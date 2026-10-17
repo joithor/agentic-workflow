@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Aw.Kernel;
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -17,8 +18,11 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="dispatch">Runs a Step by id.</param>
 /// <param name="contents">Reads a stored fact.</param>
 /// <param name="facts">Stores an output.</param>
-internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog catalog, BlockStepDispatch dispatch, IFactContents contents, IFactStore facts)
+/// <param name="profiles">The live profile: 'providers' resolves from its 'workflow.judge.providers'.</param>
+internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog catalog, BlockStepDispatch dispatch, IFactContents contents, IFactStore facts, IProfileSource profiles)
 {
+    private const string ProvidersArgument = "providers";
+
     private static readonly JsonSerializerOptions _json = new(JsonSerializerDefaults.Web);
 
     /// <summary>The registered Steps among <paramref name="used"/>, in id order.</summary>
@@ -34,8 +38,9 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
     public async Task<BlockStepOutcome> Run(BlockStepRun run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(run);
-        var arguments = ResolveArguments(run);
-        var named = await ReadFacts(catalog.Find(run.Step), arguments, run, cancellationToken).ConfigureAwait(false);
+        var descriptor = catalog.Find(run.Step);
+        var arguments = await ResolveArguments(descriptor, run, cancellationToken).ConfigureAwait(false);
+        var named = await ReadFacts(descriptor, arguments, run, cancellationToken).ConfigureAwait(false);
         if (named.IsError)
         {
             return Failed(named.Error.Message);
@@ -47,7 +52,7 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
             : await StoreOutputs(done, cancellationToken).ConfigureAwait(false);
     }
 
-    private static Dictionary<string, JsonElement> ResolveArguments(BlockStepRun run)
+    private async Task<Dictionary<string, JsonElement>> ResolveArguments(BlockDescriptor? descriptor, BlockStepRun run, CancellationToken cancellationToken)
     {
         var arguments = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
         foreach (var (name, value) in run.Arguments)
@@ -58,7 +63,23 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
             }
         }
 
+        if (descriptor?.Parameters.Any(static p => p.Name == ProvidersArgument) == true)
+        {
+            arguments[ProvidersArgument] = await Providers(run, arguments, cancellationToken).ConfigureAwait(false);
+        }
+
         return arguments;
+    }
+
+    // The effective provider list (JudgeProviders): the profile's, narrowed by the recipe's own literal list; { profile: workflow.judge.providers } narrows nothing.
+    private async Task<JsonElement> Providers(BlockStepRun run, Dictionary<string, JsonElement> arguments, CancellationToken cancellationToken)
+    {
+        var loaded = await profiles.Load(cancellationToken).ConfigureAwait(false);
+        var profile = loaded.IsError ? new SindriProfile(1, string.Empty) : loaded.Value.Profile;
+        IReadOnlyList<string>? literal = arguments.TryGetValue(ProvidersArgument, out var named) && named.ValueKind == JsonValueKind.Array
+            ? [.. named.EnumerateArray().Where(static n => n.ValueKind == JsonValueKind.String).Select(static n => n.GetString() ?? string.Empty)]
+            : null;
+        return JsonSerializer.SerializeToElement(JudgeProviders.Effective(profile, run.Repo, literal), _json);
     }
 
     private async Task<Result<Dictionary<FactKey, JsonElement>>> ReadFacts(

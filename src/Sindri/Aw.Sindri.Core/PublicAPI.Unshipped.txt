@@ -1748,7 +1748,6 @@ Aw.Sindri.Core.Profile.ProfileRules
 Aw.Sindri.Core.Profile.RepoDenyGlobs
 Aw.Sindri.Core.Profile.RepoEntry
 Aw.Sindri.Core.Profile.RepoEntry.<Clone>$() -> Aw.Sindri.Core.Profile.RepoEntry!
-Aw.Sindri.Core.Profile.RepoEntry.Deconstruct(out string! Name, out string! Path, out Aw.Sindri.Core.Profile.IndexSettings? Index) -> void
 Aw.Sindri.Core.Profile.RepoEntry.Equals(Aw.Sindri.Core.Profile.RepoEntry? other) -> bool
 Aw.Sindri.Core.Profile.RepoEntry.Index.get -> Aw.Sindri.Core.Profile.IndexSettings?
 Aw.Sindri.Core.Profile.RepoEntry.Index.init -> void
@@ -1756,7 +1755,6 @@ Aw.Sindri.Core.Profile.RepoEntry.Name.get -> string!
 Aw.Sindri.Core.Profile.RepoEntry.Name.init -> void
 Aw.Sindri.Core.Profile.RepoEntry.Path.get -> string!
 Aw.Sindri.Core.Profile.RepoEntry.Path.init -> void
-Aw.Sindri.Core.Profile.RepoEntry.RepoEntry(string! Name, string! Path, Aw.Sindri.Core.Profile.IndexSettings? Index = null) -> void
 Aw.Sindri.Core.Profile.ServiceSettings
 Aw.Sindri.Core.Profile.ServiceSettings.<Clone>$() -> Aw.Sindri.Core.Profile.ServiceSettings!
 Aw.Sindri.Core.Profile.ServiceSettings.Deconstruct(out string! Every) -> void
@@ -1789,7 +1787,6 @@ Aw.Sindri.Core.Profile.SindriProfile.Workflow.get -> Aw.Sindri.Core.Profile.Work
 Aw.Sindri.Core.Profile.SindriProfile.Workflow.init -> void
 Aw.Sindri.Core.Profile.WorkflowSettings
 Aw.Sindri.Core.Profile.WorkflowSettings.<Clone>$() -> Aw.Sindri.Core.Profile.WorkflowSettings!
-Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay) -> void
 Aw.Sindri.Core.Profile.WorkflowSettings.DeskTimeout.get -> string?
 Aw.Sindri.Core.Profile.WorkflowSettings.DeskTimeout.init -> void
 Aw.Sindri.Core.Profile.WorkflowSettings.DispatchDelay.get -> string?
@@ -1799,7 +1796,6 @@ Aw.Sindri.Core.Profile.WorkflowSettings.Effects.init -> void
 Aw.Sindri.Core.Profile.WorkflowSettings.Equals(Aw.Sindri.Core.Profile.WorkflowSettings? other) -> bool
 Aw.Sindri.Core.Profile.WorkflowSettings.EventHold.get -> string?
 Aw.Sindri.Core.Profile.WorkflowSettings.EventHold.init -> void
-Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null) -> void
 Aw.Sindri.Core.Profile.WorkflowTimes
 Aw.Sindri.Core.Profile.WorkflowTimes.<Clone>$() -> Aw.Sindri.Core.Profile.WorkflowTimes!
 Aw.Sindri.Core.Profile.WorkflowTimes.Deconstruct(out System.TimeSpan DeskTimeout, out System.TimeSpan EventHold) -> void
@@ -8330,3 +8326,41 @@ Aw.Sindri.Core.Workflow.Blocks.BlockDurationJsonConverter
 Aw.Sindri.Core.Workflow.Blocks.BlockDurationJsonConverter.BlockDurationJsonConverter() -> void
 override Aw.Sindri.Core.Workflow.Blocks.BlockDurationJsonConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> System.TimeSpan
 override Aw.Sindri.Core.Workflow.Blocks.BlockDurationJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, System.TimeSpan value, System.Text.Json.JsonSerializerOptions! options) -> void
+Aw.Sindri.Core.Profile.JudgeProviders
+Aw.Sindri.Core.Profile.JudgeSettings
+Aw.Sindri.Core.Profile.JudgeSettings.<Clone>$() -> Aw.Sindri.Core.Profile.JudgeSettings!
+Aw.Sindri.Core.Profile.JudgeSettings.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? Providers) -> void
+Aw.Sindri.Core.Profile.JudgeSettings.Equals(Aw.Sindri.Core.Profile.JudgeSettings? other) -> bool
+Aw.Sindri.Core.Profile.JudgeSettings.JudgeSettings(System.Collections.Generic.IReadOnlyList<string!>? Providers = null) -> void
+Aw.Sindri.Core.Profile.JudgeSettings.Providers.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Profile.JudgeSettings.Providers.init -> void
+Aw.Sindri.Core.Profile.RepoEntry.Deconstruct(out string! Name, out string! Path, out Aw.Sindri.Core.Profile.IndexSettings? Index, out Aw.Sindri.Core.Profile.RepoWorkflowSettings? Workflow) -> void
+Aw.Sindri.Core.Profile.RepoEntry.RepoEntry(string! Name, string! Path, Aw.Sindri.Core.Profile.IndexSettings? Index = null, Aw.Sindri.Core.Profile.RepoWorkflowSettings? Workflow = null) -> void
+Aw.Sindri.Core.Profile.RepoEntry.Workflow.get -> Aw.Sindri.Core.Profile.RepoWorkflowSettings?
+Aw.Sindri.Core.Profile.RepoEntry.Workflow.init -> void
+Aw.Sindri.Core.Profile.RepoWorkflowSettings
+Aw.Sindri.Core.Profile.RepoWorkflowSettings.<Clone>$() -> Aw.Sindri.Core.Profile.RepoWorkflowSettings!
+Aw.Sindri.Core.Profile.RepoWorkflowSettings.Deconstruct(out Aw.Sindri.Core.Profile.JudgeSettings? Judge) -> void
+Aw.Sindri.Core.Profile.RepoWorkflowSettings.Equals(Aw.Sindri.Core.Profile.RepoWorkflowSettings? other) -> bool
+Aw.Sindri.Core.Profile.RepoWorkflowSettings.Judge.get -> Aw.Sindri.Core.Profile.JudgeSettings?
+Aw.Sindri.Core.Profile.RepoWorkflowSettings.Judge.init -> void
+Aw.Sindri.Core.Profile.RepoWorkflowSettings.RepoWorkflowSettings(Aw.Sindri.Core.Profile.JudgeSettings? Judge = null) -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.JudgeSettings? Judge) -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Judge.get -> Aw.Sindri.Core.Profile.JudgeSettings?
+Aw.Sindri.Core.Profile.WorkflowSettings.Judge.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.JudgeSettings? Judge = null) -> void
+const Aw.Sindri.Core.Profile.JudgeProviders.Jev = "jev" -> string!
+const Aw.Sindri.Core.Profile.JudgeProviders.Rules = "rules" -> string!
+override Aw.Sindri.Core.Profile.JudgeSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.JudgeSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.JudgeSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.RepoWorkflowSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.RepoWorkflowSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.RepoWorkflowSettings.ToString() -> string!
+static Aw.Sindri.Core.Profile.JudgeProviders.Default.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Profile.JudgeProviders.Effective(Aw.Sindri.Core.Profile.SindriProfile! profile, string? repo, System.Collections.Generic.IReadOnlyList<string!>? recipeLiteral) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Profile.JudgeProviders.Known.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Profile.JudgeSettings.operator !=(Aw.Sindri.Core.Profile.JudgeSettings? left, Aw.Sindri.Core.Profile.JudgeSettings? right) -> bool
+static Aw.Sindri.Core.Profile.JudgeSettings.operator ==(Aw.Sindri.Core.Profile.JudgeSettings? left, Aw.Sindri.Core.Profile.JudgeSettings? right) -> bool
+static Aw.Sindri.Core.Profile.RepoWorkflowSettings.operator !=(Aw.Sindri.Core.Profile.RepoWorkflowSettings? left, Aw.Sindri.Core.Profile.RepoWorkflowSettings? right) -> bool
+static Aw.Sindri.Core.Profile.RepoWorkflowSettings.operator ==(Aw.Sindri.Core.Profile.RepoWorkflowSettings? left, Aw.Sindri.Core.Profile.RepoWorkflowSettings? right) -> bool

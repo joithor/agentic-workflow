@@ -35,6 +35,7 @@ public sealed class BlockRuntimeInterpreterTests : IDisposable
 
             Assert.Equal(("evidence-ui", 1), (view.State, fake.Runs));
             Assert.NotNull(view.Task);   // the next state's desk task
+            Assert.Equal("rules", fake.Last!.Arguments["providers"].EnumerateArray().Last().GetString());   // the effective provider list (DT-J plan Q8), rules last
             Assert.Equal("fact:diff", fake.Last!.Facts.Keys.Select(static k => k.Value).Order(StringComparer.Ordinal).Last());
             await Task.Delay(1, ct);
         });
