@@ -1,6 +1,6 @@
 # Sindri scoping station: the first station of spec-to-proven-PR, as block recipes
 
-**Status:** design, revision 3.6 (after /autoplan passes 1–2, a narrow re-check, the owner's scope-graph request
+**Status:** design, revision 3.7 (after /autoplan passes 1–2, a narrow re-check, the owner's scope-graph request
 of 2026-10-16, two recorded limits, the #309 /autoplan follow-up and its rounds 2 and 3, §13) · **Date:** 2026-10-15, amended 2026-10-16 · **Owner decisions:** 2026-10-15 and 2026-10-16 (§1) · **Engine decision:** 2026-10-15, fact keys stay camelCase (W5) ·
 **Builds on:** the decision-tree recipes spec `2026-10-15-sindri-decision-tree-recipes-design.md` (DT, #240), rev 4;
 the workflow engine spec `2026-10-10-sindri-workflow-engine-design.md` (WF), rev 8.2, schema 1;
@@ -577,8 +577,18 @@ severity: fail | warn }] }`, written as `fact:findings` and printed by `--json`.
   | `index-not-built` | Code (callers, callees, symbols) | The code lens's `symbols` block with `state: unavailable` and the text "index not built" (`LensSymbols`) | `unavailable` | `index-not-built` | none | Decided | Wait for the code index (S-9) |
   | `history-unlinked` | History (ticket mentions) | Nothing: no source row says it. The intent band has no linked tickets while the ticket linker (S-5B) is not built; the gather step records it for the ticket-mentions band until then | `unavailable` | `history-unlinked` | none | Decided | Wait for the ticket linker (S-5B) |
   | `commit-not-held` | Code | A code-lens source `unavailable` with code SND-CONTEXT-110. Today 110 is a thrown not-found error; the context lane widens it to a source code on a 200 answer for the as-of read (an ask through the meta, C3) | `unavailable` | `commit-not-held` | SND-CONTEXT-110 | Owner-approved (2026-10-16) | Fetch the commit into the profile repo's checkout, then regather |
-  | `not-synced` | History (an intent source) | A history-lens intent source whose sync state (`SourceSyncStatus.State`, `src/Context/Aw.Context.Core/Results/SourceSyncStatus.cs`) is `Degraded` with no last sync (`LastSync` null), which `SourcesStatusService` reports for a never-synced source; the row's own health is not the test. A source whose sync ran and failed (sync state `Unavailable`) or whose row is `degraded` for any other reason is not this limit and still fails `SCP-COV-002` | `degraded` | `not-synced` | Assigned by the context lane's S-H | Provisional; owner to confirm (Q11) | Sync the intent source, then regather |
+  | `not-synced` | History (an intent source) | A history-lens intent source whose sync state (`SourceSyncStatus.State`, `src/Context/Aw.Context.Core/Results/SourceSyncStatus.cs`) is `Degraded` with no last sync (`LastSync` null), which `SourcesStatusService` reports for a never-synced source; the row's own health is not the test. A source whose sync ran and failed (sync state `Unavailable`) or whose row is `degraded` for any other reason is not this limit and still fails `SCP-COV-002` | `degraded` | `not-synced` | Assigned by the context lane's S-H | Owner-approved, 2026-10-18 ("allow, show the gap, queue or start the sync") | None needed from the owner: the context engine queues the source's sync itself (below); rescope once it has run |
   | `not-configured` | Any lens (incidents today) | A source with `state: not-configured` | `not-configured` | `not-configured` | none | Decided | Name the source in the profile, then regather |
+
+  **The never-synced source closes itself** (owner, 2026-10-18). When a lens read meets an intent source that was
+  never synced, the context engine (the context lane's S-H) queues that source's `SyncSources` job on the P6 job
+  runtime (job key `sync`, so a sync already queued or running is joined, never doubled). The scoping steps stay
+  read-only: they only read the job's state through the history answer. The stop's row reads, by job state:
+  queued "not searched: never synced — sync queued"; running "not searched: never synced — sync running";
+  finished "not searched: never synced — synced since; rescope to include it"; failed "not searched: never synced —
+  the sync failed (<code>); see `sindri jobs show <id>`". Approval is allowed in every one of these states. The
+  owner's `rescope` (or a `regather` for another reason) reads the history lens again and picks the synced source up;
+  nothing rescopes by itself.
 
   The fix lines live in one constant map in `Aw.Sindri.Features/Scoping/` (SC-K), read by the CLI and the app, so they cannot drift.
 
@@ -829,7 +839,7 @@ Every ask to another lane is a row here; this doc edits no other spec, except th
 | C2 | **Surface kinds** `notification`, `permission`, `report`, `flag`, with extractor rules as the profile setting `context.extract.recognizers`, never rules for one app's registries | App-agnostic profile setting | SC-L (S-SK), SC-F |
 | C3 | **`input.context.code`** in the answer's shape: files, tests, data things, schema files; callers and callees report `unavailable` ("index not built") until S-9, which the gather step records as `index-not-built`; `commit-not-held` (SND-CONTEXT-110) on a code source whose as-of commit isn't on disk, also recorded (the rows are §8.2's Recorded limits table; the context lane widens 110's row in the context spec to name the as-of read and to carry it as a source code on a 200 answer, not a thrown error, an ask sent through the meta; until it lands, SC-K's `commit-not-held` proof uses the fixture shape) | No TS index named | SC-L (S-CL) |
 | C4 | **A component hop**, in the answer's shape (confirmed `implements` only, fan-out cap) | — | SC-L (S-CH) |
-| C5 | **`input.context.history`** in the answer's shape: stored edges and `git-history` first; ticket mentions report `history-unlinked` until S-5B; incidents `not-configured`; an intent source never synced reports `degraded` (as `SourcesStatusService` does today), which the gather step records as `not-synced` (provisional) (§8.2's Recorded limits table) | Recorded states named | SC-L (S-H) |
+| C5 | **`input.context.history`** in the answer's shape: stored edges and `git-history` first; ticket mentions report `history-unlinked` until S-5B; incidents `not-configured`; an intent source never synced reports `degraded` (as `SourcesStatusService` does today), which the gather step records as `not-synced` (owner-approved 2026-10-18; §8.2's Recorded limits table); the context engine also queues that source's `SyncSources` job (job key `sync`, joined if one is queued or running) and the history answer carries the job's state and id, so the stop can say queued, running, finished or failed | Recorded states named; the never-synced source's sync queued once, its state in the answer | SC-L (S-H) |
 | C6 | **`searched`** as an extension of `SourceState` with `not-configured` and a code per source, plus per-band `empty`, reusing the lens result's existing `coverage`, `gaps` and `degraded[]` rather than a parallel set; `fetchedAt` on every ref | Reuse, not a parallel vocabulary | SC-L (S-LB) |
 | C7 | **The `diff` shape** over refs only (base and head shas), with `unmapped` paths. `read-change` resolves a PR to its shas | Refs only | SC-T (S-D) |
 | C8 | **The tracker port** `ITrackerSource` in `Aw.Context.Core` and `GET /sindri/context/record?key=&children=&comments=`, profile key `context.sources.<name>`. The route answers `service:engine` and the human only (owner decision B); before S-6, one issue by key through Onyx | Absorbs the review's tracker-port row; session rule added | SC-T (S-6, S-TR) |
@@ -1075,6 +1085,14 @@ If the owner rejects `not-synced`, remove every mention of it: grep the doc for 
 | T10 | 13.7 R9, 13.5 | R9 no longer claims eval cases for the negative cases (they are SC-K's proof); 13.5's removal list says the grep is authoritative |
 | T12 | Status line, §13.8 | Revision 3.6; this table |
 
+### 13.9 Rev 3.7, the owner's answer on `not-synced` (2026-10-18)
+
+| Where | What changed |
+|---|---|
+| §8.2 table, Q11 | `not-synced` is owner-approved: "allow, show the gap, queue or start the sync" |
+| §8.2 | The context engine queues the never-synced source's `SyncSources` job itself (job key `sync`, joined if one is queued or running); the stop's four sentences by job state; a rescope picks the synced source up; the scoping steps stay read-only |
+| C5 | The context lane's half (below) |
+
 ## 14. Phases
 
 Each phase is one PR, driven by /specToProvenPR in the named lane. Sizes: S is a few files, M one subsystem slice, L
@@ -1146,7 +1164,7 @@ Each has a provisional answer. All are reversible unless marked.
 | Q8 | How much owner time per error-analysis cycle? (prompting.md) | About an hour per agent Step per cycle: 30 traces every four weeks while the station is new, fewer once regression cases hold. Calibration labels for the four gating judges first (about 80 labels), the rest later |
 | Q9 | Add `step.scout` (IDEA-017) as a fifth evidence source? | Not in version 1. Add it after SC-B if missed items cluster in code the lenses can't see |
 | Q10 | Should the interview's caps (5 per round, 4 rounds) be profile values? | No: the recipe's (DT Q7). The owner's experience after SC-P decides whether to change them |
-| Q11 | Can the owner approve at the stop with a lens not searched? | No: a transient source failure sends the instance back to `gather` (`regather`) and parks at the `rescope` cap with the source named. Recorded limits (`index-not-built`, `history-unlinked`, `commit-not-held`, `not-synced`, `not-configured`) and a lens the profile marks `none` for a repo (`not-applicable` with its reason) pass and show at the stop as "not searched: <limit> — <fix line>". `not-synced` is provisional: the owner is to confirm it. *Owner should confirm* |
+| Q11 | Can the owner approve at the stop with a lens not searched? | No: a transient source failure sends the instance back to `gather` (`regather`) and parks at the `rescope` cap with the source named. Recorded limits (`index-not-built`, `history-unlinked`, `commit-not-held`, `not-synced`, `not-configured`) and a lens the profile marks `none` for a repo (`not-applicable` with its reason) pass and show at the stop as "not searched: <limit> — <fix line>". `not-synced` is owner-approved (2026-10-18): approval is allowed, the gap is shown, and the context engine queues the source's sync itself (§8.2) |
 | Q12 | Do the challenger and drafter need different vendors, or only different models? | Different models, and different vendors when the repo's profile allows more than one (SC7 says "model or vendor"). `SCP-CHAL-002` reads the runtime's record (W8) |
 | Q13 | Does the station write tracker issues from the scope? | No. Writing to a tracker is an ask-first effect for the plan station, never scoping's |
 | Q14 | What happens to a cancelled instance's proposals? | They stay, tagged with the run, and map review shows them; `withdraw` runs only on `drop`. A cancel hook is a later engine question |
