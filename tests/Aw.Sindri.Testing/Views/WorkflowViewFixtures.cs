@@ -288,7 +288,7 @@ public static class WorkflowViewFixtures
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "no answer for this kind"),
     };
 
-    private static StatusAnswer ChildPointer(string address, string child) =>
+    private static StatusAnswer ChildPointer(string address, string? child) =>
         new(AnswerKind.Text, Act("ApplyCommand:answer-text"), ActionClass.Desk, $"sindri workflow answer {address} <the child's answer>", AtTerminal: false, Via: "child", Child: child);
 
     /// <summary>What the cancel sentence and the complete command need from the instance's open work; N and M come from the fixture until engine P4b.</summary>
@@ -345,6 +345,12 @@ public static class WorkflowViewFixtures
         new OpenWork(OpenChildren: 1),
         new StatusLines { Answer = ChildPointer("ITM-01JC9/item/1", "ITM-01JC9/item/1/step.4"), Child = new StatusChild(WorkflowInstanceId.Of(InstanceAddress.From("ITM-01JC9/item/1/step.4")), InstanceAddress.From("ITM-01JC9/item/1/step.4"), "parked", "budget") });
 
+    /// <summary>The shape today's control plane serves for a mirrored park: the pointer, with no child address (the served view does not list its children yet).</summary>
+    public static StatusFields StatusMirroredBudgetNoChild() => Status(_itemChildPointer, "budget (child)",
+        "Parked (budget) in the child: the child used 50k of 50k tokens.",
+        new OpenWork(OpenChildren: 1),
+        new StatusLines { Answer = ChildPointer("ITM-01JC9/item/1", child: null) });
+
     /// <summary>Layout 2: an open desk task with its inputs, a parking timeout and the state and instance budgets.</summary>
     public static StatusFields StatusDeskTask() => Status(_sentry8812, "desk task",
         "Classify the severity for sentry-8812, then run: sindri workflow complete ITM-01JK2/triage-alert/1 --run 2.1 --outcome done --output fact:severity=<file>",
@@ -394,7 +400,7 @@ public static class WorkflowViewFixtures
     /// <returns>The statuses.</returns>
     public static IReadOnlyList<StatusFields> AllStatuses() =>
     [
-        StatusParkedChild(), StatusEscalatedChild(), StatusMirroredBudget(), StatusDeskTask(), StatusParkedBudget(), StatusEscalatedGate(), StatusTakenOver(), StatusDone(),
+        StatusParkedChild(), StatusEscalatedChild(), StatusMirroredBudget(), StatusMirroredBudgetNoChild(), StatusDeskTask(), StatusParkedBudget(), StatusEscalatedGate(), StatusTakenOver(), StatusDone(),
         StatusParkedDrift(), StatusNeedsAnswerStep(), StatusNeedsAnswerWait(), .. AllDetails().Select(d => d.Current.Status),
     ];
 

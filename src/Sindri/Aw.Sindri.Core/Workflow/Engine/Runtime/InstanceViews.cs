@@ -52,7 +52,7 @@ public static partial class InstanceViews
         var task = instance is { Ended: false, Suspension: null, Frame.Run: { Runtime: StepRuntime.Desk } open }
             ? Task(instance.Frame.State, open.Token, recipe, timeoutAt)
             : null;
-        var words = new InstanceWords(instance, recipe, since, children.Count > 0 ? children[0] : null);
+        var words = new InstanceWords(instance, recipe, since, MirroredChild(instance, children));
         var view = new InstanceView(
             instance.Address,
             recipe.Version,
@@ -209,6 +209,12 @@ public static partial class InstanceViews
     /// </summary>
     private static string CompleteCli(string address, DeskTask task) =>
         CompleteCommand.Line(address, task.Run, task.Outcomes.Count > 0 ? task.Outcomes[0] : null, task.Outputs);
+
+    /// <summary>The child a suspension mirrors, matched by its instance id (a sibling listed first is not it); none listed means none; with no mirror, the first child.</summary>
+    private static ChildView? MirroredChild(WorkflowInstance instance, IReadOnlyList<ChildView> children) =>
+        instance.Suspension?.Mirrors is { } mirrored
+            ? children.FirstOrDefault(c => WorkflowInstanceId.Of(c.Address) == mirrored)
+            : children.Count > 0 ? children[0] : null;
 
     private static bool Answerable(Suspension suspension) =>
         suspension.ParkKind is not (ParkKind.Revoked or ParkKind.ChildRevoked or ParkKind.Drift);

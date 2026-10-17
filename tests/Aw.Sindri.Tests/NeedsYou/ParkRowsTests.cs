@@ -30,6 +30,7 @@ public sealed class ParkRowsTests
         Assert.Equal(("park:" + WorkflowInstanceId.Of(_address).Value, AnswerKind.Grant, ActionId.From("ApplyCommand:answer-grant"), Urgency.Pulse), (row.Id.Value, row.AnswerKind, row.PrimaryAction, row.Urgency));
         Assert.Equal(("the item", ItemQueryHarness.Id('1'), "sindri workflow answer " + _address.Value + " --grant 1"), (row.Title, row.Item, row.Cli));
         Assert.Equal(_since, row.Since);
+        Assert.Null(row.Via);   // a park the engine can answer itself is no pointer
     }
 
     [Theory]
@@ -51,7 +52,7 @@ public sealed class ParkRowsTests
         var row = NeedsYouRows.ForPark(Item(), instance.Address, summary, _since, _plain);
 
         var line = StatusCases.View(name).AnswerLine!;
-        Assert.Equal((line.ActionId, line.Cli, line.Kind), (row.PrimaryAction, row.Cli, row.AnswerKind));
+        Assert.Equal((line.ActionId, line.Cli, line.Kind, line.Via), (row.PrimaryAction, row.Cli, row.AnswerKind, row.Via));
     }
 
     [Theory]
@@ -68,6 +69,7 @@ public sealed class ParkRowsTests
 
         Assert.EndsWith("<the child's answer>", row.Cli, StringComparison.Ordinal);
         Assert.Equal(ActionId.From("ApplyCommand:answer-text"), row.PrimaryAction);
+        Assert.Equal("child", row.Via);
     }
 
     [Fact]

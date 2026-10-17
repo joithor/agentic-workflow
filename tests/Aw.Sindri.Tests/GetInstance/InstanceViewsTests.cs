@@ -234,6 +234,8 @@ public sealed class InstanceViewsTests
     [InlineData("parked-mirrored-needs-answer-wait", true)]
     [InlineData("parked-mirrored-budget", true)]
     [InlineData("parked-mirrored-spec-conflict", true)]
+    [InlineData("parked-mirrored-two-children", true)]
+    [InlineData("parked-mirrored-unlisted-child", true)]
     [InlineData("parked-no-progress-child", false)]
     [InlineData("parked-mirrored-rounds", false)]
     [InlineData("parked-mirrored-timeout", false)]
@@ -245,9 +247,38 @@ public sealed class InstanceViewsTests
         var answer = StatusCases.View(name).AnswerLine!;
 
         Assert.Equal(pointsAtChild ? "child" : null, answer.Via);
-        Assert.Equal(pointsAtChild ? "T-3/step/1/step.4" : null, answer.Child);
+        Assert.Equal(pointsAtChild && name != "parked-mirrored-unlisted-child" ? "T-3/step/1/step.4" : null, answer.Child);
         Assert.Equal(pointsAtChild, answer.Cli.EndsWith("<the child's answer>", StringComparison.Ordinal));
     }
+
+    [Fact]
+    public void The_child_named_is_the_one_the_suspension_mirrors_not_the_first_listed_sibling()
+    {
+        var view = StatusCases.View("parked-mirrored-two-children");
+
+        Assert.Equal("T-3/step/1/step.4", view.AnswerLine!.Child);
+        Assert.Contains("(forwarded to T-3/step/1/step.4)", InstanceViews.Status(view, StatusCases.Now).Text, StringComparison.Ordinal);
+        Assert.DoesNotContain("step.2", InstanceViews.Status(view, StatusCases.Now).Text.Split('\n').Single(l => l.TrimStart().StartsWith("answer", StringComparison.Ordinal)), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_mirrored_child_that_is_not_listed_is_not_guessed_from_a_sibling()
+    {
+        var view = StatusCases.View("parked-mirrored-unlisted-child");
+
+        Assert.Null(view.AnswerLine!.Child);
+        Assert.Equal("child", view.AnswerLine.Via);
+        var answerLine = InstanceViews.Status(view, StatusCases.Now).Text.Split('\n').Single(l => l.TrimStart().StartsWith("answer", StringComparison.Ordinal));
+        Assert.DoesNotContain("step.2", answerLine, StringComparison.Ordinal);
+        Assert.Contains("(forwarded to the child)", answerLine, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("parked-mirrored-needs-answer-wait")]
+    [InlineData("parked-mirrored-spec-conflict")]
+    [InlineData("parked-mirrored-needs-answer")]
+    public void The_next_line_of_a_mirrored_park_names_the_child(string name)
+        => Assert.Contains(" in T-3/step/1/step.4", StatusCases.View(name).Next, StringComparison.Ordinal);
 
     [Fact]
     public void The_status_answer_is_the_first_variant_the_one_table_lists_for_every_park_shape()
@@ -275,9 +306,20 @@ public sealed class InstanceViewsTests
         {
             Assert.Equal(AnswerRow.For(fitting[0]).Action, line!.ActionId.Value);
         }
+        else if (shape.Kind == SuspensionKind.Escalation && shape.Escalation == EscalationKind.Child)
+        {
+            Assert.Equal("child", line!.Via);   // a child's escalation is only ever a pointer
+        }
         else if (shape is { Kind: SuspensionKind.Park, Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Revoked or ParkKind.ChildRevoked or ParkKind.Drift })
         {
             Assert.True(line is null || line.Kind == AnswerKind.CancelOnly, "a revoked or drifted park takes no answer");
+        }
+        else
+        {
+            // Every other empty-fit shape: a spec-conflict kind the engine never produces without a fit (loop, refusal, step, wait, none) and
+            // a takeover or null-reason shape. None is built by the engine, so the line is not part of the contract; require only that it never
+            // claims a protected answer variant.
+            Assert.True(line is null || line.Kind is AnswerKind.CancelOnly or AnswerKind.Resume or AnswerKind.Text, $"{shape.Kind}/{shape.Reason}/{shape.ParkKind}");
         }
     }
 
