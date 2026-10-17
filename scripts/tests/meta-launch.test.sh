@@ -5,7 +5,6 @@
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fail=0
-[ "$(uname -s)" = Darwin ] && { echo "skip: this suite (the golden transcript, GNU tools, uuid case, wc padding) is Linux-only; the launcher check against a stale aw-meta runs everywhere in meta-version.test.sh"; exit 0; }
 check() {
   if [ "$2" == "$3" ]; then echo "ok - $1"; else
     echo "not ok - $1"; echo "  expected: $3"; echo "  actual:   $2"; fail=1
@@ -478,7 +477,8 @@ tmux kill-server 2> /dev/null; killstubs
 # Three reported lanes started at the same moment (as Warp's panes do) still start one at a time.
 reset; : > "$CALLS.events"; : > "$CALLS.codex"; rm -f "$ids/p1" "$ids/p2" "$ids/p3" "$ids/p1.settled" "$ids/p2.settled" "$ids/p3.settled"
 export -n OLD_ROLLOUT
-( : ) > "$ids/.reported.flock"   # a lock file left by a crashed start: flock holds nothing on it, so it is no obstacle
+# a lock left by a crashed start (its owner pid is dead) is no obstacle: the next start takes it over
+( sleep 0 & dead=$!; wait "$dead"; ln -s "$dead" "$ids/.reported.lock" )
 AW_LAUNCHER_CONFIG="$LCFG" AW_META_ID_WAIT=10 bash "$DIR/meta-lane.sh" t1 p1 > /dev/null 2>&1 & p1=$!
 AW_LAUNCHER_CONFIG="$LCFG" AW_META_ID_WAIT=10 bash "$DIR/meta-lane.sh" t1 p2 > /dev/null 2>&1 & p2=$!
 AW_LAUNCHER_CONFIG="$LCFG" AW_META_ID_WAIT=10 bash "$DIR/meta-lane.sh" t1 p3 > /dev/null 2>&1 & p3=$!
@@ -487,7 +487,21 @@ a1="$(tr -d '[:space:]' < "$ids/p1")"; a2="$(tr -d '[:space:]' < "$ids/p2")"; a3
 check "three lanes starting at once: one at a time (each id recorded before the next agent starts)" "$(awk '{print $1}' "$CALLS.events" | tr '\n' ';')" "start;wrote;start;wrote;start;wrote;"
 check "three lanes starting at once: each lane recorded its own rollout's id" "$(grep -c "wrote p1 $a1" "$CALLS.events"):$(grep -c "wrote p2 $a2" "$CALLS.events"):$(grep -c "wrote p3 $a3" "$CALLS.events"):$(printf '%s\n' "$a1" "$a2" "$a3" | sort -u | wc -l | tr -d ' ')" "1:1:1:3"
 kill "$p1" "$p2" "$p3" 2> /dev/null; killstubs; wait 2> /dev/null
-check "the start lock is released afterwards" "$(flock -n "$ids/.reported.flock" true && echo free || echo held)" "free"
+check "the start lock is released afterwards" "$(test -e "$ids/.reported.lock" -o -L "$ids/.reported.lock" && echo held || echo free)" "free"
+
+# A lock held by a live process is waited for: the lane starts anyway once AW_META_ID_WAIT x 10 s have passed, and says so.
+reset; : > "$CALLS.events"; : > "$CALLS.codex"; rm -f "$ids/p1" "$ids/p1.settled"
+sleep 60 & holder=$!
+ln -s "$holder" "$ids/.reported.lock"
+t0=$SECONDS
+AW_LAUNCHER_CONFIG="$LCFG" AW_META_ID_WAIT=1 bash "$DIR/meta-lane.sh" t1 p1 > "$WORK/held.out" 2>&1 & p1=$!
+for _ in $(seq 250); do grep -q "starting p1 anyway" "$WORK/held.out" && break; sleep 0.1; done
+check "a start lock held by a live process: the lane waits about AW_META_ID_WAIT x 10 s, then starts anyway" "$(grep -c "another lane's start did not finish; starting p1 anyway" "$WORK/held.out"):$([ $((SECONDS - t0)) -ge 9 ] && echo waited || echo "early $((SECONDS - t0))s")" "1:waited"
+check "the live holder's lock is left alone" "$(readlink "$ids/.reported.lock")" "$holder"
+kill "$p1" "$holder" 2> /dev/null; killstubs; wait 2> /dev/null; unlink "$ids/.reported.lock" 2> /dev/null
+
+# The launcher scripts run on macOS's bash 3.2 and BSD tools: no flock, fd-number redirections, BASHPID, mapfile or associative arrays.
+check "the launcher scripts use no flock, exec {fd}, BASHPID, mapfile, readarray or declare -A" "$(grep -n -E 'flock|exec \{[a-z_]+\}|BASHPID|mapfile|readarray|declare -A|\$\{[A-Za-z_]+(,,|\^\^)\}' "$DIR/meta-lane.sh" "$DIR/meta-launch.sh" "$DIR/launcher-lib.sh" "$DIR/meta-team-lib.sh" | grep -v -E '^[^:]+:[0-9]+:[[:space:]]*#' | wc -l | tr -d ' ')" "0"
 
 # Precedence: AW_META_CLAUDE ranks above the file's claude-code bin; without it the file's bin is used.
 jq -n '{schema:1, agents:{"claude-code":{override:true, bin:"/nonexistent/claude"}}}' > "$LCFG"
