@@ -46,9 +46,9 @@ internal sealed class JobRig : IDisposable
 
     public static string Body<T>(T value) => Encoding.UTF8.GetString(AwJson.Serialize(value, SliceHarness.Json));
 
-    public static string View(JobState state, int rounds, string? summary = null, string? code = null) => Body(new JobView(JobId.From(Id), JobKind.From("RunService"), JobKey.From("heartbeat"),
+    public static string View(JobState state, int rounds, string? summary = null, string? code = null, System.Text.Json.JsonElement? result = null) => Body(new JobView(JobId.From(Id), JobKind.From("RunService"), JobKey.From("heartbeat"),
         Item: null, Repo: null, ServiceName.From("heartbeat"), state, "human:local", KnownInstants.Epoch, state == JobState.Running ? null : KnownInstants.Epoch,
-        [.. Enumerable.Range(1, rounds).Select(static n => new JobLine(n, string.Create(CultureInfo.InvariantCulture, $"line {n}"), KnownInstants.Epoch))], rounds, summary, code, Result: null, CancelledBy: null,
+        [.. Enumerable.Range(1, rounds).Select(static n => new JobLine(n, string.Create(CultureInfo.InvariantCulture, $"line {n}"), KnownInstants.Epoch))], rounds, summary, code, result, CancelledBy: null,
         state == JobState.Running ? [ActionId.From("CancelJob")] : [], state == JobState.Running ? "sindri jobs cancel " + Id : null, new AsOf(10, 10, KnownInstants.Epoch, Rebuilding: false, Stalled: false)));
 
     public static string Progress(int round, string line) => string.Create(CultureInfo.InvariantCulture, $$"""{"commandId":"00000000-0000-0000-0000-000000000007","job":"{{Id}}","round":{{round}},"line":"{{line}}"}""");
