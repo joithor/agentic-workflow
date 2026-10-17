@@ -2,6 +2,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Features.Launching;
@@ -252,5 +253,85 @@ public sealed class LauncherServiceTests
 
         Expect.Equal(SindriErrors.LaunchNoSession.Code, Assert.Single(_rig.Failures).Code);
         Assert.Empty(_rig.Viewer.Requests);
+    }
+
+    [Fact]
+    public async Task Launch_time_recheck_writes_launch_failed_010()
+    {
+        await Boot();
+        var claude = AgentId.From("claude-code");
+        await _rig.Approve(new AgentSettings(SoftLimit: null, new Dictionary<string, AgentLimits>(StringComparer.Ordinal) { [claude.Value] = new(DailyBudget: 10m) }));
+        _rig.Spend.Spent(claude, 1m);
+        using var caller = _rig.Caller();
+        var pending = await Filed(_a);   // the open saw 1 of 10 dollars
+        _rig.Spend.Spent(claude, 10m);   // and the agent spent the rest in the 30 s before the launch
+
+        var launched = await _rig.Launch(pending);
+
+        Assert.False(launched);
+        var failed = Assert.Single(_rig.Failures);
+        Expect.Equal((SindriErrors.LaunchBudgetReached.Code, _a), (failed.Code, failed.Launch));
+        Assert.Empty(_rig.Launcher.Requests);
+    }
+
+    [Fact]
+    public async Task A_launch_under_its_budget_goes_ahead()
+    {
+        await Boot();
+        var claude = AgentId.From("claude-code");
+        await _rig.Approve(new AgentSettings(SoftLimit: null, new Dictionary<string, AgentLimits>(StringComparer.Ordinal) { [claude.Value] = new(DailyBudget: 10m) }));
+        _rig.Spend.Spent(claude, 8m);   // soft: a warning at the open, no refusal at the launch
+        using var caller = _rig.Caller();
+
+        Assert.True(await _rig.Launch(await Filed(_a)));
+    }
+
+    [Fact]
+    public async Task A_failed_launch_probes_the_targets_again()
+    {
+        await Boot();
+        using var caller = _rig.Caller();
+        _rig.Launcher.FailNextWith(SindriErrors.LaunchViewerFailed.With("no window"));
+
+        _ = await _rig.Launch(await Filed(_a));
+        _rig.Slice.Clock.Advance(TimeSpan.FromSeconds(1));
+        _rig.Launcher.Probed = _rig.Launcher.Probed with { Host = new HostFacts(HostKind.Tmux, Present: false, Version: null, Problem: "not-installed") };
+        _ = await _rig.Tick();
+
+        Expect.Equal(2, _rig.Recorded(EventTypes.LaunchProbed).Count);   // the start-up probe, then the one a failed launch asks for
+    }
+
+    [Fact]
+    public async Task A_pre_chosen_session_id_is_recorded_on_launch_started()
+    {
+        await Boot();
+        using var caller = _rig.Caller();
+        var chosen = Core.Sessions.SessionId.From("0198f2a1-0000-7000-8000-000000000001");
+        _rig.Launcher.PreChosenSession = chosen;
+
+        Assert.True(await _rig.Launch(await Filed(_a)));
+
+        var started = _rig.Payload<LaunchStarted>(Assert.Single(_rig.Recorded(EventTypes.LaunchStarted)));
+        Expect.Equal(chosen, started.SessionId);
+    }
+
+    [Fact]
+    public async Task Probes_at_start_then_every_ten_minutes_and_only_on_change()
+    {
+        await Boot();   // the first tick probes
+        Expect.Equal(1, _rig.Recorded(EventTypes.LaunchProbed).Count);
+
+        _rig.Slice.Clock.Advance(TimeSpan.FromMinutes(9));
+        _rig.Launcher.Probed = _rig.Launcher.Probed with { Host = new HostFacts(HostKind.Tmux, Present: false, Version: null, Problem: "not-installed") };
+        _ = await _rig.Tick();
+        Expect.Equal(1, _rig.Recorded(EventTypes.LaunchProbed).Count);   // not yet due
+
+        _rig.Slice.Clock.Advance(TimeSpan.FromMinutes(2));
+        _ = await _rig.Tick();
+        Expect.Equal(2, _rig.Recorded(EventTypes.LaunchProbed).Count);
+
+        _rig.Slice.Clock.Advance(TimeSpan.FromMinutes(10));
+        _ = await _rig.Tick();
+        Expect.Equal(2, _rig.Recorded(EventTypes.LaunchProbed).Count);   // due, nothing changed
     }
 }

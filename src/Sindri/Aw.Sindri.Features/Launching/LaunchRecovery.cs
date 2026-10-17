@@ -75,7 +75,7 @@ internal sealed class LaunchRecovery(ILedgerStore ledger, IProjectorStatus views
 
         if (row.Live && row is { Viewer.Outcome: ViewerOutcomeKind.Unconfirmed, Late: false, OutcomeAt: { } at } && at + timings.Deadline > timings.Clock.GetUtcNow())
         {
-            work.Watch(new WatchedViewer(row.Id, row.Item, new HostRef(HostKind.Tmux, SessionNames.For(row.Id)), at + timings.Deadline));
+            work.Watch(new WatchedViewer(row.Id, row.Item, new HostRef(HostKind.Tmux, LaunchSessionName.For(row.Id)), at + timings.Deadline));
         }
 
         return Unit.Value;

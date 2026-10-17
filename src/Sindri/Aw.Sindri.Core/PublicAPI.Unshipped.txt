@@ -9646,7 +9646,6 @@ Aw.Sindri.Core.Launches.LaunchRow.Viewer.init -> void
 static Aw.Sindri.Core.Launches.LaunchRow.operator !=(Aw.Sindri.Core.Launches.LaunchRow? left, Aw.Sindri.Core.Launches.LaunchRow? right) -> bool
 override Aw.Sindri.Core.Launches.LaunchRow.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Launches.LaunchRow.GetHashCode() -> int
-Aw.Sindri.Core.Launches.ILaunchSpend.Today(Aw.Sindri.Core.Launch.AgentId target, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<decimal?>!>
 static Aw.Sindri.Core.Launches.LaunchRules.InFlight(Aw.Sindri.Core.Launches.LaunchRow! row, System.DateTimeOffset now) -> bool
 Aw.Sindri.Core.Launches.LaunchBudgets
 Aw.Sindri.Core.Launches.LaunchRow.ArgvHash.get -> string?
@@ -9707,3 +9706,162 @@ Aw.Sindri.Core.Launches.LaunchEnd.ExitCode.init -> void
 Aw.Sindri.Core.Launches.LaunchRow.Message.init -> void
 Aw.Sindri.Core.Launches.ILaunchViews.ForRepo(Aw.Sindri.Core.Ids.RepoName repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.LaunchRow!>!>!>
 static Aw.Sindri.Core.Launches.LaunchBudgets.Of(Aw.Sindri.Core.Profile.AgentSettings? agents, Aw.Sindri.Core.Launch.AgentId target, decimal? spentToday) -> Aw.Sindri.Core.Launches.LaunchBudgetState
+Aw.Sindri.Core.Launch.AgentEntry.Usage.get -> string?
+Aw.Sindri.Core.Launch.AgentEntry.Usage.init -> void
+Aw.Sindri.Core.Launch.LaunchSessionName
+static Aw.Sindri.Core.Launch.LaunchSessionName.For(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> string!
+static Aw.Sindri.Core.Launches.LaunchBudgets.Refusal(Aw.Sindri.Core.Launches.LaunchBudgetState state, Aw.Sindri.Core.Launch.AgentId target) -> Aw.Kernel.Error?
+Aw.Sindri.Core.Launch.ILaunchProbes
+Aw.Sindri.Core.Launch.ILaunchProbes.Record(Aw.Sindri.Core.Lease.LeaseGrant! grant, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Launch.RecordedProbe!>!>
+Aw.Sindri.Core.Launch.RecordedProbe
+Aw.Sindri.Core.Launch.RecordedProbe.<Clone>$() -> Aw.Sindri.Core.Launch.RecordedProbe!
+Aw.Sindri.Core.Launch.RecordedProbe.Changed.get -> bool
+Aw.Sindri.Core.Launch.RecordedProbe.Changed.init -> void
+Aw.Sindri.Core.Launch.RecordedProbe.Deconstruct(out Aw.Sindri.Core.Launch.LaunchProbed! Probed, out bool Changed) -> void
+Aw.Sindri.Core.Launch.RecordedProbe.Equals(Aw.Sindri.Core.Launch.RecordedProbe? other) -> bool
+Aw.Sindri.Core.Launch.RecordedProbe.Probed.get -> Aw.Sindri.Core.Launch.LaunchProbed!
+Aw.Sindri.Core.Launch.RecordedProbe.Probed.init -> void
+Aw.Sindri.Core.Launch.RecordedProbe.RecordedProbe(Aw.Sindri.Core.Launch.LaunchProbed! Probed, bool Changed) -> void
+override Aw.Sindri.Core.Launch.RecordedProbe.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launch.RecordedProbe.GetHashCode() -> int
+override Aw.Sindri.Core.Launch.RecordedProbe.ToString() -> string!
+static Aw.Sindri.Core.Launch.RecordedProbe.operator !=(Aw.Sindri.Core.Launch.RecordedProbe? left, Aw.Sindri.Core.Launch.RecordedProbe? right) -> bool
+static Aw.Sindri.Core.Launch.RecordedProbe.operator ==(Aw.Sindri.Core.Launch.RecordedProbe? left, Aw.Sindri.Core.Launch.RecordedProbe? right) -> bool
+Aw.Sindri.Core.Launch.StartedLaunch.ChosenSession.get -> string?
+Aw.Sindri.Core.Launch.StartedLaunch.ChosenSession.init -> void
+Aw.Sindri.Core.Launches.AgentSpend
+Aw.Sindri.Core.Launches.AgentSpend.<Clone>$() -> Aw.Sindri.Core.Launches.AgentSpend!
+Aw.Sindri.Core.Launches.AgentSpend.AgentSpend(decimal Usd, long Tokens, Aw.Sindri.Core.Launches.SpendBasis Basis) -> void
+Aw.Sindri.Core.Launches.AgentSpend.Basis.get -> Aw.Sindri.Core.Launches.SpendBasis
+Aw.Sindri.Core.Launches.AgentSpend.Basis.init -> void
+Aw.Sindri.Core.Launches.AgentSpend.Deconstruct(out decimal Usd, out long Tokens, out Aw.Sindri.Core.Launches.SpendBasis Basis) -> void
+Aw.Sindri.Core.Launches.AgentSpend.Equals(Aw.Sindri.Core.Launches.AgentSpend? other) -> bool
+Aw.Sindri.Core.Launches.AgentSpend.Tokens.get -> long
+Aw.Sindri.Core.Launches.AgentSpend.Tokens.init -> void
+Aw.Sindri.Core.Launches.AgentSpend.Usd.get -> decimal
+Aw.Sindri.Core.Launches.AgentSpend.Usd.init -> void
+Aw.Sindri.Core.Launches.BudgetFacts
+Aw.Sindri.Core.Launches.BudgetFacts.<Clone>$() -> Aw.Sindri.Core.Launches.BudgetFacts!
+Aw.Sindri.Core.Launches.BudgetFacts.Basis.get -> Aw.Sindri.Core.Launches.SpendBasis?
+Aw.Sindri.Core.Launches.BudgetFacts.Basis.init -> void
+Aw.Sindri.Core.Launches.BudgetFacts.BudgetFacts(decimal? DailyUsd, decimal? SpentUsd, decimal? Fraction, Aw.Sindri.Core.Launches.LaunchBudgetState State, Aw.Sindri.Core.Launches.SpendBasis? Basis, long Tokens) -> void
+Aw.Sindri.Core.Launches.BudgetFacts.DailyUsd.get -> decimal?
+Aw.Sindri.Core.Launches.BudgetFacts.DailyUsd.init -> void
+Aw.Sindri.Core.Launches.BudgetFacts.Deconstruct(out decimal? DailyUsd, out decimal? SpentUsd, out decimal? Fraction, out Aw.Sindri.Core.Launches.LaunchBudgetState State, out Aw.Sindri.Core.Launches.SpendBasis? Basis, out long Tokens) -> void
+Aw.Sindri.Core.Launches.BudgetFacts.Equals(Aw.Sindri.Core.Launches.BudgetFacts? other) -> bool
+Aw.Sindri.Core.Launches.BudgetFacts.Fraction.get -> decimal?
+Aw.Sindri.Core.Launches.BudgetFacts.Fraction.init -> void
+Aw.Sindri.Core.Launches.BudgetFacts.SpentUsd.get -> decimal?
+Aw.Sindri.Core.Launches.BudgetFacts.SpentUsd.init -> void
+Aw.Sindri.Core.Launches.BudgetFacts.State.get -> Aw.Sindri.Core.Launches.LaunchBudgetState
+Aw.Sindri.Core.Launches.BudgetFacts.State.init -> void
+Aw.Sindri.Core.Launches.BudgetFacts.Tokens.get -> long
+Aw.Sindri.Core.Launches.BudgetFacts.Tokens.init -> void
+Aw.Sindri.Core.Launches.Budgets
+Aw.Sindri.Core.Launches.ILaunchSpend.Today(Aw.Sindri.Core.Launch.AgentId target, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Launches.AgentSpend?>!>
+Aw.Sindri.Core.Launches.IUsageReader
+Aw.Sindri.Core.Launches.IUsageReader.Between(System.DateTimeOffset from, System.DateTimeOffset to, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.ModelTokens!>!>
+Aw.Sindri.Core.Launches.IUsageReader.Name.get -> string!
+Aw.Sindri.Core.Launches.IUsageReader.OfSession(Aw.Sindri.Core.Sessions.SessionId session, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.ModelTokens!>!>
+Aw.Sindri.Core.Launches.IUsageReader.Verified.get -> bool
+Aw.Sindri.Core.Launches.LaunchTargetRow
+Aw.Sindri.Core.Launches.LaunchTargetRow.<Clone>$() -> Aw.Sindri.Core.Launches.LaunchTargetRow!
+Aw.Sindri.Core.Launches.LaunchTargetRow.Budget.get -> Aw.Sindri.Core.Launches.BudgetFacts!
+Aw.Sindri.Core.Launches.LaunchTargetRow.Budget.init -> void
+Aw.Sindri.Core.Launches.LaunchTargetRow.Deconstruct(out Aw.Sindri.Core.Launch.TargetFacts! Facts, out Aw.Sindri.Core.Launches.BudgetFacts! Budget) -> void
+Aw.Sindri.Core.Launches.LaunchTargetRow.Equals(Aw.Sindri.Core.Launches.LaunchTargetRow? other) -> bool
+Aw.Sindri.Core.Launches.LaunchTargetRow.Facts.get -> Aw.Sindri.Core.Launch.TargetFacts!
+Aw.Sindri.Core.Launches.LaunchTargetRow.Facts.init -> void
+Aw.Sindri.Core.Launches.LaunchTargetRow.LaunchTargetRow(Aw.Sindri.Core.Launch.TargetFacts! Facts, Aw.Sindri.Core.Launches.BudgetFacts! Budget) -> void
+Aw.Sindri.Core.Launches.LaunchTargets
+Aw.Sindri.Core.Launches.LaunchTargets.<Clone>$() -> Aw.Sindri.Core.Launches.LaunchTargets!
+Aw.Sindri.Core.Launches.LaunchTargets.AsOf.get -> Aw.Sindri.Core.Views.AsOf!
+Aw.Sindri.Core.Launches.LaunchTargets.AsOf.init -> void
+Aw.Sindri.Core.Launches.LaunchTargets.BudgetTotal.get -> Aw.Sindri.Core.Launches.BudgetFacts!
+Aw.Sindri.Core.Launches.LaunchTargets.BudgetTotal.init -> void
+Aw.Sindri.Core.Launches.LaunchTargets.Deconstruct(out bool Probed, out System.DateTimeOffset? ProbedAt, out Aw.Sindri.Core.Launch.TerminalFacts? Terminal, out Aw.Sindri.Core.Launch.HostFacts? Host, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.LaunchTargetRow!>! Targets, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.RepoFacts!>! Repos, out Aw.Sindri.Core.Launches.BudgetFacts! BudgetTotal, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Core.Launches.LaunchTargets.Equals(Aw.Sindri.Core.Launches.LaunchTargets? other) -> bool
+Aw.Sindri.Core.Launches.LaunchTargets.Host.get -> Aw.Sindri.Core.Launch.HostFacts?
+Aw.Sindri.Core.Launches.LaunchTargets.Host.init -> void
+Aw.Sindri.Core.Launches.LaunchTargets.LaunchTargets(bool Probed, System.DateTimeOffset? ProbedAt, Aw.Sindri.Core.Launch.TerminalFacts? Terminal, Aw.Sindri.Core.Launch.HostFacts? Host, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.LaunchTargetRow!>! Targets, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.RepoFacts!>! Repos, Aw.Sindri.Core.Launches.BudgetFacts! BudgetTotal, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Core.Launches.LaunchTargets.Probed.get -> bool
+Aw.Sindri.Core.Launches.LaunchTargets.Probed.init -> void
+Aw.Sindri.Core.Launches.LaunchTargets.ProbedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Launches.LaunchTargets.ProbedAt.init -> void
+Aw.Sindri.Core.Launches.LaunchTargets.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.RepoFacts!>!
+Aw.Sindri.Core.Launches.LaunchTargets.Repos.init -> void
+Aw.Sindri.Core.Launches.LaunchTargets.Targets.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.LaunchTargetRow!>!
+Aw.Sindri.Core.Launches.LaunchTargets.Targets.init -> void
+Aw.Sindri.Core.Launches.LaunchTargets.Terminal.get -> Aw.Sindri.Core.Launch.TerminalFacts?
+Aw.Sindri.Core.Launches.LaunchTargets.Terminal.init -> void
+Aw.Sindri.Core.Launches.LaunchTargetsProjection
+Aw.Sindri.Core.Launches.ModelPrice
+Aw.Sindri.Core.Launches.ModelPrice.<Clone>$() -> Aw.Sindri.Core.Launches.ModelPrice!
+Aw.Sindri.Core.Launches.ModelPrice.CacheRead.get -> decimal
+Aw.Sindri.Core.Launches.ModelPrice.CacheRead.init -> void
+Aw.Sindri.Core.Launches.ModelPrice.CacheWrite.get -> decimal
+Aw.Sindri.Core.Launches.ModelPrice.CacheWrite.init -> void
+Aw.Sindri.Core.Launches.ModelPrice.Deconstruct(out string! Prefix, out decimal Input, out decimal CacheRead, out decimal CacheWrite, out decimal Output) -> void
+Aw.Sindri.Core.Launches.ModelPrice.Equals(Aw.Sindri.Core.Launches.ModelPrice? other) -> bool
+Aw.Sindri.Core.Launches.ModelPrice.Input.get -> decimal
+Aw.Sindri.Core.Launches.ModelPrice.Input.init -> void
+Aw.Sindri.Core.Launches.ModelPrice.ModelPrice(string! Prefix, decimal Input, decimal CacheRead, decimal CacheWrite, decimal Output) -> void
+Aw.Sindri.Core.Launches.ModelPrice.Output.get -> decimal
+Aw.Sindri.Core.Launches.ModelPrice.Output.init -> void
+Aw.Sindri.Core.Launches.ModelPrice.Prefix.get -> string!
+Aw.Sindri.Core.Launches.ModelPrice.Prefix.init -> void
+Aw.Sindri.Core.Launches.ModelTokens
+Aw.Sindri.Core.Launches.ModelTokens.<Clone>$() -> Aw.Sindri.Core.Launches.ModelTokens!
+Aw.Sindri.Core.Launches.ModelTokens.CacheRead.get -> long
+Aw.Sindri.Core.Launches.ModelTokens.CacheRead.init -> void
+Aw.Sindri.Core.Launches.ModelTokens.CacheWrite.get -> long
+Aw.Sindri.Core.Launches.ModelTokens.CacheWrite.init -> void
+Aw.Sindri.Core.Launches.ModelTokens.Deconstruct(out string! Model, out long Input, out long CacheRead, out long CacheWrite, out long Output) -> void
+Aw.Sindri.Core.Launches.ModelTokens.Equals(Aw.Sindri.Core.Launches.ModelTokens? other) -> bool
+Aw.Sindri.Core.Launches.ModelTokens.Input.get -> long
+Aw.Sindri.Core.Launches.ModelTokens.Input.init -> void
+Aw.Sindri.Core.Launches.ModelTokens.Model.get -> string!
+Aw.Sindri.Core.Launches.ModelTokens.Model.init -> void
+Aw.Sindri.Core.Launches.ModelTokens.ModelTokens(string! Model, long Input, long CacheRead, long CacheWrite, long Output) -> void
+Aw.Sindri.Core.Launches.ModelTokens.Output.get -> long
+Aw.Sindri.Core.Launches.ModelTokens.Output.init -> void
+Aw.Sindri.Core.Launches.ModelTokens.Total.get -> long
+Aw.Sindri.Core.Launches.SpendBasis
+Aw.Sindri.Core.Launches.SpendBasis.PriceTable = 0 -> Aw.Sindri.Core.Launches.SpendBasis
+Aw.Sindri.Core.Launches.SpendBasis.TokensOnly = 1 -> Aw.Sindri.Core.Launches.SpendBasis
+override Aw.Sindri.Core.Launches.AgentSpend.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launches.AgentSpend.GetHashCode() -> int
+override Aw.Sindri.Core.Launches.AgentSpend.ToString() -> string!
+override Aw.Sindri.Core.Launches.BudgetFacts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launches.BudgetFacts.GetHashCode() -> int
+override Aw.Sindri.Core.Launches.BudgetFacts.ToString() -> string!
+override Aw.Sindri.Core.Launches.LaunchTargetRow.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launches.LaunchTargetRow.GetHashCode() -> int
+override Aw.Sindri.Core.Launches.LaunchTargetRow.ToString() -> string!
+override Aw.Sindri.Core.Launches.LaunchTargets.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launches.LaunchTargets.GetHashCode() -> int
+override Aw.Sindri.Core.Launches.LaunchTargets.ToString() -> string!
+override Aw.Sindri.Core.Launches.ModelPrice.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launches.ModelPrice.GetHashCode() -> int
+override Aw.Sindri.Core.Launches.ModelPrice.ToString() -> string!
+override Aw.Sindri.Core.Launches.ModelTokens.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launches.ModelTokens.GetHashCode() -> int
+override Aw.Sindri.Core.Launches.ModelTokens.ToString() -> string!
+static Aw.Sindri.Core.Launches.AgentSpend.operator !=(Aw.Sindri.Core.Launches.AgentSpend? left, Aw.Sindri.Core.Launches.AgentSpend? right) -> bool
+static Aw.Sindri.Core.Launches.AgentSpend.operator ==(Aw.Sindri.Core.Launches.AgentSpend? left, Aw.Sindri.Core.Launches.AgentSpend? right) -> bool
+static Aw.Sindri.Core.Launches.BudgetFacts.operator !=(Aw.Sindri.Core.Launches.BudgetFacts? left, Aw.Sindri.Core.Launches.BudgetFacts? right) -> bool
+static Aw.Sindri.Core.Launches.BudgetFacts.operator ==(Aw.Sindri.Core.Launches.BudgetFacts? left, Aw.Sindri.Core.Launches.BudgetFacts? right) -> bool
+static Aw.Sindri.Core.Launches.Budgets.For(Aw.Sindri.Core.Profile.AgentSettings? agents, Aw.Sindri.Core.Launch.AgentId target, Aw.Sindri.Core.Launches.AgentSpend? spend) -> Aw.Sindri.Core.Launches.BudgetFacts!
+static Aw.Sindri.Core.Launches.Budgets.PriceOf(string! model) -> Aw.Sindri.Core.Launches.ModelPrice?
+static Aw.Sindri.Core.Launches.Budgets.Spend(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Launches.ModelTokens!>! usage) -> Aw.Sindri.Core.Launches.AgentSpend!
+static Aw.Sindri.Core.Launches.Budgets.Total(Aw.Sindri.Core.Profile.AgentSettings? agents, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.BudgetFacts!>! targets) -> Aw.Sindri.Core.Launches.BudgetFacts!
+static Aw.Sindri.Core.Launches.LaunchBudgets.Of(Aw.Sindri.Core.Profile.AgentSettings? agents, Aw.Sindri.Core.Launch.AgentId target, Aw.Sindri.Core.Launches.AgentSpend? spend) -> Aw.Sindri.Core.Launches.LaunchBudgetState
+static Aw.Sindri.Core.Launches.LaunchTargetRow.operator !=(Aw.Sindri.Core.Launches.LaunchTargetRow? left, Aw.Sindri.Core.Launches.LaunchTargetRow? right) -> bool
+static Aw.Sindri.Core.Launches.LaunchTargetRow.operator ==(Aw.Sindri.Core.Launches.LaunchTargetRow? left, Aw.Sindri.Core.Launches.LaunchTargetRow? right) -> bool
+static Aw.Sindri.Core.Launches.LaunchTargets.operator !=(Aw.Sindri.Core.Launches.LaunchTargets? left, Aw.Sindri.Core.Launches.LaunchTargets? right) -> bool
+static Aw.Sindri.Core.Launches.LaunchTargets.operator ==(Aw.Sindri.Core.Launches.LaunchTargets? left, Aw.Sindri.Core.Launches.LaunchTargets? right) -> bool
+static Aw.Sindri.Core.Launches.LaunchTargetsProjection.Project(Aw.Sindri.Core.Launch.LaunchProbed? probed, System.DateTimeOffset? probedAt, Aw.Sindri.Core.Profile.AgentSettings? agents, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Launches.AgentSpend!>! spend, Aw.Sindri.Core.Views.AsOf! asOf) -> Aw.Sindri.Core.Launches.LaunchTargets!
+static Aw.Sindri.Core.Launches.ModelPrice.operator !=(Aw.Sindri.Core.Launches.ModelPrice? left, Aw.Sindri.Core.Launches.ModelPrice? right) -> bool
+static Aw.Sindri.Core.Launches.ModelPrice.operator ==(Aw.Sindri.Core.Launches.ModelPrice? left, Aw.Sindri.Core.Launches.ModelPrice? right) -> bool
+static Aw.Sindri.Core.Launches.ModelTokens.operator !=(Aw.Sindri.Core.Launches.ModelTokens? left, Aw.Sindri.Core.Launches.ModelTokens? right) -> bool
+static Aw.Sindri.Core.Launches.ModelTokens.operator ==(Aw.Sindri.Core.Launches.ModelTokens? left, Aw.Sindri.Core.Launches.ModelTokens? right) -> bool

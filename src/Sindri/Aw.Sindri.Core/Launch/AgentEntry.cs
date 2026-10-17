@@ -33,6 +33,9 @@ public sealed record AgentEntry(AgentId Id, string Label, string Bin, string? Pr
     /// <summary>The hash of the entry's argv template (launcher SL8, L-11), or null until the catalog computes it. P10a's addition.</summary>
     public string? ArgvHash { get; init; }
 
+    /// <summary>The usage reader the entry names ('claude-code', 'codex', 'cursor' or 'none'), or null when the file says nothing. P10a's addition.</summary>
+    public string? Usage { get; init; }
+
     /// <summary>The name the entry's processes are matched by: <see cref="ProcessName"/>, else the basename of <see cref="Bin"/>.</summary>
     public string MatchName => ProcessName is { Length: > 0 } name ? name : BaseName(Bin);
 

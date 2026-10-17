@@ -13,6 +13,7 @@ public static class AgentEntries
         Open = ["{bin}", "--session-id", "{sessionId}", "-n", "{name}", "{seed}"],
         SessionIdMode = SessionIdMode.PreChosenUuid,
         SessionIdPattern = Uuid,
+        Usage = "claude-code",
         ModelForm = ModelForm.ClaudeFlag,
         PolicyForm = PolicyForm.ClaudeSettingsFile,
     };
@@ -23,6 +24,7 @@ public static class AgentEntries
         Open = ["{bin}", "-C", "{cwd}", "{seed}"],
         SessionIdMode = SessionIdMode.Reported,
         SessionIdPattern = Uuid,
+        Usage = "codex",
         ModelForm = ModelForm.CodexFlag,
         PolicyForm = PolicyForm.CodexOverrides,
     };
@@ -33,6 +35,7 @@ public static class AgentEntries
         Open = ["{bin}", "{seed}"],
         SessionIdMode = SessionIdMode.Reported,
         SessionIdPattern = Uuid,
+        Usage = "cursor",
     };
 
     /// <summary>A user-added entry with no id and no resume.</summary>

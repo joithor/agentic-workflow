@@ -60,6 +60,7 @@ internal static partial class AgentSections
                 Open = section.Open!, // why: Problem() proved open is set
                 SessionIdMode = Mode(section.SessionId),
                 SessionIdPattern = Text(section.SessionIdPattern),
+                Usage = section.Usage,
                 ModelForm = ModelOf(Text(section.Model)),
                 PolicyForm = PolicyOf(Text(section.Policy)),
                 Source = source,

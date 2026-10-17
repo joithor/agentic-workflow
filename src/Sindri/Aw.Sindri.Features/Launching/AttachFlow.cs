@@ -57,7 +57,7 @@ internal sealed class AttachFlow(ILaunchViews launches, ITerminalViewer viewer, 
         ViewerOutcome shown;
         try
         {
-            var host = new HostRef(HostKind.Tmux, SessionNames.For(live.Id));
+            var host = new HostRef(HostKind.Tmux, LaunchSessionName.For(live.Id));
             shown = await viewer.Open(new ViewerRequest(host, argv, LaunchOutcomes.TabTitle(request.Item), _window), linked.Token).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)

@@ -1,6 +1,8 @@
 using Aw.Redaction;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Infrastructure.Launch.Usage;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Infrastructure.Launch;
@@ -17,6 +19,9 @@ internal static class LauncherServiceCollectionExtensions
             .AddSingleton<ISessionHost>(static sp => sp.GetRequiredService<TmuxSessionHost>())   // the launcher service polls it for attached clients (API P10a U9)
             .AddSingleton<NoSessionHost>()
             .AddSingleton<ITerminalViewer>(sp => Viewer(sp, environment))
+            .AddSingleton<IReadOnlyDictionary<string, IUsageReader>>(UsageReaders(environment))
+            .AddSingleton<ILaunchSpend>(sp => new UsageSpend(sp.GetRequiredService<ReloadingAgentCatalog>(), sp.GetRequiredService<IReadOnlyDictionary<string, IUsageReader>>(), sp.GetRequiredService<TimeProvider>()))
+            .AddScoped<ILaunchProbes, LaunchProbeRecorder>()
             .AddSingleton<ILauncher>(sp => new Launcher(Parts(sp, environment, settings, BuiltinHash)))
             .AddSingleton<ILaunchSetup>(sp => new LauncherInit(new LauncherInitParts(sp.GetRequiredService<ReloadingAgentCatalog>(), Detection(sp, environment))
             {
@@ -40,6 +45,7 @@ internal static class LauncherServiceCollectionExtensions
             BuiltinHash = builtinHash,
             Approved = Approved(sp),
             Config = () => catalog.Current,
+            Usage = name => sp.GetRequiredService<IReadOnlyDictionary<string, IUsageReader>>().GetValueOrDefault(name),
         };
     }
 
@@ -65,6 +71,16 @@ internal static class LauncherServiceCollectionExtensions
             "exec-template" => new ExecTemplateViewer(new ExecTemplateOptions(section.Name!, section.Argv!), host, time, Redactor.Default),   // why: a valid section has both
             _ => new PrintViewer(),
         };
+    }
+
+    /// <summary>The usage readers over the CLIs' own transcript directories: where the CLIs write by default, or where their own variables point.</summary>
+    private static Dictionary<string, IUsageReader> UsageReaders(Func<string, string?> environment)
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var claude = LauncherStartup.NonEmpty(environment("CLAUDE_CONFIG_DIR")) ?? Path.Combine(home, ".claude");
+        var codex = LauncherStartup.NonEmpty(environment("CODEX_HOME")) ?? Path.Combine(home, ".codex");
+        IUsageReader[] readers = [new ClaudeCodeUsage(Path.Combine(claude, "projects")), new CodexUsage(Path.Combine(codex, "sessions")), new CursorUsage(Path.Combine(home, ".cursor", "projects"))];
+        return readers.ToDictionary(static r => r.Name, StringComparer.Ordinal);
     }
 
     private static WarpViewerOptions WarpOptions(Func<string, string?> environment)

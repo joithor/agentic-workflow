@@ -71,7 +71,7 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
         return new LaunchProbed(terminal, host, targets, []);
     }
 
-    private static string SessionName(LaunchId launch) => "snd-" + launch.Value;
+    private static string SessionName(LaunchId launch) => LaunchSessionName.For(launch);
 
     private static FailedLaunch Fail(Error error) => new(error, LaunchStage.Host);
 

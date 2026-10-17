@@ -1,6 +1,7 @@
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Views;
 
@@ -8,8 +9,9 @@ namespace Aw.Sindri.Features.Launching;
 
 /// <summary>Turns a request into the launcher's input (UI spec E-1): the attended launch of the request's agent in the item's repo checkout.</summary>
 /// <param name="reader">Reads the item.</param>
-/// <param name="profile">The approved profile, which names each repo's path.</param>
-internal sealed class LaunchPlans(IViewReader reader, IApprovedProfile profile)
+/// <param name="profile">The approved profile, which names each repo's path and each agent's daily budget.</param>
+/// <param name="spend">What each agent has spent today, for the budget re-check (screens spec E-28).</param>
+internal sealed class LaunchPlans(IViewReader reader, IApprovedProfile profile, ILaunchSpend spend)
 {
     /// <summary>Builds the launch.</summary>
     /// <param name="pending">The request.</param>
@@ -18,6 +20,7 @@ internal sealed class LaunchPlans(IViewReader reader, IApprovedProfile profile)
     public async ValueTask<Result<LaunchRequest>> Build(PendingLaunch pending, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(pending);
+        _ = spend;   // red: the budget is not re-checked yet
         var request = pending.Request;
         var item = await reader.Get<ItemRow>(ViewNames.Items, request.Item.Value, cancellationToken).ConfigureAwait(false);
         if (item.IsError)

@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Profile;
 
 namespace Aw.Sindri.Infrastructure.Launch;
@@ -19,6 +20,9 @@ internal sealed record LauncherParts(IAgentCatalog Catalog, Func<bool, ISessionH
 
     /// <summary>The launcher.json as read now (problems, dropped entries), or null when nothing is checked.</summary>
     public Func<LauncherConfig>? Config { get; init; }
+
+    /// <summary>The usage reader a catalog entry's 'usage' field names, or null when there is none: the probe reports the target as limited without one.</summary>
+    public Func<string, IUsageReader?> Usage { get; init; } = static _ => null;
 
     /// <summary>Finds an agent CLI the way the login shell does; null when it doesn't resolve.</summary>
     public Func<string, CancellationToken, ValueTask<string?>> ResolveBin { get; init; } = BinResolver.Resolve;

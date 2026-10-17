@@ -162,4 +162,22 @@ public sealed class LauncherTests : IDisposable
         Expect.Equal(HostKind.Tmux, probed.Host.Kind);
         Assert.Equal(["claude-code", "aider"], probed.Targets.Select(t => t.Id.Value), StringComparer.Ordinal);
     }
+
+    [Fact]
+    public async Task A_pre_chosen_session_id_is_carried_on_the_started_launch()
+    {
+        var result = await Make().Launch(A.LaunchRequest().Build(), CancellationToken.None);
+
+        var started = Assert.IsType<StartedLaunch>(result);
+        Assert.Matches("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", started.ChosenSession);
+        Assert.Contains(started.ChosenSession, _host.Started.Single().Argv, StringComparer.Ordinal);   // the id the agent was told is the id recorded
+    }
+
+    [Fact]
+    public async Task A_reported_session_id_is_not_known_at_start()
+    {
+        var result = await Make(hostFor: null, viewer: null, AgentEntries.Codex).Launch(A.LaunchRequest().WithAgent(AgentId.From("codex")).Build(), CancellationToken.None);
+
+        Assert.Null(Assert.IsType<StartedLaunch>(result).ChosenSession);
+    }
 }

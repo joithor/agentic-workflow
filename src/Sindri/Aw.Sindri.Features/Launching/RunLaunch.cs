@@ -17,9 +17,10 @@ namespace Aw.Sindri.Features.Launching;
 /// <param name="intake">Reads the ledger.</param>
 /// <param name="outcomes">Appends the failures and the attach.</param>
 /// <param name="host">Counts a session's attached clients.</param>
+/// <param name="probes">Probes the launch targets: at start, every 10 minutes and after a failed launch.</param>
 /// <param name="work">What the launcher remembers.</param>
 /// <param name="timings">The limits.</param>
-internal sealed class RunLaunch(LaunchRecovery recovery, LaunchIntake intake, LaunchOutcomes outcomes, ISessionHost host, LaunchWork work, LaunchTimings timings)
+internal sealed class RunLaunch(LaunchRecovery recovery, LaunchIntake intake, LaunchOutcomes outcomes, ISessionHost host, ILaunchProbes probes, LaunchWork work, LaunchTimings timings)
     : IService<RunLaunchRequest, RunLaunchResponse>
 {
     public async ValueTask<Result<RunLaunchResponse>> Handle(RunLaunchRequest request, CancellationToken cancellationToken)
@@ -47,6 +48,7 @@ internal sealed class RunLaunch(LaunchRecovery recovery, LaunchIntake intake, La
         }
 
         var polled = await Poll(request.Grant, cancellationToken).ConfigureAwait(false);
+        _ = probes;   // red: no probe is recorded yet
         return polled.IsError ? polled.Error : new RunLaunchResponse(work.TakeDue());
     }
 

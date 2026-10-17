@@ -34,6 +34,9 @@ public sealed class FakeLauncher : ILauncher
     /// <param name="stage">Where it stopped.</param>
     public void FailNextWith(Error error, LaunchStage stage = LaunchStage.Host) => _nextFailure = (error, stage);
 
+    /// <summary>The session id every new launch reports as chosen before it started, or null (an agent whose id is reported later).</summary>
+    public Core.Sessions.SessionId? PreChosenSession { get; set; }
+
     /// <summary>When set, 'Launch' waits for it (and its caller's cancellation) before answering: a launch that is still running.</summary>
     public Task? Hold { get; set; }
 
@@ -66,10 +69,13 @@ public sealed class FakeLauncher : ILauncher
             return new FailedLaunch(failure.Error, failure.Stage);
         }
 
-        var host = new HostRef(HostKind.Tmux, "snd-" + request.Launch.Value);
+        var host = new HostRef(HostKind.Tmux, LaunchSessionName.For(request.Launch));
         var started = new StartedLaunch(
             host, request.Attended ? Viewer ?? ViewerOutcome.Opened : ViewerOutcome.Skipped,
-            ["tmux", "-L", "sindri", "attach-session", "-t", "=" + host.Name], CatalogSource.Builtin, "fake-argv-hash");
+            ["tmux", "-L", "sindri", "attach-session", "-t", "=" + host.Name], CatalogSource.Builtin, "fake-argv-hash")
+        {
+            ChosenSession = PreChosenSession?.Value,
+        };
         _live[request.Launch] = started;
         return started;
     }

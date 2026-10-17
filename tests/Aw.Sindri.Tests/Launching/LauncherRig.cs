@@ -9,6 +9,7 @@ using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Features.Launching;
+using Aw.Sindri.Infrastructure.Launch;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Launch;
 using Aw.Sindri.Tests.Views;
@@ -45,6 +46,10 @@ internal sealed class LauncherRig
 
     public FakeOpenRuntime Runtime { get; } = new();
 
+    public FixedLaunchSpend Spend { get; } = new();
+
+    public FakeRepoLocator Repos { get; } = new();
+
     public HookedStatus Status { get; }
 
     public LaunchWork Work { get; private set; } = new();
@@ -62,18 +67,28 @@ internal sealed class LauncherRig
         _ = await Slice.Profiles.Save(new LoadedProfile(profile, ProfileHashing.Of(AwJson.Serialize(profile, SliceHarness.Json)), "/home/profile.yaml"), TestContext.Current.CancellationToken);
     }
 
+    /// <summary>Approves the boot profile with <paramref name="agents"/> added: the budgets the launcher service re-checks.</summary>
+    /// <param name="agents">The 'agents:' block.</param>
+    public async Task Approve(AgentSettings agents)
+    {
+        var profile = ProfileRules.Check(new SindriProfile(1, "thor", Repos: [new RepoEntry(_repo.Value, "/work/demo")], Agents: agents)).Value;
+        _ = await Slice.Profiles.Save(new LoadedProfile(profile, ProfileHashing.Of(AwJson.Serialize(profile, SliceHarness.Json)), "/home/profile.yaml"), TestContext.Current.CancellationToken);
+    }
+
+    private LaunchProbeRecorder Probes => new(Port, Slice.Profiles, Repos, Slice.Store, Slice.Events);
+
     public void Restart() => Work = new LaunchWork();
 
     private LaunchOutcomes Outcomes => new(Slice.Store, Slice.Events, Viewer);
 
     private RunLaunch Run => new(
-        new LaunchRecovery(Slice.Store, Status, H.Views, Outcomes, Work, Timings), new LaunchIntake(Slice.Store, Slice.Events, Work), Outcomes, Host, Work, Timings);
+        new LaunchRecovery(Slice.Store, Status, H.Views, Outcomes, Work, Timings), new LaunchIntake(Slice.Store, Slice.Events, Work), Outcomes, Host, Probes, Work, Timings);
 
     private ProcessLaunch Process
     {
         get
         {
-            var plans = new LaunchPlans(H.Views, Slice.Profiles);
+            var plans = new LaunchPlans(H.Views, Slice.Profiles, Spend);
             return new ProcessLaunch(
                 Outcomes, new TakeoverWait(Status, Slice.Store, H.Views, Runtime, Timings), Port,
                 new AttachFlow(new LaunchViews(H.Views), Viewer, Port, plans, Outcomes, Timings), plans, Work, Timings);
