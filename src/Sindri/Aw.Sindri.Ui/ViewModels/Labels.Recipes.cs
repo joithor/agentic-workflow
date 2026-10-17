@@ -108,4 +108,12 @@ internal static partial class Labels
     /// <param name="template">The template as served.</param>
     /// <returns>The line.</returns>
     internal static string NameTemplateLine(string template) => $"name {template}";
+
+    /// <summary>The link from an instance frame or a Workflows group head to the recipe sheet.</summary>
+    internal const string RecipeLink = "Recipe ▸";
+
+    /// <summary>The recipe link's accessible name: the visible word first, then which recipe (and version) it opens.</summary>
+    /// <param name="subject">The recipe link's subject, "id" or "id@hash12".</param>
+    /// <returns>The words.</returns>
+    internal static string OpenRecipeName(string subject) => $"Recipe {subject}, open";
 }

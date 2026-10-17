@@ -115,5 +115,7 @@ internal sealed partial class InstanceFrameView : UserControl
 
     private void OnBack(object? sender, RoutedEventArgs e) => (TopLevel.GetTopLevel(this)?.DataContext as ShellViewModel)?.Back();
 
+    private void OnRecipe(object? sender, RoutedEventArgs e) => _frame?.OpenRecipe();
+
     private void OnOpenIn(object? sender, RoutedEventArgs e) => _ = (DataContext as InstanceFrameViewModel)?.Subject?.OpenIn(CancellationToken.None);
 }

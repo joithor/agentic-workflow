@@ -58,4 +58,61 @@ public sealed class ShellRecipeTests
         shell.Navigate(Link("item/ITM-1"));
         Assert.NotEqual(UiPreferences.MaxSheetWidth, shell.ShownSheetWidth);
     }
+
+    private readonly InMemoryEndpointRecords _records = new();
+    private readonly FakeSindriApi _server = new() { Catalog = RouteAnswer.Api("commands", "catalog"), NeedsYouView = RouteAnswer.Api("needs-you", "empty") };
+
+    private async Task<ShellViewModel> Connected()
+    {
+        _records.Write(A.Record());
+        var shell = new ShellViewModel(_records, _server, new FakeTimeProvider(A.Noon), new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
+        await shell.Restore(TestContext.Current.CancellationToken);
+        _ = shell.Run(TestContext.Current.CancellationToken);
+        for (var i = 0; i < 400 && shell.State != ShellState.Normal; i++)
+        {
+            await Task.Delay(5, TestContext.Current.CancellationToken);
+        }
+
+        return shell;
+    }
+
+    [Fact]
+    public Task Frame_recipe_link_stacks_the_recipe_sheet_and_Back_returns_to_the_frame() => UiThread.Run(async () =>
+    {
+        var shell = await Connected();
+        var detail = FixtureInstances.Detail("project-build");
+        shell.OpenInstance(detail.Address, detail.Id);
+        for (var i = 0; i < 400 && shell.Instance.Phase != FramePhase.Shown; i++)
+        {
+            await Task.Delay(5, TestContext.Current.CancellationToken);
+        }
+
+        shell.Instance.OpenRecipe();
+        for (var i = 0; i < 400 && shell.Recipe.Phase != FramePhase.Shown; i++)
+        {
+            await Task.Delay(5, TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal((true, true, detail.Recipe.Id, FramePhase.Shown), (shell.IsRecipeSheet, shell.HasTrail, shell.Recipe.Id, shell.Recipe.Phase));
+        Assert.Equal((detail.Recipe.Id, detail.Recipe.Hash["sha256:".Length..][..12]), _server.LastRecipeRead);
+        shell.Back();
+        Assert.Equal((true, false, detail.Address), (shell.IsInstanceSheet, shell.HasTrail, shell.Instance.Address));
+    }, TestContext.Current.CancellationToken);
+
+    [Fact]
+    public Task Group_head_recipe_button_opens_the_approved_recipe_with_no_trail() => UiThread.Run(async () =>
+    {
+        var shell = await Connected();
+        shell.GoTo(PageId.Workflows);
+        for (var i = 0; i < 400 && shell.Workflows.Groups.Count == 0; i++)
+        {
+            await Task.Delay(5, TestContext.Current.CancellationToken);
+        }
+
+        var group = shell.Workflows.Groups[0];
+        group.OpenRecipe();
+
+        Assert.Equal((true, false, group.Recipe), (shell.IsRecipeSheet, shell.HasTrail, shell.Recipe.Id));
+        Assert.Null(_server.LastRecipeRead?.Hash);
+    }, TestContext.Current.CancellationToken);
 }
