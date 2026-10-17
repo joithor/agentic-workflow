@@ -234,4 +234,79 @@ public sealed class QueueGateTests
         Assert.True(result.IsSuccess, result.IsError ? result.Error.Message : string.Empty);
         Assert.Equal([11, 12], result.Value.Gates.Select(g => g.Pr));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Every_heavy_step_gets_as_many_wrapper_session_slots_as_the_pool_has()
+    {
+        await SaveGate(parallel: 3, new StepConfig("unit", ["scripts/unit.sh"], Heavy: true));
+        ScriptPr(11);
+        _ = _world.Runner.When("scripts/unit.sh");
+        ScriptGit();
+
+        _ = await Run(11);
+
+        var step = _world.Runner.Requests.Single(r => r.Argv.Contains("scripts/unit.sh", StringComparer.Ordinal));
+        Assert.Equal(("meta", "3"), (step.Env[GatePriority.Variable], step.Env[GatePriority.SessionSlots]));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_wrapper_lock_timeout_is_an_error_for_that_gate_and_does_not_cancel_the_gates_above_it()
+    {
+        await SaveGate(parallel: 3, new StepConfig("unit", ["scripts/unit.sh"], Heavy: true));
+        ScriptPr(11, 12);
+        _ = _world.Runner.When("scripts/unit.sh", request => request.Cwd!.Contains("/gates/11/", StringComparison.Ordinal) ? Exit(75) : Exit(0));
+        ScriptGit();
+
+        var result = await Service().Handle(new QueueGateRequest([11, 12], Max: null), TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal([TrainState.Error, TrainState.Pass], result.Value.Entries.Select(e => e.State));
+        Assert.Equal([12], result.Value.Gates.Select(g => g.Pr));
+        Assert.Null((await _world.Gates.Latest(11, TestContext.Current.CancellationToken)).Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cancelling_the_train_cancels_every_gate_and_the_board_gets_its_pid_and_end_line()
+    {
+        await SaveGate(parallel: 3, new StepConfig("unit", ["scripts/unit.sh"], Heavy: true));
+        ScriptPr(11, 12);
+        using var cancel = new CancellationTokenSource();
+        var started = 0;
+        _ = _world.Runner.When("scripts/unit.sh", async _ =>
+        {
+            if (Interlocked.Increment(ref started) == 2)
+            {
+                await cancel.CancelAsync();
+            }
+
+            await Task.Delay(Timeout.Infinite, cancel.Token);
+            return Exit(0);
+        });
+        ScriptGit();
+
+        var result = await Service().Handle(new QueueGateRequest([11, 12], Max: null, Pid: 4242), cancel.Token);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal([TrainState.Cancelled, TrainState.Cancelled], result.Value.Entries.Select(e => e.State));
+        Assert.Empty(result.Value.Gates);
+        var stored = (await _world.Values.Get(KvKeys.Train, TestContext.Current.CancellationToken)).Value;
+        Assert.StartsWith("TRAIN pid 4242 started", stored, StringComparison.Ordinal);
+        Assert.Contains("TRAIN ended", stored, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_step_that_throws_is_an_error_for_its_gate_and_the_train_still_ends()
+    {
+        await SaveGate(parallel: 3, new StepConfig("unit", ["scripts/unit.sh"], Heavy: true));
+        ScriptPr(11, 12);
+        _ = _world.Runner.When("scripts/unit.sh", request => request.Cwd!.Contains("/gates/11/", StringComparison.Ordinal) ? throw new IOException("disk full") : Exit(0));
+        ScriptGit();
+
+        var result = await Service().Handle(new QueueGateRequest([11, 12], Max: null), TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal([TrainState.Error, TrainState.Pass], result.Value.Entries.Select(e => e.State));
+        Assert.Contains("disk full", result.Value.Entries[0].Note, StringComparison.Ordinal);
+        Assert.Contains("TRAIN ended", (await _world.Values.Get(KvKeys.Train, TestContext.Current.CancellationToken)).Value, StringComparison.Ordinal);
+    }
 }

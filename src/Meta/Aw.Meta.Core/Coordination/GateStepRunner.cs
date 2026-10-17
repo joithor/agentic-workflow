@@ -17,14 +17,25 @@ public sealed class GateStepRunner(ICommandRunner runner, MetaPaths paths)
     /// <param name="step">The step.</param>
     /// <param name="tree">The gate tree to run in.</param>
     /// <param name="log">The log file.</param>
-    /// <param name="cancellationToken">Cancels the step (its process tree is killed).</param>
-    /// <returns>The step with its verdict, or the error that kept it from starting.</returns>
-    public async ValueTask<Result<GateStep>> Run(StepConfig step, string tree, string log, CancellationToken cancellationToken)
+    /// <param name="heavySlots">The gate's heavy-slot limit, given to the heavy-job wrapper as its per-session slot count.</param>
+    /// <param name="cancellationToken">Cancels the step (its process tree is stopped).</param>
+    /// <returns>The step with its verdict, or the error that kept it from starting or from getting a heavy slot (the wrapper's exit 75).</returns>
+    public async ValueTask<Result<GateStep>> Run(StepConfig step, string tree, string log, int heavySlots, CancellationToken cancellationToken)
     {
-        var request = new CommandRequest(GateCommand.For(step, paths.Heavy), _limit) { Cwd = tree, LogFile = log, Env = GatePriority.Environment, UnsetEnv = GatePriority.Scrubbed };
+        var argv = GateCommand.For(step, paths.Heavy);
+        var request = new CommandRequest(argv, _limit) { Cwd = tree, LogFile = log, Env = GatePriority.EnvironmentFor(heavySlots), UnsetEnv = GatePriority.Scrubbed };
         var ran = await runner.Run(request, cancellationToken).ConfigureAwait(false);
-        return ran.IsError
-            ? ran.Error
-            : new GateStep(step.Name, ran.Value is { ExitCode: 0, TimedOut: false } ? GateVerdict.Pass : GateVerdict.Fail, log);
+        if (ran.IsError)
+        {
+            return ran.Error;
+        }
+
+        // The wrapper giving up on a lock says nothing about the step: an infrastructure error, so it never counts as a red gate.
+        if (ran.Value is { ExitCode: GatePriority.LockTimeout, TimedOut: false } && paths.Heavy is not null && argv[0] == paths.Heavy)
+        {
+            return MetaErrors.CommandNotStarted.With($"{step.Name}: the heavy-job wrapper gave up waiting for a lock (exit {GatePriority.LockTimeout})");
+        }
+
+        return new GateStep(step.Name, ran.Value is { ExitCode: 0, TimedOut: false } ? GateVerdict.Pass : GateVerdict.Fail, log);
     }
 }

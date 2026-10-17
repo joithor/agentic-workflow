@@ -61,7 +61,7 @@ internal sealed class CliHarness : IDisposable
         await using (provider.ConfigureAwait(false))
         {
             _ = provider.GetRequiredService<TelemetryRuntime>();
-            var exit = await CommandTable.Run(arguments, provider, provider.GetRequiredService<JsonSerializerOptions>(), io).ConfigureAwait(false);
+            var exit = await CommandTable.Run(arguments, provider, provider.GetRequiredService<JsonSerializerOptions>(), io, TestContext.Current.CancellationToken).ConfigureAwait(false);
             return new CliResult(exit, output.ToString(), error.ToString());
         }
     }

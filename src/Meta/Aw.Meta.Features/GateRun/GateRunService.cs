@@ -75,7 +75,7 @@ internal sealed class GateRunService(IMetaConfig config, GateWorkspace workspace
         var ran = await StepScheduler.Run(
             graph.Value,
             Math.Max(1, gate.ParallelSteps ?? heavyCap),
-            (step, token) => steps.Run(step, plan.Prepared.Tree, workspace.LogPath(plan.Pr, plan.Run, step.Name), token),
+            (step, token) => steps.Run(step, plan.Prepared.Tree, workspace.LogPath(plan.Pr, plan.Run, step.Name), Math.Max(1, gate.ParallelSteps ?? heavyCap), token),
             cancellationToken).ConfigureAwait(false);
         return ran;
     }

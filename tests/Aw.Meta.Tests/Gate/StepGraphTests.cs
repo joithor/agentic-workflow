@@ -46,6 +46,16 @@ public sealed class StepGraphTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_script_named_for_dotnet_waits_for_the_builds_unless_it_says_it_waits_for_nothing()
+    {
+        var restore = new StepConfig("verify-packages", ["scripts/dotnet-verify-packages.sh"]);
+        var graph = Graph(Build("build"), restore, restore with { Name = "free", After = [] });
+
+        Assert.Equal(["build"], Waits(graph, "verify-packages"));
+        Assert.Empty(Waits(graph, "free"));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Without_a_build_in_the_selection_nothing_waits()
     {
         var graph = Graph(Test("unit"), Cheap("sync"));

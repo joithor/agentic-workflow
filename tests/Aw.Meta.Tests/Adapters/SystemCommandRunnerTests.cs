@@ -108,6 +108,32 @@ public sealed class SystemCommandRunnerTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task Cancelling_gives_the_command_a_SIGTERM_first_so_its_exit_trap_runs()
+    {
+        var marker = Path.Combine(_dir.Path, "trapped");
+        using var cancel = new CancellationTokenSource(TimeSpan.FromMilliseconds(1500));
+        var request = new CommandRequest(["bash", "-c", "trap 'echo term > \"$1\"; exit 0' TERM; sleep 60 & wait", "bash", marker], TimeSpan.FromSeconds(60));
+
+        _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await new SystemCommandRunner().Run(request, cancel.Token));
+
+        Assert.True(File.Exists(marker));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_log_that_cannot_be_opened_is_a_start_failure_and_nothing_is_started()
+    {
+        var blocker = Path.Combine(_dir.Path, "file");
+        await File.WriteAllTextAsync(blocker, "x", TestContext.Current.CancellationToken);
+        var started = Path.Combine(_dir.Path, "started");
+        var request = new CommandRequest(["touch", started], TimeSpan.FromSeconds(5)) { LogFile = Path.Combine(blocker, "step.log") };
+
+        var result = await new SystemCommandRunner().Run(request, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsError);
+        Assert.False(File.Exists(started));
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task A_grandchild_holding_the_pipes_open_does_not_hang_the_run_or_fail_it_afterwards()
     {
         var unobserved = new List<Exception>();

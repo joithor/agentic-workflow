@@ -1852,7 +1852,6 @@ static Aw.Meta.Core.Gate.TrainText.Summary(string! main, System.Collections.Gene
 Aw.Meta.Core.Gate.GateGraphs
 Aw.Meta.Core.Coordination.GateStepRunner
 Aw.Meta.Core.Coordination.GateStepRunner.GateStepRunner(Aw.Meta.Core.Ports.ICommandRunner! runner, Aw.Meta.Core.MetaPaths! paths) -> void
-Aw.Meta.Core.Coordination.GateStepRunner.Run(Aw.Meta.Core.Config.StepConfig! step, string! tree, string! log, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Gate.GateStep!>!>
 Aw.Meta.Core.Coordination.TrainCandidates
 Aw.Meta.Core.Coordination.TrainCandidates.<Clone>$() -> Aw.Meta.Core.Coordination.TrainCandidates!
 Aw.Meta.Core.Coordination.TrainCandidates.Deconstruct(out Aw.Meta.Core.Config.TeamConfig! Team, out System.Collections.Generic.IReadOnlyList<int>! Prs) -> void
@@ -1871,3 +1870,7 @@ static Aw.Meta.Core.Coordination.TrainCandidates.operator ==(Aw.Meta.Core.Coordi
 Aw.Meta.Core.Coordination.TrainSelection
 Aw.Meta.Core.Coordination.TrainSelection.Choose(System.Collections.Generic.IReadOnlyList<int>! named, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Coordination.TrainCandidates!>!>
 Aw.Meta.Core.Coordination.TrainSelection.TrainSelection(Aw.Meta.Core.Ports.IMetaConfig! config, Aw.Meta.Core.Coordination.MergeQueueReader! queue) -> void
+Aw.Meta.Core.Coordination.GateStepRunner.Run(Aw.Meta.Core.Config.StepConfig! step, string! tree, string! log, int heavySlots, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Gate.GateStep!>!>
+const Aw.Meta.Core.Gate.GatePriority.LockTimeout = 75 -> int
+const Aw.Meta.Core.Gate.GatePriority.SessionSlots = "AW_SESSION_HEAVY_SLOTS" -> string!
+static Aw.Meta.Core.Gate.GatePriority.EnvironmentFor(int heavySlots) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!

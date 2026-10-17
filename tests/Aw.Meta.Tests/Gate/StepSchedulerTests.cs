@@ -187,4 +187,23 @@ public sealed class StepSchedulerTests
 
         Assert.Empty(result.Value);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_step_that_throws_is_an_error_that_cancels_the_steps_still_running_and_holds_back_its_dependents()
+    {
+        var gates = new Gates();
+        var boom = Heavy("boom");
+        var after = Heavy("after") with { After = ["boom"] };
+        var run = StepScheduler.Run(
+            Graph(boom, Heavy("sibling"), after),
+            3,
+            (step, token) => step.Name == "boom" ? throw new IOException("disk full") : gates.Run(step, token),
+            TestContext.Current.CancellationToken);
+
+        var result = await run.WaitAsync(_patience, TimeProvider.System, TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsError);
+        Assert.Contains("disk full", result.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("after", gates.StartOrder, StringComparer.Ordinal);
+    }
 }

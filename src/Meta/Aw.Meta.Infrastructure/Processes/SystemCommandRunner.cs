@@ -15,6 +15,7 @@ internal sealed class SystemCommandRunner : ICommandRunner
 {
     private const int TailCharacters = 64 * 1024;
     private readonly TimeSpan _drainGrace;
+    private readonly TimeSpan _termGrace;
 
     public SystemCommandRunner()
         : this(TimeSpan.FromSeconds(2))
@@ -23,9 +24,11 @@ internal sealed class SystemCommandRunner : ICommandRunner
 
     /// <summary>A runner that waits this long, after the command ends, for its output to finish.</summary>
     /// <param name="drainGrace">The wait.</param>
-    internal SystemCommandRunner(TimeSpan drainGrace)
+    /// <param name="termGrace">How long a command gets to exit after SIGTERM before it is killed (default 10 seconds).</param>
+    internal SystemCommandRunner(TimeSpan drainGrace, TimeSpan? termGrace = null)
     {
         _drainGrace = drainGrace;
+        _termGrace = termGrace ?? TimeSpan.FromSeconds(10);
     }
 
     public async ValueTask<Result<CommandResult>> Run(CommandRequest request, CancellationToken cancellationToken)
@@ -38,23 +41,27 @@ internal sealed class SystemCommandRunner : ICommandRunner
 
         using var sandbox = request.Isolated ? Sandbox.Create() : null;
         using var process = new Process { StartInfo = StartInfo(request, sandbox) };
+
+        // The log is opened first: a log that can't be opened must not leave a started child with nobody to wait for it.
+        StreamWriter? log;
         try
         {
-            if (!process.Start())
-            {
-                return MetaErrors.CommandNotStarted.With(request.Argv[0]);
-            }
+#pragma warning disable CA2000 // disposed in the finally below
+            log = OpenLog(request.LogFile);
+#pragma warning restore CA2000
         }
-        catch (Win32Exception exception)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return MetaErrors.CommandNotStarted.With($"{request.Argv[0]}: {exception.Message}");
+            return MetaErrors.CommandNotStarted.With($"log {request.LogFile}: {exception.Message}");
         }
 
-#pragma warning disable CA2000 // disposed in the finally below
-        var log = OpenLog(request.LogFile);
-#pragma warning restore CA2000
         try
         {
+            if (Start(process, request) is { } notStarted)
+            {
+                return notStarted;
+            }
+
             return await Collect(process, request, log, cancellationToken).ConfigureAwait(false);
         }
         finally
@@ -63,6 +70,18 @@ internal sealed class SystemCommandRunner : ICommandRunner
             {
                 await log.DisposeAsync().ConfigureAwait(false);
             }
+        }
+    }
+
+    private static Error? Start(Process process, CommandRequest request)
+    {
+        try
+        {
+            return process.Start() ? null : MetaErrors.CommandNotStarted.With(request.Argv[0]);
+        }
+        catch (Win32Exception exception)
+        {
+            return MetaErrors.CommandNotStarted.With($"{request.Argv[0]}: {exception.Message}");
         }
     }
 
@@ -148,7 +167,7 @@ internal sealed class SystemCommandRunner : ICommandRunner
     }
 
     // Returns true when the command was killed for running past its timeout; a cancellation kills it and propagates.
-    private static async ValueTask<bool> Wait(Process process, TimeSpan timeout, CancellationToken cancellationToken)
+    private async ValueTask<bool> Wait(Process process, TimeSpan timeout, CancellationToken cancellationToken)
     {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(timeout);
@@ -159,11 +178,40 @@ internal sealed class SystemCommandRunner : ICommandRunner
         }
         catch (OperationCanceledException)
         {
-            process.Kill(entireProcessTree: true);
-            await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
+            await Stop(process).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
             return true;
         }
+    }
+
+    // SIGTERM to the command and every descendant it has now (pids this runner started, found through their parents, never by name), so
+    // the heavy-job wrapper and the scripts run their exit traps and release their locks; then, after the grace, whatever is left is killed.
+    private async Task Stop(Process process)
+    {
+        var tree = ProcessTree.Of(process.Id);
+        if (tree.Count > 0 && await ProcessTree.Terminate(tree).ConfigureAwait(false))
+        {
+            using var grace = new CancellationTokenSource(_termGrace);
+            try
+            {
+                await process.WaitForExitAsync(grace.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // Still running after the grace: killed below.
+            }
+        }
+
+        try
+        {
+            process.Kill(entireProcessTree: true);
+        }
+        catch (InvalidOperationException)
+        {
+            // Already gone.
+        }
+
+        await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
     }
 
     private static async Task Pump(StreamReader reader, TailBuffer tail, StreamWriter? log, CancellationToken stop)

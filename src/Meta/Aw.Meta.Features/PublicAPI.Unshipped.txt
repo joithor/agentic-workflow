@@ -882,13 +882,11 @@ Aw.Meta.Features.GateRerun.GateRerunResponse.MainLog.get -> string?
 Aw.Meta.Features.GateRerun.GateRerunResponse.MainLog.init -> void
 Aw.Meta.Features.QueueGate.QueueGateRequest
 Aw.Meta.Features.QueueGate.QueueGateRequest.<Clone>$() -> Aw.Meta.Features.QueueGate.QueueGateRequest!
-Aw.Meta.Features.QueueGate.QueueGateRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<int>! Prs, out int? Max) -> void
 Aw.Meta.Features.QueueGate.QueueGateRequest.Equals(Aw.Meta.Features.QueueGate.QueueGateRequest? other) -> bool
 Aw.Meta.Features.QueueGate.QueueGateRequest.Max.get -> int?
 Aw.Meta.Features.QueueGate.QueueGateRequest.Max.init -> void
 Aw.Meta.Features.QueueGate.QueueGateRequest.Prs.get -> System.Collections.Generic.IReadOnlyList<int>!
 Aw.Meta.Features.QueueGate.QueueGateRequest.Prs.init -> void
-Aw.Meta.Features.QueueGate.QueueGateRequest.QueueGateRequest(System.Collections.Generic.IReadOnlyList<int>! Prs, int? Max) -> void
 Aw.Meta.Features.QueueGate.QueueGateResponse
 Aw.Meta.Features.QueueGate.QueueGateResponse.<Clone>$() -> Aw.Meta.Features.QueueGate.QueueGateResponse!
 Aw.Meta.Features.QueueGate.QueueGateResponse.Deconstruct(out string! Main, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Gate.TrainEntry!>! Entries, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Gate.GateRecord!>! Gates, out Aw.Meta.Core.Health.HeavySlots? Heavy) -> void
@@ -914,3 +912,7 @@ static Aw.Meta.Features.QueueGate.QueueGateRequest.operator !=(Aw.Meta.Features.
 static Aw.Meta.Features.QueueGate.QueueGateRequest.operator ==(Aw.Meta.Features.QueueGate.QueueGateRequest? left, Aw.Meta.Features.QueueGate.QueueGateRequest? right) -> bool
 static Aw.Meta.Features.QueueGate.QueueGateResponse.operator !=(Aw.Meta.Features.QueueGate.QueueGateResponse? left, Aw.Meta.Features.QueueGate.QueueGateResponse? right) -> bool
 static Aw.Meta.Features.QueueGate.QueueGateResponse.operator ==(Aw.Meta.Features.QueueGate.QueueGateResponse? left, Aw.Meta.Features.QueueGate.QueueGateResponse? right) -> bool
+Aw.Meta.Features.QueueGate.QueueGateRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<int>! Prs, out int? Max, out int Pid) -> void
+Aw.Meta.Features.QueueGate.QueueGateRequest.Pid.get -> int
+Aw.Meta.Features.QueueGate.QueueGateRequest.Pid.init -> void
+Aw.Meta.Features.QueueGate.QueueGateRequest.QueueGateRequest(System.Collections.Generic.IReadOnlyList<int>! Prs, int? Max, int Pid = 0) -> void

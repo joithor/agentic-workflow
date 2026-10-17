@@ -100,7 +100,8 @@ public sealed class StepGraph
         return step.Heavy || Mentions(step.Run) ? [.. builders] : [];
     }
 
-    private static bool Mentions(IReadOnlyList<string> run) => run.Contains("dotnet", StringComparer.Ordinal);
+    // Any word that names dotnet, so a script (scripts/dotnet-verify-packages.sh) that restores the solution counts like dotnet itself.
+    private static bool Mentions(IReadOnlyList<string> run) => run.Any(word => word.Contains("dotnet", StringComparison.Ordinal));
 
     private static bool Builds(IReadOnlyList<string> run) =>
         run.Count > 1 && run[0] == "dotnet"

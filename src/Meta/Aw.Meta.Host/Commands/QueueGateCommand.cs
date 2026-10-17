@@ -37,7 +37,7 @@ internal static class QueueGateCommand
             max = parsed;
         }
 
-        return CommandOutput.Call<QueueGateRequest, QueueGateResponse>(context, new QueueGateRequest(prs, max), Text, static r => r.Entries.Any(e => e.State != TrainState.Pass));
+        return CommandOutput.Call<QueueGateRequest, QueueGateResponse>(context, new QueueGateRequest(prs, max, Environment.ProcessId), Text, static r => r.Entries.Any(e => e.State != TrainState.Pass));
     }
 
     private static string Text(QueueGateResponse response) =>

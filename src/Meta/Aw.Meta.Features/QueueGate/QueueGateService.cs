@@ -41,20 +41,31 @@ internal sealed class QueueGateService(TrainSelection queue, GateWorkspace works
             return built.Error;
         }
 
-        using var board = new TrainBoard(values, built.Value.Main);
-        foreach (var entry in built.Value.Left)
+        using var board = new TrainBoard(values, built.Value.Main, "TRAIN pid " + request.Pid.ToString(CultureInfo.InvariantCulture) + " started " + Stamp());
+        GateRecord?[] recorded;
+        try
         {
-            await board.Set(entry).ConfigureAwait(false);
+            foreach (var entry in built.Value.Left)
+            {
+                await board.Set(entry).ConfigureAwait(false);
+            }
+
+            recorded = await Run(team, built.Value, board, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            // However the train ends (an exception, a signal), the board says so: a board with a start and no end is a train that died.
+            await board.Publish("TRAIN ended " + Stamp()).ConfigureAwait(false);
         }
 
-        var recorded = await Run(team, built.Value, board).ConfigureAwait(false);
-        await board.Publish("TRAIN ended " + clock.GetUtcNow().ToString("u", CultureInfo.InvariantCulture)).ConfigureAwait(false);
         return new QueueGateResponse(
             built.Value.Main,
             [.. board.Entries.OrderBy(e => e.Position == 0 ? int.MaxValue : e.Position).ThenBy(e => e.Pr)],
             [.. recorded.OfType<GateRecord>()],
             reserved.IsSuccess ? reserved.Value : null);
     }
+
+    private string Stamp() => clock.GetUtcNow().ToString("u", CultureInfo.InvariantCulture);
 
     // Builds the trees one after the other (each stacks on the ones before it): the gates to run, and the pull requests left out.
     private async ValueTask<Result<Built>> Build(TeamConfig team, IReadOnlyList<int> candidates, int size, CancellationToken cancellationToken)
@@ -111,9 +122,9 @@ internal sealed class QueueGateService(TrainSelection queue, GateWorkspace works
             : new Planned(stack.Count + 1, pr, prepared.Pr.Head, stack, prepared, scopes, graph.Value, (latest.Value?.Run ?? 0) + 1);
     }
 
-    private async Task<GateRecord?[]> Run(TeamConfig team, Built built, TrainBoard board)
+    private async Task<GateRecord?[]> Run(TeamConfig team, Built built, TrainBoard board, CancellationToken cancellationToken)
     {
-        using var pool = new Train(built.Gating.Count, Math.Max(1, team.Gate.ParallelSteps ?? team.Heavy.Cap));
+        using var pool = new Train(built.Gating.Count, Math.Max(1, team.Gate.ParallelSteps ?? team.Heavy.Cap), cancellationToken);
         foreach (var gate in built.Gating)
         {
             await board.Set(new TrainEntry(gate.Position, gate.Pr, TrainText.BaseOf(gate.Stack), TrainState.Gating)).ConfigureAwait(false);
@@ -134,8 +145,9 @@ internal sealed class QueueGateService(TrainSelection queue, GateWorkspace works
                 gate.Position,
                 async (step, stepToken) =>
                 {
-                    var done = await steps.Run(step, gate.Prepared.Tree, workspace.LogPath(gate.Pr, gate.Run, step.Name), stepToken).ConfigureAwait(false);
-                    if (done.IsError || done.Value.Verdict != GateVerdict.Pass)
+                    var done = await steps.Run(step, gate.Prepared.Tree, workspace.LogPath(gate.Pr, gate.Run, step.Name), train.Limit, stepToken).ConfigureAwait(false);
+                    // Only a red step stops the gates above; an error (a step that could not start, the wrapper's lock timeout) says nothing about the code.
+                    if (done.IsSuccess && done.Value.Verdict != GateVerdict.Pass)
                     {
                         await train.CancelAbove(gate.Position).ConfigureAwait(false);
                     }
@@ -149,19 +161,31 @@ internal sealed class QueueGateService(TrainSelection queue, GateWorkspace works
                 return null;
             }
 
-            var verdict = ran.Value.All(s => s.Verdict == GateVerdict.Pass) ? GateVerdict.Pass : GateVerdict.Fail;
-            var record = new GateRecord(gate.Pr, gate.Head, gate.Prepared.Main, gate.Scopes, ran.Value, verdict, clock.GetUtcNow()) { Tree = gate.Prepared.TreeSha, Stack = gate.Stack };
-            var saved = await gates.Save(record, CancellationToken.None).ConfigureAwait(false);
-            await board.Set(saved.IsError
-                ? new TrainEntry(gate.Position, gate.Pr, @base, TrainState.Error, saved.Error.Message.ReplaceLineEndings(" "))
-                : new TrainEntry(gate.Position, gate.Pr, @base, verdict == GateVerdict.Pass ? TrainState.Pass : TrainState.Fail)).ConfigureAwait(false);
-            return saved.IsError ? null : saved.Value;
+            return await Record(gate, ran.Value, board).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        catch (OperationCanceledException) when (token.IsCancellationRequested || train.Interrupted)
         {
-            await board.Set(new TrainEntry(gate.Position, gate.Pr, @base, TrainState.Cancelled, "a gate below it failed; stays queued")).ConfigureAwait(false);
+            await board.Set(new TrainEntry(gate.Position, gate.Pr, @base, TrainState.Cancelled, train.Interrupted ? "interrupted; stays queued" : "a gate below it failed; stays queued")).ConfigureAwait(false);
             return null;
         }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // Whatever a gate throws, the train still ends with a board and the gates that did finish recorded.
+            await board.Set(new TrainEntry(gate.Position, gate.Pr, @base, TrainState.Error, exception.Message.ReplaceLineEndings(" "))).ConfigureAwait(false);
+            return null;
+        }
+    }
+
+    private async Task<GateRecord?> Record(Planned gate, IReadOnlyList<GateStep> ran, TrainBoard board)
+    {
+        var @base = TrainText.BaseOf(gate.Stack);
+        var verdict = ran.All(s => s.Verdict == GateVerdict.Pass) ? GateVerdict.Pass : GateVerdict.Fail;
+        var record = new GateRecord(gate.Pr, gate.Head, gate.Prepared.Main, gate.Scopes, ran, verdict, clock.GetUtcNow()) { Tree = gate.Prepared.TreeSha, Stack = gate.Stack };
+        var saved = await gates.Save(record, CancellationToken.None).ConfigureAwait(false);
+        await board.Set(saved.IsError
+            ? new TrainEntry(gate.Position, gate.Pr, @base, TrainState.Error, saved.Error.Message.ReplaceLineEndings(" "))
+            : new TrainEntry(gate.Position, gate.Pr, @base, verdict == GateVerdict.Pass ? TrainState.Pass : TrainState.Fail)).ConfigureAwait(false);
+        return saved.IsError ? null : saved.Value;
     }
 
     private sealed record Planned(int Position, int Pr, string Head, IReadOnlyList<StackedPr> Stack, PreparedGate Prepared, IReadOnlyList<string> Scopes, StepGraph Graph, int Run);
@@ -171,11 +195,19 @@ internal sealed class QueueGateService(TrainSelection queue, GateWorkspace works
     // The heavy slots every gate shares and one cancellation source per gate, so a failure can stop the gates above it.
     private sealed class Train : IDisposable
     {
-        internal Train(int gates, int limit)
+        private readonly CancellationToken _caller;
+
+        internal Train(int gates, int limit, CancellationToken caller)
         {
+            _caller = caller;
+            Limit = limit;
             Slots = new SlotPool(limit);
-            Tokens = [.. Enumerable.Range(0, gates).Select(_ => new CancellationTokenSource())];
+            Tokens = [.. Enumerable.Range(0, gates).Select(_ => CancellationTokenSource.CreateLinkedTokenSource(caller))];
         }
+
+        internal int Limit { get; }
+
+        internal bool Interrupted => _caller.IsCancellationRequested;
 
         internal SlotPool Slots { get; }
 

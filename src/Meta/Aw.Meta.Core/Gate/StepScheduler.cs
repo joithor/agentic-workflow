@@ -33,7 +33,7 @@ public static class StepScheduler
         using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var done = Enumerable.Range(0, count).Select(_ => new TaskCompletionSource<Result<T>?>(TaskCreationOptions.RunContinuationsAsynchronously)).ToArray();
 
-        await Task.WhenAll(Enumerable.Range(0, count).Select(i => Node(new Shared<T>(graph, done, slots, job, run, stop), i))).ConfigureAwait(false);
+        await Task.WhenAll(Enumerable.Range(0, count).Select(i => Node(new Shared<T>(graph, done, slots, job, run, stop, cancellationToken), i))).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
         var results = new List<T>(count);
         foreach (var task in done)
@@ -57,7 +57,7 @@ public static class StepScheduler
 
     private static async Task Node<T>(Shared<T> all, int i)
     {
-        var (graph, done, slots, job, run, stop) = all;
+        var (graph, done, slots, job, run, stop, caller) = all;
         Result<T>? outcome = null;
         try
         {
@@ -66,15 +66,22 @@ public static class StepScheduler
                 _ = await done[dependency].Task.WaitAsync(stop.Token).ConfigureAwait(false);
             }
 
+            stop.Token.ThrowIfCancellationRequested();
             outcome = await RunOne(graph.Steps[i], (slots, job, i), run, stop.Token).ConfigureAwait(false);
             if (outcome.IsError)
             {
                 await stop.CancelAsync().ConfigureAwait(false);
             }
         }
-        catch (OperationCanceledException) when (stop.IsCancellationRequested)
+        catch (OperationCanceledException) when (stop.IsCancellationRequested || caller.IsCancellationRequested)
         {
             // Cancelled by a sibling's error or by the caller; the error (or the caller's exception) is reported by Run.
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            // A step that throws is an error, not a crash of the run: the steps still running are cancelled and the error is reported by Run.
+            outcome = MetaErrors.CommandNotStarted.With($"{graph.Steps[i].Name}: {exception.Message}");
+            await stop.CancelAsync().ConfigureAwait(false);
         }
         finally
         {
@@ -93,5 +100,5 @@ public static class StepScheduler
         return await run(step, cancellationToken).ConfigureAwait(false);
     }
 
-    private sealed record Shared<T>(StepGraph Graph, TaskCompletionSource<Result<T>?>[] Done, SlotPool Slots, int Job, Func<StepConfig, CancellationToken, ValueTask<Result<T>>> Run, CancellationTokenSource Stop);
+    private sealed record Shared<T>(StepGraph Graph, TaskCompletionSource<Result<T>?>[] Done, SlotPool Slots, int Job, Func<StepConfig, CancellationToken, ValueTask<Result<T>>> Run, CancellationTokenSource Stop, CancellationToken Caller);
 }

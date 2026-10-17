@@ -7,7 +7,8 @@ namespace Aw.Meta.Features.QueueGate;
 /// <summary>The train as it stands: each pull request's entry, written to the key-value store whenever one changes so the status can show it.</summary>
 /// <param name="values">The store.</param>
 /// <param name="main">The main sha the train is pinned to.</param>
-internal sealed class TrainBoard(IKeyValueStore values, string main) : IDisposable
+/// <param name="header">The first line of the board: which process runs the train and since when.</param>
+internal sealed class TrainBoard(IKeyValueStore values, string main, string header) : IDisposable
 {
     private readonly SemaphoreSlim _writing = new(1, 1);
     private readonly List<TrainEntry> _entries = [];
@@ -40,7 +41,7 @@ internal sealed class TrainBoard(IKeyValueStore values, string main) : IDisposab
         try
         {
             // The status is advisory: a store that can't be written must not stop the train.
-            _ = await values.Set(KvKeys.Train, string.Join('\n', [.. TrainText.Summary(main, Entries), .. ended is null ? Array.Empty<string>() : [ended]]), CancellationToken.None).ConfigureAwait(false);
+            _ = await values.Set(KvKeys.Train, string.Join('\n', [header, .. TrainText.Summary(main, Entries), .. ended is null ? Array.Empty<string>() : [ended]]), CancellationToken.None).ConfigureAwait(false);
         }
         finally
         {

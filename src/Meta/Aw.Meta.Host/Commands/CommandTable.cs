@@ -82,7 +82,7 @@ internal static class CommandTable
         return CommandOutput.Failed;
     }
 
-    internal static async Task<int> Run(string[] args, IServiceProvider provider, JsonSerializerOptions json, ConsoleIo io)
+    internal static async Task<int> Run(string[] args, IServiceProvider provider, JsonSerializerOptions json, ConsoleIo io, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(args);
         if (args.Length == 0)
@@ -108,7 +108,7 @@ internal static class CommandTable
         var scope = provider.CreateAsyncScope();
         await using (scope.ConfigureAwait(false))
         {
-            var context = new CommandContext(line, scope.ServiceProvider, json, io);
+            var context = new CommandContext(line, scope.ServiceProvider, json, io, cancellationToken);
             if (entry.NeedsConfig && (await scope.ServiceProvider.GetRequiredService<IMetaConfig>().Load(CancellationToken.None).ConfigureAwait(false)) is { IsError: true } missing)
             {
                 return CommandOutput.Fail(context, missing.Error);
