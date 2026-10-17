@@ -405,8 +405,8 @@ Example: `name: "{fact:scope} · {start:date}"` and `generate: "triage {start:da
 - `item`: its `ITM-` id (not the title).
 - `text`: the first non-empty line, trimmed.
 - `file`: the file name.
+- `link`: the `title` field, else the URL's host.
 - `linear-project`, `webhook`, `payload` and `packet`: the payload's `id` field, else `number`, else the bare key (`SubjectRefs.PayloadId`, the same text a subject label shows).
-- `linear-project` and `webhook`: the payload's `id` field, else `number`, else the bare key.
 
 Each value has its control characters and newlines replaced by a space. The value is then cut to 40 characters
 and the whole name to 80 characters. Both cuts use `SubjectRefs.Cut`, which never splits a surrogate pair and
