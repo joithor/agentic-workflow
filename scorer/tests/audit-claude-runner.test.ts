@@ -19,9 +19,14 @@ describe("claudeArgs", () => {
 });
 
 describe("childEnv", () => {
-  it("passes only PATH, HOME, USER and the auth variables claude needs", () => {
+  it("passes only PATH, HOME, USER, the auth variables claude needs and the harness-child mark", () => {
     const env = childEnv({ PATH: "/bin", HOME: "/h", USER: "u", ANTHROPIC_API_KEY: "k", CLAUDE_CODE_OAUTH_TOKEN: "o", CLAUDE_CONFIG_DIR: "/c", AWS_SECRET_ACCESS_KEY: "s", GITHUB_TOKEN: "g" });
-    expect(env).toEqual({ PATH: "/bin", HOME: "/h", USER: "u", ANTHROPIC_API_KEY: "k", CLAUDE_CODE_OAUTH_TOKEN: "o", CLAUDE_CONFIG_DIR: "/c" });
+    expect(env).toEqual({ PATH: "/bin", HOME: "/h", USER: "u", ANTHROPIC_API_KEY: "k", CLAUDE_CODE_OAUTH_TOKEN: "o", CLAUDE_CONFIG_DIR: "/c", AW_JUDGE_CHILD: "1" });
+  });
+
+  it("marks the child as a harness child so the session collector doesn't list it as a session", () => {
+    expect(childEnv({ PATH: "/bin" }).AW_JUDGE_CHILD).toBe("1");
+    expect(childEnv({ PATH: "/bin", AW_JUDGE_CHILD: "0" }).AW_JUDGE_CHILD).toBe("1");
   });
 });
 
@@ -66,7 +71,7 @@ describe("makeClaudeRunner", () => {
     expect(seen).toHaveLength(1);
     expect(seen[0].file).toBe("claude");
     expect(seen[0].args).toEqual(claudeArgs("sonnet", { type: "object" }));
-    expect(seen[0].env).toEqual({ PATH: "/bin", HOME: "/h", USER: "u" });
+    expect(seen[0].env).toEqual({ PATH: "/bin", HOME: "/h", USER: "u", AW_JUDGE_CHILD: "1" });
     expect(seen[0].timeout).toBe(180_000);
     expect(seen[0].input).toBe("the prompt");
   });
@@ -82,7 +87,7 @@ describe("makeClaudeRunner", () => {
     await makeClaudeRunner({ model: "sonnet", timeoutMs: 5, exec })("p", {});
     expect(timeout).toBe(5);
     expect(env.PATH).toBe(process.env.PATH);
-    expect(Object.keys(env).every((k) => ["PATH", "HOME", "USER", "ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "CLAUDE_CONFIG_DIR"].includes(k))).toBe(true);
+    expect(Object.keys(env).every((k) => ["PATH", "HOME", "USER", "ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "CLAUDE_CONFIG_DIR", "AW_JUDGE_CHILD"].includes(k))).toBe(true);
   });
 
   it("runs the real spawn path against a stub claude on PATH (no model call), from a private cwd", async () => {

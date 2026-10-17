@@ -58,11 +58,26 @@ public sealed class GraphifyClusterSourceTests
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task A_stub_script_whose_write_descriptor_a_concurrent_fork_still_holds_is_still_run()
+    {
+        // Linux refuses to exec a file some process holds open for writing (ETXTBSY). A sibling test's fork can inherit the
+        // write descriptor of a stub script that was just written, so the stub must never be exec'd itself, only read by sh.
+        using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["src/a.ts"] = "export const a = 1;\n" });
+        using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
+        await using var heldOpen = new FileStream(stub.Options.Binary, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
+        var source = new GraphifyClusterSource(new GitCli(), stub.Options);
+
+        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+
+        Assert.True(set.Value.Available, "the stub ran despite an open write descriptor");
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task A_run_that_throws_for_an_unexpected_io_reason_is_a_degraded_unavailable_set_not_an_exception()
     {
         using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["src/a.ts"] = "export const a = 1;\n" });
         using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
-        var source = new GraphifyClusterSource(new GitCli(), stub.Options with { Sandbox = (_, command, _) => command.Contains("extract", StringComparer.Ordinal) ? throw new IOException("disk full") : command });
+        var source = new GraphifyClusterSource(new GitCli(), stub.Options with { Sandbox = (_, command, _) => command.Contains("extract", StringComparer.Ordinal) ? throw new IOException("disk full") : StubGraphify.RunThroughShell(command) });
 
         var set = await source.Clusters(repo.Repo, repo.Head, Ct);
 
@@ -76,7 +91,7 @@ public sealed class GraphifyClusterSourceTests
     {
         using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["src/a.ts"] = "export const a = 1;\n" });
         using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
-        var source = new GraphifyClusterSource(new GitCli(), stub.Options with { Sandbox = (_, command, _) => command.Contains("extract", StringComparer.Ordinal) ? throw new ArgumentNullException(nameof(command)) : command });
+        var source = new GraphifyClusterSource(new GitCli(), stub.Options with { Sandbox = (_, command, _) => command.Contains("extract", StringComparer.Ordinal) ? throw new ArgumentNullException(nameof(command)) : StubGraphify.RunThroughShell(command) });
 
         _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await source.Clusters(repo.Repo, repo.Head, Ct));
     }

@@ -33,7 +33,7 @@ internal static class CommandOutput
         where TRequest : notnull
     {
         var service = context.Services.GetRequiredService<IService<TRequest, TResponse>>();
-        var result = await service.Handle(request, CancellationToken.None).ConfigureAwait(false);
+        var result = await service.Handle(request, context.Cancellation).ConfigureAwait(false);
         return Report(context, result, text, attention);
     }
 

@@ -76,7 +76,63 @@ public sealed class WatchDiffTests
     public void Main_moving_is_reported_once_per_move() =>
         Assert.Equal(["MAIN moved bbbbbbb"], Run(Snap(), Snap("bbbbbbb1234"), Snap("bbbbbbb1234")), StringComparer.Ordinal);
 
+    private static WatchSnapshot Res(bool disk = false, bool memory = false) => new([], "m1", disk, memory);
+
     [Fact, Trait("Lane", "unit")]
-    public void Disk_changes_are_reported_when_they_change() =>
-        Assert.Equal(["DISK LOW", "DISK OK"], Run(Snap(), Snap(diskLow: true), Snap(diskLow: true), Snap()), StringComparer.Ordinal);
+    public void Disk_changes_are_reported_once_two_polls_agree() =>
+        Assert.Equal(["DISK LOW", "DISK OK"], Run(Snap(), Snap(diskLow: true), Snap(diskLow: true), Snap(diskLow: true), Snap(), Snap(), Snap()), StringComparer.Ordinal);
+
+    [Fact, Trait("Lane", "unit")]
+    public void Memory_changes_are_reported_once_two_polls_agree() =>
+        Assert.Equal(["MEMORY LOW", "MEMORY OK"], Run(Snap(), Res(memory: true), Res(memory: true), Res(memory: true), Res(), Res()), StringComparer.Ordinal);
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_resource_flapping_around_its_floor_is_never_reported() =>
+        Assert.Empty(Run(Snap(), Res(memory: true, disk: true), Res(), Res(memory: true, disk: true), Res(), Res(memory: true), Res()));
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_blip_between_two_agreeing_polls_does_not_flip_back()
+    {
+        // LOW is reported after two polls; a single OK between LOW polls does not report OK, and a second OK in a row does.
+        Assert.Equal(
+            ["MEMORY LOW", "MEMORY OK"],
+            Run(Snap(), Res(memory: true), Res(memory: true), Res(), Res(memory: true), Res(), Res()),
+            StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Disk_and_memory_are_reported_independently() =>
+        Assert.Equal(
+            ["DISK LOW", "MEMORY LOW", "DISK OK"],
+            Run(Snap(), Res(disk: true, memory: true), Res(disk: true, memory: true), Res(memory: true), Res(memory: true)),
+            StringComparer.Ordinal);
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_state_an_earlier_watch_reported_is_not_announced_again()
+    {
+        var state = WatchState.Continuing(new WatchResources(DiskLow: true, MemoryLow: true));
+        var lines = new List<string>();
+        foreach (var poll in new[] { Res(disk: true, memory: true), Res(disk: true, memory: true), Res(disk: true), Res(disk: true) })
+        {
+            var step = WatchDiff.Step(state, poll);
+            lines.AddRange(step.Lines);
+            state = step.State;
+        }
+
+        Assert.Equal(["MEMORY OK"], lines, StringComparer.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("disk=low mem=ok", true, false)]
+    [InlineData("disk=ok mem=low", false, true)]
+    [InlineData("disk=low mem=low", true, true)]
+    [InlineData("anything else", false, false)]
+    public void The_kept_form_reads_back(string text, bool disk, bool memory)
+    {
+        var read = WatchResources.Parse(text);
+
+        Assert.Equal(new WatchResources(disk, memory), read);
+        Assert.Equal(read, WatchResources.Parse(read.ToString()));
+        Assert.Equal(WatchResources.None, WatchResources.Parse(null));
+    }
 }
