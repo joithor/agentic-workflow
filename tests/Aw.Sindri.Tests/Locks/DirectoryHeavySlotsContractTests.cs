@@ -1,6 +1,7 @@
 using System.Globalization;
 using Aw.Context.Core.Locks;
 using Aw.Context.Testing.Locks;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Infrastructure.Locks;
 
@@ -24,7 +25,7 @@ public sealed class DirectoryHeavySlotsContractTests : HeavyJobLockContract, IDi
             {
                 var slot = k == 1 ? path : string.Create(CultureInfo.InvariantCulture, $"{path}.{k}");
                 _ = Directory.CreateDirectory(slot);
-                File.WriteAllText(Path.Combine(slot, DirectoryHeavySlots.OwnerFile), string.Create(CultureInfo.InvariantCulture, $"{Environment.ProcessId} {DateTime.UtcNow:yyyy-MM-ddTHH:mm:ssZ} {busyHolder}\n"));
+                File.WriteAllText(Path.Combine(slot, DirectoryHeavySlots.OwnerFile), string.Create(CultureInfo.InvariantCulture, $"{Environment.ProcessId} {RealTime.NowDateTime:yyyy-MM-ddTHH:mm:ssZ} {busyHolder}\n"));
             }
         }
 
