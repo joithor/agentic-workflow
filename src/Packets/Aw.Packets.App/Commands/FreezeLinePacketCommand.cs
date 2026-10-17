@@ -11,13 +11,13 @@ internal static class FreezeLinePacketCommand
 {
     internal static async Task<int> Run(PacketKind kind, IReadOnlyList<string> args, IServiceProvider services, JsonSerializerOptions json)
     {
-        if (PacketArguments.Parse(args) is not { } arguments)
+        if (PacketArguments.Parse(args, takesBy: true) is not { } arguments)
         {
-            return CommandOutput.Usage($"{FreezePacketCommand.Name} --kind {kind.Name} {PacketArguments.Shape}");
+            return CommandOutput.Usage($"{FreezePacketCommand.Name} --kind {kind.Name} {PacketArguments.FreezeShape}");
         }
 
         var service = services.GetRequiredService<IService<FreezeLinePacketRequest, FreezeLinePacketResponse>>();
-        var result = await service.Handle(new FreezeLinePacketRequest(kind.Name, arguments.PacketDirectory, arguments.RepoDirectory), CancellationToken.None)
+        var result = await service.Handle(new FreezeLinePacketRequest(kind.Name, arguments.PacketDirectory, arguments.RepoDirectory, arguments.By), CancellationToken.None)
             .ConfigureAwait(false);
         if (result.IsError)
         {

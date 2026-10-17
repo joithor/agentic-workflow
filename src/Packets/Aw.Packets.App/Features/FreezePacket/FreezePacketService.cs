@@ -24,6 +24,7 @@ internal sealed class FreezePacketService(PacketInspector inspector, IFreezeLog 
         {
             SchemaVersion = 1,
             Packet = checkedPacket.Loaded.Packet.Manifest.Id,
+            By = request.By,
             Frozen = false,
             DigestVersion = PacketDigest.Version,
             AlreadyFrozen = false,
@@ -40,11 +41,11 @@ internal sealed class FreezePacketService(PacketInspector inspector, IFreezeLog 
             return hash.Error;
         }
 
-        var receipt = await log.Record(Record(checkedPacket.Loaded, hash.Value), cancellationToken).ConfigureAwait(false);
+        var receipt = await log.Record(Record(checkedPacket.Loaded, hash.Value, request.By), cancellationToken).ConfigureAwait(false);
         return receipt.Map(r => notFrozen with { Frozen = true, Hash = hash.Value, Location = r.Location, AlreadyFrozen = r.AlreadyFrozen });
     }
 
-    private FreezeRecord Record(LoadedPacket loaded, PacketHash hash) => new()
+    private FreezeRecord Record(LoadedPacket loaded, PacketHash hash, FreezeBy by) => new()
     {
         SchemaVersion = 1,
         Repo = loaded.Packet.Manifest.Repo,
@@ -52,6 +53,7 @@ internal sealed class FreezePacketService(PacketInspector inspector, IFreezeLog 
         Hash = hash,
         DigestVersion = PacketDigest.Version,
         BaseSha = CommitSha.From(loaded.Packet.Manifest.BaseSha),   // the checks passed, so PKT-BASE-001 accepted it
+        By = by,
         FrozenAt = clock.GetUtcNow(),
         Files = [.. loaded.Files.Keys.Order(StringComparer.Ordinal)],
     };

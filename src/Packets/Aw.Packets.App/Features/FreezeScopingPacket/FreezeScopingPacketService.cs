@@ -30,6 +30,7 @@ internal sealed class FreezeScopingPacketService(IScopingPacketSource source, IF
             SchemaVersion = 1,
             Kind = PacketKinds.Scoping.Name,
             Instance = instance,
+            By = request.By,
             Frozen = false,
             DigestVersion = PacketDigest.Version,
             AlreadyFrozen = false,
@@ -59,6 +60,7 @@ internal sealed class FreezeScopingPacketService(IScopingPacketSource source, IF
         Packet = instance,
         Hash = hash,
         DigestVersion = PacketDigest.Version,
+        By = request.By,
         FrozenAt = clock.GetUtcNow(),
         Files = [.. PacketKinds.Scoping.Files.Select(static f => f.Name).Order(StringComparer.Ordinal)],
     };

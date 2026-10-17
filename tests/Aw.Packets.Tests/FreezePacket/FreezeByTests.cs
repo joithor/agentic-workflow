@@ -32,9 +32,9 @@ public sealed class FreezeByTests
     [Fact, Trait("Lane", "unit")]
     public async Task A_build_freeze_is_by_the_machine_unless_the_owner_asked()
     {
-        Assert.Equal(FreezeBy.Machine, (await FreezeBuild(by: null)).By);
-        Assert.Equal(FreezeBy.Machine, (await FreezeBuild(FreezeBy.Machine)).By);
-        Assert.Equal(FreezeBy.Owner, (await FreezeBuild(FreezeBy.Owner)).By);
+        Assert.Equal(FreezeBy.Machine, (await FreezeBuild(by: null)).FrozenBy);
+        Assert.Equal(FreezeBy.Machine, (await FreezeBuild(FreezeBy.Machine)).FrozenBy);
+        Assert.Equal(FreezeBy.Owner, (await FreezeBuild(FreezeBy.Owner)).FrozenBy);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -59,7 +59,7 @@ public sealed class FreezeByTests
             .Handle(new FreezeLinePacketRequest("design", "pkt", RepoDirectory: null, By: FreezeBy.Owner), CancellationToken.None);
 
         Assert.Equal(FreezeBy.Owner, result.Value.By);
-        Assert.Equal(FreezeBy.Owner, Assert.Single(log.Records).Value.By);
+        Assert.Equal(FreezeBy.Owner, Assert.Single(log.Records).Value.FrozenBy);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -72,7 +72,7 @@ public sealed class FreezeByTests
             .Handle(new FreezeScopingPacketRequest("pkt", "example/repo", "idea-1", FreezeBy.Owner), CancellationToken.None);
 
         Assert.Equal(FreezeBy.Owner, result.Value.By);
-        Assert.Equal(FreezeBy.Owner, Assert.Single(log.Records).Value.By);
+        Assert.Equal(FreezeBy.Owner, Assert.Single(log.Records).Value.FrozenBy);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -97,6 +97,7 @@ public sealed class FreezeByTests
 
         Assert.Contains("\"by\": \"owner\"", written, StringComparison.Ordinal);
         Assert.DoesNotContain("\"by\"", old, StringComparison.Ordinal);
-        Assert.Equal(FreezeBy.Machine, read.Value.By);
+        Assert.Null(read.Value.By);
+        Assert.Equal(FreezeBy.Machine, read.Value.FrozenBy);
     }
 }

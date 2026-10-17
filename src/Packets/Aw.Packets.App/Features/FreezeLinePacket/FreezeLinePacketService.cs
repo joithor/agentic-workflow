@@ -28,6 +28,7 @@ internal sealed class FreezeLinePacketService(LinePacketInspector inspector, IFr
             SchemaVersion = 1,
             Kind = kind.Name,
             Packet = inspected.Manifest?.Id,
+            By = request.By,
             Frozen = false,
             DigestVersion = PacketDigest.Version,
             AlreadyFrozen = false,
@@ -44,11 +45,11 @@ internal sealed class FreezeLinePacketService(LinePacketInspector inspector, IFr
             return hash.Error;
         }
 
-        var receipt = await log.Record(Record(kind, manifest, inspected.Files, hash.Value), cancellationToken).ConfigureAwait(false);
+        var receipt = await log.Record(Record(kind, manifest, inspected.Files, hash.Value, request.By), cancellationToken).ConfigureAwait(false);
         return receipt.Map(r => notFrozen with { Frozen = true, Hash = hash.Value, Location = r.Location, AlreadyFrozen = r.AlreadyFrozen });
     }
 
-    private FreezeRecord Record(PacketKind kind, LineManifest manifest, LinePacketFiles files, PacketHash hash) => new()
+    private FreezeRecord Record(PacketKind kind, LineManifest manifest, LinePacketFiles files, PacketHash hash, FreezeBy by) => new()
     {
         SchemaVersion = 1,
         Kind = kind.Name,
@@ -57,6 +58,7 @@ internal sealed class FreezeLinePacketService(LinePacketInspector inspector, IFr
         Hash = hash,
         DigestVersion = PacketDigest.Version,
         BaseSha = CommitSha.From(manifest.BaseSha),   // the checks passed, so PKT-BASE-001 accepted it
+        By = by,
         FrozenAt = clock.GetUtcNow(),
         Files = [.. files.Present.Keys.Where(k => kind.Files.Any(f => f.Name == k) || kind.Directories.Any(d => k.StartsWith(d.Prefix, StringComparison.Ordinal))).Order(StringComparer.Ordinal)],
     };

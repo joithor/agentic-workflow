@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Kernel.Services;
 using Aw.Packets.App.Features.FreezeScopingPacket;
+using Aw.Packets.Core.Model;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Packets.App.Commands;
@@ -8,7 +9,7 @@ namespace Aw.Packets.App.Commands;
 /// <summary>'freeze --kind scoping': validates a scope packet and records its hash under the scoping instance.</summary>
 internal static class FreezeScopingPacketCommand
 {
-    private const string Shape = "--kind scoping <packet-dir> --repo-slug <owner/name> --instance <slug> [--json]";
+    private const string Shape = "--kind scoping <packet-dir> --repo-slug <owner/name> --instance <slug> [--by owner|machine] [--json]";
 
     internal static async Task<int> Run(IReadOnlyList<string> args, IServiceProvider services, JsonSerializerOptions json)
     {
@@ -18,7 +19,7 @@ internal static class FreezeScopingPacketCommand
         }
 
         var service = services.GetRequiredService<IService<FreezeScopingPacketRequest, FreezeScopingPacketResponse>>();
-        var result = await service.Handle(new FreezeScopingPacketRequest(arguments.PacketDirectory, arguments.RepoSlug, arguments.Instance), CancellationToken.None)
+        var result = await service.Handle(new FreezeScopingPacketRequest(arguments.PacketDirectory, arguments.RepoSlug, arguments.Instance, arguments.By), CancellationToken.None)
             .ConfigureAwait(false);
         if (result.IsError)
         {
@@ -42,15 +43,21 @@ internal static class FreezeScopingPacketCommand
         return frozen.Frozen ? 0 : 1;
     }
 
-    private static (string PacketDirectory, string RepoSlug, string Instance, bool Json)? Parse(IReadOnlyList<string> args)
+    private static (string PacketDirectory, string RepoSlug, string Instance, FreezeBy By, bool Json)? Parse(IReadOnlyList<string> args)
     {
-        if (SimpleArguments.Parse(args, "--repo-slug", "--instance") is not { } parsed
+        if (SimpleArguments.Parse(args, "--repo-slug", "--instance", "--by") is not { } parsed
             || !parsed.Values.TryGetValue("--repo-slug", out var slug)
             || !parsed.Values.TryGetValue("--instance", out var instance))
         {
             return null;
         }
 
-        return (parsed.PacketDirectory, slug, instance, parsed.Json);
+        FreezeBy? by = FreezeBy.Machine;
+        if (parsed.Values.TryGetValue("--by", out var given))
+        {
+            by = FreezeByArgument.Parse(given);
+        }
+
+        return by is { } who ? (parsed.PacketDirectory, slug, instance, who, parsed.Json) : null;
     }
 }

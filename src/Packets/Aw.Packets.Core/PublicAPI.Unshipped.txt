@@ -644,7 +644,7 @@ Aw.Packets.Core.Model.FreezeRecord
 Aw.Packets.Core.Model.FreezeRecord.<Clone>$() -> Aw.Packets.Core.Model.FreezeRecord!
 Aw.Packets.Core.Model.FreezeRecord.BaseSha.get -> Aw.Packets.Core.Values.CommitSha?
 Aw.Packets.Core.Model.FreezeRecord.BaseSha.init -> void
-Aw.Packets.Core.Model.FreezeRecord.By.get -> Aw.Packets.Core.Model.FreezeBy
+Aw.Packets.Core.Model.FreezeRecord.By.get -> Aw.Packets.Core.Model.FreezeBy?
 Aw.Packets.Core.Model.FreezeRecord.By.init -> void
 Aw.Packets.Core.Model.FreezeRecord.DigestVersion.get -> int
 Aw.Packets.Core.Model.FreezeRecord.DigestVersion.init -> void
@@ -654,6 +654,7 @@ Aw.Packets.Core.Model.FreezeRecord.Files.init -> void
 Aw.Packets.Core.Model.FreezeRecord.FreezeRecord() -> void
 Aw.Packets.Core.Model.FreezeRecord.FrozenAt.get -> System.DateTimeOffset
 Aw.Packets.Core.Model.FreezeRecord.FrozenAt.init -> void
+Aw.Packets.Core.Model.FreezeRecord.FrozenBy.get -> Aw.Packets.Core.Model.FreezeBy
 Aw.Packets.Core.Model.FreezeRecord.Hash.get -> Aw.Packets.Core.Values.PacketHash
 Aw.Packets.Core.Model.FreezeRecord.Hash.init -> void
 Aw.Packets.Core.Model.FreezeRecord.Kind.get -> string!
