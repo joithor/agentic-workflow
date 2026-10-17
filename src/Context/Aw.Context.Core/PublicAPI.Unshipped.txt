@@ -4941,3 +4941,61 @@ static Aw.Context.Core.History.RecordTimes.operator !=(Aw.Context.Core.History.R
 static Aw.Context.Core.History.RecordTimes.operator ==(Aw.Context.Core.History.RecordTimes? left, Aw.Context.Core.History.RecordTimes? right) -> bool
 Aw.Context.Core.Linking.IntentRecord.CreatedAt.get -> System.DateTimeOffset?
 Aw.Context.Core.Linking.IntentRecord.CreatedAt.init -> void
+Aw.Context.Core.History.FileChange
+Aw.Context.Core.History.FileChange.At.get -> System.DateTimeOffset
+Aw.Context.Core.History.FileChange.At.init -> void
+Aw.Context.Core.History.FileChange.<Clone>$() -> Aw.Context.Core.History.FileChange!
+Aw.Context.Core.History.FileChange.Deconstruct(out string! Sha, out System.DateTimeOffset At, out string! Subject, out int Parents, out System.Collections.Generic.IReadOnlyList<string!>! Files) -> void
+Aw.Context.Core.History.FileChange.Equals(Aw.Context.Core.History.FileChange? other) -> bool
+Aw.Context.Core.History.FileChange.FileChange(string! Sha, System.DateTimeOffset At, string! Subject, int Parents, System.Collections.Generic.IReadOnlyList<string!>! Files) -> void
+Aw.Context.Core.History.FileChange.Files.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.History.FileChange.Files.init -> void
+Aw.Context.Core.History.FileChange.Parents.get -> int
+Aw.Context.Core.History.FileChange.Parents.init -> void
+Aw.Context.Core.History.FileChange.Sha.get -> string!
+Aw.Context.Core.History.FileChange.Sha.init -> void
+Aw.Context.Core.History.FileChange.Subject.get -> string!
+Aw.Context.Core.History.FileChange.Subject.init -> void
+Aw.Context.Core.History.FileHistory
+Aw.Context.Core.History.FileHistory.Changes.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.FileChange!>!
+Aw.Context.Core.History.FileHistory.Changes.init -> void
+Aw.Context.Core.History.FileHistory.<Clone>$() -> Aw.Context.Core.History.FileHistory!
+Aw.Context.Core.History.FileHistory.Deconstruct(out string! Head, out bool Shallow, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.FileChange!>! Changes, out bool Truncated) -> void
+Aw.Context.Core.History.FileHistory.Equals(Aw.Context.Core.History.FileHistory? other) -> bool
+Aw.Context.Core.History.FileHistory.FileHistory(string! Head, bool Shallow, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.FileChange!>! Changes, bool Truncated) -> void
+Aw.Context.Core.History.FileHistory.Head.get -> string!
+Aw.Context.Core.History.FileHistory.Head.init -> void
+Aw.Context.Core.History.FileHistory.Shallow.get -> bool
+Aw.Context.Core.History.FileHistory.Shallow.init -> void
+Aw.Context.Core.History.FileHistory.Truncated.get -> bool
+Aw.Context.Core.History.FileHistory.Truncated.init -> void
+Aw.Context.Core.History.IFileHistory
+override Aw.Context.Core.History.FileChange.Equals(object? obj) -> bool
+override Aw.Context.Core.History.FileChange.GetHashCode() -> int
+override Aw.Context.Core.History.FileChange.ToString() -> string!
+override Aw.Context.Core.History.FileHistory.Equals(object? obj) -> bool
+override Aw.Context.Core.History.FileHistory.GetHashCode() -> int
+override Aw.Context.Core.History.FileHistory.ToString() -> string!
+static Aw.Context.Core.History.FileChange.operator !=(Aw.Context.Core.History.FileChange? left, Aw.Context.Core.History.FileChange? right) -> bool
+static Aw.Context.Core.History.FileChange.operator ==(Aw.Context.Core.History.FileChange? left, Aw.Context.Core.History.FileChange? right) -> bool
+static Aw.Context.Core.History.FileHistory.operator !=(Aw.Context.Core.History.FileHistory? left, Aw.Context.Core.History.FileHistory? right) -> bool
+static Aw.Context.Core.History.FileHistory.operator ==(Aw.Context.Core.History.FileHistory? left, Aw.Context.Core.History.FileHistory? right) -> bool
+Aw.Context.Core.History.FileHistoryQuery
+Aw.Context.Core.History.FileHistoryQuery.<Clone>$() -> Aw.Context.Core.History.FileHistoryQuery!
+Aw.Context.Core.History.FileHistoryQuery.Deconstruct(out string? UpTo, out System.Collections.Generic.IReadOnlyList<string!>! Paths, out Aw.Context.Core.History.HistoryWindow! Window, out int Max) -> void
+Aw.Context.Core.History.FileHistoryQuery.Equals(Aw.Context.Core.History.FileHistoryQuery? other) -> bool
+Aw.Context.Core.History.FileHistoryQuery.FileHistoryQuery(string? UpTo, System.Collections.Generic.IReadOnlyList<string!>! Paths, Aw.Context.Core.History.HistoryWindow! Window, int Max) -> void
+Aw.Context.Core.History.FileHistoryQuery.Max.get -> int
+Aw.Context.Core.History.FileHistoryQuery.Max.init -> void
+Aw.Context.Core.History.FileHistoryQuery.Paths.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.History.FileHistoryQuery.Paths.init -> void
+Aw.Context.Core.History.FileHistoryQuery.UpTo.get -> string?
+Aw.Context.Core.History.FileHistoryQuery.UpTo.init -> void
+Aw.Context.Core.History.FileHistoryQuery.Window.get -> Aw.Context.Core.History.HistoryWindow!
+Aw.Context.Core.History.FileHistoryQuery.Window.init -> void
+Aw.Context.Core.History.IFileHistory.Changes(Aw.Context.Core.Engine.ContextRepo! repo, Aw.Context.Core.History.FileHistoryQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.History.FileHistory!>!>
+override Aw.Context.Core.History.FileHistoryQuery.Equals(object? obj) -> bool
+override Aw.Context.Core.History.FileHistoryQuery.GetHashCode() -> int
+override Aw.Context.Core.History.FileHistoryQuery.ToString() -> string!
+static Aw.Context.Core.History.FileHistoryQuery.operator !=(Aw.Context.Core.History.FileHistoryQuery? left, Aw.Context.Core.History.FileHistoryQuery? right) -> bool
+static Aw.Context.Core.History.FileHistoryQuery.operator ==(Aw.Context.Core.History.FileHistoryQuery? left, Aw.Context.Core.History.FileHistoryQuery? right) -> bool
