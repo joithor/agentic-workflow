@@ -217,7 +217,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         var header = detail.Current.Status.Header;
         var local = TimeZoneInfo.ConvertTime(header.Since, clock.LocalTimeZone);
         Address = detail.Address;
-        (Title, Recipe, Hash12, Version) = (detail.Title, detail.Recipe.Id, header.Hash12, string.Create(CultureInfo.InvariantCulture, $"v{detail.Recipe.Version}"));
+        (Title, Recipe, Hash12, Version) = (detail.Title, detail.Recipe.Id, header.Hash12, string.Create(CultureInfo.InvariantCulture, $"v{header.Version}"));
         (StateText, Detail) = (header.State, header.Detail ?? string.Empty);
         SinceText = $"since {local.ToString("HH:mm", CultureInfo.InvariantCulture)} ({Labels.Duration(header.AgeSeconds)})";
         Identity = $"{Recipe}@{Hash12} · {Version} · {StateText}{(HasDetail ? ": " + Detail : string.Empty)} · {SinceText}";
