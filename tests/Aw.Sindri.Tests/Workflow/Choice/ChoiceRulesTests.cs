@@ -47,7 +47,16 @@ public sealed class ChoiceRulesTests
     [Fact, Trait("Lane", "unit")]
     public void A_choice_with_a_bad_outcome_name_is_RCP_CHOICE_002() =>
         Only("RCP-CHOICE-002", RouteRecipes.Edit(RouteRecipes.Compact, "\"ui: what a user", "\"Ui: what a user"),
-            "RCP-CHOICE-002: entry 1 of choices in state 'route' names outcome 'Ui', which isn't [a-z][a-z0-9]{0,31}", "start with a-z and use only a-z and 0-9, at most 32 characters");
+            "RCP-CHOICE-002: entry 1 of choices in state 'route' names outcome 'Ui', which isn't [a-z][A-Za-z0-9]{0,31}", "start with a-z and use only letters and digits, at most 32 characters");
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_camelCase_choice_name_is_accepted() =>
+        Assert.DoesNotContain(RouteRecipes.Lines(RouteRecipes.Edit(RouteRecipes.Compact, "\"ui: what a user", "\"notStartable: what a user")), static l => l.StartsWith("RCP-CHOICE-002", StringComparison.Ordinal));
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_hyphenated_choice_name_is_RCP_CHOICE_002() =>
+        Only("RCP-CHOICE-002", RouteRecipes.Edit(RouteRecipes.Compact, "\"ui: what a user", "\"not-startable: what a user"),
+            "RCP-CHOICE-002: entry 1 of choices in state 'route' names outcome 'not-startable', which isn't [a-z][A-Za-z0-9]{0,31}", "start with a-z and use only letters and digits, at most 32 characters");
 
     [Fact, Trait("Lane", "unit")]
     public void A_choice_with_an_empty_criterion_is_RCP_CHOICE_002() =>
