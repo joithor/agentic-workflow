@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "agents": {
+    "claude-code": {
+      "override": true,
+      "model": "none",
+      "policy": "claude-settings-file"
+    },
+    "aider": {
+      "label": "Aider",
+      "bin": "aider",
+      "open": ["{bin}", "--message", "{seed}"],
+      "sessionId": "none",
+      "model": "none",
+      "policy": "none"
+    }
+  }
+}
