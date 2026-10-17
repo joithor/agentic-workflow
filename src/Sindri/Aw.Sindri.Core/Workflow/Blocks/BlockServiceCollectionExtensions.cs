@@ -49,7 +49,7 @@ public static class BlockServiceCollectionExtensions
     public static IServiceCollection AddStepInput<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(this IServiceCollection services)
         where T : class, IStepInput, IDescribedBlock
         => services.AddSingleton(T.Descriptor).AddScoped<T>().AddScoped<IStepInput, T>().AddKeyedScoped<IStepInput, T>(T.Descriptor.Id.Value)
-            .AddSingleton(new StepInputRuntime(T.Descriptor.Id));
+            .AddSingleton(new StepInputRegistration(T.Descriptor.Id));
 
     /// <summary>
     /// Registers a block's descriptor without a runtime (spec §12: the P6 and P7 blocks ship in P1 this way), so

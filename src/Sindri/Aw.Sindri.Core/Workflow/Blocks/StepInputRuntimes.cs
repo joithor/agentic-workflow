@@ -3,11 +3,11 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Core.Workflow.Blocks;
 
 /// <summary>
-/// The Step inputs this build can run, built from the <see cref="StepInputRuntime"/> markers AddStepInput registers. A
+/// The Step inputs this build can run, built from the <see cref="StepInputRegistration"/> markers AddStepInput registers. A
 /// descriptor registered without a runtime (AddBlockDescriptor) validates in a recipe but is not in this set.
 /// </summary>
 /// <param name="runtimes">The markers.</param>
-public sealed class StepInputRuntimes(IEnumerable<StepInputRuntime> runtimes)
+public sealed class StepInputRuntimes(IEnumerable<StepInputRegistration> runtimes)
 {
     private readonly HashSet<BlockId> _ids = [.. runtimes.Select(static r => r.Id)];
 

@@ -37,7 +37,7 @@ public sealed class StartInstanceStepInputTests
     [Fact, Trait("Lane", "unit")]
     public async Task Start_goes_on_when_the_input_has_a_runtime()
     {
-        var (service, runtime) = Service(runtimes: [new StepInputRuntime(BlockId.From(FakeStepInput.Id))]);
+        var (service, runtime) = Service(runtimes: [new StepInputRegistration(BlockId.From(FakeStepInput.Id))]);
 
         _ = await service.Handle(Request(), Token);
 
@@ -47,7 +47,7 @@ public sealed class StartInstanceStepInputTests
     private static StartInstanceRequest Request() =>
         new("workflow.inputs", "T-1", NextAttempt: false, new Dictionary<FactKey, StartFact> { [_item] = new("item.json", Encoding.UTF8.GetBytes("{\"id\":\"T-1\"}")) });
 
-    private static (StartInstanceService Service, Capturing Runtime) Service(StepInputRuntime[] runtimes)
+    private static (StartInstanceService Service, Capturing Runtime) Service(StepInputRegistration[] runtimes)
     {
         var runtime = new Capturing();
         return (new StartInstanceService(new OneItem(), new OneRecipe(), new NoInstances(), new StartFacts(new InMemoryFactStore(), TimeProvider.System, new StepInputRuntimes(runtimes)), runtime, new NoLaunches(),

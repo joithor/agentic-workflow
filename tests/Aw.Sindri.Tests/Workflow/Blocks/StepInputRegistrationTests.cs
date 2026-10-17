@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Aw.Sindri.Tests.Workflow.Blocks;
 
 /// <summary>A Step input with no runtime is refused instead of dropped (SND-WF-016; engine spec §5.1, E1).</summary>
-public sealed class StepInputRuntimeTests
+public sealed class StepInputRegistrationTests
 {
     private static readonly BlockId _echo = BlockId.From(FakeStepInput.Id);
 
@@ -20,7 +20,7 @@ public sealed class StepInputRuntimeTests
 
         _ = Assert.IsType<FakeStepInput>(scope.ServiceProvider.GetRequiredKeyedService<IStepInput>(FakeStepInput.Id));
         _ = Assert.IsType<FakeStepInput>(Assert.Single(scope.ServiceProvider.GetServices<IStepInput>()));
-        Assert.True(new StepInputRuntimes(provider.GetServices<StepInputRuntime>()).Has(_echo));
+        Assert.True(new StepInputRuntimes(provider.GetServices<StepInputRegistration>()).Has(_echo));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -28,14 +28,14 @@ public sealed class StepInputRuntimeTests
     {
         await using var provider = new ServiceCollection().AddBlockDescriptor(FakeStepInput.Descriptor).BuildServiceProvider();
 
-        Assert.False(new StepInputRuntimes(provider.GetServices<StepInputRuntime>()).Has(_echo));
+        Assert.False(new StepInputRuntimes(provider.GetServices<StepInputRegistration>()).Has(_echo));
     }
 
     [Fact, Trait("Lane", "unit")]
     public void StepInputRefusals_names_the_path_and_id_of_the_first_input_with_no_runtime()
     {
         var recipe = ARecipe.WithStepInputs(ARecipe.Minimal(RecipeId.From("workflow.inputs")), FakeStepInput.Id, "input.test.other");
-        var runtimes = new StepInputRuntimes([new StepInputRuntime(_echo)]);
+        var runtimes = new StepInputRuntimes([new StepInputRegistration(_echo)]);
 
         var refused = StepInputRefusals.Check(recipe, runtimes);
 
@@ -49,7 +49,7 @@ public sealed class StepInputRuntimeTests
     [Fact, Trait("Lane", "unit")]
     public void StepInputRefusals_passes_a_recipe_whose_inputs_all_run_and_one_with_none()
     {
-        var runtimes = new StepInputRuntimes([new StepInputRuntime(_echo)]);
+        var runtimes = new StepInputRuntimes([new StepInputRegistration(_echo)]);
 
         Assert.Null(StepInputRefusals.Check(ARecipe.WithStepInputs(ARecipe.Minimal(RecipeId.From("workflow.inputs")), FakeStepInput.Id), runtimes));
         Assert.Null(StepInputRefusals.Check(ARecipe.Minimal(RecipeId.From("workflow.inputs")), runtimes));
