@@ -310,6 +310,38 @@ public sealed class DockerCliRuntimeTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Every_compose_call_unsets_the_compose_variables_and_every_key_sindri_writes_into_the_env()
+    {
+        var runner = new FakeToolRunner(Exit(0, "[]"));
+        var cli = Cli(runner);
+
+        _ = cli.Pull(_project, static _ => { }, Token);
+        _ = cli.Up(_project, static _ => { }, limit: null, Token);
+        _ = cli.Stop(_project, Token);
+        _ = cli.Ps(_project, Token);
+        _ = cli.PublishedPorts(_project, Token);
+
+        string[] expected = ["COMPOSE_PROFILES", "COMPOSE_FILE", "COMPOSE_PROJECT_NAME", "COMPOSE_ENV_FILES", "COMPOSE_PATH_SEPARATOR", "IMAGE_TAG", "DISABLE_TELEMETRY", "AUTH_TYPE", "USER_AUTH_SECRET", "INDEXING_MODEL_SERVER_HOST", "HOST_PORT"];
+        Assert.Equal(5, runner.Calls.Count);
+        foreach (var call in runner.Calls)
+        {
+            Assert.NotNull(call.Environment);
+            Assert.All(expected, name => Assert.True(call.Environment.ContainsKey(name) && call.Environment[name] is null, name));
+        }
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_read_only_docker_calls_keep_the_environment_as_it_is()
+    {
+        var runner = new FakeToolRunner(Exit(0, "linux/arm64"));
+
+        _ = Cli(runner).ServerPlatform(Token);
+        _ = Cli(runner).RepoDigests(["docker.io/x/y@sha256:aaa"], Token);
+
+        Assert.All(runner.Calls, static c => Assert.Null(c.Environment));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Stop_and_Ps_use_30_second_timeouts_and_stop_removes_nothing()
     {
         var runner = new FakeToolRunner(Exit(0, "[]"));

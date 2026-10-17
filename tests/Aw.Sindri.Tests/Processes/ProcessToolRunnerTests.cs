@@ -3,6 +3,7 @@ using Aw.Sindri.Infrastructure.Processes;
 namespace Aw.Sindri.Tests.Processes;
 
 // The real runner, over harmless system tools (printf, sh); never security or op.
+[Collection(ProcessEnvironment.Name)]
 public sealed class ProcessToolRunnerTests
 {
     private readonly ProcessToolRunner _runner = new();
@@ -32,5 +33,25 @@ public sealed class ProcessToolRunnerTests
 
         Assert.Equal(ToolRun.TimedOut, run);
         Assert.True(watch.Elapsed < TimeSpan.FromSeconds(5));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public void An_unset_variable_is_absent_in_the_child_and_a_set_one_is_present()
+    {
+        Environment.SetEnvironmentVariable("AW_TEST_INHERITED", "leaks");
+        try
+        {
+            var options = new ToolRunOptions(Environment: new Dictionary<string, string?>(StringComparer.Ordinal) { ["AW_TEST_INHERITED"] = null, ["AW_TEST_ADDED"] = "added" });
+
+            var run = _runner.Run("sh", ["-c", "printf '%s|%s' \"${AW_TEST_INHERITED-absent}\" \"${AW_TEST_ADDED-absent}\""], TimeSpan.FromSeconds(5), options: options, cancellationToken: TestContext.Current.CancellationToken);
+            var untouched = _runner.Run("sh", ["-c", "printf '%s' \"${AW_TEST_INHERITED-absent}\""], TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
+
+            Assert.Equal("absent|added", run.Output);
+            Assert.Equal("leaks", untouched.Output);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("AW_TEST_INHERITED", value: null);
+        }
     }
 }

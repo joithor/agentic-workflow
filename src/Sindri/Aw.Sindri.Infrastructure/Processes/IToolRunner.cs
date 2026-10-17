@@ -7,8 +7,8 @@ internal interface IToolRunner
     /// <param name="fileName">The tool, looked up on PATH.</param>
     /// <param name="arguments">Its arguments, one per element.</param>
     /// <param name="timeout">How long it may run.</param>
-    /// <param name="standardErrorLine">Called once per standard error line while the tool runs (a pull's progress); null drops standard error. Standard output is still captured whole.</param>
+    /// <param name="options">Standard error lines and environment changes (see <see cref="ToolRunOptions"/>); null for neither.</param>
     /// <param name="cancellationToken">Cancels the run: the tool and its children are killed.</param>
     /// <returns>How it ended and what it printed on standard output.</returns>
-    public ToolRun Run(string fileName, IReadOnlyList<string> arguments, TimeSpan timeout, Action<string>? standardErrorLine = null, CancellationToken cancellationToken = default);
+    public ToolRun Run(string fileName, IReadOnlyList<string> arguments, TimeSpan timeout, ToolRunOptions? options = null, CancellationToken cancellationToken = default);
 }

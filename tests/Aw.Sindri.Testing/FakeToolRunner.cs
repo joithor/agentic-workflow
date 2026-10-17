@@ -35,11 +35,12 @@ internal sealed class FakeToolRunner : IToolRunner
         _standardErrorLines = standardErrorLines ?? [];
     }
 
-    public List<(string FileName, IReadOnlyList<string> Arguments, TimeSpan Timeout, bool HadStderrCallback)> Calls { get; } = [];
+    public List<(string FileName, IReadOnlyList<string> Arguments, TimeSpan Timeout, bool HadStderrCallback, IReadOnlyDictionary<string, string?>? Environment)> Calls { get; } = [];
 
-    public ToolRun Run(string fileName, IReadOnlyList<string> arguments, TimeSpan timeout, Action<string>? standardErrorLine = null, CancellationToken cancellationToken = default)
+    public ToolRun Run(string fileName, IReadOnlyList<string> arguments, TimeSpan timeout, ToolRunOptions? options = null, CancellationToken cancellationToken = default)
     {
-        Calls.Add((fileName, [.. arguments], timeout, standardErrorLine is not null));
+        var standardErrorLine = options?.StandardErrorLine;
+        Calls.Add((fileName, [.. arguments], timeout, standardErrorLine is not null, options?.Environment));
         if (cancellationToken.IsCancellationRequested)
         {
             return ToolRun.Cancelled;

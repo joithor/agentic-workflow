@@ -8053,6 +8053,7 @@ static Aw.Sindri.Core.Onyx.OnyxConfig.RenderEnv(string! template, Aw.Sindri.Core
 static Aw.Sindri.Core.Onyx.OnyxConfig.RenderOverride(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeService!>! services, Aw.Sindri.Core.Onyx.EnvSettings! settings, Aw.Sindri.Core.Onyx.OnyxPins! pins, string! platform) -> Aw.Kernel.Result<string!>!
 static Aw.Sindri.Core.Onyx.OnyxConfig.ActiveImages(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeService!>! services, Aw.Sindri.Core.Onyx.EnvSettings! settings, Aw.Sindri.Core.Onyx.OnyxPins! pins, string! platform, System.Collections.Generic.IReadOnlyList<string!>! enabledProfiles) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!
 static Aw.Sindri.Core.Onyx.OnyxConfig.EnabledProfiles(string? envText) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Onyx.OnyxConfig.EnvKeys.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Sindri.Core.Onyx.OnyxPaths.For(string! sindriHome) -> Aw.Sindri.Core.Onyx.OnyxPaths!
 static Aw.Sindri.Core.Onyx.OnyxPaths.operator !=(Aw.Sindri.Core.Onyx.OnyxPaths? left, Aw.Sindri.Core.Onyx.OnyxPaths? right) -> bool
 static Aw.Sindri.Core.Onyx.OnyxPaths.operator ==(Aw.Sindri.Core.Onyx.OnyxPaths? left, Aw.Sindri.Core.Onyx.OnyxPaths? right) -> bool
@@ -8140,6 +8141,7 @@ static Aw.Sindri.Core.Onyx.ComposeContainer.operator !=(Aw.Sindri.Core.Onyx.Comp
 static Aw.Sindri.Core.Onyx.ComposeContainer.operator ==(Aw.Sindri.Core.Onyx.ComposeContainer? left, Aw.Sindri.Core.Onyx.ComposeContainer? right) -> bool
 static Aw.Sindri.Core.Onyx.ComposeProject.operator !=(Aw.Sindri.Core.Onyx.ComposeProject? left, Aw.Sindri.Core.Onyx.ComposeProject? right) -> bool
 static Aw.Sindri.Core.Onyx.ComposeProject.operator ==(Aw.Sindri.Core.Onyx.ComposeProject? left, Aw.Sindri.Core.Onyx.ComposeProject? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposeProject.StrippedVariables.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Sindri.Core.Onyx.ComposePublisher.operator !=(Aw.Sindri.Core.Onyx.ComposePublisher? left, Aw.Sindri.Core.Onyx.ComposePublisher? right) -> bool
 static Aw.Sindri.Core.Onyx.ComposePublisher.operator ==(Aw.Sindri.Core.Onyx.ComposePublisher? left, Aw.Sindri.Core.Onyx.ComposePublisher? right) -> bool
 static Aw.Sindri.Core.Onyx.ComposePublishedPort.operator !=(Aw.Sindri.Core.Onyx.ComposePublishedPort? left, Aw.Sindri.Core.Onyx.ComposePublishedPort? right) -> bool

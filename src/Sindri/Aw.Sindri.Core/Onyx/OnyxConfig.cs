@@ -29,6 +29,9 @@ public static class OnyxConfig
 
     private const string SecretKey = "USER_AUTH_SECRET";
 
+    /// <summary>Gets the six keys Sindri sets in the .env.</summary>
+    public static IReadOnlyList<string> EnvKeys { get; } = ["IMAGE_TAG", "DISABLE_TELEMETRY", "AUTH_TYPE", SecretKey, "INDEXING_MODEL_SERVER_HOST", "HOST_PORT"];
+
     // Services the override gives a profile (replacing the compose file's), so compose doesn't start them unless that profile is enabled.
     private static readonly Dictionary<string, string> _profiledByOverride = new(StringComparer.Ordinal) { ["code-interpreter"] = "code-interpreter", ["indexing_model_server"] = "indexing-model-server" };
 

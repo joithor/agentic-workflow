@@ -61,7 +61,7 @@ public abstract class ToolRunnerContract
         var seen = new List<string>();
         var expected = new ToolRun(ToolOutcome.Exited, 0, "");
 
-        var run = Create(expected, ["a", "b"]).Run("sh", ["-c", "echo a >&2; echo b >&2"], TimeSpan.FromSeconds(30), seen.Add, TestContext.Current.CancellationToken);
+        var run = Create(expected, ["a", "b"]).Run("sh", ["-c", "echo a >&2; echo b >&2"], TimeSpan.FromSeconds(30), new ToolRunOptions(seen.Add), TestContext.Current.CancellationToken);
 
         Expect.Equal(expected, run);
         Expect.Sequence(["a", "b"], seen);

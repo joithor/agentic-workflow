@@ -16,13 +16,16 @@ internal sealed partial class DockerCliRuntime
     private static readonly TimeSpan _pullTimeout = TimeSpan.FromMinutes(45);
     private static readonly TimeSpan _upTimeout = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan _shortTimeout = TimeSpan.FromSeconds(30);
+
+    // Compose reads its own COMPOSE_* variables and any variable that is also a key of the .env from the shell before the .env, so the child gets none of them: the rendered .env is authoritative.
+    private static readonly IReadOnlyDictionary<string, string?> _composeEnvironment = ComposeProject.StrippedVariables.ToDictionary(static name => name, static _ => (string?)null, StringComparer.Ordinal);
     private static readonly JsonSerializerOptions _wire = AwJson.CreateOptions(ComposeWireJsonContext.Default);
 
     /// <inheritdoc />
     public Result<string> ServerPlatform(CancellationToken cancellationToken)
     {
         var tail = new Tail();
-        var run = runner.Run("docker", ["version", "--format", "{{.Server.Os}}/{{.Server.Arch}}"], _timeout, tail.Add, cancellationToken);
+        var run = runner.Run("docker", ["version", "--format", "{{.Server.Os}}/{{.Server.Arch}}"], _timeout, new ToolRunOptions(tail.Add), cancellationToken);
         if (Failed(run, tail, new Call("version", _timeout), cancellationToken) is { } error)
         {
             return error;
@@ -77,7 +80,7 @@ internal sealed partial class DockerCliRuntime
         }
 
         var tail = new Tail();
-        var run = runner.Run("docker", ["image", "inspect", "--format", "{{json .RepoDigests}}", image], _shortTimeout, tail.Add, cancellationToken);
+        var run = runner.Run("docker", ["image", "inspect", "--format", "{{json .RepoDigests}}", image], _shortTimeout, new ToolRunOptions(tail.Add), cancellationToken);
         if (run is { Outcome: ToolOutcome.Exited, ExitCode: not 0 } && !tail.DaemonUnreachable)
         {
             return Results.Success<IReadOnlyList<string>>([]);   // `No such image`: not pulled yet
@@ -98,11 +101,13 @@ internal sealed partial class DockerCliRuntime
     {
         string[] arguments = ["compose", "-p", ComposeProject.Name, "-f", project.ComposeFile, "-f", project.OverrideFile, "--env-file", project.EnvFile, .. verb];
         var tail = new Tail();
-        var run = runner.Run("docker", arguments, call.Timeout, line =>
-        {
-            tail.Add(line);
-            progress?.Invoke(line);
-        }, cancellationToken);
+        var run = runner.Run("docker", arguments, call.Timeout, new ToolRunOptions(
+            line =>
+            {
+                tail.Add(line);
+                progress?.Invoke(line);
+            },
+            _composeEnvironment), cancellationToken);
         return Failed(run, tail, call, cancellationToken) is { } error ? error : run.Output;
     }
 

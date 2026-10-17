@@ -7,7 +7,7 @@ namespace Aw.Sindri.Infrastructure.Processes;
 internal sealed class ProcessToolRunner : IToolRunner
 {
     /// <inheritdoc />
-    public ToolRun Run(string fileName, IReadOnlyList<string> arguments, TimeSpan timeout, Action<string>? standardErrorLine = null, CancellationToken cancellationToken = default)
+    public ToolRun Run(string fileName, IReadOnlyList<string> arguments, TimeSpan timeout, ToolRunOptions? options = null, CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
         {
@@ -21,6 +21,7 @@ internal sealed class ProcessToolRunner : IToolRunner
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
+        ApplyEnvironment(start, options?.Environment);
         Process? process;
         try
         {
@@ -38,7 +39,27 @@ internal sealed class ProcessToolRunner : IToolRunner
 
         using (process)
         {
-            return Wait(process, timeout, standardErrorLine, cancellationToken);
+            return Wait(process, timeout, options?.StandardErrorLine, cancellationToken);
+        }
+    }
+
+    private static void ApplyEnvironment(ProcessStartInfo start, IReadOnlyDictionary<string, string?>? changes)
+    {
+        if (changes is null)
+        {
+            return;
+        }
+
+        foreach (var (name, value) in changes)
+        {
+            if (value is null)
+            {
+                _ = start.Environment.Remove(name);
+            }
+            else
+            {
+                start.Environment[name] = value;
+            }
         }
     }
 
