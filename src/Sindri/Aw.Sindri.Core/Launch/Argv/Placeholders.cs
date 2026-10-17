@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using Aw.Kernel;
 
-namespace Aw.Sindri.Core.Launch;
+namespace Aw.Sindri.Core.Launch.Argv;
 
 /// <summary>Expands an argv template over the closed placeholder set (launcher spec section 4). There is no shell: the result is an argument list.</summary>
 public static partial class Placeholders

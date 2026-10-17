@@ -9368,66 +9368,66 @@ Aw.Sindri.Core.Launch.AgentEntry.SessionIdMode.get -> Aw.Sindri.Core.Launch.Sess
 Aw.Sindri.Core.Launch.AgentEntry.SessionIdMode.init -> void
 Aw.Sindri.Core.Launch.AgentEntry.SessionIdPattern.get -> string?
 Aw.Sindri.Core.Launch.AgentEntry.SessionIdPattern.init -> void
-Aw.Sindri.Core.Launch.ArgvBuilder
-Aw.Sindri.Core.Launch.ArgvInputs
-Aw.Sindri.Core.Launch.ArgvInputs.ArgvInputs(Aw.Sindri.Core.Ids.ItemId Item, string! RepoPath, string! SessionName, string! Seed, Aw.Sindri.Core.Sessions.SessionId? SessionId = null, string? McpConfigPath = null, Aw.Sindri.Core.Launch.StepArgs? Step = null) -> void
-Aw.Sindri.Core.Launch.ArgvInputs.<Clone>$() -> Aw.Sindri.Core.Launch.ArgvInputs!
-Aw.Sindri.Core.Launch.ArgvInputs.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Item, out string! RepoPath, out string! SessionName, out string! Seed, out Aw.Sindri.Core.Sessions.SessionId? SessionId, out string? McpConfigPath, out Aw.Sindri.Core.Launch.StepArgs? Step) -> void
-Aw.Sindri.Core.Launch.ArgvInputs.Equals(Aw.Sindri.Core.Launch.ArgvInputs? other) -> bool
-Aw.Sindri.Core.Launch.ArgvInputs.Item.get -> Aw.Sindri.Core.Ids.ItemId
-Aw.Sindri.Core.Launch.ArgvInputs.Item.init -> void
-Aw.Sindri.Core.Launch.ArgvInputs.McpConfigPath.get -> string?
-Aw.Sindri.Core.Launch.ArgvInputs.McpConfigPath.init -> void
-Aw.Sindri.Core.Launch.ArgvInputs.RepoPath.get -> string!
-Aw.Sindri.Core.Launch.ArgvInputs.RepoPath.init -> void
-Aw.Sindri.Core.Launch.ArgvInputs.Seed.get -> string!
-Aw.Sindri.Core.Launch.ArgvInputs.Seed.init -> void
-Aw.Sindri.Core.Launch.ArgvInputs.SessionId.get -> Aw.Sindri.Core.Sessions.SessionId?
-Aw.Sindri.Core.Launch.ArgvInputs.SessionId.init -> void
-Aw.Sindri.Core.Launch.ArgvInputs.SessionName.get -> string!
-Aw.Sindri.Core.Launch.ArgvInputs.SessionName.init -> void
-Aw.Sindri.Core.Launch.ArgvInputs.Step.get -> Aw.Sindri.Core.Launch.StepArgs?
-Aw.Sindri.Core.Launch.ArgvInputs.Step.init -> void
-Aw.Sindri.Core.Launch.Placeholders
-Aw.Sindri.Core.Launch.PlaceholderValues
-Aw.Sindri.Core.Launch.PlaceholderValues.Bin.get -> string!
-Aw.Sindri.Core.Launch.PlaceholderValues.Bin.init -> void
-Aw.Sindri.Core.Launch.PlaceholderValues.<Clone>$() -> Aw.Sindri.Core.Launch.PlaceholderValues!
-Aw.Sindri.Core.Launch.PlaceholderValues.Cmd.get -> System.Collections.Generic.IReadOnlyList<string!>?
-Aw.Sindri.Core.Launch.PlaceholderValues.Cmd.init -> void
-Aw.Sindri.Core.Launch.PlaceholderValues.Cwd.get -> string!
-Aw.Sindri.Core.Launch.PlaceholderValues.Cwd.init -> void
-Aw.Sindri.Core.Launch.PlaceholderValues.Deconstruct(out string! Bin, out string! Cwd, out string! Title, out string! Name, out string! Seed, out Aw.Sindri.Core.Sessions.SessionId? SessionId, out string? McpConfig, out System.Collections.Generic.IReadOnlyList<string!>? Cmd) -> void
-Aw.Sindri.Core.Launch.PlaceholderValues.Equals(Aw.Sindri.Core.Launch.PlaceholderValues? other) -> bool
-Aw.Sindri.Core.Launch.PlaceholderValues.McpConfig.get -> string?
-Aw.Sindri.Core.Launch.PlaceholderValues.McpConfig.init -> void
-Aw.Sindri.Core.Launch.PlaceholderValues.Name.get -> string!
-Aw.Sindri.Core.Launch.PlaceholderValues.Name.init -> void
-Aw.Sindri.Core.Launch.PlaceholderValues.PlaceholderValues(string! Bin, string! Cwd, string! Title, string! Name, string! Seed, Aw.Sindri.Core.Sessions.SessionId? SessionId = null, string? McpConfig = null, System.Collections.Generic.IReadOnlyList<string!>? Cmd = null) -> void
-Aw.Sindri.Core.Launch.PlaceholderValues.Seed.get -> string!
-Aw.Sindri.Core.Launch.PlaceholderValues.Seed.init -> void
-Aw.Sindri.Core.Launch.PlaceholderValues.SessionId.get -> Aw.Sindri.Core.Sessions.SessionId?
-Aw.Sindri.Core.Launch.PlaceholderValues.SessionId.init -> void
-Aw.Sindri.Core.Launch.PlaceholderValues.Title.get -> string!
-Aw.Sindri.Core.Launch.PlaceholderValues.Title.init -> void
+Aw.Sindri.Core.Launch.Argv.ArgvBuilder
+Aw.Sindri.Core.Launch.Argv.ArgvInputs
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.ArgvInputs(Aw.Sindri.Core.Ids.ItemId Item, string! RepoPath, string! SessionName, string! Seed, Aw.Sindri.Core.Sessions.SessionId? SessionId = null, string? McpConfigPath = null, Aw.Sindri.Core.Launch.StepArgs? Step = null) -> void
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.<Clone>$() -> Aw.Sindri.Core.Launch.Argv.ArgvInputs!
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Item, out string! RepoPath, out string! SessionName, out string! Seed, out Aw.Sindri.Core.Sessions.SessionId? SessionId, out string? McpConfigPath, out Aw.Sindri.Core.Launch.StepArgs? Step) -> void
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.Equals(Aw.Sindri.Core.Launch.Argv.ArgvInputs? other) -> bool
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.Item.get -> Aw.Sindri.Core.Ids.ItemId
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.Item.init -> void
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.McpConfigPath.get -> string?
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.McpConfigPath.init -> void
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.RepoPath.get -> string!
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.RepoPath.init -> void
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.Seed.get -> string!
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.Seed.init -> void
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.SessionId.get -> Aw.Sindri.Core.Sessions.SessionId?
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.SessionId.init -> void
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.SessionName.get -> string!
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.SessionName.init -> void
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.Step.get -> Aw.Sindri.Core.Launch.StepArgs?
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.Step.init -> void
+Aw.Sindri.Core.Launch.Argv.Placeholders
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.Bin.get -> string!
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.Bin.init -> void
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.<Clone>$() -> Aw.Sindri.Core.Launch.Argv.PlaceholderValues!
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.Cmd.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.Cmd.init -> void
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.Cwd.get -> string!
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.Cwd.init -> void
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.Deconstruct(out string! Bin, out string! Cwd, out string! Title, out string! Name, out string! Seed, out Aw.Sindri.Core.Sessions.SessionId? SessionId, out string? McpConfig, out System.Collections.Generic.IReadOnlyList<string!>? Cmd) -> void
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.Equals(Aw.Sindri.Core.Launch.Argv.PlaceholderValues? other) -> bool
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.McpConfig.get -> string?
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.McpConfig.init -> void
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.Name.get -> string!
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.Name.init -> void
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.PlaceholderValues(string! Bin, string! Cwd, string! Title, string! Name, string! Seed, Aw.Sindri.Core.Sessions.SessionId? SessionId = null, string? McpConfig = null, System.Collections.Generic.IReadOnlyList<string!>? Cmd = null) -> void
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.Seed.get -> string!
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.Seed.init -> void
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.SessionId.get -> Aw.Sindri.Core.Sessions.SessionId?
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.SessionId.init -> void
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.Title.get -> string!
+Aw.Sindri.Core.Launch.Argv.PlaceholderValues.Title.init -> void
 Aw.Sindri.Core.Launch.SessionIdMode
 Aw.Sindri.Core.Launch.SessionIdMode.None = 0 -> Aw.Sindri.Core.Launch.SessionIdMode
 Aw.Sindri.Core.Launch.SessionIdMode.PreChosenUuid = 1 -> Aw.Sindri.Core.Launch.SessionIdMode
 Aw.Sindri.Core.Launch.SessionIdMode.Reported = 2 -> Aw.Sindri.Core.Launch.SessionIdMode
-Aw.Sindri.Core.Launch.SessionIdRules
-override Aw.Sindri.Core.Launch.ArgvInputs.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Launch.ArgvInputs.GetHashCode() -> int
-override Aw.Sindri.Core.Launch.ArgvInputs.ToString() -> string!
-override Aw.Sindri.Core.Launch.PlaceholderValues.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Launch.PlaceholderValues.GetHashCode() -> int
-override Aw.Sindri.Core.Launch.PlaceholderValues.ToString() -> string!
-static Aw.Sindri.Core.Launch.ArgvBuilder.Build(Aw.Sindri.Core.Launch.AgentEntry! entry, Aw.Sindri.Core.Launch.LaunchMode mode, Aw.Sindri.Core.Launch.ArgvInputs! inputs) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!
-static Aw.Sindri.Core.Launch.ArgvBuilder.Seed(Aw.Sindri.Core.Ids.ItemId item) -> string!
-static Aw.Sindri.Core.Launch.ArgvInputs.operator !=(Aw.Sindri.Core.Launch.ArgvInputs? left, Aw.Sindri.Core.Launch.ArgvInputs? right) -> bool
-static Aw.Sindri.Core.Launch.ArgvInputs.operator ==(Aw.Sindri.Core.Launch.ArgvInputs? left, Aw.Sindri.Core.Launch.ArgvInputs? right) -> bool
-static Aw.Sindri.Core.Launch.Placeholders.Expand(System.Collections.Generic.IReadOnlyList<string!>! template, Aw.Sindri.Core.Launch.PlaceholderValues! values) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!
-static Aw.Sindri.Core.Launch.PlaceholderValues.operator !=(Aw.Sindri.Core.Launch.PlaceholderValues? left, Aw.Sindri.Core.Launch.PlaceholderValues? right) -> bool
-static Aw.Sindri.Core.Launch.PlaceholderValues.operator ==(Aw.Sindri.Core.Launch.PlaceholderValues? left, Aw.Sindri.Core.Launch.PlaceholderValues? right) -> bool
-static Aw.Sindri.Core.Launch.SessionIdRules.IsUsable(Aw.Sindri.Core.Launch.AgentEntry! entry, Aw.Sindri.Core.Sessions.SessionId? id) -> bool
-static Aw.Sindri.Core.Launch.SessionIdRules.Parse(string? text) -> Aw.Sindri.Core.Sessions.SessionId?
-static Aw.Sindri.Core.Launch.Placeholders.IsAbsolute(string! path) -> bool
+Aw.Sindri.Core.Launch.Argv.SessionIdRules
+override Aw.Sindri.Core.Launch.Argv.ArgvInputs.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launch.Argv.ArgvInputs.GetHashCode() -> int
+override Aw.Sindri.Core.Launch.Argv.ArgvInputs.ToString() -> string!
+override Aw.Sindri.Core.Launch.Argv.PlaceholderValues.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launch.Argv.PlaceholderValues.GetHashCode() -> int
+override Aw.Sindri.Core.Launch.Argv.PlaceholderValues.ToString() -> string!
+static Aw.Sindri.Core.Launch.Argv.ArgvBuilder.Build(Aw.Sindri.Core.Launch.AgentEntry! entry, Aw.Sindri.Core.Launch.LaunchMode mode, Aw.Sindri.Core.Launch.Argv.ArgvInputs! inputs) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!
+static Aw.Sindri.Core.Launch.Argv.ArgvBuilder.Seed(Aw.Sindri.Core.Ids.ItemId item) -> string!
+static Aw.Sindri.Core.Launch.Argv.ArgvInputs.operator !=(Aw.Sindri.Core.Launch.Argv.ArgvInputs? left, Aw.Sindri.Core.Launch.Argv.ArgvInputs? right) -> bool
+static Aw.Sindri.Core.Launch.Argv.ArgvInputs.operator ==(Aw.Sindri.Core.Launch.Argv.ArgvInputs? left, Aw.Sindri.Core.Launch.Argv.ArgvInputs? right) -> bool
+static Aw.Sindri.Core.Launch.Argv.Placeholders.Expand(System.Collections.Generic.IReadOnlyList<string!>! template, Aw.Sindri.Core.Launch.Argv.PlaceholderValues! values) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!
+static Aw.Sindri.Core.Launch.Argv.PlaceholderValues.operator !=(Aw.Sindri.Core.Launch.Argv.PlaceholderValues? left, Aw.Sindri.Core.Launch.Argv.PlaceholderValues? right) -> bool
+static Aw.Sindri.Core.Launch.Argv.PlaceholderValues.operator ==(Aw.Sindri.Core.Launch.Argv.PlaceholderValues? left, Aw.Sindri.Core.Launch.Argv.PlaceholderValues? right) -> bool
+static Aw.Sindri.Core.Launch.Argv.SessionIdRules.IsUsable(Aw.Sindri.Core.Launch.AgentEntry! entry, Aw.Sindri.Core.Sessions.SessionId? id) -> bool
+static Aw.Sindri.Core.Launch.Argv.SessionIdRules.Parse(string? text) -> Aw.Sindri.Core.Sessions.SessionId?
+static Aw.Sindri.Core.Launch.Argv.Placeholders.IsAbsolute(string! path) -> bool

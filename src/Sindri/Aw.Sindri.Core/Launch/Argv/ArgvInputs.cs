@@ -1,6 +1,6 @@
 using Aw.Sindri.Core.Ids;
 
-namespace Aw.Sindri.Core.Launch;
+namespace Aw.Sindri.Core.Launch.Argv;
 
 /// <summary>
 /// What <see cref="ArgvBuilder.Build"/> expands an entry's templates with (launcher spec section 3): ids, the repo path, the session name,

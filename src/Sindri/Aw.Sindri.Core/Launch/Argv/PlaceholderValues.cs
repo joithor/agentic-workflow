@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Core.Launch;
+namespace Aw.Sindri.Core.Launch.Argv;
 
 /// <summary>The values of the closed placeholder set (launcher spec section 4) for one expansion; a null value is a placeholder the caller has none for.</summary>
 /// <param name="Bin">'{bin}'.</param>

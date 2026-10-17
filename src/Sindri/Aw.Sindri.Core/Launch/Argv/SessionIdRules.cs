@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using Aw.Sindri.Core.Sessions;
 
-namespace Aw.Sindri.Core.Launch;
+namespace Aw.Sindri.Core.Launch.Argv;
 
 /// <summary>Which session ids are usable (launcher L-9): the generic bound (<see cref="SessionId"/> itself), then the entry's own pattern.</summary>
 public static class SessionIdRules

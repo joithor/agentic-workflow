@@ -1,7 +1,7 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Ids;
 
-namespace Aw.Sindri.Core.Launch;
+namespace Aw.Sindri.Core.Launch.Argv;
 
 /// <summary>Builds the argv an entry launches with (launcher spec section 3, 'BuildArgv'). Pure.</summary>
 public static class ArgvBuilder
