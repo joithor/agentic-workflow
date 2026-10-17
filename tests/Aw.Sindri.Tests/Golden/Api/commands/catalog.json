@@ -369,6 +369,32 @@
       "shortcut": null
     },
     {
+      "action": "LaunchInit",
+      "class": "local",
+      "allowedCallers": [],
+      "terminal": false,
+      "method": null,
+      "route": null,
+      "cli": "sindri launch init [--viewer <name>] [--force] [--stdout]",
+      "ui": "cli-only:local",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
+      "action": "LaunchShow",
+      "class": "local",
+      "allowedCallers": [],
+      "terminal": false,
+      "method": null,
+      "route": null,
+      "cli": "sindri launch show [<id>] [--json]",
+      "ui": "cli-only:local",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
       "action": "OpenItem:attach",
       "class": "desk",
       "allowedCallers": [

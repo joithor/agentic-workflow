@@ -1,7 +1,7 @@
-using Microsoft.Extensions.Time.Testing;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Testing.Launch;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.Launch.Viewers;
 

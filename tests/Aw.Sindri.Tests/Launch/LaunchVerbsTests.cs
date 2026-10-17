@@ -78,7 +78,7 @@ public sealed class LaunchVerbsTests : IDisposable
 
         Expect.Equal(0, code);
         Expect.Equal("""{"schema":1}""" + Environment.NewLine, _out.ToString());
-        Expect.Equal(new LaunchInitRequest("kitty", Force: true, ToStdout: true), setup.Asked!);
+        Expect.Equal(new LaunchInitRequest("kitty", Force: true, ToStdout: true), setup.Asked);
     }
 
     [Fact]

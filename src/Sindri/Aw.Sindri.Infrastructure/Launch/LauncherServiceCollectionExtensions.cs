@@ -13,7 +13,7 @@ internal static class LauncherServiceCollectionExtensions
         var builtinHashes = LauncherConfigFile.Read(LauncherStartup.Builtins(), user: null).Value.Agents.ToDictionary(static a => a.Id.Value, static a => a.ArgvHash, StringComparer.Ordinal);
         string? BuiltinHash(AgentId id) => builtinHashes.GetValueOrDefault(id.Value);
         return services
-            .AddSingleton<TmuxSessionHost>(static _ => new TmuxSessionHost(new TmuxHostOptions()))
+            .AddSingleton(static _ => new TmuxSessionHost(new TmuxHostOptions()))
             .AddSingleton<NoSessionHost>()
             .AddSingleton<ITerminalViewer>(sp => Viewer(sp, environment))
             .AddSingleton<ILauncher>(sp => new Launcher(Parts(sp, environment, settings, BuiltinHash)))
