@@ -71,6 +71,33 @@ public sealed class OnyxUpTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_config_repair_that_rewrote_a_file_restarts_the_stack_so_changed_services_are_recreated()
+    {
+        var rig = new OnyxUpRig();
+        _ = (await rig.Up(Token)).Value;
+        rig.Workspace.Files[rig.Paths.Env] = rig.Workspace.Files[rig.Paths.Env].Replace("DISABLE_TELEMETRY=true", "DISABLE_TELEMETRY=false", StringComparison.Ordinal);
+        rig.Runtime.Calls.Clear();
+
+        var second = (await rig.Up(Token)).Value;
+
+        Assert.Contains("DISABLE_TELEMETRY=true", rig.Workspace.Files[rig.Paths.Env], StringComparison.Ordinal);
+        Assert.Contains("Up", rig.Runtime.Calls, StringComparer.Ordinal);
+        Assert.Equal(["config", "start"], second.Ran, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_rerun_that_rewrote_nothing_does_not_touch_the_running_stack()
+    {
+        var rig = new OnyxUpRig();
+        _ = (await rig.Up(Token)).Value;
+        rig.Runtime.Calls.Clear();
+
+        _ = (await rig.Up(Token)).Value;
+
+        Assert.DoesNotContain("Up", rig.Runtime.Calls, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_fail_row_blocks_before_any_fetch()
     {
         var rig = new OnyxUpRig();
