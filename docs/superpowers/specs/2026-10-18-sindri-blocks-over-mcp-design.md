@@ -55,7 +55,8 @@ The names are the owner's literal ones. The `sindri_` prefix is choice C2.
   - A longer block answers at once with `outcome: "running"` and a `jobId`, which the session polls with `sindri_job`.
   - Which shape a block gets is fixed by its descriptor, not chosen per call.
 - **Idempotent per `callId`.** The session may pass its own `callId` (a UUID). A retry with the same id returns the
-  first answer and runs nothing again. With no `callId`, the server makes one.
+  first answer and runs nothing again. With no `callId`, the server makes one. The engine keys the call as the
+  Temporal Update id `call:<run>:<callId>` (§B.2).
 - **Results are fenced.** Any string in `result` or `error` that isn't Sindri's own wording is fenced, and its object
   carries `"trust": "untrusted"`, as the job result's strings are since P8 (`sindri:job`). The new fence label is
   `sindri:call`.
@@ -98,6 +99,9 @@ record against.
 - Two command-catalog rows: `ListRunTools` (query) and `ExecuteBlockCall` (issue, caller `session` only; the CLI and
   the human have no verb in v1). The UI lane's pins change: labels, row count, copy blocks.
 - API goldens for both routes, and a tools/list golden showing the two tools after `sindri_job`.
+- The step report's request (`CompleteStep`, `sindri workflow complete --run`) gains the optional `calls: [<callId>,
+  ...]` of §B.3. The API binds and passes it through, and the engine validates it. Its JSON, the CLI's `--call <id>`
+  (repeatable) and the request golden change with it.
 - The app shows calls in the Step's evidence list (§B.3) with no new screen. The UI lane gets one row there.
 
 ### A.5 Proof
@@ -242,7 +246,7 @@ Contract first, so the two lanes build in parallel.
 
 | Phase | Lane | Holds | Waits on |
 |---|---|---|---|
-| **BM-0** | engine | The contract, red: the `Callable` field; the `tools:` recipe field with the RCP-TOOL-001..003 fixtures; the request and response records for `ListRunTools` and `ExecuteBlockCall`, with stub services; the `step.tool-called` event record; the typed refusals | P8 (the agent runtime, ILauncher's per-launch MCP config) and DT-J2 (`MaxDuration`) merged |
+| **BM-0** | engine | The contract, red: the `Callable` field; the `tools:` recipe field with the RCP-TOOL-001..003 fixtures; the request and response records for `ListRunTools` and `ExecuteBlockCall`, with stub services; the `step.tool-called` event record; the typed refusals | P8 (the agent runtime), API P10a (#295: ILauncher's per-launch MCP config, where `X-Sindri-Run` is set) and DT-J2 (`MaxDuration`) merged |
 | **BM-1** | engine | The validator rows; the catalog test; `list_tools` computed from the recipe, the build and the policy; the `block-call` Update with its validator, `RunBlockCall` and the evidence event; the content-store body; the budget key; `calls:` on the step report; the events line. Tests: unit (pure filtering and refusals), integration (an Update through the time-skipping server, replay after a restart mid-call, cancel on takeover) | BM-0 |
 | **BA-1** | api | §A: the two MCP tools, the routes, the header, the refusal recording (C4), the catalog rows, the goldens. Built against BM-0's records and stubs, so it starts the day BM-0 lands | BM-0 |
 | **BA-2** | api, with engine | §A.5's proof end to end, with a real launched Step session | BM-1, BA-1 |
