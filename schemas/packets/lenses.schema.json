@@ -1,0 +1,354 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/packets/lenses.schema.json",
+  "title": "Packet lenses file (schemaVersion 1)",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "code": {
+      "type": "object",
+      "properties": {
+        "anchors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "depth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 32
+        },
+        "hops": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "state",
+              "flow",
+              "dependency",
+              "component"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "mapVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "foundCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "band": {
+                "enum": [
+                  "code",
+                  "product",
+                  "intent"
+                ]
+              },
+              "lensItem": {
+                "type": "string",
+                "pattern": "^L-(code|product|related|history)-[1-9][0-9]*$"
+              },
+              "trust": {
+                "enum": [
+                  "untrusted",
+                  "owner"
+                ]
+              }
+            },
+            "required": [
+              "key",
+              "kind",
+              "label",
+              "band",
+              "lensItem",
+              "trust"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string"
+              },
+              "to": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "provenance": {
+                "type": "string"
+              },
+              "confirmed": {
+                "type": "boolean"
+              },
+              "trust": {
+                "enum": [
+                  "untrusted",
+                  "owner"
+                ]
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "type",
+              "provenance",
+              "confirmed",
+              "trust"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "lensItem": {
+                "type": "string",
+                "pattern": "^L-(code|product|related|history)-[1-9][0-9]*$"
+              },
+              "kind": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "citations": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "trust": {
+                "enum": [
+                  "untrusted",
+                  "owner"
+                ]
+              }
+            },
+            "required": [
+              "lensItem",
+              "kind",
+              "label",
+              "citations",
+              "trust"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "truncated": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "code",
+              "product",
+              "intent"
+            ]
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "anchors",
+        "depth",
+        "hops",
+        "mapVersion",
+        "foundCount",
+        "nodes",
+        "edges",
+        "items",
+        "truncated"
+      ],
+      "additionalProperties": false
+    },
+    "product": {
+      "type": "object",
+      "properties": {
+        "anchors": {
+          "$ref": "#/properties/code/properties/anchors"
+        },
+        "depth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 32
+        },
+        "hops": {
+          "$ref": "#/properties/code/properties/hops",
+          "uniqueItems": true
+        },
+        "mapVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "foundCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "nodes": {
+          "$ref": "#/properties/code/properties/nodes"
+        },
+        "edges": {
+          "$ref": "#/properties/code/properties/edges"
+        },
+        "items": {
+          "$ref": "#/properties/code/properties/items"
+        },
+        "truncated": {
+          "$ref": "#/properties/code/properties/truncated",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "anchors",
+        "depth",
+        "hops",
+        "mapVersion",
+        "foundCount",
+        "nodes",
+        "edges",
+        "items",
+        "truncated"
+      ],
+      "additionalProperties": false
+    },
+    "related": {
+      "type": "object",
+      "properties": {
+        "anchors": {
+          "$ref": "#/properties/code/properties/anchors"
+        },
+        "depth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 32
+        },
+        "hops": {
+          "$ref": "#/properties/code/properties/hops",
+          "uniqueItems": true
+        },
+        "mapVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "foundCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "nodes": {
+          "$ref": "#/properties/code/properties/nodes"
+        },
+        "edges": {
+          "$ref": "#/properties/code/properties/edges"
+        },
+        "items": {
+          "$ref": "#/properties/code/properties/items"
+        },
+        "truncated": {
+          "$ref": "#/properties/code/properties/truncated",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "anchors",
+        "depth",
+        "hops",
+        "mapVersion",
+        "foundCount",
+        "nodes",
+        "edges",
+        "items",
+        "truncated"
+      ],
+      "additionalProperties": false
+    },
+    "history": {
+      "type": "object",
+      "properties": {
+        "anchors": {
+          "$ref": "#/properties/code/properties/anchors"
+        },
+        "depth": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 32
+        },
+        "hops": {
+          "$ref": "#/properties/code/properties/hops",
+          "uniqueItems": true
+        },
+        "mapVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "foundCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "nodes": {
+          "$ref": "#/properties/code/properties/nodes"
+        },
+        "edges": {
+          "$ref": "#/properties/code/properties/edges"
+        },
+        "items": {
+          "$ref": "#/properties/code/properties/items"
+        },
+        "truncated": {
+          "$ref": "#/properties/code/properties/truncated",
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "anchors",
+        "depth",
+        "hops",
+        "mapVersion",
+        "foundCount",
+        "nodes",
+        "edges",
+        "items",
+        "truncated"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "code",
+    "product",
+    "related",
+    "history"
+  ],
+  "additionalProperties": false
+}

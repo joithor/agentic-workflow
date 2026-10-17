@@ -4,6 +4,7 @@ using Aw.Meta.Core.Commands;
 using Aw.Meta.Core.Health;
 using Aw.Meta.Features.Watch;
 using Aw.Meta.Testing;
+using Aw.Meta.Tests.Reserve;
 
 namespace Aw.Meta.Tests.Watch;
 
@@ -15,7 +16,7 @@ public sealed class WatchTests
 
     private WatchService Service() => new(
         _world.Config,
-        new WatchPoller(_world.Repo, _world.Resources, _world.Messages, _world.Values, new WatchSweeper(_world.Config, _world.Sweeper, _world.Values)),
+        new WatchPoller(_world.Repo, _world.Resources, _world.Messages, _world.Values, new WatchSweeper(_world.Config, _world.Sweeper, _world.Values), Worlds.Reservation(_world)),
         _world.Values,
         _world.Delay,
         _world.Clock);
@@ -144,9 +145,122 @@ public sealed class WatchTests
             }
         });
 
-        _ = await Watch(TimeSpan.FromSeconds(480));
+        _ = await Watch(TimeSpan.FromSeconds(600));
 
         Assert.Equal(["DISK LOW", "DISK OK"], _lines.Where(l => l.StartsWith("DISK", StringComparison.Ordinal)), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Low_memory_and_its_recovery_are_reported_once_each()
+    {
+        await _world.Ready();
+        _world.Resources.Resources = new HostResources(64_000_000, 4_000_000, 0, DiskFreeBytes: 80_000_000_000);
+        Script([List(Pr(190, "OPEN", "aaa1111"))], onPoll: poll =>
+        {
+            if (poll == 2)
+            {
+                _world.Resources.Resources = new HostResources(64_000_000, 20_000_000, 0, DiskFreeBytes: 80_000_000_000);
+            }
+        });
+
+        _ = await Watch(TimeSpan.FromSeconds(600));
+
+        Assert.Equal(["MEMORY LOW", "MEMORY OK"], _lines.Where(l => l.StartsWith("MEMORY", StringComparison.Ordinal)), StringComparer.Ordinal);
+        Assert.DoesNotContain(_lines, l => l.StartsWith("DISK", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_re_armed_watch_does_not_announce_a_low_state_the_last_one_reported()
+    {
+        await _world.Ready();
+        _world.Resources.Resources = new HostResources(64_000_000, 4_000_000, 0, DiskFreeBytes: 80_000_000_000);
+        Script([List(Pr(190, "OPEN", "aaa1111"))]);
+
+        _ = await Watch(TimeSpan.FromSeconds(240));
+        var first = _lines.Count(l => l.StartsWith("MEMORY", StringComparison.Ordinal));
+        _lines.Clear();
+        _ = await Watch(TimeSpan.FromSeconds(240));
+
+        Assert.Equal(1, first);
+        Assert.DoesNotContain(_lines, l => l.StartsWith("MEMORY", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_re_armed_watch_reports_the_recovery_of_a_state_the_last_one_reported_low()
+    {
+        await _world.Ready();
+        _ = await _world.Values.Set(KvKeys.WatchResources, "disk=ok mem=low", CancellationToken.None);
+        _world.Resources.Resources = new HostResources(64_000_000, 20_000_000, 0, DiskFreeBytes: 80_000_000_000);
+        Script([List(Pr(190, "OPEN", "aaa1111"))]);
+
+        _ = await Watch(TimeSpan.FromSeconds(240));
+
+        Assert.Equal(["MEMORY OK"], _lines.Where(l => l.StartsWith("MEMORY", StringComparison.Ordinal)), StringComparer.Ordinal);
+        Assert.Equal("disk=ok mem=ok", (await _world.Values.Get(KvKeys.WatchResources, CancellationToken.None)).Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Pull_requests_seen_ending_lower_the_reservation()
+    {
+        await _world.Ready();
+        for (var n = 0; n < 7; n++)
+        {
+            await _world.Receive("m" + n.ToString(CultureInfo.InvariantCulture), "t1-api", string.Create(CultureInfo.InvariantCulture, $"ready #{190 + n} 079c2541"));
+        }
+
+        Script([List(Pr(190, "OPEN", "aaa1111")), List(Pr(190, "OPEN", "aaa1111"), Pr(191, "MERGED", "b"), Pr(192, "CLOSED", "c"), Pr(193, "MERGED", "d"), Pr(194, "CLOSED", "e"), Pr(195, "MERGED", "f"))]);
+
+        _ = await Watch(TimeSpan.FromSeconds(120));
+        var before = _world.Heavy.Reserve;
+        _lines.Clear();
+        _ = await Watch(TimeSpan.FromSeconds(120));
+
+        Assert.Equal(3, before);
+        Assert.Equal(0, _world.Heavy.Reserve);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_poll_goes_on_when_the_reservation_cannot_be_kept()
+    {
+        await _world.Ready();
+        for (var n = 0; n < 3; n++)
+        {
+            await _world.Receive("m" + n.ToString(CultureInfo.InvariantCulture), "t1-api", string.Create(CultureInfo.InvariantCulture, $"ready #{190 + n} 079c2541"));
+        }
+
+        _world.Heavy.FailWrites = true;   // depth 3 wants one slot, so the write is reached
+        Script([List(Pr(190, "OPEN", "aaa1111")), List(Pr(190, "OPEN", "aaa1111"), Pr(191, "OPEN", "bbb2222"))]);
+
+        _ = await Watch(TimeSpan.FromSeconds(240));
+
+        Assert.Equal(0, _world.Heavy.Writes);
+        Assert.Contains(_lines, l => l.Contains("#191", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Nearly_full_swap_counts_as_low_memory_even_with_memory_to_spare()
+    {
+        await _world.Ready();
+        _world.Resources.Resources = new HostResources(64_000_000, 40_000_000, SwapUsedKb: 9_500_000, DiskFreeBytes: 80_000_000_000, SwapTotalKb: 10_000_000);
+        Script([List(Pr(190, "OPEN", "aaa1111"))]);
+
+        _ = await Watch(TimeSpan.FromSeconds(240));
+
+        Assert.Equal(["MEMORY LOW"], _lines.Where(l => l.StartsWith("MEMORY", StringComparison.Ordinal)), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_floors_come_from_the_team_config()
+    {
+        _ = await _world.Config.Save(
+            new Core.Config.TeamConfig("t1", "/work", ["meta", "api"]) { Resources = new Core.Config.ResourcesConfig(DiskFloorGb: 200, MemFloorGb: 40, SwapHighPct: 90) },
+            CancellationToken.None);
+        _world.Resources.Resources = new HostResources(64_000_000, 20_000_000, 0, DiskFreeBytes: 80_000_000_000);
+        Script([List(Pr(190, "OPEN", "aaa1111"))]);
+
+        _ = await Watch(TimeSpan.FromSeconds(240));
+
+        Assert.Equal(["DISK LOW", "MEMORY LOW"], _lines.Where(l => l.StartsWith("DISK", StringComparison.Ordinal) || l.StartsWith("MEMORY", StringComparison.Ordinal)), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

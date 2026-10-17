@@ -27,6 +27,7 @@ internal static class GateRunCommand
             [
                 string.Create(CultureInfo.InvariantCulture, $"gate #{gate.Pr} run {gate.Run}: head {Short(gate.Head)} on main {Short(gate.Main)}; scopes: {(gate.Scopes.Count == 0 ? "none" : string.Join(", ", gate.Scopes))}"),
                 .. gate.Steps.Select(s => string.Concat("  ", s.Verdict == GateVerdict.Pass ? "PASS" : "FAIL", " ", s.Name.PadRight(width), "  ", s.Log)),
+                .. response.Heavy is { } heavy ? [heavy.Line()] : Array.Empty<string>(),
                 string.Create(CultureInfo.InvariantCulture, $"RESULT pr={gate.Pr} {gate.Verdict.ToString().ToUpperInvariant()}"),
             ]);
     }

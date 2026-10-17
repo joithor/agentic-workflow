@@ -31,7 +31,8 @@ internal static class ChoiceSteps
         Rung: null,
         DeskCapable: true,
         OutcomesFrom: "choices",
-        InputsFrom: "facts");
+        InputsFrom: "facts",
+        Runtime: BlockRuntime.Block);   // human-only on the desk (DT spec §8.5); DT-J runs it
 
     /// <summary>'step.desk.choose': the desk twin of a route state ('from'); outcomes are that state's choices, without 'uncertain'.</summary>
     public static BlockDescriptor DeskChoose { get; } = new(
@@ -44,7 +45,9 @@ internal static class ChoiceSteps
         Rung: null,
         DeskCapable: true,
         OutcomesFrom: "from.choices",
-        InputsFrom: "from.facts");
+        InputsFrom: "from.facts",
+        HumanOnly: true,
+        Runtime: BlockRuntime.Desk);
 
     private static OutputSpec Decision => new(FactKey.From("fact:decision"), RequiredOn: [], Every: true, EngineFilled: true);
 }
