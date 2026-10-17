@@ -108,7 +108,7 @@ public static class PacketKinds
         Index,
     ]);
 
-    private static PacketFileSpec Manifest => new(PacketReader.ManifestFile, PacketFileFormat.Json);
+    private static PacketFileSpec Manifest => new(PacketKind.ManifestFile, PacketFileFormat.Json);
 
     private static PacketFileSpec Index => new("index.json", PacketFileFormat.Json, "index");
 

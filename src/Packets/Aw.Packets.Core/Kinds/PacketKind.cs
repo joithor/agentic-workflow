@@ -9,6 +9,9 @@ namespace Aw.Packets.Core.Kinds;
 /// <param name="Files">The files the kind lists; empty for the manifest-driven build kind.</param>
 public sealed record PacketKind(string Name, IReadOnlyList<PacketFileSpec> Files)
 {
+    /// <summary>The manifest's file name (the build kind links its files from it; a line kind lists it among its own).</summary>
+    public const string ManifestFile = "packet.json";
+
     /// <summary>The sub-directories the kind allows beside its files (a proof pack's 'app-run/' and 'evidence/').</summary>
     public IReadOnlyList<PacketLinkedDirectory> Directories { get; init; } = [];
 
@@ -16,5 +19,5 @@ public sealed record PacketKind(string Name, IReadOnlyList<PacketFileSpec> Files
     public bool IsManifestDriven => Files.Count == 0;
 
     /// <summary>True for a line kind: it lists its files, and its 'packet.json' links each of them.</summary>
-    public bool IsLine => Files.Any(static f => string.Equals(f.Name, PacketReader.ManifestFile, StringComparison.Ordinal));
+    public bool IsLine => Files.Any(static f => string.Equals(f.Name, ManifestFile, StringComparison.Ordinal));
 }

@@ -20,5 +20,5 @@ internal static class A
     /// <param name="kind">The kind.</param>
     /// <param name="id">The packet id; the kind's default when null.</param>
     /// <returns>A new builder.</returns>
-    public static LinePacketBuilder LinePacket(Aw.Packets.Core.Kinds.PacketKind kind, string? id = null) => new(kind, id);
+    public static LinePacketBuilder LinePacket(Core.Kinds.PacketKind kind, string? id = null) => new(kind, id);
 }

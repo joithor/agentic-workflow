@@ -1229,3 +1229,4 @@ static readonly Aw.Packets.Core.PacketsErrors.Unreadable -> Aw.Kernel.ErrorDefin
 static readonly Aw.Packets.Core.PacketsErrors.UnsupportedSchema -> Aw.Kernel.ErrorDefinition!
 virtual Aw.Packets.Core.PacketReader.FileReader.Invoke(string! relativePath) -> Aw.Kernel.Result<System.ReadOnlyMemory<byte>?>!
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Id.init -> void
+const Aw.Packets.Core.Kinds.PacketKind.ManifestFile = "packet.json" -> string!

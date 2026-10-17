@@ -303,9 +303,9 @@ public sealed class LineChecksTests
             .With(new TaskBuilder("P2").After("P1").Writing("docs/guide.md").Example("P2-e1", holdout: false, "test").Example("P2-h1", holdout: true, "api-transcript")).Build();
         var held = A.Packet().With(new TaskBuilder("P1").ExampleWithText("P1-h1", holdout: true, "the hidden text").Example("P1-e1", holdout: false, "test")).Build();
 
-        var overlapChecks = await Run(kind, A.LinePacket(kind).With("tasks.json", Aw.Kernel.Json.AwJson.Serialize(overlap.Tasks, PacketFiles.Json)).Build());
-        var cycleChecks = await Run(kind, A.LinePacket(kind).With("tasks.json", Aw.Kernel.Json.AwJson.Serialize(cycle.Tasks, PacketFiles.Json)).Build());
-        var heldChecks = await Run(kind, A.LinePacket(kind).With("tasks.json", Aw.Kernel.Json.AwJson.Serialize(held.Tasks, PacketFiles.Json)).Build());
+        var overlapChecks = await Run(kind, A.LinePacket(kind).With("tasks.json", Kernel.Json.AwJson.Serialize(overlap.Tasks, PacketFiles.Json)).Build());
+        var cycleChecks = await Run(kind, A.LinePacket(kind).With("tasks.json", Kernel.Json.AwJson.Serialize(cycle.Tasks, PacketFiles.Json)).Build());
+        var heldChecks = await Run(kind, A.LinePacket(kind).With("tasks.json", Kernel.Json.AwJson.Serialize(held.Tasks, PacketFiles.Json)).Build());
 
         _ = Assert.Single(Failures(overlapChecks, PacketRules.ScopeOverlap));
         _ = Assert.Single(Failures(cycleChecks, PacketRules.Acyclic));
@@ -345,7 +345,7 @@ public sealed class LineChecksTests
     public void The_typed_links_name_exactly_the_files_and_directories_the_kind_lists(string name)
     {
         var kind = Kind(name);
-        var expected = kind.Files.Where(static f => f.Link is not null).Select(static f => f.Link!).Concat(kind.Directories.Select(static d => d.Link)).Order(StringComparer.Ordinal);
+        var expected = kind.Files.Where(static f => f.Link is not null).Select(static f => f.Link).OfType<string>().Concat(kind.Directories.Select(static d => d.Link)).Order(StringComparer.Ordinal);
         var actual = System.Text.Json.JsonDocument.Parse(A.LinePacket(kind).Build()["packet.json"]).RootElement.GetProperty("links").EnumerateObject().Select(static p => p.Name).Order(StringComparer.Ordinal);
 
         Assert.Equal(expected, actual, StringComparer.Ordinal);

@@ -1,7 +1,8 @@
 using Aw.Kernel;
+using Aw.Packets.Core.Checks;
 using Aw.Packets.Core.Values;
 
-namespace Aw.Packets.Core.Checks;
+namespace Aw.Packets.Core;
 
 /// <summary>Lists the repository's files at a packet's base commit, for the rules that read it.</summary>
 internal static class BaseTreeLoader

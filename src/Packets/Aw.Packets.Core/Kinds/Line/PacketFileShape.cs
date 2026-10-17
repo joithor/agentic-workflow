@@ -2,7 +2,8 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 
-namespace Aw.Packets.Core.Kinds;
+namespace Aw.Packets.Core.Kinds.Line;
+
 
 /// <summary>What "well formed" means for a packet file of each <see cref="PacketFileFormat"/>; shared by every kind's checks.</summary>
 internal static class PacketFileShape

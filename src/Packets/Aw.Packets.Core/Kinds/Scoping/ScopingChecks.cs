@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Aw.Kernel.Json;
 using Aw.Packets.Core.Checks;
+using Aw.Packets.Core.Kinds.Line;
 
 namespace Aw.Packets.Core.Kinds.Scoping;
 
