@@ -4682,3 +4682,12 @@ Aw.Context.Core.Results.DiffStatus
 Aw.Context.Core.Results.DiffStatus.Mapped = 0 -> Aw.Context.Core.Results.DiffStatus
 Aw.Context.Core.Results.DiffStatus.Suggested = 1 -> Aw.Context.Core.Results.DiffStatus
 Aw.Context.Core.Results.DiffStatus.Unmapped = 2 -> Aw.Context.Core.Results.DiffStatus
+static readonly Aw.Context.Core.ContextErrors.CodeGlobInvalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.CodeGlobsTooMany -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.CodeSearchTimedOut -> Aw.Kernel.ErrorDefinition!
+Aw.Context.Core.Engine.ContextSettings.SchemaGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Engine.ContextSettings.SchemaGlobs.init -> void
+Aw.Context.Core.Engine.ContextSettings.TestGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Engine.ContextSettings.TestGlobs.init -> void
+static Aw.Context.Core.Engine.ContextSettings.DefaultSchemaGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Context.Core.Engine.ContextSettings.DefaultTestGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!

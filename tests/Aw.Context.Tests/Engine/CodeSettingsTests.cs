@@ -1,0 +1,98 @@
+using System.Globalization;
+using System.Text.Json;
+using Aw.Context.Core;
+using Aw.Context.Core.Engine;
+using Aw.Kernel;
+
+namespace Aw.Context.Tests.Engine;
+
+public sealed class CodeSettingsTests
+{
+    private static Result<ContextSettings> Read(string json) => SettingsReader.Read(JsonDocument.Parse(json).RootElement.Clone());
+
+    [Fact, Trait("Lane", "unit")]
+    public void Code_section_with_globs_validates()
+    {
+        var settings = Read("""{"code":{"schemaGlobs":["db/**/*.sql"],"testGlobs":["spec/**"]}}""").Value;
+
+        Assert.Equal((["db/**/*.sql"], ["spec/**"]), (settings.SchemaGlobs.ToArray(), settings.TestGlobs.ToArray()));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Defaults_are_used_when_the_section_is_absent()
+    {
+        var settings = Read("""{"minHits":1}""").Value;
+
+        Assert.Equal((ContextSettings.DefaultSchemaGlobs, ContextSettings.DefaultTestGlobs), (settings.SchemaGlobs, settings.TestGlobs));
+        Assert.Contains("**/*.sql", settings.SchemaGlobs, StringComparer.Ordinal);
+        Assert.Contains("**/*.test.*", settings.TestGlobs, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Empty_schemaGlobs_is_allowed_and_means_off()
+    {
+        var settings = Read("""{"code":{"schemaGlobs":[]}}""").Value;
+
+        Assert.Empty(settings.SchemaGlobs);
+        Assert.Equal(ContextSettings.DefaultTestGlobs, settings.TestGlobs);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("../x/**")]
+    [InlineData("a/../b")]
+    [InlineData("/etc/**")]
+    [InlineData("")]
+    [InlineData("a\\u0007b")]
+    public void Glob_with_dotdot_absolute_empty_or_control_char_is_150_at_its_index(string glob)
+    {
+        var settings = Read("{\"code\":{\"schemaGlobs\":[\"ok/**\",\"" + glob + "\"]}}");
+
+        Assert.Equal(ContextErrors.CodeGlobInvalid.Code, settings.Error.Code);
+        Assert.StartsWith("context.code.schemaGlobs[1]:", settings.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_glob_over_200_characters_is_150_on_testGlobs()
+    {
+        var settings = Read("{\"code\":{\"testGlobs\":[\"" + new string('a', 201) + "\"]}}");
+
+        Assert.Equal(ContextErrors.CodeGlobInvalid.Code, settings.Error.Code);
+        Assert.StartsWith("context.code.testGlobs[0]:", settings.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("schemaGlobs", 50, true)]
+    [InlineData("schemaGlobs", 51, false)]
+    [InlineData("testGlobs", 51, false)]
+    public void More_than_50_globs_is_151(string key, int count, bool valid)
+    {
+        var globs = string.Join(',', Enumerable.Range(0, count).Select(i => string.Create(CultureInfo.InvariantCulture, $"\"g{i}/**\"")));
+        var settings = Read("{\"code\":{\"" + key + "\":[" + globs + "]}}");
+
+        Assert.Equal(valid, settings.IsSuccess);
+        if (!valid)
+        {
+            Assert.Equal(ContextErrors.CodeGlobsTooMany.Code, settings.Error.Code);
+            Assert.StartsWith("context.code." + key + ":", settings.Error.Message, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Unknown_key_under_code_is_refused_naming_the_key_path()
+    {
+        var settings = Read("""{"code":{"schemaGlob":["x"]}}""");
+
+        Assert.Equal(ContextErrors.SettingsInvalid.Code, settings.Error.Code);
+        Assert.StartsWith("context.code.schemaGlob:", settings.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_new_codes_are_150_timeout_152_and_150_151_are_attention()
+    {
+        Assert.Equal(["SND-CONTEXT-150", "SND-CONTEXT-151", "SND-CONTEXT-152"],
+            new[] { ContextErrors.CodeGlobInvalid, ContextErrors.CodeGlobsTooMany, ContextErrors.CodeSearchTimedOut }.Select(e => e.Code), StringComparer.Ordinal);
+        Assert.Equal(ErrorKind.Timeout, ContextErrors.CodeSearchTimedOut.Kind);
+        Assert.All([ContextErrors.CodeGlobInvalid, ContextErrors.CodeGlobsTooMany], e => Assert.Contains(e.Code, ContextErrors.Attention));
+        Assert.DoesNotContain(ContextErrors.CodeSearchTimedOut.Code, ContextErrors.Attention);
+    }
+}
