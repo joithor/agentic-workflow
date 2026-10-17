@@ -1,6 +1,7 @@
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.ViewModels.Controls;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 
@@ -55,7 +56,8 @@ internal static class NeedsYouMapper
             Actions = [.. row.Actions.SelectMany(id => Actions(row, subject, id, readiness, decisions).Select(a => a with { CatalogRead = read }))],
             Subject = subject,
             ItemId = row.Item,
-            Cli = row.Cli,
+            Cli = InstanceRules.IsChildVia(row.Via) ? string.Empty : row.Cli,   // the placeholder of a child pointer is not a command to copy
+            Via = row.Via,
             RecordedOnly = row.RecordedOnly,
             Notice = row.Notice ?? string.Empty,
             Question = PendingDecision(subject?.DecisionId, decisions)?.Question ?? string.Empty,

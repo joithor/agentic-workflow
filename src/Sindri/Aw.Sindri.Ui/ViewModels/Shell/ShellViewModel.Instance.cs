@@ -1,6 +1,7 @@
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Instance;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -40,6 +41,31 @@ internal sealed partial class ShellViewModel
         }
 
         Navigate(new DeepLink(DeepLinkKind.Workflow, address));
+    }
+
+    /// <summary>Follows an "Answer in the child" control: the child's frame, or the parent's at its Children panel; a needs-you row opens the instance it stands for, else its own sheet.</summary>
+    /// <param name="answer">The control.</param>
+    internal void FollowChildAnswer(ChildAnswerViewModel answer)
+    {
+        ArgumentNullException.ThrowIfNull(answer);
+        var (link, intent) = answer.Link is { } served ? (served, answer.Intent) : (ParentOfNeedsYouRow(answer.NeedsYouRowId), FrameIntent.FocusChildren);
+        if (link is { Kind: DeepLinkKind.Workflow, Subject: { } address })
+        {
+            Instance.Intend(address, intent);
+        }
+
+        Navigate(link);
+    }
+
+    // A needs-you row is served the instance it stands for as its subject (the address or the id) and no address of the child: its parent's
+    // frame when a row of the strip or the list knows that instance, else the row's own sheet. The child is never guessed.
+    private DeepLink ParentOfNeedsYouRow(string? rowId)
+    {
+        var entry = NeedsYou.Seen.Rows.FirstOrDefault(r => string.Equals(r.Id, rowId, StringComparison.Ordinal))?.Entry;
+        var subject = entry?.Subject?.Id;
+        var (address, _) = Strip.Rows.Select(r => (r.Address, r.InstanceId)).Concat(Workflows.Groups.SelectMany(g => g.Rows).Select(r => (r.Address, r.InstanceId)))
+            .FirstOrDefault(r => string.Equals(r.Address, subject, StringComparison.Ordinal) || string.Equals(r.InstanceId, subject, StringComparison.Ordinal));
+        return address is not null ? new DeepLink(DeepLinkKind.Workflow, address) : LinkOf(rowId ?? string.Empty);
     }
 
     /// <summary>Back: returns to the frame or sheet this one was opened from (a child, an item), else closes the sheet like Esc does.</summary>

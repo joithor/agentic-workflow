@@ -82,7 +82,7 @@ internal sealed partial class InstanceFrameView : UserControl
     private void GiveUp(FrameFocusEventArgs wanted)
     {
         LayoutUpdated -= OnLayoutUpdated;
-        if (wanted.Target is FrameFocus.ChildEntry or FrameFocus.ChildItem or FrameFocus.ChildPointer && _frame is { } frame)
+        if (wanted.Target is FrameFocus.ChildEntry or FrameFocus.ChildItem or FrameFocus.ChildPointer or FrameFocus.Children && _frame is { } frame)
         {
             OnFocusRequested(frame, new FrameFocusEventArgs(frame.InitialFocus, key: null));
             return;
@@ -107,6 +107,7 @@ internal sealed partial class InstanceFrameView : UserControl
             FrameFocus.ChildItem => Find("ChildRowItemOpen", b => b.DataContext is ChildRowViewModel child && string.Equals(child.ItemId, wanted.Key, StringComparison.Ordinal)),
             FrameFocus.ChildPointer => Find("ExpandedChild"),
             FrameFocus.Recipe => Find("InstanceRecipe"),
+            FrameFocus.Children => Find("ChildRowOpen"),
             _ => throw new ArgumentOutOfRangeException(nameof(wanted), wanted.Target, message: null),
         };
     }

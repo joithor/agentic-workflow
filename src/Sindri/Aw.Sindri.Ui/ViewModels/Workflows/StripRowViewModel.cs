@@ -19,12 +19,16 @@ internal sealed class StripRowViewModel : ObservableObject
     {
         (_row, _clock) = (row, clock);
         var answer = row.Answer;
-        if (answer is not null && InstanceRules.HasProtectedAnswer(row))
+        if (InstanceRules.IsChildPointer(answer))
+        {
+            ChildAnswer = ChildAnswerViewModel.ForInstance(row.Address, answer!.Child); // why: IsChildPointer is true only with an answer
+        }
+        else if (answer is not null && InstanceRules.HasProtectedAnswer(row))
         {
             Protected = new ProtectedActionViewModel(new ProtectedAction(Labels.AnswerVerb(answer.Kind), answer.Cli, row.Address), clipboard, clock);
         }
 
-        CanAnswer = Protected is null && (answer is not null || InstanceRules.CompletesAtDesk(row));
+        CanAnswer = Protected is null && ChildAnswer is null && (answer is not null || InstanceRules.CompletesAtDesk(row));
     }
 
     /// <summary>The served chip (the word and tone the chip control draws).</summary>
@@ -65,6 +69,9 @@ internal sealed class StripRowViewModel : ObservableObject
     /// <summary>The answer button's accessible name: the verb and the address.</summary>
     public string AnswerName => $"{Labels.Answer} {_row.Address}";
 
+    /// <summary>The "Answer in the child" control of a row whose answer a child decides; null for any other row.</summary>
+    public ChildAnswerViewModel? ChildAnswer { get; }
+
     /// <summary>The lock button for a protected answer; null for none.</summary>
     public ProtectedActionViewModel? Protected { get; }
 
@@ -90,7 +97,7 @@ internal sealed class StripRowViewModel : ObservableObject
     public bool IsSelected { get; private set => Set(ref field, value); }
 
     /// <summary>Everything the row draws (the age is read from the clock, from the served since): two rows with the same signature look the same.</summary>
-    internal string Signature => string.Join('|', Address, _row.Since.UtcTicks, Chip, Subject, Recipe, Stage, Now, Badge, Glyph, CanAnswer, Protected?.Cli, ItemId);
+    internal string Signature => string.Join('|', Address, _row.Since.UtcTicks, Chip, Subject, Recipe, Stage, Now, Badge, Glyph, CanAnswer, Protected?.Cli, ChildAnswer?.Target, ChildAnswer?.Intent, ItemId);
 
     /// <summary>Reads the age anew.</summary>
     internal void Refresh() => OnChanged(nameof(Age));

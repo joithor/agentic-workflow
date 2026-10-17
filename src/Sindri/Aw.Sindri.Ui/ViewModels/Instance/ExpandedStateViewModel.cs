@@ -1,6 +1,7 @@
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Components;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Instance;
 
@@ -28,6 +29,12 @@ internal sealed class ExpandedStateViewModel : ObservableObject
         {
             Child = new ChildPointerViewModel(child);
             Child.Opened += (_, e) => ChildRequested?.Invoke(this, e);
+        }
+
+        if (InstanceRules.IsChildPointer(status.Answer))
+        {
+            AnswerChild = status.Answer;
+            AnswerInChildName = Labels.AnswerInChildName(address);
         }
 
         HasAttach = current.Step is { } step && string.Equals(step.Ref, "step.agent", StringComparison.Ordinal) && status.Paused is null;
@@ -97,6 +104,40 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     /// <summary>The pointer to the child the instance waits on, or null.</summary>
     public ChildPointerViewModel? Child { get; }
 
+    /// <summary>True when the answer is a pointer to a child that decides it: the state shows "Answer in the child" and no answer form.</summary>
+    public bool AnswersInChild => AnswerChild is not null;
+
+    private StatusAnswer? AnswerChild { get; }
+
+#pragma warning disable CA1822, MA0041 // a fixed sentence is a property because the view binds it
+    /// <summary>The "Answer in the child" words.</summary>
+    public string AnswerInChildText => Labels.AnswerInChild;
+#pragma warning restore CA1822, MA0041
+
+    /// <summary>The control's accessible name: the drawn words, then the instance.</summary>
+    public string AnswerInChildName { get; } = string.Empty;
+
+    /// <summary>Follows "Answer in the child": the child's frame when the served pointer is the answer's child, else focus moves to the Children panel of this frame.</summary>
+    public void AnswerInTheChild()
+    {
+        if (AnswerChild is null)
+        {
+            return;
+        }
+
+        if (_current.Status.Child is { } child && Child is not null && string.Equals(child.Address, AnswerChild.Child, StringComparison.Ordinal))
+        {
+            Child.Open();
+        }
+        else
+        {
+            ChildrenRequested?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
+    /// <summary>Raised when "Answer in the child" has no served child to open: this frame's Children panel is where the answer goes.</summary>
+    internal event EventHandler? ChildrenRequested;
+
     /// <summary>The commands in served order.</summary>
     public IReadOnlyList<ExpandedCommandViewModel> Commands { get; }
 
@@ -157,7 +198,7 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     /// What the state draws as controls and structure, so a re-read of the same keeps them (and the focus, the open confirm and a Copied label).
     /// The words that move with time (the status text, the timeout, the budget, the next sentence, the child pointer's state) are not: <see cref="Update"/> changes them in place.
     /// </summary>
-    internal string Signature => string.Join('|', _current.State, StepLine, string.Join(',', Gates), string.Join(',', Commands.Select(c => c.Signature)), _current.Status.Child?.Id, HasNext, HasBudget, HasTimeout, IsPaused, HasDrift);
+    internal string Signature => string.Join('|', _current.State, StepLine, string.Join(',', Gates), string.Join(',', Commands.Select(c => c.Signature)), _current.Status.Child?.Id, AnswerChild?.Child, AnswersInChild, HasNext, HasBudget, HasTimeout, IsPaused, HasDrift);
 
     /// <summary>Takes a re-read of the same state: the moving words change, the controls stay.</summary>
     /// <param name="current">The state as served now; its <see cref="Signature"/> equals this one's.</param>

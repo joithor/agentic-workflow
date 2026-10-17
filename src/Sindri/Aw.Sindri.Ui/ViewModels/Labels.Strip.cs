@@ -8,6 +8,14 @@ internal static partial class Labels
     /// <summary>The strip row's desk answer button.</summary>
     internal const string Answer = "Answer";
 
+    /// <summary>The words of a row whose answer a child instance decides: the row points at the child instead of offering an answer.</summary>
+    internal const string AnswerInChild = "Answer in the child";
+
+    /// <summary>The accessible name of the "Answer in the child" control: the drawn words lead (WCAG 2.5.3), then the instance it opens.</summary>
+    /// <param name="address">The address of the instance the control opens.</param>
+    /// <returns>The name.</returns>
+    internal static string AnswerInChildName(string address) => $"{AnswerInChild} {address}";
+
     /// <summary>What the strip says while the workflow list route is not served yet (screens §4.8).</summary>
     internal const string ArrivesWorkflowStrip = "arrives with API P11";
 
