@@ -15,6 +15,7 @@ using Aw.Sindri.Core.Health;
 using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
@@ -44,6 +45,7 @@ using Aw.Sindri.Features.GetInstanceFact;
 using Aw.Sindri.Features.GetItem;
 using Aw.Sindri.Features.GetItemTimeline;
 using Aw.Sindri.Features.GetJob;
+using Aw.Sindri.Features.GetLaunch;
 using Aw.Sindri.Features.GetNeedsYou;
 using Aw.Sindri.Features.GetProfile;
 using Aw.Sindri.Features.GetQueue;
@@ -58,6 +60,7 @@ using Aw.Sindri.Features.ListOutbox;
 using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Features.ListServices;
+using Aw.Sindri.Features.OpenItem;
 using Aw.Sindri.Features.PauseService;
 using Aw.Sindri.Features.ReadLedger;
 using Aw.Sindri.Features.RebuildViews;
@@ -146,6 +149,8 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ItemOpenRequested)), JsonSerializable(typeof(LaunchStarted)), JsonSerializable(typeof(LaunchStartedPublic)), JsonSerializable(typeof(LaunchFailed))]   // API P10a (U0)
 [JsonSerializable(typeof(LaunchShowReport)), JsonSerializable(typeof(LaunchProbed)), JsonSerializable(typeof(SessionEnded)), JsonSerializable(typeof(SessionUsage)), JsonSerializable(typeof(LaunchSessionReported))]
 [JsonSerializable(typeof(LaunchViewerAttached))]
+[JsonSerializable(typeof(LaunchRow)), JsonSerializable(typeof(LaunchEnd)), JsonSerializable(typeof(LaunchViewer)), JsonSerializable(typeof(LaunchViewerPublic))]   // API P10a (U8): the launches view
+[JsonSerializable(typeof(OpenItemRequest)), JsonSerializable(typeof(OpenItemBody)), JsonSerializable(typeof(LaunchRequested)), JsonSerializable(typeof(GetLaunchRequest)), JsonSerializable(typeof(LaunchView))]
 // Two LaunchId types meet here: the collector's looser one (Core.Launch) and the engine's 'LCH-…' one the launch events carry (SYSLIB1031).
 [JsonSerializable(typeof(Core.Workflow.Engine.LaunchId), TypeInfoPropertyName = "EngineLaunchId")]
 [JsonSerializable(typeof(SyncContextSourcesRequest)), JsonSerializable(typeof(SyncContextSourcesResult))]
