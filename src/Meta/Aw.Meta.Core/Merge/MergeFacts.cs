@@ -18,6 +18,9 @@ public sealed record MergeFacts
     /// <summary>The main commit now.</summary>
     public required string CurrentMain { get; init; }
 
+    /// <summary>The tree merging the gated head onto the current main gives ("git merge-tree --write-tree"); null when not computed, or when it conflicts.</summary>
+    public string? MergedTree { get; init; }
+
     /// <summary>Whether the pull request is a draft.</summary>
     public bool IsDraft { get; init; }
 
