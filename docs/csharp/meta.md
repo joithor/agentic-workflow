@@ -161,38 +161,51 @@ floor+headroom)` / `builders: 1 per lane (memory low)` when something cuts it; `
 
 aw-meta runs on **Linux** and **macOS** (`scripts/install-meta.sh`, `./setup.sh --with-meta`; the host RID is whatever
 `dotnet --info` reports: `linux-x64`, `linux-arm64`, `osx-arm64` or `osx-x64`; NativeAOT needs the platform's C toolchain, Xcode's
-command line tools on macOS). On any other OS the installer exits 1 and says so; setup stops with that message. Nothing is
+command line tools on macOS). On any other OS the installer exits 1 and says so; `setup.sh --with-meta` finishes the rest of setup, then exits non-zero with that message. Nothing is
 skipped quietly, so a reinstall never leaves an old binary in place without a signal: the installer prints the installed
 version, and the launcher warns when the binary is older than the Meta sources it runs from (below).
 
 What reads the host differs; everything else (the SQLite stores, the team config, the CLI, gate and merge, the launcher) is the same
-code. The adapter is chosen by OS when the host composes (`AddMetaInfrastructure`).
+code. One internal function (`AddHostAdapters`, over a `HostPlatform`) picks the adapters for the process table, host resources and process liveness when the host composes (`AddMetaInfrastructure`); on an OS that is neither Linux nor macOS those three answer `AW-META-010` "unavailable on <OS>", and `lsof` and the tools below are never run.
 
 | Need | Linux | macOS |
 |------|-------|-------|
 | Memory total and available (`health`, `status`, `watch`'s `MEMORY LOW`) | `/proc/meminfo` (`MemAvailable`) | `sysctl -n hw.memsize`; available is the free, inactive and speculative pages of `vm_stat` times its page size |
 | Swap used and total | `/proc/meminfo` | `sysctl -n vm.swapusage` |
 | The process table (orphans, duplicate MCP servers, process groups, `health`'s counts) | `/proc/<pid>/stat` and `cmdline`; age from the process start time | `ps -axww -o pid=,ppid=,etime=,rss=,stat=,args=`; age from `etime`, so no time-zone or boot-time arithmetic. Zombies are left out on both |
-| Is this pid running (live sessions, heavy-lock holders) | `/proc/<pid>` | the OS process list (`Process.GetProcessById`) |
+| Is this pid running, and is it the process the file names (live sessions, heavy-lock holders; `IProcessLiveness`) | `/proc/<pid>/stat` start time against `/proc/uptime` | `ps -o etime= -p <pid>`: the start time is now minus the elapsed time |
 | What a process holds (worktree cleanup's idle test) | `/proc/<pid>/cwd` and `fd` | `lsof -w -n -F pcn` (cwd, open files, executables) |
 | Termination (`health`'s orphan kill) | `kill -TERM` | `kill -TERM` |
 | Disk free space, the heavy-job lock directories | the same on both | the same on both |
 
+**A reused pid is not the session.** A session record (`~/.claude/sessions/<pid>.json`) or a heavy-lock owner file names a pid, and the OS hands a
+pid to a new process once the old one exits. Liveness therefore also compares the process's start time with the file's last write: a
+process that started more than 2 seconds after the file was written (`ProcessStart.Tolerance`; `ps` and `/proc` count whole seconds) is
+another process, and the session or lock is not live. The check is as good as the file's modified time: a record that is rewritten
+later by something other than its own process would hide a reuse, and a start time that cannot be read (a failed `ps`) makes the
+listing fail with `AW-META-010` instead of guessing.
+
 A macOS tool that cannot run, times out or prints something unreadable makes the figure unavailable: the command fails with
-`AW-META-010` and a reason that starts "unavailable on macOS: <tool> ..." (for example `sysctl -n vm.swapusage exited 1: ...`). It is
-never replaced by a made-up value, and `health` does not guess from the rest. The tools' whole output is read (`ps` lists far
-more than the command runner's default 64 KB tail). Symlinked paths: git reports a worktree's physical path (`/private/var/...`),
+`AW-META-010` and a reason that starts "unavailable on macOS: <tool> ..." (for example `/usr/sbin/sysctl -n vm.swapusage exited 1: ...`; at most 300 characters of the tool's stderr are quoted). A number too large for a 64-bit integer in a tool's output is the same error, never an exception. Each tool runs by the absolute path macOS ships it at (`/usr/sbin/sysctl`, `/usr/bin/vm_stat`, `/bin/ps`, `/bin/kill`, `/usr/sbin/lsof`) when that file exists, so a PATH that something else controls can't substitute another program; the bare name is used only when the absolute path does not exist. It is
+never replaced by a made-up value, and `health` does not guess from the rest. The tools' output is read up to 16 MiB (`ps` lists far
+more than the command runner's default 64 KB tail; 16 MiB is about thirty times a busy machine's list, and past it the start is dropped). Symlinked paths: git reports a worktree's physical path (`/private/var/...`),
 while a team config may name it through a symlink (`/var/...`); put worktree roots in `worktrees.roots` by their physical path on
-macOS. The launcher script's own test suite (`scripts/tests/meta-launch.test.sh`: golden transcript, GNU tools) is Linux-only;
-`scripts/tests/meta-version.test.sh` covers the staleness check on both.
+macOS.
+
+**The launcher on macOS.** `scripts/meta-launch.sh`, `meta-lane.sh` and `launcher-lib.sh` run on macOS's bash 3.2 and BSD tools: no `flock`,
+`exec {fd}>`, `BASHPID`, `mapfile`, associative arrays or `readlink -f`. The team start lock is the symlink `lane-sessions/.reported.lock`
+(`ln -s` is atomic and records the owner pid in one step): a lock whose owner is dead is taken over, a live holder is waited for. macOS
+`uuidgen` ids are lowercased. `scripts/tests/meta-launch.test.sh` runs on both OSes (it builds a one-line C `sleep` with `cc` on macOS: a
+copy of the system `sleep` is killed there). It was run on macOS for this section (a throwaway team on a private tmux server, one Claude lane and
+two lanes whose agent reports its session id, started one at a time); it has not run on a real Warp window here, and `aw-meta-launch` on
+macOS opens Warp with `open warp://launch/<team>%20team`. `scripts/tests/meta-version.test.sh` covers the staleness check on both.
 
 **Version and staleness.** `aw-meta version` is how a stale install shows. `scripts/install-meta.sh` stamps the publish with the tree's
-`git rev-parse HEAD` and a UTC time and prints `aw-meta <commit> (built ..., <os> <rid>)` when it finishes (`... predates 'aw-meta
+`git rev-parse HEAD` (`<HEAD>-dirty` when a file under a build path has uncommitted or untracked changes) and a UTC time and prints `aw-meta <commit> (built ..., <os> <rid>)` when it finishes (`... predates 'aw-meta
 version'` for an older binary). `scripts/meta-launch.sh` runs `aw-meta version --json` at each launch and prints one stderr line, never
-failing the launch, when the binary is older than the sources of this checkout: the last commit that touched `src/Meta`, `src/Aw.Kernel`,
-`src/Aw.Kernel.Data`, `src/Aw.Kernel.Telemetry`, `src/Redaction` or `src/Aw.Analyzers` (what the publish builds) is not an ancestor of, or
+failing the launch, when the binary is older than the sources of this checkout: the last commit that touched a build path (`scripts/meta-build-paths.txt`, the one list: `src/Meta`, the Kernel, Redaction and Analyzers projects and the root build files; the installer, the staleness check and the NativeAOT smoke all read it) is not an ancestor of, or
 equal to, the binary's commit (`git merge-base --is-ancestor`); an unstamped binary, one with no `version` command, and a commit this
-checkout lacks warn too. Docs-only commits after the binary do not. `AW_META_NO_STALE_CHECK=1` turns it off; `AW_META_BIN` names the
+checkout lacks, and a `-dirty` stamp warn too. After copying the binary the installer runs `aw-meta version --json` and fails (exit 1, "install didn't take") unless its commit is the one stamped, and fails when the publish produced no `aw-meta`. Docs-only commits after the binary do not. `AW_META_NO_STALE_CHECK=1` turns it off; `AW_META_BIN` names the
 binary (default `$AW_STATE_DIR/bin/aw-meta`).
 
 ## Worktree cleanup
@@ -299,7 +312,7 @@ working untouched. `team-migrate` moves it into `teams/<its team name>/` on requ
 | `$AW_STATE_DIR/launcher.json` | the owner, or `aw-meta-launch --init-launcher` (read by `scripts/launcher-lib.sh`) |
 | `$AW_STATE_DIR/meta/teams/<team>/lane-sessions/<lane>.ambiguous` | `scripts/meta-lane.sh` when an agent that reports its own session id left more than one candidate session file |
 | `$AW_STATE_DIR/meta/teams/<team>/lane-sessions/<lane>.settled` | `scripts/meta-lane.sh` for a lane whose agent reports its own session id: left once the id is recorded or refused; `meta-launch.sh` waits for it before starting the next lane |
-| `$AW_STATE_DIR/meta/teams/<team>/lane-sessions/.reported.flock` | `scripts/meta-lane.sh`: the team start lock (`flock`; the kernel drops it when the holder dies) that serialises the start of lanes whose agent reports its own session id |
+| `$AW_STATE_DIR/meta/teams/<team>/lane-sessions/.reported.lock` | `scripts/meta-lane.sh`: the team start lock (a symlink whose target is the owner's pid; a dead owner's lock is taken over) that serialises the start of lanes whose agent reports its own session id |
 
 ## Launcher
 
@@ -326,7 +339,7 @@ chooses its own id: lanes of that kind start one at a time, each waiting up to `
 (the `lane-sessions/<lane>` file a hook writes, else the single new file the catalog's `newestFile` glob finds that no other
 lane has recorded; two candidates are refused and leave `<lane>.ambiguous`). "New" means a path that did not exist when
 the lane started (a snapshot taken before the agent runs), not a recently modified one. The one-at-a-time start is the
-lane's own: `meta-lane.sh` takes a team start lock (`flock` on `lane-sessions/.reported.flock`) before the agent runs and releases it
+lane's own: `meta-lane.sh` takes a team start lock (the symlink `lane-sessions/.reported.lock`, no `flock`: macOS has none) before the agent runs and releases it
 when the id is recorded or refused, or after a timeout plus a grace window (`AW_META_ID_GRACE` seconds, default 10, during which the lane still watches for its late file and keeps it if it arrives, so the next lane cannot take it), so lanes created together (a Warp pane that creates its session, a
 reboot, `--lanes`) are safe too. A lane that cannot start leaves `<lane>.failed` (the reason, the line the launcher prints as `lane <l> failed to start: ...`) and `<lane>.settled`, so the launcher reports it at once instead of waiting out the timeout. A lane refused by the launcher reader (a kickoff prompt starting with `-` once a
 `launcher.json` exists) starts no agent and records no id.

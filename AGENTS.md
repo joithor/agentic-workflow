@@ -183,7 +183,7 @@ bash scripts/tests/test-tmux.test.sh
 bash scripts/tests/sindri-smoke-normalize.test.sh
 bash scripts/tests/scoping-fixture.test.sh
 bash scripts/tests/line-fixture.test.sh
-bash scripts/tests/meta-launch.test.sh      # Linux-only (golden transcript, GNU tools)
+bash scripts/tests/meta-launch.test.sh      # Linux and macOS (golden transcript; needs cc on macOS)
 bash scripts/tests/meta-version.test.sh     # the installed aw-meta's version and the launcher's staleness warning (Linux and macOS)
 bash scripts/tests/install-meta.test.sh
 bash scripts/tests/meta-teams.test.sh
