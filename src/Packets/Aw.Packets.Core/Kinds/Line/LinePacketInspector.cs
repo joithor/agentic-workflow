@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Packets.Core.Checks;
+using Aw.Packets.Core.Model;
 
 namespace Aw.Packets.Core.Kinds.Line;
 
@@ -14,10 +15,11 @@ public sealed class LinePacketInspector(ILinePacketSource source, IRepoSnapshot 
     /// <param name="kind">A line kind.</param>
     /// <param name="packetDirectory">The packet directory.</param>
     /// <param name="repoDirectory">A directory inside the repository.</param>
+    /// <param name="sizes">The sizes file for a plan graph's PKT-SIZE-001; null leaves the rule unchecked.</param>
     /// <param name="cancellationToken">Cancels the reads.</param>
     /// <returns>The inspection; the read error; or AW-PACKETS-006 when the repository can't be read. A base commit
     /// missing from the repository is a PKT-BASE-001 failure, not an error.</returns>
-    public async ValueTask<Result<LineInspection>> Inspect(PacketKind kind, string packetDirectory, string repoDirectory, CancellationToken cancellationToken)
+    public async ValueTask<Result<LineInspection>> Inspect(PacketKind kind, string packetDirectory, string repoDirectory, SizesFile? sizes, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(kind);
         var files = await source.Read(kind, packetDirectory, cancellationToken).ConfigureAwait(false);
@@ -40,6 +42,6 @@ public sealed class LinePacketInspector(ILinePacketSource source, IRepoSnapshot 
             tree = loaded.Value;
         }
 
-        return new LineInspection(kind, files.Value, manifest, LinePacketChecks.Run(kind, files.Value, read, tree, json));
+        return new LineInspection(kind, files.Value, manifest, LinePacketChecks.Run(kind, files.Value, new LineInputs(read, tree, sizes), json));
     }
 }

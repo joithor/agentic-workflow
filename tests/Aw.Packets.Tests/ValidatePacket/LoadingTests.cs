@@ -13,7 +13,7 @@ public sealed class LoadingTests
         breakIt(files);
         var service = new ValidatePacketService(new PacketInspector(
             new InMemoryPacketSource().With("pkt", files),
-            new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles)));
+            new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles)), new InMemorySizesSource());
 
         var result = await service.Handle(new ValidatePacketRequest("pkt"), CancellationToken.None);
 
@@ -73,7 +73,7 @@ public sealed class LoadingTests
         files["tasks.json"] = [0xEF, 0xBB, 0xBF, .. files["tasks.json"]];
         var service = new ValidatePacketService(new PacketInspector(
             new InMemoryPacketSource().With("pkt", files),
-            new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles)));
+            new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles)), new InMemorySizesSource());
 
         var result = await service.Handle(new ValidatePacketRequest("pkt"), CancellationToken.None);
 
@@ -95,7 +95,7 @@ public sealed class LoadingTests
         Replace(files, file, from, to);
         var service = new ValidatePacketService(new PacketInspector(
             new InMemoryPacketSource().With("pkt", files),
-            new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles)));
+            new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles)), new InMemorySizesSource());
 
         var result = await service.Handle(new ValidatePacketRequest("pkt"), CancellationToken.None);
 
@@ -127,7 +127,7 @@ public sealed class LoadingTests
         Replace(files, "tasks.json", "\"readSeeds\": [", "\"readSeeds\": [null, ");
         var service = new ValidatePacketService(new PacketInspector(
             new InMemoryPacketSource().With("pkt", files),
-            new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles)));
+            new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles)), new InMemorySizesSource());
 
         var result = await service.Handle(new ValidatePacketRequest("pkt"), CancellationToken.None);
 
@@ -145,7 +145,7 @@ public sealed class LoadingTests
 
         var service = new ValidatePacketService(new PacketInspector(
             new InMemoryPacketSource().With("pkt", PacketFiles.Of(packet.Build())),
-            new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles)));
+            new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles)), new InMemorySizesSource());
 
         var result = await service.Handle(new ValidatePacketRequest("pkt"), CancellationToken.None);
 

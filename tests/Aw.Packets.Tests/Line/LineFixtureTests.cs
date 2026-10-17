@@ -58,7 +58,7 @@ public sealed class LineFixtureTests
 
         foreach (var kind in new[] { PacketKinds.Design, PacketKinds.Plan })
         {
-            var inspection = await inspector.Inspect(kind, Path.Combine(_gold, kind.Name, "expiry"), "repo", CancellationToken.None);
+            var inspection = await inspector.Inspect(kind, Path.Combine(_gold, kind.Name, "expiry"), "repo", sizes: null, CancellationToken.None);
 
             Assert.True(inspection.Value.Passed, $"{kind.Name}: " + string.Join("; ", inspection.Value.Checks.Where(static c => c.State == CheckState.Fail).Select(static c => $"{c.Rule} {c.Message}")));
         }

@@ -25,6 +25,7 @@ public abstract class FreezeLogContract
         Packet = PacketId.From("demo-packet"),
         Hash = PacketHash.From(hash),
         DigestVersion = 1,
+        By = FreezeBy.Machine,
         BaseSha = CommitSha.From(PacketBuilder.BaseSha),
         FrozenAt = new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero),
         Files = ["packet.json", "tasks.json"],
@@ -86,6 +87,65 @@ public abstract class FreezeLogContract
         Expect.That(other.IsSuccess && !other.Value.AlreadyFrozen && ReadBack(log).Count == 2, "another repo's packet with the same id and hash is its own record");
     }
 
+    /// <summary>Find returns the record by repository, packet and hash.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Find_returns_the_record_of_that_hash_and_nothing_for_another()
+    {
+        var log = Create();
+        _ = await log.Record(ARecord() with { By = FreezeBy.Owner }, CancellationToken.None);
+        var identity = new PacketIdentity(RepoSlug.From("example/repo"), PacketId.From("demo-packet"));
+
+        var found = await log.Find(identity, PacketHash.From(HashA), CancellationToken.None);
+        var otherHash = await log.Find(identity, PacketHash.From(HashB), CancellationToken.None);
+        var otherRepo = await log.Find(identity with { Repo = RepoSlug.From("other/repo") }, PacketHash.From(HashA), CancellationToken.None);
+        var otherPacket = await log.Find(identity with { Packet = PacketId.From("other-packet") }, PacketHash.From(HashA), CancellationToken.None);
+
+        Expect.That(found.IsSuccess && found.Value is { } record && Same(ARecord() with { By = FreezeBy.Owner }, record), "the recorded freeze is found, with who froze it");
+        Expect.That(otherHash.IsSuccess && otherHash.Value is null, "another hash of the packet was never frozen");
+        Expect.That(otherRepo.IsSuccess && otherRepo.Value is null, "the same packet id in another repository is another packet");
+        Expect.That(otherPacket.IsSuccess && otherPacket.Value is null, "another packet is not found");
+    }
+
+    /// <summary>A freeze is write-once: a second freeze of the same hash by someone else keeps the first record and its 'by'.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task A_second_freeze_of_the_same_hash_by_the_owner_keeps_the_machine_record()
+    {
+        var log = Create();
+        _ = await log.Record(ARecord() with { By = FreezeBy.Machine }, CancellationToken.None);
+
+        var again = await log.Record(ARecord() with { By = FreezeBy.Owner, FrozenAt = new DateTimeOffset(2027, 1, 1, 0, 0, 0, TimeSpan.Zero) }, CancellationToken.None);
+
+        Expect.That(again.IsSuccess && again.Value.AlreadyFrozen, "the second freeze is already frozen");
+        var stored = ReadBack(log);
+        Expect.That(stored.Count == 1 && stored[0].By == FreezeBy.Machine && stored[0].FrozenAt == ARecord().FrozenAt, "the first record keeps its 'by' and time: no upgrade");
+        var found = await log.Find(new PacketIdentity(RepoSlug.From("example/repo"), PacketId.From("demo-packet")), PacketHash.From(HashA), CancellationToken.None);
+        Expect.That(found.IsSuccess && found.Value?.By == FreezeBy.Machine, "Find reports the first record");
+    }
+
+    /// <summary>A record that exists but can't be parsed is AW-PACKETS-008, not 'never frozen'.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task A_record_that_exists_but_is_malformed_is_AW_PACKETS_008()
+    {
+        var log = Create();
+        _ = await log.Record(ARecord(), CancellationToken.None);
+        if (!CorruptRecord(log))
+        {
+            return;   // an in-memory log holds typed records: it can't hold a malformed one
+        }
+
+        var found = await log.Find(new PacketIdentity(RepoSlug.From("example/repo"), PacketId.From("demo-packet")), PacketHash.From(HashA), CancellationToken.None);
+
+        Expect.That(found.IsError && found.Error.Code == PacketsErrors.Unreadable.Code, "a malformed record is AW-PACKETS-008");
+    }
+
+    /// <summary>Replaces the stored record with one that can't be parsed (its 'by' is not a known value).</summary>
+    /// <param name="log">A log from <see cref="Create"/> holding one record.</param>
+    /// <returns>False when the log can't hold a malformed record.</returns>
+    protected virtual bool CorruptRecord(IFreezeLog log) => false;
+
     /// <summary>A log that can't write fails with AW-PACKETS-007.</summary>
     /// <returns>A task.</returns>
     [Fact]
@@ -102,7 +162,7 @@ public abstract class FreezeLogContract
     /// <returns>True when every field matches.</returns>
     protected static bool Same(FreezeRecord x, FreezeRecord y) =>
         x.SchemaVersion == y.SchemaVersion && x.Repo == y.Repo && x.Packet == y.Packet && x.Hash == y.Hash && x.DigestVersion == y.DigestVersion
-        && x.BaseSha == y.BaseSha && x.FrozenAt == y.FrozenAt && x.Files.SequenceEqual(y.Files, StringComparer.Ordinal);
+        && x.BaseSha == y.BaseSha && x.By == y.By && x.FrozenAt == y.FrozenAt && x.Files.SequenceEqual(y.Files, StringComparer.Ordinal);
 
     /// <summary>Creates an empty log.</summary>
     /// <returns>The log under test.</returns>

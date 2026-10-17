@@ -125,6 +125,52 @@ public sealed class AsOfMapTests
         Assert.Contains(built.Value.Graph.Nodes, n => n.Key.Kind == NodeKind.Surface);
     }
 
+    private const string FlagSection = "\"extract\":{\"recognizers\":[{\"kind\":\"flag\",\"glob\":\"src/**/*.ts\",\"pattern\":\"export (?:type|class|function|const) (?<n>[A-Za-z]+)\",\"keyFrom\":\"n\"}]}";
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Backtest_as_of_map_holds_what_a_profile_recognizer_finds_and_a_different_set_misses_the_cache()
+    {
+        await using var world = await BacktestWorld.Start(BacktestWorld.AfterAllCuts);
+        var sample = await SampleOf(world, "SPL-105");
+        var repo = world.Profile.Single(r => r.Name == sample.Repo);
+        var builder = world.Services.GetRequiredService<AsOfMapBuilder>();
+        var ct = TestContext.Current.CancellationToken;
+
+        var plain = (await builder.Build(new AsOfRequest(repo, sample, world.Human()), ct)).Value;
+        var withFlags = (await builder.Build(new AsOfRequest(repo, sample, world.Human(FlagSection)), ct)).Value;
+        var again = (await builder.Build(new AsOfRequest(repo, sample, world.Human(FlagSection)), ct)).Value;
+
+        Assert.DoesNotContain(plain.Graph.Nodes, n => n.Key.Value.StartsWith("surface:flag/", StringComparison.Ordinal));
+        Assert.False(withFlags.Cached);   // the plain run's cached map is not served to a profile with recognizers
+        Assert.Contains(withFlags.Graph.Nodes, n => n.Key.Value.StartsWith("surface:flag/", StringComparison.Ordinal));
+        Assert.True(again.Cached);
+        Assert.Equal(withFlags.Graph.Nodes.Select(n => n.Key.Value), again.Graph.Nodes.Select(n => n.Key.Value), StringComparer.Ordinal);
+    }
+
+    // Catastrophic on any text without the tail: every character can be matched two ways, so the one-second match timeout fires.
+    private const string TimeoutSection = "\"extract\":{\"recognizers\":[{\"kind\":\"flag\",\"glob\":\"src/app.ts\",\"pattern\":\"(?<n>(?:[^!]|[^!])+)+!!!QQ\",\"keyFrom\":\"n\"}]}";
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Backtest_as_of_map_whose_recognizer_timed_out_is_not_cached_and_the_report_says_so()
+    {
+        await using var world = await BacktestWorld.Start(BacktestWorld.AfterAllCuts);
+        var sample = await SampleOf(world, "SPL-105");
+        var repo = world.Profile.Single(r => r.Name == sample.Repo);
+        var builder = world.Services.GetRequiredService<AsOfMapBuilder>();
+        var ct = TestContext.Current.CancellationToken;
+
+        var first = (await builder.Build(new AsOfRequest(repo, sample, world.Human(TimeoutSection)), ct)).Value;
+        var second = (await builder.Build(new AsOfRequest(repo, sample, world.Human(TimeoutSection)), ct)).Value;
+        var report = (await world.Run("graph", world.Human(TimeoutSection))).Value.Report;
+
+        Assert.True(first.RecognizersTimedOut);
+        Assert.False(second.Cached);   // the partial map was never written, so a later build extracts again
+        Assert.Contains(report.Degraded, d => d.StartsWith($"recognizers timed out: {report.Samples.Count} of {report.Samples.Count} sample maps", StringComparison.Ordinal));   // every kept sample's cut has src/app.ts
+
+        var clean = (await world.Run("graph")).Value.Report;
+        Assert.DoesNotContain(clean.Degraded, d => d.StartsWith("recognizers timed out", StringComparison.Ordinal));
+    }
+
     private sealed class WriteFailingCache(IEvalStore inner) : IEvalStore
     {
         public ValueTask<Result<string>> WriteReport<T>(EvalReportKind kind, T report, DateTimeOffset at, CancellationToken cancellationToken)
