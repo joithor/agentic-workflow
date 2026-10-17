@@ -11,9 +11,15 @@ namespace Aw.Meta.Infrastructure.Files;
 /// /proc/uptime, checked against when the file naming the pid was written. A /proc entry that vanishes mid-read is a process that exited.
 /// </summary>
 /// <param name="time">The clock the start time is computed from.</param>
-internal sealed class ProcProcessLiveness(TimeProvider time) : IProcessLiveness
+/// <param name="read">Reads a /proc file as text (File.ReadAllTextAsync in the host).</param>
+internal sealed class ProcProcessLiveness(TimeProvider time, Func<string, CancellationToken, Task<string>> read) : IProcessLiveness
 {
     private const double ClockTicksPerSecond = 100;
+
+    public ProcProcessLiveness(TimeProvider time)
+        : this(time, File.ReadAllTextAsync)
+    {
+    }
 
     public async ValueTask<Result<bool>> IsRunning(int pid, DateTimeOffset recordedAt, CancellationToken cancellationToken)
     {
@@ -24,13 +30,13 @@ internal sealed class ProcProcessLiveness(TimeProvider time) : IProcessLiveness
 
         try
         {
-            var stat = await File.ReadAllTextAsync("/proc/" + pid.ToString(CultureInfo.InvariantCulture) + "/stat", cancellationToken).ConfigureAwait(false);
+            var stat = await read("/proc/" + pid.ToString(CultureInfo.InvariantCulture) + "/stat", cancellationToken).ConfigureAwait(false);
             if (ProcFormat.Stat(stat) is not { } fields)
             {
                 return false;
             }
 
-            var uptime = double.Parse((await File.ReadAllTextAsync("/proc/uptime", cancellationToken).ConfigureAwait(false)).Split(' ')[0], CultureInfo.InvariantCulture);
+            var uptime = double.Parse((await read("/proc/uptime", cancellationToken).ConfigureAwait(false)).Split(' ')[0], CultureInfo.InvariantCulture);
             var age = TimeSpan.FromSeconds(Math.Max(0, uptime - (fields.StartTicks / ClockTicksPerSecond)));
             return !ProcessStart.IsReused(time.GetUtcNow() - age, recordedAt);
         }
