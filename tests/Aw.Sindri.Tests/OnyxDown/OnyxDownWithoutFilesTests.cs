@@ -39,6 +39,46 @@ public sealed class OnyxDownWithoutFilesTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Down_stops_the_live_containers_by_project_label_when_the_compose_file_is_gone_too()
+    {
+        var rig = await RunningRigWithout(static p => p.Compose);
+
+        var response = (await Down(rig)).Value;
+
+        Assert.True(response.WasRunning);
+        Assert.Contains("nginx", response.Stopped, StringComparer.Ordinal);
+        Assert.Equal(["Ps", "Stop"], rig.Runtime.LabelOnlyCalls);
+        Assert.Contains(response.Warnings, static w => w.Contains("project label", StringComparison.Ordinal));
+        Assert.All(rig.Runtime.Containers, static c => Assert.Equal("exited", c.State, StringComparer.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Down_with_no_file_and_nothing_live_does_nothing_and_says_nothing()
+    {
+        var rig = new OnyxUpRig();
+
+        var response = (await Down(rig)).Value;
+
+        Assert.False(response.WasRunning);
+        Assert.Empty(response.Warnings);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Down_by_label_reports_only_what_stopped_and_warns_about_what_is_still_live()
+    {
+        var rig = await RunningRigWithout(static p => p.Override);
+        rig.Runtime.StubbornServices.Add("nginx");
+
+        var response = (await Down(rig)).Value;
+
+        Assert.True(response.WasRunning);
+        Assert.DoesNotContain("nginx", response.Stopped, StringComparer.Ordinal);
+        Assert.Contains("api_server", response.Stopped, StringComparer.Ordinal);
+        Assert.Contains(response.Warnings, static w => w.Contains("still running", StringComparison.Ordinal) && w.Contains("nginx", StringComparison.Ordinal));
+        Assert.Equal(["Ps", "Stop", "Ps"], rig.Runtime.LabelOnlyCalls);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Down_with_the_files_present_still_uses_them()
     {
         var rig = new OnyxUpRig();

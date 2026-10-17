@@ -43,6 +43,9 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     /// <summary>Gets the operations (Ps, Stop) called on a project that names no files (<see cref="ComposeProject.ByLabel"/>), in order.</summary>
     public IList<string> LabelOnlyCalls { get; } = [];
 
+    /// <summary>Gets the services <see cref="Stop"/> leaves running (a container that ignores the stop).</summary>
+    public IList<string> StubbornServices { get; } = [];
+
     /// <summary>Gets the services <see cref="Up"/> starts: the eight Onyx runs with no profile.</summary>
     public IList<string> StartedServices { get; } = ["api_server", "background", "cache", "inference_model_server", "nginx", "opensearch", "relational_db", "web_server"];
 
@@ -131,7 +134,10 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
         cancellationToken.ThrowIfCancellationRequested();
         for (var i = 0; i < Containers.Count; i++)
         {
-            Containers[i] = Containers[i] with { State = "exited" };
+            if (!StubbornServices.Contains(Containers[i].Service))
+            {
+                Containers[i] = Containers[i] with { State = "exited" };
+            }
         }
 
         return Results.Ok();
