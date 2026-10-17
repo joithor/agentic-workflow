@@ -308,7 +308,7 @@ public sealed class SystemCommandRunnerTests : IDisposable
         {
             try
             {
-                using var process = System.Diagnostics.Process.GetProcessById(pid);
+                using var process = Process.GetProcessById(pid);
                 process.Kill();
             }
             catch (ArgumentException)

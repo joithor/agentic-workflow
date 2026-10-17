@@ -54,7 +54,7 @@ public sealed class StatusTests
 
         var status = await Status();
 
-        Assert.DoesNotContain("stale", status.Train!, StringComparison.Ordinal);
+        Assert.DoesNotContain("stale", status.Train, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -65,7 +65,7 @@ public sealed class StatusTests
 
         var status = await Status();
 
-        Assert.DoesNotContain("stale", status.Train!, StringComparison.Ordinal);
+        Assert.DoesNotContain("stale", status.Train, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

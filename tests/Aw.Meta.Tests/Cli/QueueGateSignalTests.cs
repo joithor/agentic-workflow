@@ -47,7 +47,7 @@ public sealed class QueueGateSignalTests : IDisposable
 
     private Process Start()
     {
-        var host = typeof(Aw.Meta.Host.Composition).Assembly.Location;
+        var host = typeof(Host.Composition).Assembly.Location;
         var info = new ProcessStartInfo("dotnet", [host, "queue-gate", "7"]) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
         foreach (var name in info.Environment.Keys.Where(k => k.StartsWith("AW_META_", StringComparison.Ordinal) || k.StartsWith("TMUX", StringComparison.Ordinal)).ToList())
         {
