@@ -61,6 +61,23 @@ internal sealed partial class RunStepActivities(IApprovedRecipes approvals, Bloc
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Runs a block-runtime Step (DT spec §8.2), once: the activity, scheduled with 'block:{token}:{n}' as its id and never retried,
+    /// resolves the registered <see cref="IBlockStep"/>, runs it and stores its outputs.
+    /// </summary>
+    /// <param name="run">The run.</param>
+    /// <returns>The outcome and stored outputs, or the failure.</returns>
+    [Activity("RunBlockStep")]
+    public Task<BlockStepOutcome> RunBlockStepAsync(BlockStepRun run)
+    {
+        ArgumentNullException.ThrowIfNull(run);
+        BlockStepRequested(logger, run.Address, run.State, run.Token);
+        throw new NotSupportedException("the block runtime is not built yet");
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "block step requested: {Address} {State} run {Token}")]
+    private static partial void BlockStepRequested(ILogger logger, string address, string state, string token);
+
     [LoggerMessage(Level = LogLevel.Information, Message = "desk task open: {Address} {State} run {Token}")]
     private static partial void DeskTaskOpen(ILogger logger, string address, string state, string token);
 }

@@ -26,4 +26,10 @@ public sealed record DecisionContext(
     /// can't name without a namespace cycle).
     /// </summary>
     public TimeSpan DeskTimeout { get; init; } = TimeSpan.FromDays(2);
+
+    /// <summary>
+    /// The Steps this build runs on the block runtime (DT spec §8.2): a Step in it whose descriptor says <see cref="BlockRuntime.Block"/>
+    /// opens its run on <see cref="StepRuntime.Block"/>. Empty by default, which is the desk path every history before the block runtime took.
+    /// </summary>
+    public IReadOnlySet<BlockId> BlockRuntimes { get; init; } = new HashSet<BlockId>();
 }
