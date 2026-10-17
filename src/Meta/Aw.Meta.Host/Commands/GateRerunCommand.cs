@@ -19,5 +19,11 @@ internal static class GateRerunCommand
             : Task.FromResult(PrArgument.Usage(context, Entry));
 
     private static string Text(GateRerunResponse response) =>
-        string.Create(CultureInfo.InvariantCulture, $"{response.Verdict.ToString().ToUpperInvariant()} #{response.Pr} gate run {response.Run} step {response.Step}, test {response.Test}: {response.Reason}");
+        string.Join(
+            Environment.NewLine,
+            [
+                string.Create(CultureInfo.InvariantCulture, $"{response.Verdict.ToString().ToUpperInvariant()} #{response.Pr} gate run {response.Run} step {response.Step}, test {response.Test}: {response.Reason}"),
+                .. response.AloneLog is { } alone ? [$"  alone: {alone}"] : Array.Empty<string>(),
+                .. response.MainLog is { } main ? [$"  main:  {main}"] : Array.Empty<string>(),
+            ]);
 }

@@ -33,6 +33,43 @@ public sealed class MergeGateTests
     }
 
     [Theory, Trait("Lane", "unit")]
+    [InlineData(null, "main1", true)]        // legacy gate without a tree, same main: the old rule
+    [InlineData(null, "main2", false)]       // legacy gate, main moved: refused
+    [InlineData("t1", "main2", false)]       // tree recorded, main moved, merge-tree not computed or different
+    public void The_main_check_of_an_unstacked_gate_keeps_the_fast_path_and_the_old_rule(string? tree, string currentMain, bool ok)
+    {
+        var gate = Gate() with { Tree = tree };
+
+        var check = MergeGate.Evaluate(Facts(gate) with { CurrentMain = currentMain }).Single(c => c.Name == "main");
+
+        Assert.Equal(ok, check.Ok);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("main1", "t1", true)]
+    [InlineData("main2", "t1", true)]
+    [InlineData("main1", "t2", false)]
+    [InlineData("main1", null, false)]
+    public void A_stacked_gate_holds_only_when_the_merged_tree_equals_the_tested_tree(string currentMain, string? mergedTree, bool ok)
+    {
+        var gate = Gate() with { Tree = "t1", Stack = [new StackedPr(189, "a1")] };
+
+        var check = MergeGate.Evaluate(Facts(gate) with { CurrentMain = currentMain, MergedTree = mergedTree }).Single(c => c.Name == "main");
+
+        Assert.Equal(ok, check.Ok);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_head_check_still_applies_to_a_stacked_gate_whose_tree_matches()
+    {
+        var gate = Gate() with { Tree = "t1", Stack = [new StackedPr(189, "a1")] };
+
+        var failed = Failed(Facts(gate) with { CurrentHead = "head2", MergedTree = "t1" });
+
+        Assert.Equal(["head"], failed);
+    }
+
+    [Theory, Trait("Lane", "unit")]
     [InlineData(new[] { "repo" }, true)]
     [InlineData(new[] { "repo", "dotnet" }, false)]
     public void A_gate_vouches_only_for_the_scopes_it_ran(string[] planned, bool ok)

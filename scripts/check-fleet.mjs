@@ -94,6 +94,7 @@ try {
   }
   if (!sm.processes?.length) fail(`${sdir}/manifest.json`, "lists no processes");
 
+  const FIXTURE_ROOT = "/nonexistent-fixture-root";
   // No symlink in the tree may point at a directory that exists on the box: tools that glob the repo (actions/setup-dotnet's
   // hash of global.json files, find) follow it into the real file system and fail on the first unreadable directory (CI did, on cwd -> /).
   const walkLinks = (rel) => {
@@ -103,7 +104,8 @@ try {
         const target = fs.readlinkSync(path.join(ROOT, sdir, r));
         let dir = false;
         try { dir = fs.statSync(path.resolve(path.dirname(path.join(ROOT, sdir, r)), target)).isDirectory(); } catch { /* dangling is the point */ }
-        if (dir) fail(`${sdir}/${r}`, `symlink target ${target} is a directory that exists here; point it at a path that does not exist (e.g. /srv/fixture-root)`);
+        if (dir) fail(`${sdir}/${r}`, `symlink target ${target} is a directory that exists here; point it at a path that does not exist (under ${FIXTURE_ROOT})`);
+        else if (!target.startsWith(`${FIXTURE_ROOT}/`) && target !== FIXTURE_ROOT && !/^socket:\[[0-9]+\]$/.test(target)) fail(`${sdir}/${r}`, `symlink target ${target} is outside ${FIXTURE_ROOT}; a path that exists on some box is followed by tools that glob the repo`);
       } else if (e.isDirectory()) walkLinks(r);
     }
   };

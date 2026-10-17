@@ -70,6 +70,7 @@ test_judge_failure_fails_open_to_allow() {
   local bin_dir out; bin_dir="$(mktemp -d)"
   cat > "$bin_dir/judge" <<'EOF'
 #!/usr/bin/env bash
+cat >/dev/null  # drain stdin like the real judge, so the logged cause is judge-exit-1, never a SIGPIPE 141
 exit 1
 EOF
   chmod +x "$bin_dir/judge"

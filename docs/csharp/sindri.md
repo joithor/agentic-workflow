@@ -550,6 +550,25 @@ API P6. A job is work a command starts and does not wait for: the command is acc
 - **`job-probe`.** An opt-in diagnostic service, not a built-in: it runs only when a profile names it (`services: job-probe: {every: 24h}`), and the long job to start by hand (`sindri services run job-probe`, about 62 s). It reports 250 lines, one every 250 ms, and ends `ok: 250 lines`; line 5 holds an OSC-8 hyperlink, line 6 a credential-shaped fake and line 7 is 300 characters, so a run shows the escaping, the scrubbing, the cut at 200 characters and the 200-line window (the view keeps lines 51 to 250). Cancelling stops it within one line.
 - **Goldens.** `services-name-run/`, `services-name-pause/`, `services-name-resume/`, `jobs-id/`, `jobs-id-cancel/`, `jobs/`, plus `services/` (`paused`, `running-job`, `manual-ok`: a manual run leaves the next slot where the scheduled one put it), `needs-you/after-manual-run` (the failure row is gone) and `events/job-lifecycle` (started, two lines, finished, the manual `service.ran`).
 
+## Session collector (collector spec; CO-2a)
+
+`SessionCollectorHost` (a hosted service under `sindri serve`, the `ProfileWatch` pattern: it runs only while the process holds the lease) runs one
+pass every `sessions.pollSeconds` (2 by default) as the caller `service:session-collector`, through three internal services: `RestoreFleetHistory`
+(once, after the lease: the last 24 hours of `fleet.changed` rows rebuild the set already reported), `CollectSessions` (the pass: the process table, Claude's
+session records, the aw:fleet hook's state files, merged by the pure rules in `Aw.Sindri.Core/Sessions/`) and `RecordFleetChanges` (appends with the lease
+grant: no command gate, audit row or catalog row, the `CheckProfileService` pattern). The pass has a 500 ms budget for the process table (past it the previous snapshot stays); every other source (Claude's records, the fleet state files, and the per-process environment, cwd and open files) gets its own fifth of it, and a source that fails or overruns is one
+`problems` row and leaves the others intact; when the process table itself fails the previous snapshot stays and nothing is ledgered as gone.
+
+- **A named exception to "queries read `views.db`":** the live snapshot (`ISessionSnapshot`) is memory only (collector spec CO3), as API P13's `GET /engine`
+  reads Temporal live. The ledger gets one public event type, `fleet.changed {provider, sessionId, change, state, reason?, repo?, host, launchId?}`
+  (`change` is `appeared` after two passes in a row, `asking` once it has lasted 5 s and at most 6 per session per hour, or `gone`); `running` and `idle` flips
+  and leaving `asking` are never ledgered. Key `fleet.changed:<provider>:<id>:<change>:<observedAtMs>`; `Invalidates = [status]`. The payload holds no cwd, title or socket.
+- **Reads:** `/proc` (the current user's processes by `status` `Uid:`; argv[0] to its first NUL only; the environment reduced to an allowlist), `~/.claude/sessions/*.json` (never
+  `*.key`), `$AW_FLEET_DIR/<provider>/*.json`. The agent catalog is `config/launcher/builtins.json` (embedded) merged with `launcher.json`'s `agents` (`AW_LAUNCHER_CONFIG`,
+  default `$AW_STATE_DIR/launcher.json`); `sessions.enabled`, `pollSeconds`, `providers` and `claudeSessionsDir` come from the same file, read once at start.
+- **Test overrides:** `AW_SESSIONS_PROC_ROOT` and `AW_SESSIONS_CLAUDE_DIR`, for tests and the prover only; either shows `SND-SESSION-003`.
+- Telemetry: span `sindri.collector.pass`, gauge `sindri.sessions` (by provider and state), counters `sindri.collector.overrun` and `sindri.collector.pruned`.
+
 ## Scheduler
 
 The control plane runs the services the **approved** profile names, on their cadence. It re-reads the approval once a
@@ -599,6 +618,10 @@ blocks.
 | `SND-REQ-002` | Too many open requests: 20 in the repo or 50 in all, counted for a `session` caller (429; API P4) |
 | `SND-DEC-404` | No decision has that id, or a `session` caller asked for one outside its repo (404; API P4) |
 | `SND-DEC-001` | The choice isn't one of the decision's options, or the note is over 2,000 characters (400; API P4) |
+| `SND-LAUNCH-011` | `launcher.json` (or an agent entry in it) isn't valid: an unknown key in a section, a bad kind, a placeholder outside the closed set, an entry that lacks `label`, `bin`, `open` or `sessionId`, a `sessions.pollSeconds` outside 1 to 30. The collector reads the built-in agents and the default settings instead and shows one problem row (collector CO-2a). Each error names the section and key at fault (`sessions.pollSeconds is 1 to 30`), so a fix is per section even though the fallback is the whole file |
+| `SND-SESSION-001` | One of the session collector's sources failed or a pass overran its 500 ms budget: a problem row beside a normal list, never an exception message (collector CO-2a) |
+| `SND-SESSION-002` | The session collector can't run here; the `detail` is `unsupported-platform`, `proc-unreadable` or `disabled`, and only these replace the list (collector CO-2a; the routes are CO-3) |
+| `SND-SESSION-003` | A test override (`AW_SESSIONS_PROC_ROOT`, `AW_SESSIONS_CLAUDE_DIR`) is set in this run: informational, one problem row beside a normal list; pruning of hook files is off and focus answers `copy` (collector CO-2a) |
 | `SND-SECRET-001` | A secret pointer is malformed: no scheme, an unknown scheme, or a bad target. Expected `env:NAME`, `file:/absolute/path`, `keychain:<service>/<account>` or `op:<vault>/<item>/<field>`; the message names only the scheme, never the text after it (it may be a secret pasted by mistake) |
 | `SND-SECRET-002` | A secret pointer doesn't resolve: the variable is unset or empty, the file is missing or empty, the keychain (macOS `security`, Linux `secret-tool`) or 1Password entry is missing, `security`, `secret-tool` or `op` isn't on PATH or ran past its timeout (5 s, 30 s), or `keychain:` is used on any other OS. On Linux `secret-tool` exits 1 both for a missing entry and when no D-Bus session or keyring is reachable, so `sindri serve` must run in the login session. The message names the pointer and the fix, never a value |
 | `SND-SECRET-003` | A `file:` pointer is unsafe: the file has group or other permission bits (it must be 0600 or stricter) or isn't a regular file (a symbolic link, even to a 0600 file, or a directory; only the last path segment is checked) |
