@@ -17,6 +17,7 @@ namespace Aw.Sindri.Tests.CompleteStep;
 /// hanging, and the same report with the same nonce applies once a worker runs.
 /// </summary>
 [Lane(TestLane.Integration)]
+[Collection(nameof(WallClockAlone))]   // it asserts the answer arrives within 3 to 10 s of wall clock
 public sealed class DeskReportFailureTests(DevServer server) : IClassFixture<DevServer>, IDisposable
 {
     private readonly WorkflowsHarness _harness = new();

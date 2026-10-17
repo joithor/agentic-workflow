@@ -48,8 +48,6 @@ Aw.Context.Core.Engine.ContextQuery
 Aw.Context.Core.Engine.ContextQuery.<Clone>$() -> Aw.Context.Core.Engine.ContextQuery!
 Aw.Context.Core.Engine.ContextQuery.Budget.get -> int?
 Aw.Context.Core.Engine.ContextQuery.Budget.init -> void
-Aw.Context.Core.Engine.ContextQuery.ContextQuery(string? Text, string? Node = null, string? Item = null, string? Symbol = null, int? Depth = null, int? Budget = null, bool Draft = false) -> void
-Aw.Context.Core.Engine.ContextQuery.Deconstruct(out string? Text, out string? Node, out string? Item, out string? Symbol, out int? Depth, out int? Budget, out bool Draft) -> void
 Aw.Context.Core.Engine.ContextQuery.Depth.get -> int?
 Aw.Context.Core.Engine.ContextQuery.Depth.init -> void
 Aw.Context.Core.Engine.ContextQuery.Draft.get -> bool
@@ -2038,8 +2036,6 @@ Aw.Context.Core.Results.ContextResult.Cites.get -> System.Collections.Generic.IR
 Aw.Context.Core.Results.ContextResult.Cites.init -> void
 Aw.Context.Core.Results.ContextResult.Conflicts.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultConflict!>!
 Aw.Context.Core.Results.ContextResult.Conflicts.init -> void
-Aw.Context.Core.Results.ContextResult.ContextResult(int SchemaVersion, Aw.Context.Core.Results.QueryId QueryId, Aw.Context.Core.Engine.ContextQuery! Query, System.Collections.Generic.IReadOnlyList<string!>! Anchors, string? MapVersion, System.DateTimeOffset AsOf, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultSection!>! Sections, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultConflict!>! Conflicts, System.Collections.Generic.IReadOnlyList<string!>! SuggestedAnchors, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DegradedSource!>! Degraded, bool Truncated, Aw.Context.Core.Results.BudgetUse! Budget, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
-Aw.Context.Core.Results.ContextResult.Deconstruct(out int SchemaVersion, out Aw.Context.Core.Results.QueryId QueryId, out Aw.Context.Core.Engine.ContextQuery! Query, out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out string? MapVersion, out System.DateTimeOffset AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultSection!>! Sections, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultConflict!>! Conflicts, out System.Collections.Generic.IReadOnlyList<string!>! SuggestedAnchors, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DegradedSource!>! Degraded, out bool Truncated, out Aw.Context.Core.Results.BudgetUse! Budget, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
 Aw.Context.Core.Results.ContextResult.Degraded.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DegradedSource!>!
 Aw.Context.Core.Results.ContextResult.Degraded.init -> void
 Aw.Context.Core.Results.ContextResult.Equals(Aw.Context.Core.Results.ContextResult? other) -> bool
@@ -3871,7 +3867,6 @@ Aw.Context.Core.Overrides.ProposalPayload.Deconstruct(out string! Run, out Aw.Co
 Aw.Context.Core.Overrides.ProposalPayload.Generation.get -> int
 Aw.Context.Core.Overrides.ProposalPayload.Generation.init -> void
 Aw.Context.Core.Overrides.ProposalPayload.ProposalPayload(string! Run, Aw.Context.Core.Engine.ContextRepoName Repo, Aw.Context.Core.Graph.NodeKind Kind, Aw.Context.Core.Graph.NodeKey? Parent = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence = null, string? Quote = null, int Generation = 0) -> void
-
 Aw.Context.Core.Extract.LabelPass
 Aw.Context.Core.Extract.LabelPass.<Clone>$() -> Aw.Context.Core.Extract.LabelPass!
 Aw.Context.Core.Extract.LabelPass.Complete.get -> bool
@@ -3889,7 +3884,6 @@ static Aw.Context.Core.Extract.LabelPass.operator ==(Aw.Context.Core.Extract.Lab
 const Aw.Context.Core.Overrides.MapOverride.CutMarker = "service:deny-cut" -> string!
 Aw.Context.Core.Overrides.MapOverride.IsCutUndo.get -> bool
 static Aw.Context.Core.Overrides.MapOverride.UndoingCut(Aw.Context.Core.Overrides.MapOverride! decision, System.DateTimeOffset at) -> Aw.Context.Core.Overrides.MapOverride!
-
 static Aw.Context.Core.Graph.TrustPolicy.ForNode(Aw.Context.Core.Graph.GraphNode! node, bool accepted) -> Aw.Context.Core.Results.Trust
 static Aw.Context.Core.Map.MapAccess.WithoutDenied(Aw.Context.Core.Graph.GraphSnapshot! current, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! profile, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! mapped, System.DateTimeOffset at) -> (Aw.Context.Core.Graph.GraphSnapshot! Graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Undo)
 static Aw.Context.Core.Engine.ScopeRules.Mapped(Aw.Context.Core.Engine.ContextSettings! settings, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>!
@@ -4091,3 +4085,165 @@ Aw.Context.Core.Lenses.SearchedSource.Deconstruct(out Aw.Context.Core.Sources.So
 Aw.Context.Core.Lenses.SearchedSource.Id.get -> Aw.Context.Core.Sources.SourceId
 Aw.Context.Core.Lenses.SearchedSource.SearchedSource(Aw.Context.Core.Sources.SourceId Id, Aw.Context.Core.Lenses.SearchedState State, string? Reason, string? Code, System.DateTimeOffset? AsOf) -> void
 static Aw.Context.Core.Lenses.SearchedSources.Intent(Aw.Context.Core.Sources.SourceId id, bool configured, Aw.Context.Core.Linking.IntentSourceState? state) -> Aw.Context.Core.Lenses.SearchedSource!
+Aw.Context.Core.Engine.ContextQuery.ContextQuery(string? Text, string? Node = null, string? Item = null, string? Symbol = null, int? Depth = null, int? Budget = null, bool Draft = false, Aw.Context.Core.Engine.DiffRange? Diff = null, Aw.Context.Core.Engine.ContextRepoName? Repo = null) -> void
+Aw.Context.Core.Engine.ContextQuery.Deconstruct(out string? Text, out string? Node, out string? Item, out string? Symbol, out int? Depth, out int? Budget, out bool Draft, out Aw.Context.Core.Engine.DiffRange? Diff, out Aw.Context.Core.Engine.ContextRepoName? Repo) -> void
+Aw.Context.Core.Engine.ContextQuery.Diff.get -> Aw.Context.Core.Engine.DiffRange?
+Aw.Context.Core.Engine.ContextQuery.Diff.init -> void
+Aw.Context.Core.Engine.ContextQuery.Repo.get -> Aw.Context.Core.Engine.ContextRepoName?
+Aw.Context.Core.Engine.ContextQuery.Repo.init -> void
+Aw.Context.Core.Engine.DiffRange
+Aw.Context.Core.Engine.DiffRange.<Clone>$() -> Aw.Context.Core.Engine.DiffRange!
+Aw.Context.Core.Engine.DiffRange.Base.get -> string!
+Aw.Context.Core.Engine.DiffRange.Base.init -> void
+Aw.Context.Core.Engine.DiffRange.Deconstruct(out string! Base, out string! Head) -> void
+Aw.Context.Core.Engine.DiffRange.DiffRange(string! Base, string! Head) -> void
+Aw.Context.Core.Engine.DiffRange.Equals(Aw.Context.Core.Engine.DiffRange? other) -> bool
+Aw.Context.Core.Engine.DiffRange.Head.get -> string!
+Aw.Context.Core.Engine.DiffRange.Head.init -> void
+Aw.Context.Core.Engine.DiffRange.IsValid() -> bool
+Aw.Context.Core.Extract.RepoChange
+Aw.Context.Core.Extract.RepoChange.<Clone>$() -> Aw.Context.Core.Extract.RepoChange!
+Aw.Context.Core.Extract.RepoChange.Change.init -> void
+Aw.Context.Core.Extract.RepoChange.Equals(Aw.Context.Core.Extract.RepoChange? other) -> bool
+Aw.Context.Core.Extract.RepoChange.Path.get -> string!
+Aw.Context.Core.Extract.RepoChange.Path.init -> void
+Aw.Context.Core.Extract.RepoChanges
+Aw.Context.Core.Extract.RepoChanges.<Clone>$() -> Aw.Context.Core.Extract.RepoChanges!
+Aw.Context.Core.Extract.RepoChanges.Base.get -> string!
+Aw.Context.Core.Extract.RepoChanges.Base.init -> void
+Aw.Context.Core.Extract.RepoChanges.Deconstruct(out string! Base, out string! Head, out string! MergeBase, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.RepoChange!>! Files) -> void
+Aw.Context.Core.Extract.RepoChanges.Equals(Aw.Context.Core.Extract.RepoChanges? other) -> bool
+Aw.Context.Core.Extract.RepoChanges.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.RepoChange!>!
+Aw.Context.Core.Extract.RepoChanges.Files.init -> void
+Aw.Context.Core.Extract.RepoChanges.Head.get -> string!
+Aw.Context.Core.Extract.RepoChanges.Head.init -> void
+Aw.Context.Core.Extract.RepoChanges.MergeBase.get -> string!
+Aw.Context.Core.Extract.RepoChanges.MergeBase.init -> void
+Aw.Context.Core.Extract.RepoChanges.RepoChanges(string! Base, string! Head, string! MergeBase, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.RepoChange!>! Files) -> void
+Aw.Context.Core.Lenses.DiffAnchors
+Aw.Context.Core.Results.ContextResult.ContextResult(int SchemaVersion, Aw.Context.Core.Results.QueryId QueryId, Aw.Context.Core.Engine.ContextQuery! Query, System.Collections.Generic.IReadOnlyList<string!>! Anchors, string? MapVersion, System.DateTimeOffset AsOf, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultSection!>! Sections, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultConflict!>! Conflicts, System.Collections.Generic.IReadOnlyList<string!>! SuggestedAnchors, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DegradedSource!>! Degraded, bool Truncated, Aw.Context.Core.Results.BudgetUse! Budget, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites, Aw.Context.Core.Results.DiffPart? Diff = null) -> void
+Aw.Context.Core.Results.ContextResult.Deconstruct(out int SchemaVersion, out Aw.Context.Core.Results.QueryId QueryId, out Aw.Context.Core.Engine.ContextQuery! Query, out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out string? MapVersion, out System.DateTimeOffset AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultSection!>! Sections, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultConflict!>! Conflicts, out System.Collections.Generic.IReadOnlyList<string!>! SuggestedAnchors, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DegradedSource!>! Degraded, out bool Truncated, out Aw.Context.Core.Results.BudgetUse! Budget, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites, out Aw.Context.Core.Results.DiffPart? Diff) -> void
+Aw.Context.Core.Results.ContextResult.Diff.get -> Aw.Context.Core.Results.DiffPart?
+Aw.Context.Core.Results.ContextResult.Diff.init -> void
+Aw.Context.Core.Results.DiffCounts
+Aw.Context.Core.Results.DiffCounts.<Clone>$() -> Aw.Context.Core.Results.DiffCounts!
+Aw.Context.Core.Results.DiffCounts.Changed.get -> int
+Aw.Context.Core.Results.DiffCounts.Changed.init -> void
+Aw.Context.Core.Results.DiffCounts.Deconstruct(out int Changed, out int Mapped, out int Suggested, out int Unmapped, out int Denied) -> void
+Aw.Context.Core.Results.DiffCounts.Denied.get -> int
+Aw.Context.Core.Results.DiffCounts.Denied.init -> void
+Aw.Context.Core.Results.DiffCounts.DiffCounts(int Changed, int Mapped, int Suggested, int Unmapped, int Denied) -> void
+Aw.Context.Core.Results.DiffCounts.Equals(Aw.Context.Core.Results.DiffCounts? other) -> bool
+Aw.Context.Core.Results.DiffCounts.Mapped.get -> int
+Aw.Context.Core.Results.DiffCounts.Mapped.init -> void
+Aw.Context.Core.Results.DiffCounts.Suggested.get -> int
+Aw.Context.Core.Results.DiffCounts.Suggested.init -> void
+Aw.Context.Core.Results.DiffCounts.Unmapped.get -> int
+Aw.Context.Core.Results.DiffCounts.Unmapped.init -> void
+Aw.Context.Core.Results.DiffFile
+Aw.Context.Core.Results.DiffFile.<Clone>$() -> Aw.Context.Core.Results.DiffFile!
+Aw.Context.Core.Results.DiffFile.Change.init -> void
+Aw.Context.Core.Results.DiffFile.Equals(Aw.Context.Core.Results.DiffFile? other) -> bool
+Aw.Context.Core.Results.DiffFile.Nodes.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffNode!>!
+Aw.Context.Core.Results.DiffFile.Nodes.init -> void
+Aw.Context.Core.Results.DiffFile.Path.get -> string!
+Aw.Context.Core.Results.DiffFile.Path.init -> void
+Aw.Context.Core.Results.DiffFile.Status.init -> void
+Aw.Context.Core.Results.DiffNode
+Aw.Context.Core.Results.DiffNode.<Clone>$() -> Aw.Context.Core.Results.DiffNode!
+Aw.Context.Core.Results.DiffNode.Confirmed.get -> bool
+Aw.Context.Core.Results.DiffNode.Confirmed.init -> void
+Aw.Context.Core.Results.DiffNode.Equals(Aw.Context.Core.Results.DiffNode? other) -> bool
+Aw.Context.Core.Results.DiffNode.Key.init -> void
+Aw.Context.Core.Results.DiffPart
+Aw.Context.Core.Results.DiffPart.<Clone>$() -> Aw.Context.Core.Results.DiffPart!
+Aw.Context.Core.Results.DiffPart.AnchorsTotal.get -> int
+Aw.Context.Core.Results.DiffPart.AnchorsTotal.init -> void
+Aw.Context.Core.Results.DiffPart.AnchorsTruncated.get -> bool
+Aw.Context.Core.Results.DiffPart.AnchorsTruncated.init -> void
+Aw.Context.Core.Results.DiffPart.Base.get -> string!
+Aw.Context.Core.Results.DiffPart.Base.init -> void
+Aw.Context.Core.Results.DiffPart.Counts.get -> Aw.Context.Core.Results.DiffCounts!
+Aw.Context.Core.Results.DiffPart.Counts.init -> void
+Aw.Context.Core.Results.DiffPart.Deconstruct(out Aw.Context.Core.Engine.ContextRepoName Repo, out string! Base, out string! Head, out string! MergeBase, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffFile!>! Files, out System.Collections.Generic.IReadOnlyList<string!>! Unmapped, out Aw.Context.Core.Results.DiffCounts! Counts, out bool Truncated, out int AnchorsTotal, out bool AnchorsTruncated) -> void
+Aw.Context.Core.Results.DiffPart.DiffPart(Aw.Context.Core.Engine.ContextRepoName Repo, string! Base, string! Head, string! MergeBase, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffFile!>! Files, System.Collections.Generic.IReadOnlyList<string!>! Unmapped, Aw.Context.Core.Results.DiffCounts! Counts, bool Truncated, int AnchorsTotal, bool AnchorsTruncated) -> void
+Aw.Context.Core.Results.DiffPart.Equals(Aw.Context.Core.Results.DiffPart? other) -> bool
+Aw.Context.Core.Results.DiffPart.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffFile!>!
+Aw.Context.Core.Results.DiffPart.Files.init -> void
+Aw.Context.Core.Results.DiffPart.Head.get -> string!
+Aw.Context.Core.Results.DiffPart.Head.init -> void
+Aw.Context.Core.Results.DiffPart.MergeBase.get -> string!
+Aw.Context.Core.Results.DiffPart.MergeBase.init -> void
+Aw.Context.Core.Results.DiffPart.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
+Aw.Context.Core.Results.DiffPart.Repo.init -> void
+Aw.Context.Core.Results.DiffPart.Truncated.get -> bool
+Aw.Context.Core.Results.DiffPart.Truncated.init -> void
+Aw.Context.Core.Results.DiffPart.Unmapped.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Results.DiffPart.Unmapped.init -> void
+const Aw.Context.Core.Engine.DiffRange.Message = "a diff names two commit shas joined by '..' (base..head, 7 to 64 lower-case hex characters each); resolve the refs to shas first: branch names, tags, HEAD, '~', '^' and '...' are not accepted" -> string!
+const Aw.Context.Core.Lenses.DiffAnchors.MaxAnchors = 20 -> int
+const Aw.Context.Core.Lenses.DiffAnchors.MaxFiles = 1000 -> int
+override Aw.Context.Core.Engine.DiffRange.Equals(object? obj) -> bool
+override Aw.Context.Core.Engine.DiffRange.GetHashCode() -> int
+override Aw.Context.Core.Engine.DiffRange.ToString() -> string!
+override Aw.Context.Core.Extract.RepoChange.Equals(object? obj) -> bool
+override Aw.Context.Core.Extract.RepoChange.GetHashCode() -> int
+override Aw.Context.Core.Extract.RepoChange.ToString() -> string!
+override Aw.Context.Core.Extract.RepoChanges.Equals(object? obj) -> bool
+override Aw.Context.Core.Extract.RepoChanges.GetHashCode() -> int
+override Aw.Context.Core.Extract.RepoChanges.ToString() -> string!
+override Aw.Context.Core.Results.DiffCounts.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.DiffCounts.GetHashCode() -> int
+override Aw.Context.Core.Results.DiffCounts.ToString() -> string!
+override Aw.Context.Core.Results.DiffFile.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.DiffFile.GetHashCode() -> int
+override Aw.Context.Core.Results.DiffFile.ToString() -> string!
+override Aw.Context.Core.Results.DiffNode.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.DiffNode.GetHashCode() -> int
+override Aw.Context.Core.Results.DiffNode.ToString() -> string!
+override Aw.Context.Core.Results.DiffPart.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.DiffPart.GetHashCode() -> int
+override Aw.Context.Core.Results.DiffPart.ToString() -> string!
+static Aw.Context.Core.Engine.DiffRange.Parse(string? text) -> Aw.Kernel.Result<Aw.Context.Core.Engine.DiffRange!>!
+static Aw.Context.Core.Engine.DiffRange.operator !=(Aw.Context.Core.Engine.DiffRange? left, Aw.Context.Core.Engine.DiffRange? right) -> bool
+static Aw.Context.Core.Engine.DiffRange.operator ==(Aw.Context.Core.Engine.DiffRange? left, Aw.Context.Core.Engine.DiffRange? right) -> bool
+static Aw.Context.Core.Extract.RepoChange.operator !=(Aw.Context.Core.Extract.RepoChange? left, Aw.Context.Core.Extract.RepoChange? right) -> bool
+static Aw.Context.Core.Extract.RepoChange.operator ==(Aw.Context.Core.Extract.RepoChange? left, Aw.Context.Core.Extract.RepoChange? right) -> bool
+static Aw.Context.Core.Extract.RepoChanges.operator !=(Aw.Context.Core.Extract.RepoChanges? left, Aw.Context.Core.Extract.RepoChanges? right) -> bool
+static Aw.Context.Core.Extract.RepoChanges.operator ==(Aw.Context.Core.Extract.RepoChanges? left, Aw.Context.Core.Extract.RepoChanges? right) -> bool
+static Aw.Context.Core.Lenses.DiffAnchors.Build(Aw.Context.Core.Extract.RepoChanges! changes, Aw.Context.Core.Engine.ContextRepo! repo, Aw.Context.Core.Graph.GraphSnapshot! graph) -> (Aw.Context.Core.Results.DiffPart! Part, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphNode!>! Anchors)
+static Aw.Context.Core.Results.DiffCounts.operator !=(Aw.Context.Core.Results.DiffCounts? left, Aw.Context.Core.Results.DiffCounts? right) -> bool
+static Aw.Context.Core.Results.DiffCounts.operator ==(Aw.Context.Core.Results.DiffCounts? left, Aw.Context.Core.Results.DiffCounts? right) -> bool
+static Aw.Context.Core.Results.DiffFile.operator !=(Aw.Context.Core.Results.DiffFile? left, Aw.Context.Core.Results.DiffFile? right) -> bool
+static Aw.Context.Core.Results.DiffFile.operator ==(Aw.Context.Core.Results.DiffFile? left, Aw.Context.Core.Results.DiffFile? right) -> bool
+static Aw.Context.Core.Results.DiffNode.operator !=(Aw.Context.Core.Results.DiffNode? left, Aw.Context.Core.Results.DiffNode? right) -> bool
+static Aw.Context.Core.Results.DiffNode.operator ==(Aw.Context.Core.Results.DiffNode? left, Aw.Context.Core.Results.DiffNode? right) -> bool
+static Aw.Context.Core.Results.DiffPart.operator !=(Aw.Context.Core.Results.DiffPart? left, Aw.Context.Core.Results.DiffPart? right) -> bool
+static Aw.Context.Core.Results.DiffPart.operator ==(Aw.Context.Core.Results.DiffPart? left, Aw.Context.Core.Results.DiffPart? right) -> bool
+static readonly Aw.Context.Core.ContextErrors.CommitUnknown -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.NoMergeBase -> Aw.Kernel.ErrorDefinition!
+Aw.Context.Core.Engine.DiffRangeJsonConverter
+Aw.Context.Core.Engine.DiffRangeJsonConverter.DiffRangeJsonConverter() -> void
+override Aw.Context.Core.Engine.DiffRangeJsonConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Aw.Context.Core.Engine.DiffRange!
+override Aw.Context.Core.Engine.DiffRangeJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Aw.Context.Core.Engine.DiffRange! value, System.Text.Json.JsonSerializerOptions! options) -> void
+const Aw.Context.Core.Engine.QueryRules.RepoMessage = "a repo goes with a diff only (it names the repo whose commits the range is read in)" -> string!
+Aw.Context.Core.Extract.IRepoReader.Changes(Aw.Context.Core.Engine.ContextRepo! repo, Aw.Context.Core.Engine.DiffRange! range, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Extract.RepoChanges!>!>
+Aw.Context.Core.Extract.RepoChange.Change.get -> Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Extract.RepoChange.Deconstruct(out string! Path, out Aw.Context.Core.Results.ChangeKind Change) -> void
+Aw.Context.Core.Extract.RepoChange.RepoChange(string! Path, Aw.Context.Core.Results.ChangeKind Change) -> void
+Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Results.ChangeKind.Added = 0 -> Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Results.ChangeKind.Deleted = 2 -> Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Results.ChangeKind.Modified = 1 -> Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Results.ChangeKind.TypeChanged = 3 -> Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Results.DiffFile.Change.get -> Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Results.DiffFile.Deconstruct(out string! Path, out Aw.Context.Core.Results.ChangeKind Change, out Aw.Context.Core.Results.DiffStatus Status, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffNode!>! Nodes) -> void
+Aw.Context.Core.Results.DiffFile.DiffFile(string! Path, Aw.Context.Core.Results.ChangeKind Change, Aw.Context.Core.Results.DiffStatus Status, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffNode!>! Nodes) -> void
+Aw.Context.Core.Results.DiffFile.Status.get -> Aw.Context.Core.Results.DiffStatus
+Aw.Context.Core.Results.DiffNode.Deconstruct(out string! Key, out bool Confirmed) -> void
+Aw.Context.Core.Results.DiffNode.DiffNode(string! Key, bool Confirmed) -> void
+Aw.Context.Core.Results.DiffNode.Key.get -> string!
+Aw.Context.Core.Results.DiffStatus
+Aw.Context.Core.Results.DiffStatus.Mapped = 0 -> Aw.Context.Core.Results.DiffStatus
+Aw.Context.Core.Results.DiffStatus.Suggested = 1 -> Aw.Context.Core.Results.DiffStatus
+Aw.Context.Core.Results.DiffStatus.Unmapped = 2 -> Aw.Context.Core.Results.DiffStatus

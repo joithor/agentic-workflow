@@ -42,11 +42,12 @@ internal sealed class Interrupt : IDisposable
         FollowsJob(args) || (args is ["workflow", "events", .. var rest] && rest.Contains("--follow", StringComparer.Ordinal))
         || (args is ["status", .. var follow] && follow.Contains("--follow", StringComparer.Ordinal));
 
-    /// <summary>Whether <paramref name="args"/> is 'services run' without --detach: it follows its job, so the first Ctrl-C cancels the job and the second leaves.</summary>
+    /// <summary>Whether <paramref name="args"/> is 'services run', 'context sources sync' or 'context map build' without --detach: it follows its job, so the first Ctrl-C cancels the job and the second leaves.</summary>
     /// <param name="args">The command line.</param>
     /// <returns>True for a job-following verb.</returns>
     public static bool FollowsJob(string[] args) =>
-        args is ["services", "run", .. var rest] && !rest.Contains("--detach", StringComparer.Ordinal);
+        !args.Contains("--detach", StringComparer.Ordinal)
+        && (args is ["services", "run", ..] or ["context", "sources", "sync", ..] or ["context", "map", "build", ..]);
 
     /// <summary>Starts listening when <paramref name="args"/> <see cref="Streams"/> or <see cref="FollowsJob"/>.</summary>
     /// <param name="args">The command line.</param>
