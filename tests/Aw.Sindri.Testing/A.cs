@@ -14,6 +14,9 @@ public static class A
     /// <summary>The id the decision builders default to.</summary>
     public static DecisionId FirstDecisionId { get; } = DecisionId.From("DEC-00000000000000000000000000000001");
 
+    /// <summary>The id the job builders default to.</summary>
+    public static JobId FirstJobId { get; } = JobId.From("JOB-00000000000000000000000000000001");
+
     /// <summary>An items-view row builder: a new item at version 1.</summary>
     /// <returns>A new builder.</returns>
     public static ItemRowBuilder Item() => new();
@@ -101,4 +104,32 @@ public static class A
     /// <summary>A needs-you row builder: a pulsing decision row.</summary>
     /// <returns>A new builder.</returns>
     public static NeedsYouRowBuilder NeedsYouRow() => new();
+
+    /// <summary>A jobs-view row builder: a running RunService job for heartbeat, started at the epoch.</summary>
+    /// <returns>A new builder.</returns>
+    public static JobBuilder Job() => new();
+
+    /// <summary>A RunServiceRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static RunServiceRequestBuilder RunServiceRequest() => new();
+
+    /// <summary>A PauseServiceRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static PauseServiceRequestBuilder PauseServiceRequest() => new();
+
+    /// <summary>A ResumeServiceRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static ResumeServiceRequestBuilder ResumeServiceRequest() => new();
+
+    /// <summary>A CancelJobRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static CancelJobRequestBuilder CancelJobRequest() => new();
+
+    /// <summary>A GetJobRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static GetJobRequestBuilder GetJobRequest() => new();
+
+    /// <summary>A ListJobsRequest builder with deterministic defaults.</summary>
+    /// <returns>A new builder.</returns>
+    public static ListJobsRequestBuilder ListJobsRequest() => new();
 }

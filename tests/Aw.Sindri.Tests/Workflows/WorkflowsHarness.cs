@@ -14,6 +14,7 @@ using Aw.Sindri.Infrastructure.Notifications;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.Ledger;
 using Aw.Sindri.Tests.Notifications;
+using Aw.Sindri.Tests.Workflows.Spike;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Time.Testing;
@@ -121,8 +122,7 @@ internal sealed class WorkflowsHarness : IDisposable
         }
     }
 
-    private static bool IsPortTaken(Exception e) =>
-        e.ToString().Contains("address already in use", StringComparison.OrdinalIgnoreCase);
+    private static bool IsPortTaken(Exception e) => TemporalServerFixture.IsPortTaken(e);
 
     public static string Target(WorkflowEnvironment env) => env.Client.Connection.Options.TargetHost!;
 
@@ -281,14 +281,18 @@ internal sealed class WorkflowsHarness : IDisposable
     /// Runs 'sindri workflow &lt;args&gt;' in process as <paramref name="session"/> classes the CLI, typing
     /// <paramref name="typed"/> at a challenge. The writes are clients of the API control.json names, as the real CLI's are.
     /// </summary>
-    internal static async Task<(int Exit, string Stdout, string Stderr)> Cli(IServiceProvider services, AgentSession session, string? typed, params string[] args)
+    internal static Task<(int Exit, string Stdout, string Stderr)> Cli(IServiceProvider services, AgentSession session, string? typed, params string[] args) =>
+        Cli(services, session, typed, repo: null, args);
+
+    /// <summary>Runs 'sindri workflow &lt;args&gt;' as <paramref name="session"/> from <paramref name="repo"/> (the X-Sindri-Repo it sends), or from no repo.</summary>
+    internal static async Task<(int Exit, string Stdout, string Stderr)> Cli(IServiceProvider services, AgentSession session, string? typed, Core.Ids.RepoName? repo, params string[] args)
     {
         var stdout = new StringWriter();
         var stderr = new StringWriter();
         var json = services.GetRequiredService<JsonSerializerOptions>();
         var output = new Output(stdout, stderr, json);
         using var client = new ControlPlaneClient(services.GetRequiredService<IControlPlaneProbe>(), json,
-            CallerHeaders.For(session, services.GetRequiredService<IHumanTokenStore>(), static _ => ValueTask.FromResult<Core.Ids.RepoName?>(null)), TimeSpan.FromSeconds(30));
+            CallerHeaders.For(session, services.GetRequiredService<IHumanTokenStore>(), _ => ValueTask.FromResult(repo)), TimeSpan.FromSeconds(30));
         var desk = new RecipeDesk(client, new StringReader(typed is null ? string.Empty : typed + "\n"), static _ => Task.FromResult<Kernel.Error?>(null));
         var exit = await WorkflowCommandTable.Run(args, services, output, desk, TestContext.Current.CancellationToken);
         return (exit, stdout.ToString(), stderr.ToString());
@@ -317,7 +321,7 @@ internal sealed class WorkflowsHarness : IDisposable
         while (DateTime.UtcNow < deadline)
         {
             last = await Cli(sindri, args);
-            if (last.Exit != 0 || (last.Stdout.Length > 0 && last.Stdout is not ("no instances match\n" or "nothing needs you\n")))
+            if (last.Exit != 0 || (last.Stdout.Length > 0 && last.Stdout is not ("No workflows match.\n" or "No workflows are open.\n" or "nothing needs you\n")))
             {
                 break;
             }

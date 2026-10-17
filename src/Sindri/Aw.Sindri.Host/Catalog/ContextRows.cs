@@ -9,11 +9,9 @@ namespace Aw.Sindri.Host.Catalog;
 /// README X63 sets the classes of the map review: a single decision (accept, reject, rename, move), the bulk deterministic accept,
 /// undo and the orphan repoint and drop are desk (one reversible override row, with Undo; the terminal and the app may run them);
 /// applying a review file, merge, add, delete and promote are protected (the terminal and the typed confirmation of X30, like import).
-/// Proposing is a job run synchronously (it only writes draft rows). BuildContextMap is a job that waits for API P6's runtime:
-/// 'pending:API-P6' with no route mapped, and drafts come from proposals and the 'context-rebuild' scheduled service meanwhile.
-/// SyncSources is a job (API §4.1), which needs API P6's job runtime, so it is registered 'pending:API-P6' (the S-5B part is in: the sync itself
-/// and the 'context-sync' scheduled service; only the job runtime is missing) with no route mapped yet; until then the
-/// 'context-docs-refresh' scheduled service refreshes repo-docs and 'context-sync' syncs the intent sources.
+/// Proposing is a job run synchronously (it only writes draft rows). BuildContextMap, SyncSources and RunContextBacktest are jobs on API P6's runtime (JobRows.Job,
+/// AddContextJobs, MapContextJobs): they start a job and answer its links, and the 'context-rebuild' and 'context-sync' scheduled services
+/// run the same work on a cadence.
 /// </summary>
 internal static class ContextRows
 {
@@ -37,16 +35,16 @@ internal static class ContextRows
         new(ActionId.From("ProposeContextMap"), typeof(ProposeContextMapRequest), Variant: null, ActionClass.Job, ServiceGrants: [],
             NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
             "POST", "/sindri/context/map/proposals", ShellRows.Form("sindri context map propose <file>"), "ready"),
-        new(ActionId.From("BuildContextMap"), CommandType: null, Variant: null, ActionClass.Job, ServiceGrants: [],
-            NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
-            "POST", "/sindri/context/map/build", ShellRows.Form("sindri context map build"), "pending:API-P6"),
+        JobRows.Job("BuildContextMap", typeof(BuildContextMapRequest), "/sindri/context/map/build", "sindri context map build"),
         new(ActionId.From("ImportContextMap"), typeof(ImportContextMapRequest), Variant: null, ActionClass.Protected, ServiceGrants: [],
             NeedsTerminal: true, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
             "POST", "/sindri/context/map/import", ShellRows.Form("sindri context map import <file>"), "cli-only:typed-confirmation"),
-        new(ActionId.From("SyncSources"), CommandType: null, Variant: null, ActionClass.Job, ServiceGrants: [],
-            NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
-            "POST", "/sindri/context/sources/sync", ShellRows.Form("sindri context sources sync"), "pending:API-P6"),
+        JobRows.Job("SyncSources", typeof(SyncContextSourcesRequest), "/sindri/context/sources/sync", "sindri context sources sync"),
+        JobRows.Job(BacktestAction, typeof(RunContextBacktestRequest), "/sindri/context/eval/backtest", "sindri context eval backtest"),
     ];
+
+    /// <summary>The backtest's action id (a shared contract with the UI lane: Verb+Context+noun); one constant, so a rename is one line.</summary>
+    internal const string BacktestAction = "RunContextBacktest";
 
     private const string EngineRowsTypedConfirmation = "cli-only:typed-confirmation";
 

@@ -19,6 +19,7 @@ internal static class SindriHostServiceCollectionExtensions
         .AddSingleton<IExitCode, ProcessExitCode>()
         .AddSingleton<ICommandCatalog, CommandCatalog>()
         .AddSingleton<Projector>()
+        .AddSingleton<ScheduleInputs>()
         .AddSingleton<IOnyxProgress>(static _ => new ConsoleOnyxProgress(Console.Error));   // `onyx up`'s lines and dots on standard error
 
     /// <summary>
@@ -32,6 +33,7 @@ internal static class SindriHostServiceCollectionExtensions
         .AddHostedService<ServeListenerCheck>()
         .AddHostedService<SchedulerHost>()
         .AddHostedService<ProjectorHost>()
+        .AddHostedService<JobRecoveryHost>()
         .AddHostedService<ProfileWatch>()
         .AddHostedService<LeaseRenewer>();
 }

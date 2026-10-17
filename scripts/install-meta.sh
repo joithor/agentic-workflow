@@ -56,7 +56,16 @@ fi
 # script must run from it; from any other tree (a worktree, a second clone) it refuses. With no team repo, a linked git worktree
 # is refused. --allow-worktree is the explicit override, and then aw-meta-launch is linked into this tree.
 LAUNCH_DIR="$SCRIPT_DIR"
-team_json="${AW_META_CONFIG:-$STATE/meta/team.json}"
+# shellcheck source=meta-team-lib.sh
+. "$SCRIPT_DIR/scripts/meta-team-lib.sh"
+meta_amb=0
+meta_resolve "$STATE" "${AW_META_TEAM:-}" 2> /dev/null || meta_amb=1   # several teams and none selected: which team's repo to check is unknown
+if [ "$meta_amb" = 1 ] && [ "$allow_worktree" != 1 ]; then
+  echo "install-meta: several teams exist and none is selected, so the team's repo to install from is unknown." >&2
+  echo "  Set AW_META_TEAM=<name> (aw-meta team-list shows them), or pass --allow-worktree to install from this tree on purpose." >&2
+  exit 3
+fi
+team_json="${AW_META_CONFIG:-$META_CONFIG}"
 team_repo="$(jq -r '.repo // empty' "$team_json" 2>/dev/null || true)"
 if [ "$allow_worktree" != 1 ]; then
   if [ -n "$team_repo" ] && [ -f "$team_repo/scripts/meta-launch.sh" ]; then
@@ -94,7 +103,7 @@ else
   mkdir -p "$work"
   tree="$(mktemp -d "$work/tree.XXXXXX")"
   git -C "$SCRIPT_DIR" ls-files -z --cached --others --exclude-standard -- global.json nuget.config .editorconfig 'Directory.*' \
-    BannedSymbols.txt CodeMetricsConfig.txt src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction src/Aw.Analyzers src/Meta \
+    'BannedSymbols*.txt' CodeMetricsConfig.txt src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction src/Aw.Analyzers src/Meta \
     | (cd "$SCRIPT_DIR" && tar --null -T - -cf -) | tar -xf - -C "$tree"
   rid="$(dotnet --info | awk '/^ *RID:/ {print $2; exit}')"
   run=(dotnet publish "$tree/src/Meta/Aw.Meta.Host/Aw.Meta.Host.csproj" -c Release -r "$rid" -p:RestoreLockedMode=false -o "$tree/out")
@@ -160,5 +169,5 @@ else
   ln -sfn "$BIN/aw-meta" "$LOCAL_BIN/aw-meta"
   ln -sfn "$LAUNCH_DIR/scripts/meta-launch.sh" "$LOCAL_BIN/aw-meta-launch"
   echo "  meta: aw-meta and aw-meta-launch in $LOCAL_BIN"
-  [ -f "$STATE/meta/team.json" ] || echo "  meta: next, write a team config: aw-meta team-init --team <t> --repo <dir> --lanes a,b,c (example: skills/meta/examples/agentic-workflow.team.json)"
+  [ -f "$META_CONFIG" ] || [ "$meta_amb" = 1 ] || echo "  meta: next, write a team config: aw-meta team-init --team <t> --repo <dir> --lanes a,b,c (example: skills/meta/examples/agentic-workflow.team.json)"
 fi

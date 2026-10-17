@@ -68,11 +68,23 @@ public sealed class CqrsRuleTests
         Assert.Empty(CatalogCoverageRules.Check([typeof(FixtureApply)], variants));
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void Catalog_coverage_rule_flags_an_IJob_whose_row_is_not_class_job()
+    {
+        var desk = new InMemoryCommandCatalog(Row("FixtureJob", typeof(FixtureJob), variant: null));
+        var job = new InMemoryCommandCatalog(Row("FixtureJob", typeof(FixtureJob), variant: null) with { Class = ActionClass.Job });
+
+        Assert.Equal(["ARCH-CQRS-003: FixtureJob is an IJob, so its row's class is 'job'"], CatalogCoverageRules.Check([typeof(FixtureJob)], desk));
+        Assert.Empty(CatalogCoverageRules.Check([typeof(FixtureJob)], job));
+    }
+
     private static CommandRow Row(string action, Type type, string? variant) =>
         new(ActionId.From(action), type, variant, ActionClass.Desk, ServiceGrants: [], NeedsTerminal: false, SelfAudited: false, Destructive: false,
             ReadsViews: false, Shortcut: null, "POST", "/sindri/fixture", CliForm.Parse("sindri fixture").Value, "ready");
 
     private sealed record UnlistedCommand : ICommand<CommandAccepted>;
+
+    private sealed record FixtureJob : IJob<CommandAccepted>;
 
     private sealed record LedgerQuery : IQuery<long>;
 

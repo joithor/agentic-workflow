@@ -146,12 +146,27 @@ public static class SindriErrors
     /// <summary>SND-ONYX-012: Sindri can't use its Onyx directory under the Sindri home (no permission to create or lock a file in it); the message names the directory.</summary>
     public static readonly ErrorDefinition OnyxWorkspaceUnusable = new("SND-ONYX-012", ErrorKind.Unavailable, "Sindri can't use its Onyx directory");
 
+    /// <summary>SND-JOB-404: no job has that id, or a session caller may not see it (API spec §9).</summary>
+    public static readonly ErrorDefinition JobNotFound = new("SND-JOB-404", ErrorKind.NotFound, "No such job");
+
+    /// <summary>SND-JOB-409: a job of that kind and key is already running (the error carries 'runningJob'), or the job to cancel already ended.</summary>
+    public static readonly ErrorDefinition JobConflict = new("SND-JOB-409", ErrorKind.Conflict, "The job conflicts with one that is running or ended");
+
+    /// <summary>SND-JOB-001: the process stopped while the job ran; it appears only as a job's code, never as an HTTP response.</summary>
+    public static readonly ErrorDefinition JobInterrupted = new("SND-JOB-001", ErrorKind.Unavailable, "The job was interrupted: the process stopped while it ran");
+
+    /// <summary>SND-JOB-002: the most jobs are running (8); start again when one ends.</summary>
+    public static readonly ErrorDefinition JobsRateLimited = new("SND-JOB-002", ErrorKind.RateLimited, "Too many jobs are running");
+
+    /// <summary>SND-SVC-404: no service of the approved profile has that name (API spec §9).</summary>
+    public static readonly ErrorDefinition ServiceNotFound = new("SND-SVC-404", ErrorKind.NotFound, "No such service in the approved profile");
+
     /// <summary>Every Sindri error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
         LeaseHeld, LeaseLost, LeaseStale, ProfileMissing, ProfileInvalid, ProfileHashMismatch, ProfileNeedsTerminal,
         ProfileNotApproved, ApprovalsUnavailable, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, PortInUse, ApiNoCode, ApiInternal,
         CallerUnknown, OriginRefused, CommandBusy, AuthTokenRequired, AuthRefused, UnknownVerb, StartFailed,
-        InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe, OnyxDockerUnavailable, OnyxComposeMissing, OnyxNotEnoughResources, OnyxPinsMalformed, OnyxPortTaken, OnyxNotReady, OnyxRemoteDocker, OnyxComposeFailed, OnyxWorkspaceUnusable,
+        InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, JobNotFound, JobConflict, JobInterrupted, JobsRateLimited, ServiceNotFound, OnyxDockerUnavailable, OnyxComposeMissing, OnyxNotEnoughResources, OnyxPinsMalformed, OnyxPortTaken, OnyxNotReady, OnyxRemoteDocker, OnyxComposeFailed, OnyxWorkspaceUnusable, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
     ];
 }

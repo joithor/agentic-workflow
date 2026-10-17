@@ -39,6 +39,12 @@ public static class ApiViews
     /// <summary>GET /sindri/decisions.</summary>
     public const string Decisions = "decisions";
 
+    /// <summary>GET /sindri/jobs/{jobId}.</summary>
+    public const string Job = "job";
+
+    /// <summary>GET /sindri/jobs.</summary>
+    public const string Jobs = "jobs";
+
     /// <summary>Every view name.</summary>
-    public static IReadOnlyList<string> All { get; } = [Status, Services, Profile, Commands, Queue, Items, Item, Timeline, NeedsYou, Requests, Decisions];
+    public static IReadOnlyList<string> All { get; } = [Status, Services, Profile, Commands, Queue, Items, Item, Timeline, NeedsYou, Requests, Decisions, Job, Jobs];
 }

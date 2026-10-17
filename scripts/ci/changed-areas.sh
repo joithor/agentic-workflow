@@ -60,7 +60,7 @@ classify_changes() {
     case "$file" in
       config/*|scripts/*|providers/*|setup.sh|mods/*|skills/*|.agents/*|AGENTS.md|CLAUDE.md|.claude/*|.cursor/*|.devcontainer/*|.env.example)
         bash=true ;;
-      src/*|tests/*|schemas/packets/*|*.cs|*.csproj|*.props|*.targets|*.slnx|global.json|nuget.config|.editorconfig|BannedSymbols.txt|packages.lock.json|.config/dotnet-tools.json)
+      src/*|tests/*|schemas/packets/*|*.cs|*.csproj|*.props|*.targets|*.slnx|global.json|nuget.config|.editorconfig|BannedSymbols*.txt|packages.lock.json|.config/dotnet-tools.json)
         dotnet=true ;;
     esac
     case "$file" in
@@ -86,6 +86,9 @@ classify_changes() {
       # scripts/tests/scoping-fixture.test.sh builds the fixture's history and runs its self-check (dotnet comes from tests/*)
       tests/fixtures/scoping/*) dotnet=true; bash=true ;;
       docs/csharp/sindri-profile.md|docs/csharp/sindri-launcher.md) bash=true ;;
+      # check-fleet.mjs (and its suite) validate the fleet state schema's fixtures and the /proc-shaped sessions tree; both sit under tests/ (dotnet) too
+      tests/fixtures/fleet/*|tests/fixtures/sessions/*) bash=true ;;
+      docs/csharp/sindri-sessions.md) bash=true ;;
     esac
     for pkg in "${TS_PACKAGES[@]}"; do
       case "$file" in

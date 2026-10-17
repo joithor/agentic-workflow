@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Aw.Meta.Core;
 using Aw.Meta.Core.Ports;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,6 +17,8 @@ internal static class CommandTable
         RoleShowCommand.Entry,
         TeamInitCommand.Entry,
         TeamShowCommand.Entry,
+        TeamListCommand.Entry,
+        TeamMigrateCommand.Entry,
         SyncInboxCommand.Entry,
         StopCheckCommand.Entry,
         OutboxRecordCommand.Entry,
@@ -44,7 +47,39 @@ internal static class CommandTable
         LaneReplyCommand.Entry,
     ];
 
+    // Commands that work across teams: they never need one selected.
+    private static readonly HashSet<string> _teamFree = new(["team-list", "team-migrate"], StringComparer.Ordinal);
+
+    // The hook commands run for every session of the box, so they pass through when the team can't be told.
+    private static readonly HashSet<string> _hooks = new(["stop-check", "outbox-record"], StringComparer.Ordinal);
+
     internal static IReadOnlyList<CommandEntry> Entries => _entries;
+
+    private static string Ambiguity(TeamLayout layout) =>
+        $"several teams exist ({string.Join(", ", layout.Ambiguous)}) and none is selected; pass --team <name> or set AW_META_TEAM (aw-meta team-list shows them)";
+
+    // The team checks before a command runs: an unusable --team name is a usage error; several teams with none selected refuses (a hook passes).
+    private static int? TeamGate(CommandEntry entry, TeamLayout layout, ConsoleIo io)
+    {
+        // A hook runs for every session, so a bad name or no way to tell the team lets it through, as with no team set up.
+        if (_hooks.Contains(entry.Name) && (layout.Problem is not null || layout.Ambiguous.Count > 0))
+        {
+            return CommandOutput.Ok;
+        }
+
+        if (layout.Problem is { } bad)
+        {
+            return CommandOutput.Usage(io, bad, entry.Spec.Usage);
+        }
+
+        if (layout.Ambiguous.Count == 0 || _teamFree.Contains(entry.Name))
+        {
+            return null;
+        }
+
+        io.Err.WriteLine($"{MetaErrors.TeamAmbiguous.Code}: {Ambiguity(layout)}");
+        return CommandOutput.Failed;
+    }
 
     internal static async Task<int> Run(string[] args, IServiceProvider provider, JsonSerializerOptions json, ConsoleIo io)
     {
@@ -62,6 +97,11 @@ internal static class CommandTable
         if (CommandLine.Parse(args[1..], entry.Spec, out var problem) is not { } line)
         {
             return CommandOutput.Usage(io, problem, entry.Spec.Usage);
+        }
+
+        if (TeamGate(entry, provider.GetRequiredService<TeamLayout>(), io) is { } refused)
+        {
+            return refused;
         }
 
         var scope = provider.CreateAsyncScope();

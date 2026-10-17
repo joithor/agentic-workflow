@@ -59,7 +59,13 @@ public static class MetaErrors
     /// <summary>AW-META-018.</summary>
     public static readonly ErrorDefinition QueueEntryNotFound = new("AW-META-018", ErrorKind.NotFound, "No merge-queue entry for that pull request");
 
+    /// <summary>AW-META-019.</summary>
+    public static readonly ErrorDefinition TeamAmbiguous = new("AW-META-019", ErrorKind.Invalid, "Several teams exist and none is selected");
+
+    /// <summary>AW-META-020.</summary>
+    public static readonly ErrorDefinition TeamMigrationRefused = new("AW-META-020", ErrorKind.Conflict, "The legacy team can't be migrated");
+
     /// <summary>Every Meta error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
-        [Invalid, NoTeamConfig, ConfigInvalid, TranscriptUnreadable, MessageNotFound, QuestionNotFound, GateStepNotFound, LogUnwritable, CommandNotStarted, HostUnreadable, ConfigExists, CommandFailed, LogUnreadable, LaneVariablesUnset, LaneNotRecorded, UnknownLane, ClaudeLane, QueueEntryNotFound];
+        [Invalid, NoTeamConfig, ConfigInvalid, TranscriptUnreadable, MessageNotFound, QuestionNotFound, GateStepNotFound, LogUnwritable, CommandNotStarted, HostUnreadable, ConfigExists, CommandFailed, LogUnreadable, LaneVariablesUnset, LaneNotRecorded, UnknownLane, ClaudeLane, QueueEntryNotFound, TeamAmbiguous, TeamMigrationRefused];
 }

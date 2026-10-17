@@ -59,7 +59,7 @@ public static class ReviewDrafts
 
         return draft.Value is { } found
             ? found
-            : ContextErrors.NoDraftMap.With("there is no draft map (fix: sindri context map propose <file>, or name context-rebuild under services: in the profile)");
+            : ContextErrors.NoDraftMap.With("there is no draft map (fix: sindri context map build, sindri context map propose <file>, or name context-rebuild under services: in the profile)");
     }
 
     /// <summary>

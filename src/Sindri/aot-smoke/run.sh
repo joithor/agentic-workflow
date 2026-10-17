@@ -10,7 +10,7 @@
 # temporal): doctor with nothing running, start headless with an unapproved profile, a second serve refused by the lease,
 # the approve preview and its non-terminal refusal, a session's typed approve refused (SND-AUTH-002), the human's typed
 # approval, status (text and --json's apiVersion), /sindri/mcp's initialize and tools/list as a stateless MCP client,
-# the views rebuild refused to a session and requested by the human, status's views and health lines, the item verbs (API P3: a human's item add, the queue and the item list, a session's item add refused, the human's item close, the done list and the queue again), the request verbs (API P4: a session's request, the needs-you list, a session's decide refused, the human's decide, the list again and the accepted requests), the ledger read (API P5: the human's lists command.handled, a session's doesn't, one item's events, and GET /events/catalog), a session's stop refused, the human's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
+# the views rebuild refused to a session and requested by the human, status's views and health lines, the item verbs (API P3: a human's item add, the queue and the item list, a session's item add refused, the human's item close, the done list and the queue again), the request verbs (API P4: a session's request, the needs-you list, a session's decide refused, the human's decide, the list again and the accepted requests), the ledger read (API P5: the human's lists command.handled, a session's doesn't, one item's events, and GET /events/catalog), the service and job verbs (API P6: the services list as JSON, a manual run of heartbeat followed to its end, a session's run refused, jobs show and the jobs list, pause and resume with a session's pause refused, and the services list after each), a session's stop refused, the human's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
 # context:mcp-scope row never reads the real provider files);
 # then recipe validate on the shipped recipes (their hashes; workflow.item reads its child beside it) and on an invalid
 # fixture (RCP-REACH-001, exit 1), then Onyx P2: onyx status --json with no docker on PATH (state not-set-up, the docker row fail
@@ -67,7 +67,7 @@ scratch="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/aot-sindri-smoke.XXXXXX")" && pwd -P
 tree="$scratch/tree"
 work="$scratch/run"
 mkdir -p "$tree" "$work"
-git -C "$root" ls-files -z --cached --others --exclude-standard -- global.json nuget.config .editorconfig 'Directory.*' BannedSymbols.txt CodeMetricsConfig.txt context/onyx.lock \
+git -C "$root" ls-files -z --cached --others --exclude-standard -- global.json nuget.config .editorconfig 'Directory.*' 'BannedSymbols*.txt' CodeMetricsConfig.txt context/onyx.lock \
   src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction src/Aw.Analyzers src/Context src/Judge src/Sindri | (cd "$root" && tar --null -T - -cf -) | tar -xf - -C "$tree"
 dotnet publish "$tree/src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" -c Release --no-self-contained -warnaserror   -o "$out/bin" </dev/null >"$out/publish.log" 2>&1 || { tail -20 "$out/publish.log" >&2; exit 1; }
 
@@ -128,19 +128,24 @@ mcp() { # $1 = JSON-RPC method, $2 = params: one stateless /sindri/mcp call as a
   curl -s -m 30 -X POST "${url%/}/sindri/mcp" -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
     -H 'X-Sindri-Repo: smoke' -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"$1\",\"params\":$2}" | sed -n 's/^data: //p'
 }
-settle() { # the projector has caught up and isn't rebuilding (it polls once a second): status's views line is then stable
-  local i
-  for i in $(seq 1 40); do
+settle() { # the projector has caught up and isn't rebuilding (it polls once a second): status's views line is then stable.
+  # Bounded by wall time, not a count, so a loaded box gets the same 60 s; a timeout prints a named line into the transcript
+  # (so the diff says why) instead of falling through to a snapshot taken mid-rebuild.
+  local deadline=$((SECONDS + 60))
+  while ((SECONDS < deadline)); do
     jq -e '.views | (.cursor == .ledgerHead and (.rebuilding | not))' <<<"$(bounded "$bin" status --json </dev/null 2>/dev/null)" >/dev/null 2>&1 && return 0
     sleep 0.25
   done
+  echo "## settle: the views were still rebuilding or behind after 60 s"
 }
-items_in() { # $1 = state, $2 = count: the items view lists that many in that state (the projector polls once a second)
-  local i
-  for i in $(seq 1 40); do
+items_in() { # $1 = state, $2 = count: the items view lists that many in that state (the projector polls once a second);
+  # bounded by wall time like settle, with a named line on a timeout
+  local deadline=$((SECONDS + 60))
+  while ((SECONDS < deadline)); do
     jq -e --argjson n "$2" '.items | length == $n' <<<"$(bounded "$bin" items --state "$1" --json </dev/null 2>/dev/null)" >/dev/null 2>&1 && return 0
     sleep 0.25
   done
+  echo "## items_in: the items view didn't list $2 '$1' item(s) after 60 s"
 }
 session_tty() { # an agent session at a terminal (the CLI's own terminal check passes, so the server decides)
   echo "## sindri $* (session, terminal)"
@@ -197,6 +202,21 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   echo "## GET /sindri/events/catalog | jq (public types, their invalidates)"
   curl -s -m 30 "$(jq -r '.url' "$AW_SINDRI_HOME/control.json" | sed 's|/$||')/sindri/events/catalog" -H 'X-Sindri-Repo: smoke' \
     | jq -c '{commandHandled: any(.types[]; .type == "command.handled"), itemCreated: (.types[] | select(.type == "item.created") | .invalidates)}'
+  echo "## sindri services --json | jq (name, every, paused, job)"
+  bounded "$bin" services --json </dev/null | jq -c '[.services[] | {name, every, paused, job}]'
+  human services run heartbeat </dev/null
+  settle
+  session services run heartbeat
+  job="$(bounded "$bin" jobs --json </dev/null | jq -r '.jobs[0].id')"
+  run jobs show "$job"
+  run jobs --state succeeded
+  human services pause heartbeat </dev/null
+  session services pause heartbeat
+  settle
+  run services
+  human services resume heartbeat </dev/null
+  settle
+  run services
   session stop
   human stop </dev/null
   run status

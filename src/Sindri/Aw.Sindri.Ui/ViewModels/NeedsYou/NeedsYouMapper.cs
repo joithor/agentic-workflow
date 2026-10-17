@@ -19,7 +19,7 @@ internal static class NeedsYouMapper
     {
         ArgumentNullException.ThrowIfNull(list);
         ArgumentNullException.ThrowIfNull(catalog);
-        var readiness = catalog.Rows.ToDictionary(r => r.Action, r => (ReadinessOf(r.Ui), CatalogReadiness.Parse(r.Ui).Stage), StringComparer.Ordinal);
+        var readiness = catalog.Rows.ToDictionary(r => r.Action, r => (ReadinessOf(r.Ui), CatalogReadiness.Parse(r.Ui).Stage, r.Cli), StringComparer.Ordinal);
         var read = catalog.Rows.Count > 0;
         return new NeedsYouFeed([.. list.Rows.Select(row => Entry(row, readiness, decisions, read))], list.Empty ?? string.Empty)
         {
@@ -38,7 +38,7 @@ internal static class NeedsYouMapper
         _ => ActionReadiness.CliOnly,
     };
 
-    private static NeedsYouEntry Entry(NeedsYouRowView row, Dictionary<string, (ActionReadiness Readiness, string Stage)> readiness, DecisionList? decisions, bool read)
+    private static NeedsYouEntry Entry(NeedsYouRowView row, Dictionary<string, (ActionReadiness Readiness, string Stage, string Cli)> readiness, DecisionList? decisions, bool read)
     {
         var subject = row.Subject is { } s ? new NeedsYouSubject(s.Kind, s.Id) : null;
         return new NeedsYouEntry(row.Id, UrgencyOf(row.Urgency))
@@ -51,8 +51,8 @@ internal static class NeedsYouMapper
             Label = row.Label,
             Reason = row.Reason,
             Since = row.Since,
-            PrimaryAction = row.PrimaryAction,
-            Actions = [.. row.Actions.SelectMany(id => Actions(row, subject?.DecisionId, id, readiness, decisions).Select(a => a with { CatalogRead = read }))],
+            PrimaryAction = row.PrimaryAction ?? string.Empty,
+            Actions = [.. row.Actions.SelectMany(id => Actions(row, subject, id, readiness, decisions).Select(a => a with { CatalogRead = read }))],
             Subject = subject,
             ItemId = row.Item,
             Cli = row.Cli,
@@ -69,14 +69,15 @@ internal static class NeedsYouMapper
     private static DecisionView? PendingDecision(string? decisionId, DecisionList? decisions) =>
         decisionId is null ? null : decisions?.Decisions.FirstOrDefault(d => string.Equals(d.Id, decisionId, StringComparison.Ordinal));
 
-    // A Decide on a decision row is one button per option the pending list offers; every other action is one button as served.
-    private static IEnumerable<NeedsYouAction> Actions(NeedsYouRowView row, string? decisionId, string id, Dictionary<string, (ActionReadiness Readiness, string Stage)> readiness, DecisionList? decisions)
+    // A Decide on a decision row is one button per option the pending list offers; every other action is one button with its own catalog command.
+    private static IEnumerable<NeedsYouAction> Actions(NeedsYouRowView row, NeedsYouSubject? subject, string id, Dictionary<string, (ActionReadiness Readiness, string Stage, string Cli)> readiness, DecisionList? decisions)
     {
-        var (ready, stage) = readiness.GetValueOrDefault(id, (ActionReadiness.Pending, ""));
-        var decision = string.Equals(id, Decide, StringComparison.Ordinal) ? PendingDecision(decisionId, decisions) : null;
+        var (ready, stage, catalogCli) = readiness.GetValueOrDefault(id, (ActionReadiness.Pending, "", ""));
+        var decision = string.Equals(id, Decide, StringComparison.Ordinal) ? PendingDecision(subject?.DecisionId, decisions) : null;
         if (decision is null)
         {
-            yield return new NeedsYouAction(id, Labels.Action(id), ready, row.Cli, RejectLike: false) { Stage = stage };
+            var (cli, hint) = ActionCommand.For(catalogCli, string.Equals(id, row.PrimaryAction, StringComparison.Ordinal), row.Cli, subject, row.Item);
+            yield return new NeedsYouAction(id, Labels.Action(id), ready, cli, RejectLike: false) { Stage = stage, FillInHint = hint };
             yield break;
         }
 

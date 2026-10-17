@@ -1,0 +1,17 @@
+{
+  "pid": 9999,
+  "sessionId": "dddddddd-0000-4000-8000-000000009999",
+  "cwd": "/home/dev/gone",
+  "startedAt": 1760000009999,
+  "procStart": "1",
+  "version": "2.1.301",
+  "kind": "interactive",
+  "entrypoint": "cli",
+  "name": "gone",
+  "nameSource": "user",
+  "status": "idle",
+  "statusUpdatedAt": 1760000109999,
+  "updatedAt": 1760000109999,
+  "pidDomain": "host",
+  "peerProtocol": 1
+}

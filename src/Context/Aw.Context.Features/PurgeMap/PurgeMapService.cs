@@ -33,7 +33,7 @@ internal sealed class PurgeMapService(IGraphStore store, IExportStore exports, T
             return versions.Error;
         }
 
-        var dropped = await store.Delete(MapRetention.ExcessVersions(versions.Value), cancellationToken).ConfigureAwait(false);
+        var dropped = await store.Delete(MapRetention.ExcessVersions(versions.Value, clock.GetUtcNow()), cancellationToken).ConfigureAwait(false);
         return dropped.IsError ? dropped.Error : new PurgeReport(removed, dropped.Value);
     }
 }

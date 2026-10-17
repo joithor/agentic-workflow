@@ -48,8 +48,6 @@ Aw.Context.Core.Engine.ContextQuery
 Aw.Context.Core.Engine.ContextQuery.<Clone>$() -> Aw.Context.Core.Engine.ContextQuery!
 Aw.Context.Core.Engine.ContextQuery.Budget.get -> int?
 Aw.Context.Core.Engine.ContextQuery.Budget.init -> void
-Aw.Context.Core.Engine.ContextQuery.ContextQuery(string? Text, string? Node = null, string? Item = null, string? Symbol = null, int? Depth = null, int? Budget = null, bool Draft = false) -> void
-Aw.Context.Core.Engine.ContextQuery.Deconstruct(out string? Text, out string? Node, out string? Item, out string? Symbol, out int? Depth, out int? Budget, out bool Draft) -> void
 Aw.Context.Core.Engine.ContextQuery.Depth.get -> int?
 Aw.Context.Core.Engine.ContextQuery.Depth.init -> void
 Aw.Context.Core.Engine.ContextQuery.Draft.get -> bool
@@ -2046,8 +2044,6 @@ Aw.Context.Core.Results.ContextResult.Cites.get -> System.Collections.Generic.IR
 Aw.Context.Core.Results.ContextResult.Cites.init -> void
 Aw.Context.Core.Results.ContextResult.Conflicts.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultConflict!>!
 Aw.Context.Core.Results.ContextResult.Conflicts.init -> void
-Aw.Context.Core.Results.ContextResult.ContextResult(int SchemaVersion, Aw.Context.Core.Results.QueryId QueryId, Aw.Context.Core.Engine.ContextQuery! Query, System.Collections.Generic.IReadOnlyList<string!>! Anchors, string? MapVersion, System.DateTimeOffset AsOf, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultSection!>! Sections, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultConflict!>! Conflicts, System.Collections.Generic.IReadOnlyList<string!>! SuggestedAnchors, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DegradedSource!>! Degraded, bool Truncated, Aw.Context.Core.Results.BudgetUse! Budget, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
-Aw.Context.Core.Results.ContextResult.Deconstruct(out int SchemaVersion, out Aw.Context.Core.Results.QueryId QueryId, out Aw.Context.Core.Engine.ContextQuery! Query, out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out string? MapVersion, out System.DateTimeOffset AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultSection!>! Sections, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultConflict!>! Conflicts, out System.Collections.Generic.IReadOnlyList<string!>! SuggestedAnchors, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DegradedSource!>! Degraded, out bool Truncated, out Aw.Context.Core.Results.BudgetUse! Budget, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
 Aw.Context.Core.Results.ContextResult.Degraded.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DegradedSource!>!
 Aw.Context.Core.Results.ContextResult.Degraded.init -> void
 Aw.Context.Core.Results.ContextResult.Equals(Aw.Context.Core.Results.ContextResult? other) -> bool
@@ -3587,7 +3583,7 @@ static Aw.Context.Core.Map.MapImported.operator !=(Aw.Context.Core.Map.MapImport
 static Aw.Context.Core.Map.MapImported.operator ==(Aw.Context.Core.Map.MapImported? left, Aw.Context.Core.Map.MapImported? right) -> bool
 static Aw.Context.Core.Map.MapPromoted.operator !=(Aw.Context.Core.Map.MapPromoted? left, Aw.Context.Core.Map.MapPromoted? right) -> bool
 static Aw.Context.Core.Map.MapPromoted.operator ==(Aw.Context.Core.Map.MapPromoted? left, Aw.Context.Core.Map.MapPromoted? right) -> bool
-static Aw.Context.Core.Map.MapRetention.ExcessVersions(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Map.MapVersion!>! versions) -> System.Collections.Generic.IReadOnlyList<int>!
+static Aw.Context.Core.Map.MapRetention.ExcessVersions(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Map.MapVersion!>! versions, System.DateTimeOffset now) -> System.Collections.Generic.IReadOnlyList<int>!
 static Aw.Context.Core.Map.MapRetention.ExpiredExports(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Map.ExportedFile!>! files, System.DateTimeOffset now) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Map.ExportedFile!>!
 static Aw.Context.Core.Map.MapRetention.ExportLifetime.get -> System.TimeSpan
 static Aw.Context.Core.Map.MapSnapshot.operator !=(Aw.Context.Core.Map.MapSnapshot? left, Aw.Context.Core.Map.MapSnapshot? right) -> bool
@@ -3879,7 +3875,6 @@ Aw.Context.Core.Overrides.ProposalPayload.Deconstruct(out string! Run, out Aw.Co
 Aw.Context.Core.Overrides.ProposalPayload.Generation.get -> int
 Aw.Context.Core.Overrides.ProposalPayload.Generation.init -> void
 Aw.Context.Core.Overrides.ProposalPayload.ProposalPayload(string! Run, Aw.Context.Core.Engine.ContextRepoName Repo, Aw.Context.Core.Graph.NodeKind Kind, Aw.Context.Core.Graph.NodeKey? Parent = null, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.EvidenceRef!>? Evidence = null, string? Quote = null, int Generation = 0) -> void
-
 Aw.Context.Core.Extract.LabelPass
 Aw.Context.Core.Extract.LabelPass.<Clone>$() -> Aw.Context.Core.Extract.LabelPass!
 Aw.Context.Core.Extract.LabelPass.Complete.get -> bool
@@ -3897,7 +3892,6 @@ static Aw.Context.Core.Extract.LabelPass.operator ==(Aw.Context.Core.Extract.Lab
 const Aw.Context.Core.Overrides.MapOverride.CutMarker = "service:deny-cut" -> string!
 Aw.Context.Core.Overrides.MapOverride.IsCutUndo.get -> bool
 static Aw.Context.Core.Overrides.MapOverride.UndoingCut(Aw.Context.Core.Overrides.MapOverride! decision, System.DateTimeOffset at) -> Aw.Context.Core.Overrides.MapOverride!
-
 static Aw.Context.Core.Graph.TrustPolicy.ForNode(Aw.Context.Core.Graph.GraphNode! node, bool accepted) -> Aw.Context.Core.Results.Trust
 static Aw.Context.Core.Map.MapAccess.WithoutDenied(Aw.Context.Core.Graph.GraphSnapshot! current, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! profile, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! mapped, System.DateTimeOffset at) -> (Aw.Context.Core.Graph.GraphSnapshot! Graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Undo)
 static Aw.Context.Core.Engine.ScopeRules.Mapped(Aw.Context.Core.Engine.ContextSettings! settings, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! repos) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>!
@@ -3905,3 +3899,786 @@ static Aw.Context.Core.Graph.TrustPolicy.ForNode(Aw.Context.Core.Graph.NodeKind 
 Aw.Context.Core.Results.SourceCalls
 static Aw.Context.Core.Results.SourceCalls.Degraded(Aw.Context.Core.Sources.SourceId source, Aw.Kernel.Error! error, System.DateTimeOffset since) -> Aw.Context.Core.Results.DegradedSource!
 static Aw.Context.Core.Results.SourceCalls.Within<T>(Aw.Context.Core.Sources.IContextSource! source, (System.TimeSpan Left, System.TimeProvider! Clock) deadline, System.Func<System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<T>!>>! call, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<T>!>
+Aw.Context.Core.Eval.Backtest.Arm
+Aw.Context.Core.Eval.Backtest.Arm.All = 7 -> Aw.Context.Core.Eval.Backtest.Arm
+Aw.Context.Core.Eval.Backtest.Arm.Brief = 0 -> Aw.Context.Core.Eval.Backtest.Arm
+Aw.Context.Core.Eval.Backtest.Arm.Code = 6 -> Aw.Context.Core.Eval.Backtest.Arm
+Aw.Context.Core.Eval.Backtest.Arm.Docs = 1 -> Aw.Context.Core.Eval.Backtest.Arm
+Aw.Context.Core.Eval.Backtest.Arm.Graph = 2 -> Aw.Context.Core.Eval.Backtest.Arm
+Aw.Context.Core.Eval.Backtest.Arm.GraphReviewed = 3 -> Aw.Context.Core.Eval.Backtest.Arm
+Aw.Context.Core.Eval.Backtest.Arm.Linear = 4 -> Aw.Context.Core.Eval.Backtest.Arm
+Aw.Context.Core.Eval.Backtest.Arm.Onyx = 5 -> Aw.Context.Core.Eval.Backtest.Arm
+Aw.Context.Core.Eval.Backtest.ArmPassLine
+Aw.Context.Core.Eval.Backtest.ArmPassLine.<Clone>$() -> Aw.Context.Core.Eval.Backtest.ArmPassLine!
+Aw.Context.Core.Eval.Backtest.ArmPassLine.ArmPassLine(string! NodeRecall, string! NodePrecision, string! FileRecallAt20, string! Tokens, string! Overall) -> void
+Aw.Context.Core.Eval.Backtest.ArmPassLine.Deconstruct(out string! NodeRecall, out string! NodePrecision, out string! FileRecallAt20, out string! Tokens, out string! Overall) -> void
+Aw.Context.Core.Eval.Backtest.ArmPassLine.Equals(Aw.Context.Core.Eval.Backtest.ArmPassLine? other) -> bool
+Aw.Context.Core.Eval.Backtest.ArmPassLine.FileRecallAt20.get -> string!
+Aw.Context.Core.Eval.Backtest.ArmPassLine.FileRecallAt20.init -> void
+Aw.Context.Core.Eval.Backtest.ArmPassLine.NodePrecision.get -> string!
+Aw.Context.Core.Eval.Backtest.ArmPassLine.NodePrecision.init -> void
+Aw.Context.Core.Eval.Backtest.ArmPassLine.NodeRecall.get -> string!
+Aw.Context.Core.Eval.Backtest.ArmPassLine.NodeRecall.init -> void
+Aw.Context.Core.Eval.Backtest.ArmPassLine.Overall.get -> string!
+Aw.Context.Core.Eval.Backtest.ArmPassLine.Overall.init -> void
+Aw.Context.Core.Eval.Backtest.ArmPassLine.Tokens.get -> string!
+Aw.Context.Core.Eval.Backtest.ArmPassLine.Tokens.init -> void
+Aw.Context.Core.Eval.Backtest.ArmScore
+Aw.Context.Core.Eval.Backtest.ArmScore.<Clone>$() -> Aw.Context.Core.Eval.Backtest.ArmScore!
+Aw.Context.Core.Eval.Backtest.ArmScore.AdjudicatedPrecision.get -> double?
+Aw.Context.Core.Eval.Backtest.ArmScore.AdjudicatedPrecision.init -> void
+Aw.Context.Core.Eval.Backtest.ArmScore.ArmScore(int Samples, int Mapped, double? NodeRecall, double? NodePrecision, double? FileRecallAt20, double LeakyShare, int Tokens) -> void
+Aw.Context.Core.Eval.Backtest.ArmScore.Deconstruct(out int Samples, out int Mapped, out double? NodeRecall, out double? NodePrecision, out double? FileRecallAt20, out double LeakyShare, out int Tokens) -> void
+Aw.Context.Core.Eval.Backtest.ArmScore.Equals(Aw.Context.Core.Eval.Backtest.ArmScore? other) -> bool
+Aw.Context.Core.Eval.Backtest.ArmScore.FileRecallAt20.get -> double?
+Aw.Context.Core.Eval.Backtest.ArmScore.FileRecallAt20.init -> void
+Aw.Context.Core.Eval.Backtest.ArmScore.LeakyShare.get -> double
+Aw.Context.Core.Eval.Backtest.ArmScore.LeakyShare.init -> void
+Aw.Context.Core.Eval.Backtest.ArmScore.Mapped.get -> int
+Aw.Context.Core.Eval.Backtest.ArmScore.Mapped.init -> void
+Aw.Context.Core.Eval.Backtest.ArmScore.NodePrecision.get -> double?
+Aw.Context.Core.Eval.Backtest.ArmScore.NodePrecision.init -> void
+Aw.Context.Core.Eval.Backtest.ArmScore.NodeRecall.get -> double?
+Aw.Context.Core.Eval.Backtest.ArmScore.NodeRecall.init -> void
+Aw.Context.Core.Eval.Backtest.ArmScore.Samples.get -> int
+Aw.Context.Core.Eval.Backtest.ArmScore.Samples.init -> void
+Aw.Context.Core.Eval.Backtest.ArmScore.Tokens.get -> int
+Aw.Context.Core.Eval.Backtest.ArmScore.Tokens.init -> void
+Aw.Context.Core.Eval.Backtest.Arms
+Aw.Context.Core.Eval.Backtest.BacktestScoring
+Aw.Context.Core.Eval.Backtest.BriefIssue
+Aw.Context.Core.Eval.Backtest.BriefIssue.<Clone>$() -> Aw.Context.Core.Eval.Backtest.BriefIssue!
+Aw.Context.Core.Eval.Backtest.BriefIssue.CreatedAt.get -> System.DateTimeOffset
+Aw.Context.Core.Eval.Backtest.BriefIssue.CreatedAt.init -> void
+Aw.Context.Core.Eval.Backtest.BriefIssue.Equals(Aw.Context.Core.Eval.Backtest.BriefIssue? other) -> bool
+Aw.Context.Core.Eval.Backtest.BriefIssue.Key.get -> string!
+Aw.Context.Core.Eval.Backtest.BriefIssue.Key.init -> void
+Aw.Context.Core.Eval.Backtest.BriefIssue.RecordRef.get -> string!
+Aw.Context.Core.Eval.Backtest.BriefIssue.RecordRef.init -> void
+Aw.Context.Core.Eval.Backtest.BriefIssue.UpdatedAt.get -> System.DateTimeOffset
+Aw.Context.Core.Eval.Backtest.BriefIssue.UpdatedAt.init -> void
+Aw.Context.Core.Eval.Backtest.BriefIssue.Version.get -> string?
+Aw.Context.Core.Eval.Backtest.BriefIssue.Version.init -> void
+Aw.Context.Core.Eval.Backtest.Corpus
+Aw.Context.Core.Eval.Backtest.Corpus.<Clone>$() -> Aw.Context.Core.Eval.Backtest.Corpus!
+Aw.Context.Core.Eval.Backtest.Corpus.Corpus(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.CorpusSample!>! Samples, Aw.Context.Core.Eval.Backtest.LeftOut! LeftOut) -> void
+Aw.Context.Core.Eval.Backtest.Corpus.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.CorpusSample!>! Samples, out Aw.Context.Core.Eval.Backtest.LeftOut! LeftOut) -> void
+Aw.Context.Core.Eval.Backtest.Corpus.Equals(Aw.Context.Core.Eval.Backtest.Corpus? other) -> bool
+Aw.Context.Core.Eval.Backtest.Corpus.LeftOut.get -> Aw.Context.Core.Eval.Backtest.LeftOut!
+Aw.Context.Core.Eval.Backtest.Corpus.LeftOut.init -> void
+Aw.Context.Core.Eval.Backtest.Corpus.Samples.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.CorpusSample!>!
+Aw.Context.Core.Eval.Backtest.Corpus.Samples.init -> void
+Aw.Context.Core.Eval.Backtest.CorpusBuilder
+Aw.Context.Core.Eval.Backtest.CorpusSample
+Aw.Context.Core.Eval.Backtest.CorpusSample.<Clone>$() -> Aw.Context.Core.Eval.Backtest.CorpusSample!
+Aw.Context.Core.Eval.Backtest.CorpusSample.CorpusSample(string! IssueKey, string! RecordRef, string? Version, System.DateTimeOffset CreatedAt, bool Leaky, Aw.Context.Core.Engine.ContextRepoName Repo, string! Merge, string! Cut, System.Collections.Generic.IReadOnlyList<string!>! TruthFiles) -> void
+Aw.Context.Core.Eval.Backtest.CorpusSample.CreatedAt.get -> System.DateTimeOffset
+Aw.Context.Core.Eval.Backtest.CorpusSample.CreatedAt.init -> void
+Aw.Context.Core.Eval.Backtest.CorpusSample.Cut.get -> string!
+Aw.Context.Core.Eval.Backtest.CorpusSample.Cut.init -> void
+Aw.Context.Core.Eval.Backtest.CorpusSample.Deconstruct(out string! IssueKey, out string! RecordRef, out string? Version, out System.DateTimeOffset CreatedAt, out bool Leaky, out Aw.Context.Core.Engine.ContextRepoName Repo, out string! Merge, out string! Cut, out System.Collections.Generic.IReadOnlyList<string!>! TruthFiles) -> void
+Aw.Context.Core.Eval.Backtest.CorpusSample.Equals(Aw.Context.Core.Eval.Backtest.CorpusSample? other) -> bool
+Aw.Context.Core.Eval.Backtest.CorpusSample.IssueKey.get -> string!
+Aw.Context.Core.Eval.Backtest.CorpusSample.IssueKey.init -> void
+Aw.Context.Core.Eval.Backtest.CorpusSample.Leaky.get -> bool
+Aw.Context.Core.Eval.Backtest.CorpusSample.Leaky.init -> void
+Aw.Context.Core.Eval.Backtest.CorpusSample.Merge.get -> string!
+Aw.Context.Core.Eval.Backtest.CorpusSample.Merge.init -> void
+Aw.Context.Core.Eval.Backtest.CorpusSample.RecordRef.get -> string!
+Aw.Context.Core.Eval.Backtest.CorpusSample.RecordRef.init -> void
+Aw.Context.Core.Eval.Backtest.CorpusSample.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
+Aw.Context.Core.Eval.Backtest.CorpusSample.Repo.init -> void
+Aw.Context.Core.Eval.Backtest.CorpusSample.TruthFiles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Eval.Backtest.CorpusSample.TruthFiles.init -> void
+Aw.Context.Core.Eval.Backtest.CorpusSample.Version.get -> string?
+Aw.Context.Core.Eval.Backtest.CorpusSample.Version.init -> void
+Aw.Context.Core.Eval.Backtest.HistoryCommit
+Aw.Context.Core.Eval.Backtest.HistoryCommit.<Clone>$() -> Aw.Context.Core.Eval.Backtest.HistoryCommit!
+Aw.Context.Core.Eval.Backtest.HistoryCommit.At.get -> System.DateTimeOffset
+Aw.Context.Core.Eval.Backtest.HistoryCommit.At.init -> void
+Aw.Context.Core.Eval.Backtest.HistoryCommit.Branch.get -> string?
+Aw.Context.Core.Eval.Backtest.HistoryCommit.Branch.init -> void
+Aw.Context.Core.Eval.Backtest.HistoryCommit.ChangedFiles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Eval.Backtest.HistoryCommit.ChangedFiles.init -> void
+Aw.Context.Core.Eval.Backtest.HistoryCommit.Deconstruct(out string! Sha, out System.DateTimeOffset At, out string! Subject, out string? Branch, out bool IsMerge, out System.Collections.Generic.IReadOnlyList<string!>! ChangedFiles) -> void
+Aw.Context.Core.Eval.Backtest.HistoryCommit.Equals(Aw.Context.Core.Eval.Backtest.HistoryCommit? other) -> bool
+Aw.Context.Core.Eval.Backtest.HistoryCommit.HistoryCommit(string! Sha, System.DateTimeOffset At, string! Subject, string? Branch, bool IsMerge, System.Collections.Generic.IReadOnlyList<string!>! ChangedFiles) -> void
+Aw.Context.Core.Eval.Backtest.HistoryCommit.IsMerge.get -> bool
+Aw.Context.Core.Eval.Backtest.HistoryCommit.IsMerge.init -> void
+Aw.Context.Core.Eval.Backtest.HistoryCommit.Sha.get -> string!
+Aw.Context.Core.Eval.Backtest.HistoryCommit.Sha.init -> void
+Aw.Context.Core.Eval.Backtest.HistoryCommit.Subject.get -> string!
+Aw.Context.Core.Eval.Backtest.HistoryCommit.Subject.init -> void
+Aw.Context.Core.Eval.Backtest.LeftOut
+Aw.Context.Core.Eval.Backtest.LeftOut.<Clone>$() -> Aw.Context.Core.Eval.Backtest.LeftOut!
+Aw.Context.Core.Eval.Backtest.LeftOut.Deconstruct(out int NoMerge, out int OutsideTeams, out int ExtractFailed, out System.Collections.Generic.IReadOnlyList<string!>! Keys) -> void
+Aw.Context.Core.Eval.Backtest.LeftOut.Equals(Aw.Context.Core.Eval.Backtest.LeftOut? other) -> bool
+Aw.Context.Core.Eval.Backtest.LeftOut.ExtractFailed.get -> int
+Aw.Context.Core.Eval.Backtest.LeftOut.ExtractFailed.init -> void
+Aw.Context.Core.Eval.Backtest.LeftOut.Keys.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Eval.Backtest.LeftOut.Keys.init -> void
+Aw.Context.Core.Eval.Backtest.LeftOut.LeftOut(int NoMerge, int OutsideTeams, int ExtractFailed, System.Collections.Generic.IReadOnlyList<string!>! Keys) -> void
+Aw.Context.Core.Eval.Backtest.LeftOut.NoMerge.get -> int
+Aw.Context.Core.Eval.Backtest.LeftOut.NoMerge.init -> void
+Aw.Context.Core.Eval.Backtest.LeftOut.OutsideTeams.get -> int
+Aw.Context.Core.Eval.Backtest.LeftOut.OutsideTeams.init -> void
+Aw.Context.Core.Eval.Backtest.LeftOut.Total.get -> int
+Aw.Context.Core.Eval.Backtest.PassBars
+Aw.Context.Core.Eval.Backtest.PassLine
+Aw.Context.Core.Eval.Backtest.RepoHistory
+Aw.Context.Core.Eval.Backtest.RepoHistory.<Clone>$() -> Aw.Context.Core.Eval.Backtest.RepoHistory!
+Aw.Context.Core.Eval.Backtest.RepoHistory.Commits.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.HistoryCommit!>!
+Aw.Context.Core.Eval.Backtest.RepoHistory.Commits.init -> void
+Aw.Context.Core.Eval.Backtest.RepoHistory.Deconstruct(out Aw.Context.Core.Engine.ContextRepoName Repo, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.HistoryCommit!>! Commits) -> void
+Aw.Context.Core.Eval.Backtest.RepoHistory.Equals(Aw.Context.Core.Eval.Backtest.RepoHistory? other) -> bool
+Aw.Context.Core.Eval.Backtest.RepoHistory.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
+Aw.Context.Core.Eval.Backtest.RepoHistory.Repo.init -> void
+Aw.Context.Core.Eval.Backtest.RepoHistory.RepoHistory(Aw.Context.Core.Engine.ContextRepoName Repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.HistoryCommit!>! Commits) -> void
+Aw.Context.Core.Eval.Backtest.SampleScore
+Aw.Context.Core.Eval.Backtest.SampleScore.<Clone>$() -> Aw.Context.Core.Eval.Backtest.SampleScore!
+Aw.Context.Core.Eval.Backtest.SampleScore.Arm.get -> string!
+Aw.Context.Core.Eval.Backtest.SampleScore.Arm.init -> void
+Aw.Context.Core.Eval.Backtest.SampleScore.Deconstruct(out string! IssueKey, out string! Arm, out bool Unmapped, out double? NodeRecall, out double? NodePrecision, out double FileRecallAt20, out System.Collections.Generic.IReadOnlyList<string!>! PredictedNodes, out System.Collections.Generic.IReadOnlyList<string!>! TruthNodes, out System.Collections.Generic.IReadOnlyList<string!>! PredictedFiles, out bool Leaky) -> void
+Aw.Context.Core.Eval.Backtest.SampleScore.Equals(Aw.Context.Core.Eval.Backtest.SampleScore? other) -> bool
+Aw.Context.Core.Eval.Backtest.SampleScore.FileRecallAt20.get -> double
+Aw.Context.Core.Eval.Backtest.SampleScore.FileRecallAt20.init -> void
+Aw.Context.Core.Eval.Backtest.SampleScore.IssueKey.get -> string!
+Aw.Context.Core.Eval.Backtest.SampleScore.IssueKey.init -> void
+Aw.Context.Core.Eval.Backtest.SampleScore.Leaky.get -> bool
+Aw.Context.Core.Eval.Backtest.SampleScore.Leaky.init -> void
+Aw.Context.Core.Eval.Backtest.SampleScore.NodePrecision.get -> double?
+Aw.Context.Core.Eval.Backtest.SampleScore.NodePrecision.init -> void
+Aw.Context.Core.Eval.Backtest.SampleScore.NodeRecall.get -> double?
+Aw.Context.Core.Eval.Backtest.SampleScore.NodeRecall.init -> void
+Aw.Context.Core.Eval.Backtest.SampleScore.PredictedFiles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Eval.Backtest.SampleScore.PredictedFiles.init -> void
+Aw.Context.Core.Eval.Backtest.SampleScore.PredictedNodes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Eval.Backtest.SampleScore.PredictedNodes.init -> void
+Aw.Context.Core.Eval.Backtest.SampleScore.SampleScore(string! IssueKey, string! Arm, bool Unmapped, double? NodeRecall, double? NodePrecision, double FileRecallAt20, System.Collections.Generic.IReadOnlyList<string!>! PredictedNodes, System.Collections.Generic.IReadOnlyList<string!>! TruthNodes, System.Collections.Generic.IReadOnlyList<string!>! PredictedFiles, bool Leaky) -> void
+Aw.Context.Core.Eval.Backtest.SampleScore.TruthNodes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Eval.Backtest.SampleScore.TruthNodes.init -> void
+Aw.Context.Core.Eval.Backtest.SampleScore.Unmapped.get -> bool
+Aw.Context.Core.Eval.Backtest.SampleScore.Unmapped.init -> void
+Aw.Context.Core.Eval.Backtest.Verdicts
+const Aw.Context.Core.Eval.Backtest.PassBars.FileCutoff = 20 -> int
+const Aw.Context.Core.Eval.Backtest.PassBars.FileRecallAt20 = 0.5 -> double
+const Aw.Context.Core.Eval.Backtest.PassBars.MaxTokens = 1500000 -> int
+const Aw.Context.Core.Eval.Backtest.PassBars.MinSamples = 30 -> int
+const Aw.Context.Core.Eval.Backtest.PassBars.NodePrecision = 0.6 -> double
+const Aw.Context.Core.Eval.Backtest.PassBars.NodeRecall = 0.6 -> double
+const Aw.Context.Core.Eval.Backtest.Verdicts.Met = "met" -> string!
+const Aw.Context.Core.Eval.Backtest.Verdicts.NotMeasured = "not measured" -> string!
+const Aw.Context.Core.Eval.Backtest.Verdicts.NotMet = "not met" -> string!
+const Aw.Context.Core.Eval.Backtest.Verdicts.NotPassed = "NOT PASSED" -> string!
+const Aw.Context.Core.Eval.Backtest.Verdicts.OwnerDecision = "owner decision needed (small sample)" -> string!
+const Aw.Context.Core.Eval.Backtest.Verdicts.Pass = "PASS" -> string!
+const Aw.Context.Core.Extract.MapExtractor.Version = 1 -> int
+override Aw.Context.Core.Eval.Backtest.ArmPassLine.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.ArmPassLine.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.ArmPassLine.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.ArmScore.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.ArmScore.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.ArmScore.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.BriefIssue.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.BriefIssue.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.BriefIssue.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.Corpus.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.Corpus.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.Corpus.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.CorpusSample.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.CorpusSample.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.CorpusSample.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.HistoryCommit.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.HistoryCommit.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.HistoryCommit.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.LeftOut.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.LeftOut.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.LeftOut.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.RepoHistory.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.RepoHistory.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.RepoHistory.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.SampleScore.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.SampleScore.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.SampleScore.ToString() -> string!
+static Aw.Context.Core.Eval.Backtest.ArmPassLine.operator !=(Aw.Context.Core.Eval.Backtest.ArmPassLine? left, Aw.Context.Core.Eval.Backtest.ArmPassLine? right) -> bool
+static Aw.Context.Core.Eval.Backtest.ArmPassLine.operator ==(Aw.Context.Core.Eval.Backtest.ArmPassLine? left, Aw.Context.Core.Eval.Backtest.ArmPassLine? right) -> bool
+static Aw.Context.Core.Eval.Backtest.ArmScore.operator !=(Aw.Context.Core.Eval.Backtest.ArmScore? left, Aw.Context.Core.Eval.Backtest.ArmScore? right) -> bool
+static Aw.Context.Core.Eval.Backtest.ArmScore.operator ==(Aw.Context.Core.Eval.Backtest.ArmScore? left, Aw.Context.Core.Eval.Backtest.ArmScore? right) -> bool
+static Aw.Context.Core.Eval.Backtest.Arms.Available.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Arm>!
+static Aw.Context.Core.Eval.Backtest.Arms.Name(Aw.Context.Core.Eval.Backtest.Arm arm) -> string!
+static Aw.Context.Core.Eval.Backtest.Arms.NotAvailable.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Arm>!
+static Aw.Context.Core.Eval.Backtest.Arms.Parse(string! text) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Arm>!>!
+static Aw.Context.Core.Eval.Backtest.Arms.PendingStage(Aw.Context.Core.Eval.Backtest.Arm arm) -> string?
+static Aw.Context.Core.Eval.Backtest.BacktestScoring.Aggregate(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.SampleScore!>! scores, int tokens) -> Aw.Context.Core.Eval.Backtest.ArmScore!
+static Aw.Context.Core.Eval.Backtest.BacktestScoring.PredictedFiles(Aw.Context.Core.Results.ContextResult! result) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Context.Core.Eval.Backtest.BacktestScoring.PredictedNodes(Aw.Context.Core.Results.ContextResult! result) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Context.Core.Eval.Backtest.BacktestScoring.Score(Aw.Context.Core.Eval.Backtest.CorpusSample! sample, string! arm, System.Collections.Generic.IReadOnlyList<string!>! truthNodes, Aw.Context.Core.Results.ContextResult! result, bool armLeaky) -> Aw.Context.Core.Eval.Backtest.SampleScore!
+static Aw.Context.Core.Eval.Backtest.BacktestScoring.TruthNodes(Aw.Context.Core.Graph.GraphSnapshot! asOf, System.Collections.Generic.IReadOnlyList<string!>! truthFiles) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Context.Core.Eval.Backtest.BriefIssue.operator !=(Aw.Context.Core.Eval.Backtest.BriefIssue? left, Aw.Context.Core.Eval.Backtest.BriefIssue? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BriefIssue.operator ==(Aw.Context.Core.Eval.Backtest.BriefIssue? left, Aw.Context.Core.Eval.Backtest.BriefIssue? right) -> bool
+static Aw.Context.Core.Eval.Backtest.Corpus.operator !=(Aw.Context.Core.Eval.Backtest.Corpus? left, Aw.Context.Core.Eval.Backtest.Corpus? right) -> bool
+static Aw.Context.Core.Eval.Backtest.Corpus.operator ==(Aw.Context.Core.Eval.Backtest.Corpus? left, Aw.Context.Core.Eval.Backtest.Corpus? right) -> bool
+static Aw.Context.Core.Eval.Backtest.CorpusBuilder.Build(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.BriefIssue!>! issues, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.RepoHistory!>! histories, System.Collections.Generic.IReadOnlyList<string!>! teams, System.Func<string!, bool>! isDenied) -> Aw.Context.Core.Eval.Backtest.Corpus!
+static Aw.Context.Core.Eval.Backtest.CorpusBuilder.Carries(string? text, string! key) -> bool
+static Aw.Context.Core.Eval.Backtest.CorpusSample.operator !=(Aw.Context.Core.Eval.Backtest.CorpusSample? left, Aw.Context.Core.Eval.Backtest.CorpusSample? right) -> bool
+static Aw.Context.Core.Eval.Backtest.CorpusSample.operator ==(Aw.Context.Core.Eval.Backtest.CorpusSample? left, Aw.Context.Core.Eval.Backtest.CorpusSample? right) -> bool
+static Aw.Context.Core.Eval.Backtest.HistoryCommit.operator !=(Aw.Context.Core.Eval.Backtest.HistoryCommit? left, Aw.Context.Core.Eval.Backtest.HistoryCommit? right) -> bool
+static Aw.Context.Core.Eval.Backtest.HistoryCommit.operator ==(Aw.Context.Core.Eval.Backtest.HistoryCommit? left, Aw.Context.Core.Eval.Backtest.HistoryCommit? right) -> bool
+static Aw.Context.Core.Eval.Backtest.LeftOut.None.get -> Aw.Context.Core.Eval.Backtest.LeftOut!
+static Aw.Context.Core.Eval.Backtest.LeftOut.operator !=(Aw.Context.Core.Eval.Backtest.LeftOut? left, Aw.Context.Core.Eval.Backtest.LeftOut? right) -> bool
+static Aw.Context.Core.Eval.Backtest.LeftOut.operator ==(Aw.Context.Core.Eval.Backtest.LeftOut? left, Aw.Context.Core.Eval.Backtest.LeftOut? right) -> bool
+static Aw.Context.Core.Eval.Backtest.PassLine.Evaluate(Aw.Context.Core.Eval.Backtest.ArmScore! arm, Aw.Context.Core.Eval.Backtest.ArmScore? brief, int sampleCount) -> Aw.Context.Core.Eval.Backtest.ArmPassLine!
+static Aw.Context.Core.Eval.Backtest.RepoHistory.operator !=(Aw.Context.Core.Eval.Backtest.RepoHistory? left, Aw.Context.Core.Eval.Backtest.RepoHistory? right) -> bool
+static Aw.Context.Core.Eval.Backtest.RepoHistory.operator ==(Aw.Context.Core.Eval.Backtest.RepoHistory? left, Aw.Context.Core.Eval.Backtest.RepoHistory? right) -> bool
+static Aw.Context.Core.Eval.Backtest.SampleScore.operator !=(Aw.Context.Core.Eval.Backtest.SampleScore? left, Aw.Context.Core.Eval.Backtest.SampleScore? right) -> bool
+static Aw.Context.Core.Eval.Backtest.SampleScore.operator ==(Aw.Context.Core.Eval.Backtest.SampleScore? left, Aw.Context.Core.Eval.Backtest.SampleScore? right) -> bool
+static readonly Aw.Context.Core.ContextErrors.AdjudicationCapped -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.NoBriefSource -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.NoEligibleSample -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.UnknownArm -> Aw.Kernel.ErrorDefinition!
+Aw.Context.Core.Eval.Backtest.AsOfMapCache
+Aw.Context.Core.Eval.Backtest.Brief
+Aw.Context.Core.Eval.Backtest.Brief.<Clone>$() -> Aw.Context.Core.Eval.Backtest.Brief!
+Aw.Context.Core.Eval.Backtest.Brief.Brief(string! Key, string! Text) -> void
+Aw.Context.Core.Eval.Backtest.Brief.Deconstruct(out string! Key, out string! Text) -> void
+Aw.Context.Core.Eval.Backtest.Brief.Equals(Aw.Context.Core.Eval.Backtest.Brief? other) -> bool
+Aw.Context.Core.Eval.Backtest.Brief.Key.get -> string!
+Aw.Context.Core.Eval.Backtest.Brief.Key.init -> void
+Aw.Context.Core.Eval.Backtest.Brief.Text.get -> string!
+Aw.Context.Core.Eval.Backtest.Brief.Text.init -> void
+Aw.Context.Core.Eval.Backtest.BriefIssue.BriefIssue(string! Key, string! RecordRef, string? Version, System.DateTimeOffset CreatedAt, System.DateTimeOffset UpdatedAt, string! Title = "") -> void
+Aw.Context.Core.Eval.Backtest.BriefIssue.Deconstruct(out string! Key, out string! RecordRef, out string? Version, out System.DateTimeOffset CreatedAt, out System.DateTimeOffset UpdatedAt, out string! Title) -> void
+Aw.Context.Core.Eval.Backtest.BriefIssue.Title.get -> string!
+Aw.Context.Core.Eval.Backtest.BriefIssue.Title.init -> void
+Aw.Context.Core.Eval.Backtest.BriefScope
+Aw.Context.Core.Eval.Backtest.BriefScope.<Clone>$() -> Aw.Context.Core.Eval.Backtest.BriefScope!
+Aw.Context.Core.Eval.Backtest.BriefScope.BriefScope(Aw.Context.Core.Engine.ContextSettings! Settings, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! Repos, Aw.Context.Core.Trust.Scrubbers! Scrubbers) -> void
+Aw.Context.Core.Eval.Backtest.BriefScope.Deconstruct(out Aw.Context.Core.Engine.ContextSettings! Settings, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>! Repos, out Aw.Context.Core.Trust.Scrubbers! Scrubbers) -> void
+Aw.Context.Core.Eval.Backtest.BriefScope.Equals(Aw.Context.Core.Eval.Backtest.BriefScope? other) -> bool
+Aw.Context.Core.Eval.Backtest.BriefScope.Repos.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Engine.ContextRepo!>!
+Aw.Context.Core.Eval.Backtest.BriefScope.Repos.init -> void
+Aw.Context.Core.Eval.Backtest.BriefScope.Scrubbers.get -> Aw.Context.Core.Trust.Scrubbers!
+Aw.Context.Core.Eval.Backtest.BriefScope.Scrubbers.init -> void
+Aw.Context.Core.Eval.Backtest.BriefScope.Settings.get -> Aw.Context.Core.Engine.ContextSettings!
+Aw.Context.Core.Eval.Backtest.BriefScope.Settings.init -> void
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.<Clone>$() -> Aw.Context.Core.Eval.Backtest.EvalPurgeReport!
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.CacheFiles.get -> int
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.CacheFiles.init -> void
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.Deconstruct(out int Reports, out int CacheFiles, out int ProbeReports) -> void
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.Equals(Aw.Context.Core.Eval.Backtest.EvalPurgeReport? other) -> bool
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.EvalPurgeReport(int Reports, int CacheFiles, int ProbeReports) -> void
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.ProbeReports.get -> int
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.ProbeReports.init -> void
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.Reports.get -> int
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.Reports.init -> void
+Aw.Context.Core.Eval.Backtest.EvalPurgeReport.Total.get -> int
+Aw.Context.Core.Eval.Backtest.EvalReportKind
+Aw.Context.Core.Eval.Backtest.EvalReportKind.Backtest = 0 -> Aw.Context.Core.Eval.Backtest.EvalReportKind
+Aw.Context.Core.Eval.Backtest.EvalReportKind.Map = 1 -> Aw.Context.Core.Eval.Backtest.EvalReportKind
+Aw.Context.Core.Eval.Backtest.IBriefSource
+Aw.Context.Core.Eval.Backtest.IBriefSource.Brief(Aw.Context.Core.Eval.Backtest.BriefScope! scope, Aw.Context.Core.Eval.Backtest.BriefIssue! issue, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.Backtest.Brief?>!>
+Aw.Context.Core.Eval.Backtest.IEvalStore
+Aw.Context.Core.Eval.Backtest.IEvalStore.Expired(System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.Backtest.EvalPurgeReport!>!>
+Aw.Context.Core.Eval.Backtest.IEvalStore.Purge(System.DateTimeOffset now, bool all, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.Backtest.EvalPurgeReport!>!>
+Aw.Context.Core.Eval.Backtest.IEvalStore.ReadMap(string! key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Extract.ExtractedMap?>!>
+Aw.Context.Core.Eval.Backtest.IEvalStore.WriteMap(string! key, Aw.Context.Core.Extract.ExtractedMap! map, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Context.Core.Eval.Backtest.IEvalStore.WriteReport<T>(Aw.Context.Core.Eval.Backtest.EvalReportKind kind, T! report, System.DateTimeOffset at, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Context.Core.Eval.Backtest.IMergeHistory
+Aw.Context.Core.Eval.Backtest.IMergeHistory.History(Aw.Context.Core.Engine.ContextRepo! repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.Backtest.RepoHistory!>!>
+override Aw.Context.Core.Eval.Backtest.Brief.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.Brief.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.Brief.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.BriefScope.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.BriefScope.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.BriefScope.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.EvalPurgeReport.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.EvalPurgeReport.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.EvalPurgeReport.ToString() -> string!
+static Aw.Context.Core.Eval.Backtest.AsOfMapCache.Key(Aw.Context.Core.Engine.ContextRepoName repo, string! commit, int extractorVersion, bool clustered) -> string!
+static Aw.Context.Core.Eval.Backtest.Brief.operator !=(Aw.Context.Core.Eval.Backtest.Brief? left, Aw.Context.Core.Eval.Backtest.Brief? right) -> bool
+static Aw.Context.Core.Eval.Backtest.Brief.operator ==(Aw.Context.Core.Eval.Backtest.Brief? left, Aw.Context.Core.Eval.Backtest.Brief? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BriefScope.operator !=(Aw.Context.Core.Eval.Backtest.BriefScope? left, Aw.Context.Core.Eval.Backtest.BriefScope? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BriefScope.operator ==(Aw.Context.Core.Eval.Backtest.BriefScope? left, Aw.Context.Core.Eval.Backtest.BriefScope? right) -> bool
+static Aw.Context.Core.Eval.Backtest.EvalPurgeReport.operator !=(Aw.Context.Core.Eval.Backtest.EvalPurgeReport? left, Aw.Context.Core.Eval.Backtest.EvalPurgeReport? right) -> bool
+static Aw.Context.Core.Eval.Backtest.EvalPurgeReport.operator ==(Aw.Context.Core.Eval.Backtest.EvalPurgeReport? left, Aw.Context.Core.Eval.Backtest.EvalPurgeReport? right) -> bool
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.<Clone>$() -> Aw.Context.Core.Eval.Backtest.AsOfDocsRequest!
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.AsOfDocsRequest(Aw.Context.Core.Engine.ContextRepo! Repo, string! Commit, System.Collections.Generic.IReadOnlyList<string!>! Globs, Aw.Context.Core.Trust.Scrubbers! Scrubbers) -> void
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Commit.get -> string!
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Commit.init -> void
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Deconstruct(out Aw.Context.Core.Engine.ContextRepo! Repo, out string! Commit, out System.Collections.Generic.IReadOnlyList<string!>! Globs, out Aw.Context.Core.Trust.Scrubbers! Scrubbers) -> void
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Equals(Aw.Context.Core.Eval.Backtest.AsOfDocsRequest? other) -> bool
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Globs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Globs.init -> void
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Repo.get -> Aw.Context.Core.Engine.ContextRepo!
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Repo.init -> void
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Scrubbers.get -> Aw.Context.Core.Trust.Scrubbers!
+Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Scrubbers.init -> void
+Aw.Context.Core.Eval.Backtest.IAsOfDocs
+Aw.Context.Core.Eval.Backtest.IAsOfDocs.Open(Aw.Context.Core.Eval.Backtest.AsOfDocsRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Sources.IContextSource!>!>
+override Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.ToString() -> string!
+static Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.operator !=(Aw.Context.Core.Eval.Backtest.AsOfDocsRequest? left, Aw.Context.Core.Eval.Backtest.AsOfDocsRequest? right) -> bool
+static Aw.Context.Core.Eval.Backtest.AsOfDocsRequest.operator ==(Aw.Context.Core.Eval.Backtest.AsOfDocsRequest? left, Aw.Context.Core.Eval.Backtest.AsOfDocsRequest? right) -> bool
+Aw.Context.Core.Eval.Backtest.ArmReport
+Aw.Context.Core.Eval.Backtest.ArmReport.<Clone>$() -> Aw.Context.Core.Eval.Backtest.ArmReport!
+Aw.Context.Core.Eval.Backtest.ArmReport.Arm.get -> string!
+Aw.Context.Core.Eval.Backtest.ArmReport.Arm.init -> void
+Aw.Context.Core.Eval.Backtest.ArmReport.ArmReport(string! Arm, string! Dimension, bool Leaky, string? NotAvailable, Aw.Context.Core.Eval.Backtest.ArmScore? Score, Aw.Context.Core.Eval.Backtest.ArmPassLine? PassLine, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.SampleScore!>! Samples) -> void
+Aw.Context.Core.Eval.Backtest.ArmReport.Deconstruct(out string! Arm, out string! Dimension, out bool Leaky, out string? NotAvailable, out Aw.Context.Core.Eval.Backtest.ArmScore? Score, out Aw.Context.Core.Eval.Backtest.ArmPassLine? PassLine, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.SampleScore!>! Samples) -> void
+Aw.Context.Core.Eval.Backtest.ArmReport.Dimension.get -> string!
+Aw.Context.Core.Eval.Backtest.ArmReport.Dimension.init -> void
+Aw.Context.Core.Eval.Backtest.ArmReport.Equals(Aw.Context.Core.Eval.Backtest.ArmReport? other) -> bool
+Aw.Context.Core.Eval.Backtest.ArmReport.Leaky.get -> bool
+Aw.Context.Core.Eval.Backtest.ArmReport.Leaky.init -> void
+Aw.Context.Core.Eval.Backtest.ArmReport.NotAvailable.get -> string?
+Aw.Context.Core.Eval.Backtest.ArmReport.NotAvailable.init -> void
+Aw.Context.Core.Eval.Backtest.ArmReport.PassLine.get -> Aw.Context.Core.Eval.Backtest.ArmPassLine?
+Aw.Context.Core.Eval.Backtest.ArmReport.PassLine.init -> void
+Aw.Context.Core.Eval.Backtest.ArmReport.Samples.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.SampleScore!>!
+Aw.Context.Core.Eval.Backtest.ArmReport.Samples.init -> void
+Aw.Context.Core.Eval.Backtest.ArmReport.Score.get -> Aw.Context.Core.Eval.Backtest.ArmScore?
+Aw.Context.Core.Eval.Backtest.ArmReport.Score.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport
+Aw.Context.Core.Eval.Backtest.BacktestReport.<Clone>$() -> Aw.Context.Core.Eval.Backtest.BacktestReport!
+Aw.Context.Core.Eval.Backtest.BacktestReport.Arms.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.ArmReport!>!
+Aw.Context.Core.Eval.Backtest.BacktestReport.Arms.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.BacktestReport(int SchemaVersion, System.DateTimeOffset CreatedAt, string! Window, int SampleCount, bool SmallSample, double LeakyShare, Aw.Context.Core.Eval.Backtest.LeftOut! LeftOut, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.CorpusSample!>! Samples, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.ArmReport!>! Arms, string? Overall, System.Collections.Generic.IReadOnlyList<string!>! Degraded) -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.CreatedAt.get -> System.DateTimeOffset
+Aw.Context.Core.Eval.Backtest.BacktestReport.CreatedAt.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.Deconstruct(out int SchemaVersion, out System.DateTimeOffset CreatedAt, out string! Window, out int SampleCount, out bool SmallSample, out double LeakyShare, out Aw.Context.Core.Eval.Backtest.LeftOut! LeftOut, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.CorpusSample!>! Samples, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.ArmReport!>! Arms, out string? Overall, out System.Collections.Generic.IReadOnlyList<string!>! Degraded) -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.Degraded.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Eval.Backtest.BacktestReport.Degraded.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.Equals(Aw.Context.Core.Eval.Backtest.BacktestReport? other) -> bool
+Aw.Context.Core.Eval.Backtest.BacktestReport.LeakyShare.get -> double
+Aw.Context.Core.Eval.Backtest.BacktestReport.LeakyShare.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.LeftOut.get -> Aw.Context.Core.Eval.Backtest.LeftOut!
+Aw.Context.Core.Eval.Backtest.BacktestReport.LeftOut.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.Overall.get -> string?
+Aw.Context.Core.Eval.Backtest.BacktestReport.Overall.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.SampleCount.get -> int
+Aw.Context.Core.Eval.Backtest.BacktestReport.SampleCount.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.Samples.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.CorpusSample!>!
+Aw.Context.Core.Eval.Backtest.BacktestReport.Samples.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.SchemaVersion.get -> int
+Aw.Context.Core.Eval.Backtest.BacktestReport.SchemaVersion.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.SmallSample.get -> bool
+Aw.Context.Core.Eval.Backtest.BacktestReport.SmallSample.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestReport.Window.get -> string!
+Aw.Context.Core.Eval.Backtest.BacktestReport.Window.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestRequest
+Aw.Context.Core.Eval.Backtest.BacktestRequest.<Clone>$() -> Aw.Context.Core.Eval.Backtest.BacktestRequest!
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Arms.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Arm>!
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Arms.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestRequest.BacktestRequest(Aw.Context.Core.Engine.ContextScope! Scope, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Arm>! Arms, System.DateTimeOffset? Since = null, System.DateTimeOffset? Until = null, int? Limit = null, System.IProgress<string!>? Progress = null) -> void
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Deconstruct(out Aw.Context.Core.Engine.ContextScope! Scope, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Arm>! Arms, out System.DateTimeOffset? Since, out System.DateTimeOffset? Until, out int? Limit, out System.IProgress<string!>? Progress) -> void
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Equals(Aw.Context.Core.Eval.Backtest.BacktestRequest? other) -> bool
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Limit.get -> int?
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Limit.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Progress.get -> System.IProgress<string!>?
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Progress.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Scope.get -> Aw.Context.Core.Engine.ContextScope!
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Scope.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Since.get -> System.DateTimeOffset?
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Since.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Until.get -> System.DateTimeOffset?
+Aw.Context.Core.Eval.Backtest.BacktestRequest.Until.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestRun
+Aw.Context.Core.Eval.Backtest.BacktestRun.<Clone>$() -> Aw.Context.Core.Eval.Backtest.BacktestRun!
+Aw.Context.Core.Eval.Backtest.BacktestRun.BacktestRun(Aw.Context.Core.Eval.Backtest.BacktestReport! Report, string! Path) -> void
+Aw.Context.Core.Eval.Backtest.BacktestRun.Deconstruct(out Aw.Context.Core.Eval.Backtest.BacktestReport! Report, out string! Path) -> void
+Aw.Context.Core.Eval.Backtest.BacktestRun.Equals(Aw.Context.Core.Eval.Backtest.BacktestRun? other) -> bool
+Aw.Context.Core.Eval.Backtest.BacktestRun.Path.get -> string!
+Aw.Context.Core.Eval.Backtest.BacktestRun.Path.init -> void
+Aw.Context.Core.Eval.Backtest.BacktestRun.Report.get -> Aw.Context.Core.Eval.Backtest.BacktestReport!
+Aw.Context.Core.Eval.Backtest.BacktestRun.Report.init -> void
+Aw.Context.Core.Eval.Backtest.LeftOut.NoBrief.get -> int
+Aw.Context.Core.Eval.Backtest.LeftOut.NoBrief.init -> void
+Aw.Context.Core.Facade.IContextEngine.EvalBacktest(Aw.Context.Core.Eval.Backtest.BacktestRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.Backtest.BacktestRun!>!>
+const Aw.Context.Core.Eval.Backtest.BacktestReport.CurrentSchemaVersion = 1 -> int
+override Aw.Context.Core.Eval.Backtest.ArmReport.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.ArmReport.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.ArmReport.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.BacktestReport.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.BacktestReport.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.BacktestReport.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.BacktestRequest.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.BacktestRequest.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.BacktestRequest.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.BacktestRun.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.BacktestRun.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.BacktestRun.ToString() -> string!
+static Aw.Context.Core.Eval.Backtest.ArmReport.operator !=(Aw.Context.Core.Eval.Backtest.ArmReport? left, Aw.Context.Core.Eval.Backtest.ArmReport? right) -> bool
+static Aw.Context.Core.Eval.Backtest.ArmReport.operator ==(Aw.Context.Core.Eval.Backtest.ArmReport? left, Aw.Context.Core.Eval.Backtest.ArmReport? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BacktestReport.operator !=(Aw.Context.Core.Eval.Backtest.BacktestReport? left, Aw.Context.Core.Eval.Backtest.BacktestReport? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BacktestReport.operator ==(Aw.Context.Core.Eval.Backtest.BacktestReport? left, Aw.Context.Core.Eval.Backtest.BacktestReport? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BacktestRequest.operator !=(Aw.Context.Core.Eval.Backtest.BacktestRequest? left, Aw.Context.Core.Eval.Backtest.BacktestRequest? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BacktestRequest.operator ==(Aw.Context.Core.Eval.Backtest.BacktestRequest? left, Aw.Context.Core.Eval.Backtest.BacktestRequest? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BacktestRun.operator !=(Aw.Context.Core.Eval.Backtest.BacktestRun? left, Aw.Context.Core.Eval.Backtest.BacktestRun? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BacktestRun.operator ==(Aw.Context.Core.Eval.Backtest.BacktestRun? left, Aw.Context.Core.Eval.Backtest.BacktestRun? right) -> bool
+Aw.Context.Core.Eval.Backtest.ArmQuestion
+Aw.Context.Core.Eval.Backtest.ArmQuestion.<Clone>$() -> Aw.Context.Core.Eval.Backtest.ArmQuestion!
+Aw.Context.Core.Eval.Backtest.ArmQuestion.ArmQuestion(Aw.Context.Core.Engine.ContextScope! Scope, Aw.Context.Core.Engine.ContextQuery! Query, Aw.Context.Core.Map.VisibleMap? Map, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.IContextSource!>! Sources, System.DateTimeOffset AsOf) -> void
+Aw.Context.Core.Eval.Backtest.ArmQuestion.AsOf.get -> System.DateTimeOffset
+Aw.Context.Core.Eval.Backtest.ArmQuestion.AsOf.init -> void
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Deconstruct(out Aw.Context.Core.Engine.ContextScope! Scope, out Aw.Context.Core.Engine.ContextQuery! Query, out Aw.Context.Core.Map.VisibleMap? Map, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.IContextSource!>! Sources, out System.DateTimeOffset AsOf) -> void
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Equals(Aw.Context.Core.Eval.Backtest.ArmQuestion? other) -> bool
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Map.get -> Aw.Context.Core.Map.VisibleMap?
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Map.init -> void
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Query.get -> Aw.Context.Core.Engine.ContextQuery!
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Query.init -> void
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Scope.get -> Aw.Context.Core.Engine.ContextScope!
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Scope.init -> void
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Sources.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Sources.IContextSource!>!
+Aw.Context.Core.Eval.Backtest.ArmQuestion.Sources.init -> void
+Aw.Context.Core.Eval.Backtest.IArmQuery
+Aw.Context.Core.Eval.Backtest.IArmQuery.Ask(Aw.Context.Core.Eval.Backtest.ArmQuestion! question, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Results.ContextResult!>!>
+override Aw.Context.Core.Eval.Backtest.ArmQuestion.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.ArmQuestion.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.ArmQuestion.ToString() -> string!
+static Aw.Context.Core.Eval.Backtest.ArmQuestion.operator !=(Aw.Context.Core.Eval.Backtest.ArmQuestion? left, Aw.Context.Core.Eval.Backtest.ArmQuestion? right) -> bool
+static Aw.Context.Core.Eval.Backtest.ArmQuestion.operator ==(Aw.Context.Core.Eval.Backtest.ArmQuestion? left, Aw.Context.Core.Eval.Backtest.ArmQuestion? right) -> bool
+Aw.Context.Core.Engine.ContextSettings.Adjudicator.get -> bool
+Aw.Context.Core.Engine.ContextSettings.Adjudicator.init -> void
+Aw.Context.Core.Eval.Backtest.AdjudicatedScoring
+Aw.Context.Core.Eval.Backtest.SampleScore.AdjudicatedPrecision.get -> double?
+Aw.Context.Core.Eval.Backtest.SampleScore.AdjudicatedPrecision.init -> void
+Aw.Context.Core.Eval.Backtest.Surface
+Aw.Context.Core.Eval.Backtest.Surface.<Clone>$() -> Aw.Context.Core.Eval.Backtest.Surface!
+Aw.Context.Core.Eval.Backtest.Surface.Deconstruct(out string! Key, out string! Label) -> void
+Aw.Context.Core.Eval.Backtest.Surface.Equals(Aw.Context.Core.Eval.Backtest.Surface? other) -> bool
+Aw.Context.Core.Eval.Backtest.Surface.Key.get -> string!
+Aw.Context.Core.Eval.Backtest.Surface.Key.init -> void
+Aw.Context.Core.Eval.Backtest.Surface.Label.get -> string!
+Aw.Context.Core.Eval.Backtest.Surface.Label.init -> void
+Aw.Context.Core.Eval.Backtest.Surface.Surface(string! Key, string! Label) -> void
+Aw.Context.Core.Eval.Backtest.Verdict
+Aw.Context.Core.Eval.Backtest.Verdict.NotRelevant = 1 -> Aw.Context.Core.Eval.Backtest.Verdict
+Aw.Context.Core.Eval.Backtest.Verdict.Relevant = 0 -> Aw.Context.Core.Eval.Backtest.Verdict
+Aw.Context.Core.Eval.Backtest.Verdict.Unjudged = 3 -> Aw.Context.Core.Eval.Backtest.Verdict
+Aw.Context.Core.Eval.Backtest.Verdict.Unstable = 2 -> Aw.Context.Core.Eval.Backtest.Verdict
+override Aw.Context.Core.Eval.Backtest.Surface.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.Surface.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.Surface.ToString() -> string!
+static Aw.Context.Core.Eval.Backtest.AdjudicatedScoring.Precision(System.Collections.Generic.IReadOnlyList<string!>! predicted, System.Collections.Generic.IReadOnlyList<string!>! truth, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Eval.Backtest.Verdict>! verdicts) -> double?
+static Aw.Context.Core.Eval.Backtest.AdjudicatedScoring.Surfaces(System.Collections.Generic.IReadOnlyList<string!>! predicted, System.Collections.Generic.IReadOnlyList<string!>! truth, Aw.Context.Core.Graph.GraphSnapshot! graph) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Surface!>!
+static Aw.Context.Core.Eval.Backtest.Surface.operator !=(Aw.Context.Core.Eval.Backtest.Surface? left, Aw.Context.Core.Eval.Backtest.Surface? right) -> bool
+static Aw.Context.Core.Eval.Backtest.Surface.operator ==(Aw.Context.Core.Eval.Backtest.Surface? left, Aw.Context.Core.Eval.Backtest.Surface? right) -> bool
+Aw.Context.Core.Eval.Backtest.Adjudication
+Aw.Context.Core.Eval.Backtest.Adjudication.<Clone>$() -> Aw.Context.Core.Eval.Backtest.Adjudication!
+Aw.Context.Core.Eval.Backtest.Adjudication.Capped.get -> bool
+Aw.Context.Core.Eval.Backtest.Adjudication.Capped.init -> void
+Aw.Context.Core.Eval.Backtest.Adjudication.Equals(Aw.Context.Core.Eval.Backtest.Adjudication? other) -> bool
+Aw.Context.Core.Eval.Backtest.Adjudication.Tokens.get -> int
+Aw.Context.Core.Eval.Backtest.Adjudication.Tokens.init -> void
+Aw.Context.Core.Eval.Backtest.Adjudication.Verdicts.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Eval.Backtest.Verdict>!
+Aw.Context.Core.Eval.Backtest.Adjudication.Verdicts.init -> void
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.<Clone>$() -> Aw.Context.Core.Eval.Backtest.AdjudicationRequest!
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.AdjudicationRequest(string! Brief, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Surface!>! Surfaces, Aw.Context.Core.Trust.IEgressScrubber! Egress, int TokensLeft) -> void
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.Brief.get -> string!
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.Brief.init -> void
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.Deconstruct(out string! Brief, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Surface!>! Surfaces, out Aw.Context.Core.Trust.IEgressScrubber! Egress, out int TokensLeft) -> void
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.Egress.get -> Aw.Context.Core.Trust.IEgressScrubber!
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.Egress.init -> void
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.Equals(Aw.Context.Core.Eval.Backtest.AdjudicationRequest? other) -> bool
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.Surfaces.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.Surface!>!
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.Surfaces.init -> void
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.TokensLeft.get -> int
+Aw.Context.Core.Eval.Backtest.AdjudicationRequest.TokensLeft.init -> void
+Aw.Context.Core.Eval.Backtest.IAdjudicator
+Aw.Context.Core.Eval.Backtest.IAdjudicator.Judge(Aw.Context.Core.Eval.Backtest.AdjudicationRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Context.Core.Eval.Backtest.Adjudication!>
+override Aw.Context.Core.Eval.Backtest.Adjudication.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.Adjudication.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.Adjudication.ToString() -> string!
+override Aw.Context.Core.Eval.Backtest.AdjudicationRequest.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.AdjudicationRequest.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.AdjudicationRequest.ToString() -> string!
+static Aw.Context.Core.Eval.Backtest.Adjudication.operator !=(Aw.Context.Core.Eval.Backtest.Adjudication? left, Aw.Context.Core.Eval.Backtest.Adjudication? right) -> bool
+static Aw.Context.Core.Eval.Backtest.Adjudication.operator ==(Aw.Context.Core.Eval.Backtest.Adjudication? left, Aw.Context.Core.Eval.Backtest.Adjudication? right) -> bool
+static Aw.Context.Core.Eval.Backtest.AdjudicationRequest.operator !=(Aw.Context.Core.Eval.Backtest.AdjudicationRequest? left, Aw.Context.Core.Eval.Backtest.AdjudicationRequest? right) -> bool
+static Aw.Context.Core.Eval.Backtest.AdjudicationRequest.operator ==(Aw.Context.Core.Eval.Backtest.AdjudicationRequest? left, Aw.Context.Core.Eval.Backtest.AdjudicationRequest? right) -> bool
+Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest
+Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.<Clone>$() -> Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest!
+Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.All.get -> bool
+Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.All.init -> void
+Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.Deconstruct(out Aw.Context.Core.Engine.ContextScope! Scope, out bool All) -> void
+Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.Equals(Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest? other) -> bool
+Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.EvalPurgeRequest(Aw.Context.Core.Engine.ContextScope! Scope, bool All) -> void
+Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.Scope.get -> Aw.Context.Core.Engine.ContextScope!
+Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.Scope.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityBars
+Aw.Context.Core.Eval.MapQuality.MapQualityReport
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.<Clone>$() -> Aw.Context.Core.Eval.MapQuality.MapQualityReport!
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.Bars.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.Bars.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.CreatedAt.get -> System.DateTimeOffset
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.CreatedAt.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.Deconstruct(out int SchemaVersion, out System.DateTimeOffset CreatedAt, out string! MapVersion, out Aw.Context.Core.Eval.MapQuality.Ratio! NodePrecision, out Aw.Context.Core.Eval.MapQuality.Ratio! NodePrecisionDeterministic, out Aw.Context.Core.Eval.MapQuality.Ratio! NodePrecisionModel, out Aw.Context.Core.Eval.MapQuality.Ratio! LinkPrecision, out int Undecided, out Aw.Context.Core.Eval.MapQuality.Ratio! UnmappedRate, out string? Window, out System.Collections.Generic.IReadOnlyList<string!>! Bars) -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.Equals(Aw.Context.Core.Eval.MapQuality.MapQualityReport? other) -> bool
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.LinkPrecision.get -> Aw.Context.Core.Eval.MapQuality.Ratio!
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.LinkPrecision.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.MapQualityReport(int SchemaVersion, System.DateTimeOffset CreatedAt, string! MapVersion, Aw.Context.Core.Eval.MapQuality.Ratio! NodePrecision, Aw.Context.Core.Eval.MapQuality.Ratio! NodePrecisionDeterministic, Aw.Context.Core.Eval.MapQuality.Ratio! NodePrecisionModel, Aw.Context.Core.Eval.MapQuality.Ratio! LinkPrecision, int Undecided, Aw.Context.Core.Eval.MapQuality.Ratio! UnmappedRate, string? Window, System.Collections.Generic.IReadOnlyList<string!>! Bars) -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.MapVersion.get -> string!
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.MapVersion.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.NodePrecision.get -> Aw.Context.Core.Eval.MapQuality.Ratio!
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.NodePrecision.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.NodePrecisionDeterministic.get -> Aw.Context.Core.Eval.MapQuality.Ratio!
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.NodePrecisionDeterministic.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.NodePrecisionModel.get -> Aw.Context.Core.Eval.MapQuality.Ratio!
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.NodePrecisionModel.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.SchemaVersion.get -> int
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.SchemaVersion.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.Undecided.get -> int
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.Undecided.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.UnmappedRate.get -> Aw.Context.Core.Eval.MapQuality.Ratio!
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.UnmappedRate.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.Window.get -> string?
+Aw.Context.Core.Eval.MapQuality.MapQualityReport.Window.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityRequest
+Aw.Context.Core.Eval.MapQuality.MapQualityRequest.<Clone>$() -> Aw.Context.Core.Eval.MapQuality.MapQualityRequest!
+Aw.Context.Core.Eval.MapQuality.MapQualityRequest.Deconstruct(out Aw.Context.Core.Engine.ContextScope! Scope) -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityRequest.Equals(Aw.Context.Core.Eval.MapQuality.MapQualityRequest? other) -> bool
+Aw.Context.Core.Eval.MapQuality.MapQualityRequest.MapQualityRequest(Aw.Context.Core.Engine.ContextScope! Scope) -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityRequest.Scope.get -> Aw.Context.Core.Engine.ContextScope!
+Aw.Context.Core.Eval.MapQuality.MapQualityRequest.Scope.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityRun
+Aw.Context.Core.Eval.MapQuality.MapQualityRun.<Clone>$() -> Aw.Context.Core.Eval.MapQuality.MapQualityRun!
+Aw.Context.Core.Eval.MapQuality.MapQualityRun.Deconstruct(out Aw.Context.Core.Eval.MapQuality.MapQualityReport! Report, out string! Path) -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityRun.Equals(Aw.Context.Core.Eval.MapQuality.MapQualityRun? other) -> bool
+Aw.Context.Core.Eval.MapQuality.MapQualityRun.MapQualityRun(Aw.Context.Core.Eval.MapQuality.MapQualityReport! Report, string! Path) -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityRun.Path.get -> string!
+Aw.Context.Core.Eval.MapQuality.MapQualityRun.Path.init -> void
+Aw.Context.Core.Eval.MapQuality.MapQualityRun.Report.get -> Aw.Context.Core.Eval.MapQuality.MapQualityReport!
+Aw.Context.Core.Eval.MapQuality.MapQualityRun.Report.init -> void
+Aw.Context.Core.Eval.MapQuality.Ratio
+Aw.Context.Core.Eval.MapQuality.Ratio.<Clone>$() -> Aw.Context.Core.Eval.MapQuality.Ratio!
+Aw.Context.Core.Eval.MapQuality.Ratio.Deconstruct(out int Hits, out int Total) -> void
+Aw.Context.Core.Eval.MapQuality.Ratio.Equals(Aw.Context.Core.Eval.MapQuality.Ratio? other) -> bool
+Aw.Context.Core.Eval.MapQuality.Ratio.Hits.get -> int
+Aw.Context.Core.Eval.MapQuality.Ratio.Hits.init -> void
+Aw.Context.Core.Eval.MapQuality.Ratio.Ratio(int Hits, int Total) -> void
+Aw.Context.Core.Eval.MapQuality.Ratio.Total.get -> int
+Aw.Context.Core.Eval.MapQuality.Ratio.Total.init -> void
+Aw.Context.Core.Eval.MapQuality.Ratio.Value.get -> double?
+Aw.Context.Core.Facade.IContextEngine.EvalMap(Aw.Context.Core.Eval.MapQuality.MapQualityRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.MapQuality.MapQualityRun!>!>
+Aw.Context.Core.Facade.IContextEngine.EvalPurge(Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.Backtest.EvalPurgeReport!>!>
+const Aw.Context.Core.Eval.MapQuality.MapQualityBars.NodePrecision = 0.8 -> double
+const Aw.Context.Core.Eval.MapQuality.MapQualityBars.UnmappedRate = 0.2 -> double
+const Aw.Context.Core.Eval.MapQuality.MapQualityReport.CurrentSchemaVersion = 1 -> int
+override Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.GetHashCode() -> int
+override Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.ToString() -> string!
+override Aw.Context.Core.Eval.MapQuality.MapQualityReport.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.MapQuality.MapQualityReport.GetHashCode() -> int
+override Aw.Context.Core.Eval.MapQuality.MapQualityReport.ToString() -> string!
+override Aw.Context.Core.Eval.MapQuality.MapQualityRequest.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.MapQuality.MapQualityRequest.GetHashCode() -> int
+override Aw.Context.Core.Eval.MapQuality.MapQualityRequest.ToString() -> string!
+override Aw.Context.Core.Eval.MapQuality.MapQualityRun.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.MapQuality.MapQualityRun.GetHashCode() -> int
+override Aw.Context.Core.Eval.MapQuality.MapQualityRun.ToString() -> string!
+override Aw.Context.Core.Eval.MapQuality.Ratio.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.MapQuality.Ratio.GetHashCode() -> int
+override Aw.Context.Core.Eval.MapQuality.Ratio.ToString() -> string!
+static Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.operator !=(Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest? left, Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest? right) -> bool
+static Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest.operator ==(Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest? left, Aw.Context.Core.Eval.MapQuality.EvalPurgeRequest? right) -> bool
+static Aw.Context.Core.Eval.MapQuality.MapQualityBars.Judge(Aw.Context.Core.Eval.MapQuality.Ratio! nodePrecision, Aw.Context.Core.Eval.MapQuality.Ratio! unmapped) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Context.Core.Eval.MapQuality.MapQualityReport.operator !=(Aw.Context.Core.Eval.MapQuality.MapQualityReport? left, Aw.Context.Core.Eval.MapQuality.MapQualityReport? right) -> bool
+static Aw.Context.Core.Eval.MapQuality.MapQualityReport.operator ==(Aw.Context.Core.Eval.MapQuality.MapQualityReport? left, Aw.Context.Core.Eval.MapQuality.MapQualityReport? right) -> bool
+static Aw.Context.Core.Eval.MapQuality.MapQualityRequest.operator !=(Aw.Context.Core.Eval.MapQuality.MapQualityRequest? left, Aw.Context.Core.Eval.MapQuality.MapQualityRequest? right) -> bool
+static Aw.Context.Core.Eval.MapQuality.MapQualityRequest.operator ==(Aw.Context.Core.Eval.MapQuality.MapQualityRequest? left, Aw.Context.Core.Eval.MapQuality.MapQualityRequest? right) -> bool
+static Aw.Context.Core.Eval.MapQuality.MapQualityRun.operator !=(Aw.Context.Core.Eval.MapQuality.MapQualityRun? left, Aw.Context.Core.Eval.MapQuality.MapQualityRun? right) -> bool
+static Aw.Context.Core.Eval.MapQuality.MapQualityRun.operator ==(Aw.Context.Core.Eval.MapQuality.MapQualityRun? left, Aw.Context.Core.Eval.MapQuality.MapQualityRun? right) -> bool
+static Aw.Context.Core.Eval.MapQuality.Ratio.operator !=(Aw.Context.Core.Eval.MapQuality.Ratio? left, Aw.Context.Core.Eval.MapQuality.Ratio? right) -> bool
+static Aw.Context.Core.Eval.MapQuality.Ratio.operator ==(Aw.Context.Core.Eval.MapQuality.Ratio? left, Aw.Context.Core.Eval.MapQuality.Ratio? right) -> bool
+static Aw.Context.Core.Map.MapRetention.EvalWindow.get -> System.TimeSpan
+Aw.Context.Core.Eval.Backtest.Adjudication.Adjudication(System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Eval.Backtest.Verdict>! Verdicts, int Tokens, bool Capped, string? Error = null) -> void
+Aw.Context.Core.Eval.Backtest.Adjudication.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Eval.Backtest.Verdict>! Verdicts, out int Tokens, out bool Capped, out string? Error) -> void
+Aw.Context.Core.Eval.Backtest.Adjudication.Error.get -> string?
+Aw.Context.Core.Eval.Backtest.Adjudication.Error.init -> void
+Aw.Context.Core.Eval.Backtest.LeftOut.SourceDown.get -> int
+Aw.Context.Core.Eval.Backtest.LeftOut.SourceDown.init -> void
+static Aw.Context.Core.Eval.Backtest.PassLine.Overall(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.ArmReport!>! arms) -> string?
+const Aw.Context.Core.Eval.Backtest.Verdicts.NoComparableArm = "no comparable arm ran" -> string!
+Aw.Context.Core.Eval.Backtest.BriefListing
+Aw.Context.Core.Eval.Backtest.BriefListing.<Clone>$() -> Aw.Context.Core.Eval.Backtest.BriefListing!
+Aw.Context.Core.Eval.Backtest.BriefListing.BriefListing(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.BriefIssue!>! Issues, System.Collections.Generic.IReadOnlyList<string!>! CappedTeams) -> void
+Aw.Context.Core.Eval.Backtest.BriefListing.CappedTeams.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Eval.Backtest.BriefListing.CappedTeams.init -> void
+Aw.Context.Core.Eval.Backtest.BriefListing.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.BriefIssue!>! Issues, out System.Collections.Generic.IReadOnlyList<string!>! CappedTeams) -> void
+Aw.Context.Core.Eval.Backtest.BriefListing.Equals(Aw.Context.Core.Eval.Backtest.BriefListing? other) -> bool
+Aw.Context.Core.Eval.Backtest.BriefListing.Issues.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.BriefIssue!>!
+Aw.Context.Core.Eval.Backtest.BriefListing.Issues.init -> void
+Aw.Context.Core.Eval.Backtest.IBriefSource.Issues(Aw.Context.Core.Eval.Backtest.BriefScope! scope, System.DateTimeOffset? since, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.Backtest.BriefListing!>!>
+Aw.Context.Core.Sources.SourceQuery.UpdatedSince.get -> System.DateTimeOffset?
+Aw.Context.Core.Sources.SourceQuery.UpdatedSince.init -> void
+override Aw.Context.Core.Eval.Backtest.BriefListing.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.BriefListing.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.BriefListing.ToString() -> string!
+static Aw.Context.Core.Eval.Backtest.BriefListing.operator !=(Aw.Context.Core.Eval.Backtest.BriefListing? left, Aw.Context.Core.Eval.Backtest.BriefListing? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BriefListing.operator ==(Aw.Context.Core.Eval.Backtest.BriefListing? left, Aw.Context.Core.Eval.Backtest.BriefListing? right) -> bool
+Aw.Context.Core.Engine.ContextQuery.ContextQuery(string? Text, string? Node = null, string? Item = null, string? Symbol = null, int? Depth = null, int? Budget = null, bool Draft = false, Aw.Context.Core.Engine.DiffRange? Diff = null, Aw.Context.Core.Engine.ContextRepoName? Repo = null) -> void
+Aw.Context.Core.Engine.ContextQuery.Deconstruct(out string? Text, out string? Node, out string? Item, out string? Symbol, out int? Depth, out int? Budget, out bool Draft, out Aw.Context.Core.Engine.DiffRange? Diff, out Aw.Context.Core.Engine.ContextRepoName? Repo) -> void
+Aw.Context.Core.Engine.ContextQuery.Diff.get -> Aw.Context.Core.Engine.DiffRange?
+Aw.Context.Core.Engine.ContextQuery.Diff.init -> void
+Aw.Context.Core.Engine.ContextQuery.Repo.get -> Aw.Context.Core.Engine.ContextRepoName?
+Aw.Context.Core.Engine.ContextQuery.Repo.init -> void
+Aw.Context.Core.Engine.DiffRange
+Aw.Context.Core.Engine.DiffRange.<Clone>$() -> Aw.Context.Core.Engine.DiffRange!
+Aw.Context.Core.Engine.DiffRange.Base.get -> string!
+Aw.Context.Core.Engine.DiffRange.Base.init -> void
+Aw.Context.Core.Engine.DiffRange.Deconstruct(out string! Base, out string! Head) -> void
+Aw.Context.Core.Engine.DiffRange.DiffRange(string! Base, string! Head) -> void
+Aw.Context.Core.Engine.DiffRange.Equals(Aw.Context.Core.Engine.DiffRange? other) -> bool
+Aw.Context.Core.Engine.DiffRange.Head.get -> string!
+Aw.Context.Core.Engine.DiffRange.Head.init -> void
+Aw.Context.Core.Engine.DiffRange.IsValid() -> bool
+Aw.Context.Core.Extract.RepoChange
+Aw.Context.Core.Extract.RepoChange.<Clone>$() -> Aw.Context.Core.Extract.RepoChange!
+Aw.Context.Core.Extract.RepoChange.Change.init -> void
+Aw.Context.Core.Extract.RepoChange.Equals(Aw.Context.Core.Extract.RepoChange? other) -> bool
+Aw.Context.Core.Extract.RepoChange.Path.get -> string!
+Aw.Context.Core.Extract.RepoChange.Path.init -> void
+Aw.Context.Core.Extract.RepoChanges
+Aw.Context.Core.Extract.RepoChanges.<Clone>$() -> Aw.Context.Core.Extract.RepoChanges!
+Aw.Context.Core.Extract.RepoChanges.Base.get -> string!
+Aw.Context.Core.Extract.RepoChanges.Base.init -> void
+Aw.Context.Core.Extract.RepoChanges.Deconstruct(out string! Base, out string! Head, out string! MergeBase, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.RepoChange!>! Files) -> void
+Aw.Context.Core.Extract.RepoChanges.Equals(Aw.Context.Core.Extract.RepoChanges? other) -> bool
+Aw.Context.Core.Extract.RepoChanges.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.RepoChange!>!
+Aw.Context.Core.Extract.RepoChanges.Files.init -> void
+Aw.Context.Core.Extract.RepoChanges.Head.get -> string!
+Aw.Context.Core.Extract.RepoChanges.Head.init -> void
+Aw.Context.Core.Extract.RepoChanges.MergeBase.get -> string!
+Aw.Context.Core.Extract.RepoChanges.MergeBase.init -> void
+Aw.Context.Core.Extract.RepoChanges.RepoChanges(string! Base, string! Head, string! MergeBase, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.RepoChange!>! Files) -> void
+Aw.Context.Core.Lenses.DiffAnchors
+Aw.Context.Core.Results.ContextResult.ContextResult(int SchemaVersion, Aw.Context.Core.Results.QueryId QueryId, Aw.Context.Core.Engine.ContextQuery! Query, System.Collections.Generic.IReadOnlyList<string!>! Anchors, string? MapVersion, System.DateTimeOffset AsOf, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultSection!>! Sections, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultConflict!>! Conflicts, System.Collections.Generic.IReadOnlyList<string!>! SuggestedAnchors, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DegradedSource!>! Degraded, bool Truncated, Aw.Context.Core.Results.BudgetUse! Budget, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites, Aw.Context.Core.Results.DiffPart? Diff = null) -> void
+Aw.Context.Core.Results.ContextResult.Deconstruct(out int SchemaVersion, out Aw.Context.Core.Results.QueryId QueryId, out Aw.Context.Core.Engine.ContextQuery! Query, out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out string? MapVersion, out System.DateTimeOffset AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultSection!>! Sections, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.ResultConflict!>! Conflicts, out System.Collections.Generic.IReadOnlyList<string!>! SuggestedAnchors, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DegradedSource!>! Degraded, out bool Truncated, out Aw.Context.Core.Results.BudgetUse! Budget, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites, out Aw.Context.Core.Results.DiffPart? Diff) -> void
+Aw.Context.Core.Results.ContextResult.Diff.get -> Aw.Context.Core.Results.DiffPart?
+Aw.Context.Core.Results.ContextResult.Diff.init -> void
+Aw.Context.Core.Results.DiffCounts
+Aw.Context.Core.Results.DiffCounts.<Clone>$() -> Aw.Context.Core.Results.DiffCounts!
+Aw.Context.Core.Results.DiffCounts.Changed.get -> int
+Aw.Context.Core.Results.DiffCounts.Changed.init -> void
+Aw.Context.Core.Results.DiffCounts.Deconstruct(out int Changed, out int Mapped, out int Suggested, out int Unmapped, out int Denied) -> void
+Aw.Context.Core.Results.DiffCounts.Denied.get -> int
+Aw.Context.Core.Results.DiffCounts.Denied.init -> void
+Aw.Context.Core.Results.DiffCounts.DiffCounts(int Changed, int Mapped, int Suggested, int Unmapped, int Denied) -> void
+Aw.Context.Core.Results.DiffCounts.Equals(Aw.Context.Core.Results.DiffCounts? other) -> bool
+Aw.Context.Core.Results.DiffCounts.Mapped.get -> int
+Aw.Context.Core.Results.DiffCounts.Mapped.init -> void
+Aw.Context.Core.Results.DiffCounts.Suggested.get -> int
+Aw.Context.Core.Results.DiffCounts.Suggested.init -> void
+Aw.Context.Core.Results.DiffCounts.Unmapped.get -> int
+Aw.Context.Core.Results.DiffCounts.Unmapped.init -> void
+Aw.Context.Core.Results.DiffFile
+Aw.Context.Core.Results.DiffFile.<Clone>$() -> Aw.Context.Core.Results.DiffFile!
+Aw.Context.Core.Results.DiffFile.Change.init -> void
+Aw.Context.Core.Results.DiffFile.Equals(Aw.Context.Core.Results.DiffFile? other) -> bool
+Aw.Context.Core.Results.DiffFile.Nodes.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffNode!>!
+Aw.Context.Core.Results.DiffFile.Nodes.init -> void
+Aw.Context.Core.Results.DiffFile.Path.get -> string!
+Aw.Context.Core.Results.DiffFile.Path.init -> void
+Aw.Context.Core.Results.DiffFile.Status.init -> void
+Aw.Context.Core.Results.DiffNode
+Aw.Context.Core.Results.DiffNode.<Clone>$() -> Aw.Context.Core.Results.DiffNode!
+Aw.Context.Core.Results.DiffNode.Confirmed.get -> bool
+Aw.Context.Core.Results.DiffNode.Confirmed.init -> void
+Aw.Context.Core.Results.DiffNode.Equals(Aw.Context.Core.Results.DiffNode? other) -> bool
+Aw.Context.Core.Results.DiffNode.Key.init -> void
+Aw.Context.Core.Results.DiffPart
+Aw.Context.Core.Results.DiffPart.<Clone>$() -> Aw.Context.Core.Results.DiffPart!
+Aw.Context.Core.Results.DiffPart.AnchorsTotal.get -> int
+Aw.Context.Core.Results.DiffPart.AnchorsTotal.init -> void
+Aw.Context.Core.Results.DiffPart.AnchorsTruncated.get -> bool
+Aw.Context.Core.Results.DiffPart.AnchorsTruncated.init -> void
+Aw.Context.Core.Results.DiffPart.Base.get -> string!
+Aw.Context.Core.Results.DiffPart.Base.init -> void
+Aw.Context.Core.Results.DiffPart.Counts.get -> Aw.Context.Core.Results.DiffCounts!
+Aw.Context.Core.Results.DiffPart.Counts.init -> void
+Aw.Context.Core.Results.DiffPart.Deconstruct(out Aw.Context.Core.Engine.ContextRepoName Repo, out string! Base, out string! Head, out string! MergeBase, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffFile!>! Files, out System.Collections.Generic.IReadOnlyList<string!>! Unmapped, out Aw.Context.Core.Results.DiffCounts! Counts, out bool Truncated, out int AnchorsTotal, out bool AnchorsTruncated) -> void
+Aw.Context.Core.Results.DiffPart.DiffPart(Aw.Context.Core.Engine.ContextRepoName Repo, string! Base, string! Head, string! MergeBase, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffFile!>! Files, System.Collections.Generic.IReadOnlyList<string!>! Unmapped, Aw.Context.Core.Results.DiffCounts! Counts, bool Truncated, int AnchorsTotal, bool AnchorsTruncated) -> void
+Aw.Context.Core.Results.DiffPart.Equals(Aw.Context.Core.Results.DiffPart? other) -> bool
+Aw.Context.Core.Results.DiffPart.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffFile!>!
+Aw.Context.Core.Results.DiffPart.Files.init -> void
+Aw.Context.Core.Results.DiffPart.Head.get -> string!
+Aw.Context.Core.Results.DiffPart.Head.init -> void
+Aw.Context.Core.Results.DiffPart.MergeBase.get -> string!
+Aw.Context.Core.Results.DiffPart.MergeBase.init -> void
+Aw.Context.Core.Results.DiffPart.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
+Aw.Context.Core.Results.DiffPart.Repo.init -> void
+Aw.Context.Core.Results.DiffPart.Truncated.get -> bool
+Aw.Context.Core.Results.DiffPart.Truncated.init -> void
+Aw.Context.Core.Results.DiffPart.Unmapped.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Results.DiffPart.Unmapped.init -> void
+const Aw.Context.Core.Engine.DiffRange.Message = "a diff names two commit shas joined by '..' (base..head, 7 to 64 lower-case hex characters each); resolve the refs to shas first: branch names, tags, HEAD, '~', '^' and '...' are not accepted" -> string!
+const Aw.Context.Core.Lenses.DiffAnchors.MaxAnchors = 20 -> int
+const Aw.Context.Core.Lenses.DiffAnchors.MaxFiles = 1000 -> int
+override Aw.Context.Core.Engine.DiffRange.Equals(object? obj) -> bool
+override Aw.Context.Core.Engine.DiffRange.GetHashCode() -> int
+override Aw.Context.Core.Engine.DiffRange.ToString() -> string!
+override Aw.Context.Core.Extract.RepoChange.Equals(object? obj) -> bool
+override Aw.Context.Core.Extract.RepoChange.GetHashCode() -> int
+override Aw.Context.Core.Extract.RepoChange.ToString() -> string!
+override Aw.Context.Core.Extract.RepoChanges.Equals(object? obj) -> bool
+override Aw.Context.Core.Extract.RepoChanges.GetHashCode() -> int
+override Aw.Context.Core.Extract.RepoChanges.ToString() -> string!
+override Aw.Context.Core.Results.DiffCounts.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.DiffCounts.GetHashCode() -> int
+override Aw.Context.Core.Results.DiffCounts.ToString() -> string!
+override Aw.Context.Core.Results.DiffFile.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.DiffFile.GetHashCode() -> int
+override Aw.Context.Core.Results.DiffFile.ToString() -> string!
+override Aw.Context.Core.Results.DiffNode.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.DiffNode.GetHashCode() -> int
+override Aw.Context.Core.Results.DiffNode.ToString() -> string!
+override Aw.Context.Core.Results.DiffPart.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.DiffPart.GetHashCode() -> int
+override Aw.Context.Core.Results.DiffPart.ToString() -> string!
+static Aw.Context.Core.Engine.DiffRange.Parse(string? text) -> Aw.Kernel.Result<Aw.Context.Core.Engine.DiffRange!>!
+static Aw.Context.Core.Engine.DiffRange.operator !=(Aw.Context.Core.Engine.DiffRange? left, Aw.Context.Core.Engine.DiffRange? right) -> bool
+static Aw.Context.Core.Engine.DiffRange.operator ==(Aw.Context.Core.Engine.DiffRange? left, Aw.Context.Core.Engine.DiffRange? right) -> bool
+static Aw.Context.Core.Extract.RepoChange.operator !=(Aw.Context.Core.Extract.RepoChange? left, Aw.Context.Core.Extract.RepoChange? right) -> bool
+static Aw.Context.Core.Extract.RepoChange.operator ==(Aw.Context.Core.Extract.RepoChange? left, Aw.Context.Core.Extract.RepoChange? right) -> bool
+static Aw.Context.Core.Extract.RepoChanges.operator !=(Aw.Context.Core.Extract.RepoChanges? left, Aw.Context.Core.Extract.RepoChanges? right) -> bool
+static Aw.Context.Core.Extract.RepoChanges.operator ==(Aw.Context.Core.Extract.RepoChanges? left, Aw.Context.Core.Extract.RepoChanges? right) -> bool
+static Aw.Context.Core.Lenses.DiffAnchors.Build(Aw.Context.Core.Extract.RepoChanges! changes, Aw.Context.Core.Engine.ContextRepo! repo, Aw.Context.Core.Graph.GraphSnapshot! graph) -> (Aw.Context.Core.Results.DiffPart! Part, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.GraphNode!>! Anchors)
+static Aw.Context.Core.Results.DiffCounts.operator !=(Aw.Context.Core.Results.DiffCounts? left, Aw.Context.Core.Results.DiffCounts? right) -> bool
+static Aw.Context.Core.Results.DiffCounts.operator ==(Aw.Context.Core.Results.DiffCounts? left, Aw.Context.Core.Results.DiffCounts? right) -> bool
+static Aw.Context.Core.Results.DiffFile.operator !=(Aw.Context.Core.Results.DiffFile? left, Aw.Context.Core.Results.DiffFile? right) -> bool
+static Aw.Context.Core.Results.DiffFile.operator ==(Aw.Context.Core.Results.DiffFile? left, Aw.Context.Core.Results.DiffFile? right) -> bool
+static Aw.Context.Core.Results.DiffNode.operator !=(Aw.Context.Core.Results.DiffNode? left, Aw.Context.Core.Results.DiffNode? right) -> bool
+static Aw.Context.Core.Results.DiffNode.operator ==(Aw.Context.Core.Results.DiffNode? left, Aw.Context.Core.Results.DiffNode? right) -> bool
+static Aw.Context.Core.Results.DiffPart.operator !=(Aw.Context.Core.Results.DiffPart? left, Aw.Context.Core.Results.DiffPart? right) -> bool
+static Aw.Context.Core.Results.DiffPart.operator ==(Aw.Context.Core.Results.DiffPart? left, Aw.Context.Core.Results.DiffPart? right) -> bool
+static readonly Aw.Context.Core.ContextErrors.CommitUnknown -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.NoMergeBase -> Aw.Kernel.ErrorDefinition!
+Aw.Context.Core.Engine.DiffRangeJsonConverter
+Aw.Context.Core.Engine.DiffRangeJsonConverter.DiffRangeJsonConverter() -> void
+override Aw.Context.Core.Engine.DiffRangeJsonConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Aw.Context.Core.Engine.DiffRange!
+override Aw.Context.Core.Engine.DiffRangeJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Aw.Context.Core.Engine.DiffRange! value, System.Text.Json.JsonSerializerOptions! options) -> void
+const Aw.Context.Core.Engine.QueryRules.RepoMessage = "a repo goes with a diff only (it names the repo whose commits the range is read in)" -> string!
+Aw.Context.Core.Extract.IRepoReader.Changes(Aw.Context.Core.Engine.ContextRepo! repo, Aw.Context.Core.Engine.DiffRange! range, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Extract.RepoChanges!>!>
+Aw.Context.Core.Extract.RepoChange.Change.get -> Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Extract.RepoChange.Deconstruct(out string! Path, out Aw.Context.Core.Results.ChangeKind Change) -> void
+Aw.Context.Core.Extract.RepoChange.RepoChange(string! Path, Aw.Context.Core.Results.ChangeKind Change) -> void
+Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Results.ChangeKind.Added = 0 -> Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Results.ChangeKind.Deleted = 2 -> Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Results.ChangeKind.Modified = 1 -> Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Results.ChangeKind.TypeChanged = 3 -> Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Results.DiffFile.Change.get -> Aw.Context.Core.Results.ChangeKind
+Aw.Context.Core.Results.DiffFile.Deconstruct(out string! Path, out Aw.Context.Core.Results.ChangeKind Change, out Aw.Context.Core.Results.DiffStatus Status, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffNode!>! Nodes) -> void
+Aw.Context.Core.Results.DiffFile.DiffFile(string! Path, Aw.Context.Core.Results.ChangeKind Change, Aw.Context.Core.Results.DiffStatus Status, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.DiffNode!>! Nodes) -> void
+Aw.Context.Core.Results.DiffFile.Status.get -> Aw.Context.Core.Results.DiffStatus
+Aw.Context.Core.Results.DiffNode.Deconstruct(out string! Key, out bool Confirmed) -> void
+Aw.Context.Core.Results.DiffNode.DiffNode(string! Key, bool Confirmed) -> void
+Aw.Context.Core.Results.DiffNode.Key.get -> string!
+Aw.Context.Core.Results.DiffStatus
+Aw.Context.Core.Results.DiffStatus.Mapped = 0 -> Aw.Context.Core.Results.DiffStatus
+Aw.Context.Core.Results.DiffStatus.Suggested = 1 -> Aw.Context.Core.Results.DiffStatus
+Aw.Context.Core.Results.DiffStatus.Unmapped = 2 -> Aw.Context.Core.Results.DiffStatus

@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Workflow.Views;
 
 namespace Aw.Sindri.Features.GetInstance;
 
@@ -7,4 +8,4 @@ namespace Aw.Sindri.Features.GetInstance;
 /// 'GetInstance' Query shows it.
 /// </summary>
 /// <param name="Instance">The instance: its id ('WFI-…', what the route carries), its address, or a bare item for the root of its latest attempt.</param>
-public sealed record GetInstanceRequest(string Instance) : IQuery<GetInstanceResponse>;
+public sealed record GetInstanceRequest(string Instance) : IQuery<InstanceDetail>;

@@ -31,6 +31,12 @@ internal sealed class RecipeShape(JsonSerializerOptions options, ReaderFindings 
             return;
         }
 
+        if (type == typeof(ProducedFact))
+        {
+            ProducedEntry(node, path);
+            return;
+        }
+
         var info = options.GetTypeInfo(type);   // a nullable value type is a leaf, read as itself
         switch (info.Kind)
         {
@@ -48,6 +54,52 @@ internal sealed class RecipeShape(JsonSerializerOptions options, ReaderFindings 
                 Leaf(node, info, path);
                 break;
         }
+    }
+
+    /// <summary>A 'produces' entry (§3.5): a bare fact key (checked as one, so its camelCase hint stays) or '{ fact, from }' (DT spec §8.4).</summary>
+    private void ProducedEntry(JsonNode node, string path)
+    {
+        if (node is JsonValue)
+        {
+            Check(node, typeof(FactKey), path, nullable: false);
+            return;
+        }
+
+        if (node is not JsonObject map)
+        {
+            Shaped(node, path);
+            return;
+        }
+
+        const string What = "a produces entry";
+        foreach (var key in map.Select(static p => p.Key).ToList())
+        {
+            var at = ReaderFindings.Join(path, key);
+            if (string.Equals(key, "fact", StringComparison.Ordinal) || string.Equals(key, "from", StringComparison.Ordinal))
+            {
+                Check(map[key], typeof(FactKey), at, nullable: false);
+                continue;
+            }
+
+            findings.Add("RCP-SCHEMA-001", at, $"'{key}' isn't a field of {What}", $"remove it; {What} has fact, from");
+            findings.RefuseUnknown(at, map, key);
+        }
+
+        if (!map.ContainsKey("fact"))
+        {
+            findings.Add("RCP-SCHEMA-001", ReaderFindings.Join(path, "fact"), $"{What} has no 'fact'", "add 'fact': the fact key to record");
+        }
+
+        if (!map.ContainsKey("from"))
+        {
+            findings.Add("RCP-SCHEMA-001", ReaderFindings.Join(path, "from"), $"{What} has no 'from'", "add 'from': the child's output key, or write the bare key");
+        }
+    }
+
+    private void Shaped(JsonNode node, string path)
+    {
+        findings.Add("RCP-SCHEMA-002", path, $"{Written(node)} isn't {RecipeTypes.Expected(typeof(ProducedFact))}", "write a fact key, or { fact, from } to rename a child's output");
+        findings.Refuse(path);
     }
 
     private void Empty(Type type, string path, bool nullable)

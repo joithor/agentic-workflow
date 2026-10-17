@@ -1,5 +1,5 @@
 {
-  "note": "an added entry with the defaults written out (mcp none, resume null); aider-added-defaults.json leaves them absent",
+  "note": "an added entry with the defaults written out (mcp, model and policy none, resume null); aider-added-defaults.json leaves them absent",
   "entry": {
     "label": "Aider",
     "bin": "/usr/local/bin/aider",
@@ -17,6 +17,6 @@
     "usage": "none",
     "mcp": "none"
   },
-  "canonical": "{\"bin\":\"aider\",\"mcp\":\"none\",\"open\":[\"{bin}\",\"--message\",\"{seed}\"],\"resume\":null,\"sessionId\":\"none\"}",
-  "argvHash": "sha256:4d9cb60d34ce5af39badb06be033735bb071d7d6537c4d72114c85db0576bf81"
+  "canonical": "{\"bin\":\"aider\",\"mcp\":\"none\",\"model\":\"none\",\"open\":[\"{bin}\",\"--message\",\"{seed}\"],\"policy\":\"none\",\"resume\":null,\"sessionId\":\"none\"}",
+  "argvHash": "sha256:74afc168585ce8c077c26cffb9c21468cbff554dd2c7889e3e3fc7ad78a26087"
 }

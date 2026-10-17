@@ -33,11 +33,11 @@ public sealed class TeamAndRoleCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task A_second_team_init_is_refused_with_its_code_and_a_usage_error_names_the_command()
+    public async Task A_repeated_team_init_is_refused_with_its_code_and_a_usage_error_names_the_command()
     {
         _ = await _cli.Run("team-init", "--team", "t1", "--repo", "/r", "--lanes", "api");
 
-        var again = await _cli.Run("team-init", "--team", "x", "--repo", "/r", "--lanes", "api");
+        var again = await _cli.Run("team-init", "--team", "t1", "--repo", "/r", "--lanes", "api");
         var bad = await _cli.Run("role-set");
 
         Assert.Equal((2, "AW-META-011"), (again.Exit, again.Err[..11]));
