@@ -393,7 +393,7 @@ $SINDRI context map export [<name-or-path>] [--json]
 
 `$SINDRI doctor` adds `context:map` (warns with no map or with orphaned overrides; how far the map is behind HEAD is
 unknown until a build records its commit, S-4) and `context:retention` (warns while exports older than 14 days or
-retained versions past the newest 20 are still there). The `context-purge` service removes both: name it under
+retained versions past the newest 20 are still there, except those replaced within the last 90 days, which a backtest can still read). The `context-purge` service removes both: name it under
 `services:` in the profile.
 
 ### Exit codes (map verbs)
@@ -686,9 +686,9 @@ the store, a usage error · `75` the heavy-job lock stayed busy (`040`).
 | `SND-CONTEXT-046` | `promote` refused: no draft, undecided items, or the draft changed after you confirmed it | `context map build`, `context map propose <file>` or the `context-rebuild` service, then `map review`; review the new draft with `map review`, then run `promote` again if the draft moved |
 | `SND-CONTEXT-047` | The node or link was decided already or is gone, or `--undo` names an unknown or undone override | `map review` lists the queue; `--history` the ids |
 | `SND-CONTEXT-048` | Git can't read the repo at the commit | Fix the repo path or fetch the commit |
-| `SND-CONTEXT-056` | A sync of that source is already running (409; one at a time per source) | Wait; `context sources status` shows it |
+| `SND-CONTEXT-056` | That source's sync is already running (for example the `context-sync` service holds it): the source's own row in the job's result carries this code and the other sources go on. It is an in-run row, not a start-time refusal: a second job start answers `SND-JOB-409` | Wait; `context sources status` shows it |
 | `SND-CONTEXT-057` | A model answer the engine refused (quote not verbatim, target outside the record's links, malformed), or a record skipped because its extraction prompt alone is over `maxTokensPerSync` (no decisions, not queued; the same when its conflict checks can't fit even one pair under the cap as the run's first call: the pairs are refused, and not retried on a version change unless the decision's quote changes); counted in `refused`, never fails the sync. A conflict verdict that can't be read keeps the pair pending (the record stays queued) and is asked at most 3 times, then the pair is marked refused | None for answers (persistent counts mean prompt drift); for a skipped record raise `maxTokensPerSync`: a record skipped for its prompt is retried when its version changes, but refused conflict pairs are not (unless the quote changes), so raise the cap before the give-up happens |
-| `SND-CONTEXT-058` | `sources sync --source X` names a source that isn't configured or has nothing to sync (404) | `context sources status` for the names |
+| `SND-CONTEXT-058` | `sources sync <source>` names a source that isn't configured or has nothing to sync (404) | `context sources status` for the names |
 | `SND-CONTEXT-059` | A sync stopped at its time cap: partial, it resumes from its cursor (`sources status` shows `059`, the source stays `ok` or `degraded`, exit 0). Every run completes at least one record, so a slow source still finishes across runs. A model or store failure in the same run shows instead of `059` | None; the next run continues. Raise the cadence if persistent |
 
 ## S-5A: the onyx source, secret pointers, doctor `context:onyx`
@@ -808,6 +808,29 @@ $SINDRI context query "split pane orientation"
 $SINDRI stop                                    # free the port before going back to your real home
 ```
 
+## S-7A: the evaluation harness
+
+`sindri context eval backtest` replays the owner's merged work against the context engine (context spec §9): each merged PR whose title or branch carries an issue key of a `context.sources.linear.teams` team is a sample, cut at the last commit before the issue was created. For each sample the engine builds the map as it stood then (from git; never today's map), asks every requested arm the issue's brief, and scores what came back against the files the PR changed.
+
+### What it prints
+
+The CLI prints the finished job's small result, in this order. The first line is the count: `5 samples · 1 left out · small sample` (the `small sample` words only below 30 samples; the left-out count adds the issues with no merged PR, outside the profile's teams, with no brief, whose cut git can't read, and dropped because the brief source was unavailable). Then one row per arm, in this order: `brief` (the brief-only baseline), `docs`, `graph` (the floor), `graph+reviewed` (the ceiling, labeled `(leaky)`), `all`; `linear`, `onyx` and `code` print `not available (S-6 / S-7B / S-9)`, and an arm that did not run prints `did not run`. A row reads `node recall 0.50 · node precision 0.40 · file recall@20 0.30 · leaky 1.00 · tokens 0` (`not measured` for a metric with nothing to average, never 0). Then `pass line: <verdict>`, one `degraded: <note>` line for each limit on the run (`clusters unavailable: N of M sample maps were built without clusters`; `issue listing capped: <team>`, when a team's Onyx search used up the 50 hits Onyx gives and the admin search has no next page, so issues past it are not in the corpus; samples dropped because the brief source was down; adjudication stopped at its cap or by a model error, the note leading with the error's code), and `report <path>`. The pass line is the arm `all`'s when it ran, else the best verdict among the arms that ran other than the brief-only baseline and the leaky ceiling (`no comparable arm ran` when only those did). The samples (issue keys, refs, cut and merge shas, truth files) and the per-bar verdicts (node recall above brief-only and at least 0.60; node precision at least 0.60; file recall@20 at least 0.50; at most 1.5M tokens; each `met`, `not met` or `not measured`) are in the report file, not on the terminal. Below 30 samples the overall line is `owner decision needed (small sample)` and nothing is enabled. A brief edited after its cut is `leaky`; every Onyx brief edited after its creation is, because Onyx keeps no content history. A merge at or before the moment its issue was created is no sample (its cut would already hold the answer). A run in which no sample could be scored is `SND-CONTEXT-080` with the counts of why, not an empty report.
+
+`--since` and `--until` take a date (`2026-09-30`, read as UTC; an `--until` date covers that whole day) or a full timestamp (taken as given). `--limit` is at least 1, and a window that ends before it starts is refused (`SND-CLI-003`) before the job exists.
+
+### The adjudicator
+
+Off by default. `context.eval.adjudicator: true` lets the run ask the model whether a predicted node no PR touched is relevant to the brief: twice, the second time in reversed order, keeping answers that agree. It sees the scrubbed brief and node labels only, and stops at 1.5M tokens per run (`SND-CONTEXT-083`). A model error is not a verdict: adjudication stops, the report says `adjudication incomplete` with the error's code, adjudicated precision is not measured, and the run makes no further model call.
+
+### Map quality and housekeeping
+
+`sindri context eval map [--json]` reads your accept and reject decisions: node precision per provenance, link precision, nodes nobody decided (counted apart), and the unmapped rate (files changed in the 90 days before the mapped commit that implement no node), with the bars (precision at least 0.80, unmapped at most 0.20). `sindri context eval purge [--all]` deletes reports and the as-of cache older than 90 days; `--all` also clears the probe reports, so the next `eval probes` has no baseline. A session (an agent) is refused with SND-CONTEXT-020; a human at a terminal and the `context-purge` service are not. Reports are under `$AW_SINDRI_HOME/context/eval/{backtest,map}` and hold refs, versions, shas and numbers, never brief text.
+
+### Status
+
+The backtest is a job (it takes a heavy-job slot and runs for minutes); `sindri context eval backtest [--arms a,b|all] [--since D] [--until D] [--limit N] [--detach] [--json]` starts the job and follows it (Ctrl-C cancels it; `--detach` prints the job id; `--json` prints the started body, then the final job). A session cannot start it (SND-AUTH-002); a second start while one runs is SND-JOB-409; an unknown arm is refused at the start (SND-CONTEXT-082). The job's result is small (at most 16 KiB): the sample count, whether it is a small sample, the number left out, one line per arm, the pass line and the report path. The full report, with the samples and scores, stays in the eval file store. The owner's corpus is S-7B.
+
+Errors: `SND-CONTEXT-080` no eligible sample, `081` no brief source, `082` unknown arm, `083` adjudication stopped at its cap.
 ## Asking about a change (S-D)
 
 ```

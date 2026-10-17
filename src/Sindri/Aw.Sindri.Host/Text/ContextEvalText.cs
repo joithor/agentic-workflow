@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Text;
 using Aw.Context.Core.Eval;
+using Aw.Context.Core.Eval.Backtest;
+using Aw.Context.Core.Eval.MapQuality;
 
 namespace Aw.Sindri.Host.Text;
 
@@ -41,6 +43,33 @@ internal static class ContextEvalText
 
         return text.AppendLine("report not saved").ToString();
     }
+
+    /// <summary>The map's quality as text.</summary>
+    /// <param name="run">The run.</param>
+    /// <returns>The text.</returns>
+    internal static string Map(MapQualityRun run)
+    {
+        var r = run.Report;
+        var text = new StringBuilder(Invariant($"map {r.MapVersion} quality\n"));
+        _ = text.AppendLine(Invariant($"  node precision {Show(r.NodePrecision)} (deterministic {Show(r.NodePrecisionDeterministic)}, model {Show(r.NodePrecisionModel)}) · {r.Undecided} undecided"));
+        _ = text.AppendLine(Invariant($"  link precision {Show(r.LinkPrecision)}"));
+        _ = text.AppendLine(Invariant($"  unmapped rate {Show(r.UnmappedRate)}{(r.Window is null ? string.Empty : " over " + r.Window)}"));
+        foreach (var bar in r.Bars)
+        {
+            _ = text.Append("  ").AppendLine(bar);
+        }
+
+        return text.Append("report ").AppendLine(run.Path).ToString();
+    }
+
+    /// <summary>What a purge removed.</summary>
+    /// <param name="report">The counts.</param>
+    /// <param name="all">True for 'purge --all'.</param>
+    /// <returns>The text.</returns>
+    internal static string Purge(EvalPurgeReport report, bool all) =>
+        Invariant($"removed {report.Reports} report(s) and {report.CacheFiles} cache file(s){(all ? Invariant($" and {report.ProbeReports} probe report(s): the probe baselines are cleared too, so the next 'eval probes' says no baseline") : string.Empty)}\n");
+
+    private static string Show(Ratio ratio) => ratio.Value is { } v ? Invariant($"{v:0.00} ({ratio.Hits}/{ratio.Total})") : "not measured";
 
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
 }

@@ -11,7 +11,7 @@ namespace Aw.Context.Infrastructure.Onyx;
 
 /// <summary>
 /// The 'onyx' source (spec §5.2): Onyx CE v4.9.0 over its admin search and document routes, live, without as-of cuts.
-/// Search sends one 'POST /api/admin/search' (each term quoted as a phrase), keeps Onyx's order as the rank (its score
+/// Search sends one 'POST /api/admin/search' (each term quoted as a phrase; a query's UpdatedSince goes as the filter 'time_cutoff'), keeps Onyx's order as the rank (its score
 /// is discarded, D3), drops documents an Onyx admin hid (admin search includes them; a standard search doesn't), keys
 /// each hit with <see cref="OnyxRecordKeys"/>, marks hits changed after the query's as-of time
 /// leaky, and applies the limit itself (Onyx returns up to 50). Fetch reads 'document-size-info', then 'chunk-info' per
@@ -48,7 +48,7 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
             return Array.Empty<SourceHit>();
         }
 
-        var body = AwJson.Serialize(new OnyxAdminSearchRequest(text, new OnyxSearchFilters()), OnyxWire.Options);
+        var body = AwJson.Serialize(new OnyxAdminSearchRequest(text, new OnyxSearchFilters(query.UpdatedSince)), OnyxWire.Options);
         var reply = await client.Call<OnyxAdminSearchReply>(OnyxCall.Post(SearchRoute, body), query.Deadline, cancellationToken).ConfigureAwait(false);
         if (reply.IsError)
         {
@@ -77,7 +77,7 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
 
         var facts = _seen.GetValueOrDefault(document);
         return new SourceRecord(reference, OnyxRecordKeys.KindOf(reference.Canonical), facts?.Title ?? document, text.Value,
-            facts?.Author, CreatedAt: null, facts?.UpdatedAt ?? UpdatedAt(reference.Version));
+            facts?.Author, facts?.CreatedAt, facts?.UpdatedAt ?? UpdatedAt(reference.Version));
     }
 
     /// <inheritdoc />
@@ -161,7 +161,7 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
             _seen.Clear();
         }
 
-        _seen[document.DocumentId] = new OnyxHitFacts(document.SemanticIdentifier, document.PrimaryOwners is [var first, ..] ? first : null, document.UpdatedAt);
+        _seen[document.DocumentId] = new OnyxHitFacts(document.SemanticIdentifier, document.PrimaryOwners is [var first, ..] ? first : null, document.UpdatedAt, document.CreatedAt);
     }
 
     /// <summary>The document's chunks in order, joined with blank lines; stops fetching once 64 KB are in and cuts there.</summary>
