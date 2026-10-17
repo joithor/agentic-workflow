@@ -2,6 +2,7 @@
 # Tests for scripts/check-fleet.mjs (the fleet state file contract, session collector CO-0): the repo passes, each valid fixture
 # validates and each invalid one is refused, and each kind of drift fails.
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/test-grep.sh"
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 CHECK="$REPO/scripts/check-fleet.mjs"
@@ -20,7 +21,7 @@ ensure_scripts_deps "$REPO/scripts" || exit 1
 
 run() { set +e; OUT="$(node "$CHECK" --root "$1" 2>&1)"; RC=$?; set -e; }
 expect_rc() { if [ "$RC" -eq "$2" ]; then ok "$1 (exit $RC)"; else fail "$1: exit $RC, want $2"; printf '%s\n' "$OUT" | sed 's/^/      | /'; fi; }
-expect_out() { if printf '%s\n' "$OUT" | grep -qF -- "$2"; then ok "$1"; else fail "$1: output lacks '$2'"; printf '%s\n' "$OUT" | sed 's/^/      | /'; fi; }
+expect_out() { if printf '%s\n' "$OUT" | has -F -- "$2"; then ok "$1"; else fail "$1: output lacks '$2'"; printf '%s\n' "$OUT" | sed 's/^/      | /'; fi; }
 
 # A throwaway copy of the files the check reads.
 copy() {

@@ -10,7 +10,7 @@ globs:
   - "Directory.Build.targets"
   - "Directory.Packages.props"
   - "nuget.config"
-  - "BannedSymbols.txt"
+  - "BannedSymbols*.txt"
   - "deps.yaml"
   - "schemas/deps.schema.json"
   - "**/.editorconfig"
@@ -27,7 +27,7 @@ paths:
   - "Directory.Build.targets"
   - "Directory.Packages.props"
   - "nuget.config"
-  - "BannedSymbols.txt"
+  - "BannedSymbols*.txt"
   - "deps.yaml"
   - "schemas/deps.schema.json"
   - "**/.editorconfig"
@@ -145,7 +145,7 @@ Sindri's UI is an [Avalonia UI](https://avaloniaui.net/) app, its own package `S
 ## Build settings and analyzers (§4b.6)
 
 - `global.json` pins the SDK. `Directory.Build.props` sets `Nullable`, `LangVersion=latest`, `ImplicitUsings`, `TreatWarningsAsErrors`, `EnforceCodeStyleInBuild`, `EnableNETAnalyzers=false` (the pinned NetAnalyzers package owns the CA rules), `GenerateDocumentationFile`, NuGet audit (high and critical advisories, `NU1903`/`NU1904`, fail the build), and `RestorePackagesWithLockFile` (locked mode in CI). Severity lives in `.editorconfig` (the bulk `error` baseline plus explicit lines); **never add `AnalysisLevel`**: with the SDK analyzers off it is silently ignored. Don't override these per project, except through the two role switches below.
-- **Project roles** (from the name, in `Directory.Build.props`): `*.Tests` and `*.Testing` are test projects, `*.Host` hosts, `*.Analyzers` analyzers; **every other project is a library** (`Core`, `Features`, `Infrastructure`, a small package's `App`, Kernel, `Redaction`) and gets `IsAotCompatible=true`. A library opts out only with `AwAotCompatible=false` and a comment saying why (e.g. `Evidence`: Playwright for .NET has no NativeAOT). A non-`Core` project opts into the banned-symbol list with `AwBannedSymbols=true`.
+- **Project roles** (from the name, in `Directory.Build.props`): `*.Tests` and `*.Testing` are test projects, `*.Host` hosts, `*.Analyzers` analyzers; **every other project is a library** (`Core`, `Features`, `Infrastructure`, a small package's `App`, Kernel, `Redaction`) and gets `IsAotCompatible=true`. A library opts out only with `AwAotCompatible=false` and a comment saying why (e.g. `Evidence`: Playwright for .NET has no NativeAOT). A non-`Core` project opts into the Core banned-symbol list with `AwBannedSymbols=true` (every production project already gets `BannedSymbols.All.txt`).
 - **Lock files:** CI fails on a missing `packages.lock.json` (`AW0001`, `Directory.Build.targets`) and on a lock file restore changed or a package that isn't signed (`scripts/dotnet-verify-packages.sh`: lock files present and unchanged, signature-verified locked restore, `dotnet nuget verify --all`).
 - `Directory.Packages.props`: Central Package Management with versions pinned as **`[x.y.z]`** (a bare `x.y.z` is only a minimum). **New packages are at least 14 days old** on nuget.org. Analyzers come in as `GlobalPackageReference` and get the same review as runtime dependencies (they run code in every build).
 - `nuget.config` maps every package to nuget.org only. Don't add sources.
@@ -157,6 +157,17 @@ Sindri's UI is an [Avalonia UI](https://avaloniaui.net/) app, its own package `S
 - **No TODO comments** (`MA0026`): finish the work or open a work item.
 - **File name matches the type** (`MA0048`): one top-level type per file.
 - Fix a warning; don't suppress it. A `#pragma warning disable` or `[SuppressMessage]` needs a `Justification` and is reviewed like an override.
+
+## Style-guide rules (§4b.3, §4b.6; research 2026-10-16)
+
+One record each in `rules/engineering/csharp/`; `.editorconfig` holds the severities. A rule marked *cleanup* is at `suggestion` until the style-cleanup PR fixes its sites, then it is `error`.
+
+- **Async and lifetimes:** never dispose what a running task uses (`CA2025`, cleanup); `await` the task inside `using`/`try` instead of returning it (`RCS1229`, cleanup); dispose what you create and own and dispose disposable fields (`CA2000`, `CA2213`, cleanup; tests are off); no `async void` except a UI event handler with a `// why:` (`MA0155`, cleanup); give `StartNew` and `ContinueWith` a scheduler (`CA2008`). `BannedSymbols.All.txt` (every production project): `new TaskCompletionSource` passes `TaskCreationOptions.RunContinuationsAsynchronously`; no `Thread.Sleep`, `Task.Wait`, `Task<T>.Result` or `GetResult()` (cleanup). Every task-returning method on a Core interface takes a `CancellationToken` (`ARCH-ASYNC-001`).
+- **SQL:** command text is a constant or reviewed literal, never concatenated; values go in parameters (`CA2100`, cleanup; tests are off).
+- **Bug classes:** `RCS1210`, `RCS1202`, `RCS1256`, `RCS1234`, `RCS1257`, `RCS1096`, `RCS1252`; no dead conditions (`CA1508`, cleanup); one enumeration of an `IEnumerable` (`CA1851`); no dead statics (`CA1823`, `CA1810`, `CA2207`, and `CA1802`, cleanup).
+- **API shape (Framework Design Guidelines):** `CA2227`, `CA1065`, `CA1066`, `CA1815`, `CA1052`, `CA2214`, `CA1033`, `CA1044`, `CA1813`, `CA1027`, and `CA1819`, `CA1034`, `CA1063` (cleanup). `CA1062` stays off.
+- **Banned symbols:** the Core list is `BannedSymbols.txt`; `BannedSymbols.All.txt` goes to every production project, `BannedSymbols.NonHost.txt` (`Environment.Exit`, `GC.Collect`) to every production project but a Host; `BannedSymbols.Tests.txt` (no clock, `Guid.NewGuid` or `Thread.Sleep`) is not wired yet: it lands with the cleanup PR. The first two are wired in `Directory.Build.props` (a project named `*.Desktop` or `*.AotSmoke` counts as non-Host); a record's `banned-symbols` check names its file in `ref`.
+- Transitional: the rule above that every agent-obeyed rule has an explicit severity "never `suggestion`" holds again once the cleanup PR lands; until then the *cleanup* rules are the exception.
 
 ## AOT scope (§4b.6)
 
