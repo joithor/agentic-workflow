@@ -19,7 +19,7 @@ internal static class StatusCases
     [
         "desk-task", "parked-no-progress-child", "parked-budget", "escalated-gate", "taken-over", "done",
         "parked-rounds", "parked-needs-answer-step", "parked-needs-answer-wait", "parked-timeout", "parked-revoked",
-        "parked-drift", "parked-no-runtime", "parked-rounds-with-drift", "cancelled",
+        "parked-drift", "parked-no-runtime", "parked-rounds-with-drift", "cancelled", "escalated-child", "parked-mirrored-needs-answer",
     ];
 
     public static InterpretedRecipe Recipe { get; } = new(
@@ -28,28 +28,46 @@ internal static class StatusCases
         EngineFixture.Catalog,
         new Dictionary<FactKey, InputFact> { [FactKey.From("fact:spec")] = new("spec.md", EngineFixture.Fact("the spec")) });
 
-    public static InstanceView View(string name) => name switch
+    public static InstanceView View(string name)
     {
-        "desk-task" => Of(Produce(), Ago(72), timeoutAt: Now + new TimeSpan(days: 1, hours: 22, minutes: 48, seconds: 0)),
-        "parked-no-progress-child" => Of(MirroringChild(), Ago(12), children: [new ChildView(InstanceAddress.From("T-3/step/1/step.4"), "parked: no-progress")]),
-        "parked-budget" => Of(Park(ParkReason.Budget, ParkKind.Step, "produce used 200k of 200k tokens") with { Spent = Spent(200_000) }, Ago(3)),
-        "escalated-gate" => Of(Escalated(), Ago(120)),
-        "taken-over" => Of(TakenOver(TimeSpan.FromSeconds(40)), Ago(5)),
-        "done" => Of(Ended("done", "resolved"), Ago(1)),
-        "parked-rounds" => Of(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds"), Ago(30)),
-        "parked-needs-answer-step" => Of(Park(ParkReason.NeedsAnswer, ParkKind.Step, "step.produce failed: the spec is ambiguous"), Ago(8)),
-        "parked-needs-answer-wait" => Of(Park(ParkReason.NeedsAnswer, ParkKind.Wait, "gate.test.check refused produce -> checks (no output)"), Ago(8)),
-        "parked-timeout" => Of(Park(ParkReason.Timeout, kind: null, "produce ran past 2d"), Ago(60 * 26)),
-        "parked-revoked" => Of(Park(ParkReason.SpecConflict, ParkKind.Revoked, "workflow.step was revoked."), Ago(4)),
-        "parked-dispatch-no-runtime" => Of(DispatchPark("effect.claim.ref can't run: repo 'x' isn't in the approved profile (SND-WF-010). Fix that, then resume to send it again."), Ago(4)),
-        "parked-dispatch-effect-failed" => Of(DispatchPark("effect.claim.ref can't run: the ref could not be created. Fix that, then resume to send it again."), Ago(4)),
-        "parked-dispatch-allowlist" => Of(DispatchPark("effect.claim.ref isn't on the profile's effect allowlist. Add it and approve the profile, then resume to send it again."), Ago(4)),
-        "parked-drift" => Of(Park(ParkReason.SpecConflict, ParkKind.Drift, "step.produce"), Ago(4)),
-        "parked-no-runtime" => Of(Park(ParkReason.NoRuntime, kind: null, "step.test.agent"), Ago(2)),
-        "parked-rounds-with-drift" => Of(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds") with { PendingPark = Suspended(ParkReason.SpecConflict, ParkKind.Drift, "step.produce") }, Ago(30)),
-        "cancelled" => Of(Ended("cancelled", "cancelled"), Ago(1)),
-        "parked-rounds-with-approved-drift" => Of(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds") with { PendingPark = Suspended(ParkReason.SpecConflict, ParkKind.Drift, "step.produce") with { Approved = true } }, Ago(30)),
-        "parked-rounds-with-later-drift" => Of(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds") with
+        var built = Build(name);
+        return InstanceViews.Of(built.Instance, Recipe, built.Since, built.TimeoutAt, new InstanceViewContext(Version: 4, Children: built.Children));
+    }
+
+    /// <summary>The interpreter state a case's view is built from.</summary>
+    /// <param name="name">The case.</param>
+    /// <returns>The instance.</returns>
+    public static WorkflowInstance Instance(string name) => Build(name).Instance;
+
+    private sealed record Built(WorkflowInstance Instance, DateTimeOffset Since, DateTimeOffset? TimeoutAt, IReadOnlyList<ChildView>? Children);
+
+    private static Built Build(string name) => name switch
+    {
+        "desk-task" => Case(Produce(), Ago(72), timeoutAt: Now + new TimeSpan(days: 1, hours: 22, minutes: 48, seconds: 0)),
+        "parked-no-progress-child" => Case(MirroringChild(), Ago(12), children: [new ChildView(InstanceAddress.From("T-3/step/1/step.4"), "parked: no-progress")]),
+        "parked-budget" => Case(Park(ParkReason.Budget, ParkKind.Step, "produce used 200k of 200k tokens") with { Spent = Spent(200_000) }, Ago(3)),
+        "escalated-gate" => Case(Escalated(), Ago(120)),
+        "taken-over" => Case(TakenOver(TimeSpan.FromSeconds(40)), Ago(5)),
+        "done" => Case(Ended("done", "resolved"), Ago(1)),
+        "parked-rounds" => Case(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds"), Ago(30)),
+        "parked-needs-answer-step" => Case(Park(ParkReason.NeedsAnswer, ParkKind.Step, "step.produce failed: the spec is ambiguous"), Ago(8)),
+        "parked-needs-answer-wait" => Case(Park(ParkReason.NeedsAnswer, ParkKind.Wait, "gate.test.check refused produce -> checks (no output)"), Ago(8)),
+        "parked-timeout" => Case(Park(ParkReason.Timeout, kind: null, "produce ran past 2d"), Ago(60 * 26)),
+        "parked-revoked" => Case(Park(ParkReason.SpecConflict, ParkKind.Revoked, "workflow.step was revoked."), Ago(4)),
+        "parked-dispatch-no-runtime" => Case(DispatchPark("effect.claim.ref can't run: repo 'x' isn't in the approved profile (SND-WF-010). Fix that, then resume to send it again."), Ago(4)),
+        "parked-dispatch-effect-failed" => Case(DispatchPark("effect.claim.ref can't run: the ref could not be created. Fix that, then resume to send it again."), Ago(4)),
+        "parked-dispatch-allowlist" => Case(DispatchPark("effect.claim.ref isn't on the profile's effect allowlist. Add it and approve the profile, then resume to send it again."), Ago(4)),
+        "escalated-child" => Case(EscalatedChild(), Ago(15), children: [new ChildView(InstanceAddress.From("T-3/step/1/step.4"), "escalated: gate")]),
+        "parked-mirrored-needs-answer" => Case(Produce() with
+        {
+            Suspension = Suspended(ParkReason.NeedsAnswer, kind: null, "the child's step failed") with { Mirrors = EngineFixture.ChildId },
+        }, Ago(9), children: [new ChildView(InstanceAddress.From("T-3/step/1/step.4"), "parked: needs-answer")]),
+        "parked-drift" => Case(Park(ParkReason.SpecConflict, ParkKind.Drift, "step.produce"), Ago(4)),
+        "parked-no-runtime" => Case(Park(ParkReason.NoRuntime, kind: null, "step.test.agent"), Ago(2)),
+        "parked-rounds-with-drift" => Case(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds") with { PendingPark = Suspended(ParkReason.SpecConflict, ParkKind.Drift, "step.produce") }, Ago(30)),
+        "cancelled" => Case(Ended("cancelled", "cancelled"), Ago(1)),
+        "parked-rounds-with-approved-drift" => Case(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds") with { PendingPark = Suspended(ParkReason.SpecConflict, ParkKind.Drift, "step.produce") with { Approved = true } }, Ago(30)),
+        "parked-rounds-with-later-drift" => Case(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds") with
         {
             PendingPark = Suspended(ParkReason.Timeout, kind: null, "produce waited too long"),
             LaterParks = [Suspended(ParkReason.SpecConflict, ParkKind.Drift, "step.produce")],
@@ -57,8 +75,7 @@ internal static class StatusCases
         _ => throw new ArgumentOutOfRangeException(nameof(name), name, "no such status case"),
     };
 
-    private static InstanceView Of(WorkflowInstance instance, DateTimeOffset since, DateTimeOffset? timeoutAt = null, IReadOnlyList<ChildView>? children = null) =>
-        InstanceViews.Of(instance, Recipe, since, timeoutAt, new InstanceViewContext(Version: 4, Children: children));
+    private static Built Case(WorkflowInstance instance, DateTimeOffset since, DateTimeOffset? timeoutAt = null, IReadOnlyList<ChildView>? children = null) => new(instance, since, timeoutAt, children);
 
     private static DateTimeOffset Ago(int minutes) => Now - TimeSpan.FromMinutes(minutes);
 
@@ -79,6 +96,13 @@ internal static class StatusCases
     private static WorkflowInstance MirroringChild() => Produce() with
     {
         Suspension = Suspended(ParkReason.NoProgress, ParkKind.Loop, "checks failed twice with the same findings") with { Mirrors = EngineFixture.ChildId },
+    };
+
+    /// <summary>An escalation mirroring a child (§5.8): the child's escalation, forwarded; its own variants are the child's.</summary>
+    private static WorkflowInstance EscalatedChild() => Produce() with
+    {
+        Suspension = new Suspension(
+            SuspensionKind.Escalation, Reason: null, ParkKind: null, EscalationKind.Child, "the child's gate escalated", "service:workflow", Mirrors: EngineFixture.ChildId, Resume(ResumeKind.Forward)),
     };
 
     private static WorkflowInstance TakenOver(TimeSpan? paused = null) => Produce() with

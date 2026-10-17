@@ -2,6 +2,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Tests.Workflow.Engine;
@@ -110,27 +111,77 @@ public sealed class InstanceViewsTests
         Assert.Null(view.Answer);
     }
 
+    private const string Answering = "sindri workflow answer T-3/step/1 ";
+
     [Theory]
-    [InlineData("parked-rounds", "answer-grant")]
-    [InlineData("parked-no-progress-child", "answer-grant", "answer-text")]
-    [InlineData("parked-budget", "answer-grant-tokens")]
-    [InlineData("parked-needs-answer-step", "answer-text")]
-    [InlineData("parked-needs-answer-wait", "answer-resume")]
-    [InlineData("parked-timeout", "answer-resume")]
-    [InlineData("parked-no-runtime", "answer-resume")]
-    [InlineData("escalated-gate", "answer-accept", "answer-reject")]
-    public void A_parked_instance_serves_one_command_per_fitting_answer_variant_with_its_full_cli(string name, params string[] ids)
+    [InlineData("parked-rounds", "answer-grant=--grant 1")]
+    [InlineData("parked-no-progress-child", "answer-grant=--grant 1", "answer-text=--text <answer>")]
+    [InlineData("parked-budget", "answer-grant-tokens=--grant-tokens 100k")]
+    [InlineData("parked-needs-answer-step", "answer-text=--text <answer>")]
+    [InlineData("parked-needs-answer-wait", "answer-resume=--resume")]
+    [InlineData("parked-timeout", "answer-resume=--resume")]
+    [InlineData("parked-no-runtime", "answer-resume=--resume")]
+    [InlineData("escalated-gate", "answer-accept=--accept", "answer-reject=--reject")]
+    [InlineData("escalated-child")]
+    [InlineData("parked-mirrored-needs-answer")]
+    public void A_parked_instance_serves_one_command_per_fitting_answer_variant_with_its_exact_runnable_cli(string name, params string[] expected)
     {
-        var view = StatusCases.View(name);
+        var answers = AnswerEntries(StatusCases.View(name));
 
-        var answers = view.AllowedCommands.Where(c => c.Action.StartsWith("ApplyCommand:answer", StringComparison.Ordinal)).ToList();
-
-        Assert.Equal(ids.Select(i => "ApplyCommand:" + i).ToArray(), answers.Select(a => a.Action).ToArray());
+        Assert.Equal(expected, answers.Select(a => $"{a.Action["ApplyCommand:".Length..]}={a.Cli[Answering.Length..]}").ToArray());
+        Assert.All(answers, a => Assert.StartsWith(Answering, a.Cli, StringComparison.Ordinal));
         Assert.DoesNotContain(answers, a => string.Equals(a.Action, "ApplyCommand:answer", StringComparison.Ordinal));
-        Assert.All(answers, a => Assert.Contains(" --", a.Cli, StringComparison.Ordinal));
-        Assert.Equal(view.AnswerLine!.Cli, answers[0].Cli, StringComparer.Ordinal);
-        Assert.Equal(view.AnswerLine.ActionId.Value, answers[0].Action, StringComparer.Ordinal);
     }
+
+    [Fact]
+    public void The_first_served_answer_is_the_status_answers_variant()
+    {
+        foreach (var name in StatusCases.Names)
+        {
+            var view = StatusCases.View(name);
+            if (AnswerEntries(view) is [var first, ..])
+            {
+                Assert.Equal(view.AnswerLine!.ActionId.Value, first.Action);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Every_served_answer_cli_is_runnable_parses_and_fits_the_suspension()
+    {
+        var served = 0;
+        foreach (var name in StatusCases.Names)
+        {
+            var instance = StatusCases.Instance(name);
+            foreach (var entry in AnswerEntries(StatusCases.View(name)))
+            {
+                served++;
+                var args = entry.Cli[Answering.Length..].Split(' ');
+                Assert.DoesNotContain(entry.Cli, "[", StringComparison.Ordinal);
+                if (!entry.Action.EndsWith("answer-text", StringComparison.Ordinal))
+                {
+                    Assert.DoesNotContain("<", entry.Cli, StringComparison.Ordinal);   // only the text a person types stays a template
+                }
+
+                var parsed = await Host.Commands.ApplyCommandVerbs.AnswerOptions(args, TestContext.Current.CancellationToken);
+                Assert.False(parsed.IsError, $"{name}: {entry.Cli}: {(parsed.IsError ? parsed.Error.Message : string.Empty)}");
+                var answer = new AnswerGiven("human:cli", new CommandStamp(CommandNonce.From(new string('c', 32)), new string('d', 64)), parsed.Value.Variant, parsed.Value.Text, parsed.Value.Amount, Forwarded: null);
+                var fits = AnswerFit.Check(instance, recipe: null, answer);
+                Assert.False(fits.IsError, $"{name}: {entry.Cli} is refused: {(fits.IsError ? fits.Error.Message : string.Empty)}");
+            }
+        }
+
+        Assert.True(served >= 9);
+    }
+
+    [Theory]
+    [InlineData("escalated-child")]
+    [InlineData("parked-mirrored-needs-answer")]
+    public void A_mirrored_suspension_whose_childs_fit_is_not_known_serves_no_answer_command(string name)
+        => Assert.Empty(AnswerEntries(StatusCases.View(name)));
+
+    private static List<AllowedCommand> AnswerEntries(InstanceView view)
+        => [.. view.AllowedCommands.Where(c => c.Action.StartsWith("ApplyCommand:answer", StringComparison.Ordinal))];
 
     [Theory]
     [InlineData("parked-revoked")]
@@ -140,27 +191,63 @@ public sealed class InstanceViewsTests
     public void A_state_that_takes_no_answer_serves_no_answer_command(string name)
         => Assert.DoesNotContain(StatusCases.View(name).AllowedCommands, c => c.Action.StartsWith("ApplyCommand:answer", StringComparison.Ordinal));
 
+    [Theory]
+    [InlineData(SuspensionKind.Park, ParkReason.Rounds, null, null, "grant")]
+    [InlineData(SuspensionKind.Park, ParkReason.NoProgress, null, null, "grant,text")]
+    [InlineData(SuspensionKind.Park, ParkReason.Budget, null, null, "grant-tokens")]
+    [InlineData(SuspensionKind.Park, ParkReason.NeedsAnswer, ParkKind.Wait, null, "resume")]
+    [InlineData(SuspensionKind.Park, ParkReason.NeedsAnswer, ParkKind.Step, null, "text")]
+    [InlineData(SuspensionKind.Park, ParkReason.Timeout, null, null, "resume")]
+    [InlineData(SuspensionKind.Park, ParkReason.NoRuntime, null, null, "resume")]
+    [InlineData(SuspensionKind.Park, ParkReason.SpecConflict, ParkKind.Dispatch, null, "resume")]
+    [InlineData(SuspensionKind.Park, ParkReason.SpecConflict, ParkKind.Drift, null, "")]
+    [InlineData(SuspensionKind.Escalation, null, null, EscalationKind.Gate, "accept,reject")]
+    [InlineData(SuspensionKind.Escalation, null, null, EscalationKind.Timeout, "resume")]
+    [InlineData(SuspensionKind.Escalation, null, null, EscalationKind.Child, "")]
+    public void The_one_variant_table_lists_what_fits_each_suspension_shape(SuspensionKind kind, ParkReason? reason, ParkKind? parkKind, EscalationKind? escalation, string expected)
+    {
+        var suspension = FrameFixture.Park(ParkReason.Rounds, parkKind, ResumeKind.Transition) with { Kind = kind, Reason = reason, Escalation = escalation };
+
+        var variants = AnswerVariants.Fitting(suspension).Select(v => v.ToString().ToLowerInvariant().Replace("granttokens", "grant-tokens", StringComparison.Ordinal));
+
+        Assert.Equal(expected, string.Join(',', variants));
+    }
+
     [Fact]
-    public void The_variants_served_agree_with_the_answer_check_on_every_suspension_shape()
+    public void The_answer_check_takes_its_variants_from_the_one_table()
     {
         var instance = FrameFixture.Producing();
-        var shapes = new List<Suspension>();
         foreach (var reason in Enum.GetValues<ParkReason>())
         {
             foreach (var kind in (ParkKind?[])[null, .. Enum.GetValues<ParkKind>().Cast<ParkKind?>()])
             {
-                shapes.Add(FrameFixture.Park(reason, kind, ResumeKind.Transition));
+                var shape = FrameFixture.Park(reason, kind, ResumeKind.Transition);
+                Assert.Equal([.. AnswerVariants.Fitting(shape)], [.. AnswerFit.Variants(shape, instance.Address, instance.Recipe)]);
             }
         }
+    }
 
-        foreach (var escalation in Enum.GetValues<EscalationKind>())
+    [Fact]
+    public void Each_answer_variant_has_one_row_pinned_to_the_catalog()
+    {
+        var catalog = Host.Catalog.EngineRows.All.ToDictionary(static r => r.Action.Value, StringComparer.Ordinal);
+        foreach (var variant in Enum.GetValues<AnswerVariant>())
         {
-            shapes.Add(FrameFixture.Park(ParkReason.Rounds, kind: null, ResumeKind.Transition) with { Kind = SuspensionKind.Escalation, Reason = null, Escalation = escalation });
+            var row = AnswerRow.For(variant, "100k");
+            Assert.Equal(row.Id, AnswerRow.ForAction("ApplyCommand:" + row.Id).Id);
+            var entry = catalog["ApplyCommand:" + row.Id];
+            Assert.Equal(row.Class, entry.Class);
+            Assert.Contains(row.Option.Split(' ')[0], entry.Cli.Text, StringComparison.Ordinal);
         }
 
-        Assert.All(shapes, shape => Assert.Equal(
-            [.. AnswerFit.Variants(shape, instance.Address, instance.Recipe)],
-            [.. InstanceViews.Fitting(shape)]));
+        _ = Assert.Throws<System.Diagnostics.UnreachableException>(() => AnswerRow.For((AnswerVariant)99));
+    }
+
+    [Fact]
+    public void The_commands_line_names_each_verb_once_as_spec_6_4_lists_them()
+    {
+        Assert.Contains("  commands  answer, takeover, cancel", InstanceViews.Status(StatusCases.View("escalated-gate"), StatusCases.Now).Text, StringComparison.Ordinal);
+        Assert.Contains("  commands  answer (forwarded), takeover, cancel", InstanceViews.Status(StatusCases.View("parked-no-progress-child"), StatusCases.Now).Text, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -180,8 +267,8 @@ public sealed class InstanceViewsTests
         Assert.Equal(
             [.. view.AllowedCommands.Where(c => c.Action.StartsWith("ApplyCommand:answer", StringComparison.Ordinal)).Select(c => (c.Action, c.Cli))],
             [.. answers.Select(a => (a.ActionId.Value, a.Cli))]);
-        Assert.Equal(status.Answer!.Cli, answers[0].Cli, StringComparer.Ordinal);
-        Assert.All(answers, a => Assert.Contains(" --", a.Cli, StringComparison.Ordinal));
+        Assert.Equal(status.Answer!.ActionId.Value, answers[0].ActionId.Value, StringComparer.Ordinal);
+        Assert.All(answers, a => Assert.StartsWith(Answering, a.Cli, StringComparison.Ordinal));
     }
 
     private static string Hash12() => StatusCases.Recipe.Version.Hash.Value["sha256:".Length..][..12];

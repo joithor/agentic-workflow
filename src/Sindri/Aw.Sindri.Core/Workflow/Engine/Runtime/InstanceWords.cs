@@ -80,7 +80,7 @@ internal sealed partial record InstanceWords(WorkflowInstance Instance, Interpre
         return park.Reason switch
         {
             ParkReason.Rounds or ParkReason.NoProgress => $"{Answering} --grant 1{Gap}(at a terminal{forwarded})",
-            ParkReason.Budget => $"{Answering} --grant-tokens {Grant()}{Gap}(at a terminal; once per park)",
+            ParkReason.Budget => $"{Answering} --grant-tokens {GrantTokens()}{Gap}(at a terminal; once per park)",
             ParkReason.NeedsAnswer when park.ParkKind == ParkKind.Wait => $"{Answering} --resume [--text <answer>]",
             ParkReason.NeedsAnswer => $"{Answering} --text <answer>",
             ParkReason.Timeout or ParkReason.SpecConflict or ParkReason.NoRuntime or null or _ => $"{Answering} --resume",
@@ -97,7 +97,7 @@ internal sealed partial record InstanceWords(WorkflowInstance Instance, Interpre
     };
 
     /// <summary>The grant a budget park suggests: half the active state's budget, else half the recipe's.</summary>
-    private string Grant()
+    internal string GrantTokens()
     {
         var cap = Recipe.Recipe.States.TryGetValue(Instance.Frame.State, out var state) && state.Budget is { } own
             ? own.Tokens

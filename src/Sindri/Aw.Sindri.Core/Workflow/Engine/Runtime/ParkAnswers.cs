@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Views;
 using ActionClass = Aw.Sindri.Core.Commands.ActionClass;
 
@@ -42,18 +44,25 @@ public static class ParkAnswers
         ParkReason.Timeout or ParkReason.SpecConflict or ParkReason.NoRuntime or null or _ => Line(AnswerKind.Resume, $"{answering} --resume"),
     };
 
-    private static StatusAnswer Line(AnswerKind kind, string cli, bool atTerminal = false) => new(
-        kind,
-        ActionId.From(kind switch
+    private static StatusAnswer Line(AnswerKind kind, string cli, bool atTerminal = false)
+    {
+        if (Variant(kind) is not { } variant)
         {
-            AnswerKind.Text => "ApplyCommand:answer-text",
-            AnswerKind.Resume => "ApplyCommand:answer-resume",
-            AnswerKind.Grant => "ApplyCommand:answer-grant",
-            AnswerKind.GrantTokens => "ApplyCommand:answer-grant-tokens",
-            AnswerKind.Accept => "ApplyCommand:answer-accept",
-            AnswerKind.CancelOnly or _ => "ApplyCommand:cancel",
-        }),
-        kind is AnswerKind.Grant or AnswerKind.GrantTokens or AnswerKind.Accept ? ActionClass.Protected : ActionClass.Desk,
-        cli,
-        atTerminal);
+            return new(kind, ActionId.From("ApplyCommand:cancel"), ActionClass.Desk, cli, atTerminal);
+        }
+
+        var row = AnswerRow.For(variant);
+        return new(kind, ActionId.From(row.Action), row.Class, cli, atTerminal);
+    }
+
+    private static AnswerVariant? Variant(AnswerKind kind) => kind switch
+    {
+        AnswerKind.Text => AnswerVariant.Text,
+        AnswerKind.Resume => AnswerVariant.Resume,
+        AnswerKind.Grant => AnswerVariant.Grant,
+        AnswerKind.GrantTokens => AnswerVariant.GrantTokens,
+        AnswerKind.Accept => AnswerVariant.Accept,
+        AnswerKind.CancelOnly => null,
+        _ => throw new UnreachableException($"no answer variant for {kind}"),
+    };
 }

@@ -49,7 +49,7 @@ internal static class StatusRecords
     /// <summary>The instance's own verbs in §6.4 order, then the re-approval a drift waits for: each a row of the command catalog.</summary>
     private static List<StatusCommand> Commands(InstanceView view)
     {
-        var rows = view.AllowedCommands.Select(c => Row(c, view.AnswerLine, view)).ToList();
+        var rows = view.AllowedCommands.Select(c => Row(c, view)).ToList();
         if (view.ApproveRow is { } approve)
         {
             rows.Add(approve);
@@ -58,24 +58,17 @@ internal static class StatusRecords
         return rows;
     }
 
-    private static StatusCommand Row(AllowedCommand command, StatusAnswer? answer, InstanceView view)
+    private static StatusCommand Row(AllowedCommand command, InstanceView view)
     {
         var verb = Verb(StatusLayout.Verb(command.Action));
         return verb switch
         {
-            StatusVerb.Answer when answer is not null && string.Equals(answer.ActionId.Value, command.Action, StringComparison.Ordinal) => new StatusCommand(verb, answer.ActionId, answer.Class, command.Cli, Confirm: null),
-            StatusVerb.Answer => new StatusCommand(verb, ActionId.From(command.Action), AnswerClass(command.Action), command.Cli, Confirm: null),
+            StatusVerb.Answer => new StatusCommand(verb, ActionId.From(command.Action), AnswerRow.ForAction(command.Action).Class, command.Cli, Confirm: null),
             StatusVerb.Takeover => new StatusCommand(verb, ActionId.From(command.Action), ActionClass.Pause, command.Cli, Confirm: null),
             StatusVerb.Cancel => new StatusCommand(verb, ActionId.From(command.Action), ActionClass.Desk, command.Cli, ConfirmText.Cancel(view.Address, view.RunningSteps, view.Children.Count)),
             StatusVerb.Complete or StatusVerb.Handback or StatusVerb.Approve or _ => new StatusCommand(verb, ActionId.From(command.Action), ActionClass.Desk, command.Cli, Confirm: null),
         };
     }
-
-    /// <summary>The class of an answer variant's catalog row: grants and accept are protected, the rest desk.</summary>
-    private static ActionClass AnswerClass(string action) =>
-        string.Equals(action, "ApplyCommand:answer-grant", StringComparison.Ordinal)
-        || string.Equals(action, "ApplyCommand:answer-grant-tokens", StringComparison.Ordinal)
-        || string.Equals(action, "ApplyCommand:answer-accept", StringComparison.Ordinal) ? ActionClass.Protected : ActionClass.Desk;
 
     /// <summary>The closed verb of an allowed command's name.</summary>
     private static StatusVerb Verb(string name) => name switch

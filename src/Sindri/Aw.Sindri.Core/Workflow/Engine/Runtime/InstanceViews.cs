@@ -61,7 +61,7 @@ public static partial class InstanceViews
             LegacyDetail(recipe) ?? (task is not null ? "desk task" : words.Detail()),
             since,
             words.Next(task),
-            Allowed(instance, task, words.AnswerLine()),
+            Allowed(instance, task, words.GrantTokens()),
             instance.Suspension is { } s ? new OpenQuestion(s.Kind, s.Reason, s.Question) : null,
             task,
             instance.Frame.Run?.Token,
@@ -169,9 +169,9 @@ public static partial class InstanceViews
     /// </summary>
     /// <param name="instance">The interpreter's state.</param>
     /// <param name="task">The open desk task, if any.</param>
-    /// <param name="primary">The answer the status line offers (its budget grant is the one printed); computed with a placeholder grant when null.</param>
+    /// <param name="grantTokens">The token amount a budget park's grant offers (the one the status line prints).</param>
     /// <returns>Each command's action id and CLI line; an open park or escalation gets one 'answer' entry per variant that fits, each with its full CLI.</returns>
-    public static IReadOnlyList<AllowedCommand> Allowed(WorkflowInstance instance, DeskTask? task, StatusAnswer? primary = null)
+    public static IReadOnlyList<AllowedCommand> Allowed(WorkflowInstance instance, DeskTask? task, string grantTokens)
     {
         ArgumentNullException.ThrowIfNull(instance);
         if (instance.Ended)
@@ -183,7 +183,7 @@ public static partial class InstanceViews
         var commands = new List<AllowedCommand>();
         if (instance.Suspension is { Kind: not SuspensionKind.Takeover } open && Answerable(open))
         {
-            commands.AddRange(AnswerCommands(instance, open, primary));
+            commands.AddRange(AnswerCommands(instance, open, grantTokens));
         }
 
         if (task is not null)
