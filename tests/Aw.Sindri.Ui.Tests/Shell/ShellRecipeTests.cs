@@ -97,6 +97,7 @@ public sealed class ShellRecipeTests
         Assert.Equal((detail.Recipe.Id, detail.Recipe.Hash["sha256:".Length..][..12]), _server.LastRecipeRead);
         shell.Back();
         Assert.Equal((true, false, detail.Address), (shell.IsInstanceSheet, shell.HasTrail, shell.Instance.Address));
+        Assert.Equal(FrameFocus.Recipe, shell.Instance.WantedFocus?.Target);   // Back lands on the link that opened the recipe, not on a control that has hidden
     }, TestContext.Current.CancellationToken);
 
     [Fact]
@@ -114,5 +115,8 @@ public sealed class ShellRecipeTests
 
         Assert.Equal((true, false, group.Recipe), (shell.IsRecipeSheet, shell.HasTrail, shell.Recipe.Id));
         Assert.Null(_server.LastRecipeRead?.Hash);
+        Assert.Equal(group.Recipe, shell.OpenerRecipeGroup);   // Esc returns focus to that group's button
+        shell.Navigate(Link("item/ITM-1"));
+        Assert.Null(shell.OpenerRecipeGroup);
     }, TestContext.Current.CancellationToken);
 }

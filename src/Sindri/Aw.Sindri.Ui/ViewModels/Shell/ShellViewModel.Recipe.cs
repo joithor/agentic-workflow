@@ -9,6 +9,9 @@ internal sealed partial class ShellViewModel
     /// <summary>The recipe sheet.</summary>
     public RecipeSheetViewModel Recipe { get; }
 
+    /// <summary>The Workflows group whose Recipe button opened the sheet (its recipe id), where Esc returns focus; null when it was opened some other way.</summary>
+    internal string? OpenerRecipeGroup { get; private set; }
+
     /// <summary>True when the sheet's subject is a recipe.</summary>
     public bool IsRecipeSheet => SheetLink?.Kind == DeepLinkKind.Recipe;
 

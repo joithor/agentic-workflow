@@ -65,7 +65,7 @@ public sealed class RecipeStatesViewModelTests
         var node = Node(Band("workflow.project"), Text(loop["from"]));
 
         Expect.Sequence([Labels.LoopNoteSelf(Text(loop["name"]), loop["cap"]!.GetValue<int>())], node.Notes);
-        Assert.Equal(Labels.StepLink, node.Link);
+        Assert.Equal(string.Empty, node.Link);   // a loop into the same state joins no neighbours, and position is not a transition
         Assert.Contains(node.Notes[0], node.Name, StringComparison.Ordinal);
     }
 
@@ -111,8 +111,19 @@ public sealed class RecipeStatesViewModelTests
     {
         var band = Band("workflow.item");
 
+        // the recipe serves no transitions: the path order is a list, so no link claims that one state leads to the next (done is not followed by dropped)
         Assert.All(band.Nodes, n => Assert.Equal(n.State, n.Name));
-        Assert.All(band.Nodes.SkipLast(1), n => Assert.Equal(Labels.StepLink, n.Link));
-        Assert.Equal(string.Empty, band.Nodes[^1].Link);
+        Assert.All(band.Nodes, n => Assert.Equal(string.Empty, n.Link));
+    }
+
+    [Theory]
+    [MemberData(nameof(Ids))]
+    public void A_link_is_drawn_only_where_a_loop_is_served(string id)
+    {
+        var loops = Golden(id)["loops"]!.AsArray().Count;
+        var band = Band(id);
+
+        Assert.All(band.Nodes.Select(n => n.Link).Where(l => l.Length > 0), l => Assert.StartsWith(Labels.LoopMark, l, StringComparison.Ordinal));
+        Assert.False(band.Nodes.Where(n => n.Link.Length > 0).Skip(loops).Any());
     }
 }

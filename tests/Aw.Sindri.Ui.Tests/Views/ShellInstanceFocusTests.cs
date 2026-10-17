@@ -96,4 +96,32 @@ public sealed class ShellInstanceFocusTests : FrameHost
         Assert.True(Named<Border>(window, "SheetTitle").IsFocused, $"focus is on {window.FocusManager?.GetFocusedElement()}");
         Assert.True(shell.IsSheetShown);
     });
+
+    [Fact]
+    public Task Back_from_a_recipe_lands_on_the_frames_Recipe_link_and_Esc_from_a_group_head_returns_to_its_button() => OnUi(async () =>
+    {
+        var (window, shell, address) = await OpenedFromTheWorkflowsRow("project-build");   // wide: the header's Back hides when nothing is stacked
+        Click(Buttons(window, "InstanceRecipe")[0]);
+        await Until(window, () => shell.IsRecipeSheet && shell.Recipe.Phase == FramePhase.Shown);
+        Assert.True(shell.HasTrail);
+
+        Click(Named<Button>(window, "SheetBack"));
+        await Until(window, () => shell.IsInstanceSheet && OnNamed(window, "InstanceRecipe"), $"focus is on {FocusedButton(window)?.Name}");
+        Assert.True(FocusedButton(window)!.IsEffectivelyVisible);
+        Assert.Equal(shell.Instance.RecipeLinkName, Heard.Name(FocusedButton(window)!));
+
+        // the group head's Recipe button, with the sheet covering the page: Esc comes back to that button
+        Press(window, Key.Escape);
+        await Until(window, () => !shell.IsSheetOpen);
+        window.Width = 1000;
+        Settle(window);
+        var group = shell.Workflows.Groups.First(g => g.Rows.Any(r => string.Equals(r.Address, address, StringComparison.Ordinal)));
+        var button = Buttons(window, "WorkflowGroupRecipe").First(b => ReferenceEquals(b.DataContext, group));
+        Assert.True(button.Focus(NavigationMethod.Tab));
+        Click(button);
+        await Until(window, () => shell.IsRecipeSheet && shell.IsSheetShown && Named<Border>(window, "SheetTitle").IsFocused, $"focus is on {window.FocusManager?.GetFocusedElement()}");
+
+        Press(window, Key.Escape);
+        await Until(window, () => !shell.IsSheetOpen && OnNamed(window, "WorkflowGroupRecipe") && ReferenceEquals(FocusedButton(window)!.DataContext, group), $"focus is on {FocusedButton(window)?.Name}");
+    });
 }

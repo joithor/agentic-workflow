@@ -106,6 +106,7 @@ internal sealed partial class InstanceFrameView : UserControl
             FrameFocus.ChildEntry => Find("ChildRowOpen", b => b.DataContext is ChildRowViewModel child && string.Equals(child.Address, wanted.Key, StringComparison.Ordinal)),
             FrameFocus.ChildItem => Find("ChildRowItemOpen", b => b.DataContext is ChildRowViewModel child && string.Equals(child.ItemId, wanted.Key, StringComparison.Ordinal)),
             FrameFocus.ChildPointer => Find("ExpandedChild"),
+            FrameFocus.Recipe => Find("InstanceRecipe"),
             _ => throw new ArgumentOutOfRangeException(nameof(wanted), wanted.Target, message: null),
         };
     }

@@ -92,7 +92,9 @@ public sealed class RecipeSheetViewModelTests
 
         var sheet = await Opened(WithName);
 
-        Assert.Equal((FramePhase.Unreadable, Labels.StripUnreadable, Labels.Back, FrameFocus.Back), (sheet.Phase, sheet.ProblemText, sheet.BackText, sheet.InitialFocus));
+        Assert.Equal((FramePhase.Unreadable, Labels.RecipeUnreadable, Labels.Back), (sheet.Phase, sheet.ProblemText, sheet.BackText));
+        Assert.DoesNotContain("P11", sheet.ProblemText, StringComparison.Ordinal);   // the workflow list's sentence names the wrong thing and an API phase that has landed
+        Assert.DoesNotContain("workflow list", sheet.ProblemText, StringComparison.Ordinal);
     }
 
     [Fact]

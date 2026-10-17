@@ -116,4 +116,7 @@ internal static partial class Labels
     /// <param name="subject">The recipe link's subject, "id" or "id@hash12".</param>
     /// <returns>The words.</returns>
     internal static string OpenRecipeName(string subject) => $"Recipe {subject}, open";
+
+    /// <summary>What the recipe sheet says when the recipe's answer is in a shape this build can't read.</summary>
+    internal const string RecipeUnreadable = "This recipe's answer can't be read by this build of the app.";
 }
