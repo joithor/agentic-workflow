@@ -1,3 +1,4 @@
+using Aw.Context.Core.Extract;
 using Aw.Context.Core;
 using Aw.Context.Core.Eval.Backtest;
 
@@ -183,7 +184,21 @@ public sealed class BacktestTests
         Assert.All(world.Model.Requests, r => Assert.DoesNotContain("code:", r.Prompt, StringComparison.Ordinal));
         Assert.True(graph.Tokens > 0);
         Assert.True(graph.AdjudicatedPrecision >= graph.NodePrecision);
-        Assert.Empty(report.Degraded);
+        Assert.DoesNotContain(report.Degraded, d => d.Contains("adjudication", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Backtest_says_how_many_sample_maps_were_built_without_clusters_from_real_state()
+    {
+        await using var without = await BacktestWorld.Start(BacktestWorld.BeforeAllCuts);   // the default cluster source is unavailable
+        await using var with = await BacktestWorld.Start(BacktestWorld.BeforeAllCuts);
+        with.Clusters.Set = new ClusterSet([], Available: true);
+
+        var plain = (await without.Run("graph")).Value.Report;
+        var clustered = (await with.Run("graph")).Value.Report;
+
+        Assert.Contains(plain.Degraded, d => d.StartsWith($"clusters unavailable: {plain.Samples.Count} of {plain.Samples.Count} sample maps were built without clusters", StringComparison.Ordinal));
+        Assert.DoesNotContain(clustered.Degraded, d => d.StartsWith("clusters unavailable", StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "integration")]
