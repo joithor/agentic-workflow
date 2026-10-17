@@ -163,6 +163,9 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-111: the two commits of a diff range share no merge base (unrelated histories).</summary>
     public static readonly ErrorDefinition NoMergeBase = new("SND-CONTEXT-111", ErrorKind.Invalid, "The two commits share no merge base");
 
+    /// <summary>SND-CONTEXT-120: the map version asked for ('mapVersion=' / '--map-version') isn't held: never written, purged, a draft, still building, or its commit part differs. Scoping stage S-LB1 owns 120–129.</summary>
+    public static readonly ErrorDefinition MapVersionNotRetained = new("SND-CONTEXT-120", ErrorKind.NotFound, "That map version is not retained");
+
     /// <summary>SND-CONTEXT-150: a 'context.code.schemaGlobs' or 'context.code.testGlobs' entry isn't a repo-relative glob. The message starts with the key path.</summary>
     public static readonly ErrorDefinition CodeGlobInvalid = new("SND-CONTEXT-150", ErrorKind.Invalid, "A code-lens glob is not a repo-relative glob");
 
@@ -179,7 +182,7 @@ public static class ContextErrors
          NoMap, MapFileInvalid, MapNodeUndefined, ExportOutsideHome, MapFileChanged, ProbeFileInvalid, NoProbeFile, AmbiguousAnchor, ProbesRegressed,
          HeavyLockBusy, LabelingUnavailable, ReviewFileNoMatch, NoDraftMap, RepoOutsideScope, PromoteRefused, ReviewTargetStale, ExtractionUnreadable,
          OnyxKeyRefused, OnyxUnexpectedReply, OnyxDocumentNotFound, OnyxKeyNotServiceAccount, OnyxNotPinnedOrLoopback, SyncRunning, ModelAnswerRefused, SyncSourceUnknown, SyncCapped,
-         NoEligibleSample, NoBriefSource, UnknownArm, AdjudicationCapped, CommitUnknown, NoMergeBase, CodeGlobInvalid, CodeGlobsTooMany, CodeSearchTimedOut];
+         NoEligibleSample, NoBriefSource, UnknownArm, AdjudicationCapped, CommitUnknown, NoMergeBase, MapVersionNotRetained, CodeGlobInvalid, CodeGlobsTooMany, CodeSearchTimedOut];
 
     /// <summary>
     /// The codes the CLI answers with exit 1 (attention, spec §8.6): an unknown or ambiguous anchor, a refused input or
@@ -192,6 +195,6 @@ public static class ContextErrors
         ExportOutsideHome.Code, MapFileChanged.Code, ProbeFileInvalid.Code, NoProbeFile.Code, AmbiguousAnchor.Code, ProbesRegressed.Code,
         LabelingUnavailable.Code, ReviewFileNoMatch.Code, NoDraftMap.Code, RepoOutsideScope.Code, PromoteRefused.Code, ReviewTargetStale.Code, SyncRunning.Code, SyncSourceUnknown.Code,
         NoEligibleSample.Code, NoBriefSource.Code, UnknownArm.Code,
-        CommitUnknown.Code, NoMergeBase.Code, CodeGlobInvalid.Code, CodeGlobsTooMany.Code,
+        CommitUnknown.Code, NoMergeBase.Code, MapVersionNotRetained.Code, CodeGlobInvalid.Code, CodeGlobsTooMany.Code,
     };
 }

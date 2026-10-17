@@ -18,7 +18,7 @@ internal sealed partial class ShellViewModel
     public bool IsInstanceSheet => SheetLink?.Kind == DeepLinkKind.Workflow;
 
     /// <summary>The sheet's width as it is shown: an instance's is the widest, every other sheet keeps the human's.</summary>
-    public double ShownSheetWidth => IsInstanceSheet ? UiPreferences.MaxSheetWidth : SheetWidth;
+    public double ShownSheetWidth => IsInstanceSheet || IsRecipeSheet ? UiPreferences.MaxSheetWidth : SheetWidth;
 
     /// <summary>True when the sheet was stacked from a frame: its Back has a frame to return to, at every width.</summary>
     public bool HasTrail => _trail.Count > 0;
@@ -57,13 +57,21 @@ internal sealed partial class ShellViewModel
         CloseSheet();
     }
 
-    // Back to a frame lands focus on the entry of the child (or the child's item) the user went into, once the frame is shown.
+    // Back to a frame lands focus on the entry of the child (or the child's item) the user went into, or on the Recipe link that opened the recipe, once the frame is shown.
     private void ReturnFocus(DeepLink previous, DeepLink? leaving, bool viaPointer)
     {
-        if (previous is { Kind: DeepLinkKind.Workflow, Subject: { } parent } && leaving is { Subject: { } from } && leaving.Kind is DeepLinkKind.Workflow or DeepLinkKind.Item)
+        if (previous is not { Kind: DeepLinkKind.Workflow, Subject: { } parent } || leaving is not { Subject: { } from })
         {
-            var intent = leaving.Kind == DeepLinkKind.Item ? FrameIntent.FocusChildItem : viaPointer ? FrameIntent.FocusPointer : FrameIntent.FocusChild;
-            Instance.Intend(parent, intent, from);
+            return;
+        }
+
+        if (leaving.Kind == DeepLinkKind.Recipe)
+        {
+            Instance.Intend(parent, FrameIntent.FocusRecipe);
+        }
+        else if (leaving.Kind is DeepLinkKind.Workflow or DeepLinkKind.Item)
+        {
+            Instance.Intend(parent, leaving.Kind == DeepLinkKind.Item ? FrameIntent.FocusChildItem : viaPointer ? FrameIntent.FocusPointer : FrameIntent.FocusChild, from);
         }
     }
 

@@ -68,6 +68,18 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
     /// <param name="Json">True for --json.</param>
     internal sealed record QueryArguments(string QueryString, bool Json)
     {
+        private static readonly Dictionary<string, string> _valuedKeys = new(StringComparer.Ordinal)
+        {
+            ["--node"] = "node",
+            ["--item"] = "item",
+            ["--symbol"] = "symbol",
+            ["--depth"] = "depth",
+            ["--budget"] = "budget",
+            ["--diff"] = "diff",
+            ["--repo"] = "repo",
+            ["--map-version"] = "mapVersion",
+        };
+
         internal static Kernel.Result<QueryArguments> Parse(string[] args)
         {
             var words = new List<string>();
@@ -83,17 +95,22 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
                     case "--draft":
                         pairs.Add(("draft", "true"));
                         break;
-                    case "--node" or "--item" or "--symbol" or "--depth" or "--budget" or "--diff" or "--repo" when i + 1 < args.Length:
-                        pairs.Add((args[i][2..], args[++i]));
+                    case var valued when _valuedKeys.TryGetValue(valued, out var key) && i + 1 < args.Length:
+                        pairs.Add((key, args[++i]));
                         break;
                     case var flag when flag.StartsWith("--", StringComparison.Ordinal):
-                        return SindriErrors.InvalidInput.With($"'{flag}' isn't a context query flag (or it needs a value): --node K | --item I | --symbol S | --diff BASE..HEAD [--repo R] | --depth N | --budget N | --draft | --json");
+                        return SindriErrors.InvalidInput.With($"'{flag}' isn't a context query flag (or it needs a value): --node K | --item I | --symbol S | --diff BASE..HEAD [--repo R] | --depth N | --budget N | --map-version V | --draft | --json");
                     default:
                         words.Add(args[i]);
                         break;
                 }
             }
 
+            return Finish(words, pairs, json);
+        }
+
+        private static Kernel.Result<QueryArguments> Finish(List<string> words, List<(string Key, string Value)> pairs, bool json)
+        {
             if (Misspelled(pairs) is { } refused)
             {
                 return refused;

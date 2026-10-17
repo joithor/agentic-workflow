@@ -97,6 +97,44 @@ public abstract class GraphStoreContract
         Expect.That(Expect.Ok(await store.Snapshot(draft: true, None), test) is null, test, "a draft snapshot with no draft");
     }
 
+    /// <summary>A retained version reads with its own graph and today's whole override layer, in one session (scoping spec C10).</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task SnapshotAt_reads_a_retained_version_with_todays_overrides_in_one_session()
+    {
+        const string test = nameof(SnapshotAt_reads_a_retained_version_with_todays_overrides_in_one_session);
+        var store = CreateStore();
+        var first = Expect.Ok(await store.SaveCurrent(SampleMap.Build(), SampleMap.At, None), test);
+        var second = Expect.Ok(await store.SaveCurrent(SampleMap.Build(" (2)"), SampleMap.At.AddDays(1), None), test);
+        var later = new MapOverride(OverrideAction.Accept, NodeKey.From("feature:layout.split-pane"), "avery", SampleMap.At.AddDays(2));
+        _ = Expect.Ok(await store.AppendOverrides([later], None), test);
+
+        var old = Expect.Ok(await store.SnapshotAt(first.Number, None), test);
+        var current = Expect.Ok(await store.SnapshotAt(second.Number, None), test);
+
+        Expect.That(old is not null && old.Version.Status == MapVersionStatus.Retained && old.Version.Number == first.Number, test, "the retained version isn't the one asked for");
+        Expect.That(old is not null && Canonical.Of(old.Graph) == Canonical.Of(SampleMap.Build().Graph), test, "the retained version's graph differs");
+        Expect.That(old is not null && old.Overrides.Any(o => o.ToId() == later.ToId()), test, "a later override is missing from the old version's read");
+        Expect.That(current is not null && current.Version.Status == MapVersionStatus.Current && Canonical.Of(current.Graph) == Canonical.Of(SampleMap.Build(" (2)").Graph), test, "the current version doesn't read by number");
+    }
+
+    /// <summary>A draft, a version never written and one already deleted are not held: only 'current' and 'retained' versions read by number.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task SnapshotAt_a_draft_an_unwritten_or_a_deleted_version_is_not_held()
+    {
+        const string test = nameof(SnapshotAt_a_draft_an_unwritten_or_a_deleted_version_is_not_held);
+        var store = CreateStore();
+        var first = Expect.Ok(await store.SaveCurrent(SampleMap.Build(), SampleMap.At, None), test);
+        _ = Expect.Ok(await store.SaveCurrent(SampleMap.Build(" (2)"), SampleMap.At.AddDays(1), None), test);
+        var draft = Expect.Ok(await store.SaveDraft(SampleMap.Build(" (draft)"), SampleMap.At.AddDays(2), None), test);
+        _ = Expect.Ok(await store.Delete([first.Number], None), test);
+
+        Expect.That(Expect.Ok(await store.SnapshotAt(draft.Number, None), test) is null, test, "a draft read by number");
+        Expect.That(Expect.Ok(await store.SnapshotAt(999, None), test) is null, test, "a version never written");
+        Expect.That(Expect.Ok(await store.SnapshotAt(first.Number, None), test) is null, test, "a deleted version");
+    }
+
     /// <summary>A draft is a new version beside the current one: current stays current and the draft reads back as written.</summary>
     /// <returns>The test.</returns>
     [Fact]
