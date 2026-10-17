@@ -129,25 +129,73 @@ case "\${1:-}" in
   publish)
     echo "\$*" > "$WORK/publish-args"
     [ -e "$WORK/publish-fails" ] && { echo "stub publish failed" >&2; exit 1; }
-    out=""; prev=""; for a in "\$@"; do [ "\$prev" = -o ] && out="\$a"; prev="\$a"; done
+    out=""; prev=""; rev=unknown; for a in "\$@"; do [ "\$prev" = -o ] && out="\$a"; prev="\$a"; case "\$a" in -p:SourceRevisionId=*) rev="\${a#-p:SourceRevisionId=}" ;; esac; done
+    [ -e "$WORK/publish-wrongcommit" ] && rev=0000000000000000000000000000000000000000
     mkdir -p "\$out"
-    printf '#!/usr/bin/env bash\necho built\n' > "\$out/aw-meta"; chmod +x "\$out/aw-meta"
+    [ -e "$WORK/publish-nobin" ] || {
+      printf '#!/usr/bin/env bash\nif [ "\${1:-}" = version ]; then echo '"'"'{"commit":"%s","builtAt":"2026-10-17T00:00:00Z","os":"macOS","rid":"osx-arm64"}'"'"'; fi\n' "\$rev" > "\$out/aw-meta"; chmod +x "\$out/aw-meta"; }
     echo dylib > "\$out/libe_sqlite3.dylib" ;;
 esac
 STUB
 chmod +x "$HOME/.dotnet/dotnet"
 unset AW_SKIP_BUILD
-OUT="$(CLAUDE_LOCAL_BIN="$WORK/pub-bin" bash "$DIR/install-meta.sh" --provider claude 2>&1)"; RC=$?
+# The trees the publish runs from are temp git repos (this checkout's own state must not matter): scripts, the meta build paths, a Meta source.
+mktree() { # mktree <dir>
+  mkdir -p "$1/scripts" "$1/config/hooks/adapters" "$1/config/lib" "$1/src/Meta" "$1/docs"
+  cp "$DIR/install-meta.sh" "$DIR/meta-launch.sh" "$DIR/meta-team-lib.sh" "$DIR/meta-version-lib.sh" "$DIR/meta-build-paths.txt" "$1/scripts/" 2> /dev/null
+  cp "$DIR/../config/hooks/adapters/"* "$1/config/hooks/adapters/"; cp -r "$DIR/../config/lib/." "$1/config/lib/"
+  cp "$DIR/../config/hooks/meta-stop-gate.sh" "$DIR/../config/hooks/meta-outbox.sh" "$1/config/hooks/"
+  cp "$DIR/../global.json" "$1/"; echo one > "$1/src/Meta/a.cs"; echo doc > "$1/docs/a.md"
+  git -C "$1" init -q && git -C "$1" add -A && git -C "$1" -c user.email=t@t -c user.name=t commit -qm t
+}
+mktree "$WORK/ptree"; PHEAD="$(git -C "$WORK/ptree" rev-parse HEAD)"
+pub() { CLAUDE_LOCAL_BIN="$WORK/pub-bin" bash "$WORK/ptree/scripts/install-meta.sh" --provider claude --allow-worktree 2>&1; }
+OUT="$(pub)"; RC=$?
 ARGS="$(cat "$WORK/publish-args" 2>/dev/null)"
 check "a real install publishes for the host runtime id and installs the binary and e_sqlite3" "$RC:$(test -x "$AW_STATE_DIR/bin/aw-meta" && test -f "$AW_STATE_DIR/bin/libe_sqlite3.dylib" && echo yes):$(printf '%s' "$ARGS" | grep -c -- '-r osx-arm64')" "0:yes:1"
-check "the publish is stamped with this tree's commit" "$(printf '%s' "$ARGS" | grep -c -- "-p:SourceRevisionId=$(git -C "$DIR/.." rev-parse HEAD)")" "1"
+check "the publish is stamped with this tree's commit" "$(printf '%s' "$ARGS" | grep -c -- "-p:SourceRevisionId=$PHEAD\( \|\$\)")" "1"
 check "the publish is stamped with a UTC build time" "$(printf '%s' "$ARGS" | grep -cE -- '-p:AwBuildTime=[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z')" "1"
+check "the install line shows the installed commit" "$(printf '%s' "$OUT" | grep -c "aw-meta $PHEAD (built")" "1"
+# a dirty tree: a changed or new file under a meta build path stamps <HEAD>-dirty; a docs change does not
+echo doc2 >> "$WORK/ptree/docs/a.md"; echo extra > "$WORK/ptree/docs/untracked.md"
+OUT="$(pub)"; ARGS="$(cat "$WORK/publish-args")"
+check "a docs-only change leaves the stamp clean" "$(printf '%s' "$ARGS" | grep -c -- "-p:SourceRevisionId=$PHEAD\( \|\$\)")" "1"
+echo two >> "$WORK/ptree/src/Meta/a.cs"
+OUT="$(pub)"; RC=$?; ARGS="$(cat "$WORK/publish-args")"
+check "an uncommitted change under a meta build path stamps <HEAD>-dirty, and the install line shows it" "$RC:$(printf '%s' "$ARGS" | grep -c -- "-p:SourceRevisionId=$PHEAD-dirty"):$(printf '%s' "$OUT" | grep -c "aw-meta $PHEAD-dirty (built")" "0:1:1"
+git -C "$WORK/ptree" checkout -q -- src/Meta/a.cs; echo new > "$WORK/ptree/src/Meta/new.cs"
+OUT="$(pub)"; ARGS="$(cat "$WORK/publish-args")"
+check "a new untracked file under a meta build path is dirty too" "$(printf '%s' "$ARGS" | grep -c -- "-p:SourceRevisionId=$PHEAD-dirty")" "1"
+unlink "$WORK/ptree/src/Meta/new.cs"
+# the publish must have produced the binary, and the installed one must be the one just built
+: > "$WORK/publish-nobin"; printf 'old\n' > "$AW_STATE_DIR/bin/aw-meta"
+OUT="$(pub)"; RC=$?
+check "a publish that produced no aw-meta exits 1 and leaves the installed binary alone" "$RC:$(printf '%s' "$OUT" | grep -c 'produced no aw-meta'):$(cat "$AW_STATE_DIR/bin/aw-meta")" "1:1:old"
+unlink "$WORK/publish-nobin"
+: > "$WORK/publish-wrongcommit"
+OUT="$(pub)"; RC=$?
+check "an installed binary whose commit is not the stamped one: exit 1, install did not take" "$RC:$(printf '%s' "$OUT" | grep -c "install didn't take")" "1:1"
+unlink "$WORK/publish-wrongcommit"
 : > "$WORK/publish-fails"; printf 'old\n' > "$AW_STATE_DIR/bin/aw-meta"
-OUT="$(CLAUDE_LOCAL_BIN="$WORK/pub-bin" bash "$DIR/install-meta.sh" --provider claude 2>&1)"; RC=$?
+OUT="$(pub)"; RC=$?
 check "a failed publish exits 1 with its log and leaves the installed binary alone" "$RC:$(printf '%s' "$OUT" | grep -c 'stub publish failed'):$(cat "$AW_STATE_DIR/bin/aw-meta")" "1:1:old"
+unlink "$WORK/publish-fails"
 unlink "$HOME/.dotnet/dotnet"
 export AW_SKIP_BUILD=1
 printf '#!/usr/bin/env bash\nexit 0\n' > "$AW_STATE_DIR/bin/aw-meta"; chmod +x "$AW_STATE_DIR/bin/aw-meta"
+
+# A HOME with a space: every hook command quotes its script path, so the hook runs (SEC-3)
+SP="$WORK/h o m e"; mkdir -p "$SP/.claude" "$SP/.codex" "$SP/.cursor" "$SP/state/bin"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$SP/state/bin/aw-meta"; chmod +x "$SP/state/bin/aw-meta"
+echo '{}' > "$SP/.claude/settings.json"
+for prov in claude codex cursor; do
+  OUT="$(HOME="$SP" AW_STATE_DIR="$SP/state" CLAUDE_LOCAL_BIN="$SP/lbin" CODEX_HOME="$SP/.codex" AW_META_CONFIG= bash "$DIR/install-meta.sh" --provider "$prov" --allow-worktree 2>&1)"; RC=$?
+  check "$prov: installs under a HOME with a space" "$RC" "0"
+done
+cmds="$( { jq -r '.. | .command? // empty' "$SP/.claude/settings.json" "$SP/.codex/hooks.json" "$SP/.cursor/hooks.json"; } | grep 'aw:meta\|aw:session-id' )"
+check "every hook command quotes its script path" "$(printf '%s\n' "$cmds" | grep -c -v '^"[^"]*" ')" "0"
+check "the Claude stop gate command runs from the quoted path" "$(HOME="$SP" AW_STATE_DIR="$SP/state" bash -c "$(jq -r '.hooks.Stop[].hooks[].command' "$SP/.claude/settings.json" | grep meta-stop-gate)" < /dev/null > /dev/null 2>&1; echo $?)" "0"
+check "a codex hook command runs its adapter and script from the quoted paths" "$(HOME="$SP" AW_STATE_DIR="$SP/state" bash -c "$(jq -r '.hooks.SessionStart[].hooks[].command' "$SP/.codex/hooks.json" | grep session-id-report)" < /dev/null > /dev/null 2>&1; echo $?)" "0"
 
 # Linking: aw-meta-launch points into the canonical checkout only. A temp git repo holding a copy of the installer stands in for the
 # tree it runs from; a linked worktree of it is the throwaway one.

@@ -57,6 +57,9 @@ stub "$B" "$C2"
 check "a binary from a docs-only commit between two Meta changes is older too" "$(meta_stale_line "$B" "$R" | grep -c 'older than the Meta sources')" "1"
 stub "$B" unknown
 check "an unstamped binary: warns it cannot be compared" "$(meta_stale_line "$B" "$R" | grep -c 'no commit stamp')" "1"
+stub "$B" "$C3-dirty"
+OUT="$(meta_stale_line "$B" "$R")"
+check "a binary built from a dirty tree: warns, naming the commit and the fix" "$(printf '%s\n' "$OUT" | wc -l | tr -d ' '):$(printf '%s' "$OUT" | grep -c "built from a dirty tree (${C3:0:12}).*scripts/install-meta.sh")" "1:1"
 stub "$B" none
 check "a binary with no version command: warns it predates the command" "$(meta_stale_line "$B" "$R" | grep -c "predates 'aw-meta version'")" "1"
 stub "$B" "0123456789abcdef0123456789abcdef01234567"
@@ -64,6 +67,11 @@ check "a commit this checkout does not have: warns" "$(meta_stale_line "$B" "$R"
 check "no binary: no warning" "$(meta_stale_line "$WORK/missing" "$R")" ""
 mkdir -p "$WORK/plain"
 check "not a git checkout: no warning" "$(meta_stale_line "$B" "$WORK/plain")" ""
+
+# the build paths are defined once: scripts/meta-build-paths.txt, read by the lib, install-meta.sh and the NativeAOT smoke
+check "META_BUILD_PATHS is the list in meta-build-paths.txt" "$(printf '%s,' "${META_BUILD_PATHS[@]}")" "$(grep -v '^#' "$DIR/meta-build-paths.txt" | grep -v '^$' | tr '\n' ',')"
+check "the list names the Meta, Kernel, Redaction and Analyzers sources and the root build files" "$(printf '%s\n' "${META_BUILD_PATHS[@]}" | grep -c -x -E 'src/Meta|src/Aw.Kernel|src/Aw.Kernel.Telemetry|src/Redaction|src/Aw.Analyzers|global.json|Directory.\*')" "7"
+check "install-meta.sh and the NativeAOT smoke carry no copy of the list" "$(grep -c 'src/Aw.Kernel.Telemetry' "$DIR/install-meta.sh" "$DIR/../src/Meta/aot-smoke/run.sh" | grep -v ':0$' | wc -l | tr -d ' ')" "0"
 
 # the launcher: one stderr line, not fatal, switched off by AW_META_NO_STALE_CHECK=1
 if command -v tmux > /dev/null 2>&1 && command -v jq > /dev/null 2>&1; then
