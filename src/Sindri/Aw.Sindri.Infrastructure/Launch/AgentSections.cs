@@ -13,6 +13,8 @@ internal static partial class AgentSections
     private static readonly string[] _sessionIds = ["pre-chosen-uuid", "reported", "none"];
     private static readonly string[] _usages = ["claude-code", "codex", "cursor", "none"];
     private static readonly string[] _mcps = ["claude-config-file", "codex-overrides", "none"];
+    private static readonly string[] _models = ["claude-flag", "codex-flag", "cursor-flag", "none"];
+    private static readonly string[] _policies = ["claude-settings-file", "codex-overrides", "cursor-config", "none"];
 
     /// <summary>The built-in entry with <paramref name="over"/>'s named fields laid over it.</summary>
     internal static AgentSection Merge(AgentSection baseline, AgentSection over) => Elements(baseline, over) with
@@ -30,6 +32,8 @@ internal static partial class AgentSections
     {
         Resume = Present(over.Resume) ? over.Resume : baseline.Resume,
         SessionIdPattern = Present(over.SessionIdPattern) ? over.SessionIdPattern : baseline.SessionIdPattern,
+        Model = Present(over.Model) ? over.Model : baseline.Model,
+        Policy = Present(over.Policy) ? over.Policy : baseline.Policy,
         ReportedId = Present(over.ReportedId) ? over.ReportedId : baseline.ReportedId,
         ProcessName = Present(over.ProcessName) ? over.ProcessName : baseline.ProcessName,
         Transcripts = Present(over.Transcripts) ? over.Transcripts : baseline.Transcripts,
@@ -59,7 +63,7 @@ internal static partial class AgentSections
             return "an entry needs label, bin, open and sessionId";
         }
 
-        return OneOf(s.SessionId, _sessionIds, "sessionId") ?? OneOf(s.Usage, _usages, "usage") ?? OneOf(s.Mcp, _mcps, "mcp")
+        return OneOf(s.SessionId, _sessionIds, "sessionId") ?? OneOf(s.Usage, _usages, "usage") ?? OneOf(s.Mcp, _mcps, "mcp") ?? Form(s.Model, _models, "model") ?? Form(s.Policy, _policies, "policy")
             ?? Argv(s.Open, "open") ?? Argv(Strings(s.Resume), "resume") ?? Reported(s);
     }
 
@@ -79,6 +83,9 @@ internal static partial class AgentSections
         return s.ReportedId.ValueKind == JsonValueKind.Object && AwJson.Deserialize<ReportedIdSection>(
             System.Text.Encoding.UTF8.GetBytes(s.ReportedId.GetRawText()), LauncherConfigFile.Json).IsError ? "reportedId has an unknown key" : null;
     }
+
+    private static string? Form(JsonElement value, string[] allowed, string field) =>
+        !Present(value) ? null : OneOf(value.ValueKind == JsonValueKind.String ? value.GetString() : "(not a string)", allowed, field);
 
     private static string? OneOf(string? value, string[] allowed, string field) =>
         value is null || allowed.Contains(value, StringComparer.Ordinal) ? null : $"{field} '{value}' isn't one of {string.Join(", ", allowed)}";
