@@ -83,10 +83,26 @@ internal static class RecipeNormalizer
             transition["from"] = new JsonArray(from.DeepClone());
         }
 
+        Produces(transition["produces"] as JsonArray);
         foreach (var list in (string[])["gates", "effects"])
         {
             Wrap(transition[list] as JsonArray, "use");
             Uses(transition[list] as JsonArray, $"{path}.{list}", findings);
+        }
+    }
+
+    /// <summary>An entry '{ fact: X, from: X }' renames nothing, so it is the bare key 'X' (one canonical form, one hash).</summary>
+    private static void Produces(JsonArray? entries)
+    {
+        for (var i = 0; entries is not null && i < entries.Count; i++)
+        {
+            if (entries[i] is JsonObject { Count: 2 } entry
+                && entry["fact"] is JsonValue fact && fact.TryGetValue<string>(out var name)
+                && entry["from"] is JsonValue from && from.TryGetValue<string>(out var source)
+                && string.Equals(name, source, StringComparison.Ordinal))
+            {
+                entries[i] = JsonValue.Create(name);
+            }
         }
     }
 

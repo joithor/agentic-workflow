@@ -68,7 +68,7 @@ META="${AW_META_BIN:-${AW_STATE_DIR:-$HOME/.agentic-workflow}/bin/aw-meta}"
 own_agent || pass        # a nested agent instance inside the lane is not the lane
 # A lane name becomes a path component (the reply marker): letters, digits, '.', '_' and '-', and not only dots.
 { [[ "$AW_META_LANE" =~ ^[A-Za-z0-9._-]+$ ]] && [[ "$AW_META_LANE" =~ [^.] ]]; } || { failopen lane-name-invalid; pass; }
-LANE_DIR="${AW_STATE_DIR:-$HOME/.agentic-workflow}/meta/lane-sessions"
+LANE_DIR="${AW_META_DIR:-${AW_STATE_DIR:-$HOME/.agentic-workflow}/meta}/lane-sessions"
 REPLIED="$LANE_DIR/$AW_META_LANE.replied"   # the checksum of the reply last recorded
 OWED="$LANE_DIR/$AW_META_LANE.owed"         # the checksum of the owed list the last block showed
 # code_of <output>: "-AW-META-NNN" when aw-meta's first line is a coded error, appended to a failopen cause (the code, never the text)

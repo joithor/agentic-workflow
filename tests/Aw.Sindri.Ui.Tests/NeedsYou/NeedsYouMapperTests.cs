@@ -138,6 +138,17 @@ public sealed class NeedsYouMapperTests
     }
 
     [Fact]
+    public void On_a_null_primary_row_Pause_takes_the_catalog_form_with_the_service_filled()
+    {
+        var row = Feed("unknown-service").Rows[0];
+        var pause = row.Actions.Single(a => a.CatalogId == "PauseService");
+        var catalog = Catalog().Rows.Single(r => r.Action == "PauseService").Cli;
+
+        Assert.Equal(catalog.Replace("<name>", row.Subject!.Id, StringComparison.Ordinal), pause.Cli);
+        Assert.Empty(pause.FillInHint);
+    }
+
+    [Fact]
     public void An_action_the_catalog_doesnt_list_is_pending_never_runnable()
     {
         var empty = Catalog() with { Rows = [] };

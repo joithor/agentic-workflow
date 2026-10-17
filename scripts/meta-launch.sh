@@ -13,9 +13,10 @@
 # Before it creates anything it looks (read-only: has-session) for `<team>-<lane>` sessions of the lanes it would start on tmux's
 # DEFAULT socket, where a team started before the switch still runs, and refuses (exit 1) if any exist: starting them again
 # would run a second claude on the same transcripts. The owner stops the old team, then relaunches; --allow-legacy (owner only) skips the check.
-#   meta-launch.sh [--lanes a,b,...] [--no-open] [--dry-run] [--allow-legacy]
+#   meta-launch.sh [--team <name>] [--lanes a,b,...] [--no-open] [--dry-run] [--allow-legacy]
 #   meta-launch.sh --init-launcher [--viewer warp|print|<terminal id>] [--force] [--stdout]   write launcher.json for this box
-#   AW_META_CONFIG      team config (default $AW_STATE_DIR/meta/team.json; `aw-meta team-init` writes it)
+#   AW_META_CONFIG      team config (default $AW_STATE_DIR/meta/teams/<team>/team.json, or the legacy $AW_STATE_DIR/meta/team.json; `aw-meta team-init` writes it)
+#   AW_META_TEAM        the team to launch (same as --team); with one team on disk, or a legacy config, none is needed (scripts/meta-team-lib.sh)
 #   AW_LAUNCHER_CONFIG  the launcher file (default $AW_STATE_DIR/launcher.json); passed on to each lane's session
 #   AW_WARP_LAUNCH_DIR  default ${XDG_DATA_HOME:-~/.local/share}/warp-terminal/launch_configurations (Linux),
 #                       ~/.warp/launch_configurations (macOS)
@@ -24,9 +25,10 @@
 #   AW_META_ID_WAIT     seconds a lane whose agent reports its own session id has to report it (default 30; tests)
 set -euo pipefail
 here="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"   # through the ~/.local/bin/aw-meta-launch symlink too
-only=""; open=1; dry=0; allow_legacy="${AW_META_ALLOW_LEGACY:-0}"; init=0; init_viewer=""; init_force=0; init_stdout=0
+only=""; team_sel="${AW_META_TEAM:-}"; open=1; dry=0; allow_legacy="${AW_META_ALLOW_LEGACY:-0}"; init=0; init_viewer=""; init_force=0; init_stdout=0
 while [ $# -gt 0 ]; do
   case "$1" in
+    --team) team_sel="${2:?--team needs a name}"; shift 2 ;;
     --lanes) only="${2:?--lanes needs a list}"; shift 2 ;;
     --no-open) open=0; shift ;;
     --dry-run) dry=1; shift ;;
@@ -35,7 +37,7 @@ while [ $# -gt 0 ]; do
     --viewer) init_viewer="${2:?--viewer needs a name}"; shift 2 ;;
     --force) init_force=1; shift ;;
     --stdout) init_stdout=1; shift ;;
-    *) echo "usage: meta-launch.sh [--lanes a,b,...] [--no-open] [--dry-run] [--allow-legacy] | --init-launcher [--viewer name] [--force] [--stdout]" >&2; exit 2 ;;
+    *) echo "usage: meta-launch.sh [--team name] [--lanes a,b,...] [--no-open] [--dry-run] [--allow-legacy] | --init-launcher [--viewer name] [--force] [--stdout]" >&2; exit 2 ;;
   esac
 done
 if [ "$init" = 0 ] && { [ -n "$init_viewer" ] || [ "$init_force" = 1 ] || [ "$init_stdout" = 1 ]; }; then
@@ -45,6 +47,8 @@ command -v jq > /dev/null || { echo "meta-launch: jq is not installed" >&2; exit
 state_dir="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
 # shellcheck source=launcher-lib.sh
 . "$here/launcher-lib.sh"
+# shellcheck source=meta-team-lib.sh
+. "$here/meta-team-lib.sh"
 
 # --init-launcher: detect this box's terminal and write launcher.json (spec section 4, "The generator"): no GUI session
 # is print; else Warp when present; else $TERM_PROGRAM when it names a terminal in config/launcher/terminals.json; else
@@ -95,9 +99,17 @@ init_launcher() {
 if [ "$init" = 1 ]; then init_launcher; exit $?; fi
 
 command -v tmux > /dev/null || { echo "meta-launch: tmux is not installed" >&2; exit 1; }
-config="${AW_META_CONFIG:-$state_dir/meta/team.json}"
+if [ -n "${AW_META_CONFIG:-}" ] && [ -z "$team_sel" ]; then   # an explicit config names its team: the state directory follows it
+  team_sel="$(jq -r 'if (.team | type) == "string" then .team else empty end' "$AW_META_CONFIG" 2> /dev/null || true)"
+fi
+meta_resolve "$state_dir" "$team_sel" || exit 2
+config="$(meta_pick_config "$team_sel")"   # a lane's AW_META_CONFIG is ignored when --team names another team
+meta_dir="$META_DIR"
 [ -f "$config" ] || { echo "meta-launch: no team config at $config (run: aw-meta team-init --team <t> --repo <dir> --lanes a,b)" >&2; exit 1; }
 team="$(jq -r '.team // empty' "$config")"
+if [ -n "$team_sel" ] && [ "$team" != "$team_sel" ]; then
+  echo "meta-launch: $config names team '$team', not the selected '$team_sel' (its directory and the team field must agree)" >&2; exit 2
+fi
 repo="$(jq -r '.repo // empty' "$config")"
 all="$(jq -r '[(.metaLane // "meta")] + (.lanes // []) | reduce .[] as $l ([]; if index([$l]) then . else . + [$l] end) | join(",")' "$config")"
 tmux_t=(tmux -L "$team")            # every tmux call of this launcher: the team's own socket
@@ -169,11 +181,11 @@ claude_in_pane() {
 # meta-lane.sh serialises such lanes itself too (a start lock), so a Warp pane that creates its session is safe as well.
 # AW_META_ID_WAIT seconds at most.
 mark_start() { # lane: clear the previous start's markers
-  mkdir -p "$state_dir/meta/lane-sessions"
-  rm -f "$state_dir/meta/lane-sessions/$1.settled" "$state_dir/meta/lane-sessions/$1.ambiguous" "$state_dir/meta/lane-sessions/$1.failed"
+  mkdir -p "$meta_dir/lane-sessions"
+  rm -f "$meta_dir/lane-sessions/$1.settled" "$meta_dir/lane-sessions/$1.ambiguous" "$meta_dir/lane-sessions/$1.failed"
 }
 wait_reported() { # lane
-  local d="$state_dir/meta/lane-sessions" n
+  local d="$meta_dir/lane-sessions" n
   n=$(( ${AW_META_ID_WAIT:-30} * 10 ))
   if [ "$(launcher_agent_field "$(agent_of "$1")" sessionId)" = reported ]; then
     while [ "$n" -gt 0 ]; do
@@ -210,7 +222,7 @@ for l in "${L[@]}"; do
   if "${tmux_t[@]}" has-session -t "=$s" 2> /dev/null; then
     # Claude exited or crashed and the pane fell back to its shell (meta-lane.sh left <lane>.exited): start the lane
     # again in place, resumed by id. A pane still running claude is never touched.
-    if [ ! -f "$state_dir/meta/lane-sessions/$l.exited" ] || claude_in_pane "$s" "$(proc_of "$l")"; then echo "tmux $s: running"
+    if [ ! -f "$meta_dir/lane-sessions/$l.exited" ] || claude_in_pane "$s" "$(proc_of "$l")"; then echo "tmux $s: running"
     elif [ "$dry" = 1 ]; then echo "[dry-run] ${tmux_t[*]} respawn-pane -k -t $s $here/meta-lane.sh $team $l"
     else
       mark_start "$l"
