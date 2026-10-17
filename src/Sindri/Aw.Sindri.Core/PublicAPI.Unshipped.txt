@@ -8304,3 +8304,25 @@ static Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Completed(Aw.Sindri.Core.W
 static Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Failed(string! reason) -> Aw.Sindri.Core.Workflow.Blocks.BlockStepResult!
 static Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.operator !=(Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? left, Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.operator ==(Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? left, Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? right) -> bool
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers
+static Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers.Actor(Aw.Sindri.Core.Workflow.Ids.BlockId step) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers.Failed(Aw.Sindri.Core.Workflow.Ids.BlockId step, Aw.Sindri.Core.Workflow.Engine.RunToken run, string! reason) -> Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed!
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion!
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.BlockCompletion(Aw.Sindri.Core.Workflow.Ids.BlockId Step, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Outputs) -> void
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Step, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Outputs) -> void
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Equals(Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Outcome.get -> Aw.Sindri.Core.Workflow.Ids.OutcomeName
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Outcome.init -> void
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Outputs.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>!
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Outputs.init -> void
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Run.get -> Aw.Sindri.Core.Workflow.Engine.RunToken
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Run.init -> void
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Step.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Step.init -> void
+override Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.operator !=(Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion? left, Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.operator ==(Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion? left, Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers.Completed(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext! context, Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion! result) -> Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger!
