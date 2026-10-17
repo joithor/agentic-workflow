@@ -578,6 +578,47 @@ is logged once (`SND-SCHED-001`) and the current schedule keeps running. A profi
 ships one service, `heartbeat` (API P6 adds the opt-in `job-probe`, see Jobs), which records `service.heartbeat` per slot; the index, intake and scorer join later as
 blocks.
 
+## MCP tools (API P8)
+
+`/sindri/mcp` (one stateless Streamable HTTP endpoint, `Aw.Sindri.Host/Mcp/`) serves the `context_*` tools (docs/csharp/sindri-context.md S-1M) and these seven. Every call runs as `session:mcp` in the repo named by `X-Sindri-Repo`. Each tool binds its arguments (`McpArguments`), calls one service of the same decorated chain the HTTP route uses, fences the result and summarises it; no logic lives in the endpoint. `tools/list` returns 12 tools in this order: the five `context_*`, then the seven below.
+
+| Tool | Arguments | Same as | Kind |
+|---|---|---|---|
+| `sindri_status` | none | `GET /status` | query, `readOnlyHint` |
+| `sindri_queue` | none | `GET /queue` | query, `readOnlyHint` |
+| `sindri_item` | `itemId` (an `ITM-` id or a tracker alias) | `GET /items/{itemId}` | query, `readOnlyHint` |
+| `sindri_item_timeline` | `itemId`, `after?` (integer, 0 or more) | `GET /items/{itemId}/timeline` | query, `readOnlyHint` |
+| `sindri_pending_decisions` | `itemId?` | `GET /decisions?pending=true` | query, `readOnlyHint` |
+| `sindri_job` | `jobId` | `GET /jobs/{jobId}` | query, `readOnlyHint` |
+| `sindri_request` | `kind` (`rescope`, `add-task`, `note`, `handback`), `text` (1 to 2,000 characters), `itemId?` | `POST /requests` (`FileRequest`) | request, `readOnlyHint: false`, `destructiveHint: false` |
+
+There is no decision, desk, protected, job or step-report tool, and no `sindri_context` (use `context_query`): a session asks a human through `sindri_request`, and `McpSurfaceTests` (`tests/Aw.Architecture.Tests`) fails the integration lane if the MCP namespace references any command but `FileRequestRequest`, a challenge answer or the launch secret. Results are the route's body: an id that isn't an id is `SND-CLI-003`, an item or job of another repo is `SND-ITEM-404` / `SND-JOB-404`, a request over its caps `SND-REQ-001` / `SND-REQ-002`.
+
+**Fencing.** `structuredContent` is the HTTP body with the free-text fields below wrapped by `UntrustedFence.Wrap` (source and author as listed) and `"trust": "untrusted"` added to the object that holds each one (`McpFencing` over the serialized body, per `FencePlan`). The HTTP routes are unchanged. Fencing the strings of a job `result` is a provisional owner default ("fence all free text", 2026-10-16), reversible by deleting its `FencePlan.Job` field. A path may end in `[]` for an array of strings. The text block carries ids, states and counts only, never record text.
+
+| Tool | Fenced fields | Source | Author |
+|---|---|---|---|
+| `sindri_queue` | `groups[].items[].title` | `sindri:item` | none |
+| `sindri_item` | `title`, `body` | `sindri:item` | `createdBy` |
+| `sindri_item_timeline` | `entries[].line` | `sindri:timeline` | the entry's `actor` |
+| `sindri_pending_decisions` | `decisions[].question`, `.note`, `.notice`, `.cleared` | `sindri:decision` | `filedBy` (question), `decidedBy` (note) |
+| `sindri_job` | `summary`, every string inside `result` (any depth; numbers, booleans and nulls stay), `progress[].line` | `sindri:job` | `startedBy` for `summary` and `result`; none for `progress[].line` (a line carries no author) |
+| `sindri_status`, `sindri_request` | none | | |
+
+**Headers.** `UseMcpCaller` removes every `X-Sindri-*` request header except `X-Sindri-Repo`, then sets `X-Sindri-Client: mcp`; a caller, terminal, token, read-your-writes (`X-Sindri-After`) or launch-secret header can't ride an MCP call, and any `Origin` is `SND-API-008`.
+
+**Read-your-writes.** `X-Sindri-After` isn't honoured on MCP, so `sindri_request` waits for the views to reach its own write (at most 2 seconds, `SindriTools.WaitForViews`, which a test holds equal to the `ReadYourWrites.Limit` the HTTP routes wait; the Host root depends on the Mcp namespace, so it can not read that constant) before answering; a `sindri_pending_decisions` right after it lists the new decision. On a timeout it still answers success, with "views catching up" in the text.
+
+**The endpoint's own refusals** (shared by the `context_*` and `sindri_*` tools; every tool error is `isError` with `McpToolError {code, message}`, text `<code> <message>`):
+
+| Code | Kind | Meaning |
+|---|---|---|
+| `SND-CONTEXT-021` | Invalid | The call has no `X-Sindri-Repo` (every MCP call is repo-scoped; a registration always writes it) |
+| `SND-CONTEXT-022` | Invalid | An argument of the wrong type, a missing required one, an unknown one, or an enum value outside the schema |
+| `SND-CONTEXT-023` | NotFound | Unknown tool (`sindri_decide` and every other absent tool) |
+
+**Goldens.** `tests/Aw.Sindri.Tests/Golden/Mcp/<tool>/<scenario>.json`, plus `tools-list/default.json` (names, schemas, annotations; descriptions may be reworded and the golden re-recorded) and `errors/`. They sit outside `Golden/Api`, so the UI contract test doesn't enumerate them. The AOT smoke (`src/Sindri/aot-smoke`) lists the 12 tools and calls `sindri_queue`, `sindri_request`, `sindri_item` (`SND-CLI-003`) and `sindri_decide` (`SND-CONTEXT-023`); its profile names the repo `smoke`.
+
 ## Errors
 
 **Extension members (RFC 9457 §3.2).** A slice may attach typed members to its `Error` with `error.WithExtension(name, value, typeInfo)` (or a `JsonElement` built with its own source-generated type info; `Aw.Kernel.ErrorExtensions`). The names are camelCase, at most 64 characters and not `type`, `title`, `status`, `detail`, `instance` or `traceId` (a bad or repeated name throws `ArgumentException`: a bug in the slice). `HttpResults.Problem` writes them as top-level members of the ProblemDetails body in the order attached, after the standard ones (ASP.NET's `traceId` follows), and cleans every string in them (values, and member names inside objects) with `SafeText.Clean`: scrubbed, escaped, one line, at most 200 characters; sessions and the human get the same body. An error without extensions answers byte for byte as before. The writer caps each array at 100 items and ends it with a `"…(N more)"` string item, and gives object member names that clean to the same text a `~2`, `~3` suffix; a slice should still bound its own lists. The middleware refusals that carry an `Error` (read-your-writes, caller context) go through `ApiProblems.Write(context, error, status)` and carry them too. The CLI (`Output.Error`) and the UI client (`SindriApiClient.Refusal`) ignore them and use the code and message. Each code that uses them lists the members in its row below. Not carried over MCP tool errors or the event stream's 400 yet.

@@ -1,0 +1,3 @@
+{"start":{"inputs":{"fact:issue":"Export button does nothing.","fact:expected":"A CSV downloads.","fact:actual":"Nothing happens."}}}
+{"trigger":{"kind":"step.completed","outcome":"unfixed","outputs":{"fact:findings":"Handler is bound; the request is never sent."}},"expect":{"state":"investigate"}}
+{"trigger":{"kind":"step.completed","outcome":"unfixed","outputs":{"fact:findings":"The request is sent; the response is dropped."}},"expect":{"state":"unfixed","outcome":"unresolved"}}
