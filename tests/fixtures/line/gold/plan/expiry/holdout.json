@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "minPerPhase": 2,
+  "phases": [
+    {
+      "id": "P1",
+      "setHash": "sha256:120b647bad6aa385c51333e167940d167148db5edc69a352fcffcd06160bbf2a",
+      "count": 3,
+      "canaries": 1,
+      "scenarioIds": [
+        "P1-H1",
+        "P1-H2",
+        "P1-C"
+      ]
+    },
+    {
+      "id": "P2",
+      "setHash": "sha256:dd465ee91ace26527694d7991f2a065a78435dbfeb26cf34b6cb1682ccf3c9a1",
+      "count": 3,
+      "canaries": 1,
+      "scenarioIds": [
+        "P2-H1",
+        "P2-H2",
+        "P2-C"
+      ]
+    },
+    {
+      "id": "P3",
+      "setHash": "sha256:65c84ec3a7d951a13a91f88c998d1bd1651a7d67d5074c0e27f99e51533f475a",
+      "count": 3,
+      "canaries": 1,
+      "scenarioIds": [
+        "P3-H1",
+        "P3-H2",
+        "P3-C"
+      ]
+    },
+    {
+      "id": "P4",
+      "setHash": "sha256:fc03364d3d367c12f16e24fdb80d081e3c31a0d12cbaabd99a89af417ec6108a",
+      "count": 3,
+      "canaries": 1,
+      "scenarioIds": [
+        "P4-H1",
+        "P4-H2",
+        "P4-C"
+      ]
+    }
+  ]
+}

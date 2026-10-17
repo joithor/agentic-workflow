@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "frozen": [
+    {
+      "packet": "scope/expiry",
+      "kind": "scoping",
+      "hash": "sha256:44176e0753b41549a885b5a25a2a0dfe7a16cd0fff19e696c1d030ecb07f931f",
+      "by": "owner",
+      "station": "step.scope.freeze",
+      "at": "2026-10-16T09:30:00Z"
+    },
+    {
+      "packet": "scope/archive",
+      "kind": "scoping",
+      "hash": "sha256:754f835f61fd3aa0029fdf81d541401c00a1bfcef66397565fead04187ebf07b",
+      "by": "owner",
+      "station": "step.scope.freeze",
+      "at": "2026-10-16T09:40:00Z"
+    },
+    {
+      "packet": "design/expiry",
+      "kind": "design",
+      "hash": "sha256:a734c961899c30471871636568df30a47268d487758376853833c2934806ed88",
+      "by": "owner",
+      "station": "step.plan.freeze",
+      "at": "2026-10-16T11:05:00Z"
+    },
+    {
+      "packet": "plan/expiry",
+      "kind": "plan",
+      "hash": "sha256:8fef0f7542817118089b2797e60b50bc902ec02dae8f28aef65f1589b901b544",
+      "by": "owner",
+      "station": "step.plan.freeze",
+      "at": "2026-10-16T11:05:00Z"
+    }
+  ],
+  "note": "Stand-in for the records aw-packets freeze writes. Hashes are the fixture's own dirHash (selfcheck.mjs), not aw-packets hash, until LN-PKT1 lands."
+}

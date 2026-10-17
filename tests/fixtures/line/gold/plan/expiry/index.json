@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "plan",
+  "id": "plan-expiry",
+  "parents": [
+    "sha256:a734c961899c30471871636568df30a47268d487758376853833c2934806ed88",
+    "sha256:44176e0753b41549a885b5a25a2a0dfe7a16cd0fff19e696c1d030ecb07f931f"
+  ],
+  "acceptance": {
+    "self": null,
+    "extends": "sha256:a121a2a606709877fb3002bedb5a298f72f764872741d93ef87a6d9e1eead7bd"
+  }
+}

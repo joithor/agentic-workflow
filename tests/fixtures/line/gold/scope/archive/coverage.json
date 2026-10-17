@@ -1,0 +1,157 @@
+{
+  "schemaVersion": 1,
+  "lenses": [
+    {
+      "lens": "code",
+      "state": "found",
+      "searched": {
+        "anchors": [
+          "surface:screen/notes-list",
+          "surface:route/notes-api",
+          "surface:job/nightly"
+        ],
+        "sources": [
+          "map",
+          "repo"
+        ],
+        "mapVersion": "v1",
+        "depth": 2,
+        "hops": [
+          "state",
+          "dependency"
+        ]
+      },
+      "limits": [
+        {
+          "not": "callers and callees",
+          "why": "index-not-built"
+        }
+      ],
+      "mapCoverage": {
+        "mapped": 13,
+        "new": 0,
+        "unmapped": 0
+      },
+      "found": {
+        "count": 13,
+        "ids": [
+          "L-code-1",
+          "L-code-2",
+          "L-code-3",
+          "L-code-4",
+          "L-code-5",
+          "L-code-6",
+          "L-code-7",
+          "L-code-8",
+          "L-code-9",
+          "L-code-10",
+          "L-code-11",
+          "L-code-12",
+          "L-code-13"
+        ]
+      }
+    },
+    {
+      "lens": "product",
+      "state": "found",
+      "searched": {
+        "anchors": [
+          "surface:screen/notes-list",
+          "surface:route/notes-api",
+          "surface:job/nightly"
+        ],
+        "sources": [
+          "map"
+        ],
+        "mapVersion": "v1",
+        "depth": 3,
+        "hops": [
+          "state",
+          "dependency",
+          "flow"
+        ]
+      },
+      "limits": [],
+      "mapCoverage": {
+        "mapped": 11,
+        "new": 0,
+        "unmapped": 0
+      },
+      "found": {
+        "count": 11,
+        "ids": [
+          "L-product-1",
+          "L-product-2",
+          "L-product-3",
+          "L-product-4",
+          "L-product-5",
+          "L-product-6",
+          "L-product-7",
+          "L-product-8",
+          "L-product-9",
+          "L-product-10",
+          "L-product-11"
+        ]
+      }
+    },
+    {
+      "lens": "related",
+      "state": "found",
+      "searched": {
+        "anchors": [
+          "surface:screen/notes-list",
+          "surface:route/notes-api",
+          "surface:job/nightly"
+        ],
+        "sources": [
+          "tracker"
+        ],
+        "mapVersion": "v1",
+        "depth": 0,
+        "hops": []
+      },
+      "limits": [],
+      "mapCoverage": {
+        "mapped": 0,
+        "new": 0,
+        "unmapped": 0
+      },
+      "found": {
+        "count": 3,
+        "ids": [
+          "L-related-1",
+          "L-related-2",
+          "L-related-3"
+        ]
+      }
+    },
+    {
+      "lens": "history",
+      "state": "nothing-found",
+      "searched": {
+        "anchors": [
+          "surface:screen/notes-list",
+          "surface:route/notes-api",
+          "surface:job/nightly"
+        ],
+        "sources": [
+          "tracker",
+          "git"
+        ],
+        "mapVersion": "v1",
+        "depth": 0,
+        "hops": []
+      },
+      "limits": [],
+      "mapCoverage": {
+        "mapped": 0,
+        "new": 0,
+        "unmapped": 0
+      },
+      "found": {
+        "count": 0,
+        "ids": []
+      }
+    }
+  ]
+}

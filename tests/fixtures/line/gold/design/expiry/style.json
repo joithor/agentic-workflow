@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "style": {
+    "id": "plain",
+    "version": "1.0.0",
+    "hash": "sha256:1e4ebede299841d8f273da698fd40aa4f89cf2810edfcc5b8a738dbd7eba9780"
+  },
+  "lenses": {
+    "id": "design-five",
+    "version": "1.0.0",
+    "hash": "sha256:c8b638addb288a6a4ed90dc729673fc379d36cc4e871c661fc744f20a74cad4d"
+  }
+}

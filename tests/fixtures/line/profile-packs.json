@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "workflow": {
+    "packs": {
+      "style": {
+        "default": "plain",
+        "repos": {}
+      },
+      "lenses": {
+        "design": {
+          "default": "design-five",
+          "repos": {}
+        }
+      },
+      "pins": {
+        "style/plain": "sha256:1e4ebede299841d8f273da698fd40aa4f89cf2810edfcc5b8a738dbd7eba9780",
+        "style/formal": "sha256:27520dc9fe3d2b2110d3fc6e3646743714ab4971efc5f0a49678b58c2710a03b",
+        "lenses/design-five": "sha256:c8b638addb288a6a4ed90dc729673fc379d36cc4e871c661fc744f20a74cad4d",
+        "lenses/design-two": "sha256:20b52ad46e289799c2c9c119041a39aa1c62d046a6e1af9f965a1fc3115eed98"
+      }
+    }
+  },
+  "note": "Fixture profile keys: the default packs, and the pins a repo or machine pack needs (spec 5.1). A test repo that names design-two instead is the non-default case."
+}
