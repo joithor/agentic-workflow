@@ -8018,8 +8018,10 @@ Aw.Sindri.Core.Onyx.OnyxSetupState.Project.get -> string?
 Aw.Sindri.Core.Onyx.OnyxSetupState.Project.init -> void
 Aw.Sindri.Core.Onyx.OnyxSetupState.Steps.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 Aw.Sindri.Core.Onyx.OnyxSetupState.Steps.init -> void
-Aw.Sindri.Core.Onyx.OnyxSetupState.Deconstruct(out int Port, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Steps, out string? Project) -> void
-Aw.Sindri.Core.Onyx.OnyxSetupState.OnyxSetupState(int Port, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Steps, string? Project = null) -> void
+Aw.Sindri.Core.Onyx.OnyxSetupState.SchemaVersion.get -> int
+Aw.Sindri.Core.Onyx.OnyxSetupState.SchemaVersion.init -> void
+Aw.Sindri.Core.Onyx.OnyxSetupState.Deconstruct(out int Port, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Steps, out string? Project, out int SchemaVersion) -> void
+Aw.Sindri.Core.Onyx.OnyxSetupState.OnyxSetupState(int Port, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Steps, string? Project = null, int SchemaVersion = 1) -> void
 Aw.Sindri.Core.Onyx.OnyxState.Running = 1 -> Aw.Sindri.Core.Onyx.OnyxState
 Aw.Sindri.Core.Onyx.OnyxState.Stopped = 2 -> Aw.Sindri.Core.Onyx.OnyxState
 Aw.Sindri.Core.Onyx.OnyxSteps
@@ -8028,6 +8030,7 @@ const Aw.Sindri.Core.Onyx.OnyxSteps.Config = "config" -> string!
 const Aw.Sindri.Core.Onyx.OnyxSteps.Fetch = "fetch" -> string!
 const Aw.Sindri.Core.Onyx.OnyxSteps.Pull = "pull" -> string!
 const Aw.Sindri.Core.Onyx.OnyxSteps.Start = "start" -> string!
+const Aw.Sindri.Core.Onyx.OnyxSetupState.CurrentSchema = 1 -> int
 override Aw.Sindri.Core.Onyx.ComposeService.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Onyx.ComposeService.GetHashCode() -> int
 override Aw.Sindri.Core.Onyx.ComposeService.ToString() -> string!
@@ -8205,6 +8208,7 @@ Aw.Sindri.Core.Onyx.IOnyxProgress
 Aw.Sindri.Core.Onyx.IOnyxProgress.Line(string! text) -> void
 Aw.Sindri.Core.Onyx.IOnyxProgress.Tick() -> void
 Aw.Sindri.Core.Onyx.IOnyxWorkspace.TryLock() -> System.IDisposable?
+Aw.Sindri.Core.Onyx.IOnyxWorkspace.StateIsUnreadable() -> bool
 Aw.Sindri.Core.Onyx.IRandomHex
 Aw.Sindri.Core.Onyx.IRandomHex.Hex(int bytes) -> string!
 Aw.Sindri.Core.Onyx.OnyxFacts

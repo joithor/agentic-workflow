@@ -19,6 +19,10 @@ public interface IOnyxWorkspace
     /// <returns>The state, or null when the file is missing or corrupt (never throws: a corrupt state is an empty one, every step is re-checked and each is idempotent).</returns>
     public OnyxSetupState? ReadState();
 
+    /// <summary>Tells a state file that exists and can't be read as state (corrupt, empty, or written for another schema version) from a missing one.</summary>
+    /// <returns>True when the file exists and <see cref="ReadState"/> returns null for it; false when it is missing or reads fine.</returns>
+    public bool StateIsUnreadable();
+
     /// <summary>Writes the setup state, atomically and owner-only.</summary>
     /// <param name="state">The state.</param>
     public void WriteState(OnyxSetupState state);

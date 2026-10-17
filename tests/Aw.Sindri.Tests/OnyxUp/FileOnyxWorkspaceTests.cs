@@ -61,6 +61,14 @@ public sealed class FileOnyxWorkspaceTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public void The_state_file_carries_its_schema_version()
+    {
+        _workspace.WriteState(new OnyxSetupState(3000, new Dictionary<string, string>(StringComparer.Ordinal)));
+
+        Assert.Contains("\"schemaVersion\":1", File.ReadAllText(_paths.State), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task A_write_never_leaves_a_partial_file_for_a_reader()
     {
         var big = new string('x', 2_000_000);

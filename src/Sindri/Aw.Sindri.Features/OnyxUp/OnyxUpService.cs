@@ -26,6 +26,11 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
         }
 
         var state = workspace.ReadState();
+        if (state is null && workspace.StateIsUnreadable())
+        {
+            progress.Line("state.json is unreadable; starting over from the first step (each step checks what is already there)");
+        }
+
         var pins = pinsSource.Pins;
         var preflight = Preflight(state, pins, cancellationToken);
         if (preflight.IsError)

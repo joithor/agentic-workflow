@@ -45,6 +45,21 @@ public sealed class OnyxStackDoctorTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task An_unreadable_state_file_warns_and_names_the_fix_without_asking_docker()
+    {
+        _workspace.StateIsCorrupt = true;
+        Stack();
+
+        var check = await Doctor().Check(Token);
+
+        Assert.Equal("onyx:stack", check!.Name);
+        Assert.Equal(CheckState.Warn, check.State);
+        Assert.Equal("state file unreadable; `sindri onyx up` rebuilds it", check.Detail);
+        Assert.Equal("sindri onyx up", check.Fix);
+        Assert.DoesNotContain("Ps", _runtime.Calls, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Healthy_loopback_pinned_stack_is_ok()
     {
         Stack(s => Container(s, health: s == "api_server" ? "healthy" : null));

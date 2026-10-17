@@ -43,6 +43,9 @@ public sealed class FakeOnyxWorkspace : IOnyxWorkspace
     public OnyxSetupState? ReadState() => StateIsCorrupt ? null : State;
 
     /// <inheritdoc />
+    public bool StateIsUnreadable() => StateIsCorrupt;
+
+    /// <inheritdoc />
     public void WriteState(OnyxSetupState state)
     {
         (State, StateIsCorrupt) = (state, false);

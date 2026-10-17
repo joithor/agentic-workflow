@@ -372,6 +372,7 @@ public sealed class OnyxUpResumeTests
         var rerun = (await rig.Up(Token)).Value;
 
         Assert.Equal(["fetch", "config", "pull", "start"], rerun.Ran, StringComparer.Ordinal);
+        Assert.Contains(rig.Progress.Lines, static l => l.Contains("state.json is unreadable", StringComparison.Ordinal));
         Assert.False(rig.Workspace.StateIsCorrupt);
         Assert.Equal(4, rig.Workspace.State!.Steps.Count);
         Assert.Equal(key, OnyxConfig.ReadSecret(rig.Workspace.Files[rig.Paths.Env]));

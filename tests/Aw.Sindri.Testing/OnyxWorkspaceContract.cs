@@ -58,6 +58,36 @@ public abstract class OnyxWorkspaceContract
         Expect.True(rig.Workspace.ReadState() is null);
     }
 
+    /// <summary>A missing state is not unreadable; a corrupt one, or one of another schema version, is.</summary>
+    /// <param name="raw">What the state file holds.</param>
+    [Theory]
+    [InlineData("not json")]
+    [InlineData("")]
+    [InlineData("{\"port\":3000,\"steps\":{},\"schemaVersion\":2}")]
+    public void A_state_file_that_cannot_be_read_is_told_apart_from_a_missing_one(string raw)
+    {
+        using var rig = Create();
+        Expect.True(!rig.Workspace.StateIsUnreadable());
+
+        rig.WriteRawState(raw);
+
+        Expect.True(rig.Workspace.ReadState() is null);
+        Expect.True(rig.Workspace.StateIsUnreadable());
+    }
+
+    /// <summary>A state written after a corrupt one reads fine.</summary>
+    [Fact]
+    public void Writing_a_state_replaces_a_corrupt_one()
+    {
+        using var rig = Create();
+        rig.WriteRawState("not json");
+
+        rig.Workspace.WriteState(new OnyxSetupState(3000, new Dictionary<string, string>(StringComparer.Ordinal)));
+
+        Expect.True(rig.Workspace.ReadState() is not null);
+        Expect.True(!rig.Workspace.StateIsUnreadable());
+    }
+
     /// <summary>A state round-trips.</summary>
     [Fact]
     public void State_round_trips()

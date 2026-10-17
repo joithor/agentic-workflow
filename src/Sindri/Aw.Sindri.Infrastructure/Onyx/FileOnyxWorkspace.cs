@@ -49,13 +49,16 @@ internal sealed class FileOnyxWorkspace(ISindriHome home, JsonSerializerOptions 
         try
         {
             var path = _paths.State;
-            return File.Exists(path) && AwJson.Deserialize<OnyxSetupState>(File.ReadAllBytes(path), json) is { IsSuccess: true } read ? read.Value : null;
+            return File.Exists(path) && AwJson.Deserialize<OnyxSetupState>(File.ReadAllBytes(path), json) is { IsSuccess: true } read && read.Value.SchemaVersion == OnyxSetupState.CurrentSchema ? read.Value : null;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
             return null;
         }
     }
+
+    /// <inheritdoc />
+    public bool StateIsUnreadable() => ReadState() is null && File.Exists(_paths.State);
 
     /// <inheritdoc />
     public void WriteState(OnyxSetupState state)

@@ -31,7 +31,7 @@ internal sealed class OnyxStackDoctor(IOnyxWorkspace workspace, OnyxFacts facts,
     {
         if (workspace.ReadState() is not { } state)
         {
-            return null;
+            return workspace.StateIsUnreadable() ? new DoctorCheck(Name, CheckState.Warn, "state file unreadable; `sindri onyx up` rebuilds it", "sindri onyx up") : null;
         }
 
         var containers = facts.Containers(state, cancellationToken);
