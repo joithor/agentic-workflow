@@ -9,6 +9,7 @@ using Aw.Sindri.Testing.Workflow;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Temporalio.Client;
+using Temporalio.Exceptions;
 using Temporalio.Worker;
 
 namespace Aw.Sindri.Tests.Workflows;
@@ -83,6 +84,49 @@ public sealed class BlockRuntimeInterpreterTests : IDisposable
 
             Assert.Equal("cancelled", cancelled.Instance.State);
             await WaitFor(() => fake.Cancelled == 1, ct);
+        });
+    }
+
+    [Theory(Timeout = 120_000)]
+    [InlineData("human:cli")]
+    [InlineData("agent:session")]
+    public async Task A_desk_report_on_a_block_run_is_refused_at_once_and_blocks_no_later_report(string actor)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var fake = FakeBlockStep.Hanging();
+        await Run(fake, maxDuration: null, async handle =>
+        {
+            var view = await WorkflowsHarness.Until(handle, static v => v.Run is not null && v.State == "route-evidence");
+            await WaitFor(() => fake.Runs > 0, ct);
+            var output = new FactValue("fact:sha256:" + new string('e', 64), new string('e', 64), HeadSha: null);
+            var report = new StepCompleted(actor, view.Run!, OutcomeName.From("ui"), new Dictionary<FactKey, FactValue> { [FactKey.From("fact:decision")] = output }, Tokens: 0, StepRuntime.Desk, new string('f', 64));
+
+            var first = await Assert.ThrowsAsync<WorkflowUpdateFailedException>(() => handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(new string('a', 32))).WaitAsync(TimeSpan.FromSeconds(20), ct));
+            var second = await Assert.ThrowsAsync<WorkflowUpdateFailedException>(() => handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(new string('b', 32))).WaitAsync(TimeSpan.FromSeconds(20), ct));
+
+            Assert.Equal(("SND-WF-003", "SND-WF-003"), (Assert.IsType<ApplicationFailureException>(first.InnerException).ErrorType, Assert.IsType<ApplicationFailureException>(second.InnerException).ErrorType));
+            Assert.Equal(0, fake.Cancelled);   // the engine's run goes on
+        });
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task Takeover_during_a_block_run_cancels_it_and_a_handback_runs_it_again()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var fake = FakeBlockStep.HangingThenCompleting("ui");
+        await Run(fake, maxDuration: null, async handle =>
+        {
+            await WaitFor(() => fake.Runs > 0, ct);
+            var takeover = new TakeoverRequested("human:cli", new CommandStamp(CommandNonce.From(new string('1', 32)), new string('0', 64)));
+            _ = await handle.ExecuteUpdateAsync(wf => wf.TakeoverAsync(takeover), new WorkflowUpdateOptions(new string('1', 32)));
+            _ = await WorkflowsHarness.Until(handle, static v => v.State == "taken-over");
+            await WaitFor(() => fake.Cancelled == 1, ct);
+
+            var handback = new HandbackRequested("human:cli", new CommandStamp(CommandNonce.From(new string('2', 32)), new string('0', 64)));
+            _ = await handle.ExecuteUpdateAsync(wf => wf.HandbackAsync(handback), new WorkflowUpdateOptions(new string('2', 32)));
+            var view = await WorkflowsHarness.Until(handle, static v => v.State == "evidence-ui");
+
+            Assert.Equal((2, "evidence-ui"), (fake.Runs, view.State));
         });
     }
 

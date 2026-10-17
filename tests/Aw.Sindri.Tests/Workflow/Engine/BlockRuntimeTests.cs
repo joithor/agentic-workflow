@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
@@ -67,6 +68,21 @@ public sealed class BlockRuntimeTests
 
         Assert.Equal(("block", "JD-7"), (recorded.Trigger.Via, recorded.Trigger.Decision));
         Assert.Equal(("block", "JD-7"), (detail.Via, detail.Decision));
+    }
+
+    [Theory]
+    [InlineData("human:cli", StepRuntime.Desk)]
+    [InlineData("agent:x", StepRuntime.Agent)]
+    public void A_report_from_another_runtime_on_a_block_run_is_refused_not_allowed(string actor, StepRuntime via)
+    {
+        var instance = BlockRun();
+        var report = new StepCompleted(actor, instance.Frame.Run!.Token, OutcomeName.From("ui"), Decision(), Tokens: 0, via, new string('f', 64));
+
+        var decision = TransitionDecision.Decide(new DecisionInput(instance, _route, report, GateAnswers.None, Context()));
+
+        var rejected = Assert.IsType<Rejected>(decision);
+        Assert.Equal(WorkflowErrors.TriggerNotAllowed.Code, rejected.Error.Code);
+        Assert.Contains("take it over", rejected.Error.Message, StringComparison.Ordinal);
     }
 
     [Theory]
