@@ -118,7 +118,21 @@ internal sealed class JevProvider(HttpClient http, ISecretSource secrets, IInput
             return new ProviderErrored(ProviderReasons.OutOfEnum);
         }
 
-        var confidence = answer.Confidence is >= 0 and <= 1 ? answer.Confidence.Value : AgentAnswer.DefaultConfidence;
+        // A question that asks for a confidence (choose) never takes a missing or out-of-range one as certain.
+        double confidence;
+        if (answer.Confidence is >= 0 and <= 1)
+        {
+            confidence = answer.Confidence.Value;
+        }
+        else if (question.AskConfidence)
+        {
+            return new ProviderErrored(ProviderReasons.UnparseableAnswer);
+        }
+        else
+        {
+            confidence = AgentAnswer.DefaultConfidence;
+        }
+
         return new ProviderDecided(choice, confidence, ProviderReasons.Model) { Probabilities = answer.Probabilities };
     }
 }

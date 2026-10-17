@@ -16,7 +16,7 @@ Aw.Judge.Host ──► Aw.Judge.Features ──► Aw.Judge.Core ◄── Aw.J
 
 | Project | Holds |
 |---|---|
-| `Aw.Judge.Core` | Typed ids (`Ids`: `DecisionId`, `ToolUseId`, `SessionId`, `PromptId`, `AgentId`), the domain records (`Briefs`, `Decisions`, `Health`, `Config`, `Providers`), the eight questions with their input records (`Questions`), the evaluation engine with the question catalog, and the rules provider (`Evaluation`), the error catalogue (`Errors.JudgeErrors`, AW-JUDGE-NNN) and the ports (`Ports`) |
+| `Aw.Judge.Core` | Typed ids (`Ids`: `DecisionId`, `ToolUseId`, `SessionId`, `PromptId`, `AgentId`), the domain records (`Briefs`, `Decisions`, `Health`, `Config`, `Providers`), the nine questions with their input records (`Questions`), the evaluation engine with the question catalog, and the rules provider (`Evaluation`), the error catalogue (`Errors.JudgeErrors`, AW-JUDGE-NNN) and the ports (`Ports`) |
 | `Aw.Judge.Features` | One slice per command: `AskQuestion` (every `judge <question>`), `SaveBrief`, `GetBrief`, `MapBriefByName`, `MapBriefByDispatch`, `SetBriefAgentId`, `ExplainDecision` (`why`), `UndoDecision`, `ApproveDecision`, `GetHealth`, `GetConfig`, `SetConfig`; `AskQuestion` is decorated with `PruneAfterQuestion` (retention, below) |
 | `Aw.Judge.Infrastructure` | The SQLite stores over `decisions.sqlite`, the config file, the redactor adapter over `Aw.Redaction`, the `PATH` executable locator, the process runner, the secret source (environment, then keychain), the model providers and their catalog (`Providers/`), random decision ids, and the settings read from the environment |
 | `Aw.Judge.Host` | `Program.cs`, `Composition.Compose`, one command per slice in `Commands/`, the command table (which takes the providers allowlist out of argv first), `JudgeJsonContext` (the package's one source-generated JSON context) |
@@ -139,13 +139,15 @@ whole file invalid (AW-JUDGE-007): readers use the defaults (wake-gate enabled a
 
 ### Questions
 
-`judge <question> < input.json` is one command for all eight questions (the `AskQuestion` slice). It reads stdin, takes
+`judge <question> < input.json` is one command for all nine questions (the `AskQuestion` slice). It reads stdin, takes
 no arguments, and prints one envelope on stdout:
 
 | Outcome | Exit | Stdout |
 |---|---|---|
 | Decided | 0 | `{"decision", "confidence", "model", "reasonCode", "id"}` plus the question's declared extra fields (`chosenIndex`, `reasons`) when the deciding provider sent them; a provider's undeclared fields are dropped |
 | Escalated | 2 | `{"escalated": true, "reasonCode"}`, reason `question-disabled`, `invalid-input`, `rule-timeout`, `below-threshold` or `no-provider-decided` |
+
+`choose` is the one exception to these two shapes (the hook questions' envelopes never change): its decided envelope adds `probabilities` (option → probability) when the deciding provider sent them, and its escalated envelope is `{"escalated": true, "reasonCode", "id", "probabilities"?}`, the `id` of the decision row the escalation wrote (for `why`) and the probabilities a provider sent before the call fell below threshold. Both keys are left out, not null, when absent. Pinned by `Hook_question_envelopes_are_unchanged` and the `AskQuestion/Golden/choose-*.json` goldens.
 
 `model` is the provider that decided (`rules` for a pre-rule or a fallback rule), `id` the decision's id for `why`,
 `undo` and `approve`. Every call writes one decision row, escalations included. **Hook-contract exception:**
@@ -168,13 +170,16 @@ decides or escalates, and before its envelope is written, the judge prunes old d
 | `brief-scope` | `{agentType, goal, acceptanceCriteria, proofCommand, skillInternal?}` | `ready`, `missing`, `needs_design` | brief | 0.6 | 10 s | `agentType` `Explore`, `claude-code-guide` or `lean-researcher`, or `skillInternal: true` → `ready`; a blank goal or acceptance criteria → `missing` | none (escalates) |
 | `ask-check` | `{transcriptTail}` | `continue`, `ask` | transcript | 0.6 | 10 s | the deny list → `ask`: merge, delete, force push (`force-push`, `force pushed`, …), or a push with `-f`, `--force`, `--force-with-lease` or a `+refspec`; a plain push isn't listed | `ask` |
 | `rule-check` | `{rule, hunk}` | `violated`, `fine`, `n/a` | diff | 0.6 | 10 s | a blank hunk → `n/a` | none |
-| `resolution-check` | `{brief, expected, actual, rootCause, checkKind, checkSummary, beforePassed, afterPassed, diffStat, diff?}`, `checkKind` `ui-evidence` or `test`; a blank `brief` is invalid input | `resolved`, `partial`, `unresolved` (+ `reasons`) | brief | 0.8 | 15 s | the check fails after the fix, or already passed before it → `unresolved` | none |
+| `resolution-check` | `{brief, expected, actual, rootCause, checkKind, checkSummary, beforePassed, afterPassed, diffStat, diff?}`, `checkKind` `ui-evidence`, `api-evidence` (an HTTP or CLI contract check), `db-evidence` (a persisted-state check) or `test`; a blank `brief` is invalid input | `resolved`, `partial`, `unresolved` (+ `reasons`) | brief | 0.8 | 15 s | the check fails after the fix, or already passed before it → `unresolved` | none |
+| `choose` | `{prompt, state: {<fact>: <value>}, choices: [{name, criterion}], threshold?}`; per call: 2 to 32 choices, each `name` matching `[a-z][A-Za-z0-9]{0,31}`, distinct and never `uncertain`, each `criterion` 1 to 400 characters, a non-blank `prompt`, a non-empty `state`, `threshold` above 0 and at most 1; anything else is invalid input | the call's choice names (+ `probabilities` in the envelope) | brief | config.json's `choose` entry, else the call's `threshold`, else 0.6 | 15 s | none | none (escalates) |
 | `turn-progress` | `{problem, turnDiff, acceptanceCriteria?, priorDiffStat?, signals?}` (the last three default to empty); a blank `problem` is invalid input | `progressing`, `stalled`, `regressing`, `off-target` | diff | 0.7 | 10 s | a blank `turnDiff` → `stalled` | none |
 | `ui-element-repair` | `{brokenSelector, step, candidates: [{index, role, accessibleName, testId, text}]}` (the four strings may be null) | `repaired` (+ `chosenIndex`), `no-good-candidate` | code | 0.6 | 10 s | no candidates → `no-good-candidate` | none |
 | `visual-critique` | `{afterScreenshot, evidenceDir, baselineScreenshot?}`; `evidenceDir` absolute and each screenshot a relative path that stays inside it (no `..`), none with a control character or a line or paragraph separator (U+2028, U+2029), else `invalid-input`; the prompt carries each path on one line, capped | `looks-right`, `looks-off`, `sloppy` (+ `reasons`) | image | 0.5 | 20 s | none: judging the screenshot is the question | none |
 
-The input names of `wake-gate`, `brief-scope` and `ask-check` are hook contract; the other five are the C# judge's own
-design (their tier-2 callers are ported to this contract). Prompts carry untrusted text (a ticket, a diff, a problem
+`choose` (contract: owner-approved 2026-10-17, DT spec §8.3) is the one question whose outputs, criteria and threshold come from its input: `ChooseQuestion.For(input)` builds its `QuestionDefinition` per call (`QuestionEvaluator.EvaluateChoose`, which the catalog calls). The prompt is the question, then each fact and the options with their criteria inside untrusted-text blocks. Its definition asks for a confidence (`AskConfidence`): the agent CLIs' answer schema then requires `confidence` (a number, 0 to 1), so their answers can fall below the threshold too, and an answer without a usable one is errored, never taken as certain; every other question's schema and the 1.0 default are unchanged. `uncertain` is not a choice name: the caller maps an escalation to it.
+
+The input names of `wake-gate`, `brief-scope` and `ask-check` are hook contract; the other six (`choose` included) are the C# judge's own
+design (the five that tier-2 packages call are ported to this contract; `choose`'s caller is Sindri, through a cli edge, DT spec §8.3). Prompts carry untrusted text (a ticket, a diff, a problem
 statement) inside tagged blocks with the tags inside it defused, capped (`UntrustedText`). Pinned by the
 `Questions/*Tests` (each question's rules, offline with `ScriptedProvider`), `AskQuestionTests` (config, allowlist,
 session, the config's providers block) and `AskQuestionCliTests` (envelopes, exit codes, the ask-check exception,
@@ -242,7 +247,7 @@ its extra properties. All three read images, so all three cover every content cl
 
 The answer object is read the same way for all three: a string `decision` among the outputs; a `confidence` 0–1 when
 present, else **1.0** (the CLIs answer under a schema with no confidence field, so a well-formed answer is taken as
-certain); each declared extra checked against its fragment's JSON `type` (and array `items`), a null one absent;
+certain; `choose` is the exception, its schema requires the field and an answer without a usable one is errored, Jev's included); each declared extra checked against its fragment's JSON `type` (and array `items`), a null one absent;
 undeclared fields dropped.
 
 ### Jev
@@ -256,7 +261,7 @@ redacts (then caps at `InputCap.MaxChars`) both the state and the prompt, which 
 (ask-check's transcript tail, a rule-check hunk, a brief's proof command). claude and codex get the prompt as built,
 on standard input: they run on the user's own model logins, the same place the agent's session already sends that
 text. cursor-agent gets it redacted, because its prompt is an argument (The agent CLIs above).
-The answer's `choice`, `confidence` (1.0 when absent) and `probabilities` become the decision.
+The answer's `choice`, `confidence` (1.0 when absent, except for `choose`, where a missing or out-of-range one is errored `unparseable-answer`) and `probabilities` become the decision.
 
 ### Rules
 
@@ -408,7 +413,7 @@ bash src/Judge/aot-smoke/run.sh   # "aot-judge-smoke: native binary passed (… 
 
 ## State files
 
-All under `${AW_STATE_DIR:-~/.agentic-workflow}/judge/`. The C# build starts with fresh state (spec §4c); it never
+All under `${AW_JUDGE_STATE_DIR:-${AW_STATE_DIR:-~/.agentic-workflow}/judge}/`. The C# build starts with fresh state (spec §4c); it never
 reads a TS-written file.
 
 | File | Holds |
@@ -420,7 +425,8 @@ reads a TS-written file.
 
 | Variable | Read by | Meaning |
 |---|---|---|
-| `AW_STATE_DIR` | Infrastructure settings | The state root; the judge's files are under `<root>/judge/`. Default `~/.agentic-workflow` |
+| `AW_JUDGE_STATE_DIR` | Infrastructure settings | The judge directory itself (`decisions.sqlite`, `config.json`), used as is; read first. For a caller that runs its own judge with its own store (Sindri): it moves nothing but the judge's own files, so `AW_STATE_DIR`'s locks and other tools' state stay put |
+| `AW_STATE_DIR` | Infrastructure settings | The state root; the judge's files are under `<root>/judge/` unless `AW_JUDGE_STATE_DIR` is set. Default `~/.agentic-workflow` |
 | `AW_SESSION_ID` | the question commands (`Composition`, once) | The calling session, stored with the decision's detail row; a value past the session id's cap is ignored |
 | `AW_PROVIDER` | `ProviderCatalog` | The host the calling session runs in (`claude`, `codex`, `cursor`), which leads the agent CLI order unless `config.json` sets `providers.agentClis` |
 | `AW_JUDGE_PROVIDERS` | the command table (`Composition` reads it once) | A comma-separated allowlist of providers when the `--providers` flag is absent; only a question reads it, and there an unreadable list is a usage error (64) |

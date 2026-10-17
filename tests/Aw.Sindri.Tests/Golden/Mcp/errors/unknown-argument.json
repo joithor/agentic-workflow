@@ -1,0 +1,10 @@
+{
+  "isError": true,
+  "structuredContent": {
+    "code": "SND-CONTEXT-022",
+    "message": "sindri_request has no argument 'priority' (fix: kind, text, itemId only)"
+  },
+  "content": [
+    "SND-CONTEXT-022 sindri_request has no argument 'priority' (fix: kind, text, itemId only)"
+  ]
+}
