@@ -8926,7 +8926,6 @@ Aw.Sindri.Core.Launch.LaunchResult.Started.CatalogSource.init -> void
 Aw.Sindri.Core.Launch.LaunchResult.Started.Equals(Aw.Sindri.Core.Launch.LaunchResult.Started? other) -> bool
 Aw.Sindri.Core.Launch.LaunchResult.Started.Host.get -> Aw.Sindri.Core.Launch.HostRef!
 Aw.Sindri.Core.Launch.LaunchResult.Started.Host.init -> void
-Aw.Sindri.Core.Launch.LaunchResult.Started.SessionId.init -> void
 Aw.Sindri.Core.Launch.LaunchResult.Started.Viewer.get -> Aw.Sindri.Core.Launch.ViewerOutcome!
 Aw.Sindri.Core.Launch.LaunchResult.Started.Viewer.init -> void
 Aw.Sindri.Core.Launch.LaunchStage
@@ -9163,9 +9162,6 @@ Aw.Sindri.Core.Events.LaunchStarted.SessionId.get -> Aw.Sindri.Core.Sessions.Ses
 Aw.Sindri.Core.Events.LaunchStartedPublic.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Launch.LaunchMode Mode, out Aw.Sindri.Core.Launch.AgentId Target, out Aw.Sindri.Core.Sessions.SessionId? SessionId, out string! TabTitle, out Aw.Sindri.Core.Events.LaunchViewerPublic! Viewer, out System.Collections.Generic.IReadOnlyList<string!>! Attach, out Aw.Sindri.Core.Launch.CatalogSource CatalogSource, out string! ArgvHash) -> void
 Aw.Sindri.Core.Events.LaunchStartedPublic.LaunchStartedPublic(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Launch.LaunchMode Mode, Aw.Sindri.Core.Launch.AgentId Target, Aw.Sindri.Core.Sessions.SessionId? SessionId, string! TabTitle, Aw.Sindri.Core.Events.LaunchViewerPublic! Viewer, System.Collections.Generic.IReadOnlyList<string!>! Attach, Aw.Sindri.Core.Launch.CatalogSource CatalogSource, string! ArgvHash) -> void
 Aw.Sindri.Core.Events.LaunchStartedPublic.SessionId.get -> Aw.Sindri.Core.Sessions.SessionId?
-Aw.Sindri.Core.Launch.LaunchResult.Started.Deconstruct(out Aw.Sindri.Core.Launch.HostRef! Host, out Aw.Sindri.Core.Launch.ViewerOutcome! Viewer, out System.Collections.Generic.IReadOnlyList<string!>! Attach, out Aw.Sindri.Core.Launch.CatalogSource CatalogSource, out string! ArgvHash, out Aw.Sindri.Core.Sessions.SessionId? SessionId) -> void
-Aw.Sindri.Core.Launch.LaunchResult.Started.SessionId.get -> Aw.Sindri.Core.Sessions.SessionId?
-Aw.Sindri.Core.Launch.LaunchResult.Started.Started(Aw.Sindri.Core.Launch.HostRef! Host, Aw.Sindri.Core.Launch.ViewerOutcome! Viewer, System.Collections.Generic.IReadOnlyList<string!>! Attach, Aw.Sindri.Core.Launch.CatalogSource CatalogSource, string! ArgvHash, Aw.Sindri.Core.Sessions.SessionId? SessionId = null) -> void
 Aw.Sindri.Core.Launch.TerminalFacts.Deconstruct(out string! Kind, out string! Label, out bool Present, out string! Source, out string? ConfigPath, out string? Problem, out string? Detail) -> void
 Aw.Sindri.Core.Launch.TerminalFacts.Kind.get -> string!
 Aw.Sindri.Core.Launch.TerminalFacts.Kind.init -> void
@@ -9319,3 +9315,5 @@ static Aw.Sindri.Core.Launch.RepoFacts.operator !=(Aw.Sindri.Core.Launch.RepoFac
 static Aw.Sindri.Core.Launch.RepoFacts.operator ==(Aw.Sindri.Core.Launch.RepoFacts? left, Aw.Sindri.Core.Launch.RepoFacts? right) -> bool
 static Aw.Sindri.Core.Launch.TargetFacts.operator !=(Aw.Sindri.Core.Launch.TargetFacts? left, Aw.Sindri.Core.Launch.TargetFacts? right) -> bool
 static Aw.Sindri.Core.Launch.TargetFacts.operator ==(Aw.Sindri.Core.Launch.TargetFacts? left, Aw.Sindri.Core.Launch.TargetFacts? right) -> bool
+Aw.Sindri.Core.Launch.LaunchResult.Started.Deconstruct(out Aw.Sindri.Core.Launch.HostRef! Host, out Aw.Sindri.Core.Launch.ViewerOutcome! Viewer, out System.Collections.Generic.IReadOnlyList<string!>! Attach, out Aw.Sindri.Core.Launch.CatalogSource CatalogSource, out string! ArgvHash) -> void
+Aw.Sindri.Core.Launch.LaunchResult.Started.Started(Aw.Sindri.Core.Launch.HostRef! Host, Aw.Sindri.Core.Launch.ViewerOutcome! Viewer, System.Collections.Generic.IReadOnlyList<string!>! Attach, Aw.Sindri.Core.Launch.CatalogSource CatalogSource, string! ArgvHash) -> void

@@ -1,5 +1,4 @@
 using Aw.Kernel;
-using Aw.Sindri.Core.Sessions;
 
 namespace Aw.Sindri.Core.Launch;
 
@@ -16,8 +15,7 @@ public abstract record LaunchResult
     /// <param name="Attach">The command that attaches to the session (shown when the viewer didn't open).</param>
     /// <param name="CatalogSource">Where the launched entry came from.</param>
     /// <param name="ArgvHash">The hash of the entry's argv template, as the profile's stepArgvHash holds it.</param>
-    /// <param name="SessionId">The agent's session id when the launcher minted it, otherwise null.</param>
-    public sealed record Started(HostRef Host, ViewerOutcome Viewer, IReadOnlyList<string> Attach, CatalogSource CatalogSource, string ArgvHash, SessionId? SessionId = null) : LaunchResult;
+    public sealed record Started(HostRef Host, ViewerOutcome Viewer, IReadOnlyList<string> Attach, CatalogSource CatalogSource, string ArgvHash) : LaunchResult;
 
     /// <summary>The session did not start.</summary>
     /// <param name="Error">Why: a catalogue code (SND-LAUNCH-…).</param>
