@@ -2,6 +2,7 @@
 # Tests for scripts/binaries-lock.sh check: the repo's binaries.lock passes, and each malformed fixture fails with its
 # code. fetch is not run here (it downloads); its platform lookup is covered through a missing-row case.
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/test-grep.sh"
 
 SCRIPT="$(cd "$(dirname "$0")/.." && pwd)/binaries-lock.sh"
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -16,7 +17,7 @@ fail() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
 run() { set +e; OUT="$(bash "$SCRIPT" "$@" 2>&1)"; RC=$?; set -e; }
 expect() {   # <label> <rc> [<regex>]
   if [ "$RC" -ne "$2" ]; then fail "$1: exit $RC, want $2"; printf '%s\n' "$OUT" | sed 's/^/      | /'; return; fi
-  if [ -n "${3:-}" ] && ! printf '%s\n' "$OUT" | grep -qE -- "$3"; then fail "$1: output lacks /$3/"; printf '%s\n' "$OUT" | sed 's/^/      | /'; return; fi
+  if [ -n "${3:-}" ] && ! printf '%s\n' "$OUT" | has -E -- "$3"; then fail "$1: output lacks /$3/"; printf '%s\n' "$OUT" | sed 's/^/      | /'; return; fi
   ok "$1"
 }
 

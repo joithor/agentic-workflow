@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/test-grep.sh"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$DIR/../.."
 PLIST="$ROOT/config/launchd/com.agentic-workflow.scorer-audit.plist"
@@ -24,8 +25,8 @@ test_installer_installs_both_plists() {
 test_cron_hint_escapes_percent() {
   # An unescaped % in a crontab line ends the command; the hint must print \% so a pasted entry works.
   # The echo in install-scorer.sh holds the text \$(date +\\%F); it prints $(date +\%F).
-  grep -F 'weekly cron entry' "$ROOT/scripts/install-scorer.sh" | grep -qF '\$(date +\\%F)"' || { echo "FAIL: cron hint does not escape % as \\%"; exit 1; }
-  if grep -F 'weekly cron entry' "$ROOT/scripts/install-scorer.sh" | grep -qF '+%F'; then echo "FAIL: cron hint still has an unescaped %F"; exit 1; fi
+  grep -F 'weekly cron entry' "$ROOT/scripts/install-scorer.sh" | has -F '\$(date +\\%F)"' || { echo "FAIL: cron hint does not escape % as \\%"; exit 1; }
+  if grep -F 'weekly cron entry' "$ROOT/scripts/install-scorer.sh" | has -F '+%F'; then echo "FAIL: cron hint still has an unescaped %F"; exit 1; fi
   echo "PASS: test_cron_hint_escapes_percent"
 }
 

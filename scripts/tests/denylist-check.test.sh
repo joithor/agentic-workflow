@@ -3,6 +3,7 @@
 # only file:line and a count, never the matched words; every bad pointer or list fails closed (exit 2). The words here
 # are synthetic.
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/test-grep.sh"
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SCRIPT="$HERE/../denylist-check.sh"
@@ -25,7 +26,7 @@ expect() { # expect <name> <code> <substring>...
 refuse() { # refuse <name> <substring>... — OUT contains none of them (case-insensitive)
   local name="$1" s; shift
   for s in "$@"; do
-    if printf '%s' "$OUT" | grep -qiF -- "$s"; then fail "$name (printed '$s')"; printf '%s\n' "$OUT" | sed 's/^/       | /'; return; fi
+    if printf '%s' "$OUT" | has -iF -- "$s"; then fail "$name (printed '$s')"; printf '%s\n' "$OUT" | sed 's/^/       | /'; return; fi
   done
   ok "$name"
 }
