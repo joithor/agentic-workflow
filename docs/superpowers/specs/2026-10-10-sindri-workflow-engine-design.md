@@ -959,8 +959,8 @@ It uses API §8.1's launch contract; nothing here launches anything itself.
   app's button) opens a Warp tab running `tmux attach -t snd-<run>` and the human types into the live agent. The
   `UserPromptSubmit` hook inside the session classifies that turn as a `takeover` (D §9.3), which pauses the instance
   (§5.5) and invalidates the launch secret for `step-report` until `handback`. Non-interactive runs (`claude -p`,
-  `codex exec`) are never used for a Step, because they cannot be joined. `tmux capture-pane` gives the UI a scrubbed,
-  read-only preview later (the collector spec, README follow-ups).
+  `codex exec`) are never used for a Step, because they cannot be joined. `tmux capture-pane` gives the UI an unscrubbed,
+  read-only, human-only preview (owner, 2026-10-17; the collector spec's CA-9).
 
 **Amended by the UI app design spec (approved):** its E-6 adds the `open-request` trigger (id and key
 `wf:{instance}:open:{launchId}`, applied in `Commit` wherever `takeover` is allowed, no nonce, exempt from the approval
