@@ -90,9 +90,9 @@ public sealed class ListFilterAttributesTests : IDisposable
             var found = new List<string>();
             foreach (var query in _nullQueries)
             {
-                var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
+                var deadline = RealTime.NowDateTime + TimeSpan.FromSeconds(20);
                 var ids = new List<string>();
-                while (ids.Count == 0 && DateTime.UtcNow < deadline)
+                while (ids.Count == 0 && RealTime.NowDateTime < deadline)
                 {
                     await foreach (var execution in env.Client.ListWorkflowsAsync(query).WithCancellation(ct))
                     {
@@ -120,9 +120,9 @@ public sealed class ListFilterAttributesTests : IDisposable
     /// <summary>The addresses 'workflow list <paramref name="args"/>' prints, one per line, retried until there are <paramref name="count"/> of them (visibility is eventually consistent).</summary>
     private static async Task<string[]> Addresses(IServiceProvider sindri, int count, string[] args, CancellationToken ct)
     {
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
+        var deadline = RealTime.NowDateTime + TimeSpan.FromSeconds(20);
         string[] last = [];
-        while (DateTime.UtcNow < deadline && last.Length != count)
+        while (RealTime.NowDateTime < deadline && last.Length != count)
         {
             var (_, stdout, _) = await WorkflowsHarness.Cli(sindri, args);
             last = [.. stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries).Where(static l => !l.StartsWith("no instances", StringComparison.Ordinal)).Select(static l => l.Split("  ")[0])];

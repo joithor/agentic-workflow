@@ -1,3 +1,4 @@
+using Aw.Kernel.Testing;
 using Aw.Meta.Core;
 using Aw.Meta.Core.Commands;
 using Aw.Meta.Core.Ports;
@@ -73,7 +74,7 @@ public abstract class CommandRunnerContract
     [Fact]
     public async Task Output_is_appended_to_the_log_file()
     {
-        var log = Path.Combine(Path.GetTempPath(), "aw-meta-cmd-" + Guid.NewGuid().ToString("N") + ".log");
+        var log = Path.Combine(Path.GetTempPath(), "aw-meta-cmd-" + RealTime.NewGuid().ToString("N") + ".log");
         try
         {
             var result = await Create().Run(Request(Prints("to the log")) with { LogFile = log }, _none);

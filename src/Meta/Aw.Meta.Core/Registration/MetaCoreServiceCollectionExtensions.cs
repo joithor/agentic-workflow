@@ -23,7 +23,12 @@ public static class MetaCoreServiceCollectionExtensions
         .AddScoped<RepoCommands>()
         .AddScoped<GateTree>()
         .AddScoped<GateWorkspace>()
+        .AddScoped<GateStepRunner>()
+        .AddScoped<TrainSelection>()
         .AddScoped<MergeReadiness>()
+        .AddScoped<MergeQueueReader>()
+        .AddScoped<HeavyReservation>()
+        .AddScoped<ResourceAdvisor>()
         .AddScoped<WorktreeInspector>()
         .AddScoped<WorktreeSweeper>();
 }

@@ -41,9 +41,9 @@ internal static class ChoiceList
         return new ChoiceParse(entries, faults);
     }
 
-    /// <summary>Whether <paramref name="name"/> is a choice outcome: [a-z][a-z0-9]{0,31}, which OutcomeName accepts.</summary>
+    /// <summary>Whether <paramref name="name"/> is a choice outcome: [a-z][A-Za-z0-9]{0,31}, which OutcomeName accepts.</summary>
     private static bool IsOutcome(string name) =>
-        name.Length is >= 1 and <= 32 && name[0] is >= 'a' and <= 'z' && name.All(static c => c is (>= 'a' and <= 'z') or (>= '0' and <= '9'));
+        name.Length is >= 1 and <= 32 && name[0] is >= 'a' and <= 'z' && name.All(static c => c is (>= 'a' and <= 'z') or (>= 'A' and <= 'Z') or (>= '0' and <= '9'));
 
     private static ChoiceFault? Entry(JsonElement entry, int index)
     {

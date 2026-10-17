@@ -82,6 +82,10 @@ d="$(copy proc-incomplete)"
 rm "$d/tests/fixtures/sessions/proc/311/environ"
 run "$d"; expect_rc "a process directory without environ fails" 1; expect_out "names the file" "proc/311: no environ file"
 
+d="$(copy proc-link-outside)"
+ln -sfn /nonexistent-elsewhere/repo "$d/tests/fixtures/sessions/proc/211/cwd"
+run "$d"; expect_rc "a cwd symlink outside the fixture root fails (it may exist on another box)" 1; expect_out "names the link" "proc/211/cwd: symlink target /nonexistent-elsewhere/repo is outside /nonexistent-fixture-root"
+
 echo "shared Ajv install (scripts/lib/ensure-scripts-deps.sh)"
 # Two suites that need Ajv at once: a stub npm (slow, counting its calls) in a scratch package dir.
 dep="$TMPROOT/deps" && mkdir -p "$dep/bin" "$dep/pkg"

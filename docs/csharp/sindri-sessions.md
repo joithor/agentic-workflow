@@ -112,6 +112,17 @@ the Claude version (`claude --version`) and the readings here:
 
 Claude Code version: _pending_.
 
+## Built so far
+
+CO-2a (discovery): `Aw.Sindri.Core/Sessions/` (the records, the pure rules `SessionLiveness`, `AgentProcessRules`, `SessionStateRules.Merge`,
+`FleetChangeRules.Diff`/`Restore`, `EnvironmentAllowlist`, the ports), `Aw.Sindri.Core/Launch/` and `Infrastructure/Launch/` (the minimal launcher reader and agent
+catalog, CA-0), `Infrastructure/Sessions/` (`ProcProcessTable`, `ClaudeSessionRecords`, `FleetStateFiles`, `TranscriptFiles`, `SessionSnapshotStore`),
+`Features/Sessions/` (the pass, `RecordFleetChanges`, `RestoreFleetHistory`) and `Host/Server/SessionCollectorHost`. Host detection (`HostRules`, tmux, terminals) is
+CO-2b, so every session's host reads `unknown` until then; the routes and the CLI are CO-3. The event is `fleet.changed`; the codes are `SND-SESSION-001`
+(a source failed), `-002` (`unsupported-platform`, `proc-unreadable`, `disabled`) and `-003` (a test override) in `docs/csharp/sindri.md`. The snapshot over
+`tests/fixtures/sessions/` is pinned by `tests/Aw.Sindri.Tests/Sessions/Golden/snapshot-discovery.json`. `LaunchId` (the engine's, `Core/Workflow/Engine/LaunchId.cs`, `LCH-` and 32 hex) is the
+typed id of `AW_SINDRI_LAUNCH`; a value of another shape is dropped.
+
 ## API rows for review
 
 The API lane reviews these rows (spec §7; the ideas lane builds them in the phases named). None is built in CO-0.
