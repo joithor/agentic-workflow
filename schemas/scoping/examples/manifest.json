@@ -1,0 +1,244 @@
+{
+  "examples": [
+    {
+      "file": "scope-input.brief.valid.json",
+      "schema": "scope-input.json",
+      "valid": true,
+      "source": "spec section 4 table: { kind, repo, path, section? }"
+    },
+    {
+      "file": "scope-input.tracker.valid.json",
+      "schema": "scope-input.json",
+      "valid": true,
+      "source": "spec section 4 table: { kind, repo, key }"
+    },
+    {
+      "file": "scope-input.idea.valid.json",
+      "schema": "scope-input.json",
+      "valid": true,
+      "source": "spec section 4 table: { kind, repo, text }"
+    },
+    {
+      "file": "scope-input.change.valid.json",
+      "schema": "scope-input.json",
+      "valid": true,
+      "source": "spec section 4 table: { kind, repo, ref }"
+    },
+    {
+      "file": "scope-input.unknown-kind.invalid.json",
+      "schema": "scope-input.json",
+      "valid": false,
+      "source": "a kind the table does not list"
+    },
+    {
+      "file": "scope-input.pr-not-ref.invalid.json",
+      "schema": "scope-input.json",
+      "valid": false,
+      "source": "the table names the field ref, not pr"
+    },
+    {
+      "file": "scope-input.missing-repo.invalid.json",
+      "schema": "scope-input.json",
+      "valid": false,
+      "source": "repo is in every shape"
+    },
+    {
+      "file": "brief.valid.json",
+      "schema": "brief.json",
+      "valid": true,
+      "source": "spec section 4: { text, refs: [{ id, source, key, version, trust, fetchedAt }], subject }"
+    },
+    {
+      "file": "brief.no-refs.invalid.json",
+      "schema": "brief.json",
+      "valid": false,
+      "source": "refs is part of the shape"
+    },
+    {
+      "file": "scope-map.fact.valid.json",
+      "schema": "scope-map.json",
+      "valid": true,
+      "source": "spec section 8.3 scope-map.json field list, fact form (no envelope, no trust: SCP-TRUST-001)"
+    },
+    {
+      "file": "scope-map.file.valid.json",
+      "schema": "scope-map.json",
+      "valid": true,
+      "source": "spec 8.3 field list plus the packet-file envelope; code-stamped trust (SCP-TRUST-001)"
+    },
+    {
+      "file": "scope-map.fact-with-trust.invalid.json",
+      "schema": "scope-map.json",
+      "valid": false,
+      "source": "SCP-TRUST-001: a model-written trust is a schema finding at the draft stage"
+    },
+    {
+      "file": "scope-map.surface-id-as-citation.invalid.json",
+      "schema": "scope-map.json",
+      "valid": false,
+      "source": "SCP-CITE-001: a citation is a lens item, a ref or an answer, not a surface id"
+    },
+    {
+      "file": "scope-map.bad-status.invalid.json",
+      "schema": "scope-map.json",
+      "valid": false,
+      "source": "spec 8.3: graph status mapped, new, unmapped or unknown"
+    },
+    {
+      "file": "acceptance.fact.valid.json",
+      "schema": "acceptance.json",
+      "valid": true,
+      "source": "spec 8.3 acceptance.json field list, fact form (no trust)"
+    },
+    {
+      "file": "acceptance.file.valid.json",
+      "schema": "acceptance.json",
+      "valid": true,
+      "source": "spec 8.3 plus the packet-file envelope; code-stamped trust"
+    },
+    {
+      "file": "acceptance.fact-with-trust.invalid.json",
+      "schema": "acceptance.json",
+      "valid": false,
+      "source": "SCP-TRUST-001: a model cannot claim owner trust"
+    },
+    {
+      "file": "acceptance.plain-with-reason.valid.json",
+      "schema": "acceptance.json",
+      "valid": true,
+      "source": "SCP-ACC-001: form: plain with a reason"
+    },
+    {
+      "file": "acceptance.plain-without-reason.invalid.json",
+      "schema": "acceptance.json",
+      "valid": false,
+      "source": "SCP-ACC-001"
+    },
+    {
+      "file": "acceptance.answer-id.invalid.json",
+      "schema": "acceptance.json",
+      "valid": false,
+      "source": "spec 7.3: acceptance ids are AC-<n>; A<n> is the answer log"
+    },
+    {
+      "file": "acceptance.passing.invalid.json",
+      "schema": "acceptance.json",
+      "valid": false,
+      "source": "spec 8.3: status: failing"
+    },
+    {
+      "file": "questions.spec-7-3.valid.json",
+      "schema": "questions.json",
+      "valid": true,
+      "source": "spec section 7.3 (the question example, quoted whole)"
+    },
+    {
+      "file": "questions.one-option.invalid.json",
+      "schema": "questions.json",
+      "valid": false,
+      "source": "spec 7.3: two to four options"
+    },
+    {
+      "file": "questions.uncited-option.invalid.json",
+      "schema": "questions.json",
+      "valid": false,
+      "source": "spec 7.3: every option cites (option-uncited)"
+    },
+    {
+      "file": "questions.two-recommended.invalid.json",
+      "schema": "questions.json",
+      "valid": false,
+      "source": "spec 7.3: recommended is set on at most one option"
+    },
+    {
+      "file": "questions.six.invalid.json",
+      "schema": "questions.json",
+      "valid": false,
+      "source": "spec 7.2: at most five per round"
+    },
+    {
+      "file": "open-questions.valid.json",
+      "schema": "open-questions.json",
+      "valid": true,
+      "source": "spec 7.2 and 7.4: ranked open questions with a recommended option; needs-owner-wording"
+    },
+    {
+      "file": "challenge-round.nothing-new.valid.json",
+      "schema": "challenge-round.json",
+      "valid": true,
+      "source": "spec A.4: walked[] (lenses and dimensions) and the verdict nothingNew"
+    },
+    {
+      "file": "challenge-round.found.valid.json",
+      "schema": "challenge-round.json",
+      "valid": true,
+      "source": "spec A.4: found with new surfaces (with citations) and new behaviours (with the question each raises)"
+    },
+    {
+      "file": "challenge-round.found-empty.invalid.json",
+      "schema": "challenge-round.json",
+      "valid": false,
+      "source": "challenge-log: found with no items is a failed Step"
+    },
+    {
+      "file": "challenge-round.nothing-new-with-items.invalid.json",
+      "schema": "challenge-round.json",
+      "valid": false,
+      "source": "challenge-log: nothingNew with items is a failed Step"
+    },
+    {
+      "file": "challenge-round.walked-object.invalid.json",
+      "schema": "challenge-round.json",
+      "valid": false,
+      "source": "spec A.4/B.2: walked[] is an array"
+    },
+    {
+      "file": "challenge-round.no-verdict.invalid.json",
+      "schema": "challenge-round.json",
+      "valid": false,
+      "source": "spec A.4: the verdict"
+    },
+    {
+      "file": "challenge.fact.valid.json",
+      "schema": "challenge.json",
+      "valid": true,
+      "source": "spec 8.3 challenge.json: rounds[], the last one empty"
+    },
+    {
+      "file": "challenge.file.valid.json",
+      "schema": "challenge.json",
+      "valid": true,
+      "source": "spec 8.3 plus the packet-file envelope"
+    },
+    {
+      "file": "coverage.fact.valid.json",
+      "schema": "coverage.json",
+      "valid": true,
+      "source": "spec 8.3 coverage.json: one row per lens (rows as in the line gold)"
+    },
+    {
+      "file": "coverage.object-sources.valid.json",
+      "schema": "coverage.json",
+      "valid": true,
+      "source": "spec 8.2/8.3 \"sources and states\" with the commit-not-held limit of #309 (unavailable, reason, code SND-CONTEXT-110)"
+    },
+    {
+      "file": "coverage.file.valid.json",
+      "schema": "coverage.json",
+      "valid": true,
+      "source": "spec 8.3 plus the packet-file envelope"
+    },
+    {
+      "file": "coverage.three-rows.invalid.json",
+      "schema": "coverage.json",
+      "valid": false,
+      "source": "SCP-COV-001: one row per lens"
+    },
+    {
+      "file": "coverage.four-code-rows.invalid.json",
+      "schema": "coverage.json",
+      "valid": false,
+      "source": "SCP-COV-001: one row per lens, not four rows of one lens"
+    }
+  ]
+}

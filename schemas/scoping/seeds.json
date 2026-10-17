@@ -1,0 +1,22 @@
+{
+  "fact:scopeMap": {
+    "surfaces": [],
+    "implications": [],
+    "workstreams": [],
+    "flagged": [],
+    "excluded": [],
+    "unmapped": [],
+    "unresolved": []
+  },
+  "fact:acceptance": {
+    "items": []
+  },
+  "fact:findings": [],
+  "fact:answers": [],
+  "fact:answerLog": [],
+  "fact:challenge": {
+    "rounds": []
+  },
+  "fact:questions": [],
+  "fact:openQuestions": []
+}
