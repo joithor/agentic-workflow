@@ -88,6 +88,16 @@ public sealed class RecipeSchemaTests
         Assert.Equal(1, inputs["minItems"]!.GetValue<int>());   // and so is an empty list (RCP-INPUT-002)
     }
 
+    [Fact, Trait("Lane", "integration")]   // reads schemas/recipes/
+    public void The_editor_overlay_input_kinds_are_the_subject_kinds_the_validator_accepts()
+    {
+        var overlay = JsonNode.Parse(File.ReadAllText(Path.Combine(RepoRoot(), "schemas", "recipes", "recipe.editor.schema.json")))!;
+
+        var kinds = overlay["$defs"]!["RecipeInput"]!["properties"]!["kind"]!["enum"]!.AsArray().Select(static n => n!.GetValue<string>());
+
+        Assert.Equal(SubjectKinds.All.Order(StringComparer.Ordinal), kinds.Order(StringComparer.Ordinal), StringComparer.Ordinal);
+    }
+
     private static void Collect(Type type, Dictionary<string, JsonTypeInfo> records)
     {
         var info = SliceHarness.Json.GetTypeInfo(Nullable.GetUnderlyingType(type) ?? type);
