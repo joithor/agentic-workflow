@@ -75,6 +75,8 @@ classify_changes() {
       schemas/packets/*) ;;  # the packet schemas belong to Aw.Packets (its golden test, the dotnet area above)
       # Aw.Evidence's lock interop tests source it: the C# lock adapter and the shell tools share one lock format
       config/lib/locks.sh) dotnet=true ;;
+      # recipes/ is embedded in the Sindri tests (ShippedRecipes) and read by the schema check (check-scoping-schemas.mjs)
+      recipes/*) dotnet=true; bash=true ;;
       schemas/*|rules/*) bash=true ;;  # check-deps and check-rules (and their suites) read these
       # scripts/tests/ci-lane-budgets.test.sh checks lane-budgets.mjs against these numbers
       tests/Aw.Kernel.Testing/Lanes.cs) bash=true ;;
