@@ -1,0 +1,10 @@
+{
+  "isError": true,
+  "structuredContent": {
+    "code": "SND-CONTEXT-023",
+    "message": "'sindri_decide' is not a Sindri MCP tool (fix: tools/list names them)"
+  },
+  "content": [
+    "SND-CONTEXT-023 'sindri_decide' is not a Sindri MCP tool (fix: tools/list names them)"
+  ]
+}

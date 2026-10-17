@@ -17,7 +17,13 @@ public sealed partial class ShippedRecipesTests
             [
                 "dev/desk-round-trip.yaml", "dev/incident-hold.yaml", "dev/triage-three-state.yaml", "dev/workflow.dev-child-outputs.yaml", "dev/workflow.dev-child-summary.yaml",
                 "dev/workflow.dev-evidence-route.yaml",
-                "dev/workflow.dev-notify.yaml", "dev/workflow.dev-timeout.yaml", "sindri/workflow.item.yaml", "sindri/workflow.step.yaml",
+                "dev/workflow.dev-notify.yaml", "dev/workflow.dev-timeout.yaml",
+                "sindri/workflow.evidence-all.yaml", "sindri/workflow.evidence-api.yaml", "sindri/workflow.evidence-db.yaml",
+                "sindri/workflow.evidence-other.yaml", "sindri/workflow.evidence-ui.yaml", "sindri/workflow.evidence.yaml",
+                "sindri/workflow.hand-test.yaml", "sindri/workflow.implement.yaml",
+                "sindri/workflow.investigate.yaml", "sindri/workflow.item.yaml", "sindri/workflow.report.yaml",
+                "sindri/workflow.reproduce.yaml", "sindri/workflow.review-loop.yaml", "sindri/workflow.step.yaml",
+                "sindri/workflow.verify.yaml",
             ],
             ShippedRecipes.Recipes,
             StringComparer.Ordinal);

@@ -22,7 +22,9 @@ public sealed partial class QuestionEvaluator
         // Once the input validated, the row holds the record (its declared fields), as a decided row does; before that
         // (disabled, invalid) it holds what the caller sent.
         await Record(question, run, settlement, run.Input ?? run.RawInput, cancellationToken).ConfigureAwait(false);
-        return new EscalatedOutcome(reasonCode);
+        return question.ReportsTrace
+            ? new EscalatedOutcome(reasonCode) { Id = run.Id, Probabilities = run.UndecidedProbabilities }
+            : new EscalatedOutcome(reasonCode);
     }
 
     private async ValueTask<EvaluationOutcome> Settle<TInput>(
@@ -34,7 +36,11 @@ public sealed partial class QuestionEvaluator
         var decision = settlement.Decision!;
         // why: a settlement that decides always names who decided.
         var model = settlement.Provider!.Value;
-        return new DecidedOutcome(decision, settlement.Confidence, model, settlement.ReasonCode, run.Id) { Extra = Declared(extra, question.ExtraProperties) };
+        return new DecidedOutcome(decision, settlement.Confidence, model, settlement.ReasonCode, run.Id)
+        {
+            Extra = Declared(extra, question.ExtraProperties),
+            Probabilities = question.ReportsTrace ? settlement.DecidingProbabilities : null,
+        };
     }
 
     // Only the fields the question declares ride back to the caller; anything else a provider sent is dropped.

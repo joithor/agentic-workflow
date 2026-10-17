@@ -1059,6 +1059,10 @@ One MCP endpoint serves every Sindri tool, this spec's and the context engine's:
   context engine's `context_*` tools call `IContextEngine` (context spec §8.5);
 - the endpoint holds no logic, and errors come back as tool errors carrying the SND code and message;
 - repo scope is enforced by the server (§3.1), so the tools have no "all repos" argument.
+- a call with no `X-Sindri-Repo` is refused (`SND-CONTEXT-021`), whatever the tool: every MCP session comes from a
+  registration or config that carries the header, so §3.1's repo-less session view is HTTP only;
+- the endpoint keeps only `X-Sindri-Repo` of the request's `X-Sindri-*` headers (the launch secret never rides MCP, §8.1)
+  and sets `X-Sindri-Client: mcp`; its own refusals are `SND-CONTEXT-021`, `022` (a bad argument) and `023` (an unknown tool).
 
 **Registration is per repo, by the owner, never user-wide.** `sindri mcp register` prints, and with `--apply` runs,
 `claude mcp add --transport http --scope local --header "X-Sindri-Repo: <name>" sindri http://127.0.0.1:<port>/sindri/mcp`
@@ -1083,8 +1087,11 @@ that target launches without Sindri MCP. `sindri doctor` warns on any user-wide 
 | `sindri_request` | `kind`, `itemId?`, `text` | `POST /requests` (`FileRequest`) | request |
 | `context_query`, `context_node`, `context_neighbors`, `context_sources` | context spec §8.5 | `IContextEngine` | query, **with S3**; off while `context.sessions.enabled` is false |
 
-Text from agents or trackers in `sindri_*` results carries the same `trust` field and fencing as `context_*` results
-(context spec §7). There is no decision, desk, protected or job tool, so the MCP surface can't even attempt one. Query tools carry the MCP
+Every free-text field a `sindri_*` result returns that isn't Sindri's own wording (item titles and bodies, timeline
+lines, decision questions and notes, job summaries and progress lines) is fenced and the object holding it carries
+`"trust": "untrusted"`, as `context_*` results do (context spec §7), whoever wrote it. `sindri_request` waits (up to 2 s)
+for the views to reach its own write before it answers, so a `sindri_pending_decisions` straight after it lists the
+new decision. The tools are listed in this table's order, after the five `context_*` tools. There is no decision, desk, protected or job tool, so the MCP surface can't even attempt one. Query tools carry the MCP
 `readOnlyHint` annotation. Whichever lands first, context Phase 1 (S-1M) or this spec's P8, creates the endpoint; the
 other adds its tools to it. `sindri mcp register` ships with whichever creates the endpoint.
 

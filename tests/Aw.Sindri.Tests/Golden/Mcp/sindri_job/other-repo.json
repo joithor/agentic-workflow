@@ -1,0 +1,10 @@
+{
+  "isError": true,
+  "structuredContent": {
+    "code": "SND-JOB-404",
+    "message": "No such job (fix: run `sindri jobs` to list them)"
+  },
+  "content": [
+    "SND-JOB-404 No such job (fix: run `sindri jobs` to list them)"
+  ]
+}
