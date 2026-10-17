@@ -262,7 +262,7 @@ Reserved state names: `cancelled`, `escalated`, `parked`, `taken-over`.
 | Duration | `<n>m`, `<n>h` or `<n>d`, at least `1m` |
 | Tokens | int, or with a `k`/`M` suffix |
 | Fact type | `text \| file \| item \| link \| scope-map \| packet \| evidence \| decision \| payload` (UI E-22, §5.2). `text`, `file` and `item` are the input types of rev 7; the rest are for outputs and for inputs that carry a structured value. The type picks a viewer in the app and nothing else: the engine stores every fact as a hashed blob, and a type it doesn't know is `RCP-TYPE-001`, not a runtime error |
-| Subject kind | `item \| linear-project \| webhook \| file \| text \| link` (UI E-22, §5.4). Each input declares one (`RCP-INPUT-001`). `item` pairs with type `item`, `file` with `file`, `text` with `text`, `link` with `link`, and `linear-project` and `webhook` with `payload`. Any other pairing is `RCP-TYPE-003` |
+| Subject kind | `item \| linear-project \| webhook \| file \| text \| link \| packet \| payload` (UI E-22, §5.4; `packet` and `payload` added by DT-R1, owner decision 2026-10-16). Each input declares one (`RCP-INPUT-001`). `item` pairs with type `item`, `file` with `file`, `text` with `text`, `link` with `link`, `packet` with `packet`, and `linear-project`, `webhook` and `payload` with `payload`. Any other pairing is `RCP-TYPE-003` |
 | `with:` value | A literal (string, number, bool or a list of these), `{ fact }` or `{ profile }`. Capability parameters take only literals or `{ profile }` (`RCP-CAP-007`) |
 
 ### 3.4 States
@@ -406,7 +406,7 @@ Example: `name: "{fact:scope} · {start:date}"` and `generate: "triage {start:da
 - `text`: the first non-empty line, trimmed.
 - `file`: the file name.
 - `link`: the `title` field, else the URL's host.
-- `linear-project` and `webhook`: the payload's `id` field, else `number`, else the bare key.
+- `linear-project`, `webhook`, `payload` and `packet`: the payload's `id` field, else `number`, else the bare key (`SubjectRefs.PayloadId`, the same text a subject label shows).
 
 Each value has its control characters and newlines replaced by a space. The value is then cut to 40 characters
 and the whole name to 80 characters. Both cuts use `SubjectRefs.Cut`, which never splits a surrogate pair and
@@ -1061,7 +1061,7 @@ directory when not (so `workflow.item.yaml` finds `workflow.step.yaml`).
 Error lines for the P4c rules, in this section's format (`RCP-NAME-001` is taken by state names, §3.4, so the template rules start at `002`):
 
 ```
-RCP-INPUT-001: input 'fact:spec' declares no kind at workflow.step.yaml:4:9 (inputs[0]); fix: add kind: item | link | linear-project | webhook | file | text, paired with its type (item/item, file/file, text/text, link/link, linear-project and webhook/payload)
+RCP-INPUT-001: input 'fact:spec' declares no kind at workflow.step.yaml:4:9 (inputs[0]); fix: add kind: item | link | linear-project | webhook | file | text | packet | payload, paired with its type (item/item, file/file, text/text, link/link, packet/packet; payload, linear-project and webhook pair with payload)
 RCP-INPUT-002: the recipe declares no input at workflow.x.yaml:1:1 (inputs); fix: declare at least one input; a scheduled recipe gives it generate: "<template>"
 RCP-NAME-002: the name template is empty or longer than 200 characters at …:5:7 (name); fix: write literal text with {fact:<input>} or {start:date|time}
 RCP-NAME-003: unknown placeholder '{owner}' at …:5:7 (name); fix: use {fact:<input>}, {start:date} or {start:time}, and write {{ or }} for a literal brace
@@ -1757,3 +1757,5 @@ Merged (#179). Unchanged by rev 8.
   `complete --run` moves the instance to `checks`, and the event records `via: agent` and the token usage. The same
   `complete` from another session exits 2 with `SND-AUTH-002`. Killing the tmux session parks the Step through
   `step.failed(exit)` within 150 s.
+
+> DT-R1 note: block descriptors gain optional `Runtime` (`desk|block|agent`) and `HumanOnly` fields (written only when set; DT spec §8.5, scoping-station W3); `workflow complete` on a human-only Step needs a human caller.

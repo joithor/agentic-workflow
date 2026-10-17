@@ -732,7 +732,7 @@ definition (states, transitions, evals, pins, open instances placed per state, t
 | Field | What it holds |
 |---|---|
 | `id`, `hash`, `version` | The recipe's stamp (the same one an instance carries in `recipe`), served now ahead of the engine's full body: its id, its `sha256:<64 hex>` hash and its version |
-| `inputs[]` | `{key, label?, type, kind, required, generate?}`. `type` is a fact type (the nine of `FactRow.type`); **`kind`** is the subject adapter (`item`, `linear-project`, `webhook`, `file`, `text`, `link`) and is served for every input; `generate` is the template text, and `required` is false when it is present |
+| `inputs[]` | `{key, label?, type, kind, required, generate?}`. `type` is a fact type (the nine of `FactRow.type`); **`kind`** is the subject adapter (`item`, `linear-project`, `webhook`, `file`, `text`, `link`, `packet`, `payload`) and is served for every input; `generate` is the template text, and `required` is false when it is present |
 | `name` | The recipe's name template as written, or null |
 | `outputs[]` | `{key, label?, type, from}`: the new output declarations (WF `outputs`, E-22), with the added fact types of screens §5.2 |
 | `orderedBy` | `"path"`, or `"transition-list"` when the graph has more than one initial path: the same field and meaning as on `InstanceView` |
@@ -1153,7 +1153,7 @@ of **`docs/csharp/sindri.md`**. Not `docs/sindri/errors.md`, which is generated 
 
 | Code | Kind (status) | When | Phase |
 |---|---|---|---|
-| `SND-AUTH-002` | Forbidden (403) | The caller may not run the command's action class | P1 |
+| `SND-AUTH-002` | Forbidden (403) | The caller may not run the command's action class; also `CompleteStep` on a human-only Step (DT-R1) from a caller that isn't a human | P1 |
 | `SND-API-007` | Invalid (400) | An unknown `X-Sindri-Caller` value | P1 |
 | `SND-API-008` | Forbidden (403) | A command carried an `Origin` header | P1 |
 | `SND-API-009` | Unavailable (503) | The command gate wasn't acquired within 5 s | P1 |

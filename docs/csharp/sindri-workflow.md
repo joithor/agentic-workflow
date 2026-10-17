@@ -248,8 +248,8 @@ needs re-approval.
 ### Fact types and subject kinds
 
 Fact type: `text`, `file`, `item`, `link`, `scope-map`, `packet`, `evidence`, `decision`, `payload` (`FactTypes`). It picks a viewer in
-the app and nothing else. Subject kind: `item`, `linear-project`, `webhook`, `file`, `text`, `link` (`SubjectKinds`); `item`, `file`, `text` and `link`
-pair with the type of the same name, `linear-project` and `webhook` with `payload`; an input with no `type` has its kind's. Both are strings in the long form, so a bad value
+the app and nothing else. Subject kind: `item`, `linear-project`, `webhook`, `file`, `text`, `link`, `packet`, `payload` (`SubjectKinds`); `item`, `file`, `text`, `link` and `packet`
+pair with the type of the same name, `linear-project`, `webhook` and `payload` with `payload` (owner decision 2026-10-16: a packet or a plain payload as a subject); an input with no `type` has its kind's. Both are strings in the long form, so a bad value
 reaches its rule (`RCP-TYPE-001` to `-003`, `RCP-INPUT-001`/`-002`, `RCP-NAME-002` to `-006`, `RCP-OUT-001` to `-003`, `RCP-URG-001`) instead of a reader error. Those rules
 (the Declarations rows under Rules) run on every path that validates a recipe, so a value of another spelling is refused with its rule's line.
 
@@ -357,7 +357,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-WHEN-002` | `when: { loop }` names a declared loop, and `when: { outcome }` isn't used on a trigger that reports no outcome | Declare the loop |
 | `RCP-OUTCOME-001` | Every outcome a Step, event or child reports is handled by a transition, and terminal outcomes are `resolved`, `unresolved`, `alreadySatisfied` or `failed` | Add a transition for it, or use one of those outcomes |
 | `RCP-CHOICE-001` | A `step.judge.choose` state's `choices` has 2 to 32 entries | List 2 to 32 choices, each `"<outcome>: <criterion>"` |
-| `RCP-CHOICE-002` | `choices` is a literal list (not `{ fact }` or `{ profile }`) and each entry is text `"<outcome>: <criterion>"`: the outcome is `[a-z][a-z0-9]{0,31}`, the criterion 1 to 400 characters. An unquoted `- ui: ...` is a YAML mapping and gets the quote fix | Quote the entry; write the choices as a literal list |
+| `RCP-CHOICE-002` | `choices` is a literal list (not `{ fact }` or `{ profile }`) and each entry is text `"<outcome>: <criterion>"`: the outcome is `[a-z][A-Za-z0-9]{0,31}` (camelCase), the criterion 1 to 400 characters. An unquoted `- ui: ...` is a YAML mapping and gets the quote fix | Quote the entry; write the choices as a literal list |
 | `RCP-CHOICE-003` | Outcome names are distinct, and none is `uncertain` (the Step adds it) | Give each choice its own outcome |
 | `RCP-CHOICE-004` | `facts` is a literal list of at least one fact key; a hyphenated key gets the camelCase fix | List the facts the question reads |
 | `RCP-CHOICE-005` | Every route state routes `uncertain`, if it does, to a `step.desk.choose` state whose `from` names it, and has a `step.failed` transition to that twin; a twin's `from` is a literal naming a route state (not `{ fact }` or `{ profile }`) | Route to the desk twin; set `from:` to the route state |
@@ -392,9 +392,9 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-OUT-002` | An output's `from` isn't a terminal or engine-owned state, and the state's Step, its leaving transitions' `produces` or its wait records the output's key. For a state that waits on a child, the child's declared outputs | Record the fact there, or name the state that does |
 | `RCP-OUT-003` | Output keys are unique and none is also an input key | Give each output its own key |
 | `RCP-TYPE-001` | An input's or output's `type` is a fact type | Use one of the nine types |
-| `RCP-TYPE-002` | An input's `kind` is a subject kind | Use one of the six kinds |
+| `RCP-TYPE-002` | An input's `kind` is a subject kind | Use one of the eight kinds |
 | `RCP-TYPE-003` | An input's `kind` pairs with its `type` (an absent `type` takes its kind's); not reported for an entry with a bad type or kind | Set `type` to the kind's, or change `kind` |
-| `RCP-INPUT-001` | Every input declares a `kind` | Add `kind: item \| link \| linear-project \| webhook \| file \| text`, paired with its type |
+| `RCP-INPUT-001` | Every input declares a `kind` | Add `kind: item \| link \| linear-project \| webhook \| file \| text \| packet \| payload`, paired with its type |
 | `RCP-INPUT-002` | The recipe declares at least one input | Declare one; a scheduled recipe gives it `generate: "<template>"` |
 | `RCP-NAME-002` | A `name` or `generate` template isn't empty and is at most 200 characters | Write literal text with placeholders |
 | `RCP-NAME-003` | A template has no unknown placeholder, unbalanced `{` or `}`, or control character | Use `{fact:<input>}`, `{start:date}`, `{start:time}`; write `{{` or `}}` for a literal brace |
@@ -443,13 +443,57 @@ A block is a class with a static descriptor, registered explicitly (no assembly 
    A Step whose outcomes or inputs depend on its parameters sets `OutcomesFrom` and `InputsFrom`: a list parameter's name
    (`choices`), or `<stateParam>.<listParam>` for a twin that reads another state's Step (`from.choices`). Read outcomes
    and inputs through `StepOutcomes.Of` and `StepInputs.Of`, never from the descriptor directly: the validator, the report validation and the eval read through them (the desk's views still read the descriptor and move onto them in DT-V2). An output that every
-   outcome must carry is `Every: true` (read it with `StepOutputs.RequiredOn`), and one the engine writes when a report
+   outcome must carry is `Every: true` (read it with `StepOutputs.RequiredOn`; what a caller must write, in the views, the commands and the eval scaffold, is `StepOutputs.CallerWritesOn` (`CallerWritesSomewhere` when the Step declares no outcomes, and for a fact row's required flag), which leaves out engine-filled outputs), and one the engine writes when a report
    omits it is `EngineFilled: true`. These descriptor fields are written only when set, so a descriptor without them
    keeps its hash; `ShippedBlocksTests` pins every shipped hash.
+
+   Two more optional fields are written only when set: `Runtime` (`desk`, `block` or `agent`: who runs the Step; descriptor-only
+   until DT-J, absent means today's rule) and `HumanOnly` (true or absent, never false). A Step is **human-only** when its descriptor
+   says `HumanOnly`, or when its `Runtime` is `block` and it runs on the desk (`HumanOnlySteps.Applies`). `workflow complete` on a
+   human-only Step is `SND-AUTH-002` unless the caller is a human (the app or a terminal): the refusal sits in `CompleteStep`, before
+   the nonce is claimed, so nothing is consumed, and a session report on an instance that can't be read is refused with that read
+   error, not let through. The message names the Step, its state and the command the human runs. Today `CompleteStep` is a desk-class command, so the command chain (`AuthorizingService`) refuses every session with its generic `SND-AUTH-002` before the service runs; this per-Step check is defence in depth, and takes over once a non-human class can reach `CompleteStep` (step reports open to sessions, P10).
 4. **Use it in a recipe** and run `sindri recipe validate` on it.
 5. **A behaviour change bumps `Version`** in the descriptor, in the reviewed change that makes it. Once approvals pin
    blocks (P2), a changed descriptor parks the instances of every recipe approved against the old one until it is
    re-approved (`SND-RECIPE-006`).
+
+### Block catalog (decision-tree Steps)
+
+Descriptor-only Steps (`AddBlockDescriptor`): recipes that name them validate, they run on the desk or are unavailable until their runtime
+(DT-J, DT-B) ships. `evidence.check` is a descriptor-only evidence provider (runtime in DT-B): a recipe that guards a transition with it validates (no `RCP-EVID-001`), the engine refuses the transition at run time ("no runtime for evidence checks in this build"), and `recipe eval` still answers every evidence check as holding, since an eval line has no evidence answer yet (a known gap until DT-B). Facts are `fact:` keys. Outputs are
+what a report must carry, on which outcomes; "every outcome" outputs are on all of them.
+
+| Step | Runtime | Inputs | Outcomes | Outputs |
+|---|---|---|---|---|
+| `step.intake.ticket` | desk | - | `done` | `issue` on done; `expected` on done; `actual` on done |
+| `step.rootcause.investigate` | agent | `issue`, `expected`, `actual` | `diagnosed`, `unfixed` | `rootCause` on diagnosed; `findings` on unfixed |
+| `step.reproduce.ui-check` | agent | `issue`, `rootCause` | `reproduced`, `notReproduced` | `check` on reproduced; `baseline` on reproduced; `findings` on notReproduced |
+| `step.reproduce.test-check` | agent | `issue`, `rootCause` | `reproduced`, `notReproduced` | `check` on reproduced; `baseline` on reproduced; `findings` on notReproduced |
+| `step.bugfix.start-attempt` | block | `decision` | `single`, `split`, `capReached` | `attempt` on single,split |
+| `step.bugfix.record-candidate` | block | `diff` | `recorded` | `candidate` on recorded |
+| `step.bugfix.recheck` | block | `check`, `candidate` | `passed`, `failed` | `recheck` (every outcome) |
+| `step.bugfix.judge` | block | `check`, `candidate`, `evidenceSummary` | `resolved`, `partial`, `unresolved`, `needsHuman` | `verdict` (every outcome) |
+| `step.report.write` | agent | `issue` | `done` | `resolution` on done |
+| `step.handtest.run` | agent | `phasePacket`, `workspace` | `works`, `broken` | `manualTest` (every outcome) |
+| `step.verify.journey` | agent | `phasePacket`, `workspace` | `pass`, `fail` | `evidencePack` (every outcome) |
+| `step.verify.design` | agent | `phasePacket`, `workspace` | `pass`, `fail`, `skipped` | `designCheck` on pass,fail |
+| `step.evidence.ui-plan` | agent | `phasePacket`, `built` | `planned`, `noTarget` | `evidencePlan` on planned; `evidenceSummary` on noTarget |
+| `step.evidence.api-plan` | agent | `phasePacket`, `built` | `planned`, `noTarget` | `evidencePlan` on planned; `evidenceSummary` on noTarget |
+| `step.evidence.db-plan` | agent | `phasePacket`, `built` | `planned`, `noTarget` | `evidencePlan` on planned; `evidenceSummary` on noTarget |
+| `step.evidence.ui-run` | agent | `evidencePlan`, `built` | `passed`, `failed`, `broken` | `evidenceSummary` (every outcome) |
+| `step.evidence.api-run` | agent | `evidencePlan`, `built` | `passed`, `failed` | `evidenceSummary` (every outcome) |
+| `step.evidence.db-run` | agent | `evidencePlan`, `built` | `passed`, `failed` | `evidenceSummary` (every outcome) |
+| `step.evidence.none` | block | `built` | `done` | `evidenceSummary` on done |
+| `step.evidence.combine` | block | `evidenceUi`, `evidenceApi`, `evidenceDb` | `done` | `evidenceSummary` on done |
+| `step.evidence.desk` | desk, human-only | `built` | `recorded`, `noneFound` | `evidenceSummary` (every outcome); `evidenceReason` (every outcome) |
+| `step.review.run` | agent | `change`, `phasePacket` | `clean`, `findings`, `behaviourWrong` | `review` (every outcome) |
+| `step.review.fix` | agent | `change`, `review` | `fixed` | `change` on fixed |
+| `step.review.recheck` | agent | `change`, `review` | `clean`, `findings`, `behaviourWrong` | `review` (every outcome) |
+| `step.owner.decide` | desk, human-only | - | `retry`, `stop` | `notes` on retry |
+
+`step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and human-only; their hashes moved once when the two fields
+landed (provisional owner default); every other shipped descriptor hashes as before (`ShippedBlocksTests` pins all of them).
 
 ## Writing a decision tree
 
@@ -458,7 +502,7 @@ that lets a person pick when the judge is unsure or fails. Until the block runti
 complete example is `recipes/dev/workflow.dev-evidence-route.yaml`.
 
 - **The route state** gives `prompt`, `facts` (what the question reads; each must be produced on every path into the
-  state) and `choices`, each entry quoted `"<outcome>: <criterion>"`. Its outcomes are the choice names plus `uncertain`.
+  state) and `choices`, each entry quoted `"<outcome>: <criterion>"` with a camelCase outcome (`notStartable`, `[a-z][A-Za-z0-9]{0,31}`). Its outcomes are the choice names plus `uncertain`.
   The choices are literal, so approving the recipe fixes its branches.
 - **The desk twin** is `step: { use: step.desk.choose, with: { from: <route state> } }`. Its outcomes are the route's choices.
 - **Transitions:** one per choice, listing both states in `from`, each `produces: [fact:decision]`; then
