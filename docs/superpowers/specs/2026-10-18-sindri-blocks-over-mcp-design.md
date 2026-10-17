@@ -303,7 +303,8 @@ C6). The engine side is §B.5.
   has no default and can only be pinned in a recipe is left out with `omitted` reason `needs-recipe-pin`.
 - **High priority** (C6). An owner's call takes its heavy slot ahead of merge trains, transition gates, Step calls and
   agent work, including jobs waiting through the box's heavy wrapper (§B.5: Sindri publishes how many owner calls
-  wait, and the wrapper holds that many slots back, as it does for the meta's reserve). Owner calls hold at most the
+  wait, and the wrapper holds that many slots back, as it does for the meta's reserve; the meta's wrapper change,
+  owner-approved at BM-1). Owner calls hold at most the
   box's slot cap minus one, so a gate or a merge train always gets a slot. The timing rule (§A.1) is unchanged: a
   sync call still waits at most 30 s before answering `running`.
 - **High sensitivity** (choice C10, recommended (a)): an owner's call result is private.
