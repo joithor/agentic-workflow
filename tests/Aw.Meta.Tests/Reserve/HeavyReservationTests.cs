@@ -18,12 +18,12 @@ public sealed class HeavyReservationTests
         await _world.ReadyWithGate();
         for (var n = 0; n < depth; n++)
         {
-            _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine("m" + n.ToString(CultureInfo.InvariantCulture), "t1-api", string.Create(CultureInfo.InvariantCulture, $"ready #{190 + n} 079c2541")));
+            _world.Transcripts.Append(MetaWorld.Transcript, MetaWorld.PeerLine("m" + n.ToString(CultureInfo.InvariantCulture), "t1-api", string.Create(CultureInfo.InvariantCulture, $"ready #{190 + n} 079c2541")));
             _ = await _world.Sync.Run(MetaWorld.Transcript, CancellationToken.None);
         }
     }
 
-    private async Task<Aw.Kernel.Result<Aw.Kernel.Unit>> Apply() =>
+    private async Task<Kernel.Result<Kernel.Unit>> Apply() =>
         await Worlds.Reservation(_world).Apply((await _world.Config.Load(CancellationToken.None)).Value, CancellationToken.None);
 
     [Theory, Trait("Lane", "unit")]
@@ -142,12 +142,12 @@ public sealed class HeavyReservationTests
             _ = await _world.Gates.RecordMerge(new MergeRecord(pr, "abc1234", _world.Clock.GetUtcNow()), CancellationToken.None);
         }
 
-        _ = await _world.Gates.Save(new Aw.Meta.Core.Gate.GateRecord(190, "headsha", "mainsha", ["repo"], [new Aw.Meta.Core.Gate.GateStep("sync-rules", Aw.Meta.Core.Gate.GateVerdict.Pass, "/l/sync.log")], Aw.Meta.Core.Gate.GateVerdict.Pass, _world.Clock.GetUtcNow()), CancellationToken.None);
+        _ = await _world.Gates.Save(new Core.Gate.GateRecord(190, "headsha", "mainsha", ["repo"], [new Core.Gate.GateStep("sync-rules", Core.Gate.GateVerdict.Pass, "/l/sync.log")], Core.Gate.GateVerdict.Pass, _world.Clock.GetUtcNow()), CancellationToken.None);
         var merged = false;
         _ = _world.Runner
             .When("gh pr view 190 --json headRefOid,isDraft,title,state", """{"headRefOid":"headsha","isDraft":false,"title":"Add x","state":"OPEN"}""")
-            .When("gh pr merge 190 --merge", _ => { merged = true; return new Aw.Meta.Core.Commands.CommandResult(0, string.Empty, string.Empty, TimedOut: false); })
-            .When("rev-parse --verify --quiet origin/main", _ => new Aw.Meta.Core.Commands.CommandResult(0, merged ? "newmainsha1234\n" : "mainsha\n", string.Empty, TimedOut: false))
+            .When("gh pr merge 190 --merge", _ => { merged = true; return new Core.Commands.CommandResult(0, string.Empty, string.Empty, TimedOut: false); })
+            .When("rev-parse --verify --quiet origin/main", _ => new Core.Commands.CommandResult(0, merged ? "newmainsha1234\n" : "mainsha\n", string.Empty, TimedOut: false))
             .When("git diff --name-only mainsha...headsha", "README.md\n")
             .When("git fetch");
         var merge = new MergeRunService(new MergeReadiness(_world.Config, _world.Gates, _world.Repo, _world.LogFiles), _world.Repo, _world.Gates, _world.Log, Worlds.Reservation(_world), _world.Clock);
@@ -179,6 +179,6 @@ public sealed class HeavyReservationTests
             .When("rev-parse --verify --quiet origin/main", "mainsha\n")
             .When("git diff --name-only", "src/a.cs\n")
             .When("git")
-            .When("/bin/heavy", _ => { onStep?.Invoke(); return new Aw.Meta.Core.Commands.CommandResult(0, string.Empty, string.Empty, TimedOut: false); })
+            .When("/bin/heavy", _ => { onStep?.Invoke(); return new Core.Commands.CommandResult(0, string.Empty, string.Empty, TimedOut: false); })
             .When("scripts/sync-rules.sh");
 }

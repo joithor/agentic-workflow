@@ -44,7 +44,7 @@ context use case: `ContextScopes` is shared, it can't move to Sindri Core (only 
 package's Core, DEPS-PROJ-008), and ARCH-SLICE-001 forbids sharing it across slice folders. Later stages add their
 context services here. The routes are `GET /sindri/context/query` and
 `GET /sindri/context/sources`. The CLI verbs are `Host/Commands/ContextVerbs`, with text output in `ContextText`.
-`Host/Catalog/ContextRows` holds `SyncSources` and `BuildContextMap` as ready `job` rows (`JobRows.Job`, request types `SyncContextSourcesRequest` and `BuildContextMapRequest`, routes `POST /sindri/context/sources/sync` and `POST /sindri/context/map/build`); the `context-sync` and `context-rebuild` services below run the same work on a cadence.
+`Host/Catalog/ContextRows` holds `SyncSources`, `BuildContextMap` and `RunContextBacktest` as ready `job` rows (`JobRows.Job`, request types `SyncContextSourcesRequest`, `BuildContextMapRequest` and `RunContextBacktestRequest`, routes `POST /sindri/context/sources/sync`, `POST /sindri/context/map/build` and `POST /sindri/context/eval/backtest`); the `context-sync` and `context-rebuild` services below run the same work on a cadence.
 
 ### Query pipeline (Phase 1, text shape)
 
@@ -275,6 +275,13 @@ counts); the scheduled service `ContextPurgeService` (`context-purge`); doctor r
 `context:retention` in the `RunDoctor` slice's `ContextEngineChecks`, which `ProfileFacts.Context` runs (so
 `RunDoctorService` stays within AW1007's dependency limit). CLI: `Host/Commands/ContextMapVerbs` and `ContextMapText`. The map JSON
 types are in `SindriJsonContext`; the reader and the exports folder take its `JsonSerializerOptions`.
+
+**Version retention (`MapRetention.ExcessVersions(versions, now)`).** The purge deletes a `Retained` version only when it is
+beyond the newest 20 retained **and** its successor (the next Current-or-Retained version by number) was created more than
+90 days ago. A version is what an as-of read (`AsOfMapBuilder.Authored`, newest Current-or-Retained created at or before a
+sample's date) returns for the dates from its own creation to its successor's, and the backtest's eval window is 90 days (the
+eval cache and report expiry), so a version replaced inside the window may still be read. No migration: `map_version.created`
+is enough. `CheckRetention` counts the same set.
 
 `GET /sindri/context/map/export` is the one query that writes: a file under `exports/` (owner-only, purged after 14
 days), never the store or the ledger. It is a query because the API spec lists it as one, and it changes no state a
@@ -641,6 +648,39 @@ intent source never synced or its last run failed. `SyncSources` is a job on API
 sources status); `tests/Aw.Sindri.Tests/ContextCalls/ContextSyncTests` (integration: service named or not, event with counts, event key,
 sources status, doctor row, item query), `ContextCliTests` and `ContextReviewRowsTests` (the pending form and the catalog row).
 
+## S-7A: the evaluation harness (corpus, as-of maps, arms, reports)
+
+### Shape
+
+- **Core** (`Aw.Context.Core/Eval/Backtest`, pure): `Arm`/`Arms` (names, order, `--arms` parsing, 082), `CorpusBuilder` (a sample is a merge keyed by its issue: the cut is the last first-parent commit before the merge at or before the issue's `createdAt`, and a merge at or before `createdAt` is no sample; truth is `git diff --name-only <merge>^1 <merge>` minus the deny globs), `BacktestScoring` (node recall, strict node precision, file recall@20, macro means; a metric with nothing to average is `null`, "not measured", never 0), `PassLine`/`PassBars` (the §9.4 bars; below 30 samples the overall line is the owner decision and enables nothing), `AdjudicatedScoring`, `MapQuality/*`. Ports: `IMergeHistory`, `IBriefSource`, `IAsOfDocs`, `IEvalStore`, `IArmQuery`, `IAdjudicator`. `MapExtractor.Version` keys the as-of cache.
+- **Infrastructure** (`Eval/`): `GitMergeHistory` (first-parent log over `GitCli`, caller `GIT_*` removed), `OnyxBriefSource` (searches each profile team key, keeps hits whose S-5A alias is `TEAM-n`, reads description chunks through the adapter's own allowlist; the brief is cleaned at ingest; a record edited after its creation is `leaky`, because Onyx keeps no content history), `AsOfRepoDocs` (the repo docs at the cut commit, same globs, size cap, chunker and ingest scrub, held in memory; the live `RepoDocsSource` is unchanged and keeps `SupportsAsOf: false`), `FileEvalStore` (0700/0600 files, refuses a worktree with 005, 90-day TTL).
+- **Features**: `QueryPipeline` is the old `QueryContextService` body behind one seam (`IMapProvider` plus a source catalog plus an as-of time); `QueryContextService` calls it with the live map, `ArmQuery` calls it with a sample's as-of map and an arm-filtered catalog. **No `asOf`, arm or graph parameter was added to `GET /sindri/context/query` or MCP**, so a session can never see an as-of or arm view. `RunBacktest/*` (`CorpusLoader`, `SampleScorer`, `AsOfMapBuilder`, `ArmRunner`, `ReportAssembly`, `RunBacktestService`), `Adjudicate/Adjudicator`, `EvalMap/*`, `EvalPurge/*`. The eval slices sit behind one `ContextEval` group in the facade.
+- **As-of map** (`AsOfMapBuilder`): `MapExtractor.Extract` over the cut commit's tree, plus `ClusterFeatures.Propose` over that commit's clusters with no labels (no labeling pass, no model call), joined under the newest map version created at or before the issue's creation (authored nodes whose code the cut lacks are dropped, `AsOfPruning`), with the `map_override` rows dated before the issue applied, all through `MapAccess.View` (the deny cut every reader makes; no pending proposal). A cache that can't be written costs time, never the map. Cached by repo, sha12, extractor version and whether clusters answered (`eval/cache/maps/<repo>-<sha12>-x<v>-c<0|1>.json`). Nothing is written to `context.db`.
+- **Arms**: `brief` (text anchors only, depth 0, no source), `docs` (as-of docs, empty graph), `graph` (the floor), `graph+reviewed` (today's map with every decision; labeled leaky), `all` (as-of graph and as-of docs). `linear`, `onyx`, `code` print `not available (S-6 / S-7B / S-9)`. `ranker` is 082 naming S-8.
+- **Heavy lock**: one slot for the whole run (`IHeavyJobLock`); busy is 040. A session caller is 020 ("a human or service job"). Cancellation writes no report.
+- **Adjudicator** (`context.eval.adjudicator`, default off): asks twice (second time the surfaces reversed), keeps agreeing answers, a disagreement is `unstable` and counts as not relevant, a model error stops adjudication (`Adjudication.Error`, `adjudication incomplete` in the report, no further call); sends the scrubbed brief inside the untrusted fence and node labels only; truth nodes are never judged; stops at 1.5M tokens (083, degraded, the rest `unjudged`, adjudicated precision "not measured"). The cap is the §9.4 bar kept as a constant, not a profile key.
+- **State is files**: `context/eval/{backtest,map,cache}`; no `context.db` migration, no new ledger event type.
+
+### Sindri
+
+`GET /sindri/context/eval/map` (a query: no catalog row), `sindri context eval map|purge|backtest`. `eval purge` runs in the CLI process (`--all` also clears the probe reports, so the next `eval probes` has no baseline) as the CLI's own caller class: a session gets SND-CONTEXT-020 from the engine. The `context-purge` service applies the 90-day eval TTL and `doctor`'s `context:retention` counts expired eval files. **`RunContextBacktest`** is a ready `class: job` row (`JobRows.Job`, `POST /sindri/context/eval/backtest`, command type `RunContextBacktestRequest {Arms, Since, Until, Limit}`). `AddContextJobs` registers it with `AddJob` (key `backtest`; the precheck refuses an unknown arm as SND-CONTEXT-082, and a limit of zero or less or a window that ends before it starts as SND-CLI-003, before any job exists; the request names no repo, so no `repo:` selector is passed), `ContextJobEndpoints` maps it with `MapJob`, and `RunContextBacktestService` runs `IContextEngine.EvalBacktest` under the starting caller with the job's progress, answering `RunContextBacktestResult` (counts, one `BacktestArmLine` per arm, the pass line, the report path, at most 20 degraded notes). `context eval backtest` is parsed by `BacktestLine` and run by `ContextJobVerbs` through the `JobFollower`. A session start is refused by the gate; a second start is SND-JOB-409. The action id is one constant (`ContextRows.BacktestAction`). Goldens: `jobs-id/context-backtest.json`, the catalog row.
+
+### Errors (S-7A range 080-083)
+
+| Code | Kind (HTTP) | Exit | Meaning |
+|---|---|---|---|
+| `SND-CONTEXT-080` | NotFound (404) | 1 | No eligible sample, or every sample was dropped (the message gives the counts left out and why) |
+| `SND-CONTEXT-081` | Unavailable (503) | 1 | No configured source can supply issue briefs |
+| `SND-CONTEXT-082` | Invalid (400) | 1 | `--arms` names an unknown arm (the message lists the arms and which are not available yet) |
+| `SND-CONTEXT-083` | degraded | 0 | Adjudication stopped at the 1.5M-token cap |
+
+084-086 are reserved for review findings, 087-089 for S-7B. Reused: 020, 030, 040, 048 (a cut git can't read: that sample is dropped and counted), 005, 004 (a cache or context.db read failing stops the run with its own code), 001, 011.
+
+The Onyx issue listing is one admin search per profile team. Onyx v4.9.0's admin search takes no offset and returns at most 50 hits, so it can't be paged: a team whose search returns 50 is reported as `issue listing capped: <team>` (a degraded note, and in the 080 message when nothing was eligible), and `--since` goes into the search as Onyx's update-time filter (`time_cutoff`; an issue is never updated before it was created, so none created in the window is lost) so the cap is spent inside the window. `--until` has no source filter and applies after the listing.
+
+### Tests
+
+`tests/Aw.Context.Tests/{Eval/Backtest,RunBacktest,Adjudicate,EvalMap}` (pure scoring, merge history on the fixture repo, the briefs against the fake Onyx, the whole backtest on the split-panes fixture, as-of honesty, adjudicator with `FakeModelPort`); `tests/Aw.Sindri.Tests/ContextCalls/{BacktestJobTextTests,ContextBacktestJobApiTests,ContextEvalNotRunningTests,ContextEvalStoreHostTests,ContextEvalVerbsTests,ContextJobVerbsTests,ContextLensesApiTests,ContextReviewRowsTests}` (the job text, the job route and its prechecks, the CLI parse and exit codes, the eval verbs).
 ## S-D: the diff shape
 
 The fifth query shape (`ContextQuery.Diff = new DiffRange(base, head)`, optional `Repo`): the files changed from the merge base of two commits to the second, mapped to nodes, then the same cascade, packing, sources and citations as the other shapes.
