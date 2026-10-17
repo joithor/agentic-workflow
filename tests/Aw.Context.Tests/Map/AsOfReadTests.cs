@@ -77,6 +77,17 @@ public sealed class AsOfReadTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_single_retained_version_is_named_once_not_as_a_range()
+    {
+        await TwoVersions();
+
+        var result = await _reader.ReadViewAt(MapWorld.Human, At("v99"), MapWorld.None);
+
+        Assert.Contains("retained: v1)", result.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("v1..v1", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_commit_part_that_differs_is_120_and_the_label_an_answer_printed_reads_back()
     {
         var store = _world.Store;

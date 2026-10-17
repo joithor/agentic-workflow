@@ -199,7 +199,7 @@ public sealed class ContextReviewVerbsTests : IDisposable
         var exit = await Lens(api, "lenses", "feature:a", "--draft", "--map-version", "v1");
 
         var text = _error.ToString();
-        Assert.Equal(2, exit);   // 006 is a tool error like HTTP's 400, not attention
+        Assert.Equal(1, exit);   // 006 is attention on the CLI, like every other 006 refusal
         Assert.Empty(api.Calls);
         Assert.Contains("SND-CONTEXT-006", text, StringComparison.Ordinal);
         Assert.Contains("--draft", text, StringComparison.Ordinal);
