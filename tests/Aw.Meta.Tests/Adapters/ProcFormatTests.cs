@@ -26,6 +26,6 @@ public sealed class ProcFormatTests
     {
         var fields = ProcFormat.MemInfo("MemTotal:       16000000 kB\nMemAvailable:    9000000 kB\nSwapTotal:       2000000 kB\nSwapFree:        1500000 kB\n");
 
-        Assert.Equal((9_000_000L, 500_000L, 16_000_000L), (fields.Available, fields.SwapUsed, fields.Total));
+        Assert.Equal((9_000_000L, 500_000L, 16_000_000L, 2_000_000L), (fields.Available, fields.SwapUsed, fields.Total, fields.SwapTotal));
     }
 }
