@@ -25,4 +25,16 @@ internal sealed class MacProcessLiveness(MacHostReader reader, TimeProvider time
 
         return age.Value is { } running && !ProcessStart.IsReused(now - running, recordedAt);
     }
+
+    public async ValueTask<IReadOnlyList<Result<bool>>> Running(IReadOnlyList<ProcessClaim> claims, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(claims);
+        var answers = new List<Result<bool>>(claims.Count);
+        foreach (var claim in claims)
+        {
+            answers.Add(await IsRunning(claim.Pid, claim.RecordedAt, cancellationToken).ConfigureAwait(false));
+        }
+
+        return answers;
+    }
 }

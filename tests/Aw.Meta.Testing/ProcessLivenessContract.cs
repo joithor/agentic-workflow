@@ -61,6 +61,30 @@ public abstract class ProcessLivenessContract
         Expect.That(alive.IsSuccess && !alive.Value, "gone");
     }
 
+    /// <summary>A batch answers every claim in order, as the single call does for it.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task A_batch_answers_each_claim_in_order_as_the_single_call_does()
+    {
+        var liveness = Create();
+        var pid = StartProcess();
+        var gone = StartProcess();
+        StopProcess(gone);
+
+        var answers = await liveness.Running(
+            [
+                new ProcessClaim(pid, RealTime.NowOffset),
+                new ProcessClaim(pid, RealTime.NowOffset - TimeSpan.FromHours(1)),
+                new ProcessClaim(gone, RealTime.NowOffset),
+                new ProcessClaim(2_147_000_000, RealTime.NowOffset),
+                new ProcessClaim(0, RealTime.NowOffset),
+            ],
+            _none);
+
+        Expect.That(answers.Count == 5 && answers.All(a => a.IsSuccess), "every claim is answered");
+        Expect.That(answers.Select(a => a.Value).SequenceEqual([true, false, false, false, false]), "running; reused; exited; no such pid; not a pid");
+    }
+
     /// <summary>A pid no process has, or that is not a pid, is not alive.</summary>
     /// <returns>A task.</returns>
     [Fact]

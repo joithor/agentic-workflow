@@ -62,17 +62,42 @@ public sealed class DirectorySessionDirectoryTests : IDisposable
         Assert.Equal("current", Assert.Single(sessions.Value).Session.Value);
     }
 
-    [Fact, Trait("Lane", "integration")]
-    public async Task A_host_that_cannot_be_asked_is_the_error_not_an_empty_list()
+    private Task WriteSession(int pid)
     {
-        await File.WriteAllTextAsync(Path.Combine(_dir.Path, "42.json"), """{"pid":42,"sessionId":"x"}""", TestContext.Current.CancellationToken);
+        var text = string.Create(System.Globalization.CultureInfo.InvariantCulture, $$"""{"pid":{{pid}},"sessionId":"s{{pid}}"}""");
+        return File.WriteAllTextAsync(Path.Combine(_dir.Path, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{pid}.json")), text, TestContext.Current.CancellationToken);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task The_sessions_are_checked_with_one_batch_not_one_call_each()
+    {
+        foreach (var pid in new[] { 41, 42, 43 })
+        {
+            await WriteSession(pid);
+        }
+
         var liveness = new InMemoryProcessLiveness();
-        liveness.FailWith(MetaErrors.HostUnreadable.With("unavailable on macOS: ps could not be run"));
+        _ = await new DirectorySessionDirectory(_dir.Path, liveness).Live(CancellationToken.None);
+
+        Assert.Equal((1, 0), (liveness.BatchCalls, liveness.SingleCalls));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_pid_the_host_cannot_be_asked_about_is_kept_live_and_the_others_are_still_judged()
+    {
+        foreach (var pid in new[] { 41, 42, 43 })
+        {
+            await WriteSession(pid);
+        }
+
+        var liveness = new InMemoryProcessLiveness();
+        liveness.Run(41, DateTimeOffset.UnixEpoch);
+        liveness.FailWith(42, MetaErrors.HostUnreadable.With("unavailable on macOS: ps could not be run"));
 
         var sessions = await new DirectorySessionDirectory(_dir.Path, liveness).Live(CancellationToken.None);
 
-        Assert.True(sessions.IsError);
-        Assert.Equal(MetaErrors.HostUnreadable.Code, sessions.Error.Code);
+        Assert.True(sessions.IsSuccess);
+        Assert.Equal([41, 42], sessions.Value.Select(s => s.Pid));
     }
 
     public void Dispose() => _dir.Dispose();

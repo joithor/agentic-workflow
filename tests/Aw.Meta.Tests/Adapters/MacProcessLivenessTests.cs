@@ -1,5 +1,6 @@
 using Aw.Meta.Core;
 using Aw.Meta.Core.Commands;
+using Aw.Meta.Core.Ports;
 using Aw.Meta.Infrastructure.Files;
 using Aw.Meta.Testing;
 using Microsoft.Extensions.Time.Testing;
@@ -95,6 +96,30 @@ public sealed class MacProcessLivenessTests
         var alive = await liveness.IsRunning(321, _now, TestContext.Current.CancellationToken);
 
         Assert.Equal(MetaErrors.HostUnreadable.Code, alive.Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_batch_lists_the_processes_with_one_ps_and_answers_every_claim_in_order()
+    {
+        var (liveness, runner) = Make(r => r.When("-axo pid=,etime=", "  321    02:00:00\n  400       00:30\n"));
+
+        var answers = await liveness.Running(
+            [new ProcessClaim(321, _now - TimeSpan.FromMinutes(5)), new ProcessClaim(400, _now - TimeSpan.FromHours(1)), new ProcessClaim(999, _now), new ProcessClaim(0, _now)],
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal([true, false, false, false], answers.Select(a => a.Value));
+        Assert.Equal(["/bin/ps -axo pid=,etime="], runner.Lines);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_batch_whose_ps_cannot_run_is_AW_META_010_for_every_claim_not_an_exception()
+    {
+        var (liveness, _) = Make(r => r);
+
+        var answers = await liveness.Running([new ProcessClaim(321, _now), new ProcessClaim(400, _now)], TestContext.Current.CancellationToken);
+
+        Assert.All(answers, a => Assert.Equal(MetaErrors.HostUnreadable.Code, a.Error.Code));
+        Assert.Equal(2, answers.Count);
     }
 
     [Fact, Trait("Lane", "unit")]

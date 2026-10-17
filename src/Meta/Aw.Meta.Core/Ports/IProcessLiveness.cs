@@ -15,4 +15,15 @@ public interface IProcessLiveness
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>True when it is that process; false when there is none or the pid was reused; AW-META-010 when the host can't be asked.</returns>
     public ValueTask<Result<bool>> IsRunning(int pid, DateTimeOffset recordedAt, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Answers many claims at once (the macOS adapter lists every process with one ps instead of one ps per pid). The answers come
+    /// back in the order of <paramref name="claims"/> and each is what <see cref="IsRunning"/> would answer for that claim. A claim
+    /// the host could not be asked about is its own AW-META-010, never a failure of the whole call: callers read it as unknown
+    /// (<see cref="LivenessVerdicts.IsLiveOrUnknown"/>).
+    /// </summary>
+    /// <param name="claims">The pids and when the files naming them were written.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>One answer per claim, in order.</returns>
+    public ValueTask<IReadOnlyList<Result<bool>>> Running(IReadOnlyList<ProcessClaim> claims, CancellationToken cancellationToken);
 }

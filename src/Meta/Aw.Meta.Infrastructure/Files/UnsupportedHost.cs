@@ -21,6 +21,13 @@ internal sealed class UnsupportedHost(string os) : IProcessTable, IHostResources
 
     public ValueTask<Result<IReadOnlyList<ProcessLocation>>> Locations(CancellationToken cancellationToken) => Unavailable<IReadOnlyList<ProcessLocation>>();
 
+    public async ValueTask<IReadOnlyList<Result<bool>>> Running(IReadOnlyList<ProcessClaim> claims, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(claims);
+        var answer = await Unavailable<bool>().ConfigureAwait(false);
+        return [.. claims.Select(_ => answer)];
+    }
+
     private ValueTask<Result<T>> Unavailable<T>() =>
         ValueTask.FromResult(Results.Failure<T>(MetaErrors.HostUnreadable.With($"unavailable on {os}: aw-meta reads the process table and memory on Linux and macOS only")));
 }

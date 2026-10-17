@@ -45,15 +45,30 @@ public sealed class HeavyLockDirectoryTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task A_host_that_cannot_be_asked_is_the_error()
+    public async Task A_holder_the_host_cannot_be_asked_about_is_listed_alive_not_an_error()
     {
         var path = TakeLock(77, new DateTime(2026, 10, 17, 9, 0, 0, DateTimeKind.Utc));
         var liveness = new InMemoryProcessLiveness();
-        liveness.FailWith(MetaErrors.HostUnreadable.With("unavailable on macOS: ps could not be run"));
+        liveness.FailWith(77, MetaErrors.HostUnreadable.With("unavailable on macOS: ps could not be run"));
 
         var locks = await HeavyLockDirectory.List(path, liveness, TestContext.Current.CancellationToken);
 
-        Assert.Equal(MetaErrors.HostUnreadable.Code, locks.Error.Code);
+        Assert.True(locks.IsSuccess);
+        Assert.Equal((77, true), (Assert.Single(locks.Value).Pid, Assert.Single(locks.Value).Alive));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task The_holders_are_checked_with_one_batch()
+    {
+        var path = TakeLock(77, new DateTime(2026, 10, 17, 9, 0, 0, DateTimeKind.Utc));
+        var second = Path.Combine(_dir.Path, "heavy-job.lock.2");
+        _ = Directory.CreateDirectory(second);
+        await File.WriteAllTextAsync(Path.Combine(second, "owner"), "78 2026-10-17T09:00:00Z session=1 dotnet test", TestContext.Current.CancellationToken);
+        var liveness = new InMemoryProcessLiveness();
+
+        _ = await HeavyLockDirectory.List(path, liveness, TestContext.Current.CancellationToken);
+
+        Assert.Equal((1, 0), (liveness.BatchCalls, liveness.SingleCalls));
     }
 
     public void Dispose() => _dir.Dispose();
