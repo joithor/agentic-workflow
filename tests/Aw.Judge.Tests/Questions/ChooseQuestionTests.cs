@@ -181,7 +181,7 @@ public sealed class ChooseQuestionTests
     public async Task An_out_of_enum_answer_is_a_failure_row_and_the_next_provider_is_asked()
     {
         var run = new QuestionRun();
-        var first = new Testing.ScriptedProvider(ProviderName.Jev, ContentClass.Brief).Decides("elsewhere", 0.9);
+        var first = new ScriptedProvider(ProviderName.Jev, ContentClass.Brief).Decides("elsewhere", 0.9);
         var second = Cli(ContentClass.Brief).Decides("db", 0.9);
 
         var outcome = await run.AskByName("choose", Input(), first, second);
