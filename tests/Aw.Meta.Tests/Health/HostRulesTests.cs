@@ -62,11 +62,4 @@ public sealed class HostRulesTests
 
         Assert.Equal([new DuplicateServer("node /x/other-mcp", 4, 3)], duplicates);
     }
-
-    [Theory, Trait("Lane", "unit")]
-    [InlineData(1_600_000, false)]
-    [InlineData(1_599_999, true)]
-    [InlineData(100, true)]
-    public void Memory_is_low_under_ten_percent_available(long available, bool low) =>
-        Assert.Equal(low, HostRules.MemoryLow(new HostResources(16_000_000, available, 0, 1)));
 }

@@ -101,7 +101,7 @@ public static class InstanceNames
         "file" => recipe.Inputs.TryGetValue(input.Key, out var file) ? file.Name : null,
         "text" => content is null ? null : SubjectRefs.FirstLine(content),
         "link" => content is null ? null : LinkText(content),
-        "linear-project" or "webhook" => content is null ? null : SubjectRefs.PayloadId(content),
+        "linear-project" or "webhook" or "payload" or "packet" => content is null ? null : SubjectRefs.PayloadId(content),
         _ => null,
     };
 

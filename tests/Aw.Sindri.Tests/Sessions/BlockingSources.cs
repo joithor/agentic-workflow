@@ -7,12 +7,13 @@ namespace Aw.Sindri.Tests.Sessions;
 internal sealed class BlockingSources : IClaudeSessionRecords, IFleetStates, IDisposable
 {
     private readonly ManualResetEventSlim _gate = new(initialState: false);
-    private int _recordReads;
-    private int _fleetReads;
+    public ReadSignal Records { get; } = new();
 
-    public int RecordReads => Volatile.Read(ref _recordReads);
+    public ReadSignal Fleet { get; } = new();
 
-    public int FleetReads => Volatile.Read(ref _fleetReads);
+    public int RecordReads => Records.Count;
+
+    public int FleetReads => Fleet.Count;
 
     public CancellationToken RecordToken { get; private set; }
 
@@ -21,14 +22,14 @@ internal sealed class BlockingSources : IClaudeSessionRecords, IFleetStates, IDi
     Result<IReadOnlyList<ClaudeRecord>> IClaudeSessionRecords.Read(CancellationToken cancellationToken)
     {
         RecordToken = cancellationToken;
-        _ = Interlocked.Increment(ref _recordReads);
+        Records.Increment();
         _ = _gate.Wait(TimeSpan.FromSeconds(10), CancellationToken.None);
         return Results.Success<IReadOnlyList<ClaudeRecord>>([]);
     }
 
     Result<IReadOnlyList<FleetStateFile>> IFleetStates.Read(CancellationToken cancellationToken)
     {
-        _ = Interlocked.Increment(ref _fleetReads);
+        Fleet.Increment();
         _ = _gate.Wait(TimeSpan.FromSeconds(10), CancellationToken.None);
         return Results.Success<IReadOnlyList<FleetStateFile>>([]);
     }
