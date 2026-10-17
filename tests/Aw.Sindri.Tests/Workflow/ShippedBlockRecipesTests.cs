@@ -50,8 +50,9 @@ public sealed class ShippedBlockRecipesTests
 
         foreach (var (name, state) in recipe.States.Where(s => s.Value.Step?.Use.Value == "step.judge.choose"))
         {
-            Assert.Contains(recipe.States.Values, s => s.Step?.Use.Value == "step.desk.choose" && s.Step.With.ContainsKey("from"));
-            Assert.Contains(recipe.Transitions, t => t.From.Contains(name, StringComparer.Ordinal) && t.On == "step.failed");
+            var twin = Assert.Single(recipe.States, s => s.Value.Step?.Use.Value == "step.desk.choose" && s.Value.Step.With.TryGetValue("from", out var from) && from.Literal?.GetString() == name);
+            var failed = Assert.Single(recipe.Transitions, t => t.From.Contains(name, StringComparer.Ordinal) && t.On == "step.failed");
+            Assert.Equal(twin.Key, failed.To);
         }
     }
 }
