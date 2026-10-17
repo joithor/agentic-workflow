@@ -12,6 +12,10 @@ internal static class A
     /// <returns>A new builder.</returns>
     public static TaskBuilder Task(string id) => new(id);
 
+    /// <summary>A sizes file with the line spec's Q5 limits (XS 3 files and 2 items, S 8 and 4, M 20 and 8, L 40 and 16, XL 80 and 32) and a budget that grows with the size.</summary>
+    /// <returns>The sizes.</returns>
+    public static Core.Model.SizesFile Sizes() => SizesBuilder.Default();
+
     /// <summary>A scope packet's files that pass every scoping check.</summary>
     /// <returns>A new builder.</returns>
     public static ScopingPacketBuilder ScopingPacket() => new();

@@ -13,7 +13,7 @@ public sealed class LimitTests
     {
         var service = new ValidatePacketService(new PacketInspector(
             new InMemoryPacketSource().With("pkt", PacketFiles.Of(packet.Build())),
-            repo ?? new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles)));
+            repo ?? new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles)), new InMemorySizesSource());
         var result = await service.Handle(new ValidatePacketRequest("pkt"), CancellationToken.None);
         Assert.True(result.IsSuccess, result.IsError ? result.Error.Message : null);
         return result.Value;
