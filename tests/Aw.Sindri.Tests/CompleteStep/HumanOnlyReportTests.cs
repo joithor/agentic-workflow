@@ -114,6 +114,32 @@ public sealed class HumanOnlyReportTests
     }
 
     /// <summary>Review run 1 (arch-r1-1): the view read for the human-only rule serves the engine-filled outputs and the approval check too.</summary>
+    /// <summary>Review run 1 (qa-r1-2): a retry with a nonce that is already claimed is refused before anything else, and the claim stays.</summary>
+    [Fact(Timeout = 30_000)]
+    public async Task A_session_retry_on_a_claimed_nonce_is_refused_and_keeps_the_claim()
+    {
+        var desk = new OpenTask("step.desk.choose");
+        _ = await _nonces.Claim(_nonce, "earlier report", TestContext.Current.CancellationToken);
+
+        var refused = await Service(desk, Session()).Handle(Request(), TestContext.Current.CancellationToken);
+
+        Assert.Equal("SND-AUTH-002", refused.Error.Code);
+        Assert.Empty(desk.Attempted);
+        Assert.Equal(NonceClaim.Pending, (await _nonces.Claim(_nonce, "earlier report", TestContext.Current.CancellationToken)).Value);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task A_session_retry_on_a_claimed_nonce_with_an_unreadable_instance_is_that_error()
+    {
+        var desk = new OpenTask("step.desk.choose") { Unreadable = true };
+        _ = await _nonces.Claim(_nonce, "earlier report", TestContext.Current.CancellationToken);
+
+        var refused = await Service(desk, Session()).Handle(Request(), TestContext.Current.CancellationToken);
+
+        Assert.Equal("SND-WF-010", refused.Error.Code);
+        Assert.Empty(desk.Attempted);
+    }
+
     [Fact(Timeout = 30_000)]
     public async Task A_session_report_reads_the_instance_once()
     {

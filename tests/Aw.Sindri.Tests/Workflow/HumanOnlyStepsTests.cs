@@ -9,6 +9,8 @@ public sealed class HumanOnlyStepsTests
 {
     [Theory, Trait("Lane", "unit")]
     [InlineData(true, null, StepRuntime.Desk, true)]
+    [InlineData(true, null, StepRuntime.Agent, false)]
+    [InlineData(true, BlockRuntime.Block, StepRuntime.Desk, true)]
     [InlineData(null, BlockRuntime.Block, StepRuntime.Desk, true)]
     [InlineData(null, BlockRuntime.Block, StepRuntime.Agent, false)]
     [InlineData(null, null, StepRuntime.Desk, false)]
