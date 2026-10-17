@@ -190,7 +190,7 @@ public sealed class SqliteDatabaseReaderContractTests : ReadOnlyDatabaseContract
             attempts.Add(attempt);
             if (attempt == 1)
             {
-                File.SetLastWriteTimeUtc(source, DateTime.UtcNow.AddMinutes(5));
+                File.SetLastWriteTimeUtc(source, RealTime.NowDateTime.AddMinutes(5));
             }
         });
 
@@ -209,7 +209,7 @@ public sealed class SqliteDatabaseReaderContractTests : ReadOnlyDatabaseContract
         var reader = new SqliteDatabaseReader(attempt =>
         {
             attempts = attempt;
-            File.SetLastWriteTimeUtc(source, DateTime.UtcNow.AddMinutes(attempt));
+            File.SetLastWriteTimeUtc(source, RealTime.NowDateTime.AddMinutes(attempt));
         });
 
         var opened = await reader.OpenAsync(db.Target, TestContext.Current.CancellationToken);

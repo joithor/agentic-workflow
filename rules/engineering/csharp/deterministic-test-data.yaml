@@ -13,7 +13,7 @@ checks:
     status: active
     note: "checked in review"
 gap: open
-gapNote: "BannedSymbols applies to Core projects and opt-ins such as Aw.Kernel, never to tests, so tests aren't checked for the wall clock or random ids."
+gapNote: "The wall clock, Guid.NewGuid and Thread.Sleep in tests are checked by the tests-use-fake-time record; builders, shared fixtures and the rest of this rule are followed in review."
 source:
   type: adr
   ref: "docs/superpowers/specs/2026-10-09-agent-readiness-design.md#4b5"

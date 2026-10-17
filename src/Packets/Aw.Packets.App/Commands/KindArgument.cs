@@ -10,25 +10,41 @@ internal static class KindArgument
     /// <returns>The kind and the other arguments; null for a repeated '--kind', a missing value or an unknown kind.</returns>
     internal static (PacketKind Kind, IReadOnlyList<string> Arguments)? Extract(IReadOnlyList<string> args)
     {
-        PacketKind? kind = null;
-        var rest = new List<string>();
+        var at = -1;
         for (var i = 0; i < args.Count; i++)
         {
             if (args[i] != "--kind")
             {
-                rest.Add(args[i]);
                 continue;
             }
 
-            if (kind is not null || i + 1 >= args.Count || PacketKinds.Find(args[i + 1]) is not { } found)
+            if (at >= 0)
             {
                 return null;
             }
 
-            kind = found;
-            i++;
+            at = i;
         }
 
-        return (kind ?? PacketKinds.Build, rest);
+        if (at < 0)
+        {
+            return (PacketKinds.Build, [.. args]);
+        }
+
+        if (at + 1 >= args.Count || PacketKinds.Find(args[at + 1]) is not { } kind)
+        {
+            return null;
+        }
+
+        var rest = new List<string>(args.Count - 2);
+        for (var i = 0; i < args.Count; i++)
+        {
+            if (i != at && i != at + 1)
+            {
+                rest.Add(args[i]);
+            }
+        }
+
+        return (kind, rest);
     }
 }

@@ -185,8 +185,8 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
     /// <summary>Waits until visibility lists <paramref name="count"/> live instances of <paramref name="item"/> (it is eventually consistent).</summary>
     private static async Task Visible(IServiceProvider sindri, string item, int count)
     {
-        var deadline = DateTime.UtcNow + _patience;
-        while (DateTime.UtcNow < deadline)
+        var deadline = RealTime.NowDateTime + _patience;
+        while (RealTime.NowDateTime < deadline)
         {
             var listed = await sindri.GetRequiredService<IWorkflowInstances>().List($"Item = '{item}'", ended: false, Token);
             if (!listed.IsError && listed.Value.Count == count)
@@ -226,8 +226,8 @@ public sealed class EventBridgeTests(DevServer server) : IClassFixture<DevServer
     /// <summary>The 'workflow.started' event the interpreter mirrored for <paramref name="address"/>: the command a causation route names.</summary>
     private static async Task<Guid> StartedEvent(IServiceProvider sindri, string address)
     {
-        var deadline = DateTime.UtcNow + _patience;
-        while (DateTime.UtcNow < deadline)
+        var deadline = RealTime.NowDateTime + _patience;
+        while (RealTime.NowDateTime < deadline)
         {
             var read = await sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 1000, Token);
             var started = read.Value.FirstOrDefault(e => e.Envelope.Type == "workflow.started" && InstanceOf(e) == address);
