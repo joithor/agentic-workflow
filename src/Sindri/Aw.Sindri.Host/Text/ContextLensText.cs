@@ -18,22 +18,83 @@ internal static class ContextLensText
 
     internal static string Lenses(LensesView view, bool fence)
     {
-        var text = new StringBuilder(Invariant($"lenses of {view.Anchor.Key.Value} ({Fenced(view.Anchor.Label, view.Anchor.Trust, fence)}) · map {view.MapVersion}{(view.Draft ? " (draft)" : string.Empty)} · depth {view.Depth}\n"));
-        Intent(text, view.Bands.Intent, fence);
-        Product(text, view.Bands.Product, fence);
-        Code(text, view.Bands.Code);
-        foreach (var edge in view.Edges)
+        var text = new StringBuilder(Invariant($"lenses of {view.Anchor.Key.Value} ({Fenced(view.Anchor.Label, view.Anchor.Trust, fence)}) · map {MapName(view.MapVersion, view.MapCommit)}{(view.Draft ? " (draft)" : string.Empty)} · depth {view.Depth}\n"));
+        return Body(text, new LensParts(view.Bands, view.Edges, view.Conflicts, view.Coverage, view.Searched), fence);
+    }
+
+    internal static string LensesSet(LensesSetView view, bool fence)
+    {
+        var anchors = string.Join(", ", view.Anchors.Select(a => Invariant($"{a.Key.Value} ({Fenced(a.Label, a.Trust, fence)})")));
+        var text = new StringBuilder(Invariant($"lenses of {view.Anchors.Count} anchors ({anchors}) · map {MapName(view.MapVersion, view.MapCommit)}{(view.Draft ? " (draft)" : string.Empty)} · depth {view.Depth}\n"));
+        foreach (var missing in view.MissingAnchors)
+        {
+            _ = text.AppendLine($"missing anchor: {missing}");
+        }
+
+        return Body(text, new LensParts(view.Bands, view.Edges, view.Conflicts, view.Coverage, view.Searched), fence);
+    }
+
+    private readonly record struct LensParts(LensBands Bands, IReadOnlyList<LensEdge> Edges, IReadOnlyList<LensConflict> Conflicts, LensCoverage Coverage, LensSearched Searched);
+
+    private static string MapName(string version, string? commit) => commit is null ? version : version + "@" + commit;
+
+    private static string Body(StringBuilder text, LensParts parts, bool fence)
+    {
+        var (bands, edges, conflicts, coverage, searched) = parts;
+        Intent(text, bands.Intent, fence);
+        Product(text, bands.Product, fence);
+        Code(text, bands.Code);
+        foreach (var edge in edges)
         {
             _ = text.AppendLine(Invariant($"edge {edge.From.Value} {EdgeRules.Name(edge.Type)} {edge.To.Value}  {edge.Provenance.ToString().ToLowerInvariant()} {(edge.Confirmed ? "confirmed" : "suggested")} {edge.Confidence:0.00}  {edge.Link.Value}"));
         }
 
-        foreach (var conflict in view.Conflicts)
+        foreach (var conflict in conflicts)
         {
             _ = text.AppendLine($"conflict {conflict.Kind.ToString().ToLowerInvariant()}: {conflict.Decision.Value} over {conflict.Other} on {conflict.Node.Value}");
         }
 
-        return text.Append(Coverage(view.Coverage)).ToString();
+        _ = text.Append(Searched(searched)).Append(Coverage(coverage));
+        if (coverage.ByAnchor is { } by)
+        {
+            foreach (var (key, c) in by)
+            {
+                _ = text.AppendLine(Invariant($"  {key}: intent {c.Intent.Covered} of {c.Intent.Of} · product {c.Product.Confirmed} of {c.Product.Of} confirmed · code {c.Code.Implemented} of {c.Code.Of} implemented"));
+            }
+        }
+
+        return text.ToString();
     }
+
+    /// <summary>What was looked at, one word per source state ('onyx degraded (SND-CONTEXT-010)'), never colour.</summary>
+    private static string Searched(LensSearched searched)
+    {
+        var text = new StringBuilder(Invariant($"searched: map {searched.MapVersion} · depth {searched.Depth} · hops {string.Join(", ", searched.Hops)}\n"));
+        foreach (var source in searched.Sources)
+        {
+            var why = source.Code ?? source.Reason;
+            _ = text.AppendLine(Invariant($"  {source.Id.Value} {StateWord(source.State)}{(why is null ? string.Empty : " (" + why + ")")}"));
+        }
+
+        foreach (var (name, band) in new[] { ("intent", searched.Bands.Intent), ("product", searched.Bands.Product), ("code", searched.Bands.Code) })
+        {
+            if (band.Empty)
+            {
+                _ = text.AppendLine($"  {name} band: empty");
+            }
+        }
+
+        return text.ToString();
+    }
+
+    private static string StateWord(SearchedState state) => state switch
+    {
+        SearchedState.NotConfigured => "not-configured",
+        SearchedState.Ok => "ok",
+        SearchedState.Unavailable => "unavailable",
+        SearchedState.Degraded => "degraded",
+        _ => state.ToString().ToLowerInvariant(),
+    };
 
     /// <summary>The coverage block, one line per count and one per gap; 'map status --anchor' prints it too.</summary>
     /// <param name="c">The coverage.</param>
@@ -41,6 +102,11 @@ internal static class ContextLensText
     internal static string Coverage(LensCoverage c)
     {
         var text = new StringBuilder(Invariant($"coverage: scope {c.Scope} · intent {c.Intent.Covered} of {c.Intent.Of} · product {c.Product.Confirmed} of {c.Product.Of} confirmed · code {c.Code.Implemented} of {c.Code.Of} implemented ({c.Code.Level} level), {c.Code.Suggested} suggested\n"));
+        if (c.Map is { } m)
+        {
+            _ = text.AppendLine(Invariant($"map coverage: {m.Paths.Count} paths{(m.Truncated ? " (truncated)" : string.Empty)}, {m.Files} files, {m.Unmapped} unmapped, {m.Suggested} suggested · map created {m.Created:yyyy-MM-ddTHH:mm:ssZ} ({m.AgeDays} days old)"));
+        }
+
         foreach (var gap in c.Gaps)
         {
             _ = text.AppendLine($"gap: {gap.Node.Value} missing {string.Join(", ", gap.Missing.Select(m => m.ToString().ToLowerInvariant()))}{(gap.Note is { } note ? " (" + note + ")" : string.Empty)}");

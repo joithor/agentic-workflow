@@ -17,14 +17,19 @@ public static class LensCoverageBuilder
         return LensScope.Of(graph, anchor, depth: 0) is { } scope ? Of(scope) : new LensCoverage(0, new CoverageIntent(0, 0), new CoverageProduct(0, 0), new CoverageCode(0, 0, FileLevel, 0), []);
     }
 
-    internal static LensCoverage Of(LensScope scope)
+    internal static LensCoverage Of(LensScope scope) => Of(scope.Graph, scope.Nodes, scope.Cascade.OwnScope);
+
+    /// <summary>The coverage of any own scope (one anchor's, or the union of several).</summary>
+    internal static LensCoverage Of(GraphSnapshot graph, IReadOnlyDictionary<string, GraphNode> nodes, IReadOnlyCollection<NodeKey> ownScope)
     {
-        var order = scope.Cascade.OwnScope.OrderBy(k => k.Value, StringComparer.Ordinal).ToList();
-        var covered = scope.IntoScope(EdgeType.Mentions, EdgeType.Decides).Select(e => e.To.Value).ToHashSet(StringComparer.Ordinal);
-        var implements = scope.IntoScope(EdgeType.Implements).ToList();
+        var order = ownScope.OrderBy(k => k.Value, StringComparer.Ordinal).ToList();
+        var own = ownScope.Select(k => k.Value).ToHashSet(StringComparer.Ordinal);
+        IEnumerable<GraphEdge> Into(params EdgeType[] types) => graph.Edges.Where(e => types.Contains(e.Type) && own.Contains(e.To.Value));
+        var covered = Into(EdgeType.Mentions, EdgeType.Decides).Select(e => e.To.Value).ToHashSet(StringComparer.Ordinal);
+        var implements = Into(EdgeType.Implements).ToList();
         var confirmed = implements.Where(e => LensScope.Confirmed(e.Provenance)).Select(e => e.To.Value).ToHashSet(StringComparer.Ordinal);
         var suggested = implements.Select(e => e.To.Value).Where(t => !confirmed.Contains(t)).ToHashSet(StringComparer.Ordinal);
-        var product = order.Count(k => scope.Nodes.TryGetValue(k.Value, out var n) && LensScope.Confirmed(n.Provenance));
+        var product = order.Count(k => nodes.TryGetValue(k.Value, out var n) && LensScope.Confirmed(n.Provenance));
         return new LensCoverage(order.Count, new CoverageIntent(order.Count(k => covered.Contains(k.Value)), order.Count),
             new CoverageProduct(product, order.Count), new CoverageCode(order.Count(k => confirmed.Contains(k.Value)), order.Count, FileLevel, order.Count(k => suggested.Contains(k.Value))),
             [.. order.Select(k => Gap(k, covered.Contains(k.Value), confirmed.Contains(k.Value), suggested.Contains(k.Value))).OfType<LensGap>()]);
