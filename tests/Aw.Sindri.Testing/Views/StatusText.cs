@@ -115,7 +115,7 @@ public static class StatusText
             notes.Add("at a terminal");
         }
 
-        if (status.Child is not null)
+        if (status.Child is not null || status.Answer.Via == "child")
         {
             notes.Add("forwarded to the child");
         }

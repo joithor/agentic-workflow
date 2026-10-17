@@ -534,6 +534,7 @@ How items move through the states:
 | `recordedOnly` | Whether the decision is recorded only (before S2) |
 | `notice` | The sentence that says so, served by the API (`recorded; acted on once the workflow engine runs`) so no client keeps its own copy; `null` when `recordedOnly` is false. A `DecisionView` voided by closing its item carries the voided sentence (`voided: the item was closed`) in `notice` and `cleared` |
 | `answerKind` | For `park` rows: `text`, `resume`, `grant`, `grantTokens`, `accept` (with reject), or `cancel-only`, taken from the engine's resume action (engine §5.8), so the app shows the right control |
+| `via?` | `"child"` when `cli` points at a child that decides the answer; omitted otherwise |
 | `primaryAction` | A catalog action id (no P4 row is `cli-only`, so none serves `copy:<cli>`). Per kind: <ul><li>`decision` → `Decide`;</li><li>`park` → the engine's action id;</li><li>`failure` → `RunService` (served since P6, with `cli` `sindri services run <name>`), or **null** for a failure of a service this build doesn't have (`SND-SVC-404`: `actions` is `[PauseService]` and `cli` is `sindri profile validate`; golden `needs-you/unknown-service`);</li><li>`profile` → `ApproveProfile` (protected: terminal-only, so the app copies the row's `cli`, `sindri profile approve <hash>`, instead of calling it).</li></ul> |
 | `cli` | The CLI form |
 

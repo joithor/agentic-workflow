@@ -273,6 +273,17 @@ public sealed class InstanceViewsTests
         Assert.Contains("(forwarded to the child)", answerLine, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void The_fixture_renderer_and_the_engine_print_the_same_answer_line_for_a_pointer_with_no_known_child()
+    {
+        var engine = AnswerLine(InstanceViews.Status(StatusCases.View("parked-mirrored-unlisted-child"), StatusCases.Now).Text);
+        var fixture = AnswerLine(Aw.Sindri.Testing.Views.StatusText.Render(Aw.Sindri.Testing.Views.WorkflowViewFixtures.StatusMirroredBudgetNoChild(), Aw.Sindri.Testing.Views.WorkflowViewFixtures.Now));
+
+        Assert.Equal(engine[engine.IndexOf("<the child's answer>", StringComparison.Ordinal)..], fixture[fixture.IndexOf("<the child's answer>", StringComparison.Ordinal)..]);
+    }
+
+    private static string AnswerLine(string text) => text.Split('\n').Single(l => l.TrimStart().StartsWith("answer", StringComparison.Ordinal)).TrimEnd();
+
     [Theory]
     [InlineData("parked-mirrored-needs-answer-wait")]
     [InlineData("parked-mirrored-spec-conflict")]
@@ -316,10 +327,13 @@ public sealed class InstanceViewsTests
         }
         else
         {
-            // Every other empty-fit shape: a spec-conflict kind the engine never produces without a fit (loop, refusal, step, wait, none) and
-            // a takeover or null-reason shape. None is built by the engine, so the line is not part of the contract; require only that it never
-            // claims a protected answer variant.
-            Assert.True(line is null || line.Kind is AnswerKind.CancelOnly or AnswerKind.Resume or AnswerKind.Text, $"{shape.Kind}/{shape.Reason}/{shape.ParkKind}");
+            // The shapes the engine never builds without a fit, skipped by name: a spec-conflict park of kind loop, refusal, step, wait or
+            // dispatch (or none), and a null-reason park. Every other shape must take no answer, or only the cancel one.
+            var neverBuilt = shape is { Kind: SuspensionKind.Park, Reason: ParkReason.SpecConflict or null };
+            if (!neverBuilt)
+            {
+                Assert.True(line is null || line.Kind == AnswerKind.CancelOnly, $"{shape.Kind}/{shape.Reason}/{shape.ParkKind}");
+            }
         }
     }
 
