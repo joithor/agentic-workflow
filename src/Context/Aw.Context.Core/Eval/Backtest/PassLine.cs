@@ -22,9 +22,9 @@ public static class PassLine
         return new ArmPassLine(recall, precision, files, tokens, overall);
     }
 
-    /// <summary>The report's overall line: the arm 'all' when it ran, else the best non-leaky arm that ran, never a leaky arm.</summary>
+    /// <summary>The report's overall line: the arm 'all' when it ran, else the best arm that is neither leaky nor the brief-only baseline (the baseline is what the engine must beat, so it never decides the line).</summary>
     /// <param name="arms">The arm rows in report order.</param>
-    /// <returns>The overall verdict; 'no non-leaky arm ran' when only the leaky arm ran; null when no arm was judged.</returns>
+    /// <returns>The overall verdict; 'no comparable arm ran' when only the baseline and/or the leaky arm ran; null when no arm was judged.</returns>
     public static string? Overall(IReadOnlyList<ArmReport> arms)
     {
         ArgumentNullException.ThrowIfNull(arms);
@@ -39,9 +39,9 @@ public static class PassLine
             return all.PassLine?.Overall;
         }
 
-        var clean = judged.Where(a => !a.Leaky).Select(a => a.PassLine?.Overall).OfType<string>().ToList();
+        var clean = judged.Where(a => !a.Leaky && !string.Equals(a.Arm, Arms.Name(Arm.Brief), StringComparison.Ordinal)).Select(a => a.PassLine?.Overall).OfType<string>().ToList();
         return clean.Count == 0
-            ? Verdicts.NoCleanArm
+            ? Verdicts.NoComparableArm
             : clean.Select((line, i) => (Line: line, Order: i)).OrderByDescending(x => Rank(x.Line)).ThenByDescending(x => x.Order).First().Line;   // the best verdict; the richer (later) arm on a tie
     }
 
