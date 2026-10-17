@@ -272,6 +272,7 @@ public sealed class QueueGateTests
         ScriptPr(11, 12);
         using var cancel = new CancellationTokenSource();
         var started = 0;
+        // The fake step never looks at the caller's token: it ends only when the runner's token fires, so the train's step tokens must be linked to the caller.
         _ = _world.Runner.When("scripts/unit.sh", async _ =>
         {
             if (Interlocked.Increment(ref started) == 2)
@@ -279,12 +280,12 @@ public sealed class QueueGateTests
                 await cancel.CancelAsync();
             }
 
-            await Task.Delay(Timeout.Infinite, cancel.Token);
+            await Task.Delay(Timeout.Infinite, CancellationToken.None);
             return Exit(0);
         });
         ScriptGit();
 
-        var result = await Service().Handle(new QueueGateRequest([11, 12], Max: null, Pid: 4242), cancel.Token);
+        var result = await Service().Handle(new QueueGateRequest([11, 12], Max: null, Pid: 4242), cancel.Token).AsTask().WaitAsync(TimeSpan.FromSeconds(20), TimeProvider.System, TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Equal([TrainState.Cancelled, TrainState.Cancelled], result.Value.Entries.Select(e => e.State));

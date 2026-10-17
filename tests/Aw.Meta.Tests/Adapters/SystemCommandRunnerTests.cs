@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Aw.Meta.Core.Commands;
 using Aw.Meta.Infrastructure.Processes;
 
@@ -117,6 +118,100 @@ public sealed class SystemCommandRunnerTests : IDisposable
         _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await new SystemCommandRunner().Run(request, cancel.Token));
 
         Assert.True(File.Exists(marker));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_command_that_ignores_SIGTERM_is_killed_after_its_grace_with_what_it_started()
+    {
+        var pidFile = Path.Combine(_dir.Path, "child.pid");
+        using var cancel = new CancellationTokenSource();
+        var request = new CommandRequest(["bash", "-c", "trap '' TERM; sleep 60 & echo $! > \"$1\"; wait", "bash", pidFile], TimeSpan.FromSeconds(60)) { TermGrace = TimeSpan.FromMilliseconds(200) };
+        var running = new SystemCommandRunner().Run(request, cancel.Token).AsTask();
+        var child = ProcessTree.Snapshot(await WaitForPid(pidFile))[0];
+        var watch = Stopwatch.StartNew();
+
+        await cancel.CancelAsync();
+        _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await running.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken));
+
+        Assert.True(watch.Elapsed < TimeSpan.FromSeconds(15), "took " + watch.Elapsed.ToString());
+        await AssertGone(child);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_grandchild_gets_the_SIGTERM_too_so_its_own_trap_runs()
+    {
+        var marker = Path.Combine(_dir.Path, "grandchild-trapped");
+        var ready = Path.Combine(_dir.Path, "grandchild-ready");
+        using var cancel = new CancellationTokenSource();
+        var inner = "trap 'echo term > \"$1\"; exit 0' TERM; sleep 60 & touch \"$2\"; wait";
+        var request = new CommandRequest(["bash", "-c", "bash -c \"$1\" bash \"$2\" \"$3\" & wait", "bash", inner, marker, ready], TimeSpan.FromSeconds(60));
+        var running = new SystemCommandRunner().Run(request, cancel.Token).AsTask();
+        await WaitForFile(ready);
+
+        await cancel.CancelAsync();
+        _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await running.WaitAsync(TimeSpan.FromSeconds(60), TestContext.Current.CancellationToken));
+
+        Assert.True(File.Exists(marker));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task The_process_tree_has_a_started_child_below_the_parent_and_not_the_parent_below_the_child()
+    {
+        var info = new ProcessStartInfo("sleep", ["30"]) { UseShellExecute = false };
+        using var child = Process.Start(info) ?? throw new InvalidOperationException("sleep did not start");
+        try
+        {
+            var fromParent = ProcessTree.Of(Environment.ProcessId);
+            var fromChild = ProcessTree.Of(child.Id);
+
+            Assert.Equal(Environment.ProcessId, fromParent[0]);
+            Assert.Contains(child.Id, fromParent);
+            Assert.Equal([child.Id], fromChild);
+            Assert.DoesNotContain(Environment.ProcessId, fromChild);
+            Assert.True(ProcessTree.IsAlive(ProcessTree.Snapshot(child.Id)[0]));
+            Assert.False(ProcessTree.IsAlive(new ProcessRef(child.Id, "0")));   // same pid, other start time: a reused pid is not the process
+        }
+        finally
+        {
+            child.Kill();
+            await child.WaitForExitAsync(TestContext.Current.CancellationToken);
+        }
+    }
+
+    private static async Task<int> WaitForPid(string file)
+    {
+        await WaitForFile(file);
+        for (var i = 0; i < 100; i++)
+        {
+            if (int.TryParse((await File.ReadAllTextAsync(file, TestContext.Current.CancellationToken)).Trim(), out var pid))
+            {
+                return pid;
+            }
+
+            await Task.Delay(50, TestContext.Current.CancellationToken);
+        }
+
+        throw new TimeoutException(file);
+    }
+
+    private static async Task WaitForFile(string file)
+    {
+        for (var i = 0; i < 200 && !File.Exists(file); i++)
+        {
+            await Task.Delay(50, TestContext.Current.CancellationToken);
+        }
+
+        Assert.True(File.Exists(file), file);
+    }
+
+    private static async Task AssertGone(ProcessRef process)
+    {
+        for (var i = 0; i < 100 && ProcessTree.IsAlive(process); i++)
+        {
+            await Task.Delay(50, TestContext.Current.CancellationToken);
+        }
+
+        Assert.False(ProcessTree.IsAlive(process), "the process still runs");
     }
 
     [Fact, Trait("Lane", "integration")]

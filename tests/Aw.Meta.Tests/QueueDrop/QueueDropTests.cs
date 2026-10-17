@@ -17,7 +17,7 @@ public sealed class QueueDropTests
 
     private QueueDropService Drop() => new(_world.Messages, _world.Gates, _world.Values, _world.Log, Worlds.Reservation(_world), _world.Clock);
 
-    private StatusService Service() => new(_world.Config, Worlds.StatusReader(_world), _world.Values, _world.Resources, Worlds.Advisor(_world), _world.Clock);
+    private StatusService Service() => new(_world.Config, Worlds.StatusReader(_world), _world.Values, _world.Resources, Worlds.Advisor(_world), _world.Processes, _world.Clock);
 
     [Fact, Trait("Lane", "unit")]
     public async Task Dropping_removes_the_queue_entry_and_logs_the_reason()

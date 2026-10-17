@@ -19,4 +19,7 @@ public sealed record CommandRequest(IReadOnlyList<string> Argv, TimeSpan Timeout
 
     /// <summary>A file the combined output is appended to as it arrives; null for none.</summary>
     public string? LogFile { get; init; }
+
+    /// <summary>How long the command gets to exit after SIGTERM before it and what it started are killed; null for the runner's default (45 seconds).</summary>
+    public TimeSpan? TermGrace { get; init; }
 }

@@ -51,7 +51,7 @@ internal sealed class GateRunService(IMetaConfig config, GateWorkspace workspace
 
     private async ValueTask<Result<GatePlan>> Plan(TeamConfig team, GateRunRequest request, CancellationToken cancellationToken)
     {
-        var prepared = await workspace.Prepare(team, request.Pr, listChanged: request.Scopes.Count == 0).ConfigureAwait(false);
+        var prepared = await workspace.Prepare(team, request.Pr, listChanged: request.Scopes.Count == 0, cancellationToken: cancellationToken).ConfigureAwait(false);
         var latest = await gates.Latest(request.Pr, cancellationToken).ConfigureAwait(false);
         if (prepared.IsError || latest.IsError)
         {

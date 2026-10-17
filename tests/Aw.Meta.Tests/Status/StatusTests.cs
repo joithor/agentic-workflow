@@ -13,7 +13,7 @@ public sealed class StatusTests
 {
     private readonly MetaWorld _world = new();
 
-    private StatusService Service() => new(_world.Config, Worlds.StatusReader(_world), _world.Values, _world.Resources, Worlds.Advisor(_world), _world.Clock);
+    private StatusService Service() => new(_world.Config, Worlds.StatusReader(_world), _world.Values, _world.Resources, Worlds.Advisor(_world), _world.Processes, _world.Clock);
 
     private async Task<StatusResponse> Status()
     {
@@ -33,6 +33,39 @@ public sealed class StatusTests
         Assert.Empty(status.MergeQueue);
         Assert.Empty(status.OwnerQueue);
         Assert.Equal(0, status.Lanes.Version);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_train_board_without_an_end_line_is_stale_when_its_process_is_gone()
+    {
+        await _world.Ready();
+        _ = await _world.Values.Set(KvKeys.Train, "TRAIN pid 2000000000 started 2026-10-15 05:00:00Z\nTRAIN main abc: position, PR, base, RESULT", TestContext.Current.CancellationToken);
+
+        var status = await Status();
+
+        Assert.EndsWith("TRAIN stale: process 2000000000 is gone and wrote no end line", status.Train, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_train_board_of_a_running_process_is_not_stale()
+    {
+        await _world.Ready();
+        _ = await _world.Values.Set(KvKeys.Train, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"TRAIN pid {_world.Processes.Start()} started x"), TestContext.Current.CancellationToken);
+
+        var status = await Status();
+
+        Assert.DoesNotContain("stale", status.Train!, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_train_board_with_an_end_line_is_never_stale()
+    {
+        await _world.Ready();
+        _ = await _world.Values.Set(KvKeys.Train, "TRAIN pid 2000000000 started x\nTRAIN ended y", TestContext.Current.CancellationToken);
+
+        var status = await Status();
+
+        Assert.DoesNotContain("stale", status.Train!, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

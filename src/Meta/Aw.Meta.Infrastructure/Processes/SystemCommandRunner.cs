@@ -24,11 +24,11 @@ internal sealed class SystemCommandRunner : ICommandRunner
 
     /// <summary>A runner that waits this long, after the command ends, for its output to finish.</summary>
     /// <param name="drainGrace">The wait.</param>
-    /// <param name="termGrace">How long a command gets to exit after SIGTERM before it is killed (default 10 seconds).</param>
+    /// <param name="termGrace">How long a command gets to exit after SIGTERM before it is killed (default 45 seconds, above the longest step cleanup; a request can set its own).</param>
     internal SystemCommandRunner(TimeSpan drainGrace, TimeSpan? termGrace = null)
     {
         _drainGrace = drainGrace;
-        _termGrace = termGrace ?? TimeSpan.FromSeconds(10);
+        _termGrace = termGrace ?? TimeSpan.FromSeconds(45);
     }
 
     public async ValueTask<Result<CommandResult>> Run(CommandRequest request, CancellationToken cancellationToken)
@@ -98,7 +98,7 @@ internal sealed class SystemCommandRunner : ICommandRunner
             reading = Task.WhenAll(
                 Pump(process.StandardOutput, stdout, log, stopPumping.Token), Pump(process.StandardError, stderr, log, stopPumping.Token));
 #pragma warning restore CA2025
-            var timedOut = await Wait(process, request.Timeout, cancellationToken).ConfigureAwait(false);
+            var timedOut = await Wait(process, request, request.Timeout, cancellationToken).ConfigureAwait(false);
             _ = await Task.WhenAny(reading, Task.Delay(_drainGrace, CancellationToken.None)).ConfigureAwait(false);
             return new CommandResult(timedOut ? -1 : process.ExitCode, stdout.ToString(), stderr.ToString(), timedOut);
         }
@@ -167,7 +167,7 @@ internal sealed class SystemCommandRunner : ICommandRunner
     }
 
     // Returns true when the command was killed for running past its timeout; a cancellation kills it and propagates.
-    private async ValueTask<bool> Wait(Process process, TimeSpan timeout, CancellationToken cancellationToken)
+    private async ValueTask<bool> Wait(Process process, CommandRequest request, TimeSpan timeout, CancellationToken cancellationToken)
     {
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         deadline.CancelAfter(timeout);
@@ -178,28 +178,34 @@ internal sealed class SystemCommandRunner : ICommandRunner
         }
         catch (OperationCanceledException)
         {
-            await Stop(process).ConfigureAwait(false);
+            await Stop(process, request.TermGrace ?? _termGrace).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();
             return true;
         }
     }
 
     // SIGTERM to the command and every descendant it has now (pids this runner started, found through their parents, never by name), so
-    // the heavy-job wrapper and the scripts run their exit traps and release their locks; then, after the grace, whatever is left is killed.
-    private async Task Stop(Process process)
+    // the heavy-job wrapper and the scripts run their exit traps and release their locks; then, after the grace, every snapshot process
+    // still alive with the recorded start time is killed, and so is whatever it started since. The root exiting early does not end the
+    // wait: its children are reparented, and are only found again through the snapshot.
+    private static async Task Stop(Process process, TimeSpan grace)
     {
-        var tree = ProcessTree.Of(process.Id);
-        if (tree.Count > 0 && await ProcessTree.Terminate(tree).ConfigureAwait(false))
+        var snapshot = ProcessTree.Snapshot(process.Id);
+        if (snapshot.Count > 0 && await ProcessTree.Terminate([.. snapshot.Select(p => p.Pid)]).ConfigureAwait(false))
         {
-            using var grace = new CancellationTokenSource(_termGrace);
-            try
-            {
-                await process.WaitForExitAsync(grace.Token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                // Still running after the grace: killed below.
-            }
+            await WaitUntilGone(process, snapshot, grace).ConfigureAwait(false);
+        }
+
+        var alive = snapshot.Where(ProcessTree.IsAlive).ToList();
+        var doomed = new HashSet<int>(alive.Select(p => p.Pid));
+        foreach (var survivor in alive)
+        {
+            doomed.UnionWith(ProcessTree.Of(survivor.Pid));
+        }
+
+        if (doomed.Count > 0)
+        {
+            _ = await ProcessTree.Kill([.. doomed]).ConfigureAwait(false);
         }
 
         try
@@ -212,6 +218,23 @@ internal sealed class SystemCommandRunner : ICommandRunner
         }
 
         await process.WaitForExitAsync(CancellationToken.None).ConfigureAwait(false);
+    }
+
+    private static async Task WaitUntilGone(Process process, IReadOnlyList<ProcessRef> snapshot, TimeSpan grace)
+    {
+        using var expired = new CancellationTokenSource(grace);
+        try
+        {
+            await process.WaitForExitAsync(expired.Token).ConfigureAwait(false);
+            while (snapshot.Any(ProcessTree.IsAlive))
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(50), expired.Token).ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Still running after the grace: killed by the caller.
+        }
     }
 
     private static async Task Pump(StreamReader reader, TailBuffer tail, StreamWriter? log, CancellationToken stop)

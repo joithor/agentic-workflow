@@ -49,8 +49,14 @@ public sealed class GateWorkspace(RepoCommands repo, GateTree trees, MetaPaths p
     /// <param name="pr">The pull request number.</param>
     /// <param name="listChanged">Whether to list the paths the pull request changes.</param>
     /// <param name="onto">For a train gate: the main to pin and the heads of the pull requests ahead of this one, merged in order before its own head; null for a plain gate on origin/main.</param>
+    /// <param name="cancellationToken">Stops the git and gh calls (their process trees are killed) and throws the cancellation.</param>
     /// <returns>The prepared tree, or an error from git or gh.</returns>
-    public async ValueTask<Result<PreparedGate>> Prepare(TeamConfig config, int pr, bool listChanged, GateBase? onto = null)
+    public ValueTask<Result<PreparedGate>> Prepare(TeamConfig config, int pr, bool listChanged, GateBase? onto = null, CancellationToken cancellationToken = default) =>
+        cancellationToken.CanBeCanceled
+            ? new GateWorkspace(repo.Cancelling(cancellationToken), trees.Cancelling(cancellationToken), paths).Prepared(config, pr, listChanged, onto)
+            : Prepared(config, pr, listChanged, onto);
+
+    private async ValueTask<Result<PreparedGate>> Prepared(TeamConfig config, int pr, bool listChanged, GateBase? onto)
     {
         var view = await repo.View(config.Repo, pr, Fields).ConfigureAwait(false);
         var main = view.IsError ? Results.Failure<string>(view.Error) : await Pin(config, pr, onto?.Main).ConfigureAwait(false);

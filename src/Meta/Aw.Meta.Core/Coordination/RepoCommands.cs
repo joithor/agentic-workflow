@@ -13,6 +13,12 @@ namespace Aw.Meta.Core.Coordination;
 public sealed class RepoCommands(ICommandRunner runner, MetaPaths paths)
 {
     private static readonly TimeSpan _limit = TimeSpan.FromMinutes(5);
+    private CancellationToken _cancellation;
+
+    /// <summary>The same calls, each stopped (its process tree killed, the cancellation thrown) when the token fires.</summary>
+    /// <param name="cancellationToken">The token.</param>
+    /// <returns>A copy bound to the token.</returns>
+    public RepoCommands Cancelling(CancellationToken cancellationToken) => new(runner, paths) { _cancellation = cancellationToken };
 
     /// <summary>Runs git in a directory.</summary>
     /// <param name="cwd">The working directory.</param>
@@ -120,7 +126,7 @@ public sealed class RepoCommands(ICommandRunner runner, MetaPaths paths)
 
     private async ValueTask<Result<string>> Run(string cwd, IReadOnlyList<string> argv)
     {
-        var ran = await runner.Run(new CommandRequest(argv, _limit) { Cwd = cwd }, CancellationToken.None).ConfigureAwait(false);
+        var ran = await runner.Run(new CommandRequest(argv, _limit) { Cwd = cwd }, _cancellation).ConfigureAwait(false);
         if (ran.IsError)
         {
             return ran.Error;

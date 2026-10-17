@@ -6,6 +6,11 @@ namespace Aw.Meta.Core.Coordination;
 /// <param name="repo">The git calls.</param>
 public sealed class GateTree(RepoCommands repo)
 {
+    /// <summary>The same worktree handling with every git call bound to a token.</summary>
+    /// <param name="cancellationToken">The token.</param>
+    /// <returns>A copy bound to the token.</returns>
+    public GateTree Cancelling(CancellationToken cancellationToken) => new(repo.Cancelling(cancellationToken));
+
     private static readonly string[] _identity = ["-c", "user.name=aw-meta", "-c", "user.email=aw-meta@localhost"];
 
     /// <summary>Checks the tree out at <paramref name="revision"/>, creating the worktree on first use and discarding anything left in it.</summary>

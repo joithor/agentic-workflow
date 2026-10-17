@@ -76,7 +76,7 @@ internal sealed class QueueGateService(TrainSelection queue, GateWorkspace works
         foreach (var pr in candidates.TakeWhile(_ => gating.Count < size))
         {
             var stack = gating.Select(g => new StackedPr(g.Pr, g.Head)).ToList();
-            var prepared = await workspace.Prepare(team, pr, listChanged: true, new GateBase(main, stack)).ConfigureAwait(false);
+            var prepared = await workspace.Prepare(team, pr, listChanged: true, new GateBase(main, stack), cancellationToken).ConfigureAwait(false);
             if (prepared.IsError)
             {
                 left.Add(new TrainEntry(0, pr, TrainText.BaseOf(stack), TrainState.Error, prepared.Error.Message.ReplaceLineEndings(" ")));

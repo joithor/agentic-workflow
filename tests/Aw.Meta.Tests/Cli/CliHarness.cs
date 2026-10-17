@@ -42,6 +42,8 @@ internal sealed class CliHarness : IDisposable
         _env[name] = value;
     }
 
+    internal string Env(string name) => _env[name];
+
     internal Task<CliResult> Run(params string[] args) => RunWithInput(string.Empty, args);
 
     internal async Task<CliResult> RunWithInput(string stdin, params string[] args)

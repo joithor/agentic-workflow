@@ -1762,8 +1762,8 @@ Aw.Meta.Core.Config.GateConfig.ParallelSteps.get -> int?
 Aw.Meta.Core.Config.GateConfig.ParallelSteps.init -> void
 Aw.Meta.Core.Config.StepConfig.After.get -> System.Collections.Generic.IReadOnlyList<string!>?
 Aw.Meta.Core.Config.StepConfig.After.init -> void
-Aw.Meta.Core.Config.StepConfig.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<string!>! Run, out bool Heavy, out System.Collections.Generic.IReadOnlyList<string!>? Rerun, out System.Collections.Generic.IReadOnlyList<string!>? After) -> void
-Aw.Meta.Core.Config.StepConfig.StepConfig(string! Name, System.Collections.Generic.IReadOnlyList<string!>! Run, bool Heavy = false, System.Collections.Generic.IReadOnlyList<string!>? Rerun = null, System.Collections.Generic.IReadOnlyList<string!>? After = null) -> void
+Aw.Meta.Core.Config.StepConfig.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<string!>! Run, out bool Heavy, out System.Collections.Generic.IReadOnlyList<string!>? Rerun, out System.Collections.Generic.IReadOnlyList<string!>? After, out int? TermGraceSeconds) -> void
+Aw.Meta.Core.Config.StepConfig.StepConfig(string! Name, System.Collections.Generic.IReadOnlyList<string!>! Run, bool Heavy = false, System.Collections.Generic.IReadOnlyList<string!>? Rerun = null, System.Collections.Generic.IReadOnlyList<string!>? After = null, int? TermGraceSeconds = null) -> void
 Aw.Meta.Core.Gate.StepGraph
 Aw.Meta.Core.Gate.StepGraph.DependenciesOf(int index) -> System.Collections.Generic.IReadOnlyList<int>!
 Aw.Meta.Core.Gate.StepGraph.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.StepConfig!>!
@@ -1803,7 +1803,7 @@ Aw.Meta.Core.Coordination.GateBase.Main.init -> void
 Aw.Meta.Core.Coordination.GateBase.Stack.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Gate.StackedPr!>!
 Aw.Meta.Core.Coordination.GateBase.Stack.init -> void
 Aw.Meta.Core.Coordination.GateTree.MergeAll(string! tree, System.Collections.Generic.IReadOnlyList<string!>! heads) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
-Aw.Meta.Core.Coordination.GateWorkspace.Prepare(Aw.Meta.Core.Config.TeamConfig! config, int pr, bool listChanged, Aw.Meta.Core.Coordination.GateBase? onto = null) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Coordination.PreparedGate!>!>
+Aw.Meta.Core.Coordination.GateWorkspace.Prepare(Aw.Meta.Core.Config.TeamConfig! config, int pr, bool listChanged, Aw.Meta.Core.Coordination.GateBase? onto = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Coordination.PreparedGate!>!>
 Aw.Meta.Core.Coordination.PreparedGate.ConflictsWith.get -> Aw.Meta.Core.Gate.StackedPr?
 Aw.Meta.Core.Coordination.PreparedGate.ConflictsWith.init -> void
 Aw.Meta.Core.Gate.SlotPool
@@ -1874,3 +1874,10 @@ Aw.Meta.Core.Coordination.GateStepRunner.Run(Aw.Meta.Core.Config.StepConfig! ste
 const Aw.Meta.Core.Gate.GatePriority.LockTimeout = 75 -> int
 const Aw.Meta.Core.Gate.GatePriority.SessionSlots = "AW_SESSION_HEAVY_SLOTS" -> string!
 static Aw.Meta.Core.Gate.GatePriority.EnvironmentFor(int heavySlots) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Meta.Core.Commands.CommandRequest.TermGrace.get -> System.TimeSpan?
+Aw.Meta.Core.Commands.CommandRequest.TermGrace.init -> void
+Aw.Meta.Core.Config.StepConfig.TermGraceSeconds.get -> int?
+Aw.Meta.Core.Config.StepConfig.TermGraceSeconds.init -> void
+Aw.Meta.Core.Coordination.GateTree.Cancelling(System.Threading.CancellationToken cancellationToken) -> Aw.Meta.Core.Coordination.GateTree!
+Aw.Meta.Core.Coordination.RepoCommands.Cancelling(System.Threading.CancellationToken cancellationToken) -> Aw.Meta.Core.Coordination.RepoCommands!
+static Aw.Meta.Core.Gate.TrainText.MarkStale(string? board, System.Func<int, bool>! isRunning) -> string?
