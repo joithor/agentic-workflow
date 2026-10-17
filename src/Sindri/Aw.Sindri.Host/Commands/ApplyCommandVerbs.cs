@@ -181,7 +181,7 @@ internal sealed class ApplyCommandVerbs(RecipeDesk desk, IServiceProvider servic
     }
 
     /// <summary>The answer's variant and its text or amount, and the optional nonce; exactly one variant, '--resume' may carry '--text'.</summary>
-    private static async Task<Result<(AnswerVariant Variant, string? Text, int? Amount, CommandNonce? Nonce)>> AnswerOptions(string[] options, CancellationToken ct)
+    internal static async Task<Result<(AnswerVariant Variant, string? Text, int? Amount, CommandNonce? Nonce)>> AnswerOptions(string[] options, CancellationToken ct)
     {
         var tokens = Tokens(options);
         if (tokens.IsError)

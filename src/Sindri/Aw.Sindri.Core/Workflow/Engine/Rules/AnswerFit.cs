@@ -42,7 +42,7 @@ internal static class AnswerFit
         }
 
         var row = FitRow.For(suspension, address, instance.Recipe);
-        if (!row.Variants.Contains(answer.Variant))
+        if (!AnswerVariants.Fitting(suspension).Contains(answer.Variant))
         {
             return FitRefusals.Refuse($"{Spelled(answer.Variant)} doesn't fit {address}, {row.Shown}", row.Fix);
         }
@@ -53,18 +53,6 @@ internal static class AnswerFit
         }
 
         return answer.Variant == AnswerVariant.Reject ? suspension.Resume with { Kind = ResumeKind.Refuse } : suspension.Resume;
-    }
-
-    /// <summary>The answer variants that fit <paramref name="suspension"/>, in the order §3.8 lists them; empty when only cancel or an approval ends it.</summary>
-    /// <param name="suspension">A park or escalation that mirrors no child.</param>
-    /// <param name="address">The instance's address.</param>
-    /// <param name="recipe">The recipe it runs.</param>
-    /// <returns>The variants.</returns>
-    public static IReadOnlyList<AnswerVariant> Variants(Suspension suspension, InstanceAddress address, PinnedRecipe recipe)
-    {
-        ArgumentNullException.ThrowIfNull(suspension);
-        ArgumentNullException.ThrowIfNull(recipe);
-        return FitRow.For(suspension, address.Value, recipe).Variants;
     }
 
     private static Error? Unanswerable(WorkflowInstance instance, string address)

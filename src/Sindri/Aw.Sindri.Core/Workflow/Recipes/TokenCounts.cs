@@ -8,6 +8,16 @@ namespace Aw.Sindri.Core.Workflow.Recipes;
 /// </summary>
 public static class TokenCounts
 {
+    /// <summary>The text for a count that <see cref="TryParse"/> reads back to the same count: whole millions as 'nM', whole thousands as 'nk', else the plain integer ('12500', never '12.5k').</summary>
+    /// <param name="count">The count, at least 1.</param>
+    /// <returns>The text.</returns>
+    public static string Format(int count) => count switch
+    {
+        > 0 when count % 1_000_000 == 0 => string.Create(CultureInfo.InvariantCulture, $"{count / 1_000_000}M"),
+        > 0 when count % 1_000 == 0 => string.Create(CultureInfo.InvariantCulture, $"{count / 1_000}k"),
+        _ => count.ToString(CultureInfo.InvariantCulture),
+    };
+
     /// <summary>Reads '1500', '200k' or '2M'.</summary>
     /// <param name="text">The text as written in the recipe.</param>
     /// <param name="count">The count, when the text is one.</param>
