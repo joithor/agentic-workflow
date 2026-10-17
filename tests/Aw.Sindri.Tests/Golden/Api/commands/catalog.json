@@ -733,6 +733,23 @@
       "shortcut": null
     },
     {
+      "action": "RunContextBacktest",
+      "class": "job",
+      "allowedCallers": [
+        "human+terminal",
+        "human",
+        "service"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/context/eval/backtest",
+      "cli": "sindri context eval backtest",
+      "ui": "ready",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
       "action": "RunDoctor",
       "class": "local",
       "allowedCallers": [],
