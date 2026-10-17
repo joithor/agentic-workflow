@@ -158,11 +158,11 @@ public sealed class LineChecksTests
         var rule = $"{LineRules.For(kind)!.Prefix}-006";
         var parents = $"[\"{LinePacketBuilder.Hash}\", \"{LinePacketBuilder.Hash}\"]";
 
-        var wrongKind = await Run(kind, A.LinePacket(kind).With("index.json", LinePacketBuilder.Index("scoping", "[]", "null", "null")).Build());
-        var repeated = await Run(kind, A.LinePacket(kind).With("index.json", LinePacketBuilder.Index(name, parents, "null", "null")).Build());
+        var wrongKind = await Run(kind, A.LinePacket(kind).Edit("index.json", $"\"kind\": \"{name}\"", "\"kind\": \"scoping\"").Build());
+        var repeated = await Run(kind, A.LinePacket(kind).Edit("index.json", "\"parents\": []", $"\"parents\": {parents}").Build());
         var noChain = await Run(kind, A.LinePacket(kind).With("index.json", $"{{ \"schemaVersion\": 1, \"kind\": \"{name}\", \"parents\": [] }}").Build());
-        var withId = await Run(kind, A.LinePacket(kind).With("index.json", LinePacketBuilder.Index(name, "[]", "null", "null").Replace("\"parents\"", "\"id\": \"x\", \"parents\"", StringComparison.Ordinal)).Build());
-        var badHash = await Run(kind, A.LinePacket(kind).With("index.json", LinePacketBuilder.Index(name, "[\"abc\"]", "null", "null")).Build());
+        var withId = await Run(kind, A.LinePacket(kind).Edit("index.json", "\"parents\"", "\"id\": \"x\", \"parents\"").Build());
+        var badHash = await Run(kind, A.LinePacket(kind).Edit("index.json", "\"parents\": []", "\"parents\": [\"abc\"]").Build());
 
         Assert.Contains("kind is 'scoping'", Assert.Single(Failures(wrongKind, rule)).Message, StringComparison.Ordinal);
         Assert.Contains("twice", Assert.Single(Failures(repeated, rule)).Message, StringComparison.Ordinal);

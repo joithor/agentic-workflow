@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Text.Json;
 using Aw.Kernel.Json;
 using Aw.Packets.Core.Checks;
@@ -19,14 +20,15 @@ internal sealed partial class LineContext
     private readonly HashSet<string> _malformed = new(StringComparer.Ordinal);
     private readonly string? _manifestProblem;
 
-    internal LineContext(PacketKind kind, LineRuleSet rules, LinePacketFiles files, JsonSerializerOptions json, CheckList checks)
+    internal LineContext(PacketKind kind, LineRuleSet rules, LinePacketFiles files, ManifestRead read, JsonSerializerOptions json, CheckList checks)
     {
         _kind = kind;
         _rules = rules;
         _files = files;
         _json = json;
         _checks = checks;
-        (Manifest, _manifestProblem) = LinePacketChecks.Manifest(kind, files, json);
+        Manifest = read.Manifest;
+        _manifestProblem = read.Problem;
     }
 
     internal LineManifest? Manifest { get; }
@@ -191,6 +193,52 @@ internal sealed partial class LineContext
         {
             yield return ("parents", "parents lists a hash twice.", "List each parent packet once.");
         }
+
+        foreach (var problem in ChainProblems(index))
+        {
+            yield return problem;
+        }
+    }
+
+    // acceptance.self is the sha256 of this packet's acceptance.json bytes (null when the kind has none); acceptance.extends is that file's 'parent'.
+    private IEnumerable<(string Where, string Message, string Fix)> ChainProblems(PacketIndex index)
+    {
+        if (!_files.Present.TryGetValue("acceptance.json", out var bytes))
+        {
+            return _kind.Files.All(static f => f.Name != "acceptance.json") && index.Acceptance.Self is not null
+                ? [("acceptance.self", $"acceptance.self is set, but a {_kind.Name} packet has no acceptance.json.", "Set acceptance.self to null.")]
+                : [];
+        }
+
+        return SelfProblems(index, bytes).Concat(ExtendsProblems(index, bytes));
+    }
+
+    private static IEnumerable<(string Where, string Message, string Fix)> SelfProblems(PacketIndex index, ReadOnlyMemory<byte> bytes)
+    {
+        var actual = "sha256:" + Convert.ToHexStringLower(SHA256.HashData(bytes.Span));
+        var self = index.Acceptance.Self?.Value;
+        return string.Equals(self, actual, StringComparison.Ordinal)
+            ? []
+            : [("acceptance.self", $"acceptance.self is {self ?? "null"}; the sha256 of acceptance.json is {actual}.", $"Set acceptance.self to {actual}.")];
+    }
+
+    private IEnumerable<(string Where, string Message, string Fix)> ExtendsProblems(PacketIndex index, ReadOnlyMemory<byte> bytes)
+    {
+        var extends = index.Acceptance.Extends?.Value;
+        return ParentOf(bytes) is { } parent && !string.Equals(extends, parent, StringComparison.Ordinal)
+            ? [("acceptance.extends", $"acceptance.extends is {extends ?? "null"}; acceptance.json's parent is {parent}.", $"Set acceptance.extends to {parent}.")]
+            : [];
+    }
+
+    private string? ParentOf(ReadOnlyMemory<byte> bytes)
+    {
+        if (_malformed.Contains("acceptance.json"))
+        {
+            return null;
+        }
+
+        var parsed = AwJson.Deserialize<AcceptanceFile>(bytes.Span, _json);
+        return parsed.IsSuccess ? parsed.Value.Parent.Value : null;
     }
 
     // Reads one typed file; null (and the rule failed or unchecked) when it is missing, malformed or doesn't match.
@@ -206,7 +254,7 @@ internal sealed partial class LineContext
         var parsed = AwJson.Deserialize<T>(bytes.Span, _json);
         if (parsed.IsError)
         {
-            _checks.Rule(rule, string.Empty, [($"file {file}", parsed.Error.Message, $"Fix {file} to match schemas/packets/{schema}.schema.json.")]);
+            _checks.Rule(rule, string.Empty, [($"file {file}", LineProblems.Plain(file, parsed.Error.Message), $"Fix {file} to match schemas/packets/{schema}.schema.json.")]);
             return null;
         }
 

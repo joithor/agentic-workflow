@@ -19,6 +19,10 @@ public sealed record AcceptanceItem
     /// <summary>failing, passing or superseded.</summary>
     public required AcceptanceStatus Status { get; init; }
 
+    /// <summary>The id of the item that replaces this one; required on a superseded item and only there (provisional, pending the line spec's amendment).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public ItemId? SupersededBy { get; init; }
+
     /// <summary>The evidence for a passing item; empty otherwise.</summary>
     public required IReadOnlyList<EvidenceRef> Evidence { get; init; }
 }

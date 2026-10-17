@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.RegularExpressions;
 using Aw.Packets.Core.Checks;
 using Aw.Packets.Core.Model;
 
@@ -45,6 +46,7 @@ internal static class LineProblems
             yield return ("schemaVersion", $"schemaVersion is {file.SchemaVersion.ToString(CultureInfo.InvariantCulture)}; this build reads {PacketReader.SchemaVersion.ToString(CultureInfo.InvariantCulture)}.", "Set schemaVersion to 1.");
         }
 
+        var ids = file.Items.Select(static i => i.Id.Value).ToHashSet(StringComparer.Ordinal);
         for (var i = 0; i < file.Items.Count; i++)
         {
             var item = file.Items[i];
@@ -53,6 +55,28 @@ internal static class LineProblems
             {
                 yield return (where, $"{where} has no text.", "Give every item its text; ids and texts never change.");
             }
+
+            foreach (var problem in Supersession(item, where, ids))
+            {
+                yield return problem;
+            }
+        }
+    }
+
+    // A superseded item names its successor (DSN-ACC-003 reads it); no other item has the field.
+    private static IEnumerable<(string Where, string Message, string Fix)> Supersession(AcceptanceItem item, string where, HashSet<string> ids)
+    {
+        if (item.Status == AcceptanceStatus.Superseded && item.SupersededBy is null)
+        {
+            yield return (where, $"{where} ('{item.Id.Value}') is superseded but names no successor.", "Add supersededBy: the id of the item that replaces it.");
+        }
+        else if (item.Status != AcceptanceStatus.Superseded && item.SupersededBy is not null)
+        {
+            yield return (where, $"{where} ('{item.Id.Value}') has supersededBy but is not superseded.", "Set its status to superseded, or remove supersededBy.");
+        }
+        else if (item.SupersededBy is { } successor && !ids.Contains(successor.Value))
+        {
+            yield return (where, $"{where} ('{item.Id.Value}') is superseded by '{successor.Value}', which is not an item of this file.", "Name an item of this file.");
         }
     }
 
@@ -182,5 +206,18 @@ internal static class LineProblems
     {
         var seen = new HashSet<T>();
         return items.Any(i => !seen.Add(i));
+    }
+
+    /// <summary>A JSON read error in terms of the file and its fields, with no CLR type names.</summary>
+    /// <param name="file">The file name.</param>
+    /// <param name="message">The reader's message.</param>
+    /// <returns>For example 'index.json: the property id is not a field of index.json.'</returns>
+    internal static string Plain(string file, string message)
+    {
+        var text = Regex.Replace(message, @"^Invalid JSON for [^:]+: ", string.Empty, RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
+        text = Regex.Replace(text, @"The JSON property '(?<name>[^']+)' could not be mapped to any \.NET member contained in type '[^']*'\.?", "the property '${name}' is not a field of this file.", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
+        text = Regex.Replace(text, @"The JSON value could not be converted to [\w.`]+\.", "a value has the wrong shape.", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
+        text = Regex.Replace(text, @"JSON deserialization for type '[^']*' was missing required properties[^:]*: ", "missing required fields: ", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1));
+        return $"{file}: {text}";
     }
 }

@@ -1,13 +1,16 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using Aw.Packets.Core.Kinds;
 
-namespace Aw.Packets.Core.Kinds.Line;
+namespace Aw.Packets.Core.Checks;
 
 
 /// <summary>What "well formed" means for a packet file of each <see cref="PacketFileFormat"/>; shared by every kind's checks.</summary>
 internal static class PacketFileShape
 {
+    private static readonly JsonDocumentOptions _strict = new() { AllowDuplicateProperties = false };
+
     /// <summary>Why a file's bytes aren't well formed for its format, or null when they are.</summary>
     /// <param name="spec">The file's name and format.</param>
     /// <param name="bytes">Its bytes.</param>
@@ -31,10 +34,9 @@ internal static class PacketFileShape
 
     private static string? JsonProblem(string name, ReadOnlyMemory<byte> bytes)
     {
-        var strict = PacketReader.Strict(name, bytes.Span);
-        if (strict.IsError)
+        if (StrictProblem(name, bytes.Span) is { } strictProblem)
         {
-            return strict.Error.Message;
+            return strictProblem;
         }
 
         using var document = JsonDocument.Parse(bytes);
@@ -58,10 +60,9 @@ internal static class PacketFileShape
             }
 
             var bytesOfLine = Encoding.UTF8.GetBytes(line);
-            var strict = PacketReader.Strict($"{name} line {number.ToString(CultureInfo.InvariantCulture)}", bytesOfLine);
-            if (strict.IsError)
+            if (StrictProblem($"{name} line {number.ToString(CultureInfo.InvariantCulture)}", bytesOfLine) is { } strictProblem)
             {
-                return strict.Error.Message;
+                return strictProblem;
             }
 
             using var document = JsonDocument.Parse(bytesOfLine);
@@ -85,5 +86,58 @@ internal static class PacketFileShape
         {
             return $"{name} is not valid UTF-8.";
         }
+    }
+
+    internal static string? StrictProblem(string path, ReadOnlySpan<byte> bytes)
+    {
+        if (bytes.StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF]))
+        {
+            return $"{path} starts with a UTF-8 byte order mark; save it as UTF-8 without one.";
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(bytes.ToArray(), _strict);   // throws on a duplicate key at any depth
+            return NullInList(document.RootElement, "$") is { } where
+                ? $"{path}: {where} is null; lists hold values, never null."
+                : null;
+        }
+        catch (JsonException ex)
+        {
+            return $"{path}: {ex.Message}";
+        }
+    }
+
+    // The JSON path of the first null inside an array (in document order), or null. Iterative, so a deep document
+    // can't overflow the stack: children are pushed in reverse so they pop in document order.
+    private static string? NullInList(JsonElement root, string rootPath)
+    {
+        var pending = new Stack<(JsonElement Element, string Path)>();
+        pending.Push((root, rootPath));
+        while (pending.TryPop(out var next))
+        {
+            if (next.Element.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var property in next.Element.EnumerateObject().Reverse())
+                {
+                    pending.Push((property.Value, $"{next.Path}.{property.Name}"));
+                }
+            }
+            else if (next.Element.ValueKind == JsonValueKind.Array)
+            {
+                var items = next.Element.EnumerateArray().ToList();
+                if (items.FindIndex(static i => i.ValueKind == JsonValueKind.Null) is var at and >= 0)
+                {
+                    return string.Create(CultureInfo.InvariantCulture, $"{next.Path}[{at}]");
+                }
+
+                for (var index = items.Count - 1; index >= 0; index--)
+                {
+                    pending.Push((items[index], string.Create(CultureInfo.InvariantCulture, $"{next.Path}[{index}]")));
+                }
+            }
+        }
+
+        return null;
     }
 }

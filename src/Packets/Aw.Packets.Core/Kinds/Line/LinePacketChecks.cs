@@ -19,15 +19,15 @@ internal static class LinePacketChecks
     /// <param name="kind">A line kind.</param>
     /// <param name="files">The packet as read.</param>
     /// <param name="json">The package's JSON options.</param>
-    /// <returns>The manifest view, or null when packet.json is missing or doesn't parse (the checks say why).</returns>
-    internal static LineManifest? ReadManifest(PacketKind kind, LinePacketFiles files, JsonSerializerOptions json) =>
-        Manifest(kind, files, json).Manifest;
+    /// <returns>The manifest view, or none when packet.json is missing or doesn't parse (the checks say why).</returns>
+    internal static ManifestRead ReadManifest(PacketKind kind, LinePacketFiles files, JsonSerializerOptions json) =>
+        Manifest(kind, files, json);
 
-    internal static IReadOnlyList<CheckResult> Run(PacketKind kind, LinePacketFiles files, BaseTree? tree, JsonSerializerOptions json)
+    internal static IReadOnlyList<CheckResult> Run(PacketKind kind, LinePacketFiles files, ManifestRead read, BaseTree? tree, JsonSerializerOptions json)
     {
         var rules = LineRules.For(kind) ?? throw new ArgumentException($"'{kind.Name}' is not a line kind.", nameof(kind));
         var checks = new CheckList();
-        var context = new LineContext(kind, rules, files, json, checks);
+        var context = new LineContext(kind, rules, files, read, json, checks);
         context.Common();
         var plan = context.KindRules();
         if (plan is not null && tree is not null && context.Manifest is { } manifest)
@@ -70,11 +70,11 @@ internal static class LinePacketChecks
         Links = new PacketLinks { Decisions = string.Empty, OutOfScope = string.Empty, Tasks = "tasks.json", Design = [], Plans = [] },
     };
 
-    internal static (LineManifest? Manifest, string? Problem) Manifest(PacketKind kind, LinePacketFiles files, JsonSerializerOptions json)
+    internal static ManifestRead Manifest(PacketKind kind, LinePacketFiles files, JsonSerializerOptions json)
     {
         if (!files.Present.TryGetValue(ManifestFile, out var bytes) || PacketFileShape.Problem(new PacketFileSpec(ManifestFile, PacketFileFormat.Json), bytes) is not null)
         {
-            return (null, null);
+            return new ManifestRead(Manifest: null, Problem: null);
         }
 
         var parsed = kind.Name switch
@@ -86,6 +86,6 @@ internal static class LinePacketChecks
             "review" => AwJson.Deserialize<LinePacketManifest<ReviewLinks>>(bytes.Span, json).Map(static m => m.ToView()),
             _ => AwJson.Deserialize<LinePacketManifest<HandoffLinks>>(bytes.Span, json).Map(static m => m.ToView()),
         };
-        return parsed.IsError ? (null, parsed.Error.Message) : (parsed.Value, null);
+        return parsed.IsError ? new ManifestRead(Manifest: null, Problem: LineProblems.Plain(ManifestFile, parsed.Error.Message)) : new ManifestRead(Manifest: parsed.Value, Problem: null);
     }
 }

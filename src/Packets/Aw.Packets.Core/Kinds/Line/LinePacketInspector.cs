@@ -26,7 +26,8 @@ public sealed class LinePacketInspector(ILinePacketSource source, IRepoSnapshot 
             return files.Error;
         }
 
-        var manifest = LinePacketChecks.ReadManifest(kind, files.Value, json);
+        var read = LinePacketChecks.ReadManifest(kind, files.Value, json);
+        var manifest = read.Manifest;
         BaseTree? tree = null;
         if (manifest is not null)
         {
@@ -39,6 +40,6 @@ public sealed class LinePacketInspector(ILinePacketSource source, IRepoSnapshot 
             tree = loaded.Value;
         }
 
-        return new LineInspection(kind, files.Value, manifest, LinePacketChecks.Run(kind, files.Value, tree, json));
+        return new LineInspection(kind, files.Value, manifest, LinePacketChecks.Run(kind, files.Value, read, tree, json));
     }
 }

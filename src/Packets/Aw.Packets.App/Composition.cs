@@ -18,7 +18,7 @@ internal static class Composition
             .AddKernelTelemetry(TelemetryOptions.FromEnvironment("aw-packets", environment, clock))   // JSON lines on stderr (AW_LOG_LEVEL); exports off
             .AddSingleton(AwJson.CreateOptions(PacketsJsonContext.Default))   // the one Kernel JSON profile: output and state files
             .AddPacketsCore()
-            .AddScoped<LinePacketInspector>()
+            .AddLinePacketKinds()
             .AddPacketsFeatures()
             .AddPacketsInfrastructure(environment);
     }

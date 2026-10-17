@@ -1230,3 +1230,7 @@ static readonly Aw.Packets.Core.PacketsErrors.UnsupportedSchema -> Aw.Kernel.Err
 virtual Aw.Packets.Core.PacketReader.FileReader.Invoke(string! relativePath) -> Aw.Kernel.Result<System.ReadOnlyMemory<byte>?>!
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Id.init -> void
 const Aw.Packets.Core.Kinds.PacketKind.ManifestFile = "packet.json" -> string!
+Aw.Packets.Core.Kinds.Line.AcceptanceItem.SupersededBy.get -> Aw.Packets.Core.Ids.ItemId?
+Aw.Packets.Core.Kinds.Line.AcceptanceItem.SupersededBy.init -> void
+Aw.Packets.Core.Kinds.Line.LineKindsServiceCollectionExtensions
+static Aw.Packets.Core.Kinds.Line.LineKindsServiceCollectionExtensions.AddLinePacketKinds(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

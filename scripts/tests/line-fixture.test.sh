@@ -43,7 +43,7 @@ mutate() { # mutate <name> <expect-text> <command run inside the copy of tests/f
 mkdir -p "$WORK/clean" && cp -R "$FX" "$WORK/clean/line" && cp -R "$ROOT/tests/fixtures/scoping" "$WORK/clean/scoping"
 node "$WORK/clean/line/selfcheck.mjs" >/dev/null 2>&1; check "an unmutated copy of the fixture passes selfcheck (exit 0)" "$?" "0"
 mutate hops-integer "lenses.json agrees with coverage.json" "sed -i 's/\"hops\": \\[\\]/\"hops\": 0/' gold/scope/expiry/lenses.json"
-mutate p2-p3-share-a-file "PKT-SCOPE-002" "sed -i 's|\"web/api-client.ts\"|\"src/sharing/routes.ts\"|' gold/plan/expiry/packet.json"
+mutate p2-p3-share-a-file "PKT-SCOPE-002" "sed -i 's|\"web/api-client.ts\"|\"src/sharing/routes.ts\"|' gold/plan/expiry/tasks.json"
 mutate canary-leaked-to-readme "canary phrase appears" "echo '$PHRASE' >> README.md"
 mutate hidden-text-leaked "no hidden scenario text" "echo '$LEAK_TEXT' >> gold/design/expiry/spec.md"
 mutate formal-pack-copies-plain "two style packs really differ" "cp packs/style/plain/pack.json packs/style/formal/pack.json && sed -i 's/\"id\": \"plain\"/\"id\": \"formal\"/' packs/style/formal/pack.json"
@@ -56,7 +56,8 @@ mutate pl-leak-report-clean "PL-LEAK" "node -e 'const f=\"gold/prove/holdout-res
 mutate related-path-not-a-cascade-path "related is a cascade lens" "sed -i 's/reads action:audit.report/reads action:export.run/' gold/scope-trace/expiry.related-trace.json"
 mutate hops-not-hop-kinds "hop-kind arrays" "sed -i 's/\"dependency\"/\"walk\"/' gold/scope/expiry/lenses.json gold/scope/expiry/coverage.json"
 mutate malformed-gold-is-a-check "crashed" "echo '{' > gold/design/expiry/signals.json"
-mutate packet-edited-after-freeze "freeze record hash" "echo >> gold/design/expiry/spec.md"
+mutate design-parent-not-the-frozen-scope "index.json: kind design, parent is the frozen" "sed -i '0,/sha256:[0-9a-f]\\{64\\}/s//sha256:0000000000000000000000000000000000000000000000000000000000000000/' gold/design/expiry/index.json"
+mutate plan-index-self-set "index.json: kind plan" "sed -i 's/\"self\": null/\"self\": \"sha256:0000000000000000000000000000000000000000000000000000000000000000\"/' gold/plan/expiry/index.json"
 
 # --- the history: reproducible, with the planted items ---
 h1="$(bash "$FX/history/build.sh" "$WORK/a")"; check "build.sh exits 0 (first)" "$?" "0"

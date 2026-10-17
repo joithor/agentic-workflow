@@ -19,6 +19,7 @@ internal sealed class LinePacketBuilder
     private const string Sha = PacketBuilder.BaseSha;
 
     private readonly Dictionary<string, byte[]> _files = new(StringComparer.Ordinal);
+    private bool _indexSet;
 
     /// <summary>Creates the builder with the kind's gold files.</summary>
     /// <param name="kind">The kind.</param>
@@ -38,7 +39,7 @@ internal sealed class LinePacketBuilder
         }
 
         _files["packet.json"] = Encoding.UTF8.GetBytes(Manifest(kind, packetId));
-        _files["index.json"] = Encoding.UTF8.GetBytes(Index(kind.Name, "[]", kind.Name == "plan" ? "null" : $"\"{Hash}\"", "null"));
+        _files["index.json"] = Encoding.UTF8.GetBytes(Index(kind.Name, "[]", "null", "null"));
         foreach (var (name, text) in KindFiles(kind.Name))
         {
             _files[name] = Encoding.UTF8.GetBytes(text);
@@ -63,11 +64,7 @@ internal sealed class LinePacketBuilder
     /// <param name="name">The path relative to the packet directory.</param>
     /// <param name="text">Its text.</param>
     /// <returns>This builder.</returns>
-    public LinePacketBuilder With(string name, string text)
-    {
-        _files[name] = Encoding.UTF8.GetBytes(text);
-        return this;
-    }
+    public LinePacketBuilder With(string name, string text) => With(name, Encoding.UTF8.GetBytes(text));
 
     /// <summary>Replaces (or adds) a file.</summary>
     /// <param name="name">The path relative to the packet directory.</param>
@@ -76,6 +73,7 @@ internal sealed class LinePacketBuilder
     public LinePacketBuilder With(string name, byte[] bytes)
     {
         _files[name] = bytes;
+        _indexSet |= name == "index.json";
         return this;
     }
 
@@ -86,6 +84,7 @@ internal sealed class LinePacketBuilder
     /// <returns>This builder.</returns>
     public LinePacketBuilder Edit(string name, string from, string to)
     {
+        Materialize();
         var current = Encoding.UTF8.GetString(_files[name]);
         var at = current.IndexOf(from, StringComparison.Ordinal);
         if (at < 0)
@@ -107,7 +106,28 @@ internal sealed class LinePacketBuilder
 
     /// <summary>The files, by path: a fresh map a test may change.</summary>
     /// <returns>The files.</returns>
-    public Dictionary<string, byte[]> Build() => new(_files, StringComparer.Ordinal);
+    public Dictionary<string, byte[]> Build()
+    {
+        Materialize();
+        return new Dictionary<string, byte[]>(_files, StringComparer.Ordinal);
+    }
+
+    // index.json follows acceptance.json (PKT-xxx-006): self is its sha256, extends its 'parent'; until a test sets the index itself.
+    private void Materialize()
+    {
+        if (_indexSet || !_files.ContainsKey("index.json") || !_files.TryGetValue("acceptance.json", out var acceptance))
+        {
+            return;
+        }
+
+        var parent = System.Text.RegularExpressions.Regex.Match(Encoding.UTF8.GetString(acceptance), "\"parent\": \"(?<hash>sha256:[0-9a-f]{64})\"", System.Text.RegularExpressions.RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1)).Groups["hash"].Value;
+        _files["index.json"] = Encoding.UTF8.GetBytes(Index(Kind.Name, "[]", $"\"{FileHash(acceptance)}\"", $"\"{parent}\""));
+    }
+
+    /// <summary>The 'sha256:' hash of a file's bytes.</summary>
+    /// <param name="bytes">The bytes.</param>
+    /// <returns>The hash.</returns>
+    public static string FileHash(byte[] bytes) => "sha256:" + Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(bytes));
 
     /// <summary>An index.json.</summary>
     /// <param name="kind">The kind it says.</param>

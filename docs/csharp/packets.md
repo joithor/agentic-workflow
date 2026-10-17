@@ -150,9 +150,9 @@ the executability review, hidden scenarios, the PR) stays in Sindri's `DesignPac
 | `P-003` | each JSON file is one strict JSON object (UTF-8, no byte order mark, no duplicate key, no null in a list), each JSON-lines line is one object, each text file is valid UTF-8 |
 | `P-004` | `packet.json` matches the kind's schema, says `"kind": "<this kind>"`, and has `schemaVersion` 1 |
 | `P-005` | `links` name each of the kind's files and nothing else; a linked directory's list equals the files found under it (an unlisted file would escape the hash), each once |
-| `P-006` | `index.json` matches its schema, says the kind, and lists no parent twice |
+| `P-006` | `index.json` matches its schema, says the kind, lists no parent twice, and ties to `acceptance.json`: `acceptance.self` is the `sha256:` of that file's bytes (null when the kind has none) and `acceptance.extends` equals its `parent` |
 | `PKT-BASE-001` | `baseSha` is a full commit sha that exists in the repository (`--repo`, default the packet directory) |
-| `PKT-DSN-007`, `PKT-PRF-007`, `PKT-PHS-010` | `acceptance.json` matches its schema: `schemaVersion` 1, `parent` (the hash of the previous `acceptance.json`, line spec LC-2), `items[]` with a non-blank `id` and `text`, a `status` of `failing`, `passing` or `superseded`, and `evidence[]` of `{kind, path, sha256, commit, at}`; the other item fields (`form`, `surfaces`, `citations`, `trust`, the item's own `parent`) pass through, since the scoping spec and Sindri's `LC-ACC-001` own them |
+| `PKT-DSN-007`, `PKT-PRF-007`, `PKT-PHS-010` | `acceptance.json` matches its schema: `schemaVersion` 1, `parent` (the hash of the previous `acceptance.json`, line spec LC-2), `items[]` with a non-blank `id` and `text`, a `status` of `failing`, `passing` or `superseded`, `evidence[]` of `{kind, path, sha256, commit, at}`, and `supersededBy` (the id of an item in the file) on a superseded item and on no other (provisional, pending the line spec's amendment); the other item fields (`form`, `surfaces`, `citations`, `trust`, the item's own `parent`) pass through, since the scoping spec and Sindri's `LC-ACC-001` own them |
 | `PKT-DSN-008`, `PKT-PHS-011` | item ids are unique and no item is `passing`: only the proof pack flips an item (LC-2) |
 | `PKT-PRF-008` | item ids are unique and every `passing` item has evidence |
 | `PKT-PLN-007` | `tasks.json` matches the task-plan schema; then **the build kind's task rules run on it** (LN10): `PKT-ID-001`, `PKT-WS-001`, `PKT-GRAPH-001/002`, `PKT-BASE-001`, `PKT-SCOPE-001/002`, `PKT-ACC-001`, `PKT-EVID-001`, `PKT-DEC-001` (an empty decision log: it passes), `PKT-HOLD-001/002`; `PKT-SIZE-001` stays unchecked until LN-PKT3. They are unchecked when `tasks.json` can't be read |
@@ -164,6 +164,12 @@ the executability review, hidden scenarios, the PR) stays in Sindri's `DesignPac
 
 `PKT-xxx-007` and above that name a file check are `unchecked` when the file is missing or not well formed; `P-005` and
 `PKT-BASE-001` are `unchecked` when `packet.json` can't be read.
+
+**Errors name the file and the field** (`index.json: the property 'id' is not a field of this file.`), never a CLR type.
+
+**Re-freezing an id.** `freeze` does not refuse a packet whose id was frozen before with other content: it records
+the new hash beside the old one (the record is per hash), and `verify` (LN-PKT2) matches by hash, not by id. Which
+packet is "the newest in force" under a phase, and that ids are unique per line, are Sindri's to enforce.
 
 **Phase-packet ids are unique per line** (line spec LN-PKT1): that is a fact about *all* of a line's packets, which one
 packet's schema-only `validate` cannot see, so Sindri checks it (as it does `SCP-LENS-001` for the scope packet). An
