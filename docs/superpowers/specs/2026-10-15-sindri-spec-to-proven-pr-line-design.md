@@ -1,8 +1,8 @@
 # Sindri spec-to-proven-PR line: the line contract, design, plan and the per-phase child
 
-**Status:** design, revision 2.5 (after /autoplan pass 1, a narrow re-check, #263's asks, #258 rev 3.2's scope graphs, the #308 review rulings and the #309 /autoplan follow-up, §14) (draft; not built until every station is specced, LN1) · **Date:** 2026-10-15 ·
+**Status:** design, revision 2.6 (after /autoplan pass 1, a narrow re-check, #263's asks, #258 rev 3.2's scope graphs, the #308 review rulings, the #309 /autoplan follow-up and its round 2, §14) (draft; not built until every station is specced, LN1) · **Date:** 2026-10-15 ·
 **Owner decisions:** 2026-10-15 and 2026-10-16 (§1) · **Builds on:** the scoping station spec
-`2026-10-15-sindri-scoping-station-design.md` (SC, #258), rev 3.4, branch `docs/sindri-scoping-station`; the
+`2026-10-15-sindri-scoping-station-design.md` (SC, #258), rev 3.5, branch `docs/sindri-scoping-station`; the
 decision-tree recipes spec `2026-10-15-sindri-decision-tree-recipes-design.md` (DT, #240), rev 4; the parked PR
 babysitter and docs sync draft `2026-10-15-sindri-pr-babysitter-docs-sync-design.md` (PB), branch
 `docs/sindri-pr-babysitter-docs-sync`; the workflow engine spec `2026-10-10-sindri-workflow-engine-design.md` (WF), rev
@@ -49,7 +49,7 @@ value form: a pack is named by a plain string parameter (LN-WF5). Every request 
 | LN12 | **No seed reuses a prompt as-is** (owner, IDEA-098; carried from SC10). Every agent Step's seed on the line, including the #240 blocks the line uses, is written new against PR-R's rubric and evidence loop | §10. It amends DT7's /enhancePrompt porting (DTC7) |
 | LN13 | **Packets, not facts, cross stations; facts never do** (carried from SC §3) | A station reads its input packet by hash and verifies it against the freeze record; it never reads another instance's facts |
 | LN15 | **The scope opens in Context** (owner, 2026-10-16; the five pieces confirmed: "yes add those"; #258 SC11). The scope packet freezes `lenses.json` (per lens: found nodes and edges, anchors, depth, map version); the context lane extends C1 and C10 and adds C15 (`subgraph`); #258 API9 reads a packet's file by hash, after a purge too; #258 U7 opens U9 from the stop and the scope viewers, pinned as of the stop (drawn from `lenses.json`) with a live toggle, per scope lens, with empty states (UI R8-14); W13's `scope-packet` type is what the viewer switches on. For the line: stop 1 carries the action, and every packet viewer reads its files through API9 (LN-UI4) | The owner reads a scope's blast radius as a graph, as it stood at the stop. One file route serves every packet kind, so the line's viewers don't need a second one |
-| LN16 | **The line spec set is approved for build** (owner, 2026-10-16: "approved. build that shit"). The approval covers #258 (scoping station, rev 3.2; rev 3.3 adds `commit-not-held` (owner-approved 2026-10-16) and `not-synced` (provisional owner default)), #262 (the line, rev 2.3) and #263 (PR babysitter and docs sync); Q16 stays as specced (the pinned view draws from `lenses.json`) | The owner read the set together. The build follows each spec's phases and waves, starting with the phases provable on what main holds |
+| LN16 | **The line spec set is approved for build** (owner, 2026-10-16: "approved. build that shit"). The approval covers #258 (scoping station, rev 3.2; rev 3.3 adds `commit-not-held`, owner-approved 2026-10-16), #262 (the line, rev 2.3) and #263 (PR babysitter and docs sync); Q16 stays as specced (the pinned view draws from `lenses.json`). Not covered by this approval: `not-synced`, which stays provisional until the scoping spec's Q11 is answered | The owner read the set together. The build follows each spec's phases and waves, starting with the phases provable on what main holds |
 
 ## 2. Terms
 
@@ -96,7 +96,7 @@ Every packet is an `aw-packets` kind (LN10; LN-PKT1), hashed by `aw-packets hash
 carries `index.json`: its kind, its parents' hashes, and `acceptance: { self, extends }`, where `self` is the sha256 of the
 packet's own `acceptance.json` and `extends` is the parent acceptance's hash. `self` is null for every kind without `acceptance.json`: plan, review and handoff (`aw-packets` refuses a non-null `self` there). `extends` equals the `parent` of the packet's own `acceptance.json` (`aw-packets` checks they match); in a kind without `acceptance.json` it carries the nearest ancestor's acceptance hash (not checked by `aw-packets`). Every hash field (`parents[]`, `self`, `extends`, `parent`, evidence `sha256`) is `sha256:` plus 64 lowercase hex. `index.json` carries no
 `id`; the packet id lives in `packet.json`. The scope packet is the chain's root: its files are #258 §8.3's twelve, and the
-design packet's `index.json` `parents` carries the scope packet's hash. The walk (LC-3, `sindri line show`) starts at the design packet and reaches the root through its `parents` entry (the scope packet's hash), which `aw-packets verify` checks. A reader verifies its input with `aw-packets verify
+design packet's `index.json` `parents` carries the scope packet's hash. The walk (LC-3, `sindri line show`) starts at the newest packet (the hand-off, whose `index.json` lists packets 1-6) and reaches the root through each packet's `parents`; the design-to-scope link (the scope packet's hash) is the one `aw-packets verify` checks. A reader verifies its input with `aw-packets verify
 <dir> --hash <h>` (LN-PKT2) before it reads anything.
 
 | # | Packet (kind) | Made by | Files | Frozen fields | Hash and freeze | Evidence it adds |
@@ -974,7 +974,7 @@ Rulings from the #308 review, which follow LN-PKT1's own row. Nothing else chang
 | §3.3 LC-2, §4 DSN-ACC-003 | A `superseded` item carries `supersededBy: <item id>` |
 | §3.2 intro | `extends` loses "(null for the first)", since every packet carrying `index.json` has a parent; `self` is null when the kind has no `acceptance.json` (the plan); LC-2 reads "in every packet that has one" |
 | §3.2 Files column | `index.json` added to the design, plan, phase, proof and review rows (the hand-off row already had it) |
-| Header, LN16 | Citations of the scoping spec move from rev 3.2 to rev 3.3 |
+| Header, LN16 | The header cites the scoping spec's current revision (rev 3.5 as of 14.6); LN16 keeps rev 3.2 as the approval record (L6) |
 | §3.2 proof row, §3.3 LC-2 | Evidence `sha256` values carry the `sha256:` prefix |
 
 ### 14.5 Rev 2.5, the #309 /autoplan follow-up
@@ -990,6 +990,15 @@ Fixes to match what #308 built (`schemas/packets/*.schema.json`, `LineContext.cs
 | L5 | §3.2 plan row | `packet.json`, `links.tasks` and `tasks.json` written as a plain list |
 | L6 | Header, LN16 | LN16 keeps "#258 (scoping station, rev 3.2)" as the approval record and adds what rev 3.3 added; the header's "Builds on" moves to the scoping spec's rev 3.4 |
 | L7 | Status line, §14.5 | Revision 2.5; this table |
+
+### 14.6 Rev 2.6, the #309 /autoplan follow-up, round 2
+
+| Id | Where | What changed |
+|---|---|---|
+| R9-L1 | LN16 | The approval sentence ends at `commit-not-held`; `not-synced` is named as not covered until the scoping spec's Q11 is answered |
+| R9-L2 | §3.2 intro (LC-3 walk) | The walk starts at the newest packet (the hand-off, `index.json` over packets 1-6), not the design packet; the design-to-scope link is the one `aw-packets verify` checks |
+| R9-L3 | §14.4 last row | It no longer says citations move to rev 3.3: the header cites the current scoping rev, LN16 keeps rev 3.2 |
+| R9-L4 | Header, status line | Builds on the scoping spec's rev 3.5; revision 2.6 |
 
 ## 15. Open questions
 
