@@ -21,7 +21,7 @@ root="$(cd "$here/../../.." && pwd)"
 tree="$out/tree"
 [ ! -d "$tree" ] || find "$tree" -delete
 mkdir -p "$tree"
-git -C "$root" ls-files -z --cached --others --exclude-standard -- global.json nuget.config .editorconfig 'Directory.*' BannedSymbols.txt CodeMetricsConfig.txt \
+git -C "$root" ls-files -z --cached --others --exclude-standard -- global.json nuget.config .editorconfig 'Directory.*' 'BannedSymbols*.txt' CodeMetricsConfig.txt \
   src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction src/Aw.Analyzers src/Meta | (cd "$root" && tar --null -T - -cf -) | tar -xf - -C "$tree"
 rid="$(dotnet --info | awk '/^ *RID:/ {print $2; exit}')"
 dotnet publish "$tree/src/Meta/Aw.Meta.Host/Aw.Meta.Host.csproj" -c Release -r "$rid" -p:RestoreLockedMode=false \
