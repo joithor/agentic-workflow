@@ -18,3 +18,8 @@ aw_setup_meta_step() {
   done
   return 0
 }
+
+# aw_setup_meta_finish <rc>  — the last line of setup.sh: the meta step's result, after everything else has run.
+aw_setup_meta_finish() {
+  return 0
+}

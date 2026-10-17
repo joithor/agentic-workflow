@@ -202,6 +202,21 @@ check "setup step: a publish failure (1) fails the step at once" "$(step 1)" "1:
 check "setup step: a failure says setup stops and the installed binary may be stale" "$( ( source "$DIR/../config/lib/setup-meta-step.sh"; step 1 > /dev/null; aw_setup_meta_step "$WORK/fake" claude ) 2>&1 | grep -c 'install-meta.sh failed for claude (exit 1); setup stops')" "1"
 check "setup step: an installer success returns 0, no warning" "$(step 0)" "0:0:2"
 
+# A failed meta step does not abort the rest of setup (set -e): setup.sh records the rc, writes the registry, then exits with it and says why last
+finish() { # finish <installer exit code> -> "<exit>:<registry written>:<last line says what failed>"
+  printf '#!/usr/bin/env bash\nexit %s\n' "$1" > "$WORK/fake/scripts/install-meta.sh"
+  local out rc=0
+  out="$( ( set -euo pipefail; source "$DIR/../config/lib/setup-meta-step.sh"
+    META_RC=0; aw_setup_meta_step "$WORK/fake" claude || META_RC=$?
+    echo "registry written"
+    aw_setup_meta_finish "$META_RC" ) 2>&1 )" || rc=$?
+  echo "$rc:$(printf '%s' "$out" | grep -c '^registry written$'):$(printf '%s' "$out" | tail -1 | grep -c 'meta install failed')"
+}
+check "setup finish: a failed meta step still writes the registry, then exits with the installer's code and the message last" "$(finish 1)" "1:1:1"
+check "setup finish: a refused tree (3) and a success end setup with 0 and no failure message" "$(finish 3):$(finish 0)" "0:1:0:0:1:0"
+SETUP_SRC="$DIR/../setup.sh"
+check "setup.sh runs the meta step with '|| META_RC=\$?' and finishes after the registry is written" "$(grep -c 'aw_setup_meta_step .* || META_RC=\$?' "$SETUP_SRC"):$([ "$(grep -n 'aw_setup_meta_finish' "$SETUP_SRC" | tail -1 | cut -d: -f1)" -gt "$(grep -n 'aw_write_provider_registry "' "$SETUP_SRC" | tail -1 | cut -d: -f1)" ] && echo after)" "1:after"
+
 # setup.sh --with-meta runs the meta step on every OS (it used to print "skipped" on macOS), under the real uname
 mkdir -p "$WORK/shome"
 OUT="$(PATH="${PATH#"$WORK/linuxbin:"}" HOME="$WORK/shome" AW_STATE_DIR="$WORK/sstate" AW_NO_SYSTEM_INSTALL=1 AW_SKIP_BUILD= bash "$DIR/../setup.sh" --providers claude --dry-run --with-meta 2>&1)"; RC=$?
