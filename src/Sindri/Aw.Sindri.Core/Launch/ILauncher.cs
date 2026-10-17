@@ -10,8 +10,8 @@ namespace Aw.Sindri.Core.Launch;
 public interface ILauncher
 {
     /// <summary>
-    /// Launches. Idempotent per launch id: a second call returns the existing <see cref="LaunchResult.Started"/> with the same
-    /// <see cref="HostRef"/> and starts no second session. A failure is a value (<see cref="LaunchResult.Failed"/>), never an exception.
+    /// Launches. Idempotent per launch id: a second call returns the existing <see cref="StartedLaunch"/> with the same
+    /// <see cref="HostRef"/> and starts no second session. A failure is a value (<see cref="FailedLaunch"/>), never an exception.
     /// </summary>
     /// <param name="request">The launch.</param>
     /// <param name="cancellationToken">Cancels the wait.</param>

@@ -26,8 +26,8 @@ public abstract class LauncherContract
         var first = await launcher.Launch(request, CancellationToken.None);
         var second = await launcher.Launch(request, CancellationToken.None);
 
-        Expect.True(first is LaunchResult.Started && second is LaunchResult.Started);
-        Expect.Equal(((LaunchResult.Started)first).Host, ((LaunchResult.Started)second).Host);
+        Expect.True(first is StartedLaunch && second is StartedLaunch);
+        Expect.Equal(((StartedLaunch)first).Host, ((StartedLaunch)second).Host);
         Expect.Equal(1, SessionCount());
     }
 
@@ -57,6 +57,6 @@ public abstract class LauncherContract
 
         var result = await Create().Launch(A.LaunchRequest().Unattended(step).Build(), CancellationToken.None);
 
-        Expect.True(result is LaunchResult.Started { Viewer.Kind: ViewerOutcomeKind.Skipped });
+        Expect.True(result is StartedLaunch { Viewer.Kind: ViewerOutcomeKind.Skipped });
     }
 }
