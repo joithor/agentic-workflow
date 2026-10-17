@@ -237,6 +237,7 @@ public sealed partial class QuestionEvaluator(IDecisionLog log, IInputRedactor r
             LatencyMs = at.LatencyMs,
             ChainPosition = at.Position,
             Probabilities = answer.Probabilities ?? run.UndecidedProbabilities,
+            DecidingProbabilities = answer.Probabilities,
             RulesOpinion = opinion,
             Agreement = agreement,
         };
