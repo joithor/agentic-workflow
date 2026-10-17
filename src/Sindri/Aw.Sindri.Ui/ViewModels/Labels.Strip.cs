@@ -44,8 +44,8 @@ internal static partial class Labels
     /// <returns>The words, or empty for a kind that has no badge (a taken-over row says WITH YOU in its chip).</returns>
     internal static string EngineBadge(EngineOwnedKind kind, string reason) => kind switch
     {
-        EngineOwnedKind.Escalated => $"▲ escalated: {reason}",
-        EngineOwnedKind.Parked => $"▲ parked: {reason}",
+        EngineOwnedKind.Escalated => $"{MarkEscalated} escalated: {reason}",
+        EngineOwnedKind.Parked => $"{MarkEscalated} parked: {reason}",
         EngineOwnedKind.TakenOver => string.Empty,
         _ => string.Empty,
     };

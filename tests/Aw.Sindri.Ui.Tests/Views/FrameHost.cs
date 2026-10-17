@@ -113,9 +113,9 @@ public abstract class FrameHost : IDisposable
 
     private protected static bool Visible(Visual within, string name) => within.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.Name == name)?.IsEffectivelyVisible == true;
 
-    private protected static void Frame(Window window, string name)
+    private protected static void Frame(Window window, string name, string prefix = "u3-")
     {
         Settle(window);
-        FrameFile.Save(window, "u3-" + name);
+        FrameFile.Save(window, prefix + name);
     }
 }
