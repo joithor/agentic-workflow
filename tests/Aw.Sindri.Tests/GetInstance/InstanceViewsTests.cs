@@ -117,6 +117,11 @@ public sealed class InstanceViewsTests
     [InlineData("parked-rounds", "answer-grant=--grant 1")]
     [InlineData("parked-no-progress-child", "answer-grant=--grant 1", "answer-text=--text <answer>")]
     [InlineData("parked-budget", "answer-grant-tokens=--grant-tokens 100k")]
+    [InlineData("parked-budget-odd", "answer-grant-tokens=--grant-tokens 12500")]
+    [InlineData("parked-mirrored-rounds", "answer-grant=--grant 1")]
+    [InlineData("parked-mirrored-timeout", "answer-resume=--resume")]
+    [InlineData("parked-mirrored-no-runtime", "answer-resume=--resume")]
+    [InlineData("parked-mirrored-budget")]
     [InlineData("parked-needs-answer-step", "answer-text=--text <answer>")]
     [InlineData("parked-needs-answer-wait", "answer-resume=--resume")]
     [InlineData("parked-timeout", "answer-resume=--resume")]
@@ -147,17 +152,17 @@ public sealed class InstanceViewsTests
     }
 
     [Fact]
-    public async Task Every_served_answer_cli_is_runnable_parses_and_fits_the_suspension()
+    public async Task Every_served_answer_cli_is_runnable_parses_and_fits_the_suspension_or_the_child()
     {
         var served = 0;
         foreach (var name in StatusCases.Names)
         {
-            var instance = StatusCases.Instance(name);
+            var recipe = StatusCases.RecipeOf(name);
             foreach (var entry in AnswerEntries(StatusCases.View(name)))
             {
                 served++;
                 var args = entry.Cli[Answering.Length..].Split(' ');
-                Assert.DoesNotContain(entry.Cli, "[", StringComparison.Ordinal);
+                Assert.DoesNotContain("[", entry.Cli, StringComparison.Ordinal);
                 if (!entry.Action.EndsWith("answer-text", StringComparison.Ordinal))
                 {
                     Assert.DoesNotContain("<", entry.Cli, StringComparison.Ordinal);   // only the text a person types stays a template
@@ -166,12 +171,86 @@ public sealed class InstanceViewsTests
                 var parsed = await Host.Commands.ApplyCommandVerbs.AnswerOptions(args, TestContext.Current.CancellationToken);
                 Assert.False(parsed.IsError, $"{name}: {entry.Cli}: {(parsed.IsError ? parsed.Error.Message : string.Empty)}");
                 var answer = new AnswerGiven("human:cli", new CommandStamp(CommandNonce.From(new string('c', 32)), new string('d', 64)), parsed.Value.Variant, parsed.Value.Text, parsed.Value.Amount, Forwarded: null);
-                var fits = AnswerFit.Check(instance, recipe: null, answer);
-                Assert.False(fits.IsError, $"{name}: {entry.Cli} is refused: {(fits.IsError ? fits.Error.Message : string.Empty)}");
+                foreach (var target in FitTargets(name))
+                {
+                    var fits = AnswerFit.Check(target, recipe, answer);
+                    Assert.False(fits.IsError, $"{name}: {entry.Cli} is refused by {target.Suspension!.ParkKind}: {(fits.IsError ? fits.Error.Message : string.Empty)}");
+                }
             }
         }
 
-        Assert.True(served >= 9);
+        Assert.True(served >= 12);
+    }
+
+    /// <summary>The instance whose answer check applies: the case itself, or for a mirror the child it forwards to, with each park kind the child can have for that reason.</summary>
+    private static IEnumerable<WorkflowInstance> FitTargets(string name)
+    {
+        var instance = StatusCases.Instance(name);
+        if (instance.Suspension is not { Mirrors: not null } mirrored)
+        {
+            yield return instance;
+            yield break;
+        }
+
+        ParkKind?[] kinds = mirrored.Reason is ParkReason.Rounds or ParkReason.NoProgress ? [ParkKind.Loop, ParkKind.Refusal] : [null, ParkKind.Step, ParkKind.Wait];
+        foreach (var kind in kinds)
+        {
+            yield return instance with { Suspension = mirrored with { Mirrors = null, ParkKind = kind } };
+        }
+    }
+
+    [Fact]
+    public void Only_the_reasons_whose_fit_does_not_depend_on_the_child_serve_a_mirror_an_entry()
+    {
+        var fixes = Enum.GetValues<ParkReason>().Where(r => AnswerVariants.ReasonFixesChildFit(r)).ToArray();
+
+        Assert.Equal([ParkReason.Rounds, ParkReason.NoProgress, ParkReason.Timeout, ParkReason.NoRuntime], fixes);
+        foreach (var reason in fixes)
+        {
+            var fits = new ParkKind?[] { null, ParkKind.Loop, ParkKind.Refusal, ParkKind.Step, ParkKind.Wait }.Select(k => AnswerVariants.Fitting(FrameFixture.Park(reason, k, ResumeKind.Transition)).ToArray()).ToList();
+            Assert.All(fits, f => Assert.Equal(fits[0], f));   // whatever the child's park kind, the same variants fit
+        }
+    }
+
+    [Theory]
+    [InlineData("parked-mirrored-needs-answer")]
+    [InlineData("parked-mirrored-budget")]
+    [InlineData("escalated-child")]
+    public void A_mirror_whose_child_decides_points_its_status_line_at_the_child(string name)
+    {
+        var answer = StatusCases.View(name).AnswerLine!;
+
+        Assert.Equal(Answering + "<the child's answer>", answer.Cli);
+        Assert.Equal("ApplyCommand:answer-text", answer.ActionId.Value);
+        Assert.Contains("(forwarded to T-3/step/1/step.4)", InstanceViews.Status(StatusCases.View(name), StatusCases.Now).Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_status_answer_is_the_first_variant_the_one_table_lists_for_every_park_shape()
+    {
+        foreach (var reason in Enum.GetValues<ParkReason>())
+        {
+            foreach (var kind in (ParkKind?[])[null, .. Enum.GetValues<ParkKind>().Cast<ParkKind?>()])
+            {
+                AssertFirstVariant(FrameFixture.Park(reason, kind, ResumeKind.Transition));
+            }
+        }
+
+        foreach (var escalation in Enum.GetValues<EscalationKind>().Where(static e => e != EscalationKind.Child))
+        {
+            AssertFirstVariant(FrameFixture.Park(ParkReason.Rounds, kind: null, ResumeKind.Transition) with { Kind = SuspensionKind.Escalation, Reason = null, Escalation = escalation });
+        }
+    }
+
+    private static void AssertFirstVariant(Suspension shape)
+    {
+        var address = FrameFixture.Producing().Address;
+        var fitting = AnswerVariants.Fitting(shape);
+        var line = ParkAnswers.For(new ParkShape(shape.Kind, shape.Reason, shape.ParkKind, shape.Escalation), address);
+        if (fitting.Count > 0)
+        {
+            Assert.Equal(AnswerRow.For(fitting[0]).Action, line!.ActionId.Value);
+        }
     }
 
     [Theory]
@@ -214,20 +293,6 @@ public sealed class InstanceViewsTests
     }
 
     [Fact]
-    public void The_answer_check_takes_its_variants_from_the_one_table()
-    {
-        var instance = FrameFixture.Producing();
-        foreach (var reason in Enum.GetValues<ParkReason>())
-        {
-            foreach (var kind in (ParkKind?[])[null, .. Enum.GetValues<ParkKind>().Cast<ParkKind?>()])
-            {
-                var shape = FrameFixture.Park(reason, kind, ResumeKind.Transition);
-                Assert.Equal([.. AnswerVariants.Fitting(shape)], [.. AnswerFit.Variants(shape, instance.Address, instance.Recipe)]);
-            }
-        }
-    }
-
-    [Fact]
     public void Each_answer_variant_has_one_row_pinned_to_the_catalog()
     {
         var catalog = Host.Catalog.EngineRows.All.ToDictionary(static r => r.Action.Value, StringComparer.Ordinal);
@@ -237,7 +302,7 @@ public sealed class InstanceViewsTests
             Assert.Equal(row.Id, AnswerRow.ForAction("ApplyCommand:" + row.Id).Id);
             var entry = catalog["ApplyCommand:" + row.Id];
             Assert.Equal(row.Class, entry.Class);
-            Assert.Contains(row.Option.Split(' ')[0], entry.Cli.Text, StringComparison.Ordinal);
+            Assert.Equal(row.Option.Split(' ')[0], entry.Cli.Text.Split(' ')[4]);   // the option token after <address>, exactly
         }
 
         _ = Assert.Throws<System.Diagnostics.UnreachableException>(() => AnswerRow.For((AnswerVariant)99));

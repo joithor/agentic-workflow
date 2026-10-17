@@ -25,6 +25,7 @@ public static class ParkAnswers
         var answering = $"sindri workflow answer {address.Value}";
         return shape switch
         {
+            { Kind: SuspensionKind.Park, Mirrors: true } when !AnswerVariants.ReasonFixesChildFit(shape.Reason) => Line(AnswerKind.Text, $"{answering} <the child's answer>"),
             { Kind: SuspensionKind.Park, Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Drift or ParkKind.ChildRevoked } => null,
             { Kind: SuspensionKind.Park, Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Revoked } => Line(AnswerKind.CancelOnly, $"sindri workflow cancel {address.Value}"),
             { Kind: SuspensionKind.Park } => Park(shape, answering, grantTokens),

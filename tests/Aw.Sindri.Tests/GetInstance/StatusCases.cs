@@ -20,6 +20,13 @@ internal static class StatusCases
         "desk-task", "parked-no-progress-child", "parked-budget", "escalated-gate", "taken-over", "done",
         "parked-rounds", "parked-needs-answer-step", "parked-needs-answer-wait", "parked-timeout", "parked-revoked",
         "parked-drift", "parked-no-runtime", "parked-rounds-with-drift", "cancelled", "escalated-child", "parked-mirrored-needs-answer",
+        "parked-budget-odd", "parked-mirrored-rounds", "parked-mirrored-timeout", "parked-mirrored-no-runtime", "parked-mirrored-budget",
+    ];
+
+    /// <summary>The cases whose suspension mirrors a child.</summary>
+    public static IReadOnlyList<string> Mirrored { get; } =
+    [
+        "parked-no-progress-child", "escalated-child", "parked-mirrored-needs-answer", "parked-mirrored-rounds", "parked-mirrored-timeout", "parked-mirrored-no-runtime", "parked-mirrored-budget",
     ];
 
     public static InterpretedRecipe Recipe { get; } = new(
@@ -31,7 +38,7 @@ internal static class StatusCases
     public static InstanceView View(string name)
     {
         var built = Build(name);
-        return InstanceViews.Of(built.Instance, Recipe, built.Since, built.TimeoutAt, new InstanceViewContext(Version: 4, Children: built.Children));
+        return InstanceViews.Of(built.Instance, built.Recipe ?? Recipe, built.Since, built.TimeoutAt, new InstanceViewContext(Version: 4, Children: built.Children));
     }
 
     /// <summary>The interpreter state a case's view is built from.</summary>
@@ -39,7 +46,12 @@ internal static class StatusCases
     /// <returns>The instance.</returns>
     public static WorkflowInstance Instance(string name) => Build(name).Instance;
 
-    private sealed record Built(WorkflowInstance Instance, DateTimeOffset Since, DateTimeOffset? TimeoutAt, IReadOnlyList<ChildView>? Children);
+    /// <summary>The recipe a case runs: the shipped workflow.step, or it with the case's own budget.</summary>
+    /// <param name="name">The case.</param>
+    /// <returns>The recipe.</returns>
+    public static Aw.Sindri.Core.Workflow.Recipes.Recipe RecipeOf(string name) => (Build(name).Recipe ?? Recipe).Recipe;
+
+    private sealed record Built(WorkflowInstance Instance, DateTimeOffset Since, DateTimeOffset? TimeoutAt, IReadOnlyList<ChildView>? Children, InterpretedRecipe? Recipe = null);
 
     private static Built Build(string name) => name switch
     {
@@ -62,6 +74,11 @@ internal static class StatusCases
         {
             Suspension = Suspended(ParkReason.NeedsAnswer, kind: null, "the child's step failed") with { Mirrors = EngineFixture.ChildId },
         }, Ago(9), children: [new ChildView(InstanceAddress.From("T-3/step/1/step.4"), "parked: needs-answer")]),
+        "parked-budget-odd" => Case(Park(ParkReason.Budget, ParkKind.Step, "produce used 25k of 25k tokens") with { Spent = Spent(25_000) }, Ago(3), recipe: WithProduceBudget(25_000)),
+        "parked-mirrored-rounds" => Case(MirroredPark(ParkReason.Rounds, "the child used all 3 rounds"), Ago(10), children: [Child("parked: rounds")]),
+        "parked-mirrored-timeout" => Case(MirroredPark(ParkReason.Timeout, "the child ran past 2d"), Ago(10), children: [Child("parked: timeout")]),
+        "parked-mirrored-no-runtime" => Case(MirroredPark(ParkReason.NoRuntime, "no runtime for step.test.agent"), Ago(10), children: [Child("parked: no-runtime")]),
+        "parked-mirrored-budget" => Case(MirroredPark(ParkReason.Budget, "the child used 50k of 50k tokens"), Ago(10), children: [Child("parked: budget")]),
         "parked-drift" => Case(Park(ParkReason.SpecConflict, ParkKind.Drift, "step.produce"), Ago(4)),
         "parked-no-runtime" => Case(Park(ParkReason.NoRuntime, kind: null, "step.test.agent"), Ago(2)),
         "parked-rounds-with-drift" => Case(Park(ParkReason.Rounds, ParkKind.Loop, "revisions used 3 of 3 rounds") with { PendingPark = Suspended(ParkReason.SpecConflict, ParkKind.Drift, "step.produce") }, Ago(30)),
@@ -75,7 +92,24 @@ internal static class StatusCases
         _ => throw new ArgumentOutOfRangeException(nameof(name), name, "no such status case"),
     };
 
-    private static Built Case(WorkflowInstance instance, DateTimeOffset since, DateTimeOffset? timeoutAt = null, IReadOnlyList<ChildView>? children = null) => new(instance, since, timeoutAt, children);
+    private static Built Case(WorkflowInstance instance, DateTimeOffset since, DateTimeOffset? timeoutAt = null, IReadOnlyList<ChildView>? children = null, InterpretedRecipe? recipe = null) => new(instance, since, timeoutAt, children, recipe);
+
+    private static ChildView Child(string state) => new(InstanceAddress.From("T-3/step/1/step.4"), state);
+
+    /// <summary>A park mirroring the child, as the engine builds it (§5.8): the child's reason, no park kind.</summary>
+    private static WorkflowInstance MirroredPark(ParkReason reason, string question) => Produce() with
+    {
+        Suspension = Suspended(reason, kind: null, question) with { Mirrors = EngineFixture.ChildId, Resume = Resume(ResumeKind.Forward) },
+    };
+
+    /// <summary>The shipped recipe with the produce state's budget set to <paramref name="tokens"/>.</summary>
+    private static InterpretedRecipe WithProduceBudget(int tokens) => Recipe with
+    {
+        Recipe = Recipe.Recipe with
+        {
+            States = Recipe.Recipe.States.ToDictionary(static s => s.Key, s => s.Key == "produce" ? s.Value with { Budget = new Aw.Sindri.Core.Workflow.Recipes.BudgetSpec(tokens) } : s.Value, StringComparer.Ordinal),
+        },
+    };
 
     private static DateTimeOffset Ago(int minutes) => Now - TimeSpan.FromMinutes(minutes);
 

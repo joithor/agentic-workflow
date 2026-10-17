@@ -26,5 +26,5 @@ public static partial class InstanceViews
     }
 
     private static bool ReasonFixesChildFit(Suspension suspension) =>
-        suspension.Kind == SuspensionKind.Park && suspension.Reason is ParkReason.Rounds or ParkReason.NoProgress or ParkReason.Timeout or ParkReason.NoRuntime;
+        suspension.Kind == SuspensionKind.Park && AnswerVariants.ReasonFixesChildFit(suspension.Reason);
 }

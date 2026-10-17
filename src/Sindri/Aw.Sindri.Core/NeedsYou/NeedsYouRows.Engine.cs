@@ -30,7 +30,7 @@ public static partial class NeedsYouRows
     public static NeedsYouRow ForPark(ItemRow item, InstanceAddress address, SuspensionSummary suspension, DateTimeOffset since, ITextScrubber scrubber)
     {
         ArgumentNullException.ThrowIfNull(suspension);
-        var answer = ParkAnswers.For(new ParkShape(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation), address);
+        var answer = ParkAnswers.For(new ParkShape(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null), address);
         var (label, words) = Words(suspension);
         var shape = new EngineRow("park:", label, $"{words} ({address.Value})", Urgency.Pulse, answer?.Kind,
             answer?.ActionId ?? _approveRecipe, answer is null ? [_approveRecipe, _cancel] : [answer.ActionId], answer?.Cli ?? Status(address));

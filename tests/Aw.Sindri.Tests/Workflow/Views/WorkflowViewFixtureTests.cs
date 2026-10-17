@@ -117,6 +117,24 @@ public sealed class WorkflowViewFixtureTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Every_fixture_status_names_each_verb_once_on_its_commands_line()
+    {
+        foreach (var status in WorkflowViewFixtures.AllStatuses())
+        {
+            var line = status.Text.Split('\n').Select(static l => l.Trim()).FirstOrDefault(static l => l.StartsWith("commands", StringComparison.Ordinal));
+            if (line is null)
+            {
+                continue;
+            }
+
+            var verbs = line["commands".Length..].Split(',', StringSplitOptions.TrimEntries);
+            Assert.Equal(verbs.Distinct(StringComparer.Ordinal).ToArray(), verbs);
+        }
+
+        Assert.Contains(WorkflowViewFixtures.AllStatuses(), static s => s.Commands.Where(static c => c.Verb == StatusVerb.Answer).Skip(1).Any());   // the repeated-answer shapes are in the set
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Main_path_states_are_numbered_from_one_and_a_branch_has_no_order()
     {
         foreach (var view in WorkflowViewFixtures.AllDetails())

@@ -1,26 +1,19 @@
 using Aw.Sindri.Core.Workflow.Engine.Instances;
-using Aw.Sindri.Core.Workflow.Engine.Triggers;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 
-/// <summary>One row of spec §3.8 as the answer sees it: the variants that fit, how the suspension is shown, and the fix (the §6.4 answer line).</summary>
+/// <summary>One row of spec §3.8 as the answer sees it: how the suspension is shown and the fix (the §6.4 answer line); which variants fit is <see cref="AnswerVariants.Fitting"/>.</summary>
 /// <param name="Shown">The suspension as status shows it ('parked (rounds)').</param>
 /// <param name="Fix">The command that fits.</param>
 internal sealed record FitRow(string Shown, string Fix)
 {
-    /// <summary>The answer variants that fit: the one table (<see cref="AnswerVariants.Fitting"/>) the served commands use too; empty when only cancel (or an approval) ends it.</summary>
-    public IReadOnlyList<AnswerVariant> Variants { get; init; } = [];
-
     /// <summary>The row for <paramref name="suspension"/>.</summary>
     /// <param name="suspension">The park or escalation (not a mirror).</param>
     /// <param name="address">The instance's address.</param>
     /// <param name="recipe">The recipe it runs.</param>
     /// <returns>The row.</returns>
     public static FitRow For(Suspension suspension, string address, PinnedRecipe recipe)
-    {
-        var row = suspension.Kind == SuspensionKind.Escalation ? Escalated(suspension, address) : Parked(suspension, address, recipe);
-        return row with { Variants = AnswerVariants.Fitting(suspension) };
-    }
+        => suspension.Kind == SuspensionKind.Escalation ? Escalated(suspension, address) : Parked(suspension, address, recipe);
 
     private static FitRow Parked(Suspension suspension, string address, PinnedRecipe recipe) => suspension.Reason switch
     {

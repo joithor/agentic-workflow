@@ -7861,6 +7861,7 @@ static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.PairedType(string! kind) -> 
 static Aw.Sindri.Core.Workflow.Recipes.SubjectKinds.TypeOf(Aw.Sindri.Core.Workflow.Recipes.RecipeInput! input) -> string!
 static Aw.Sindri.Core.Workflow.Recipes.TimeoutSpec.operator !=(Aw.Sindri.Core.Workflow.Recipes.TimeoutSpec? left, Aw.Sindri.Core.Workflow.Recipes.TimeoutSpec? right) -> bool
 static Aw.Sindri.Core.Workflow.Recipes.TimeoutSpec.operator ==(Aw.Sindri.Core.Workflow.Recipes.TimeoutSpec? left, Aw.Sindri.Core.Workflow.Recipes.TimeoutSpec? right) -> bool
+static Aw.Sindri.Core.Workflow.Recipes.TokenCounts.Format(int count) -> string!
 static Aw.Sindri.Core.Workflow.Recipes.TokenCounts.TryParse(string! text, out int count) -> bool
 static Aw.Sindri.Core.Workflow.Recipes.Urgencies.All.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Sindri.Core.Workflow.Recipes.Urgencies.IsKnown(string! urgency) -> bool
@@ -8174,15 +8175,17 @@ static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForIdleTakeover(Aw.Sindri.Core.Views
 static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForPark(Aw.Sindri.Core.Views.ItemRow! item, Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, Aw.Sindri.Core.Events.SuspensionSummary! suspension, System.DateTimeOffset since, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Sindri.Core.NeedsYou.NeedsYouRow!
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape!
-Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind Kind, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, out Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind, out Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind Kind, out Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, out Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind, out Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, out bool Mirrors) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape? other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Escalation.get -> Aw.Sindri.Core.Workflow.Engine.EscalationKind?
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Escalation.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Mirrors.get -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Mirrors.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Kind.get -> Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Kind.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.ParkKind.get -> Aw.Sindri.Core.Workflow.Engine.ParkKind?
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.ParkKind.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.ParkShape(Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind Kind, Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind, Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.ParkShape(Aw.Sindri.Core.Workflow.Engine.Instances.SuspensionKind Kind, Aw.Sindri.Core.Workflow.Engine.ParkReason? Reason, Aw.Sindri.Core.Workflow.Engine.ParkKind? ParkKind, Aw.Sindri.Core.Workflow.Engine.EscalationKind? Escalation, bool Mirrors = false) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Reason.get -> Aw.Sindri.Core.Workflow.Engine.ParkReason?
 Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Reason.init -> void
 override Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Equals(object? obj) -> bool
@@ -8253,5 +8256,3 @@ static Aw.Sindri.Core.Jobs.JobStateNames.Of(Aw.Sindri.Core.Jobs.JobState state) 
 const Aw.Sindri.Core.Jobs.JobRules.NoSuchJob = "No such job (fix: run `sindri jobs` to list them)" -> string!
 static Aw.Sindri.Core.Scheduling.ServiceSchedule.From(Aw.Sindri.Core.Profile.SindriProfile? profile, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Scheduling.BuiltInService!>! builtIns, System.DateTimeOffset now, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Ids.ServiceName, System.DateTimeOffset>! lastRuns) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.ServiceSchedule!>!
 static Aw.Sindri.Core.Scheduling.ServiceSchedule.FirstSlot(System.DateTimeOffset? lastRun, Aw.Sindri.Core.Profile.Cadence! cadence, System.DateTimeOffset now) -> System.DateTimeOffset
-Aw.Sindri.Core.Workflow.Engine.Instances.AnswerVariants
-static Aw.Sindri.Core.Workflow.Engine.Instances.AnswerVariants.Fitting(Aw.Sindri.Core.Workflow.Engine.Instances.Suspension! suspension) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant>!
