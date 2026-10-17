@@ -71,32 +71,6 @@ public sealed class ShellInstanceFocusTests : FrameHost
         Assert.False(window.FocusManager?.GetFocusedElement() is Avalonia.Visual focused && Named<Control>(window, "Page").IsVisualAncestorOf(focused), "a background re-read moved focus to the page");
     });
 
-    [Fact]
-    public Task Back_from_a_child_focuses_the_child_entry_and_Esc_returns_to_the_Workflows_row() => OnUi(async () =>
-    {
-        var (window, shell, address) = await OpenedFromTheWorkflowsRow("project-build");
-        var child = shell.Instance.Children!.Groups.Single().Streams[0].Rows[0];
-        Click(Buttons(window, "ChildRowOpen")[0]);
-        await Until(window, () => string.Equals(shell.Instance.Address, child.Address, StringComparison.Ordinal) && shell.Instance.Phase != FramePhase.Loading);
-        await Until(window, () => FocusedButton(window) is { } held && Named<Control>(window, "InstanceFrame").IsVisualAncestorOf(held), "focus is not in the child's frame");
-
-        Click(Named<Button>(window, "SheetBack"));
-        await Until(window, () => string.Equals(shell.Instance.Address, address, StringComparison.Ordinal) && OnChildEntry(window, child.Address), "focus did not return to the child entry");
-
-        Press(window, Key.Escape);
-        await Until(window, () => !shell.IsSheetOpen && OnWorkflowRow(window, address), "focus did not return to the Workflows row");
-    });
-
-    [Fact]
-    public Task A_row_open_where_the_sheet_covers_the_page_stays_on_the_heading() => OnUi(async () =>
-    {
-        var (window, shell, _) = await OpenedFromTheWorkflowsRow("project-build", width: 1000);
-
-        Settle(window);   // the frame is read: focus must not have moved on from the heading to its first action (§11.2)
-        Assert.True(Named<Border>(window, "SheetTitle").IsFocused, $"focus is on {window.FocusManager?.GetFocusedElement()}");
-        Assert.True(shell.IsSheetShown);
-    });
-
     private static string Focus(Window window) => FocusedButton(window)?.Name ?? window.FocusManager?.GetFocusedElement()?.ToString() ?? "nothing";
 
     private static async Task BackLandsOnTheRecipeLink(Window window, ShellViewModel shell)
@@ -136,11 +110,35 @@ public sealed class ShellInstanceFocusTests : FrameHost
     }
 
     [Fact]
-    public Task Back_from_a_recipe_lands_on_the_frames_Recipe_link_and_Esc_returns_to_the_opener() => OnUi(async () =>
+    public Task Back_from_a_child_or_a_recipe_returns_focus_and_Esc_returns_to_the_opener() => OnUi(async () =>
     {
-        var (window, shell, address) = await OpenedFromTheWorkflowsRow("project-build");   // wide: the header's Back hides when nothing is stacked
+        var (window, shell, address) = await OpenedFromTheWorkflowsRow("project-build");
+        var child = shell.Instance.Children!.Groups.Single().Streams[0].Rows[0];
+        Click(Buttons(window, "ChildRowOpen")[0]);
+        await Until(window, () => string.Equals(shell.Instance.Address, child.Address, StringComparison.Ordinal) && shell.Instance.Phase != FramePhase.Loading);
+        await Until(window, () => FocusedButton(window) is { } held && Named<Control>(window, "InstanceFrame").IsVisualAncestorOf(held), "focus is not in the child's frame");
+
+        Click(Named<Button>(window, "SheetBack"));
+        await Until(window, () => string.Equals(shell.Instance.Address, address, StringComparison.Ordinal) && OnChildEntry(window, child.Address), "focus did not return to the child entry");
+
+        Press(window, Key.Escape);
+        await Until(window, () => !shell.IsSheetOpen && OnWorkflowRow(window, address), "focus did not return to the Workflows row");
+
+        // the same window, the same frame opened again from its row: a recipe stacked on it (the header's Back hides here, at this width)
+        Press(window, Key.Enter);
+        await Until(window, () => shell.IsInstanceSheet && shell.Instance.Phase == FramePhase.Shown && string.Equals(shell.Instance.Address, address, StringComparison.Ordinal));
         await BackLandsOnTheRecipeLink(window, shell);
         await EscEndsTheStackOnTheOpeningRow(window, shell, address);
         await EscReturnsToTheGroupButton(window, shell, address);
+    });
+
+    [Fact]
+    public Task A_row_open_where_the_sheet_covers_the_page_stays_on_the_heading() => OnUi(async () =>
+    {
+        var (window, shell, _) = await OpenedFromTheWorkflowsRow("project-build", width: 1000);
+
+        Settle(window);   // the frame is read: focus must not have moved on from the heading to its first action (§11.2)
+        Assert.True(Named<Border>(window, "SheetTitle").IsFocused, $"focus is on {window.FocusManager?.GetFocusedElement()}");
+        Assert.True(shell.IsSheetShown);
     });
 }

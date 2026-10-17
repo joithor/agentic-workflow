@@ -1,6 +1,6 @@
 namespace Aw.Sindri.Ui.ViewModels.Recipes;
 
-/// <summary>One state of the recipe's band: its name, the link to the next, the loops that are notes on it, the outputs it produces and the states that branch off it.</summary>
+/// <summary>One state of the recipe's band: its name, the loop link to the next state (only a served loop joins two), the loops that are notes on it, the outputs it produces and the states that branch off it.</summary>
 internal sealed class RecipeStateNodeViewModel
 {
     internal RecipeStateNodeViewModel(string state, string link, IReadOnlyList<string> notes, IReadOnlyList<string> outputs, IReadOnlyList<RecipeStateNodeViewModel> branches, string spoken)
@@ -15,7 +15,7 @@ internal sealed class RecipeStateNodeViewModel
     /// <summary>The words screen readers hear: every visible line, then what the glyphs and the indent say.</summary>
     public string Name { get; }
 
-    /// <summary>What joins this state to the next: the step link, or the loop mark with the loop's name and cap; empty on the last.</summary>
+    /// <summary>The loop mark with the loop's name and cap when a served loop joins this state to the next; empty otherwise (the recipe serves no other transition).</summary>
     public string Link { get; }
 
     /// <summary>True when a loop link follows this state.</summary>
