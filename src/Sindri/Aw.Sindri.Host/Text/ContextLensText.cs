@@ -35,6 +35,8 @@ internal static class ContextLensText
         return text.Append(Coverage(view.Coverage)).ToString();
     }
 
+    internal static string LensesSet(LensesSetView view, bool fence) => throw new NotSupportedException();
+
     /// <summary>The coverage block, one line per count and one per gap; 'map status --anchor' prints it too.</summary>
     /// <param name="c">The coverage.</param>
     /// <returns>The lines.</returns>
