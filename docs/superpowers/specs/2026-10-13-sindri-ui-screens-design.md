@@ -139,7 +139,7 @@ Workflows    8 open · 2 need you · 1 with you                                 
 ├ intake.linear  2  ·  scoping.project (standalone)  0 ────────────────────────────────────────────────────────── show all ▾ ┤
 │ 4 done today ▸ (collapsed)                                                                                                │
 └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-   ● done   ◐ in progress   ○ not started   ▲ escalated   ▌parked   ⇄ loop        Enter opens · A answer · B hand back · X cancel
+   ● done   ◐ in progress   ○ not started   ▲ escalated   ▌parked   ⇄ loop        Enter opens · A answers a decision or completes a desk task · B hand back · X cancel
 ```
 
 - **SUBJECT** is the instance's first input rendered by its kind's adapter (§5.4): a Linear project shows team and

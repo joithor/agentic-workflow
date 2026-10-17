@@ -32,7 +32,7 @@ public sealed class WorkflowsLegendTests
     {
         var list = new WorkflowsViewModel(_server, new FakeClipboard(), new FakeTimeProvider(A.Noon));
 
-        Assert.Contains("A answers a decision or a desk task", list.LegendText, StringComparison.Ordinal);
-        Assert.Contains("A answers a decision or a desk task", list.LegendName, StringComparison.Ordinal);
+        Assert.Contains("A answers a decision or completes a desk task", list.LegendText, StringComparison.Ordinal);
+        Assert.Contains("A answers a decision or completes a desk task", list.LegendName, StringComparison.Ordinal);
     }
 }
