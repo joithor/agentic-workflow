@@ -6,8 +6,7 @@ namespace Aw.Sindri.Features.Blocks.Step;
 /// <summary>
 /// The scoping station's Steps (scoping spec §9): descriptors only, desk-capable. A block Step is the deterministic one
 /// the block runtime runs (SC-R), an agent Step runs in a launched session, and the two desk Steps are human-only. An agent
-/// Step reaches only <see cref="Capability.Tools"/> (its reads and its own output files): the read-only rule is W9's, enforced
-/// at launch (L-17), not a descriptor field yet. Fact and outcome names are camelCase.
+/// Step declares <see cref="Capability.Tools"/>; the read-only rule is W9's, enforced at launch (L-17), and is not a descriptor field yet. Fact and outcome names are camelCase.
 /// </summary>
 internal static class ScopingSteps
 {
@@ -35,11 +34,13 @@ internal static class ScopingSteps
         .Reports("seeded").Writes(On("fact:answers", "seeded"), On("fact:answerLog", "seeded"));
 
     /// <summary>'step.brief.questions': what the idea leaves open; 'asked' with up to five questions, or 'ready'.</summary>
+    // TODO(W9/L-17): read-only capability (no descriptor field yet; the launch enforces it)
     public static BlockDescriptor BriefQuestions { get; } = AgentStep("step.brief.questions", Capability.Tools)
         .Reads("fact:idea", "fact:answers", "fact:answerLog").Reports("asked", "ready")
         .Writes(On("fact:questions", "asked"), On("fact:interviewClosed", "ready"));
 
     /// <summary>'step.brief.write': the cited brief from the idea and the answers; 'written' or 'empty'.</summary>
+    // TODO(W9/L-17): read-only capability (no descriptor field yet; the launch enforces it)
     public static BlockDescriptor BriefWrite { get; } = AgentStep("step.brief.write", Capability.Tools)
         .Reads("fact:idea", "fact:answers", "fact:answerLog").Reports("written", "empty").Writes(On("fact:brief", "written"));
 
@@ -52,6 +53,7 @@ internal static class ScopingSteps
         .Reads("fact:anchors").Reports("gathered").Writes(On("fact:lenses", "gathered"), On("fact:coverage", "gathered"));
 
     /// <summary>'step.scope.draft': the scope map and the acceptance list from the lenses; 'drafted'.</summary>
+    // TODO(W9/L-17): read-only capability (no descriptor field yet; the launch enforces it)
     public static BlockDescriptor Draft { get; } = AgentStep("step.scope.draft", Capability.Tools)
         .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:findings", "fact:answerLog", "fact:challenge")
         .Reports("drafted").Writes(On("fact:scopeMap", "drafted"), On("fact:acceptance", "drafted"));
@@ -62,6 +64,7 @@ internal static class ScopingSteps
         .Reports("pass", "gaps", "regather").Writes(On("fact:findings", "gaps", "regather"));
 
     /// <summary>'step.interview.questions': the behaviour gaps as up to five questions; 'asked' or 'none'.</summary>
+    // TODO(W9/L-17): read-only capability (no descriptor field yet; the launch enforces it)
     public static BlockDescriptor InterviewQuestions { get; } = AgentStep("step.interview.questions", Capability.Tools)
         .Reads("fact:scopeMap", "fact:acceptance", "fact:lenses", "fact:answerLog", "fact:challenge", "fact:openQuestions")
         .Reports("asked", "none").Writes(On("fact:questions", "asked"), On("fact:openQuestions", "asked", "none"));
@@ -76,6 +79,7 @@ internal static class ScopingSteps
         .Reads("fact:answers", "fact:answerLog").Reports("recorded").Writes(On("fact:answerLog", "recorded"));
 
     /// <summary>'step.interview.apply': folds the answers into the map, list and open questions; 'updated', or 'rescope' when an answer changes the surfaces.</summary>
+    // TODO(W9/L-17): read-only capability (no descriptor field yet; the launch enforces it)
     public static BlockDescriptor InterviewApply { get; } = AgentStep("step.interview.apply", Capability.Tools)
         .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:questions", "fact:answers", "fact:answerLog", "fact:scopeMap", "fact:acceptance", "fact:openQuestions", "fact:anchors")
         .Reports("updated", "rescope")
@@ -86,6 +90,7 @@ internal static class ScopingSteps
         .Reads("fact:scopeMap", "fact:anchors", "fact:lenses").Reports("anchored").Writes(On("fact:anchors", "anchored"));
 
     /// <summary>'step.scope.challenge': a second model's look for missed surfaces and behaviours; reports only its own round.</summary>
+    // TODO(W9/L-17): read-only capability (no descriptor field yet; the launch enforces it)
     public static BlockDescriptor Challenge { get; } = AgentStep("step.scope.challenge", Capability.Tools)
         .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:answerLog", "fact:challenge")
         .Reports("nothingNew", "found").Writes(Every("fact:challengeRound"));
@@ -101,7 +106,7 @@ internal static class ScopingSteps
 
     /// <summary>'step.scope.evidence': every check, the packet assembled in the run area; 'complete' re-reports five facts, 'incomplete' and 'regather' carry findings.</summary>
     public static BlockDescriptor Evidence { get; } = BlockStep("step.scope.evidence", Capability.Tools)
-        .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:answers", "fact:answerLog", "fact:challenge", "fact:openQuestions", "fact:decision")
+        .Reads("fact:brief", "fact:lenses", "fact:coverage", "fact:scopeMap", "fact:acceptance", "fact:answers", "fact:answerLog", "fact:challenge", "fact:openQuestions", "fact:decision", "fact:anchors", "fact:questions")
         .Reports("complete", "incomplete", "regather")
         .Writes(On("fact:scopeMap", "complete"), On("fact:acceptance", "complete"), On("fact:coverage", "complete"), On("fact:openQuestions", "complete"), On("fact:scopePacket", "complete"), On("fact:findings", "incomplete", "regather"));
 

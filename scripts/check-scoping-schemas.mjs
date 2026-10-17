@@ -5,7 +5,9 @@
 //
 // 1. Every schemas/scoping/*.json except seeds.json compiles under Ajv 8's Ajv2020.
 // 2. schemas/scoping/examples/manifest.json lists every example file, each with the verdict its schema must give.
-// 3. seeds.json holds exactly the facts recipes/sindri/workflow.scoping.yaml seeds at intake, and each seed that has a schema satisfies it.
+// 3. Every payload in recipes/sindri/evals/workflow.scoping and workflow.idea-to-brief whose fact has a schema (start inputs and trigger
+//    outputs) satisfies it; a string for such a fact is a failure, since the facts are JSON values.
+// 4. seeds.json holds exactly the facts recipes/sindri/workflow.scoping.yaml seeds at intake, and each seed that has a schema satisfies it.
 // Exit codes: 0 ok, 1 a check failed, 2 a tool error (missing Ajv: run `npm ci --prefix scripts`). One line per failure.
 
 import fs from "node:fs";
@@ -24,6 +26,18 @@ const SEED_SCHEMAS = {
   "fact:challenge": "challenge.json",
   "fact:questions": "questions.json",
   "fact:openQuestions": "open-questions.json",
+};
+
+const FACT_SCHEMAS = {
+  "fact:scopeInput": "scope-input.json",
+  "fact:brief": "brief.json",
+  "fact:scopeMap": "scope-map.json",
+  "fact:acceptance": "acceptance.json",
+  "fact:questions": "questions.json",
+  "fact:openQuestions": "open-questions.json",
+  "fact:challenge": "challenge.json",
+  "fact:challengeRound": "challenge-round.json",
+  "fact:coverage": "coverage.json",
 };
 
 const failures = [];
@@ -65,9 +79,28 @@ try {
     if (ok !== ex.valid) fail(where, `expected ${ex.valid ? "valid" : "invalid"} against ${ex.schema}, schema says ${ok ? "valid" : "invalid"}${ok ? "" : ` (${ajv.errorsText(validate.errors)})`}`);
   }
   for (const f of fs.readdirSync(path.join(ROOT, ...edir.split("/")))) if (f !== "manifest.json" && !listed.has(f)) fail(`${edir}/${f}`, "not listed in manifest.json");
+  for (const ex of manifest.examples) if (ex.valid && !ex.source) fail(`${edir}/${ex.file}`, "a valid example names its source in the spec");
   for (const f of files) if (!manifest.examples.some((e) => e.schema === f && e.valid)) fail(`${DIR}/${f}`, "has no valid example");
 
-  // 3. seeds
+  // 3. eval payloads
+  for (const recipeId of ["workflow.scoping", "workflow.idea-to-brief"]) {
+    const edir2 = path.join(ROOT, "recipes/sindri/evals", recipeId);
+    if (!fs.existsSync(edir2)) { fail(`recipes/sindri/evals/${recipeId}`, "missing"); continue; }
+    for (const f of fs.readdirSync(edir2).filter((n) => n.endsWith(".jsonl"))) {
+      const where = `recipes/sindri/evals/${recipeId}/${f}`;
+      fs.readFileSync(path.join(edir2, f), "utf8").split("\n").filter(Boolean).forEach((text, i) => {
+        let line;
+        try { line = JSON.parse(text); } catch { fail(`${where}:${i + 1}`, "not JSON"); return; }
+        const payloads = Object.entries(line.start?.inputs ?? line.trigger?.outputs ?? {});
+        for (const [fact, value] of payloads) {
+          const validate = validators.get(FACT_SCHEMAS[fact]);
+          if (validate && !validate(value)) fail(`${where}:${i + 1}`, `${fact} does not satisfy ${FACT_SCHEMAS[fact]} (${ajv.errorsText(validate.errors)})`);
+        }
+      });
+    }
+  }
+
+  // 4. seeds
   const seeds = readJson(`${DIR}/seeds.json`);
   const recipe = fs.readFileSync(path.join(ROOT, "recipes/sindri/workflow.scoping.yaml"), "utf8");
   const intake = /from: intake, to: read-brief[^\n]*produces: \[([^\]]*)\]/.exec(recipe);

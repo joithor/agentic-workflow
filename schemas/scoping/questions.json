@@ -2,21 +2,49 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/jthorare/agentic-workflow/schemas/scoping/questions.json",
   "title": "Interview questions (fact:questions)",
-  "description": "A batch of at most five questions with two to four exclusive options each; every option cites (scoping spec section 7.3, A.2, A.5). Question ids are unique within the batch.",
+  "description": "Spec 7.3: each question carries two to four options plus \"other\" and \"skip\"; every option cites; at most one option is recommended (checked by SCP, not here); at most five per round (7.2).",
   "type": "array",
   "items": {
     "type": "object",
     "properties": {
       "id": {
         "type": "string",
-        "minLength": 1
+        "pattern": "^Q([0-9]+|-revise)$"
       },
-      "text": {
-        "type": "string",
-        "minLength": 1
+      "surfaces": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "pattern": "^S[0-9]+$",
+          "description": "A surface id in the scope map."
+        }
       },
       "dimension": {
         "type": "string"
+      },
+      "impact": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 3
+      },
+      "blocks": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "pattern": "^AC-[0-9]+$",
+          "description": "An acceptance item id (spec 7.3: blocks [\"AC-4\"]). The answer-log id is A<n>."
+        }
+      },
+      "trust": {
+        "enum": [
+          "untrusted",
+          "owner"
+        ],
+        "description": "Stamped by code (SCP-TRUST-001). The spec 7.3 example carries it on a question; a draft-stage model-written value is a finding, so it is optional here."
+      },
+      "question": {
+        "type": "string",
+        "minLength": 1
       },
       "options": {
         "type": "array",
@@ -25,48 +53,56 @@
           "properties": {
             "id": {
               "type": "string",
-              "minLength": 1
+              "pattern": "^Q([0-9]+|-revise)\\.[a-z]$"
             },
-            "label": {
+            "answer": {
               "type": "string",
               "minLength": 1
             },
             "rationale": {
               "type": "string"
             },
-            "citations": {
+            "cites": {
               "type": "array",
-              "minItems": 1,
               "items": {
                 "type": "string",
                 "pattern": "^(R[0-9]+|A[0-9]+|L-(code|product|related|history)-[0-9]+)$"
-              }
-            },
-            "yields": {
-              "type": "string"
+              },
+              "description": "Ids that resolve (SCP-CITE-001): a lens item L-<lens>-<n>, a source ref R<n> in fact:brief.refs, or an answer A<n> in the answer log.",
+              "minItems": 1
             },
             "recommended": {
               "type": "boolean"
+            },
+            "yields": {
+              "type": "string"
             }
           },
           "required": [
             "id",
-            "label",
-            "citations"
+            "answer",
+            "cites"
           ],
           "additionalProperties": false
         },
         "minItems": 2,
         "maxItems": 4
+      },
+      "other": {
+        "type": "boolean"
+      },
+      "skip": {
+        "type": "boolean"
       }
     },
     "required": [
       "id",
-      "text",
-      "options"
+      "question",
+      "options",
+      "other",
+      "skip"
     ],
     "additionalProperties": false
   },
-  "maxItems": 5,
-  "uniqueItems": true
+  "maxItems": 5
 }

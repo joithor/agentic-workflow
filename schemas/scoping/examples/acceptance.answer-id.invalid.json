@@ -2,14 +2,16 @@
   "items": [
     {
       "id": "A-1",
-      "text": "When an invitation is 14 days old, the system shall expire it.",
-      "form": "event",
+      "text": "WHEN an invitation is 14 days old THE system SHALL expire it.",
+      "form": "ears",
       "surfaces": [
         "S1"
       ],
       "citations": [
-        "R1"
+        "R1",
+        "L-code-1"
       ],
+      "trust": "untrusted",
       "status": "failing",
       "evidence": [],
       "parent": null

@@ -1,10 +1,17 @@
 [
   {
     "id": "Q9",
-    "text": "Who is notified on expiry?",
+    "question": "Who is notified on expiry?",
     "impact": 2,
-    "citations": [
-      "R1"
+    "recommended": "Q9.a",
+    "surfaces": [
+      "S2"
     ]
+  },
+  {
+    "id": "Q10",
+    "question": "Keep exports working?",
+    "impact": 1,
+    "marker": "needs-owner-wording"
   }
 ]

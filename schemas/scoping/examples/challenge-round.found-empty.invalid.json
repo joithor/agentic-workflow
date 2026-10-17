@@ -1,0 +1,15 @@
+{
+  "walked": {
+    "lenses": [
+      "code",
+      "product",
+      "related",
+      "history"
+    ],
+    "dimensions": [
+      "who may use it",
+      "failure"
+    ]
+  },
+  "verdict": "found"
+}

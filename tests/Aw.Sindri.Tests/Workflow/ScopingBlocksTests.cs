@@ -32,7 +32,7 @@ public sealed class ScopingBlocksTests
     [InlineData("step.scope.challenge", BlockRuntime.Agent, false, "fact:brief,fact:lenses,fact:coverage,fact:scopeMap,fact:acceptance,fact:answerLog,fact:challenge", "nothingNew,found", "fact:challengeRound", "", Capability.Tools)]
     [InlineData("step.scope.challenge-log", BlockRuntime.Block, false, "fact:challenge,fact:challengeRound", "nothingNew,found", "fact:challenge", "fact:findings=found", Capability.None)]
     [InlineData("step.scope.propose", BlockRuntime.Block, false, "fact:scopeMap", "proposed,skipped", "fact:scopeMap", "", Capability.Tools)]
-    [InlineData("step.scope.evidence", BlockRuntime.Block, false, "fact:brief,fact:lenses,fact:coverage,fact:scopeMap,fact:acceptance,fact:answers,fact:answerLog,fact:challenge,fact:openQuestions,fact:decision", "complete,incomplete,regather", "", "fact:scopeMap=complete;fact:acceptance=complete;fact:coverage=complete;fact:openQuestions=complete;fact:scopePacket=complete;fact:findings=incomplete,regather", Capability.Tools)]
+    [InlineData("step.scope.evidence", BlockRuntime.Block, false, "fact:brief,fact:lenses,fact:coverage,fact:scopeMap,fact:acceptance,fact:answers,fact:answerLog,fact:challenge,fact:openQuestions,fact:decision,fact:anchors,fact:questions", "complete,incomplete,regather", "", "fact:scopeMap=complete;fact:acceptance=complete;fact:coverage=complete;fact:openQuestions=complete;fact:scopePacket=complete;fact:findings=incomplete,regather", Capability.Tools)]
     [InlineData("step.scope.review", BlockRuntime.Desk, true, "fact:scopePacket", "approve,revise,drop", "", "fact:answers=revise", Capability.None)]
     [InlineData("step.scope.freeze", BlockRuntime.Block, false, "fact:scopePacket,fact:answerLog", "frozen,mismatch", "", "fact:findings=mismatch", Capability.Tools)]
     [InlineData("step.scope.withdraw", BlockRuntime.Block, false, "", "withdrawn", "", "", Capability.Tools)]
@@ -63,12 +63,22 @@ public sealed class ScopingBlocksTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void No_scoping_agent_step_may_edit_or_reach_beyond_its_reads()
+    public void Every_scoping_agent_step_declares_tools_and_neither_effects_nor_write_scope_nor_network()
     {
         string[] ids = ["step.brief.questions", "step.brief.write", "step.scope.draft", "step.interview.questions", "step.interview.apply", "step.scope.challenge"];
         var agents = ids.Select(Block).ToList();
 
-        Assert.All(agents, a => Assert.Equal(Capability.Tools, a.Capabilities));   // read-only (W9, L-17): no Effects, WriteScope or Network; the launch enforces the rest
+        Assert.All(agents, a => Assert.Equal(Capability.Tools, a.Capabilities));   // the read-only capability is W9/L-17's and has no descriptor field yet; this only pins what the descriptor can say
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Every_intake_kind_has_a_happy_path_eval()
+    {
+        // idea is the one kind whose path runs through the child, so its eval is named for that (scoping spec Appendix B.1: idea-child)
+        var expected = Block("step.scope.intake").Outcomes.Select(o => o.Value == "idea" ? "idea-child" : $"{o.Value}-happy").Order(StringComparer.Ordinal);
+        var shipped = ShippedRecipes.Evals.Where(e => e.StartsWith("sindri/evals/workflow.scoping/", StringComparison.Ordinal)).Select(e => Path.GetFileNameWithoutExtension(e));
+
+        Assert.Empty(expected.Except(shipped, StringComparer.Ordinal));
     }
 
     [Theory, Trait("Lane", "unit")]

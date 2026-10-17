@@ -1,0 +1,44 @@
+{
+  "rounds": [
+    {
+      "round": 1,
+      "walked": {
+        "lenses": [
+          "code",
+          "product",
+          "related",
+          "history"
+        ],
+        "dimensions": [
+          "who may use it",
+          "failure"
+        ]
+      },
+      "verdict": "found",
+      "surfaces": [
+        {
+          "title": "Reminder email",
+          "citations": [
+            "L-code-4"
+          ]
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "walked": {
+        "lenses": [
+          "code",
+          "product",
+          "related",
+          "history"
+        ],
+        "dimensions": [
+          "who may use it",
+          "failure"
+        ]
+      },
+      "verdict": "nothingNew"
+    }
+  ]
+}

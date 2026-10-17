@@ -1,10 +1,14 @@
 {
   "walked": {
     "lenses": [
-      "code"
+      "code",
+      "product",
+      "related",
+      "history"
     ],
     "dimensions": [
-      "data"
+      "who may use it",
+      "failure"
     ]
   },
   "verdict": "found",
@@ -16,5 +20,13 @@
       ]
     }
   ],
-  "behaviours": []
+  "behaviours": [
+    {
+      "text": "A link that expired after an export ran",
+      "question": "What does the export do with it?",
+      "citations": [
+        "L-code-5"
+      ]
+    }
+  ]
 }

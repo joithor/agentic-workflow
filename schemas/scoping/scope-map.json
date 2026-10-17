@@ -1,10 +1,24 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/jthorare/agentic-workflow/schemas/scoping/scope-map.json",
-  "title": "Scope map (fact:scopeMap)",
-  "description": "The scope map (scoping spec section 8.3, scope-map.json): surfaces, implications, workstreams with dependencies, flagged and excluded items, unmapped paths and unresolved findings.",
+  "title": "Scope map (fact:scopeMap and scope-map.json)",
+  "description": "Spec 8.3 scope-map.json: \"Surfaces (kind, title, detail, citations, trust, lens, graph status ...), implications, workstreams with dependencies, flagged, excluded, unmapped, and unresolved\". One schema for the fact and the packet file: the file adds the optional envelope schemaVersion, change and baseSha.",
   "type": "object",
   "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "description": "Packet-file envelope: present in the file written to the scope packet (aw-packets: every JSON file carries schemaVersion 1), absent in the fact."
+    },
+    "change": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Packet-file envelope: the change slug."
+    },
+    "baseSha": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Packet-file envelope: the commit the map was read at."
+    },
     "surfaces": {
       "type": "array",
       "items": {
@@ -12,7 +26,13 @@
         "properties": {
           "id": {
             "type": "string",
-            "minLength": 1
+            "pattern": "^S[0-9]+$",
+            "description": "A surface id in the scope map."
+          },
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The map node key (feature:..., surface:..., action:..., thing:...) when the surface has one."
           },
           "kind": {
             "type": "string",
@@ -31,7 +51,8 @@
               "type": "string",
               "pattern": "^(R[0-9]+|A[0-9]+|L-(code|product|related|history)-[0-9]+)$"
             },
-            "description": "Source refs (R<n>), answers (A<n>) and lens items (L-<lens>-<n>) the item rests on."
+            "description": "Ids that resolve (SCP-CITE-001): a lens item L-<lens>-<n>, a source ref R<n> in fact:brief.refs, or an answer A<n> in the answer log.",
+            "minItems": 1
           },
           "lens": {
             "enum": [
@@ -50,8 +71,11 @@
             ]
           },
           "trust": {
-            "type": "string",
-            "description": "Stamped by code, never written by a model."
+            "enum": [
+              "untrusted",
+              "owner"
+            ],
+            "description": "Stamped by code (SCP-TRUST-001). The spec 7.3 example carries it on a question; a draft-stage model-written value is a finding, so it is optional here."
           }
         },
         "required": [
@@ -82,12 +106,29 @@
               "type": "string",
               "pattern": "^(R[0-9]+|A[0-9]+|L-(code|product|related|history)-[0-9]+)$"
             },
-            "description": "Source refs (R<n>), answers (A<n>) and lens items (L-<lens>-<n>) the item rests on."
+            "description": "Ids that resolve (SCP-CITE-001): a lens item L-<lens>-<n>, a source ref R<n> in fact:brief.refs, or an answer A<n> in the answer log.",
+            "minItems": 1
+          },
+          "surfaces": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^S[0-9]+$",
+              "description": "A surface id in the scope map."
+            }
+          },
+          "trust": {
+            "enum": [
+              "untrusted",
+              "owner"
+            ],
+            "description": "Stamped by code (SCP-TRUST-001). The spec 7.3 example carries it on a question; a draft-stage model-written value is a finding, so it is optional here."
           }
         },
         "required": [
           "id",
-          "text"
+          "text",
+          "citations"
         ],
         "additionalProperties": false
       }
@@ -109,10 +150,12 @@
             "type": "array",
             "items": {
               "type": "string",
-              "minLength": 1
-            }
+              "pattern": "^S[0-9]+$",
+              "description": "A surface id in the scope map."
+            },
+            "minItems": 1
           },
-          "dependsOn": {
+          "deps": {
             "type": "array",
             "items": {
               "type": "string",
@@ -123,7 +166,8 @@
         "required": [
           "id",
           "title",
-          "surfaces"
+          "surfaces",
+          "deps"
         ],
         "additionalProperties": false
       }
@@ -135,7 +179,8 @@
         "properties": {
           "item": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "description": "A lens item id or a surface id."
           },
           "reason": {
             "type": "string",
@@ -156,19 +201,12 @@
         "properties": {
           "item": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "description": "A lens item id or a surface id."
           },
           "reason": {
             "type": "string",
             "minLength": 1
-          },
-          "citations": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "pattern": "^(R[0-9]+|A[0-9]+|L-(code|product|related|history)-[0-9]+)$"
-            },
-            "description": "Source refs (R<n>), answers (A<n>) and lens items (L-<lens>-<n>) the item rests on."
           }
         },
         "required": [
@@ -189,6 +227,13 @@
           },
           "reason": {
             "type": "string"
+          },
+          "trust": {
+            "enum": [
+              "untrusted",
+              "owner"
+            ],
+            "description": "Stamped by code (SCP-TRUST-001). The spec 7.3 example carries it on a question; a draft-stage model-written value is a finding, so it is optional here."
           }
         },
         "required": [
@@ -219,8 +264,7 @@
           "why"
         ],
         "additionalProperties": false
-      },
-      "description": "Each finding the drafter or apply could not settle, with its rule, item and why."
+      }
     }
   },
   "required": [

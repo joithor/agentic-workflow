@@ -1,8 +1,14 @@
 {
   "walked": {
     "lenses": [
-      "code"
+      "code",
+      "product",
+      "related",
+      "history"
     ],
-    "dimensions": []
+    "dimensions": [
+      "who may use it",
+      "failure"
+    ]
   }
 }

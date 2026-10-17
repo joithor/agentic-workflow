@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/jthorare/agentic-workflow/schemas/scoping/scope-input.json",
   "title": "What to scope (fact:scopeInput)",
-  "description": "The input of workflow.scoping: one of four shapes, told apart by kind (scoping spec section 4). step.scope.intake declares it for the Start form and workflow start.",
+  "description": "The input of workflow.scoping: one of four shapes told apart by kind (scoping spec section 4 table).",
   "oneOf": [
     {
       "type": "object",

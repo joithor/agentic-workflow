@@ -1,10 +1,14 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/jthorare/agentic-workflow/schemas/scoping/challenge.json",
-  "title": "Challenge record (fact:challenge)",
-  "description": "The challenge record: every challenger round in order, appended by step.scope.challenge-log; the last one is empty when the challenger has nothing new (scoping spec section 8.3).",
+  "title": "Challenge record (fact:challenge and challenge.json)",
+  "description": "Spec 8.3 challenge.json: \"fact:challenge.rounds[], appended by step.scope.challenge-log ... one round per challenger run ... the last one empty\". Each round is the A.4 round, with an optional index. The file adds the optional envelope schemaVersion.",
   "type": "object",
   "properties": {
+    "schemaVersion": {
+      "const": 1,
+      "description": "Packet-file envelope: present in the file written to the scope packet (aw-packets: every JSON file carries schemaVersion 1), absent in the fact."
+    },
     "rounds": {
       "type": "array",
       "items": {
@@ -55,11 +59,12 @@
                 },
                 "citations": {
                   "type": "array",
-                  "minItems": 1,
                   "items": {
                     "type": "string",
                     "pattern": "^(R[0-9]+|A[0-9]+|L-(code|product|related|history)-[0-9]+)$"
-                  }
+                  },
+                  "description": "Ids that resolve (SCP-CITE-001): a lens item L-<lens>-<n>, a source ref R<n> in fact:brief.refs, or an answer A<n> in the answer log.",
+                  "minItems": 1
                 }
               },
               "required": [
@@ -84,11 +89,12 @@
                 },
                 "citations": {
                   "type": "array",
-                  "minItems": 1,
                   "items": {
                     "type": "string",
                     "pattern": "^(R[0-9]+|A[0-9]+|L-(code|product|related|history)-[0-9]+)$"
-                  }
+                  },
+                  "description": "Ids that resolve (SCP-CITE-001): a lens item L-<lens>-<n>, a source ref R<n> in fact:brief.refs, or an answer A<n> in the answer log.",
+                  "minItems": 1
                 }
               },
               "required": [
@@ -98,13 +104,77 @@
               ],
               "additionalProperties": false
             }
+          },
+          "round": {
+            "type": "integer",
+            "minimum": 1
           }
         },
         "required": [
           "walked",
           "verdict"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "verdict": {
+                  "const": "found"
+                }
+              },
+              "required": [
+                "verdict"
+              ]
+            },
+            "then": {
+              "anyOf": [
+                {
+                  "required": [
+                    "surfaces"
+                  ],
+                  "properties": {
+                    "surfaces": {
+                      "minItems": 1
+                    }
+                  }
+                },
+                {
+                  "required": [
+                    "behaviours"
+                  ],
+                  "properties": {
+                    "behaviours": {
+                      "minItems": 1
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "verdict": {
+                  "const": "nothingNew"
+                }
+              },
+              "required": [
+                "verdict"
+              ]
+            },
+            "then": {
+              "properties": {
+                "surfaces": {
+                  "maxItems": 0
+                },
+                "behaviours": {
+                  "maxItems": 0
+                }
+              }
+            }
+          }
+        ]
       }
     }
   },

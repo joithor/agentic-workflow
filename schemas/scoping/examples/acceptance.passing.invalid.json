@@ -1,11 +1,17 @@
 {
   "items": [
     {
-      "id": "A-1",
-      "text": "x",
-      "form": "plain",
-      "surfaces": [],
-      "citations": [],
+      "id": "AC-1",
+      "text": "WHEN an invitation is 14 days old THE system SHALL expire it.",
+      "form": "ears",
+      "surfaces": [
+        "S1"
+      ],
+      "citations": [
+        "R1",
+        "L-code-1"
+      ],
+      "trust": "untrusted",
       "status": "passing",
       "evidence": [],
       "parent": null

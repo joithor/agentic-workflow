@@ -7,6 +7,7 @@ namespace Aw.Sindri.Features.Blocks;
 /// The context lane's Step inputs (scoping spec §9, requests C1, C3, C5 and W6), shipped as descriptors so the scoping
 /// recipe validates. At run time an input without a runtime is unavailable: the lane that owns the input replaces its
 /// descriptor here with the block and keeps the id, the parameters and the hash-relevant fields it declares.
+/// Delete each entry when the context lane registers the real block (same id and params).
 /// </summary>
 internal static class PendingInputs
 {
