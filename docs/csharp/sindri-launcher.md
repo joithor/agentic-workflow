@@ -151,7 +151,7 @@ fails. Ajv is a dev dependency of `scripts/` (`npm ci --prefix scripts`; the tes
 
 T3 Code starts and owns its agent process and can't adopt a `claude --session-id` or `codex resume` session, so it is
 not a viewer until the spike (spec §7, phase SL-T) says otherwise. A T3 Code user sets the `print` viewer (or their
-terminal's `exec-template`), and `sindri open ITM-…` prints the `tmux -L sindri attach …` command to run in any terminal,
+terminal's `exec-template`), and `sindri open ITM-…` prints the `tmux -L sindri-launch attach …` command to run in any terminal,
 including one inside T3 Code if it has one. The session is the normal tmux-hosted CLI, so liveness, usage, budgets and
 takeover all work; T3 Code just isn't the window.
 

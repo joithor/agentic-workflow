@@ -100,12 +100,12 @@ public sealed class TmuxSessionHostTests : SessionHostContract, IDisposable
         var env = new Dictionary<string, string>(StringComparer.Ordinal) { ["SND_A"] = "1", ["SND_B"] = "two words" };
         var session = new HostSession("snd-fake", _tmux.Scratch, ["claude", "--flag"], env);
 
-        _ = await new TmuxSessionHost(new TmuxHostOptions(fake.Path, "sindri")).Start(session, _deadline, CancellationToken.None);
+        _ = await new TmuxSessionHost(new TmuxHostOptions(fake.Path, "sindri-launch")).Start(session, _deadline, CancellationToken.None);
 
         var calls = fake.Calls();
         Expect.True(calls.All(c => !c.Contains("set-environment", StringComparison.Ordinal) && !c.Contains("setenv", StringComparison.Ordinal)));
         var create = Expect.Only([.. calls.Where(c => c.Contains("new-session", StringComparison.Ordinal))]);
-        Expect.True(create.StartsWith("-L sindri new-session -d -s snd-fake -c ", StringComparison.Ordinal));
+        Expect.True(create.StartsWith("-L sindri-launch new-session -d -s snd-fake -c ", StringComparison.Ordinal));
         Expect.True(create.Contains("-e SND_A=1", StringComparison.Ordinal) && create.Contains("-e SND_B=two words", StringComparison.Ordinal));
         Expect.True(create.EndsWith("claude --flag", StringComparison.Ordinal));
     }
@@ -116,7 +116,7 @@ public sealed class TmuxSessionHostTests : SessionHostContract, IDisposable
     public async Task Tmux_older_than_3_is_a_host_problem(string banner, string version)
     {
         var fake = FakeTmux.Install(_tmux.Scratch, banner);
-        var host = new TmuxSessionHost(new TmuxHostOptions(fake.Path, "sindri"));
+        var host = new TmuxSessionHost(new TmuxHostOptions(fake.Path, "sindri-launch"));
 
         var facts = await host.Probe(CancellationToken.None);
         var started = await host.Start(Session("snd-old"), _deadline, CancellationToken.None);
@@ -184,5 +184,21 @@ public sealed class TmuxSessionHostTests : SessionHostContract, IDisposable
         }
 
         public string[] Calls() => File.Exists(Log) ? File.ReadAllLines(Log) : [];
+    }
+}
+
+/// <summary>The launcher's tmux server is its own: aw-meta teams run on a socket named after the team ('sindri' today).</summary>
+[Lane(TestLane.Unit)]
+public sealed class TmuxHostDefaultSocketTests
+{
+    [Fact]
+    public void Default_socket_is_never_the_team_socket()
+    {
+        var host = new TmuxSessionHost(new TmuxHostOptions());
+
+        Expect.Equal("sindri-launch", new TmuxHostOptions().Socket);
+        Expect.True(new TmuxHostOptions().Socket != "sindri");
+        Expect.True(new TmuxHostOptions().Socket.EndsWith("-launch", StringComparison.Ordinal));   // a bare team name never ends this way
+        Expect.Sequence(["tmux", "-L", "sindri-launch", "attach-session", "-t", "=snd-one"], host.AttachArgv(new HostRef(HostKind.Tmux, "snd-one")));
     }
 }

@@ -3,7 +3,7 @@ using Aw.Kernel;
 namespace Aw.Sindri.Core.Launch;
 
 /// <summary>
-/// What owns a launched agent process (launcher spec SL4; port; the tmux adapter runs 'tmux -L sindri'). Every member is
+/// What owns a launched agent process (launcher spec SL4; port; the tmux adapter runs 'tmux -L sindri-launch'). Every member is
 /// safe to repeat: a session that is already gone is not an error.
 /// </summary>
 public interface ISessionHost

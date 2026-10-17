@@ -10,7 +10,7 @@ using Aw.Sindri.Core.Launch;
 namespace Aw.Sindri.Infrastructure.Launch;
 
 /// <summary>
-/// The tmux <see cref="ISessionHost"/> (API P10a, unit U5): sessions on the Sindri-owned server ('tmux -L sindri'), named
+/// The tmux <see cref="ISessionHost"/> (API P10a, unit U5): sessions on the Sindri-owned server ('tmux -L sindri-launch'), named
 /// 'snd-&lt;launchId&gt;'. Every call is one bounded tmux process with TMUX removed from its environment, so a Sindri that was
 /// itself started from a tmux pane never reaches that pane's server. The session's environment goes in through
 /// 'new-session -e' (tmux 3.2); the server's global environment is never written ('set-environment -g' is never run), so
