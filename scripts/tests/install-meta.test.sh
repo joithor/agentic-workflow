@@ -102,7 +102,7 @@ check "Darwin, another provider: installs too" "$RC:$(printf '%s' "$OUT" | grep 
 mkdir -p "$WORK/bsdbin"
 printf '#!/usr/bin/env bash\necho FreeBSD\n' > "$WORK/bsdbin/uname"; chmod +x "$WORK/bsdbin/uname"
 OUT="$(PATH="$WORK/bsdbin:$PATH" CLAUDE_LOCAL_BIN="$WORK/bsd-bin" bash "$DIR/install-meta.sh" --provider claude 2>&1)"; RC=$?
-check "an unsupported OS: exit 1 naming the OS and the supported ones" "$RC:$(printf '%s' "$OUT" | grep -c 'FreeBSD.*Linux and macOS only')" "1:1"
+check "an unsupported OS: exit 1 naming the OS and the supported ones" "$RC:$(printf '%s' "$OUT" | grep -c 'Linux and macOS only (this is FreeBSD)')" "1:1"
 check "an unsupported OS: nothing linked" "$(ls "$WORK/bsd-bin" 2>/dev/null | wc -l | tr -d ' ')" "0"
 
 # The version stamp: the installed binary's version is printed, an old binary without `version` says so, and the publish is
@@ -153,7 +153,7 @@ printf '#!/usr/bin/env bash\nexit 0\n' > "$AW_STATE_DIR/bin/aw-meta"; chmod +x "
 # tree it runs from; a linked worktree of it is the throwaway one.
 TOP="$DIR/.."
 mkdir -p "$WORK/tree/scripts" "$WORK/tree/config/hooks/adapters" "$WORK/tree/config/lib"
-cp "$DIR/install-meta.sh" "$DIR/meta-launch.sh" "$DIR/meta-team-lib.sh" "$WORK/tree/scripts/"
+cp "$DIR/install-meta.sh" "$DIR/meta-launch.sh" "$DIR/meta-team-lib.sh" "$DIR/meta-version-lib.sh" "$WORK/tree/scripts/"
 cp "$TOP/config/hooks/adapters/"* "$WORK/tree/config/hooks/adapters/" 2>/dev/null
 cp -r "$TOP/config/lib/." "$WORK/tree/config/lib/"
 cp "$TOP/config/hooks/meta-stop-gate.sh" "$TOP/config/hooks/meta-outbox.sh" "$WORK/tree/config/hooks/"
@@ -180,7 +180,7 @@ check "a team repo set, run from a second plain clone: refused too" "$RC:$(link)
 OUT="$(bash "$WORK/wt/scripts/install-meta.sh" --provider claude --allow-worktree 2>&1)"; RC=$?
 check "a team repo set, --allow-worktree: installs from this tree and links it" "$RC:$(link)" "0:$WORK/wt/scripts/meta-launch.sh"
 rm -f "$CLAUDE_LOCAL_BIN/aw-meta-launch"
-cp "$WORK/tree/scripts/install-meta.sh" "$WORK/tree/scripts/meta-team-lib.sh" "$WORK/canon2/scripts/"
+cp "$WORK/tree/scripts/install-meta.sh" "$WORK/tree/scripts/meta-team-lib.sh" "$WORK/tree/scripts/meta-version-lib.sh" "$WORK/canon2/scripts/"
 cp -r "$WORK/tree/config" "$WORK/tree/global.json" "$WORK/canon2/"
 OUT="$(bash "$WORK/canon2/scripts/install-meta.sh" --provider claude 2>&1)"; RC=$?
 check "a team repo set, run from it: linked into it, no flag needed" "$RC:$(link)" "0:$WORK/canon2/scripts/meta-launch.sh"
