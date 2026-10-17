@@ -15,4 +15,10 @@ internal static class A
     /// <summary>A scope packet's files that pass every scoping check.</summary>
     /// <returns>A new builder.</returns>
     public static ScopingPacketBuilder ScopingPacket() => new();
+
+    /// <summary>A line packet's files (design, plan, phase, proof, review or handoff) that pass every check of the kind.</summary>
+    /// <param name="kind">The kind.</param>
+    /// <param name="id">The packet id; the kind's default when null.</param>
+    /// <returns>A new builder.</returns>
+    public static LinePacketBuilder LinePacket(Core.Kinds.PacketKind kind, string? id = null) => new(kind, id);
 }

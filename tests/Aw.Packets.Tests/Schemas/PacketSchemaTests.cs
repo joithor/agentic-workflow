@@ -9,6 +9,8 @@ using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Packets.App;
 using Aw.Packets.Core.Ids;
+using Aw.Packets.Core.Kinds;
+using Aw.Packets.Core.Kinds.Line;
 using Aw.Packets.Core.Kinds.Scoping;
 using Aw.Packets.Core.Model;
 using Aw.Packets.Core.Values;
@@ -26,7 +28,12 @@ public sealed class PacketSchemaTests
 
     private static readonly JsonSerializerOptions _json = AwJson.CreateOptions(PacketsJsonContext.Default);
 
-    public static TheoryData<string> Files => ["packet", "decisions", "out-of-scope", "tasks", "freeze-record", "lenses"];
+    public static TheoryData<string> Files =>
+    [
+        "packet", "decisions", "out-of-scope", "tasks", "freeze-record", "lenses",
+        "design-packet", "plan-packet", "phase-packet", "proof-packet", "review-packet", "handoff-packet",
+        "index", "acceptance", "phase", "phase-holdout", "pull-request",
+    ];
 
     [Theory, Trait("Lane", "integration")]   // reads (and in update mode writes) schemas/packets/
     [MemberData(nameof(Files))]
@@ -39,6 +46,17 @@ public sealed class PacketSchemaTests
             "out-of-scope" => typeof(OutOfScope),
             "tasks" => typeof(TaskPlan),
             "lenses" => typeof(LensesFile),
+            "design-packet" => typeof(LinePacketManifest<DesignLinks>),
+            "plan-packet" => typeof(LinePacketManifest<PlanLinks>),
+            "phase-packet" => typeof(LinePacketManifest<PhaseLinks>),
+            "proof-packet" => typeof(LinePacketManifest<ProofLinks>),
+            "review-packet" => typeof(LinePacketManifest<ReviewLinks>),
+            "handoff-packet" => typeof(LinePacketManifest<HandoffLinks>),
+            "index" => typeof(PacketIndex),
+            "acceptance" => typeof(AcceptanceFile),
+            "phase" => typeof(PhaseFile),
+            "phase-holdout" => typeof(PhaseHoldout),
+            "pull-request" => typeof(PullRequestFile),
             _ => typeof(FreezeRecord),
         };
         var actual = Render(Generate(type, name));
@@ -73,7 +91,38 @@ public sealed class PacketSchemaTests
             root[key] = value?.DeepClone();
         }
 
+        LinePatch(root, name);
         return root;
+    }
+
+    // The line kinds' files: schemaVersion is 1, a packet.json says its own kind, an index.json one of the line kinds,
+    // and a phase packet's id is '<line>-<phase>[-a<n>]' (PKT-PHS-007), which the exporter can't see.
+    private static void LinePatch(JsonObject root, string name)
+    {
+        if (new[] { "packet", "decisions", "out-of-scope", "tasks", "freeze-record", "lenses" }.Contains(name, StringComparer.Ordinal)
+            || root["properties"] is not JsonObject properties)
+        {
+            return;
+        }
+
+        if (properties["schemaVersion"] is JsonObject version)
+        {
+            version["const"] = 1;
+        }
+
+        if (name.EndsWith("-packet", StringComparison.Ordinal) && properties["kind"] is JsonObject packetKind)
+        {
+            packetKind["const"] = name[..^"-packet".Length];
+            if (name == "phase-packet" && properties["id"] is JsonObject id)
+            {
+                id["pattern"] = "^[a-z0-9]+(?:-[a-z0-9]+)+?(?:-a[1-9][0-9]*)?$";
+            }
+        }
+
+        if (name == "index" && properties["kind"] is JsonObject indexKind)
+        {
+            indexKind["enum"] = new JsonArray(PacketKinds.All.Where(static k => k.IsLine).Select(static k => (JsonNode)JsonValue.Create(k.Name)).ToArray());
+        }
     }
 
     // lenses.json's ranges and id pattern (PKT-SCP-004), which the exporter can't see because ScopingChecks states them in code.

@@ -10,7 +10,7 @@ namespace Aw.Packets.App.Commands;
 internal static class HashPacketCommand
 {
     internal const string Name = "hash";
-    private const string Shape = "<packet-dir> [--kind build|scoping] [--json]";
+    private const string Shape = "<packet-dir> [--kind build|scoping|design|plan|phase|proof|review|handoff] [--json]";
 
     internal static async Task<int> Run(PacketKind kind, IReadOnlyList<string> args, IServiceProvider services, JsonSerializerOptions json)
     {
