@@ -37,6 +37,13 @@
       "confirm": null
     },
     {
+      "verb": "answer",
+      "actionId": "ApplyCommand:answer-text",
+      "class": "desk",
+      "cli": "sindri workflow answer ITM-01JC8/item/1 --text <answer>",
+      "confirm": null
+    },
+    {
       "verb": "takeover",
       "actionId": "ApplyCommand:takeover",
       "class": "pause",

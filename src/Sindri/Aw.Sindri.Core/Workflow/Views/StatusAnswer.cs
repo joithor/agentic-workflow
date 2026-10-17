@@ -10,10 +10,14 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="Class">The catalog row's action class: "desk" or "protected".</param>
 /// <param name="Cli">The exact command printed.</param>
 /// <param name="AtTerminal">Whether it needs a terminal.</param>
+/// <param name="Via">"child" when this line is a pointer to a child that decides the answer, not an answer form to run; null (omitted) otherwise.</param>
+/// <param name="Child">The child's address, on a "child" pointer when it is known; null (omitted) otherwise.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record StatusAnswer(
     AnswerKind Kind,
     ActionId ActionId,
     ActionClass Class,
     string Cli,
-    bool AtTerminal);
+    bool AtTerminal,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Via = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Child = null);

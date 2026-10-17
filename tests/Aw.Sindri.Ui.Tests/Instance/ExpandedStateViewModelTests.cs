@@ -135,7 +135,7 @@ public sealed class ExpandedStateViewModelTests
         var escalated = Expanded("escalated-gate");
         var drift = OfStatus("parked-drift");
 
-        var answer = escalated.Commands.Single(c => c.Verb == StatusVerb.Answer);
+        var answer = escalated.Commands.First(c => c.Verb == StatusVerb.Answer);
         var approve = drift.Commands.Single(c => c.Verb == StatusVerb.Approve);
 
         Assert.True(escalated.HasAnswer);
@@ -251,52 +251,43 @@ public sealed class ExpandedStateViewModelTests
         Assert.Equal((false, string.Empty), (desk.HasAttach, desk.AttachChip));
     }
 
-    // Interim (engine lane): the served answer command's CLI is the bare form the CLI rejects; status.answer.cli is the full one. The real shape:
-    // commands[0] is verb "answer" with the same actionId as status.answer (a variant id such as "ApplyCommand:answer-resume").
-    private static StatusFields WithBareAnswer(bool answered, bool generic = false)
+    [Fact]
+    public void Each_answer_variant_shows_its_own_label_and_served_cli()
     {
-        var status = FixtureInstances.Detail("escalated-gate").Current.Status;
-        var bare = $"sindri workflow answer {status.Header.Address}";
-        var variantId = "ApplyCommand:answer-resume";
-        var answer = status.Answer! with { Kind = AnswerKind.Resume, ActionId = variantId, Class = "desk", Cli = bare + " --resume" };
-        var entry = status.Commands[0] with { Verb = StatusVerb.Answer, ActionId = generic ? "ApplyCommand:answer" : variantId, Class = "desk", Cli = bare };
-        var rest = status.Commands.Skip(1).ToList();
-        if (generic)
-        {
-            rest.Insert(0, entry with { ActionId = variantId });
-        }
+        var served = FixtureInstances.Status("escalated-gate").Commands.Where(c => c.Verb == StatusVerb.Answer).ToList();
 
-        return status with { Commands = [entry, .. rest], Answer = answered ? answer : null };
+        var answers = OfStatus("escalated-gate").Commands.Where(c => c.Verb == StatusVerb.Answer).ToList();
+
+        Assert.Equal(served.Select(c => (Labels.Action(c.ActionId), c.Cli)), answers.Select(a => (a.Label, a.Cli)));
+        Assert.Equal(["Accept", "Reject"], answers.Select(a => a.Label), StringComparer.Ordinal);
     }
 
     [Fact]
-    public async Task An_answer_command_with_the_answers_action_id_draws_and_copies_the_status_answer_cli()
+    public async Task An_answer_entry_copies_its_served_cli_not_the_status_line_hint()
     {
-        var status = WithBareAnswer(answered: true);
-        var answer = OfStatus("escalated-gate", status).Commands.Single(c => c.Verb == StatusVerb.Answer);
+        var status = FixtureInstances.Status("needs-answer-wait");
+        var answer = OfStatus("needs-answer-wait").Commands.Single(c => c.Verb == StatusVerb.Answer);
 
         await answer.Copy(Token);
 
-        Assert.Equal((status.Answer!.Cli, status.Answer.Cli), (answer.Cli, _clipboard.Text));
-        Assert.Contains("--resume", answer.Cli, StringComparison.Ordinal);
+        var cli = status.Commands.Single(c => c.Verb == StatusVerb.Answer).Cli;
+        Assert.Equal((cli, cli), (answer.Cli, _clipboard.Text));
+        Assert.NotEqual(status.Answer!.Cli, answer.Cli, StringComparer.Ordinal);
     }
 
-    [Fact]
-    public void A_generic_entry_beside_its_variant_entry_shows_the_answer_once()
+    [Theory]
+    [InlineData("escalated-child")]
+    [InlineData("mirrored-budget")]
+    [InlineData("mirrored-budget-no-child")]
+    public void A_child_pointer_answer_shows_no_answer_command(string scenario)
     {
-        var status = WithBareAnswer(answered: true, generic: true);
+        var status = FixtureInstances.Status(scenario);
 
-        var answers = OfStatus("escalated-gate", status).Commands.Where(c => c.Verb == StatusVerb.Answer).ToList();
+        var expanded = OfStatus(scenario);
 
-        Assert.Equal(status.Answer!.Cli, Assert.Single(answers).Cli);
-    }
-
-    [Fact]
-    public void A_generic_entry_with_no_answer_is_hidden_and_a_variant_with_another_action_id_keeps_its_own_cli()
-    {
-        var served = FixtureInstances.Detail("escalated-gate").Current.Status;
-        var lone = served with { Answer = null, Commands = [served.Commands[0] with { Verb = StatusVerb.Answer, ActionId = "ApplyCommand:answer" }] };
-        Assert.DoesNotContain(OfStatus("escalated-gate", lone).Commands, c => c.Verb == StatusVerb.Answer);
-        Assert.Equal(served.Commands[0].Cli, OfStatus("escalated-gate", served).Commands[0].Cli);
+        Assert.NotNull(status.Answer);
+        Assert.DoesNotContain(status.Commands, c => c.Verb == StatusVerb.Answer);
+        Assert.False(expanded.HasAnswer);
+        Assert.All(expanded.Commands, c => Assert.NotEmpty(c.Cli));
     }
 }

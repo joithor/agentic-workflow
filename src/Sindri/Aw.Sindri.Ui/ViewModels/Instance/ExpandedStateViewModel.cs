@@ -19,7 +19,7 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     {
         (_current, _address) = (current, address);
         var status = current.Status;
-        Commands = [.. ServedCommands(status).Select(c => new ExpandedCommandViewModel(c, status.Answer?.Kind, address, clipboard, clock))];
+        Commands = [.. status.Commands.Select(c => new ExpandedCommandViewModel(c, status.Answer?.Kind, address, clipboard, clock))];
         _cancel = Commands.FirstOrDefault(c => c.Verb == StatusVerb.Cancel);
         Gates = [.. current.Gates.Select(Labels.GateText)];
         StepLine = Line(current.Step, Labels.StepLine);
@@ -34,29 +34,6 @@ internal sealed class ExpandedStateViewModel : ObservableObject
         Name = Labels.ExpandedName(current.State, address);
         CopyStatusName = Labels.CopyStatusName(address);
         StatusCopy = new CopyAction(clipboard, clock, Labels.CopyStatus, Labels.CopyStatus);
-    }
-
-    // Interim until the engine serves the full CLI in commands[].cli: an answer command whose actionId is the status answer's shows
-    // answer.cli (the bare form is rejected by the CLI). The bare generic "ApplyCommand:answer" entry is dropped (its variant carries the answer),
-    // and an answer CLI is never listed twice. Variant entries with another actionId keep their own cli.
-    private static IEnumerable<StatusCommand> ServedCommands(StatusFields status)
-    {
-        var shown = new HashSet<string>(StringComparer.Ordinal);
-        foreach (var command in status.Commands)
-        {
-            if (string.Equals(command.ActionId, "ApplyCommand:answer", StringComparison.Ordinal) && !string.Equals(status.Answer?.ActionId, command.ActionId, StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            var served = command.Verb == StatusVerb.Answer && status.Answer is { } answer && string.Equals(command.ActionId, answer.ActionId, StringComparison.Ordinal)
-                ? command with { Cli = answer.Cli }
-                : command;
-            if (served.Verb != StatusVerb.Answer || shown.Add(served.Cli))
-            {
-                yield return served;
-            }
-        }
     }
 
     // The lines that move with time or with the engine's counters: a re-read changes their words in place and keeps the controls.
