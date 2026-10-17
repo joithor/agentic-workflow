@@ -82,7 +82,7 @@ internal sealed class GateRunService(IMetaConfig config, GateWorkspace workspace
             Math.Max(1, gate.ParallelSteps ?? heavyCap),
             (step, token) => steps.Run(step, plan.Prepared.Tree, workspace.LogPath(plan.Pr, plan.Run, step.Name), token),
             cancellationToken).ConfigureAwait(false);
-        return ran.IsError ? ran.Error : Results.Success<IReadOnlyList<GateStep>>(ran.Value);
+        return ran;
     }
 
     private async ValueTask<Result<GateRunResponse>> Record(GatePlan plan, IReadOnlyList<GateStep> ran, CancellationToken cancellationToken)
