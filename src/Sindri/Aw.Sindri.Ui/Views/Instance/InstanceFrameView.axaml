@@ -1,0 +1,46 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:inst="using:Aw.Sindri.Ui.ViewModels.Instance"
+             xmlns:iv="using:Aw.Sindri.Ui.Views.Instance"
+             x:Class="Aw.Sindri.Ui.Views.Instance.InstanceFrameView"
+             x:DataType="inst:InstanceFrameViewModel">
+  <!-- The instance frame (screens spec §4.2), inside the shell's sheet: one frame for every recipe. The header is the status header's served
+       words; then the subject line, the states band and the expanded state. A refusal or an unreadable answer shows its sentence with Back. -->
+  <StackPanel x:Name="InstanceFrame" Spacing="{StaticResource Space.MD}">
+    <TextBlock x:Name="InstanceLoading" Classes="body muted" Text="{Binding LoadingText}" IsVisible="{Binding IsLoading}" AutomationProperties.Name="{Binding LoadingText}" />
+    <TextBlock x:Name="InstanceProblem" Classes="body" Text="{Binding ProblemText}" IsVisible="{Binding IsProblem}" TextWrapping="Wrap" AutomationProperties.Name="{Binding ProblemText}" />
+    <!-- Where the sheet covers the page its header's Back does the same, so this one hides. -->
+    <Button x:Name="InstanceBack" Classes="not-found-back" Classes.shown="{Binding IsProblem}" Content="{Binding BackText}" Click="OnBack"
+            HorizontalAlignment="Left" AutomationProperties.Name="{Binding BackText}" />
+
+    <StackPanel x:Name="InstanceBody" Spacing="{StaticResource Space.MD}" IsVisible="{Binding IsShown}">
+      <StackPanel Spacing="4">
+        <TextBlock x:Name="InstanceTitle" Classes="detail-title" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Title}" />
+        <TextBlock x:Name="InstanceIdentity" Classes="caption mono subtle" Text="{Binding Identity}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Identity}" />
+        <TextBlock x:Name="InstanceNote" Classes="body-strong" Text="{Binding Note}" IsVisible="{Binding HasNote}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Note}" />
+      </StackPanel>
+      <WrapPanel x:Name="InstanceSubject" Orientation="Horizontal" IsVisible="{Binding Subject, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <TextBlock Classes="caption subtle" Text="{Binding SubjectText}" VerticalAlignment="Center" Margin="0,0,8,0" />
+        <TextBlock x:Name="InstanceSubjectLabel" Classes="body" Text="{Binding Subject.Label}" VerticalAlignment="Center" Margin="0,0,12,0"
+                   AutomationProperties.Name="{Binding Subject.Label}" />
+        <Button x:Name="InstanceOpenIn" Content="{Binding Subject.OpenInText}" IsVisible="{Binding Subject.HasHref}" Click="OnOpenIn"
+                AutomationProperties.Name="{Binding Subject.OpenInName}" />
+      </WrapPanel>
+      <Panel IsVisible="{Binding Band, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <iv:StatesBand x:Name="Band" DataContext="{Binding Band}" />
+      </Panel>
+      <Panel IsVisible="{Binding Expanded, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <iv:ExpandedStateView x:Name="Expanded" DataContext="{Binding Expanded}" />
+      </Panel>
+      <Panel IsVisible="{Binding Facts, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <iv:FactsPanel x:Name="Facts" DataContext="{Binding Facts}" />
+      </Panel>
+      <Panel IsVisible="{Binding Children, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <iv:ChildrenPanel x:Name="Children" DataContext="{Binding Children}" />
+      </Panel>
+      <Panel IsVisible="{Binding Tabs, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <iv:FrameTabs x:Name="FrameTabsStrip" DataContext="{Binding Tabs}" />
+      </Panel>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

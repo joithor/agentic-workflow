@@ -4,4 +4,26 @@
   <Style Selector="Border.strip-row.stale">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
   </Style>
+  <!-- The Workflows page (screens spec §4.2): a stale row is marked like the strip's; the column heads sit on a hairline; the group header and the
+       finished line are quiet full-width buttons; the state the instance is in reads stronger than the rest. Tokens only. -->
+  <Style Selector="Border.workflow-row.stale">
+    <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
+  </Style>
+  <Style Selector="Border.column-heads">
+    <Setter Property="Padding" Value="16,6" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+  </Style>
+  <Style Selector="Button.group-toggle">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource Brush.Hairline}" />
+    <Setter Property="BorderThickness" Value="0,1,0,0" />
+    <Setter Property="CornerRadius" Value="0" />
+    <Setter Property="Padding" Value="16,8" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+  </Style>
+  <Style Selector="TextBlock.current">
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
 </Styles>
