@@ -2,6 +2,7 @@ using System.Globalization;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Meta.Core;
+using Aw.Meta.Core.Coordination;
 using Aw.Meta.Core.Logs;
 using Aw.Meta.Core.Merge;
 using Aw.Meta.Core.Messages;
@@ -18,8 +19,9 @@ namespace Aw.Meta.Features.QueueDrop;
 /// <param name="gates">Tells which pull requests are merged.</param>
 /// <param name="values">Keeps the drops and the pull requests the watch saw end.</param>
 /// <param name="log">The running log.</param>
+/// <param name="reservation">Computes the heavy-slot reservation again once the entry has left the queue.</param>
 /// <param name="clock">Dates the drop.</param>
-internal sealed class QueueDropService(IMessageStore messages, IGateStore gates, IKeyValueStore values, IRunningLog log, TimeProvider clock) : IService<QueueDropRequest, QueueDropResponse>
+internal sealed class QueueDropService(IMessageStore messages, IGateStore gates, IKeyValueStore values, IRunningLog log, HeavyReservation reservation, TimeProvider clock) : IService<QueueDropRequest, QueueDropResponse>
 {
     public async ValueTask<Result<QueueDropResponse>> Handle(QueueDropRequest request, CancellationToken cancellationToken)
     {
@@ -40,6 +42,12 @@ internal sealed class QueueDropService(IMessageStore messages, IGateStore gates,
         var saved = await values.Set(KvKeys.QueueDropped, QueueDrops.With(stored.Value, request.Pr, now), cancellationToken).ConfigureAwait(false);
         var line = LogLine.Event(LogKind.Note, now, string.Create(CultureInfo.InvariantCulture, $"queue-drop #{request.Pr}: {request.Reason}"));
         var appended = saved.IsError ? Results.Failure<Unit>(saved.Error) : await log.Append(line, cancellationToken).ConfigureAwait(false);
+        if (saved.IsSuccess)
+        {
+            // Advisory: the queue is shorter now, so the reservation may drop; failing to keep it must not undo the drop.
+            _ = await reservation.Apply(cancellationToken).ConfigureAwait(false);
+        }
+
         return appended.IsError ? appended.Error : new QueueDropResponse(request.Pr, line);
     }
 

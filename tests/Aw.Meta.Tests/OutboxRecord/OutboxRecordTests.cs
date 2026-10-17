@@ -20,12 +20,6 @@ public sealed class OutboxRecordTests
         return result.Value;
     }
 
-    private async Task Receive(string id, string name, string body)
-    {
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine(id, name, body));
-        _ = await _world.Sync.Run(MetaWorld.Transcript, CancellationToken.None);
-    }
-
     [Fact, Trait("Lane", "unit")]
     public async Task A_send_from_any_other_session_is_not_recorded()
     {
@@ -54,8 +48,8 @@ public sealed class OutboxRecordTests
     public async Task A_send_to_the_peer_closes_its_reply_obligation_and_names_what_it_closed()
     {
         await _world.Ready();
-        await Receive("m1", "t1-api", "please rebase");
-        await Receive("m2", "t1-ui", "and me");
+        await _world.Receive("m1", "t1-api", "please rebase");
+        await _world.Receive("m2", "t1-ui", "and me");
 
         var response = await Send("t1-api", "done", id: "out-1");
 
@@ -70,7 +64,7 @@ public sealed class OutboxRecordTests
     public async Task A_send_addressed_to_the_peer_socket_closes_the_reply_too()
     {
         await _world.Ready();
-        await Receive("m1", "t1-api", "please rebase");
+        await _world.Receive("m1", "t1-api", "please rebase");
 
         var response = await Send("uds:/run/t1-api.sock", "done");
 
