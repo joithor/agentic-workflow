@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "rounds": [
+    {
+      "round": 1,
+      "lenses": [
+        "behaviour",
+        "regression",
+        "boundaries"
+      ],
+      "findings": [
+        {
+          "id": "CH-1",
+          "severity": "HIGH",
+          "text": "No acceptance item covers: If the chosen expiry time is not in the future, the system shall refuse to create the link.",
+          "cites": [
+            "AC-4"
+          ]
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "lenses": [
+        "behaviour",
+        "regression",
+        "boundaries"
+      ],
+      "findings": []
+    }
+  ]
+}
