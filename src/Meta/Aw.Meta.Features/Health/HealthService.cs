@@ -2,6 +2,7 @@ using System.Globalization;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Meta.Core;
+using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Coordination;
 using Aw.Meta.Core.Health;
 using Aw.Meta.Core.Ports;
@@ -17,7 +18,7 @@ namespace Aw.Meta.Features.Health;
 /// <param name="killer">Terminates orphans.</param>
 /// <param name="values">Keeps the summary.</param>
 /// <param name="config">The team config, for the thresholds (the defaults without one).</param>
-/// <param name="advisor">Reads the heavy reservation and computes the builders advice.</param>
+/// <param name="advisor">Shows the kept heavy reservation and computes the builders advice.</param>
 /// <param name="clock">Dates the summary.</param>
 internal sealed class HealthService(HostProbe probe, LaneCheck lanes, OrphanKiller killer, IKeyValueStore values, IMetaConfig config, ResourceAdvisor advisor, TimeProvider clock)
     : IService<HealthRequest, HealthResponse>
@@ -49,10 +50,10 @@ internal sealed class HealthService(HostProbe probe, LaneCheck lanes, OrphanKill
     {
         var (orphans, killed, missing, standing) = found;
         var processes = host.Snapshot.Processes;
-        var low = HostRules.MemoryLow(host.Resources);
         var remaining = orphans.Count(o => !killed.Contains(o.Pid));
         var team = await config.Load(cancellationToken).ConfigureAwait(false);
-        var advice = await advisor.Advise(team.IsSuccess ? team.Value : null, host.Resources, cancellationToken).ConfigureAwait(false);
+        var low = ResourceRules.MemoryLow(host.Resources, team.IsSuccess ? team.Value.Resources : new ResourcesConfig());
+        var advice = await advisor.Advise(team.IsSuccess ? team.Value : null, host.Resources, refresh: false, cancellationToken).ConfigureAwait(false);
         if (advice.IsError)
         {
             return advice.Error;

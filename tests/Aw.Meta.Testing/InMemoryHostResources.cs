@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.Kernel;
+using Aw.Meta.Core;
 using Aw.Meta.Core.Health;
 using Aw.Meta.Core.Ports;
 
@@ -26,8 +27,12 @@ public sealed class InMemoryHostResources : IHostResources
     /// <param name="slot">The slot.</param>
     public void TakeLock(HeavyLock slot) => _locks.Add(slot);
 
+    /// <summary>Whether <see cref="Read"/> fails (the memory and disk figures cannot be read).</summary>
+    public bool FailRead { get; set; }
+
     /// <inheritdoc />
-    public ValueTask<Result<HostResources>> Read(CancellationToken cancellationToken) => Done.Of(Resources);
+    public ValueTask<Result<HostResources>> Read(CancellationToken cancellationToken) =>
+        FailRead ? Done.Failed<HostResources>(MetaErrors.HostUnreadable.With("the host cannot be read")) : Done.Of(Resources);
 
     /// <inheritdoc />
     public ValueTask<Result<IReadOnlyList<HeavyLock>>> HeavyLocks(CancellationToken cancellationToken) =>

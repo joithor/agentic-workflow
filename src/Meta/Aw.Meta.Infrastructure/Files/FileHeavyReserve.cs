@@ -7,50 +7,68 @@ using Aw.Meta.Core.Ports;
 namespace Aw.Meta.Infrastructure.Files;
 
 /// <summary>
-/// IHeavyReserve over the two files the heavy-job wrapper reads in the state root: heavy-slots-cap (the box-wide slots, default 3)
-/// and heavy-meta-reserve (the slots the meta gates hold, 0 to the cap). A write goes to a temporary file that is renamed over the real one.
+/// IHeavyReserve over heavy-reserve in the team's state directory: one line, "reserve depth time" (the time ISO 8601, round-trip).
+/// A write goes to a temporary file in the same directory that is renamed over the real one.
 /// </summary>
-/// <param name="stateRoot">$AW_STATE_DIR.</param>
-internal sealed class FileHeavyReserve(string stateRoot) : IHeavyReserve
+/// <param name="directory">The team's state directory.</param>
+internal sealed class FileHeavyReserve(string directory) : IHeavyReserve
 {
-    private const string CapFile = "heavy-slots-cap";
-    private const string ReserveFile = "heavy-meta-reserve";
+    private const string ReserveFile = "heavy-reserve";
 
-    public async ValueTask<Result<HeavySlots>> Read(CancellationToken cancellationToken)
+    public async ValueTask<Result<HeavyReserveRecord?>> Read(CancellationToken cancellationToken)
     {
-        var cap = await Number(CapFile, cancellationToken).ConfigureAwait(false) is > 0 and var configured ? configured : IHeavyReserve.DefaultCap;
-        var reserve = await Number(ReserveFile, cancellationToken).ConfigureAwait(false) ?? 0;
-        return new HeavySlots(cap, Math.Min(reserve, cap));
-    }
-
-    public async ValueTask<Result<Unit>> Write(int slots, CancellationToken cancellationToken)
-    {
-        var path = Path.Combine(stateRoot, ReserveFile);
-        var temp = path + ".tmp";
         try
         {
-            _ = Directory.CreateDirectory(stateRoot);
-            await File.WriteAllTextAsync(temp, slots.ToString(CultureInfo.InvariantCulture) + "\n", cancellationToken).ConfigureAwait(false);
+            var text = await File.ReadAllTextAsync(Path.Combine(directory, ReserveFile), cancellationToken).ConfigureAwait(false);
+            return Results.Success(Parse(text));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return Results.Success<HeavyReserveRecord?>(value: null);
+        }
+    }
+
+    public async ValueTask<Result<Unit>> Write(HeavyReserveRecord record, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        var path = Path.Combine(directory, ReserveFile);
+        var temp = Path.Combine(directory, string.Create(CultureInfo.InvariantCulture, $".{ReserveFile}.{Environment.ProcessId}.{Path.GetRandomFileName()}.tmp"));
+        try
+        {
+            _ = Directory.CreateDirectory(directory);
+            var line = string.Create(CultureInfo.InvariantCulture, $"{record.Reserve} {record.Depth} {record.At:O}\n");
+            await File.WriteAllTextAsync(temp, line, cancellationToken).ConfigureAwait(false);
             File.Move(temp, path, overwrite: true);
             return Results.Ok();
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
+            TryDelete(temp);
             return MetaErrors.HostUnreadable.With($"{path}: {exception.Message}");
         }
     }
 
-    // A whole number in the file, or null when the file is missing, unreadable or holds anything else (the wrapper treats those as unset).
-    private async ValueTask<int?> Number(string name, CancellationToken cancellationToken)
+    // Anything but three well-formed fields reads as "not computed yet".
+    private static HeavyReserveRecord? Parse(string text)
+    {
+        var fields = text.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return fields.Length == 3
+            && int.TryParse(fields[0], NumberStyles.None, CultureInfo.InvariantCulture, out var reserve)
+            && int.TryParse(fields[1], NumberStyles.None, CultureInfo.InvariantCulture, out var depth)
+            && DateTimeOffset.TryParse(fields[2], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var at)
+                ? new HeavyReserveRecord(reserve, depth, at)
+                : null;
+    }
+
+    private static void TryDelete(string path)
     {
         try
         {
-            var text = (await File.ReadAllTextAsync(Path.Combine(stateRoot, name), cancellationToken).ConfigureAwait(false)).Trim();
-            return int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var value) ? value : null;
+            File.Delete(path);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return null;
+            // Best effort: a leftover temporary file is harmless.
         }
     }
 }

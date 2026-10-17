@@ -14,7 +14,8 @@ namespace Aw.Meta.Features.Watch;
 /// <param name="messages">The inbox.</param>
 /// <param name="values">Keeps the pull requests seen merged or closed, which the merge queue drops.</param>
 /// <param name="sweeper">Sweeps the worktrees of the pull requests seen to end.</param>
-internal sealed class WatchPoller(RepoCommands repo, IHostResources resources, IMessageStore messages, IKeyValueStore values, WatchSweeper sweeper)
+/// <param name="reservation">Keeps the heavy-slot reservation in step with the merge queue on every poll.</param>
+internal sealed class WatchPoller(RepoCommands repo, IHostResources resources, IMessageStore messages, IKeyValueStore values, WatchSweeper sweeper, HeavyReservation reservation)
 {
     internal async ValueTask<Result<Polled>> Poll(TeamConfig team, CancellationToken cancellationToken)
     {
@@ -34,6 +35,8 @@ internal sealed class WatchPoller(RepoCommands repo, IHostResources resources, I
             return remembered.Error;
         }
 
+        // Advisory: the queue changes with ready messages, drops and pull requests that end, so every poll follows it (and renews the time).
+        _ = await reservation.Apply(team, cancellationToken).ConfigureAwait(false);
         var worktrees = await sweeper.Sweep(remembered.Value, cancellationToken).ConfigureAwait(false);
         return new Polled(new WatchSnapshot(prs.Value, main.Value, ResourceRules.DiskLow(disk.Value, team.Resources), ResourceRules.MemoryLow(disk.Value, team.Resources)), inbox.Value.Count, worktrees);
     }

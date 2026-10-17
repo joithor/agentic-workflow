@@ -13,9 +13,9 @@ namespace Aw.Meta.Features.Health;
 /// <param name="Duplicates">MCP server commands running more often than there are sessions to own them.</param>
 /// <param name="MissingLanes">Configured lanes with no live session; null when there is no team config to check against.</param>
 /// <param name="HeavyLocks">The taken heavy-job lock slots.</param>
-/// <param name="MemoryLow">Whether available memory is under a tenth of the total.</param>
+/// <param name="MemoryLow">Whether memory is low by the team's thresholds (resources.memFloorGb, resources.swapHighPct; the defaults without a team config).</param>
 /// <param name="Lanes">How each non-Claude lane stands; absent (null) for a team of Claude lanes.</param>
-/// <param name="Heavy">The box-wide heavy slots and the meta gates' reservation.</param>
+/// <param name="Heavy">The heavy-slot reservation the meta computed for the merge queue, with its staleness; null when none was computed or the team turned it off.</param>
 /// <param name="Builders">The builders per lane to run now.</param>
 /// <param name="Attention">Whether something needs acting on: an orphan still running, a missing lane or low memory.</param>
 public sealed record HealthResponse(

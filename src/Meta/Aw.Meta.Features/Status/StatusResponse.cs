@@ -16,7 +16,7 @@ public sealed record StatusResponse(IReadOnlyList<Obligation> Obligations, IRead
     /// <summary>The last health check's one-line summary; null when health never ran.</summary>
     public string? LastHealth { get; init; }
 
-    /// <summary>The box-wide heavy slots and how many the meta gates reserve now; null when the host could not be read.</summary>
+    /// <summary>The heavy-slot reservation recomputed for the merge queue now; null when the host could not be read or the team turned the reservation off.</summary>
     public HeavySlots? Heavy { get; init; }
 
     /// <summary>The builders per lane to run now; null when the host could not be read.</summary>

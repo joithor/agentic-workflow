@@ -45,17 +45,17 @@ public sealed class ResourceRulesTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData(78, 4)]    // 30 + 3 lanes x 4 x 4 = 78
-    [InlineData(77, 3)]    // 30 + 3 x 3 x 4 = 66 fits, 78 does not
-    [InlineData(65, 2)]    // 66 does not fit, 30 + 3 x 2 x 4 = 54 does
-    [InlineData(53, 1)]    // 54 does not fit; one builder is the least
-    [InlineData(10, 1)]    // far below the floor: still one
-    public void Builders_shrink_while_the_disk_cannot_hold_the_floor_and_every_lanes_worktrees(long diskGb, int perLane)
+    [InlineData(78, 4, null)]    // 30 + 3 lanes x 4 x 4 = 78
+    [InlineData(77, 3, BuilderAdvice.DiskLimit)]    // 30 + 3 x 3 x 4 = 66 fits, 78 does not
+    [InlineData(65, 2, BuilderAdvice.DiskLimit)]    // 66 does not fit, 30 + 3 x 2 x 4 = 54 does
+    [InlineData(53, 1, BuilderAdvice.DiskLimit)]    // 54 does not fit; one builder is the least
+    [InlineData(10, 1, BuilderAdvice.DiskLimit)]    // far below the floor: still one
+    public void Builders_shrink_while_the_disk_cannot_hold_the_floor_and_every_lanes_worktrees(long diskGb, int perLane, string? limit)
     {
         var advice = BuilderAdvice.Compute(Host(diskGb: diskGb), _limits, new BuildersConfig(MaxPerLane: 4, WorktreeGb: 4), lanes: 3);
 
         Assert.Equal(perLane, advice.PerLane);
-        Assert.Equal(perLane < 4 || diskGb < 30 + (3 * perLane * 4) ? BuilderAdvice.DiskLimit : null, advice.Limit);
+        Assert.Equal(limit, advice.Limit);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -69,7 +69,15 @@ public sealed class ResourceRulesTests
     {
         var advice = BuilderAdvice.Compute(Host(diskGb: 900, memGb: 5), _limits, new BuildersConfig(), lanes: 2);
 
-        Assert.Equal((1, BuilderAdvice.MemoryLimit, "builders: 1 per lane (memory below floor)"), (advice.PerLane, advice.Limit, advice.Line()));
+        Assert.Equal((1, BuilderAdvice.MemoryLimit, "builders: 1 per lane (memory low)"), (advice.PerLane, advice.Limit, advice.Line()));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Nearly_full_swap_means_one_builder_like_the_watchs_memory_low()
+    {
+        var advice = BuilderAdvice.Compute(Host(diskGb: 900, memGb: 40, swapUsedGb: 8), _limits, new BuildersConfig(), lanes: 2);
+
+        Assert.Equal((1, BuilderAdvice.MemoryLimit), (advice.PerLane, advice.Limit));
     }
 
     [Fact, Trait("Lane", "unit")]

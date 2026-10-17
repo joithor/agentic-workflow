@@ -43,7 +43,7 @@ public sealed class HealthTests
         AllLanesLive();
         _world.Processes.Add(new ProcessInfo(10, 1, "claude --resume a", RssKb: 1_048_576, AgeSeconds: 5000));
         _world.Processes.Add(new ProcessInfo(11, 1, "dotnet build X.slnx", RssKb: 524_288, AgeSeconds: 60));
-        _world.Resources.Resources = new HostResources(16_000_000, 8_000_000, 100_000, 50_000_000_000);
+        _world.Resources.Resources = new HostResources(24_000_000, 12_000_000, 100_000, 50_000_000_000);
 
         var health = await Check();
 
@@ -57,16 +57,32 @@ public sealed class HealthTests
     {
         await _world.Ready();
         AllLanesLive();
-        _world.Heavy.Cap = 4;
-        _world.Heavy.Reserve = 2;
+        _world.Heavy.Record = new HeavyReserveRecord(2, 5, A.At(50));
         _world.Resources.Resources = new HostResources(64_000_000, 16_000_000, 0, DiskFreeBytes: 132L * 1024 * 1024 * 1024);
 
         var health = await Check();
 
-        Assert.Equal(new HeavySlots(4, 2), health.Heavy);
+        Assert.Equal(new HeavySlots(3, 2, 5, A.At(50)), health.Heavy);
+        Assert.Equal("heavy reservation: 2 of 3 slots (queue depth 5) - set it with meta-gate-reserve 5", health.Heavy!.Line());
         Assert.Equal("builders: 4 per lane (disk 132 GB free, mem 15 GB available)", health.Builders!.Line());
         Assert.False(health.Attention);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_reservation_nobody_recomputed_for_half_an_hour_is_reported_stale()
+    {
+        await _world.Ready();
+        AllLanesLive();
+        _world.Heavy.Record = new HeavyReserveRecord(2, 5, A.At(20));
+
+        var health = await Check();
+
+        Assert.True(health.Heavy!.Stale);
+        Assert.EndsWith("[stale: computed 04:20Z; run status or gate-run to recompute]", health.Heavy.Line(), StringComparison.Ordinal);
+        Assert.Equal(_world.Heavy.Record, await KeptRecord());   // health only reads
+    }
+
+    private async Task<HeavyReserveRecord?> KeptRecord() => (await _world.Heavy.Read(CancellationToken.None)).Value;
 
     [Fact, Trait("Lane", "unit")]
     public async Task The_builders_advice_follows_the_team_configs_thresholds()
@@ -90,7 +106,8 @@ public sealed class HealthTests
 
         var health = await Check();
 
-        Assert.Equal((4, 3), (health.Builders!.PerLane, health.Heavy!.Cap));
+        Assert.Equal(4, health.Builders!.PerLane);
+        Assert.Null(health.Heavy);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -137,6 +154,21 @@ public sealed class HealthTests
 
         Assert.True(health.MemoryLow);
         Assert.True(health.Attention);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(7_000_000, true)]    // 7 GB available of 64: under the 8 GB floor, though over a tenth of the total
+    [InlineData(9_000_000, false)]
+    public async Task Memory_is_low_by_the_same_floor_the_watch_uses(long availableKb, bool low)
+    {
+        await _world.Ready();
+        AllLanesLive();
+        _world.Resources.Resources = new HostResources(64_000_000, availableKb, 0, 50_000_000_000);
+
+        var health = await Check();
+
+        Assert.Equal(low, health.MemoryLow);
+        Assert.Equal(low, health.Attention);
     }
 
     [Fact, Trait("Lane", "unit")]

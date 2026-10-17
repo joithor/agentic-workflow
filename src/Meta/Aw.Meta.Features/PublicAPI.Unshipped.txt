@@ -56,11 +56,13 @@ Aw.Meta.Features.GateRun.GateRunRequest.Scopes.get -> System.Collections.Generic
 Aw.Meta.Features.GateRun.GateRunRequest.Scopes.init -> void
 Aw.Meta.Features.GateRun.GateRunResponse
 Aw.Meta.Features.GateRun.GateRunResponse.<Clone>$() -> Aw.Meta.Features.GateRun.GateRunResponse!
-Aw.Meta.Features.GateRun.GateRunResponse.Deconstruct(out Aw.Meta.Core.Gate.GateRecord! Gate) -> void
+Aw.Meta.Features.GateRun.GateRunResponse.Deconstruct(out Aw.Meta.Core.Gate.GateRecord! Gate, out Aw.Meta.Core.Health.HeavySlots? Heavy) -> void
 Aw.Meta.Features.GateRun.GateRunResponse.Equals(Aw.Meta.Features.GateRun.GateRunResponse? other) -> bool
 Aw.Meta.Features.GateRun.GateRunResponse.Gate.get -> Aw.Meta.Core.Gate.GateRecord!
 Aw.Meta.Features.GateRun.GateRunResponse.Gate.init -> void
-Aw.Meta.Features.GateRun.GateRunResponse.GateRunResponse(Aw.Meta.Core.Gate.GateRecord! Gate) -> void
+Aw.Meta.Features.GateRun.GateRunResponse.GateRunResponse(Aw.Meta.Core.Gate.GateRecord! Gate, Aw.Meta.Core.Health.HeavySlots? Heavy = null) -> void
+Aw.Meta.Features.GateRun.GateRunResponse.Heavy.get -> Aw.Meta.Core.Health.HeavySlots?
+Aw.Meta.Features.GateRun.GateRunResponse.Heavy.init -> void
 Aw.Meta.Features.Health.HealthRequest
 Aw.Meta.Features.Health.HealthRequest.<Clone>$() -> Aw.Meta.Features.Health.HealthRequest!
 Aw.Meta.Features.Health.HealthRequest.Deconstruct(out bool KillOrphans) -> void
@@ -72,11 +74,17 @@ Aw.Meta.Features.Health.HealthResponse
 Aw.Meta.Features.Health.HealthResponse.<Clone>$() -> Aw.Meta.Features.Health.HealthResponse!
 Aw.Meta.Features.Health.HealthResponse.Attention.get -> bool
 Aw.Meta.Features.Health.HealthResponse.Attention.init -> void
+Aw.Meta.Features.Health.HealthResponse.Builders.get -> Aw.Meta.Core.Health.BuilderAdvice?
+Aw.Meta.Features.Health.HealthResponse.Builders.init -> void
+Aw.Meta.Features.Health.HealthResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>! Groups, out int ProcessCount, out Aw.Meta.Core.Health.HostResources! Host, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Orphans, out System.Collections.Generic.IReadOnlyList<int>! Killed, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>! Duplicates, out System.Collections.Generic.IReadOnlyList<string!>? MissingLanes, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>! HeavyLocks, out bool MemoryLow, out bool Attention, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>? Lanes, out Aw.Meta.Core.Health.HeavySlots? Heavy, out Aw.Meta.Core.Health.BuilderAdvice? Builders) -> void
 Aw.Meta.Features.Health.HealthResponse.Duplicates.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>!
 Aw.Meta.Features.Health.HealthResponse.Duplicates.init -> void
 Aw.Meta.Features.Health.HealthResponse.Equals(Aw.Meta.Features.Health.HealthResponse? other) -> bool
 Aw.Meta.Features.Health.HealthResponse.Groups.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>!
 Aw.Meta.Features.Health.HealthResponse.Groups.init -> void
+Aw.Meta.Features.Health.HealthResponse.HealthResponse(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>! Groups, int ProcessCount, Aw.Meta.Core.Health.HostResources! Host, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Orphans, System.Collections.Generic.IReadOnlyList<int>! Killed, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>! Duplicates, System.Collections.Generic.IReadOnlyList<string!>? MissingLanes, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>! HeavyLocks, bool MemoryLow, bool Attention, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>? Lanes = null, Aw.Meta.Core.Health.HeavySlots? Heavy = null, Aw.Meta.Core.Health.BuilderAdvice? Builders = null) -> void
+Aw.Meta.Features.Health.HealthResponse.Heavy.get -> Aw.Meta.Core.Health.HeavySlots?
+Aw.Meta.Features.Health.HealthResponse.Heavy.init -> void
 Aw.Meta.Features.Health.HealthResponse.HeavyLocks.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>!
 Aw.Meta.Features.Health.HealthResponse.HeavyLocks.init -> void
 Aw.Meta.Features.Health.HealthResponse.Host.get -> Aw.Meta.Core.Health.HostResources!
@@ -417,16 +425,23 @@ Aw.Meta.Features.Status.StatusRequest.Equals(Aw.Meta.Features.Status.StatusReque
 Aw.Meta.Features.Status.StatusRequest.StatusRequest() -> void
 Aw.Meta.Features.Status.StatusResponse
 Aw.Meta.Features.Status.StatusResponse.<Clone>$() -> Aw.Meta.Features.Status.StatusResponse!
+Aw.Meta.Features.Status.StatusResponse.Builders.get -> Aw.Meta.Core.Health.BuilderAdvice?
+Aw.Meta.Features.Status.StatusResponse.Builders.init -> void
+Aw.Meta.Features.Status.StatusResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>! Obligations, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.QueuedPr!>! MergeQueue, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Owner.OwnerQuestion!>! OwnerQueue, out Aw.Meta.Core.Lanes.LaneMapState! Lanes) -> void
 Aw.Meta.Features.Status.StatusResponse.Equals(Aw.Meta.Features.Status.StatusResponse? other) -> bool
+Aw.Meta.Features.Status.StatusResponse.Heavy.get -> Aw.Meta.Core.Health.HeavySlots?
+Aw.Meta.Features.Status.StatusResponse.Heavy.init -> void
 Aw.Meta.Features.Status.StatusResponse.Lanes.get -> Aw.Meta.Core.Lanes.LaneMapState!
 Aw.Meta.Features.Status.StatusResponse.Lanes.init -> void
 Aw.Meta.Features.Status.StatusResponse.LastHealth.get -> string?
 Aw.Meta.Features.Status.StatusResponse.LastHealth.init -> void
+Aw.Meta.Features.Status.StatusResponse.MergeQueue.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.QueuedPr!>!
 Aw.Meta.Features.Status.StatusResponse.MergeQueue.init -> void
 Aw.Meta.Features.Status.StatusResponse.Obligations.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>!
 Aw.Meta.Features.Status.StatusResponse.Obligations.init -> void
 Aw.Meta.Features.Status.StatusResponse.OwnerQueue.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Owner.OwnerQuestion!>!
 Aw.Meta.Features.Status.StatusResponse.OwnerQueue.init -> void
+Aw.Meta.Features.Status.StatusResponse.StatusResponse(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>! Obligations, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.QueuedPr!>! MergeQueue, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Owner.OwnerQuestion!>! OwnerQueue, Aw.Meta.Core.Lanes.LaneMapState! Lanes) -> void
 Aw.Meta.Features.StopCheck.StopCheckRequest
 Aw.Meta.Features.StopCheck.StopCheckRequest.<Clone>$() -> Aw.Meta.Features.StopCheck.StopCheckRequest!
 Aw.Meta.Features.StopCheck.StopCheckRequest.Deconstruct(out Aw.Meta.Core.Ids.SessionId Session, out string! Transcript, out bool HookActive, out int MaxBlocks) -> void
@@ -861,16 +876,3 @@ static Aw.Meta.Features.WorktreeSweep.SweepWorktreesRequest.operator !=(Aw.Meta.
 static Aw.Meta.Features.WorktreeSweep.SweepWorktreesRequest.operator ==(Aw.Meta.Features.WorktreeSweep.SweepWorktreesRequest? left, Aw.Meta.Features.WorktreeSweep.SweepWorktreesRequest? right) -> bool
 static Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse.operator !=(Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse? left, Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse? right) -> bool
 static Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse.operator ==(Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse? left, Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse? right) -> bool
-Aw.Meta.Features.Health.HealthResponse.Builders.get -> Aw.Meta.Core.Health.BuilderAdvice?
-Aw.Meta.Features.Health.HealthResponse.Builders.init -> void
-Aw.Meta.Features.Health.HealthResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>! Groups, out int ProcessCount, out Aw.Meta.Core.Health.HostResources! Host, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Orphans, out System.Collections.Generic.IReadOnlyList<int>! Killed, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>! Duplicates, out System.Collections.Generic.IReadOnlyList<string!>? MissingLanes, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>! HeavyLocks, out bool MemoryLow, out bool Attention, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>? Lanes, out Aw.Meta.Core.Health.HeavySlots? Heavy, out Aw.Meta.Core.Health.BuilderAdvice? Builders) -> void
-Aw.Meta.Features.Health.HealthResponse.HealthResponse(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>! Groups, int ProcessCount, Aw.Meta.Core.Health.HostResources! Host, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Orphans, System.Collections.Generic.IReadOnlyList<int>! Killed, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>! Duplicates, System.Collections.Generic.IReadOnlyList<string!>? MissingLanes, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>! HeavyLocks, bool MemoryLow, bool Attention, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>? Lanes = null, Aw.Meta.Core.Health.HeavySlots? Heavy = null, Aw.Meta.Core.Health.BuilderAdvice? Builders = null) -> void
-Aw.Meta.Features.Health.HealthResponse.Heavy.get -> Aw.Meta.Core.Health.HeavySlots?
-Aw.Meta.Features.Health.HealthResponse.Heavy.init -> void
-Aw.Meta.Features.Status.StatusResponse.Builders.get -> Aw.Meta.Core.Health.BuilderAdvice?
-Aw.Meta.Features.Status.StatusResponse.Builders.init -> void
-Aw.Meta.Features.Status.StatusResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>! Obligations, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.QueuedPr!>! MergeQueue, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Owner.OwnerQuestion!>! OwnerQueue, out Aw.Meta.Core.Lanes.LaneMapState! Lanes) -> void
-Aw.Meta.Features.Status.StatusResponse.Heavy.get -> Aw.Meta.Core.Health.HeavySlots?
-Aw.Meta.Features.Status.StatusResponse.Heavy.init -> void
-Aw.Meta.Features.Status.StatusResponse.MergeQueue.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.QueuedPr!>!
-Aw.Meta.Features.Status.StatusResponse.StatusResponse(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>! Obligations, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.QueuedPr!>! MergeQueue, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Owner.OwnerQuestion!>! OwnerQueue, Aw.Meta.Core.Lanes.LaneMapState! Lanes) -> void

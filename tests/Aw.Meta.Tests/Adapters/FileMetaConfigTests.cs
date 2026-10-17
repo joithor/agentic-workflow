@@ -84,6 +84,34 @@ public sealed class FileMetaConfigTests : IDisposable
         Assert.Equal(MetaErrors.ConfigInvalid.Code, loaded.Error.Code);
     }
 
+    [Theory, Trait("Lane", "integration")]
+    [InlineData("\"resources\":{\"swapHighPct\":0}")]
+    [InlineData("\"resources\":{\"swapHighPct\":101}")]
+    [InlineData("\"resources\":{\"diskFloorGb\":-1}")]
+    [InlineData("\"resources\":{\"memFloorGb\":-5}")]
+    [InlineData("\"builders\":{\"maxPerLane\":0}")]
+    [InlineData("\"builders\":{\"worktreeGb\":-4}")]
+    [InlineData("\"heavy\":{\"cap\":0}")]
+    public async Task A_threshold_outside_its_range_is_AW_META_003(string key)
+    {
+        var (config, _) = Make(Base + "," + key + "}");
+
+        var loaded = await config.Load(CancellationToken.None);
+
+        Assert.Equal(MetaErrors.ConfigInvalid.Code, loaded.Error.Code);
+        Assert.Contains("must be", loaded.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task The_heavy_cap_reads_with_its_default_of_three()
+    {
+        var (plain, _) = Make(Base + "}");
+        var defaulted = (await plain.Load(CancellationToken.None)).Value.Heavy.Cap;
+        var (capped, _) = Make(Base + ",\"heavy\":{\"cap\":5}}");
+
+        Assert.Equal((3, 5), (defaulted, (await capped.Load(CancellationToken.None)).Value.Heavy.Cap));
+    }
+
     [Fact, Trait("Lane", "integration")]
     public async Task The_reserve_setting_survives_a_save_and_a_load()
     {

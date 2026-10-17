@@ -1,3 +1,4 @@
+using Aw.Meta.Core.Health;
 using Aw.Meta.Core.Ports;
 using Xunit;
 
@@ -7,52 +8,33 @@ namespace Aw.Meta.Testing;
 public abstract class HeavyReserveContract
 {
     private static readonly CancellationToken _none = CancellationToken.None;
+    private static readonly DateTimeOffset _at = new(2026, 10, 15, 5, 0, 0, TimeSpan.Zero);
 
-    /// <summary>The adapter under test, with no cap and no reservation set.</summary>
+    /// <summary>The adapter under test, with nothing computed yet.</summary>
     /// <returns>The adapter.</returns>
     protected abstract IHeavyReserve Create();
 
-    /// <summary>Sets the cap the adapter reads, the way the owner's cap file would.</summary>
-    /// <param name="reserve">The adapter returned by <see cref="Create"/>.</param>
-    /// <param name="cap">The cap.</param>
-    protected abstract void SetCap(IHeavyReserve reserve, int cap);
-
-    /// <summary>With nothing set the cap is the default and nothing is reserved.</summary>
+    /// <summary>With nothing written there is no computation.</summary>
     /// <returns>A task.</returns>
     [Fact]
-    public async Task Nothing_set_means_the_default_cap_and_no_reservation()
+    public async Task Nothing_written_reads_as_none()
     {
         var read = await Create().Read(_none);
 
-        Expect.That(read.IsSuccess && read.Value.Cap == IHeavyReserve.DefaultCap && read.Value.Reserve == 0, "the defaults are the cap 3 and no reservation");
+        Expect.That(read.IsSuccess && read.Value is null, "no computation is kept yet");
     }
 
-    /// <summary>A written reservation is read back, and the cap is what was set.</summary>
+    /// <summary>A written computation is read back whole.</summary>
     /// <returns>A task.</returns>
     [Fact]
-    public async Task A_written_reservation_is_read_back_beside_the_cap()
+    public async Task A_written_computation_is_read_back()
     {
         var reserve = Create();
-        SetCap(reserve, 4);
 
-        var written = await reserve.Write(2, _none);
+        var written = await reserve.Write(new HeavyReserveRecord(2, 5, _at), _none);
         var read = await reserve.Read(_none);
 
-        Expect.That(written.IsSuccess && read.IsSuccess && read.Value.Cap == 4 && read.Value.Reserve == 2, "the reservation and the cap are read");
-    }
-
-    /// <summary>The reservation is never reported above the cap.</summary>
-    /// <returns>A task.</returns>
-    [Fact]
-    public async Task A_reservation_above_the_cap_reads_as_the_cap()
-    {
-        var reserve = Create();
-        SetCap(reserve, 2);
-
-        _ = await reserve.Write(5, _none);
-        var read = await reserve.Read(_none);
-
-        Expect.That(read.IsSuccess && read.Value.Reserve == 2, "the reservation is clamped to the cap");
+        Expect.That(written.IsSuccess && read.IsSuccess && read.Value == new HeavyReserveRecord(2, 5, _at), "the reservation, depth and time are read back");
     }
 
     /// <summary>A later write replaces the earlier one.</summary>
@@ -62,10 +44,10 @@ public abstract class HeavyReserveContract
     {
         var reserve = Create();
 
-        _ = await reserve.Write(2, _none);
-        _ = await reserve.Write(0, _none);
+        _ = await reserve.Write(new HeavyReserveRecord(2, 5, _at), _none);
+        _ = await reserve.Write(new HeavyReserveRecord(0, 0, _at.AddMinutes(1)), _none);
         var read = await reserve.Read(_none);
 
-        Expect.That(read.IsSuccess && read.Value.Reserve == 0, "the last write wins");
+        Expect.That(read.IsSuccess && read.Value == new HeavyReserveRecord(0, 0, _at.AddMinutes(1)), "the last write wins");
     }
 }
