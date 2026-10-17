@@ -58,14 +58,12 @@ internal static partial class AgentSections
 
     private static string? Problem(AgentSection s)
     {
-        if (s.Label is not { Length: > 0 } || s.Bin is not { Length: > 0 } || s.Open is not { Count: > 0 } || s.SessionId is null)
-        {
-            return "an entry needs label, bin, open and sessionId";
-        }
-
-        return OneOf(s.SessionId, _sessionIds, "sessionId") ?? OneOf(s.Usage, _usages, "usage") ?? OneOf(s.Mcp, _mcps, "mcp") ?? Forms(s)
+        return Required(s) ?? OneOf(s.SessionId, _sessionIds, "sessionId") ?? OneOf(s.Usage, _usages, "usage") ?? OneOf(s.Mcp, _mcps, "mcp") ?? Forms(s)
             ?? Argv(s.Open, "open") ?? Argv(Strings(s.Resume), "resume") ?? Reported(s);
     }
+
+    private static string? Required(AgentSection s) =>
+        s.Label is not { Length: > 0 } || s.Bin is not { Length: > 0 } || s.Open is not { Count: > 0 } || s.SessionId is null ? "an entry needs label, bin, open and sessionId" : null;
 
     private static string? Forms(AgentSection s) => Form(s.Model, _models, "model") ?? Form(s.Policy, _policies, "policy");
 
