@@ -111,10 +111,9 @@ internal static class ContextTools
     /// <returns>The tool result.</returns>
     internal static async ValueTask<CallToolResult> CallSources(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
     {
-        if (arguments is { Count: > 0 })
+        if (McpArguments.None("context_sources", arguments) is { } refused)
         {
-            return McpResults.Failure(services, ContextErrors.McpArgumentsInvalid.With(
-                $"context_sources takes no arguments, got '{string.Join("', '", arguments.Keys)}' (fix: call it with {{}})"));
+            return McpResults.Failure(services, refused);
         }
 
         var port = services.GetRequiredService<IHttpContextAccessor>().HttpContext?.Connection.LocalPort ?? 0;
