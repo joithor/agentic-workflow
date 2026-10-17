@@ -1,6 +1,6 @@
-using Aw.Context.Core.Extract;
 using Aw.Context.Core;
 using Aw.Context.Core.Eval.Backtest;
+using Aw.Context.Core.Extract;
 
 namespace Aw.Context.Tests.RunBacktest;
 
