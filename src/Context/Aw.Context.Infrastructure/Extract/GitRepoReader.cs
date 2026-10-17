@@ -37,6 +37,32 @@ internal sealed class GitRepoReader(GitCli git) : IRepoReader
         return text.IsError ? Unreadable(repo, commit, path) : text;
     }
 
+    public async ValueTask<Result<RepoChanges>> Changes(ContextRepo repo, DiffRange range, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(repo);
+        ArgumentNullException.ThrowIfNull(range);
+        if (!range.IsValid())
+        {
+            return ContextErrors.QueryInvalid.With(DiffRange.Message);
+        }
+
+        var first = await git.Commit(repo.Path, range.Base, cancellationToken).ConfigureAwait(false);
+        var second = first.IsError ? first : await git.Commit(repo.Path, range.Head, cancellationToken).ConfigureAwait(false);
+        var mergeBase = second.IsError ? second : await git.MergeBase(repo.Path, first.Value, second.Value, cancellationToken).ConfigureAwait(false);
+        var listed = mergeBase.IsError ? mergeBase.Error : await git.NameStatus(repo.Path, mergeBase.Value, second.Value, cancellationToken).ConfigureAwait(false);
+        return listed.IsError
+            ? Failure(repo, range, listed.Error)
+            : new RepoChanges(first.Value, second.Value, mergeBase.Value, [.. listed.Value.OrderBy(c => c.Path, StringComparer.Ordinal)]);
+    }
+
+    // 110 and 111 are the caller's to fix and say which repo and range; any other git failure is the checkout (048). Neither prints what git said.
+    private static Error Failure(ContextRepo repo, DiffRange range, Error error) =>
+        error.Code == ContextErrors.CommitUnknown.Code
+            ? ContextErrors.CommitUnknown.With($"the clone of {repo.Name.Value} holds no commit of {range}, or an abbreviation of it is ambiguous or spelled like a ref (fix: fetch that commit into the profile repo's checkout, or pass the full shas it holds)")
+            : error.Code == ContextErrors.NoMergeBase.Code
+                ? ContextErrors.NoMergeBase.With($"the commits of {range} share no merge base in {repo.Name.Value} (fix: pass a base on the head's history)")
+                : Unreadable(repo, range.ToString());
+
     // Names the repo and the commit or path asked for, never what git printed (it may name repo content).
     private static Error Unreadable(ContextRepo repo, string what, string? path = null) =>
         ContextErrors.ExtractionUnreadable.With($"git can't read {path ?? what} of {repo.Name.Value} (fix: check the checkout and that the commit exists)");

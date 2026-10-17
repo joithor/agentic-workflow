@@ -38,10 +38,8 @@ internal sealed class ContextMapVerbs(ControlPlaneClient client, Output output, 
         ["propose", var file, "--json"] => _review.Propose(file, json: true, ct),
         ["proposals", "--run", var run] => _review.Proposals(run, json: false, ct),
         ["proposals", "--run", var run, "--json"] => _review.Proposals(run, json: true, ct),
-        ["build", ..] => output.Error(SindriErrors.UnknownVerb.With(
-            "'context map build' is pending:API-P6 (a job: it ships once API P6's job runtime merges); a draft appears through 'context map propose <file>' and the context-rebuild service: name it under services: in the profile")),
         _ => output.Error(SindriErrors.UnknownVerb.With(
-            $"'context map {string.Join(' ', args)}' is not a map command: context map import <file> | export [<path>] [--json] | status [--anchor <key>] [--json] | review … | promote | propose <file> [--json] | proposals --run <id> [--json] | build")),
+            $"'context map {string.Join(' ', args)}' is not a map command: context map import <file> | export [<path>] [--json] | status [--anchor <key>] [--json] | review … | promote | propose <file> [--json] | proposals --run <id> [--json] | build [--detach] [--json]")),
     };
 
     private async Task<int> Import(string file, CancellationToken ct)

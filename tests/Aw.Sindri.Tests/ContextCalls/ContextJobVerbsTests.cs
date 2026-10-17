@@ -1,0 +1,121 @@
+using System.Net;
+using Aw.Sindri.Core.Control;
+using Aw.Sindri.Host.Commands;
+using Aw.Sindri.Testing;
+
+namespace Aw.Sindri.Tests.ContextCalls;
+
+/// <summary>'context sources sync' and 'context map build' over a scripted API (API P6 follow-up): the start each posts, what it prints with --detach and --json, and a refused start.</summary>
+public sealed class ContextJobVerbsTests : IDisposable
+{
+    private const string Started = """{"accepted":{"commandId":"00000000-0000-0000-0000-00000000000c","sequence":5},"jobId":"JOB-0000000000000000000000000000000e","links":{"job":"/sindri/jobs/JOB-0000000000000000000000000000000e","cancel":"/sindri/jobs/JOB-0000000000000000000000000000000e/cancel","events":"/sindri/events?after=4&types=job.*"}}""";
+
+    private static readonly FakeControlPlaneProbe _probe = FakeControlPlaneProbe.For(new ControlEndpoint(new Uri("http://127.0.0.1:7410"), 42, 3), new Ping(42, 3));
+    private readonly StringWriter _out = new();
+    private readonly StringWriter _error = new();
+
+    public void Dispose()
+    {
+        _out.Dispose();
+        _error.Dispose();
+    }
+
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
+    private CancellationToken _interrupt = Token;
+
+    private async Task<int> Run(ScriptedApi api, params string[] args)
+    {
+        using var client = new ControlPlaneClient(_probe, SliceHarness.Json, handler: api);
+        var output = new Output(_out, _error, SliceHarness.Json);
+        return await new ContextJobVerbs(client, output, new JobFollower(client, output, TimeProvider.System)).Run(args, _interrupt, Token);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Sources_sync_posts_the_start_and_with_detach_prints_the_job_and_returns()
+    {
+        var api = new ScriptedApi((HttpStatusCode.OK, Started));
+
+        var exit = await Run(api, "sources", "sync", "--detach");
+
+        Assert.True(exit == 0, _error.ToString());
+        var (method, route, _) = Assert.Single(api.Calls);
+        Assert.Equal(("POST", "/sindri/context/sources/sync"), (method, route));
+        Assert.Equal("job JOB-0000000000000000000000000000000e started\n", _out.ToString().Replace("\r\n", "\n", StringComparison.Ordinal));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("sources", "sync")]
+    [InlineData("map", "build")]
+    public async Task A_Ctrl_C_during_the_start_does_not_cancel_the_POST_so_the_job_is_never_lost(params string[] args)
+    {
+        var api = new ScriptedApi((HttpStatusCode.OK, Started));
+        using var interrupted = new CancellationTokenSource();
+        await interrupted.CancelAsync();
+
+        _interrupt = interrupted.Token;
+
+        var exit = await Run(api, [.. args, "--detach"]);
+
+        Assert.True(exit == 0, _error.ToString());
+        _ = Assert.Single(api.Calls);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Sources_sync_names_one_source_in_the_body()
+    {
+        var api = new ScriptedApi((HttpStatusCode.OK, Started));
+
+        _ = await Run(api, "sources", "sync", "onyx", "--detach");
+
+        Assert.Contains("\"source\":\"onyx\"", Assert.Single(api.Calls).Body, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Map_build_posts_to_its_route_and_with_json_and_detach_prints_the_JobStarted_body()
+    {
+        var api = new ScriptedApi((HttpStatusCode.OK, Started));
+
+        var exit = await Run(api, "map", "build", "--detach", "--json");
+
+        Assert.True(exit == 0, _error.ToString());
+        Assert.Equal("/sindri/context/map/build", Assert.Single(api.Calls).Route);
+        Assert.Contains("\"jobId\":\"JOB-0000000000000000000000000000000e\"", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_second_start_prints_SND_JOB_409_and_exits_2()
+    {
+        var api = new ScriptedApi((HttpStatusCode.Conflict,
+            """{"type":"x","title":"SND-JOB-409","status":409,"detail":"A SyncSources job is running (JOB-0000000000000000000000000000000e)","runningJob":"JOB-0000000000000000000000000000000e"}"""));
+
+        var exit = await Run(api, "sources", "sync", "--detach");
+
+        Assert.Equal(2, exit);
+        Assert.Contains("SND-JOB-409", _error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("sources", "sync", "a", "b")]
+    [InlineData("sources", "sync", "--nope")]
+    [InlineData("map", "build", "extra")]
+    public async Task A_form_that_is_not_the_verbs_is_a_usage_error_and_calls_nothing(params string[] args)
+    {
+        var api = new ScriptedApi((HttpStatusCode.OK, Started));
+
+        var exit = await Run(api, args);
+
+        Assert.Equal(2, exit);
+        Assert.Empty(api.Calls);
+        Assert.Contains("[--detach] [--json]", _error.ToString() + _out, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(true, "context", "sources", "sync")]
+    [InlineData(true, "context", "sources", "sync", "onyx", "--json")]
+    [InlineData(true, "context", "map", "build")]
+    [InlineData(false, "context", "map", "build", "--detach")]
+    [InlineData(false, "context", "sources", "sync", "--detach")]
+    [InlineData(false, "context", "sources", "status")]
+    public void The_two_verbs_listen_for_ctrl_C_unless_detached(bool follows, params string[] args) => Assert.Equal(follows, Interrupt.FollowsJob(args));
+}

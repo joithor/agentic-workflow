@@ -201,7 +201,7 @@
       "method": "POST",
       "route": "/sindri/context/map/build",
       "cli": "sindri context map build",
-      "ui": "pending:API-P6",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -807,7 +807,7 @@
       "method": "POST",
       "route": "/sindri/context/sources/sync",
       "cli": "sindri context sources sync",
-      "ui": "pending:API-P6",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
