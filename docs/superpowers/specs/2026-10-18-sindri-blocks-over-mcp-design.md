@@ -1,6 +1,6 @@
 # Sindri blocks over MCP: two generic tools, `sindri_list_tools` and `sindri_execute_tool_call`
 
-**Status:** design; every owner choice answered (2026-10-18); the owner's read of the whole spec pending · **Date:** 2026-10-18 · **Owner decisions:** 2026-10-17
+**Status:** design, approved (owner, 2026-10-18; every choice answered in §C) · **Date:** 2026-10-18 · **Owner decisions:** 2026-10-17
 (the two-tool shape, below), 2026-10-18 (sessions outside a Step may call blocks, C3) · **Amends:** the API surface spec `2026-10-10-sindri-api-surface-design.md` (API), §4.1, §4.2,
 ARCH-CQRS-001, §8 and §9; the workflow engine spec `2026-10-10-sindri-workflow-engine-design.md` (ENG), §2, §3.4 and §6.5; the session
 launcher spec `2026-10-15-sindri-session-launcher-design.md` (LCH), the per-launch MCP config · **Lanes:** the API lane
