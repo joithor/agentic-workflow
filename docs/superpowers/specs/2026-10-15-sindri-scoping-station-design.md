@@ -1,7 +1,7 @@
 # Sindri scoping station: the first station of spec-to-proven-PR, as block recipes
 
-**Status:** design, revision 3.2 (after /autoplan passes 1–2, a narrow re-check and the owner's scope-graph request
-of 2026-10-16, §13) · **Date:** 2026-10-15, amended 2026-10-16 · **Owner decisions:** 2026-10-15 and 2026-10-16 (§1) · **Engine decision:** 2026-10-15, fact keys stay camelCase (W5) ·
+**Status:** design, revision 3.3 (after /autoplan passes 1–2, a narrow re-check, the owner's scope-graph request
+of 2026-10-16 and two recorded limits, §13) · **Date:** 2026-10-15, amended 2026-10-16 · **Owner decisions:** 2026-10-15 and 2026-10-16 (§1) · **Engine decision:** 2026-10-15, fact keys stay camelCase (W5) ·
 **Builds on:** the decision-tree recipes spec `2026-10-15-sindri-decision-tree-recipes-design.md` (DT, #240), rev 4;
 the workflow engine spec `2026-10-10-sindri-workflow-engine-design.md` (WF), rev 8.2, schema 1;
 `docs/csharp/sindri-workflow.md` (REF); the context retrieval spec `2026-10-10-sindri-context-retrieval-design.md`
@@ -58,7 +58,7 @@ block, W6–W14, sequenced before SC-L and SC-R.
 - **Interview round:** one batch of at most five questions, answered in one desk task.
 - **Answer log:** `fact:answerLog`, every answer batch so far, append-only, with stable ids `A<n>` (§7.4).
 - **Recorded limit:** a coverage state that is known and accepted, not a failure: `index-not-built`, `history-unlinked`,
-  `not-configured`, or a lens the profile marks `none` for a repo (§8.2).
+  `commit-not-held`, `not-synced`, `not-configured`, or a lens the profile marks `none` for a repo (§8.2).
 - **Run area:** the instance's own directory under `$AW_SINDRI_HOME` (W11), where draft files and the packet live.
 - **As of the stop:** the lens graphs frozen in `lenses.json`, with the map version the lenses read
   (`searched.mapVersion`). The Context view pinned to them draws the packet, not the map; **live** is the same ids
@@ -126,10 +126,10 @@ TypeScript build.
 
 | Lens | Covers (SC5) | Version 1 source | Input block | Recorded limits in version 1 |
 |---|---|---|---|---|
-| **Code** | files, symbols, callers and callees, covering tests, data and schema touched | CTX lenses code band (files with `implements` and `tests` edges); S-CL's code lens: test files that name an implementing file, `Thing` nodes the scope `writes` and `reads`, migration and schema files under `context.code.schemaGlobs`; C13's lexical source (identifier and string search, file level) | `input.context.code` (C3) | callers, callees and symbols: `index-not-built` until S-9, which waits on a C# code index that has no spec yet |
+| **Code** | files, symbols, callers and callees, covering tests, data and schema touched | CTX lenses code band (files with `implements` and `tests` edges); S-CL's code lens: test files that name an implementing file, `Thing` nodes the scope `writes` and `reads`, migration and schema files under `context.code.schemaGlobs`; C13's lexical source (identifier and string search, file level) | `input.context.code` (C3) | callers, callees and symbols: `index-not-built` until S-9, which waits on a C# code index that has no spec yet; `commit-not-held` (SND-CONTEXT-110): the as-of map version's commit isn't on disk, the context engine never fetches, so a regather can't fix it |
 | **Product surfaces** | screens, APIs, jobs, notifications, permissions, reports, flags | CTX lenses product band `own` (the anchors' features, surfaces and actions) | `input.context.lenses` (C1) | kinds `notification`, `permission`, `report`, `flag` arrive with S-SK (C2) |
 | **Related features** | features that share data, flows or components with the change | CTX cascade `affects`: the state, flow and dependency hops, plus the component hop (C4) | `input.context.lenses` (C1) | — |
-| **History** | past tickets, incidents, PRs and decisions on the same areas | CTX intent band (records with `mentions`, decisions with `decides` and `supersedes`, from stored edges); S-H's `git-history` adapter for merged PRs and commits | `input.context.history` (C5) | ticket `mentions`: `history-unlinked` until S-5B; incidents: `not-configured` until a source exists |
+| **History** | past tickets, incidents, PRs and decisions on the same areas | CTX intent band (records with `mentions`, decisions with `decides` and `supersedes`, from stored edges); S-H's `git-history` adapter for merged PRs and commits | `input.context.history` (C5) | ticket `mentions`: `history-unlinked` until S-5B; incidents: `not-configured` until a source exists; `not-synced` (provisional owner default): an intent source that was never synced, which a regather can't sync |
 
 Every lens result carries **`searched`** (C6): the anchors, each source with its `SourceState` (`ok`, `degraded`,
 `unavailable`, `not-configured`) and a code, the map version, the depth and the hops; and **map coverage** (C13): the
@@ -554,7 +554,7 @@ severity: fail | warn }] }`, written as `fact:findings` and printed by `--json`.
   `complete`, `incomplete`, or `regather` on the same condition. Warnings never change an outcome and are never
   reported as `fact:findings` (the stop view re-runs the checks to show them).
 - **Recorded limits pass.** `index-not-built` (code callers, callees, symbols), `history-unlinked` (ticket mentions
-  before S-5B), `not-configured`, and a lens the profile marks `none` for a repo (shown `not-applicable` with its reason)
+  before S-5B), `commit-not-held` (a code-lens source `unavailable` with code SND-CONTEXT-110, as-of commit not on disk; owner-approved), `not-synced` (an intent source never synced; provisional owner default), `not-configured`, and a lens the profile marks `none` for a repo (shown `not-applicable` with its reason)
   are recorded states. They appear on the row and at the stop, and never refuse it.
 - **The verbs.** `sindri scoping check (<address> | --facts <dir>) [--draft <dir>] [--stage draft|evidence] [--json]`
   and `sindri scoping show (<address> | --facts <dir>) [--json]`. With `--facts` they run in the CLI over a directory
@@ -999,6 +999,15 @@ text, focus, band cap on `subgraph`, and §12's "edits no other spec" line. Not 
 §4.4 (the amendment adds a paragraph; the UI lane draws it with U9's HTML), and a node card link to its U3 row
 (left to the UI lane).
 
+### 13.5 Rev 3.3, two recorded limits (owner, 2026-10-16)
+
+| Where | What changed | Source |
+|---|---|---|
+| §2, §5.1 (Code row), §8.2, Q11 | `commit-not-held` is a recorded limit: a code-lens source answers `unavailable` with reason `commit-not-held` and code SND-CONTEXT-110 when the as-of map version's commit isn't on disk. The context engine never fetches, so a regather can't fix it. It passes `SCP-COV-002` and shows at the stop | Owner-approved |
+| §2, §5.1 (History row), §8.2, Q11 | `not-synced` is a recorded limit: an intent source that was never synced, which a regather can't sync | **Provisional owner default; owner to confirm** |
+
+A failed source's state stays `degraded` (C6's `SourceState`), never `error`; the spec already says so, so no text changed for it.
+
 ## 14. Phases
 
 Each phase is one PR, driven by /specToProvenPR in the named lane. Sizes: S is a few files, M one subsystem slice, L
@@ -1070,7 +1079,7 @@ Each has a provisional answer. All are reversible unless marked.
 | Q8 | How much owner time per error-analysis cycle? (prompting.md) | About an hour per agent Step per cycle: 30 traces every four weeks while the station is new, fewer once regression cases hold. Calibration labels for the four gating judges first (about 80 labels), the rest later |
 | Q9 | Add `step.scout` (IDEA-017) as a fifth evidence source? | Not in version 1. Add it after SC-B if missed items cluster in code the lenses can't see |
 | Q10 | Should the interview's caps (5 per round, 4 rounds) be profile values? | No: the recipe's (DT Q7). The owner's experience after SC-P decides whether to change them |
-| Q11 | Can the owner approve at the stop with a lens not searched? | No: a transient source failure sends the instance back to `gather` (`regather`) and parks at the `rescope` cap with the source named. Recorded limits (`index-not-built`, `history-unlinked`, `not-configured`) and a lens the profile marks `none` for a repo (`not-applicable` with its reason) pass and show at the stop. *Owner should confirm* |
+| Q11 | Can the owner approve at the stop with a lens not searched? | No: a transient source failure sends the instance back to `gather` (`regather`) and parks at the `rescope` cap with the source named. Recorded limits (`index-not-built`, `history-unlinked`, `commit-not-held`, `not-synced`, `not-configured`) and a lens the profile marks `none` for a repo (`not-applicable` with its reason) pass and show at the stop. *Owner should confirm* |
 | Q12 | Do the challenger and drafter need different vendors, or only different models? | Different models, and different vendors when the repo's profile allows more than one (SC7 says "model or vendor"). `SCP-CHAL-002` reads the runtime's record (W8) |
 | Q13 | Does the station write tracker issues from the scope? | No. Writing to a tracker is an ask-first effect for the plan station, never scoping's |
 | Q14 | What happens to a cancelled instance's proposals? | They stay, tagged with the run, and map review shows them; `withdraw` runs only on `drop`. A cancel hook is a later engine question |
