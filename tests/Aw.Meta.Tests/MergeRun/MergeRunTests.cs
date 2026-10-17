@@ -6,6 +6,7 @@ using Aw.Meta.Core.Lanes;
 using Aw.Meta.Core.Obligations;
 using Aw.Meta.Features.MergeRun;
 using Aw.Meta.Testing;
+using Aw.Meta.Tests.Reserve;
 
 namespace Aw.Meta.Tests.MergeRun;
 
@@ -13,7 +14,7 @@ public sealed class MergeRunTests
 {
     private readonly MetaWorld _world = new();
 
-    private MergeRunService Service() => new(new MergeReadiness(_world.Config, _world.Gates, _world.Repo, _world.LogFiles), _world.Repo, _world.Gates, _world.Log, _world.Clock);
+    private MergeRunService Service() => new(new MergeReadiness(_world.Config, _world.Gates, _world.Repo, _world.LogFiles), _world.Repo, _world.Gates, _world.Log, Worlds.Reservation(_world), _world.Clock);
 
     private async Task Ready(bool gated = true, bool mergeFails = false, bool fetchFails = false, string state = "OPEN", string? mergeCommit = null)
     {

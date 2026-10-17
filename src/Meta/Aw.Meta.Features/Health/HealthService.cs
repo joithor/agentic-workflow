@@ -2,6 +2,8 @@ using System.Globalization;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Meta.Core;
+using Aw.Meta.Core.Config;
+using Aw.Meta.Core.Coordination;
 using Aw.Meta.Core.Health;
 using Aw.Meta.Core.Ports;
 
@@ -15,8 +17,10 @@ namespace Aw.Meta.Features.Health;
 /// <param name="lanes">Finds missing lanes.</param>
 /// <param name="killer">Terminates orphans.</param>
 /// <param name="values">Keeps the summary.</param>
+/// <param name="config">The team config, for the thresholds (the defaults without one).</param>
+/// <param name="advisor">Shows the kept heavy reservation and computes the builders advice.</param>
 /// <param name="clock">Dates the summary.</param>
-internal sealed class HealthService(HostProbe probe, LaneCheck lanes, OrphanKiller killer, IKeyValueStore values, TimeProvider clock)
+internal sealed class HealthService(HostProbe probe, LaneCheck lanes, OrphanKiller killer, IKeyValueStore values, IMetaConfig config, ResourceAdvisor advisor, TimeProvider clock)
     : IService<HealthRequest, HealthResponse>
 {
     public async ValueTask<Result<HealthResponse>> Handle(HealthRequest request, CancellationToken cancellationToken)
@@ -30,19 +34,33 @@ internal sealed class HealthService(HostProbe probe, LaneCheck lanes, OrphanKill
             return host.IsError ? host.Error : missing.IsError ? missing.Error : standing.Error;
         }
 
-        var processes = host.Value.Snapshot.Processes;
-        var orphans = HostRules.Orphans(processes);
+        var orphans = HostRules.Orphans(host.Value.Snapshot.Processes);
         var killed = request.KillOrphans ? await killer.Kill(orphans, cancellationToken).ConfigureAwait(false) : Results.Success<IReadOnlyList<int>>([]);
         if (killed.IsError)
         {
             return killed.Error;
         }
 
-        var low = HostRules.MemoryLow(host.Value.Resources);
-        var remaining = orphans.Count(o => !killed.Value.Contains(o.Pid));
-        var attention = NeedsAttention(remaining, low, missing.Value, standing.Value);
+        return await Report(host.Value, new Findings(orphans, killed.Value, missing.Value, standing.Value), cancellationToken).ConfigureAwait(false);
+    }
+
+    private sealed record Findings(IReadOnlyList<ProcessInfo> Orphans, IReadOnlyList<int> Killed, IReadOnlyList<string>? Missing, IReadOnlyList<Core.Lanes.LaneHealth>? Standing);
+
+    private async ValueTask<Result<HealthResponse>> Report(HostReading host, Findings found, CancellationToken cancellationToken)
+    {
+        var (orphans, killed, missing, standing) = found;
+        var processes = host.Snapshot.Processes;
+        var remaining = orphans.Count(o => !killed.Contains(o.Pid));
+        var team = await config.Load(cancellationToken).ConfigureAwait(false);
+        var low = ResourceRules.MemoryLow(host.Resources, team.IsSuccess ? team.Value.Resources : new ResourcesConfig());
+        var advice = await advisor.Advise(team.IsSuccess ? team.Value : null, host.Resources, refresh: false, cancellationToken).ConfigureAwait(false);
+        if (advice.IsError)
+        {
+            return advice.Error;
+        }
+
         var response = new HealthResponse(
-            ProcessGroups.Group(processes), processes.Count, host.Value.Resources, orphans, killed.Value, HostRules.Duplicates(processes), missing.Value, host.Value.Locks, low, attention, standing.Value);
+            ProcessGroups.Group(processes), processes.Count, host.Resources, orphans, killed, HostRules.Duplicates(processes), missing, host.Locks, low, NeedsAttention(remaining, low, missing, standing), standing, advice.Value.Heavy, advice.Value.Builders);
         var kept = await values.Set(KvKeys.HealthLast, Summary(response, remaining), cancellationToken).ConfigureAwait(false);
         return kept.IsError ? kept.Error : response;
     }
