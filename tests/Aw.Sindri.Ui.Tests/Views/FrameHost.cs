@@ -34,8 +34,18 @@ public abstract class FrameHost : IDisposable
 
     public void Dispose()
     {
-        _stop.Dispose();
+        Dispose(disposing: true);
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>Releases the host's resources.</summary>
+    /// <param name="disposing">True when called from <see cref="Dispose()"/>.</param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _stop.Dispose();
+        }
     }
 
     private protected async Task OnUi(Func<Task> body) =>

@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
@@ -32,7 +33,7 @@ internal sealed class RecoveryRig
 
     public async Task<JobRow> Left(JobId id, ServiceName? service = null)
     {
-        var started = new JobStarted(CommandId.From(Guid.NewGuid()), id, JobKind.From("RunService"), JobKey.From("heartbeat"), Item: null, Repo: null, service);
+        var started = new JobStarted(CommandId.From(RealTime.NewGuid()), id, JobKind.From("RunService"), JobKey.From("heartbeat"), Item: null, Repo: null, service);
         // why: every test holds the lease before it leaves a job behind
         var appended = await H.Store.Append(H.Events.Entry(EventTypes.JobStarted, started, $"job.started:{id.Value}"), H.Held.Current!, TestContext.Current.CancellationToken);
         var row = A.Job().WithId(id).Build() with { Service = service, Sequence = appended.Value.Sequence };

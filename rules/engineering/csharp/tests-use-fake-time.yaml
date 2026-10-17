@@ -2,18 +2,18 @@ schemaVersion: 1
 id: engineering.csharp.tests-use-fake-time
 kind: engineering
 section: "4b.5"
-text: "No DateTime.Now, DateTime.UtcNow, Guid.NewGuid or Thread.Sleep in a test: use FakeTimeProvider, a fake IIdGenerator and a signal."
+text: "No DateTime.Now, DateTime.UtcNow, Guid.NewGuid or Thread.Sleep in a test: use FakeTimeProvider, a fake IIdGenerator and a signal; Aw.Kernel.Testing.RealTime names the few places a test needs real time (a polling deadline, a file time, a unique temp name)."
 why: "A test that reads the wall clock or sleeps is slow and flakes."
 select:
   languages: [csharp]
   paths: ["tests/**"]
 checks:
-  - type: review
-    id: "fake time in tests"
+  - type: banned-symbols
+    id: "RS0030"
+    ref: "BannedSymbols.Tests.txt"
+    entries: ["P:System.DateTime.Now", "P:System.DateTime.UtcNow", "P:System.DateTime.Today", "P:System.DateTimeOffset.Now", "P:System.DateTimeOffset.UtcNow", "M:System.Guid.NewGuid", "M:System.Threading.Thread.Sleep(System.Int32)", "M:System.Threading.Thread.Sleep(System.TimeSpan)"]
     status: active
-    note: "RS0030 entries land in BannedSymbols.Tests.txt with the cleanup PR"
-gap: open
-gapNote: "About 74 uses on main. The test-side banned-symbols file lands with the cleanup PR together with the fixes, because a banned symbol with a live use fails the build."
+gap: closed
 source:
   type: desk
   ref: "https://learn.microsoft.com/dotnet/core/testing/unit-testing-best-practices"
