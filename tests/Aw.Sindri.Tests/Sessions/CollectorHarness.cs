@@ -9,15 +9,15 @@ namespace Aw.Sindri.Tests.Sessions;
 /// <summary>The collector's ports in memory with the real services over them: one pass is <see cref="Pass"/>.</summary>
 internal sealed class CollectorHarness
 {
-    public CollectorHarness(SessionSettings? settings = null, IProcessTable? processes = null, ITextScrubber? scrubber = null)
+    public CollectorHarness(SessionSettings? settings = null, IProcessTable? processes = null, ITextScrubber? scrubber = null, IClaudeSessionRecords? records = null, IFleetStates? fleet = null, Microsoft.Extensions.Logging.ILogger<CollectSessionsService>? logger = null)
     {
         Settings = settings ?? SessionSettings.Defaults;
         Processes = processes ?? Fake;
         var catalog = new AgentCatalog(SessionData.Agents);
-        Discovery = new SessionDiscovery(Processes, Records, Fleet, catalog, Settings);
+        Discovery = new SessionDiscovery(Processes, records ?? Records, fleet ?? Fleet, catalog, Settings);
         var repos = new SessionRepos(Locator, Base.Profiles, Base.Clock);
         Observer = new SessionObserver(Transcripts, scrubber ?? new PassThroughScrubber(), repos);
-        Service = new CollectSessionsService(Discovery, Observer, Memory, Snapshot, Base.Clock);
+        Service = new CollectSessionsService(Discovery, Observer, Memory, Snapshot, Base.Clock, logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<CollectSessionsService>.Instance);
     }
 
     public SliceHarness Base { get; } = new();
