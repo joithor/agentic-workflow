@@ -2310,6 +2310,15 @@ static Aw.Sindri.Features.ListRequests.ListRequestsResponse.operator !=(Aw.Sindr
 static Aw.Sindri.Features.ListRequests.ListRequestsResponse.operator ==(Aw.Sindri.Features.ListRequests.ListRequestsResponse? left, Aw.Sindri.Features.ListRequests.ListRequestsResponse? right) -> bool
 static Aw.Sindri.Features.ListRequests.RequestView.operator !=(Aw.Sindri.Features.ListRequests.RequestView? left, Aw.Sindri.Features.ListRequests.RequestView? right) -> bool
 static Aw.Sindri.Features.ListRequests.RequestView.operator ==(Aw.Sindri.Features.ListRequests.RequestView? left, Aw.Sindri.Features.ListRequests.RequestView? right) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest
+Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest!
+Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest.GetContextEvalMapRequest() -> void
+override Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest? left, Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest? left, Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest? right) -> bool
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Deconstruct(out string? Q, out string? Node, out string? Item, out string? Symbol, out string? Depth, out string? Budget, out bool Draft, out string? Diff, out string? Repo) -> void
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Diff.get -> string?
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Diff.init -> void
@@ -2330,3 +2339,87 @@ static Aw.Sindri.Features.ResumeService.ResumeServiceRequest.operator ==(Aw.Sind
 static Aw.Sindri.Features.RunService.RunServiceRequest.operator !=(Aw.Sindri.Features.RunService.RunServiceRequest? left, Aw.Sindri.Features.RunService.RunServiceRequest? right) -> bool
 static Aw.Sindri.Features.RunService.RunServiceRequest.operator ==(Aw.Sindri.Features.RunService.RunServiceRequest? left, Aw.Sindri.Features.RunService.RunServiceRequest? right) -> bool
 static Aw.Sindri.Features.SindriJobServiceCollectionExtensions.AddJob<TRequest, TResult, TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<TRequest!, Aw.Sindri.Core.Ids.JobKey>! key, System.Func<TResult, string!>! summary, System.Func<TRequest!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>>? precheck = null, System.Func<TRequest!, Aw.Sindri.Core.Ids.RepoName?>? repo = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Aw.Sindri.Features.ContextCalls.BacktestArmLine
+Aw.Sindri.Features.ContextCalls.BacktestArmLine.<Clone>$() -> Aw.Sindri.Features.ContextCalls.BacktestArmLine!
+Aw.Sindri.Features.ContextCalls.BacktestArmLine.Arm.get -> string!
+Aw.Sindri.Features.ContextCalls.BacktestArmLine.Arm.init -> void
+Aw.Sindri.Features.ContextCalls.BacktestArmLine.Equals(Aw.Sindri.Features.ContextCalls.BacktestArmLine? other) -> bool
+Aw.Sindri.Features.ContextCalls.BacktestArmLine.NotAvailable.get -> string?
+Aw.Sindri.Features.ContextCalls.BacktestArmLine.NotAvailable.init -> void
+Aw.Sindri.Features.ContextCalls.BacktestArmLine.Overall.get -> string?
+Aw.Sindri.Features.ContextCalls.BacktestArmLine.Overall.init -> void
+Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest
+Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest!
+Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest.Arms.get -> string?
+Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest.Arms.init -> void
+Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest.Deconstruct(out string? Arms, out System.DateTimeOffset? Since, out System.DateTimeOffset? Until, out int? Limit) -> void
+Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest.Equals(Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest.Limit.get -> int?
+Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest.Limit.init -> void
+Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest.RunContextBacktestRequest(string? Arms = null, System.DateTimeOffset? Since = null, System.DateTimeOffset? Until = null, int? Limit = null) -> void
+Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest.Since.get -> System.DateTimeOffset?
+Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest.Since.init -> void
+Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest.Until.get -> System.DateTimeOffset?
+Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest.Until.init -> void
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.<Clone>$() -> Aw.Sindri.Features.ContextCalls.RunContextBacktestResult!
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.Arms.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ContextCalls.BacktestArmLine!>!
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.Arms.init -> void
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.Deconstruct(out int Samples, out bool SmallSample, out int LeftOut, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ContextCalls.BacktestArmLine!>! Arms, out string? PassLine, out string! Report, out System.Collections.Generic.IReadOnlyList<string!>! Degraded) -> void
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.Degraded.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.Degraded.init -> void
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.Equals(Aw.Sindri.Features.ContextCalls.RunContextBacktestResult? other) -> bool
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.LeftOut.get -> int
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.LeftOut.init -> void
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.PassLine.get -> string?
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.PassLine.init -> void
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.Report.get -> string!
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.Report.init -> void
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.RunContextBacktestResult(int Samples, bool SmallSample, int LeftOut, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ContextCalls.BacktestArmLine!>! Arms, string? PassLine, string! Report, System.Collections.Generic.IReadOnlyList<string!>! Degraded) -> void
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.Samples.get -> int
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.Samples.init -> void
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.SmallSample.get -> bool
+Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.SmallSample.init -> void
+override Aw.Sindri.Features.ContextCalls.BacktestArmLine.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.BacktestArmLine.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.BacktestArmLine.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.BacktestArmLine.operator !=(Aw.Sindri.Features.ContextCalls.BacktestArmLine? left, Aw.Sindri.Features.ContextCalls.BacktestArmLine? right) -> bool
+static Aw.Sindri.Features.ContextCalls.BacktestArmLine.operator ==(Aw.Sindri.Features.ContextCalls.BacktestArmLine? left, Aw.Sindri.Features.ContextCalls.BacktestArmLine? right) -> bool
+static Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest.operator !=(Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest? left, Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest.operator ==(Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest? left, Aw.Sindri.Features.ContextCalls.RunContextBacktestRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.operator !=(Aw.Sindri.Features.ContextCalls.RunContextBacktestResult? left, Aw.Sindri.Features.ContextCalls.RunContextBacktestResult? right) -> bool
+static Aw.Sindri.Features.ContextCalls.RunContextBacktestResult.operator ==(Aw.Sindri.Features.ContextCalls.RunContextBacktestResult? left, Aw.Sindri.Features.ContextCalls.RunContextBacktestResult? right) -> bool
+Aw.Sindri.Features.ContextCalls.BacktestArmLine.BacktestArmLine(string! Arm, string? NotAvailable, string? Overall, bool Leaky, Aw.Sindri.Features.ContextCalls.BacktestArmScore? Score) -> void
+Aw.Sindri.Features.ContextCalls.BacktestArmLine.Deconstruct(out string! Arm, out string? NotAvailable, out string? Overall, out bool Leaky, out Aw.Sindri.Features.ContextCalls.BacktestArmScore? Score) -> void
+Aw.Sindri.Features.ContextCalls.BacktestArmLine.Leaky.get -> bool
+Aw.Sindri.Features.ContextCalls.BacktestArmLine.Leaky.init -> void
+Aw.Sindri.Features.ContextCalls.BacktestArmLine.Score.get -> Aw.Sindri.Features.ContextCalls.BacktestArmScore?
+Aw.Sindri.Features.ContextCalls.BacktestArmLine.Score.init -> void
+Aw.Sindri.Features.ContextCalls.BacktestArmScore
+Aw.Sindri.Features.ContextCalls.BacktestArmScore.<Clone>$() -> Aw.Sindri.Features.ContextCalls.BacktestArmScore!
+Aw.Sindri.Features.ContextCalls.BacktestArmScore.BacktestArmScore(int Samples, double? NodeRecall, double? NodePrecision, double? FileRecallAt20, double LeakyShare, int Tokens) -> void
+Aw.Sindri.Features.ContextCalls.BacktestArmScore.Deconstruct(out int Samples, out double? NodeRecall, out double? NodePrecision, out double? FileRecallAt20, out double LeakyShare, out int Tokens) -> void
+Aw.Sindri.Features.ContextCalls.BacktestArmScore.Equals(Aw.Sindri.Features.ContextCalls.BacktestArmScore? other) -> bool
+Aw.Sindri.Features.ContextCalls.BacktestArmScore.FileRecallAt20.get -> double?
+Aw.Sindri.Features.ContextCalls.BacktestArmScore.FileRecallAt20.init -> void
+Aw.Sindri.Features.ContextCalls.BacktestArmScore.LeakyShare.get -> double
+Aw.Sindri.Features.ContextCalls.BacktestArmScore.LeakyShare.init -> void
+Aw.Sindri.Features.ContextCalls.BacktestArmScore.NodePrecision.get -> double?
+Aw.Sindri.Features.ContextCalls.BacktestArmScore.NodePrecision.init -> void
+Aw.Sindri.Features.ContextCalls.BacktestArmScore.NodeRecall.get -> double?
+Aw.Sindri.Features.ContextCalls.BacktestArmScore.NodeRecall.init -> void
+Aw.Sindri.Features.ContextCalls.BacktestArmScore.Samples.get -> int
+Aw.Sindri.Features.ContextCalls.BacktestArmScore.Samples.init -> void
+Aw.Sindri.Features.ContextCalls.BacktestArmScore.Tokens.get -> int
+Aw.Sindri.Features.ContextCalls.BacktestArmScore.Tokens.init -> void
+override Aw.Sindri.Features.ContextCalls.BacktestArmScore.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.BacktestArmScore.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.BacktestArmScore.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.BacktestArmScore.operator !=(Aw.Sindri.Features.ContextCalls.BacktestArmScore? left, Aw.Sindri.Features.ContextCalls.BacktestArmScore? right) -> bool
+static Aw.Sindri.Features.ContextCalls.BacktestArmScore.operator ==(Aw.Sindri.Features.ContextCalls.BacktestArmScore? left, Aw.Sindri.Features.ContextCalls.BacktestArmScore? right) -> bool

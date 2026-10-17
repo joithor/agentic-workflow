@@ -77,6 +77,7 @@ public sealed class MapHealthTests : IDisposable
             _ = await _world.ImportFixture();
         }
 
+        _world.Clock.Advance(TimeSpan.FromDays(91));
         var old = (await _world.Map.ExportMap("old.json", MapWorld.Human, MapWorld.None)).Value.Path;
         _world.Exports.Touch(old, _world.Clock.GetUtcNow().AddDays(-15));
 
