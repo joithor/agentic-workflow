@@ -63,9 +63,11 @@ internal static partial class AgentSections
             return "an entry needs label, bin, open and sessionId";
         }
 
-        return OneOf(s.SessionId, _sessionIds, "sessionId") ?? OneOf(s.Usage, _usages, "usage") ?? OneOf(s.Mcp, _mcps, "mcp") ?? Form(s.Model, _models, "model") ?? Form(s.Policy, _policies, "policy")
+        return OneOf(s.SessionId, _sessionIds, "sessionId") ?? OneOf(s.Usage, _usages, "usage") ?? OneOf(s.Mcp, _mcps, "mcp") ?? Forms(s)
             ?? Argv(s.Open, "open") ?? Argv(Strings(s.Resume), "resume") ?? Reported(s);
     }
+
+    private static string? Forms(AgentSection s) => Form(s.Model, _models, "model") ?? Form(s.Policy, _policies, "policy");
 
     private static string? Reported(AgentSection s)
     {
