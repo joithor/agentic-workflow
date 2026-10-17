@@ -57,7 +57,7 @@
   },
   "resources": { "diskFloorGb": 30, "memFloorGb": 8, "swapHighPct": 90 },
   "builders": { "maxPerLane": 4, "worktreeGb": 4 },
-  "heavy": { "reserve": [ { "minDepth": 3, "slots": 1 }, { "minDepth": 5, "slots": 2 }, { "minDepth": 7, "slots": "all" } ] },
+  "heavy": { "cap": 3, "reserve": [ { "minDepth": 3, "slots": 1 }, { "minDepth": 5, "slots": 2 }, { "minDepth": 7, "slots": "all" } ] },
   "mergeOrder": [
     { "before": 190, "after": 192 },
     { "before": 192, "after": 209 },
