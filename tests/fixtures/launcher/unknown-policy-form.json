@@ -1,0 +1,6 @@
+{
+  "schema": 1,
+  "agents": {
+    "codex": { "override": true, "policy": "codex-settings-file" }
+  }
+}

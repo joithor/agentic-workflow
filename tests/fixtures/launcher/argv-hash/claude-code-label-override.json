@@ -8,6 +8,6 @@
     "transcripts": null
   },
   "equalsBuiltin": "claude-code",
-  "canonical": "{\"bin\":\"claude\",\"mcp\":\"claude-config-file\",\"open\":[\"{bin}\",\"--session-id\",\"{sessionId}\",\"-n\",\"{name}\",\"{seed}\"],\"resume\":[\"{bin}\",\"--resume\",\"{sessionId}\"],\"sessionId\":\"pre-chosen-uuid\"}",
-  "argvHash": "sha256:e0c86e63de1a891eb9f2912271c11e93416638ed2f87f9b77d49186b034231c0"
+  "canonical": "{\"bin\":\"claude\",\"mcp\":\"claude-config-file\",\"model\":\"claude-flag\",\"open\":[\"{bin}\",\"--session-id\",\"{sessionId}\",\"-n\",\"{name}\",\"{seed}\"],\"policy\":\"claude-settings-file\",\"resume\":[\"{bin}\",\"--resume\",\"{sessionId}\"],\"sessionId\":\"pre-chosen-uuid\"}",
+  "argvHash": "sha256:658eeefe1c915e8eb16ed6ba0bf3646ac24a8ee58b48446e096555d96f913acd"
 }
