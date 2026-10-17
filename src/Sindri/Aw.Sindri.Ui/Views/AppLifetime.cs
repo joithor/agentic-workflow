@@ -193,7 +193,9 @@ internal sealed class AppLifetime : IDisposable
         _onQuitting?.Invoke(this, EventArgs.Empty);
         try
         {
+#pragma warning disable RS0030 // Avalonia's shutdown-requested handler is synchronous; the wait is bounded by SettleWithin
             _settle().WaitAsync(SettleWithin, _clock).GetAwaiter().GetResult();
+#pragma warning restore RS0030
         }
         catch (TimeoutException)
         {

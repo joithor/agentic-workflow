@@ -14,7 +14,9 @@ namespace Aw.Kernel.Telemetry;
 /// </summary>
 public sealed class TelemetryRuntime : IDisposable
 {
+#pragma warning disable CA2213 // the provider is added to LoggerFactory, whose Dispose (below) disposes it
     private readonly JsonLinesLoggerProvider _logs;
+#pragma warning restore CA2213
     private readonly Withheld _withheld;
     private readonly TracerProvider _tracer;
     private readonly MeterProvider? _meter;
@@ -107,7 +109,9 @@ public sealed class TelemetryRuntime : IDisposable
             return (builder.Build(), 0);
         }
 
+#pragma warning disable CA2000 // the provider builder owns the processor or reader and disposes it with the provider
         builder = builder.AddProcessor(new ScrubbingActivityProcessor(scrubber, withheld)).AddProcessor(new SimpleActivityExportProcessor(exporter));
+#pragma warning restore CA2000
         return (builder.Build(), 1);
     }
 
@@ -115,6 +119,8 @@ public sealed class TelemetryRuntime : IDisposable
         Sdk.CreateMeterProviderBuilder()
             .SetResourceBuilder(ResourceBuilder.CreateEmpty().AddService(options.ServiceName))
             .AddMeter(options.SourcePattern, Telemetry.Withheld.MeterName)
+#pragma warning disable CA2000 // the provider builder owns the processor or reader and disposes it with the provider
             .AddReader(new PeriodicExportingMetricReader(new ScrubbingMetricExporter(exporter, scrubber, withheld)))
+#pragma warning restore CA2000
             .Build();
 }

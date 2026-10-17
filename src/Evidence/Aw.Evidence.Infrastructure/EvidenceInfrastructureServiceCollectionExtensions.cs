@@ -58,7 +58,7 @@ public static class EvidenceInfrastructureServiceCollectionExtensions
             .AddSingleton<IBrowser, PlaywrightBrowser>()
             .AddSingleton<IBrowserInstaller, PlaywrightInstaller>()
             .AddSingleton<IJudge, UnavailableJudge>()
-            .AddSingleton<IApiTransport>(new HttpApiTransport(TimeSpan.FromSeconds(30)))
+            .AddSingleton<IApiTransport>(static _ => new HttpApiTransport(TimeSpan.FromSeconds(30)))
             .AddSingleton<ICliRunner>(new ProcessCliRunner(TimeSpan.FromMinutes(2)))
             .AddSingleton<IExecutableLocator, FileExecutableLocator>()
             .AddSingleton<IEvidenceTargets, FileEvidenceTargets>()

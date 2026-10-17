@@ -13,7 +13,9 @@ internal sealed class HttpApiTransport : IApiTransport, IDisposable
 
     public HttpApiTransport(TimeSpan timeout)
     {
+#pragma warning disable CA2000 // the field owns the client and Dispose releases it
         _client = new HttpClient(new SocketsHttpHandler { AllowAutoRedirect = false, UseCookies = false, AutomaticDecompression = DecompressionMethods.All }) { Timeout = timeout };
+#pragma warning restore CA2000
     }
 
     /// <inheritdoc/>

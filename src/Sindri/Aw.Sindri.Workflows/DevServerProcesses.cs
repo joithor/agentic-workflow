@@ -101,7 +101,9 @@ internal static partial class DevServerProcesses
             throw new TimeoutException($"{file} didn't finish within 10 s");
         }
 
+#pragma warning disable RS0030 // the child has exited, so its stream reaches end of file at once; this short-lived tool leaves no grandchild holding the pipe
         return output.GetAwaiter().GetResult();
+#pragma warning restore RS0030
     }
 
     private static int? Flag(string line, Regex flag) =>
