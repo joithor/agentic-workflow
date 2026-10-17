@@ -162,6 +162,13 @@ mkdir -p "$WORK/path"; for o in open xdg-open; do printf '#!/usr/bin/env bash\ne
 OUT="$(PATH="$WORK/path:$PATH" bash "$DIR/meta-launch.sh" --lanes api)"
 for _ in $(seq 50); do [ -s "$WORK/opened" ] && break; sleep 0.1; done   # xdg-open runs in the background
 check "open: by the config's name, URI-encoded" "$(tail -1 <<< "$OUT"):$(cat "$WORK/opened" 2> /dev/null)" "warp: opening warp://launch/t1%20team:warp://launch/t1%20team"
+# An open that fails (no app registered for warp://: LSOpenURLs -10814) never aborts a launch whose sessions and layout exist.
+mkdir -p "$WORK/failpath"; for o in open xdg-open warp-terminal; do printf '#!/usr/bin/env bash\nexit 1\n' > "$WORK/failpath/$o"; chmod +x "$WORK/failpath/$o"; done
+OUT="$(PATH="$WORK/failpath:$PATH" bash "$DIR/meta-launch.sh" --lanes api 2>&1)"; RC=$?
+check "open fails: the launch still exits 0" "$RC" "0"
+if [ "$(uname -s)" = Darwin ]; then
+  check "open fails: the manual hint is printed" "$(grep -c 'Command Palette' <<< "$OUT")" "1"
+fi
 # claude restarted by hand in the fallback shell: the marker is still there, but a claude runs in the pane.
 mkdir -p "$WORK/fakebin"; cp "$SLEEPBIN" "$WORK/fakebin/claude"
 : > "$AW_STATE_DIR/meta/lane-sessions/api.exited"
