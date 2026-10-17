@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Infrastructure.Onyx;
 using Aw.Sindri.Infrastructure.Secrets;
 using Aw.Sindri.Testing;
@@ -43,6 +44,24 @@ public sealed class DockerCliRuntimeTests
         Assert.True(facts.ComposeV2);
         Assert.Null(facts.MemoryBytes);
     }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Get \"http://%2Fvar%2Frun%2Fdocker.sock/v1.51/version\": dial unix /var/run/docker.sock: connect: permission denied", DaemonProblem.PermissionDenied)]
+    [InlineData("Failed to initialize: unable to resolve docker endpoint: context \"nope\": context not found: open /home/u/.docker/contexts/meta/x/meta.json: no such file or directory", DaemonProblem.ContextMissing)]
+    [InlineData("Current context \"colima\" does not exist", DaemonProblem.ContextMissing)]
+    [InlineData("failed to connect to the docker API at unix:///Users/u/.docker/run/docker.sock; check if the path is correct and if the daemon is running: dial unix /Users/u/.docker/run/docker.sock: connect: no such file or directory", DaemonProblem.NotRunning)]
+    [InlineData("", DaemonProblem.NotRunning)]
+    public void Inspect_classifies_a_failed_version_by_its_stderr(string stderr, DaemonProblem expected)
+    {
+        var facts = new DockerCliRuntime(Docker(new ToolRun(ToolOutcome.Exited, 1, "Client: ...", stderr), Ok("v2.40.3"), Fails)).Inspect(Token);
+
+        Assert.False(facts.DaemonAnswers);
+        Assert.Equal(expected, facts.DaemonProblem);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Inspect_reports_no_problem_when_the_daemon_answers()
+        => Assert.Equal(DaemonProblem.None, new DockerCliRuntime(DockerWithInfo("29.4.0", "16818978816", "/var/lib/docker")).Inspect(Token).DaemonProblem);
 
     [Fact, Trait("Lane", "unit")]
     public void Inspect_treats_a_timeout_as_daemon_down()

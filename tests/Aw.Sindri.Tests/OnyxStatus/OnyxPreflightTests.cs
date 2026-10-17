@@ -61,6 +61,31 @@ public sealed class OnyxPreflightTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Evaluate_fails_001_with_a_group_fix_when_the_socket_is_permission_denied()
+    {
+        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.PermissionDenied, new HostFacts(_roomy, DataRoot: null, _free), _pins);
+
+        var docker = Check(report, "docker");
+        Assert.Equal(CheckState.Fail, docker.State);
+        Assert.Equal("SND-ONYX-001", docker.Problem?.Code);
+        Assert.Equal("docker CLI found, permission denied on the daemon socket", docker.Detail);
+        Assert.Contains("add your user to the docker group (`sudo usermod -aG docker $USER`, then log out and in), or use Docker Desktop", docker.Problem?.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("isn't running", docker.Problem?.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Evaluate_fails_001_with_a_context_fix_when_the_docker_context_does_not_exist()
+    {
+        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.ContextMissing, new HostFacts(_roomy, DataRoot: null, _free), _pins);
+
+        var docker = Check(report, "docker");
+        Assert.Equal("SND-ONYX-001", docker.Problem?.Code);
+        Assert.Equal("docker CLI found, the selected docker context doesn't exist", docker.Detail);
+        Assert.Contains("docker context use default", docker.Problem?.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("isn't running", docker.Problem?.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Evaluate_fails_002_when_only_compose_v1_is_present()
     {
         var report = OnyxPreflight.Evaluate(FakeContainerRuntime.ComposeV1Only, new HostFacts(_roomy, DataRoot: null, _free), _pins);

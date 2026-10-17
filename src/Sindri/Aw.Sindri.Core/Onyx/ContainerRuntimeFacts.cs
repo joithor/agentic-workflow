@@ -13,8 +13,10 @@ namespace Aw.Sindri.Core.Onyx;
 /// <param name="MemoryBytes">The memory Docker has (Docker Desktop's VM limit) when the daemon answers `docker info`.</param>
 /// <param name="DataRoot">Docker's data root (`docker info` DockerRootDir) when the daemon answers: a host directory on a Linux engine, a path inside the VM on Docker Desktop.</param>
 /// <param name="OperatingSystem">The engine's operating system (`docker info` OperatingSystem) when the daemon answers: "Docker Desktop" or "OrbStack" for a VM runtime, the distribution's name for a Linux engine.</param>
+/// <param name="DaemonProblem">Why the daemon didn't answer, from the CLI's stderr, when <paramref name="DaemonAnswers"/> is false and the CLI is found; <see cref="Onyx.DaemonProblem.None"/> when it answers.</param>
 public sealed record ContainerRuntimeFacts(
-    bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes, string? DataRoot, string? OperatingSystem = null)
+    bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes, string? DataRoot, string? OperatingSystem = null,
+    DaemonProblem DaemonProblem = DaemonProblem.None)
 {
     /// <summary>Gets a value indicating whether Docker's data lives in a VM (Docker Desktop, OrbStack), so the data root is not a directory on this host even if a directory of that name exists here.</summary>
     public bool DataInVm => OperatingSystem is { } os

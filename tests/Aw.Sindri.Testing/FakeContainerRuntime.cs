@@ -18,7 +18,13 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
         CliFound: false, DaemonAnswers: false, ServerVersion: null, ComposeV2: false, ComposeVersion: null, MemoryBytes: null, DataRoot: null);
 
     /// <summary>A box with the CLI and Compose v2 whose daemon isn't answering (Docker Desktop not started).</summary>
-    public static ContainerRuntimeFacts DaemonDown { get; } = Healthy with { DaemonAnswers = false, ServerVersion = null, MemoryBytes = null, DataRoot = null, OperatingSystem = null };
+    public static ContainerRuntimeFacts DaemonDown { get; } = Healthy with { DaemonAnswers = false, ServerVersion = null, MemoryBytes = null, DataRoot = null, OperatingSystem = null, DaemonProblem = DaemonProblem.NotRunning };
+
+    /// <summary>A box whose daemon runs but whose socket this user may not open (a Linux user outside the docker group).</summary>
+    public static ContainerRuntimeFacts PermissionDenied { get; } = DaemonDown with { DaemonProblem = DaemonProblem.PermissionDenied };
+
+    /// <summary>A box whose selected docker context doesn't exist.</summary>
+    public static ContainerRuntimeFacts ContextMissing { get; } = DaemonDown with { DaemonProblem = DaemonProblem.ContextMissing };
 
     /// <summary>A box with Docker running and only legacy docker-compose.</summary>
     public static ContainerRuntimeFacts ComposeV1Only { get; } = Healthy with { ComposeV2 = false, ComposeVersion = null };
