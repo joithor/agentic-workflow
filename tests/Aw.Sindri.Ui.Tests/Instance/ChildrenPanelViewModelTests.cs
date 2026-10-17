@@ -187,10 +187,20 @@ public sealed class ChildrenPanelViewModelTests
     [Fact]
     public void Empty_reads_the_recipe_declares_no_children()
     {
-        var panel = Panel("incident-loop");
+        var panel = Panel("dev-desk-round-trip");
 
+        Assert.DoesNotContain(FixtureInstances.Detail("dev-desk-round-trip").States, s => s.Child);
         Assert.Equal((false, Labels.NoChildren), (panel.HasGroups, panel.EmptyText));
         Assert.Empty(panel.Groups);
+    }
+
+    [Fact]
+    public void Empty_reads_no_children_yet_when_a_state_of_the_recipe_marks_children()
+    {
+        var panel = Panel("incident-loop");
+
+        Assert.Contains(FixtureInstances.Detail("incident-loop").States, s => s.Child);
+        Assert.Equal((false, Labels.NoChildrenYet), (panel.HasGroups, panel.EmptyText));
     }
 
     [Fact]

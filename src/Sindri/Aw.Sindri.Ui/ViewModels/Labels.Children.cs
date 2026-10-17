@@ -12,6 +12,9 @@ internal static partial class Labels
     /// <summary>The words of a recipe that declares no children.</summary>
     internal const string NoChildren = "This recipe declares no children.";
 
+    /// <summary>The words of a recipe that marks a child state, before any child has started.</summary>
+    internal const string NoChildrenYet = "No children yet.";
+
     /// <summary>What follows a park that the engine mirrors from a child to its parent.</summary>
     internal const string MirroredHere = "mirrored here";
 
