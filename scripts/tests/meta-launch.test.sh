@@ -568,7 +568,7 @@ done
 reset_lock; kill "$live_b" "$live_c" 2> /dev/null; wait "$live_b" "$live_c" 2> /dev/null
 
 # The launcher scripts run on macOS's bash 3.2 and BSD tools: no flock, fd-number redirections, BASHPID, mapfile or associative arrays.
-check "the launcher scripts use no flock, exec {fd}, BASHPID, mapfile, readarray or declare -A" "$(grep -n -E 'flock|exec \{[a-z_]+\}|BASHPID|mapfile|readarray|declare -A|\$\{[A-Za-z_]+(,,|\^\^)\}' "$DIR/meta-lane.sh" "$DIR/meta-launch.sh" "$DIR/launcher-lib.sh" "$DIR/meta-team-lib.sh" | grep -v -E '^[^:]+:[0-9]+:[[:space:]]*#' | wc -l | tr -d ' ')" "0"
+check "the launcher scripts use no flock, exec {fd}, BASHPID, mapfile, readarray or declare -A" "$(grep -n -E 'flock|exec \{[a-z_]+\}|BASHPID|mapfile|readarray|declare -A|\$\{[A-Za-z_]+(,,|\^\^)\}' "$DIR/meta-lane.sh" "$DIR/meta-start-lock.sh" "$DIR/meta-launch.sh" "$DIR/launcher-lib.sh" "$DIR/meta-team-lib.sh" | grep -v -E '^[^:]+:[0-9]+:[[:space:]]*#' | wc -l | tr -d ' ')" "0"
 
 # Precedence: AW_META_CLAUDE ranks above the file's claude-code bin; without it the file's bin is used.
 jq -n '{schema:1, agents:{"claude-code":{override:true, bin:"/nonexistent/claude"}}}' > "$LCFG"

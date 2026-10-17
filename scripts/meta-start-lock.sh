@@ -8,19 +8,52 @@
 # lock's slot empty.
 start_lock_hook() { :; }
 release_start_lock() { [ "$(readlink "$start_lock" 2> /dev/null)" = "$lane_pid" ] && unlink "$start_lock" 2> /dev/null; return 0; }
+
+# live_pid <value>: whether the lock's owner is a running process. Only a positive integer is a pid: 0 would signal the process
+# group and -1 every process (kill -0 succeeds for both), and anything else names nobody, so those owners are stale.
+live_pid() {
+  case "$1" in
+    '' | *[!0-9]* | 0*) return 1 ;;
+  esac
+  kill -0 "$1" 2> /dev/null
+}
+
+# take_over_dead <owner>: remove the lock whose owner was seen dead. Takers go through a second atomic guard (a directory,
+# $start_lock.takeover) and re-read the owner inside it, so a lane that lost the race to another taker finds that taker's live
+# lock and leaves it alone, and the lock is never moved aside (no gap where a live lock is absent). While a taker holds the
+# guard, newcomers only `ln -s`, which fails for as long as the lock exists. The guard itself is held for a few commands; one
+# whose owner is dead (a taker killed in them) is cleared after it was seen for a second.
+take_over_dead() { # <owner seen dead>
+  local guard="$start_lock.takeover" now
+  if mkdir "$guard" 2> /dev/null; then
+    printf '%s\n' "$lane_pid" > "$guard/owner" 2> /dev/null
+    now="$(readlink "$start_lock" 2> /dev/null)"
+    if [ -n "$now" ] && ! live_pid "$now"; then
+      unlink "$start_lock" 2> /dev/null
+      start_lock_hook gap
+    fi
+    rm -f "$guard/owner"; rmdir "$guard" 2> /dev/null
+    return 0
+  fi
+  # the guard is held: its holder finishes in microseconds, so wait; clear it only when its owner is gone
+  sleep 0.1
+  local holder; holder="$(cat "$guard/owner" 2> /dev/null)"
+  if [ "${guard_seen:-}" = "seen:$holder" ] && ! live_pid "$holder"; then
+    rm -f "$guard/owner"; rmdir "$guard" 2> /dev/null
+    guard_seen=""
+  else
+    guard_seen="seen:$holder"
+  fi
+  return 0
+}
+
 acquire_start_lock() { # returns 1 if the holder did not finish in AW_META_ID_WAIT x 10 s
-  local deadline=$((SECONDS + ${AW_META_ID_WAIT:-30} * 10)) owner moved
+  local deadline=$((SECONDS + ${AW_META_ID_WAIT:-30} * 10)) owner guard_seen=""
   while ! ln -s "$lane_pid" "$start_lock" 2> /dev/null; do
     owner="$(readlink "$start_lock" 2> /dev/null)"
-    if [ -n "$owner" ] && ! kill -0 "$owner" 2> /dev/null; then   # the holder died: take the lock over (the rename wins for one taker)
+    if [ -n "$owner" ] && ! live_pid "$owner"; then   # the holder died: take the lock over, one taker at a time
       start_lock_hook checked
-      moved="$start_lock.dead.$$"
-      if mv "$start_lock" "$moved" 2> /dev/null; then
-        start_lock_hook gap
-        # a taker that got in between our check and the rename moved a live lock: put it back
-        [ "$(readlink "$moved")" = "$owner" ] || ln -s "$(readlink "$moved")" "$start_lock" 2> /dev/null
-        unlink "$moved" 2> /dev/null
-      fi
+      take_over_dead "$owner"
       continue
     fi
     if [ "$SECONDS" -ge "$deadline" ]; then
