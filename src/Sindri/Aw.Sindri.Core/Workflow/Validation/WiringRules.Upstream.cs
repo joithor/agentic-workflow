@@ -1,7 +1,6 @@
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
-using Available = System.Collections.Generic.Dictionary<string, System.Collections.Generic.HashSet<Aw.Sindri.Core.Workflow.Ids.FactKey>>;
 
 namespace Aw.Sindri.Core.Workflow.Validation;
 
@@ -21,82 +20,18 @@ internal sealed partial class WiringRules
 
     private static IEnumerable<RecipeFinding> Upstream(Recipe recipe, BlockCatalog catalog, RecipeSource source)
     {
-        var available = Reaching(recipe);
+        var available = FactsReaching.Of(recipe);
         return StateNeeds(recipe, catalog)
             .Concat(TransitionNeeds(recipe, catalog))
-            .Where(n => available.TryGetValue(n.State, out var facts) && !facts.Contains(n.Fact) && !(n.Transition?.Produces.Contains(n.Fact) ?? false))
+            .Where(n => available.TryGetValue(n.State, out var facts) && !facts.Contains(n.Fact) && !(n.Transition?.Produces.Any(p => p.Fact == n.Fact) ?? false))
             .DistinctBy(n => (n.Path, n.Fact))
             .Select(n => source.Finding(
                 "RCP-WIRE-001",
                 n.Path,
-                $"{n.What} needs '{n.Fact.Value}', but {Witness(recipe, available, n.State, n.Fact)}",
+                $"{n.What} needs '{n.Fact.Value}', but {FactsReaching.Witness(recipe, available, n.State, n.Fact)}",
                 n.Transition is null
                     ? $"produce it on every path into '{n.State}', or add it to the recipe's inputs"
                     : $"produce it on this transition or on every path into '{n.State}', or add it to the recipe's inputs"));
-    }
-
-    /// <summary>
-    /// The facts recorded on every path into each state the start reaches (a must-analysis to its greatest fixpoint):
-    /// the initial state has the recipe's inputs; any other state has what every transition into it from a reached
-    /// state carries (that state's facts plus its 'produces'). A state the start doesn't reach has no entry.
-    /// </summary>
-    private static Available Reaching(Recipe recipe)
-    {
-        var available = new Available(StringComparer.Ordinal);
-        if (!recipe.States.ContainsKey(recipe.Initial))
-        {
-            return available;
-        }
-
-        available[recipe.Initial] = [.. recipe.Inputs.Select(i => i.Key)];
-        for (var changed = true; changed;)
-        {
-            changed = false;
-            foreach (var transition in recipe.Transitions)
-            {
-                foreach (var from in transition.From)
-                {
-                    changed |= Carry(recipe, available, from, transition);
-                }
-            }
-        }
-
-        return available;
-    }
-
-    private static bool Carry(Recipe recipe, Available available, string from, RecipeTransition transition)
-    {
-        if (transition.To == recipe.Initial || !recipe.States.ContainsKey(transition.To) || !available.TryGetValue(from, out var facts))
-        {
-            return false;
-        }
-
-        HashSet<FactKey> carried = [.. facts, .. transition.Produces];
-        if (!available.TryGetValue(transition.To, out var current))
-        {
-            available[transition.To] = carried;
-            return true;
-        }
-
-        var before = current.Count;
-        current.IntersectWith(carried);
-        return current.Count != before;
-    }
-
-    /// <summary>Why <paramref name="fact"/> isn't there in <paramref name="state"/>: the start, or the first path into it that doesn't carry it.</summary>
-    private static string Witness(Recipe recipe, Available available, string state, FactKey fact)
-    {
-        if (state == recipe.Initial)
-        {
-            return "the start doesn't supply it";
-        }
-
-        var path = recipe.Transitions
-            .Select((t, i) => (Transition: t, Index: i))
-            .Where(p => p.Transition.To == state && !p.Transition.Produces.Contains(fact))
-            .SelectMany(p => p.Transition.From.Select(from => (p.Index, From: from)))
-            .FirstOrDefault(p => available.TryGetValue(p.From, out var facts) && !facts.Contains(fact));
-        return path.From is null ? "not every path into it produces it" : $"the path through transitions[{Inv(path.Index)}] from '{path.From}' doesn't produce it";
     }
 
     private static IEnumerable<Need> StateNeeds(Recipe recipe, BlockCatalog catalog) =>

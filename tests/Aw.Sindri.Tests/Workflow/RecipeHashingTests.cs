@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core.Workflow;
@@ -62,6 +63,32 @@ public sealed class RecipeHashingTests
 
         Assert.Equal(KnownCanonical, Encoding.UTF8.GetString(CanonicalJson.Of(node)));
         Assert.Equal(KnownHash, document.Hash.Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_bare_produces_entry_is_written_as_a_plain_string()
+    {
+        var document = RecipeReaderTests.Reader.Read(RecipeReaderTests.Minimal, "test.yaml").Document!;
+        var node = JsonNode.Parse(AwJson.Serialize(document.Recipe, SliceHarness.Json))!.AsObject();
+
+        var produces = node["transitions"]!.AsArray()[0]!["produces"]!.AsArray();
+        Assert.Equal(JsonValueKind.String, produces[0]!.GetValueKind());
+        Assert.Equal("fact:output", produces[0]!.GetValue<string>());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_renamed_entry_hashes_as_an_object_and_bare_entries_dont_move()
+    {
+        var bare = RecipeReaderTests.Reader.Read(RecipeReaderTests.Minimal, "a.yaml").Document!;
+        var renamed = RecipeReaderTests.Reader.Read(
+            RecipeReaderTests.Minimal.Replace("produces: [fact:output]", "produces: [fact:output, { fact: fact:exported, from: fact:result }]", StringComparison.Ordinal), "a.yaml").Document!;
+
+        var produces = JsonNode.Parse(AwJson.Serialize(renamed.Recipe, SliceHarness.Json))!["transitions"]![0]!["produces"]!.AsArray();
+
+        Assert.Equal("fact:output", produces[0]!.GetValue<string>());
+        Assert.Equal("{\"fact\":\"fact:exported\",\"from\":\"fact:result\"}", Encoding.UTF8.GetString(CanonicalJson.Of(produces[1])));
+        Assert.NotEqual(bare.Hash, renamed.Hash);
+        Assert.Equal(KnownHash, bare.Hash.Value);
     }
 
     private const string KnownCanonical =

@@ -11,6 +11,9 @@ internal sealed record NeedsYouActionControl(NeedsYouAction Action, bool IsPrima
     /// <summary>The accessible name: the label and the row's id (a list of buttons has several "Approve").</summary>
     internal string Name => SubjectId.Length > 0 ? Action.Label + " " + SubjectId : Action.Label;
 
+    /// <summary>True when a protected action's inline command still has a placeholder to fill in (the hint is drawn beside it).</summary>
+    internal bool IsProtectedWithHint => IsProtected && Action.FillInHint.Length > 0;
+
     /// <summary>True for a protected action: the view shows the lock and its command, and nothing here runs it.</summary>
     internal bool IsProtected => Action.IsProtected;
 }
