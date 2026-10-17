@@ -226,7 +226,7 @@ A new code range `SND-ONYX-0xx` in `SindriErrors`, each with a one-line fix:
 | `SND-ONYX-008` | Minting or verifying the key failed |
 | `SND-ONYX-009` | Writing a secret failed (and the `file:` fallback did too) |
 
-Doctor gains `onyx:stack` (managed only): the compose project's containers and their health, the bound address (fails
+Doctor gains `onyx:stack` (when Sindri's Onyx state exists): the compose project's containers and their health, the bound address (fails
 on anything but loopback), the image digests running vs the pins. The existing `context:onyx` row is unchanged. The
 UI's Health page shows both rows as it shows every doctor row; nothing UI-specific is required.
 
