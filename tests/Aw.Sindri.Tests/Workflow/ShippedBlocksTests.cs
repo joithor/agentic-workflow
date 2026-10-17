@@ -97,6 +97,53 @@ public sealed class ShippedBlocksTests
         Assert.Equal(hash, PinRules.Hash(FixtureCatalog.Shipped().Find(BlockId.From(id))!, SliceHarness.Json).Value);   // why: no approved recipe may drift-park because a nullable field was added
 
     [Fact, Trait("Lane", "unit")]
+    public void Every_shipped_descriptor_has_a_pinned_hash()
+    {
+        var actual = FixtureCatalog.Shipped().Blocks.OrderBy(static b => b.Id.Value, StringComparer.Ordinal)
+            .Select(static b => b.Id.Value + " " + PinRules.Hash(b, SliceHarness.Json).Value);
+
+        Assert.Equal(_pinnedHashes, actual, StringComparer.Ordinal);   // why: a descriptor's hash is what a recipe pins; it moves only by an owner-approved, listed change
+    }
+
+    private static readonly string[] _pinnedHashes = [
+        "effect.claim.ref sha256:2a44426d862b3721014969dfcc03a7851f56551f2b9bec9f340e500353a9abd3",
+        "effect.notify.desk sha256:c3cb05f7d73c6c539b05acb87c15185c4a9b81d12fb27626b59f12b94e157b07",
+        "evidence.check sha256:5e8052c5aaf078f6a487a5822fa63d9821a011fa480205fe5bbc8e9f07092d62",
+        "gate.budget.available sha256:2e11428fb8765eb8e43f62db6dce8dd654cddd1b6685e6c61080037174408135",
+        "gate.route.startable sha256:00a724a0231157eba73e8b90950bde6e40fb9e6f17f03f955d3896e6aa2fadf0",
+        "step.bugfix.judge sha256:b85ef223337f347fa5644a3c2739dbd330b13895ffe1b919a10f779ceb65e386",
+        "step.bugfix.recheck sha256:59cec1093d9bb47e31d84ba62b50dbbf6942724097032aa39bc01e462bcdcdc5",
+        "step.bugfix.record-candidate sha256:e4624e9608c06bae38a456f5dc271e4469f5e77b03168c5b0c8674c3067c5867",
+        "step.bugfix.start-attempt sha256:98817771c1c63c9232fd20b42bf32ff44a910b03887702eb23a034b9b39d107d",
+        "step.checks sha256:8d6a4302bc9aa7ab780620c014cbc2954c3b9e4cef153be63bb1a2eeb72c2fe8",
+        "step.desk.choose sha256:f01cd85115d1e9d1e12afdb5cdae46a3bdbf7a033d0f95d9973c7847ca6e062c",
+        "step.evidence.api-plan sha256:6569f1b231e81b1c2766f6d6a2c921d913902f8bb018397ef406eb561a925988",
+        "step.evidence.api-run sha256:d4e136c9e5435a8485879e5910510eccd99b6cd7a200ba74248fb4a8c405991d",
+        "step.evidence.combine sha256:4763332a755d9790c0f16f7a8bc90e0327e11ca25fddb9f95c46944d06afb5a4",
+        "step.evidence.db-plan sha256:2a7a0b5fc3bf5d2d73dc01e234d5166ba0ffc29bdf6faaeb409bb3ddc198e1d5",
+        "step.evidence.db-run sha256:2a11047b4e9b0ebba08c94e6f025b4ef5f1b8efe7f785443255db4e237e6b7d8",
+        "step.evidence.desk sha256:6f4e09b7fad8b4a095386eaa2083406a84245702cfb6d887a3a3d7934dcce0fe",
+        "step.evidence.none sha256:3a59ef573f878e44c196fac08806a30b47d78f633e594e2db16d04f4f7cefa8c",
+        "step.evidence.ui-plan sha256:3e4799c7fda03eda86807f35f6366a153f49219339c9c1c3b1fc4e323143900a",
+        "step.evidence.ui-run sha256:cc61bf599ffbc47677b7e719566da7511d3e9674489741c98e862529912e7ad9",
+        "step.handtest.run sha256:3ec327e0820b5cb0b02b62c6ee95b93f74f626a800f095d751811aff55bd4a49",
+        "step.intake.ticket sha256:ea24ee0f0a02b06b48469073d11591f0ed25a9c803c86c8e439cf096e0e2b04f",
+        "step.judge.choose sha256:7e172d1a423e48ffc9c053c3a5d4ff4edfa5753518e339170a73c685f726b2a6",
+        "step.owner.decide sha256:8df7dfe0c17e2b53dc326b5dc77352b48520495c3e64ec3d52e12e662992237b",
+        "step.produce sha256:b86ef5f788d73f55217a97d0158f1caea49b09d19f4878858acd040434505370",
+        "step.report.write sha256:d7b9f03e2b946166e8d958866b8d9543e16286bcf21d0f31e0815d29918c40c1",
+        "step.reproduce.test-check sha256:53c108eccc335ecce0339b1dd8c390fd7b9acda30c799427cf539e96db7daae8",
+        "step.reproduce.ui-check sha256:db810e660ef0b51326ea417be46017ea844537bde8b3b32b7968314aa6f0348d",
+        "step.review.fix sha256:822ac918431cb0b69bbd86edc650ccf80e9c1a1865cf640f00e05217d8ff16e1",
+        "step.review.recheck sha256:87fe20fa2000cb66b32f09bed01b8a150ba79aace78936743295b662fb5d6337",
+        "step.review.run sha256:a1b6aeacbdf6793b41acecfcfc7f730a626434cde3ca6b3c692d98a019b2f892",
+        "step.rootcause.investigate sha256:089db1c623c8ac46b368e17c20432e4384db243721ce09c7848cd940c23cd6d0",
+        "step.verify sha256:076936b6ec84ebf12669ca18a2525adb4c3922e86ed4c6cfc16c975e55944d3d",
+        "step.verify.design sha256:f64255db776db059a66d31bf1234d42fde46a2ebb7b2fb0568c21ac3ec44cdd5",
+        "step.verify.journey sha256:f8b1dcef144b670930540e962818c004b78f02d84803253e5d96f18ff4c3e877",
+    ];
+
+    [Fact, Trait("Lane", "unit")]
     public async Task The_choice_steps_are_desk_capable_descriptors_without_runtimes()
     {
         await using var provider = Composed();
