@@ -130,6 +130,34 @@ public sealed class HeavyReservationTests
         Assert.Equal(3, _world.Heavy.Reserve);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(0, 3, 0)]
+    [InlineData(1, 3, 3)]
+    [InlineData(2, 3, 5)]
+    [InlineData(3, 3, 7)]
+    [InlineData(2, 2, 7)]
+    [InlineData(1, 1, 7)]
+    [InlineData(3, 5, 5)]
+    public void The_printed_argument_is_the_one_that_makes_the_script_keep_the_slots(int reserve, int cap, int argument)
+    {
+        var slots = new HeavySlots(cap, reserve, Depth: 2, A.At(0));
+
+        Assert.Equal(argument, slots.ScriptDepth);
+        Assert.Contains("set it with meta-gate-reserve " + argument.ToString(CultureInfo.InvariantCulture), slots.Line(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Custom_tiers_print_the_script_argument_and_not_the_queue_depth()
+    {
+        await Ready(2);
+        await Configure(team => team with { Heavy = new HeavyConfig(new ReserveSetting(Enabled: true, [new ReserveTier(2, ReserveSlots.All)])) });
+
+        var applied = await Apply();
+
+        Assert.Equal("heavy reservation: 3 of 3 slots (queue depth 2) - set it with meta-gate-reserve 7", applied.Value!.Line());
+        Assert.Contains("set it with meta-gate-reserve 7", Assert.Single(_world.Log.Lines), StringComparison.Ordinal);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Dropping_queued_prs_lowers_the_reservation()
     {

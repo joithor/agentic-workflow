@@ -10,7 +10,7 @@ namespace Aw.Meta.Core.Coordination;
 /// <summary>
 /// Works out the heavy-slot reservation from the merge-queue depth (the ready pull requests not yet merged) and keeps it in the
 /// team's own state directory. It runs wherever the queue changes (a gate run, a merge, a queue-drop, each watch poll, status).
-/// aw-meta never writes the heavy-job wrapper's files: the meta runs meta-gate-reserve with the depth shown before each gate. Each
+/// aw-meta never writes the heavy-job wrapper's files: the meta runs meta-gate-reserve with the argument shown (the script's own tiers differ from the team's) before each gate. Each
 /// change of the reservation is one NOTE line in the running log. A team that sets "heavy": {"reserve": false} computes nothing.
 /// </summary>
 /// <param name="reserve">The team's kept reservation.</param>
@@ -95,7 +95,7 @@ public sealed class HeavyReservation(IHeavyReserve reserve, MergeQueueReader que
     {
         var text = string.Create(
             CultureInfo.InvariantCulture,
-            $"heavy reservation {before} -> {slots.Reserve} of {slots.Cap} slots (merge queue depth {slots.Depth}); set it with meta-gate-reserve {slots.Depth}");
+            $"heavy reservation {before} -> {slots.Reserve} of {slots.Cap} slots (merge queue depth {slots.Depth}); set it with meta-gate-reserve {slots.ScriptDepth}");
         return await log.Append(LogLine.Event(LogKind.Note, slots.ComputedAt, text), cancellationToken).ConfigureAwait(false);
     }
 }

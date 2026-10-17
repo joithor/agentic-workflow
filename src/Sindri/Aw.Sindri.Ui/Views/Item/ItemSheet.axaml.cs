@@ -67,7 +67,9 @@ internal sealed partial class ItemSheet : UserControl
 
     // An option on one of the item's pending decisions: Decide, once; the buttons are rebuilt by the re-read, so focus
     // goes to the sheet's title when the pressed one is gone (focus is never lost).
+#pragma warning disable MA0155 // why: an Avalonia RoutedEvent handler returns void, so it can only be async void
     private async void OnDecisionOption(object? sender, RoutedEventArgs e)
+#pragma warning restore MA0155
     {
         if (sender is not Button { DataContext: ViewModels.NeedsYou.DecisionOption option } button || _sheet is not { } sheet
             || button.FindAncestorOfType<ItemsControl>()?.FindAncestorOfType<StackPanel>()?.DataContext is not ItemDecisionRow row)

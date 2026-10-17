@@ -5,7 +5,7 @@ namespace Aw.Meta.Core.Ports;
 
 /// <summary>
 /// The heavy-slot reservation this team's meta computes, kept in the team's own state directory (heavy-reserve). aw-meta never
-/// writes the heavy-job wrapper's files: the meta runs meta-gate-reserve with the printed queue depth before each gate.
+/// writes the heavy-job wrapper's files: the meta runs meta-gate-reserve with the printed argument before each gate.
 /// </summary>
 public interface IHeavyReserve
 {

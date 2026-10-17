@@ -14,7 +14,19 @@ namespace Aw.Meta.Infrastructure.Processes;
 internal sealed class SystemCommandRunner : ICommandRunner
 {
     private const int TailCharacters = 64 * 1024;
-    private static readonly TimeSpan _drainGrace = TimeSpan.FromSeconds(2);
+    private readonly TimeSpan _drainGrace;
+
+    public SystemCommandRunner()
+        : this(TimeSpan.FromSeconds(2))
+    {
+    }
+
+    /// <summary>A runner that waits this long, after the command ends, for its output to finish.</summary>
+    /// <param name="drainGrace">The wait.</param>
+    internal SystemCommandRunner(TimeSpan drainGrace)
+    {
+        _drainGrace = drainGrace;
+    }
 
     public async ValueTask<Result<CommandResult>> Run(CommandRequest request, CancellationToken cancellationToken)
     {
@@ -38,22 +50,52 @@ internal sealed class SystemCommandRunner : ICommandRunner
             return MetaErrors.CommandNotStarted.With($"{request.Argv[0]}: {exception.Message}");
         }
 
+#pragma warning disable CA2000 // disposed in the finally below
         var log = OpenLog(request.LogFile);
+#pragma warning restore CA2000
         try
         {
-            var stdout = new TailBuffer(TailCharacters);
-            var stderr = new TailBuffer(TailCharacters);
-            process.StandardInput.Close();
-            var reading = Task.WhenAll(Pump(process.StandardOutput, stdout, log), Pump(process.StandardError, stderr, log));
-            var timedOut = await Wait(process, request.Timeout, cancellationToken).ConfigureAwait(false);
-            _ = await Task.WhenAny(reading, Task.Delay(_drainGrace, CancellationToken.None)).ConfigureAwait(false);
-            return new CommandResult(timedOut ? -1 : process.ExitCode, stdout.ToString(), stderr.ToString(), timedOut);
+            return await Collect(process, request, log, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
             if (log is not null)
             {
                 await log.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+    }
+
+    private async Task<Result<CommandResult>> Collect(Process process, CommandRequest request, StreamWriter? log, CancellationToken cancellationToken)
+    {
+        using var stopPumping = new CancellationTokenSource();
+        var reading = Task.CompletedTask;
+        try
+        {
+            var stdout = new TailBuffer(TailCharacters);
+            var stderr = new TailBuffer(TailCharacters);
+            process.StandardInput.Close();
+#pragma warning disable CA2025 // awaited in the finally below, before the caller disposes the process and stopPumping goes out of scope
+            reading = Task.WhenAll(
+                Pump(process.StandardOutput, stdout, log, stopPumping.Token), Pump(process.StandardError, stderr, log, stopPumping.Token));
+#pragma warning restore CA2025
+            var timedOut = await Wait(process, request.Timeout, cancellationToken).ConfigureAwait(false);
+            _ = await Task.WhenAny(reading, Task.Delay(_drainGrace, CancellationToken.None)).ConfigureAwait(false);
+            return new CommandResult(timedOut ? -1 : process.ExitCode, stdout.ToString(), stderr.ToString(), timedOut);
+        }
+        finally
+        {
+            // A grandchild can keep the pipes open after the command ended: after the grace the pumps are cancelled and
+            // awaited, so none still reads the process's streams or writes the log once the caller disposes them.
+            await stopPumping.CancelAsync().ConfigureAwait(false);
+            try
+            {
+                await reading.ConfigureAwait(false);
+            }
+            catch (Exception exception) when (exception is OperationCanceledException or IOException or ObjectDisposedException)
+            {
+                // The output a grandchild produced after the grace is dropped, and a pump that failed (a log that can't
+                // be written, a pipe that closed) loses output only: the command's own result stands.
             }
         }
     }
@@ -124,11 +166,11 @@ internal sealed class SystemCommandRunner : ICommandRunner
         }
     }
 
-    private static async Task Pump(StreamReader reader, TailBuffer tail, StreamWriter? log)
+    private static async Task Pump(StreamReader reader, TailBuffer tail, StreamWriter? log, CancellationToken stop)
     {
         var buffer = new char[4096];
         int read;
-        while ((read = await reader.ReadAsync(buffer).ConfigureAwait(false)) > 0)
+        while ((read = await reader.ReadAsync(buffer.AsMemory(), stop).ConfigureAwait(false)) > 0)
         {
             lock (tail)
             {

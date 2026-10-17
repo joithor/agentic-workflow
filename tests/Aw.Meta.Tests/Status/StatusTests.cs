@@ -53,6 +53,24 @@ public sealed class StatusTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_reservation_that_cannot_be_kept_leaves_its_line_out_and_the_builders_advice_stays()
+    {
+        await _world.Ready();
+        await _world.Receive("m1", "t1-api", "ready #190 079c2541");
+        await _world.Receive("m2", "t1-ui", "ready #191 079c2541");
+        await _world.Receive("m3", "t1-api", "ready #192 079c2541");   // depth 3 wants one slot, so the write is reached
+        _world.Resources.Resources = new HostResources(64_000_000, 32_000_000, 0, DiskFreeBytes: 200L * 1024 * 1024 * 1024);
+        _world.Heavy.FailWrites = true;
+
+        var status = await Status();
+
+        Assert.Equal(0, _world.Heavy.Writes);
+        Assert.Null(status.Heavy);
+        Assert.Equal("builders: 4 per lane (disk 200 GB free, mem 30 GB available)", status.Builders!.Line());
+        Assert.Equal([190, 191, 192], status.MergeQueue.Select(p => p.Pr));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task An_unreadable_host_leaves_the_advice_out_instead_of_failing()
     {
         await _world.Ready();

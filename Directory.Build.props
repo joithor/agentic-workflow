@@ -73,9 +73,11 @@
     <AwBannedSymbols Condition="'$(AwBannedSymbols)' == '' and '$(AwIsCoreProject)' == 'true'">true</AwBannedSymbols>
     <!-- Every production project (Core, Features, Infrastructure, App, Host, Kernel, ...) gets BannedSymbols.All.txt
          (blocking waits, TaskCompletionSource continuations); every one but a Host also gets
-         BannedSymbols.NonHost.txt (Environment.Exit, GC.Collect); only a project named *.Host counts as a Host. BannedSymbols.Tests.txt for test projects lands with the style cleanup. -->
+         BannedSymbols.NonHost.txt (Environment.Exit, GC.Collect); only a project named *.Host counts as a Host. Test projects get
+         BannedSymbols.Tests.txt (the wall clock, Guid.NewGuid and Thread.Sleep; Aw.Kernel.Testing's RealTime is the one exception). -->
     <AwBannedSymbolsAll Condition="'$(AwIsTestProject)' != 'true' and '$(AwIsAnalyzerProject)' != 'true'">true</AwBannedSymbolsAll>
     <AwBannedSymbolsNonHost Condition="'$(AwBannedSymbolsAll)' == 'true' and '$(AwIsHostProject)' != 'true'">true</AwBannedSymbolsNonHost>
+    <AwBannedSymbolsTests Condition="'$(AwIsTestProject)' == 'true'">true</AwBannedSymbolsTests>
   </PropertyGroup>
 
   <!-- Test projects (*.Tests, and the *.Testing fakes, builders and contract bases) live under tests/. Their
@@ -93,6 +95,9 @@
   </ItemGroup>
   <ItemGroup Condition="'$(AwBannedSymbolsNonHost)' == 'true'">
     <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.NonHost.txt" Link="BannedSymbols.NonHost.txt" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(AwBannedSymbolsTests)' == 'true'">
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)BannedSymbols.Tests.txt" Link="BannedSymbols.Tests.txt" />
   </ItemGroup>
 
   <!-- CA1502 (cyclomatic complexity) reads its limit from here. -->

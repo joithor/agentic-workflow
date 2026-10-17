@@ -39,7 +39,9 @@ public sealed class ResourceAdvisor(IHeavyReserve reserve, HeavyReservation rese
 
         if (refresh)
         {
-            return await reservation.Apply(team, cancellationToken).ConfigureAwait(false);
+            // Advisory: a reservation that can't be kept (unwritable state directory) leaves the line out; the builders advice stays.
+            var applied = await reservation.Apply(team, cancellationToken).ConfigureAwait(false);
+            return applied.IsError ? Results.Success<HeavySlots?>(value: null) : applied;
         }
 
         var kept = await reserve.Read(cancellationToken).ConfigureAwait(false);

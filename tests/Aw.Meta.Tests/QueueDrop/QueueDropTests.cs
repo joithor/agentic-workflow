@@ -1,5 +1,6 @@
 using System.Globalization;
 using Aw.Meta.Core;
+using Aw.Meta.Core.Health;
 using Aw.Meta.Core.Ids;
 using Aw.Meta.Core.Messages;
 using Aw.Meta.Core.Obligations;
@@ -97,6 +98,28 @@ public sealed class QueueDropTests
         var status = await Service().Handle(new StatusRequest(), CancellationToken.None);
 
         Assert.Equal(queued ? [250] : [], status.Value.MergeQueue.Select(q => q.Pr));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_drop_stands_when_the_reservation_cannot_be_kept()
+    {
+        await _world.Ready();
+        for (var n = 0; n < 3; n++)
+        {
+            await _world.Receive("m" + n.ToString(CultureInfo.InvariantCulture), "t1-api", string.Create(CultureInfo.InvariantCulture, $"ready #{250 + n} 079c2541"));
+        }
+
+        _world.Heavy.Record = new HeavyReserveRecord(1, 3, _world.Clock.GetUtcNow());   // depth 2 after the drop wants 0, so the write is reached
+        _world.Heavy.FailWrites = true;
+
+        var dropped = await Drop().Handle(new QueueDropRequest(250, "not ready"), CancellationToken.None);
+        var status = await Service().Handle(new StatusRequest(), CancellationToken.None);
+
+        Assert.True(dropped.IsSuccess, dropped.IsError ? dropped.Error.Message : string.Empty);
+        Assert.Equal(0, _world.Heavy.Writes);
+        Assert.Equal(1, _world.Heavy.Reserve);
+        Assert.Equal([251, 252], status.Value.MergeQueue.Select(q => q.Pr));
+        Assert.Contains(_world.Log.Lines, line => line.Contains("queue-drop #250", StringComparison.Ordinal));
     }
 
     [Theory, Trait("Lane", "unit")]

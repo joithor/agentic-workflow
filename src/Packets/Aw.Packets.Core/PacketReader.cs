@@ -126,7 +126,7 @@ public static class PacketReader
             : PacketsErrors.UnsupportedSchema.With(string.Create(CultureInfo.InvariantCulture, $"{path}: schemaVersion {declared}; this build reads {SchemaVersion}."));
     }
 
-    private static Result<Unit> Strict(string path, ReadOnlySpan<byte> bytes)
+    internal static Result<Unit> Strict(string path, ReadOnlySpan<byte> bytes)
     {
         if (bytes.StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF]))
         {

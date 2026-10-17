@@ -144,8 +144,8 @@ kept worktree with every reason.
 ## Health
 
 `aw-meta health` groups memory (Claude sessions, builds, Temporal, MCP servers, Docker, other), finds orphaned Temporal
-dev servers, duplicate MCP server copies, lanes with no live session and heavy-lock holders, and reports the heavy cap, the
-reservation the gates hold and the builders-per-lane advice (see Resources and adaptation). `aw-meta health
+dev servers, duplicate MCP server copies, lanes with no live session and heavy-lock holders, and reports the heavy reservation aw-meta
+computed from the merge queue (sized against `heavy.cap`; not what the wrapper's gates actually hold) and the builders-per-lane advice (see Resources and adaptation). `aw-meta health
 --kill-orphans` kills only orphans that match the rule (parent `systemd --user` or init, `--db-filename` under
 `/tmp/aw-sindri-*`, older than 5 min), by pid. Never `pkill -f` a pattern.
 
@@ -159,8 +159,8 @@ machine. The thresholds are the team config's `resources`, `builders` and `heavy
 - Run gates **only through `aw-meta gate-run`** (and reruns through `gate-rerun`). They carry `AW_HEAVY_PRIORITY=meta`, so the
   heavy-job wrapper lets them use any box-wide slot. aw-meta computes the slot reservation from the merge-queue depth (the more
   ready pull requests wait, the more slots the gates should keep) and prints it as `heavy reservation: N of C slots (queue depth
-  D) - set it with meta-gate-reserve D` in `status`, `health` and `gate-run`. **Before each gate, run `meta-gate-reserve D`** with
-  the depth `aw-meta status` just printed; aw-meta never writes the wrapper's files itself. When the queue empties (or the line says
+  D) - set it with meta-gate-reserve A` in `status`, `health` and `gate-run`. **Before each gate, run `meta-gate-reserve A`** with
+  the argument `aw-meta status` just printed (not the queue depth: the script's tiers are fixed, so aw-meta prints the argument that gives its computed slots; `gate-run` prints the line after its steps, so read it from `status` first); aw-meta never writes the wrapper's files itself. When the queue empties (or the line says
   `[stale: ...]`) run `status` again and apply it, or `meta-gate-reserve --clear`. A gate you run by hand has no priority and
   waits behind that reservation: don't.
 - Gates run **one at a time** (serial): start the next `gate-run` only when the previous one is recorded.
