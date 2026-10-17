@@ -39,12 +39,13 @@ public sealed class OnyxPreflightBlocksTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_null_endpoint_fails_with_010_unknown()
+    public void A_null_endpoint_fails_with_010_saying_it_could_not_be_read()
     {
         var docker = Check(Evaluate(FakeContainerRuntime.Healthy with { Endpoint = null }), "docker");
 
         Assert.Equal("SND-ONYX-010", docker.Problem?.Code);
-        Assert.Contains("(unknown)", docker.Problem?.Message, StringComparison.Ordinal);
+        Assert.Contains("couldn't read Docker's endpoint (`docker context inspect` failed); check `docker context ls`", docker.Problem?.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("another machine", docker.Problem?.Message, StringComparison.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]

@@ -154,6 +154,44 @@ public sealed class OnyxDownTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Down_with_no_docker_cli_is_001_with_the_install_fix_not_a_remote_refusal()
+    {
+        var rig = await RunningRig();
+        rig.Runtime.Facts = FakeContainerRuntime.NoCli;
+
+        var error = (await Down(rig)).Error;
+
+        Assert.Equal("SND-ONYX-001", error.Code);
+        Assert.Contains("Docker isn't installed", error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Stop", rig.Runtime.Calls, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Down_with_a_daemon_that_does_not_answer_is_001_isnt_running()
+    {
+        var rig = await RunningRig();
+        rig.Runtime.Facts = FakeContainerRuntime.DaemonDown;
+
+        var error = (await Down(rig)).Error;
+
+        Assert.Equal("SND-ONYX-001", error.Code);
+        Assert.Contains("Docker isn't running", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Down_with_an_unreadable_endpoint_says_so_under_010()
+    {
+        var rig = await RunningRig();
+        rig.Runtime.Facts = FakeContainerRuntime.Healthy with { Endpoint = null };
+
+        var error = (await Down(rig)).Error;
+
+        Assert.Equal("SND-ONYX-010", error.Code);
+        Assert.Contains("couldn't read Docker's endpoint (`docker context inspect` failed); check `docker context ls`", error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("another machine", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Down_reports_a_failed_stop_as_011()
     {
         var rig = await RunningRig();
