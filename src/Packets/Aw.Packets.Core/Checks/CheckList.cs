@@ -53,6 +53,8 @@ internal sealed class CheckList
         }
     }
 
+    internal void AddRange(IEnumerable<CheckResult> results) => _results.AddRange(results);
+
     internal void Unchecked(string rule, string reason) =>
         _results.Add(new CheckResult(rule, CheckState.Unchecked, "packet", reason, Fix: null));
 }

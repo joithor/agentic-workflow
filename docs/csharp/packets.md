@@ -64,12 +64,12 @@ application takes over once it exists, spec §4c; Sindri is built new, not porte
 `status` and `hash`); any other linked file's entry is `sha256:<hex of its bytes>`. Canonical JSON sorts object keys by
 ordinal, drops whitespace, keeps numbers as written, and writes strings as System.Text.Json's relaxed encoder does (the Kernel profile): `"` and `\` escaped, control characters in their short or `\u00XX` form, U+2028/U+2029 and characters outside the Basic Multilingual Plane as `\u` escapes (surrogate pairs), everything else as UTF-8. `CanonicalJsonTests` pins examples and one packet's hash; changing these bytes needs a new `digestVersion`.
 
-## Packet kinds (`--kind build|scoping`)
+## Packet kinds (`--kind build|scoping|design|plan|phase|proof|review|handoff`)
 
 `PacketKinds` (`Aw.Packets.Core.Kinds`) is the registry: a kind is a name and the fixed files its schema lists. Every
 command takes `--kind` (anywhere in its arguments; `build`, the packet above, when it isn't given; an unknown kind is a
 usage error, exit 2). The `build` kind has no fixed list (`packet.json` links its files); the `scoping` kind (scoping
-station spec §8.3, P1) lists twelve.
+station spec §8.3, P1) lists twelve; the six **line kinds** (below, LN-PKT1) list their files too, `packet.json` and `index.json` among them.
 
 | File | Format | Checked here |
 |---|---|---|
@@ -113,6 +113,79 @@ document so no build packet can collide with it: a JSON file's entry is the file
 JSON-lines or text file's entry is `sha256:<hex of its bytes>`. `ScopingDigestTests` pins one packet's hash, computed
 independently of the C# code.
 
+## Line kinds: `design`, `plan`, `phase`, `proof`, `review`, `handoff` (LN-PKT1)
+
+The spec-to-proven-PR line (`docs/superpowers/specs/2026-10-15-sindri-spec-to-proven-pr-line-design.md` §3.2) is a chain
+of packets, each an `aw-packets` kind. Unlike `scoping`, every line kind has a **`packet.json`** whose `links` name each of
+the kind's files and its `index.json`, so the canonical hash covers all of them, and **PKT-BASE-001** and the freeze
+checks apply to every kind. The kinds, their files and the `links` key that names each:
+
+| Kind (rule prefix) | Files (link key) |
+|---|---|
+| `design` (`PKT-DSN`) | `spec.md` (spec), `sections.json` (sections), `coverage.json` (coverage), `decisions.json` (decisions), `acceptance.json` (acceptance), `signals.json` (signals), `contracts.json` (contracts), `lens-rounds.jsonl` (lensRounds), `style.json` (style), `escapes.json` (escapes), `runs.json` (runs), `index.json` (index) |
+| `plan` (`PKT-PLN`) | `tasks.json` (**tasks**: PKT's own `links.tasks`, LN10), `graph.json` (graph), `exec-review.json` (execReview), `holdout.json` (holdout), `answers.jsonl` (answers), `index.json` (index) |
+| `phase` (`PKT-PHS`) | `phase.json` (phase), `acceptance.json` (acceptance), `signals.json` (signals), `holdout.json` (holdout), `design.md` (design), `index.json` (index) |
+| `proof` (`PKT-PRF`) | `proof.json` (proof), `red.json` (red), `before-after.json` (beforeAfter), `holdout.json` (holdout), `not-proven.md` (notProven), `acceptance.json` (acceptance), `index.json` (index), and every file under `app-run/` (appRun) and `evidence/` (evidence), listed one by one |
+| `review` (`PKT-REV`) | `review.json` (review), `index.json` (index) |
+| `handoff` (`PKT-HND`) | `pr.json` (pr), `body.md` (body), `green.json` (green), `index.json` (index) |
+
+**`packet.json`** (`schemas/packets/<kind>-packet.schema.json`, one per kind): `schemaVersion` 1, `kind`, `id` (a
+`PacketId`), `repo`, `baseSha` (text, so a short sha is a PKT-BASE-001 failure), `status`, `hash` and `links`. The links
+of a file are strings equal to the file's name; a proof pack's `appRun` and `evidence` are lists of paths under
+`app-run/` and `evidence/` (any format; hashed by content). No unknown field. The plan graph's `tasks.json` is PKT's
+`TaskPlan` (the build kind's, `schemas/packets/tasks.schema.json`): one task per phase, stacks as workstreams.
+
+**`index.json`** (`schemas/packets/index.schema.json`): `schemaVersion` 1, `kind` (the packet's), `parents` (the hashes of
+the packets it builds on, each once) and `acceptance` (`self`: the hash of its own `acceptance.json`, null when it has
+none; `extends`: the hash of the `acceptance.json` it extends, null at the root of the chain).
+
+**Rules (schema only).** One engine, one prefix per kind, numbered from 001. What the files *mean* (coverage, signals,
+the executability review, hidden scenarios, the PR) stays in Sindri's `DesignPacketChecks`, `PlanChecks` and
+`ProofChecks`, which `aw-packets` (tier 1) must not reference.
+
+| Rule (`P` = the kind's prefix) | Holds when |
+|---|---|
+| `P-001` | every file the kind lists is present |
+| `P-002` | the directory holds no other entry (a sub-directory counts, named with a trailing `/`; `app-run/` and `evidence/` are the proof pack's own) |
+| `P-003` | each JSON file is one strict JSON object (UTF-8, no byte order mark, no duplicate key, no null in a list), each JSON-lines line is one object, each text file is valid UTF-8 |
+| `P-004` | `packet.json` matches the kind's schema, says `"kind": "<this kind>"`, and has `schemaVersion` 1 |
+| `P-005` | `links` name each of the kind's files and nothing else; a linked directory's list equals the files found under it (an unlisted file would escape the hash), each once |
+| `P-006` | `index.json` matches its schema, says the kind, and lists no parent twice |
+| `PKT-BASE-001` | `baseSha` is a full commit sha that exists in the repository (`--repo`, default the packet directory) |
+| `PKT-DSN-007`, `PKT-PRF-007`, `PKT-PHS-010` | `acceptance.json` matches its schema: `schemaVersion` 1, `parent` (the hash of the previous `acceptance.json`, line spec LC-2), `items[]` with a non-blank `id` and `text`, a `status` of `failing`, `passing` or `superseded`, and `evidence[]` of `{kind, path, sha256, commit, at}`; the other item fields (`form`, `surfaces`, `citations`, `trust`, the item's own `parent`) pass through, since the scoping spec and Sindri's `LC-ACC-001` own them |
+| `PKT-DSN-008`, `PKT-PHS-011` | item ids are unique and no item is `passing`: only the proof pack flips an item (LC-2) |
+| `PKT-PRF-008` | item ids are unique and every `passing` item has evidence |
+| `PKT-PLN-007` | `tasks.json` matches the task-plan schema; then **the build kind's task rules run on it** (LN10): `PKT-ID-001`, `PKT-WS-001`, `PKT-GRAPH-001/002`, `PKT-BASE-001`, `PKT-SCOPE-001/002`, `PKT-ACC-001`, `PKT-EVID-001`, `PKT-DEC-001` (an empty decision log: it passes), `PKT-HOLD-001/002`; `PKT-SIZE-001` stays unchecked until LN-PKT3. They are unchecked when `tasks.json` can't be read |
+| `PKT-PHS-007` | the packet id is `<line>-<phase>` or `<line>-<phase>-a<n>`: lower-case letters, digits and `-`, at least two segments, an amendment number from 1 |
+| `PKT-PHS-008` | `phase.json` matches its schema: `goal`, `kind` (`feature`, `fix`, `refactor`, `docs`, `config`), `deps`, `size`, `base` (`rule` `default-branch` or `dependency-head`, and its `ref`, which for `dependency-head` is one of `deps`), `allowedFiles` (non-empty, each a relative glob or `new: <path>`, the write-scope syntax), `testChange[]` (`path` and `reason`), `readSeeds`, `budget`; an optional `amends`; no unknown field |
+| `PKT-PHS-009` | `phase.json` has `amends` exactly when the id ends `-a<n>`; an amendment's `paths` are non-empty write-scope entries and its `reason` is not blank |
+| `PKT-PHS-012` | `holdout.json` is `{schemaVersion, setHash, count}`: the hash and size of the hidden set, never its text |
+| `PKT-HND-007` | `pr.json` matches its schema: `base`, `headBranch`, `headSha` (a full sha), `stackParent` (a branch or null), `title`, `labels` (each once) |
+
+`PKT-xxx-007` and above that name a file check are `unchecked` when the file is missing or not well formed; `P-005` and
+`PKT-BASE-001` are `unchecked` when `packet.json` can't be read.
+
+**Phase-packet ids are unique per line** (line spec LN-PKT1): that is a fact about *all* of a line's packets, which one
+packet's schema-only `validate` cannot see, so Sindri checks it (as it does `SCP-LENS-001` for the scope packet). An
+amendment is a new packet with the next number whose `index.json` parent is the packet it amends, so the newest id
+under a phase is the packet in force.
+
+**`validate --kind <line kind> <packet-dir> [--repo <dir>] [--json]`** runs the rules above; output as the build kind's
+(`kind` is the kind and `packet` the id, null when `packet.json` can't be read). Exit 0 passed, 1 a check failed, 2 the
+directory is missing or the repository can't be read. It writes nothing.
+
+**`hash <packet-dir> --kind <line kind> [--json]`** prints the canonical hash, no check run; `files` lists the files it
+covers, the linked directories' files included. **The line hash** is the build kind's canonical form over the kind's files
+(`packet.json` without `status` and `hash`, a JSON file without `$schema`, any other file `sha256:<hex of its bytes>`) and the
+files under the linked directories, with `"kind":"<kind>"` in the hashed document so no packet of another kind can collide
+with it. Entries the kind doesn't list are not hashed (`validate` fails them). `LineDigestTests` pins one packet's hash,
+computed independently of the C# code.
+
+**`freeze --kind <line kind> <packet-dir> [--repo <dir>] [--json]`** validates, then records the hash at
+`packets/<owner>/<name>/<id>/frozen/<hex>.json` from `packet.json`'s `repo` and `id` (the record's `kind` is the kind, with
+its `baseSha`). A failed check freezes nothing (exit 1); the same hash again says `already frozen`; a packet whose
+`packet.json` records `status: frozen` and its `hash` freezes to the same hash, since neither is hashed.
+
 ## Exit codes and errors
 
 | Exit | When |
@@ -129,6 +202,7 @@ Errors go to stderr as `aw-packets: <code> <message>` (with `--json`, the `Error
 |---|---|---|
 | `IPacketSource` | `FileSystemPacketSource` | `InMemoryPacketSource`, `PacketSourceContract` |
 | `IScopingPacketSource` | `FileSystemScopingPacketSource` (the twelve listed files, a symbolic link refused; the other top-level names, never their content) | `InMemoryScopingPacketSource`, `ScopingPacketSourceContract` |
+| `ILinePacketSource` | `FileSystemLinePacketSource` (a line kind's listed files and every file under its linked directories, at most 2,000 of them; a symbolic link, linked file or directory, is refused; the other top-level names, never their content) | `InMemoryLinePacketSource`, `LinePacketSourceContract` |
 | `IRepoSnapshot` | `GitRepoSnapshot` (`git ls-tree -r -z`, 30 s limit per run) | `InMemoryRepoSnapshot`, `RepoSnapshotContract` |
 | `IFreezeLog` | `FileFreezeLog` (temp file, then move) | `InMemoryFreezeLog`, `FreezeLogContract` |
 | `TimeProvider` (BCL) | `TimeProvider.System` | `FakeTimeProvider` |

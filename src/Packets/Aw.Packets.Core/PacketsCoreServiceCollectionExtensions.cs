@@ -1,3 +1,4 @@
+using Aw.Packets.Core.Kinds.Line;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Packets.Core;
@@ -9,5 +10,5 @@ public static class PacketsCoreServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddPacketsCore(this IServiceCollection services) =>
-        services.AddScoped<PacketInspector>();
+        services.AddScoped<PacketInspector>().AddScoped<LinePacketInspector>();
 }
