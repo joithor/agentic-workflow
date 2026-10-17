@@ -14,4 +14,7 @@ public enum DaemonProblem
 
     /// <summary>The selected docker context doesn't exist.</summary>
     ContextMissing,
+
+    /// <summary>It didn't answer within the whole budget (the first try and the retry): it may be starting, as Docker Desktop does when it wakes from Resource Saver.</summary>
+    Starting,
 }

@@ -64,14 +64,51 @@ public sealed class DockerCliRuntimeTests
         => Assert.Equal(DaemonProblem.None, new DockerCliRuntime(DockerWithInfo("29.4.0", "16818978816", "/var/lib/docker")).Inspect(Token).DaemonProblem);
 
     [Fact, Trait("Lane", "unit")]
-    public void Inspect_treats_a_timeout_as_daemon_down()
+    public void Inspect_reports_a_daemon_that_times_out_twice_as_starting_after_25_seconds()
     {
-        // A daemon that is starting up and hangs: the 5 s timeout kills the call.
-        var facts = new DockerCliRuntime(Docker(ToolRun.TimedOut, ToolRun.TimedOut, ToolRun.TimedOut)).Inspect(Token);
+        // A daemon that is waking up and hangs: the 5 s try and the 20 s retry both end in the timeout.
+        var runner = Docker(ToolRun.TimedOut, ToolRun.TimedOut, ToolRun.TimedOut);
+
+        var facts = new DockerCliRuntime(runner).Inspect(Token);
 
         Assert.True(facts.CliFound);
         Assert.False(facts.DaemonAnswers);
         Assert.False(facts.ComposeV2);
+        Assert.Equal(DaemonProblem.Starting, facts.DaemonProblem);
+        Assert.Equal(25, facts.WaitedSeconds);
+        Assert.Equal([TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(20)], runner.Calls.Where(static c => c.Arguments[0] == "version").Select(static c => c.Timeout));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Inspect_retries_a_timed_out_version_once_with_a_longer_budget_and_succeeds()
+    {
+        var versionCalls = 0;
+        var runner = new FakeToolRunner((_, arguments) => arguments[0] switch
+        {
+            "version" => ++versionCalls == 1 ? ToolRun.TimedOut : Ok("29.4.0"),
+            "compose" => Ok("v2.40.3"),
+            _ => Ok("16818978816|Docker Desktop|/var/lib/docker"),
+        });
+
+        var facts = new DockerCliRuntime(runner).Inspect(Token);
+
+        Assert.True(facts.DaemonAnswers);
+        Assert.Equal("29.4.0", facts.ServerVersion);
+        Assert.Equal(DaemonProblem.None, facts.DaemonProblem);
+        Assert.Null(facts.WaitedSeconds);
+        Assert.Equal([TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(20)], runner.Calls.Where(static c => c.Arguments[0] == "version").Select(static c => c.Timeout));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Inspect_does_not_retry_a_version_that_failed_without_timing_out()
+    {
+        var runner = Docker(new ToolRun(ToolOutcome.Exited, 1, "", "permission denied"), Ok("v2.40.3"), Fails);
+
+        var facts = new DockerCliRuntime(runner).Inspect(Token);
+
+        _ = Assert.Single(runner.Calls, static c => c.Arguments[0] == "version");
+        Assert.Equal(DaemonProblem.PermissionDenied, facts.DaemonProblem);
+        Assert.Null(facts.WaitedSeconds);
     }
 
     [Fact, Trait("Lane", "unit")]

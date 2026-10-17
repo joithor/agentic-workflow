@@ -23,6 +23,9 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     /// <summary>A box whose daemon runs but whose socket this user may not open (a Linux user outside the docker group).</summary>
     public static ContainerRuntimeFacts PermissionDenied { get; } = DaemonDown with { DaemonProblem = DaemonProblem.PermissionDenied };
 
+    /// <summary>A box whose daemon didn't answer in 25 s (5 s, then a 20 s retry): Docker Desktop waking from Resource Saver.</summary>
+    public static ContainerRuntimeFacts Starting { get; } = DaemonDown with { DaemonProblem = DaemonProblem.Starting, WaitedSeconds = 25 };
+
     /// <summary>A box whose selected docker context doesn't exist.</summary>
     public static ContainerRuntimeFacts ContextMissing { get; } = DaemonDown with { DaemonProblem = DaemonProblem.ContextMissing };
 

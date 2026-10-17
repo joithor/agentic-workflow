@@ -74,6 +74,20 @@ public sealed class OnyxPreflightTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Evaluate_fails_001_with_a_wait_fix_when_the_daemon_did_not_answer_in_time()
+    {
+        var report = OnyxPreflight.Evaluate(FakeContainerRuntime.Starting, new HostFacts(_roomy, DataRoot: null, _free), _pins);
+
+        var docker = Check(report, "docker");
+        Assert.Equal(CheckState.Fail, docker.State);
+        Assert.Equal("SND-ONYX-001", docker.Problem?.Code);
+        Assert.Equal("Docker didn't answer within 25 s; it may be starting (Docker Desktop's Resource Saver)", docker.Detail);
+        Assert.Contains("wait", docker.Problem?.Message, StringComparison.Ordinal);
+        Assert.Contains("run this again", docker.Problem?.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("isn't running", docker.Problem?.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Evaluate_fails_001_with_a_context_fix_when_the_docker_context_does_not_exist()
     {
         var report = OnyxPreflight.Evaluate(FakeContainerRuntime.ContextMissing, new HostFacts(_roomy, DataRoot: null, _free), _pins);
