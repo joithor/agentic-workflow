@@ -55,6 +55,8 @@
   },
   "template": "template.md",
   "examples": [
-    "examples/behaviour.md"
+    "examples/behaviour.md",
+    "examples/summary.md",
+    "examples/hard-case.md"
   ]
 }

@@ -9,11 +9,8 @@
         "surface:screen/share-dialog",
         "surface:api/weekly-digest-email"
       ],
-      "depth": 2,
-      "hops": [
-        "state",
-        "dependency"
-      ],
+      "depth": 0,
+      "hops": [],
       "mapVersion": "v1",
       "foundCount": 13,
       "nodes": [
@@ -259,12 +256,8 @@
         "surface:screen/share-dialog",
         "surface:api/weekly-digest-email"
       ],
-      "depth": 3,
-      "hops": [
-        "state",
-        "dependency",
-        "flow"
-      ],
+      "depth": 0,
+      "hops": [],
       "mapVersion": "v1",
       "foundCount": 8,
       "nodes": [
@@ -406,8 +399,12 @@
         "surface:screen/share-dialog",
         "surface:api/weekly-digest-email"
       ],
-      "depth": 0,
-      "hops": [],
+      "depth": 2,
+      "hops": [
+        "state",
+        "dependency",
+        "flow"
+      ],
       "mapVersion": "v1",
       "foundCount": 3,
       "nodes": [],

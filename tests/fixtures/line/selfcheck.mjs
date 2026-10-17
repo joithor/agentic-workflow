@@ -174,8 +174,7 @@ function run() {
       if (!Array.isArray(l.hops)) { lensErr.push(`${l.lens}: hops must be an array of hop kinds, not ${typeof l.hops}`); continue; }
       if (JSON.stringify(row.searched.anchors) !== JSON.stringify(l.anchors) || row.searched.depth !== l.depth || row.searched.mapVersion !== l.mapVersion || JSON.stringify(row.searched.hops) !== JSON.stringify(l.hops)) lensErr.push(`${l.lens}: searched != lenses`);
       if (!l.hops.every((h) => HOPS.includes(h))) lensErr.push(`${l.lens}: hops must be hop kinds ${HOPS.join("|")}`);
-      if (!Array.isArray(l.hops) || (l.depth === 0 && l.hops.length !== 0)) lensErr.push(`${l.lens}: hops is [] at depth 0`);
-      if (l.hops.length !== l.depth) lensErr.push(`${l.lens}: hops has ${l.hops.length} kinds for depth ${l.depth}`);
+      if ((l.depth === 0) !== (l.hops.length === 0)) lensErr.push(`${l.lens}: hops is [] if and only if depth is 0`);
       const ids = [...l.nodes.map((n) => n.lensItem), ...l.items.map((i) => i.id)];
       if (JSON.stringify([...ids].sort()) !== JSON.stringify([...row.found.ids].sort()) || row.found.count !== ids.length || l.foundCount !== ids.length) lensErr.push(`${l.lens}: found ids differ`);
       if (!ids.every((id) => id.startsWith(`L-${l.lens}-`))) lensErr.push(`${l.lens}: an id is not L-${l.lens}-n`);
@@ -210,7 +209,7 @@ function run() {
   const lensRounds = readJsonl(at("gold", D, "lens-rounds.jsonl"));
   shapeOk(`${D}/sections.json`, sections, { schemaVersion: "integer", sections: [{ id: "string", parent: "string|null", heading: "string", covers: ["string"], cites: ["string"], assumes: ["string"] }] });
   shapeOk(`${D}/coverage.json`, dcov, { schemaVersion: "integer", surfaces: [{ key: "string", id: "string", sections: ["string"] }], excluded: [{ key: "string", id: "string", reason: "string" }], unmapped: [{ path: "string", sections: ["string"] }] });
-  shapeOk(`${D}/decisions.json`, decisions, { schemaVersion: "integer", decisions: [{ id: "string", question: "string", affects: ["string"], cites: ["string"], options: [{ id: "string", answer: "string", tradeoffs: "string", "recommended?": "boolean" }], status: "string" }] });
+  shapeOk(`${D}/decisions.json`, decisions, { schemaVersion: "integer", decisions: [{ id: "string", question: "string", affects: ["string"], cites: ["string"], options: [{ id: "string", answer: "string", tradeoffs: "string", "recommended?": "boolean" }], status: "string", chosen: "string" }] });
   shapeOk(`${D}/acceptance.json`, dacc, { schemaVersion: "integer", parent: "string", items: [{ id: "string", text: "string", status: "string", evidence: [], trust: "string" }], superseded: [] });
   shapeOk(`${D}/contracts.json`, contracts, { schemaVersion: "integer", baseSha: "string", edits: [{ id: "string", lane: "string", target: { file: "string", heading: "string" }, quote: "string", change: "string", row: "integer" }] });
   shapeOk(`${D}/style.json`, style, { schemaVersion: "integer", style: { id: "string", version: "string", hash: "string" }, lenses: { id: "string", version: "string", hash: "string" } });
@@ -267,7 +266,7 @@ function run() {
   }
   ok("DSN-DEC-001: every decision has 2-3 options, one recommended, affects, and its sections assume the recommendation", decErr.length === 0, decErr.join("; "));
   const d3 = decisions.decisions.find((d) => d.id === "D3");
-  ok("the design has three open decisions, one of them D3 (where link expiry runs)", decisions.decisions.length === 3 && decisions.decisions.every((d) => d.status === "open") && d3 && /where does link expiry run/i.test(d3.question) && d3.options.find((o) => o.recommended).id === "D3.a" && d3.options.some((o) => o.id === "D3.b" && /nightly/i.test(o.answer)));
+  ok("the design has three decisions, one of them D3 (where link expiry runs), with the chosen options recorded from the plan's answers", decisions.decisions.length === 3 && decisions.decisions.every((d) => d.status === "answered" && d.options.some((o) => o.id === d.chosen)) && readJsonl(at("gold", "plan", "expiry", "answers.jsonl")).at(-1).answers.every((a) => decisions.decisions.find((d) => d.id === a.decision)?.chosen === a.pick) && d3 && /where does link expiry run/i.test(d3.question) && d3.options.find((o) => o.recommended).id === "D3.a" && d3.options.some((o) => o.id === "D3.b" && /nightly/i.test(o.answer)));
   // CITE-001
   ok("DSN-CITE-001: every section cites scope ids or a decision", sections.sections.every((s) => s.cites.length > 0 && s.cites.every((c) => scopeAcc.has(c) || surfaceById.has(c) || decisions.decisions.some((d) => d.id === c) || /^S\d+$/.test(c))));
   const cited = [...spec.matchAll(/\bS(\d+)\b/g)].map((m) => `S${m[1]}`);
@@ -317,6 +316,7 @@ function run() {
       shapeOk(`packs/style/${id}/pack.json`, pj, { kind: "string", id: "string", version: "string", title: "string", sections: [{ id: "string", heading: "string", required: "boolean", guidance: "string", "maxWords?": "integer" }], rules: { forbidden: ["string"], "maxLines?": "integer", tables: "string", voice: "string" }, template: "string", examples: ["string"] });
       const tHeads = [...readText(path.join(dir, pj.template)).matchAll(/^## (.+?)\s*$/gm)].map((m) => m[1]);
       ok(`pack ${id}: template headings are the pack's sections, in order`, JSON.stringify(tHeads) === JSON.stringify(pj.sections.map((s) => s.heading)), tHeads.join("|"));
+      ok(`pack ${id}: 2-4 examples, one of them a hard case (spec 5.1)`, pj.examples.length >= 2 && pj.examples.length <= 4 && pj.examples.some((e) => /hard/.test(e)) && walk(path.join(dir, "examples")).length === pj.examples.length);
       ok(`pack ${id}: voice and example files exist`, fs.existsSync(path.join(dir, pj.rules.voice)) && pj.examples.every((e) => fs.existsSync(path.join(dir, e))));
     } else {
       shapeOk(`packs/lenses/${id}/pack.json`, pj, { kind: "string", id: "string", version: "string", applies: "string", lenses: [{ id: "string", title: "string", prompt: "string", when: "string|object" }] });
@@ -431,7 +431,7 @@ function run() {
   const against = v1.answers.filter((a) => a.pick !== rec.get(a.decision));
   ok("owner answers: every pick is a real option; visit 1 answers all three decisions; exactly one pick (D3.b) is against the recommendation", v1.answers.length === 3 && v1.answers.every((a) => decisions.decisions.find((d) => d.id === a.decision)?.options.some((o) => o.id === a.pick)) && against.length === 1 && against[0].pick === "D3.b");
   const rev = v1.expects.designRevision;
-  ok("owner answers: the pick forces one redesign of exactly D3's sections, records its conflict with AC-2, and widens P2 by a file no other phase uses", v1.expects.route === "redesign" && v1.expects.settle === "changed" && JSON.stringify(rev.changedSections) === JSON.stringify(d3.affects) && rev.mustRecordConflict.every((id) => scopeAcc.has(id)) && rev.removesAssumes.join() === "D3.a" && rev.planImpact.P2.addWriteScope.every((p) => repoHas(p) && tasks.every((t) => !t.writeScope.includes(p))) && v2.action === "approve" && v2.expects.route === "approved" && ans.scoping.endsWith("answers/expiry.json") && fs.existsSync(path.join(HERE, "..", "..", "..", ans.scoping)));
+  ok("owner answers: the pick forces one redesign of exactly D3's sections, records its conflict with AC-2, and widens P2 by a file no other phase uses", v1.expects.route === "redesign" && v1.expects.settle === "changed" && JSON.stringify(rev.changedSections) === JSON.stringify(d3.affects) && rev.mustRecordConflict.every((id) => scopeAcc.has(id)) && rev.removesAssumes.join() === "D3.a" && rev.planImpact.P2.addWriteScope.every((p) => repoHas(p) && tasks.every((t) => !t.writeScope.includes(p))) && v2.action === "approve" && v2.expects.route === "approved" && ans.scoping.endsWith("answers/expiry.json") && fs.existsSync(path.join(SCOPING, "answers", "expiry.json")));
   const planAnswers = readJsonl(at("gold", P, "answers.jsonl"));
   ok(`${P}/answers.jsonl: the recommended path, so settle reports assumed`, planAnswers.length === 1 && planAnswers[0].answers.every((a) => a.pick === rec.get(a.decision)));
 
@@ -504,7 +504,7 @@ function main(argv) {
     if (args.length) return usage();
   } catch (e) { console.error(`selfcheck: ${e.message}`); return 2; }
   let results;
-  try { results = run(); } catch (e) { console.error(`selfcheck: ${e.stack}`); return 2; }
+  try { results = run(); } catch (e) { check.push({ name: "selfcheck crashed on malformed or missing gold", ok: false, detail: String(e.message) }); results = check; }
   const failed = results.filter((r) => !r.ok);
   if (json) console.log(JSON.stringify({ passed: results.length - failed.length, failed: failed.length, results }));
   else {

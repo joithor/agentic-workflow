@@ -17,13 +17,6 @@
       "verdict": "pass",
       "category": "unhappy-path",
       "observed": "Status 404; the body was empty."
-    },
-    {
-      "scenario": "P2-C",
-      "item": null,
-      "verdict": "not-found",
-      "category": "canary",
-      "observed": "No such phrase seen in the app."
     }
   ]
 }

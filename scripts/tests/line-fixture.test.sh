@@ -19,6 +19,9 @@ check() {
 WORK="$(mktemp -d)"
 trap 'find "$WORK" -delete 2>/dev/null' EXIT
 mkdir -p "$WORK/a" "$WORK/b"
+# The canary phrase and a scenario's text are read from the hidden sets, never written here (they must appear nowhere else).
+PHRASE="$(sed -n 's/.*"phrase": "\([^"]*\)".*/\1/p' "$FX/holdout/expiry/P1.set.json")"
+LEAK_TEXT="$(node -p 'JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).scenarios.find(s=>s.id==="P2-H1").expected' "$FX/holdout/expiry/P2.set.json")"
 
 # --- the fixture's own checks ---
 out="$(node "$FX/selfcheck.mjs" 2>&1)"; rc=$?
@@ -34,15 +37,24 @@ mutate() { # mutate <name> <expect-text> <command run inside the copy of tests/f
   ( cd "$copy/line" && eval "$cmd" ) >/dev/null 2>&1
   local got rc; got="$(node "$copy/line/selfcheck.mjs" 2>&1)"; rc=$?
   check "a broken fixture fails selfcheck: $name" "$rc" "1"
-  case "$got" in *"$expect"*) echo "ok - ...and names: $expect" ;; *) echo "not ok - expected the failure to name: $expect"; echo "$got" | grep -A1 '^not ok' | head -6; fail=1 ;; esac
+  if printf '%s\n' "$got" | grep '^not ok - ' | grep -qF -- "$expect"; then echo "ok - ...and a failing check names: $expect"; else echo "not ok - expected a failing check to name: $expect"; printf '%s\n' "$got" | grep -A1 '^not ok' | head -6; fail=1; fi
 }
+# an unmutated copy passes clean, so a mutation failing means something
+mkdir -p "$WORK/clean" && cp -R "$FX" "$WORK/clean/line" && cp -R "$ROOT/tests/fixtures/scoping" "$WORK/clean/scoping"
+node "$WORK/clean/line/selfcheck.mjs" >/dev/null 2>&1; check "an unmutated copy of the fixture passes selfcheck (exit 0)" "$?" "0"
 mutate hops-integer "lenses.json agrees with coverage.json" "sed -i 's/\"hops\": \\[\\]/\"hops\": 0/' gold/scope/expiry/lenses.json"
 mutate p2-p3-share-a-file "PKT-SCOPE-002" "sed -i 's|\"web/api-client.ts\"|\"src/sharing/routes.ts\"|' gold/plan/expiry/packet.json"
-mutate canary-leaked-to-readme "canary phrase appears" "echo 'plover-lantern-umber-0417' >> README.md"
-mutate hidden-text-leaked "no hidden scenario text" "echo 'The page tells the visitor that the link expired and shows no part of the note.' >> gold/design/expiry/spec.md"
+mutate canary-leaked-to-readme "canary phrase appears" "echo '$PHRASE' >> README.md"
+mutate hidden-text-leaked "no hidden scenario text" "echo '$LEAK_TEXT' >> gold/design/expiry/spec.md"
 mutate formal-pack-copies-plain "two style packs really differ" "cp packs/style/plain/pack.json packs/style/formal/pack.json && sed -i 's/\"id\": \"plain\"/\"id\": \"formal\"/' packs/style/formal/pack.json"
 mutate planted-red-passes-removed "PL-RED" "sed -i 's/\"outcome\": \"passed\"/\"outcome\": \"failed\"/' gold/build/red.json"
 mutate secret-shaped-file "secret-shaped" "printf 'k = \"ghp_%s\"\\n' abcdefghijklmnopqrstuvwxyz0123456789 > notes.txt"
+mutate pl-lens-defect-not-in-spec "PL-LENS" "sed -i 's/UTC instant/UTC moment/' gold/lens/design-defect.json"
+mutate pl-scope-inside-allowed "PL-SCOPE" "sed -i 's|\"src/digest/digest.ts\"|\"src/sharing/links.ts\"|' planted.json"
+mutate pl-canary-not-in-message "PL-CANARY" "sed -i 's/see \$CANARY/see nothing/' history/build.sh"
+mutate pl-leak-report-clean "PL-LEAK" "node -e 'const f=\"gold/prove/holdout-result.leaky.json\",fs=require(\"fs\"),j=JSON.parse(fs.readFileSync(f,\"utf8\"));j.results[0].observed=\"Status 410.\";fs.writeFileSync(f,JSON.stringify(j,null,2))'"
+mutate hops-not-hop-kinds "hop-kind arrays" "sed -i 's/\"dependency\"/\"walk\"/' gold/scope/expiry/lenses.json gold/scope/expiry/coverage.json"
+mutate malformed-gold-is-a-check "crashed" "echo '{' > gold/design/expiry/signals.json"
 mutate packet-edited-after-freeze "freeze record hash" "echo >> gold/design/expiry/spec.md"
 
 # --- the history: reproducible, with the planted items ---
@@ -76,7 +88,6 @@ check "the red commit changes only test files" "$(git -C "$R" diff --name-only m
 check "the red commit holds the tagged test" "$(git -C "$R" show line/p1-red:tests/expiry.test.ts | grep -c 'PLANTED PL-RED')" "1"
 
 # PL-CANARY: the P1 phrase is in exactly one commit message, and in no diff
-PHRASE="$(sed -n 's/.*"phrase": "\([^"]*\)".*/\1/p' "$FX/holdout/expiry/P1.set.json")"
 check "the P1 canary phrase is in exactly one commit message" "$(git -C "$R" log --all --format=%B | grep -c -F "$PHRASE")" "1"
 check "...the last commit of line/p1" "$(git -C "$R" log -1 --format=%s line/p1 | grep -c -F "$PHRASE")" "1"
 check "the phrase is in no diff of the branch" "$(git -C "$R" log -p main..line/p1 | grep -c -F "+$PHRASE")" "0"

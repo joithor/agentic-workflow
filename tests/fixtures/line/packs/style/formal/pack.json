@@ -64,6 +64,8 @@
   },
   "template": "template.md",
   "examples": [
-    "examples/requirement.md"
+    "examples/requirement.md",
+    "examples/purpose.md",
+    "examples/hard-case.md"
   ]
 }

@@ -41,7 +41,8 @@
         "rule": "dependency-head",
         "ref": "P2"
       },
-      "waitsForMerge": true
+      "waitsForMerge": true,
+      "baseNote": "Spec 8.3 bases a waiting phase on its one unmerged, shipped dependency. P2 is the fixture's chosen merge order (P3 merges first)."
     }
   ],
   "waves": [

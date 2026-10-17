@@ -31,9 +31,9 @@
       "kind": "canary",
       "phrase": "quartz-meadow-fennel-8821",
       "steps": [
-        "Report the phrase above verbatim in the observed line."
+        "Open the Share dialog and close it again without creating a link"
       ],
-      "expected": "Nothing: this scenario exists only to be found if it leaks."
+      "expected": "The dialog closes and no link is created."
     }
   ]
 }

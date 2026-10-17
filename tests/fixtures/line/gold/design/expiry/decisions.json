@@ -24,7 +24,8 @@
           "tradeoffs": "Any end date; needs a date input, its validation and a time zone choice in the dialog."
         }
       ],
-      "status": "open"
+      "status": "answered",
+      "chosen": "D1.a"
     },
     {
       "id": "D2",
@@ -49,7 +50,8 @@
           "tradeoffs": "A visitor knows whom to ask; the page reveals that the note exists and who wrote about it."
         }
       ],
-      "status": "open"
+      "status": "answered",
+      "chosen": "D2.a"
     },
     {
       "id": "D3",
@@ -76,7 +78,8 @@
           "tradeoffs": "No cost on read; an expired link stays open for up to a day, which AC-2 forbids."
         }
       ],
-      "status": "open"
+      "status": "answered",
+      "chosen": "D3.a"
     }
   ]
 }

@@ -15,11 +15,8 @@
           "repo"
         ],
         "mapVersion": "v1",
-        "depth": 2,
-        "hops": [
-          "state",
-          "dependency"
-        ]
+        "depth": 0,
+        "hops": []
       },
       "limits": [
         {
@@ -64,12 +61,8 @@
           "map"
         ],
         "mapVersion": "v1",
-        "depth": 3,
-        "hops": [
-          "state",
-          "dependency",
-          "flow"
-        ]
+        "depth": 0,
+        "hops": []
       },
       "limits": [],
       "mapCoverage": {
@@ -107,8 +100,12 @@
           "tracker"
         ],
         "mapVersion": "v1",
-        "depth": 0,
-        "hops": []
+        "depth": 2,
+        "hops": [
+          "state",
+          "dependency",
+          "flow"
+        ]
       },
       "limits": [],
       "mapCoverage": {

@@ -11,11 +11,11 @@ phrases are random word groups, and no file holds a secret-shaped string (the hi
 
 | Part | What |
 |---|---|
-| `gold/scope/{expiry,archive}/` | The frozen **scope packet** of each change, the 13 files of scoping spec §8.3 (`scope-map`, `acceptance`, `coverage`, `lenses` …, `index`). Built from the scoping gold, so ids, texts and surfaces agree with it. `lenses.json`'s `hops` is an array of hop kinds from `state, dependency, flow, component` in cascade order (`[]` at depth 0), as many as `depth` |
-| `gold/design/expiry/` | The gold **design** packet (§3.2 row 2): `spec.md` in the `plain` pack, `sections`, `coverage`, **three open decisions** (D1 the picker's choices, D2 what the expired page shows, **D3 where expiry runs**), `signals` (a measurable signal per item), `contracts` (one edit to decision 0001, quoted from the repo), `lens-rounds` (the `design-five` pack, two rounds), `style`, `escapes` (RG-4, the export regression the design adds), `runs`. `expiry.formal.spec.md` is the same design in the `formal` style |
+| `gold/scope/{expiry,archive}/` | The frozen **scope packet** of each change, the 13 files of scoping spec §8.3 (`scope-map`, `acceptance`, `coverage`, `lenses` …, `index`). Built from the scoping gold, so ids, texts and surfaces agree with it. `lenses.json`'s `hops` is the array of hop kinds the lens walked, from `state, dependency, flow, component`, in cascade order (the default `[state, dependency, flow]`; `[]` when the lens does no graph walk, depth 0). Only `related` is a cascade lens (scoping spec §5.1: the cascade `affects`), so it has depth 2 and the three default hops; code, product and history have depth 0 and `[]`. The scoping gold files the tracker issues under `related`, which a real cascade would not return; the ids stay as the scoping gold has them |
+| `gold/design/expiry/` | The gold **design** packet (§3.2 row 2): `spec.md` in the `plain` pack, `sections`, `coverage`, **three decisions** (D1 the picker's choices, D2 what the expired page shows, **D3 where expiry runs**), each with its chosen option filled as at stop 2 (all recommended), `signals` (a measurable signal per item), `contracts` (one edit to decision 0001, quoted from the repo), `lens-rounds` (the `design-five` pack, two rounds), `style`, `escapes` (RG-4, the export regression the design adds), `runs`. `expiry.formal.spec.md` is the same design in the `formal` style |
 | `gold/plan/expiry/` | The gold **plan** packet (§3.2 row 3, §6): `packet.json` (PKT's task plan, four phases with `writeScope`, test changes, hidden entries with no text), `graph.json` (waves, stacks, bases), `exec-review.json`, `holdout.json` (set hashes and counts), `answers.jsonl`. P1 the expiry field and migration; P2 the public route's expired page, stacked on P1; P3 the expiry picker, beside P2 (also on P1); P4 regression coverage for export and the digest, after both |
 | `gold/freeze.json` | The freeze record of each packet (hash, `by: owner`) |
-| `holdout/expiry/P1..P4.{set,seal}.json` | **Hidden-scenario sets** (§9.1): two scenarios and one canary scenario each, and the seal binding the set to the plan. In the real line they live outside every repo; they are here because they are fixture data |
+| `holdout/expiry/P1..P4.{set,seal}.json` | **Hidden-scenario sets** (§9.1): two scenarios and one canary scenario each (a decoy that never asks for the phrase, so a faithful evaluator cannot leak it; it gets no evaluator result), and the seal binding the set to the plan. In the real line they live outside every repo; they are here because they are fixture data |
 | `packs/style/{plain,formal}/` | Two style packs (§5.1) that differ in headings, section limits, forbidden phrases, table rule, line cap and voice, so `DSN-STYLE-001` is tested both ways |
 | `packs/lenses/{design-five,design-two}/` | The five-lens pack (product, architecture, design, devex, security; the default) and a two-lens pack (architecture, time-and-storage; the non-default one) |
 | `profile-packs.json` | The profile keys that name the default packs, and the pins (§5.1) |
@@ -44,7 +44,7 @@ under both packs, `LENS-001/002/003`, `ESC-001`); the plan's DAG (P2 on P1, P3 b
 disjoint paths), `PKT-SCOPE-001/002`, `PLN-SIZE/ACC/SIG/STACK/EXEC-001`; the hidden sets, seals and counts; each canary in its
 set and nowhere else, and no 8-word run of scenario text outside the store (the planted report excepted); the two style packs
 really differ; the pins; the owner answers; every planted item exists once and is tagged; no secret-shaped file.
-`bash scripts/tests/line-fixture.test.sh` runs it, breaks a copy nine ways to show each class of check can fail, and builds the
+`bash scripts/tests/line-fixture.test.sh` runs it, breaks a copy 14 ways (each must name its failing check; an unmutated copy must pass) to show each class of check can fail, and builds the
 history twice (same head, pinned tags).
 
 ## Using it
@@ -60,7 +60,7 @@ bash scripts/tests/line-fixture.test.sh              # the CI suite
 
 1. **Hashes.** `aw-packets hash` has no `scoping`, `design` or `plan` kind yet (LN-PKT1). Each packet's hash here is `dirHash`: SHA-256 over the sorted `path NUL sha256(bytes) LF` lines of its files. `index.json` carries `parents` (hashes), and `acceptance: { self, extends }` (the file hash of its own `acceptance.json`, and of the one it extends). Pack pins use the same `dirHash`. These are stand-ins; the owner proof below swaps them for `aw-packets hash`.
 2. **Plan packet status.** `packet.json` has `status: draft` and `hash: null`, as `aw-packets validate` reads it before a freeze; the frozen state is `gold/freeze.json`, the stand-in for the record `aw-packets freeze` writes. No phase packets (§3.2 row 4) are included: `step.plan.freeze` makes them by code from the plan.
-3. **Gold design and plan are the candidate at stop 2 under the recommended answers** (settle `assumed`). The D3.b redesign is described by `answers/owner.json` (`expects.designRevision`: the sections to change, the conflict to record, P2's widened scope), not by a second design.
+3. **Gold design and plan are the packets frozen after the recommended answers** (settle `assumed`; `decisions.json` records `chosen` for D1.a, D2.a, D3.a). The D3.b redesign is described by `answers/owner.json` (`expects.designRevision`: the sections to change, the conflict to record, P2's widened scope), not by a second design.
 4. **Digest notice (AC-6) sits in P4.** The spec says P4 is regression coverage for export and the digest; AC-6 (the scope's afterAnswers item) must be in exactly one phase (`PLN-ACC-001`), and its code is `src/digest/digest.ts`, which only P4 writes. So P4 holds AC-6, RG-2 and RG-4.
 5. **RG-4 (export unchanged) is added by the design.** The spec names export in P4 but the scoping gold lists export as a decoy. The design adds RG-4 citing sec-4, and records two `line.escape` rows (`DSN-ESC-001`).
 6. **P3 depends on P1**, not on P2, so it is parallel to P2 and stacked on the same base; P4 has two unmerged deps and is `waitsForMerge`. Stacks in `graph.json` are numbers (P1 and P2 in stack 1, P3 in stack 2); a base rule is `default-branch` or `dependency-head`.
@@ -70,7 +70,7 @@ bash scripts/tests/line-fixture.test.sh              # the CI suite
 10. **Hidden scenarios** have no `text` field; `steps` and `expected` are the text. The canary is a scenario of `kind: canary` with a `phrase`. A set's hash is the SHA-256 of its file; the seal also holds the SHA-256 of the plan's `packet.json`.
 11. **The red test "passes on the red commit"** is recorded in `gold/build/red.json` (the proof pack's `red.json` shape, simplified); the repo is never compiled or run, so the suite checks the tag, the file and the counts, not a test run.
 12. **Packet files are generated once and frozen.** There is no generator in the tree: an edit to a gold file fails the freeze check, which prints both hashes to paste into `gold/freeze.json` (and `index.json` of a child packet) in a reviewed change.
-13. **Spec conflicts.** §6.1's `step.plan.freeze` freezes the design and plan together; the fixture records both in `freeze.json` at the same instant. `hops` follows the instruction (an array of hop kinds), not any integer reading.
+13. **Spec conflicts.** §6.1's `step.plan.freeze` freezes the design and plan together; the fixture records both in `freeze.json` at the same instant. `hops` is the set of hop kinds walked (scoping spec C4, C6), not one per depth level; selfcheck requires hop kinds from the four, no duplicates, and `[]` if and only if depth is 0.
 
 ## Remaining owner proof (what closes later)
 
@@ -81,3 +81,10 @@ Not built here, and the fixture is ready for each:
 - `aw-packets validate gold/plan/expiry --repo <built fixture-notes>` (needs the plan packet kind, **LN-PKT1**), and `aw-packets hash`/`freeze` to replace the stand-in hashes of Choice 1.
 - `sindri pack check packs/style/formal` and the other three packs (**LN-API4**); `recipe prompt-eval` over the seeds (**SC-E**, LN-S1).
 - Holdout log scan on `line/p1-canary` (`PRV-HOLD-003`, **prove station**) and `PRV-HOLD-001/002` over the leaky report.
+
+## Notes added in review
+
+- **Verdicts.** The prove reports use only the spec's verdicts (`pass`, `fail`, A.9); the canary scenario gets no evaluator result. The planted leaky report quotes the scenario's text, not the canary phrase, so the phrase stays in the hidden sets (and the built history) only.
+- **P4's base.** `graph.json` names P2 as P4's base; spec §8.3 bases a waiting phase on its one unmerged, shipped dependency, so which one is a runtime fact. The static `P2` is the fixture's chosen merge order (P3 merges first), stated in the phase's `baseNote`.
+- **`runs.json`** (scope and design) has one row per step type, not per round.
+- **Style packs** each have three examples, one a hard case (§5.1).
