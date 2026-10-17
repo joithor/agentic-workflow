@@ -31,9 +31,9 @@ internal static class IsolatedLauncherRead
         {
             document = JsonDocument.Parse(user);
         }
-        catch (JsonException)
+        catch (JsonException e)
         {
-            return baseline with { Problem = "launcher.json isn't valid JSON" };
+            return baseline with { Problem = "launcher.json isn't valid JSON", Unusable = true, ProblemLine = (int)(e.LineNumber ?? -1) + 1 };
         }
 
         using (document)
@@ -41,14 +41,14 @@ internal static class IsolatedLauncherRead
             var root = document.RootElement;
             if (root.ValueKind != JsonValueKind.Object || !root.TryGetProperty("schema", out var schema) || schema.ValueKind != JsonValueKind.Number || !schema.TryGetInt32(out var version) || version != 1)
             {
-                return baseline with { Problem = "launcher.json needs \"schema\": 1" };
+                return baseline with { Problem = "launcher.json needs \"schema\": 1", Unusable = true };
             }
 
-            return Sections(builtins, root);
+            return Sections(builtins, user, root);
         }
     }
 
-    private static LauncherConfig Sections(byte[] builtins, JsonElement root)
+    private static LauncherConfig Sections(byte[] builtins, byte[] user, JsonElement root)
     {
         var problems = new List<string>();
         var attended = new List<string>();
@@ -60,8 +60,9 @@ internal static class IsolatedLauncherRead
         Attended<ViewerSection>(root, "viewer", LauncherConfigFile.Viewer, attended);
         Attended<HostSection>(root, "host", LauncherConfigFile.Host, attended);
         var sessions = Sessions(root, problems);
-        var agents = Agents(builtins, root, problems);
-        return new LauncherConfig(agents, sessions) { Problem = problems.Count == 0 ? null : string.Join("; ", problems), AttendedProblems = attended };
+        var dropped = new List<DroppedEntry>();
+        var agents = Agents(builtins, user, root, problems, dropped);
+        return new LauncherConfig(agents, sessions) { Problem = problems.Count == 0 ? null : string.Join("; ", problems), AttendedProblems = attended, Dropped = dropped };
     }
 
     private static void Attended<T>(JsonElement root, string name, Func<T?, string?> check, List<string> attended)
@@ -98,15 +99,18 @@ internal static class IsolatedLauncherRead
         return stayOff ? new SessionsSection { Enabled = false } : null;
     }
 
-    private static List<AgentEntry> Agents(byte[] builtins, JsonElement root, List<string> problems)
+    private static List<AgentEntry> Agents(byte[] builtins, byte[] user, JsonElement root, List<string> problems, List<DroppedEntry> dropped)
     {
+        var lines = AgentLines.Of(user);
+        var named = new Dictionary<string, AgentSection>(StringComparer.Ordinal);
+        var sink = new Problems(problems, dropped, lines);
         var baselineAgents = AwJson.Deserialize<LauncherDocument>(builtins, LauncherConfigFile.Json).Value.Agents ?? [];
         var merged = new Dictionary<string, AgentSection>(baselineAgents, StringComparer.Ordinal);
         if (root.TryGetProperty("agents", out var added) && added.ValueKind == JsonValueKind.Object)
         {
             foreach (var property in added.EnumerateObject())
             {
-                Add(property, baselineAgents, merged, problems);
+                Add(property, baselineAgents, merged, sink, named);
             }
         }
         else if (root.TryGetProperty("agents", out _))
@@ -117,7 +121,7 @@ internal static class IsolatedLauncherRead
         var entries = new List<AgentEntry>();
         foreach (var (id, section) in merged)
         {
-            var entry = AgentSections.Entry(id, section);
+            var entry = AgentSections.Entry(id, section, AgentSections.SourceOf(id, baselineAgents, named));
             if (entry.IsSuccess)
             {
                 entries.Add(entry.Value);
@@ -131,18 +135,27 @@ internal static class IsolatedLauncherRead
         return entries;
     }
 
-    private static void Add(JsonProperty property, Dictionary<string, AgentSection> baselineAgents, Dictionary<string, AgentSection> merged, List<string> problems)
+    private sealed record Problems(List<string> Messages, List<DroppedEntry> Dropped, Dictionary<string, int> Lines)
+    {
+        internal void Drop(string id, string reason)
+        {
+            Messages.Add(reason);
+            Dropped.Add(new DroppedEntry(id, Lines.GetValueOrDefault(id), reason));
+        }
+    }
+
+    private static void Add(JsonProperty property, Dictionary<string, AgentSection> baselineAgents, Dictionary<string, AgentSection> merged, Problems problems, Dictionary<string, AgentSection> named)
     {
         var id = property.Name;
         var section = Section<AgentSection>(property.Value);
         var builtIn = baselineAgents.TryGetValue(id, out var baseline);
         if (section is null)
         {
-            problems.Add($"agents.{id} isn't valid");
+            problems.Drop(id, $"agents.{id} isn't valid");
         }
         else if (section.Override == true != builtIn)
         {
-            problems.Add($"agents.{id}: " + (builtIn ? "a built-in id needs \"override\": true" : "\"override\": true is for a built-in id"));
+            problems.Drop(id, $"agents.{id}: " + (builtIn ? "a built-in id needs \"override\": true" : "\"override\": true is for a built-in id"));
         }
         else
         {
@@ -150,11 +163,12 @@ internal static class IsolatedLauncherRead
             var checkedEntry = AgentSections.Entry(id, candidate);
             if (checkedEntry.IsError)
             {
-                problems.Add(checkedEntry.Error.Message);
+                problems.Drop(id, checkedEntry.Error.Message);
             }
             else
             {
                 merged[id] = candidate;
+                named[id] = section;
             }
         }
     }

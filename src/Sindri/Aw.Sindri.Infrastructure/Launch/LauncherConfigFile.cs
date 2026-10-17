@@ -116,7 +116,7 @@ internal static class LauncherConfigFile
         var entries = new List<AgentEntry>();
         foreach (var (id, section) in merged)
         {
-            var entry = AgentSections.Entry(id, section);
+            var entry = AgentSections.Entry(id, section, AgentSections.SourceOf(id, builtins, added));
             if (entry.IsError)
             {
                 return entry.Error;
