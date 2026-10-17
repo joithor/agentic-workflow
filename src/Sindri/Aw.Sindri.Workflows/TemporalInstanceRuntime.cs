@@ -114,9 +114,10 @@ internal sealed class TemporalInstanceRuntime(TemporalFrontend frontend, Tempora
 
         try
         {
-            var view = await client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value)
-                .QueryAsync(static wf => wf.GetInstance(), new WorkflowQueryOptions { Rpc = new RpcOptions { Timeout = QueryPatience, CancellationToken = cancellationToken } })
-                .ConfigureAwait(false);
+            var view = await TemporalReads.Run(
+                _ => client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value)
+                    .QueryAsync(static wf => wf.GetInstance(), new WorkflowQueryOptions { Rpc = TemporalReads.Rpc(cancellationToken, QueryPatience) }),
+                cancellationToken).ConfigureAwait(false);
             known.Remember(address);   // a read cache for the id-to-address hop, not instance state
             return view;
         }

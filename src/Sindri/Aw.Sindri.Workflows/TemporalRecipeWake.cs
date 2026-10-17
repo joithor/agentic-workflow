@@ -84,8 +84,7 @@ internal class TemporalRecipeWake(TemporalFrontend frontend) : IRecipeWake
         var addresses = new List<InstanceAddress>();
         try
         {
-            await foreach (var execution in client.Value.ListWorkflowsAsync($"WorkflowType = 'RecipeWorkflow' AND ExecutionStatus = 'Running' AND RecipeHash = '{hash.Value}'")
-                .WithCancellation(cancellationToken).ConfigureAwait(false))
+            foreach (var execution in await TemporalReads.List(client.Value, $"WorkflowType = 'RecipeWorkflow' AND ExecutionStatus = 'Running' AND RecipeHash = '{hash.Value}'", cancellationToken).ConfigureAwait(false))
             {
                 addresses.Add(InstanceAddress.From(execution.Id));
             }
