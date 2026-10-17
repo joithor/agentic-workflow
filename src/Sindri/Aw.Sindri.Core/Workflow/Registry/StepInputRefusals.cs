@@ -1,8 +1,9 @@
 using System.Globalization;
 using Aw.Kernel;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Recipes;
 
-namespace Aw.Sindri.Core.Workflow.Blocks;
+namespace Aw.Sindri.Core.Workflow.Registry;
 
 /// <summary>
 /// SND-WF-016 (engine spec §5.1, E1): a recipe whose Step names an input this build has no runtime for is refused at

@@ -2445,7 +2445,7 @@ Aw.Sindri.Core.Workflow.Blocks.StepInputContext.Input.init -> void
 Aw.Sindri.Core.Workflow.Blocks.StepInputContext.Step.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
 Aw.Sindri.Core.Workflow.Blocks.StepInputContext.Step.init -> void
 Aw.Sindri.Core.Workflow.Blocks.StepInputContext.StepInputContext(Aw.Sindri.Core.Workflow.Ids.BlockId Input, Aw.Sindri.Core.Workflow.Ids.BlockId Step, System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Arguments, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! Facts) -> void
-Aw.Sindri.Core.Workflow.Blocks.StepInputRefusals
+Aw.Sindri.Core.Workflow.Registry.StepInputRefusals
 Aw.Sindri.Core.Workflow.Blocks.StepInputRuntime
 Aw.Sindri.Core.Workflow.Blocks.StepInputRuntime.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.StepInputRuntime!
 Aw.Sindri.Core.Workflow.Blocks.StepInputRuntime.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Id) -> void
@@ -7455,7 +7455,7 @@ static Aw.Sindri.Core.Workflow.Blocks.StepContext.operator !=(Aw.Sindri.Core.Wor
 static Aw.Sindri.Core.Workflow.Blocks.StepContext.operator ==(Aw.Sindri.Core.Workflow.Blocks.StepContext? left, Aw.Sindri.Core.Workflow.Blocks.StepContext? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.StepInputContext.operator !=(Aw.Sindri.Core.Workflow.Blocks.StepInputContext? left, Aw.Sindri.Core.Workflow.Blocks.StepInputContext? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.StepInputContext.operator ==(Aw.Sindri.Core.Workflow.Blocks.StepInputContext? left, Aw.Sindri.Core.Workflow.Blocks.StepInputContext? right) -> bool
-static Aw.Sindri.Core.Workflow.Blocks.StepInputRefusals.Check(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Blocks.StepInputRuntimes! runtimes) -> Aw.Kernel.Error?
+static Aw.Sindri.Core.Workflow.Registry.StepInputRefusals.Check(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Blocks.StepInputRuntimes! runtimes) -> Aw.Kernel.Error?
 static Aw.Sindri.Core.Workflow.Blocks.StepInputRuntime.operator !=(Aw.Sindri.Core.Workflow.Blocks.StepInputRuntime? left, Aw.Sindri.Core.Workflow.Blocks.StepInputRuntime? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.StepInputRuntime.operator ==(Aw.Sindri.Core.Workflow.Blocks.StepInputRuntime? left, Aw.Sindri.Core.Workflow.Blocks.StepInputRuntime? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.StepReport.operator !=(Aw.Sindri.Core.Workflow.Blocks.StepReport? left, Aw.Sindri.Core.Workflow.Blocks.StepReport? right) -> bool

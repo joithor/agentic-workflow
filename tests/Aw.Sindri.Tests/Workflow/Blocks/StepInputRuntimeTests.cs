@@ -1,6 +1,7 @@
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Testing.Workflow;
 using Microsoft.Extensions.DependencyInjection;
 
