@@ -199,7 +199,7 @@ step() { # step <installer exit code> -> "<step rc>:<warnings>:<installer calls>
 }
 check "setup step: a tree refusal (3) warns for each provider and returns 0" "$(step 3)" "0:2:2"
 check "setup step: a publish failure (1) fails the step at once" "$(step 1)" "1:0:1"
-check "setup step: a failure says setup stops and the installed binary may be stale" "$( ( source "$DIR/../config/lib/setup-meta-step.sh"; step 1 > /dev/null; aw_setup_meta_step "$WORK/fake" claude ) 2>&1 | grep -c 'install-meta.sh failed for claude (exit 1); setup stops')" "1"
+check "setup step: a failure says setup fails at the end and the installed binary may be stale" "$( ( source "$DIR/../config/lib/setup-meta-step.sh"; step 1 > /dev/null; aw_setup_meta_step "$WORK/fake" claude ) 2>&1 | grep -c 'install-meta.sh failed for claude (exit 1); setup goes on and fails at the end')" "1"
 check "setup step: an installer success returns 0, no warning" "$(step 0)" "0:0:2"
 
 # A failed meta step does not abort the rest of setup (set -e): setup.sh records the rc, writes the registry, then exits with it and says why last
