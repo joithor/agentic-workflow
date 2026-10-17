@@ -311,12 +311,14 @@ terminal outcomes plus `cancelled` (`RCP-WHEN-001`, whose message ends with `(ou
 
 - **Loops:** `loops: { <name>: { cap ≥ 1, noProgress } }`. `noProgress` defaults to `[findings, emptyDiff, sameFailure]`
   and can't be empty (`RCP-LOOP-003`). A looped state needs a transition back into it (`RCP-LOOP-002`).
-  **Until P8 (spec §3.7, owner decision 2026-10-11):** the engine sees a round's `fact:findings` only as a reference
-  and its SHA-256, and a Step report carries no diff, so P3–P7 detect no progress only from identical findings (the
-  digest of the whole findings value; a superset, keyed by file, check and normalized message, isn't detected) and a
-  repeated failure reason (`sameFailure`: a `step.failed`, or a gate refusal, repeats its reason). `emptyDiff` never
-  fires, so a loop that names only `emptyDiff` never parks early, and the validator doesn't say so. The agent runtime
-  (P8) adds finding keys and a diff signal to Step reports, and the full A §17.23.13 rule lands there.
+  **No-progress (spec §3.7, A §17.23.13, P8):** a round made no progress over the last when a signal the loop names fires.
+  `findings`: a report's `fact:findings` that is a JSON list of `{file, check, message}` gets one key per finding (the
+  SHA-256 of `file|check|message`, the file with `/` separators, the message with whitespace collapsed and case dropped),
+  and the signal fires when the round still has every key of the last round (a superset, or the same set). Findings in any
+  other shape have no keys and keep the whole-value digest rule (fires only when identical). `emptyDiff`: fires when the
+  engine measured an empty diff on an agent run (the worktree's HEAD is the start HEAD and `git status --porcelain` is
+  empty); sessions never report it, and desk and block reports leave it false. `sameFailure`: a `step.failed`, or a gate
+  refusal, repeats its reason. The first round has nothing to compare with.
 - **Budgets:** `budget: { tokens }` on an active state and on the recipe. Exhausting one parks the instance with `budget`.
 - **`next`** tells whoever reads the status what happens or what to do. Its variables are `{item}`, `{instance}`,
   `{state}`, `{user}`, `{child}`, `{loop.<name>}`, `{loop.<name>.cap}` and `{budget.tokens.left}` (`RCP-NEXT-001`).
