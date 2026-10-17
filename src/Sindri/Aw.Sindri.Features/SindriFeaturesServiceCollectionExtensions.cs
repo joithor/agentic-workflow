@@ -69,6 +69,7 @@ using Aw.Sindri.Features.RegisterRecipe;
 using Aw.Sindri.Features.ResumeService;
 using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Features.RunDoctor;
+using Aw.Sindri.Features.Sessions;
 using Aw.Sindri.Features.ShowRecipe;
 using Aw.Sindri.Features.StartInstance;
 using Aw.Sindri.Features.StartProcess;
@@ -122,7 +123,8 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddRegistrySlices()
             .AddContextSlices()
             .AddContextJobs()
-            .AddEngineSlices();
+            .AddEngineSlices()
+            .AddSessionSlices();
         return services;
     }
 

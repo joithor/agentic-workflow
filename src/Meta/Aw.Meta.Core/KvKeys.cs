@@ -35,4 +35,7 @@ public static class KvKeys
 
     /// <summary>When the owner or meta dropped a pull request's merge-queue entry (aw-meta queue-drop), as "pr=ticks" pairs; a ready message newer than the drop queues it again.</summary>
     public const string QueueDropped = "queue.dropped";
+
+    /// <summary>The running (or last) merge-train's summary lines, as the status shows them.</summary>
+    public const string Train = "train.state";
 }
