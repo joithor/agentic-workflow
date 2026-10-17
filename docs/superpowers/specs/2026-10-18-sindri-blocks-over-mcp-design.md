@@ -569,7 +569,7 @@ list of failed reasons are §A.1's; §B cites them and never restates them.
      secret split across the cut is still removed.
 
   A failed call's body is the block's reasons.
-- **Refused calls (C4).** The API records a call refused with `SND-TOOL-001`, `-002`, `-004`, `-005` or `-006`
+- **Refused calls (C4).** The API records a call refused with `SND-TOOL-001`, `-002`, `-004` or `-006`
   under §A.1's refusal rule. It writes a `refused` row and a `step.tool-called` event, with no result and no
   `step.tool-started`, through the `IBlockCallLog.RecordRefused` port (R1-14).
   - That is a Features service the API calls directly. It is not the `RecordEvent` activity.
@@ -614,8 +614,8 @@ high priority and sensitivity." Whether a plain session counts as the owner's is
   - `workflow.tools.plain: [<block id> | { block, with }]` is optional, at box level or under a `repos[]` entry. It
     supplies pins (`{ block, with }`) and can narrow the list. `ProfileRules` checks each entry, as RCP-TOOL-001 and
     RCP-TOOL-004 do.
-  - A block with an unpinnable required parameter that has no pin there can't be called, and `list_tools` names it
-    in `omitted`.
+  - A block with a required parameter that only a recipe or this list can pin, and no pin here, can't be called.
+    `list_tools` names it in `omitted` with reason `needs-recipe-pin`.
   - A Step session never sees this list: a Step keeps only its state's `tools:`.
 - **Where it runs (C7).** A `ReadsCode` block runs in a fresh detached scratch worktree under
   `$AW_SINDRI_HOME/calls/worktrees/<id>/` (a server-made GUID v7), at the commit `ref` names (§A.1, §A.6), removed
