@@ -171,6 +171,24 @@ public sealed class TmuxSessionHostTests : SessionHostContract, IDisposable
         return count;
     }
 
+    [Fact]
+    public async Task Secret_never_in_argv_or_tmux_global_env()
+    {
+        const string Value = "launch-proof-0123456789abcdef";
+        var host = Create();
+        var session = new HostSession("snd-proof", _tmux.Scratch, ["sleep", "60"], new Dictionary<string, string>(StringComparer.Ordinal) { ["AW_SINDRI_LAUNCH_SECRET"] = Value });
+
+        var started = await host.Start(session, _deadline, CancellationToken.None);
+
+        Expect.True(started.IsSuccess);
+        var global = _tmux.Run("show-environment", "-g");
+        var scoped = _tmux.Run("show-environment", "-t", "=snd-proof");
+        var commands = _tmux.Run("list-panes", "-a", "-F", "#{pane_start_command}|#{pane_current_command}");
+        Expect.True(global is not null && !global.Contains("AW_SINDRI_LAUNCH_SECRET", StringComparison.Ordinal) && !global.Contains(Value, StringComparison.Ordinal));
+        Expect.True(scoped is not null && scoped.Contains("AW_SINDRI_LAUNCH_SECRET=" + Value, StringComparison.Ordinal));   // the session has it, as new-session -e sets it
+        Expect.True(commands is not null && !commands.Contains(Value, StringComparison.Ordinal));
+    }
+
     /// <summary>A stand-in 'tmux' that logs its arguments and prints a version banner; every session is new to it.</summary>
     private sealed record FakeTmux(string Path, string Log)
     {

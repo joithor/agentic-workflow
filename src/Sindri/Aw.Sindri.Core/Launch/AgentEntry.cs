@@ -12,6 +12,9 @@ public sealed record AgentEntry(AgentId Id, string Label, string Bin, string? Pr
     /// <summary>The regex whose first group is the session id in a transcript path (the entry's reportedId.capture), or null.</summary>
     public string? IdCapture { get; init; }
 
+    /// <summary>The glob of the CLI's newest session file, the fallback that finds a reported id when the hook didn't fire (the entry's reportedId.newestFile), or null. P10a's addition.</summary>
+    public string? ReportedNewestFile { get; init; }
+
     /// <summary>The argv template that opens a new session ('{bin}', '{cwd}', '{name}', '{seed}', '{sessionId}', '{mcpConfig}'). P10a's addition.</summary>
     public IReadOnlyList<string> Open { get; init; } = [];
 

@@ -34,6 +34,8 @@ internal static partial class Labels
         ["IssueChallenge"] = "Get approval challenge",
         ["IssueNonce"] = "Get command nonce",
         ["OpenItem:attach"] = "Attach",
+        ["SessionExit"] = "Report session exit",
+        ["SessionHeartbeat"] = "Report session heartbeat",
         ["OpenItem:open"] = "Open",
         ["OpenItem:resume"] = "Resume session",
         ["PauseService"] = "Pause service",

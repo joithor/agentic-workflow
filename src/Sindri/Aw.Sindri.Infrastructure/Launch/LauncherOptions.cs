@@ -19,6 +19,9 @@ internal sealed record LauncherOptions(string Home)
     /// <summary>The per-launch secret hashes: a launcher-owned directory the doctor and the scrubber skip.</summary>
     public string SecretsDirectory => Path.Combine(Home, "launch", "secrets");
 
+    /// <summary>The flat per-launch files the id hook and 'session wrap' share (<c lang="text">&lt;id&gt;.capture.json</c>, <c lang="text">&lt;id&gt;.session-id</c>; launcher L-9).</summary>
+    public string LaunchesDirectory => Path.Combine(Home, Core.Launch.LaunchFiles.Directory);
+
     /// <summary>The per-launch Step policy files (0600, deleted with the launch).</summary>
     public string PolicyDirectory => Path.Combine(Home, "launch", "policy");
 }

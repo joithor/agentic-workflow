@@ -95,6 +95,8 @@ internal static class EndpointTable
         _ = commands.MapIssueNonce();
         _ = commands.MapApplyCommand();
         _ = commands.MapCompleteStep();
+        _ = commands.MapSessionHeartbeat();
+        _ = commands.MapSessionExit();
         return commands;
     }
 }

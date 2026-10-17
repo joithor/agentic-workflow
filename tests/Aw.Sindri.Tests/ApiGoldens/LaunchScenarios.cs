@@ -151,10 +151,10 @@ internal static class LaunchScenarios
         }
     }
 
-    private static Task Request(GoldenHost host, LaunchId launch, ItemId item, CancellationToken ct) =>
+    internal static Task Request(GoldenHost host, LaunchId launch, ItemId item, CancellationToken ct) =>
         ViewScenarios.Append(host, EventTypes.ItemOpenRequested, new ItemOpenRequested(launch, item, LaunchMode.Open, AgentId.From("claude-code"), "click"), $"item.open-requested:{launch.Value}", ct);
 
-    private static Task Started(GoldenHost host, LaunchId launch, string item, ViewerOutcomeKind outcome, CancellationToken ct, LaunchViewer? viewer = null) =>
+    internal static Task Started(GoldenHost host, LaunchId launch, string item, ViewerOutcomeKind outcome, CancellationToken ct, LaunchViewer? viewer = null) =>
         ViewScenarios.Append(host, EventTypes.LaunchStarted,
             new LaunchStarted(launch, ItemId.From(item), LaunchMode.Open, AgentId.From("claude-code"), SessionId.From("0a1b2c3d-0000-4000-8000-000000000001"), "sindri " + item,
                 viewer ?? new LaunchViewer("warp", "Warp", outcome, Code: null, Detail: null), ["tmux", "-L", "sindri", "attach", "-t", "=snd-" + launch.Value], CatalogSource.Builtin, "sha256:" + new string('a', 64)),
