@@ -37,6 +37,8 @@ internal static partial class Labels
         ["OpenItem:open"] = "Open",
         ["OpenItem:resume"] = "Resume session",
         ["PauseService"] = "Pause service",
+        ["LaunchInit"] = "Set up the launcher",
+        ["LaunchShow"] = "Show a launch",
         ["ProbeLaunchTargets"] = "Check launch targets again",
         ["PromoteContextMap"] = "Promote map",
         ["ProposeContextMap"] = "Propose map from scope",
