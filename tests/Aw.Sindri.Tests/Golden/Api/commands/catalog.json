@@ -470,7 +470,7 @@
       "method": "POST",
       "route": "/sindri/launch/targets/probe",
       "cli": "sindri launch probe",
-      "ui": "ready",
+      "ui": "pending:P10a",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
