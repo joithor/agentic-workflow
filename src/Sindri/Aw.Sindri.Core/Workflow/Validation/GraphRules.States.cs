@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Edges = System.Collections.Generic.Dictionary<string, System.Collections.Generic.HashSet<string>>;
 
@@ -9,9 +10,10 @@ internal sealed partial class GraphRules
 {
     /// <summary>
     /// RCP-TIME-001: an active or wait state without a timeout, reported where the state starts. RCP-TIME-002: 'then:
-    /// retry' on a child wait, which would start a second child instead of re-arming the same wait.
+    /// retry' on a child wait, which would start a second child instead of re-arming the same wait. RCP-TIME-003: 'then: retry'
+    /// on a state whose Step runs on the block runtime (DT spec §8.2), which ends a run that outlives its 'maxDuration' as step.failed and has no timer park to retry.
     /// </summary>
-    private static IEnumerable<RecipeFinding> Timeouts(Recipe recipe, RecipeSource source)
+    private static IEnumerable<RecipeFinding> Timeouts(Recipe recipe, BlockCatalog catalog, RecipeSource source)
     {
         foreach (var (name, state) in recipe.States.Where(s => s.Value.Kind != StateKind.Terminal))
         {
@@ -31,6 +33,14 @@ internal sealed partial class GraphRules
                     $"states.{name}.timeout.then",
                     $"state '{name}' retries a child wait when it times out",
                     "use then: park or then: escalate, since a child can't be retried");
+            }
+            else if (state.Timeout.Then == TimeoutAction.Retry && state.Step is { } step && catalog.Find(step.Use) is { Runtime: BlockRuntime.Block })
+            {
+                yield return source.Finding(
+                    "RCP-TIME-003",
+                    $"states.{name}.timeout.then",
+                    $"state '{name}' runs {step.Use.Value} on the block runtime, where 'then: retry' doesn't apply",
+                    "use then: park (a judge call that runs out ends as step.failed, which the route sends to its desk twin)");
             }
         }
     }
