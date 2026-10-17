@@ -11,7 +11,7 @@ namespace Aw.Sindri.Host.Commands;
 /// 'sindri context …' (context spec §8.5, §8.6): clients of GET /sindri/context/query and /sindri/context/sources. Exit 0
 /// when results came back (possibly degraded or empty); 1 for attention (not running, an unknown or out-of-scope
 /// anchor, a refused question, session reads off); 2 for a tool error (an invalid profile, the store, every source
-/// down) and usage errors. 'sources sync' is pending:API-P6 (a job) (SND-CLI-001, like every pending CLI form).
+/// down) and usage errors. 'sources sync' is a job verb (<see cref="ContextJobVerbs"/>).
 /// </summary>
 /// <param name="client">The API client.</param>
 /// <param name="output">Where the verbs write.</param>
@@ -22,8 +22,6 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
         ["query", .. var rest] => Query(rest, ct),
         ["sources", "status"] => Sources(json: false, ct),
         ["sources", "status", "--json"] => Sources(json: true, ct),
-        ["sources", "sync"] => output.Error(SindriErrors.UnknownVerb.With(
-            "'context sources sync' is pending:API-P6 (a job: it needs API P6's job runtime); meanwhile the context-docs-refresh service refreshes repo docs and the context-sync service syncs the intent sources: name them under services: in the profile")),
         _ => output.Error(SindriErrors.UnknownVerb.With($"'context {string.Join(' ', args)}' is not a context command: context query <text> | context show|neighbors|path | context eval probes | context sources status | context sources sync | context map import|export|status")),
     };
 
@@ -85,15 +83,20 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
                     case "--draft":
                         pairs.Add(("draft", "true"));
                         break;
-                    case "--node" or "--item" or "--symbol" or "--depth" or "--budget" when i + 1 < args.Length:
+                    case "--node" or "--item" or "--symbol" or "--depth" or "--budget" or "--diff" or "--repo" when i + 1 < args.Length:
                         pairs.Add((args[i][2..], args[++i]));
                         break;
                     case var flag when flag.StartsWith("--", StringComparison.Ordinal):
-                        return SindriErrors.InvalidInput.With($"'{flag}' isn't a context query flag (or it needs a value): --node K | --item I | --symbol S | --depth N | --budget N | --draft | --json");
+                        return SindriErrors.InvalidInput.With($"'{flag}' isn't a context query flag (or it needs a value): --node K | --item I | --symbol S | --diff BASE..HEAD [--repo R] | --depth N | --budget N | --draft | --json");
                     default:
                         words.Add(args[i]);
                         break;
                 }
+            }
+
+            if (Misspelled(pairs) is { } refused)
+            {
+                return refused;
             }
 
             if (words.Count > 0)
@@ -103,6 +106,18 @@ internal sealed class ContextVerbs(ControlPlaneClient client, Output output)
 
             var query = EncodedQuery(pairs);
             return query.IsError ? query.Error : new QueryArguments(query.Value, json);
+        }
+
+        // A range that is not two shas, or a repo without a diff, is refused here as the engine would: nothing is sent.
+        private static Kernel.Error? Misspelled(List<(string Key, string Value)> pairs)
+        {
+            var range = pairs.Find(p => p.Key == "diff").Value;
+            if (range is not null && DiffRange.Parse(range).IsError)
+            {
+                return DiffRange.Parse(range).Error;
+            }
+
+            return range is null && pairs.Exists(p => p.Key == "repo") ? ContextErrors.QueryInvalid.With(QueryRules.RepoMessage + " (CLI: --diff BASE..HEAD --repo R)") : null;
         }
 
         private static Kernel.Result<string> EncodedQuery(List<(string Key, string Value)> pairs)

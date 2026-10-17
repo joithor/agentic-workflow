@@ -57,4 +57,41 @@ public sealed class ResultJsonTests
     [Fact, Trait("Lane", "unit")]
     public void Scrub_blocked_is_written_in_kebab_case() =>
         Assert.Equal("\"scrub-blocked\"", Encoding.UTF8.GetString(AwJson.Serialize(CitationState.ScrubBlocked, _json)));
+
+    [Fact, Trait("Lane", "unit")]
+    public void Other_shapes_serialize_without_diff_or_repo()
+    {
+        var at = new DateTimeOffset(2026, 10, 10, 18, 2, 11, TimeSpan.Zero);
+        var result = new ContextResult(ContextResult.CurrentSchemaVersion, QueryId.From("q_1"), new ContextQuery("split pane"), [], MapVersion: null, at,
+            [], [], [], [], Truncated: false, new BudgetUse(6000, 0, Estimate: true), new Dictionary<string, Citation>(StringComparer.Ordinal));
+
+        var text = Encoding.UTF8.GetString(AwJson.Serialize(result, _json));
+
+        Assert.DoesNotContain("\"diff\"", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"repo\"", text, StringComparison.Ordinal);
+        Assert.Contains("\"query\":{\"text\":\"split pane\",\"node\":null,\"item\":null,\"symbol\":null,\"depth\":null,\"budget\":null,\"draft\":false}", text, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_diff_result_writes_the_range_as_one_string_and_the_part_with_the_wire_names()
+    {
+        var at = new DateTimeOffset(2026, 10, 10, 18, 2, 11, TimeSpan.Zero);
+        var sha = "0123456789abcdef0123456789abcdef01234567";
+        var node = new DiffNode("feature:layout.split-pane", Confirmed: true);
+        var part = new DiffPart(ContextRepoName.From("aw-split-panes"), sha, sha, sha,
+            [new DiffFile("src/a.ts", ChangeKind.TypeChanged, DiffStatus.Mapped, [node])], [], new DiffCounts(1, 1, 0, 0, 0), Truncated: false, 1, AnchorsTruncated: false);
+        var result = new ContextResult(ContextResult.CurrentSchemaVersion, QueryId.From("q_1"), new ContextQuery(Text: null, Diff: new DiffRange(sha, sha), Repo: ContextRepoName.From("aw-split-panes")), ["feature:layout.split-pane"],
+            "v1", at, [], [], [], [], Truncated: false, new BudgetUse(6000, 0, Estimate: true), new Dictionary<string, Citation>(StringComparer.Ordinal), part);
+
+        var bytes = AwJson.Serialize(result, _json);
+        var text = Encoding.UTF8.GetString(bytes);
+        var back = AwJson.Deserialize<ContextResult>(bytes, _json);
+
+        Assert.Contains($"\"diff\":\"{sha}..{sha}\",\"repo\":\"aw-split-panes\"", text, StringComparison.Ordinal);
+        Assert.Contains("\"change\":\"typeChanged\",\"status\":\"mapped\"", text, StringComparison.Ordinal);
+        Assert.Contains("\"anchorsTotal\":1,\"anchorsTruncated\":false", text, StringComparison.Ordinal);
+        Assert.Contains("\"mergeBase\":\"" + sha + "\"", text, StringComparison.Ordinal);
+        Assert.True(back.IsSuccess);
+        Assert.Equal(text, Encoding.UTF8.GetString(AwJson.Serialize(back.Value, _json)));
+    }
 }

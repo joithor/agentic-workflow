@@ -35,7 +35,7 @@ internal sealed class ResultAssembly(IEgressScrubber egress, QueryId queryId, Da
         var packed = Packer.Pack(candidates, budget);
         return new ContextResult(ContextResult.CurrentSchemaVersion, queryId, query, graph.Anchors, graph.MapVersion, asOf, packed.Sections,
             conflicts, graph.Suggested, [.. records.Degraded.Select(d => d with { Message = egress.Scrub(d.Message).Text })], packed.Truncated,
-            new BudgetUse(budget, packed.Used, Estimate: true), cites);
+            new BudgetUse(budget, packed.Used, Estimate: true), cites, graph.Diff);
     }
 
     // A decision's quote comes from a record: when the answer carries that record's citation, the decision cites it instead of the map (spec §8.4).

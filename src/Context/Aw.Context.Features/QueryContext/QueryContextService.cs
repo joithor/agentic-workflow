@@ -2,8 +2,8 @@ using System.Globalization;
 using Aw.Context.Core;
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Extract;
 using Aw.Context.Core.Graph;
-using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Linking;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Ranking;
@@ -26,7 +26,7 @@ namespace Aw.Context.Features.QueryContext;
 /// scrubbers, built from the approved profile's extra patterns, and so does the map's text. A text question asked with no
 /// map (or by a session whose repo implements none of it) is answered from the sources alone. No model is called.
 /// </summary>
-internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFactory scrubberFactory, IIdGenerator ids, TimeProvider clock, MapReader graphs, IIntentStore intents)
+internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFactory scrubberFactory, IIdGenerator ids, TimeProvider clock, MapReader graphs, IIntentStore intents, IRepoReader repoReader)
     : IService<QueryContextRequest, ContextResult>
 {
     /// <summary>The most fused items fetched (and so cited) per query.</summary>
@@ -101,7 +101,7 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFacto
 
         if (query.Symbol is { } symbol)
         {
-            return Symbolic(map, symbol, depth, new MapText(scrubbers));
+            return SymbolAnswer.Build(map, symbol, depth, new MapText(scrubbers));
         }
 
         if (map.IsError)
@@ -121,6 +121,11 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFacto
         if (request.Query.Item is { } item)
         {
             return await ItemAnchored(request, item, context, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (request.Query.Diff is { } diff)
+        {
+            return (await new DiffAnswer(graphs, repoReader).Build(request, diff, context, cancellationToken).ConfigureAwait(false)).Map(a => (a.Graph, a.Terms, (ItemMiss?)null));
         }
 
         var anchored = await Anchored(request, valid, context.Settings, context.Scrubbers, cancellationToken).ConfigureAwait(false);
@@ -164,29 +169,6 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFacto
     }
 
     private static Error Unknown(ItemMiss miss, ContextScope scope) => QueryRules.UnknownItem(miss.Item, miss.Suggested, scope.SyncConfigured);
-
-    private static Result<(GraphPart Graph, IReadOnlyList<string> Terms)> Symbolic(Result<VisibleMap> map, string symbol, int depth, MapText text)
-    {
-        var implemented = map.Bind(m => FileFeatures(m.Graph, symbol));
-        return implemented.IsError
-            ? implemented.Error
-            : (GraphAnswer.Build(map.Value, implemented.Value, [], depth, text), [.. implemented.Value.SelectMany(a => text.SearchTerms(a.Label)).Distinct(StringComparer.Ordinal)]);
-    }
-
-    /// <summary>The nodes a file implements (the symbol shape's file-path form): SND-CONTEXT-003 when the map has no such file or it implements nothing.</summary>
-    private static Result<IReadOnlyList<GraphNode>> FileFeatures(GraphSnapshot graph, string symbol)
-    {
-        var path = symbol.Trim();
-        path = RepoPaths.Normalize(path.StartsWith("code:", StringComparison.Ordinal) ? path["code:".Length..] : path);
-        var file = NodeKey.TryFrom("code:" + path, out var key) ? graph.Resolve(key) : null;
-        IReadOnlyList<GraphNode> features = file is null
-            ? []
-            : [.. graph.Edges.Where(e => e.Type == EdgeType.Implements && e.From.Value == file.Key.Value).Select(e => graph.Resolve(e.To)).OfType<GraphNode>()
-                .DistinctBy(n => n.Key.Value, StringComparer.Ordinal).OrderBy(n => n.Key.Value, StringComparer.Ordinal)];
-        return features.Count > 0
-            ? Results.Success(features)
-            : ContextErrors.UnknownAnchor.With("no file with that path implements anything in this map (fix: sindri context filemap)");
-    }
 
     private async Task<Searched> Search(IReadOnlyList<IContextSource> sources, IReadOnlyList<string> terms, DateTimeOffset deadline, CancellationToken ct)
     {
@@ -270,7 +252,7 @@ internal sealed class QueryContextService(ISourceCatalog catalog, IScrubberFacto
         if (graph.LinkedRecords.Any(waiting.Contains))
         {
             degraded.Add(new DegradedSource(SourceId.From("decisions"), ContextErrors.LabelingUnavailable.Code,
-                "decisions of a linked record are not extracted yet: labeling is off or over its token cap (fix: turn on 'context.labeling.enabled' or raise 'maxTokensPerSync', then wait for the next context-sync slot)", clock.GetUtcNow()));
+                "decisions of a linked record are not extracted yet: labeling is off or over its token cap (fix: turn on 'context.labeling.enabled' or raise 'maxTokensPerSync', then run sindri context sources sync, or wait for the next context-sync slot)", clock.GetUtcNow()));
         }
     }
 
