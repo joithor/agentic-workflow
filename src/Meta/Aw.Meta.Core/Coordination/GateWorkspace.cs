@@ -66,8 +66,10 @@ public sealed class GateWorkspace(RepoCommands repo, GateTree trees, MetaPaths p
             return built.Error;
         }
 
-        var culprit = built.Value || stack.Count == 0 ? null : await Culprit(config.Repo, stack, view.Value.Head).ConfigureAwait(false);
-        return await Describe(config.Repo, new PreparedGate(view.Value, main.Value, TreePath(pr), built.Value, []) { ConflictsWith = culprit }, listChanged).ConfigureAwait(false);
+        var culprit = built.Value || stack.Count == 0 ? Results.Success<StackedPr?>(value: null) : await Culprit(config.Repo, main.Value, stack, view.Value.Head).ConfigureAwait(false);
+        return culprit.IsError
+            ? culprit.Error
+            : await Describe(config.Repo, new PreparedGate(view.Value, main.Value, TreePath(pr), built.Value, []) { ConflictsWith = culprit.Value }, listChanged).ConfigureAwait(false);
     }
 
     // Fetches the pull request, then resolves origin/main unless the train already pinned it.
@@ -83,18 +85,26 @@ public sealed class GateWorkspace(RepoCommands repo, GateTree trees, MetaPaths p
         return ready.IsError ? ready.Error : await trees.MergeAll(tree, heads).ConfigureAwait(false);
     }
 
-    // The stacked pull request whose head conflicts with this head on its own; the last one when none does alone (the conflict needs several).
-    private async ValueTask<StackedPr> Culprit(string repoDirectory, IReadOnlyList<StackedPr> stack, string head)
+    // Who the head conflicts with: main itself first (null: the pull request conflicts with main on its own), else the stacked pull
+    // request whose head conflicts with it alone, else the last one (the conflict needs several). A git failure is an error, never a conflict.
+    private async ValueTask<Result<StackedPr?>> Culprit(string repoDirectory, string main, IReadOnlyList<StackedPr> stack, string head)
     {
+        var withMain = await repo.Conflicts(repoDirectory, main, head).ConfigureAwait(false);
+        if (withMain.IsError || withMain.Value)
+        {
+            return withMain.IsError ? withMain.Error : Results.Success<StackedPr?>(value: null);
+        }
+
         foreach (var ahead in stack)
         {
-            if (await repo.MergeTree(repoDirectory, ahead.Head, head).ConfigureAwait(false) is null)
+            var alone = await repo.Conflicts(repoDirectory, ahead.Head, head).ConfigureAwait(false);
+            if (alone.IsError || alone.Value)
             {
-                return ahead;
+                return alone.IsError ? alone.Error : Results.Success<StackedPr?>(ahead);
             }
         }
 
-        return stack[^1];
+        return Results.Success<StackedPr?>(stack[^1]);
     }
 
     private async ValueTask<Result<PreparedGate>> Describe(string repoDirectory, PreparedGate prepared, bool listChanged)
@@ -108,6 +118,11 @@ public sealed class GateWorkspace(RepoCommands repo, GateTree trees, MetaPaths p
 
     private async ValueTask<Result<string>> TreeSha(string tree, bool merged) =>
         merged ? await repo.Git(tree, "rev-parse", "HEAD^{tree}").ConfigureAwait(false) : string.Empty;
+
+    /// <summary>The git tree sha the gate worktree holds now (HEAD^{tree}).</summary>
+    /// <param name="pr">The pull request number.</param>
+    /// <returns>The tree sha, or an error (also when the worktree does not exist).</returns>
+    public ValueTask<Result<string>> CurrentTree(int pr) => repo.Git(TreePath(pr), "rev-parse", "HEAD^{tree}");
 
     /// <summary>Checks the plain-main tree out at the main the gate ran on, so a failure there predates the pull request.</summary>
     /// <param name="config">The team config (its repo).</param>

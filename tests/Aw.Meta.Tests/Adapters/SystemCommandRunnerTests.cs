@@ -69,6 +69,20 @@ public sealed class SystemCommandRunnerTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task Isolation_can_start_after_a_wrapper_which_keeps_the_real_environment()
+    {
+        var script = "echo \"wrapper:$HOME\"; exec \"$@\"";
+        var request = new CommandRequest(["sh", "-c", script, "sh", "sh", "-c", "echo \"command:$HOME\""], TimeSpan.FromSeconds(20)) { Isolated = true, IsolatedFrom = 4 };
+        var realHome = Environment.GetEnvironmentVariable("HOME");
+
+        var result = await new SystemCommandRunner().Run(request, CancellationToken.None);
+
+        var lines = result.Value.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        Assert.Equal("wrapper:" + realHome, lines[0]);
+        Assert.StartsWith("command:" + Path.GetTempPath(), lines[1], StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task A_relative_script_runs_from_the_working_directory_whatever_ours_is()
     {
         var scripts = Directory.CreateDirectory(Path.Combine(_dir.Path, "scripts")).FullName;

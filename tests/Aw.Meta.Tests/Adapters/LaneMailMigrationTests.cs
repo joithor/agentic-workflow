@@ -1,4 +1,5 @@
 using Aw.Kernel.Data;
+using Aw.Meta.Core.Gate;
 using Aw.Meta.Core.Lanes;
 using Aw.Meta.Infrastructure.Sqlite;
 using Microsoft.Extensions.Time.Testing;
@@ -40,6 +41,35 @@ public sealed class LaneMailMigrationTests : IDisposable
         version.CommandText = "SELECT MAX(version) FROM schema_version";
         Assert.Equal(4L, await version.ExecuteScalarAsync(CancellationToken.None));
         Assert.True(File.Exists(options.DatabasePath + ".bak-v2"));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Migration_0004_upgrades_a_v3_database_keeps_its_gate_as_untreed_and_stores_a_tree_and_stack()
+    {
+        var options = MetaDatabase.OptionsFor(_state.Path);
+        var clock = new FakeTimeProvider();
+        var migrations = EmbeddedMigrations.Load(typeof(MetaDatabase).Assembly, MetaDatabase.ResourcePrefix).Value;
+        var connections = new SqliteConnectionFactory(options);
+        _ = await new MigrationRunner(connections, clock).Migrate(migrations, CancellationToken.None, targetVersion: 3);
+        await using (var connection = (await connections.Open(CancellationToken.None)).Value)
+        {
+            await using var insert = connection.CreateCommand();
+            insert.CommandText = "INSERT INTO gates (pr, run, head, main, scopes, verdict, at) VALUES (7, 1, 'old-head', 'old-main', '', 'Pass', '2026-10-15T05:00:00.0000000Z')";
+            _ = await insert.ExecuteNonQueryAsync(CancellationToken.None);
+        }
+
+        var gates = new SqliteGateStore(new MetaDatabase(options, clock));
+        var old = (await gates.Latest(7, CancellationToken.None)).Value!;
+        var saved = await gates.Save(new GateRecord(7, "new-head", "m", [], [], GateVerdict.Pass, clock.GetUtcNow()) { Tree = "t1", Stack = [new StackedPr(5, "h5")] }, CancellationToken.None);
+        var latest = (await gates.Latest(7, CancellationToken.None)).Value!;
+
+        Assert.Equal("old-head", old.Head);
+        Assert.Null(old.Tree);
+        Assert.Empty(old.Stack);
+        Assert.Equal(2, saved.Value.Run);
+        Assert.Equal("t1", latest.Tree);
+        Assert.Equal([new StackedPr(5, "h5")], latest.Stack);
+        Assert.True(File.Exists(options.DatabasePath + ".bak-v3"));
     }
 
     public void Dispose() => _state.Dispose();

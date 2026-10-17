@@ -143,6 +143,33 @@ public sealed class CheckMergeTests
     private async Task SaveTreeGate(string main, string tree, params StackedPr[] stack) =>
         _ = await _world.Gates.Save(new GateRecord(190, "headsha", main, ["repo", "dotnet"], [new("sync-rules", GateVerdict.Pass, "/l/sync.log")], GateVerdict.Pass, A.At(5)) { Tree = tree, Stack = stack }, CancellationToken.None);
 
+    // An older run of the repo scope and a newer run of the dotnet scope, on the same head and main; the older one tested `olderTree`.
+    private async Task SaveTwoScopedRuns(string olderTree)
+    {
+        _ = await _world.Gates.Save(new GateRecord(190, "headsha", "mainsha", ["repo"], [new("sync-rules", GateVerdict.Pass, "/l/sync.log")], GateVerdict.Pass, A.At(4)) { Tree = olderTree }, CancellationToken.None);
+        _ = await _world.Gates.Save(new GateRecord(190, "headsha", "mainsha", ["dotnet"], [new("build", GateVerdict.Pass, "/l/b.log"), new("unit", GateVerdict.Pass, "/l/u.log")], GateVerdict.Pass, A.At(5)) { Tree = "tree1" }, CancellationToken.None);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Runs_of_different_scopes_on_the_same_tree_complete_each_other()
+    {
+        await _world.ReadyWithGate();
+        await SaveTwoScopedRuns("tree1");
+        Script();
+
+        Assert.Empty(Failed(await Check()));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_run_on_another_tree_does_not_count_towards_the_scopes_of_the_chosen_run()
+    {
+        await _world.ReadyWithGate();
+        await SaveTwoScopedRuns("tree0");
+        Script();
+
+        Assert.Equal(["scopes"], Failed(await Check()));
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task A_stacked_gate_is_valid_when_merging_its_head_onto_main_gives_the_tested_tree()
     {

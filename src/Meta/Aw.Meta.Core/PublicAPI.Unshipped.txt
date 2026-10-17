@@ -1871,3 +1871,9 @@ static Aw.Meta.Core.Coordination.TrainCandidates.operator ==(Aw.Meta.Core.Coordi
 Aw.Meta.Core.Coordination.TrainSelection
 Aw.Meta.Core.Coordination.TrainSelection.Choose(System.Collections.Generic.IReadOnlyList<int>! named, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Coordination.TrainCandidates!>!>
 Aw.Meta.Core.Coordination.TrainSelection.TrainSelection(Aw.Meta.Core.Ports.IMetaConfig! config, Aw.Meta.Core.Coordination.MergeQueueReader! queue) -> void
+static Aw.Meta.Core.Gate.GatePriority.HookOverrides.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Meta.Core.Gate.GatePriority.SuiteUnset.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Commands.CommandRequest.IsolatedFrom.get -> int
+Aw.Meta.Core.Commands.CommandRequest.IsolatedFrom.init -> void
+Aw.Meta.Core.Coordination.RepoCommands.Conflicts(string! repo, string! main, string! head) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+Aw.Meta.Core.Coordination.GateWorkspace.CurrentTree(int pr) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
