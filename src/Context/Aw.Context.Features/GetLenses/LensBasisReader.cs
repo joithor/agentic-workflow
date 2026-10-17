@@ -22,11 +22,15 @@ internal sealed class LensBasisReader(IRepoReader repos, IIntentStore intents, T
         return new LensBasis(map.Snapshot.Tag, draft, clock.GetUtcNow())
         {
             MapCreated = version.Created,
-            MapCommit = version.Commit is { Length: > 0 } commit ? commit[..Math.Min(7, commit.Length)] : null,
+            MapCommit = ShortCommit(version.Commit),
             Files = await Files(version.Repo, settings, scope, cancellationToken).ConfigureAwait(false),
             IntentSources = [SearchedSources.Intent(_onyx, settings.Onyx is not null, state.IsError ? null : state.Value)],
         };
     }
+
+    /// <summary>The commit as 'mapCommit' shows it: exactly 7 lowercase hex characters, or null when there is no commit or it isn't a sha of 7 or more hex characters.</summary>
+    internal static string? ShortCommit(string? commit) =>
+        commit is { Length: >= 7 } && commit.All(char.IsAsciiHexDigit) ? commit[..7].ToLowerInvariant() : null;
 
     private async ValueTask<IReadOnlyList<string>> Files(ContextRepoName name, ContextSettings settings, ContextScope scope, CancellationToken cancellationToken)
     {
