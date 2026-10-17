@@ -105,5 +105,35 @@ public sealed class InstanceViewsTests
         Assert.Null(view.Answer);
     }
 
+    [Theory]
+    [InlineData("parked-rounds", "answer-grant")]
+    [InlineData("parked-no-progress-child", "answer-grant", "answer-text")]
+    [InlineData("parked-budget", "answer-grant-tokens")]
+    [InlineData("parked-needs-answer-step", "answer-text")]
+    [InlineData("parked-needs-answer-wait", "answer-resume")]
+    [InlineData("parked-timeout", "answer-resume")]
+    [InlineData("parked-no-runtime", "answer-resume")]
+    [InlineData("escalated-gate", "answer-accept", "answer-reject")]
+    public void A_parked_instance_serves_one_command_per_fitting_answer_variant_with_its_full_cli(string name, params string[] ids)
+    {
+        var view = StatusCases.View(name);
+
+        var answers = view.AllowedCommands.Where(c => c.Action.StartsWith("ApplyCommand:answer", StringComparison.Ordinal)).ToList();
+
+        Assert.Equal(ids.Select(i => "ApplyCommand:" + i).ToArray(), answers.Select(a => a.Action).ToArray());
+        Assert.DoesNotContain(answers, a => string.Equals(a.Action, "ApplyCommand:answer", StringComparison.Ordinal));
+        Assert.All(answers, a => Assert.Contains(" --", a.Cli, StringComparison.Ordinal));
+        Assert.Equal(view.AnswerLine!.Cli, answers[0].Cli, StringComparer.Ordinal);
+        Assert.Equal(view.AnswerLine.ActionId.Value, answers[0].Action, StringComparer.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("parked-revoked")]
+    [InlineData("parked-drift")]
+    [InlineData("taken-over")]
+    [InlineData("desk-task")]
+    public void A_state_that_takes_no_answer_serves_no_answer_command(string name)
+        => Assert.DoesNotContain(StatusCases.View(name).AllowedCommands, c => c.Action.StartsWith("ApplyCommand:answer", StringComparison.Ordinal));
+
     private static string Hash12() => StatusCases.Recipe.Version.Hash.Value["sha256:".Length..][..12];
 }
