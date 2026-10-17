@@ -44,7 +44,7 @@ public sealed class OnyxFacts(IContainerRuntime runtime, IHostProbes probes, ISi
     public Result<string> Platform(CancellationToken cancellationToken)
         => DockerProblem(cancellationToken) is { } problem ? problem : runtime.ServerPlatform(cancellationToken);
 
-    /// <summary>Tells why Docker can't be used here: the one guard every docker or compose command against the daemon goes through (<see cref="Containers"/>, <see cref="Platform"/>), so nothing is sent to a missing CLI, a stopped daemon or a Docker that points at another machine.</summary>
+    /// <summary>Tells why Docker can't be used here: the one guard every docker or compose command against the daemon goes through (<see cref="Containers(CancellationToken)"/>, <see cref="Platform"/>), so nothing is sent to a missing CLI, a stopped daemon or a Docker that points at another machine.</summary>
     /// <param name="cancellationToken">Cancels the inspection (made once per instance).</param>
     /// <returns>The error (<see cref="OnyxPreflight.DockerProblem"/>), or null when Docker is local and answering.</returns>
     public Error? DockerProblem(CancellationToken cancellationToken) => OnyxPreflight.DockerProblem(Docker(cancellationToken));
@@ -61,8 +61,14 @@ public sealed class OnyxFacts(IContainerRuntime runtime, IHostProbes probes, ISi
     /// <summary>Lists the containers of Sindri's Onyx project.</summary>
     /// <param name="cancellationToken">Cancels the reading.</param>
     /// <returns>The containers, or the error (Docker isn't usable here, or isn't answering).</returns>
-    public Result<IReadOnlyList<ComposeContainer>> Containers(CancellationToken cancellationToken)
-        => DockerProblem(cancellationToken) is { } problem ? problem : runtime.Ps(Project, cancellationToken);
+    public Result<IReadOnlyList<ComposeContainer>> Containers(CancellationToken cancellationToken) => Containers(Project, cancellationToken);
+
+    /// <summary>Lists the containers of a compose project (this home's own, with or without its files: see <see cref="ComposeProject.ByLabel"/>).</summary>
+    /// <param name="project">The project to list.</param>
+    /// <param name="cancellationToken">Cancels the reading.</param>
+    /// <returns>The containers, or the error (Docker isn't usable here, or isn't answering).</returns>
+    public Result<IReadOnlyList<ComposeContainer>> Containers(ComposeProject project, CancellationToken cancellationToken)
+        => DockerProblem(cancellationToken) is { } problem ? problem : runtime.Ps(project, cancellationToken);
 
     private ContainerRuntimeFacts Docker(CancellationToken cancellationToken) => _docker ??= runtime.Inspect(cancellationToken);
 

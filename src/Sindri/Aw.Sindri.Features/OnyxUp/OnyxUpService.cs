@@ -31,7 +31,8 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
             return SindriErrors.CommandBusy.With("another `sindri onyx up` is running; wait for it to finish, then run this again");
         }
 
-        return await Run(cancellationToken).ConfigureAwait(false);
+        var result = await Run(cancellationToken).ConfigureAwait(false);
+        return result.IsError ? ComposeFailures.WithHint(result.Error, "run `sindri onyx up` again to resume") : result;
     }
 
     private async ValueTask<Result<OnyxUpResponse>> Run(CancellationToken cancellationToken)

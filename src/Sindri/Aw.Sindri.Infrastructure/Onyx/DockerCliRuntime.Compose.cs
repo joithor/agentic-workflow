@@ -98,7 +98,9 @@ internal sealed partial class DockerCliRuntime
 
     private Result<string> Compose(ComposeProject project, string[] verb, Call call, Action<string>? progress, CancellationToken cancellationToken)
     {
-        string[] arguments = ["compose", "-p", project.Name, "-f", project.ComposeFile, "-f", project.OverrideFile, "--env-file", project.EnvFile, .. verb];
+        string[] arguments = project.HasFiles
+            ? ["compose", "-p", project.Name, "-f", project.ComposeFile, "-f", project.OverrideFile, "--env-file", project.EnvFile, .. verb]
+            : ["compose", "-p", project.Name, .. verb];   // by label: compose finds the project's containers without its files
         var tail = new Tail();
         var run = runner.Run("docker", arguments, call.Timeout, new ToolRunOptions(
             line =>
@@ -152,7 +154,7 @@ internal sealed partial class DockerCliRuntime
         ToolOutcome.TimedOut => call.Stop ? ComposeFailures.StopCutShort(call.Timeout) : ComposeFailures.TimedOut(call.What, call.Timeout),
         ToolOutcome.Exited when run.ExitCode == 0 => null,
         _ when tail.DaemonUnreachable => SindriErrors.OnyxDockerUnavailable.With("Docker isn't running: start Docker Desktop (or the docker service) and wait until it is ready, then run this again"),
-        _ => SindriErrors.OnyxComposeFailed.With(string.Create(CultureInfo.InvariantCulture, $"`docker {call.What}` failed (exit {run.ExitCode}): {tail.Text()}; fix what it says, then run `sindri onyx up` again to resume")),
+        _ => SindriErrors.OnyxComposeFailed.With(string.Create(CultureInfo.InvariantCulture, $"`docker {call.What}` failed (exit {run.ExitCode}): {tail.Text()}; fix what it says")),
     };
 
     private static Result<IReadOnlyList<ComposeContainer>> ParsePs(string output)

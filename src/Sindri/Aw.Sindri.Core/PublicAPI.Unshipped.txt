@@ -8265,3 +8265,5 @@ Aw.Sindri.Core.Onyx.OnyxFacts.Project.get -> Aw.Sindri.Core.Onyx.ComposeProject!
 Aw.Sindri.Core.Onyx.OnyxFacts.DockerProblem(System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Error?
 Aw.Sindri.Core.Onyx.ComposeProject.HasFiles.get -> bool
 static Aw.Sindri.Core.Onyx.ComposeProject.ByLabel(string! name) -> Aw.Sindri.Core.Onyx.ComposeProject!
+Aw.Sindri.Core.Onyx.OnyxFacts.Containers(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeContainer!>!>!
+static Aw.Sindri.Core.Onyx.ComposeFailures.WithHint(Aw.Kernel.Error! error, string! hint) -> Aw.Kernel.Error!

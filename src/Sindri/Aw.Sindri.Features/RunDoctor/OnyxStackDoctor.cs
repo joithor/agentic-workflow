@@ -65,7 +65,7 @@ internal sealed class OnyxStackDoctor(IOnyxWorkspace workspace, OnyxFacts facts,
     private static DoctorCheck Unreadable(Error error, ComposeProject project)
         => error.Code == SindriErrors.OnyxDockerUnavailable.Code
             ? new DoctorCheck(Name, CheckState.Warn, $"docker isn't running ({error.Code}); the Onyx stack can't be read", "start Docker Desktop (or the docker service), then run sindri doctor again")
-            : new DoctorCheck(Name, CheckState.Warn, $"docker answered but the Onyx stack couldn't be read ({error.Code}): {error.Message}", $"run `docker compose -p {project.Name} ps` to see why, then run sindri doctor again");
+            : new DoctorCheck(Name, CheckState.Warn, $"docker answered but the Onyx stack couldn't be read ({error.Code}): {error.Message}", $"run `docker compose -p {project.Name} ps` to see why; run `sindri onyx up` to repair Onyx's files, then run sindri doctor again");
 
     private DoctorCheck? Failure(IReadOnlyList<ComposeContainer> containers, string platform)
     {
