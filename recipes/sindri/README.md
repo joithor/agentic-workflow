@@ -22,7 +22,13 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 - A route (`step.judge.choose`) has its desk twin (`step.desk.choose`), and a failed route Step goes to the desk.
 - A child wait routes `cancelled` on its own transition, which records nothing.
 - `workflow.evidence` nests two deep (evidence, evidence-all, evidence-ui), inside the limit of 4 (`RCP-CHILD-003`).
-- A parent keeps only the summaries its children's every path proves. `evidence-all`'s failures end in `all-failed` and every `cancelled` in `dropped`, both without a summary, so a parent waiting on `workflow.evidence` receives `evidenceSummary` on `resolved` only (Q6, `RCP-WIRE-003`). The instance's own facts carry it as well when a leaf child fails.
+- A parent keeps only the summaries its children's every path proves, so a parent waiting on `workflow.evidence` receives `evidenceSummary` on `resolved` only (`RCP-WIRE-003`). The instance's own facts carry it as well when a leaf child fails.
+- `workflow.evidence`'s unresolved terminals (owner, 2026-10-17):
+  - `failed`: a single leaf ran and did not hold.
+  - `all-failed`: the `all` branch ended unresolved. `evidence-all` stops at its first failing check, so usually one of ui, api and db failed.
+  - `dropped`: the child run it waited on was cancelled.
+
+  A parent sees all three as `unresolved` and can't route on which one it was.
 - `evidence.check` is descriptor-only: a recipe using it validates, and the engine refuses it at run time. Evals answer evidence checks as holding.
 
 ## Approval order
@@ -36,5 +42,7 @@ DTC2 to DTC9 as the plan reads them. Out of this change: seeds (DT-R3), `workflo
 `workflow.implement` exports the Step's `fact:output` under that key, since only a child's outputs can be renamed (`RCP-WIRE-002`). `workflow.evidence` names `evidence-ui` as the `from` of its `evidenceSummary` output, a compromise: `from` is a declaration only, and the summary comes from whichever leaf ran. `workflow.reproduce` names `ui-check` as the producer of `check` and `baseline`; the test-check path produces them too.
 
 ## Known gaps
+
+- A check cancelled inside `evidence-all` ends `workflow.evidence` in `all-failed`, not `dropped`. `evidence-all` reports it as its own unresolved `dropped`, because a recipe terminal can't declare `cancelled`.
 
 - A change that touches two of ui, api and db is not an `all` change (`all` needs all three). The judge routes it to one leaf, or ends uncertain and the desk picks. Running two leaves needs DT-B or DT-E.

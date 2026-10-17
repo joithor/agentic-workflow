@@ -119,6 +119,7 @@ public sealed class EvidenceParentFactsTests
             """{"trigger":{"kind":"step.completed","outcome":"all"},"expect":{"state":"evidence-all"}}""",
             Child("dropped", "cancelled"));
 
+        Assert.Equal("unresolved", simulation.Instance.Outcome?.Value);
         Assert.DoesNotContain(FactKey.From("fact:evidenceSummary"), simulation.Instance.Facts.Keys);
     }
 
