@@ -19,7 +19,7 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     {
         (_current, _address) = (current, address);
         var status = current.Status;
-        Commands = [.. status.Commands.Select(c => new ExpandedCommandViewModel(c, status.Answer?.Kind, address, clipboard, clock))];
+        Commands = [.. ServedCommands(status).Select(c => new ExpandedCommandViewModel(c, status.Answer?.Kind, address, clipboard, clock))];
         _cancel = Commands.FirstOrDefault(c => c.Verb == StatusVerb.Cancel);
         Gates = [.. current.Gates.Select(Labels.GateText)];
         StepLine = Line(current.Step, Labels.StepLine);
@@ -34,6 +34,23 @@ internal sealed class ExpandedStateViewModel : ObservableObject
         Name = Labels.ExpandedName(current.State, address);
         CopyStatusName = Labels.CopyStatusName(address);
         StatusCopy = new CopyAction(clipboard, clock, Labels.CopyStatus, Labels.CopyStatus);
+    }
+
+    // Interim until the engine serves one entry per answer variant: the generic "ApplyCommand:answer" entry carries a bare CLI the
+    // CLI rejects, so it shows the status's answer CLI instead (hidden when there is no answer). Variant entries keep their own.
+    private static IEnumerable<StatusCommand> ServedCommands(StatusFields status)
+    {
+        foreach (var command in status.Commands)
+        {
+            if (!string.Equals(command.ActionId, "ApplyCommand:answer", StringComparison.Ordinal))
+            {
+                yield return command;
+            }
+            else if (status.Answer is { } answer)
+            {
+                yield return command with { Cli = answer.Cli };
+            }
+        }
     }
 
     // The lines that move with time or with the engine's counters: a re-read changes their words in place and keeps the controls.
