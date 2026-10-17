@@ -140,7 +140,7 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-057: a model answer the engine refused (a quote that isn't verbatim, a target outside the record's linked nodes, a malformed shape). Counted in a sync's 'refused', never failing it.</summary>
     public static readonly ErrorDefinition ModelAnswerRefused = new("SND-CONTEXT-057", ErrorKind.Invalid, "A model answer was refused");
 
-    /// <summary>SND-CONTEXT-058: 'sources sync --source X' names a source that isn't configured or has nothing to sync (CLI exit 1, HTTP 404).</summary>
+    /// <summary>SND-CONTEXT-058: 'sources sync X' (X, the sync request's source) names a source that isn't configured or has nothing to sync (CLI exit 1, HTTP 404).</summary>
     public static readonly ErrorDefinition SyncSourceUnknown = new("SND-CONTEXT-058", ErrorKind.NotFound, "No such source to sync");
 
     /// <summary>SND-CONTEXT-059: a sync stopped at its time cap: the run is partial and resumes from its cursor next time (degraded, exit 0).</summary>
