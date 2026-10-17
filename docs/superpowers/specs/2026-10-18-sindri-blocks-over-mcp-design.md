@@ -590,17 +590,19 @@ list of failed reasons are §A.1's; §B cites them and never restates them.
 The owner decided (2026-10-18, C3) that their own sessions, outside any Step, may use the block tools as well. A call
 like this has no instance and no run. It never moves anything, and it is never proof for a work item.
 
+The owner then widened that (2026-10-18, C6): "my sessions can use every block. no matter what. if i'm steering it's
+high priority and sensitivity." Whether a plain session counts as the owner's is C11. In v1, every plain session does.
+
 - **Which blocks.**
-  - By default, a plain session gets the **plain set**: every Callable block whose capabilities are within
-    `{ Tools }` and whose required parameters all have a default or are session-settable. A block that needs a pin
-    is in the plain set only through the `{ block, with }` form below, so the default set never skips a pin check.
-  - `workflow.tools.plain: [<block id> | { block, with }]`, at box level or under a `repos[]` entry, replaces that
-    default. A repo's list wins over the box's, as for `workflow.judge.providers`. `ProfileRules` checks each entry,
-    as RCP-TOOL-001 and RCP-TOOL-004 do.
-  - A block with `Network` is in the plain set only when the owner lists it by name. A block with `Budget` can't be
-    in the plain set in v1 (`ProfileRules` refuses it): a plain call has no run, so there is no budget for it to
-    spend. A Step session never inherits the plain set.
-  - The default is owner choice C6.
+  - A plain session gets **every Callable block**, `Network` and `Budget` ones included. There is no default subset.
+  - What stays is structural. Only `gate` and `evidenceProvider` blocks are Callable (B.1): a Step, an effect or an
+    input fill means nothing as a call. A required parameter that the session can't set needs a default or a pin.
+  - `workflow.tools.plain: [<block id> | { block, with }]` is optional, at box level or under a `repos[]` entry. It
+    supplies pins (`{ block, with }`) and can narrow the list. `ProfileRules` checks each entry, as RCP-TOOL-001 and
+    RCP-TOOL-004 do.
+  - A block with an unpinnable required parameter that has no pin there can't be called, and `list_tools` names it
+    in `omitted`.
+  - A Step session never sees this list: a Step keeps only its state's `tools:`.
 - **Where it runs (C7).** A `ReadsCode` block runs in a fresh detached scratch worktree under
   `$AW_SINDRI_HOME/calls/worktrees/<id>/` (a server-made GUID v7), at the commit `ref` names (§A.1, §A.6), removed
   with `git worktree remove` when the call ends. It never runs in the shared checkout or in the session's own
@@ -611,8 +613,19 @@ like this has no instance and no run. It never moves anything, and it is never p
   - B.2's environment, denylist and heavy-slot rules apply unchanged. `dirty` and `changedDuringCall` are always
     false.
 - **Who runs it.** `BlockCallRunner`, a hosted service in the Sindri host. It is a bounded queue that runs
-  `workflow.calls.plainConcurrent` calls at once per repo (B.4), each through the same `RunBlockCall` body as B.2
-  with a `BlockContext` that has no instance, run or `StepPolicy`.
+  `workflow.calls.plainConcurrent` calls at once per repo (default 2, B.4), each through the same `RunBlockCall`
+  body as B.2. Its `BlockContext` has no instance, run or `StepPolicy`.
+  - **High priority (C6).** A plain call takes its heavy slot through `IHeavySlots.Take(priority: High)`, and
+    takes the next free slot before anything else waits for it:
+    1. plain calls, ahead of meta's merge-train reservation too. Meta decided this on 2026-10-18; it is reversible
+       and has been noted to the owner;
+    2. meta's merge trains, which otherwise keep their reservation rule;
+    3. transition gates;
+    4. Step calls and agent work.
+
+    Nothing is pre-empted: a running gate step or build finishes, and the owner's call takes the next free slot.
+    `IHeavySlots` gains the priority in BM-1. The box wrapper isn't involved, because the slot is taken in-process
+    (B.2, R3-01). §A.1's timing rule still holds: a sync call waits at most 30 s for a slot, then answers `running`.
   - The API claims the row as for a Step call (§A.1 step 9), then enqueues it. The calls live in `block_calls` with
     scope `repo:<name>`, and their bodies in `block_call_bodies`.
   - The stored-call lookup, the poll, `SND-TOOL-409` and the restart sweep work as in §A.1 and B.2. On a restart, a
@@ -628,11 +641,25 @@ like this has no instance and no run. It never moves anything, and it is never p
   - Refused calls are recorded the same way (C4).
   - There is no session id on MCP, so calls are counted and shown per repo: `sindri ledger --type
     session.tool-called` and the places §A.4 lists.
+- **High sensitivity (C10).** The owner chooses how private a plain call is. Under the recommended answer (a):
+  - The result is readable only by the calling session's own answer and by the human (the app and the CLI). It is
+    never readable by another session or a Step agent through MCP, never readable by the Judge, and never sent
+    anywhere.
+  - Both `session.*` events are private on the stream.
+  - The body is still scrubbed by `Aw.Redaction` (the scrub protects the logs, not from the owner) and is kept 30
+    days.
+
+  Under (c), the body isn't stored at all: only its sha256 and size are kept, and a poll after the answer gets
+  `result: gone`.
 - **Linking to an item.** A plain call that names an item never satisfies a gate, a step report's `calls:` can't
   cite it, and it is not a fact (C8).
-- **Budget.** `workflow.calls.plainPerDay` per repo per local day (default 200). Past it, a call is `SND-TOOL-005`.
-  Refused entries have their own cap, also per repo per day and equal to `plainPerDay`, then one
-  `session.tool-refusals-capped` event for that day.
+- **Budget and caps ("no matter what").**
+  - A `Budget` block called from a plain session spends from no Sindri budget, because there is no run. Its spend is
+    recorded on `session.tool-called` as `spent`, and it is never refused for budget.
+  - `workflow.calls.plainPerDay` (per repo per local day, default 200) refuses nothing. Past it, each event carries
+    `capPassed: true` and the host logs one notice a day. `SND-TOOL-005` is gone.
+  - Refused entries (a bad name or bad arguments) keep their own per-repo daily cap, then one
+    `session.tool-refusals-capped` event for that day, so the ledger stays bounded.
 
 ## C. Owner choices (plain words)
 
@@ -679,7 +706,7 @@ Contract first, so the two lanes build in parallel.
 | Phase | Lane | Holds | Waits on | Docs it updates |
 |---|---|---|---|---|
 | **BM-0** | engine | The contract, red: `Callable`, `Description`, `ReadsCode` and the `ParameterSpec` fields (`EnumSource` among them); `tools:` with the RCP-TOOL-001..005 fixtures; `BlockContext` and `GateContext.Checkout`; `IBlockCallStore`, `IBlockCallLog`, the request and response records for `ListCallableBlocks` and `ExecuteBlockCall`, with stub services; the `*.tool-started` and `*.tool-called` records; the typed refusals | P8 (the agent runtime), DT-J2 (`MaxDuration`; draft PR #306, not merged), the owner's C2 answer (the tool names) | none |
-| **BM-1** | engine | The validator rows; the catalog test; `gate.tests.green`, `checks.json` read from the base (`fact:change.base`, else the default branch), `needs-repo-config`, `schemas/checks.schema.json`, a `sindri doctor` check that validates every registered repo's `checks.json` and names a repo that has none, and the `deps.yaml` file edge for it (`node scripts/check-deps.mjs`); `list_tools` with its enum sources and `omitted`; the `block_calls` and `block_call_bodies` migration; the run call state in `RecipeWorkflow`; the `block-call` Update, `MarkCallStarted` and `RunBlockCall` (the runner), with the events' idempotency keys; the heavy slot through `IHeavySlots` with its wait ceiling; the commit, tree, dirty and `changedDuringCall` record; the per-folder lock (calls only); the restart sweep (rows, scratch worktrees, scratch `TMPDIR`s); the environment base and denylist; the bodies and the 30-day sweep; the budget and concurrency keys; `calls:` validation; `BlockCallRunner` for plain calls; `workflow.review-loop`'s `fix` `tools:` and the recipe test that keeps it through DTC4. Tests: unit (filtering, refusals, schema building, enum sources, path confinement, `invalid-argument`, the denylist, `ref` checking, the filter as one argv value, the plain set's pin rule); integration (an Update through the time-skipping server, single flight, cancel on run end, takeover per C5, the restart sweep, a Step call in a dirty folder, a folder edited during a call, a slot-wait timeout, a plain call in a scratch worktree) | BM-0 | `docs/csharp/sindri-workflow.md` (`tools:`, RCP-TOOL rows, a "Block calls" section), `docs/csharp/sindri-profile.md` (the keys), `docs/csharp/sindri.md` (the events, the tables, the doctor check), a `checks.json` reference in `docs/csharp/` (targets come from the base) |
+| **BM-1** | engine | The validator rows; the catalog test; `gate.tests.green`, `checks.json` read from the base (`fact:change.base`, else the default branch), `needs-repo-config`, `schemas/checks.schema.json`, a `sindri doctor` check that validates every registered repo's `checks.json` and names a repo that has none, and the `deps.yaml` file edge for it (`node scripts/check-deps.mjs`); `list_tools` with its enum sources and `omitted`; the `block_calls` and `block_call_bodies` migration; the run call state in `RecipeWorkflow`; the `block-call` Update, `MarkCallStarted` and `RunBlockCall` (the runner), with the events' idempotency keys; the heavy slot through `IHeavySlots` with its wait ceiling; the commit, tree, dirty and `changedDuringCall` record; the per-folder lock (calls only); the restart sweep (rows, scratch worktrees, scratch `TMPDIR`s); the environment base and denylist; the bodies and the 30-day sweep; the budget and concurrency keys; `calls:` validation; `BlockCallRunner` for plain calls; `workflow.review-loop`'s `fix` `tools:` and the recipe test that keeps it through DTC4. Tests: unit (filtering, refusals, schema building, enum sources, path confinement, `invalid-argument`, the denylist, `ref` checking, the filter as one argv value, the plain pin rule); integration (an Update through the time-skipping server, single flight, cancel on run end, takeover per C5, the restart sweep, a Step call in a dirty folder, a folder edited during a call, a slot-wait timeout, a plain call in a scratch worktree) | BM-0 | `docs/csharp/sindri-workflow.md` (`tools:`, RCP-TOOL rows, a "Block calls" section), `docs/csharp/sindri-profile.md` (the keys), `docs/csharp/sindri.md` (the events, the tables, the doctor check), a `checks.json` reference in `docs/csharp/` (targets come from the base) |
 | **BA-1** | api | §A: the two MCP tools, the routes, `X-Sindri-Run` and the launcher's per-launch MCP form change, schema validation, the stored-call lookup, the claim and the 409 check, the refusal recording, the catalog rows, the goldens. Built against BM-0's records and stubs, so it starts the day BM-0 lands. Its gate also runs `Aw.Sindri.Ui.Tests`, which pins the catalog rows | BM-0 | §A's list |
 | **BA-2** | api, with engine | §A.5's proof end to end, with a real launched Step session and a plain session | BM-1, BA-1 | the proof log |
 | **BU-1** | ui | The calls on a Step (cited, uncited, waiting, running), the plain calls (§A.4), and the app steps of §A.5's proof | BM-1, BA-1 | `docs/csharp/sindri-ui.md` |
@@ -695,4 +722,4 @@ checks run or new findings in the next round than before calls shipped.
 is versioned in the repo (provisional default, reversible); transition gates with a checkout, and reusing a call for
 one on an exact match (R1-12); a recipe-level default `tools:` (R1-31); per-session attribution for Sindri-launched
 sessions (`X-Sindri-Launch`); a heavy-slot priority for calls below the transition gates (an `IHeavySlots` change);
-`Budget` blocks in the plain set, once a plain budget exists.
+a Sindri budget for plain calls' spend, if the owner wants one later.
