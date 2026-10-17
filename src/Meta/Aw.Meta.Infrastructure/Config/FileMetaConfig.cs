@@ -31,7 +31,12 @@ internal sealed class FileMetaConfig(string path, JsonSerializerOptions json) : 
         }
 
         var config = AwJson.Deserialize<TeamConfig>(bytes.AsSpan().StartsWith(_utf8Bom) ? bytes.AsSpan(_utf8Bom.Length) : bytes, json);
-        return config.IsError ? MetaErrors.ConfigInvalid.With($"{path}: {config.Error.Message}") : config;
+        if (config.IsError)
+        {
+            return MetaErrors.ConfigInvalid.With($"{path}: {config.Error.Message}");
+        }
+
+        return ThresholdChecks.Problem(config.Value) is { } problem ? MetaErrors.ConfigInvalid.With($"{path}: {problem}") : config;
     }
 
     public async ValueTask<Result<Unit>> Save(TeamConfig config, CancellationToken cancellationToken)

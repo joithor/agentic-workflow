@@ -21,6 +21,7 @@ setup_fake_judge() {
   local bin_dir brief_json; bin_dir="$(mktemp -d)"; brief_json="${1:-}"
   cat > "$bin_dir/judge" <<EOF
 #!/usr/bin/env bash
+if [ "\$1" = "ask-check" ]; then cat >/dev/null; exit 0; fi  # drain stdin like the real judge: else the hook's printf can die of SIGPIPE (141)
 if [ "\$1" = "brief" ] && [ "\$2" = "get" ]; then
   if [ -n '$brief_json' ]; then
     printf '%s' '$brief_json'
