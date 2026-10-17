@@ -18,7 +18,7 @@ states:
 transitions:
   - { from: journey, to: design, on: step.completed, when: { outcome: pass }, produces: [fact:evidencePack] }
   - { from: journey, to: failed, on: step.completed, when: { outcome: fail }, produces: [fact:evidencePack] }
-  - { from: design,  to: passed, on: step.completed, when: { outcome: pass } }
+  - { from: design,  to: passed, on: step.completed, when: { outcome: pass }, produces: [fact:designCheck] }
   - { from: design,  to: passed, on: step.completed, when: { outcome: skipped } }
-  - { from: design,  to: failed, on: step.completed, when: { outcome: fail } }
-evals: [evals/workflow.verify/happy.jsonl, evals/workflow.verify/journey-fail.jsonl, evals/workflow.verify/design-skipped.jsonl]
+  - { from: design,  to: failed, on: step.completed, when: { outcome: fail }, produces: [fact:designCheck] }
+evals: [evals/workflow.verify/happy.jsonl, evals/workflow.verify/journey-fail.jsonl, evals/workflow.verify/design-skipped.jsonl, evals/workflow.verify/design-fail.jsonl]

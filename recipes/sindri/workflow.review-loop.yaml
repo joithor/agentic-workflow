@@ -30,3 +30,5 @@ evals:
   - evals/workflow.review-loop/happy.jsonl
   - evals/workflow.review-loop/cap-then-recheck.jsonl
   - evals/workflow.review-loop/behaviour-wrong.jsonl
+  - evals/workflow.review-loop/recheck-clean.jsonl
+  - evals/workflow.review-loop/recheck-wrong.jsonl

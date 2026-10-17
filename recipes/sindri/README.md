@@ -22,7 +22,7 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 - A route (`step.judge.choose`) has its desk twin (`step.desk.choose`), and a failed route Step goes to the desk.
 - A child wait routes `cancelled` on its own transition, which records nothing.
 - `workflow.evidence` nests two deep (evidence, evidence-all, evidence-ui), inside the limit of 4 (`RCP-CHILD-003`).
-- A parent keeps only the summaries its children's every path proves. `evidence-all`'s failures and every `cancelled` end without a summary, so `workflow.evidence` guarantees `evidenceSummary` on `resolved` and on a leaf child's failure.
+- A parent keeps only the summaries its children's every path proves. `evidence-all`'s failures and every `cancelled` end without a summary, so a parent waiting on `workflow.evidence` receives `evidenceSummary` on `resolved` only (Q6, `RCP-WIRE-003`). The instance's own facts carry it as well when a leaf child fails.
 - `evidence.check` is descriptor-only: a recipe using it validates, and the engine refuses it at run time. Evals answer evidence checks as holding.
 
 ## Approval order
@@ -33,4 +33,8 @@ Approve leaf recipes first (`report`, `investigate`, `reproduce`, `implement`, `
 
 DTC2 to DTC9 as the plan reads them. Out of this change: seeds (DT-R3), `workflow.implement-split` (needs an areas signal, DT-B), and the `branch` output of `workflow.implement` (no Step writes it yet).
 
-`workflow.implement` exports the Step's `fact:output` under that key, since only a child's outputs can be renamed (`RCP-WIRE-002`). `workflow.reproduce` names `ui-check` as the producer of `check` and `baseline`; the test-check path produces them too.
+`workflow.implement` exports the Step's `fact:output` under that key, since only a child's outputs can be renamed (`RCP-WIRE-002`). `workflow.evidence` names `evidence-ui` as the `from` of its `evidenceSummary` output, a compromise: `from` is a declaration only, and the summary comes from whichever leaf ran. `workflow.reproduce` names `ui-check` as the producer of `check` and `baseline`; the test-check path produces them too.
+
+## Known gaps
+
+- A change that touches two of ui, api and db is not an `all` change (`all` needs all three). The judge routes it to one leaf, or ends uncertain and the desk picks. Running two leaves needs DT-B or DT-E.

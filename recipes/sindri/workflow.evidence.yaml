@@ -21,7 +21,7 @@ states:
           - "ui: what a user sees or does in a web app changed"
           - "api: an HTTP or CLI contract changed: a route, a verb, an exit code or a response shape"
           - "db: what is persisted changed: a schema, a migration, or the rows a command writes"
-          - "all: more than one of ui, api and db changed"
+          - "all: all three of ui, api and db changed"
           - "none: the always-run checks already prove it (the verify pack, or the frozen bug check)"
           - "other: none of these would prove it"
     timeout: { after: 2d, then: park }
@@ -110,3 +110,7 @@ evals:
   - evals/workflow.evidence/uncertain.jsonl
   - evals/workflow.evidence/failed.jsonl
   - evals/workflow.evidence/leaf-failed.jsonl
+  - evals/workflow.evidence/all-unresolved.jsonl
+  - evals/workflow.evidence/cancelled.jsonl
+  - evals/workflow.evidence/other-failed.jsonl
+  - evals/workflow.evidence/child-parks.jsonl
