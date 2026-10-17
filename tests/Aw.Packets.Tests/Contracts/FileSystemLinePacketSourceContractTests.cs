@@ -70,7 +70,7 @@ public sealed class FileSystemLinePacketSourceContractTests : LinePacketSourceCo
         var files = A.LinePacket(PacketKinds.Proof).Build();
         for (var i = 0; i <= LineLimits.MaxLinkedFiles; i++)
         {
-            files[$"evidence/f{i}.txt"] = "x"u8.ToArray();
+            files["evidence/f" + i.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".txt"] = "x"u8.ToArray();
         }
 
         var read = await Create(files).Read(PacketKinds.Proof, Directory, CancellationToken.None);

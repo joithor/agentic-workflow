@@ -115,8 +115,6 @@ Aw.Packets.Core.Kinds.Line.AcceptanceItem.Equals(Aw.Packets.Core.Kinds.Line.Acce
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Evidence.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Line.EvidenceRef!>!
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Evidence.init -> void
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Id.get -> Aw.Packets.Core.Ids.ItemId
-Aw.Packets.Core.Kinds.Line.AcceptanceItem.Other.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.JsonElement>?
-Aw.Packets.Core.Kinds.Line.AcceptanceItem.Other.init -> void
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Status.get -> Aw.Packets.Core.Kinds.Line.AcceptanceStatus
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Status.init -> void
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Text.get -> string!

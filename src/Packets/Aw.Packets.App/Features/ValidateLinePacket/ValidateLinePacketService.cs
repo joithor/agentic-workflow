@@ -9,7 +9,7 @@ internal sealed class ValidateLinePacketService(LinePacketInspector inspector) :
 {
     public async ValueTask<Result<ValidateLinePacketResponse>> Handle(ValidateLinePacketRequest request, CancellationToken cancellationToken)
     {
-        var kind = PacketKinds.Find(request.Kind)!;   // the validator accepted it
+        var kind = PacketKinds.Find(request.Kind)!;   // why: the validator accepted the kind
         var inspection = await inspector.Inspect(kind, request.PacketDirectory, request.RepoDirectory ?? request.PacketDirectory, cancellationToken)
             .ConfigureAwait(false);
         return inspection.Map(static i => new ValidateLinePacketResponse(1, i.Kind.Name, i.Manifest?.Id, i.Passed, i.Checks));

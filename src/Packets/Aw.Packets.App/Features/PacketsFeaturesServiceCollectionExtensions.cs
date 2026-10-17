@@ -53,6 +53,11 @@ internal static class PacketsFeaturesServiceCollectionExtensions
                 new ValidatingService<FreezeScopingPacketRequest, FreezeScopingPacketResponse>(
                     sp.GetRequiredService<FreezeScopingPacketService>(),
                     sp.GetRequiredService<IValidator<FreezeScopingPacketRequest>>()));
+        return services.AddLinePacketFeatures();
+    }
+
+    private static IServiceCollection AddLinePacketFeatures(this IServiceCollection services)
+    {
         _ = services
             .AddScoped<ValidateLinePacketService>()
             .AddScoped<IValidator<ValidateLinePacketRequest>, ValidateLinePacketValidator>()

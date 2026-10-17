@@ -99,7 +99,7 @@ public sealed class PacketSchemaTests
     // and a phase packet's id is '<line>-<phase>[-a<n>]' (PKT-PHS-007), which the exporter can't see.
     private static void LinePatch(JsonObject root, string name)
     {
-        if (name is "packet" or "decisions" or "out-of-scope" or "tasks" or "freeze-record" or "lenses"
+        if (new[] { "packet", "decisions", "out-of-scope", "tasks", "freeze-record", "lenses" }.Contains(name, StringComparer.Ordinal)
             || root["properties"] is not JsonObject properties)
         {
             return;
@@ -121,7 +121,7 @@ public sealed class PacketSchemaTests
 
         if (name == "index" && properties["kind"] is JsonObject indexKind)
         {
-            indexKind["enum"] = new JsonArray(PacketKinds.All.Where(static k => k.IsLine).Select(static k => (JsonNode)JsonValue.Create(k.Name)!).ToArray());
+            indexKind["enum"] = new JsonArray(PacketKinds.All.Where(static k => k.IsLine).Select(static k => (JsonNode)JsonValue.Create(k.Name)).ToArray());
         }
     }
 

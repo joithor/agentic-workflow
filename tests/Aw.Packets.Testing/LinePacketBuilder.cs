@@ -39,22 +39,14 @@ internal sealed class LinePacketBuilder
 
         _files["packet.json"] = Encoding.UTF8.GetBytes(Manifest(kind, packetId));
         _files["index.json"] = Encoding.UTF8.GetBytes(Index(kind.Name, "[]", kind.Name == "plan" ? "null" : $"\"{Hash}\"", "null"));
-        switch (kind.Name)
+        foreach (var (name, text) in KindFiles(kind.Name))
         {
-            case "design" or "proof":
-                _files["acceptance.json"] = Encoding.UTF8.GetBytes(Acceptance(kind.Name == "proof" ? "passing" : "failing"));
-                break;
-            case "phase":
-                _files["acceptance.json"] = Encoding.UTF8.GetBytes(Acceptance("failing"));
-                _files["phase.json"] = Encoding.UTF8.GetBytes(PhaseJson);
-                _files["holdout.json"] = Encoding.UTF8.GetBytes($"{{ \"schemaVersion\": 1, \"setHash\": \"{Hash}\", \"count\": 3 }}\n");
-                break;
-            case "plan":
-                _files["tasks.json"] = AwJson.Serialize(A.Packet().Build().Tasks, PacketFiles.Json);
-                break;
-            case "handoff":
-                _files["pr.json"] = Encoding.UTF8.GetBytes($"{{ \"schemaVersion\": 1, \"base\": \"main\", \"headBranch\": \"sindri/expiry/p1\", \"headSha\": \"{Sha}\", \"stackParent\": null, \"title\": \"feat: expiry\", \"labels\": [\"area:sharing\"] }}\n");
-                break;
+            _files[name] = Encoding.UTF8.GetBytes(text);
+        }
+
+        if (kind.Name == "plan")
+        {
+            _files["tasks.json"] = AwJson.Serialize(A.Packet().Build().Tasks, PacketFiles.Json);
         }
 
         if (kind.Name == "proof")
@@ -151,6 +143,23 @@ internal sealed class LinePacketBuilder
         "  \"readSeeds\": [\"code:src/a.cs\"],\n" +
         "  \"budget\": { \"tokens\": 100000, \"turns\": 40, \"wallMinutes\": 30 }\n" +
         "}\n";
+
+    private static Dictionary<string, string> KindFiles(string kind) => kind switch
+    {
+        "design" => new(StringComparer.Ordinal) { ["acceptance.json"] = Acceptance("failing") },
+        "proof" => new(StringComparer.Ordinal) { ["acceptance.json"] = Acceptance("passing") },
+        "phase" => new(StringComparer.Ordinal)
+        {
+            ["acceptance.json"] = Acceptance("failing"),
+            ["phase.json"] = PhaseJson,
+            ["holdout.json"] = $"{{ \"schemaVersion\": 1, \"setHash\": \"{Hash}\", \"count\": 3 }}\n",
+        },
+        "handoff" => new(StringComparer.Ordinal)
+        {
+            ["pr.json"] = $"{{ \"schemaVersion\": 1, \"base\": \"main\", \"headBranch\": \"sindri/expiry/p1\", \"headSha\": \"{Sha}\", \"stackParent\": null, \"title\": \"feat: expiry\", \"labels\": [\"area:sharing\"] }}\n",
+        },
+        _ => new(StringComparer.Ordinal),
+    };
 
     private static string Manifest(PacketKind kind, string id)
     {

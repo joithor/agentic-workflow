@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/packets/phase.schema.json",
+  "title": "Packet phase file (schemaVersion 1)",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "goal": {
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "feature",
+        "fix",
+        "refactor",
+        "docs",
+        "config"
+      ]
+    },
+    "deps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "size": {
+      "enum": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ]
+    },
+    "base": {
+      "type": "object",
+      "properties": {
+        "rule": {
+          "enum": [
+            "default-branch",
+            "dependency-head"
+          ]
+        },
+        "ref": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "rule",
+        "ref"
+      ],
+      "additionalProperties": false
+    },
+    "allowedFiles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "testChange": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "readSeeds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "budget": {
+      "type": "object",
+      "properties": {
+        "tokens": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "turns": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "wallMinutes": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "amends": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "parent": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reason": {
+          "type": "string"
+        },
+        "at": true
+      },
+      "required": [
+        "parent",
+        "paths",
+        "reason",
+        "at"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "goal",
+    "kind",
+    "deps",
+    "size",
+    "base",
+    "allowedFiles",
+    "testChange",
+    "readSeeds",
+    "budget"
+  ],
+  "additionalProperties": false
+}

@@ -59,7 +59,7 @@ public sealed class LineCliTests : IDisposable
         Assert.Matches("^sha256:[0-9a-f]{64}\n$", hash);
         using var json = JsonDocument.Parse(jsonOut);
         Assert.Equal("proof", json.RootElement.GetProperty("kind").GetString());
-        Assert.Contains("evidence/shot.txt", json.RootElement.GetProperty("files").EnumerateArray().Select(static f => f.GetString()));
+        Assert.Contains("evidence/shot.txt", json.RootElement.GetProperty("files").EnumerateArray().Select(static f => f.GetString()), StringComparer.Ordinal);
         Assert.Contains(hash.Trim(), frozen, StringComparison.Ordinal);
         Assert.Equal(hash.Trim(), json.RootElement.GetProperty("hash").GetString());
     }

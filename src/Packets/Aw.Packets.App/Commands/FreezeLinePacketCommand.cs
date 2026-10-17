@@ -30,15 +30,20 @@ internal static class FreezeLinePacketCommand
             return CommandOutput.Json(frozen, frozen.Frozen, json);
         }
 
+        Print(kind, frozen);
+        return frozen.Frozen ? 0 : 1;
+    }
+
+    private static void Print(PacketKind kind, FreezeLinePacketResponse frozen)
+    {
         var name = frozen.Packet?.Value ?? "(no packet.json)";
-        Console.Out.WriteLine(frozen.Frozen
-            ? $"aw-packets freeze: {kind.Name} packet {name} — {(frozen.AlreadyFrozen ? "already frozen" : "frozen")} {frozen.Hash?.Value} (packets/{frozen.Location})"
-            : $"aw-packets freeze: {kind.Name} packet {name} — not frozen: {CommandOutput.Summary(frozen.Checks)}");
+        var outcome = frozen.Frozen
+            ? $"{(frozen.AlreadyFrozen ? "already frozen" : "frozen")} {frozen.Hash?.Value} (packets/{frozen.Location})"
+            : $"not frozen: {CommandOutput.Summary(frozen.Checks)}";
+        Console.Out.WriteLine($"aw-packets freeze: {kind.Name} packet {name} — {outcome}");
         if (!frozen.Frozen)
         {
             CommandOutput.Checks(frozen.Checks);
         }
-
-        return frozen.Frozen ? 0 : 1;
     }
 }

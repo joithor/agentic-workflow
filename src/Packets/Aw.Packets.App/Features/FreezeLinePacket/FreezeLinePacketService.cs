@@ -14,7 +14,7 @@ internal sealed class FreezeLinePacketService(LinePacketInspector inspector, IFr
 {
     public async ValueTask<Result<FreezeLinePacketResponse>> Handle(FreezeLinePacketRequest request, CancellationToken cancellationToken)
     {
-        var kind = PacketKinds.Find(request.Kind)!;   // the validator accepted it
+        var kind = PacketKinds.Find(request.Kind)!;   // why: the validator accepted the kind
         var inspection = await inspector.Inspect(kind, request.PacketDirectory, request.RepoDirectory ?? request.PacketDirectory, cancellationToken)
             .ConfigureAwait(false);
         if (inspection.IsError)

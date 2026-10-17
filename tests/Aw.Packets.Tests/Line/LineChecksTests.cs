@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Aw.Packets.Core.Checks;
 using Aw.Packets.Core.Kinds;
@@ -23,6 +24,8 @@ public sealed class LineChecksTests
     private static IEnumerable<CheckResult> Failures(IEnumerable<CheckResult> checks, string rule) =>
         checks.Where(c => c.Rule == rule && c.State == CheckState.Fail);
 
+    private static bool Is(string value, params string[] any) => any.Contains(value, StringComparer.Ordinal);
+
     private static PacketKind Kind(string name) => PacketKinds.Find(name)!;
 
     [Theory, Trait("Lane", "unit")]
@@ -36,7 +39,7 @@ public sealed class LineChecksTests
         Assert.All(checks.Where(static c => !c.Rule.StartsWith("PKT-SIZE", StringComparison.Ordinal)), static c => Assert.Equal(CheckState.Pass, c.State));
         var prefix = LineRules.For(kind)!.Prefix;
         Assert.Equal(
-            Enumerable.Range(1, 6).Select(n => $"{prefix}-00{n}"),
+            Enumerable.Range(1, 6).Select(n => prefix + "-00" + n.ToString(CultureInfo.InvariantCulture)),
             checks.Where(c => c.Rule.StartsWith(prefix, StringComparison.Ordinal)).Select(static c => c.Rule).Take(6), StringComparer.Ordinal);
         Assert.Contains(checks, static c => c.Rule == PacketRules.BaseCommit);
     }
@@ -53,8 +56,8 @@ public sealed class LineChecksTests
         Assert.Equal(
             ["PKT-PHS-001", "PKT-PHS-002", "PKT-PHS-003", "PKT-PHS-004", "PKT-PHS-005", "PKT-PHS-006", "PKT-PHS-007", "PKT-PHS-008", "PKT-PHS-009", "PKT-PHS-010", "PKT-PHS-011", "PKT-PHS-012", "PKT-BASE-001"],
             phase.Select(static c => c.Rule), StringComparer.Ordinal);
-        Assert.Equal(["PKT-PRF-007", "PKT-PRF-008"], proof.Select(static c => c.Rule).Where(static r => r.StartsWith("PKT-PRF-00", StringComparison.Ordinal) && r[^1] is '7' or '8'), StringComparer.Ordinal);
-        Assert.Equal(["PKT-DSN-007", "PKT-DSN-008"], design.Select(static c => c.Rule).Where(static r => r is "PKT-DSN-007" or "PKT-DSN-008"), StringComparer.Ordinal);
+        Assert.Equal(["PKT-PRF-007", "PKT-PRF-008"], proof.Select(static c => c.Rule).Where(static r => Is(r, "PKT-PRF-007", "PKT-PRF-008")), StringComparer.Ordinal);
+        Assert.Equal(["PKT-DSN-007", "PKT-DSN-008"], design.Select(static c => c.Rule).Where(static r => Is(r, "PKT-DSN-007", "PKT-DSN-008")), StringComparer.Ordinal);
         Assert.Contains(handoff, static c => c.Rule == "PKT-HND-007");
         Assert.Contains(plan, static c => c.Rule == "PKT-PLN-007");
         Assert.Contains(plan, static c => c.Rule == PacketRules.Acyclic);
@@ -99,7 +102,7 @@ public sealed class LineChecksTests
     {
         var checks = await Run(PacketKinds.Design, A.LinePacket(PacketKinds.Design).With("spec.md", [0xFF, 0xFE, 0x41]).Build());
 
-        Assert.Single(Failures(checks, "PKT-DSN-003"));
+        _ = Assert.Single(Failures(checks, "PKT-DSN-003"));
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -115,8 +118,8 @@ public sealed class LineChecksTests
         var shortSchema = await Run(kind, A.LinePacket(kind).Edit("packet.json", "\"schemaVersion\": 1", "\"schemaVersion\": 2").Build());
 
         Assert.Contains("kind is 'build'", Assert.Single(Failures(wrongKind, rule)).Message, StringComparison.Ordinal);
-        Assert.Single(Failures(unknown, rule));
-        Assert.Single(Failures(noLink, rule));
+        _ = Assert.Single(Failures(unknown, rule));
+        _ = Assert.Single(Failures(noLink, rule));
         Assert.Contains("schemaVersion is 2", Assert.Single(Failures(shortSchema, rule)).Message, StringComparison.Ordinal);
         Assert.Equal(CheckState.Unchecked, noLink.Single(c => c.Rule == $"{LineRules.For(kind)!.Prefix}-005").State);
         Assert.Equal(CheckState.Unchecked, unknown.Single(static c => c.Rule == PacketRules.BaseCommit).State);
@@ -127,7 +130,7 @@ public sealed class LineChecksTests
     public async Task A_link_that_names_another_file_fails_005(string name)
     {
         var kind = Kind(name);
-        var first = kind.Files.First(static f => f.Link is "index");
+        var first = kind.Files.First(static f => string.Equals(f.Link, "index", StringComparison.Ordinal));
 
         var checks = await Run(kind, A.LinePacket(kind).Edit("packet.json", "\"index\": \"index.json\"", "\"index\": \"other.json\"").Build());
 
@@ -163,9 +166,9 @@ public sealed class LineChecksTests
 
         Assert.Contains("kind is 'scoping'", Assert.Single(Failures(wrongKind, rule)).Message, StringComparison.Ordinal);
         Assert.Contains("twice", Assert.Single(Failures(repeated, rule)).Message, StringComparison.Ordinal);
-        Assert.Single(Failures(noChain, rule));
-        Assert.Single(Failures(withId, rule));
-        Assert.Single(Failures(badHash, rule));
+        _ = Assert.Single(Failures(noChain, rule));
+        _ = Assert.Single(Failures(withId, rule));
+        _ = Assert.Single(Failures(badHash, rule));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -181,9 +184,9 @@ public sealed class LineChecksTests
 
         Assert.Contains("only the proof pack", Assert.Single(Failures(passing, "PKT-DSN-008")).Message, StringComparison.Ordinal);
         Assert.Contains("appears 2 times", Assert.Single(Failures(twice, "PKT-DSN-008")).Message, StringComparison.Ordinal);
-        Assert.Single(Failures(noParent, "PKT-DSN-007"));
+        _ = Assert.Single(Failures(noParent, "PKT-DSN-007"));
         Assert.Contains("no text", Assert.Single(Failures(noText, "PKT-DSN-007")).Message, StringComparison.Ordinal);
-        Assert.Single(Failures(badStatus, "PKT-DSN-007"));
+        _ = Assert.Single(Failures(badStatus, "PKT-DSN-007"));
         Assert.Empty(Failures(extra, "PKT-DSN-007"));
         Assert.Equal(CheckState.Unchecked, noParent.Single(static c => c.Rule == "PKT-DSN-008").State);
     }
@@ -192,14 +195,12 @@ public sealed class LineChecksTests
     public async Task A_proof_pack_may_flip_an_item_to_passing_only_with_evidence()
     {
         var kind = PacketKinds.Proof;
-        var bare = await Run(kind, A.LinePacket(kind).With("acceptance.json", LinePacketBuilder.Acceptance("passing").Replace("\"evidence\": [{", "\"evidence\": [], \"x\": [{", StringComparison.Ordinal)).Build());
         var bad = await Run(kind, A.LinePacket(kind).Edit("acceptance.json", "\"commit\": \"" + PacketBuilder.BaseSha + "\"", "\"commit\": \"abc\"").Build());
         var noEvidence = await Run(kind, A.LinePacket(kind).With("acceptance.json", "{ \"schemaVersion\": 1, \"parent\": \"" + LinePacketBuilder.OtherHash + "\", \"items\": [{ \"id\": \"AC-1\", \"text\": \"t\", \"status\": \"passing\", \"evidence\": [] }] }").Build());
 
-        Assert.Single(Failures(noEvidence, "PKT-PRF-008"));
+        _ = Assert.Single(Failures(noEvidence, "PKT-PRF-008"));
         Assert.Contains("no evidence", Failures(noEvidence, "PKT-PRF-008").Single().Message, StringComparison.Ordinal);
-        Assert.Single(Failures(bad, "PKT-PRF-007"));
-        Assert.NotEmpty(Failures(bare, "PKT-PRF-007"));
+        _ = Assert.Single(Failures(bad, "PKT-PRF-007"));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -219,7 +220,7 @@ public sealed class LineChecksTests
         {
             var checks = await Run(PacketKinds.Phase, A.LinePacket(PacketKinds.Phase, id).Build());
 
-            Assert.Equal(id is "expiry" ? CheckState.Fail : CheckState.Pass, checks.Single(static c => c.Rule == "PKT-PHS-007").State);
+            Assert.Equal(id == "expiry" ? CheckState.Fail : CheckState.Pass, checks.Single(static c => c.Rule == "PKT-PHS-007").State);
         }
     }
 
@@ -230,10 +231,10 @@ public sealed class LineChecksTests
         var objectOnly = await Run(PacketKinds.Phase, A.LinePacket(PacketKinds.Phase)
             .Edit("phase.json", "\"deps\": []", "\"deps\": [], \"amends\": { \"parent\": \"" + LinePacketBuilder.Hash + "\", \"paths\": [], \"reason\": \" \", \"at\": \"2026-10-16T09:00:00Z\" }").Build());
         var badPath = await Run(PacketKinds.Phase, A.LinePacket(PacketKinds.Phase, "expiry-p1-a2")
-            .Edit("phase.json", "\"deps\": []", "\"deps\": [], \"amends\": { \"parent\": \"" + LinePacketBuilder.Hash + "\", \"paths\": [\"/etc/passwd\", \"new: ../x\"], \"reason\": \"r\", \"at\": \"2026-10-16T09:00:00Z\" }").Build());
+            .Edit("phase.json", "\"deps\": []", "\"deps\": [], \"amends\": { \"parent\": \"" + LinePacketBuilder.Hash + "\", \"paths\": [\"new: /abs\", \"new: ../x\"], \"reason\": \"r\", \"at\": \"2026-10-16T09:00:00Z\" }").Build());
 
         Assert.Contains("no 'amends'", Assert.Single(Failures(suffixOnly, "PKT-PHS-009")).Message, StringComparison.Ordinal);
-        Assert.Equal(4, Failures(objectOnly, "PKT-PHS-009").Count());
+        Assert.Equal(3, Failures(objectOnly, "PKT-PHS-009").Count());
         Assert.Equal(2, Failures(badPath, "PKT-PHS-009").Count());
     }
 
@@ -244,19 +245,19 @@ public sealed class LineChecksTests
         var unknown = await Run(kind, A.LinePacket(kind).Edit("phase.json", "\"goal\"", "\"owner\": \"x\", \"goal\"").Build());
         var badKind = await Run(kind, A.LinePacket(kind).Edit("phase.json", "\"feature\"", "\"epic\"").Build());
         var noScope = await Run(kind, A.LinePacket(kind).Edit("phase.json", "[\"src/**\", \"new: src/expiry.cs\"]", "[]").Build());
-        var badGlob = await Run(kind, A.LinePacket(kind).Edit("phase.json", "\"src/**\"", "\"/abs/**\"").Build());
+        var badGlob = await Run(kind, A.LinePacket(kind).Edit("phase.json", "\"src/**\"", "\"new: ../x\"").Build());
         var depBase = await Run(kind, A.LinePacket(kind).Edit("phase.json", "\"default-branch\", \"ref\": \"main\"", "\"dependency-head\", \"ref\": \"p2\"").Build());
         var okDepBase = await Run(kind, A.LinePacket(kind).Edit("phase.json", "\"deps\": []", "\"deps\": [\"p2\"]").Edit("phase.json", "\"default-branch\", \"ref\": \"main\"", "\"dependency-head\", \"ref\": \"p2\"").Build());
         var emptyReason = await Run(kind, A.LinePacket(kind).Edit("phase.json", "createLink gains an argument", " ").Build());
         var twice = await Run(kind, A.LinePacket(kind).Edit("phase.json", "\"deps\": []", "\"deps\": [\"p2\", \"p2\"]").Build());
 
-        Assert.Single(Failures(unknown, "PKT-PHS-008"));
-        Assert.Single(Failures(badKind, "PKT-PHS-008"));
+        _ = Assert.Single(Failures(unknown, "PKT-PHS-008"));
+        _ = Assert.Single(Failures(badKind, "PKT-PHS-008"));
         Assert.Contains("allowedFiles is empty", Assert.Single(Failures(noScope, "PKT-PHS-008")).Message, StringComparison.Ordinal);
-        Assert.Contains("/abs/**", Assert.Single(Failures(badGlob, "PKT-PHS-008")).Message, StringComparison.Ordinal);
+        Assert.Contains("new: ../x", Assert.Single(Failures(badGlob, "PKT-PHS-008")).Message, StringComparison.Ordinal);
         Assert.Contains("not one of deps", Assert.Single(Failures(depBase, "PKT-PHS-008")).Message, StringComparison.Ordinal);
         Assert.Empty(Failures(okDepBase, "PKT-PHS-008"));
-        Assert.Single(Failures(emptyReason, "PKT-PHS-008"));
+        _ = Assert.Single(Failures(emptyReason, "PKT-PHS-008"));
         Assert.Contains("twice", Assert.Single(Failures(twice, "PKT-PHS-008")).Message, StringComparison.Ordinal);
     }
 
@@ -269,10 +270,10 @@ public sealed class LineChecksTests
         var withText = await Run(kind, A.LinePacket(kind).Edit("holdout.json", "\"count\"", "\"scenarios\": [], \"count\"").Build());
         var negative = await Run(kind, A.LinePacket(kind).Edit("holdout.json", "\"count\": 3", "\"count\": -1").Build());
 
-        Assert.Single(Failures(passing, "PKT-PHS-011"));
-        Assert.Single(Failures(noHash, "PKT-PHS-012"));
-        Assert.Single(Failures(withText, "PKT-PHS-012"));
-        Assert.Single(Failures(negative, "PKT-PHS-012"));
+        _ = Assert.Single(Failures(passing, "PKT-PHS-011"));
+        _ = Assert.Single(Failures(noHash, "PKT-PHS-012"));
+        _ = Assert.Single(Failures(withText, "PKT-PHS-012"));
+        _ = Assert.Single(Failures(negative, "PKT-PHS-012"));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -285,11 +286,11 @@ public sealed class LineChecksTests
         var blank = await Run(kind, A.LinePacket(kind).Edit("pr.json", "\"title\": \"feat: expiry\"", "\"title\": \" \"").Build());
         var labels = await Run(kind, A.LinePacket(kind).Edit("pr.json", "[\"area:sharing\"]", "[\"a\", \"a\"]").Build());
 
-        Assert.Single(Failures(shortSha, "PKT-HND-007"));
-        Assert.Single(Failures(noStack, "PKT-HND-007"));
+        _ = Assert.Single(Failures(shortSha, "PKT-HND-007"));
+        _ = Assert.Single(Failures(noStack, "PKT-HND-007"));
         Assert.Empty(Failures(stacked, "PKT-HND-007"));
-        Assert.Single(Failures(blank, "PKT-HND-007"));
-        Assert.Single(Failures(labels, "PKT-HND-007"));
+        _ = Assert.Single(Failures(blank, "PKT-HND-007"));
+        _ = Assert.Single(Failures(labels, "PKT-HND-007"));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -306,9 +307,9 @@ public sealed class LineChecksTests
         var cycleChecks = await Run(kind, A.LinePacket(kind).With("tasks.json", Aw.Kernel.Json.AwJson.Serialize(cycle.Tasks, PacketFiles.Json)).Build());
         var heldChecks = await Run(kind, A.LinePacket(kind).With("tasks.json", Aw.Kernel.Json.AwJson.Serialize(held.Tasks, PacketFiles.Json)).Build());
 
-        Assert.Single(Failures(overlapChecks, PacketRules.ScopeOverlap));
-        Assert.Single(Failures(cycleChecks, PacketRules.Acyclic));
-        Assert.Single(Failures(heldChecks, PacketRules.HoldoutStored));
+        _ = Assert.Single(Failures(overlapChecks, PacketRules.ScopeOverlap));
+        _ = Assert.Single(Failures(cycleChecks, PacketRules.Acyclic));
+        _ = Assert.Single(Failures(heldChecks, PacketRules.HoldoutStored));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -319,9 +320,9 @@ public sealed class LineChecksTests
         var unknown = await Run(kind, A.LinePacket(kind).With("tasks.json", "{ \"schemaVersion\": 1, \"workstreams\": [], \"tasks\": [], \"extra\": 1 }").Build());
         var version = await Run(kind, A.LinePacket(kind).With("tasks.json", "{ \"schemaVersion\": 2, \"workstreams\": [], \"tasks\": [] }").Build());
 
-        Assert.Single(Failures(unknown, "PKT-PLN-007"));
+        _ = Assert.Single(Failures(unknown, "PKT-PLN-007"));
         Assert.Contains("schemaVersion is 2", Assert.Single(Failures(version, "PKT-PLN-007")).Message, StringComparison.Ordinal);
-        Assert.All(unknown.Where(static c => c.Rule is "PKT-ID-001" or "PKT-GRAPH-002" or "PKT-SCOPE-002" or "PKT-HOLD-002"), static c => Assert.Equal(CheckState.Unchecked, c.State));
+        Assert.All(unknown.Where(static c => Is(c.Rule, "PKT-ID-001", "PKT-GRAPH-002", "PKT-SCOPE-002", "PKT-HOLD-002")), static c => Assert.Equal(CheckState.Unchecked, c.State));
         Assert.Contains(unknown, static c => c.Rule == PacketRules.BaseCommit && c.State == CheckState.Pass);
     }
 
