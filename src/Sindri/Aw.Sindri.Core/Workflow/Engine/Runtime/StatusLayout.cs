@@ -40,7 +40,7 @@ public static class StatusLayout
     {
         ArgumentNullException.ThrowIfNull(view);
         var forwarded = view.Question is not null && view.Children.Count > 0;
-        return string.Join(", ", view.AllowedCommands.Select(c => Verb(c.Action) is var verb && verb == "answer" && forwarded ? "answer (forwarded)" : verb));
+        return string.Join(", ", view.AllowedCommands.Select(c => Verb(c.Action) is var verb && verb == "answer" && forwarded ? "answer (forwarded)" : verb).Distinct(StringComparer.Ordinal));
     }
 
     /// <summary>The verb of an action id: 'complete' for 'CompleteStep', 'answer' for every 'answer-&lt;variant&gt;', else what follows the colon.</summary>

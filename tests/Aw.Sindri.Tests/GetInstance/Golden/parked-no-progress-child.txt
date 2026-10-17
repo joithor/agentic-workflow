@@ -3,4 +3,4 @@ T-3/step/1  workflow.step@1c1173a162a7  v4  parked: no-progress (child)  since 1
             Grant more rounds at a terminal, or cancel.
   child     T-3/step/1/step.4  parked: no-progress
   answer    sindri workflow answer T-3/step/1 --grant 1     (at a terminal; forwarded to the child)
-  commands  answer (forwarded), answer (forwarded), takeover, cancel
+  commands  answer (forwarded), takeover, cancel
