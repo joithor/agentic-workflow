@@ -78,4 +78,12 @@ public sealed class MacFormatTests
     [Fact, Trait("Lane", "unit")]
     public void A_process_with_no_arguments_is_listed_by_its_pid_in_brackets() =>
         Assert.Equal("[300]", Assert.Single(MacFormat.Processes("  300     1       00:10    500 S    ")).Cmdline);
+
+    [Fact, Trait("Lane", "unit")]
+    public void Pid_ages_are_read_from_pid_and_etime_lines_and_other_lines_are_left_out()
+    {
+        var ages = MacFormat.PidAges("  321    02:00:00\n  400 3-00:00:30\nPID ELAPSED\n  500 soon\n  600\n");
+
+        Assert.Equal((7200L, 259_230L, 2), (ages[321], ages[400], ages.Count));
+    }
 }

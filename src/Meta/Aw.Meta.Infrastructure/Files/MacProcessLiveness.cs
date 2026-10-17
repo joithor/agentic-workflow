@@ -29,12 +29,23 @@ internal sealed class MacProcessLiveness(MacHostReader reader, TimeProvider time
     public async ValueTask<IReadOnlyList<Result<bool>>> Running(IReadOnlyList<ProcessClaim> claims, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(claims);
-        var answers = new List<Result<bool>>(claims.Count);
-        foreach (var claim in claims)
+        var now = time.GetUtcNow();   // before ps runs, as in IsRunning
+        var ages = await reader.ProcessAges(cancellationToken).ConfigureAwait(false);
+        return [.. claims.Select(claim => Answer(claim, now, ages))];
+    }
+
+    private static Result<bool> Answer(ProcessClaim claim, DateTimeOffset now, Result<IReadOnlyDictionary<int, long>> ages)
+    {
+        if (claim.Pid <= 0)
         {
-            answers.Add(await IsRunning(claim.Pid, claim.RecordedAt, cancellationToken).ConfigureAwait(false));
+            return false;
         }
 
-        return answers;
+        if (ages.IsError)
+        {
+            return ages.Error;
+        }
+
+        return ages.Value.TryGetValue(claim.Pid, out var seconds) && !ProcessStart.IsReused(now - TimeSpan.FromSeconds(seconds), claim.RecordedAt);
     }
 }

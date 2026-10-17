@@ -9,7 +9,8 @@ namespace Aw.Meta.Infrastructure.Files;
 /// <summary>
 /// ISessionDirectory over Claude Code's sessions directory (one &lt;pid&gt;.json per session). The format is Claude Code's
 /// own and undocumented, so every record is read defensively: one that can't be read is skipped, never an error.
-/// A session is live when its pid runs and the process did not start after the record was last written (IProcessLiveness).
+/// A session is live when its pid runs and the process did not start after the record was last written, asked of IProcessLiveness in
+/// one batch; a pid the host can't be asked about is kept (unknown is not dead).
 /// </summary>
 /// <param name="directory">The sessions directory.</param>
 /// <param name="liveness">Tells whether the pid still belongs to the session's process.</param>
@@ -22,28 +23,18 @@ internal sealed class DirectorySessionDirectory(string directory, IProcessLivene
             return Results.Success<IReadOnlyList<LiveSession>>([]);
         }
 
-        var sessions = new List<LiveSession>();
+        var found = new List<(LiveSession Session, ProcessClaim Claim)>();
         foreach (var file in Directory.EnumerateFiles(directory, "*.json").Order(StringComparer.Ordinal))
         {
-            var session = await Read(file, cancellationToken).ConfigureAwait(false);
-            if (session is null)
+            if (await Read(file, cancellationToken).ConfigureAwait(false) is { } session)
             {
-                continue;
-            }
-
-            var alive = await liveness.IsRunning(session.Pid, new DateTimeOffset(File.GetLastWriteTimeUtc(file), TimeSpan.Zero), cancellationToken).ConfigureAwait(false);
-            if (alive.IsError)
-            {
-                return alive.Error;
-            }
-
-            if (alive.Value)
-            {
-                sessions.Add(session);
+                found.Add((session, new ProcessClaim(session.Pid, new DateTimeOffset(File.GetLastWriteTimeUtc(file), TimeSpan.Zero))));
             }
         }
 
-        return sessions;
+        // one batch for every record; a pid the host could not be asked about stays in the list (unknown is not dead)
+        var verdicts = await liveness.Running([.. found.Select(f => f.Claim)], cancellationToken).ConfigureAwait(false);
+        return Results.Success<IReadOnlyList<LiveSession>>([.. found.Where((_, i) => verdicts[i].IsLiveOrUnknown()).Select(f => f.Session)]);
     }
 
     private static async ValueTask<LiveSession?> Read(string file, CancellationToken cancellationToken)

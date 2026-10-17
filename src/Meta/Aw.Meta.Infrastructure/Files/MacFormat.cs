@@ -69,6 +69,24 @@ internal static class MacFormat
         return new ProcessInfo(pid, ppid, args.Length > 0 ? args : "[" + pid.ToString(CultureInfo.InvariantCulture) + "]", rss, age);
     }
 
+    /// <summary>The age in seconds of every process of "ps -axo pid=,etime=". Lines that are not a pid and an elapsed time are left out.</summary>
+    /// <param name="ps">The tool's output.</param>
+    /// <returns>Each listed pid's age.</returns>
+    internal static IReadOnlyDictionary<int, long> PidAges(string ps)
+    {
+        var ages = new Dictionary<int, long>();
+        foreach (var line in ps.ReplaceLineEndings("\n").Split('\n'))
+        {
+            var columns = line.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (columns.Length == 2 && int.TryParse(columns[0], NumberStyles.None, CultureInfo.InvariantCulture, out var pid) && Elapsed(columns[1]) is { } age)
+            {
+                ages[pid] = age;
+            }
+        }
+
+        return ages;
+    }
+
     /// <summary>The seconds of a ps elapsed time, [[dd-]hh:]mm:ss.</summary>
     /// <param name="etime">The text.</param>
     /// <returns>Seconds, or null when it isn't one.</returns>

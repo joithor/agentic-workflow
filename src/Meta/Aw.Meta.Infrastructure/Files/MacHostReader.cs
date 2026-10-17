@@ -60,6 +60,15 @@ internal sealed class MacHostReader(string stateDirectory, ICommandRunner runner
     internal ValueTask<Result<string>> Lsof(CancellationToken cancellationToken) =>
         MacTools.Output(runner, [paths.Lsof, "-w", "-n", "-F", "pcnR"], cancellationToken);
 
+    /// <summary>How long every live process has run, from one ps ("ps -axo pid=,etime=").</summary>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>Each listed pid's age in seconds, or AW-META-010.</returns>
+    internal async ValueTask<Result<IReadOnlyDictionary<int, long>>> ProcessAges(CancellationToken cancellationToken)
+    {
+        var ps = await MacTools.Output(runner, [paths.Ps, "-axo", "pid=,etime="], cancellationToken).ConfigureAwait(false);
+        return ps.IsError ? ps.Error : Parsed(() => MacFormat.PidAges(ps.Value));
+    }
+
     /// <summary>How long a process has run ("ps -o etime= -p pid"), or null when there is no such process.</summary>
     /// <param name="pid">The process id.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
