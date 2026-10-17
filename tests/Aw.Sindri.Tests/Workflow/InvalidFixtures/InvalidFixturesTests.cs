@@ -28,6 +28,7 @@ public sealed class InvalidFixturesTests
     private static readonly string[] _decisionTree =
     [
         "RCP-CHOICE-001", "RCP-CHOICE-002", "RCP-CHOICE-003", "RCP-CHOICE-004", "RCP-CHOICE-005", "RCP-CHOICE-006",
+        "RCP-TIME-003",
     ];
 
     /// <summary>The child-output rule (DT spec §8.4).</summary>

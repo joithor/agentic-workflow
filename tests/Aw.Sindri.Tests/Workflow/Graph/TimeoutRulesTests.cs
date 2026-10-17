@@ -1,9 +1,10 @@
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Tests.Workflow.Choice;
 using static Aw.Sindri.Tests.Workflow.Graph.GraphRecipe;
 
 namespace Aw.Sindri.Tests.Workflow.Graph;
 
-/// <summary>RCP-TIME-001 (every active and wait state has a timeout) and RCP-TIME-002 (no retry on a child wait), spec §3.4.</summary>
+/// <summary>RCP-TIME-001 (every active and wait state has a timeout), RCP-TIME-002 (no retry on a child wait), spec §3.4, and RCP-TIME-003 (no retry on a block-runtime Step), DT spec §8.2.</summary>
 public sealed class TimeoutRulesTests
 {
     [Fact, Trait("Lane", "unit")]
@@ -54,5 +55,25 @@ public sealed class TimeoutRulesTests
             [Go("produce", "claimed"), Go("claimed", "running", "wait.satisfied"), Go("running", "done", "wait.satisfied")]);
 
         Assert.Empty(Lines(recipe));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Retry_on_a_block_runtime_state_is_RCP_TIME_003()
+    {
+        var lines = RouteRecipes.Lines(RouteRecipes.Fixture("RCP-TIME-003"), "RCP-TIME-003.yaml");
+
+        Assert.Equal(
+            ["RCP-TIME-003: state 'route' runs step.judge.choose on the block runtime, where 'then: retry' doesn't apply at RCP-TIME-003.yaml:16:27 (states.route.timeout.then); use then: park (a judge call that runs out ends as step.failed, which the route sends to its desk twin)"],
+            lines);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("then: park")]
+    [InlineData("then: escalate")]
+    public void Park_and_escalate_on_a_block_runtime_state_raise_nothing(string then)
+    {
+        var yaml = RouteRecipes.Fixture("RCP-TIME-003").Replace("then: retry", then, StringComparison.Ordinal);
+
+        Assert.Empty(RouteRecipes.Lines(yaml, "RCP-TIME-003.yaml"));
     }
 }
