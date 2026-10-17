@@ -2,6 +2,8 @@ using System.Text.Json;
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
+using Aw.Context.Core.Eval.Backtest;
+using Aw.Context.Core.Eval.MapQuality;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
@@ -80,6 +82,19 @@ public sealed class FakeContextEngine : IContextEngine
         var report = await ProbeRunner.Run(new ProbeFile(file ?? "/probes/probes.json", "fake-hash", _probes), ask, baseline: null, DateTimeOffset.UnixEpoch, cancellationToken).ConfigureAwait(false);
         return report.IsError ? report.Error : new ProbeRun(report.Value, Path: null);
     }
+
+    /// <summary>The fake keeps no history or issues: a backtest finds no eligible sample (SND-CONTEXT-080).</summary>
+    public ValueTask<Result<BacktestRun>> EvalBacktest(BacktestRequest request, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<BacktestRun>>(ContextErrors.NoEligibleSample.With("this test engine has no merge history or issues"));
+
+    /// <summary>The fake has no map: SND-CONTEXT-030.</summary>
+    public ValueTask<Result<MapQualityRun>> EvalMap(MapQualityRequest request, CancellationToken cancellationToken) => NoMap<MapQualityRun>();
+
+    /// <summary>The fake keeps no eval files.</summary>
+    public ValueTask<Result<EvalPurgeReport>> EvalPurge(EvalPurgeRequest request, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<EvalPurgeReport>>(request.Scope.Caller.Kind == ContextCallerKind.Session
+            ? ContextErrors.SessionsDisabled.With("purging eval files is a human or service call: a session can't")
+            : new EvalPurgeReport(0, 0, 0));
 
     /// <inheritdoc/>
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => NoMap<NodeView>();
