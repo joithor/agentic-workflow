@@ -23,30 +23,34 @@
         <TextBlock x:Name="WorkflowRowCompact" Classes="caption mono subtle" Text="{Binding Compact}" IsVisible="False" TextTrimming="CharacterEllipsis"
                    AutomationProperties.AccessibilityView="Raw" />
       </StackPanel>
-      <ItemsControl x:Name="WorkflowRowInputs" Grid.Column="1" ItemsSource="{Binding Inputs}" Margin="0,0,8,0">
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="wf:InputCellViewModel">
-            <Border Name="WorkflowInputCell" AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+      <!-- Each column is one static wrapper that names all its cells: a list's cells are materialized after the row's accessibility node
+           was built, and AT-SPI never saw them (live proof, BUG-3). The cells inside are drawn only. -->
+      <Border x:Name="WorkflowRowInputs" Grid.Column="1" Margin="0,0,8,0" AutomationProperties.Name="{Binding InputsName}"
+              AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <ItemsControl ItemsSource="{Binding Inputs}" AutomationProperties.AccessibilityView="Raw">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="wf:InputCellViewModel">
               <TextBlock Classes="caption mono" TextTrimming="CharacterEllipsis" AutomationProperties.AccessibilityView="Raw">
                 <Run Text="{Binding Label}" /><Run Text=" " /><Run Text="{Binding Mark}" />
               </TextBlock>
-            </Border>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
-      <ItemsControl x:Name="WorkflowRowStages" Grid.Column="2" ItemsSource="{Binding Cells}">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
-        <ItemsControl.ItemTemplate>
-          <DataTemplate x:DataType="wf:StageCellViewModel">
-            <Border Name="WorkflowStageCell" Margin="0,0,6,0" IsVisible="{Binding !IsMissing}" AutomationProperties.Name="{Binding Name}"
-                    AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-              <TextBlock Classes="caption mono" Classes.current="{Binding IsCurrent}" Text="{Binding Text}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
-            </Border>
-          </DataTemplate>
-        </ItemsControl.ItemTemplate>
-      </ItemsControl>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Border>
+      <Border x:Name="WorkflowRowStages" Grid.Column="2" AutomationProperties.Name="{Binding StagesName}"
+              AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <ItemsControl ItemsSource="{Binding Cells}" AutomationProperties.AccessibilityView="Raw">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="wf:StageCellViewModel">
+              <TextBlock Classes="caption mono" Classes.current="{Binding IsCurrent}" Text="{Binding Text}" TextWrapping="Wrap" Margin="0,0,6,0"
+                         IsVisible="{Binding !IsMissing}" AutomationProperties.AccessibilityView="Raw" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </Border>
       <TextBlock x:Name="WorkflowRowNow" Grid.Column="3" Classes="caption subtle" Text="{Binding Now}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
                  AutomationProperties.Name="{Binding Now}" />
     </Grid>
