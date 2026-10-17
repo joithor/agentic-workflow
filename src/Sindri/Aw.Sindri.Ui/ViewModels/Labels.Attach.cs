@@ -45,6 +45,12 @@ internal static partial class Labels
     /// <returns>The name.</returns>
     internal static string OpenInstanceName(string address) => $"Open instance {address}";
 
+    /// <summary>Accessible name of a Workflows row's title button: the visible title first (WCAG 2.5.3, Label in Name), then what it does.</summary>
+    /// <param name="subject">The title as drawn.</param>
+    /// <param name="address">The instance address (opaque).</param>
+    /// <returns>The name.</returns>
+    internal static string OpenInstanceName(string subject, string address) => $"{subject}, open instance {address}";
+
     /// <summary>Accessible name of the chevron.</summary>
     /// <param name="address">The instance address (opaque).</param>
     /// <returns>The name.</returns>

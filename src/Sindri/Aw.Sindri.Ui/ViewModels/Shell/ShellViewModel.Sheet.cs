@@ -36,7 +36,8 @@ internal sealed partial class ShellViewModel
         DeepLinkKind.Item => false,
         DeepLinkKind.NeedsYou or DeepLinkKind.Decision => false,
         // LANE ANCHOR U3': one `DeepLinkKind.X or … => false` arm claims the kinds from the placeholder (kinds: NeedsYou, Decision), as screens spec §8 assigns them. `Item` is U2's item sheet (#197): its arm, `DeepLinkKind.Item => false`, is written above both markers. `HomeNeedsYou` is a page link, not a sheet. Insert immediately above this marker, never between the markers.
-        // LANE ANCHOR U8: one `DeepLinkKind.X or … => false` arm claims the kinds (kinds: Workflow); U8 re-bases the item sheet (§4.7), which is content and adds no arm. Recipe, Node, Session, System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers.
+        // LANE ANCHOR U8: one `DeepLinkKind.X or … => false` arm claims the kinds (kinds: Workflow); U8b re-bases the item sheet (§4.7), which is content and adds no arm. Recipe, Node, Session, System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers.
+        DeepLinkKind.Workflow => false,
         _ => true,
     };
 #pragma warning restore IDE0072
