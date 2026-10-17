@@ -33,7 +33,7 @@ public sealed record DecisionContext(
     /// </summary>
     /// <param name="step">The Step.</param>
     /// <returns>The runtime, or null when the build has none for it.</returns>
-    internal StepRuntime? RuntimeOf(BlockId step) => Runtimes.TryGetValue(step, out var runtime) && runtime == StepRuntime.Block && Catalog.Find(step) is { Runtime: BlockRuntime.Block }
-        ? StepRuntime.Block
+    internal StepRuntime? RuntimeOf(BlockId step) => Runtimes.TryGetValue(step, out var runtime) && (runtime == StepRuntime.Agent || (runtime == StepRuntime.Block && Catalog.Find(step) is { Runtime: BlockRuntime.Block }))
+        ? runtime
         : null;
 }

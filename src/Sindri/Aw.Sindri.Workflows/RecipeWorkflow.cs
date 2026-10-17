@@ -94,6 +94,8 @@ internal sealed partial class RecipeWorkflow
         _since = Now;
         // DT-J2: first, before any await, so the marker is the first command and replays at the same place; a history that began before the block runtime has no marker, so it replays with no block runtimes, on the desk path exactly as recorded (kept until the cutover; DT-J plan Q7)
         var blockRuntime = Workflow.Patched("dt-j-block-runtime");
+        // P8: right after the DT-J marker, before any other command; a history that began before the agent runtime has no marker, so it replays with no agent map and stays on the desk exactly as recorded (kept until the cutover)
+        var agentRuntime = Workflow.Patched("p8-agent-runtime");
         var loaded = await Workflow.ExecuteLocalActivityAsync(
             (RunStepActivities a) => a.LoadRecipeAsync(start.Recipe),
             new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(30) }).ConfigureAwait(true);
@@ -103,6 +105,11 @@ internal sealed partial class RecipeWorkflow
         _eventHold = loaded.EventHold;
         _dispatchDelay = loaded.DispatchDelay;
         var runtimes = (blockRuntime ? loaded.BlockRuntimes ?? [] : []).ToDictionary(static b => b, static _ => StepRuntime.Block);
+        foreach (var agent in agentRuntime ? loaded.AgentRuntimes ?? [] : [])
+        {
+            runtimes[agent] = StepRuntime.Agent;
+        }
+
         var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, runtimes, NoChildRecipes.Instance) { DeskTimeout = loaded.DeskTimeout };
         _context = new Interpreting(loaded.Recipe, decisions);
         _repo = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : null;

@@ -2531,12 +2531,12 @@ Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Catalog.get -> Aw.Sindr
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Catalog.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Children.get -> Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver!
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Children.init -> void
-Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DecisionContext(Aw.Sindri.Core.Workflow.Engine.Decisions.ApprovalCheck Approval, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! Catalog, System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.BlockId>! Runtimes, Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver! Children) -> void
-Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Decisions.ApprovalCheck Approval, out Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! Catalog, out System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.BlockId>! Runtimes, out Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver! Children) -> void
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DecisionContext(Aw.Sindri.Core.Workflow.Engine.Decisions.ApprovalCheck Approval, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! Catalog, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.BlockId, Aw.Sindri.Core.Workflow.Engine.StepRuntime>! Runtimes, Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver! Children) -> void
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Decisions.ApprovalCheck Approval, out Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! Catalog, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.BlockId, Aw.Sindri.Core.Workflow.Engine.StepRuntime>! Runtimes, out Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver! Children) -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DeskTimeout.get -> System.TimeSpan
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DeskTimeout.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Equals(Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Runtimes.get -> System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.BlockId>!
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Runtimes.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.BlockId, Aw.Sindri.Core.Workflow.Engine.StepRuntime>!
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Runtimes.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionInput
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionInput.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionInput!
@@ -9454,8 +9454,6 @@ Aw.Sindri.Core.Workflow.Blocks.BlockStepRuntimes.BlockStepRuntimes(System.Collec
 Aw.Sindri.Core.Workflow.Blocks.BlockStepRuntimes.Ids.get -> System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.BlockId>!
 Aw.Sindri.Core.Workflow.Blocks.IBlockStep
 Aw.Sindri.Core.Workflow.Blocks.IBlockStep.Run(Aw.Sindri.Core.Workflow.Blocks.StepContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Workflow.Blocks.BlockStepResult!>
-Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.BlockRuntimes.get -> System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.BlockId>!
-Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.BlockRuntimes.init -> void
 Aw.Sindri.Core.Workflow.Engine.StepRuntime.Block = 3 -> Aw.Sindri.Core.Workflow.Engine.StepRuntime
 override Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.GetHashCode() -> int
@@ -9516,10 +9514,10 @@ Aw.Sindri.Core.Profile.RepoWorkflowSettings.Equals(Aw.Sindri.Core.Profile.RepoWo
 Aw.Sindri.Core.Profile.RepoWorkflowSettings.Judge.get -> Aw.Sindri.Core.Profile.JudgeSettings?
 Aw.Sindri.Core.Profile.RepoWorkflowSettings.Judge.init -> void
 Aw.Sindri.Core.Profile.RepoWorkflowSettings.RepoWorkflowSettings(Aw.Sindri.Core.Profile.JudgeSettings? Judge = null) -> void
-Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.JudgeSettings? Judge) -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.JudgeSettings? Judge, out Aw.Sindri.Core.Profile.WorkflowAgentSettings? Agent) -> void
 Aw.Sindri.Core.Profile.WorkflowSettings.Judge.get -> Aw.Sindri.Core.Profile.JudgeSettings?
 Aw.Sindri.Core.Profile.WorkflowSettings.Judge.init -> void
-Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.JudgeSettings? Judge = null) -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.JudgeSettings? Judge = null, Aw.Sindri.Core.Profile.WorkflowAgentSettings? Agent = null) -> void
 const Aw.Sindri.Core.Profile.JudgeProviders.Jev = "jev" -> string!
 const Aw.Sindri.Core.Profile.JudgeProviders.Rules = "rules" -> string!
 override Aw.Sindri.Core.Profile.JudgeSettings.Equals(object? obj) -> bool
@@ -10089,3 +10087,18 @@ static Aw.Sindri.Core.Sessions.SessionIdScan.operator !=(Aw.Sindri.Core.Sessions
 static Aw.Sindri.Core.Sessions.SessionIdScan.operator ==(Aw.Sindri.Core.Sessions.SessionIdScan? left, Aw.Sindri.Core.Sessions.SessionIdScan? right) -> bool
 Aw.Sindri.Core.Launches.ILaunchFiles.Launches() -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.LaunchId>!
 Aw.Sindri.Core.Launches.ILostSessions.SweepFiles(System.TimeSpan olderThan, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int?>
+
+Aw.Sindri.Core.Profile.WorkflowAgentSettings
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.<Clone>$() -> Aw.Sindri.Core.Profile.WorkflowAgentSettings!
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.Deconstruct(out Aw.Sindri.Core.Launch.AgentId? Target) -> void
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.Equals(Aw.Sindri.Core.Profile.WorkflowAgentSettings? other) -> bool
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.Target.get -> Aw.Sindri.Core.Launch.AgentId?
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.Target.init -> void
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.WorkflowAgentSettings(Aw.Sindri.Core.Launch.AgentId? Target = null) -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Agent.get -> Aw.Sindri.Core.Profile.WorkflowAgentSettings?
+Aw.Sindri.Core.Profile.WorkflowSettings.Agent.init -> void
+override Aw.Sindri.Core.Profile.WorkflowAgentSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.WorkflowAgentSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.WorkflowAgentSettings.ToString() -> string!
+static Aw.Sindri.Core.Profile.WorkflowAgentSettings.operator !=(Aw.Sindri.Core.Profile.WorkflowAgentSettings? left, Aw.Sindri.Core.Profile.WorkflowAgentSettings? right) -> bool
+static Aw.Sindri.Core.Profile.WorkflowAgentSettings.operator ==(Aw.Sindri.Core.Profile.WorkflowAgentSettings? left, Aw.Sindri.Core.Profile.WorkflowAgentSettings? right) -> bool
