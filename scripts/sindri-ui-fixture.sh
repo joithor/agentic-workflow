@@ -31,6 +31,14 @@
 #                                  new item): one triage and two work instances; --large starts twelve roots across three recipes
 #   sindri-ui-fixture.sh incident start|stop
 #                                  start an incident-urgency instance (recipes/dev/incident-hold.yaml; it tops the strip) or cancel it
+#   sindri-ui-fixture.sh context up|draft|down
+#                                  the Context page's data (U9; run after 'up'): up writes a git repo, aw-split-panes, under
+#                                  <home>/ui-fixture-context (the tabs repo of tests/Aw.Context.Testing/Fixtures/MapTabsRepo.cs),
+#                                  adds it to the live profile's repos and approves that, then imports the tabs map
+#                                  (map-tabs.json) as the owner, typing 'import map <hash6>', and prints the repo name
+#                                  (the app's repo= argument); draft runs 'context map build' as the owner (a draft to
+#                                  review; a missing model is a degraded line, not a failure); down removes the repo, the
+#                                  map copy and the profile entry (and approves again); the second run is a no-op
 #
 # FIXTURE_REPO names the items' repo (default: none, so the API's default applies).
 # Environment: AW_SINDRI_HOME (required: sindri-prove.sh's guard, a temp or proof folder), SINDRI (the built C# CLI,
@@ -48,7 +56,7 @@ STALL_ID="7f3c1a52-0b6e-4d1e-9a55-3c2f6d8e1b04"
 STALL_CORRELATION="7f3c1a52-0b6e-4d1e-9a55-3c2f6d8e1b05"
 
 die() { echo "sindri-ui-fixture: $*" >&2; exit 2; }
-usage() { sed -n '5,36p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '5,41p' "$0" | sed 's/^# \{0,1\}//'; }
 
 # sindri-prove.sh's guard alone: it runs before any verb, and SINDRI=true makes the verb a no-op.
 guard() { SINDRI=true "$PROVE" guard >/dev/null || exit 2; }
@@ -290,6 +298,80 @@ incident() {
   esac
 }
 
+CONTEXT_REPO="aw-split-panes"
+context_dir() { printf '%s\n' "$AW_SINDRI_HOME/ui-fixture-context"; }
+
+# The tabs repo: the files and the one commit of MapTabsRepo, with a fixed author and date (so the sha is the same every time).
+context_repo() {
+  local dir="$1"
+  [ ! -d "$dir/.git" ] || return 0
+  need git
+  mkdir -p "$dir/src/tabs" "$dir/src/layout" || return
+  printf 'export class TabManager {\n  restoreLayout(): void {}\n}\n' > "$dir/src/tabs/TabManager.ts"
+  printf 'export class TabGroups {\n  groupSelected(): void {}\n}\n' > "$dir/src/tabs/TabGroups.ts"
+  printf 'export const pinned: string[] = [];\n' > "$dir/src/tabs/Pinned.ts"
+  printf 'export class Grid {}\n' > "$dir/src/layout/Grid.ts"
+  printf '# Tabs\n' > "$dir/README.md"
+  printf 'PRIVATE=1\n' > "$dir/.env"
+  local g=(env GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_AUTHOR_NAME="Fixture Author" GIT_AUTHOR_EMAIL=fixture@example.invalid
+     GIT_COMMITTER_NAME="Fixture Author" GIT_COMMITTER_EMAIL=fixture@example.invalid
+     GIT_AUTHOR_DATE=2026-07-01T09:00:00Z GIT_COMMITTER_DATE=2026-07-01T09:00:00Z git -C "$dir")
+  "${g[@]}" init -q -b main && "${g[@]}" config core.hooksPath "$dir/.no-hooks" && "${g[@]}" add -A \
+    && "${g[@]}" commit -q --no-gpg-sign -m "Tabs fixture" || die "context up: can't build the repo in $dir"
+}
+
+# Adds the repo to the live profile's repos: (a repos: block after user: when there is none).
+context_profile_add() {
+  local profile="$1" dir="$2"
+  grep -q "name: $CONTEXT_REPO" "$profile" && return 0
+  if grep -q '^repos:' "$profile"; then
+    awk -v e="  - { name: $CONTEXT_REPO, path: $dir }" '{print} /^repos:/ {print e}' "$profile" > "$profile.new"
+  else
+    awk -v e="repos:\n  - { name: $CONTEXT_REPO, path: $dir }" '{print} /^user:/ {print e}' "$profile" > "$profile.new"
+  fi && mv "$profile.new" "$profile"
+}
+
+context_up() {
+  need jq
+  local profile dir map hash out
+  profile="$(profile_path)"
+  [ -f "$profile" ] || die "no live profile at $profile: run 'up' first"
+  dir="$(context_dir)/$CONTEXT_REPO"
+  context_repo "$dir" || return
+  if ! grep -q "name: $CONTEXT_REPO" "$profile"; then
+    context_profile_add "$profile" "$dir" || die "context up: can't add the repo to $profile"
+    approve || return
+  fi
+  map="$(context_dir)/tabs-map.json"
+  cp "$ROOT/tests/Aw.Context.Testing/Fixtures/map-tabs.json" "$map" || die "context up: can't copy the tabs map"
+  hash="$(sha256sum "$map" 2>/dev/null | cut -d' ' -f1)"
+  [ -n "$hash" ] || hash="$(shasum -a 256 "$map" | cut -d' ' -f1)"
+  [ -n "$hash" ] || die "context up: no sha256sum or shasum"
+  # The challenge is 'import map ' and the first six characters of the file's sha-256 (the content hash the CLI shows).
+  if ! out="$(printf 'import map %s\n' "${hash:0:6}" | "$PROVE" human context map import "$map" 2>&1)"; then
+    die "context up: the map import was refused: $out"
+  fi
+  printf '%s\n' "$CONTEXT_REPO"
+}
+
+context_draft() { "$PROVE" human context map build; }
+
+context_down() {
+  local dir profile
+  dir="$(context_dir)"
+  case "$dir" in */ui-fixture-context) [ ! -d "$dir" ] || rm -rf -- "$dir" ;; *) die "context down: refusing to delete $dir" ;; esac
+  profile="$(profile_path)"
+  if [ -f "$profile" ] && grep -q "name: $CONTEXT_REPO" "$profile"; then
+    grep -v "name: $CONTEXT_REPO" "$profile" | awk '{l[NR]=$0} END {for (i=1;i<=NR;i++) if (!(l[i]=="repos:" && (i==NR || l[i+1] !~ /^  /))) print l[i]}' > "$profile.new" \
+      && mv "$profile.new" "$profile" && { (approve) || echo "context down: the profile changed; approve it again (sindri profile approve)" >&2; }
+  fi
+  return 0
+}
+
+context() {
+  case "$1" in up) context_up ;; draft) context_draft ;; down) context_down ;; esac
+}
+
 verb="${1:-}"
 case "$verb" in
   -h | --help) usage; exit 0 ;;
@@ -301,6 +383,7 @@ case "$verb" in
   workflows) [ "$#" -eq 1 ] || { [ "$#" -eq 2 ] && [ "$2" = "--large" ]; } || die "usage: workflows [--large]" ;;
   incident) { [ "$#" -eq 2 ] && { [ "$2" = start ] || [ "$2" = stop ]; }; } || die "usage: incident start|stop" ;;
   request) [ "$#" -ge 2 ] || die "usage: request [--item ID] [--repo R] <text>" ;;
+  context) { [ "$#" -eq 2 ] && { [ "$2" = up ] || [ "$2" = draft ] || [ "$2" = down ]; }; } || die "usage: context up|draft|down" ;;
   decide) [ "$#" -eq 3 ] || die "usage: decide <DEC-id> <choice>" ;;
   *) usage >&2; die "unknown verb: $verb" ;;
 esac
