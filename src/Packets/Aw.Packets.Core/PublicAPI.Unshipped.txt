@@ -38,6 +38,14 @@ Aw.Packets.Core.Ids.ExampleId.GetTypeCode() -> System.TypeCode
 Aw.Packets.Core.Ids.ExampleId.IsInitialized() -> bool
 Aw.Packets.Core.Ids.ExampleId.ToString(System.IFormatProvider? provider) -> string!
 Aw.Packets.Core.Ids.ExampleId.Value.get -> string!
+Aw.Packets.Core.Ids.ItemId
+Aw.Packets.Core.Ids.ItemId.Equals(Aw.Packets.Core.Ids.ItemId other) -> bool
+Aw.Packets.Core.Ids.ItemId.Equals(Aw.Packets.Core.Ids.ItemId other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Ids.ItemId>! comparer) -> bool
+Aw.Packets.Core.Ids.ItemId.GetTypeCode() -> System.TypeCode
+Aw.Packets.Core.Ids.ItemId.IsInitialized() -> bool
+Aw.Packets.Core.Ids.ItemId.ItemId() -> void
+Aw.Packets.Core.Ids.ItemId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Packets.Core.Ids.ItemId.Value.get -> string!
 Aw.Packets.Core.Ids.PacketId
 Aw.Packets.Core.Ids.PacketId.Equals(Aw.Packets.Core.Ids.PacketId other) -> bool
 Aw.Packets.Core.Ids.PacketId.Equals(Aw.Packets.Core.Ids.PacketId other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Ids.PacketId>! comparer) -> bool
@@ -106,9 +114,8 @@ Aw.Packets.Core.Kinds.Line.AcceptanceItem.AcceptanceItem() -> void
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Equals(Aw.Packets.Core.Kinds.Line.AcceptanceItem? other) -> bool
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Evidence.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Line.EvidenceRef!>!
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Evidence.init -> void
-Aw.Packets.Core.Kinds.Line.AcceptanceItem.Id.get -> string!
-Aw.Packets.Core.Kinds.Line.AcceptanceItem.Id.init -> void
-Aw.Packets.Core.Kinds.Line.AcceptanceItem.Other.get -> System.Collections.Generic.Dictionary<string!, System.Text.Json.JsonElement>?
+Aw.Packets.Core.Kinds.Line.AcceptanceItem.Id.get -> Aw.Packets.Core.Ids.ItemId
+Aw.Packets.Core.Kinds.Line.AcceptanceItem.Other.get -> System.Collections.Generic.IDictionary<string!, System.Text.Json.JsonElement>?
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Other.init -> void
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Status.get -> Aw.Packets.Core.Kinds.Line.AcceptanceStatus
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Status.init -> void
@@ -255,12 +262,12 @@ Aw.Packets.Core.Kinds.Line.LineRuleSet.<Clone>$() -> Aw.Packets.Core.Kinds.Line.
 Aw.Packets.Core.Kinds.Line.LineRuleSet.Deconstruct(out string! Prefix) -> void
 Aw.Packets.Core.Kinds.Line.LineRuleSet.Equals(Aw.Packets.Core.Kinds.Line.LineRuleSet? other) -> bool
 Aw.Packets.Core.Kinds.Line.LineRuleSet.FilesPresent.get -> string!
-Aw.Packets.Core.Kinds.Line.LineRuleSet.Id(int number) -> string!
 Aw.Packets.Core.Kinds.Line.LineRuleSet.Index.get -> string!
 Aw.Packets.Core.Kinds.Line.LineRuleSet.LineRuleSet(string! Prefix) -> void
 Aw.Packets.Core.Kinds.Line.LineRuleSet.Links.get -> string!
 Aw.Packets.Core.Kinds.Line.LineRuleSet.Manifest.get -> string!
 Aw.Packets.Core.Kinds.Line.LineRuleSet.NoUnlisted.get -> string!
+Aw.Packets.Core.Kinds.Line.LineRuleSet.Number(int number) -> string!
 Aw.Packets.Core.Kinds.Line.LineRuleSet.Prefix.get -> string!
 Aw.Packets.Core.Kinds.Line.LineRuleSet.Prefix.init -> void
 Aw.Packets.Core.Kinds.Line.LineRuleSet.WellFormed.get -> string!
@@ -441,7 +448,6 @@ Aw.Packets.Core.Kinds.PacketFileFormat.JsonLines = 2 -> Aw.Packets.Core.Kinds.Pa
 Aw.Packets.Core.Kinds.PacketFileFormat.Text = 3 -> Aw.Packets.Core.Kinds.PacketFileFormat
 Aw.Packets.Core.Kinds.PacketFileSpec
 Aw.Packets.Core.Kinds.PacketFileSpec.<Clone>$() -> Aw.Packets.Core.Kinds.PacketFileSpec!
-Aw.Packets.Core.Kinds.PacketFileSpec.Deconstruct(out string! Name, out Aw.Packets.Core.Kinds.PacketFileFormat Format) -> void
 Aw.Packets.Core.Kinds.PacketFileSpec.Deconstruct(out string! Name, out Aw.Packets.Core.Kinds.PacketFileFormat Format, out string? Link) -> void
 Aw.Packets.Core.Kinds.PacketFileSpec.Equals(Aw.Packets.Core.Kinds.PacketFileSpec? other) -> bool
 Aw.Packets.Core.Kinds.PacketFileSpec.Format.get -> Aw.Packets.Core.Kinds.PacketFileFormat
@@ -450,7 +456,6 @@ Aw.Packets.Core.Kinds.PacketFileSpec.Link.get -> string?
 Aw.Packets.Core.Kinds.PacketFileSpec.Link.init -> void
 Aw.Packets.Core.Kinds.PacketFileSpec.Name.get -> string!
 Aw.Packets.Core.Kinds.PacketFileSpec.Name.init -> void
-Aw.Packets.Core.Kinds.PacketFileSpec.PacketFileSpec(string! Name, Aw.Packets.Core.Kinds.PacketFileFormat Format) -> void
 Aw.Packets.Core.Kinds.PacketFileSpec.PacketFileSpec(string! Name, Aw.Packets.Core.Kinds.PacketFileFormat Format, string? Link = null) -> void
 Aw.Packets.Core.Kinds.PacketKind
 Aw.Packets.Core.Kinds.PacketKind.<Clone>$() -> Aw.Packets.Core.Kinds.PacketKind!
@@ -874,6 +879,9 @@ override Aw.Packets.Core.Checks.CheckResult.ToString() -> string!
 override Aw.Packets.Core.Ids.ExampleId.Equals(object? obj) -> bool
 override Aw.Packets.Core.Ids.ExampleId.GetHashCode() -> int
 override Aw.Packets.Core.Ids.ExampleId.ToString() -> string!
+override Aw.Packets.Core.Ids.ItemId.Equals(object? obj) -> bool
+override Aw.Packets.Core.Ids.ItemId.GetHashCode() -> int
+override Aw.Packets.Core.Ids.ItemId.ToString() -> string!
 override Aw.Packets.Core.Ids.PacketId.Equals(object? obj) -> bool
 override Aw.Packets.Core.Ids.PacketId.GetHashCode() -> int
 override Aw.Packets.Core.Ids.PacketId.ToString() -> string!
@@ -1049,6 +1057,12 @@ static Aw.Packets.Core.Ids.ExampleId.TryFrom(string? value, out Aw.Packets.Core.
 static Aw.Packets.Core.Ids.ExampleId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Packets.Core.Ids.ExampleId result) -> bool
 static Aw.Packets.Core.Ids.ExampleId.operator !=(Aw.Packets.Core.Ids.ExampleId left, Aw.Packets.Core.Ids.ExampleId right) -> bool
 static Aw.Packets.Core.Ids.ExampleId.operator ==(Aw.Packets.Core.Ids.ExampleId left, Aw.Packets.Core.Ids.ExampleId right) -> bool
+static Aw.Packets.Core.Ids.ItemId.From(string! value) -> Aw.Packets.Core.Ids.ItemId
+static Aw.Packets.Core.Ids.ItemId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Packets.Core.Ids.ItemId
+static Aw.Packets.Core.Ids.ItemId.TryFrom(string? value, out Aw.Packets.Core.Ids.ItemId vo) -> bool
+static Aw.Packets.Core.Ids.ItemId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Packets.Core.Ids.ItemId result) -> bool
+static Aw.Packets.Core.Ids.ItemId.operator !=(Aw.Packets.Core.Ids.ItemId left, Aw.Packets.Core.Ids.ItemId right) -> bool
+static Aw.Packets.Core.Ids.ItemId.operator ==(Aw.Packets.Core.Ids.ItemId left, Aw.Packets.Core.Ids.ItemId right) -> bool
 static Aw.Packets.Core.Ids.PacketId.From(string! value) -> Aw.Packets.Core.Ids.PacketId
 static Aw.Packets.Core.Ids.PacketId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Packets.Core.Ids.PacketId
 static Aw.Packets.Core.Ids.PacketId.TryFrom(string? value, out Aw.Packets.Core.Ids.PacketId vo) -> bool
@@ -1216,3 +1230,4 @@ static readonly Aw.Packets.Core.PacketsErrors.RepoUnavailable -> Aw.Kernel.Error
 static readonly Aw.Packets.Core.PacketsErrors.Unreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Packets.Core.PacketsErrors.UnsupportedSchema -> Aw.Kernel.ErrorDefinition!
 virtual Aw.Packets.Core.PacketReader.FileReader.Invoke(string! relativePath) -> Aw.Kernel.Result<System.ReadOnlyMemory<byte>?>!
+Aw.Packets.Core.Kinds.Line.AcceptanceItem.Id.init -> void

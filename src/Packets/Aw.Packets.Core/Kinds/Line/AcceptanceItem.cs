@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Aw.Packets.Core.Ids;
 
 namespace Aw.Packets.Core.Kinds.Line;
 
@@ -10,7 +11,7 @@ namespace Aw.Packets.Core.Kinds.Line;
 public sealed record AcceptanceItem
 {
     /// <summary>The item id; never changes.</summary>
-    public required string Id { get; init; }
+    public required ItemId Id { get; init; }
 
     /// <summary>The item's text; never changes.</summary>
     public required string Text { get; init; }
@@ -23,5 +24,5 @@ public sealed record AcceptanceItem
 
     /// <summary>The other fields, as written.</summary>
     [JsonExtensionData]
-    public Dictionary<string, JsonElement>? Other { get; init; }
+    public IDictionary<string, JsonElement>? Other { get; init; }
 }
