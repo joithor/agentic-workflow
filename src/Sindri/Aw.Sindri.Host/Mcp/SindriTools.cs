@@ -1,9 +1,11 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.Json.Serialization.Metadata;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.FileRequest;
 using Aw.Sindri.Features.GetItem;
@@ -47,6 +49,9 @@ internal static class SindriTools
 
     /// <summary>The kinds sindri_request files, as the API names them.</summary>
     internal static readonly string[] RequestKinds = ["rescope", "add-task", "note", "handback"];
+
+    // why: the HTTP routes wait this long for the views too (ReadYourWrites.Limit); the Mcp namespace can't reference the Host root without a cycle
+    private static readonly TimeSpan _waitForViews = TimeSpan.FromSeconds(2);
 
     private const string ItemIdText = "An item id (ITM-...) or a tracker alias";
 
@@ -238,7 +243,7 @@ internal static class SindriTools
     /// <returns>The tool result.</returns>
     internal static async ValueTask<CallToolResult> CallRequest(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
     {
-        var bound = BindRequest(arguments);
+        var bound = BindRequest(arguments, (JsonTypeInfo<RequestKind>)services.GetRequiredService<JsonSerializerOptions>().GetTypeInfo(typeof(RequestKind)));
         if (bound.IsError)
         {
             return McpResults.Failure(services, bound.Error);
@@ -251,18 +256,18 @@ internal static class SindriTools
         }
 
         // why: X-Sindri-After isn't honoured on this endpoint, so the tool reads its own write before it answers; a timeout is not a failure
-        var caught = await services.GetRequiredService<IProjectorStatus>().WaitFor(answer.Value.Accepted.Sequence, ReadYourWrites.Limit, ct).ConfigureAwait(false);
+        var caught = await services.GetRequiredService<IProjectorStatus>().WaitFor(answer.Value.Accepted.Sequence, _waitForViews, ct).ConfigureAwait(false);
         return McpResults.Success(services, answer.Value, McpSummaries.Request(answer.Value, bound.Value.Kind, viewsCaughtUp: !caught.IsError));
     }
 
-    private static Result<FileRequestRequest> BindRequest(IDictionary<string, JsonElement>? arguments)
+    private static Result<FileRequestRequest> BindRequest(IDictionary<string, JsonElement>? arguments, JsonTypeInfo<RequestKind> kinds)
     {
         if (McpArguments.Only(Request, arguments, "kind", "text", "itemId") is { } refused)
         {
             return refused;
         }
 
-        var kind = McpArguments.RequiredEnum(Request, arguments, "kind", SindriJsonContext.Default.RequestKind);
+        var kind = McpArguments.RequiredEnum(Request, arguments, "kind", kinds);
         var text = McpArguments.RequiredString(Request, arguments, "text", "Split this into two items.");
         var item = McpArguments.OptionalString(Request, arguments, "itemId").Bind(ItemRoute.ItemFilter);
         return kind.Bind(k => text.Bind(t => item.Map(i => new FileRequestRequest(k, t, i))));

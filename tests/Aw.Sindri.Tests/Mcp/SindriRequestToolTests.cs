@@ -276,7 +276,7 @@ public sealed class SindriRequestToolTests
         public async Task<string> Human(string route, CancellationToken ct)
         {
             await Settle(ct);
-            return (await Host.Http.Ask(Get(route, Callers.CallerRequests.Human(Host.Token.Value)))).Body;
+            return (await Host.Http.Ask(Get(route, CallerRequests.Human(Host.Token.Value)))).Body;
         }
 
         public Task Settle(CancellationToken ct) => ViewScenarios.CatchUp(Host, ct);

@@ -8,7 +8,6 @@ using Aw.Sindri.Core.Items.Vocabulary;
 using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Features.FileRequest;
 using Aw.Sindri.Features.GetItem;
-using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Features.GetItemTimeline;
 using Aw.Sindri.Features.GetJob;
 using Aw.Sindri.Features.GetQueue;
@@ -141,7 +140,16 @@ internal static class McpSummaries
     /// <param name="viewsCaughtUp">Whether the views reached the request in time.</param>
     /// <returns>The text.</returns>
     internal static string Request(RequestFiledResponse filed, RequestKind kind, bool viewsCaughtUp) =>
-        $"filed {filed.RequestId.Value} ({RequestVerbArguments.KindName(kind)}) as {filed.DecisionId.Value}; a human settles it{(viewsCaughtUp ? string.Empty : " (views catching up: sindri_pending_decisions may not list it yet)")}";
+        $"filed {filed.RequestId.Value} ({KindWord(kind)}) as {filed.DecisionId.Value}; a human settles it{(viewsCaughtUp ? string.Empty : " (views catching up: sindri_pending_decisions may not list it yet)")}";
+
+    private static string KindWord(RequestKind kind) => kind switch
+    {
+        RequestKind.Rescope => "rescope",
+        RequestKind.AddTask => "add-task",
+        RequestKind.Note => "note",
+        RequestKind.Handback => "handback",
+        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "not a request kind"),
+    };
 
     private static string ViewsWord(GetStatusResponse status) => status.Views switch
     {
