@@ -98,6 +98,21 @@ public sealed class HumanOnlyReportTests
             refused.Error.Message);
     }
 
+    /// <summary>Review run 1 (I2): the command in the refusal lists the outputs the Step requires on the reported outcome, as the status line does.</summary>
+    [Theory(Timeout = 30_000)]
+    [InlineData("step.evidence.desk", "recorded", " --output fact:evidenceSummary=<file> --output fact:evidenceReason=<file>")]
+    [InlineData("step.owner.decide", "retry", " --output fact:notes=<file>")]
+    [InlineData("step.owner.decide", "stop", "")]
+    public async Task The_refusal_command_lists_the_outputs_required_on_the_reported_outcome(string step, string outcome, string outputs)
+    {
+        var desk = new OpenTask(step);
+        var request = new CompleteStepRequest(_address.Value, RunToken.For(1, 1), OutcomeName.From(outcome), new Dictionary<FactKey, ReadOnlyMemory<byte>>(), _nonce);
+
+        var refused = await Service(desk, Session()).Handle(request, TestContext.Current.CancellationToken);
+
+        Assert.EndsWith($"sindri workflow complete T-7/evidence/1 --run {RunToken.For(1, 1).Value} --outcome {outcome}{outputs}", refused.Error.Message, StringComparison.Ordinal);
+    }
+
     [Fact(Timeout = 30_000)]
     public async Task A_fresh_session_report_on_an_instance_that_cant_be_read_is_that_error_and_claims_nothing()
     {
