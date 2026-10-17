@@ -9474,8 +9474,8 @@ override Aw.Sindri.Core.Profile.AgentLimits.ToString() -> string!
 override Aw.Sindri.Core.Profile.AgentSettings.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Profile.AgentSettings.GetHashCode() -> int
 override Aw.Sindri.Core.Profile.AgentSettings.ToString() -> string!
-static Aw.Sindri.Core.Launch.StepApproval.Check(Aw.Sindri.Core.Launch.AgentEntry! entry, string? builtinArgvHash, Aw.Sindri.Core.Profile.AgentSettings? approved) -> Aw.Kernel.Result<Aw.Sindri.Core.Launch.AgentEntry!>!
-static Aw.Sindri.Core.Launch.StepApproval.Resolve(Aw.Sindri.Core.Launch.IAgentCatalog! catalog, Aw.Sindri.Core.Launch.AgentId id, string? builtinArgvHash, Aw.Sindri.Core.Profile.AgentSettings? approved) -> Aw.Kernel.Result<Aw.Sindri.Core.Launch.AgentEntry!>!
+static Aw.Sindri.Core.Launch.StepApproval.Check(Aw.Sindri.Core.Launch.AgentEntry! entry, string? builtinArgvHash, System.Collections.Generic.IReadOnlyList<string!>! approvedHashes) -> Aw.Kernel.Result<Aw.Sindri.Core.Launch.AgentEntry!>!
+static Aw.Sindri.Core.Launch.StepApproval.Resolve(Aw.Sindri.Core.Launch.IAgentCatalog! catalog, Aw.Sindri.Core.Launch.AgentId id, string? builtinArgvHash, System.Collections.Generic.IReadOnlyList<string!>! approvedHashes) -> Aw.Kernel.Result<Aw.Sindri.Core.Launch.AgentEntry!>!
 static Aw.Sindri.Core.Profile.AgentLimits.operator !=(Aw.Sindri.Core.Profile.AgentLimits? left, Aw.Sindri.Core.Profile.AgentLimits? right) -> bool
 static Aw.Sindri.Core.Profile.AgentLimits.operator ==(Aw.Sindri.Core.Profile.AgentLimits? left, Aw.Sindri.Core.Profile.AgentLimits? right) -> bool
 static Aw.Sindri.Core.Profile.AgentSettings.operator !=(Aw.Sindri.Core.Profile.AgentSettings? left, Aw.Sindri.Core.Profile.AgentSettings? right) -> bool
@@ -9527,3 +9527,4 @@ override Aw.Sindri.Core.Profile.AgentSettingsJsonConverter.Read(ref System.Text.
 override Aw.Sindri.Core.Profile.AgentSettingsJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Aw.Sindri.Core.Profile.AgentSettings! value, System.Text.Json.JsonSerializerOptions! options) -> void
 override Aw.Sindri.Core.Profile.HashListJsonConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> System.Collections.Generic.IReadOnlyList<string!>!
 override Aw.Sindri.Core.Profile.HashListJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, System.Collections.Generic.IReadOnlyList<string!>! value, System.Text.Json.JsonSerializerOptions! options) -> void
+Aw.Sindri.Core.Profile.AgentSettings.StepArgvHashes(Aw.Sindri.Core.Launch.AgentId id) -> System.Collections.Generic.IReadOnlyList<string!>!

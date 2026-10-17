@@ -15,6 +15,8 @@ public sealed class StepApprovalTests
     private static AgentEntry Entry(string id, CatalogSource source, string? hash) =>
         new(Id(id), Label: id, Bin: id, ProcessName: null, Transcripts: null, Resume: null) { Source = source, ArgvHash = hash };
 
+    private static IReadOnlyList<string> Hashes(string id, AgentSettings settings) => settings.StepArgvHashes(Id(id));
+
     private static AgentSettings Approved(string id, params string[] hashes) =>
         new(Targets: new Dictionary<string, AgentLimits>(StringComparer.Ordinal) { [id] = new(StepArgvHash: hashes) });
 
@@ -23,7 +25,7 @@ public sealed class StepApprovalTests
     {
         var entry = Entry("claude-code", CatalogSource.Builtin, BuiltinHash);
 
-        var result = StepApproval.Check(entry, BuiltinHash, approved: null);
+        var result = StepApproval.Check(entry, BuiltinHash, approvedHashes: []);
 
         Assert.True(result.IsSuccess);
         Assert.Same(entry, result.Value);
@@ -34,7 +36,7 @@ public sealed class StepApprovalTests
     {
         var entry = Entry("claude-code", CatalogSource.Override, BuiltinHash);
 
-        Assert.True(StepApproval.Check(entry, BuiltinHash, approved: null).IsSuccess);
+        Assert.True(StepApproval.Check(entry, BuiltinHash, approvedHashes: []).IsSuccess);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -42,7 +44,7 @@ public sealed class StepApprovalTests
     {
         var entry = Entry("aider", CatalogSource.Added, "aider-hash");
 
-        var error = StepApproval.Check(entry, builtinArgvHash: null, approved: null).Error;
+        var error = StepApproval.Check(entry, builtinArgvHash: null, approvedHashes: []).Error;
 
         Assert.Equal(SindriErrors.LaunchNotApproved.Code, error.Code);
         Assert.Contains("not-approved", error.Message, StringComparison.Ordinal);
@@ -56,7 +58,7 @@ public sealed class StepApprovalTests
     {
         var entry = Entry("aider", CatalogSource.Added, "new-hash");
 
-        var error = StepApproval.Check(entry, builtinArgvHash: null, Approved("aider", "old-hash")).Error;
+        var error = StepApproval.Check(entry, builtinArgvHash: null, Hashes("aider", Approved("aider", "old-hash"))).Error;
 
         Assert.Equal(SindriErrors.LaunchNotApproved.Code, error.Code);
         Assert.Equal("hash-changed", Detail(error, "reason"));
@@ -69,8 +71,8 @@ public sealed class StepApprovalTests
     {
         var entry = Entry("claude-code", CatalogSource.Override, "other-hash");
 
-        Assert.Equal("not-approved", Detail(StepApproval.Check(entry, BuiltinHash, approved: null).Error, "reason"));
-        Assert.True(StepApproval.Check(entry, BuiltinHash, Approved("claude-code", "other-hash")).IsSuccess);
+        Assert.Equal("not-approved", Detail(StepApproval.Check(entry, BuiltinHash, approvedHashes: []).Error, "reason"));
+        Assert.True(StepApproval.Check(entry, BuiltinHash, Hashes("claude-code", Approved("claude-code", "other-hash"))).IsSuccess);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -78,9 +80,9 @@ public sealed class StepApprovalTests
     {
         var entry = Entry("aider", CatalogSource.Added, "h2");
 
-        Assert.True(StepApproval.Check(entry, builtinArgvHash: null, Approved("aider", "h1", "h2", "h3")).IsSuccess);
-        Assert.False(StepApproval.Check(entry, builtinArgvHash: null, Approved("aider", "h1", "h3")).IsSuccess);
-        Assert.False(StepApproval.Check(entry, builtinArgvHash: null, Approved("codex", "h2")).IsSuccess);
+        Assert.True(StepApproval.Check(entry, builtinArgvHash: null, Hashes("aider", Approved("aider", "h1", "h2", "h3"))).IsSuccess);
+        Assert.False(StepApproval.Check(entry, builtinArgvHash: null, Hashes("aider", Approved("aider", "h1", "h3"))).IsSuccess);
+        Assert.False(StepApproval.Check(entry, builtinArgvHash: null, Hashes("aider", Approved("codex", "h2"))).IsSuccess);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -90,7 +92,7 @@ public sealed class StepApprovalTests
         var second = Entry("aider", CatalogSource.Added, "h2") with { Open = ["{bin}", "second"] };
         var catalog = new FlippingCatalog(first, second);
 
-        var result = StepApproval.Resolve(catalog, Id("aider"), builtinArgvHash: null, Approved("aider", "h1"));
+        var result = StepApproval.Resolve(catalog, Id("aider"), builtinArgvHash: null, Hashes("aider", Approved("aider", "h1")));
 
         Assert.Same(first, result.Value);
         Assert.Equal(1, catalog.Resolves);
@@ -99,7 +101,7 @@ public sealed class StepApprovalTests
     [Fact, Trait("Lane", "unit")]
     public void An_id_the_catalog_lacks_is_003_not_in_catalog()
     {
-        var error = StepApproval.Resolve(new FlippingCatalog(), Id("ghost"), builtinArgvHash: null, approved: null).Error;
+        var error = StepApproval.Resolve(new FlippingCatalog(), Id("ghost"), builtinArgvHash: null, approvedHashes: []).Error;
 
         Assert.Equal(SindriErrors.LaunchAgentMissing.Code, error.Code);
         Assert.Contains("not-in-catalog", error.Message, StringComparison.Ordinal);

@@ -1,7 +1,6 @@
 using System.Buffers;
 using System.Text.Json;
 using Aw.Kernel;
-using Aw.Sindri.Core.Profile;
 
 namespace Aw.Sindri.Core.Launch;
 
@@ -11,9 +10,9 @@ public static class StepApproval
     /// <summary>Checks <paramref name="entry"/> for an unattended Step.</summary>
     /// <param name="entry">The loaded entry; the caller builds the argv from the entry this returns, never from a re-read.</param>
     /// <param name="builtinArgvHash">The built-in entry's hash for the same id, or null when there is no built-in of that id.</param>
-    /// <param name="approved">The approved profile's 'agents:' block, or null.</param>
+    /// <param name="approvedHashes">The approved profile's agents.&lt;id&gt;.stepArgvHash list for this id (empty when none).</param>
     /// <returns>The same entry; SND-LAUNCH-012 with 'reason', 'current' and 'approved' when the argv isn't approved.</returns>
-    public static Result<AgentEntry> Check(AgentEntry entry, string? builtinArgvHash, AgentSettings? approved)
+    public static Result<AgentEntry> Check(AgentEntry entry, string? builtinArgvHash, IReadOnlyList<string> approvedHashes)
     {
         ArgumentNullException.ThrowIfNull(entry);
         if (entry.Source == CatalogSource.Builtin || IsBinOnlyOverride(entry, builtinArgvHash))
@@ -21,7 +20,7 @@ public static class StepApproval
             return entry;
         }
 
-        var listed = Listed(entry.Id, approved);
+        var listed = approvedHashes;
         if (entry.ArgvHash is { } current && listed.Contains(current, StringComparer.Ordinal))
         {
             return entry;
@@ -39,18 +38,15 @@ public static class StepApproval
     /// <param name="catalog">The catalog.</param>
     /// <param name="id">The agent id.</param>
     /// <param name="builtinArgvHash">The built-in entry's hash for <paramref name="id"/>, or null.</param>
-    /// <param name="approved">The approved profile's 'agents:' block, or null.</param>
+    /// <param name="approvedHashes">The approved profile's agents.&lt;id&gt;.stepArgvHash list for this id (empty when none).</param>
     /// <returns>The entry; SND-LAUNCH-003 'not-in-catalog'; or what <see cref="Check"/> returns.</returns>
-    public static Result<AgentEntry> Resolve(IAgentCatalog catalog, AgentId id, string? builtinArgvHash, AgentSettings? approved)
+    public static Result<AgentEntry> Resolve(IAgentCatalog catalog, AgentId id, string? builtinArgvHash, IReadOnlyList<string> approvedHashes)
     {
         ArgumentNullException.ThrowIfNull(catalog);
         return catalog.Resolve(id) is { } entry
-            ? Check(entry, builtinArgvHash, approved)
+            ? Check(entry, builtinArgvHash, approvedHashes)
             : SindriErrors.LaunchAgentMissing.With($"{id.Value} is not in the catalog (not-in-catalog; fix: run `sindri launch show`)");
     }
-
-    private static IReadOnlyList<string> Listed(AgentId id, AgentSettings? approved) =>
-        approved?.Targets is { } targets && targets.TryGetValue(id.Value, out var limits) ? limits.StepArgvHash ?? [] : [];
 
     private static bool IsBinOnlyOverride(AgentEntry entry, string? builtinArgvHash) =>
         entry.Source == CatalogSource.Override && builtinArgvHash is not null && string.Equals(entry.ArgvHash, builtinArgvHash, StringComparison.Ordinal);

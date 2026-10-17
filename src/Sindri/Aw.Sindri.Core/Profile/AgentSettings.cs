@@ -17,4 +17,10 @@ public sealed record AgentSettings(decimal? SoftLimit = null, IReadOnlyDictionar
 
     /// <summary>The soft limit when the profile sets none.</summary>
     public const decimal DefaultSoftLimit = 0.8m;
+
+    /// <summary>The hashes the approved profile lists for an id under agents.&lt;id&gt;.stepArgvHash (SL8).</summary>
+    /// <param name="id">The agent id.</param>
+    /// <returns>The hashes; empty when none are listed.</returns>
+    public IReadOnlyList<string> StepArgvHashes(Launch.AgentId id) =>
+        Targets is { } targets && targets.TryGetValue(id.Value, out var limits) ? limits.StepArgvHash ?? [] : [];
 }
