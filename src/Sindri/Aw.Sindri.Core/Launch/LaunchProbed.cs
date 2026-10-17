@@ -1,6 +1,5 @@
-using Aw.Sindri.Core.Launch;
 
-namespace Aw.Sindri.Core.Events;
+namespace Aw.Sindri.Core.Launch;
 
 /// <summary>The 'launch.probed' payload (UI spec E-3, launcher L-4): what this box can launch now. Also what <see cref="ILauncher.Probe"/> returns.</summary>
 /// <param name="Terminal">The configured viewer.</param>

@@ -1,5 +1,4 @@
 using Aw.Kernel;
-using Aw.Sindri.Core.Events;
 using EngineLaunchId = Aw.Sindri.Core.Workflow.Engine.LaunchId;
 
 namespace Aw.Sindri.Core.Launch;

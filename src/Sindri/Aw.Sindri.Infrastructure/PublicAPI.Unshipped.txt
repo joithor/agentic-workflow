@@ -2,8 +2,3 @@
 Aw.Sindri.Infrastructure.Registration.SindriInfrastructureServiceCollectionExtensions
 static Aw.Sindri.Infrastructure.Registration.SindriInfrastructureServiceCollectionExtensions.AddSindriInfrastructure(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<string!, string?>! environment) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Sindri.Infrastructure.Registration.SindriInfrastructureServiceCollectionExtensions.CreateSecretPointers(System.Func<string!, string?>! environment) -> Aw.Sindri.Core.Secrets.ISecretPointers!
-Aw.Sindri.Infrastructure.Launch.Launcher
-Aw.Sindri.Infrastructure.Launch.Launcher.Launch(Aw.Sindri.Core.Launch.LaunchRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Launch.LaunchResult!>
-Aw.Sindri.Infrastructure.Launch.Launcher.Launcher() -> void
-Aw.Sindri.Infrastructure.Launch.Launcher.Probe(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Events.LaunchProbed!>
-Aw.Sindri.Infrastructure.Launch.Launcher.Stop(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>

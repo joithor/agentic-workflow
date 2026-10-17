@@ -1,5 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
 using Aw.Kernel;
-using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Launch;
 using EngineLaunchId = Aw.Sindri.Core.Workflow.Engine.LaunchId;
 
@@ -9,7 +9,8 @@ namespace Aw.Sindri.Infrastructure.Launch;
 /// The real <see cref="ILauncher"/> (API P10a, unit U7): catalog, host and viewer composed. A red stub until U7: every member
 /// throws, so <c lang="csharp">LauncherContract</c> fails against it by design.
 /// </summary>
-public sealed class Launcher : ILauncher
+[SuppressMessage("Major Code Smell", "MA0182:Avoid unused internal types", Justification = "Registered in U7 (API P10a); a red stub until then.")]
+internal sealed class Launcher : ILauncher
 {
     /// <inheritdoc/>
     public ValueTask<LaunchResult> Launch(LaunchRequest request, CancellationToken cancellationToken) =>

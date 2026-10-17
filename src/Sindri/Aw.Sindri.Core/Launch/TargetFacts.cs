@@ -1,6 +1,5 @@
-using Aw.Sindri.Core.Launch;
 
-namespace Aw.Sindri.Core.Events;
+namespace Aw.Sindri.Core.Launch;
 
 /// <summary>One catalog target in 'launch.probed' (UI spec E-3, launcher L-4).</summary>
 /// <param name="Id">The target.</param>

@@ -14,6 +14,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Health;
 using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Jobs;
+using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.NeedsYou;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
@@ -140,9 +141,10 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ReviewHistoryView)), JsonSerializable(typeof(ReviewExported)), JsonSerializable(typeof(ReviewResult)), JsonSerializable(typeof(ProposalsView))]
 [JsonSerializable(typeof(LensesView)), JsonSerializable(typeof(FileMapView)), JsonSerializable(typeof(ContextMapReviewed)), JsonSerializable(typeof(ContextMapPromoted))]
 [JsonSerializable(typeof(ContextMapProposed)), JsonSerializable(typeof(ContextMapBuilt))]
+[JsonSerializable(typeof(FleetChanged))]
 [JsonSerializable(typeof(ItemOpenRequested)), JsonSerializable(typeof(LaunchStarted)), JsonSerializable(typeof(LaunchStartedPublic)), JsonSerializable(typeof(LaunchFailed))]   // API P10a (U0)
 [JsonSerializable(typeof(LaunchProbed)), JsonSerializable(typeof(SessionEnded)), JsonSerializable(typeof(SessionUsage)), JsonSerializable(typeof(LaunchSessionReported))]
 [JsonSerializable(typeof(LaunchViewerAttached))]
 // Two LaunchId types meet here: the collector's looser one (Core.Launch) and the engine's 'LCH-…' one the launch events carry (SYSLIB1031).
-[JsonSerializable(typeof(Aw.Sindri.Core.Workflow.Engine.LaunchId), TypeInfoPropertyName = "EngineLaunchId")]
+[JsonSerializable(typeof(Core.Workflow.Engine.LaunchId), TypeInfoPropertyName = "EngineLaunchId")]
 internal sealed partial class SindriJsonContext : JsonSerializerContext;

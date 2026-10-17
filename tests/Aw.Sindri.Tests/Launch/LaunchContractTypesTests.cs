@@ -46,7 +46,7 @@ public sealed class LaunchContractTypesTests
             ["tmux", "-L", "sindri", "attach-session", "-t", "=snd-x"], CatalogSource.Builtin, "hash");
         var h = new SliceHarness();
         var entry = h.Events.Entry(EventTypes.LaunchStarted, started, "launch.outcome:x", A.FirstItemId.Value);
-        var row = new Aw.Sindri.Core.Ledger.LedgerEvent(Sequence: 1, Epoch: 1, entry.Envelope, entry.IdempotencyKey, entry.Item);
+        var row = new Core.Ledger.LedgerEvent(Sequence: 1, Epoch: 1, entry.Envelope, entry.IdempotencyKey, entry.Item);
 
         var shown = PublicEvents.For(row, SliceHarness.Json, new PassThroughScrubber(), includeNonPublic: false).Value!;
 

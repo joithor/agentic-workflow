@@ -1,6 +1,6 @@
 using Aw.Sindri.Core.Ids;
 
-namespace Aw.Sindri.Core.Events;
+namespace Aw.Sindri.Core.Launch;
 
 /// <summary>One profile repo in 'launch.probed' (UI spec E-3).</summary>
 /// <param name="Repo">The repo.</param>
