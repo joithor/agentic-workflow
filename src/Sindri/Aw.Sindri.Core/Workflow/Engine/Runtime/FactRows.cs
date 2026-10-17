@@ -68,7 +68,7 @@ public static class FactRows
     private static FactPending? Pending(OutputSpec? spec, Held held, FactKey key) =>
         spec is null || held.Task is not { } task
             ? null
-            : new FactPending(spec.RequiredOn.Count > 0, DeskChecks.Applies(task, spec) ? [DeskChecks.Id(held.Interpreted, key)] : [], ActionId.From("CompleteStep"));
+            : new FactPending(StepOutputs.RequiredSomewhere(spec), DeskChecks.Applies(task, spec) ? [DeskChecks.Id(held.Interpreted, key)] : [], ActionId.From("CompleteStep"));
 
     /// <summary>The per-type handle (API spec §3.8): a file's name and hash, an item's id, nothing for text, and the fact key for the types a viewer fetches through the facts route.</summary>
     private static FactRef? Ref(Declared fact, FactValue? value, string? name, ItemKey item, string? content)

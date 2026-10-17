@@ -16,7 +16,7 @@ internal static class DeskChecks
     /// <param name="output">One of the Step's declared outputs.</param>
     /// <returns>True when the output is required on the outcome the form's command reports.</returns>
     public static bool Applies(DeskTask task, OutputSpec output) =>
-        task.Outcomes.Count == 0 ? output.RequiredOn.Count > 0 : output.RequiredOn.Contains(task.Outcomes[0]);
+        task.Outcomes.Count == 0 ? StepOutputs.RequiredSomewhere(output) : StepOutputs.RequiredOn(output, task.Outcomes[0]);
 
     /// <summary>The id of the check on <paramref name="fact"/>.</summary>
     /// <param name="interpreted">The recipe, which declares the output's type.</param>
