@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Judge.Core.Evaluation;
 using Aw.Judge.Core.Providers;
+using Aw.Judge.Testing;
 using Aw.Kernel.Testing;
 using static Aw.Judge.Tests.Questions.QuestionRun;
 
@@ -222,7 +223,7 @@ public sealed class ChooseQuestionTests
     public async Task The_envelope_carries_only_the_deciding_providers_probabilities()
     {
         var earlier = new Dictionary<string, double>(StringComparer.Ordinal) { ["ui"] = 0.5, ["api"] = 0.3, ["db"] = 0.2 };
-        var jev = new Aw.Judge.Testing.ScriptedProvider(ProviderName.Jev, ContentClass.Brief).Decides("ui", 0.5, earlier);
+        var jev = new ScriptedProvider(ProviderName.Jev, ContentClass.Brief).Decides("ui", 0.5, earlier);
         var cli = Cli(ContentClass.Brief).Decides("api", 0.9);
 
         var outcome = await new QuestionRun().AskByName("choose", Input(), jev, cli);
@@ -237,7 +238,7 @@ public sealed class ChooseQuestionTests
     {
         var earlier = new Dictionary<string, double>(StringComparer.Ordinal) { ["ui"] = 0.5, ["api"] = 0.3, ["db"] = 0.2 };
         var own = new Dictionary<string, double>(StringComparer.Ordinal) { ["ui"] = 0.05, ["api"] = 0.9, ["db"] = 0.05 };
-        var jev = new Aw.Judge.Testing.ScriptedProvider(ProviderName.Jev, ContentClass.Brief).Decides("ui", 0.5, earlier);
+        var jev = new ScriptedProvider(ProviderName.Jev, ContentClass.Brief).Decides("ui", 0.5, earlier);
         var cli = Cli(ContentClass.Brief).Decides("api", 0.9, own);
 
         var outcome = await new QuestionRun().AskByName("choose", Input(), jev, cli);
