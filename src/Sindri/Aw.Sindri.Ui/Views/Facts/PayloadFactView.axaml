@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:facts="using:Aw.Sindri.Ui.ViewModels.Facts"
+             x:Class="Aw.Sindri.Ui.Views.Facts.PayloadFactView"
+             x:DataType="facts:PayloadFactViewer">
+  <!-- A payload fact (and every type with no viewer of its own): the first three keys, then the whole body as a tree you can walk with the arrow keys. -->
+  <StackPanel Spacing="6">
+    <TextBlock x:Name="PayloadLoading" Classes="caption muted" Text="{Binding LoadingText}" IsVisible="{Binding IsLoading}" />
+    <TextBlock x:Name="PayloadAnnouncement" Classes="caption live-region" Classes.live="{Binding Voice.IsAnnouncing}" Width="0" Opacity="0" IsHitTestVisible="False" Text="{Binding Voice.Announcement}" />
+    <TextBlock x:Name="PayloadProblem" Classes="body" Text="{Binding ProblemText}" IsVisible="{Binding HasProblem}" TextWrapping="Wrap" AutomationProperties.Name="{Binding ProblemText}" />
+    <StackPanel Spacing="6" IsVisible="{Binding IsShown}">
+      <ItemsControl x:Name="PayloadPreview" ItemsSource="{Binding Preview}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="x:String">
+            <TextBlock Name="PayloadPreviewLine" Classes="caption mono" Text="{Binding}" TextWrapping="Wrap" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <TreeView x:Name="PayloadTree" ItemsSource="{Binding Tree}" MaxHeight="280" AutomationProperties.Name="{Binding Row.Label}">
+        <TreeView.ItemTemplate>
+          <TreeDataTemplate x:DataType="facts:PayloadNodeViewModel" ItemsSource="{Binding Children}">
+            <TextBlock Classes="caption mono" Text="{Binding Text}" TextWrapping="Wrap" />
+          </TreeDataTemplate>
+        </TreeView.ItemTemplate>
+      </TreeView>
+      <TextBlock x:Name="PayloadTruncated" Classes="caption" Text="{Binding TruncatedNote}" IsVisible="{Binding HasTruncatedNote}" TextWrapping="Wrap"
+                 AutomationProperties.Name="{Binding TruncatedNote}" />
+    </StackPanel>
+  </StackPanel>
+</UserControl>
