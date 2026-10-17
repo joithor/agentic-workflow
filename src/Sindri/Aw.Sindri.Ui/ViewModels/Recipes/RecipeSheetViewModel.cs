@@ -51,6 +51,12 @@ internal sealed class RecipeSheetViewModel(ISindriApi api) : ObservableObject
     /// <summary>The name template, or empty.</summary>
     public string Name { get; private set { Set(ref field, value); OnChanged(nameof(HasName)); } } = string.Empty;
 
+    /// <summary>The states band; null before a read.</summary>
+    public RecipeStatesViewModel? States { get; private set => Set(ref field, value); }
+
+    /// <summary>The inputs and outputs; null before a read.</summary>
+    public RecipeFactsViewModel? Facts { get; private set => Set(ref field, value); }
+
     /// <summary>The sentence a refusal or an unreadable answer shows.</summary>
     public string ProblemText { get; private set => Set(ref field, value); } = string.Empty;
 
@@ -122,6 +128,8 @@ internal sealed class RecipeSheetViewModel(ISindriApi api) : ObservableObject
         Id = recipe.Id;
         Identity = string.Create(CultureInfo.InvariantCulture, $"{recipe.Id}@{Labels.Hash12(recipe.Hash)} · v{recipe.Version} · {Labels.UrgencyWord(recipe.Urgency)}");
         Name = recipe.Name ?? string.Empty;
+        States = new RecipeStatesViewModel(recipe);
+        Facts = new RecipeFactsViewModel(recipe);
         Note = string.Empty;
         ProblemText = string.Empty;
         Phase = FramePhase.Shown;
@@ -157,5 +165,6 @@ internal sealed class RecipeSheetViewModel(ISindriApi api) : ObservableObject
     {
         _generation++;
         (Id, Identity, Name, Note, ProblemText) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
+        (States, Facts) = (null, null);
     }
 }

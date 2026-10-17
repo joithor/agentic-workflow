@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.ViewModels;
@@ -27,4 +28,76 @@ internal static partial class Labels
         RecipeUrgency.Work => "work",
         _ => throw new ArgumentOutOfRangeException(nameof(urgency), urgency, message: null),
     };
+
+    /// <summary>The outputs section's sentence for a recipe that declares none.</summary>
+    internal const string NoOutputs = "This recipe declares no outputs.";
+
+    /// <summary>The mark between two neighbouring states that loop into each other, with the loop's name (when it has one) and cap.</summary>
+    /// <param name="name">The loop's name, or null.</param>
+    /// <param name="cap">The round cap.</param>
+    /// <returns>The mark and the cap, "⇄ rounds ≤2".</returns>
+    internal static string LoopLink(string? name, int cap) => string.Create(CultureInfo.InvariantCulture, $"{LoopMark} {(string.IsNullOrEmpty(name) ? string.Empty : name + " ")}≤{cap}");
+
+    /// <summary>What a loop link says in words, for a screen reader.</summary>
+    /// <param name="name">The loop's name, or null.</param>
+    /// <param name="cap">The round cap.</param>
+    /// <returns>The words, "rounds, up to 2 rounds".</returns>
+    internal static string LoopCapWords(string? name, int cap) => string.Create(CultureInfo.InvariantCulture, $"{(string.IsNullOrEmpty(name) ? string.Empty : name + ", ")}up to {cap} rounds");
+
+    /// <summary>The note on a state whose loop goes to a state that is not its neighbour.</summary>
+    /// <param name="name">The loop's name, or null.</param>
+    /// <param name="to">The state it goes to.</param>
+    /// <param name="cap">The round cap.</param>
+    /// <returns>The sentence.</returns>
+    internal static string LoopNote(string? name, string to, int cap) => $"loops to {to}: {LoopCapWords(name, cap)}";
+
+    /// <summary>The note on a state that loops into itself.</summary>
+    /// <param name="name">The loop's name, or null.</param>
+    /// <param name="cap">The round cap.</param>
+    /// <returns>The sentence.</returns>
+    internal static string LoopNoteSelf(string? name, int cap) => $"loops on itself: {LoopCapWords(name, cap)}";
+
+    /// <summary>An output under the state it comes from.</summary>
+    /// <param name="label">The output's label, or its key.</param>
+    /// <param name="type">The type word.</param>
+    /// <returns>The line.</returns>
+    internal static string OutputLine(string label, string type) => $"{label} ({type})";
+
+    /// <summary>A fact type in the word the API serves it in.</summary>
+    /// <param name="type">The type (a word this build doesn't know reads as payload).</param>
+    /// <returns>The word.</returns>
+    internal static string FactTypeWord(FactType type) => type switch
+    {
+        FactType.Text => "text",
+        FactType.File => "file",
+        FactType.Item => "item",
+        FactType.Link => "link",
+        FactType.ScopeMap => "scope-map",
+        FactType.Packet => "packet",
+        FactType.Evidence => "evidence",
+        FactType.Decision => "decision",
+        FactType.Payload => "payload",
+        _ => throw new ArgumentOutOfRangeException(nameof(type), type, message: null),
+    };
+
+    /// <summary>An input's detail line.</summary>
+    /// <param name="input">The input.</param>
+    /// <returns>Key, type, kind and whether it is required.</returns>
+    internal static string InputDetail(RecipeInputView input) => $"{input.Key} · {FactTypeWord(input.Type)} · {input.Kind} · {(input.Required ? "required" : "optional")}";
+
+    /// <summary>An output's detail line.</summary>
+    /// <param name="output">The output.</param>
+    /// <returns>Key, type and the state it comes from.</returns>
+    internal static string OutputDetail(RecipeOutputView output) => $"{output.Key} · {FactTypeWord(output.Type)} · from {output.From}";
+
+    /// <summary>An input's generate template.</summary>
+    /// <param name="template">The template as served.</param>
+    /// <returns>The line.</returns>
+    internal static string GenerateLine(string template) => $"generated: {template}";
+
+    /// <summary>The inputs section's heading.</summary>
+    internal const string InputsHeading = "Inputs";
+
+    /// <summary>The outputs section's heading.</summary>
+    internal const string OutputsHeading = "Outputs";
 }
