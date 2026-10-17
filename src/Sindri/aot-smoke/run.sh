@@ -222,6 +222,8 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   doctor
   run recipe validate "$root/recipes/sindri/workflow.step.yaml"
   run recipe validate "$root/recipes/sindri/workflow.item.yaml"
+  run recipe validate "$root/recipes/sindri/workflow.review-loop.yaml"
+  run recipe validate "$root/recipes/sindri/workflow.evidence.yaml"
   run recipe validate "$root/tests/Aw.Sindri.Testing/Workflow/Recipes/invalid/RCP-REACH-001.yaml"
 } >"$out/actual.raw"
 
