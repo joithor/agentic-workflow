@@ -4,8 +4,8 @@ namespace Aw.Sindri.Features.Jobs;
 
 /// <summary>One running job as the runner tracks it: its start, its work's token source, its cancel state and the first write failure.</summary>
 /// <param name="start">The accepted start.</param>
-/// <param name="source">Trips the work token.</param>
-internal sealed class JobRun(JobStart start, CancellationTokenSource source)
+/// <param name="parent">The token the work token links to (a stop request trips it).</param>
+internal sealed class JobRun(JobStart start, CancellationToken parent)
 {
     private volatile bool _cancelled;
     private volatile bool _recorded;
@@ -14,7 +14,7 @@ internal sealed class JobRun(JobStart start, CancellationTokenSource source)
 
     public JobStart Start { get; } = start;
 
-    public CancellationTokenSource Source { get; } = source;
+    public CancellationTokenSource Source { get; } = CancellationTokenSource.CreateLinkedTokenSource(parent);
 
     public TaskCompletionSource Done { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 

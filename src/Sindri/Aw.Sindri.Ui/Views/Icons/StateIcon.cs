@@ -197,7 +197,9 @@ internal sealed class StateIcon : Control
 
         _spinning = duration;
 
+#pragma warning disable CA2000 // disposed by the _spin stop action below
         var turning = new CancellationTokenSource();
+#pragma warning restore CA2000
         _spin = () =>
         {
             turning.Cancel();

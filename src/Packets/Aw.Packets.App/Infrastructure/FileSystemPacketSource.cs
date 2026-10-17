@@ -16,12 +16,13 @@ internal sealed class FileSystemPacketSource(JsonSerializerOptions json) : IPack
     {
         var root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(packetDirectory));
         var result = Directory.Exists(root)
-            ? PacketReader.Load(relative => Read(root, relative), json)
+            ? PacketReader.Load(relative => ReadFile(root, relative), json)
             : PacketsErrors.NotFound.With($"No packet directory at {packetDirectory}.");
         return ValueTask.FromResult(result);
     }
 
-    private static Result<ReadOnlyMemory<byte>?> Read(string root, string relative)
+    // One file by its path under root, never through a symbolic link or out of the directory; shared with the scoping source.
+    internal static Result<ReadOnlyMemory<byte>?> ReadFile(string root, string relative)
     {
         var full = Path.GetFullPath(Path.Combine(root, relative));
         var inside = Path.GetRelativePath(root, full);

@@ -1,3 +1,4 @@
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Ledger;
 
 namespace Aw.Sindri.Tests.Server;
@@ -26,10 +27,10 @@ internal sealed class RecordingSignal(TimeProvider clock) : ILedgerSignal
     /// <returns>When it has been entered.</returns>
     public async Task Entered(int count)
     {
-        var until = DateTime.UtcNow.AddSeconds(10);
+        var until = RealTime.NowDateTime.AddSeconds(10);
         while (Waits < count)
         {
-            Assert.True(DateTime.UtcNow < until, "the pump never entered its wait");
+            Assert.True(RealTime.NowDateTime < until, "the pump never entered its wait");
             await Task.Delay(5, TestContext.Current.CancellationToken);
         }
     }
