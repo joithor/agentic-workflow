@@ -29,8 +29,6 @@ public sealed class McpArgumentsTests
     [Theory, Trait("Lane", "unit")]
     [InlineData("{}")]
     [InlineData("""{"itemId":null}""")]
-    [InlineData("""{"itemId":""}""")]
-    [InlineData("""{"itemId":"  "}""")]
     [InlineData("""{"itemId":7}""")]
     public void A_missing_required_argument_is_022_with_an_example_call(string json)
     {
@@ -38,8 +36,19 @@ public sealed class McpArgumentsTests
 
         Assert.True(bound.IsError);
         Assert.Equal(Code, bound.Error.Code);
-        Assert.Contains("sindri_item needs 'itemId'", bound.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("sindri_item needs 'itemId', a string", bound.Error.Message, StringComparison.Ordinal);
         Assert.Contains("""{"itemId": "ITM-0001"}""", bound.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void A_blank_required_string_is_bound_as_sent_for_the_route_to_judge(string value)
+    {
+        var bound = McpArguments.RequiredString("sindri_item", Args($$"""{"itemId":"{{value}}"}"""), "itemId", "ITM-0001");
+
+        Assert.False(bound.IsError);
+        Assert.Equal(value, bound.Value);
     }
 
     [Fact, Trait("Lane", "unit")]

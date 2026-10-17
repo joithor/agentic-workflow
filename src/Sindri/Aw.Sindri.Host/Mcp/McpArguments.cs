@@ -34,16 +34,16 @@ internal static class McpArguments
             : ContextErrors.McpArgumentsInvalid.With($"{tool} has no argument '{unknown}' (fix: {string.Join(", ", allowed)} only)");
     }
 
-    /// <summary>A required string argument.</summary>
+    /// <summary>A required string argument: present and a string. What the text may say (blank, too long, an id) is left to the service or route behind the tool, so its code is the same over HTTP.</summary>
     /// <param name="tool">The tool's name.</param>
     /// <param name="arguments">The call's arguments.</param>
     /// <param name="name">The argument's name.</param>
     /// <param name="example">The value the example call shows.</param>
     /// <returns>The text, or the refusal.</returns>
     internal static Result<string> RequiredString(string tool, IDictionary<string, JsonElement>? arguments, string name, string example) =>
-        arguments is not null && arguments.TryGetValue(name, out var raw) && raw.ValueKind == JsonValueKind.String && !string.IsNullOrWhiteSpace(raw.GetString())
+        arguments is not null && arguments.TryGetValue(name, out var raw) && raw.ValueKind == JsonValueKind.String
             ? raw.GetString()!   // why: a String kind always has a string
-            : ContextErrors.McpArgumentsInvalid.With($"{tool} needs '{name}', a non-blank string (fix: call it with {{\"{name}\": \"{example}\"}})");
+            : ContextErrors.McpArgumentsInvalid.With($"{tool} needs '{name}', a string (fix: call it with {{\"{name}\": \"{example}\"}})");
 
     /// <summary>An optional string argument; null counts as absent.</summary>
     /// <param name="tool">The tool's name.</param>

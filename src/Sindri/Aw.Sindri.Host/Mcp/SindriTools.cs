@@ -266,7 +266,7 @@ internal static class SindriTools
 
         var kind = McpArguments.RequiredEnum(Request, arguments, "kind", kinds);
         var text = McpArguments.RequiredString(Request, arguments, "text", "Split this into two items.");
-        var item = McpArguments.OptionalString(Request, arguments, "itemId").Bind(ItemRoute.ItemFilter);
+        var item = McpArguments.OptionalString(Request, arguments, "itemId").Bind(GivenItem);
         return kind.Bind(k => text.Bind(t => item.Map(i => new FileRequestRequest(k, t, i))));
     }
 
@@ -283,6 +283,18 @@ internal static class SindriTools
         }
 
         var text = McpArguments.OptionalString(tool, arguments, "itemId");
-        return text.IsError ? text.Error : ItemRoute.ItemFilter(text.Value);
+        return text.Bind(GivenItem);
+    }
+
+    // why: ItemRoute.ItemFilter reads "" as no filter (an empty '?item='); an itemId a caller wrote out is an id or a refusal, never a wider call
+    private static Result<ItemRef?> GivenItem(string? text)
+    {
+        if (text is null)
+        {
+            return (ItemRef?)null;
+        }
+
+        var item = ItemRoute.Item(text);
+        return item.IsError ? item.Error : (ItemRef?)item.Value;
     }
 }

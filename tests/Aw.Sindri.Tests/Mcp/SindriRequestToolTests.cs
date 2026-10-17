@@ -253,12 +253,31 @@ public sealed class SindriRequestToolTests
         var noRepo = await none.Call("sindri_request", Request("note", "Hello."), ct);
         var unknownArgument = await mcp.Call("sindri_request", """{"kind":"note","text":"Hi.","priority":1}""", ct);
         var badKind = await mcp.Call("sindri_request", """{"kind":"approve","text":"Hi."}""", ct);
-        var blank = await mcp.Call("sindri_request", """{"kind":"note","text":"  "}""", ct);
 
-        Assert.Equal(["SND-CONTEXT-023", "SND-CONTEXT-021", "SND-CONTEXT-022", "SND-CONTEXT-022", "SND-CONTEXT-022"],
-            new[] { unknownTool, noRepo, unknownArgument, badKind, blank }.Select(Code), StringComparer.Ordinal);
+        Assert.Equal(["SND-CONTEXT-023", "SND-CONTEXT-021", "SND-CONTEXT-022", "SND-CONTEXT-022"],
+            new[] { unknownTool, noRepo, unknownArgument, badKind }.Select(Code), StringComparer.Ordinal);
         Assert.Contains("rescope, add-task, note, handback", Text(badKind), StringComparison.Ordinal);
         McpGolden.Match(unknownTool, world.Host.Home, "errors", "unknown-tool");
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task Blank_text_and_blank_ids_get_the_codes_the_http_routes_give()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var world = await World.Start(ct);
+        await using var mcp = await McpSession.Open(world.Host, "alpha", ct);
+
+        var blankText = await mcp.Call("sindri_request", """{"kind":"note","text":"  "}""", ct);
+        var emptyText = await mcp.Call("sindri_request", """{"kind":"note","text":""}""", ct);
+        var emptyItemOnRequest = await mcp.Call("sindri_request", """{"kind":"note","text":"Hi.","itemId":""}""", ct);
+        var blankItem = await mcp.Call("sindri_item", """{"itemId":"  "}""", ct);
+        var emptyItemOnDecisions = await mcp.Call("sindri_pending_decisions", """{"itemId":""}""", ct);
+        var emptyJob = await mcp.Call("sindri_job", """{"jobId":""}""", ct);
+
+        Assert.Equal(["SND-REQ-001", "SND-REQ-001", "SND-CLI-003", "SND-CLI-003", "SND-CLI-003", "SND-CLI-003"],
+            new[] { blankText, emptyText, emptyItemOnRequest, blankItem, emptyItemOnDecisions, emptyJob }.Select(Code), StringComparer.Ordinal);
+        var http = await world.Human("/sindri/items/%20", ct);
+        Assert.Contains("SND-CLI-003", http, StringComparison.Ordinal);
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
