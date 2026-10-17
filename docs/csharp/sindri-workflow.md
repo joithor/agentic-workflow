@@ -126,9 +126,9 @@ form under its hash: `registered <id>@<hash12> (unapproved)`, or `already regist
 `recipe.registered` event per hash). Other content under a registered id and version is `SND-RECIPE-007`; any other
 failing rule is `SND-RECIPE-001`, each followed by its rule lines.
 
-`sindri recipe show <id@hash> [--json]` (a query; the hash by 8 or more digits) prints the recipe's line, then `urgency: <urgency>`, `name: <template>` when the recipe has a `name`, one
-`input: <key> type=<type> kind=<kind|-> [generate="<template>"]` line per input (the type is the declared one, else the one the kind pairs with; a row registered before input kinds shows `kind=-`) and one `output: <key> type=<type> from=<state>` line per output, then the path order (below), then the approval preview;
-an unknown hash is `SND-RECIPE-002`. `show --json` prints the server's body, `{"recipe":{id, version, hash, standing, via, stale, inputs, urgency, name, outputs, orderedBy, states, loops},"preview":{…}}`: the recipe object has the same fields as a `recipe list --json` row, so a client reads urgency, inputs, outputs and the path order the same way from either. `sindri recipe list [--stale] [--json]` prints one line per registered recipe,
+`sindri recipe show <id|id@hash> [--json]` (a query; a bare id is the approved version, a hash is 8 or more digits) prints the recipe's `<id>@<hash12>`, then `urgency: <urgency>`, `name: <template>` when the recipe has a `name`, one
+`input: <key> type=<type> kind=<kind|-> [generate="<template>"]` line per input (the type is the declared one, else the one the kind pairs with; a row registered before input kinds shows `kind=-`) and one `output: <key> type=<type> from=<state>` line per output, then the path order (below) and one `loop: <name> <from> -> <to> cap=<n>` line per loop;
+an unknown id or hash is `SND-RECIPE-002`, an id with no approved version `SND-RECIPE-003`. The standing, the approval and the approval preview are not in `show`: `recipe list` has the standing and `recipe approve` prints the preview before it asks. `show --json` prints the served `RecipeView`, `{id, hash, version, name, inputs, outputs, urgency, orderedBy, states, loops}`, where an input is `{key, label, type, kind, required, generate}` (`kind` is `-` on a legacy row, `required` is false for an input with a `generate` template) and an output is `{key, label, type, from}`; the standing, `via` and `stale` are `recipe list` fields, not part of the view. `sindri recipe list [--stale] [--json]` prints one line per registered recipe,
 `<id>@<hash12> <standing> (<via>)[; stale: …]`, where standing is `approved`, `unapproved` or `revoked` and stale names
 `pin-drift` (a pinned block's descriptor changed in this build), `child-stale` (a pinned child was revoked or has a newer approved version) or `legacy-shape` (registered before input kinds; the line's fix is `register the current file at a new version and approve it`, and an unapproved row of that shape carries the mark too);
 `--stale` keeps only the approved ones that are stale. `--json` prints the server's body,
@@ -141,7 +141,7 @@ isn't running they print `SND-API-001 not running: …` and exit 1.
 transition graph by `StatePathOrder` and never hashed (a recipe's hash is the same with or without it): `orderedBy` (`path`, or
 `transition-list` when `initial` has more than one distinct non-terminal first target other than itself), `states[]` (`id`, `order`, `branchOf`) and
 `loops[]` (`name`, `from`, `to`). Text form: `order: <orderedBy>`, one `state: <name> order=<n>|branch-of=<state>|order=-` line per state and
-one `loop: <name|-> <from> -> <to>` line per loop edge. The walk starts at `initial` and follows each state's transitions in list order:
+one loop line per loop edge: `recipe list` prints `loop: <name|-> <from> -> <to>` (every loop edge), `recipe show` prints `loop: <name> <from> -> <to> cap=<n>` (named loops with a cap only). The walk starts at `initial` and follows each state's transitions in list order:
 the first to a non-terminal state not yet seen continues the main path, a later one is a branch and every state only that branch reaches is folded
 under the state it leaves (`branchOf`, no `order`); a transition back to a state still on the walk is a loop edge, named by the target's
 `loop:` (the loop the engine counts the round on; else the looping state's), listed in the order the walk finds them. A terminal target neither takes the main-path slot nor decides `orderedBy`; terminal states are numbered after the non-terminal ones in
@@ -665,27 +665,28 @@ covers the search attributes, a delivered event, a refused event's park (`NeedsY
 Engine spec rev 8.1 §5.1, §5.6, §6.3, §6.4, S1-D6 and S1-D11; README X5 and X16.
 
 All three are clients of serve's routes, like the write verbs: `status` resolves its reference with `GET /sindri/workflow/instances?address=` and
-reads `GET /sindri/workflow/instances/{id}`; `list` calls `GET /sindri/workflow/instances` with `needsMe`, `item`, `state` and `query`;
+reads `GET /sindri/workflow/instances/{id}`; `list` calls `GET /sindri/workflow/instances` with `needsMe`, `item`, `state`, `recipe`, `urgency`, `subject`, `root`, `open` and `query`;
 `events` resolves the same way and reads `GET /sindri/workflow/instances/{id}/events?after=` (`--follow` polls it). None starts serve:
 with none running they print `SND-API-001 not running: …` and exit 1. Only `recipe validate` and `recipe eval` run in process (spec §6.1).
-The `--json` output is the response as the CLI's serializer prints it (`status` prints the `instance` member, as before).
+The `--json` output is the served body as the CLI's serializer prints it: `list` prints `InstanceList`, `status` prints the `current.status` fields of the instance detail (`StatusFields`: header, text, next, answer, commands).
 
 | Verb | Slice | What it reads | Prints |
 |---|---|---|---|
-| `workflow status <address> [--json]` | `GetInstance` | the `GetInstance` Query (`TemporalInstanceRuntime.Get`); an ended instance answers too | the §6.4 layout, or the `InstanceView` as JSON. Exit 2 with `SND-WF-001` for no such instance, `SND-API-002` when no worker answers in 10 s |
-| `workflow list [--needs-me \| --item <id> \| --state <s>] [--query <q>] [--json]` | `ListInstances` | a visibility query on the search attributes, then each row's `GetInstance` | one status header per line; `--needs-me` prints **Decisions** (parks and escalations; a takeover is never listed, since `NeedsYou` is false while taken over. `takeoverIdle` records a `workflow.notified` row, which P6 delivers as `notify.desk`; listing idle takeovers under `--needs-me` isn't built yet, an owner item for the API / P6) then **Tasks** (open desk tasks), each under its heading. Empty: `nothing needs you` (`--needs-me`) or `no instances match`; exit 0 |
+| `workflow status <address> [--json]` | `GetInstance` | the `GetInstance` Query (`TemporalInstanceRuntime.Get`) through `GET /workflow/instances/{id}`; an ended instance answers too | the §6.4 layout (the served `current.status.text`), or the `StatusFields` as JSON. Exit 2 with `SND-WF-001` for an address or id no instance has (the `address=` lookup), `SND-ITEM-404` for another repo's instance, `SND-API-002` when no worker answers in 10 s |
+| `workflow list [--needs-me \| --item <id> \| --state <s>] [--query <q>] [--json]` | `ListInstances` | a visibility query on the search attributes, then each row's `GetInstance`; ended roots are counted from the listing without a Query | one line per instance in the API order (`<address>  <recipe>@<hash12>  <state>: <now>  since <time> (<age>)`; no version column); `--needs-me` prints **Decisions** (PARKED, ESCALATED and WITH YOU rows: parks and escalations, and a takeover's idle row once P6 lists it; a taken-over instance has `NeedsYou` false, so it is listed only through its `workflow.notified` row, which P6 delivers as `notify.desk`; listing idle takeovers under `--needs-me` isn't built yet, an owner item for the API / P6) then **Tasks** (DECISION rows: open desk tasks), each section by address. Empty: the sentence the server served for the filter: `nothing needs you` (`--needs-me`), `No workflows are open.` (bare `list`) or `No workflows match.`; exit 0 |
 | `workflow events <address> [--follow] [--json]` | `GetInstanceEvents` | the ledger through `ILedgerReader`, never Temporal's history | one line per event: `seq  MM-dd HH:mm:ss  type  from -> to  trigger outcome  run r  actor`; `no events`. `--follow` reads after its cursor every second until interrupted |
 
-- **`--needs-me` is a stand-in.** `GET /needs-you` (API P4) isn't built yet, so `ListInstances` serves it with the
-  visibility query `NeedsYou = true` over running instances and sorts the views with `NeedsYouList.Of`: Decisions,
-  then Tasks, by address, and a parent whose open question mirrors a listed child shown once, under the child. When
-  API P4 lands, `--needs-me` reads its route instead and keeps this output.
+- **`--needs-me` is served by the list route.** `GET /needs-you` (API P4) serves the owner's needs-you list, a different list; `ListInstances` serves this one with the
+  visibility query `NeedsYou = true` (`needsMe=true`) over the unfinished instances, and drops a parent whose open
+  question mirrors a listed child (`NeedsYouList.Shown`; spec §6.3: once, under the child). The CLI groups the rows by
+  their chip into Decisions, then Tasks, each by address, and prints `nothing needs you` when no row falls under either.
 - **Which instances.** Bare `list` and `--needs-me` list running instances; `--item` and `--state` list ended ones too
   (`IWorkflowInstances.List(query, ended, …)`). `--state` takes a state name (`[a-z][a-z0-9-]{0,63}`); `--query` adds a
   raw visibility query for scripts.
-- **`v<n>`.** Temporal keeps no row version, so the instance's version is the count of events the interpreter has
+- **Version.** Temporal keeps no row version, so the instance's version is the count of events the interpreter has
   mirrored into the ledger (`workflow.started` and every transition): a new instance is `v1`. The workflow counts
-  them in `Mirror` and sets `InstanceView.Version` in the Query.
+  them in `Mirror` and sets `InstanceView.Version` in the Query. It shows as `header.version` of `status --json` and in
+  the `instance:<address>@v<n>` challenge of the protected verbs; the list line has no version column.
 - **Times.** Every clock time status prints is UTC (`since 11:54`; `since 10-09 11:54` once a day or more has passed),
   in the header and in `next` alike, because the Query has no local time zone. Durations read `1d 22h 48m`, or `40s`
   under a minute (`StatusText`).
