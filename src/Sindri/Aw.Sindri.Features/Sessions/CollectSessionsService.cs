@@ -51,6 +51,10 @@ internal sealed class CollectSessionsService(SessionDiscovery discovery, Session
         {
             return null;   // overran its budget
         }
+        catch (OperationCanceledException)
+        {
+            return new Discovered([], [], Good: false);   // shutting down: no pass, no problem row, nothing published as a failure
+        }
     }
 
     private List<ObservedSession> Observe(IReadOnlyList<Candidate> candidates, DateTimeOffset now) =>
