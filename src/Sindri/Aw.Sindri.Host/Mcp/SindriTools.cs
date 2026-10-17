@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using ModelContextProtocol.Protocol;
 
@@ -113,33 +114,58 @@ internal static class SindriTools
         Annotations = new ToolAnnotations { ReadOnlyHint = false, DestructiveHint = false, IdempotentHint = false, OpenWorldHint = false },
     };
 
-    /// <summary>Runs sindri_status (contract stub; Unit C).</summary>
+    /// <summary>Runs Status (contract stub).</summary>
+    /// <param name="services">The request's services.</param>
+    /// <param name="arguments">The call's arguments.</param>
+    /// <param name="ct">Cancels the call.</param>
     /// <returns>The tool result.</returns>
-    internal static ValueTask<CallToolResult> CallStatus() => NotYet(Status);
+    internal static ValueTask<CallToolResult> CallStatus(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct) => NotYet(Status, services, arguments, ct);
 
-    /// <summary>Runs sindri_queue (contract stub; Unit C).</summary>
+    /// <summary>Runs Queue (contract stub).</summary>
+    /// <param name="services">The request's services.</param>
+    /// <param name="arguments">The call's arguments.</param>
+    /// <param name="ct">Cancels the call.</param>
     /// <returns>The tool result.</returns>
-    internal static ValueTask<CallToolResult> CallQueue() => NotYet(Queue);
+    internal static ValueTask<CallToolResult> CallQueue(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct) => NotYet(Queue, services, arguments, ct);
 
-    /// <summary>Runs sindri_item (contract stub; Unit C).</summary>
+    /// <summary>Runs Item (contract stub).</summary>
+    /// <param name="services">The request's services.</param>
+    /// <param name="arguments">The call's arguments.</param>
+    /// <param name="ct">Cancels the call.</param>
     /// <returns>The tool result.</returns>
-    internal static ValueTask<CallToolResult> CallItem() => NotYet(Item);
+    internal static ValueTask<CallToolResult> CallItem(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct) => NotYet(Item, services, arguments, ct);
 
-    /// <summary>Runs sindri_item_timeline (contract stub; Unit C).</summary>
+    /// <summary>Runs Timeline (contract stub).</summary>
+    /// <param name="services">The request's services.</param>
+    /// <param name="arguments">The call's arguments.</param>
+    /// <param name="ct">Cancels the call.</param>
     /// <returns>The tool result.</returns>
-    internal static ValueTask<CallToolResult> CallTimeline() => NotYet(Timeline);
+    internal static ValueTask<CallToolResult> CallTimeline(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct) => NotYet(Timeline, services, arguments, ct);
 
-    /// <summary>Runs sindri_pending_decisions (contract stub; Unit C).</summary>
+    /// <summary>Runs PendingDecisions (contract stub).</summary>
+    /// <param name="services">The request's services.</param>
+    /// <param name="arguments">The call's arguments.</param>
+    /// <param name="ct">Cancels the call.</param>
     /// <returns>The tool result.</returns>
-    internal static ValueTask<CallToolResult> CallPendingDecisions() => NotYet(PendingDecisions);
+    internal static ValueTask<CallToolResult> CallPendingDecisions(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct) => NotYet(PendingDecisions, services, arguments, ct);
 
-    /// <summary>Runs sindri_job (contract stub; Unit C).</summary>
+    /// <summary>Runs Job (contract stub).</summary>
+    /// <param name="services">The request's services.</param>
+    /// <param name="arguments">The call's arguments.</param>
+    /// <param name="ct">Cancels the call.</param>
     /// <returns>The tool result.</returns>
-    internal static ValueTask<CallToolResult> CallJob() => NotYet(Job);
+    internal static ValueTask<CallToolResult> CallJob(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct) => NotYet(Job, services, arguments, ct);
 
-    /// <summary>Runs sindri_request (contract stub; Unit D).</summary>
+    /// <summary>Runs Request (contract stub).</summary>
+    /// <param name="services">The request's services.</param>
+    /// <param name="arguments">The call's arguments.</param>
+    /// <param name="ct">Cancels the call.</param>
     /// <returns>The tool result.</returns>
-    internal static ValueTask<CallToolResult> CallRequest() => NotYet(Request);
+    internal static ValueTask<CallToolResult> CallRequest(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct) => NotYet(Request, services, arguments, ct);
 
-    private static ValueTask<CallToolResult> NotYet(string tool) => throw new NotSupportedException($"{tool} is a contract stub");
+    private static ValueTask<CallToolResult> NotYet(string tool, IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
+    {
+        _ = (services, arguments, ct);   // why: the stubs take the signature the real handlers will have
+        throw new NotSupportedException($"{tool} is a contract stub");
+    }
 }
