@@ -30,6 +30,7 @@ public sealed class OnyxUpCommandTests : IDisposable
         _rig.Progress.Forward = new ConsoleOnyxProgress(_error);
         _services = new ServiceCollection()
             .AddSingleton(_rig.Service())
+            .AddSingleton<Core.Onyx.IOnyxProgress>(_rig.Progress)
             .AddSingleton<IService<OnyxDownRequest, OnyxDownResponse>>(
                 new OnyxDownService(_rig.Workspace, new Core.Onyx.OnyxFacts(_rig.Runtime, _rig.Probes, new FakeSindriHome(OnyxUpRig.Home)), _rig.Runtime))
             .BuildServiceProvider();
@@ -183,6 +184,27 @@ public sealed class OnyxUpCommandTests : IDisposable
         Assert.Equal(string.Empty, _out.ToString());
         Assert.False(_rig.Workspace.LockHeld);
         Assert.DoesNotContain("Up", _rig.Runtime.Calls, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Up_interrupted_in_the_middle_of_a_dot_row_ends_the_row_before_the_resume_line()
+    {
+        using var source = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        _rig.Runtime.OnCall = operation =>
+        {
+            if (operation == "Pull")
+            {
+                _rig.Progress.Tick();
+                _rig.Progress.Tick();
+                _rig.Progress.Tick();
+                source.Cancel();
+            }
+        };
+
+        _ = await Verbs(Human).Up(json: false, source.Token);
+
+        var error = _error.ToString().Replace("\r\n", "\n", StringComparison.Ordinal);
+        Assert.Contains("...\ninterrupted; run `sindri onyx up` again to resume\n", error, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
