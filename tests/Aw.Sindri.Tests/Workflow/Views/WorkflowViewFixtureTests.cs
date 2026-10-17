@@ -111,7 +111,7 @@ public sealed class WorkflowViewFixtureTests
             {
                 Assert.True(catalog.TryGetValue(answer.ActionId.Value, out var actionClass), $"{answer.ActionId.Value} is not a catalog row");
                 Assert.Equal(actionClass, answer.Class);
-                Assert.Equal(answer.ActionId, status.Commands.Single(c => c.Verb == StatusVerb.Answer).ActionId);
+                Assert.Equal(answer.ActionId, status.Commands.First(c => c.Verb == StatusVerb.Answer).ActionId);   // the status answer's variant is the first served
             }
         }
     }
