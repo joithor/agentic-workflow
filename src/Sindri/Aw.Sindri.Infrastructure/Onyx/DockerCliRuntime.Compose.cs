@@ -16,6 +16,7 @@ internal sealed partial class DockerCliRuntime
     private static readonly TimeSpan _pullTimeout = TimeSpan.FromMinutes(45);
     private static readonly TimeSpan _upTimeout = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan _shortTimeout = TimeSpan.FromSeconds(30);
+    private static readonly TimeSpan _stopTimeout = TimeSpan.FromMinutes(2);
 
     // Compose reads its own COMPOSE_* variables and any variable that is also a key of the .env from the shell before the .env, so the child gets none of them: the rendered .env is authoritative.
     private static readonly IReadOnlyDictionary<string, string?> _composeEnvironment = ComposeProject.StrippedVariables.ToDictionary(static name => name, static _ => (string?)null, StringComparer.Ordinal);
@@ -48,7 +49,7 @@ internal sealed partial class DockerCliRuntime
 
     /// <inheritdoc />
     public Result<Unit> Stop(ComposeProject project, CancellationToken cancellationToken)
-        => Compose(project, ["stop"], new Call("compose stop", _shortTimeout), progress: null, cancellationToken).Map(static _ => Unit.Value);
+        => Compose(project, ["stop"], new Call("compose stop", _stopTimeout, CutShort: true, Stop: true), progress: null, cancellationToken).Map(static _ => Unit.Value);
 
     /// <inheritdoc />
     public Result<IReadOnlyList<ComposeContainer>> Ps(ComposeProject project, CancellationToken cancellationToken)
@@ -81,9 +82,9 @@ internal sealed partial class DockerCliRuntime
 
         var tail = new Tail();
         var run = runner.Run("docker", ["image", "inspect", "--format", "{{json .RepoDigests}}", image], _shortTimeout, new ToolRunOptions(tail.Add), cancellationToken);
-        if (run is { Outcome: ToolOutcome.Exited, ExitCode: not 0 } && !tail.DaemonUnreachable)
+        if (run is { Outcome: ToolOutcome.Exited, ExitCode: not 0 } && !tail.DaemonUnreachable && tail.NoSuchImage)
         {
-            return Results.Success<IReadOnlyList<string>>([]);   // `No such image`: not pulled yet
+            return Results.Success<IReadOnlyList<string>>([]);   // `No such image`: not pulled yet; any other failure is reported below, not read as "not pulled"
         }
 
         if (Failed(run, tail, new Call("image inspect", _shortTimeout), cancellationToken) is { } error)
@@ -117,7 +118,7 @@ internal sealed partial class DockerCliRuntime
         ToolOutcome.Cancelled => throw new OperationCanceledException(cancellationToken),
         ToolOutcome.Missing => SindriErrors.OnyxDockerUnavailable.With("Docker isn't installed: install Docker Desktop (or Docker Engine), then run this again"),
         ToolOutcome.TimedOut when !call.CutShort && call.Timeout <= _shortTimeout => SindriErrors.OnyxDockerUnavailable.With("Docker isn't answering (a command hung): start or restart Docker Desktop (or the docker service) and wait until it is ready, then run this again"),
-        ToolOutcome.TimedOut => ComposeFailures.TimedOut(call.What, call.Timeout),
+        ToolOutcome.TimedOut => call.Stop ? ComposeFailures.StopCutShort(call.Timeout) : ComposeFailures.TimedOut(call.What, call.Timeout),
         ToolOutcome.Exited when run.ExitCode == 0 => null,
         _ when tail.DaemonUnreachable => SindriErrors.OnyxDockerUnavailable.With("Docker isn't running: start Docker Desktop (or the docker service) and wait until it is ready, then run this again"),
         _ => SindriErrors.OnyxComposeFailed.With(string.Create(CultureInfo.InvariantCulture, $"`docker {call.What}` failed (exit {run.ExitCode}): {tail.Text()}; fix what it says, then run `sindri onyx up` again to resume")),
@@ -167,7 +168,7 @@ internal sealed partial class DockerCliRuntime
     private static Error Unreadable() => SindriErrors.OnyxComposeFailed.With("`docker compose ps --format json` printed something Sindri can't read; update Docker Compose to v2.21 or newer, then run this again");
 
     // What a docker command is called in a message, how long it may run, and whether running out of time means it was cut short (a long command) or that docker isn't answering (a short read).
-    private sealed record Call(string What, TimeSpan Timeout, bool CutShort = false);
+    private sealed record Call(string What, TimeSpan Timeout, bool CutShort = false, bool Stop = false);
 
     // The last lines a command printed on standard error, for an error message (printable characters only, bounded).
     private sealed class Tail
@@ -177,11 +178,14 @@ internal sealed partial class DockerCliRuntime
 
         public bool DaemonUnreachable { get; private set; }
 
+        public bool NoSuchImage { get; private set; }
+
         public void Add(string line)
         {
             lock (_gate)
             {
                 DaemonUnreachable |= line.Contains("Cannot connect to the Docker daemon", StringComparison.OrdinalIgnoreCase) || line.Contains("daemon running", StringComparison.OrdinalIgnoreCase);
+                NoSuchImage |= line.Contains("no such image", StringComparison.OrdinalIgnoreCase);
                 _lines.Enqueue(line);
                 if (_lines.Count > TailLines)
                 {

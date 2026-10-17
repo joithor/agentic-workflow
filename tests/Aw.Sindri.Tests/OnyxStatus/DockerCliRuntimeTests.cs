@@ -342,7 +342,7 @@ public sealed class DockerCliRuntimeTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Stop_and_Ps_use_30_second_timeouts_and_stop_removes_nothing()
+    public void Stop_uses_2_minutes_and_Ps_30_seconds_and_stop_removes_nothing()
     {
         var runner = new FakeToolRunner(Exit(0, "[]"));
 
@@ -350,7 +350,7 @@ public sealed class DockerCliRuntimeTests
         _ = Cli(runner).Ps(_project, Token);
 
         Assert.Equal([[.. _composePrefix, "stop"], [.. _composePrefix, "ps", "-a", "--format", "json"]], runner.Calls.Select(static c => c.Arguments));
-        Assert.All(runner.Calls, static c => Assert.Equal(TimeSpan.FromSeconds(30), c.Timeout));
+        Assert.Equal([TimeSpan.FromMinutes(2), TimeSpan.FromSeconds(30)], runner.Calls.Select(static c => c.Timeout));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -430,7 +430,10 @@ public sealed class DockerCliRuntimeTests
             "docker.io/library/nginx@sha256:aaa" => Exit(0, "[\"docker.io/library/nginx@sha256:aaa\"]\n"),
             "docker.io/onyxdotapp/onyx-backend@sha256:bbb" => Exit(0, "[\"onyxdotapp/onyx-backend@sha256:bbb\",\"docker.io/onyxdotapp/onyx-backend@sha256:ccc\"]\n"),
             _ => Exit(1),
-        });
+        })
+        {
+            StandardErrorFor = static (_, arguments) => arguments[^1].Contains("gone", StringComparison.Ordinal) ? [$"Error response from daemon: No such image: {arguments[^1]}"] : [],
+        };
 
         var digests = Cli(runner).RepoDigests(["docker.io/library/nginx@sha256:aaa", "docker.io/onyxdotapp/onyx-backend@sha256:bbb", "docker.io/x/gone@sha256:ddd"], Token).Value;
 
@@ -439,6 +442,32 @@ public sealed class DockerCliRuntimeTests
         Assert.Empty(digests["docker.io/x/gone@sha256:ddd"]);
         Assert.All(runner.Calls, static c => Assert.Equal(["image", "inspect", "--format", "{{json .RepoDigests}}"], c.Arguments.Take(4), StringComparer.Ordinal));
         Assert.All(runner.Calls, static c => Assert.Equal(TimeSpan.FromSeconds(30), c.Timeout));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void RepoDigests_reports_a_failure_that_is_not_a_missing_image_instead_of_calling_it_not_pulled()
+    {
+        var runner = new FakeToolRunner(Exit(1), ["permission denied while trying to connect to the docker API at unix:///var/run/docker.sock"]);
+
+        var error = Cli(runner).RepoDigests(["docker.io/x/y@sha256:aaa"], Token).Error;
+
+        Assert.Equal("SND-ONYX-011", error.Code);
+        Assert.Contains("permission denied", error.Message, StringComparison.Ordinal);
+        Assert.Contains("image inspect", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_stop_gets_two_minutes_and_one_that_runs_out_is_011_cut_short_not_a_hung_docker()
+    {
+        var runner = new FakeToolRunner(ToolRun.TimedOut);
+
+        var error = Cli(runner).Stop(_project, Token).Error;
+
+        Assert.Equal(TimeSpan.FromMinutes(2), Assert.Single(runner.Calls).Timeout);
+        Assert.Equal("SND-ONYX-011", error.Code);
+        Assert.Contains("the stop was cut short", error.Message, StringComparison.Ordinal);
+        Assert.Contains("sindri onyx down", error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("isn't answering", error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

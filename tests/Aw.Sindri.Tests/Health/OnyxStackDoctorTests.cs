@@ -60,6 +60,24 @@ public sealed class OnyxStackDoctorTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_docker_that_answers_but_fails_to_list_the_containers_is_told_apart_from_one_that_is_not_running()
+    {
+        Stack();
+        _runtime.FailNext("Ps", Aw.Sindri.Core.SindriErrors.OnyxComposeFailed.With("`docker compose ps` failed (exit 1): no configuration file provided"));
+
+        var failed = await Doctor().Check(Token);
+        _runtime.Facts = FakeContainerRuntime.DaemonDown;
+        var down = await Doctor().Check(Token);
+
+        Assert.Equal(CheckState.Warn, failed!.State);
+        Assert.Contains("SND-ONYX-011", failed.Detail, StringComparison.Ordinal);
+        Assert.Contains("no configuration file provided", failed.Detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("isn't running", failed.Detail, StringComparison.Ordinal);
+        Assert.Contains("SND-ONYX-001", down!.Detail, StringComparison.Ordinal);
+        Assert.Contains("isn't running", down.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Healthy_loopback_pinned_stack_is_ok()
     {
         Stack(s => Container(s, health: s == "api_server" ? "healthy" : null));

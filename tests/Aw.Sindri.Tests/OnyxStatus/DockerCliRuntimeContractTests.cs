@@ -15,7 +15,12 @@ public sealed class DockerCliRuntimeContractTests : ContainerRuntimeContract
     {
         var box = new Box(facts, localImages);
         var stderr = facts.DaemonAnswers ? [] : new[] { "Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?" };
-        return new DockerCliRuntime(new FakeToolRunner((_, arguments) => box.Run(arguments), stderr), static _ => null);
+        var runner = new FakeToolRunner((_, arguments) => box.Run(arguments), stderr)
+        {
+            // what `docker image inspect` prints for an image that isn't there
+            StandardErrorFor = (_, arguments) => arguments[0] == "image" && facts.DaemonAnswers && !localImages.ContainsKey(arguments[^1]) ? [$"Error response from daemon: No such image: {arguments[^1]}"] : stderr,
+        };
+        return new DockerCliRuntime(runner, static _ => null);
     }
 
     // A box with the given facts: answers each docker command as its CLI would, and remembers whether the stack was started and stopped.

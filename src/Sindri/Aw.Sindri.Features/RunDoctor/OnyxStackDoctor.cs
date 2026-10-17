@@ -1,4 +1,6 @@
 using System.Globalization;
+using Aw.Kernel;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Onyx;
 
@@ -38,13 +40,19 @@ internal sealed class OnyxStackDoctor(IOnyxWorkspace workspace, OnyxFacts facts,
         var platform = facts.Platform(cancellationToken);
         if (containers.IsError || platform.IsError)
         {
-            return new DoctorCheck(Name, CheckState.Warn, "docker isn't running; the Onyx stack can't be read", "start Docker Desktop (or the docker service), then run sindri doctor again");
+            return Unreadable(containers.IsError ? containers.Error : platform.Error, facts.ProjectOf(state));
         }
 
         return containers.Value.All(static c => c.State != "running")
             ? new DoctorCheck(Name, CheckState.Warn, "stopped: no Onyx container is running", "sindri onyx up")
             : Failure(state, containers.Value, platform.Value) ?? Ok(containers.Value);
     }
+
+    // Docker not answering (001) and docker answering but a command failing or being cut short (011) are different problems with different fixes.
+    private static DoctorCheck Unreadable(Error error, ComposeProject project)
+        => error.Code == SindriErrors.OnyxDockerUnavailable.Code
+            ? new DoctorCheck(Name, CheckState.Warn, $"docker isn't running ({error.Code}); the Onyx stack can't be read", "start Docker Desktop (or the docker service), then run sindri doctor again")
+            : new DoctorCheck(Name, CheckState.Warn, $"docker answered but the Onyx stack couldn't be read ({error.Code}): {error.Message}", $"run `docker compose -p {project.Name} ps` to see why, then run sindri doctor again");
 
     private DoctorCheck? Failure(OnyxSetupState state, IReadOnlyList<ComposeContainer> containers, string platform)
     {

@@ -35,6 +35,9 @@ internal sealed class FakeToolRunner : IToolRunner
         _standardErrorLines = standardErrorLines ?? [];
     }
 
+    /// <summary>Gets an optional script of the standard error lines a call "prints", per command and arguments; when set it replaces the fixed lines.</summary>
+    public Func<string, IReadOnlyList<string>, IReadOnlyList<string>>? StandardErrorFor { get; init; }
+
     public List<(string FileName, IReadOnlyList<string> Arguments, TimeSpan Timeout, bool HadStderrCallback, IReadOnlyDictionary<string, string?>? Environment)> Calls { get; } = [];
 
     public ToolRun Run(string fileName, IReadOnlyList<string> arguments, TimeSpan timeout, ToolRunOptions? options = null, CancellationToken cancellationToken = default)
@@ -48,7 +51,7 @@ internal sealed class FakeToolRunner : IToolRunner
 
         if (standardErrorLine is not null)
         {
-            foreach (var line in _standardErrorLines)
+            foreach (var line in StandardErrorFor?.Invoke(fileName, arguments) ?? _standardErrorLines)
             {
                 standardErrorLine(line);
             }

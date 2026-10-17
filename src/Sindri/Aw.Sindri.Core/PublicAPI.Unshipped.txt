@@ -8157,6 +8157,7 @@ static Aw.Sindri.Core.Onyx.ComposePublishedPort.operator !=(Aw.Sindri.Core.Onyx.
 static Aw.Sindri.Core.Onyx.ComposePublishedPort.operator ==(Aw.Sindri.Core.Onyx.ComposePublishedPort? left, Aw.Sindri.Core.Onyx.ComposePublishedPort? right) -> bool
 static Aw.Sindri.Core.Onyx.ComposeFailures.IsTimeout(Aw.Kernel.Error! error) -> bool
 static Aw.Sindri.Core.Onyx.ComposeFailures.TimedOut(string! what, System.TimeSpan timeout) -> Aw.Kernel.Error!
+static Aw.Sindri.Core.Onyx.ComposeFailures.StopCutShort(System.TimeSpan timeout) -> Aw.Kernel.Error!
 static Aw.Sindri.Core.Onyx.ImageNames.WithoutDefaults(string! reference) -> string!
 Aw.Sindri.Core.Onyx.DeployFetch
 Aw.Sindri.Core.Onyx.DeployFetch.<Clone>$() -> Aw.Sindri.Core.Onyx.DeployFetch!
