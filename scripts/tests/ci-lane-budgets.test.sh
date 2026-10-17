@@ -211,8 +211,24 @@ $OUT"
   echo "PASS: test_sindri_ui_integration_budget_is_90_s"
 }
 
+test_sindri_integration_budget_is_120_s() {
+  local d="$WORK/sindri"; make_fixture "$d"
+  mkdir -p "$d/tests/Aw.Sindri.Tests"; echo '<Project />' > "$d/tests/Aw.Sindri.Tests/Aw.Sindri.Tests.csproj"
+  perl -pi -e 's#^(\s*)</Folder>#$1  <Project Path="tests/Aw.Sindri.Tests/Aw.Sindri.Tests.csproj" />\n$1</Folder>#' "$d/AgenticWorkflow.slnx"
+  printf '  - id: Sindri\n    kind: package\n    tier: 4\n    projectPrefix: Aw.Sindri.Tests\n' >> "$d/deps.yaml"
+  run_check "$d"
+  printf '%s\n' "$OUT" | grep -qE '^ok +Sindri +integration +[0-9.]+ s +limit 120 s' || fail "Sindri's integration limit is 120 s (owner, 2026-10-16):
+$OUT"
+  printf '%s\n' "$OUT" | grep -qE 'Sindri +unit +[0-9.]+ s +limit 10 s' || fail "Sindri's unit limit stays 10 s:
+$OUT"
+  printf '%s\n' "$OUT" | grep -qE '^ok +Foo +integration +[0-9.]+ s +limit 60 s' || fail "other packages keep 60 s:
+$OUT"
+  echo "PASS: test_sindri_integration_budget_is_120_s"
+}
+
 test_sums_each_package_and_passes_under_budget
 test_sindri_ui_integration_budget_is_90_s
+test_sindri_integration_budget_is_120_s
 test_a_package_over_budget_fails_with_the_rule_id
 test_a_failing_test_run_fails_the_check
 test_tool_errors_exit_2
