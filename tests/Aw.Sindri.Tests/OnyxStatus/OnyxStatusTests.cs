@@ -118,6 +118,22 @@ public sealed class OnyxStatusTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Status_takes_the_port_nginx_publishes_over_the_one_state_json_recorded()
+    {
+        var rig = await RunningRig();
+        rig.Workspace.State = rig.Workspace.State! with { Port = 3005 };
+        var nginx = rig.Runtime.Containers.Single(static c => c.Service == "nginx");
+        rig.Runtime.Containers[rig.Runtime.Containers.IndexOf(nginx)] = nginx with { Publishers = [new ComposePublisher("127.0.0.1", 3001, 80)] };
+
+        var status = await Status(rig);
+
+        Assert.Equal(OnyxState.Running, status.State);
+        Assert.Equal(3001, status.Port);
+        Assert.Equal("http://127.0.0.1:3001", status.Url);
+        Assert.Equal([3001], rig.Health.Probed);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Status_says_unreachable_when_the_running_stack_does_not_answer()
     {
         var rig = await RunningRig();
