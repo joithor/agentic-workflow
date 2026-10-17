@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "sizes": {
+    "XS": { "files": 3, "items": 2, "budget": { "tokens": 50000, "turns": 20, "wallMinutes": 30 } },
+    "S": { "files": 1, "items": 4, "budget": { "tokens": 150000, "turns": 60, "wallMinutes": 90 } },
+    "M": { "files": 20, "items": 8, "budget": {} },
+    "L": { "files": 40, "items": 16, "budget": {} },
+    "XL": { "files": 80, "items": 32, "budget": {} }
+  }
+}

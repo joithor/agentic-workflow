@@ -1,4 +1,4 @@
-# Packets — `aw-packets validate | freeze | hash`
+# Packets — `aw-packets validate | freeze | hash | verify`
 
 `Aw.Packets` (`src/Packets`, tier 1, small shape: `Aw.Packets.Core` + `Aw.Packets.App`) checks and freezes handoff
 packets (factory addendum §17.4). Before the switch it is the standalone NativeAOT CLI `aw-packets`, which writes only
@@ -44,25 +44,79 @@ file list comes from git.
 | `PKT-DEC-001` | Every question is answered, or deferred with an owner and a `buildMayAssume` default |
 | `PKT-HOLD-001` | Every task holds at least one acceptance example out (addendum §17.4: a share held out, per task); a task with no examples fails |
 | `PKT-HOLD-002` | No held-out example keeps its text in the packet: held-out text lives in sindri-private state, mounted only into evaluator Steps and never committed (addendum §17.19); the packet keeps its id and evidence kinds |
-| `PKT-SIZE-001` | **Unchecked**: the size-class budgets aren't defined (open question below) |
+| `PKT-SIZE-001` | Every task fits its size class's limits from a sizes file (`validate --sizes <file>`, below): `unchecked` without one |
 | `PKT-FLOW-001` | **Unchecked**: workflow coverage (addendum §17.7) needs the lens catalog and workflow generation |
 
 The text output lists every rule (`pass`, `FAIL` with the subject, what was found and the fix, or `unchecked` with the
 reason). A rule reports at most 50 failures, then one `omitted` record whose `omitted` field counts the rest (the summary line's failure count includes them). `--json` writes one document, `schemaVersion` 1, with `packet`, `passed` and `checks[]` (one record per
 failure, one per passing or unchecked rule; each failure has `rule`, `subject`, `message` and `fix`).
 
-## Freeze (`aw-packets freeze <packet-dir> [--repo <dir>] [--json]`)
+## Sizes (`PKT-SIZE-001`, `validate --sizes <file>`, LN-PKT3)
+
+PKT owns the shape of the limits, the Sindri profile the values: Sindri writes the sizes file from `workflow.plan.sizes`
+and passes it, so tier-1 `aw-packets` never reads the profile. Without `--sizes`, the rule is `unchecked`; with it,
+each task is held to its own size class (`validate` of a build packet, and of a plan graph with `--kind plan`; no other
+command takes it, and the other line kinds have no tasks). The file (`schemas/packets/sizes.schema.json`, generated from `SizesFile`):
+
+```json
+{ "schemaVersion": 1,
+  "sizes": { "XS": { "files": 3, "items": 2, "budget": { "tokens": 50000, "turns": 20, "wallMinutes": 30 } },
+             "S": {...}, "M": {...}, "L": {...}, "XL": {...} } }
+```
+
+All five sizes are present. A limit is zero or more; a `budget` field left out is not checked. A task fails the rule when:
+
+- the files its write scope covers exceed `files`: the base commit's files its globs match plus the paths it declares
+  `new:`, each file once however many entries match it;
+- its acceptance examples (held-out ones included) exceed `items`;
+- its `budget.tokens`, `turns` or `wallMinutes` exceed the limit (a field the task leaves out is not compared).
+
+The failure is one record per task, naming each limit it is over, with the fix (split the task or raise its size). It is
+`unchecked` when the base commit can't be read (the files can't be counted). A sizes file that is missing (or a directory), unreadable,
+larger than 64 KB, malformed, not `schemaVersion` 1 or with a negative limit is `AW-PACKETS-009` (exit 2), never a check
+result. `freeze` takes no `--sizes` (Sindri validates first).
+
+## Freeze (`aw-packets freeze <packet-dir> [--repo <dir>] [--by owner|machine] [--json]`)
 
 Runs the same checks. A packet with a failed check isn't frozen and nothing is written. Otherwise its canonical hash
 is recorded at `packets/<owner>/<name>/<id>/frozen/<hex>.json` (per repository: a packet id is unique only within one) (`FreezeRecord`: `schemaVersion`, `repo`, packet, hash,
-`digestVersion`, `kind` (`build` unless the record says otherwise), `baseSha` (left out for a kind that has none), `frozenAt`, the files the hash covers). Freezing the same hash again writes nothing and says `already frozen`. The
+`digestVersion`, `kind` (`build` unless the record says otherwise), `by` (`machine` or `owner`, below), `baseSha` (left out for a kind that has none), `frozenAt`, the files the hash covers). Freezing the same hash again writes nothing and says `already frozen`. The
 packet directory itself is never changed; the record under `packets/` is authoritative (the ledger of the C# Sindri
 application takes over once it exists, spec §4c; Sindri is built new, not ported, factory addendum §17.29).
+
+**Who froze it (`--by owner|machine`, LN-PKT5, line spec §2).** `freeze` takes `--by` for every kind (default `machine`); it is
+stored as `by` in the `FreezeRecord` and printed by `verify`. `step.build.amend` and the stop blocks pass `owner`, every other
+freeze `machine`. A freeze is write-once: freezing a hash that is already frozen writes nothing and keeps the first record, `by` and `frozenAt` included, there is no upgrade from `machine` to `owner`. The response and the text report the **stored** record's `by` and `frozenAt`, and when the stored `by` is not the one this call asked for (an `--by owner` freeze of a hash a machine froze first) they add `alreadyFrozenBy: <stored by>` (JSON) and a `note: alreadyFrozenBy …` line (text): the exit stays 0 (it is frozen), but the owner's freeze was not recorded. So Sindri must freeze as `owner` first when the owner's freeze has to be provable, and check `alreadyFrozenBy`/`verify`'s `by` otherwise. A record from before `by` existed has no `by` and reads as `machine` (every such freeze was a machine
+freeze); `verify` prints it so. The record is not part of the digest, so `by` never changes a hash. Freezing a hash that is
+already frozen writes nothing and keeps the first record's `by` (above).
 
 **The hash (`digestVersion` 1, spec §4c Digests):** SHA-256 over the canonical JSON of
 `{"digestVersion":1,"files":{<path>:<entry>}}`. A JSON packet file's entry is the file itself without its `$schema` editor hint (and `packet.json` without
 `status` and `hash`); any other linked file's entry is `sha256:<hex of its bytes>`. Canonical JSON sorts object keys by
 ordinal, drops whitespace, keeps numbers as written, and writes strings as System.Text.Json's relaxed encoder does (the Kernel profile): `"` and `\` escaped, control characters in their short or `\u00XX` form, U+2028/U+2029 and characters outside the Basic Multilingual Plane as `\u` escapes (surrogate pairs), everything else as UTF-8. `CanonicalJsonTests` pins examples and one packet's hash; changing these bytes needs a new `digestVersion`.
+
+## Verify (`aw-packets verify <packet-dir> --hash <h> [--candidate] [--kind K] [--json]`, LN-PKT2)
+
+Recomputes the packet's hash with the one canonicalization `hash` prints and `freeze` records (any of the eight kinds:
+`--kind`, `build` by default), compares it with `--hash` (`sha256:` and 64 lower-case hex digits), and finds the freeze
+record where `freeze` wrote it, `packets/<owner>/<name>/<id>/frozen/<hex>.json`, with `<owner>/<name>` and `<id>` read from
+`packet.json` (build and the line kinds). A scope packet has no `packet.json`: give the repository and instance it was frozen
+under, `--repo-slug <owner/name> --instance <slug>`, as `freeze --kind scoping` takes them (only a scope packet takes them).
+With `--candidate` it only recomputes and compares, looks for no record, and needs neither. It reads only: nothing is written.
+
+| Exit | When |
+|---|---|
+| 0 | The hash matches and (unless `--candidate`) a freeze record of that hash exists |
+| 1 | The packet hashes to something else (`MISMATCH`), the hash was never frozen for that packet (`NOT FROZEN`), or the packet is malformed (`AW-PACKETS-003`, `-004`) |
+| 2 | A usage error (a missing or malformed `--hash`, an unknown or repeated flag), or the packet or the record can't be read (`AW-PACKETS-002`, `-008`) |
+
+Text: `aw-packets verify: <kind> packet <id> — verified <hash>, frozen by owner at 2026-10-17T09:00:00Z (packets/…)`, or
+`… — MISMATCH: the packet hashes to <a>, not <b>`, or `… — NOT FROZEN: no freeze record for <hash> (looked at packets/…)`, or
+`… — hash matches <hash> (candidate: no freeze record looked up)`. `--json` writes `{schemaVersion, kind, packet, verified,
+candidate, expected, computed, digestVersion, frozen, by, frozenAt, location, reason}` (`packet`, `frozen`, `by`, `frozenAt`,
+`location` and `reason` left out when unknown or not applicable). A record whose own `hash` differs from its location is not
+verified. A phase packet's hash covers its `packet.json` links, so verifying the newest amendment is verifying by its own hash:
+which packet is in force under a phase is Sindri's to say.
 
 ## Packet kinds (`--kind build|scoping|design|plan|phase|proof|review|handoff`)
 
@@ -155,7 +209,7 @@ the executability review, hidden scenarios, the PR) stays in Sindri's `DesignPac
 | `PKT-DSN-007`, `PKT-PRF-007`, `PKT-PHS-010` | `acceptance.json` matches its schema: `schemaVersion` 1, `parent` (the hash of the previous `acceptance.json`, line spec LC-2), `items[]` with a non-blank `id` and `text`, a `status` of `failing`, `passing` or `superseded`, `evidence[]` of `{kind, path, sha256, commit, at}`, and `supersededBy` (the id of an item in the file) on a superseded item and on no other (provisional, pending the line spec's amendment); the other item fields (`form`, `surfaces`, `citations`, `trust`, the item's own `parent`) pass through, since the scoping spec and Sindri's `LC-ACC-001` own them |
 | `PKT-DSN-008`, `PKT-PHS-011` | item ids are unique and no item is `passing`: only the proof pack flips an item (LC-2) |
 | `PKT-PRF-008` | item ids are unique and every `passing` item has evidence |
-| `PKT-PLN-007` | `tasks.json` matches the task-plan schema; then **the build kind's task rules run on it** (LN10): `PKT-ID-001`, `PKT-WS-001`, `PKT-GRAPH-001/002`, `PKT-BASE-001`, `PKT-SCOPE-001/002`, `PKT-ACC-001`, `PKT-EVID-001`, `PKT-DEC-001` (an empty decision log: it passes), `PKT-HOLD-001/002`; `PKT-SIZE-001` stays unchecked until LN-PKT3. They are unchecked when `tasks.json` can't be read |
+| `PKT-PLN-007` | `tasks.json` matches the task-plan schema; then **the build kind's task rules run on it** (LN10): `PKT-ID-001`, `PKT-WS-001`, `PKT-GRAPH-001/002`, `PKT-BASE-001`, `PKT-SCOPE-001/002`, `PKT-ACC-001`, `PKT-EVID-001`, `PKT-DEC-001` (an empty decision log: it passes), `PKT-HOLD-001/002`; `PKT-SIZE-001` is checked when `--sizes` is given (LN-PKT3). They are unchecked when `tasks.json` can't be read |
 | `PKT-PHS-007` | the packet id is `<line>-<phase>` or `<line>-<phase>-a<n>`: lower-case letters, digits and `-`, at least two segments, an amendment number from 1 |
 | `PKT-PHS-008` | `phase.json` matches its schema: `goal`, `kind` (`feature`, `fix`, `refactor`, `docs`, `config`), `deps`, `size`, `base` (`rule` `default-branch` or `dependency-head`, and its `ref`, which for `dependency-head` is one of `deps`), `allowedFiles` (non-empty, each a relative glob or `new: <path>`, the write-scope syntax), `testChange[]` (`path` and `reason`), `readSeeds`, `budget`; an optional `amends`; no unknown field |
 | `PKT-PHS-009` | `phase.json` has `amends` exactly when the id ends `-a<n>`; an amendment's `paths` are non-empty write-scope entries and its `reason` is not blank |
@@ -196,9 +250,9 @@ its `baseSha`). A failed check freezes nothing (exit 1); the same hash again say
 
 | Exit | When |
 |---|---|
-| 0 | Every implemented check passed (and, for `freeze`, the hash is recorded) |
+| 0 | Every implemented check passed (and, for `freeze`, the hash is recorded; for `verify`, the hash is verified) |
 | 1 | A check failed, or the packet is malformed (`AW-PACKETS-003`, `-004`) |
-| 2 | A usage error, or the tool couldn't do its job: no packet (`AW-PACKETS-002`), an unreadable repository (`-006`) or packet file (`-008`), an unwritable freeze log (`-007`) |
+| 2 | A usage error, or the tool couldn't do its job: no packet (`AW-PACKETS-002`), an unreadable repository (`-006`) or packet file (`-008`), an unwritable freeze log (`-007`), an unusable sizes file (`-009`) |
 
 Errors go to stderr as `aw-packets: <code> <message>` (with `--json`, the `Error` record).
 
@@ -218,9 +272,9 @@ errors are the same whatever supplies the bytes; `PacketSourceContract` checks t
 
 ## Open questions
 
-- **Size classes (`PKT-SIZE-001`):** addendum §17.5 sets a session's budget "by size class and lens", and sindri's
-  profile already has a per-size `sizeBudget`. Do the packet-time budgets live in the profile next to it, which lens
-  does a packet-time check use, and is a task over its budget a failure or a split signal?
+- **Size classes (`PKT-SIZE-001`)** are answered by LN-PKT3 (above): the values live in the profile's `workflow.plan.sizes`,
+  Sindri writes the sizes file, and a task over a limit is a failure. Not decided here: which lens a packet-time budget
+  uses (the file has one budget per size).
 - **Holdout store (`PKT-HOLD-002` checks the packet side today):** addendum §17.19 puts held-out examples in
   sindri-private state with a canary per set. What is that store's path and format, and how does a packet name a set
   (by example id, as now)? The store side and the canary are checked once the store exists.

@@ -23,8 +23,9 @@ internal static class LinePacketChecks
     internal static ManifestRead ReadManifest(PacketKind kind, LinePacketFiles files, JsonSerializerOptions json) =>
         Manifest(kind, files, json);
 
-    internal static IReadOnlyList<CheckResult> Run(PacketKind kind, LinePacketFiles files, ManifestRead read, BaseTree? tree, JsonSerializerOptions json)
+    internal static IReadOnlyList<CheckResult> Run(PacketKind kind, LinePacketFiles files, LineInputs inputs, JsonSerializerOptions json)
     {
+        var (read, tree, sizes) = inputs;
         var rules = LineRules.For(kind) ?? throw new ArgumentException($"'{kind.Name}' is not a line kind.", nameof(kind));
         var checks = new CheckList();
         var context = new LineContext(kind, rules, files, read, json, checks);
@@ -34,7 +35,7 @@ internal static class LinePacketChecks
         {
             // the task plan is a build packet's, minus the decision log and the out-of-scope list a plan graph doesn't have
             var packet = new Packet(Shell(manifest), new DecisionLog(1, []), new OutOfScope(1, []), plan);
-            context.Append(PacketChecks.RunPlan(packet, tree));
+            context.Append(PacketChecks.RunPlan(packet, tree, sizes));
         }
         else
         {
@@ -53,6 +54,7 @@ internal static class LinePacketChecks
                 checks.Unchecked(PacketRules.Decisions, Why);
                 checks.Unchecked(PacketRules.HoldoutExists, Why);
                 checks.Unchecked(PacketRules.HoldoutStored, Why);
+                checks.Unchecked(PacketRules.SizeBudget, Why);
             }
         }
 
