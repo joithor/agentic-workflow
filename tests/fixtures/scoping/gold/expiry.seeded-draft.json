@@ -62,7 +62,7 @@
       "regression": false
     },
     {
-      "id": "RG-1",
+      "id": "AC-8",
       "form": "event",
       "text": "When an editor revokes a link, the system shall stop returning its note, as it does today.",
       "surfaces": [
@@ -71,7 +71,7 @@
       "regression": true
     },
     {
-      "id": "RG-2",
+      "id": "AC-9",
       "form": "event",
       "text": "When the digest is built for a week with no changed note, the system shall send nothing.",
       "surfaces": [
@@ -80,7 +80,7 @@
       "regression": true
     },
     {
-      "id": "RG-3",
+      "id": "AC-10",
       "form": "unwanted",
       "text": "If a viewer tries to create a link, the system shall refuse, as it does today.",
       "surfaces": [
