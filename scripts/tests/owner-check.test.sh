@@ -3,6 +3,7 @@
 # and a stub sindri binary, in a temp repo and a temp state root. Nothing here touches a real Sindri home, port or
 # profile: the "real" home and profile are temp files too, and the port is a free one (OWNER_CHECK_PORT).
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/test-grep.sh"
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PASS=0
@@ -137,8 +138,8 @@ check "the seed is exported by the merged build from the real home (the profile'
 P="$OC_HOME/profile/profile.yaml"
 check "the real profile is copied in and left unchanged" '[ -f "$P" ] && cmp -s "$T/profile.orig" "$REAL_HOME/profile/profile.yaml"'
 check "the named engine service is kept, the others removed, other services kept" 'grep -q "^  context-sync:" "$P" && grep -q "^    every: 15m" "$P" && ! grep -q "context-purge\|context-docs-refresh" "$P" && grep -q "^  heartbeat:" "$P"'
-check "labeling is off unless the check names it; its other keys stay" 'awk "/^  labeling:/{f=1;next} f&&/^    enabled:/{print \$2; exit}" "$P" | grep -qx false && grep -q "^    maxTokens: 20000" "$P"'
-check "sessions are on when the check uses a session" 'awk "/^  sessions:/{f=1;next} f&&/^    enabled:/{print \$2; exit}" "$P" | grep -qx true'
+check "labeling is off unless the check names it; its other keys stay" 'awk "/^  labeling:/{f=1;next} f&&/^    enabled:/{print \$2; exit}" "$P" | has -x false && grep -q "^    maxTokens: 20000" "$P"'
+check "sessions are on when the check uses a session" 'awk "/^  sessions:/{f=1;next} f&&/^    enabled:/{print \$2; exit}" "$P" | has -x true'
 check "start, approve and import run against the scratch home and port, in order" '
   [ "$(grep -v "^main" "$T/calls.log" | sed "s/ args=.*//" | sort -u)" = "home=$OC_HOME port=$PORT" ] &&
   [ "$(grep -v "^main" "$T/calls.log" | sed "s/.* args=//" | tr "\n" "|")" = "--headless|profile validate --json|profile approve $(printf "a%.0s" $(seq 1 64))|context map import $OC_HOME/seed.json|" ]'
@@ -165,8 +166,8 @@ run s-x up --labeling
 expect "up without --seed or --session" 0 "$OC_HOME"
 check "without --seed nothing is exported or imported" '! grep -q "export\|import" "$T/calls.log" && [ ! -e "$OC_HOME/seed.json" ]'
 check "--labeling turns labeling on; no session leaves sessions off; no MCP config" '
-  awk "/^  labeling:/{f=1;next} f&&/^    enabled:/{print \$2; exit}" "$P" | grep -qx true &&
-  awk "/^  sessions:/{f=1;next} f&&/^    enabled:/{print \$2; exit}" "$P" | grep -qx false && [ ! -e "$OC_SCRATCH/mcp.json" ]'
+  awk "/^  labeling:/{f=1;next} f&&/^    enabled:/{print \$2; exit}" "$P" | has -x true &&
+  awk "/^  sessions:/{f=1;next} f&&/^    enabled:/{print \$2; exit}" "$P" | has -x false && [ ! -e "$OC_SCRATCH/mcp.json" ]'
 check "no service named: every engine service is removed" '! grep -q "context-sync\|context-purge\|context-docs-refresh" "$P" && grep -q "^  heartbeat:" "$P"'
 run s-x down
 
@@ -179,7 +180,7 @@ cp "$REAL_HOME/profile/profile.yaml" "$T/elsewhere.yaml"
 : > "$T/calls.log"
 AW_SINDRI_PROFILE="$T/elsewhere.yaml" run s-x up --session --repo work-repo
 expect "up with AW_SINDRI_PROFILE pointing at the real profile" 0 "unset AW_SINDRI_PROFILE; export SINDRI="
-check "the PR's build (smoke included) never sees AW_SINDRI_PROFILE, so it loads the edited copy" '! grep -q PROFILE-LEAK "$T/calls.log" && awk "/^  sessions:/{f=1;next} f&&/^    enabled:/{print \$2; exit}" "$P" | grep -qx true'
+check "the PR's build (smoke included) never sees AW_SINDRI_PROFILE, so it loads the edited copy" '! grep -q PROFILE-LEAK "$T/calls.log" && awk "/^  sessions:/{f=1;next} f&&/^    enabled:/{print \$2; exit}" "$P" | has -x true'
 AW_SINDRI_HOME="$OC_HOME" run s-x down
 expect "down runs from a shell that exported the owner-check home" 0 "unset SINDRI AW_SINDRI_HOME AW_SINDRI_PORT"
 check "  ... and tears it down" '! listening "$PORT" && [ ! -e "$OC_HOME" ]'
@@ -203,7 +204,7 @@ run s-x down
 
 tr -d '\r' < "$T/profile.orig" | sed 's/$/\r/' > "$T/crlf.yaml"
 AW_SINDRI_PROFILE="$T/crlf.yaml" run s-x up
-check "a CRLF profile is edited too (labeling turned off)" '[ "$CODE" = 0 ] && ! grep -q $'"'"'\r'"'"' "$P" && awk "/^  labeling:/{f=1;next} f&&/^    enabled:/{print \$2; exit}" "$P" | grep -qx false'
+check "a CRLF profile is edited too (labeling turned off)" '[ "$CODE" = 0 ] && ! grep -q $'"'"'\r'"'"' "$P" && awk "/^  labeling:/{f=1;next} f&&/^    enabled:/{print \$2; exit}" "$P" | has -x false'
 run s-x down
 
 AW_SINDRI_HOME="$STATE/sindri-app-ownercheck-s-other" run s-x up
@@ -214,7 +215,7 @@ AW_SINDRI_PROFILE="$T/bare.yaml" run s-x up --session --services context-sync --
 expect "a service the check names but the profile lacks is refused" 2 "context-sync"
 run s-x down
 AW_SINDRI_PROFILE="$T/bare.yaml" run s-x up --session --repo work-repo
-check "missing context keys are added when the check needs them" '[ "$CODE" = 0 ] && grep -q "^context:" "$P" && awk "/^  sessions:/{f=1;next} f&&/^    enabled:/{print \$2; exit}" "$P" | grep -qx true'
+check "missing context keys are added when the check needs them" '[ "$CODE" = 0 ] && grep -q "^context:" "$P" && awk "/^  sessions:/{f=1;next} f&&/^    enabled:/{print \$2; exit}" "$P" | has -x true'
 run s-x down
 
 echo
