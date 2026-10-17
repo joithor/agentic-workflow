@@ -8,9 +8,6 @@ namespace Aw.Meta.Features.ShowVersion;
 /// <param name="build">The binary's stamp.</param>
 internal sealed class ShowVersionService(IBuildInfo build) : IService<ShowVersionRequest, BuildInfo>
 {
-    public ValueTask<Result<BuildInfo>> Handle(ShowVersionRequest request, CancellationToken cancellationToken)
-    {
-        _ = build;
-        throw new NotSupportedException();
-    }
+    public ValueTask<Result<BuildInfo>> Handle(ShowVersionRequest request, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(Results.Success(build.Read()));
 }

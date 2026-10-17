@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Runtime.InteropServices;
 using Aw.Meta.Core.Ports;
 
 namespace Aw.Meta.Infrastructure.Build;
@@ -8,11 +10,16 @@ namespace Aw.Meta.Infrastructure.Build;
 /// </summary>
 internal sealed class AssemblyBuildInfo : IBuildInfo
 {
-    internal const string Unknown = "unknown";
+    internal const string BuildTimeKey = "AwBuildTime";
 
     public BuildInfo Read()
     {
-        _ = BuildStamp.Commit(Unknown);
-        throw new NotSupportedException();
+        var assembly = typeof(AssemblyBuildInfo).Assembly;
+        var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? string.Empty;
+        var builtAt = assembly.GetCustomAttributes<AssemblyMetadataAttribute>().FirstOrDefault(a => a.Key == BuildTimeKey)?.Value;
+        return new BuildInfo(BuildStamp.Commit(version), string.IsNullOrEmpty(builtAt) ? BuildStamp.Unknown : builtAt, Os(), RuntimeInformation.RuntimeIdentifier);
     }
+
+    private static string Os() =>
+        OperatingSystem.IsMacOS() ? "macOS" : OperatingSystem.IsLinux() ? "Linux" : RuntimeInformation.OSDescription;
 }
