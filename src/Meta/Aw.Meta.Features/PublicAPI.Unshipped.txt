@@ -874,3 +874,7 @@ Aw.Meta.Features.Status.StatusResponse.Heavy.get -> Aw.Meta.Core.Health.HeavySlo
 Aw.Meta.Features.Status.StatusResponse.Heavy.init -> void
 Aw.Meta.Features.Status.StatusResponse.MergeQueue.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.QueuedPr!>!
 Aw.Meta.Features.Status.StatusResponse.StatusResponse(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>! Obligations, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.QueuedPr!>! MergeQueue, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Owner.OwnerQuestion!>! OwnerQueue, Aw.Meta.Core.Lanes.LaneMapState! Lanes) -> void
+Aw.Meta.Features.GateRerun.GateRerunResponse.AloneLog.get -> string?
+Aw.Meta.Features.GateRerun.GateRerunResponse.AloneLog.init -> void
+Aw.Meta.Features.GateRerun.GateRerunResponse.MainLog.get -> string?
+Aw.Meta.Features.GateRerun.GateRerunResponse.MainLog.init -> void

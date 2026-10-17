@@ -24,7 +24,8 @@ internal sealed class SystemCommandRunner : ICommandRunner
             return MetaErrors.CommandNotStarted.With("empty command");
         }
 
-        using var process = new Process { StartInfo = StartInfo(request) };
+        using var sandbox = request.Isolated ? Sandbox.Create() : null;
+        using var process = new Process { StartInfo = StartInfo(request, sandbox) };
         try
         {
             if (!process.Start())
@@ -57,7 +58,7 @@ internal sealed class SystemCommandRunner : ICommandRunner
         }
     }
 
-    private static ProcessStartInfo StartInfo(CommandRequest request)
+    private static ProcessStartInfo StartInfo(CommandRequest request, Sandbox? sandbox)
     {
         var info = new ProcessStartInfo(ProgramPath.Resolve(request.Argv[0], request.Cwd))
         {
@@ -76,7 +77,12 @@ internal sealed class SystemCommandRunner : ICommandRunner
             info.WorkingDirectory = cwd;
         }
 
-        foreach (var (name, value) in request.Env)
+        foreach (var name in request.UnsetEnv.Concat(sandbox is null ? [] : Sandbox.Unset))
+        {
+            _ = info.Environment.Remove(name);
+        }
+
+        foreach (var (name, value) in (sandbox?.Variables() ?? new Dictionary<string, string>(StringComparer.Ordinal)).Concat(request.Env))
         {
             info.Environment[name] = value;
         }

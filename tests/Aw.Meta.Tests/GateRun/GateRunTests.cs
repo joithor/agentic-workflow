@@ -76,6 +76,22 @@ public sealed class GateRunTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Steps_do_not_inherit_the_meta_panes_session_variables()
+    {
+        await _world.ReadyWithGate();
+        Script();
+
+        _ = await Run();
+
+        var steps = _world.Runner.Requests.Where(r => r.LogFile is not null).ToList();
+        Assert.NotEmpty(steps);
+        Assert.All(steps, r => Assert.Equal(GatePriority.Scrubbed, r.UnsetEnv));
+        Assert.Contains("TMUX", GatePriority.Scrubbed, StringComparer.Ordinal);
+        Assert.Contains("AW_META_TEAM", GatePriority.Scrubbed, StringComparer.Ordinal);
+        Assert.Contains("AW_SINDRI_CHILD", GatePriority.Scrubbed, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_passing_gate_is_recorded_and_a_second_run_gets_the_next_number()
     {
         await _world.ReadyWithGate();

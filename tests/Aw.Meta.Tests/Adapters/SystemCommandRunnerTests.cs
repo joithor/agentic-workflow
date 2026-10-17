@@ -25,6 +25,50 @@ public sealed class SystemCommandRunnerTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task Variables_named_to_unset_do_not_reach_the_command()
+    {
+        Environment.SetEnvironmentVariable("AW_META_TEST_LEAK", "leaked");
+        try
+        {
+            var request = new CommandRequest(["sh", "-c", "printf %s \"${AW_META_TEST_LEAK-unset}\""], TimeSpan.FromSeconds(20)) { UnsetEnv = ["AW_META_TEST_LEAK"] };
+
+            var result = await new SystemCommandRunner().Run(request, CancellationToken.None);
+
+            Assert.Equal("unset", result.Value.Stdout);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("AW_META_TEST_LEAK", value: null);
+        }
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task An_isolated_command_gets_a_fresh_home_and_state_directory_that_are_gone_afterwards()
+    {
+        Environment.SetEnvironmentVariable("AW_META_TEST_TMUX_LIKE", "leaked");
+        try
+        {
+            var script = "printf '%s\\n%s\\n%s\\n' \"$HOME\" \"$AW_STATE_DIR\" \"${AW_META_TEST_TMUX_LIKE-unset}\"; test -d \"$HOME\" && test -d \"$AW_STATE_DIR\" && echo dirs-exist";
+            var request = new CommandRequest(["sh", "-c", script], TimeSpan.FromSeconds(20)) { Isolated = true, UnsetEnv = ["AW_META_TEST_TMUX_LIKE"] };
+            var realHome = Environment.GetEnvironmentVariable("HOME");
+
+            var result = await new SystemCommandRunner().Run(request, CancellationToken.None);
+
+            var lines = result.Value.Stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            Assert.NotEqual(realHome, lines[0], StringComparer.Ordinal);
+            Assert.StartsWith(Path.GetTempPath(), lines[0], StringComparison.Ordinal);
+            Assert.NotEqual(lines[0], lines[1], StringComparer.Ordinal);
+            Assert.Equal(["unset", "dirs-exist"], lines[2..]);
+            Assert.False(Directory.Exists(lines[0]));
+            Assert.False(Directory.Exists(lines[1]));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("AW_META_TEST_TMUX_LIKE", value: null);
+        }
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task A_relative_script_runs_from_the_working_directory_whatever_ours_is()
     {
         var scripts = Directory.CreateDirectory(Path.Combine(_dir.Path, "scripts")).FullName;

@@ -18,9 +18,19 @@ internal sealed class RerunExecutor(ICommandRunner runner, MetaPaths paths)
     /// <summary>The command that runs one test of the step, or null when the step can't.</summary>
     internal IReadOnlyList<string>? Command(StepConfig step, string test) => GateCommand.Rerun(step, test, paths.Heavy);
 
-    internal async ValueTask<Result<RerunOutcome>> Run(IReadOnlyList<string> argv, string tree, string test, bool filterMustMatch, CancellationToken cancellationToken)
+    internal async ValueTask<Result<RerunOutcome>> Run(RerunJob job, CancellationToken cancellationToken)
     {
-        var ran = await runner.Run(new CommandRequest(argv, _limit) { Cwd = tree, Env = GatePriority.Environment }, cancellationToken).ConfigureAwait(false);
+        var (argv, tree, test, filterMustMatch, log) = job;
+        // A dotnet rerun needs the real home (NuGet, the SDK's state); any other command is a suite, which runs as bash-tests.sh runs it.
+        var request = new CommandRequest(argv, _limit)
+        {
+            Cwd = tree,
+            Env = GatePriority.Environment,
+            UnsetEnv = GatePriority.Scrubbed,
+            Isolated = !argv.Contains("dotnet", StringComparer.Ordinal),
+            LogFile = log,
+        };
+        var ran = await runner.Run(request, cancellationToken).ConfigureAwait(false);
         if (ran.IsError)
         {
             return ran.Error;

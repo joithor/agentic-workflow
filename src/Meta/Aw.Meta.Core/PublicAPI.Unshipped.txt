@@ -1705,3 +1705,9 @@ static Aw.Meta.Core.Coordination.ResourceAdvice.operator ==(Aw.Meta.Core.Coordin
 static Aw.Meta.Core.Gate.GatePriority.Environment.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 static Aw.Meta.Core.Merge.QueuedPr.operator !=(Aw.Meta.Core.Merge.QueuedPr? left, Aw.Meta.Core.Merge.QueuedPr? right) -> bool
 static Aw.Meta.Core.Merge.QueuedPr.operator ==(Aw.Meta.Core.Merge.QueuedPr? left, Aw.Meta.Core.Merge.QueuedPr? right) -> bool
+Aw.Meta.Core.Commands.CommandRequest.Isolated.get -> bool
+Aw.Meta.Core.Commands.CommandRequest.Isolated.init -> void
+Aw.Meta.Core.Commands.CommandRequest.UnsetEnv.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Commands.CommandRequest.UnsetEnv.init -> void
+Aw.Meta.Core.Coordination.GateWorkspace.RerunLogPath(int pr, int run, string! step, string! test, string! where) -> string!
+static Aw.Meta.Core.Gate.GatePriority.Scrubbed.get -> System.Collections.Generic.IReadOnlyList<string!>!

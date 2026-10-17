@@ -29,6 +29,20 @@ public sealed class GateWorkspace(RepoCommands repo, GateTree trees, MetaPaths p
     /// <returns>The file path.</returns>
     public string LogPath(int pr, int run, string name) => string.Create(CultureInfo.InvariantCulture, $"{paths.GateDirectory(pr)}/{run}/{name}.log");
 
+    /// <summary>The log of one rerun: gates/&lt;pr&gt;/&lt;run&gt;/rerun-&lt;step&gt;-&lt;test&gt;-&lt;where&gt;.log, the test name made safe for a file name. A later rerun of the same test appends to it.</summary>
+    /// <param name="pr">The pull request number.</param>
+    /// <param name="run">The gate run.</param>
+    /// <param name="step">The step name.</param>
+    /// <param name="test">The test filter.</param>
+    /// <param name="where">"alone" (the gate tree) or "main" (the plain-main tree).</param>
+    /// <returns>The file path.</returns>
+    public string RerunLogPath(int pr, int run, string step, string test, string where)
+    {
+        ArgumentNullException.ThrowIfNull(test);
+        var safe = new string([.. test.Select(c => char.IsAsciiLetterOrDigit(c) || c is '.' or '-' or '_' ? c : '_').Take(80)]);
+        return string.Create(CultureInfo.InvariantCulture, $"{paths.GateDirectory(pr)}/{run}/rerun-{step}-{safe}-{where}.log");
+    }
+
     /// <summary>Fetches, checks origin/main out in the tree and merges the pull request head onto it.</summary>
     /// <param name="config">The team config (its repo).</param>
     /// <param name="pr">The pull request number.</param>

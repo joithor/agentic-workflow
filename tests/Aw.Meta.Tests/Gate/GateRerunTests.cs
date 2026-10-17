@@ -214,6 +214,49 @@ public sealed class GateRerunTests
         Assert.DoesNotContain("--no-build", main.Argv, StringComparer.Ordinal);
     }
 
+    // A step with a rerun template that is no dotnet command: a bash suite, as the shipped bash-scripts step.
+    private async Task UseBashStep()
+    {
+        var team = (await _world.Config.Load(CancellationToken.None)).Value;
+        var scopes = team.Gate.Scopes.ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.Ordinal);
+        var unit = new StepConfig("unit", ["bash", "scripts/ci/bash-tests.sh"], Heavy: true, Rerun: ["bash", "{test}"]);
+        scopes["dotnet"] = scopes["dotnet"] with { Steps = [.. scopes["dotnet"].Steps.Where(step => step.Name != "unit"), unit] };
+        _ = await _world.Config.Save(team with { Gate = team.Gate with { Scopes = scopes } }, CancellationToken.None);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_bash_suite_is_rerun_isolated_with_the_session_variables_stripped_and_its_output_kept()
+    {
+        await SaveRedGate();
+        await UseBashStep();
+        _ = _world.Runner.When("bash scripts/x.test.sh", request => request.Cwd == MainTree ? Fail("failed on main") : Pass()).When("git");
+
+        var response = await Rerun("scripts/x.test.sh");
+
+        var alone = _world.Runner.Requests.Single(r => r.Cwd == GateTree && r.Argv.Contains("scripts/x.test.sh", StringComparer.Ordinal));
+        Assert.True(alone.Isolated);
+        Assert.Equal(GatePriority.Scrubbed, alone.UnsetEnv);
+        Assert.Equal("/state/meta/gates/190/1/rerun-unit-scripts_x.test.sh-alone.log", alone.LogFile);
+        Assert.Equal(alone.LogFile, response.AloneLog);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_dotnet_rerun_keeps_the_real_home_but_still_logs()
+    {
+        await SaveRedGate();
+        Script(onGate: Fail(), onMain: Fail());
+
+        var response = await Rerun();
+
+        var alone = _world.Runner.Requests.Single(r => r.Cwd == GateTree && r.Argv.Contains("--filter-method", StringComparer.Ordinal));
+        var main = _world.Runner.Requests.Single(r => r.Cwd == MainTree && r.Argv.Contains("--filter-method", StringComparer.Ordinal));
+        Assert.False(alone.Isolated);
+        Assert.Equal(GatePriority.Scrubbed, alone.UnsetEnv);
+        Assert.Equal((alone.LogFile, main.LogFile), (response.AloneLog, response.MainLog));
+        Assert.EndsWith("-main.log", main.LogFile, StringComparison.Ordinal);
+        Assert.Contains(response.AloneLog!, response.Reason, StringComparison.Ordinal);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Each_test_is_classified_on_its_own()
     {
