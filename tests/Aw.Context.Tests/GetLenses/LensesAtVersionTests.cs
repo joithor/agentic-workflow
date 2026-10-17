@@ -46,6 +46,17 @@ public sealed class LensesAtVersionTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Twenty_five_copies_of_one_anchor_count_once_and_are_not_006()
+    {
+        _ = await _world.ImportYaml(MapWorld.TabsMap);
+
+        var view = await Set([.. Enumerable.Repeat(Manager, 25)]);
+
+        Assert.True(view.IsSuccess);
+        Assert.Equal([Manager], view.Value.Anchors.Select(a => a.Key.Value), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task GetLenses_at_mapVersion_reads_that_version_and_reports_it_in_mapVersion_and_searched()
     {
         var created = await TabsThenOther();
