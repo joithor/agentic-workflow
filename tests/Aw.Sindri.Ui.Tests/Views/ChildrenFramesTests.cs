@@ -69,9 +69,11 @@ public sealed class ChildrenFramesTests : FrameHost
         var parent = shell.Instance.Address;
         var child = shell.Instance.Children!.Groups.Single().Streams[0].Rows[0];
 
+        Assert.False(Named<Button>(window, "SheetBack").IsEffectivelyVisible);   // beside the page with no trail there is nothing to go back to
         Click(Buttons(window, "ChildRowOpen")[0]);
         await Until(window, () => shell.Instance.Address == child.Address);
         Assert.Equal((true, child.Id), (shell.IsInstanceSheet, Server.LastInstanceId));
+        Assert.True(Named<Button>(window, "SheetBack").IsEffectivelyVisible);   // at 1600 px too: a stacked frame has a way back (L4)
 
         Click(Named<Button>(window, "SheetBack"));
         await Until(window, () => shell.Instance.Address == parent && shell.Instance.Phase == FramePhase.Shown);
