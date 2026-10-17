@@ -103,7 +103,7 @@ else
   mkdir -p "$work"
   tree="$(mktemp -d "$work/tree.XXXXXX")"
   git -C "$SCRIPT_DIR" ls-files -z --cached --others --exclude-standard -- global.json nuget.config .editorconfig 'Directory.*' \
-    BannedSymbols.txt CodeMetricsConfig.txt src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction src/Aw.Analyzers src/Meta \
+    'BannedSymbols*.txt' CodeMetricsConfig.txt src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction src/Aw.Analyzers src/Meta \
     | (cd "$SCRIPT_DIR" && tar --null -T - -cf -) | tar -xf - -C "$tree"
   rid="$(dotnet --info | awk '/^ *RID:/ {print $2; exit}')"
   run=(dotnet publish "$tree/src/Meta/Aw.Meta.Host/Aw.Meta.Host.csproj" -c Release -r "$rid" -p:RestoreLockedMode=false -o "$tree/out")

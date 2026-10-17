@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.sql-is-constant
+kind: engineering
+section: "4b.2"
+text: "SQL command text is a constant or a reviewed literal, never built by concatenation or interpolation; values go in parameters."
+why: "Hand-written ADO.NET is where an honest mistake becomes SQL injection."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: analyzer
+    id: "CA2100"
+    severity: suggestion
+    status: active
+gap: open
+gapNote: "7 sites in src on main (Kernel.Data, Evidence); tests are out of scope (tests/.editorconfig turns it off). Set to suggestion until the cleanup PR (branch chore/style-cleanup) fixes the flagged sites and raises it to error; followed by hand until then."
+source:
+  type: desk
+  ref: "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca2100"
+status: active
