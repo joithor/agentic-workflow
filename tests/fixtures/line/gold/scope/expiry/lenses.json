@@ -410,35 +410,61 @@
       "foundCount": 5,
       "nodes": [
         {
-          "key": "surface:screen/note-editor",
-          "kind": "surface",
-          "label": "Note editor screen",
+          "key": "feature:audit-report",
+          "kind": "feature",
+          "label": "Audit report",
           "band": "product",
           "lensItem": "L-related-4",
-          "trust": "untrusted"
+          "trust": "untrusted",
+          "reach": {
+            "depth": 1,
+            "path": [
+              "surface:route/links-create",
+              "owns action:sharing.create-link",
+              "writes thing:audit-entry",
+              "reads action:audit.report"
+            ]
+          }
         },
         {
-          "key": "surface:screen/notes-list",
-          "kind": "surface",
-          "label": "Notes list screen",
+          "key": "feature:sharing",
+          "kind": "feature",
+          "label": "Public link sharing",
           "band": "product",
           "lensItem": "L-related-5",
-          "trust": "untrusted"
+          "trust": "untrusted",
+          "reach": {
+            "depth": 1,
+            "path": [
+              "surface:route/links-create",
+              "owns action:sharing.create-link",
+              "writes thing:shared-link",
+              "reads action:sharing.resolve-link"
+            ]
+          }
         }
       ],
       "edges": [
         {
-          "from": "surface:screen/notes-list",
-          "to": "surface:screen/note-editor",
-          "type": "moves-to",
+          "from": "surface:route/links-create",
+          "to": "feature:sharing",
+          "type": "part-of",
           "provenance": "deterministic",
           "confirmed": true,
           "trust": "untrusted"
         },
         {
-          "from": "surface:screen/note-editor",
-          "to": "surface:screen/share-dialog",
-          "type": "moves-to",
+          "from": "surface:route/link-resolve",
+          "to": "feature:sharing",
+          "type": "part-of",
+          "provenance": "deterministic",
+          "confirmed": true,
+          "trust": "untrusted"
+        },
+        {
+          "from": "surface:screen/share-dialog",
+          "to": "feature:sharing",
+          "type": "part-of",
           "provenance": "deterministic",
           "confirmed": true,
           "trust": "untrusted"

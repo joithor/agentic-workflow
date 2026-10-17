@@ -118,11 +118,11 @@
       "found": {
         "count": 5,
         "ids": [
-          "L-related-4",
-          "L-related-5",
           "L-related-1",
           "L-related-2",
-          "L-related-3"
+          "L-related-3",
+          "L-related-4",
+          "L-related-5"
         ]
       }
     },

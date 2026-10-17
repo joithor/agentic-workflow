@@ -372,22 +372,82 @@
         "component"
       ],
       "mapVersion": "v1",
-      "foundCount": 4,
+      "foundCount": 7,
       "nodes": [
         {
-          "key": "surface:screen/note-editor",
-          "kind": "surface",
-          "label": "Note editor screen",
+          "key": "feature:audit-report",
+          "kind": "feature",
+          "label": "Audit report",
           "band": "product",
           "lensItem": "L-related-4",
-          "trust": "untrusted"
+          "trust": "untrusted",
+          "reach": {
+            "depth": 1,
+            "path": [
+              "surface:route/notes-api",
+              "owns action:notes.delete",
+              "writes thing:audit-entry",
+              "reads action:audit.report"
+            ]
+          }
+        },
+        {
+          "key": "feature:digest",
+          "kind": "feature",
+          "label": "Email digest",
+          "band": "product",
+          "lensItem": "L-related-5",
+          "trust": "untrusted",
+          "reach": {
+            "depth": 1,
+            "path": [
+              "surface:route/notes-api",
+              "owns action:notes.delete",
+              "writes thing:note",
+              "reads action:digest.send"
+            ]
+          }
+        },
+        {
+          "key": "feature:export",
+          "kind": "feature",
+          "label": "Export",
+          "band": "product",
+          "lensItem": "L-related-6",
+          "trust": "untrusted",
+          "reach": {
+            "depth": 1,
+            "path": [
+              "surface:route/notes-api",
+              "owns action:notes.delete",
+              "writes thing:note",
+              "reads action:export.run"
+            ]
+          }
+        },
+        {
+          "key": "feature:sharing",
+          "kind": "feature",
+          "label": "Public link sharing",
+          "band": "product",
+          "lensItem": "L-related-7",
+          "trust": "untrusted",
+          "reach": {
+            "depth": 1,
+            "path": [
+              "surface:route/notes-api",
+              "owns action:notes.delete",
+              "writes thing:note",
+              "reads action:sharing.resolve-link"
+            ]
+          }
         }
       ],
       "edges": [
         {
-          "from": "surface:screen/notes-list",
-          "to": "surface:screen/note-editor",
-          "type": "moves-to",
+          "from": "surface:job/nightly",
+          "to": "feature:digest",
+          "type": "part-of",
           "provenance": "deterministic",
           "confirmed": true,
           "trust": "untrusted"

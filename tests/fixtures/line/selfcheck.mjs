@@ -127,6 +127,18 @@ const SCOPE_FILES = ["scope-map.json", "acceptance.json", "coverage.json", "lens
 const DESIGN_FILES = ["spec.md", "sections.json", "coverage.json", "decisions.json", "acceptance.json", "signals.json", "contracts.json", "lens-rounds.jsonl", "style.json", "escapes.json", "runs.json", "index.json"];
 const PLAN_FILES = ["packet.json", "graph.json", "exec-review.json", "holdout.json", "answers.jsonl", "index.json"];
 
+function parseMapEdges() {
+  const lines = readText(path.join(SCOPING, "map.yaml")).split("\n");
+  const out = [];
+  for (let i = lines.indexOf("edges:") + 1; i < lines.length; i++) {
+    let m = lines[i].match(/^  - \{from: "([^"]+)", to: "([^"]+)", type: ([\w-]+)\}/);
+    if (m) { out.push({ from: m[1], to: m[2], type: m[3] }); continue; }
+    m = lines[i].match(/^  - from: (\S+)/);
+    if (m) { const e = { from: m[1], to: "", type: "" }; for (let j = i + 1; j < lines.length && /^    /.test(lines[j]); j++) { const t = lines[j].match(/^    (to|type): (\S+)/); if (t) e[t[1]] = t[2]; } out.push(e); }
+  }
+  return out;
+}
+
 function run() {
   const allFiles = walk(HERE);
   // ---------------- extends the scoping fixture ----------------
@@ -188,11 +200,30 @@ function run() {
     ok(`${dir}: lenses.json agrees with coverage.json (SCP-LENS-001); hops are hop-kind arrays`, lensErr.length === 0, lensErr.join("; "));
     ok(`${dir}: a lens that found nothing says so (nothing-found)`, cov.lenses.every((r) => (r.found.count === 0) === (r.state === "nothing-found")));
     const rel = ln.lenses.find((l) => l.lens === "related");
-    const mustKeys = new Set(g.mustFind.map((m) => m.key));
-    const reachedNodes = rel.nodes.filter((n) => !mustKeys.has(n.key));
     const everyKey = new Set(ln.lenses.flatMap((l) => l.nodes.map((n) => n.key)));
-    ok(`${dir}: the lens results hold every scoping must-find graph key, plus 1-2 related nodes the cascade reaches`, g.mustFind.filter((m) => !m.key.startsWith("linear:") && !m.key.startsWith("commit:")).every((m) => everyKey.has(m.key)) && ln.lenses.reduce((n, l) => n + l.foundCount, 0) === g.mustFind.length + reachedNodes.length && reachedNodes.length >= 1 && reachedNodes.length <= 2, `${reachedNodes.length}`);
-    ok(`${dir}: related is a cascade lens (depth 2, all four hops, component last) and each node it reaches has an edge to an anchor or to another reached node`, rel.depth === 2 && JSON.stringify(rel.hops) === JSON.stringify(["state", "dependency", "flow", "component"]) && reachedNodes.every((n) => n.band === "product" && n.trust === "untrusted" && rel.edges.some((e) => (e.from === n.key && (rel.anchors.includes(e.to) || reachedNodes.some((x) => x.key === e.to))) || (e.to === n.key && (rel.anchors.includes(e.from) || reachedNodes.some((x) => x.key === e.from))))));
+    ok(`${dir}: the lens results hold every scoping must-find graph key, and the related lens adds what the cascade reaches`, g.mustFind.filter((m) => !m.key.startsWith("linear:") && !m.key.startsWith("commit:")).every((m) => everyKey.has(m.key)) && ln.lenses.reduce((n, l) => n + l.foundCount, 0) === g.mustFind.length + rel.nodes.length && rel.nodes.length >= 1, `${rel.nodes.length}`);
+    // what Cascade.Affects returns (Cascade.cs Steps and Ascend): a reached surface or action is reported as its owning feature
+    const mapEdges = parseMapEdges();
+    const inE = (n, t) => mapEdges.filter((e) => e.to === n && e.type === t), outE = (n, t) => mapEdges.filter((e) => e.from === n && e.type === t);
+    const ascendOf = (n) => { const sf = n.startsWith("action:") ? outE(n, "on")[0]?.to : n; if (!sf || !sf.startsWith("surface:")) return n; return outE(sf, "part-of").map((e) => e.to).find((x) => x.startsWith("feature:")) ?? n; };
+    const relErr = [];
+    for (const n of rel.nodes) {
+      const r = n.reach, p = r?.path ?? [];
+      const reads = p.filter((x) => x.startsWith("reads ")).map((x) => x.slice(6)), writes = p.filter((x) => x.startsWith("writes ")).map((x) => x.slice(7));
+      if (!mapKeys.has(n.key)) relErr.push(`${n.key}: not a map key`);
+      if (n.band !== "product" || n.trust !== "untrusted") relErr.push(`${n.key}: band or trust`);
+      if (!r || !(r.depth >= 1 && r.depth <= rel.depth)) relErr.push(`${n.key}: reach.depth`);
+      if (rel.anchors.includes(n.key)) relErr.push(`${n.key}: is an anchor, not a reached node`);
+      if (!rel.anchors.includes(p[0])) relErr.push(`${n.key}: path does not start at an anchor`);
+      if (writes.length !== reads.length || writes.length !== r?.depth) relErr.push(`${n.key}: a state hop is one writes and one reads; depth ${r?.depth}`);
+      const last = reads.at(-1);
+      if (last === undefined || ascendOf(last) !== n.key) relErr.push(`${n.key}: the last reader ${last} does not ascend to it`);
+      for (const w of writes) if (!mapEdges.some((e) => e.type === "writes" && e.to === w)) relErr.push(`${n.key}: no writes edge to ${w}`);
+      if (last && writes.length && !inE(writes.at(-1), "reads").some((e) => e.from === last)) relErr.push(`${n.key}: ${last} does not read ${writes.at(-1)}`);
+    }
+    const structure = ["part-of", "on", "reads", "writes", "step-of", "depends-on", "moves-to"];
+    ok(`${dir}: related is a cascade lens (depth 2, all four hops, component last); every node is a map key the cascade reaches from an anchor by a real state hop, with its depth and path; edges are structure edges among the reached nodes and the anchors`, rel.depth === 2 && JSON.stringify(rel.hops) === JSON.stringify(["state", "dependency", "flow", "component"]) && relErr.length === 0 && rel.edges.every((e) => structure.includes(e.type)), relErr.join("; "));
+    ok(`${dir}: coverage.json found ids are sorted numerically within each lens`, cov.lenses.every((r) => r.found.ids.every((id, i, a) => i === 0 || Number(a[i - 1].split("-").pop()) < Number(id.split("-").pop()))));
     const rounds = readJsonl(at("gold", dir, "rounds.jsonl"));
     ok(`${dir}/rounds.jsonl: a first round and one that adds the challenger's finding${c === "expiry" ? ", then the rescope" : ""}`, rounds[0].trigger === "first" && rounds[1].trigger === "found" && (c === "expiry" ? rounds[2]?.trigger === "rescope" : rounds.length === 2));
     const answersLog = readJsonl(at("gold", dir, "answers.jsonl"));

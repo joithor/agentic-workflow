@@ -218,7 +218,7 @@
       "denied": false
     },
     {
-      "ref": "surface:screen/note-editor",
+      "ref": "feature:audit-report",
       "trust": "untrusted",
       "version": "fixture",
       "fetchedAt": "2026-10-16T09:00:00Z",

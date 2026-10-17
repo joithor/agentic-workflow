@@ -111,17 +111,20 @@
       },
       "limits": [],
       "mapCoverage": {
-        "mapped": 1,
+        "mapped": 4,
         "new": 0,
         "unmapped": 0
       },
       "found": {
-        "count": 4,
+        "count": 7,
         "ids": [
-          "L-related-4",
           "L-related-1",
           "L-related-2",
-          "L-related-3"
+          "L-related-3",
+          "L-related-4",
+          "L-related-5",
+          "L-related-6",
+          "L-related-7"
         ]
       }
     },
