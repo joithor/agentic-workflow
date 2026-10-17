@@ -1,0 +1,4 @@
+M:System.Threading.Tasks.TaskCompletionSource.#ctor;Pass TaskCreationOptions.RunContinuationsAsynchronously so a completion never runs its continuations inline on the completing thread (engineering.csharp.tcs-runs-continuations-async)
+M:System.Threading.Tasks.TaskCompletionSource.#ctor(System.Object);Pass TaskCreationOptions.RunContinuationsAsynchronously so a completion never runs its continuations inline on the completing thread (engineering.csharp.tcs-runs-continuations-async)
+M:System.Threading.Tasks.TaskCompletionSource`1.#ctor;Pass TaskCreationOptions.RunContinuationsAsynchronously so a completion never runs its continuations inline on the completing thread (engineering.csharp.tcs-runs-continuations-async)
+M:System.Threading.Tasks.TaskCompletionSource`1.#ctor(System.Object);Pass TaskCreationOptions.RunContinuationsAsynchronously so a completion never runs its continuations inline on the completing thread (engineering.csharp.tcs-runs-continuations-async)
