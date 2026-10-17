@@ -1,14 +1,14 @@
-using Aw.Sindri.Core.Workflow.Recipes;
-using Aw.Sindri.Testing.Workflow;
+using Aw._sindri.Core.Workflow.Recipes;
+using Aw._sindri.Testing.Workflow;
 
-namespace Aw.Sindri.Tests.Workflow;
+namespace Aw._sindri.Tests.Workflow;
 
 /// <summary>The shipped block recipes (decision-tree recipes DT-R2): how they nest, and the two rules every parent and every route follows.</summary>
 public sealed class ShippedBlockRecipesTests
 {
-    private static readonly string[] Sindri = [.. ShippedRecipes.Recipes.Where(r => r.StartsWith("sindri/", StringComparison.Ordinal))];
+    private static readonly string[] _sindri = [.. ShippedRecipes.Recipes.Where(r => r.StartsWith("sindri/", StringComparison.Ordinal))];
 
-    public static TheoryData<string> Recipes => [.. Sindri];
+    public static TheoryData<string> Recipes => [.. _sindri];
 
     private static Recipe Read(string path) => RecipeComposition.ReadClean(ShippedRecipes.Read(path), Path.GetFileName(path)).Recipe;
 
@@ -34,7 +34,7 @@ public sealed class ShippedBlockRecipesTests
 
         foreach (var (name, state) in recipe.States.Where(s => s.Value.WaitFor?.Child is not null))
         {
-            var cancelled = recipe.Transitions.Where(t => t.From.Contains(name) && t.When?.Outcome?.Value == "cancelled").ToList();
+            var cancelled = recipe.Transitions.Where(t => t.From.Contains(name, StringComparer.Ordinal) && t.When?.Outcome?.Value == "cancelled").ToList();
 
             var line = Assert.Single(cancelled);
             Assert.Equal([name], line.From);
@@ -51,7 +51,7 @@ public sealed class ShippedBlockRecipesTests
         foreach (var (name, state) in recipe.States.Where(s => s.Value.Step?.Use.Value == "step.judge.choose"))
         {
             Assert.Contains(recipe.States.Values, s => s.Step?.Use.Value == "step.desk.choose" && s.Step.With.ContainsKey("from"));
-            Assert.Contains(recipe.Transitions, t => t.From.Contains(name) && t.On == "step.failed");
+            Assert.Contains(recipe.Transitions, t => t.From.Contains(name, StringComparer.Ordinal) && t.On == "step.failed");
         }
     }
 }

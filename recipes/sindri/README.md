@@ -15,7 +15,7 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 | `workflow.evidence-other` | phasePacket, built | evidenceSummary, evidenceReason | recorded / none-found |
 | `workflow.evidence-all` | phasePacket, built | evidenceSummary | done / failed, dropped |
 | `workflow.evidence` | phasePacket, built | evidenceSummary, decision | done / failed, dropped |
-| `workflow.review-loop` | change (payload), phasePacket | review | see the recipe |
+| `workflow.review-loop` | change (payload), phasePacket | review | clean / stuck, wrong (failed) |
 
 ## Rules every block recipe follows
 
