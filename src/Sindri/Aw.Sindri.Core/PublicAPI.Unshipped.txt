@@ -8319,15 +8319,18 @@ Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeV2.get -> bool
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeV2.init -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeVersion.get -> string?
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeVersion.init -> void
-Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ContainerRuntimeFacts(bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes, string? DataRoot) -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ContainerRuntimeFacts(bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes, string? DataRoot, string? OperatingSystem = null) -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DaemonAnswers.get -> bool
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DaemonAnswers.init -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DataRoot.get -> string?
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DataRoot.init -> void
-Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Deconstruct(out bool CliFound, out bool DaemonAnswers, out string? ServerVersion, out bool ComposeV2, out string? ComposeVersion, out long? MemoryBytes, out string? DataRoot) -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DataInVm.get -> bool
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Deconstruct(out bool CliFound, out bool DaemonAnswers, out string? ServerVersion, out bool ComposeV2, out string? ComposeVersion, out long? MemoryBytes, out string? DataRoot, out string? OperatingSystem) -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Equals(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? other) -> bool
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.MemoryBytes.get -> long?
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.MemoryBytes.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.OperatingSystem.get -> string?
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.OperatingSystem.init -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ServerVersion.get -> string?
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ServerVersion.init -> void
 Aw.Sindri.Core.Onyx.IContainerRuntime

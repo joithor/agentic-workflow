@@ -19,7 +19,7 @@ public sealed class OnyxStatusTests
         return (await service.Handle(new OnyxStatusRequest(), TestContext.Current.CancellationToken)).Value;
     }
 
-    private static async Task<OnyxStatusResponse> StatusWithDataRoot(bool onThisHost)
+    private static async Task<OnyxStatusResponse> StatusWithDataRoot(bool onThisHost, ContainerRuntimeFacts? docker = null)
     {
         var probes = new FakeHostProbes { FreeBytes = 100 * Gib };
         _ = probes.Directories.Add("/sindri-home");
@@ -29,15 +29,25 @@ public sealed class OnyxStatusTests
             probes.VolumeFreeBytes["/var/lib/docker"] = 12 * Gib;
         }
 
-        var service = new OnyxStatusService(new EmbeddedOnyxPins(), new FakeContainerRuntime(FakeContainerRuntime.Healthy), probes, new FakeSindriHome("/sindri-home"));
+        var service = new OnyxStatusService(new EmbeddedOnyxPins(), new FakeContainerRuntime(docker ?? FakeContainerRuntime.Healthy), probes, new FakeSindriHome("/sindri-home"));
 
         return (await service.Handle(new OnyxStatusRequest(), TestContext.Current.CancellationToken)).Value;
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Status_measures_a_data_root_that_is_a_directory_on_this_host()
+    public async Task Status_ignores_a_host_directory_of_the_data_root_name_when_docker_runs_in_a_vm()
     {
-        var status = await StatusWithDataRoot(onThisHost: true);
+        var status = await StatusWithDataRoot(onThisHost: true, FakeContainerRuntime.Healthy);   // Docker Desktop, and a /var/lib/docker with 12 GiB on this host
+
+        var disk = Assert.Single(status.Checks, static c => c.Name == "disk");
+        Assert.Equal(CheckState.Ok, disk.State);
+        Assert.Equal("100.0 GiB free at /sindri-home, needs 16.3 GiB; Docker's data lives in a VM here; its disk image size is capped separately (Docker Desktop: Settings → Resources)", disk.Detail);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Status_measures_a_native_engines_data_root()
+    {
+        var status = await StatusWithDataRoot(onThisHost: true, FakeContainerRuntime.NativeEngine);
 
         var disk = Assert.Single(status.Checks, static c => c.Name == "disk");
         Assert.Equal(CheckState.Fail, disk.State);

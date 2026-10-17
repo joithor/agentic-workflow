@@ -17,9 +17,9 @@ public sealed class DockerCliRuntimeContractTests : ContainerRuntimeContract
         {
             "version" => facts.DaemonAnswers ? new ToolRun(ToolOutcome.Exited, 0, facts.ServerVersion + "\n") : new ToolRun(ToolOutcome.Exited, 1, ""),
             "compose" => facts.ComposeV2 ? new ToolRun(ToolOutcome.Exited, 0, facts.ComposeVersion + "\n") : new ToolRun(ToolOutcome.Exited, 1, ""),
-            _ => facts.MemoryBytes is null && facts.DataRoot is null
+            _ => facts is { MemoryBytes: null, DataRoot: null, OperatingSystem: null }
                 ? new ToolRun(ToolOutcome.Exited, 1, "")
-                : new ToolRun(ToolOutcome.Exited, 0, facts.MemoryBytes?.ToString(System.Globalization.CultureInfo.InvariantCulture) + "|" + facts.DataRoot + "\n"),
+                : new ToolRun(ToolOutcome.Exited, 0, facts.MemoryBytes?.ToString(System.Globalization.CultureInfo.InvariantCulture) + "|" + facts.OperatingSystem + "|" + facts.DataRoot + "\n"),
         },
     }));
 }

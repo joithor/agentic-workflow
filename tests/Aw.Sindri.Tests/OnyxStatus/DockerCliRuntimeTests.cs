@@ -59,7 +59,7 @@ public sealed class DockerCliRuntimeTests
     public void Inspect_reports_compose_v1_only()
     {
         // Only legacy docker-compose (v1): `docker compose version` fails.
-        var facts = new DockerCliRuntime(Docker(Ok("29.4.0"), Fails, Ok("16818978816|/var/lib/docker"))).Inspect(Token);
+        var facts = new DockerCliRuntime(Docker(Ok("29.4.0"), Fails, Ok("16818978816|Docker Desktop|/var/lib/docker"))).Inspect(Token);
 
         Assert.True(facts.DaemonAnswers);
         Assert.False(facts.ComposeV2);
@@ -69,7 +69,7 @@ public sealed class DockerCliRuntimeTests
     [Fact, Trait("Lane", "unit")]
     public void Inspect_reads_memory_bytes()
     {
-        var facts = new DockerCliRuntime(Docker(Ok("29.4.0"), Ok("v2.40.3"), Ok("16818978816|/var/lib/docker"))).Inspect(Token);
+        var facts = new DockerCliRuntime(Docker(Ok("29.4.0"), Ok("v2.40.3"), Ok("16818978816|Docker Desktop|/var/lib/docker"))).Inspect(Token);
 
         Assert.Equal(16_818_978_816, facts.MemoryBytes);
         Assert.Equal("29.4.0", facts.ServerVersion);
@@ -79,7 +79,7 @@ public sealed class DockerCliRuntimeTests
     [Fact, Trait("Lane", "unit")]
     public void Inspect_reports_a_version_that_is_not_plain_text_as_unreadable_with_the_fact_still_true()
     {
-        var facts = new DockerCliRuntime(Docker(Ok("29.4.0\u001b[2J\u001b]0;pwned\a"), Ok("v2.40.3 \u001b[31m"), Ok("16818978816|/var/lib/docker"))).Inspect(Token);
+        var facts = new DockerCliRuntime(Docker(Ok("29.4.0\u001b[2J\u001b]0;pwned\a"), Ok("v2.40.3 \u001b[31m"), Ok("16818978816|Docker Desktop|/var/lib/docker"))).Inspect(Token);
 
         Assert.True(facts.DaemonAnswers);
         Assert.Null(facts.ServerVersion);
@@ -96,11 +96,11 @@ public sealed class DockerCliRuntimeTests
         Assert.Equal(16_818_978_816, facts.MemoryBytes);
     }
 
-    private static FakeToolRunner DockerWithInfo(string version, string memory, string dataRoot) => new((_, arguments) => arguments[0] switch
+    private static FakeToolRunner DockerWithInfo(string version, string memory, string dataRoot, string operatingSystem = "Docker Desktop") => new((_, arguments) => arguments[0] switch
     {
         "version" => Ok(version),
         "compose" => Ok("v2.40.3"),
-        _ => Ok(memory + "|" + dataRoot),
+        _ => Ok(memory + "|" + operatingSystem + "|" + dataRoot),
     });
 
     [Fact, Trait("Lane", "unit")]
@@ -114,7 +114,7 @@ public sealed class DockerCliRuntimeTests
             [
                 ["version", "--format", "{{.Server.Version}}"],
                 ["compose", "version", "--short"],
-                ["info", "--format", "{{.MemTotal}}|{{.DockerRootDir}}"],
+                ["info", "--format", "{{.MemTotal}}|{{.OperatingSystem}}|{{.DockerRootDir}}"],
             ],
             runner.Calls.Select(static c => c.Arguments));
         Assert.All(runner.Calls, static c => Assert.Equal("docker", c.FileName));
@@ -135,21 +135,34 @@ public sealed class DockerCliRuntimeTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("lots|/var/lib/docker", null, "/var/lib/docker")]
-    [InlineData("16818978816", null, null)]
-    [InlineData("16818978816|/srv/a|b", 16_818_978_816, "/srv/a|b")]
-    public void Inspect_guards_each_half_of_the_info_line_on_its_own(string info, long? memory, string? dataRoot)
+    [InlineData("lots|OrbStack|/var/lib/docker", null, "OrbStack", "/var/lib/docker")]
+    [InlineData("16818978816|OrbStack", null, null, null)]
+    [InlineData("16818978816|OrbStack|/srv/a|b", 16_818_978_816, "OrbStack", "/srv/a|b")]
+    [InlineData("16818978816||/var/lib/docker", 16_818_978_816, null, "/var/lib/docker")]
+    [InlineData("16818978816|Dock\u001b[2Jer|/var/lib/docker", 16_818_978_816, null, "/var/lib/docker")]
+    public void Inspect_guards_each_part_of_the_info_line_on_its_own(string info, long? memory, string? operatingSystem, string? dataRoot)
     {
         var facts = new DockerCliRuntime(Docker(Ok("29.4.0"), Ok("v2.40.3"), Ok(info))).Inspect(Token);
 
         Assert.Equal(memory, facts.MemoryBytes);
+        Assert.Equal(operatingSystem, facts.OperatingSystem);
         Assert.Equal(dataRoot, facts.DataRoot);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Inspect_reads_the_operating_system_of_this_boxs_runtime()
+    {
+        // `docker info --format '{{.OperatingSystem}}'` on an OrbStack box prints exactly "OrbStack".
+        var facts = new DockerCliRuntime(DockerWithInfo("29.4.0", "16818978816", "/var/lib/docker", "OrbStack")).Inspect(Token);
+
+        Assert.Equal("OrbStack", facts.OperatingSystem);
+        Assert.True(facts.DataInVm);
     }
 
     [Fact, Trait("Lane", "unit")]
     public void Inspect_does_not_ask_info_of_a_daemon_that_does_not_answer()
     {
-        var runner = Docker(Fails, Ok("v2.40.3"), Ok("16818978816|/var/lib/docker"));
+        var runner = Docker(Fails, Ok("v2.40.3"), Ok("16818978816|Docker Desktop|/var/lib/docker"));
 
         _ = new DockerCliRuntime(runner).Inspect(Token);
 
