@@ -330,6 +330,29 @@ public sealed class DockerCliRuntimeTests
         }
     }
 
+    [Fact, Trait("Lane", "integration")]
+    public void Every_compose_call_also_unsets_each_key_present_in_the_rendered_env_whatever_Sindri_wrote()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "aw-onyx-env-" + Guid.NewGuid().ToString("N"));
+        _ = Directory.CreateDirectory(directory);
+        try
+        {
+            var envFile = Path.Combine(directory, ".env");
+            File.WriteAllText(envFile, "# a comment\nPOSTGRES_PASSWORD=password\n\nexport REDIS_PASSWORD=x\nHOST_PORT=3000\nQUOTED=\"a=b\"\n");
+            var runner = new FakeToolRunner(Exit(0, "[]"));
+
+            _ = Cli(runner).Stop(_project with { EnvFile = envFile }, Token);
+
+            var environment = Assert.Single(runner.Calls).Environment!;
+            Assert.All(["POSTGRES_PASSWORD", "REDIS_PASSWORD", "QUOTED", "HOST_PORT", "COMPOSE_FILE"], name => Assert.True(environment.ContainsKey(name) && environment[name] is null, $"{name} was not stripped"));
+            Assert.DoesNotContain("a", environment.Keys, StringComparer.Ordinal);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void The_read_only_docker_calls_keep_the_environment_as_it_is()
     {
