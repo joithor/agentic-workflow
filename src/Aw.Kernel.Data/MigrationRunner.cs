@@ -261,7 +261,9 @@ public sealed class MigrationRunner(ISqliteConnectionFactory connections, TimePr
         var command = connection.CreateCommand();
         await using var commandScope = command.ConfigureAwait(false);
         command.Transaction = transaction;
+#pragma warning disable CA2100 // the callers pass the embedded, numbered migration scripts and fixed pragmas, never input
         command.CommandText = sql;
+#pragma warning restore CA2100
         _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 }

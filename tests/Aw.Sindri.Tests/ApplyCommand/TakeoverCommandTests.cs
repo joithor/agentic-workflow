@@ -107,7 +107,7 @@ public sealed class TakeoverCommandTests(DevServer server) : IClassFixture<DevSe
         var back = await served.Cli("handback", "T-63/step/1");
         var open = await served.Until("T-63/step/1", static v => v.Task is not null);
         Assert.True(back.Exit == 0, back.Stderr);
-        var left = Assert.IsType<DateTimeOffset>(open.Task!.TimeoutAt) - DateTimeOffset.UtcNow;
+        var left = Assert.IsType<DateTimeOffset>(open.Task!.TimeoutAt) - RealTime.NowOffset;
         Assert.InRange(left, _deskWait - TimeSpan.FromMinutes(5), _deskWait);
     }
 
