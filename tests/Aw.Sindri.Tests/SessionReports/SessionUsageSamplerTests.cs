@@ -3,7 +3,6 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Sessions;
-using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Features.SampleSessionUsage;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Views;
@@ -21,7 +20,7 @@ public sealed class SessionUsageSamplerTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private SessionUsageSampler Sampler() => new(_s.Liveness, new LaunchViews(_s.Views.Views), new Used(_used), _samples, _s.Views.Slice.Held, _s.Views.Slice.Store, _s.Views.Slice.Events, _s.Views.Slice.Clock);
+    private SessionUsageSampler Sampler() => new(_s.Liveness, new LaunchViews(_s.Views.Views), new Used(_used), _samples, _s.Events(), _s.Views.Slice.Clock);
 
     private async Task Running()
     {

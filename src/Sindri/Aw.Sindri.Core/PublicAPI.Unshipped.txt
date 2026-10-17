@@ -9978,3 +9978,4 @@ Aw.Sindri.Core.Launches.UsageSamples.Keep(System.Collections.Generic.IReadOnlySe
 Aw.Sindri.Core.Launches.UsageSamples.UsageSamples() -> void
 Aw.Sindri.Core.Launches.LaunchLiveness.Active() -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.LaunchId>!
 static Aw.Sindri.Core.Launches.LaunchRules.UsageEvery.get -> System.TimeSpan
+Aw.Sindri.Core.Launches.LaunchSessionEvents.Usage(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, string! item, int sample, long inputTokens, long outputTokens, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>>

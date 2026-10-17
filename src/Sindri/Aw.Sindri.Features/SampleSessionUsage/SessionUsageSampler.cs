@@ -1,8 +1,4 @@
-using Aw.Sindri.Core.Events;
-using Aw.Sindri.Core.Lease;
-using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Launches;
-using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Features.SampleSessionUsage;
 
@@ -15,19 +11,12 @@ namespace Aw.Sindri.Features.SampleSessionUsage;
 /// <param name="views">The 'launches' view: the session id, the agent and the item.</param>
 /// <param name="usage">The usage readers.</param>
 /// <param name="samples">The last totals.</param>
-/// <param name="held">The lease this process holds.</param>
-/// <param name="ledger">Appends the events.</param>
-/// <param name="events">Builds the entries.</param>
+/// <param name="events">Appends the sample.</param>
 /// <param name="clock">The time.</param>
-internal sealed class SessionUsageSampler(LaunchLiveness liveness, ILaunchViews views, ILaunchUsage usage, UsageSamples samples, HeldLease held, ILedgerStore ledger, EventFactory events, TimeProvider clock) : ISessionUsageSampler
+internal sealed class SessionUsageSampler(LaunchLiveness liveness, ILaunchViews views, ILaunchUsage usage, UsageSamples samples, LaunchSessionEvents events, TimeProvider clock) : ISessionUsageSampler
 {
     public async ValueTask<int> Sample(CancellationToken cancellationToken)
     {
-        if (held.Current is not { } grant)
-        {
-            return 0;
-        }
-
         var now = clock.GetUtcNow();
         var tracked = liveness.Active();
         samples.Keep(tracked.ToHashSet());
@@ -53,9 +42,8 @@ internal sealed class SessionUsageSampler(LaunchLiveness liveness, ILaunchViews 
                 continue;
             }
 
-            var number = (int)Math.Floor(Math.Max(0, ((now - (row.OutcomeAt ?? row.RequestedAt)) / LaunchRules.UsageEvery))) + 1;
-            var entry = events.Entry(EventTypes.SessionUsage, new SessionUsage(launch, number, input, output), $"{EventTypes.SessionUsage}:{launch.Value}:{number}", row.Item.Value);
-            if ((await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false)).IsSuccess)
+            var number = (int)Math.Floor(Math.Max(0, (now - (row.OutcomeAt ?? row.RequestedAt)) / LaunchRules.UsageEvery)) + 1;
+            if ((await events.Usage(launch, row.Item.Value, number, input, output, cancellationToken).ConfigureAwait(false)).IsSuccess)
             {
                 appended++;
             }
