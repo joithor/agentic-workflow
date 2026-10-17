@@ -36,8 +36,8 @@ internal static partial class McpEndpoint
     }
 
     /// <summary>
-    /// Before the caller middleware: an MCP request is always a session (API §6), so the caller, terminal, token and
-    /// client headers are replaced by 'X-Sindri-Client: mcp' and only X-Sindri-Repo is kept. MCP clients send no Origin,
+    /// Before the caller middleware: an MCP request is always a session (API §6), so every X-Sindri-* header is
+    /// dropped but X-Sindri-Repo, and 'X-Sindri-Client: mcp' is set. MCP clients send no Origin,
     /// so any Origin is refused here (403, SND-API-008), loopback ones included.
     /// </summary>
     /// <param name="app">The app.</param>
@@ -61,14 +61,19 @@ internal static partial class McpEndpoint
                 return;
             }
 
-            _ = headers.Remove(SindriHeaders.Caller);
-            _ = headers.Remove(SindriHeaders.Terminal);
-            _ = headers.Remove(SindriHeaders.Token);
+            foreach (var name in headers.Keys.Where(IsStripped).ToList())   // why: nothing but the repo may ride an MCP call (a launch secret, a read-your-writes sequence, a token)
+            {
+                _ = headers.Remove(name);
+            }
+
             headers[SindriHeaders.Client] = "mcp";
             await next(context).ConfigureAwait(false);
         });
         return app;
     }
+
+    private static bool IsStripped(string name) =>
+        name.StartsWith("X-Sindri-", StringComparison.OrdinalIgnoreCase) && !string.Equals(name, SindriHeaders.Repo, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Maps the endpoint.</summary>
     /// <param name="app">The app.</param>

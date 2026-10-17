@@ -161,12 +161,11 @@ In `tests/Aw.Sindri.Tests/ContextCalls`:
 
 ### Errors (S-1M range 021–029; 020 is S-1A's)
 
+021, 022 and 023 are the endpoint's own refusals, shared with the `sindri_*` tools: API P8 appended those rows to the tool table and moved the three codes to docs/csharp/sindri.md "MCP tools (API P8)".
+
 | Code | Kind | Surface | Meaning |
 |---|---|---|---|
 | `SND-CONTEXT-020` | Forbidden | MCP tool error | Session reads off (S-1A's code, mapped) |
-| `SND-CONTEXT-021` | Invalid | MCP tool error | The call has no `X-Sindri-Repo` |
-| `SND-CONTEXT-022` | Invalid | MCP tool error | An argument of the wrong type, or an unknown one |
-| `SND-CONTEXT-023` | NotFound | MCP tool error | Unknown tool |
 | `SND-CONTEXT-024` | Invalid | CLI exit 1 | `mcp register`: not a profile repo |
 | `SND-CONTEXT-025` | Unavailable | CLI exit 2 | `mcp register --apply`: claude couldn't run or failed |
 | `SND-CONTEXT-026` | Conflict | doctor `warn` | A user-wide `sindri` MCP entry in a provider's config |

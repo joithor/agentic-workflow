@@ -9,10 +9,10 @@ namespace Aw.Judge.Tests.Questions;
 public sealed class QuestionCatalogTests
 {
     [Fact]
-    public void The_catalog_holds_the_eight_questions()
+    public void The_catalog_holds_the_nine_questions()
     {
         Assert.Equal(
-            ["ask-check", "brief-scope", "resolution-check", "rule-check", "turn-progress", "ui-element-repair", "visual-critique", "wake-gate"],
+            ["ask-check", "brief-scope", "choose", "resolution-check", "rule-check", "turn-progress", "ui-element-repair", "visual-critique", "wake-gate"],
             QuestionCatalog.Names.Order(StringComparer.Ordinal),
             StringComparer.Ordinal);
     }
@@ -26,8 +26,17 @@ public sealed class QuestionCatalogTests
 
         var outcome = await evaluator.Ask(name, "{}", new EvaluationContext { Providers = [] }, CancellationToken.None);
 
-        Assert.Equal(new EscalatedOutcome("invalid-input"), outcome);
-        Assert.Equal(name, Assert.Single(log.Decisions).Question);
+        var row = Assert.Single(log.Decisions);
+        Assert.Equal(name, row.Question);
+        if (name == "choose")
+        {
+            // why: choose alone reports the decision id, and it is the recorded row's
+            Assert.Equal(new EscalatedOutcome("invalid-input") { Id = row.Id }, outcome);
+        }
+        else
+        {
+            Assert.Equal(new EscalatedOutcome("invalid-input"), outcome);
+        }
     }
 
     public static TheoryData<string> Names() => [.. QuestionCatalog.Names];

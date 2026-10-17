@@ -1,0 +1,10 @@
+{
+  "isError": true,
+  "structuredContent": {
+    "code": "SND-ITEM-404",
+    "message": "no item 'ITM-0000000000000000000000000000001d'"
+  },
+  "content": [
+    "SND-ITEM-404 no item 'ITM-0000000000000000000000000000001d'"
+  ]
+}

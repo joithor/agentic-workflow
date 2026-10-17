@@ -1,0 +1,16 @@
+schema: 1
+id: workflow.report
+version: 1
+description: "Block recipe: write the bug fix report (resolution.md) for a fixed or an unfixed bug alike. No pull request."
+inputs:
+  - { key: fact:issue, label: "Issue", type: text, kind: text }
+outputs:
+  - { key: fact:resolution, label: "Resolution report", type: text, from: write }
+initial: write
+states:
+  write:   { kind: active, step: step.report.write, timeout: { after: 4h, then: park },
+             next: "Write the resolution report for {item}, then complete this Step." }
+  written: { kind: terminal, outcome: resolved }
+transitions:
+  - { from: write, to: written, on: step.completed, when: { outcome: done }, produces: [fact:resolution] }
+evals: [evals/workflow.report/happy.jsonl]
