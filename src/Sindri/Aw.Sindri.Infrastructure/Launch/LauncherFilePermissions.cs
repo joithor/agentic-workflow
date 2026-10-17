@@ -24,7 +24,7 @@ internal static class LauncherFilePermissions
             warnings.Add($"{path} is group- or world-writable (fix: chmod go-w)");
         }
 
-        var parent = System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(path));
+        var parent = Path.GetDirectoryName(Path.GetFullPath(path));
         if (parent is not null && (File.GetUnixFileMode(parent) & Others) != UnixFileMode.None)
         {
             warnings.Add($"{parent} is group- or world-writable (fix: chmod go-w)");

@@ -35,12 +35,12 @@ public sealed class ManifestParityTests
     public void Every_fixture_file_is_in_the_manifest()
     {
         using var manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(SessionFixtures.Launcher, "manifest.json")));
-        var listed = manifest.RootElement.GetProperty("fixtures").EnumerateArray().Select(static f => f.GetProperty("file").GetString()!).ToHashSet(StringComparer.Ordinal);
+        var listed = manifest.RootElement.GetProperty("fixtures").EnumerateArray().Select(static f => f.GetProperty("file").GetString()).ToHashSet(StringComparer.Ordinal);
         var files = Directory.EnumerateFiles(SessionFixtures.Launcher, "*.json").Select(Path.GetFileName).Where(static f => f != "manifest.json");
 
         foreach (var file in files)
         {
-            Assert.Contains(file!, listed);
+            Assert.Contains(file, listed);
         }
     }
 }
