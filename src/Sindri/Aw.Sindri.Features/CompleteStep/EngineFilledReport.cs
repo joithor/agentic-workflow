@@ -3,9 +3,9 @@ using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
-using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Features.CompleteStep;
@@ -23,7 +23,7 @@ internal sealed class EngineFilledReport(BlockCatalog catalog, JsonSerializerOpt
 
     /// <summary>
     /// The refusal (SND-AUTH-002) for a non-human caller reporting on a human-only Step (DT spec §8.5, scoping-station spec W3): the
-    /// open task is this run's and <see cref="Aw.Sindri.Core.Workflow.Engine.HumanOnlySteps"/> says a human must report it.
+    /// open task is this run's and <see cref="HumanOnlySteps"/> says a human must report it.
     /// </summary>
     /// <param name="view">The instance as read.</param>
     /// <param name="request">The report.</param>
