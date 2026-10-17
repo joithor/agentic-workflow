@@ -9,9 +9,11 @@ internal sealed class StuckTable(FakeProcessTable inner) : IProcessTable, IDispo
 {
     private readonly ManualResetEventSlim _gate = new(initialState: false);
     private readonly HashSet<int> _stuck = [];
-    private int _reads;
+    public ReadSignal Tables { get; } = new();
 
-    public int Reads => Volatile.Read(ref _reads);
+    public ReadSignal Environments { get; } = new();
+
+    public int Reads => Tables.Count;
 
     public bool BlockReads { get; set; }
 
@@ -21,7 +23,7 @@ internal sealed class StuckTable(FakeProcessTable inner) : IProcessTable, IDispo
 
     public Result<IReadOnlyList<ProcessEntry>> Read(CancellationToken cancellationToken)
     {
-        _ = Interlocked.Increment(ref _reads);
+        Tables.Increment();
         if (BlockReads)
         {
             _ = _gate.Wait(TimeSpan.FromSeconds(10), CancellationToken.None);
@@ -34,6 +36,7 @@ internal sealed class StuckTable(FakeProcessTable inner) : IProcessTable, IDispo
     {
         if (_stuck.Contains(pid))
         {
+            Environments.Increment();
             _ = _gate.Wait(TimeSpan.FromSeconds(10), CancellationToken.None);
         }
 

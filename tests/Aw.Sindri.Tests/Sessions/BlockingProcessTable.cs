@@ -8,10 +8,13 @@ internal sealed class BlockingProcessTable : IProcessTable, IDisposable
 {
     private readonly ManualResetEventSlim _gate = new(initialState: false);
 
+    public ReadSignal Reads { get; } = new();
+
     public void Release() => _gate.Set();
 
     public Result<IReadOnlyList<ProcessEntry>> Read(CancellationToken cancellationToken)
     {
+        Reads.Increment();
         _ = _gate.Wait(TimeSpan.FromSeconds(10), CancellationToken.None);
         return Results.Success<IReadOnlyList<ProcessEntry>>([]);
     }

@@ -81,16 +81,19 @@ internal sealed partial class CollectSessionsService(SessionDiscovery discovery,
             .OrderBy(static s => s.Ref.ToString(), StringComparer.Ordinal),
     ];
 
-    /// <summary>A session whose process couldn't be classified this pass stays as it was: no 'gone' and no new 'appeared' (a never-seen one waits for a pass that can read it).</summary>
-    private List<ObservedSession> KeepUnknown(List<ObservedSession> sessions, IReadOnlyCollection<int> unknown)
+    /// <summary>
+    /// A process that couldn't be classified this pass (its environment was unreadable) is shown exactly as last pass showed it, whichever path built it this time: no 'gone',
+    /// no 'appeared', no lost lane or launch. One never shown before stays out until a pass can read it. A reused pid (other start ticks) inherits nothing.
+    /// </summary>
+    private List<ObservedSession> KeepUnknown(List<ObservedSession> sessions, IReadOnlyCollection<(int Pid, long StartTicks)> unknown)
     {
         if (unknown.Count == 0)
         {
             return sessions;
         }
 
-        var kept = memory.Previous.Values.Where(p => unknown.Contains(p.Pid) && !sessions.Exists(s => s.Ref == p.Ref));
-        return [.. sessions.Concat(kept).OrderBy(static s => s.Ref.ToString(), StringComparer.Ordinal)];
+        var kept = memory.Previous.Values.Where(p => unknown.Contains((p.Pid, p.StartTicks))).ToList();
+        return [.. sessions.Where(s => !unknown.Contains((s.Pid, s.StartTicks))).Concat(kept).OrderBy(static s => s.Ref.ToString(), StringComparer.Ordinal)];
     }
 
     private void KeepPrevious(List<SessionProblem> problems, DateTimeOffset now)

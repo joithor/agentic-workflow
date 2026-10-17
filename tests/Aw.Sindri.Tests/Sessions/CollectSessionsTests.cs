@@ -37,7 +37,7 @@ public sealed class CollectSessionsTests
     {
         ClaudeRuns();
         _ = _c.Records.With(LiveRecord());
-        var guarded = new SessionDiscovery(new ThrowingEnvironmentTable(_c.Fake), _c.Records, _c.Fleet, new Infrastructure.Launch.AgentCatalog(Agents), _c.Settings);
+        var guarded = new SessionDiscovery(new ThrowingEnvironmentTable(_c.Fake), _c.Records, _c.Fleet, new Infrastructure.Launch.AgentCatalog(Agents), _c.Settings, _c.Base.Clock);
 
         var found = await Task.Run(() => guarded.Discover(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken), TestContext.Current.CancellationToken);
 
@@ -208,19 +208,25 @@ public sealed class CollectSessionsTests
     {
         using var blocked = new BlockingSources();
         var c = new CollectorHarness(records: blocked, fleet: blocked);
+        var budget = TimeSpan.FromSeconds(1);
         _ = c.Fake.With(Proc(10, 1, "claude", argv0: "claude", ticks: 100), cwd: "/w/api");
 
-        var first = await c.Pass(TimeSpan.FromMilliseconds(500));
+        var first = c.Pass(budget);
+        await blocked.Records.Reached(1);
+        c.Base.Clock.Advance(budget);   // the records read is late
+        await blocked.Fleet.Reached(1);
+        c.Base.Clock.Advance(budget);   // so is the fleet read
+        var firstResponse = await first;
         _ = c.Fake.With(Proc(11, 1, "claude", argv0: "claude", ticks: 101), cwd: "/w/web");
-        var second = await c.Pass(TimeSpan.FromMilliseconds(500));
+        var secondResponse = await c.Pass(budget);   // both are still blocked: not started again, so there is nothing to wait for
         blocked.Release();
 
-        Assert.Equal((true, false, 1), (first.Good, first.Overran, first.Sessions));
-        Assert.Equal((true, false, 2), (second.Good, second.Overran, second.Sessions));
+        Assert.Equal((true, false, 1), (firstResponse.Good, firstResponse.Overran, firstResponse.Sessions));
+        Assert.Equal((true, false, 2), (secondResponse.Good, secondResponse.Overran, secondResponse.Sessions));
         var problems = c.Snapshot.Current!.Problems;
         Assert.Equal("claude-records,fleet-states", string.Join(',', problems.Select(static p => p.Source).Order(StringComparer.Ordinal)));
         Assert.All(problems, static p => Assert.Equal("SND-SESSION-001", p.Code));
-        Assert.Equal((1, 1), (blocked.RecordReads, blocked.FleetReads));   // the second pass didn't start them again
+        Assert.Equal((1, 1), (blocked.RecordReads, blocked.FleetReads));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -228,8 +234,12 @@ public sealed class CollectSessionsTests
     {
         using var blocking = new BlockingProcessTable();
         var c = new CollectorHarness(processes: blocking);
+        var budget = TimeSpan.FromSeconds(1);
 
-        var response = await c.Pass(TimeSpan.FromMilliseconds(50));
+        var pass = c.Pass(budget);
+        await blocking.Reads.Reached(1);
+        c.Base.Clock.Advance(budget);
+        var response = await pass;
         blocking.Release();
 
         Assert.Equal((false, true), (response.Good, response.Overran));

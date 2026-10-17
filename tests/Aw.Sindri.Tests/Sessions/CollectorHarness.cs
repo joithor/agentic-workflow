@@ -14,7 +14,7 @@ internal sealed class CollectorHarness
         Settings = settings ?? SessionSettings.Defaults;
         Processes = processes ?? Fake;
         var catalog = new AgentCatalog(SessionData.Agents);
-        Discovery = new SessionDiscovery(Processes, records ?? Records, fleet ?? Fleet, catalog, Settings);
+        Discovery = new SessionDiscovery(Processes, records ?? Records, fleet ?? Fleet, catalog, Settings, Base.Clock);
         var repos = new SessionRepos(Locator, Base.Profiles, Base.Clock);
         Observer = new SessionObserver(Transcripts, scrubber ?? new PassThroughScrubber(), repos);
         Service = new CollectSessionsService(Discovery, Observer, Memory, Snapshot, Base.Clock, logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<CollectSessionsService>.Instance);
