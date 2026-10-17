@@ -10,7 +10,7 @@
 #
 # --providers defaults to every provider whose CLI is installed
 # (`claude`, `codex`, `cursor-agent`/`cursor`). Shared steps (scorer/judge,
-# Serena image, external pack clone, rtk, headroom) run once;
+# Serena image, external pack clone, rtk) run once;
 # per-provider steps live in providers/<name>/install.sh.
 #
 # State stays under ~/.agentic-workflow (kept for compatibility):
@@ -553,87 +553,24 @@ else
   echo "  rtk: installed"
 fi
 
-# --- headroom ---
-echo ""
-echo "=== Installing headroom ==="
-
-# headroom-ai requires Python >= 3.10; pick the newest one on PATH, including
-# unversioned `python3` (e.g. a Homebrew or pyenv 3.14 install).
-_aw_find_python() {
-  HEADROOM_PYTHON=""
-  local _best_minor=-1 _py _minor
-  for _py in python3.14 python3.13 python3.12 python3.11 python3.10 python3 python; do
-    command -v "$_py" &>/dev/null || continue
-    _minor=$("$_py" -c "import sys; print(sys.version_info.minor if sys.version_info.major == 3 else -1)" 2>/dev/null)
-    case "$_minor" in ''|*[!0-9-]*) continue ;; esac
-    if [ "$_minor" -ge 10 ] && [ "$_minor" -gt "$_best_minor" ]; then
-      HEADROOM_PYTHON="$_py"
-      _best_minor="$_minor"
-    fi
-  done
-}
-_aw_find_python
-if [ -z "$HEADROOM_PYTHON" ] && ! command -v headroom &>/dev/null; then
-  echo "Installing Python 3.10+ (required for headroom-ai)..."
-  aw_sys_install python3 pip || { echo "FATAL: Python could not be installed (see above)."; exit 1; }
-  _aw_find_python
-fi
-
-HEADROOM_CMD=""
-if command -v headroom &>/dev/null; then
-  HEADROOM_CMD="$(command -v headroom)"
-  echo "  headroom: already installed ($(headroom --version 2>/dev/null || echo 'unknown version'))"
-elif [ -z "$HEADROOM_PYTHON" ]; then
-  if aw_dry; then
-    echo "  WARN: Python 3.10+ not found (a real run would stop here); headroom MCP skipped"
-  else
-    echo "FATAL: Python 3.10+ is required for headroom-ai, and the one the package manager installed is older."
-    echo "  Install Python 3.10 or newer, then re-run setup.sh."
-    exit 1
-  fi
-else
-  # Derive user-install bin dir (e.g. ~/Library/Python/3.13/bin on macOS)
-  HEADROOM_BIN="$("$HEADROOM_PYTHON" -m site --user-base 2>/dev/null)/bin/headroom"
-  if [ -x "$HEADROOM_BIN" ]; then
-    echo "  headroom: already installed at $HEADROOM_BIN ($("$HEADROOM_BIN" --version 2>/dev/null || echo 'unknown version'))"
-  elif aw_dry; then
-    echo "  [dry-run] would run: $HEADROOM_PYTHON -m pip install --user 'headroom-ai[all]'"
-  else
-    # On Debian/Ubuntu, pip may not be bundled — try ensurepip bootstrap first
-    if ! "$HEADROOM_PYTHON" -m pip --version &>/dev/null; then
-      "$HEADROOM_PYTHON" -m ensurepip --user 2>/dev/null \
-        || { echo "Installing pip for $HEADROOM_PYTHON..."; aw_sys_install pip && "$HEADROOM_PYTHON" -m pip --version &>/dev/null; } \
-        || { echo "FATAL: pip is not installed for $HEADROOM_PYTHON and could not be installed (see above)."; exit 1; }
-    fi
-    "$HEADROOM_PYTHON" -m pip install --break-system-packages --user "headroom-ai[all]" 2>/dev/null \
-      || "$HEADROOM_PYTHON" -m pip install --user "headroom-ai[all]" \
-      || { echo "FATAL: headroom installation failed."; exit 1; }
-    [ -x "$HEADROOM_BIN" ] || { echo "FATAL: headroom binary not found after installation at $HEADROOM_BIN."; exit 1; }
-    echo "  headroom: installed"
-  fi
-  # Use full path when headroom is not on PATH (common after --user install)
-  HEADROOM_CMD="$HEADROOM_BIN"
-fi
-
 # --- MCP server catalog (registered with every selected provider) ---
 PRISM_VERSION="20.21.17"       # pin: bump here when upgrading (5.1.0 hung on MCP initialize)
 XCODEBUILDMCP_VERSION="2.3.0"  # pin: bump here when upgrading (keep config/mcp.json in sync)
 
 AW_MCP_SERVERS="$(jq -nc \
   --arg serena "$HOME/.local/bin/serena-docker" \
-  --arg headroom "$HEADROOM_CMD" \
   --arg prism "prism-mcp-server@$PRISM_VERSION" \
   --arg xcode "xcodebuildmcp@$XCODEBUILDMCP_VERSION" \
   --arg darwin "$([ "$(uname)" = "Darwin" ] && echo 1 || echo 0)" '
   [ {name: "serena", command: $serena, args: []},
-    (if $headroom != "" then {name: "headroom", command: $headroom, args: ["mcp", "serve"]} else empty end),
     {name: "prism-mcp", command: "npx", args: ["-y", $prism], env: {PRISM_DASHBOARD_PORT: "7180"}},
     (if $darwin == "1" then {name: "xcodebuildmcp", command: "npx", args: ["-y", $xcode, "mcp"]} else empty end)
   ]')"
 export AW_MCP_SERVERS
 # Servers the toolkit no longer ships: each provider removes them from an existing install (agentic-bridge, the MCP
-# bridge, retired 2026-10-10: never used; the ledger and judge's outbox carry agent handoffs).
-AW_MCP_RETIRED="agentic-bridge"
+# bridge, retired 2026-10-10: never used; the ledger and judge's outbox carry agent handoffs; headroom, the content
+# compression server, retired 2026-10-18: about 4.2 GB of RAM per Claude session).
+AW_MCP_RETIRED="agentic-bridge headroom"
 export AW_MCP_RETIRED
 # The bridge package itself: after the pull only its ignored output (dist, node_modules, bridge.db) is left.
 aw_remove_retired_dir "$SCRIPT_DIR" mcp-bridge
