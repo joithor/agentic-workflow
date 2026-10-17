@@ -17,7 +17,7 @@ public static class McpFenceReader
     public static JsonElement Unfence(JsonElement fenced)
     {
         using var stream = new MemoryStream();
-        using (var writer = new Utf8JsonWriter(stream))
+        using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }))
         {
             Write(fenced, writer);
         }
