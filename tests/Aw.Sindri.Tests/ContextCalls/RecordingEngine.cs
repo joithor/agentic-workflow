@@ -18,14 +18,17 @@ namespace Aw.Sindri.Tests.ContextCalls;
 /// Wraps the host's real context engine and records, for each query, the engine caller Sindri built and the span the call
 /// ran inside, so a test can show an MCP call took the same query chain as the HTTP route.
 /// </summary>
-internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller Caller, string? Span)> calls) : IContextEngine
+internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller Caller, string? Span)> calls, Func<Context.Core.Eval.Backtest.BacktestRequest, CancellationToken, ValueTask<Result<Context.Core.Eval.Backtest.BacktestRun>>>? backtest = null) : IContextEngine
 {
     /// <summary>Replaces the registered engine with one that records into <paramref name="calls"/>.</summary>
-    public static void Install(IServiceCollection services, List<(ContextCaller Caller, string? Span)> calls)
+    /// <param name="services">The host's services.</param>
+    /// <param name="calls">Receives each recorded call.</param>
+    /// <param name="backtest">Answers EvalBacktest instead of the real engine (a backtest needs a git history and a brief source), or null.</param>
+    public static void Install(IServiceCollection services, List<(ContextCaller Caller, string? Span)> calls, Func<Context.Core.Eval.Backtest.BacktestRequest, CancellationToken, ValueTask<Result<Context.Core.Eval.Backtest.BacktestRun>>>? backtest = null)
     {
         var original = services.Last(d => d.ServiceType == typeof(IContextEngine));
         _ = services.Remove(original);
-        services.Add(new ServiceDescriptor(typeof(IContextEngine), sp => new RecordingEngine(Resolve(original, sp), calls), original.Lifetime));
+        services.Add(new ServiceDescriptor(typeof(IContextEngine), sp => new RecordingEngine(Resolve(original, sp), calls, backtest), original.Lifetime));
     }
 
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) => inner.CheckSettings(section, repos);
@@ -57,6 +60,15 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
 
     public ValueTask<Result<ProbeRun>> EvalProbes(string? file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, CancellationToken cancellationToken) =>
         inner.EvalProbes(file, ask, cancellationToken);
+
+    public ValueTask<Result<Context.Core.Eval.Backtest.BacktestRun>> EvalBacktest(Context.Core.Eval.Backtest.BacktestRequest request, CancellationToken cancellationToken) =>
+        backtest is null ? inner.EvalBacktest(request, cancellationToken) : backtest(request, cancellationToken);
+
+    public ValueTask<Result<Context.Core.Eval.MapQuality.MapQualityRun>> EvalMap(Context.Core.Eval.MapQuality.MapQualityRequest request, CancellationToken cancellationToken) =>
+        inner.EvalMap(request, cancellationToken);
+
+    public ValueTask<Result<Context.Core.Eval.Backtest.EvalPurgeReport>> EvalPurge(Context.Core.Eval.MapQuality.EvalPurgeRequest request, CancellationToken cancellationToken) =>
+        inner.EvalPurge(request, cancellationToken);
 
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => inner.ShowNode(key, scope, cancellationToken);
 

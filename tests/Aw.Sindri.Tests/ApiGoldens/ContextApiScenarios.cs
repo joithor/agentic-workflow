@@ -35,6 +35,7 @@ internal static class ContextApiScenarios
         ("context-lenses", "unknown-anchor-003", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Atabs.nope", ct)),
         ("context-lenses", "ambiguous-037", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=Layout", ct)),
         ("context-lenses", "no-draft-044", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&draft=true", ct)),
+        ("context-eval", "map-tabs", async (s, ct) => await s.Fetch("/sindri/context/eval/map", ct)),
         ("context-filemap", "root", async (s, ct) => await s.Fetch($"/sindri/context/filemap?repo={Repo}", ct)),
         ("context-filemap", "src", async (s, ct) => await s.Fetch($"/sindri/context/filemap?repo={Repo}&path=src/", ct)),
         ("context-filemap", "src-tabs", async (s, ct) => await s.Fetch($"/sindri/context/filemap?repo={Repo}&path=src/tabs/", ct)),

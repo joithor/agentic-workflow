@@ -21,9 +21,9 @@ internal static class OnyxIndex
 
     public static IReadOnlyList<OnyxDocument> Documents => _documents.Value;
 
-    public static JsonArray Search(OnyxSearchRequest request)
+    public static JsonArray Search(OnyxSearchRequest request, IReadOnlyList<OnyxDocument> documents)
     {
-        var candidates = Documents.Where(d => Matches(d, request)).ToList();
+        var candidates = documents.Where(d => Matches(d, request)).ToList();
         if (request.Query.Trim().Length == 0)
         {
             // Onyx answers an empty query with random_retrieval; the fake keeps it deterministic (document id order).
@@ -40,6 +40,28 @@ internal static class OnyxIndex
             .Take(OnyxSearchRequest.MaxHits)
             .Select(h => Hit(h.Document, h.Score, h.Chunk, terms));
         return [.. hits];
+    }
+
+    /// <summary>A synthetic Linear issue as the connector records it: the search doc (identifier '[KEY] title', link, created_at in metadata) and its chunks.</summary>
+    /// <param name="issue">The issue.</param>
+    /// <returns>The document.</returns>
+    public static OnyxDocument From(SyntheticIssue issue)
+    {
+        var doc = new JsonObject
+        {
+            ["document_id"] = issue.Id,
+            ["semantic_identifier"] = $"[{issue.Key}] {issue.Title}",
+            ["link"] = "https://linear.app/fixture-labs/issue/" + issue.Key,
+            ["blurb"] = issue.Chunks[0],
+            ["source_type"] = "linear",
+            ["boost"] = 0,
+            ["hidden"] = false,
+            ["metadata"] = new JsonObject { ["team"] = "Split Panes", ["state"] = "Done", ["created_at"] = issue.CreatedAt.UtcDateTime.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture) },
+            ["updated_at"] = issue.UpdatedAt.ToString("yyyy-MM-dd'T'HH:mm:sszzz", CultureInfo.InvariantCulture),
+            ["primary_owners"] = new JsonArray("Avery Fixture"),
+            ["secondary_owners"] = new JsonArray("Avery Fixture"),
+        };
+        return new OnyxDocument(issue.Id, $"[{issue.Key}] {issue.Title}", "linear", issue.UpdatedAt, doc, issue.Chunks);
     }
 
     public static IEnumerable<string> Terms(string text) =>

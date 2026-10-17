@@ -73,6 +73,17 @@ public sealed class ContextReviewRowsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Run_context_backtest_is_a_ready_job_row_for_the_backtest_request()
+    {
+        var backtest = Row("RunContextBacktest");
+
+        Assert.Equal((ActionClass.Job, "ready", "POST", "/sindri/context/eval/backtest"), (backtest.Class, backtest.Ui, backtest.Method, backtest.Route));
+        Assert.Equal(typeof(RunContextBacktestRequest), backtest.CommandType);
+        Assert.Equal("sindri context eval backtest", backtest.Cli.Text);
+        Assert.False(Table.Decide(backtest.Class, A.Caller().Session().Build(), backtest).Allowed);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Sync_sources_is_a_ready_job_row_for_the_sync_request()
     {
         var sync = Row("SyncSources");

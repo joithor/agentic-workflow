@@ -1,4 +1,6 @@
 using Aw.Context.Core.Eval;
+using Aw.Context.Core.Eval.Backtest;
+using Aw.Context.Core.Eval.MapQuality;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
@@ -8,11 +10,14 @@ using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
+using Aw.Context.Features.Adjudicate;
 using Aw.Context.Features.ApplyReviewFile;
 using Aw.Context.Features.BuildMap;
 using Aw.Context.Features.CheckMap;
 using Aw.Context.Features.CheckRetention;
+using Aw.Context.Features.EvalMap;
 using Aw.Context.Features.EvalProbes;
+using Aw.Context.Features.EvalPurge;
 using Aw.Context.Features.ExportMap;
 using Aw.Context.Features.ExportReview;
 using Aw.Context.Features.FindPath;
@@ -31,6 +36,7 @@ using Aw.Context.Features.RefreshDocs;
 using Aw.Context.Features.ReviewHistory;
 using Aw.Context.Features.ReviewMap;
 using Aw.Context.Features.ReviewQueue;
+using Aw.Context.Features.RunBacktest;
 using Aw.Context.Features.ShowMapStatus;
 using Aw.Context.Features.ShowNode;
 using Aw.Context.Features.SourcesStatus;
@@ -52,10 +58,16 @@ public static class ContextFeaturesServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         services.TryAddSingleton<ILabeler, DisabledLabeler>();   // a host that sets up labeling (AddContextLabeling) replaces it
         services.TryAddSingleton<IHeavyJobLock, UnconfiguredHeavyJobLock>();   // a host that wires the box-wide lock replaces it
+        services.TryAddSingleton<UnconfiguredBacktest>();   // hosts that wire the backtest ports (Infrastructure) replace these
+        services.TryAddSingleton<IBriefSource>(sp => sp.GetRequiredService<UnconfiguredBacktest>());
+        services.TryAddSingleton<IMergeHistory>(sp => sp.GetRequiredService<UnconfiguredBacktest>());
+        services.TryAddSingleton<IAsOfDocs>(sp => sp.GetRequiredService<UnconfiguredBacktest>());
+        services.TryAddSingleton<IEvalStore>(sp => sp.GetRequiredService<UnconfiguredBacktest>());
         return services.AddContextSlices();
     }
 
     private static IServiceCollection AddContextSlices(this IServiceCollection services) => services
+        .AddBacktest()
         .AddScoped<IService<QueryContextRequest, ContextResult>, QueryContextService>()
         .AddScoped<IService<SourcesStatusRequest, SourcesView>, SourcesStatusService>()
         .AddScoped<IService<RefreshDocsRequest, RefreshReport>, RefreshDocsService>()
@@ -72,7 +84,6 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<ShowNodeRequest, NodeView>, ShowNodeService>()
         .AddScoped<IService<ListNeighborsRequest, NeighborsView>, ListNeighborsService>()
         .AddScoped<IService<FindPathRequest, PathView>, FindPathService>()
-        .AddScoped<IService<EvalProbesRequest, ProbeRun>, EvalProbesService>()
         .AddScoped<IService<BuildMapRequest, MapBuildReport>, BuildMapService>()
         .AddScoped<IService<ReviewQueueRequest, ReviewQueueView>, ReviewQueueService>()
         .AddScoped<IService<ReviewHistoryRequest, ReviewHistoryView>, ReviewHistoryService>()
@@ -94,4 +105,18 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IContextGraph>(static sp => sp.GetRequiredService<ContextGraph>())
         .AddScoped<IContextLenses>(static sp => sp.GetRequiredService<ContextGraph>())
         .AddScoped<IContextEngine, ContextEngine>();
+
+    private static IServiceCollection AddBacktest(this IServiceCollection services) => services
+        .AddScoped<IService<EvalProbesRequest, ProbeRun>, EvalProbesService>()
+        .AddScoped<IService<BacktestRequest, BacktestRun>, RunBacktestService>()
+        .AddScoped<IService<MapQualityRequest, MapQualityRun>, EvalMapService>()
+        .AddScoped<IService<EvalPurgeRequest, EvalPurgeReport>, EvalPurgeService>()
+        .AddScoped<ContextEval>()
+        .AddScoped<QueryPipeline>()
+        .AddScoped<IArmQuery, ArmQuery>()
+        .AddScoped<AsOfMapBuilder>()
+        .AddScoped<ArmRunner>()
+        .AddScoped<CorpusLoader>()
+        .AddScoped<IAdjudicator, Adjudicator>()
+        .AddScoped<SampleScorer>();
 }
