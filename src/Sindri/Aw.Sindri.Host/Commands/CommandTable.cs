@@ -67,7 +67,6 @@ internal static class CommandTable
         var verbs = new Verbs(client, probe, output, services);
         using var interrupt = Interrupt.For(args);   // Ctrl-C ends 'workflow events --follow' with exit 0; no other verb listens
         var ct = interrupt.Token;
-        var harnesses = new ProbeCommands(services.GetRequiredService<IProcessAncestry>(), services.GetRequiredService<IHarnessVersions>(), environment, Interactive());
         return args switch
         {
             // ---- verbs: one arm per verb ----
@@ -81,12 +80,13 @@ internal static class CommandTable
                 .Approve(a.Hash, Interactive(), Console.In, ct).ConfigureAwait(false),
             ["views", "rebuild", .. var rest] when NoStart(rest) is { } noStart => await new Verbs(client, probe, output, services, c => start.EnsureRunning(!noStart, c))
                 .RebuildViews(ct).ConfigureAwait(false),
+            ["open", .. var rest] => await new OpenCommand(client, output, start.EnsureRunning, services.GetRequiredService<TimeProvider>()).Run(rest, ct).ConfigureAwait(false),
             ["queue" or "items" or "item", ..] => await new ItemVerbs(client, output, (launch, c) => start.EnsureRunning(launch, c)).Run(args, ct).ConfigureAwait(false),
             ["request" or "requests" or "decisions" or "decide" or "needs-you", ..] => await new RequestVerbs(client, output, (launch, c) => start.EnsureRunning(launch, c)).Run(args, ct).ConfigureAwait(false),
             ["ledger", .. var rest] => await new LedgerVerbs(client, output, (launch, c) => start.EnsureRunning(launch, c)).Run(rest, ct).ConfigureAwait(false),
             ["services" or "jobs", ..] => await JobCommands.Run(args, (client, output), start.EnsureRunning, services.GetRequiredService<TimeProvider>(), (ct, interrupt.Again)).ConfigureAwait(false),
             ["launch", .. var rest] => await new LaunchVerbs(services.GetRequiredService<ILaunchSetup>(), output).Run(rest, ct).ConfigureAwait(false),
-            ["doctor", ..] => await Doctor(args, verbs, harnesses, output, ct).ConfigureAwait(false),
+            ["doctor", ..] => await Doctor(args, verbs, Harnesses(services, environment), output, ct).ConfigureAwait(false),
             ["mcp", .. var rest] => await new McpVerbs(services, output, session).Run(rest, ct).ConfigureAwait(false),
             ["context", ..] => await Context(args, client, output, services, (ct, interrupt.Again)).ConfigureAwait(false),
             ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
@@ -97,6 +97,9 @@ internal static class CommandTable
             _ => await UnknownVerb(args, output).ConfigureAwait(false),
         };
     }
+
+    private static ProbeCommands Harnesses(IServiceProvider services, Func<string, string?> environment) =>
+        new(services.GetRequiredService<IProcessAncestry>(), services.GetRequiredService<IHarnessVersions>(), environment, Interactive());
 
     /// <summary>'sindri doctor [--json]' and 'sindri doctor --probe [--harness NAME] [--json]'.</summary>
     private static async Task<int> Doctor(string[] args, Verbs verbs, ProbeCommands harnesses, Output output, CancellationToken ct) =>
