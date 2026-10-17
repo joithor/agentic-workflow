@@ -37,6 +37,12 @@ internal static class ReportAssembly
             notes.Add(string.Create(CultureInfo.InvariantCulture, $"SND-CONTEXT-011: {left.SourceDown} sample(s) dropped because the brief source was unavailable (fix: sindri context sources status)"));
         }
 
+        if (collected.WithoutClusters > 0)
+        {
+            notes.Add(string.Create(CultureInfo.InvariantCulture,
+                $"clusters unavailable: {collected.WithoutClusters} of {collected.Kept.Count} sample maps were built without clusters, so the map-reading arms ran on thinner maps (fix: install graphify, or sindri doctor)"));
+        }
+
         if (collected.AdjudicationCapped)
         {
             notes.Add("SND-CONTEXT-083: adjudication stopped at the 1.5M-token cap; the rest are unjudged and adjudicated precision is not measured");
@@ -44,7 +50,7 @@ internal static class ReportAssembly
 
         if (collected.AdjudicationError is { } code)
         {
-            notes.Add($"adjudication incomplete ({code}): the model could not answer, so the surfaces are unjudged and adjudicated precision is not measured; no further model call was made");
+            notes.Add($"{code}: adjudication incomplete: the model could not answer, so the surfaces are unjudged and adjudicated precision is not measured; no further model call was made");
         }
 
         return notes;

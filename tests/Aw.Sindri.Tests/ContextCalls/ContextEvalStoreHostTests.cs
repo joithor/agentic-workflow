@@ -21,7 +21,7 @@ public sealed class ContextEvalStoreHostTests : IDisposable
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static BacktestReport Backtest() => new(1, _now, "all", 5, SmallSample: true, 1.0, new LeftOut(1, 0, 0, ["SPL-106"]), [], [], Verdicts.OwnerDecision, ["clusters unavailable"]);
+    private static BacktestReport Backtest() => new(1, _now, "all", 5, SmallSample: true, 1.0, new LeftOut(1, 0, 0, ["SPL-106"]), [], [], Verdicts.OwnerDecision, ["clusters unavailable: 1 of 5 sample maps were built without clusters, so the map-reading arms ran on thinner maps (fix: install graphify, or sindri doctor)"]);
 
     private static MapQualityReport Quality() => new(1, _now, "v1", new Ratio(4, 5), new Ratio(3, 3), new Ratio(1, 2), new Ratio(2, 2), 0, new Ratio(1, 10), "2026-04-30..2026-07-29", ["node precision >= 0.80: met"]);
 

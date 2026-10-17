@@ -68,7 +68,7 @@
     "passLine": "owner decision needed (small sample)",
     "report": "<home>/context/eval/backtest/20260101T000000Z.json",
     "degraded": [
-      "clusters unavailable"
+      "clusters unavailable: 1 of 5 sample maps were built without clusters, so the map-reading arms ran on thinner maps (fix: install graphify, or sindri doctor)"
     ]
   },
   "cancelledBy": null,

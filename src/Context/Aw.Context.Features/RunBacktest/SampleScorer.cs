@@ -17,7 +17,7 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
     /// <param name="world">The call's settings, repos and scrubbers.</param>
     /// <param name="loaded">The corpus.</param>
     /// <param name="cancellationToken">Cancels the run; the exception propagates and no report is written.</param>
-    /// <returns>The scores, or SND-CONTEXT-011 when no brief could be read at all.</returns>
+    /// <returns>The scores; SND-CONTEXT-080 with the drop counts when every sample was dropped; or the error of a failing store, cache or context.db, which stops the run with its own code.</returns>
     public async ValueTask<Result<Collected>> Score(BacktestRequest request, BriefScope world, LoadedCorpus loaded, CancellationToken cancellationToken)
     {
         var running = request.Arms.Where(a => Arms.PendingStage(a) is null).ToList();
@@ -36,7 +36,7 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
                 return outcome.Error;   // a refused store (005) stops the run: every other sample would fail the same way
             }
 
-            if (outcome.Value == Outcome.Scored)
+            if (outcome.Value is Outcome.Scored or Outcome.ScoredWithoutClusters)
             {
                 kept.Add(sample);
             }
@@ -52,6 +52,7 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
                 AdjudicationCapped = spend.Capped,
                 AdjudicationError = spend.Error,
                 SourceDown = dropped.GetValueOrDefault(Outcome.SourceDown),
+                WithoutClusters = running.Exists(static a => a != Arm.Docs) ? dropped.GetValueOrDefault(Outcome.ScoredWithoutClusters) : 0,   // the docs arm reads no map
             };
     }
 
@@ -67,25 +68,31 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
         var brief = await briefs.Brief(world, issue, cancellationToken).ConfigureAwait(false);
         if (brief.IsError || brief.Value is null)
         {
-            request.Progress?.Report($"{how.Step}: dropped, no brief");
+            request.Progress?.Report($"{how.Step}: dropped, {(brief.IsError ? "brief source unavailable" : "no brief")}");
             return brief.IsError ? Outcome.SourceDown : Outcome.NoBrief;
         }
 
         var opened = await Open(world.Repos.First(r => r.Name == sample.Repo), sample, (world, request.Scope), cancellationToken).ConfigureAwait(false);
         if (opened.IsError)
         {
-            if (!string.Equals(opened.Error.Code, ContextErrors.ExtractionUnreadable.Code, StringComparison.Ordinal))
-            {
-                return opened.Error;   // a refused store (005), context.db or the cache failing: every other sample would fail the same way, and the code is the real cause
-            }
-
-            request.Progress?.Report($"{how.Step}: dropped, git can't read the cut");
-            return Outcome.CutUnreadable;
+            return CutDrop(opened.Error, request.Progress, how.Step);
         }
 
         request.Progress?.Report($"{how.Step}: map {(opened.Value.Graph.Cached ? "cached" : "built")}");
         await Ask(request, (how.Running, sample, how.Scores), (brief.Value, opened.Value, spend), cancellationToken).ConfigureAwait(false);
-        return Outcome.Scored;
+        return opened.Value.Graph.Clustered ? Outcome.Scored : Outcome.ScoredWithoutClusters;
+    }
+
+    // Only git failing to read the cut drops a sample; a refused store (005), context.db or the cache failing would fail every other sample the same way, so the real code stops the run.
+    private static Result<Outcome> CutDrop(Error error, IProgress<string>? progress, string step)
+    {
+        if (!string.Equals(error.Code, ContextErrors.ExtractionUnreadable.Code, StringComparison.Ordinal))
+        {
+            return error;
+        }
+
+        progress?.Report($"{step}: dropped, git can't read the cut");
+        return Outcome.CutUnreadable;
     }
 
     private async ValueTask<Result<Opened>> Open(ContextRepo repo, CorpusSample sample, (BriefScope World, ContextScope Scope) given, CancellationToken cancellationToken)
@@ -146,6 +153,7 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
     private enum Outcome
     {
         Scored,
+        ScoredWithoutClusters,
         NoBrief,
         SourceDown,
         CutUnreadable,

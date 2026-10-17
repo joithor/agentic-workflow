@@ -38,7 +38,7 @@ public sealed class ContextBacktestJobApiTests : IDisposable
         new(arm, "source", Leaky: false, NotAvailable: null, new ArmScore(5, 5, 0.5, 0.4, 0.3, 1.0, 0), new ArmPassLine("not met", "not met", "not met", "met", Verdicts.OwnerDecision), [new SampleScore("SPL-101", arm, Unmapped: false, 0.5, 0.4, 0.3, ["file:brief-text.cs"], [], [], Leaky: false)]);
 
     private static BacktestRun Run() => new(new BacktestReport(1, new DateTimeOffset(2026, 10, 16, 9, 0, 0, TimeSpan.Zero), "all", 5, SmallSample: true, 1.0, new LeftOut(1, 0, 0, ["SPL-106"]),
-        [], [Row("brief"), Row("graph"), new ArmReport("linear", "source", Leaky: false, "S-6", Score: null, PassLine: null, [])], Verdicts.OwnerDecision, ["clusters unavailable"]), ReportPath);
+        [], [Row("brief"), Row("graph"), new ArmReport("linear", "source", Leaky: false, "S-6", Score: null, PassLine: null, [])], Verdicts.OwnerDecision, ["clusters unavailable: 1 of 5 sample maps were built without clusters, so the map-reading arms ran on thinner maps (fix: install graphify, or sindri doctor)"]), ReportPath);
 
     private async Task<GoldenHost> Host(bool blocked = false)
     {

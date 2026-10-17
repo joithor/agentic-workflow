@@ -23,7 +23,7 @@ public sealed class BacktestJobTextTests : IDisposable
         [], [Ran("brief", leaky: false, new ArmScore(5, 5, 0.5, 0.4, 0.3, 1.0, 0)), Ran("docs", leaky: false, new ArmScore(5, 5, 0.25, NodePrecision: null, 0.1, 1.0, 12)),
             Ran("graph", leaky: false, new ArmScore(5, 5, 0.0, 0.0, 0.0, 1.0, 0)), Ran("graph+reviewed", leaky: true, new ArmScore(5, 5, 0.9, 0.8, 0.7, 1.0, 0)),
             Ran("all", leaky: false, new ArmScore(5, 5, 0.5, 0.4, 0.3, 1.0, 0)), new ArmReport("linear", "source", Leaky: false, "S-6", Score: null, PassLine: null, [])],
-        Verdicts.OwnerDecision, ["clusters unavailable"]), "/home/x/backtest.json"));
+        Verdicts.OwnerDecision, ["clusters unavailable: 1 of 5 sample maps were built without clusters, so the map-reading arms ran on thinner maps (fix: install graphify, or sindri doctor)"]), "/home/x/backtest.json"));
 
     private static readonly string _table = string.Join('\n',
         "5 samples · 1 left out · small sample",
@@ -34,7 +34,7 @@ public sealed class BacktestJobTextTests : IDisposable
         "  all                    node recall 0.50 · node precision 0.40 · file recall@20 0.30 · leaky 1.00 · tokens 0",
         "  linear                 not available (S-6)",
         "  pass line: owner decision needed (small sample)".TrimStart(),
-        "degraded: clusters unavailable",
+        "degraded: clusters unavailable: 1 of 5 sample maps were built without clusters, so the map-reading arms ran on thinner maps (fix: install graphify, or sindri doctor)",
         "report /home/x/backtest.json",
         string.Empty);
 

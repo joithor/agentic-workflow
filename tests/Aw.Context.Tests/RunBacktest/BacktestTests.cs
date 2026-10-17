@@ -251,7 +251,7 @@ public sealed class BacktestTests
         var report = (await world.Run("graph", scope: world.Human("\"eval\":{\"adjudicator\":true}"))).Value.Report;
 
         _ = Assert.Single(world.Model.Requests);   // one failed call, then the run stops asking
-        Assert.Contains(report.Degraded, d => d.Contains("adjudication incomplete", StringComparison.Ordinal) && d.Contains(ContextErrors.LabelingUnavailable.Code, StringComparison.Ordinal));
+        Assert.Contains(report.Degraded, d => d.StartsWith(ContextErrors.LabelingUnavailable.Code + ": adjudication incomplete", StringComparison.Ordinal));
         Assert.All(Arm(report, "graph").Samples, s => Assert.Null(s.AdjudicatedPrecision));   // never reported as measured
     }
 

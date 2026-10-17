@@ -54,7 +54,7 @@ public sealed class EvalStoreTests : IDisposable
     public async Task The_store_serialises_the_real_backtest_and_map_quality_reports_and_the_map_cache_through_its_own_context()
     {
         var store = Store();
-        var backtest = new BacktestReport(1, _now, "all", 5, SmallSample: true, 1.0, new LeftOut(1, 0, 0, ["SPL-106"]), [], [], Verdicts.OwnerDecision, ["clusters unavailable"]);
+        var backtest = new BacktestReport(1, _now, "all", 5, SmallSample: true, 1.0, new LeftOut(1, 0, 0, ["SPL-106"]), [], [], Verdicts.OwnerDecision, ["clusters unavailable: 1 of 5 sample maps were built without clusters, so the map-reading arms ran on thinner maps (fix: install graphify, or sindri doctor)"]);
         var quality = new Context.Core.Eval.MapQuality.MapQualityReport(1, _now, "v1", new(4, 5), new(3, 3), new(1, 2), new(2, 2), 0, new(1, 10), Window: null, ["node precision: met"]);
 
         var b = await store.WriteReport(EvalReportKind.Backtest, backtest, _now, TestContext.Current.CancellationToken);

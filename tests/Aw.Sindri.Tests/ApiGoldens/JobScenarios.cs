@@ -235,7 +235,7 @@ internal static class JobScenarios
                 [new BacktestArmLine("brief", NotAvailable: null, Verdicts.OwnerDecision, Leaky: false, new BacktestArmScore(5, 0.5, 0.4, 0.3, 1.0, 0)),
                  new BacktestArmLine("graph", NotAvailable: null, Verdicts.OwnerDecision, Leaky: false, new BacktestArmScore(5, 0.0, NodePrecision: null, 0.0, 1.0, 0)),
                  new BacktestArmLine("linear", "S-6", Overall: null, Leaky: false, Score: null)],
-                Verdicts.OwnerDecision, "<home>/context/eval/backtest/20260101T000000Z.json", ["clusters unavailable"]);
+                Verdicts.OwnerDecision, "<home>/context/eval/backtest/20260101T000000Z.json", ["clusters unavailable: 1 of 5 sample maps were built without clusters, so the map-reading arms ran on thinner maps (fix: install graphify, or sindri doctor)"]);
             var element = JsonSerializer.SerializeToElement(result, h.App.Services.GetRequiredService<JsonSerializerOptions>());
             await Finished(h, j, JobOutcome.Succeeded, "5 samples, brief+graph, " + Verdicts.OwnerDecision, code: null, element, ct);
         },

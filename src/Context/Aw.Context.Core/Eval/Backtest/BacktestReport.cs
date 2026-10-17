@@ -13,7 +13,7 @@ namespace Aw.Context.Core.Eval.Backtest;
 /// <param name="Samples">The samples: refs, versions, cut and merge shas, truth files.</param>
 /// <param name="Arms">The arm rows, in report order, the not-yet-available ones included.</param>
 /// <param name="Overall">The pass line for the arm 'all', or for the best-run arm when it didn't run: the §9.4 verdict for the record.</param>
-/// <param name="Degraded">Notes on what limited the run ('adjudication stopped at the token cap', 'clusters unavailable').</param>
+/// <param name="Degraded">Notes on what limited the run ('adjudication stopped at the token cap', 'N of M sample maps built without clusters').</param>
 public sealed record BacktestReport(int SchemaVersion, DateTimeOffset CreatedAt, string Window, int SampleCount, bool SmallSample, double LeakyShare, LeftOut LeftOut,
     IReadOnlyList<CorpusSample> Samples, IReadOnlyList<ArmReport> Arms, string? Overall, IReadOnlyList<string> Degraded)
 {
