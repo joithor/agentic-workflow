@@ -3,7 +3,7 @@
   "structuredContent": {
     "accepted": {
       "commandId": "<command>",
-      "sequence": <n>
+      "sequence": "<n>"
     },
     "requestId": "REQ-<id>",
     "decisionId": "DEC-<id>"

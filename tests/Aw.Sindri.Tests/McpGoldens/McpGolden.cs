@@ -26,7 +26,7 @@ internal static class McpGolden
         NormalizationRule[] filed =
         [
             new("command", "\"commandId\": \"[0-9a-f-]+\"", "\"commandId\": \"<command>\""),
-            new("sequence", "\"sequence\": [0-9]+", "\"sequence\": <n>"),
+            new("sequence", "\"sequence\": [0-9]+", "\"sequence\": \"<n>\""),
             new("request", "REQ-[0-9a-f]{32}", "REQ-<id>"),
             new("decision", "DEC-[0-9a-f]{32}", "DEC-<id>"),
         ];

@@ -37,7 +37,8 @@ public sealed class SindriRequestToolTests
 
         Assert.NotEqual(true, result.IsError);
         var decision = result.StructuredContent!.Value.GetProperty("decisionId").GetString()!;
-        Assert.StartsWith("filed REQ-", Text(result), StringComparison.Ordinal);
+        var requestId = result.StructuredContent.Value.GetProperty("requestId").GetString()!;
+        Assert.StartsWith($"filed {requestId} (", Text(result), StringComparison.Ordinal);
         Assert.Contains($"(rescope) as {decision}; a human settles it", Text(result), StringComparison.Ordinal);
         var needs = await world.Human("/sindri/needs-you", ct);
         var pending = JsonDocument.Parse(await world.Human("/sindri/decisions?pending=true", ct)).RootElement.GetProperty("decisions");
@@ -206,7 +207,8 @@ public sealed class SindriRequestToolTests
         var seen = new HeaderTap();
         await using var host = await GoldenHost.Start(temporary: true, ct, SeededMcp.Profile, extra: services => services.Replace(ServiceDescriptor.Singleton<IHttpContextAccessor>(seen)));
         await using var mcp = await McpSession.Open(host, "alpha", ct,
-            (SindriHeaders.After, "99999"), ("X-Sindri-Launch-Secret", "s3cret"), (SindriHeaders.Caller, "human"), ("X-Sindri-Launch", "L-1"));
+            (SindriHeaders.After, "99999"), ("X-Sindri-Launch-Secret", "s3cret"), (SindriHeaders.Caller, "human"), ("X-Sindri-Launch", "L-1"),
+            ("x-sindri-caller", "human"), (SindriHeaders.Client, "ui"));
 
         var result = await mcp.Call("sindri_status", "{}", ct);
 
