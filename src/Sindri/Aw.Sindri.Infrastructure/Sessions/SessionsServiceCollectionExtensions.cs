@@ -26,6 +26,10 @@ internal static class SessionsServiceCollectionExtensions
             .AddSingleton<IProcessTable>(new ProcProcessTable(procRoot, OwnUid.Read()))
             .AddSingleton<IClaudeSessionRecords>(new ClaudeSessionRecords(load.ClaudeSessionsDirectory))
             .AddSingleton<IFleetStates>(new FleetStateFiles(fleet, providers, pruning: !load.Sessions.TestOverride))
+            .AddSingleton<IUnixSockets>(new UnixSockets(procRoot))
+            .AddSingleton<ITmuxServers>(provider => new TmuxCli(provider.GetRequiredService<TimeProvider>(), "tmux", TimeSpan.FromMilliseconds(1500)))
+            .AddSingleton<ITeamNames>(new TeamNameFiles(settings.StateDirectory))
+            .AddSingleton<ITerminalNames>(TerminalProcessNames.Embedded())
             .AddSingleton<ITranscripts>(new TranscriptFiles(home))
             .AddSingleton<ISessionSnapshot, SessionSnapshotStore>();
     }

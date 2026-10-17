@@ -110,6 +110,19 @@ internal sealed class SourcePass(Dictionary<string, Task> abandoned, TimeSpan bu
         return fallback;
     }
 
+    /// <summary>A source read once for the whole pass (no pid): its answer, or <paramref name="fallback"/> with a problem row when it fails or runs late.</summary>
+    internal T Value<T>(string name, Func<CancellationToken, T> read, T fallback)
+    {
+        var (outcome, value) = Run(name, pid: null, read);
+        if (outcome == SourceOutcome.Done)
+        {
+            return value ?? fallback;
+        }
+
+        Note(name);
+        return fallback;
+    }
+
     private static (bool Ok, T? Value) Attempt<T>(Func<CancellationToken, T> read, CancellationToken cancellationToken)
     {
         try
