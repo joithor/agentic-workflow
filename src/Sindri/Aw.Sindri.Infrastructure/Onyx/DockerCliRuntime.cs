@@ -15,7 +15,7 @@ internal sealed class DockerCliRuntime(IToolRunner runner) : IContainerRuntime
         var server = Docker(["version", "--format", "{{.Server.Version}}"]);
         if (server.Outcome == ToolOutcome.Missing)
         {
-            return new ContainerRuntimeFacts(CliFound: false, DaemonAnswers: false, ServerVersion: null, ComposeV2: false, ComposeVersion: null, MemoryBytes: null, DataRoot: null);
+            return new ContainerRuntimeFacts(CliFound: false, DaemonAnswers: false, ServerVersion: null, ComposeV2: false, ComposeVersion: null, MemoryBytes: null, DataRoot: null, OperatingSystem: null);
         }
 
         var serverText = Text(server);
@@ -23,25 +23,27 @@ internal sealed class DockerCliRuntime(IToolRunner runner) : IContainerRuntime
         var compose = Docker(["compose", "version", "--short"]);
         var composeText = Text(compose);
         cancellationToken.ThrowIfCancellationRequested();
-        var (memory, dataRoot) = serverText is null ? (null, null) : Info(Text(Docker(["info", "--format", "{{.MemTotal}}|{{.DockerRootDir}}"])));
+        var (memory, operatingSystem, dataRoot) = serverText is null ? (null, null, null) : Info(Text(Docker(["info", "--format", "{{.MemTotal}}|{{.OperatingSystem}}|{{.DockerRootDir}}"])));
 
         return new ContainerRuntimeFacts(
-            CliFound: true, DaemonAnswers: serverText is not null, ServerVersion: Version(serverText), ComposeV2: composeText is not null, ComposeVersion: Version(composeText), MemoryBytes: memory, DataRoot: dataRoot);
+            CliFound: true, DaemonAnswers: serverText is not null, ServerVersion: Version(serverText), ComposeV2: composeText is not null, ComposeVersion: Version(composeText), MemoryBytes: memory, DataRoot: dataRoot, OperatingSystem: operatingSystem);
     }
 
-    // One `docker info` line, MemTotal|DockerRootDir, split at the first '|' (a path may hold one, a byte count never does). Each half is guarded
-    // on its own: memory is a plain non-negative number, the data root an absolute path with no control character; anything else reads as unknown.
-    private static (long? Memory, string? DataRoot) Info(string? line)
+    // One `docker info` line, MemTotal|OperatingSystem|DockerRootDir, split at the first two '|' (a path may hold one, a byte count never does). Each part is
+    // guarded on its own: memory is a plain non-negative number, the operating system a short text with no control character, the data root an absolute
+    // path with no control character; anything else reads as unknown.
+    private static (long? Memory, string? OperatingSystem, string? DataRoot) Info(string? line)
     {
-        var bar = line?.IndexOf('|', StringComparison.Ordinal) ?? -1;
-        if (line is null || bar < 0)
+        var parts = line?.Split('|', 3) ?? [];
+        if (parts.Length < 3)
         {
-            return (null, null);
+            return (null, null, null);
         }
 
-        var memory = long.TryParse(line.AsSpan(0, bar), NumberStyles.None, CultureInfo.InvariantCulture, out var bytes) ? bytes : (long?)null;
-        var root = line[(bar + 1)..];
-        return (memory, Path.IsPathRooted(root) && !root.Any(char.IsControl) ? root : null);
+        return (
+            long.TryParse(parts[0], NumberStyles.None, CultureInfo.InvariantCulture, out var bytes) ? bytes : null,
+            parts[1] is { Length: > 0 and <= 64 } os && !os.Any(char.IsControl) ? os : null,
+            Path.IsPathRooted(parts[2]) && !parts[2].Any(char.IsControl) ? parts[2] : null);
     }
 
     private ToolRun Docker(string[] arguments) => runner.Run("docker", arguments, _timeout);

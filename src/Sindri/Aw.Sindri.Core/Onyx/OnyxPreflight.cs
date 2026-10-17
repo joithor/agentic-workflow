@@ -72,13 +72,15 @@ public static class OnyxPreflight
             : Fail("memory", detail, SindriErrors.OnyxNotEnoughResources, $"Docker has {Gib(have)} GiB and Onyx needs a {setting} GiB limit: set Docker's memory to at least {setting} GiB in Docker Desktop → Settings → Resources");
     }
 
-    // Spec §4.1 step 1: free disk at the Sindri home and, when Docker's data root is a directory on this host, there too; the
-    // smaller one counts. When the data root is known but isn't a host directory it is inside a VM, whose disk
-    // image sits on the host volume and has a cap of its own, which no host probe can read: the row says so.
+    // Spec §4.1 step 1: free disk at the Sindri home and, when Docker's data root is a directory on this host (a native engine), there too;
+    // the smaller one counts. Whether the data lives in a VM comes from what `docker info` reports (Docker Desktop, OrbStack), never from
+    // whether a directory of that name exists here. A VM's disk image sits on the host volume and has a cap of its own, which no host probe
+    // can read: the row says so, and a same-named host directory is not measured.
     private static PreflightCheck Disk(ContainerRuntimeFacts docker, DiskFacts home, DiskFacts? dataRoot, OnyxPins pins)
     {
-        var measured = dataRoot is not null && dataRoot.FreeBytes < home.FreeBytes ? dataRoot : home;
-        var note = docker.DataRoot is not null && dataRoot is null ? "; Docker's data lives in a VM here; its disk image size is capped separately (Docker Desktop: Settings → Resources)" : "";
+        var hostRoot = docker.DataInVm ? null : dataRoot;
+        var measured = hostRoot is not null && hostRoot.FreeBytes < home.FreeBytes ? hostRoot : home;
+        var note = docker.DataInVm ? "; Docker's data lives in a VM here; its disk image size is capped separately (Docker Desktop: Settings → Resources)" : "";
         var detail = $"{Gib(measured.FreeBytes)} GiB free at {measured.MeasuredPath}, needs {Gib(pins.DiskBytes)} GiB{note}";
         return measured.FreeBytes >= pins.DiskBytes
             ? Ok("disk", detail)

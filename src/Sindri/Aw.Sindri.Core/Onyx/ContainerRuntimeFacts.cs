@@ -17,5 +17,6 @@ public sealed record ContainerRuntimeFacts(
     bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes, string? DataRoot, string? OperatingSystem = null)
 {
     /// <summary>Gets a value indicating whether Docker's data lives in a VM (Docker Desktop, OrbStack), so the data root is not a directory on this host even if a directory of that name exists here.</summary>
-    public bool DataInVm => OperatingSystem is null && false;
+    public bool DataInVm => OperatingSystem is { } os
+        && (os.Contains("Desktop", StringComparison.OrdinalIgnoreCase) || os.Contains("OrbStack", StringComparison.OrdinalIgnoreCase));
 }

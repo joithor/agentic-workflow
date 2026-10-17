@@ -14,7 +14,7 @@ internal sealed class OnyxStatusService(IOnyxPinsSource pinsSource, IContainerRu
         var docker = runtime.Inspect(cancellationToken);
         var host = new HostFacts(
             probes.FreeDisk(home.Path),
-            docker.DataRoot is { } dataRoot ? probes.FreeDiskIfExists(dataRoot) : null,
+            docker is { DataInVm: false, DataRoot: { } dataRoot } ? probes.FreeDiskIfExists(dataRoot) : null,
             probes.Ports(OnyxPreflight.PreferredPort, OnyxPreflight.FallbackFirst, OnyxPreflight.FallbackLast));
         var report = OnyxPreflight.Evaluate(docker, host, pins);
         Result<OnyxStatusResponse> response = new OnyxStatusResponse(OnyxState.NotSetUp, pins.Version, pins.Commit, report.Checks, report.Port, report.Ok ? 0 : 1);
