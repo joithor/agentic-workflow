@@ -137,12 +137,14 @@ settle() { # the projector has caught up and isn't rebuilding (it polls once a s
   done
   echo "## settle: the views were still rebuilding or behind after 60 s"
 }
-items_in() { # $1 = state, $2 = count: the items view lists that many in that state (the projector polls once a second)
-  local i
-  for i in $(seq 1 40); do
+items_in() { # $1 = state, $2 = count: the items view lists that many in that state (the projector polls once a second);
+  # bounded by wall time like settle, with a named line on a timeout
+  local deadline=$((SECONDS + 60))
+  while ((SECONDS < deadline)); do
     jq -e --argjson n "$2" '.items | length == $n' <<<"$(bounded "$bin" items --state "$1" --json </dev/null 2>/dev/null)" >/dev/null 2>&1 && return 0
     sleep 0.25
   done
+  echo "## items_in: the items view didn't list $2 '$1' item(s) after 60 s"
 }
 session_tty() { # an agent session at a terminal (the CLI's own terminal check passes, so the server decides)
   echo "## sindri $* (session, terminal)"
