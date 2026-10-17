@@ -69,6 +69,12 @@ internal sealed class InstanceRowViewModel : ObservableObject
     /// <summary>The cells under the group's column heads, one per column in the group's order (a blank where this row has no such state).</summary>
     public IReadOnlyList<StageCellViewModel> Cells { get; private set => Set(ref field, value); }
 
+    /// <summary>What a screen reader hears for the inputs column: the cells' names in one.</summary>
+    public string InputsName => string.Join(", ", Inputs.Select(i => i.Name));
+
+    /// <summary>What a screen reader hears for the stages column: the cells' names in one.</summary>
+    public string StagesName => string.Join(", ", Stages.Select(c => c.Name));
+
     /// <summary>Lines the cells up under the group's columns.</summary>
     /// <param name="columns">The group's columns.</param>
     internal void Align(IReadOnlyList<string> columns) =>

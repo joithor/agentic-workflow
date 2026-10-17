@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text.Json.Nodes;
+using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
@@ -53,15 +54,24 @@ public sealed class WorkflowsFramesTests : FrameHost
         List<Border> Wrappers(string name) => [.. window.GetVisualDescendants().OfType<Border>().Where(b => b.Name == name && b.IsEffectivelyVisible)];
 
         Assert.Equal(WorkflowsLegend.Name, Heard.Wrapper(Assert.Single(Wrappers("WorkflowsLegendName"))));
-        var current = Wrappers("WorkflowStageCell").First(b => ((StageCellViewModel)b.DataContext!).IsCurrent);
-        Assert.Equal(((StageCellViewModel)current.DataContext!).Name, Heard.Wrapper(current));
-        Assert.Contains(Labels.StageCurrent, Heard.Wrapper(current), StringComparison.Ordinal);
-        var input = Wrappers("WorkflowInputCell")[0];
-        Assert.Equal(((InputCellViewModel)input.DataContext!).Name, Heard.Wrapper(input));
         var row = shell.Workflows.Groups[0].Rows[0];
+        var stages = Wrappers("WorkflowRowStages").First(b => ReferenceEquals(b.DataContext, row));
+        Assert.Equal(row.StagesName, Heard.Wrapper(stages));
+        Assert.All(row.Stages.Select(c => c.Name), name => Assert.Contains(name, row.StagesName, StringComparison.Ordinal));
+        Assert.Contains(Labels.StageCurrent, row.StagesName, StringComparison.Ordinal);
+        var inputs = Wrappers("WorkflowRowInputs").First(b => ReferenceEquals(b.DataContext, row));
+        Assert.Equal(row.InputsName, Heard.Wrapper(inputs));
+        Assert.All(row.Inputs.Select(i => i.Name), name => Assert.Contains(name, row.InputsName, StringComparison.Ordinal));
         var title = window.GetVisualDescendants().OfType<Button>().First(b => b.Name == "WorkflowRowOpen" && b.IsEffectivelyVisible && ReferenceEquals(b.DataContext, row));
         Assert.Equal(Labels.OpenInstanceName(row.Subject, row.Address), Heard.Name(title));
         Assert.Contains(row.Subject, Heard.Name(title), StringComparison.Ordinal);
+
+        // The row's cells are children of the row in the automation tree, which is where AT-SPI reads them (L2)
+        var frame = window.GetVisualDescendants().OfType<Border>().First(b => b.Name == "WorkflowRowFrame" && ReferenceEquals(b.DataContext, row));
+        var reached = Heard.Tree(frame);
+        Assert.Contains((row.StagesName, AutomationControlType.Text), reached);
+        Assert.Contains((row.InputsName, AutomationControlType.Text), reached);
+        Assert.DoesNotContain(reached, r => row.Stages.Any(c => string.Equals(c.Name, r.Name, StringComparison.Ordinal)));   // the cells inside are not read a second time
     }
 
     [Fact]

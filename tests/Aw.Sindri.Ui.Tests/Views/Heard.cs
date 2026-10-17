@@ -26,4 +26,24 @@ internal static class Heard
 
         return peer.GetName();
     }
+
+    /// <summary>
+    /// Every name the control's peer reaches by walking the automation tree down from it with GetChildren, the way an assistive
+    /// client does (a single CreatePeerForElement on a nested control proves nothing about whether its parent exposes it).
+    /// </summary>
+    internal static List<(string Name, AutomationControlType Type)> Tree(Control root)
+    {
+        var found = new List<(string, AutomationControlType)>();
+        void Walk(AutomationPeer peer)
+        {
+            foreach (var child in peer.GetChildren())
+            {
+                found.Add((child.GetName(), child.GetAutomationControlType()));
+                Walk(child);
+            }
+        }
+
+        Walk(ControlAutomationPeer.CreatePeerForElement(root));
+        return found;
+    }
 }
