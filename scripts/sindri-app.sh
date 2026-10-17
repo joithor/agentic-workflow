@@ -15,12 +15,14 @@
 # libraries (src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh <dir>), side by side, which is where bare `sindri` looks for
 # `sindri-ui` (docs/csharp/sindri-ui.md "Launching"). <stamp> hashes the content of every tracked and untracked file
 # under the paths the host build reads, the pinned SDK and the platform, so a source change, committed or not, rebuilds
-# and nothing else does. The newest two builds are kept: a control plane already running may be using the older one.
-# The host publish runs on a copy of those files (as the smoke scripts do, so the checkout's lock files never change),
-# under the box-wide heavy-job slot when it exists ($AW_STATE_DIR/bin-r1b/heavy), one publish at a time per state dir.
+# and nothing else does. The newest two builds are kept, and any build a running control plane executes (its pid in control.json, alive, with the
+# build dir in its command line) is neither pruned nor rebuilt: --rebuild of it is declined until `sindri-app stop`. A build
+# that exists for the stamp is never published again, only made current.
+# The file list is scripts/lib/sindri-build-inputs.sh, shared with src/Sindri/aot-smoke/run.sh. The host publish runs on a copy of those files (as the smoke scripts do, so the checkout's lock files never change),
+# under the box-wide heavy-job slot (`heavy --expensive`) when it exists ($AW_STATE_DIR/bin-r1b/heavy), one publish at a time per state dir.
 # Progress goes to stderr, so stdout is only sindri's (`sindri-app status --json` stays parseable).
 #
-# Every run also: installs the .NET SDK global.json pins into $DOTNET_ROOT (default ~/.dotnet) when missing, with
+# Every run also: installs the .NET SDK global.json pins into $DOTNET_ROOT (default: where the pinned SDK is found, else ~/.dotnet) when missing, with
 # Microsoft's dotnet-install.sh; fetches the pinned temporal CLI when missing (scripts/binaries-lock.sh fetch temporal);
 # and links $CLAUDE_LOCAL_BIN/sindri-app (default ~/.local/bin) to this script, unless AW_SINDRI_APP_NO_LINK=1, this tree
 # is a linked git worktree, or something else already has that name (a dangling link is replaced).
@@ -70,14 +72,22 @@ if [ "${AW_SINDRI_APP_NO_LINK:-0}" != 1 ]; then
 fi
 
 # 2. The pinned SDK, on PATH for this run and the apphost (which finds the runtime through DOTNET_ROOT).
+# DOTNET_ROOT, when unset, is where the pinned SDK was found (the parent of its sdk dir in `dotnet --list-sdks`), else ~/.dotnet.
+dotnet_root_given="${DOTNET_ROOT:-}"
 export DOTNET_ROOT="${DOTNET_ROOT:-$HOME/.dotnet}"
 export PATH="$DOTNET_ROOT:$PATH"
 sdk="$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' "$root/global.json" | head -1)"
 [ -n "$sdk" ] || die "no sdk version in $root/global.json"
-if ! dotnet --list-sdks 2>/dev/null | grep -q "^$sdk "; then
+sdk_line="$(dotnet --list-sdks 2>/dev/null | grep "^$sdk " | head -1 || true)"
+if [ -z "$sdk_line" ]; then
   say "installing the .NET SDK $sdk into $DOTNET_ROOT (global.json)"
   curl -fsSL https://dot.net/v1/dotnet-install.sh | bash -s -- --version "$sdk" --install-dir "$DOTNET_ROOT" --no-path >&2 \
     || die "installing the .NET SDK $sdk failed"
+elif [ -z "$dotnet_root_given" ]; then
+  sdk_dir="${sdk_line#*\[}"; sdk_dir="${sdk_dir%\]*}"
+  DOTNET_ROOT="$(dirname "$sdk_dir")"
+  export DOTNET_ROOT
+  PATH="$DOTNET_ROOT:$PATH"
 fi
 
 # 3. The pinned temporal CLI that serve starts (kept when already installed).
@@ -94,17 +104,53 @@ mkdir -p "$base" "$cache"
 inputs="$cache/inputs.$$"
 trap 'rm -f "$inputs"' EXIT
 # A tracked file deleted in the working tree is left out: it isn't part of the build, and tar would fail on it.
-git -C "$root" ls-files -z --cached --others --exclude-standard -- global.json nuget.config .editorconfig 'Directory.*' \
-  BannedSymbols.txt CodeMetricsConfig.txt src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction \
-  src/Aw.Analyzers src/Context src/Judge src/Sindri context \
+# shellcheck source=lib/sindri-build-inputs.sh
+source "$here/lib/sindri-build-inputs.sh"
+# `context` is read by the build once #287 lands; it is not in the smoke's list yet.
+git -C "$root" ls-files -z --cached --others --exclude-standard -- "${SINDRI_BUILD_PATHSPECS[@]}" context \
   | while IFS= read -r -d '' f; do if [ -f "$root/$f" ]; then printf '%s\n' "$f"; fi; done | LC_ALL=C sort -u > "$inputs"
 [ -s "$inputs" ] || die "no build inputs found under $root"
 stamp="$( { printf '%s\n' "$sdk" "$platform"; cat "$inputs"; (cd "$root" && git hash-object --stdin-paths < "$inputs"); } | sha256 | cut -c1-16)"
 current="$(cat "$base/current" 2>/dev/null || true)"
 built() { [ -x "$base/$1/sindri" ] && [ -x "$base/$1/sindri-ui" ]; }
+# A build a running control plane executes is never replaced or pruned: the pid in control.json, alive, whose command line
+# (ps) names the build dir. (A plain pid check, no lock file the plane would have to keep.)
+control="${AW_SINDRI_HOME:-$state/sindri-app}/control.json"
+running_pid() {
+  local pid
+  pid="$(jq -r '.pid // empty' "$control" 2>/dev/null || true)"
+  if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then printf '%s' "$pid"; fi
+}
+in_use() { # $1 = a build's stamp
+  local pid cmd
+  pid="$(running_pid)"
+  [ -n "$pid" ] || return 1
+  cmd="$(ps -p "$pid" -o command= 2>/dev/null || true)"
+  case "$cmd" in *"$base/$1/"*) return 0 ;; *) return 1 ;; esac
+}
+if [ "$rebuild" = 1 ] && in_use "$stamp"; then
+  say "the running control plane uses build $stamp; not rebuilding it (\`sindri-app stop\`, then --rebuild)"
+  rebuild=0
+fi
 
-# 5. Publish when stale, one publish at a time (a lock dir holding the owner's pid; a dead owner's lock is taken over).
-if [ "$rebuild" = 1 ] || [ "$current" != "$stamp" ] || ! built "$stamp"; then
+# 5. Publish when there is no build for this stamp (or --rebuild), one publish at a time (a lock dir holding the owner's
+# pid; a dead owner's lock is taken over). An existing build for the stamp is only made current.
+make_current() { # $1 = stamp; the earlier current becomes previous
+  local previous d n
+  previous="$(cat "$base/previous" 2>/dev/null || true)"
+  if [ -n "$current" ] && [ "$current" != "$1" ]; then previous="$current"; fi
+  printf '%s\n' "$previous" > "$base/previous"
+  printf '%s\n' "$1" > "$base/current.new"
+  mv -f "$base/current.new" "$base/current"
+  # Keep this build and the one before it, and any a running control plane uses.
+  for d in "$base"/*; do
+    n="$(basename "$d")"
+    if [ -d "$d" ] && [ "$n" != "$1" ] && [ "$n" != "$previous" ] && ! in_use "$n"; then rm -rf "$d"; fi
+  done
+}
+if [ "$rebuild" = 0 ] && built "$stamp"; then
+  if [ "$current" != "$stamp" ]; then make_current "$stamp"; fi
+else
   lock="$base/.lock"
   until mkdir "$lock" 2>/dev/null; do
     owner="$(cat "$lock/pid" 2>/dev/null || true)"
@@ -118,38 +164,31 @@ if [ "$rebuild" = 1 ] || [ "$current" != "$stamp" ] || ! built "$stamp"; then
   trap 'rm -f "$inputs"; rm -rf "$lock" "$stage"; [ -z "$tree" ] || rm -rf "$tree"' EXIT
   current="$(cat "$base/current" 2>/dev/null || true)"
   # Another run may have published this stamp while this one waited.
-  if [ "$rebuild" = 1 ] || [ "$current" != "$stamp" ] || ! built "$stamp"; then
+  if [ "$rebuild" = 1 ] || ! built "$stamp"; then
     log="$cache/publish.log"
     : > "$log"
     pre=()
-    if [ -x "$heavy" ]; then pre=("$heavy"); fi
+    if [ -x "$heavy" ]; then pre=("$heavy" --expensive); fi
     tree="$(mktemp -d "$cache/tree.XXXXXX")"
     (cd "$root" && tar -cf - -T "$inputs") | tar -xf - -C "$tree"
     rm -rf "$stage"
     say "publishing sindri (framework-dependent) and sindri-ui (NativeAOT, $platform), build $stamp; log: $log"
-    ${pre[@]+"${pre[@]}"} dotnet publish "$tree/src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" -c Release --no-self-contained \
-      -o "$stage" </dev/null >>"$log" 2>&1 || { tail -20 "$log" >&2; die "publishing sindri failed"; }
-    ${pre[@]+"${pre[@]}"} bash "$root/src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh" "$stage" </dev/null >>"$log" 2>&1 \
+    # From inside the copy (host) and the checkout (UI), so global.json's SDK pin applies whatever the caller's cwd.
+    (cd "$tree" && ${pre[@]+"${pre[@]}"} dotnet publish "src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj" -c Release --no-self-contained \
+      -o "$stage") </dev/null >>"$log" 2>&1 || { tail -20 "$log" >&2; die "publishing sindri failed"; }
+    (cd "$root" && ${pre[@]+"${pre[@]}"} bash "$root/src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh" "$stage") </dev/null >>"$log" 2>&1 \
       || { tail -20 "$log" >&2; die "publishing sindri-ui failed"; }
+    # The copy is done with: the final exec skips EXIT traps, so it goes here.
+    rm -rf "$tree"; tree=""
     [ -x "$stage/sindri" ] || die "the publish left no sindri in $stage"
     [ -x "$stage/sindri-ui" ] || die "the publish left no sindri-ui in $stage"
     rm -rf "$base/$stamp"
     mv "$stage" "$base/$stamp"
-    # Keep this build and the one before it (a --rebuild of the current stamp keeps the earlier previous one).
-    previous="$(cat "$base/previous" 2>/dev/null || true)"
-    if [ -n "$current" ] && [ "$current" != "$stamp" ]; then previous="$current"; fi
-    printf '%s\n' "$previous" > "$base/previous"
-    printf '%s\n' "$stamp" > "$base/current.new"
-    mv -f "$base/current.new" "$base/current"
-    for d in "$base"/*; do
-      n="$(basename "$d")"
-      if [ -d "$d" ] && [ "$n" != "$stamp" ] && [ "$n" != "$previous" ]; then rm -rf "$d"; fi
-    done
+    make_current "$stamp"
     say "built $base/$stamp"
     # A control plane already running keeps its build: bare sindri finds it rather than starting this one.
-    control="${AW_SINDRI_HOME:-$state/sindri-app}/control.json"
-    pid="$(jq -r '.pid // empty' "$control" 2>/dev/null || true)"
-    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+    pid="$(running_pid)"
+    if [ -n "$pid" ] && ! in_use "$stamp"; then
       say "a control plane from an earlier build is running (pid $pid); \`sindri-app stop\`, then \`sindri-app\`, runs this one"
     fi
   fi

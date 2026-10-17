@@ -28,9 +28,13 @@ mkdir -p "$WORK/fakebin"
 cat > "$WORK/fakebin/dotnet" <<'EOF'
 #!/usr/bin/env bash
 case "$1" in
-  --list-sdks) echo "10.0.401 [/fake/sdk]" ;;
+  --list-sdks) echo "10.0.401 [/fake/dotnet/sdk]" ;;
   publish)
     echo "publish" >> "$CALLS"
+    echo "cwd=$(pwd -P)" >> "$CALLS"
+    for f in config/launcher/builtins.json BannedSymbols.All.txt BannedSymbols.NonHost.txt; do
+      [ -f "$f" ] && echo "has $f" >> "$CALLS"
+    done
     [ "${FAIL_PUBLISH:-0}" = 1 ] && { echo "error CS0001: boom"; exit 1; }
     out=""; while [ $# -gt 0 ]; do [ "$1" = -o ] && out="$2"; shift; done
     mkdir -p "$out"
@@ -43,29 +47,45 @@ export PATH="$WORK/fakebin:$PATH"
 # The throwaway repo.
 R="$WORK/repo"
 mkdir -p "$R/scripts" "$R/src/Sindri/Aw.Sindri.Host" "$R/src/Sindri/Aw.Sindri.Ui.AotSmoke"
+mkdir -p "$R/scripts/lib" "$R/config/launcher"
 cp "$DIR/sindri-app.sh" "$R/scripts/"
+cp "$DIR/lib/sindri-build-inputs.sh" "$R/scripts/lib/"
+echo '{}' > "$R/config/launcher/builtins.json"
+echo 'T:System.X' > "$R/BannedSymbols.All.txt"
+echo 'T:System.Y' > "$R/BannedSymbols.NonHost.txt"
 printf '{\n  "sdk": {\n    "version": "10.0.401"\n  }\n}\n' > "$R/global.json"
 echo '<Project />' > "$R/src/Sindri/Aw.Sindri.Host/Aw.Sindri.Host.csproj"
-printf '#!/usr/bin/env bash\necho ui >> "$CALLS"\nprintf "#!/bin/sh\\n" > "$1/sindri-ui"; chmod +x "$1/sindri-ui"\n' \
+printf '#!/usr/bin/env bash\necho ui >> "$CALLS"\necho "uicwd=$(pwd -P)" >> "$CALLS"\nprintf "#!/bin/sh\\n" > "$1/sindri-ui"; chmod +x "$1/sindri-ui"\n' \
   > "$R/src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh"
 printf '#!/usr/bin/env bash\necho "fetch $2" >> "$CALLS"\n' > "$R/scripts/binaries-lock.sh"
 chmod +x "$R/scripts/binaries-lock.sh" "$R/src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh"
 git -C "$R" init -q && git -C "$R" add -A && git -C "$R" -c user.email=t@t -c user.name=t commit -qm init
 
 B="$AW_STATE_DIR/bin/sindri-app"
+C="$AW_STATE_DIR/cache/sindri-app-build"
 L="$HOME/.local/bin/sindri-app"
 builds() { find "$B" -mindepth 1 -maxdepth 1 -type d ! -name '.*' | wc -l | tr -d ' '; }
 publishes() { grep -c '^publish$' "$CALLS"; }
 
-OUT="$(bash "$R/scripts/sindri-app.sh" status --json 2>"$WORK/err")"; RC=$?
+OUT="$(cd "$WORK" && bash "$R/scripts/sindri-app.sh" status --json 2>"$WORK/err")"; RC=$?
 check "first run: exit is sindri's" "$RC" "0"
 check "first run: stdout is only sindri's, with the arguments" "$OUT" "sindri status --json"
 check "first run: one host publish and one UI publish" "$(publishes):$(grep -c '^ui$' "$CALLS")" "1:1"
 check "first run: temporal fetched" "$(grep -c '^fetch temporal$' "$CALLS")" "1"
 S1="$(cat "$B/current")"
+check "B1: a successful publish leaves no tree.* copy behind" "$(find "$C" -mindepth 1 -maxdepth 1 -name 'tree.*' | wc -l | tr -d ' ')" "0"
+check "I1: the host publish runs inside the build copy, the UI publish inside the checkout, whatever the caller's cwd" \
+  "$(grep '^cwd=' "$CALLS" | sed 's|.*/||; s|\..*||'):$(grep '^uicwd=' "$CALLS" | sed 's|.*=||')" "tree:$R"
+check "B3: the files outside src/ the build reads are copied" \
+  "$(grep '^has ' "$CALLS" | sort | tr '\n' ' ')" "has BannedSymbols.All.txt has BannedSymbols.NonHost.txt has config/launcher/builtins.json "
+. "$DIR/lib/test-grep.sh"
+check "B3: sindri-app.sh and the aot-smoke share one file list" \
+  "$(has 'sindri-build-inputs.sh' "$DIR/sindri-app.sh" && has 'sindri-build-inputs.sh' "$DIR/../src/Sindri/aot-smoke/run.sh" && has 'SINDRI_BUILD_PATHSPECS' "$DIR/lib/sindri-build-inputs.sh" && echo shared)" "shared"
+check "B3: that list names config/launcher and BannedSymbols*.txt" \
+  "$(has -F config/launcher "$DIR/lib/sindri-build-inputs.sh" && has -F "'BannedSymbols*.txt'" "$DIR/lib/sindri-build-inputs.sh" && echo yes)" "yes"
 check "first run: both binaries in the current build" \
   "$(test -x "$B/$S1/sindri" && test -x "$B/$S1/sindri-ui" && echo yes)" "yes"
-check "first run: DOTNET_ROOT defaults to ~/.dotnet" "$(grep -c "^root=$HOME/.dotnet$" "$WORK/err")" "1"
+check "first run: DOTNET_ROOT derives from the SDK found (not ~/.dotnet)" "$(grep -c "^root=/fake/dotnet$" "$WORK/err")" "1"
 check "first run: sindri-app linked to the script" "$(readlink "$L")" "$R/scripts/sindri-app.sh"
 
 OUT="$(bash "$L" 2>/dev/null)"
@@ -97,5 +117,51 @@ check "a dangling sindri-app is replaced" "$(readlink "$L")" "$R/scripts/sindri-
 rm -f "$L"
 AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" >/dev/null 2>&1
 check "AW_SINDRI_APP_NO_LINK=1 links nothing" "$(test -e "$L" || test -L "$L" || echo none)" "none"
+
+# B2: with the box-wide heavy wrapper present, both publishes go through `heavy --expensive`.
+mkdir -p "$AW_STATE_DIR/bin-r1b"
+printf '#!/usr/bin/env bash\necho "heavy $1" >> "$CALLS"\nshift\nexec "$@"\n' > "$AW_STATE_DIR/bin-r1b/heavy"
+chmod +x "$AW_STATE_DIR/bin-r1b/heavy"
+echo '// heavy' >> "$R/src/Sindri/Aw.Sindri.Host/New.cs"
+: > "$CALLS"
+bash "$R/scripts/sindri-app.sh" >/dev/null 2>&1
+check "B2: the host and UI publishes both run under heavy --expensive" "$(grep -c '^heavy --expensive$' "$CALLS")" "2"
+rm -f "$AW_STATE_DIR/bin-r1b/heavy"
+
+# I3: a build for this stamp is not published again, even when it is not the current one; a build the running control
+# plane executes is neither pruned nor rebuilt.
+NEWCS="$R/src/Sindri/Aw.Sindri.Host/New.cs"
+SC="$(cat "$B/current")"
+cp "$NEWCS" "$WORK/new.cs.orig"
+echo '// other' >> "$NEWCS"
+bash "$R/scripts/sindri-app.sh" >/dev/null 2>&1   # a new stamp: SC becomes previous
+SN="$(cat "$B/current")"
+cp "$WORK/new.cs.orig" "$NEWCS"
+P1="$(publishes)"
+bash "$R/scripts/sindri-app.sh" >/dev/null 2>&1   # the earlier source again: SC's build still exists
+check "I3: an existing build for the stamp is made current without a publish" \
+  "$(publishes):$(cat "$B/current")" "$P1:$SC"
+check "I3: the build it replaced is now previous, and two builds are kept" "$(cat "$B/previous"):$(builds)" "$SN:2"
+
+# A running control plane executing SN (a process whose command line names that build); a third stamp would prune SN.
+bash -c 'sleep 15; :' "$B/$SN/sindri" >/dev/null 2>&1 &
+HOLD=$!
+mkdir -p "$AW_STATE_DIR/sindri-app"
+printf '{"pid": %s}\n' "$HOLD" > "$AW_STATE_DIR/sindri-app/control.json"
+echo '// third' >> "$NEWCS"
+bash "$R/scripts/sindri-app.sh" >/dev/null 2>&1
+check "I3: a build the running control plane uses is not pruned" "$(test -d "$B/$SN" && echo kept)" "kept"
+kill "$HOLD" 2>/dev/null; wait "$HOLD" 2>/dev/null
+
+SX="$(cat "$B/current")"
+bash -c 'sleep 15; :' "$B/$SX/sindri" >/dev/null 2>&1 &
+HOLD=$!
+printf '{"pid": %s}\n' "$HOLD" > "$AW_STATE_DIR/sindri-app/control.json"
+PB="$(publishes)"
+bash "$R/scripts/sindri-app.sh" --rebuild >/dev/null 2>"$WORK/err"
+check "I3: --rebuild of the build in use does not publish or delete it" \
+  "$(publishes):$(test -x "$B/$SX/sindri" && echo kept):$(grep -c 'not rebuilding' "$WORK/err")" "$PB:kept:1"
+kill "$HOLD" 2>/dev/null; wait "$HOLD" 2>/dev/null
+rm -f "$AW_STATE_DIR/sindri-app/control.json"
 
 exit "$fail"
