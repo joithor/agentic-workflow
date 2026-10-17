@@ -34,21 +34,18 @@ public sealed class OnyxRealStackTests
         Assert.SkipWhen(!docker.CliFound || !docker.DaemonAnswers, "Docker isn't available on this box");
         Assert.SkipWhen(provider.GetRequiredService<IHostProbes>().FreeDisk(Path.GetTempPath()).FreeBytes < provider.GetRequiredService<IOnyxPinsSource>().Pins.DiskBytes, "not enough free disk for the Onyx images");
         var paths = OnyxPaths.For(home);
-        string? created = null;
+        // Set before `up` runs, so a start that fails halfway still has its stack removed below.
+        var created = paths.Project.Name;
         try
         {
-            await Cycle(provider, paths, name => created = name);
+            await Cycle(provider, paths);
         }
         finally
         {
-            // Only the project this test's own home started is removed: its name is per home (never the owner's), and it is the one state.json recorded after `up`.
-            if (created is not null && string.Equals(created, paths.Project.Name, StringComparison.Ordinal) && ComposeProject.IsOurs(created))
+            // Only the project this test's own home names is removed: the name is per home (never the owner's), and it is checked to be one Sindri makes.
+            if (ComposeProject.IsOurs(created))
             {
-                _ = new ProcessToolRunner().Run(
-                    "docker",
-                    ["compose", "-p", created, "-f", paths.Compose, "-f", paths.Override, "--env-file", paths.Env, "down", "-v"],
-                    TimeSpan.FromMinutes(5),
-                    cancellationToken: CancellationToken.None);
+                RemoveStack(created, paths);
             }
 
             if (Directory.Exists(home))
@@ -58,7 +55,7 @@ public sealed class OnyxRealStackTests
         }
     }
 
-    private static async Task Cycle(ServiceProvider provider, OnyxPaths paths, Action<string> started)
+    private static async Task Cycle(ServiceProvider provider, OnyxPaths paths)
     {
         await using var scope = provider.CreateAsyncScope();
         var services = scope.ServiceProvider;
@@ -66,7 +63,6 @@ public sealed class OnyxRealStackTests
         var up = (await services.GetRequiredService<IService<OnyxUpRequest, OnyxUpResponse>>().Handle(new OnyxUpRequest(), Token)).Value;
         var recorded = services.GetRequiredService<IOnyxWorkspace>().ReadState()?.Project;
         Assert.Equal(paths.Project.Name, recorded);   // the project this home started: per home, never a shared name
-        started(paths.Project.Name);
         using var http = new HttpClient();
 
         Assert.Contains("v4.9.0", await http.GetStringAsync(new Uri(up.Url + OnyxRoutes.Version), Token), StringComparison.Ordinal);
@@ -79,5 +75,30 @@ public sealed class OnyxRealStackTests
         Assert.DoesNotContain(runtime.Ps(paths.Project, Token).Value, static c => c.State == "running");
         var status = (await services.GetRequiredService<IService<OnyxStatusRequest, OnyxStatusResponse>>().Handle(new OnyxStatusRequest(), Token)).Value;
         Assert.Equal(OnyxState.Stopped, status.State);
+    }
+
+    // `compose down -v` with the home's files when they all landed; after a start that failed before they did, the project's containers and volumes are found by its label.
+    private static void RemoveStack(string project, OnyxPaths paths)
+    {
+        var runner = new ProcessToolRunner();
+        var limit = TimeSpan.FromMinutes(5);
+        if (File.Exists(paths.Compose) && File.Exists(paths.Override) && File.Exists(paths.Env))
+        {
+            _ = runner.Run("docker", ["compose", "-p", project, "-f", paths.Compose, "-f", paths.Override, "--env-file", paths.Env, "down", "-v"], limit, cancellationToken: CancellationToken.None);
+            return;
+        }
+
+        var label = "label=com.docker.compose.project=" + project;
+        var containers = runner.Run("docker", ["ps", "-aq", "--filter", label], limit, cancellationToken: CancellationToken.None).Output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (containers.Length > 0)
+        {
+            _ = runner.Run("docker", ["rm", "-f", "-v", .. containers], limit, cancellationToken: CancellationToken.None);
+        }
+
+        var volumes = runner.Run("docker", ["volume", "ls", "-q", "--filter", label], limit, cancellationToken: CancellationToken.None).Output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (volumes.Length > 0)
+        {
+            _ = runner.Run("docker", ["volume", "rm", .. volumes], limit, cancellationToken: CancellationToken.None);
+        }
     }
 }
