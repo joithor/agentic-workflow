@@ -232,7 +232,7 @@ API §8's proof shape, with a launched Step session in place of `claude -p`. A r
 callable blocks, one `sync` and one `async`. The journey:
 1. `list_tools` shows exactly those two, with their descriptions, schemas and modes.
 2. A bad argument gets `SND-TOOL-002`, and the agent sees its `violations` path.
-3. A good `sync` call answers `ended`/`ok`, and its `evidenceSeq` is in `workflow events`.
+3. A good `sync` call answers `ended`/`ok`, and its `ledgerSeq` is in `workflow events`.
 4. The same `callId` again runs nothing (the block's own counter is unchanged), and the same `callId` with other
    arguments gets `SND-TOOL-409`.
 5. The `async` call answers `running`, the run's calls route lists it running, and polling the same `callId` ends it.
