@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Tests for scripts/sync-rules.sh using a temp-dir fixture repo.
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/test-grep.sh"
 
 SCRIPT="$(cd "$(dirname "$0")/.." && pwd)/sync-rules.sh"
 PASS=0
@@ -73,7 +74,7 @@ check "original AGENTS.md content kept" 'grep -q "make test" "$R/AGENTS.md"'
 echo "sync-rules: idempotent"
 before="$(cat "$R/AGENTS.md")"
 out="$(bash "$SCRIPT" "$R")"
-check "second run reports up to date" 'echo "$out" | grep -q "up to date"'
+check "second run reports up to date" 'echo "$out" | has "up to date"'
 check "AGENTS.md unchanged on rerun" '[ "$before" = "$(cat "$R/AGENTS.md")" ]'
 check "--check passes when in sync" 'bash "$SCRIPT" --check "$R" >/dev/null'
 
@@ -94,7 +95,7 @@ echo "sync-rules: globs/paths mismatch"
 M="$(fixture mismatch)"
 printf -- '---\nglobs: ["a/**"]\npaths: ["b/**"]\n---\n# Bad\n' > "$M/.agents/rules/bad.md"
 check "mismatch exits nonzero" '! bash "$SCRIPT" "$M" >/dev/null 2>&1'
-check "mismatch names the rule" '{ bash "$SCRIPT" "$M" 2>&1 || true; } | grep -q "bad.md"'
+check "mismatch names the rule" '{ bash "$SCRIPT" "$M" 2>&1 || true; } | has "bad.md"'
 
 echo "sync-rules: legacy files"
 L="$(fixture legacy)"

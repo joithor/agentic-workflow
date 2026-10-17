@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Tests for scripts/check-env-example.sh using temp-dir fixture trees.
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/test-grep.sh"
 
 SCRIPT="$(cd "$(dirname "$0")/.." && pwd)/check-env-example.sh"
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -15,8 +16,8 @@ fail() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
 # run <dir> → sets OUT and RC
 run() { set +e; OUT="$(bash "$SCRIPT" --root "$1" 2>&1)"; RC=$?; set -e; }
 expect_rc() { if [ "$RC" -eq "$2" ]; then ok "$1 (exit $RC)"; else fail "$1: exit $RC, want $2"; printf '%s\n' "$OUT" | sed 's/^/      | /'; fi; }
-expect_out() { if printf '%s\n' "$OUT" | grep -qE -- "$2"; then ok "$1"; else fail "$1: output lacks /$2/"; printf '%s\n' "$OUT" | sed 's/^/      | /'; fi; }
-expect_no_out() { if printf '%s\n' "$OUT" | grep -qE -- "$2"; then fail "$1: output has /$2/"; printf '%s\n' "$OUT" | sed 's/^/      | /'; else ok "$1"; fi; }
+expect_out() { if printf '%s\n' "$OUT" | has -E -- "$2"; then ok "$1"; else fail "$1: output lacks /$2/"; printf '%s\n' "$OUT" | sed 's/^/      | /'; fi; }
+expect_no_out() { if printf '%s\n' "$OUT" | has -E -- "$2"; then fail "$1: output has /$2/"; printf '%s\n' "$OUT" | sed 's/^/      | /'; else ok "$1"; fi; }
 
 # A minimal compliant tree: one read per language, each documented.
 fixture() {

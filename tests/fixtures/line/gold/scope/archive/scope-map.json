@@ -1,0 +1,405 @@
+{
+  "schemaVersion": 1,
+  "change": "archive",
+  "baseSha": "3288642cd47359fff2642b8bf429976915ca4894",
+  "surfaces": [
+    {
+      "key": "feature:notes",
+      "kind": "feature",
+      "title": "Notes",
+      "detail": "The feature the change lives in.",
+      "citations": [
+        "L-code-1"
+      ],
+      "trust": "untrusted",
+      "lens": "code",
+      "graphStatus": "mapped",
+      "id": "S1"
+    },
+    {
+      "key": "surface:screen/notes-list",
+      "kind": "surface",
+      "title": "Notes list screen",
+      "detail": "Archived notes leave the list.",
+      "citations": [
+        "L-code-2"
+      ],
+      "trust": "untrusted",
+      "lens": "code",
+      "graphStatus": "mapped",
+      "id": "S2"
+    },
+    {
+      "key": "surface:route/notes-api",
+      "kind": "surface",
+      "title": "Notes API (/api/notes)",
+      "detail": "Listing and restoring go through it.",
+      "citations": [
+        "L-code-3"
+      ],
+      "trust": "untrusted",
+      "lens": "code",
+      "graphStatus": "mapped",
+      "id": "S3"
+    },
+    {
+      "key": "action:notes.save",
+      "kind": "action",
+      "title": "Save a note",
+      "detail": "A restore saves the note.",
+      "citations": [
+        "L-code-4"
+      ],
+      "trust": "untrusted",
+      "lens": "code",
+      "graphStatus": "mapped",
+      "id": "S4"
+    },
+    {
+      "key": "thing:note",
+      "kind": "thing",
+      "title": "Note",
+      "detail": "Gains an archived state.",
+      "citations": [
+        "L-code-5"
+      ],
+      "trust": "untrusted",
+      "lens": "code",
+      "graphStatus": "mapped",
+      "id": "S5"
+    },
+    {
+      "key": "code:src/notes/service.ts",
+      "kind": "code",
+      "title": "service.ts",
+      "detail": "listNotes and saveNote change.",
+      "citations": [
+        "L-code-6"
+      ],
+      "trust": "untrusted",
+      "lens": "code",
+      "graphStatus": "mapped",
+      "id": "S6"
+    },
+    {
+      "key": "code:src/notes/routes.ts",
+      "kind": "code",
+      "title": "routes.ts",
+      "detail": "A restore route is added.",
+      "citations": [
+        "L-code-7"
+      ],
+      "trust": "untrusted",
+      "lens": "code",
+      "graphStatus": "mapped",
+      "id": "S7"
+    },
+    {
+      "key": "code:web/screens/NotesList.ts",
+      "kind": "code",
+      "title": "NotesList.ts",
+      "detail": "The list hides archived notes.",
+      "citations": [
+        "L-code-8"
+      ],
+      "trust": "untrusted",
+      "lens": "code",
+      "graphStatus": "mapped",
+      "id": "S8"
+    },
+    {
+      "key": "code:tests/notes.test.ts",
+      "kind": "code",
+      "title": "notes.test.ts",
+      "detail": "The tests that pin notes.",
+      "citations": [
+        "L-code-9"
+      ],
+      "trust": "untrusted",
+      "lens": "code",
+      "graphStatus": "mapped",
+      "id": "S9"
+    },
+    {
+      "key": "feature:digest",
+      "kind": "feature",
+      "title": "Email digest",
+      "detail": "An archived note stays out of the digest.",
+      "citations": [
+        "L-product-1"
+      ],
+      "trust": "untrusted",
+      "lens": "product",
+      "graphStatus": "mapped",
+      "id": "S10"
+    },
+    {
+      "key": "action:digest.send",
+      "kind": "action",
+      "title": "Send the weekly digest",
+      "detail": "Builds the mail from listNotes.",
+      "citations": [
+        "L-product-2"
+      ],
+      "trust": "untrusted",
+      "lens": "product",
+      "graphStatus": "mapped",
+      "id": "S11"
+    },
+    {
+      "key": "code:src/digest/digest.ts",
+      "kind": "code",
+      "title": "digest.ts",
+      "detail": "Filters the changed notes.",
+      "citations": [
+        "L-code-10"
+      ],
+      "trust": "untrusted",
+      "lens": "code",
+      "graphStatus": "mapped",
+      "id": "S12"
+    },
+    {
+      "key": "feature:trash",
+      "kind": "feature",
+      "title": "Trash purge",
+      "detail": "Trash and archive both retire notes; their order matters.",
+      "citations": [
+        "L-product-3"
+      ],
+      "trust": "untrusted",
+      "lens": "product",
+      "graphStatus": "mapped",
+      "id": "S13"
+    },
+    {
+      "key": "action:trash.purge",
+      "kind": "action",
+      "title": "Purge old trashed notes",
+      "detail": "Purges by age too.",
+      "citations": [
+        "L-product-4"
+      ],
+      "trust": "untrusted",
+      "lens": "product",
+      "graphStatus": "mapped",
+      "id": "S14"
+    },
+    {
+      "key": "surface:job/nightly",
+      "kind": "surface",
+      "title": "Nightly job",
+      "detail": "The archive pass would run here.",
+      "citations": [
+        "L-product-5"
+      ],
+      "trust": "untrusted",
+      "lens": "product",
+      "graphStatus": "mapped",
+      "id": "S15"
+    },
+    {
+      "key": "code:src/jobs/nightly.ts",
+      "kind": "code",
+      "title": "nightly.ts",
+      "detail": "Schedules the archive pass.",
+      "citations": [
+        "L-code-11"
+      ],
+      "trust": "untrusted",
+      "lens": "code",
+      "graphStatus": "mapped",
+      "id": "S16"
+    },
+    {
+      "key": "code:src/jobs/purge-trash.ts",
+      "kind": "code",
+      "title": "purge-trash.ts",
+      "detail": "The sibling pass.",
+      "citations": [
+        "L-code-12"
+      ],
+      "trust": "untrusted",
+      "lens": "code",
+      "graphStatus": "mapped",
+      "id": "S17"
+    },
+    {
+      "key": "feature:export",
+      "kind": "feature",
+      "title": "Export",
+      "detail": "Does an export include archived notes?",
+      "citations": [
+        "L-product-6"
+      ],
+      "trust": "untrusted",
+      "lens": "product",
+      "graphStatus": "mapped",
+      "id": "S18"
+    },
+    {
+      "key": "action:export.run",
+      "kind": "action",
+      "title": "Export a team's notes",
+      "detail": "Reads every note.",
+      "citations": [
+        "L-product-7"
+      ],
+      "trust": "untrusted",
+      "lens": "product",
+      "graphStatus": "mapped",
+      "id": "S19"
+    },
+    {
+      "key": "code:src/export/exporter.ts",
+      "kind": "code",
+      "title": "exporter.ts",
+      "detail": "Reads listNotes.",
+      "citations": [
+        "L-code-13"
+      ],
+      "trust": "untrusted",
+      "lens": "code",
+      "graphStatus": "mapped",
+      "id": "S20"
+    },
+    {
+      "key": "feature:sharing",
+      "kind": "feature",
+      "title": "Public link sharing",
+      "detail": "A shared link to an archived note: still open?",
+      "citations": [
+        "L-product-8"
+      ],
+      "trust": "untrusted",
+      "lens": "product",
+      "graphStatus": "mapped",
+      "id": "S21"
+    },
+    {
+      "key": "action:sharing.resolve-link",
+      "kind": "action",
+      "title": "Open a shared link",
+      "detail": "Reads the note.",
+      "citations": [
+        "L-product-9"
+      ],
+      "trust": "untrusted",
+      "lens": "product",
+      "graphStatus": "mapped",
+      "id": "S22"
+    },
+    {
+      "key": "surface:route/link-resolve",
+      "kind": "surface",
+      "title": "Open shared link (GET /s/:token)",
+      "detail": "A link to an archived note resolves through it.",
+      "citations": [
+        "L-product-10"
+      ],
+      "trust": "untrusted",
+      "lens": "product",
+      "graphStatus": "mapped",
+      "id": "S23"
+    },
+    {
+      "key": "surface:api/weekly-digest-email",
+      "kind": "surface",
+      "title": "Weekly digest email",
+      "detail": "Archived notes stay out of it.",
+      "citations": [
+        "L-product-11"
+      ],
+      "trust": "untrusted",
+      "lens": "product",
+      "graphStatus": "mapped",
+      "id": "S24"
+    },
+    {
+      "key": "surface:screen/archive",
+      "kind": "surface",
+      "title": "The archive list and its Restore control",
+      "detail": "New: The archive list and its Restore control, on surface:screen/notes-list.",
+      "citations": [
+        "S2"
+      ],
+      "trust": "untrusted",
+      "lens": "code",
+      "graphStatus": "new",
+      "id": "S25"
+    }
+  ],
+  "implications": [
+    {
+      "id": "R1",
+      "text": "An archived note must stay out of the list and the digest but remain openable.",
+      "surfaces": [
+        "S2",
+        "S24"
+      ]
+    },
+    {
+      "id": "R2",
+      "text": "Archive and trash both retire notes; their order matters.",
+      "surfaces": [
+        "S15"
+      ]
+    }
+  ],
+  "workstreams": [
+    {
+      "id": "ws-1",
+      "title": "Archived state and restore",
+      "surfaces": [
+        "S1",
+        "S2",
+        "S3",
+        "S25",
+        "S5"
+      ],
+      "deps": []
+    },
+    {
+      "id": "ws-2",
+      "title": "Nightly pass",
+      "surfaces": [
+        "S15",
+        "S13"
+      ],
+      "deps": [
+        "ws-1"
+      ]
+    }
+  ],
+  "flagged": [],
+  "excluded": [
+    {
+      "key": "feature:sharing.link-revocation",
+      "reason": "Revoking a link has nothing to do with a note's age."
+    },
+    {
+      "key": "surface:route/links-revoke",
+      "reason": "Same."
+    },
+    {
+      "key": "surface:setting/linkRevocation",
+      "reason": "Same."
+    },
+    {
+      "key": "feature:audit-report",
+      "reason": "Archiving adds no action the report counts."
+    },
+    {
+      "key": "surface:route/audit-report",
+      "reason": "Same."
+    }
+  ],
+  "unmapped": [
+    {
+      "path": "migrations/006_note_archive.sql",
+      "reason": "A new column on notes.",
+      "trust": "untrusted"
+    }
+  ],
+  "unresolved": []
+}

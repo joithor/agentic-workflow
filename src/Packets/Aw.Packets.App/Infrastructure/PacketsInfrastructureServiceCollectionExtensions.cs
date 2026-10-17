@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Aw.Packets.Core;
+using Aw.Packets.Core.Kinds.Scoping;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Packets.App.Infrastructure;
@@ -18,6 +19,7 @@ internal static class PacketsInfrastructureServiceCollectionExtensions
         => services
             .AddSingleton(SettingsFromEnvironment.Read(environment))
             .AddSingleton<IPacketSource>(static sp => new FileSystemPacketSource(sp.GetRequiredService<JsonSerializerOptions>()))
+            .AddSingleton<IScopingPacketSource>(static _ => new FileSystemScopingPacketSource())
             .AddSingleton<IRepoSnapshot>(static _ => new GitRepoSnapshot(GitTimeout))
             .AddSingleton<IFreezeLog>(static sp => new FileFreezeLog(sp.GetRequiredService<PacketsSettings>(), sp.GetRequiredService<JsonSerializerOptions>()));
 }
