@@ -31,37 +31,20 @@ internal sealed class OnyxDownService(IOnyxWorkspace workspace, OnyxFacts facts,
 
     private Result<OnyxDownResponse> Stop(CancellationToken cancellationToken)
     {
-        var compose = workspace.Read(facts.Paths.Compose);
-        if (compose.IsError)
+        var picked = facts.ProjectInUse(workspace);
+        if (picked.IsError)
         {
-            return compose.Error;
+            return picked.Error;
         }
 
-        if (compose.Value is null)
-        {
-            return new OnyxDownResponse(WasRunning: false, [], []);   // the fetched files never landed: no project to ask docker about
-        }
-
-        var project = facts.Project;
-        var missing = MissingRenderedFiles();
-        if (missing.IsError)
-        {
-            return missing.Error;
-        }
-
+        var (project, missing) = picked.Value;
         List<string> warnings = facts.ForeignProjectWarning(workspace.ReadState()) is { } foreign ? [foreign] : [];
-        if (missing.Value.Count > 0)
-        {
-            // Compose can't read the project without its files, but it still knows the containers by their project label.
-            project = ComposeProject.ByLabel(project.Name);
-            warnings.Add($"{string.Join(" and ", missing.Value)} missing; stopping by the project label (`docker compose -p {project.Name} stop`)");
-        }
-
-        return StopLive(project, warnings, cancellationToken);
+        var note = missing.Count == 0 ? null : $"{string.Join(" and ", missing)} missing; stopping by the project label (`docker stop` on the containers labelled {project.Name})";
+        return StopLive(project, note, warnings, cancellationToken);
     }
 
     // What runs is what docker says this home's project has, whatever state.json recorded: a start that failed halfway leaves containers up too.
-    private Result<OnyxDownResponse> StopLive(ComposeProject project, List<string> warnings, CancellationToken cancellationToken)
+    private Result<OnyxDownResponse> StopLive(ComposeProject project, string? note, List<string> warnings, CancellationToken cancellationToken)
     {
         var containers = facts.Containers(project, cancellationToken);
         if (containers.IsError)
@@ -75,28 +58,35 @@ internal sealed class OnyxDownService(IOnyxWorkspace workspace, OnyxFacts facts,
             return new OnyxDownResponse(WasRunning: false, [], warnings);
         }
 
-        var stopped = runtime.Stop(project, cancellationToken);
-        return stopped.IsError ? stopped.Error : new OnyxDownResponse(WasRunning: true, running, warnings);
-    }
-
-    // The rendered files compose reads beside the pinned compose file: the names of those that are gone (an unreadable one is an error, not a missing one).
-    private Result<List<string>> MissingRenderedFiles()
-    {
-        List<string> missing = [];
-        foreach (var path in new[] { facts.Paths.Override, facts.Paths.Env })
+        if (note is not null)
         {
-            var read = workspace.Read(path);
-            if (read.IsError)
-            {
-                return read.Error;
-            }
-
-            if (read.Value is null)
-            {
-                missing.Add(path[(path.LastIndexOf('/') + 1)..]);
-            }
+            warnings.Add(note);
         }
 
-        return missing;
+        var stopped = runtime.Stop(project, cancellationToken);
+        if (stopped.IsError)
+        {
+            return stopped.Error;
+        }
+
+        return project.HasFiles ? new OnyxDownResponse(WasRunning: true, running, warnings) : ByLabelOutcome(project, running, warnings, cancellationToken);
+    }
+
+    // `docker stop` by id says only that the command ended: ask again and report what is down, and warn about what still runs (a container that ignored the stop, or one restarted by its policy).
+    private Result<OnyxDownResponse> ByLabelOutcome(ComposeProject project, IReadOnlyList<string> running, List<string> warnings, CancellationToken cancellationToken)
+    {
+        var after = facts.Containers(project, cancellationToken);
+        if (after.IsError)
+        {
+            return after.Error;
+        }
+
+        IReadOnlyList<string> still = [.. after.Value.Where(static c => ComposeContainer.IsLive(c.State)).Select(static c => c.Service).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+        if (still.Count > 0)
+        {
+            warnings.Add($"still running after the stop: {string.Join(", ", still)}; run `sindri onyx down` again or stop them with `docker stop`");
+        }
+
+        return new OnyxDownResponse(WasRunning: true, [.. running.Except(still, StringComparer.Ordinal)], warnings);
     }
 }

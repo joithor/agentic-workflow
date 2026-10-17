@@ -47,11 +47,11 @@ internal sealed partial class DockerCliRuntime
 
     /// <inheritdoc />
     public Result<Unit> Stop(ComposeProject project, CancellationToken cancellationToken)
-        => Compose(project, ["stop"], new Call("compose stop", _stopTimeout, CutShort: true, Stop: true), progress: null, cancellationToken).Map(static _ => Unit.Value);
+        => !project.HasFiles ? StopByLabel(project, cancellationToken) : Compose(project, ["stop"], new Call("compose stop", _stopTimeout, CutShort: true, Stop: true), progress: null, cancellationToken).Map(static _ => Unit.Value);
 
     /// <inheritdoc />
     public Result<IReadOnlyList<ComposeContainer>> Ps(ComposeProject project, CancellationToken cancellationToken)
-        => Compose(project, ["ps", "-a", "--format", "json"], new Call("compose ps", _shortTimeout), progress: null, cancellationToken).Bind(ParsePs);
+        => !project.HasFiles ? PsByLabel(project, cancellationToken) : Compose(project, ["ps", "-a", "--format", "json"], new Call("compose ps", _shortTimeout), progress: null, cancellationToken).Bind(ParsePs);
 
     /// <inheritdoc />
     public Result<IReadOnlyDictionary<string, IReadOnlyList<string>>> RepoDigests(IReadOnlyList<string> images, CancellationToken cancellationToken)
@@ -98,9 +98,12 @@ internal sealed partial class DockerCliRuntime
 
     private Result<string> Compose(ComposeProject project, string[] verb, Call call, Action<string>? progress, CancellationToken cancellationToken)
     {
-        string[] arguments = project.HasFiles
-            ? ["compose", "-p", project.Name, "-f", project.ComposeFile, "-f", project.OverrideFile, "--env-file", project.EnvFile, .. verb]
-            : ["compose", "-p", project.Name, .. verb];   // by label: compose finds the project's containers without its files
+        if (!project.HasFiles)
+        {
+            return SindriErrors.OnyxComposeFailed.With("this compose operation needs the project's files, and there are none; run `sindri onyx up` to lay them down");
+        }
+
+        string[] arguments = ["compose", "-p", project.Name, "-f", project.ComposeFile, "-f", project.OverrideFile, "--env-file", project.EnvFile, .. verb];   // a project with no files never gets here: see DockerCliRuntime.Label
         var tail = new Tail();
         var run = runner.Run("docker", arguments, call.Timeout, new ToolRunOptions(
             line =>

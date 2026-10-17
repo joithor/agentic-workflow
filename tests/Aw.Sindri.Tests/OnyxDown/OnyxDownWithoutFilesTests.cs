@@ -19,6 +19,7 @@ public sealed class OnyxDownWithoutFilesTests
         _ = (await rig.Up(Token)).Value;
         Assert.True(rig.Workspace.Files.Remove(file(rig.Paths)));
         rig.Runtime.Calls.Clear();
+        rig.Runtime.LabelOnlyCalls.Clear();
         return rig;
     }
 
@@ -33,7 +34,7 @@ public sealed class OnyxDownWithoutFilesTests
 
         Assert.True(response.WasRunning);
         Assert.Contains("nginx", response.Stopped, StringComparer.Ordinal);
-        Assert.Equal(["Ps", "Stop"], rig.Runtime.LabelOnlyCalls);
+        Assert.Equal(["Ps", "Stop", "Ps"], rig.Runtime.LabelOnlyCalls);   // list, stop, then ask again what is down
         Assert.Contains(response.Warnings, static w => w.Contains("project label", StringComparison.Ordinal));
         Assert.All(rig.Runtime.Containers, static c => Assert.Equal("exited", c.State, StringComparer.Ordinal));
     }
@@ -47,7 +48,7 @@ public sealed class OnyxDownWithoutFilesTests
 
         Assert.True(response.WasRunning);
         Assert.Contains("nginx", response.Stopped, StringComparer.Ordinal);
-        Assert.Equal(["Ps", "Stop"], rig.Runtime.LabelOnlyCalls);
+        Assert.Equal(["Ps", "Stop", "Ps"], rig.Runtime.LabelOnlyCalls);   // list, stop, then ask again what is down
         Assert.Contains(response.Warnings, static w => w.Contains("project label", StringComparison.Ordinal));
         Assert.All(rig.Runtime.Containers, static c => Assert.Equal("exited", c.State, StringComparer.Ordinal));
     }
@@ -78,11 +79,42 @@ public sealed class OnyxDownWithoutFilesTests
         Assert.Equal(["Ps", "Stop", "Ps"], rig.Runtime.LabelOnlyCalls);
     }
 
+    // The same decision serves the start's own-port check: with any file gone, our running nginx is looked for by the project label.
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("compose")]
+    [InlineData("override")]
+    [InlineData("env")]
+    public async Task The_project_in_use_is_by_label_when_any_one_of_the_three_files_is_gone(string missing)
+    {
+        var rig = await RunningRigWithout(missing switch { "compose" => static p => p.Compose, "override" => static p => p.Override, _ => static p => p.Env });
+        var facts = new OnyxFacts(rig.Runtime, rig.Probes, new FakeSindriHome(OnyxUpRig.Home));
+
+        var (project, gone) = facts.ProjectInUse(rig.Workspace).Value;
+
+        Assert.False(project.HasFiles);
+        Assert.Equal(facts.Project.Name, project.Name);
+        _ = Assert.Single(gone);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_project_in_use_has_its_files_when_all_three_are_there()
+    {
+        var rig = new OnyxUpRig();
+        _ = (await rig.Up(Token)).Value;
+        var facts = new OnyxFacts(rig.Runtime, rig.Probes, new FakeSindriHome(OnyxUpRig.Home));
+
+        var (project, gone) = facts.ProjectInUse(rig.Workspace).Value;
+
+        Assert.True(project.HasFiles);
+        Assert.Empty(gone);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Down_with_the_files_present_still_uses_them()
     {
         var rig = new OnyxUpRig();
         _ = (await rig.Up(Token)).Value;
+        rig.Runtime.LabelOnlyCalls.Clear();   // the first up asked by label before any file existed
 
         _ = (await Down(rig)).Value;
 

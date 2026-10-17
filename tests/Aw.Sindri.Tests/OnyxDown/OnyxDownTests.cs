@@ -136,8 +136,7 @@ public sealed class OnyxDownTests
         var response = (await Down(rig)).Value;
 
         Assert.False(response.WasRunning);
-        Assert.DoesNotContain("Stop", rig.Runtime.Calls, StringComparer.Ordinal);
-        Assert.DoesNotContain("Ps", rig.Runtime.Calls, StringComparer.Ordinal);
+        Assert.DoesNotContain("Stop", rig.Runtime.Calls, StringComparer.Ordinal);   // it only asks docker by the project label: containers outlive a deleted directory
     }
 
     [Fact, Trait("Lane", "unit")]

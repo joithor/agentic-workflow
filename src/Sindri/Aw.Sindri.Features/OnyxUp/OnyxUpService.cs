@@ -147,18 +147,13 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
             return Results.Success<int?>(value: null);   // a remote or unreadable endpoint is refused by the preflight; nothing asks it anything before that
         }
 
-        var compose = workspace.Read(facts.Paths.Compose);
-        if (compose.IsError)
+        var picked = facts.ProjectInUse(workspace);   // with any of the three files gone the project is asked about by its label: its containers still hold the port
+        if (picked.IsError)
         {
-            return compose.Error;
+            return picked.Error;
         }
 
-        if (compose.Value is null)
-        {
-            return Results.Success<int?>(value: null);   // no compose file yet means no project to ask about
-        }
-
-        var containers = facts.Containers(cancellationToken);
+        var containers = facts.Containers(picked.Value.Project, cancellationToken);
         return Results.Success(containers.IsSuccess ? OnyxFacts.OwnPort(containers.Value) : null);
     }
 }

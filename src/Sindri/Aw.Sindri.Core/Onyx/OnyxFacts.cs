@@ -82,4 +82,31 @@ public sealed class OnyxFacts(IContainerRuntime runtime, IHostProbes probes, ISi
             .SelectMany(static c => c.Publishers)
             .FirstOrDefault(static p => p.Address == "127.0.0.1")?.PublishedPort;
     }
+
+    /// <summary>
+    /// Picks the compose project to ask about and act on: this home's own with its files when the compose file, the override and the .env are all there, and by project label alone when any of them is gone
+    /// (compose can't read a project without its files, but docker still knows its containers by the label). The one decision for `down` and the start's own-port check.
+    /// </summary>
+    /// <param name="workspace">Where the files live.</param>
+    /// <returns>The project and the names of the files that are gone (empty when all three are there), or the error of an unreadable file.</returns>
+    public Result<(ComposeProject Project, IReadOnlyList<string> Missing)> ProjectInUse(IOnyxWorkspace workspace)
+    {
+        ArgumentNullException.ThrowIfNull(workspace);
+        List<string> missing = [];
+        foreach (var path in new[] { Paths.Compose, Paths.Override, Paths.Env })
+        {
+            var read = workspace.Read(path);
+            if (read.IsError)
+            {
+                return read.Error;
+            }
+
+            if (read.Value is null)
+            {
+                missing.Add(path[(path.LastIndexOf('/') + 1)..]);
+            }
+        }
+
+        return (missing.Count == 0 ? Project : ComposeProject.ByLabel(Project.Name), missing);
+    }
 }

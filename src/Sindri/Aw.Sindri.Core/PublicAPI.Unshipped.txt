@@ -8744,3 +8744,4 @@ static Aw.Sindri.Core.Onyx.ComposeProject.ByLabel(string! name) -> Aw.Sindri.Cor
 Aw.Sindri.Core.Onyx.OnyxFacts.Containers(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeContainer!>!>!
 static Aw.Sindri.Core.Onyx.ComposeFailures.WithHint(Aw.Kernel.Error! error, string! hint) -> Aw.Kernel.Error!
 Aw.Sindri.Core.Onyx.OnyxState.Unknown = 3 -> Aw.Sindri.Core.Onyx.OnyxState
+Aw.Sindri.Core.Onyx.OnyxFacts.ProjectInUse(Aw.Sindri.Core.Onyx.IOnyxWorkspace! workspace) -> Aw.Kernel.Result<(Aw.Sindri.Core.Onyx.ComposeProject! Project, System.Collections.Generic.IReadOnlyList<string!>! Missing)>!
