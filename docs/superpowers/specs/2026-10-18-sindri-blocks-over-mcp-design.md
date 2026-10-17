@@ -267,28 +267,36 @@ side is §B.5.
 
 A call never moves the instance. It runs one block for the session and records what happened, and the Step's own
 report and the recipe's gates still decide the transition (ENG §6.5: "the session reports; the engine decides").
+The answer's shape, the order of checks, the timing rule, the store key and the refusal rule are §A.1's; §B cites
+them and never restates them.
 
 ### B.1 Which blocks are callable
 
-- **The descriptor opts in.** `BlockDescriptor` gains three fields, each written only when set, so every existing
+- **The descriptor opts in.** `BlockDescriptor` gains four fields, each written only when set, so every existing
   descriptor hashes as before (like `HumanOnly`):
   - `Callable` (`bool?`).
   - `Description` (`string?`), Sindri's own one-line text, which `list_tools` serves (§A.1).
+  - `ReadsCode` (`bool?`, written only when true): the block runs against a checkout. `list_tools` shows it as
+    `readsCode`, a plain call to it must pass `ref` (§A.1 check 6, §A.6), and every answer carries `commit` (§A.1).
   - `MaxDuration`, already added by DT-J2.
 - **`ParameterSpec` gains** these fields (R1-05, R1-09), also written only when set:
   - `Description`;
-  - `Enum` (the allowed literals);
+  - `Enum` (fixed allowed literals, part of the hashed descriptor);
+  - `EnumSource` (`string?`): the values come from repo config when the list is made, not from the descriptor. The
+    descriptor hashes only the source's name (`checks.targets`), never its values;
   - `ItemType` (for a list);
   - `SessionSettable` (`bool?`): the session may set this parameter per call. A parameter without it never appears
     in `inputSchema`.
-- **The catalog test** `Every_callable_block_is_described_bounded_and_read_only` requires, for every Callable block:
+- **The catalog test** `Every_callable_block_is_described_bounded_and_writes_no_state` requires, for every Callable
+  block:
   - its kind is `gate` or `evidenceProvider` (a `step`, `effect` or `stepInput` block is never callable);
   - no `Effects`, `WriteScope` or `AutonomyTier` capability;
   - a `Description` and a `MaxDuration`;
   - a `Description` on each session-settable parameter;
   - no session-settable parameter that is a capability field.
 
-  A block pack that breaks any of these fails its own build.
+  A block pack that breaks any of these fails its own build. A callable block may write build output under the
+  worktree it runs in (B.2), and nothing else.
 - **What the session may set (R1-09).** `inputSchema` (§A.1) is built from the session-settable parameters only.
   The following never come from a call; the recipe pins them, or the block's defaults supply them:
   - capability fields;
@@ -312,43 +320,65 @@ report and the recipe's gates still decide the transition (ENG §6.5: "the sessi
 | `RCP-TOOL-003` | A listed block needs a capability (`Network`, `Budget`, `Tools`) that the state's own Step doesn't hold. A call runs with the Step's capabilities, never wider (owner, 2026-10-17: a Step only tightens) |
 | `RCP-TOOL-004` | A required parameter that isn't session-settable has no pinned value and no default, or a pin names a parameter the block doesn't have, or a pin sets a capability field to anything but a literal or `{ profile }` |
 
-- **`list_tools` is computed, not stored.** For an open agent run, it is the state's `tools:` entries whose block is
-  Callable in the running build, ordered by id.
+- **`list_tools` is computed, not stored.** `ListCallableBlocks` returns, for an open agent run, the state's `tools:`
+  entries whose block is Callable in the running build, ordered by id.
   - Each entry carries `mode`: `sync` when `MaxDuration` ≤ 30 s, otherwise `async` (§A.1).
+  - An `EnumSource` parameter's `enum` is filled in `inputSchema` at that moment, from the run's `checks.json` copy
+    (below). Validation (§A.1 check 5) uses the same values, so a target the list didn't show is `SND-TOOL-002`.
   - A block named in an approved recipe but gone from the build drops out. Calling it is `SND-TOOL-001`, and the
     approval drift check (ENG §5.8) reports it.
 - **The first callable block (R1-01)** is `gate.tests.green`, new in BM-1.
-  - It runs one test target that the repo declares in `.agentic-workflow/checks.json` (per-repo config: the
-    command, its working directory, and a filter template). Its pass or fail is its outcome.
-  - Its only session-settable parameters are `target` (an `Enum` of the declared targets) and `filter` (a string
-    passed to the filter template as one argument, never through a shell).
-  - The command itself is never session-set.
-  - Capabilities: `Tools`. `MaxDuration`: 20 min, so it is `async`.
-  - The first shipped state that lists it is `workflow.implement`'s `implement` state, as `tools: [gate.tests.green]`.
-    This changes that recipe's hash before it is approved.
+  - It runs one test target that the repo declares in `.agentic-workflow/checks.json` (per-repo config, schema
+    `schemas/checks.schema.json`, new in BM-1): each target's argv command, its working directory, its filter
+    template, and the env names it needs. Its pass or fail is its outcome.
+  - Its only session-settable parameters are `target` (`EnumSource: checks.targets`) and `filter`. The command is
+    never session-set.
+  - **`checks.json` is never read from the worktree the agent edits.** Sindri reads it with
+    `git show <base>:.agentic-workflow/checks.json` from the run's base commit: the item's base ref, else the
+    registered repo's default branch. A plain call reads it from the default branch's tip, not from `ref`. Its
+    sha256 (`checksSha256`) is recorded on every call (B.3), so a changed test command is visible.
+  - **`filter` is a value, never a command.** It is bound as exactly one argv element into the target's template:
+    never a shell string, never in an option position (a value starting with `-` is preceded by the template's own
+    `--`, or refused with `SND-TOOL-002` when the template has none).
+  - Capabilities: `Tools`. `ReadsCode`: true. `MaxDuration`: 20 min, so it is `async`.
+  - **The first shipped state that lists it** is `workflow.review-loop`'s `fix` state, as
+    `tools: [gate.tests.green]`. Its Step, `step.review.fix`, is an agent Step (`AgentStep`) that holds `Tools`, so
+    RCP-TOOL-002 and -003 pass. The fixer runs the tests before it reports `fixed`. This changes that recipe's hash
+    before it is approved.
 
   `evidence.check` and the two shipped gates stay non-callable: they read engine state, so they mean nothing called
   from a session.
 
 ### B.2 Running a call
 
-- **The call store.** One table, `block_calls`, in the Sindri database (a migration in BM-1), owned by an
-  `IBlockCallStore` port in Core with a SQLite implementation.
-  - **Columns:** `callId`, `scope` (`run:<instance>/<run>` or `repo:<repo>`), `block`, `descriptorHash`,
-    `argumentsSha256`, `state` (`running` | `ok` | `failed` | `refused`), `reason`, `resultSha256`, `resultBytes`,
-    `started`, `ended`, `duringTakeover`.
-  - **What reads it:**
-    - API dedupe and `SND-TOOL-409` (R1-14);
-    - the same-`callId` poll (R1-07);
-    - the in-flight calls the app lists (R1-28);
-    - the single-flight check (R1-15).
-  - **Bodies** go to the content store, scrubbed (B.3):
-    - the arguments under `call:<run>:<callId>:arguments`;
-    - the result under `call:<run>:<callId>`.
+- **The call store.** One table, `block_calls`, in the ledger database `$AW_SINDRI_HOME/ledger.db` (a migration in
+  BM-1), beside `events`, so a call row and its event are written in one transaction. It is owned by an
+  `IBlockCallStore` port in Core with a SQLite implementation. It is the one source for the read routes (§A.4).
+  - **Key:** (scope, `callId`) (§A.1), scope `run:WFI-<32 hex>:<token>` or `repo:<name>`. A refused call is stored
+    under a server-made id with the sent `callId` as a field (§A.1).
+  - **Columns:** `scope`, `callId`, `sentCallId`, `block`, `descriptorHash`, `argumentsSha256`, `ref`, `itemId`,
+    `state` (`waiting` | `running` | `ok` | `failed` | `refused`), `reason`, `commit`, `tree`, `dirty`,
+    `checksSha256`, `resultSha256`, `resultBytes`, `truncated`, `ledgerSeq`, `started`, `ended`, `duringTakeover`.
+  - **What reads it:** the stored-call lookup and `SND-TOOL-409` (§A.1), the poll, the read routes and the app's
+    running rows (§A.4), and the concurrency check (B.4).
+  - **Bodies are per-call rows,** not entries in a shared store. `block_call_bodies(scope, callId, kind, sha256,
+    bytes)`, with `kind` `arguments` or `result`, in the same database. Each body belongs to one call, so deleting a
+    call's row deletes its bodies and never another call's. The existing content store, `workflow/facts/<sha256>`
+    (`HomeFactStore`), is not used: it is SHA-addressed and shared, so a 30-day delete there could remove a body a
+    fact still needs. History and the ledger hold only ids and hashes, never a body (R1-18).
+- **`BlockContext`** (a BM-0 record in Core) is what a running call gets:
+  - `Repo`, `Worktree` (path), `Commit`, `Tree`, `Dirty`;
+  - the approved profile, the run's `StepPolicy` (null for a plain call) and the Step's capabilities;
+  - `Scope` and `CallId`;
+  - a `CancellationToken`.
 
-  History holds only ids and hashes, never a body (R1-18).
+  It relates to the gate context this way: for a gate block, the runner builds the existing `GateContext` (`Gate`,
+  `Arguments`, `Facts`, `Threshold`) from the call, and passes the checkout through a new init-only member,
+  `GateContext.Checkout` (repo, worktree, commit), which a transition gate leaves null. Nothing calls
+  `IGate.Evaluate` or an `IEvidenceProvider` outside tests today, so BM-1 adds the runner: `RunBlockCall`'s body,
+  shared by Step and plain calls.
 - **The path of a Step call:**
-  1. The API checks `SND-TOOL-409` against the store.
+  1. The API runs §A.1's checks in their order, the stored-call lookup first.
   2. The API writes the arguments body, then sends the `block-call` Update to the instance's `RecipeWorkflow`. The
      Update carries `{ callId, block, argumentsSha256 }` only. Because the store holds the call, a retry is served
      from the store, not from the Update id, so dedupe holds across Continue-As-New (R1-14).
@@ -356,39 +386,46 @@ report and the recipe's gates still decide the transition (ENG §6.5: "the sessi
      to §A.3, so no new `SND-WF` code is needed:
      - the run is not the instance's open attempt, or its Step isn't on the agent runtime: `SND-TOOL-404`;
      - the block is not in `list_tools`: `SND-TOOL-001`;
-     - another call of this run is `running`: `SND-TOOL-006`, busy (R1-15: one call in flight per run);
+     - another call of this run is `running`: `SND-TOOL-006` (one call in flight per run, B.4);
      - the budget is spent: `SND-TOOL-004`.
-
-     Schema validation (`SND-TOOL-002`) is the API's, before the Update.
-  4. The handler marks the row `running`, through the `MarkCallStarted` local activity.
-  5. The handler runs one `RunBlockCall` activity: one attempt, no retries, with a heartbeat. It then appends the
-     evidence event (B.3) and marks the row ended.
-  6. The API answers the call: `state: ended` with its `outcome` when the block ends within 30 s. Otherwise it answers
-     `state: running`, and the session polls with the same `callId` (§A.1).
+  4. The handler marks the row `waiting` and appends `step.tool-started` (B.3), through the `MarkCallStarted` local
+     activity.
+  5. The handler runs one `RunBlockCall` activity: one attempt, no retries, with a heartbeat. It takes the heavy
+     slot and the worktree lock (below), records `commit`, `tree` and `dirty`, marks the row `running`, runs the
+     block, then appends `step.tool-called` (B.3) and marks the row ended.
+  6. The API answers by §A.1's timing rule.
+- **Where a Step call runs (C9).** In the run's own per-run worktree, as it is, uncommitted edits included. It is
+  Sindri's per-run copy, never the shared checkout or the owner's folder.
+  - Before the block starts, the call records the worktree's `commit` (`git rev-parse HEAD`), its `tree` (the
+    working tree as it is, untracked files included: `git add -A` into a temporary index file, then
+    `git write-tree`; the agent's own index is untouched) and `dirty` (the tree differs from the commit's).
+  - A callable block writes only build output under that worktree. It never commits, stages or edits a tracked
+    file.
+  - **Serialized with the agent's own heavy jobs there.** A call holds a per-worktree lock,
+    `<git-dir>/sindri-call.lock` (a `flock`), for as long as it runs, as well as its heavy slot. BM-1 changes the
+    heavy wrapper (`~/.agentic-workflow/bin-r1b/heavy` and its tests) to take the same file around a job it runs
+    inside a git worktree that has one, so the agent's own build and a call never overlap in one folder. Time spent
+    waiting on either lock is slot wait (§A.1's timing rule, `waiting: heavy-lock`).
 - **Restarts (R1-13).** A single-attempt activity is not resumed. When the host restarts, the activity's heartbeat
-  times out and it ends `failed` with reason `host-restart`. On startup, a sweep also ends every `running` row the
-  workflow no longer owns that way. The session calls again with a new `callId`.
+  times out and it ends `failed` with reason `host-restart`. On startup, a sweep also:
+  - ends every `waiting` or `running` row the workflow no longer owns that way;
+  - removes orphaned scratch worktrees under `$AW_SINDRI_HOME/calls/worktrees/` (B.5): only by that path prefix,
+    with `git worktree remove`, then `git worktree prune`. `--force` is used only for a path under that prefix,
+    which is always Sindri's own scratch, never a per-run or user worktree.
 - **The heavy lock (R1-15).**
-  - A block that builds or tests takes a heavy slot at the low priority (`AW_HEAVY_PRIORITY=call`), below the
-    transition gates and meta's gates.
-  - `MaxDuration` starts when the slot is granted, so time spent waiting for a slot is not run time. The poll
-    answers `running` with `waiting: heavy-lock` while it waits.
+  - A block that builds or tests takes a heavy slot through the heavy wrapper at the default priority. A call
+    priority below the transition gates is a wrapper change, listed under follow-ups.
+  - Waits are bounded by §A.1's timing rule. `MaxDuration` starts when the slot is granted.
   - With one call in flight per run, a run holds at most one slot for calls.
-- **The policy and the environment (R1-29).** The call's `BlockContext` carries:
-  - the run's StepPolicy (the ILauncher contract; a callable block never writes, so `Mode` matters only for a future
-    kind that does);
-  - the Step's capabilities;
-  - the run's repo and worktree;
-  - the approved profile.
-
-  The block runs as the host, in the run's own worktree. Its process environment is a fixed allowlist, never the
-  host's or the session's:
-  - `PATH`, `LANG`;
-  - a scratch `TMPDIR` and `HOME` under the call's directory;
-  - `DOTNET_ROOT`, `DOTNET_CLI_HOME` and `NUGET_PACKAGES` pointing at the shared caches (never a fresh cache);
-  - the names the repo's `checks.json` lists.
-
-  It never carries the launch secret, a GitHub token or a provider key.
+- **The environment (R1-29).** The block runs as the host. Its process environment is a fixed base plus the repo's
+  names, never the host's or the session's:
+  - the fixed base: `PATH`, `LANG`, the `AW_HEAVY_*` lock variables, the real `HOME` (the wrapper and the repo's
+    tools need it), and a scratch `TMPDIR` under `$AW_SINDRI_HOME/calls/tmp/<callId>/`, removed when the call
+    ends. HOME is never swapped: a temporary HOME makes each build download its own package cache;
+  - the env names the target lists in `checks.json`, after the denylist.
+  - **The denylist wins** over the repo's names: `*TOKEN*`, `*SECRET*`, `*KEY*`, `GH_*`, `GITHUB_*`,
+    `AW_SINDRI_LAUNCH_SECRET`, and the provider keys (`ANTHROPIC_*`, `OPENAI_*`, `CURSOR_*`). A denied name is
+    dropped and named in the call's reasons, never passed.
 - **Takeover (R1-10, owner choice C5).**
   - *If C5 is yes (recommended):* a call during a takeover runs, and is recorded with `duringTakeover: true`. A step
     report can't cite it (B.3). A call in flight when the takeover starts keeps running.
@@ -402,64 +439,66 @@ report and the recipe's gates still decide the transition (ENG §6.5: "the sessi
   green `gate.tests.green` call followed by the same gate on the transition runs the tests twice. That is by design:
   the engine decides from its own runs.
 
-  A later change may reuse a call when the descriptor hash, the arguments hash and the worktree's commit all match.
+  A later change may reuse a call when the descriptor hash, the arguments hash and the worktree's tree all match.
   It is listed under follow-ups, and is not in v1.
 
-### B.3 The call as the Step's evidence
+### B.3 The call's record
 
-- **One ledger event per call: `step.tool-called`,** appended by the handler after the call ends. Its fields:
-  - `instance`, `run`, `callId`, `block`;
-  - `descriptorHash` (R1-35; the running build's);
-  - `argumentsSha256`;
-  - `outcome` (`ok` | `failed` | `refused`) and `reason` (null-omitted);
-  - `resultBytes`, `resultSha256`, `truncated`;
-  - `durationMs`, `lockWaitMs`;
-  - `duringTakeover` (null-omitted);
-  - `launch` and `client` (R1-39: the run's launch id, and the MCP client name the API stamps).
+- **Two ledger events per call.**
+  - `step.tool-started`, appended when the call starts (B.2 step 4): `instance`, `run`, `callId` and `block` only.
+    The app refreshes on it (§A.4).
+  - `step.tool-called`, appended by the handler after the call ends. Its fields:
+    - `instance`, `run`, `callId`, `block`;
+    - `descriptorHash` (R1-35; the running build's);
+    - `argumentsSha256`, `checksSha256` (when the block reads `checks.json`);
+    - `commit`, `tree`, `dirty` (a `ReadsCode` block);
+    - `outcome` (`ok` | `failed` | `refused`) and `reason` (null-omitted);
+    - `resultBytes`, `resultSha256`, `truncated`;
+    - `durationMs`, `lockWaitMs`;
+    - `duringTakeover` (null-omitted);
+    - `launch` and `client` (R1-39: the run's launch id, and the MCP client name the API stamps).
 
-  `evidenceSeq` (§A.1) is this event's seq. The event never triggers a transition.
+  `ledgerSeq` (§A.1) is the `step.tool-called` event's seq. Neither event triggers a transition.
 - **Example lines (R1-36), as `workflow events` prints them:**
-  - `tool-called gate.tests.green · ok · 4m 12s (waited 40s for a heavy slot)`
+  - `tool-started gate.tests.green`
+  - `tool-called gate.tests.green · ok · 4m 12s (waited 40s for a heavy slot) · a1b2c3d dirty`
   - `tool-called gate.tests.green · failed · 1m 3s · 3 tests failed`
   - `tool-called gate.tests.green · refused · SND-TOOL-002 arguments: /filter must be a string`
   - `tool-refusals-capped · 50 refused calls recorded; later ones are not`
 - **The result body (R1-38).**
   1. It is scrubbed by `Aw.Redaction` first.
   2. Then it is cut to 64 KiB. A longer one keeps its first 64 KiB and is marked `truncated`.
-  3. It is stored in the content store. The order (scrub, then cut) means a secret split across the cut is still
-     removed.
+  3. It is stored as the call's `result` row in `block_call_bodies` (B.2). The order (scrub, then cut) means a
+     secret split across the cut is still removed.
 
   A failed call's body is the block's reasons.
-- **Refused calls (C4).** The API records a call refused with `SND-TOOL-001`, `-002`, `-004`, `-005` or `-006`. It writes a
-  `refused` row and a `step.tool-called` event, with no result, through the `IBlockCallLog.RecordRefused` port (R1-14).
+- **Refused calls (C4).** The API records a call refused with `SND-TOOL-001`, `-002`, `-004`, `-005` or `-006`
+  under §A.1's refusal rule (a server-made id, the sent `callId` as a field). It writes a `refused` row and a
+  `step.tool-called` event, with no result and no `step.tool-started`, through the `IBlockCallLog.RecordRefused`
+  port (R1-14).
   - That is a Features service the API calls directly. It is not the `RecordEvent` activity.
   - Refused calls don't count against the call budget. They have their own cap per run, equal to the budget (B.4).
     Past it, one `step.tool-refusals-capped` event marks the cut.
-  - `SND-TOOL-404` refusals have no run. They go to the structured log only (`Aw.Kernel.Telemetry`, at the warning
-    level, scrubbed; R1-39), never to the ledger.
-- **Using the evidence.**
+  - `SND-TOOL-404` refusals have no run. They go to the structured log only (scrubbed; R1-39), never to the ledger.
+- **Using the calls.**
   - A step report may cite calls in `calls: [<callId>, ...]` (§A.4). Validation (ENG §5.5) refuses an id that isn't
     a recorded `ok` or `failed` call of this run, or that is `duringTakeover`.
-  - The run's evidence list, which feeds the app's row (§A.4), the Judge's facts for a later route (DT §8.3) and
-    `workflow why` (DT-J3), lists every call of the run in seq order. Calls the report didn't cite are marked
+  - The run's calls, read from `block_calls` for the app (§A.4), the Judge's facts for a later route (DT §8.3) and
+    `workflow why` (DT-J3), are every call of the run in seq order. Calls the report didn't cite are marked
     uncited, so a report that leaves out a failing call can be seen.
-- **Telemetry (R1-23).**
-  - One span per call, `sindri.block_call`, with the attributes `block`, `scope` (`run` | `repo`), `outcome` and
-    `reason`.
-  - The counters `sindri.block_calls` (by `outcome` and `scope`) and `sindri.block_call_refusals` (by code).
-  - The histograms `sindri.block_call.duration` and `sindri.block_call.lock_wait`.
-  - All through `Aw.Kernel.Telemetry`, exporting off by default.
+- **Telemetry** is §A.4's, in one place.
 
 ### B.4 Time and budget
 
-- **Sync or async is the block's own.** A block whose `MaxDuration` is 30 s or less is answered in the call.
-  Otherwise the call answers `running`, and the session polls with the same `callId` (§A.1). No P6 job is involved:
-  jobs don't survive a restart, and a session can't start one (R1-07). Every callable block is bounded, which the
-  catalog test enforces (B.1).
+- **Sync or async is the block's own,** and the wait and the answer follow §A.1's timing rule. No P6 job is
+  involved: jobs don't survive a restart, and a session can't start one (R1-07). Every callable block is bounded,
+  which the catalog test enforces (B.1).
 - **The per-run call budget** is `workflow.calls.perRun` (default 50, with a row in `docs/csharp/sindri-profile.md`).
-  Past it, a call is refused with `SND-TOOL-004`.
+  Past it, a call is refused with `SND-TOOL-004`. A poll never spends it (§A.1).
   - A block with the `Budget` capability also spends the run's ENG §3.7 budget. An over-budget run parks with
     `budget` after the call ends, never in the middle of one.
+- **Concurrency.** One call in flight per run (`SND-TOOL-006`). Plain calls: `workflow.calls.plainConcurrent` per
+  repo (default 2, §A.6), then `SND-TOOL-006`.
 - **The state's clock keeps running (R1-33).** Calls don't pause the state's `timeout`, so a long call can use up the
   Step's time. That is by design: the recipe's timeout bounds the whole Step, calls included.
 
@@ -477,28 +516,35 @@ like this has no instance and no run. It never moves anything, and it is never p
   - A block with `Network` or `Budget` is in the plain set only when the owner lists it by name. A Step session never
     inherits the plain set.
   - The default is owner choice C6.
-- **Where it runs.** In a fresh detached worktree that Sindri makes, at the commit the caller names (`ref`; by
-  default the registered repo's `HEAD`), removed when the call ends. It never runs in the shared checkout or in the
-  session's own folder (C7).
-  - The policy is fixed: `Mode` readOnly, the worktree as the only writable path, and the approved profile.
-  - B.2's environment allowlist and heavy-lock rules apply unchanged.
-- **Who runs it.** `BlockCallRunner`, a hosted service in the Sindri host. It is a bounded queue, one call at a time
-  per repo (`SND-TOOL-006` when busy), running the same `RunBlockCall` body as B.2 with a `BlockContext` that has no
-  instance or run.
-  - The calls live in `block_calls` with `scope: repo:<repo>`. The content keys are `call:<repo>:<callId>` and
-    `call:<repo>:<callId>:arguments`.
-  - Sync, poll, `SND-TOOL-409` and the restart sweep work as in B.2. On a restart, a `running` row ends `failed`
-    with reason `host-restart`. No Temporal and no P6 job are involved.
-- **How it is recorded.** One `session.tool-called` event on the repo's stream. It has B.3's fields without
-  `instance`, `run` and `launch`, plus `caller: session` and the `ref`'s commit sha.
-  - The bodies are kept 30 days (C8).
+- **Where it runs (C7).** In a fresh detached scratch worktree under `$AW_SINDRI_HOME/calls/worktrees/`, at the commit
+  `ref` names (required for a `ReadsCode` block, §A.6), removed with `git worktree remove` when the call ends. It
+  never runs in the shared checkout or in the session's own folder.
+  - **`ref` is resolved once:** `git rev-parse --verify --end-of-options <ref>^{commit}` in the registered repo. Only
+    the resulting sha is used after that (the worktree, the record, the answer's `commit`). A ref that doesn't
+    resolve is `SND-TOOL-002`.
+  - The policy is fixed: no `StepPolicy`, the scratch worktree as the only writable path, and the approved profile.
+  - B.2's environment, denylist and heavy-lock rules apply unchanged. `dirty` is always false.
+- **Who runs it.** `BlockCallRunner`, a hosted service in the Sindri host. It is a bounded queue that runs
+  `workflow.calls.plainConcurrent` calls at once per repo (B.4), each through the same `RunBlockCall` body as B.2
+  with a `BlockContext` that has no instance, run or `StepPolicy`.
+  - The calls live in `block_calls` with scope `repo:<name>`, and their bodies in `block_call_bodies`.
+  - The stored-call lookup, the poll, `SND-TOOL-409` and the restart sweep work as in §A.1 and B.2. On a restart, a
+    `waiting` or `running` row ends `failed` with reason `host-restart`, and its scratch worktree is removed. No
+    Temporal and no P6 job are involved.
+- **How it is recorded.** On the repo's stream: `session.tool-started` (`callId` and `block` only) when it starts,
+  and `session.tool-called` when it ends. The latter has B.3's fields without `instance`, `run` and `launch`, plus
+  `caller: session`, the resolved `commit` and the `itemId` when given.
+  - A sweep deletes plain calls' rows and their bodies after 30 days (C8). Each body is its call's own row (B.2), so
+    the sweep never removes another call's body.
   - Refused calls are recorded the same way (C4).
-  - There is no session id on MCP, so calls are counted and shown per repo: in `sindri ledger --type
-    session.tool-called` and in the repo's activity in the app (BU-1).
-- **Linking to an item.** With an optional `itemId`, the call also shows on that item's timeline as "session call,
-  not proof". It never satisfies a gate, a step report's `calls:` can't cite it, and it is not a fact (C8).
-- **Budget.** `workflow.calls.plainPerDay` per repo (default 200). Past it, a call is `SND-TOOL-005`. Refused
-  entries have their own cap, as in B.3.
+  - There is no session id on MCP, so calls are counted and shown per repo: `sindri ledger --type
+    session.tool-called` and the places §A.4 lists.
+- **Linking to an item.** With an optional `itemId` (an item of this repo, §A.1 check 6), the call also shows on that
+  item's timeline as "plain call, not proof". It never satisfies a gate, a step report's `calls:` can't cite it, and
+  it is not a fact (C8).
+- **Budget.** `workflow.calls.plainPerDay` per repo per local day (default 200). Past it, a call is `SND-TOOL-005`.
+  Refused entries have their own cap, also per repo per day and equal to `plainPerDay`, then one
+  `session.tool-refusals-capped` event for that day.
 
 ## C. Owner choices (plain words)
 
@@ -540,13 +586,15 @@ Contract first, so the two lanes build in parallel.
 
 | Phase | Lane | Holds | Waits on | Docs it updates |
 |---|---|---|---|---|
-| **BM-0** | engine | The contract, red: `Callable`, `Description` and the `ParameterSpec` fields; `tools:` with the RCP-TOOL-001..004 fixtures; `IBlockCallStore`, `IBlockCallLog`, the request and response records for `ListRunTools` and `ExecuteBlockCall`, with stub services; the `step.tool-called` and `session.tool-called` records; the typed refusals | P8 (the agent runtime), API P10a #295 (the per-launch MCP config with `X-Sindri-Run`), DT-J2 (`MaxDuration`) | none |
-| **BM-1** | engine | The validator rows; the catalog test; `gate.tests.green` and `checks.json`; `list_tools`; the `block_calls` migration; the `block-call` Update, `MarkCallStarted` and `RunBlockCall`; the restart sweep; the heavy-lock priority; the environment allowlist; the evidence events, bodies and telemetry; the budget keys; `calls:` validation; `BlockCallRunner` for plain calls; `workflow.implement`'s `tools:`. Tests: unit (filtering, refusals, schema building, path confinement); integration (an Update through the time-skipping server, single flight, cancel on run end, takeover per C5, the restart sweep, a plain call in a scratch worktree) | BM-0 | `docs/csharp/sindri-workflow.md` (`tools:`, RCP-TOOL rows, a "Block calls" section), `docs/csharp/sindri-profile.md` (three keys), `docs/csharp/sindri.md` (the two events), a `checks.json` reference in `docs/csharp/` |
-| **BA-1** | api | §A: the two MCP tools, the routes, the header, schema validation, the 409 check, the refusal recording, the catalog rows, the goldens. Built against BM-0's records and stubs, so it starts the day BM-0 lands | BM-0 | §A's list |
+| **BM-0** | engine | The contract, red: `Callable`, `Description`, `ReadsCode` and the `ParameterSpec` fields (`EnumSource` among them); `tools:` with the RCP-TOOL-001..004 fixtures; `BlockContext` and `GateContext.Checkout`; `IBlockCallStore`, `IBlockCallLog`, the request and response records for `ListCallableBlocks` and `ExecuteBlockCall`, with stub services; the `*.tool-started` and `*.tool-called` records; the typed refusals | P8 (the agent runtime), DT-J2 (`MaxDuration`), the owner's C2 answer (the tool names) | none |
+| **BM-1** | engine | The validator rows; the catalog test; `gate.tests.green`, `checks.json` read from the base commit, `schemas/checks.schema.json`, a `sindri doctor` check that validates every registered repo's `checks.json`, and the `deps.yaml` file edge for it (`node scripts/check-deps.mjs`); `list_tools` with its enum sources; the `block_calls` and `block_call_bodies` migration; the `block-call` Update, `MarkCallStarted` and `RunBlockCall` (the runner); the commit, tree and dirty record; the per-worktree lock and its heavy-wrapper change; the restart sweep (rows and scratch worktrees); the environment base and denylist; the events, bodies and the 30-day sweep; the budget and concurrency keys; `calls:` validation; `BlockCallRunner` for plain calls; `workflow.review-loop`'s `fix` `tools:`. Tests: unit (filtering, refusals, schema building, enum sources, path confinement, the denylist, `ref` resolution, the filter as one argv value); integration (an Update through the time-skipping server, single flight, cancel on run end, takeover per C5, the restart sweep, a Step call in a dirty worktree, a plain call in a scratch worktree) | BM-0 | `docs/csharp/sindri-workflow.md` (`tools:`, RCP-TOOL rows, a "Block calls" section), `docs/csharp/sindri-profile.md` (the keys), `docs/csharp/sindri.md` (the events, the tables, the doctor check), a `checks.json` reference in `docs/csharp/` |
+| **BA-1** | api | §A: the two MCP tools, the routes, `X-Sindri-Run` and the launcher's per-launch MCP form change, schema validation, the stored-call lookup and the 409 check, the refusal recording, the catalog rows, the goldens. Built against BM-0's records and stubs, so it starts the day BM-0 lands | BM-0 | §A's list |
 | **BA-2** | api, with engine | §A.5's proof end to end, with a real launched Step session and a plain session | BM-1, BA-1 | the proof log |
-| **BU-1** | ui | The calls on a Step's evidence list (cited, uncited, in flight) and in the repo's activity | BA-1's goldens | `docs/csharp/sindri-ui.md` |
+| **BU-1** | ui | The calls on a Step (cited, uncited, waiting, running), the plain calls (§A.4), and the app steps of §A.5's proof | BM-1, BA-1 | `docs/csharp/sindri-ui.md` |
 
-BM-1 and BA-1 run at the same time, each lane with its own builders. Only BA-2 needs both.
+BM-1 and BA-1 run at the same time, each lane with its own builders. BA-2 and BU-1 need both, and run at the same
+time as each other.
 
 **Follow-ups, not in v1:** reusing a call for a transition's gate on an exact match (R1-12); a recipe-level default
-`tools:` (R1-31); per-session attribution for Sindri-launched sessions (`X-Sindri-Launch`).
+`tools:` (R1-31); per-session attribution for Sindri-launched sessions (`X-Sindri-Launch`); a heavy-lock priority for
+calls below the transition gates (a heavy-wrapper change).
