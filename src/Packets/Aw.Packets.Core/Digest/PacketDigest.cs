@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Kernel;
 using Aw.Packets.Core.Kinds;
+using Aw.Packets.Core.Kinds.Line;
 using Aw.Packets.Core.Kinds.Scoping;
 using Aw.Packets.Core.Model;
 using Aw.Packets.Core.Values;
@@ -58,6 +59,31 @@ public static class PacketDigest
         }
 
         return Compute(kind.Files.Select(f => (f.Name, files.Present[f.Name], f.Format == PacketFileFormat.Json)), kind.Name);
+    }
+
+    /// <summary>
+    /// Computes the hash of a line packet (design, plan, phase, proof, review, handoff): the same canonical form over the
+    /// kind's files (packet.json and index.json among them) and the files under its linked directories, with
+    /// '"kind":"&lt;kind&gt;"' in the hashed document so no packet of another kind can collide with it. A JSON file's entry
+    /// is the file without its '$schema' hint (packet.json also without 'status' and 'hash'); any other file's entry is
+    /// 'sha256:&lt;hex of its bytes&gt;'.
+    /// </summary>
+    /// <param name="kind">A line kind.</param>
+    /// <param name="files">The packet directory as read.</param>
+    /// <returns>The hash; AW-PACKETS-003 when a listed file is missing or a JSON file has no canonical form.</returns>
+    public static Result<PacketHash> Compute(PacketKind kind, LinePacketFiles files)
+    {
+        ArgumentNullException.ThrowIfNull(kind);
+        ArgumentNullException.ThrowIfNull(files);
+        if (kind.Files.FirstOrDefault(f => !files.Present.ContainsKey(f.Name)) is { } missing)
+        {
+            return PacketsErrors.Malformed.With($"{missing.Name} is missing; a {kind.Name} packet is hashed with all {kind.Files.Count} files.");
+        }
+
+        var json = kind.Files.Where(static f => f.Format == PacketFileFormat.Json).Select(static f => f.Name).ToHashSet(StringComparer.Ordinal);
+        var listed = kind.Files.Select(static f => f.Name).ToHashSet(StringComparer.Ordinal);
+        var covered = files.Present.Where(f => listed.Contains(f.Key) || kind.Directories.Any(d => f.Key.StartsWith(d.Prefix, StringComparison.Ordinal)));
+        return Compute(covered.Select(f => (f.Key, f.Value, json.Contains(f.Key))), kind.Name);
     }
 
     private static Result<PacketHash> Compute(IEnumerable<(string Path, ReadOnlyMemory<byte> Bytes, bool IsJson)> entries, string? kind)
