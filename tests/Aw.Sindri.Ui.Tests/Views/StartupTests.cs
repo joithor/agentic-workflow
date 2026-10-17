@@ -27,7 +27,11 @@ public sealed class StartupTests : IDisposable
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    public void Dispose() => _desktop.Dispose();
+    public void Dispose()
+    {
+        _app?.Dispose();   // a listener left running reads the dispatcher in the next test's set-up
+        _desktop.Dispose();
+    }
 
     private static async Task OnUi(Func<Task> body) =>
         _ = await HeadlessUnitTestSession.GetOrStartForAssembly(typeof(StartupTests).Assembly)
@@ -39,6 +43,7 @@ public sealed class StartupTests : IDisposable
 
     private readonly RecordingLogger _log = new();
     private int? _exitCode;
+    private SindriApp? _app;
 
     private SindriPlatform Platform(FakeSingleInstance instance) =>
         new(new InMemoryEndpointRecords(), new InMemoryHumanToken(), new InMemoryPreferencesStore(), new FakeMotionPreference(), instance, _tray) { Log = _log };
@@ -48,6 +53,7 @@ public sealed class StartupTests : IDisposable
     private SindriApp Start(FakeSingleInstance instance)
     {
         var app = SindriApp.Create(Platform(instance), _clock);
+        _app = app;
         app.End = (_, exitCode) => _exitCode ??= exitCode;
         app.ApplicationLifetime = _desktop;
         app.Initialize();
