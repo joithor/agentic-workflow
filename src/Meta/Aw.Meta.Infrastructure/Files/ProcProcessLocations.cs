@@ -41,7 +41,7 @@ internal sealed class ProcProcessLocations : IProcessLocations
             }
         }
 
-        var invoker = Chain(Environment.ProcessId, parents);
+        var invoker = ProcessAncestry.Chain(Environment.ProcessId, parents);
         var found = new List<ProcessLocation>();
         foreach (var (pid, directory) in directories)
         {
@@ -52,17 +52,6 @@ internal sealed class ProcProcessLocations : IProcessLocations
         }
 
         return found;
-    }
-
-    private static HashSet<int> Chain(int start, Dictionary<int, int> parents)
-    {
-        var chain = new HashSet<int>();
-        for (var pid = start; pid > 1 && chain.Add(pid) && parents.TryGetValue(pid, out var parent); pid = parent)
-        {
-            // each ancestor, up to init
-        }
-
-        return chain;
     }
 
     private static int? Parent(string directory)

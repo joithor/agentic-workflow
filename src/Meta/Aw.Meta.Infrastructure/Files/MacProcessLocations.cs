@@ -4,7 +4,7 @@ using Aw.Meta.Core.Ports;
 
 namespace Aw.Meta.Infrastructure.Files;
 
-/// <summary>IProcessLocations on macOS through lsof (one call, run by <see cref="MacHostReader"/>).</summary>
+/// <summary>IProcessLocations on macOS through lsof (one call, run by <see cref="MacHostReader"/>); the invokers come from lsof's parent field, with the same ancestry walk as the /proc scan.</summary>
 /// <param name="reader">Runs lsof.</param>
 /// <param name="selfPid">The scanning process's id.</param>
 internal sealed class MacProcessLocations(MacHostReader reader, int selfPid) : IProcessLocations
@@ -18,8 +18,13 @@ internal sealed class MacProcessLocations(MacHostReader reader, int selfPid) : I
         }
 
         var found = LsofOutput.Parse(output.Value);
-        return found.Count == 0
-            ? MetaErrors.HostUnreadable.With("unavailable on macOS: lsof listed no process")
-            : Results.Success<IReadOnlyList<ProcessLocation>>([.. found.Select(e => e.Location.Pid == selfPid ? e.Location with { IsInvoker = true } : e.Location)]);
+        if (found.Count == 0)
+        {
+            return MetaErrors.HostUnreadable.With("unavailable on macOS: lsof listed no process");
+        }
+
+        // lsof's R field is each process's parent: the scanner and the shells that ran it are never evidence that another command is running
+        var invokers = ProcessAncestry.Chain(selfPid, found.Where(e => e.Ppid > 0).ToDictionary(e => e.Location.Pid, e => e.Ppid));
+        return Results.Success<IReadOnlyList<ProcessLocation>>([.. found.Select(e => invokers.Contains(e.Location.Pid) ? e.Location with { IsInvoker = true } : e.Location)]);
     }
 }
