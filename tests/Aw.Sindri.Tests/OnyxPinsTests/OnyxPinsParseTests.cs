@@ -135,6 +135,29 @@ public sealed class OnyxPinsParseTests
     public void Parse_accepts_what_the_bash_check_accepts(string rows)
         => Assert.True(OnyxPins.Parse(Fixture(rows)).IsSuccess);
 
+    // The same two fixtures as scripts/tests/onyx-lock.test.sh: the valid file without its image rows, and without its compose file row.
+    [Fact, Trait("Lane", "unit")]
+    public void Parse_refuses_a_lock_with_no_image_rows()
+    {
+        var text = string.Join('\n', Fixture().Split('\n').Where(static l => !l.StartsWith("image", StringComparison.Ordinal)));
+
+        var result = OnyxPins.Parse(text);
+
+        Assert.Equal(SindriErrors.OnyxPinsMalformed.Code, result.Error.Code);
+        Assert.Contains("no image rows", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Parse_refuses_a_lock_with_no_compose_file_row()
+    {
+        var text = string.Join('\n', Fixture().Split('\n').Where(static l => !l.StartsWith("file", StringComparison.Ordinal)));
+
+        var result = OnyxPins.Parse(text);
+
+        Assert.Equal(SindriErrors.OnyxPinsMalformed.Code, result.Error.Code);
+        Assert.Contains("no file row for docker_compose/docker-compose.yml", result.Error.Message, StringComparison.Ordinal);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Parse_refuses_an_image_missing_a_platform()
     {
