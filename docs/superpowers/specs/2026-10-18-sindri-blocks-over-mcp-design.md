@@ -529,6 +529,10 @@ Step get the block tools (§A.6, §B.5). C6 to C8 are the details that answer op
 8. **What your own session's calls count for.** *Recommended:* they're logged (repo, block, outcome, result) and
    kept 30 days, but they never count as proof for a work item or a Step, even when they name an item. Later, if
    you want, a Step could adopt one as proof (not in v1).
+9. **What an agent's Step block call tests.** When an agent's Step runs a block such as the tests, should it test the
+   agent's working folder as it is, uncommitted edits included, or a clean copy of its last commit? *Recommended:*
+   the folder as it is. It is Sindri's own per-run copy, never yours, and each call records exactly which code it saw
+   (the commit, a fingerprint of the working tree, and whether there were uncommitted edits).
 
 ## D. Phases
 
