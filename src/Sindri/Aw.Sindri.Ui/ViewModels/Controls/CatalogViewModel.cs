@@ -38,6 +38,11 @@ internal sealed class CatalogViewModel(IClipboard clipboard, TimeProvider clock)
     /// <returns>The control.</returns>
     internal ControlViewModel? For(string action) => Controls.FirstOrDefault(c => string.Equals(c.Action, action, StringComparison.Ordinal));
 
+    /// <summary>The catalog row for an action id, or null when the catalog is not read or has no such row.</summary>
+    /// <param name="action">The action id.</param>
+    /// <returns>The row.</returns>
+    internal CommandRowView? Row(string action) => _rows.GetValueOrDefault(action);
+
     /// <summary>A control for one catalog row acting on one subject (an item's actions, a row's primary action), or null when the catalog has no such row.</summary>
     /// <param name="action">The action id.</param>
     /// <param name="subject">The subject's id, named in the control's accessible name.</param>

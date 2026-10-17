@@ -24,7 +24,7 @@ internal static class InstanceHeads
     /// <summary>The Workflows page's head: "8 open · 2 need you · 1 with you".</summary>
     /// <param name="counts">The list's counts.</param>
     /// <returns>The text.</returns>
-    internal static string Workflows(ListCounts counts) => $"{Number(counts.Open)} open · {Number(counts.NeedsYou)} need you · {Number(counts.WithYou)} with you";
+    internal static string Workflows(ListCounts counts) => Labels.WorkflowsHead(Number(counts.Open), Number(counts.NeedsYou), Number(counts.WithYou));
 
     /// <summary>The collapsed finished line: "4 done today".</summary>
     /// <param name="done">The finished figure.</param>

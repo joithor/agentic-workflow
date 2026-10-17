@@ -24,7 +24,10 @@ internal sealed partial class ShellViewModel
     internal bool IsSelectedNeedsYouRowOpen => IsHome && NeedsYou.SelectedId is { } id && string.Equals(NeedsYou.SheetRowId, id, StringComparison.Ordinal);
 
     /// <summary>True when the selected row (a queue row or a Needs-you row) is the one whose sheet is open.</summary>
-    internal bool IsSelectedSheetOpen => IsSelectedRowOpen || IsSelectedNeedsYouRowOpen;
+    internal bool IsSelectedSheetOpen => IsSelectedRowOpen || IsSelectedNeedsYouRowOpen || IsSelectedWorkflowOpen;
+
+    /// <summary>True when the Workflows page's selected row is the instance whose frame is open.</summary>
+    internal bool IsSelectedWorkflowOpen => IsWorkflows && IsSheetOpen && IsInstanceSheet && Workflows.SelectedAddress is { } address && string.Equals(address, Instance.Address, StringComparison.Ordinal);
 
     /// <summary>Marks every current row seen (Shift+A from anywhere but a text field).</summary>
     internal void MarkAllSeen() => NeedsYou.MarkAllSeen();
