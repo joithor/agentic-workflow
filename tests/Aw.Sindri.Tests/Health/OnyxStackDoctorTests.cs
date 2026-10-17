@@ -63,7 +63,7 @@ public sealed class OnyxStackDoctorTests
     public async Task A_docker_that_answers_but_fails_to_list_the_containers_is_told_apart_from_one_that_is_not_running()
     {
         Stack();
-        _runtime.FailNext("Ps", Aw.Sindri.Core.SindriErrors.OnyxComposeFailed.With("`docker compose ps` failed (exit 1): no configuration file provided"));
+        _runtime.FailNext("Ps", Sindri.Core.SindriErrors.OnyxComposeFailed.With("`docker compose ps` failed (exit 1): no configuration file provided"));
 
         var failed = await Doctor().Check(Token);
         _runtime.Facts = FakeContainerRuntime.DaemonDown;

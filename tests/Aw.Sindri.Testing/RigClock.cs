@@ -9,7 +9,7 @@ public sealed class RigClock : FakeTimeProvider
     public bool AdvanceOnDelay { get; set; }
 
     /// <inheritdoc />
-    public override System.Threading.ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+    public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
     {
         var timer = base.CreateTimer(callback, state, dueTime, period);
         if (AdvanceOnDelay && dueTime > TimeSpan.Zero && dueTime != Timeout.InfiniteTimeSpan)
