@@ -28,9 +28,9 @@ internal sealed class OnyxStartStep(IContainerRuntime runtime, IOnyxHealth healt
 
     private async ValueTask<bool> IsDone(OnyxUpContext context, string stamp, string? recorded, CancellationToken cancellationToken)
     {
-        if (!string.Equals(recorded, stamp, StringComparison.Ordinal))
+        if (context.ConfigRewritten || !string.Equals(recorded, stamp, StringComparison.Ordinal))
         {
-            return false;
+            return false;   // a rewritten config file means the running services still have the old one: `up -d` recreates what changed
         }
 
         var containers = runtime.Ps(context.Project, cancellationToken);

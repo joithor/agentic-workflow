@@ -58,6 +58,7 @@ internal sealed class OnyxConfigStep(IOnyxWorkspace workspace, IComposeServices 
 
         var wrote = workspace.WriteIfChanged(context.Paths.Env, env, secret: true);
         wrote |= workspace.WriteIfChanged(context.Paths.Override, rendered.Value, secret: false);
+        context.ConfigRewritten = wrote;
         return stale || wrote ? OnyxStepOutcome.Ran : OnyxStepOutcome.Skipped;
     }
 

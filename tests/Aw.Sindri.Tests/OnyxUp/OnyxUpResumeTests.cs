@@ -205,7 +205,7 @@ public sealed class OnyxUpResumeTests
 
         var rerun = (await rig.Up(Token)).Value;
 
-        Assert.Equal(["config"], rerun.Ran, StringComparer.Ordinal);
+        Assert.Equal(["config", "start"], rerun.Ran, StringComparer.Ordinal);
         Assert.Equal(over, rig.Workspace.Files[rig.Paths.Override], StringComparer.Ordinal);
         Assert.Equal(env, rig.Workspace.Files[rig.Paths.Env], StringComparer.Ordinal);
         Assert.Equal(1, rig.Random.Calls);
@@ -326,7 +326,7 @@ public sealed class OnyxUpResumeTests
         var regenerated = OnyxConfig.ReadSecret(rig.Workspace.Files[rig.Paths.Env]);
         var third = (await rig.Up(Token)).Value;
 
-        Assert.Equal(["config"], second.Ran, StringComparer.Ordinal);
+        Assert.Equal(["config", "start"], second.Ran, StringComparer.Ordinal);
         Assert.Equal(new string('0', 63) + "2", regenerated);
         Assert.Equal(["fetch", "config", "pull", "start"], third.Skipped, StringComparer.Ordinal);
         Assert.Equal(regenerated, OnyxConfig.ReadSecret(rig.Workspace.Files[rig.Paths.Env]));
@@ -342,7 +342,7 @@ public sealed class OnyxUpResumeTests
 
         var rerun = (await rig.Up(Token)).Value;
 
-        Assert.Equal(["config"], rerun.Ran, StringComparer.Ordinal);
+        Assert.Equal(["config", "start"], rerun.Ran, StringComparer.Ordinal);
         Assert.NotNull(OnyxConfig.ReadSecret(rig.Workspace.Files[rig.Paths.Env]));
     }
 
@@ -356,7 +356,7 @@ public sealed class OnyxUpResumeTests
 
         var rerun = (await rig.Up(Token)).Value;
 
-        Assert.Equal(["config"], rerun.Ran, StringComparer.Ordinal);
+        Assert.Equal(["config", "start"], rerun.Ran, StringComparer.Ordinal);
         Assert.Equal(key, OnyxConfig.ReadSecret(rig.Workspace.Files[rig.Paths.Env]));
         Assert.Equal(1, rig.Random.Calls);
     }
