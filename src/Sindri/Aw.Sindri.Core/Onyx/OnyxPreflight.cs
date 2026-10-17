@@ -28,14 +28,13 @@ public static class OnyxPreflight
         ArgumentNullException.ThrowIfNull(docker);
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(pins);
-        _ = usedByOthers;   // red: not used yet
         var dockerCheck = Docker(docker);
         var needsDocker = dockerCheck.State != CheckState.Ok;
         PreflightCheck[] checks =
         [
             dockerCheck,
             needsDocker ? Warn("compose", "needs docker") : Compose(docker),
-            needsDocker ? Warn("memory", "needs docker") : Memory(docker, pins),
+            needsDocker ? Warn("memory", "needs docker") : Memory(docker, pins, usedByOthers),
             Disk(docker, host.Home, host.DataRoot, pins),
             ownPort is { } own ? Ok("port", $"{own.ToString(CultureInfo.InvariantCulture)} (Onyx's own)") : Port(host.Port),
         ];
@@ -140,7 +139,7 @@ public static class OnyxPreflight
 
     // The lock's docker-memory-bytes is a floor for `docker info` MemTotal, which reads a few percent under the VM limit
     // the user sets. The setting the user is told is that floor rounded up to a whole GiB (5.5 GiB floor, 6 GiB setting).
-    private static PreflightCheck Memory(ContainerRuntimeFacts docker, OnyxPins pins)
+    private static PreflightCheck Memory(ContainerRuntimeFacts docker, OnyxPins pins, Result<long>? usedByOthers)
     {
         var setting = ((pins.DockerMemoryBytes + (1L << 30) - 1) >> 30).ToString(CultureInfo.InvariantCulture);
         if (docker.MemoryBytes is not { } have)
@@ -149,9 +148,27 @@ public static class OnyxPreflight
         }
 
         var detail = $"{Gib(have)} GiB for Docker, needs a {setting} GiB setting";
-        return have >= pins.DockerMemoryBytes
-            ? Ok("memory", detail)
-            : Fail("memory", detail, SindriErrors.OnyxNotEnoughResources, $"Docker has {Gib(have)} GiB and Onyx needs a {setting} GiB limit: set Docker's memory to at least {setting} GiB in Docker Desktop → Settings → Resources");
+        if (have < pins.DockerMemoryBytes)
+        {
+            return Fail("memory", detail, SindriErrors.OnyxNotEnoughResources, $"Docker has {Gib(have)} GiB and Onyx needs a {setting} GiB limit: set Docker's memory to at least {setting} GiB in Docker Desktop → Settings → Resources");
+        }
+
+        if (usedByOthers is not { } read)
+        {
+            return Ok("memory", detail);
+        }
+
+        // Docker's VM is shared: what other containers already hold is not there for Onyx (the floor is for one stack on a VM of its own).
+        if (read.IsError)
+        {
+            return Warn("memory", $"{detail}; the memory other containers use couldn't be read");
+        }
+
+        var used = read.Value;
+        var withOthers = $"{Gib(have)} GiB for Docker, {Gib(used)} GiB used by other containers, needs {Gib(pins.DockerMemoryBytes)} GiB free";
+        return have - used >= pins.DockerMemoryBytes
+            ? Ok("memory", withOthers)
+            : Fail("memory", withOthers, SindriErrors.OnyxNotEnoughResources, $"Docker has {Gib(have)} GiB and other containers already use {Gib(used)} GiB, leaving {Gib(Math.Max(0, have - used))} GiB for Onyx, which needs {Gib(pins.DockerMemoryBytes)} GiB: stop the other containers (`docker ps`), or raise Docker's memory to at least {Gib(used + pins.DockerMemoryBytes)} GiB in Docker Desktop → Settings → Resources");
     }
 
     // Spec §4.1 step 1: free disk at the Sindri home and, when Docker's data root is a directory on this host, there too; the

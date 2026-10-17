@@ -17,7 +17,7 @@ public sealed class OnyxUpTests
 
         var response = (await rig.Up(Token)).Value;
 
-        Assert.Equal(["Inspect", "Ps", "ServerPlatform", "Pull", "RepoDigests", "RenderedConfig", "Up"], rig.Runtime.Calls, StringComparer.Ordinal);
+        Assert.Equal(["Inspect", "Ps", "MemoryUsedOutside", "ServerPlatform", "Pull", "RepoDigests", "RenderedConfig", "Up"], rig.Runtime.Calls, StringComparer.Ordinal);
         Assert.Equal(_allSteps, response.Ran, StringComparer.Ordinal);
         Assert.Empty(response.Skipped);
         Assert.Equal("http://127.0.0.1:3000", response.Url);
@@ -110,7 +110,7 @@ public sealed class OnyxUpTests
         Assert.Equal(0, rig.Files.Fetches);
         Assert.Empty(rig.Workspace.Writes);
         Assert.Equal(0, rig.Workspace.StateWrites);
-        Assert.Equal(["Inspect", "Ps"], rig.Runtime.Calls, StringComparer.Ordinal);   // Ps: whether our own nginx already holds the port, by the project label with no files yet
+        Assert.Equal(["Inspect", "Ps", "MemoryUsedOutside"], rig.Runtime.Calls, StringComparer.Ordinal);   // Ps: whether our own nginx already holds the port, by the project label with no files yet
     }
 
     [Fact, Trait("Lane", "unit")]

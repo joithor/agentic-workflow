@@ -14,7 +14,73 @@ internal sealed partial class DockerCliRuntime
     private const string ServiceLabel = "com.docker.compose.service";
 
     /// <inheritdoc />
-    public Result<long> MemoryUsedOutside(ComposeProject project, CancellationToken cancellationToken) => throw new NotSupportedException();
+    public Result<long> MemoryUsedOutside(ComposeProject project, CancellationToken cancellationToken)
+    {
+        if (LabelFilter(project) is not { } filter)
+        {
+            return NotOurs(project).Error;
+        }
+
+        var ours = Direct(["ps", "-q", "--filter", filter], new Call("ps", _timeout), cancellationToken);
+        if (ours.IsError)
+        {
+            return ours.Error;
+        }
+
+        var stats = Direct(["stats", "--no-stream", "--format", "{{.ID}}|{{.MemUsage}}"], new Call("stats", _timeout), cancellationToken);
+        if (stats.IsError)
+        {
+            return stats.Error;
+        }
+
+        var own = Split(ours.Value).ToHashSet(StringComparer.Ordinal);
+        long total = 0;
+        foreach (var line in Split(stats.Value))
+        {
+            var bar = line.IndexOf('|', StringComparison.Ordinal);
+            if (bar <= 0 || !TryBytes(line[(bar + 1)..].Split('/')[0], out var bytes))
+            {
+                return SindriErrors.OnyxComposeFailed.With("`docker stats` printed a memory figure Sindri can't read; update Docker, then run this again");
+            }
+
+            total += own.Contains(line[..bar]) ? 0 : bytes;
+        }
+
+        return total;
+    }
+
+    // `1.5GiB`, `512MiB`, `1024KiB`, `2048B`, `1.5GB`: a number and a unit, binary (KiB) or decimal (kB, MB, GB).
+    private static bool TryBytes(string text, out long bytes)
+    {
+        bytes = 0;
+        var trimmed = text.Trim();
+        var cut = trimmed.Length;
+        while (cut > 0 && char.IsAsciiLetter(trimmed[cut - 1]))
+        {
+            cut--;
+        }
+
+        long? unit = trimmed[cut..] switch
+        {
+            "B" => 1,
+            "kB" or "KB" => 1_000,
+            "KiB" => 1L << 10,
+            "MB" => 1_000_000,
+            "MiB" => 1L << 20,
+            "GB" => 1_000_000_000,
+            "GiB" => 1L << 30,
+            "TB" => 1_000_000_000_000,
+            "TiB" => 1L << 40,
+            _ => null,
+        };
+        if (unit is not { } size || !double.TryParse(trimmed[..cut], NumberStyles.Float, CultureInfo.InvariantCulture, out var amount) || amount < 0)
+        {
+            return false;
+        }
+
+        bytes = (long)Math.Round(amount * size, MidpointRounding.AwayFromZero);
+        return true;
+    }
 
     private Result<Unit> StopByLabel(ComposeProject project, CancellationToken cancellationToken)
     {

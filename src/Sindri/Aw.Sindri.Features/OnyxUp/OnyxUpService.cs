@@ -127,7 +127,7 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
             return ownPort.Error;
         }
 
-        var report = OnyxPreflight.Evaluate(docker, host, pins, ownPort.Value);
+        var report = OnyxPreflight.Evaluate(docker, host, pins, ownPort.Value, facts.MemoryUsedByOthers(cancellationToken));
         if (report.Blocks)
         {
             return report.Checks.First(static c => c.State == CheckState.Fail).Problem!;   // why: a failed check always carries its error
