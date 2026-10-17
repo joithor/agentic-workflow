@@ -122,6 +122,7 @@ public sealed class OnyxStatusTests
     {
         var rig = await RunningRig();
         rig.Workspace.State = rig.Workspace.State! with { Port = 3005 };
+        rig.Health.Probed.Clear();   // up's own health wait probed already
         var nginx = rig.Runtime.Containers.Single(static c => c.Service == "nginx");
         rig.Runtime.Containers[rig.Runtime.Containers.IndexOf(nginx)] = nginx with { Publishers = [new ComposePublisher("127.0.0.1", 3001, 80)] };
 
