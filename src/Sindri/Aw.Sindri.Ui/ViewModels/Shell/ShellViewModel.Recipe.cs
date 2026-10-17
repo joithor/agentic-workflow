@@ -28,5 +28,16 @@ internal sealed partial class ShellViewModel
         }
     }
 
-    private void InitRecipe() => Health.Follow((url, token) => IsRecipeSheet ? Recipe.Refresh(url, token) : Task.CompletedTask);
+    private void InitRecipe()
+    {
+        Health.Follow((url, token) => IsRecipeSheet ? Recipe.Refresh(url, token) : Task.CompletedTask);
+
+        // The frame's link stacks the recipe on it (Back returns to the frame); a group head's button opens the approved version over the page it is on.
+        Instance.RecipeRequested += (_, e) =>
+        {
+            Stacked(() => OpenSheet(new DeepLink(DeepLinkKind.Recipe, e.Subject)), push: true);
+            SheetStacked?.Invoke(this, EventArgs.Empty);   // the Recipe button stays under the sheet: focus goes to the sheet's heading
+        };
+        Workflows.RecipeRequested += (_, e) => OpenSheet(new DeepLink(DeepLinkKind.Recipe, e.Subject));
+    }
 }
