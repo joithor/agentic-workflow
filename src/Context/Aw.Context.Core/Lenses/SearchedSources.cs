@@ -6,7 +6,7 @@ namespace Aw.Context.Core.Lenses;
 /// <summary>The rows of <see cref="LensSearched.Sources"/>.</summary>
 public static class SearchedSources
 {
-    /// <summary>The row of an intent source: not-configured when the profile doesn't name it, error with the last run's code when it failed, unavailable ('not-synced') before the first sync, else ok at its last sync.</summary>
+    /// <summary>The row of an intent source: not-configured when the profile doesn't name it, degraded with the last run's code when it failed, unavailable ('not-synced') before the first sync, else ok at its last sync.</summary>
     /// <param name="id">The source ('onyx').</param>
     /// <param name="configured">Whether the profile names it.</param>
     /// <param name="state">What its sync stored, or null when it has no state yet.</param>
@@ -25,7 +25,7 @@ public static class SearchedSources
 
         // A capped run (059) or held-back extraction (042) is partial, not a failure: the source still answers.
         var failed = state.LastError is { } code && code != ContextErrors.SyncCapped.Code && code != ContextErrors.LabelingUnavailable.Code;
-        return new SearchedSource(id, failed ? SearchedState.Error : SearchedState.Ok, Reason: null, state.LastError, state.LastSync);
+        return new SearchedSource(id, failed ? SearchedState.Degraded : SearchedState.Ok, Reason: null, state.LastError, state.LastSync);
     }
 
     /// <summary>The map's row: ok, as of the version's creation.</summary>

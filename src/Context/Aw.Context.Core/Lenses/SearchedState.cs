@@ -19,6 +19,6 @@ public enum SearchedState
     Unavailable,
 
     /// <summary>Named, and its last run failed; <see cref="SearchedSource.Code"/> says why.</summary>
-    [JsonStringEnumMemberName("error")]
-    Error,
+    [JsonStringEnumMemberName("degraded")]
+    Degraded,
 }

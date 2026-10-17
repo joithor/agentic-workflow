@@ -4042,7 +4042,6 @@ Aw.Context.Core.Lenses.SearchedSource.State.get -> Aw.Context.Core.Lenses.Search
 Aw.Context.Core.Lenses.SearchedSource.State.init -> void
 Aw.Context.Core.Lenses.SearchedSources
 Aw.Context.Core.Lenses.SearchedState
-Aw.Context.Core.Lenses.SearchedState.Error = 3 -> Aw.Context.Core.Lenses.SearchedState
 Aw.Context.Core.Lenses.SearchedState.NotConfigured = 1 -> Aw.Context.Core.Lenses.SearchedState
 Aw.Context.Core.Lenses.SearchedState.Ok = 0 -> Aw.Context.Core.Lenses.SearchedState
 Aw.Context.Core.Lenses.SearchedState.Unavailable = 2 -> Aw.Context.Core.Lenses.SearchedState
@@ -4906,3 +4905,14 @@ static readonly Aw.Context.Core.ContextErrors.MapVersionNotRetained -> Aw.Kernel
 ~override Aw.Context.Core.Map.MapVersionRef.ToString() -> string
 Aw.Context.Core.Map.MapVersionRef.Label.get -> string!
 static Aw.Context.Core.Map.MapVersionRef.Tag(int number) -> string!
+Aw.Context.Core.Engine.ContextQuery.MapVersion.get -> string?
+Aw.Context.Core.Engine.ContextQuery.MapVersion.init -> void
+Aw.Context.Core.Facade.IContextLenses.Lenses(string! anchor, Aw.Context.Core.Map.MapRead read, int? depth, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Lenses.LensesView!>!>
+Aw.Context.Core.Facade.IContextLenses.LensesOf(System.Collections.Generic.IReadOnlyList<string!>! anchors, Aw.Context.Core.Map.MapRead read, int? depth, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Lenses.LensesSetView!>!>
+Aw.Context.Core.Lenses.LensBasis.MapCommit.get -> string?
+Aw.Context.Core.Lenses.LensBasis.MapCommit.init -> void
+Aw.Context.Core.Lenses.LensesSetView.MapCommit.get -> string?
+Aw.Context.Core.Lenses.LensesSetView.MapCommit.init -> void
+Aw.Context.Core.Lenses.LensesView.MapCommit.get -> string?
+Aw.Context.Core.Lenses.LensesView.MapCommit.init -> void
+Aw.Context.Core.Lenses.SearchedState.Degraded = 3 -> Aw.Context.Core.Lenses.SearchedState

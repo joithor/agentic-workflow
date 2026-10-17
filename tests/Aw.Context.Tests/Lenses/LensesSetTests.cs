@@ -202,7 +202,7 @@ public sealed class LensesSetTests
     [Fact, Trait("Lane", "unit")]
     public void Searched_lists_map_intent_sources_and_code_index_with_states_codes_and_reasons()
     {
-        var onyx = new SearchedSource(SourceId.From("onyx"), SearchedState.Error, Reason: null, "SND-CONTEXT-010", AsOf: null);
+        var onyx = new SearchedSource(SourceId.From("onyx"), SearchedState.Degraded, Reason: null, "SND-CONTEXT-010", AsOf: null);
         var basis = Basis() with { IntentSources = [onyx] };
 
         var searched = Set(Tabs(), [Manager, Layout], basis: basis).Searched;
@@ -211,19 +211,28 @@ public sealed class LensesSetTests
         Assert.Equal(("v2", 2), (searched.MapVersion, searched.Depth));
         Assert.Equal(["state", "dependency", "flow"], searched.Hops);
         Assert.Equal(
-            [(SourceId.From("map"), SearchedState.Ok, null, null, _created), (SourceId.From("onyx"), SearchedState.Error, null, "SND-CONTEXT-010", null), (SourceId.From("code-index"), SearchedState.Unavailable, "index-not-built", null, null)],
+            [(SourceId.From("map"), SearchedState.Ok, null, null, _created), (SourceId.From("onyx"), SearchedState.Degraded, null, "SND-CONTEXT-010", null), (SourceId.From("code-index"), SearchedState.Unavailable, "index-not-built", null, null)],
             searched.Sources.Select(s => (s.Id, s.State, s.Reason, s.Code, s.AsOf)));
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Intent_source_rows_read_not_configured_not_synced_error_and_ok()
+    public void A_failed_intent_source_reads_degraded_on_the_wire_with_its_code()
+    {
+        var row = SearchedSources.Intent(SourceId.From("onyx"), configured: true, new IntentSourceState("c", _created, LastError: "SND-CONTEXT-010", 3, 1, 0, 0));
+
+        Assert.Equal("\"degraded\"", System.Text.Json.JsonSerializer.Serialize(row.State));
+        Assert.Equal(("SND-CONTEXT-010", SearchedState.Degraded), (row.Code, row.State));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Intent_source_rows_read_not_configured_not_synced_degraded_and_ok()
     {
         var synced = new IntentSourceState("c", _created, LastError: null, 3, 1, 0, 0);
 
         Assert.Equal((SearchedState.NotConfigured, "not-configured", null), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: false, state: null)));
         Assert.Equal((SearchedState.Unavailable, "not-synced", null), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: true, state: null)));
         Assert.Equal((SearchedState.Unavailable, "not-synced", null), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: true, new IntentSourceState(Cursor: null, LastSync: null, LastError: null, Records: 0, Links: 0, Decisions: 0, Queued: 0))));
-        Assert.Equal((SearchedState.Error, null, "SND-CONTEXT-010"), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: true, synced with { LastError = "SND-CONTEXT-010" })));
+        Assert.Equal((SearchedState.Degraded, null, "SND-CONTEXT-010"), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: true, synced with { LastError = "SND-CONTEXT-010" })));
         Assert.Equal((SearchedState.Ok, null, "SND-CONTEXT-059"), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: true, synced with { LastError = "SND-CONTEXT-059" })));
         var ok = SearchedSources.Intent(SourceId.From("onyx"), configured: true, synced);
         Assert.Equal((SearchedState.Ok, null, null, _created), (ok.State, ok.Reason, ok.Code, ok.AsOf));
