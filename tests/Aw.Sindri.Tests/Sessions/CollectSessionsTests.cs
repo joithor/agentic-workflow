@@ -56,6 +56,18 @@ public sealed class CollectSessionsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_pass_cancelled_by_shutdown_returns_instead_of_throwing()
+    {
+        using var shutdown = new CancellationTokenSource();
+        await shutdown.CancelAsync();
+
+        var result = await _c.Service.Handle(new CollectSessionsRequest(TimeSpan.FromSeconds(30)), shutdown.Token);
+
+        Assert.True(result.IsSuccess);
+        Assert.False(result.Value.Good);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Pass_shows_a_recycled_pid_as_an_unidentified_process()
     {
         ClaudeRuns(ticks: 999);   // the record says 100
