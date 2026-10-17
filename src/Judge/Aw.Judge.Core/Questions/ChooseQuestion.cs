@@ -43,12 +43,14 @@ public static class ChooseQuestion
     {
         ArgumentNullException.ThrowIfNull(input);
         var criteria = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var choice in input.Choices)
+        // A null entry (JSON null) is skipped here: InputProblem reports it, so the call escalates before any provider sees it.
+        var choices = input.Choices.Where(c => c is not null).ToList();
+        foreach (var choice in choices)
         {
             criteria[choice.Name] = choice.Criterion;
         }
 
-        return Build([.. input.Choices.Select(c => c.Name)], criteria, input.Threshold ?? DefaultThreshold);
+        return Build([.. choices.Select(c => c.Name)], criteria, input.Threshold ?? DefaultThreshold);
     }
 
     internal static string? InputProblem(ChooseInput input)
@@ -76,6 +78,12 @@ public static class ChooseQuestion
         HashSet<string> seen = new(StringComparer.Ordinal);
         foreach (var choice in choices)
         {
+            // why: the element type is non-null, but JSON null deserializes into the list.
+            if (choice is null)
+            {
+                return "a choice must be an object";
+            }
+
             if (ChoiceProblem(choice) is { } problem)
             {
                 return problem;
