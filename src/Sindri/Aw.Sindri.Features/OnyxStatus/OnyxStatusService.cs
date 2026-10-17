@@ -22,7 +22,7 @@ internal sealed class OnyxStatusService(IOnyxPinsSource pinsSource, OnyxFacts fa
         var setUp = IsSetUp(state, compose.Value);
         var (running, servingPort) = Serving(setUp, state, cancellationToken);
         var report = OnyxPreflight.Evaluate(docker, host, pins, running ? servingPort : null);
-        var onyx = Classify(setUp, running);
+        var onyx = Classify(setUp, running, facts.DockerProblem(cancellationToken) is not null);
         var (url, version) = running ? await Running(report.Port, cancellationToken).ConfigureAwait(false) : (null, null);
         return new OnyxStatusResponse(onyx, pins.Version, pins.Commit, report.Checks, report.Port, report.Ok ? 0 : 1, url, version, Detail(onyx));
     }
@@ -30,7 +30,9 @@ internal sealed class OnyxStatusService(IOnyxPinsSource pinsSource, OnyxFacts fa
     // Set up means `onyx up` finished its start step and the fetched files are still there.
     private static bool IsSetUp(OnyxSetupState? state, string? compose) => state is not null && state.Steps.ContainsKey(OnyxSteps.Start) && compose is not null;
 
-    private static OnyxState Classify(bool setUp, bool running) => !setUp ? OnyxState.NotSetUp : running ? OnyxState.Running : OnyxState.Stopped;
+    // Set up with a Docker that can't be asked: whether it runs is unknown, never a guess of stopped.
+    private static OnyxState Classify(bool setUp, bool running, bool dockerUnusable)
+        => !setUp ? OnyxState.NotSetUp : dockerUnusable ? OnyxState.Unknown : running ? OnyxState.Running : OnyxState.Stopped;
 
     // The address, and the release it reports (or unreachable when it doesn't answer).
     private async ValueTask<(string Url, string Version)> Running(int port, CancellationToken cancellationToken)
@@ -44,7 +46,7 @@ internal sealed class OnyxStatusService(IOnyxPinsSource pinsSource, OnyxFacts fa
         OnyxState.NotSetUp => "not set up: run `sindri onyx up`",
         OnyxState.Stopped => "stopped: run `sindri onyx up` to start it",
         OnyxState.Running => "running",
-        OnyxState.Unknown => "",
+        OnyxState.Unknown => "unknown: Docker isn't usable here, so whether Onyx runs can't be told",
         _ => "",
     };
 

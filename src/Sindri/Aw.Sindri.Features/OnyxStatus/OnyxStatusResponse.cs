@@ -3,7 +3,7 @@ using Aw.Sindri.Core.Onyx;
 namespace Aw.Sindri.Features.OnyxStatus;
 
 /// <summary>The Onyx status: where it stands, the pins, the preflight's checks and the exit code they add up to.</summary>
-/// <param name="State">not-set-up until `sindri onyx up` finished its start step and the files are still there; then running when nginx and the API server run, otherwise stopped.</param>
+/// <param name="State">not-set-up until `sindri onyx up` finished its start step and the files are still there; then unknown when Docker isn't usable here, else running when nginx and the API server run, otherwise stopped.</param>
 /// <param name="PinnedVersion">The pinned Onyx release.</param>
 /// <param name="PinnedCommit">The commit its tag points to.</param>
 /// <param name="Checks">docker, compose, memory, disk, port, in that order (the port row says "Onyx's own" while it is running there).</param>

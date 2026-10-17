@@ -119,7 +119,7 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
             return await output.Json(status, status.ExitCode).ConfigureAwait(false);
         }
 
-        var rows = new List<string> { $"{"onyx",-10}{OnyxStateText(status.State)}" };
+        var rows = new List<string> { $"{"onyx",-10}{OnyxStateText(status)}" };
         if (status.Url is not null)
         {
             rows.Add($"{"url",-10}{status.Url}");
@@ -131,13 +131,13 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
         return await output.Text(string.Join('\n', rows) + "\n", status.ExitCode).ConfigureAwait(false);
     }
 
-    private static string OnyxStateText(OnyxState state) => state switch
+    private static string OnyxStateText(OnyxStatusResponse status) => status.State switch
     {
         OnyxState.NotSetUp => "not set up (run `sindri onyx up`)",
         OnyxState.Stopped => "stopped (run `sindri onyx up` to start it)",
         OnyxState.Running => "running",
-        OnyxState.Unknown => "unknown",
-        _ => state.ToString(),
+        OnyxState.Unknown => $"unknown (Docker isn't usable here: {status.Checks.FirstOrDefault(static c => c.Name == "docker")?.Detail})",
+        _ => status.State.ToString(),
     };
 
     internal async Task<int> Approve(string? hashText, bool interactive, TextReader input, CancellationToken ct)
