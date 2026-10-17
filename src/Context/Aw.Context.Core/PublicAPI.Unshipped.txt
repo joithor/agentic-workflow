@@ -4939,3 +4939,5 @@ static Aw.Context.Core.History.MergeSubject.Parse(string! subject) -> Aw.Context
 static Aw.Context.Core.History.RecordTimes.Of(System.DateTimeOffset? createdAt, string! version) -> Aw.Context.Core.History.RecordTimes!
 static Aw.Context.Core.History.RecordTimes.operator !=(Aw.Context.Core.History.RecordTimes? left, Aw.Context.Core.History.RecordTimes? right) -> bool
 static Aw.Context.Core.History.RecordTimes.operator ==(Aw.Context.Core.History.RecordTimes? left, Aw.Context.Core.History.RecordTimes? right) -> bool
+Aw.Context.Core.Linking.IntentRecord.CreatedAt.get -> System.DateTimeOffset?
+Aw.Context.Core.Linking.IntentRecord.CreatedAt.init -> void
