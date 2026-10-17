@@ -57,7 +57,7 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
 
         var (port, platform, warnings) = preflight.Value;
         var context = new OnyxUpContext(pins, facts.Paths, port, platform) { Project = facts.Project };
-        var recorded = new Dictionary<string, string>(state?.Steps ?? new Dictionary<string, string>(StringComparer.Ordinal), StringComparer.Ordinal);
+        var recorded = RecordedStamps(state, foreignState: foreign is not null);
         var results = await RunSteps(context, recorded, cancellationToken).ConfigureAwait(false);
         if (results.IsError)
         {
@@ -71,6 +71,10 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
 
         return new OnyxUpResponse(port, string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}"), context.Version ?? pins.Version, warnings, results.Value);
     }
+
+    // A state another home wrote vouches for nothing here: start from step 1 like an unreadable one (each step still re-verifies what is on disk).
+    private static Dictionary<string, string> RecordedStamps(OnyxSetupState? state, bool foreignState) =>
+        new(foreignState ? [] : state?.Steps ?? new Dictionary<string, string>(StringComparer.Ordinal), StringComparer.Ordinal);
 
     private async ValueTask<Result<List<OnyxStepResult>>> RunSteps(OnyxUpContext context, Dictionary<string, string> recorded, CancellationToken cancellationToken)
     {
