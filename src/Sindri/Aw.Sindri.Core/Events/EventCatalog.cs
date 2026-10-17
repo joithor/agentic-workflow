@@ -42,6 +42,7 @@ public static class EventCatalog
         new(EventTypes.ServicePaused, Public: true, typeof(ServicePaused), "service.paused:<name>:<commandId>") { Invalidates = [ApiViews.Services, ApiViews.Status] },
         new(EventTypes.ServiceResumed, Public: true, typeof(ServiceResumed), "service.resumed:<name>:<commandId>") { Invalidates = [ApiViews.Services, ApiViews.Status] },
         new(EventTypes.ProfileChecked, Public: true, typeof(ProfileChecked), "profile.checked:<previousCheckSequence>") { Invalidates = [ApiViews.Status, ApiViews.Profile, ApiViews.NeedsYou] },
+        new(EventTypes.FleetChanged, Public: true, typeof(FleetChanged), "fleet.changed:<provider>:<id>:<change>:<observedAtMs>") { Invalidates = [ApiViews.Status] },
         new(EventTypes.ViewsRebuilt, Public: false, PublicPayload: null, "views.rebuilt:<commandId>"),
     ];
 }
