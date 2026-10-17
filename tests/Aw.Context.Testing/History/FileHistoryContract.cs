@@ -67,7 +67,7 @@ public abstract class FileHistoryContract
 
         var merge = history.Changes[0];
         Expect.That(merge.Parents == 2 && merge.Files.SequenceEqual(_both, StringComparer.Ordinal), test, "parents or files differ: " + string.Join(", ", merge.Files));
-        Expect.That(history.Changes.Skip(1).All(c => c.Parents == 1), test, "a plain commit has one parent");
+        Expect.That(history.Changes.Skip(1).All(c => c.Parents <= 1), test, "a plain commit has at most one parent");
     }
 
     /// <summary>Only the requested paths are listed, and a commit that touched none is not.</summary>

@@ -44,7 +44,7 @@ internal static class HistoryWorlds
         new FileChange(edit, HistoryScript.EditAt, HistoryScript.EditSubject, 1, ["other.txt"]),
         new FileChange(merge, HistoryScript.MergeAt, HistoryScript.MergeSubject, 2, ["a.txt", "b.txt"]),
         new FileChange(touch, HistoryScript.TouchAt, HistoryScript.TouchSubject, 1, [HistoryScript.DashPath, "b.txt", "other.txt"]),
-        new FileChange(initial, HistoryScript.InitialAt, HistoryScript.InitialSubject, 1, ["a.txt", "other.txt"]),
+        new FileChange(initial, HistoryScript.InitialAt, HistoryScript.InitialSubject, 0, ["a.txt", "other.txt"]),
     ]);
 
     /// <summary>The files the real repo starts from.</summary>
