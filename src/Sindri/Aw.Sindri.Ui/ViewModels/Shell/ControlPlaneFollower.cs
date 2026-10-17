@@ -159,9 +159,11 @@ internal sealed partial class ControlPlaneFollower(IEndpointRecordSource records
             _ = dirty.Writer.TryWrite(item: true);
         }
 
+#pragma warning disable CA2025 // all three tasks are awaited together in the finally below, before 'using' disposes stop
         var refresher = RefreshOnSignal(url, dirty, stop);
         var watcher = WatchRecord(stop);
         var pinger = PingWhileFollowing(url, stop);
+#pragma warning restore CA2025
         try
         {
             await foreach (var e in api.Events(url, _cursor, stop.Token).ConfigureAwait(true))

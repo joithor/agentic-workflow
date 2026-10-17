@@ -97,8 +97,8 @@ public sealed class PhaseSixSignalTests(SindriTimeSkippingServer server) : IClas
     /// <summary>The recipe's 'effect.notify.desk' in <paramref name="state"/>, read until it is there (the rows follow the workflow task).</summary>
     private static async Task<OutboxCommandView> RecipeEffect(IServiceProvider sindri, EffectState state)
     {
-        var deadline = DateTime.UtcNow + _patience;
-        while (DateTime.UtcNow < deadline)
+        var deadline = RealTime.NowDateTime + _patience;
+        while (RealTime.NowDateTime < deadline)
         {
             if ((await Outbox(sindri, state)).FirstOrDefault(static c => c.Kind == _notify && c.Origin == CommandOrigin.Recipe) is { } found)
             {

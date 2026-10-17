@@ -26,7 +26,8 @@ internal sealed partial class AwInputRedactor(IRedactor redactor) : IInputRedact
         JsonObject obj => Object(obj),
         JsonArray array => new JsonArray([.. array.Select(Redact)]),
         JsonValue value when value.TryGetValue<string>(out var text) => JsonValue.Create(Text(text)),
-        _ => input?.DeepClone(),
+        null => null,
+        _ => input.DeepClone(),
     };
 
     // An Anthropic or OpenAI key; a GitHub token; an AWS access key id; a Slack token; a JWT; a standalone 40+ hex run
