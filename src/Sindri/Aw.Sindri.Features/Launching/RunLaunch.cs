@@ -23,6 +23,8 @@ namespace Aw.Sindri.Features.Launching;
 internal sealed class RunLaunch(LaunchRecovery recovery, LaunchIntake intake, LaunchOutcomes outcomes, ISessionHost host, ILaunchProbes probes, LaunchWork work, LaunchTimings timings)
     : IService<RunLaunchRequest, RunLaunchResponse>
 {
+    private static readonly TimeSpan _probeEvery = TimeSpan.FromMinutes(10);
+
     public async ValueTask<Result<RunLaunchResponse>> Handle(RunLaunchRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -48,8 +50,24 @@ internal sealed class RunLaunch(LaunchRecovery recovery, LaunchIntake intake, La
         }
 
         var polled = await Poll(request.Grant, cancellationToken).ConfigureAwait(false);
-        _ = probes;   // red: no probe is recorded yet
-        return polled.IsError ? polled.Error : new RunLaunchResponse(work.TakeDue());
+        if (polled.IsError)
+        {
+            return polled.Error;
+        }
+
+        var due = work.TakeDue();
+        await Probe(request.Grant, cancellationToken).ConfigureAwait(false);
+        return new RunLaunchResponse(due);
+    }
+
+    /// <summary>Probes the launch targets at the first tick, every 10 minutes after, and the tick after a failed launch (UI spec E-3). Best effort: a probe that fails is tried again at the next due time and never fails the tick.</summary>
+    private async ValueTask Probe(LeaseGrant grant, CancellationToken cancellationToken)
+    {
+        var now = timings.Clock.GetUtcNow();
+        if (work.TakeProbe(now, now + _probeEvery))
+        {
+            _ = await probes.Record(grant, cancellationToken).ConfigureAwait(false);
+        }
     }
 
     private async ValueTask<Result<Unit>> Expire(LeaseGrant grant, CancellationToken cancellationToken)

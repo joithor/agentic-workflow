@@ -9957,3 +9957,5 @@ static Aw.Sindri.Core.Sessions.SessionIdCapture.Choose(Aw.Sindri.Core.Launch.Cap
 static Aw.Sindri.Core.Sessions.SessionIdScan.None.get -> Aw.Sindri.Core.Sessions.SessionIdScan!
 static Aw.Sindri.Core.Sessions.SessionIdScan.operator !=(Aw.Sindri.Core.Sessions.SessionIdScan? left, Aw.Sindri.Core.Sessions.SessionIdScan? right) -> bool
 static Aw.Sindri.Core.Sessions.SessionIdScan.operator ==(Aw.Sindri.Core.Sessions.SessionIdScan? left, Aw.Sindri.Core.Sessions.SessionIdScan? right) -> bool
+Aw.Sindri.Core.Launches.ILaunchFiles.Launches() -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.LaunchId>!
+Aw.Sindri.Core.Launches.ILostSessions.SweepFiles(System.TimeSpan olderThan, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int?>

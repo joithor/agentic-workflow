@@ -7,14 +7,14 @@ namespace Aw.Sindri.Host.Server;
 /// tab or a killed wrap clears the double-launch guard. At start it also removes the capture rules and id files a dead launch left (older than 60 s; by then
 /// 'session wrap' has read them, so a running session loses nothing).
 /// </summary>
-internal sealed partial class LostSessionsHost(IServiceScopeFactory scopes, ILaunchFiles files, TimeProvider clock, ILogger<LostSessionsHost> log) : BackgroundService
+internal sealed partial class LostSessionsHost(IServiceScopeFactory scopes, TimeProvider clock, ILogger<LostSessionsHost> log) : BackgroundService
 {
     private static readonly TimeSpan _every = TimeSpan.FromSeconds(10);
     private static readonly TimeSpan _stale = TimeSpan.FromSeconds(60);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _ = files.SweepStale(clock.GetUtcNow(), _stale, static _ => false);
+        var filesSwept = false;
         while (!stoppingToken.IsCancellationRequested)
         {
             try
@@ -23,7 +23,9 @@ internal sealed partial class LostSessionsHost(IServiceScopeFactory scopes, ILau
                 var scope = scopes.CreateAsyncScope();
                 await using (scope.ConfigureAwait(false))
                 {
-                    var ended = await scope.ServiceProvider.GetRequiredService<ILostSessions>().Sweep(stoppingToken).ConfigureAwait(false);
+                    var lost = scope.ServiceProvider.GetRequiredService<ILostSessions>();
+                    filesSwept = filesSwept || await lost.SweepFiles(_stale, stoppingToken).ConfigureAwait(false) is not null;   // once, as soon as the views know which sessions are live
+                    var ended = await lost.Sweep(stoppingToken).ConfigureAwait(false);
                     if (ended > 0)
                     {
                         LogLost(log, ended);

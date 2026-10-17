@@ -2,6 +2,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -333,5 +334,18 @@ public sealed class LauncherServiceTests
         _rig.Slice.Clock.Advance(TimeSpan.FromMinutes(10));
         _ = await _rig.Tick();
         Expect.Equal(2, _rig.Recorded(EventTypes.LaunchProbed).Count);   // due, nothing changed
+    }
+
+    [Fact]
+    public async Task A_started_launch_starts_the_lost_timer_before_wrap_ever_beats()
+    {
+        await Boot();
+        using var caller = _rig.Caller();
+
+        Assert.True(await _rig.Launch(await Filed(_a)));
+        Assert.Empty(_rig.Liveness.Silent(_rig.Slice.Clock.GetUtcNow() + TimeSpan.FromSeconds(119), LaunchRules.LostAfter));
+        var silent = _rig.Liveness.Silent(_rig.Slice.Clock.GetUtcNow() + LaunchRules.LostAfter, LaunchRules.LostAfter);
+
+        Expect.Equal(_a, Assert.Single(silent));
     }
 }

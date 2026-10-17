@@ -24,6 +24,7 @@ internal static class EndpointTable
         _ = queries.MapGetItem();
         _ = queries.MapGetJob();
         _ = queries.MapGetLaunch();
+        _ = queries.MapGetLaunchTargets();
         _ = queries.MapListJobs();
         _ = queries.MapGetItemTimeline();
         _ = queries.MapGetQueue();
@@ -78,6 +79,7 @@ internal static class EndpointTable
         _ = commands.MapResumeService();
         _ = commands.MapRunService();
         _ = commands.MapContextJobs();
+        _ = commands.MapLaunchTargetJob();
         _ = commands.MapCreateItem();
         _ = commands.MapDecide();
         _ = commands.MapFileRequest();

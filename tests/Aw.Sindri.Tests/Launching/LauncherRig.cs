@@ -46,6 +46,8 @@ internal sealed class LauncherRig
 
     public FakeOpenRuntime Runtime { get; } = new();
 
+    public LaunchLiveness Liveness { get; } = new();
+
     public FixedLaunchSpend Spend { get; } = new();
 
     public FakeRepoLocator Repos { get; } = new();
@@ -79,7 +81,7 @@ internal sealed class LauncherRig
 
     public void Restart() => Work = new LaunchWork();
 
-    private LaunchOutcomes Outcomes => new(Slice.Store, Slice.Events, Viewer);
+    private LaunchOutcomes Outcomes => new(Slice.Store, Slice.Events, Viewer, Liveness, Slice.Clock);
 
     private RunLaunch Run => new(
         new LaunchRecovery(Slice.Store, Status, H.Views, Outcomes, Work, Timings), new LaunchIntake(Slice.Store, Slice.Events, Work), Outcomes, Host, Probes, Work, Timings);

@@ -1,5 +1,6 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Lease;
 
@@ -10,9 +11,21 @@ namespace Aw.Sindri.Features.ProbeLaunchTargets;
 /// <param name="probes">Probes and records.</param>
 internal sealed class ProbeLaunchTargetsService(HeldLease held, ILaunchProbes probes) : IService<ProbeLaunchTargetsRequest, ProbeLaunchTargetsResult>
 {
-    public ValueTask<Result<ProbeLaunchTargetsResult>> Handle(ProbeLaunchTargetsRequest request, CancellationToken cancellationToken)
+    public async ValueTask<Result<ProbeLaunchTargetsResult>> Handle(ProbeLaunchTargetsRequest request, CancellationToken cancellationToken)
     {
-        _ = (held, probes);
-        throw new NotSupportedException("ProbeLaunchTargets: make ProbeLaunchTargetsTests pass");
+        ArgumentNullException.ThrowIfNull(request);
+        if (held.Current is not { } grant)
+        {
+            return SindriErrors.NotRunning.With("the control plane doesn't hold the lease (fix: sindri)");
+        }
+
+        var recorded = await probes.Record(grant, cancellationToken).ConfigureAwait(false);
+        if (recorded.IsError)
+        {
+            return recorded.Error;
+        }
+
+        var targets = recorded.Value.Probed.Targets;
+        return new ProbeLaunchTargetsResult(recorded.Value.Changed, targets.Count, targets.Count(static t => t.Present));
     }
 }

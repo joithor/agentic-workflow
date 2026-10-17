@@ -31,6 +31,7 @@ internal static class LaunchScenarios
         ("launches-id", "requested"), ("launches-id", "started-opened"), ("launches-id", "started-unconfirmed"), ("launches-id", "started-late-attach"),
         ("launches-id", "started-viewer-failed"), ("launches-id", "started-print"), ("launches-id", "failed-host-stage"), ("launches-id", "failed-expired-007"),
         ("launches-id", "not-found"), ("launches-id", "bad-id"), ("launches-id", "session-other-repo"),
+        .. LaunchTargetScenarios.All,
     ];
 
     /// <summary>Whether <paramref name="slug"/> and <paramref name="scenario"/> belong to this class.</summary>
@@ -42,6 +43,11 @@ internal static class LaunchScenarios
     /// <summary>Starts the scenario's host: the budget ones read a spend of 10 (hard) or 8 (soft) for claude-code.</summary>
     public static Task<GoldenHost> Start(string scenario, CancellationToken ct)
     {
+        if (LaunchTargetScenarios.NeedsOwnHost(scenario))
+        {
+            return LaunchTargetScenarios.Start(scenario, ct);
+        }
+
         var spend = new FixedLaunchSpend();
         if (scenario.StartsWith("budget-", StringComparison.Ordinal))
         {
@@ -54,6 +60,11 @@ internal static class LaunchScenarios
     /// <summary>Runs the scenario against <paramref name="host"/> and returns the body to compare.</summary>
     public static async Task<string> Body(GoldenHost host, string slug, string scenario, CancellationToken ct)
     {
+        if (slug.StartsWith("launch-targets", StringComparison.Ordinal))
+        {
+            return await LaunchTargetScenarios.Body(host, slug, scenario, ct);
+        }
+
         await ViewScenarios.Approve(host, ct);
         var item = await ItemScenarios.Create(host, "Try the queue", "demo");
         await ViewScenarios.CatchUp(host, ct);

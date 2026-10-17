@@ -15,5 +15,21 @@ public static class LaunchTargetsProjection
     /// <param name="asOf">How fresh the views are.</param>
     /// <returns>The view.</returns>
     public static LaunchTargets Project(LaunchProbed? probed, DateTimeOffset? probedAt, AgentSettings? agents, IReadOnlyDictionary<string, AgentSpend> spend, AsOf asOf)
-        => throw new NotSupportedException("LaunchTargetsProjection.Project: make the projection tests pass");
+    {
+        ArgumentNullException.ThrowIfNull(spend);
+        ArgumentNullException.ThrowIfNull(asOf);
+        if (probed is null)
+        {
+            return new LaunchTargets(Probed: false, ProbedAt: null, Terminal: null, Host: null, [], [], Budgets.Total(agents, []), asOf);
+        }
+
+        var rows = new List<LaunchTargetRow>(probed.Targets.Count);
+        foreach (var target in probed.Targets)
+        {
+            var found = spend.TryGetValue(target.Id.Value, out var used);
+            rows.Add(new LaunchTargetRow(target, Budgets.For(agents, target.Id, found ? used : null)));
+        }
+
+        return new LaunchTargets(Probed: true, probedAt, probed.Terminal, probed.Host, rows, probed.Repos, Budgets.Total(agents, [.. rows.Select(static r => r.Budget)]), asOf);
+    }
 }

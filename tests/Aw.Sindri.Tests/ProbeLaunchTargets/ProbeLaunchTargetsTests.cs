@@ -71,7 +71,7 @@ public sealed class ProbeLaunchTargetsTests
         _ = await service.Handle(A.ProbeLaunchTargetsRequest().Build(), Token);
 
         var recorded = _slice.Events.Payload<LaunchProbed>(Assert.Single(Probes)).Value;
-        Expect.Equal([("demo", true), ("gone", false)], recorded.Repos.Select(static r => (r.Repo.Value, r.Present)).ToList());
+        Assert.Equal([("demo", true), ("gone", false)], recorded.Repos.Select(static r => (r.Repo.Value, r.Present)));
     }
 
     [Fact]

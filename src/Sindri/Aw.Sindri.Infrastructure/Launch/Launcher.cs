@@ -67,11 +67,15 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
         foreach (var entry in parts.Catalog.All)
         {
             var found = await parts.ResolveBin(entry.Bin, cancellationToken).ConfigureAwait(false) is not null;
-            targets.Add(new TargetFacts(entry.Id, found, Version: null, Limited: null, found ? null : "not-installed", entry.Source, entry.Source == CatalogSource.Override));
+            targets.Add(new TargetFacts(entry.Id, found, Version: null, Limited(entry), found ? null : "not-installed", entry.Source, entry.Source == CatalogSource.Override));
         }
 
         return new LaunchProbed(terminal, host, targets, []);
     }
+
+    /// <summary>Why a target works with limits: its entry names no usage reader (a budget on it is refused), or the reader is not yet checked against the real CLI (launcher L-4, API P10a Q11).</summary>
+    private string? Limited(AgentEntry entry) =>
+        entry.Usage is not { } name || string.Equals(name, "none", StringComparison.Ordinal) || parts.Usage(name) is not { } reader ? "no-usage-reader" : reader.Verified ? null : "usage-unverified";
 
     private static string SessionName(LaunchId launch) => LaunchSessionName.For(launch);
 
@@ -168,7 +172,7 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
             var policyPath = step?.Policy is { } policy && entry.PolicyForm == PolicyForm.ClaudeSettingsFile
                 ? StepPolicyFile.Write(parts.Options.PolicyDirectory, request.Launch, policy)
                 : null;
-            var session = entry.SessionIdMode == SessionIdMode.PreChosenUuid ? SessionId.From(Guid.NewGuid().ToString("D")) : (SessionId?)null;
+            var session = PreChosen(entry);
             var seed = ArgvBuilder.Seed(request.Item) + (step is null ? string.Empty : $" This is the {step.Ref.State} step, block {step.Ref.Block}.");
             var argv = ArgvBuilder.Build(entry, request.Mode, new ArgvInputs(request.Item, workDir, SessionName(request.Launch), seed, session, McpConfigPath: null, step, policyPath));
             if (argv.IsError)
@@ -179,13 +183,16 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
             WriteCaptureRule(request.Launch, entry);
             var secret = LaunchSecrets.Mint();
             LaunchSecrets.Write(parts.Options.SecretsDirectory, request.Launch, secret);
-            return new Prepared(workDir, argv.Value, Environment(request, secret));
+            return new Prepared(workDir, argv.Value, Environment(request, secret), session?.Value);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return KernelErrors.Unavailable.With($"the launch's files could not be written: {e.Message}");
         }
     }
+
+    /// <summary>The session id an entry in 'pre-chosen-uuid' mode is told to use, else none (an id reported later is recorded then, launcher L-9).</summary>
+    private static SessionId? PreChosen(AgentEntry entry) => entry.SessionIdMode == SessionIdMode.PreChosenUuid ? SessionId.From(Guid.NewGuid().ToString("D")) : null;
 
     /// <summary>The capture rule 'session wrap' reads for an entry whose CLI reports its own id (launcher L-9): 0600, no secret in it.</summary>
     private void WriteCaptureRule(LaunchId launch, AgentEntry entry)
@@ -225,7 +232,7 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
         var source = (entry.Source, entry.ArgvHash ?? string.Empty);
         if (host.Kind == HostKind.None)
         {
-            return await RunOnViewer(request, host, (name, prepared.WorkDir, wrapped), source, cancellationToken).ConfigureAwait(false);
+            return await RunOnViewer(request, host, (name, prepared.WorkDir, wrapped), (source, prepared.Session), cancellationToken).ConfigureAwait(false);
         }
 
         var started = await host.Start(new HostSession(name, prepared.WorkDir, wrapped, prepared.Env), parts.Options.HostDeadline, cancellationToken).ConfigureAwait(false);
@@ -239,10 +246,10 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
         var viewer = request.Attended
             ? await OpenViewer(new ViewerRequest(started.Value, host.AttachArgv(started.Value), $"sindri {request.Item.Value}", parts.Options.ViewerWindow) { Cwd = prepared.WorkDir }, cancellationToken).ConfigureAwait(false)
             : ViewerOutcome.Skipped;
-        return new StartedLaunch(started.Value, viewer, host.AttachArgv(started.Value), source.Source, source.Item2);
+        return new StartedLaunch(started.Value, viewer, host.AttachArgv(started.Value), source.Source, source.Item2) { ChosenSession = prepared.Session };
     }
 
-    private async ValueTask<LaunchResult> RunOnViewer(LaunchRequest request, ISessionHost host, (string Name, string WorkDir, List<string> Argv) session, (CatalogSource Source, string Hash) source, CancellationToken cancellationToken)
+    private async ValueTask<LaunchResult> RunOnViewer(LaunchRequest request, ISessionHost host, (string Name, string WorkDir, List<string> Argv) session, ((CatalogSource Source, string Hash) Entry, string? Chosen) started, CancellationToken cancellationToken)
     {
         var none = new HostRef(host.Kind, session.Name);
         var outcome = request.Attended
@@ -250,7 +257,7 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
             : ViewerOutcome.Skipped;
         if (outcome.Kind != ViewerOutcomeKind.Failed)
         {
-            return new StartedLaunch(none, outcome, session.Argv, source.Source, source.Hash);
+            return new StartedLaunch(none, outcome, session.Argv, started.Entry.Source, started.Entry.Hash) { ChosenSession = started.Chosen };
         }
 
         _ = await host.Stop(none, CancellationToken.None).ConfigureAwait(false);   // a viewer that started a thread before failing
@@ -282,5 +289,5 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
         }
     }
 
-    private sealed record Prepared(string WorkDir, IReadOnlyList<string> Argv, Dictionary<string, string> Env);
+    private sealed record Prepared(string WorkDir, IReadOnlyList<string> Argv, Dictionary<string, string> Env, string? Session);
 }

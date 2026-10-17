@@ -13,9 +13,13 @@ public sealed class FakeLaunchFiles : ILaunchFiles
 
     private readonly Dictionary<LaunchId, string> _open = [];
     private readonly List<LaunchId> _forgotten = [];
+    private readonly List<LaunchId> _swept = [];
 
     /// <summary>The launches whose files were deleted, in order.</summary>
     public IReadOnlyList<LaunchId> Forgotten => _forgotten;
+
+    /// <summary>The launches the start-up sweep removed.</summary>
+    public IReadOnlyList<LaunchId> Swept => _swept;
 
     /// <summary>Makes <paramref name="launch"/> open with <paramref name="proof"/>.</summary>
     /// <param name="launch">The launch.</param>
@@ -36,5 +40,19 @@ public sealed class FakeLaunchFiles : ILaunchFiles
     }
 
     /// <inheritdoc/>
-    public int SweepStale(DateTimeOffset now, TimeSpan olderThan, Func<LaunchId, bool> live) => 0;
+    public IReadOnlyList<LaunchId> Launches() => [.. _open.Keys];
+
+    /// <inheritdoc/>
+    public int SweepStale(DateTimeOffset now, TimeSpan olderThan, Func<LaunchId, bool> live)
+    {
+        ArgumentNullException.ThrowIfNull(live);
+        var stale = _open.Keys.Where(launch => !live(launch)).ToList();
+        foreach (var launch in stale)
+        {
+            _ = _open.Remove(launch);
+            _swept.Add(launch);
+        }
+
+        return stale.Count;
+    }
 }

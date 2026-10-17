@@ -44,7 +44,7 @@ public sealed class ClaudeCodeUsageTests : IDisposable
 
         var used = (await new ClaudeCodeUsage(_files.Root).Between(_from, _to, Token)).OrderBy(static m => m.Model, StringComparer.Ordinal).ToList();
 
-        Expect.Equal([new ModelTokens("claude-haiku-4-5", 1, 2, 3, 4), new ModelTokens("claude-sonnet-4-5", 11, 1, 1, 6)], used);
+        Assert.Equal<ModelTokens>([new ModelTokens("claude-haiku-4-5", 1, 2, 3, 4), new ModelTokens("claude-sonnet-4-5", 11, 1, 1, 6)], used);
     }
 
     [Fact]

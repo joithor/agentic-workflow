@@ -3,6 +3,7 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Features.CloseItem;
 using Aw.Sindri.Features.CreateItem;
 using Aw.Sindri.Features.OpenItem;
+using Aw.Sindri.Features.ProbeLaunchTargets;
 
 namespace Aw.Sindri.Host.Catalog;
 
@@ -23,6 +24,7 @@ internal static class ItemRows
         Open("open", "sindri open <itemId> [--agent <agent>]"),
         Open("attach", "sindri open <itemId> --attach [--agent <agent>]"),
         Open("resume", "sindri open <itemId> --resume [--agent <agent>]"),
+        JobRows.Job("ProbeLaunchTargets", typeof(ProbeLaunchTargetsRequest), "/sindri/launch/targets/probe", "sindri launch probe"),
     ];
 
     /// <summary>An 'OpenItem' variant (API P10a, UI spec E-1): one POST route, desk, waits for the views.</summary>

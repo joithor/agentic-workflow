@@ -1,5 +1,6 @@
 using Aw.Kernel;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Profile;
@@ -13,6 +14,15 @@ namespace Aw.Sindri.Features.Launching;
 /// <param name="spend">What each agent has spent today, for the budget re-check (screens spec E-28).</param>
 internal sealed class LaunchPlans(IViewReader reader, IApprovedProfile profile, ILaunchSpend spend)
 {
+    private static string? RepoPath(RepoName? repo, IReadOnlyList<RepoEntry>? repos) =>
+        repo is { } named ? repos?.FirstOrDefault(r => string.Equals(r.Name, named.Value, StringComparison.Ordinal))?.Path : null;
+
+    private async ValueTask<Error?> Budget(AgentId target, AgentSettings? agents, CancellationToken cancellationToken)
+    {
+        var spent = await spend.Today(target, cancellationToken).ConfigureAwait(false);
+        return spent.IsError ? spent.Error : LaunchBudgets.Refusal(LaunchBudgets.Of(agents, target, spent.Value), target);
+    }
+
     /// <summary>Builds the launch.</summary>
     /// <param name="pending">The request.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
@@ -20,7 +30,6 @@ internal sealed class LaunchPlans(IViewReader reader, IApprovedProfile profile, 
     public async ValueTask<Result<LaunchRequest>> Build(PendingLaunch pending, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(pending);
-        _ = spend;   // red: the budget is not re-checked yet
         var request = pending.Request;
         var item = await reader.Get<ItemRow>(ViewNames.Items, request.Item.Value, cancellationToken).ConfigureAwait(false);
         if (item.IsError)
@@ -34,7 +43,12 @@ internal sealed class LaunchPlans(IViewReader reader, IApprovedProfile profile, 
             return approved.Error;
         }
 
-        var path = item.Value?.Repo is { } repo ? approved.Value?.Profile.Repos?.FirstOrDefault(r => string.Equals(r.Name, repo.Value, StringComparison.Ordinal))?.Path : null;
+        if (request.Mode != LaunchMode.Attach && await Budget(request.Target, approved.Value?.Profile.Agents, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return refused;   // the spend moved since the open (E-28): an attach starts no process, so only a start is held to it
+        }
+
+        var path = RepoPath(item.Value?.Repo, approved.Value?.Profile.Repos);
         return path is null
             ? SindriErrors.LaunchRepoMissing.With($"{request.Item.Value} has no repo with a path in the approved profile (fix: add the repo to repos and approve)")
             : new LaunchRequest(request.Launch, request.Item, request.Target, request.Mode, Attended: true, path, Instance: null, Worktree: null, Step: null, Run: null);

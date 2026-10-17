@@ -43,6 +43,26 @@ internal sealed partial class LaunchFileStore(LauncherOptions options) : ILaunch
         DeleteFlat(options, launch);
     }
 
+    public IReadOnlyList<LaunchId> Launches()
+    {
+        if (!Directory.Exists(options.LaunchesDirectory))
+        {
+            return [];
+        }
+
+        var found = new HashSet<LaunchId>();
+        foreach (var file in Directory.EnumerateFiles(options.LaunchesDirectory))
+        {
+            var match = PerLaunch.Match(Path.GetFileName(file));
+            if (match.Success && LaunchId.TryParse(match.Groups["launch"].Value, provider: null, out var launch))
+            {
+                _ = found.Add(launch);
+            }
+        }
+
+        return [.. found];
+    }
+
     public int SweepStale(DateTimeOffset now, TimeSpan olderThan, Func<LaunchId, bool> live)
     {
         ArgumentNullException.ThrowIfNull(live);

@@ -19,6 +19,10 @@ public interface ILaunchFiles
     /// <param name="launch">The launch.</param>
     public void Forget(LaunchId launch);
 
+    /// <summary>The launches that have a capture rule or a reported-id file on disk.</summary>
+    /// <returns>Their ids, each once.</returns>
+    public IReadOnlyList<LaunchId> Launches();
+
     /// <summary>Removes the capture rules and id files older than <paramref name="olderThan"/> whose launch has no live session (the launcher service's start-up sweep).</summary>
     /// <param name="now">The time now.</param>
     /// <param name="olderThan">How old a file must be.</param>

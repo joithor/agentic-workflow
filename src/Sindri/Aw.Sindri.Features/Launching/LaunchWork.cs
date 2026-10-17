@@ -16,11 +16,40 @@ internal sealed class LaunchWork
     private readonly HashSet<LaunchId> _claimed = [];
     private readonly Dictionary<LaunchId, WatchedViewer> _watched = [];
 
+    private DateTimeOffset _nextProbe = DateTimeOffset.MinValue;
+
     /// <summary>True once the start-up sweep ran.</summary>
     public bool Recovered { get; set; }
 
     /// <summary>The last ledger sequence read.</summary>
     public long Cursor { get; set; }
+
+    /// <summary>Whether the launch targets are due for a probe, and if so schedules the next one at <paramref name="next"/>.</summary>
+    /// <param name="now">The time.</param>
+    /// <param name="next">When the one after this is due.</param>
+    /// <returns>True when the caller should probe now.</returns>
+    public bool TakeProbe(DateTimeOffset now, DateTimeOffset next)
+    {
+        lock (_gate)
+        {
+            if (now < _nextProbe)
+            {
+                return false;
+            }
+
+            _nextProbe = next;
+            return true;
+        }
+    }
+
+    /// <summary>A launch failed: the next tick probes the targets again.</summary>
+    public void ProbeSoon()
+    {
+        lock (_gate)
+        {
+            _nextProbe = DateTimeOffset.MinValue;
+        }
+    }
 
     /// <summary>Notes a request with no outcome yet; a replay of the same request changes nothing.</summary>
     /// <param name="pending">The request.</param>

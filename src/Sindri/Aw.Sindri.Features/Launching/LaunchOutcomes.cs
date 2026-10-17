@@ -2,8 +2,10 @@ using Aw.Kernel;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Features.Launching;
@@ -15,7 +17,9 @@ namespace Aw.Sindri.Features.Launching;
 /// <param name="ledger">The ledger.</param>
 /// <param name="events">Builds the entries.</param>
 /// <param name="viewer">The configured viewer, whose kind 'launch.started' records.</param>
-internal sealed class LaunchOutcomes(ILedgerStore ledger, EventFactory events, ITerminalViewer viewer)
+/// <param name="liveness">The heartbeats: a started launch starts its clock here, so a wrap that dies before its first heartbeat is still ended as lost (API spec §8.1).</param>
+/// <param name="clock">The time the clock starts at.</param>
+internal sealed class LaunchOutcomes(ILedgerStore ledger, EventFactory events, ITerminalViewer viewer, LaunchLiveness liveness, TimeProvider clock)
 {
     /// <summary>The viewer's tab title for an item (launcher L-10: the same for every viewer).</summary>
     /// <param name="item">The item.</param>
@@ -41,9 +45,20 @@ internal sealed class LaunchOutcomes(ILedgerStore ledger, EventFactory events, I
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(started);
-        return Started(grant,
-            new LaunchStarted(request.Launch, request.Item, request.Mode, request.Agent, SessionId: null, TabTitle(request.Item), ViewerOf(started.Viewer), started.Attach, started.CatalogSource, started.ArgvHash),
-            cancellationToken);
+        return Recorded(request.Launch, Started(grant,
+            new LaunchStarted(request.Launch, request.Item, request.Mode, request.Agent, SessionIdOf(started), TabTitle(request.Item), ViewerOf(started.Viewer), started.Attach, started.CatalogSource, started.ArgvHash),
+            cancellationToken));
+    }
+
+    private async ValueTask<Result<LedgerAppend>> Recorded(LaunchId launch, ValueTask<Result<LedgerAppend>> appending)
+    {
+        var appended = await appending.ConfigureAwait(false);
+        if (appended.IsSuccess && !appended.Value.AlreadyRecorded)
+        {
+            liveness.Beat(launch, clock.GetUtcNow());   // the clock starts now, not at wrap's first heartbeat
+        }
+
+        return appended;
     }
 
     /// <summary>Records the session as started.</summary>
@@ -79,6 +94,9 @@ internal sealed class LaunchOutcomes(ILedgerStore ledger, EventFactory events, I
         ArgumentNullException.ThrowIfNull(watched);
         return ledger.Append(events.Entry(EventTypes.LaunchViewerAttached, new LaunchViewerAttached(watched.Launch, at), $"{EventTypes.LaunchViewerAttached}:{watched.Launch.Value}", watched.Item.Value), grant, cancellationToken);
     }
+
+    /// <summary>The id the launcher chose before it started the agent (launcher L-9); an agent whose id is reported later has none here.</summary>
+    private static SessionId? SessionIdOf(StartedLaunch started) => started.ChosenSession is { } chosen && SessionId.TryFrom(chosen, out var id) ? id : null;
 
     private static string OutcomeKey(LaunchId launch) => "launch.outcome:" + launch.Value;
 }

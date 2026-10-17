@@ -1,5 +1,4 @@
 using Aw.Sindri.Core.Commands;
-using Aw.Sindri.Core.Ids;
 
 namespace Aw.Sindri.Host.Catalog;
 
@@ -10,18 +9,5 @@ namespace Aw.Sindri.Host.Catalog;
 /// </summary>
 internal static class PendingRows
 {
-    internal static IReadOnlyList<CommandRow> All { get; } =
-    [
-        Pending("ProbeLaunchTargets", ActionClass.Job, "POST /sindri/launch/targets/probe", "sindri launch probe", "P10a"),
-    ];
-
-    /// <summary>A pending row: '&lt;Command&gt;[:&lt;variant&gt;]', its class, 'METHOD /route', its CLI form and the phase that ships it.</summary>
-    private static CommandRow Pending(string action, ActionClass actionClass, string route, string cli, string phase)
-    {
-        var colon = action.IndexOf(':', StringComparison.Ordinal);
-        var space = route.IndexOf(' ', StringComparison.Ordinal);
-        return new CommandRow(ActionId.From(action), CommandType: null, colon < 0 ? null : action[(colon + 1)..], actionClass,
-            ServiceGrants: [], NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
-            route[..space], route[(space + 1)..], ShellRows.Form(cli), "pending:" + phase);
-    }
+    internal static IReadOnlyList<CommandRow> All { get; } = [];
 }
