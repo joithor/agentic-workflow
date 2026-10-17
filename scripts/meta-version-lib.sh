@@ -7,10 +7,16 @@
 #   meta_version_line <bin>             one line: "aw-meta <commit> (built <time>, <os> <rid>)", or why there is no version
 #   meta_stale_line <bin> <repo-dir>    one warning line when the binary is older than the sources it is run from, else nothing
 #
-# A binary is stale when the last commit that touched the sources it is built from (META_BUILD_PATHS, the paths install-meta.sh
-# copies into its publish tree) is not an ancestor of, or equal to, the commit the binary was built from.
+# A binary is stale when the last commit that touched the sources it is built from (META_BUILD_PATHS, read from
+# scripts/meta-build-paths.txt: the one list install-meta.sh copies into its publish tree) is not an ancestor of, or equal to, the
+# commit the binary was built from. A binary built from a tree with uncommitted changes there is stamped <commit>-dirty and always
+# warns: it is not the commit it names.
 
-META_BUILD_PATHS=(src/Meta src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction src/Aw.Analyzers)
+META_BUILD_PATHS=()
+while IFS= read -r _meta_path; do
+  case "$_meta_path" in '' | '#'*) ;; *) META_BUILD_PATHS+=("$_meta_path") ;; esac
+done < "$(dirname "${BASH_SOURCE[0]}")/meta-build-paths.txt"
+unset _meta_path
 
 meta_version_json() { "$1" version --json 2> /dev/null || true; }
 
@@ -37,6 +43,8 @@ meta_stale_line() {
     echo "meta-launch: warning: the installed aw-meta ($bin) predates 'aw-meta version', so it is older than the Meta sources in $repo; run scripts/install-meta.sh"
   elif [ "$commit" = unknown ]; then
     echo "meta-launch: warning: the installed aw-meta ($bin) carries no commit stamp, so it cannot be compared with the Meta sources in $repo; run scripts/install-meta.sh"
+  elif [[ "$commit" == *-dirty ]]; then
+    echo "meta-launch: warning: the installed aw-meta was built from a dirty tree (${commit:0:12}), so it may not match the Meta sources in $repo; run scripts/install-meta.sh from a clean checkout"
   elif ! git -C "$repo" cat-file -e "$commit^{commit}" 2> /dev/null; then
     echo "meta-launch: warning: the installed aw-meta was built from ${commit:0:12}, which this checkout does not have; run scripts/install-meta.sh from here"
   elif ! git -C "$repo" merge-base --is-ancestor "$head" "$commit" 2> /dev/null; then

@@ -7,9 +7,8 @@
 # gate, the version stamp (publish passes SourceRevisionId and AwBuildTime; the OS and RID are normalized), and a usage error. Every call is bounded by `timeout 30`. The normalized output (dates, times, the temp path) must
 # equal expected.txt.
 # AW_LOG_LEVEL=none on purpose: a log line carries a wall-clock time, and the contract is that stderr stays clean.
-# Output goes to artifacts/aot-meta-smoke/ (gitignored). The publish runs on a copy of the files it needs (the root build
-# files, src/Aw.Kernel, src/Aw.Kernel.Data, src/Aw.Kernel.Telemetry and src/Redaction, src/Aw.Analyzers (every production
-# project loads it), src/Meta): PublishAot with a RID makes restore add the host RID's ILCompiler packs to the lock files,
+# Output goes to artifacts/aot-meta-smoke/ (gitignored). The publish runs on a copy of the files it needs (scripts/meta-build-paths.txt,
+# the one list: the root build files and every project Meta references): PublishAot with a RID makes restore add the host RID's ILCompiler packs to the lock files,
 # so it never runs on the checkout, whose lock files stay RID-free.
 set -euo pipefail
 
@@ -30,8 +29,9 @@ root="$(cd "$here/../../.." && pwd)"
 tree="$out/tree"
 [ ! -d "$tree" ] || find "$tree" -delete
 mkdir -p "$tree"
-git -C "$root" ls-files -z --cached --others --exclude-standard -- global.json nuget.config .editorconfig 'Directory.*' 'BannedSymbols*.txt' CodeMetricsConfig.txt \
-  src/Aw.Kernel src/Aw.Kernel.Data src/Aw.Kernel.Telemetry src/Redaction src/Aw.Analyzers src/Meta | (cd "$root" && tar --null -T - -cf -) | tar -xf - -C "$tree"
+# shellcheck source=../../../scripts/meta-version-lib.sh
+. "$root/scripts/meta-version-lib.sh"   # META_BUILD_PATHS: scripts/meta-build-paths.txt, the one list
+git -C "$root" ls-files -z --cached --others --exclude-standard -- "${META_BUILD_PATHS[@]}" | (cd "$root" && tar --null -T - -cf -) | tar -xf - -C "$tree"
 rid="$(dotnet --info | awk '/^ *RID:/ {print $2; exit}')"
 dotnet publish "$tree/src/Meta/Aw.Meta.Host/Aw.Meta.Host.csproj" -c Release -r "$rid" -p:RestoreLockedMode=false \
   -p:SourceRevisionId=aot-smoke -p:AwBuildTime=2026-01-02T03:04:05Z -o "$out/bin" </dev/null >"$out/publish.log" 2>&1 || { tail -20 "$out/publish.log" >&2; exit 1; }

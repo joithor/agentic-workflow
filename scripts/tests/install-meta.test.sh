@@ -57,9 +57,9 @@ OUT="$(bash "$DIR/install-meta.sh" --provider codex 2>&1)"; RC=$?
 check "codex: exit 0" "$RC" "0"
 check "codex: the trust step is printed" "$(printf '%s' "$OUT" | grep -c 'run `/hooks` to trust the `aw:\*` hooks')" "1"
 check "codex: SessionStart runs session-id-report through the adapter" \
-  "$(jq -r '.hooks.SessionStart[].hooks[].command' "$C" | grep -c "adapters/codex.sh $AW_STATE_DIR/hooks/session-id-report.sh # aw:session-id-report")" "1"
+  "$(jq -r '.hooks.SessionStart[].hooks[].command' "$C" | grep -c "^\"$AW_STATE_DIR/hooks/adapters/codex.sh\" \"$AW_STATE_DIR/hooks/session-id-report.sh\" # aw:session-id-report")" "1"
 check "codex: UserPromptSubmit runs meta-lane-gate through the adapter" \
-  "$(jq -r '.hooks.UserPromptSubmit[].hooks[].command' "$C" | grep -c "adapters/codex.sh $AW_STATE_DIR/hooks/meta-lane-gate.sh # aw:meta-lane-gate")" "1"
+  "$(jq -r '.hooks.UserPromptSubmit[].hooks[].command' "$C" | grep -c "^\"$AW_STATE_DIR/hooks/adapters/codex.sh\" \"$AW_STATE_DIR/hooks/meta-lane-gate.sh\" # aw:meta-lane-gate")" "1"
 check "codex: Stop gets meta-lane-gate beside the user's own hook" "$(jq -r '[.hooks.Stop[].hooks[].command] | map(sub(".*# ";"")) | join(",")' "$C")" "mine,aw:meta-lane-gate"
 check "codex: the Claude-only hooks are not registered" "$(grep -c 'meta-stop-gate\|meta-outbox' "$C")" "0"
 check "codex: scripts, adapters and the fail-open logger staged" \
@@ -77,7 +77,7 @@ check "cursor: exit 0, no Codex trust step" "$RC:$(printf '%s' "$OUT" | grep -c 
 check "cursor: sessionStart has session-id-report and meta-lane-gate" "$(jq -r '[.hooks.sessionStart[].command] | map(sub(".*# ";"")) | sort | join(",")' "$U")" "aw:meta-lane-gate,aw:session-id-report"
 check "cursor: postToolUse and stop run meta-lane-gate; the user's stop hook is kept" \
   "$(jq -r '[.hooks.postToolUse[].command] | map(sub(".*# ";"")) | join(",")' "$U"):$(jq -r '[.hooks.stop[].command] | map(sub(".*# ";"")) | join(",")' "$U")" "aw:meta-lane-gate:mine,aw:meta-lane-gate"
-check "cursor: the entries go through the cursor adapter" "$(jq -r '.hooks.stop[].command' "$U" | grep -c "adapters/cursor.sh $AW_STATE_DIR/hooks/meta-lane-gate.sh")" "1"
+check "cursor: the entries go through the cursor adapter" "$(jq -r '.hooks.stop[].command' "$U" | grep -c "^\"$AW_STATE_DIR/hooks/adapters/cursor.sh\" \"$AW_STATE_DIR/hooks/meta-lane-gate.sh\"")" "1"
 cp "$U" "$WORK/cursor-before"
 bash "$DIR/install-meta.sh" --provider cursor > /dev/null 2>&1
 check "cursor: rerun leaves hooks.json unchanged" "$(cmp -s "$U" "$WORK/cursor-before" && echo same)" "same"
@@ -201,7 +201,7 @@ check "a codex hook command runs its adapter and script from the quoted paths" "
 # tree it runs from; a linked worktree of it is the throwaway one.
 TOP="$DIR/.."
 mkdir -p "$WORK/tree/scripts" "$WORK/tree/config/hooks/adapters" "$WORK/tree/config/lib"
-cp "$DIR/install-meta.sh" "$DIR/meta-launch.sh" "$DIR/meta-team-lib.sh" "$DIR/meta-version-lib.sh" "$WORK/tree/scripts/"
+cp "$DIR/install-meta.sh" "$DIR/meta-launch.sh" "$DIR/meta-team-lib.sh" "$DIR/meta-version-lib.sh" "$DIR/meta-build-paths.txt" "$WORK/tree/scripts/"
 cp "$TOP/config/hooks/adapters/"* "$WORK/tree/config/hooks/adapters/" 2>/dev/null
 cp -r "$TOP/config/lib/." "$WORK/tree/config/lib/"
 cp "$TOP/config/hooks/meta-stop-gate.sh" "$TOP/config/hooks/meta-outbox.sh" "$WORK/tree/config/hooks/"
@@ -228,7 +228,7 @@ check "a team repo set, run from a second plain clone: refused too" "$RC:$(link)
 OUT="$(bash "$WORK/wt/scripts/install-meta.sh" --provider claude --allow-worktree 2>&1)"; RC=$?
 check "a team repo set, --allow-worktree: installs from this tree and links it" "$RC:$(link)" "0:$WORK/wt/scripts/meta-launch.sh"
 rm -f "$CLAUDE_LOCAL_BIN/aw-meta-launch"
-cp "$WORK/tree/scripts/install-meta.sh" "$WORK/tree/scripts/meta-team-lib.sh" "$WORK/tree/scripts/meta-version-lib.sh" "$WORK/canon2/scripts/"
+cp "$WORK/tree/scripts/install-meta.sh" "$WORK/tree/scripts/meta-team-lib.sh" "$WORK/tree/scripts/meta-version-lib.sh" "$WORK/tree/scripts/meta-build-paths.txt" "$WORK/canon2/scripts/"
 cp -r "$WORK/tree/config" "$WORK/tree/global.json" "$WORK/canon2/"
 OUT="$(bash "$WORK/canon2/scripts/install-meta.sh" --provider claude 2>&1)"; RC=$?
 check "a team repo set, run from it: linked into it, no flag needed" "$RC:$(link)" "0:$WORK/canon2/scripts/meta-launch.sh"
