@@ -23,6 +23,13 @@ public sealed class MapReader(IGraphStore store, IIntentStore intents)
     /// <returns>The visible map, or SND-CONTEXT-001/003/004/020/030.</returns>
     public ValueTask<Result<VisibleMap>> Read(ContextScope scope, bool draft, CancellationToken cancellationToken) => ReadMap(scope, draft, withIntent: true, cancellationToken);
 
+    /// <summary>The map as of <paramref name="read"/>: the current version, the newest draft or a retained version, with today's deny globs, scrub and session scope on it.</summary>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <param name="read">Which map.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The visible map, or SND-CONTEXT-001/003/004/020/030/044/120.</returns>
+    public ValueTask<Result<VisibleMap>> ReadViewAt(ContextScope scope, MapRead read, CancellationToken cancellationToken) => throw new NotSupportedException();
+
     private async ValueTask<Result<VisibleMap>> ReadMap(ContextScope scope, bool draft, bool withIntent, CancellationToken cancellationToken)
     {
         if (MapAccess.Gate(scope) is { } refused)

@@ -4868,3 +4868,39 @@ Aw.Context.Core.Results.DiffStatus
 Aw.Context.Core.Results.DiffStatus.Mapped = 0 -> Aw.Context.Core.Results.DiffStatus
 Aw.Context.Core.Results.DiffStatus.Suggested = 1 -> Aw.Context.Core.Results.DiffStatus
 Aw.Context.Core.Results.DiffStatus.Unmapped = 2 -> Aw.Context.Core.Results.DiffStatus
+Aw.Context.Core.Map.IGraphStore.SnapshotAt(int version, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapSnapshot?>!>
+Aw.Context.Core.Map.MapRead
+Aw.Context.Core.Map.MapRead.Deconstruct(out bool Draft, out Aw.Context.Core.Map.MapVersionRef? Version) -> void
+Aw.Context.Core.Map.MapRead.Draft.get -> bool
+Aw.Context.Core.Map.MapRead.Draft.init -> void
+Aw.Context.Core.Map.MapRead.Equals(Aw.Context.Core.Map.MapRead other) -> bool
+Aw.Context.Core.Map.MapRead.MapRead() -> void
+Aw.Context.Core.Map.MapRead.MapRead(bool Draft, Aw.Context.Core.Map.MapVersionRef? Version) -> void
+Aw.Context.Core.Map.MapRead.Version.get -> Aw.Context.Core.Map.MapVersionRef?
+Aw.Context.Core.Map.MapRead.Version.init -> void
+Aw.Context.Core.Map.MapReader.ReadViewAt(Aw.Context.Core.Engine.ContextScope! scope, Aw.Context.Core.Map.MapRead read, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>
+Aw.Context.Core.Map.MapVersionRef
+Aw.Context.Core.Map.MapVersionRef.Commit.get -> string?
+Aw.Context.Core.Map.MapVersionRef.Commit.init -> void
+Aw.Context.Core.Map.MapVersionRef.Deconstruct(out int Number, out string? Commit) -> void
+Aw.Context.Core.Map.MapVersionRef.Equals(Aw.Context.Core.Map.MapVersionRef other) -> bool
+Aw.Context.Core.Map.MapVersionRef.MapVersionRef() -> void
+Aw.Context.Core.Map.MapVersionRef.MapVersionRef(int Number, string? Commit) -> void
+Aw.Context.Core.Map.MapVersionRef.Names(Aw.Context.Core.Map.MapVersion! version) -> bool
+Aw.Context.Core.Map.MapVersionRef.Number.get -> int
+Aw.Context.Core.Map.MapVersionRef.Number.init -> void
+override Aw.Context.Core.Map.MapRead.GetHashCode() -> int
+override Aw.Context.Core.Map.MapVersionRef.GetHashCode() -> int
+static Aw.Context.Core.Map.MapRead.Current.get -> Aw.Context.Core.Map.MapRead
+static Aw.Context.Core.Map.MapRead.NewestDraft.get -> Aw.Context.Core.Map.MapRead
+static Aw.Context.Core.Map.MapRead.Of(bool draft, string? mapVersion) -> Aw.Kernel.Result<Aw.Context.Core.Map.MapRead>!
+static Aw.Context.Core.Map.MapRead.operator !=(Aw.Context.Core.Map.MapRead left, Aw.Context.Core.Map.MapRead right) -> bool
+static Aw.Context.Core.Map.MapRead.operator ==(Aw.Context.Core.Map.MapRead left, Aw.Context.Core.Map.MapRead right) -> bool
+static Aw.Context.Core.Map.MapVersionRef.Parse(string? text) -> Aw.Kernel.Result<Aw.Context.Core.Map.MapVersionRef>!
+static Aw.Context.Core.Map.MapVersionRef.operator !=(Aw.Context.Core.Map.MapVersionRef left, Aw.Context.Core.Map.MapVersionRef right) -> bool
+static Aw.Context.Core.Map.MapVersionRef.operator ==(Aw.Context.Core.Map.MapVersionRef left, Aw.Context.Core.Map.MapVersionRef right) -> bool
+static readonly Aw.Context.Core.ContextErrors.MapVersionNotRetained -> Aw.Kernel.ErrorDefinition!
+~override Aw.Context.Core.Map.MapRead.Equals(object obj) -> bool
+~override Aw.Context.Core.Map.MapRead.ToString() -> string
+~override Aw.Context.Core.Map.MapVersionRef.Equals(object obj) -> bool
+~override Aw.Context.Core.Map.MapVersionRef.ToString() -> string

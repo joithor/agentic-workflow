@@ -54,6 +54,9 @@ public sealed class FakeGraphStore : IGraphStore, IProposalRuns
     });
 
     /// <inheritdoc/>
+    public ValueTask<Result<MapSnapshot?>> SnapshotAt(int version, CancellationToken cancellationToken) => throw new NotSupportedException();
+
+    /// <inheritdoc/>
     public ValueTask<Result<IReadOnlyList<MapOverride>>> Overrides(CancellationToken cancellationToken) =>
         Done(() => Results.Success<IReadOnlyList<MapOverride>>([.. _overrides.OrderBy(o => o.At).ThenBy(o => o.ToId().Value, StringComparer.Ordinal)]));
 

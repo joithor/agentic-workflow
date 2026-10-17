@@ -56,6 +56,8 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
         }
     }
 
+    public ValueTask<Result<MapSnapshot?>> SnapshotAt(int version, CancellationToken cancellationToken) => throw new NotSupportedException();
+
     public async ValueTask<Result<GraphSnapshot>> Read(int version, CancellationToken cancellationToken)
     {
         var read = await OpenRead(cancellationToken).ConfigureAwait(false);
