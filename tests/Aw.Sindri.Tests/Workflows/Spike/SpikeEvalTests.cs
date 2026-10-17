@@ -14,6 +14,7 @@ namespace Aw.Sindri.Tests.Workflows.Spike;
 /// </summary>
 /// <param name="server">The time-skipping server.</param>
 [Lane(TestLane.Integration)]
+[Collection(nameof(WallClockAlone))]   // wall clock (it asserts wall clock bounds of 1 s and 10 s)
 public sealed class SpikeEvalTests(TimeSkippingServer server) : IClassFixture<TimeSkippingServer>
 {
     private const string Queue = "spike-evals";
