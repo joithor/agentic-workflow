@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Aw.Context.Core.Eval.Backtest;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
@@ -28,10 +29,10 @@ internal static class JobScenarios
     public static IReadOnlyList<(string Slug, string Scenario)> All { get; } =
     [
         ("services-name-run", "started"), ("services-name-run", "refused-session"), ("services-name-run", "refused-no-header"), ("services-name-run", "refused-origin"),
-        ("services-name-run", "unknown-service"), ("services-name-run", "already-running"), ("services-name-run", "scheduled-in-flight"),
+        ("services-name-run", "unknown-service"), ("services-name-run", "already-running"), ("services-name-run", "scheduled-in-flight"), ("services-name-run", "too-many"),
         ("services-name-pause", "accepted"), ("services-name-pause", "refused-session"), ("services-name-pause", "unknown-service"),
         ("services-name-resume", "accepted"), ("services-name-resume", "refused-session"), ("services-name-resume", "unknown-service"),
-        ("services", "paused"), ("services", "running-job"), ("services", "manual-ok"), ("needs-you", "after-manual-run"), ("events", "job-lifecycle"),
+        ("services", "paused"), ("services", "running-job"), ("services", "manual-ok"), ("needs-you", "after-manual-run"), ("needs-you", "unknown-service"), ("events", "job-lifecycle"),
         ("jobs-id", "running"), ("jobs-id", "succeeded"), ("jobs-id", "failed"), ("jobs-id", "cancelled"), ("jobs-id", "interrupted"), ("jobs-id", "progress-capped"),
         ("jobs-id", "context-backtest"), ("jobs-id", "ansi-escaped"), ("jobs-id", "result"), ("jobs-id", "not-found"), ("jobs-id", "bad-id"), ("jobs-id", "session-other-repo"), ("jobs-id", "stalled"),
         ("jobs-id-cancel", "accepted"), ("jobs-id-cancel", "already-ended"), ("jobs-id-cancel", "not-found"), ("jobs-id-cancel", "refused-session"),
@@ -50,6 +51,7 @@ internal static class JobScenarios
             "services-name-run" => await Run(host, scenario),
             "services-name-pause" or "services-name-resume" => await PauseOrResume(host, slug[(slug.LastIndexOf('-') + 1)..], scenario),
             "services" when scenario == "manual-ok" => await AfterManualRun(host, "/sindri/services", ct),
+            "needs-you" when scenario == "unknown-service" => await UnknownService(host, ct),
             "needs-you" => await AfterManualRun(host, "/sindri/needs-you", ct),
             "events" => await Lifecycle(host, ct),
             "services" => await Services(host, scenario, ct),
@@ -72,18 +74,23 @@ internal static class JobScenarios
     {
         var human = JobHost.Human(host);
         var path = "/sindri/services/heartbeat/run";
+        return scenario switch
+        {
+            "started" => await Ask(host, Post(path, json: null, human)),
+            "refused-session" => await Ask(host, Post(path, json: null, Session)),
+            "refused-no-header" => await Ask(host, Post(path, json: null)),
+            "refused-origin" => await Ask(host, Post(path, json: null, [.. human, ("Origin", "http://localhost:3000")])),
+            "unknown-service" => await Ask(host, Post("/sindri/services/ghost/run", json: null, human)),
+            "already-running" or "scheduled-in-flight" or "too-many" => await RunInFlight(host, scenario),
+            _ => throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such run scenario"),
+        };
+    }
+
+    private static async Task<string> RunInFlight(GoldenHost host, string scenario)
+    {
+        var human = JobHost.Human(host);
         switch (scenario)
         {
-            case "started":
-                return await Ask(host, Post(path, json: null, human));
-            case "refused-session":
-                return await Ask(host, Post(path, json: null, Session));
-            case "refused-no-header":
-                return await Ask(host, Post(path, json: null));
-            case "refused-origin":
-                return await Ask(host, Post(path, json: null, [.. human, ("Origin", "http://localhost:3000")]));
-            case "unknown-service":
-                return await Ask(host, Post("/sindri/services/ghost/run", json: null, human));
             case "already-running":
                 _ = await Ask(host, Post("/sindri/services/stuck/run", json: null, human));
                 return await Ask(host, Post("/sindri/services/stuck/run", json: null, human));
@@ -91,11 +98,17 @@ internal static class JobScenarios
                 Expect.True(host.App.Services.GetRequiredService<ServiceRunGuard>().TryClaim(ServiceName.From("heartbeat"), out var claim));
                 using (claim)
                 {
-                    return await Ask(host, Post(path, json: null, human));
+                    return await Ask(host, Post("/sindri/services/heartbeat/run", json: null, human));
                 }
 
-            default:
-                throw new ArgumentOutOfRangeException(nameof(scenario), scenario, "no such run scenario");
+            default:   // too-many: eight jobs run (seven echoes and the stuck service); a ninth is refused with 429, SND-JOB-002
+                for (var n = 0; n < JobLimits.MaxRunning - 1; n++)
+                {
+                    _ = await JobHost.StartEcho(host, lines: 10 + n, delayMs: JobHost.LongDelayMs);
+                }
+
+                _ = await Ask(host, Post("/sindri/services/stuck/run", json: null, human));
+                return await Ask(host, Post("/sindri/services/heartbeat/run", json: null, human));
         }
     }
 
@@ -126,6 +139,15 @@ internal static class JobScenarios
         _ = await Ask(host, Post("/sindri/services/heartbeat/run", json: null, JobHost.Human(host)));
         await JobHost.Settle(host, ct);
         return await ViewScenarios.Read(host, path);
+    }
+
+    /// <summary>The profile names a service this build lacks: its run failed with SND-SVC-404, and its needs-you row has no primary action (it can only be paused).</summary>
+    private static async Task<string> UnknownService(GoldenHost host, CancellationToken ct)
+    {
+        await ViewScenarios.Append(host, EventTypes.ServiceRan,
+            new ServiceRan(Command(4), ServiceName.From("phantom"), host.Now().AddMinutes(-1), ServiceOutcome.Failed, SindriErrors.ServiceNotFound.Code), "service.ran:golden-unknown", ct);
+        await ViewScenarios.CatchUp(host, ct);
+        return await ViewScenarios.Read(host, "/sindri/needs-you");
     }
 
     /// <summary>The events of one manual run, as the stream sends them: started, two lines, finished, and the run's manual 'service.ran' naming the job.</summary>

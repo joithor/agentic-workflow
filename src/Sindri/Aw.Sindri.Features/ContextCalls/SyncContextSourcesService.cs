@@ -1,6 +1,9 @@
 using System.Globalization;
+using Aw.Context.Core;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Sources;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
@@ -13,8 +16,9 @@ namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>
 /// The work of a sync job (context spec §8.8; API P6): syncs the intent sources through the engine under the starting caller, which is the same work as
-/// the 'context-sync' service, and records 'context.sources.synced' per source (slot: when the job began). A source that is down is a row with its
-/// code, as in the service; a sync of a source that is running already (the scheduled service's) is SND-CONTEXT-056 and fails the job.
+/// the 'context-sync' service does: one source at a time, recording 'context.sources.synced' for each as it finishes (slot: when the job began). A source
+/// that is down is a row with its code. A source that is running already (the scheduled service's, SND-CONTEXT-056) is a row with that code in a sync of every
+/// source, and fails the job when it is the one named.
 /// </summary>
 /// <param name="scopes">The profile's scope and the caller.</param>
 /// <param name="engine">The context engine.</param>
@@ -41,23 +45,65 @@ internal sealed class SyncContextSourcesService(ContextScopes scopes, IContextEn
         }
 
         var slot = clock.GetUtcNow();
-        jobs.Current?.Progress.Report(request.Source is null ? "syncing every source" : $"syncing {request.Source}");
-        var report = await engine.Sync(request.Source, scope.Value, cancellationToken).ConfigureAwait(false);
+        var wanted = await Wanted(request.Source, scope.Value, cancellationToken).ConfigureAwait(false);
+        if (wanted.IsError)
+        {
+            return wanted.Error;
+        }
+
+        var synced = new List<SyncedSource>();
+        foreach (var source in wanted.Value)
+        {
+            jobs.Current?.Progress.Report($"syncing {source}");
+            var done = await SyncOne(source, request.Source is null, (scope.Value, slot, grant), cancellationToken).ConfigureAwait(false);
+            if (done.IsError)
+            {
+                return done.Error;   // the sources before this one have their events already
+            }
+
+            synced.AddRange(done.Value);
+        }
+
+        return new SyncContextSourcesResult(synced);
+    }
+
+    /// <summary>The sources to sync one at a time, as the 'context-sync' service does: the one named, or every intent source.</summary>
+    private async ValueTask<Result<IReadOnlyList<string>>> Wanted(string? named, ContextScope scope, CancellationToken cancellationToken)
+    {
+        if (named is not null)
+        {
+            return new[] { named };
+        }
+
+        var view = await engine.Sources(scope, cancellationToken).ConfigureAwait(false);
+        return view.IsError ? view.Error : Results.Success<IReadOnlyList<string>>([.. view.Value.Sources.Where(static r => r.Kind == SourceKind.Intent).Select(static r => r.Source.Value).Distinct(StringComparer.Ordinal)]);
+    }
+
+    /// <summary>
+    /// Syncs one source and records its event. In a sync of every source, one that is running already (056) is its own row with the code and the others go on; a
+    /// named source in that state fails the job.
+    /// </summary>
+    private async ValueTask<Result<IReadOnlyList<SyncedSource>>> SyncOne(string source, bool all, (ContextScope Scope, DateTimeOffset Slot, LeaseGrant Grant) run, CancellationToken cancellationToken)
+    {
+        var report = await engine.Sync(source, run.Scope, cancellationToken).ConfigureAwait(false);
         if (report.IsError)
         {
-            return report.Error;
+            return all && report.Error.Code == ContextErrors.SyncRunning.Code
+                ? Results.Success<IReadOnlyList<SyncedSource>>([new SyncedSource(source, new ContextLinksSynced(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, report.Error.Code))])
+                : report.Error;
         }
 
         foreach (var row in report.Value.Sources)
         {
-            var recorded = await Record(row, slot, grant, cancellationToken).ConfigureAwait(false);
+            // the engine has applied the sync: its events are appended even when the job is being cancelled
+            var recorded = await Record(row, run.Slot, run.Grant, CancellationToken.None).ConfigureAwait(false);
             if (recorded.IsError)
             {
                 return recorded.Error;
             }
         }
 
-        return new SyncContextSourcesResult([.. report.Value.Sources.Select(static r => new SyncedSource(r.Source.Value, Links(r)))]);
+        return Results.Success<IReadOnlyList<SyncedSource>>([.. report.Value.Sources.Select(static r => new SyncedSource(r.Source.Value, Links(r)))]);
     }
 
     private static ContextLinksSynced Links(SourceSync row) =>

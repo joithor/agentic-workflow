@@ -21,7 +21,13 @@ internal sealed class ProbeJobService(IJobContextAccessor jobs, Commands.Chain.F
             case "stubborn":   // ignores its token: it returns only when the test releases the latch
                 latch.Start();
                 await latch.Release.Task.ConfigureAwait(false);
+                _ = latch.Returned.TrySetResult();
                 return new ProbeReport("late");
+            case "own-cancel":   // like 'stubborn', then throws a cancellation of its own that is not its token's (a timeout)
+                latch.Start();
+                await latch.Release.Task.ConfigureAwait(false);
+                _ = latch.Returned.TrySetResult();
+                throw new OperationCanceledException("a timeout of its own");
             case "fail" or "throw" or "big" or "secret" or "repo" or "esc" or "keyed":
                 return Immediate(request.Mode);
             default:

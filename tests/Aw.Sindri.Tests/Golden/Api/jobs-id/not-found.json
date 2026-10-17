@@ -2,6 +2,6 @@
   "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
   "title": "SND-JOB-404",
   "status": 404,
-  "detail": "no such job",
+  "detail": "No such job (fix: run `sindri jobs` to list them)",
   "traceId": "<trace>"
 }

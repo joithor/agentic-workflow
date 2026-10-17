@@ -74,7 +74,7 @@ public sealed class InstanceIdRoutesTests(DevServer server) : IClassFixture<DevS
         var bare = await served.Cli("status", "T-52");
         var bareEvents = await served.Cli("events", "T-52");
 
-        Assert.Equal((HttpStatusCode.OK, "T-52/step/1"), (got, instance.GetProperty("instance").GetProperty("address").GetString()));
+        Assert.Equal((HttpStatusCode.OK, "T-52/step/1"), (got, instance.GetProperty("address").GetString()));
         Assert.Equal(HttpStatusCode.OK, read);
         Assert.True(events.GetProperty("cursor").GetInt64() > 0);
         Assert.Equal("SND-WF-001", unknown.GetProperty("title").GetString());

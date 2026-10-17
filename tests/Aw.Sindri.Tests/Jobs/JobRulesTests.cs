@@ -26,6 +26,17 @@ public sealed class JobRulesTests
         Expect.Equal(250, lines[^1].Round);
     }
 
+    public static TheoryData<JobState> States => [.. Enum.GetValues<JobState>()];
+
+    [Theory]
+    [MemberData(nameof(States))]
+    public void Every_state_name_is_the_name_the_json_writes(JobState state)
+    {
+        var json = System.Text.Encoding.UTF8.GetString(Kernel.Json.AwJson.Serialize(state, SliceHarness.Json));
+
+        Expect.Equal($"\"{JobStateNames.Of(state)}\"", json);   // the SQLite filter compares this name with the stored column
+    }
+
     [Fact]
     public void Clean_cuts_a_line_to_200_characters_and_escapes_control_sequences()
     {

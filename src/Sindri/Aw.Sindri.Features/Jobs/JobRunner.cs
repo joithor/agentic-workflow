@@ -23,18 +23,21 @@ namespace Aw.Sindri.Features.Jobs;
 internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jobs, ICallerContextAccessor callers, JobEventWriter writer, JobRegistry registry, IShutdown shutdown)
     : IJobRunner, IAsyncDisposable, IDisposable
 {
-    private readonly ConcurrentDictionary<string, Run> _runs = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, JobRun> _runs = new(StringComparer.Ordinal);
     private readonly CancellationTokenSource _stopping = CancellationTokenSource.CreateLinkedTokenSource(shutdown.Stopping);   // a stop request or a lost lease trips every job's token at once
     private int _disposed;
 
     /// <inheritdoc />
     public int Running => _runs.Count;
 
+    /// <summary>The ids of the jobs running now (a test names the ones that did not end).</summary>
+    public IReadOnlyList<string> Active => [.. _runs.Keys];
+
     /// <inheritdoc />
     public ValueTask Start(JobStart start, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(start);
-        var run = new Run(start, CancellationTokenSource.CreateLinkedTokenSource(_stopping.Token));
+        var run = new JobRun(start, CancellationTokenSource.CreateLinkedTokenSource(_stopping.Token));
         _runs[start.Job.Value] = run;
         using (ExecutionContext.SuppressFlow())   // the job's task starts with no ambient caller or job of the code that started it
         {
@@ -52,6 +55,7 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
             return false;
         }
 
+        run.Recorded = true;
         run.Cancelled = true;
         // the (kind, key) claim stays until the work has returned (Execute releases it): a service whose old run is still winding down must never overlap a new one
         try
@@ -62,6 +66,10 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
         {
             return false;   // it ended just now
         }
+        finally
+        {
+            _ = run.Pending?.TrySetResult(true);
+        }
 
         return true;
     }
@@ -71,17 +79,33 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
     {
         if (_runs.TryGetValue(job.Value, out var run))
         {
-            run.Cancelled = true;
+            run.Mark();
         }
     }
 
     /// <inheritdoc />
     public void Withdraw(JobId job)
     {
-        if (_runs.TryGetValue(job.Value, out var run) && run.WriteFailure is null)
+        if (_runs.TryGetValue(job.Value, out var run))
         {
-            run.Cancelled = false;
+            if (run.WriteFailure is null && !run.Recorded)
+            {
+                run.Cancelled = false;
+            }
+
+            _ = run.Pending?.TrySetResult(run.Recorded);
         }
+    }
+
+    /// <inheritdoc />
+    public async ValueTask<bool> CancelRecorded(JobId job)
+    {
+        if (!_runs.TryGetValue(job.Value, out var run) || !run.Cancelled)
+        {
+            return false;
+        }
+
+        return run.Pending is { } pending ? await pending.Task.ConfigureAwait(false) : run.Recorded;
     }
 
     /// <inheritdoc />
@@ -126,7 +150,7 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
         _stopping.Dispose();
     }
 
-    private async Task Execute(Run run)
+    private async Task Execute(JobRun run)
     {
         var queue = new JobLineQueue(JobLimits.QueueLines);
         var drained = Task.Run(() => Drain(run, queue), CancellationToken.None);
@@ -153,15 +177,16 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
     }
 
     /// <summary>Writes how the job ended. A write that fails while the lease is still held is tried once more, then replaced by a failed end carrying the write's own code; a lost lease is recovery's.</summary>
-    private async Task End(Run run, JobWorkResult? work)
+    private async Task End(JobRun run, JobWorkResult? work)
     {
+        await Settle(run).ConfigureAwait(false);   // whether a cancel in flight was recorded or withdrawn is settled before the job decides how it ends
         if (run.WriteFailure is { } failure)
         {
             await Finish(run, new JobWorkResult(failure, string.Empty, Result: null)).ConfigureAwait(false);
         }
-        else if (work is not null && !run.Cancelled && !_stopping.IsCancellationRequested)
+        else if (!run.Cancelled && !_stopping.IsCancellationRequested && (work ?? Withdrawn(run)) is { } ending)
         {
-            var finished = await Retry(() => writer.Finish(run.Start, work, CancellationToken.None)).ConfigureAwait(false);
+            var finished = await Retry(() => writer.Finish(run.Start, ending, CancellationToken.None)).ConfigureAwait(false);
             if (finished.IsError && writer.HoldsLease())
             {
                 _ = await writer.Finish(run.Start, new JobWorkResult(finished.Error, string.Empty, Result: null), CancellationToken.None).ConfigureAwait(false);
@@ -169,7 +194,20 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
         }
     }
 
-    private async Task Finish(Run run, JobWorkResult work) =>
+    /// <summary>Waits while a cancel is pending (it may be replaced by another), then the end is fixed.</summary>
+    private static async Task Settle(JobRun run)
+    {
+        while (run.OpenCancelOrEnd() is { } pending)
+        {
+            _ = await pending.ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>A work that threw a cancellation of its own saw a mark that was withdrawn: nothing cancelled the job, so it ends failed instead of with no end at all.</summary>
+    private static JobWorkResult? Withdrawn(JobRun run) =>
+        run.Source.IsCancellationRequested ? null : new JobWorkResult(SindriErrors.ServiceFailed.With("the job was cancelled but the cancel could not be recorded"), string.Empty, Result: null);
+
+    private async Task Finish(JobRun run, JobWorkResult work) =>
         _ = await Retry(() => writer.Finish(run.Start, work, CancellationToken.None)).ConfigureAwait(false);
 
     /// <summary>Runs <paramref name="write"/>; when it fails with the lease still held, once more (every event has an idempotency key, so a repeat is safe).</summary>
@@ -180,7 +218,7 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
     }
 
     /// <summary>Runs the work under the starting caller; null when it was cancelled (nothing to record), otherwise how it ended.</summary>
-    private async Task<JobWorkResult?> Work(Run run, JobLineQueue queue)
+    private async Task<JobWorkResult?> Work(JobRun run, JobLineQueue queue)
     {
         var start = run.Start;
         try
@@ -206,7 +244,7 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
     }
 
     /// <summary>Writes the queued lines as 'job.progress' within the budget; a write that fails (after one retry while the lease is held) stops the writing, cancels the job and is its failure.</summary>
-    private async Task Drain(Run run, JobLineQueue queue)
+    private async Task Drain(JobRun run, JobLineQueue queue)
     {
         var budget = new JobProgressBudget();
         try
@@ -219,12 +257,12 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
                 }
 
                 var admitted = budget.Admit();
-                if (admitted == JobAdmission.Drop)
+                if (admitted == ProgressDecision.Drop)
                 {
                     continue;
                 }
 
-                var text = admitted == JobAdmission.Truncate ? "(progress truncated)" : line;
+                var text = admitted == ProgressDecision.Truncate ? "(progress truncated)" : line;
                 var written = await Retry(() => writer.Progress(run.Start, budget.Written, text, CancellationToken.None)).ConfigureAwait(false);
                 if (written.IsError)
                 {
@@ -240,7 +278,7 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
         }
     }
 
-    private static async Task Break(Run run, Error failure)
+    private static async Task Break(JobRun run, Error failure)
     {
         run.WriteFailure ??= failure;
         run.Cancelled = true;   // the job ends here; Execute writes its failed end while the lease is held, recovery otherwise
@@ -250,18 +288,5 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
     private sealed class QueueProgress(JobLineQueue queue) : IProgress<string>
     {
         public void Report(string value) => queue.Offer(value);
-    }
-
-    private sealed class Run(JobStart start, CancellationTokenSource source)
-    {
-        public JobStart Start { get; } = start;
-
-        public CancellationTokenSource Source { get; } = source;
-
-        public TaskCompletionSource Done { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        public bool Cancelled { get; set; }
-
-        public Error? WriteFailure { get; set; }
     }
 }

@@ -32,7 +32,7 @@ internal sealed partial class SchedulerHost(
     private ProfileHash? _profile;
     private bool _loaded;
     private string? _problem;
-    private bool _pausesKnown;   // until the first good read of the pauses no service runs: a restart mid-rebuild must not run what a human paused
+    private bool _pausesKnown;   // until the first good read of the pauses no profile service runs (a built-in can't be paused): a restart mid-rebuild must not run what a human paused
     private bool _pausesFailing;   // the last read of the pauses failed (logged once for the stretch)
     private IReadOnlySet<ServiceName> _paused = new HashSet<ServiceName>();   // read once per tick; a failed read keeps the last known set
 
@@ -96,7 +96,7 @@ internal sealed partial class SchedulerHost(
         {
             _loaded = true;   // the first read loads the built-ins even with no approved profile (S1-D8)
             _profile = profile?.Hash;
-            _schedules = ServiceSchedule.From(profile?.Profile, inputs.BuiltIns, clock.GetUtcNow());
+            _schedules = ServiceSchedule.From(profile?.Profile, inputs.BuiltIns, clock.GetUtcNow(), await LastRuns(ct).ConfigureAwait(false));
             LogSchedule(log, _profile?.Abbreviated ?? "none", _schedules.Count);
         }
     }
@@ -115,7 +115,7 @@ internal sealed partial class SchedulerHost(
             }
 
             // a paused service's slot passes unrun (so a resume doesn't burst); a service with a run in flight, scheduled or manual, skips this slot (S1-D10)
-            if (_pausesKnown && !_paused.Contains(schedule.Name) && guard.TryClaim(schedule.Name, out var claim))
+            if ((_pausesKnown || IsBuiltIn(schedule.Name)) && !_paused.Contains(schedule.Name) && guard.TryClaim(schedule.Name, out var claim))
             {
                 var run = RunOne(schedule, new ScheduledRun(grant, schedule.NextSlot), claim, ct);   // its own loop: not awaited here
                 if (run.IsCompleted)
@@ -134,6 +134,9 @@ internal sealed partial class SchedulerHost(
 
         _schedules = advanced;
     }
+
+    /// <summary>A built-in service can't be paused (only the profile's can), so it needs no read of the pauses to start.</summary>
+    private bool IsBuiltIn(ServiceName name) => inputs.BuiltIns.Any(b => b.Name == name);
 
     private async Task ReadPauses(CancellationToken ct)
     {

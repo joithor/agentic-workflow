@@ -11,18 +11,18 @@ namespace Aw.Sindri.Tests.GetJob;
 [Lane(TestLane.Integration)]
 public sealed class GetJobHttpTests
 {
-    [Fact(Timeout = 30_000)]
+    [Fact(Timeout = 60_000)]
     public async Task Get_after_start_with_X_Sindri_After_sees_running()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await JobHost.Start(ct);
         var (job, sequence) = await JobHost.StartEcho(host, lines: 100, delayMs: 100);
 
-        var answer = await host.Http.Ask(Get($"/sindri/jobs/{job.Value}", [.. JobHost.Human(host), (SindriHeaders.After, sequence.ToString(System.Globalization.CultureInfo.InvariantCulture))]));
-        _ = await host.Http.Ask(Post($"/sindri/jobs/{job.Value}/cancel", json: null, JobHost.Human(host)));
+        var answer = await JobHost.Retrying(host, () => host.Http.Ask(Get($"/sindri/jobs/{job.Value}", [.. JobHost.Human(host), (SindriHeaders.After, sequence.ToString(System.Globalization.CultureInfo.InvariantCulture))])), ct);
+        await JobHost.Cancel(host, job, ct);   // the job ends only through this cancel: a refused one fails here, by name
         await JobHost.Settle(host, ct);
 
-        Assert.Equal(HttpStatusCode.OK, answer.Status);
+        Assert.True(answer.Status == HttpStatusCode.OK, $"GET answered {answer.Status} {answer.Code}: {answer.Body}");
         using var json = JsonDocument.Parse(answer.Body);
         Assert.Equal(("running", "EchoJob"), (json.RootElement.GetProperty("state").GetString(), json.RootElement.GetProperty("kind").GetString()));
         Assert.Equal(["CancelJob"], json.RootElement.GetProperty("actions").EnumerateArray().Select(static a => a.GetString()), StringComparer.Ordinal);

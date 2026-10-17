@@ -9,7 +9,8 @@
       "viewer",
       "host",
       "agents",
-      "meta"
+      "meta",
+      "sessions"
     ],
     "viewer": [
       "kind",
@@ -83,7 +84,14 @@
       "{mcpConfig}",
       "{cmd...}"
     ],
-    "splicePlaceholder": "{cmd...}"
+    "splicePlaceholder": "{cmd...}",
+    "sessions": [
+      "enabled",
+      "pollSeconds",
+      "providers",
+      "tmuxSockets",
+      "claudeSessionsDir"
+    ]
   },
   "type": "object",
   "additionalProperties": false,
@@ -216,6 +224,9 @@
     },
     "meta": {
       "$ref": "#/$defs/meta"
+    },
+    "sessions": {
+      "$ref": "#/$defs/sessions"
     }
   },
   "$defs": {
@@ -535,6 +546,45 @@
           "additionalProperties": {
             "$ref": "#/$defs/agentId"
           }
+        }
+      }
+    },
+    "sessions": {
+      "description": "The session collector's settings (spec 2026-10-16-sindri-session-collector-design.md section 9). Optional and additive; the bash reader accepts and ignores it.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Default true; false turns the whole collector off (SND-SESSION-002 disabled)."
+        },
+        "pollSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 30,
+          "description": "Pass cadence; default 2."
+        },
+        "providers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/agentId"
+          },
+          "uniqueItems": true,
+          "description": "Which catalog agents to discover; default every catalog entry."
+        },
+        "tmuxSockets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^/.+"
+          },
+          "uniqueItems": true,
+          "description": "Extra absolute tmux socket paths to read besides the ones found from processes; default []."
+        },
+        "claudeSessionsDir": {
+          "type": "string",
+          "pattern": "^/.+",
+          "description": "For a relocated Claude config (CLAUDE_CONFIG_DIR); default ~/.claude/sessions."
         }
       }
     }

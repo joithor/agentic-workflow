@@ -251,6 +251,24 @@
       "schema": "invalid",
       "bash": "accept",
       "note": "claude-code's built-in has no reportedId; an override to sessionId: reported without one leaves a reported agent with no reportedId (section 4)"
+    },
+    {
+      "file": "sessions.json",
+      "schema": "valid",
+      "bash": "accept",
+      "note": "the session collector's settings (CO-0): every sessions key; the bash reader accepts and ignores them"
+    },
+    {
+      "file": "sessions-bogus.json",
+      "schema": "invalid",
+      "bash": "accept",
+      "note": "an unknown key inside sessions; the bash reader ignores the whole key; the schema refuses it, and so will the C# reader once it lands (CO-2a)"
+    },
+    {
+      "file": "sessions-poll-out-of-range.json",
+      "schema": "invalid",
+      "bash": "accept",
+      "note": "pollSeconds is 1 to 30; a range the bash reader does not check"
     }
   ]
 }

@@ -36,9 +36,10 @@ internal sealed class ContextJobVerbs(ControlPlaneClient client, Output output, 
             return await output.Error(SindriErrors.InvalidInput.With($"'context {string.Join(' ', args)}' isn't this command: {(sync ? SyncUsage : BuildUsage)}")).ConfigureAwait(false);
         }
 
+        // the start itself is never cancelled by Ctrl-C (as 'services run'): the job may exist on the server, and only the follow listens for the interrupt
         var started = sync
-            ? await client.Post<SyncContextSourcesRequest, JobStartedResponse>("/sindri/context/sources/sync", new SyncContextSourcesRequest(line.Words.Count == 1 ? line.Words[0] : null), interrupt).ConfigureAwait(false)
-            : await client.Post<BuildContextMapRequest, JobStartedResponse>("/sindri/context/map/build", new BuildContextMapRequest(), interrupt).ConfigureAwait(false);
+            ? await client.Post<SyncContextSourcesRequest, JobStartedResponse>("/sindri/context/sources/sync", new SyncContextSourcesRequest(line.Words.Count == 1 ? line.Words[0] : null), CancellationToken.None).ConfigureAwait(false)
+            : await client.Post<BuildContextMapRequest, JobStartedResponse>("/sindri/context/map/build", new BuildContextMapRequest(), CancellationToken.None).ConfigureAwait(false);
         if (started.IsError)
         {
             return await output.Error(started.Error).ConfigureAwait(false);

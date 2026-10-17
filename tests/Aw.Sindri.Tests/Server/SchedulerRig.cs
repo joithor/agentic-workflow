@@ -18,15 +18,17 @@ internal sealed class SchedulerRig : IAsyncDisposable
 {
     private readonly ServiceProvider _provider;
     private readonly SteppedClock _clock;
-    private readonly SchedulerHost _scheduler;
+    private readonly IReadOnlyList<BuiltInService> _builtIns;
+    private SchedulerHost _scheduler;
     private readonly InMemoryViewStore _views = new(SliceHarness.Json);
     private long _sequence;
 
-    private SchedulerRig(IEnumerable<IScheduledService> services)
+    private SchedulerRig(IEnumerable<IScheduledService> services, IEnumerable<BuiltInService> builtIns)
     {
+        Reader = new SwitchableLedgerReader(H.Store);
         var collection = new ServiceCollection()
             .AddSingleton<ILedgerStore>(H.Store)
-            .AddSingleton<ILedgerReader>(H.Store)
+            .AddSingleton<ILedgerReader>(Reader)
             .AddSingleton(H.Events)
             .AddSingleton<TimeProvider>(H.Clock)
             .AddSingleton(H.Callers)
@@ -40,10 +42,14 @@ internal sealed class SchedulerRig : IAsyncDisposable
         Progress = new ProjectorProgress(H.Clock);
         _provider = collection.BuildServiceProvider();
         _clock = new SteppedClock(H.Clock);
-        _scheduler = new SchedulerHost(_provider.GetRequiredService<IServiceScopeFactory>(), new ScheduleInputs(H.Profiles, [], new ViewServicePauses(_views, Progress)), Guard, H.Held, H.Callers, _clock, Log);
+        _builtIns = [.. builtIns];
+        _scheduler = NewScheduler();
     }
 
     public SliceHarness H { get; } = new();
+
+    /// <summary>The scheduler's ledger reader; a test can make it fail.</summary>
+    public SwitchableLedgerReader Reader { get; }
 
     /// <summary>What the scheduler logged.</summary>
     public ListLogger<SchedulerHost> Log { get; } = new();
@@ -51,15 +57,22 @@ internal sealed class SchedulerRig : IAsyncDisposable
     /// <summary>The projector status the pause view reads.</summary>
     internal ProjectorProgress Progress { get; }
 
-    public ServiceRunGuard Guard { get; } = new();
+    public ServiceRunGuard Guard { get; private set; } = new();
 
     /// <summary>Approves a profile naming <paramref name="every"/> for each service, takes the lease and leaves the scheduler to <see cref="Begin"/>.</summary>
     /// <param name="services">The services this build has.</param>
     /// <param name="every">The services the profile names, each with its cadence.</param>
     /// <returns>The running rig.</returns>
-    public static async Task<SchedulerRig> Start(IEnumerable<IScheduledService> services, params (string Name, string Every)[] every)
+    public static Task<SchedulerRig> Start(IEnumerable<IScheduledService> services, params (string Name, string Every)[] every) => Start(services, [], every);
+
+    /// <summary>As the overload without built-ins, with built-in services the profile does not name.</summary>
+    /// <param name="services">The services this build has.</param>
+    /// <param name="builtIns">The built-in services.</param>
+    /// <param name="every">The services the profile names, each with its cadence.</param>
+    /// <returns>The running rig.</returns>
+    public static async Task<SchedulerRig> Start(IEnumerable<IScheduledService> services, IEnumerable<BuiltInService> builtIns, params (string Name, string Every)[] every)
     {
-        var rig = new SchedulerRig(services);
+        var rig = new SchedulerRig(services, builtIns);
         _ = await rig.H.Profiles.Save(SliceHarness.ProfileOf("thor", every), TestContext.Current.CancellationToken);
         _ = await rig.H.HoldLease();
         return rig;
@@ -80,6 +93,25 @@ internal sealed class SchedulerRig : IAsyncDisposable
             await _clock.Armed();
         }
     }
+
+    /// <summary>Stops the process's scheduler and starts a new one on the same ledger, as a restart does (the run guard is in memory, so it starts empty).</summary>
+    /// <param name="down">How long the process stays down before the new one starts.</param>
+    /// <returns>A task that completes when the new scheduler runs.</returns>
+    public async Task Restart(TimeSpan down = default)
+    {
+        await _scheduler.StopAsync(TestContext.Current.CancellationToken);
+        _scheduler.Dispose();
+        H.Clock.Advance(down);
+        Guard = new ServiceRunGuard();
+        _scheduler = NewScheduler();
+        await Begin();
+    }
+
+    /// <summary>Approves a profile naming <paramref name="every"/> for each service; the scheduler picks it up on its next tick.</summary>
+    /// <param name="every">The services the profile names, each with its cadence.</param>
+    /// <returns>A task that completes then.</returns>
+    public async Task Reapprove(params (string Name, string Every)[] every) =>
+        _ = await H.Profiles.Save(SliceHarness.ProfileOf("thor", every), TestContext.Current.CancellationToken);
 
     public Task Pause(string service) => Fold(EventTypes.ServicePaused, new ServicePaused(H.Ids.New<CommandId>(), ServiceName.From(service)));
 
@@ -121,6 +153,8 @@ internal sealed class SchedulerRig : IAsyncDisposable
         _scheduler.Dispose();
         await _provider.DisposeAsync();
     }
+
+    private SchedulerHost NewScheduler() => new(_provider.GetRequiredService<IServiceScopeFactory>(), new ScheduleInputs(H.Profiles, _builtIns, new ViewServicePauses(_views, Progress)), Guard, H.Held, H.Callers, _clock, Log);
 
     private async Task Fold<TPayload>(string type, TPayload payload)
     {

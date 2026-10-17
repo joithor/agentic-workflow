@@ -84,6 +84,9 @@ classify_changes() {
       # scripts/tests/scoping-fixture.test.sh builds the fixture's history and runs its self-check (dotnet comes from tests/*)
       tests/fixtures/scoping/*) dotnet=true; bash=true ;;
       docs/csharp/sindri-profile.md|docs/csharp/sindri-launcher.md) bash=true ;;
+      # check-fleet.mjs (and its suite) validate the fleet state schema's fixtures and the /proc-shaped sessions tree; both sit under tests/ (dotnet) too
+      tests/fixtures/fleet/*|tests/fixtures/sessions/*) bash=true ;;
+      docs/csharp/sindri-sessions.md) bash=true ;;
     esac
     for pkg in "${TS_PACKAGES[@]}"; do
       case "$file" in

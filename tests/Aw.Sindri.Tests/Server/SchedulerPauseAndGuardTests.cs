@@ -2,6 +2,8 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.Server;
@@ -61,6 +63,21 @@ public sealed class SchedulerPauseAndGuardTests
     }
 
     [Fact]
+    public async Task A_built_in_service_runs_before_the_first_good_read_of_the_pauses_while_a_profile_service_waits()
+    {
+        var tidy = new ScriptedService(ScriptedService.Worked);
+        var counted = new CountingService();
+        await using var rig = await SchedulerRig.Start([tidy, counted], [new BuiltInService(CountingService.Name, new Cadence(TimeSpan.FromSeconds(5)))], ("tidy", "5s"));
+        await rig.BeginRebuild();   // the process starts while the views are rebuilding: no pause can be read
+        await rig.Begin();
+
+        await rig.Step(12);
+
+        Assert.True(counted.Runs >= 1, "the built-in service was held back by the pause read");   // it can't be paused, so there is nothing to wait for
+        Expect.Equal(0, tidy.Runs);
+    }
+
+    [Fact]
     public async Task A_pause_read_that_returns_an_error_is_logged_once_with_its_code_until_it_reads_again()
     {
         var tidy = new ScriptedService(ScriptedService.Worked);
@@ -103,7 +120,7 @@ public sealed class SchedulerPauseAndGuardTests
     {
         var tidy = new ScriptedService(ScriptedService.Worked);
         await using var rig = await SchedulerRig.Start([tidy], ("tidy", "5s"));
-        Assert.True(rig.Guard.TryClaim(_tidy, out var manual));   // a manual run holds the service
+        Assert.True(rig.Guard.TryClaimManual(_tidy, out var manual));   // a manual run holds the service
         await rig.Begin();
 
         await rig.Step(12);

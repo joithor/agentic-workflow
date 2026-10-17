@@ -128,11 +128,7 @@ public sealed class NeedsYouMapperTests
     [Fact]
     public void A_row_with_a_null_primary_action_has_no_primary_control()
     {
-        var served = GoldenFiles.Node("needs-you", "fixture");
-        served["rows"]![1]!["primaryAction"] = null;
-        var list = AwJson.Deserialize<NeedsYouList>(Encoding.UTF8.GetBytes(served.ToJsonString()), SindriApiClient.Json).Value;
-
-        var row = NeedsYouMapper.Map(list, Catalog(), Pending(), _counts).Rows[1];
+        var row = Feed("unknown-service").Rows[0];   // the API's own golden: a profile service this build lacks, served with a null primaryAction
 
         Assert.Equal("", row.PrimaryAction);
         Assert.NotEmpty(row.Actions);

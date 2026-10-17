@@ -31,7 +31,24 @@ internal static class EndpointTable
         _ = queries.MapListRequests();
         _ = queries.MapGetInstance();
         _ = queries.MapGetInstanceEvents();
+        _ = queries.MapGetInstanceFact();
         _ = queries.MapGetProfile();
+        _ = queries.MapGetStatus();
+        _ = queries.MapListCommands();
+        _ = queries.MapListItems();
+        _ = queries.MapListInstances();
+        _ = queries.MapListOutbox();
+        _ = queries.MapListServices();
+        _ = queries.MapListRecipes();
+        _ = queries.MapPingProcess();
+        _ = queries.MapReadLedger();
+        _ = queries.MapShowRecipe();
+        _ = queries.MapStreamEvents();
+        return MapContextQueries(queries);
+    }
+
+    private static RouteGroupBuilder MapContextQueries(RouteGroupBuilder queries)
+    {
         _ = queries.MapExportContextMap();
         _ = queries.MapExportContextReview();
         _ = queries.MapFindContextPath();
@@ -43,20 +60,9 @@ internal static class EndpointTable
         _ = queries.MapGetContextReview();
         _ = queries.MapGetContextReviewHistory();
         _ = queries.MapGetContextSources();
-        _ = queries.MapGetStatus();
         _ = queries.MapListContextNeighbors();
-        _ = queries.MapListCommands();
-        _ = queries.MapListItems();
-        _ = queries.MapListInstances();
-        _ = queries.MapListOutbox();
-        _ = queries.MapListServices();
-        _ = queries.MapListRecipes();
-        _ = queries.MapPingProcess();
         _ = queries.MapQueryContext();
-        _ = queries.MapReadLedger();
         _ = queries.MapShowContextNode();
-        _ = queries.MapShowRecipe();
-        _ = queries.MapStreamEvents();
         return queries;
     }
 
