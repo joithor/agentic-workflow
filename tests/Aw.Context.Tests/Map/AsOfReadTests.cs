@@ -28,7 +28,7 @@ public sealed class AsOfReadTests : IDisposable
     private async Task TwoVersions()
     {
         _ = await _world.ImportFixture();   // v1
-        _ = await _world.ImportYaml(MapWorld.TabsMap);   // v2
+        _ = await _world.ImportYaml(MapWorld.Yaml("schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:", "  - {key: \"feature:only-in-two\", label: \"Two\"}"));   // v2
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -42,7 +42,8 @@ public sealed class AsOfReadTests : IDisposable
         Assert.Equal((1, "v1"), (old.Value.Snapshot.Version.Number, old.Value.Snapshot.Tag));
         Assert.Equal(2, current.Value.Snapshot.Version.Number);
         Assert.Contains(old.Value.Graph.Nodes, n => string.Equals(n.Key.Value, "feature:layout.split-pane", StringComparison.Ordinal));
-        Assert.DoesNotContain(old.Value.Graph.Nodes, n => string.Equals(n.Key.Value, "feature:tabs.tab-manager", StringComparison.Ordinal));
+        Assert.DoesNotContain(old.Value.Graph.Nodes, n => string.Equals(n.Key.Value, "feature:only-in-two", StringComparison.Ordinal));
+        Assert.Contains(current.Value.Graph.Nodes, n => string.Equals(n.Key.Value, "feature:only-in-two", StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]

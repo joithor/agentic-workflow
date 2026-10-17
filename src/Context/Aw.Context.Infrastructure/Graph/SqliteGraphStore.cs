@@ -51,12 +51,25 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
 
         await using (session.ConfigureAwait(false))
         {
-            var snapshot = await SnapshotIn(session, draft ? MapVersionStatus.Draft : MapVersionStatus.Current, cancellationToken).ConfigureAwait(false);
+            var snapshot = await SnapshotIn(session, v => v.Status == (draft ? MapVersionStatus.Draft : MapVersionStatus.Current), cancellationToken).ConfigureAwait(false);
             return snapshot.IsError ? ContextDatabase.Translate(snapshot.Error) : snapshot;
         }
     }
 
-    public ValueTask<Result<MapSnapshot?>> SnapshotAt(int version, CancellationToken cancellationToken) => throw new NotSupportedException();
+    public async ValueTask<Result<MapSnapshot?>> SnapshotAt(int version, CancellationToken cancellationToken)
+    {
+        var read = await OpenRead(cancellationToken).ConfigureAwait(false);
+        if (read.IsError || read.Value is not { } session)
+        {
+            return read.IsError ? read.Error : Results.Success<MapSnapshot?>(value: null);
+        }
+
+        await using (session.ConfigureAwait(false))
+        {
+            var snapshot = await SnapshotIn(session, v => v.Number == version && v.Status is MapVersionStatus.Current or MapVersionStatus.Retained, cancellationToken).ConfigureAwait(false);
+            return snapshot.IsError ? ContextDatabase.Translate(snapshot.Error) : snapshot;
+        }
+    }
 
     public async ValueTask<Result<GraphSnapshot>> Read(int version, CancellationToken cancellationToken)
     {
@@ -104,11 +117,11 @@ internal sealed class SqliteGraphStore(ContextDatabase database, ContextStoreSet
         return true;
     }
 
-    /// <summary>The newest version with <paramref name="status"/>, its graph and the overrides, all read in <paramref name="session"/>.</summary>
-    private static async ValueTask<Result<MapSnapshot?>> SnapshotIn(SqliteReadSession session, MapVersionStatus status, CancellationToken cancellationToken)
+    /// <summary>The newest version <paramref name="wanted"/> accepts, its graph and the overrides, all read in <paramref name="session"/>.</summary>
+    private static async ValueTask<Result<MapSnapshot?>> SnapshotIn(SqliteReadSession session, Func<MapVersion, bool> wanted, CancellationToken cancellationToken)
     {
         var versions = await SqliteQueries.List(session, new SqlStatement(GraphSql.SelectVersions), GraphRows.Version, cancellationToken).ConfigureAwait(false);
-        if (versions.IsError || versions.Value.FirstOrDefault(v => v.Status == status) is not { } version)
+        if (versions.IsError || versions.Value.FirstOrDefault(wanted) is not { } version)
         {
             return versions.IsError ? versions.Error : Results.Success<MapSnapshot?>(value: null);
         }

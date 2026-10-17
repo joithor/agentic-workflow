@@ -17,5 +17,19 @@ public readonly record struct MapRead(bool Draft, MapVersionRef? Version)
     /// <param name="draft">The draft flag.</param>
     /// <param name="mapVersion">The version text, or null.</param>
     /// <returns>The read, or SND-CONTEXT-006.</returns>
-    public static Result<MapRead> Of(bool draft, string? mapVersion) => throw new NotSupportedException();
+    public static Result<MapRead> Of(bool draft, string? mapVersion)
+    {
+        if (mapVersion is null)
+        {
+            return draft ? NewestDraft : Current;
+        }
+
+        if (draft)
+        {
+            return ContextErrors.QueryInvalid.With("draft and mapVersion are two shapes of one question (fix: ask for the draft or for a version, not both)");
+        }
+
+        var parsed = MapVersionRef.Parse(mapVersion);
+        return parsed.IsError ? parsed.Error : new MapRead(Draft: false, parsed.Value);
+    }
 }
