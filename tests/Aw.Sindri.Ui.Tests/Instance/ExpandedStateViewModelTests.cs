@@ -251,23 +251,28 @@ public sealed class ExpandedStateViewModelTests
         Assert.Equal((false, string.Empty), (desk.HasAttach, desk.AttachChip));
     }
 
-    // Interim (engine lane): a generic "ApplyCommand:answer" entry carries a bare CLI that the CLI rejects; the status's answer.cli is the full one.
-    private static StatusFields WithGenericAnswer(bool answered)
+    // Interim (engine lane): the served answer command's CLI is the bare form the CLI rejects; status.answer.cli is the full one. The real shape:
+    // commands[0] is verb "answer" with the same actionId as status.answer (a variant id such as "ApplyCommand:answer-resume").
+    private static StatusFields WithBareAnswer(bool answered, bool generic = false)
     {
         var status = FixtureInstances.Detail("escalated-gate").Current.Status;
         var bare = $"sindri workflow answer {status.Header.Address}";
-        var generic = status.Commands[0] with { ActionId = "ApplyCommand:answer", Class = "desk", Cli = bare };
-        return status with
+        var variantId = "ApplyCommand:answer-resume";
+        var answer = status.Answer! with { Kind = AnswerKind.Resume, ActionId = variantId, Class = "desk", Cli = bare + " --resume" };
+        var entry = status.Commands[0] with { Verb = StatusVerb.Answer, ActionId = generic ? "ApplyCommand:answer" : variantId, Class = "desk", Cli = bare };
+        var rest = status.Commands.Skip(1).ToList();
+        if (generic)
         {
-            Commands = [generic, .. status.Commands.Skip(1)],
-            Answer = answered ? status.Answer! with { Kind = AnswerKind.Resume, ActionId = "ApplyCommand:answer-resume", Class = "desk", Cli = bare + " --resume" } : null,
-        };
+            rest.Insert(0, entry with { ActionId = variantId });
+        }
+
+        return status with { Commands = [entry, .. rest], Answer = answered ? answer : null };
     }
 
     [Fact]
-    public async Task A_generic_answer_command_draws_and_copies_the_status_answer_cli()
+    public async Task An_answer_command_with_the_answers_action_id_draws_and_copies_the_status_answer_cli()
     {
-        var status = WithGenericAnswer(answered: true);
+        var status = WithBareAnswer(answered: true);
         var answer = OfStatus("escalated-gate", status).Commands.Single(c => c.Verb == StatusVerb.Answer);
 
         await answer.Copy(Token);
@@ -277,10 +282,21 @@ public sealed class ExpandedStateViewModelTests
     }
 
     [Fact]
-    public void A_generic_answer_command_with_no_answer_is_hidden_and_a_variant_keeps_its_own_cli()
+    public void A_generic_entry_beside_its_variant_entry_shows_the_answer_once()
     {
-        Assert.DoesNotContain(OfStatus("escalated-gate", WithGenericAnswer(answered: false)).Commands, c => c.Verb == StatusVerb.Answer);
+        var status = WithBareAnswer(answered: true, generic: true);
+
+        var answers = OfStatus("escalated-gate", status).Commands.Where(c => c.Verb == StatusVerb.Answer).ToList();
+
+        Assert.Equal(status.Answer!.Cli, Assert.Single(answers).Cli);
+    }
+
+    [Fact]
+    public void A_generic_entry_with_no_answer_is_hidden_and_a_variant_with_another_action_id_keeps_its_own_cli()
+    {
         var served = FixtureInstances.Detail("escalated-gate").Current.Status;
+        var lone = served with { Answer = null, Commands = [served.Commands[0] with { Verb = StatusVerb.Answer, ActionId = "ApplyCommand:answer" }] };
+        Assert.DoesNotContain(OfStatus("escalated-gate", lone).Commands, c => c.Verb == StatusVerb.Answer);
         Assert.Equal(served.Commands[0].Cli, OfStatus("escalated-gate", served).Commands[0].Cli);
     }
 }
