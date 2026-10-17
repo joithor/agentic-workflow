@@ -1,11 +1,9 @@
-using System.Diagnostics.CodeAnalysis;
 using Aw.Sindri.Core.Launch;
 
 namespace Aw.Sindri.Infrastructure.Launch;
 
 /// <summary>The 'print' viewer (API P10a, unit U6): nothing opens; the attach command travels on 'launch.started' and the app or 'sindri open' prints it.</summary>
 /// <param name="source">'file' when launcher.json names it, 'detected' when the launcher fell back to it.</param>
-[SuppressMessage("Major Code Smell", "MA0182:Avoid unused internal types", Justification = "Registered in U7 (API P10a).")]
 internal sealed class PrintViewer(string source = "file") : ITerminalViewer
 {
     /// <inheritdoc/>

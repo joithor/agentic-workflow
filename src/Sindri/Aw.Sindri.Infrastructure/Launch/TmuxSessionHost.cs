@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Aw.Kernel;
@@ -16,7 +15,6 @@ namespace Aw.Sindri.Infrastructure.Launch;
 /// 'new-session -e' (tmux 3.2); the server's global environment is never written ('set-environment -g' is never run), so
 /// one launch's secret can't leak into the next.
 /// </summary>
-[SuppressMessage("Major Code Smell", "MA0182:Avoid unused internal types", Justification = "Registered in U7 (API P10a).")]
 internal sealed partial class TmuxSessionHost(TmuxHostOptions options) : ISessionHost
 {
     private static readonly TimeSpan _callBudget = TimeSpan.FromSeconds(5);

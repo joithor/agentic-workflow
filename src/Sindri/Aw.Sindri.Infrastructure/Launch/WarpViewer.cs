@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Globalization;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 using Aw.Redaction;
 using Aw.Sindri.Core;
@@ -14,7 +13,6 @@ namespace Aw.Sindri.Infrastructure.Launch;
 /// 'xdg-open', deleted 60 s after the outcome, and any older one swept at start-up so an old launch can't be re-run from
 /// Warp's palette. The window and the client check are the shared ones.
 /// </summary>
-[SuppressMessage("Major Code Smell", "MA0182:Avoid unused internal types", Justification = "Registered in U7 (API P10a).")]
 [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
 internal sealed partial class WarpViewer(WarpViewerOptions options, ISessionHost host, TimeProvider time, IRedactor? redactor = null) : ITerminalViewer
 {

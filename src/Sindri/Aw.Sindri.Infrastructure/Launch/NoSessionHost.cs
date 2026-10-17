@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Launch;
@@ -9,7 +8,6 @@ namespace Aw.Sindri.Infrastructure.Launch;
 /// The <c lang="text">none</c> host (launcher spec §3): it starts nothing, so the viewer runs the agent itself. Only human opens use it;
 /// Steps always use tmux (SL4).
 /// </summary>
-[SuppressMessage("Major Code Smell", "MA0182:Avoid unused internal types", Justification = "Registered in U7 (API P10a).")]
 internal sealed class NoSessionHost : ISessionHost
 {
     /// <inheritdoc/>

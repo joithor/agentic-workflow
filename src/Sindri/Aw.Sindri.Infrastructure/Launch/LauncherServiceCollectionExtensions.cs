@@ -1,0 +1,77 @@
+using Aw.Redaction;
+using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Profile;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Aw.Sindri.Infrastructure.Launch;
+
+/// <summary>Registers the launcher and its parts (API P10a, U7): the tmux host, the configured viewer, the launcher and the box-local setup.</summary>
+internal static class LauncherServiceCollectionExtensions
+{
+    internal static IServiceCollection AddSindriLauncher(this IServiceCollection services, Func<string, string?> environment, SindriSettings settings)
+    {
+        var builtinHashes = LauncherConfigFile.Read(LauncherStartup.Builtins(), user: null).Value.Agents.ToDictionary(static a => a.Id.Value, static a => a.ArgvHash, StringComparer.Ordinal);
+        string? BuiltinHash(AgentId id) => builtinHashes.GetValueOrDefault(id.Value);
+        return services
+            .AddSingleton<TmuxSessionHost>(static _ => new TmuxSessionHost(new TmuxHostOptions()))
+            .AddSingleton<NoSessionHost>()
+            .AddSingleton<ITerminalViewer>(sp => Viewer(sp, environment))
+            .AddSingleton<ILauncher>(sp => new Launcher(Parts(sp, environment, settings, BuiltinHash)))
+            .AddSingleton<ILaunchSetup>(sp => new LauncherInit(new LauncherInitParts(sp.GetRequiredService<ReloadingAgentCatalog>(), Detection(sp, environment))
+            {
+                BuiltinHash = BuiltinHash,
+                Approved = Approved(sp),
+            }));
+    }
+
+    private static LauncherParts Parts(IServiceProvider sp, Func<string, string?> environment, SindriSettings settings, Func<AgentId, string?> builtinHash)
+    {
+        var catalog = sp.GetRequiredService<ReloadingAgentCatalog>();
+        var tmux = sp.GetRequiredService<TmuxSessionHost>();
+        var none = sp.GetRequiredService<NoSessionHost>();
+        var options = new LauncherOptions(settings.Home)
+        {
+            SindriExecutable = Environment.ProcessPath ?? "sindri",
+            SindriHome = LauncherStartup.NonEmpty(environment("AW_SINDRI_HOME")),
+        };
+        return new LauncherParts(catalog, attended => attended && string.Equals(catalog.Current.Host?.Kind, "none", StringComparison.Ordinal) ? none : tmux, sp.GetRequiredService<ITerminalViewer>(), options, sp.GetRequiredService<TimeProvider>())
+        {
+            BuiltinHash = builtinHash,
+            Approved = Approved(sp),
+            Config = () => catalog.Current,
+        };
+    }
+
+    private static Func<CancellationToken, ValueTask<AgentSettings?>> Approved(IServiceProvider sp) => async ct =>
+    {
+        var latest = await sp.GetRequiredService<IApprovedProfile>().Latest(ct).ConfigureAwait(false);
+        return latest.IsError ? null : latest.Value?.Profile.Agents;
+    };
+
+    private static DetectionInputs Detection(IServiceProvider sp, Func<string, string?> environment) =>
+        new(environment, ViewerProcess.OnLoginPath, async ct => (await Create(sp, environment, new ViewerSection("warp")).Probe(ct).ConfigureAwait(false)).Present, TerminalTemplates.Load());
+
+    private static ConfiguredViewer Viewer(IServiceProvider sp, Func<string, string?> environment) =>
+        new(sp.GetRequiredService<ReloadingAgentCatalog>(), section => Create(sp, environment, section), Detection(sp, environment));
+
+    private static ITerminalViewer Create(IServiceProvider sp, Func<string, string?> environment, ViewerSection section)
+    {
+        var host = sp.GetRequiredService<TmuxSessionHost>();
+        var time = sp.GetRequiredService<TimeProvider>();
+        return section.Kind switch
+        {
+            "warp" when !OperatingSystem.IsWindows() => new WarpViewer(WarpOptions(environment), host, time, Redactor.Default),
+            "exec-template" => new ExecTemplateViewer(new ExecTemplateOptions(section.Name!, section.Argv!), host, time, Redactor.Default),   // why: a valid section has both
+            _ => new PrintViewer(),
+        };
+    }
+
+    private static WarpViewerOptions WarpOptions(Func<string, string?> environment)
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var mac = OperatingSystem.IsMacOS();
+        var data = LauncherStartup.NonEmpty(environment("XDG_DATA_HOME")) ?? Path.Combine(home, ".local", "share");
+        var dir = LauncherStartup.NonEmpty(environment("AW_WARP_LAUNCH_DIR")) ?? (mac ? Path.Combine(home, ".warp", "launch_configurations") : Path.Combine(data, "warp-terminal", "launch_configurations"));
+        return new WarpViewerOptions(dir) { IsMac = mac, Opener = mac ? "open" : "xdg-open", GetEnv = environment };
+    }
+}

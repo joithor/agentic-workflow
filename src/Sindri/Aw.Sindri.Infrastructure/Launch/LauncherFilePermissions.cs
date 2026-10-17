@@ -1,9 +1,6 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace Aw.Sindri.Infrastructure.Launch;
 
 /// <summary>The file may run commands as the user, like a shell rc (launcher spec, permissions): doctor warns when it, or the directory it sits in, can be written by others.</summary>
-[SuppressMessage("Major Code Smell", "MA0182:Avoid unused internal types", Justification = "Doctor calls it in U12 (API P10a).")]
 internal static class LauncherFilePermissions
 {
     private const UnixFileMode Others = UnixFileMode.GroupWrite | UnixFileMode.OtherWrite;

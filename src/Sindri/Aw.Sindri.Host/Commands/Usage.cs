@@ -30,6 +30,8 @@ internal static class Usage
         "       sindri jobs [--state <s>] [--kind <k>] [--json] [--no-start]   the jobs, newest first (states: running, succeeded, failed, cancelled); exit 1 while the views rebuild or stall",
         "       sindri jobs show <jobId> [--json] [--no-start]   one job: who started it, its last 200 lines, how it ended and the command that cancels it",
         "       sindri jobs cancel <jobId> [--no-start]   cancel a running job (SND-JOB-409 when it already ended)",
+        "       sindri launch init [--viewer <name>] [--force] [--stdout]   detect this box's terminal and write launcher.json (0600); a file that exists is refused without --force (exit 1); --stdout writes nothing",
+        "       sindri launch show [<id>] [--json]   the merged agent catalog: source, resolved bin, argvHash, whether Steps may run it (SL8) and the profile line that approves an entry that will park",
         "       sindri doctor [--json]        lease, ledger, views, profile, api, temporal and context checks, and the pinned harness probe; runs without the control plane",
         "       sindri doctor --probe [--harness <name>]  this process's agent variables (names only), ancestry and harness version, as JSON",
         "       sindri mcp register [--repo NAME] [--apply] [--json]   the per-repo Claude Code registration of /sindri/mcp (--apply: a human at a terminal)",

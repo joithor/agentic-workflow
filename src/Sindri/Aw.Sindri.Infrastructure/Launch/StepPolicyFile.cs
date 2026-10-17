@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -10,7 +9,6 @@ namespace Aw.Sindri.Infrastructure.Launch;
 /// <see cref="StepPolicy"/> and deletes the file with the launch. ReadOnly is plan mode plus the allow-list and the one writable path; Plan is plan mode
 /// with no write rules; Default sets no mode and adds the allow-list and the writable path.
 /// </summary>
-[SuppressMessage("Major Code Smell", "MA0182:Avoid unused internal types", Justification = "The launcher (U7, API P10a) writes and deletes the file.")]
 internal static class StepPolicyFile
 {
     private static readonly System.Text.Json.JsonSerializerOptions _json = AwJson.CreateOptions(LauncherJsonContext.Default, indented: true);

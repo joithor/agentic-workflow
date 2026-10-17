@@ -32,7 +32,7 @@ public sealed class LauncherInitTests : IDisposable
     private LauncherInit Setup(DetectionInputs detection, AgentSettings? approved = null) =>
         new(new LauncherInitParts(Catalog(), detection)
         {
-            BuiltinHash = id => LauncherConfigFile.Read(LauncherStartup.Builtins(), user: null).Value.Agents.Single(a => a.Id.Equals(id)).ArgvHash,
+            BuiltinHash = id => LauncherConfigFile.Read(LauncherStartup.Builtins(), user: null).Value.Agents.SingleOrDefault(a => a.Id.Equals(id))?.ArgvHash,
             Approved = _ => ValueTask.FromResult(approved),
             ResolveBin = (bin, _) => ValueTask.FromResult<string?>("/usr/bin/" + bin),
         });
@@ -65,7 +65,7 @@ public sealed class LauncherInitTests : IDisposable
         var config = Catalog().Current;
         Expect.Equal("exec-template", config.Viewer?.Kind);
         Expect.Equal("xterm", config.Viewer?.Name);
-        Expect.True(config.Problem is null && !config.Unusable);
+        Expect.True(config.Problem is null && !config.Unusable, config.Problem ?? string.Empty);
     }
 
     [Fact]

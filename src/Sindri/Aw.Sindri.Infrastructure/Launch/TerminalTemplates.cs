@@ -3,7 +3,6 @@ using Aw.Kernel.Json;
 namespace Aw.Sindri.Infrastructure.Launch;
 
 /// <summary>The rows of <c lang="text">config/launcher/terminals.json</c>, embedded in this assembly (once, beside the built-in agents).</summary>
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "MA0182:Avoid unused internal types", Justification = "Used by the launcher registration in U7 (API P10a).")]
 internal static class TerminalTemplates
 {
     internal static IReadOnlyList<TerminalTemplate> Load()

@@ -25,7 +25,7 @@ public sealed class LauncherTests : IDisposable
     private LauncherOptions Options => new(_home);
 
     private Launcher Make(Func<bool, ISessionHost>? hostFor = null, ITerminalViewer? viewer = null, params AgentEntry[] entries) =>
-        new(new LauncherParts(new AgentCatalog(entries.Length == 0 ? [AgentEntries.ClaudeCode, AgentEntries.Cursor] : entries), hostFor ?? (_ => _host), viewer ?? _viewer, Options, _clock));
+        new(new LauncherParts(new AgentCatalog(entries.Length == 0 ? [AgentEntries.ClaudeCode, AgentEntries.Cursor] : entries), hostFor ?? (_ => _host), viewer ?? _viewer, Options, _clock) { ResolveBin = static (_, _) => ValueTask.FromResult<string?>(null) });
 
     private static StepArgs Step(StepPolicy? policy = null) => new(Model: null, policy, new StepRef("build", "agent"));
 

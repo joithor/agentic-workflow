@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Aw.Redaction;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launch.Argv;
@@ -11,7 +10,6 @@ namespace Aw.Sindri.Infrastructure.Launch;
 /// in the window, or a spawn that fails, is a failure; an exit 0 with no client is unconfirmed, never opened (a
 /// single-instance terminal can exit 0 without a window).
 /// </summary>
-[SuppressMessage("Major Code Smell", "MA0182:Avoid unused internal types", Justification = "Registered in U7 (API P10a).")]
 internal sealed class ExecTemplateViewer(ExecTemplateOptions options, ISessionHost host, TimeProvider time, IRedactor? redactor = null) : ITerminalViewer
 {
     /// <inheritdoc/>
