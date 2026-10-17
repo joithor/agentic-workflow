@@ -76,7 +76,7 @@ A case file is JSON lines, LF or CRLF:
 or an engine trigger: `answer` with a `variant` (`grant`, `grant-tokens`, `accept`, `reject`, `resume`, `text`; the
 grants take `amount`, a `text` answer's text is `outputs` `fact:answer`), `takeover`, `handback`, `cancel` and
 `deadline`. An answer wait is satisfied by an `answer` line with `variant` `text` (outcome `answered`), not by
-`wait.satisfied`. A `deadline` line fires the running timer: `takeoverIdle` while taken over, the retry timer after a `then: retry` re-armed the state, otherwise the state timer. It fails when no timer runs (parked, escalated or ended).
+`wait.satisfied`. A child's `wait.satisfied` line may give `outputs`: only the child's declared outputs, under the child's keys; a key it doesn't declare, or any on `cancelled`, fails the line. `--scaffold` fills a child line with the outputs its outcome always carries. A `deadline` line fires the running timer: `takeoverIdle` while taken over, the retry timer after a `then: retry` re-armed the state, otherwise the state timer. It fails when no timer runs (parked, escalated or ended).
 
 A `step.failed` line takes an optional `reason`, what the Step reported as its failure. Left out, it is the constant
 `the Step failed`, the same on every line, so two `step.failed` lines in a loop are the same failure and park
@@ -237,7 +237,7 @@ needs re-approval.
 | `urgency` | no | `incident`, `triage` or `work` (default `work`; UI E-21). The app orders its Workflows strip by it; the engine never reads it. The normalizer writes `work` when it is absent, so an absent urgency and `urgency: work` hash the same. Any other value is `RCP-URG-001` |
 | `inputs` | yes | At least one (`RCP-INPUT-002`): `{ key, label?, type?, kind, generate? }`. `kind` is a subject kind and required (`RCP-INPUT-001`); `type` is a fact type and defaults to the type `kind` pairs with; `generate` is a template that supplies the value when the start gives none (text inputs only, `RCP-NAME-005`/`-006`). The bare-key short form (`[fact:item]`) normalizes to an input with no `kind`, so it fails `RCP-INPUT-001`. The first input is the instance's subject (UI E-22) |
 | `name` | no | A template for the instance's name, rendered once at start: literals, `{fact:<input>}`, `{start:date}`, `{start:time}`, `{{` and `}}` (engine spec §3.11). The name is the subject's label. `RCP-NAME-002` to `-004` |
-| `outputs` | no | What the recipe produces for a human: `{ key, label?, type?, from }`. `from` names the state that produces the fact. Declarations only: they add no wiring (UI E-22) |
+| `outputs` | no | What the recipe produces for a human: `{ key, label?, type?, from }`. `from` names the state that produces the fact. Declarations only: they add no wiring (UI E-22), except on a child: a child's declared outputs are the facts of its parent's `wait.satisfied` (DT-C) |
 | `initial` | yes | An `active` or `wait` state (`RCP-INIT-001`) |
 | `states` | yes | At least one non-terminal and one terminal state. `cancelled`, `escalated`, `parked` and `taken-over` are reserved (`RCP-STATE-001`) |
 | `transitions` | yes | |
@@ -296,7 +296,7 @@ re-arms the deadline in the same frame and re-sends the entering transition's ef
 | `gates` | no | `{ use, threshold?, with? }`, run in order. A judge or model gate needs a threshold above 0 and at most 1; a deterministic gate takes none (`RCP-THRESH-001`/`-002`) |
 | `evidence` | no | `{ kind, at, expect: pass \| fail }` |
 | `effects` | no | `{ use, with? }` |
-| `produces` | no | Facts the transition records; each must be an output of the trigger's source (`RCP-WIRE-002`) |
+| `produces` | no | Facts the transition records; each must be an output of the trigger's source (`RCP-WIRE-002`; for a child, one of its declared `outputs`). An entry is a fact key, or `{ fact, from }` to record a child's output under another key (DT-C) |
 
 The first transition whose `when` holds is the one taken. If its gates refuse, that is a refusal, not a fall-through to
 the next transition.
@@ -351,7 +351,8 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-EVID-001` | An evidence kind has a registered provider (a bad `at` or `expect` is `RCP-SCHEMA-002`) | Name a provided kind, or register the provider |
 | `RCP-EVENT-001` | A waited-for event is registered | Wait for a registered event |
 | `RCP-WIRE-001` | A block's inputs are produced on every path into its state, or are recipe inputs | Produce it on every path, or add it to `inputs` |
-| `RCP-WIRE-002` | `produces` lists only what the trigger's source records | List only its outputs |
+| `RCP-WIRE-002` | `produces` lists only what the trigger's source records (for a child, a declared output); only a child's output is renamed; no fact is written twice on one transition | List only its outputs |
+| `RCP-WIRE-003` | A transition from a child wait produces a child output only on outcomes whose every path inside the child produces it, never on `cancelled`, and never on a `when` that names no outcome (it matches every outcome, `cancelled` among them) | Produce it on that path in the child, or `when: { outcome: <o> }` an outcome that always carries it |
 | `RCP-WHEN-001` | `when: { outcome }` names an outcome the source reports; the message lists the outcomes available there (`outcomes here: ui, api, uncertain`) | Test one of its outcomes |
 | `RCP-WHEN-002` | `when: { loop }` names a declared loop, and `when: { outcome }` isn't used on a trigger that reports no outcome | Declare the loop |
 | `RCP-OUTCOME-001` | Every outcome a Step, event or child reports is handled by a transition, and terminal outcomes are `resolved`, `unresolved`, `alreadySatisfied` or `failed` | Add a transition for it, or use one of those outcomes |
@@ -388,7 +389,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-RES-001` | **Information:** a resource wait has no allocator in this build | None needed; it parks with `SND-WF-010` until one lands |
 | `RCP-URG-001` | `urgency` is `incident`, `triage` or `work` | Use one of them, or remove `urgency` (the default is `work`) |
 | `RCP-OUT-001` | An output's `from` names a state of the recipe | Name one of its states |
-| `RCP-OUT-002` | An output's `from` isn't a terminal or engine-owned state, and the state's Step, its leaving transitions' `produces` or its wait records the output's key. **Information** when the state waits on a child, whose outcome the validator can't read | Record the fact there, or name the state that does |
+| `RCP-OUT-002` | An output's `from` isn't a terminal or engine-owned state, and the state's Step, its leaving transitions' `produces` or its wait records the output's key. For a state that waits on a child, the child's declared outputs | Record the fact there, or name the state that does |
 | `RCP-OUT-003` | Output keys are unique and none is also an input key | Give each output its own key |
 | `RCP-TYPE-001` | An input's or output's `type` is a fact type | Use one of the nine types |
 | `RCP-TYPE-002` | An input's `kind` is a subject kind | Use one of the six kinds |
@@ -470,6 +471,27 @@ complete example is `recipes/dev/workflow.dev-evidence-route.yaml`.
 - **Evals:** `recipe eval --scaffold <file>` prints the first path; `--scaffold <file> --out <dir>` writes one
   `<dir>/scaffold-<branch>.jsonl` per path (each choice, `uncertain`, and `step_failed`) and refuses to overwrite a file.
 - Until DT-V2, `status` on a choice state doesn't list the choices; read them in the recipe.
+
+## Child outputs
+
+A child declares what it hands back in `outputs`; the parent's `wait.satisfied` from it then carries those facts, and the
+transition decides which to keep (decision-tree spec §8.4, DT-C). The complete example is the pair
+`recipes/dev/workflow.dev-child-summary.yaml` (the child) and `recipes/dev/workflow.dev-child-outputs.yaml` (the parent).
+
+- **Declare** the output on the child (`outputs: [{ key: fact:output, ..., from: export }]`) and produce it in the child
+  (`produces: [fact:output]` on the transition out of `export`).
+- **Take it** on the parent's transition from the child wait: `produces: [fact:output]`, or rename it with
+  `{ fact: fact:exported, from: fact:output }` (both required; `from` is the child's key). A rename is only for a child's output.
+- **Where it is there:** an output is present on an outcome only if every path inside the child to a terminal state that ends
+  with it produces it. Produce it on `resolved`, not on `unresolved` if some path skips it (`RCP-WIRE-003` names the path), and
+  never on `cancelled`. The `when` is resolved against the child's outcomes (its terminal outcomes and `cancelled`): `not` is the
+  complement, `all` the intersection, `any` the union, and a fact or loop test **may** hold on any outcome and **must** hold on
+  none: the check runs over the outcomes the `when` may fire on, so `not: { outcome: cancelled }` is fine when the output is on
+  every other outcome, and `all: [{ outcome: resolved }, { not: { fact: ... } }]` is still checked as `resolved`. A `when` with
+  no outcome test anywhere (`not: { fact: ... }` included) matches every outcome, `cancelled` among them, and is refused. Route `cancelled` with a transition of its own.
+- **Eval:** a child's `wait.satisfied` line gives the outputs the child would (`"outputs":{"fact:output":"..."}`), under the
+  child's keys. A parent branch that tests the renamed fact (`when: { fact: fact:exported, is: present }`) is reached only
+  if the line carried it. The test of a `when` runs before the transition's own `produces`, so it reads facts recorded earlier. A `when` reads the trigger's outputs under the child's keys, not the renamed ones.
 
 ## Temporal foundation
 

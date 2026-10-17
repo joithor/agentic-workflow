@@ -43,6 +43,6 @@ public sealed class RowSheetViewModelTests
     {
         var entry = NeedsYouRows.Failure() with { Actions = [new NeedsYouAction("RunService", "Run again", ActionReadiness.Ready, "sindri services run index", RejectLike: false)] };
 
-        Assert.Contains(new SheetDetail("Run again", "sindri services run index"), FailureDetails.Build(entry, "1h"));
+        Assert.Contains(new SheetDetail("Run again", "sindri services run index", Command: "sindri services run index"), FailureDetails.Build(entry, "1h"));
     }
 }

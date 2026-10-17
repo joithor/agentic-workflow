@@ -4714,7 +4714,7 @@ Aw.Sindri.Core.Workflow.Recipes.RecipeState.WaitFor.get -> Aw.Sindri.Core.Workfl
 Aw.Sindri.Core.Workflow.Recipes.RecipeState.WaitFor.init -> void
 Aw.Sindri.Core.Workflow.Recipes.RecipeTransition
 Aw.Sindri.Core.Workflow.Recipes.RecipeTransition.<Clone>$() -> Aw.Sindri.Core.Workflow.Recipes.RecipeTransition!
-Aw.Sindri.Core.Workflow.Recipes.RecipeTransition.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! From, out string! To, out string! On, out Aw.Sindri.Core.Workflow.Recipes.WhenClause? When, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.GateUse!>! Gates, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.EvidenceCheck!>! Evidence, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.BlockUse!>! Effects, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>! Produces) -> void
+Aw.Sindri.Core.Workflow.Recipes.RecipeTransition.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! From, out string! To, out string! On, out Aw.Sindri.Core.Workflow.Recipes.WhenClause? When, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.GateUse!>! Gates, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.EvidenceCheck!>! Evidence, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.BlockUse!>! Effects, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.ProducedFact!>! Produces) -> void
 Aw.Sindri.Core.Workflow.Recipes.RecipeTransition.Effects.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.BlockUse!>!
 Aw.Sindri.Core.Workflow.Recipes.RecipeTransition.Effects.init -> void
 Aw.Sindri.Core.Workflow.Recipes.RecipeTransition.Equals(Aw.Sindri.Core.Workflow.Recipes.RecipeTransition? other) -> bool
@@ -4726,9 +4726,9 @@ Aw.Sindri.Core.Workflow.Recipes.RecipeTransition.Gates.get -> System.Collections
 Aw.Sindri.Core.Workflow.Recipes.RecipeTransition.Gates.init -> void
 Aw.Sindri.Core.Workflow.Recipes.RecipeTransition.On.get -> string!
 Aw.Sindri.Core.Workflow.Recipes.RecipeTransition.On.init -> void
-Aw.Sindri.Core.Workflow.Recipes.RecipeTransition.Produces.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>!
+Aw.Sindri.Core.Workflow.Recipes.RecipeTransition.Produces.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.ProducedFact!>!
 Aw.Sindri.Core.Workflow.Recipes.RecipeTransition.Produces.init -> void
-Aw.Sindri.Core.Workflow.Recipes.RecipeTransition.RecipeTransition(System.Collections.Generic.IReadOnlyList<string!>! From, string! To, string! On, Aw.Sindri.Core.Workflow.Recipes.WhenClause? When, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.GateUse!>! Gates, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.EvidenceCheck!>! Evidence, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.BlockUse!>! Effects, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>! Produces) -> void
+Aw.Sindri.Core.Workflow.Recipes.RecipeTransition.RecipeTransition(System.Collections.Generic.IReadOnlyList<string!>! From, string! To, string! On, Aw.Sindri.Core.Workflow.Recipes.WhenClause? When, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.GateUse!>! Gates, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.EvidenceCheck!>! Evidence, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.BlockUse!>! Effects, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.ProducedFact!>! Produces) -> void
 Aw.Sindri.Core.Workflow.Recipes.RecipeTransition.To.get -> string!
 Aw.Sindri.Core.Workflow.Recipes.RecipeTransition.To.init -> void
 Aw.Sindri.Core.Workflow.Recipes.RecipeTransition.When.get -> Aw.Sindri.Core.Workflow.Recipes.WhenClause?
@@ -8697,6 +8697,25 @@ virtual Aw.Sindri.Core.Workflow.Engine.Triggers.WaitSource.PrintMembers(System.T
 ~Aw.Sindri.Core.Ids.EventId.ToString(string format, System.IFormatProvider provider) -> string
 ~override Aw.Sindri.Core.Ids.ItemRef.Equals(object obj) -> bool
 ~override Aw.Sindri.Core.Sessions.SessionRef.Equals(object obj) -> bool
+Aw.Sindri.Core.Workflow.Recipes.ProducedFact
+Aw.Sindri.Core.Workflow.Recipes.ProducedFact.<Clone>$() -> Aw.Sindri.Core.Workflow.Recipes.ProducedFact!
+Aw.Sindri.Core.Workflow.Recipes.ProducedFact.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.FactKey Fact, out Aw.Sindri.Core.Workflow.Ids.FactKey? From) -> void
+Aw.Sindri.Core.Workflow.Recipes.ProducedFact.Equals(Aw.Sindri.Core.Workflow.Recipes.ProducedFact? other) -> bool
+Aw.Sindri.Core.Workflow.Recipes.ProducedFact.Fact.get -> Aw.Sindri.Core.Workflow.Ids.FactKey
+Aw.Sindri.Core.Workflow.Recipes.ProducedFact.Fact.init -> void
+Aw.Sindri.Core.Workflow.Recipes.ProducedFact.From.get -> Aw.Sindri.Core.Workflow.Ids.FactKey?
+Aw.Sindri.Core.Workflow.Recipes.ProducedFact.From.init -> void
+Aw.Sindri.Core.Workflow.Recipes.ProducedFact.ProducedFact(Aw.Sindri.Core.Workflow.Ids.FactKey Fact, Aw.Sindri.Core.Workflow.Ids.FactKey? From) -> void
+Aw.Sindri.Core.Workflow.Recipes.ProducedFact.SourceKey() -> Aw.Sindri.Core.Workflow.Ids.FactKey
+override Aw.Sindri.Core.Workflow.Recipes.ProducedFact.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Recipes.ProducedFact.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Recipes.ProducedFact.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Recipes.ProducedFact.operator !=(Aw.Sindri.Core.Workflow.Recipes.ProducedFact? left, Aw.Sindri.Core.Workflow.Recipes.ProducedFact? right) -> bool
+static Aw.Sindri.Core.Workflow.Recipes.ProducedFact.operator ==(Aw.Sindri.Core.Workflow.Recipes.ProducedFact? left, Aw.Sindri.Core.Workflow.Recipes.ProducedFact? right) -> bool
+Aw.Sindri.Core.Workflow.Recipes.ProducedFactJsonConverter
+Aw.Sindri.Core.Workflow.Recipes.ProducedFactJsonConverter.ProducedFactJsonConverter() -> void
+override Aw.Sindri.Core.Workflow.Recipes.ProducedFactJsonConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Aw.Sindri.Core.Workflow.Recipes.ProducedFact!
+override Aw.Sindri.Core.Workflow.Recipes.ProducedFactJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Aw.Sindri.Core.Workflow.Recipes.ProducedFact! value, System.Text.Json.JsonSerializerOptions! options) -> void
 Aw.Sindri.Core.Items.EngineItemStates
 Aw.Sindri.Core.Views.EngineItemPart
 Aw.Sindri.Core.Views.EngineItemPart.<Clone>$() -> Aw.Sindri.Core.Views.EngineItemPart!

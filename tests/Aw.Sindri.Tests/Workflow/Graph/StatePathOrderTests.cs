@@ -204,14 +204,23 @@ public sealed class StatePathOrderTests
     }
 
 
+    /// <summary>Every shipped recipe's hash, pinned before DT-C changed how a produces entry is read (a bare key must keep writing as a string).</summary>
+    public static IReadOnlyDictionary<string, string> PinnedHashes { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["sindri/workflow.item.yaml"] = "sha256:85ecaff4781ee6cfd458a983861cf04a66228fde579c95722b03b353a3532d45",
+        ["sindri/workflow.step.yaml"] = "sha256:1c1173a162a77736c33620e985d6d75473cf3755963adc5c46eb9049434f5276",
+        ["dev/desk-round-trip.yaml"] = "sha256:459f0bb87b5ab29e00fe744561f13e95e8a5819debcd065a1c52b0ad3aba27ac",
+        ["dev/incident-hold.yaml"] = "sha256:fe5798176e157e8571c6f6accf00aa3dc36b56fe5836f37333af6b936a293ad8",
+        ["dev/triage-three-state.yaml"] = "sha256:94c0c28e21ca37b9f9ad16233e33c9620b70e940c0fc19f3fb14cc9dfc51f002",
+        ["dev/workflow.dev-child-outputs.yaml"] = "sha256:f66693ba9983b2bd047afb4b8398c438bd033adbe04ccea31d0964b27096f2a2",
+        ["dev/workflow.dev-child-summary.yaml"] = "sha256:fe3a3d60a4a5d9c9f94b5feb9bca7f7a8b44fbbf04aa2d765e640b3a9ff43c57",
+        ["dev/workflow.dev-evidence-route.yaml"] = "sha256:49b8827fdf75f75694807ae34c1df7395563cc969997ac31f203023bf2872c37",
+        ["dev/workflow.dev-notify.yaml"] = "sha256:4bb9f16cd6f6a5fd871f87d70d0a87da82bf7a1967779cfe295d4d7b6fe1dc8d",
+        ["dev/workflow.dev-timeout.yaml"] = "sha256:ab732e4c4a955d653104d3639274967ad506b97842a4b2d57d07657b0347cf9c",
+    };
+
     [Theory, Trait("Lane", "unit")]
-    [InlineData("sindri/workflow.item.yaml", "sha256:85ecaff4781ee6cfd458a983861cf04a66228fde579c95722b03b353a3532d45")]
-    [InlineData("sindri/workflow.step.yaml", "sha256:1c1173a162a77736c33620e985d6d75473cf3755963adc5c46eb9049434f5276")]
-    [InlineData("dev/desk-round-trip.yaml", "sha256:459f0bb87b5ab29e00fe744561f13e95e8a5819debcd065a1c52b0ad3aba27ac")]
-    [InlineData("dev/incident-hold.yaml", "sha256:fe5798176e157e8571c6f6accf00aa3dc36b56fe5836f37333af6b936a293ad8")]
-    [InlineData("dev/triage-three-state.yaml", "sha256:94c0c28e21ca37b9f9ad16233e33c9620b70e940c0fc19f3fb14cc9dfc51f002")]
-    [InlineData("dev/workflow.dev-notify.yaml", "sha256:4bb9f16cd6f6a5fd871f87d70d0a87da82bf7a1967779cfe295d4d7b6fe1dc8d")]
-    [InlineData("dev/workflow.dev-timeout.yaml", "sha256:ab732e4c4a955d653104d3639274967ad506b97842a4b2d57d07657b0347cf9c")]
+    [MemberData(nameof(Pinned))]
     public void The_path_order_is_not_hashed_so_every_shipped_recipe_keeps_its_hash(string path, string hash)
     {
         var document = RecipeComposition.ReadClean(ShippedRecipes.Read(path), Path.GetFileName(path));
@@ -221,6 +230,12 @@ public sealed class StatePathOrderTests
         Assert.DoesNotContain("orderedBy", json, StringComparison.Ordinal);
         Assert.DoesNotContain("branchOf", json, StringComparison.Ordinal);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Every_shipped_recipe_has_a_pinned_hash() =>
+        Assert.Empty(ShippedRecipes.Recipes.Except(PinnedHashes.Keys, StringComparer.Ordinal));
+
+    public static TheoryData<string, string> Pinned => [.. PinnedHashes.Select(p => (p.Key, p.Value))];
 
     public static TheoryData<string> Recipes => [.. ShippedRecipes.Recipes];
 }
