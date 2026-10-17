@@ -304,8 +304,8 @@ C6). The engine side is §B.5.
 - **High priority** (C6). An owner's call takes its heavy slot ahead of merge trains, transition gates, Step calls and
   agent work, including jobs waiting through the box's heavy wrapper (§B.5: Sindri publishes how many owner calls
   wait, and the wrapper holds that many slots back, as it does for the meta's reserve; the meta's wrapper change,
-  owner-approved at BM-1). Owner calls hold at most the
-  box's slot cap minus one, so a gate or a merge train always gets a slot. The timing rule (§A.1) is unchanged: a
+  owner-approved at BM-1). Plain calls (owner and lane
+  together) hold at most the box's slot cap minus one, so a gate or a merge train always gets a slot. The timing rule (§A.1) is unchanged: a
   sync call still waits at most 30 s before answering `running`.
 - **High sensitivity** (choice C10, recommended (a)): an owner's call result is private.
   - **Who sees it:** the calling session's own answer (polled by its `callId`), the app, and the CLI run by the human.
