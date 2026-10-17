@@ -74,6 +74,21 @@ public sealed class ProcessToolRunnerTests
     }
 
     [Fact, Trait("Lane", "integration")]
+    public void A_cancel_that_arrives_after_the_child_exited_returns_its_real_result()
+    {
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var options = new ToolRunOptions(StandardErrorLine: _ =>
+        {
+            Thread.Sleep(TimeSpan.FromMilliseconds(500));   // the child printed its line and exited long ago
+            cancel.Cancel();
+        });
+
+        var run = _runner.Run("sh", ["-c", "echo done >&2; printf out; exit 7"], TimeSpan.FromSeconds(10), options: options, cancellationToken: cancel.Token);
+
+        Assert.Equal(new ToolRun(ToolOutcome.Exited, 7, "out"), run);
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public void An_unset_variable_is_absent_in_the_child_and_a_set_one_is_present()
     {
         Environment.SetEnvironmentVariable("AW_TEST_INHERITED", "leaks");
