@@ -1,10 +1,10 @@
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
-using Aw.Context.Core.Engine;
-using Trust = Aw.Context.Core.Results.Trust;
 using Aw.Context.Core.Sources;
+using Trust = Aw.Context.Core.Results.Trust;
 
 namespace Aw.Context.Tests.History;
 

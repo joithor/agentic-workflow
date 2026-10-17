@@ -16,20 +16,20 @@ internal static class HistoryWorlds
     {
         _ = temp.RunAt(HistoryScript.InitialAt, "commit", "-q", "--amend", "-m", HistoryScript.InitialSubject);
         var initial = temp.Run("rev-parse", "HEAD");
-        File.WriteAllText(System.IO.Path.Combine(temp.Path, "b.txt"), "b1\n");
-        File.WriteAllText(System.IO.Path.Combine(temp.Path, HistoryScript.DashPath), "d1\n");
-        File.WriteAllText(System.IO.Path.Combine(temp.Path, "other.txt"), "o2\n");
+        File.WriteAllText(Path.Combine(temp.Path, "b.txt"), "b1\n");
+        File.WriteAllText(Path.Combine(temp.Path, HistoryScript.DashPath), "d1\n");
+        File.WriteAllText(Path.Combine(temp.Path, "other.txt"), "o2\n");
         _ = temp.Run("add", "-A");
         _ = temp.RunAt(HistoryScript.TouchAt, "commit", "-q", "-m", HistoryScript.TouchSubject, "-m", "Body with a token " + HistoryScript.BodyToken);
         var touch = temp.Run("rev-parse", "HEAD");
         _ = temp.Run("checkout", "-q", "-b", "feat");
-        File.WriteAllText(System.IO.Path.Combine(temp.Path, "a.txt"), "a2\n");
-        File.WriteAllText(System.IO.Path.Combine(temp.Path, "b.txt"), "b2\n");
+        File.WriteAllText(Path.Combine(temp.Path, "a.txt"), "a2\n");
+        File.WriteAllText(Path.Combine(temp.Path, "b.txt"), "b2\n");
         _ = temp.RunAt(HistoryScript.SideAt, "commit", "-q", "-am", "side");
         _ = temp.Run("checkout", "-q", "main");
         _ = temp.RunAt(HistoryScript.MergeAt, "merge", "-q", "--no-ff", "feat", "-m", HistoryScript.MergeSubject);
         var merge = temp.Run("rev-parse", "HEAD");
-        File.WriteAllText(System.IO.Path.Combine(temp.Path, "other.txt"), "o3\n");
+        File.WriteAllText(Path.Combine(temp.Path, "other.txt"), "o3\n");
         _ = temp.RunAt(HistoryScript.EditAt, "commit", "-q", "-am", HistoryScript.EditSubject);
         var edit = temp.Run("rev-parse", "HEAD");
         return Describe(edit, merge, touch, initial);
