@@ -4,14 +4,20 @@ using Aw.Meta.Core;
 
 namespace Aw.Meta.Infrastructure.Files;
 
-/// <summary>SIGTERM by pid through the kill program (the same on Linux and macOS).</summary>
+/// <summary>SIGTERM by pid through the kill program (on Linux here; macOS goes through its host reader).</summary>
 internal static class SignalProcess
 {
+    /// <summary>The error for a pid that must never be signalled (init, or not a process), else null.</summary>
+    /// <param name="pid">The process id.</param>
+    /// <returns>AW-META-010, or null.</returns>
+    internal static Error? Refusal(int pid) =>
+        pid <= 1 ? MetaErrors.HostUnreadable.With("refusing to signal pid " + pid.ToString(CultureInfo.InvariantCulture)) : null;
+
     internal static async ValueTask<Result<Unit>> Terminate(int pid, CancellationToken cancellationToken)
     {
-        if (pid <= 1)
+        if (Refusal(pid) is { } refusal)
         {
-            return MetaErrors.HostUnreadable.With("refusing to signal pid " + pid.ToString(CultureInfo.InvariantCulture));
+            return refusal;
         }
 
         var info = new System.Diagnostics.ProcessStartInfo("kill") { RedirectStandardError = true, UseShellExecute = false };

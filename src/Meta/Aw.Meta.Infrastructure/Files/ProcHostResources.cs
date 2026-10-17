@@ -12,7 +12,8 @@ namespace Aw.Meta.Infrastructure.Files;
 /// </summary>
 /// <param name="stateDirectory">A directory on the disk whose free space is reported.</param>
 /// <param name="heavyLock">The heavy-job lock path (slot 1); the other slots are its siblings.</param>
-internal sealed class ProcHostResources(string stateDirectory, string heavyLock) : IHostResources
+/// <param name="liveness">Tells whether a lock holder still runs.</param>
+internal sealed class ProcHostResources(string stateDirectory, string heavyLock, IProcessLiveness liveness) : IHostResources
 {
     public async ValueTask<Result<HostResources>> Read(CancellationToken cancellationToken)
     {
@@ -28,5 +29,5 @@ internal sealed class ProcHostResources(string stateDirectory, string heavyLock)
     }
 
     public ValueTask<Result<IReadOnlyList<HeavyLock>>> HeavyLocks(CancellationToken cancellationToken) =>
-        HeavyLockDirectory.List(heavyLock, cancellationToken);
+        HeavyLockDirectory.List(heavyLock, liveness, cancellationToken);
 }

@@ -1,4 +1,6 @@
 using Aw.Meta.Core;
+using Aw.Meta.Core.Commands;
+using Aw.Meta.Testing;
 using Aw.Meta.Infrastructure.Files;
 using Aw.Meta.Infrastructure.Processes;
 
@@ -34,5 +36,38 @@ public sealed class MacToolsTests
 
         Assert.True(output.IsError);
         Assert.Contains("unavailable on macOS: aw-meta-no-such-tool could not be run", output.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_tool_s_stderr_in_the_error_is_cut_to_about_300_characters()
+    {
+        var noisy = new InMemoryCommandRunner().When("noisy", _ => new CommandResult(1, string.Empty, new string('x', 5000), TimedOut: false));
+
+        var output = await MacTools.Output(noisy, ["noisy"], TestContext.Current.CancellationToken);
+
+        Assert.Equal(MetaErrors.HostUnreadable.Code, output.Error.Code);
+        Assert.InRange(output.Error.Message.Length, 1, 400);
+        Assert.Contains("(truncated)", output.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_short_stderr_is_kept_whole()
+    {
+        var runner = new InMemoryCommandRunner().When("short", _ => new CommandResult(2, string.Empty, "  boom \n", TimedOut: false));
+
+        var output = await MacTools.Output(runner, ["short"], TestContext.Current.CancellationToken);
+
+        Assert.EndsWith("exited 2: boom", output.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_tail_asked_for_is_the_documented_16_MiB_cap_not_int_MaxValue()
+    {
+        var runner = new InMemoryCommandRunner().When("big", "ok");
+
+        _ = await MacTools.Output(runner, ["big"], TestContext.Current.CancellationToken);
+
+        Assert.Equal(16 * 1024 * 1024, Assert.Single(runner.Requests).TailCharacters);
+        Assert.Equal(16 * 1024 * 1024, MacTools.OutputCharacterCap);
     }
 }

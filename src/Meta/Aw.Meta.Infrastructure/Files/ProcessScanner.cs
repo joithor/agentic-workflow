@@ -9,7 +9,8 @@ namespace Aw.Meta.Infrastructure.Files;
 /// IProcessLocations over /proc (the working directory and every open file of each process the user may read), or lsof where there is
 /// no /proc (macOS). A process that exits mid-scan, or belongs to someone else, is skipped; a scan that cannot run at all is an error.
 /// </summary>
-internal sealed class ProcessScanner : IProcessLocations
+/// <param name="lsof">The lsof program (macOS: <see cref="MacToolPaths.Lsof"/>).</param>
+internal sealed class ProcessScanner(string lsof) : IProcessLocations
 {
     private const string Proc = "/proc";
 
@@ -107,18 +108,18 @@ internal sealed class ProcessScanner : IProcessLocations
         }
     }
 
-    private static async ValueTask<List<ProcessLocation>> Lsof(CancellationToken cancellationToken)
+    private async ValueTask<List<ProcessLocation>> Lsof(CancellationToken cancellationToken)
     {
-        var info = new System.Diagnostics.ProcessStartInfo("lsof") { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
+        var info = new System.Diagnostics.ProcessStartInfo(lsof) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
         foreach (var argument in (string[])["-w", "-n", "-F", "pcn"])
         {
             info.ArgumentList.Add(argument);
         }
 
-        using var lsof = System.Diagnostics.Process.Start(info) ?? throw new InvalidOperationException("lsof could not be started");
-        var errors = lsof.StandardError.ReadToEndAsync(cancellationToken);
-        var output = await lsof.StandardOutput.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
-        await lsof.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        using var process = System.Diagnostics.Process.Start(info) ?? throw new InvalidOperationException("lsof could not be started");
+        var errors = process.StandardError.ReadToEndAsync(cancellationToken);
+        var output = await process.StandardOutput.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
         _ = await errors.ConfigureAwait(false);
         var found = LsofOutput.Parse(output);
         return found.Count == 0

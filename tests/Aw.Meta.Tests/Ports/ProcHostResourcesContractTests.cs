@@ -18,7 +18,7 @@ public sealed class ProcHostResourcesContractTests : HostResourcesContract, IDis
     protected override IHostResources Create()
     {
         Assert.SkipUnless(OperatingSystem.IsLinux(), "the /proc adapter reads /proc");
-        return new ProcHostResources(_state.Path, Lock);
+        return new ProcHostResources(_state.Path, Lock, RealLiveness.Create());
     }
 
     protected override void TakeLock(IHostResources resources, int pid)

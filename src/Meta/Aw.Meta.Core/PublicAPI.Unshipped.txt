@@ -1778,3 +1778,8 @@ override Aw.Meta.Core.Ports.BuildInfo.GetHashCode() -> int
 override Aw.Meta.Core.Ports.BuildInfo.ToString() -> string!
 static Aw.Meta.Core.Ports.BuildInfo.operator !=(Aw.Meta.Core.Ports.BuildInfo? left, Aw.Meta.Core.Ports.BuildInfo? right) -> bool
 static Aw.Meta.Core.Ports.BuildInfo.operator ==(Aw.Meta.Core.Ports.BuildInfo? left, Aw.Meta.Core.Ports.BuildInfo? right) -> bool
+Aw.Meta.Core.Health.ProcessStart
+Aw.Meta.Core.Ports.IProcessLiveness
+Aw.Meta.Core.Ports.IProcessLiveness.IsRunning(int pid, System.DateTimeOffset recordedAt, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+static Aw.Meta.Core.Health.ProcessStart.IsReused(System.DateTimeOffset startedAt, System.DateTimeOffset recordedAt) -> bool
+static Aw.Meta.Core.Health.ProcessStart.Tolerance.get -> System.TimeSpan

@@ -69,6 +69,11 @@ internal static class MacFormat
         return new ProcessInfo(pid, ppid, args.Length > 0 ? args : "[" + pid.ToString(CultureInfo.InvariantCulture) + "]", rss, age);
     }
 
+    /// <summary>The seconds of a ps elapsed time, [[dd-]hh:]mm:ss.</summary>
+    /// <param name="etime">The text.</param>
+    /// <returns>Seconds, or null when it isn't one.</returns>
+    internal static long? Elapsed(string etime) => ElapsedSeconds(etime);
+
     // ps etime: [[dd-]hh:]mm:ss
     private static long? ElapsedSeconds(string etime)
     {

@@ -8,6 +8,7 @@ public sealed class BuildStampTests
     [InlineData("1.0.0+0123456789abcdef0123456789abcdef01234567", "0123456789abcdef0123456789abcdef01234567")]
     [InlineData("1.0.0-preview.1+abc123", "abc123")]
     [InlineData("1.0.0+abc+extra", "abc+extra")]
+    [InlineData("1.0.0+0123456789abcdef0123456789abcdef01234567-dirty", "0123456789abcdef0123456789abcdef01234567-dirty")]
     public void The_commit_is_what_follows_the_first_plus(string version, string commit) => Assert.Equal(commit, BuildStamp.Commit(version));
 
     [Theory, Trait("Lane", "unit")]

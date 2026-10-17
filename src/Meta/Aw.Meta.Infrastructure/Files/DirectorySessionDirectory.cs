@@ -9,10 +9,11 @@ namespace Aw.Meta.Infrastructure.Files;
 /// <summary>
 /// ISessionDirectory over Claude Code's sessions directory (one &lt;pid&gt;.json per session). The format is Claude Code's
 /// own and undocumented, so every record is read defensively: one that can't be read is skipped, never an error.
-/// Liveness is ProcessLiveness (the pid's /proc entry on Linux, the OS process list on macOS).
+/// A session is live when its pid runs and the process did not start after the record was last written (IProcessLiveness).
 /// </summary>
 /// <param name="directory">The sessions directory.</param>
-internal sealed class DirectorySessionDirectory(string directory) : ISessionDirectory
+/// <param name="liveness">Tells whether the pid still belongs to the session's process.</param>
+internal sealed class DirectorySessionDirectory(string directory, IProcessLiveness liveness) : ISessionDirectory
 {
     public async ValueTask<Result<IReadOnlyList<LiveSession>>> Live(CancellationToken cancellationToken)
     {
@@ -25,7 +26,18 @@ internal sealed class DirectorySessionDirectory(string directory) : ISessionDire
         foreach (var file in Directory.EnumerateFiles(directory, "*.json").Order(StringComparer.Ordinal))
         {
             var session = await Read(file, cancellationToken).ConfigureAwait(false);
-            if (session is not null && ProcessLiveness.IsAlive(session.Pid))
+            if (session is null)
+            {
+                continue;
+            }
+
+            var alive = await liveness.IsRunning(session.Pid, new DateTimeOffset(File.GetLastWriteTimeUtc(file), TimeSpan.Zero), cancellationToken).ConfigureAwait(false);
+            if (alive.IsError)
+            {
+                return alive.Error;
+            }
+
+            if (alive.Value)
             {
                 sessions.Add(session);
             }

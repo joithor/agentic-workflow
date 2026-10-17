@@ -1,6 +1,7 @@
 using System.Globalization;
 using Aw.Kernel;
 using Aw.Meta.Core.Health;
+using Aw.Meta.Core.Ports;
 
 namespace Aw.Meta.Infrastructure.Files;
 
@@ -10,7 +11,7 @@ namespace Aw.Meta.Infrastructure.Files;
 /// </summary>
 internal static class HeavyLockDirectory
 {
-    internal static async ValueTask<Result<IReadOnlyList<HeavyLock>>> List(string heavyLock, CancellationToken cancellationToken)
+    internal static async ValueTask<Result<IReadOnlyList<HeavyLock>>> List(string heavyLock, IProcessLiveness liveness, CancellationToken cancellationToken)
     {
         var parent = Path.GetDirectoryName(Path.GetFullPath(heavyLock));
         if (parent is null || !Directory.Exists(parent))
@@ -22,7 +23,13 @@ internal static class HeavyLockDirectory
         var taken = new List<HeavyLock>();
         foreach (var slot in Directory.EnumerateDirectories(parent).Where(d => IsSlot(Path.GetFileName(d), name)).Order(StringComparer.Ordinal))
         {
-            taken.Add(await Holder(slot, cancellationToken).ConfigureAwait(false));
+            var holder = await Holder(slot, liveness, cancellationToken).ConfigureAwait(false);
+            if (holder.IsError)
+            {
+                return holder.Error;
+            }
+
+            taken.Add(holder.Value);
         }
 
         return taken;
@@ -32,15 +39,21 @@ internal static class HeavyLockDirectory
         directory == name
         || (directory.StartsWith(name + ".", StringComparison.Ordinal) && int.TryParse(directory[(name.Length + 1)..], NumberStyles.None, CultureInfo.InvariantCulture, out _));
 
-    private static async ValueTask<HeavyLock> Holder(string slot, CancellationToken cancellationToken)
+    private static async ValueTask<Result<HeavyLock>> Holder(string slot, IProcessLiveness liveness, CancellationToken cancellationToken)
     {
         try
         {
-            var text = (await File.ReadAllTextAsync(Path.Combine(slot, "owner"), cancellationToken).ConfigureAwait(false)).Trim();
+            var owner = Path.Combine(slot, "owner");
+            var text = (await File.ReadAllTextAsync(owner, cancellationToken).ConfigureAwait(false)).Trim();
             var first = text.Split(' ', 2)[0];
-            return int.TryParse(first, NumberStyles.None, CultureInfo.InvariantCulture, out var pid)
-                ? new HeavyLock(slot, pid, ProcessLiveness.IsAlive(pid), text)
-                : new HeavyLock(slot, Pid: null, Alive: false, text);
+            if (!int.TryParse(first, NumberStyles.None, CultureInfo.InvariantCulture, out var pid))
+            {
+                return new HeavyLock(slot, Pid: null, Alive: false, text);
+            }
+
+            // the owner file's time is when the lock was taken: a process that started after it is not the holder (the pid was reused)
+            var alive = await liveness.IsRunning(pid, new DateTimeOffset(File.GetLastWriteTimeUtc(owner), TimeSpan.Zero), cancellationToken).ConfigureAwait(false);
+            return alive.IsError ? alive.Error : new HeavyLock(slot, pid, alive.Value, text);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
