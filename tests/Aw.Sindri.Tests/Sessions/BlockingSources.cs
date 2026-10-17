@@ -14,10 +14,13 @@ internal sealed class BlockingSources : IClaudeSessionRecords, IFleetStates, IDi
 
     public int FleetReads => Volatile.Read(ref _fleetReads);
 
+    public CancellationToken RecordToken { get; private set; }
+
     public void Release() => _gate.Set();
 
     Result<IReadOnlyList<ClaudeRecord>> IClaudeSessionRecords.Read(CancellationToken cancellationToken)
     {
+        RecordToken = cancellationToken;
         _ = Interlocked.Increment(ref _recordReads);
         _ = _gate.Wait(TimeSpan.FromSeconds(10), CancellationToken.None);
         return Results.Success<IReadOnlyList<ClaudeRecord>>([]);

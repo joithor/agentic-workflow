@@ -17,7 +17,7 @@ internal sealed class CollectorMemory
 
     internal FleetTrackerState Tracker { get; set; } = FleetTrackerState.Empty;
 
-    /// <summary>Changes found but not yet appended to the ledger, oldest first: an append that fails leaves them here for the next pass, so a 'gone' never lands without its 'appeared'.</summary>
+    /// <summary>Changes found but not yet appended to the ledger, oldest first: an append that fails leaves them here for the next pass. Past <see cref="PendingCap"/> the oldest are dropped, which can orphan a 'gone' whose 'appeared' went first.</summary>
     internal IReadOnlyList<FleetChange> Pending { get; set; } = [];
 
     internal bool Restored { get; set; }

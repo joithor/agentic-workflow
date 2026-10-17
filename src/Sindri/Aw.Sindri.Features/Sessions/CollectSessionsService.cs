@@ -30,6 +30,7 @@ internal sealed partial class CollectSessionsService(SessionDiscovery discovery,
         }
 
         var sessions = Observe(found.Candidates, now);
+        sessions = KeepUnknown(sessions, found.Unknown);
         var diff = FleetChangeRules.Diff(memory.Tracker, sessions, now, goodPass: true);
         var ended = memory.Ending(sessions, now);
         memory.Tracker = diff.State;
@@ -45,6 +46,7 @@ internal sealed partial class CollectSessionsService(SessionDiscovery discovery,
     {
         if (pending.Count <= CollectorMemory.PendingCap)
         {
+            memory.PendingOverflowLogged &= pending.Count >= CollectorMemory.PendingCap;   // logged again if it overflows again later
             return pending;
         }
 
@@ -78,6 +80,18 @@ internal sealed partial class CollectSessionsService(SessionDiscovery discovery,
             .Select(c => observer.Observe(c, now, memory.Previous.GetValueOrDefault(c.Ref)))
             .OrderBy(static s => s.Ref.ToString(), StringComparer.Ordinal),
     ];
+
+    /// <summary>A session whose process couldn't be classified this pass stays as it was: no 'gone' and no new 'appeared' (a never-seen one waits for a pass that can read it).</summary>
+    private List<ObservedSession> KeepUnknown(List<ObservedSession> sessions, IReadOnlyCollection<int> unknown)
+    {
+        if (unknown.Count == 0)
+        {
+            return sessions;
+        }
+
+        var kept = memory.Previous.Values.Where(p => unknown.Contains(p.Pid) && !sessions.Exists(s => s.Ref == p.Ref));
+        return [.. sessions.Concat(kept).OrderBy(static s => s.Ref.ToString(), StringComparer.Ordinal)];
+    }
 
     private void KeepPrevious(List<SessionProblem> problems, DateTimeOffset now)
     {

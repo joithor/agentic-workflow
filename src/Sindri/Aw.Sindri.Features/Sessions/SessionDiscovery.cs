@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Aw.Kernel;
 using Aw.Sindri.Core.Launch;
@@ -49,7 +50,7 @@ internal sealed class SessionDiscovery(IProcessTable processes, IClaudeSessionRe
     {
         var problems = new List<SessionProblem>();
         var pass = new Pass(_abandoned, budget, problems, cancellationToken);
-        var (outcome, table) = pass.Run("processes", processes.Read);
+        var (outcome, table) = pass.Run("processes", pid: null, processes.Read);
         if (outcome == Outcome.TimedOut)
         {
             return null;
@@ -70,7 +71,8 @@ internal sealed class SessionDiscovery(IProcessTable processes, IClaudeSessionRe
         var hooks = pass.List("fleet-states", fleet.Read);
         var byPid = table.Value.ToDictionary(static p => p.Pid);
         var live = LiveRecords(claudeRecords, byPid);
-        var found = AgentProcessRules.Find(table.Value, agents, pid => pass.Value("environment", _ => processes.Environment(pid), _emptyEnvironment).ContainsKey("AW_JUDGE_CHILD"), live.ContainsKey);
+        var unknown = new HashSet<int>();
+        var found = AgentProcessRules.Find(table.Value, agents, pid => IsJudgeChild(pid, pass, unknown), live.ContainsKey);
         var candidates = new List<Candidate>();
         if (agents.Find(static a => a.Id.Equals(_claude)) is { } claudeAgent)
         {
@@ -78,7 +80,21 @@ internal sealed class SessionDiscovery(IProcessTable processes, IClaudeSessionRe
         }
 
         candidates.AddRange(found.Where(f => !live.ContainsKey(f.Process.Pid)).Select(f => FromProcess(f, hooks, pass)));
-        return new Discovered(candidates, problems, Good: true);
+        return new Discovered(candidates, problems, Good: true) { Unknown = unknown };
+    }
+
+    /// <summary>A process whose environment can't be read is unknown, never "not a judge child": it is left out of this pass and its previous state is kept.</summary>
+    private bool IsJudgeChild(int pid, Pass pass, HashSet<int> unknown)
+    {
+        var (outcome, environment) = pass.Run("environment", pid, _ => processes.Environment(pid));
+        if (outcome == Outcome.Done && environment is not null)
+        {
+            return environment.ContainsKey("AW_JUDGE_CHILD");
+        }
+
+        pass.Note("environment");
+        _ = unknown.Add(pid);
+        return true;   // left out of this pass either way; the service keeps what it showed before
     }
 
     private enum Outcome
@@ -95,51 +111,55 @@ internal sealed class SessionDiscovery(IProcessTable processes, IClaudeSessionRe
     private sealed class Pass(Dictionary<string, Task> abandoned, TimeSpan budget, List<SessionProblem> problems, CancellationToken shutdown)
     {
         private const int Sources = 5;
-        private readonly Dictionary<string, long> _begun = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, TimeSpan> _spent = new(StringComparer.Ordinal);
         private readonly HashSet<string> _failed = new(StringComparer.Ordinal);
 
-        internal (Outcome Outcome, T? Value) Run<T>(string name, Func<CancellationToken, T> read)
+        /// <summary>Reads one source (for one process, when <paramref name="pid"/> is given) under its own deadline; abandonment is keyed by source and pid, so one stuck pid blocks only itself.</summary>
+        internal (Outcome Outcome, T? Value) Run<T>(string name, int? pid, Func<CancellationToken, T> read)
         {
             shutdown.ThrowIfCancellationRequested();
-            if (_failed.Contains(name) || (abandoned.TryGetValue(name, out var running) && !running.IsCompleted))
+            var key = pid is { } p ? string.Create(CultureInfo.InvariantCulture, $"{name}:{p}") : name;
+            if (_failed.Contains(key) || (abandoned.TryGetValue(key, out var running) && !running.IsCompleted))
             {
-                _ = _failed.Add(name);
+                _ = _failed.Add(key);
                 return (Outcome.TimedOut, default);
             }
 
-            _ = abandoned.Remove(name);
-            if (!_begun.TryGetValue(name, out var begun))
-            {
-                begun = Stopwatch.GetTimestamp();
-                _begun[name] = begun;
-            }
-
-            var share = string.Equals(name, "processes", StringComparison.Ordinal) ? budget : budget / Sources;
-            var remaining = share - Stopwatch.GetElapsedTime(begun);
+            _ = abandoned.Remove(key);
+            var whole = string.Equals(name, "processes", StringComparison.Ordinal);
+            var share = whole ? budget : budget / Sources;
+            var begun = Stopwatch.GetTimestamp();
+            var used = _spent.GetValueOrDefault(name);
+            var remaining = Min(share, budget - used);   // every pid of one source together stays inside one budget
             if (remaining <= TimeSpan.Zero)
             {
-                _ = _failed.Add(name);
+                _ = _failed.Add(key);
                 return (Outcome.TimedOut, default);
             }
 
             var cancel = CancellationTokenSource.CreateLinkedTokenSource(shutdown);
             var task = Task.Run(() => Attempt(read, cancel.Token), CancellationToken.None);
-            _ = task.ContinueWith(_ => cancel.Dispose(), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
-            if (!task.Wait(remaining, shutdown))
+            var finished = task.Wait(remaining, shutdown);
+            _spent[name] = used + Stopwatch.GetElapsedTime(begun);
+            if (!finished)
             {
-                abandoned[name] = task;   // left running: the read is cancelled, but one that ignores that is only waited for, never repeated
-                _ = _failed.Add(name);
+                abandoned[key] = task;   // left running: the read is cancelled, but one that ignores that is only waited for, never repeated
+                _ = _failed.Add(key);
                 cancel.Cancel();
+                _ = task.ContinueWith(_ => cancel.Dispose(), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);   // registered after Cancel: nothing races it
                 return (Outcome.TimedOut, default);
             }
 
+            cancel.Dispose();
             var (ok, value) = task.Result;
             return ok ? (Outcome.Done, value) : (Outcome.Failed, default);
         }
 
+        private static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
+
         internal IReadOnlyList<T> List<T>(string name, Func<CancellationToken, Result<IReadOnlyList<T>>> read)
         {
-            var (outcome, result) = Run(name, read);
+            var (outcome, result) = Run(name, pid: null, read);
             if (outcome == Outcome.Done && result is { IsSuccess: true } ok)
             {
                 return ok.Value;
@@ -149,9 +169,9 @@ internal sealed class SessionDiscovery(IProcessTable processes, IClaudeSessionRe
             return [];
         }
 
-        internal T Value<T>(string name, Func<CancellationToken, T> read, T fallback)
+        internal T Value<T>(string name, int pid, Func<CancellationToken, T> read, T fallback)
         {
-            var (outcome, value) = Run(name, read);
+            var (outcome, value) = Run(name, pid, read);
             if (outcome == Outcome.Done)
             {
                 return value ?? fallback;   // a source that answers "nothing" (no cwd) is not a problem
@@ -177,7 +197,7 @@ internal sealed class SessionDiscovery(IProcessTable processes, IClaudeSessionRe
             }
         }
 
-        private void Note(string name)
+        internal void Note(string name)
         {
             if (!problems.Exists(p => string.Equals(p.Source, name, StringComparison.Ordinal)))
             {
@@ -211,11 +231,11 @@ internal sealed class SessionDiscovery(IProcessTable processes, IClaudeSessionRe
     {
         var id = record.Session ?? SessionId.OfProcess(process.Pid, process.StartTicks);
         var hook = hooks.FirstOrDefault(h => h.Provider.Equals(agent.Id) && h.Session.Equals(id));
-        return new Candidate(process, agent, id, IdKnown: record.Session is not null, pass.Value("environment", _ => processes.Environment(process.Pid), _emptyEnvironment))
+        return new Candidate(process, agent, id, IdKnown: record.Session is not null, pass.Value("environment", process.Pid, _ => processes.Environment(process.Pid), _emptyEnvironment))
         {
             Record = record,
             Hook = hook,
-            Cwd = record.Cwd ?? hook?.Cwd ?? pass.Value("cwd", _ => processes.Cwd(process.Pid), fallback: null),
+            Cwd = record.Cwd ?? hook?.Cwd ?? pass.Value("cwd", process.Pid, _ => processes.Cwd(process.Pid), fallback: null),
             TranscriptHint = hook?.Transcript,
         };
     }
@@ -224,12 +244,12 @@ internal sealed class SessionDiscovery(IProcessTable processes, IClaudeSessionRe
     {
         var process = found.Process;
         var hook = hooks.FirstOrDefault(h => h.Provider.Equals(found.Agent.Id) && h.AgentPid == process.Pid && h.AgentStartTicks == process.StartTicks);
-        var files = pass.Value("open-files", _ => processes.OpenFiles(process.Pid), []);
+        var files = pass.Value("open-files", process.Pid, _ => processes.OpenFiles(process.Pid), []);
         var known = hook?.Session ?? RolloutId(found.Agent, files);
-        return new Candidate(process, found.Agent, known ?? SessionId.OfProcess(process.Pid, process.StartTicks), IdKnown: known is not null, pass.Value("environment", _ => processes.Environment(process.Pid), _emptyEnvironment))
+        return new Candidate(process, found.Agent, known ?? SessionId.OfProcess(process.Pid, process.StartTicks), IdKnown: known is not null, pass.Value("environment", process.Pid, _ => processes.Environment(process.Pid), _emptyEnvironment))
         {
             Hook = hook,
-            Cwd = hook?.Cwd ?? pass.Value("cwd", _ => processes.Cwd(process.Pid), fallback: null),
+            Cwd = hook?.Cwd ?? pass.Value("cwd", process.Pid, _ => processes.Cwd(process.Pid), fallback: null),
             TranscriptHint = hook?.Transcript ?? files.FirstOrDefault(static f => f.EndsWith(".jsonl", StringComparison.Ordinal)),
         };
     }
