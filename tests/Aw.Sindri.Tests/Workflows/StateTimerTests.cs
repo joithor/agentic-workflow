@@ -224,8 +224,8 @@ public sealed class StateTimerTests(SindriTimeSkippingServer server) : IClassFix
     /// <summary>Waits until the instance's history shows a fired timer: it fired server-side while no worker ran.</summary>
     private static async Task TimerFired(WorkflowHandle handle, CancellationToken ct)
     {
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
-        while (DateTime.UtcNow < deadline)
+        var deadline = RealTime.NowDateTime + TimeSpan.FromSeconds(20);
+        while (RealTime.NowDateTime < deadline)
         {
             var history = await handle.FetchHistoryAsync();
             if (history.Events.Any(static e => e.EventType == EventType.TimerFired))
@@ -266,9 +266,9 @@ public sealed class StateTimerTests(SindriTimeSkippingServer server) : IClassFix
     /// <summary>The 'workflow.*' ledger rows once there are <paramref name="count"/> (the mirror follows the workflow task).</summary>
     private static async Task<IReadOnlyList<string>> Rows(DeskInstance desk, int count)
     {
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
+        var deadline = RealTime.NowDateTime + TimeSpan.FromSeconds(20);
         var rows = await desk.Events();
-        while (rows.Count < count && DateTime.UtcNow < deadline)
+        while (rows.Count < count && RealTime.NowDateTime < deadline)
         {
             await Task.Delay(100, TestContext.Current.CancellationToken);
             rows = await desk.Events();

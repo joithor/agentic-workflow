@@ -57,7 +57,8 @@ public static class InputCap
         JsonObject obj => new JsonObject(obj.Select(pair => KeyValuePair.Create(pair.Key, CutStrings(pair.Value)))),
         JsonArray array => new JsonArray([.. array.Select(CutStrings)]),
         JsonValue value when value.TryGetValue<string>(out var text) => JsonValue.Create(Truncate(text, StringLimit)),
-        _ => node?.DeepClone(),
+        null => null,
+        _ => node.DeepClone(),
     };
 
     // A prefix of the full text as one string; halved until its escaped form fits.

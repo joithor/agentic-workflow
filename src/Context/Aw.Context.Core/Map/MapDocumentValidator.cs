@@ -147,12 +147,13 @@ public static class MapDocumentValidator
             : !keys.Add(d.ToKey().Value) ? ("quote", "the same record and quote are decided twice")
             : !NodeKey.TryFrom($"record:{d.Record.Value}", out _) ? ("record", "too long to be pointed at by a record node (at most 1017 characters)")
             : default((string, string)?);
-        if (problem is { } p)
+        if (problem is not { } p)
         {
-            problems.Invalid(Fmt($"decisions[{i}].{p.Item1}"), p.Item2);
+            return false;
         }
 
-        return problem is not null;
+        problems.Invalid(Fmt($"decisions[{i}].{p.Item1}"), p.Item2);
+        return true;
     }
 
     private static MapOverride Normalized(MapOverride o) =>
