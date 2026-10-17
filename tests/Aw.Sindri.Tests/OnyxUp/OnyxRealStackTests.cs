@@ -1,16 +1,12 @@
-using Aw.Kernel.Json;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Onyx;
-using Aw.Sindri.Core.Registration;
-using Aw.Sindri.Features;
 using Aw.Sindri.Features.OnyxDown;
 using Aw.Sindri.Features.OnyxStatus;
 using Aw.Sindri.Features.OnyxUp;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Host;
 using Aw.Sindri.Infrastructure.Processes;
-using Aw.Sindri.Infrastructure.Registration;
 using Aw.Sindri.Testing;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -30,13 +26,9 @@ public sealed class OnyxRealStackTests
     {
         var home = Path.Combine(Path.GetTempPath(), "aw-onyx-real-" + Guid.NewGuid().ToString("N"));
         string? Environment(string name) => string.Equals(name, "AW_SINDRI_HOME", StringComparison.Ordinal) || string.Equals(name, "AW_STATE_DIR", StringComparison.Ordinal) ? home : null;
-        await using var provider = new ServiceCollection()
-            .AddSingleton(TimeProvider.System)
-            .AddSingleton(AwJson.CreateOptions(SindriJsonContext.Default))
+        // The host's own composition (what Program.cs runs), so this cannot drift from main; only the progress sink is swapped, to keep the console quiet.
+        await using var provider = Composition.Compose(new ServiceCollection(), Environment, TimeProvider.System)
             .AddSingleton<IOnyxProgress>(new CapturingOnyxProgress())
-            .AddSindriCore()
-            .AddSindriFeatures()
-            .AddSindriInfrastructure(Environment)
             .BuildServiceProvider();
         var docker = provider.GetRequiredService<IContainerRuntime>().Inspect(Token);
         Assert.SkipWhen(!docker.CliFound || !docker.DaemonAnswers, "Docker isn't available on this box");
