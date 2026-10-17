@@ -6,7 +6,7 @@ namespace Aw.Sindri.Core.Launch;
 [JsonConverter(typeof(JsonStringEnumConverter<HostKind>))]
 public enum HostKind
 {
-    /// <summary>A session on the Sindri-owned tmux server (-L sindri).</summary>
+    /// <summary>A session on the Sindri-owned tmux server (-L sindri-launch).</summary>
     [JsonStringEnumMemberName("tmux")]
     Tmux,
 
