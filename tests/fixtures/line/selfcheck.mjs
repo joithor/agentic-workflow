@@ -187,8 +187,12 @@ function run() {
     }
     ok(`${dir}: lenses.json agrees with coverage.json (SCP-LENS-001); hops are hop-kind arrays`, lensErr.length === 0, lensErr.join("; "));
     ok(`${dir}: a lens that found nothing says so (nothing-found)`, cov.lenses.every((r) => (r.found.count === 0) === (r.state === "nothing-found")));
-    const goldIds = g.mustFind.length;
-    ok(`${dir}: the lens results hold every scoping must-find key`, ln.lenses.reduce((n, l) => n + l.foundCount, 0) === goldIds, `${ln.lenses.reduce((n, l) => n + l.foundCount, 0)} vs ${goldIds}`);
+    const rel = ln.lenses.find((l) => l.lens === "related");
+    const mustKeys = new Set(g.mustFind.map((m) => m.key));
+    const reachedNodes = rel.nodes.filter((n) => !mustKeys.has(n.key));
+    const everyKey = new Set(ln.lenses.flatMap((l) => l.nodes.map((n) => n.key)));
+    ok(`${dir}: the lens results hold every scoping must-find graph key, plus 1-2 related nodes the cascade reaches`, g.mustFind.filter((m) => !m.key.startsWith("linear:") && !m.key.startsWith("commit:")).every((m) => everyKey.has(m.key)) && ln.lenses.reduce((n, l) => n + l.foundCount, 0) === g.mustFind.length + reachedNodes.length && reachedNodes.length >= 1 && reachedNodes.length <= 2, `${reachedNodes.length}`);
+    ok(`${dir}: related is a cascade lens (depth 2, all four hops, component last) and each node it reaches has an edge to an anchor or to another reached node`, rel.depth === 2 && JSON.stringify(rel.hops) === JSON.stringify(["state", "dependency", "flow", "component"]) && reachedNodes.every((n) => n.band === "product" && n.trust === "untrusted" && rel.edges.some((e) => (e.from === n.key && (rel.anchors.includes(e.to) || reachedNodes.some((x) => x.key === e.to))) || (e.to === n.key && (rel.anchors.includes(e.from) || reachedNodes.some((x) => x.key === e.from))))));
     const rounds = readJsonl(at("gold", dir, "rounds.jsonl"));
     ok(`${dir}/rounds.jsonl: a first round and one that adds the challenger's finding${c === "expiry" ? ", then the rescope" : ""}`, rounds[0].trigger === "first" && rounds[1].trigger === "found" && (c === "expiry" ? rounds[2]?.trigger === "rescope" : rounds.length === 2));
     const answersLog = readJsonl(at("gold", dir, "answers.jsonl"));

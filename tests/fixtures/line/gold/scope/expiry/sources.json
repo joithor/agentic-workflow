@@ -218,6 +218,22 @@
       "denied": false
     },
     {
+      "ref": "surface:screen/note-editor",
+      "trust": "untrusted",
+      "version": "fixture",
+      "fetchedAt": "2026-10-16T09:00:00Z",
+      "truncated": false,
+      "denied": false
+    },
+    {
+      "ref": "surface:screen/notes-list",
+      "trust": "untrusted",
+      "version": "fixture",
+      "fetchedAt": "2026-10-16T09:00:00Z",
+      "truncated": false,
+      "denied": false
+    },
+    {
       "ref": "repo:docs/decisions/0001-links-never-expire.md",
       "trust": "untrusted",
       "version": "fixture",

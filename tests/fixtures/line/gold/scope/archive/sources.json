@@ -218,6 +218,14 @@
       "denied": false
     },
     {
+      "ref": "surface:screen/note-editor",
+      "trust": "untrusted",
+      "version": "fixture",
+      "fetchedAt": "2026-10-16T09:00:00Z",
+      "truncated": false,
+      "denied": false
+    },
+    {
       "ref": "repo:src/notes/model.ts",
       "trust": "untrusted",
       "version": "fixture",

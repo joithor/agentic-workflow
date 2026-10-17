@@ -403,12 +403,46 @@
       "hops": [
         "state",
         "dependency",
-        "flow"
+        "flow",
+        "component"
       ],
       "mapVersion": "v1",
-      "foundCount": 3,
-      "nodes": [],
+      "foundCount": 5,
+      "nodes": [
+        {
+          "key": "surface:screen/note-editor",
+          "kind": "surface",
+          "label": "Note editor screen",
+          "band": "product",
+          "lensItem": "L-related-4",
+          "trust": "untrusted"
+        },
+        {
+          "key": "surface:screen/notes-list",
+          "kind": "surface",
+          "label": "Notes list screen",
+          "band": "product",
+          "lensItem": "L-related-5",
+          "trust": "untrusted"
+        }
+      ],
       "edges": [
+        {
+          "from": "surface:screen/notes-list",
+          "to": "surface:screen/note-editor",
+          "type": "moves-to",
+          "provenance": "deterministic",
+          "confirmed": true,
+          "trust": "untrusted"
+        },
+        {
+          "from": "surface:screen/note-editor",
+          "to": "surface:screen/share-dialog",
+          "type": "moves-to",
+          "provenance": "deterministic",
+          "confirmed": true,
+          "trust": "untrusted"
+        },
         {
           "from": "surface:screen/share-dialog",
           "to": "surface:route/link-resolve",

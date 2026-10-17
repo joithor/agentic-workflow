@@ -97,6 +97,7 @@
           "surface:api/weekly-digest-email"
         ],
         "sources": [
+          "map",
           "tracker"
         ],
         "mapVersion": "v1",
@@ -104,18 +105,21 @@
         "hops": [
           "state",
           "dependency",
-          "flow"
+          "flow",
+          "component"
         ]
       },
       "limits": [],
       "mapCoverage": {
-        "mapped": 0,
+        "mapped": 2,
         "new": 0,
         "unmapped": 0
       },
       "found": {
-        "count": 3,
+        "count": 5,
         "ids": [
+          "L-related-4",
+          "L-related-5",
           "L-related-1",
           "L-related-2",
           "L-related-3"
