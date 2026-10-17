@@ -11,7 +11,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// 'allowedCommands', and the rendered words status prints: the header's detail, 'next' (§3.8, §3.7), the answer line
 /// per park reason, a drift waiting behind a park, and the token budgets (engine P4 unit (e)).
 /// </summary>
-public static class InstanceViews
+public static partial class InstanceViews
 {
     /// <summary>The state of a view whose workflow has not built its instance yet (the Query answers before the start finishes): it carries no layout.</summary>
     public const string StartingState = "starting";
@@ -52,7 +52,7 @@ public static class InstanceViews
         var task = instance is { Ended: false, Suspension: null, Frame.Run: { Runtime: StepRuntime.Desk } open }
             ? Task(instance.Frame.State, open.Token, recipe, timeoutAt)
             : null;
-        var words = new InstanceWords(instance, recipe, since, children.Count > 0 ? children[0] : null);
+        var words = new InstanceWords(instance, recipe, since, MirroredChild(instance, children));
         var view = new InstanceView(
             instance.Address,
             recipe.Version,
@@ -60,7 +60,7 @@ public static class InstanceViews
             LegacyDetail(recipe) ?? (task is not null ? "desk task" : words.Detail()),
             since,
             words.Next(task),
-            Allowed(instance, task),
+            Allowed(instance, task, words.GrantTokens()),
             instance.Suspension is { } s ? new OpenQuestion(s.Kind, s.Reason, s.Question) : null,
             task,
             instance.Frame.Run?.Token,
@@ -168,8 +168,9 @@ public static class InstanceViews
     /// </summary>
     /// <param name="instance">The interpreter's state.</param>
     /// <param name="task">The open desk task, if any.</param>
-    /// <returns>Each command's action id and CLI line.</returns>
-    public static IReadOnlyList<AllowedCommand> Allowed(WorkflowInstance instance, DeskTask? task)
+    /// <param name="grantTokens">The token amount a budget park's grant offers (the one the status line prints).</param>
+    /// <returns>Each command's action id and CLI line; an open park or escalation gets one 'answer' entry per variant that fits, each with its full CLI.</returns>
+    public static IReadOnlyList<AllowedCommand> Allowed(WorkflowInstance instance, DeskTask? task, string grantTokens)
     {
         ArgumentNullException.ThrowIfNull(instance);
         if (instance.Ended)
@@ -181,7 +182,7 @@ public static class InstanceViews
         var commands = new List<AllowedCommand>();
         if (instance.Suspension is { Kind: not SuspensionKind.Takeover } open && Answerable(open))
         {
-            commands.Add(new("ApplyCommand:answer", $"sindri workflow answer {address}"));
+            commands.AddRange(AnswerCommands(instance, open, grantTokens));
         }
 
         if (task is not null)
@@ -208,6 +209,12 @@ public static class InstanceViews
     /// </summary>
     private static string CompleteCli(string address, DeskTask task) =>
         CompleteCommand.Line(address, task.Run, task.Outcomes.Count > 0 ? task.Outcomes[0] : null, task.Outputs);
+
+    /// <summary>The child a suspension mirrors, matched by its instance id (a sibling listed first is not it); none listed means none; with no mirror, the first child.</summary>
+    private static ChildView? MirroredChild(WorkflowInstance instance, IReadOnlyList<ChildView> children) =>
+        instance.Suspension?.Mirrors is { } mirrored
+            ? children.FirstOrDefault(c => WorkflowInstanceId.Of(c.Address) == mirrored)
+            : children.Count > 0 ? children[0] : null;
 
     private static bool Answerable(Suspension suspension) =>
         suspension.ParkKind is not (ParkKind.Revoked or ParkKind.ChildRevoked or ParkKind.Drift);

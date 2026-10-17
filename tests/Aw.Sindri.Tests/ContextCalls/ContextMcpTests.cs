@@ -27,7 +27,7 @@ public sealed class ContextMcpTests : IDisposable
     public void Dispose() => _repo.Dispose();
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
-    public async Task Tools_list_names_the_context_tools_read_only_even_while_sessions_are_off()
+    public async Task Tools_list_names_the_context_tools_first_and_read_only_even_while_sessions_are_off()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var host = await ContextHosts.Approved(_repo, sessions: false, ct);
@@ -35,8 +35,10 @@ public sealed class ContextMcpTests : IDisposable
 
         var tools = await mcp.Client.ListToolsAsync(cancellationToken: ct);
 
-        Assert.Equal(["context_lenses", "context_neighbors", "context_node", "context_query", "context_sources"], tools.Select(t => t.Name).Order(StringComparer.Ordinal), StringComparer.Ordinal);
-        Assert.All(tools, t => Assert.True(t.ProtocolTool.Annotations?.ReadOnlyHint));
+        var context = tools.Where(t => t.Name.StartsWith("context_", StringComparison.Ordinal)).ToList();
+        Assert.Equal(["context_query", "context_sources", "context_lenses", "context_node", "context_neighbors"], context.Select(t => t.Name), StringComparer.Ordinal);
+        Assert.Equal(context.Select(t => t.Name), tools.Take(context.Count).Select(t => t.Name), StringComparer.Ordinal);   // why: the context tools come first
+        Assert.All(context, t => Assert.True(t.ProtocolTool.Annotations?.ReadOnlyHint));
         var query = tools.Single(t => t.Name == "context_query").JsonSchema;
         Assert.False(query.GetProperty("additionalProperties").GetBoolean());
         Assert.False(query.GetProperty("properties").TryGetProperty("draft", out _));   // why: no draft map over MCP

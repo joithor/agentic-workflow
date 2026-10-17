@@ -16,11 +16,13 @@ namespace Aw.Sindri.Ui.Views;
 /// constructor (theme only) is for the XAML loader and headless view tests. The platform wiring (tray, single instance,
 /// close-to-tray) is another part of this class, which receives the window through ShellOpened.
 /// </summary>
-public sealed partial class SindriApp : Application
+public sealed partial class SindriApp : Application, IDisposable
 {
     private readonly Preferences? _preferences;
     private readonly TimeProvider? _clock;
     private InstanceListener? _listener;
+    private readonly CancellationTokenSource _listening = new();
+    private int _disposed;
 
     /// <summary>
     /// The exit code when the app failed (SND-UI-004): its start-up, or its following of the control plane, threw. The app
@@ -54,10 +56,21 @@ public sealed partial class SindriApp : Application
         // One writer of the preferences for the whole app: the shell and Settings share it, so their writes queue.
         var preferences = new Preferences(platform.Preferences);
         var clipboard = new AvaloniaClipboard(static () => (Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow);
+        var launcher = new AvaloniaLauncher(static () => (Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow);
 #pragma warning disable CA2000 // the shell view model keeps the client for the app's process
         var api = new SindriApiClient(Loopback(), platform.Token, clock, platform.Log);
 #pragma warning restore CA2000
-        return new(new ShellViewModel(platform.Records, api, clock, preferences, clipboard, platform.Motion), preferences, platform, clock);
+        return new(new ShellViewModel(platform.Records, api, clock, preferences, clipboard, platform.Motion, launcher), preferences, platform, clock);
+    }
+
+    /// <summary>Stops reading the single instance's messages (the app's exit does; a test that starts the app calls it).</summary>
+    public void Dispose()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) == 0)
+        {
+            _listening.Cancel();
+            _listening.Dispose();
+        }
     }
 
     /// <summary>The shell the app was built over; null for the theme-only app.</summary>
@@ -90,7 +103,8 @@ public sealed partial class SindriApp : Application
             // A later launch is answered from now on, while the window is still being built (ShellOpened hands the
             // messages to the window's lifetime); reading ends when the head disposes the instance.
             _listener = new InstanceListener(platform.Instance);
-            _ = _listener.Listen(CancellationToken.None);
+            _ = _listener.Listen(_listening.Token);
+            desktop.Exit += (_, _) => Dispose();
 
             // Started on the UI thread, so the view models' awaits come back to it. Its failure is observed there: logged,
             // then the app ends with FailedExitCode.

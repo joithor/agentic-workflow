@@ -27,7 +27,7 @@ public static class MergeGate
             GateResult(gate, facts.FailingTests, facts.FailureCounts),
             Scopes(gate, facts.PlannedScopes, facts.ScopeRuns),
             Head(facts),
-            new MergeCheck("main", gate.Main == facts.CurrentMain, $"gate ran on main {gate.Main}, main is {facts.CurrentMain}"),
+            Main(gate, facts),
             Order(facts),
             new MergeCheck("draft", !facts.IsDraft, facts.IsDraft ? "the pull request is a draft" : "ready for review"),
         ];
@@ -101,6 +101,33 @@ public static class MergeGate
         return docsOnly && facts.RepoGatePassedOnHead
             ? new MergeCheck("head", Ok: true, "head moved by a docs-only change and the repo gate passed on it")
             : new MergeCheck("head", Ok: false, $"head moved from {gate.Head} to {facts.CurrentHead} since the gate");
+    }
+
+    // The fast path (same main) holds for an unstacked gate only: a stacked gate tested a main plus other pull requests' heads,
+    // so it is valid only while merging its head onto main today still gives the tested tree. The same test lets a gate
+    // whose main moved stand. A gate recorded before the tree was kept (Tree null) keeps the old rule.
+    private static MergeCheck Main(GateRecord gate, MergeFacts facts)
+    {
+        if (gate.Stack.Count == 0 && gate.Main == facts.CurrentMain)
+        {
+            return new MergeCheck("main", Ok: true, $"gate ran on main {gate.Main}");
+        }
+
+        if (gate.Tree is null)
+        {
+            return new MergeCheck("main", Ok: false, $"gate ran on main {gate.Main}, main is {facts.CurrentMain}");
+        }
+
+        if (facts.MergedTree == gate.Tree)
+        {
+            return new MergeCheck("main", Ok: true, gate.Stack.Count == 0
+                ? $"main moved from {gate.Main} to {facts.CurrentMain}, and the gated head merges onto it to the tested tree"
+                : $"the gated head merges onto main {facts.CurrentMain} to the tested tree (the gate stacked {string.Join(", ", gate.Stack.Select(s => "#" + s.Pr.ToString(CultureInfo.InvariantCulture)))})");
+        }
+
+        return new MergeCheck("main", Ok: false, gate.Stack.Count == 0
+            ? $"gate ran on main {gate.Main}, main is {facts.CurrentMain}, and the gated head no longer merges onto it to the tested tree"
+            : $"the gate stacked {string.Join(", ", gate.Stack.Select(s => "#" + s.Pr.ToString(CultureInfo.InvariantCulture)))}; merging the gated head onto main {facts.CurrentMain} does not give the tested tree");
     }
 
     private static MergeCheck Order(MergeFacts facts)

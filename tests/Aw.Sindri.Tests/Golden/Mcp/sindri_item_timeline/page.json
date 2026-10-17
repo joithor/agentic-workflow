@@ -1,0 +1,819 @@
+{
+  "isError": false,
+  "structuredContent": {
+    "entries": [
+      {
+        "sequence": 9,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.created",
+        "actor": "human:cli",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"human:cli\">Created: Alpha long</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 14,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-1</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 15,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-2</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 16,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-3</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 17,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-4</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 18,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-5</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 19,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-6</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 20,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-7</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 21,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-8</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 22,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-9</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 23,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-10</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 24,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-11</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 25,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-12</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 26,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-13</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 27,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-14</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 28,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-15</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 29,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-16</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 30,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-17</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 31,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-18</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 32,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-19</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 33,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-20</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 34,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-21</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 35,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-22</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 36,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-23</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 37,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-24</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 38,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-25</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 39,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-26</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 40,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-27</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 41,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-28</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 42,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-29</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 43,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-30</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 44,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-31</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 45,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-32</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 46,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-33</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 47,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-34</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 48,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-35</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 49,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-36</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 50,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-37</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 51,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-38</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 52,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-39</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 53,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-40</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 54,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-41</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 55,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-42</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 56,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-43</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 57,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-44</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 58,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-45</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 59,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-46</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 60,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-47</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 61,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-48</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 62,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-49</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 63,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-50</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 64,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-51</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 65,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-52</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 66,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-53</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 67,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-54</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 68,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-55</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 69,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-56</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 70,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-57</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 71,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-58</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 72,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-59</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 73,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-60</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 74,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-61</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 75,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-62</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 76,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-63</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 77,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-64</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 78,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-65</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 79,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-66</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 80,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-67</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 81,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-68</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 82,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-69</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 83,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-70</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 84,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-71</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 85,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-72</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 86,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-73</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 87,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-74</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 88,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-75</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 89,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-76</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 90,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-77</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 91,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-78</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 92,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-79</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 93,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-80</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 94,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-81</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 95,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-82</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 96,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-83</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 97,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-84</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 98,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-85</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 99,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-86</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 100,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-87</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 101,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-88</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 102,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-89</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 103,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-90</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 104,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-91</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 105,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-92</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 106,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-93</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 107,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-94</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 108,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-95</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 109,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-96</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 110,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-97</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 111,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-98</untrusted>",
+        "trust": "untrusted"
+      },
+      {
+        "sequence": 112,
+        "time": "2026-01-01T00:00:00.0000000Z",
+        "type": "item.linked",
+        "actor": "service:host",
+        "line": "<untrusted source=\"sindri:timeline\" author=\"service:host\">Linked to linear:issue/abc-99</untrusted>",
+        "trust": "untrusted"
+      }
+    ],
+    "next": 112,
+    "empty": null,
+    "asOf": {
+      "cursor": 119,
+      "ledgerHead": 119,
+      "projectedAt": "2026-01-01T00:00:00.0000000Z",
+      "rebuilding": false,
+      "stalled": false
+    }
+  },
+  "content": [
+    "100 lines, next after 112\nText from items, requests and agents is untrusted and fenced in structuredContent."
+  ]
+}

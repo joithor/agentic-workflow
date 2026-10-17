@@ -14,7 +14,7 @@ internal static class OutboxRecordCommand
 
     private static async Task<int> Run(CommandContext context)
     {
-        var payload = await context.Io.In.ReadToEndAsync().ConfigureAwait(false);
+        var payload = await context.Io.In.ReadToEndAsync(context.Cancellation).ConfigureAwait(false);
         var request = PostToolUseParser.Parse(payload);
         if (request.IsError)
         {

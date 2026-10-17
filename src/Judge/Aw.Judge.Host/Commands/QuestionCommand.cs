@@ -63,10 +63,10 @@ internal static class QuestionCommand
     private static string Envelope(EvaluationOutcome outcome, JsonSerializerOptions json) => outcome switch
     {
         DecidedOutcome d => WithExtra(
-            CommandOutput.Json(new DecidedEnvelope(d.Decision, d.Confidence, ProviderNames.Name(d.Model), d.ReasonCode, d.Id.Value), json),
+            CommandOutput.Json(new DecidedEnvelope(d.Decision, d.Confidence, ProviderNames.Name(d.Model), d.ReasonCode, d.Id.Value) { Probabilities = d.Probabilities }, json),
             d.Extra,
             json),
-        _ => CommandOutput.Json(EscalatedEnvelope.For(outcome.ReasonCode), json),
+        _ => CommandOutput.Json(EscalatedEnvelope.For(outcome), json),
     };
 
     // The question's declared extra fields (chosenIndex, reasons) go beside the envelope's own.

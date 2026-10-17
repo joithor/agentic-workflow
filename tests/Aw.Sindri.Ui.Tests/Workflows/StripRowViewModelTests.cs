@@ -65,7 +65,7 @@ public sealed class StripRowViewModelTests
         var plain = Of(Where(r => r.EngineOwned is null && r.Recipe.Urgency == RecipeUrgency.Work));
         var incident = Of(Where(r => r.Recipe.Urgency == RecipeUrgency.Incident));
 
-        Assert.Equal((false, "", "◐", "▲"), (plain.HasBadge, plain.Badge, plain.Glyph, incident.Glyph));
+        Assert.Equal((false, "", Labels.MarkActive, Labels.MarkEscalated), (plain.HasBadge, plain.Badge, plain.Glyph, incident.Glyph));
     }
 
     [Fact]

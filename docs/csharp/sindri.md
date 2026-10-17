@@ -192,7 +192,7 @@ foreign browser `Origin` a 403):
 | `GET /sindri/items?state=&repo=` | `ListItems` (a query): `{items: [ItemSummary], empty, asOf}`, the oldest `since` first, filtered by the kebab-case `state` and the `repo`; without `state` it lists open items only (`done` and `cancelled` appear only when `state` names them), and its empty sentence then says `No open items[ in <repo>].`; a malformed filter is 400 `SND-CLI-003` |
 | `GET /sindri/items/{itemId}` | `GetItem` (a query): the `ItemSummary` fields flattened, then `version, createdBy, waitingOn, instance, createdAt, updatedAt, body, link, asOf`. `{itemId}` is an `ITM-…` id or a tracker key; an unknown one, or one outside a session's repo, is 404 `SND-ITEM-404`. `body` (scrubbed) and `link` appear only here |
 | `GET /sindri/items/{itemId}/timeline?after=N` | `GetItemTimeline` (a query): `{entries: [{sequence, time, type, actor, line}], next, empty, asOf}`, a page of 100 after sequence N; `next` is the page's last sequence when more follow, else null |
-| `GET /sindri/needs-you` | `GetNeedsYou` (a query, API P4): `{rows: [NeedsYouRow], empty, asOf}`, in `NeedsYouOrder` (urgency, then `since`, then id). A row is `{id, kind, label, subject: {kind, id}, item, title, reason, repo, urgency, since, recordedOnly, notice, answerKind, primaryAction, actions, cli}`; `kind` is `decision` (`id` `decision:DEC-…`, subject a decision), `failure` (`failure:service:<name>`, subject a service) (its `cli` is `sindri services run <name>` since API P6, filled through `CliForm.Fill`; its `primaryAction` is `RunService`) or `profile` (`profile:drift`, subject `{profile, <live hash>}`). `recordedOnly` is true for a decision (its answer is recorded and not yet acted on) with `notice` the API's sentence for it. `empty` is `Nothing needs you. N running, M queued.` when there is no row, or the views' sentence when they are stale. A session sees its repo's rows and the repo-less ones |
+| `GET /sindri/needs-you` | `GetNeedsYou` (a query, API P4): `{rows: [NeedsYouRow], empty, asOf}`, in `NeedsYouOrder` (urgency, then `since`, then id). A row is `{id, kind, label, subject: {kind, id}, item, title, reason, repo, urgency, since, recordedOnly, notice, answerKind, via?, primaryAction, actions, cli}` (`via` is `"child"` when `cli` points at a child that decides the answer, and omitted otherwise); `kind` is `decision` (`id` `decision:DEC-…`, subject a decision), `failure` (`failure:service:<name>`, subject a service) (its `cli` is `sindri services run <name>` since API P6, filled through `CliForm.Fill`; its `primaryAction` is `RunService`) or `profile` (`profile:drift`, subject `{profile, <live hash>}`). `recordedOnly` is true for a decision (its answer is recorded and not yet acted on) with `notice` the API's sentence for it. `empty` is `Nothing needs you. N running, M queued.` when there is no row, or the views' sentence when they are stale. A session sees its repo's rows and the repo-less ones |
 | `GET /sindri/requests?state=&item=` | `ListRequests` (a query, API P4): `{requests: [{id, kind, item, repo, text, actor, state, decisionId, filedAt}], empty, asOf}`, newest first; `state` is `open`, `accepted`, `declined` or `voided`, `item` an id or alias (a malformed one is `SND-CLI-003`) |
 | `GET /sindri/decisions?pending=&item=` | `ListDecisions` (a query, API P4): `{decisions: [DecisionView], empty, asOf}`, pending oldest first, decided newest first (at most 200). A `DecisionView` carries `id, kind, class, label, item, itemVersion, repo, question, options: [{id, label, rejectLike, cli}], recommended, state, filedBy, filedAt, decidedBy, decidedAt, choice, note, recordedOnly, notice, actions, cli, cleared`; `actions` is `[Decide]` while pending and empty after; `cleared` is the timeline line that settled or voided it. There is no `GET /decisions/{id}` |
 | `POST /sindri/requests` | `FileRequest` (class `request`): body `{kind, item, text}`; answers `{accepted: {commandId, sequence}, requestId, decisionId}`; appends one `request.filed`, which opens the request and its pending decision |
@@ -550,6 +550,25 @@ API P6. A job is work a command starts and does not wait for: the command is acc
 - **`job-probe`.** An opt-in diagnostic service, not a built-in: it runs only when a profile names it (`services: job-probe: {every: 24h}`), and the long job to start by hand (`sindri services run job-probe`, about 62 s). It reports 250 lines, one every 250 ms, and ends `ok: 250 lines`; line 5 holds an OSC-8 hyperlink, line 6 a credential-shaped fake and line 7 is 300 characters, so a run shows the escaping, the scrubbing, the cut at 200 characters and the 200-line window (the view keeps lines 51 to 250). Cancelling stops it within one line.
 - **Goldens.** `services-name-run/`, `services-name-pause/`, `services-name-resume/`, `jobs-id/`, `jobs-id-cancel/`, `jobs/`, plus `services/` (`paused`, `running-job`, `manual-ok`: a manual run leaves the next slot where the scheduled one put it), `needs-you/after-manual-run` (the failure row is gone) and `events/job-lifecycle` (started, two lines, finished, the manual `service.ran`).
 
+## Session collector (collector spec; CO-2a)
+
+`SessionCollectorHost` (a hosted service under `sindri serve`, the `ProfileWatch` pattern: it runs only while the process holds the lease) runs one
+pass every `sessions.pollSeconds` (2 by default) as the caller `service:session-collector`, through three internal services: `RestoreFleetHistory`
+(once, after the lease: the last 24 hours of `fleet.changed` rows rebuild the set already reported), `CollectSessions` (the pass: the process table, Claude's
+session records, the aw:fleet hook's state files, merged by the pure rules in `Aw.Sindri.Core/Sessions/`) and `RecordFleetChanges` (appends with the lease
+grant: no command gate, audit row or catalog row, the `CheckProfileService` pattern). The pass has a 500 ms budget for the process table (past it the previous snapshot stays); every other source (Claude's records, the fleet state files, and the per-process environment, cwd and open files) gets its own fifth of it, and a source that fails or overruns is one
+`problems` row and leaves the others intact; when the process table itself fails the previous snapshot stays and nothing is ledgered as gone.
+
+- **A named exception to "queries read `views.db`":** the live snapshot (`ISessionSnapshot`) is memory only (collector spec CO3), as API P13's `GET /engine`
+  reads Temporal live. The ledger gets one public event type, `fleet.changed {provider, sessionId, change, state, reason?, repo?, host, launchId?}`
+  (`change` is `appeared` after two passes in a row, `asking` once it has lasted 5 s and at most 6 per session per hour, or `gone`); `running` and `idle` flips
+  and leaving `asking` are never ledgered. Key `fleet.changed:<provider>:<id>:<change>:<observedAtMs>`; `Invalidates = [status]`. The payload holds no cwd, title or socket.
+- **Reads:** `/proc` (the current user's processes by `status` `Uid:`; argv[0] to its first NUL only; the environment reduced to an allowlist), `~/.claude/sessions/*.json` (never
+  `*.key`), `$AW_FLEET_DIR/<provider>/*.json`. The agent catalog is `config/launcher/builtins.json` (embedded) merged with `launcher.json`'s `agents` (`AW_LAUNCHER_CONFIG`,
+  default `$AW_STATE_DIR/launcher.json`); `sessions.enabled`, `pollSeconds`, `providers` and `claudeSessionsDir` come from the same file, read once at start.
+- **Test overrides:** `AW_SESSIONS_PROC_ROOT` and `AW_SESSIONS_CLAUDE_DIR`, for tests and the prover only; either shows `SND-SESSION-003`.
+- Telemetry: span `sindri.collector.pass`, gauge `sindri.sessions` (by provider and state), counters `sindri.collector.overrun` and `sindri.collector.pruned`.
+
 ## Scheduler
 
 The control plane runs the services the **approved** profile names, on their cadence. It re-reads the approval once a
@@ -558,6 +577,47 @@ failed run (an error or an exception) is logged (`SND-SCHED-001`) and the next s
 is logged once (`SND-SCHED-001`) and the current schedule keeps running. A profile service this build doesn't have is logged and recorded as a failed `service.ran` with `SND-SVC-404` (not `SND-SCHED-001`): its needs-you row has no `RunService` (running it answers the same 404), offers only `PauseService`, and points at `sindri profile validate` and the profile (remove or rename the service); health still lists it as a failed service. Nothing runs while the process holds no lease. S1
 ships one service, `heartbeat` (API P6 adds the opt-in `job-probe`, see Jobs), which records `service.heartbeat` per slot; the index, intake and scorer join later as
 blocks.
+
+## MCP tools (API P8)
+
+`/sindri/mcp` (one stateless Streamable HTTP endpoint, `Aw.Sindri.Host/Mcp/`) serves the `context_*` tools (docs/csharp/sindri-context.md S-1M) and these seven. Every call runs as `session:mcp` in the repo named by `X-Sindri-Repo`. Each tool binds its arguments (`McpArguments`), calls one service of the same decorated chain the HTTP route uses, fences the result and summarises it; no logic lives in the endpoint. `tools/list` returns 12 tools in this order: the five `context_*`, then the seven below.
+
+| Tool | Arguments | Same as | Kind |
+|---|---|---|---|
+| `sindri_status` | none | `GET /status` | query, `readOnlyHint` |
+| `sindri_queue` | none | `GET /queue` | query, `readOnlyHint` |
+| `sindri_item` | `itemId` (an `ITM-` id or a tracker alias) | `GET /items/{itemId}` | query, `readOnlyHint` |
+| `sindri_item_timeline` | `itemId`, `after?` (integer, 0 or more) | `GET /items/{itemId}/timeline` | query, `readOnlyHint` |
+| `sindri_pending_decisions` | `itemId?` | `GET /decisions?pending=true` | query, `readOnlyHint` |
+| `sindri_job` | `jobId` | `GET /jobs/{jobId}` | query, `readOnlyHint` |
+| `sindri_request` | `kind` (`rescope`, `add-task`, `note`, `handback`), `text` (1 to 2,000 characters), `itemId?` | `POST /requests` (`FileRequest`) | request, `readOnlyHint: false`, `destructiveHint: false` |
+
+There is no decision, desk, protected, job or step-report tool, and no `sindri_context` (use `context_query`): a session asks a human through `sindri_request`, and `McpSurfaceTests` (`tests/Aw.Architecture.Tests`) fails the integration lane if the MCP namespace references any command but `FileRequestRequest`, a challenge answer or the launch secret. Results are the route's body: an id that isn't an id is `SND-CLI-003`, an item or job of another repo is `SND-ITEM-404` / `SND-JOB-404`, a request over its caps `SND-REQ-001` / `SND-REQ-002`.
+
+**Fencing.** `structuredContent` is the HTTP body with the free-text fields below wrapped by `UntrustedFence.Wrap` (source and author as listed) and `"trust": "untrusted"` added to the object that holds each one (`McpFencing` over the serialized body, per `FencePlan`). The HTTP routes are unchanged. Fencing the strings of a job `result` is a provisional owner default ("fence all free text", 2026-10-16), reversible by deleting its `FencePlan.Job` field. A path may end in `[]` for an array of strings. The text block carries ids, states and counts only, never record text.
+
+| Tool | Fenced fields | Source | Author |
+|---|---|---|---|
+| `sindri_queue` | `groups[].items[].title` | `sindri:item` | none |
+| `sindri_item` | `title`, `body` | `sindri:item` | `createdBy` |
+| `sindri_item_timeline` | `entries[].line` | `sindri:timeline` | the entry's `actor` |
+| `sindri_pending_decisions` | `decisions[].question`, `.note`, `.notice`, `.cleared` | `sindri:decision` | `filedBy` (question), `decidedBy` (note) |
+| `sindri_job` | `summary`, every string inside `result` (any depth; numbers, booleans and nulls stay), `progress[].line` | `sindri:job` | `startedBy` for `summary` and `result`; none for `progress[].line` (a line carries no author) |
+| `sindri_status`, `sindri_request` | none | | |
+
+**Headers.** `UseMcpCaller` removes every `X-Sindri-*` request header except `X-Sindri-Repo`, then sets `X-Sindri-Client: mcp`; a caller, terminal, token, read-your-writes (`X-Sindri-After`) or launch-secret header can't ride an MCP call, and any `Origin` is `SND-API-008`.
+
+**Read-your-writes.** `X-Sindri-After` isn't honoured on MCP, so `sindri_request` waits for the views to reach its own write (at most 2 seconds, `SindriTools.WaitForViews`, which a test holds equal to the `ReadYourWrites.Limit` the HTTP routes wait; the Host root depends on the Mcp namespace, so it can not read that constant) before answering; a `sindri_pending_decisions` right after it lists the new decision. On a timeout it still answers success, with "views catching up" in the text.
+
+**The endpoint's own refusals** (shared by the `context_*` and `sindri_*` tools; every tool error is `isError` with `McpToolError {code, message}`, text `<code> <message>`):
+
+| Code | Kind | Meaning |
+|---|---|---|
+| `SND-CONTEXT-021` | Invalid | The call has no `X-Sindri-Repo` (every MCP call is repo-scoped; a registration always writes it) |
+| `SND-CONTEXT-022` | Invalid | An argument of the wrong type, a missing required one, an unknown one, or an enum value outside the schema |
+| `SND-CONTEXT-023` | NotFound | Unknown tool (`sindri_decide` and every other absent tool) |
+
+**Goldens.** `tests/Aw.Sindri.Tests/Golden/Mcp/<tool>/<scenario>.json`, plus `tools-list/default.json` (names, schemas, annotations; descriptions may be reworded and the golden re-recorded) and `errors/`. They sit outside `Golden/Api`, so the UI contract test doesn't enumerate them. The AOT smoke (`src/Sindri/aot-smoke`) lists the 12 tools and calls `sindri_queue`, `sindri_request`, `sindri_item` (`SND-CLI-003`) and `sindri_decide` (`SND-CONTEXT-023`); its profile names the repo `smoke`.
 
 ## Errors
 
@@ -599,6 +659,10 @@ blocks.
 | `SND-REQ-002` | Too many open requests: 20 in the repo or 50 in all, counted for a `session` caller (429; API P4) |
 | `SND-DEC-404` | No decision has that id, or a `session` caller asked for one outside its repo (404; API P4) |
 | `SND-DEC-001` | The choice isn't one of the decision's options, or the note is over 2,000 characters (400; API P4) |
+| `SND-LAUNCH-011` | `launcher.json` (or an agent entry in it) isn't valid: an unknown key in a section, a bad kind, a placeholder outside the closed set, an entry that lacks `label`, `bin`, `open` or `sessionId`, a `sessions.pollSeconds` outside 1 to 30. The collector reads the built-in agents and the default settings instead and shows one problem row (collector CO-2a). Each error names the section and key at fault (`sessions.pollSeconds is 1 to 30`), so a fix is per section even though the fallback is the whole file |
+| `SND-SESSION-001` | One of the session collector's sources failed or a pass overran its 500 ms budget: a problem row beside a normal list, never an exception message (collector CO-2a) |
+| `SND-SESSION-002` | The session collector can't run here; the `detail` is `unsupported-platform`, `proc-unreadable` or `disabled`, and only these replace the list (collector CO-2a; the routes are CO-3) |
+| `SND-SESSION-003` | A test override (`AW_SESSIONS_PROC_ROOT`, `AW_SESSIONS_CLAUDE_DIR`) is set in this run: informational, one problem row beside a normal list; pruning of hook files is off and focus answers `copy` (collector CO-2a) |
 | `SND-SECRET-001` | A secret pointer is malformed: no scheme, an unknown scheme, or a bad target. Expected `env:NAME`, `file:/absolute/path`, `keychain:<service>/<account>` or `op:<vault>/<item>/<field>`; the message names only the scheme, never the text after it (it may be a secret pasted by mistake) |
 | `SND-SECRET-002` | A secret pointer doesn't resolve: the variable is unset or empty, the file is missing or empty, the keychain (macOS `security`, Linux `secret-tool`) or 1Password entry is missing, `security`, `secret-tool` or `op` isn't on PATH or ran past its timeout (5 s, 30 s), or `keychain:` is used on any other OS. On Linux `secret-tool` exits 1 both for a missing entry and when no D-Bus session or keyring is reachable, so `sindri serve` must run in the login session. The message names the pointer and the fix, never a value |
 | `SND-SECRET-003` | A `file:` pointer is unsafe: the file has group or other permission bits (it must be 0600 or stricter) or isn't a regular file (a symbolic link, even to a 0600 file, or a directory; only the last path segment is checked) |

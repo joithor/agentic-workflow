@@ -36,7 +36,7 @@ public sealed class MergeReadiness(IMetaConfig config, IGateStore gates, RepoCom
 
         if (history.Value.Count == 0)
         {
-            return new MergeAssessment(team.Value, MergeGate.Evaluate(new MergeFacts { Pr = pr, CurrentHead = string.Empty, CurrentMain = string.Empty }), Pr: null);
+            return NeverGated(team.Value, pr);
         }
 
         var current = await Current(team.Value.Repo, pr).ConfigureAwait(false);
@@ -65,8 +65,11 @@ public sealed class MergeReadiness(IMetaConfig config, IGateStore gates, RepoCom
             FailingTests = names,
             FailureCounts = counts,
         };
-        return new MergeAssessment(team.Value, [.. MergeGate.Evaluate(facts), State(view)], view);
+        return new MergeAssessment(team.Value, [.. MergeGate.Evaluate(facts with { MergedTree = await MergedTree(team.Value.Repo, gate, main).ConfigureAwait(false) }), State(view)], view);
     }
+
+    private static MergeAssessment NeverGated(TeamConfig team, int pr) =>
+        new(team, MergeGate.Evaluate(new MergeFacts { Pr = pr, CurrentHead = string.Empty, CurrentMain = string.Empty }), Pr: null);
 
     private async ValueTask<Result<(PrDetails View, string Main)>> Current(string repoDirectory, int pr)
     {
@@ -99,7 +102,7 @@ public sealed class MergeReadiness(IMetaConfig config, IGateStore gates, RepoCom
     // or main never count. Steps are matched to scopes by the team config; a step no scope names stays with the chosen run.
     private static (GateRecord Gate, IReadOnlyDictionary<string, int> ScopeRuns) Combine(IReadOnlyList<GateRecord> history, GateRecord chosen, GateConfig config)
     {
-        var same = history.Where(g => g.Head == chosen.Head && g.Main == chosen.Main).ToList();
+        var same = history.Where(g => g.Head == chosen.Head && g.Main == chosen.Main && g.Tree == chosen.Tree).ToList();
         var known = config.Scopes.Values.SelectMany(scope => scope.Steps.Select(step => step.Name)).ToHashSet(StringComparer.Ordinal);
         var scopeRuns = new Dictionary<string, int>(StringComparer.Ordinal);
         var steps = chosen.Steps.Where(step => !known.Contains(step.Name)).ToList();
@@ -118,6 +121,10 @@ public sealed class MergeReadiness(IMetaConfig config, IGateStore gates, RepoCom
             : used.Where(run => run.Verdict != GateVerdict.Pass && run.Steps.All(step => step.Verdict == GateVerdict.Pass)).Select(run => run.Verdict).FirstOrDefault(GateVerdict.Pass);
         return (chosen with { Scopes = [.. scopeRuns.Keys], Steps = steps, Verdict = verdict }, scopeRuns);
     }
+
+    // Only a gate that recorded its tree and is not simply current (stacked, or main moved) needs the merge-tree answer.
+    private async ValueTask<string?> MergedTree(string repoDirectory, GateRecord gate, string main) =>
+        gate.Tree is null || (gate.Stack.Count == 0 && gate.Main == main) ? null : await repo.MergeTree(repoDirectory, main, gate.Head).ConfigureAwait(false);
 
     private async ValueTask<IReadOnlyList<string>?> Delta(string repoDirectory, GateRecord gate, string head)
     {

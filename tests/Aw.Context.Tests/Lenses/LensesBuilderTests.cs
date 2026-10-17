@@ -251,7 +251,7 @@ public sealed class LensesBuilderTests
 
         var direct = LensCoverageBuilder.ForAnchor(graph, NodeKey.From(Anchor));
 
-        Assert.Equivalent(Lenses().Coverage, direct);
+        Assert.Equivalent(Lenses().Coverage with { Map = null }, direct);
     }
 
     [Fact, Trait("Lane", "unit")]

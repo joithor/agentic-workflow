@@ -633,7 +633,7 @@ current map has it: after a promote) or `unmapped` (you rejected it). The `POST`
 ### Lenses and the file map
 
 ```
-$ sindri context lenses feature:tabs.tab-manager [--depth <0-4>] [--draft] [--json]
+$ sindri context lenses feature:tabs.tab-manager [<key>...] [--depth <0-4>] [--draft | --map-version <v>] [--json]
 lenses of feature:tabs.tab-manager · map v13
 intent (2): …
 product (7): …
@@ -656,6 +656,10 @@ $ sindri context filemap accept edge:0123456789abcdef      # or reject: one over
   A model-suggested file link shows as `suggested` until you accept it. `coverage` counts only the node's own scope. The symbol
   column reads `index not built` until the code index exists. `--draft` reads the draft (`SND-CONTEXT-044` when there is none);
   an unknown anchor is `SND-CONTEXT-003` with suggestions.
+- Several keys (up to 20; more is `006`) give one union read from one map snapshot (JSON schema 2): an anchor that doesn't resolve or can't be read is listed as `missing anchor: <key>` and in `missingAnchors`, and `coverage.byAnchor` counts each anchor. With one key the JSON stays schema 1.
+- `--map-version v3` (also `3` or `v3@a41b07d`) reads a retained map version, here and in `context query --map-version`; it can't go with `--draft` (`006`), and a version that isn't held is `SND-CONTEXT-120`. `mapVersion` is always `v<N>`; `mapCommit` is the commit the version was built at, 7 lowercase hex characters, omitted when the version names no commit.
+- Every answer ends with what was searched: one line per source (`map`, `onyx`, `code-index`) with its state as a word (`ok`, `not-configured`, `unavailable` or `degraded`, with its code or reason: `onyx degraded (SND-CONTEXT-010)`), and a `map coverage` line (the repo's files under the anchors' paths, how many are unmapped or suggested, and when the version was created; `coverage.map.created` in JSON, while `asOf` is when the answer was built). Query citations carry `fetchedAt`.
+- The top-level `edges` (mentions, decides, quotes, supersedes, implements, tests) and `bands.product.edges` (structure edges) never overlap: draw both.
 - `filemap` lists the direct children of a path with a status word each: `mapped`, `suggested` or `unmapped` (a directory
   takes the worst of its children). A repo that is not in the profile, or outside a session's repo, is `SND-CONTEXT-045` with
   the same answer for both, so a scope never reveals what is outside it.

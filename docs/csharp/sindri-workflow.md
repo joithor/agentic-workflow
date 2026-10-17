@@ -495,6 +495,14 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 `step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and human-only; their hashes moved once when the two fields
 landed (provisional owner default); every other shipped descriptor hashes as before (`ShippedBlocksTests` pins all of them).
 
+### Block recipes
+
+The shipped block recipes (`recipes/sindri/`: report, investigate, reproduce, implement, hand-test, verify, the evidence
+family and review-loop) are listed with their inputs, outputs and terminals in `recipes/sindri/README.md`. The inputs are
+`issue` (report), `issue`, `expected` and `actual` (investigate), `issue` and `rootCause` (reproduce, implement), `phasePacket` and `workspace` (hand-test, verify), `phasePacket` and `built`
+(every evidence recipe) and `change` and `phasePacket` (review-loop). `phasePacket` and `change` use the `packet` and
+`payload` subject kinds. Approve the leaf recipes first, then `workflow.evidence-all`, then `workflow.evidence`.
+
 ## Writing a decision tree
 
 A route is a `step.judge.choose` state that picks one of a recipe's branches, and a desk twin, a `step.desk.choose` state
@@ -741,7 +749,7 @@ The `--json` output is the served body as the CLI's serializer prints it: `list`
   outcome and the outputs required on it), the answer line per park reason (`--grant 1`, `--grant-tokens <half the
   state's budget>`, `--text`, `--resume [--text]`, `--resume`, `--accept`, and the approval or cancel a spec-conflict
   needs), the drift line for a drift recorded behind a park, the budgets, and `allowedCommands`. A spec-conflict park
-  whose only way out is an approval or a cancel (revoked, child revoked, drift) offers no `answer`.
+  whose only way out is an approval or a cancel (revoked, child revoked, drift) offers no `answer`. An open park or escalation serves one `answer` entry per fitting variant, each under its catalog id (`answer-text`, `answer-resume`, `answer-grant`, `answer-grant-tokens`, `answer-accept`, `answer-reject`), the status line's own variant first, each with the full command that runs it (the status line itself may keep its hint form, such as `--resume [--text <answer>]`; `--text <answer>` stays a template because the text is the person's). A suspension that mirrors a child serves only the variants its reason alone fixes (rounds, no-progress, timeout, no-runtime). An escalation from a child and a mirrored needs-answer, budget or spec-conflict park serve none, and their status `answer` line points at the child (`sindri workflow answer <address> <the child's answer>`, `(forwarded to <child>)`, action id `answer-text`) and is marked explicitly: `via: "child"` and `child: <the child's address>` on the status answer record (both omitted on every other answer; `child` is present only when the served view lists the mirrored child, matched by its instance id, and the control plane does not list children yet, so expect `via: "child"` without `child` until P7 wires child propagation into the served view); the needs-you row carries the same `via` marker, so a client never reads the cli text to tell a pointer from a form. A budget grant's amount is whole `k` or `M` when exact, else the plain integer, so it parses (`TokenCounts.Format`) whenever a cap exists to halve; a budget park with no cap (a `gate.budget` refusal on a recipe with no budget) serves no `answer-grant-tokens` entry, and its status line keeps the `--grant-tokens <n>` hint. The one table of which variants fit is `AnswerVariants.Fitting`, shared by the answer check and the served list.
 - **Layout** (`StatusLayout`): the labels take 12 columns, `next` wraps at 120, and the lines come in a fixed order:
   next, child, inputs, drift, timeout, paused, budget (beside an open desk task, as §6.4 shows it), answer, commands.
   An input's digest prints as its first four hex digits and `...` (ASCII for §6.4's ellipsis). The answer note is set

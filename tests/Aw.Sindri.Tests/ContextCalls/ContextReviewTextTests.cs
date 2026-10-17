@@ -72,10 +72,10 @@ public sealed class ContextReviewTextTests
     {
         var node = NodeKey.From("feature:tabs.tab-manager");
         var link = LinkId.From("edge:0123456789abcdef");
-        var file = new LensFile("src/tabs/TabGroups.ts", [NodeKey.From("feature:tabs.tab-groups")], [], Provenance.Model, 0.74, Confirmed: false, Suggested: true, link);
-        var record = new LensRecord(NodeKey.From("record:linear:issue/1"), "Tab manager spec", "linear", [node], Trust.Untrusted, CitationState.Unchecked, []);
+        var file = new LensFile("src/tabs/TabGroups.ts", [NodeKey.From("feature:tabs.tab-groups")], [], Provenance.Model, 0.74, Confirmed: false, Suggested: true, link, "src/tabs/TabGroups.ts", NodeKind.Code, Trust.Untrusted);
+        var record = new LensRecord(NodeKey.From("record:linear:issue/1"), "Tab manager spec", "linear", [node], Trust.Untrusted, CitationState.Unchecked, [], NodeKind.Record);
         var own = new LensItem(node, "Tab manager", NodeKind.Feature, Provenance.Human, 1, Confirmed: true, Trust.Trusted);
-        var decision = new LensDecision(NodeKey.From("decision:2"), "stays expanded", [node], [NodeKey.From("decision:1")], Quotes: null, Provenance.Human, Confirmed: true, Trust.Trusted, At: null, Quote: null);
+        var decision = new LensDecision(NodeKey.From("decision:2"), "stays expanded", [node], [NodeKey.From("decision:1")], Quotes: null, Provenance.Human, Confirmed: true, Trust.Trusted, At: null, Quote: null, "stays expanded", NodeKind.Decision);
         return new LensesView(1, new LensAnchor(node, "Tab manager", NodeKind.Feature, Trust.Trusted), "v13", Draft: false, 2, DateTimeOffset.UnixEpoch,
             new LensBands(
                 new IntentBand([record], [decision], new IntentCounts(1, 1, Orphaned: null), Truncated: false),
@@ -83,6 +83,7 @@ public sealed class ContextReviewTextTests
                 new CodeBand([file], LensSymbols.Unavailable, new CodeCounts(1, 0, 1), Truncated: false)),
             [], [new LensConflict(ConflictKind.Supersedes, node, NodeKey.From("decision:2"), "decision:1", "decision:2 supersedes decision:1", [], [])],
             new LensCoverage(6, new CoverageIntent(4, 6), new CoverageProduct(3, 6), new CoverageCode(2, 6, "file", 1), [new LensGap(NodeKey.From("surface:command/x"), [GapKind.Intent, GapKind.Code], Note: null)]),
+            new LensSearched([], "v13", 2, [], [], new SearchedBands(new BandSearched(Empty: false), new BandSearched(Empty: false), new BandSearched(Empty: false))),
             [], new Dictionary<string, Citation>(StringComparer.Ordinal));
     }
 

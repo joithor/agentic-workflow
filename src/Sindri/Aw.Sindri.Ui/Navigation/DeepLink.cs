@@ -34,7 +34,7 @@ internal sealed record DeepLink(DeepLinkKind Kind, string? Subject)
 
         var kind = _kinds.FirstOrDefault(k => text.AsSpan(0, slash).SequenceEqual(k.Prefix)).Kind;
         var subject = text![(slash + 1)..]; // why: slash >= 0 only when text isn't null
-        if (kind is null || !(kind == DeepLinkKind.Workflow ? IsAddress(subject) : IsSubject(subject)))
+        if (kind is null || !(kind == DeepLinkKind.Workflow ? IsAddress(subject) : kind == DeepLinkKind.Recipe ? IsRecipe(subject) : IsSubject(subject)))
         {
             return false;
         }
@@ -69,6 +69,10 @@ internal sealed record DeepLink(DeepLinkKind Kind, string? Subject)
     // A workflow address is the instance's, whose tail may hold segments ('ITM-01JC8/step'): each is a subject, none a dot step.
     private static bool IsAddress(string s) =>
         s.Length <= MaxSubject && s.Split('/').All(segment => segment is not ("." or "..") && IsSubject(segment));
+
+    // A recipe link names the recipe, and may pin a version after '@': the hash, whole or by a prefix ('id@hash12').
+    private static bool IsRecipe(string s) =>
+        s.Length <= MaxSubject && s.Split('@') is var parts && parts.Length <= 2 && parts.All(IsSubject);
 
     private static bool IsSubject(string s) =>
         s.Length is > 0 and <= MaxSubject && s.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or '.' or ':');

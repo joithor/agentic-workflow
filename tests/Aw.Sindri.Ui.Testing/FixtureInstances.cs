@@ -28,6 +28,11 @@ internal static class FixtureInstances
     /// <summary>The root list as served: every root row and the root-wide counts.</summary>
     internal static InstanceList Root => _root.Value;
 
+    /// <summary>One list golden of the instance list route, read through the app's records.</summary>
+    /// <param name="scenario">The scenario ('open', 'recipe-filter', 'preview-missing-input').</param>
+    /// <returns>The list as served.</returns>
+    internal static InstanceList List(string scenario) => Read<InstanceList>(GoldenFiles.Api("workflow-instances", scenario));
+
     /// <summary>The root rows.</summary>
     internal static IReadOnlyList<InstanceSummary> Rows => Root.Instances;
 
@@ -56,6 +61,31 @@ internal static class FixtureInstances
     /// <param name="row">The row.</param>
     /// <returns>Whether it is open.</returns>
     internal static bool IsOpen(InstanceSummary row) => IsOpen(row.State, row.States.Select(s => (s.State, s.Terminal)));
+
+    /// <summary>One instance golden in full, read through the app's records.</summary>
+    /// <param name="scenario">The scenario ('project-build', 'incident-loop').</param>
+    /// <returns>The instance as served.</returns>
+    internal static InstanceDetail Detail(string scenario) => Read<InstanceDetail>(GoldenFiles.Api("workflow-instance", scenario));
+
+    /// <summary>One recipe golden in full, read through the app's records.</summary>
+    /// <param name="id">The recipe id ('workflow.project'); a recipe golden is named by the id its body carries.</param>
+    /// <returns>The recipe as served.</returns>
+    internal static RecipeView Recipe(string id) => Read<RecipeView>(GoldenFiles.Api("workflow-recipe", id));
+
+    /// <summary>Every recipe golden's id (the not-found refusal is not one).</summary>
+    internal static IReadOnlyList<string> RecipeIds => [.. WorkflowAnswers.NamedRecipeGoldens.Values.Order(StringComparer.Ordinal)];
+
+    /// <summary>One status golden, read through the app's records (a state the instance goldens don't show in full, such as taken-over).</summary>
+    /// <param name="scenario">The scenario ('taken-over', 'parked-drift').</param>
+    /// <returns>The status as served.</returns>
+    internal static StatusFields Status(string scenario) => Read<StatusFields>(GoldenFiles.Api("workflow-status", scenario));
+
+    /// <summary>A golden changed by a test (a member removed or nulled), read through the app's records.</summary>
+    /// <typeparam name="T">The record.</typeparam>
+    /// <param name="node">The edited body.</param>
+    /// <returns>The record.</returns>
+    internal static T Parse<T>(System.Text.Json.Nodes.JsonNode node)
+        where T : class => Read<T>(node.ToJsonString());
 
     private static T Read<T>(string body)
         where T : class =>
