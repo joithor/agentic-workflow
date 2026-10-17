@@ -30,7 +30,10 @@ internal sealed record Settlement
     /// <summary>The settling provider's chain position (the skipped count for an escalation).</summary>
     public int ChainPosition { get; init; }
 
-    /// <summary>The probabilities to keep in the details.</summary>
+    /// <summary>The probabilities only the deciding answer sent; the envelope carries these and never an earlier provider's.</summary>
+    public IReadOnlyDictionary<string, double>? DecidingProbabilities { get; init; }
+
+    /// <summary>The probabilities to keep in the details (the deciding answer's, else an earlier below-threshold answer's: the row may keep the merged value).</summary>
     public IReadOnlyDictionary<string, double>? Probabilities { get; init; }
 
     /// <summary>What the fallback rules would have said.</summary>

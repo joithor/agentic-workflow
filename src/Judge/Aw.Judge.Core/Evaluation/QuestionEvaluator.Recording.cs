@@ -39,7 +39,7 @@ public sealed partial class QuestionEvaluator
         return new DecidedOutcome(decision, settlement.Confidence, model, settlement.ReasonCode, run.Id)
         {
             Extra = Declared(extra, question.ExtraProperties),
-            Probabilities = question.ReportsTrace ? settlement.Probabilities : null,
+            Probabilities = question.ReportsTrace ? settlement.DecidingProbabilities : null,
         };
     }
 
