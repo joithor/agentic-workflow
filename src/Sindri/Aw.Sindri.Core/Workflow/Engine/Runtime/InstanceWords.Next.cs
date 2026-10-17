@@ -79,14 +79,8 @@ internal sealed partial record InstanceWords
             : "the next state";
 
     /// <summary>The 'workflow complete' line for the task: its first declared outcome and the outputs required on it.</summary>
-    private string Complete(DeskTask task)
-    {
-        var outcome = task.Outcomes.Count > 0 ? task.Outcomes[0].Value : "<outcome>";
-        var outputs = task.Outputs
-            .Where(o => o.RequiredOn.Any(r => r.Value == outcome))
-            .Select(static o => $" --output {o.Fact.Value}=<file>");
-        return $"sindri workflow complete {Address} --run {task.Run.Value} --outcome {outcome}{string.Concat(outputs)}";
-    }
+    private string Complete(DeskTask task) =>
+        CompleteCommand.Line(Address, task.Run, task.Outcomes.Count > 0 ? task.Outcomes[0] : null, task.Outputs);
 
     /// <summary>The state's recipe 'next' with its variables filled in (§3.7); one the engine can't fill stays as written.</summary>
     private string RecipeNext() =>

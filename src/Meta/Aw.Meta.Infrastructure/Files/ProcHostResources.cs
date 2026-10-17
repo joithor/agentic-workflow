@@ -20,7 +20,7 @@ internal sealed class ProcHostResources(string stateDirectory, string heavyLock)
         try
         {
             var meminfo = ProcFormat.MemInfo(await File.ReadAllTextAsync("/proc/meminfo", cancellationToken).ConfigureAwait(false));
-            return new HostResources(meminfo.Total, meminfo.Available, meminfo.SwapUsed, DiskSpace.Free(stateDirectory));
+            return new HostResources(meminfo.Total, meminfo.Available, meminfo.SwapUsed, DiskSpace.Free(stateDirectory), meminfo.SwapTotal);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or FormatException)
         {
