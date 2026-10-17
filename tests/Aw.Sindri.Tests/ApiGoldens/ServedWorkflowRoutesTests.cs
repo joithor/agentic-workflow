@@ -213,11 +213,11 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
     private static async Task<InstanceList> ListUntil(Served served, string path, Func<InstanceList, bool> holds)
     {
         var options = served.Sindri.GetRequiredService<JsonSerializerOptions>();
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
+        var deadline = RealTime.NowDateTime + TimeSpan.FromSeconds(20);
         while (true)
         {
             var list = JsonSerializer.Deserialize<InstanceList>(await Read(served, path), options)!;   // visibility is eventually consistent
-            if (holds(list) || DateTime.UtcNow > deadline)
+            if (holds(list) || RealTime.NowDateTime > deadline)
             {
                 return list;
             }
