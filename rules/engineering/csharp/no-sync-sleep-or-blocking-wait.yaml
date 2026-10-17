@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.no-sync-sleep-or-blocking-wait
+kind: engineering
+section: "4b.3"
+text: "No Thread.Sleep, TaskAwaiter.GetResult, Task.Wait or Task<T>.Result in production code: await instead."
+why: "Blocking a thread on a task starves the pool and deadlocks under a synchronization context."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: review
+    id: "blocking waits"
+    status: active
+    note: "RS0030 entries land in BannedSymbols.All.txt with the cleanup PR"
+gap: open
+gapNote: "About 11 call sites on main (Sleep, GetResult, Task.Wait). The RS0030 entries join BannedSymbols.All.txt in the cleanup PR together with their fixes, because a banned symbol with a live use fails the build."
+source:
+  type: desk
+  ref: "https://github.com/davidfowl/AspNetCoreDiagnosticScenarios/blob/master/AsyncGuidance.md"
+status: active

@@ -161,3 +161,35 @@ records:
     section: "4b.9"
   - id: engineering.csharp.rule-records-name-their-check
     section: "4b.9"
+  - id: engineering.csharp.no-dispose-before-task-completes
+    section: "4b.3"
+  - id: engineering.csharp.await-when-state-needs-it
+    section: "4b.3"
+  - id: engineering.csharp.dispose-owned-resources
+    section: "4b.3"
+  - id: engineering.csharp.sql-is-constant
+    section: "4b.2"
+  - id: engineering.csharp.no-sync-sleep-or-blocking-wait
+    section: "4b.3"
+  - id: engineering.csharp.tcs-runs-continuations-async
+    section: "4b.3"
+  - id: engineering.csharp.tests-use-fake-time
+    section: "4b.5"
+  - id: engineering.csharp.no-async-void
+    section: "4b.3"
+  - id: engineering.csharp.scheduler-explicit
+    section: "4b.3"
+  - id: engineering.csharp.bug-class-roslynator-pack
+    section: "4b.6"
+  - id: engineering.csharp.fdg-api-shape-pack
+    section: "4b.3"
+  - id: engineering.csharp.no-multiple-enumeration
+    section: "4b.3"
+  - id: engineering.csharp.no-dead-statics
+    section: "4b.3"
+  - id: engineering.csharp.dead-condition
+    section: "4b.3"
+  - id: engineering.csharp.port-methods-take-token
+    section: "4b.3"
+  - id: engineering.csharp.small-bans
+    section: "4b.6"
