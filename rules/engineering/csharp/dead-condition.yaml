@@ -1,0 +1,19 @@
+schemaVersion: 1
+id: engineering.csharp.dead-condition
+kind: engineering
+section: "4b.3"
+text: "No always-true or always-false condition: remove the dead branch or the check."
+why: "A condition that flow analysis proves constant is dead code or a wrong assumption."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: analyzer
+    id: "CA1508"
+    status: active
+gap: closed
+relatedIds: ["RCS1215"]
+source:
+  type: desk
+  ref: "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1508"
+status: active

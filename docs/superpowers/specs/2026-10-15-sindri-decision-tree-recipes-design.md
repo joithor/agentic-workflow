@@ -75,7 +75,7 @@ the transition (§8.6).
 ### 3.2 Choices grammar and rules
 
 An entry is `"<outcome>: <criterion>"`. The outcome is the text before the **first** `": "` and matches
-`[a-z][a-z0-9]{0,31}`; the criterion is the rest, 1 to 400 characters, and may contain colons. Entries must be quoted
+`[a-z][A-Za-z0-9]{0,31}` (camelCase); the criterion is the rest, 1 to 400 characters, and may contain colons. Entries must be quoted
 in YAML, since an unquoted `- ui: …` is a mapping. The validator adds (§8.1):
 
 | Rule | Check | Message names |
@@ -219,7 +219,7 @@ its terminal outcomes.
 |---|---|---|---|---|---|
 | `workflow.plan` | A stage plan, a verification plan written before code, and a judge check that it states an observable signal | `step.plan.write`, `step.plan.verification`, `step.judge.choose` (`ready`, `underspecified`) | `fact:plan`, `fact:verificationPlan` | `resolved`, `unresolved` | specToProvenPR 1–2 |
 | `workflow.investigate` | Root cause to `diagnosed`, with a confirmed hypothesis | `step.rootcause.investigate` (`diagnosed`, `unfixed`) | `fact:rootCause` | `resolved`, `unresolved` | bugFix 2 |
-| `workflow.reproduce` | A route between a UI check and a test check, then a check that fails on the base for the reported reason, frozen as the baseline | `step.judge.choose` (`ui-check`, `test-check`), `step.reproduce.ui-check` / `step.reproduce.test-check` (`reproduced`, `not-reproduced`), each through `bugfix-state` | `fact:check` (kind, file, command), `fact:baseline` | `resolved`, `unresolved` (not reproduced) | bugFix 3 |
+| `workflow.reproduce` | A route between a UI check and a test check, then a check that fails on the base for the reported reason, frozen as the baseline | `step.judge.choose` (`uiCheck`, `testCheck`), `step.reproduce.ui-check` / `step.reproduce.test-check` (`reproduced`, `notReproduced`), each through `bugfix-state` | `fact:check` (kind, file, command), `fact:baseline` | `resolved`, `unresolved` (not reproduced) | bugFix 3 |
 | `workflow.implement` | Test-first build in a per-run worktree, looping on the checks | `step.produce`, `step.checks` (the existing Steps) under `loop: revisions` | `fact:diff`, `fact:branch` | `resolved`, `unresolved` | specToProvenPR 3; bugFix 4 (mode A) |
 | `workflow.implement-split` | Mode C: one implementer per area, in sequence on one worktree, each given the previous diff | `step.produce` per area, under `loop: areas` | `fact:diff`, `fact:branch` | `resolved`, `unresolved` | bugFix 4 (mode C) |
 | `workflow.hand-test` | Use the change by hand in the running app; record what was done, expected and seen | `step.handtest.run` (`works`, `broken`) | `fact:manualTest` | `resolved`, `unresolved` | specToProvenPR 4 |
@@ -228,7 +228,7 @@ its terminal outcomes.
 | `workflow.evidence-api` | An API or CLI contract run (§5.2) | `step.evidence.api-plan`, `step.evidence.api-run` (`passed`, `failed`) | `fact:evidenceSummary` | same | new |
 | `workflow.evidence-db` | A persisted-state run (§5.2) | `step.evidence.db-plan`, `step.evidence.db-run` (`passed`, `failed`) | `fact:evidenceSummary` | same | new |
 | `workflow.evidence-all` | The three above in sequence, as children, then one combine Step (§5.3) | `step.evidence.combine` (`done`; block runtime, pure) | `fact:evidenceSummary` (the three combined) | same | new |
-| `workflow.evidence-other` | The evidence the human used, and why no block fitted | `step.evidence.desk` (`recorded`, `none-found`; human-only) | `fact:evidenceSummary`, `fact:evidenceReason` | `resolved` (recorded), `unresolved` (none found) | DT5 |
+| `workflow.evidence-other` | The evidence the human used, and why no block fitted | `step.evidence.desk` (`recorded`, `noneFound`; human-only) | `fact:evidenceSummary`, `fact:evidenceReason` | `resolved` (recorded), `unresolved` (none found) | DT5 |
 | `workflow.evidence` | The route of §3.3 over the evidence recipes and `none`, reconverged | `step.judge.choose`, `step.desk.choose`, `step.evidence.none` | `fact:evidenceSummary`, `fact:decision` | `resolved`, `unresolved` | specToProvenPR 6; bugFix 5 |
 | `workflow.review-loop` | `/review` to 0 blocking and 0 issue findings, cap 5, then one narrow re-check (§4.1) | `step.review.run`, `step.review.fix`, `step.review.recheck` | `fact:review` | `resolved`, `unresolved`, `failed` (behaviour wrong) | specToProvenPR 8 |
 | `workflow.ready` | The GREEN gate (the full suite and CI on the PR head), the proof re-check if review changed non-test source, the PR body, `ready #N` to the merge orchestrator | `step.ready.green` (`green`, `red`), `step.ready.recheck` (`pass`, `fail`, `skipped`), `step.ready.body` (`done`); effect `effect.notify.desk` on the last transition | `fact:ready` (head sha, gate scopes, proof and review state; input `fact:pr` isn't re-declared, `RCP-OUT-003`) | `resolved`, `unresolved` | specToProvenPR 9 |
@@ -236,9 +236,9 @@ its terminal outcomes.
 
 Steps that the meta recipes use directly: `step.intake.ticket` (desk, `done`; writes `fact:issue`, `fact:expected`,
 `fact:actual`), `step.pr.open-draft` (desk, `done`; writes `fact:pr`), and three bugfix Steps over `bugfix-state`:
-`step.bugfix.start-attempt` (block, `single`, `split`, `cap-reached`: it passes the mode on, so the implement
+`step.bugfix.start-attempt` (block, `single`, `split`, `capReached`: it passes the mode on, so the implement
 branch follows it), `step.bugfix.record-candidate` (block, `recorded`), `step.bugfix.recheck` (block-then-agent, `passed`,
-`failed`) and `step.bugfix.judge` (block, `resolved`, `partial`, `unresolved`, `needs-human`). Every Step descriptor above lands in DT-R (§10),
+`failed`) and `step.bugfix.judge` (block, `resolved`, `partial`, `unresolved`, `needsHuman`). Every Step descriptor above lands in DT-R (§10),
 descriptor-only and `deskCapable`, so every recipe validates, evals and runs at the desk before P8 gives its Steps an
 agent.
 
@@ -267,7 +267,7 @@ states:
 transitions:
   - { from: [review, recheck], to: clean, on: step.completed, when: { outcome: clean },           produces: [fact:review] }
   - { from: review,  to: fix,     on: step.completed, when: { outcome: findings },        produces: [fact:review] }
-  - { from: [review, recheck], to: wrong, on: step.completed, when: { outcome: behaviour-wrong }, produces: [fact:review] }
+  - { from: [review, recheck], to: wrong, on: step.completed, when: { outcome: behaviourWrong }, produces: [fact:review] }
   - { from: fix,     to: review,  on: step.completed, when: { all: [ { outcome: fixed }, { loop: rounds, below: cap } ] } }
   - { from: fix,     to: recheck, on: step.completed, when: { all: [ { outcome: fixed }, { not: { loop: rounds, below: cap } } ] } }
   - { from: recheck, to: stuck,   on: step.completed, when: { outcome: findings },        produces: [fact:review] }
@@ -279,7 +279,7 @@ evals:
 ```
 
 - `step.review.run` reports `clean` (0 blocking and 0 issue findings, classified by substance as specToProvenPR's
-  "Blocking or not" says), `findings`, or `behaviour-wrong` (a finding that shows the behaviour itself is wrong,
+  "Blocking or not" says), `findings`, or `behaviourWrong` (a finding that shows the behaviour itself is wrong,
   specToProvenPR step 8). Suggestions and nits are answered in writing inside the Step and never count.
 - The cap and the narrow re-check make the #184 precedent explicit. `stuck` is `unresolved` and `wrong` is `failed`,
   so the parent branches on the outcome: `failed` goes back to implement, and `unresolved` parks for the owner (§6.2).
@@ -333,7 +333,7 @@ appearing becomes a proposal for a new evidence block and a new choice: a review
 that rule: it freezes the check and records each run (BugFix). The recipes call it rather than re-implement it:
 
 - `step.reproduce.*-check` runs the check through `bugfix-state` at the base and reports `reproduced` (it failed for
-  the reported reason) or `not-reproduced` (it passed). Those are Step outcomes, not a transition's evidence: a failing
+  the reported reason) or `notReproduced` (it passed). Those are Step outcomes, not a transition's evidence: a failing
   evidence clause is a refusal, and a refusal parks `needs-answer` instead of ending `unresolved` (WF §5.8).
 - After the fix, `step.bugfix.recheck` runs the frozen check on the candidate through `bugfix-state` and reports
   `passed` or `failed`.
@@ -355,7 +355,7 @@ intake (desk) ─► investigate ─► reproduce ─► route-mode ─► attem
                                                                                       │ passed       │ failed
                                                                                       ▼              ▼
               ┌──── partial / unresolved, attempts < cap ◄── judge ◄── evidence             back to route-mode
-              ▼                                       │ resolved   │ needs-human          (attempts < cap)
+              ▼                                       │ resolved   │ needsHuman          (attempts < cap)
           route-mode ─► attempt                       ▼            ▼
                                              report ─► fixed   owner (desk)
           attempts at cap, or not reproduced ─► report ─► not-fixed
@@ -368,13 +368,13 @@ intake (desk) ─► investigate ─► reproduce ─► route-mode ─► attem
   is always run; the route adds evidence the check alone doesn't give (an api diff behind a UI bug, say).
 - `judge` is `step.bugfix.judge`, which runs `bugfix-state judge`: the helper builds the `resolution-check` input from
   its own state and records the verdict once per candidate, its guard against re-rolled verdicts (BugFix). Outcomes:
-  `resolved`, `partial`, `unresolved`, and `needs-human` (the Judge escalated), which goes to the human-only
+  `resolved`, `partial`, `unresolved`, and `needsHuman` (the Judge escalated), which goes to the human-only
   `step.owner.decide`. The evidence summary reaches it through the children's outputs (§8.4).
 - **One attempt counter.** `bugfix-state`'s attempt count (at most 3) is authoritative. `attempt`
   (`step.bugfix.start-attempt`) runs after `route-mode`, reads the mode from its `fact:decision`, and calls
   `start-attempt --mode` before each round; a failed recheck or a `partial` verdict goes back to `route-mode` and so
   opens a new attempt, so the shared `workflow.implement` stays
-  bugfix-agnostic. The recipe's `loop: attempts`, cap 3, mirrors it, and `cap-reached` goes to the unfixed report.
+  bugfix-agnostic. The recipe's `loop: attempts`, cap 3, mirrors it, and `capReached` goes to the unfixed report.
 - It ends in `workflow.report`, never in `workflow.ready`: the skill doesn't open a PR, and neither does the recipe.
   `step.bugfix.record-candidate` runs after each implement, and `step.report.write` calls `bugfix-state advance
   report` (with `--unresolved` on the unfixed path), so `bugfix-state`'s own state matches the instance's. Two
@@ -539,7 +539,7 @@ caller class `human` (API §4). A session gets `SND-AUTH-002`, as for a protecte
 It applies to `step.desk.choose`, `step.evidence.desk` and `step.owner.decide`, and to any `deskCapable` Step whose
 runtime is `block` while it runs on the desk (`step.judge.choose` before DT-J, or on a fallback), so a session can't
 pick a branch through the route state itself. Every desk completion event already
-records its actor, which `workflow events` shows.
+records its actor, which `workflow events` shows. The refusal lives in `CompleteStep` (`EngineFilledReport.HumanOnlyRefusal`), before the nonce claim, so nothing is consumed; a session report on an instance that can't be read is refused with that read error. Today `CompleteStep` is a desk-class command, so the command chain (`AuthorizingService`) refuses every session with its generic `SND-AUTH-002` before the service runs; the per-Step check, with its full-command message, is defence in depth that takes over once a non-human class can reach `CompleteStep` (step reports open to sessions, P10).
 
 ### 8.6 Tracing a route (engine; DT-J)
 
@@ -673,7 +673,7 @@ found anything CRITICAL. Revision 2 fixes every HIGH and MEDIUM finding as follo
   scaffold and the views (§8.1). Parameter inputs are wired (`InputsFrom`). The block runtime contract is spelled out
   (§8.2). Sindri reaches Judge through a `cli` edge (§8.3). Descriptor hashes stay put (§8.1). The phase graph is
   rebuilt: descriptors land in DT-V and DT-R, and DT-B needs P7 and the evidence activity. All recipes live in one
-  directory (§4). `behaviour-wrong` is in §4.1. Reproduce reports Step outcomes (§5.5), and there is one attempt
+  directory (§4). `behaviourWrong` is in §4.1. Reproduce reports Step outcomes (§5.5), and there is one attempt
   counter (§6.1). Child `cancelled` is handled (§3.5). The edges and the Evidence Judge adapter are declared (§8.8).
   The wrong rule id is fixed (`RCP-CAP-002`), and the CLIs get a `confidence` field (§8.3).
 - **Design:** §9 is new: the desk choice, empty states, the choice control, the route column, and the deep-child NOW

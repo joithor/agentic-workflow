@@ -99,13 +99,25 @@ public static partial class EvalScaffold
             : [.. simulation.Recipe.Transitions
                 .Where(t => t.On == TriggerNames.WaitSatisfied && t.From.Contains(simulation.Instance.State, StringComparer.Ordinal))
                 .Select(static t => t.When?.Outcome).Distinct(), null];
-        return outcomes.Distinct().Select(static o => new EvalTrigger(TriggerNames.WaitSatisfied, o, Outputs: null, Park: null));
+        var present = wait.Child is { } child && simulation.Children.Resolve(child.Recipe) is { } found ? ChildOutputs.PresentOn(found.Recipe) : null;
+        return outcomes.Distinct().Select(o => new EvalTrigger(TriggerNames.WaitSatisfied, o, ChildLineOutputs(wait.Child, o, present), Park: null));
+    }
+
+    /// <summary>The outputs a child always carries on <paramref name="outcome"/>, as placeholder content (null when it carries none).</summary>
+    private static Dictionary<FactKey, JsonElement>? ChildLineOutputs(ChildWait? child, OutcomeName? outcome, IReadOnlyDictionary<OutcomeName, IReadOnlySet<FactKey>>? present)
+    {
+        if (child is null || outcome is not { } reported || present is null || !present.TryGetValue(reported, out var facts) || facts.Count == 0)
+        {
+            return null;
+        }
+
+        return facts.ToDictionary(static f => f, f => EvalFacts.OfText($"{f.Value} from {child.Recipe.Value} ({reported.Value})"));
     }
 
     /// <summary>The outputs a Step must write on <paramref name="outcome"/>, as placeholder content.</summary>
     private static Dictionary<FactKey, JsonElement>? Outputs(BlockDescriptor descriptor, OutcomeName outcome)
     {
-        var required = descriptor.Outputs.Where(o => StepOutputs.RequiredOn(o, outcome) && o.EngineFilled != true).ToDictionary(
+        var required = descriptor.Outputs.Where(o => StepOutputs.CallerWritesOn(o, outcome)).ToDictionary(
             static o => o.Fact, o => EvalFacts.OfText($"{o.Fact.Value} from {descriptor.Id.Value} ({outcome.Value})"));
         return required.Count == 0 ? null : required;
     }

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/test-grep.sh"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/../find-duplicate-skills.sh"
 
@@ -38,11 +39,11 @@ test_ignores_non_duplicate() {
   # brandkit is aw-only, agentic-workflow is wa-only: neither should appear
   local actual
   actual="$(find_duplicate_skills "$FIXTURES/aw-skills.txt" "$FIXTURES/wa-skills.txt")"
-  if echo "$actual" | grep -q "brandkit"; then
+  if echo "$actual" | has "brandkit"; then
     echo "FAIL: brandkit (aw-only) should not be reported as a duplicate"
     exit 1
   fi
-  if echo "$actual" | grep -q "agentic-workflow"; then
+  if echo "$actual" | has "agentic-workflow"; then
     echo "FAIL: agentic-workflow (wa-only, no camelCase counterpart) should not be reported"
     exit 1
   fi

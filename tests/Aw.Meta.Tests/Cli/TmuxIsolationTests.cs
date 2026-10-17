@@ -27,7 +27,7 @@ public sealed class TmuxIsolationTests : IDisposable
     public async Task Health_and_lanes_with_a_non_Claude_lane_call_the_stub_and_the_lane_reads_as_down()
     {
         _ = await _cli.Run("team-init", "--team", "t1", "--repo", "/r", "--lanes", "meta,api");
-        var sessions = Directory.CreateDirectory(_cli.File("meta/lane-sessions")).FullName;
+        var sessions = Directory.CreateDirectory(_cli.File("meta/teams/t1/lane-sessions")).FullName;
         await File.WriteAllTextAsync(Path.Combine(sessions, "api"), "s-1\n", TestContext.Current.CancellationToken);
         await File.WriteAllTextAsync(Path.Combine(sessions, "api.agent"), """{"agent":"codex","processName":"codex","hooks":true}""", TestContext.Current.CancellationToken);
 

@@ -18,18 +18,22 @@ internal static class GateRunCommand
             ? CommandOutput.Call<GateRunRequest, GateRunResponse>(context, new GateRunRequest(pr, [.. context.Line.Positionals.Skip(1)]), Text, static r => r.Gate.Verdict != GateVerdict.Pass)
             : Task.FromResult(PrArgument.Usage(context, Entry));
 
-    private static string Text(GateRunResponse response)
+    private static string Text(GateRunResponse response) =>
+        string.Join(Environment.NewLine, [.. Lines(response.Gate, stack: false), .. response.Heavy is { } heavy ? [heavy.Line()] : Array.Empty<string>(), Result(response.Gate)]);
+
+    /// <summary>The gate's header and one line per step; a train gate's header also names the pull requests under it.</summary>
+    internal static IEnumerable<string> Lines(GateRecord gate, bool stack)
     {
-        var gate = response.Gate;
         var width = gate.Steps.Select(s => s.Name.Length).DefaultIfEmpty().Max();
-        return string.Join(
-            Environment.NewLine,
-            [
-                string.Create(CultureInfo.InvariantCulture, $"gate #{gate.Pr} run {gate.Run}: head {Short(gate.Head)} on main {Short(gate.Main)}; scopes: {(gate.Scopes.Count == 0 ? "none" : string.Join(", ", gate.Scopes))}"),
-                .. gate.Steps.Select(s => string.Concat("  ", s.Verdict == GateVerdict.Pass ? "PASS" : "FAIL", " ", s.Name.PadRight(width), "  ", s.Log)),
-                string.Create(CultureInfo.InvariantCulture, $"RESULT pr={gate.Pr} {gate.Verdict.ToString().ToUpperInvariant()}"),
-            ]);
+        var under = stack && gate.Stack.Count > 0 ? " stacked on " + string.Join(", ", gate.Stack.Select(s => string.Create(CultureInfo.InvariantCulture, $"#{s.Pr}"))) : string.Empty;
+        return
+        [
+            string.Create(CultureInfo.InvariantCulture, $"gate #{gate.Pr} run {gate.Run}: head {Short(gate.Head)} on main {Short(gate.Main)}{under}; scopes: {(gate.Scopes.Count == 0 ? "none" : string.Join(", ", gate.Scopes))}"),
+            .. gate.Steps.Select(s => string.Concat("  ", s.Verdict == GateVerdict.Pass ? "PASS" : "FAIL", " ", s.Name.PadRight(width), "  ", s.Log)),
+        ];
     }
+
+    internal static string Result(GateRecord gate) => string.Create(CultureInfo.InvariantCulture, $"RESULT pr={gate.Pr} {gate.Verdict.ToString().ToUpperInvariant()}");
 
     private static string Short(string sha) => sha.Length > 7 ? sha[..7] : sha;
 }

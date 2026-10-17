@@ -1,0 +1,41 @@
+{
+  "services": [
+    {
+      "name": "heartbeat",
+      "every": "5s",
+      "paused": false,
+      "lastRun": {
+        "slot": "2026-01-01T00:00:00.0000000Z",
+        "outcome": "ok",
+        "code": null,
+        "ranAt": "2026-01-01T00:00:00.0000000Z"
+      },
+      "nextSlot": "2025-12-31T23:59:05.0000000Z",
+      "job": null
+    },
+    {
+      "name": "phantom",
+      "every": "5s",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null
+    },
+    {
+      "name": "stuck",
+      "every": "5s",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null
+    }
+  ],
+  "empty": null,
+  "asOf": {
+    "cursor": 11,
+    "ledgerHead": 11,
+    "projectedAt": "2026-01-01T00:00:00.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}

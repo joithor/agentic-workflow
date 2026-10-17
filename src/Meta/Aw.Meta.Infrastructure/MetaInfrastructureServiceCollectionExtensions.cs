@@ -27,6 +27,7 @@ public static class MetaInfrastructureServiceCollectionExtensions
         return services
             .AddSingleton(settings)
             .AddSingleton(settings.Paths)
+            .AddSingleton(settings.Layout)
             .AddSingleton(sp => new MetaDatabase(MetaDatabase.OptionsFor(settings.StateDirectory), sp.GetRequiredService<TimeProvider>()))
             .AddScoped<IMessageStore, SqliteMessageStore>()
             .AddScoped<ILaneStore, SqliteLaneStore>()
@@ -40,9 +41,11 @@ public static class MetaInfrastructureServiceCollectionExtensions
             .AddScoped<ILanePane>(sp => new TmuxLanePane(sp.GetRequiredService<ICommandRunner>(), settings.Tmux, settings.TmuxSocket, sp.GetRequiredService<IMetaConfig>()))
             .AddScoped<ISessionDirectory>(sp => new LaneSessionDirectory(
                 new DirectorySessionDirectory(settings.SessionsDirectory), sp.GetRequiredService<IMetaConfig>(), sp.GetRequiredService<ILaneFiles>(), sp.GetRequiredService<ILanePane>()))
+            .AddScoped<ITeamCatalog>(sp => new FileTeamCatalog(settings.Layout, sp.GetRequiredService<ISessionDirectory>(), sp.GetRequiredService<JsonSerializerOptions>(), sp.GetRequiredService<TimeProvider>()))
             .AddSingleton<IProcessTable>(new ProcProcessTable(settings.StateDirectory))
             .AddSingleton<IProcessLocations, ProcessScanner>()
             .AddSingleton<IHostResources>(new ProcHostResources(settings.StateDirectory, settings.HeavyLock))
+            .AddSingleton<IHeavyReserve>(new FileHeavyReserve(settings.StateDirectory))
             .AddSingleton<ILogFiles, FileLogFiles>()
             .AddSingleton<IWorktreeFiles, DirectoryWorktreeFiles>()
             .AddSingleton<IDelay>(sp => new ClockDelay(sp.GetRequiredService<TimeProvider>()))

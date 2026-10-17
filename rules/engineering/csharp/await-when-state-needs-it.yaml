@@ -1,0 +1,18 @@
+schemaVersion: 1
+id: engineering.csharp.await-when-state-needs-it
+kind: engineering
+section: "4b.3"
+text: "A method that returns a task from inside using or try awaits it, so the resource lives until the task finishes and exceptions surface in the try."
+why: "Returning the task disposes the resource before the work ends and skips the catch."
+select:
+  languages: [csharp]
+  paths: ["src/**", "tests/**"]
+checks:
+  - type: analyzer
+    id: "RCS1229"
+    status: active
+gap: closed
+source:
+  type: desk
+  ref: "https://github.com/davidfowl/AspNetCoreDiagnosticScenarios/blob/master/AsyncGuidance.md"
+status: active

@@ -9,7 +9,8 @@ internal sealed class TaskGraph
 {
     private readonly Dictionary<TaskId, IReadOnlyList<TaskId>> _deps;
     private readonly Dictionary<TaskId, int> _position = [];
-    private readonly Dictionary<TaskId, BitArray> _reach = [];
+    private readonly BitArray?[] _reach;
+    private int[][]? _depsAt;
 
     internal TaskGraph(IReadOnlyList<PacketTask> tasks)
     {
@@ -19,6 +20,8 @@ internal sealed class TaskGraph
         {
             _position[Ids[i]] = i;
         }
+
+        _reach = new BitArray?[Ids.Count];
     }
 
     internal IReadOnlyList<TaskId> Ids { get; }
@@ -42,8 +45,16 @@ internal sealed class TaskGraph
     }
 
     /// <summary>True when a chain of dependencies orders <paramref name="a"/> and <paramref name="b"/> either way.</summary>
-    internal bool Ordered(TaskId a, TaskId b) =>
-        _position.TryGetValue(a, out var pa) && _position.TryGetValue(b, out var pb) && (Reach(a)[pb] || Reach(b)[pa]);
+    internal bool Ordered(TaskId a, TaskId b) => Ordered(Position(a), Position(b));
+
+    /// <summary>The task's index in <see cref="Ids"/>, or -1 for an id no task has.</summary>
+    internal int Position(TaskId id) => _position.TryGetValue(id, out var at) ? at : -1;
+
+    /// <summary>
+    /// <see cref="Ordered(TaskId, TaskId)"/> by <see cref="Position"/>: a pair loop over a large plan calls this
+    /// millions of times, so it does no hashing.
+    /// </summary>
+    internal bool Ordered(int a, int b) => a >= 0 && b >= 0 && (Reach(a)[b] || Reach(b)[a]);
 
     // One cycle through the group, from its smallest id: a depth-first walk inside the group (deps in declared order),
     // iterative so a long chain can't overflow the stack. Every member of a strongly connected group reaches the start.
@@ -83,21 +94,23 @@ internal sealed class TaskGraph
     }
 
     // Every task 'from' waits on, directly or not, as one bit per task (memory n²/8 bytes at most), computed once.
-    private BitArray Reach(TaskId from)
+    private BitArray Reach(int from)
     {
-        if (_reach.TryGetValue(from, out var known))
+        if (_reach[from] is { } known)
         {
             return known;
         }
 
+        // the walk is over positions, so it hashes nothing; an unknown dependency has no position and is skipped
+        _depsAt ??= [.. Ids.Select(id => _deps[id].Select(Position).Where(static at => at >= 0).ToArray())];
         var seen = new BitArray(Ids.Count);
-        var stack = new Stack<TaskId>(_deps[from]);
+        var stack = new Stack<int>(_depsAt[from]);
         while (stack.TryPop(out var next))
         {
-            if (_position.TryGetValue(next, out var at) && !seen[at])
+            if (!seen[next])
             {
-                seen[at] = true;
-                foreach (var dep in _deps[next])
+                seen[next] = true;
+                foreach (var dep in _depsAt[next])
                 {
                     stack.Push(dep);
                 }

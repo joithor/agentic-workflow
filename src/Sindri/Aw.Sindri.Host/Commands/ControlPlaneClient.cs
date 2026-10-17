@@ -4,6 +4,7 @@ using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Text;
 using Aw.Sindri.Features.GetStatus;
 
 namespace Aw.Sindri.Host.Commands;
@@ -102,7 +103,9 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
     /// <returns>The answer, or the API's error.</returns>
     public Task<Result<ApiAnswer<T>>> Post<TBody, T>(string route, TBody? body, CancellationToken ct)
     {
+#pragma warning disable CA2000 // Send disposes the content, on its failure paths and with the request
         var content = body is null ? null : new ByteArrayContent(AwJson.Serialize(body, options)) { Headers = { ContentType = new MediaTypeHeaderValue("application/json") } };
+#pragma warning restore CA2000
         return Send<T>(HttpMethod.Post, route, content, after: null, ct);
     }
 
@@ -178,7 +181,7 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
     {
         var problem = AwJson.Deserialize<ApiProblem>(bytes, options);
         return problem.IsSuccess && problem.Value.Title is { } code
-            ? new Error(code, Kind(status), Refusal(code, problem.Value.Detail ?? code))
+            ? new Error(code, Kind(status), Refusal(code, problem.Value.Detail ?? code) + RunningJob(code, problem.Value.Detail, problem.Value.RunningJob))
             : SindriErrors.ApiNoCode.With(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"the API answered HTTP {status} without an error code"));
     }
 
@@ -188,6 +191,10 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
         403 => ErrorKind.Forbidden,
         _ => ErrorKind.Invalid,
     };
+
+    /// <summary>A refused start names the job that is already running and the command that shows it, unless the route's detail already says so.</summary>
+    private static string RunningJob(string code, string? detail, string? job) =>
+        code == SindriErrors.JobConflict.Code && !string.IsNullOrEmpty(job) && detail?.Contains("(fix:", StringComparison.Ordinal) != true ? $" (fix: sindri jobs show {SafeText.Line(SafeText.Escape(job), 60)})" : string.Empty;
 
     /// <summary>A refused action class names why this CLI called as a session (workflow spec §4.2), so the reader knows what to change.</summary>
     private string Refusal(string code, string detail) =>

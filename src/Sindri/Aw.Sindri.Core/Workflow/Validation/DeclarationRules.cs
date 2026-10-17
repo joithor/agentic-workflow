@@ -111,7 +111,7 @@ internal sealed class DeclarationRules : IRecipeRules
         if (input.Kind is null)
         {
             yield return source.Finding("RCP-INPUT-001", path, $"{what} declares no kind",
-                "add kind: item | link | linear-project | webhook | file | text, paired with its type (item/item, file/file, text/text, link/link, linear-project and webhook/payload)");
+                "add kind: item | link | linear-project | webhook | file | text | packet | payload, paired with its type (item/item, file/file, text/text, link/link, packet/packet; payload, linear-project and webhook pair with payload)");
         }
 
         if (badType is null && badKind is null && Unpaired(input, what, path, source) is { } unpaired)
@@ -231,25 +231,17 @@ internal sealed class DeclarationRules : IRecipeRules
         return Unrecorded(recipe, output, path, context, source);
     }
 
-    /// <summary>OUT-002 for a state that records nothing like the output: an error, or information when the state waits on a child whose outcome can't be read here.</summary>
+    /// <summary>OUT-002 for a state that records nothing like the output.</summary>
     private static RecipeFinding? Unrecorded(Recipe recipe, RecipeOutput output, string path, ValidationContext context, RecipeSource source)
     {
         var state = recipe.States[output.From];
         var key = output.Key.Value;
         var name = output.From;
         // an input is a fact the recipe starts with, so it needs no state to record it
-        var produced = recipe.Transitions.Where(t => t.From.Contains(name, StringComparer.Ordinal)).SelectMany(t => t.Produces);
+        var produced = recipe.Transitions.Where(t => t.From.Contains(name, StringComparer.Ordinal)).SelectMany(t => t.Produces).Select(p => p.Fact);
         if (produced.Contains(output.Key) || recipe.Inputs.Any(i => i.Key == output.Key))
         {
             return null;
-        }
-
-        if (state.WaitFor?.Child is { } child)
-        {
-            return source.Finding("RCP-OUT-002", path,
-                $"output '{key}' comes from state '{name}', which waits on child '{child.Recipe.Value}'; whether the child's outcome carries it can't be checked here",
-                $"list '{key}' in 'produces' on the transition leaving '{name}' if the recipe should record it",
-                FindingSeverity.Information);
         }
 
         if (RecordedBy(state, context) is not { } recorded || recorded.Facts.Contains(output.Key))
@@ -263,7 +255,7 @@ internal sealed class DeclarationRules : IRecipeRules
             $"have the state's Step, a transition leaving it ('produces') or its wait record '{key}', or name the state that does");
     }
 
-    /// <summary>What a state's own trigger records: a Step's outputs, an event's facts, an answer's fact; null when its block or event can't be found (the block rules report that).</summary>
+    /// <summary>What a state's own trigger records: a Step's outputs, an event's facts, an answer's fact, a child's declared outputs; null when its block or event can't be found (the block rules report that).</summary>
     private static Recorded? RecordedBy(RecipeState state, ValidationContext context) => state switch
     {
         { Step: { } step } => context.Catalog.Find(step.Use) is { Kind: BlockKind.Step } descriptor
@@ -272,6 +264,9 @@ internal sealed class DeclarationRules : IRecipeRules
         { WaitFor.Event: { } kind } => context.Catalog.FindEvent(kind) is { } e ? new Recorded($"event '{kind.Value}'", e.Facts) : null,
         { WaitFor.Answer: { } answer } => new Recorded($"answer '{answer.Id.Value}'", [FactKey.Answer]),
         { WaitFor.Resource: not null } => new Recorded("resource", []),
+        { WaitFor.Child: { } child } => context.Children.Resolve(child.Recipe) is { } found
+            ? new Recorded($"child '{child.Recipe.Value}'", ChildOutputs.Declared(found.Recipe))   // an unresolved child is RCP-CHILD-001's
+            : null,
         _ => null,
     };
 

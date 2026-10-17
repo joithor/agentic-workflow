@@ -71,6 +71,9 @@ public static class EventTypes
     /// <summary>A human asked for the views to be rebuilt (not public).</summary>
     public const string ViewsRebuilt = "views.rebuilt";
 
+    /// <summary>A session appeared, started asking for approval, or went (the session collector; collector spec CO3).</summary>
+    public const string FleetChanged = "fleet.changed";
+
     /// <summary>A human created a work item.</summary>
     public const string ItemCreated = "item.created";
 
@@ -85,6 +88,24 @@ public static class EventTypes
 
     /// <summary>A human chose an option of a decision.</summary>
     public const string DecisionRecorded = "decision.recorded";
+
+    /// <summary>A job-class command was accepted and its work handed to the runtime (API P6).</summary>
+    public const string JobStarted = "job.started";
+
+    /// <summary>A job reported one progress line (API P6).</summary>
+    public const string JobProgress = "job.progress";
+
+    /// <summary>A job's work ended, succeeded or failed (API P6).</summary>
+    public const string JobFinished = "job.finished";
+
+    /// <summary>A human or service cancelled a running job (API P6).</summary>
+    public const string JobCancelled = "job.cancelled";
+
+    /// <summary>A human paused a background service (API P6).</summary>
+    public const string ServicePaused = "service.paused";
+
+    /// <summary>A human resumed a paused background service (API P6).</summary>
+    public const string ServiceResumed = "service.resumed";
 
     /// <summary>The event a background service records per run: 'service.&lt;name&gt;'.</summary>
     /// <param name="service">The service.</param>

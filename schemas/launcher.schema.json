@@ -9,7 +9,8 @@
       "viewer",
       "host",
       "agents",
-      "meta"
+      "meta",
+      "sessions"
     ],
     "viewer": [
       "kind",
@@ -40,7 +41,9 @@
       "processName",
       "transcripts",
       "usage",
-      "mcp"
+      "mcp",
+      "model",
+      "policy"
     ],
     "sessionIdModes": [
       "pre-chosen-uuid",
@@ -63,6 +66,18 @@
       "codex-overrides",
       "none"
     ],
+    "modelForms": [
+      "claude-flag",
+      "codex-flag",
+      "cursor-flag",
+      "none"
+    ],
+    "policyForms": [
+      "claude-settings-file",
+      "codex-overrides",
+      "cursor-config",
+      "none"
+    ],
     "meta": [
       "lanesAgent",
       "lanes"
@@ -83,7 +98,14 @@
       "{mcpConfig}",
       "{cmd...}"
     ],
-    "splicePlaceholder": "{cmd...}"
+    "splicePlaceholder": "{cmd...}",
+    "sessions": [
+      "enabled",
+      "pollSeconds",
+      "providers",
+      "tmuxSockets",
+      "claudeSessionsDir"
+    ]
   },
   "type": "object",
   "additionalProperties": false,
@@ -216,6 +238,9 @@
     },
     "meta": {
       "$ref": "#/$defs/meta"
+    },
+    "sessions": {
+      "$ref": "#/$defs/sessions"
     }
   },
   "$defs": {
@@ -415,6 +440,24 @@
             "none"
           ],
           "description": "Absent means \"none\" (the argvHash default)."
+        },
+        "model": {
+          "enum": [
+            "claude-flag",
+            "codex-flag",
+            "cursor-flag",
+            "none"
+          ],
+          "description": "Decided (owner, 2026-10-16). The built-in form that passes a per-run model id (cursor-flag is reserved and parks with SND-LAUNCH-013 until verified) on an unattended Step launch only (scoping-station spec L-17). Absent means \"none\" (the argvHash default). The form name is an argvHash input; the model id is not. The bash reader accepts the key and never applies it."
+        },
+        "policy": {
+          "enum": [
+            "claude-settings-file",
+            "codex-overrides",
+            "cursor-config",
+            "none"
+          ],
+          "description": "Decided (owner, 2026-10-16). The built-in form that passes a per-launch policy (a file for claude-settings-file; typed -c overrides, no file, for codex-overrides; cursor-config is reserved and parks with SND-LAUNCH-013 until verified) on an unattended Step launch only (scoping-station spec L-17). Absent means \"none\" (the argvHash default). The form name is an argvHash input; the policy path is not. The bash reader accepts the key and never applies it."
         }
       },
       "additionalProperties": false,
@@ -535,6 +578,45 @@
           "additionalProperties": {
             "$ref": "#/$defs/agentId"
           }
+        }
+      }
+    },
+    "sessions": {
+      "description": "The session collector's settings (spec 2026-10-16-sindri-session-collector-design.md section 9). Optional and additive; the bash reader accepts and ignores it.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Default true; false turns the whole collector off (SND-SESSION-002 disabled)."
+        },
+        "pollSeconds": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 30,
+          "description": "Pass cadence; default 2."
+        },
+        "providers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/agentId"
+          },
+          "uniqueItems": true,
+          "description": "Which catalog agents to discover; default every catalog entry."
+        },
+        "tmuxSockets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^/.+"
+          },
+          "uniqueItems": true,
+          "description": "Extra absolute tmux socket paths to read besides the ones found from processes; default []."
+        },
+        "claudeSessionsDir": {
+          "type": "string",
+          "pattern": "^/.+",
+          "description": "For a relocated Claude config (CLAUDE_CONFIG_DIR); default ~/.claude/sessions."
         }
       }
     }

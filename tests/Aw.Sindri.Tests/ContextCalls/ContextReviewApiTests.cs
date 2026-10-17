@@ -310,17 +310,6 @@ public sealed class ContextReviewApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task There_is_no_route_that_runs_map_build_before_API_P6()
-    {
-        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
-        await using var host = await Host(sessions: false);
-
-        var build = await host.Http.Ask(Post("/sindri/context/map/build", "{}", Terminal(host)));
-
-        Assert.Contains(build.Status, new[] { HttpStatusCode.NotFound, HttpStatusCode.MethodNotAllowed });
-    }
-
-    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
     public async Task A_repo_git_cant_read_is_048_and_nothing_is_written()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();

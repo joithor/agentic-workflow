@@ -1,0 +1,19 @@
+schemaVersion: 1
+id: engineering.csharp.sql-is-constant
+kind: engineering
+section: "4b.2"
+text: "SQL command text is a constant or a reviewed literal, never built by concatenation or interpolation; values go in parameters."
+why: "Hand-written ADO.NET is where an honest mistake becomes SQL injection."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: analyzer
+    id: "CA2100"
+    status: active
+gap: partial
+gapNote: "CA2100 is suppressed once, inside SqliteQueries.Prepare, so it cannot see the text a SqlStatement carries: callers that build a SqlStatement are review-checked for constant text with values bound as parameters."
+source:
+  type: desk
+  ref: "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca2100"
+status: active

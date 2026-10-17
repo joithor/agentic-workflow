@@ -5,7 +5,8 @@ namespace Aw.Sindri.Core.Scheduling;
 /// first ok after a failure, or the service's outcome isn't known to be ok.
 /// </summary>
 /// <param name="Idle">True when the run did nothing: it found no work and changed nothing.</param>
-public sealed record ScheduledResult(bool Idle)
+/// <param name="Summary">What a manual run's job reports as its summary ('ok: 250 lines'), or null for the default 'ok: worked' or 'ok: idle'.</param>
+public sealed record ScheduledResult(bool Idle, string? Summary = null)
 {
     /// <summary>The run did work.</summary>
     public static ScheduledResult Worked { get; } = new(Idle: false);

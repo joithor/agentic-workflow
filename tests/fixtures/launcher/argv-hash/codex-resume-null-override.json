@@ -5,6 +5,6 @@
     "override": true,
     "resume": null
   },
-  "canonical": "{\"bin\":\"codex\",\"mcp\":\"codex-overrides\",\"open\":[\"{bin}\",\"-C\",\"{cwd}\",\"{seed}\"],\"resume\":null,\"sessionId\":\"reported\"}",
-  "argvHash": "sha256:de05de1ab053c4d0c1ee0cc66688a11400c0342544559bcdbb29352b9a39943a"
+  "canonical": "{\"bin\":\"codex\",\"mcp\":\"codex-overrides\",\"model\":\"codex-flag\",\"open\":[\"{bin}\",\"-C\",\"{cwd}\",\"{seed}\"],\"policy\":\"codex-overrides\",\"resume\":null,\"sessionId\":\"reported\"}",
+  "argvHash": "sha256:458dc292e739427442507bb9b6cfd950191dfecac47bdb1a460119b644420243"
 }

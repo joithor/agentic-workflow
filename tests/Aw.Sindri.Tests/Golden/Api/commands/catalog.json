@@ -201,7 +201,7 @@
       "method": "POST",
       "route": "/sindri/context/map/build",
       "cli": "sindri context map build",
-      "ui": "pending:API-P6",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -218,7 +218,7 @@
       "method": "POST",
       "route": "/sindri/jobs/{jobId}/cancel",
       "cli": "sindri jobs cancel <jobId>",
-      "ui": "pending:P6",
+      "ui": "ready",
       "destructive": false,
       "readsViews": true,
       "shortcut": null
@@ -427,7 +427,7 @@
       "method": "POST",
       "route": "/sindri/services/{name}/pause",
       "cli": "sindri services pause <name>",
-      "ui": "pending:P6",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -524,7 +524,7 @@
       "method": "POST",
       "route": "/sindri/services/{name}/resume",
       "cli": "sindri services resume <name>",
-      "ui": "pending:P6",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -733,6 +733,23 @@
       "shortcut": null
     },
     {
+      "action": "RunContextBacktest",
+      "class": "job",
+      "allowedCallers": [
+        "human+terminal",
+        "human",
+        "service"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/context/eval/backtest",
+      "cli": "sindri context eval backtest",
+      "ui": "ready",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
       "action": "RunDoctor",
       "class": "local",
       "allowedCallers": [],
@@ -757,7 +774,7 @@
       "method": "POST",
       "route": "/sindri/services/{name}/run",
       "cli": "sindri services run <name>",
-      "ui": "pending:P6",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -807,7 +824,7 @@
       "method": "POST",
       "route": "/sindri/context/sources/sync",
       "cli": "sindri context sources sync",
-      "ui": "pending:API-P6",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null

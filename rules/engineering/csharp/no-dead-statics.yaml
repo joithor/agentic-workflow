@@ -1,0 +1,27 @@
+schemaVersion: 1
+id: engineering.csharp.no-dead-statics
+kind: engineering
+section: "4b.3"
+text: "No unused private fields and no needless static initialization: use const for literals, inline static initializers."
+why: "Dead state and static constructors hide cost and ordering bugs."
+select:
+  languages: [csharp]
+  paths: ["src/**", "tests/**"]
+checks:
+  - type: analyzer
+    id: "CA1823"
+    status: active
+  - type: analyzer
+    id: "CA1810"
+    status: active
+  - type: analyzer
+    id: "CA2207"
+    status: active
+  - type: analyzer
+    id: "CA1802"
+    status: active
+gap: closed
+source:
+  type: desk
+  ref: "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1823"
+status: active

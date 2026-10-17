@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/test-grep.sh"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$DIR/../.."
 TMP="$(mktemp -d)"
@@ -119,7 +120,7 @@ test_index_jobs() {
     grep -q '<key>EnvironmentVariables</key>' "$plist" && grep -q '<string>__BIN__:__HOME__/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>' "$plist" || { echo "FAIL: $name has no PATH (launchd's default has no uv or Homebrew)"; exit 1; }
     # Exact: "sindri-index" must not be satisfied by "sindri-index-quick".
     grep -qE "com\.agentic-workflow\.$name(\||\.plist)" "$ROOT/scripts/install-sindri.sh" || { echo "FAIL: installer does not install $name"; exit 1; }
-    sed -e "s|__HOME__|/h|g" -e "s|__BIN__|/b|g" "$plist" | grep -q '__' && { echo "FAIL: $name has a placeholder the installer does not substitute"; exit 1; }
+    sed -e "s|__HOME__|/h|g" -e "s|__BIN__|/b|g" "$plist" | has '__' && { echo "FAIL: $name has a placeholder the installer does not substitute"; exit 1; }
   done
   grep -q '<string>--quick</string>' "$launchd/com.agentic-workflow.sindri-index-quick.plist" && grep -q '<integer>3600</integer>' "$launchd/com.agentic-workflow.sindri-index-quick.plist" || { echo "FAIL: the quick job is not an hourly --quick build"; exit 1; }
   grep -q '<key>Hour</key>' "$launchd/com.agentic-workflow.sindri-index.plist" || { echo "FAIL: the full build is not nightly"; exit 1; }
@@ -127,9 +128,9 @@ test_index_jobs() {
   # Heavy jobs run at background priority, so they never compete with the interactive session.
   for name in sindri-index sindri-index-quick; do
     plist="$launchd/com.agentic-workflow.$name.plist"
-    tr -d ' \n' < "$plist" | grep -q '<key>ProcessType</key><string>Background</string>' || { echo "FAIL: $name is not ProcessType Background"; exit 1; }
-    tr -d ' \n' < "$plist" | grep -q '<key>Nice</key><integer>10</integer>' || { echo "FAIL: $name is not Nice 10"; exit 1; }
-    tr -d ' \n' < "$plist" | grep -q '<key>LowPriorityIO</key><true/>' || { echo "FAIL: $name is not LowPriorityIO"; exit 1; }
+    tr -d ' \n' < "$plist" | has '<key>ProcessType</key><string>Background</string>' || { echo "FAIL: $name is not ProcessType Background"; exit 1; }
+    tr -d ' \n' < "$plist" | has '<key>Nice</key><integer>10</integer>' || { echo "FAIL: $name is not Nice 10"; exit 1; }
+    tr -d ' \n' < "$plist" | has '<key>LowPriorityIO</key><true/>' || { echo "FAIL: $name is not LowPriorityIO"; exit 1; }
   done
   # Each index job has its own log, so one job's failure isn't read as the other's.
   [ "$(grep -c '<string>__HOME__/.agentic-workflow/sindri/index-quick-launchd.log</string>' "$launchd/com.agentic-workflow.sindri-index-quick.plist")" = 2 ] || { echo "FAIL: the quick job does not log to index-quick-launchd.log"; exit 1; }
@@ -157,10 +158,10 @@ test_evolve_job_is_weekly() {
   local plist="$ROOT/config/launchd/com.agentic-workflow.sindri-evolve.plist"
   [ -f "$plist" ] || { echo "FAIL: $plist missing"; exit 1; }
   if command -v plutil >/dev/null 2>&1; then plutil -lint "$plist" >/dev/null || { echo "FAIL: plist invalid"; exit 1; }; fi
-  tr -d ' \n' < "$plist" | grep -q '<key>Weekday</key><integer>1</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>30</integer>' || { echo "FAIL: not Mondays 07:30"; exit 1; }
-  tr -d ' \n' < "$plist" | grep -q '<string>__BIN__/sindri</string><string>evolve</string><string>weekly</string>' || { echo "FAIL: evolve weekly command missing"; exit 1; }
+  tr -d ' \n' < "$plist" | has '<key>Weekday</key><integer>1</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>30</integer>' || { echo "FAIL: not Mondays 07:30"; exit 1; }
+  tr -d ' \n' < "$plist" | has '<string>__BIN__/sindri</string><string>evolve</string><string>weekly</string>' || { echo "FAIL: evolve weekly command missing"; exit 1; }
   grep -q '<key>PATH</key>' "$plist" && grep -q '<string>__BIN__:__HOME__/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>' "$plist" || { echo "FAIL: PATH is not the fixed launchd PATH"; exit 1; }
-  if sed -e "s|__HOME__|/h|g" -e "s|__BIN__|/b|g" "$plist" | grep -q '__'; then echo "FAIL: a placeholder the installer does not substitute"; exit 1; fi
+  if sed -e "s|__HOME__|/h|g" -e "s|__BIN__|/b|g" "$plist" | has '__'; then echo "FAIL: a placeholder the installer does not substitute"; exit 1; fi
   [ "$(grep -c '<string>__HOME__/.agentic-workflow/sindri/evolve-launchd.log</string>' "$plist")" = 2 ] || { echo "FAIL: the evolve job does not log to evolve-launchd.log"; exit 1; }
   grep -qE 'com\.agentic-workflow\.sindri-evolve\|weekly evolve \(Mondays 07:30\)' "$ROOT/scripts/install-sindri.sh" || { echo "FAIL: installer does not install the job"; exit 1; }
   local out

@@ -4,7 +4,7 @@ using Aw.Architecture.Tests.Rules;
 namespace Aw.Architecture.Tests;
 
 /// <summary>Each rule fails on a fixture package that breaks it, with the rule id, what it found and the fix.</summary>
-[Trait("Lane", "unit")]
+[Trait("Lane", "integration")]
 public sealed class FixtureTests
 {
     private static readonly string[] _compliant = ["Good", "SmallGood"];
@@ -21,6 +21,7 @@ public sealed class FixtureTests
         Verify.None([
             .. DirectionRules.Check(edges), .. SliceRules.Check(edges), .. ServiceProviderRules.Check(edges),
             .. PortRules.Check(edges), .. InfrastructureRules.Check(types, FixtureSet.Roots(_compliant)),
+            .. AsyncRules.Check(types, FixtureSet.Roots(_compliant)),
             .. CycleRules.Check(types), .. NamingRules.CheckNamespaces(types),
             .. PlacementRules.Check(types, FixtureSet.Roots(_compliant)),
         ]);
@@ -102,6 +103,10 @@ public sealed class FixtureTests
     [Fact]
     public void A_public_infrastructure_type_is_reported_but_the_registration_class_is_not() =>
         Verify.Exactly(InfrastructureRules.Check(FixtureSet.Types("InfraBad"), FixtureSet.Roots("InfraBad")), InfrastructureRules.Id, "OrderDto is public");
+
+    [Fact]
+    public void A_task_returning_port_method_without_a_token_is_reported_but_dispose_and_tokened_methods_are_not() =>
+        Verify.Exactly(AsyncRules.Check(FixtureSet.Types("AsyncBad"), FixtureSet.Roots("AsyncBad")), AsyncRules.Id, "IFetcher.Fetch(");
 
     [Fact]
     public void A_namespace_cycle_is_reported() =>

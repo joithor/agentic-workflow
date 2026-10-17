@@ -119,12 +119,40 @@ public static class SindriErrors
     /// <summary>SND-DEC-001: the choice isn't one of the decision's options, or the note is too long.</summary>
     public static readonly ErrorDefinition DecisionInvalid = new("SND-DEC-001", ErrorKind.Invalid, "The decision's choice isn't valid");
 
+    /// <summary>SND-JOB-404: no job has that id, or a session caller may not see it (API spec §9).</summary>
+    public static readonly ErrorDefinition JobNotFound = new("SND-JOB-404", ErrorKind.NotFound, "No such job");
+
+    /// <summary>SND-JOB-409: a job of that kind and key is already running (the error carries 'runningJob'), or the job to cancel already ended.</summary>
+    public static readonly ErrorDefinition JobConflict = new("SND-JOB-409", ErrorKind.Conflict, "The job conflicts with one that is running or ended");
+
+    /// <summary>SND-JOB-001: the process stopped while the job ran; it appears only as a job's code, never as an HTTP response.</summary>
+    public static readonly ErrorDefinition JobInterrupted = new("SND-JOB-001", ErrorKind.Unavailable, "The job was interrupted: the process stopped while it ran");
+
+    /// <summary>SND-JOB-002: the most jobs are running (8); start again when one ends.</summary>
+    public static readonly ErrorDefinition JobsRateLimited = new("SND-JOB-002", ErrorKind.RateLimited, "Too many jobs are running");
+
+    /// <summary>SND-SVC-404: no service of the approved profile has that name (API spec §9).</summary>
+    public static readonly ErrorDefinition ServiceNotFound = new("SND-SVC-404", ErrorKind.NotFound, "No such service in the approved profile");
+
+    /// <summary>SND-LAUNCH-011: launcher.json or an agent entry in it isn't valid (launcher spec §4); the defaults are used.</summary>
+    public static readonly ErrorDefinition LauncherInvalid = new("SND-LAUNCH-011", ErrorKind.Invalid, "launcher.json isn't valid");
+
+    /// <summary>SND-SESSION-001: one of the collector's sources failed or overran in a pass; a problem row beside a normal list.</summary>
+    public static readonly ErrorDefinition SessionSourceFailed = new("SND-SESSION-001", ErrorKind.Unavailable, "A session source failed in the last pass");
+
+    /// <summary>SND-SESSION-002: the session collector can't run here (collector spec CA-5): unsupported-platform, proc-unreadable or disabled.</summary>
+    public static readonly ErrorDefinition SessionsUnavailable = new("SND-SESSION-002", ErrorKind.Unavailable, "The session collector can't run here");
+
+    /// <summary>SND-SESSION-003: a test override (AW_SESSIONS_PROC_ROOT, AW_SESSIONS_CLAUDE_DIR) is set in this run; informational, one problem row beside a normal list.</summary>
+    public static readonly ErrorDefinition SessionsTestOverride = new("SND-SESSION-003", ErrorKind.Unavailable, "A test override is set in this run");
+
     /// <summary>Every Sindri error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
         LeaseHeld, LeaseLost, LeaseStale, ProfileMissing, ProfileInvalid, ProfileHashMismatch, ProfileNeedsTerminal,
         ProfileNotApproved, ApprovalsUnavailable, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, PortInUse, ApiNoCode, ApiInternal,
         CallerUnknown, OriginRefused, CommandBusy, AuthTokenRequired, AuthRefused, UnknownVerb, StartFailed,
-        InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
+        InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, JobNotFound, JobConflict, JobInterrupted, JobsRateLimited, ServiceNotFound, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
+        LauncherInvalid, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride,
     ];
 }

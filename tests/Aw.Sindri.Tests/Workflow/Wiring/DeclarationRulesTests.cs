@@ -1,6 +1,6 @@
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
-using Aw.Sindri.Core.Workflow.Validation;
+using Aw.Sindri.Testing.Workflow;
 using static Aw.Sindri.Tests.Workflow.Wiring.WiringRecipe;
 
 namespace Aw.Sindri.Tests.Workflow.Wiring;
@@ -139,24 +139,33 @@ public sealed class DeclarationRulesTests
         Assert.Empty(CheckDeclarations(Waiting(WaitForEvent("no.such"), "fact:report")));
     }
 
-    [Fact, Trait("Lane", "unit")]
-    public void An_output_from_a_state_waiting_on_a_child_is_information_when_nothing_records_it()
+    private static Recipe WaitingOnKid() => Of(
+        "running",
+        [("running", WaitForChild("workflow.kid")), ("done", Terminal())],
+        [Go("running", "done", "wait.satisfied", AnyOf(Outcome("resolved"), Outcome("cancelled")))]) with
     {
-        var recipe = Of(
-            "running",
-            [("running", WaitForChild("workflow.step")), ("done", Terminal())],
-            [Go("running", "done", "wait.satisfied", AnyOf(Outcome("resolved"), Outcome("cancelled")))]) with
-        {
-            Outputs = [Out("fact:result", "running")],
-        };
+        Outputs = [Out("fact:result", "running")],
+    };
 
-        var finding = Assert.Single(CheckDeclarations(recipe, At(("outputs[0].from", 5, 48))));
+    private static Located WithKid(string declared) => At(("outputs[0].from", 5, 48)) with
+    {
+        Children = new InMemoryChildRecipes().With(Child(
+            Of("produce", _produceThenDone, [Go("produce", "done", when: Outcome("done"))], inputs: [], id: "workflow.kid") with { Outputs = [OutputOf(declared, "produce")] })),
+    };
 
-        Assert.Equal(FindingSeverity.Information, finding.Severity);
+    [Fact, Trait("Lane", "unit")]
+    public void An_output_from_a_child_wait_is_recorded_by_the_childs_outputs() =>
+        Assert.Empty(CheckDeclarations(WaitingOnKid(), WithKid("fact:result")));
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_output_the_child_doesnt_declare_is_RCP_OUT_002() =>
         Assert.Equal(
-            "RCP-OUT-002: output 'fact:result' comes from state 'running', which waits on child 'workflow.step'; whether the child's outcome carries it can't be checked here at r.yaml:5:48 (outputs[0].from); list 'fact:result' in 'produces' on the transition leaving 'running' if the recipe should record it",
-            finding.ToLine());
-    }
+            ["RCP-OUT-002: output 'fact:result' comes from state 'running', but nothing there records it (child 'workflow.kid' records fact:other) at r.yaml:5:48 (outputs[0].from); have the state's Step, a transition leaving it ('produces') or its wait record 'fact:result', or name the state that does"],
+            CheckDeclarations(WaitingOnKid(), WithKid("fact:other")).Lines());
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_unresolved_child_gives_no_OUT_002() =>
+        Assert.Empty(CheckDeclarations(WaitingOnKid(), At(("outputs[0].from", 5, 48))));
 
     [Fact, Trait("Lane", "unit")]
     public void A_duplicate_output_key_and_an_output_key_that_is_an_input_key_are_reported()
@@ -190,7 +199,7 @@ public sealed class DeclarationRulesTests
     public void A_kind_that_isnt_a_subject_kind_is_reported()
     {
         Assert.Equal(
-            ["RCP-TYPE-002: input 'fact:item' has kind 'ticket', which isn't one of item, linear-project, webhook, file, text, link at r.yaml:4:40 (inputs[0].kind); use one of them"],
+            ["RCP-TYPE-002: input 'fact:item' has kind 'ticket', which isn't one of item, linear-project, webhook, file, text, link, packet, payload at r.yaml:4:40 (inputs[0].kind); use one of them"],
             CheckDeclarations(Base(inputs: [In("fact:item", "item", "ticket")]), At(("inputs[0].kind", 4, 40))).Lines());
     }
 
@@ -198,8 +207,17 @@ public sealed class DeclarationRulesTests
     [InlineData("file", "item", "RCP-TYPE-003: input 'fact:item' has kind 'item' but type 'file'; kind item pairs with type item at r.yaml:4:40 (inputs[0].kind); set type to item, or change kind")]
     [InlineData("text", "item", "RCP-TYPE-003: input 'fact:item' has kind 'item' but type 'text'; kind item pairs with type item at r.yaml:4:40 (inputs[0].kind); set type to item, or change kind")]
     [InlineData("text", "webhook", "RCP-TYPE-003: input 'fact:item' has kind 'webhook' but type 'text'; kind webhook pairs with type payload at r.yaml:4:40 (inputs[0].kind); set type to payload, or change kind")]
+    [InlineData("text", "packet", "RCP-TYPE-003: input 'fact:item' has kind 'packet' but type 'text'; kind packet pairs with type packet at r.yaml:4:40 (inputs[0].kind); set type to packet, or change kind")]
+    [InlineData("text", "payload", "RCP-TYPE-003: input 'fact:item' has kind 'payload' but type 'text'; kind payload pairs with type payload at r.yaml:4:40 (inputs[0].kind); set type to payload, or change kind")]
     public void A_kind_and_type_that_dont_pair_are_reported(string? type, string kind, string expected) =>
         Assert.Equal([expected], CheckDeclarations(Base(inputs: [In("fact:item", type, kind)]), At(("inputs[0].kind", 4, 40))).Lines());
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("packet", "packet")]
+    [InlineData("payload", "payload")]
+    [InlineData(null, "packet")]
+    public void The_packet_and_payload_kinds_are_known_and_pair_with_their_own_type(string? type, string kind) =>
+        Assert.Empty(CheckDeclarations(Base(inputs: [In("fact:item", type, kind)])));
 
     [Fact, Trait("Lane", "unit")]
     public void An_unpaired_check_is_skipped_for_an_entry_with_a_bad_type_or_kind()
@@ -213,7 +231,7 @@ public sealed class DeclarationRulesTests
     public void An_input_that_declares_no_kind_is_reported_and_the_type_is_not_enough()
     {
         Assert.Equal(
-            ["RCP-INPUT-001: input 'fact:item' declares no kind at r.yaml:5:9 (inputs[0]); add kind: item | link | linear-project | webhook | file | text, paired with its type (item/item, file/file, text/text, link/link, linear-project and webhook/payload)"],
+            ["RCP-INPUT-001: input 'fact:item' declares no kind at r.yaml:5:9 (inputs[0]); add kind: item | link | linear-project | webhook | file | text | packet | payload, paired with its type (item/item, file/file, text/text, link/link, packet/packet; payload, linear-project and webhook pair with payload)"],
             CheckDeclarations(Base(inputs: [In("fact:item", "item", kind: null)]), At(("inputs[0]", 5, 9))).Lines());
     }
 

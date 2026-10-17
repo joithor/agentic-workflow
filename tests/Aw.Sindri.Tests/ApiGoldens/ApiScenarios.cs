@@ -25,8 +25,11 @@ internal static class ApiScenarios
         .. ContextApiScenarios.Rows,
         .. ViewScenarios.All,
         .. ItemScenarios.All,
+        .. ParkScenarios.All,
         .. RequestScenarios.All,
         .. StreamScenarios.All,
+        .. JobScenarios.All,
+        .. JobScopeScenarios.All,
     ];
 
     /// <summary>Whether the scenario's host must refuse the prover label (its home isn't temporary).</summary>
@@ -36,10 +39,12 @@ internal static class ApiScenarios
     public static async Task<GoldenHost> Start(string slug, string scenario, CancellationToken ct) =>
         ContextApiScenarios.Handles(slug)
             ? await ContextApiScenarios.Start(slug, scenario, ct)
+            : JobScenarios.Handles(slug, scenario) || JobScopeScenarios.Handles(slug, scenario)
+            ? await Jobs.JobHost.Start(ct, pump: false)
             : await GoldenHost.Start(temporary: !NeedsNonTemporaryHome(slug, scenario), ct, ProfileYaml(slug, scenario));
 
     /// <summary>The live profile the scenario's host starts with: the item scenarios need two repos.</summary>
-    public static string ProfileYaml(string slug, string scenario) => ItemScenarios.Handles(slug, scenario) || RequestScenarios.Handles(slug, scenario) || StreamScenarios.Handles(slug, scenario) ? ItemScenarios.ProfileYaml : GoldenHost.ProfileYaml;
+    public static string ProfileYaml(string slug, string scenario) => ItemScenarios.Handles(slug, scenario) || ParkScenarios.Handles(slug, scenario) || RequestScenarios.Handles(slug, scenario) || StreamScenarios.Handles(slug, scenario) ? ItemScenarios.ProfileYaml : GoldenHost.ProfileYaml;
 
     /// <summary>Runs the scenario against <paramref name="host"/> and returns the body to compare.</summary>
     public static async Task<string> Body(GoldenHost host, string slug, string scenario, CancellationToken ct)
@@ -78,16 +83,18 @@ internal static class ApiScenarios
     /// <summary>The scenario's body when one of the scenario classes owns it, else null.</summary>
     private static Func<Task<string>>? Delegated(GoldenHost host, string slug, string scenario, CancellationToken ct) =>
         ItemScenarios.Handles(slug, scenario) ? () => ItemScenarios.Body(host, slug, scenario, ct)
+        : ParkScenarios.Handles(slug, scenario) ? () => ParkScenarios.Body(host, slug, scenario, ct)
         : RequestScenarios.Handles(slug, scenario) ? () => RequestScenarios.Body(host, slug, scenario, ct)
         : StreamScenarios.Handles(slug, scenario) ? () => StreamScenarios.Body(host, slug, scenario, ct)
         : ViewScenarios.Handles(slug, scenario) ? () => ViewScenarios.Body(host, slug, scenario, ct)
+        : JobScenarios.Handles(slug, scenario) ? () => JobScenarios.Body(host, slug, scenario, ct)
+        : JobScopeScenarios.Handles(slug, scenario) ? () => JobScopeScenarios.Body(host, slug, scenario, ct)
         : null;
 
     private static (string Name, string Value)[] Session => [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")];
 
-    // An unknown recipe answers the engine's SND-RECIPE-002 (WorkflowErrors.RecipeNotFound; API spec §3.8). Served today by
-    // the recipe show route (id@hash); P11 serves GET /workflow/recipes/{id} and re-records this file from that route.
-    private static string UnknownRecipe => "/sindri/workflow/recipes/workflow.unknown@" + new string('0', 64);
+    // An unknown recipe answers the engine's SND-RECIPE-002 (WorkflowErrors.RecipeNotFound; API spec §3.8), from GET /workflow/recipes/{id} (API P11).
+    private static string UnknownRecipe => "/sindri/workflow/recipes/workflow.unknown";
 
     private static (string Name, string Value) Origin => ("Origin", "http://localhost:3000");
 

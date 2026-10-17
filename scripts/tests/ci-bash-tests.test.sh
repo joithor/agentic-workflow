@@ -5,6 +5,7 @@
 # in a parallel pool; the timing-sensitive ones (SERIAL, each with a reason) run one at
 # a time after the pool, alone on the machine.
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/test-grep.sh"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 RUNNER="$ROOT/scripts/ci/bash-tests.sh"
 
@@ -24,7 +25,7 @@ $(diff <(printf '%s\n' "$listed" | sort) <(printf '%s\n' "$want") || true)"
 }
 
 test_suites_outside_the_old_globs_are_listed() {
-  bash "$RUNNER" --list | grep -qx 'skills/ui-evidence/scripts/lib/tests/locks.test.sh' \
+  bash "$RUNNER" --list | has -x 'skills/ui-evidence/scripts/lib/tests/locks.test.sh' \
     || fail "a nested skill suite is not run"
   echo "PASS: test_suites_outside_the_old_globs_are_listed"
 }
@@ -45,7 +46,7 @@ test_every_serial_suite_is_listed_and_has_a_reason() {
   while IFS=$'\t' read -r path reason; do
     [ -n "$path" ] || continue
     n=$((n + 1))
-    printf '%s\n' "$listed" | grep -qxF "$path" || fail "serial suite is not one the runner runs: $path"
+    printf '%s\n' "$listed" | has -xF "$path" || fail "serial suite is not one the runner runs: $path"
     [ "${#reason}" -ge 20 ] || fail "serial suite needs a reason: $path"
   done < <(bash "$RUNNER" --serial)
   [ "$n" -gt 0 ] || fail "no serial suites declared"
@@ -58,8 +59,9 @@ test_the_timing_sensitive_suites_are_serial() {
   for s in scripts/tests/agent-token.test.sh config/hooks/tests/failopen.test.sh config/lib/tests/failopen.test.sh \
            config/lib/tests/statusline.test.sh config/hooks/tests/sindri-nudge.test.sh config/lib/tests/prompt-sort.test.sh \
            scripts/tests/readiness-baseline.test.sh config/lib/tests/aw-state-dir-isolation.test.sh \
-           config/lib/tests/installed-hooks-smoke.test.sh config/lib/tests/install-wake-gating.test.sh; do
-    printf '%s\n' "$serial" | grep -qxF "$s" || fail "timing-sensitive or shared-state suite is not serial: $s"
+           config/lib/tests/installed-hooks-smoke.test.sh config/lib/tests/install-wake-gating.test.sh \
+           config/lib/tests/judge-brief-real-cli.test.sh config/lib/tests/send-gate-real-judge.test.sh; do
+    printf '%s\n' "$serial" | has -xF "$s" || fail "timing-sensitive or shared-state suite is not serial: $s"
   done
   echo "PASS: test_the_timing_sensitive_suites_are_serial"
 }
@@ -71,7 +73,7 @@ test_no_pool_suite_builds_judge() {
   pool="$(comm -23 <(bash "$RUNNER" --list | sort) <(bash "$RUNNER" --serial | cut -f1 | sort))"
   while IFS= read -r s; do
     [ -n "$s" ] || continue
-    if grep -nE 'install-judge' "$ROOT/$s" | grep -vE '^[0-9]+: *#' | grep -vq -- '--hook-only'; then
+    if grep -nE 'install-judge' "$ROOT/$s" | grep -vE '^[0-9]+: *#' | has -v -- '--hook-only'; then
       hits+="$s"$'\n'
     fi
   done <<<"$pool"
@@ -126,14 +128,14 @@ $out"
   [ -e "$m/saw-p1-p2" ] && [ -e "$m/saw-p2-p1" ] || fail "parallel suites did not run at the same time:
 $out"
   [ ! -e "$m/overlaps" ] || fail "a serial suite overlapped another suite: $(cat "$m/overlaps")"
-  printf '%s\n' "$out" | grep -qE '^PASS +par +t/p1\.test\.sh +[0-9]+s$' || fail "summary lacks a par row with a duration:
+  printf '%s\n' "$out" | has -E '^PASS +par +t/p1\.test\.sh +[0-9]+s$' || fail "summary lacks a par row with a duration:
 $out"
-  printf '%s\n' "$out" | grep -qE '^PASS +ser +t/s2\.test\.sh +[0-9]+s$' || fail "summary lacks a ser row with a duration:
+  printf '%s\n' "$out" | has -E '^PASS +ser +t/s2\.test\.sh +[0-9]+s$' || fail "summary lacks a ser row with a duration:
 $out"
-  if printf '%s\n' "$out" | grep -q 'should never run'; then fail "an excluded suite ran"; fi
-  printf '%s\n' "$out" | grep -qE '^PASS +par +t/with space\.test\.sh +[0-9]+s$' || fail "a suite whose path has a space did not run as one suite:
+  if printf '%s\n' "$out" | has 'should never run'; then fail "an excluded suite ran"; fi
+  printf '%s\n' "$out" | has -E '^PASS +par +t/with space\.test\.sh +[0-9]+s$' || fail "a suite whose path has a space did not run as one suite:
 $out"
-  printf '%s\n' "$out" | grep -q '5 run, 0 failed, 1 excluded' || fail "summary counts are wrong:
+  printf '%s\n' "$out" | has '5 run, 0 failed, 1 excluded' || fail "summary counts are wrong:
 $out"
   rm -rf "$d" "$m"
   echo "PASS: test_pool_runs_in_parallel_and_serial_suites_run_alone"
@@ -148,13 +150,13 @@ test_a_failing_suite_fails_the_run_and_shows_its_log() {
   out="$(run_fixture "$d" "$m" 2>&1)" || rc=$?
   [ "$rc" -eq 1 ] || fail "a failing suite must exit 1, got $rc:
 $out"
-  printf '%s\n' "$out" | grep -qE '^FAIL +par +t/p1\.test\.sh' || fail "the failing par suite is not reported:
+  printf '%s\n' "$out" | has -E '^FAIL +par +t/p1\.test\.sh' || fail "the failing par suite is not reported:
 $out"
-  printf '%s\n' "$out" | grep -qE '^FAIL +ser +t/s1\.test\.sh' || fail "the failing ser suite is not reported:
+  printf '%s\n' "$out" | has -E '^FAIL +ser +t/s1\.test\.sh' || fail "the failing ser suite is not reported:
 $out"
-  printf '%s\n' "$out" | grep -qF 'not ok - boom happened' || fail "the failing suite's log is not printed"
-  printf '%s\n' "$out" | grep -qF 'exit 3' || fail "the failing suite's exit code is not printed"
-  printf '%s\n' "$out" | grep -q '2 failed' || fail "summary does not count the failures:
+  printf '%s\n' "$out" | has -F 'not ok - boom happened' || fail "the failing suite's log is not printed"
+  printf '%s\n' "$out" | has -F 'exit 3' || fail "the failing suite's exit code is not printed"
+  printf '%s\n' "$out" | has '2 failed' || fail "summary does not count the failures:
 $out"
   rm -rf "$d" "$m"
   echo "PASS: test_a_failing_suite_fails_the_run_and_shows_its_log"
@@ -184,7 +186,7 @@ test_a_suite_whose_sandbox_cannot_be_made_fails_instead_of_running() {
   mkdir -p "$o/stub"; printf '#!/bin/sh\nexit 1\n' > "$o/stub/mktemp"; chmod +x "$o/stub/mktemp"
   out="$(PATH="$o/stub:$PATH" bash "$RUNNER" --run-one par "$o/x.test.sh" "$o" p001 2>&1)"
   [ "$(cat "$o/p001.rc")" = 2 ] || fail "a missing sandbox must fail the suite (rc file: $(cat "$o/p001.rc" 2>/dev/null)): $out"
-  printf '%s\n' "$out" | grep -q 'FAIL  par' || fail "the failure is not reported: $out"
+  printf '%s\n' "$out" | has 'FAIL  par' || fail "the failure is not reported: $out"
   rm -r "$o"
   echo "PASS: test_a_suite_whose_sandbox_cannot_be_made_fails_instead_of_running"
 }
@@ -200,6 +202,23 @@ test_the_sindri_home_and_local_bin_overrides_are_scrubbed_per_suite() {
   [ "$(cat "$m/seen")" = "unset|unset" ] || fail "a suite still saw the caller's AW_SINDRI_HOME or CLAUDE_LOCAL_BIN: $(cat "$m/seen")"
   rm -r "$d" "$m"
   echo "PASS: test_the_sindri_home_and_local_bin_overrides_are_scrubbed_per_suite"
+}
+
+test_the_lane_environment_is_stripped_per_suite() {
+  local d m out rc=0 v seen
+  d="$(mktemp -d)"; m="$(mktemp -d)"
+  git -C "$d" init -q; mkdir -p "$d/t"
+  # Every variable a lane or meta pane exports; a suite must see none of them, and still see what it legitimately needs.
+  printf '%s\n' 'for v in AW_META_TEAM AW_META_DIR AW_META_LANE AW_META_LANE_PID AW_META_LANE_AGENT AW_META_LANE_PROC AW_SINDRI_CHILD AW_SINDRI_LAUNCH AW_LAUNCHER_CONFIG TMUX TMUX_PANE; do eval "[ -z \"\${$v+x}\" ]" || echo "leaked $v" >> "$MARK/seen"; done
+[ -n "${GIT_CONFIG_GLOBAL:-}" ] && [ -n "${PATH:-}" ] || echo "lost a needed variable" >> "$MARK/seen"' > "$d/t/a.test.sh"
+  git -C "$d" add t
+  out="$(MARK="$m" GIT_CONFIG_GLOBAL=/caller/gitconfig AW_META_TEAM=t AW_META_DIR=/x AW_META_LANE=l AW_META_LANE_PID=1 AW_META_LANE_AGENT=a AW_META_LANE_PROC=p \
+    AW_SINDRI_CHILD=1 AW_SINDRI_LAUNCH=x AW_LAUNCHER_CONFIG=/caller/launcher.json TMUX=/tmp/fake,1,0 TMUX_PANE=%1 BASH_TESTS_ROOT="$d" BASH_TESTS_JOBS=1 BASH_TESTS_SERIAL="" BASH_TESTS_EXCLUDED="" bash "$RUNNER" 2>&1)" || rc=$?
+  [ "$rc" -eq 0 ] || fail "fixture run exited $rc: $out"
+  seen="$(cat "$m/seen" 2>/dev/null || true)"
+  [ -z "$seen" ] || fail "a suite saw the lane environment: $seen"
+  rm -r "$d" "$m"
+  echo "PASS: test_the_lane_environment_is_stripped_per_suite"
 }
 
 test_bad_configuration_is_a_tool_error() {
@@ -230,4 +249,5 @@ test_a_failing_suite_fails_the_run_and_shows_its_log
 test_every_suite_gets_its_own_fresh_home_and_state_dir_whatever_the_caller_exported
 test_a_suite_whose_sandbox_cannot_be_made_fails_instead_of_running
 test_the_sindri_home_and_local_bin_overrides_are_scrubbed_per_suite
+test_the_lane_environment_is_stripped_per_suite
 test_bad_configuration_is_a_tool_error

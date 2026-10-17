@@ -8,7 +8,7 @@ not habits.
 
 It is a portable harness for any project. Everything team-specific (lanes, repo, gate scopes, merge order, known
 flakes, kickoff prompts, log file) lives in a team config. It runs before the C# switch as an opt-in standalone
-NativeAOT CLI (`./setup.sh --with-meta`; the meta itself is Claude Code only, lanes can run other agent CLIs and take part in its obligations, see [Launcher](#launcher) and [Non-Claude lanes](#non-claude-lanes); Linux only for now, aw-meta reads /proc, so on macOS setup skips it) that keeps its state under `$AW_STATE_DIR/meta/` and
+NativeAOT CLI (`./setup.sh --with-meta`; the meta itself is Claude Code only, lanes can run other agent CLIs and take part in its obligations, see [Launcher](#launcher) and [Non-Claude lanes](#non-claude-lanes); Linux only for now, aw-meta reads /proc, so on macOS setup skips it) that keeps its state under `$AW_STATE_DIR/meta/` (per team: `teams/<team>/`, see [Named teams](#named-teams)) and
 appends to the configured running log. Its gate and merge commands act on the team's checkout and PRs: `git fetch`, a
 gate worktree registered in the repo, the configured gate steps, `gh pr merge`, and the removal of finished worktrees (`git worktree remove`, never forced; see "Worktree cleanup"). Sindri absorbs it later (see the
 last section).
@@ -22,7 +22,7 @@ AOT smoke: `bash src/Meta/aot-smoke/run.sh`. Shell side: `config/hooks/meta-stop
 
 | Piece | What it does |
 |-------|--------------|
-| `aw-meta` | State in `$AW_STATE_DIR/meta/meta.db` (SQLite, WAL): messages, sends, lane map versions, gates, merges, owner questions |
+| `aw-meta` | State in `$AW_STATE_DIR/meta/teams/<team>/meta.db` (or the legacy flat `$AW_STATE_DIR/meta/meta.db`; SQLite, WAL): messages, sends, lane map versions, gates, merges, owner questions |
 | Stop hook `aw:meta-stop-gate` | Runs `aw-meta stop-check` with the session id and transcript path; exit 1 from it blocks the stop (hook exit 2, the list on stderr) |
 | PostToolUse hook `aw:meta-outbox` (matcher `SendMessage`) | Pipes the hook payload to `aw-meta outbox-record`, which records the send and closes what it settles |
 | `aw-meta-launch` (`scripts/meta-launch.sh`) | By default one Warp window, a pane per lane, each attached to tmux session `<team>-<lane>` (on the team's own socket, `tmux -L <team>`) running `scripts/meta-lane.sh`; `launcher.json` can pick another viewer and other lane agents ([Launcher](#launcher)) |
@@ -70,14 +70,16 @@ A lane queues a pull request for merge by sending a message whose **first line**
 ## Commands
 
 Every command takes `--json`. Exit 0 ok, 1 attention (read the output and act), 2 usage or tool error; an error is one
-stderr line `AW-META-NNN: <reason>`. Every command but `team-init`, `role-*`, `health`, `stop-check`, `outbox-record` and the lane-side `lane-inbox`, `lane-stop-check` and `lane-reply` needs
-the team config (`AW-META-002` otherwise); the hook commands must let any session through when no team is set up.
+stderr line `AW-META-NNN: <reason>`. Every command but `team-init`, `team-list`, `team-migrate`, `role-*`, `health`, `stop-check`, `outbox-record` and the lane-side `lane-inbox`, `lane-stop-check` and `lane-reply` needs
+the team config (`AW-META-002` otherwise); the hook commands must let any session through when no team is set up. Those that need no config still need a *selected* team when several exist (`role-*`, `health`: `AW-META-019`), because they read or write the team's `meta.db`; only `team-list` and `team-migrate` work with none, and the hooks pass through.
 `stop-check` prints what is owed on stdout (the hook moves it to stderr for Claude Code).
 
 | Command | What it does |
 |---------|--------------|
-| `team-init --team <t> --repo <abs dir> --lanes a,b [--meta-lane meta] [--log <file>] [--force]` | Writes a starter team config (`--force` to overwrite one) |
+| `team-init --team <t> --repo <abs dir> --lanes a,b [--meta-lane meta] [--log <file>] [--force]` | Writes a starter team config to `teams/<t>/team.json` (`--force` to overwrite that team's; no other team is touched). A name that is the legacy config's own team resolves to the flat layout, as before |
 | `team-show` | Prints the team config |
+| `team-list` | Every team: name, layout (`named` or `legacy`), repo, lanes, the registered meta session and whether it runs; `*` marks the selected one. Works with no team selected |
+| `team-migrate [--dry-run]` | Opt-in, never automatic: moves the legacy flat layout (everything directly under `meta/` but `teams/` and `gates/`) into `teams/<its team name>/`, putting entries back if a move fails. Refuses (`AW-META-020`) while the team's meta or a lane session runs; checkpoints the WAL, moves `meta.db*` first and `team.json` last. `gates/` stays (gate trees are registered with git by absolute path), so sweep it with `worktree-sweep` first: afterwards the sweep roots are `teams/<team>/gates`. Exit 2 with `AW-META-002` when there is no legacy config, `AW-META-020` when the team name is unusable as a directory or `teams/<name>` exists. Stop the team's sessions first (meta and lanes) |
 | `role-set --session <id> [--name <n>]` / `role-show` | Registers the meta session (the launcher does this for the meta pane) |
 | `inbox-sync --session <id> --transcript <path>` | Records new peer messages from the transcript |
 | `inbox [--all]` | Open reply obligations (or every message) |
@@ -89,21 +91,82 @@ the team config (`AW-META-002` otherwise); the hook commands must let any sessio
 | `lane-reply (--text <t> \| --file <f> \| --stdin)` | A lane's answer to the meta: records an inbound message `lane:<lane>:<n>` from `<team>-<lane>` (classified like any inbound message), clears what the lane owed, and logs team, lane, provider and session. Exit 0 (silent when no team is set up, or the reply is blank); 2 when the variables are unset (`AW-META-014`) or `lane-sessions/<lane>` has no record (`AW-META-015`) |
 | `stop-check --session <id> --transcript <path> [--hook-active]` | Syncs, refreshes the lane map, prints every open obligation with the command that settles it; exit 1 if any |
 | `lanes-refresh` / `lanes [--announce]` | Rebuilds the lane map from live sessions named `<team>-<lane>` (`~/.claude/sessions`), then lane announcements ("API lane: …"); `lanes` refreshes first; `--announce` prints the `LANE MAP v<n>:` text |
-| `gate-run <pr> [scope...]` | Runs the merge gate in a gate tree (PR head merged onto `origin/main`); scopes come from the changed paths and the team config |
+| `gate-run <pr> [scope...]` | Runs the merge gate in a gate tree (PR head merged onto `origin/main`); scopes come from the changed paths and the team config. Every step runs with `AW_HEAVY_PRIORITY=meta` (the heavy-job wrapper lets such a job use any box-wide slot), and before the run it computes the heavy reservation and keeps the heavy reservation (computed before the steps run) and prints it after the steps, just before `RESULT`, as `heavy reservation: N of C slots (queue depth D) - set it with meta-gate-reserve A` (see "Resources and adaptation") |
+| `queue-gate [pr...] [--max K]` | Gates the first K ready pull requests in merge-queue order (K defaults to the team's `heavy.cap`; named pull requests are taken in the order given) as a train: see "Merge queue". Prints each gate as `gate-run` does, then the `TRAIN` table (position, PR, base, RESULT) in train order; `DROPPED #N: conflicts with #M at <sha>` lines name the pull requests left out. Exit 0 when every pull request in the train passes, 1 otherwise |
 | `gate-rerun <pr> --step <s> --test <filter>` | Reruns one red test alone and on plain main (the main tree is built first: `--no-build` is dropped there); records `flake` or `real` for that test. A filter that matches no test on the gate tree is an error (AW-META-001), whatever `--ignore-exit-code` the step carries; on main it means the test is not there (a test the PR adds), so a test that fails alone is `real` |
-| `merge-check <pr>` | The merge preconditions: gate green (or every failing test of every red step, read from the step log's `failed <name>` lines, or from the bash runner's `FAIL  par|ser  <suite>  ...  exit N` lines (suite paths, deduplicated), was rerun and classified a flake; a log that can't be read, or whose summary `failed: N` differs from the number of `failed <name>` lines (a crash or timeout names no test), refuses), the gate ran every scope its diff needs (every gate run of the PR at the same head and the same main counts: a scope is judged by its newest such run, so `gate-run <pr> <scope>` after a run with one flaky step completes it; a scope whose newest run failed stays red even if an earlier run passed it; runs at another head or main never count; the output names the run each scope came from, e.g. `repo (run 1), dotnet (run 2)`), head and main unmoved since the gate (a docs-only delta needs only the `always` scopes), merge order, not a draft |
-| `merge-run <pr>` | `merge-check`, then `gh pr merge <pr> --merge`, logs it and opens `announce-main` with the "main moved to <sha>" text. The merge is recorded as soon as gh succeeds: main's sha comes from a fetch, else from `gh pr view --json mergeCommit`, else it stays unknown ("main moved (#N merged)"). Running it again on a pull request that is already merged with no merge recorded records it and opens `announce-main` |
+| `merge-check <pr>` | The merge preconditions: gate green (or every failing test of every red step, read from the step log's `failed <name>` lines, or from the bash runner's `FAIL  par|ser  <suite>  ...  exit N` lines (suite paths, deduplicated), was rerun and classified a flake; a log that can't be read, or whose summary `failed: N` differs from the number of `failed <name>` lines (a crash or timeout names no test), refuses), the gate ran every scope its diff needs (every gate run of the PR at the same head and the same main counts: a scope is judged by its newest such run, so `gate-run <pr> <scope>` after a run with one flaky step completes it; a scope whose newest run failed stays red even if an earlier run passed it; runs at another head or main never count; the output names the run each scope came from, e.g. `repo (run 1), dotnet (run 2)`), head unmoved since the gate (a docs-only delta needs only the `always` scopes), main unmoved or still giving the tested tree (an unstacked gate on the same main is valid by the fast path; a stacked gate, or one whose main moved, is valid only if `git merge-tree --write-tree <origin/main> <gated head>` equals the tree the gate recorded, `gates.tree`, with the pulls merged under it kept in `gates.stack`; a gate recorded before migration 0004 has no tree and keeps the same-main rule), merge order, not a draft |
+| `merge-run <pr>` | `merge-check`, then `gh pr merge <pr> --merge`, logs it and opens `announce-main` with the "main moved to <sha>" text. The merge is recorded as soon as gh succeeds: main's sha comes from a fetch, else from `gh pr view --json mergeCommit`, else it stays unknown ("main moved (#N merged)"). Running it again on a pull request that is already merged with no merge recorded records it and opens `announce-main`. Once the merge is recorded it computes the heavy reservation again from the shorter queue (0 when the queue is empty), even when the log line could not be written |
 | `owner [--all]` / `owner-answer <q> --answer <t>` / `owner-ask --text <t>` | The owner question queue (inbound messages starting `OWNER QUESTION`); an answer is dated in the decision log and owed back to the lane |
-| `health [--kill-orphans]` | Memory by group, orphaned Temporal dev servers, duplicate MCP server copies, lanes with no live session, heavy-lock holders; `--kill-orphans` kills only orphans by the rule below, by pid |
-| `watch [--interval <s>] [--for <dur>]` | Prints one line per settled change (PR opened, merged, ready, head moved, mergeable after two equal polls and never `UNKNOWN`, main moved, disk low) and keeps a heartbeat |
+| `health [--kill-orphans]` | Memory by group, orphaned Temporal dev servers, duplicate MCP server copies, lanes with no live session, heavy-lock holders, the last computed heavy reservation (with a `[stale: ...]` note when nobody recomputed it for 30 minutes), and the `builders-per-lane` advice (see "Resources and adaptation"); `--kill-orphans` kills only orphans by the rule below, by pid |
+| `watch [--interval <s>] [--for <dur>]` | Prints one line per settled change (PR opened, merged, ready, head moved, mergeable after two equal polls and never `UNKNOWN`, main moved, `DISK LOW` / `DISK OK`, `MEMORY LOW` / `MEMORY OK`, each after two polls agree) and keeps a heartbeat; every poll also recomputes the heavy reservation |
 | `worktree-list [--no-fetch]` | Every worktree of the team repo (`git worktree list --porcelain`) with its branch, head, pull request (number and state) and verdict `removable` or `kept` with every reason; changes nothing (it fetches origin first unless `--no-fetch`). Exit 0 |
 | `worktree-sweep [--dry-run] [--pr <n>]` | Removes the removable worktrees (see "Worktree cleanup"), all or just pull request n's (its head branch and its gate trees); prints each removed and each kept one with its reasons. `--dry-run` removes nothing. Exit 0, 1 when git refused a removal, 2 when nothing could be judged (git, gh or the process scan failed: nothing is removed) |
 | `log-append --kind merge\|decision\|lanes\|incident\|note --text <t>` | Appends a dated line to the running log |
-| `status` | Obligations, merge queue (ready pull requests; one leaves it when any merge is recorded for it, or when the watch saw it merged or closed on GitHub, kept under `watch.ended-prs`), owner queue, lanes |
+| `status` | Obligations, merge queue (ready pull requests; one leaves it when any merge is recorded for it, or when the watch saw it merged or closed on GitHub, kept under `watch.ended-prs`), owner queue, lanes, and one line each for the heavy reservation and the builders advice |
 | `queue-drop <pr> --reason <text>` | Removes the pull request's merge-queue entry and appends a `NOTE` line (`queue-drop #N: <reason>`) to the running log. The inbox message stays; the drop is kept with its time under `queue.dropped`, so only a ready message sent after it queues the pull request again. Exit 0 dropped; 2 when the pull request has no queue entry (`AW-META-018`), the reason is blank or usage |
 
 The orphan rule: the command line has `temporal` and `server start-dev`, its `--db-filename` is under `/tmp/aw-sindri-`,
 its parent is `systemd --user` or init, and it is older than five minutes.
+
+## Merge queue
+
+`queue-gate` gates a train of ready pull requests in one round. The queue is the pull requests lanes said are ready, lowest number first, reordered only by the team's merge-order rules (a pull request waits behind the one the rules say merges before it).
+
+- **Stacking.** Position 1 gates on `origin/main`. Position k gates in its own gate tree (`gates/<pr>/tree`) on the same pinned `origin/main` with the heads of positions 1..k-1 merged in order, then its own head. Nothing is pushed. The record keeps the stack (the pull request and head of every position under it) and the tested tree; `merge-check` accepts a stacked gate when the merge result of the current `origin/main` with the gated head has the tree the gate tested, which holds once the pull requests under it are merged, in any merge style.
+- **Conflicts.** A head that conflicts with main or with the heads ahead of it is dropped from the round: `DROPPED #N: conflicts with #M at <sha>`. The later pull requests stack without it.
+- **One slot pool.** Every step of every gate takes its heavy slots from one pool of `gate.parallelSteps` (default `heavy.cap`) slots; a free slot goes to the lowest train position, then the earliest step. Steps that are not heavy start as soon as they are free.
+- **Failure.** When a step of position j fails, the gates above j that are still running are cancelled: each step's own process tree is killed by the PIDs aw-meta started (never by name). A cancelled gate is not recorded and its pull request stays queued for the next round. Gates above j that had already finished keep their record, but their stack holds j, which is not merged, so `merge-check` refuses them until a new train is run.
+- **Status.** The train is kept in the key-value store (`train.state`) and `status` prints it: position, PR, base, state (`GATING`, `PASS`, `FAIL`, `CANCELLED`, `DROPPED`, `SKIPPED`, `ERROR`). Drafts are `SKIPPED`.
+- `gate-rerun <pr>` works on a train gate: it reruns in the tree the train built for that pull request.
+
+## Resources and adaptation
+
+The meta watches memory and disk and adapts, so a team never has to be told by hand. All thresholds live in `team.json`
+(`resources`, `builders`, `heavy`) and have defaults; nothing is specific to one repo.
+
+**Events** (`watch`, one line when the state flips, never repeated): `DISK LOW` / `DISK OK` (state-disk free space against
+`resources.diskFloorGb`), `MEMORY LOW` / `MEMORY OK` (`MemAvailable` from `/proc/meminfo` against `resources.memFloorGb`, or swap
+used at or above `resources.swapHighPct`). A flip is reported only after two consecutive polls agree on it (the rule `mergeable`
+already follows), so a host sitting at its floor does not flap LOW, OK, LOW and make the meta message every lane each time. The
+last reported state is kept in the team's store (`watch.resources`), so a re-armed watch does not announce a standing LOW again.
+`health` judges memory by the same rule (`ResourceRules.MemoryLow`), so the two never disagree. aw-meta is Linux-only because it reads `/proc`.
+
+**Gate priority and the reservation.** The heavy-job wrapper (`AW_HEAVY` or `$AW_STATE_DIR/bin-r1b/heavy`) shares a
+box-wide number of slots between every expensive job. aw-meta stays inside its own state directory: it never writes the
+wrapper's files (`heavy-meta-reserve`) and never reads its cap file. It speaks to the wrapper in one way and advises about
+the other:
+
+- `gate-run` and `gate-rerun` export `AW_HEAVY_PRIORITY=meta` to every command they start. A job with that priority may take any slot.
+- aw-meta **computes** the reservation from the **merge-queue depth**: the pull requests lanes said are `ready` that are not yet
+  merged, ended or dropped (what `status` lists as the merge queue), sized against the team's `heavy.cap` (default 3; keep it equal
+  to the wrapper's own cap). The tier with the highest `minDepth` the depth reaches decides; with the defaults a depth of 3 or 4
+  reserves 1 slot, 5 or 6 reserves 2, 7 or more reserves all of them (`"all"` is `heavy.cap`), and 0 to 2 reserves none. It
+  keeps the result, the depth behind it and the time in `heavy-reserve` in the team's state directory (`meta/teams/<team>/`, or
+  `meta/` for a legacy team), and recomputes it wherever the queue changes: before each `gate-run`, after each `merge-run` (even
+  when its log line fails), after each `queue-drop`, on every `watch` poll (a ready message, a drop, or a pull request seen
+  merged or closed on GitHub) and on each `status`. Each change of the reservation is one `NOTE` line in the running log
+  (`heavy reservation 0 -> 1 of 3 slots (merge queue depth 3); set it with meta-gate-reserve 3`; the argument is explained below). Computing it is advisory: if the
+  file can't be written the gate or merge still runs. `heavy.reserve: false` makes aw-meta compute nothing.
+- **Applying it is the meta's step**: `gate-run`, `status` and `health` print `heavy reservation: N of C slots (queue depth D) - set
+  it with meta-gate-reserve A`, and the meta runs `meta-gate-reserve A` (the installed bash script, the only writer of the
+  wrapper's file) before each gate. `A` is **not the queue depth**: the script has its own fixed tiers (depth 0-2 reserves 0, 3-4
+  reserves 1, 5-6 reserves 2, 7 or more reserves its cap), which differ from a team's custom `heavy.reserve` tiers or `heavy.cap`.
+  aw-meta prints the argument that makes the script keep the slots it computed: 0 slots prints 0, 1 prints 3, 2 prints 5, and all
+  of them (N = C) prints 7. A count between 2 and the cap has no argument; it prints 5 (the script keeps 2, never more than computed).
+  `gate-run` computes before its steps and prints the line after them, so to apply the reservation before a gate read it from
+  `status` (which recomputes it). The wrapper then gives every expensive job *without* the priority only the
+  slots above the reservation, and does not count a wait for the reservation toward its timeout. A line ending `[stale: computed
+  HH:MMZ; ...]` means nothing recomputed it for 30 minutes (no watch is running and no gate, merge, drop or status has run): run
+  `status` and apply the new depth, or `meta-gate-reserve --clear` when the queue is empty.
+- The reservation assumes every gate runs through `aw-meta gate-run`. A gate run by hand carries no priority and would wait behind
+  the reservation it is meant to share; nothing running is ever pre-empted.
+
+**Builders per lane.** `health` (and `status`, one line) advises how many builder subagents each lane should run now, from
+`builders.maxPerLane`: it is reduced while free disk is under `resources.diskFloorGb + lanes x builders x builders.worktreeGb`
+(lanes are the configured lanes but the meta lane), and is 1 while memory is low (the watch's `MEMORY LOW` rule: under `resources.memFloorGb` available, or swap at `resources.swapHighPct`); it is never
+below 1. The line reads `builders: 4 per lane (disk 132 GB free, mem 12 GB available)`, or `builders: 2 per lane (disk below
+floor+headroom)` / `builders: 1 per lane (memory low)` when something cuts it; `--json` carries `builders` (`perLane`,
+`maxPerLane`, `diskFreeGb`, `memAvailableGb`, `limit`) and `heavy` (`cap`, `reserve`, `depth`, `computedAt`, `stale`; absent when no reservation was computed or `heavy.reserve` is false). Without a team config the defaults and one lane apply, and no reservation.
 
 ## Worktree cleanup
 
@@ -130,7 +193,7 @@ With `worktrees.enabled: false` the two automatic triggers only report ("would r
 3. Nothing unpushed: every commit of its HEAD is reachable from a remote branch (`git rev-list HEAD --not --remotes` is empty).
 4. Idle: no live process has its working directory or an open file inside it (`/proc/<pid>/cwd` and `fd` on Linux, `lsof` where there is no `/proc`). This covers a lane or builder still sitting in it. A scan that cannot run fails the sweep: nothing is removed.
 5. Not protected: not the main worktree, not the team's shared checkout (`repo`), not locked (`git worktree lock`), its directory not missing.
-6. Under an allowed root: `worktrees.roots` (default `~/repos/aw-wt`, `<repo>/.claude/worktrees`), plus the gate directory `$AW_STATE_DIR/meta/gates` always. A path outside every root, a root itself, or a sibling that shares a root's name prefix is kept.
+6. Under an allowed root: `worktrees.roots` (default `~/repos/aw-wt`, `<repo>/.claude/worktrees`), plus the selected team's gate directory (`$AW_STATE_DIR/meta/teams/<team>/gates`, or the flat `meta/gates` on the legacy layout) always. After `team-migrate` the old flat `meta/gates` is no longer a root, so sweep it first (`worktree-sweep` with the legacy layout) or remove those throwaway gate trees by hand. The other roots (`worktrees.roots`) default to the same directories for every team: teams on one repo share them, so a team's sweep may remove another team's finished worktrees (rules 1 to 5 still apply); set `worktrees.roots` per team to keep them apart. A path outside every root, a root itself, or a sibling that shares a root's name prefix is kept.
 
 7. Not changed since the last sweep: the directory, or any file in its top two levels (build output and `.git` left out), has a modification time later than the start of the previous removing sweep (`worktrees.sweep-start` in aw-meta state; a sweep records its start after it removes, and `--dry-run` and `worktree-list` record nothing). This is a change trigger, not an age timer: it protects only trees that changed after the previous sweep, so a tree untouched since then is judged by rules 1 to 6. With no recorded sweep it has nothing to compare with. A tree whose files can't be read is kept. Gate trees are exempt (they are aw-meta's own and rule 1 for them already needs an ended pull request).
 
@@ -142,9 +205,39 @@ A **gate tree** (`gates/<pr>/tree`, `gates/<pr>/main-tree`) is aw-meta's own thr
 remove it: ...`, exit 1 for an explicit sweep). `git worktree prune` runs after any removal. **Branches are never deleted.**
 A worktree git cannot read is kept with the reason.
 
+## Named teams
+
+Every team has its own config and state, so several meta sessions (one per team) run at once and never see each
+other's messages, obligations, role, gates or lane sessions. A team name is `[a-z0-9][a-z0-9-]*` (it is a directory
+name, a tmux socket name and the prefix of the session names).
+
+**Selecting a team**, for every command: the global `--team <name>` option (it wins), else `AW_META_TEAM`. The
+launcher exports `AW_META_TEAM` and `AW_META_DIR` (the team's state directory) into every lane it starts, the meta pane
+included, so lane commands, the lane hooks and the Claude Stop and outbox hooks need nothing more; the two Claude hooks
+also fall back to the tmux socket name (the launcher runs the team on `tmux -L <team>`) when the variable is unset,
+and only for a team that exists on disk. `aw-meta-launch --team <name>` takes the same option.
+
+**Resolution** (`TeamResolver`, mirrored by `scripts/meta-team-lib.sh`):
+
+| Selected | On disk | Acts on |
+|----------|---------|---------|
+| `X` | `teams/X/` | `teams/X` |
+| `X` | no `teams/X`, legacy `team.json` whose `team` is `X` | the legacy flat layout |
+| `X` | neither | `teams/X` (`team-init` creates it; others report `AW-META-002`) |
+| none | a legacy `team.json` | the legacy flat layout, exactly as before |
+| none | one `teams/<t>/team.json` | `teams/<t>` |
+| none | several | error: `AW-META-019`, exit 2, the teams listed; `stop-check` and `outbox-record` pass through (exit 0) so a hook never blocks an unrelated session; `team-list` and `team-migrate` need no team |
+| none | none | the flat paths (no config: `AW-META-002`) |
+
+A name that is not `[a-z0-9][a-z0-9-]*` is a usage error before anything is read or created (except `stop-check` and `outbox-record`, which pass through with exit 0 like they do on ambiguity). `AW_META_CONFIG` still
+overrides the config file path (the state directory is still the team's), unless a team is selected and the file's `team` names another one: a lane's own `AW_META_CONFIG` is then ignored, so `aw-meta --team B` in team A's pane acts on B.
+
+**Legacy layout.** `$AW_STATE_DIR/meta/team.json` with `meta.db`, `lane-sessions/` and `gates/` beside it keeps
+working untouched. `team-migrate` moves it into `teams/<its team name>/` on request only.
+
 ## Team config
 
-`$AW_STATE_DIR/meta/team.json` (or `AW_META_CONFIG`). Unknown fields are ignored. Example:
+`$AW_STATE_DIR/meta/teams/<team>/team.json` (the legacy flat `$AW_STATE_DIR/meta/team.json`, or `AW_META_CONFIG`). Unknown fields are ignored. Example:
 `skills/meta/examples/agentic-workflow.team.json` (its `repo`, `prompts` and `log` are placeholders: set absolute paths, since they are not expanded).
 
 | Field | Meaning |
@@ -152,29 +245,34 @@ A worktree git cannot read is kept with the reason.
 | `team`, `metaLane`, `lanes` | Session and tmux names are `<team>-<lane>` |
 | `repo` | Absolute path of the shared checkout (Warp needs an absolute cwd) |
 | `prompts` | Directory of `<lane>.md` kickoff prompts for fresh lane sessions |
-| `log` | The running log (default `$AW_STATE_DIR/meta/log.md`) |
-| `gate.always`, `gate.docsOnly`, `gate.scopes.<name>.{paths,steps}` | The merge gate. A step is `{name, run: argv, heavy, rerun?}`; `heavy` runs it through the heavy-job wrapper (`AW_HEAVY`, used when the file exists); a `run[0]` with a `/` that is not absolute (`scripts/check.sh`) is resolved against the gate tree, not aw-meta's own directory (a bare name goes through PATH); `rerun` is the argv `gate-rerun` uses, with a `{test}` placeholder (default for a `dotnet test` step: its argv plus `--filter-method *<test>*`). Step names are unique across scopes |
+| `log` | The running log (default `$AW_STATE_DIR/meta/teams/<team>/log.md`) |
+| `gate.always`, `gate.docsOnly`, `gate.scopes.<name>.{paths,steps}` | The merge gate. A step is `{name, run: argv, heavy, rerun?}`; `heavy` runs it through the heavy-job wrapper (`AW_HEAVY`, used when the file exists); a `run[0]` with a `/` that is not absolute (`scripts/check.sh`) is resolved against the gate tree, not aw-meta's own directory (a bare name goes through PATH); `rerun` is the argv `gate-rerun` uses, with a `{test}` placeholder (default for a `dotnet test` step: its argv plus `--filter-method *<test>*`). Step names are unique across scopes. **Parallel steps:** a step may carry `after: [names]` and the gate carries `parallelSteps`. Steps run concurrently once what they wait for has finished; heavy steps are limited to `parallelSteps` at once (default: `heavy.cap` from team.json, else 3; 1 = serial). Without `after`, dependencies are inferred: a step that builds (`dotnet build`, or `dotnet test`/`publish` without `--no-build`) waits for the previous builder, so builders chain; any other heavy step, and any step with a word naming `dotnet` (so `scripts/dotnet-verify-packages.sh`, which restores the solution, waits like `dotnet format` does), waits for every builder in the selection; the rest run at once. `after: []` is how a heavy step opts out. Every gate step runs with `AW_SESSION_HEAVY_SLOTS` set to the pool limit (the heavy-job wrapper otherwise serialises all steps of the meta pane on its per-session lock), and a wrapper exit 75 (lock timeout) is an infrastructure error (`AW-META-009`), never a red gate. A cancelled step gets SIGTERM to its process tree (pids aw-meta started, found by parent, never by name), a 10 s grace, then a kill; `queue-gate` cancels its steps on SIGINT/SIGTERM and writes `TRAIN pid <n> started <time>` first and `TRAIN ended <time>` last on its board `after: []` waits for nothing; a name that is configured but not selected is ignored; an unknown name, a self-wait or a cycle is AW-META-003. Results, the RESULT output and the record keep config order and the same log files. A failed step does not skip its dependents. `dotnet test --no-build` steps only read `bin`/`obj`, so they may run side by side |
 | `mergeOrder` | `[{before, after}]`: `after` can't merge while `before` is open |
 | `worktrees` | `{roots?, buildOutputs?, enabled?}` for the worktree cleanup (see that section): the directories whose worktrees may be removed (`~` is the home directory), the directory names of untracked build output that don't keep a worktree, and `enabled` (default true; false makes the merge-run and watch triggers only report) |
+| `resources` | `{diskFloorGb?, memFloorGb?, swapHighPct?}`, defaults 30, 8 and 90 (floors 0 or more, `swapHighPct` 1 to 100; anything else is AW-META-003 at load): the watch reports `DISK LOW` below `diskFloorGb` free on the state disk and `MEMORY LOW` below `memFloorGb` available or at `swapHighPct` percent of swap in use (a host with no swap never trips the swap rule). See "Resources and adaptation" |
+| `builders` | `{maxPerLane?, worktreeGb?}`, defaults 4 and 4 (`maxPerLane` 1 or more, `worktreeGb` 0 or more; anything else is AW-META-003 at load): the most builder subagents a lane runs at once, and the disk one builder's worktree and build output take (the `health` advice) |
+| `heavy` | `{reserve?, cap?}`: `reserve` is an array of `{minDepth, slots}` tiers (slots is a whole number or `"all"`), `true` or absent for the defaults `[{"minDepth":3,"slots":1},{"minDepth":5,"slots":2},{"minDepth":7,"slots":"all"}]`, or `false` to compute no reservation; `cap` (default 3, at least 1) is the slot count the reservation is sized against, to keep equal to the wrapper's own |
 | `knownFlakes` | Test names (or Class.Method, or a class) a red is checked against before it counts as real; matched as whole dot-separated segments, never as a substring |
 
 ## Files
 
 | Path | Written by |
 |------|-----------|
-| `$AW_STATE_DIR/meta/meta.db` | `aw-meta` |
-| `$AW_STATE_DIR/meta/team.json` | `team-init` (then the owner) |
-| `$AW_STATE_DIR/meta/gates/<pr>/` | `gate-run`, `gate-rerun`: `tree` (the gate tree, reused per PR), `main-tree` (plain main for reruns), `<run>/<step>.log` |
-| `$AW_STATE_DIR/meta/lane-sessions/<lane>` | `scripts/meta-lane.sh` (the lane's Claude session id), or `config/hooks/session-id-report.sh` at the SessionStart of a Codex or Cursor lane (its own session id, atomic, 0600) |
-| `$AW_STATE_DIR/meta/lane-sessions/<lane>.replied`, `.owed` | `config/hooks/meta-lane-gate.sh`: the checksum of the last reply it recorded and of the owed list the last block showed (cleared by a new delivery, a relaunch, a new session) |
-| `$AW_STATE_DIR/meta/lane-sessions/<lane>.agent` | `scripts/meta-lane.sh` (JSON: `agent`, `processName`, `hooks`, `transcripts`) for a lane whose agent isn't Claude Code; read by the lane commands and the lane source |
-| `$AW_STATE_DIR/meta/lane-sessions/<lane>.exited` | `scripts/meta-lane.sh` when the lane's claude exited and the pane fell back to its shell; `meta-launch.sh` restarts such a pane unless a claude runs in it again |
+| `$AW_STATE_DIR/meta/teams/<team>/meta.db` | `aw-meta` |
+| `$AW_STATE_DIR/meta/teams/<team>/team.json` | `team-init` (then the owner) |
+| `$AW_STATE_DIR/meta/meta.db`, `team.json` | the legacy flat layout of a team set up before named teams (still read when no team is selected; `team-migrate` moves it) |
+| `$AW_STATE_DIR/meta/teams/<team>/gates/<pr>/` | `gate-run`, `gate-rerun`: `tree` (the gate tree, reused per PR), `main-tree` (plain main for reruns), `<run>/<step>.log` |
+| `$AW_STATE_DIR/meta/teams/<team>/lane-sessions/<lane>` | `scripts/meta-lane.sh` (the lane's Claude session id), or `config/hooks/session-id-report.sh` at the SessionStart of a Codex or Cursor lane (its own session id, atomic, 0600) |
+| `$AW_STATE_DIR/meta/teams/<team>/lane-sessions/<lane>.replied`, `.owed` | `config/hooks/meta-lane-gate.sh`: the checksum of the last reply it recorded and of the owed list the last block showed (cleared by a new delivery, a relaunch, a new session) |
+| `$AW_STATE_DIR/meta/teams/<team>/lane-sessions/<lane>.agent` | `scripts/meta-lane.sh` (JSON: `agent`, `processName`, `hooks`, `transcripts`) for a lane whose agent isn't Claude Code; read by the lane commands and the lane source |
+| `$AW_STATE_DIR/meta/teams/<team>/lane-sessions/<lane>.exited` | `scripts/meta-lane.sh` when the lane's claude exited and the pane fell back to its shell; `meta-launch.sh` restarts such a pane unless a claude runs in it again |
+| `$AW_STATE_DIR/meta/teams/<team>/heavy-reserve` | `aw-meta` (`gate-run`, `merge-run`, `queue-drop`, `watch`, `status`): the computed heavy reservation, `<slots> <queue depth> <time>`; the heavy-job wrapper never reads it (the meta applies it with `meta-gate-reserve`) |
 | the running log | `aw-meta` (merges, owner decisions, lane maps, kills, worktree sweeps, `log-append`) |
 | `$XDG_DATA_HOME/warp-terminal/launch_configurations/<team>-team.yaml` | `scripts/meta-launch.sh` (the `warp` viewer only) |
 | `$AW_STATE_DIR/launcher.json` | the owner, or `aw-meta-launch --init-launcher` (read by `scripts/launcher-lib.sh`) |
-| `$AW_STATE_DIR/meta/lane-sessions/<lane>.ambiguous` | `scripts/meta-lane.sh` when an agent that reports its own session id left more than one candidate session file |
-| `$AW_STATE_DIR/meta/lane-sessions/<lane>.settled` | `scripts/meta-lane.sh` for a lane whose agent reports its own session id: left once the id is recorded or refused; `meta-launch.sh` waits for it before starting the next lane |
-| `$AW_STATE_DIR/meta/lane-sessions/.reported.flock` | `scripts/meta-lane.sh`: the team start lock (`flock`; the kernel drops it when the holder dies) that serialises the start of lanes whose agent reports its own session id |
+| `$AW_STATE_DIR/meta/teams/<team>/lane-sessions/<lane>.ambiguous` | `scripts/meta-lane.sh` when an agent that reports its own session id left more than one candidate session file |
+| `$AW_STATE_DIR/meta/teams/<team>/lane-sessions/<lane>.settled` | `scripts/meta-lane.sh` for a lane whose agent reports its own session id: left once the id is recorded or refused; `meta-launch.sh` waits for it before starting the next lane |
+| `$AW_STATE_DIR/meta/teams/<team>/lane-sessions/.reported.flock` | `scripts/meta-lane.sh`: the team start lock (`flock`; the kernel drops it when the holder dies) that serialises the start of lanes whose agent reports its own session id |
 
 ## Launcher
 
@@ -213,7 +311,7 @@ and `AW_META_CLAUDE_ARGS` is inserted after `{bin}`; both stay for tests and are
 `"override": true` entry for `claude-code`. `AW_WARP_LAUNCH_DIR` is where the `warp` viewer writes its YAML (the file has no
 such field). `AW_LAUNCHER_CONFIG` is passed on to every lane's tmux session.
 
-**Lane variables.** Every lane's environment has `AW_SINDRI_CHILD=1`, `AW_META_TEAM` and `AW_META_LANE`. `meta-lane.sh`
+**Lane variables.** Every lane's environment has `AW_SINDRI_CHILD=1`, `AW_META_TEAM`, `AW_META_LANE` and `AW_META_DIR` (the team's state directory, which the lane hooks write `lane-sessions/` under). `meta-lane.sh`
 exports them (L-12, SL-1 section 10.2) instead of passing `-e` to `new-session`, so tmux's global environment, the Warp
 layout and every tmux command stay as they are with no file, `-L <team>` aside (the owner's condition). The effect is the
 same: a `sindri` run inside the lane is a session caller, whatever the agent. A shell left in the pane after the agent

@@ -23,6 +23,9 @@ public static class TeamConfigs
         MergeOrder = [new MergeOrderRule(Before: 190, After: 192)],
         KnownFlakes = ["SpikeEvalTests"],
         Worktrees = new WorktreeConfig(["/work/wt"], ["bin", "obj"], Enabled: false),
+        Resources = new ResourcesConfig(DiskFloorGb: 40, MemFloorGb: 6, SwapHighPct: 80),
+        Builders = new BuildersConfig(MaxPerLane: 3, WorktreeGb: 5),
+        Heavy = new HeavyConfig(new ReserveSetting(Enabled: true, [new ReserveTier(2, new ReserveSlots(1)), new ReserveTier(4, ReserveSlots.All)]), Cap: 4),
     };
 
     /// <summary>Whether two configs hold the same values.</summary>
@@ -35,11 +38,19 @@ public static class TeamConfigs
         ArgumentNullException.ThrowIfNull(b);
         return a.Team == b.Team && a.Repo == b.Repo && a.MetaLane == b.MetaLane && a.Log == b.Log && a.Prompts == b.Prompts
             && a.Lanes.SequenceEqual(b.Lanes, StringComparer.Ordinal)
-            && a.KnownFlakes.SequenceEqual(b.KnownFlakes, StringComparer.Ordinal)
-            && a.MergeOrder.SequenceEqual(b.MergeOrder)
             && SameGate(a.Gate, b.Gate)
-            && SameWorktrees(a.Worktrees, b.Worktrees);
+            && SameWorktrees(a.Worktrees, b.Worktrees)
+            && SameResources(a, b);
     }
+
+    private static bool SameResources(TeamConfig a, TeamConfig b) =>
+        a.KnownFlakes.SequenceEqual(b.KnownFlakes, StringComparer.Ordinal)
+        && a.MergeOrder.SequenceEqual(b.MergeOrder)
+        && a.Resources == b.Resources
+        && a.Builders == b.Builders
+        && a.Heavy.Cap == b.Heavy.Cap
+        && a.Heavy.EffectiveReserve.Enabled == b.Heavy.EffectiveReserve.Enabled
+        && a.Heavy.EffectiveReserve.Tiers.SequenceEqual(b.Heavy.EffectiveReserve.Tiers);
 
     private static bool SameWorktrees(WorktreeConfig a, WorktreeConfig b) =>
         a.Enabled == b.Enabled

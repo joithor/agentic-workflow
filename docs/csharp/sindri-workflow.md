@@ -76,7 +76,7 @@ A case file is JSON lines, LF or CRLF:
 or an engine trigger: `answer` with a `variant` (`grant`, `grant-tokens`, `accept`, `reject`, `resume`, `text`; the
 grants take `amount`, a `text` answer's text is `outputs` `fact:answer`), `takeover`, `handback`, `cancel` and
 `deadline`. An answer wait is satisfied by an `answer` line with `variant` `text` (outcome `answered`), not by
-`wait.satisfied`. A `deadline` line fires the running timer: `takeoverIdle` while taken over, the retry timer after a `then: retry` re-armed the state, otherwise the state timer. It fails when no timer runs (parked, escalated or ended).
+`wait.satisfied`. A child's `wait.satisfied` line may give `outputs`: only the child's declared outputs, under the child's keys; a key it doesn't declare, or any on `cancelled`, fails the line. `--scaffold` fills a child line with the outputs its outcome always carries. A `deadline` line fires the running timer: `takeoverIdle` while taken over, the retry timer after a `then: retry` re-armed the state, otherwise the state timer. It fails when no timer runs (parked, escalated or ended).
 
 A `step.failed` line takes an optional `reason`, what the Step reported as its failure. Left out, it is the constant
 `the Step failed`, the same on every line, so two `step.failed` lines in a loop are the same failure and park
@@ -126,9 +126,9 @@ form under its hash: `registered <id>@<hash12> (unapproved)`, or `already regist
 `recipe.registered` event per hash). Other content under a registered id and version is `SND-RECIPE-007`; any other
 failing rule is `SND-RECIPE-001`, each followed by its rule lines.
 
-`sindri recipe show <id@hash> [--json]` (a query; the hash by 8 or more digits) prints the recipe's line, then `urgency: <urgency>`, `name: <template>` when the recipe has a `name`, one
-`input: <key> type=<type> kind=<kind|-> [generate="<template>"]` line per input (the type is the declared one, else the one the kind pairs with; a row registered before input kinds shows `kind=-`) and one `output: <key> type=<type> from=<state>` line per output, then the path order (below), then the approval preview;
-an unknown hash is `SND-RECIPE-002`. `show --json` prints the server's body, `{"recipe":{id, version, hash, standing, via, stale, inputs, urgency, name, outputs, orderedBy, states, loops},"preview":{…}}`: the recipe object has the same fields as a `recipe list --json` row, so a client reads urgency, inputs, outputs and the path order the same way from either. `sindri recipe list [--stale] [--json]` prints one line per registered recipe,
+`sindri recipe show <id|id@hash> [--json]` (a query; a bare id is the approved version, a hash is 8 or more digits) prints the recipe's `<id>@<hash12>`, then `urgency: <urgency>`, `name: <template>` when the recipe has a `name`, one
+`input: <key> type=<type> kind=<kind|-> [generate="<template>"]` line per input (the type is the declared one, else the one the kind pairs with; a row registered before input kinds shows `kind=-`) and one `output: <key> type=<type> from=<state>` line per output, then the path order (below) and one `loop: <name> <from> -> <to> cap=<n>` line per loop;
+an unknown id or hash is `SND-RECIPE-002`, an id with no approved version `SND-RECIPE-003`. The standing, the approval and the approval preview are not in `show`: `recipe list` has the standing and `recipe approve` prints the preview before it asks. `show --json` prints the served `RecipeView`, `{id, hash, version, name, inputs, outputs, urgency, orderedBy, states, loops}`, where an input is `{key, label, type, kind, required, generate}` (`kind` is `-` on a legacy row, `required` is false for an input with a `generate` template) and an output is `{key, label, type, from}`; the standing, `via` and `stale` are `recipe list` fields, not part of the view. `sindri recipe list [--stale] [--json]` prints one line per registered recipe,
 `<id>@<hash12> <standing> (<via>)[; stale: …]`, where standing is `approved`, `unapproved` or `revoked` and stale names
 `pin-drift` (a pinned block's descriptor changed in this build), `child-stale` (a pinned child was revoked or has a newer approved version) or `legacy-shape` (registered before input kinds; the line's fix is `register the current file at a new version and approve it`, and an unapproved row of that shape carries the mark too);
 `--stale` keeps only the approved ones that are stale. `--json` prints the server's body,
@@ -141,7 +141,7 @@ isn't running they print `SND-API-001 not running: …` and exit 1.
 transition graph by `StatePathOrder` and never hashed (a recipe's hash is the same with or without it): `orderedBy` (`path`, or
 `transition-list` when `initial` has more than one distinct non-terminal first target other than itself), `states[]` (`id`, `order`, `branchOf`) and
 `loops[]` (`name`, `from`, `to`). Text form: `order: <orderedBy>`, one `state: <name> order=<n>|branch-of=<state>|order=-` line per state and
-one `loop: <name|-> <from> -> <to>` line per loop edge. The walk starts at `initial` and follows each state's transitions in list order:
+one loop line per loop edge: `recipe list` prints `loop: <name|-> <from> -> <to>` (every loop edge), `recipe show` prints `loop: <name> <from> -> <to> cap=<n>` (named loops with a cap only). The walk starts at `initial` and follows each state's transitions in list order:
 the first to a non-terminal state not yet seen continues the main path, a later one is a branch and every state only that branch reaches is folded
 under the state it leaves (`branchOf`, no `order`); a transition back to a state still on the walk is a loop edge, named by the target's
 `loop:` (the loop the engine counts the round on; else the looping state's), listed in the order the walk finds them. A terminal target neither takes the main-path slot nor decides `orderedBy`; terminal states are numbered after the non-terminal ones in
@@ -237,7 +237,7 @@ needs re-approval.
 | `urgency` | no | `incident`, `triage` or `work` (default `work`; UI E-21). The app orders its Workflows strip by it; the engine never reads it. The normalizer writes `work` when it is absent, so an absent urgency and `urgency: work` hash the same. Any other value is `RCP-URG-001` |
 | `inputs` | yes | At least one (`RCP-INPUT-002`): `{ key, label?, type?, kind, generate? }`. `kind` is a subject kind and required (`RCP-INPUT-001`); `type` is a fact type and defaults to the type `kind` pairs with; `generate` is a template that supplies the value when the start gives none (text inputs only, `RCP-NAME-005`/`-006`). The bare-key short form (`[fact:item]`) normalizes to an input with no `kind`, so it fails `RCP-INPUT-001`. The first input is the instance's subject (UI E-22) |
 | `name` | no | A template for the instance's name, rendered once at start: literals, `{fact:<input>}`, `{start:date}`, `{start:time}`, `{{` and `}}` (engine spec §3.11). The name is the subject's label. `RCP-NAME-002` to `-004` |
-| `outputs` | no | What the recipe produces for a human: `{ key, label?, type?, from }`. `from` names the state that produces the fact. Declarations only: they add no wiring (UI E-22) |
+| `outputs` | no | What the recipe produces for a human: `{ key, label?, type?, from }`. `from` names the state that produces the fact. Declarations only: they add no wiring (UI E-22), except on a child: a child's declared outputs are the facts of its parent's `wait.satisfied` (DT-C) |
 | `initial` | yes | An `active` or `wait` state (`RCP-INIT-001`) |
 | `states` | yes | At least one non-terminal and one terminal state. `cancelled`, `escalated`, `parked` and `taken-over` are reserved (`RCP-STATE-001`) |
 | `transitions` | yes | |
@@ -248,8 +248,8 @@ needs re-approval.
 ### Fact types and subject kinds
 
 Fact type: `text`, `file`, `item`, `link`, `scope-map`, `packet`, `evidence`, `decision`, `payload` (`FactTypes`). It picks a viewer in
-the app and nothing else. Subject kind: `item`, `linear-project`, `webhook`, `file`, `text`, `link` (`SubjectKinds`); `item`, `file`, `text` and `link`
-pair with the type of the same name, `linear-project` and `webhook` with `payload`; an input with no `type` has its kind's. Both are strings in the long form, so a bad value
+the app and nothing else. Subject kind: `item`, `linear-project`, `webhook`, `file`, `text`, `link`, `packet`, `payload` (`SubjectKinds`); `item`, `file`, `text`, `link` and `packet`
+pair with the type of the same name, `linear-project`, `webhook` and `payload` with `payload` (owner decision 2026-10-16: a packet or a plain payload as a subject); an input with no `type` has its kind's. Both are strings in the long form, so a bad value
 reaches its rule (`RCP-TYPE-001` to `-003`, `RCP-INPUT-001`/`-002`, `RCP-NAME-002` to `-006`, `RCP-OUT-001` to `-003`, `RCP-URG-001`) instead of a reader error. Those rules
 (the Declarations rows under Rules) run on every path that validates a recipe, so a value of another spelling is refused with its rule's line.
 
@@ -296,7 +296,7 @@ re-arms the deadline in the same frame and re-sends the entering transition's ef
 | `gates` | no | `{ use, threshold?, with? }`, run in order. A judge or model gate needs a threshold above 0 and at most 1; a deterministic gate takes none (`RCP-THRESH-001`/`-002`) |
 | `evidence` | no | `{ kind, at, expect: pass \| fail }` |
 | `effects` | no | `{ use, with? }` |
-| `produces` | no | Facts the transition records; each must be an output of the trigger's source (`RCP-WIRE-002`) |
+| `produces` | no | Facts the transition records; each must be an output of the trigger's source (`RCP-WIRE-002`; for a child, one of its declared `outputs`). An entry is a fact key, or `{ fact, from }` to record a child's output under another key (DT-C) |
 
 The first transition whose `when` holds is the one taken. If its gates refuse, that is a refusal, not a fall-through to
 the next transition.
@@ -351,12 +351,13 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-EVID-001` | An evidence kind has a registered provider (a bad `at` or `expect` is `RCP-SCHEMA-002`) | Name a provided kind, or register the provider |
 | `RCP-EVENT-001` | A waited-for event is registered | Wait for a registered event |
 | `RCP-WIRE-001` | A block's inputs are produced on every path into its state, or are recipe inputs | Produce it on every path, or add it to `inputs` |
-| `RCP-WIRE-002` | `produces` lists only what the trigger's source records | List only its outputs |
+| `RCP-WIRE-002` | `produces` lists only what the trigger's source records (for a child, a declared output); only a child's output is renamed; no fact is written twice on one transition | List only its outputs |
+| `RCP-WIRE-003` | A transition from a child wait produces a child output only on outcomes whose every path inside the child produces it, never on `cancelled`, and never on a `when` that names no outcome (it matches every outcome, `cancelled` among them) | Produce it on that path in the child, or `when: { outcome: <o> }` an outcome that always carries it |
 | `RCP-WHEN-001` | `when: { outcome }` names an outcome the source reports; the message lists the outcomes available there (`outcomes here: ui, api, uncertain`) | Test one of its outcomes |
 | `RCP-WHEN-002` | `when: { loop }` names a declared loop, and `when: { outcome }` isn't used on a trigger that reports no outcome | Declare the loop |
 | `RCP-OUTCOME-001` | Every outcome a Step, event or child reports is handled by a transition, and terminal outcomes are `resolved`, `unresolved`, `alreadySatisfied` or `failed` | Add a transition for it, or use one of those outcomes |
 | `RCP-CHOICE-001` | A `step.judge.choose` state's `choices` has 2 to 32 entries | List 2 to 32 choices, each `"<outcome>: <criterion>"` |
-| `RCP-CHOICE-002` | `choices` is a literal list (not `{ fact }` or `{ profile }`) and each entry is text `"<outcome>: <criterion>"`: the outcome is `[a-z][a-z0-9]{0,31}`, the criterion 1 to 400 characters. An unquoted `- ui: ...` is a YAML mapping and gets the quote fix | Quote the entry; write the choices as a literal list |
+| `RCP-CHOICE-002` | `choices` is a literal list (not `{ fact }` or `{ profile }`) and each entry is text `"<outcome>: <criterion>"`: the outcome is `[a-z][A-Za-z0-9]{0,31}` (camelCase), the criterion 1 to 400 characters. An unquoted `- ui: ...` is a YAML mapping and gets the quote fix | Quote the entry; write the choices as a literal list |
 | `RCP-CHOICE-003` | Outcome names are distinct, and none is `uncertain` (the Step adds it) | Give each choice its own outcome |
 | `RCP-CHOICE-004` | `facts` is a literal list of at least one fact key; a hyphenated key gets the camelCase fix | List the facts the question reads |
 | `RCP-CHOICE-005` | Every route state routes `uncertain`, if it does, to a `step.desk.choose` state whose `from` names it, and has a `step.failed` transition to that twin; a twin's `from` is a literal naming a route state (not `{ fact }` or `{ profile }`) | Route to the desk twin; set `from:` to the route state |
@@ -388,12 +389,12 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-RES-001` | **Information:** a resource wait has no allocator in this build | None needed; it parks with `SND-WF-010` until one lands |
 | `RCP-URG-001` | `urgency` is `incident`, `triage` or `work` | Use one of them, or remove `urgency` (the default is `work`) |
 | `RCP-OUT-001` | An output's `from` names a state of the recipe | Name one of its states |
-| `RCP-OUT-002` | An output's `from` isn't a terminal or engine-owned state, and the state's Step, its leaving transitions' `produces` or its wait records the output's key. **Information** when the state waits on a child, whose outcome the validator can't read | Record the fact there, or name the state that does |
+| `RCP-OUT-002` | An output's `from` isn't a terminal or engine-owned state, and the state's Step, its leaving transitions' `produces` or its wait records the output's key. For a state that waits on a child, the child's declared outputs | Record the fact there, or name the state that does |
 | `RCP-OUT-003` | Output keys are unique and none is also an input key | Give each output its own key |
 | `RCP-TYPE-001` | An input's or output's `type` is a fact type | Use one of the nine types |
-| `RCP-TYPE-002` | An input's `kind` is a subject kind | Use one of the six kinds |
+| `RCP-TYPE-002` | An input's `kind` is a subject kind | Use one of the eight kinds |
 | `RCP-TYPE-003` | An input's `kind` pairs with its `type` (an absent `type` takes its kind's); not reported for an entry with a bad type or kind | Set `type` to the kind's, or change `kind` |
-| `RCP-INPUT-001` | Every input declares a `kind` | Add `kind: item \| link \| linear-project \| webhook \| file \| text`, paired with its type |
+| `RCP-INPUT-001` | Every input declares a `kind` | Add `kind: item \| link \| linear-project \| webhook \| file \| text \| packet \| payload`, paired with its type |
 | `RCP-INPUT-002` | The recipe declares at least one input | Declare one; a scheduled recipe gives it `generate: "<template>"` |
 | `RCP-NAME-002` | A `name` or `generate` template isn't empty and is at most 200 characters | Write literal text with placeholders |
 | `RCP-NAME-003` | A template has no unknown placeholder, unbalanced `{` or `}`, or control character | Use `{fact:<input>}`, `{start:date}`, `{start:time}`; write `{{` or `}}` for a literal brace |
@@ -442,13 +443,57 @@ A block is a class with a static descriptor, registered explicitly (no assembly 
    A Step whose outcomes or inputs depend on its parameters sets `OutcomesFrom` and `InputsFrom`: a list parameter's name
    (`choices`), or `<stateParam>.<listParam>` for a twin that reads another state's Step (`from.choices`). Read outcomes
    and inputs through `StepOutcomes.Of` and `StepInputs.Of`, never from the descriptor directly: the validator, the report validation and the eval read through them (the desk's views still read the descriptor and move onto them in DT-V2). An output that every
-   outcome must carry is `Every: true` (read it with `StepOutputs.RequiredOn`), and one the engine writes when a report
+   outcome must carry is `Every: true` (read it with `StepOutputs.RequiredOn`; what a caller must write, in the views, the commands and the eval scaffold, is `StepOutputs.CallerWritesOn` (`CallerWritesSomewhere` when the Step declares no outcomes, and for a fact row's required flag), which leaves out engine-filled outputs), and one the engine writes when a report
    omits it is `EngineFilled: true`. These descriptor fields are written only when set, so a descriptor without them
    keeps its hash; `ShippedBlocksTests` pins every shipped hash.
+
+   Two more optional fields are written only when set: `Runtime` (`desk`, `block` or `agent`: who runs the Step; descriptor-only
+   until DT-J, absent means today's rule) and `HumanOnly` (true or absent, never false). A Step is **human-only** when its descriptor
+   says `HumanOnly`, or when its `Runtime` is `block` and it runs on the desk (`HumanOnlySteps.Applies`). `workflow complete` on a
+   human-only Step is `SND-AUTH-002` unless the caller is a human (the app or a terminal): the refusal sits in `CompleteStep`, before
+   the nonce is claimed, so nothing is consumed, and a session report on an instance that can't be read is refused with that read
+   error, not let through. The message names the Step, its state and the command the human runs. Today `CompleteStep` is a desk-class command, so the command chain (`AuthorizingService`) refuses every session with its generic `SND-AUTH-002` before the service runs; this per-Step check is defence in depth, and takes over once a non-human class can reach `CompleteStep` (step reports open to sessions, P10).
 4. **Use it in a recipe** and run `sindri recipe validate` on it.
 5. **A behaviour change bumps `Version`** in the descriptor, in the reviewed change that makes it. Once approvals pin
    blocks (P2), a changed descriptor parks the instances of every recipe approved against the old one until it is
    re-approved (`SND-RECIPE-006`).
+
+### Block catalog (decision-tree Steps)
+
+Descriptor-only Steps (`AddBlockDescriptor`): recipes that name them validate, they run on the desk or are unavailable until their runtime
+(DT-J, DT-B) ships. `evidence.check` is a descriptor-only evidence provider (runtime in DT-B): a recipe that guards a transition with it validates (no `RCP-EVID-001`), the engine refuses the transition at run time ("no runtime for evidence checks in this build"), and `recipe eval` still answers every evidence check as holding, since an eval line has no evidence answer yet (a known gap until DT-B). Facts are `fact:` keys. Outputs are
+what a report must carry, on which outcomes; "every outcome" outputs are on all of them.
+
+| Step | Runtime | Inputs | Outcomes | Outputs |
+|---|---|---|---|---|
+| `step.intake.ticket` | desk | - | `done` | `issue` on done; `expected` on done; `actual` on done |
+| `step.rootcause.investigate` | agent | `issue`, `expected`, `actual` | `diagnosed`, `unfixed` | `rootCause` on diagnosed; `findings` on unfixed |
+| `step.reproduce.ui-check` | agent | `issue`, `rootCause` | `reproduced`, `notReproduced` | `check` on reproduced; `baseline` on reproduced; `findings` on notReproduced |
+| `step.reproduce.test-check` | agent | `issue`, `rootCause` | `reproduced`, `notReproduced` | `check` on reproduced; `baseline` on reproduced; `findings` on notReproduced |
+| `step.bugfix.start-attempt` | block | `decision` | `single`, `split`, `capReached` | `attempt` on single,split |
+| `step.bugfix.record-candidate` | block | `diff` | `recorded` | `candidate` on recorded |
+| `step.bugfix.recheck` | block | `check`, `candidate` | `passed`, `failed` | `recheck` (every outcome) |
+| `step.bugfix.judge` | block | `check`, `candidate`, `evidenceSummary` | `resolved`, `partial`, `unresolved`, `needsHuman` | `verdict` (every outcome) |
+| `step.report.write` | agent | `issue` | `done` | `resolution` on done |
+| `step.handtest.run` | agent | `phasePacket`, `workspace` | `works`, `broken` | `manualTest` (every outcome) |
+| `step.verify.journey` | agent | `phasePacket`, `workspace` | `pass`, `fail` | `evidencePack` (every outcome) |
+| `step.verify.design` | agent | `phasePacket`, `workspace` | `pass`, `fail`, `skipped` | `designCheck` on pass,fail |
+| `step.evidence.ui-plan` | agent | `phasePacket`, `built` | `planned`, `noTarget` | `evidencePlan` on planned; `evidenceSummary` on noTarget |
+| `step.evidence.api-plan` | agent | `phasePacket`, `built` | `planned`, `noTarget` | `evidencePlan` on planned; `evidenceSummary` on noTarget |
+| `step.evidence.db-plan` | agent | `phasePacket`, `built` | `planned`, `noTarget` | `evidencePlan` on planned; `evidenceSummary` on noTarget |
+| `step.evidence.ui-run` | agent | `evidencePlan`, `built` | `passed`, `failed`, `broken` | `evidenceSummary` (every outcome) |
+| `step.evidence.api-run` | agent | `evidencePlan`, `built` | `passed`, `failed` | `evidenceSummary` (every outcome) |
+| `step.evidence.db-run` | agent | `evidencePlan`, `built` | `passed`, `failed` | `evidenceSummary` (every outcome) |
+| `step.evidence.none` | block | `built` | `done` | `evidenceSummary` on done |
+| `step.evidence.combine` | block | `evidenceUi`, `evidenceApi`, `evidenceDb` | `done` | `evidenceSummary` on done |
+| `step.evidence.desk` | desk, human-only | `built` | `recorded`, `noneFound` | `evidenceSummary` (every outcome); `evidenceReason` (every outcome) |
+| `step.review.run` | agent | `change`, `phasePacket` | `clean`, `findings`, `behaviourWrong` | `review` (every outcome) |
+| `step.review.fix` | agent | `change`, `review` | `fixed` | `change` on fixed |
+| `step.review.recheck` | agent | `change`, `review` | `clean`, `findings`, `behaviourWrong` | `review` (every outcome) |
+| `step.owner.decide` | desk, human-only | - | `retry`, `stop` | `notes` on retry |
+
+`step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and human-only; their hashes moved once when the two fields
+landed (provisional owner default); every other shipped descriptor hashes as before (`ShippedBlocksTests` pins all of them).
 
 ## Writing a decision tree
 
@@ -457,7 +502,7 @@ that lets a person pick when the judge is unsure or fails. Until the block runti
 complete example is `recipes/dev/workflow.dev-evidence-route.yaml`.
 
 - **The route state** gives `prompt`, `facts` (what the question reads; each must be produced on every path into the
-  state) and `choices`, each entry quoted `"<outcome>: <criterion>"`. Its outcomes are the choice names plus `uncertain`.
+  state) and `choices`, each entry quoted `"<outcome>: <criterion>"` with a camelCase outcome (`notStartable`, `[a-z][A-Za-z0-9]{0,31}`). Its outcomes are the choice names plus `uncertain`.
   The choices are literal, so approving the recipe fixes its branches.
 - **The desk twin** is `step: { use: step.desk.choose, with: { from: <route state> } }`. Its outcomes are the route's choices.
 - **Transitions:** one per choice, listing both states in `from`, each `produces: [fact:decision]`; then
@@ -470,6 +515,27 @@ complete example is `recipes/dev/workflow.dev-evidence-route.yaml`.
 - **Evals:** `recipe eval --scaffold <file>` prints the first path; `--scaffold <file> --out <dir>` writes one
   `<dir>/scaffold-<branch>.jsonl` per path (each choice, `uncertain`, and `step_failed`) and refuses to overwrite a file.
 - Until DT-V2, `status` on a choice state doesn't list the choices; read them in the recipe.
+
+## Child outputs
+
+A child declares what it hands back in `outputs`; the parent's `wait.satisfied` from it then carries those facts, and the
+transition decides which to keep (decision-tree spec §8.4, DT-C). The complete example is the pair
+`recipes/dev/workflow.dev-child-summary.yaml` (the child) and `recipes/dev/workflow.dev-child-outputs.yaml` (the parent).
+
+- **Declare** the output on the child (`outputs: [{ key: fact:output, ..., from: export }]`) and produce it in the child
+  (`produces: [fact:output]` on the transition out of `export`).
+- **Take it** on the parent's transition from the child wait: `produces: [fact:output]`, or rename it with
+  `{ fact: fact:exported, from: fact:output }` (both required; `from` is the child's key). A rename is only for a child's output.
+- **Where it is there:** an output is present on an outcome only if every path inside the child to a terminal state that ends
+  with it produces it. Produce it on `resolved`, not on `unresolved` if some path skips it (`RCP-WIRE-003` names the path), and
+  never on `cancelled`. The `when` is resolved against the child's outcomes (its terminal outcomes and `cancelled`): `not` is the
+  complement, `all` the intersection, `any` the union, and a fact or loop test **may** hold on any outcome and **must** hold on
+  none: the check runs over the outcomes the `when` may fire on, so `not: { outcome: cancelled }` is fine when the output is on
+  every other outcome, and `all: [{ outcome: resolved }, { not: { fact: ... } }]` is still checked as `resolved`. A `when` with
+  no outcome test anywhere (`not: { fact: ... }` included) matches every outcome, `cancelled` among them, and is refused. Route `cancelled` with a transition of its own.
+- **Eval:** a child's `wait.satisfied` line gives the outputs the child would (`"outputs":{"fact:output":"..."}`), under the
+  child's keys. A parent branch that tests the renamed fact (`when: { fact: fact:exported, is: present }`) is reached only
+  if the line carried it. The test of a `when` runs before the transition's own `produces`, so it reads facts recorded earlier. A `when` reads the trigger's outputs under the child's keys, not the renamed ones.
 
 ## Temporal foundation
 
@@ -643,27 +709,28 @@ covers the search attributes, a delivered event, a refused event's park (`NeedsY
 Engine spec rev 8.1 §5.1, §5.6, §6.3, §6.4, S1-D6 and S1-D11; README X5 and X16.
 
 All three are clients of serve's routes, like the write verbs: `status` resolves its reference with `GET /sindri/workflow/instances?address=` and
-reads `GET /sindri/workflow/instances/{id}`; `list` calls `GET /sindri/workflow/instances` with `needsMe`, `item`, `state` and `query`;
+reads `GET /sindri/workflow/instances/{id}`; `list` calls `GET /sindri/workflow/instances` with `needsMe`, `item`, `state`, `recipe`, `urgency`, `subject`, `root`, `open` and `query`;
 `events` resolves the same way and reads `GET /sindri/workflow/instances/{id}/events?after=` (`--follow` polls it). None starts serve:
 with none running they print `SND-API-001 not running: …` and exit 1. Only `recipe validate` and `recipe eval` run in process (spec §6.1).
-The `--json` output is the response as the CLI's serializer prints it (`status` prints the `instance` member, as before).
+The `--json` output is the served body as the CLI's serializer prints it: `list` prints `InstanceList`, `status` prints the `current.status` fields of the instance detail (`StatusFields`: header, text, next, answer, commands).
 
 | Verb | Slice | What it reads | Prints |
 |---|---|---|---|
-| `workflow status <address> [--json]` | `GetInstance` | the `GetInstance` Query (`TemporalInstanceRuntime.Get`); an ended instance answers too | the §6.4 layout, or the `InstanceView` as JSON. Exit 2 with `SND-WF-001` for no such instance, `SND-API-002` when no worker answers in 10 s |
-| `workflow list [--needs-me \| --item <id> \| --state <s>] [--query <q>] [--json]` | `ListInstances` | a visibility query on the search attributes, then each row's `GetInstance` | one status header per line; `--needs-me` prints **Decisions** (parks and escalations; a takeover is never listed, since `NeedsYou` is false while taken over. `takeoverIdle` records a `workflow.notified` row, which P6 delivers as `notify.desk`; listing idle takeovers under `--needs-me` isn't built yet, an owner item for the API / P6) then **Tasks** (open desk tasks), each under its heading. Empty: `nothing needs you` (`--needs-me`) or `no instances match`; exit 0 |
+| `workflow status <address> [--json]` | `GetInstance` | the `GetInstance` Query (`TemporalInstanceRuntime.Get`) through `GET /workflow/instances/{id}`; an ended instance answers too | the §6.4 layout (the served `current.status.text`), or the `StatusFields` as JSON. Exit 2 with `SND-WF-001` for an address or id no instance has (the `address=` lookup), `SND-ITEM-404` for another repo's instance, `SND-API-002` when no worker answers in 10 s |
+| `workflow list [--needs-me \| --item <id> \| --state <s>] [--query <q>] [--json]` | `ListInstances` | a visibility query on the search attributes, then each row's `GetInstance`; ended roots are counted from the listing without a Query | one line per instance in the API order (`<address>  <recipe>@<hash12>  <state>: <now>  since <time> (<age>)`; no version column); `--needs-me` prints **Decisions** (PARKED, ESCALATED and WITH YOU rows: parks and escalations, and a takeover's idle row once P6 lists it; a taken-over instance has `NeedsYou` false, so it is listed only through its `workflow.notified` row, which P6 delivers as `notify.desk`; listing idle takeovers under `--needs-me` isn't built yet, an owner item for the API / P6) then **Tasks** (DECISION rows: open desk tasks), each section by address. Empty: the sentence the server served for the filter: `nothing needs you` (`--needs-me`), `No workflows are open.` (bare `list`) or `No workflows match.`; exit 0 |
 | `workflow events <address> [--follow] [--json]` | `GetInstanceEvents` | the ledger through `ILedgerReader`, never Temporal's history | one line per event: `seq  MM-dd HH:mm:ss  type  from -> to  trigger outcome  run r  actor`; `no events`. `--follow` reads after its cursor every second until interrupted |
 
-- **`--needs-me` is a stand-in.** `GET /needs-you` (API P4) isn't built yet, so `ListInstances` serves it with the
-  visibility query `NeedsYou = true` over running instances and sorts the views with `NeedsYouList.Of`: Decisions,
-  then Tasks, by address, and a parent whose open question mirrors a listed child shown once, under the child. When
-  API P4 lands, `--needs-me` reads its route instead and keeps this output.
+- **`--needs-me` is served by the list route.** `GET /needs-you` (API P4) serves the owner's needs-you list, a different list; `ListInstances` serves this one with the
+  visibility query `NeedsYou = true` (`needsMe=true`) over the unfinished instances, and drops a parent whose open
+  question mirrors a listed child (`NeedsYouList.Shown`; spec §6.3: once, under the child). The CLI groups the rows by
+  their chip into Decisions, then Tasks, each by address, and prints `nothing needs you` when no row falls under either.
 - **Which instances.** Bare `list` and `--needs-me` list running instances; `--item` and `--state` list ended ones too
   (`IWorkflowInstances.List(query, ended, …)`). `--state` takes a state name (`[a-z][a-z0-9-]{0,63}`); `--query` adds a
   raw visibility query for scripts.
-- **`v<n>`.** Temporal keeps no row version, so the instance's version is the count of events the interpreter has
+- **Version.** Temporal keeps no row version, so the instance's version is the count of events the interpreter has
   mirrored into the ledger (`workflow.started` and every transition): a new instance is `v1`. The workflow counts
-  them in `Mirror` and sets `InstanceView.Version` in the Query.
+  them in `Mirror` and sets `InstanceView.Version` in the Query. It shows as `header.version` of `status --json` and in
+  the `instance:<address>@v<n>` challenge of the protected verbs; the list line has no version column.
 - **Times.** Every clock time status prints is UTC (`since 11:54`; `since 10-09 11:54` once a day or more has passed),
   in the header and in `next` alike, because the Query has no local time zone. Durations read `1d 22h 48m`, or `40s`
   under a minute (`StatusText`).

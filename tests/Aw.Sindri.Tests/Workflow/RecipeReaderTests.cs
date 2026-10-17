@@ -12,7 +12,7 @@ namespace Aw.Sindri.Tests.Workflow;
 /// <summary>The YAML recipe reader (spec §3.1): core-schema scalars, every node's position, every finding, and normalization of each short form.</summary>
 public sealed class RecipeReaderTests
 {
-    internal static readonly string Minimal =
+    internal const string Minimal =
         "schema: 1\n"
         + "id: workflow.minimal\n"
         + "version: 1\n"
@@ -58,6 +58,97 @@ public sealed class RecipeReaderTests
         var line = Assert.Single(lines);
         Assert.StartsWith("RCP-SCHEMA-002: 'fact:evidence-summary' isn't a fact key (", line, StringComparison.Ordinal);
         Assert.EndsWith("; fact names are camelCase: write fact:evidenceSummary", line, StringComparison.Ordinal);
+    }
+
+    private static string WithProduces(string produces) =>
+        Minimal.Replace("produces: [fact:output]", "produces: " + produces, StringComparison.Ordinal);
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_long_form_produces_entry_binds_with_its_source()
+    {
+        var recipe = Bind(WithProduces("[fact:output, { fact: fact:exported, from: fact:result }]"));
+
+        Assert.Equal(
+            [new ProducedFact(FactKey.From("fact:output"), From: null), new ProducedFact(FactKey.From("fact:exported"), FactKey.From("fact:result"))],
+            recipe.Transitions[0].Produces);
+        Assert.Equal(FactKey.From("fact:result"), recipe.Transitions[0].Produces[1].SourceKey());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_rename_to_itself_reads_as_the_bare_key_and_hashes_the_same()
+    {
+        var renamed = Reader.Read(WithProduces("[{ fact: fact:output, from: fact:output }]"), "a.yaml").Document!;
+        var bare = Reader.Read(Minimal, "a.yaml").Document!;
+
+        Assert.Equal([new ProducedFact(FactKey.From("fact:output"), From: null)], renamed.Recipe.Transitions[0].Produces);
+        Assert.Equal(bare.Hash, renamed.Hash);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_produced_fact_whose_source_is_itself_is_the_bare_key_in_the_type_and_the_converter()
+    {
+        var x = FactKey.From("fact:output");
+        var built = new ProducedFact(x, x);
+
+        Assert.Equal(new ProducedFact(x, From: null), built);
+        Assert.Null(built.From);
+        Assert.Equal("\"fact:output\"", JsonSerializer.Serialize(built));
+        Assert.Equal(new ProducedFact(x, From: null), JsonSerializer.Deserialize<ProducedFact>("{\"fact\":\"fact:output\",\"from\":\"fact:output\"}"));
+        Assert.Equal(new ProducedFact(x, FactKey.From("fact:result")), JsonSerializer.Deserialize<ProducedFact>("{\"fact\":\"fact:output\",\"from\":\"fact:result\"}"));
+
+        // with-expressions go through the same normalization, in both directions
+        var renamed = new ProducedFact(x, FactKey.From("fact:result"));
+        var toSelf = renamed with { From = x };
+        var toOther = new ProducedFact(x, From: null) with { From = FactKey.From("fact:result") };
+        Assert.Equal(new ProducedFact(x, From: null), toSelf);
+        Assert.Null(toSelf.From);
+        Assert.Equal("\"fact:output\"", JsonSerializer.Serialize(toSelf));
+        Assert.Equal(renamed, toOther);
+        Assert.Equal("{\"fact\":\"fact:output\",\"from\":\"fact:result\"}", JsonSerializer.Serialize(toOther));
+
+        // a with that changes the fact leaves a source equal to the new fact normalized too
+        var y = FactKey.From("fact:result");
+        var moved = new ProducedFact(x, x) with { Fact = y };
+        Assert.Equal(new ProducedFact(y, From: null), moved);
+        Assert.Equal("\"fact:result\"", JsonSerializer.Serialize(moved));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_long_form_entry_without_from_is_RCP_SCHEMA_001()
+    {
+        var line = Assert.Single(Lines(WithProduces("[{ fact: fact:exported }]")));
+
+        Assert.StartsWith("RCP-SCHEMA-001: a produces entry has no 'from'", line, StringComparison.Ordinal);
+        Assert.Contains("transitions[0].produces[0].from", line, StringComparison.Ordinal);
+        Assert.EndsWith("add 'from': the child's output key, or write the bare key", line, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_unknown_field_in_a_produces_entry_is_RCP_SCHEMA_001()
+    {
+        var line = Assert.Single(Lines(WithProduces("[{ fact: fact:exported, from: fact:result, as: fact:x }]")));
+
+        Assert.StartsWith("RCP-SCHEMA-001: 'as' isn't a field of a produces entry", line, StringComparison.Ordinal);
+        Assert.EndsWith("remove it; a produces entry has fact, from", line, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_hyphenated_from_is_RCP_SCHEMA_002_with_a_camelCase_fix()
+    {
+        var line = Assert.Single(Lines(WithProduces("[{ fact: fact:exported, from: fact:my-result }]")));
+
+        Assert.StartsWith("RCP-SCHEMA-002: 'fact:my-result' isn't a fact key (", line, StringComparison.Ordinal);
+        Assert.Contains("transitions[0].produces[0].from", line, StringComparison.Ordinal);
+        Assert.EndsWith("; fact names are camelCase: write fact:myResult", line, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_list_in_produces_is_RCP_SCHEMA_002()
+    {
+        var line = Assert.Single(Lines(WithProduces("[[fact:output]]")));
+
+        Assert.StartsWith("RCP-SCHEMA-002: [\"fact:output\"] isn't a fact key, or { fact, from }", line, StringComparison.Ordinal);
+        Assert.EndsWith("write a fact key, or { fact, from } to rename a child's output", line, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

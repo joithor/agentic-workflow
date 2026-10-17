@@ -1,4 +1,3 @@
-using System.Text;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
@@ -69,6 +68,8 @@ public static class InstanceViews
             instance.Outcome)
         {
             Id = WorkflowInstanceId.Of(instance.Address),
+            ParentId = instance.Parent,
+            FactShas = ShasOf(instance),
             Version = context.Version,
             Answer = words.Answer(),
             Drift = words.Drift(),
@@ -78,6 +79,10 @@ public static class InstanceViews
         };
         return WithLayout(view, new Layout(instance, recipe, task, words), context);
     }
+
+    /// <summary>The stored digest of each fact by key; null when the instance holds none.</summary>
+    private static Dictionary<string, string>? ShasOf(WorkflowInstance instance) =>
+        instance.Facts.Count == 0 ? null : instance.Facts.ToDictionary(static f => f.Key.Value, static f => f.Value.Sha256, StringComparer.Ordinal);
 
     /// <summary>The API's detail view of <paramref name="view"/>: a pure function of the view and the context (no clock, no I/O).</summary>
     /// <param name="view">The instance view <see cref="Of(WorkflowInstance, InterpretedRecipe, DateTimeOffset, DateTimeOffset?, InstanceViewContext)"/> built.</param>
@@ -201,22 +206,8 @@ public static class InstanceViews
     /// The complete command with the outcome it reports (the Step's first declared) and an '--output &lt;fact&gt;=&lt;file&gt;' flag for each
     /// output required on that outcome (API spec §3.8 'desk runtime'); '&lt;outcome&gt;' when the Step declares none.
     /// </summary>
-    private static string CompleteCli(string address, DeskTask task)
-    {
-        var line = new StringBuilder($"sindri workflow complete {address} --run {task.Run.Value} --outcome ");
-        if (task.Outcomes.Count == 0)
-        {
-            return line.Append("<outcome>").ToString();
-        }
-
-        _ = line.Append(task.Outcomes[0].Value);
-        foreach (var output in task.Outputs.Where(o => o.RequiredOn.Contains(task.Outcomes[0])))
-        {
-            _ = line.Append(" --output ").Append(output.Fact.Value).Append("=<file>");
-        }
-
-        return line.ToString();
-    }
+    private static string CompleteCli(string address, DeskTask task) =>
+        CompleteCommand.Line(address, task.Run, task.Outcomes.Count > 0 ? task.Outcomes[0] : null, task.Outputs);
 
     private static bool Answerable(Suspension suspension) =>
         suspension.ParkKind is not (ParkKind.Revoked or ParkKind.ChildRevoked or ParkKind.Drift);

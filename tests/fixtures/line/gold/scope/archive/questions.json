@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "questions": [
+    {
+      "id": "gap-clock",
+      "rank": 1,
+      "question": "A year of what: since the note was last changed, or since it was created?",
+      "options": [
+        {
+          "index": 0,
+          "text": "Last changed",
+          "recommended": true
+        },
+        {
+          "index": 1,
+          "text": "Created",
+          "recommended": false
+        }
+      ],
+      "citations": [
+        "repo:src/notes/model.ts"
+      ],
+      "status": "answered"
+    },
+    {
+      "id": "gap-links",
+      "rank": 2,
+      "question": "Does a shared link to an archived note keep working?",
+      "options": [
+        {
+          "index": 0,
+          "text": "Yes",
+          "recommended": true
+        },
+        {
+          "index": 1,
+          "text": "No, the link shows the note is archived",
+          "recommended": false
+        }
+      ],
+      "citations": [
+        "repo:src/sharing/links.ts"
+      ],
+      "status": "answered"
+    },
+    {
+      "id": "gap-export",
+      "rank": 3,
+      "question": "Does an export include archived notes?",
+      "options": [
+        {
+          "index": 0,
+          "text": "Yes",
+          "recommended": true
+        },
+        {
+          "index": 1,
+          "text": "No",
+          "recommended": false
+        }
+      ],
+      "citations": [
+        "repo:src/export/exporter.ts"
+      ],
+      "status": "answered"
+    },
+    {
+      "id": "gap-trash",
+      "rank": 4,
+      "question": "Can a trashed note be archived, and does a purge still delete an archived one?",
+      "options": [
+        {
+          "index": 0,
+          "text": "Archive skips trashed notes; purge ignores archived",
+          "recommended": true
+        },
+        {
+          "index": 1,
+          "text": "Archive includes trashed notes",
+          "recommended": false
+        }
+      ],
+      "citations": [
+        "repo:src/jobs/purge-trash.ts"
+      ],
+      "status": "answered"
+    },
+    {
+      "id": "gap-restore-role",
+      "rank": 5,
+      "question": "Who may restore: editors, owners?",
+      "options": [
+        {
+          "index": 0,
+          "text": "Editors",
+          "recommended": true
+        },
+        {
+          "index": 1,
+          "text": "Owners",
+          "recommended": false
+        }
+      ],
+      "citations": [
+        "repo:src/roles/roles.ts"
+      ],
+      "status": "answered"
+    }
+  ]
+}

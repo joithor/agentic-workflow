@@ -34,8 +34,18 @@ public abstract class FrameHost : IDisposable
 
     public void Dispose()
     {
-        _stop.Dispose();
+        Dispose(disposing: true);
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>Releases the host's resources.</summary>
+    /// <param name="disposing">True when called from <see cref="Dispose()"/>.</param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _stop.Dispose();
+        }
     }
 
     private protected async Task OnUi(Func<Task> body) =>
@@ -106,8 +116,6 @@ public abstract class FrameHost : IDisposable
     private protected static void Frame(Window window, string name)
     {
         Settle(window);
-        var dir = Path.Combine(AppContext.BaseDirectory, "frames");
-        _ = Directory.CreateDirectory(dir);
-        window.CaptureRenderedFrame()?.Save(Path.Combine(dir, "u3-" + name + ".png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+        FrameFile.Save(window, "u3-" + name);
     }
 }

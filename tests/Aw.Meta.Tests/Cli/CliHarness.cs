@@ -42,6 +42,8 @@ internal sealed class CliHarness : IDisposable
         _env[name] = value;
     }
 
+    internal string Env(string name) => _env[name];
+
     internal Task<CliResult> Run(params string[] args) => RunWithInput(string.Empty, args);
 
     internal async Task<CliResult> RunWithInput(string stdin, params string[] args)
@@ -49,13 +51,19 @@ internal sealed class CliHarness : IDisposable
         using var output = new StringWriter();
         using var error = new StringWriter();
         using var input = new StringReader(stdin);
-        var io = new ConsoleIo(output, error, input, name => _env.GetValueOrDefault(name));
+        var (arguments, environment, problem) = TeamOption.Apply(args, name => _env.GetValueOrDefault(name));
+        var io = new ConsoleIo(output, error, input, environment);
+        if (problem.Length > 0)
+        {
+            return new CliResult(CommandOutput.Usage(io, problem, "[--team <name>] <command> [arguments]"), output.ToString(), error.ToString());
+        }
+
         var services = Composition.Compose(new ServiceCollection(), io.Env, Clock);
         var provider = services.BuildServiceProvider();
         await using (provider.ConfigureAwait(false))
         {
             _ = provider.GetRequiredService<TelemetryRuntime>();
-            var exit = await CommandTable.Run(args, provider, provider.GetRequiredService<JsonSerializerOptions>(), io).ConfigureAwait(false);
+            var exit = await CommandTable.Run(arguments, provider, provider.GetRequiredService<JsonSerializerOptions>(), io, TestContext.Current.CancellationToken).ConfigureAwait(false);
             return new CliResult(exit, output.ToString(), error.ToString());
         }
     }

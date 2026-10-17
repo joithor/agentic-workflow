@@ -1,4 +1,5 @@
 using System.Net;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing;
@@ -89,18 +90,6 @@ public sealed class ContextReviewVerbsTests : IDisposable
         var unreadable = await Run(new ScriptedApi(Problem(HttpStatusCode.ServiceUnavailable, "SND-CONTEXT-048", "git can't read the repo")), interactive: true, string.Empty, "review", "--accept-deterministic");
 
         Assert.Equal((75, 2), (busy, unreadable));
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public async Task Map_build_is_pending_API_P6_and_exits_2_like_a_pending_form()
-    {
-        var api = new ScriptedApi(Ok("{}"));
-
-        var exit = await Run(api, interactive: true, string.Empty, "build");
-
-        Assert.Equal(2, exit);
-        Assert.Empty(api.Calls);
-        Assert.Contains("pending:API-P6", _error.ToString(), StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -238,7 +227,7 @@ public sealed class ContextReviewVerbsTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Propose_reads_a_camelCase_file_sends_it_and_prints_each_surfaces_standing()
     {
-        var file = Path.Combine(Path.GetTempPath(), $"aw-propose-{Guid.NewGuid():N}.json");
+        var file = Path.Combine(Path.GetTempPath(), $"aw-propose-{RealTime.NewGuid():N}.json");
         await File.WriteAllTextAsync(file, """{"run":"scope-1","repo":"work-app","surfaces":[{"name":"Zoom","kind":"feature"},{"name":"Tab manager","key":"feature:tabs.tab-manager"}]}""", Token);
         try
         {

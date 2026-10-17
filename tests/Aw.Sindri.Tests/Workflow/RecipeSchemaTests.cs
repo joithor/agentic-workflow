@@ -66,6 +66,18 @@ public sealed class RecipeSchemaTests
     }
 
     [Fact, Trait("Lane", "integration")]   // reads schemas/recipes/
+    public void The_editor_overlay_describes_a_produces_entry_as_the_readers_fact_and_from()
+    {
+        var overlay = JsonNode.Parse(File.ReadAllText(Path.Combine(RepoRoot(), "schemas", "recipes", "recipe.editor.schema.json")))!;
+
+        var rename = overlay["$defs"]!["RecipeTransition"]!["properties"]!["produces"]!["items"]!["oneOf"]!.AsArray()[1]!;
+
+        Assert.Equal(["fact", "from"], rename["properties"]!.AsObject().Select(p => p.Key).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(["fact", "from"], rename["required"]!.AsArray().Select(n => n!.GetValue<string>()).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.False(rename["additionalProperties"]!.GetValue<bool>());
+    }
+
+    [Fact, Trait("Lane", "integration")]   // reads schemas/recipes/
     public void The_editor_overlay_accepts_only_declared_inputs_and_at_least_one()
     {
         var overlay = JsonNode.Parse(File.ReadAllText(Path.Combine(RepoRoot(), "schemas", "recipes", "recipe.editor.schema.json")))!;
@@ -74,6 +86,16 @@ public sealed class RecipeSchemaTests
 
         Assert.Equal("#/$defs/RecipeInput", inputs["items"]!["$ref"]!.GetValue<string>());   // the bare-key short form is refused (RCP-INPUT-001)
         Assert.Equal(1, inputs["minItems"]!.GetValue<int>());   // and so is an empty list (RCP-INPUT-002)
+    }
+
+    [Fact, Trait("Lane", "integration")]   // reads schemas/recipes/
+    public void The_editor_overlay_input_kinds_are_the_subject_kinds_the_validator_accepts()
+    {
+        var overlay = JsonNode.Parse(File.ReadAllText(Path.Combine(RepoRoot(), "schemas", "recipes", "recipe.editor.schema.json")))!;
+
+        var kinds = overlay["$defs"]!["RecipeInput"]!["properties"]!["kind"]!["enum"]!.AsArray().Select(static n => n!.GetValue<string>());
+
+        Assert.Equal(SubjectKinds.All.Order(StringComparer.Ordinal), kinds.Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     private static void Collect(Type type, Dictionary<string, JsonTypeInfo> records)
@@ -123,6 +145,11 @@ public sealed class RecipeSchemaTests
             return IdSchema(type);
         }
 
+        if (TransformProduced(type, node) is { } produced)
+        {
+            return produced;
+        }
+
         if (Nullable.GetUnderlyingType(type) is { } underlying && IsTypedId(underlying))
         {
             var nullable = IdSchema(underlying);
@@ -138,6 +165,36 @@ public sealed class RecipeSchemaTests
 
         return node;
     }
+
+    /// <summary>A produces entry has a user-code converter too: a fact key, or the rename { fact, from } (DT spec §8.4).</summary>
+    private static JsonObject? TransformProduced(Type type, JsonNode node)
+    {
+        if (type == typeof(ProducedFact))
+        {
+            return Produced();
+        }
+
+        if (node is JsonObject list && type == typeof(IReadOnlyList<ProducedFact>))
+        {
+            list["items"] = Produced();
+            return list;
+        }
+
+        return null;
+    }
+
+    private static JsonObject Produced() => new()
+    {
+        ["oneOf"] = new JsonArray(
+            IdSchema(typeof(FactKey)),
+            new JsonObject
+            {
+                ["type"] = "object",
+                ["properties"] = new JsonObject { ["fact"] = IdSchema(typeof(FactKey)), ["from"] = IdSchema(typeof(FactKey)) },
+                ["required"] = new JsonArray("fact", "from"),
+                ["additionalProperties"] = false,
+            }),
+    };
 
     private static bool IsTypedId(Type type) =>
         type.GetInterfaces().Any(static i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ITypedId<,>));

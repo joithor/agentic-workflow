@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Tests for scripts/check-launcher.mjs (the launcher.json contract, SL-0): the repo passes, and each kind of drift fails.
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/test-grep.sh"
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 CHECK="$REPO/scripts/check-launcher.mjs"
@@ -12,14 +13,14 @@ trap 'rm -rf "$TMPROOT"' EXIT
 ok()   { PASS=$((PASS + 1)); echo "  ok   $1"; }
 fail() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
 
-# Ajv is a dev dependency of scripts/ (scripts/package.json); install it when missing.
-if [ ! -d "$REPO/scripts/node_modules/ajv" ]; then
-  (cd "$REPO/scripts" && npm ci --ignore-scripts --no-audit --no-fund >/dev/null 2>&1) || { echo "cannot install Ajv (npm ci --prefix scripts)"; exit 1; }
-fi
+# Ajv is a dev dependency of scripts/ (scripts/package.json); installed once under a lock, since suites run in parallel.
+# shellcheck source=scripts/lib/ensure-scripts-deps.sh
+. "$REPO/scripts/lib/ensure-scripts-deps.sh"
+ensure_scripts_deps "$REPO/scripts" || exit 1
 
 run() { set +e; OUT="$(node "$CHECK" --root "$1" 2>&1)"; RC=$?; set -e; }
 expect_rc() { if [ "$RC" -eq "$2" ]; then ok "$1 (exit $RC)"; else fail "$1: exit $RC, want $2"; printf '%s\n' "$OUT" | sed 's/^/      | /'; fi; }
-expect_out() { if printf '%s\n' "$OUT" | grep -qF -- "$2"; then ok "$1"; else fail "$1: output lacks '$2'"; printf '%s\n' "$OUT" | sed 's/^/      | /'; fi; }
+expect_out() { if printf '%s\n' "$OUT" | has -F -- "$2"; then ok "$1"; else fail "$1: output lacks '$2'"; printf '%s\n' "$OUT" | sed 's/^/      | /'; fi; }
 
 # A throwaway copy of the files the check reads.
 copy() {
@@ -56,6 +57,18 @@ run "$d"; expect_rc "a built-in with an unknown placeholder fails" 1; expect_out
 d="$(copy terminal)"
 perl -pi -e 's/"--title", "\{title\}", "--directory"/"--directory"/' "$d/config/launcher/terminals.json"
 run "$d"; expect_rc "a terminal template without {title} fails" 1; expect_out "names it" "kitty: argv has no {title}"
+
+d="$(copy procnames)"
+perl -0pi -e 's/\n\s*"processNames": \["kitty"\],//' "$d/config/launcher/terminals.json"
+run "$d"; expect_rc "a terminals.json row without processNames fails" 1; expect_out "names it" "kitty: processNames must be a non-empty array"
+
+d="$(copy procnames-dup)"
+perl -0pi -e 's/"processNames": \["foot"\]/"processNames": ["kitty"]/' "$d/config/launcher/terminals.json"
+run "$d"; expect_rc "a process name shared by two rows fails" 1; expect_out "names both" "foot: processName kitty is also kitty's"
+
+d="$(copy sessionskeys)"
+perl -0pi -e 's/"pollSeconds": \{/"pollSecs": {/' "$d/schemas/launcher.schema.json"
+run "$d"; expect_rc "x-aw-keys.sessions out of step with the schema fails" 1; expect_out "names the list" "x-aw-keys.sessions"
 
 d="$(copy keys)"
 perl -0pi -e 's/"mcpForms": \[[^]]*\]/"mcpForms": ["none"]/' "$d/schemas/launcher.schema.json"

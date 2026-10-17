@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Lease;
@@ -14,6 +15,7 @@ using Aw.Sindri.Infrastructure.Notifications;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.Ledger;
 using Aw.Sindri.Tests.Notifications;
+using Aw.Sindri.Tests.Workflows.Spike;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Time.Testing;
@@ -68,7 +70,7 @@ internal sealed class WorkflowsHarness : IDisposable
     {
         ArgumentNullException.ThrowIfNull(replace);
         ArgumentNullException.ThrowIfNull(variables);
-        var services = Composition.Compose(new ServiceCollection(), name => name == "AW_SINDRI_HOME" ? _home.Path : variables(name), new FakeTimeProvider(DateTimeOffset.UtcNow));
+        var services = Composition.Compose(new ServiceCollection(), name => name == "AW_SINDRI_HOME" ? _home.Path : variables(name), new FakeTimeProvider(RealTime.NowOffset));
         _ = services.Replace(ServiceDescriptor.Singleton<IOsNotifier>(Notifier));
         replace(services);
         return services.BuildServiceProvider();
@@ -121,8 +123,7 @@ internal sealed class WorkflowsHarness : IDisposable
         }
     }
 
-    private static bool IsPortTaken(Exception e) =>
-        e.ToString().Contains("address already in use", StringComparison.OrdinalIgnoreCase);
+    private static bool IsPortTaken(Exception e) => TemporalServerFixture.IsPortTaken(e);
 
     public static string Target(WorkflowEnvironment env) => env.Client.Connection.Options.TargetHost!;
 
@@ -166,7 +167,7 @@ internal sealed class WorkflowsHarness : IDisposable
     {
         using var sindri = Sindri();
         var revoked = sindri.GetRequiredService<IRecipeApprovals>()
-            .Revoke(new RecipeRevocation(recipe.Id, recipe.Version, recipe.Hash, "human:test", DateTimeOffset.UtcNow, CascadedFrom: null), TestContext.Current.CancellationToken).AsTask().GetAwaiter().GetResult();
+            .Revoke(new RecipeRevocation(recipe.Id, recipe.Version, recipe.Hash, "human:test", RealTime.NowOffset, CascadedFrom: null), TestContext.Current.CancellationToken).AsTask().GetAwaiter().GetResult();
         Assert.False(revoked.IsError, revoked.IsError ? revoked.Error.Message : null);
     }
 
@@ -177,12 +178,12 @@ internal sealed class WorkflowsHarness : IDisposable
         var document = sindri.GetRequiredService<IRecipeReader>().Read(yaml, "recipe.yaml").Document;
         Assert.NotNull(document);
         var row = new RegisteredRecipe(document.Recipe.Id, document.Recipe.Version, Workflow.RecipeDeclarationsTests.LegacyHash(yaml),
-            Workflow.RecipeDeclarationsTests.LegacyJson(yaml).ToJsonString(), Base: null, DateTimeOffset.UtcNow);
+            Workflow.RecipeDeclarationsTests.LegacyJson(yaml).ToJsonString(), Base: null, RealTime.NowOffset);
         var added = sindri.GetRequiredService<IRecipeStore>().Add(row, TestContext.Current.CancellationToken).AsTask().GetAwaiter().GetResult();
         Assert.False(added.IsError, added.IsError ? added.Error.Message : null);
         var approvals = sindri.GetRequiredService<IRecipeApprovals>();
         var pins = PinRules.Pins(document.Recipe, sindri.GetRequiredService<BlockCatalog>(), approvals.Current(TestContext.Current.CancellationToken).AsTask().GetAwaiter().GetResult().Value, sindri.GetRequiredService<JsonSerializerOptions>());
-        var approved = approvals.Approve(new RecipeApproval(row.Id, row.Version, row.Hash, "human:test", DateTimeOffset.UtcNow, ApprovalVia.Desk, Base: null, pins), TestContext.Current.CancellationToken).AsTask().GetAwaiter().GetResult();
+        var approved = approvals.Approve(new RecipeApproval(row.Id, row.Version, row.Hash, "human:test", RealTime.NowOffset, ApprovalVia.Desk, Base: null, pins), TestContext.Current.CancellationToken).AsTask().GetAwaiter().GetResult();
         Assert.False(approved.IsError, approved.IsError ? approved.Error.Message : null);
         return added.Value.Recipe;
     }
@@ -197,14 +198,14 @@ internal sealed class WorkflowsHarness : IDisposable
         var recipe = document.Recipe with { Hash = null };
         var text = System.Text.Encoding.UTF8.GetString(Kernel.Json.AwJson.Serialize(recipe, json));
         var added = sindri.GetRequiredService<IRecipeStore>()
-            .Add(new RegisteredRecipe(recipe.Id, recipe.Version, document.Hash, text, recipe.Base, DateTimeOffset.UtcNow), ct).AsTask().GetAwaiter().GetResult();
+            .Add(new RegisteredRecipe(recipe.Id, recipe.Version, document.Hash, text, recipe.Base, RealTime.NowOffset), ct).AsTask().GetAwaiter().GetResult();
         Assert.False(added.IsError, added.IsError ? added.Error.Message : null);
         if (approve)
         {
             var approvals = sindri.GetRequiredService<IRecipeApprovals>();
             var current = approvals.Current(ct).AsTask().GetAwaiter().GetResult().Value;
             var pins = PinRules.Pins(recipe, sindri.GetRequiredService<BlockCatalog>(), current, json);
-            var approved = approvals.Approve(new RecipeApproval(recipe.Id, recipe.Version, document.Hash, "human:test", DateTimeOffset.UtcNow,
+            var approved = approvals.Approve(new RecipeApproval(recipe.Id, recipe.Version, document.Hash, "human:test", RealTime.NowOffset,
                 ApprovalVia.Desk, recipe.Base, pins), ct).AsTask().GetAwaiter().GetResult();
             Assert.False(approved.IsError, approved.IsError ? approved.Error.Message : null);
         }
@@ -230,7 +231,7 @@ internal sealed class WorkflowsHarness : IDisposable
     {
         var approved = await sindri.GetRequiredService<IApprovedRecipes>().Latest(RecipeId.From(recipe), ct);
         Assert.False(approved.IsError, approved.IsError ? approved.Error.Message : null);
-        return new InstanceStart(approved.Value.Version, ItemKey.From(item), Attempt: 1, new Dictionary<FactKey, InputFact>(), Tenant: "local", Ring: 0) { StartedAt = DateTimeOffset.UtcNow };
+        return new InstanceStart(approved.Value.Version, ItemKey.From(item), Attempt: 1, new Dictionary<FactKey, InputFact>(), Tenant: "local", Ring: 0) { StartedAt = RealTime.NowOffset };
     }
 
     /// <summary>The workflow input for 'workflow.step' on <paramref name="item"/>, attempt 1, with a 'fact:spec' input.</summary>
@@ -240,7 +241,7 @@ internal sealed class WorkflowsHarness : IDisposable
         Assert.False(approved.IsError, approved.IsError ? approved.Error.Message : null);
         var spec = new FactValue("fact:sha256:" + new string('a', 64), new string('a', 64), HeadSha: null);
         var inputs = new Dictionary<FactKey, InputFact> { [FactKey.From("fact:spec")] = new InputFact("spec.md", spec) };
-        return new InstanceStart(approved.Value.Version, ItemKey.From(item), Attempt: 1, inputs, Tenant: "local", Ring: 0) { StartedAt = DateTimeOffset.UtcNow };
+        return new InstanceStart(approved.Value.Version, ItemKey.From(item), Attempt: 1, inputs, Tenant: "local", Ring: 0) { StartedAt = RealTime.NowOffset };
     }
 
     public static async Task<WorkflowHandle<RecipeWorkflow, RecipeResult>> Start(ITemporalClient client, InstanceStart start) =>
@@ -249,9 +250,9 @@ internal sealed class WorkflowsHarness : IDisposable
     /// <summary>Queries 'GetInstance' until <paramref name="holds"/>, failing the test after the patience runs out.</summary>
     public static async Task<InstanceView> Until(WorkflowHandle<RecipeWorkflow> handle, Func<InstanceView, bool> holds)
     {
-        var deadline = DateTime.UtcNow + _patience;
+        var deadline = RealTime.NowDateTime + _patience;
         InstanceView? last = null;
-        while (DateTime.UtcNow < deadline)
+        while (RealTime.NowDateTime < deadline)
         {
             // why: an unbounded Query can sit on a time-skipping server (a replay waiting for a worker) until the test's own timeout; 25 s is past the 10 s sticky-queue wait a restarted worker leaves behind
             var ct = TestContext.Current.CancellationToken;
@@ -281,14 +282,18 @@ internal sealed class WorkflowsHarness : IDisposable
     /// Runs 'sindri workflow &lt;args&gt;' in process as <paramref name="session"/> classes the CLI, typing
     /// <paramref name="typed"/> at a challenge. The writes are clients of the API control.json names, as the real CLI's are.
     /// </summary>
-    internal static async Task<(int Exit, string Stdout, string Stderr)> Cli(IServiceProvider services, AgentSession session, string? typed, params string[] args)
+    internal static Task<(int Exit, string Stdout, string Stderr)> Cli(IServiceProvider services, AgentSession session, string? typed, params string[] args) =>
+        Cli(services, session, typed, repo: null, args);
+
+    /// <summary>Runs 'sindri workflow &lt;args&gt;' as <paramref name="session"/> from <paramref name="repo"/> (the X-Sindri-Repo it sends), or from no repo.</summary>
+    internal static async Task<(int Exit, string Stdout, string Stderr)> Cli(IServiceProvider services, AgentSession session, string? typed, Core.Ids.RepoName? repo, params string[] args)
     {
         var stdout = new StringWriter();
         var stderr = new StringWriter();
         var json = services.GetRequiredService<JsonSerializerOptions>();
         var output = new Output(stdout, stderr, json);
         using var client = new ControlPlaneClient(services.GetRequiredService<IControlPlaneProbe>(), json,
-            CallerHeaders.For(session, services.GetRequiredService<IHumanTokenStore>(), static _ => ValueTask.FromResult<Core.Ids.RepoName?>(null)), TimeSpan.FromSeconds(30));
+            CallerHeaders.For(session, services.GetRequiredService<IHumanTokenStore>(), _ => ValueTask.FromResult(repo)), TimeSpan.FromSeconds(30));
         var desk = new RecipeDesk(client, new StringReader(typed is null ? string.Empty : typed + "\n"), static _ => Task.FromResult<Kernel.Error?>(null));
         var exit = await WorkflowCommandTable.Run(args, services, output, desk, TestContext.Current.CancellationToken);
         return (exit, stdout.ToString(), stderr.ToString());
@@ -312,12 +317,12 @@ internal sealed class WorkflowsHarness : IDisposable
     /// <summary>'workflow &lt;args&gt;' (a list), retried while it prints nothing or an empty state, as visibility catches up.</summary>
     public static async Task<string> Listed(IServiceProvider sindri, CancellationToken ct, params string[] args)
     {
-        var deadline = DateTime.UtcNow + _patience;
+        var deadline = RealTime.NowDateTime + _patience;
         var last = (Exit: -1, Stdout: string.Empty, Stderr: string.Empty);
-        while (DateTime.UtcNow < deadline)
+        while (RealTime.NowDateTime < deadline)
         {
             last = await Cli(sindri, args);
-            if (last.Exit != 0 || (last.Stdout.Length > 0 && last.Stdout is not ("no instances match\n" or "nothing needs you\n")))
+            if (last.Exit != 0 || (last.Stdout.Length > 0 && last.Stdout is not ("No workflows match.\n" or "No workflows are open.\n" or "nothing needs you\n")))
             {
                 break;
             }

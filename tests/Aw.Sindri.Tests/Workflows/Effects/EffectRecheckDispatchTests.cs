@@ -384,7 +384,7 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server, 
     {
         var wake = new TemporalRecipeWake(sindri.GetRequiredService<TemporalFrontend>());
         var mine = WorkflowInstanceId.Of(InstanceAddress.From(handle.Id));
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(30);
+        var deadline = RealTime.NowDateTime + TimeSpan.FromSeconds(30);
         while (true)
         {
             var running = await wake.Running(hash, Token);
@@ -393,7 +393,7 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server, 
                 return;
             }
 
-            Assert.True(DateTime.UtcNow < deadline, "the visibility store never listed this test's instance");
+            Assert.True(RealTime.NowDateTime < deadline, "the visibility store never listed this test's instance");
             await Task.Delay(100, Token);
         }
     }
@@ -493,8 +493,8 @@ public sealed class EffectRecheckDispatchTests(SindriTimeSkippingServer server, 
 
     private static async Task Armed(WorkflowHandle handle, int timers, TimeSpan delay)
     {
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
-        while (DateTime.UtcNow < deadline)
+        var deadline = RealTime.NowDateTime + TimeSpan.FromSeconds(20);
+        while (RealTime.NowDateTime < deadline)
         {
             var started = (await handle.FetchHistoryAsync()).Events
                 .Count(e => e.EventType == EventType.TimerStarted && e.TimerStartedEventAttributes.StartToFireTimeout.ToTimeSpan() == delay);

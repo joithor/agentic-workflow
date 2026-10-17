@@ -251,6 +251,54 @@
       "schema": "invalid",
       "bash": "accept",
       "note": "claude-code's built-in has no reportedId; an override to sessionId: reported without one leaves a reported agent with no reportedId (section 4)"
+    },
+    {
+      "file": "sessions.json",
+      "schema": "valid",
+      "bash": "accept",
+      "note": "the session collector's settings (CO-0): every sessions key; the bash reader accepts and ignores them"
+    },
+    {
+      "file": "sessions-bogus.json",
+      "schema": "invalid",
+      "bash": "accept",
+      "note": "an unknown key inside sessions; the bash reader ignores the whole key; the schema refuses it, and so will the C# reader once it lands (CO-2a)"
+    },
+    {
+      "file": "sessions-poll-out-of-range.json",
+      "schema": "invalid",
+      "bash": "accept",
+      "note": "pollSeconds is 1 to 30; a range the bash reader does not check"
+    },
+    {
+      "file": "model-policy-forms.json",
+      "schema": "valid",
+      "bash": "accept",
+      "note": "model and policy forms (decided, owner, 2026-10-16); the bash reader accepts and never applies them"
+    },
+    {
+      "file": "unknown-model-form.json",
+      "schema": "invalid",
+      "bash": "accept",
+      "note": "model names built-in forms only; the bash reader does not check the value, as for mcp"
+    },
+    {
+      "file": "unknown-policy-form.json",
+      "schema": "invalid",
+      "bash": "accept",
+      "note": "policy names built-in forms only; the bash reader does not check the value, as for mcp"
+    },
+    {
+      "file": "model-policy-every-form.json",
+      "schema": "valid",
+      "bash": "accept",
+      "note": "every model and policy enum value once, so a reader's enum must match the schema's exactly"
+    },
+    {
+      "file": "model-null.json",
+      "schema": "invalid",
+      "bash": "accept",
+      "note": "null is not absent: model must be one of the form names; the bash reader does not check the value"
     }
   ]
 }

@@ -19,6 +19,8 @@ always parks and `then:` doesn't apply when it fires (§3.4, §3.8). Each is mar
 state machine) and §17.29.4 step 2 · **Next:** P4a (the Temporal foundation), then `/specToProvenPR` takes the Phases at
 the end to PRs.
 
+**Revision note (2026-10-16, DT-C):** a child's declared `outputs` are the facts of its parent's `wait.satisfied` (§3.2, §5.8, §9.2), `produces` gains the long form `{ fact, from }` (§3.5), `RCP-WIRE-003` joins §9.1 and `RCP-OUT-002` is an error, not information, when the fact only arrives through a child (§9.1). Each is marked *DT-C, 2026-10-16* inline.
+
 **Revision note (2026-10-14):** the UI screens spec's (`2026-10-13-sindri-ui-screens-design.md`) edits E-21 (recipe
 `urgency`), E-22 (engine half: `outputs`, the fact types, `inputs[].kind`), E-30 (the ledger column that links Temporal
 history to ledger sequences) and E-31 (the scoping recipe's draft proposals), and the states path order (its §5.1), are
@@ -240,7 +242,7 @@ public interface IDescribedBlock { public static abstract BlockDescriptor Descri
 | `urgency` | no | `incident \| triage \| work`, default `work` (UI E-21). The app orders Home's Workflows strip and the Workflows list's groups by it, `incident` first. It changes no engine behaviour: no timer, escalation or notification reads it. `RCP-URG-001` (any other value). The normalized document writes the default, so an absent `urgency` and `urgency: work` hash the same |
 | `inputs` | **yes** | At least one (`RCP-INPUT-002`). The long form is `{ key, label?, type?, kind, generate? }`. `kind` is one of the subject kinds in §3.3 and is required (`RCP-INPUT-001`). `type` is one of the fact types in §3.3 and defaults to the type `kind` pairs with. `generate` is a template (§3.11) that supplies the value when the start doesn't. The bare-string short form (`[fact:item]`) normalizes to `{ key }` with no `kind`, so it fails `RCP-INPUT-001`. The **first** declared input is the instance's subject (UI §5.4). `recipe show` and `GET /workflow/recipes` return the inputs so the app can render a start form and a subject line |
 | `name` | no | A template (§3.11) for the instance's name, rendered once at start. The name becomes `subject.label`. `RCP-NAME-002`–`006` |
-| `outputs` | no | What the recipe produces for a human, in the long form `[{ key, label?, type?, from }]` (UI E-22). `key` is a fact key; `type` is one of §3.3's fact types (default `text`); `from` names the state that produces the fact. The app places the fact under that state in the states band and in the facts panel (UI §5.2). Declarations only: they add no wiring (`produces` and Step outputs still do), and an undeclared fact is still recorded and still shown, as `payload`. `RCP-OUT-001`–`003`, `RCP-TYPE-001`–`003` (§9.1) |
+| `outputs` | no | What the recipe produces for a human, in the long form `[{ key, label?, type?, from }]` (UI E-22). `key` is a fact key; `type` is one of §3.3's fact types (default `text`); `from` names the state that produces the fact. The app places the fact under that state in the states band and in the facts panel (UI §5.2). Declarations only: they add no wiring (`produces` and Step outputs still do), except on a child: *DT-C, 2026-10-16*: a child's declared `outputs` are the facts of the parent's `wait.satisfied` from it (decision-tree spec §8.4). An undeclared fact is still recorded and still shown, as `payload`. `RCP-OUT-001`–`003`, `RCP-TYPE-001`–`003` (§9.1) |
 | `initial` | yes | An `active` or `wait` state |
 | `states` | yes | At least one non-terminal and one terminal state; reserved names refused |
 | `transitions` | yes | |
@@ -260,7 +262,7 @@ Reserved state names: `cancelled`, `escalated`, `parked`, `taken-over`.
 | Duration | `<n>m`, `<n>h` or `<n>d`, at least `1m` |
 | Tokens | int, or with a `k`/`M` suffix |
 | Fact type | `text \| file \| item \| link \| scope-map \| packet \| evidence \| decision \| payload` (UI E-22, §5.2). `text`, `file` and `item` are the input types of rev 7; the rest are for outputs and for inputs that carry a structured value. The type picks a viewer in the app and nothing else: the engine stores every fact as a hashed blob, and a type it doesn't know is `RCP-TYPE-001`, not a runtime error |
-| Subject kind | `item \| linear-project \| webhook \| file \| text \| link` (UI E-22, §5.4). Each input declares one (`RCP-INPUT-001`). `item` pairs with type `item`, `file` with `file`, `text` with `text`, `link` with `link`, and `linear-project` and `webhook` with `payload`. Any other pairing is `RCP-TYPE-003` |
+| Subject kind | `item \| linear-project \| webhook \| file \| text \| link \| packet \| payload` (UI E-22, §5.4; `packet` and `payload` added by DT-R1, owner decision 2026-10-16). Each input declares one (`RCP-INPUT-001`). `item` pairs with type `item`, `file` with `file`, `text` with `text`, `link` with `link`, `packet` with `packet`, and `linear-project`, `webhook` and `payload` with `payload`. Any other pairing is `RCP-TYPE-003` |
 | `with:` value | A literal (string, number, bool or a list of these), `{ fact }` or `{ profile }`. Capability parameters take only literals or `{ profile }` (`RCP-CAP-007`) |
 
 ### 3.4 States
@@ -305,7 +307,7 @@ allowed on a `child` wait (`RCP-TIME-002`).
 | `gates` | no | `{ use, threshold?, with? }`, run in order |
 | `evidence` | no | `{ kind, at, expect: pass\|fail }` |
 | `effects` | no | `{ use, with? }` |
-| `produces` | no | Each must be an output or fact of the trigger's source (`RCP-WIRE-002`) |
+| `produces` | no | Each must be an output or fact of the trigger's source (`RCP-WIRE-002`); from a child wait that is one of the child's declared `outputs`. *DT-C, 2026-10-16:* an entry is a fact key, or `{ fact, from }` to record a child's output under another key (both required; `{ fact: X, from: X }` is the bare key `X`, and a bare key still hashes as a plain string). Only a child's output can be renamed, and no fact is written twice on one transition (`RCP-WIRE-002`). Produced from a child on an outcome that doesn't carry it on every path inside the child, or on `cancelled`, is `RCP-WIRE-003` |
 
 The first transition whose `when` holds is the matched one. If its gates refuse, that is a refusal (§5.5), not a
 fall-through. A `step.failed` with no transition parks with `needs-answer`.
@@ -404,7 +406,7 @@ Example: `name: "{fact:scope} · {start:date}"` and `generate: "triage {start:da
 - `text`: the first non-empty line, trimmed.
 - `file`: the file name.
 - `link`: the `title` field, else the URL's host.
-- `linear-project` and `webhook`: the payload's `id` field, else `number`, else the bare key.
+- `linear-project`, `webhook`, `payload` and `packet`: the payload's `id` field, else `number`, else the bare key (`SubjectRefs.PayloadId`, the same text a subject label shows).
 
 Each value has its control characters and newlines replaced by a space. The value is then cut to 40 characters
 and the whole name to 80 characters. Both cuts use `SubjectRefs.Cut`, which never splits a surrogate pair and
@@ -698,6 +700,7 @@ Registered events (`EventDescriptor`, §2) reach instances as Temporal **Signals
   arrive as signals the child sends to its parent, and the parent pushes a mirroring suspension (reason, question,
   `childNext`). Any later signal or result from the child pops that mirror first, so a child cancelled at its own
   address, or accepted straight to `done`, still releases its parent.
+- *DT-C, 2026-10-16:* the child's result carries its declared `outputs` present at its end, under its own keys; `cancelled` carries none. The validator (`RCP-WIRE-002`, `-003`), `recipe eval` and the pure engine's `produces` (which applies a rename) are DT-C; the interpreter filling the result's outputs from the child's facts is P7.
 - **Forwarded answers.** An `answer` to a parent whose suspension mirrors a child is an Update on the **child**: the
   nonce endpoint resolves the forwarding and mints the nonce for the child; the challenge for a `protected` answer is
   bound to the child's address. The CLI prints the child's result and the parent follows through the child's signal.
@@ -1043,7 +1046,7 @@ directory when not (so `workflow.item.yaml` finds `workflow.step.yaml`).
 |---|---|
 | Schema | `RCP-SCHEMA-001`–`003`, `RCP-STATE-001`, `RCP-INIT-001`, `RCP-DUR-001`, `RCP-NAME-001` |
 | Blocks registered | `RCP-BLOCK-001`–`003`, `RCP-EVID-001`, `RCP-EVENT-001` |
-| Inputs upstream | `RCP-WIRE-001`, `-002`, `RCP-WHEN-001`, `RCP-OUTCOME-001`, `RCP-CHILD-001` |
+| Inputs upstream | `RCP-WIRE-001`, `-002`, `-003` *(DT-C)*, `RCP-WHEN-001`, `RCP-OUTCOME-001`, `RCP-CHILD-001` |
 | Capability | `RCP-CAP-001`–`007` |
 | Reachable | `RCP-REACH-001` |
 | A way out | `RCP-EXIT-001` |
@@ -1052,13 +1055,13 @@ directory when not (so `workflow.item.yaml` finds `workflow.step.yaml`).
 | Allowlisted effects | `RCP-EFFECT-001` (`skipped` without the profile key) |
 | Hash | `RCP-HASH-001` |
 | Added | `RCP-TRIG-001`, `RCP-WHEN-002`, `RCP-THRESH-001`, `-002`, `RCP-NEXT-001`, `-002`, `RCP-CHILD-002` (cycle), `-003` (depth > 4), `RCP-VERSION-001`, `-002`, `RCP-TRIG-002` (reserved verb), `RCP-TIME-002` (`retry` on a child wait), `RCP-RES-001` (information: a resource with no allocator in this build) |
-| Added (UI E-21, E-22) | `RCP-URG-001` (`urgency` is not `incident`, `triage` or `work`) · `RCP-OUT-001` (`outputs[].from` names no state of the recipe) · `RCP-OUT-002` (`outputs[].from` names a terminal or engine-owned state, or a state whose Step descriptor and transitions never produce `key`; information when the fact only arrives through a child) · `RCP-OUT-003` (duplicate output `key`, or an output `key` that is also an input `key`) · `RCP-TYPE-001` (a fact `type`, on an input or an output, is not one of the nine in §3.3) · `RCP-TYPE-002` (an input `kind` is not one of the six in §3.3) · `RCP-TYPE-003` (a `kind` and `type` that don't pair, §3.3) |
+| Added (UI E-21, E-22) | `RCP-URG-001` (`urgency` is not `incident`, `triage` or `work`) · `RCP-OUT-001` (`outputs[].from` names no state of the recipe) · `RCP-OUT-002` (`outputs[].from` names a terminal or engine-owned state, or a state whose Step descriptor and transitions never produce `key`; *DT-C, 2026-10-16:* when the fact only arrives through a child it is an error against the resolved child's declared `outputs`, not information) · `RCP-OUT-003` (duplicate output `key`, or an output `key` that is also an input `key`) · `RCP-TYPE-001` (a fact `type`, on an input or an output, is not one of the nine in §3.3) · `RCP-TYPE-002` (an input `kind` is not one of the six in §3.3) · `RCP-TYPE-003` (a `kind` and `type` that don't pair, §3.3) |
 | Added (P4c) | `RCP-INPUT-001` (an input declares no `kind`) · `RCP-INPUT-002` (the recipe declares no input) · `RCP-NAME-002` (`name` or `generate` is empty, only whitespace, or longer than 200 characters) · `RCP-NAME-003` (an unknown placeholder, or an unbalanced `{` or `}`) · `RCP-NAME-004` (`{fact:x}` in `name` names no declared input) · `RCP-NAME-005` (a `{fact:…}` placeholder in `generate`) · `RCP-NAME-006` (`generate` on an input whose kind isn't `text`) |
 
 Error lines for the P4c rules, in this section's format (`RCP-NAME-001` is taken by state names, §3.4, so the template rules start at `002`):
 
 ```
-RCP-INPUT-001: input 'fact:spec' declares no kind at workflow.step.yaml:4:9 (inputs[0]); fix: add kind: item | link | linear-project | webhook | file | text, paired with its type (item/item, file/file, text/text, link/link, linear-project and webhook/payload)
+RCP-INPUT-001: input 'fact:spec' declares no kind at workflow.step.yaml:4:9 (inputs[0]); fix: add kind: item | link | linear-project | webhook | file | text | packet | payload, paired with its type (item/item, file/file, text/text, link/link, packet/packet; payload, linear-project and webhook pair with payload)
 RCP-INPUT-002: the recipe declares no input at workflow.x.yaml:1:1 (inputs); fix: declare at least one input; a scheduled recipe gives it generate: "<template>"
 RCP-NAME-002: the name template is empty or longer than 200 characters at …:5:7 (name); fix: write literal text with {fact:<input>} or {start:date|time}
 RCP-NAME-003: unknown placeholder '{owner}' at …:5:7 (name); fix: use {fact:<input>}, {start:date} or {start:time}, and write {{ or }} for a literal brace
@@ -1077,7 +1080,7 @@ RCP-NAME-006: generate on an input of kind 'item' at …:7:9 (inputs[0].generate
 The owner extended the format on 2026-10-11 (rev 7.2):
 - **Child lines.** A child's park, resume and escalation are `{"kind":"child.parked","park":"<reason>"}`,
   `{"kind":"child.resumed"}` and `{"kind":"child.escalated"}`. The reason is spelled as `expect.park` spells it,
-  because a park reason isn't an outcome (§3.6). A child's end stays `wait.satisfied` with its outcome (§5.8).
+  because a park reason isn't an outcome (§3.6). A child's end stays `wait.satisfied` with its outcome (§5.8). *DT-C, 2026-10-16:* it may give `outputs`, only the child's declared ones, under the child's own keys (not the parent's renamed ones); none on `cancelled`.
 - **Engine triggers.** `variant` says which one a line stands for: an answer's option (`grant`, `grant-tokens`,
   `accept`, `reject`, `resume`, `text`) with `kind: "answer"`, or `takeover`, `handback`, `cancel`, `deadline` and
   `command`, which go with the kind of the same name (`command.<verb>` for a command) and may be left out there.
@@ -1754,3 +1757,5 @@ Merged (#179). Unchanged by rev 8.
   `complete --run` moves the instance to `checks`, and the event records `via: agent` and the token usage. The same
   `complete` from another session exits 2 with `SND-AUTH-002`. Killing the tmux session parks the Step through
   `step.failed(exit)` within 150 s.
+
+> DT-R1 note: block descriptors gain optional `Runtime` (`desk|block|agent`) and `HumanOnly` fields (written only when set; DT spec §8.5, scoping-station W3); `workflow complete` on a human-only Step needs a human caller.

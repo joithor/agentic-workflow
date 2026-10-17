@@ -4,7 +4,7 @@ using Aw.Architecture.Tests.TypedIds;
 namespace Aw.Architecture.Tests;
 
 /// <summary>Every §4b.1 rule over every registered production assembly (Packages.cs).</summary>
-[Trait("Lane", "unit")]
+[Trait("Lane", "integration")]
 public sealed class ArchitectureTests
 {
     [Fact]
@@ -24,6 +24,10 @@ public sealed class ArchitectureTests
     [Fact]
     public void Infrastructure_types_stay_internal() =>
         Verify.None(InfrastructureRules.Check(Production.Architecture.Types, Production.Scope));
+
+    [Fact]
+    public void Every_task_returning_port_method_takes_a_cancellation_token() =>
+        Verify.None(AsyncRules.Check(Production.Architecture.Types, Production.Scope));
 
     [Fact]
     public void Every_type_of_a_package_sits_in_a_layer_namespace() =>
