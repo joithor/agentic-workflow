@@ -40,6 +40,9 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     /// <summary>Gets the compose project name of each compose operation called, in order.</summary>
     public IList<string> Projects { get; } = [];
 
+    /// <summary>Gets the operations (Ps, Stop) called on a project that names no files (<see cref="ComposeProject.ByLabel"/>), in order.</summary>
+    public IList<string> LabelOnlyCalls { get; } = [];
+
     /// <summary>Gets the services <see cref="Up"/> starts: the eight Onyx runs with no profile.</summary>
     public IList<string> StartedServices { get; } = ["api_server", "background", "cache", "inference_model_server", "nginx", "opensearch", "relational_db", "web_server"];
 
@@ -119,6 +122,7 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     public Result<Unit> Stop(ComposeProject project, CancellationToken cancellationToken)
     {
         Projects.Add(project.Name);
+        TrackLabelOnly(project, "Stop");
         if (Begin("Stop") is { } error)
         {
             return error;
@@ -137,6 +141,7 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     public Result<IReadOnlyList<ComposeContainer>> Ps(ComposeProject project, CancellationToken cancellationToken)
     {
         Projects.Add(project.Name);
+        TrackLabelOnly(project, "Ps");
         return Begin("Ps") is { } error ? error : Results.Success<IReadOnlyList<ComposeContainer>>([.. Containers]);
     }
 
@@ -160,6 +165,14 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
         IReadOnlyDictionary<string, IReadOnlyList<string>> map = images.Distinct(StringComparer.Ordinal)
             .ToDictionary(static i => i, i => (IReadOnlyList<string>)(LocalImages.TryGetValue(i, out var digests) ? digests : []), StringComparer.Ordinal);
         return Results.Success(map);
+    }
+
+    private void TrackLabelOnly(ComposeProject project, string operation)
+    {
+        if (!project.HasFiles)
+        {
+            LabelOnlyCalls.Add(operation);
+        }
     }
 
     // Records the call, then says why it can't run: a failure queued for it, or a runtime that isn't there.

@@ -13,6 +13,9 @@ public sealed record ComposeProject(string Name, string ComposeFile, string Over
     private const string Prefix = "sindri-onyx-";
     private const int HashHexDigits = 8;
 
+    /// <summary>Gets whether the project names its compose, override and .env files (false for <see cref="ByLabel"/>).</summary>
+    public bool HasFiles => ComposeFile.Length > 0;
+
     /// <summary>Gets the variables every compose call must not inherit from the shell: Compose's own COMPOSE_* settings and every key Sindri writes into the .env (the shell wins over the .env, so a stray one would change what the rendered files say).</summary>
     public static IReadOnlyList<string> StrippedVariables { get; } = ["COMPOSE_PROFILES", "COMPOSE_FILE", "COMPOSE_PROJECT_NAME", "COMPOSE_ENV_FILES", "COMPOSE_PATH_SEPARATOR", .. OnyxConfig.EnvKeys];
 
@@ -25,6 +28,11 @@ public sealed record ComposeProject(string Name, string ComposeFile, string Over
         var hash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(sindriHome.TrimEnd('/', '\\'))));
         return Prefix + hash[..HashHexDigits];
     }
+
+    /// <summary>Names a project with no files: compose identifies its containers by the project label, which is enough to list and stop them when Sindri's own files are gone.</summary>
+    /// <param name="name">The compose project name (see <see cref="NameFor"/>).</param>
+    /// <returns>The project with empty file paths.</returns>
+    public static ComposeProject ByLabel(string name) => new(name, "", "", "");
 
     /// <summary>Tells whether a name read back from state.json is one <see cref="NameFor"/> could have made (so a hand-edited file can't smuggle an option or another project into a docker command).</summary>
     /// <param name="name">The recorded name.</param>

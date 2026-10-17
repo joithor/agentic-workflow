@@ -8263,3 +8263,5 @@ Aw.Sindri.Core.Onyx.OnyxFacts.Containers(System.Threading.CancellationToken canc
 Aw.Sindri.Core.Onyx.OnyxFacts.ForeignProjectWarning(Aw.Sindri.Core.Onyx.OnyxSetupState? state) -> string?
 Aw.Sindri.Core.Onyx.OnyxFacts.Project.get -> Aw.Sindri.Core.Onyx.ComposeProject!
 Aw.Sindri.Core.Onyx.OnyxFacts.DockerProblem(System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Error?
+Aw.Sindri.Core.Onyx.ComposeProject.HasFiles.get -> bool
+static Aw.Sindri.Core.Onyx.ComposeProject.ByLabel(string! name) -> Aw.Sindri.Core.Onyx.ComposeProject!
