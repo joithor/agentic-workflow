@@ -94,13 +94,4 @@ public sealed class ArgvBuilderTests
 
         Assert.Equal("SND-REQ-001", ArgvBuilder.Build(AgentEntries.ClaudeCode, LaunchMode.Open, inputs).Error.Code);
     }
-
-    [Fact, Trait("Lane", "unit")]
-    public void A_step_adds_nothing_yet()
-    {
-        var human = ArgvBuilder.Build(AgentEntries.Codex, LaunchMode.Open, Inputs());
-        var step = ArgvBuilder.Build(AgentEntries.Codex, LaunchMode.Open, Inputs() with { Step = new StepArgs(Model: "some-model", Policy: null, new StepRef("build", "agent")) });
-
-        Assert.Equal(human.Value, step.Value); // the L-17 forms are P10a U3
-    }
 }

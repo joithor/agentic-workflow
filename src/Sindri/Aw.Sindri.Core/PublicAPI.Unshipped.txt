@@ -9369,9 +9369,7 @@ Aw.Sindri.Core.Launch.AgentEntry.SessionIdPattern.get -> string?
 Aw.Sindri.Core.Launch.AgentEntry.SessionIdPattern.init -> void
 Aw.Sindri.Core.Launch.Argv.ArgvBuilder
 Aw.Sindri.Core.Launch.Argv.ArgvInputs
-Aw.Sindri.Core.Launch.Argv.ArgvInputs.ArgvInputs(Aw.Sindri.Core.Ids.ItemId Item, string! RepoPath, string! SessionName, string! Seed, Aw.Sindri.Core.Sessions.SessionId? SessionId = null, string? McpConfigPath = null, Aw.Sindri.Core.Launch.StepArgs? Step = null) -> void
 Aw.Sindri.Core.Launch.Argv.ArgvInputs.<Clone>$() -> Aw.Sindri.Core.Launch.Argv.ArgvInputs!
-Aw.Sindri.Core.Launch.Argv.ArgvInputs.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Item, out string! RepoPath, out string! SessionName, out string! Seed, out Aw.Sindri.Core.Sessions.SessionId? SessionId, out string? McpConfigPath, out Aw.Sindri.Core.Launch.StepArgs? Step) -> void
 Aw.Sindri.Core.Launch.Argv.ArgvInputs.Equals(Aw.Sindri.Core.Launch.Argv.ArgvInputs? other) -> bool
 Aw.Sindri.Core.Launch.Argv.ArgvInputs.Item.get -> Aw.Sindri.Core.Ids.ItemId
 Aw.Sindri.Core.Launch.Argv.ArgvInputs.Item.init -> void
@@ -9430,5 +9428,14 @@ static Aw.Sindri.Core.Launch.Argv.PlaceholderValues.operator ==(Aw.Sindri.Core.L
 static Aw.Sindri.Core.Launch.Argv.SessionIdRules.IsUsable(Aw.Sindri.Core.Launch.AgentEntry! entry, Aw.Sindri.Core.Sessions.SessionId? id) -> bool
 static Aw.Sindri.Core.Launch.Argv.SessionIdRules.Parse(string? text) -> Aw.Sindri.Core.Sessions.SessionId?
 static Aw.Sindri.Core.Launch.Argv.Placeholders.IsAbsolute(string! path) -> bool
-
 Aw.Sindri.Core.Jobs.IJobCancellation.CancelRecorded(Aw.Sindri.Core.Ids.JobId job, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.PolicyFilePath.get -> string?
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.PolicyFilePath.init -> void
+Aw.Sindri.Core.Launch.Argv.StepForms
+const Aw.Sindri.Core.Launch.StepEnvironment.RunDirectory = "AW_SINDRI_RUN_DIR" -> string!
+static Aw.Sindri.Core.Launch.StepEnvironment.For(Aw.Sindri.Core.Launch.LaunchRequest! request) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Core.Launch.StepEnvironment
+const Aw.Sindri.Core.Launch.StepEnvironment.Instance = "AW_SINDRI_INSTANCE" -> string!
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.ArgvInputs(Aw.Sindri.Core.Ids.ItemId Item, string! RepoPath, string! SessionName, string! Seed, Aw.Sindri.Core.Sessions.SessionId? SessionId = null, string? McpConfigPath = null, Aw.Sindri.Core.Launch.StepArgs? Step = null, string? PolicyFilePath = null) -> void
+Aw.Sindri.Core.Launch.Argv.ArgvInputs.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Item, out string! RepoPath, out string! SessionName, out string! Seed, out Aw.Sindri.Core.Sessions.SessionId? SessionId, out string? McpConfigPath, out Aw.Sindri.Core.Launch.StepArgs? Step, out string? PolicyFilePath) -> void
+static Aw.Sindri.Core.Launch.Argv.StepForms.Arguments(Aw.Sindri.Core.Launch.AgentEntry! entry, Aw.Sindri.Core.Launch.StepArgs! step, string? policyFilePath) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!

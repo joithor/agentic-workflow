@@ -13,6 +13,8 @@ public static class AgentEntries
         Open = ["{bin}", "--session-id", "{sessionId}", "-n", "{name}", "{seed}"],
         SessionIdMode = SessionIdMode.PreChosenUuid,
         SessionIdPattern = Uuid,
+        ModelForm = ModelForm.ClaudeFlag,
+        PolicyForm = PolicyForm.ClaudeSettingsFile,
     };
 
     /// <summary>The built-in codex entry: a reported id.</summary>
@@ -21,6 +23,8 @@ public static class AgentEntries
         Open = ["{bin}", "-C", "{cwd}", "{seed}"],
         SessionIdMode = SessionIdMode.Reported,
         SessionIdPattern = Uuid,
+        ModelForm = ModelForm.CodexFlag,
+        PolicyForm = PolicyForm.CodexOverrides,
     };
 
     /// <summary>The built-in cursor entry: a reported id, and an embedded placeholder in its resume template.</summary>
