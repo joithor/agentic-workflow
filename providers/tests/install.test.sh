@@ -2,6 +2,7 @@
 # Tests for providers/lib.sh + providers/*/install.sh (installer plumbing).
 # Runs entirely inside a throwaway $HOME; never touches the real one.
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/test-grep.sh"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$DIR/../.." && pwd)"
 
@@ -33,7 +34,7 @@ test_links_managed_and_bootstrap_then_is_idempotent() {
   [ "$(readlink "$d/review")" = "$ROOT/skills/review" ] || fail "review not linked"
   [ "$(readlink "$d/bootstrap")" = "$ROOT/bootstrap" ] || fail "bootstrap not linked"
   out="$(aw_install_skills_into "$d" </dev/null)"
-  echo "$out" | grep -q "review: up to date" || fail "second run should be up to date"
+  echo "$out" | has "review: up to date" || fail "second run should be up to date"
   teardown_env
   echo "PASS: test_links_managed_and_bootstrap_then_is_idempotent"
 }
@@ -115,7 +116,7 @@ test_cursor_mcp_merge_preserves_and_is_idempotent() {
   jq -e '.mcpServers["sample-server"].args == ["/b/mcp.js"]' "$f" >/dev/null || fail "sample server not added"
   jq -e '.mcpServers["prism-mcp"].env.PRISM_DASHBOARD_PORT == "7180"' "$f" >/dev/null || fail "env not written"
   jq -e '.mcpServers["sample-server"] | has("env") | not' "$f" >/dev/null || fail "empty env should be omitted"
-  cursor_register_mcp | grep -q "up to date" || fail "second merge should be a no-op"
+  cursor_register_mcp | has "up to date" || fail "second merge should be a no-op"
   teardown_env
   echo "PASS: test_cursor_mcp_merge_preserves_and_is_idempotent"
 }
@@ -132,13 +133,13 @@ test_cursor_retires_stale_servers() {
   out="$(cursor_register_mcp)"
   jq -e '.mcpServers | has("agentic-bridge") | not' "$f" >/dev/null || fail "retired server not removed from mcp.json"
   jq -e '.mcpServers.mine.url == "https://x" and (.mcpServers | has("sample-server"))' "$f" >/dev/null || fail "other servers not kept"
-  echo "$out" | grep -q "agentic-bridge: removed (retired)" || fail "removal not reported: $out"
+  echo "$out" | has "agentic-bridge: removed (retired)" || fail "removal not reported: $out"
   out="$(cursor_register_mcp)"
-  echo "$out" | grep -q "up to date" || fail "second run should be a no-op: $out"
-  ! echo "$out" | grep -q "removed" || fail "second run should remove nothing: $out"
+  echo "$out" | has "up to date" || fail "second run should be a no-op: $out"
+  ! echo "$out" | has "removed" || fail "second run should remove nothing: $out"
   AW_MCP_RETIRED="sample-server"
   out="$(cursor_register_mcp)"
-  ! echo "$out" | grep -q "sample-server: removed" || fail "a shipped server is not retired, so don't report it removed: $out"
+  ! echo "$out" | has "sample-server: removed" || fail "a shipped server is not retired, so don't report it removed: $out"
   jq -e '.mcpServers | has("sample-server")' "$f" >/dev/null || fail "a shipped server must stay"
   teardown_env
   echo "PASS: test_cursor_retires_stale_servers"
@@ -153,13 +154,13 @@ test_cli_retire_removes_only_registered() {
   AW_MCP_RETIRED="agentic-bridge never-registered"
   out="$(aw_mcp_retire_cli "Fake" fake_present fake_remove)"
   [ "$(cat "$calls")" = "remove agentic-bridge" ] || fail "expected one removal, got: $(cat "$calls" 2>/dev/null)"
-  echo "$out" | grep -q "agentic-bridge: removed from Fake (retired)" || fail "removal not reported: $out"
-  ! echo "$out" | grep -q "never-registered" || fail "absent server should be silent: $out"
+  echo "$out" | has "agentic-bridge: removed from Fake (retired)" || fail "removal not reported: $out"
+  ! echo "$out" | has "never-registered" || fail "absent server should be silent: $out"
   rm -f "$calls"
   AW_DRY_RUN=1
   out="$(aw_mcp_retire_cli "Fake" fake_present fake_remove)"
   [ ! -s "$calls" ] || fail "dry run removed something: $(cat "$calls")"
-  echo "$out" | grep -q "would remove agentic-bridge from Fake (retired)" || fail "dry run should say what it would remove: $out"
+  echo "$out" | has "would remove agentic-bridge from Fake (retired)" || fail "dry run should say what it would remove: $out"
   AW_MCP_RETIRED=""
   [ -z "$(aw_mcp_retire_cli "Fake" fake_present fake_remove)" ] || fail "nothing retired should print nothing"
   teardown_env
@@ -177,7 +178,7 @@ test_cli_retire_skips_shipped_servers() {
   AW_MCP_RETIRED="serena agentic-bridge"
   out="$(aw_mcp_retire_cli "Fake" fake_present fake_remove)"
   [ "$(cat "$calls")" = "remove agentic-bridge" ] || fail "only the unshipped server should go, got: $(cat "$calls" 2>/dev/null)"
-  ! echo "$out" | grep -q "serena" || fail "a shipped server should be silent: $out"
+  ! echo "$out" | has "serena" || fail "a shipped server should be silent: $out"
   AW_MCP_SERVERS=""; AW_MCP_RETIRED=""
   teardown_env
   echo "PASS: test_cli_retire_skips_shipped_servers"
@@ -196,13 +197,13 @@ test_claude_retire_removes_user_and_local_scopes() {
   out="$(PATH="$bin:$PATH" claude_retire_mcp)"
   grep -qx "$proj mcp remove --scope local agentic-bridge" "$calls" || fail "local scope not removed from its project: $(cat "$calls")"
   grep -q " mcp remove --scope user agentic-bridge$" "$calls" || fail "user scope not removed: $(cat "$calls")"
-  echo "$out" | grep -q "agentic-bridge: removed from Claude Code (retired)" || fail "removal not reported: $out"
+  echo "$out" | has "agentic-bridge: removed from Claude Code (retired)" || fail "removal not reported: $out"
   rm -f "$calls"
   jq -n --arg p "$proj" '{projects: {($p): {mcpServers: {"agentic-bridge": {command: "node"}}}}}' >"$HOME/.claude.json"
   AW_DRY_RUN=1
   out="$(PATH="$bin:$PATH" claude_retire_mcp)"
   [ ! -s "$calls" ] || fail "dry run ran claude: $(cat "$calls")"
-  echo "$out" | grep -q "would remove agentic-bridge from Claude Code (retired)" || fail "dry run missed the local-only entry: $out"
+  echo "$out" | has "would remove agentic-bridge from Claude Code (retired)" || fail "dry run missed the local-only entry: $out"
   AW_DRY_RUN=0
   jq -n '{projects: {"/no/such/dir": {mcpServers: {"agentic-bridge": {command: "node"}}}}}' >"$HOME/.claude.json"
   [ -z "$(PATH="$bin:$PATH" claude_retire_mcp)" ] && [ ! -s "$calls" ] || fail "an entry under a deleted project should be left alone"
@@ -231,11 +232,11 @@ test_remove_retired_dir_only_when_untracked() {
   AW_DRY_RUN=1
   out="$(aw_remove_retired_dir "$repo" old-pkg)"
   [ -d "$repo/old-pkg" ] || fail "dry run removed the directory"
-  echo "$out" | grep -q "would remove $repo/old-pkg" || fail "dry run should say what it would remove: $out"
+  echo "$out" | has "would remove $repo/old-pkg" || fail "dry run should say what it would remove: $out"
   AW_DRY_RUN=0
   out="$(aw_remove_retired_dir "$repo" old-pkg)"
   [ ! -e "$repo/old-pkg" ] || fail "untracked leftover not removed"
-  echo "$out" | grep -q "removed $repo/old-pkg (retired)" || fail "removal not reported: $out"
+  echo "$out" | has "removed $repo/old-pkg (retired)" || fail "removal not reported: $out"
   out="$(aw_remove_retired_dir "$repo" kept)"
   [ -f "$repo/kept/file" ] || fail "a tracked directory must stay"
   mkdir -p "$repo/wip/dist"; touch "$repo/wip/dist/x.js" "$repo/wip/new-feature.ts"
@@ -298,15 +299,15 @@ NPM
   export NPM_LOG="$SANDBOX/npm.log"
   AW_SKILL_PACKAGES=(good bad nopkg)
   out="$(PATH="$bin:$PATH" aw_build_skill_packages "$root")"
-  echo "$out" | grep -q "good: built" || fail "good package not built"
-  echo "$out" | grep -q "WARN: bad build failed" || fail "failed build should warn, not abort"
-  echo "$out" | grep -q "nopkg: no package.json, skipping" || fail "package-less skill should be skipped"
+  echo "$out" | has "good: built" || fail "good package not built"
+  echo "$out" | has "WARN: bad build failed" || fail "failed build should warn, not abort"
+  echo "$out" | has "nopkg: no package.json, skipping" || fail "package-less skill should be skipped"
   grep -q "^good ci --ignore-scripts --no-audit --no-fund$" "$NPM_LOG" || fail "npm ci not run for good"
   grep -q "^good run build$" "$NPM_LOG" || fail "npm run build not run for good"
   : > "$NPM_LOG"
   out="$(AW_DRY_RUN=1 PATH="$bin:$PATH" aw_build_skill_packages "$root")"
   [ ! -s "$NPM_LOG" ] || fail "dry-run must not run npm"
-  echo "$out" | grep -q "\[dry-run\] would run: npm ci && npm run build (in $root/skills/good)" || fail "dry-run should print the build"
+  echo "$out" | has "\[dry-run\] would run: npm ci && npm run build (in $root/skills/good)" || fail "dry-run should print the build"
   teardown_env
   echo "PASS: test_builds_skill_packages_and_warns_on_failure"
 }
@@ -337,7 +338,7 @@ test_resize_hooks_migrate_to_tagged_per_tty_entries() {
  "statusLine":{"type":"command","command":"x"}}
 JSON
   out="$(AW_DRY_RUN=1 claude_install_settings 2>&1)"
-  echo "$out" | grep -q "would migrate 2 legacy" || fail "dry-run should announce the migration: $out"
+  echo "$out" | has "would migrate 2 legacy" || fail "dry-run should announce the migration: $out"
   [ "$(jq '[.. | .command? // empty | select(contains("shell_pid\""))] | length' "$f")" = 2 ] || fail "dry-run changed settings.json"
   claude_install_settings >/dev/null 2>&1 || fail "install failed"
   [ "$(jq '[.. | .command? // empty | select(contains("$HOME/.claude/shell_pid\""))] | length' "$f")" = 0 ] || fail "legacy commands remain"

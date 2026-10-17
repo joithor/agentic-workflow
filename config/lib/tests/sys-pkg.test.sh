@@ -3,6 +3,7 @@
 # package on a platform is skipped, sudo is used only when not root, and a box with no sudo or no manager fails clearly.
 # Dry runs only (AW_DRY_RUN=1), on a PATH of fakes, so nothing is installed.
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../../scripts/lib/test-grep.sh"
 
 REPO="$(cd "$(dirname "$0")/../../.." && pwd)"
 PASS=0
@@ -27,7 +28,7 @@ run() {
   set -e
 }
 expect() {   # <label> <rc> <regex>
-  if [ "$RC" -eq "$2" ] && printf '%s\n' "$OUT" | grep -qE -- "$3"; then ok "$1"; else
+  if [ "$RC" -eq "$2" ] && printf '%s\n' "$OUT" | has -E -- "$3"; then ok "$1"; else
     fail "$1: exit $RC, want $2, output:"; printf '%s\n' "$OUT" | sed 's/^/      | /'
   fi
 }
