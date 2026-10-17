@@ -1855,7 +1855,6 @@ Aw.Sindri.Core.Profile.SindriProfile.Api.get -> Aw.Sindri.Core.Profile.ApiSettin
 Aw.Sindri.Core.Profile.SindriProfile.Api.init -> void
 Aw.Sindri.Core.Profile.SindriProfile.Context.get -> System.Text.Json.JsonElement?
 Aw.Sindri.Core.Profile.SindriProfile.Context.init -> void
-Aw.Sindri.Core.Profile.SindriProfile.Deconstruct(out int SchemaVersion, out string! User, out string! Tenant, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services, out Aw.Sindri.Core.Profile.ApiSettings? Api, out Aw.Sindri.Core.Profile.WorkflowSettings? Workflow, out System.Text.Json.JsonElement? Context, out Aw.Sindri.Core.Profile.IndexSettings? Index) -> void
 Aw.Sindri.Core.Profile.SindriProfile.Equals(Aw.Sindri.Core.Profile.SindriProfile? other) -> bool
 Aw.Sindri.Core.Profile.SindriProfile.Index.get -> Aw.Sindri.Core.Profile.IndexSettings?
 Aw.Sindri.Core.Profile.SindriProfile.Index.init -> void
@@ -1865,7 +1864,6 @@ Aw.Sindri.Core.Profile.SindriProfile.SchemaVersion.get -> int
 Aw.Sindri.Core.Profile.SindriProfile.SchemaVersion.init -> void
 Aw.Sindri.Core.Profile.SindriProfile.Services.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>?
 Aw.Sindri.Core.Profile.SindriProfile.Services.init -> void
-Aw.Sindri.Core.Profile.SindriProfile.SindriProfile(int SchemaVersion, string! User, string! Tenant = "local", System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos = null, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services = null, Aw.Sindri.Core.Profile.ApiSettings? Api = null, Aw.Sindri.Core.Profile.WorkflowSettings? Workflow = null, System.Text.Json.JsonElement? Context = null, Aw.Sindri.Core.Profile.IndexSettings? Index = null) -> void
 Aw.Sindri.Core.Profile.SindriProfile.Tenant.get -> string!
 Aw.Sindri.Core.Profile.SindriProfile.Tenant.init -> void
 Aw.Sindri.Core.Profile.SindriProfile.User.get -> string!
@@ -9431,3 +9429,71 @@ static Aw.Sindri.Core.Launch.Argv.PlaceholderValues.operator ==(Aw.Sindri.Core.L
 static Aw.Sindri.Core.Launch.Argv.SessionIdRules.IsUsable(Aw.Sindri.Core.Launch.AgentEntry! entry, Aw.Sindri.Core.Sessions.SessionId? id) -> bool
 static Aw.Sindri.Core.Launch.Argv.SessionIdRules.Parse(string? text) -> Aw.Sindri.Core.Sessions.SessionId?
 static Aw.Sindri.Core.Launch.Argv.Placeholders.IsAbsolute(string! path) -> bool
+Aw.Sindri.Core.Launch.StepApproval
+Aw.Sindri.Core.Profile.AgentLimits
+Aw.Sindri.Core.Profile.AgentLimits.AgentLimits(decimal? DailyBudget = null, System.Collections.Generic.IReadOnlyList<string!>? StepArgvHash = null) -> void
+Aw.Sindri.Core.Profile.AgentLimits.<Clone>$() -> Aw.Sindri.Core.Profile.AgentLimits!
+Aw.Sindri.Core.Profile.AgentLimits.DailyBudget.get -> decimal?
+Aw.Sindri.Core.Profile.AgentLimits.DailyBudget.init -> void
+Aw.Sindri.Core.Profile.AgentLimits.Deconstruct(out decimal? DailyBudget, out System.Collections.Generic.IReadOnlyList<string!>? StepArgvHash) -> void
+Aw.Sindri.Core.Profile.AgentLimits.Equals(Aw.Sindri.Core.Profile.AgentLimits? other) -> bool
+Aw.Sindri.Core.Profile.AgentLimits.StepArgvHash.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Profile.AgentLimits.StepArgvHash.init -> void
+Aw.Sindri.Core.Profile.AgentSettings
+Aw.Sindri.Core.Profile.AgentSettings.AgentSettings(decimal? SoftLimit = null, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.AgentLimits!>? Targets = null) -> void
+Aw.Sindri.Core.Profile.AgentSettings.<Clone>$() -> Aw.Sindri.Core.Profile.AgentSettings!
+Aw.Sindri.Core.Profile.AgentSettings.Deconstruct(out decimal? SoftLimit, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.AgentLimits!>? Targets) -> void
+Aw.Sindri.Core.Profile.AgentSettings.Equals(Aw.Sindri.Core.Profile.AgentSettings? other) -> bool
+Aw.Sindri.Core.Profile.AgentSettings.Targets.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.AgentLimits!>?
+Aw.Sindri.Core.Profile.AgentSettings.Targets.init -> void
+override Aw.Sindri.Core.Profile.AgentLimits.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.AgentLimits.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.AgentLimits.ToString() -> string!
+override Aw.Sindri.Core.Profile.AgentSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.AgentSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.AgentSettings.ToString() -> string!
+static Aw.Sindri.Core.Launch.StepApproval.Check(Aw.Sindri.Core.Launch.AgentEntry! entry, string? builtinArgvHash, Aw.Sindri.Core.Profile.AgentSettings? approved) -> Aw.Kernel.Result<Aw.Sindri.Core.Launch.AgentEntry!>!
+static Aw.Sindri.Core.Launch.StepApproval.Resolve(Aw.Sindri.Core.Launch.IAgentCatalog! catalog, Aw.Sindri.Core.Launch.AgentId id, string? builtinArgvHash, Aw.Sindri.Core.Profile.AgentSettings? approved) -> Aw.Kernel.Result<Aw.Sindri.Core.Launch.AgentEntry!>!
+static Aw.Sindri.Core.Profile.AgentLimits.operator !=(Aw.Sindri.Core.Profile.AgentLimits? left, Aw.Sindri.Core.Profile.AgentLimits? right) -> bool
+static Aw.Sindri.Core.Profile.AgentLimits.operator ==(Aw.Sindri.Core.Profile.AgentLimits? left, Aw.Sindri.Core.Profile.AgentLimits? right) -> bool
+static Aw.Sindri.Core.Profile.AgentSettings.operator !=(Aw.Sindri.Core.Profile.AgentSettings? left, Aw.Sindri.Core.Profile.AgentSettings? right) -> bool
+static Aw.Sindri.Core.Profile.AgentSettings.operator ==(Aw.Sindri.Core.Profile.AgentSettings? left, Aw.Sindri.Core.Profile.AgentSettings? right) -> bool
+Aw.Sindri.Core.Profile.AgentSettings.SoftLimit.get -> decimal?
+Aw.Sindri.Core.Profile.AgentSettings.SoftLimit.init -> void
+Aw.Sindri.Core.Profile.LaunchRepoSettings
+Aw.Sindri.Core.Profile.LaunchRepoSettings.<Clone>$() -> Aw.Sindri.Core.Profile.LaunchRepoSettings!
+Aw.Sindri.Core.Profile.LaunchRepoSettings.Deconstruct(out Aw.Sindri.Core.Launch.AgentId? Default) -> void
+Aw.Sindri.Core.Profile.LaunchRepoSettings.Default.get -> Aw.Sindri.Core.Launch.AgentId?
+Aw.Sindri.Core.Profile.LaunchRepoSettings.Default.init -> void
+Aw.Sindri.Core.Profile.LaunchRepoSettings.Equals(Aw.Sindri.Core.Profile.LaunchRepoSettings? other) -> bool
+Aw.Sindri.Core.Profile.LaunchRepoSettings.LaunchRepoSettings(Aw.Sindri.Core.Launch.AgentId? Default = null) -> void
+Aw.Sindri.Core.Profile.LaunchSettings
+Aw.Sindri.Core.Profile.LaunchSettings.<Clone>$() -> Aw.Sindri.Core.Profile.LaunchSettings!
+Aw.Sindri.Core.Profile.LaunchSettings.ConfirmWindow.get -> string?
+Aw.Sindri.Core.Profile.LaunchSettings.ConfirmWindow.init -> void
+Aw.Sindri.Core.Profile.LaunchSettings.Deconstruct(out Aw.Sindri.Core.Launch.AgentId? Default, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.LaunchRepoSettings!>? Repos, out string? ConfirmWindow) -> void
+Aw.Sindri.Core.Profile.LaunchSettings.Default.get -> Aw.Sindri.Core.Launch.AgentId?
+Aw.Sindri.Core.Profile.LaunchSettings.Default.init -> void
+Aw.Sindri.Core.Profile.LaunchSettings.Equals(Aw.Sindri.Core.Profile.LaunchSettings? other) -> bool
+Aw.Sindri.Core.Profile.LaunchSettings.LaunchSettings(Aw.Sindri.Core.Launch.AgentId? Default = null, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.LaunchRepoSettings!>? Repos = null, string? ConfirmWindow = null) -> void
+Aw.Sindri.Core.Profile.LaunchSettings.Repos.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.LaunchRepoSettings!>?
+Aw.Sindri.Core.Profile.LaunchSettings.Repos.init -> void
+Aw.Sindri.Core.Profile.SindriProfile.Agents.get -> Aw.Sindri.Core.Profile.AgentSettings?
+Aw.Sindri.Core.Profile.SindriProfile.Agents.init -> void
+Aw.Sindri.Core.Profile.SindriProfile.Deconstruct(out int SchemaVersion, out string! User, out string! Tenant, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services, out Aw.Sindri.Core.Profile.ApiSettings? Api, out Aw.Sindri.Core.Profile.WorkflowSettings? Workflow, out System.Text.Json.JsonElement? Context, out Aw.Sindri.Core.Profile.IndexSettings? Index, out Aw.Sindri.Core.Profile.LaunchSettings? Launch, out Aw.Sindri.Core.Profile.AgentSettings? Agents) -> void
+Aw.Sindri.Core.Profile.SindriProfile.Launch.get -> Aw.Sindri.Core.Profile.LaunchSettings?
+Aw.Sindri.Core.Profile.SindriProfile.Launch.init -> void
+Aw.Sindri.Core.Profile.SindriProfile.SindriProfile(int SchemaVersion, string! User, string! Tenant = "local", System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>? Repos = null, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Profile.ServiceSettings!>? Services = null, Aw.Sindri.Core.Profile.ApiSettings? Api = null, Aw.Sindri.Core.Profile.WorkflowSettings? Workflow = null, System.Text.Json.JsonElement? Context = null, Aw.Sindri.Core.Profile.IndexSettings? Index = null, Aw.Sindri.Core.Profile.LaunchSettings? Launch = null, Aw.Sindri.Core.Profile.AgentSettings? Agents = null) -> void
+const Aw.Sindri.Core.Profile.AgentSettings.DefaultSoftLimit = 0.8 -> decimal
+const Aw.Sindri.Core.Profile.AgentSettings.SoftLimitKey = "softLimit" -> string!
+override Aw.Sindri.Core.Profile.LaunchRepoSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.LaunchRepoSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.LaunchRepoSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.LaunchSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.LaunchSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.LaunchSettings.ToString() -> string!
+static Aw.Sindri.Core.Profile.LaunchRepoSettings.operator !=(Aw.Sindri.Core.Profile.LaunchRepoSettings? left, Aw.Sindri.Core.Profile.LaunchRepoSettings? right) -> bool
+static Aw.Sindri.Core.Profile.LaunchRepoSettings.operator ==(Aw.Sindri.Core.Profile.LaunchRepoSettings? left, Aw.Sindri.Core.Profile.LaunchRepoSettings? right) -> bool
+static Aw.Sindri.Core.Profile.LaunchSettings.DefaultConfirmWindow.get -> System.TimeSpan
+static Aw.Sindri.Core.Profile.LaunchSettings.operator !=(Aw.Sindri.Core.Profile.LaunchSettings? left, Aw.Sindri.Core.Profile.LaunchSettings? right) -> bool
+static Aw.Sindri.Core.Profile.LaunchSettings.operator ==(Aw.Sindri.Core.Profile.LaunchSettings? left, Aw.Sindri.Core.Profile.LaunchSettings? right) -> bool
