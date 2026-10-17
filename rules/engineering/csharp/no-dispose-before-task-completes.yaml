@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.no-dispose-before-task-completes
+kind: engineering
+section: "4b.3"
+text: "Never dispose an object that a still-running task uses: await the task inside the scope that owns the object."
+why: "Disposing under a running task is a use-after-dispose bug that only shows under load."
+select:
+  languages: [csharp]
+  paths: ["src/**", "tests/**"]
+checks:
+  - type: analyzer
+    id: "CA2025"
+    severity: suggestion
+    status: active
+gap: open
+gapNote: "5 sites on main (Ui ControlPlaneFollower, Meta SystemCommandRunner). Set to suggestion until the cleanup PR (branch chore/style-cleanup) fixes the flagged sites and raises it to error; followed by hand until then."
+source:
+  type: desk
+  ref: "https://github.com/davidfowl/AspNetCoreDiagnosticScenarios/blob/master/AsyncGuidance.md"
+status: active

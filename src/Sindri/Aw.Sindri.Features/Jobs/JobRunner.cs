@@ -98,14 +98,14 @@ internal sealed class JobRunner(Func<JobScope> openScope, IJobContextAccessor jo
     }
 
     /// <inheritdoc />
-    public async ValueTask<bool> CancelRecorded(JobId job)
+    public async ValueTask<bool> CancelRecorded(JobId job, CancellationToken cancellationToken)
     {
         if (!_runs.TryGetValue(job.Value, out var run) || !run.Cancelled)
         {
             return false;
         }
 
-        return run.Pending is { } pending ? await pending.Task.ConfigureAwait(false) : run.Recorded;
+        return run.Pending is { } pending ? await pending.Task.WaitAsync(cancellationToken).ConfigureAwait(false) : run.Recorded;
     }
 
     /// <inheritdoc />
