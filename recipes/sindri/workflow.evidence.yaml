@@ -93,9 +93,14 @@ transitions:
   - { from: [evidence-ui, evidence-api, evidence-db, evidence-all, evidence-other], to: done, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:evidenceSummary] }
   - { from: [evidence-ui, evidence-api, evidence-db, evidence-other], to: failed, on: wait.satisfied, when: { outcome: unresolved }, produces: [fact:evidenceSummary] }
   - { from: evidence-all, to: dropped, on: wait.satisfied, when: { outcome: unresolved } }
-  - { from: [evidence-ui, evidence-api, evidence-db, evidence-all, evidence-other], to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
+  - { from: evidence-ui, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
+  - { from: evidence-api, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
+  - { from: evidence-db, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
+  - { from: evidence-all, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
+  - { from: evidence-other, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
   - { from: evidence-none, to: done, on: step.completed, when: { outcome: done }, produces: [fact:evidenceSummary] }
 evals:
+  - evals/workflow.evidence/happy.jsonl
   - evals/workflow.evidence/ui.jsonl
   - evals/workflow.evidence/api.jsonl
   - evals/workflow.evidence/db.jsonl
