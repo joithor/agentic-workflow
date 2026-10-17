@@ -14,7 +14,7 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 | `workflow.evidence-api`, `workflow.evidence-db` | phasePacket, built | evidenceSummary | passed / failed |
 | `workflow.evidence-other` | phasePacket, built | evidenceSummary, evidenceReason | recorded / none-found |
 | `workflow.evidence-all` | phasePacket, built | evidenceSummary | done / failed, dropped |
-| `workflow.evidence` | phasePacket, built | evidenceSummary, decision | done / failed, dropped |
+| `workflow.evidence` | phasePacket, built | evidenceSummary, decision | done / failed, all-failed, dropped |
 | `workflow.review-loop` | change (payload), phasePacket | review | clean / stuck, wrong (failed) |
 
 ## Rules every block recipe follows
@@ -22,7 +22,7 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 - A route (`step.judge.choose`) has its desk twin (`step.desk.choose`), and a failed route Step goes to the desk.
 - A child wait routes `cancelled` on its own transition, which records nothing.
 - `workflow.evidence` nests two deep (evidence, evidence-all, evidence-ui), inside the limit of 4 (`RCP-CHILD-003`).
-- A parent keeps only the summaries its children's every path proves. `evidence-all`'s failures and every `cancelled` end without a summary, so a parent waiting on `workflow.evidence` receives `evidenceSummary` on `resolved` only (Q6, `RCP-WIRE-003`). The instance's own facts carry it as well when a leaf child fails.
+- A parent keeps only the summaries its children's every path proves. `evidence-all`'s failures end in `all-failed` and every `cancelled` in `dropped`, both without a summary, so a parent waiting on `workflow.evidence` receives `evidenceSummary` on `resolved` only (Q6, `RCP-WIRE-003`). The instance's own facts carry it as well when a leaf child fails.
 - `evidence.check` is descriptor-only: a recipe using it validates, and the engine refuses it at run time. Evals answer evidence checks as holding.
 
 ## Approval order

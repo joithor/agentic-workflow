@@ -146,8 +146,10 @@ transitions:
   uncertain one (§8.6).
 - `none` goes to `evidence-none`, a block-runtime Step (`step.evidence.none`, pure) that writes a
   `fact:evidenceSummary` saying the always-run checks are the proof, then joins the other branches. No desk task is
-  spent on it. A summary leaves the route on `resolved`, and from a failed leaf child; an unresolved `evidence-all` and
-  every `cancelled` child end in `dropped` with none (Q6, `RCP-WIRE-003`).
+  spent on it. A summary leaves the route on `resolved`, and from a failed leaf child; an unresolved `evidence-all`
+  ends in its own `all-failed` terminal and every `cancelled` child in `dropped`, both with none (Q6, `RCP-WIRE-003`).
+  `all-failed` is not `dropped`: `dropped` means the run was cancelled, while `all-failed` means the combined evidence
+  ran and did not hold (owner, 2026-10-17).
 - The route state's `next` is written as an instruction, because before DT-J it runs at the desk and a human acts in
   it (REF "Voice"). Its timeout is the desk's 2 days for that reason. On the block runtime the call is bounded by
   `MaxDuration` (2 minutes, §8.2), which ends it as `step.failed` long before the state's timer.
