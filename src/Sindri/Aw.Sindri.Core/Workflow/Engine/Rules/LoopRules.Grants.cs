@@ -72,10 +72,9 @@ internal static partial class LoopRules
     private static Result<(string Name, LoopSpec Spec, LoopState Loop)> Parked(
         WorkflowInstance instance, Recipe recipe, string answer, params ReadOnlySpan<ParkReason> reasons)
     {
-        var park = instance.Suspension is { Kind: SuspensionKind.Park } parked ? parked : null;
-        if (park?.Reason is not { } reason || !reasons.Contains(reason))
+        if (instance.Suspension is not { Kind: SuspensionKind.Park, Reason: { } reason } park || !reasons.Contains(reason))
         {
-            var fix = park?.Reason == ParkReason.Rounds
+            var fix = instance.Suspension is { Kind: SuspensionKind.Park, Reason: ParkReason.Rounds }
                 ? "grant more rounds at a terminal with --grant n"
                 : "use an answer from allowedCommands in status";
             return WorkflowErrors.TriggerNotAllowed.With($"{answer} doesn't answer {Shown(instance)} (fix: {fix})");

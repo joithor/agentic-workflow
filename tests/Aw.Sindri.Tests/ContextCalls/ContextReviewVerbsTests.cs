@@ -1,4 +1,5 @@
 using System.Net;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing;
@@ -253,7 +254,7 @@ public sealed class ContextReviewVerbsTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Propose_reads_a_camelCase_file_sends_it_and_prints_each_surfaces_standing()
     {
-        var file = Path.Combine(Path.GetTempPath(), $"aw-propose-{Guid.NewGuid():N}.json");
+        var file = Path.Combine(Path.GetTempPath(), $"aw-propose-{RealTime.NewGuid():N}.json");
         await File.WriteAllTextAsync(file, """{"run":"scope-1","repo":"work-app","surfaces":[{"name":"Zoom","kind":"feature"},{"name":"Tab manager","key":"feature:tabs.tab-manager"}]}""", Token);
         try
         {

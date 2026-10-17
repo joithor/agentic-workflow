@@ -130,7 +130,7 @@ public sealed class ServeLauncherContractTests : ControlPlaneLauncherContract, I
         for (var waited = 0; !condition(); waited += 20)
         {
             Assert.True(waited < 5000, "the condition didn't hold within 5 s");
-            Thread.Sleep(20);
+            RealTime.Sleep(TimeSpan.FromMilliseconds(20));
         }
     }
 }

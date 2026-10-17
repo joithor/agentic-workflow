@@ -35,7 +35,7 @@ public sealed class HeldEventTests(SindriTimeSkippingServer server) : IClassFixt
             _ = await WorkflowsHarness.Until(handle, static v => v.State == "triaged");
 
             // 'claim.created' fits no wait in 'triaged', so it is held
-            var held = Event("claim.created", 7, outcome: null) with { OccurredAt = DateTimeOffset.UtcNow };
+            var held = Event("claim.created", 7, outcome: null) with { OccurredAt = RealTime.NowOffset };
             await handle.SignalAsync(wf => wf.EventAsync(held));
             await env.DelayAsync(TimeSpan.FromHours(25), ct);
             var rows = await WorkflowRows(sindri, static types => types.Contains("workflow.expired", StringComparer.Ordinal), ct);
@@ -67,7 +67,7 @@ public sealed class HeldEventTests(SindriTimeSkippingServer server) : IClassFixt
             _ = await WorkflowsHarness.Until(handle, static v => v.State == "triaged");
 
             // why: the bridge delivered it late (serve was down for a day); it fits the wait, so it satisfies it (§5.4: only a buffered signal expires)
-            var late = Event("item.routed", 8, OutcomeName.From("notStartable")) with { OccurredAt = DateTimeOffset.UtcNow - TimeSpan.FromHours(25) };
+            var late = Event("item.routed", 8, OutcomeName.From("notStartable")) with { OccurredAt = RealTime.NowOffset - TimeSpan.FromHours(25) };
             await handle.SignalAsync(wf => wf.EventAsync(late));
             var result = await handle.GetResultAsync();
             var rows = await WorkflowRows(sindri, static types => types.Count >= 2, ct);
@@ -92,7 +92,7 @@ public sealed class HeldEventTests(SindriTimeSkippingServer server) : IClassFixt
             var handle = await WorkflowsHarness.Start(env.Client, await WorkflowsHarness.RecipeStart(sindri, "workflow.item", "T-63", ct));
             _ = await WorkflowsHarness.Until(handle, static v => v.State == "triaged");
 
-            var stale = Event("claim.created", 9, outcome: null) with { OccurredAt = DateTimeOffset.UtcNow - TimeSpan.FromHours(25) };
+            var stale = Event("claim.created", 9, outcome: null) with { OccurredAt = RealTime.NowOffset - TimeSpan.FromHours(25) };
             await handle.SignalAsync(wf => wf.EventAsync(stale));
             var rows = await WorkflowRows(sindri, static types => types.Contains("workflow.expired", StringComparer.Ordinal), ct);
 
@@ -108,9 +108,9 @@ public sealed class HeldEventTests(SindriTimeSkippingServer server) : IClassFixt
     /// <summary>The instance's workflow.* ledger types, read until <paramref name="holds"/> (the mirror follows the workflow task).</summary>
     private static async Task<IReadOnlyList<string>> WorkflowRows(IServiceProvider sindri, Func<IReadOnlyList<string>, bool> holds, CancellationToken ct)
     {
-        var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(20);
+        var deadline = RealTime.NowDateTime + TimeSpan.FromSeconds(20);
         IReadOnlyList<string> types = [];
-        while (DateTime.UtcNow < deadline)
+        while (RealTime.NowDateTime < deadline)
         {
             types = [.. (await sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 100, ct)).Value
                 .Select(static e => e.Envelope.Type).Where(static t => t.StartsWith("workflow.", StringComparison.Ordinal))];

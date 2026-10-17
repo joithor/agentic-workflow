@@ -8,12 +8,20 @@ internal static class ProvenanceFlag
     /// <summary>Absent is fine (null); 'seeded' or 'unknown' bind; anything else is a usage error.</summary>
     internal static bool TryParse(string? text, out DbProvenance? provenance)
     {
-        provenance = text switch
+        switch (text)
         {
-            "seeded" => DbProvenance.Seeded,
-            "unknown" => DbProvenance.Unknown,
-            _ => null,
-        };
-        return text is null || provenance is not null;
+            case null:
+                provenance = null;
+                return true;
+            case "seeded":
+                provenance = DbProvenance.Seeded;
+                return true;
+            case "unknown":
+                provenance = DbProvenance.Unknown;
+                return true;
+            default:
+                provenance = null;
+                return false;
+        }
     }
 }
