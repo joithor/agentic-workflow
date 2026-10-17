@@ -20,6 +20,9 @@ internal sealed partial class ShellViewModel
     /// <summary>The sheet's width as it is shown: an instance's is the widest, every other sheet keeps the human's.</summary>
     public double ShownSheetWidth => IsInstanceSheet ? UiPreferences.MaxSheetWidth : SheetWidth;
 
+    /// <summary>True when the sheet was stacked from a frame: its Back has a frame to return to, at every width.</summary>
+    public bool HasTrail => _trail.Count > 0;
+
     /// <summary>The Workflows row the frame was opened from (its address), where Esc returns focus; null when it came from elsewhere.</summary>
     internal string? OpenerWorkflow { get; private set; }
 
@@ -44,12 +47,13 @@ internal sealed partial class ShellViewModel
     {
         if (IsSheetOpen && _trail.TryPop(out var previous))
         {
+            OnChanged(nameof(HasTrail));
             ReturnFocus(previous.Link, SheetLink, previous.Pointer);
             Stacked(() => Navigate(previous.Link), push: false);
             return;
         }
 
-        _trail.Clear();
+        ClearTrail();
         CloseSheet();
     }
 
@@ -87,7 +91,7 @@ internal sealed partial class ShellViewModel
         Workflows.ClearNote();
         if (!_stacking)
         {
-            _trail.Clear();   // a sheet opened from anywhere but a frame starts a new trail
+            ClearTrail();   // a sheet opened from anywhere but a frame starts a new trail
             OpenerWorkflow = null;   // ... and has no Workflows row to return to; a stacked one keeps the row that opened the first frame
         }
 
@@ -105,12 +109,19 @@ internal sealed partial class ShellViewModel
         }
     }
 
+    private void ClearTrail()
+    {
+        _trail.Clear();
+        OnChanged(nameof(HasTrail));
+    }
+
     // A sheet opened from inside a frame (a child, an item) keeps the one it came from, so Back returns to it.
     private void Stacked(Action open, bool push, bool viaPointer = false)
     {
         if (push && IsSheetOpen && SheetLink is { } here)
         {
             _trail.Push((here, viaPointer));
+            OnChanged(nameof(HasTrail));
         }
 
         _stacking = true;
@@ -127,7 +138,7 @@ internal sealed partial class ShellViewModel
     // "Open all in Work": the Work page, unfiltered, with the frame closed.
     private void OpenWork()
     {
-        _trail.Clear();
+        ClearTrail();
         CloseSheet();
         Queue.ClearFilter();   // every item of the group, not the ones a filter left over would show
         GoTo(PageId.Work);
