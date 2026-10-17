@@ -10,6 +10,11 @@ internal sealed class CollectorMemory
 {
     internal static readonly TimeSpan EndedFor = TimeSpan.FromMinutes(10);
 
+    /// <summary>The most changes kept while the ledger cannot take them; past it the oldest go.</summary>
+    internal const int PendingCap = 1000;
+
+    internal bool PendingOverflowLogged { get; set; }
+
     internal FleetTrackerState Tracker { get; set; } = FleetTrackerState.Empty;
 
     /// <summary>Changes found but not yet appended to the ledger, oldest first: an append that fails leaves them here for the next pass, so a 'gone' never lands without its 'appeared'.</summary>

@@ -30,7 +30,7 @@ public sealed class SnapshotDiscoveryTests
         var repos = new SessionRepos(new FakeRepoLocator(), new InMemoryProfiles(), clock);
         var observer = new SessionObserver(new TranscriptFiles("/nonexistent-fixture-root/home"), new PassThroughScrubber(), repos);
         var snapshot = new SessionSnapshotStore();
-        var service = new CollectSessionsService(discovery, observer, new CollectorMemory(), snapshot, clock);
+        var service = new CollectSessionsService(discovery, observer, new CollectorMemory(), snapshot, clock, Microsoft.Extensions.Logging.Abstractions.NullLogger<CollectSessionsService>.Instance);
 
         var response = await service.Handle(new CollectSessionsRequest(TimeSpan.FromSeconds(30)), Token);
 

@@ -39,9 +39,9 @@ public sealed class CollectSessionsTests
         _ = _c.Records.With(LiveRecord());
         var guarded = new SessionDiscovery(new ThrowingEnvironmentTable(_c.Fake), _c.Records, _c.Fleet, new Infrastructure.Launch.AgentCatalog(Agents), _c.Settings);
 
-        var found = await Task.Run(() => guarded.Discover(TestContext.Current.CancellationToken), TestContext.Current.CancellationToken);
+        var found = await Task.Run(() => guarded.Discover(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken), TestContext.Current.CancellationToken);
 
-        Assert.True(found.Good);
+        Assert.True(found!.Good);
         Assert.Equal("claude-code/" + Id, Assert.Single(found.Candidates).Ref.ToString());
         var problem = Assert.Single(found.Problems);
         Assert.Equal(("environment", "SND-SESSION-001"), (problem.Source, problem.Code));
@@ -201,6 +201,26 @@ public sealed class CollectSessionsTests
 
         var live = Assert.Single(Assert.Single(_c.Fleet.Prunes));
         Assert.Equal(($"claude-code/{Id}", 0), (live.ToString(), response.Pruned));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_blocked_records_source_and_a_blocked_fleet_source_are_one_problem_row_each_while_the_process_table_sessions_stay_live()
+    {
+        using var blocked = new BlockingSources();
+        var c = new CollectorHarness(records: blocked, fleet: blocked);
+        _ = c.Fake.With(Proc(10, 1, "claude", argv0: "claude", ticks: 100), cwd: "/w/api");
+
+        var first = await c.Pass(TimeSpan.FromMilliseconds(500));
+        _ = c.Fake.With(Proc(11, 1, "claude", argv0: "claude", ticks: 101), cwd: "/w/web");
+        var second = await c.Pass(TimeSpan.FromMilliseconds(500));
+        blocked.Release();
+
+        Assert.Equal((true, false, 1), (first.Good, first.Overran, first.Sessions));
+        Assert.Equal((true, false, 2), (second.Good, second.Overran, second.Sessions));
+        var problems = c.Snapshot.Current!.Problems;
+        Assert.Equal("claude-records,fleet-states", string.Join(',', problems.Select(static p => p.Source).Order(StringComparer.Ordinal)));
+        Assert.All(problems, static p => Assert.Equal("SND-SESSION-001", p.Code));
+        Assert.Equal((1, 1), (blocked.RecordReads, blocked.FleetReads));   // the second pass didn't start them again
     }
 
     [Fact, Trait("Lane", "unit")]

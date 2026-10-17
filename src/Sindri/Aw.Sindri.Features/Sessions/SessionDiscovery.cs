@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using Aw.Kernel;
 using Aw.Sindri.Core.Launch;
@@ -7,7 +8,7 @@ namespace Aw.Sindri.Features.Sessions;
 
 /// <summary>
 /// One pass over the sources (collector spec §4.1): the process table, Claude's records, the hook's state files. A source that fails is a problem row and leaves the
-/// others intact; when the process table itself fails the pass is not good and the caller keeps the previous snapshot.
+/// others intact; when the process table itself fails or overruns the pass is not good and the caller keeps the previous snapshot.
 /// </summary>
 internal sealed class SessionDiscovery(IProcessTable processes, IClaudeSessionRecords records, IFleetStates fleet, IAgentCatalog catalog, SessionSettings settings)
 {
@@ -37,64 +38,142 @@ internal sealed class SessionDiscovery(IProcessTable processes, IClaudeSessionRe
     /// <summary>Deletes dead sessions' hook files after a good pass (collector spec §5.4).</summary>
     internal int Prune(IReadOnlyCollection<SessionRef> live, DateTimeOffset now) => fleet.Prune(live, now);
 
-    internal Discovered Discover(CancellationToken cancellationToken)
+    /// <summary>The sources still running from an earlier pass that gave up on them: by name, so a blocked source is reported again and never started a second time.</summary>
+    private readonly Dictionary<string, Task> _abandoned = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// One pass. The process table gets the whole <paramref name="budget"/> (past it, null: the caller keeps the previous snapshot); every other source gets its own
+    /// fifth of it, so one slow source is one problem row and the rest stay live (collector spec §4.1).
+    /// </summary>
+    internal Discovered? Discover(TimeSpan budget, CancellationToken cancellationToken)
     {
-        var table = processes.Read(cancellationToken);
+        var problems = new List<SessionProblem>();
+        var pass = new Pass(_abandoned, budget, problems, cancellationToken);
+        var (outcome, table) = pass.Run("processes", processes.Read);
+        if (outcome == Outcome.TimedOut)
+        {
+            return null;
+        }
+
+        if (table is null)
+        {
+            return new Discovered([], [SessionProblems.Source("processes")], Good: false);
+        }
+
         if (table.IsError)
         {
             return new Discovered([], [SessionProblems.ProcessTable(table.Error)], Good: false);
         }
 
-        var problems = new List<SessionProblem>();
         var agents = Agents();
-        var guard = new Guard(problems);
-        var claudeRecords = guard.Result(() => records.Read(cancellationToken), "claude-records");
-        var hooks = guard.Result(() => fleet.Read(cancellationToken), "fleet-states");
+        var claudeRecords = pass.List("claude-records", records.Read);
+        var hooks = pass.List("fleet-states", fleet.Read);
         var byPid = table.Value.ToDictionary(static p => p.Pid);
         var live = LiveRecords(claudeRecords, byPid);
-        var found = AgentProcessRules.Find(table.Value, agents, pid => guard.Run(() => processes.Environment(pid), "environment", _emptyEnvironment).ContainsKey("AW_JUDGE_CHILD"), live.ContainsKey);
+        var found = AgentProcessRules.Find(table.Value, agents, pid => pass.Value("environment", _ => processes.Environment(pid), _emptyEnvironment).ContainsKey("AW_JUDGE_CHILD"), live.ContainsKey);
         var candidates = new List<Candidate>();
         if (agents.Find(static a => a.Id.Equals(_claude)) is { } claudeAgent)
         {
-            candidates.AddRange(live.Values.Select(r => FromRecord(r, byPid[r.Pid], claudeAgent, hooks, guard)));
+            candidates.AddRange(live.Values.Select(r => FromRecord(r, byPid[r.Pid], claudeAgent, hooks, pass)));
         }
 
-        candidates.AddRange(found.Where(f => !live.ContainsKey(f.Process.Pid)).Select(f => FromProcess(f, hooks, guard)));
+        candidates.AddRange(found.Where(f => !live.ContainsKey(f.Process.Pid)).Select(f => FromProcess(f, hooks, pass)));
         return new Discovered(candidates, problems, Good: true);
     }
 
-    /// <summary>One source failing (an error result or an exception) is one problem row for that source and an empty answer; the other sources stay intact (collector spec §4.1).</summary>
-    private sealed class Guard(List<SessionProblem> problems)
+    private enum Outcome
     {
-        internal IReadOnlyList<T> Result<T>(Func<Result<IReadOnlyList<T>>> read, string name)
+        Done,
+        TimedOut,
+        Failed,
+    }
+
+    /// <summary>
+    /// The sources of one pass, each read on its own task under its own deadline. A source that times out or throws is one problem row and an empty answer for the rest of
+    /// the pass; one whose earlier read is still running is not started again (no pile-up) and is reported the same way.
+    /// </summary>
+    private sealed class Pass(Dictionary<string, Task> abandoned, TimeSpan budget, List<SessionProblem> problems, CancellationToken shutdown)
+    {
+        private const int Sources = 5;
+        private readonly Dictionary<string, long> _begun = new(StringComparer.Ordinal);
+        private readonly HashSet<string> _failed = new(StringComparer.Ordinal);
+
+        internal (Outcome Outcome, T? Value) Run<T>(string name, Func<CancellationToken, T> read)
         {
-            try
+            shutdown.ThrowIfCancellationRequested();
+            if (_failed.Contains(name) || (abandoned.TryGetValue(name, out var running) && !running.IsCompleted))
             {
-                var result = read();
-                if (result.IsSuccess)
-                {
-                    return result.Value;
-                }
+                _ = _failed.Add(name);
+                return (Outcome.TimedOut, default);
             }
-            catch (Exception e) when (e is not OperationCanceledException)
+
+            _ = abandoned.Remove(name);
+            if (!_begun.TryGetValue(name, out var begun))
             {
-                // reported below, the same as an error result
+                begun = Stopwatch.GetTimestamp();
+                _begun[name] = begun;
+            }
+
+            var share = string.Equals(name, "processes", StringComparison.Ordinal) ? budget : budget / Sources;
+            var remaining = share - Stopwatch.GetElapsedTime(begun);
+            if (remaining <= TimeSpan.Zero)
+            {
+                _ = _failed.Add(name);
+                return (Outcome.TimedOut, default);
+            }
+
+            var cancel = CancellationTokenSource.CreateLinkedTokenSource(shutdown);
+            var task = Task.Run(() => Attempt(read, cancel.Token), CancellationToken.None);
+            _ = task.ContinueWith(_ => cancel.Dispose(), CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+            if (!task.Wait(remaining, shutdown))
+            {
+                abandoned[name] = task;   // left running: the read is cancelled, but one that ignores that is only waited for, never repeated
+                _ = _failed.Add(name);
+                cancel.Cancel();
+                return (Outcome.TimedOut, default);
+            }
+
+            var (ok, value) = task.Result;
+            return ok ? (Outcome.Done, value) : (Outcome.Failed, default);
+        }
+
+        internal IReadOnlyList<T> List<T>(string name, Func<CancellationToken, Result<IReadOnlyList<T>>> read)
+        {
+            var (outcome, result) = Run(name, read);
+            if (outcome == Outcome.Done && result is { IsSuccess: true } ok)
+            {
+                return ok.Value;
             }
 
             Note(name);
             return [];
         }
 
-        internal T Run<T>(Func<T> read, string name, T fallback)
+        internal T Value<T>(string name, Func<CancellationToken, T> read, T fallback)
+        {
+            var (outcome, value) = Run(name, read);
+            if (outcome == Outcome.Done)
+            {
+                return value ?? fallback;   // a source that answers "nothing" (no cwd) is not a problem
+            }
+
+            Note(name);
+            return fallback;
+        }
+
+        private static (bool Ok, T? Value) Attempt<T>(Func<CancellationToken, T> read, CancellationToken cancellationToken)
         {
             try
             {
-                return read();
+                return (true, read(cancellationToken));
+            }
+            catch (OperationCanceledException)
+            {
+                return (false, default);   // the pass gave up on it or the host is stopping
             }
             catch (Exception e) when (e is not OperationCanceledException)
             {
-                Note(name);
-                return fallback;
+                return (false, default);   // reported as the source's problem row; the message never leaves this method
             }
         }
 
@@ -128,29 +207,29 @@ internal sealed class SessionDiscovery(IProcessTable processes, IClaudeSessionRe
     private List<AgentEntry> Agents() =>
         [.. catalog.All.Where(a => settings.Providers is null || settings.Providers.Any(p => p.Equals(a.Id)))];
 
-    private Candidate FromRecord(ClaudeRecord record, ProcessEntry process, AgentEntry agent, IReadOnlyList<FleetStateFile> hooks, Guard guard)
+    private Candidate FromRecord(ClaudeRecord record, ProcessEntry process, AgentEntry agent, IReadOnlyList<FleetStateFile> hooks, Pass pass)
     {
         var id = record.Session ?? SessionId.OfProcess(process.Pid, process.StartTicks);
         var hook = hooks.FirstOrDefault(h => h.Provider.Equals(agent.Id) && h.Session.Equals(id));
-        return new Candidate(process, agent, id, IdKnown: record.Session is not null, guard.Run(() => processes.Environment(process.Pid), "environment", _emptyEnvironment))
+        return new Candidate(process, agent, id, IdKnown: record.Session is not null, pass.Value("environment", _ => processes.Environment(process.Pid), _emptyEnvironment))
         {
             Record = record,
             Hook = hook,
-            Cwd = record.Cwd ?? hook?.Cwd ?? guard.Run(() => processes.Cwd(process.Pid), "cwd", fallback: null),
+            Cwd = record.Cwd ?? hook?.Cwd ?? pass.Value("cwd", _ => processes.Cwd(process.Pid), fallback: null),
             TranscriptHint = hook?.Transcript,
         };
     }
 
-    private Candidate FromProcess(AgentProcess found, IReadOnlyList<FleetStateFile> hooks, Guard guard)
+    private Candidate FromProcess(AgentProcess found, IReadOnlyList<FleetStateFile> hooks, Pass pass)
     {
         var process = found.Process;
         var hook = hooks.FirstOrDefault(h => h.Provider.Equals(found.Agent.Id) && h.AgentPid == process.Pid && h.AgentStartTicks == process.StartTicks);
-        var files = guard.Run(() => processes.OpenFiles(process.Pid), "open-files", []);
+        var files = pass.Value("open-files", _ => processes.OpenFiles(process.Pid), (IReadOnlyList<string>)[]);
         var known = hook?.Session ?? RolloutId(found.Agent, files);
-        return new Candidate(process, found.Agent, known ?? SessionId.OfProcess(process.Pid, process.StartTicks), IdKnown: known is not null, guard.Run(() => processes.Environment(process.Pid), "environment", _emptyEnvironment))
+        return new Candidate(process, found.Agent, known ?? SessionId.OfProcess(process.Pid, process.StartTicks), IdKnown: known is not null, pass.Value("environment", _ => processes.Environment(process.Pid), _emptyEnvironment))
         {
             Hook = hook,
-            Cwd = hook?.Cwd ?? guard.Run(() => processes.Cwd(process.Pid), "cwd", fallback: null),
+            Cwd = hook?.Cwd ?? pass.Value("cwd", _ => processes.Cwd(process.Pid), fallback: null),
             TranscriptHint = hook?.Transcript ?? files.FirstOrDefault(static f => f.EndsWith(".jsonl", StringComparison.Ordinal)),
         };
     }
