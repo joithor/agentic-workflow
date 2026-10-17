@@ -6,4 +6,5 @@ namespace Aw.Context.Features.QueryContext;
 /// <param name="Map">The map provider.</param>
 /// <param name="Catalog">The source catalog.</param>
 /// <param name="AsOf">The time every source is asked to cut to, or null for the live query.</param>
-internal sealed record PipelineInputs(IMapProvider Map, ISourceCatalog Catalog, DateTimeOffset? AsOf = null);
+/// <param name="Diff">The diff shape's anchoring (the live query only; a backtest arm never asks a diff).</param>
+internal sealed record PipelineInputs(IMapProvider Map, ISourceCatalog Catalog, DateTimeOffset? AsOf = null, DiffAnswer? Diff = null);

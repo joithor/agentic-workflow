@@ -11,5 +11,7 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// <param name="Depth">The cascade depth as sent (a whole number 0 to 4; anything else is SND-CONTEXT-006), or null.</param>
 /// <param name="Budget">The token budget as sent (a whole number of 1 or more; anything else is SND-CONTEXT-006), or null.</param>
 /// <param name="Draft">True to read the draft map.</param>
+/// <param name="Diff">Two commit shas, 'base..head' (the diff shape), or null.</param>
+/// <param name="Repo">The repo the diff is read in, or null (the only repo in the caller's scope).</param>
 public sealed record QueryContextRequest(string? Q, string? Node = null, string? Item = null, string? Symbol = null, string? Depth = null,
-    string? Budget = null, bool Draft = false) : IQuery<ContextResult>;
+    string? Budget = null, bool Draft = false, string? Diff = null, string? Repo = null) : IQuery<ContextResult>;

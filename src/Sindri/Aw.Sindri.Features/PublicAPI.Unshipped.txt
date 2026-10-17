@@ -348,7 +348,6 @@ Aw.Sindri.Features.ContextCalls.QueryContextRequest
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.QueryContextRequest!
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Budget.get -> string?
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Budget.init -> void
-Aw.Sindri.Features.ContextCalls.QueryContextRequest.Deconstruct(out string? Q, out string? Node, out string? Item, out string? Symbol, out string? Depth, out string? Budget, out bool Draft) -> void
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Depth.get -> string?
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Depth.init -> void
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Draft.get -> bool
@@ -360,7 +359,6 @@ Aw.Sindri.Features.ContextCalls.QueryContextRequest.Node.get -> string?
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Node.init -> void
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Q.get -> string?
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Q.init -> void
-Aw.Sindri.Features.ContextCalls.QueryContextRequest.QueryContextRequest(string? Q, string? Node = null, string? Item = null, string? Symbol = null, string? Depth = null, string? Budget = null, bool Draft = false) -> void
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Symbol.get -> string?
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Symbol.init -> void
 Aw.Sindri.Features.ContextCalls.ReviewContextMapRequest
@@ -2321,6 +2319,12 @@ override Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest.GetHashCode() 
 override Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest.ToString() -> string!
 static Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest? left, Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest? right) -> bool
 static Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest? left, Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest? right) -> bool
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Deconstruct(out string? Q, out string? Node, out string? Item, out string? Symbol, out string? Depth, out string? Budget, out bool Draft, out string? Diff, out string? Repo) -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Diff.get -> string?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Diff.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.QueryContextRequest(string? Q, string? Node = null, string? Item = null, string? Symbol = null, string? Depth = null, string? Budget = null, bool Draft = false, string? Diff = null, string? Repo = null) -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Repo.get -> string?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Repo.init -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Deconstruct(out string? NeedsMe, out Aw.Sindri.Core.Workflow.Engine.ItemKey? Item, out string? State, out string? Query, out string? Address, out string? Recipe, out string? Urgency, out string? Subject, out string? Root, out string? Open) -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.ListInstancesRequest(string? NeedsMe = null, Aw.Sindri.Core.Workflow.Engine.ItemKey? Item = null, string? State = null, string? Query = null, string? Address = null, string? Recipe = null, string? Urgency = null, string? Subject = null, string? Root = null, string? Open = null) -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Open.get -> string?

@@ -831,3 +831,10 @@ Off by default. `context.eval.adjudicator: true` lets the run ask the model whet
 The backtest is a job (it takes a heavy-job slot and runs for minutes); `sindri context eval backtest [--arms a,b|all] [--since D] [--until D] [--limit N] [--detach] [--json]` starts the job and follows it (Ctrl-C cancels it; `--detach` prints the job id; `--json` prints the started body, then the final job). A session cannot start it (SND-AUTH-002); a second start while one runs is SND-JOB-409; an unknown arm is refused at the start (SND-CONTEXT-082). The job's result is small (at most 16 KiB): the sample count, whether it is a small sample, the number left out, one line per arm, the pass line and the report path. The full report, with the samples and scores, stays in the eval file store. The owner's corpus is S-7B.
 
 Errors: `SND-CONTEXT-080` no eligible sample, `081` no brief source, `082` unknown arm, `083` adjudication stopped at its cap.
+## Asking about a change (S-D)
+
+```
+sindri context query --diff <base>..<head> [--repo <name>] [--json]
+```
+
+`<base>` and `<head>` are commit shas (7 to 64 hex characters), never branch names. Sindri lists the files changed from the merge base to `<head>`, the product-map nodes they implement, and what those nodes affect. The text output starts with a count line, then `UNMAPPED`: changed files no node claims, a gap to look at. Files only a model suggested are `suggested`, not `unmapped`. Paths under your deny globs are counted (`denied`) and never listed. An empty range answers with no files. `repo` can be left out when one repo is mapped. Exit 1 with `SND-CONTEXT-110` means the clone does not hold a sha: fetch it first; `111` means the commits share no history.

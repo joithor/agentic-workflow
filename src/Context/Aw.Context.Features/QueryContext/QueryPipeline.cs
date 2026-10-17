@@ -48,7 +48,7 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
             return valid.Error;
         }
 
-        var anchored = await AnchorFor(request, valid.Value, (settings.Value, scrubbers.Value), graphs, cancellationToken).ConfigureAwait(false);
+        var anchored = await AnchorFor(request, valid.Value, (settings.Value, scrubbers.Value), inputs, cancellationToken).ConfigureAwait(false);
         if (anchored.IsError)
         {
             return anchored.Error;
@@ -119,11 +119,19 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
     }
 
     private static async ValueTask<Result<(GraphPart Graph, IReadOnlyList<string> Terms, ItemMiss? Miss)>> AnchorFor(QueryContextRequest request, ValidQuery valid,
-        (ContextSettings Settings, Scrubbers Scrubbers) context, IMapProvider graphs, CancellationToken cancellationToken)
+        (ContextSettings Settings, Scrubbers Scrubbers) context, PipelineInputs inputs, CancellationToken cancellationToken)
     {
+        var (graphs, diffs) = (inputs.Map, inputs.Diff);
         if (request.Query.Item is { } item)
         {
             return await ItemAnchored(request, item, context, graphs, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (request.Query.Diff is { } diff)
+        {
+            return diffs is null
+                ? ContextErrors.QueryInvalid.With("the diff shape is answered by the live query only")
+                : (await diffs.Build(request, diff, context, cancellationToken).ConfigureAwait(false)).Map(a => (a.Graph, a.Terms, (ItemMiss?)null));
         }
 
         var anchored = await Anchored(request, valid, context, graphs, cancellationToken).ConfigureAwait(false);

@@ -3,6 +3,7 @@ using Aw.Context.Core.Extract;
 using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Extract;
 using Aw.Context.Testing.Fixtures;
+using Aw.Context.Testing.Map;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Infrastructure.Locks;
@@ -42,6 +43,8 @@ internal static class ContextApiScenarios
         ("context-filemap", "repo-outside-045", async (s, ct) => await s.Fetch("/sindri/context/filemap?repo=elsewhere", ct)),
         ("context-filemap", "no-draft-044", async (s, ct) => await s.Fetch($"/sindri/context/filemap?repo={Repo}&draft=true", ct)),
         ("context-map", "map-tabs-anchor", async (s, ct) => await s.Fetch($"/sindri/context/map?anchor={Anchor}", ct)),
+        ("context-query", "diff-spl-103", async (s, ct) => await s.Fetch($"/sindri/context/query?diff={DiffRange(s)}&repo={FixtureMap.Repo}", ct)),
+        ("context-query", "diff-unknown-sha-110", async (s, ct) => await s.Fetch($"/sindri/context/query?diff={_unknownBase}..{HeadOf(s)}&repo={FixtureMap.Repo}", ct)),
         ("context-node", "tab-manager", async (s, ct) => await s.Fetch($"/sindri/context/node?key={Anchor}", ct)),
         ("context-map-review", "no-draft-044", async (s, ct) => await s.Fetch("/sindri/context/map/review", ct)),
         ("context-map-review", "session-auth-002", async (s, ct) => await s.SessionReview(ct)),
@@ -68,6 +71,11 @@ internal static class ContextApiScenarios
     /// <summary>Starts the host the scenario runs on, with the map imported (the bulk accept: a rebuilt draft over the fixture repo).</summary>
     public static async Task<GoldenHost> Start(string slug, string scenario, CancellationToken ct)
     {
+        if (slug == "context-query")
+        {
+            return await StartDiff(ct);
+        }
+
         var bulk = (slug, scenario) is ("context-map-review", "post-accept-deterministic");
         var locks = Directory.CreateTempSubdirectory("aw-golden-locks-");
         IDisposable repo = bulk ? FixtureRepo.Build() : MapTabsRepo.Build();
@@ -85,6 +93,40 @@ internal static class ContextApiScenarios
         }
 
         return host;
+    }
+
+    // The diff goldens read PR 3 of the split-panes fixture repo, whose shas are the same on every machine.
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<GoldenHost, string> _diffRanges = [];
+
+    private static readonly string _unknownBase = new('1', 40);
+
+    private static string HeadOf(Scenario scenario) => DiffRange(scenario)[(DiffRange(scenario).IndexOf("..", StringComparison.Ordinal) + 2)..];
+
+    private static string DiffRange(Scenario scenario) => _diffRanges.TryGetValue(scenario.RunsOn(), out var range) ? range : throw new InvalidOperationException("not a diff scenario");
+
+    private static async Task<GoldenHost> StartDiff(CancellationToken ct)
+    {
+        var repo = FixtureRepo.Build();
+        var host = await ContextHosts.Approved(repo, sessions: true, ct, name: FixtureMap.Repo);
+        host.Own(repo);
+        await ContextMapApiTests.Import(host);
+        var merge = repo.PullRequests.Single(p => p.Number == 3).MergeCommit;
+        _diffRanges.Add(host, $"{Rev(repo, merge + "^1")}..{Rev(repo, merge + "^2")}");
+        return host;
+    }
+
+    private static string Rev(FixtureRepo repo, string rev)
+    {
+        var start = new System.Diagnostics.ProcessStartInfo("git") { RedirectStandardOutput = true, UseShellExecute = false };
+        foreach (var arg in (string[])["-C", repo.Path, "rev-parse", rev])
+        {
+            start.ArgumentList.Add(arg);
+        }
+
+        using var git = System.Diagnostics.Process.Start(start)!;   // why: git is on the test machine's PATH
+        var sha = git.StandardOutput.ReadToEnd().Trim();
+        git.WaitForExit();
+        return sha;
     }
 
     /// <summary>Runs the scenario and returns the body to compare (a scenario's setup steps are not part of it).</summary>
