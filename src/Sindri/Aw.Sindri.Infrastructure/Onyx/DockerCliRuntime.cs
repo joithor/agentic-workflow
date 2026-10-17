@@ -26,7 +26,7 @@ internal sealed class DockerCliRuntime(IToolRunner runner) : IContainerRuntime
         var (memory, operatingSystem, dataRoot) = serverText is null ? (null, null, null) : Info(Text(Docker(["info", "--format", "{{.MemTotal}}|{{.OperatingSystem}}|{{.DockerRootDir}}"])));
 
         return new ContainerRuntimeFacts(
-            CliFound: true, DaemonAnswers: serverText is not null, ServerVersion: Version(serverText), ComposeV2: composeText is not null, ComposeVersion: Version(composeText), MemoryBytes: memory, DataRoot: dataRoot, OperatingSystem: operatingSystem);
+            CliFound: true, DaemonAnswers: serverText is not null, ServerVersion: Version(serverText), ComposeV2: composeText is not null, ComposeVersion: Version(composeText), MemoryBytes: memory, DataRoot: dataRoot, OperatingSystem: operatingSystem, DaemonProblem: serverText is null ? Problem(server) : DaemonProblem.None);
     }
 
     // One `docker info` line, MemTotal|OperatingSystem|DockerRootDir, split at the first two '|' (a path may hold one, a byte count never does). Each part is
@@ -45,6 +45,15 @@ internal sealed class DockerCliRuntime(IToolRunner runner) : IContainerRuntime
             parts[1] is { Length: > 0 and <= 64 } os && !os.Any(char.IsControl) ? os : null,
             Path.IsPathRooted(parts[2]) && !parts[2].Any(char.IsControl) ? parts[2] : null);
     }
+
+    // Why `docker version` failed, from the CLI's own stderr. The text is only matched, never shown (it may hold paths or anything else the CLI prints).
+    private static DaemonProblem Problem(ToolRun failed) => failed.Error switch
+    {
+        var e when e.Contains("permission denied", StringComparison.OrdinalIgnoreCase) => DaemonProblem.PermissionDenied,
+        var e when e.Contains("context", StringComparison.OrdinalIgnoreCase)
+            && (e.Contains("does not exist", StringComparison.OrdinalIgnoreCase) || e.Contains("not found", StringComparison.OrdinalIgnoreCase)) => DaemonProblem.ContextMissing,
+        _ => DaemonProblem.NotRunning,
+    };
 
     private ToolRun Docker(string[] arguments) => runner.Run("docker", arguments, _timeout);
 

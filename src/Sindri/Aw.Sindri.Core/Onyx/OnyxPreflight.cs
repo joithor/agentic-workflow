@@ -48,6 +48,8 @@ public static class OnyxPreflight
     private static PreflightCheck Docker(ContainerRuntimeFacts docker) => docker switch
     {
         { CliFound: false } => Fail("docker", "docker CLI not found", SindriErrors.OnyxDockerUnavailable, "Docker isn't installed: install Docker Desktop (or Docker Engine), then run this again"),
+        { DaemonAnswers: false, DaemonProblem: DaemonProblem.PermissionDenied } => Fail("docker", "docker CLI found, permission denied on the daemon socket", SindriErrors.OnyxDockerUnavailable, "Docker is running but this user can't open its socket: add your user to the docker group (`sudo usermod -aG docker $USER`, then log out and in), or use Docker Desktop, then run this again"),
+        { DaemonAnswers: false, DaemonProblem: DaemonProblem.ContextMissing } => Fail("docker", "docker CLI found, the selected docker context doesn't exist", SindriErrors.OnyxDockerUnavailable, "The selected docker context doesn't exist: run `docker context use default` (`docker context ls` lists the others), then run this again"),
         { DaemonAnswers: false } => Fail("docker", "docker CLI found, daemon not answering", SindriErrors.OnyxDockerUnavailable, "Docker isn't running: start Docker Desktop (or the docker service) and wait until it is ready, then run this again"),
         _ => Ok("docker", docker.ServerVersion ?? "unreadable version"),
     };
