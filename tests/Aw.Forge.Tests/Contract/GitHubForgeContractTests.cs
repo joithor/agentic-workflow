@@ -22,7 +22,7 @@ public sealed class GitHubForgeContractTests : ForgeReadContract, IDisposable
         if (string.IsNullOrWhiteSpace(repo) || string.IsNullOrWhiteSpace(credential) || repo.Split('/') is not [var owner, var name])
         {
             Assert.Skip("set AW_FORGE_GITHUB_REPO (owner/name of a scratch repository) and AW_FORGE_TOKEN to run the GitHub contract");
-            return null!;   // why: Assert.Skip throws; this line is unreachable
+            throw new InvalidOperationException("skipped");   // Assert.Skip throws first; this keeps the pattern variables definitely assigned
         }
 
         _provider = new ServiceCollection()
