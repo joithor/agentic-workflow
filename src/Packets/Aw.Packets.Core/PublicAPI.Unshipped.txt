@@ -131,7 +131,7 @@ Aw.Packets.Core.Kinds.Scoping.LensEntry
 Aw.Packets.Core.Kinds.Scoping.LensEntry.<Clone>$() -> Aw.Packets.Core.Kinds.Scoping.LensEntry!
 Aw.Packets.Core.Kinds.Scoping.LensEntry.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Packets.Core.Kinds.Scoping.LensEntry.Anchors.init -> void
-Aw.Packets.Core.Kinds.Scoping.LensEntry.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out int Depth, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensHop>! Hops, out int MapVersion, out int FoundCount, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensNode!>! Nodes, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensEdge!>! Edges, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensFound!>! Items, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensBand>! Truncated) -> void
+Aw.Packets.Core.Kinds.Scoping.LensEntry.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out int Depth, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensHop>! Hops, out string! MapVersion, out int FoundCount, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensNode!>! Nodes, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensEdge!>! Edges, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensFound!>! Items, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensBand>! Truncated) -> void
 Aw.Packets.Core.Kinds.Scoping.LensEntry.Depth.get -> int
 Aw.Packets.Core.Kinds.Scoping.LensEntry.Depth.init -> void
 Aw.Packets.Core.Kinds.Scoping.LensEntry.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensEdge!>!
@@ -143,8 +143,8 @@ Aw.Packets.Core.Kinds.Scoping.LensEntry.Hops.get -> System.Collections.Generic.I
 Aw.Packets.Core.Kinds.Scoping.LensEntry.Hops.init -> void
 Aw.Packets.Core.Kinds.Scoping.LensEntry.Items.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensFound!>!
 Aw.Packets.Core.Kinds.Scoping.LensEntry.Items.init -> void
-Aw.Packets.Core.Kinds.Scoping.LensEntry.LensEntry(System.Collections.Generic.IReadOnlyList<string!>! Anchors, int Depth, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensHop>! Hops, int MapVersion, int FoundCount, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensNode!>! Nodes, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensEdge!>! Edges, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensFound!>! Items, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensBand>! Truncated) -> void
-Aw.Packets.Core.Kinds.Scoping.LensEntry.MapVersion.get -> int
+Aw.Packets.Core.Kinds.Scoping.LensEntry.LensEntry(System.Collections.Generic.IReadOnlyList<string!>! Anchors, int Depth, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensHop>! Hops, string! MapVersion, int FoundCount, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensNode!>! Nodes, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensEdge!>! Edges, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensFound!>! Items, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensBand>! Truncated) -> void
+Aw.Packets.Core.Kinds.Scoping.LensEntry.MapVersion.get -> string!
 Aw.Packets.Core.Kinds.Scoping.LensEntry.MapVersion.init -> void
 Aw.Packets.Core.Kinds.Scoping.LensEntry.Nodes.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensNode!>!
 Aw.Packets.Core.Kinds.Scoping.LensEntry.Nodes.init -> void

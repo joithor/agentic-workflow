@@ -219,9 +219,9 @@ public static partial class ScopingChecks
             yield return ($"{lens}.hops", $"{lens}.hops lists a hop kind twice.", "List each hop kind once.");
         }
 
-        if (entry.MapVersion < 0)
+        if (string.IsNullOrWhiteSpace(entry.MapVersion))
         {
-            yield return ($"{lens}.mapVersion", $"{lens}.mapVersion is {entry.MapVersion.ToString(CultureInfo.InvariantCulture)}; it is 0 or more.", "Record the map version the lens read.");
+            yield return ($"{lens}.mapVersion", $"{lens}.mapVersion is empty.", "Record the map version the lens read, for example v12.");
         }
 
         if (entry.FoundCount < entry.Nodes.Count + entry.Items.Count)

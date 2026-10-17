@@ -16,7 +16,7 @@ public sealed class ScopingDigestTests
     [Fact, Trait("Lane", "unit")]
     public async Task The_digest_of_the_gold_scope_packet_is_pinned() =>
         // digestVersion 1: a change to these bytes needs a new PacketDigest.Version, not a new pin.
-        Assert.Equal("sha256:a6fc9e932f40e4b8937322db0a5a2eaff440ae657cd1ac864e4752c245d662d2", await Hash(A.ScopingPacket().Build()), StringComparer.Ordinal);
+        Assert.Equal("sha256:8d253d677c20ead2de54c4f682c2dba474edd3ce4bda36f9058c3ce8ba9f5e4f", await Hash(A.ScopingPacket().Build()), StringComparer.Ordinal);
 
     [Fact, Trait("Lane", "unit")]
     public async Task A_json_file_hashes_by_content_not_by_formatting_key_order_or_schema_hint()

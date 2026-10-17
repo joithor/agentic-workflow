@@ -41,8 +41,8 @@
           "uniqueItems": true
         },
         "mapVersion": {
-          "type": "integer",
-          "minimum": 0
+          "type": "string",
+          "minLength": 1
         },
         "foundCount": {
           "type": "integer",
@@ -208,8 +208,8 @@
           "uniqueItems": true
         },
         "mapVersion": {
-          "type": "integer",
-          "minimum": 0
+          "type": "string",
+          "minLength": 1
         },
         "foundCount": {
           "type": "integer",
@@ -258,8 +258,8 @@
           "uniqueItems": true
         },
         "mapVersion": {
-          "type": "integer",
-          "minimum": 0
+          "type": "string",
+          "minLength": 1
         },
         "foundCount": {
           "type": "integer",
@@ -308,8 +308,8 @@
           "uniqueItems": true
         },
         "mapVersion": {
-          "type": "integer",
-          "minimum": 0
+          "type": "string",
+          "minLength": 1
         },
         "foundCount": {
           "type": "integer",

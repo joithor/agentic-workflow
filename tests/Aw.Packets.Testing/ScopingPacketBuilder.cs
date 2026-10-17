@@ -14,15 +14,15 @@ internal sealed class ScopingPacketBuilder
         "{\n" +
         "  \"schemaVersion\": 1,\n" +
         "  \"code\": {\n" +
-        "    \"anchors\": [\"code:src/a.cs\"], \"depth\": 2, \"hops\": [], \"mapVersion\": 13, \"foundCount\": 2,\n" +
+        "    \"anchors\": [\"code:src/a.cs\"], \"depth\": 2, \"hops\": [], \"mapVersion\": \"v13\", \"foundCount\": 2,\n" +
         "    \"nodes\": [{ \"key\": \"code:src/b.cs\", \"kind\": \"file\", \"label\": \"b.cs\", \"band\": \"code\", \"lensItem\": \"L-code-1\", \"trust\": \"untrusted\" }],\n" +
         "    \"edges\": [{ \"from\": \"code:src/a.cs\", \"to\": \"code:src/b.cs\", \"type\": \"imports\", \"provenance\": \"static\", \"confirmed\": false, \"trust\": \"untrusted\" }],\n" +
         "    \"items\": [{ \"lensItem\": \"L-code-2\", \"kind\": \"commit\", \"label\": \"fix b\", \"citations\": [\"git:abc123\"], \"trust\": \"untrusted\" }],\n" +
         "    \"truncated\": []\n" +
         "  },\n" +
-        "  \"product\": { \"anchors\": [], \"depth\": 2, \"hops\": [\"state\"], \"mapVersion\": 13, \"foundCount\": 0, \"nodes\": [], \"edges\": [], \"items\": [], \"truncated\": [] },\n" +
-        "  \"related\": { \"anchors\": [], \"depth\": 2, \"hops\": [\"state\", \"dependency\", \"flow\"], \"mapVersion\": 13, \"foundCount\": 0, \"nodes\": [], \"edges\": [], \"items\": [], \"truncated\": [] },\n" +
-        "  \"history\": { \"anchors\": [], \"depth\": 0, \"hops\": [], \"mapVersion\": 13, \"foundCount\": 0, \"nodes\": [], \"edges\": [], \"items\": [], \"truncated\": [] }\n" +
+        "  \"product\": { \"anchors\": [], \"depth\": 2, \"hops\": [\"state\"], \"mapVersion\": \"v13\", \"foundCount\": 0, \"nodes\": [], \"edges\": [], \"items\": [], \"truncated\": [] },\n" +
+        "  \"related\": { \"anchors\": [], \"depth\": 2, \"hops\": [\"state\", \"dependency\", \"flow\"], \"mapVersion\": \"v13\", \"foundCount\": 0, \"nodes\": [], \"edges\": [], \"items\": [], \"truncated\": [] },\n" +
+        "  \"history\": { \"anchors\": [], \"depth\": 0, \"hops\": [], \"mapVersion\": \"v13\", \"foundCount\": 0, \"nodes\": [], \"edges\": [], \"items\": [], \"truncated\": [] }\n" +
         "}\n";
 
     private readonly Dictionary<string, byte[]> _files = new(StringComparer.Ordinal);

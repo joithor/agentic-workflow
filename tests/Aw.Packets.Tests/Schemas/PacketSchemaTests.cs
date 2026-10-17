@@ -97,7 +97,7 @@ public sealed class PacketSchemaTests
     {
         ["LensEntry.depth"] = static s => { s["minimum"] = 0; s["maximum"] = ScopingChecks.MaxReach; },
         ["LensEntry.hops"] = static s => s["uniqueItems"] = true,
-        ["LensEntry.mapVersion"] = static s => s["minimum"] = 0,
+        ["LensEntry.mapVersion"] = static s => s["minLength"] = 1,
         ["LensEntry.foundCount"] = static s => s["minimum"] = 0,
         ["LensEntry.truncated"] = static s => s["uniqueItems"] = true,
         ["LensesFile.schemaVersion"] = static s => s["const"] = 1,
