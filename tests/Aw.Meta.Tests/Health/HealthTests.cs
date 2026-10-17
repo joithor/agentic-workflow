@@ -72,7 +72,7 @@ public sealed class HealthTests
     public async Task The_builders_advice_follows_the_team_configs_thresholds()
     {
         _ = await _world.Config.Save(
-            new Aw.Meta.Core.Config.TeamConfig("t1", "/work", ["meta", "api", "ui"]) { Builders = new Aw.Meta.Core.Config.BuildersConfig(MaxPerLane: 3, WorktreeGb: 10) },
+            new Core.Config.TeamConfig("t1", "/work", ["meta", "api", "ui"]) { Builders = new Core.Config.BuildersConfig(MaxPerLane: 3, WorktreeGb: 10) },
             CancellationToken.None);
         _world.Resources.Resources = new HostResources(64_000_000, 32_000_000, 0, DiskFreeBytes: 80L * 1024 * 1024 * 1024);
 

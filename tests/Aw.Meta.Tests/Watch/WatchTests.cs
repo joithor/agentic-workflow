@@ -184,7 +184,7 @@ public sealed class WatchTests
     public async Task The_floors_come_from_the_team_config()
     {
         _ = await _world.Config.Save(
-            new Aw.Meta.Core.Config.TeamConfig("t1", "/work", ["meta", "api"]) { Resources = new Aw.Meta.Core.Config.ResourcesConfig(DiskFloorGb: 200, MemFloorGb: 40, SwapHighPct: 90) },
+            new Core.Config.TeamConfig("t1", "/work", ["meta", "api"]) { Resources = new Core.Config.ResourcesConfig(DiskFloorGb: 200, MemFloorGb: 40, SwapHighPct: 90) },
             CancellationToken.None);
         _world.Resources.Resources = new HostResources(64_000_000, 20_000_000, 0, DiskFreeBytes: 80_000_000_000);
         Script([List(Pr(190, "OPEN", "aaa1111"))]);
