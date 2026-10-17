@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.5",
+  "title": "SND-CONTEXT-110",
+  "status": 404,
+  "detail": "the clone of aw-split-panes holds no commit of 1111111111111111111111111111111111111111..1bd4f9651a430db97c760d3ab62acc1e7d47ca7d, or an abbreviation of it is ambiguous or spelled like a ref (fix: fetch that commit into the profile repo's checkout, or pass the full shas it holds)",
+  "traceId": "<trace>"
+}
