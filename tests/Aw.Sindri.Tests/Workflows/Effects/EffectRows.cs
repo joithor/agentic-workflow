@@ -1,3 +1,4 @@
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -29,8 +30,8 @@ internal static class EffectRows
     /// <summary>The rows of <paramref name="type"/> from <paramref name="origin"/>, read until there is one (the rows follow the workflow task).</summary>
     public static async Task<IReadOnlyList<EffectRow>> Eventually(IServiceProvider sindri, string type, CommandOrigin origin)
     {
-        var deadline = DateTime.UtcNow + _patience;
-        while (DateTime.UtcNow < deadline)
+        var deadline = RealTime.NowDateTime + _patience;
+        while (RealTime.NowDateTime < deadline)
         {
             if (await Of(sindri, type, origin) is { Count: > 0 } rows)
             {

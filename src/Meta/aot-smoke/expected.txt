@@ -56,5 +56,6 @@ exit 2
 - NOTE <date> <time>: smoke run
 - NOTE <date> <time>: queue-drop #1: smoke drop
 ## state files
+./meta/heavy-reserve
 ./meta/meta.db
 ./meta/team.json
