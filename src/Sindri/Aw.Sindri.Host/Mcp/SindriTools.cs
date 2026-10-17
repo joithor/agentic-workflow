@@ -50,9 +50,6 @@ internal static class SindriTools
     /// <summary>The kinds sindri_request files, as the API names them.</summary>
     internal static readonly string[] RequestKinds = ["rescope", "add-task", "note", "handback"];
 
-    // why: the HTTP routes wait this long for the views too (ReadYourWrites.Limit); the Mcp namespace can't reference the Host root without a cycle
-    private static readonly TimeSpan _waitForViews = TimeSpan.FromSeconds(2);
-
     private const string ItemIdText = "An item id (ITM-...) or a tracker alias";
 
     // why: declared first, because static initializers run in textual order and the definitions below read it
@@ -256,7 +253,7 @@ internal static class SindriTools
         }
 
         // why: X-Sindri-After isn't honoured on this endpoint, so the tool reads its own write before it answers; a timeout is not a failure
-        var caught = await services.GetRequiredService<IProjectorStatus>().WaitFor(answer.Value.Accepted.Sequence, _waitForViews, ct).ConfigureAwait(false);
+        var caught = await services.GetRequiredService<IProjectorStatus>().WaitFor(answer.Value.Accepted.Sequence, ReadYourWrites.Limit, ct).ConfigureAwait(false);
         return McpResults.Success(services, answer.Value, McpSummaries.Request(answer.Value, bound.Value.Kind, viewsCaughtUp: !caught.IsError));
     }
 

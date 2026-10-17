@@ -1,8 +1,11 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Aw.Kernel;
 using Aw.Kernel.Telemetry;
 using Aw.Kernel.Telemetry.Testing;
+using Aw.Sindri.Core;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Host;
 using Aw.Sindri.Tests.ApiGoldens;
 using Aw.Sindri.Tests.Callers;
@@ -139,6 +142,48 @@ public sealed class SindriRequestToolTests
     }
 
     [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task Sindri_request_waits_for_the_views_to_reach_its_own_write_before_it_answers()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var spy = new WaitSpy();
+        await using var world = await World.Start(ct, pump: false, extra: spy.Register);
+        long behind = -1;
+        spy.OnLaterWait = async (inner, sequence, limit, token) =>
+        {
+            behind = inner.Current.Cursor;   // the views are still behind the write when the tool starts to wait
+            await ViewScenarios.CatchUp(world.Host, token);
+            return await inner.WaitFor(sequence, limit, token);
+        };
+        await using var mcp = await McpSession.Open(world.Host, "alpha", ct);
+
+        var result = await mcp.Call("sindri_request", Request("note", "Wait for me."), ct);
+
+        Assert.NotEqual(true, result.IsError);
+        var sequence = result.StructuredContent!.Value.GetProperty("accepted").GetProperty("sequence").GetInt64();
+        Assert.True(behind < sequence, "the views were already past the write, so nothing was waited for");
+        Assert.Equal(2, spy.Calls.Count);   // the command's own wait for the head, then the tool's wait for its write
+        Assert.Equal((sequence, ReadYourWrites.Limit), spy.Calls[1]);
+        Assert.DoesNotContain("catching up", Text(result), StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
+    public async Task Views_that_stay_behind_the_write_still_answer_success_with_a_catching_up_note()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var spy = new WaitSpy();
+        await using var world = await World.Start(ct, pump: false, extra: spy.Register);
+        spy.OnLaterWait = (_, sequence, _, _) => ValueTask.FromResult<Result<Unit>>(SindriErrors.ViewsBehind.With(string.Create(CultureInfo.InvariantCulture, $"the views didn't reach {sequence}")));
+        await using var mcp = await McpSession.Open(world.Host, "alpha", ct);
+
+        var result = await mcp.Call("sindri_request", Request("note", "The views are slow."), ct);
+
+        Assert.NotEqual(true, result.IsError);
+        Assert.Contains("(views catching up: sindri_pending_decisions may not list it yet)", Text(result), StringComparison.Ordinal);
+        Assert.Equal(result.StructuredContent!.Value.GetProperty("accepted").GetProperty("sequence").GetInt64(), spy.Calls[^1].Sequence);
+        Assert.Equal(ReadYourWrites.Limit, spy.Calls[^1].Limit);
+    }
+
+    [Fact(Timeout = 60_000), Trait("Lane", "integration")]
     public async Task A_human_caller_terminal_and_token_header_on_the_mcp_endpoint_still_files_as_session_mcp()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -258,9 +303,9 @@ public sealed class SindriRequestToolTests
 
         public required string BetaItem { get; init; }
 
-        public static async Task<World> Start(CancellationToken ct)
+        public static async Task<World> Start(CancellationToken ct, bool pump = true, Action<IServiceCollection>? extra = null)
         {
-            var host = await GoldenHost.Start(temporary: true, ct, SeededMcp.Profile);
+            var host = await GoldenHost.Start(temporary: true, ct, SeededMcp.Profile, extra: extra);
             await ViewScenarios.Approve(host, ct);
             var world = new World
             {
@@ -269,7 +314,7 @@ public sealed class SindriRequestToolTests
                 BetaItem = await ItemScenarios.Create(host, "Beta one", "beta"),
             };
             await ViewScenarios.CatchUp(host, ct);
-            world._pump = Pump.Start(host);
+            world._pump = pump ? Pump.Start(host) : null;
             return world;
         }
 
@@ -324,6 +369,44 @@ public sealed class SindriRequestToolTests
             await _stop.CancelAsync();
             await _loop;
             _stop.Dispose();
+        }
+    }
+
+    /// <summary>The projector's status with every wait recorded; from the second wait on (the first is the command's own, for the ledger head) a test can answer in place of the projector.</summary>
+    private sealed class WaitSpy : IProjectorStatus
+    {
+        private readonly List<(long Sequence, TimeSpan Limit)> _calls = [];
+
+        public Func<IProjectorStatus, long, TimeSpan, CancellationToken, ValueTask<Result<Unit>>>? OnLaterWait { get; set; }
+
+        public IReadOnlyList<(long Sequence, TimeSpan Limit)> Calls
+        {
+            get
+            {
+                lock (_calls)
+                {
+                    return [.. _calls];
+                }
+            }
+        }
+
+        public ViewsStatus Current => Inner.Current;
+
+        private IProjectorStatus Inner { get => field ?? throw new InvalidOperationException("the spy isn't resolved"); set; }
+
+        public void Register(IServiceCollection services) =>
+            services.Replace(ServiceDescriptor.Singleton<IProjectorStatus>(sp => { Inner = sp.GetRequiredService<ProjectorProgress>(); return this; }));
+
+        public ValueTask<Result<Unit>> WaitFor(long sequence, TimeSpan limit, CancellationToken cancellationToken)
+        {
+            int count;
+            lock (_calls)
+            {
+                _calls.Add((sequence, limit));
+                count = _calls.Count;
+            }
+
+            return count > 1 && OnLaterWait is { } later ? later(Inner, sequence, limit, cancellationToken) : Inner.WaitFor(sequence, limit, cancellationToken);
         }
     }
 
