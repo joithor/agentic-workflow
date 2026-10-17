@@ -7,6 +7,7 @@ using Aw.Sindri.Ui.ViewModels.Item;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.ViewModels.Palette;
 using Aw.Sindri.Ui.ViewModels.Queue;
+using Aw.Sindri.Ui.ViewModels.Recipes;
 using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
@@ -76,6 +77,8 @@ internal sealed partial class ShellViewModel : ObservableObject
         InitWorkflows();
         Instance = new InstanceFrameViewModel(api, clipboard, clock, catalog: Health.Catalog, launcher: launcher);
         InitInstance();
+        Recipe = new RecipeSheetViewModel(api);
+        InitRecipe();
         Queue.PropertyChanged += OnQueueChanged;
         InitAnnouncements();
         Attention = AttentionSummary.For(feed: null, State, _clock.GetUtcNow());

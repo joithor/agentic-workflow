@@ -24,4 +24,9 @@ public sealed record ContextQuery(
     int? Budget = null,
     bool Draft = false,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DiffRange? Diff = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ContextRepoName? Repo = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ContextRepoName? Repo = null)
+{
+    /// <summary>Read the graph as of a retained map version ('v3', '3' or 'v3@a41b07d'); null for the current one. Left out of JSON when null; not valid with Draft.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? MapVersion { get; init; }
+}

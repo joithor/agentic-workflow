@@ -65,10 +65,12 @@ public sealed class LaneAnchorTests
         var property = Find(lines, "IsSheetPlaceholderShown =>");
         var u3 = Find(lines, "LANE ANCHOR U3'");
         var u8 = Find(lines, "LANE ANCHOR U8");
+        var u10 = Find(lines, "LANE ANCHOR U10");
         var fallback = Find(lines, "_ => true");
 
-        Assert.True(property >= 0 && property < u3 && u8 == u3 + 1 && u8 < fallback, "the markers are adjacent inside the switch, above its '_ => true' arm");
-        Assert.All(lines[(u8 + 1)..fallback], l => Assert.True(IsArmOrBlank(l), "between u8 and the fallback only `… => false,` arms: " + l));
+        Assert.True(property >= 0 && property < u3 && u8 == u3 + 1 && u8 < u10 && u10 < fallback, "U3' and U8 are adjacent inside the switch, U10 follows U8's arms, all above its '_ => true' arm");
+        Assert.All(lines[(u8 + 1)..u10], l => Assert.True(IsArmOrBlank(l), "between u8 and u10 only `… => false,` arms: " + l));
+        Assert.All(lines[(u10 + 1)..fallback], l => Assert.True(IsArmOrBlank(l), "between u10 and the fallback only `… => false,` arms: " + l));
     }
 
     [Fact]
@@ -81,8 +83,9 @@ public sealed class LaneAnchorTests
         var lines = File.ReadAllLines(Path.Combine(UiSource.Root, SheetPath));
         var withAbove = Insert(lines, Find(lines, "LANE ANCHOR U3'"), "        DeepLinkKind.NeedsYou or DeepLinkKind.Decision => false,");
         var both = Insert(withAbove, Find(withAbove, "LANE ANCHOR U8") + 1, "        DeepLinkKind.Workflow => false,");
+        var all = Insert(both, Find(both, "LANE ANCHOR U10") + 1, "        DeepLinkKind.Recipe => false,");
 
-        AssertSwitch(both);
+        AssertSwitch(all);
     }
 
     private static readonly XNamespace _x = "http://schemas.microsoft.com/winfx/2006/xaml";
@@ -97,11 +100,14 @@ public sealed class LaneAnchorTests
         var content = Named(doc, "SheetContent");
         var u3 = Marker(doc, "LANE ANCHOR U3'");
         var u8 = Marker(doc, "LANE ANCHOR U8");
+        var u10 = Marker(doc, "LANE ANCHOR U10");
 
         Assert.Contains(content, sheet.Descendants());
         Assert.Same(content, u3.Parent);
         Assert.Same(content, u8.Parent);
         Assert.Same(u8, u3.NextNode);
+        Assert.Same(content, u10.Parent);
+        Assert.True(u10.IsAfter(u8), "the U10 marker follows U8's content");
     }
 
     private static XDocument Window() => XDocument.Load(Path.Combine(UiSource.Library, "Views", "Shell", "ShellWindow.axaml"));
@@ -162,13 +168,30 @@ public sealed class LaneAnchorTests
         Assert.Equal(u8.Order(StringComparer.Ordinal), Kinds("src/Sindri/Aw.Sindri.Ui/Views/Shell/ShellWindow.axaml", "LANE ANCHOR U8").Order(StringComparer.Ordinal));
     }
 
+    [Fact]
+    public void The_U10_marker_follows_U8_and_claims_Recipe()
+    {
+        var u10 = Kinds(SheetPath, "LANE ANCHOR U10");
+
+        Assert.Equal(["Recipe"], u10);
+        Assert.Equal(u10, Kinds("src/Sindri/Aw.Sindri.Ui/Views/Shell/ShellWindow.axaml", "LANE ANCHOR U10"));
+        Assert.Empty(u10.Intersect(Kinds(SheetPath, "LANE ANCHOR U8"), StringComparer.Ordinal));
+        Assert.Empty(u10.Intersect(Kinds(SheetPath, "LANE ANCHOR U3'"), StringComparer.Ordinal));
+        string[] files = [SheetPath, "src/Sindri/Aw.Sindri.Ui/Views/Shell/ShellWindow.axaml", "docs/csharp/sindri-ui.md"];
+        Assert.All(files, f =>
+        {
+            var line = Lines(f).Single(l => l.Contains("LANE ANCHOR U10", StringComparison.Ordinal));
+            Assert.Contains("never between the markers", line, StringComparison.Ordinal);
+        });
+    }
+
     // arch-3: every kind has an owner: one of the two lanes, U2's item sheet, Home's page link, or the phase that renders it later.
     [Fact]
     public void Every_deep_link_kind_is_claimed_by_a_lane_or_named_as_later()
     {
         string[] owned = ["Item", "HomeNeedsYou"];
-        string[] later = ["Recipe", "Node", "Session", "System", "Service", "Job"];
-        var claimed = Kinds(SheetPath, "LANE ANCHOR U3'").Concat(Kinds(SheetPath, "LANE ANCHOR U8")).Concat(owned).Concat(later);
+        string[] later = ["Node", "Session", "System", "Service", "Job"];
+        var claimed = Kinds(SheetPath, "LANE ANCHOR U3'").Concat(Kinds(SheetPath, "LANE ANCHOR U8")).Concat(Kinds(SheetPath, "LANE ANCHOR U10")).Concat(owned).Concat(later);
 
         Assert.Equal(Enum.GetNames<DeepLinkKind>().Order(StringComparer.Ordinal), claimed.Order(StringComparer.Ordinal));
     }

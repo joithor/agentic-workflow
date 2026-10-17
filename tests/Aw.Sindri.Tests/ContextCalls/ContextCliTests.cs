@@ -22,6 +22,15 @@ public sealed class ContextCliTests
         Assert.True(parsed.Value.Json);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void Query_map_version_flag_sends_mapVersion_and_a_draft_beside_it_is_still_the_servers_006()
+    {
+        var parsed = ContextVerbs.QueryArguments.Parse(["--node", "feature:tabs", "--map-version", "v3@a41b07d", "--json"]);
+
+        Assert.True(parsed.IsSuccess, parsed.IsError ? parsed.Error.Message : null);
+        Assert.Equal("?node=feature%3Atabs&mapVersion=v3%40a41b07d", parsed.Value.QueryString);
+    }
+
     [Theory, Trait("Lane", "unit")]
     [InlineData("depth", "abc", "(fix: --depth 2)")]
     [InlineData("depth", "9", "(fix: --depth 2)")]

@@ -284,4 +284,19 @@ public sealed class WorkflowsViewModelTests
         var short1 = served.Rows.First(r => string.Equals(r.Address, Text(shortened["address"]), StringComparison.Ordinal));
         Assert.Contains(short1.Cells, c => string.Equals(c.State, dropped, StringComparison.Ordinal) && c.Text.Length == 0);
     }
+
+    [Fact]
+    public async Task Recipe_link_opens_the_approved_recipe()
+    {
+        var list = await Shown();
+        var group = list.Groups[0];
+        var asked = new List<string>();
+        list.RecipeRequested += (_, e) => asked.Add(e.Subject);
+
+        group.OpenRecipe();
+
+        Expect.Sequence([group.Recipe], asked);   // a bare id: the approved version
+        Assert.StartsWith(Labels.RecipeLink[..^2], group.RecipeLinkName, StringComparison.Ordinal);
+        Assert.Contains(group.Recipe, group.RecipeLinkName, StringComparison.Ordinal);
+    }
 }

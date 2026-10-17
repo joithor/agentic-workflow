@@ -105,6 +105,12 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
     public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
         inner.Lenses(anchor, draft, depth, scope, cancellationToken);
 
+    public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.Lenses(anchor, read, depth, scope, cancellationToken);
+
+    public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.LensesOf(anchors, read, depth, scope, cancellationToken);
+
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         inner.FileMap(query, scope, cancellationToken);
 
