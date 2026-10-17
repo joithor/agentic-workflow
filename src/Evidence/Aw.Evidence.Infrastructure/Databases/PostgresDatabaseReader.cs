@@ -32,7 +32,9 @@ internal sealed class PostgresDatabaseReader : IDatabaseReader
             return EvidenceErrors.DatabaseRefused.With("this reader opens Postgres servers only");
         }
 
+#pragma warning disable CA2000 // disposed on every failure path below; on success it is handed to the caller (handedOver)
         var connection = new NpgsqlConnection(PostgresConnectionString.Build(postgres.Entry, postgres.Password));
+#pragma warning restore CA2000
         var handedOver = false;
         try
         {

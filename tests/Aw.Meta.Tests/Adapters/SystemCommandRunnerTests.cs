@@ -64,6 +64,71 @@ public sealed class SystemCommandRunnerTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task A_grandchild_holding_the_pipes_open_does_not_hang_the_run_or_fail_it_afterwards()
+    {
+        var unobserved = new List<Exception>();
+        void Record(object? sender, UnobservedTaskExceptionEventArgs e)
+        {
+            lock (unobserved)
+            {
+                if (e.Exception.ToString().Contains(nameof(SystemCommandRunner), StringComparison.Ordinal))
+                {
+                    unobserved.Add(e.Exception);   // only this runner's: the handler is process-wide
+                }
+            }
+        }
+
+        var pidFile = Path.Combine(_dir.Path, "grandchild.pid");
+        TaskScheduler.UnobservedTaskException += Record;
+        try
+        {
+            // The grandchild inherits stdout and stderr and holds them 30 s: the run must end without it.
+            var script = $"sh -c 'echo $$ > \"{pidFile}\"; exec sleep 30' & echo early";
+            var request = new CommandRequest(["sh", "-c", script], TimeSpan.FromSeconds(20)) { LogFile = Path.Combine(_dir.Path, "late.log") };
+
+            var run = new SystemCommandRunner(TimeSpan.FromMilliseconds(100)).Run(request, CancellationToken.None).AsTask();
+            var finished = await Task.WhenAny(run, Task.Delay(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken));
+            Assert.Same(run, finished);
+            var result = await run;
+            await Task.Delay(TimeSpan.FromMilliseconds(500), TestContext.Current.CancellationToken);
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
+            Assert.Contains("early", result.Value.Stdout, StringComparison.Ordinal);
+            lock (unobserved)
+            {
+                Assert.Empty(unobserved);
+            }
+        }
+        finally
+        {
+            TaskScheduler.UnobservedTaskException -= Record;
+            KillGrandchild(pidFile);
+        }
+    }
+
+    // By PID only: the sleeping grandchild outlives its parent shell, so the test ends it itself.
+    private static void KillGrandchild(string pidFile)
+    {
+        if (File.Exists(pidFile) && int.TryParse(File.ReadAllText(pidFile).Trim(), System.Globalization.CultureInfo.InvariantCulture, out var pid))
+        {
+            try
+            {
+                using var process = System.Diagnostics.Process.GetProcessById(pid);
+                process.Kill();
+            }
+            catch (ArgumentException)
+            {
+                // already gone
+            }
+            catch (InvalidOperationException)
+            {
+                // already gone
+            }
+        }
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task A_missing_working_directory_is_a_start_failure()
     {
         var request = new CommandRequest(["true"], TimeSpan.FromSeconds(5)) { Cwd = Path.Combine(_dir.Path, "absent") };

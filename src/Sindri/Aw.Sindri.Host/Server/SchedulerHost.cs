@@ -115,18 +115,27 @@ internal sealed partial class SchedulerHost(
             }
 
             // a paused service's slot passes unrun (so a resume doesn't burst); a service with a run in flight, scheduled or manual, skips this slot (S1-D10)
-            if ((_pausesKnown || IsBuiltIn(schedule.Name)) && !_paused.Contains(schedule.Name) && guard.TryClaim(schedule.Name, out var claim))
+            IDisposable? claim = null;
+            try
             {
-                var run = RunOne(schedule, new ScheduledRun(grant, schedule.NextSlot), claim, ct);   // its own loop: not awaited here
-                if (run.IsCompleted)
+                if ((_pausesKnown || IsBuiltIn(schedule.Name)) && !_paused.Contains(schedule.Name) && guard.TryClaim(schedule.Name, out claim))
                 {
-                    await run.ConfigureAwait(false);
-                    _ = _running.Remove(schedule.Name);
+                    var run = RunOne(schedule, new ScheduledRun(grant, schedule.NextSlot), claim, ct);   // its own loop: not awaited here; it owns the claim now
+                    claim = null;
+                    if (run.IsCompleted)
+                    {
+                        await run.ConfigureAwait(false);
+                        _ = _running.Remove(schedule.Name);
+                    }
+                    else
+                    {
+                        _running[schedule.Name] = run;
+                    }
                 }
-                else
-                {
-                    _running[schedule.Name] = run;
-                }
+            }
+            finally
+            {
+                claim?.Dispose();
             }
 
             advanced.Add(schedule.Advance(now));
