@@ -163,6 +163,12 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-111: the two commits of a diff range share no merge base (unrelated histories).</summary>
     public static readonly ErrorDefinition NoMergeBase = new("SND-CONTEXT-111", ErrorKind.Invalid, "The two commits share no merge base");
 
+    /// <summary>SND-CONTEXT-130: a profile recognizer ('context.extract.recognizers[i]') is invalid: an unknown kind, a bad glob, a regex that doesn't compile or a key group it doesn't name. 132 is reserved for a recognizer that timed out on a file (degraded, never a failure).</summary>
+    public static readonly ErrorDefinition RecognizerInvalid = new("SND-CONTEXT-130", ErrorKind.Invalid, "A profile recognizer is invalid");
+
+    /// <summary>SND-CONTEXT-131: more than 50 profile recognizers, or a pattern over 512 characters.</summary>
+    public static readonly ErrorDefinition RecognizerOverCap = new("SND-CONTEXT-131", ErrorKind.Invalid, "Too many profile recognizers, or a pattern is too long");
+
     /// <summary>Every Context error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
         [SettingsInvalid, SourceNotConfigured, UnknownAnchor, StoreUnavailable, PathInWorktree, QueryInvalid, SourceUnavailable, AllSourcesUnavailable, SessionsDisabled,
@@ -170,7 +176,7 @@ public static class ContextErrors
          NoMap, MapFileInvalid, MapNodeUndefined, ExportOutsideHome, MapFileChanged, ProbeFileInvalid, NoProbeFile, AmbiguousAnchor, ProbesRegressed,
          HeavyLockBusy, LabelingUnavailable, ReviewFileNoMatch, NoDraftMap, RepoOutsideScope, PromoteRefused, ReviewTargetStale, ExtractionUnreadable,
          OnyxKeyRefused, OnyxUnexpectedReply, OnyxDocumentNotFound, OnyxKeyNotServiceAccount, OnyxNotPinnedOrLoopback, SyncRunning, ModelAnswerRefused, SyncSourceUnknown, SyncCapped,
-         NoEligibleSample, NoBriefSource, UnknownArm, AdjudicationCapped, CommitUnknown, NoMergeBase];
+         NoEligibleSample, NoBriefSource, UnknownArm, AdjudicationCapped, CommitUnknown, NoMergeBase, RecognizerInvalid, RecognizerOverCap];
 
     /// <summary>
     /// The codes the CLI answers with exit 1 (attention, spec §8.6): an unknown or ambiguous anchor, a refused input or

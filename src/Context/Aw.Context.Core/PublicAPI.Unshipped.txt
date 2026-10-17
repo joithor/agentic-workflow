@@ -4682,3 +4682,13 @@ Aw.Context.Core.Results.DiffStatus
 Aw.Context.Core.Results.DiffStatus.Mapped = 0 -> Aw.Context.Core.Results.DiffStatus
 Aw.Context.Core.Results.DiffStatus.Suggested = 1 -> Aw.Context.Core.Results.DiffStatus
 Aw.Context.Core.Results.DiffStatus.Unmapped = 2 -> Aw.Context.Core.Results.DiffStatus
+Aw.Context.Core.Engine.ContextSettings.Recognizers.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ProfileRecognizer!>!
+Aw.Context.Core.Engine.ContextSettings.Recognizers.init -> void
+Aw.Context.Core.Extract.ProfileRecognizer
+Aw.Context.Core.Extract.ProfileRecognizer.Glob.get -> string!
+Aw.Context.Core.Extract.ProfileRecognizer.Kind.get -> string!
+Aw.Context.Core.Extract.ProfileRecognizer.KeyFrom.get -> string!
+Aw.Context.Core.Extract.ProfileRecognizer.Pattern.get -> string!
+Aw.Context.Core.Extract.ProfileRecognizer.ProfileRecognizer(string! kind, string! glob, string! pattern, string! keyFrom) -> void
+static readonly Aw.Context.Core.ContextErrors.RecognizerInvalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.RecognizerOverCap -> Aw.Kernel.ErrorDefinition!

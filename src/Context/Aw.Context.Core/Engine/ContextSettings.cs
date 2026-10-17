@@ -1,3 +1,4 @@
+using Aw.Context.Core.Extract;
 using Aw.Context.Core.Onyx;
 using Aw.Context.Core.Trust;
 
@@ -50,4 +51,7 @@ public sealed record ContextSettings
 
     /// <summary>'context.eval.adjudicator' (S-7A): whether a backtest asks the model to label surfaces no PR touched, within 1.5M tokens per run. Off by default.</summary>
     public bool Adjudicator { get; init; }
+
+    /// <summary>'context.extract.recognizers' (S-SK): the profile's extra surface recognizers, added to the built-in forms. Empty by default.</summary>
+    public IReadOnlyList<ProfileRecognizer> Recognizers { get; init; } = [];
 }
