@@ -1,3 +1,4 @@
+using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Platform;
 
 namespace Aw.Sindri.Ui.Testing;
@@ -59,7 +60,7 @@ public abstract class LauncherContract
     {
         var launcher = Create();
 
-        Expect.True(!await launcher.OpenFile(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "missing.md"), Token));
+        Expect.True(!await launcher.OpenFile(Path.Combine(Path.GetTempPath(), RealTime.NewGuid().ToString("N"), "missing.md"), Token));
     }
 
     [Fact]

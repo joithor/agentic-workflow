@@ -21,6 +21,8 @@ internal sealed class RecipeSheetViewModel(ISindriApi api) : ObservableObject
         {
             Set(ref field, value);
             OnChanged(nameof(IsProblem));
+            OnChanged(nameof(IsLoading));
+            OnChanged(nameof(IsShown));
             OnChanged(nameof(InitialFocus));
         }
     }
@@ -31,12 +33,24 @@ internal sealed class RecipeSheetViewModel(ISindriApi api) : ObservableObject
     /// <summary>True when the recipe serves a name template.</summary>
     public bool HasName => Name.Length > 0;
 
+    /// <summary>True before the first answer.</summary>
+    public bool IsLoading => Phase == FramePhase.Loading;
+
+    /// <summary>True while a recipe is shown.</summary>
+    public bool IsShown => Phase == FramePhase.Shown;
+
+    /// <summary>The name template's line, "name {fact:scope} - {start:date}"; empty when the recipe serves none.</summary>
+    public string NameLine => HasName ? Labels.NameTemplateLine(Name) : string.Empty;
+
     /// <summary>True when there is a note.</summary>
     public bool HasNote => Note.Length > 0;
 
     /// <summary>Back's words.</summary>
 #pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
     public string BackText => Labels.Back;
+
+    /// <summary>The heading of the loading skeleton.</summary>
+    public string LoadingText => Labels.LoadingRecipe;
 
     /// <summary>Where focus lands: Back when there is nothing else to act on.</summary>
     public FrameFocus InitialFocus => FrameFocus.Back;
@@ -49,7 +63,7 @@ internal sealed class RecipeSheetViewModel(ISindriApi api) : ObservableObject
     public string Identity { get; private set => Set(ref field, value); } = string.Empty;
 
     /// <summary>The name template, or empty.</summary>
-    public string Name { get; private set { Set(ref field, value); OnChanged(nameof(HasName)); } } = string.Empty;
+    public string Name { get; private set { Set(ref field, value); OnChanged(nameof(HasName)); OnChanged(nameof(NameLine)); } } = string.Empty;
 
     /// <summary>The states band; null before a read.</summary>
     public RecipeStatesViewModel? States { get; private set => Set(ref field, value); }
@@ -70,6 +84,15 @@ internal sealed class RecipeSheetViewModel(ISindriApi api) : ObservableObject
     /// <returns>A task that completes when the sheet shows the answer.</returns>
     internal Task Open(Uri url, string subject, CancellationToken cancellationToken)
     {
+        Show(subject);
+        _url = url;
+        return Read(cancellationToken);
+    }
+
+    /// <summary>Names the recipe now, before any read (a deep link, even before the app is connected).</summary>
+    /// <param name="subject">The link's subject: an id, or an id, '@' and a hash.</param>
+    internal void Show(string subject)
+    {
         if (!string.Equals(subject, _subject, StringComparison.Ordinal))
         {
             Clear();
@@ -77,9 +100,6 @@ internal sealed class RecipeSheetViewModel(ISindriApi api) : ObservableObject
             Id = Split(subject).Recipe;
             Phase = FramePhase.Loading;
         }
-
-        _url = url;
-        return Read(cancellationToken);
     }
 
     /// <summary>Re-reads the recipe shown.</summary>

@@ -1,0 +1,61 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:rec="using:Aw.Sindri.Ui.ViewModels.Recipes"
+             xmlns:rv="using:Aw.Sindri.Ui.Views.Recipes"
+             x:Class="Aw.Sindri.Ui.Views.Recipes.RecipeSheetView"
+             x:DataType="rec:RecipeSheetViewModel">
+  <!-- The recipe sheet (screens spec §4.3, U10a), read-only, inside the shell's sheet: the header (id@hash, version, urgency, the name template),
+       the states band, then what the recipe declares as inputs and outputs. A refusal or an unreadable answer shows its sentence with Back. -->
+  <StackPanel x:Name="RecipeSheet" Spacing="{StaticResource Space.MD}">
+    <TextBlock x:Name="RecipeLoading" Classes="body muted" Text="{Binding LoadingText}" IsVisible="{Binding IsLoading}" AutomationProperties.Name="{Binding LoadingText}" />
+    <TextBlock x:Name="RecipeProblem" Classes="body" Text="{Binding ProblemText}" IsVisible="{Binding IsProblem}" TextWrapping="Wrap" AutomationProperties.Name="{Binding ProblemText}" />
+    <Button x:Name="RecipeBack" Classes="not-found-back" Classes.shown="{Binding IsProblem}" Content="{Binding BackText}" Click="OnBack"
+            HorizontalAlignment="Left" AutomationProperties.Name="{Binding BackText}" />
+
+    <StackPanel x:Name="RecipeBody" Spacing="{StaticResource Space.MD}" IsVisible="{Binding IsShown}">
+      <StackPanel Spacing="4">
+        <TextBlock x:Name="RecipeTitle" Classes="detail-title" Text="{Binding Id}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Id}" />
+        <TextBlock x:Name="RecipeIdentity" Classes="caption mono subtle" Text="{Binding Identity}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Identity}" />
+        <TextBlock x:Name="RecipeNameTemplate" Classes="caption mono" Text="{Binding NameLine}" IsVisible="{Binding HasName}" TextWrapping="Wrap" AutomationProperties.Name="{Binding NameLine}" />
+        <TextBlock x:Name="RecipeNote" Classes="body-strong" Text="{Binding Note}" IsVisible="{Binding HasNote}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Note}" />
+      </StackPanel>
+      <Panel IsVisible="{Binding States, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <rv:RecipeStatesBand x:Name="RecipeStates" DataContext="{Binding States}" />
+      </Panel>
+      <Panel IsVisible="{Binding Facts, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <Border x:Name="RecipeFacts" Classes="frame-panel" DataContext="{Binding Facts}" x:DataType="rec:RecipeFactsViewModel">
+          <StackPanel Spacing="8">
+            <TextBlock Classes="eyebrow" Text="{Binding InputsHeading}" />
+            <ItemsControl x:Name="RecipeInputs" ItemsSource="{Binding Inputs}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="rec:RecipeFactRowViewModel">
+                  <Border Margin="0,0,0,8" AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                    <StackPanel Spacing="2" AutomationProperties.AccessibilityView="Raw">
+                      <TextBlock Name="RecipeInputLabel" Classes="body-strong" Text="{Binding Label}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                      <TextBlock Name="RecipeInputDetail" Classes="caption mono subtle" Text="{Binding Detail}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                      <TextBlock Name="RecipeInputGenerate" Classes="caption mono" Text="{Binding Generate}" IsVisible="{Binding HasGenerate}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Classes="eyebrow" Text="{Binding OutputsHeading}" />
+            <TextBlock x:Name="RecipeNoOutputs" Classes="body muted" Text="{Binding NoOutputsText}" IsVisible="{Binding !HasOutputs}" TextWrapping="Wrap" AutomationProperties.Name="{Binding NoOutputsText}" />
+            <ItemsControl x:Name="RecipeOutputs" ItemsSource="{Binding Outputs}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="rec:RecipeFactRowViewModel">
+                  <Border Margin="0,0,0,8" AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                    <StackPanel Spacing="2" AutomationProperties.AccessibilityView="Raw">
+                      <TextBlock Name="RecipeOutputLabel" Classes="body-strong" Text="{Binding Label}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                      <TextBlock Name="RecipeOutputDetail" Classes="caption mono subtle" Text="{Binding Detail}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </Border>
+      </Panel>
+    </StackPanel>
+  </StackPanel>
+</UserControl>

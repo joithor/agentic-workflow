@@ -12,6 +12,6 @@ internal static class WorkflowsLegend
         + "        Enter opens · A answers a decision or completes a desk task · B hand back · X cancel";
 
     /// <summary>The line in words, for screen readers: no glyph.</summary>
-    internal static readonly string Name =
+    internal const string Name =
         $"{Labels.StageDone}, {Labels.StageActive}, {Labels.StagePending}, {Labels.LegendEscalated}, {Labels.LegendTakenOver}, {Labels.LegendLoop}. Keys: Enter opens, A answers a decision or completes a desk task, B hand back, X cancel";
 }

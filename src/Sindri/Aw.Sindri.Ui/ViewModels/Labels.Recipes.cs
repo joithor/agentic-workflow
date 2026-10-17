@@ -100,4 +100,12 @@ internal static partial class Labels
 
     /// <summary>The outputs section's heading.</summary>
     internal const string OutputsHeading = "Outputs";
+
+    /// <summary>The sheet's skeleton while the recipe is read.</summary>
+    internal const string LoadingRecipe = "Reading the recipe…";
+
+    /// <summary>The recipe's name template, labelled.</summary>
+    /// <param name="template">The template as served.</param>
+    /// <returns>The line.</returns>
+    internal static string NameTemplateLine(string template) => $"name {template}";
 }
