@@ -80,6 +80,8 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IRecipeApprovals, SqliteRecipeApprovals>()
             .AddSingleton<IWorkflowClaims, SqliteWorkflowClaims>()   // engine P6 unit (d): workflow_claims in ledger.db
             .AddSingleton<IClaimRefs, GitClaimRefs>()                // engine P6 unit (d): the claim's marker ref
+            .AddSingleton<IRunDiff, GitRunDiff>()                    // engine P8: the diff signal of an agent run
+            .AddSingleton<IAgentSessions, LedgerAgentSessions>()     // engine P8: an agent session's end and spend, from the ledger
             .AddSingleton<IChallenges, ProcessChallenges>()
             .AddSingleton(sp => HeavyLockSettings.Read(environment, sp.GetRequiredService<SindriSettings>().StateDirectory))
             .AddSingleton<IHeavySlots, DirectoryHeavySlots>()

@@ -10172,3 +10172,25 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.operator !=(Aw.Sindri
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? right) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.AgentSessionState(Aw.Sindri.Core.Events.SessionEndReason? EndedAs = null, int? ExitCode = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.Deconstruct(out Aw.Sindri.Core.Events.SessionEndReason? EndedAs, out int? ExitCode) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.EndedAs.get -> Aw.Sindri.Core.Events.SessionEndReason?
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.EndedAs.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.ExitCode.get -> int?
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.ExitCode.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.IsLive.get -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.Live.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState? right) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentSessions
+Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentSessions.Usage(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentSessions.Watch(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState!>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.IRunDiff
+Aw.Sindri.Core.Workflow.Engine.Runtime.IRunDiff.Head(string! worktree, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.IRunDiff.IsEmpty(string! worktree, string! startHead, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
