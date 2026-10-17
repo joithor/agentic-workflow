@@ -219,7 +219,7 @@ its terminal outcomes.
 |---|---|---|---|---|---|
 | `workflow.plan` | A stage plan, a verification plan written before code, and a judge check that it states an observable signal | `step.plan.write`, `step.plan.verification`, `step.judge.choose` (`ready`, `underspecified`) | `fact:plan`, `fact:verificationPlan` | `resolved`, `unresolved` | specToProvenPR 1–2 |
 | `workflow.investigate` | Root cause to `diagnosed`, with a confirmed hypothesis | `step.rootcause.investigate` (`diagnosed`, `unfixed`) | `fact:rootCause` | `resolved`, `unresolved` | bugFix 2 |
-| `workflow.reproduce` | A route between a UI check and a test check, then a check that fails on the base for the reported reason, frozen as the baseline | `step.judge.choose` (`ui-check`, `test-check`), `step.reproduce.ui-check` / `step.reproduce.test-check` (`reproduced`, `notReproduced`), each through `bugfix-state` | `fact:check` (kind, file, command), `fact:baseline` | `resolved`, `unresolved` (not reproduced) | bugFix 3 |
+| `workflow.reproduce` | A route between a UI check and a test check, then a check that fails on the base for the reported reason, frozen as the baseline | `step.judge.choose` (`uiCheck`, `testCheck`), `step.reproduce.ui-check` / `step.reproduce.test-check` (`reproduced`, `notReproduced`), each through `bugfix-state` | `fact:check` (kind, file, command), `fact:baseline` | `resolved`, `unresolved` (not reproduced) | bugFix 3 |
 | `workflow.implement` | Test-first build in a per-run worktree, looping on the checks | `step.produce`, `step.checks` (the existing Steps) under `loop: revisions` | `fact:diff`, `fact:branch` | `resolved`, `unresolved` | specToProvenPR 3; bugFix 4 (mode A) |
 | `workflow.implement-split` | Mode C: one implementer per area, in sequence on one worktree, each given the previous diff | `step.produce` per area, under `loop: areas` | `fact:diff`, `fact:branch` | `resolved`, `unresolved` | bugFix 4 (mode C) |
 | `workflow.hand-test` | Use the change by hand in the running app; record what was done, expected and seen | `step.handtest.run` (`works`, `broken`) | `fact:manualTest` | `resolved`, `unresolved` | specToProvenPR 4 |
@@ -355,7 +355,7 @@ intake (desk) ─► investigate ─► reproduce ─► route-mode ─► attem
                                                                                       │ passed       │ failed
                                                                                       ▼              ▼
               ┌──── partial / unresolved, attempts < cap ◄── judge ◄── evidence             back to route-mode
-              ▼                                       │ resolved   │ needs-human          (attempts < cap)
+              ▼                                       │ resolved   │ needsHuman          (attempts < cap)
           route-mode ─► attempt                       ▼            ▼
                                              report ─► fixed   owner (desk)
           attempts at cap, or not reproduced ─► report ─► not-fixed
@@ -368,13 +368,13 @@ intake (desk) ─► investigate ─► reproduce ─► route-mode ─► attem
   is always run; the route adds evidence the check alone doesn't give (an api diff behind a UI bug, say).
 - `judge` is `step.bugfix.judge`, which runs `bugfix-state judge`: the helper builds the `resolution-check` input from
   its own state and records the verdict once per candidate, its guard against re-rolled verdicts (BugFix). Outcomes:
-  `resolved`, `partial`, `unresolved`, and `needs-human` (the Judge escalated), which goes to the human-only
+  `resolved`, `partial`, `unresolved`, and `needsHuman` (the Judge escalated), which goes to the human-only
   `step.owner.decide`. The evidence summary reaches it through the children's outputs (§8.4).
 - **One attempt counter.** `bugfix-state`'s attempt count (at most 3) is authoritative. `attempt`
   (`step.bugfix.start-attempt`) runs after `route-mode`, reads the mode from its `fact:decision`, and calls
   `start-attempt --mode` before each round; a failed recheck or a `partial` verdict goes back to `route-mode` and so
   opens a new attempt, so the shared `workflow.implement` stays
-  bugfix-agnostic. The recipe's `loop: attempts`, cap 3, mirrors it, and `cap-reached` goes to the unfixed report.
+  bugfix-agnostic. The recipe's `loop: attempts`, cap 3, mirrors it, and `capReached` goes to the unfixed report.
 - It ends in `workflow.report`, never in `workflow.ready`: the skill doesn't open a PR, and neither does the recipe.
   `step.bugfix.record-candidate` runs after each implement, and `step.report.write` calls `bugfix-state advance
   report` (with `--unresolved` on the unfixed path), so `bugfix-state`'s own state matches the instance's. Two
@@ -539,7 +539,7 @@ caller class `human` (API §4). A session gets `SND-AUTH-002`, as for a protecte
 It applies to `step.desk.choose`, `step.evidence.desk` and `step.owner.decide`, and to any `deskCapable` Step whose
 runtime is `block` while it runs on the desk (`step.judge.choose` before DT-J, or on a fallback), so a session can't
 pick a branch through the route state itself. Every desk completion event already
-records its actor, which `workflow events` shows. The refusal lives in `CompleteStep` (`EngineFilledReport.HumanOnlyRefusal`), before the nonce claim, so nothing is consumed; a session report on an instance that can't be read is refused with that read error.
+records its actor, which `workflow events` shows. The refusal lives in `CompleteStep` (`EngineFilledReport.HumanOnlyRefusal`), before the nonce claim, so nothing is consumed; a session report on an instance that can't be read is refused with that read error. Today `CompleteStep` is a desk-class command, so the command chain (`AuthorizingService`) refuses every session with its generic `SND-AUTH-002` before the service runs; the per-Step check, with its full-command message, is defence in depth that takes over once a non-human class can reach `CompleteStep` (step reports open to sessions, P10).
 
 ### 8.6 Tracing a route (engine; DT-J)
 
@@ -673,7 +673,7 @@ found anything CRITICAL. Revision 2 fixes every HIGH and MEDIUM finding as follo
   scaffold and the views (§8.1). Parameter inputs are wired (`InputsFrom`). The block runtime contract is spelled out
   (§8.2). Sindri reaches Judge through a `cli` edge (§8.3). Descriptor hashes stay put (§8.1). The phase graph is
   rebuilt: descriptors land in DT-V and DT-R, and DT-B needs P7 and the evidence activity. All recipes live in one
-  directory (§4). `behaviour-wrong` is in §4.1. Reproduce reports Step outcomes (§5.5), and there is one attempt
+  directory (§4). `behaviourWrong` is in §4.1. Reproduce reports Step outcomes (§5.5), and there is one attempt
   counter (§6.1). Child `cancelled` is handled (§3.5). The edges and the Evidence Judge adapter are declared (§8.8).
   The wrong rule id is fixed (`RCP-CAP-002`), and the CLIs get a `confidence` field (§8.3).
 - **Design:** §9 is new: the desk choice, empty states, the choice control, the route column, and the deep-child NOW
