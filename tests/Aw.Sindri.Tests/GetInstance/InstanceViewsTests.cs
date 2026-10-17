@@ -5,7 +5,9 @@ using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Views;
+using Aw.Sindri.Testing.Views;
 using Aw.Sindri.Tests.Workflow.Engine;
+using FixtureStatusText = Aw.Sindri.Testing.Views.StatusText;
 
 namespace Aw.Sindri.Tests.GetInstance;
 
@@ -277,7 +279,7 @@ public sealed class InstanceViewsTests
     public void The_fixture_renderer_and_the_engine_print_the_same_answer_line_for_a_pointer_with_no_known_child()
     {
         var engine = AnswerLine(InstanceViews.Status(StatusCases.View("parked-mirrored-unlisted-child"), StatusCases.Now).Text);
-        var fixture = AnswerLine(Aw.Sindri.Testing.Views.StatusText.Render(Aw.Sindri.Testing.Views.WorkflowViewFixtures.StatusMirroredBudgetNoChild(), Aw.Sindri.Testing.Views.WorkflowViewFixtures.Now));
+        var fixture = AnswerLine(FixtureStatusText.Render(WorkflowViewFixtures.StatusMirroredBudgetNoChild(), WorkflowViewFixtures.Now));
 
         Assert.Equal(engine[engine.IndexOf("<the child's answer>", StringComparison.Ordinal)..], fixture[fixture.IndexOf("<the child's answer>", StringComparison.Ordinal)..]);
     }
