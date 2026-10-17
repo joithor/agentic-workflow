@@ -31,6 +31,8 @@ node "$FX/selfcheck.mjs" extra >/dev/null 2>&1; check "selfcheck: an unknown arg
 node "$FX/selfcheck.mjs" diff-scope >/dev/null 2>&1; check "selfcheck diff-scope with no arguments exits 2" "$?" "2"
 
 # --- each check can fail: break a copy of the fixture (line and scoping side by side) ---
+# sedi <script> <file>...: an in-place sed that works with GNU and BSD sed alike (CI runs on macOS).
+sedi() { local script="$1" f; shift; for f in "$@"; do sed "$script" "$f" > "$f.sedi" && mv "$f.sedi" "$f" || return 1; done; }
 mutate() { # mutate <name> <expect-text> <command run inside the copy of tests/fixtures/line>
   local name="$1" expect="$2" cmd="$3" copy="$WORK/m-$1"
   mkdir -p "$copy" && cp -R "$ROOT/tests/fixtures/line" "$copy/line" && cp -R "$ROOT/tests/fixtures/scoping" "$copy/scoping"
@@ -42,19 +44,19 @@ mutate() { # mutate <name> <expect-text> <command run inside the copy of tests/f
 # an unmutated copy passes clean, so a mutation failing means something
 mkdir -p "$WORK/clean" && cp -R "$FX" "$WORK/clean/line" && cp -R "$ROOT/tests/fixtures/scoping" "$WORK/clean/scoping"
 node "$WORK/clean/line/selfcheck.mjs" >/dev/null 2>&1; check "an unmutated copy of the fixture passes selfcheck (exit 0)" "$?" "0"
-mutate hops-integer "lenses.json agrees with coverage.json" "sed -i 's/\"hops\": \\[\\]/\"hops\": 0/' gold/scope/expiry/lenses.json"
-mutate p2-p3-share-a-file "PKT-SCOPE-002" "sed -i 's|\"web/api-client.ts\"|\"src/sharing/routes.ts\"|' gold/plan/expiry/packet.json"
+mutate hops-integer "lenses.json agrees with coverage.json" "sedi 's/\"hops\": \\[\\]/\"hops\": 0/' gold/scope/expiry/lenses.json"
+mutate p2-p3-share-a-file "PKT-SCOPE-002" "sedi 's|\"web/api-client.ts\"|\"src/sharing/routes.ts\"|' gold/plan/expiry/packet.json"
 mutate canary-leaked-to-readme "canary phrase appears" "echo '$PHRASE' >> README.md"
 mutate hidden-text-leaked "no hidden scenario text" "echo '$LEAK_TEXT' >> gold/design/expiry/spec.md"
-mutate formal-pack-copies-plain "two style packs really differ" "cp packs/style/plain/pack.json packs/style/formal/pack.json && sed -i 's/\"id\": \"plain\"/\"id\": \"formal\"/' packs/style/formal/pack.json"
-mutate planted-red-passes-removed "PL-RED" "sed -i 's/\"outcome\": \"passed\"/\"outcome\": \"failed\"/' gold/build/red.json"
+mutate formal-pack-copies-plain "two style packs really differ" "cp packs/style/plain/pack.json packs/style/formal/pack.json && sedi 's/\"id\": \"plain\"/\"id\": \"formal\"/' packs/style/formal/pack.json"
+mutate planted-red-passes-removed "PL-RED" "sedi 's/\"outcome\": \"passed\"/\"outcome\": \"failed\"/' gold/build/red.json"
 mutate secret-shaped-file "secret-shaped" "printf 'k = \"ghp_%s\"\\n' abcdefghijklmnopqrstuvwxyz0123456789 > notes.txt"
-mutate pl-lens-defect-not-in-spec "PL-LENS" "sed -i 's/UTC instant/UTC moment/' gold/lens/design-defect.json"
-mutate pl-scope-inside-allowed "PL-SCOPE" "sed -i 's|\"src/digest/digest.ts\"|\"src/sharing/links.ts\"|' planted.json"
-mutate pl-canary-not-in-message "PL-CANARY" "sed -i 's/see \$CANARY/see nothing/' history/build.sh"
+mutate pl-lens-defect-not-in-spec "PL-LENS" "sedi 's/UTC instant/UTC moment/' gold/lens/design-defect.json"
+mutate pl-scope-inside-allowed "PL-SCOPE" "sedi 's|\"src/digest/digest.ts\"|\"src/sharing/links.ts\"|' planted.json"
+mutate pl-canary-not-in-message "PL-CANARY" "sedi 's/see \$CANARY/see nothing/' history/build.sh"
 mutate pl-leak-report-clean "PL-LEAK" "node -e 'const f=\"gold/prove/holdout-result.leaky.json\",fs=require(\"fs\"),j=JSON.parse(fs.readFileSync(f,\"utf8\"));j.results[0].observed=\"Status 410.\";fs.writeFileSync(f,JSON.stringify(j,null,2))'"
-mutate related-path-not-a-cascade-path "related is a cascade lens" "sed -i 's/reads action:audit.report/reads action:export.run/' gold/scope-trace/expiry.related-trace.json"
-mutate hops-not-hop-kinds "hop-kind arrays" "sed -i 's/\"dependency\"/\"walk\"/' gold/scope/expiry/lenses.json gold/scope/expiry/coverage.json"
+mutate related-path-not-a-cascade-path "related is a cascade lens" "sedi 's/reads action:audit.report/reads action:export.run/' gold/scope-trace/expiry.related-trace.json"
+mutate hops-not-hop-kinds "hop-kind arrays" "sedi 's/\"dependency\"/\"walk\"/' gold/scope/expiry/lenses.json gold/scope/expiry/coverage.json"
 mutate malformed-gold-is-a-check "crashed" "echo '{' > gold/design/expiry/signals.json"
 mutate packet-edited-after-freeze "freeze record hash" "echo >> gold/design/expiry/spec.md"
 
