@@ -153,6 +153,7 @@ transitions:
     usually one of ui, api and db failed, not all three. A check cancelled *inside* `evidence-all` also ends here,
     because `evidence-all` reports it as its own unresolved `dropped` and a terminal can't declare `cancelled`.
   - **`dropped`**: the child run this instance waited on (a leaf, or `evidence-all` itself) was cancelled.
+
   All three declare the outcome `unresolved` (owner, 2026-10-17: `all-failed` is kept apart from `dropped`), so a
   parent waiting on `workflow.evidence` can't route on which one it was. The `workflow.evidence` child instance's
   state name shows it, in `workflow status`, the ledger and the app.
