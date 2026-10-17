@@ -37,4 +37,12 @@ public sealed class ContextErrorsTests
         Assert.All([ContextErrors.SyncRunning, ContextErrors.SyncSourceUnknown], e => Assert.Contains(e.Code, ContextErrors.Attention));
         Assert.All([ContextErrors.ModelAnswerRefused, ContextErrors.SyncCapped], e => Assert.DoesNotContain(e.Code, ContextErrors.Attention));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_S_SK_recognizer_codes_are_130_and_131_and_132_stays_reserved()
+    {
+        Assert.Equal(["SND-CONTEXT-130", "SND-CONTEXT-131"], new[] { ContextErrors.RecognizerInvalid, ContextErrors.RecognizerOverCap }.Select(e => e.Code), StringComparer.Ordinal);
+        Assert.DoesNotContain(ContextErrors.All, e => string.Equals(e.Code, "SND-CONTEXT-132", StringComparison.Ordinal));
+        Assert.All([ContextErrors.RecognizerInvalid, ContextErrors.RecognizerOverCap], e => Assert.Equal(ErrorKind.Invalid, e.Kind));
+    }
 }

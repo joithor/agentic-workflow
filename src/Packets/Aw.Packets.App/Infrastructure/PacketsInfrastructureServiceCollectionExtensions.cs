@@ -22,6 +22,7 @@ internal static class PacketsInfrastructureServiceCollectionExtensions
             .AddSingleton<IPacketSource>(static sp => new FileSystemPacketSource(sp.GetRequiredService<JsonSerializerOptions>()))
             .AddSingleton<IScopingPacketSource>(static _ => new FileSystemScopingPacketSource())
             .AddSingleton<ILinePacketSource>(static _ => new FileSystemLinePacketSource())
+            .AddSingleton<ISizesSource>(static sp => new FileSystemSizesSource(sp.GetRequiredService<JsonSerializerOptions>()))
             .AddSingleton<IRepoSnapshot>(static _ => new GitRepoSnapshot(GitTimeout))
             .AddSingleton<IFreezeLog>(static sp => new FileFreezeLog(sp.GetRequiredService<PacketsSettings>(), sp.GetRequiredService<JsonSerializerOptions>()));
 }

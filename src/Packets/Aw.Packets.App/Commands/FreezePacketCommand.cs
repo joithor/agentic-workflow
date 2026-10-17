@@ -12,13 +12,13 @@ internal static class FreezePacketCommand
 
     internal static async Task<int> Run(IReadOnlyList<string> args, IServiceProvider services, JsonSerializerOptions json)
     {
-        if (PacketArguments.Parse(args) is not { } arguments)
+        if (PacketArguments.Parse(args, takesBy: true) is not { } arguments)
         {
-            return CommandOutput.Usage($"{Name} {PacketArguments.Shape}");
+            return CommandOutput.Usage($"{Name} {PacketArguments.FreezeShape}");
         }
 
         var service = services.GetRequiredService<IService<FreezePacketRequest, FreezePacketResponse>>();
-        var result = await service.Handle(new FreezePacketRequest(arguments.PacketDirectory, arguments.RepoDirectory), CancellationToken.None)
+        var result = await service.Handle(new FreezePacketRequest(arguments.PacketDirectory, arguments.RepoDirectory, arguments.By), CancellationToken.None)
             .ConfigureAwait(false);
         if (result.IsError)
         {
@@ -34,6 +34,7 @@ internal static class FreezePacketCommand
         Console.Out.WriteLine(frozen.Frozen
             ? $"aw-packets freeze: packet {frozen.Packet.Value} — {(frozen.AlreadyFrozen ? "already frozen" : "frozen")} {frozen.Hash?.Value} (packets/{frozen.Location})"
             : $"aw-packets freeze: packet {frozen.Packet.Value} — not frozen: {CommandOutput.Summary(frozen.Checks)}");
+        CommandOutput.AlreadyFrozenNote(frozen.AlreadyFrozenBy);
         if (!frozen.Frozen)
         {
             CommandOutput.Checks(frozen.Checks);

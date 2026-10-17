@@ -33,6 +33,13 @@
       ],
       "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64})$"
     },
+    "by": {
+      "enum": [
+        "machine",
+        "owner",
+        null
+      ]
+    },
     "frozenAt": true,
     "files": {
       "type": "array",

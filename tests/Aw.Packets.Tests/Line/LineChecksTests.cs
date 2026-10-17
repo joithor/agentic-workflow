@@ -17,7 +17,7 @@ public sealed class LineChecksTests
             new InMemoryLinePacketSource().With("pkt", files),
             new InMemoryRepoSnapshot().With(sha ?? PacketBuilder.BaseSha, PacketBuilder.BaseFiles),
             PacketFiles.Json);
-        var inspection = await inspector.Inspect(kind, "pkt", "repo", CancellationToken.None);
+        var inspection = await inspector.Inspect(kind, "pkt", "repo", sizes: null, CancellationToken.None);
         return inspection.Value.Checks;
     }
 

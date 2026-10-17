@@ -3,6 +3,7 @@ using Aw.Kernel.Telemetry;
 using Aw.Packets.App.Features;
 using Aw.Packets.App.Infrastructure;
 using Aw.Packets.Core;
+using Aw.Packets.Core.Hashing;
 using Aw.Packets.Core.Kinds.Line;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -18,6 +19,7 @@ internal static class Composition
             .AddKernelTelemetry(TelemetryOptions.FromEnvironment("aw-packets", environment, clock))   // JSON lines on stderr (AW_LOG_LEVEL); exports off
             .AddSingleton(AwJson.CreateOptions(PacketsJsonContext.Default))   // the one Kernel JSON profile: output and state files
             .AddPacketsCore()
+            .AddScoped<PacketHasher>()   // the one canonicalization, shared by the hash and verify slices
             .AddLinePacketKinds()
             .AddPacketsFeatures()
             .AddPacketsInfrastructure(environment);
