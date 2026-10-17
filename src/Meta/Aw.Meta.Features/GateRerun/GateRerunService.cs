@@ -47,7 +47,7 @@ internal sealed class GateRerunService(IMetaConfig config, IGateStore gates, Gat
 
         var run = target.Value.Gate.Run;
         var stored = await gates.Classify(request.Pr, run, request.Step, new TestVerdict(request.Test, judged.Value.Verdict), cancellationToken).ConfigureAwait(false);
-        return stored.IsError ? stored.Error : new GateRerunResponse(request.Pr, run, request.Step, request.Test, judged.Value.Verdict, judged.Value.Reason);
+        return stored.IsError ? stored.Error : new GateRerunResponse(request.Pr, run, request.Step, request.Test, judged.Value.Verdict, judged.Value.Reason) { AloneLog = judged.Value.AloneLog, MainLog = judged.Value.MainLog };
     }
 
     private Result<RerunTarget> Resolve(GateRerunRequest request, TeamConfig team, GateRecord? gate)
@@ -81,16 +81,43 @@ internal sealed class GateRerunService(IMetaConfig config, IGateStore gates, Gat
 
     private async ValueTask<Result<Judgement>> Judge(TeamConfig team, RerunTarget target, GateRerunRequest request, CancellationToken cancellationToken)
     {
-        var alone = await reruns.Run(target.Command, workspace.TreePath(request.Pr), request.Test, filterMustMatch: true, cancellationToken).ConfigureAwait(false);
+        var aloneLog = workspace.RerunLogPath(request.Pr, target.Gate.Run, request.Step, request.Test, "alone");
+        var held = await SameTree(request.Pr, target.Gate).ConfigureAwait(false);
+        if (held.IsError)
+        {
+            return held.Error;
+        }
+
+        var alone = await reruns.Run(new RerunJob(target.Command, workspace.TreePath(request.Pr), request.Test, FilterMustMatch: true, aloneLog), cancellationToken).ConfigureAwait(false);
         return alone.IsError || alone.Value.Passed
-            ? alone.IsError ? alone.Error : new Judgement(FlakeVerdict.Flake, "passes alone on the gate tree")
+            ? alone.IsError ? alone.Error : new Judgement(FlakeVerdict.Flake, "passes alone on the gate tree", aloneLog)
             : await AgainstMain(team, target, request, alone.Value, cancellationToken).ConfigureAwait(false);
     }
 
+    // A rerun is evidence about the tree the gate tested. The worktree is reused by later gates of the pull request, so it may hold another.
+    private async ValueTask<Result<Unit>> SameTree(int pr, GateRecord gate)
+    {
+        if (gate.Tree is null)
+        {
+            return Results.Ok();   // a legacy or conflicted gate recorded no tree: nothing to compare with
+        }
+
+        var current = await workspace.CurrentTree(pr).ConfigureAwait(false);
+        return current.IsError
+            ? MetaErrors.Invalid.With(string.Create(CultureInfo.InvariantCulture, $"the gate tree of #{pr} can't be read ({current.Error.Message}); run aw-meta gate-run {pr} again"))
+            : current.Value == gate.Tree
+                ? Results.Ok()
+                : MetaErrors.Invalid.With(string.Create(CultureInfo.InvariantCulture, $"the gate tree of #{pr} holds {Short(current.Value)} now, not {Short(gate.Tree)}, the tree gate run {gate.Run} tested; run aw-meta gate-run {pr} again before classifying"));
+    }
+
+    private static string Short(string sha) => sha.Length > 12 ? sha[..12] : sha;
+
     private async ValueTask<Result<Judgement>> AgainstMain(TeamConfig team, RerunTarget target, GateRerunRequest request, RerunOutcome alone, CancellationToken cancellationToken)
     {
+        var aloneLog = workspace.RerunLogPath(request.Pr, target.Gate.Run, request.Step, request.Test, "alone");
         var main = await workspace.PrepareMain(team, request.Pr, target.Gate.Main).ConfigureAwait(false);
-        var onMain = main.IsError ? Results.Failure<RerunOutcome>(main.Error) : await reruns.Run(RerunExecutor.Building(target.Command), main.Value, request.Test, filterMustMatch: false, cancellationToken).ConfigureAwait(false);
+        var mainLog = workspace.RerunLogPath(request.Pr, target.Gate.Run, request.Step, request.Test, "main");
+        var onMain = main.IsError ? Results.Failure<RerunOutcome>(main.Error) : await reruns.Run(new RerunJob(RerunExecutor.Building(target.Command), main.Value, request.Test, FilterMustMatch: false, mainLog), cancellationToken).ConfigureAwait(false);
         var gateLog = await logs.Tail(target.Step.Log, LogCharacters, cancellationToken).ConfigureAwait(false);
         if (onMain.IsError)
         {
@@ -100,11 +127,17 @@ internal sealed class GateRerunService(IMetaConfig config, IGateStore gates, Gat
         var verdict = FlakeRule.Classify(alone, onMain.Value, FailureExcerpt.For(gateLog.IsSuccess ? gateLog.Value : string.Empty, request.Test));
         if (verdict == FlakeVerdict.Real && Known(team, request.Test) is { } known)
         {
-            return new Judgement(FlakeVerdict.Flake, $"known flake ({known}); it also fails alone");
+            return new Judgement(FlakeVerdict.Flake, $"known flake ({known}); it also fails alone (output: {aloneLog})", aloneLog, mainLog);
         }
 
-        return new Judgement(verdict, verdict == FlakeVerdict.Flake ? "fails alone the way it fails on main" : onMain.Value.Absent ? "fails alone; the test is not on main" : onMain.Value.Passed ? "fails alone and passes on main" : "fails alone, and not the way it fails on main");
+        return new Judgement(verdict, Reason(verdict, onMain.Value) + $" (alone: {aloneLog}; main: {mainLog})", aloneLog, mainLog);
     }
+
+    private static string Reason(FlakeVerdict verdict, RerunOutcome onMain) =>
+        verdict == FlakeVerdict.Flake ? "fails alone the way it fails on main"
+        : onMain.Absent ? "fails alone; the test is not on main"
+        : onMain.Passed ? "fails alone and passes on main"
+        : "fails alone, and not the way it fails on main";
 
     private static string? Known(TeamConfig team, string test) =>
         team.KnownFlakes.FirstOrDefault(flake => TestNames.Matches(flake, test));
