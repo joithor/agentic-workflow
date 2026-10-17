@@ -1,3 +1,5 @@
+using Aw.Meta.Core.Gate;
+
 namespace Aw.Meta.Infrastructure.Processes;
 
 /// <summary>
@@ -6,12 +8,8 @@ namespace Aw.Meta.Infrastructure.Processes;
 /// </summary>
 internal sealed class Sandbox : IDisposable
 {
-    // The hook and provider overrides the install helpers honour: a caller's must not steer a suite at real files.
-    internal static readonly string[] Unset =
-    [
-        "CLAUDE_SETTINGS_FILE", "CLAUDE_HOOKS_DIR", "CLAUDE_DIR", "CODEX_HOOKS_FILE", "CODEX_HOME", "CURSOR_HOOKS_FILE", "AW_HOOKS_DIR",
-        "AW_HOOK_ADAPTER_FLAGS", "AW_META_CONFIG", "AW_SINDRI_HOME", "CLAUDE_LOCAL_BIN", "TMUX",
-    ];
+    // What bash-tests.sh strips, defined once in GatePriority.
+    internal static IReadOnlyList<string> Unset => GatePriority.SuiteUnset;
 
     private readonly DirectoryInfo _root;
 

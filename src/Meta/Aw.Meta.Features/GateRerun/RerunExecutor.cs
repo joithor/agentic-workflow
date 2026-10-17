@@ -21,15 +21,7 @@ internal sealed class RerunExecutor(ICommandRunner runner, MetaPaths paths)
     internal async ValueTask<Result<RerunOutcome>> Run(RerunJob job, CancellationToken cancellationToken)
     {
         var (argv, tree, test, filterMustMatch, log) = job;
-        // A dotnet rerun needs the real home (NuGet, the SDK's state); any other command is a suite, which runs as bash-tests.sh runs it.
-        var request = new CommandRequest(argv, _limit)
-        {
-            Cwd = tree,
-            Env = GatePriority.Environment,
-            UnsetEnv = GatePriority.Scrubbed,
-            Isolated = !argv.Contains("dotnet", StringComparer.Ordinal),
-            LogFile = log,
-        };
+        var request = Request(argv, tree, log);
         var ran = await runner.Run(request, cancellationToken).ConfigureAwait(false);
         if (ran.IsError)
         {
@@ -50,6 +42,18 @@ internal sealed class RerunExecutor(ICommandRunner runner, MetaPaths paths)
             ? new RerunOutcome(Passed: true)
             : new RerunOutcome(Passed: false, result.TimedOut ? "timed out" : FailureExcerpt.For(output, test));
     }
+
+    // A dotnet rerun needs the real home (NuGet, the SDK's state); any other command is a suite, which runs as bash-tests.sh runs it.
+    // The heavy wrapper keeps the real state dir (its locks) and DOTNET_ROOT: only the command behind it is isolated.
+    private CommandRequest Request(IReadOnlyList<string> argv, string tree, string log) => new(argv, _limit)
+    {
+        Cwd = tree,
+        Env = GatePriority.Environment,
+        UnsetEnv = GatePriority.Scrubbed,
+        Isolated = !argv.Contains("dotnet", StringComparer.Ordinal),
+        IsolatedFrom = paths.Heavy is { } heavy && argv.Count > 0 && argv[0] == heavy ? 1 : 0,
+        LogFile = log,
+    };
 
     /// <summary>The same command without --no-build, for a tree nobody built.</summary>
     internal static IReadOnlyList<string> Building(IReadOnlyList<string> argv) => [.. argv.Where(word => word != "--no-build")];

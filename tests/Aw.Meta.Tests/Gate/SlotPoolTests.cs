@@ -19,7 +19,8 @@ public sealed class SlotPoolTests
             }
         }).ToList();
 
-        await Task.Delay(TimeSpan.FromMilliseconds(100), TestContext.Current.CancellationToken);
+        // Acquire registers its waiter synchronously before it first awaits, so all four are queued by now.
+        Assert.All(waiting, task => Assert.False(task.IsCompleted));
         held.Dispose();
         await Task.WhenAll(waiting);
 
@@ -34,8 +35,7 @@ public sealed class SlotPoolTests
         var second = await pool.Acquire(2, 0, TestContext.Current.CancellationToken);
 
         var third = pool.Acquire(3, 0, TestContext.Current.CancellationToken).AsTask();
-        await Task.Delay(TimeSpan.FromMilliseconds(50), TestContext.Current.CancellationToken);
-        Assert.False(third.IsCompleted);
+        Assert.False(third.IsCompleted);   // queued synchronously: the pool is full
 
         first.Dispose();
         first.Dispose();

@@ -116,6 +116,40 @@ public sealed class QueueGateTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_stacked_head_that_conflicts_with_main_itself_is_blamed_on_main_not_the_stack()
+    {
+        await SaveGate(parallel: null, new StepConfig("check", ["scripts/check.sh"]));
+        ScriptPr(11, 12);
+        _ = _world.Runner
+            .When("merge --quiet --no-edit head12", exitCode: 1)
+            .When("diff --name-only --diff-filter=U", "src/a.cs\n")
+            .When("merge-tree --write-tree mainsha head12", exitCode: 1);
+        ScriptGit();
+
+        var response = await Run(11, 12);
+
+        Assert.Equal(("conflicts with main at mainsha", TrainState.Dropped), (response.Entries.Single(e => e.Pr == 12).Note, response.Entries.Single(e => e.Pr == 12).State));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_git_failure_while_finding_the_conflict_is_an_error_not_a_conflict()
+    {
+        await SaveGate(parallel: null, new StepConfig("check", ["scripts/check.sh"]));
+        ScriptPr(11, 12);
+        _ = _world.Runner
+            .When("merge --quiet --no-edit head12", exitCode: 1)
+            .When("diff --name-only --diff-filter=U", "src/a.cs\n")
+            .When("merge-tree --write-tree mainsha head12", exitCode: 128);
+        ScriptGit();
+
+        var result = await Service().Handle(new QueueGateRequest([11, 12], Max: null), TestContext.Current.CancellationToken);
+
+        var entry = result.Value.Entries.Single(e => e.Pr == 12);
+        Assert.Equal(TrainState.Error, entry.State);
+        Assert.Contains("merge-tree", entry.Note, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_head_that_conflicts_with_main_itself_says_so()
     {
         await SaveGate(parallel: null, new StepConfig("check", ["scripts/check.sh"]));

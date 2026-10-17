@@ -82,11 +82,35 @@ internal sealed class GateRerunService(IMetaConfig config, IGateStore gates, Gat
     private async ValueTask<Result<Judgement>> Judge(TeamConfig team, RerunTarget target, GateRerunRequest request, CancellationToken cancellationToken)
     {
         var aloneLog = workspace.RerunLogPath(request.Pr, target.Gate.Run, request.Step, request.Test, "alone");
+        var held = await SameTree(request.Pr, target.Gate).ConfigureAwait(false);
+        if (held.IsError)
+        {
+            return held.Error;
+        }
+
         var alone = await reruns.Run(new RerunJob(target.Command, workspace.TreePath(request.Pr), request.Test, FilterMustMatch: true, aloneLog), cancellationToken).ConfigureAwait(false);
         return alone.IsError || alone.Value.Passed
             ? alone.IsError ? alone.Error : new Judgement(FlakeVerdict.Flake, "passes alone on the gate tree", aloneLog)
             : await AgainstMain(team, target, request, alone.Value, cancellationToken).ConfigureAwait(false);
     }
+
+    // A rerun is evidence about the tree the gate tested. The worktree is reused by later gates of the pull request, so it may hold another.
+    private async ValueTask<Result<Unit>> SameTree(int pr, GateRecord gate)
+    {
+        if (gate.Tree is null)
+        {
+            return Results.Ok();   // a legacy or conflicted gate recorded no tree: nothing to compare with
+        }
+
+        var current = await workspace.CurrentTree(pr).ConfigureAwait(false);
+        return current.IsError
+            ? MetaErrors.Invalid.With(string.Create(CultureInfo.InvariantCulture, $"the gate tree of #{pr} can't be read ({current.Error.Message}); run aw-meta gate-run {pr} again"))
+            : current.Value == gate.Tree
+                ? Results.Ok()
+                : MetaErrors.Invalid.With(string.Create(CultureInfo.InvariantCulture, $"the gate tree of #{pr} holds {Short(current.Value)} now, not {Short(gate.Tree)}, the tree gate run {gate.Run} tested; run aw-meta gate-run {pr} again before classifying"));
+    }
+
+    private static string Short(string sha) => sha.Length > 12 ? sha[..12] : sha;
 
     private async ValueTask<Result<Judgement>> AgainstMain(TeamConfig team, RerunTarget target, GateRerunRequest request, RerunOutcome alone, CancellationToken cancellationToken)
     {

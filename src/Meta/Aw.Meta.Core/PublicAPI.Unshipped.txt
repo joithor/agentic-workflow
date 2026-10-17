@@ -1881,3 +1881,9 @@ Aw.Meta.Core.Config.StepConfig.TermGraceSeconds.init -> void
 Aw.Meta.Core.Coordination.GateTree.Cancelling(System.Threading.CancellationToken cancellationToken) -> Aw.Meta.Core.Coordination.GateTree!
 Aw.Meta.Core.Coordination.RepoCommands.Cancelling(System.Threading.CancellationToken cancellationToken) -> Aw.Meta.Core.Coordination.RepoCommands!
 static Aw.Meta.Core.Gate.TrainText.MarkStale(string? board, System.Func<int, bool>! isRunning) -> string?
+static Aw.Meta.Core.Gate.GatePriority.HookOverrides.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Meta.Core.Gate.GatePriority.SuiteUnset.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Commands.CommandRequest.IsolatedFrom.get -> int
+Aw.Meta.Core.Commands.CommandRequest.IsolatedFrom.init -> void
+Aw.Meta.Core.Coordination.RepoCommands.Conflicts(string! repo, string! main, string! head) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+Aw.Meta.Core.Coordination.GateWorkspace.CurrentTree(int pr) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>

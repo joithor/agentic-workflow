@@ -65,6 +65,53 @@ public sealed class GateRerunTests
         _ = await _world.Config.Save(team with { Gate = team.Gate with { Scopes = scopes } }, CancellationToken.None);
     }
 
+    private async Task SaveRedGateWithTree(string tree)
+    {
+        await _world.ReadyWithGate();
+        _world.LogFiles.Put(UnitLog, "failed Spike.Eval_runs (23ms)\n");
+        var steps = new List<GateStep> { new("unit", GateVerdict.Fail, UnitLog) };
+        _ = await _world.Gates.Save(new GateRecord(190, "headsha", "mainsha", ["dotnet"], steps, GateVerdict.Fail, A.At(5)) { Tree = tree }, CancellationToken.None);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_gate_tree_that_holds_another_tree_than_the_gate_tested_is_refused_without_running_anything()
+    {
+        await SaveRedGateWithTree("testedtree");
+        _ = _world.Runner.When("rev-parse HEAD^{tree}", "othertree\n");
+        Script(onGate: Pass(), onMain: Pass());
+
+        var result = await Service().Handle(new GateRerunRequest(190, "unit", "Eval_runs"), CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Contains("run aw-meta gate-run 190", result.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(_world.Runner.Requests, r => r.Argv.Contains("--filter-method", StringComparer.Ordinal));
+        Assert.Empty(await Reruns());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_gate_tree_that_holds_the_tested_tree_is_rerun()
+    {
+        await SaveRedGateWithTree("testedtree");
+        _ = _world.Runner.When("rev-parse HEAD^{tree}", "testedtree\n");
+        Script(onGate: Pass(), onMain: Pass());
+
+        Assert.Equal(FlakeVerdict.Flake, (await Rerun()).Verdict);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Isolation_starts_after_the_heavy_wrapper()
+    {
+        var argv = new[] { _world.Paths.Heavy!, "bash", "suite.sh" };
+        var executor = new RerunExecutor(_world.Runner, _world.Paths);
+        _ = _world.Runner.When("suite.sh");
+
+        _ = await executor.Run(new RerunJob(argv, "/t", "x", FilterMustMatch: false, "/log"), CancellationToken.None);
+
+        var request = _world.Runner.Requests.Single();
+        Assert.True(request.Isolated);
+        Assert.Equal(1, request.IsolatedFrom);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Every_rerun_on_the_gate_tree_and_on_main_carries_meta_priority()
     {

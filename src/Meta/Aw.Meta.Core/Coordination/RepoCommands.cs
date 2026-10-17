@@ -95,6 +95,25 @@ public sealed class RepoCommands(ICommandRunner runner, MetaPaths paths)
         return string.IsNullOrEmpty(first) ? null : first;
     }
 
+    /// <summary>Whether merging a head onto a main commit conflicts (merge-tree exits 1), as opposed to git failing (any other non-zero exit).</summary>
+    /// <param name="repo">The repo directory.</param>
+    /// <param name="main">The main commit.</param>
+    /// <param name="head">The head to merge onto it.</param>
+    /// <returns>True when it conflicts, false when it merges cleanly, an error when git could not tell.</returns>
+    public async ValueTask<Result<bool>> Conflicts(string repo, string main, string head)
+    {
+        var ran = await runner.Run(new CommandRequest(["git", "merge-tree", "--write-tree", main, head], _limit) { Cwd = repo }, CancellationToken.None).ConfigureAwait(false);
+        if (ran.IsError)
+        {
+            return ran.Error;
+        }
+
+        var result = ran.Value;
+        return result is { TimedOut: false, ExitCode: 0 or 1 }
+            ? result.ExitCode == 1
+            : MetaErrors.CommandFailed.With($"git merge-tree: {(result.TimedOut ? "timed out" : FirstLine(result.Stderr.Length > 0 ? result.Stderr : result.Stdout))}");
+    }
+
     /// <summary>The paths a range changes.</summary>
     /// <param name="repo">The repo directory.</param>
     /// <param name="range">A git range: "origin/main...abc" or "abc..def".</param>
