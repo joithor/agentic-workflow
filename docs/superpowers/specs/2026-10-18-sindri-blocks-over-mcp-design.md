@@ -401,11 +401,15 @@ them and never restates them.
     `git write-tree`; the agent's own index is untouched) and `dirty` (the tree differs from the commit's).
   - A callable block writes only build output under that worktree. It never commits, stages or edits a tracked
     file.
-  - **Serialized with the agent's own heavy jobs there.** A call holds a per-worktree lock,
-    `<git-dir>/sindri-call.lock` (a `flock`), for as long as it runs, as well as its heavy slot. BM-1 changes the
-    heavy wrapper (`~/.agentic-workflow/bin-r1b/heavy` and its tests) to take the same file around a job it runs
-    inside a git worktree that has one, so the agent's own build and a call never overlap in one folder. Time spent
-    waiting on either lock is slot wait (§A.1's timing rule, `waiting: heavy-lock`).
+  - **Overlap with the agent's own builds (provisional default).** A call holds a per-worktree lock,
+    `<git-dir>/sindri-call.lock` (a `flock`), for as long as it runs, as well as its heavy slot. A second call in
+    that folder therefore waits.
+    - The agent's own build doesn't take that lock in v1. The heavy wrapper lives on the box, outside the repo, so it
+      can't change through a reviewed PR.
+    - `list_tools` and every `running` answer say so in Sindri's own words: "a call is building in this folder; don't
+      build here until it ends".
+    - Making the wrapper take the same lock is a follow-up. It is done once the wrapper is versioned in the repo.
+    - Time spent waiting on either lock is slot wait (§A.1's timing rule, `waiting: heavy-lock`).
 - **Restarts (R1-13).** A single-attempt activity is not resumed. When the host restarts, the activity's heartbeat
   times out and it ends `failed` with reason `host-restart`. On startup, a sweep also:
   - ends every `waiting` or `running` row the workflow no longer owns that way;
@@ -587,7 +591,7 @@ Contract first, so the two lanes build in parallel.
 | Phase | Lane | Holds | Waits on | Docs it updates |
 |---|---|---|---|---|
 | **BM-0** | engine | The contract, red: `Callable`, `Description`, `ReadsCode` and the `ParameterSpec` fields (`EnumSource` among them); `tools:` with the RCP-TOOL-001..004 fixtures; `BlockContext` and `GateContext.Checkout`; `IBlockCallStore`, `IBlockCallLog`, the request and response records for `ListCallableBlocks` and `ExecuteBlockCall`, with stub services; the `*.tool-started` and `*.tool-called` records; the typed refusals | P8 (the agent runtime), DT-J2 (`MaxDuration`), the owner's C2 answer (the tool names) | none |
-| **BM-1** | engine | The validator rows; the catalog test; `gate.tests.green`, `checks.json` read from the base commit, `schemas/checks.schema.json`, a `sindri doctor` check that validates every registered repo's `checks.json`, and the `deps.yaml` file edge for it (`node scripts/check-deps.mjs`); `list_tools` with its enum sources; the `block_calls` and `block_call_bodies` migration; the `block-call` Update, `MarkCallStarted` and `RunBlockCall` (the runner); the commit, tree and dirty record; the per-worktree lock and its heavy-wrapper change; the restart sweep (rows and scratch worktrees); the environment base and denylist; the events, bodies and the 30-day sweep; the budget and concurrency keys; `calls:` validation; `BlockCallRunner` for plain calls; `workflow.review-loop`'s `fix` `tools:`. Tests: unit (filtering, refusals, schema building, enum sources, path confinement, the denylist, `ref` resolution, the filter as one argv value); integration (an Update through the time-skipping server, single flight, cancel on run end, takeover per C5, the restart sweep, a Step call in a dirty worktree, a plain call in a scratch worktree) | BM-0 | `docs/csharp/sindri-workflow.md` (`tools:`, RCP-TOOL rows, a "Block calls" section), `docs/csharp/sindri-profile.md` (the keys), `docs/csharp/sindri.md` (the events, the tables, the doctor check), a `checks.json` reference in `docs/csharp/` |
+| **BM-1** | engine | The validator rows; the catalog test; `gate.tests.green`, `checks.json` read from the base commit, `schemas/checks.schema.json`, a `sindri doctor` check that validates every registered repo's `checks.json`, and the `deps.yaml` file edge for it (`node scripts/check-deps.mjs`); `list_tools` with its enum sources; the `block_calls` and `block_call_bodies` migration; the `block-call` Update, `MarkCallStarted` and `RunBlockCall` (the runner); the commit, tree and dirty record; the per-worktree lock (calls only); the restart sweep (rows and scratch worktrees); the environment base and denylist; the events, bodies and the 30-day sweep; the budget and concurrency keys; `calls:` validation; `BlockCallRunner` for plain calls; `workflow.review-loop`'s `fix` `tools:`. Tests: unit (filtering, refusals, schema building, enum sources, path confinement, the denylist, `ref` resolution, the filter as one argv value); integration (an Update through the time-skipping server, single flight, cancel on run end, takeover per C5, the restart sweep, a Step call in a dirty worktree, a plain call in a scratch worktree) | BM-0 | `docs/csharp/sindri-workflow.md` (`tools:`, RCP-TOOL rows, a "Block calls" section), `docs/csharp/sindri-profile.md` (the keys), `docs/csharp/sindri.md` (the events, the tables, the doctor check), a `checks.json` reference in `docs/csharp/` |
 | **BA-1** | api | §A: the two MCP tools, the routes, `X-Sindri-Run` and the launcher's per-launch MCP form change, schema validation, the stored-call lookup and the 409 check, the refusal recording, the catalog rows, the goldens. Built against BM-0's records and stubs, so it starts the day BM-0 lands | BM-0 | §A's list |
 | **BA-2** | api, with engine | §A.5's proof end to end, with a real launched Step session and a plain session | BM-1, BA-1 | the proof log |
 | **BU-1** | ui | The calls on a Step (cited, uncited, waiting, running), the plain calls (§A.4), and the app steps of §A.5's proof | BM-1, BA-1 | `docs/csharp/sindri-ui.md` |
@@ -595,6 +599,6 @@ Contract first, so the two lanes build in parallel.
 BM-1 and BA-1 run at the same time, each lane with its own builders. BA-2 and BU-1 need both, and run at the same
 time as each other.
 
-**Follow-ups, not in v1:** reusing a call for a transition's gate on an exact match (R1-12); a recipe-level default
+**Follow-ups, not in v1:** the heavy wrapper taking the per-worktree lock for the agent's own builds, once the wrapper is versioned in the repo (provisional default, reversible); reusing a call for a transition's gate on an exact match (R1-12); a recipe-level default
 `tools:` (R1-31); per-session attribution for Sindri-launched sessions (`X-Sindri-Launch`); a heavy-lock priority for
 calls below the transition gates (a heavy-wrapper change).
