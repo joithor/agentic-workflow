@@ -204,6 +204,23 @@ test_the_sindri_home_and_local_bin_overrides_are_scrubbed_per_suite() {
   echo "PASS: test_the_sindri_home_and_local_bin_overrides_are_scrubbed_per_suite"
 }
 
+test_the_lane_environment_is_stripped_per_suite() {
+  local d m out rc=0 v seen
+  d="$(mktemp -d)"; m="$(mktemp -d)"
+  git -C "$d" init -q; mkdir -p "$d/t"
+  # Every variable a lane or meta pane exports; a suite must see none of them, and still see what it legitimately needs.
+  printf '%s\n' 'for v in AW_META_TEAM AW_META_DIR AW_META_LANE AW_META_LANE_PID AW_META_LANE_AGENT AW_META_LANE_PROC AW_SINDRI_CHILD AW_SINDRI_LAUNCH AW_LAUNCHER_CONFIG TMUX TMUX_PANE; do eval "[ -z \"\${$v+x}\" ]" || echo "leaked $v" >> "$MARK/seen"; done
+[ -n "${GIT_CONFIG_GLOBAL:-}" ] && [ -n "${PATH:-}" ] || echo "lost a needed variable" >> "$MARK/seen"' > "$d/t/a.test.sh"
+  git -C "$d" add t
+  out="$(MARK="$m" GIT_CONFIG_GLOBAL=/caller/gitconfig AW_META_TEAM=t AW_META_DIR=/x AW_META_LANE=l AW_META_LANE_PID=1 AW_META_LANE_AGENT=a AW_META_LANE_PROC=p \
+    AW_SINDRI_CHILD=1 AW_SINDRI_LAUNCH=x AW_LAUNCHER_CONFIG=/caller/launcher.json TMUX=/tmp/fake,1,0 TMUX_PANE=%1 BASH_TESTS_ROOT="$d" BASH_TESTS_JOBS=1 BASH_TESTS_SERIAL="" BASH_TESTS_EXCLUDED="" bash "$RUNNER" 2>&1)" || rc=$?
+  [ "$rc" -eq 0 ] || fail "fixture run exited $rc: $out"
+  seen="$(cat "$m/seen" 2>/dev/null || true)"
+  [ -z "$seen" ] || fail "a suite saw the lane environment: $seen"
+  rm -r "$d" "$m"
+  echo "PASS: test_the_lane_environment_is_stripped_per_suite"
+}
+
 test_bad_configuration_is_a_tool_error() {
   local d m rc
   d="$(mktemp -d)"; m="$(mktemp -d)"
@@ -232,4 +249,5 @@ test_a_failing_suite_fails_the_run_and_shows_its_log
 test_every_suite_gets_its_own_fresh_home_and_state_dir_whatever_the_caller_exported
 test_a_suite_whose_sandbox_cannot_be_made_fails_instead_of_running
 test_the_sindri_home_and_local_bin_overrides_are_scrubbed_per_suite
+test_the_lane_environment_is_stripped_per_suite
 test_bad_configuration_is_a_tool_error

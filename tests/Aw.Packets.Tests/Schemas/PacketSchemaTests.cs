@@ -9,6 +9,7 @@ using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Packets.App;
 using Aw.Packets.Core.Ids;
+using Aw.Packets.Core.Kinds.Scoping;
 using Aw.Packets.Core.Model;
 using Aw.Packets.Core.Values;
 
@@ -21,9 +22,11 @@ namespace Aw.Packets.Tests.Schemas;
 /// </summary>
 public sealed class PacketSchemaTests
 {
+    private const string LensItemPattern = "^L-(code|product|related|history)-[1-9][0-9]*$";
+
     private static readonly JsonSerializerOptions _json = AwJson.CreateOptions(PacketsJsonContext.Default);
 
-    public static TheoryData<string> Files => ["packet", "decisions", "out-of-scope", "tasks", "freeze-record"];
+    public static TheoryData<string> Files => ["packet", "decisions", "out-of-scope", "tasks", "freeze-record", "lenses"];
 
     [Theory, Trait("Lane", "integration")]   // reads (and in update mode writes) schemas/packets/
     [MemberData(nameof(Files))]
@@ -35,6 +38,7 @@ public sealed class PacketSchemaTests
             "decisions" => typeof(DecisionLog),
             "out-of-scope" => typeof(OutOfScope),
             "tasks" => typeof(TaskPlan),
+            "lenses" => typeof(LensesFile),
             _ => typeof(FreezeRecord),
         };
         var actual = Render(Generate(type, name));
@@ -56,7 +60,7 @@ public sealed class PacketSchemaTests
         var schema = JsonSchemaExporter.GetJsonSchemaAsNode(_json, type, new JsonSchemaExporterOptions
         {
             TreatNullObliviousAsNonNullable = true,
-            TransformSchemaNode = static (context, node) => Transform(context.TypeInfo.Type, node),
+            TransformSchemaNode = static (context, node) => Ranges(context.PropertyInfo, Transform(context.TypeInfo.Type, node)),
         });
         var root = new JsonObject
         {
@@ -71,6 +75,35 @@ public sealed class PacketSchemaTests
 
         return root;
     }
+
+    // lenses.json's ranges and id pattern (PKT-SCP-004), which the exporter can't see because ScopingChecks states them in code.
+    private static JsonNode Ranges(System.Text.Json.Serialization.Metadata.JsonPropertyInfo? property, JsonNode node)
+    {
+        if (property is null || node is not JsonObject schema)
+        {
+            return node;
+        }
+
+        var key = property.DeclaringType.Name + "." + property.Name;
+        if (_lensRanges.TryGetValue(key, out var apply))
+        {
+            apply(schema);
+        }
+
+        return node;
+    }
+
+    private static readonly Dictionary<string, Action<JsonObject>> _lensRanges = new(StringComparer.Ordinal)
+    {
+        ["LensEntry.depth"] = static s => { s["minimum"] = 0; s["maximum"] = ScopingChecks.MaxReach; },
+        ["LensEntry.hops"] = static s => s["uniqueItems"] = true,
+        ["LensEntry.mapVersion"] = static s => s["minLength"] = 1,
+        ["LensEntry.foundCount"] = static s => s["minimum"] = 0,
+        ["LensEntry.truncated"] = static s => s["uniqueItems"] = true,
+        ["LensesFile.schemaVersion"] = static s => s["const"] = 1,
+        ["LensNode.lensItem"] = static s => s["pattern"] = LensItemPattern,
+        ["LensFound.lensItem"] = static s => s["pattern"] = LensItemPattern,
+    };
 
     // A typed id has a user-code converter, so the exporter can't see its shape ('true'): describe it, and give a list
     // of ids its item schema, which the exporter leaves out when the item schema is 'true'.
