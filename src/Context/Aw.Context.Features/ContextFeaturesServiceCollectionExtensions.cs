@@ -95,6 +95,8 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<ProposeFromScopeRequest, ProposeResult>, ProposeFromScopeService>()
         .AddScoped<IService<GetProposalsRequest, ProposalsView>, GetProposalsService>()
         .AddScoped<IService<GetLensesRequest, LensesView>, GetLensesService>()
+        .AddScoped<IService<GetLensesSetRequest, LensesSetView>, GetLensesSetService>()
+        .AddScoped<LensBasisReader>()
         .AddScoped<IService<GetFileMapRequest, FileMapView>, GetFileMapService>()
         .AddScoped<MapReader>()
         .AddScoped<MapAdmin>()

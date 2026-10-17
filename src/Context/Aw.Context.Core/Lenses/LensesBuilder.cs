@@ -35,7 +35,10 @@ public static class LensesBuilder
         var searched = LensSearchedBuilder.For(basis, [scope.Anchor.Key.Value], clamped, bands);
         var anchorTrust = TrustPolicy.ForNode(scope.Anchor, LensScope.Confirmed(scope.Anchor.Provenance));
         return new LensesView(1, new LensAnchor(scope.Anchor.Key, scope.Anchor.Label, scope.Anchor.Key.Kind, anchorTrust), basis.Map, basis.Draft, clamped, basis.AsOf,
-            bands, LensEdges.Across(graph, items), LensConflicts.Of(scope, checkedPairs ?? []), coverage, searched, [], new Dictionary<string, Results.Citation>(StringComparer.Ordinal));
+            bands, LensEdges.Across(graph, items), LensConflicts.Of(scope, checkedPairs ?? []), coverage, searched, [], new Dictionary<string, Results.Citation>(StringComparer.Ordinal))
+        {
+            MapCommit = basis.MapCommit,
+        };
     }
 
     /// <summary>Builds the schema 2 view over several anchors (scoping spec C1): the union of their bands.</summary>

@@ -4916,3 +4916,4 @@ Aw.Context.Core.Lenses.LensesSetView.MapCommit.init -> void
 Aw.Context.Core.Lenses.LensesView.MapCommit.get -> string?
 Aw.Context.Core.Lenses.LensesView.MapCommit.init -> void
 Aw.Context.Core.Lenses.SearchedState.Degraded = 3 -> Aw.Context.Core.Lenses.SearchedState
+Aw.Context.Core.Map.MapReader.ReadAt(Aw.Context.Core.Engine.ContextScope! scope, Aw.Context.Core.Map.MapRead read, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>

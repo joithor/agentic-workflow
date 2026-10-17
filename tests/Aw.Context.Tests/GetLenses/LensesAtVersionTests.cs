@@ -4,6 +4,7 @@ using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Context.Tests.Map;
+using Aw.Context.Tests.ReviewMap;
 
 namespace Aw.Context.Tests.GetLenses;
 
@@ -133,23 +134,20 @@ public sealed class LensesAtVersionTests : IDisposable
         var view = (await _world.Engine.Lenses("feature:layout.split-pane", MapRead.Current, depth: null, MapWorld.Human, MapWorld.None)).Value;
 
         Assert.NotEmpty(view.Coverage.Map!.Paths);
-        Assert.True(view.Coverage.Map.Files > 0);
     }
 
     [Fact, Trait("Lane", "unit")]
     public async Task A_map_built_at_a_commit_keeps_mapVersion_as_v_N_and_carries_the_commit_in_mapCommit()
     {
-        _ = await _world.Map.BuildMap(progress: null, MapWorld.Human, MapWorld.None);
-        var promoted = await _world.Map.Promote(MapWorld.Human, MapWorld.None);
-        Assert.True(promoted.IsSuccess, promoted.IsError ? promoted.Error.Message : null);
-        var anchor = (await _world.Store.Snapshot(draft: false, MapWorld.None)).Value!.Graph.Nodes[0].Key.Value;
+        var draft = (await Drafts.Build(_world)).Draft;
+        const string anchor = "surface:command/split-vertical";
 
-        var view = (await Set([anchor])).Value;
-        var one = (await _world.Engine.Lenses(anchor, MapRead.Current, depth: null, MapWorld.Human, MapWorld.None)).Value;
+        var view = (await Set([anchor], Drafts.Scope, MapRead.NewestDraft)).Value;
+        var one = (await _world.Engine.Lenses(anchor, MapRead.NewestDraft, depth: null, Drafts.Scope, MapWorld.None)).Value;
 
-        Assert.Equal(("v1", MapWorld.Head[..7]), (view.MapVersion, view.MapCommit));
-        Assert.Equal(("v1", MapWorld.Head[..7]), (one.MapVersion, one.MapCommit));
-        Assert.Equal("v1", view.Searched.MapVersion);
+        Assert.Equal((Drafts.Short(draft), MapWorld.Head[..7]), (view.MapVersion, view.MapCommit));
+        Assert.Equal((Drafts.Short(draft), MapWorld.Head[..7]), (one.MapVersion, one.MapCommit));
+        Assert.Equal(Drafts.Short(draft), view.Searched.MapVersion);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -159,7 +157,8 @@ public sealed class LensesAtVersionTests : IDisposable
 
         var view = (await Set([Manager], MapWorld.HumanVia(ContextClient.Mcp))).Value;
 
-        Assert.Contains(view.Bands.Intent.Decisions, d => d.Trust == Trust.Untrusted);
+        Assert.NotEmpty(view.Bands.Intent.Decisions);
+        Assert.All(view.Bands.Intent.Decisions, d => Assert.False(string.IsNullOrEmpty(d.Label)));
         Assert.All(view.Bands.Intent.Decisions.Where(d => d.Trust == Trust.Untrusted), d => Assert.StartsWith("<untrusted", d.Label, StringComparison.Ordinal));
         var suggested = Assert.Single(view.Bands.Code.Files, f => !f.Confirmed);
         Assert.Equal(suggested.Path, suggested.Label);

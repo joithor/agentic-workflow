@@ -89,7 +89,7 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
         var (settings, scrubbers) = context;
         var query = request.Query;
         var depth = query.Depth ?? settings.CascadeDepth;
-        var map = await graphs.Read(request.Scope, query.Draft, cancellationToken).ConfigureAwait(false);
+        var map = await graphs.Read(request.Scope, QueryReads.Of(query), cancellationToken).ConfigureAwait(false);
         if (query.Node is { } node)
         {
             var anchor = map.Bind(m => AnchorMatch.Resolve(m.Graph, node));
@@ -148,7 +148,7 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
     private static async ValueTask<Result<(GraphPart Graph, IReadOnlyList<string> Terms, ItemMiss? Miss)>> ItemAnchored(QueryContextRequest request, string item,
         (ContextSettings Settings, Scrubbers Scrubbers) context, IMapProvider graphs, CancellationToken cancellationToken)
     {
-        var map = await graphs.Read(request.Scope, request.Query.Draft, cancellationToken).ConfigureAwait(false);
+        var map = await graphs.Read(request.Scope, QueryReads.Of(request.Query), cancellationToken).ConfigureAwait(false);
         var unmapped = map.IsError && !request.Query.Draft && (string.Equals(map.Error.Code, ContextErrors.NoMap.Code, StringComparison.Ordinal) || string.Equals(map.Error.Code, ContextErrors.UnknownAnchor.Code, StringComparison.Ordinal));   // no map, or nothing of it this session's repo implements
         if (map.IsError && !unmapped)
         {
