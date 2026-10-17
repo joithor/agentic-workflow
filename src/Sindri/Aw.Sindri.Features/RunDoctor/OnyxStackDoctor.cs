@@ -43,7 +43,7 @@ internal sealed class OnyxStackDoctor(IOnyxWorkspace workspace, OnyxFacts facts,
             return Unreadable(containers.IsError ? containers.Error : platform.Error, facts.ProjectOf(state));
         }
 
-        return containers.Value.All(static c => c.State != "running")
+        return !containers.Value.Any(static c => ComposeContainer.IsLive(c.State))
             ? new DoctorCheck(Name, CheckState.Warn, "stopped: no Onyx container is running", "sindri onyx up")
             : Failure(state, containers.Value, platform.Value) ?? Ok(containers.Value);
     }
@@ -58,7 +58,8 @@ internal sealed class OnyxStackDoctor(IOnyxWorkspace workspace, OnyxFacts facts,
     {
         if (containers.FirstOrDefault(static c => c.State != "running" || c.Health == "unhealthy") is { } down)
         {
-            return Fail($"{down.Service} is {down.State}{(down.Health is null ? "" : $" ({down.Health})")}", $"docker compose -p {facts.ProjectOf(state).Name} logs " + down.Service + ", then sindri onyx up");
+            var crashLooping = down.State == "restarting" ? " (crash-looping)" : "";
+            return Fail($"{down.Service} is {down.State}{crashLooping}{(down.Health is null ? "" : $" ({down.Health})")}", $"docker compose -p {facts.ProjectOf(state).Name} logs " + down.Service + ", then sindri onyx up");
         }
 
         foreach (var container in containers)

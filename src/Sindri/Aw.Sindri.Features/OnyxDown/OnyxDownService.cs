@@ -6,7 +6,7 @@ using Aw.Sindri.Core.Onyx;
 namespace Aw.Sindri.Features.OnyxDown;
 
 /// <summary>
-/// Stops the project's containers (`docker compose stop`: it removes no container, volume or image, and Sindri's files stay). Stops whatever containers `docker compose ps` shows running for the project (also after a start that failed, or with an unreadable state.json) and does nothing
+/// Stops the project's containers (`docker compose stop`: it removes no container, volume or image, and Sindri's files stay). Stops whatever containers `docker compose ps` shows live (running, restarting or paused) for the project (also after a start that failed, or with an unreadable state.json) and does nothing
 /// when none runs or the fetched files were never laid down. Refuses a Docker that points at another machine (SND-ONYX-010), and takes the same lock as `onyx up`, so it never stops a stack that is being started.
 /// </summary>
 internal sealed class OnyxDownService(IOnyxWorkspace workspace, OnyxFacts facts, IContainerRuntime runtime) : IService<OnyxDownRequest, OnyxDownResponse>
@@ -49,7 +49,7 @@ internal sealed class OnyxDownService(IOnyxWorkspace workspace, OnyxFacts facts,
             return containers.Error;
         }
 
-        IReadOnlyList<string> running = [.. containers.Value.Where(static c => c.State == "running").Select(static c => c.Service).Order(StringComparer.Ordinal)];
+        IReadOnlyList<string> running = [.. containers.Value.Where(static c => ComposeContainer.IsLive(c.State)).Select(static c => c.Service).Order(StringComparer.Ordinal)];
         if (running.Count == 0)
         {
             return new OnyxDownResponse(WasRunning: false, []);

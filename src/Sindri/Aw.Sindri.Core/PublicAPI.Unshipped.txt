@@ -8081,6 +8081,7 @@ Aw.Sindri.Core.Onyx.ComposeContainer.Health.get -> string?
 Aw.Sindri.Core.Onyx.ComposeContainer.Health.init -> void
 Aw.Sindri.Core.Onyx.ComposeContainer.Image.get -> string!
 Aw.Sindri.Core.Onyx.ComposeContainer.Image.init -> void
+static Aw.Sindri.Core.Onyx.ComposeContainer.IsLive(string! state) -> bool
 Aw.Sindri.Core.Onyx.ComposeContainer.Publishers.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposePublisher!>!
 Aw.Sindri.Core.Onyx.ComposeContainer.Publishers.init -> void
 Aw.Sindri.Core.Onyx.ComposeContainer.Service.get -> string!
