@@ -22,13 +22,13 @@ internal static class StatusCases
         "desk-task", "parked-no-progress-child", "parked-budget", "escalated-gate", "taken-over", "done",
         "parked-rounds", "parked-needs-answer-step", "parked-needs-answer-wait", "parked-timeout", "parked-revoked",
         "parked-drift", "parked-no-runtime", "parked-rounds-with-drift", "cancelled", "escalated-child", "parked-mirrored-needs-answer",
-        "parked-budget-odd", "parked-mirrored-rounds", "parked-mirrored-timeout", "parked-mirrored-no-runtime", "parked-mirrored-budget",
+        "parked-budget-odd", "parked-budget-no-cap", "parked-mirrored-spec-conflict", "parked-mirrored-needs-answer-wait", "parked-mirrored-rounds", "parked-mirrored-timeout", "parked-mirrored-no-runtime", "parked-mirrored-budget",
     ];
 
     /// <summary>The cases whose suspension mirrors a child.</summary>
     public static IReadOnlyList<string> Mirrored { get; } =
     [
-        "parked-no-progress-child", "escalated-child", "parked-mirrored-needs-answer", "parked-mirrored-rounds", "parked-mirrored-timeout", "parked-mirrored-no-runtime", "parked-mirrored-budget",
+        "parked-no-progress-child", "escalated-child", "parked-mirrored-needs-answer", "parked-mirrored-spec-conflict", "parked-mirrored-needs-answer-wait", "parked-mirrored-rounds", "parked-mirrored-timeout", "parked-mirrored-no-runtime", "parked-mirrored-budget",
     ];
 
     public static InterpretedRecipe Recipe { get; } = new(
@@ -77,6 +77,9 @@ internal static class StatusCases
             Suspension = Suspended(ParkReason.NeedsAnswer, kind: null, "the child's step failed") with { Mirrors = EngineFixture.ChildId },
         }, Ago(9), children: [new ChildView(InstanceAddress.From("T-3/step/1/step.4"), "parked: needs-answer")]),
         "parked-budget-odd" => Case(Park(ParkReason.Budget, ParkKind.Step, "produce used 25k of 25k tokens") with { Spent = Spent(25_000) }, Ago(3), recipe: WithProduceBudget(25_000)),
+        "parked-budget-no-cap" => Case(Park(ParkReason.Budget, ParkKind.Refusal, "gate.budget.available refused produce -> checks (no budget left)"), Ago(3), recipe: WithoutBudgets()),
+        "parked-mirrored-spec-conflict" => Case(MirroredPark(ParkReason.SpecConflict, "the child's recipe changed"), Ago(10), children: [Child("parked: spec-conflict")]),
+        "parked-mirrored-needs-answer-wait" => Case(MirroredWait(), Ago(9), children: [Child("parked: needs-answer")]),
         "parked-mirrored-rounds" => Case(MirroredPark(ParkReason.Rounds, "the child used all 3 rounds"), Ago(10), children: [Child("parked: rounds")]),
         "parked-mirrored-timeout" => Case(MirroredPark(ParkReason.Timeout, "the child ran past 2d"), Ago(10), children: [Child("parked: timeout")]),
         "parked-mirrored-no-runtime" => Case(MirroredPark(ParkReason.NoRuntime, "no runtime for step.test.agent"), Ago(10), children: [Child("parked: no-runtime")]),
@@ -102,6 +105,22 @@ internal static class StatusCases
     private static WorkflowInstance MirroredPark(ParkReason reason, string question) => Produce() with
     {
         Suspension = Suspended(reason, kind: null, question) with { Mirrors = EngineFixture.ChildId, Resume = Resume(ResumeKind.Forward) },
+    };
+
+    private static WorkflowInstance MirroredWait()
+    {
+        var park = MirroredPark(ParkReason.NeedsAnswer, "the child's wait could not read the reply");
+        return park with { Suspension = park.Suspension! with { ParkKind = ParkKind.Wait } };
+    }
+
+    /// <summary>The shipped recipe with no budget on the recipe or any state: a gate.budget refusal has no cap to halve.</summary>
+    private static InterpretedRecipe WithoutBudgets() => Recipe with
+    {
+        Recipe = Recipe.Recipe with
+        {
+            Budget = null,
+            States = Recipe.Recipe.States.ToDictionary(static s => s.Key, static s => s.Value with { Budget = null }, StringComparer.Ordinal),
+        },
     };
 
     /// <summary>The shipped recipe with the produce state's budget set to <paramref name="tokens"/>.</summary>

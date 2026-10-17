@@ -1,4 +1,6 @@
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
@@ -20,6 +22,11 @@ public static partial class InstanceViews
 
         foreach (var variant in AnswerVariants.Fitting(suspension))
         {
+            if (variant == AnswerVariant.GrantTokens && !TokenCounts.TryParse(grantTokens, out _))
+            {
+                continue;   // no cap to halve: the amount is the person's, so no entry carries a placeholder (the status line keeps its hint)
+            }
+
             var row = AnswerRow.For(variant, grantTokens);
             yield return new(row.Action, row.Cli(instance.Address.Value));
         }

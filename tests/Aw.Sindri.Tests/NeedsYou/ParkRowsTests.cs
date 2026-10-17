@@ -31,6 +31,44 @@ public sealed class ParkRowsTests
         Assert.Equal(_since, row.Since);
     }
 
+    [Theory]
+    [InlineData("parked-no-progress-child")]
+    [InlineData("escalated-child")]
+    [InlineData("parked-mirrored-needs-answer")]
+    [InlineData("parked-mirrored-rounds")]
+    [InlineData("parked-mirrored-timeout")]
+    [InlineData("parked-mirrored-no-runtime")]
+    [InlineData("parked-mirrored-budget")]
+    [InlineData("parked-mirrored-spec-conflict")]
+    [InlineData("parked-mirrored-needs-answer-wait")]
+    public void A_mirrored_park_row_carries_the_same_action_and_cli_as_the_status_answer_line(string name)
+    {
+        var instance = Aw.Sindri.Tests.GetInstance.StatusCases.Instance(name);
+        var suspension = instance.Suspension!;
+        var summary = new SuspensionSummary(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors?.Value);
+
+        var row = NeedsYouRows.ForPark(Item(), instance.Address, summary, _since, _plain);
+
+        var line = Aw.Sindri.Tests.GetInstance.StatusCases.View(name).AnswerLine!;
+        Assert.Equal((line.ActionId, line.Cli, line.Kind), (row.PrimaryAction, row.Cli, row.AnswerKind));
+    }
+
+    [Theory]
+    [InlineData("parked-mirrored-needs-answer")]
+    [InlineData("parked-mirrored-needs-answer-wait")]
+    [InlineData("parked-mirrored-budget")]
+    [InlineData("parked-mirrored-spec-conflict")]
+    public void A_mirrored_park_the_child_decides_points_its_row_at_the_child(string name)
+    {
+        var suspension = Aw.Sindri.Tests.GetInstance.StatusCases.Instance(name).Suspension!;
+        var summary = new SuspensionSummary(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors?.Value);
+
+        var row = NeedsYouRows.ForPark(Item(), _address, summary, _since, _plain);
+
+        Assert.EndsWith("<the child's answer>", row.Cli, StringComparison.Ordinal);
+        Assert.Equal(ActionId.From("ApplyCommand:answer-text"), row.PrimaryAction);
+    }
+
     [Fact]
     public void Gate_escalation_row_is_answer_accept_and_cli_only()
     {
