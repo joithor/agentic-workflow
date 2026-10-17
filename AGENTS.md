@@ -183,6 +183,7 @@ bash scripts/tests/tmux-isolation.test.sh   # scripts/ci/tmux-isolation.sh: no t
 bash scripts/tests/test-tmux.test.sh
 bash scripts/tests/sindri-smoke-normalize.test.sh
 bash scripts/tests/scoping-fixture.test.sh
+bash scripts/tests/line-fixture.test.sh
 bash scripts/tests/meta-launch.test.sh
 bash scripts/tests/install-meta.test.sh
 bash scripts/tests/meta-teams.test.sh

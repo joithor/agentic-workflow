@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "rounds": [
+    {
+      "round": 1,
+      "lenses": [
+        "behaviour",
+        "regression",
+        "boundaries"
+      ],
+      "findings": [
+        {
+          "id": "CH-1",
+          "severity": "HIGH",
+          "text": "No acceptance item covers: While a note is archived, the system shall leave it out of the weekly digest.",
+          "cites": [
+            "AC-4"
+          ]
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "lenses": [
+        "behaviour",
+        "regression",
+        "boundaries"
+      ],
+      "findings": []
+    }
+  ]
+}
