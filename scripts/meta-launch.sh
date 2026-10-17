@@ -288,10 +288,12 @@ viewer_warp() {
     # Warp opens a launch configuration by its name (the YAML's name:, URI-encoded), not by its file path.
     uri="warp://launch/$(jq -rn --arg n "$team team" '$n|@uri')"
     echo "warp: opening $uri"
-    if [ "$(uname -s)" = Darwin ]; then open "$uri"
+    hint="open $uri in Warp (Command Palette → Launch Configuration → $team team)"
+    # an open that fails (no app registered for warp://) leaves the sessions and the layout in place: print the manual way, exit 0
+    if [ "$(uname -s)" = Darwin ]; then open "$uri" || echo "warp: could not open it; $hint"
     elif command -v xdg-open > /dev/null; then xdg-open "$uri" > /dev/null 2>&1 &
     elif command -v warp-terminal > /dev/null; then warp-terminal "$uri" > /dev/null 2>&1 &
-    else echo "open $uri in Warp (Command Palette → Launch Configuration → $team team)"; fi
+    else echo "$hint"; fi
   fi
 }
 
