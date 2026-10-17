@@ -62,6 +62,23 @@ public sealed class InstanceFrameViewModelTests
         Assert.Equal((0, Text(Golden("project-build")["id"]), FramePhase.Shown), (_server.InstancesCalls, _server.LastInstanceId, frame.Phase));
     }
 
+    [Fact]
+    public async Task Header_draws_the_instance_version_the_status_header_serves_not_the_recipes()
+    {
+        var node = Golden("dev-desk-round-trip");
+        node["current"]!["status"]!["header"]!["version"] = (int)node["recipe"]!["version"]! + 1;
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, node.ToJsonString());
+        var frame = Frame();
+
+        await frame.Open(_api, Text(node["address"]), Text(node["id"]), Token);
+
+        var served = (int)node["current"]!["status"]!["header"]!["version"]!;
+        Assert.NotEqual((int)node["recipe"]!["version"]!, served);
+        var word = "v" + served.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        Assert.Equal(word, frame.Version);
+        Assert.Contains($"· {word} ·", frame.Identity, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("project-build")]
     [InlineData("escalated-gate")]
@@ -74,7 +91,7 @@ public sealed class InstanceFrameViewModelTests
         var golden = Golden(scenario);
         var header = golden["current"]!["status"]!["header"]!;
         Assert.Equal(
-            (Text(golden["address"]), Text(golden["title"]), Text(golden["recipe"]!["id"]), Text(header["hash12"]), $"v{golden["recipe"]!["version"]}", Text(header["state"]), SinceOf(scenario)),
+            (Text(golden["address"]), Text(golden["title"]), Text(golden["recipe"]!["id"]), Text(header["hash12"]), $"v{header["version"]}", Text(header["state"]), SinceOf(scenario)),
             (frame.Address, frame.Title, frame.Recipe, frame.Hash12, frame.Version, frame.StateText, frame.SinceText));
         Assert.Contains(frame.Recipe + "@" + frame.Hash12, frame.Identity, StringComparison.Ordinal);
     }
