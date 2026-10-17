@@ -28,4 +28,8 @@ public sealed class SindriToolSchemaTests
             Assert.Equal(JsonSerializer.Serialize(state).Trim('"'), McpSummaries.JobStateWord(state));
         }
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_wait_for_the_views_is_the_limit_the_http_routes_wait() =>
+        Assert.Equal(ReadYourWrites.Limit, SindriTools.WaitForViews);
 }

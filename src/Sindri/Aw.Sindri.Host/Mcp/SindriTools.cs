@@ -1,10 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
-using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Commands;
-using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.FileRequest;
@@ -49,6 +47,10 @@ internal static class SindriTools
 
     /// <summary>The kinds sindri_request files, as the API names them.</summary>
     internal static readonly string[] RequestKinds = ["rescope", "add-task", "note", "handback"];
+
+    /// <summary>How long sindri_request waits for the views to hold its write: ReadYourWrites.Limit's value (a test holds the two equal).</summary>
+    // why: the Aw.Sindri.Host root already depends on this namespace, so reading ReadYourWrites.Limit here would make a namespace cycle (ARCH-CYCLE-001)
+    internal static readonly TimeSpan WaitForViews = TimeSpan.FromSeconds(2);
 
     private const string ItemIdText = "An item id (ITM-...) or a tracker alias";
 
@@ -170,7 +172,7 @@ internal static class SindriTools
     /// <returns>The tool result.</returns>
     internal static async ValueTask<CallToolResult> CallItem(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
     {
-        var item = BindItem(Item, arguments);
+        var item = SindriBindings.Item(Item, arguments);
         if (item.IsError)
         {
             return McpResults.Failure(services, item.Error);
@@ -187,7 +189,7 @@ internal static class SindriTools
     /// <returns>The tool result.</returns>
     internal static async ValueTask<CallToolResult> CallTimeline(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
     {
-        var bound = BindItem(Timeline, arguments, "after").Bind(item => McpArguments.OptionalLong(Timeline, arguments, "after").Map(after => new GetItemTimelineRequest(item, after)));
+        var bound = SindriBindings.Item(Timeline, arguments, "after").Bind(item => McpArguments.OptionalLong(Timeline, arguments, "after").Map(after => new GetItemTimelineRequest(item, after)));
         if (bound.IsError)
         {
             return McpResults.Failure(services, bound.Error);
@@ -204,7 +206,7 @@ internal static class SindriTools
     /// <returns>The tool result.</returns>
     internal static async ValueTask<CallToolResult> CallPendingDecisions(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
     {
-        var bound = BindOptionalItem(PendingDecisions, arguments);
+        var bound = SindriBindings.OptionalItem(PendingDecisions, arguments);
         if (bound.IsError)
         {
             return McpResults.Failure(services, bound.Error);
@@ -240,7 +242,7 @@ internal static class SindriTools
     /// <returns>The tool result.</returns>
     internal static async ValueTask<CallToolResult> CallRequest(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
     {
-        var bound = BindRequest(arguments, (JsonTypeInfo<RequestKind>)services.GetRequiredService<JsonSerializerOptions>().GetTypeInfo(typeof(RequestKind)));
+        var bound = SindriBindings.Request(arguments, (JsonTypeInfo<RequestKind>)services.GetRequiredService<JsonSerializerOptions>().GetTypeInfo(typeof(RequestKind)));
         if (bound.IsError)
         {
             return McpResults.Failure(services, bound.Error);
@@ -253,48 +255,7 @@ internal static class SindriTools
         }
 
         // why: X-Sindri-After isn't honoured on this endpoint, so the tool reads its own write before it answers; a timeout is not a failure
-        var caught = await services.GetRequiredService<IProjectorStatus>().WaitFor(answer.Value.Accepted.Sequence, ReadYourWrites.Limit, ct).ConfigureAwait(false);
+        var caught = await services.GetRequiredService<IProjectorStatus>().WaitFor(answer.Value.Accepted.Sequence, WaitForViews, ct).ConfigureAwait(false);
         return McpResults.Success(services, answer.Value, McpSummaries.Request(answer.Value, bound.Value.Kind, viewsCaughtUp: !caught.IsError));
-    }
-
-    private static Result<FileRequestRequest> BindRequest(IDictionary<string, JsonElement>? arguments, JsonTypeInfo<RequestKind> kinds)
-    {
-        if (McpArguments.Only(Request, arguments, "kind", "text", "itemId") is { } refused)
-        {
-            return refused;
-        }
-
-        var kind = McpArguments.RequiredEnum(Request, arguments, "kind", kinds);
-        var text = McpArguments.RequiredString(Request, arguments, "text", "Split this into two items.");
-        var item = McpArguments.OptionalString(Request, arguments, "itemId").Bind(GivenItem);
-        return kind.Bind(k => text.Bind(t => item.Map(i => new FileRequestRequest(k, t, i))));
-    }
-
-    private static Result<ItemRef> BindItem(string tool, IDictionary<string, JsonElement>? arguments, params string[] more) =>
-        McpArguments.Only(tool, arguments, ["itemId", .. more]) is { } refused
-            ? refused
-            : McpArguments.RequiredString(tool, arguments, "itemId", "ITM-...").Bind(ItemRoute.Item);
-
-    private static Result<ItemRef?> BindOptionalItem(string tool, IDictionary<string, JsonElement>? arguments)
-    {
-        if (McpArguments.Only(tool, arguments, "itemId") is { } refused)
-        {
-            return refused;
-        }
-
-        var text = McpArguments.OptionalString(tool, arguments, "itemId");
-        return text.Bind(GivenItem);
-    }
-
-    // why: ItemRoute.ItemFilter reads "" as no filter (an empty '?item='); an itemId a caller wrote out is an id or a refusal, never a wider call
-    private static Result<ItemRef?> GivenItem(string? text)
-    {
-        if (text is null)
-        {
-            return (ItemRef?)null;
-        }
-
-        var item = ItemRoute.Item(text);
-        return item.IsError ? item.Error : (ItemRef?)item.Value;
     }
 }
