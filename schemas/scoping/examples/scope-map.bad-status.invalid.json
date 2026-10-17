@@ -1,0 +1,19 @@
+{
+  "surfaces": [
+    {
+      "id": "S1",
+      "kind": "Feature",
+      "title": "Invitations",
+      "citations": [
+        "R1"
+      ],
+      "graphStatus": "guessed"
+    }
+  ],
+  "implications": [],
+  "workstreams": [],
+  "flagged": [],
+  "excluded": [],
+  "unmapped": [],
+  "unresolved": []
+}

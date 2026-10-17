@@ -1,0 +1,14 @@
+{
+  "items": [
+    {
+      "id": "A-1",
+      "text": "x",
+      "form": "plain",
+      "surfaces": [],
+      "citations": [],
+      "status": "passing",
+      "evidence": [],
+      "parent": null
+    }
+  ]
+}

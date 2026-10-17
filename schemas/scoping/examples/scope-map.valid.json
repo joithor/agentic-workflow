@@ -1,0 +1,36 @@
+{
+  "surfaces": [
+    {
+      "id": "S1",
+      "kind": "Feature",
+      "title": "Invitations",
+      "detail": "Sent by email",
+      "citations": [
+        "R1",
+        "L-product-1"
+      ],
+      "lens": "product",
+      "graphStatus": "mapped"
+    }
+  ],
+  "implications": [],
+  "workstreams": [
+    {
+      "id": "W1",
+      "title": "Expiry",
+      "surfaces": [
+        "S1"
+      ],
+      "dependsOn": []
+    }
+  ],
+  "flagged": [],
+  "excluded": [
+    {
+      "item": "L-code-3",
+      "reason": "test helper"
+    }
+  ],
+  "unmapped": [],
+  "unresolved": []
+}

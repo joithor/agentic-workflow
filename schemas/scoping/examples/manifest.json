@@ -1,0 +1,119 @@
+{
+  "examples": [
+    {
+      "file": "scope-input.brief.valid.json",
+      "schema": "scope-input.json",
+      "valid": true
+    },
+    {
+      "file": "scope-input.tracker.valid.json",
+      "schema": "scope-input.json",
+      "valid": true
+    },
+    {
+      "file": "scope-input.idea.valid.json",
+      "schema": "scope-input.json",
+      "valid": true
+    },
+    {
+      "file": "scope-input.change.valid.json",
+      "schema": "scope-input.json",
+      "valid": true
+    },
+    {
+      "file": "scope-input.unknown-kind.invalid.json",
+      "schema": "scope-input.json",
+      "valid": false
+    },
+    {
+      "file": "scope-input.extra-field.invalid.json",
+      "schema": "scope-input.json",
+      "valid": false
+    },
+    {
+      "file": "scope-input.missing-repo.invalid.json",
+      "schema": "scope-input.json",
+      "valid": false
+    },
+    {
+      "file": "brief.valid.json",
+      "schema": "brief.json",
+      "valid": true
+    },
+    {
+      "file": "brief.no-refs.invalid.json",
+      "schema": "brief.json",
+      "valid": false
+    },
+    {
+      "file": "scope-map.valid.json",
+      "schema": "scope-map.json",
+      "valid": true
+    },
+    {
+      "file": "scope-map.bad-citation.invalid.json",
+      "schema": "scope-map.json",
+      "valid": false
+    },
+    {
+      "file": "scope-map.bad-status.invalid.json",
+      "schema": "scope-map.json",
+      "valid": false
+    },
+    {
+      "file": "acceptance.valid.json",
+      "schema": "acceptance.json",
+      "valid": true
+    },
+    {
+      "file": "acceptance.passing.invalid.json",
+      "schema": "acceptance.json",
+      "valid": false
+    },
+    {
+      "file": "questions.valid.json",
+      "schema": "questions.json",
+      "valid": true
+    },
+    {
+      "file": "questions.one-option.invalid.json",
+      "schema": "questions.json",
+      "valid": false
+    },
+    {
+      "file": "questions.uncited-option.invalid.json",
+      "schema": "questions.json",
+      "valid": false
+    },
+    {
+      "file": "questions.six.invalid.json",
+      "schema": "questions.json",
+      "valid": false
+    },
+    {
+      "file": "open-questions.valid.json",
+      "schema": "open-questions.json",
+      "valid": true
+    },
+    {
+      "file": "challenge-round.nothing-new.valid.json",
+      "schema": "challenge-round.json",
+      "valid": true
+    },
+    {
+      "file": "challenge-round.found.valid.json",
+      "schema": "challenge-round.json",
+      "valid": true
+    },
+    {
+      "file": "challenge-round.no-verdict.invalid.json",
+      "schema": "challenge-round.json",
+      "valid": false
+    },
+    {
+      "file": "challenge.valid.json",
+      "schema": "challenge.json",
+      "valid": true
+    }
+  ]
+}

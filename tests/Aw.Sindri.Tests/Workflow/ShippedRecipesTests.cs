@@ -17,7 +17,7 @@ public sealed partial class ShippedRecipesTests
             [
                 "dev/desk-round-trip.yaml", "dev/incident-hold.yaml", "dev/triage-three-state.yaml", "dev/workflow.dev-child-outputs.yaml", "dev/workflow.dev-child-summary.yaml",
                 "dev/workflow.dev-evidence-route.yaml",
-                "dev/workflow.dev-notify.yaml", "dev/workflow.dev-timeout.yaml", "sindri/workflow.item.yaml", "sindri/workflow.step.yaml",
+                "dev/workflow.dev-notify.yaml", "dev/workflow.dev-timeout.yaml", "sindri/workflow.idea-to-brief.yaml", "sindri/workflow.item.yaml", "sindri/workflow.scoping.yaml", "sindri/workflow.step.yaml",
             ],
             ShippedRecipes.Recipes,
             StringComparer.Ordinal);
@@ -58,7 +58,9 @@ public sealed partial class ShippedRecipesTests
     {
         var id = RecipeIdLine.Match(ShippedRecipes.Read(path)).Groups["id"].Value;
 
-        Assert.Contains($"{Path.GetDirectoryName(path)}/evals/{id}/happy.jsonl", ShippedRecipes.Evals, StringComparer.Ordinal);
+        var directory = $"{Path.GetDirectoryName(path)}/evals/{id}/";
+
+        Assert.Contains(ShippedRecipes.Evals, e => e.StartsWith(directory, StringComparison.Ordinal) && (e.EndsWith("/happy.jsonl", StringComparison.Ordinal) || e.EndsWith("-happy.jsonl", StringComparison.Ordinal)));   // a station with several inputs has one happy path per input (brief-happy, tracker-happy …)
     }
 
     [Theory, Trait("Lane", "unit")]

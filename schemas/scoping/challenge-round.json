@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/scoping/challenge-round.json",
+  "title": "One challenger round (fact:challengeRound)",
+  "description": "This round only: what the challenger walked and its verdict (scoping spec A.4). nothingNew carries no items; found carries at least one new surface or behaviour. step.scope.challenge-log fails the Step when the verdict and the items disagree.",
+  "type": "object",
+  "properties": {
+    "walked": {
+      "type": "object",
+      "properties": {
+        "lenses": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "code",
+              "product",
+              "related",
+              "history"
+            ]
+          }
+        },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": [
+        "lenses",
+        "dimensions"
+      ],
+      "additionalProperties": false
+    },
+    "verdict": {
+      "enum": [
+        "nothingNew",
+        "found"
+      ]
+    },
+    "surfaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "citations": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^(R[0-9]+|A[0-9]+|L-(code|product|related|history)-[0-9]+)$"
+            }
+          }
+        },
+        "required": [
+          "title",
+          "citations"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "behaviours": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "question": {
+            "type": "string",
+            "minLength": 1
+          },
+          "citations": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "pattern": "^(R[0-9]+|A[0-9]+|L-(code|product|related|history)-[0-9]+)$"
+            }
+          }
+        },
+        "required": [
+          "text",
+          "question",
+          "citations"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "walked",
+    "verdict"
+  ],
+  "additionalProperties": false
+}

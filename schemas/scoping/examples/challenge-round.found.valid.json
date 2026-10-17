@@ -1,0 +1,20 @@
+{
+  "walked": {
+    "lenses": [
+      "code"
+    ],
+    "dimensions": [
+      "data"
+    ]
+  },
+  "verdict": "found",
+  "surfaces": [
+    {
+      "title": "Reminder email",
+      "citations": [
+        "L-code-4"
+      ]
+    }
+  ],
+  "behaviours": []
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "Q1",
+    "text": "x",
+    "options": [
+      {
+        "id": "o1",
+        "label": "a",
+        "citations": []
+      },
+      {
+        "id": "o2",
+        "label": "b",
+        "citations": [
+          "R1"
+        ]
+      }
+    ]
+  }
+]

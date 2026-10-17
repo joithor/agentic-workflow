@@ -1,0 +1,23 @@
+[
+  {
+    "id": "Q1",
+    "text": "What happens to a pending reminder?",
+    "options": [
+      {
+        "id": "o1",
+        "label": "Cancel it",
+        "citations": [
+          "L-code-2"
+        ],
+        "recommended": true
+      },
+      {
+        "id": "o2",
+        "label": "Send it",
+        "citations": [
+          "R1"
+        ]
+      }
+    ]
+  }
+]

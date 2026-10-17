@@ -1,0 +1,18 @@
+{
+  "items": [
+    {
+      "id": "A-1",
+      "text": "When an invitation is 14 days old, the system shall expire it.",
+      "form": "event",
+      "surfaces": [
+        "S1"
+      ],
+      "citations": [
+        "R1"
+      ],
+      "status": "failing",
+      "evidence": [],
+      "parent": null
+    }
+  ]
+}

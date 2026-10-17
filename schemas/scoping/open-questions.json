@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/scoping/open-questions.json",
+  "title": "Open questions (fact:openQuestions)",
+  "description": "The ranked questions not asked yet, with their recommended options (scoping spec section 7.2, A.2).",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "text": {
+        "type": "string",
+        "minLength": 1
+      },
+      "impact": {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 3
+      },
+      "recommended": {
+        "type": "string"
+      },
+      "citations": {
+        "type": "array",
+        "items": {
+          "type": "string",
+          "pattern": "^(R[0-9]+|A[0-9]+|L-(code|product|related|history)-[0-9]+)$"
+        },
+        "description": "Source refs (R<n>), answers (A<n>) and lens items (L-<lens>-<n>) the item rests on."
+      }
+    },
+    "required": [
+      "id",
+      "text",
+      "impact"
+    ],
+    "additionalProperties": false
+  }
+}

@@ -1,0 +1,236 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/scoping/scope-map.json",
+  "title": "Scope map (fact:scopeMap)",
+  "description": "The scope map (scoping spec section 8.3, scope-map.json): surfaces, implications, workstreams with dependencies, flagged and excluded items, unmapped paths and unresolved findings.",
+  "type": "object",
+  "properties": {
+    "surfaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "detail": {
+            "type": "string"
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^(R[0-9]+|A[0-9]+|L-(code|product|related|history)-[0-9]+)$"
+            },
+            "description": "Source refs (R<n>), answers (A<n>) and lens items (L-<lens>-<n>) the item rests on."
+          },
+          "lens": {
+            "enum": [
+              "code",
+              "product",
+              "related",
+              "history"
+            ]
+          },
+          "graphStatus": {
+            "enum": [
+              "mapped",
+              "new",
+              "unmapped",
+              "unknown"
+            ]
+          },
+          "trust": {
+            "type": "string",
+            "description": "Stamped by code, never written by a model."
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "citations"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "implications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^(R[0-9]+|A[0-9]+|L-(code|product|related|history)-[0-9]+)$"
+            },
+            "description": "Source refs (R<n>), answers (A<n>) and lens items (L-<lens>-<n>) the item rests on."
+          }
+        },
+        "required": [
+          "id",
+          "text"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "workstreams": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "surfaces": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "dependsOn": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "surfaces"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "flagged": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "item",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "excluded": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^(R[0-9]+|A[0-9]+|L-(code|product|related|history)-[0-9]+)$"
+            },
+            "description": "Source refs (R<n>), answers (A<n>) and lens items (L-<lens>-<n>) the item rests on."
+          }
+        },
+        "required": [
+          "item",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "unmapped": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "unresolved": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "rule": {
+            "type": "string",
+            "minLength": 1
+          },
+          "item": {
+            "type": "string"
+          },
+          "why": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "rule",
+          "why"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Each finding the drafter or apply could not settle, with its rule, item and why."
+    }
+  },
+  "required": [
+    "surfaces",
+    "implications",
+    "workstreams",
+    "flagged",
+    "excluded",
+    "unmapped",
+    "unresolved"
+  ],
+  "additionalProperties": false
+}

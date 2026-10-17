@@ -1,0 +1,12 @@
+{"start":{"inputs":{"fact:scopeInput":"Expire stale invitations after 14 days (brief B1)"}}}
+{"trigger":{"kind":"step.completed","outcome":"brief","outputs":{"fact:scopeMap":"{\"surfaces\":[]}","fact:acceptance":"[]","fact:findings":"[]","fact:answers":"[]","fact:answerLog":"[]","fact:challenge":"{\"rounds\":[]}","fact:questions":"[]","fact:openQuestions":"[]"}},"expect":{"state":"read-brief"}}
+{"trigger":{"kind":"step.completed","outcome":"read","outputs":{"fact:brief":"Brief B1: expire stale invitations after 14 days.","fact:anchors":"[\"invitations\"]"}},"expect":{"state":"gather"}}
+{"trigger":{"kind":"step.completed","outcome":"gathered","outputs":{"fact:lenses":"{\"product\":[\"inv-1\"],\"code\":[\"src/invitations.cs\"]}","fact:coverage":"{\"product\":\"ok\",\"code\":\"ok\",\"history\":\"ok\",\"related\":\"ok\"}"}},"expect":{"state":"draft"}}
+{"trigger":{"kind":"step.completed","outcome":"drafted","outputs":{"fact:scopeMap":"{\"surfaces\":[\"S1\",\"S2\"],\"v\":1}","fact:acceptance":"[\"A-1: when an invitation is 14 days old the system shall expire it\"]"}},"expect":{"state":"check"}}
+{"trigger":{"kind":"step.completed","outcome":"pass"},"expect":{"state":"questions"}}
+{"trigger":{"kind":"step.completed","outcome":"asked","outputs":{"fact:questions":"[{\"id\":\"Q1\",\"text\":\"What happens to a pending reminder?\",\"options\":[\"cancel it\",\"send it\"]}]","fact:openQuestions":"[\"Q1\"]"}},"expect":{"state":"interview"}}
+{"trigger":{"kind":"step.completed","outcome":"answered","outputs":{"fact:answers":"[{\"id\":\"Q1\",\"pick\":\"cancel it\"}]"}},"expect":{"state":"record"}}
+{"trigger":{"kind":"step.completed","outcome":"recorded","outputs":{"fact:answerLog":"[{\"id\":\"A1\",\"q\":\"Q1\"}]"}},"expect":{"state":"apply"}}
+{"trigger":{"kind":"step.completed","outcome":"rescope","outputs":{"fact:scopeMap":"{\"surfaces\":[\"S1\",\"S2\",\"S3\"]}","fact:acceptance":"[\"A-1\"]","fact:openQuestions":"[]"}},"expect":{"state":"reanchor"}}
+{"trigger":{"kind":"step.completed","outcome":"anchored","outputs":{"fact:anchors":"[\"invitations\",\"reminders\"]"}},"expect":{"state":"gather"}}
+{"trigger":{"kind":"step.completed","outcome":"gathered","outputs":{"fact:lenses":"{\"product\":[\"inv-1\"],\"code\":[\"src/invitations.cs\"]}","fact:coverage":"{\"product\":\"ok\",\"code\":\"ok\",\"history\":\"ok\",\"related\":\"ok\"}"}},"expect":{"state":"draft"}}

@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/scoping/acceptance.json",
+  "title": "Acceptance list (fact:acceptance)",
+  "description": "The acceptance list (scoping spec section 8.3, acceptance.json): one item per behaviour in an EARS form, or plain with what is missing. Item ids and texts are immutable; this station writes status failing, empty evidence and a null parent.",
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^A-[0-9]+$"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "form": {
+            "type": "string",
+            "minLength": 1,
+            "description": "An EARS form, or plain when the trigger and response are not known (the gap becomes an interview question)."
+          },
+          "surfaces": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^(R[0-9]+|A[0-9]+|L-(code|product|related|history)-[0-9]+)$"
+            },
+            "description": "Source refs (R<n>), answers (A<n>) and lens items (L-<lens>-<n>) the item rests on."
+          },
+          "trust": {
+            "type": "string",
+            "description": "Stamped by code."
+          },
+          "status": {
+            "const": "failing"
+          },
+          "evidence": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "parent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "form",
+          "surfaces",
+          "citations"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "additionalProperties": false
+}

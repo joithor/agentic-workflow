@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/scoping/challenge.json",
+  "title": "Challenge record (fact:challenge)",
+  "description": "The challenge record: every challenger round in order, appended by step.scope.challenge-log; the last one is empty when the challenger has nothing new (scoping spec section 8.3).",
+  "type": "object",
+  "properties": {
+    "rounds": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "walked": {
+            "type": "object",
+            "properties": {
+              "lenses": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "code",
+                    "product",
+                    "related",
+                    "history"
+                  ]
+                }
+              },
+              "dimensions": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": [
+              "lenses",
+              "dimensions"
+            ],
+            "additionalProperties": false
+          },
+          "verdict": {
+            "enum": [
+              "nothingNew",
+              "found"
+            ]
+          },
+          "surfaces": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "citations": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^(R[0-9]+|A[0-9]+|L-(code|product|related|history)-[0-9]+)$"
+                  }
+                }
+              },
+              "required": [
+                "title",
+                "citations"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "behaviours": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "question": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "citations": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "pattern": "^(R[0-9]+|A[0-9]+|L-(code|product|related|history)-[0-9]+)$"
+                  }
+                }
+              },
+              "required": [
+                "text",
+                "question",
+                "citations"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "walked",
+          "verdict"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "rounds"
+  ],
+  "additionalProperties": false
+}

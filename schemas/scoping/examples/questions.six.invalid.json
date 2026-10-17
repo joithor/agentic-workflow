@@ -1,0 +1,122 @@
+[
+  {
+    "id": "Q1",
+    "text": "x",
+    "options": [
+      {
+        "id": "a",
+        "label": "a",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "id": "b",
+        "label": "b",
+        "citations": [
+          "R1"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Q2",
+    "text": "x",
+    "options": [
+      {
+        "id": "a",
+        "label": "a",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "id": "b",
+        "label": "b",
+        "citations": [
+          "R1"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Q3",
+    "text": "x",
+    "options": [
+      {
+        "id": "a",
+        "label": "a",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "id": "b",
+        "label": "b",
+        "citations": [
+          "R1"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Q4",
+    "text": "x",
+    "options": [
+      {
+        "id": "a",
+        "label": "a",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "id": "b",
+        "label": "b",
+        "citations": [
+          "R1"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Q5",
+    "text": "x",
+    "options": [
+      {
+        "id": "a",
+        "label": "a",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "id": "b",
+        "label": "b",
+        "citations": [
+          "R1"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Q6",
+    "text": "x",
+    "options": [
+      {
+        "id": "a",
+        "label": "a",
+        "citations": [
+          "R1"
+        ]
+      },
+      {
+        "id": "b",
+        "label": "b",
+        "citations": [
+          "R1"
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/scoping/brief.json",
+  "title": "Brief (fact:brief)",
+  "description": "The normalized brief every reader and step.brief.write produces (scoping spec section 4): the text, the source refs R1, R2 ... it cites, and its subject.",
+  "type": "object",
+  "properties": {
+    "text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^R[0-9]+$"
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "key": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "trust": {
+            "type": "string"
+          },
+          "fetchedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "trust"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "subject": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "text",
+    "refs",
+    "subject"
+  ],
+  "additionalProperties": false
+}

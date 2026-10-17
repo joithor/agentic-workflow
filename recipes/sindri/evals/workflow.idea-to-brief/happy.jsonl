@@ -1,0 +1,9 @@
+{"start":{"inputs":{"fact:idea":"Let invitations expire."}}}
+{"trigger":{"kind":"step.completed","outcome":"seeded","outputs":{"fact:answers":"[]","fact:answerLog":"[]"}},"expect":{"state":"ask"}}
+{"trigger":{"kind":"step.completed","outcome":"asked","outputs":{"fact:questions":"[{\"id\":\"Q1\"}]"}},"expect":{"state":"answer"}}
+{"trigger":{"kind":"step.completed","outcome":"answered","outputs":{"fact:answers":"[{\"id\":\"Q1\",\"pick\":\"14 days\"}]"}},"expect":{"state":"record"}}
+{"trigger":{"kind":"step.completed","outcome":"recorded","outputs":{"fact:answerLog":"[{\"id\":\"A1\"}]"}},"expect":{"state":"ask"}}
+{"trigger":{"kind":"step.completed","outcome":"ready","outputs":{"fact:interviewClosed":"true"}},"expect":{"state":"record"}}
+{"trigger":{"kind":"step.completed","outcome":"recorded","outputs":{"fact:answerLog":"[{\"id\":\"A1\"}]"}},"expect":{"state":"write"}}
+{"trigger":{"kind":"step.completed","outcome":"written","outputs":{"fact:brief":"Brief: expire after 14 days (A1)."}},"expect":{"state":"anchor"}}
+{"trigger":{"kind":"step.completed","outcome":"anchored","outputs":{"fact:anchors":"[\"invitations\"]"}},"expect":{"state":"done","outcome":"resolved"}}
