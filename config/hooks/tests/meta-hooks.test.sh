@@ -160,6 +160,9 @@ LS="$AW_STATE_DIR/meta/lane-sessions"
 REPLIED="$LS/api.replied"
 DUP='{"hook_event_name":"Stop","session_id":"s-2","last_assistant_message":"REPLY TO META: same answer"}'
 unlink "$REPLIED" 2> /dev/null; : > "$CALLS"
+printf '%s' "$DUP" > "$WORK/in"; AW_META_TEAM=t1 AW_META_LANE=api AW_META_DIR="$WORK/teamdir2" bash "$HOOKS/meta-lane-gate.sh" 2> /dev/null < "$WORK/in"
+check "AW_META_DIR: the reply marker lands in the team's directory, not the flat one" "$([ -f "$WORK/teamdir2/lane-sessions/api.replied" ] && echo team):$([ -f "$REPLIED" ] && echo flat)" "team:"
+unlink "$REPLIED" 2> /dev/null; : > "$CALLS"
 lane "$DUP"; lane "$DUP"
 check "the same reply at two Stops (a continuation, a stale transcript tail) is recorded once" "$(grep -c '^lane-reply' "$CALLS"):$(grep -c '^lane-stop-check' "$CALLS")" "1:2"
 STUB_OUT="new mail" lane "$UPS" > /dev/null
@@ -295,6 +298,8 @@ printf '%s' '{"session_id":"0199aaaa-bbbb-4ccc-8ddd-eeeeffff0002"}' | AW_META_TE
 check "a new session in the lane replaces the id" "$(cat "$LS/api")" "0199aaaa-bbbb-4ccc-8ddd-eeeeffff0002"
 printf '%s' '{"session_id":"id-ui"}' | AW_META_TEAM=t1 AW_META_LANE=ui bash "$HOOKS/session-id-report.sh"
 check "two lanes keep their own ids" "$(cat "$LS/api"):$(cat "$LS/ui")" "0199aaaa-bbbb-4ccc-8ddd-eeeeffff0002:id-ui"
+printf '%s' '{"session_id":"id-team"}' | AW_META_TEAM=t1 AW_META_LANE=api AW_META_DIR="$WORK/teamdir" bash "$HOOKS/session-id-report.sh"
+check "AW_META_DIR: the id is recorded under the team's directory, the flat one is untouched" "$(cat "$WORK/teamdir/lane-sessions/api"):$(cat "$LS/api")" "id-team:0199aaaa-bbbb-4ccc-8ddd-eeeeffff0002"
 printf '%s' '{"session_id":"abc-1"}' | AW_SINDRI_LAUNCH=launch-7 AW_SINDRI_HOME="$WORK/sindri" bash "$HOOKS/session-id-report.sh"
 check "a Sindri launch: \$AW_SINDRI_HOME/launches/<id>.session-id" "$(cat "$WORK/sindri/launches/launch-7.session-id" 2>/dev/null)" "abc-1"
 printf '%s' '{"session_id":"abc-2"}' | AW_SINDRI_LAUNCH=launch-8 bash "$HOOKS/session-id-report.sh"
