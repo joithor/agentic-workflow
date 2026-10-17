@@ -9431,3 +9431,5 @@ static readonly Aw.Sindri.Core.SindriErrors.SessionsUnavailable -> Aw.Kernel.Err
 virtual Aw.Sindri.Core.Launch.LaunchResult.EqualityContract.get -> System.Type!
 virtual Aw.Sindri.Core.Launch.LaunchResult.Equals(Aw.Sindri.Core.Launch.LaunchResult? other) -> bool
 virtual Aw.Sindri.Core.Launch.LaunchResult.PrintMembers(System.Text.StringBuilder! builder) -> bool
+Aw.Sindri.Core.Launch.ViewerRequest.Cwd.get -> string?
+Aw.Sindri.Core.Launch.ViewerRequest.Cwd.init -> void
