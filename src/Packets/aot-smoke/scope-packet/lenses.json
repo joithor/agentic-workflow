@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "code": {
+    "anchors": ["code:src/a.cs"], "depth": 2, "hops": [], "mapVersion": 13, "foundCount": 2,
+    "nodes": [{ "key": "code:src/b.cs", "kind": "file", "label": "b.cs", "band": "code", "lensItem": "L-code-1", "trust": "untrusted" }],
+    "edges": [{ "from": "code:src/a.cs", "to": "code:src/b.cs", "type": "imports", "provenance": "static", "confirmed": false, "trust": "untrusted" }],
+    "items": [{ "lensItem": "L-code-2", "kind": "commit", "label": "fix b", "citations": ["git:abc123"], "trust": "untrusted" }],
+    "truncated": []
+  },
+  "product": { "anchors": [], "depth": 2, "hops": ["state"], "mapVersion": 13, "foundCount": 0, "nodes": [], "edges": [], "items": [], "truncated": [] },
+  "related": { "anchors": [], "depth": 2, "hops": ["state", "dependency", "flow"], "mapVersion": 13, "foundCount": 0, "nodes": [], "edges": [], "items": [], "truncated": [] },
+  "history": { "anchors": [], "depth": 0, "hops": [], "mapVersion": 13, "foundCount": 0, "nodes": [], "edges": [], "items": [], "truncated": [] }
+}

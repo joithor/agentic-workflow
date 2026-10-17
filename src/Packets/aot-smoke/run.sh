@@ -49,6 +49,10 @@ sed 's/"deps": \[\]/"deps": ["t2"]/' "$repo/packet/tasks.json" >"$work/broken/ta
 git -C "$repo" add -A
 git -C "$repo" -c user.name=smoke -c user.email=smoke@example.invalid commit -q -m packet
 
+cp -R "$here/scope-packet" "$work/scope-packet"
+cp -R "$work/scope-packet" "$work/scope-broken"
+rm "$work/scope-broken/brief.md"
+
 export AW_STATE_DIR="$work/state"
 bin="$out/bin/aw-packets"
 {
@@ -60,6 +64,21 @@ bin="$out/bin/aw-packets"
   "$bin" freeze "$repo/packet" --repo "$repo" || echo "exit $?"
   echo "## freeze again"
   "$bin" freeze "$repo/packet" --repo "$repo" --json | grep -o '"alreadyFrozen":[a-z]*' || echo "exit $?"
+  echo "## scoping validate"
+  "$bin" validate --kind scoping "$work/scope-packet" || echo "exit $?"
+  echo "## scoping validate broken"
+  "$bin" validate "$work/scope-broken" --kind scoping || echo "exit $?"
+  echo "## scoping hash"
+  "$bin" hash --kind scoping "$work/scope-packet" || echo "exit $?"
+  "$bin" hash "$work/scope-packet" --kind scoping --json || echo "exit $?"
+  echo "## scoping freeze"
+  "$bin" freeze --kind scoping "$work/scope-packet" --repo-slug example/repo --instance idea-1 || echo "exit $?"
+  echo "## scoping freeze again"
+  "$bin" freeze --kind scoping "$work/scope-packet" --repo-slug example/repo --instance idea-1 --json | grep -o '"alreadyFrozen":[a-z]*' || echo "exit $?"
+  echo "## scoping freeze broken"
+  "$bin" freeze --kind scoping "$work/scope-broken" --repo-slug example/repo --instance idea-2 || echo "exit $?"
+  echo "## build hash"
+  "$bin" hash "$repo/packet" || echo "exit $?"
   echo "## no arguments"
   "$bin" || echo "exit $?"
   echo "## state files"

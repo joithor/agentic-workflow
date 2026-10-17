@@ -13,7 +13,7 @@ namespace Aw.Packets.Core.Kinds.Scoping;
 /// </summary>
 public static partial class ScopingChecks
 {
-    /// <summary>The highest depth or hops a lens entry may record.</summary>
+    /// <summary>The highest depth a lens entry may record.</summary>
     public const int MaxReach = 32;
 
     private const string LensesFile = "lenses.json";
@@ -184,12 +184,39 @@ public static partial class ScopingChecks
 
     private static IEnumerable<(string Where, string Message, string Fix)> EntryFailures(string lens, LensEntry entry)
     {
-        foreach (var (field, value) in new (string, int)[] { ("depth", entry.Depth), ("hops", entry.Hops) })
+        foreach (var (field, value) in new (string, int)[] { ("depth", entry.Depth) })
         {
             if (value is < 0 or > MaxReach)
             {
                 yield return ($"{lens}.{field}", $"{lens}.{field} is {value.ToString(CultureInfo.InvariantCulture)}; it is 0 to {MaxReach.ToString(CultureInfo.InvariantCulture)}.", $"Record the {field} the lens ran with.");
             }
+        }
+
+        foreach (var failure in CountFailures(lens, entry))
+        {
+            yield return failure;
+        }
+
+        foreach (var (id, where) in Ids(lens, entry).Where(static i => !IdShape.IsMatch(i.Id)))
+        {
+            yield return (where, $"{where} '{id}' is not an id of the form L-<lens>-<n>.", "Use L-code-1, L-product-1, L-related-1 or L-history-1, counting from 1.");
+        }
+
+        for (var index = 0; index < entry.Edges.Count; index++)
+        {
+            if (entry.Edges[index].From.Length == 0 || entry.Edges[index].To.Length == 0)
+            {
+                var where = $"{lens}.edges[{index.ToString(CultureInfo.InvariantCulture)}]";
+                yield return (where, $"{where} has an empty end.", "Give both ends of the edge.");
+            }
+        }
+    }
+
+    private static IEnumerable<(string Where, string Message, string Fix)> CountFailures(string lens, LensEntry entry)
+    {
+        if (entry.Hops.Distinct().Take(entry.Hops.Count).Count() != entry.Hops.Count)
+        {
+            yield return ($"{lens}.hops", $"{lens}.hops lists a hop kind twice.", "List each hop kind once.");
         }
 
         if (entry.MapVersion < 0)
@@ -205,20 +232,6 @@ public static partial class ScopingChecks
         if (entry.Truncated.Distinct().Take(entry.Truncated.Count).Count() != entry.Truncated.Count)
         {
             yield return ($"{lens}.truncated", $"{lens}.truncated lists a band twice.", "List each truncated band once.");
-        }
-
-        foreach (var (id, where) in Ids(lens, entry).Where(static i => !IdShape.IsMatch(i.Id)))
-        {
-            yield return (where, $"{where} '{id}' is not an id of the form L-<lens>-<n>.", "Use L-code-1, L-product-1, L-related-1 or L-history-1, counting from 1.");
-        }
-
-        for (var index = 0; index < entry.Edges.Count; index++)
-        {
-            if (entry.Edges[index].From.Length == 0 || entry.Edges[index].To.Length == 0)
-            {
-                var where = $"{lens}.edges[{index.ToString(CultureInfo.InvariantCulture)}]";
-                yield return (where, $"{where} has an empty end.", "Give both ends of the edge.");
-            }
         }
     }
 

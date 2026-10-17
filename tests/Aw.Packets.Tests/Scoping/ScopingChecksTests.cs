@@ -90,7 +90,10 @@ public sealed class ScopingChecksTests
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("\"schemaVersion\": 1,", "\"schemaVersion\": 2,")]
-    [InlineData("\"depth\": 2, \"hops\": 0, \"mapVersion\": 13, \"foundCount\": 2", "\"depth\": 99, \"hops\": 0, \"mapVersion\": 13, \"foundCount\": 2")]
+    [InlineData("\"depth\": 2, \"hops\": [], \"mapVersion\": 13, \"foundCount\": 2", "\"depth\": 99, \"hops\": [], \"mapVersion\": 13, \"foundCount\": 2")]
+    [InlineData("\"hops\": [\"state\", \"dependency\", \"flow\"]", "\"hops\": [\"sibling\"]")]
+    [InlineData("\"hops\": [\"state\", \"dependency\", \"flow\"]", "\"hops\": 2")]
+    [InlineData("\"hops\": [\"state\", \"dependency\", \"flow\"]", "\"hops\": [\"state\", \"state\"]")]
     [InlineData("\"mapVersion\": 13, \"foundCount\": 2", "\"mapVersion\": -1, \"foundCount\": 2")]
     [InlineData("\"foundCount\": 2", "\"foundCount\": 1")]
     [InlineData("\"band\": \"code\"", "\"band\": \"sky\"")]
@@ -106,6 +109,16 @@ public sealed class ScopingChecksTests
         var checks = await Run(A.ScopingPacket().EditLenses(from, to).Build());
 
         Assert.NotEmpty(Failures(checks, ScopingRules.LensesSchema));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("\"hops\": [\"state\", \"dependency\", \"flow\"]", "\"hops\": [\"flow\", \"component\", \"state\"]")]
+    [InlineData("\"hops\": [\"state\", \"dependency\", \"flow\"]", "\"hops\": []")]
+    public async Task Hops_are_any_unique_list_of_the_four_kinds_in_any_order_and_may_be_empty(string from, string to)
+    {
+        var checks = await Run(A.ScopingPacket().EditLenses(from, to).Build());
+
+        Assert.All(checks, static c => Assert.Equal(CheckState.Pass, c.State));
     }
 
     [Fact, Trait("Lane", "unit")]

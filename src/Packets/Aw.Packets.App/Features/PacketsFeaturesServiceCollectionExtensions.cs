@@ -2,8 +2,8 @@ using Aw.Kernel.Services;
 using Aw.Packets.App.Features.FreezePacket;
 using Aw.Packets.App.Features.FreezeScopingPacket;
 using Aw.Packets.App.Features.HashPacket;
-using Aw.Packets.App.Features.ValidateScopingPacket;
 using Aw.Packets.App.Features.ValidatePacket;
+using Aw.Packets.App.Features.ValidateScopingPacket;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Packets.App.Features;

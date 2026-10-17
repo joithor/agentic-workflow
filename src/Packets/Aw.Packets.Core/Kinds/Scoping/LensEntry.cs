@@ -5,7 +5,7 @@ namespace Aw.Packets.Core.Kinds.Scoping;
 /// <summary>One lens's frozen graph part (scoping spec §8.3): what it searched from, how far, and what it found.</summary>
 /// <param name="Anchors">The anchors the lens searched from (map node keys or 'code:&lt;path&gt;' file keys).</param>
 /// <param name="Depth">How many edges out the lens followed.</param>
-/// <param name="Hops">How many cascade hops the lens followed (the related lens).</param>
+/// <param name="Hops">The hop kinds the lens walked, in the order it walked them (empty at depth 0); no order is required.</param>
 /// <param name="MapVersion">The map version the lens read.</param>
 /// <param name="FoundCount">The full count of what the lens found; more than <paramref name="Nodes"/> and <paramref name="Items"/> hold when a band was truncated.</param>
 /// <param name="Nodes">The found nodes.</param>
@@ -16,7 +16,7 @@ namespace Aw.Packets.Core.Kinds.Scoping;
 public sealed record LensEntry(
     IReadOnlyList<string> Anchors,
     int Depth,
-    int Hops,
+    IReadOnlyList<LensHop> Hops,
     int MapVersion,
     int FoundCount,
     IReadOnlyList<LensNode> Nodes,
