@@ -9,7 +9,7 @@
 # brings up the pinned Temporal dev server, so the temporal CLI must be installed: scripts/binaries-lock.sh fetch
 # temporal): doctor with nothing running, start headless with an unapproved profile, a second serve refused by the lease,
 # the approve preview and its non-terminal refusal, a session's typed approve refused (SND-AUTH-002), the human's typed
-# approval, status (text and --json's apiVersion), /sindri/mcp's initialize and tools/list as a stateless MCP client,
+# approval, status (text and --json's apiVersion), /sindri/mcp's initialize and tools/list as a stateless MCP client, then the 12 tools' calls (sindri_queue, sindri_request filed as session:mcp, sindri_item refused, sindri_decide absent),
 # the views rebuild refused to a session and requested by the human, status's views and health lines, the item verbs (API P3: a human's item add, the queue and the item list, a session's item add refused, the human's item close, the done list and the queue again), the request verbs (API P4: a session's request, the needs-you list, a session's decide refused, the human's decide, the list again and the accepted requests), the ledger read (API P5: the human's lists command.handled, a session's doesn't, one item's events, and GET /events/catalog), the service and job verbs (API P6: the services list as JSON, a manual run of heartbeat followed to its end, a session's run refused, jobs show and the jobs list, pause and resume with a session's pause refused, and the services list after each), a session's stop refused, the human's stop, status and doctor again (doctor with HOME on an empty scratch dir, so its
 # context:mcp-scope row never reads the real provider files);
 # then recipe validate on the shipped recipes (their hashes; workflow.item reads its child beside it) and on an invalid
@@ -93,7 +93,8 @@ fi
 
 export AW_SINDRI_HOME="$work/home" AW_SINDRI_PORT=0
 mkdir -p "$AW_SINDRI_HOME/profile"
-printf 'schemaVersion: 1\nuser: smoke\nservices:\n  heartbeat: { every: 5s }\n' >"$AW_SINDRI_HOME/profile/profile.yaml"
+mkdir -p "$work/repo"   # the repo 'smoke' the mcp() helper names in X-Sindri-Repo (sindri_request files against an approved profile's repo)
+printf 'schemaVersion: 1\nuser: smoke\nrepos:\n  - { name: smoke, path: %s }\nservices:\n  heartbeat: { every: 5s }\n' "$work/repo" >"$AW_SINDRI_HOME/profile/profile.yaml"
 
 exit_line() { # $1 = exit code
   local rc="$1"
@@ -169,6 +170,11 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   echo "## /sindri/mcp initialize, then tools/list (stateless)"
   mcp initialize '{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"1"}}' | jq -c '.result.serverInfo.name'
   mcp tools/list '{}' | jq -c '[.result.tools[].name]'
+  echo "## /sindri/mcp sindri_queue, sindri_request (files as session:mcp), sindri_item (not an id), sindri_decide (no such tool)"
+  mcp tools/call '{"name":"sindri_queue","arguments":{}}' | jq -c '.result | {isError, groups: [.structuredContent.groups[].group]}'
+  mcp tools/call '{"name":"sindri_request","arguments":{"kind":"note","text":"smoke"}}' | jq -c '.result | {isError, request: .structuredContent.requestId}'
+  mcp tools/call '{"name":"sindri_item","arguments":{"itemId":"nope"}}' | jq -c '.result | {isError, code: .structuredContent.code}'
+  mcp tools/call '{"name":"sindri_decide","arguments":{}}' | jq -c '.result | {isError, code: .structuredContent.code}'
   session views rebuild
   human views rebuild </dev/null
   settle
