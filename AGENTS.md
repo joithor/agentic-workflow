@@ -103,6 +103,7 @@ dotnet run --project src/Readiness/Aw.Readiness.App -- check [--json] [--root DI
 bash src/Readiness/aot-smoke/run.sh     # Publish aw-readiness NativeAOT and smoke-test the native binary (CI's AOT step)
 bash scripts/scaffold/e2e.sh            # The generators end to end: scaffold, build and test a small cli and a full http package in throwaway worktrees, NativeAOT-publish the cli one (~2 min; needs the NativeAOT toolchain)
 dotnet run --project src/Packets/Aw.Packets.App -- validate <packet-dir> [--repo <dir>] [--json]   # aw-packets: the packet checks (docs/csharp/packets.md); exit 0 pass, 1 fail, 2 tool error; writes nothing
+dotnet run --project src/Packets/Aw.Packets.App -- <validate|freeze|hash> --kind scoping <packet-dir> [--repo-slug <owner/name> --instance <slug>] [--json]   # the scoping kind (P1): schema-only PKT-SCP-001..005, the canonical hash, freeze under packets/<owner>/<name>/<instance>/frozen/; `--kind` defaults to build (docs/csharp/packets.md)
 dotnet run --project src/Packets/Aw.Packets.App -- freeze <packet-dir> [--repo <dir>] [--json]     # Record the packet's canonical hash under $AW_STATE_DIR/packets/<owner>/<name>/<id>/frozen/
 bash src/Packets/aot-smoke/run.sh        # aw-packets under NativeAOT: publish (on a copy), run against a temp repo, compare with expected.txt
 bash src/Judge/aot-smoke/run.sh          # judge under NativeAOT: publish (on a copy), run offline on a temp AW_STATE_DIR, compare with expected.txt
@@ -181,6 +182,7 @@ bash scripts/tests/tmux-isolation.test.sh   # scripts/ci/tmux-isolation.sh: no t
 bash scripts/tests/test-tmux.test.sh
 bash scripts/tests/sindri-smoke-normalize.test.sh
 bash scripts/tests/scoping-fixture.test.sh
+bash scripts/tests/line-fixture.test.sh
 bash scripts/tests/meta-launch.test.sh
 bash scripts/tests/install-meta.test.sh
 bash scripts/tests/meta-teams.test.sh

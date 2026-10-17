@@ -82,6 +82,10 @@ expect "the scoping fixture runs the bash tests (scoping-fixture.test.sh builds 
   "$(printf 'tests/fixtures/scoping/gold/expiry.json\ntests/fixtures/scoping/history/build.sh\n')" \
   "$(printf 'bash=true\ndotnet=true\npackages=[]')"
 
+expect "the line fixture runs the bash tests (line-fixture.test.sh builds its history)" \
+  "$(printf 'tests/fixtures/line/gold/plan/expiry/packet.json\ntests/fixtures/line/history/build.sh\n')" \
+  "$(printf 'bash=true\ndotnet=true\npackages=[]')"
+
 expect "SindriProfile.cs runs bash and dotnet" \
   "$(printf 'src/Sindri/Aw.Sindri.Core/Profile/SindriProfile.cs\n')" \
   "$(printf 'bash=true\ndotnet=true\npackages=[]')"
