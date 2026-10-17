@@ -30,6 +30,24 @@ public sealed class MacProcessLocationsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task The_scanning_process_and_every_ancestor_up_to_init_are_invokers_and_nothing_else_is()
+    {
+        var locations = await Make(new InMemoryCommandRunner().When("lsof", Lsof)).Locations(TestContext.Current.CancellationToken);
+
+        Assert.Equal([100, 200, 300], [.. locations.Value.Where(p => p.IsInvoker).Select(p => p.Pid).Order()]);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_parent_loop_in_the_output_ends_the_walk()
+    {
+        var runner = new InMemoryCommandRunner().When("lsof", "p300\nR200\ncaw-meta\nfcwd\nn/\np200\nR300\ncbash\nfcwd\nn/\n");
+
+        var locations = await Make(runner).Locations(TestContext.Current.CancellationToken);
+
+        Assert.Equal([200, 300], [.. locations.Value.Where(p => p.IsInvoker).Select(p => p.Pid).Order()]);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Lsof_runs_by_its_absolute_path_with_the_tool_timeout_and_output_cap()
     {
         var runner = new InMemoryCommandRunner().When("lsof", Lsof);
