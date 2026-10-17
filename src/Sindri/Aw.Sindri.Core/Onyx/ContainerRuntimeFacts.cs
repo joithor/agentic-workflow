@@ -13,8 +13,8 @@ namespace Aw.Sindri.Core.Onyx;
 /// <param name="MemoryBytes">The memory Docker has (Docker Desktop's VM limit) when the daemon answers `docker info`.</param>
 /// <param name="DataRoot">Docker's data root (`docker info` DockerRootDir) when the daemon answers: a host directory on a Linux engine, a path inside the VM on Docker Desktop.</param>
 /// <param name="OperatingSystem">The engine's operating system (`docker info` OperatingSystem) when the daemon answers: "Docker Desktop" or "OrbStack" for a VM runtime, the distribution's name for a Linux engine.</param>
-/// <param name="DaemonProblem">Why the daemon didn't answer, from the CLI's stderr, when <paramref name="DaemonAnswers"/> is false and the CLI is found; <see cref="Onyx.DaemonProblem.None"/> when it answers.</param>
-/// <param name="WaitedSeconds">How long the CLI waited in all for a daemon that timed out (<see cref="Onyx.DaemonProblem.Starting"/>); null otherwise.</param>
+/// <param name="DaemonProblem">Why the daemon didn't answer, from the CLI's stderr, when <paramref name="DaemonAnswers"/> is false and the CLI is found; <see cref="DaemonProblem.None"/> when it answers.</param>
+/// <param name="WaitedSeconds">How long the CLI waited in all for a daemon that timed out (<see cref="DaemonProblem.Starting"/>); null otherwise.</param>
 public sealed record ContainerRuntimeFacts(
     bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes, string? DataRoot, string? OperatingSystem = null,
     DaemonProblem DaemonProblem = DaemonProblem.None, int? WaitedSeconds = null)
