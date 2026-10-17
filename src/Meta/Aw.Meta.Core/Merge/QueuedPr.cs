@@ -1,4 +1,4 @@
-namespace Aw.Meta.Features.Status;
+namespace Aw.Meta.Core.Merge;
 
 /// <summary>A pull request a lane said is ready to merge.</summary>
 /// <param name="Pr">The pull request number.</param>

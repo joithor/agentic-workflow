@@ -25,5 +25,7 @@ internal static class StatusCommand
                 string.Create(CultureInfo.InvariantCulture, $"lanes: v{status.Lanes.Version} ")
                     + (status.Lanes.Entries.Count == 0 ? "(none mapped)" : string.Join(", ", status.Lanes.Entries.Select(static e => $"{e.Lane}={e.SessionName}"))),
                 "health: " + (status.LastHealth ?? "never run (aw-meta health)"),
+                .. status.Heavy is { } heavy ? [heavy.Line()] : Array.Empty<string>(),
+                .. status.Builders is { } builders ? [builders.Line()] : Array.Empty<string>(),
             ]);
 }
