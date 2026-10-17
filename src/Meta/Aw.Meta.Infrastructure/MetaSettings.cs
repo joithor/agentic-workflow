@@ -11,6 +11,5 @@ namespace Aw.Meta.Infrastructure;
 /// <param name="Tmux">The tmux program: $AW_TMUX, or tmux.</param>
 /// <param name="TmuxSocket">The tmux socket name ($AW_META_TMUX_SOCKET, passed as -L); null means the team's own socket (-L &lt;team&gt;).</param>
 /// <param name="Paths">The paths and programs the features use.</param>
-/// <param name="StateRoot">$AW_STATE_DIR (~/.agentic-workflow when unset): where the heavy-job wrapper reads heavy-slots-cap and heavy-meta-reserve.</param>
 /// <param name="Layout">Which team this run acts on (AW_META_TEAM) and what else is on disk.</param>
-internal sealed record MetaSettings(string StateDirectory, string ConfigPath, string SessionsDirectory, string HeavyLock, string LaneSessionsDirectory, string Tmux, string? TmuxSocket, MetaPaths Paths, string StateRoot, TeamLayout Layout);
+internal sealed record MetaSettings(string StateDirectory, string ConfigPath, string SessionsDirectory, string HeavyLock, string LaneSessionsDirectory, string Tmux, string? TmuxSocket, MetaPaths Paths, TeamLayout Layout);

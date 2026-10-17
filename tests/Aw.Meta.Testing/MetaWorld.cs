@@ -175,6 +175,17 @@ public sealed class MetaWorld
     public static string PeerLine(string id, string name, string body) =>
         $$"""{"type":"user","origin":{"kind":"peer","from":"uds:/run/{{name}}.sock","msg_id":"{{id}}","name":"{{name}}","body":"{{body}}"},"timestamp":"2026-10-15T04:05:00.000Z"}""" + "\n";
 
+    /// <summary>Appends a peer message to the meta transcript and syncs it into the inbox (appended, so the sync offset stays valid across calls).</summary>
+    /// <param name="id">The message id.</param>
+    /// <param name="name">The sender's session name.</param>
+    /// <param name="body">The text.</param>
+    /// <returns>A task.</returns>
+    public async Task Receive(string id, string name, string body)
+    {
+        Transcripts.Append(Transcript, PeerLine(id, name, body));
+        _ = await Sync.Run(Transcript, CancellationToken.None);
+    }
+
     /// <summary>A transcript line holding a peer message that arrived mid-turn: the queued_command attachment shape.</summary>
     /// <param name="id">The message id; empty for none (the delivery id then names it).</param>
     /// <param name="name">The sender's session name.</param>
