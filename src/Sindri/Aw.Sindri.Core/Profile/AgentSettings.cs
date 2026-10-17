@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Aw.Sindri.Core.Profile;
 
 /// <summary>
@@ -7,6 +9,7 @@ namespace Aw.Sindri.Core.Profile;
 /// </summary>
 /// <param name="SoftLimit">The fraction of a daily budget that raises the soft warning (default 0.8; 0 &lt; x &lt;= 1).</param>
 /// <param name="Targets">The limits by agent id.</param>
+[JsonConverter(typeof(AgentSettingsJsonConverter))]
 public sealed record AgentSettings(decimal? SoftLimit = null, IReadOnlyDictionary<string, AgentLimits>? Targets = null)
 {
     /// <summary>The key of <see cref="SoftLimit"/> in the file.</summary>

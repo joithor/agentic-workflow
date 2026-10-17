@@ -8,4 +8,4 @@ namespace Aw.Sindri.Core.Profile;
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record AgentLimits(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] decimal? DailyBudget = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<string>? StepArgvHash = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull), JsonConverter(typeof(HashListJsonConverter))] IReadOnlyList<string>? StepArgvHash = null);
