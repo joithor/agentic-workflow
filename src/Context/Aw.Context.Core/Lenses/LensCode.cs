@@ -10,12 +10,22 @@ internal static class LensCode
     /// <returns>The band (at most 100 files) and the keys of all its files.</returns>
     internal static (CodeBand Band, HashSet<string> Keys) Build(LensScope scope)
     {
-        var files = scope.IntoScope(EdgeType.Implements, EdgeType.Tests).Where(e => scope.Nodes.ContainsKey(e.From.Value))
-            .GroupBy(e => e.From.Value, StringComparer.Ordinal).OrderBy(g => g.Key, StringComparer.Ordinal).Select(File).ToList();
-        var noCode = scope.Cascade.OwnScope.Count(k => k.Kind == NodeKind.Feature && !Implemented(scope.Graph).Contains(k.Value));
-        var band = new CodeBand([.. files.Take(LensesBuilder.BandCap)], LensSymbols.Unavailable, new CodeCounts(files.Count, 0, noCode), files.Count > LensesBuilder.BandCap);
+        var files = Files(scope.IntoScope(EdgeType.Implements, EdgeType.Tests).Where(e => scope.Nodes.ContainsKey(e.From.Value)));
+        var band = Band(files, NoCode(scope.Graph, scope.Cascade.OwnScope));
         return (band, scope.IntoScope(EdgeType.Implements, EdgeType.Tests).Select(e => e.From.Value).ToHashSet(StringComparer.Ordinal));
     }
+
+    /// <summary>The band from whole file lists (cut at <see cref="LensesBuilder.BandCap"/>, the counts full).</summary>
+    internal static CodeBand Band(IReadOnlyList<LensFile> files, int featuresWithNoCode) =>
+        new([.. files.Take(LensesBuilder.BandCap)], LensSymbols.Unavailable, new CodeCounts(files.Count, 0, featuresWithNoCode), files.Count > LensesBuilder.BandCap);
+
+    /// <summary>One entry per file that has an edge among <paramref name="edges"/>, ordered by file key.</summary>
+    internal static List<LensFile> Files(IEnumerable<GraphEdge> edges) =>
+        [.. edges.GroupBy(e => e.From.Value, StringComparer.Ordinal).OrderBy(g => g.Key, StringComparer.Ordinal).Select(File)];
+
+    /// <summary>Features of <paramref name="own"/> that no confirmed 'implements' edge reaches.</summary>
+    internal static int NoCode(GraphSnapshot graph, IEnumerable<NodeKey> own) =>
+        own.Count(k => k.Kind == NodeKind.Feature && !Implemented(graph).Contains(k.Value));
 
     private static HashSet<string> Implemented(GraphSnapshot graph) =>
         graph.Edges.Where(e => e.Type == EdgeType.Implements && LensScope.Confirmed(e.Provenance)).Select(e => e.To.Value).ToHashSet(StringComparer.Ordinal);
@@ -26,7 +36,7 @@ internal static class LensCode
         var best = edges.OrderByDescending(e => LensScope.Confirmed(e.Provenance)).ThenByDescending(e => e.Confidence).ThenBy(e => e.To.Value, StringComparer.Ordinal).First();
         var confirmed = edges.Exists(e => LensScope.Confirmed(e.Provenance));
         return new LensFile(best.From.Name, Targets(edges, EdgeType.Implements), Targets(edges, EdgeType.Tests), best.Provenance, best.Confidence, confirmed, Suggested: !confirmed,
-            confirmed ? null : LinkIds.For(best));
+            confirmed ? null : LinkIds.For(best), best.From.Name, NodeKind.Code, TrustPolicy.For(best.Provenance, confirmed));
     }
 
     private static IReadOnlyList<NodeKey> Targets(List<GraphEdge> edges, EdgeType type) =>

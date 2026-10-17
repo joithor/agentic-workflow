@@ -71,8 +71,46 @@ public sealed class ShellInstanceFocusTests : FrameHost
         Assert.False(window.FocusManager?.GetFocusedElement() is Avalonia.Visual focused && Named<Control>(window, "Page").IsVisualAncestorOf(focused), "a background re-read moved focus to the page");
     });
 
+    private static string Focus(Window window) => FocusedButton(window)?.Name ?? window.FocusManager?.GetFocusedElement()?.ToString() ?? "nothing";
+
+    private static async Task BackLandsOnTheRecipeLink(Window window, ShellViewModel shell)
+    {
+        Click(Buttons(window, "InstanceRecipe")[0]);
+        await Until(window, () => shell.IsRecipeSheet && shell.Recipe.Phase == FramePhase.Shown);
+        Assert.True(shell.HasTrail);
+
+        Click(Named<Button>(window, "SheetBack"));
+        await Until(window, () => shell.IsInstanceSheet && OnNamed(window, "InstanceRecipe"), $"focus is on {Focus(window)}");
+        Assert.True(FocusedButton(window)!.IsEffectivelyVisible);
+        Assert.Equal(shell.Instance.RecipeLinkName, Heard.Name(FocusedButton(window)!));
+    }
+
+    // Esc ends the whole stack, as it does for a child (U8's rule), and focus goes to the row that opened the first frame, never to a bare panel.
+    private static async Task EscEndsTheStackOnTheOpeningRow(Window window, ShellViewModel shell, string address)
+    {
+        Click(Buttons(window, "InstanceRecipe")[0]);
+        await Until(window, () => shell.IsRecipeSheet && shell.HasTrail);
+        Press(window, Key.Escape);
+        await Until(window, () => !shell.IsSheetOpen && OnWorkflowRow(window, address), $"focus is on {Focus(window)}");
+    }
+
+    // The group head's Recipe button, with the sheet covering the page: Esc comes back to that button.
+    private static async Task EscReturnsToTheGroupButton(Window window, ShellViewModel shell, string address)
+    {
+        window.Width = 1000;
+        Settle(window);
+        var group = shell.Workflows.Groups.First(g => g.Rows.Any(r => string.Equals(r.Address, address, StringComparison.Ordinal)));
+        var button = Buttons(window, "WorkflowGroupRecipe").First(b => ReferenceEquals(b.DataContext, group));
+        Assert.True(button.Focus(NavigationMethod.Tab));
+        Click(button);
+        await Until(window, () => shell.IsRecipeSheet && shell.IsSheetShown && Named<Border>(window, "SheetTitle").IsFocused, $"focus is on {Focus(window)}");
+
+        Press(window, Key.Escape);
+        await Until(window, () => !shell.IsSheetOpen && OnNamed(window, "WorkflowGroupRecipe") && ReferenceEquals(FocusedButton(window)!.DataContext, group), $"focus is on {Focus(window)}");
+    }
+
     [Fact]
-    public Task Back_from_a_child_focuses_the_child_entry_and_Esc_returns_to_the_Workflows_row() => OnUi(async () =>
+    public Task Back_from_a_child_or_a_recipe_returns_focus_and_Esc_returns_to_the_opener() => OnUi(async () =>
     {
         var (window, shell, address) = await OpenedFromTheWorkflowsRow("project-build");
         var child = shell.Instance.Children!.Groups.Single().Streams[0].Rows[0];
@@ -85,6 +123,13 @@ public sealed class ShellInstanceFocusTests : FrameHost
 
         Press(window, Key.Escape);
         await Until(window, () => !shell.IsSheetOpen && OnWorkflowRow(window, address), "focus did not return to the Workflows row");
+
+        // the same window, the same frame opened again from its row: a recipe stacked on it (the header's Back hides here, at this width)
+        Press(window, Key.Enter);
+        await Until(window, () => shell.IsInstanceSheet && shell.Instance.Phase == FramePhase.Shown && string.Equals(shell.Instance.Address, address, StringComparison.Ordinal));
+        await BackLandsOnTheRecipeLink(window, shell);
+        await EscEndsTheStackOnTheOpeningRow(window, shell, address);
+        await EscReturnsToTheGroupButton(window, shell, address);
     });
 
     [Fact]

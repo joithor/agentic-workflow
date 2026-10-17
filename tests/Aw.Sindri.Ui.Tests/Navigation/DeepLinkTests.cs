@@ -37,6 +37,27 @@ public sealed class DeepLinkTests
     }
 
     [Theory]
+    [InlineData("recipe/workflow.project@a8c21e7f0000")]
+    [InlineData("recipe/workflow.project@sha256:a8c21e7f")]
+    public void A_recipe_link_may_name_a_hash_after_an_at_sign(string text)
+    {
+        Assert.True(DeepLink.TryParse(text, out var link));
+        Assert.Equal(DeepLinkKind.Recipe, link.Kind);
+        Assert.Equal(text["recipe/".Length..], link.Subject);
+        Assert.Equal(text, link.ToString());
+    }
+
+    [Theory]
+    [InlineData("recipe/@a8c21e7f")]
+    [InlineData("recipe/workflow.project@")]
+    [InlineData("recipe/a@b@c")]
+    [InlineData("item/a@b")]
+    [InlineData("workflow/a@b")]
+    [InlineData("service/a@b")]
+    public void An_at_sign_belongs_to_a_recipe_link_with_an_id_and_a_hash_and_to_no_other(string text) =>
+        Assert.False(DeepLink.TryParse(text, out _));
+
+    [Theory]
     [InlineData("workflow/")]
     [InlineData("workflow//x")]
     [InlineData("workflow/a/")]

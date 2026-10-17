@@ -96,6 +96,38 @@ public sealed class InstanceFrameViewModelTests
         Assert.Contains(frame.Recipe + "@" + frame.Hash12, frame.Identity, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("project-build")]
+    [InlineData("dev-desk-round-trip")]
+    public async Task Recipe_link_names_the_pinned_hash(string scenario)
+    {
+        var frame = await Opened(scenario);
+        var golden = Golden(scenario);
+        var (id, hash12) = (Text(golden["recipe"]!["id"]), Text(golden["current"]!["status"]!["header"]!["hash12"]));
+        var asked = new List<string>();
+        frame.RecipeRequested += (_, e) => asked.Add(e.Subject);
+
+        frame.OpenRecipe();
+
+        Assert.Equal(($"{id}@{hash12}", true, Labels.RecipeLink), (frame.RecipeSubject, frame.HasRecipeLink, frame.RecipeLinkText));
+        Assert.StartsWith(Labels.RecipeLink[..^2], frame.RecipeLinkName, StringComparison.Ordinal);   // the visible word leads the name
+        Assert.Contains($"{id}@{hash12}", frame.RecipeLinkName, StringComparison.Ordinal);
+        Expect.Sequence([$"{id}@{hash12}"], asked);
+        Assert.StartsWith(hash12, Text(golden["recipe"]!["hash"])["sha256:".Length..], StringComparison.Ordinal);   // the pinned version is the one the recipe golden serves
+    }
+
+    [Fact]
+    public void Recipe_link_is_absent_before_a_read()
+    {
+        var frame = Frame();
+        var asked = 0;
+        frame.RecipeRequested += (_, _) => asked++;
+
+        frame.OpenRecipe();
+
+        Assert.Equal((false, string.Empty, 0), (frame.HasRecipeLink, frame.RecipeSubject, asked));
+    }
+
     [Fact]
     public async Task Header_adds_detail_only_when_served()
     {

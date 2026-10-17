@@ -16,7 +16,11 @@
     <StackPanel x:Name="InstanceBody" Spacing="{StaticResource Space.MD}" IsVisible="{Binding IsShown}">
       <StackPanel Spacing="4">
         <TextBlock x:Name="InstanceTitle" Classes="detail-title" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Title}" />
-        <TextBlock x:Name="InstanceIdentity" Classes="caption mono subtle" Text="{Binding Identity}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Identity}" />
+        <WrapPanel Orientation="Horizontal">
+          <TextBlock x:Name="InstanceIdentity" Classes="caption mono subtle" Text="{Binding Identity}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,12,0"
+                     AutomationProperties.Name="{Binding Identity}" />
+          <Button x:Name="InstanceRecipe" Content="{Binding RecipeLinkText}" IsVisible="{Binding HasRecipeLink}" Click="OnRecipe" AutomationProperties.Name="{Binding RecipeLinkName}" />
+        </WrapPanel>
         <TextBlock x:Name="InstanceNote" Classes="body-strong" Text="{Binding Note}" IsVisible="{Binding HasNote}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Note}" />
       </StackPanel>
       <WrapPanel x:Name="InstanceSubject" Orientation="Horizontal" IsVisible="{Binding Subject, Converter={x:Static ObjectConverters.IsNotNull}}">

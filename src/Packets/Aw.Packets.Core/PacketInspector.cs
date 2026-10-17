@@ -1,6 +1,5 @@
 using Aw.Kernel;
 using Aw.Packets.Core.Checks;
-using Aw.Packets.Core.Values;
 
 namespace Aw.Packets.Core;
 
@@ -23,26 +22,7 @@ public sealed class PacketInspector(IPacketSource source, IRepoSnapshot repo)
             return loaded.Error;
         }
 
-        var tree = await Base(loaded.Value.Packet.Manifest.BaseSha, repoDirectory, cancellationToken).ConfigureAwait(false);
+        var tree = await BaseTreeLoader.Load(repo, loaded.Value.Packet.Manifest.BaseSha, repoDirectory, cancellationToken).ConfigureAwait(false);
         return tree.IsError ? tree.Error : new Inspection(loaded.Value, PacketChecks.Run(loaded.Value.Packet, tree.Value));
     }
-
-    private async ValueTask<Result<BaseTree>> Base(string sha, string repoDirectory, CancellationToken cancellationToken)
-    {
-        if (!CommitSha.TryFrom(sha, out var commit))
-        {
-            return new BaseTree(Files: null, $"baseSha '{sha}' isn't a full commit sha (40 or 64 lower-case hex digits)");
-        }
-
-        var files = await repo.Files(repoDirectory, commit, cancellationToken).ConfigureAwait(false);
-        if (files.IsError)
-        {
-            return files.Error.Code == PacketsErrors.CommitNotFound.Code
-                ? new BaseTree(Files: null, $"baseSha {sha} isn't in the repository: {files.Error.Message}")
-                : files.Error;
-        }
-
-        return new BaseTree(files.Value, Problem: null);
-    }
-
 }

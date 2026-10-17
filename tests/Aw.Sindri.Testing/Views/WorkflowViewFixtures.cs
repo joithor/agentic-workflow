@@ -76,7 +76,7 @@ public static class WorkflowViewFixtures
     private static readonly InstanceSummary _p2211 = Row("ITM-01JK6/triage-alert/1", _triage, "route", Today(11, 2),
         new EngineOwnedBadge(EngineOwnedKind.Escalated, "gate.severity 0.62, below 0.8"),
         Subject("webhook", "P-2211", "PagerDuty P-2211"), _triage.Cells("route"),
-        "needs your answer", "ApplyCommand:answer-accept", "ApplyCommand:takeover", "ApplyCommand:cancel") with
+        "needs your answer", "ApplyCommand:answer-accept", "ApplyCommand:answer-reject", "ApplyCommand:takeover", "ApplyCommand:cancel") with
     { Answer = Answer(AnswerKind.Accept, "ITM-01JK6/triage-alert/1"), };
 
     private static readonly InstanceSummary _sentry8809 = Row("ITM-01JK7/triage-alert/1", _triage, "done", Today(11, 58), null,
@@ -102,7 +102,10 @@ public static class WorkflowViewFixtures
     private static readonly InstanceSummary _itemParked = Row("ITM-01JC8/item/1", _item, "running", Today(11, 54), new EngineOwnedBadge(EngineOwnedKind.Parked, "no-progress (child)"),
         Subject("item", "ITM-01JC8", "Retry storm in outbox dispatcher"),
         _item.Cells("running", change: Shape(("running", c => c with { Children = new Progress(0, 1) }))),
-        "parked child", "ApplyCommand:answer-grant", "ApplyCommand:takeover", "ApplyCommand:cancel");
+        "parked child", "ApplyCommand:answer-grant", "ApplyCommand:answer-text", "ApplyCommand:takeover", "ApplyCommand:cancel");
+
+    // The same instance mirroring a child that decides the answer: it takes only takeover and cancel (no answer entry is served).
+    private static readonly InstanceSummary _itemChildPointer = _itemParked with { Address = InstanceAddress.From("ITM-01JC9/item/1"), Actions = Acts("ApplyCommand:takeover", "ApplyCommand:cancel") };
 
     private static readonly InstanceSummary _budgetStep = Row("ITM-01JH5/step/1", _step, "produce", Today(11, 54), new EngineOwnedBadge(EngineOwnedKind.Parked, "budget"),
         Subject("text", "ITM-01JH5", "ITM-01JH5"), _step.Cells("produce"), "parked: budget", "ApplyCommand:answer-grant-tokens", "ApplyCommand:takeover", "ApplyCommand:cancel");
@@ -201,6 +204,7 @@ public static class WorkflowViewFixtures
     {
         lines ??= new StatusLines();
         var recipe = row.Recipe;
+        // The header's v<n> is the instance's version (its mirrored event count). A fixture has no events, so it shows the recipe's author version as a stand-in: the goldens pin it.
         var header = new StatusHeader(row.Address, recipe.Id, recipe.Hash.Display, recipe.Version, HeaderState(row), detail, row.Since, (long)(Now - row.Since).TotalSeconds);
         var fields = new StatusFields(header, next, lines.Answer, lines.Child, lines.Drift, lines.Inputs, lines.Timeout, lines.Budget, lines.Paused,
             Commands(row, lines.Answer, open), string.Empty);
@@ -232,7 +236,7 @@ public static class WorkflowViewFixtures
             var (actionClass, cli, confirm) = verb switch
             {
                 "cancel" => (ActionClass.Desk, $"sindri workflow cancel {row.Address.Value}", ConfirmText.Cancel(row.Address, open.RunningSteps, open.OpenChildren)),
-                "answer" => (answer!.Class, answer.Cli, null),
+                "answer" => (answer!.Class, $"sindri workflow answer {row.Address.Value} {VariantOption(found[0].Value)}", null),   // the runnable form: the status line may keep its hint (--resume [--text <answer>])
                 "complete" => (ActionClass.Desk, open.CompleteCli!, null),
                 "takeover" => (ActionClass.Pause, $"sindri workflow takeover {row.Address.Value}", null),
                 "handback" => (ActionClass.Desk, $"sindri workflow handback {row.Address.Value}", null),
@@ -240,10 +244,28 @@ public static class WorkflowViewFixtures
                 _ => throw new InvalidOperationException($"no command line for the verb {verb}"),
             };
             commands.Add(new StatusCommand(Enum.Parse<StatusVerb>(verb, ignoreCase: true), found[0], actionClass, cli, confirm));
+            foreach (var more in verb == "answer" ? found.Skip(1) : [])   // the engine serves one entry per fitting answer variant
+            {
+                commands.Add(new StatusCommand(StatusVerb.Answer, more, VariantClass(more.Value), $"sindri workflow answer {row.Address.Value} {VariantOption(more.Value)}", Confirm: null));
+            }
         }
 
         return commands;
     }
+
+    private static string VariantOption(string action) => action switch
+    {
+        "ApplyCommand:answer-text" => "--text <answer>",
+        "ApplyCommand:answer-resume" => "--resume",
+        "ApplyCommand:answer-reject" => "--reject",
+        "ApplyCommand:answer-grant" => "--grant 1",
+        "ApplyCommand:answer-grant-tokens" => "--grant-tokens 100k",
+        "ApplyCommand:answer-accept" => "--accept",
+        _ => throw new InvalidOperationException($"{action} is not an answer variant"),
+    };
+
+    private static ActionClass VariantClass(string action) =>
+        action is "ApplyCommand:answer-grant" or "ApplyCommand:answer-grant-tokens" or "ApplyCommand:answer-accept" ? ActionClass.Protected : ActionClass.Desk;
 
     private static string? VerbOf(string action) => action switch
     {
@@ -265,6 +287,9 @@ public static class WorkflowViewFixtures
         AnswerKind.CancelOnly => throw new ArgumentOutOfRangeException(nameof(kind), kind, "no answer for this kind"),
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "no answer for this kind"),
     };
+
+    private static StatusAnswer ChildPointer(string address, string? child) =>
+        new(AnswerKind.Text, Act("ApplyCommand:answer-text"), ActionClass.Desk, $"sindri workflow answer {address} <the child's answer>", AtTerminal: false, Via: "child", Child: child);
 
     /// <summary>What the cancel sentence and the complete command need from the instance's open work; N and M come from the fixture until engine P4b.</summary>
     /// <param name="RunningSteps">The open run's running steps (N).</param>
@@ -307,6 +332,24 @@ public static class WorkflowViewFixtures
         "Parked (no-progress) in ITM-01JC8/item/1/step.4: checks failed twice with the same findings. Grant more rounds at a terminal, or cancel.",
         new OpenWork(OpenChildren: 1),
         new StatusLines { Answer = Answer(AnswerKind.Grant, "ITM-01JC8/item/1"), Child = new StatusChild(WorkflowInstanceId.Of(InstanceAddress.From("ITM-01JC8/item/1/step.4")), InstanceAddress.From("ITM-01JC8/item/1/step.4"), "parked", "no-progress") });
+
+    /// <summary>An escalation from a child: the status answer is a pointer to the child (`via: "child"`), and no answer entry is served.</summary>
+    public static StatusFields StatusEscalatedChild() => Status(_itemChildPointer, "escalated (child)",
+        "Escalated in ITM-01JC9/item/1/step.4: the child's gate escalated.",
+        new OpenWork(OpenChildren: 1),
+        new StatusLines { Answer = ChildPointer("ITM-01JC9/item/1", "ITM-01JC9/item/1/step.4"), Child = new StatusChild(WorkflowInstanceId.Of(InstanceAddress.From("ITM-01JC9/item/1/step.4")), InstanceAddress.From("ITM-01JC9/item/1/step.4"), "escalated", "gate") });
+
+    /// <summary>A park mirroring a child's budget park: the cap is the child's, so the status answer is a pointer to the child.</summary>
+    public static StatusFields StatusMirroredBudget() => Status(_itemChildPointer, "budget (child)",
+        "Parked (budget) in ITM-01JC9/item/1/step.4: the child used 50k of 50k tokens.",
+        new OpenWork(OpenChildren: 1),
+        new StatusLines { Answer = ChildPointer("ITM-01JC9/item/1", "ITM-01JC9/item/1/step.4"), Child = new StatusChild(WorkflowInstanceId.Of(InstanceAddress.From("ITM-01JC9/item/1/step.4")), InstanceAddress.From("ITM-01JC9/item/1/step.4"), "parked", "budget") });
+
+    /// <summary>The shape today's control plane serves for a mirrored park: the pointer, with no child address (the served view does not list its children yet).</summary>
+    public static StatusFields StatusMirroredBudgetNoChild() => Status(_itemChildPointer, "budget (child)",
+        "Parked (budget) in the child: the child used 50k of 50k tokens.",
+        new OpenWork(OpenChildren: 1),
+        new StatusLines { Answer = ChildPointer("ITM-01JC9/item/1", child: null) });
 
     /// <summary>Layout 2: an open desk task with its inputs, a parking timeout and the state and instance budgets.</summary>
     public static StatusFields StatusDeskTask() => Status(_sentry8812, "desk task",
@@ -357,7 +400,7 @@ public static class WorkflowViewFixtures
     /// <returns>The statuses.</returns>
     public static IReadOnlyList<StatusFields> AllStatuses() =>
     [
-        StatusParkedChild(), StatusDeskTask(), StatusParkedBudget(), StatusEscalatedGate(), StatusTakenOver(), StatusDone(),
+        StatusParkedChild(), StatusEscalatedChild(), StatusMirroredBudget(), StatusMirroredBudgetNoChild(), StatusDeskTask(), StatusParkedBudget(), StatusEscalatedGate(), StatusTakenOver(), StatusDone(),
         StatusParkedDrift(), StatusNeedsAnswerStep(), StatusNeedsAnswerWait(), .. AllDetails().Select(d => d.Current.Status),
     ];
 

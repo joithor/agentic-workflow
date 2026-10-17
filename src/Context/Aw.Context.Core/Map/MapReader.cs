@@ -21,16 +21,50 @@ public sealed class MapReader(IGraphStore store, IIntentStore intents)
     /// <param name="draft">True for the newest draft instead of the current version.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The visible map, or SND-CONTEXT-001/003/004/020/030.</returns>
-    public ValueTask<Result<VisibleMap>> Read(ContextScope scope, bool draft, CancellationToken cancellationToken) => ReadMap(scope, draft, withIntent: true, cancellationToken);
+    public ValueTask<Result<VisibleMap>> Read(ContextScope scope, bool draft, CancellationToken cancellationToken) => ReadMap(scope, draft ? MapRead.NewestDraft : MapRead.Current, withIntent: true, cancellationToken);
 
-    private async ValueTask<Result<VisibleMap>> ReadMap(ContextScope scope, bool draft, bool withIntent, CancellationToken cancellationToken)
+    /// <summary>The map <paramref name="scope"/>'s caller may read as of <paramref name="read"/>, with a missing draft answering SND-CONTEXT-030 like <see cref="Read"/>.</summary>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <param name="read">Which map.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The visible map, or SND-CONTEXT-001/003/004/020/030/120.</returns>
+    public ValueTask<Result<VisibleMap>> ReadAt(ContextScope scope, MapRead read, CancellationToken cancellationToken) => ReadMap(scope, read, withIntent: true, cancellationToken);
+
+    /// <summary>The map as of <paramref name="read"/>: the current version, the newest draft or a retained version, with today's deny globs, scrub and session scope on it.</summary>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <param name="read">Which map.</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The visible map, or SND-CONTEXT-001/003/004/020/030/044/120.</returns>
+    public async ValueTask<Result<VisibleMap>> ReadViewAt(ContextScope scope, MapRead read, CancellationToken cancellationToken)
+    {
+        var map = await ReadMap(scope, read, withIntent: true, cancellationToken).ConfigureAwait(false);
+        return read.Draft && map.IsError && map.Error.Code == ContextErrors.NoMap.Code ? NoDraft() : map;
+    }
+
+    /// <summary>The snapshot read asks for; a named version the store doesn't hold, or holds with another commit, is SND-CONTEXT-120.</summary>
+    private async ValueTask<Result<MapSnapshot?>> Load(MapRead read, CancellationToken cancellationToken)
+    {
+        if (read.Version is not { } asked)
+        {
+            return await store.Snapshot(read.Draft, cancellationToken).ConfigureAwait(false);
+        }
+
+        var snapshot = await store.SnapshotAt(asked.Number, cancellationToken).ConfigureAwait(false);
+        return snapshot.IsError || (snapshot.Value is { } held && asked.Names(held.Version)) ? snapshot : await NotRetained(asked, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static Error NoDraft() =>
+        ContextErrors.NoDraftMap.With("there is no draft map (fix: sindri context map build, sindri context map propose <file>, or name context-rebuild under services: in the profile, then retry; or drop --draft)");
+
+    private async ValueTask<Result<VisibleMap>> ReadMap(ContextScope scope, MapRead read, bool withIntent, CancellationToken cancellationToken)
     {
         if (MapAccess.Gate(scope) is { } refused)
         {
             return refused;
         }
 
-        var snapshot = await store.Snapshot(draft, cancellationToken).ConfigureAwait(false);
+        var draft = read.Draft;
+        var snapshot = await Load(read, cancellationToken).ConfigureAwait(false);
         if (snapshot.IsError || snapshot.Value is not { } map)
         {
             return snapshot.IsError ? snapshot.Error
@@ -56,7 +90,7 @@ public sealed class MapReader(IGraphStore store, IIntentStore intents)
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The visible map, or the reason there is none.</returns>
     public ValueTask<Result<VisibleMap>> ReadWithoutIntent(ContextScope scope, bool draft, CancellationToken cancellationToken) =>
-        ReadMap(scope, draft, withIntent: false, cancellationToken);
+        ReadMap(scope, draft ? MapRead.NewestDraft : MapRead.Current, withIntent: false, cancellationToken);
 
     private static IReadOnlyList<DecisionConflict> Seen(IReadOnlyList<DecisionConflict> pairs, GraphSnapshot graph)
     {
@@ -69,12 +103,28 @@ public sealed class MapReader(IGraphStore store, IIntentStore intents)
     /// <param name="draft">True for the newest draft instead of the current version.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The visible map, or SND-CONTEXT-001/003/004/020/030/044.</returns>
-    public async ValueTask<Result<VisibleMap>> ReadView(ContextScope scope, bool draft, CancellationToken cancellationToken)
+    public ValueTask<Result<VisibleMap>> ReadView(ContextScope scope, bool draft, CancellationToken cancellationToken) =>
+        ReadViewAt(scope, draft ? MapRead.NewestDraft : MapRead.Current, cancellationToken);
+
+    /// <summary>SND-CONTEXT-120 naming the current version and the retained range, so the fix is in the message.</summary>
+    private async ValueTask<Result<MapSnapshot?>> NotRetained(MapVersionRef asked, CancellationToken cancellationToken)
     {
-        var map = await Read(scope, draft, cancellationToken).ConfigureAwait(false);
-        return draft && map.IsError && map.Error.Code == ContextErrors.NoMap.Code
-            ? ContextErrors.NoDraftMap.With("there is no draft map (fix: sindri context map build, sindri context map propose <file>, or name context-rebuild under services: in the profile, then retry; or drop --draft)")
-            : map;
+        var versions = await store.Versions(cancellationToken).ConfigureAwait(false);
+        if (versions.IsError)
+        {
+            return versions.Error;
+        }
+
+        var current = versions.Value.FirstOrDefault(v => v.Status == MapVersionStatus.Current);
+        var retained = versions.Value.Where(v => v.Status == MapVersionStatus.Retained).Select(v => v.Number).Order().ToList();
+        var parts = new List<string>();
+        if (current is not null)
+        {
+            parts.Add($"current: {MapVersionRef.Tag(current.Number)}");
+        }
+
+        parts.Add(retained.Count == 0 ? "no earlier version is retained" : retained.Count == 1 ? $"retained: {MapVersionRef.Tag(retained[0])}" : $"retained: {MapVersionRef.Tag(retained[0])}..{MapVersionRef.Tag(retained[^1])}");
+        return ContextErrors.MapVersionNotRetained.With($"map version {asked.Label} isn't held ({string.Join("; ", parts)}) (fix: read the current map, or name a version in that range)");
     }
 
     /// <summary>The current map and this call's text scrubbing, for the graph reads: the settings (001), the scrubbers built from them (001), then <see cref="Read"/>.</summary>
