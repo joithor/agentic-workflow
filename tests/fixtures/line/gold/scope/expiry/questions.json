@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "questions": [
+    {
+      "id": "gap-decision",
+      "rank": 1,
+      "question": "Decision 0001 says shared links never expire. Does this change replace it, or add a choice beside it?",
+      "options": [
+        {
+          "index": 0,
+          "text": "Add a choice; links with no time never expire",
+          "recommended": true
+        },
+        {
+          "index": 1,
+          "text": "Replace it: every link gets a default time",
+          "recommended": false
+        },
+        {
+          "index": 2,
+          "text": "Keep the decision and drop the change",
+          "recommended": false
+        }
+      ],
+      "citations": [
+        "linear:issue/5c0b1e00-0000-4000-8000-000000000107",
+        "repo:docs/decisions/0001-links-never-expire.md"
+      ],
+      "status": "answered"
+    },
+    {
+      "id": "gap-existing-links",
+      "rank": 2,
+      "question": "What happens to the links that already exist?",
+      "options": [
+        {
+          "index": 0,
+          "text": "They never expire",
+          "recommended": true
+        },
+        {
+          "index": 1,
+          "text": "They get a default time from today",
+          "recommended": false
+        },
+        {
+          "index": 2,
+          "text": "They get a default time from their creation",
+          "recommended": false
+        }
+      ],
+      "citations": [
+        "repo:migrations/002_sharing.sql"
+      ],
+      "status": "answered"
+    },
+    {
+      "id": "gap-expired-response",
+      "rank": 3,
+      "question": "What does someone see when they open an expired link?",
+      "options": [
+        {
+          "index": 0,
+          "text": "A page that says the link expired",
+          "recommended": true
+        },
+        {
+          "index": 1,
+          "text": "The same not-found answer as an unknown link",
+          "recommended": false
+        }
+      ],
+      "citations": [
+        "repo:src/sharing/routes.ts"
+      ],
+      "status": "answered"
+    },
+    {
+      "id": "gap-revocation-order",
+      "rank": 4,
+      "question": "A link can be revoked and can expire. Which wins, and does expiry sit behind the linkRevocation flag too?",
+      "options": [
+        {
+          "index": 0,
+          "text": "Either one ends the link; expiry is not behind the flag",
+          "recommended": true
+        },
+        {
+          "index": 1,
+          "text": "Either one ends the link; expiry is behind the same flag",
+          "recommended": false
+        }
+      ],
+      "citations": [
+        "linear:issue/5c0b1e00-0000-4000-8000-000000000130",
+        "repo:src/sharing/links.ts"
+      ],
+      "status": "answered"
+    },
+    {
+      "id": "gap-who-picks",
+      "rank": 5,
+      "question": "Who may set a time: any editor, or only the owner of the note?",
+      "options": [
+        {
+          "index": 0,
+          "text": "Any editor",
+          "recommended": true
+        },
+        {
+          "index": 1,
+          "text": "Only owners",
+          "recommended": false
+        }
+      ],
+      "citations": [
+        "repo:src/sharing/routes.ts",
+        "repo:src/roles/roles.ts"
+      ],
+      "status": "answered"
+    },
+    {
+      "id": "gap-clock",
+      "rank": 6,
+      "question": "Which clock decides that a link has expired, and is the end inclusive?",
+      "options": [
+        {
+          "index": 0,
+          "text": "The server clock, UTC, the instant is the end",
+          "recommended": true
+        },
+        {
+          "index": 1,
+          "text": "The server clock, the end of that day",
+          "recommended": false
+        }
+      ],
+      "citations": [
+        "repo:src/sharing/links.ts"
+      ],
+      "status": "answered"
+    },
+    {
+      "id": "gap-notice",
+      "rank": 7,
+      "question": "Should anyone be told before a link expires?",
+      "options": [
+        {
+          "index": 0,
+          "text": "No",
+          "recommended": true
+        },
+        {
+          "index": 1,
+          "text": "Yes, the note's owner, through the weekly digest",
+          "recommended": false
+        }
+      ],
+      "citations": [
+        "repo:src/digest/digest.ts"
+      ],
+      "status": "answered"
+    }
+  ]
+}
