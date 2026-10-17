@@ -38,7 +38,9 @@ internal static class TrayMarks
     {
         if (!_icons.TryGetValue((state, count), out var icon))
         {
+#pragma warning disable CA2000 // the icons are cached for the life of the process
             icon = new WindowIcon(Draw(state, count));
+#pragma warning restore CA2000
             _icons[(state, count)] = icon;
         }
 

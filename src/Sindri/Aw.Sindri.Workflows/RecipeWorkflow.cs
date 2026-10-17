@@ -186,7 +186,7 @@ internal sealed partial class RecipeWorkflow
     {
         { Kind: SuspensionKind.Takeover } => false,
         not null => true,
-        null => instance.Frame.Run is { Runtime: StepRuntime.Desk },
+        _ => instance.Frame.Run is { Runtime: StepRuntime.Desk },
     };
 
     /// <summary>

@@ -54,7 +54,9 @@ public sealed partial class SindriApp : Application
         // One writer of the preferences for the whole app: the shell and Settings share it, so their writes queue.
         var preferences = new Preferences(platform.Preferences);
         var clipboard = new AvaloniaClipboard(static () => (Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow);
+#pragma warning disable CA2000 // the shell view model keeps the client for the app's process
         var api = new SindriApiClient(Loopback(), platform.Token, clock, platform.Log);
+#pragma warning restore CA2000
         return new(new ShellViewModel(platform.Records, api, clock, preferences, clipboard, platform.Motion), preferences, platform, clock);
     }
 
@@ -73,8 +75,10 @@ public sealed partial class SindriApp : Application
     // The API is on loopback: never through a configured proxy (as the CLI's client), and a connect that hangs fails in 2 s.
     // The client owns no timeout of its own, so the event stream stays open.
     private static HttpClient Loopback() =>
+#pragma warning disable CA2000 // the client lives for the app's process
         new(new SocketsHttpHandler { UseProxy = false, ConnectTimeout = TimeSpan.FromSeconds(2) }) { Timeout = Timeout.InfiniteTimeSpan };
 
+#pragma warning restore CA2000
     /// <inheritdoc />
     public override void Initialize() => AvaloniaXamlLoader.Load(this);
 
