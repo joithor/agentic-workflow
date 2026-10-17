@@ -113,6 +113,18 @@ public sealed class HumanOnlyReportTests
         Assert.EndsWith($"sindri workflow complete T-7/evidence/1 --run {RunToken.For(1, 1).Value} --outcome {outcome}{outputs}", refused.Error.Message, StringComparison.Ordinal);
     }
 
+    /// <summary>Review run 1 (arch-r1-1): the view read for the human-only rule serves the engine-filled outputs and the approval check too.</summary>
+    [Fact(Timeout = 30_000)]
+    public async Task A_session_report_reads_the_instance_once()
+    {
+        var desk = new OpenTask("step.produce");
+
+        var done = await Service(desk, Session()).Handle(Request(), TestContext.Current.CancellationToken);
+
+        Assert.False(done.IsError, done.IsError ? done.Error.Message : null);
+        Assert.Equal(1, desk.Reads);
+    }
+
     [Fact(Timeout = 30_000)]
     public async Task A_fresh_session_report_on_an_instance_that_cant_be_read_is_that_error_and_claims_nothing()
     {
@@ -151,6 +163,8 @@ public sealed class HumanOnlyReportTests
 
         public bool Unreadable { get; set; }
 
+        public int Reads { get; private set; }
+
         public IReadOnlyList<Trigger> Sent => _sent;
 
         public IReadOnlyList<Trigger> Attempted => _attempted;
@@ -162,7 +176,7 @@ public sealed class HumanOnlyReportTests
         public ValueTask<Result<InstanceView>> Start(InstanceStart start, CancellationToken cancellationToken) => throw new NotSupportedException("not started here");
 
         public ValueTask<Result<InstanceView>> Get(InstanceAddress at, CancellationToken cancellationToken) =>
-            Unreadable ? ValueTask.FromResult<Result<InstanceView>>(WorkflowErrors.NoRuntime.With("down")) : ValueTask.FromResult<Result<InstanceView>>(View());
+            Read() && Unreadable ? ValueTask.FromResult<Result<InstanceView>>(WorkflowErrors.NoRuntime.With("down")) : ValueTask.FromResult<Result<InstanceView>>(View());
 
         public ValueTask<Result<CommandResult>> Send(InstanceAddress at, CommandNonce nonce, Trigger command, CancellationToken cancellationToken)
         {
@@ -179,6 +193,12 @@ public sealed class HumanOnlyReportTests
         public ValueTask<Result<CommandResult>> OpenRequest(InstanceAddress at, LaunchId launch, CancellationToken cancellationToken) => throw new NotSupportedException("not requested here");
 
         public ValueTask<Result<Unit>> Signal(InstanceAddress at, WaitSatisfied delivered, CancellationToken cancellationToken) => throw new NotSupportedException("not signalled here");
+
+        private bool Read()
+        {
+            Reads++;
+            return true;
+        }
 
         private InstanceView View()
         {
