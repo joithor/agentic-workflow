@@ -112,6 +112,7 @@ evals:
   - evals/workflow.evidence/failed.jsonl
   - evals/workflow.evidence/leaf-failed.jsonl
   - evals/workflow.evidence/all-unresolved.jsonl
+  - evals/workflow.evidence/all-cancelled.jsonl
   - evals/workflow.evidence/cancelled.jsonl
   - evals/workflow.evidence/other-failed.jsonl
   - evals/workflow.evidence/child-parks.jsonl
