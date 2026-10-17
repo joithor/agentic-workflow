@@ -34,5 +34,5 @@
       "at": "2026-10-16T11:05:00Z"
     }
   ],
-  "note": "Stand-in for the records aw-packets freeze writes. Hashes are the fixture's own dirHash (selfcheck.mjs), not aw-packets hash, until LN-PKT1 lands."
+  "note": "Stand-in for the records aw-packets freeze writes. Hashes are real `aw-packets hash` values, checked by LineFixtureTests."
 }
