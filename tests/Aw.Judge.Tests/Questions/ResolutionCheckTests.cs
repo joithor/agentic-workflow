@@ -67,10 +67,10 @@ public sealed class ResolutionCheckTests
     }
 
     [Theory]
-    [InlineData("api-evidence", "HTTP or CLI contract check")]
-    [InlineData("db-evidence", "persisted-state check")]
-    [InlineData("ui-evidence", "browser UI check")]
-    [InlineData("test", "regression test")]
+    [InlineData("api-evidence", "An HTTP or CLI contract check")]
+    [InlineData("db-evidence", "A persisted-state check")]
+    [InlineData("ui-evidence", "A browser UI check")]
+    [InlineData("test", "A regression test")]
     public async Task Resolution_check_reads_api_and_db_evidence_kinds(string kind, string noun)
     {
         var cli = Cli(ContentClass.Brief).Decides("resolved", 0.95);
@@ -78,6 +78,6 @@ public sealed class ResolutionCheckTests
         var outcome = await new QuestionRun().Ask(ResolutionCheckQuestion.Definition, Input().Replace("\"checkKind\":\"test\"", $"\"checkKind\":\"{kind}\"", StringComparison.Ordinal), cli);
 
         _ = AssertModel("resolved", outcome);
-        Assert.Contains($"A {noun} failed before the fix and passes after it", Assert.Single(cli.Calls).Question.Prompt, StringComparison.Ordinal);
+        Assert.Contains($"{noun} failed before the fix and passes after it", Assert.Single(cli.Calls).Question.Prompt, StringComparison.Ordinal);
     }
 }

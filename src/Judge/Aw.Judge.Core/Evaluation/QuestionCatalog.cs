@@ -40,7 +40,7 @@ public static class QuestionCatalog
             TurnProgressQuestion.Name => evaluator.Evaluate(TurnProgressQuestion.Definition, rawInput, context, cancellationToken),
             UiElementRepairQuestion.Name => evaluator.Evaluate(UiElementRepairQuestion.Definition, rawInput, context, cancellationToken),
             VisualCritiqueQuestion.Name => evaluator.Evaluate(VisualCritiqueQuestion.Definition, rawInput, context, cancellationToken),
-            ChooseQuestion.Name => evaluator.Evaluate(ChooseQuestion.For(new ChooseInput("", new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal), [])), rawInput, context, cancellationToken),
+            ChooseQuestion.Name => evaluator.EvaluateChoose(rawInput, context, cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(question), question, "not a question in the catalog"),
         };
     }

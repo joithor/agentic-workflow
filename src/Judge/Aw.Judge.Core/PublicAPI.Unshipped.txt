@@ -990,3 +990,10 @@ Aw.Judge.Core.Questions.QuestionDefinition<TInput>.AskConfidence.get -> bool
 Aw.Judge.Core.Questions.QuestionDefinition<TInput>.AskConfidence.init -> void
 Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ReportsTrace.get -> bool
 Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ReportsTrace.init -> void
+Aw.Judge.Core.Evaluation.QuestionEvaluator.EvaluateChoose(string! rawInput, Aw.Judge.Core.Evaluation.EvaluationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Judge.Core.Evaluation.EvaluationOutcome!>
+const Aw.Judge.Core.Questions.ChooseQuestion.DefaultThreshold = 0.6 -> double
+const Aw.Judge.Core.Questions.ChooseQuestion.MaxChoices = 32 -> int
+const Aw.Judge.Core.Questions.ChooseQuestion.MaxCriterionLength = 400 -> int
+const Aw.Judge.Core.Questions.ChooseQuestion.MaxNameLength = 32 -> int
+const Aw.Judge.Core.Questions.ChooseQuestion.Uncertain = "uncertain" -> string!
+static Aw.Judge.Core.Questions.ChooseQuestion.Unreadable.get -> Aw.Judge.Core.Questions.QuestionDefinition<Aw.Judge.Core.Questions.ChooseInput!>!

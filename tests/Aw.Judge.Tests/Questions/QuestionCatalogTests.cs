@@ -26,7 +26,7 @@ public sealed class QuestionCatalogTests
 
         var outcome = await evaluator.Ask(name, "{}", new EvaluationContext { Providers = [] }, CancellationToken.None);
 
-        Assert.Equal(new EscalatedOutcome("invalid-input"), outcome);
+        Assert.Equal("invalid-input", Assert.IsType<EscalatedOutcome>(outcome).ReasonCode);   // why: choose's escalation also carries its id
         Assert.Equal(name, Assert.Single(log.Decisions).Question);
     }
 

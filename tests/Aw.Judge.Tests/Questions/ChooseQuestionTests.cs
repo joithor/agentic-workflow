@@ -165,7 +165,7 @@ public sealed class ChooseQuestionTests
     [Fact]
     public async Task Rules_alone_escalates_no_provider_decided()
     {
-        var outcome = await new QuestionRun().AskByName("choose", Input(), Rules(ContentClass.Brief));
+        var outcome = await new QuestionRun().AskByName("choose", Input());
 
         var escalated = Assert.IsType<EscalatedOutcome>(outcome);
         Assert.Equal("no-provider-decided", escalated.ReasonCode);
@@ -176,8 +176,8 @@ public sealed class ChooseQuestionTests
     public async Task An_out_of_enum_answer_is_a_failure_row_and_the_next_provider_is_asked()
     {
         var run = new QuestionRun();
-        var first = Cli(ContentClass.Brief).Decides("elsewhere", 0.9);
-        var second = new Aw.Judge.Testing.ScriptedProvider(ProviderName.CodexCli, ContentClass.Brief).Decides("db", 0.9);
+        var first = new Aw.Judge.Testing.ScriptedProvider(ProviderName.Jev, ContentClass.Brief).Decides("elsewhere", 0.9);
+        var second = Cli(ContentClass.Brief).Decides("db", 0.9);
 
         var outcome = await run.AskByName("choose", Input(), first, second);
 
