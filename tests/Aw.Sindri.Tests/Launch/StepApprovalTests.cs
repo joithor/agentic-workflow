@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Profile;
@@ -104,7 +105,7 @@ public sealed class StepApprovalTests
         Assert.Contains("not-in-catalog", error.Message, StringComparison.Ordinal);
     }
 
-    private static string? Detail(Aw.Kernel.Error error, string name) => error.Extensions!.Single(m => string.Equals(m.Key, name, StringComparison.Ordinal)).Value.GetString();
+    private static string? Detail(Error error, string name) => error.Extensions!.Single(m => string.Equals(m.Key, name, StringComparison.Ordinal)).Value.GetString();
 
     private sealed class FlippingCatalog(params AgentEntry[] entries) : IAgentCatalog
     {
