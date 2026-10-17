@@ -841,6 +841,10 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
   `{item}/{recipe}/1`, `/2` … so a start never waits on visibility. Without `--attempt` the latest attempt is used (a
   live one is returned as it is; an ended one is shown with `start a new one with --attempt next`); `--attempt next`
   is refused while the latest is live (`SND-WF-012`). It prints the status header.
+  A recipe whose Step names an input with a registered descriptor but no runtime in this build is refused with
+  `SND-WF-016` naming `states.<s>.step.inputs[k]`, here and at `recipe approve` (the challenge too); `recipe show`, `recipe validate`
+  and `recipe eval` still accept it, and eval ignores inputs. An input id with no registration at all is not this case: it is
+  `RCP-BLOCK-001` at `recipe validate` and at register.
 - **`workflow answer`, `command <verb>`, `cancel`, `takeover`, `handback`** run the `ApplyCommand` slice, in this order: resolve the address
   (a bare item is the root of its latest attempt, `SND-WF-006` listing the candidates when the item has roots of more
   than one recipe); check the arguments; claim the nonce for exactly this command (`SND-WF-009`); for a protected

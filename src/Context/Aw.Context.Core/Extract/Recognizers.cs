@@ -9,7 +9,7 @@ namespace Aw.Context.Core.Extract;
 /// <summary>The forms the extractor recognizes (S-4), each pure over one file's text. Only source files count: not tests, not vendored or built output. A form is one row of <see cref="All"/>: adding one is adding a row.</summary>
 public static partial class Recognizers
 {
-    private const int MaxFileLength = 512_000;
+    internal const int MaxFileLength = 512_000;
     private static readonly string[] _extensions = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".json"];
     private static readonly HashSet<string> _localeFolders = new(["i18n", "l10n", "locale", "locales", "lang", "translations"], StringComparer.OrdinalIgnoreCase);
     private static readonly string[] _notComponents = ["Context", "Schema", "Props"];
