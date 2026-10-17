@@ -8063,6 +8063,7 @@ static Aw.Sindri.Core.Onyx.OnyxSteps.Stamp(params string![]! parts) -> string!
 static readonly Aw.Sindri.Core.SindriErrors.OnyxComposeFailed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.OnyxNotReady -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.OnyxRemoteDocker -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.Onyx.OnyxPreflight.ComposeFloor -> System.Version!
 Aw.Sindri.Core.Onyx.ComposeContainer
 Aw.Sindri.Core.Onyx.ComposeContainer.<Clone>$() -> Aw.Sindri.Core.Onyx.ComposeContainer!
 Aw.Sindri.Core.Onyx.ComposeContainer.ComposeContainer(string! Service, string! State, string? Health, string! Image, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposePublisher!>! Publishers) -> void
@@ -8100,9 +8101,23 @@ Aw.Sindri.Core.Onyx.ComposePublisher.PublishedPort.get -> int
 Aw.Sindri.Core.Onyx.ComposePublisher.PublishedPort.init -> void
 Aw.Sindri.Core.Onyx.ComposePublisher.TargetPort.get -> int
 Aw.Sindri.Core.Onyx.ComposePublisher.TargetPort.init -> void
+Aw.Sindri.Core.Onyx.ComposePublishedPort
+Aw.Sindri.Core.Onyx.ComposePublishedPort.<Clone>$() -> Aw.Sindri.Core.Onyx.ComposePublishedPort!
+Aw.Sindri.Core.Onyx.ComposePublishedPort.ComposePublishedPort(string! Service, string! HostIp, int Published, int Target) -> void
+Aw.Sindri.Core.Onyx.ComposePublishedPort.Deconstruct(out string! Service, out string! HostIp, out int Published, out int Target) -> void
+Aw.Sindri.Core.Onyx.ComposePublishedPort.Equals(Aw.Sindri.Core.Onyx.ComposePublishedPort? other) -> bool
+Aw.Sindri.Core.Onyx.ComposePublishedPort.HostIp.get -> string!
+Aw.Sindri.Core.Onyx.ComposePublishedPort.HostIp.init -> void
+Aw.Sindri.Core.Onyx.ComposePublishedPort.Published.get -> int
+Aw.Sindri.Core.Onyx.ComposePublishedPort.Published.init -> void
+Aw.Sindri.Core.Onyx.ComposePublishedPort.Service.get -> string!
+Aw.Sindri.Core.Onyx.ComposePublishedPort.Service.init -> void
+Aw.Sindri.Core.Onyx.ComposePublishedPort.Target.get -> int
+Aw.Sindri.Core.Onyx.ComposePublishedPort.Target.init -> void
 Aw.Sindri.Core.Onyx.ComposeFailures
 Aw.Sindri.Core.Onyx.IContainerRuntime.Ps(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeContainer!>!>!
 Aw.Sindri.Core.Onyx.IContainerRuntime.Pull(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Action<string!>! progress, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+Aw.Sindri.Core.Onyx.IContainerRuntime.PublishedPorts(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposePublishedPort!>!>!
 Aw.Sindri.Core.Onyx.IContainerRuntime.RepoDigests(System.Collections.Generic.IReadOnlyList<string!>! images, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>!>!
 Aw.Sindri.Core.Onyx.IContainerRuntime.ServerPlatform(System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<string!>!
 Aw.Sindri.Core.Onyx.IContainerRuntime.Stop(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
@@ -8118,12 +8133,17 @@ override Aw.Sindri.Core.Onyx.ComposeProject.ToString() -> string!
 override Aw.Sindri.Core.Onyx.ComposePublisher.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Onyx.ComposePublisher.GetHashCode() -> int
 override Aw.Sindri.Core.Onyx.ComposePublisher.ToString() -> string!
+override Aw.Sindri.Core.Onyx.ComposePublishedPort.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.ComposePublishedPort.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.ComposePublishedPort.ToString() -> string!
 static Aw.Sindri.Core.Onyx.ComposeContainer.operator !=(Aw.Sindri.Core.Onyx.ComposeContainer? left, Aw.Sindri.Core.Onyx.ComposeContainer? right) -> bool
 static Aw.Sindri.Core.Onyx.ComposeContainer.operator ==(Aw.Sindri.Core.Onyx.ComposeContainer? left, Aw.Sindri.Core.Onyx.ComposeContainer? right) -> bool
 static Aw.Sindri.Core.Onyx.ComposeProject.operator !=(Aw.Sindri.Core.Onyx.ComposeProject? left, Aw.Sindri.Core.Onyx.ComposeProject? right) -> bool
 static Aw.Sindri.Core.Onyx.ComposeProject.operator ==(Aw.Sindri.Core.Onyx.ComposeProject? left, Aw.Sindri.Core.Onyx.ComposeProject? right) -> bool
 static Aw.Sindri.Core.Onyx.ComposePublisher.operator !=(Aw.Sindri.Core.Onyx.ComposePublisher? left, Aw.Sindri.Core.Onyx.ComposePublisher? right) -> bool
 static Aw.Sindri.Core.Onyx.ComposePublisher.operator ==(Aw.Sindri.Core.Onyx.ComposePublisher? left, Aw.Sindri.Core.Onyx.ComposePublisher? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposePublishedPort.operator !=(Aw.Sindri.Core.Onyx.ComposePublishedPort? left, Aw.Sindri.Core.Onyx.ComposePublishedPort? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposePublishedPort.operator ==(Aw.Sindri.Core.Onyx.ComposePublishedPort? left, Aw.Sindri.Core.Onyx.ComposePublishedPort? right) -> bool
 static Aw.Sindri.Core.Onyx.ComposeFailures.IsTimeout(Aw.Kernel.Error! error) -> bool
 static Aw.Sindri.Core.Onyx.ComposeFailures.TimedOut(string! what, System.TimeSpan timeout) -> Aw.Kernel.Error!
 static Aw.Sindri.Core.Onyx.ImageNames.WithoutDefaults(string! reference) -> string!
@@ -8187,5 +8207,8 @@ Aw.Sindri.Core.Onyx.OnyxFacts.Platform(System.Threading.CancellationToken cancel
 Aw.Sindri.Core.Onyx.OnyxFacts.Read(System.Threading.CancellationToken cancellationToken) -> (Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! Docker, Aw.Sindri.Core.Onyx.HostFacts! Host)
 Aw.Sindri.Core.Onyx.OnyxPaths.EnvTemplate.get -> string!
 Aw.Sindri.Core.Onyx.OnyxPaths.Project.get -> Aw.Sindri.Core.Onyx.ComposeProject!
+Aw.Sindri.Core.Onyx.OnyxBindings
 static Aw.Sindri.Core.Onyx.OnyxPreflight.IsLocalEndpoint(string? endpoint) -> bool
 static Aw.Sindri.Core.Onyx.OnyxPreflight.RemoteDocker(string? endpoint) -> Aw.Kernel.Error!
+static Aw.Sindri.Core.Onyx.OnyxPreflight.TryParseComposeVersion(string? text, out System.Version! version) -> bool
+static Aw.Sindri.Core.Onyx.OnyxBindings.Verify(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposePublishedPort!>! published, int port) -> Aw.Kernel.Error?

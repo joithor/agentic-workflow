@@ -48,6 +48,17 @@ internal sealed class OnyxStartStep(IContainerRuntime runtime, IOnyxHealth healt
 
     private async ValueTask<Result<Unit>> Run(OnyxUpContext context, CancellationToken cancellationToken)
     {
+        var ports = runtime.PublishedPorts(context.Project, cancellationToken);
+        if (ports.IsError)
+        {
+            return ports.Error;
+        }
+
+        if (OnyxBindings.Verify(ports.Value, context.Port) is { } refused)
+        {
+            return refused;   // nothing has been started
+        }
+
         var begun = clock.GetUtcNow();
         var started = runtime.Up(context.Project, _ => progress.Tick(), Left(begun), cancellationToken);
         if (started.IsError)

@@ -60,6 +60,11 @@ public sealed class DockerCliRuntimeContractTests : ContainerRuntimeContract
                 return Exited("", 1);
             }
 
+            if (arguments.Contains("config", StringComparer.Ordinal))
+            {
+                return Exited("{\"services\":{\"nginx\":{\"ports\":[{\"mode\":\"ingress\",\"host_ip\":\"127.0.0.1\",\"target\":80,\"published\":\"3000\",\"protocol\":\"tcp\"}]}}}");
+            }
+
             return arguments.Contains("ps", StringComparer.Ordinal) ? Exited(Ps()) : Exited("");
         }
 

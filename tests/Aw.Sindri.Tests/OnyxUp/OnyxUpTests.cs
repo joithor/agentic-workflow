@@ -16,7 +16,7 @@ public sealed class OnyxUpTests
 
         var response = (await rig.Up(Token)).Value;
 
-        Assert.Equal(["Inspect", "ServerPlatform", "Pull", "RepoDigests", "Up"], rig.Runtime.Calls, StringComparer.Ordinal);
+        Assert.Equal(["Inspect", "ServerPlatform", "Pull", "RepoDigests", "PublishedPorts", "Up"], rig.Runtime.Calls, StringComparer.Ordinal);
         Assert.Equal(_allSteps, response.Ran, StringComparer.Ordinal);
         Assert.Empty(response.Skipped);
         Assert.Equal("http://127.0.0.1:3000", response.Url);

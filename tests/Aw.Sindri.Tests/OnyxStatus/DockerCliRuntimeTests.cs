@@ -285,6 +285,30 @@ public sealed class DockerCliRuntimeTests
         Assert.True(ComposeFailures.IsTimeout(error));
     }
 
+    private const string ConfigJson = "{\"name\":\"sindri-onyx\",\"services\":{\"nginx\":{\"image\":\"nginx@sha256:aaa\",\"environment\":{\"USER_AUTH_SECRET\":\"hunter2-secret\"},\"ports\":[{\"mode\":\"ingress\",\"host_ip\":\"127.0.0.1\",\"target\":80,\"published\":\"3000\",\"protocol\":\"tcp\"}]},\"cache\":{\"image\":\"redis\"},\"relational_db\":{\"ports\":[{\"mode\":\"ingress\",\"target\":5432,\"protocol\":\"tcp\"}]}}}";
+
+    [Fact, Trait("Lane", "unit")]
+    public void PublishedPorts_reads_compose_config_json_and_names_a_port_with_no_address_or_host_port()
+    {
+        var runner = new FakeToolRunner(Exit(0, ConfigJson));
+
+        var ports = Cli(runner).PublishedPorts(_project, Token).Value;
+
+        Assert.Equal([.. _composePrefix, "config", "--format", "json"], Assert.Single(runner.Calls).Arguments);
+        Assert.Equal(
+            [new ComposePublishedPort("nginx", "127.0.0.1", 3000, 80), new ComposePublishedPort("relational_db", "", 0, 5432)],
+            ports);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void PublishedPorts_output_it_cannot_read_is_011_and_never_echoes_the_environment()
+    {
+        var error = Cli(new FakeToolRunner(Exit(0, "not json hunter2-secret"))).PublishedPorts(_project, Token).Error;
+
+        Assert.Equal("SND-ONYX-011", error.Code);
+        Assert.DoesNotContain("hunter2", error.Message, StringComparison.Ordinal);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Stop_and_Ps_use_30_second_timeouts_and_stop_removes_nothing()
     {

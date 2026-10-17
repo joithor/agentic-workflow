@@ -26,6 +26,7 @@ public sealed class OnyxUpRig
         {
             Written = Mirror,
         };
+        Runtime.Config = _ => [new ComposePublishedPort("nginx", "127.0.0.1", RenderedPort(), 80)];
         Random = new FakeRandomHex();
         Clock = new RigClock();
         foreach (var pin in Pins.Pins.Images.Where(static i => i.Platform == "linux/arm64"))
@@ -88,6 +89,13 @@ public sealed class OnyxUpRig
     /// <returns>The result.</returns>
     public async Task<Kernel.Result<OnyxUpResponse>> Up(CancellationToken cancellationToken)
         => await Service().Handle(new OnyxUpRequest(), cancellationToken);
+
+    // Compose reads HOST_PORT from the rendered .env, so the fake config answers with it (3000 before the env exists).
+    private int RenderedPort()
+        => Workspace.Read(Paths.Env)?.Split('\n').FirstOrDefault(static l => l.StartsWith("HOST_PORT=", StringComparison.Ordinal)) is { } line
+            && int.TryParse(line["HOST_PORT=".Length..], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var port)
+                ? port
+                : 3000;
 
     // A file the fake fetch "wrote" is on disk for the workspace too.
     private void Mirror(string path, byte[] bytes) => Workspace.Files[Paths.DeployDir + "/" + path] = System.Text.Encoding.UTF8.GetString(bytes);

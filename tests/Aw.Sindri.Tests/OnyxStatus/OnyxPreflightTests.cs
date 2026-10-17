@@ -70,6 +70,43 @@ public sealed class OnyxPreflightTests
         Assert.Equal("SND-ONYX-002", compose.Problem?.Code);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("2.24.0", true)]
+    [InlineData("v2.29.7", true)]
+    [InlineData("5.1.2", true)]
+    [InlineData("2.40.3-desktop.1", true)]
+    [InlineData("2.23.9", false)]
+    [InlineData("v2.20.0", false)]
+    [InlineData("1.29.2", false)]
+    public void Evaluate_judges_the_compose_version_against_the_override_floor(string version, bool ok)
+    {
+        var docker = FakeContainerRuntime.Healthy with { ComposeVersion = version };
+
+        var compose = Check(OnyxPreflight.Evaluate(docker, new HostFacts(_roomy, DataRoot: null, _free), _pins), "compose");
+
+        Assert.Equal(ok ? CheckState.Ok : CheckState.Fail, compose.State);
+        if (!ok)
+        {
+            Assert.Equal("SND-ONYX-002", compose.Problem?.Code);
+            Assert.Contains("update Compose", compose.Problem!.Message, StringComparison.Ordinal);
+            Assert.Contains("2.24.0", compose.Problem.Message, StringComparison.Ordinal);
+        }
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(null)]
+    [InlineData("dev")]
+    public void Evaluate_warns_and_does_not_block_on_an_unreadable_compose_version(string? version)
+    {
+        var docker = FakeContainerRuntime.Healthy with { ComposeVersion = version };
+
+        var report = OnyxPreflight.Evaluate(docker, new HostFacts(_roomy, DataRoot: null, _free), _pins);
+
+        Assert.Equal(CheckState.Warn, Check(report, "compose").State);
+        Assert.Equal("unreadable version", Check(report, "compose").Detail);
+        Assert.False(report.Blocks);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Evaluate_fails_003_when_docker_memory_is_short()
     {

@@ -91,6 +91,11 @@ public abstract class ContainerRuntimeContract
         Expect.True(runtime.Ps(Project, Token).Value.All(static c => c.State == "exited"));
     }
 
+    /// <summary>The rendered compose's published ports are what a healthy box's Onyx publishes: nginx's 80 on loopback.</summary>
+    [Fact]
+    public void The_published_ports_of_a_healthy_box_are_nginx_on_loopback()
+        => Expect.Equal(new ComposePublishedPort("nginx", "127.0.0.1", 3000, 80), Create(FakeContainerRuntime.Healthy).PublishedPorts(Project, Token).Value.Single());
+
     /// <summary>A present image maps to its digests and a missing one to an empty list.</summary>
     [Fact]
     public void A_present_image_maps_to_its_digests_and_a_missing_one_to_none()
@@ -114,6 +119,7 @@ public abstract class ContainerRuntimeContract
         Expect.Equal("SND-ONYX-001", runtime.Up(Project, static _ => { }, limit: null, Token).Error.Code);
         Expect.Equal("SND-ONYX-001", runtime.Stop(Project, Token).Error.Code);
         Expect.Equal("SND-ONYX-001", runtime.Ps(Project, Token).Error.Code);
+        Expect.Equal("SND-ONYX-001", runtime.PublishedPorts(Project, Token).Error.Code);
         Expect.Equal("SND-ONYX-001", runtime.RepoDigests(["a@sha256:b"], Token).Error.Code);
     }
 

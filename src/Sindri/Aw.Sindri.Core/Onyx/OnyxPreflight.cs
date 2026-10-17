@@ -66,9 +66,48 @@ public static class OnyxPreflight
     public static Error RemoteDocker(string? endpoint)
         => SindriErrors.OnyxRemoteDocker.With($"Docker points at another machine ({endpoint ?? "unknown"}): Sindri only runs Onyx on this one; switch to the local context (`docker context use default`, and unset DOCKER_HOST), then run this again");
 
-    private static PreflightCheck Compose(ContainerRuntimeFacts docker) => docker.ComposeV2
-        ? Ok("compose", docker.ComposeVersion ?? "unreadable version")
-        : Fail("compose", "Compose v2 not found", SindriErrors.OnyxComposeMissing, "Docker Compose v2 is missing (`docker compose version` fails; the legacy docker-compose isn't enough): update Docker Desktop or install the docker compose plugin");
+    /// <summary>The first Compose release that reads the `!override` tag Sindri's compose override uses.</summary>
+    public static readonly Version ComposeFloor = new(2, 24, 0);
+
+    private static PreflightCheck Compose(ContainerRuntimeFacts docker)
+    {
+        if (!docker.ComposeV2)
+        {
+            return Fail("compose", "Compose v2 not found", SindriErrors.OnyxComposeMissing, "Docker Compose v2 is missing (`docker compose version` fails; the legacy docker-compose isn't enough): update Docker Desktop or install the docker compose plugin");
+        }
+
+        if (docker.ComposeVersion is not { } text || !TryParseComposeVersion(text, out var version))
+        {
+            return Warn("compose", "unreadable version");   // the rendered compose is still checked before anything starts
+        }
+
+        return version >= ComposeFloor
+            ? Ok("compose", text)
+            : Fail("compose", text, SindriErrors.OnyxComposeMissing, $"Docker Compose {text} is too old: Sindri's override needs Compose {ComposeFloor} or newer (the `!override` tag); update Compose (Docker Desktop, or the docker compose plugin), then run this again");
+    }
+
+    /// <summary>Reads a Compose version such as 2.24.0, v2.29.7, 5.1.2 or 2.40.3-desktop.1 (the numbers before any suffix).</summary>
+    /// <param name="text">The version text as `docker compose version --short` prints it, or null.</param>
+    /// <param name="version">The major, minor and patch numbers.</param>
+    /// <returns>True when the text starts with at least a major and a minor number.</returns>
+    public static bool TryParseComposeVersion(string? text, out Version version)
+    {
+        version = new Version(0, 0, 0);
+        var core = text?.TrimStart('v', 'V').Split('-', '+')[0].Split('.');
+        if (core is null || core.Length < 2 || !int.TryParse(core[0], NumberStyles.None, CultureInfo.InvariantCulture, out var major) || !int.TryParse(core[1], NumberStyles.None, CultureInfo.InvariantCulture, out var minor))
+        {
+            return false;
+        }
+
+        var patch = 0;
+        if (core.Length > 2)
+        {
+            _ = int.TryParse(core[2], NumberStyles.None, CultureInfo.InvariantCulture, out patch);
+        }
+
+        version = new Version(major, minor, patch);
+        return true;
+    }
 
     // The lock's docker-memory-bytes is a floor for `docker info` MemTotal, which reads a few percent under the VM limit
     // the user sets. The setting the user is told is that floor rounded up to a whole GiB (5.5 GiB floor, 6 GiB setting).
