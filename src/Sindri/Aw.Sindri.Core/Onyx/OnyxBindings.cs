@@ -11,11 +11,17 @@ public static class OnyxBindings
     /// <summary>Checks that the only published port across all services is nginx's 80 on 127.0.0.1 at the chosen port.</summary>
     /// <param name="config">What the rendered compose publishes and which services reach the host another way.</param>
     /// <param name="port">The loopback port Sindri chose.</param>
-    /// <returns>Null when the bindings are exactly the expected one; else SND-ONYX-004 naming the first service published anywhere else (or the missing nginx binding).</returns>
+    /// <returns>Null when the bindings are exactly the expected one and no service has the host's network, pid namespace or privileges; else SND-ONYX-004 naming the first service and setting (or the missing nginx binding).</returns>
     public static Error? Verify(ComposeConfigFacts config, int port)
     {
         ArgumentNullException.ThrowIfNull(config);
         var published = config.Ports;
+        if (config.HostAccess.Count > 0)
+        {
+            var access = config.HostAccess[0];
+            return SindriErrors.OnyxPinsMalformed.With(string.Create(CultureInfo.InvariantCulture, $"the rendered compose gives {access.Service} the host's network, processes or privileges ({access.Setting}); Sindri only runs Onyx isolated from the host (nginx on {Loopback}:{port} is the one way in), so nothing was started: the pinned compose or Sindri's override changed, update Sindri and context/onyx.lock together"));
+        }
+
         var expected = (Service: "nginx", HostIp: Loopback, Published: port, Target: 80);
         var other = published.FirstOrDefault(p => (p.Service, p.HostIp, p.Published, p.Target) != expected);
         if (other is not null)

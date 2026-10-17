@@ -26,6 +26,26 @@ internal sealed partial class DockerCliRuntime
             [.. wire.Value.Services
                 .OrderBy(static s => s.Key, StringComparer.Ordinal)
                 .SelectMany(static s => (s.Value.Ports ?? []).Select(p => new ComposePublishedPort(s.Key, p.HostIp ?? "", p.Published ?? 0, p.Target ?? 0)))],
-            []);
+            [.. wire.Value.Services
+                .OrderBy(static s => s.Key, StringComparer.Ordinal)
+                .SelectMany(static s => HostAccess(s.Key, s.Value))]);
+    }
+
+    private static IEnumerable<ComposeHostAccess> HostAccess(string service, ComposeConfigWire.ServiceWire wire)
+    {
+        if (wire.NetworkMode == "host")
+        {
+            yield return new ComposeHostAccess(service, "network_mode: host");
+        }
+
+        if (wire.Privileged == true)
+        {
+            yield return new ComposeHostAccess(service, "privileged: true");
+        }
+
+        if (wire.Pid == "host")
+        {
+            yield return new ComposeHostAccess(service, "pid: host");
+        }
     }
 }
