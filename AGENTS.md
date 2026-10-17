@@ -182,6 +182,7 @@ bash scripts/tests/sindri-smoke-normalize.test.sh
 bash scripts/tests/scoping-fixture.test.sh
 bash scripts/tests/meta-launch.test.sh
 bash scripts/tests/install-meta.test.sh
+bash scripts/tests/meta-teams.test.sh
 bash config/hooks/tests/codex-adapter.test.sh
 bash config/hooks/tests/cursor-adapter.test.sh
 bash config/hooks/tests/provider-install-hooks.test.sh

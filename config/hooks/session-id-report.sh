@@ -2,7 +2,7 @@
 # aw:session-id-report — SessionStart hook for Codex and Cursor (installed user-wide by scripts/install-meta.sh, through the
 # provider adapters). Reports the session's own id to the host that launched it, so lanes started together each record their
 # own id instead of guessing from file timing (launcher spec section 4):
-#   AW_META_TEAM + AW_META_LANE  ->  $AW_STATE_DIR/meta/lane-sessions/<lane>          (scripts/meta-lane.sh waits for it)
+#   AW_META_TEAM + AW_META_LANE  ->  ${AW_META_DIR:-$AW_STATE_DIR/meta}/lane-sessions/<lane>          (scripts/meta-lane.sh waits for it)
 #   AW_SINDRI_LAUNCH             ->  $AW_SINDRI_HOME/launches/<launchId>.session-id    (Sindri's launcher)
 # The key is a variable the host set on that one session, so two sessions started together can't swap ids. Outside a lane or a
 # Sindri launch it exits 0 at once, writing nothing. The id is written atomically and 0600. Reads the id from `session_id`
@@ -85,9 +85,9 @@ if [ "$lane_mode" = 1 ] && ! own_agent; then lane_mode=0; fi
 STATE="${AW_STATE_DIR:-$HOME/.agentic-workflow}"
 if [ "$lane_mode" = 1 ]; then
   safe_name "$AW_META_LANE" || { failopen lane-name-invalid; exit 0; }
-  write_id "$STATE/meta/lane-sessions" "$AW_META_LANE" || failopen write-failed
+  write_id "${AW_META_DIR:-$STATE/meta}/lane-sessions" "$AW_META_LANE" || failopen write-failed
   # a new session starts with no reply marker or owed checksum (meta-lane-gate.sh)
-  unlink "$STATE/meta/lane-sessions/$AW_META_LANE.replied" 2> /dev/null; unlink "$STATE/meta/lane-sessions/$AW_META_LANE.owed" 2> /dev/null
+  unlink "${AW_META_DIR:-$STATE/meta}/lane-sessions/$AW_META_LANE.replied" 2> /dev/null; unlink "${AW_META_DIR:-$STATE/meta}/lane-sessions/$AW_META_LANE.owed" 2> /dev/null
 fi
 if [ -n "${AW_SINDRI_LAUNCH:-}" ]; then
   if safe_name "$AW_SINDRI_LAUNCH"; then
