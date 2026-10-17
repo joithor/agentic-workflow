@@ -103,7 +103,9 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
     /// <returns>The answer, or the API's error.</returns>
     public Task<Result<ApiAnswer<T>>> Post<TBody, T>(string route, TBody? body, CancellationToken ct)
     {
+#pragma warning disable CA2000 // Send disposes the content, on its failure paths and with the request
         var content = body is null ? null : new ByteArrayContent(AwJson.Serialize(body, options)) { Headers = { ContentType = new MediaTypeHeaderValue("application/json") } };
+#pragma warning restore CA2000
         return Send<T>(HttpMethod.Post, route, content, after: null, ct);
     }
 

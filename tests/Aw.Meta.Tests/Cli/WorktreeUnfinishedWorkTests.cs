@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Aw.Kernel.Testing;
 
 namespace Aw.Meta.Tests.Cli;
 
@@ -76,7 +77,7 @@ public sealed class WorktreeUnfinishedWorkTests : IDisposable
         _lab.MergeIntoMain("done");
         await _lab.Gh((1, "MERGED", "done"));
         await _lab.Team();
-        _lab.Cli.Clock.SetUtcNow(DateTimeOffset.UtcNow.AddHours(-1));
+        _lab.Cli.Clock.SetUtcNow(RealTime.NowOffset.AddHours(-1));
         _ = await _lab.Cli.Run("worktree-sweep");   // records its start an hour ago
         var tree = _lab.Tree("done");   // made after that sweep started
 
@@ -96,7 +97,7 @@ public sealed class WorktreeUnfinishedWorkTests : IDisposable
         var tree = _lab.Tree("done");
         await _lab.Gh((1, "MERGED", "done"));
         await _lab.Team();
-        _lab.Cli.Clock.SetUtcNow(DateTimeOffset.UtcNow.AddHours(1));
+        _lab.Cli.Clock.SetUtcNow(RealTime.NowOffset.AddHours(1));
         _lab.StartSleeper(tree);
         _ = await _lab.Cli.Run("worktree-sweep");   // kept (in use); records its start, after the tree was made
         Assert.True(Directory.Exists(tree));

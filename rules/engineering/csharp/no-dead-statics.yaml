@@ -19,10 +19,8 @@ checks:
     status: active
   - type: analyzer
     id: "CA1802"
-    severity: suggestion
     status: active
-gap: partial
-gapNote: "CA1802 (3 test sites on main) is at suggestion until the cleanup PR fixes them and raises it to error."
+gap: closed
 source:
   type: desk
   ref: "https://learn.microsoft.com/dotnet/fundamentals/code-analysis/quality-rules/ca1823"

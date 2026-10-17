@@ -53,7 +53,11 @@ internal sealed class SingleLaunch(TimeSpan holderWait)
             finally
             {
                 // Ending the instance (removing its socket and pid files) is inside the boundary too: ui/ may be gone.
+                // This runs after runApp returned, so Avalonia's synchronization context is installed: it is safe only because
+                // SocketSingleInstance.DisposeAsync uses ConfigureAwait(false) throughout. Removing one there would deadlock on exit.
+#pragma warning disable RS0030 // safe to block: SocketSingleInstance.DisposeAsync awaits with ConfigureAwait(false) throughout, so it never needs this thread's context
                 instance.DisposeAsync().AsTask().GetAwaiter().GetResult();
+#pragma warning restore RS0030
             }
         }
         catch (Exception e)
@@ -112,8 +116,10 @@ internal sealed class SingleLaunch(TimeSpan holderWait)
             return RunApp(runApp, errors);
         }
 
+#pragma warning disable RS0030 // the launcher is synchronous on the main thread before the UI starts (see the comment above)
         if (instance.Send(MessageFor(args), CancellationToken.None).AsTask().GetAwaiter().GetResult())
         {
+#pragma warning restore RS0030
             return 0;
         }
 
@@ -129,7 +135,9 @@ internal sealed class SingleLaunch(TimeSpan holderWait)
                 return RunApp(runApp, errors);
             }
 
+#pragma warning disable RS0030 // the launcher is synchronous on the main thread before the UI starts: it waits out a holder that is still starting
             Thread.Sleep(_claimEvery);
+#pragma warning restore RS0030
         }
         while (waited.Elapsed < holderWait);
 
@@ -152,7 +160,9 @@ internal sealed class SingleLaunch(TimeSpan holderWait)
         return link.Contains('/', StringComparison.Ordinal) && link.Length <= InstanceMessages.MaxLength ? link : InstanceMessages.Focus;
     }
 
+#pragma warning disable RS0030 // the launcher is synchronous on the main thread before the UI starts
     private static bool Claim(ISingleInstance instance) => instance.TryClaim(CancellationToken.None).AsTask().GetAwaiter().GetResult();
+#pragma warning restore RS0030
 
     private static int RunApp(Func<int> runApp, TextWriter errors)
     {

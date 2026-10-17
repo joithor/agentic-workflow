@@ -15,7 +15,9 @@ public sealed class EndpointRecordRead
     }
 
     /// <summary>Gets the record's JSON bytes; null when there is none or it can't be read (<see cref="Failure"/> tells which).</summary>
+#pragma warning disable CA1819 // the record's bytes are handed to the parser as read, without a copy
     public byte[]? Bytes { get; }
+#pragma warning restore CA1819
 
     /// <summary>Gets why a record that is there can't be read; null when it could be, or there is none.</summary>
     public EndpointRecordFailure? Failure { get; }
