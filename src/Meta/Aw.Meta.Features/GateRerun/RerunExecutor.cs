@@ -20,7 +20,7 @@ internal sealed class RerunExecutor(ICommandRunner runner, MetaPaths paths)
 
     internal async ValueTask<Result<RerunOutcome>> Run(IReadOnlyList<string> argv, string tree, string test, bool filterMustMatch, CancellationToken cancellationToken)
     {
-        var ran = await runner.Run(new CommandRequest(argv, _limit) { Cwd = tree }, cancellationToken).ConfigureAwait(false);
+        var ran = await runner.Run(new CommandRequest(argv, _limit) { Cwd = tree, Env = GatePriority.Environment }, cancellationToken).ConfigureAwait(false);
         if (ran.IsError)
         {
             return ran.Error;
