@@ -66,7 +66,7 @@ public sealed class EvidenceParentFactsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Evidence_all_unresolved_carries_no_summary()
+    public void Evidence_all_failing_at_the_api_child_leaves_no_evidenceApi_and_no_summary()
     {
         var simulation = Fold("sindri/workflow.evidence-all.yaml",
             Child("api", "resolved", "ui summary"), Child("failed", "unresolved", "api broke"));
@@ -99,5 +99,34 @@ public sealed class EvidenceParentFactsTests
             Child("failed", "unresolved", "api failed"));
 
         Assert.Equal(Digest("api failed"), simulation.Instance.Facts[FactKey.From("fact:evidenceSummary")].Sha256);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Evidence_drops_with_nothing_recorded_when_evidence_all_is_unresolved()
+    {
+        var simulation = Fold("sindri/workflow.evidence.yaml",
+            """{"trigger":{"kind":"step.completed","outcome":"all"},"expect":{"state":"evidence-all"}}""",
+            Child("dropped", "unresolved", "partial"));
+
+        Assert.DoesNotContain(FactKey.From("fact:evidenceSummary"), simulation.Instance.Facts.Keys);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("pass", "matches", "passed", true)]
+    [InlineData("fail", "header drifts", "failed", true)]
+    [InlineData("skipped", null, "passed", false)]
+    public void Verify_records_the_design_check_on_pass_and_fail_and_not_on_skipped(string outcome, string? content, string state, bool recorded)
+    {
+        var outputs = content is null ? string.Empty : ",\"outputs\":{\"fact:designCheck\":\"" + content + "\"}";
+        var simulation = Fold("sindri/workflow.verify.yaml",
+            """{"trigger":{"kind":"step.completed","outcome":"pass","outputs":{"fact:evidencePack":"pack"}},"expect":{"state":"design"}}""",
+            "{\"trigger\":{\"kind\":\"step.completed\",\"outcome\":\"" + outcome + "\"" + outputs + "},\"expect\":{\"state\":\"" + state + "\"}}");
+
+        var key = FactKey.From("fact:designCheck");
+        Assert.Equal(recorded, simulation.Instance.Facts.ContainsKey(key));
+        if (recorded)
+        {
+            Assert.Equal(Digest(content!), simulation.Instance.Facts[key].Sha256);
+        }
     }
 }

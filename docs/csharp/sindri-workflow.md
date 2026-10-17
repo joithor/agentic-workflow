@@ -499,7 +499,7 @@ landed (provisional owner default); every other shipped descriptor hashes as bef
 
 The shipped block recipes (`recipes/sindri/`: report, investigate, reproduce, implement, hand-test, verify, the evidence
 family and review-loop) are listed with their inputs, outputs and terminals in `recipes/sindri/README.md`. The inputs are
-`issue`, `rootCause` (reproduce, implement), `phasePacket` and `workspace` (hand-test, verify), `phasePacket` and `built`
+`issue` (report), `issue`, `expected` and `actual` (investigate), `issue` and `rootCause` (reproduce, implement), `phasePacket` and `workspace` (hand-test, verify), `phasePacket` and `built`
 (every evidence recipe) and `change` and `phasePacket` (review-loop). `phasePacket` and `change` use the `packet` and
 `payload` subject kinds. Approve the leaf recipes first, then `workflow.evidence-all`, then `workflow.evidence`.
 

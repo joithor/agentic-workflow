@@ -11,6 +11,12 @@ public sealed class ShippedRecipeScaffoldTests
 {
     public static TheoryData<string> Recipes => [.. ShippedRecipes.Recipes.Where(r => r.StartsWith("sindri/", StringComparison.Ordinal))];
 
+    private static readonly Dictionary<string, string[]> _routes = new(StringComparer.Ordinal)
+    {
+        ["sindri/workflow.evidence.yaml"] = ["scaffold-ui", "scaffold-api", "scaffold-db", "scaffold-all", "scaffold-none", "scaffold-other", "scaffold-uncertain", "scaffold-step_failed"],
+        ["sindri/workflow.reproduce.yaml"] = ["scaffold-uiCheck", "scaffold-testCheck", "scaffold-uncertain", "scaffold-step_failed"],
+    };
+
     [Theory, Trait("Lane", "unit")]
     [MemberData(nameof(Recipes))]
     public void Every_scaffolded_case_of_a_shipped_recipe_passes(string path)
@@ -26,6 +32,12 @@ public sealed class ShippedRecipeScaffoldTests
         var cases = EvalScaffold.GenerateAll(recipe, EvalComposition.Catalog, children);
 
         Assert.NotEmpty(cases);
+        if (_routes.TryGetValue(path, out var expected))
+        {
+            Assert.Equal(expected, cases.Select(c => c.Name), StringComparer.Ordinal);
+            Assert.All(cases, c => Assert.NotNull(c.Steps[^1].Expect.Outcome));
+        }
+
         foreach (var evalCase in cases)
         {
             var verdict = EvalRunner.Run(evalCase, recipe, EvalComposition.Catalog, children);

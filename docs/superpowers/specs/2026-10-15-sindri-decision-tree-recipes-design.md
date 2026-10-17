@@ -146,7 +146,8 @@ transitions:
   uncertain one (§8.6).
 - `none` goes to `evidence-none`, a block-runtime Step (`step.evidence.none`, pure) that writes a
   `fact:evidenceSummary` saying the always-run checks are the proof, then joins the other branches. No desk task is
-  spent on it, and every path out of the route carries a summary.
+  spent on it. A summary leaves the route on `resolved`, and from a failed leaf child; an unresolved `evidence-all` and
+  every `cancelled` child end in `dropped` with none (Q6, `RCP-WIRE-003`).
 - The route state's `next` is written as an instruction, because before DT-J it runs at the desk and a human acts in
   it (REF "Voice"). Its timeout is the desk's 2 days for that reason. On the block runtime the call is bounded by
   `MaxDuration` (2 minutes, §8.2), which ends it as `step.failed` long before the state's timer.
@@ -282,6 +283,8 @@ evals:
   - evals/workflow.review-loop/happy.jsonl
   - evals/workflow.review-loop/cap-then-recheck.jsonl
   - evals/workflow.review-loop/behaviour-wrong.jsonl
+  - evals/workflow.review-loop/recheck-clean.jsonl
+  - evals/workflow.review-loop/recheck-wrong.jsonl
 ```
 
 - `step.review.run` reports `clean` (0 blocking and 0 issue findings, classified by substance as specToProvenPR's
