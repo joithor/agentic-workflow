@@ -5,9 +5,8 @@
 # per test project, sums the wall clock per package (the deps.yaml projectPrefix, longest
 # wins) and fails a package at or over its lane budget. A stub `dotnet` stands in for the SDK.
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/test-grep.sh"
 
-# The last grep of a pipeline reads all its input (no -q), so an early match can't SIGPIPE the writer under pipefail.
-has() { grep "$@" >/dev/null; }
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 CHECK="$ROOT/scripts/ci/lane-budgets.mjs"
 
@@ -217,11 +216,11 @@ test_sindri_integration_budget_is_120_s() {
   perl -pi -e 's#^(\s*)</Folder>#$1  <Project Path="tests/Aw.Sindri.Tests/Aw.Sindri.Tests.csproj" />\n$1</Folder>#' "$d/AgenticWorkflow.slnx"
   printf '  - id: Sindri\n    kind: package\n    tier: 4\n    projectPrefix: Aw.Sindri.Tests\n' >> "$d/deps.yaml"
   run_check "$d"
-  printf '%s\n' "$OUT" | grep -qE '^ok +Sindri +integration +[0-9.]+ s +limit 120 s' || fail "Sindri's integration limit is 120 s (owner, 2026-10-16):
+  printf '%s\n' "$OUT" | has -E '^ok +Sindri +integration +[0-9.]+ s +limit 120 s' || fail "Sindri's integration limit is 120 s (owner, 2026-10-16):
 $OUT"
-  printf '%s\n' "$OUT" | grep -qE 'Sindri +unit +[0-9.]+ s +limit 10 s' || fail "Sindri's unit limit stays 10 s:
+  printf '%s\n' "$OUT" | has -E 'Sindri +unit +[0-9.]+ s +limit 10 s' || fail "Sindri's unit limit stays 10 s:
 $OUT"
-  printf '%s\n' "$OUT" | grep -qE '^ok +Foo +integration +[0-9.]+ s +limit 60 s' || fail "other packages keep 60 s:
+  printf '%s\n' "$OUT" | has -E '^ok +Foo +integration +[0-9.]+ s +limit 60 s' || fail "other packages keep 60 s:
 $OUT"
   echo "PASS: test_sindri_integration_budget_is_120_s"
 }

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../../scripts/lib/test-grep.sh"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK="$DIR/../../hooks/done-gate.sh"
 # The hook logs fail-open events under $AW_STATE_DIR (default ~/.agentic-workflow): this suite gets its own, never an inherited one.
@@ -472,7 +473,7 @@ test_ui_requirement_blocks_a_done_claim_without_ui_evidence() {
   rc=$?
   set -e
   [ "$rc" -eq 2 ] || { echo "FAIL: expected exit 2 without UI evidence, got $rc"; exit 1; }
-  echo "$err" | grep -qi "UI evidence" || { echo "FAIL: stderr must say UI evidence is required, got: $err"; exit 1; }
+  echo "$err" | has -i "UI evidence" || { echo "FAIL: stderr must say UI evidence is required, got: $err"; exit 1; }
   jq -e '.requirements.uiEvidence' "$sessions/s1.sort.json" > /dev/null || { echo "FAIL: the requirement must stay until evidence is shown"; exit 1; }
   echo "PASS: test_ui_requirement_blocks_a_done_claim_without_ui_evidence"
 }

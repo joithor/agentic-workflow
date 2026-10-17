@@ -4,6 +4,7 @@
 # command, the AppArmor profile for bwrap is applied, and with everything present the checks pass. Runs on a PATH of symlinks to
 # just the core tools plus fakes, so the host's real bwrap/uv/graphify never leak in.
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/test-grep.sh"
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 SCRIPT="$REPO/scripts/install-deps.sh"
@@ -30,7 +31,7 @@ expect() {   # <label> <rc> [<regex>]...
   if [ "$RC" -ne "$rc" ]; then fail "$label: exit $RC, want $rc"; printf '%s\n' "$OUT" | sed 's/^/      | /'; return; fi
   local re
   for re in "$@"; do
-    printf '%s\n' "$OUT" | grep -qE -- "$re" || { fail "$label: output lacks /$re/"; printf '%s\n' "$OUT" | sed 's/^/      | /'; return; }
+    printf '%s\n' "$OUT" | has -E -- "$re" || { fail "$label: output lacks /$re/"; printf '%s\n' "$OUT" | sed 's/^/      | /'; return; }
   done
   ok "$label"
 }
@@ -85,7 +86,7 @@ for t in bwrap secret-tool clang lsof tmux curl git; do fake "$t"; done
 : >"$TMPROOT/zlib.h"
 run AW_DEPS_OS=Linux AW_DRY_RUN=1
 expect "all system packages present" 0 "bwrap: found" "secret-tool: found"
-printf '%s\n' "$OUT" | grep -q "sudo apt-get" && fail "no sudo line when nothing is missing" || ok "no sudo line when nothing is missing"
+printf '%s\n' "$OUT" | has "sudo apt-get" && fail "no sudo line when nothing is missing" || ok "no sudo line when nothing is missing"
 
 # 4b. bwrap present but its sandbox fails with the AppArmor restriction on: the profile is written and loaded through
 # sudo, then the sandbox is probed again (the fake probe passes once apparmor_parser ran).
@@ -99,14 +100,14 @@ expect "dry run shows the AppArmor profile and the commands" 0 "cannot create a 
 run AW_DEPS_OS=Linux AW_DEPS_BWRAP_PROBE="$PROBE" AW_DEPS_USERNS_FILE="$TMPROOT/userns" AW_STATE_DIR="$TMPROOT/nostate"
 grep -q "^sudo tee /etc/apparmor.d/bwrap" "$LOG" && grep -q "^sudo apparmor_parser -r /etc/apparmor.d/bwrap" "$LOG" \
   && ok "a real run writes and loads the profile through sudo" || fail "profile not applied: $(cat "$LOG")"
-printf '%s\n' "$OUT" | grep -q "bwrap: sandbox works" && ok "the sandbox is probed again and works" \
+printf '%s\n' "$OUT" | has "bwrap: sandbox works" && ok "the sandbox is probed again and works" \
   || { fail "no second probe"; printf '%s\n' "$OUT" | sed 's/^/      | /'; }
 run AW_DEPS_OS=Linux AW_NO_SYSTEM_INSTALL=1 AW_DEPS_BWRAP_PROBE=false AW_DEPS_USERNS_FILE="$TMPROOT/userns"
 expect "AW_NO_SYSTEM_INSTALL=1 prints the AppArmor fix and fails" 1 "nothing is applied" "sudo apparmor_parser -r /etc/apparmor.d/bwrap"
 echo 0 >"$TMPROOT/userns"
 run AW_DEPS_OS=Linux AW_DEPS_BWRAP_PROBE=false AW_DEPS_USERNS_FILE="$TMPROOT/userns"
 expect "a failing bwrap with the restriction off still fails, without the AppArmor advice" 1 "cannot create a sandbox"
-printf '%s\n' "$OUT" | grep -q "apparmor_parser" && fail "no AppArmor advice when the sysctl is 0" || ok "no AppArmor advice when the sysctl is 0"
+printf '%s\n' "$OUT" | has "apparmor_parser" && fail "no AppArmor advice when the sysctl is 0" || ok "no AppArmor advice when the sysctl is 0"
 run AW_DEPS_OS=Linux AW_DEPS_BWRAP_PROBE=true AW_DRY_RUN=1
 expect "a working bwrap probe passes" 0 "bwrap: sandbox works"
 
@@ -115,7 +116,7 @@ rm "$BIN/bwrap"; : >"$LOG"
 run AW_DEPS_OS=Linux AW_DEPS_BWRAP_PROBE=true AW_FAKE_PROVIDES=bwrap AW_STATE_DIR="$TMPROOT/nostate"
 grep -q "^sudo apt-get update" "$LOG" && grep -q "^apt-get install -y bubblewrap$" "$LOG" \
   && ok "a missing package is installed with sudo apt-get" || fail "install not run: $(cat "$LOG")"
-printf '%s\n' "$OUT" | grep -q "Checking again" && printf '%s\n' "$OUT" | grep -q "bwrap: found" \
+printf '%s\n' "$OUT" | has "Checking again" && printf '%s\n' "$OUT" | has "bwrap: found" \
   && ok "the packages are checked again after the install" || { fail "no re-check"; printf '%s\n' "$OUT" | sed 's/^/      | /'; }
 
 # 5b. The install runs but the command is still missing: exit 1.
@@ -133,7 +134,7 @@ fake bwrap
 # 6. macOS: no Linux-only packages are required.
 run AW_DEPS_OS=Darwin AW_DRY_RUN=1
 expect "macOS does not ask for bwrap" 0 "tmux: found"
-printf '%s\n' "$OUT" | grep -q "bwrap" && fail "macOS must not mention bwrap" || ok "macOS must not mention bwrap"
+printf '%s\n' "$OUT" | has "bwrap" && fail "macOS must not mention bwrap" || ok "macOS must not mention bwrap"
 
 # 6b. macOS without tmux: brew installs it.
 rm "$BIN/tmux"; : >"$LOG"
