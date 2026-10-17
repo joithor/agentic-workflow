@@ -1,12 +1,11 @@
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Engine;
-using EngineLaunchId = Aw.Sindri.Core.Workflow.Engine.LaunchId;
 
 namespace Aw.Sindri.Core.Launch;
 
 /// <summary>
 /// One launch for <see cref="ILauncher"/> (API P10a; the shape engine P8 calls with, agreed 2026-10-16). The id is the engine's
-/// 'LCH-…' <see cref="EngineLaunchId"/>, not the collector's looser one of this namespace.
+/// 'LCH-…' <see cref="LaunchId"/>, not the collector's looser one of this namespace.
 /// </summary>
 /// <param name="Launch">The launch id; a second call with the same id returns the first call's session.</param>
 /// <param name="Item">The item the session works on.</param>
@@ -19,7 +18,7 @@ namespace Aw.Sindri.Core.Launch;
 /// <param name="Step">The Step's arguments; non-null only when <paramref name="Attended"/> is false.</param>
 /// <param name="Run">The Step run's token, or null.</param>
 public sealed record LaunchRequest(
-    EngineLaunchId Launch,
+    LaunchId Launch,
     ItemId Item,
     AgentId Agent,
     LaunchMode Mode,

@@ -1,12 +1,12 @@
 using Aw.Sindri.Core.Launch;
-using EngineLaunchId = Aw.Sindri.Core.Workflow.Engine.LaunchId;
+using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Testing.Launch;
 
 /// <summary>Builds a LaunchRequest with deterministic defaults: the first launch of the first item, claude-code, an attended Open.</summary>
 public sealed class LaunchRequestBuilder
 {
-    private EngineLaunchId _launch = A.FirstLaunchId;
+    private LaunchId _launch = A.FirstLaunchId;
     private AgentId _agent = AgentId.From("claude-code");
     private bool _attended = true;
     private StepArgs? _step;
@@ -14,7 +14,7 @@ public sealed class LaunchRequestBuilder
     /// <summary>Sets the launch id.</summary>
     /// <param name="value">The id.</param>
     /// <returns>This builder.</returns>
-    public LaunchRequestBuilder WithLaunch(EngineLaunchId value)
+    public LaunchRequestBuilder WithLaunch(LaunchId value)
     {
         _launch = value;
         return this;

@@ -1,6 +1,6 @@
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Workflow.Engine;
 using Xunit;
-using EngineLaunchId = Aw.Sindri.Core.Workflow.Engine.LaunchId;
 
 namespace Aw.Sindri.Testing.Launch;
 
@@ -42,7 +42,7 @@ public abstract class LauncherContract
 
         var first = await launcher.Stop(request.Launch, CancellationToken.None);
         var second = await launcher.Stop(request.Launch, CancellationToken.None);
-        var never = await launcher.Stop(EngineLaunchId.From("LCH-" + new string('0', 32)), CancellationToken.None);
+        var never = await launcher.Stop(LaunchId.From("LCH-" + new string('0', 32)), CancellationToken.None);
 
         Expect.True(first.IsSuccess && second.IsSuccess && never.IsSuccess);
         Expect.Equal(0, SessionCount());

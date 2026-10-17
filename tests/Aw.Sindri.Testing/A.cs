@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Testing;
 
@@ -18,7 +19,7 @@ public static class A
     public static JobId FirstJobId { get; } = JobId.From("JOB-00000000000000000000000000000001");
 
     /// <summary>The launch id the launch builders default to.</summary>
-    public static Core.Workflow.Engine.LaunchId FirstLaunchId { get; } = Core.Workflow.Engine.LaunchId.From("LCH-00000000000000000000000000000001");
+    public static LaunchId FirstLaunchId { get; } = LaunchId.From("LCH-00000000000000000000000000000001");
 
     /// <summary>A LaunchRequest builder: the first launch of the first item, an attended open of claude-code.</summary>
     /// <returns>A new builder.</returns>

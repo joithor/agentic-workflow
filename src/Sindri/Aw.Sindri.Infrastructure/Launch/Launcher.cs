@@ -1,7 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Aw.Kernel;
 using Aw.Sindri.Core.Launch;
-using EngineLaunchId = Aw.Sindri.Core.Workflow.Engine.LaunchId;
+using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Infrastructure.Launch;
 
@@ -17,7 +17,7 @@ internal sealed class Launcher : ILauncher
         throw new NotSupportedException("Launcher: make LauncherContract pass (U7)");
 
     /// <inheritdoc/>
-    public ValueTask<Result<Unit>> Stop(EngineLaunchId launch, CancellationToken cancellationToken) =>
+    public ValueTask<Result<Unit>> Stop(LaunchId launch, CancellationToken cancellationToken) =>
         throw new NotSupportedException("Launcher: make LauncherContract pass (U7)");
 
     /// <inheritdoc/>

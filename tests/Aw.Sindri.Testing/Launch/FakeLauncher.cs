@@ -1,6 +1,6 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Launch;
-using EngineLaunchId = Aw.Sindri.Core.Workflow.Engine.LaunchId;
+using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Testing.Launch;
 
@@ -10,9 +10,9 @@ namespace Aw.Sindri.Testing.Launch;
 /// </summary>
 public sealed class FakeLauncher : ILauncher
 {
-    private readonly Dictionary<EngineLaunchId, LaunchResult.Started> _live = [];
+    private readonly Dictionary<LaunchId, LaunchResult.Started> _live = [];
     private readonly List<LaunchRequest> _requests = [];
-    private readonly List<EngineLaunchId> _stops = [];
+    private readonly List<LaunchId> _stops = [];
     private (Error Error, LaunchStage Stage)? _nextFailure;
 
     /// <summary>What <see cref="Probe"/> returns.</summary>
@@ -27,7 +27,7 @@ public sealed class FakeLauncher : ILauncher
     public IReadOnlyList<LaunchRequest> Requests => _requests;
 
     /// <summary>Every launch id Stop received, repeats included, in order.</summary>
-    public IReadOnlyList<EngineLaunchId> Stops => _stops;
+    public IReadOnlyList<LaunchId> Stops => _stops;
 
     /// <summary>Makes the next new launch fail; a repeat of a live launch still returns its Started.</summary>
     /// <param name="error">The catalogue error.</param>
@@ -59,7 +59,7 @@ public sealed class FakeLauncher : ILauncher
     }
 
     /// <inheritdoc/>
-    public ValueTask<Result<Unit>> Stop(EngineLaunchId launch, CancellationToken cancellationToken)
+    public ValueTask<Result<Unit>> Stop(LaunchId launch, CancellationToken cancellationToken)
     {
         _stops.Add(launch);
         _ = _live.Remove(launch);

@@ -3,8 +3,8 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Sessions;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Testing;
-using EngineLaunchId = Aw.Sindri.Core.Workflow.Engine.LaunchId;
 
 namespace Aw.Sindri.Tests.Launch;
 
@@ -77,7 +77,7 @@ public sealed class LaunchContractTypesTests
     {
         var request = A.LaunchRequest().Build();
 
-        _ = Assert.IsType<EngineLaunchId>(request.Launch);
+        _ = Assert.IsType<LaunchId>(request.Launch);
         Assert.True(request.Attended);
         Assert.Null(request.Step);
     }

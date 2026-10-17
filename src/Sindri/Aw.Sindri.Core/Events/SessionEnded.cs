@@ -1,4 +1,4 @@
-using EngineLaunchId = Aw.Sindri.Core.Workflow.Engine.LaunchId;
+using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Core.Events;
 
@@ -6,4 +6,4 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Launch">The launch.</param>
 /// <param name="Reason">Exit or lost.</param>
 /// <param name="ExitCode">The agent's exit code for <see cref="SessionEndReason.Exit"/>, otherwise null.</param>
-public sealed record SessionEnded(EngineLaunchId Launch, SessionEndReason Reason, int? ExitCode);
+public sealed record SessionEnded(LaunchId Launch, SessionEndReason Reason, int? ExitCode);

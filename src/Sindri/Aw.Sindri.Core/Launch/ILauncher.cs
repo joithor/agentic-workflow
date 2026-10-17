@@ -1,5 +1,5 @@
 using Aw.Kernel;
-using EngineLaunchId = Aw.Sindri.Core.Workflow.Engine.LaunchId;
+using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Core.Launch;
 
@@ -22,7 +22,7 @@ public interface ILauncher
     /// <param name="launch">The launch (the engine's 'LCH-…' id).</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>Success, or an error when the host could not be asked.</returns>
-    public ValueTask<Result<Unit>> Stop(EngineLaunchId launch, CancellationToken cancellationToken);
+    public ValueTask<Result<Unit>> Stop(LaunchId launch, CancellationToken cancellationToken);
 
     /// <summary>Checks the viewer, the host, every catalog target and every repo path.</summary>
     /// <param name="cancellationToken">Cancels the call.</param>

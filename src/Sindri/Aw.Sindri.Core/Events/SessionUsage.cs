@@ -1,4 +1,4 @@
-using EngineLaunchId = Aw.Sindri.Core.Workflow.Engine.LaunchId;
+using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Core.Events;
 
@@ -7,4 +7,4 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Sample">The sample's number in this launch, from 1.</param>
 /// <param name="InputTokens">Input tokens so far.</param>
 /// <param name="OutputTokens">Output tokens so far.</param>
-public sealed record SessionUsage(EngineLaunchId Launch, int Sample, long InputTokens, long OutputTokens);
+public sealed record SessionUsage(LaunchId Launch, int Sample, long InputTokens, long OutputTokens);
