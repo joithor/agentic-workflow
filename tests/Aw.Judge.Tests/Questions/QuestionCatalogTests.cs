@@ -26,8 +26,17 @@ public sealed class QuestionCatalogTests
 
         var outcome = await evaluator.Ask(name, "{}", new EvaluationContext { Providers = [] }, CancellationToken.None);
 
-        Assert.Equal("invalid-input", Assert.IsType<EscalatedOutcome>(outcome).ReasonCode);   // why: choose's escalation also carries its id
-        Assert.Equal(name, Assert.Single(log.Decisions).Question);
+        var row = Assert.Single(log.Decisions);
+        Assert.Equal(name, row.Question);
+        if (name == "choose")
+        {
+            // why: choose alone reports the decision id, and it is the recorded row's
+            Assert.Equal(new EscalatedOutcome("invalid-input") { Id = row.Id }, outcome);
+        }
+        else
+        {
+            Assert.Equal(new EscalatedOutcome("invalid-input"), outcome);
+        }
     }
 
     public static TheoryData<string> Names() => [.. QuestionCatalog.Names];

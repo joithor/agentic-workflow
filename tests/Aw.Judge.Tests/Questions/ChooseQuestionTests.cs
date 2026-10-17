@@ -39,6 +39,8 @@ public sealed class ChooseQuestionTests
     [InlineData("""[{"name":"ui","criterion":"a"},{"name":"has space","criterion":"b"}]""")]
     [InlineData("""[{"name":"ui","criterion":"a"},{"name":"1st","criterion":"b"}]""")]
     [InlineData("""[{"name":"ui","criterion":"a"},{"name":"b","criterion":" "}]""")]
+    [InlineData("[null]")]
+    [InlineData("""[null,{"name":"ui","criterion":"a"},{"name":"api","criterion":"b"}]""")]
     public async Task An_invalid_choice_list_escalates_invalid_input(string choices)
     {
         var cli = Cli(ContentClass.Brief).Decides("ui", 0.9);
@@ -134,12 +136,13 @@ public sealed class ChooseQuestionTests
         var probabilities = new Dictionary<string, double>(StringComparer.Ordinal) { ["ui"] = 0.4, ["api"] = 0.35, ["db"] = 0.25 };
         var cli = Cli(ContentClass.Brief).Decides("ui", 0.4, probabilities);
 
-        var outcome = await new QuestionRun().AskByName("choose", Input(), cli);
+        var run = new QuestionRun();
+        var outcome = await run.AskByName("choose", Input(), cli);
 
         var escalated = Assert.IsType<EscalatedOutcome>(outcome);
         Assert.Equal("below-threshold", escalated.ReasonCode);
         Assert.Equal(probabilities, escalated.Probabilities);
-        _ = Assert.NotNull(escalated.Id);
+        Assert.Equal(Assert.Single(run.Log.Decisions).Id, escalated.Id);
     }
 
     [Fact]
@@ -165,11 +168,12 @@ public sealed class ChooseQuestionTests
     [Fact]
     public async Task Rules_alone_escalates_no_provider_decided()
     {
-        var outcome = await new QuestionRun().AskByName("choose", Input());
+        var run = new QuestionRun();
+        var outcome = await run.AskByName("choose", Input());
 
         var escalated = Assert.IsType<EscalatedOutcome>(outcome);
         Assert.Equal("no-provider-decided", escalated.ReasonCode);
-        _ = Assert.NotNull(escalated.Id);
+        Assert.Equal(Assert.Single(run.Log.Decisions).Id, escalated.Id);
     }
 
     [Fact]
@@ -207,7 +211,66 @@ public sealed class ChooseQuestionTests
 
         var outcome = await run.AskByName("choose", "{}");
 
-        Assert.Equal("invalid-input", Assert.IsType<EscalatedOutcome>(outcome).ReasonCode);
-        Assert.Equal("choose", Assert.Single(run.Log.Decisions).Question);
+        var escalated = Assert.IsType<EscalatedOutcome>(outcome);
+        Assert.Equal("invalid-input", escalated.ReasonCode);
+        var row = Assert.Single(run.Log.Decisions);
+        Assert.Equal("choose", row.Question);
+        Assert.Equal(row.Id, escalated.Id);
+    }
+
+    [Fact]
+    public async Task The_envelope_carries_only_the_deciding_providers_probabilities()
+    {
+        var earlier = new Dictionary<string, double>(StringComparer.Ordinal) { ["ui"] = 0.5, ["api"] = 0.3, ["db"] = 0.2 };
+        var jev = new Aw.Judge.Testing.ScriptedProvider(ProviderName.Jev, ContentClass.Brief).Decides("ui", 0.5, earlier);
+        var cli = Cli(ContentClass.Brief).Decides("api", 0.9);
+
+        var outcome = await new QuestionRun().AskByName("choose", Input(), jev, cli);
+
+        var decided = Assert.IsType<DecidedOutcome>(outcome);
+        Assert.Equal(("api", ProviderName.ClaudeCli), (decided.Decision, decided.Model));
+        Assert.Null(decided.Probabilities);   // why: the below-threshold provider's distribution is not the decider's
+    }
+
+    [Fact]
+    public async Task A_deciding_provider_that_sends_probabilities_gets_exactly_those_in_the_envelope()
+    {
+        var earlier = new Dictionary<string, double>(StringComparer.Ordinal) { ["ui"] = 0.5, ["api"] = 0.3, ["db"] = 0.2 };
+        var own = new Dictionary<string, double>(StringComparer.Ordinal) { ["ui"] = 0.05, ["api"] = 0.9, ["db"] = 0.05 };
+        var jev = new Aw.Judge.Testing.ScriptedProvider(ProviderName.Jev, ContentClass.Brief).Decides("ui", 0.5, earlier);
+        var cli = Cli(ContentClass.Brief).Decides("api", 0.9, own);
+
+        var outcome = await new QuestionRun().AskByName("choose", Input(), jev, cli);
+
+        Assert.Equal(own, Assert.IsType<DecidedOutcome>(outcome).Probabilities);
+    }
+
+    [Fact]
+    public async Task The_config_threshold_wins_in_the_other_direction_too()
+    {
+        var cli = Cli(ContentClass.Brief).Decides("ui", 0.5);
+
+        var outcome = await new QuestionRun().AskByName("choose", Input(threshold: "0.95"), new QuestionOverride(Enabled: true, Threshold: 0.3), cli);
+
+        _ = AssertModel("ui", outcome);
+    }
+
+    [Fact]
+    public async Task An_answer_at_exactly_the_default_threshold_decides()
+    {
+        var outcome = await new QuestionRun().AskByName("choose", Input(), Cli(ContentClass.Brief).Decides("ui", 0.6));
+
+        _ = AssertModel("ui", outcome);
+    }
+
+    [Fact]
+    public async Task A_threshold_of_1_and_exactly_32_choices_are_valid()
+    {
+        var names = Enumerable.Range(0, 32).Select(i => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"c{i}")).ToArray();
+        var cli = Cli(ContentClass.Brief).Decides("c7", 1.0);
+
+        var outcome = await new QuestionRun().AskByName("choose", Input(Choices(names), threshold: "1"), cli);
+
+        _ = AssertModel("c7", outcome);
     }
 }

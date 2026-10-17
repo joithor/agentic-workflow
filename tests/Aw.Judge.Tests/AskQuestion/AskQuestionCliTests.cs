@@ -126,19 +126,57 @@ public sealed class AskQuestionCliTests : IDisposable
         CliGolden.Match(withProbabilities, "AskQuestion/Golden/choose-decided.json");
     }
 
+    private const string Scope = """{"agentType":"general-purpose","goal":"build it","acceptanceCriteria":"tests pass","proofCommand":"make test"}""";
+    private const string Tail = """{"transcriptTail":"I finished the change and will now wait."}""";
+
+    private static Dictionary<string, double> Sent(string key) => new(StringComparer.Ordinal) { [key] = 0.9 };
+
     [Theory, Trait("Lane", "integration")]
-    [InlineData("wake-gate")]
-    [InlineData("brief-scope")]
-    [InlineData("ask-check")]
-    public async Task Hook_question_envelopes_are_unchanged(string question)
+    [InlineData("wake-gate", Progress, "message-meta", "send")]
+    [InlineData("brief-scope", Scope, "brief", "ready")]
+    [InlineData("ask-check", Tail, "transcript", "ask")]
+    public async Task Hook_question_envelopes_are_unchanged(string question, string input, string contentClass, string decision)
     {
-        var probabilities = new Dictionary<string, double>(StringComparer.Ordinal) { ["send"] = 0.9 };
+        var cls = contentClass switch { "brief" => ContentClass.Brief, "transcript" => ContentClass.Transcript, _ => ContentClass.MessageMeta };
         var escalated = await new JudgeCli(_state).RunWithInput("{}", question);
+        var decided = await new JudgeCli(_state) { Providers = [Cli(cls).Decides(decision, 0.9, Sent(decision))] }.RunWithInput(input, question);
 
         Assert.Equal("escalated,reasonCode", Names(escalated.Json()));   // why: no id on a hook question's escalation
-        var decided = await new JudgeCli(_state) { Providers = [Cli(ContentClass.MessageMeta).Decides("send", 0.9, probabilities)] }
-            .RunWithInput(Progress, "wake-gate");
         Assert.Equal("confidence,decision,id,model,reasonCode", Names(decided.Json()));   // why: no probabilities even when a provider sent them
+        Assert.Equal("claude-cli", decided.Json().GetProperty("model").GetString());   // why: the provider really decided
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_hook_question_decided_by_a_model_that_sent_probabilities_is_byte_stable()
+    {
+        var run = await new JudgeCli(_state) { Providers = [Cli(ContentClass.MessageMeta).Decides("send", 0.9, Sent("send"))] }.RunWithInput(Progress, "wake-gate");
+
+        Assert.Equal(0, run.ExitCode);
+        CliGolden.Match(run, "AskQuestion/Golden/hook-decided-with-probabilities.json");
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_hook_question_below_threshold_with_probabilities_is_byte_stable()
+    {
+        var run = await new JudgeCli(_state) { Providers = [Cli(ContentClass.Brief).Decides("ready", 0.3, Sent("ready"))] }.RunWithInput(Scope, "brief-scope");
+
+        Assert.Equal(2, run.ExitCode);
+        CliGolden.Match(run, "AskQuestion/Golden/hook-escalated-below-threshold.json");
+    }
+
+    [Theory, Trait("Lane", "integration")]
+    [InlineData("[null]")]
+    [InlineData("""[null,{"name":"ui","criterion":"a"},{"name":"api","criterion":"b"}]""")]
+    public async Task A_null_choice_escalates_invalid_input_with_a_row_instead_of_crashing(string choices)
+    {
+        var input = $$"""{"prompt":"Which?","state":{"diff":"x"},"choices":{{choices}}}""";
+
+        var run = await new JudgeCli(_state).RunWithInput(input, "choose");
+
+        Assert.Equal((2, ""), (run.ExitCode, run.Stderr));
+        Assert.Equal("invalid-input", run.Json().GetProperty("reasonCode").GetString());
+        Assert.Equal("escalated,id,reasonCode", Names(run.Json()));
+        Assert.Equal(["choose|none|invalid-input|escalated"], await DecisionRows());
     }
 
     private async Task<List<string>> DecisionRows()

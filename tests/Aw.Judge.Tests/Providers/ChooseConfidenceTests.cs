@@ -19,7 +19,7 @@ public sealed class ChooseConfidenceTests
         Assert.Equal("""["decision","confidence"]""", lax["required"]!.ToJsonString());
         Assert.Equal("""["decision","confidence"]""", strict["required"]!.ToJsonString());
         Assert.Equal("number", lax["properties"]!["confidence"]!["type"]!.GetValue<string>());
-        Assert.Equal("number", strict["properties"]!["confidence"]!["type"]!.GetValue<string>());   // why: required, so not nullable
+        Assert.Equal("""{"type":"number"}""", strict["properties"]!["confidence"]!.ToJsonString());   // why: required, so not nullable, and strict mode takes no range keywords
         Assert.Equal(0, lax["properties"]!["confidence"]!["minimum"]!.GetValue<int>());
         Assert.Equal(1, lax["properties"]!["confidence"]!["maximum"]!.GetValue<int>());
     }
@@ -45,6 +45,7 @@ public sealed class ChooseConfidenceTests
     [Theory]
     [InlineData("""{"decision":"ui"}""")]
     [InlineData("""{"decision":"ui","confidence":1.5}""")]
+    [InlineData("""{"decision":"ui","confidence":-0.1}""")]
     [InlineData("""{"decision":"ui","confidence":"high"}""")]
     public void A_choose_answer_without_a_usable_confidence_is_errored_not_certain(string answer)
         => Assert.Equal(new ProviderErrored("unparseable-answer"), AgentAnswer.Read(JsonNode.Parse(answer), Choose));
