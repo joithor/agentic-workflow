@@ -22,7 +22,7 @@ public sealed class FileSystemSizesSourceContractTests : SizesSourceContract, ID
 
     private sealed class RootedSizesSource(string root, ISizesSource inner) : ISizesSource
     {
-        public ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.SizesFile>> Read(string path, CancellationToken cancellationToken) =>
+        public ValueTask<Kernel.Result<Core.Model.SizesFile>> Read(string path, CancellationToken cancellationToken) =>
             inner.Read(Path.Combine(root, path), cancellationToken);
     }
 }

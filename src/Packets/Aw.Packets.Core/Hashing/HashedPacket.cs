@@ -1,7 +1,7 @@
 using Aw.Packets.Core.Model;
 using Aw.Packets.Core.Values;
 
-namespace Aw.Packets.Core;
+namespace Aw.Packets.Core.Hashing;
 
 /// <summary>A packet's canonical hash, the files it covers and which packet it is.</summary>
 /// <param name="Hash">The canonical hash, 'sha256:&lt;hex&gt;'.</param>

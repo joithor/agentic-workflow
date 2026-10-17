@@ -4,6 +4,7 @@ using Aw.Packets.App.Features.ValidateLinePacket;
 using Aw.Packets.Core;
 using Aw.Packets.Core.Checks;
 using Aw.Packets.Core.Digest;
+using Aw.Packets.Core.Hashing;
 using Aw.Packets.Core.Kinds;
 using Aw.Packets.Core.Kinds.Line;
 using Aw.Packets.Testing;

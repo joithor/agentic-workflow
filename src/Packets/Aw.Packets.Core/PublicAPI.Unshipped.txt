@@ -24,17 +24,20 @@ Aw.Packets.Core.Checks.CheckState.Unchecked = 3 -> Aw.Packets.Core.Checks.CheckS
 Aw.Packets.Core.Checks.PacketRules
 Aw.Packets.Core.Digest.PacketDigest
 Aw.Packets.Core.FreezeLocation
-Aw.Packets.Core.HashedPacket
-Aw.Packets.Core.HashedPacket.<Clone>$() -> Aw.Packets.Core.HashedPacket!
-Aw.Packets.Core.HashedPacket.Deconstruct(out Aw.Packets.Core.Values.PacketHash Hash, out System.Collections.Generic.IReadOnlyList<string!>! Files, out Aw.Packets.Core.Model.PacketIdentity? Identity) -> void
-Aw.Packets.Core.HashedPacket.Equals(Aw.Packets.Core.HashedPacket? other) -> bool
-Aw.Packets.Core.HashedPacket.Files.get -> System.Collections.Generic.IReadOnlyList<string!>!
-Aw.Packets.Core.HashedPacket.Files.init -> void
-Aw.Packets.Core.HashedPacket.Hash.get -> Aw.Packets.Core.Values.PacketHash
-Aw.Packets.Core.HashedPacket.Hash.init -> void
-Aw.Packets.Core.HashedPacket.HashedPacket(Aw.Packets.Core.Values.PacketHash Hash, System.Collections.Generic.IReadOnlyList<string!>! Files, Aw.Packets.Core.Model.PacketIdentity? Identity) -> void
-Aw.Packets.Core.HashedPacket.Identity.get -> Aw.Packets.Core.Model.PacketIdentity?
-Aw.Packets.Core.HashedPacket.Identity.init -> void
+Aw.Packets.Core.Hashing.HashedPacket
+Aw.Packets.Core.Hashing.HashedPacket.<Clone>$() -> Aw.Packets.Core.Hashing.HashedPacket!
+Aw.Packets.Core.Hashing.HashedPacket.Deconstruct(out Aw.Packets.Core.Values.PacketHash Hash, out System.Collections.Generic.IReadOnlyList<string!>! Files, out Aw.Packets.Core.Model.PacketIdentity? Identity) -> void
+Aw.Packets.Core.Hashing.HashedPacket.Equals(Aw.Packets.Core.Hashing.HashedPacket? other) -> bool
+Aw.Packets.Core.Hashing.HashedPacket.Files.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Packets.Core.Hashing.HashedPacket.Files.init -> void
+Aw.Packets.Core.Hashing.HashedPacket.Hash.get -> Aw.Packets.Core.Values.PacketHash
+Aw.Packets.Core.Hashing.HashedPacket.Hash.init -> void
+Aw.Packets.Core.Hashing.HashedPacket.HashedPacket(Aw.Packets.Core.Values.PacketHash Hash, System.Collections.Generic.IReadOnlyList<string!>! Files, Aw.Packets.Core.Model.PacketIdentity? Identity) -> void
+Aw.Packets.Core.Hashing.HashedPacket.Identity.get -> Aw.Packets.Core.Model.PacketIdentity?
+Aw.Packets.Core.Hashing.HashedPacket.Identity.init -> void
+Aw.Packets.Core.Hashing.PacketHasher
+Aw.Packets.Core.Hashing.PacketHasher.Hash(Aw.Packets.Core.Kinds.PacketKind! kind, string! packetDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Hashing.HashedPacket!>!>
+Aw.Packets.Core.Hashing.PacketHasher.PacketHasher(Aw.Packets.Core.IPacketSource! builds, Aw.Packets.Core.Kinds.Scoping.IScopingPacketSource! scoping, Aw.Packets.Core.Kinds.Line.ILinePacketSource! lines, System.Text.Json.JsonSerializerOptions! json) -> void
 Aw.Packets.Core.IFreezeLog
 Aw.Packets.Core.IFreezeLog.Find(Aw.Packets.Core.Model.PacketIdentity! packet, Aw.Packets.Core.Values.PacketHash hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.FreezeRecord?>!>
 Aw.Packets.Core.IFreezeLog.Record(Aw.Packets.Core.Model.FreezeRecord! record, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.FreezeReceipt!>!>
@@ -875,9 +878,6 @@ Aw.Packets.Core.Model.Workstream.Id.init -> void
 Aw.Packets.Core.Model.Workstream.Title.get -> string!
 Aw.Packets.Core.Model.Workstream.Title.init -> void
 Aw.Packets.Core.Model.Workstream.Workstream(Aw.Packets.Core.Ids.WorkstreamId Id, string! Title) -> void
-Aw.Packets.Core.PacketHasher
-Aw.Packets.Core.PacketHasher.Hash(Aw.Packets.Core.Kinds.PacketKind! kind, string! packetDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.HashedPacket!>!>
-Aw.Packets.Core.PacketHasher.PacketHasher(Aw.Packets.Core.IPacketSource! builds, Aw.Packets.Core.Kinds.Scoping.IScopingPacketSource! scoping, Aw.Packets.Core.Kinds.Line.ILinePacketSource! lines, System.Text.Json.JsonSerializerOptions! json) -> void
 Aw.Packets.Core.PacketInspector
 Aw.Packets.Core.PacketInspector.Inspect(string! packetDirectory, string! repoDirectory, Aw.Packets.Core.Model.SizesFile? sizes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Inspection!>!>
 Aw.Packets.Core.PacketInspector.PacketInspector(Aw.Packets.Core.IPacketSource! source, Aw.Packets.Core.IRepoSnapshot! repo) -> void
@@ -948,9 +948,9 @@ const Aw.Packets.Core.PacketReader.SchemaVersion = 1 -> int
 override Aw.Packets.Core.Checks.CheckResult.Equals(object? obj) -> bool
 override Aw.Packets.Core.Checks.CheckResult.GetHashCode() -> int
 override Aw.Packets.Core.Checks.CheckResult.ToString() -> string!
-override Aw.Packets.Core.HashedPacket.Equals(object? obj) -> bool
-override Aw.Packets.Core.HashedPacket.GetHashCode() -> int
-override Aw.Packets.Core.HashedPacket.ToString() -> string!
+override Aw.Packets.Core.Hashing.HashedPacket.Equals(object? obj) -> bool
+override Aw.Packets.Core.Hashing.HashedPacket.GetHashCode() -> int
+override Aw.Packets.Core.Hashing.HashedPacket.ToString() -> string!
 override Aw.Packets.Core.Ids.ExampleId.Equals(object? obj) -> bool
 override Aw.Packets.Core.Ids.ExampleId.GetHashCode() -> int
 override Aw.Packets.Core.Ids.ExampleId.ToString() -> string!
@@ -1139,8 +1139,8 @@ static Aw.Packets.Core.Digest.PacketDigest.Compute(Aw.Packets.Core.Kinds.Scoping
 static Aw.Packets.Core.Digest.PacketDigest.Compute(Aw.Packets.Core.Model.LoadedPacket! loaded) -> Aw.Kernel.Result<Aw.Packets.Core.Values.PacketHash>!
 static Aw.Packets.Core.FreezeLocation.Of(Aw.Packets.Core.Model.FreezeRecord! record) -> string!
 static Aw.Packets.Core.FreezeLocation.Of(Aw.Packets.Core.Values.RepoSlug repo, Aw.Packets.Core.Ids.PacketId packet, Aw.Packets.Core.Values.PacketHash hash) -> string!
-static Aw.Packets.Core.HashedPacket.operator !=(Aw.Packets.Core.HashedPacket? left, Aw.Packets.Core.HashedPacket? right) -> bool
-static Aw.Packets.Core.HashedPacket.operator ==(Aw.Packets.Core.HashedPacket? left, Aw.Packets.Core.HashedPacket? right) -> bool
+static Aw.Packets.Core.Hashing.HashedPacket.operator !=(Aw.Packets.Core.Hashing.HashedPacket? left, Aw.Packets.Core.Hashing.HashedPacket? right) -> bool
+static Aw.Packets.Core.Hashing.HashedPacket.operator ==(Aw.Packets.Core.Hashing.HashedPacket? left, Aw.Packets.Core.Hashing.HashedPacket? right) -> bool
 static Aw.Packets.Core.Ids.ExampleId.From(string! value) -> Aw.Packets.Core.Ids.ExampleId
 static Aw.Packets.Core.Ids.ExampleId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Packets.Core.Ids.ExampleId
 static Aw.Packets.Core.Ids.ExampleId.TryFrom(string? value, out Aw.Packets.Core.Ids.ExampleId vo) -> bool

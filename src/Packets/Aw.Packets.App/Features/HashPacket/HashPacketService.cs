@@ -1,7 +1,7 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
-using Aw.Packets.Core;
 using Aw.Packets.Core.Digest;
+using Aw.Packets.Core.Hashing;
 using Aw.Packets.Core.Kinds;
 
 namespace Aw.Packets.App.Features.HashPacket;

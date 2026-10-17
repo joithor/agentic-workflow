@@ -2,6 +2,7 @@ using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Packets.Core;
 using Aw.Packets.Core.Digest;
+using Aw.Packets.Core.Hashing;
 using Aw.Packets.Core.Ids;
 using Aw.Packets.Core.Kinds;
 using Aw.Packets.Core.Model;

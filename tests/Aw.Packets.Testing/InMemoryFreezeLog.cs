@@ -31,5 +31,5 @@ internal sealed class InMemoryFreezeLog : IFreezeLog
 
     /// <inheritdoc />
     public ValueTask<Result<FreezeRecord?>> Find(PacketIdentity packet, PacketHash hash, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(Results.Success<FreezeRecord?>(_records.GetValueOrDefault(FreezeLocation.Of(packet.Repo, packet.Packet, hash))));
+        ValueTask.FromResult(Results.Success(_records.GetValueOrDefault(FreezeLocation.Of(packet.Repo, packet.Packet, hash))));
 }

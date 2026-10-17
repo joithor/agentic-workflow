@@ -6,7 +6,7 @@ using Aw.Packets.Core.Kinds.Line;
 using Aw.Packets.Core.Kinds.Scoping;
 using Aw.Packets.Core.Model;
 
-namespace Aw.Packets.Core;
+namespace Aw.Packets.Core.Hashing;
 
 /// <summary>The one canonicalization, for any kind: reads the packet and computes the hash 'freeze' records, with no checks run.</summary>
 /// <param name="builds">Reads a build packet.</param>

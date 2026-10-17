@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Aw.Kernel.Testing;
-using Aw.Packets.Core.Model;
 using Aw.Packets.Core.Kinds;
+using Aw.Packets.Core.Model;
 using Aw.Packets.Testing;
 
 namespace Aw.Packets.Tests.Cli;

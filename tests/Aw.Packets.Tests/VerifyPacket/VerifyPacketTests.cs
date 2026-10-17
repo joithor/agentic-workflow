@@ -4,6 +4,7 @@ using Aw.Packets.App.Features.FreezeScopingPacket;
 using Aw.Packets.App.Features.HashPacket;
 using Aw.Packets.App.Features.VerifyPacket;
 using Aw.Packets.Core;
+using Aw.Packets.Core.Hashing;
 using Aw.Packets.Core.Kinds;
 using Aw.Packets.Core.Kinds.Line;
 using Aw.Packets.Core.Model;

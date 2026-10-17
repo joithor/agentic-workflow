@@ -5,6 +5,7 @@ using Aw.Packets.App.Features.ValidateScopingPacket;
 using Aw.Packets.Core;
 using Aw.Packets.Core.Checks;
 using Aw.Packets.Core.Digest;
+using Aw.Packets.Core.Hashing;
 using Aw.Packets.Core.Kinds;
 using Aw.Packets.Testing;
 using Microsoft.Extensions.Time.Testing;
