@@ -102,7 +102,7 @@ public static class ChooseQuestion
     {
         if (!IsName(choice.Name) || string.Equals(choice.Name, Uncertain, StringComparison.Ordinal))
         {
-            return "a choice name must be a letter then letters and digits, at most 32, and not 'uncertain'";
+            return "a choice name must be a lowercase letter then letters and digits, at most 32, and not 'uncertain'";
         }
 
         return string.IsNullOrWhiteSpace(choice.Criterion) || choice.Criterion.Length > MaxCriterionLength
@@ -126,7 +126,7 @@ public static class ChooseQuestion
 
     private static bool IsName(string name) =>
         name.Length is >= 1 and <= MaxNameLength
-        && char.IsAsciiLetter(name[0])
+        && char.IsAsciiLetterLower(name[0])
         && name.All(char.IsAsciiLetterOrDigit);
 
     private static string Prompt(ChooseInput input)

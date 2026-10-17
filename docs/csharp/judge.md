@@ -171,7 +171,7 @@ decides or escalates, and before its envelope is written, the judge prunes old d
 | `ask-check` | `{transcriptTail}` | `continue`, `ask` | transcript | 0.6 | 10 s | the deny list → `ask`: merge, delete, force push (`force-push`, `force pushed`, …), or a push with `-f`, `--force`, `--force-with-lease` or a `+refspec`; a plain push isn't listed | `ask` |
 | `rule-check` | `{rule, hunk}` | `violated`, `fine`, `n/a` | diff | 0.6 | 10 s | a blank hunk → `n/a` | none |
 | `resolution-check` | `{brief, expected, actual, rootCause, checkKind, checkSummary, beforePassed, afterPassed, diffStat, diff?}`, `checkKind` `ui-evidence`, `api-evidence` (an HTTP or CLI contract check), `db-evidence` (a persisted-state check) or `test`; a blank `brief` is invalid input | `resolved`, `partial`, `unresolved` (+ `reasons`) | brief | 0.8 | 15 s | the check fails after the fix, or already passed before it → `unresolved` | none |
-| `choose` | `{prompt, state: {<fact>: <value>}, choices: [{name, criterion}], threshold?}`; per call: 2 to 32 choices, each `name` a letter then letters and digits (at most 32), distinct and never `uncertain`, each `criterion` 1 to 400 characters, a non-blank `prompt`, a non-empty `state`, `threshold` above 0 and at most 1; anything else is invalid input | the call's choice names (+ `probabilities` in the envelope) | brief | config.json's `choose` entry, else the call's `threshold`, else 0.6 | 15 s | none | none (escalates) |
+| `choose` | `{prompt, state: {<fact>: <value>}, choices: [{name, criterion}], threshold?}`; per call: 2 to 32 choices, each `name` matching `[a-z][A-Za-z0-9]{0,31}`, distinct and never `uncertain`, each `criterion` 1 to 400 characters, a non-blank `prompt`, a non-empty `state`, `threshold` above 0 and at most 1; anything else is invalid input | the call's choice names (+ `probabilities` in the envelope) | brief | config.json's `choose` entry, else the call's `threshold`, else 0.6 | 15 s | none | none (escalates) |
 | `turn-progress` | `{problem, turnDiff, acceptanceCriteria?, priorDiffStat?, signals?}` (the last three default to empty); a blank `problem` is invalid input | `progressing`, `stalled`, `regressing`, `off-target` | diff | 0.7 | 10 s | a blank `turnDiff` → `stalled` | none |
 | `ui-element-repair` | `{brokenSelector, step, candidates: [{index, role, accessibleName, testId, text}]}` (the four strings may be null) | `repaired` (+ `chosenIndex`), `no-good-candidate` | code | 0.6 | 10 s | no candidates → `no-good-candidate` | none |
 | `visual-critique` | `{afterScreenshot, evidenceDir, baselineScreenshot?}`; `evidenceDir` absolute and each screenshot a relative path that stays inside it (no `..`), none with a control character or a line or paragraph separator (U+2028, U+2029), else `invalid-input`; the prompt carries each path on one line, capped | `looks-right`, `looks-off`, `sloppy` (+ `reasons`) | image | 0.5 | 20 s | none: judging the screenshot is the question | none |
@@ -247,7 +247,7 @@ its extra properties. All three read images, so all three cover every content cl
 
 The answer object is read the same way for all three: a string `decision` among the outputs; a `confidence` 0–1 when
 present, else **1.0** (the CLIs answer under a schema with no confidence field, so a well-formed answer is taken as
-certain; `choose` is the exception, its schema requires the field and an answer without a usable one is errored); each declared extra checked against its fragment's JSON `type` (and array `items`), a null one absent;
+certain; `choose` is the exception, its schema requires the field and an answer without a usable one is errored, Jev's included); each declared extra checked against its fragment's JSON `type` (and array `items`), a null one absent;
 undeclared fields dropped.
 
 ### Jev
@@ -261,7 +261,7 @@ redacts (then caps at `InputCap.MaxChars`) both the state and the prompt, which 
 (ask-check's transcript tail, a rule-check hunk, a brief's proof command). claude and codex get the prompt as built,
 on standard input: they run on the user's own model logins, the same place the agent's session already sends that
 text. cursor-agent gets it redacted, because its prompt is an argument (The agent CLIs above).
-The answer's `choice`, `confidence` (1.0 when absent) and `probabilities` become the decision.
+The answer's `choice`, `confidence` (1.0 when absent, except for `choose`, where a missing or out-of-range one is errored `unparseable-answer`) and `probabilities` become the decision.
 
 ### Rules
 
