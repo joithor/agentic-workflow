@@ -28,6 +28,7 @@ internal sealed class NotifyDeskEffect(IDeskNotices notices, TimeProvider clock)
     public async ValueTask<Result<EffectDone>> Dispatch(EffectContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
+        cancellationToken.ThrowIfCancellationRequested();
         var notice = new DeskNotice(context.Identity, InstanceAddress.From(context.Instance), ItemKey.From(context.Item),
             ClassOf(context), context.Text ?? Argument(context, "text") ?? context.Instance, clock.GetUtcNow());
         var sent = await notices.Send(notice, cancellationToken).ConfigureAwait(false);

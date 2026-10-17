@@ -39,6 +39,7 @@ internal sealed class ClaimRefEffect(IWorkflowClaims claims, IInstanceLiveness l
     public async ValueTask<Result<EffectDone>> Dispatch(EffectContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
+        cancellationToken.ThrowIfCancellationRequested();
         var target = await Target(context, cancellationToken).ConfigureAwait(false);
         if (target.IsError)
         {
