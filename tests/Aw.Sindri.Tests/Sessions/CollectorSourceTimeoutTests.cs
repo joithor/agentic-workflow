@@ -119,7 +119,7 @@ public sealed class CollectorSourceTimeoutTests
         using var table = new StuckTable(fake);
         var c = new CollectorHarness(processes: table);
         var budget = TimeSpan.FromHours(500);
-        var pids = Enumerable.Range(10, 5).ToList()   // a source gets five shares of the budget, so five stuck pids is what one pass can abandon;
+        var pids = Enumerable.Range(10, 5).ToList();   // a source gets five shares of the budget: five stuck pids is what one pass can abandon
         foreach (var pid in pids)
         {
             _ = fake.With(Proc(pid, 1, "claude", argv0: "claude", ticks: pid), cwd: "/w/a");
