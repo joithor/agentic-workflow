@@ -1,5 +1,5 @@
+using System.Globalization;
 using Aw.Sindri.Core.Workflow.Engine.Evals;
-using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Validation;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Workflow.Engine;
@@ -29,7 +29,7 @@ public sealed class ShippedRecipeScaffoldTests
         foreach (var evalCase in cases)
         {
             var verdict = EvalRunner.Run(evalCase, recipe, EvalComposition.Catalog, children);
-            Assert.True(verdict.Passed, $"{path} {evalCase.Name}: line {verdict.Line}: {verdict.Detail}");
+            Assert.True(verdict.Passed, $"{path} {evalCase.Name}: line {verdict.Line?.ToString(CultureInfo.InvariantCulture)}: {verdict.Detail}");
         }
     }
 }

@@ -1,11 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Evals;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Validation;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Workflow.Engine;
@@ -52,7 +49,7 @@ public sealed class EvidenceParentFactsTests
     private static string Child(string state, string outcome, string? summary = null) =>
         JsonSerializer.Serialize(new
         {
-            trigger = new { kind = "wait.satisfied", outcome, outputs = summary is null ? null : new Dictionary<string, string> { ["fact:evidenceSummary"] = summary } },
+            trigger = new { kind = "wait.satisfied", outcome, outputs = summary is null ? null : new Dictionary<string, string>(StringComparer.Ordinal) { ["fact:evidenceSummary"] = summary } },
             expect = new { state },
         });
 
@@ -87,7 +84,7 @@ public sealed class EvidenceParentFactsTests
     public void Evidence_routes_every_leaf_choice_and_reconverges_on_the_summary(string choice, string state)
     {
         var simulation = Fold("sindri/workflow.evidence.yaml",
-            $$"""{"trigger":{"kind":"step.completed","outcome":"{{choice}}"},"expect":{"state":"{{state}}"}}""",
+            """{"trigger":{"kind":"step.completed","outcome":"CHOICE"},"expect":{"state":"STATE"}}""".Replace("CHOICE", choice, StringComparison.Ordinal).Replace("STATE", state, StringComparison.Ordinal),
             Child("done", "resolved", "proof"));
 
         Assert.Equal("resolved", simulation.Instance.Outcome?.Value);
