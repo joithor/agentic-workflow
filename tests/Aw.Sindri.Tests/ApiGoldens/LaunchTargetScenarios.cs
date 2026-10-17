@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Testing;
@@ -67,7 +68,7 @@ internal static class LaunchTargetScenarios
     }
 
     private static LaunchProbed Probed(string scenario) => new(Terminal(scenario), new HostFacts(HostKind.Tmux, Present: true, "3.4", Problem: null), Targets(scenario),
-        [new RepoFacts(Aw.Sindri.Core.Ids.RepoName.From("demo"), Present: true), new RepoFacts(Aw.Sindri.Core.Ids.RepoName.From("other"), Present: false)]);
+        [new RepoFacts(RepoName.From("demo"), Present: true), new RepoFacts(RepoName.From("other"), Present: false)]);
 
     private static TerminalFacts Terminal(string scenario) => scenario switch
     {
