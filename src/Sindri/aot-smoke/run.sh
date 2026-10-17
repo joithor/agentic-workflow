@@ -127,12 +127,15 @@ mcp() { # $1 = JSON-RPC method, $2 = params: one stateless /sindri/mcp call as a
   curl -s -m 30 -X POST "${url%/}/sindri/mcp" -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
     -H 'X-Sindri-Repo: smoke' -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"$1\",\"params\":$2}" | sed -n 's/^data: //p'
 }
-settle() { # the projector has caught up and isn't rebuilding (it polls once a second): status's views line is then stable
-  local i
-  for i in $(seq 1 40); do
+settle() { # the projector has caught up and isn't rebuilding (it polls once a second): status's views line is then stable.
+  # Bounded by wall time, not a count, so a loaded box gets the same 60 s; a timeout prints a named line into the transcript
+  # (so the diff says why) instead of falling through to a snapshot taken mid-rebuild.
+  local deadline=$((SECONDS + 60))
+  while ((SECONDS < deadline)); do
     jq -e '.views | (.cursor == .ledgerHead and (.rebuilding | not))' <<<"$(bounded "$bin" status --json </dev/null 2>/dev/null)" >/dev/null 2>&1 && return 0
     sleep 0.25
   done
+  echo "## settle: the views were still rebuilding or behind after 60 s"
 }
 items_in() { # $1 = state, $2 = count: the items view lists that many in that state (the projector polls once a second)
   local i
