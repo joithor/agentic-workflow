@@ -20,6 +20,11 @@ internal sealed partial class ShellViewModel
     /// <param name="width">The width the user dragged it to.</param>
     internal void ResizeSheet(double width)
     {
+        if (IsInstanceSheet || IsRecipeSheet)
+        {
+            return;   // an instance's or a recipe's sheet is always the widest; the width the human chose for the others stays
+        }
+
         Remember(p => p with { SheetWidth = width });
         OnChanged(nameof(SheetWidth));
     }

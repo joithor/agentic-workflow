@@ -492,8 +492,50 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 | `step.review.recheck` | agent | `change`, `review` | `clean`, `findings`, `behaviourWrong` | `review` (every outcome) |
 | `step.owner.decide` | desk, human-only | - | `retry`, `stop` | `notes` on retry |
 
+
+### Block catalog (scoping station)
+
+Descriptor-only too (`ScopingSteps`, `PendingInputs` in `Aw.Sindri.Features/Blocks/`); the recipes are `workflow.scoping` and `workflow.idea-to-brief` (scoping spec §6, §9). Every Step is desk-capable. An agent Step reaches only `Tools` (the read-only rule is W9's, enforced at launch).
+
+| Step | Runtime | Inputs | Outcomes | Outputs |
+|---|---|---|---|---|
+| `step.scope.intake` | block | `scopeInput` | `brief`, `tracker`, `idea`, `change` | the eight seeds (`scopeMap`, `acceptance`, `findings`, `answers`, `answerLog`, `challenge`, `questions`, `openQuestions`) on all four |
+| `step.scope.read-brief`, `step.scope.read-change` | block | `scopeInput` | `read`, `empty` | `brief`, `anchors` on read |
+| `step.scope.read-tracker` | block (`Network`) | `scopeInput` | `read`, `empty` | `brief`, `anchors` on read |
+| `step.brief.seed` | block | - | `seeded` | `answers`, `answerLog` on seeded |
+| `step.brief.questions` | agent | `idea`, `answers`, `answerLog` | `asked`, `ready` | `questions` on asked; `interviewClosed` on ready |
+| `step.brief.write` | agent | `idea`, `answers`, `answerLog` | `written`, `empty` | `brief` on written |
+| `step.scope.anchor` | block | `brief` | `anchored` | `anchors` on anchored |
+| `step.scope.gather` | block | `anchors` (+ its Step inputs) | `gathered` | `lenses`, `coverage` on gathered |
+| `step.scope.draft` | agent | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `findings`, `answerLog`, `challenge` | `drafted` | `scopeMap`, `acceptance` on drafted |
+| `step.scope.check` | block | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answers`, `answerLog` | `pass`, `gaps`, `regather` | `findings` on gaps, regather |
+| `step.interview.questions` | agent | `scopeMap`, `acceptance`, `lenses`, `answerLog`, `challenge`, `openQuestions` | `asked`, `none` | `questions` on asked; `openQuestions` on asked, none |
+| `step.interview.answer` | desk, human-only | `questions`, `answerLog` | `answered`, `doneAsking` | `answers` on both; `interviewClosed` on doneAsking |
+| `step.interview.record` | block | `answers`, `answerLog` | `recorded` | `answerLog` on recorded |
+| `step.interview.apply` | agent | ten facts (spec §9) | `updated`, `rescope` | `scopeMap`, `acceptance`, `openQuestions` on both |
+| `step.scope.reanchor` | block | `scopeMap`, `anchors`, `lenses` | `anchored` | `anchors` on anchored |
+| `step.scope.challenge` | agent | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answerLog`, `challenge` | `nothingNew`, `found` | `challengeRound` (every outcome) |
+| `step.scope.challenge-log` | block | `challenge`, `challengeRound` | `nothingNew`, `found` | `challenge` (every outcome); `findings` on found |
+| `step.scope.propose` | block | `scopeMap` | `proposed`, `skipped` | `scopeMap` (every outcome) |
+| `step.scope.evidence` | block | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answers`, `answerLog`, `challenge`, `openQuestions`, `decision`, `anchors`, `questions` | `complete`, `incomplete`, `regather` | five facts on complete; `findings` on incomplete, regather |
+| `step.scope.review` | desk, human-only | `scopePacket` | `approve`, `revise`, `drop` | `answers` on revise |
+| `step.scope.freeze` | block | `scopePacket`, `answerLog` | `frozen`, `mismatch` | `findings` on mismatch |
+| `step.scope.withdraw` | block | - | `withdrawn` | - |
+
+`step.interview.answer` and `step.scope.review` carry no form yet: the answer form built from `fact:questions` and the stop's fixed form (approve, revise, drop) await W2, so at the desk they complete with plain outcomes and outputs. The output schemas, their fact-or-packet-file design and field-name choices are in `schemas/scoping/README.md`.
+
+The Step inputs `input.context.lenses`, `input.context.code` and `input.context.history` are registered as descriptors (parameters `anchors`, `depth`, `hops`, `window`) so the recipe validates; the context lane replaces them with the blocks (C1, C3, C5, W6). The output schemas are `schemas/scoping/` (`node scripts/check-scoping-schemas.mjs`).
+
 `step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and human-only; their hashes moved once when the two fields
 landed (provisional owner default); every other shipped descriptor hashes as before (`ShippedBlocksTests` pins all of them).
+
+### Block recipes
+
+The shipped block recipes (`recipes/sindri/`: report, investigate, reproduce, implement, hand-test, verify, the evidence
+family and review-loop) are listed with their inputs, outputs and terminals in `recipes/sindri/README.md`. The inputs are
+`issue` (report), `issue`, `expected` and `actual` (investigate), `issue` and `rootCause` (reproduce, implement), `phasePacket` and `workspace` (hand-test, verify), `phasePacket` and `built`
+(every evidence recipe) and `change` and `phasePacket` (review-loop). `phasePacket` and `change` use the `packet` and
+`payload` subject kinds. Approve the leaf recipes first, then `workflow.evidence-all`, then `workflow.evidence`.
 
 ## Writing a decision tree
 
@@ -741,7 +783,7 @@ The `--json` output is the served body as the CLI's serializer prints it: `list`
   outcome and the outputs required on it), the answer line per park reason (`--grant 1`, `--grant-tokens <half the
   state's budget>`, `--text`, `--resume [--text]`, `--resume`, `--accept`, and the approval or cancel a spec-conflict
   needs), the drift line for a drift recorded behind a park, the budgets, and `allowedCommands`. A spec-conflict park
-  whose only way out is an approval or a cancel (revoked, child revoked, drift) offers no `answer`.
+  whose only way out is an approval or a cancel (revoked, child revoked, drift) offers no `answer`. An open park or escalation serves one `answer` entry per fitting variant, each under its catalog id (`answer-text`, `answer-resume`, `answer-grant`, `answer-grant-tokens`, `answer-accept`, `answer-reject`), the status line's own variant first, each with the full command that runs it (the status line itself may keep its hint form, such as `--resume [--text <answer>]`; `--text <answer>` stays a template because the text is the person's). A suspension that mirrors a child serves only the variants its reason alone fixes (rounds, no-progress, timeout, no-runtime). An escalation from a child and a mirrored needs-answer, budget or spec-conflict park serve none, and their status `answer` line points at the child (`sindri workflow answer <address> <the child's answer>`, `(forwarded to <child>)`, action id `answer-text`) and is marked explicitly: `via: "child"` and `child: <the child's address>` on the status answer record (both omitted on every other answer; `child` is present only when the served view lists the mirrored child, matched by its instance id, and the control plane does not list children yet, so expect `via: "child"` without `child` until P7 wires child propagation into the served view); the needs-you row carries the same `via` marker, so a client never reads the cli text to tell a pointer from a form. A budget grant's amount is whole `k` or `M` when exact, else the plain integer, so it parses (`TokenCounts.Format`) whenever a cap exists to halve; a budget park with no cap (a `gate.budget` refusal on a recipe with no budget) serves no `answer-grant-tokens` entry, and its status line keeps the `--grant-tokens <n>` hint. The one table of which variants fit is `AnswerVariants.Fitting`, shared by the answer check and the served list.
 - **Layout** (`StatusLayout`): the labels take 12 columns, `next` wraps at 120, and the lines come in a fixed order:
   next, child, inputs, drift, timeout, paused, budget (beside an open desk task, as §6.4 shows it), answer, commands.
   An input's digest prints as its first four hex digits and `...` (ASCII for §6.4's ellipsis). The answer note is set

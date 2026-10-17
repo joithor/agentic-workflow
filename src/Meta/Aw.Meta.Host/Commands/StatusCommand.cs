@@ -24,6 +24,7 @@ internal static class StatusCommand
                 .. status.OwnerQueue.Select(static q => string.Create(CultureInfo.InvariantCulture, $"  q{q.Number} ({q.AskedBy}): {q.Text}")),
                 string.Create(CultureInfo.InvariantCulture, $"lanes: v{status.Lanes.Version} ")
                     + (status.Lanes.Entries.Count == 0 ? "(none mapped)" : string.Join(", ", status.Lanes.Entries.Select(static e => $"{e.Lane}={e.SessionName}"))),
+                .. status.Train is { Length: > 0 } train ? train.Split('\n') : [],
                 "health: " + (status.LastHealth ?? "never run (aw-meta health)"),
                 .. status.Heavy is { } heavy ? [heavy.Line()] : Array.Empty<string>(),
                 .. status.Builders is { } builders ? [builders.Line()] : Array.Empty<string>(),

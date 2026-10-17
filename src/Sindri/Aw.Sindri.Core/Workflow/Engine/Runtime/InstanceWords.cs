@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
@@ -36,6 +37,7 @@ internal sealed partial record InstanceWords(WorkflowInstance Instance, Interpre
     public string? Answer() => Instance.Suspension switch
     {
         _ when Instance.Ended => null,
+        { Kind: SuspensionKind.Park, Mirrors: not null } park when !AnswerVariants.ReasonFixesChildFit(park.Reason) => $"{Answering} <the child's answer>{Gap}(forwarded to {ChildName})",
         { Kind: SuspensionKind.Park, Reason: ParkReason.SpecConflict } park => SpecConflictAnswer(park),
         { Kind: SuspensionKind.Park } park => ParkAnswer(park),
         { Kind: SuspensionKind.Escalation, Escalation: EscalationKind.Gate } => $"{Answering} --accept{Gap}(at a terminal)",
@@ -80,7 +82,7 @@ internal sealed partial record InstanceWords(WorkflowInstance Instance, Interpre
         return park.Reason switch
         {
             ParkReason.Rounds or ParkReason.NoProgress => $"{Answering} --grant 1{Gap}(at a terminal{forwarded})",
-            ParkReason.Budget => $"{Answering} --grant-tokens {Grant()}{Gap}(at a terminal; once per park)",
+            ParkReason.Budget => $"{Answering} --grant-tokens {GrantTokens()}{Gap}(at a terminal; once per park)",
             ParkReason.NeedsAnswer when park.ParkKind == ParkKind.Wait => $"{Answering} --resume [--text <answer>]",
             ParkReason.NeedsAnswer => $"{Answering} --text <answer>",
             ParkReason.Timeout or ParkReason.SpecConflict or ParkReason.NoRuntime or null or _ => $"{Answering} --resume",
@@ -97,12 +99,12 @@ internal sealed partial record InstanceWords(WorkflowInstance Instance, Interpre
     };
 
     /// <summary>The grant a budget park suggests: half the active state's budget, else half the recipe's.</summary>
-    private string Grant()
+    internal string GrantTokens()
     {
         var cap = Recipe.Recipe.States.TryGetValue(Instance.Frame.State, out var state) && state.Budget is { } own
             ? own.Tokens
             : Recipe.Recipe.Budget?.Tokens;
-        return cap is { } tokens ? StatusText.Tokens(Math.Max(1, tokens / 2)) : "<n>";
+        return cap is { } tokens ? TokenCounts.Format(Math.Max(1, tokens / 2)) : "<n>";
     }
 
     /// <summary>The block a drift or no-runtime park names: its question when that is a block id, otherwise words for it.</summary>

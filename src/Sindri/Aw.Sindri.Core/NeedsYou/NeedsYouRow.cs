@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Views;
 
@@ -23,6 +24,7 @@ namespace Aw.Sindri.Core.NeedsYou;
 /// <param name="PrimaryAction">A catalog action id (never 'copy:'), a member of <paramref name="Actions"/>, or null when the row has no one-step action (a failure of a service this build lacks).</param>
 /// <param name="Actions">The action ids that apply; ready, pending or cli-only is the catalog's say.</param>
 /// <param name="Cli">The command line that does it, built through CliForm.Fill with typed ids.</param>
+/// <param name="Via">"child" when the cli is a pointer to a child that decides the answer, not an answer form; null (omitted) otherwise.</param>
 public sealed record NeedsYouRow(
     NeedsYouRowId Id,
     NeedsYouKind Kind,
@@ -39,4 +41,5 @@ public sealed record NeedsYouRow(
     AnswerKind? AnswerKind,
     ActionId? PrimaryAction,
     IReadOnlyList<ActionId> Actions,
-    string Cli);
+    string Cli,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Via = null);

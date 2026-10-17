@@ -9,11 +9,11 @@ using Aw.Kernel.Json;
 namespace Aw.Judge.Infrastructure.Config;
 
 /// <summary>
-/// IJudgeConfigStore over $AW_STATE_DIR/judge/config.json: no file is the default config; a file that can't be read
+/// IJudgeConfigStore over config.json in the judge directory: no file is the default config; a file that can't be read
 /// or isn't a valid config (JudgeConfigParser) is AW-JUDGE-007 naming the file. Written as indented Kernel-profile JSON,
 /// atomically (a temporary file renamed into place).
 /// </summary>
-/// <param name="stateDirectory">$AW_STATE_DIR/judge (JudgeSettings.StateDirectory).</param>
+/// <param name="stateDirectory">JudgeSettings.StateDirectory: $AW_JUDGE_STATE_DIR, else $AW_STATE_DIR/judge.</param>
 /// <param name="json">The host's Kernel JSON profile (its context knows JudgeConfig).</param>
 internal sealed class FileJudgeConfigStore(string stateDirectory, JsonSerializerOptions json) : IJudgeConfigStore
 {

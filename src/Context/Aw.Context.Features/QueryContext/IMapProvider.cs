@@ -9,8 +9,8 @@ internal interface IMapProvider
 {
     /// <summary>Reads the map the caller may see.</summary>
     /// <param name="scope">The caller and the approved section.</param>
-    /// <param name="draft">True for the draft map.</param>
+    /// <param name="read">The current map, the draft or a retained version.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The visible map, or the reader's error (SND-CONTEXT-030 with no map).</returns>
-    public ValueTask<Result<VisibleMap>> Read(ContextScope scope, bool draft, CancellationToken cancellationToken);
+    public ValueTask<Result<VisibleMap>> Read(ContextScope scope, MapRead read, CancellationToken cancellationToken);
 }

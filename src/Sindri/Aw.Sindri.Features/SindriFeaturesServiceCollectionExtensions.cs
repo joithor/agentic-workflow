@@ -69,6 +69,7 @@ using Aw.Sindri.Features.RegisterRecipe;
 using Aw.Sindri.Features.ResumeService;
 using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Features.RunDoctor;
+using Aw.Sindri.Features.Sessions;
 using Aw.Sindri.Features.ShowRecipe;
 using Aw.Sindri.Features.StartInstance;
 using Aw.Sindri.Features.StartProcess;
@@ -122,7 +123,8 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddRegistrySlices()
             .AddContextSlices()
             .AddContextJobs()
-            .AddEngineSlices();
+            .AddEngineSlices()
+            .AddSessionSlices();
         return services;
     }
 
@@ -191,6 +193,8 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<ExportContextReviewRequest>, AcceptAllValidator<ExportContextReviewRequest>>().AddQuery<ExportContextReviewRequest, ReviewExported, ExportContextReviewService>();
         _ = services.AddScoped<IValidator<GetContextFileMapRequest>, AcceptAllValidator<GetContextFileMapRequest>>().AddQuery<GetContextFileMapRequest, FileMapView, GetContextFileMapService>();
         _ = services.AddScoped<IValidator<GetContextLensesRequest>, AcceptAllValidator<GetContextLensesRequest>>().AddQuery<GetContextLensesRequest, LensesView, GetContextLensesService>();
+        _ = services.AddScoped<IValidator<GetContextLensesSetRequest>, AcceptAllValidator<GetContextLensesSetRequest>>().AddQuery<GetContextLensesSetRequest, LensesSetView, GetContextLensesSetService>();
+        _ = services.AddScoped<IValidator<GetContextLensesAnswerRequest>, AcceptAllValidator<GetContextLensesAnswerRequest>>().AddQuery<GetContextLensesAnswerRequest, LensesAnswer, GetContextLensesAnswerService>();
         _ = services.AddScoped<IValidator<GetContextEvalMapRequest>, AcceptAllValidator<GetContextEvalMapRequest>>().AddQuery<GetContextEvalMapRequest, MapQualityRun, GetContextEvalMapService>();
         _ = services.AddScoped<IValidator<GetContextProposalsRequest>, AcceptAllValidator<GetContextProposalsRequest>>().AddQuery<GetContextProposalsRequest, ProposalsView, GetContextProposalsService>();
         _ = services.AddScoped<IValidator<GetContextReviewRequest>, AcceptAllValidator<GetContextReviewRequest>>().AddQuery<GetContextReviewRequest, ReviewQueueView, GetContextReviewService>();

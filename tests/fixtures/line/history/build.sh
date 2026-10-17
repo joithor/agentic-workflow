@@ -111,7 +111,7 @@ export function revokeLink(actor: string, id: string): SharedLink | undefined {
   return link;
 }
 TS
-sed -i 's|createLink(req.user, req.body.noteId)|createLink(req.user, req.body.noteId, { expiresAt: req.body.expiresAt })|' "$DEST/src/sharing/routes.ts"
+sed 's|createLink(req.user, req.body.noteId)|createLink(req.user, req.body.noteId, { expiresAt: req.body.expiresAt })|' "$DEST/src/sharing/routes.ts" > "$DEST/src/sharing/routes.ts.new" && mv "$DEST/src/sharing/routes.ts.new" "$DEST/src/sharing/routes.ts"
 commit 2026-10-16T13:00:00Z "feat: store an expiry time on a shared link (P1)"
 git tag line/p1-green
 
