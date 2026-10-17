@@ -1,7 +1,7 @@
 {
   "pid": 211,
   "sessionId": "aaaaaaaa-0000-4000-8000-000000000211",
-  "cwd": "/home/dev/repo",
+  "cwd": "/nonexistent-fixture-root/home/dev/repo",
   "startedAt": 1760000000211,
   "procStart": "1100",
   "version": "2.1.301",
