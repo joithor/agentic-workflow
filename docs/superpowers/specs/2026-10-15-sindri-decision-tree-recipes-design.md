@@ -75,7 +75,7 @@ the transition (§8.6).
 ### 3.2 Choices grammar and rules
 
 An entry is `"<outcome>: <criterion>"`. The outcome is the text before the **first** `": "` and matches
-`[a-z][a-z0-9]{0,31}`; the criterion is the rest, 1 to 400 characters, and may contain colons. Entries must be quoted
+`[a-z][A-Za-z0-9]{0,31}` (camelCase); the criterion is the rest, 1 to 400 characters, and may contain colons. Entries must be quoted
 in YAML, since an unquoted `- ui: …` is a mapping. The validator adds (§8.1):
 
 | Rule | Check | Message names |
