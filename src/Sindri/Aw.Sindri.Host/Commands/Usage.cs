@@ -19,6 +19,7 @@ internal static class Usage
         "       sindri items [--state <s>] [--repo <r>] [--json] [--no-start]   the item list, the oldest first",
         "       sindri item add <title> [--repo <r>] [--no-start]   create an item: 'ITM-… created (sequence N)'",
         "       sindri item close <item> [--cancelled] [--version <n>] [--no-start]   close an item (id or tracker key) as done, or cancelled; without --version it closes the version it reads first",
+        "       sindri open <item> [--agent <id>] [--attach | --resume] [--version <n>] [--no-wait] [--json] [--no-start]   open the item's agent session (claude-code, codex, cursor or an added agent): asks for a launch, waits for the launcher's answer (up to 35 s) and prints how the viewer fared, and the attach command when no window opened; exit 0 started, 1 not running or no answer yet, 2 refused or failed",
         "       sindri request <kind> [--item <item>] <text> [--json] [--no-start]   ask a human (rescope, add-task, note or handback), about an item or none: 'REQ-… filed; DEC-… waits for a human'; it is a session's verb",
         "       sindri requests [--state <s>] [--item <item>] [--json] [--no-start]   the requests, newest first, with their text; exit 1 while the views rebuild or stall",
         "       sindri decisions [--pending | --decided] [--item <item>] [--json] [--no-start]   the decisions: pending oldest first, decided newest first, each with its question and the command that decides it; exit 1 while the views rebuild or stall",

@@ -146,6 +146,9 @@ public static class SindriErrors
     /// <summary>SND-LAUNCH-004: the item's repo isn't on disk.</summary>
     public static readonly ErrorDefinition LaunchRepoMissing = new("SND-LAUNCH-004", ErrorKind.NotFound, "The repo isn't on disk");
 
+    /// <summary>SND-LAUNCH-404: no launch has that id, or a session caller may not see it.</summary>
+    public static readonly ErrorDefinition LaunchNotFound = new("SND-LAUNCH-404", ErrorKind.NotFound, "No such launch");
+
     /// <summary>SND-LAUNCH-006: there is no session to resume or attach to; the mode falls back to Open.</summary>
     public static readonly ErrorDefinition LaunchNoSession = new("SND-LAUNCH-006", ErrorKind.NotFound, "There is no session to resume or attach to");
 
@@ -189,7 +192,7 @@ public static class SindriErrors
         ProfileNotApproved, ApprovalsUnavailable, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, PortInUse, ApiNoCode, ApiInternal,
         CallerUnknown, OriginRefused, CommandBusy, AuthTokenRequired, AuthRefused, UnknownVerb, StartFailed,
         InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, JobNotFound, JobConflict, JobInterrupted, JobsRateLimited, ServiceNotFound, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
-        LaunchViewerFailed, LaunchNoViewer, LaunchAgentMissing, LaunchRepoMissing, LaunchNoSession, LaunchInterrupted, LaunchInProgress, LaunchTimedOut, LaunchBudgetReached,
+        LaunchNotFound, LaunchViewerFailed, LaunchNoViewer, LaunchAgentMissing, LaunchRepoMissing, LaunchNoSession, LaunchInterrupted, LaunchInProgress, LaunchTimedOut, LaunchBudgetReached,
         LauncherInvalid, LaunchNotApproved, LaunchFormUnsupported, AuthLaunchSecret, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride,
     ];
 }

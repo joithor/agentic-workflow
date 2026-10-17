@@ -629,6 +629,7 @@ blocks.
 | `SND-LAUNCH-010` | The target's spend today reached its `dailyBudget`, or a `dailyBudget` is set on a target with `usage: none` (`detail: no-usage-reader`) (429; API P10a) |
 | `SND-LAUNCH-012` | The agent entry isn't approved for unattended Steps: `detail.reason` is `not-approved` or `hash-changed`, with the `current` and `approved` hashes (403; launcher SL8; API P10a) |
 | `SND-LAUNCH-013` | A Step asked for a model or a policy and the entry's matching form is `none`; nothing launches (400; launcher L-17; API P10a) |
+| `SND-LAUNCH-404` | No launch has that id, or a session caller may not see it: `GET /sindri/launches/{launchId}` (404; API P10a) |
 | `SND-LAUNCH-011` | `launcher.json` (or an agent entry in it) isn't valid: an unknown key in a section, a bad kind, a placeholder outside the closed set, an entry that lacks `label`, `bin`, `open` or `sessionId`, a `sessions.pollSeconds` outside 1 to 30. The collector reads the built-in agents and the default settings instead and shows one problem row (collector CO-2a) |
 | `SND-SESSION-001` | One of the session collector's sources failed or a pass overran its 500 ms budget: a problem row beside a normal list, never an exception message (collector CO-2a) |
 | `SND-SESSION-002` | The session collector can't run here; the `detail` is `unsupported-platform`, `proc-unreadable` or `disabled`, and only these replace the list (collector CO-2a; the routes are CO-3) |

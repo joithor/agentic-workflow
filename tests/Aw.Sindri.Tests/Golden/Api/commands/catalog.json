@@ -379,7 +379,7 @@
       "method": "POST",
       "route": "/sindri/items/{itemId}/open",
       "cli": "sindri open <itemId> --attach [--agent <agent>]",
-      "ui": "pending:P10a",
+      "ui": "ready",
       "destructive": false,
       "readsViews": true,
       "shortcut": null
@@ -395,7 +395,7 @@
       "method": "POST",
       "route": "/sindri/items/{itemId}/open",
       "cli": "sindri open <itemId> [--agent <agent>]",
-      "ui": "pending:P10a",
+      "ui": "ready",
       "destructive": false,
       "readsViews": true,
       "shortcut": null
@@ -411,7 +411,7 @@
       "method": "POST",
       "route": "/sindri/items/{itemId}/open",
       "cli": "sindri open <itemId> --resume [--agent <agent>]",
-      "ui": "pending:P10a",
+      "ui": "ready",
       "destructive": false,
       "readsViews": true,
       "shortcut": null
