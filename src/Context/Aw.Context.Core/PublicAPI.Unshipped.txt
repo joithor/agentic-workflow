@@ -5035,3 +5035,40 @@ static Aw.Context.Core.Code.LexicalSchemaFile.operator !=(Aw.Context.Core.Code.L
 static Aw.Context.Core.Code.LexicalSchemaFile.operator ==(Aw.Context.Core.Code.LexicalSchemaFile? left, Aw.Context.Core.Code.LexicalSchemaFile? right) -> bool
 static Aw.Context.Core.Code.LexicalTest.operator !=(Aw.Context.Core.Code.LexicalTest? left, Aw.Context.Core.Code.LexicalTest? right) -> bool
 static Aw.Context.Core.Code.LexicalTest.operator ==(Aw.Context.Core.Code.LexicalTest? left, Aw.Context.Core.Code.LexicalTest? right) -> bool
+Aw.Context.Core.Code.CodeSearchHits
+Aw.Context.Core.Code.CodeSearchHits.<Clone>$() -> Aw.Context.Core.Code.CodeSearchHits!
+Aw.Context.Core.Code.CodeSearchHits.CodeSearchHits(System.Collections.Generic.IReadOnlyList<string!>! Paths, bool Truncated) -> void
+Aw.Context.Core.Code.CodeSearchHits.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Paths, out bool Truncated) -> void
+Aw.Context.Core.Code.CodeSearchHits.Equals(Aw.Context.Core.Code.CodeSearchHits? other) -> bool
+Aw.Context.Core.Code.CodeSearchHits.Paths.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Code.CodeSearchHits.Paths.init -> void
+Aw.Context.Core.Code.CodeSearchHits.Truncated.get -> bool
+Aw.Context.Core.Code.CodeSearchHits.Truncated.init -> void
+Aw.Context.Core.Code.ICodeSearch
+override Aw.Context.Core.Code.CodeSearchHits.Equals(object? obj) -> bool
+override Aw.Context.Core.Code.CodeSearchHits.GetHashCode() -> int
+override Aw.Context.Core.Code.CodeSearchHits.ToString() -> string!
+static Aw.Context.Core.Code.CodeSearchHits.operator !=(Aw.Context.Core.Code.CodeSearchHits? left, Aw.Context.Core.Code.CodeSearchHits? right) -> bool
+static Aw.Context.Core.Code.CodeSearchHits.operator ==(Aw.Context.Core.Code.CodeSearchHits? left, Aw.Context.Core.Code.CodeSearchHits? right) -> bool
+Aw.Context.Core.Code.CodeSearchQuery
+Aw.Context.Core.Code.CodeSearchQuery.<Clone>$() -> Aw.Context.Core.Code.CodeSearchQuery!
+Aw.Context.Core.Code.CodeSearchQuery.CodeSearchQuery(Aw.Context.Core.Engine.ContextRepo! Repo, string! Commit, System.Collections.Generic.IReadOnlyList<string!>! Terms, System.Collections.Generic.IReadOnlyList<string!>? Within, int Max) -> void
+Aw.Context.Core.Code.CodeSearchQuery.Commit.get -> string!
+Aw.Context.Core.Code.CodeSearchQuery.Commit.init -> void
+Aw.Context.Core.Code.CodeSearchQuery.Deconstruct(out Aw.Context.Core.Engine.ContextRepo! Repo, out string! Commit, out System.Collections.Generic.IReadOnlyList<string!>! Terms, out System.Collections.Generic.IReadOnlyList<string!>? Within, out int Max) -> void
+Aw.Context.Core.Code.CodeSearchQuery.Equals(Aw.Context.Core.Code.CodeSearchQuery? other) -> bool
+Aw.Context.Core.Code.CodeSearchQuery.Max.get -> int
+Aw.Context.Core.Code.CodeSearchQuery.Max.init -> void
+Aw.Context.Core.Code.CodeSearchQuery.Repo.get -> Aw.Context.Core.Engine.ContextRepo!
+Aw.Context.Core.Code.CodeSearchQuery.Repo.init -> void
+Aw.Context.Core.Code.CodeSearchQuery.Terms.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Code.CodeSearchQuery.Terms.init -> void
+Aw.Context.Core.Code.CodeSearchQuery.TermsProblem() -> Aw.Kernel.Error?
+Aw.Context.Core.Code.CodeSearchQuery.Within.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Context.Core.Code.CodeSearchQuery.Within.init -> void
+Aw.Context.Core.Code.ICodeSearch.FilesNaming(Aw.Context.Core.Code.CodeSearchQuery! query, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Code.CodeSearchHits!>!>
+override Aw.Context.Core.Code.CodeSearchQuery.Equals(object? obj) -> bool
+override Aw.Context.Core.Code.CodeSearchQuery.GetHashCode() -> int
+override Aw.Context.Core.Code.CodeSearchQuery.ToString() -> string!
+static Aw.Context.Core.Code.CodeSearchQuery.operator !=(Aw.Context.Core.Code.CodeSearchQuery? left, Aw.Context.Core.Code.CodeSearchQuery? right) -> bool
+static Aw.Context.Core.Code.CodeSearchQuery.operator ==(Aw.Context.Core.Code.CodeSearchQuery? left, Aw.Context.Core.Code.CodeSearchQuery? right) -> bool
