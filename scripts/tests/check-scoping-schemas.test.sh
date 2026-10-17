@@ -42,7 +42,7 @@ echo "drift"
 d="$(copy verdict)"; edit "$d/schemas/scoping/examples/scope-input.brief.valid.json" '.kind = "ticket"'
 run "$d"; expect_rc "a valid example the schema refuses fails" 1; expect_out "names the example" "scope-input.brief.valid.json"
 
-d="$(copy relax)"; edit "$d/schemas/scoping/acceptance.json" '.properties.items.items.properties.status = {"type":"string"}'
+d="$(copy relax)"; edit "$d/schemas/scoping/acceptance.json" '."$defs".fact.properties.items.items.properties.status = {"type":"string"} | ."$defs".file.properties.items.items.properties.status = {"type":"string"}'
 run "$d"; expect_rc "a schema that accepts an invalid example fails" 1; expect_out "names the invalid example" "acceptance.passing.invalid.json"
 
 d="$(copy unlisted)"; echo '{}' > "$d/schemas/scoping/examples/extra.json"

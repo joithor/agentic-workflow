@@ -1,15 +1,29 @@
 {
-  "walked": {
-    "lenses": [
-      "code",
-      "product",
-      "related",
-      "history"
-    ],
-    "dimensions": [
-      "who may use it",
-      "failure"
-    ]
-  },
+  "walked": [
+    {
+      "kind": "lens",
+      "name": "code"
+    },
+    {
+      "kind": "lens",
+      "name": "product"
+    },
+    {
+      "kind": "lens",
+      "name": "related"
+    },
+    {
+      "kind": "lens",
+      "name": "history"
+    },
+    {
+      "kind": "dimension",
+      "name": "who may use it"
+    },
+    {
+      "kind": "dimension",
+      "name": "failure"
+    }
+  ],
   "verdict": "nothingNew"
 }

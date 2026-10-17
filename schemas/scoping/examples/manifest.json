@@ -58,13 +58,19 @@
       "file": "scope-map.fact.valid.json",
       "schema": "scope-map.json",
       "valid": true,
-      "source": "spec section 8.3 scope-map.json field list, fact form (no envelope)"
+      "source": "spec section 8.3 scope-map.json field list, fact form (no envelope, no trust: SCP-TRUST-001)"
     },
     {
       "file": "scope-map.file.valid.json",
       "schema": "scope-map.json",
       "valid": true,
-      "source": "spec 8.3 field list plus the packet-file envelope (aw-packets: every JSON file carries schemaVersion)"
+      "source": "spec 8.3 field list plus the packet-file envelope; code-stamped trust (SCP-TRUST-001)"
+    },
+    {
+      "file": "scope-map.fact-with-trust.invalid.json",
+      "schema": "scope-map.json",
+      "valid": false,
+      "source": "SCP-TRUST-001: a model-written trust is a schema finding at the draft stage"
     },
     {
       "file": "scope-map.surface-id-as-citation.invalid.json",
@@ -82,13 +88,19 @@
       "file": "acceptance.fact.valid.json",
       "schema": "acceptance.json",
       "valid": true,
-      "source": "spec 8.3 acceptance.json field list, fact form"
+      "source": "spec 8.3 acceptance.json field list, fact form (no trust)"
     },
     {
       "file": "acceptance.file.valid.json",
       "schema": "acceptance.json",
       "valid": true,
-      "source": "spec 8.3 plus the packet-file envelope"
+      "source": "spec 8.3 plus the packet-file envelope; code-stamped trust"
+    },
+    {
+      "file": "acceptance.fact-with-trust.invalid.json",
+      "schema": "acceptance.json",
+      "valid": false,
+      "source": "SCP-TRUST-001: a model cannot claim owner trust"
     },
     {
       "file": "acceptance.plain-with-reason.valid.json",
@@ -133,6 +145,12 @@
       "source": "spec 7.3: every option cites (option-uncited)"
     },
     {
+      "file": "questions.two-recommended.invalid.json",
+      "schema": "questions.json",
+      "valid": false,
+      "source": "spec 7.3: recommended is set on at most one option"
+    },
+    {
       "file": "questions.six.invalid.json",
       "schema": "questions.json",
       "valid": false,
@@ -148,7 +166,7 @@
       "file": "challenge-round.nothing-new.valid.json",
       "schema": "challenge-round.json",
       "valid": true,
-      "source": "spec A.4: walked[] and the verdict nothingNew"
+      "source": "spec A.4: walked[] (lenses and dimensions) and the verdict nothingNew"
     },
     {
       "file": "challenge-round.found.valid.json",
@@ -167,6 +185,12 @@
       "schema": "challenge-round.json",
       "valid": false,
       "source": "challenge-log: nothingNew with items is a failed Step"
+    },
+    {
+      "file": "challenge-round.walked-object.invalid.json",
+      "schema": "challenge-round.json",
+      "valid": false,
+      "source": "spec A.4/B.2: walked[] is an array"
     },
     {
       "file": "challenge-round.no-verdict.invalid.json",
@@ -193,6 +217,12 @@
       "source": "spec 8.3 coverage.json: one row per lens (rows as in the line gold)"
     },
     {
+      "file": "coverage.object-sources.valid.json",
+      "schema": "coverage.json",
+      "valid": true,
+      "source": "spec 8.2/8.3 \"sources and states\" with the commit-not-held limit of #309 (unavailable, reason, code SND-CONTEXT-110)"
+    },
+    {
       "file": "coverage.file.valid.json",
       "schema": "coverage.json",
       "valid": true,
@@ -203,6 +233,12 @@
       "schema": "coverage.json",
       "valid": false,
       "source": "SCP-COV-001: one row per lens"
+    },
+    {
+      "file": "coverage.four-code-rows.invalid.json",
+      "schema": "coverage.json",
+      "valid": false,
+      "source": "SCP-COV-001: one row per lens, not four rows of one lens"
     }
   ]
 }

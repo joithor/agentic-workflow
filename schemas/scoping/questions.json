@@ -15,7 +15,7 @@
         "type": "array",
         "items": {
           "type": "string",
-          "pattern": "^S[0-9]+$",
+          "pattern": "^S[1-9][0-9]*$",
           "description": "A surface id in the scope map."
         }
       },
@@ -31,7 +31,7 @@
         "type": "array",
         "items": {
           "type": "string",
-          "pattern": "^AC-[0-9]+$",
+          "pattern": "^AC-[1-9][0-9]*$",
           "description": "An acceptance item id (spec 7.3: blocks [\"AC-4\"]). The answer-log id is A<n>."
         }
       },
@@ -66,7 +66,7 @@
               "type": "array",
               "items": {
                 "type": "string",
-                "pattern": "^(R[0-9]+|A[0-9]+|L-(code|product|related|history)-[0-9]+)$"
+                "pattern": "^(R[1-9][0-9]*|A[1-9][0-9]*|L-(code|product|related|history)-[1-9][0-9]*)$"
               },
               "description": "Ids that resolve (SCP-CITE-001): a lens item L-<lens>-<n>, a source ref R<n> in fact:brief.refs, or an answer A<n> in the answer log.",
               "minItems": 1
@@ -86,7 +86,19 @@
           "additionalProperties": false
         },
         "minItems": 2,
-        "maxItems": 4
+        "maxItems": 4,
+        "contains": {
+          "properties": {
+            "recommended": {
+              "const": true
+            }
+          },
+          "required": [
+            "recommended"
+          ]
+        },
+        "minContains": 0,
+        "maxContains": 1
       },
       "other": {
         "type": "boolean"

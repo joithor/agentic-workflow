@@ -9,9 +9,9 @@
         "R1",
         "L-product-1"
       ],
-      "trust": "untrusted",
       "lens": "product",
-      "graphStatus": "mapped"
+      "graphStatus": "mapped",
+      "trust": "untrusted"
     }
   ],
   "implications": [
@@ -23,7 +23,8 @@
       ],
       "surfaces": [
         "S1"
-      ]
+      ],
+      "trust": "untrusted"
     }
   ],
   "workstreams": [
@@ -51,7 +52,8 @@
   "unmapped": [
     {
       "path": "migrations/006.sql",
-      "reason": "no node owns a new migration"
+      "reason": "no node owns a new migration",
+      "trust": "untrusted"
     }
   ],
   "unresolved": [

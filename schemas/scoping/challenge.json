@@ -15,32 +15,34 @@
         "type": "object",
         "properties": {
           "walked": {
-            "type": "object",
-            "properties": {
-              "lenses": {
-                "type": "array",
-                "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
                   "enum": [
-                    "code",
-                    "product",
-                    "related",
-                    "history"
+                    "lens",
+                    "dimension"
                   ]
-                }
-              },
-              "dimensions": {
-                "type": "array",
-                "items": {
+                },
+                "name": {
                   "type": "string",
                   "minLength": 1
+                },
+                "surface": {
+                  "type": "string",
+                  "pattern": "^S[1-9][0-9]*$",
+                  "description": "A surface id in the scope map."
                 }
-              }
+              },
+              "required": [
+                "kind",
+                "name"
+              ],
+              "additionalProperties": false
             },
-            "required": [
-              "lenses",
-              "dimensions"
-            ],
-            "additionalProperties": false
+            "minItems": 1,
+            "description": "Spec A.4/B.2 \"walked[] (lenses and dimensions)\": one entry per lens or dimension walked (SCP-CHAL-001: \"lists every lens and dimension it walked\")."
           },
           "verdict": {
             "enum": [
@@ -61,7 +63,7 @@
                   "type": "array",
                   "items": {
                     "type": "string",
-                    "pattern": "^(R[0-9]+|A[0-9]+|L-(code|product|related|history)-[0-9]+)$"
+                    "pattern": "^(R[1-9][0-9]*|A[1-9][0-9]*|L-(code|product|related|history)-[1-9][0-9]*)$"
                   },
                   "description": "Ids that resolve (SCP-CITE-001): a lens item L-<lens>-<n>, a source ref R<n> in fact:brief.refs, or an answer A<n> in the answer log.",
                   "minItems": 1
@@ -91,7 +93,7 @@
                   "type": "array",
                   "items": {
                     "type": "string",
-                    "pattern": "^(R[0-9]+|A[0-9]+|L-(code|product|related|history)-[0-9]+)$"
+                    "pattern": "^(R[1-9][0-9]*|A[1-9][0-9]*|L-(code|product|related|history)-[1-9][0-9]*)$"
                   },
                   "description": "Ids that resolve (SCP-CITE-001): a lens item L-<lens>-<n>, a source ref R<n> in fact:brief.refs, or an answer A<n> in the answer log.",
                   "minItems": 1

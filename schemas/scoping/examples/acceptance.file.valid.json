@@ -13,10 +13,10 @@
         "R1",
         "L-code-1"
       ],
-      "trust": "untrusted",
       "status": "failing",
       "evidence": [],
-      "parent": null
+      "parent": null,
+      "trust": "untrusted"
     }
   ]
 }

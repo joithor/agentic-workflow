@@ -16,7 +16,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "pattern": "^R[0-9]+$"
+            "pattern": "^R[1-9][0-9]*$"
           },
           "source": {
             "type": "string",
