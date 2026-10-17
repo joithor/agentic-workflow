@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Features.Decide;
 using Aw.Sindri.Features.FileRequest;
 
 namespace Aw.Architecture.Tests;
@@ -23,15 +24,24 @@ public sealed class McpSurfaceTests
         var catalog = HostIntrospection.Catalog().Rows;
         var allowed = new HashSet<string>(StringComparer.Ordinal) { typeof(FileRequestRequest).FullName! };
         var commands = catalog.Select(r => r.CommandType?.FullName).OfType<string>().Where(n => !allowed.Contains(n)).ToHashSet(StringComparer.Ordinal);
-        var protectedRoutes = catalog.Where(r => r.Class != ActionClass.Request).Select(r => r.Route).OfType<string>()
+        // why: catalog routes are templates ('/sindri/decisions/{decisionId}'); code that builds one loads only the text before the first '{'
+        var protectedPrefixes = catalog.Where(r => r.Class != ActionClass.Request).Select(r => r.Route).OfType<string>()
+            .Select(r => r.Split('{')[0])
             .SelectMany(r => new[] { r, r.Replace("/sindri", string.Empty, StringComparison.Ordinal) })
-            .Where(r => r.Length > 1 && r != "/")
+            .Where(r => r.Length > 1)
             .ToHashSet(StringComparer.Ordinal);
+        var literals = HostIntrospection.LiteralsIn(HostIntrospection.Host, McpNamespace);
+
+        // the rule must be able to fail: a scanner that finds nothing, or a catalog without the decide command, would pass vacuously
+        Assert.Contains(typeof(DecideRequest).FullName!, commands);
+        Assert.NotEmpty(protectedPrefixes);
+        Assert.Contains(literals, l => l.Literal == "/sindri/mcp");
+        Assert.Contains(literals, l => l.Literal == "sindri_request");
 
         var found = McpTypes()
             .SelectMany(t => t.Dependencies.Where(d => commands.Contains(d.Target.FullName)).Select(d => $"{t.FullName} uses command {d.Target.FullName}"))
-            .Concat(HostIntrospection.LiteralsIn(HostIntrospection.Host, McpNamespace)
-                .Where(l => protectedRoutes.Contains(l.Literal))
+            .Concat(literals
+                .Where(l => protectedPrefixes.Any(p => l.Literal.StartsWith(p, StringComparison.Ordinal)))
                 .Select(l => $"{l.Type} holds the route '{l.Literal}' of a command that isn't a request"))
             .Distinct(StringComparer.Ordinal)
             .Order(StringComparer.Ordinal)
