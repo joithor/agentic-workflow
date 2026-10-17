@@ -36,6 +36,44 @@ public sealed class ProcessToolRunnerTests
     }
 
     [Fact, Trait("Lane", "integration")]
+    public void A_cancelled_run_kills_the_child_and_returns_cancelled_quickly()
+    {
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        var pid = "";
+        var options = new ToolRunOptions(StandardErrorLine: line =>
+        {
+            pid = line;
+            cancel.CancelAfter(TimeSpan.FromMilliseconds(200));   // the child is up: cancel it shortly after
+        });
+        var watch = System.Diagnostics.Stopwatch.StartNew();
+
+        var run = _runner.Run("sh", ["-c", "echo $$ >&2; exec sleep 10"], TimeSpan.FromSeconds(30), options: options, cancellationToken: cancel.Token);
+        var elapsed = watch.Elapsed;
+        var alive = _runner.Run("kill", ["-0", pid], TimeSpan.FromSeconds(5), cancellationToken: TestContext.Current.CancellationToken);
+
+        Assert.Equal(ToolRun.Cancelled, run);
+        Assert.True(elapsed < TimeSpan.FromSeconds(2), $"took {elapsed}");
+        Assert.NotEqual(0, alive.ExitCode);   // `kill -0` fails: the child is gone
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public void An_already_cancelled_token_returns_cancelled_without_starting_the_tool()
+    {
+        var marker = Path.Combine(Path.GetTempPath(), "aw-runner-started-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var run = _runner.Run("sh", ["-c", $"touch {marker}"], TimeSpan.FromSeconds(5), cancellationToken: new CancellationToken(canceled: true));
+
+            Assert.Equal(ToolRun.Cancelled, run);
+            Assert.False(File.Exists(marker));
+        }
+        finally
+        {
+            File.Delete(marker);
+        }
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public void An_unset_variable_is_absent_in_the_child_and_a_set_one_is_present()
     {
         Environment.SetEnvironmentVariable("AW_TEST_INHERITED", "leaks");
