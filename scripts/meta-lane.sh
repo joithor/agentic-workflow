@@ -131,29 +131,9 @@ watch_reported_id() { # [seconds]: the wait (default AW_META_ID_WAIT); a second 
 # (or the lane script ends first). The lock is a symlink, lane-sessions/.reported.lock, whose target is the owner's pid:
 # `ln -s` is atomic and records the owner in one step, on macOS (no flock there) and Linux alike. A lock whose owner pid
 # is dead is taken over, so a crashed start never leaves a stale one.
+# shellcheck source=meta-start-lock.sh
 start_lock="$ids/.reported.lock"
-release_start_lock() { [ "$(readlink "$start_lock" 2> /dev/null)" = "$lane_pid" ] && unlink "$start_lock" 2> /dev/null; return 0; }
-acquire_start_lock() { # returns 1 if the holder did not finish in AW_META_ID_WAIT x 10 s
-  local deadline=$((SECONDS + ${AW_META_ID_WAIT:-30} * 10)) owner moved
-  while ! ln -s "$lane_pid" "$start_lock" 2> /dev/null; do
-    owner="$(readlink "$start_lock" 2> /dev/null)"
-    if [ -n "$owner" ] && ! kill -0 "$owner" 2> /dev/null; then   # the holder died: take the lock over (the rename wins for one taker)
-      moved="$start_lock.dead.$$"
-      if mv "$start_lock" "$moved" 2> /dev/null; then
-        # a taker that got in between our check and the rename moved a live lock: put it back
-        [ "$(readlink "$moved")" = "$owner" ] || ln -s "$(readlink "$moved")" "$start_lock" 2> /dev/null
-        unlink "$moved" 2> /dev/null
-      fi
-      continue
-    fi
-    if [ "$SECONDS" -ge "$deadline" ]; then
-      echo "meta-lane: another lane's start did not finish; starting $lane anyway" >&2
-      return 1
-    fi
-    sleep 0.2
-  done
-  return 0
-}
+. "$here/meta-start-lock.sh"
 
 id=""; mode=fresh; write_id=0
 case "$id_mode" in
