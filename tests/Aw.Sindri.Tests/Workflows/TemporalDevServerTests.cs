@@ -39,6 +39,27 @@ public sealed class TemporalDevServerTests : IDisposable
     }
 
     [Fact(Timeout = 60_000)]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+    public async Task A_start_whose_server_comes_up_seconds_late_waits_for_it_and_is_not_cut_short_by_the_read_bound()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var slow = Path.Combine(_home.Path, "slow-temporal.sh");
+        await File.WriteAllTextAsync(slow, $"#!/bin/sh\nsleep 4\nexec \"{PinnedTemporal.Path()}\" \"$@\"\n", ct);   // the pinned CLI, 4 s after the process starts: a cold box
+        File.SetUnixFileMode(slow, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        var server = new TemporalDevServer();
+
+        var running = await server.StartAsync(new TemporalServerStart(slow, _home.Path), ct);
+        try
+        {
+            Assert.Equal(DevServerAnswer.Ready, (await DevServerProbe.Ask(running.Frontend, TemporalSettings.DefaultNamespace, TimeSpan.FromSeconds(5), ct)).Answer);
+        }
+        finally
+        {
+            await server.StopAsync(running, ct);
+        }
+    }
+
+    [Fact(Timeout = 60_000)]
     public async Task A_server_left_by_a_serve_that_died_is_adopted_by_the_next_start()
     {
         var ct = TestContext.Current.CancellationToken;

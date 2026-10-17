@@ -27,10 +27,36 @@ public abstract class TemporalServerFixture : IAsyncLifetime
         GC.SuppressFinalize(this);
     }
 
-    /// <summary>Starts <paramref name="kind"/> from its pinned binary.</summary>
+    /// <summary>
+    /// Starts <paramref name="kind"/> from its pinned binary. The SDK picks each server's port (bind 0, read, release) and the
+    /// server then binds it, so a parallel fixture can take it in between ("address already in use"); that start is tried again
+    /// with a new port, three times at most.
+    /// </summary>
     /// <param name="kind">The server.</param>
     /// <returns>The environment.</returns>
-    public static async Task<WorkflowEnvironment> Start(ServerKind kind) => kind switch
+    public static async Task<WorkflowEnvironment> Start(ServerKind kind)
+    {
+        const int Attempts = 3;
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                return await StartOnce(kind);
+            }
+            catch (Exception e) when (attempt < Attempts && IsPortTaken(e))
+            {
+                await Console.Error.WriteLineAsync(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{kind} server start {attempt} of {Attempts} lost its port ({e.Message.ReplaceLineEndings(" ")}); starting again on another"));
+            }
+        }
+    }
+
+    /// <summary>Whether a failed server start lost its port to another process.</summary>
+    /// <param name="e">The failure.</param>
+    /// <returns>True for "address already in use".</returns>
+    internal static bool IsPortTaken(Exception e) =>
+        e.ToString().Contains("address already in use", StringComparison.OrdinalIgnoreCase);
+
+    private static async Task<WorkflowEnvironment> StartOnce(ServerKind kind) => kind switch
     {
         ServerKind.TimeSkipping => await WorkflowEnvironment.StartTimeSkippingAsync(new WorkflowEnvironmentStartTimeSkippingOptions
         {

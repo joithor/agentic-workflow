@@ -251,6 +251,24 @@ OUT1="$(bash "$DIR/meta-launch.sh" --no-open --dry-run | sed "s#$WORK#W#g")"
 check "launcher.json at the default path with viewer warp: the same layout, byte for byte" "$OUT1" "$OUT0"
 unlink "$AW_STATE_DIR/launcher.json"
 
+# sessions (session collector CO-0): the key is the collector's; the bash reader accepts it and ignores it, so the layout is today's.
+reset
+cp "$FIX/sessions.json" "$LCFG"
+OUT1="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open --dry-run 2>&1 | sed "s#$WORK#W#g"; exit "${PIPESTATUS[0]}")"; RC=$?
+check "a launcher.json with sessions: accepted, the same layout as no file" "$RC:$(diff <(printf '%s\n' "$OUT0") <(printf '%s\n' "$OUT1" | sed 's# -e AW_LAUNCHER_CONFIG=[^ ]*##') > /dev/null && echo same)" "0:same"
+cp "$FIX/sessions-bogus.json" "$LCFG"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open --dry-run 2>&1)"; RC=$?
+check "a sessions key with an unknown member: still accepted by the bash reader (sindri launch show refuses it)" "$RC:$(grep -c 'SND-LAUNCH-011' <<< "$OUT")" "0:0"
+
+# model and policy (L-17, owner 2026-10-16): per-entry form names the bash reader accepts and never applies, so the layout is today's.
+reset
+cp "$FIX/model-policy-forms.json" "$LCFG"
+OUT1="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open --dry-run 2>&1 | sed "s#$WORK#W#g"; exit "${PIPESTATUS[0]}")"; RC=$?
+check "a launcher.json with model and policy forms: accepted, the same layout as no file" "$RC:$(diff <(printf '%s\n' "$OUT0") <(printf '%s\n' "$OUT1" | sed 's# -e AW_LAUNCHER_CONFIG=[^ ]*##') > /dev/null && echo same)" "0:same"
+cp "$FIX/unknown-model-form.json" "$LCFG"
+OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open --dry-run 2>&1)"; RC=$?
+check "an unknown model form value: still accepted by the bash reader (sindri launch show refuses it)" "$RC:$(grep -c 'SND-LAUNCH-011' <<< "$OUT")" "0:0"
+
 # viewer: print — one attach line per lane, no Warp YAML.
 reset; unlink "$yaml" 2> /dev/null; cp "$FIX/viewer-print.json" "$LCFG"
 OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" 2>&1)"; RC=$?
@@ -301,7 +319,7 @@ echo "parent=$([ "$AW_META_LANE_PID" = "$PPID" ] && echo lane-script || echo oth
 sleep 600
 EOF
 chmod +x "$WORK/codex"
-jq -n --arg c "$WORK/codex" '{schema:1, agents:{codex:{override:true, bin:$c}}, meta:{lanesAgent:"codex"}}' > "$LCFG"
+jq -n --arg c "$WORK/codex" '{schema:1, agents:{codex:{override:true, bin:$c, model:"codex-flag", policy:"codex-overrides"}}, meta:{lanesAgent:"codex"}}' > "$LCFG"   # the forms are named and never applied: the argv check below holds
 reset; : > "$CALLS.events"; : > "$CALLS.codex"
 OUT="$(AW_LAUNCHER_CONFIG="$LCFG" bash "$DIR/meta-launch.sh" --no-open 2>&1)"; RC=$?
 check "codex lanes: the launch notes that they take part through their hooks" "$RC:$(grep -x 'lane api: codex, takes part in the obligations through its hooks (scripts/install-meta.sh installs them)' <<< "$OUT" | wc -l):$(grep -c '^lane meta' <<< "$OUT")" "0:1:0"
@@ -311,7 +329,7 @@ check "codex lanes: started one at a time (each id is reported before the next l
 a="$(tr -d '[:space:]' < "$ids/api")"; u="$(tr -d '[:space:]' < "$ids/ui")"
 check "codex lanes: each lane recorded the id its own rollout file carries" "$(grep -c "wrote api $a" "$CALLS.events"):$(grep -c "wrote ui $u" "$CALLS.events")" "1:1"
 check "codex lanes: two distinct ids" "$([ "$a" != "$u" ] && [ -n "$a" ] && echo yes)" "yes"
-check "codex lanes: the built-in open argv, the prompt as the last argument, none without one" "$(grep -h -- '-C' "$CALLS.codex" | sort | tr '\n' ';')" "-C|$WORK/repo|1|t1|ui;-C|$WORK/repo|API kickoff  When you answer a message from the meta (aw-meta lane-inbox shows it), end your turn with a line starting REPLY TO META: followed by your reply.|1|t1|api;"
+check "codex lanes: the built-in open argv (the model and policy forms add nothing), the prompt as the last argument, none without one" "$(grep -h -- '-C' "$CALLS.codex" | sort | tr '\n' ';')" "-C|$WORK/repo|1|t1|ui;-C|$WORK/repo|API kickoff  When you answer a message from the meta (aw-meta lane-inbox shows it), end your turn with a line starting REPLY TO META: followed by your reply.|1|t1|api;"
 check "codex lanes: <lane>.agent records the catalog facts the lane map needs" "$(jq -cS . "$ids/api.agent")" '{"agent":"codex","hooks":true,"processName":"codex","transcripts":"~/.codex/sessions/*/*/*/rollout-*-{sessionId}.jsonl"}'
 check "codex lanes: the meta lane (Claude) has no .agent record" "$(ls "$ids" | grep -c '^meta.agent$')" "0"
 check "codex lanes: AW_META_LANE_PID is the agent's parent (the lane script), AW_META_LANE_PROC the process name, AW_META_LANE_AGENT the catalog id" "$(sort -u "$CALLS.pid" | tr '\n' ';')" "parent=lane-script|proc=codex|agent=codex;"

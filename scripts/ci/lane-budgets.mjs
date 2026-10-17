@@ -9,7 +9,7 @@
 //   dotnet test --project <test project> --no-build --configuration <C> --filter-trait "Lane=<lane>" --ignore-exit-code 8
 // sums the wall clock per package (the deps.yaml package whose projectPrefix starts the project's name,
 // longest wins; a test assembly no package owns, such as Aw.Architecture.Tests, is its own row) and fails a
-// package at or over its lane's budget. Budgets: unit 10 s, integration 60 s; heavy has none and isn't run.
+// package at or over its lane's budget. Budgets: unit 10 s, integration 60 s (SindriUi: integration 90 s, owner 2026-10-16); heavy has none and isn't run.
 //
 // The wall clock is the test run only: run it after the solution is built (CI's `dotnet build` step), so
 // --no-build keeps compile time out of the budget. It includes each test host's start-up, which is part
@@ -26,12 +26,16 @@ import { parseYaml } from "../deps/yaml.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const BUDGETS = { unit: 10, integration: 60 };
+// Per-package exceptions to the lane budget, each an owner decision: SindriUi's headless Avalonia tests (real fonts, rendering)
+// cannot run in 60 s on CI (owner, 2026-10-16). Sindri's integration lane is wait-bound on real Temporal servers: 120 s
+// (owner, 2026-10-16: 63.7 s in CI after fail-fast + 8 threads). An explicit --budget for a lane overrides this table too.
+const PACKAGE_BUDGETS = { SindriUi: { integration: 90 }, Sindri: { integration: 120 } };
 const SOLUTION = "AgenticWorkflow.slnx";
 
 class ToolError extends Error {}
 
 function parseArgs(argv) {
-  const opts = { root: path.resolve(HERE, "..", ".."), configuration: "Release", dotnet: "dotnet", budgets: { ...BUDGETS } };
+  const opts = { root: path.resolve(HERE, "..", ".."), configuration: "Release", dotnet: "dotnet", budgets: { ...BUDGETS }, explicit: new Set() };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const value = () => {
@@ -48,6 +52,7 @@ function parseArgs(argv) {
         const n = Number(secs);
         if (!Number.isFinite(n) || n <= 0) throw new ToolError(`--budget: '${pair}' needs a positive number of seconds`);
         opts.budgets[lane] = n;
+        opts.explicit.add(lane);
       }
     } else throw new ToolError(`unknown argument '${a}'`);
   }
@@ -99,6 +104,9 @@ function time(opts, project, lane) {
   return { secs, status: r.status ?? -1, output: `${r.stdout ?? ""}${r.stderr ?? ""}`, command: shown(args) };
 }
 
+// A package's limit for a lane: --budget, else the package's own exception, else the lane's budget.
+const limitFor = (opts, pkg, lane) => (opts.explicit.has(lane) ? undefined : PACKAGE_BUDGETS[pkg]?.[lane]) ?? opts.budgets[lane];
+
 // Truncated, never rounded up, so a passing row just under its limit never prints the limit itself.
 const fmt = (s) => {
   const digits = s < 10 ? 2 : 1;
@@ -146,7 +154,7 @@ export function main(argv, out = (l) => console.log(l)) {
   const width = Math.max(7, ...sorted.map((r) => r.pkg.length));
   const summary = ["| Package | Lane | Seconds | Limit | Projects |", "|---|---|---|---|---|"];
   for (const r of sorted) {
-    const limit = opts.budgets[r.lane];
+    const limit = limitFor(opts, r.pkg, r.lane);
     const over = r.secs >= limit;
     out(`${over ? "OVER" : "ok  "}  ${r.pkg.padEnd(width)}  ${r.lane.padEnd(11)}  ${fmt(r.secs)} s  limit ${fmt(limit)} s  (${r.projects.length} project${r.projects.length === 1 ? "" : "s"})`);
     summary.push(`| ${r.pkg} | ${r.lane} | ${fmt(r.secs)} | ${fmt(limit)} | ${r.projects.map((p) => `${path.basename(p.project, ".csproj")} ${fmt(p.secs)} s`).join(", ")} |`);

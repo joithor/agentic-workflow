@@ -130,20 +130,20 @@ public static partial class TransitionDecision
         $"No runtime for {step.Value} in this build. Cancel, or resume in a build that has it.", actor, Mirrors: null,
         new ResumeAction(ResumeKind.Restart, Withheld: null, Gate: null, Effects: []));
 
-    /// <summary>'produces' (§3.5): the facts the transition records from what its trigger's source reported.</summary>
+    /// <summary>'produces' (§3.5): the facts the transition records from what its trigger's source reported; a renamed entry (DT spec §8.4) records its source's value under its own key.</summary>
     private static IReadOnlyDictionary<FactKey, FactValue> Produce(IReadOnlyDictionary<FactKey, FactValue> facts, RecipeTransition transition, Trigger trigger)
     {
         var outputs = Outputs(trigger);
-        var produced = transition.Produces.Where(outputs.ContainsKey).ToList();
+        var produced = transition.Produces.Where(p => outputs.ContainsKey(p.SourceKey())).ToList();
         if (produced.Count == 0)
         {
             return facts;
         }
 
         var merged = new Dictionary<FactKey, FactValue>(facts);
-        foreach (var fact in produced)
+        foreach (var entry in produced)
         {
-            merged[fact] = outputs[fact];
+            merged[entry.Fact] = outputs[entry.SourceKey()];
         }
 
         return merged;

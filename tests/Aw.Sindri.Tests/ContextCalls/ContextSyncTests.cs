@@ -115,7 +115,9 @@ public sealed class ContextSyncTests : IDisposable
         Assert.Equal(CheckState.Ok, synced.State);
         Assert.Equal(CheckState.Warn, failed.State);
         Assert.Contains("SND-CONTEXT-010", failed.Detail, StringComparison.Ordinal);
-        Assert.Contains("next context-sync slot", never.Fix, StringComparison.Ordinal);   // the service is named, and no command runs a sync by hand yet
+        Assert.Contains("next context-sync slot", never.Fix, StringComparison.Ordinal);   // the service is named: its slot syncs without a command
+        Assert.Contains("sindri context sources sync", never.Fix, StringComparison.Ordinal);   // and the job route runs one by hand (API P6)
+        Assert.Contains("sindri context sources sync", failed.Fix, StringComparison.Ordinal);
         Assert.DoesNotContain("run it once", never.Fix, StringComparison.Ordinal);
         Assert.Contains("retries", failed.Fix, StringComparison.Ordinal);   // a failed run's fix does not send the operator to name a service that is named
         Assert.DoesNotContain("name the context-sync service", failed.Fix, StringComparison.Ordinal);
@@ -131,6 +133,7 @@ public sealed class ContextSyncTests : IDisposable
         var never = await Doctor(host, ct);
 
         Assert.Contains("name the context-sync service", never.Fix, StringComparison.Ordinal);
+        Assert.Contains("sindri context sources sync", never.Fix, StringComparison.Ordinal);
         Assert.DoesNotContain("run it once", never.Fix, StringComparison.Ordinal);
     }
 

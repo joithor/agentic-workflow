@@ -36,7 +36,20 @@ internal static class WiringRecipe
         string on = "step.completed",
         WhenClause? when = null,
         string[]? produces = null) =>
-        new([from], to, on, when, [], [], [], [.. (produces ?? []).Select(FactKey.From)]);
+        new([from], to, on, when, [], [], [], [.. (produces ?? []).Select(p => new ProducedFact(FactKey.From(p), From: null))]);
+
+    /// <summary>A transition whose 'produces' holds long-form entries.</summary>
+    public static RecipeTransition GoProducing(string from, string to, string on, WhenClause? when, params ProducedFact[] produces) =>
+        new([from], to, on, when, [], [], [], produces);
+
+    /// <summary>A bare 'produces' entry.</summary>
+    public static ProducedFact Bare(string fact) => new(FactKey.From(fact), From: null);
+
+    /// <summary>A renamed 'produces' entry: <paramref name="fact"/> takes the value of <paramref name="from"/>.</summary>
+    public static ProducedFact Rename(string fact, string from) => new(FactKey.From(fact), FactKey.From(from));
+
+    /// <summary>An output declaration produced in <paramref name="from"/>.</summary>
+    public static RecipeOutput OutputOf(string key, string from) => new(FactKey.From(key), Label: null, Type: null, from);
 
     public static WhenClause Outcome(string outcome) => ARecipe.When(OutcomeName.From(outcome));
 

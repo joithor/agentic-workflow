@@ -18,7 +18,7 @@ namespace Aw.Sindri.Tests.Workflow.InvalidFixtures;
 
 /// <summary>
 /// Runs an invalid fixture end to end: the composition's reader and catalog, and recipe validate's service over an
-/// in-memory directory that holds the fixture beside the child recipes the fixtures name. The service takes no base,
+/// in-memory directory that holds the fixture beside the child recipes the fixtures name (the shipped dev child for the DT-C ones). The service takes no base,
 /// no registry and no profile yet (the freeze picks a base, register supplies the registry, the profile's
 /// workflow.effects comes in P6), so a fixture that needs one runs the same steps the service runs (read, load the
 /// same-directory children, validate) with it added.
@@ -105,7 +105,8 @@ internal static class InvalidFixtureRun
     {
         var files = new InMemoryRecipeFiles()
             .With(Path.Combine(Directory, file), text)
-            .With(Path.Combine(Directory, "workflow.step.yaml"), Leaf("workflow.step"));
+            .With(Path.Combine(Directory, "workflow.step.yaml"), Leaf("workflow.step"))
+            .With(Path.Combine(Directory, "workflow.dev-child-summary.yaml"), ShippedRecipes.Read("dev/workflow.dev-child-summary.yaml"));
         for (var level = 1; level < 5; level++)
         {
             _ = files.With(Path.Combine(Directory, Depth(level) + ".yaml"), Parent(Depth(level), Depth(level + 1)));

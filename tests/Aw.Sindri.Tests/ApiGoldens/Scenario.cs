@@ -16,6 +16,9 @@ internal sealed class Scenario(GoldenHost host)
 {
     private static readonly string _link = LinkIds.For(new GraphEdge(NodeKey.From("code:src/tabs/TabGroups.ts"), NodeKey.From("feature:tabs.tab-groups"), EdgeType.Implements)).Value;
 
+    /// <summary>The host the scenario runs on.</summary>
+    internal GoldenHost RunsOn() => host;
+
     private (string Name, string Value)[] AppHeaders() => [.. Human(host.Token.Value, client: "ui").Where(h => h.Name != SindriHeaders.Terminal)];
 
     private (string Name, string Value)[] TerminalHeaders() => Human(host.Token.Value);

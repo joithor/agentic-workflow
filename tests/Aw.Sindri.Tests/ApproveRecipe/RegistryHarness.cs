@@ -15,6 +15,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Core.Workflow.Validation;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ApproveRecipe;
 using Aw.Sindri.Features.Blocks;
 using Aw.Sindri.Features.Commands;
@@ -82,7 +83,8 @@ internal sealed class RegistryHarness : IAsyncDisposable
             .AddScoped<IValidator<IssueChallengeRequest>, AcceptAllValidator<IssueChallengeRequest>>().AddIssue<IssueChallengeRequest, IssueChallengeResponse, IssueChallengeService>()
             .AddScoped<IValidator<RegisterRecipeRequest>, AcceptAllValidator<RegisterRecipeRequest>>().AddCommand<RegisterRecipeRequest, RegisterRecipeResponse, RegisterRecipeService>()
             .AddScoped<IValidator<ListRecipesRequest>, AcceptAllValidator<ListRecipesRequest>>().AddQuery<ListRecipesRequest, ListRecipesResponse, ListRecipesService>()
-            .AddScoped<IValidator<ShowRecipeRequest>, AcceptAllValidator<ShowRecipeRequest>>().AddQuery<ShowRecipeRequest, ShowRecipeResponse, ShowRecipeService>()
+            .AddScoped<IValidator<ShowRecipeRequest>, AcceptAllValidator<ShowRecipeRequest>>().AddQuery<ShowRecipeRequest, RecipeView, ShowRecipeService>()
+            .AddSingleton<Core.Workflow.Engine.Runtime.IApprovedRecipes>(sp => new RegistryApprovedRecipes(Recipes, Approvals, sp.GetRequiredService<BlockCatalog>(), SliceHarness.Json))
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }
 
@@ -182,8 +184,17 @@ internal sealed class RegistryHarness : IAsyncDisposable
     /// <summary>The one listed line of <paramref name="recipe"/>.</summary>
     public async Task<RecipeSummary> Line(RegisteredRecipe recipe) => Assert.Single(await List(), s => s.Hash == recipe.Hash);
 
-    /// <summary>Shows <paramref name="id"/>@<paramref name="hash"/>.</summary>
-    public Task<Result<ShowRecipeResponse>> Show(RecipeId id, string hash) => Run<ShowRecipeRequest, ShowRecipeResponse>(new ShowRecipeRequest(id, hash), Human);
+    /// <summary>Shows <paramref name="id"/>@<paramref name="hash"/> as the API's recipe view; with no hash, the approved version of <paramref name="id"/>.</summary>
+    public Task<Result<RecipeView>> Show(RecipeId id, string? hash = null) => Run<ShowRecipeRequest, RecipeView>(new ShowRecipeRequest(id, hash), Human);
+
+    /// <summary>The approval preview of the registered version of <paramref name="id"/> that <paramref name="hash"/> names ('recipe approve' prints it), whether or not it is approved.</summary>
+    public async Task<Result<ApprovalPreview>> Preview(RecipeId id, string hash)
+    {
+        await using var scope = _provider.CreateAsyncScope();
+        var planner = scope.ServiceProvider.GetRequiredService<RecipeApprovalPlanner>();
+        var found = await planner.Find(id, hash, TestContext.Current.CancellationToken);
+        return found.IsError ? found.Error : await planner.Preview(found.Value, TestContext.Current.CancellationToken);
+    }
 
     /// <summary>The ledger's events of <paramref name="type"/>.</summary>
     public IReadOnlyList<LedgerEvent> Events(string type) => [.. H.Store.Events.Where(e => e.Envelope.Type == type)];

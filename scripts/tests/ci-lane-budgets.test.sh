@@ -5,6 +5,9 @@
 # per test project, sums the wall clock per package (the deps.yaml projectPrefix, longest
 # wins) and fails a package at or over its lane budget. A stub `dotnet` stands in for the SDK.
 set -euo pipefail
+
+# The last grep of a pipeline reads all its input (no -q), so an early match can't SIGPIPE the writer under pipefail.
+has() { grep "$@" >/dev/null; }
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 CHECK="$ROOT/scripts/ci/lane-budgets.mjs"
 
@@ -92,19 +95,19 @@ $OUT"
   # this suite runs in the parallel pool); FooData is its own package.
   at_least "$(secs_of Foo unit)" 0.6 || fail "Foo unit should sum both projects (>= 0.6 s):
 $OUT"
-  printf '%s\n' "$OUT" | grep -qE '^ok +Foo +unit .* limit 60 s +\(2 projects\)' || fail "Foo unit row should name its limit and 2 projects:
+  printf '%s\n' "$OUT" | has -E '^ok +Foo +unit .* limit 60 s +\(2 projects\)' || fail "Foo unit row should name its limit and 2 projects:
 $OUT"
   at_least "$(secs_of FooData integration)" 0.2 || fail "Aw.Foo.Data.Tests should count for FooData (longest prefix):
 $OUT"
-  printf '%s\n' "$OUT" | grep -qE '^ok +FooData +integration .*\(1 project\)' || fail "FooData integration is its own one-project row:
+  printf '%s\n' "$OUT" | has -E '^ok +FooData +integration .*\(1 project\)' || fail "FooData integration is its own one-project row:
 $OUT"
-  printf '%s\n' "$OUT" | grep -qE '^ok +\(Aw\.Architecture\.Tests\) +unit' || fail "an unowned test assembly is its own row:
+  printf '%s\n' "$OUT" | has -E '^ok +\(Aw\.Architecture\.Tests\) +unit' || fail "an unowned test assembly is its own row:
 $OUT"
   grep -q 'Aw.Foo.Testing' "$WORK/log" && fail "a *.Testing project is not a test project and must not run"
   grep -q 'Lane=heavy' "$WORK/log" && fail "the heavy lane has no budget and must not run"
   grep -qF -- '--project tests/Aw.Foo.Tests/Aw.Foo.Tests.csproj' "$WORK/log" || fail "dotnet test not called per project:
 $(cat "$WORK/log")"
-  grep -F -- 'Aw.Foo.Tests.csproj' "$WORK/log" | grep -F -- '--filter-trait Lane=unit' | grep -F -- '--ignore-exit-code 8' | grep -qF -- '--no-build' \
+  grep -F -- 'Aw.Foo.Tests.csproj' "$WORK/log" | grep -F -- '--filter-trait Lane=unit' | grep -F -- '--ignore-exit-code 8' | has -F -- '--no-build' \
     || fail "missing lane filter, exit-8 ignore or --no-build:
 $(cat "$WORK/log")"
   echo "PASS: test_sums_each_package_and_passes_under_budget"
@@ -119,10 +122,10 @@ test_a_package_over_budget_fails_with_the_rule_id() {
   [ "$RC" -eq 1 ] || fail "over budget must exit 1, got $RC:
 $OUT"
   printf '%s\n' "$OUT" | grep -E '^LANE-PKG-001' | grep -F 'Foo' | grep -F 'unit' | grep -F 'limit 0.5 s' \
-    | grep -F 'Slowest project: Aw.Foo.Tests' | grep -qF 'dotnet test --project tests/Aw.Foo.Tests/Aw.Foo.Tests.csproj' \
+    | grep -F 'Slowest project: Aw.Foo.Tests' | has -F 'dotnet test --project tests/Aw.Foo.Tests/Aw.Foo.Tests.csproj' \
     || fail "LANE-PKG-001 must name the package, lane, measured s, limit, the slowest project and the fix command:
 $OUT"
-  printf '%s\n' "$OUT" | grep -qE '^ok +FooData' || fail "a package under budget still reports ok:
+  printf '%s\n' "$OUT" | has -E '^ok +FooData' || fail "a package under budget still reports ok:
 $OUT"
   echo "PASS: test_a_package_over_budget_fails_with_the_rule_id"
 }
@@ -134,7 +137,7 @@ test_a_failing_test_run_fails_the_check() {
   unset STUB_EXIT_Aw_Foo_Data_Tests_integration
   [ "$RC" -eq 1 ] || fail "a failing dotnet test must exit 1, got $RC:
 $OUT"
-  printf '%s\n' "$OUT" | grep -E '^LANE-PKG-002' | grep -F 'Aw.Foo.Data.Tests' | grep -qF 'exit 2' \
+  printf '%s\n' "$OUT" | grep -E '^LANE-PKG-002' | grep -F 'Aw.Foo.Data.Tests' | has -F 'exit 2' \
     || fail "LANE-PKG-002 must name the project and the exit code:
 $OUT"
   echo "PASS: test_a_failing_test_run_fails_the_check"
@@ -160,7 +163,7 @@ test_no_test_project_is_a_tool_error() {
   run_check "$d"
   [ "$RC" -eq 2 ] || fail "a solution with no *.Tests project must exit 2 (nothing timed is not a pass), got $RC:
 $OUT"
-  printf '%s\n' "$OUT" | grep -q 'no \*.Tests project' || fail "the error must say there is nothing to time:
+  printf '%s\n' "$OUT" | has 'no \*.Tests project' || fail "the error must say there is nothing to time:
 $OUT"
   echo "PASS: test_no_test_project_is_a_tool_error"
 }
@@ -186,14 +189,46 @@ $OUT"
   unit="$(sed -nE 's/.*TestLane\.Unit => TimeSpan\.FromSeconds\(([0-9]+)\).*/\1/p' "$ROOT/tests/Aw.Kernel.Testing/Lanes.cs")"
   integration="$(sed -nE 's/.*TestLane\.Integration => TimeSpan\.FromSeconds\(([0-9]+)\).*/\1/p' "$ROOT/tests/Aw.Kernel.Testing/Lanes.cs")"
   [ -n "$unit" ] && [ -n "$integration" ] || fail "could not read the budgets from tests/Aw.Kernel.Testing/Lanes.cs"
-  printf '%s\n' "$OUT" | grep -qE "unit .*limit $unit s" || fail "the unit budget must be Lanes.cs's $unit s:
+  printf '%s\n' "$OUT" | has -E "unit .*limit $unit s" || fail "the unit budget must be Lanes.cs's $unit s:
 $OUT"
-  printf '%s\n' "$OUT" | grep -qE "integration .*limit $integration s" || fail "the integration budget must be Lanes.cs's $integration s:
+  printf '%s\n' "$OUT" | has -E "integration .*limit $integration s" || fail "the integration budget must be Lanes.cs's $integration s:
 $OUT"
   echo "PASS: test_default_budgets_are_the_rule_numbers"
 }
 
+test_sindri_ui_integration_budget_is_90_s() {
+  local d="$WORK/sindriui"; make_fixture "$d"
+  mkdir -p "$d/tests/Aw.Sindri.Ui.Tests"; echo '<Project />' > "$d/tests/Aw.Sindri.Ui.Tests/Aw.Sindri.Ui.Tests.csproj"
+  perl -pi -e 's#^(\s*)</Folder>#$1  <Project Path="tests/Aw.Sindri.Ui.Tests/Aw.Sindri.Ui.Tests.csproj" />\n$1</Folder>#' "$d/AgenticWorkflow.slnx"
+  printf '  - id: SindriUi\n    kind: package\n    tier: 4\n    projectPrefix: Aw.Sindri.Ui\n' >> "$d/deps.yaml"
+  run_check "$d"
+  printf '%s\n' "$OUT" | has -E 'SindriUi +integration +[0-9.]+ s +limit 90 s' || fail "SindriUi's integration limit is 90 s (owner, 2026-10-16):
+$OUT"
+  printf '%s\n' "$OUT" | has -E 'SindriUi +unit +[0-9.]+ s +limit 10 s' || fail "SindriUi's unit limit stays 10 s:
+$OUT"
+  printf '%s\n' "$OUT" | has -E '^ok +Foo +integration +[0-9.]+ s +limit 60 s' || fail "other packages keep 60 s:
+$OUT"
+  echo "PASS: test_sindri_ui_integration_budget_is_90_s"
+}
+
+test_sindri_integration_budget_is_120_s() {
+  local d="$WORK/sindri"; make_fixture "$d"
+  mkdir -p "$d/tests/Aw.Sindri.Tests"; echo '<Project />' > "$d/tests/Aw.Sindri.Tests/Aw.Sindri.Tests.csproj"
+  perl -pi -e 's#^(\s*)</Folder>#$1  <Project Path="tests/Aw.Sindri.Tests/Aw.Sindri.Tests.csproj" />\n$1</Folder>#' "$d/AgenticWorkflow.slnx"
+  printf '  - id: Sindri\n    kind: package\n    tier: 4\n    projectPrefix: Aw.Sindri.Tests\n' >> "$d/deps.yaml"
+  run_check "$d"
+  printf '%s\n' "$OUT" | grep -qE '^ok +Sindri +integration +[0-9.]+ s +limit 120 s' || fail "Sindri's integration limit is 120 s (owner, 2026-10-16):
+$OUT"
+  printf '%s\n' "$OUT" | grep -qE 'Sindri +unit +[0-9.]+ s +limit 10 s' || fail "Sindri's unit limit stays 10 s:
+$OUT"
+  printf '%s\n' "$OUT" | grep -qE '^ok +Foo +integration +[0-9.]+ s +limit 60 s' || fail "other packages keep 60 s:
+$OUT"
+  echo "PASS: test_sindri_integration_budget_is_120_s"
+}
+
 test_sums_each_package_and_passes_under_budget
+test_sindri_ui_integration_budget_is_90_s
+test_sindri_integration_budget_is_120_s
 test_a_package_over_budget_fails_with_the_rule_id
 test_a_failing_test_run_fails_the_check
 test_tool_errors_exit_2

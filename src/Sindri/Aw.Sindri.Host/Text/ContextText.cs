@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 
@@ -18,6 +19,11 @@ internal static class ContextText
         var text = new StringBuilder();
         var anchors = result.Anchors.Count == 0 ? "none" : string.Join(", ", result.Anchors);
         _ = text.AppendLine(Invariant($"context {result.QueryId.Value} · anchors: {anchors} · map: {result.MapVersion ?? "none"} · as of {result.AsOf:O}"));
+        if (result.Diff is { } diff)
+        {
+            Diff(text, diff);
+        }
+
         foreach (var degraded in result.Degraded)
         {
             _ = text.AppendLine(Invariant($"DEGRADED {degraded.Source.Value}: {degraded.Code} {degraded.Message}"));
@@ -42,6 +48,36 @@ internal static class ContextText
         Citations(text, result.Cites);
         return text.ToString();
     }
+
+    /// <summary>The diff shape's header and the paths no node claims, before the sections; control characters in a path are shown escaped.</summary>
+    private static void Diff(StringBuilder text, DiffPart diff)
+    {
+        var c = diff.Counts;
+        _ = text.AppendLine(Invariant($"diff {Short(diff.Base)}..{Short(diff.Head)} against merge base {Short(diff.MergeBase)} · {c.Changed} changed: {c.Mapped} mapped, {c.Suggested} suggested, {c.Unmapped} unmapped, {c.Denied} denied"));
+        if (diff.Truncated)
+        {
+            _ = text.AppendLine(Invariant($"  file list truncated to the first {diff.Files.Count}"));
+        }
+
+        if (diff.AnchorsTruncated)
+        {
+            _ = text.AppendLine(Invariant($"  anchors: the first {DiffAnchors.MaxAnchors} of {diff.AnchorsTotal}"));
+        }
+
+        if (diff.Unmapped.Count > 0)
+        {
+            _ = text.AppendLine("UNMAPPED (changed files no node claims):");
+            foreach (var path in diff.Unmapped)
+            {
+                _ = text.Append("  ").AppendLine(Escaped(path));
+            }
+        }
+    }
+
+    private static string Short(string sha) => sha.Length <= 7 ? sha : sha[..7];
+
+    private static string Escaped(string path) =>
+        string.Concat(path.Select(ch => char.IsControl(ch) ? Invariant($"\\x{(int)ch:x2}") : ch.ToString()));
 
     internal static string Render(SourcesView view)
     {

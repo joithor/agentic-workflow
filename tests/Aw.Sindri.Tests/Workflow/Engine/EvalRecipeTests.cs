@@ -235,7 +235,7 @@ public sealed class EvalRecipeTests
         var started = EvalSimulation.Start(new EvalCase("c", new EvalStartLine(new EvalStart(recipe.Inputs.ToDictionary(static i => i.Key, static i => EvalFacts.OfText("x"))), Scaffold: false), []), recipe, EvalComposition.Catalog, InMemoryChildRecipes.None).Value;
         var stepped = started.Step(line, 2).Value.Next;
         Assert.Equal(EvalFacts.Value(new DecisionFact("ui", "eval")), stepped.Instance.Facts[FactKey.From("fact:decision")]);
-        Assert.Contains("fact:decision", recipe.Transitions[0].Produces.Select(f => f.Value), StringComparer.Ordinal);
+        Assert.Contains("fact:decision", recipe.Transitions[0].Produces.Select(p => p.Fact.Value), StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -323,6 +323,95 @@ public sealed class EvalRecipeTests
         ]));
         _ = _files.With("dev/evals/workflow.timed/happy.jsonl", AskStart + "\n" + string.Join('\n', lines) + "\n");
         return await Eval(recipe);
+    }
+
+    private const string Parent = "dev/workflow.dev-child-outputs.yaml";
+    private const string ParentHappy = "dev/evals/workflow.dev-child-outputs/happy.jsonl";
+    private const string ParentStart = """{"start":{"inputs":{"fact:request":"Export the weekly summary."}}}""";
+    private const string ChildResolved = """{"trigger":{"kind":"wait.satisfied","outcome":"resolved","outputs":{"fact:output":"summary-week-41.csv"}},"expect":{"state":"review"}}""";
+    private const string Accepted = """{"trigger":{"kind":"step.completed","outcome":"accepted"},"expect":{"state":"done","outcome":"resolved"}}""";
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_child_lines_outputs_reach_the_parent()
+    {
+        // accepted reaches 'done' only if the renamed fact:exported arrived, since that branch tests it
+        _ = _files.With(ParentHappy, string.Join('\n', ParentStart, ChildResolved, Accepted) + "\n");
+
+        var response = await Eval(Parent);
+
+        Assert.True(response.Passed, string.Join('\n', response.Cases.Select(c => c.ToLine())));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_child_line_without_the_output_takes_the_other_branch()
+    {
+        const string NoOutput = """{"trigger":{"kind":"wait.satisfied","outcome":"resolved"},"expect":{"state":"review"}}""";
+        const string Unproven = """{"trigger":{"kind":"step.completed","outcome":"accepted"},"expect":{"state":"unproven","outcome":"unresolved"}}""";
+        _ = _files.With(ParentHappy, string.Join('\n', ParentStart, NoOutput, Unproven) + "\n");
+
+        var response = await Eval(Parent);
+
+        Assert.True(response.Passed, string.Join('\n', response.Cases.Select(c => c.ToLine())));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_child_line_with_an_undeclared_output_fails_naming_it()
+    {
+        const string Undeclared = """{"trigger":{"kind":"wait.satisfied","outcome":"resolved","outputs":{"fact:findings":"x"}},"expect":{"state":"review"}}""";
+        _ = _files.With(ParentHappy, string.Join('\n', ParentStart, Undeclared) + "\n");
+
+        var failed = (await Eval(Parent)).Cases[0];
+
+        Assert.False(failed.Passed);
+        Assert.Equal(2, failed.Line);
+        Assert.Contains("wait.satisfied from child 'workflow.dev-child-summary' gives fact:findings, which workflow.dev-child-summary doesn't declare as outputs (fix: give only its outputs: fact:output)", failed.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_child_line_with_outputs_from_a_child_that_declares_none_says_so()
+    {
+        const string ChildFile = "dev/workflow.dev-child-summary.yaml";
+        const string Declared = "  - { key: fact:output, label: \"Exported file\", type: file, from: export }\n";
+        var child = ShippedRecipes.Read(ChildFile);
+        Assert.Contains(Declared, child, StringComparison.Ordinal);
+        _ = _files.With(ChildFile, child.Replace("outputs:\n" + Declared, "outputs: []\n", StringComparison.Ordinal));
+        _ = _files.With(ParentHappy, string.Join('\n', ParentStart, ChildResolved) + "\n");
+
+        var failed = (await Eval(Parent)).Cases[0];
+
+        Assert.False(failed.Passed);
+        Assert.Contains("which workflow.dev-child-summary doesn't declare as outputs (fix: remove outputs; workflow.dev-child-summary declares none)", failed.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_cancelled_child_line_with_outputs_fails()
+    {
+        const string Cancelled = """{"trigger":{"kind":"wait.satisfied","outcome":"cancelled","outputs":{"fact:output":"x"}},"expect":{"state":"dropped","outcome":"unresolved"}}""";
+        _ = _files.With(ParentHappy, string.Join('\n', ParentStart, Cancelled) + "\n");
+
+        var failed = (await Eval(Parent)).Cases[0];
+
+        Assert.False(failed.Passed);
+        Assert.Contains("a cancelled child carries no outputs (fix: remove outputs from this line)", failed.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Scaffold_gives_a_child_line_the_outputs_its_outcome_always_carries()
+    {
+        var scaffold = Assert.IsType<string>((await Eval(Parent, EvalMode.Scaffold)).Scaffold);
+
+        Assert.Contains("\"fact:output\":\"fact:output from workflow.dev-child-summary (resolved)\"", scaffold, StringComparison.Ordinal);
+        _ = _files.With(ParentHappy, scaffold);
+        Assert.True((await Eval(Parent)).Passed);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Scaffold_of_workflow_item_is_unchanged()
+    {
+        var scaffold = Assert.IsType<string>((await Eval("sindri/workflow.item.yaml", EvalMode.Scaffold)).Scaffold);
+
+        Assert.DoesNotContain("workflow.step (", scaffold, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"kind\":\"wait.satisfied\",\"outcome\":\"resolved\",\"outputs\"", scaffold, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
