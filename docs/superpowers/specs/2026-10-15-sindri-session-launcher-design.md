@@ -86,7 +86,7 @@ All three live in `Aw.Sindri.Core/Launch/` beside `ILauncher` (API P10a's `Core/
 
 **The agent's environment** (review C10). UI §6.3 step 2 put `AW_SINDRI_CHILD=1`, `AW_SINDRI_ITEM`, `AW_SINDRI_LAUNCH`
 and the missing-CLI guard into Warp's exec line; with tmux as the host that line only runs `tmux attach`, so they move:
-`ISessionHost.Start(env)` passes them with `new-session -e` (tmux ≥ 3.0, checked by the host probe), never with
+`ISessionHost.Start(env)` passes them with `new-session -e` (tmux ≥ 3.2, checked by the host probe; the floor the P10a build found `new-session -e` needs, provisional owner default 2026-10-17), never with
 `set-environment -g`, and `sindri session wrap` sets them again before it starts the agent as its child (wrap stays
 the parent: it waits for a reported id, L-9, and sends API §8.1's heartbeat), so a session started by hand inside the
 pane has them too. `AW_SINDRI_HOME` is passed the same way when it isn't the default (the prover's temp home), so the
@@ -123,7 +123,7 @@ and the projections then report `viewer.outcome: opened` with `late: true`. Afte
 the deadline `unconfirmed` stays.
 
 `ILauncher.Probe` (UI E-3) fills `launch.probed` as today. `terminal` keeps its shape; `terminal.id` is now the viewer
-kind (`warp`, `exec-template:<name>`, `print`), so no golden changes shape. Added fields (additive, API §9 versioning
+kind (`warp`, `exec-template`, `print`; an exec-template's name is `terminal.label`), so no golden changes shape. Added fields (additive, API §9 versioning
 rules; L-4): `terminal.label`, `terminal.source` (`file` or `detected`), `terminal.configPath`,
 `terminal.detail {line, reason}` when `problem` is `config-invalid`, `host: {kind, present, version?, problem?}` and,
 on each target row, `source` and `overridden`.
