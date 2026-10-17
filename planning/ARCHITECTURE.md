@@ -93,7 +93,7 @@ graph LR
         Skills["skills/*/SKILL.md<br/>(capability phrases)"]
         Hooks["config/hooks/*.sh<br/>(canonical protocol)"]
         Rules["AGENTS.md + .agents/rules/"]
-        MCPs["MCP servers<br/>(serena, headroom, prism-mcp, ...)"]
+        MCPs["MCP servers<br/>(serena, prism-mcp, ...)"]
     end
 
     Setup["setup.sh --providers ..."] --> PClaude["providers/claude/"]
@@ -108,7 +108,7 @@ graph LR
     MCPs --> |"claude mcp add / codex mcp add / ~/.cursor/mcp.json"| PClaude & PCodex & PCursor
 ```
 
-- **Installer.** `setup.sh [--providers claude,codex,cursor]` installs for the listed providers, or detects installed CLIs when no flag is given. It runs the shared steps (Serena images, external pack fetch, rtk and headroom) once, then calls `providers/<name>/install.sh` and `providers/<name>/install-hooks.sh` for each selected provider.
+- **Installer.** `setup.sh [--providers claude,codex,cursor]` installs for the listed providers, or detects installed CLIs when no flag is given. It runs the shared steps (Serena images, external pack fetch, rtk) once, then calls `providers/<name>/install.sh` and `providers/<name>/install-hooks.sh` for each selected provider.
 - **Stable paths.** `~/.agentic-workflow/toolkit` is a symlink to the repo root. Skills resolve shared fragments through `SHARED_DIR=~/.agentic-workflow/toolkit/skills/_shared`, never through a provider's skills directory. `~/.agentic-workflow/providers` records each installed provider and its skills directory (`<name> <skills-dir>` per line).
 - **Capabilities, not tools.** Skill text names capabilities (**Ask the user**, **Spawn a subagent**, **Dispatch in parallel**, **Invoke skill**, `mcp: <server>/<tool>`). `skills/_shared/capabilities.md` maps each one to the right tool on each provider. `allowed-tools` frontmatter uses Claude Code names, and the other providers ignore it.
 - **Hooks.** `config/hooks/*.sh` speak one protocol (JSON on stdin, exit 2 = deny). Claude Code runs them directly. `config/hooks/adapters/{codex,cursor}.sh` translate each provider's hook payloads, event names, and exit semantics to that protocol, so the safety logic exists once.

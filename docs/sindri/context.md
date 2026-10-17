@@ -303,7 +303,7 @@ repo: aw-split-panes      # the profile's repo name the map describes
 nodes:
   - key: feature:layout.split-pane          # the kind is the key's scheme
     label: Split pane                       # provenance defaults to human in an authored map
-  - key: surface:command/split-vertical     # surface:<screen|pane|dialog|command|keybinding|setting|menu|route|api|job>/<name>
+  - key: surface:command/split-vertical     # surface:<screen|pane|dialog|command|keybinding|setting|menu|route|api|job|notification|permission|report|flag>/<name>
     label: Split vertically (command)
   - key: code:src/layout/SplitPane.ts
     label: SplitPane.ts

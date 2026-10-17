@@ -623,6 +623,16 @@ Either way `sindri` is the binary in a publish directory (framework-dependent: a
 depends on nothing else about how `sindri` is built: it talks to the control plane only through the HTTP API and two files under its home, `control.json` and
 `auth/human.token`.
 
+**One command before the switch: `sindri-app`** (`scripts/sindri-app.sh`). It builds exactly that layout and runs it:
+when the source changed (a content hash of the files the host build reads, committed or not, with the pinned SDK and
+the platform), it publishes `sindri` framework-dependent and `sindri-ui` NativeAOT (through
+`Aw.Sindri.Ui.AotSmoke/run.sh <dir>`) into `$AW_STATE_DIR/bin/sindri-app/<stamp>/`, keeping the build before it, then
+`exec`s that `sindri` with its arguments, so bare `sindri-app` starts the control plane and opens the app. It also
+installs the pinned SDK into `~/.dotnet` and fetches the pinned `temporal` when either is missing, and links
+`~/.local/bin/sindri-app` to itself (from the canonical checkout; `AW_SINDRI_APP_NO_LINK=1` skips). It is a side name:
+`sindri` stays the TypeScript CLI until the switch. A control plane already running from an earlier build keeps
+running it (bare `sindri` finds it); the script says so and `sindri-app stop` then `sindri-app` moves to the new build.
+
 **`opened` is only "started".** `sindri` starts `sindri-ui` detached with its output to `/dev/null` and reports
 `opened (sindri-ui, pid N)` as soon as the process starts, so the line can still claim success when that `sindri-ui`
 then exits 1 (a running app that doesn't answer) or 2 (a failed start-up), and N is the launched process, not the
