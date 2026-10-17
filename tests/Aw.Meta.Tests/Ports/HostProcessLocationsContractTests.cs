@@ -1,8 +1,8 @@
 using System.Diagnostics;
 using Aw.Kernel.Testing;
 using Aw.Meta.Core.Ports;
-using Aw.Meta.Infrastructure.Processes;
 using Aw.Meta.Infrastructure.Files;
+using Aw.Meta.Infrastructure.Processes;
 using Aw.Meta.Testing;
 using Aw.Meta.Tests.Adapters;
 
