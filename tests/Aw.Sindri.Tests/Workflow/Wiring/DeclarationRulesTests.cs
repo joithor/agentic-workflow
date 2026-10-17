@@ -190,7 +190,7 @@ public sealed class DeclarationRulesTests
     public void A_kind_that_isnt_a_subject_kind_is_reported()
     {
         Assert.Equal(
-            ["RCP-TYPE-002: input 'fact:item' has kind 'ticket', which isn't one of item, linear-project, webhook, file, text, link at r.yaml:4:40 (inputs[0].kind); use one of them"],
+            ["RCP-TYPE-002: input 'fact:item' has kind 'ticket', which isn't one of item, linear-project, webhook, file, text, link, packet, payload at r.yaml:4:40 (inputs[0].kind); use one of them"],
             CheckDeclarations(Base(inputs: [In("fact:item", "item", "ticket")]), At(("inputs[0].kind", 4, 40))).Lines());
     }
 
@@ -198,8 +198,17 @@ public sealed class DeclarationRulesTests
     [InlineData("file", "item", "RCP-TYPE-003: input 'fact:item' has kind 'item' but type 'file'; kind item pairs with type item at r.yaml:4:40 (inputs[0].kind); set type to item, or change kind")]
     [InlineData("text", "item", "RCP-TYPE-003: input 'fact:item' has kind 'item' but type 'text'; kind item pairs with type item at r.yaml:4:40 (inputs[0].kind); set type to item, or change kind")]
     [InlineData("text", "webhook", "RCP-TYPE-003: input 'fact:item' has kind 'webhook' but type 'text'; kind webhook pairs with type payload at r.yaml:4:40 (inputs[0].kind); set type to payload, or change kind")]
+    [InlineData("text", "packet", "RCP-TYPE-003: input 'fact:item' has kind 'packet' but type 'text'; kind packet pairs with type packet at r.yaml:4:40 (inputs[0].kind); set type to packet, or change kind")]
+    [InlineData("text", "payload", "RCP-TYPE-003: input 'fact:item' has kind 'payload' but type 'text'; kind payload pairs with type payload at r.yaml:4:40 (inputs[0].kind); set type to payload, or change kind")]
     public void A_kind_and_type_that_dont_pair_are_reported(string? type, string kind, string expected) =>
         Assert.Equal([expected], CheckDeclarations(Base(inputs: [In("fact:item", type, kind)]), At(("inputs[0].kind", 4, 40))).Lines());
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("packet", "packet")]
+    [InlineData("payload", "payload")]
+    [InlineData(null, "packet")]
+    public void The_packet_and_payload_kinds_are_known_and_pair_with_their_own_type(string? type, string kind) =>
+        Assert.Empty(CheckDeclarations(Base(inputs: [In("fact:item", type, kind)])));
 
     [Fact, Trait("Lane", "unit")]
     public void An_unpaired_check_is_skipped_for_an_entry_with_a_bad_type_or_kind()
@@ -213,7 +222,7 @@ public sealed class DeclarationRulesTests
     public void An_input_that_declares_no_kind_is_reported_and_the_type_is_not_enough()
     {
         Assert.Equal(
-            ["RCP-INPUT-001: input 'fact:item' declares no kind at r.yaml:5:9 (inputs[0]); add kind: item | link | linear-project | webhook | file | text, paired with its type (item/item, file/file, text/text, link/link, linear-project and webhook/payload)"],
+            ["RCP-INPUT-001: input 'fact:item' declares no kind at r.yaml:5:9 (inputs[0]); add kind: item | link | linear-project | webhook | file | text | packet | payload, paired with its type (item/item, file/file, text/text, link/link, packet/packet, payload, linear-project and webhook/payload)"],
             CheckDeclarations(Base(inputs: [In("fact:item", "item", kind: null)]), At(("inputs[0]", 5, 9))).Lines());
     }
 
