@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Aw.Sindri.Ui.ViewModels.Workflows;
@@ -23,6 +24,17 @@ internal sealed partial class InstanceRow : UserControl
 
     /// <summary>The row's instance address.</summary>
     internal string Address => (DataContext as InstanceRowViewModel)?.Address ?? string.Empty;
+
+    /// <inheritdoc />
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        // A row with no inputs has nothing to name: its wrapper leaves the control view rather than stand as a nameless stop (review run 5, r5-1).
+        if (this.FindControl<Control>("WorkflowRowInputs") is { } inputs && DataContext is InstanceRowViewModel row)
+        {
+            AutomationProperties.SetAccessibilityView(inputs, row.HasInputs ? AccessibilityView.Control : AccessibilityView.Raw);
+        }
+    }
 
     /// <inheritdoc />
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
