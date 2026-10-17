@@ -32,6 +32,16 @@ public sealed class ChooseConfidenceTests
         Assert.Null(AnswerSchema.Strict(Questions.Text)["properties"]!["confidence"]);
     }
 
+    [Theory]
+    [InlineData("0")]
+    [InlineData("1")]
+    public void The_confidence_bounds_0_and_1_are_accepted(string confidence)
+    {
+        var result = AgentAnswer.Read(JsonNode.Parse($$"""{"decision":"ui","confidence":{{confidence}}}"""), Choose);
+
+        _ = Assert.IsType<ProviderDecided>(result);
+    }
+
     [Fact]
     public void A_cli_confidence_below_threshold_is_undecided()
     {

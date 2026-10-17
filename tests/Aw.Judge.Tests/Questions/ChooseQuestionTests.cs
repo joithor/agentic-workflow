@@ -19,6 +19,9 @@ public sealed class ChooseQuestionTests
         return $$"""{"prompt":{{JsonSerializer.Serialize(prompt)}},"state":{{state}},"choices":{{choices}}{{extra}}}""";
     }
 
+    // why: an explicit chain, so these tests keep their meaning when the default chain drops jev
+    private static ChainSpec JevThenCli { get; } = ChainSpec.Build([AgentCliName.ClaudeCli], jev: true);
+
     private static string Choices(params string[] names) =>
         "[" + string.Join(',', names.Select(n => $$"""{"name":"{{n}}","criterion":"when {{n}}"}""")) + "]";
 
@@ -39,6 +42,8 @@ public sealed class ChooseQuestionTests
     [InlineData("""[{"name":"ui","criterion":"a"},{"name":"uncertain","criterion":"b"}]""")]
     [InlineData("""[{"name":"ui","criterion":"a"},{"name":"has space","criterion":"b"}]""")]
     [InlineData("""[{"name":"ui","criterion":"a"},{"name":"1st","criterion":"b"}]""")]
+    [InlineData("""[{"name":"ui","criterion":"a"},{"name":"UI","criterion":"b"}]""")]
+    [InlineData("""[{"name":"ui","criterion":"a"},{"name":"Uncertain","criterion":"b"}]""")]
     [InlineData("""[{"name":"ui","criterion":"a"},{"name":"b","criterion":" "}]""")]
     [InlineData("[null]")]
     [InlineData("""[null,{"name":"ui","criterion":"a"},{"name":"api","criterion":"b"}]""")]
@@ -225,12 +230,15 @@ public sealed class ChooseQuestionTests
         var earlier = new Dictionary<string, double>(StringComparer.Ordinal) { ["ui"] = 0.5, ["api"] = 0.3, ["db"] = 0.2 };
         var jev = new ScriptedProvider(ProviderName.Jev, ContentClass.Brief).Decides("ui", 0.5, earlier);
         var cli = Cli(ContentClass.Brief).Decides("api", 0.9);
+        var run = new QuestionRun();
 
-        var outcome = await new QuestionRun().AskByName("choose", Input(), jev, cli);
+        var outcome = await run.AskByName("choose", Input(), JevThenCli, jev, cli);
 
         var decided = Assert.IsType<DecidedOutcome>(outcome);
         Assert.Equal(("api", ProviderName.ClaudeCli), (decided.Decision, decided.Model));
         Assert.Null(decided.Probabilities);   // why: the below-threshold provider's distribution is not the decider's
+        _ = Assert.Single(jev.Calls);
+        Assert.Equal(earlier, Assert.Single(run.Log.Decisions).Details?.Probabilities);   // why: the row may keep the merged value
     }
 
     [Fact]
@@ -241,9 +249,10 @@ public sealed class ChooseQuestionTests
         var jev = new ScriptedProvider(ProviderName.Jev, ContentClass.Brief).Decides("ui", 0.5, earlier);
         var cli = Cli(ContentClass.Brief).Decides("api", 0.9, own);
 
-        var outcome = await new QuestionRun().AskByName("choose", Input(), jev, cli);
+        var outcome = await new QuestionRun().AskByName("choose", Input(), JevThenCli, jev, cli);
 
         Assert.Equal(own, Assert.IsType<DecidedOutcome>(outcome).Probabilities);
+        _ = Assert.Single(jev.Calls);
     }
 
     [Fact]
@@ -254,6 +263,14 @@ public sealed class ChooseQuestionTests
         var outcome = await new QuestionRun().AskByName("choose", Input(threshold: "0.95"), new QuestionOverride(Enabled: true, Threshold: 0.3), cli);
 
         _ = AssertModel("ui", outcome);
+    }
+
+    [Fact]
+    public async Task An_answer_just_under_the_default_threshold_escalates_below_threshold()
+    {
+        var outcome = await new QuestionRun().AskByName("choose", Input(), Cli(ContentClass.Brief).Decides("ui", 0.59));
+
+        Assert.Equal("below-threshold", Assert.IsType<EscalatedOutcome>(outcome).ReasonCode);
     }
 
     [Fact]

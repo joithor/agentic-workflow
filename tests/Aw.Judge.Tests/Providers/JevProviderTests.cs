@@ -211,6 +211,28 @@ public sealed class JevProviderTests
         Assert.Equal("""{"ui":"only UI files changed","api":"a route changed"}""", sent["criteria"]!.ToJsonString());
     }
 
+    [Theory]
+    [InlineData("""{"answers":{"decision":{"type":"choice","choice":"api"}}}""")]
+    [InlineData("""{"answers":{"decision":{"type":"choice","choice":"api","confidence":1.5}}}""")]
+    [InlineData("""{"answers":{"decision":{"type":"choice","choice":"api","confidence":-0.1}}}""")]
+    public async Task A_choose_answer_without_a_usable_confidence_is_errored_not_certain(string body)
+    {
+        using var provider = new JevProvider(new HttpClient(FakeHttpHandler.Answering(HttpStatusCode.OK, body)), Secrets(), new FakeInputRedactor());
+        var question = Questions.Text with { Name = "choose", Outputs = ["ui", "api"], AskConfidence = true };
+
+        var result = await provider.Decide(question, Questions.Input, Questions.Budget, TestContext.Current.CancellationToken);
+
+        Assert.Equal(new ProviderErrored("unparseable-answer"), result);
+    }
+
+    [Fact]
+    public async Task Other_questions_still_default_a_missing_jev_confidence_to_certain()
+    {
+        var result = await Decide(FakeHttpHandler.Answering(HttpStatusCode.OK, """{"answers":{"decision":{"type":"choice","choice":"batch"}}}"""));
+
+        Assert.Equal(1.0, Assert.IsType<ProviderDecided>(result).Confidence);
+    }
+
     private static async Task<ProviderResult> Decide(FakeHttpHandler handler, FakeSecretSource? secrets = null)
     {
         using var provider = new JevProvider(new HttpClient(handler), secrets ?? Secrets(), new FakeInputRedactor());
