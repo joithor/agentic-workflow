@@ -4682,3 +4682,260 @@ Aw.Context.Core.Results.DiffStatus
 Aw.Context.Core.Results.DiffStatus.Mapped = 0 -> Aw.Context.Core.Results.DiffStatus
 Aw.Context.Core.Results.DiffStatus.Suggested = 1 -> Aw.Context.Core.Results.DiffStatus
 Aw.Context.Core.Results.DiffStatus.Unmapped = 2 -> Aw.Context.Core.Results.DiffStatus
+Aw.Context.Core.History.HistoryChange
+Aw.Context.Core.History.HistoryChange.Anchors.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
+Aw.Context.Core.History.HistoryChange.Anchors.init -> void
+Aw.Context.Core.History.HistoryChange.At.get -> System.DateTimeOffset
+Aw.Context.Core.History.HistoryChange.At.init -> void
+Aw.Context.Core.History.HistoryChange.Branch.get -> string?
+Aw.Context.Core.History.HistoryChange.Branch.init -> void
+Aw.Context.Core.History.HistoryChange.<Clone>$() -> Aw.Context.Core.History.HistoryChange!
+Aw.Context.Core.History.HistoryChange.Deconstruct(out string! Key, out Aw.Context.Core.Engine.ContextRepoName Repo, out string! Sha, out System.DateTimeOffset At, out string! Subject, out Aw.Context.Core.History.HistoryChangeKind Kind, out string? Branch, out int? Pr, out System.Collections.Generic.IReadOnlyList<string!>! Files, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Anchors, out Aw.Context.Core.Results.Trust Trust) -> void
+Aw.Context.Core.History.HistoryChange.Equals(Aw.Context.Core.History.HistoryChange? other) -> bool
+Aw.Context.Core.History.HistoryChange.Files.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.History.HistoryChange.Files.init -> void
+Aw.Context.Core.History.HistoryChange.HistoryChange(string! Key, Aw.Context.Core.Engine.ContextRepoName Repo, string! Sha, System.DateTimeOffset At, string! Subject, Aw.Context.Core.History.HistoryChangeKind Kind, string? Branch, int? Pr, System.Collections.Generic.IReadOnlyList<string!>! Files, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Anchors, Aw.Context.Core.Results.Trust Trust) -> void
+Aw.Context.Core.History.HistoryChange.Key.get -> string!
+Aw.Context.Core.History.HistoryChange.Key.init -> void
+Aw.Context.Core.History.HistoryChangeKind
+Aw.Context.Core.History.HistoryChangeKind.Commit = 1 -> Aw.Context.Core.History.HistoryChangeKind
+Aw.Context.Core.History.HistoryChange.Kind.get -> Aw.Context.Core.History.HistoryChangeKind
+Aw.Context.Core.History.HistoryChange.Kind.init -> void
+Aw.Context.Core.History.HistoryChangeKind.Merge = 0 -> Aw.Context.Core.History.HistoryChangeKind
+Aw.Context.Core.History.HistoryChangeList
+Aw.Context.Core.History.HistoryChangeList.<Clone>$() -> Aw.Context.Core.History.HistoryChangeList!
+Aw.Context.Core.History.HistoryChangeList.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryChange!>! Items, out int Total) -> void
+Aw.Context.Core.History.HistoryChangeList.Equals(Aw.Context.Core.History.HistoryChangeList? other) -> bool
+Aw.Context.Core.History.HistoryChangeList.HistoryChangeList(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryChange!>! Items, int Total) -> void
+Aw.Context.Core.History.HistoryChangeList.Items.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryChange!>!
+Aw.Context.Core.History.HistoryChangeList.Items.init -> void
+Aw.Context.Core.History.HistoryChangeList.Total.get -> int
+Aw.Context.Core.History.HistoryChangeList.Total.init -> void
+Aw.Context.Core.History.HistoryChangeList.Truncated.get -> bool
+Aw.Context.Core.History.HistoryChange.Pr.get -> int?
+Aw.Context.Core.History.HistoryChange.Pr.init -> void
+Aw.Context.Core.History.HistoryChange.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
+Aw.Context.Core.History.HistoryChange.Repo.init -> void
+Aw.Context.Core.History.HistoryChange.Sha.get -> string!
+Aw.Context.Core.History.HistoryChange.Sha.init -> void
+Aw.Context.Core.History.HistoryChange.Subject.get -> string!
+Aw.Context.Core.History.HistoryChange.Subject.init -> void
+Aw.Context.Core.History.HistoryChange.Trust.get -> Aw.Context.Core.Results.Trust
+Aw.Context.Core.History.HistoryChange.Trust.init -> void
+Aw.Context.Core.History.HistoryCounts
+Aw.Context.Core.History.HistoryCounts.AfterCut.get -> int
+Aw.Context.Core.History.HistoryCounts.AfterCut.init -> void
+Aw.Context.Core.History.HistoryCounts.Changes.get -> int
+Aw.Context.Core.History.HistoryCounts.Changes.init -> void
+Aw.Context.Core.History.HistoryCounts.<Clone>$() -> Aw.Context.Core.History.HistoryCounts!
+Aw.Context.Core.History.HistoryCounts.Decisions.get -> int
+Aw.Context.Core.History.HistoryCounts.Decisions.init -> void
+Aw.Context.Core.History.HistoryCounts.Deconstruct(out int Records, out int Decisions, out int Changes, out int Files, out int Unlocated, out int AfterCut) -> void
+Aw.Context.Core.History.HistoryCounts.Equals(Aw.Context.Core.History.HistoryCounts? other) -> bool
+Aw.Context.Core.History.HistoryCounts.Files.get -> int
+Aw.Context.Core.History.HistoryCounts.Files.init -> void
+Aw.Context.Core.History.HistoryCounts.HistoryCounts(int Records, int Decisions, int Changes, int Files, int Unlocated, int AfterCut) -> void
+Aw.Context.Core.History.HistoryCounts.Records.get -> int
+Aw.Context.Core.History.HistoryCounts.Records.init -> void
+Aw.Context.Core.History.HistoryCounts.Unlocated.get -> int
+Aw.Context.Core.History.HistoryCounts.Unlocated.init -> void
+Aw.Context.Core.History.HistoryCut
+Aw.Context.Core.History.HistoryCutResult
+Aw.Context.Core.History.HistoryCutResult.AfterCut.get -> int
+Aw.Context.Core.History.HistoryCutResult.AfterCut.init -> void
+Aw.Context.Core.History.HistoryCutResult.<Clone>$() -> Aw.Context.Core.History.HistoryCutResult!
+Aw.Context.Core.History.HistoryCutResult.Decisions.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryDecision!>!
+Aw.Context.Core.History.HistoryCutResult.Decisions.init -> void
+Aw.Context.Core.History.HistoryCutResult.DecisionsTruncated.get -> bool
+Aw.Context.Core.History.HistoryCutResult.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryRecord!>! Records, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryDecision!>! Decisions, out int TotalRecords, out int TotalDecisions, out int AfterCut) -> void
+Aw.Context.Core.History.HistoryCutResult.Equals(Aw.Context.Core.History.HistoryCutResult? other) -> bool
+Aw.Context.Core.History.HistoryCutResult.HistoryCutResult(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryRecord!>! Records, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryDecision!>! Decisions, int TotalRecords, int TotalDecisions, int AfterCut) -> void
+Aw.Context.Core.History.HistoryCutResult.Records.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryRecord!>!
+Aw.Context.Core.History.HistoryCutResult.Records.init -> void
+Aw.Context.Core.History.HistoryCutResult.RecordsTruncated.get -> bool
+Aw.Context.Core.History.HistoryCutResult.TotalDecisions.get -> int
+Aw.Context.Core.History.HistoryCutResult.TotalDecisions.init -> void
+Aw.Context.Core.History.HistoryCutResult.TotalRecords.get -> int
+Aw.Context.Core.History.HistoryCutResult.TotalRecords.init -> void
+Aw.Context.Core.History.HistoryDecision
+Aw.Context.Core.History.HistoryDecision.Anchors.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
+Aw.Context.Core.History.HistoryDecision.Anchors.init -> void
+Aw.Context.Core.History.HistoryDecision.At.get -> System.DateTimeOffset?
+Aw.Context.Core.History.HistoryDecision.At.init -> void
+Aw.Context.Core.History.HistoryDecision.<Clone>$() -> Aw.Context.Core.History.HistoryDecision!
+Aw.Context.Core.History.HistoryDecision.Confirmed.get -> bool
+Aw.Context.Core.History.HistoryDecision.Confirmed.init -> void
+Aw.Context.Core.History.HistoryDecision.Decides.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
+Aw.Context.Core.History.HistoryDecision.Decides.init -> void
+Aw.Context.Core.History.HistoryDecision.Deconstruct(out Aw.Context.Core.Graph.NodeKey Node, out string! Text, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Decides, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Supersedes, out string? Quotes, out Aw.Context.Core.Results.Provenance Provenance, out bool Confirmed, out Aw.Context.Core.Results.Trust Trust, out System.DateTimeOffset? At, out Aw.Context.Core.Lenses.LensQuote? Quote, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Anchors, out bool Leaky) -> void
+Aw.Context.Core.History.HistoryDecision.Equals(Aw.Context.Core.History.HistoryDecision? other) -> bool
+Aw.Context.Core.History.HistoryDecision.HistoryDecision(Aw.Context.Core.Graph.NodeKey Node, string! Text, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Decides, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Supersedes, string? Quotes, Aw.Context.Core.Results.Provenance Provenance, bool Confirmed, Aw.Context.Core.Results.Trust Trust, System.DateTimeOffset? At, Aw.Context.Core.Lenses.LensQuote? Quote, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Anchors, bool Leaky) -> void
+Aw.Context.Core.History.HistoryDecision.Leaky.get -> bool
+Aw.Context.Core.History.HistoryDecision.Leaky.init -> void
+Aw.Context.Core.History.HistoryDecision.Node.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.History.HistoryDecision.Node.init -> void
+Aw.Context.Core.History.HistoryDecision.Provenance.get -> Aw.Context.Core.Results.Provenance
+Aw.Context.Core.History.HistoryDecision.Provenance.init -> void
+Aw.Context.Core.History.HistoryDecision.Quote.get -> Aw.Context.Core.Lenses.LensQuote?
+Aw.Context.Core.History.HistoryDecision.Quote.init -> void
+Aw.Context.Core.History.HistoryDecision.Quotes.get -> string?
+Aw.Context.Core.History.HistoryDecision.Quotes.init -> void
+Aw.Context.Core.History.HistoryDecision.Supersedes.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
+Aw.Context.Core.History.HistoryDecision.Supersedes.init -> void
+Aw.Context.Core.History.HistoryDecision.Text.get -> string!
+Aw.Context.Core.History.HistoryDecision.Text.init -> void
+Aw.Context.Core.History.HistoryDecision.Trust.get -> Aw.Context.Core.Results.Trust
+Aw.Context.Core.History.HistoryDecision.Trust.init -> void
+Aw.Context.Core.History.HistoryGit
+Aw.Context.Core.History.HistoryGit.Changes.get -> int
+Aw.Context.Core.History.HistoryGit.Changes.init -> void
+Aw.Context.Core.History.HistoryGit.<Clone>$() -> Aw.Context.Core.History.HistoryGit!
+Aw.Context.Core.History.HistoryGit.Deconstruct(out Aw.Context.Core.Engine.ContextRepoName Repo, out string! Head, out string? UpTo, out bool Shallow, out int Files, out int Changes) -> void
+Aw.Context.Core.History.HistoryGit.Equals(Aw.Context.Core.History.HistoryGit? other) -> bool
+Aw.Context.Core.History.HistoryGit.Files.get -> int
+Aw.Context.Core.History.HistoryGit.Files.init -> void
+Aw.Context.Core.History.HistoryGit.Head.get -> string!
+Aw.Context.Core.History.HistoryGit.Head.init -> void
+Aw.Context.Core.History.HistoryGit.HistoryGit(Aw.Context.Core.Engine.ContextRepoName Repo, string! Head, string? UpTo, bool Shallow, int Files, int Changes) -> void
+Aw.Context.Core.History.HistoryGit.Repo.get -> Aw.Context.Core.Engine.ContextRepoName
+Aw.Context.Core.History.HistoryGit.Repo.init -> void
+Aw.Context.Core.History.HistoryGit.Shallow.get -> bool
+Aw.Context.Core.History.HistoryGit.Shallow.init -> void
+Aw.Context.Core.History.HistoryGit.UpTo.get -> string?
+Aw.Context.Core.History.HistoryGit.UpTo.init -> void
+Aw.Context.Core.History.HistoryRecord
+Aw.Context.Core.History.HistoryRecord.Anchors.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
+Aw.Context.Core.History.HistoryRecord.Anchors.init -> void
+Aw.Context.Core.History.HistoryRecord.Cites.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.History.HistoryRecord.Cites.init -> void
+Aw.Context.Core.History.HistoryRecord.<Clone>$() -> Aw.Context.Core.History.HistoryRecord!
+Aw.Context.Core.History.HistoryRecord.CreatedAt.get -> System.DateTimeOffset?
+Aw.Context.Core.History.HistoryRecord.CreatedAt.init -> void
+Aw.Context.Core.History.HistoryRecord.Deconstruct(out Aw.Context.Core.Graph.NodeKey Key, out string! Label, out string! Source, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Mentions, out Aw.Context.Core.Results.Trust Trust, out Aw.Context.Core.Results.CitationState State, out System.Collections.Generic.IReadOnlyList<string!>! Cites, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Anchors, out System.DateTimeOffset? CreatedAt, out System.DateTimeOffset? UpdatedAt, out System.DateTimeOffset? FetchedAt, out bool Leaky) -> void
+Aw.Context.Core.History.HistoryRecord.Equals(Aw.Context.Core.History.HistoryRecord? other) -> bool
+Aw.Context.Core.History.HistoryRecord.FetchedAt.get -> System.DateTimeOffset?
+Aw.Context.Core.History.HistoryRecord.FetchedAt.init -> void
+Aw.Context.Core.History.HistoryRecord.HistoryRecord(Aw.Context.Core.Graph.NodeKey Key, string! Label, string! Source, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Mentions, Aw.Context.Core.Results.Trust Trust, Aw.Context.Core.Results.CitationState State, System.Collections.Generic.IReadOnlyList<string!>! Cites, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Anchors, System.DateTimeOffset? CreatedAt, System.DateTimeOffset? UpdatedAt, System.DateTimeOffset? FetchedAt, bool Leaky) -> void
+Aw.Context.Core.History.HistoryRecord.Key.get -> Aw.Context.Core.Graph.NodeKey
+Aw.Context.Core.History.HistoryRecord.Key.init -> void
+Aw.Context.Core.History.HistoryRecord.Label.get -> string!
+Aw.Context.Core.History.HistoryRecord.Label.init -> void
+Aw.Context.Core.History.HistoryRecord.Leaky.get -> bool
+Aw.Context.Core.History.HistoryRecord.Leaky.init -> void
+Aw.Context.Core.History.HistoryRecord.Mentions.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
+Aw.Context.Core.History.HistoryRecord.Mentions.init -> void
+Aw.Context.Core.History.HistoryRecord.Source.get -> string!
+Aw.Context.Core.History.HistoryRecord.Source.init -> void
+Aw.Context.Core.History.HistoryRecord.State.get -> Aw.Context.Core.Results.CitationState
+Aw.Context.Core.History.HistoryRecord.State.init -> void
+Aw.Context.Core.History.HistoryRecord.Trust.get -> Aw.Context.Core.Results.Trust
+Aw.Context.Core.History.HistoryRecord.Trust.init -> void
+Aw.Context.Core.History.HistoryRecord.UpdatedAt.get -> System.DateTimeOffset?
+Aw.Context.Core.History.HistoryRecord.UpdatedAt.init -> void
+Aw.Context.Core.History.HistoryRules
+Aw.Context.Core.History.HistoryTruncated
+Aw.Context.Core.History.HistoryTruncated.Changes.get -> bool
+Aw.Context.Core.History.HistoryTruncated.Changes.init -> void
+Aw.Context.Core.History.HistoryTruncated.<Clone>$() -> Aw.Context.Core.History.HistoryTruncated!
+Aw.Context.Core.History.HistoryTruncated.Decisions.get -> bool
+Aw.Context.Core.History.HistoryTruncated.Decisions.init -> void
+Aw.Context.Core.History.HistoryTruncated.Deconstruct(out bool Records, out bool Decisions, out bool Changes, out bool Files) -> void
+Aw.Context.Core.History.HistoryTruncated.Equals(Aw.Context.Core.History.HistoryTruncated? other) -> bool
+Aw.Context.Core.History.HistoryTruncated.Files.get -> bool
+Aw.Context.Core.History.HistoryTruncated.Files.init -> void
+Aw.Context.Core.History.HistoryTruncated.HistoryTruncated(bool Records, bool Decisions, bool Changes, bool Files) -> void
+Aw.Context.Core.History.HistoryTruncated.Records.get -> bool
+Aw.Context.Core.History.HistoryTruncated.Records.init -> void
+Aw.Context.Core.History.HistoryWindow
+Aw.Context.Core.History.HistoryWindow.Before.get -> System.DateTimeOffset?
+Aw.Context.Core.History.HistoryWindow.Before.init -> void
+Aw.Context.Core.History.HistoryWindow.<Clone>$() -> Aw.Context.Core.History.HistoryWindow!
+Aw.Context.Core.History.HistoryWindow.Deconstruct(out System.DateTimeOffset? Since, out System.DateTimeOffset? Before) -> void
+Aw.Context.Core.History.HistoryWindow.Equals(Aw.Context.Core.History.HistoryWindow? other) -> bool
+Aw.Context.Core.History.HistoryWindow.HistoryWindow(System.DateTimeOffset? Since, System.DateTimeOffset? Before) -> void
+Aw.Context.Core.History.HistoryWindow.NotAfterCut(System.DateTimeOffset at) -> bool
+Aw.Context.Core.History.HistoryWindow.Since.get -> System.DateTimeOffset?
+Aw.Context.Core.History.HistoryWindow.Since.init -> void
+Aw.Context.Core.History.MergeSubject
+Aw.Context.Core.History.MergeSubject.Branch.get -> string?
+Aw.Context.Core.History.MergeSubject.Branch.init -> void
+Aw.Context.Core.History.MergeSubject.<Clone>$() -> Aw.Context.Core.History.MergeSubject!
+Aw.Context.Core.History.MergeSubject.Deconstruct(out int? Pr, out string? Branch) -> void
+Aw.Context.Core.History.MergeSubject.Equals(Aw.Context.Core.History.MergeSubject? other) -> bool
+Aw.Context.Core.History.MergeSubject.MergeSubject(int? Pr, string? Branch) -> void
+Aw.Context.Core.History.MergeSubject.Pr.get -> int?
+Aw.Context.Core.History.MergeSubject.Pr.init -> void
+Aw.Context.Core.History.RecordTimes
+Aw.Context.Core.History.RecordTimes.<Clone>$() -> Aw.Context.Core.History.RecordTimes!
+Aw.Context.Core.History.RecordTimes.CreatedAt.get -> System.DateTimeOffset?
+Aw.Context.Core.History.RecordTimes.CreatedAt.init -> void
+Aw.Context.Core.History.RecordTimes.Deconstruct(out System.DateTimeOffset? CreatedAt, out System.DateTimeOffset? UpdatedAt) -> void
+Aw.Context.Core.History.RecordTimes.Equals(Aw.Context.Core.History.RecordTimes? other) -> bool
+Aw.Context.Core.History.RecordTimes.RecordTimes(System.DateTimeOffset? CreatedAt, System.DateTimeOffset? UpdatedAt) -> void
+Aw.Context.Core.History.RecordTimes.UpdatedAt.get -> System.DateTimeOffset?
+Aw.Context.Core.History.RecordTimes.UpdatedAt.init -> void
+const Aw.Context.Core.History.HistoryRules.ChangesPerRepo = 101 -> int
+const Aw.Context.Core.History.HistoryRules.ListCap = 100 -> int
+const Aw.Context.Core.History.HistoryRules.MaxFiles = 50 -> int
+const Aw.Context.Core.History.HistoryRules.SubjectChars = 200 -> int
+override Aw.Context.Core.History.HistoryChange.Equals(object? obj) -> bool
+override Aw.Context.Core.History.HistoryChange.GetHashCode() -> int
+override Aw.Context.Core.History.HistoryChangeList.Equals(object? obj) -> bool
+override Aw.Context.Core.History.HistoryChangeList.GetHashCode() -> int
+override Aw.Context.Core.History.HistoryChangeList.ToString() -> string!
+override Aw.Context.Core.History.HistoryChange.ToString() -> string!
+override Aw.Context.Core.History.HistoryCounts.Equals(object? obj) -> bool
+override Aw.Context.Core.History.HistoryCounts.GetHashCode() -> int
+override Aw.Context.Core.History.HistoryCounts.ToString() -> string!
+override Aw.Context.Core.History.HistoryCutResult.Equals(object? obj) -> bool
+override Aw.Context.Core.History.HistoryCutResult.GetHashCode() -> int
+override Aw.Context.Core.History.HistoryCutResult.ToString() -> string!
+override Aw.Context.Core.History.HistoryDecision.Equals(object? obj) -> bool
+override Aw.Context.Core.History.HistoryDecision.GetHashCode() -> int
+override Aw.Context.Core.History.HistoryDecision.ToString() -> string!
+override Aw.Context.Core.History.HistoryGit.Equals(object? obj) -> bool
+override Aw.Context.Core.History.HistoryGit.GetHashCode() -> int
+override Aw.Context.Core.History.HistoryGit.ToString() -> string!
+override Aw.Context.Core.History.HistoryRecord.Equals(object? obj) -> bool
+override Aw.Context.Core.History.HistoryRecord.GetHashCode() -> int
+override Aw.Context.Core.History.HistoryRecord.ToString() -> string!
+override Aw.Context.Core.History.HistoryTruncated.Equals(object? obj) -> bool
+override Aw.Context.Core.History.HistoryTruncated.GetHashCode() -> int
+override Aw.Context.Core.History.HistoryTruncated.ToString() -> string!
+override Aw.Context.Core.History.HistoryWindow.Equals(object? obj) -> bool
+override Aw.Context.Core.History.HistoryWindow.GetHashCode() -> int
+override Aw.Context.Core.History.HistoryWindow.ToString() -> string!
+override Aw.Context.Core.History.MergeSubject.Equals(object? obj) -> bool
+override Aw.Context.Core.History.MergeSubject.GetHashCode() -> int
+override Aw.Context.Core.History.MergeSubject.ToString() -> string!
+override Aw.Context.Core.History.RecordTimes.Equals(object? obj) -> bool
+override Aw.Context.Core.History.RecordTimes.GetHashCode() -> int
+override Aw.Context.Core.History.RecordTimes.ToString() -> string!
+static Aw.Context.Core.History.HistoryChangeList.operator !=(Aw.Context.Core.History.HistoryChangeList? left, Aw.Context.Core.History.HistoryChangeList? right) -> bool
+static Aw.Context.Core.History.HistoryChangeList.operator ==(Aw.Context.Core.History.HistoryChangeList? left, Aw.Context.Core.History.HistoryChangeList? right) -> bool
+static Aw.Context.Core.History.HistoryChange.operator !=(Aw.Context.Core.History.HistoryChange? left, Aw.Context.Core.History.HistoryChange? right) -> bool
+static Aw.Context.Core.History.HistoryChange.operator ==(Aw.Context.Core.History.HistoryChange? left, Aw.Context.Core.History.HistoryChange? right) -> bool
+static Aw.Context.Core.History.HistoryCounts.operator !=(Aw.Context.Core.History.HistoryCounts? left, Aw.Context.Core.History.HistoryCounts? right) -> bool
+static Aw.Context.Core.History.HistoryCounts.operator ==(Aw.Context.Core.History.HistoryCounts? left, Aw.Context.Core.History.HistoryCounts? right) -> bool
+static Aw.Context.Core.History.HistoryCut.Apply(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryRecord!>! records, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryDecision!>! decisions, Aw.Context.Core.History.HistoryWindow! window) -> Aw.Context.Core.History.HistoryCutResult!
+static Aw.Context.Core.History.HistoryCut.Changes(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryChange!>! changes) -> Aw.Context.Core.History.HistoryChangeList!
+static Aw.Context.Core.History.HistoryCutResult.operator !=(Aw.Context.Core.History.HistoryCutResult? left, Aw.Context.Core.History.HistoryCutResult? right) -> bool
+static Aw.Context.Core.History.HistoryCutResult.operator ==(Aw.Context.Core.History.HistoryCutResult? left, Aw.Context.Core.History.HistoryCutResult? right) -> bool
+static Aw.Context.Core.History.HistoryDecision.operator !=(Aw.Context.Core.History.HistoryDecision? left, Aw.Context.Core.History.HistoryDecision? right) -> bool
+static Aw.Context.Core.History.HistoryDecision.operator ==(Aw.Context.Core.History.HistoryDecision? left, Aw.Context.Core.History.HistoryDecision? right) -> bool
+static Aw.Context.Core.History.HistoryGit.operator !=(Aw.Context.Core.History.HistoryGit? left, Aw.Context.Core.History.HistoryGit? right) -> bool
+static Aw.Context.Core.History.HistoryGit.operator ==(Aw.Context.Core.History.HistoryGit? left, Aw.Context.Core.History.HistoryGit? right) -> bool
+static Aw.Context.Core.History.HistoryRecord.operator !=(Aw.Context.Core.History.HistoryRecord? left, Aw.Context.Core.History.HistoryRecord? right) -> bool
+static Aw.Context.Core.History.HistoryRecord.operator ==(Aw.Context.Core.History.HistoryRecord? left, Aw.Context.Core.History.HistoryRecord? right) -> bool
+static Aw.Context.Core.History.HistoryTruncated.operator !=(Aw.Context.Core.History.HistoryTruncated? left, Aw.Context.Core.History.HistoryTruncated? right) -> bool
+static Aw.Context.Core.History.HistoryTruncated.operator ==(Aw.Context.Core.History.HistoryTruncated? left, Aw.Context.Core.History.HistoryTruncated? right) -> bool
+static Aw.Context.Core.History.HistoryWindow.Of(string? since, string? before) -> Aw.Kernel.Result<Aw.Context.Core.History.HistoryWindow!>!
+static Aw.Context.Core.History.HistoryWindow.Open.get -> Aw.Context.Core.History.HistoryWindow!
+static Aw.Context.Core.History.HistoryWindow.operator !=(Aw.Context.Core.History.HistoryWindow? left, Aw.Context.Core.History.HistoryWindow? right) -> bool
+static Aw.Context.Core.History.HistoryWindow.operator ==(Aw.Context.Core.History.HistoryWindow? left, Aw.Context.Core.History.HistoryWindow? right) -> bool
+static Aw.Context.Core.History.MergeSubject.operator !=(Aw.Context.Core.History.MergeSubject? left, Aw.Context.Core.History.MergeSubject? right) -> bool
+static Aw.Context.Core.History.MergeSubject.operator ==(Aw.Context.Core.History.MergeSubject? left, Aw.Context.Core.History.MergeSubject? right) -> bool
+static Aw.Context.Core.History.MergeSubject.Parse(string! subject) -> Aw.Context.Core.History.MergeSubject!
+static Aw.Context.Core.History.RecordTimes.Of(System.DateTimeOffset? createdAt, string! version) -> Aw.Context.Core.History.RecordTimes!
+static Aw.Context.Core.History.RecordTimes.operator !=(Aw.Context.Core.History.RecordTimes? left, Aw.Context.Core.History.RecordTimes? right) -> bool
+static Aw.Context.Core.History.RecordTimes.operator ==(Aw.Context.Core.History.RecordTimes? left, Aw.Context.Core.History.RecordTimes? right) -> bool
