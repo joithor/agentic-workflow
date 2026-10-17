@@ -4691,3 +4691,24 @@ Aw.Context.Core.Engine.ContextSettings.TestGlobs.get -> System.Collections.Gener
 Aw.Context.Core.Engine.ContextSettings.TestGlobs.init -> void
 static Aw.Context.Core.Engine.ContextSettings.DefaultSchemaGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Context.Core.Engine.ContextSettings.DefaultTestGlobs.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Code.CodeRules
+const Aw.Context.Core.Code.CodeRules.MaxCandidates = 100 -> int
+const Aw.Context.Core.Code.CodeRules.MaxFileChars = 512000 -> int
+const Aw.Context.Core.Code.CodeRules.MaxFilesPerThing = 20 -> int
+const Aw.Context.Core.Code.CodeRules.MaxImplementingFiles = 50 -> int
+const Aw.Context.Core.Code.CodeRules.MaxListed = 100 -> int
+const Aw.Context.Core.Code.CodeRules.MaxTermLength = 200 -> int
+const Aw.Context.Core.Code.CodeRules.MaxTermsPerCall = 200 -> int
+const Aw.Context.Core.Code.CodeRules.MaxThings = 30 -> int
+const Aw.Context.Core.Code.CodeRules.MinTermLength = 4 -> int
+Aw.Context.Core.Code.CodeTerms
+static Aw.Context.Core.Code.CodeTerms.Forms(System.Collections.Generic.IEnumerable<string!>! names) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Context.Core.Code.CodeTerms.KeyName(string! key) -> string!
+Aw.Context.Core.Code.NameMatcher
+static Aw.Context.Core.Code.NameMatcher.FindPath(string! text, System.Collections.Generic.IReadOnlyList<string!>! terms) -> string?
+static Aw.Context.Core.Code.NameMatcher.FindTerm(string! text, System.Collections.Generic.IReadOnlyList<string!>! terms) -> string?
+static Aw.Context.Core.Code.NameMatcher.PathTerms(string! path) -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Code.SiblingRule
+static Aw.Context.Core.Code.SiblingRule.Ties(string! testPath, string! implementingPath) -> bool
+Aw.Context.Core.Code.TestPaths
+static Aw.Context.Core.Code.TestPaths.IsTest(string! path, System.Collections.Generic.IReadOnlyList<string!>! globs) -> bool
