@@ -102,8 +102,8 @@ internal sealed partial class RecipeWorkflow
         _deskTimeout = loaded.DeskTimeout;
         _eventHold = loaded.EventHold;
         _dispatchDelay = loaded.DispatchDelay;
-        var blocks = blockRuntime ? loaded.BlockRuntimes ?? [] : [];
-        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, new HashSet<BlockId>(), NoChildRecipes.Instance) { DeskTimeout = loaded.DeskTimeout, BlockRuntimes = blocks.ToHashSet() };
+        var runtimes = (blockRuntime ? loaded.BlockRuntimes ?? [] : []).ToDictionary(static b => b, static _ => StepRuntime.Block);
+        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, runtimes, NoChildRecipes.Instance) { DeskTimeout = loaded.DeskTimeout };
         _context = new Interpreting(loaded.Recipe, decisions);
         _repo = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : null;
         (_subject, _contents) = await NamedSubject(_recipe, start).ConfigureAwait(true);

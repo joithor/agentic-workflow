@@ -35,7 +35,7 @@ public sealed class BlockRuntimeTests
     public void A_registered_Step_whose_descriptor_is_not_a_block_one_opens_a_desk_run_like_an_unregistered_one()
     {
         var deskTwin = BlockId.From("step.desk.choose");
-        var context = EngineFixture.Context() with { BlockRuntimes = new HashSet<BlockId> { deskTwin } };
+        var context = EngineFixture.Context() with { Runtimes = new Dictionary<BlockId, StepRuntime> { [deskTwin] = StepRuntime.Block } };
 
         var entered = StateEntry.Enter(EngineFixture.At(_route, "route-evidence-desk"), _route, "route-evidence-desk", context);
 
@@ -122,7 +122,7 @@ public sealed class BlockRuntimeTests
         Assert.Equal("route-evidence-desk", Assert.IsType<Applied>(decision).Changes[0].After.State);
     }
 
-    private static DecisionContext Context() => EngineFixture.Context() with { BlockRuntimes = new HashSet<BlockId> { _judge } };
+    private static DecisionContext Context() => EngineFixture.Context() with { Runtimes = new Dictionary<BlockId, StepRuntime> { [_judge] = StepRuntime.Block } };
 
     private static WorkflowInstance BlockRun()
     {
