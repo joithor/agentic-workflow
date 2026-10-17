@@ -14,7 +14,7 @@
           "map",
           "repo"
         ],
-        "mapVersion": "v1",
+        "mapVersion": 1,
         "depth": 0,
         "hops": []
       },
@@ -60,7 +60,7 @@
         "sources": [
           "map"
         ],
-        "mapVersion": "v1",
+        "mapVersion": 1,
         "depth": 0,
         "hops": []
       },
@@ -100,7 +100,7 @@
           "map",
           "tracker"
         ],
-        "mapVersion": "v1",
+        "mapVersion": 1,
         "depth": 2,
         "hops": [
           "state",
@@ -141,7 +141,7 @@
           "tracker",
           "git"
         ],
-        "mapVersion": "v1",
+        "mapVersion": 1,
         "depth": 0,
         "hops": []
       },

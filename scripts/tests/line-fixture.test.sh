@@ -53,7 +53,7 @@ mutate pl-lens-defect-not-in-spec "PL-LENS" "sed -i 's/UTC instant/UTC moment/' 
 mutate pl-scope-inside-allowed "PL-SCOPE" "sed -i 's|\"src/digest/digest.ts\"|\"src/sharing/links.ts\"|' planted.json"
 mutate pl-canary-not-in-message "PL-CANARY" "sed -i 's/see \$CANARY/see nothing/' history/build.sh"
 mutate pl-leak-report-clean "PL-LEAK" "node -e 'const f=\"gold/prove/holdout-result.leaky.json\",fs=require(\"fs\"),j=JSON.parse(fs.readFileSync(f,\"utf8\"));j.results[0].observed=\"Status 410.\";fs.writeFileSync(f,JSON.stringify(j,null,2))'"
-mutate related-path-not-a-cascade-path "related is a cascade lens" "sed -i 's/reads action:audit.report/reads action:export.run/' gold/scope/expiry/lenses.json"
+mutate related-path-not-a-cascade-path "related is a cascade lens" "sed -i 's/reads action:audit.report/reads action:export.run/' gold/scope-trace/expiry.related-trace.json"
 mutate hops-not-hop-kinds "hop-kind arrays" "sed -i 's/\"dependency\"/\"walk\"/' gold/scope/expiry/lenses.json gold/scope/expiry/coverage.json"
 mutate malformed-gold-is-a-check "crashed" "echo '{' > gold/design/expiry/signals.json"
 mutate packet-edited-after-freeze "freeze record hash" "echo >> gold/design/expiry/spec.md"

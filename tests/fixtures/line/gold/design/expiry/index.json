@@ -3,7 +3,7 @@
   "kind": "design",
   "id": "design-expiry",
   "parents": [
-    "sha256:61772f006d6497ce2b74cf59dcdfa322eec12d6bb0d59663b17630952a5720db"
+    "sha256:23bc571e8fae33ffd8edb8b037aeed7b7187430aeefa4e8c5ed408e8d727d515"
   ],
   "acceptance": {
     "self": "sha256:a121a2a606709877fb3002bedb5a298f72f764872741d93ef87a6d9e1eead7bd",

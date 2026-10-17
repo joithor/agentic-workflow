@@ -164,7 +164,9 @@ function run() {
     const names = walk(at("gold", dir));
     ok(`${dir}: holds exactly the files of scoping spec 8.3`, JSON.stringify(names) === JSON.stringify([...SCOPE_FILES].sort()), names.join(","));
     const j = (n) => readJson(at("gold", dir, n));
-    const sm = j("scope-map.json"), acc = j("acceptance.json"), cov = j("coverage.json"), ln = j("lenses.json");
+    const sm = j("scope-map.json"), acc = j("acceptance.json"), cov = j("coverage.json"), lnRaw = j("lenses.json");
+    const LENSES = ["code", "product", "related", "history"];
+    const ln = { lenses: LENSES.map((l) => ({ lens: l, ...(lnRaw[l] ?? {}) })) };
     scopes[c] = { sm, acc, cov, ln };
     const g = scopingGold[c];
     const surf = { id: "string", key: "string", kind: "string", title: "string", detail: "string", citations: ["string"], trust: "string", lens: "string", graphStatus: "string" };
@@ -177,8 +179,10 @@ function run() {
     ok(`${dir}: acceptance equals the scoping gold's ids and texts, all failing with no evidence`, JSON.stringify(acc.items.map((a) => [a.id, a.text])) === JSON.stringify(g.acceptance.map((a) => [a.id, a.text])) && acc.items.every((a) => a.status === "failing" && a.evidence.length === 0), "differs");
     ok(`${dir}: every acceptance surface is a scope surface`, acc.items.every((a) => a.surfaces.every((k) => sm.surfaces.some((s) => s.key === k))));
     // coverage and lenses (SCP-LENS-001)
-    shapeOk(`${dir}/coverage.json`, cov, { schemaVersion: "integer", lenses: [{ lens: "string", state: "string", searched: { anchors: ["string"], sources: ["string"], mapVersion: "string", depth: "integer", hops: ["string"] }, limits: [{}], mapCoverage: {}, found: { count: "integer", ids: ["string"] } }] });
-    shapeOk(`${dir}/lenses.json`, ln, { schemaVersion: "integer", lenses: [{ lens: "string", anchors: ["string"], depth: "integer", hops: ["string"], mapVersion: "string", foundCount: "integer", nodes: [{ key: "string", kind: "string", label: "string", band: "string", lensItem: "string", trust: "string" }], edges: [{ from: "string", to: "string", type: "string", provenance: "string", confirmed: "boolean", trust: "string" }], items: [{ id: "string", kind: "string", ref: "string", title: "string", citations: ["string"], trust: "string" }], truncated: { intent: "boolean", product: "boolean", code: "boolean" } }] });
+    shapeOk(`${dir}/coverage.json`, cov, { schemaVersion: "integer", lenses: [{ lens: "string", state: "string", searched: { anchors: ["string"], sources: ["string"], mapVersion: "integer", depth: "integer", hops: ["string"] }, limits: [{}], mapCoverage: {}, found: { count: "integer", ids: ["string"] } }] });
+    const lensShape = { anchors: ["string"], depth: "integer", hops: ["string"], mapVersion: "integer", foundCount: "integer", nodes: [{ key: "string", kind: "string", label: "string", band: "string", lensItem: "string", trust: "string" }], edges: [{ from: "string", to: "string", type: "string", provenance: "string", confirmed: "boolean", trust: "string" }], items: [{ lensItem: "string", kind: "string", label: "string", citations: ["string"], trust: "string" }], truncated: ["string"] };
+    shapeOk(`${dir}/lenses.json`, lnRaw, { schemaVersion: "integer", code: lensShape, product: lensShape, related: lensShape, history: lensShape });
+    ok(`${dir}/lenses.json: a closed file, with the four lens keys and each lens's nodes in exactly the shape {key, kind, label, band, lensItem, trust} (schemas/packets/lenses.schema.json of LN-PKT1)`, JSON.stringify(Object.keys(lnRaw).sort()) === JSON.stringify(["code", "history", "product", "related", "schemaVersion"]) && LENSES.every((l) => lnRaw[l].nodes.every((n) => JSON.stringify(Object.keys(n).sort()) === JSON.stringify(["band", "key", "kind", "label", "lensItem", "trust"])) && JSON.stringify(Object.keys(lnRaw[l]).sort()) === JSON.stringify(["anchors", "depth", "edges", "foundCount", "hops", "items", "mapVersion", "nodes", "truncated"])));
     ok(`${dir}/lenses.json: one entry per lens, code product related history`, JSON.stringify(ln.lenses.map((l) => l.lens)) === JSON.stringify(["code", "product", "related", "history"]) && JSON.stringify(cov.lenses.map((l) => l.lens)) === JSON.stringify(["code", "product", "related", "history"]));
     const lensErr = [];
     for (const l of ln.lenses) {
@@ -187,7 +191,7 @@ function run() {
       if (JSON.stringify(row.searched.anchors) !== JSON.stringify(l.anchors) || row.searched.depth !== l.depth || row.searched.mapVersion !== l.mapVersion || JSON.stringify(row.searched.hops) !== JSON.stringify(l.hops)) lensErr.push(`${l.lens}: searched != lenses`);
       if (!l.hops.every((h) => HOPS.includes(h))) lensErr.push(`${l.lens}: hops must be hop kinds ${HOPS.join("|")}`);
       if ((l.depth === 0) !== (l.hops.length === 0)) lensErr.push(`${l.lens}: hops is [] if and only if depth is 0`);
-      const ids = [...l.nodes.map((n) => n.lensItem), ...l.items.map((i) => i.id)];
+      const ids = [...l.nodes.map((n) => n.lensItem), ...l.items.map((i) => i.lensItem)];
       if (JSON.stringify([...ids].sort()) !== JSON.stringify([...row.found.ids].sort()) || row.found.count !== ids.length || l.foundCount !== ids.length) lensErr.push(`${l.lens}: found ids differ`);
       if (!ids.every((id) => id.startsWith(`L-${l.lens}-`))) lensErr.push(`${l.lens}: an id is not L-${l.lens}-n`);
       const ends = new Set([...l.nodes.map((n) => n.key), ...l.anchors]);
@@ -207,8 +211,10 @@ function run() {
     const inE = (n, t) => mapEdges.filter((e) => e.to === n && e.type === t), outE = (n, t) => mapEdges.filter((e) => e.from === n && e.type === t);
     const ascendOf = (n) => { const sf = n.startsWith("action:") ? outE(n, "on")[0]?.to : n; if (!sf || !sf.startsWith("surface:")) return n; return outE(sf, "part-of").map((e) => e.to).find((x) => x.startsWith("feature:")) ?? n; };
     const relErr = [];
+    const trace = readJson(at("gold", "scope-trace", `${c}.related-trace.json`));
+    if (JSON.stringify(Object.keys(trace).sort()) !== JSON.stringify(rel.nodes.map((n) => n.key).sort())) relErr.push("related-trace.json keys differ from the related nodes");
     for (const n of rel.nodes) {
-      const r = n.reach, p = r?.path ?? [];
+      const r = trace[n.key], p = r?.path ?? [];
       const reads = p.filter((x) => x.startsWith("reads ")).map((x) => x.slice(6)), writes = p.filter((x) => x.startsWith("writes ")).map((x) => x.slice(7));
       if (!mapKeys.has(n.key)) relErr.push(`${n.key}: not a map key`);
       if (n.band !== "product" || n.trust !== "untrusted") relErr.push(`${n.key}: band or trust`);
