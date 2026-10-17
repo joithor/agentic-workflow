@@ -202,6 +202,30 @@ public sealed class BacktestTests
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task Backtest_says_so_when_a_teams_issue_listing_hit_the_source_cap()
+    {
+        await using var world = await BacktestWorld.Start(BacktestWorld.BeforeAllCuts);
+        world.Clusters.Set = new ClusterSet([], Available: true);
+        world.Briefs.Capped.Add("SPL");
+
+        var report = (await world.Run("graph")).Value.Report;
+
+        Assert.Contains(report.Degraded, d => d.StartsWith("issue listing capped: SPL", StringComparison.Ordinal) && d.Contains("not in this corpus", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Backtest_with_no_eligible_sample_in_a_capped_listing_says_the_listing_was_capped()
+    {
+        await using var world = await BacktestWorld.Start(BacktestWorld.BeforeAllCuts);
+        world.Briefs.Capped.Add("SPL");
+
+        var run = await world.Run("graph", configure: r => r with { Since = new DateTimeOffset(2030, 1, 1, 0, 0, 0, TimeSpan.Zero) });
+
+        Assert.Equal(ContextErrors.NoEligibleSample.Code, run.Error.Code);
+        Assert.Contains("listing capped: SPL", run.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task Backtest_counts_and_reports_samples_dropped_because_the_brief_source_was_down()
     {
         await using var world = await BacktestWorld.Start(BacktestWorld.BeforeAllCuts);

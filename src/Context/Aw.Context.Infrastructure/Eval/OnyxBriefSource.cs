@@ -18,7 +18,7 @@ internal sealed class OnyxBriefSource(ISourceCatalog catalog) : IBriefSource
     private static readonly TimeSpan _deadline = TimeSpan.FromSeconds(30);
     private static readonly string _onyx = "onyx";
 
-    public async ValueTask<Result<IReadOnlyList<BriefIssue>>> Issues(BriefScope scope, CancellationToken cancellationToken)
+    public async ValueTask<Result<BriefListing>> Issues(BriefScope scope, DateTimeOffset? since, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(scope);
         var source = Onyx(scope);
@@ -58,7 +58,7 @@ internal sealed class OnyxBriefSource(ISourceCatalog catalog) : IBriefSource
             }
         }
 
-        return issues.OrderBy(i => i.Key, StringComparer.Ordinal).ToList();
+        return new BriefListing([.. issues.OrderBy(i => i.Key, StringComparer.Ordinal)], []);
     }
 
     public async ValueTask<Result<Brief?>> Brief(BriefScope scope, BriefIssue issue, CancellationToken cancellationToken)

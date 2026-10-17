@@ -4,6 +4,7 @@ using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Onyx;
 using Aw.Context.Core.Sources;
 using Aw.Context.Infrastructure.Eval;
+using Aw.Context.Infrastructure.Onyx;
 using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Fakes;
 using Aw.Context.Tests.Infrastructure;
@@ -30,7 +31,7 @@ public sealed class BriefSourceTests
         using var home = new TempHome();
         var source = new OnyxBriefSource(new FixedSourceCatalog(harness.Source));
 
-        var issues = (await source.Issues(Scope(home), TestContext.Current.CancellationToken)).Value;
+        var issues = (await source.Issues(Scope(home), since: null, TestContext.Current.CancellationToken)).Value.Issues;
 
         Assert.Equal(["SPL-101", "SPL-102", "SPL-103", "SPL-104", "SPL-105", "SPL-106"], issues.Select(i => i.Key), StringComparer.Ordinal);
         var first = issues[0];
@@ -47,7 +48,7 @@ public sealed class BriefSourceTests
         using var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
         using var home = new TempHome();
         var source = new OnyxBriefSource(new FixedSourceCatalog(harness.Source));
-        var issue = (await source.Issues(Scope(home), TestContext.Current.CancellationToken)).Value[0];
+        var issue = (await source.Issues(Scope(home), since: null, TestContext.Current.CancellationToken)).Value.Issues[0];
 
         var brief = (await source.Brief(Scope(home), issue, TestContext.Current.CancellationToken)).Value;
 
@@ -77,7 +78,7 @@ public sealed class BriefSourceTests
         using var home = new TempHome();
         var source = new OnyxBriefSource(new FixedSourceCatalog());
 
-        var issues = await source.Issues(Scope(home, onyx: false), TestContext.Current.CancellationToken);
+        var issues = await source.Issues(Scope(home, onyx: false), since: null, TestContext.Current.CancellationToken);
 
         Assert.Equal(ContextErrors.NoBriefSource.Code, issues.Error.Code);
     }
@@ -89,7 +90,7 @@ public sealed class BriefSourceTests
         using var home = new TempHome();
         var source = new OnyxBriefSource(new FixedSourceCatalog(harness.Source));
 
-        var issues = await source.Issues(Scope(home), TestContext.Current.CancellationToken);
+        var issues = await source.Issues(Scope(home), since: null, TestContext.Current.CancellationToken);
 
         Assert.Equal(ContextErrors.AllSourcesUnavailable.Code, issues.Error.Code);
     }
@@ -102,10 +103,81 @@ public sealed class BriefSourceTests
         using var home = new TempHome();
         var source = new OnyxBriefSource(new FixedSourceCatalog(new FetchFailing(harness.Source)));
 
-        var issues = await source.Issues(Scope(home), TestContext.Current.CancellationToken);
+        var issues = await source.Issues(Scope(home), since: null, TestContext.Current.CancellationToken);
 
         Assert.Equal(ContextErrors.AllSourcesUnavailable.Code, issues.Error.Code);
         Assert.Contains(ContextErrors.SourceUnavailable.Code, issues.Error.Message, StringComparison.Ordinal);   // the fetch's own code is named
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task OnyxBriefSource_names_the_team_whose_listing_hit_the_search_cap_instead_of_shrinking_in_silence()
+    {
+        await using var onyx = await FakeOnyxServer.Start();
+        using var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
+        using var home = new TempHome();
+        var source = new OnyxBriefSource(new FixedSourceCatalog(new FullPage(harness.Source, copies: 9)));   // 54 hits: Onyx's 50 per search is used up
+
+        var listing = (await source.Issues(Scope(home), since: null, TestContext.Current.CancellationToken)).Value;
+
+        Assert.Equal(["SPL"], listing.CappedTeams);
+        Assert.Equal(6, listing.Issues.Count);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task OnyxBriefSource_a_listing_under_the_cap_is_not_capped()
+    {
+        await using var onyx = await FakeOnyxServer.Start();
+        using var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
+        using var home = new TempHome();
+        var source = new OnyxBriefSource(new FixedSourceCatalog(harness.Source));
+
+        var listing = (await source.Issues(Scope(home), since: null, TestContext.Current.CancellationToken)).Value;
+
+        Assert.Empty(listing.CappedTeams);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task OnyxBriefSource_applies_the_window_start_in_the_search_before_the_cap()
+    {
+        await using var onyx = await FakeOnyxServer.Start();
+        using var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
+        using var home = new TempHome();
+        var source = new OnyxBriefSource(new FixedSourceCatalog(harness.Source));
+        var all = (await source.Issues(Scope(home), since: null, TestContext.Current.CancellationToken)).Value.Issues;
+        var since = all[3].CreatedAt;
+
+        var windowed = (await source.Issues(Scope(home), since, TestContext.Current.CancellationToken)).Value.Issues;
+
+        Assert.True(windowed.Count < all.Count);
+        Assert.Equal(all.Where(i => i.UpdatedAt >= since).Select(i => i.Key), windowed.Select(i => i.Key), StringComparer.Ordinal);   // the source dropped what was updated before the window
+        Assert.Contains(windowed, i => string.Equals(i.Key, all[3].Key, StringComparison.Ordinal));   // an issue created in the window was updated in it
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void OnyxSearchFilters_send_time_cutoff_only_when_a_window_start_is_named()
+    {
+        var empty = System.Text.Encoding.UTF8.GetString(Aw.Kernel.Json.AwJson.Serialize(new OnyxAdminSearchRequest("q", new OnyxSearchFilters()), OnyxWire.Options));
+        var windowed = System.Text.Encoding.UTF8.GetString(Aw.Kernel.Json.AwJson.Serialize(new OnyxAdminSearchRequest("q", new OnyxSearchFilters(new DateTimeOffset(2026, 7, 2, 0, 0, 0, TimeSpan.Zero))), OnyxWire.Options));
+
+        Assert.DoesNotContain("time_cutoff", empty, StringComparison.Ordinal);
+        Assert.Contains("\"time_cutoff\":\"2026-07-02T00:00:00", windowed, StringComparison.Ordinal);
+    }
+
+    private sealed class FullPage(IContextSource inner, int copies) : IContextSource
+    {
+        public SourceDescriptor Describe() => inner.Describe();
+
+        public async ValueTask<Result<IReadOnlyList<SourceHit>>> Search(SourceQuery query, CancellationToken cancellationToken)
+        {
+            var hits = await inner.Search(query, cancellationToken).ConfigureAwait(false);
+            return hits.IsError ? hits.Error : Results.Success<IReadOnlyList<SourceHit>>([.. Enumerable.Repeat(hits.Value, copies).SelectMany(static h => h)]);
+        }
+
+        public ValueTask<Result<SourceRecord>> Fetch(SourceRef reference, CancellationToken cancellationToken) => inner.Fetch(reference, cancellationToken);
+
+        public ValueTask<Result<IReadOnlyList<SourceVersion?>>> Versions(IReadOnlyList<SourceRef> refs, CancellationToken cancellationToken) => inner.Versions(refs, cancellationToken);
+
+        public ValueTask<SourceHealth> Probe(CancellationToken cancellationToken) => inner.Probe(cancellationToken);
     }
 
     private sealed class FetchFailing(IContextSource inner) : IContextSource

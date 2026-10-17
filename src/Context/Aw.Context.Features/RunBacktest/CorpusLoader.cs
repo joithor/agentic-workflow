@@ -17,7 +17,7 @@ internal sealed class CorpusLoader(IBriefSource briefs, IMergeHistory history)
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(world);
-        var issues = await briefs.Issues(world, cancellationToken).ConfigureAwait(false);
+        var issues = await briefs.Issues(world, request.Since, cancellationToken).ConfigureAwait(false);
         if (issues.IsError)
         {
             return issues.Error;
@@ -35,11 +35,11 @@ internal sealed class CorpusLoader(IBriefSource briefs, IMergeHistory history)
             histories.Add(one.Value);
         }
 
-        var corpus = CorpusBuilder.Build(issues.Value, histories, world.Settings.LinearTeams, path => world.Repos.Any(r => r.Denies(path)));
+        var corpus = CorpusBuilder.Build(issues.Value.Issues, histories, world.Settings.LinearTeams, path => world.Repos.Any(r => r.Denies(path)));
         var samples = Window(corpus.Samples, request);
         return samples.Count == 0
-            ? NoSample(corpus, issues.Value.Count)
-            : new LoadedCorpus(corpus, samples, issues.Value.ToDictionary(i => i.Key, StringComparer.Ordinal));
+            ? NoSample(corpus, issues.Value.Issues.Count)
+            : new LoadedCorpus(corpus, samples, issues.Value.Issues.ToDictionary(i => i.Key, StringComparer.Ordinal));
     }
 
     private static List<CorpusSample> Window(IReadOnlyList<CorpusSample> samples, BacktestRequest request) =>

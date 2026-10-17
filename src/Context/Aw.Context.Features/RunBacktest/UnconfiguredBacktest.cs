@@ -12,7 +12,7 @@ internal sealed class UnconfiguredBacktest : IBriefSource, IMergeHistory, IAsOfD
 {
     private static Error Missing => ContextErrors.NoBriefSource.With("this host wires no backtest ports (fix: run it from Sindri)");
 
-    public ValueTask<Result<IReadOnlyList<BriefIssue>>> Issues(BriefScope scope, CancellationToken cancellationToken) => ValueTask.FromResult<Result<IReadOnlyList<BriefIssue>>>(Missing);
+    public ValueTask<Result<BriefListing>> Issues(BriefScope scope, DateTimeOffset? since, CancellationToken cancellationToken) => ValueTask.FromResult<Result<BriefListing>>(Missing);
 
     public ValueTask<Result<Brief?>> Brief(BriefScope scope, BriefIssue issue, CancellationToken cancellationToken) => ValueTask.FromResult<Result<Brief?>>(Missing);
 

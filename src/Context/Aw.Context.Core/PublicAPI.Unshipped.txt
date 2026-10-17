@@ -4182,7 +4182,6 @@ Aw.Context.Core.Eval.Backtest.EvalReportKind.Backtest = 0 -> Aw.Context.Core.Eva
 Aw.Context.Core.Eval.Backtest.EvalReportKind.Map = 1 -> Aw.Context.Core.Eval.Backtest.EvalReportKind
 Aw.Context.Core.Eval.Backtest.IBriefSource
 Aw.Context.Core.Eval.Backtest.IBriefSource.Brief(Aw.Context.Core.Eval.Backtest.BriefScope! scope, Aw.Context.Core.Eval.Backtest.BriefIssue! issue, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.Backtest.Brief?>!>
-Aw.Context.Core.Eval.Backtest.IBriefSource.Issues(Aw.Context.Core.Eval.Backtest.BriefScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.BriefIssue!>!>!>
 Aw.Context.Core.Eval.Backtest.IEvalStore
 Aw.Context.Core.Eval.Backtest.IEvalStore.Expired(System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.Backtest.EvalPurgeReport!>!>
 Aw.Context.Core.Eval.Backtest.IEvalStore.Purge(System.DateTimeOffset now, bool all, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.Backtest.EvalPurgeReport!>!>
@@ -4508,3 +4507,20 @@ Aw.Context.Core.Eval.Backtest.LeftOut.SourceDown.get -> int
 Aw.Context.Core.Eval.Backtest.LeftOut.SourceDown.init -> void
 static Aw.Context.Core.Eval.Backtest.PassLine.Overall(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.ArmReport!>! arms) -> string?
 const Aw.Context.Core.Eval.Backtest.Verdicts.NoComparableArm = "no comparable arm ran" -> string!
+Aw.Context.Core.Eval.Backtest.BriefListing
+Aw.Context.Core.Eval.Backtest.BriefListing.<Clone>$() -> Aw.Context.Core.Eval.Backtest.BriefListing!
+Aw.Context.Core.Eval.Backtest.BriefListing.BriefListing(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.BriefIssue!>! Issues, System.Collections.Generic.IReadOnlyList<string!>! CappedTeams) -> void
+Aw.Context.Core.Eval.Backtest.BriefListing.CappedTeams.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Eval.Backtest.BriefListing.CappedTeams.init -> void
+Aw.Context.Core.Eval.Backtest.BriefListing.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.BriefIssue!>! Issues, out System.Collections.Generic.IReadOnlyList<string!>! CappedTeams) -> void
+Aw.Context.Core.Eval.Backtest.BriefListing.Equals(Aw.Context.Core.Eval.Backtest.BriefListing? other) -> bool
+Aw.Context.Core.Eval.Backtest.BriefListing.Issues.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Eval.Backtest.BriefIssue!>!
+Aw.Context.Core.Eval.Backtest.BriefListing.Issues.init -> void
+Aw.Context.Core.Eval.Backtest.IBriefSource.Issues(Aw.Context.Core.Eval.Backtest.BriefScope! scope, System.DateTimeOffset? since, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Eval.Backtest.BriefListing!>!>
+Aw.Context.Core.Sources.SourceQuery.UpdatedSince.get -> System.DateTimeOffset?
+Aw.Context.Core.Sources.SourceQuery.UpdatedSince.init -> void
+override Aw.Context.Core.Eval.Backtest.BriefListing.Equals(object? obj) -> bool
+override Aw.Context.Core.Eval.Backtest.BriefListing.GetHashCode() -> int
+override Aw.Context.Core.Eval.Backtest.BriefListing.ToString() -> string!
+static Aw.Context.Core.Eval.Backtest.BriefListing.operator !=(Aw.Context.Core.Eval.Backtest.BriefListing? left, Aw.Context.Core.Eval.Backtest.BriefListing? right) -> bool
+static Aw.Context.Core.Eval.Backtest.BriefListing.operator ==(Aw.Context.Core.Eval.Backtest.BriefListing? left, Aw.Context.Core.Eval.Backtest.BriefListing? right) -> bool
