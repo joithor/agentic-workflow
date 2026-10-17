@@ -49,6 +49,9 @@ sed 's/"deps": \[\]/"deps": ["t2"]/' "$repo/packet/tasks.json" >"$work/broken/ta
 git -C "$repo" add -A
 git -C "$repo" -c user.name=smoke -c user.email=smoke@example.invalid commit -q -m packet
 
+cp -R "$here/review-packet" "$work/review-packet"
+sed "s/__BASE_SHA__/$sha/" "$here/review-packet/packet.json" >"$work/review-packet/packet.json"
+
 cp -R "$here/scope-packet" "$work/scope-packet"
 cp -R "$work/scope-packet" "$work/scope-broken"
 rm "$work/scope-broken/brief.md"
@@ -77,6 +80,10 @@ bin="$out/bin/aw-packets"
   "$bin" freeze --kind scoping "$work/scope-packet" --repo-slug example/repo --instance idea-1 --json | grep -o '"alreadyFrozen":[a-z]*' || echo "exit $?"
   echo "## scoping freeze broken"
   "$bin" freeze --kind scoping "$work/scope-broken" --repo-slug example/repo --instance idea-2 || echo "exit $?"
+  echo "## line validate"
+  "$bin" validate --kind review "$work/review-packet" --repo "$repo" || echo "exit $?"
+  echo "## line hash"
+  "$bin" hash --kind review "$work/review-packet" || echo "exit $?"
   echo "## build hash"
   "$bin" hash "$repo/packet" || echo "exit $?"
   echo "## no arguments"
