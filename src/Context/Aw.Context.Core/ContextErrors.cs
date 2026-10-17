@@ -4,7 +4,7 @@ namespace Aw.Context.Core;
 
 /// <summary>
 /// The context engine's error catalogue (spec §8.6), codes SND-CONTEXT-NNN. Stage S-1A owns 001–019 and defines 020
-/// (the session gate, spec §3); S-3a adds 030–034 (the map file and its store); S-3b adds 035–038 (the probe runner and anchors; 039 is reserved); S-4 adds 040 and 042–048 (041 stays retired, 049 is reserved); S-5A adds 050–055 (Onyx, in the
+/// (the session gate, spec §3); S-3a adds 030–034 (the map file and its store); S-3b adds 035–038 (the probe runner and anchors; 039 is reserved); S-4 adds 040 and 042–048 (041 stays retired, 049 is reserved); S-7A adds 080–083 (backtest; 084–086 reserved for review findings); S-5A adds 050–055 (Onyx, in the
 /// S-5A/B range 050–069); later stages
 /// add theirs in their ranges. HTTP status follows the kind; the CLI exit code is 1 for attention (<see cref="Attention"/>) and 2 for a tool error.
 /// </summary>
@@ -146,6 +146,17 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-059: a sync stopped at its time cap: the run is partial and resumes from its cursor next time (degraded, exit 0).</summary>
     public static readonly ErrorDefinition SyncCapped = new("SND-CONTEXT-059", ErrorKind.Unavailable, "A sync stopped at its time cap");
 
+    /// <summary>SND-CONTEXT-080: no eligible backtest sample (no merge carries an issue key of a profile team in the window, or every candidate was left out; the message gives the counts).</summary>
+    public static readonly ErrorDefinition NoEligibleSample = new("SND-CONTEXT-080", ErrorKind.NotFound, "No eligible backtest sample");
+
+    /// <summary>SND-CONTEXT-081: no configured intent source can fetch issue records for a brief ('onyx' today; 'linear' after S-6).</summary>
+    public static readonly ErrorDefinition NoBriefSource = new("SND-CONTEXT-081", ErrorKind.Unavailable, "No source can supply backtest briefs");
+
+    /// <summary>SND-CONTEXT-082: '--arms' names an unknown arm; the message lists the arms and which are not available yet.</summary>
+    public static readonly ErrorDefinition UnknownArm = new("SND-CONTEXT-082", ErrorKind.Invalid, "Unknown backtest arm");
+
+    /// <summary>SND-CONTEXT-083: adjudication stopped at its 1.5M-token cap; the rest are unjudged (degraded, exit 0; never returned as a failure).</summary>
+    public static readonly ErrorDefinition AdjudicationCapped = new("SND-CONTEXT-083", ErrorKind.Unavailable, "Adjudication stopped at its token cap");
     /// <summary>SND-CONTEXT-110: a sha of a diff range isn't a commit in the repo's clone (often a head from another clone or fork that isn't fetched yet).</summary>
     public static readonly ErrorDefinition CommitUnknown = new("SND-CONTEXT-110", ErrorKind.NotFound, "The repo's clone doesn't hold that commit");
 
@@ -158,7 +169,8 @@ public static class ContextErrors
          McpRepoMissing, McpArgumentsInvalid, McpToolUnknown, McpRegisterRepoUnknown, McpRegisterFailed, McpUserWide,
          NoMap, MapFileInvalid, MapNodeUndefined, ExportOutsideHome, MapFileChanged, ProbeFileInvalid, NoProbeFile, AmbiguousAnchor, ProbesRegressed,
          HeavyLockBusy, LabelingUnavailable, ReviewFileNoMatch, NoDraftMap, RepoOutsideScope, PromoteRefused, ReviewTargetStale, ExtractionUnreadable,
-         OnyxKeyRefused, OnyxUnexpectedReply, OnyxDocumentNotFound, OnyxKeyNotServiceAccount, OnyxNotPinnedOrLoopback, SyncRunning, ModelAnswerRefused, SyncSourceUnknown, SyncCapped, CommitUnknown, NoMergeBase];
+         OnyxKeyRefused, OnyxUnexpectedReply, OnyxDocumentNotFound, OnyxKeyNotServiceAccount, OnyxNotPinnedOrLoopback, SyncRunning, ModelAnswerRefused, SyncSourceUnknown, SyncCapped,
+         NoEligibleSample, NoBriefSource, UnknownArm, AdjudicationCapped, CommitUnknown, NoMergeBase];
 
     /// <summary>
     /// The codes the CLI answers with exit 1 (attention, spec §8.6): an unknown or ambiguous anchor, a refused input or
@@ -170,6 +182,7 @@ public static class ContextErrors
         UnknownAnchor.Code, PathInWorktree.Code, QueryInvalid.Code, SessionsDisabled.Code, NoMap.Code, MapFileInvalid.Code, MapNodeUndefined.Code,
         ExportOutsideHome.Code, MapFileChanged.Code, ProbeFileInvalid.Code, NoProbeFile.Code, AmbiguousAnchor.Code, ProbesRegressed.Code,
         LabelingUnavailable.Code, ReviewFileNoMatch.Code, NoDraftMap.Code, RepoOutsideScope.Code, PromoteRefused.Code, ReviewTargetStale.Code, SyncRunning.Code, SyncSourceUnknown.Code,
+        NoEligibleSample.Code, NoBriefSource.Code, UnknownArm.Code,
         CommitUnknown.Code, NoMergeBase.Code,
     };
 }
