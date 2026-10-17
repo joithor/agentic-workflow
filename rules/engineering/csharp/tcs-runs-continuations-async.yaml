@@ -1,0 +1,20 @@
+schemaVersion: 1
+id: engineering.csharp.tcs-runs-continuations-async
+kind: engineering
+section: "4b.3"
+text: "Create a TaskCompletionSource with TaskCreationOptions.RunContinuationsAsynchronously."
+why: "Without it, completing the source runs the awaiting code inline on the completing thread."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: banned-symbols
+    id: "RS0030"
+    ref: "BannedSymbols.All.txt"
+    entries: ["M:System.Threading.Tasks.TaskCompletionSource.#ctor", "M:System.Threading.Tasks.TaskCompletionSource.#ctor(System.Object)", "M:System.Threading.Tasks.TaskCompletionSource`1.#ctor", "M:System.Threading.Tasks.TaskCompletionSource`1.#ctor(System.Object)"]
+    status: active
+gap: closed
+source:
+  type: desk
+  ref: "https://github.com/davidfowl/AspNetCoreDiagnosticScenarios/blob/master/AsyncGuidance.md"
+status: active

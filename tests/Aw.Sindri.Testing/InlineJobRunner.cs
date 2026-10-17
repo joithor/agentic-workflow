@@ -104,7 +104,7 @@ public sealed class InlineJobRunner(IServiceScopeFactory scopes, IJobContextAcce
     }
 
     /// <inheritdoc />
-    public ValueTask<bool> CancelRecorded(JobId job) => ValueTask.FromResult(IsCancelling(job));   // the inline runner has no append in flight: a mark is a record
+    public ValueTask<bool> CancelRecorded(JobId job, CancellationToken cancellationToken) => ValueTask.FromResult(IsCancelling(job));   // the inline runner has no append in flight: a mark is a record
 
     /// <inheritdoc />
     public bool IsCancelling(JobId job) => _runs.TryGetValue(job.Value, out var run) && run.Cancelled;
