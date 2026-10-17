@@ -57,17 +57,19 @@ OUT="$(bash "$DIR/install-meta.sh" --provider codex 2>&1)"; RC=$?
 check "codex: exit 0" "$RC" "0"
 check "codex: the trust step is printed" "$(printf '%s' "$OUT" | grep -c 'run `/hooks` to trust the `aw:\*` hooks')" "1"
 check "codex: SessionStart runs session-id-report through the adapter" \
-  "$(jq -r '.hooks.SessionStart[].hooks[].command' "$C" | grep -c "^\"$AW_STATE_DIR/hooks/adapters/codex.sh\" \"$AW_STATE_DIR/hooks/session-id-report.sh\" # aw:session-id-report")" "1"
+  "$(jq -r '.hooks.SessionStart[].hooks[].command' "$C" | grep -c "^'$AW_STATE_DIR/hooks/adapters/codex.sh' '$AW_STATE_DIR/hooks/session-id-report.sh' # aw:session-id-report")" "1"
 check "codex: UserPromptSubmit runs meta-lane-gate through the adapter" \
-  "$(jq -r '.hooks.UserPromptSubmit[].hooks[].command' "$C" | grep -c "^\"$AW_STATE_DIR/hooks/adapters/codex.sh\" \"$AW_STATE_DIR/hooks/meta-lane-gate.sh\" # aw:meta-lane-gate")" "1"
+  "$(jq -r '.hooks.UserPromptSubmit[].hooks[].command' "$C" | grep -c "^'$AW_STATE_DIR/hooks/adapters/codex.sh' '$AW_STATE_DIR/hooks/meta-lane-gate.sh' # aw:meta-lane-gate")" "1"
 check "codex: Stop gets meta-lane-gate beside the user's own hook" "$(jq -r '[.hooks.Stop[].hooks[].command] | map(sub(".*# ";"")) | join(",")' "$C")" "mine,aw:meta-lane-gate"
 check "codex: the Claude-only hooks are not registered" "$(grep -c 'meta-stop-gate\|meta-outbox' "$C")" "0"
 check "codex: scripts, adapters and the fail-open logger staged" \
   "$(test -x "$AW_STATE_DIR/hooks/session-id-report.sh" && test -x "$AW_STATE_DIR/hooks/meta-lane-gate.sh" && test -x "$AW_STATE_DIR/hooks/adapters/codex.sh" && test -f "$AW_STATE_DIR/hooks/lib/failopen.sh" && echo yes)" "yes"
 check "codex: nothing written to the Claude settings by this install" "$(cmp -s "$S" "$WORK/before" && echo same)" "same"
 cp "$C" "$WORK/codex-before"
-bash "$DIR/install-meta.sh" --provider codex > /dev/null 2>&1
+OUT2="$(bash "$DIR/install-meta.sh" --provider codex 2>&1)"
 check "codex: rerun leaves hooks.json unchanged" "$(cmp -s "$C" "$WORK/codex-before" && echo same)" "same"
+# Codex trusts a hook by the hash of its text: the note says so when this install changed the text, and not when it did not
+check "codex: the first install says the hook text changed, the unchanged rerun does not" "$(printf '%s' "$OUT" | grep -c 'hook commands changed'):$(printf '%s' "$OUT2" | grep -c 'hook commands changed'):$(printf '%s' "$OUT2" | grep -c 'run `/hooks` to trust')" "1:0:1"
 
 # Cursor: flat entries; two scripts at sessionStart
 mkdir -p "$HOME/.cursor"; U="$HOME/.cursor/hooks.json"
@@ -77,7 +79,7 @@ check "cursor: exit 0, no Codex trust step" "$RC:$(printf '%s' "$OUT" | grep -c 
 check "cursor: sessionStart has session-id-report and meta-lane-gate" "$(jq -r '[.hooks.sessionStart[].command] | map(sub(".*# ";"")) | sort | join(",")' "$U")" "aw:meta-lane-gate,aw:session-id-report"
 check "cursor: postToolUse and stop run meta-lane-gate; the user's stop hook is kept" \
   "$(jq -r '[.hooks.postToolUse[].command] | map(sub(".*# ";"")) | join(",")' "$U"):$(jq -r '[.hooks.stop[].command] | map(sub(".*# ";"")) | join(",")' "$U")" "aw:meta-lane-gate:mine,aw:meta-lane-gate"
-check "cursor: the entries go through the cursor adapter" "$(jq -r '.hooks.stop[].command' "$U" | grep -c "^\"$AW_STATE_DIR/hooks/adapters/cursor.sh\" \"$AW_STATE_DIR/hooks/meta-lane-gate.sh\"")" "1"
+check "cursor: the entries go through the cursor adapter" "$(jq -r '.hooks.stop[].command' "$U" | grep -c "^'$AW_STATE_DIR/hooks/adapters/cursor.sh' '$AW_STATE_DIR/hooks/meta-lane-gate.sh'")" "1"
 cp "$U" "$WORK/cursor-before"
 bash "$DIR/install-meta.sh" --provider cursor > /dev/null 2>&1
 check "cursor: rerun leaves hooks.json unchanged" "$(cmp -s "$U" "$WORK/cursor-before" && echo same)" "same"
@@ -184,8 +186,9 @@ unlink "$HOME/.dotnet/dotnet"
 export AW_SKIP_BUILD=1
 printf '#!/usr/bin/env bash\nexit 0\n' > "$AW_STATE_DIR/bin/aw-meta"; chmod +x "$AW_STATE_DIR/bin/aw-meta"
 
-# A HOME with a space: every hook command quotes its script path, so the hook runs (SEC-3)
-SP="$WORK/h o m e"; mkdir -p "$SP/.claude" "$SP/.codex" "$SP/.cursor" "$SP/state/bin"
+# A HOME with a space, a dollar sign and a single quote: every hook command single-quotes its script path (one helper, the
+# '\'' escape), so the shell neither splits it nor expands it, and the hook runs (SEC-3, SEC2-4)
+SP="$WORK/h o \$m'e"; mkdir -p "$SP/.claude" "$SP/.codex" "$SP/.cursor" "$SP/state/bin"
 printf '#!/usr/bin/env bash\nexit 0\n' > "$SP/state/bin/aw-meta"; chmod +x "$SP/state/bin/aw-meta"
 echo '{}' > "$SP/.claude/settings.json"
 for prov in claude codex cursor; do
@@ -193,7 +196,8 @@ for prov in claude codex cursor; do
   check "$prov: installs under a HOME with a space" "$RC" "0"
 done
 cmds="$( { jq -r '.. | .command? // empty' "$SP/.claude/settings.json" "$SP/.codex/hooks.json" "$SP/.cursor/hooks.json"; } | grep 'aw:meta\|aw:session-id' )"
-check "every hook command quotes its script path" "$(printf '%s\n' "$cmds" | grep -c -v '^"[^"]*" ')" "0"
+check "every hook command single-quotes its script path" "$(printf '%s\n' "$cmds" | grep -c -v "^'.*' ")" "0"
+check "no hook command has a double quote left (a dollar sign inside one would expand)" "$(printf '%s\n' "$cmds" | grep -c '"')" "0"
 check "the Claude stop gate command runs from the quoted path" "$(HOME="$SP" AW_STATE_DIR="$SP/state" bash -c "$(jq -r '.hooks.Stop[].hooks[].command' "$SP/.claude/settings.json" | grep meta-stop-gate)" < /dev/null > /dev/null 2>&1; echo $?)" "0"
 check "a codex hook command runs its adapter and script from the quoted paths" "$(HOME="$SP" AW_STATE_DIR="$SP/state" bash -c "$(jq -r '.hooks.SessionStart[].hooks[].command' "$SP/.codex/hooks.json" | grep session-id-report)" < /dev/null > /dev/null 2>&1; echo $?)" "0"
 
