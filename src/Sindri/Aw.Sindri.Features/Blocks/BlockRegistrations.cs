@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Effect;
+using Aw.Sindri.Features.Blocks.Evidence;
 using Aw.Sindri.Features.Blocks.Gate;
 using Aw.Sindri.Features.Blocks.Step;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,32 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(DeskSteps.Verify)
         .AddBlockDescriptor(ChoiceSteps.JudgeChoose)
         .AddBlockDescriptor(ChoiceSteps.DeskChoose)
+        .AddBlockDescriptor(BugfixSteps.IntakeTicket)
+        .AddBlockDescriptor(BugfixSteps.RootcauseInvestigate)
+        .AddBlockDescriptor(BugfixSteps.ReproduceUiCheck)
+        .AddBlockDescriptor(BugfixSteps.ReproduceTestCheck)
+        .AddBlockDescriptor(BugfixSteps.StartAttempt)
+        .AddBlockDescriptor(BugfixSteps.RecordCandidate)
+        .AddBlockDescriptor(BugfixSteps.Recheck)
+        .AddBlockDescriptor(BugfixSteps.Judge)
+        .AddBlockDescriptor(BugfixSteps.ReportWrite)
+        .AddBlockDescriptor(ProofSteps.HandtestRun)
+        .AddBlockDescriptor(ProofSteps.VerifyJourney)
+        .AddBlockDescriptor(ProofSteps.VerifyDesign)
+        .AddBlockDescriptor(EvidenceSteps.UiPlan)
+        .AddBlockDescriptor(EvidenceSteps.ApiPlan)
+        .AddBlockDescriptor(EvidenceSteps.DbPlan)
+        .AddBlockDescriptor(EvidenceSteps.UiRun)
+        .AddBlockDescriptor(EvidenceSteps.ApiRun)
+        .AddBlockDescriptor(EvidenceSteps.DbRun)
+        .AddBlockDescriptor(EvidenceSteps.None)
+        .AddBlockDescriptor(EvidenceSteps.Combine)
+        .AddBlockDescriptor(EvidenceSteps.Desk)
+        .AddBlockDescriptor(ReviewSteps.Run)
+        .AddBlockDescriptor(ReviewSteps.Fix)
+        .AddBlockDescriptor(ReviewSteps.Recheck)
+        .AddBlockDescriptor(OwnerSteps.Decide)
+        .AddBlockDescriptor(EvidenceProviders.Check)
         .AddGate<BudgetAvailableGate>()
         .AddBlockDescriptor(PendingRuntimes.RouteStartable)
         .AddEffect<ClaimRefEffect>()      // engine P6 unit (d)
