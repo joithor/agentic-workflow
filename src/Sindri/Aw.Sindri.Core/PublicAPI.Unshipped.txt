@@ -8950,8 +8950,6 @@ Aw.Sindri.Core.Launch.AgentId.GetTypeCode() -> System.TypeCode
 Aw.Sindri.Core.Launch.AgentId.IsInitialized() -> bool
 Aw.Sindri.Core.Launch.AgentId.ToString(System.IFormatProvider? provider) -> string!
 Aw.Sindri.Core.Launch.AgentId.Value.get -> string!
-Aw.Sindri.Core.Launch.Argv.ArgvInputs.ArgvInputs(Aw.Sindri.Core.Ids.ItemId Item, string! RepoPath, string! SessionName, string! Seed, Aw.Sindri.Core.Sessions.SessionId? SessionId = null, string? McpConfigPath = null, Aw.Sindri.Core.Launch.StepArgs? Step = null) -> void
-Aw.Sindri.Core.Launch.Argv.ArgvInputs.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Item, out string! RepoPath, out string! SessionName, out string! Seed, out Aw.Sindri.Core.Sessions.SessionId? SessionId, out string? McpConfigPath, out Aw.Sindri.Core.Launch.StepArgs? Step) -> void
 Aw.Sindri.Core.Launch.IAgentCatalog
 Aw.Sindri.Core.Launch.IAgentCatalog.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.AgentEntry!>!
 Aw.Sindri.Core.Launch.IAgentCatalog.Resolve(Aw.Sindri.Core.Launch.AgentId id) -> Aw.Sindri.Core.Launch.AgentEntry?
