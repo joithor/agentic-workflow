@@ -68,7 +68,17 @@ internal sealed class ProcessToolRunner : IToolRunner
         process.StandardInput.Close();   // a tool that prompts reads end of input instead of waiting for a terminal
         var output = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
         var error = DrainLines(process.StandardError, standardErrorLine);
-        using var registration = cancellationToken.Register(() => Kill(process));
+        var killedByCancel = false;
+        using var registration = cancellationToken.Register(() =>
+        {
+            if (process.HasExited)
+            {
+                return;   // it finished on its own before the cancel: its result stands
+            }
+
+            Volatile.Write(ref killedByCancel, value: true);
+            Kill(process);
+        });
         if (!process.WaitForExit(timeout))
         {
             Kill(process);
@@ -79,7 +89,7 @@ internal sealed class ProcessToolRunner : IToolRunner
         process.WaitForExit();   // flushes the redirected streams
         error.GetAwaiter().GetResult();
         var text = output.GetAwaiter().GetResult();
-        return cancellationToken.IsCancellationRequested ? ToolRun.Cancelled : new ToolRun(ToolOutcome.Exited, process.ExitCode, text);
+        return Volatile.Read(ref killedByCancel) ? ToolRun.Cancelled : new ToolRun(ToolOutcome.Exited, process.ExitCode, text);
     }
 
     private static async Task DrainLines(StreamReader reader, Action<string>? onLine)
