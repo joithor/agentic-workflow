@@ -12,4 +12,10 @@ public sealed record GateRecord(int Pr, string Head, string Main, IReadOnlyList<
 {
     /// <summary>The run number within the pull request, assigned when stored.</summary>
     public int Run { get; init; }
+
+    /// <summary>The tree the gate tested: "git rev-parse HEAD^{tree}" of the gate tree after the head was merged onto its base; null for a gate recorded before migration 0004.</summary>
+    public string? Tree { get; init; }
+
+    /// <summary>The pull requests merged under this one, with their heads, in merge order; empty for a normal gate.</summary>
+    public IReadOnlyList<StackedPr> Stack { get; init; } = [];
 }
