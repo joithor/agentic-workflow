@@ -40,10 +40,13 @@ internal sealed class YamlComposeServices : IComposeServices
         var name = (key as YamlScalarNode)?.Value ?? "";
         if (value is not YamlMappingNode body)
         {
-            return new ComposeService(name, Image: null, HasProfiles: false);
+            return new ComposeService(name, Image: null, Profiles: []);
         }
 
         var image = body.Children.TryGetValue(new YamlScalarNode("image"), out var imageNode) ? (imageNode as YamlScalarNode)?.Value : null;
-        return new ComposeService(name, image, body.Children.ContainsKey(new YamlScalarNode("profiles")));
+        IReadOnlyList<string> profiles = body.Children.TryGetValue(new YamlScalarNode("profiles"), out var profileNode) && profileNode is YamlSequenceNode sequence
+            ? [.. sequence.Children.OfType<YamlScalarNode>().Select(static n => n.Value ?? "")]
+            : [];
+        return new ComposeService(name, image, profiles);
     }
 }

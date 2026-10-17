@@ -65,6 +65,20 @@ public sealed class OnyxUpResumeTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_wrong_digest_of_minio_after_pull_is_004_because_the_env_enables_its_profile()
+    {
+        var rig = new OnyxUpRig();
+        var minio = rig.Runtime.LocalImages.Keys.Single(static k => k.Contains("minio", StringComparison.Ordinal));
+        rig.Runtime.LocalImages[minio] = ["onyxdotapp/minio@sha256:" + new string('f', 64)];
+
+        var error = (await rig.Up(Token)).Error;
+
+        Assert.Equal("SND-ONYX-004", error.Code);
+        Assert.Contains("minio", error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Up", rig.Runtime.Calls, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_start_timeout_leaves_pull_done_and_the_rerun_starts_at_start()
     {
         var rig = new OnyxUpRig();

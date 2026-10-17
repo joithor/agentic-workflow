@@ -33,7 +33,7 @@ internal sealed class OnyxPullStep(IContainerRuntime runtime, IOnyxWorkspace wor
         }
 
         var images = services.Read(workspace.Read(context.Paths.Compose) ?? "")
-            .Bind(list => OnyxConfig.ActiveImages(list, context.Settings(""), context.Pins, context.Platform));
+            .Bind(list => OnyxConfig.ActiveImages(list, context.Settings(""), context.Pins, context.Platform, OnyxConfig.EnabledProfiles(workspace.Read(context.Paths.Env))));
         var digests = images.Bind(list => runtime.RepoDigests(list, cancellationToken));
         if (digests.IsError)
         {

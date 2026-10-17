@@ -20,11 +20,11 @@ public sealed class OnyxConfigTests
 
     private static readonly ComposeService[] _services =
     [
-        new("api_server", "${ONYX_BACKEND_IMAGE:-onyxdotapp/onyx-backend:${IMAGE_TAG:-latest}}", HasProfiles: false),
-        new("background", "${ONYX_BACKEND_IMAGE:-onyxdotapp/onyx-backend:${IMAGE_TAG:-latest}}", HasProfiles: false),
-        new("indexing_model_server", "${ONYX_MODEL_SERVER_IMAGE:-onyxdotapp/onyx-model-server:${IMAGE_TAG:-latest}}", HasProfiles: false),
-        new("nginx", "${BASE_IMAGE_REGISTRY:-docker.io}/library/nginx:1.25.5-alpine", HasProfiles: false),
-        new("opensearch", "${BASE_IMAGE_REGISTRY:-docker.io}/opensearchproject/opensearch:3.6.0", HasProfiles: false),
+        new("api_server", "${ONYX_BACKEND_IMAGE:-onyxdotapp/onyx-backend:${IMAGE_TAG:-latest}}", Profiles: []),
+        new("background", "${ONYX_BACKEND_IMAGE:-onyxdotapp/onyx-backend:${IMAGE_TAG:-latest}}", Profiles: []),
+        new("indexing_model_server", "${ONYX_MODEL_SERVER_IMAGE:-onyxdotapp/onyx-model-server:${IMAGE_TAG:-latest}}", Profiles: []),
+        new("nginx", "${BASE_IMAGE_REGISTRY:-docker.io}/library/nginx:1.25.5-alpine", Profiles: []),
+        new("opensearch", "${BASE_IMAGE_REGISTRY:-docker.io}/opensearchproject/opensearch:3.6.0", Profiles: []),
     ];
 
     private static int Count(string text, string key)
@@ -132,7 +132,7 @@ public sealed class OnyxConfigTests
     [Fact, Trait("Lane", "unit")]
     public void RenderOverride_refuses_an_unpinned_image()
     {
-        var services = _services.Append(new ComposeService("db", "mysql:8", HasProfiles: false)).ToArray();
+        var services = _services.Append(new ComposeService("db", "mysql:8", Profiles: [])).ToArray();
 
         var result = OnyxConfig.RenderOverride(services, _settings, _pins, "linux/arm64");
 
@@ -144,7 +144,7 @@ public sealed class OnyxConfigTests
     [Fact, Trait("Lane", "unit")]
     public void RenderOverride_refuses_a_service_with_no_image()
     {
-        var services = _services.Append(new ComposeService("db", Image: null, HasProfiles: false)).ToArray();
+        var services = _services.Append(new ComposeService("db", Image: null, Profiles: [])).ToArray();
 
         Assert.Equal("SND-ONYX-004", OnyxConfig.RenderOverride(services, _settings, _pins, "linux/arm64").Error.Code);
     }
@@ -166,9 +166,9 @@ public sealed class OnyxConfigTests
     [Fact, Trait("Lane", "unit")]
     public void ActiveImages_lists_the_pinned_ref_of_every_service_that_is_not_profiled()
     {
-        var services = _services.Append(new ComposeService("minio", "${BASE_IMAGE_REGISTRY:-docker.io}/onyxdotapp/minio:RELEASE.2025-07-23T15-54-02Z-cpuv1@sha256:7330", HasProfiles: true)).ToArray();
+        var services = _services.Append(new ComposeService("minio", "${BASE_IMAGE_REGISTRY:-docker.io}/onyxdotapp/minio:RELEASE.2025-07-23T15-54-02Z-cpuv1@sha256:7330", Profiles: ["s3-filestore"])).ToArray();
 
-        var images = OnyxConfig.ActiveImages(services, _settings, _pins, "linux/arm64").Value;
+        var images = OnyxConfig.ActiveImages(services, _settings, _pins, "linux/arm64", []).Value;
 
         Assert.Equal(
             [
@@ -177,6 +177,31 @@ public sealed class OnyxConfigTests
                 "docker.io/opensearchproject/opensearch@" + Digest("docker.io/opensearchproject/opensearch"),
             ],
             images);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void ActiveImages_adds_a_profiled_service_whose_profile_the_env_enables()
+    {
+        var minio = new ComposeService("minio", "${BASE_IMAGE_REGISTRY:-docker.io}/onyxdotapp/minio:RELEASE.2025-07-23T15-54-02Z-cpuv1@sha256:7330", Profiles: ["s3-filestore"]);
+        var other = new ComposeService("other", "${BASE_IMAGE_REGISTRY:-docker.io}/library/redis:7.4-alpine", Profiles: ["x"]);
+        var services = _services.Append(minio).ToArray();
+
+        var enabled = OnyxConfig.ActiveImages(services, _settings, _pins, "linux/arm64", ["s3-filestore"]).Value;
+        var all = OnyxConfig.ActiveImages(services, _settings, _pins, "linux/arm64", ["*"]).Value;
+        var none = OnyxConfig.ActiveImages([.. services, other], _settings, _pins, "linux/arm64", ["x-other"]);
+
+        Assert.Contains(enabled, static i => i.Contains("minio", StringComparison.Ordinal));
+        Assert.Contains(all, static i => i.Contains("minio", StringComparison.Ordinal));
+        Assert.True(none.IsError || none.Value.All(static i => !i.Contains("minio", StringComparison.Ordinal)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void EnabledProfiles_reads_the_comma_separated_COMPOSE_PROFILES_of_the_env()
+    {
+        Assert.Equal(["a", "b"], OnyxConfig.EnabledProfiles("X=1\nCOMPOSE_PROFILES=a, b\n"));
+        Assert.Equal(["s3-filestore"], OnyxConfig.EnabledProfiles("COMPOSE_PROFILES=\"s3-filestore\"\n"));
+        Assert.Empty(OnyxConfig.EnabledProfiles("# COMPOSE_PROFILES=a\n"));
+        Assert.Empty(OnyxConfig.EnabledProfiles(null));
     }
 
     [Fact, Trait("Lane", "unit")]

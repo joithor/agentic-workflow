@@ -38,9 +38,24 @@ public sealed class RealComposeConfigTests
     [Theory, Trait("Lane", "unit")]
     [InlineData("linux/arm64")]
     [InlineData("linux/amd64")]
-    public void The_active_images_are_the_seven_non_profile_pins(string platform)
+    public void The_active_images_are_the_seven_non_profile_pins_and_minio_which_the_env_enables(string platform)
     {
-        var active = OnyxConfig.ActiveImages(Services(), _settings, _pins, platform).Value;
+        var env = OnyxConfig.RenderEnv(OnyxFixtures.ReadText("docker_compose/env.template"), _settings);
+        var active = OnyxConfig.ActiveImages(Services(), _settings, _pins, platform, OnyxConfig.EnabledProfiles(env)).Value;
+
+        var expected = _nonProfileImages.Append("onyxdotapp/minio")
+            .Select(name => _pins.Images.Single(i => i.Repository == "docker.io/" + name && i.Platform == platform))
+            .Select(static i => i.Repository + "@" + i.Digest)
+            .Order(StringComparer.Ordinal);
+        Assert.Equal(expected, active, StringComparer.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("linux/arm64")]
+    [InlineData("linux/amd64")]
+    public void With_no_profile_enabled_the_active_images_are_the_seven_non_profile_pins(string platform)
+    {
+        var active = OnyxConfig.ActiveImages(Services(), _settings, _pins, platform, []).Value;
 
         var expected = _nonProfileImages
             .Select(name => _pins.Images.Single(i => i.Repository == "docker.io/" + name && i.Platform == platform))

@@ -7958,15 +7958,15 @@ static Aw.Sindri.Core.Onyx.HostFacts.operator ==(Aw.Sindri.Core.Onyx.HostFacts? 
 Aw.Sindri.Core.Onyx.ComposeImageRef
 Aw.Sindri.Core.Onyx.ComposeService
 Aw.Sindri.Core.Onyx.ComposeService.<Clone>$() -> Aw.Sindri.Core.Onyx.ComposeService!
-Aw.Sindri.Core.Onyx.ComposeService.ComposeService(string! Name, string? Image, bool HasProfiles) -> void
-Aw.Sindri.Core.Onyx.ComposeService.Deconstruct(out string! Name, out string? Image, out bool HasProfiles) -> void
 Aw.Sindri.Core.Onyx.ComposeService.Equals(Aw.Sindri.Core.Onyx.ComposeService? other) -> bool
-Aw.Sindri.Core.Onyx.ComposeService.HasProfiles.get -> bool
-Aw.Sindri.Core.Onyx.ComposeService.HasProfiles.init -> void
 Aw.Sindri.Core.Onyx.ComposeService.Image.get -> string?
 Aw.Sindri.Core.Onyx.ComposeService.Image.init -> void
 Aw.Sindri.Core.Onyx.ComposeService.Name.get -> string!
 Aw.Sindri.Core.Onyx.ComposeService.Name.init -> void
+Aw.Sindri.Core.Onyx.ComposeService.ComposeService(string! Name, string? Image, System.Collections.Generic.IReadOnlyList<string!>! Profiles) -> void
+Aw.Sindri.Core.Onyx.ComposeService.Deconstruct(out string! Name, out string? Image, out System.Collections.Generic.IReadOnlyList<string!>! Profiles) -> void
+Aw.Sindri.Core.Onyx.ComposeService.Profiles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Onyx.ComposeService.Profiles.init -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ContainerRuntimeFacts(bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes, string? DataRoot, string? Endpoint) -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Deconstruct(out bool CliFound, out bool DaemonAnswers, out string? ServerVersion, out bool ComposeV2, out string? ComposeVersion, out long? MemoryBytes, out string? DataRoot, out string? Endpoint) -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Endpoint.get -> string?
@@ -8048,10 +8048,11 @@ static Aw.Sindri.Core.Onyx.EnvSettings.operator !=(Aw.Sindri.Core.Onyx.EnvSettin
 static Aw.Sindri.Core.Onyx.EnvSettings.operator ==(Aw.Sindri.Core.Onyx.EnvSettings? left, Aw.Sindri.Core.Onyx.EnvSettings? right) -> bool
 static Aw.Sindri.Core.Onyx.ImageRef.operator !=(Aw.Sindri.Core.Onyx.ImageRef? left, Aw.Sindri.Core.Onyx.ImageRef? right) -> bool
 static Aw.Sindri.Core.Onyx.ImageRef.operator ==(Aw.Sindri.Core.Onyx.ImageRef? left, Aw.Sindri.Core.Onyx.ImageRef? right) -> bool
-static Aw.Sindri.Core.Onyx.OnyxConfig.ActiveImages(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeService!>! services, Aw.Sindri.Core.Onyx.EnvSettings! settings, Aw.Sindri.Core.Onyx.OnyxPins! pins, string! platform) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!
 static Aw.Sindri.Core.Onyx.OnyxConfig.ReadSecret(string? envText) -> string?
 static Aw.Sindri.Core.Onyx.OnyxConfig.RenderEnv(string! template, Aw.Sindri.Core.Onyx.EnvSettings! settings) -> string!
 static Aw.Sindri.Core.Onyx.OnyxConfig.RenderOverride(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeService!>! services, Aw.Sindri.Core.Onyx.EnvSettings! settings, Aw.Sindri.Core.Onyx.OnyxPins! pins, string! platform) -> Aw.Kernel.Result<string!>!
+static Aw.Sindri.Core.Onyx.OnyxConfig.ActiveImages(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeService!>! services, Aw.Sindri.Core.Onyx.EnvSettings! settings, Aw.Sindri.Core.Onyx.OnyxPins! pins, string! platform, System.Collections.Generic.IReadOnlyList<string!>! enabledProfiles) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!
+static Aw.Sindri.Core.Onyx.OnyxConfig.EnabledProfiles(string? envText) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Sindri.Core.Onyx.OnyxPaths.For(string! sindriHome) -> Aw.Sindri.Core.Onyx.OnyxPaths!
 static Aw.Sindri.Core.Onyx.OnyxPaths.operator !=(Aw.Sindri.Core.Onyx.OnyxPaths? left, Aw.Sindri.Core.Onyx.OnyxPaths? right) -> bool
 static Aw.Sindri.Core.Onyx.OnyxPaths.operator ==(Aw.Sindri.Core.Onyx.OnyxPaths? left, Aw.Sindri.Core.Onyx.OnyxPaths? right) -> bool

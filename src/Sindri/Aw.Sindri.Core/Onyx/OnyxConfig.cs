@@ -29,8 +29,8 @@ public static class OnyxConfig
 
     private const string SecretKey = "USER_AUTH_SECRET";
 
-    // Services the override gives a profile, so compose doesn't start them.
-    private static readonly string[] _profiledByOverride = ["code-interpreter", "indexing_model_server"];
+    // Services the override gives a profile (replacing the compose file's), so compose doesn't start them unless that profile is enabled.
+    private static readonly Dictionary<string, string> _profiledByOverride = new(StringComparer.Ordinal) { ["code-interpreter"] = "code-interpreter", ["indexing_model_server"] = "indexing-model-server" };
 
     // Services whose settings the override can't leave out: a compose without one has a layout this override wasn't written for.
     private static readonly string[] _sized = ["background", "indexing_model_server", "nginx", "opensearch"];
@@ -111,24 +111,52 @@ public static class OnyxConfig
         return text.ToString();
     }
 
-    /// <summary>Lists the images compose runs with no profile: what `pull` must have fetched before Sindri starts the stack.</summary>
+    /// <summary>Reads the enabled compose profiles out of a rendered .env: the comma-separated COMPOSE_PROFILES.</summary>
+    /// <param name="envText">The .env's text, or null.</param>
+    /// <returns>The profile names (empty when the line is missing, commented or empty); `*` enables every profile.</returns>
+    public static IReadOnlyList<string> EnabledProfiles(string? envText)
+    {
+        var line = envText?.Split('\n').FirstOrDefault(static l => l.StartsWith("COMPOSE_PROFILES=", StringComparison.Ordinal));
+        var value = line?["COMPOSE_PROFILES=".Length..].Trim() ?? "";
+        if (value.Length >= 2 && value[0] is '"' or '\'' && value[^1] == value[0])
+        {
+            value = value[1..^1];
+        }
+
+        return [.. value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)];
+    }
+
+    /// <summary>Lists the images compose runs: the services with no profile and the services with an enabled one, as the override leaves them. What `pull` must have fetched before Sindri starts the stack.</summary>
     /// <param name="services">The compose file's services.</param>
     /// <param name="settings">The values.</param>
     /// <param name="pins">The lock's pins.</param>
     /// <param name="platform">The Docker server's platform.</param>
-    /// <returns>Each distinct `repository@digest` of a service that has no profile in the compose file or in the override, ordinal order; SND-ONYX-004 when an image isn't pinned.</returns>
-    public static Result<IReadOnlyList<string>> ActiveImages(IReadOnlyList<ComposeService> services, EnvSettings settings, OnyxPins pins, string platform)
+    /// <param name="enabledProfiles">The profiles the rendered .env enables (see <see cref="EnabledProfiles"/>).</param>
+    /// <returns>Each distinct `repository@digest` of an active service, ordinal order; SND-ONYX-004 when an image isn't pinned.</returns>
+    public static Result<IReadOnlyList<string>> ActiveImages(IReadOnlyList<ComposeService> services, EnvSettings settings, OnyxPins pins, string platform, IReadOnlyList<string> enabledProfiles)
     {
         ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(enabledProfiles);
         var images = PinnedImages(services, settings, pins, platform);
         if (images.IsError)
         {
             return images.Error;
         }
 
-        var profiled = services.Where(static s => s.HasProfiles).Select(static s => s.Name).Concat(_profiledByOverride).ToHashSet(StringComparer.Ordinal);
-        IReadOnlyList<string> active = [.. images.Value.Where(i => !profiled.Contains(i.Key)).Select(static i => i.Value).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
-        return Results.Success(active);
+        var all = enabledProfiles.Contains("*", StringComparer.Ordinal);
+        bool Active(ComposeService service)
+        {
+            if (_profiledByOverride.TryGetValue(service.Name, out var own))
+            {
+                return all || enabledProfiles.Contains(own, StringComparer.Ordinal);
+            }
+
+            return service.Profiles.Count == 0 || all || service.Profiles.Any(p => enabledProfiles.Contains(p, StringComparer.Ordinal));
+        }
+
+        var active = services.Where(Active).Select(static s => s.Name).ToHashSet(StringComparer.Ordinal);
+        IReadOnlyList<string> list = [.. images.Value.Where(i => active.Contains(i.Key)).Select(static i => i.Value).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+        return Results.Success(list);
     }
 
     private static IEnumerable<(string Key, string Value)> Values(EnvSettings settings)
