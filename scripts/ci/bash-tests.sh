@@ -133,7 +133,7 @@ serial_paths="$(paths_of ${SERIAL[@]+"${SERIAL[@]}"})"
 # timing-sensitive suite into the pool.
 while IFS= read -r p; do
   [ -n "$p" ] || continue
-  printf '%s\n' "$all" | grep -qxF "$p" \
+  grep -qxF -- "$p" <<<"$all" \
     || { echo "bash-tests: serial suite '$p' is not a tracked, non-excluded *.test.sh" >&2; exit 2; }
 done <<<"$serial_paths"
 pool="$(printf '%s\n' "$all" | { grep -vxF -f <(printf '%s\n' "$serial_paths" '//none//') || true; } | sed '/^$/d')"
