@@ -21,6 +21,6 @@ internal sealed record FencePlan(string Source, IReadOnlyList<FenceField> Fields
         new("decisions[].notice"), new("decisions[].cleared"),
     ]);
 
-    /// <summary>sindri_job: the summary and each progress line.</summary>
-    internal static FencePlan Job { get; } = new("sindri:job", [new("summary", "startedBy"), new("progress[].line")]);
+    /// <summary>sindri_job: the summary, each progress line and every string inside the result (a service's result can carry text an agent wrote).</summary>
+    internal static FencePlan Job { get; } = new("sindri:job", [new("summary", "startedBy"), new("progress[].line"), new("result", "startedBy", EveryString: true)]);
 }

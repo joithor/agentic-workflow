@@ -119,5 +119,50 @@ public sealed class McpFencingTests
         Assert.Null(McpFenceReader.AuthorOf(row.GetProperty("cleared").GetString()!));
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void Every_string_inside_a_job_result_is_fenced_and_the_other_values_are_not()
+    {
+        var body = Json("""{"startedBy":"human:alice","result":{"files":["a.cs","b.cs"],"note":"all <good>","count":3,"ok":true,"nested":{"why":"because","n":null}}}""");
+
+        var fenced = McpFencing.Apply(body, FencePlan.Job);
+
+        var result = fenced.GetProperty("result");
+        Assert.Equal("""<untrusted source="sindri:job" author="human:alice">a.cs</untrusted>""", result.GetProperty("files")[0].GetString());
+        Assert.StartsWith("<untrusted ", result.GetProperty("files")[1].GetString(), StringComparison.Ordinal);
+        Assert.Contains("all &lt;good&gt;", result.GetProperty("note").GetString(), StringComparison.Ordinal);
+        Assert.StartsWith("<untrusted ", result.GetProperty("nested").GetProperty("why").GetString(), StringComparison.Ordinal);
+        Assert.Equal(3, result.GetProperty("count").GetInt32());
+        Assert.Equal(JsonValueKind.Null, result.GetProperty("nested").GetProperty("n").ValueKind);
+        Assert.Equal("untrusted", fenced.GetProperty("trust").GetString());
+        Assert.Equal("untrusted", result.GetProperty("trust").GetString());
+        Assert.Equal("untrusted", result.GetProperty("nested").GetProperty("trust").GetString());
+        Assert.Equal(body.GetRawText(), McpFenceReader.Unfence(fenced).GetRawText());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_job_result_that_is_one_string_or_absent_is_handled()
+    {
+        var text = McpFencing.Apply(Json("""{"startedBy":"human:alice","result":"done"}"""), FencePlan.Job);
+        var none = McpFencing.Apply(Json("""{"startedBy":"human:alice","result":null}"""), FencePlan.Job);
+
+        Assert.Equal("""<untrusted source="sindri:job" author="human:alice">done</untrusted>""", text.GetProperty("result").GetString());
+        Assert.Equal("untrusted", text.GetProperty("trust").GetString());
+        Assert.Equal(JsonValueKind.Null, none.GetProperty("result").ValueKind);
+        Assert.False(none.TryGetProperty("trust", out _));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_path_that_ends_in_an_array_wraps_its_string_elements_and_does_not_throw()
+    {
+        var plan = new FencePlan("test:tags", [new FenceField("tags[]", "by")]);
+
+        var fenced = McpFencing.Apply(Json("""{"by":"human:bob","tags":["one",2,"two"]}"""), plan);
+
+        Assert.Equal("""<untrusted source="test:tags" author="human:bob">one</untrusted>""", fenced.GetProperty("tags")[0].GetString());
+        Assert.Equal(2, fenced.GetProperty("tags")[1].GetInt32());
+        Assert.StartsWith("<untrusted ", fenced.GetProperty("tags")[2].GetString(), StringComparison.Ordinal);
+        Assert.Equal("untrusted", fenced.GetProperty("trust").GetString());
+    }
+
     private static int CountOf(string text, string part) => text.Split(part).Length - 1;
 }

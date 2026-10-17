@@ -573,9 +573,9 @@ blocks.
 | `sindri_job` | `jobId` | `GET /jobs/{jobId}` | query, `readOnlyHint` |
 | `sindri_request` | `kind` (`rescope`, `add-task`, `note`, `handback`), `text` (1 to 2,000 characters), `itemId?` | `POST /requests` (`FileRequest`) | request, `readOnlyHint: false`, `destructiveHint: false` |
 
-There is no decision, desk, protected, job or step-report tool, and no `sindri_context` (use `context_query`): a session asks a human through `sindri_request`, and `McpSurfaceTests` (`tests/Aw.Architecture.Tests`) fails the build if the MCP namespace references any command but `FileRequestRequest`, a challenge answer or the launch secret. Results are the route's body: an id that isn't an id is `SND-CLI-003`, an item or job of another repo is `SND-ITEM-404` / `SND-JOB-404`, a request over its caps `SND-REQ-001` / `SND-REQ-002`.
+There is no decision, desk, protected, job or step-report tool, and no `sindri_context` (use `context_query`): a session asks a human through `sindri_request`, and `McpSurfaceTests` (`tests/Aw.Architecture.Tests`) fails the integration lane if the MCP namespace references any command but `FileRequestRequest`, a challenge answer or the launch secret. Results are the route's body: an id that isn't an id is `SND-CLI-003`, an item or job of another repo is `SND-ITEM-404` / `SND-JOB-404`, a request over its caps `SND-REQ-001` / `SND-REQ-002`.
 
-**Fencing.** `structuredContent` is the HTTP body with the free-text fields below wrapped by `UntrustedFence.Wrap` (source and author as listed) and `"trust": "untrusted"` added to the object that holds each one (`McpFencing` over the serialized body, per `FencePlan`). The HTTP routes are unchanged. The text block carries ids, states and counts only, never record text.
+**Fencing.** `structuredContent` is the HTTP body with the free-text fields below wrapped by `UntrustedFence.Wrap` (source and author as listed) and `"trust": "untrusted"` added to the object that holds each one (`McpFencing` over the serialized body, per `FencePlan`). The HTTP routes are unchanged. Fencing the strings of a job `result` is a provisional owner default ("fence all free text", 2026-10-16), reversible by deleting its `FencePlan.Job` field. A path may end in `[]` for an array of strings. The text block carries ids, states and counts only, never record text.
 
 | Tool | Fenced fields | Source | Author |
 |---|---|---|---|
@@ -583,12 +583,12 @@ There is no decision, desk, protected, job or step-report tool, and no `sindri_c
 | `sindri_item` | `title`, `body` | `sindri:item` | `createdBy` |
 | `sindri_item_timeline` | `entries[].line` | `sindri:timeline` | the entry's `actor` |
 | `sindri_pending_decisions` | `decisions[].question`, `.note`, `.notice`, `.cleared` | `sindri:decision` | `filedBy` (question), `decidedBy` (note) |
-| `sindri_job` | `summary`, `progress[].line` | `sindri:job` | `startedBy` |
+| `sindri_job` | `summary`, every string inside `result` (any depth; numbers, booleans and nulls stay), `progress[].line` | `sindri:job` | `startedBy` for `summary` and `result`; none for `progress[].line` (a line carries no author) |
 | `sindri_status`, `sindri_request` | none | | |
 
 **Headers.** `UseMcpCaller` removes every `X-Sindri-*` request header except `X-Sindri-Repo`, then sets `X-Sindri-Client: mcp`; a caller, terminal, token, read-your-writes (`X-Sindri-After`) or launch-secret header can't ride an MCP call, and any `Origin` is `SND-API-008`.
 
-**Read-your-writes.** `X-Sindri-After` isn't honoured on MCP, so `sindri_request` waits for the views to reach its own write (at most 2 seconds, a private constant of `SindriTools`) before answering; a `sindri_pending_decisions` right after it lists the new decision. On a timeout it still answers success, with "views catching up" in the text.
+**Read-your-writes.** `X-Sindri-After` isn't honoured on MCP, so `sindri_request` waits for the views to reach its own write (at most `ReadYourWrites.Limit`, 2 seconds, the same limit the HTTP routes wait) before answering; a `sindri_pending_decisions` right after it lists the new decision. On a timeout it still answers success, with "views catching up" in the text.
 
 **The endpoint's own refusals** (shared by the `context_*` and `sindri_*` tools; every tool error is `isError` with `McpToolError {code, message}`, text `<code> <message>`):
 

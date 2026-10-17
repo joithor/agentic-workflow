@@ -30,14 +30,14 @@ internal static class McpFencing
         var node = JsonNode.Parse(body.GetRawText());
         foreach (var field in plan.Fields)
         {
-            Fence(node, field.Path.Split('.'), 0, plan.Source, field.AuthorField);
+            Fence(node, field, field.Path.Split('.'), 0, plan.Source);
         }
 
         using var document = JsonDocument.Parse(node is null ? "null" : node.ToJsonString(_write));
         return document.RootElement.Clone();
     }
 
-    private static void Fence(JsonNode? node, string[] path, int depth, string source, string? authorField)
+    private static void Fence(JsonNode? node, FenceField field, string[] path, int depth, string source)
     {
         var segment = path[depth];
         var many = segment.EndsWith("[]", StringComparison.Ordinal);
@@ -48,32 +48,109 @@ internal static class McpFencing
         }
 
         var last = depth == path.Length - 1;
-        if (many)
+        if (last)
+        {
+            FenceLeaf(owner, segment, child, field, source);
+        }
+        else if (many)
         {
             foreach (var element in child is JsonArray array ? array.ToList() : [])
             {
-                Fence(element, path, depth + 1, source, authorField);
+                Fence(element, field, path, depth + 1, source);
             }
-        }
-        else if (!last)
-        {
-            Fence(child, path, depth + 1, source, authorField);
         }
         else
         {
-            Wrap(owner, name, child, source, authorField);
+            Fence(child, field, path, depth + 1, source);
         }
     }
 
-    private static void Wrap(JsonObject owner, string name, JsonNode child, string source, string? authorField)
+    private static void FenceLeaf(JsonObject owner, string segment, JsonNode child, FenceField field, string source)
     {
-        if (child is not JsonValue value || !value.TryGetValue<string>(out var text))
+        var many = segment.EndsWith("[]", StringComparison.Ordinal);
+        var name = many ? segment[..^2] : segment;
+        var author = AuthorOf(owner, field.AuthorField);
+        if (many)
         {
-            return;
+            MarkIf(owner, child is JsonArray strings && FenceStrings(strings, source, author));
+        }
+        else if (field.EveryString)
+        {
+            var fenced = FenceTree(child, source, author, out var any);
+            if (!ReferenceEquals(fenced, child))
+            {
+                owner[name] = fenced;
+            }
+
+            MarkIf(owner, any);
+        }
+        else if (child is JsonValue value && value.TryGetValue<string>(out var text))
+        {
+            owner[name] = UntrustedFence.Wrap(source, author, text);
+            owner[TrustMember] = Untrusted;
+        }
+    }
+
+    // why: returns the node to store back, because a bare string is replaced rather than changed in place
+    private static JsonNode? FenceTree(JsonNode? node, string source, string? author, out bool any)
+    {
+        any = false;
+        switch (node)
+        {
+            case JsonValue value when value.TryGetValue<string>(out var text):
+                any = true;
+                return UntrustedFence.Wrap(source, author, text);
+            case JsonArray array:
+                any = FenceStrings(array, source, author);
+                return array;
+            case JsonObject members:
+                foreach (var (key, member) in members.ToList())
+                {
+                    var fenced = FenceTree(member, source, author, out var inside);
+                    if (!ReferenceEquals(fenced, member))
+                    {
+                        members[key] = fenced;
+                    }
+
+                    if (inside)
+                    {
+                        any = true;
+                    }
+                }
+
+                MarkIf(members, any);
+                return members;
+            default:
+                return node;
+        }
+    }
+
+    // a deep array fences its nested strings and objects too; the result says whether anything was fenced
+    private static bool FenceStrings(JsonArray array, string source, string? author)
+    {
+        var any = false;
+        for (var i = 0; i < array.Count; i++)
+        {
+            var fenced = FenceTree(array[i], source, author, out var inside);
+            if (!ReferenceEquals(fenced, array[i]))
+            {
+                array[i] = fenced;
+            }
+
+            any |= inside;
         }
 
-        var author = authorField is not null && owner[authorField] is JsonValue who && who.TryGetValue<string>(out var by) ? by : null;
-        owner[name] = UntrustedFence.Wrap(source, author, text);
-        owner[TrustMember] = Untrusted;
+        return any;
     }
+
+    private static void MarkIf(JsonObject owner, bool fenced)
+    {
+        if (fenced)
+        {
+            owner[TrustMember] = Untrusted;
+        }
+    }
+
+    private static string? AuthorOf(JsonObject owner, string? authorField) =>
+        authorField is not null && owner[authorField] is JsonValue who && who.TryGetValue<string>(out var by) ? by : null;
 }
