@@ -47,7 +47,8 @@ internal sealed class OnyxStatusService(IOnyxPinsSource pinsSource, OnyxFacts fa
         _ => "",
     };
 
-    // nginx and the API server both running is what "Onyx is up" means here; anything else is stopped.
+    // nginx and the API server both running is what "Onyx is up" means here; anything else is stopped. "Status" means "Onyx is serving" on purpose: down, doctor and
+    // own-port use ComposeContainer.IsLive instead, because a restarting container is live (it holds its port and must be stopped) but not serving.
     private bool IsRunning(CancellationToken cancellationToken)
     {
         var containers = facts.Containers(cancellationToken);
