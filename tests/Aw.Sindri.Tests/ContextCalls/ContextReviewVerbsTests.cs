@@ -185,11 +185,25 @@ public sealed class ContextReviewVerbsTests : IDisposable
         var several = new ScriptedApi(Problem(HttpStatusCode.NotFound, "SND-CONTEXT-120", "map version v99 isn't held"));
 
         var exit = await Lens(several, "lenses", "feature:a", "feature:b", "--map-version", "v99", "--depth", "2");
-        var draftAndVersion = await Lens(new ScriptedApi(Ok("{}")), "lenses", "feature:a", "--draft", "--map-version", "v1");
         var none = await Lens(new ScriptedApi(Ok("{}")), "lenses", "--map-version", "v1");
 
         Assert.Equal("/sindri/context/lenses?anchor=feature%3Aa&anchor=feature%3Ab&depth=2&mapVersion=v99", several.Calls[0].Route);
-        Assert.Equal((1, 2, 2), (exit, draftAndVersion, none));   // 120 is attention; --draft with --map-version and no key are usage errors sent nowhere
+        Assert.Equal((1, 2), (exit, none));   // 120 is attention; no key is a usage error sent nowhere
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_context_lenses_refuses_draft_with_map_version_as_006_naming_both_flags()
+    {
+        var api = new ScriptedApi(Ok("{}"));
+
+        var exit = await Lens(api, "lenses", "feature:a", "--draft", "--map-version", "v1");
+
+        var text = _error.ToString();
+        Assert.Equal(2, exit);   // 006 is a tool error like HTTP's 400, not attention
+        Assert.Empty(api.Calls);
+        Assert.Contains("SND-CONTEXT-006", text, StringComparison.Ordinal);
+        Assert.Contains("--draft", text, StringComparison.Ordinal);
+        Assert.Contains("--map-version", text, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
