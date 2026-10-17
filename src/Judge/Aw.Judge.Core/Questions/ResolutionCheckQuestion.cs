@@ -62,7 +62,7 @@ public static class ResolutionCheckQuestion
             CheckKind.ApiEvidence => "An HTTP or CLI contract check",
             CheckKind.DbEvidence => "A persisted-state check",
             CheckKind.Test => "A regression test",
-            _ => "A regression test",
+            _ => throw new System.Diagnostics.UnreachableException(),
         };
         List<string> lines =
         [

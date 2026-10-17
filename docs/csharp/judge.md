@@ -178,8 +178,8 @@ decides or escalates, and before its envelope is written, the judge prunes old d
 
 `choose` (contract: owner-approved 2026-10-17, DT spec §8.3) is the one question whose outputs, criteria and threshold come from its input: `ChooseQuestion.For(input)` builds its `QuestionDefinition` per call (`QuestionEvaluator.EvaluateChoose`, which the catalog calls). The prompt is the question, then each fact and the options with their criteria inside untrusted-text blocks. Its definition asks for a confidence (`AskConfidence`): the agent CLIs' answer schema then requires `confidence` (a number, 0 to 1), so their answers can fall below the threshold too, and an answer without a usable one is errored, never taken as certain; every other question's schema and the 1.0 default are unchanged. `uncertain` is not a choice name: the caller maps an escalation to it.
 
-The input names of `wake-gate`, `brief-scope` and `ask-check` are hook contract; the other five (`choose` included) are the C# judge's own
-design (their tier-2 callers are ported to this contract). Prompts carry untrusted text (a ticket, a diff, a problem
+The input names of `wake-gate`, `brief-scope` and `ask-check` are hook contract; the other six (`choose` included) are the C# judge's own
+design (the five that tier-2 packages call are ported to this contract; `choose`'s caller is Sindri, through a cli edge, DT spec §8.3). Prompts carry untrusted text (a ticket, a diff, a problem
 statement) inside tagged blocks with the tags inside it defused, capped (`UntrustedText`). Pinned by the
 `Questions/*Tests` (each question's rules, offline with `ScriptedProvider`), `AskQuestionTests` (config, allowlist,
 session, the config's providers block) and `AskQuestionCliTests` (envelopes, exit codes, the ask-check exception,
