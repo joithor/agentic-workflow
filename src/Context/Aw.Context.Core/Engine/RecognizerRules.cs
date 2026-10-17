@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
-using Aw.Context.Core.Graph;
 using Aw.Kernel;
 
 namespace Aw.Context.Core.Engine;
@@ -44,9 +43,9 @@ internal static partial class RecognizerRules
 
     private static Error? Entry(RecognizerEntry entry, string at)
     {
-        if (entry.Kind is null || !NodeKinds.SurfaceKinds.Contains(entry.Kind))
+        if (entry.Kind is null || !SurfaceKindList.All.Contains(entry.Kind))
         {
-            return Refuse(ContextErrors.RecognizerInvalid, at + ".kind", $"is a surface kind: {string.Join(", ", NodeKinds.SurfaceKinds.Order(StringComparer.Ordinal))}");
+            return Refuse(ContextErrors.RecognizerInvalid, at + ".kind", $"is a surface kind: {string.Join(", ", SurfaceKindList.All.Order(StringComparer.Ordinal))}");
         }
 
         return entry.Glob is null || !SettingsReader.IsGlob(entry.Glob)

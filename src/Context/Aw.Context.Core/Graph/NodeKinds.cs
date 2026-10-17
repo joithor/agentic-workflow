@@ -4,10 +4,7 @@ namespace Aw.Context.Core.Graph;
 public static class NodeKinds
 {
     /// <summary>The surface kinds: 'surface:&lt;kind&gt;/&lt;name&gt;'.</summary>
-    public static IReadOnlySet<string> SurfaceKinds { get; } = new HashSet<string>(StringComparer.Ordinal)
-    {
-        "screen", "pane", "dialog", "command", "keybinding", "setting", "menu", "route", "api", "job", "notification", "permission", "report", "flag",
-    };
+    public static IReadOnlySet<string> SurfaceKinds => SurfaceKindList.All;
 
     /// <summary>The kind a key scheme names.</summary>
     /// <param name="scheme">A scheme NodeKey accepted.</param>

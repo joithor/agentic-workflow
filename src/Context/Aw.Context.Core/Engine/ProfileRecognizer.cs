@@ -5,7 +5,7 @@ namespace Aw.Context.Core.Engine;
 /// (never a denied path), and each match of <see cref="Pattern"/> names the surface 'surface:&lt;kind&gt;/&lt;value of the keyFrom group&gt;'.
 /// Checked by <see cref="SettingsReader"/>; what it finds is suggested, never confirmed.
 /// </summary>
-/// <param name="kind">A surface kind (<see cref="Graph.NodeKinds.SurfaceKinds"/>).</param>
+/// <param name="kind">A surface kind (<see cref="SurfaceKindList.All"/>).</param>
 /// <param name="glob">A repo-relative glob.</param>
 /// <param name="pattern">A .NET regex with a named group.</param>
 /// <param name="keyFrom">The name of that group.</param>

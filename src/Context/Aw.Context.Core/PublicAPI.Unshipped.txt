@@ -4713,3 +4713,5 @@ override Aw.Context.Core.Extract.MapExtraction.GetHashCode() -> int
 override Aw.Context.Core.Extract.MapExtraction.ToString() -> string!
 static Aw.Context.Core.Extract.MapExtraction.operator !=(Aw.Context.Core.Extract.MapExtraction? left, Aw.Context.Core.Extract.MapExtraction? right) -> bool
 static Aw.Context.Core.Extract.MapExtraction.operator ==(Aw.Context.Core.Extract.MapExtraction? left, Aw.Context.Core.Extract.MapExtraction? right) -> bool
+Aw.Context.Core.SurfaceKindList
+static Aw.Context.Core.SurfaceKindList.All.get -> System.Collections.Generic.IReadOnlySet<string!>!
