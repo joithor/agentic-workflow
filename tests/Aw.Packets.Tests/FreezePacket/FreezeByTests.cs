@@ -100,4 +100,60 @@ public sealed class FreezeByTests
         Assert.Null(read.Value.By);
         Assert.Equal(FreezeBy.Machine, read.Value.FrozenBy);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Freezing_as_owner_a_hash_the_machine_froze_reports_the_stored_record_and_records_nothing()
+    {
+        var log = new InMemoryFreezeLog();
+        var inspector = new PacketInspector(
+            new InMemoryPacketSource().With("pkt", PacketFiles.Of(A.Packet().Build())),
+            new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles));
+        var first = await new FreezePacketService(inspector, log, new FakeTimeProvider(_now)).Handle(new FreezePacketRequest("pkt"), CancellationToken.None);
+        var later = await new FreezePacketService(inspector, log, new FakeTimeProvider(_now.AddDays(1)))
+            .Handle(new FreezePacketRequest("pkt", RepoDirectory: null, By: FreezeBy.Owner), CancellationToken.None);
+
+        Assert.Null(first.Value.AlreadyFrozenBy);
+        Assert.True(later.Value.Frozen);
+        Assert.True(later.Value.AlreadyFrozen);
+        Assert.Equal((FreezeBy.Machine, FreezeBy.Machine, _now), (later.Value.By, later.Value.AlreadyFrozenBy, later.Value.FrozenAt));
+        var record = Assert.Single(log.Records).Value;
+        Assert.Equal((FreezeBy.Machine, _now), (record.FrozenBy, record.FrozenAt));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Freezing_again_by_the_same_who_has_no_already_frozen_by()
+    {
+        var log = new InMemoryFreezeLog();
+        var inspector = new PacketInspector(
+            new InMemoryPacketSource().With("pkt", PacketFiles.Of(A.Packet().Build())),
+            new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles));
+        var service = new FreezePacketService(inspector, log, new FakeTimeProvider(_now));
+        _ = await service.Handle(new FreezePacketRequest("pkt"), CancellationToken.None);
+
+        var again = await service.Handle(new FreezePacketRequest("pkt"), CancellationToken.None);
+
+        Assert.True(again.Value.AlreadyFrozen);
+        Assert.Null(again.Value.AlreadyFrozenBy);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_line_and_scoping_freezes_report_the_stored_record_too()
+    {
+        var log = new InMemoryFreezeLog();
+        var lines = new LinePacketInspector(
+            new InMemoryLinePacketSource().With("pkt", A.LinePacket(PacketKinds.Design).Build()),
+            new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles),
+            PacketFiles.Json);
+        var scoping = new InMemoryScopingPacketSource().With("pkt", A.ScopingPacket().Build());
+        _ = await new FreezeLinePacketService(lines, log, new FakeTimeProvider(_now)).Handle(new FreezeLinePacketRequest("design", "pkt"), CancellationToken.None);
+        _ = await new FreezeScopingPacketService(scoping, log, new FakeTimeProvider(_now), PacketFiles.Json).Handle(new FreezeScopingPacketRequest("pkt", "example/repo", "idea-1"), CancellationToken.None);
+
+        var line = await new FreezeLinePacketService(lines, log, new FakeTimeProvider(_now.AddDays(1)))
+            .Handle(new FreezeLinePacketRequest("design", "pkt", RepoDirectory: null, By: FreezeBy.Owner), CancellationToken.None);
+        var scope = await new FreezeScopingPacketService(scoping, log, new FakeTimeProvider(_now.AddDays(1)), PacketFiles.Json)
+            .Handle(new FreezeScopingPacketRequest("pkt", "example/repo", "idea-1", FreezeBy.Owner), CancellationToken.None);
+
+        Assert.Equal((FreezeBy.Machine, FreezeBy.Machine, _now), (line.Value.By, line.Value.AlreadyFrozenBy, line.Value.FrozenAt));
+        Assert.Equal((FreezeBy.Machine, FreezeBy.Machine, _now), (scope.Value.By, scope.Value.AlreadyFrozenBy, scope.Value.FrozenAt));
+    }
 }

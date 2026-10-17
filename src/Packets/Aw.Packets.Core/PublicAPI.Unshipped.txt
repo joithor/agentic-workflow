@@ -24,6 +24,7 @@ Aw.Packets.Core.Checks.CheckState.Unchecked = 3 -> Aw.Packets.Core.Checks.CheckS
 Aw.Packets.Core.Checks.PacketRules
 Aw.Packets.Core.Digest.PacketDigest
 Aw.Packets.Core.FreezeLocation
+Aw.Packets.Core.FreezeLogExtensions
 Aw.Packets.Core.Hashing.HashedPacket
 Aw.Packets.Core.Hashing.HashedPacket.<Clone>$() -> Aw.Packets.Core.Hashing.HashedPacket!
 Aw.Packets.Core.Hashing.HashedPacket.Deconstruct(out Aw.Packets.Core.Values.PacketHash Hash, out System.Collections.Generic.IReadOnlyList<string!>! Files, out Aw.Packets.Core.Model.PacketIdentity? Identity) -> void
@@ -1139,6 +1140,7 @@ static Aw.Packets.Core.Digest.PacketDigest.Compute(Aw.Packets.Core.Kinds.Scoping
 static Aw.Packets.Core.Digest.PacketDigest.Compute(Aw.Packets.Core.Model.LoadedPacket! loaded) -> Aw.Kernel.Result<Aw.Packets.Core.Values.PacketHash>!
 static Aw.Packets.Core.FreezeLocation.Of(Aw.Packets.Core.Model.FreezeRecord! record) -> string!
 static Aw.Packets.Core.FreezeLocation.Of(Aw.Packets.Core.Values.RepoSlug repo, Aw.Packets.Core.Ids.PacketId packet, Aw.Packets.Core.Values.PacketHash hash) -> string!
+static Aw.Packets.Core.FreezeLogExtensions.Stored(this Aw.Packets.Core.IFreezeLog! log, Aw.Packets.Core.Model.FreezeRecord! requested, Aw.Packets.Core.Model.FreezeReceipt! receipt, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.FreezeRecord!>!>
 static Aw.Packets.Core.Hashing.HashedPacket.operator !=(Aw.Packets.Core.Hashing.HashedPacket? left, Aw.Packets.Core.Hashing.HashedPacket? right) -> bool
 static Aw.Packets.Core.Hashing.HashedPacket.operator ==(Aw.Packets.Core.Hashing.HashedPacket? left, Aw.Packets.Core.Hashing.HashedPacket? right) -> bool
 static Aw.Packets.Core.Ids.ExampleId.From(string! value) -> Aw.Packets.Core.Ids.ExampleId

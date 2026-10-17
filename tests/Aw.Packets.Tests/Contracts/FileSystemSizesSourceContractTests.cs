@@ -18,6 +18,17 @@ public sealed class FileSystemSizesSourceContractTests : SizesSourceContract, ID
         return new RootedSizesSource(_root.Path, new FileSystemSizesSource(PacketFiles.Json));
     }
 
+    [Fact]
+    public async Task A_directory_is_not_a_sizes_file()
+    {
+        var source = Create("sizes.json", []);
+        _ = Directory.CreateDirectory(Path.Combine(_root.Path, "folder"));
+
+        var read = await source.Read("folder", TestContext.Current.CancellationToken);
+
+        Assert.Equal(PacketsErrors.SizesUnusable.Code, read.Error.Code);
+    }
+
     public void Dispose() => _root.Dispose();
 
     private sealed class RootedSizesSource(string root, ISizesSource inner) : ISizesSource

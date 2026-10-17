@@ -35,6 +35,7 @@ internal static class FreezeScopingPacketCommand
         Console.Out.WriteLine(frozen.Frozen
             ? $"aw-packets freeze: scoping packet {frozen.Instance.Value} — {(frozen.AlreadyFrozen ? "already frozen" : "frozen")} {frozen.Hash?.Value} (packets/{frozen.Location})"
             : $"aw-packets freeze: scoping packet {frozen.Instance.Value} — not frozen: {CommandOutput.Summary(frozen.Checks)}");
+        CommandOutput.AlreadyFrozenNote(frozen.AlreadyFrozenBy);
         if (!frozen.Frozen)
         {
             CommandOutput.Checks(frozen.Checks);

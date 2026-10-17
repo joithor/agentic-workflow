@@ -170,4 +170,50 @@ public sealed class VerifyPacketTests
 
         Assert.Equal(PacketsErrors.NotFound.Code, result.Error.Code);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_record_whose_own_hash_differs_from_its_location_is_not_verified()
+    {
+        _ = _builds.With("pkt", PacketFiles.Of(A.Packet().Build()));
+        var hash = (await new HashPacketService(Hasher()).Handle(new HashPacketRequest("build", "pkt"), CancellationToken.None)).Value.Hash;
+        var other = PacketHash.From("sha256:" + new string('0', 64));
+        var misplaced = new FixedFreezeLog(new FreezeRecord
+        {
+            SchemaVersion = 1,
+            Repo = RepoSlug.From("example/repo"),
+            Packet = Core.Ids.PacketId.From("demo-packet"),
+            Hash = other,
+            DigestVersion = 1,
+            FrozenAt = _now,
+            Files = ["packet.json"],
+        });
+
+        var result = await new VerifyPacketService(Hasher(), misplaced).Handle(new VerifyPacketRequest("build", "pkt", hash), CancellationToken.None);
+
+        Assert.False(result.Value.Verified);
+        Assert.Equal(false, result.Value.Frozen);
+        Assert.Contains("doesn't belong there", result.Value.Reason, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_unreadable_record_is_an_error_not_a_verdict()
+    {
+        _ = _builds.With("pkt", PacketFiles.Of(A.Packet().Build()));
+        var hash = (await new HashPacketService(Hasher()).Handle(new HashPacketRequest("build", "pkt"), CancellationToken.None)).Value.Hash;
+
+        var result = await new VerifyPacketService(Hasher(), new FixedFreezeLog(record: null)).Handle(new VerifyPacketRequest("build", "pkt", hash), CancellationToken.None);
+
+        Assert.Equal(PacketsErrors.Unreadable.Code, result.Error.Code);
+    }
+
+    private sealed class FixedFreezeLog(FreezeRecord? record) : IFreezeLog
+    {
+        public ValueTask<Kernel.Result<FreezeReceipt>> Record(FreezeRecord toWrite, CancellationToken cancellationToken) =>
+            throw new NotSupportedException("verify never writes");
+
+        public ValueTask<Kernel.Result<FreezeRecord?>> Find(PacketIdentity packet, PacketHash hash, CancellationToken cancellationToken) =>
+            ValueTask.FromResult(record is null
+                ? Kernel.Results.Failure<FreezeRecord?>(PacketsErrors.Unreadable.With("the record is malformed"))
+                : Kernel.Results.Success<FreezeRecord?>(record));
+    }
 }

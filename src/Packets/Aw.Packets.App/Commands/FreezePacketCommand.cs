@@ -34,6 +34,7 @@ internal static class FreezePacketCommand
         Console.Out.WriteLine(frozen.Frozen
             ? $"aw-packets freeze: packet {frozen.Packet.Value} — {(frozen.AlreadyFrozen ? "already frozen" : "frozen")} {frozen.Hash?.Value} (packets/{frozen.Location})"
             : $"aw-packets freeze: packet {frozen.Packet.Value} — not frozen: {CommandOutput.Summary(frozen.Checks)}");
+        CommandOutput.AlreadyFrozenNote(frozen.AlreadyFrozenBy);
         if (!frozen.Frozen)
         {
             CommandOutput.Checks(frozen.Checks);

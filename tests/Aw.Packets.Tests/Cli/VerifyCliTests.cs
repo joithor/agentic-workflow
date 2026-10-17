@@ -134,6 +134,21 @@ public sealed class VerifyCliTests : IDisposable
     }
 
     [Fact]
+    public void A_malformed_freeze_record_is_AW_PACKETS_008_exit_2()
+    {
+        var packet = _work.WritePacket(A.Packet());
+        var hash = _work.Run("hash", packet).Out.Trim();
+        _ = _work.Run("freeze", packet, "--repo", _work.Repo);
+        var record = Path.Combine(_work.State, Assert.Single(_work.StateFiles()));
+        File.WriteAllText(record, File.ReadAllText(record).Replace("\"machine\"", "\"robot\"", StringComparison.Ordinal));
+
+        var (exit, _, error) = _work.Run("verify", packet, "--hash", hash);
+
+        Assert.Equal(2, exit);
+        Assert.StartsWith("aw-packets: AW-PACKETS-008 ", error, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void A_missing_packet_is_AW_PACKETS_002_exit_2()
     {
         var (exit, _, error) = _work.Run("verify", Path.Combine(_work.Root, "nowhere"), "--hash", "sha256:" + new string('0', 64));

@@ -68,6 +68,37 @@ public sealed class FreezeByCliTests : IDisposable
         Assert.Equal("owner", StoredBy());
     }
 
+    [Fact]
+    public void An_owner_freeze_of_a_machine_frozen_hash_exits_0_says_it_was_not_recorded_and_keeps_machine()
+    {
+        var packet = _work.WritePacket(A.Packet());
+        _ = _work.Run("freeze", packet, "--repo", _work.Repo);
+
+        var (exit, output, _) = _work.Run("freeze", packet, "--by", "owner", "--repo", _work.Repo);
+        var (jsonExit, jsonOutput, _) = _work.Run("freeze", packet, "--by", "owner", "--repo", _work.Repo, "--json");
+
+        Assert.Equal((0, 0), (exit, jsonExit));
+        Assert.Contains("already frozen sha256:", output, StringComparison.Ordinal);
+        Assert.Contains("note: alreadyFrozenBy machine", output, StringComparison.Ordinal);
+        using var json = JsonDocument.Parse(jsonOutput);
+        Assert.Equal(("machine", "machine", true), (
+            json.RootElement.GetProperty("by").GetString(),
+            json.RootElement.GetProperty("alreadyFrozenBy").GetString(),
+            json.RootElement.GetProperty("alreadyFrozen").GetBoolean()));
+        Assert.Equal("machine", StoredBy());
+    }
+
+    [Fact]
+    public void A_repeat_freeze_by_the_same_who_has_no_note()
+    {
+        var packet = _work.WritePacket(A.Packet());
+        _ = _work.Run("freeze", packet, "--by", "owner", "--repo", _work.Repo);
+
+        var (_, output, _) = _work.Run("freeze", packet, "--by", "owner", "--repo", _work.Repo);
+
+        Assert.DoesNotContain("alreadyFrozenBy", output, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("freeze", "x", "--by")]
     [InlineData("freeze", "x", "--by", "robot")]

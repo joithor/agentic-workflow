@@ -41,6 +41,7 @@ internal static class FreezeLinePacketCommand
             ? $"{(frozen.AlreadyFrozen ? "already frozen" : "frozen")} {frozen.Hash?.Value} (packets/{frozen.Location})"
             : $"not frozen: {CommandOutput.Summary(frozen.Checks)}";
         Console.Out.WriteLine($"aw-packets freeze: {kind.Name} packet {name} — {outcome}");
+        CommandOutput.AlreadyFrozenNote(frozen.AlreadyFrozenBy);
         if (!frozen.Frozen)
         {
             CommandOutput.Checks(frozen.Checks);

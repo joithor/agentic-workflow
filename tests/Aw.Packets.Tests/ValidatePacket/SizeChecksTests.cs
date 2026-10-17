@@ -74,6 +74,19 @@ public sealed class SizeChecksTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_task_exactly_at_each_limit_of_its_size_passes()
+    {
+        var packet = A.Packet().With(A.Task("t1").Sized(SizeClass.ExtraSmall).Writing("src/**", "new: src/c.cs")
+            .Example("e1", holdout: false, "test").Example("h1", holdout: true, "test")
+            .Budgeted(new TaskBudget { Tokens = 50_000, Turns = 20, WallMinutes = 30 }));
+        var sizes = A.Sizes() with { Sizes = A.Sizes().Sizes with { ExtraSmall = SizesBuilder.Limit(files: 3, items: 2, tokens: 50_000, turns: 20, wallMinutes: 30) } };
+
+        var check = Single(await Check(packet, sizes));
+
+        Assert.Equal(CheckState.Pass, check.State);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_task_with_more_acceptance_items_than_its_size_allows_fails_and_held_out_ones_count()
     {
         var packet = A.Packet().With(A.Task("t1").Sized(SizeClass.ExtraSmall).Example("e1", holdout: false, "test").Example("e2", holdout: false, "test").Example("h1", holdout: true, "test"));

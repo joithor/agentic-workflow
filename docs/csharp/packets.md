@@ -72,7 +72,7 @@ All five sizes are present. A limit is zero or more; a `budget` field left out i
 - its `budget.tokens`, `turns` or `wallMinutes` exceed the limit (a field the task leaves out is not compared).
 
 The failure is one record per task, naming each limit it is over, with the fix (split the task or raise its size). It is
-`unchecked` when the base commit can't be read (the files can't be counted). A sizes file that is missing, unreadable,
+`unchecked` when the base commit can't be read (the files can't be counted). A sizes file that is missing, not a regular file, unreadable,
 larger than 64 KB, malformed, not `schemaVersion` 1 or with a negative limit is `AW-PACKETS-009` (exit 2), never a check
 result. `freeze` takes no `--sizes` (Sindri validates first).
 
@@ -86,9 +86,9 @@ application takes over once it exists, spec §4c; Sindri is built new, not porte
 
 **Who froze it (`--by owner|machine`, LN-PKT5, line spec §2).** `freeze` takes `--by` for every kind (default `machine`); it is
 stored as `by` in the `FreezeRecord` and printed by `verify`. `step.build.amend` and the stop blocks pass `owner`, every other
-freeze `machine`. A record from before `by` existed has no `by` and reads as `machine` (every such freeze was a machine
+freeze `machine`. A freeze is write-once: freezing a hash that is already frozen writes nothing and keeps the first record, `by` and `frozenAt` included, there is no upgrade from `machine` to `owner`. The response and the text report the **stored** record's `by` and `frozenAt`, and when the stored `by` is not the one this call asked for (an `--by owner` freeze of a hash a machine froze first) they add `alreadyFrozenBy: <stored by>` (JSON) and a `note: alreadyFrozenBy …` line (text): the exit stays 0 (it is frozen), but the owner's freeze was not recorded. So Sindri must freeze as `owner` first when the owner's freeze has to be provable, and check `alreadyFrozenBy`/`verify`'s `by` otherwise. A record from before `by` existed has no `by` and reads as `machine` (every such freeze was a machine
 freeze); `verify` prints it so. The record is not part of the digest, so `by` never changes a hash. Freezing a hash that is
-already frozen writes nothing and keeps the first record's `by`.
+already frozen writes nothing and keeps the first record's `by` (above).
 
 **The hash (`digestVersion` 1, spec §4c Digests):** SHA-256 over the canonical JSON of
 `{"digestVersion":1,"files":{<path>:<entry>}}`. A JSON packet file's entry is the file itself without its `$schema` editor hint (and `packet.json` without

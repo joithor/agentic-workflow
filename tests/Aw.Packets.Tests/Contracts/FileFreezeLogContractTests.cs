@@ -24,6 +24,13 @@ public sealed class FileFreezeLogContractTests : FreezeLogContract, IDisposable
         return new FileFreezeLog(new PacketsSettings(file), _json);
     }
 
+    protected override bool CorruptRecord(IFreezeLog log)
+    {
+        var file = Directory.EnumerateFiles(Path.Combine(_state.Path, "packets"), "*", SearchOption.AllDirectories).Single();
+        File.WriteAllText(file, File.ReadAllText(file).Replace("\"machine\"", "\"robot\"", StringComparison.Ordinal));
+        return true;
+    }
+
     protected override IReadOnlyList<FreezeRecord> ReadBack(IFreezeLog log)
     {
         var root = Path.Combine(_state.Path, "packets");

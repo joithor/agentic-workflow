@@ -48,8 +48,33 @@ internal sealed class FreezeScopingPacketService(IScopingPacketSource source, IF
         }
 
         var record = Record(request, instance, hash.Value);
-        var receipt = await log.Record(record, cancellationToken).ConfigureAwait(false);
-        return receipt.Map(r => notFrozen with { Frozen = true, Hash = hash.Value, Location = r.Location, AlreadyFrozen = r.AlreadyFrozen });
+        return await Complete(request, notFrozen, record, hash.Value, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async ValueTask<Result<FreezeScopingPacketResponse>> Complete(FreezeScopingPacketRequest request, FreezeScopingPacketResponse notFrozen, FreezeRecord recorded, PacketHash hash, CancellationToken cancellationToken)
+    {
+        var receipt = await log.Record(recorded, cancellationToken).ConfigureAwait(false);
+        if (receipt.IsError)
+        {
+            return receipt.Error;
+        }
+
+        var stored = await log.Stored(recorded, receipt.Value, cancellationToken).ConfigureAwait(false);
+        if (stored.IsError)
+        {
+            return stored.Error;
+        }
+
+        return notFrozen with
+        {
+            Frozen = true,
+            Hash = hash,
+            Location = receipt.Value.Location,
+            AlreadyFrozen = receipt.Value.AlreadyFrozen,
+            By = stored.Value.FrozenBy,
+            FrozenAt = stored.Value.FrozenAt,
+            AlreadyFrozenBy = receipt.Value.AlreadyFrozen && stored.Value.FrozenBy != request.By ? stored.Value.FrozenBy : null,
+        };
     }
 
     private FreezeRecord Record(FreezeScopingPacketRequest request, PacketId instance, PacketHash hash) => new()
