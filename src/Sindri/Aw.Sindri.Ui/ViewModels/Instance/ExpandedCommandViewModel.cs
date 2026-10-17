@@ -15,7 +15,8 @@ internal sealed class ExpandedCommandViewModel : ObservableObject
     internal ExpandedCommandViewModel(StatusCommand command, AnswerKind? answer, string address, IClipboard clipboard, TimeProvider clock)
     {
         Verb = command.Verb;
-        Label = Labels.CommandLabel(command.Verb, command.Verb == StatusVerb.Answer ? answer : null);
+        // Each answer variant is its own entry (answer-accept, answer-reject, ...), named by its own action id rather than the status line's kind.
+        Label = command.Verb == StatusVerb.Answer && Labels.HasLabel(command.ActionId) ? Labels.Action(command.ActionId) : Labels.CommandLabel(command.Verb, command.Verb == StatusVerb.Answer ? answer : null);
         var isProtected = string.Equals(command.Class, "protected", StringComparison.Ordinal);
         PendingChip = isProtected ? string.Empty : Labels.AvailableWithU8b;
         Name = Labels.CommandName(Label, address, PendingChip);

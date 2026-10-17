@@ -9,14 +9,24 @@ internal static class LensTexts
     internal static LensesView Clean(LensesView view, MapText text) => view with
     {
         Anchor = view.Anchor with { Label = text.Label(view.Anchor.Label, view.Anchor.Trust) },
-        Bands = new LensBands(Intent(view.Bands.Intent, text), Product(view.Bands.Product, text), Code(view.Bands.Code, text)),
+        Bands = Bands(view.Bands, text),
     };
+
+    internal static LensesSetView Clean(LensesSetView view, MapText text) => view with
+    {
+        Anchors = [.. view.Anchors.Select(a => a with { Label = text.Label(a.Label, a.Trust) })],
+        MissingAnchors = [.. view.MissingAnchors.Select(text.Line)],
+        Bands = Bands(view.Bands, text),
+    };
+
+    private static LensBands Bands(LensBands bands, MapText text) => new(Intent(bands.Intent, text), Product(bands.Product, text), Code(bands.Code, text));
 
     private static IntentBand Intent(IntentBand band, MapText text) => band with
     {
         Records = [.. band.Records.Select(r => r with { Label = text.Label(r.Label, r.Trust) })],
         Decisions = [.. band.Decisions.Select(d => d with
         {
+            Label = text.Label(d.Label, d.Trust),
             Text = text.Body(d.Text, d.Trust),
             Quote = d.Quote is { } q ? q with { Text = text.Body(q.Text, q.Trust) } : null,
         })],
@@ -31,5 +41,5 @@ internal static class LensTexts
 
     private static LensReach Reach(LensReach reach, MapText text) => reach with { Label = text.Label(reach.Label, reach.Trust), Path = [.. reach.Path.Select(text.Line)] };
 
-    private static CodeBand Code(CodeBand band, MapText text) => band with { Files = [.. band.Files.Select(f => f with { Path = text.Line(f.Path) })] };
+    private static CodeBand Code(CodeBand band, MapText text) => band with { Files = [.. band.Files.Select(f => f with { Path = text.Line(f.Path), Label = text.Line(f.Path) })] };
 }

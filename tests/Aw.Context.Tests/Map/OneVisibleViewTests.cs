@@ -220,7 +220,7 @@ public sealed class OneVisibleViewTests : IDisposable
         var exported = (await _world.Map.ExportMap(path: null, scope, MapWorld.None)).Value;
         var document = _world.Exports.Documents[exported.Path];
 
-        Assert.Equivalent(lenses.Coverage, status.Coverage);
+        Assert.Equivalent(lenses.Coverage with { Map = null }, status.Coverage);
         Assert.Equal(status.Counts, exported.Counts);
         Assert.Equal(status.Counts.Nodes, document.Nodes.Count);
         Assert.Equal(0, status.Orphaned);

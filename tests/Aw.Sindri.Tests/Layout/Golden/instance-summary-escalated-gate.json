@@ -127,6 +127,7 @@
   },
   "actions": [
     "ApplyCommand:answer-accept",
+    "ApplyCommand:answer-reject",
     "ApplyCommand:takeover",
     "ApplyCommand:cancel"
   ]

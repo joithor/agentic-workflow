@@ -18,6 +18,7 @@ namespace Aw.Sindri.Ui.Api;
 /// <param name="Actions">The catalog ids of every action.</param>
 /// <param name="Cli">The one command to copy.</param>
 /// <param name="Chip">The served chip (U3'-API-9); null until the API serves one.</param>
+/// <param name="Via">"child" on a row whose cli points at a child that decides the answer, else null (omitted).</param>
 internal sealed record NeedsYouRowView(
     string Id,
     string Kind,
@@ -35,4 +36,5 @@ internal sealed record NeedsYouRowView(
     string? PrimaryAction,
     IReadOnlyList<string> Actions,
     string Cli,
-    Workflow.StateChip? Chip = null);
+    Workflow.StateChip? Chip = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? Via = null);
