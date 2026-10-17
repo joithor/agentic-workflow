@@ -28,7 +28,7 @@ internal static class MacFormat
         }
 
         var pageSize = Digits(vmStat.AsSpan(marker + PageSizeMarker.Length));
-        return (Pages(vmStat, "Pages free") + Pages(vmStat, "Pages inactive") + Pages(vmStat, "Pages speculative")) * pageSize / BytesPerKb;
+        return checked((Pages(vmStat, "Pages free") + Pages(vmStat, "Pages inactive") + Pages(vmStat, "Pages speculative")) * pageSize / BytesPerKb);
     }
 
     /// <summary>The swap total and used, in kilobytes, from "sysctl -n vm.swapusage".</summary>
@@ -60,7 +60,7 @@ internal static class MacFormat
             || !int.TryParse(columns[0], NumberStyles.None, CultureInfo.InvariantCulture, out var pid)
             || !int.TryParse(columns[1], NumberStyles.None, CultureInfo.InvariantCulture, out var ppid)
             || !long.TryParse(columns[3], NumberStyles.None, CultureInfo.InvariantCulture, out var rss)
-            || ElapsedSeconds(columns[2]) is not { } age)
+            || Elapsed(columns[2]) is not { } age)
         {
             return null;
         }
@@ -72,7 +72,17 @@ internal static class MacFormat
     /// <summary>The seconds of a ps elapsed time, [[dd-]hh:]mm:ss.</summary>
     /// <param name="etime">The text.</param>
     /// <returns>Seconds, or null when it isn't one.</returns>
-    internal static long? Elapsed(string etime) => ElapsedSeconds(etime);
+    internal static long? Elapsed(string etime)
+    {
+        try
+        {
+            return ElapsedSeconds(etime);
+        }
+        catch (OverflowException)
+        {
+            return null;
+        }
+    }
 
     // ps etime: [[dd-]hh:]mm:ss
     private static long? ElapsedSeconds(string etime)
@@ -98,10 +108,10 @@ internal static class MacFormat
                 return null;
             }
 
-            seconds = (seconds * 60) + value;
+            seconds = checked((seconds * 60) + value);
         }
 
-        return (days * 86_400) + seconds;
+        return checked((days * 86_400) + seconds);
     }
 
     private static long Pages(string vmStat, string key)
@@ -142,6 +152,6 @@ internal static class MacFormat
         var unit = length < text.Length ? text[length] : 'K';
         var number = double.Parse(text[..length].ToString().Replace(',', '.'), NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture);
         var factor = unit switch { 'G' => BytesPerKb * BytesPerKb, 'M' => BytesPerKb, 'K' => 1, _ => throw new FormatException("unknown swap unit " + unit) };
-        return (long)Math.Round(number * factor, MidpointRounding.AwayFromZero);
+        return checked((long)Math.Round(number * factor, MidpointRounding.AwayFromZero));
     }
 }

@@ -22,8 +22,7 @@ internal sealed class MacHostReader(string stateDirectory, ICommandRunner runner
     /// <returns>Kilobytes, or AW-META-010.</returns>
     internal async ValueTask<Result<long>> TotalMemoryKb(CancellationToken cancellationToken)
     {
-        _ = paths;
-        var total = await MacTools.Output(runner, ["sysctl", "-n", "hw.memsize"], cancellationToken).ConfigureAwait(false);
+        var total = await MacTools.Output(runner, [paths.Sysctl, "-n", "hw.memsize"], cancellationToken).ConfigureAwait(false);
         return total.IsError ? total.Error : Parsed(() => MacFormat.MemTotalKb(total.Value));
     }
 
@@ -32,8 +31,8 @@ internal sealed class MacHostReader(string stateDirectory, ICommandRunner runner
     /// <returns>The figures, or the first tool's AW-META-010.</returns>
     internal async ValueTask<Result<MacMemory>> Memory(CancellationToken cancellationToken)
     {
-        var vm = await MacTools.Output(runner, ["vm_stat"], cancellationToken).ConfigureAwait(false);
-        var swap = await MacTools.Output(runner, ["sysctl", "-n", "vm.swapusage"], cancellationToken).ConfigureAwait(false);
+        var vm = await MacTools.Output(runner, [paths.VmStat], cancellationToken).ConfigureAwait(false);
+        var swap = await MacTools.Output(runner, [paths.Sysctl, "-n", "vm.swapusage"], cancellationToken).ConfigureAwait(false);
         if (vm.IsError || swap.IsError)
         {
             return vm.IsError ? vm.Error : swap.Error;
@@ -51,7 +50,7 @@ internal sealed class MacHostReader(string stateDirectory, ICommandRunner runner
     /// <returns>The processes, or AW-META-010.</returns>
     internal async ValueTask<Result<IReadOnlyList<ProcessInfo>>> Processes(CancellationToken cancellationToken)
     {
-        var ps = await MacTools.Output(runner, ["ps", "-axww", "-o", "pid=,ppid=,etime=,rss=,stat=,args="], cancellationToken).ConfigureAwait(false);
+        var ps = await MacTools.Output(runner, [paths.Ps, "-axww", "-o", "pid=,ppid=,etime=,rss=,stat=,args="], cancellationToken).ConfigureAwait(false);
         return ps.IsError ? ps.Error : Parsed(() => MacFormat.Processes(ps.Value));
     }
 
@@ -61,11 +60,11 @@ internal sealed class MacHostReader(string stateDirectory, ICommandRunner runner
     /// <returns>The age, null for no process, or AW-META-010.</returns>
     internal async ValueTask<Result<TimeSpan?>> ProcessAge(int pid, CancellationToken cancellationToken)
     {
-        var argv = new[] { "ps", "-o", "etime=", "-p", pid.ToString(CultureInfo.InvariantCulture) };
+        var argv = new[] { paths.Ps, "-o", "etime=", "-p", pid.ToString(CultureInfo.InvariantCulture) };
         var ran = await runner.Run(new Core.Commands.CommandRequest(argv, TimeSpan.FromSeconds(15)), cancellationToken).ConfigureAwait(false);
         if (ran.IsError)
         {
-            return MetaErrors.HostUnreadable.With($"unavailable on macOS: ps could not be run ({ran.Error.Message})");
+            return MetaErrors.HostUnreadable.With($"unavailable on macOS: ps could not be run ({MacTools.Clip(ran.Error.Message)})");
         }
 
         if (ran.Value.TimedOut)
@@ -73,8 +72,13 @@ internal sealed class MacHostReader(string stateDirectory, ICommandRunner runner
             return MetaErrors.HostUnreadable.With("unavailable on macOS: ps timed out");
         }
 
-        // ps -p exits 1 and prints nothing for a pid that is not running
+        // ps -p exits 1 and prints nothing for a pid that is not running; any other failure is the tool's, not an answer
         var text = ran.Value.Stdout.Trim();
+        if (ran.Value.ExitCode > 1 || (ran.Value.ExitCode == 1 && text.Length > 0))
+        {
+            return MetaErrors.HostUnreadable.With(string.Create(CultureInfo.InvariantCulture, $"unavailable on macOS: {paths.Ps} exited {ran.Value.ExitCode}: {MacTools.Clip(ran.Value.Stderr.Trim())}"));
+        }
+
         if (text.Length == 0)
         {
             TimeSpan? none = null;
@@ -92,7 +96,7 @@ internal sealed class MacHostReader(string stateDirectory, ICommandRunner runner
     /// <returns>Success, or AW-META-010.</returns>
     internal async ValueTask<Result<Unit>> Terminate(int pid, CancellationToken cancellationToken)
     {
-        var killed = await MacTools.Output(runner, ["kill", "-TERM", pid.ToString(CultureInfo.InvariantCulture)], cancellationToken).ConfigureAwait(false);
+        var killed = await MacTools.Output(runner, [paths.Kill, "-TERM", pid.ToString(CultureInfo.InvariantCulture)], cancellationToken).ConfigureAwait(false);
         return killed.IsError ? killed.Error : Results.Ok();
     }
 
@@ -102,7 +106,7 @@ internal sealed class MacHostReader(string stateDirectory, ICommandRunner runner
         {
             return parse();
         }
-        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or FormatException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or FormatException or OverflowException)
         {
             return MetaErrors.HostUnreadable.With("unavailable on macOS: " + exception.Message);
         }

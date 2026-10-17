@@ -10,6 +10,5 @@ public static class ProcessStart
     /// <param name="startedAt">When the running process started.</param>
     /// <param name="recordedAt">When the session or lock file was last written.</param>
     /// <returns>True when the pid was reused.</returns>
-    public static bool IsReused(DateTimeOffset startedAt, DateTimeOffset recordedAt) =>
-        throw new NotSupportedException("red: the pid-reuse rule");
+    public static bool IsReused(DateTimeOffset startedAt, DateTimeOffset recordedAt) => startedAt > recordedAt + Tolerance;
 }

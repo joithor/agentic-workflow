@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Meta.Core;
 using Aw.Meta.Core.Health;
 using Aw.Meta.Core.Ports;
 
@@ -8,13 +9,16 @@ namespace Aw.Meta.Infrastructure.Files;
 /// <param name="os">The OS's name.</param>
 internal sealed class UnsupportedHost(string os) : IProcessTable, IHostResources, IProcessLiveness
 {
-    public ValueTask<Result<HostSnapshot>> Snapshot(CancellationToken cancellationToken) => throw new NotSupportedException("red: " + os);
+    public ValueTask<Result<HostSnapshot>> Snapshot(CancellationToken cancellationToken) => Unavailable<HostSnapshot>();
 
-    public ValueTask<Result<Unit>> Terminate(int pid, CancellationToken cancellationToken) => throw new NotSupportedException("red: " + os);
+    public ValueTask<Result<Unit>> Terminate(int pid, CancellationToken cancellationToken) => Unavailable<Unit>();
 
-    public ValueTask<Result<HostResources>> Read(CancellationToken cancellationToken) => throw new NotSupportedException("red: " + os);
+    public ValueTask<Result<HostResources>> Read(CancellationToken cancellationToken) => Unavailable<HostResources>();
 
-    public ValueTask<Result<IReadOnlyList<HeavyLock>>> HeavyLocks(CancellationToken cancellationToken) => throw new NotSupportedException("red: " + os);
+    public ValueTask<Result<IReadOnlyList<HeavyLock>>> HeavyLocks(CancellationToken cancellationToken) => Unavailable<IReadOnlyList<HeavyLock>>();
 
-    public ValueTask<Result<bool>> IsRunning(int pid, DateTimeOffset recordedAt, CancellationToken cancellationToken) => throw new NotSupportedException("red: " + os);
+    public ValueTask<Result<bool>> IsRunning(int pid, DateTimeOffset recordedAt, CancellationToken cancellationToken) => Unavailable<bool>();
+
+    private ValueTask<Result<T>> Unavailable<T>() =>
+        ValueTask.FromResult(Results.Failure<T>(MetaErrors.HostUnreadable.With($"unavailable on {os}: aw-meta reads the process table and memory on Linux and macOS only")));
 }

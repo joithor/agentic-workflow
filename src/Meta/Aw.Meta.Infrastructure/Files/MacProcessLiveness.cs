@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Meta.Core.Health;
 using Aw.Meta.Core.Ports;
 
 namespace Aw.Meta.Infrastructure.Files;
@@ -8,9 +9,19 @@ namespace Aw.Meta.Infrastructure.Files;
 /// <param name="time">The clock the start time is computed from.</param>
 internal sealed class MacProcessLiveness(MacHostReader reader, TimeProvider time) : IProcessLiveness
 {
-    public ValueTask<Result<bool>> IsRunning(int pid, DateTimeOffset recordedAt, CancellationToken cancellationToken)
+    public async ValueTask<Result<bool>> IsRunning(int pid, DateTimeOffset recordedAt, CancellationToken cancellationToken)
     {
-        _ = (reader, time, pid, recordedAt, cancellationToken);
-        throw new NotSupportedException("red: liveness by start time");
+        if (pid <= 0)
+        {
+            return false;
+        }
+
+        var age = await reader.ProcessAge(pid, cancellationToken).ConfigureAwait(false);
+        if (age.IsError)
+        {
+            return age.Error;
+        }
+
+        return age.Value is { } running && !ProcessStart.IsReused(time.GetUtcNow() - running, recordedAt);
     }
 }
