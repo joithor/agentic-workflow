@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using Aw.Kernel;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
+using Aw.Sindri.Core.Sessions;
 
 namespace Aw.Sindri.Infrastructure.Launch.Usage;
 
@@ -13,10 +14,14 @@ namespace Aw.Sindri.Infrastructure.Launch.Usage;
 /// <param name="catalog">The catalog, which names each entry's reader.</param>
 /// <param name="readers">The readers by name.</param>
 /// <param name="clock">The time and the local zone.</param>
-internal sealed class UsageSpend(IAgentCatalog catalog, IReadOnlyDictionary<string, IUsageReader> readers, TimeProvider clock) : ILaunchSpend
+internal sealed class UsageSpend(IAgentCatalog catalog, IReadOnlyDictionary<string, IUsageReader> readers, TimeProvider clock) : ILaunchSpend, ILaunchUsage
 {
     private static readonly TimeSpan _fresh = TimeSpan.FromSeconds(15);
     private readonly ConcurrentDictionary<AgentId, (DateTimeOffset At, DateOnly Day, AgentSpend Spend)> _read = new();
+
+    /// <inheritdoc/>
+    public async ValueTask<IReadOnlyList<ModelTokens>?> OfSession(AgentId target, SessionId session, CancellationToken cancellationToken) =>
+        catalog.Resolve(target)?.Usage is { } name && readers.TryGetValue(name, out var reader) ? await reader.OfSession(session, cancellationToken).ConfigureAwait(false) : null;
 
     /// <inheritdoc/>
     public async ValueTask<Result<AgentSpend?>> Today(AgentId target, CancellationToken cancellationToken)

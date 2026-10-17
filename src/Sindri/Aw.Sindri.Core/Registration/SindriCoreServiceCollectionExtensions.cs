@@ -59,6 +59,7 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<IProjection, LaunchesProjection>()
             .AddSingleton<ILaunchViews, LaunchViews>()
             .AddSingleton<LaunchLiveness>()
+            .AddSingleton<UsageSamples>()
             .AddScoped<ReportedIdAdmission>()
             .AddScoped<LaunchSessionEvents>()
             .AddScoped<RecipeApprovalPlanner>()

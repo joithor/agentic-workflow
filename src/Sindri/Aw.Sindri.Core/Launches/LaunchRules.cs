@@ -9,6 +9,9 @@ public static class LaunchRules
     /// <summary>How long a session may stay silent before it ends as lost (API spec §8.1).</summary>
     public static TimeSpan LostAfter { get; } = TimeSpan.FromSeconds(120);
 
+    /// <summary>How often a live session's usage is sampled (SCR E-28).</summary>
+    public static TimeSpan UsageEvery { get; } = TimeSpan.FromSeconds(60);
+
     /// <summary>How often 'session wrap' sends a heartbeat (API spec §8.1).</summary>
     public static TimeSpan HeartbeatEvery { get; } = TimeSpan.FromSeconds(30);
 
