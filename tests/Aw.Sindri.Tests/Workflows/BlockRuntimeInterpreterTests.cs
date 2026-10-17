@@ -76,11 +76,7 @@ public sealed class BlockRuntimeInterpreterTests : IDisposable
         var fake = FakeBlockStep.Hanging();
         await Run(fake, maxDuration: null, async handle =>
         {
-            while (fake.Runs == 0)
-            {
-                await Task.Delay(50, ct);
-            }
-
+            await WaitFor(() => fake.Runs > 0, ct);
             var stamp = new CommandStamp(CommandNonce.From(new string('c', 32)), new string('1', 64));
             var cancelled = await handle.ExecuteUpdateAsync(wf => wf.CancelAsync(new CancelRequested("human:cli", CancelOrigin.Command, stamp, Sequence: null, Parent: null)), new WorkflowUpdateOptions(new string('c', 32)));
 
@@ -121,7 +117,8 @@ public sealed class BlockRuntimeInterpreterTests : IDisposable
             };
             var handle = await WorkflowsHarness.Start(env.Client, start with { Inputs = inputs });
             await body(handle);
-            var replayed = await new WorkflowReplayer(new WorkflowReplayerOptions().AddWorkflow<RecipeWorkflow>()).ReplayWorkflowAsync(await handle.FetchHistoryAsync(), throwOnReplayFailure: false, ct);
+            var hist = await handle.FetchHistoryAsync();
+            var replayed = await new WorkflowReplayer(new WorkflowReplayerOptions().AddWorkflow<RecipeWorkflow>()).ReplayWorkflowAsync(hist, throwOnReplayFailure: false, ct);
             Assert.Null(replayed.ReplayFailure);
             if ((await handle.DescribeAsync()).Status == Temporalio.Api.Enums.V1.WorkflowExecutionStatus.Running)
             {

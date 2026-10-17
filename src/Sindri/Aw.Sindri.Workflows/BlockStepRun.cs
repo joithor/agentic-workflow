@@ -1,6 +1,6 @@
-using System.Text.Json;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
@@ -11,4 +11,4 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="Step">The Step's block id.</param>
 /// <param name="Arguments">Its 'with:' arguments, as the recipe wrote them.</param>
 /// <param name="Facts">The instance's facts as stored references; the activity reads the content the Step names, so no fact content enters the workflow's history.</param>
-internal sealed record BlockStepRun(string Address, string State, string Token, BlockId Step, IReadOnlyDictionary<string, JsonElement> Arguments, IReadOnlyDictionary<FactKey, FactValue> Facts);
+internal sealed record BlockStepRun(string Address, string State, string Token, BlockId Step, IReadOnlyDictionary<string, WithValue> Arguments, IReadOnlyDictionary<FactKey, FactValue> Facts);
