@@ -32,7 +32,7 @@ public sealed class PacketSchemaTests
     [
         "packet", "decisions", "out-of-scope", "tasks", "freeze-record", "lenses",
         "design-packet", "plan-packet", "phase-packet", "proof-packet", "review-packet", "handoff-packet",
-        "index", "acceptance", "phase", "phase-holdout", "pull-request",
+        "index", "acceptance", "phase", "phase-holdout", "pull-request", "sizes",
     ];
 
     [Theory, Trait("Lane", "integration")]   // reads (and in update mode writes) schemas/packets/
@@ -57,6 +57,7 @@ public sealed class PacketSchemaTests
             "phase" => typeof(PhaseFile),
             "phase-holdout" => typeof(PhaseHoldout),
             "pull-request" => typeof(PullRequestFile),
+            "sizes" => typeof(SizesFile),
             _ => typeof(FreezeRecord),
         };
         var actual = Render(Generate(type, name));
