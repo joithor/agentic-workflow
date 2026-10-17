@@ -18,9 +18,9 @@ public sealed class SessionHeartbeatTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private SessionHeartbeatService Service(params Aw.Sindri.Core.Launch.AgentEntry[] catalog) => new(_s.Events(catalog));
+    private SessionHeartbeatService Service(params Core.Launch.AgentEntry[] catalog) => new(_s.Events(catalog));
 
-    private IReadOnlyList<Aw.Sindri.Core.Ledger.LedgerEvent> Recorded() => _s.Views.Slice.Store.Events;
+    private IReadOnlyList<Core.Ledger.LedgerEvent> Recorded() => _s.Views.Slice.Store.Events;
 
     [Fact]
     public async Task SessionHeartbeat_refuses_a_wrong_launch_secret()

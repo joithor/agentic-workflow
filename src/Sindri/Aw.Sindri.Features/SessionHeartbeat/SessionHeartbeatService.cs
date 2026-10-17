@@ -11,9 +11,16 @@ namespace Aw.Sindri.Features.SessionHeartbeat;
 /// <param name="session">The session events and the secret check.</param>
 internal sealed class SessionHeartbeatService(LaunchSessionEvents session) : IService<SessionHeartbeatRequest, SessionHeartbeatResponse>
 {
-    public ValueTask<Result<SessionHeartbeatResponse>> Handle(SessionHeartbeatRequest request, CancellationToken cancellationToken)
+    public async ValueTask<Result<SessionHeartbeatResponse>> Handle(SessionHeartbeatRequest request, CancellationToken cancellationToken)
     {
-        _ = session;
-        throw new NotSupportedException("SessionHeartbeat: make SessionHeartbeatTests pass");
+        ArgumentNullException.ThrowIfNull(request);
+        var proven = session.Verify(request.LaunchId, request.Secret);
+        if (proven.IsError)
+        {
+            return proven.Error;
+        }
+
+        var beat = await session.Beat(request.LaunchId, request.SessionId, cancellationToken).ConfigureAwait(false);
+        return beat.IsError ? beat.Error : new SessionHeartbeatResponse(request.LaunchId);
     }
 }

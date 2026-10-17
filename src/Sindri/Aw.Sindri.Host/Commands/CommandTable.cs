@@ -8,7 +8,6 @@ using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Profile;
 
 using Aw.Sindri.Host.Commands.Probe;
-using Aw.Sindri.Host.Commands.SessionWrap;
 
 namespace Aw.Sindri.Host.Commands;
 
@@ -86,7 +85,7 @@ internal static class CommandTable
             ["request" or "requests" or "decisions" or "decide" or "needs-you", ..] => await new RequestVerbs(client, output, (launch, c) => start.EnsureRunning(launch, c)).Run(args, ct).ConfigureAwait(false),
             ["ledger", .. var rest] => await new LedgerVerbs(client, output, (launch, c) => start.EnsureRunning(launch, c)).Run(rest, ct).ConfigureAwait(false),
             ["services" or "jobs", ..] => await JobCommands.Run(args, (client, output), start.EnsureRunning, services.GetRequiredService<TimeProvider>(), (ct, interrupt.Again)).ConfigureAwait(false),
-            ["launch" or "session", ..] => await LaunchOrSession(args, client, output, services, environment, ct).ConfigureAwait(false),
+            ["launch" or "session", ..] => await LaunchOrSession(args, client, (output, environment), services, ct).ConfigureAwait(false),
             ["doctor", ..] => await Doctor(args, verbs, Harnesses(services, environment), output, ct).ConfigureAwait(false),
             ["mcp", .. var rest] => await new McpVerbs(services, output, session).Run(rest, ct).ConfigureAwait(false),
             ["context", ..] => await Context(args, client, output, services, (ct, interrupt.Again)).ConfigureAwait(false),
@@ -100,12 +99,12 @@ internal static class CommandTable
     }
 
     /// <summary>'launch init|show' (box-local) and 'session wrap' (runs the agent under a launch).</summary>
-    private static async Task<int> LaunchOrSession(string[] args, ControlPlaneClient client, Output output, IServiceProvider services, Func<string, string?> environment, CancellationToken ct) =>
+    private static async Task<int> LaunchOrSession(string[] args, ControlPlaneClient client, (Output Output, Func<string, string?> Environment) io, IServiceProvider services, CancellationToken ct) =>
         args switch
         {
-            ["session", "wrap", .. var rest] => await SessionWrapVerb.Run(rest, client, services.GetRequiredService<ISindriHome>(), environment, ct).ConfigureAwait(false),
-            ["launch", .. var rest] => await new LaunchVerbs(services.GetRequiredService<ILaunchSetup>(), output).Run(rest, ct).ConfigureAwait(false),
-            _ => await UnknownVerb(args, output).ConfigureAwait(false),
+            ["session", "wrap", .. var rest] => await SessionWrapVerb.Run(rest, client, services.GetRequiredService<ISindriHome>(), io.Environment, ct).ConfigureAwait(false),
+            ["launch", .. var rest] => await new LaunchVerbs(services.GetRequiredService<ILaunchSetup>(), io.Output).Run(rest, ct).ConfigureAwait(false),
+            _ => await UnknownVerb(args, io.Output).ConfigureAwait(false),
         };
 
     private static ProbeCommands Harnesses(IServiceProvider services, Func<string, string?> environment) =>

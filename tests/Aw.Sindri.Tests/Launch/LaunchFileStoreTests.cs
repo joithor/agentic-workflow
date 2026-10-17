@@ -1,5 +1,4 @@
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -28,7 +27,7 @@ public sealed class LaunchFileStoreTests : LaunchFilesContract, IDisposable
 
     protected override void Open(ILaunchFiles files, LaunchId launch, string proof) => LaunchSecrets.Write(Options.SecretsDirectory, launch, proof);
 
-    private string Seed(LaunchId launch, string name, DateTimeOffset modified)
+    private string Seed(string name, DateTimeOffset modified)
     {
         _ = Directory.CreateDirectory(Launches);
         var path = Path.Combine(Launches, name);
@@ -42,9 +41,9 @@ public sealed class LaunchFileStoreTests : LaunchFilesContract, IDisposable
     {
         var files = Create();
         Open(files, A.FirstLaunchId, "p-1");
-        var capture = Seed(A.FirstLaunchId, LaunchFiles.CaptureName(A.FirstLaunchId), KnownInstants.Epoch);
-        var id = Seed(A.FirstLaunchId, LaunchFiles.SessionIdName(A.FirstLaunchId), KnownInstants.Epoch);
-        var other = Seed(Second, LaunchFiles.CaptureName(Second), KnownInstants.Epoch);
+        var capture = Seed(LaunchFiles.CaptureName(A.FirstLaunchId), KnownInstants.Epoch);
+        var id = Seed(LaunchFiles.SessionIdName(A.FirstLaunchId), KnownInstants.Epoch);
+        var other = Seed(LaunchFiles.CaptureName(Second), KnownInstants.Epoch);
 
         files.Forget(A.FirstLaunchId);
 
@@ -56,10 +55,10 @@ public sealed class LaunchFileStoreTests : LaunchFilesContract, IDisposable
     {
         var now = KnownInstants.Epoch.AddHours(1);
         var files = Create();
-        var stale = Seed(A.FirstLaunchId, LaunchFiles.CaptureName(A.FirstLaunchId), now.AddSeconds(-61));
-        var staleId = Seed(A.FirstLaunchId, LaunchFiles.SessionIdName(A.FirstLaunchId), now.AddSeconds(-61));
-        var fresh = Seed(Second, LaunchFiles.CaptureName(Second), now.AddSeconds(-59));
-        var stranger = Seed(Second, "notes.txt", now.AddHours(-5));
+        var stale = Seed(LaunchFiles.CaptureName(A.FirstLaunchId), now.AddSeconds(-61));
+        var staleId = Seed(LaunchFiles.SessionIdName(A.FirstLaunchId), now.AddSeconds(-61));
+        var fresh = Seed(LaunchFiles.CaptureName(Second), now.AddSeconds(-59));
+        var stranger = Seed("notes.txt", now.AddHours(-5));
 
         var removed = files.SweepStale(now, TimeSpan.FromSeconds(60), static _ => false);
 
@@ -71,7 +70,7 @@ public sealed class LaunchFileStoreTests : LaunchFilesContract, IDisposable
     {
         var now = KnownInstants.Epoch.AddHours(1);
         var files = Create();
-        var kept = Seed(A.FirstLaunchId, LaunchFiles.CaptureName(A.FirstLaunchId), now.AddMinutes(-10));
+        var kept = Seed(LaunchFiles.CaptureName(A.FirstLaunchId), now.AddMinutes(-10));
 
         var removed = files.SweepStale(now, TimeSpan.FromSeconds(60), static launch => launch.Equals(A.FirstLaunchId));
 
@@ -79,8 +78,5 @@ public sealed class LaunchFileStoreTests : LaunchFilesContract, IDisposable
     }
 
     [Fact]
-    public void The_secret_hash_directory_is_not_under_launches()
-    {
-        Expect.True(!Options.SecretsDirectory.StartsWith(Launches, StringComparison.Ordinal));
-    }
+    public void The_secret_hash_directory_is_not_under_launches() => Expect.True(!Options.SecretsDirectory.StartsWith(Launches, StringComparison.Ordinal));
 }

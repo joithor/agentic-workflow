@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Host.Commands.SessionWrap;
+using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.SessionWrap;
 

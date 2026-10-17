@@ -1,6 +1,5 @@
-using Aw.Sindri.Core.Sessions;
 
-namespace Aw.Sindri.Core.Launch;
+namespace Aw.Sindri.Core.Sessions;
 
 /// <summary>What 'session wrap' found when it looked for the agent's session id.</summary>
 /// <param name="Id">The one id found, or null.</param>

@@ -1,6 +1,7 @@
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands.SessionWrap;
@@ -18,7 +19,7 @@ public sealed class SessionIdFilesTests : IDisposable
     private const string Pattern = "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$";
     private static readonly LaunchId _other = LaunchId.From("LCH-00000000000000000000000000000002");
     private readonly string _home = Directory.CreateTempSubdirectory("aw-wrap-ids-").FullName;
-    private readonly DateTimeOffset _started = DateTimeOffset.UtcNow.AddSeconds(-20);
+    private readonly DateTimeOffset _started = RealTime.NowOffset.AddSeconds(-20);
 
     public void Dispose() => Directory.Delete(_home, recursive: true);
 
@@ -46,8 +47,8 @@ public sealed class SessionIdFilesTests : IDisposable
         _ = Directory.CreateDirectory(dir);
         var path = Path.Combine(dir, $"rollout-2026-10-17T10-00-00-{id}.jsonl");
         File.WriteAllText(path, "{}\n");
-        File.SetCreationTimeUtc(path, (created ?? DateTimeOffset.UtcNow).UtcDateTime);
-        File.SetLastWriteTimeUtc(path, (created ?? DateTimeOffset.UtcNow).UtcDateTime);
+        File.SetCreationTimeUtc(path, (created ?? RealTime.NowOffset).UtcDateTime);
+        File.SetLastWriteTimeUtc(path, (created ?? RealTime.NowOffset).UtcDateTime);
         return path;
     }
 

@@ -1,5 +1,4 @@
 using Aw.Kernel.Testing;
-using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Host.Commands.SessionWrap;
 using Aw.Sindri.Testing;
 
@@ -14,12 +13,15 @@ public sealed class SessionWrapSupportTests : IDisposable
 
     public void Dispose() => Directory.Delete(_dir, recursive: true);
 
+    private static readonly string[] _command = ["claude", "--session-id", "x"];
+
     [Fact]
     public void Arguments_name_the_launch_and_the_command()
     {
         var parsed = SessionWrapArguments.Parse(["--launch", A.FirstLaunchId.Value, "--", "claude", "--session-id", "x"]);
 
-        Expect.Equal((A.FirstLaunchId, new[] { "claude", "--session-id", "x" }), (parsed.Value.Launch, parsed.Value.Argv.ToArray()));
+        Expect.Equal(A.FirstLaunchId, parsed.Value.Launch);
+        Assert.Equal(_command, parsed.Value.Argv, StringComparer.Ordinal);
     }
 
     [Theory]
@@ -45,7 +47,7 @@ public sealed class SessionWrapSupportTests : IDisposable
     {
         var set = WrapEnvironment.For(A.FirstLaunchId, static _ => null);
 
-        Expect.Equal(["AW_SINDRI_CHILD", "AW_SINDRI_LAUNCH"], set.Keys.Order(StringComparer.Ordinal).ToArray());
+        Assert.Equal(["AW_SINDRI_CHILD", "AW_SINDRI_LAUNCH"], set.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -59,6 +61,6 @@ public sealed class SessionWrapSupportTests : IDisposable
         File.SetUnixFileMode(plain, UnixFileMode.UserRead | UnixFileMode.UserWrite);
 
         Expect.Equal((true, false, false, true, false), (BinOnPath.Resolves("agent-cli", "/nonexistent:" + _dir), BinOnPath.Resolves("not-exec", _dir),
-            BinOnPath.Resolves("agent-cli", null), BinOnPath.Resolves(tool, string.Empty), BinOnPath.Resolves("missing", _dir)));
+            BinOnPath.Resolves("agent-cli", path: null), BinOnPath.Resolves(tool, string.Empty), BinOnPath.Resolves("missing", _dir)));
     }
 }

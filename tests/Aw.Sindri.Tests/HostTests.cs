@@ -44,10 +44,11 @@ public sealed class HostTests
 
         var hosted = provider.GetServices<IHostedService>().ToList();
 
-        Assert.Equal(7, hosted.Count);
+        Assert.Equal(8, hosted.Count);
         _ = Assert.Single(hosted.OfType<ServeListenerCheck>());
         _ = Assert.Single(hosted.OfType<SchedulerHost>());
         _ = Assert.Single(hosted.OfType<ProjectorHost>());
+        _ = Assert.Single(hosted.OfType<LostSessionsHost>());
         _ = Assert.Single(hosted.OfType<ProfileWatch>());
         _ = Assert.Single(hosted.OfType<SessionCollectorHost>());
         _ = Assert.Single(hosted.OfType<LeaseRenewer>());

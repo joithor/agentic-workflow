@@ -1,6 +1,7 @@
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Host.Commands.SessionWrap;
 
-namespace Aw.Sindri.Host.Commands.SessionWrap;
+namespace Aw.Sindri.Host.Commands;
 
 /// <summary>Composes 'sindri session wrap' for the verb table: the real control plane calls, process and files.</summary>
 internal static class SessionWrapVerb

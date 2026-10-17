@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Launches;
 
 namespace Aw.Sindri.Features.SweepLostSessions;
@@ -8,9 +9,17 @@ namespace Aw.Sindri.Features.SweepLostSessions;
 /// <param name="clock">The time.</param>
 internal sealed class LostSessions(LaunchLiveness liveness, LaunchSessionEvents session, TimeProvider clock) : ILostSessions
 {
-    public ValueTask<int> Sweep(CancellationToken cancellationToken)
+    public async ValueTask<int> Sweep(CancellationToken cancellationToken)
     {
-        _ = (liveness, session, clock);
-        throw new NotSupportedException("LostSessions: make LostSessionsTests pass");
+        var ended = 0;
+        foreach (var launch in liveness.Silent(clock.GetUtcNow(), LaunchRules.LostAfter))
+        {
+            if ((await session.End(launch, SessionEndReason.Lost, exitCode: null, cancellationToken).ConfigureAwait(false)).IsSuccess)
+            {
+                ended++;
+            }
+        }
+
+        return ended;
     }
 }

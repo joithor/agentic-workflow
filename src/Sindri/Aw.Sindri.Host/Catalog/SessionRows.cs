@@ -20,5 +20,5 @@ internal static class SessionRows
     private static CommandRow Issue(string action, Type type, string route) =>
         new(ActionId.From(action), type, Variant: null, ActionClass.Issue, ServiceGrants: [],
             NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
-            "POST", route, ShellRows.Form("sindri session wrap --launch <launchId> -- <agent>"), "ready");
+            "POST", route, ShellRows.Form("sindri session wrap --launch <launchId>"), "ready");
 }

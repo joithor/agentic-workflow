@@ -1,7 +1,5 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
-using Aw.Sindri.Core.Launch;
-using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Host.Commands.SessionWrap;
 using Aw.Sindri.Testing;
@@ -11,7 +9,7 @@ namespace Aw.Sindri.Tests.SessionWrap;
 
 /// <summary>'sindri session wrap' (API spec §8.1, launcher spec §3, §4) over fakes: the guard, the environment, the 30 s heartbeat, the exit call and the reported session id.</summary>
 [Lane(TestLane.Unit)]
-public sealed class SessionWrapTests
+public sealed class SessionWrapTests : IDisposable
 {
     private const string Uuid = "0a1b2c3d-0000-4000-8000-000000000001";
     private static readonly TimeSpan _deadline = TimeSpan.FromSeconds(20);
@@ -28,13 +26,18 @@ public sealed class SessionWrapTests
 
     private readonly FakeWrapCalls _calls;
 
-    public SessionWrapTests() => _calls = new FakeWrapCalls(_clock);
+    public SessionWrapTests()
+    {
+        _calls = new FakeWrapCalls(_clock);
+    }
+
+    public void Dispose() => _errors.Dispose();
 
     private static string[] Args => ["--launch", A.FirstLaunchId.Value, "--", "/bin/sh", "-c", "agent"];
 
     private SessionWrapCommand Command() => new(_calls, _children, name => _env.GetValueOrDefault(name), _clock, _errors, _ids);
 
-    private async Task Until(Func<bool> condition)
+    private static async Task Until(Func<bool> condition)
     {
         var limit = TimeProvider.System.GetTimestamp();
         while (!condition())
@@ -89,7 +92,7 @@ public sealed class SessionWrapTests
 
         _ = await Finish(run, 0);
 
-        Expect.Equal(["/bin/sh", "-c", "agent"], _children.Argv!.ToArray());
+        Assert.Equal(["/bin/sh", "-c", "agent"], _children.Argv!, StringComparer.Ordinal);
         var set = _children.Environment!;
         Expect.Equal(("1", A.FirstLaunchId.Value, "ITM-00000000000000000000000000000001", "wrap-proof", "/tmp/prover-home"),
             (set["AW_SINDRI_CHILD"], set["AW_SINDRI_LAUNCH"], set["AW_SINDRI_ITEM"], set["AW_SINDRI_LAUNCH_SECRET"], set["AW_SINDRI_HOME"]));
@@ -104,7 +107,7 @@ public sealed class SessionWrapTests
 
         Expect.Equal(7, code);
         var exit = Assert.Single(_calls.Exits);
-        Expect.Equal((7, (SessionId?)null, "wrap-proof"), exit);
+        Expect.Equal((7, null, "wrap-proof"), exit);
     }
 
     [Fact]
@@ -131,7 +134,7 @@ public sealed class SessionWrapTests
         await Run(TimeSpan.FromSeconds(65));
         _ = await Finish(run, 0);
 
-        Expect.Equal(((SessionId?)null, (SessionId?)SessionId.From(Uuid), (SessionId?)SessionId.From(Uuid)), (_calls.Beats[0].Session, _calls.Beats[1].Session, _calls.Beats[2].Session));
+        Expect.Equal((null, SessionId.From(Uuid), SessionId.From(Uuid)), (_calls.Beats[0].Session, _calls.Beats[1].Session, _calls.Beats[2].Session));
         Expect.Equal(Uuid, _calls.Exits.Single().Session!.Value.Value);
     }
 
@@ -154,7 +157,7 @@ public sealed class SessionWrapTests
     [Fact]
     public async Task Ambiguous_fallback_records_no_id()
     {
-        _ids.Script = static _ => new SessionIdScan(null, Ambiguous: true);
+        _ids.Script = static _ => new SessionIdScan(Id: null, Ambiguous: true);
         var run = Command().Run(Args, TestContext.Current.CancellationToken);
         await Until(() => _calls.Beats.Count == 1);
 

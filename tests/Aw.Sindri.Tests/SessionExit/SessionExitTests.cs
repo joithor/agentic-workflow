@@ -30,7 +30,7 @@ public sealed class SessionExitTests
         var recorded = Assert.Single(_s.Views.Slice.Store.Events);
         var payload = _s.Views.Slice.Events.Payload<SessionEnded>(recorded).Value;
         Expect.Equal((EventTypes.SessionEnded, $"session.ended:{A.FirstLaunchId.Value}", A.FirstItemId.Value), (recorded.Envelope.Type, recorded.IdempotencyKey, recorded.Item));
-        Expect.Equal((A.FirstLaunchId, SessionEndReason.Exit, (int?)7), (payload.Launch, payload.Reason, payload.ExitCode));
+        Expect.Equal((A.FirstLaunchId, SessionEndReason.Exit, 7), (payload.Launch, payload.Reason, payload.ExitCode));
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public sealed class SessionExitTests
 
         _ = await Service().Handle(A.SessionExitRequest().WithSessionId(Uuid).Build(), Token);
 
-        Expect.Equal([EventTypes.LaunchSessionReported, EventTypes.SessionEnded], _s.Views.Slice.Store.Events.OrderBy(static e => e.Sequence).Select(static e => e.Envelope.Type).ToArray());
+        Assert.Equal([EventTypes.LaunchSessionReported, EventTypes.SessionEnded], _s.Views.Slice.Store.Events.OrderBy(static e => e.Sequence).Select(static e => e.Envelope.Type), StringComparer.Ordinal);
     }
 
     [Fact]

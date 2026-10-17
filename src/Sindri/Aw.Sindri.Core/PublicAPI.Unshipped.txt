@@ -9723,16 +9723,6 @@ Aw.Sindri.Core.Launch.CaptureRule.SessionIdPattern.init -> void
 Aw.Sindri.Core.Launch.ISindriHome
 Aw.Sindri.Core.Launch.ISindriHome.Path.get -> string!
 Aw.Sindri.Core.Launch.LaunchFiles
-Aw.Sindri.Core.Launch.SessionIdCapture
-Aw.Sindri.Core.Launch.SessionIdScan
-Aw.Sindri.Core.Launch.SessionIdScan.<Clone>$() -> Aw.Sindri.Core.Launch.SessionIdScan!
-Aw.Sindri.Core.Launch.SessionIdScan.Ambiguous.get -> bool
-Aw.Sindri.Core.Launch.SessionIdScan.Ambiguous.init -> void
-Aw.Sindri.Core.Launch.SessionIdScan.Deconstruct(out Aw.Sindri.Core.Sessions.SessionId? Id, out bool Ambiguous) -> void
-Aw.Sindri.Core.Launch.SessionIdScan.Equals(Aw.Sindri.Core.Launch.SessionIdScan? other) -> bool
-Aw.Sindri.Core.Launch.SessionIdScan.Id.get -> Aw.Sindri.Core.Sessions.SessionId?
-Aw.Sindri.Core.Launch.SessionIdScan.Id.init -> void
-Aw.Sindri.Core.Launch.SessionIdScan.SessionIdScan(Aw.Sindri.Core.Sessions.SessionId? Id, bool Ambiguous) -> void
 Aw.Sindri.Core.Launches.ILaunchFiles
 Aw.Sindri.Core.Launches.ILaunchFiles.Forget(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> void
 Aw.Sindri.Core.Launches.ILaunchFiles.SweepStale(System.DateTimeOffset now, System.TimeSpan olderThan, System.Func<Aw.Sindri.Core.Workflow.Engine.LaunchId, bool>! live) -> int
@@ -9757,19 +9747,12 @@ const Aw.Sindri.Core.Launch.LaunchFiles.Directory = "launches" -> string!
 override Aw.Sindri.Core.Launch.CaptureRule.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Launch.CaptureRule.GetHashCode() -> int
 override Aw.Sindri.Core.Launch.CaptureRule.ToString() -> string!
-override Aw.Sindri.Core.Launch.SessionIdScan.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Launch.SessionIdScan.GetHashCode() -> int
-override Aw.Sindri.Core.Launch.SessionIdScan.ToString() -> string!
 override Aw.Sindri.Core.Launches.LaunchSecret.GetHashCode() -> int
 override Aw.Sindri.Core.Launches.LaunchSecret.ToString() -> string!
 static Aw.Sindri.Core.Launch.CaptureRule.operator !=(Aw.Sindri.Core.Launch.CaptureRule? left, Aw.Sindri.Core.Launch.CaptureRule? right) -> bool
 static Aw.Sindri.Core.Launch.CaptureRule.operator ==(Aw.Sindri.Core.Launch.CaptureRule? left, Aw.Sindri.Core.Launch.CaptureRule? right) -> bool
 static Aw.Sindri.Core.Launch.LaunchFiles.CaptureName(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> string!
 static Aw.Sindri.Core.Launch.LaunchFiles.SessionIdName(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> string!
-static Aw.Sindri.Core.Launch.SessionIdCapture.Choose(Aw.Sindri.Core.Launch.CaptureRule! rule, System.Collections.Generic.IReadOnlyList<string!>! paths, System.Collections.Generic.IReadOnlySet<string!>! claimed) -> Aw.Sindri.Core.Launch.SessionIdScan!
-static Aw.Sindri.Core.Launch.SessionIdScan.None.get -> Aw.Sindri.Core.Launch.SessionIdScan!
-static Aw.Sindri.Core.Launch.SessionIdScan.operator !=(Aw.Sindri.Core.Launch.SessionIdScan? left, Aw.Sindri.Core.Launch.SessionIdScan? right) -> bool
-static Aw.Sindri.Core.Launch.SessionIdScan.operator ==(Aw.Sindri.Core.Launch.SessionIdScan? left, Aw.Sindri.Core.Launch.SessionIdScan? right) -> bool
 static Aw.Sindri.Core.Launches.LaunchRules.HeartbeatEvery.get -> System.TimeSpan
 static Aw.Sindri.Core.Launches.LaunchRules.LostAfter.get -> System.TimeSpan
 static Aw.Sindri.Core.Launches.LaunchSecret.operator !=(Aw.Sindri.Core.Launches.LaunchSecret left, Aw.Sindri.Core.Launches.LaunchSecret right) -> bool
@@ -9796,6 +9779,23 @@ Aw.Sindri.Core.Launches.ReportedIdAdmission.ReportedIdAdmission(Aw.Sindri.Core.L
 override Aw.Sindri.Core.Launches.AdmittedLaunch.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Launches.AdmittedLaunch.GetHashCode() -> int
 override Aw.Sindri.Core.Launches.AdmittedLaunch.ToString() -> string!
-static Aw.Sindri.Core.Launch.SessionIdCapture.Accepts(string? pattern, Aw.Sindri.Core.Sessions.SessionId id) -> bool
 static Aw.Sindri.Core.Launches.AdmittedLaunch.operator !=(Aw.Sindri.Core.Launches.AdmittedLaunch? left, Aw.Sindri.Core.Launches.AdmittedLaunch? right) -> bool
 static Aw.Sindri.Core.Launches.AdmittedLaunch.operator ==(Aw.Sindri.Core.Launches.AdmittedLaunch? left, Aw.Sindri.Core.Launches.AdmittedLaunch? right) -> bool
+Aw.Sindri.Core.Sessions.SessionIdCapture
+Aw.Sindri.Core.Sessions.SessionIdScan
+Aw.Sindri.Core.Sessions.SessionIdScan.<Clone>$() -> Aw.Sindri.Core.Sessions.SessionIdScan!
+Aw.Sindri.Core.Sessions.SessionIdScan.Ambiguous.get -> bool
+Aw.Sindri.Core.Sessions.SessionIdScan.Ambiguous.init -> void
+Aw.Sindri.Core.Sessions.SessionIdScan.Deconstruct(out Aw.Sindri.Core.Sessions.SessionId? Id, out bool Ambiguous) -> void
+Aw.Sindri.Core.Sessions.SessionIdScan.Equals(Aw.Sindri.Core.Sessions.SessionIdScan? other) -> bool
+Aw.Sindri.Core.Sessions.SessionIdScan.Id.get -> Aw.Sindri.Core.Sessions.SessionId?
+Aw.Sindri.Core.Sessions.SessionIdScan.Id.init -> void
+Aw.Sindri.Core.Sessions.SessionIdScan.SessionIdScan(Aw.Sindri.Core.Sessions.SessionId? Id, bool Ambiguous) -> void
+override Aw.Sindri.Core.Sessions.SessionIdScan.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.SessionIdScan.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.SessionIdScan.ToString() -> string!
+static Aw.Sindri.Core.Sessions.SessionIdCapture.Accepts(string? pattern, Aw.Sindri.Core.Sessions.SessionId id) -> bool
+static Aw.Sindri.Core.Sessions.SessionIdCapture.Choose(Aw.Sindri.Core.Launch.CaptureRule! rule, System.Collections.Generic.IReadOnlyList<string!>! paths, System.Collections.Generic.IReadOnlySet<string!>! claimed) -> Aw.Sindri.Core.Sessions.SessionIdScan!
+static Aw.Sindri.Core.Sessions.SessionIdScan.None.get -> Aw.Sindri.Core.Sessions.SessionIdScan!
+static Aw.Sindri.Core.Sessions.SessionIdScan.operator !=(Aw.Sindri.Core.Sessions.SessionIdScan? left, Aw.Sindri.Core.Sessions.SessionIdScan? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionIdScan.operator ==(Aw.Sindri.Core.Sessions.SessionIdScan? left, Aw.Sindri.Core.Sessions.SessionIdScan? right) -> bool

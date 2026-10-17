@@ -1,6 +1,5 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
-using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Features.SweepLostSessions;
 using Aw.Sindri.Testing;
 
@@ -30,7 +29,7 @@ public sealed class LostSessionsTests
         Expect.Equal((0, 1), (early, swept));
         var recorded = Assert.Single(_s.Views.Slice.Store.Events);
         var payload = _s.Views.Slice.Events.Payload<SessionEnded>(recorded).Value;
-        Expect.Equal(($"session.ended:{A.FirstLaunchId.Value}", SessionEndReason.Lost, (int?)null), (recorded.IdempotencyKey, payload.Reason, payload.ExitCode));
+        Expect.Equal(($"session.ended:{A.FirstLaunchId.Value}", SessionEndReason.Lost, null), (recorded.IdempotencyKey, payload.Reason, payload.ExitCode));
         Expect.Equal(A.FirstLaunchId, Assert.Single(_s.Files.Forgotten));
     }
 

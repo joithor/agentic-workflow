@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Aw.Kernel;
+using Aw.Kernel.Json;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launch.Argv;
@@ -16,6 +17,7 @@ namespace Aw.Sindri.Infrastructure.Launch;
 internal sealed class Launcher(LauncherParts parts) : ILauncher
 {
     private static readonly TimeSpan _viewerGrace = TimeSpan.FromSeconds(1);
+    private static readonly System.Text.Json.JsonSerializerOptions _captureJson = AwJson.CreateOptions(LauncherJsonContext.Default);
     private readonly ConcurrentDictionary<LaunchId, StartedLaunch> _started = new();
     private readonly ConcurrentDictionary<LaunchId, SemaphoreSlim> _gates = new();
 
@@ -174,6 +176,7 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
                 return argv.Error;
             }
 
+            WriteCaptureRule(request.Launch, entry);
             var secret = LaunchSecrets.Mint();
             LaunchSecrets.Write(parts.Options.SecretsDirectory, request.Launch, secret);
             return new Prepared(workDir, argv.Value, Environment(request, secret));
@@ -182,6 +185,19 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
         {
             return KernelErrors.Unavailable.With($"the launch's files could not be written: {e.Message}");
         }
+    }
+
+    /// <summary>The capture rule 'session wrap' reads for an entry whose CLI reports its own id (launcher L-9): 0600, no secret in it.</summary>
+    private void WriteCaptureRule(LaunchId launch, AgentEntry entry)
+    {
+        if (entry.SessionIdMode != SessionIdMode.Reported)
+        {
+            return;
+        }
+
+        OwnerOnly.EnsureDirectory(parts.Options.LaunchesDirectory);
+        var rule = new CaptureRule(entry.SessionIdPattern, entry.ReportedNewestFile, entry.IdCapture);
+        OwnerOnly.WriteAtomically(Path.Combine(parts.Options.LaunchesDirectory, LaunchFiles.CaptureName(launch)), AwJson.Serialize(rule, _captureJson));
     }
 
     private Dictionary<string, string> Environment(LaunchRequest request, string secret)
@@ -259,6 +275,7 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
     private void Cleanup(LaunchId launch)
     {
         LaunchSecrets.Delete(parts.Options.SecretsDirectory, launch);
+        LaunchFileStore.DeleteFlat(parts.Options, launch);
         if (Directory.Exists(parts.Options.PolicyDirectory))
         {
             StepPolicyFile.Delete(parts.Options.PolicyDirectory, launch);
