@@ -111,7 +111,8 @@ owner's literal names.
      `waiting`). A unique conflict (two identical sends racing past step 2) becomes the stored-call answer, so a
      client retry never runs a call twice and never records a false `-006`. A call's row exists before the engine
      is asked: for a Step call the API sends the `block-call` Update and waits only until it is accepted, then holds
-     the MCP request per the timing rule below (§B.2).
+     the MCP request per the timing rule below (§B.2). If the engine's validator refuses the Update, the API deletes
+     its `waiting` row and records the refusal under a server-made id, as for any refusal, so the `callId` stays free.
 - **Timing: one rule** (`mode` comes from the block, never the call):
   - An `async` block answers `running` at once.
   - A `sync` block holds the request while it waits for a heavy slot, at most 30 s, then while it runs, at most
@@ -653,8 +654,9 @@ Step get the block tools (§A.6, §B.5). C6 to C8 are the details that answer op
    proof. Otherwise the tools switch off exactly when you join the agent.
 6. **Which blocks your own sessions get by default.** Every offline block that doesn't spend money (such as running
    the tests, which writes build output only in its scratch copy), or none until you list them? *Recommended:* every
-   such block. You can narrow the list in the profile, and a block that reaches
-   the network or spends money only runs if you name it there.
+   such block. You can narrow the list in the profile. A block that reaches the
+   network only runs if you name it there, and a block that spends money can't run outside a Step in v1, because
+   there is no Step budget for it to spend.
 7. **What your own session's block runs against.** A commit your session names (by its full id), in a scratch copy Sindri makes and
    throws away, or your session's own folder, uncommitted changes included? *Recommended:* the named commit in a
    scratch copy. A test run writes build output, and the scratch copy keeps that out of your working folder and the
