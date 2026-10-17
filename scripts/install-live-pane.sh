@@ -3,7 +3,7 @@
 # scorer's numbers for the current session (context, cost, judge, gates, wakes).
 #
 # Claude Code only. Mods are in-process function hooks of Claude Code; Codex and Cursor have
-# no equivalent, so they keep the statusline segments (judge, rtk, headroom, prism) and the
+# no equivalent, so they keep the statusline segments (judge, rtk, prism) and the
 # daily scorer report, and this installer says so and writes nothing for them.
 #
 # Owner tag: the marketplace is named "agentic-workflow-mods" and the plugin "aw-live"; this
