@@ -1,0 +1,8 @@
+P:System.DateTime.Now;Take a FakeTimeProvider, or use Aw.Kernel.Testing.RealTime where the test truly needs real time (engineering.csharp.tests-use-fake-time)
+P:System.DateTime.UtcNow;Take a FakeTimeProvider, or use Aw.Kernel.Testing.RealTime where the test truly needs real time (engineering.csharp.tests-use-fake-time)
+P:System.DateTime.Today;Take a FakeTimeProvider, or use Aw.Kernel.Testing.RealTime where the test truly needs real time (engineering.csharp.tests-use-fake-time)
+P:System.DateTimeOffset.Now;Take a FakeTimeProvider, or use Aw.Kernel.Testing.RealTime where the test truly needs real time (engineering.csharp.tests-use-fake-time)
+P:System.DateTimeOffset.UtcNow;Take a FakeTimeProvider, or use Aw.Kernel.Testing.RealTime where the test truly needs real time (engineering.csharp.tests-use-fake-time)
+M:System.Guid.NewGuid;Use a fake IIdGenerator, or RealTime.NewGuid() for a unique name (engineering.csharp.tests-use-fake-time)
+M:System.Threading.Thread.Sleep(System.Int32);Wait on a signal, or RealTime.Sleep when the code under test has none (engineering.csharp.tests-use-fake-time)
+M:System.Threading.Thread.Sleep(System.TimeSpan);Wait on a signal, or RealTime.Sleep when the code under test has none (engineering.csharp.tests-use-fake-time)
