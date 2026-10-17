@@ -1,0 +1,6 @@
+#nullable enable
+Aw.Forge.Core.ForgeCoreServiceCollectionExtensions
+Aw.Forge.Core.ForgeErrors
+static Aw.Forge.Core.ForgeCoreServiceCollectionExtensions.AddForgeCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Forge.Core.ForgeErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static readonly Aw.Forge.Core.ForgeErrors.Invalid -> Aw.Kernel.ErrorDefinition!

@@ -1,0 +1,3 @@
+#nullable enable
+Aw.Forge.Infrastructure.ForgeInfrastructureServiceCollectionExtensions
+static Aw.Forge.Infrastructure.ForgeInfrastructureServiceCollectionExtensions.AddForgeInfrastructure(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<string!, string?>! environment) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

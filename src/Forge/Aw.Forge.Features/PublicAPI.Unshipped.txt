@@ -1,0 +1,21 @@
+#nullable enable
+Aw.Forge.Features.ForgeFeaturesServiceCollectionExtensions
+Aw.Forge.Features.ParseForgeLink.ParseForgeLinkRequest
+Aw.Forge.Features.ParseForgeLink.ParseForgeLinkRequest.<Clone>$() -> Aw.Forge.Features.ParseForgeLink.ParseForgeLinkRequest!
+Aw.Forge.Features.ParseForgeLink.ParseForgeLinkRequest.Equals(Aw.Forge.Features.ParseForgeLink.ParseForgeLinkRequest? other) -> bool
+Aw.Forge.Features.ParseForgeLink.ParseForgeLinkRequest.ParseForgeLinkRequest() -> void
+Aw.Forge.Features.ParseForgeLink.ParseForgeLinkResponse
+Aw.Forge.Features.ParseForgeLink.ParseForgeLinkResponse.<Clone>$() -> Aw.Forge.Features.ParseForgeLink.ParseForgeLinkResponse!
+Aw.Forge.Features.ParseForgeLink.ParseForgeLinkResponse.Equals(Aw.Forge.Features.ParseForgeLink.ParseForgeLinkResponse? other) -> bool
+Aw.Forge.Features.ParseForgeLink.ParseForgeLinkResponse.ParseForgeLinkResponse() -> void
+override Aw.Forge.Features.ParseForgeLink.ParseForgeLinkRequest.Equals(object? obj) -> bool
+override Aw.Forge.Features.ParseForgeLink.ParseForgeLinkRequest.GetHashCode() -> int
+override Aw.Forge.Features.ParseForgeLink.ParseForgeLinkRequest.ToString() -> string!
+override Aw.Forge.Features.ParseForgeLink.ParseForgeLinkResponse.Equals(object? obj) -> bool
+override Aw.Forge.Features.ParseForgeLink.ParseForgeLinkResponse.GetHashCode() -> int
+override Aw.Forge.Features.ParseForgeLink.ParseForgeLinkResponse.ToString() -> string!
+static Aw.Forge.Features.ForgeFeaturesServiceCollectionExtensions.AddForgeFeatures(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Forge.Features.ParseForgeLink.ParseForgeLinkRequest.operator !=(Aw.Forge.Features.ParseForgeLink.ParseForgeLinkRequest? left, Aw.Forge.Features.ParseForgeLink.ParseForgeLinkRequest? right) -> bool
+static Aw.Forge.Features.ParseForgeLink.ParseForgeLinkRequest.operator ==(Aw.Forge.Features.ParseForgeLink.ParseForgeLinkRequest? left, Aw.Forge.Features.ParseForgeLink.ParseForgeLinkRequest? right) -> bool
+static Aw.Forge.Features.ParseForgeLink.ParseForgeLinkResponse.operator !=(Aw.Forge.Features.ParseForgeLink.ParseForgeLinkResponse? left, Aw.Forge.Features.ParseForgeLink.ParseForgeLinkResponse? right) -> bool
+static Aw.Forge.Features.ParseForgeLink.ParseForgeLinkResponse.operator ==(Aw.Forge.Features.ParseForgeLink.ParseForgeLinkResponse? left, Aw.Forge.Features.ParseForgeLink.ParseForgeLinkResponse? right) -> bool
