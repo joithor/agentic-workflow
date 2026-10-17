@@ -69,6 +69,7 @@ check "not a git checkout: no warning" "$(meta_stale_line "$B" "$WORK/plain")" "
 if command -v tmux > /dev/null 2>&1 && command -v jq > /dev/null 2>&1; then
   cp "$DIR/meta-launch.sh" "$DIR/launcher-lib.sh" "$DIR/meta-team-lib.sh" "$DIR/meta-version-lib.sh" "$R/scripts/"
   cp -r "$DIR/../config/launcher" "$R/config/"
+  mkdir -p "$R/schemas"; cp "$DIR/../schemas/launcher.schema.json" "$R/schemas/"
   commit launcher > /dev/null
   mkdir -p "$AW_STATE_DIR/meta" "$WORK/repo2"
   jq -n --arg r "$WORK/repo2" '{team:"t1",repo:$r,metaLane:"meta",lanes:["api"]}' > "$AW_STATE_DIR/meta/team.json"
@@ -77,11 +78,11 @@ if command -v tmux > /dev/null 2>&1 && command -v jq > /dev/null 2>&1; then
   OUT="$(launch)"; RC=$?
   check "meta-launch.sh: a stale binary is one warning line on stderr, and the launch goes on" \
     "$RC:$(printf '%s\n' "$OUT" | grep -c 'warning: the installed aw-meta .* is older than the Meta sources')" "0:1"
-  OUT="$(launch AW_META_NO_STALE_CHECK=1)"
-  check "meta-launch.sh: AW_META_NO_STALE_CHECK=1 switches the check off" "$(printf '%s\n' "$OUT" | grep -c 'warning')" "0"
+  OUT="$(launch AW_META_NO_STALE_CHECK=1)"; RC=$?
+  check "meta-launch.sh: AW_META_NO_STALE_CHECK=1 switches the check off" "$RC:$(printf '%s\n' "$OUT" | grep -c 'warning')" "0:0"
   stub "$B" "$(git -C "$R" rev-parse HEAD)"
-  OUT="$(launch)"
-  check "meta-launch.sh: a current binary: no warning" "$(printf '%s\n' "$OUT" | grep -c 'warning')" "0"
+  OUT="$(launch)"; RC=$?
+  check "meta-launch.sh: a current binary: no warning" "$RC:$(printf '%s\n' "$OUT" | grep -c 'warning')" "0:0"
 else
   echo "ok - skipped: the launcher cases need tmux and jq"
 fi
