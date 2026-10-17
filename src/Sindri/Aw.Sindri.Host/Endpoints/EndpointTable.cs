@@ -69,6 +69,7 @@ internal static class EndpointTable
         _ = commands.MapPauseService();
         _ = commands.MapResumeService();
         _ = commands.MapRunService();
+        _ = commands.MapContextJobs();
         _ = commands.MapCreateItem();
         _ = commands.MapDecide();
         _ = commands.MapFileRequest();

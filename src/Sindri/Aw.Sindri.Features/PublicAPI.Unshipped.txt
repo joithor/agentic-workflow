@@ -149,6 +149,23 @@ Aw.Sindri.Features.CompleteStep.CompleteStepResponse.Nonce.get -> Aw.Sindri.Core
 Aw.Sindri.Features.CompleteStep.CompleteStepResponse.Nonce.init -> void
 Aw.Sindri.Features.CompleteStep.CompleteStepResponse.Result.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.CommandResult!
 Aw.Sindri.Features.CompleteStep.CompleteStepResponse.Result.init -> void
+Aw.Sindri.Features.ContextCalls.BuildContextMapRequest
+Aw.Sindri.Features.ContextCalls.BuildContextMapRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.BuildContextMapRequest!
+Aw.Sindri.Features.ContextCalls.BuildContextMapRequest.BuildContextMapRequest() -> void
+Aw.Sindri.Features.ContextCalls.BuildContextMapRequest.Equals(Aw.Sindri.Features.ContextCalls.BuildContextMapRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.BuildContextMapResult
+Aw.Sindri.Features.ContextCalls.BuildContextMapResult.<Clone>$() -> Aw.Sindri.Features.ContextCalls.BuildContextMapResult!
+Aw.Sindri.Features.ContextCalls.BuildContextMapResult.BuildContextMapResult(string! Repo, int Draft, int Proposed, System.Collections.Generic.IReadOnlyList<string!>! Degraded) -> void
+Aw.Sindri.Features.ContextCalls.BuildContextMapResult.Deconstruct(out string! Repo, out int Draft, out int Proposed, out System.Collections.Generic.IReadOnlyList<string!>! Degraded) -> void
+Aw.Sindri.Features.ContextCalls.BuildContextMapResult.Degraded.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.ContextCalls.BuildContextMapResult.Degraded.init -> void
+Aw.Sindri.Features.ContextCalls.BuildContextMapResult.Draft.get -> int
+Aw.Sindri.Features.ContextCalls.BuildContextMapResult.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.BuildContextMapResult.Equals(Aw.Sindri.Features.ContextCalls.BuildContextMapResult? other) -> bool
+Aw.Sindri.Features.ContextCalls.BuildContextMapResult.Proposed.get -> int
+Aw.Sindri.Features.ContextCalls.BuildContextMapResult.Proposed.init -> void
+Aw.Sindri.Features.ContextCalls.BuildContextMapResult.Repo.get -> string!
+Aw.Sindri.Features.ContextCalls.BuildContextMapResult.Repo.init -> void
 Aw.Sindri.Features.ContextCalls.ContextChallenge
 Aw.Sindri.Features.ContextCalls.ContextChallenge.<Clone>$() -> Aw.Sindri.Features.ContextCalls.ContextChallenge!
 Aw.Sindri.Features.ContextCalls.ContextChallenge.Action.get -> string!
@@ -391,6 +408,29 @@ Aw.Sindri.Features.ContextCalls.ShowContextNodeRequest.Equals(Aw.Sindri.Features
 Aw.Sindri.Features.ContextCalls.ShowContextNodeRequest.Key.get -> string!
 Aw.Sindri.Features.ContextCalls.ShowContextNodeRequest.Key.init -> void
 Aw.Sindri.Features.ContextCalls.ShowContextNodeRequest.ShowContextNodeRequest(string! Key) -> void
+Aw.Sindri.Features.ContextCalls.SyncContextSourcesRequest
+Aw.Sindri.Features.ContextCalls.SyncContextSourcesRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.SyncContextSourcesRequest!
+Aw.Sindri.Features.ContextCalls.SyncContextSourcesRequest.Deconstruct(out string? Source) -> void
+Aw.Sindri.Features.ContextCalls.SyncContextSourcesRequest.Equals(Aw.Sindri.Features.ContextCalls.SyncContextSourcesRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.SyncContextSourcesRequest.Source.get -> string?
+Aw.Sindri.Features.ContextCalls.SyncContextSourcesRequest.Source.init -> void
+Aw.Sindri.Features.ContextCalls.SyncContextSourcesRequest.SyncContextSourcesRequest(string? Source = null) -> void
+Aw.Sindri.Features.ContextCalls.SyncContextSourcesResult
+Aw.Sindri.Features.ContextCalls.SyncContextSourcesResult.<Clone>$() -> Aw.Sindri.Features.ContextCalls.SyncContextSourcesResult!
+Aw.Sindri.Features.ContextCalls.SyncContextSourcesResult.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ContextCalls.SyncedSource!>! Sources) -> void
+Aw.Sindri.Features.ContextCalls.SyncContextSourcesResult.Equals(Aw.Sindri.Features.ContextCalls.SyncContextSourcesResult? other) -> bool
+Aw.Sindri.Features.ContextCalls.SyncContextSourcesResult.Sources.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ContextCalls.SyncedSource!>!
+Aw.Sindri.Features.ContextCalls.SyncContextSourcesResult.Sources.init -> void
+Aw.Sindri.Features.ContextCalls.SyncContextSourcesResult.SyncContextSourcesResult(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ContextCalls.SyncedSource!>! Sources) -> void
+Aw.Sindri.Features.ContextCalls.SyncedSource
+Aw.Sindri.Features.ContextCalls.SyncedSource.<Clone>$() -> Aw.Sindri.Features.ContextCalls.SyncedSource!
+Aw.Sindri.Features.ContextCalls.SyncedSource.Deconstruct(out string! Source, out Aw.Sindri.Core.Events.ContextLinksSynced! Links) -> void
+Aw.Sindri.Features.ContextCalls.SyncedSource.Equals(Aw.Sindri.Features.ContextCalls.SyncedSource? other) -> bool
+Aw.Sindri.Features.ContextCalls.SyncedSource.Links.get -> Aw.Sindri.Core.Events.ContextLinksSynced!
+Aw.Sindri.Features.ContextCalls.SyncedSource.Links.init -> void
+Aw.Sindri.Features.ContextCalls.SyncedSource.Source.get -> string!
+Aw.Sindri.Features.ContextCalls.SyncedSource.Source.init -> void
+Aw.Sindri.Features.ContextCalls.SyncedSource.SyncedSource(string! Source, Aw.Sindri.Core.Events.ContextLinksSynced! Links) -> void
 Aw.Sindri.Features.CreateItem.CreateItemRequest
 Aw.Sindri.Features.CreateItem.CreateItemRequest.<Clone>$() -> Aw.Sindri.Features.CreateItem.CreateItemRequest!
 Aw.Sindri.Features.CreateItem.CreateItemRequest.Body.get -> string?
@@ -2136,6 +2176,21 @@ Aw.Sindri.Features.SindriJobServiceCollectionExtensions
 override Aw.Sindri.Features.CancelJob.CancelJobRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.CancelJob.CancelJobRequest.GetHashCode() -> int
 override Aw.Sindri.Features.CancelJob.CancelJobRequest.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.BuildContextMapRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.BuildContextMapRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.BuildContextMapRequest.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.BuildContextMapResult.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.BuildContextMapResult.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.BuildContextMapResult.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.SyncContextSourcesRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.SyncContextSourcesRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.SyncContextSourcesRequest.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.SyncContextSourcesResult.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.SyncContextSourcesResult.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.SyncContextSourcesResult.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.SyncedSource.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.SyncedSource.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.SyncedSource.ToString() -> string!
 override Aw.Sindri.Features.Decide.DecideRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.Decide.DecideRequest.GetHashCode() -> int
 override Aw.Sindri.Features.Decide.DecideRequest.ToString() -> string!
@@ -2207,6 +2262,16 @@ override Aw.Sindri.Features.RunService.RunServiceRequest.GetHashCode() -> int
 override Aw.Sindri.Features.RunService.RunServiceRequest.ToString() -> string!
 static Aw.Sindri.Features.CancelJob.CancelJobRequest.operator !=(Aw.Sindri.Features.CancelJob.CancelJobRequest? left, Aw.Sindri.Features.CancelJob.CancelJobRequest? right) -> bool
 static Aw.Sindri.Features.CancelJob.CancelJobRequest.operator ==(Aw.Sindri.Features.CancelJob.CancelJobRequest? left, Aw.Sindri.Features.CancelJob.CancelJobRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.BuildContextMapRequest.operator !=(Aw.Sindri.Features.ContextCalls.BuildContextMapRequest? left, Aw.Sindri.Features.ContextCalls.BuildContextMapRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.BuildContextMapRequest.operator ==(Aw.Sindri.Features.ContextCalls.BuildContextMapRequest? left, Aw.Sindri.Features.ContextCalls.BuildContextMapRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.BuildContextMapResult.operator !=(Aw.Sindri.Features.ContextCalls.BuildContextMapResult? left, Aw.Sindri.Features.ContextCalls.BuildContextMapResult? right) -> bool
+static Aw.Sindri.Features.ContextCalls.BuildContextMapResult.operator ==(Aw.Sindri.Features.ContextCalls.BuildContextMapResult? left, Aw.Sindri.Features.ContextCalls.BuildContextMapResult? right) -> bool
+static Aw.Sindri.Features.ContextCalls.SyncContextSourcesRequest.operator !=(Aw.Sindri.Features.ContextCalls.SyncContextSourcesRequest? left, Aw.Sindri.Features.ContextCalls.SyncContextSourcesRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.SyncContextSourcesRequest.operator ==(Aw.Sindri.Features.ContextCalls.SyncContextSourcesRequest? left, Aw.Sindri.Features.ContextCalls.SyncContextSourcesRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.SyncContextSourcesResult.operator !=(Aw.Sindri.Features.ContextCalls.SyncContextSourcesResult? left, Aw.Sindri.Features.ContextCalls.SyncContextSourcesResult? right) -> bool
+static Aw.Sindri.Features.ContextCalls.SyncContextSourcesResult.operator ==(Aw.Sindri.Features.ContextCalls.SyncContextSourcesResult? left, Aw.Sindri.Features.ContextCalls.SyncContextSourcesResult? right) -> bool
+static Aw.Sindri.Features.ContextCalls.SyncedSource.operator !=(Aw.Sindri.Features.ContextCalls.SyncedSource? left, Aw.Sindri.Features.ContextCalls.SyncedSource? right) -> bool
+static Aw.Sindri.Features.ContextCalls.SyncedSource.operator ==(Aw.Sindri.Features.ContextCalls.SyncedSource? left, Aw.Sindri.Features.ContextCalls.SyncedSource? right) -> bool
 static Aw.Sindri.Features.Decide.DecideRequest.operator !=(Aw.Sindri.Features.Decide.DecideRequest? left, Aw.Sindri.Features.Decide.DecideRequest? right) -> bool
 static Aw.Sindri.Features.Decide.DecideRequest.operator ==(Aw.Sindri.Features.Decide.DecideRequest? left, Aw.Sindri.Features.Decide.DecideRequest? right) -> bool
 static Aw.Sindri.Features.EvalRecipe.ScaffoldFile.operator !=(Aw.Sindri.Features.EvalRecipe.ScaffoldFile? left, Aw.Sindri.Features.EvalRecipe.ScaffoldFile? right) -> bool

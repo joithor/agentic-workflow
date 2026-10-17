@@ -44,7 +44,7 @@ context use case: `ContextScopes` is shared, it can't move to Sindri Core (only 
 package's Core, DEPS-PROJ-008), and ARCH-SLICE-001 forbids sharing it across slice folders. Later stages add their
 context services here. The routes are `GET /sindri/context/query` and
 `GET /sindri/context/sources`. The CLI verbs are `Host/Commands/ContextVerbs`, with text output in `ContextText`.
-`Host/Catalog/ContextRows` holds `SyncSources` (`job`, `pending:API-P6`, no `CommandType` and no route until API P6's job runtime; the S-5B part is in as the `context-sync` service below).
+`Host/Catalog/ContextRows` holds `SyncSources` and `BuildContextMap` as ready `job` rows (`JobRows.Job`, request types `SyncContextSourcesRequest` and `BuildContextMapRequest`, routes `POST /sindri/context/sources/sync` and `POST /sindri/context/map/build`); the `context-sync` and `context-rebuild` services below run the same work on a cadence.
 
 ### Query pipeline (Phase 1, text shape)
 
@@ -436,9 +436,9 @@ User-facing behaviour is in `docs/sindri/context.md` (S-4). This is where the co
 | `ReviewContextMap:apply-file`, `merge`, `add`, `delete` | protected (`NeedsTerminal`) | terminal, with the typed challenge `review <verb> <hash6>` bound to the request's fields (a file's content for apply-file) |
 | `PromoteContextMap` | protected (`NeedsTerminal`) | terminal, challenge `promote map v<N>` bound to the draft |
 | `ProposeContextMap` | job | terminal, app, `service:engine` |
-| `BuildContextMap` | job, `pending:API-P6`, no `CommandType`, no route | nobody yet |
+| `BuildContextMap` | job (P6 runtime) | terminal, app, `service:engine` (a session is refused by the gate, `SND-AUTH-002`) |
 
-API P6 (the job runtime) has not merged, so `map build` has no route; the `BuildMap` slice is reachable through `ContextRebuildService` only, outside the command gate.
+`map build` is a job on API P6's runtime: `AddContextJobs` (Features) registers it with `AddJob` (key `build`), `ContextJobEndpoints` maps it with `MapJob` (any body starts it), and `BuildContextMapService` is the work, run by the job runner under the starting caller: it passes the engine's step lines to the job's progress, appends `context.map.built` and returns a small result (`repo`, `draft`, `proposed`, at most 20 `degraded` lines). `ContextRebuildService` runs the same slice on its cadence outside the gate.
 
 ### Errors (S-4 range 040, 042–048)
 
@@ -605,7 +605,7 @@ the row, and a reply the pinned shape can't read degrades onyx (`010` with cause
 - Reads: `MapReader` merges the layer for every graph read; the `item` shape (`context query --item <KEY>`) anchors on the record a tracker
   key names (`ItemAnchors`) and answers `003` with suggestions when none is linked. The fix line follows the state: with `context-sync`
   named in the profile (`ContextScope.SyncConfigured`) it says the record isn't linked yet or the key is unknown and to check the key, wait for
-  the next context-sync slot or watch `sindri context sources status` (not `sources sync` until API P6 wires it); without it, to name the service. Sindri resolves a Sindri item id (`ITM-…`) before the engine (`ItemKeys`): a linked item
+  the next context-sync slot or watch `sindri context sources status` (or `sindri context sources sync`); without it, to name the service. Sindri resolves a Sindri item id (`ITM-…`) before the engine (`ItemKeys`): a linked item
   asks for its record; one with no record yet answers `003` "has no tracker record linked yet"; an id no item has, or a session may not
   see, goes on unchanged and answers the same `003` as any unknown key.
 - Decisions and conflicts cite the record their quote comes from (`C<n>` of that record when the answer fetched it, else the map's `C1`);
@@ -624,8 +624,7 @@ the row, and a reply the pinned shape can't read degrades onyx (`010` with cause
 `context-rebuild`) syncs each intent source and records `context.sources.synced` with an additive optional `Links` payload
 (`ContextLinksSynced`: counts and the code, never record text). The event key now names its source:
 `context.sources.synced:<epoch>:<source>:<slot>` (the docs refresh's key changed the same way). Doctor row `context:sync` warns when an
-intent source never synced or its last run failed. The `SyncSources` catalog row (`job`) is `pending:API-P6` with no route and no
-`CommandType`; `sindri context sources sync` answers `SND-CLI-001` naming `pending:API-P6` and the `context-sync` service.
+intent source never synced or its last run failed. `SyncSources` is a job on API P6's runtime (`AddContextJobs`, key `sync`, one for every sync; a start naming a string that is not a kebab-case source id is refused at once as `058`). `SyncContextSourcesService` is the work: it syncs through the engine under the starting caller, one source at a time like `ContextSyncService` (a sync of every source lists the intent sources and calls the engine for each), appends one `context.sources.synced` per source as it finishes (slot: when the job began; appended even if the job is being cancelled) and returns per-source counts and the code (`SyncContextSourcesResult`, never record text). A second sync start while one runs is `SND-JOB-409` carrying `runningJob`; `056` remains the in-run code when a job meets a sync the `context-sync` service is running: it fails the job for a named source and is that source's row (code `SND-CONTEXT-056`, no event) in a sync of every source. The route accepts an empty body (every source). `sindri context sources sync [<source>] [--detach] [--json]` starts the job and follows it with `JobFollower` (`ContextJobVerbs`).
 
 ### Errors (056-059)
 
