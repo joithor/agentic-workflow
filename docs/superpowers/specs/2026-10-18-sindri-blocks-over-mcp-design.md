@@ -513,7 +513,7 @@ list of failed reasons are §A.1's; §B cites them and never restates them.
     waits.
   - The child starts with `AW_HEAVY_LOCK_HELD=1`, `AW_STATE_DIR` and `AW_HEAVY_JOB_LOCK` (the lock Sindri took), so
     a `heavy` wrapper inside the target's command runs straight through and never takes a second slot.
-  - **Priority.** A Step call and a lane's plain call take their slot at the default priority. An owner's plain call
+  - **Priority.** A Step call takes its slot at the default priority. A plain call, which is always the owner's,
     takes it at `High` (B.5). The order and the rules that make it hold against the box wrapper's jobs are B.5's.
   - **`IHeavySlots` reads the box's rules, as the wrapper does** (BM-1). Today `HeavyLockSettings` reads only
     `AW_HEAVY_SLOTS`. It gains:
@@ -599,9 +599,8 @@ list of failed reasons are §A.1's; §B cites them and never restates them.
   - The run's calls, read from `block_calls` for the app (§A.4), the Judge's facts for a later route (DT §8.3) and
     `workflow why` (DT-J3), are every call of the run in seq order. Calls the report didn't cite are marked
     uncited, so a report that leaves out a failing call can be seen.
-- **Visibility.** A Step call's events keep the stream's usual visibility. An owner's plain-call events are
-  `human`, and B.5 lists the ledger readers that skip them.
-- **Telemetry** is §A.4's, in one place. An owner's plain call's span carries no `reason` and no result text (B.5).
+- **Visibility.** Call events have the stream's usual visibility, a plain call's included (C10).
+- **Telemetry** is §A.4's, in one place.
 
 ### B.4 Time and budget
 
@@ -623,28 +622,21 @@ The owner decided (2026-10-18, C3) that their own sessions, outside any Step, ma
 like this has no instance and no run. It never moves anything, and it is never proof for a work item.
 
 The owner then widened that (2026-10-18, C6): "my sessions can use every block. no matter what. if i'm steering it's
-high priority and sensitivity." Whether a plain session counts as the owner's is C11.
-
-- **Two kinds of plain caller** (§A.2, §A.6). A plain session whose `X-Sindri-Lane` header is non-empty is a **lane
-  caller**: a team lane's agent, not the owner steering. Every other plain session is the **owner's**.
-
-  | | Owner's plain session | Lane caller |
-  |---|---|---|
-  | Blocks | every Callable block, `Network` and `Budget` ones included | Callable blocks within `{ Tools }`, plus `Network` ones named in `workflow.tools.plain`; no `Budget` block |
-  | Heavy slot | `High` (below) | default, as a Step call |
-  | Results and events | `human` visibility (C10, below) | visible to sessions of the repo, as today's events |
-  | `plainPerDay` | refuses nothing (below) | refuses nothing (below) |
+high priority and sensitivity." And (C11): "sindri can know if the session is owned by a sindri workflow. otherwise
+it's me". So a session Sindri launched for a workflow is a Step session, which §A.2 defines by its valid
+`X-Sindri-Run`. **Every other session is the owner's**, team lanes included, and gets the same treatment. Its calls are
+handled exactly like a Step's calls (C10: the same visibility, the same reads), only marked as the owner's.
 
 - **Which blocks.**
-  - What stays for both is structural. Only `gate` and `evidenceProvider` blocks are Callable (B.1): a Step, an effect
-    or an input fill means nothing as a call.
+  - A plain session gets **every Callable block**, `Network` and `Budget` ones included. There is no default subset.
+  - What stays is structural. Only `gate` and `evidenceProvider` blocks are Callable (B.1): a Step, an effect or an
+    input fill means nothing as a call.
   - A required parameter that the session can't set and that has no default must be pinned by a recipe's
     `{block, with}` or by `workflow.tools.plain`'s `{block, with}`. A plain session has no recipe, so without a pin in
     `workflow.tools.plain` the block can't be called: `list_tools` names it in `omitted` with reason
     `needs-recipe-pin`.
   - `workflow.tools.plain: [<block id> | { block, with }]` is optional, at box level or under a `repos[]` entry. It
-    supplies pins, can narrow the owner's list, and names the `Network` blocks a lane caller may call. `ProfileRules`
-    checks each entry, as RCP-TOOL-001 and RCP-TOOL-004 do.
+    supplies pins and can narrow the list. `ProfileRules` checks each entry, as RCP-TOOL-001 and RCP-TOOL-004 do.
   - A Step session never sees this list: a Step keeps only its state's `tools:`.
 - **Where it runs (C7).** A `ReadsCode` block runs in a fresh detached scratch worktree under
   `$AW_SINDRI_HOME/calls/worktrees/<id>/` (a server-made GUID v7), at the commit `ref` names (§A.1, §A.6), removed
@@ -663,13 +655,13 @@ high priority and sensitivity." Whether a plain session counts as the owner's is
   - The stored-call lookup, the poll, `SND-TOOL-409` and the restart sweep work as in §A.1 and B.2. On a restart, a
     `waiting` or `running` row ends `failed`, reason `host-restart`, and its scratch worktree is removed. No
     Temporal and no P6 job are involved.
-- **High priority (C6), for the owner's calls.** An owner's plain call takes its slot through
-  `IHeavySlots.Take(priority: High)` and gets the next free slot before anything else that waits:
-  1. owner's plain calls, ahead of meta's merge-train reservation too. Meta decided this on 2026-10-18; it is
-     reversible and has been noted to the owner;
+- **High priority (C6).** A plain call takes its slot through `IHeavySlots.Take(priority: High)` and gets the next
+  free slot before anything else that waits:
+  1. plain calls, ahead of meta's merge-train reservation too. Meta decided this on 2026-10-18; it is reversible and
+     has been noted to the owner;
   2. meta's merge trains, which otherwise keep their reservation rule;
   3. transition gates;
-  4. Step calls, lane callers' calls and agent work.
+  4. Step calls and agent work.
 
   Nothing is pre-empted: a running gate step or build finishes, and the owner's call takes the next free slot.
   §A.1's timing rule still holds: a sync call waits at most 30 s for a slot, then answers `running`.
@@ -677,51 +669,27 @@ high priority and sensitivity." Whether a plain session counts as the owner's is
     there is no shared queue. While any `High` call waits, Sindri writes the count of waiting `High` calls to
     `$AW_STATE_DIR/heavy-owner-waiting` (removed at zero, and on start). The wrapper treats it like
     `heavy-meta-reserve`: that many free slots go to Sindri first. That wrapper change is meta's: the wrapper lives
-    on the box, outside the repo, so it is a dependency of BM-1 (§D), not part of it. Until it lands, an owner's call
-    is first among Sindri's waiters only.
-  - **Gates and trains always get a slot.** Plain calls, the owner's and the lanes' together, hold at most the box
-    cap − 1 slots box-wide (the cap from `heavy-slots-cap`, B.2). With a cap of 1, a plain call waits for a free
-    slot and holds the only one, as before.
+    on the box, outside the repo, so it is a dependency of BM-1 (§D), not part of it. Until it lands, a plain call is
+    first among Sindri's waiters only.
+  - **Gates and trains always get a slot.** Plain calls hold at most the box cap − 1 slots box-wide (the cap from
+    `heavy-slots-cap`, B.2). With a cap of 1, a plain call waits for a free slot and holds the only one, as before.
   - The memory guard is never skipped (B.2): `High` changes who goes next, not whether a slot is safe.
-- **How it is recorded.** On the repo's stream, with B.3's idempotency keys: `session.tool-started` (`callId` and
-  `block` only) when it starts, and `session.tool-called` when it ends. The latter has B.3's fields without
-  `instance`, `run` and `launch`, plus `caller: session`, `lane` (a lane caller's marker, null-omitted), the
-  `commit` and `spent`.
+- **How it is recorded.** On the repo's stream, with B.3's idempotency keys and B.3's visibility:
+  `session.tool-started` (`callId` and `block` only) when it starts, and `session.tool-called` when it ends. The
+  latter has B.3's fields without `instance`, `run` and `launch`, plus `caller: owner`, the `commit` and `spent`.
   - When the call passed an `itemId`, both events' ledger `item` is that item, so they reach its Timeline (§A.4's
     "plain call … not proof" line).
+  - Results and bodies are read as a Step call's are (§A.4). Spans carry `reason` as for a Step call (§A.4).
   - A sweep deletes plain calls' rows and their bodies after 30 days (C8). Each body is its call's own row (B.2), so
-    the sweep never removes another call's body.
+    the sweep never removes another call's body. The body is scrubbed by `Aw.Redaction`, as every result is.
   - Refused calls are recorded the same way (C4).
   - Calls are counted and shown per repo: `sindri ledger --type session.tool-called` and the places §A.4 lists.
-    Repo-scoped call reads are the human's only (`SND-AUTH-002` for a session, §A.4).
-- **High sensitivity (C10), for the owner's calls.** Under the recommended answer (a):
-  - Both `session.*` events carry §A's `human` visibility. The result is readable only by the calling session's own
-    answer and by the human (the app and the CLI). It is never readable by another session or a Step agent through
-    MCP, never readable by the Judge, and never sent anywhere.
-  - **Every C# ledger reader honours it** (BM-1). Those that serve a session or feed an agent skip `human` events:
-    `CallerEventView` (the event stream, `EventStreamOpener` and `EventPump`, and `ReadLedgerService`),
-    `GetInstanceEventsService`, the `Projector` (no `human` row reaches a view a session can query, such as
-    `item-timeline`; the app's human-only reads go to `block_calls`), and `EventBridge` (no `human` event reaches a
-    workflow, so none becomes a fact the Judge reads). The others read only their own event types and never see one:
-    `JobRecovery`, `GetStatusService`, `ListOutboxService`, `RestoreFleetHistoryService`, `LedgerItemRepos`, and the
-    scheduler's `ServiceRunHistory`. The other readers §A.6 names (the context engine's retrieval and export,
-    evolve, observe and shape, the Judge's inputs) have no C# `ILedgerReader` consumer today: the Judge's facts
-    come through `EventBridge`, and the TypeScript `sindri` keeps its own ledger. The test below covers each when it
-    is added.
-  - An architecture test in `Aw.Architecture.Tests`, `Every_ledger_reader_skips_human_events`, fails when a new
-    `ILedgerReader` consumer is neither on the skip path nor on the own-types list.
-  - Spans and logs for an owner's plain call carry no `reason` and no result text (§A.4).
-  - The body is still scrubbed by `Aw.Redaction` (the scrub protects the logs, not from the owner) and is kept 30
-    days.
-
-  Under (c), the body isn't stored at all: only its sha256 and size are kept, and a poll after the answer gets
-  `result: gone` (§A.1).
 - **Linking to an item.** A plain call that names an item never satisfies a gate, a step report's `calls:` can't
   cite it, and it is not a fact (C8).
 - **Budget and caps ("no matter what").**
-  - A `Budget` block called from an owner's plain session spends from no Sindri budget, because there is no run. It
-    reports through `BlockContext.Spend` (B.2), the total is the answer's and `session.tool-called`'s `spent`, and it
-    is never refused for budget. A lane caller can't call a `Budget` block.
+  - A `Budget` block called from a plain session spends from no Sindri budget, because there is no run. It reports
+    through `BlockContext.Spend` (B.2), the total is the answer's and `session.tool-called`'s `spent`, and it is
+    never refused for budget.
   - `workflow.calls.plainPerDay` (per repo per local day, default 200) refuses nothing. Past it, each event carries
     `capPassed: true` and the host logs one notice a day.
   - Refused entries (a bad name or bad arguments) keep their own cap: 50 a day per repo (fixed in v1, as a Step's
@@ -776,7 +744,7 @@ Contract first, so the two lanes build in parallel.
 | Phase | Lane | Holds | Waits on | Docs it updates |
 |---|---|---|---|---|
 | **BM-0** | engine | The contract, red: `Callable`, `Description`, `ReadsCode` and the `ParameterSpec` fields (`EnumSource` among them); `tools:` with the RCP-TOOL-001..005 fixtures; `BlockContext` and `GateContext.Checkout`; `IBlockCallStore`, `IBlockCallLog`, the request and response records for `ListCallableBlocks` and `ExecuteBlockCall`, with stub services; the `*.tool-started` and `*.tool-called` records; the typed refusals | P8 (the agent runtime), DT-J2 (`MaxDuration`; draft PR #306, not merged), the owner's C2 answer (the tool names) | none |
-| **BM-1** | engine | The validator rows; the catalog test; `gate.tests.green`, `checks.json` read from the base (`fact:change.base`, else the default branch), `needs-repo-config`, `schemas/checks.schema.json`, a `sindri doctor` check that validates every registered repo's `checks.json` and names a repo that has none, and the `deps.yaml` file edge for it (`node scripts/check-deps.mjs`); `list_tools` with its enum sources and `omitted`; the `block_calls` and `block_call_bodies` migration; the run call state in `RecipeWorkflow`; the `block-call` Update, `MarkCallStarted` and `RunBlockCall` (the runner), with the events' idempotency keys; the heavy slot through `IHeavySlots` with its wait ceiling, the `High` priority, the box cap file, the memory guard (never skipped), meta's reserve, the `heavy-owner-waiting` count and the cap − 1 limit on plain calls; the commit, tree, dirty and `changedDuringCall` record; the per-folder lock (calls only); the restart sweep (rows, scratch worktrees, scratch `TMPDIR`s); the environment base and denylist; the bodies and the 30-day sweep; the budget and concurrency keys; `calls:` validation; `BlockCallRunner` for plain calls, the owner and lane paths (`X-Sindri-Lane`), `BlockContext.Spend` and `spent`, the `human` visibility in every C# ledger reader (B.5) with `Every_ledger_reader_skips_human_events`; `workflow.review-loop`'s `fix` `tools:` and the recipe test that keeps it through DTC4. Tests: unit (filtering, refusals, schema building, enum sources, path confinement, `invalid-argument`, the denylist, `ref` checking, the filter as one argv value, the plain pin rule); integration (an Update through the time-skipping server, single flight, cancel on run end, takeover per C5, the restart sweep, a Step call in a dirty folder, a folder edited during a call, a slot-wait timeout, a plain call in a scratch worktree, a waiting owner's plain call beating a waiting Step call and a waiting wrapper job, plain calls never holding the last slot, a lane caller refused a `Budget` block, a `Budget` block's `spent` with no run) | BM-0; meta's wrapper change (the wrapper reads `heavy-owner-waiting` like `heavy-meta-reserve`, B.5), owned by meta and landed on the box, before BM-1's priority test can pass against wrapper jobs | `docs/csharp/sindri-workflow.md` (`tools:`, RCP-TOOL rows, a "Block calls" section), `docs/csharp/sindri-profile.md` (the keys), `docs/csharp/sindri.md` (the events, the tables, the doctor check), a `checks.json` reference in `docs/csharp/` (targets come from the base) |
+| **BM-1** | engine | The validator rows; the catalog test; `gate.tests.green`, `checks.json` read from the base (`fact:change.base`, else the default branch), `needs-repo-config`, `schemas/checks.schema.json`, a `sindri doctor` check that validates every registered repo's `checks.json` and names a repo that has none, and the `deps.yaml` file edge for it (`node scripts/check-deps.mjs`); `list_tools` with its enum sources and `omitted`; the `block_calls` and `block_call_bodies` migration; the run call state in `RecipeWorkflow`; the `block-call` Update, `MarkCallStarted` and `RunBlockCall` (the runner), with the events' idempotency keys; the heavy slot through `IHeavySlots` with its wait ceiling, the `High` priority for plain calls, the box cap file, the memory guard (never skipped), meta's reserve, the `heavy-owner-waiting` count and the cap − 1 limit on plain calls; the commit, tree, dirty and `changedDuringCall` record; the per-folder lock (calls only); the restart sweep (rows, scratch worktrees, scratch `TMPDIR`s); the environment base and denylist; the bodies and the 30-day sweep; the budget and concurrency keys; `calls:` validation; `BlockCallRunner` for plain calls (`caller: owner`), `BlockContext.Spend` and `spent`; `workflow.review-loop`'s `fix` `tools:` and the recipe test that keeps it through DTC4. Tests: unit (filtering, refusals, schema building, enum sources, path confinement, `invalid-argument`, the denylist, `ref` checking, the filter as one argv value, the plain pin rule); integration (an Update through the time-skipping server, single flight, cancel on run end, takeover per C5, the restart sweep, a Step call in a dirty folder, a folder edited during a call, a slot-wait timeout, a plain call in a scratch worktree, a waiting plain call beating a waiting Step call and a waiting wrapper job, plain calls never holding the last slot, a `Budget` block's `spent` with no run) | BM-0; meta's wrapper change (the wrapper reads `heavy-owner-waiting` like `heavy-meta-reserve`, B.5), owned by meta and landed on the box, before BM-1's priority test can pass against wrapper jobs | `docs/csharp/sindri-workflow.md` (`tools:`, RCP-TOOL rows, a "Block calls" section), `docs/csharp/sindri-profile.md` (the keys), `docs/csharp/sindri.md` (the events, the tables, the doctor check), a `checks.json` reference in `docs/csharp/` (targets come from the base) |
 | **BA-1** | api | §A: the two MCP tools, the routes, `X-Sindri-Run` and the launcher's per-launch MCP form change, schema validation, the stored-call lookup, the claim and the 409 check, the refusal recording, the catalog rows, the goldens. Built against BM-0's records and stubs, so it starts the day BM-0 lands. Its gate also runs `Aw.Sindri.Ui.Tests`, which pins the catalog rows | BM-0 | §A's list |
 | **BA-2** | api, with engine | §A.5's proof end to end, with a real launched Step session and a plain session | BM-1, BA-1 | the proof log |
 | **BU-1** | ui | The calls on a Step (cited, uncited, waiting, running), the plain calls (§A.4), and the app steps of §A.5's proof | BM-1, BA-1 | `docs/csharp/sindri-ui.md` |
