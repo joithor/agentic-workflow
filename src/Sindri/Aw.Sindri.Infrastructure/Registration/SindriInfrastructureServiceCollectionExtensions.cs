@@ -26,6 +26,7 @@ using Aw.Sindri.Infrastructure.Mcp;
 using Aw.Sindri.Infrastructure.Notifications;
 using Aw.Sindri.Infrastructure.Profile;
 using Aw.Sindri.Infrastructure.Secrets;
+using Aw.Sindri.Infrastructure.Sessions;
 using Aw.Sindri.Infrastructure.Text;
 using Aw.Sindri.Infrastructure.Views;
 using Aw.Sindri.Infrastructure.Workflow;
@@ -42,10 +43,15 @@ public static class SindriInfrastructureServiceCollectionExtensions
     /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs, a lambda in tests).</param>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddSindriInfrastructure(this IServiceCollection services, Func<string, string?> environment)
-        => services
-            .AddSingleton(SettingsFromEnvironment.Read(environment))
-            .AddSingleton<IIdGenerator, GuidV7Ids>()
-            .AddSingleton<IProcessProbe, PosixProcessProbe>()
+    {
+        var settings = SettingsFromEnvironment.Read(environment);
+        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriAdapters(environment);
+    }
+
+    private static IServiceCollection AddSindriAdapters(this IServiceCollection services, Func<string, string?> environment)
+    {
+        return services
+            .AddSingleton<IIdGenerator, GuidV7Ids>().AddSingleton<IProcessProbe, PosixProcessProbe>()
             .AddSingleton<LedgerDatabase>()
             .AddSingleton<ILedgerStore, SqliteLedger>()
             .AddSingleton<ILedgerReader, SqliteLedgerReader>()
@@ -83,6 +89,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IClaudeCli, ProcessClaudeCli>()
             .AddSingleton<IProviderFiles, ProviderConfigFiles>()
             .AddSingleton<ITextScrubber>(new RedactingScrubber(Redactor.Default));
+    }
 
     /// <summary>
     /// Makes the secret-pointer resolver (env:, file:, keychain:, op:) over <paramref name="environment"/>, for Composition to
