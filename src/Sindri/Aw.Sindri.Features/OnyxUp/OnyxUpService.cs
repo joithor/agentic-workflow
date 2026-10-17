@@ -80,7 +80,7 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
     // Step 1. The port row accepts the port our own running nginx holds; a failed row stops everything before anything is fetched or written.
     private Result<(int Port, string Platform, IReadOnlyList<string> Warnings)> Preflight(OnyxSetupState? state, OnyxPins pins, CancellationToken cancellationToken)
     {
-        var (docker, host) = facts.Read(cancellationToken);
+        var (docker, host) = facts.Read(state?.Port, cancellationToken);
         var report = OnyxPreflight.Evaluate(docker, host, pins, OwnPort(state, docker, cancellationToken));
         if (report.Blocks)
         {

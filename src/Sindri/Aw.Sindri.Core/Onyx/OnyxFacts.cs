@@ -15,13 +15,23 @@ public sealed class OnyxFacts(IContainerRuntime runtime, IHostProbes probes, ISi
     /// <summary>Reads the facts: the runtime's, and the host's (free disk at the Sindri home, and at Docker's data root when that is a directory on this host, and the loopback ports).</summary>
     /// <param name="cancellationToken">Cancels the reading.</param>
     /// <returns>The runtime's facts and the host's.</returns>
-    public (ContainerRuntimeFacts Docker, HostFacts Host) Read(CancellationToken cancellationToken)
+    public (ContainerRuntimeFacts Docker, HostFacts Host) Read(CancellationToken cancellationToken) => Read(stickyPort: null, cancellationToken);
+
+    /// <summary>Reads the facts, preferring the port a previous `onyx up` settled on: it stays while it is free (or ours) and the search moves on to the usual ports only when something else holds it.</summary>
+    /// <param name="stickyPort">The port state.json recorded, or null for a first run (3000 first).</param>
+    /// <param name="cancellationToken">Cancels the reading.</param>
+    /// <returns>The runtime's facts and the host's.</returns>
+    public (ContainerRuntimeFacts Docker, HostFacts Host) Read(int? stickyPort, CancellationToken cancellationToken)
     {
         var docker = runtime.Inspect(cancellationToken);
+        var sticky = stickyPort is >= 1024 and <= 65535 and not OnyxPreflight.PreferredPort ? stickyPort : null;
+        var ports = sticky is { } kept
+            ? probes.Ports(kept, OnyxPreflight.PreferredPort, OnyxPreflight.FallbackLast)
+            : probes.Ports(OnyxPreflight.PreferredPort, OnyxPreflight.FallbackFirst, OnyxPreflight.FallbackLast);
         var host = new HostFacts(
             probes.FreeDisk(home.Path),
             docker.DataRoot is { } dataRoot ? probes.FreeDiskIfExists(dataRoot) : null,
-            probes.Ports(OnyxPreflight.PreferredPort, OnyxPreflight.FallbackFirst, OnyxPreflight.FallbackLast));
+            ports);
         return (docker, host);
     }
 

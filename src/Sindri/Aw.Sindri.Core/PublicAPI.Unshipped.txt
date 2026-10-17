@@ -8212,6 +8212,7 @@ Aw.Sindri.Core.Onyx.OnyxFacts.Paths.get -> Aw.Sindri.Core.Onyx.OnyxPaths!
 Aw.Sindri.Core.Onyx.OnyxFacts.Platform(System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<string!>!
 Aw.Sindri.Core.Onyx.OnyxFacts.ProjectOf(Aw.Sindri.Core.Onyx.OnyxSetupState? state) -> Aw.Sindri.Core.Onyx.ComposeProject!
 Aw.Sindri.Core.Onyx.OnyxFacts.Read(System.Threading.CancellationToken cancellationToken) -> (Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! Docker, Aw.Sindri.Core.Onyx.HostFacts! Host)
+Aw.Sindri.Core.Onyx.OnyxFacts.Read(int? stickyPort, System.Threading.CancellationToken cancellationToken) -> (Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! Docker, Aw.Sindri.Core.Onyx.HostFacts! Host)
 Aw.Sindri.Core.Onyx.OnyxFacts.Containers(Aw.Sindri.Core.Onyx.OnyxSetupState? state, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeContainer!>!>!
 Aw.Sindri.Core.Onyx.OnyxPaths.EnvTemplate.get -> string!
 Aw.Sindri.Core.Onyx.OnyxPaths.Project.get -> Aw.Sindri.Core.Onyx.ComposeProject!
