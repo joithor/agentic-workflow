@@ -71,7 +71,7 @@ exit 1
 ## build hash
 sha256:<hex>
 ## no arguments
-usage: aw-packets validate|freeze|hash <packet-dir> [--kind build|scoping] [--json] (build: validate and freeze take [--repo <dir>]; scoping: freeze takes --repo-slug <owner/name> --instance <slug>)
+usage: aw-packets validate|freeze|hash <packet-dir> [--kind build|scoping|design|plan|phase|proof|review|handoff] [--json] (build and the line kinds design, plan, phase, proof, review, handoff: validate and freeze take [--repo <dir>]; scoping: freeze takes --repo-slug <owner/name> --instance <slug>)
 exit 2
 ## state files
 ./packets/example/repo/aot-smoke/frozen/<hex>.json
