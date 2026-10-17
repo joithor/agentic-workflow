@@ -29,12 +29,27 @@ public static class WatchDiff
             lines.Add("MAIN moved " + Short(snapshot.MainSha));
         }
 
-        if (snapshot.DiskLow != state.DiskLow)
+        var (disk, diskSeen) = Settle(state.DiskLow, snapshot.DiskLow, state.DiskFlipSeen, "DISK", lines);
+        var (memory, memorySeen) = Settle(state.MemoryLow, snapshot.MemoryLow, state.MemoryFlipSeen, "MEMORY", lines);
+        return new WatchStep(lines, new WatchState(Initialized: true, prs, snapshot.MainSha, disk, memory, diskSeen, memorySeen));
+    }
+
+    // A resource flips once the poll disagrees with the reported state twice in a row, so a host sitting at its floor does not
+    // flap LOW, OK, LOW (each line tells every lane to pause or resume).
+    private static (bool Reported, bool FlipSeen) Settle(bool reported, bool seen, bool flipSeen, string name, List<string> lines)
+    {
+        if (seen == reported)
         {
-            lines.Add(snapshot.DiskLow ? "DISK LOW" : "DISK OK");
+            return (reported, false);
         }
 
-        return new WatchStep(lines, new WatchState(Initialized: true, prs, snapshot.MainSha, snapshot.DiskLow));
+        if (!flipSeen)
+        {
+            return (reported, true);
+        }
+
+        lines.Add(name + (seen ? " LOW" : " OK"));
+        return (seen, false);
     }
 
     private static WatchedPr Fresh(PrView pr, bool report, List<string> lines)

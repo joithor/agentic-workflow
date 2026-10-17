@@ -3,9 +3,6 @@ namespace Aw.Meta.Core.Health;
 /// <summary>The health check's rules over a process snapshot.</summary>
 public static class HostRules
 {
-    /// <summary>Memory is low below this share of the total.</summary>
-    public const int LowMemoryPercent = 10;
-
     /// <summary>The orphans: processes the orphan rule matches, with their parent looked up in the same snapshot.</summary>
     /// <param name="processes">The snapshot's processes.</param>
     /// <returns>The orphaned processes.</returns>
@@ -29,14 +26,5 @@ public static class HostRules
             .Where(group => group.Skip(allowed).Any())
             .Select(group => new DuplicateServer(group.Key, group.Count(), allowed))
             .OrderByDescending(d => d.Copies)];
-    }
-
-    /// <summary>Whether available memory is under <see cref="LowMemoryPercent"/> of the total.</summary>
-    /// <param name="resources">The host's memory.</param>
-    /// <returns>True when memory is low.</returns>
-    public static bool MemoryLow(HostResources resources)
-    {
-        ArgumentNullException.ThrowIfNull(resources);
-        return resources.AvailablePercent < LowMemoryPercent;
     }
 }
