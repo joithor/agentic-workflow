@@ -111,6 +111,36 @@ public sealed class OnyxUpCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Up_json_documents_steps_as_an_array_of_step_and_outcome()
+    {
+        _ = await Verbs(Human).Up(json: true, TestContext.Current.CancellationToken);
+
+        using var document = JsonDocument.Parse(_out.ToString());
+        var steps = document.RootElement.GetProperty("steps").EnumerateArray().Select(static e => (e.GetProperty("step").GetString(), e.GetProperty("outcome").GetString())).ToArray();
+        Assert.Equal([("fetch", "ran"), ("config", "ran"), ("pull", "ran"), ("start", "ran")], steps);
+        Assert.False(document.RootElement.TryGetProperty("ran", out _));
+        Assert.False(document.RootElement.TryGetProperty("skipped", out _));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_hand_over_line_follows_the_response()
+    {
+        var needsYou = new OnyxUpResponse(3000, "http://127.0.0.1:3000", "v4.9.0", [], [new OnyxStepResult("fetch", OnyxStepOutcome.Ran), new OnyxStepResult("account", OnyxStepOutcome.NeedsHuman)]);
+        await using var provider = new ServiceCollection().AddSingleton<IService<OnyxUpRequest, OnyxUpResponse>>(new StubUp(needsYou)).BuildServiceProvider();
+
+        var code = await new OnyxVerbs(provider, new Output(_out, _error, _json), Human).Up(json: false, TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, code);
+        Assert.Contains("needs you: account", _out.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(HandOver, _out.ToString(), StringComparison.Ordinal);
+    }
+
+    private sealed class StubUp(OnyxUpResponse response) : IService<OnyxUpRequest, OnyxUpResponse>
+    {
+        public ValueTask<Kernel.Result<OnyxUpResponse>> Handle(OnyxUpRequest request, CancellationToken cancellationToken) => ValueTask.FromResult<Kernel.Result<OnyxUpResponse>>(response);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Up_maps_SND_ONYX_003_to_exit_1_with_the_fix_text()
     {
         _rig.Probes.FreeBytes = 1L << 30;

@@ -123,6 +123,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(OnyxStatusResponse))]
 [JsonSerializable(typeof(OnyxSetupState))]
 [JsonSerializable(typeof(OnyxUpResponse))]
+[JsonSerializable(typeof(OnyxStepResult))]
 [JsonSerializable(typeof(OnyxDownResponse))]
 [JsonSerializable(typeof(PublicEvent))]
 [JsonSerializable(typeof(LedgerPage))]

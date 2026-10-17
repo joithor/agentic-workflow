@@ -15,6 +15,8 @@ namespace Aw.Sindri.Features.OnyxUp;
 internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, IOnyxPinsSource pinsSource, IOnyxProgress progress, IEnumerable<IOnyxUpStep> steps)
     : IService<OnyxUpRequest, OnyxUpResponse>
 {
+    private readonly IReadOnlyList<IOnyxUpStep> _steps = OnyxUpPlan.Validate(steps);
+
     public async ValueTask<Result<OnyxUpResponse>> Handle(OnyxUpRequest request, CancellationToken cancellationToken)
     {
         using var held = workspace.TryLock();
@@ -34,9 +36,8 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
         var (port, platform, warnings) = preflight.Value;
         var context = new OnyxUpContext(pins, facts.Paths, port, platform) { Project = facts.ProjectOf(state) };
         var recorded = new Dictionary<string, string>(state?.Steps ?? new Dictionary<string, string>(StringComparer.Ordinal), StringComparer.Ordinal);
-        List<string> ran = [];
-        List<string> skipped = [];
-        foreach (var step in steps)
+        List<OnyxStepResult> results = [];
+        foreach (var step in _steps)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var outcome = await RunStep(step, context, recorded, cancellationToken).ConfigureAwait(false);
@@ -45,10 +46,10 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
                 return outcome.Error;
             }
 
-            (outcome.Value == OnyxStepOutcome.Ran ? ran : skipped).Add(step.Name);
+            results.Add(new OnyxStepResult(step.Name, outcome.Value));
         }
 
-        return new OnyxUpResponse(port, string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}"), context.Version ?? pins.Version, warnings, ran, skipped);
+        return new OnyxUpResponse(port, string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}"), context.Version ?? pins.Version, warnings, results);
     }
 
     // The step makes its result hold; its stamp is recorded once it does.

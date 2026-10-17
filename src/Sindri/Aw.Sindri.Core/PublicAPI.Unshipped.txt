@@ -8063,6 +8063,7 @@ static Aw.Sindri.Core.Onyx.OnyxPreflight.Evaluate(Aw.Sindri.Core.Onyx.ContainerR
 static Aw.Sindri.Core.Onyx.OnyxSetupState.operator !=(Aw.Sindri.Core.Onyx.OnyxSetupState? left, Aw.Sindri.Core.Onyx.OnyxSetupState? right) -> bool
 static Aw.Sindri.Core.Onyx.OnyxSetupState.operator ==(Aw.Sindri.Core.Onyx.OnyxSetupState? left, Aw.Sindri.Core.Onyx.OnyxSetupState? right) -> bool
 static Aw.Sindri.Core.Onyx.OnyxSteps.Stamp(params string![]! parts) -> string!
+static Aw.Sindri.Core.Onyx.OnyxSteps.Order.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static readonly Aw.Sindri.Core.SindriErrors.OnyxComposeFailed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.OnyxNotReady -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.OnyxRemoteDocker -> Aw.Kernel.ErrorDefinition!

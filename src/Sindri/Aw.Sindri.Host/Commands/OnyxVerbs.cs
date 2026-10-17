@@ -42,9 +42,10 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
         }
 
         var up = answer.Value;
+        var next = up.NeedsHuman is { Count: > 0 } waiting ? $"needs you: {string.Join(", ", waiting)}" : HandOver;
         return json
             ? await output.Json(up, 0).ConfigureAwait(false)
-            : await output.Text($"{"url",-10}{up.Url}\n{"version",-10}{up.Version}\n{"ran",-10}{Steps(up.Ran)}\n{"skipped",-10}{Steps(up.Skipped)}\n{HandOver}\n", 0).ConfigureAwait(false);
+            : await output.Text($"{"url",-10}{up.Url}\n{"version",-10}{up.Version}\n{"ran",-10}{Steps(up.Ran)}\n{"skipped",-10}{Steps(up.Skipped)}\n{next}\n", 0).ConfigureAwait(false);
     }
 
     internal async Task<int> Down(bool json, CancellationToken ct)

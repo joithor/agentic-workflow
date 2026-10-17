@@ -11,7 +11,7 @@ internal sealed class OnyxPullStep(IContainerRuntime runtime, IOnyxWorkspace wor
 
     public string? After => OnyxSteps.Config;
 
-    public string Stamp(OnyxUpContext context) => OnyxSteps.Stamp(context.Done.GetValueOrDefault(OnyxSteps.Config, ""));
+    public string Stamp(OnyxUpContext context) => OnyxSteps.Stamp(context.Upstream(OnyxSteps.Config));
 
     public ValueTask<Result<OnyxStepOutcome>> Execute(OnyxUpContext context, string? recorded, CancellationToken cancellationToken)
     {
