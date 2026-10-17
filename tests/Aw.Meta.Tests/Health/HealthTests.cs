@@ -2,6 +2,7 @@ using Aw.Meta.Core;
 using Aw.Meta.Core.Health;
 using Aw.Meta.Features.Health;
 using Aw.Meta.Testing;
+using Aw.Meta.Tests.Reserve;
 
 namespace Aw.Meta.Tests.Health;
 
@@ -16,6 +17,8 @@ public sealed class HealthTests
         new LaneCheck(_world.Config, _world.Sessions, _world.Messages, _world.Lanes, _world.LaneHealth),
         new OrphanKiller(_world.Processes, _world.Log, _world.Clock),
         _world.Values,
+        _world.Config,
+        Worlds.Advisor(_world),
         _world.Clock);
 
     private async Task<HealthResponse> Check(bool kill = false)
@@ -47,6 +50,47 @@ public sealed class HealthTests
         Assert.Equal([new ProcessGroup("claude", 1, 1024), new ProcessGroup("dotnet", 1, 512)], health.Groups);
         Assert.Equal((2, 50), (health.ProcessCount, health.Host.AvailablePercent));
         Assert.False(health.Attention);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_heavy_slots_the_reservation_and_the_builders_advice_are_reported()
+    {
+        await _world.Ready();
+        AllLanesLive();
+        _world.Heavy.Cap = 4;
+        _world.Heavy.Reserve = 2;
+        _world.Resources.Resources = new HostResources(64_000_000, 16_000_000, 0, DiskFreeBytes: 132L * 1024 * 1024 * 1024);
+
+        var health = await Check();
+
+        Assert.Equal(new HeavySlots(4, 2), health.Heavy);
+        Assert.Equal("builders: 4 per lane (disk 132 GB free, mem 15 GB available)", health.Builders!.Line());
+        Assert.False(health.Attention);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_builders_advice_follows_the_team_configs_thresholds()
+    {
+        _ = await _world.Config.Save(
+            new Aw.Meta.Core.Config.TeamConfig("t1", "/work", ["meta", "api", "ui"]) { Builders = new Aw.Meta.Core.Config.BuildersConfig(MaxPerLane: 3, WorktreeGb: 10) },
+            CancellationToken.None);
+        _world.Resources.Resources = new HostResources(64_000_000, 32_000_000, 0, DiskFreeBytes: 80L * 1024 * 1024 * 1024);
+
+        var health = await Check();
+
+        // meta is not a lane that builds: 2 lanes; 30 + 2 x 3 x 10 = 90 > 80, 30 + 2 x 2 x 10 = 70 fits
+        Assert.Equal((2, 3), (health.Builders!.PerLane, health.Builders.MaxPerLane));
+        Assert.Equal("builders: 2 per lane (disk below floor+headroom)", health.Builders.Line());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Without_a_team_config_the_advice_uses_the_defaults()
+    {
+        _world.Resources.Resources = new HostResources(64_000_000, 32_000_000, 0, DiskFreeBytes: 200L * 1024 * 1024 * 1024);
+
+        var health = await Check();
+
+        Assert.Equal((4, 3), (health.Builders!.PerLane, health.Heavy!.Cap));
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -45,6 +45,7 @@ public static class MetaInfrastructureServiceCollectionExtensions
             .AddSingleton<IProcessTable>(new ProcProcessTable(settings.StateDirectory))
             .AddSingleton<IProcessLocations, ProcessScanner>()
             .AddSingleton<IHostResources>(new ProcHostResources(settings.StateDirectory, settings.HeavyLock))
+            .AddSingleton<IHeavyReserve>(new FileHeavyReserve(settings.StateRoot))
             .AddSingleton<ILogFiles, FileLogFiles>()
             .AddSingleton<IWorktreeFiles, DirectoryWorktreeFiles>()
             .AddSingleton<IDelay>(sp => new ClockDelay(sp.GetRequiredService<TimeProvider>()))

@@ -16,8 +16,9 @@ namespace Aw.Meta.Features.GateRun;
 /// <param name="workspace">Builds the tree.</param>
 /// <param name="steps">Runs a step.</param>
 /// <param name="gates">Stores the run.</param>
+/// <param name="reservation">Sets the heavy-slot reservation from the merge-queue depth before the run.</param>
 /// <param name="clock">Dates the run.</param>
-internal sealed class GateRunService(IMetaConfig config, GateWorkspace workspace, GateStepRunner steps, IGateStore gates, TimeProvider clock)
+internal sealed class GateRunService(IMetaConfig config, GateWorkspace workspace, GateStepRunner steps, IGateStore gates, HeavyReservation reservation, TimeProvider clock)
     : IService<GateRunRequest, GateRunResponse>
 {
     public async ValueTask<Result<GateRunResponse>> Handle(GateRunRequest request, CancellationToken cancellationToken)
@@ -33,6 +34,9 @@ internal sealed class GateRunService(IMetaConfig config, GateWorkspace workspace
         {
             return MetaErrors.Invalid.With($"no gate scope '{unknown}' in the team config (scopes: {string.Join(", ", team.Value.Gate.Scopes.Keys)})");
         }
+
+        // Advisory: a reservation that can't be set (unwritable state root) must not stop the gate.
+        _ = await reservation.Apply(team.Value, cancellationToken).ConfigureAwait(false);
 
         var plan = await Plan(team.Value, request, cancellationToken).ConfigureAwait(false);
         if (plan.IsError)

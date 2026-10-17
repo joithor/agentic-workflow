@@ -28,7 +28,7 @@ internal sealed class WatchService(IMetaConfig config, WatchPoller poller, IKeyV
         }
 
         var end = clock.GetUtcNow() + request.Duration;
-        var loop = new WatchLoop(team.Value.Repo, poller, request.Emit);
+        var loop = new WatchLoop(team.Value, poller, request.Emit);
         for (var polls = 1; ; polls++)
         {
             await loop.Tick(cancellationToken).ConfigureAwait(false);

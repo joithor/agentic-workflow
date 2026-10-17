@@ -7,7 +7,7 @@ internal static class ProcFormat
 {
     internal sealed record StatFields(string Name, char State, int Ppid, long StartTicks, long RssPages);
 
-    internal sealed record MemFields(long Available, long SwapUsed, long Total);
+    internal sealed record MemFields(long Available, long SwapUsed, long Total, long SwapTotal = 0);
 
     // "pid (comm) S ppid ...": comm may hold spaces and parentheses, so split after the last ')'.
     internal static StatFields? Stat(string stat)
@@ -38,6 +38,6 @@ internal static class ProcFormat
                 ? long.Parse(line[(key.Length + 1)..].Replace("kB", string.Empty, StringComparison.Ordinal).Trim(), CultureInfo.InvariantCulture)
                 : 0;
 
-        return new MemFields(Value("MemAvailable"), Value("SwapTotal") - Value("SwapFree"), Value("MemTotal"));
+        return new MemFields(Value("MemAvailable"), Value("SwapTotal") - Value("SwapFree"), Value("MemTotal"), Value("SwapTotal"));
     }
 }

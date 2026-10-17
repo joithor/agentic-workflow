@@ -79,4 +79,18 @@ public sealed class WatchDiffTests
     [Fact, Trait("Lane", "unit")]
     public void Disk_changes_are_reported_when_they_change() =>
         Assert.Equal(["DISK LOW", "DISK OK"], Run(Snap(), Snap(diskLow: true), Snap(diskLow: true), Snap()), StringComparer.Ordinal);
+
+    [Fact, Trait("Lane", "unit")]
+    public void Memory_changes_are_reported_when_they_change() =>
+        Assert.Equal(
+            ["MEMORY LOW", "MEMORY OK"],
+            Run(Snap(), new WatchSnapshot([], "m1", DiskLow: false, MemoryLow: true), new WatchSnapshot([], "m1", DiskLow: false, MemoryLow: true), Snap()),
+            StringComparer.Ordinal);
+
+    [Fact, Trait("Lane", "unit")]
+    public void Disk_and_memory_are_reported_independently() =>
+        Assert.Equal(
+            ["DISK LOW", "MEMORY LOW", "DISK OK"],
+            Run(Snap(), new WatchSnapshot([], "m1", DiskLow: true, MemoryLow: true), new WatchSnapshot([], "m1", DiskLow: false, MemoryLow: true)),
+            StringComparer.Ordinal);
 }

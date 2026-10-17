@@ -91,7 +91,6 @@ Aw.Meta.Core.Config.TeamConfig.Repo.get -> string!
 Aw.Meta.Core.Config.TeamConfig.Repo.init -> void
 Aw.Meta.Core.Config.TeamConfig.Team.get -> string!
 Aw.Meta.Core.Config.TeamConfig.Team.init -> void
-Aw.Meta.Core.Config.TeamConfig.TeamConfig(string! team, string! repo, System.Collections.Generic.IReadOnlyList<string!>! lanes, string! metaLane = "meta", string? log = null, string? prompts = null, Aw.Meta.Core.Config.GateConfig? gate = null, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.MergeOrderRule!>? mergeOrder = null, System.Collections.Generic.IReadOnlyList<string!>? knownFlakes = null, Aw.Meta.Core.Config.WorktreeConfig? worktrees = null) -> void
 Aw.Meta.Core.Config.TeamConfig.Worktrees.get -> Aw.Meta.Core.Config.WorktreeConfig!
 Aw.Meta.Core.Config.TeamConfig.Worktrees.init -> void
 Aw.Meta.Core.Config.WorktreeConfig
@@ -355,11 +354,9 @@ Aw.Meta.Core.Health.HeavyLock.Pid.init -> void
 Aw.Meta.Core.Health.HostResources
 Aw.Meta.Core.Health.HostResources.<Clone>$() -> Aw.Meta.Core.Health.HostResources!
 Aw.Meta.Core.Health.HostResources.AvailablePercent.get -> int
-Aw.Meta.Core.Health.HostResources.Deconstruct(out long MemTotalKb, out long MemAvailableKb, out long SwapUsedKb, out long DiskFreeBytes) -> void
 Aw.Meta.Core.Health.HostResources.DiskFreeBytes.get -> long
 Aw.Meta.Core.Health.HostResources.DiskFreeBytes.init -> void
 Aw.Meta.Core.Health.HostResources.Equals(Aw.Meta.Core.Health.HostResources? other) -> bool
-Aw.Meta.Core.Health.HostResources.HostResources(long MemTotalKb, long MemAvailableKb, long SwapUsedKb, long DiskFreeBytes) -> void
 Aw.Meta.Core.Health.HostResources.MemAvailableKb.get -> long
 Aw.Meta.Core.Health.HostResources.MemAvailableKb.init -> void
 Aw.Meta.Core.Health.HostResources.MemTotalKb.get -> long
@@ -976,7 +973,6 @@ Aw.Meta.Core.Watch.WatchDiff
 Aw.Meta.Core.Watch.WatchDuration
 Aw.Meta.Core.Watch.WatchSnapshot
 Aw.Meta.Core.Watch.WatchSnapshot.<Clone>$() -> Aw.Meta.Core.Watch.WatchSnapshot!
-Aw.Meta.Core.Watch.WatchSnapshot.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Watch.PrView!>! Prs, out string! MainSha, out bool DiskLow) -> void
 Aw.Meta.Core.Watch.WatchSnapshot.DiskLow.get -> bool
 Aw.Meta.Core.Watch.WatchSnapshot.DiskLow.init -> void
 Aw.Meta.Core.Watch.WatchSnapshot.Equals(Aw.Meta.Core.Watch.WatchSnapshot? other) -> bool
@@ -984,10 +980,8 @@ Aw.Meta.Core.Watch.WatchSnapshot.MainSha.get -> string!
 Aw.Meta.Core.Watch.WatchSnapshot.MainSha.init -> void
 Aw.Meta.Core.Watch.WatchSnapshot.Prs.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Watch.PrView!>!
 Aw.Meta.Core.Watch.WatchSnapshot.Prs.init -> void
-Aw.Meta.Core.Watch.WatchSnapshot.WatchSnapshot(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Watch.PrView!>! Prs, string! MainSha, bool DiskLow) -> void
 Aw.Meta.Core.Watch.WatchState
 Aw.Meta.Core.Watch.WatchState.<Clone>$() -> Aw.Meta.Core.Watch.WatchState!
-Aw.Meta.Core.Watch.WatchState.Deconstruct(out bool Initialized, out System.Collections.Generic.IReadOnlyDictionary<int, Aw.Meta.Core.Watch.WatchedPr!>! Prs, out string? MainSha, out bool DiskLow) -> void
 Aw.Meta.Core.Watch.WatchState.DiskLow.get -> bool
 Aw.Meta.Core.Watch.WatchState.DiskLow.init -> void
 Aw.Meta.Core.Watch.WatchState.Equals(Aw.Meta.Core.Watch.WatchState? other) -> bool
@@ -997,7 +991,6 @@ Aw.Meta.Core.Watch.WatchState.MainSha.get -> string?
 Aw.Meta.Core.Watch.WatchState.MainSha.init -> void
 Aw.Meta.Core.Watch.WatchState.Prs.get -> System.Collections.Generic.IReadOnlyDictionary<int, Aw.Meta.Core.Watch.WatchedPr!>!
 Aw.Meta.Core.Watch.WatchState.Prs.init -> void
-Aw.Meta.Core.Watch.WatchState.WatchState(bool Initialized, System.Collections.Generic.IReadOnlyDictionary<int, Aw.Meta.Core.Watch.WatchedPr!>! Prs, string? MainSha, bool DiskLow) -> void
 Aw.Meta.Core.Watch.WatchStep
 Aw.Meta.Core.Watch.WatchStep.<Clone>$() -> Aw.Meta.Core.Watch.WatchStep!
 Aw.Meta.Core.Watch.WatchStep.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Lines, out Aw.Meta.Core.Watch.WatchState! State) -> void
@@ -1506,3 +1499,209 @@ static readonly Aw.Meta.Core.MetaErrors.TeamAmbiguous -> Aw.Kernel.ErrorDefiniti
 static readonly Aw.Meta.Core.MetaErrors.TeamMigrationRefused -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.TranscriptUnreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.UnknownLane -> Aw.Kernel.ErrorDefinition!
+Aw.Meta.Core.Config.BuildersConfig
+Aw.Meta.Core.Config.BuildersConfig.<Clone>$() -> Aw.Meta.Core.Config.BuildersConfig!
+Aw.Meta.Core.Config.BuildersConfig.BuildersConfig(int MaxPerLane = 4, int WorktreeGb = 4) -> void
+Aw.Meta.Core.Config.BuildersConfig.Deconstruct(out int MaxPerLane, out int WorktreeGb) -> void
+Aw.Meta.Core.Config.BuildersConfig.Equals(Aw.Meta.Core.Config.BuildersConfig? other) -> bool
+Aw.Meta.Core.Config.BuildersConfig.MaxPerLane.get -> int
+Aw.Meta.Core.Config.BuildersConfig.MaxPerLane.init -> void
+Aw.Meta.Core.Config.BuildersConfig.WorktreeGb.get -> int
+Aw.Meta.Core.Config.BuildersConfig.WorktreeGb.init -> void
+Aw.Meta.Core.Config.HeavyConfig
+Aw.Meta.Core.Config.HeavyConfig.<Clone>$() -> Aw.Meta.Core.Config.HeavyConfig!
+Aw.Meta.Core.Config.HeavyConfig.Deconstruct(out Aw.Meta.Core.Config.ReserveSetting? Reserve) -> void
+Aw.Meta.Core.Config.HeavyConfig.EffectiveReserve.get -> Aw.Meta.Core.Config.ReserveSetting!
+Aw.Meta.Core.Config.HeavyConfig.Equals(Aw.Meta.Core.Config.HeavyConfig? other) -> bool
+Aw.Meta.Core.Config.HeavyConfig.HeavyConfig(Aw.Meta.Core.Config.ReserveSetting? Reserve = null) -> void
+Aw.Meta.Core.Config.HeavyConfig.Reserve.get -> Aw.Meta.Core.Config.ReserveSetting?
+Aw.Meta.Core.Config.HeavyConfig.Reserve.init -> void
+Aw.Meta.Core.Config.ReserveSetting
+Aw.Meta.Core.Config.ReserveSetting.<Clone>$() -> Aw.Meta.Core.Config.ReserveSetting!
+Aw.Meta.Core.Config.ReserveSetting.Deconstruct(out bool Enabled, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.ReserveTier!>! Tiers) -> void
+Aw.Meta.Core.Config.ReserveSetting.Enabled.get -> bool
+Aw.Meta.Core.Config.ReserveSetting.Enabled.init -> void
+Aw.Meta.Core.Config.ReserveSetting.Equals(Aw.Meta.Core.Config.ReserveSetting? other) -> bool
+Aw.Meta.Core.Config.ReserveSetting.For(int depth, int cap) -> int
+Aw.Meta.Core.Config.ReserveSetting.ReserveSetting(bool Enabled, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.ReserveTier!>! Tiers) -> void
+Aw.Meta.Core.Config.ReserveSetting.Tiers.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.ReserveTier!>!
+Aw.Meta.Core.Config.ReserveSetting.Tiers.init -> void
+Aw.Meta.Core.Config.ReserveSettingConverter
+Aw.Meta.Core.Config.ReserveSettingConverter.ReserveSettingConverter() -> void
+Aw.Meta.Core.Config.ReserveSlots
+Aw.Meta.Core.Config.ReserveSlots.Count.get -> int?
+Aw.Meta.Core.Config.ReserveSlots.Count.init -> void
+Aw.Meta.Core.Config.ReserveSlots.Deconstruct(out int? Count) -> void
+Aw.Meta.Core.Config.ReserveSlots.Equals(Aw.Meta.Core.Config.ReserveSlots other) -> bool
+Aw.Meta.Core.Config.ReserveSlots.ReserveSlots() -> void
+Aw.Meta.Core.Config.ReserveSlots.ReserveSlots(int? Count) -> void
+Aw.Meta.Core.Config.ReserveSlots.Resolve(int cap) -> int
+Aw.Meta.Core.Config.ReserveSlotsConverter
+Aw.Meta.Core.Config.ReserveSlotsConverter.ReserveSlotsConverter() -> void
+Aw.Meta.Core.Config.ReserveTier
+Aw.Meta.Core.Config.ReserveTier.<Clone>$() -> Aw.Meta.Core.Config.ReserveTier!
+Aw.Meta.Core.Config.ReserveTier.Deconstruct(out int MinDepth, out Aw.Meta.Core.Config.ReserveSlots Slots) -> void
+Aw.Meta.Core.Config.ReserveTier.Equals(Aw.Meta.Core.Config.ReserveTier? other) -> bool
+Aw.Meta.Core.Config.ReserveTier.MinDepth.get -> int
+Aw.Meta.Core.Config.ReserveTier.MinDepth.init -> void
+Aw.Meta.Core.Config.ReserveTier.ReserveTier(int MinDepth, Aw.Meta.Core.Config.ReserveSlots Slots) -> void
+Aw.Meta.Core.Config.ReserveTier.Slots.get -> Aw.Meta.Core.Config.ReserveSlots
+Aw.Meta.Core.Config.ReserveTier.Slots.init -> void
+Aw.Meta.Core.Config.ResourcesConfig
+Aw.Meta.Core.Config.ResourcesConfig.<Clone>$() -> Aw.Meta.Core.Config.ResourcesConfig!
+Aw.Meta.Core.Config.ResourcesConfig.Deconstruct(out int DiskFloorGb, out int MemFloorGb, out int SwapHighPct) -> void
+Aw.Meta.Core.Config.ResourcesConfig.DiskFloorGb.get -> int
+Aw.Meta.Core.Config.ResourcesConfig.DiskFloorGb.init -> void
+Aw.Meta.Core.Config.ResourcesConfig.Equals(Aw.Meta.Core.Config.ResourcesConfig? other) -> bool
+Aw.Meta.Core.Config.ResourcesConfig.MemFloorGb.get -> int
+Aw.Meta.Core.Config.ResourcesConfig.MemFloorGb.init -> void
+Aw.Meta.Core.Config.ResourcesConfig.ResourcesConfig(int DiskFloorGb = 30, int MemFloorGb = 8, int SwapHighPct = 90) -> void
+Aw.Meta.Core.Config.ResourcesConfig.SwapHighPct.get -> int
+Aw.Meta.Core.Config.ResourcesConfig.SwapHighPct.init -> void
+Aw.Meta.Core.Config.TeamConfig.Builders.get -> Aw.Meta.Core.Config.BuildersConfig!
+Aw.Meta.Core.Config.TeamConfig.Builders.init -> void
+Aw.Meta.Core.Config.TeamConfig.Heavy.get -> Aw.Meta.Core.Config.HeavyConfig!
+Aw.Meta.Core.Config.TeamConfig.Heavy.init -> void
+Aw.Meta.Core.Config.TeamConfig.Resources.get -> Aw.Meta.Core.Config.ResourcesConfig!
+Aw.Meta.Core.Config.TeamConfig.Resources.init -> void
+Aw.Meta.Core.Config.TeamConfig.TeamConfig(string! team, string! repo, System.Collections.Generic.IReadOnlyList<string!>! lanes, string! metaLane = "meta", string? log = null, string? prompts = null, Aw.Meta.Core.Config.GateConfig? gate = null, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.MergeOrderRule!>? mergeOrder = null, System.Collections.Generic.IReadOnlyList<string!>? knownFlakes = null, Aw.Meta.Core.Config.WorktreeConfig? worktrees = null, Aw.Meta.Core.Config.ResourcesConfig? resources = null, Aw.Meta.Core.Config.BuildersConfig? builders = null, Aw.Meta.Core.Config.HeavyConfig? heavy = null) -> void
+Aw.Meta.Core.Health.BuilderAdvice
+Aw.Meta.Core.Health.BuilderAdvice.<Clone>$() -> Aw.Meta.Core.Health.BuilderAdvice!
+Aw.Meta.Core.Health.BuilderAdvice.BuilderAdvice(int PerLane, int MaxPerLane, long DiskFreeGb, long MemAvailableGb, string? Limit) -> void
+Aw.Meta.Core.Health.BuilderAdvice.Deconstruct(out int PerLane, out int MaxPerLane, out long DiskFreeGb, out long MemAvailableGb, out string? Limit) -> void
+Aw.Meta.Core.Health.BuilderAdvice.DiskFreeGb.get -> long
+Aw.Meta.Core.Health.BuilderAdvice.DiskFreeGb.init -> void
+Aw.Meta.Core.Health.BuilderAdvice.Equals(Aw.Meta.Core.Health.BuilderAdvice? other) -> bool
+Aw.Meta.Core.Health.BuilderAdvice.Limit.get -> string?
+Aw.Meta.Core.Health.BuilderAdvice.Limit.init -> void
+Aw.Meta.Core.Health.BuilderAdvice.Line() -> string!
+Aw.Meta.Core.Health.BuilderAdvice.MaxPerLane.get -> int
+Aw.Meta.Core.Health.BuilderAdvice.MaxPerLane.init -> void
+Aw.Meta.Core.Health.BuilderAdvice.MemAvailableGb.get -> long
+Aw.Meta.Core.Health.BuilderAdvice.MemAvailableGb.init -> void
+Aw.Meta.Core.Health.BuilderAdvice.PerLane.get -> int
+Aw.Meta.Core.Health.BuilderAdvice.PerLane.init -> void
+Aw.Meta.Core.Health.HeavySlots
+Aw.Meta.Core.Health.HeavySlots.<Clone>$() -> Aw.Meta.Core.Health.HeavySlots!
+Aw.Meta.Core.Health.HeavySlots.Cap.get -> int
+Aw.Meta.Core.Health.HeavySlots.Cap.init -> void
+Aw.Meta.Core.Health.HeavySlots.Deconstruct(out int Cap, out int Reserve) -> void
+Aw.Meta.Core.Health.HeavySlots.Equals(Aw.Meta.Core.Health.HeavySlots? other) -> bool
+Aw.Meta.Core.Health.HeavySlots.HeavySlots(int Cap, int Reserve) -> void
+Aw.Meta.Core.Health.HeavySlots.Reserve.get -> int
+Aw.Meta.Core.Health.HeavySlots.Reserve.init -> void
+Aw.Meta.Core.Health.HostResources.Deconstruct(out long MemTotalKb, out long MemAvailableKb, out long SwapUsedKb, out long DiskFreeBytes, out long SwapTotalKb) -> void
+Aw.Meta.Core.Health.HostResources.HostResources(long MemTotalKb, long MemAvailableKb, long SwapUsedKb, long DiskFreeBytes, long SwapTotalKb = 0) -> void
+Aw.Meta.Core.Health.HostResources.SwapTotalKb.get -> long
+Aw.Meta.Core.Health.HostResources.SwapTotalKb.init -> void
+Aw.Meta.Core.Health.HostResources.SwapUsedPercent.get -> int
+Aw.Meta.Core.Health.ResourceRules
+Aw.Meta.Core.Ports.IHeavyReserve
+Aw.Meta.Core.Ports.IHeavyReserve.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Health.HeavySlots!>!>
+Aw.Meta.Core.Ports.IHeavyReserve.Write(int slots, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Watch.WatchSnapshot.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Watch.PrView!>! Prs, out string! MainSha, out bool DiskLow, out bool MemoryLow) -> void
+Aw.Meta.Core.Watch.WatchSnapshot.MemoryLow.get -> bool
+Aw.Meta.Core.Watch.WatchSnapshot.MemoryLow.init -> void
+Aw.Meta.Core.Watch.WatchSnapshot.WatchSnapshot(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Watch.PrView!>! Prs, string! MainSha, bool DiskLow, bool MemoryLow = false) -> void
+Aw.Meta.Core.Watch.WatchState.Deconstruct(out bool Initialized, out System.Collections.Generic.IReadOnlyDictionary<int, Aw.Meta.Core.Watch.WatchedPr!>! Prs, out string? MainSha, out bool DiskLow, out bool MemoryLow) -> void
+Aw.Meta.Core.Watch.WatchState.MemoryLow.get -> bool
+Aw.Meta.Core.Watch.WatchState.MemoryLow.init -> void
+Aw.Meta.Core.Watch.WatchState.WatchState(bool Initialized, System.Collections.Generic.IReadOnlyDictionary<int, Aw.Meta.Core.Watch.WatchedPr!>! Prs, string? MainSha, bool DiskLow, bool MemoryLow = false) -> void
+const Aw.Meta.Core.Health.BuilderAdvice.DiskLimit = "disk below floor+headroom" -> string!
+const Aw.Meta.Core.Health.BuilderAdvice.MemoryLimit = "memory below floor" -> string!
+const Aw.Meta.Core.Ports.IHeavyReserve.DefaultCap = 3 -> int
+override Aw.Meta.Core.Config.BuildersConfig.Equals(object? obj) -> bool
+override Aw.Meta.Core.Config.BuildersConfig.GetHashCode() -> int
+override Aw.Meta.Core.Config.BuildersConfig.ToString() -> string!
+override Aw.Meta.Core.Config.HeavyConfig.Equals(object? obj) -> bool
+override Aw.Meta.Core.Config.HeavyConfig.GetHashCode() -> int
+override Aw.Meta.Core.Config.HeavyConfig.ToString() -> string!
+override Aw.Meta.Core.Config.ReserveSetting.Equals(object? obj) -> bool
+override Aw.Meta.Core.Config.ReserveSetting.GetHashCode() -> int
+override Aw.Meta.Core.Config.ReserveSetting.ToString() -> string!
+override Aw.Meta.Core.Config.ReserveSettingConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Aw.Meta.Core.Config.ReserveSetting!
+override Aw.Meta.Core.Config.ReserveSettingConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Aw.Meta.Core.Config.ReserveSetting! value, System.Text.Json.JsonSerializerOptions! options) -> void
+override Aw.Meta.Core.Config.ReserveSlots.GetHashCode() -> int
+override Aw.Meta.Core.Config.ReserveSlotsConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Aw.Meta.Core.Config.ReserveSlots
+override Aw.Meta.Core.Config.ReserveSlotsConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Aw.Meta.Core.Config.ReserveSlots value, System.Text.Json.JsonSerializerOptions! options) -> void
+override Aw.Meta.Core.Config.ReserveTier.Equals(object? obj) -> bool
+override Aw.Meta.Core.Config.ReserveTier.GetHashCode() -> int
+override Aw.Meta.Core.Config.ReserveTier.ToString() -> string!
+override Aw.Meta.Core.Config.ResourcesConfig.Equals(object? obj) -> bool
+override Aw.Meta.Core.Config.ResourcesConfig.GetHashCode() -> int
+override Aw.Meta.Core.Config.ResourcesConfig.ToString() -> string!
+override Aw.Meta.Core.Health.BuilderAdvice.Equals(object? obj) -> bool
+override Aw.Meta.Core.Health.BuilderAdvice.GetHashCode() -> int
+override Aw.Meta.Core.Health.BuilderAdvice.ToString() -> string!
+override Aw.Meta.Core.Health.HeavySlots.Equals(object? obj) -> bool
+override Aw.Meta.Core.Health.HeavySlots.GetHashCode() -> int
+override Aw.Meta.Core.Health.HeavySlots.ToString() -> string!
+static Aw.Meta.Core.Config.BuildersConfig.operator !=(Aw.Meta.Core.Config.BuildersConfig? left, Aw.Meta.Core.Config.BuildersConfig? right) -> bool
+static Aw.Meta.Core.Config.BuildersConfig.operator ==(Aw.Meta.Core.Config.BuildersConfig? left, Aw.Meta.Core.Config.BuildersConfig? right) -> bool
+static Aw.Meta.Core.Config.HeavyConfig.operator !=(Aw.Meta.Core.Config.HeavyConfig? left, Aw.Meta.Core.Config.HeavyConfig? right) -> bool
+static Aw.Meta.Core.Config.HeavyConfig.operator ==(Aw.Meta.Core.Config.HeavyConfig? left, Aw.Meta.Core.Config.HeavyConfig? right) -> bool
+static Aw.Meta.Core.Config.ReserveSetting.Default.get -> Aw.Meta.Core.Config.ReserveSetting!
+static Aw.Meta.Core.Config.ReserveSetting.Off.get -> Aw.Meta.Core.Config.ReserveSetting!
+static Aw.Meta.Core.Config.ReserveSetting.operator !=(Aw.Meta.Core.Config.ReserveSetting? left, Aw.Meta.Core.Config.ReserveSetting? right) -> bool
+static Aw.Meta.Core.Config.ReserveSetting.operator ==(Aw.Meta.Core.Config.ReserveSetting? left, Aw.Meta.Core.Config.ReserveSetting? right) -> bool
+static Aw.Meta.Core.Config.ReserveSlots.All.get -> Aw.Meta.Core.Config.ReserveSlots
+static Aw.Meta.Core.Config.ReserveSlots.operator !=(Aw.Meta.Core.Config.ReserveSlots left, Aw.Meta.Core.Config.ReserveSlots right) -> bool
+static Aw.Meta.Core.Config.ReserveSlots.operator ==(Aw.Meta.Core.Config.ReserveSlots left, Aw.Meta.Core.Config.ReserveSlots right) -> bool
+static Aw.Meta.Core.Config.ReserveTier.operator !=(Aw.Meta.Core.Config.ReserveTier? left, Aw.Meta.Core.Config.ReserveTier? right) -> bool
+static Aw.Meta.Core.Config.ReserveTier.operator ==(Aw.Meta.Core.Config.ReserveTier? left, Aw.Meta.Core.Config.ReserveTier? right) -> bool
+static Aw.Meta.Core.Config.ResourcesConfig.operator !=(Aw.Meta.Core.Config.ResourcesConfig? left, Aw.Meta.Core.Config.ResourcesConfig? right) -> bool
+static Aw.Meta.Core.Config.ResourcesConfig.operator ==(Aw.Meta.Core.Config.ResourcesConfig? left, Aw.Meta.Core.Config.ResourcesConfig? right) -> bool
+static Aw.Meta.Core.Health.BuilderAdvice.Compute(Aw.Meta.Core.Health.HostResources! host, Aw.Meta.Core.Config.ResourcesConfig! limits, Aw.Meta.Core.Config.BuildersConfig! builders, int lanes) -> Aw.Meta.Core.Health.BuilderAdvice!
+static Aw.Meta.Core.Health.BuilderAdvice.operator !=(Aw.Meta.Core.Health.BuilderAdvice? left, Aw.Meta.Core.Health.BuilderAdvice? right) -> bool
+static Aw.Meta.Core.Health.BuilderAdvice.operator ==(Aw.Meta.Core.Health.BuilderAdvice? left, Aw.Meta.Core.Health.BuilderAdvice? right) -> bool
+static Aw.Meta.Core.Health.HeavySlots.operator !=(Aw.Meta.Core.Health.HeavySlots? left, Aw.Meta.Core.Health.HeavySlots? right) -> bool
+static Aw.Meta.Core.Health.HeavySlots.operator ==(Aw.Meta.Core.Health.HeavySlots? left, Aw.Meta.Core.Health.HeavySlots? right) -> bool
+static Aw.Meta.Core.Health.ResourceRules.DiskFreeGb(Aw.Meta.Core.Health.HostResources! host) -> long
+static Aw.Meta.Core.Health.ResourceRules.DiskLow(Aw.Meta.Core.Health.HostResources! host, Aw.Meta.Core.Config.ResourcesConfig! limits) -> bool
+static Aw.Meta.Core.Health.ResourceRules.MemAvailableGb(Aw.Meta.Core.Health.HostResources! host) -> long
+static Aw.Meta.Core.Health.ResourceRules.MemoryLow(Aw.Meta.Core.Health.HostResources! host, Aw.Meta.Core.Config.ResourcesConfig! limits) -> bool
+~override Aw.Meta.Core.Config.ReserveSlots.Equals(object obj) -> bool
+~override Aw.Meta.Core.Config.ReserveSlots.ToString() -> string
+Aw.Meta.Core.Coordination.HeavyReservation
+Aw.Meta.Core.Coordination.HeavyReservation.Apply(Aw.Meta.Core.Config.TeamConfig! team, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Meta.Core.Coordination.HeavyReservation.HeavyReservation(Aw.Meta.Core.Ports.IHeavyReserve! reserve, Aw.Meta.Core.Coordination.MergeQueueReader! queue, Aw.Meta.Core.Ports.IRunningLog! log, System.TimeProvider! clock) -> void
+Aw.Meta.Core.Coordination.MergeQueueReader
+Aw.Meta.Core.Coordination.MergeQueueReader.MergeQueueReader(Aw.Meta.Core.Ports.IMessageStore! messages, Aw.Meta.Core.Ports.IGateStore! gates, Aw.Meta.Core.Ports.IKeyValueStore! values) -> void
+Aw.Meta.Core.Coordination.MergeQueueReader.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.QueuedPr!>!>!>
+Aw.Meta.Core.Coordination.ResourceAdvice
+Aw.Meta.Core.Coordination.ResourceAdvice.<Clone>$() -> Aw.Meta.Core.Coordination.ResourceAdvice!
+Aw.Meta.Core.Coordination.ResourceAdvice.Builders.get -> Aw.Meta.Core.Health.BuilderAdvice!
+Aw.Meta.Core.Coordination.ResourceAdvice.Builders.init -> void
+Aw.Meta.Core.Coordination.ResourceAdvice.Deconstruct(out Aw.Meta.Core.Health.HeavySlots! Heavy, out Aw.Meta.Core.Health.BuilderAdvice! Builders) -> void
+Aw.Meta.Core.Coordination.ResourceAdvice.Equals(Aw.Meta.Core.Coordination.ResourceAdvice? other) -> bool
+Aw.Meta.Core.Coordination.ResourceAdvice.Heavy.get -> Aw.Meta.Core.Health.HeavySlots!
+Aw.Meta.Core.Coordination.ResourceAdvice.Heavy.init -> void
+Aw.Meta.Core.Coordination.ResourceAdvice.ResourceAdvice(Aw.Meta.Core.Health.HeavySlots! Heavy, Aw.Meta.Core.Health.BuilderAdvice! Builders) -> void
+Aw.Meta.Core.Coordination.ResourceAdvisor
+Aw.Meta.Core.Coordination.ResourceAdvisor.Advise(Aw.Meta.Core.Config.TeamConfig? team, Aw.Meta.Core.Health.HostResources! host, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Coordination.ResourceAdvice!>!>
+Aw.Meta.Core.Coordination.ResourceAdvisor.ResourceAdvisor(Aw.Meta.Core.Ports.IHeavyReserve! reserve) -> void
+Aw.Meta.Core.Gate.GatePriority
+Aw.Meta.Core.Merge.QueuedPr
+Aw.Meta.Core.Merge.QueuedPr.<Clone>$() -> Aw.Meta.Core.Merge.QueuedPr!
+Aw.Meta.Core.Merge.QueuedPr.Deconstruct(out int Pr, out string! From, out string! Gate) -> void
+Aw.Meta.Core.Merge.QueuedPr.Equals(Aw.Meta.Core.Merge.QueuedPr? other) -> bool
+Aw.Meta.Core.Merge.QueuedPr.From.get -> string!
+Aw.Meta.Core.Merge.QueuedPr.From.init -> void
+Aw.Meta.Core.Merge.QueuedPr.Gate.get -> string!
+Aw.Meta.Core.Merge.QueuedPr.Gate.init -> void
+Aw.Meta.Core.Merge.QueuedPr.Pr.get -> int
+Aw.Meta.Core.Merge.QueuedPr.Pr.init -> void
+Aw.Meta.Core.Merge.QueuedPr.QueuedPr(int Pr, string! From, string! Gate) -> void
+const Aw.Meta.Core.Gate.GatePriority.Meta = "meta" -> string!
+const Aw.Meta.Core.Gate.GatePriority.Variable = "AW_HEAVY_PRIORITY" -> string!
+override Aw.Meta.Core.Coordination.ResourceAdvice.Equals(object? obj) -> bool
+override Aw.Meta.Core.Coordination.ResourceAdvice.GetHashCode() -> int
+override Aw.Meta.Core.Coordination.ResourceAdvice.ToString() -> string!
+override Aw.Meta.Core.Merge.QueuedPr.Equals(object? obj) -> bool
+override Aw.Meta.Core.Merge.QueuedPr.GetHashCode() -> int
+override Aw.Meta.Core.Merge.QueuedPr.ToString() -> string!
+static Aw.Meta.Core.Coordination.ResourceAdvice.operator !=(Aw.Meta.Core.Coordination.ResourceAdvice? left, Aw.Meta.Core.Coordination.ResourceAdvice? right) -> bool
+static Aw.Meta.Core.Coordination.ResourceAdvice.operator ==(Aw.Meta.Core.Coordination.ResourceAdvice? left, Aw.Meta.Core.Coordination.ResourceAdvice? right) -> bool
+static Aw.Meta.Core.Gate.GatePriority.Environment.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+static Aw.Meta.Core.Merge.QueuedPr.operator !=(Aw.Meta.Core.Merge.QueuedPr? left, Aw.Meta.Core.Merge.QueuedPr? right) -> bool
+static Aw.Meta.Core.Merge.QueuedPr.operator ==(Aw.Meta.Core.Merge.QueuedPr? left, Aw.Meta.Core.Merge.QueuedPr? right) -> bool

@@ -1,24 +1,24 @@
 using Aw.Kernel;
 using Aw.Meta.Core;
+using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Coordination;
+using Aw.Meta.Core.Health;
 using Aw.Meta.Core.Ports;
 using Aw.Meta.Core.Watch;
 
 namespace Aw.Meta.Features.Watch;
 
-/// <summary>Takes one snapshot: GitHub's pull requests, origin's main, the state disk and the inbox.</summary>
+/// <summary>Takes one snapshot: GitHub's pull requests, origin's main, the state disk and memory against the team's floors, and the inbox.</summary>
 /// <param name="repo">The gh and git calls.</param>
-/// <param name="resources">The disk.</param>
+/// <param name="resources">The disk and memory.</param>
 /// <param name="messages">The inbox.</param>
 /// <param name="values">Keeps the pull requests seen merged or closed, which the merge queue drops.</param>
 /// <param name="sweeper">Sweeps the worktrees of the pull requests seen to end.</param>
 internal sealed class WatchPoller(RepoCommands repo, IHostResources resources, IMessageStore messages, IKeyValueStore values, WatchSweeper sweeper)
 {
-    /// <summary>Disk is low below this many free bytes.</summary>
-    internal const long DiskLowBytes = 5L * 1024 * 1024 * 1024;
-
-    internal async ValueTask<Result<Polled>> Poll(string repoDirectory, CancellationToken cancellationToken)
+    internal async ValueTask<Result<Polled>> Poll(TeamConfig team, CancellationToken cancellationToken)
     {
+        var repoDirectory = team.Repo;
         var prs = await repo.List(repoDirectory).ConfigureAwait(false);
         var main = prs.IsError ? Results.Failure<string>(prs.Error) : await repo.RemoteMain(repoDirectory).ConfigureAwait(false);
         var disk = await resources.Read(cancellationToken).ConfigureAwait(false);
@@ -35,7 +35,7 @@ internal sealed class WatchPoller(RepoCommands repo, IHostResources resources, I
         }
 
         var worktrees = await sweeper.Sweep(remembered.Value, cancellationToken).ConfigureAwait(false);
-        return new Polled(new WatchSnapshot(prs.Value, main.Value, disk.Value.DiskFreeBytes < DiskLowBytes), inbox.Value.Count, worktrees);
+        return new Polled(new WatchSnapshot(prs.Value, main.Value, ResourceRules.DiskLow(disk.Value, team.Resources), ResourceRules.MemoryLow(disk.Value, team.Resources)), inbox.Value.Count, worktrees);
     }
 
     // Keeps the pull requests GitHub shows merged or closed, so the merge queue can drop them; returns the ones not seen ended before.

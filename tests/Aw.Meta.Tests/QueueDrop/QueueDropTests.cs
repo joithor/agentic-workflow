@@ -6,6 +6,7 @@ using Aw.Meta.Core.Obligations;
 using Aw.Meta.Features.QueueDrop;
 using Aw.Meta.Features.Status;
 using Aw.Meta.Testing;
+using Aw.Meta.Tests.Reserve;
 
 namespace Aw.Meta.Tests.QueueDrop;
 
@@ -15,7 +16,7 @@ public sealed class QueueDropTests
 
     private QueueDropService Drop() => new(_world.Messages, _world.Gates, _world.Values, _world.Log, _world.Clock);
 
-    private StatusService Service() => new(_world.Config, new StatusReader(_world.Reader, _world.Messages, _world.Gates, _world.Owner, _world.Lanes), _world.Values, _world.Clock);
+    private StatusService Service() => new(_world.Config, Worlds.StatusReader(_world), _world.Values, _world.Resources, Worlds.Advisor(_world), _world.Clock);
 
     private async Task Receive(string id, string name, string body)
     {

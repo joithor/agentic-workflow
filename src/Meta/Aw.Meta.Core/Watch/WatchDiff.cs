@@ -34,7 +34,12 @@ public static class WatchDiff
             lines.Add(snapshot.DiskLow ? "DISK LOW" : "DISK OK");
         }
 
-        return new WatchStep(lines, new WatchState(Initialized: true, prs, snapshot.MainSha, snapshot.DiskLow));
+        if (snapshot.MemoryLow != state.MemoryLow)
+        {
+            lines.Add(snapshot.MemoryLow ? "MEMORY LOW" : "MEMORY OK");
+        }
+
+        return new WatchStep(lines, new WatchState(Initialized: true, prs, snapshot.MainSha, snapshot.DiskLow, snapshot.MemoryLow));
     }
 
     private static WatchedPr Fresh(PrView pr, bool report, List<string> lines)

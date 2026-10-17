@@ -150,6 +150,51 @@ public sealed class WatchTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Low_memory_and_its_recovery_are_reported_once_each()
+    {
+        await _world.Ready();
+        _world.Resources.Resources = new HostResources(64_000_000, 4_000_000, 0, DiskFreeBytes: 80_000_000_000);
+        Script([List(Pr(190, "OPEN", "aaa1111"))], onPoll: poll =>
+        {
+            if (poll == 2)
+            {
+                _world.Resources.Resources = new HostResources(64_000_000, 20_000_000, 0, DiskFreeBytes: 80_000_000_000);
+            }
+        });
+
+        _ = await Watch(TimeSpan.FromSeconds(480));
+
+        Assert.Equal(["MEMORY LOW", "MEMORY OK"], _lines.Where(l => l.StartsWith("MEMORY", StringComparison.Ordinal)), StringComparer.Ordinal);
+        Assert.DoesNotContain(_lines, l => l.StartsWith("DISK", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Nearly_full_swap_counts_as_low_memory_even_with_memory_to_spare()
+    {
+        await _world.Ready();
+        _world.Resources.Resources = new HostResources(64_000_000, 40_000_000, SwapUsedKb: 9_500_000, DiskFreeBytes: 80_000_000_000, SwapTotalKb: 10_000_000);
+        Script([List(Pr(190, "OPEN", "aaa1111"))]);
+
+        _ = await Watch(TimeSpan.FromSeconds(240));
+
+        Assert.Equal(["MEMORY LOW"], _lines.Where(l => l.StartsWith("MEMORY", StringComparison.Ordinal)), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_floors_come_from_the_team_config()
+    {
+        _ = await _world.Config.Save(
+            new Aw.Meta.Core.Config.TeamConfig("t1", "/work", ["meta", "api"]) { Resources = new Aw.Meta.Core.Config.ResourcesConfig(DiskFloorGb: 200, MemFloorGb: 40, SwapHighPct: 90) },
+            CancellationToken.None);
+        _world.Resources.Resources = new HostResources(64_000_000, 20_000_000, 0, DiskFreeBytes: 80_000_000_000);
+        Script([List(Pr(190, "OPEN", "aaa1111"))]);
+
+        _ = await Watch(TimeSpan.FromSeconds(240));
+
+        Assert.Equal(["DISK LOW", "MEMORY LOW"], _lines.Where(l => l.StartsWith("DISK", StringComparison.Ordinal) || l.StartsWith("MEMORY", StringComparison.Ordinal)), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task New_inbox_messages_between_polls_are_reported()
     {
         await _world.Ready();

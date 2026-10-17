@@ -63,6 +63,9 @@ public sealed class MetaWorld
     /// <summary>Memory, disk and heavy-job locks.</summary>
     public InMemoryHostResources Resources { get; } = new();
 
+    /// <summary>The heavy cap and the meta gates' reservation.</summary>
+    public InMemoryHeavyReserve Heavy { get; } = new();
+
     /// <summary>Processes.</summary>
     public InMemoryProcessTable Processes { get; } = new();
 

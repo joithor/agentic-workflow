@@ -1,8 +1,11 @@
 using Aw.Meta.Core;
 using Aw.Meta.Core.Gate;
+using Aw.Meta.Core.Health;
+using Aw.Meta.Core.Merge;
 using Aw.Meta.Core.Obligations;
 using Aw.Meta.Features.Status;
 using Aw.Meta.Testing;
+using Aw.Meta.Tests.Reserve;
 
 namespace Aw.Meta.Tests.Status;
 
@@ -10,7 +13,7 @@ public sealed class StatusTests
 {
     private readonly MetaWorld _world = new();
 
-    private StatusService Service() => new(_world.Config, new StatusReader(_world.Reader, _world.Messages, _world.Gates, _world.Owner, _world.Lanes), _world.Values, _world.Clock);
+    private StatusService Service() => new(_world.Config, Worlds.StatusReader(_world), _world.Values, _world.Resources, Worlds.Advisor(_world), _world.Clock);
 
     private async Task<StatusResponse> Status()
     {
@@ -36,6 +39,19 @@ public sealed class StatusTests
         Assert.Empty(status.MergeQueue);
         Assert.Empty(status.OwnerQueue);
         Assert.Equal(0, status.Lanes.Version);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_reservation_and_the_builders_advice_are_shown()
+    {
+        await _world.Ready();
+        _world.Heavy.Reserve = 1;
+        _world.Resources.Resources = new HostResources(64_000_000, 32_000_000, 0, DiskFreeBytes: 200L * 1024 * 1024 * 1024);
+
+        var status = await Status();
+
+        Assert.Equal(new HeavySlots(3, 1), status.Heavy);
+        Assert.Equal("builders: 4 per lane (disk 200 GB free, mem 30 GB available)", status.Builders!.Line());
     }
 
     [Fact, Trait("Lane", "unit")]

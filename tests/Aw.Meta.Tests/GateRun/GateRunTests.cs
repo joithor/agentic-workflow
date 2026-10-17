@@ -3,6 +3,7 @@ using Aw.Meta.Core.Coordination;
 using Aw.Meta.Core.Gate;
 using Aw.Meta.Features.GateRun;
 using Aw.Meta.Testing;
+using Aw.Meta.Tests.Reserve;
 
 namespace Aw.Meta.Tests.GateRun;
 
@@ -16,6 +17,7 @@ public sealed class GateRunTests
         new GateWorkspace(_world.Repo, _world.Trees, _world.Paths),
         new GateStepRunner(_world.Runner, _world.Paths),
         _world.Gates,
+        Worlds.Reservation(_world),
         _world.Clock);
 
     private void Script(string changed = "src/a.cs\n", int unitExit = 1)

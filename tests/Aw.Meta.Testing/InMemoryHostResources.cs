@@ -11,7 +11,7 @@ public sealed class InMemoryHostResources : IHostResources
     private readonly List<HeavyLock> _locks = [];
 
     /// <summary>The figures <see cref="Read"/> returns; change them to simulate a loaded host.</summary>
-    public HostResources Resources { get; set; } = new(MemTotalKb: 16_000_000, MemAvailableKb: 8_000_000, SwapUsedKb: 0, DiskFreeBytes: 50_000_000_000);
+    public HostResources Resources { get; set; } = new(MemTotalKb: 64_000_000, MemAvailableKb: 32_000_000, SwapUsedKb: 0, DiskFreeBytes: 50_000_000_000);
 
     /// <summary>Takes a lock slot for a holder; the holder counts as running when it is this process.</summary>
     /// <param name="pid">The holder's pid.</param>

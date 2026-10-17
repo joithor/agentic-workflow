@@ -1,13 +1,14 @@
 using System.Globalization;
+using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Watch;
 
 namespace Aw.Meta.Features.Watch;
 
 /// <summary>The state of one watch across its polls, and the lines each poll yields. Not shared between watches.</summary>
-/// <param name="repo">The repo directory polled.</param>
+/// <param name="team">The team polled: its repo and its disk and memory floors.</param>
 /// <param name="poller">Takes the snapshots.</param>
 /// <param name="emit">Receives each line.</param>
-internal sealed class WatchLoop(string repo, WatchPoller poller, Func<string, ValueTask> emit)
+internal sealed class WatchLoop(TeamConfig team, WatchPoller poller, Func<string, ValueTask> emit)
 {
     private WatchState _state = WatchState.Initial;
     private int? _inbox;
@@ -19,7 +20,7 @@ internal sealed class WatchLoop(string repo, WatchPoller poller, Func<string, Va
     /// <summary>Takes a snapshot and emits what changed. A failed poll is reported once per streak.</summary>
     internal async ValueTask Tick(CancellationToken cancellationToken)
     {
-        var polled = await poller.Poll(repo, cancellationToken).ConfigureAwait(false);
+        var polled = await poller.Poll(team, cancellationToken).ConfigureAwait(false);
         if (polled.IsError)
         {
             if (!_failing)
