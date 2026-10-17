@@ -2,6 +2,7 @@
 # Tests for scripts/install-live-pane.sh. A stub `claude` records every call and keeps a
 # tiny marketplace/plugin state, so nothing here touches a real Claude Code config.
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../../scripts/lib/test-grep.sh"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$DIR/../../.." && pwd)"
 INSTALL="$ROOT/scripts/install-live-pane.sh"
@@ -49,7 +50,7 @@ test_second_run_changes_nothing() {
   local before; before="$(writes)"
   local out; out="$(bash "$INSTALL")"
   [ "$(writes)" = "$before" ] || fail "second run wrote again: $(cat "$LOG")"
-  echo "$out" | grep -q "already installed" || fail "expected an already-installed note, got: $out"
+  echo "$out" | has "already installed" || fail "expected an already-installed note, got: $out"
   echo "PASS: test_second_run_changes_nothing"
 }
 
@@ -57,8 +58,8 @@ test_dry_run_writes_nothing_and_says_what_it_would_do() {
   new_world
   local out; out="$(bash "$INSTALL" --dry-run)"
   [ "$(writes)" = "0" ] || fail "dry-run wrote: $(cat "$LOG")"
-  echo "$out" | grep -q "\[dry-run\] claude plugin marketplace add" || fail "dry-run did not print the add: $out"
-  echo "$out" | grep -q "would be installed" || fail "dry-run did not say it would install: $out"
+  echo "$out" | has "\[dry-run\] claude plugin marketplace add" || fail "dry-run did not print the add: $out"
+  echo "$out" | has "would be installed" || fail "dry-run did not say it would install: $out"
   new_world
   out="$(AW_DRY_RUN=1 bash "$INSTALL")"
   [ "$(writes)" = "0" ] || fail "AW_DRY_RUN=1 wrote: $(cat "$LOG")"
@@ -81,8 +82,8 @@ test_codex_and_cursor_are_skipped_with_a_reason_and_no_claude_calls() {
   for p in codex cursor; do
     new_world
     local out; out="$(bash "$INSTALL" --provider "$p")"
-    echo "$out" | grep -q "skipped for $p" || fail "$p: no skip note: $out"
-    echo "$out" | grep -q "Claude Code only" || fail "$p: skip note does not say why: $out"
+    echo "$out" | has "skipped for $p" || fail "$p: no skip note: $out"
+    echo "$out" | has "Claude Code only" || fail "$p: skip note does not say why: $out"
     [ ! -s "$LOG" ] || fail "$p: claude was called: $(cat "$LOG")"
   done
   echo "PASS: test_codex_and_cursor_are_skipped_with_a_reason_and_no_claude_calls"
@@ -106,7 +107,7 @@ test_a_missing_claude_cli_is_a_clean_skip() {
   rm "$BIN/claude"
   if PATH="/usr/bin:/bin" command -v claude > /dev/null; then echo "SKIP: test_a_missing_claude_cli_is_a_clean_skip (claude lives in /usr/bin here)"; return; fi
   local out; out="$(PATH="/usr/bin:/bin" bash "$INSTALL")" || fail "exited non-zero without claude"
-  echo "$out" | grep -q "the claude CLI is not on PATH" || fail "no skip note: $out"
+  echo "$out" | has "the claude CLI is not on PATH" || fail "no skip note: $out"
   echo "PASS: test_a_missing_claude_cli_is_a_clean_skip"
 }
 
@@ -115,10 +116,10 @@ test_warns_when_scorer_has_no_live_command_and_stays_quiet_when_it_does() {
   mkdir -p "$HOME/bin2"
   printf '#!/usr/bin/env bash\nexit 1\n' > "$HOME/bin2/scorer"; chmod +x "$HOME/bin2/scorer"
   local out; out="$(CLAUDE_LOCAL_BIN="$HOME/bin2" bash "$INSTALL")"
-  echo "$out" | grep -q "WARN: .* has no 'live' command" || fail "expected a scorer warning: $out"
+  echo "$out" | has "WARN: .* has no 'live' command" || fail "expected a scorer warning: $out"
   printf '#!/usr/bin/env bash\necho "{\\"v\\":1}"\n' > "$HOME/bin2/scorer"
   out="$(CLAUDE_LOCAL_BIN="$HOME/bin2" bash "$INSTALL")"
-  echo "$out" | grep -q "WARN" && fail "unexpected warning with a live-capable scorer: $out"
+  echo "$out" | has "WARN" && fail "unexpected warning with a live-capable scorer: $out"
   echo "PASS: test_warns_when_scorer_has_no_live_command_and_stays_quiet_when_it_does"
 }
 
@@ -140,7 +141,7 @@ test_a_failing_claude_write_warns_and_exits_zero() {
       out="$(bash "$INSTALL")" || rc=$?
     fi
     [ "$rc" = "0" ] || fail "$step failure exited $rc: $out"
-    echo "$out" | grep -q "WARN: live-pane: claude .* failed (non-fatal)" || fail "$step: no WARN: $out"
+    echo "$out" | has "WARN: live-pane: claude .* failed (non-fatal)" || fail "$step: no WARN: $out"
   done
   echo "PASS: test_a_failing_claude_write_warns_and_exits_zero"
 }
@@ -176,7 +177,7 @@ test_missing_jq_is_a_noted_skip_with_exit_zero() {
   local out rc=0
   out="$(PATH="$BIN:$tools" bash "$INSTALL" 2>&1)" || rc=$?
   [ "$rc" = "0" ] || fail "missing jq exited $rc: $out"
-  echo "$out" | grep -q "jq is not on PATH" || fail "no jq note: $out"
+  echo "$out" | has "jq is not on PATH" || fail "no jq note: $out"
   [ "$(writes)" = "0" ] || fail "wrote without jq: $(cat "$LOG")"
   echo "PASS: test_missing_jq_is_a_noted_skip_with_exit_zero"
 }

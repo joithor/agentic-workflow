@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../../scripts/lib/test-grep.sh"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$DIR/../diff-skill-pairs.sh"
 
@@ -11,7 +12,7 @@ test_reports_identical_pair() {
   printf 'identical-pair\tidentical-pair-kebab\n' > "$pairs_file"
   local out
   out="$(diff_skill_pairs "$FIXTURES/aw" "$FIXTURES/wa" "$pairs_file")"
-  if ! echo "$out" | grep -q "^IDENTICAL	identical-pair	identical-pair-kebab$"; then
+  if ! echo "$out" | has "^IDENTICAL	identical-pair	identical-pair-kebab$"; then
     echo "FAIL: expected IDENTICAL verdict, got: $out"; rm "$pairs_file"; exit 1
   fi
   rm "$pairs_file"
@@ -24,7 +25,7 @@ test_reports_differing_pair() {
   printf 'differing-pair\tdiffering-pair-kebab\n' > "$pairs_file"
   local out
   out="$(diff_skill_pairs "$FIXTURES/aw" "$FIXTURES/wa" "$pairs_file")"
-  if ! echo "$out" | grep -q "^DIFFERS	differing-pair	differing-pair-kebab$"; then
+  if ! echo "$out" | has "^DIFFERS	differing-pair	differing-pair-kebab$"; then
     echo "FAIL: expected DIFFERS verdict, got: $out"; rm "$pairs_file"; exit 1
   fi
   rm "$pairs_file"

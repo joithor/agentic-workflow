@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Tests for scripts/check-profile-doc.mjs: docs/csharp/sindri-profile.md names every key of the C# SindriProfile.
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/test-grep.sh"
 
 REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 CHECK="$REPO/scripts/check-profile-doc.mjs"
@@ -13,7 +14,7 @@ ok()   { PASS=$((PASS + 1)); echo "  ok   $1"; }
 fail() { FAIL=$((FAIL + 1)); echo "  FAIL $1"; }
 run() { set +e; OUT="$(node "$CHECK" --root "$1" 2>&1)"; RC=$?; set -e; }
 expect_rc() { if [ "$RC" -eq "$2" ]; then ok "$1 (exit $RC)"; else fail "$1: exit $RC, want $2"; printf '%s\n' "$OUT" | sed 's/^/      | /'; fi; }
-expect_out() { if printf '%s\n' "$OUT" | grep -qF -- "$2"; then ok "$1"; else fail "$1: output lacks '$2'"; printf '%s\n' "$OUT" | sed 's/^/      | /'; fi; }
+expect_out() { if printf '%s\n' "$OUT" | has -F -- "$2"; then ok "$1"; else fail "$1: output lacks '$2'"; printf '%s\n' "$OUT" | sed 's/^/      | /'; fi; }
 
 echo "repo"
 run "$REPO"; expect_rc "docs/csharp/sindri-profile.md names every SindriProfile key" 0
