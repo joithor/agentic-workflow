@@ -109,9 +109,19 @@ public sealed record OnyxPins(
                 return "a second version row";
             }
 
-            if (fields.Length != 3 || !IsTag(fields[1]) || !IsHex(fields[2], 40))
+            if (fields.Length != 3)
             {
-                return "version wants a vX.Y.Z tag and a 40-digit lowercase hex commit";
+                return $"version wants 2 fields (tag commit), got {(fields.Length - 1).ToString(CultureInfo.InvariantCulture)}";
+            }
+
+            if (!IsTag(fields[1]))
+            {
+                return $"version tag \"{fields[1]}\" is not vX.Y.Z";
+            }
+
+            if (!IsHex(fields[2], 40))
+            {
+                return "version commit is not 40 lowercase hex digits";
             }
 
             (_version, _commit) = (fields[1], fields[2]);
