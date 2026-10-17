@@ -27,6 +27,8 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Refusal">What followed a refusal.</param>
 /// <param name="Effects">The identities of the effects the decision runs for this instance, as '{instance}:{entry}:{index}'.</param>
 /// <param name="Delta">The post-state delta.</param>
+/// <param name="Via">'block' for a Step the engine ran on the block runtime; null otherwise.</param>
+/// <param name="Decision">The Judge decision id of a block Step's result; null otherwise.</param>
 public sealed record WorkflowEventDetail(
     TriggerKey TriggerId,
     string TriggerActor,
@@ -42,7 +44,9 @@ public sealed record WorkflowEventDetail(
     OverrideRecord? Override,
     RefusalRecord? Refusal,
     IReadOnlyList<string> Effects,
-    WorkflowEventDelta Delta)
+    WorkflowEventDelta Delta,
+    string? Via = null,
+    string? Decision = null)
 {
     /// <summary>
     /// The detail of a row mirrored without a decision: a desk timeout's park, or a held event's expiry. It names the trigger
@@ -109,6 +113,8 @@ public sealed record WorkflowEventDetail(
             recorded.Override,
             recorded.Refusal,
             [.. recorded.Effects.Select(e => e.Text)],
-            WorkflowEventDelta.Of(recorded.Delta));
+            WorkflowEventDelta.Of(recorded.Delta),
+            recorded.Trigger.Via,
+            recorded.Trigger.Decision);
     }
 }

@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Events;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
@@ -53,6 +54,19 @@ public sealed class BlockRuntimeTests
         Assert.Equal(("service:block:step.judge.choose", StepRuntime.Block), (completed.Actor, completed.Via));
         var decision = TransitionDecision.Decide(new DecisionInput(instance, _route, trigger, GateAnswers.None, Context()));
         Assert.Equal("evidence-ui", Assert.IsType<Applied>(decision).Changes[0].After.State);
+    }
+
+    [Fact]
+    public void A_block_result_s_event_says_via_block_and_names_the_decision()
+    {
+        var instance = BlockRun();
+        var trigger = BlockStepTriggers.Completed(instance, _route, Context(), new BlockCompletion(_judge, instance.Frame.Run!.Token, OutcomeName.From("ui"), Decision(), "JD-7"));
+
+        var recorded = Assert.IsType<Applied>(TransitionDecision.Decide(new DecisionInput(instance, _route, trigger, GateAnswers.None, Context()))).Changes[0].Event;
+        var detail = WorkflowEventDetail.Of(recorded, trigger);
+
+        Assert.Equal(("block", "JD-7"), (recorded.Trigger.Via, recorded.Trigger.Decision));
+        Assert.Equal(("block", "JD-7"), (detail.Via, detail.Decision));
     }
 
     [Theory]

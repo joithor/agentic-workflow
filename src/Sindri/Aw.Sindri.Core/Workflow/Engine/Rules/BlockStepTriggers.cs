@@ -32,7 +32,7 @@ public static class BlockStepTriggers
         ArgumentNullException.ThrowIfNull(recipe);
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(result);
-        var report = new StepCompleted(Actor(result.Step), result.Run, result.Outcome, result.Outputs, Tokens: 0, StepRuntime.Block, Sha(result));
+        var report = new StepCompleted(Actor(result.Step), result.Run, result.Outcome, result.Outputs, Tokens: 0, StepRuntime.Block, Sha(result), result.Decision);
         return TransitionDecision.Decide(new DecisionInput(instance, recipe, report, GateAnswers.None, context)) is Rejected rejected
             ? Failed(result.Step, result.Run, $"invalid-result: {rejected.Error.Code} {rejected.Error.Message}")
             : report;

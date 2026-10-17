@@ -7,4 +7,5 @@ namespace Aw.Sindri.Core.Workflow.Engine.Rules;
 /// <param name="Run">The open run's token.</param>
 /// <param name="Outcome">The reported outcome.</param>
 /// <param name="Outputs">The stored outputs.</param>
-public sealed record BlockCompletion(BlockId Step, RunToken Run, OutcomeName Outcome, IReadOnlyDictionary<FactKey, FactValue> Outputs);
+/// <param name="Decision">The Judge decision id the Step reported, or null.</param>
+public sealed record BlockCompletion(BlockId Step, RunToken Run, OutcomeName Outcome, IReadOnlyDictionary<FactKey, FactValue> Outputs, string? Decision = null);

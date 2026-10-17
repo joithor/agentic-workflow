@@ -9,7 +9,9 @@ namespace Aw.Sindri.Features.GetInstanceEvents;
 /// <param name="Trigger">The trigger kind ('start', 'step.completed', …).</param>
 /// <param name="Outcome">The trigger's outcome.</param>
 /// <param name="Run">The run token.</param>
-public sealed record InstanceEventFields(string? From = null, string? To = null, string? Trigger = null, string? Outcome = null, string? Run = null)
+/// <param name="Via">'block' when the engine ran the Step on the block runtime.</param>
+/// <param name="Decision">The Judge decision id of a block Step's result.</param>
+public sealed record InstanceEventFields(string? From = null, string? To = null, string? Trigger = null, string? Outcome = null, string? Run = null, string? Via = null, string? Decision = null)
 {
     /// <summary>No fields: a payload that doesn't read as a workflow transition.</summary>
     public static InstanceEventFields None { get; } = new();
