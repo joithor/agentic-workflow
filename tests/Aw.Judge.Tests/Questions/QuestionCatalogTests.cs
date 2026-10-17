@@ -9,10 +9,10 @@ namespace Aw.Judge.Tests.Questions;
 public sealed class QuestionCatalogTests
 {
     [Fact]
-    public void The_catalog_holds_the_eight_questions()
+    public void The_catalog_holds_the_nine_questions()
     {
         Assert.Equal(
-            ["ask-check", "brief-scope", "resolution-check", "rule-check", "turn-progress", "ui-element-repair", "visual-critique", "wake-gate"],
+            ["ask-check", "brief-scope", "choose", "resolution-check", "rule-check", "turn-progress", "ui-element-repair", "visual-critique", "wake-gate"],
             QuestionCatalog.Names.Order(StringComparer.Ordinal),
             StringComparer.Ordinal);
     }

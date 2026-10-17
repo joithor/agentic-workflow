@@ -29,6 +29,13 @@ internal sealed class QuestionRun
         return evaluator.Evaluate(question, input, new EvaluationContext { Providers = providers }, CancellationToken.None);
     }
 
+    /// <summary>Asks a question by its catalog name (the path the CLI takes), so a per-call question builds its definition from the input.</summary>
+    public ValueTask<EvaluationOutcome> AskByName(string name, string input, params IModelProvider[] providers)
+    {
+        var evaluator = new QuestionEvaluator(Log, new FakeInputRedactor(), new SequentialIdGenerator(), new FakeTimeProvider(KnownInstants.Epoch), Json);
+        return evaluator.Ask(name, input, new EvaluationContext { Providers = providers }, CancellationToken.None);
+    }
+
     /// <summary>The outcome is a pre-rule's: the decision, by rules, confidence 1.</summary>
     public static void AssertPreRule(string decision, EvaluationOutcome outcome)
     {

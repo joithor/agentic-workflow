@@ -16,7 +16,8 @@ public static class QuestionCatalog
         ResolutionCheckQuestion.Name,
         TurnProgressQuestion.Name,
         UiElementRepairQuestion.Name,
-        VisualCritiqueQuestion.Name);
+        VisualCritiqueQuestion.Name,
+        ChooseQuestion.Name);
 
     /// <summary>Evaluates the named question.</summary>
     /// <param name="evaluator">The evaluator.</param>
@@ -39,6 +40,7 @@ public static class QuestionCatalog
             TurnProgressQuestion.Name => evaluator.Evaluate(TurnProgressQuestion.Definition, rawInput, context, cancellationToken),
             UiElementRepairQuestion.Name => evaluator.Evaluate(UiElementRepairQuestion.Definition, rawInput, context, cancellationToken),
             VisualCritiqueQuestion.Name => evaluator.Evaluate(VisualCritiqueQuestion.Definition, rawInput, context, cancellationToken),
+            ChooseQuestion.Name => evaluator.Evaluate(ChooseQuestion.For(new ChooseInput("", new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal), [])), rawInput, context, cancellationToken),
             _ => throw new ArgumentOutOfRangeException(nameof(question), question, "not a question in the catalog"),
         };
     }
