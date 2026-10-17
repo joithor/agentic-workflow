@@ -11,7 +11,7 @@ internal static class Worlds
 
     internal static StatusReader StatusReader(MetaWorld world) => new(world.Reader, Queue(world), world.Owner, world.Lanes);
 
-    internal static HeavyReservation Reservation(MetaWorld world) => new(world.Heavy, Queue(world), world.Log, world.Clock);
+    internal static HeavyReservation Reservation(MetaWorld world) => new(world.Heavy, Queue(world), world.Log, world.Config, world.Clock);
 
-    internal static ResourceAdvisor Advisor(MetaWorld world) => new(world.Heavy);
+    internal static ResourceAdvisor Advisor(MetaWorld world) => new(world.Heavy, Reservation(world), world.Clock);
 }

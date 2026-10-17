@@ -4,23 +4,19 @@ using Aw.Meta.Core.Health;
 namespace Aw.Meta.Core.Ports;
 
 /// <summary>
-/// The heavy-job wrapper's two files in the state root: the slot cap (heavy-slots-cap, read only) and the reservation the meta
-/// gates hold (heavy-meta-reserve, written here). The wrapper lets a job run with AW_HEAVY_PRIORITY=meta use any slot and every
-/// other expensive job only the slots above the reservation.
+/// The heavy-slot reservation this team's meta computes, kept in the team's own state directory (heavy-reserve). aw-meta never
+/// writes the heavy-job wrapper's files: the meta runs meta-gate-reserve with the printed queue depth before each gate.
 /// </summary>
 public interface IHeavyReserve
 {
-    /// <summary>The default cap when the cap file is missing or not a positive number.</summary>
-    public const int DefaultCap = 3;
-
-    /// <summary>Reads the cap and the current reservation (0 when the file is missing or unreadable; never above the cap).</summary>
+    /// <summary>Reads the last computed reservation.</summary>
     /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The slots.</returns>
-    public ValueTask<Result<HeavySlots>> Read(CancellationToken cancellationToken);
+    /// <returns>The record, or null when none was computed yet or the file holds anything else.</returns>
+    public ValueTask<Result<HeavyReserveRecord?>> Read(CancellationToken cancellationToken);
 
-    /// <summary>Writes the reservation atomically (a temporary file renamed over the real one).</summary>
-    /// <param name="slots">The slots to reserve.</param>
+    /// <summary>Keeps a computation (a temporary file renamed over the real one).</summary>
+    /// <param name="record">The reservation, the queue depth behind it and when it was computed.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>Success, or AW-META-010.</returns>
-    public ValueTask<Result<Unit>> Write(int slots, CancellationToken cancellationToken);
+    public ValueTask<Result<Unit>> Write(HeavyReserveRecord record, CancellationToken cancellationToken);
 }

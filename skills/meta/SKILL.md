@@ -157,9 +157,12 @@ machine. The thresholds are the team config's `resources`, `builders` and `heavy
 
 **Gates.**
 - Run gates **only through `aw-meta gate-run`** (and reruns through `gate-rerun`). They carry `AW_HEAVY_PRIORITY=meta`, so the
-  heavy-job wrapper lets them use any box-wide slot, and `gate-run` sets the slot reservation from the merge-queue depth (the
-  more ready pull requests wait, the more slots the gates keep; `merge-run` sets it again once the queue shrinks). A gate you run
-  by hand has no priority and waits behind that reservation: don't.
+  heavy-job wrapper lets them use any box-wide slot. aw-meta computes the slot reservation from the merge-queue depth (the more
+  ready pull requests wait, the more slots the gates should keep) and prints it as `heavy reservation: N of C slots (queue depth
+  D) - set it with meta-gate-reserve D` in `status`, `health` and `gate-run`. **Before each gate, run `meta-gate-reserve D`** with
+  the depth `aw-meta status` just printed; aw-meta never writes the wrapper's files itself. When the queue empties (or the line says
+  `[stale: ...]`) run `status` again and apply it, or `meta-gate-reserve --clear`. A gate you run by hand has no priority and
+  waits behind that reservation: don't.
 - Gates run **one at a time** (serial): start the next `gate-run` only when the previous one is recorded.
 - **Re-gate after any merge**: main moved, so every queued pull request's gate is stale (`merge-check` says so).
 - A gate failure whose log shows only a **heavy lock wait** (the step never started its build or test, it sat waiting for a
@@ -170,12 +173,13 @@ machine. The thresholds are the team config's `resources`, `builders` and `heavy
   worktrees); then if disk is still low, **ask the owner before deleting anything else**: list what is rebuildable (build output,
   package caches, proof binaries, old gate trees) with sizes via `aw-meta owner-ask`, and delete only what the owner approves,
   never with a recursive delete you were not told to run.
+- `DISK LOW` / `MEMORY LOW` print only after two polls agree, and a re-armed watch does not repeat a state it already reported.
 - `MEMORY LOW`: tell every lane to **pause starting builders and heavy jobs** until it clears; jobs already running finish.
 - `DISK OK` / `MEMORY OK`: tell the lanes to **resume**.
 
 **Builders per lane.** `aw-meta health` prints `builders: N per lane (...)` (and `status` the same line): the number of builder
 subagents each lane may run at once now, never below 1. It falls as free disk gets close to the floor plus every lane's builder
-worktrees, and is 1 while memory is under its floor. Check it after `DISK`/`MEMORY` events and at each `health`, and **tell
+worktrees, and is 1 while memory is low (the same rule as `MEMORY LOW`: under its floor, or swap nearly full). Check it after `DISK`/`MEMORY` events and at each `health`, and **tell
 the lanes when it changes** (one message to every lane: "builders per lane: N"). Every builder gets its **own worktree and
 branch**; never two builders on one branch or in one worktree. The disk floor is a rule, not a hint: below it, no new builder
 starts whatever the advice says for a lane that is idle.

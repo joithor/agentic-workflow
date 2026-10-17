@@ -20,7 +20,7 @@ namespace Aw.Meta.Features.MergeRun;
 /// <param name="repo">The git and gh calls.</param>
 /// <param name="gates">Stores the merge.</param>
 /// <param name="log">The running log.</param>
-/// <param name="reservation">Sets the heavy-slot reservation again once the merge has left the queue.</param>
+/// <param name="reservation">Computes the heavy-slot reservation again once the merge has left the queue.</param>
 /// <param name="clock">Dates the merge.</param>
 internal sealed class MergeRunService(MergeReadiness readiness, RepoCommands repo, IGateStore gates, IRunningLog log, HeavyReservation reservation, TimeProvider clock)
     : IService<MergeRunRequest, MergeRunResponse>
@@ -83,13 +83,14 @@ internal sealed class MergeRunService(MergeReadiness readiness, RepoCommands rep
         var announce = record.IsKnown
             ? $"main moved to {record.ShortSha}: #{number} {pull.Title} merged. Merge main into your branches."
             : $"main moved (#{number} {pull.Title} merged). Merge main into your branches.";
+
+        // Advisory, and before the log error returns: the merge left the queue either way, and a reservation that can't be kept must not turn it into an error.
+        _ = await reservation.Apply(assessed.Team, cancellationToken).ConfigureAwait(false);
         if (logged.IsError)
         {
             return logged.Error;
         }
 
-        // Advisory: the merge is done and recorded, so a reservation that can't be set must not turn it into an error.
-        _ = await reservation.Apply(assessed.Team, cancellationToken).ConfigureAwait(false);
         return new MergeRunResponse(request.Pr, Merged: true, assessed.Checks, record.IsKnown ? record.Sha : null, announce);
     }
 }

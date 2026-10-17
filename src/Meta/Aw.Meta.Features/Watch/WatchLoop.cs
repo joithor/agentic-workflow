@@ -8,9 +8,12 @@ namespace Aw.Meta.Features.Watch;
 /// <param name="team">The team polled: its repo and its disk and memory floors.</param>
 /// <param name="poller">Takes the snapshots.</param>
 /// <param name="emit">Receives each line.</param>
-internal sealed class WatchLoop(TeamConfig team, WatchPoller poller, Func<string, ValueTask> emit)
+/// <param name="reported">The disk and memory states an earlier watch reported (a re-armed watch does not announce them again).</param>
+/// <param name="remember">Keeps the reported states whenever they change.</param>
+internal sealed class WatchLoop(TeamConfig team, WatchPoller poller, Func<string, ValueTask> emit, WatchResources reported, Func<WatchResources, ValueTask> remember)
 {
-    private WatchState _state = WatchState.Initial;
+    private WatchState _state = WatchState.Continuing(reported);
+    private WatchResources _kept = reported;
     private int? _inbox;
     private bool _failing;
 
@@ -56,6 +59,18 @@ internal sealed class WatchLoop(TeamConfig team, WatchPoller poller, Func<string
 
         _inbox = polled.Value.Inbox;
         _state = step.State;
+        await Remember().ConfigureAwait(false);
+    }
+
+    // Keeps the disk and memory states reported so far, whenever they change.
+    private async ValueTask Remember()
+    {
+        var now = new WatchResources(_state.DiskLow, _state.MemoryLow);
+        if (now != _kept)
+        {
+            _kept = now;
+            await remember(now).ConfigureAwait(false);
+        }
     }
 
     /// <summary>Emits one line.</summary>

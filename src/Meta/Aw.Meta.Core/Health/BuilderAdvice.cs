@@ -14,12 +14,12 @@ public sealed record BuilderAdvice(int PerLane, int MaxPerLane, long DiskFreeGb,
     /// <summary>The limit text when the disk cannot hold the floor plus the builders' worktrees.</summary>
     public const string DiskLimit = "disk below floor+headroom";
 
-    /// <summary>The limit text when memory is under its floor.</summary>
-    public const string MemoryLimit = "memory below floor";
+    /// <summary>The limit text when memory is low.</summary>
+    public const string MemoryLimit = "memory low";
 
     /// <summary>
     /// The configured maximum, reduced while free disk is under the floor plus lanes x builders x worktree size, and to 1 while
-    /// available memory is under its floor.
+    /// memory is low (<see cref="ResourceRules.MemoryLow"/>: under its floor, or swap nearly all in use).
     /// </summary>
     /// <param name="host">The host's figures.</param>
     /// <param name="limits">The disk and memory floors.</param>
@@ -34,7 +34,7 @@ public sealed record BuilderAdvice(int PerLane, int MaxPerLane, long DiskFreeGb,
         var max = Math.Max(1, builders.MaxPerLane);
         var diskGb = ResourceRules.DiskFreeGb(host);
         var memGb = ResourceRules.MemAvailableGb(host);
-        if (host.MemAvailableKb < limits.MemFloorGb * 1024L * 1024)
+        if (ResourceRules.MemoryLow(host, limits))
         {
             return new BuilderAdvice(1, max, diskGb, memGb, MemoryLimit);
         }

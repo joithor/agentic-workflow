@@ -25,7 +25,7 @@ public static class TeamConfigs
         Worktrees = new WorktreeConfig(["/work/wt"], ["bin", "obj"], Enabled: false),
         Resources = new ResourcesConfig(DiskFloorGb: 40, MemFloorGb: 6, SwapHighPct: 80),
         Builders = new BuildersConfig(MaxPerLane: 3, WorktreeGb: 5),
-        Heavy = new HeavyConfig(new ReserveSetting(Enabled: true, [new ReserveTier(2, new ReserveSlots(1)), new ReserveTier(4, ReserveSlots.All)])),
+        Heavy = new HeavyConfig(new ReserveSetting(Enabled: true, [new ReserveTier(2, new ReserveSlots(1)), new ReserveTier(4, ReserveSlots.All)]), Cap: 4),
     };
 
     /// <summary>Whether two configs hold the same values.</summary>
@@ -48,6 +48,7 @@ public static class TeamConfigs
         && a.MergeOrder.SequenceEqual(b.MergeOrder)
         && a.Resources == b.Resources
         && a.Builders == b.Builders
+        && a.Heavy.Cap == b.Heavy.Cap
         && a.Heavy.EffectiveReserve.Enabled == b.Heavy.EffectiveReserve.Enabled
         && a.Heavy.EffectiveReserve.Tiers.SequenceEqual(b.Heavy.EffectiveReserve.Tiers);
 

@@ -46,7 +46,7 @@ internal static class HealthCommand
     {
         if (health.Heavy is { } heavy)
         {
-            yield return string.Create(CultureInfo.InvariantCulture, $"heavy slots: {heavy.Cap}, {heavy.Reserve} reserved for the meta gates");
+            yield return heavy.Line();
         }
 
         if (health.Builders is { } builders)

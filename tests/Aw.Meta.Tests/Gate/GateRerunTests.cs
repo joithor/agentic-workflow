@@ -66,6 +66,19 @@ public sealed class GateRerunTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Every_rerun_on_the_gate_tree_and_on_main_carries_meta_priority()
+    {
+        await SaveRedGate();
+        Script(onGate: Fail(), onMain: Fail());
+
+        _ = await Rerun();
+
+        var runs = _world.Runner.Requests.Where(r => r.Argv.Contains("--filter-method", StringComparer.Ordinal)).ToList();
+        Assert.Equal([GateTree, MainTree], runs.Select(r => r.Cwd).Order(StringComparer.Ordinal).Reverse(), StringComparer.Ordinal);
+        Assert.All(runs, run => Assert.Equal("meta", run.Env["AW_HEAVY_PRIORITY"]));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_test_that_passes_alone_is_a_flake_and_main_is_not_run()
     {
         await SaveRedGate();

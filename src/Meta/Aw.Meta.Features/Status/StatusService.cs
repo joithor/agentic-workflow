@@ -11,7 +11,7 @@ namespace Aw.Meta.Features.Status;
 /// <param name="values">Holds the last health summary.</param>
 /// <param name="status">Reads the parts.</param>
 /// <param name="resources">Reads memory and disk for the builders advice.</param>
-/// <param name="advisor">Reads the heavy reservation and computes the builders advice.</param>
+/// <param name="advisor">Recomputes the heavy reservation and computes the builders advice.</param>
 /// <param name="clock">The current time.</param>
 internal sealed class StatusService(IMetaConfig config, StatusReader status, IKeyValueStore values, IHostResources resources, ResourceAdvisor advisor, TimeProvider clock) : IService<StatusRequest, StatusResponse>
 {
@@ -32,7 +32,7 @@ internal sealed class StatusService(IMetaConfig config, StatusReader status, IKe
 
         // The reservation and the advice are extras: a host or file that can't be read leaves them out instead of failing the status.
         var host = await resources.Read(cancellationToken).ConfigureAwait(false);
-        var advice = host.IsError ? null : await advisor.Advise(team.Value, host.Value, cancellationToken).ConfigureAwait(false);
+        var advice = host.IsError ? null : await advisor.Advise(team.Value, host.Value, refresh: true, cancellationToken).ConfigureAwait(false);
         return read.Value with { LastHealth = health.Value, Heavy = advice?.IsSuccess == true ? advice.Value.Heavy : null, Builders = advice?.IsSuccess == true ? advice.Value.Builders : null };
     }
 }

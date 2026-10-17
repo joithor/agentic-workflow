@@ -4,6 +4,7 @@ using Aw.Meta.Core;
 using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Coordination;
 using Aw.Meta.Core.Gate;
+using Aw.Meta.Core.Health;
 using Aw.Meta.Core.Ports;
 
 namespace Aw.Meta.Features.GateRun;
@@ -16,7 +17,7 @@ namespace Aw.Meta.Features.GateRun;
 /// <param name="workspace">Builds the tree.</param>
 /// <param name="steps">Runs a step.</param>
 /// <param name="gates">Stores the run.</param>
-/// <param name="reservation">Sets the heavy-slot reservation from the merge-queue depth before the run.</param>
+/// <param name="reservation">Computes the heavy-slot reservation from the merge-queue depth before the run.</param>
 /// <param name="clock">Dates the run.</param>
 internal sealed class GateRunService(IMetaConfig config, GateWorkspace workspace, GateStepRunner steps, IGateStore gates, HeavyReservation reservation, TimeProvider clock)
     : IService<GateRunRequest, GateRunResponse>
@@ -35,8 +36,8 @@ internal sealed class GateRunService(IMetaConfig config, GateWorkspace workspace
             return MetaErrors.Invalid.With($"no gate scope '{unknown}' in the team config (scopes: {string.Join(", ", team.Value.Gate.Scopes.Keys)})");
         }
 
-        // Advisory: a reservation that can't be set (unwritable state root) must not stop the gate.
-        _ = await reservation.Apply(team.Value, cancellationToken).ConfigureAwait(false);
+        // Advisory: a reservation that can't be kept (unwritable state directory) must not stop the gate.
+        var reserved = await reservation.Apply(team.Value, cancellationToken).ConfigureAwait(false);
 
         var plan = await Plan(team.Value, request, cancellationToken).ConfigureAwait(false);
         if (plan.IsError)
@@ -44,8 +45,8 @@ internal sealed class GateRunService(IMetaConfig config, GateWorkspace workspace
             return plan.Error;
         }
 
-        var ran = plan.Value.Prepared.Merged ? await RunSteps(plan.Value, team.Value.Gate, team.Value.Heavy.EffectiveCap, cancellationToken).ConfigureAwait(false) : Results.Success<IReadOnlyList<GateStep>>([]);
-        return ran.IsError ? ran.Error : await Record(plan.Value, ran.Value, cancellationToken).ConfigureAwait(false);
+        var ran = plan.Value.Prepared.Merged ? await RunSteps(plan.Value, team.Value.Gate, team.Value.Heavy.Cap, cancellationToken).ConfigureAwait(false) : Results.Success<IReadOnlyList<GateStep>>([]);
+        return ran.IsError ? ran.Error : await Record(plan.Value, ran.Value, reserved.IsSuccess ? reserved.Value : null, cancellationToken).ConfigureAwait(false);
     }
 
     private async ValueTask<Result<GatePlan>> Plan(TeamConfig team, GateRunRequest request, CancellationToken cancellationToken)
@@ -85,11 +86,11 @@ internal sealed class GateRunService(IMetaConfig config, GateWorkspace workspace
         return ran;
     }
 
-    private async ValueTask<Result<GateRunResponse>> Record(GatePlan plan, IReadOnlyList<GateStep> ran, CancellationToken cancellationToken)
+    private async ValueTask<Result<GateRunResponse>> Record(GatePlan plan, IReadOnlyList<GateStep> ran, HeavySlots? heavy, CancellationToken cancellationToken)
     {
         var verdict = !plan.Prepared.Merged ? GateVerdict.Conflict : ran.All(s => s.Verdict == GateVerdict.Pass) ? GateVerdict.Pass : GateVerdict.Fail;
         var record = new GateRecord(plan.Pr, plan.Prepared.Pr.Head, plan.Prepared.Main, plan.Scopes, ran, verdict, clock.GetUtcNow());
         var saved = await gates.Save(record, cancellationToken).ConfigureAwait(false);
-        return saved.IsError ? saved.Error : new GateRunResponse(saved.Value);
+        return saved.IsError ? saved.Error : new GateRunResponse(saved.Value, heavy);
     }
 }

@@ -14,22 +14,16 @@ public sealed class QueueDropTests
 {
     private readonly MetaWorld _world = new();
 
-    private QueueDropService Drop() => new(_world.Messages, _world.Gates, _world.Values, _world.Log, _world.Clock);
+    private QueueDropService Drop() => new(_world.Messages, _world.Gates, _world.Values, _world.Log, Worlds.Reservation(_world), _world.Clock);
 
     private StatusService Service() => new(_world.Config, Worlds.StatusReader(_world), _world.Values, _world.Resources, Worlds.Advisor(_world), _world.Clock);
-
-    private async Task Receive(string id, string name, string body)
-    {
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine(id, name, body));
-        _ = await _world.Sync.Run(MetaWorld.Transcript, CancellationToken.None);
-    }
 
     [Fact, Trait("Lane", "unit")]
     public async Task Dropping_removes_the_queue_entry_and_logs_the_reason()
     {
         await _world.Ready();
-        await Receive("m1", "t1-api", "ready #250 079c2541");
-        await Receive("m2", "t1-ui", "ready #251 079c2542");
+        await _world.Receive("m1", "t1-api", "ready #250 079c2541");
+        await _world.Receive("m2", "t1-ui", "ready #251 079c2542");
 
         var dropped = await Drop().Handle(new QueueDropRequest(250, "a status line, not a ready"), CancellationToken.None);
         var status = await Service().Handle(new StatusRequest(), CancellationToken.None);
@@ -54,7 +48,7 @@ public sealed class QueueDropTests
     public async Task A_second_drop_finds_nothing_left_to_remove()
     {
         await _world.Ready();
-        await Receive("m1", "t1-api", "ready #250 079c2541");
+        await _world.Receive("m1", "t1-api", "ready #250 079c2541");
         _ = await Drop().Handle(new QueueDropRequest(250, "x"), CancellationToken.None);
 
         var again = await Drop().Handle(new QueueDropRequest(250, "x"), CancellationToken.None);
@@ -66,7 +60,7 @@ public sealed class QueueDropTests
     public async Task A_merged_pull_request_has_no_queue_entry_to_drop()
     {
         await _world.Ready();
-        await Receive("m1", "t1-api", "ready #250 079c2541");
+        await _world.Receive("m1", "t1-api", "ready #250 079c2541");
         _ = await _world.Gates.RecordMerge(new MergeRecord(250, "abcdef123", A.At(3)), CancellationToken.None);
 
         var dropped = await Drop().Handle(new QueueDropRequest(250, "x"), CancellationToken.None);
@@ -78,7 +72,7 @@ public sealed class QueueDropTests
     public async Task A_pull_request_the_watch_saw_end_has_no_queue_entry_to_drop()
     {
         await _world.Ready();
-        await Receive("m1", "t1-api", "ready #250 079c2541");
+        await _world.Receive("m1", "t1-api", "ready #250 079c2541");
         _ = await _world.Values.Set(KvKeys.EndedPrs, "250", CancellationToken.None);
 
         var dropped = await Drop().Handle(new QueueDropRequest(250, "x"), CancellationToken.None);

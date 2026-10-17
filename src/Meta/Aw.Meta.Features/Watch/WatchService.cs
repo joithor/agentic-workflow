@@ -3,6 +3,7 @@ using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Meta.Core;
 using Aw.Meta.Core.Ports;
+using Aw.Meta.Core.Watch;
 
 namespace Aw.Meta.Features.Watch;
 
@@ -28,7 +29,14 @@ internal sealed class WatchService(IMetaConfig config, WatchPoller poller, IKeyV
         }
 
         var end = clock.GetUtcNow() + request.Duration;
-        var loop = new WatchLoop(team.Value, poller, request.Emit);
+        var reported = await values.Get(KvKeys.WatchResources, cancellationToken).ConfigureAwait(false);
+        var loop = new WatchLoop(
+            team.Value,
+            poller,
+            request.Emit,
+            WatchResources.Parse(reported.IsSuccess ? reported.Value : null),
+            // Advisory: if this can't be kept, a re-armed watch announces a standing LOW again.
+            async resources => _ = await values.Set(KvKeys.WatchResources, resources.ToString(), cancellationToken).ConfigureAwait(false));
         for (var polls = 1; ; polls++)
         {
             await loop.Tick(cancellationToken).ConfigureAwait(false);
