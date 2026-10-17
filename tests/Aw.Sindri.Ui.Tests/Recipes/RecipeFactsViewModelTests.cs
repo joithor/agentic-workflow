@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Recipes;
@@ -58,7 +59,7 @@ public sealed class RecipeFactsViewModelTests
         var body = (JsonObject)Golden("workflow.no-outputs");
         body["inputs"]![0]!["type"] = "hologram";
 
-        var facts = new RecipeFactsViewModel(FixtureInstances.Parse<Aw.Sindri.Ui.Api.Workflow.RecipeView>(body));
+        var facts = new RecipeFactsViewModel(FixtureInstances.Parse<RecipeView>(body));
 
         Assert.Contains(" · payload · ", facts.Inputs[0].Detail, StringComparison.Ordinal);
     }
