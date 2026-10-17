@@ -14,8 +14,7 @@
 
     <StackPanel x:Name="RecipeBody" Spacing="{StaticResource Space.MD}" IsVisible="{Binding IsShown}">
       <StackPanel Spacing="4">
-        <TextBlock x:Name="RecipeTitle" Classes="detail-title" Text="{Binding Id}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Id}" />
-        <TextBlock x:Name="RecipeIdentity" Classes="caption mono subtle" Text="{Binding Identity}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Identity}" />
+        <TextBlock x:Name="RecipeIdentity" Classes="body-strong mono" Text="{Binding Identity}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Identity}" />
         <TextBlock x:Name="RecipeNameTemplate" Classes="caption mono" Text="{Binding NameLine}" IsVisible="{Binding HasName}" TextWrapping="Wrap" AutomationProperties.Name="{Binding NameLine}" />
         <TextBlock x:Name="RecipeNote" Classes="body-strong" Text="{Binding Note}" IsVisible="{Binding HasNote}" TextWrapping="Wrap" AutomationProperties.Name="{Binding Note}" />
       </StackPanel>

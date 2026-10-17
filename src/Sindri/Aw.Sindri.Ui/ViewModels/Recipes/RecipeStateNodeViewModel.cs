@@ -18,6 +18,9 @@ internal sealed class RecipeStateNodeViewModel
     /// <summary>What joins this state to the next: the step link, or the loop mark with the loop's name and cap; empty on the last.</summary>
     public string Link { get; }
 
+    /// <summary>True when a loop link follows this state.</summary>
+    public bool HasLink => Link.Length > 0;
+
     /// <summary>The loops on this state that are not drawn between two neighbours.</summary>
     public IReadOnlyList<string> Notes { get; }
 

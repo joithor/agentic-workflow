@@ -18,6 +18,7 @@ internal sealed partial class ShellViewModel
     // The recipe part of opening the sheet (OnSheetOpened): the sheet names its recipe at once and reads it.
     private void OnRecipeSheetOpened(DeepLink link)
     {
+        OpenerRecipeGroup = null;   // set again by the group head that opened this one, after the sheet opens
         Changed(nameof(IsRecipeSheet), nameof(ShownSheetWidth));
         if (link.Kind != DeepLinkKind.Recipe || link.Subject is not { } subject)
         {
@@ -41,6 +42,10 @@ internal sealed partial class ShellViewModel
             Stacked(() => OpenSheet(new DeepLink(DeepLinkKind.Recipe, e.Subject)), push: true);
             SheetStacked?.Invoke(this, EventArgs.Empty);   // the Recipe button stays under the sheet: focus goes to the sheet's heading
         };
-        Workflows.RecipeRequested += (_, e) => OpenSheet(new DeepLink(DeepLinkKind.Recipe, e.Subject));
+        Workflows.RecipeRequested += (_, e) =>
+        {
+            OpenSheet(new DeepLink(DeepLinkKind.Recipe, e.Subject));
+            OpenerRecipeGroup = e.Subject;   // Esc comes back to this group's button
+        };
     }
 }

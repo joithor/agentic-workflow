@@ -23,7 +23,6 @@ internal sealed class RecipeSheetViewModel(ISindriApi api) : ObservableObject
             OnChanged(nameof(IsProblem));
             OnChanged(nameof(IsLoading));
             OnChanged(nameof(IsShown));
-            OnChanged(nameof(InitialFocus));
         }
     }
 
@@ -51,9 +50,6 @@ internal sealed class RecipeSheetViewModel(ISindriApi api) : ObservableObject
 
     /// <summary>The heading of the loading skeleton.</summary>
     public string LoadingText => Labels.LoadingRecipe;
-
-    /// <summary>Where focus lands: Back when there is nothing else to act on.</summary>
-    public FrameFocus InitialFocus => FrameFocus.Back;
 #pragma warning restore CA1822, MA0041
 
     /// <summary>The recipe's id.</summary>
@@ -167,7 +163,7 @@ internal sealed class RecipeSheetViewModel(ISindriApi api) : ObservableObject
         }
         else if (string.Equals(error.Code, SindriUiErrors.BadAnswer.Code, StringComparison.Ordinal))
         {
-            Problem(FramePhase.Unreadable, Labels.StripUnreadable);
+            Problem(FramePhase.Unreadable, Labels.RecipeUnreadable);
         }
         else
         {

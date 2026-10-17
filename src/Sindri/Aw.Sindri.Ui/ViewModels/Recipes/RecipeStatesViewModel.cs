@@ -45,7 +45,7 @@ internal sealed class RecipeStatesViewModel
 
     private static RecipeStateNodeViewModel Node(Context context, RecipeStateView cell, RecipeStateView? next, List<RecipeLoopView> between, IReadOnlyList<RecipeStateNodeViewModel> branches)
     {
-        var link = next is null ? string.Empty : between.Count > 0 ? string.Join(' ', between.Select(l => Labels.LoopLink(l.Name, l.Cap))) : Labels.StepLink;
+        var link = string.Join(' ', between.Select(l => Labels.LoopLink(l.Name, l.Cap)));   // only a served loop joins two states: the recipe serves no other transition
         var spoken = new List<string>();
         if (next is not null)
         {

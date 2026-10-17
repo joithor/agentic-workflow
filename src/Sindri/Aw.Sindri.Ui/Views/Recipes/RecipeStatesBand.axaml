@@ -50,7 +50,7 @@
                   </ItemsControl.ItemTemplate>
                 </ItemsControl>
               </StackPanel>
-              <TextBlock Name="RecipeStateLink" Classes="caption mono subtle" Text="{Binding Link}" VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw" />
+              <TextBlock Name="RecipeStateLink" Classes="caption mono subtle" Text="{Binding Link}" IsVisible="{Binding HasLink}" VerticalAlignment="Top" AutomationProperties.AccessibilityView="Raw" />
             </StackPanel>
           </DataTemplate>
         </ItemsControl.ItemTemplate>

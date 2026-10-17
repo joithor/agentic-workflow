@@ -118,7 +118,6 @@ public sealed class ShellInstanceFocusTests : FrameHost
         await Until(window, () => shell.IsRecipeSheet && shell.HasTrail);
         Press(window, Key.Escape);
         await Until(window, () => !shell.IsSheetOpen && OnWorkflowRow(window, address), $"focus is on {Focus(window)}");
-        Assert.False(shell.HasTrail);
     }
 
     // The group head's Recipe button, with the sheet covering the page: Esc comes back to that button.

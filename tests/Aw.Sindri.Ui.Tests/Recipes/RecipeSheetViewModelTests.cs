@@ -80,7 +80,6 @@ public sealed class RecipeSheetViewModelTests
 
         Assert.Equal((FramePhase.NotFound, true, Labels.Back), (sheet.Phase, sheet.IsProblem, sheet.BackText));
         Assert.Contains(Text(GoldenFiles.Node("workflow-recipe", "not-found")["detail"]), sheet.ProblemText, StringComparison.Ordinal);
-        Assert.Equal(FrameFocus.Back, sheet.InitialFocus);
     }
 
     [Fact]

@@ -57,13 +57,21 @@ internal sealed partial class ShellViewModel
         CloseSheet();
     }
 
-    // Back to a frame lands focus on the entry of the child (or the child's item) the user went into, once the frame is shown.
+    // Back to a frame lands focus on the entry of the child (or the child's item) the user went into, or on the Recipe link that opened the recipe, once the frame is shown.
     private void ReturnFocus(DeepLink previous, DeepLink? leaving, bool viaPointer)
     {
-        if (previous is { Kind: DeepLinkKind.Workflow, Subject: { } parent } && leaving is { Subject: { } from } && leaving.Kind is DeepLinkKind.Workflow or DeepLinkKind.Item)
+        if (previous is not { Kind: DeepLinkKind.Workflow, Subject: { } parent } || leaving is not { Subject: { } from })
         {
-            var intent = leaving.Kind == DeepLinkKind.Item ? FrameIntent.FocusChildItem : viaPointer ? FrameIntent.FocusPointer : FrameIntent.FocusChild;
-            Instance.Intend(parent, intent, from);
+            return;
+        }
+
+        if (leaving.Kind == DeepLinkKind.Recipe)
+        {
+            Instance.Intend(parent, FrameIntent.FocusRecipe);
+        }
+        else if (leaving.Kind is DeepLinkKind.Workflow or DeepLinkKind.Item)
+        {
+            Instance.Intend(parent, leaving.Kind == DeepLinkKind.Item ? FrameIntent.FocusChildItem : viaPointer ? FrameIntent.FocusPointer : FrameIntent.FocusChild, from);
         }
     }
 
