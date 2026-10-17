@@ -52,6 +52,18 @@ public sealed class WorkflowsStripViewModelTests
         Assert.Equal((WorkflowsStripViewModel.Cap, true, Labels.MoreRows(_openAddresses.Length - WorkflowsStripViewModel.Cap)), (strip.Rows.Count, strip.HasMore, strip.MoreText));
     }
 
+    // The server decides what is open (the strip sends the page's query); "… N more" reads the served counts.open, not the rows sent.
+    [Fact]
+    public void N_more_reads_counts_open_not_the_rows_sent()
+    {
+        var root = FixtureInstances.Root;
+        var open = root.Instances.Where(FixtureInstances.IsOpen).Take(2).ToList();
+        var strip = Strip(root with { Instances = open, Counts = root.Counts with { Open = 9 } });
+        strip.SetNeedsYouShown(0);
+
+        Assert.Equal((open.Count, true, Labels.MoreRows(9 - open.Count)), (strip.Rows.Count, strip.HasMore, strip.MoreText));
+    }
+
     [Fact]
     public void N_more_opens_Workflows()
     {
