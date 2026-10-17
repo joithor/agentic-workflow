@@ -721,5 +721,5 @@ checks run or new findings in the next round than before calls shipped.
 **Follow-ups, not in v1:** the heavy wrapper taking the per-folder lock for the agent's own builds, once the wrapper
 is versioned in the repo (provisional default, reversible); transition gates with a checkout, and reusing a call for
 one on an exact match (R1-12); a recipe-level default `tools:` (R1-31); per-session attribution for Sindri-launched
-sessions (`X-Sindri-Launch`); a heavy-slot priority for calls below the transition gates (an `IHeavySlots` change);
+sessions (`X-Sindri-Launch`);
 a Sindri budget for plain calls' spend, if the owner wants one later.
