@@ -14,7 +14,7 @@ public enum OnyxStepOutcome
     [JsonStringEnumMemberName("skipped")]
     Skipped,
 
-    /// <summary>The step needs the human before it can go on (reserved: P3's account setup).</summary>
+    /// <summary>The step needs the human before it can go on. Reserved for P3's account setup: no step produces it yet, and the CLI, the JSON and the tests only know the shape.</summary>
     [JsonStringEnumMemberName("needs-human")]
     NeedsHuman,
 }

@@ -97,7 +97,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
         => services
             .AddSingleton<IOnyxPinsSource, EmbeddedOnyxPins>()                                            // context/onyx.lock, embedded
             .AddSingleton<IContainerRuntime>(_ => new DockerCliRuntime(new ProcessToolRunner(), environment))   // docker facts and compose operations
-            .AddSingleton<IDeployFiles>(static _ => new HttpDeployFiles(new HttpClient(new SocketsHttpHandler { AllowAutoRedirect = false }), new Uri("https://raw.githubusercontent.com/onyx-dot-app/onyx/")))   // the pinned files, https, no redirect
+            .AddSingleton<IDeployFiles>(static _ => new HttpDeployFiles(new HttpClient(new SocketsHttpHandler { AllowAutoRedirect = false }), new Uri("https://raw.githubusercontent.com/onyx-dot-app/onyx/")))   // the pinned files, https, no redirect; the handler keeps the environment proxy on purpose (corporate networks need it, and integrity is the pinned sha256, not the path)
             .AddSingleton<IOnyxWorkspace>(sp => new FileOnyxWorkspace(sp.GetRequiredService<ISindriHome>(), sp.GetRequiredService<JsonSerializerOptions>()))   // onyx/ under the Sindri home
             .AddSingleton<IComposeServices, YamlComposeServices>()                                       // the compose file's services, read only
             .AddSingleton<IRandomHex, OsRandomHex>()                                                      // the OS random source, for the auth key

@@ -21,7 +21,7 @@ public sealed record OnyxUpResponse(int Port, string Url, string Version, IReadO
     [JsonIgnore]
     public IReadOnlyList<string> Skipped => Named(OnyxStepOutcome.Skipped);
 
-    /// <summary>Gets the names of the steps that wait for the human.</summary>
+    /// <summary>Gets the names of the steps that wait for the human. Reserved for P3's account setup: no step produces it yet, so it is empty today.</summary>
     [JsonIgnore]
     public IReadOnlyList<string> NeedsHuman => Named(OnyxStepOutcome.NeedsHuman);
 
