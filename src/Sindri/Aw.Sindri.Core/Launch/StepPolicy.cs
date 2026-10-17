@@ -1,9 +1,12 @@
 namespace Aw.Sindri.Core.Launch;
 
 /// <summary>
-/// A Step's policy as the engine wrote it from the recipe's W9 (launcher L-17): one value the catalog entry's policy form turns into
-/// arguments. 'claude-settings-file' passes <see cref="Path"/>; 'codex-overrides' passes each of <see cref="Overrides"/> as '-c'.
+/// A Step's policy as the engine states it from the recipe's W9 (launcher L-17(a), amended by the owner 2026-10-17): target-neutral, so the
+/// engine writes no policy file. The launcher renders it for the entry's <see cref="PolicyForm"/>: 'claude-settings-file' becomes a 0600
+/// settings file the launcher writes and deletes with the launch, 'codex-overrides' becomes typed '-c' overrides, 'cursor-config' is
+/// reserved (SND-LAUNCH-013). A Step only tightens the profile, and a mode the entry can't express is SND-LAUNCH-013.
 /// </summary>
-/// <param name="Path">The per-launch policy file (0600), written by the engine.</param>
-/// <param name="Overrides">The same policy as 'key=value' config overrides, in the order they go on the command line.</param>
-public sealed record StepPolicy(string Path, IReadOnlyList<string> Overrides);
+/// <param name="AllowedTools">The tools the Step may use; empty means the CLI's read-only defaults for the mode.</param>
+/// <param name="Mode">The permission mode; never bypass or full access.</param>
+/// <param name="WritablePath">The one path the Step may write (its worktree or Step directory), or null for none.</param>
+public sealed record StepPolicy(IReadOnlyList<string> AllowedTools, StepPermissionMode Mode, string? WritablePath);

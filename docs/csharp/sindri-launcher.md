@@ -69,14 +69,17 @@ never hashed, so one approval holds across runs; changing a form name changes th
 ### Model and policy forms (decided, owner, 2026-10-16)
 
 Scoping-station spec section 12.5, row L-17. An entry names, like `mcp`, which built-in form passes a per-run model id
-(`model`) and a per-launch policy (`policy`: a file for `claude-settings-file`, typed `-c` overrides with no file for
-`codex-overrides`) to its CLI. Both are enums, default `none`, and an added entry defaults to
+(`model`) and a Step's policy (`policy`: a settings file for `claude-settings-file`, typed `-c` overrides with no file for
+`codex-overrides`) to its CLI. The Step's policy is target-neutral (owner, 2026-10-17, amending L-17(a)):
+`StepPolicy(AllowedTools, Mode {ReadOnly, Plan, Default}, WritablePath)`. The engine writes no policy file; the launcher renders
+it per form, writes any file 0600 and deletes it with the launch. A Step only tightens the profile: bypass or full access is never a
+Step mode, and a mode the entry can't express is `SND-LAUNCH-013`. Both are enums, default `none`, and an added entry defaults to
 `none`; an override keeps the built-in's forms unless it names them. A form adds its arguments only on an **unattended Step
 launch** (`attended: false`), after the expanded `open` template. Human opens, `resume` and Meta lanes never pass them. The
 closed placeholder set is unchanged: no `{model}` or `{policy}`, so no placeholder expands to an empty or optional argument.
 The bash reader (`scripts/launcher-lib.sh`) accepts both keys and never applies them (lanes are attended); it does not check
 their values, as for `mcp`. The rendering below is the C# `BuildArgv`'s (SL-2, API P10a U3), with `<id>` the per-run model
-id and `<path>` the 0600 policy file the engine writes:
+id and `<path>` the 0600 settings file the launcher renders from the Step's policy:
 
 | Key | Form | Adds (unattended only) | Built-in |
 |---|---|---|---|
@@ -85,7 +88,7 @@ id and `<path>` the 0600 policy file the engine writes:
 | `model` | `cursor-flag` | **reserved**: nothing until a box with the Cursor CLI verifies its model flag (expected `--model <id>`); a Step that requests it parks with `SND-LAUNCH-013` | none |
 | `model` | `none` | nothing | cursor |
 | `policy` | `claude-settings-file` | `--settings <path>` | claude-code |
-| `policy` | `codex-overrides` | `-c key=value` overrides, one pair per setting the engine's policy names (sandbox, approvals, the writable path) | codex |
+| `policy` | `codex-overrides` | `-c key=value` overrides, one pair per setting the launcher renders from the Step's policy (sandbox, approvals, the writable path) | codex |
 | `policy` | `cursor-config` | **reserved**: nothing until the Cursor CLI's config argument is verified; a Step that requests it parks with `SND-LAUNCH-013` | none |
 | `policy` | `none` | nothing | cursor |
 

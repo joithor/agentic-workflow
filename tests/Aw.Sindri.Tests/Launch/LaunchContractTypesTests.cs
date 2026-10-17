@@ -81,4 +81,15 @@ public sealed class LaunchContractTypesTests
         Assert.True(request.Attended);
         Assert.Null(request.Step);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void StepPolicy_is_target_neutral_with_the_three_modes_and_no_bypass()
+    {
+        var policy = new StepPolicy(["Read", "Grep"], StepPermissionMode.ReadOnly, WritablePath: null);
+        var step = new StepArgs(Model: null, policy, new StepRef("build", "agent"));
+
+        Assert.Equal(["Read", "Grep"], step.Policy!.AllowedTools);
+        Assert.Equal(["ReadOnly", "Plan", "Default"], Enum.GetNames<StepPermissionMode>());
+        Assert.Null(step.Policy.WritablePath);
+    }
 }

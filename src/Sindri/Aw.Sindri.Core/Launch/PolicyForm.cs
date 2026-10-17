@@ -10,11 +10,11 @@ public enum PolicyForm
     [JsonStringEnumMemberName("none")]
     None,
 
-    /// <summary>'--settings &lt;path&gt;'.</summary>
+    /// <summary>'--settings &lt;path&gt;' to a 0600 settings file the launcher writes from the <see cref="StepPolicy"/> and deletes with the launch.</summary>
     [JsonStringEnumMemberName("claude-settings-file")]
     ClaudeSettingsFile,
 
-    /// <summary>One '-c key=value' per <see cref="StepPolicy.Overrides"/> entry.</summary>
+    /// <summary>Typed '-c key=value' overrides the launcher renders from the <see cref="StepPolicy"/>.</summary>
     [JsonStringEnumMemberName("codex-overrides")]
     CodexOverrides,
 
