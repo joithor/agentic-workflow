@@ -1,6 +1,7 @@
 using System.Globalization;
 using Aw.Kernel;
 using Aw.Meta.Core.Config;
+using Aw.Meta.Core.Gate;
 
 namespace Aw.Meta.Core.Coordination;
 
@@ -47,26 +48,53 @@ public sealed class GateWorkspace(RepoCommands repo, GateTree trees, MetaPaths p
     /// <param name="config">The team config (its repo).</param>
     /// <param name="pr">The pull request number.</param>
     /// <param name="listChanged">Whether to list the paths the pull request changes.</param>
+    /// <param name="onto">For a train gate: the main to pin and the heads of the pull requests ahead of this one, merged in order before its own head; null for a plain gate on origin/main.</param>
     /// <returns>The prepared tree, or an error from git or gh.</returns>
-    public async ValueTask<Result<PreparedGate>> Prepare(TeamConfig config, int pr, bool listChanged)
+    public async ValueTask<Result<PreparedGate>> Prepare(TeamConfig config, int pr, bool listChanged, GateBase? onto = null)
     {
         var view = await repo.View(config.Repo, pr, Fields).ConfigureAwait(false);
-        var fetched = view.IsError ? Results.Failure<Unit>(view.Error) : await repo.Fetch(config.Repo, pr).ConfigureAwait(false);
-        var main = fetched.IsError ? Results.Failure<string>(fetched.Error) : await repo.Sha(config.Repo, "origin/main").ConfigureAwait(false);
+        var main = view.IsError ? Results.Failure<string>(view.Error) : await Pin(config, pr, onto?.Main).ConfigureAwait(false);
         if (main.IsError)
         {
             return main.Error;
         }
 
-        var tree = TreePath(pr);
-        var ready = await trees.Prepare(config.Repo, tree, main.Value).ConfigureAwait(false);
-        var merged = ready.IsError ? Results.Failure<bool>(ready.Error) : await trees.Merge(tree, view.Value.Head).ConfigureAwait(false);
-        if (merged.IsError)
+        var stack = onto?.Stack ?? [];
+        var built = await BuildTree(config, TreePath(pr), main.Value, [.. stack.Select(s => s.Head), view.Value.Head]).ConfigureAwait(false);
+        if (built.IsError)
         {
-            return merged.Error;
+            return built.Error;
         }
 
-        return await Describe(config.Repo, new PreparedGate(view.Value, main.Value, tree, merged.Value, []), listChanged).ConfigureAwait(false);
+        var culprit = built.Value || stack.Count == 0 ? null : await Culprit(config.Repo, stack, view.Value.Head).ConfigureAwait(false);
+        return await Describe(config.Repo, new PreparedGate(view.Value, main.Value, TreePath(pr), built.Value, []) { ConflictsWith = culprit }, listChanged).ConfigureAwait(false);
+    }
+
+    // Fetches the pull request, then resolves origin/main unless the train already pinned it.
+    private async ValueTask<Result<string>> Pin(TeamConfig config, int pr, string? pinned)
+    {
+        var fetched = await repo.Fetch(config.Repo, pr).ConfigureAwait(false);
+        return fetched.IsError ? fetched.Error : pinned ?? await repo.Sha(config.Repo, "origin/main").ConfigureAwait(false);
+    }
+
+    private async ValueTask<Result<bool>> BuildTree(TeamConfig config, string tree, string main, IReadOnlyList<string> heads)
+    {
+        var ready = await trees.Prepare(config.Repo, tree, main).ConfigureAwait(false);
+        return ready.IsError ? ready.Error : await trees.MergeAll(tree, heads).ConfigureAwait(false);
+    }
+
+    // The stacked pull request whose head conflicts with this head on its own; the last one when none does alone (the conflict needs several).
+    private async ValueTask<StackedPr> Culprit(string repoDirectory, IReadOnlyList<StackedPr> stack, string head)
+    {
+        foreach (var ahead in stack)
+        {
+            if (await repo.MergeTree(repoDirectory, ahead.Head, head).ConfigureAwait(false) is null)
+            {
+                return ahead;
+            }
+        }
+
+        return stack[^1];
     }
 
     private async ValueTask<Result<PreparedGate>> Describe(string repoDirectory, PreparedGate prepared, bool listChanged)

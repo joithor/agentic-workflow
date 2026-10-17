@@ -34,6 +34,7 @@ internal static class CommandTable
         StatusCommand.Entry,
         QueueDropCommand.Entry,
         GateRunCommand.Entry,
+        QueueGateCommand.Entry,
         GateRerunCommand.Entry,
         MergeCheckCommand.Entry,
         MergeRunCommand.Entry,

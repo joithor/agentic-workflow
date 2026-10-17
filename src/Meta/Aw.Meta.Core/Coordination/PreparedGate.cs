@@ -1,3 +1,4 @@
+using Aw.Meta.Core.Gate;
 using Aw.Meta.Core.Github;
 
 namespace Aw.Meta.Core.Coordination;
@@ -12,4 +13,7 @@ public sealed record PreparedGate(PrDetails Pr, string Main, string Tree, bool M
 {
     /// <summary>The git tree sha of the worktree after the merge (HEAD^{tree}); null when the head conflicted.</summary>
     public string? TreeSha { get; init; }
+
+    /// <summary>For a train gate whose head conflicted: the pull request ahead of it that it conflicts with; null otherwise.</summary>
+    public StackedPr? ConflictsWith { get; init; }
 }

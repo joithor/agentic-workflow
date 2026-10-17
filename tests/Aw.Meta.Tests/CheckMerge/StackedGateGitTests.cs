@@ -3,9 +3,9 @@ using Aw.Meta.Core.Coordination;
 using Aw.Meta.Core.Gate;
 using Aw.Meta.Core.Merge;
 using Aw.Meta.Infrastructure.Processes;
+using Aw.Meta.Testing;
 using Aw.Meta.Tests.Adapters;
 using Aw.Meta.Tests.Cli;
-using Aw.Meta.Testing;
 
 namespace Aw.Meta.Tests.CheckMerge;
 
@@ -15,7 +15,7 @@ public sealed class StackedGateGitTests : IDisposable
 {
     private readonly TempDirectory _directory = new();
 
-    private string Repo => System.IO.Path.Combine(_directory.Path, "repo");
+    private string Repo => Path.Combine(_directory.Path, "repo");
 
     private static void Git(string directory, params string[] args) => WorktreeLab.Git(directory, args);
 
@@ -23,7 +23,7 @@ public sealed class StackedGateGitTests : IDisposable
 
     private async Task Commit(string file, string text, string message)
     {
-        await File.WriteAllTextAsync(System.IO.Path.Combine(Repo, file), text, TestContext.Current.CancellationToken);
+        await File.WriteAllTextAsync(Path.Combine(Repo, file), text, TestContext.Current.CancellationToken);
         Git(Repo, "add", ".");
         Git(Repo, "commit", "--quiet", "-m", message);
     }

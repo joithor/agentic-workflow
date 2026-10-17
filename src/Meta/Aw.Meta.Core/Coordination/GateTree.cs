@@ -60,4 +60,23 @@ public sealed class GateTree(RepoCommands repo)
         _ = await repo.Git(tree, "merge", "--abort").ConfigureAwait(false);
         return false;
     }
+
+    /// <summary>Merges commits into the tree one after the other.</summary>
+    /// <param name="tree">The worktree's directory.</param>
+    /// <param name="heads">The commits to merge, in order.</param>
+    /// <returns>True when all merged; false on the first conflict (that merge is aborted); or AW-META-012.</returns>
+    public async ValueTask<Result<bool>> MergeAll(string tree, IReadOnlyList<string> heads)
+    {
+        ArgumentNullException.ThrowIfNull(heads);
+        foreach (var head in heads)
+        {
+            var merged = await Merge(tree, head).ConfigureAwait(false);
+            if (merged.IsError || !merged.Value)
+            {
+                return merged;
+            }
+        }
+
+        return true;
+    }
 }

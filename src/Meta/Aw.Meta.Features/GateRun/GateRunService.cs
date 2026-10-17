@@ -66,13 +66,7 @@ internal sealed class GateRunService(IMetaConfig config, GateWorkspace workspace
 
     private async ValueTask<Result<IReadOnlyList<GateStep>>> RunSteps(GatePlan plan, GateConfig gate, int heavyCap, CancellationToken cancellationToken)
     {
-        var configured = plan.Scopes.SelectMany(scope => gate.Scopes[scope].Steps).ToList();
-        if (configured.GroupBy(s => s.Name, StringComparer.Ordinal).FirstOrDefault(g => g.Skip(1).Any()) is { } twice)
-        {
-            return MetaErrors.ConfigInvalid.With($"two gate steps are named '{twice.Key}'; step names must be unique across the selected scopes");
-        }
-
-        var graph = StepGraph.Build(configured, [.. gate.Scopes.Values.SelectMany(scope => scope.Steps).Select(step => step.Name)]);
+        var graph = GateGraphs.Build(plan.Scopes, gate);
         if (graph.IsError)
         {
             return graph.Error;

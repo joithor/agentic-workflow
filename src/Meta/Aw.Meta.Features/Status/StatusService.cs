@@ -24,15 +24,22 @@ internal sealed class StatusService(IMetaConfig config, StatusReader status, IKe
         }
 
         var read = await status.Read(team.Value.MetaLane, clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);
-        var health = await values.Get(KvKeys.HealthLast, cancellationToken).ConfigureAwait(false);
-        if (read.IsError || health.IsError)
+        var stored = await Stored(cancellationToken).ConfigureAwait(false);
+        if (read.IsError || stored.IsError)
         {
-            return read.IsError ? read.Error : health.Error;
+            return read.IsError ? read.Error : stored.Error;
         }
 
         // The reservation and the advice are extras: a host or file that can't be read leaves them out instead of failing the status.
         var host = await resources.Read(cancellationToken).ConfigureAwait(false);
         var advice = host.IsError ? null : await advisor.Advise(team.Value, host.Value, refresh: true, cancellationToken).ConfigureAwait(false);
-        return read.Value with { LastHealth = health.Value, Heavy = advice?.IsSuccess == true ? advice.Value.Heavy : null, Builders = advice?.IsSuccess == true ? advice.Value.Builders : null };
+        return read.Value with { LastHealth = stored.Value.Health, Train = stored.Value.Train, Heavy = advice?.IsSuccess == true ? advice.Value.Heavy : null, Builders = advice?.IsSuccess == true ? advice.Value.Builders : null };
+    }
+
+    private async ValueTask<Result<(string? Health, string? Train)>> Stored(CancellationToken cancellationToken)
+    {
+        var health = await values.Get(KvKeys.HealthLast, cancellationToken).ConfigureAwait(false);
+        var train = await values.Get(KvKeys.Train, cancellationToken).ConfigureAwait(false);
+        return health.IsError || train.IsError ? health.IsError ? health.Error : train.Error : (health.Value, train.Value);
     }
 }

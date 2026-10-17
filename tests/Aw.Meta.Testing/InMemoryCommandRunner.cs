@@ -93,7 +93,7 @@ public sealed class InMemoryCommandRunner : ICommandRunner
         var argv = request.Argv;
         if (_script.FirstOrDefault(rule => rule.Match(request)) is { Result: { } answer })
         {
-            return await answer(request);
+            return await answer(request).WaitAsync(cancellationToken);
         }
 
         if (argv.Count < 2 || argv[0] != Marker || argv[1] == "missing")
