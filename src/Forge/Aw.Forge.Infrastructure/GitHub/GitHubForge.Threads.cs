@@ -13,38 +13,43 @@ internal sealed partial class GitHubForge
 
     public async ValueTask<Result<IReadOnlyList<ForgeThread>>> ListThreads(ForgeRef pull, CancellationToken cancellationToken)
     {
-        if (api.Guard(pull.Host) is { } refused)
+        if (_api.Guard(pull.Host) is { } refused)
         {
             return refused;
         }
 
-        var inline = await api.All(pull.Host, $"{RepoPath(pull)}/pulls/{pull.Number}/comments", cancellationToken).ConfigureAwait(false);
+        var inline = await _api.All(pull.Host, Inv.S($"{RepoPath(pull)}/pulls/{pull.Number}/comments"), cancellationToken).ConfigureAwait(false);
         if (inline.IsError)
         {
             return inline.Error;
         }
 
-        var reviews = await api.All(pull.Host, $"{RepoPath(pull)}/pulls/{pull.Number}/reviews", cancellationToken).ConfigureAwait(false);
+        var reviews = await _api.All(pull.Host, Inv.S($"{RepoPath(pull)}/pulls/{pull.Number}/reviews"), cancellationToken).ConfigureAwait(false);
         if (reviews.IsError)
         {
             return reviews.Error;
         }
 
-        var comments = await api.All(pull.Host, $"{RepoPath(pull)}/issues/{pull.Number}/comments", cancellationToken).ConfigureAwait(false);
+        var comments = await _api.All(pull.Host, Inv.S($"{RepoPath(pull)}/issues/{pull.Number}/comments"), cancellationToken).ConfigureAwait(false);
         if (comments.IsError)
         {
             return comments.Error;
         }
 
         var flags = await ThreadFlags(pull, cancellationToken).ConfigureAwait(false);
-        return flags.IsError ? flags.Error : Assemble(inline.Value, reviews.Value, comments.Value, flags.Value);
+        if (flags.IsError)
+        {
+            return flags.Error;
+        }
+
+        return Results.Success(Assemble(inline.Value, reviews.Value, comments.Value, flags.Value));
     }
 
     public async ValueTask<Result<Delivery>> Reply(ReplyRequest request, CancellationToken cancellationToken)
     {
         var pull = request.Pull;
         var bad = ForgeMarker.Validate(request.Marker);
-        if (api.Guard(pull.Host) is { } refused)
+        if (_api.Guard(pull.Host) is { } refused)
         {
             return refused;
         }
@@ -54,13 +59,13 @@ internal sealed partial class GitHubForge
             return bad.Error;
         }
 
-        var inline = await api.All(pull.Host, $"{RepoPath(pull)}/pulls/{pull.Number}/comments", cancellationToken).ConfigureAwait(false);
+        var inline = await _api.All(pull.Host, Inv.S($"{RepoPath(pull)}/pulls/{pull.Number}/comments"), cancellationToken).ConfigureAwait(false);
         if (inline.IsError)
         {
             return inline.Error;
         }
 
-        var issue = await api.All(pull.Host, $"{RepoPath(pull)}/issues/{pull.Number}/comments", cancellationToken).ConfigureAwait(false);
+        var issue = await _api.All(pull.Host, Inv.S($"{RepoPath(pull)}/issues/{pull.Number}/comments"), cancellationToken).ConfigureAwait(false);
         if (issue.IsError)
         {
             return issue.Error;
@@ -74,8 +79,8 @@ internal sealed partial class GitHubForge
         var body = J.Object(w => w.WriteString("body", ForgeMarker.Append(request.Text, request.Marker)));
         var (kind, number) = SplitKey(request.ThreadKey);
         var path = kind == "thread"
-            ? $"{RepoPath(pull)}/pulls/{pull.Number}/comments/{number}/replies"
-            : $"{RepoPath(pull)}/issues/{pull.Number}/comments";
+            ? Inv.S($"{RepoPath(pull)}/pulls/{pull.Number}/comments/{number}/replies")
+            : Inv.S($"{RepoPath(pull)}/issues/{pull.Number}/comments");
         return await Post(pull.Host, path, body, success: Delivery.Delivered, cancellationToken).ConfigureAwait(false);
     }
 
@@ -83,7 +88,7 @@ internal sealed partial class GitHubForge
     {
         var pull = request.Pull;
         var bad = ForgeMarker.Validate(request.Marker);
-        if (api.Guard(pull.Host) is { } refused)
+        if (_api.Guard(pull.Host) is { } refused)
         {
             return refused;
         }
@@ -96,8 +101,8 @@ internal sealed partial class GitHubForge
         var (kind, number) = SplitKey(request.ThreadKey);
         var path = kind switch
         {
-            "thread" => $"{RepoPath(pull)}/pulls/comments/{number}/reactions",
-            "comment" => $"{RepoPath(pull)}/issues/comments/{number}/reactions",
+            "thread" => Inv.S($"{RepoPath(pull)}/pulls/comments/{number}/reactions"),
+            "comment" => Inv.S($"{RepoPath(pull)}/issues/comments/{number}/reactions"),
             _ => null,
         };
         if (path is null || number.Length == 0)
@@ -105,7 +110,7 @@ internal sealed partial class GitHubForge
             return ForgeErrors.Invalid.With("threadKey: thread:N or comment:N (a review body takes no reaction)");
         }
 
-        var reply = await api.Call(pull.Host, HttpMethod.Post, path, J.Object(w => w.WriteString("content", request.Reaction)), cancellationToken).ConfigureAwait(false);
+        var reply = await _api.Call(pull.Host, HttpMethod.Post, path, J.Object(w => w.WriteString("content", request.Reaction)), cancellationToken).ConfigureAwait(false);
         if (reply.IsError)
         {
             return reply.Error;
@@ -127,7 +132,7 @@ internal sealed partial class GitHubForge
 
     private async ValueTask<Result<Delivery>> Post(string host, string path, byte[] body, Delivery success, CancellationToken cancellationToken)
     {
-        var reply = await api.Call(host, HttpMethod.Post, path, body, cancellationToken).ConfigureAwait(false);
+        var reply = await _api.Call(host, HttpMethod.Post, path, body, cancellationToken).ConfigureAwait(false);
         if (reply.IsError)
         {
             return reply.Error;
@@ -147,7 +152,7 @@ internal sealed partial class GitHubForge
             w.WriteNumber("n", pull.Number);
             w.WriteEndObject();
         });
-        var reply = await api.Query(pull.Host, body, cancellationToken).ConfigureAwait(false);
+        var reply = await _api.Query(pull.Host, body, cancellationToken).ConfigureAwait(false);
         if (reply.IsError)
         {
             return reply.Error;
@@ -158,8 +163,13 @@ internal sealed partial class GitHubForge
             return ForgeErrors.Rejected.With("the thread flags could not be read");
         }
 
-        var flags = new Dictionary<long, (bool, bool)>();
-        var nodes = reply.Value.Body.At("data")?.At("repository")?.At("pullRequest")?.At("reviewThreads")?.At("nodes") ?? default;
+        return ParseFlags(reply.Value.Body);
+    }
+
+    private static Dictionary<long, (bool Resolved, bool Outdated)> ParseFlags(JsonElement body)
+    {
+        var flags = new Dictionary<long, (bool Resolved, bool Outdated)>();
+        var nodes = body.At("data")?.At("repository")?.At("pullRequest")?.At("reviewThreads")?.At("nodes") ?? default;
         foreach (var node in nodes.Items())
         {
             var first = (node.At("comments")?.At("nodes") ?? default).Items().FirstOrDefault();
@@ -169,7 +179,7 @@ internal sealed partial class GitHubForge
         return flags;
     }
 
-    private IReadOnlyList<ForgeThread> Assemble(
+    private static IReadOnlyList<ForgeThread> Assemble(
         IReadOnlyList<JsonElement> inline,
         IReadOnlyList<JsonElement> reviews,
         IReadOnlyList<JsonElement> comments,
@@ -182,24 +192,27 @@ internal sealed partial class GitHubForge
             var id = root.Long("id");
             var (resolved, outdated) = flags.GetValueOrDefault(id);
             var markers = ForgeMarker.Of(root.Str("body")).Concat(replies[id].SelectMany(r => ForgeMarker.Of(r.Str("body")))).ToList();
-            items.Add((root.Str("created_at"), Thread($"thread:{id}", CommentKind.Thread, root, resolved, outdated || root.At("position") is null, root.Str("path"), markers)));
+            items.Add((root.Str("created_at"), Thread(new ThreadParts(Inv.S($"thread:{id}"), CommentKind.Thread, root, resolved, outdated || root.At("position") is null, root.Str("path"), markers))));
         }
 
         foreach (var review in reviews.Where(r => r.Str("body").Length > 0))
         {
-            items.Add((review.Str("submitted_at"), Thread($"review:{review.Long("id")}", CommentKind.Review, review, false, false, null, [.. ForgeMarker.Of(review.Str("body"))])));
+            items.Add((review.Str("submitted_at"), Thread(new ThreadParts(Inv.S($"review:{review.Long("id")}"), CommentKind.Review, review, Resolved: false, Outdated: false, Path: null, [.. ForgeMarker.Of(review.Str("body"))]))));
         }
 
         foreach (var comment in comments)
         {
-            items.Add((comment.Str("created_at"), Thread($"comment:{comment.Long("id")}", CommentKind.Comment, comment, false, false, null, [.. ForgeMarker.Of(comment.Str("body"))])));
+            items.Add((comment.Str("created_at"), Thread(new ThreadParts(Inv.S($"comment:{comment.Long("id")}"), CommentKind.Comment, comment, Resolved: false, Outdated: false, Path: null, [.. ForgeMarker.Of(comment.Str("body"))]))));
         }
 
         return [.. items.OrderBy(i => i.When, StringComparer.Ordinal).Select(i => i.Thread)];
     }
 
-    private static ForgeThread Thread(string key, CommentKind kind, JsonElement json, bool resolved, bool outdated, string? path, List<string> markers)
+    private sealed record ThreadParts(string Key, CommentKind Kind, JsonElement Json, bool Resolved, bool Outdated, string? Path, List<string> Markers);
+
+    private static ForgeThread Thread(ThreadParts parts)
     {
+        var (key, kind, json, resolved, outdated, path, markers) = parts;
         var user = json.At("user") ?? default;
         var isBot = user.Str("type") == "Bot" || user.Str("login").EndsWith("[bot]", StringComparison.Ordinal);
         return new ForgeThread(key, kind, user.Str("login"), json.Str("author_association"), isBot, resolved, outdated, path is { Length: > 0 } ? path : null, json.Str("body"), markers);

@@ -6,6 +6,9 @@ namespace Aw.Forge.Infrastructure.Credentials;
 internal interface ICredentialSource
 {
     /// <summary>The token for a host.</summary>
+    /// <param name="host">The forge host the token is for.</param>
     /// <param name="refresh">True after a 401: drop what is cached and ask again.</param>
+    /// <param name="cancellationToken">Cancels the lookup.</param>
+    /// <returns>The token, or the failure naming why none could be had.</returns>
     public ValueTask<Result<string>> Token(string host, bool refresh, CancellationToken cancellationToken);
 }

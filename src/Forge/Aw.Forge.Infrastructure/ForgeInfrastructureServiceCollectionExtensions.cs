@@ -4,7 +4,6 @@ using Aw.Forge.Core.Refs;
 using Aw.Forge.Infrastructure.Credentials;
 using Aw.Forge.Infrastructure.Git;
 using Aw.Forge.Infrastructure.GitHub;
-using Aw.Forge.Infrastructure.World;
 using Aw.Redaction;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -30,6 +29,19 @@ public static class ForgeInfrastructureServiceCollectionExtensions
             .AddSingleton<IForgeSeed>(provider => provider.GetRequiredService<FileForge>());
     }
 
+    /// <summary>Adds the in-memory forge, whose world lives and dies with the process (proofs and in-process composition).</summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="hosts">The allowed hosts (workflow.forge.hosts).</param>
+    /// <returns>The same collection.</returns>
+    public static IServiceCollection AddForgeMemoryInfrastructure(this IServiceCollection services, ForgeHosts hosts)
+    {
+        ArgumentNullException.ThrowIfNull(hosts);
+        return services
+            .AddSingleton(_ => new MemoryForge(hosts, Redactor.Default))
+            .AddSingleton<IForge>(provider => provider.GetRequiredService<MemoryForge>())
+            .AddSingleton<IForgeSeed>(provider => provider.GetRequiredService<MemoryForge>());
+    }
+
     /// <summary>Adds the GitHub adapter (workflow.forge.adapter: github).</summary>
     /// <param name="services">The service collection.</param>
     /// <param name="environment">Reads an environment variable.</param>
@@ -43,12 +55,12 @@ public static class ForgeInfrastructureServiceCollectionExtensions
         var spec = credential ?? ForgeCredentialSpec.Default;
         return services
             .AddSingleton(SettingsFromEnvironment.Read(environment))
+            .AddSingleton<ICredentialSource>(provider => spec.Kind == ForgeCredentialKind.Env
+                ? new EnvCredentialSource(spec.Name!, environment) // why: a ForgeCredentialSpec of kind Env always carries the variable's name (its parser rejects env: with no name).
+                : new CommandCredentialSource(spec.Argv, provider.GetService<TimeProvider>() ?? TimeProvider.System))
             .AddSingleton<IForge>(provider =>
             {
-                var clock = provider.GetService<TimeProvider>() ?? TimeProvider.System;
-                ICredentialSource source = spec.Kind == ForgeCredentialKind.Env
-                    ? new EnvCredentialSource(spec.Name!, environment)
-                    : new CommandCredentialSource(spec.Argv, clock);
+                var source = provider.GetRequiredService<ICredentialSource>();
                 var http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
                 return new GitHubForge(new GitHubApi(http, source, hosts), source, new GitPusher(Redactor.Default), Redactor.Default);
             });

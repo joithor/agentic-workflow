@@ -1,12 +1,6 @@
-using System.Security.Cryptography;
-using System.Text;
-using Aw.Forge.Core;
 using Aw.Forge.Core.Pulls;
-using Aw.Forge.Core.Ports;
 using Aw.Forge.Core.Refs;
-using Aw.Forge.Infrastructure.Git;
 using Aw.Kernel;
-using Aw.Redaction;
 
 namespace Aw.Forge.Infrastructure.World;
 
@@ -20,7 +14,7 @@ internal partial class WorldForge
             return Simulate(request);
         }
 
-        var outcome = await git.Push(request, null, cancellationToken).ConfigureAwait(false);
+        var outcome = await git.Push(request, authorizationHeader: null, cancellationToken).ConfigureAwait(false);
         if (outcome.IsSuccess && outcome.Value == PushOutcome.Pushed)
         {
             RecordTip(request);
@@ -56,7 +50,7 @@ internal partial class WorldForge
         {
             if (!string.Equals(p.ChecksSha, sha, StringComparison.Ordinal))
             {
-                return 0;
+                return Results.Success(0);
             }
 
             var rerun = p.Failing.Count;
@@ -67,7 +61,7 @@ internal partial class WorldForge
                 p.Reruns += rerun;
             }
 
-            return rerun;
+            return Results.Success(rerun);
         }));
 
     private ForgeRef Open(WorldState state, OpenPullRequest request)
@@ -109,16 +103,16 @@ internal partial class WorldForge
         return tip ?? Hash("base:" + p.BaseRef);
     }
 
-    private Result<MergeOutcome> MergePull(WorldPull p, MergeRequest request)
+    private static Result<MergeOutcome> MergePull(WorldPull p, MergeRequest request)
     {
         if (p.Status != PullStatus.Open)
         {
-            return new MergeOutcome(MergeStatus.Blocked, null, p.Status == PullStatus.Merged ? "already merged" : "closed");
+            return new MergeOutcome(MergeStatus.Blocked, MergedSha: null, Reason: p.Status == PullStatus.Merged ? "already merged" : "closed");
         }
 
         if (!string.Equals(p.HeadSha, request.ExpectedHead, StringComparison.Ordinal))
         {
-            return new MergeOutcome(MergeStatus.HeadMoved, null, null);
+            return new MergeOutcome(MergeStatus.HeadMoved, MergedSha: null, Reason: null);
         }
 
         var blocked = p switch
@@ -131,12 +125,12 @@ internal partial class WorldForge
         };
         if (blocked is not null)
         {
-            return new MergeOutcome(MergeStatus.Blocked, null, blocked);
+            return new MergeOutcome(MergeStatus.Blocked, MergedSha: null, Reason: blocked);
         }
 
         p.Status = PullStatus.Merged;
         p.MergedSha = Hash($"merge:{request.Method}:{p.HeadSha}");
-        return new MergeOutcome(MergeStatus.Merged, p.MergedSha, null);
+        return new MergeOutcome(MergeStatus.Merged, p.MergedSha, Reason: null);
     }
 
     private Result<PushOutcome> Simulate(PushRequest request) =>

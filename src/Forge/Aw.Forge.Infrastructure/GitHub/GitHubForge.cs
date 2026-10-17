@@ -17,16 +17,18 @@ namespace Aw.Forge.Infrastructure.GitHub;
 /// </summary>
 internal sealed partial class GitHubForge(GitHubApi api, ICredentialSource credentials, GitPusher git, IRedactor redactor) : IForge
 {
+    private readonly GitHubApi _api = api;
+
     public ForgeKind Kind => ForgeKind.GitHub;
 
     /// <summary>Requests this adapter has sent, for tests that prove a refusal sent none.</summary>
-    internal int RequestsSent => api.Sent;
+    internal int RequestsSent => _api.Sent;
 
-    public Result<ForgeRef> Parse(string? link) => ForgeRef.Parse(link, ForgeKind.GitHub, api.Hosts);
+    public Result<ForgeRef> Parse(string? link) => ForgeRef.Parse(link, ForgeKind.GitHub, _api.Hosts);
 
     public async ValueTask<Result<PullSnapshot>> GetPull(ForgeRef pull, CancellationToken cancellationToken)
     {
-        if (api.Guard(pull.Host) is { } refused)
+        if (_api.Guard(pull.Host) is { } refused)
         {
             return refused;
         }
@@ -54,7 +56,7 @@ internal sealed partial class GitHubForge(GitHubApi api, ICredentialSource crede
         var digests = new List<PullDigest>();
         foreach (var pull in pulls)
         {
-            if (api.Guard(pull.Host) is { } refused)
+            if (_api.Guard(pull.Host) is { } refused)
             {
                 return refused;
             }
@@ -79,7 +81,7 @@ internal sealed partial class GitHubForge(GitHubApi api, ICredentialSource crede
 
     public async ValueTask<Result<string>> CheckLog(ForgeRef pull, string check, CancellationToken cancellationToken)
     {
-        if (api.Guard(pull.Host) is { } refused)
+        if (_api.Guard(pull.Host) is { } refused)
         {
             return refused;
         }
@@ -108,12 +110,12 @@ internal sealed partial class GitHubForge(GitHubApi api, ICredentialSource crede
 
     public async ValueTask<Result<string>> DefaultBranch(ForgeRepo repo, CancellationToken cancellationToken)
     {
-        if (api.Guard(repo.Host) is { } refused)
+        if (_api.Guard(repo.Host) is { } refused)
         {
             return refused;
         }
 
-        var reply = await api.Call(repo.Host, HttpMethod.Get, $"/repos/{repo.Owner}/{repo.Name}", null, cancellationToken).ConfigureAwait(false);
+        var reply = await _api.Call(repo.Host, HttpMethod.Get, $"/repos/{repo.Owner}/{repo.Name}", body: null, cancellationToken).ConfigureAwait(false);
         if (reply.IsError)
         {
             return reply.Error;
@@ -129,7 +131,7 @@ internal sealed partial class GitHubForge(GitHubApi api, ICredentialSource crede
             return ForgeErrors.Invalid.With("remote: an https URL without credentials");
         }
 
-        if (api.Guard(remote.IdnHost.ToLowerInvariant()) is { } refused)
+        if (_api.Guard(remote.IdnHost.ToLowerInvariant()) is { } refused)
         {
             return refused;
         }
@@ -140,11 +142,16 @@ internal sealed partial class GitHubForge(GitHubApi api, ICredentialSource crede
             : await git.Push(request, GitPusher.BasicHeader(token.Value), cancellationToken).ConfigureAwait(false);
     }
 
+    private static bool IsDecision(string state) =>
+        string.Equals(state, "APPROVED", StringComparison.Ordinal)
+        || string.Equals(state, "CHANGES_REQUESTED", StringComparison.Ordinal)
+        || string.Equals(state, "DISMISSED", StringComparison.Ordinal);
+
     private static string RepoPath(ForgeRef pull) => $"/repos/{pull.Owner}/{pull.Repo}";
 
     private async ValueTask<Result<JsonElement>> ReadPull(ForgeRef pull, CancellationToken cancellationToken)
     {
-        var reply = await api.Call(pull.Host, HttpMethod.Get, $"{RepoPath(pull)}/pulls/{pull.Number}", null, cancellationToken).ConfigureAwait(false);
+        var reply = await _api.Call(pull.Host, HttpMethod.Get, Inv.S($"{RepoPath(pull)}/pulls/{pull.Number}"), body: null, cancellationToken).ConfigureAwait(false);
         if (reply.IsError)
         {
             return reply.Error;
@@ -155,7 +162,7 @@ internal sealed partial class GitHubForge(GitHubApi api, ICredentialSource crede
 
     private async ValueTask<Result<IReadOnlyList<JsonElement>>> CheckRuns(ForgeRef pull, string sha, CancellationToken cancellationToken)
     {
-        var reply = await api.Call(pull.Host, HttpMethod.Get, $"{RepoPath(pull)}/commits/{Uri.EscapeDataString(sha)}/check-runs?per_page=100&filter=latest", null, cancellationToken).ConfigureAwait(false);
+        var reply = await _api.Call(pull.Host, HttpMethod.Get, $"{RepoPath(pull)}/commits/{Uri.EscapeDataString(sha)}/check-runs?per_page=100&filter=latest", body: null, cancellationToken).ConfigureAwait(false);
         if (reply.IsError)
         {
             return reply.Error;
@@ -183,14 +190,14 @@ internal sealed partial class GitHubForge(GitHubApi api, ICredentialSource crede
 
     private async ValueTask<Result<string?>> ReviewDecision(ForgeRef pull, CancellationToken cancellationToken)
     {
-        var reviews = await api.All(pull.Host, $"{RepoPath(pull)}/pulls/{pull.Number}/reviews", cancellationToken).ConfigureAwait(false);
+        var reviews = await _api.All(pull.Host, Inv.S($"{RepoPath(pull)}/pulls/{pull.Number}/reviews"), cancellationToken).ConfigureAwait(false);
         if (reviews.IsError)
         {
             return reviews.Error;
         }
 
         var latest = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var review in reviews.Value.Where(r => r.Str("state") is "APPROVED" or "CHANGES_REQUESTED" or "DISMISSED"))
+        foreach (var review in reviews.Value.Where(r => IsDecision(r.Str("state"))))
         {
             latest[review.Str("user", "login")] = review.Str("state");
         }
@@ -226,6 +233,6 @@ internal sealed partial class GitHubForge(GitHubApi api, ICredentialSource crede
         var status = json.Flag("merged") ? PullStatus.Merged : json.Str("state") == "closed" ? PullStatus.Closed : PullStatus.Open;
         var head = json.At("head")?.Str("sha") ?? string.Empty;
         var count = (int)(json.Long("comments") + json.Long("review_comments"));
-        return new PullDigest(pull, status, head, checks.State, count, $"{json.Str("updated_at")}|{head}|{checks.State}|{count}");
+        return new PullDigest(pull, status, head, checks.State, count, Inv.S($"{json.Str("updated_at")}|{head}|{checks.State}|{count}"));
     }
 }

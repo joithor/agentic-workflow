@@ -1,12 +1,7 @@
-using System.Security.Cryptography;
-using System.Text;
 using Aw.Forge.Core;
 using Aw.Forge.Core.Pulls;
-using Aw.Forge.Core.Ports;
 using Aw.Forge.Core.Refs;
-using Aw.Forge.Infrastructure.Git;
 using Aw.Kernel;
-using Aw.Redaction;
 
 namespace Aw.Forge.Infrastructure.World;
 
@@ -97,7 +92,7 @@ internal partial class WorldForge
     {
         if (request.ThreadKey == "pull")
         {
-            if (p.Threads.Any(t => t.Kind == CommentKind.Comment && ForgeMarker.IsIn(t.Body, request.Marker)))
+            if (p.Threads.Exists(t => t.Kind == CommentKind.Comment && ForgeMarker.IsIn(t.Body, request.Marker)))
             {
                 return Delivery.AlreadyDelivered;
             }
@@ -118,7 +113,7 @@ internal partial class WorldForge
             return ForgeErrors.NotFound.With($"no thread '{request.ThreadKey}'");
         }
 
-        if (ForgeMarker.IsIn(thread.Body, request.Marker) || thread.Replies.Any(r => ForgeMarker.IsIn(r, request.Marker)))
+        if (ForgeMarker.IsIn(thread.Body, request.Marker) || thread.Replies.Exists(r => ForgeMarker.IsIn(r, request.Marker)))
         {
             return Delivery.AlreadyDelivered;
         }
@@ -127,11 +122,11 @@ internal partial class WorldForge
         return Delivery.Delivered;
     }
 
-    private static readonly HashSet<string> Reactions = new(["+1", "-1", "laugh", "confused", "heart", "hooray", "rocket", "eyes"], StringComparer.Ordinal);
+    private static readonly HashSet<string> _reactions = new(["+1", "-1", "laugh", "confused", "heart", "hooray", "rocket", "eyes"], StringComparer.Ordinal);
 
     private static Result<Delivery> ReactTo(WorldPull p, ReactionRequest request)
     {
-        if (!Reactions.Contains(request.Reaction))
+        if (!_reactions.Contains(request.Reaction))
         {
             return ForgeErrors.Invalid.With("reaction: +1, -1, laugh, confused, heart, hooray, rocket or eyes");
         }

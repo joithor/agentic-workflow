@@ -1,8 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
 using Aw.Forge.Core;
-using Aw.Forge.Core.Pulls;
 using Aw.Forge.Core.Ports;
+using Aw.Forge.Core.Pulls;
 using Aw.Forge.Core.Refs;
 using Aw.Forge.Infrastructure.Git;
 using Aw.Kernel;
@@ -68,7 +68,7 @@ internal partial class WorldForge(ForgeKind kind, ForgeHosts hosts, IWorldStore 
     }
 
     public ValueTask<Result<ForgeRef?>> FindPull(FindPullQuery query, CancellationToken cancellationToken) =>
-        Done(Guard(query.Repo.Host) ?? Count(() => Results.Success<ForgeRef?>(store.Read(state => state.Pulls
+        Done(Guard(query.Repo.Host) ?? Count(() => Results.Success(store.Read(state => state.Pulls
             .Where(p => p.Status == PullStatus.Open && Same(p, query.Repo) && p.HeadRef == query.Head
                 && (query.Author is null || p.Author == query.Author)
                 && (query.Marker is null || ForgeMarker.IsIn(p.Body, query.Marker)))
@@ -121,7 +121,7 @@ internal partial class WorldForge(ForgeKind kind, ForgeHosts hosts, IWorldStore 
             return result;
         }));
 
-    private static Error Missing(ForgeRef pull) => ForgeErrors.NotFound.With($"no pull request {pull.Owner}/{pull.Repo}#{pull.Number}");
+    private static Error Missing(ForgeRef pull) => ForgeErrors.NotFound.With($"no pull request {pull.Owner}/{pull.Repo}#{pull.Number.ToString(System.Globalization.CultureInfo.InvariantCulture)}");
 
     private static WorldPull? Find(WorldState state, ForgeRef pull) =>
         state.Pulls.FirstOrDefault(p => p.Number == pull.Number && Same(p, pull.Repository));

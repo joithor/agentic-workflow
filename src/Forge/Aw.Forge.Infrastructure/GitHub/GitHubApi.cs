@@ -19,16 +19,16 @@ internal sealed class GitHubApi(HttpClient http, ICredentialSource credentials, 
     /// <summary>Requests that left this process.</summary>
     internal int Sent => Volatile.Read(ref _sent);
 
-    internal ForgeHosts Hosts => hosts;
+    internal ForgeHosts Hosts { get; } = hosts;
 
     internal static Uri Rest(string host, string path) =>
-        new(host == "github.com" ? $"https://api.github.com{path}" : $"https://{host}/api/v3{path}");
+        new(string.Equals(host, "github.com", StringComparison.Ordinal) ? $"https://api.github.com{path}" : $"https://{host}/api/v3{path}");
 
     internal static Uri GraphQl(string host) =>
-        new(host == "github.com" ? "https://api.github.com/graphql" : $"https://{host}/api/graphql");
+        new(string.Equals(host, "github.com", StringComparison.Ordinal) ? "https://api.github.com/graphql" : $"https://{host}/api/graphql");
 
     internal Error? Guard(string host) =>
-        hosts.Allows(host) ? null : ForgeErrors.HostNotAllowed.With($"host '{host}' is not in the forge hosts");
+        Hosts.Allows(host) ? null : ForgeErrors.HostNotAllowed.With($"host '{host}' is not in the forge hosts");
 
     internal ValueTask<Result<GitHubReply>> Call(string host, HttpMethod method, string path, byte[]? body, CancellationToken cancellationToken) =>
         Send(host, method, Rest(host, path), body, cancellationToken);
@@ -40,10 +40,10 @@ internal sealed class GitHubApi(HttpClient http, ICredentialSource credentials, 
     internal async ValueTask<Result<IReadOnlyList<JsonElement>>> All(string host, string path, CancellationToken cancellationToken)
     {
         var items = new List<JsonElement>();
-        Uri? url = Rest(host, path + (path.Contains('?', StringComparison.Ordinal) ? "&" : "?") + "per_page=100");
-        for (var page = 0; url is not null && page < 20; page++)
+        var url = Rest(host, path + (path.Contains('?', StringComparison.Ordinal) ? "&" : "?") + "per_page=100");
+        for (var page = 0; page < 20; page++)
         {
-            var reply = await Send(host, HttpMethod.Get, url, null, cancellationToken).ConfigureAwait(false);
+            var reply = await Send(host, HttpMethod.Get, url, body: null, cancellationToken).ConfigureAwait(false);
             if (reply.IsError)
             {
                 return reply.Error;
@@ -55,11 +55,19 @@ internal sealed class GitHubApi(HttpClient http, ICredentialSource credentials, 
             }
 
             items.AddRange(reply.Value.Body.Items());
-            url = reply.Value.Next is { Scheme: "https" } next && string.Equals(next.Host, url.Host, StringComparison.OrdinalIgnoreCase) ? next : null;
+            if (reply.Value.Next is not { } next || !SameOrigin(next, url))
+            {
+                break;
+            }
+
+            url = next;
         }
 
         return items;
     }
+
+    private static bool SameOrigin(Uri next, Uri current) =>
+        string.Equals(next.Scheme, "https", StringComparison.Ordinal) && string.Equals(next.Host, current.Host, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>Maps a non-2xx answer to the port error it means.</summary>
     internal static Error Fail(GitHubReply reply)
@@ -69,7 +77,7 @@ internal sealed class GitHubApi(HttpClient http, ICredentialSource credentials, 
         {
             404 => ForgeErrors.NotFound.With(message),
             403 => ForgeErrors.Unauthorized.With(message),
-            _ => ForgeErrors.Rejected.With($"{reply.Status}: {message}"),
+            _ => ForgeErrors.Rejected.With(Inv.S($"{reply.Status}: {message}")),
         };
     }
 
@@ -130,7 +138,7 @@ internal sealed class GitHubApi(HttpClient http, ICredentialSource credentials, 
         var status = (int)response.StatusCode;
         if (status >= 500)
         {
-            return ForgeErrors.Unavailable.With($"the forge answered {status}");
+            return ForgeErrors.Unavailable.With(Inv.S($"the forge answered {status}"));
         }
 
         if (status == 429 || (status == 403 && response.Headers.TryGetValues("X-RateLimit-Remaining", out var left) && left.FirstOrDefault() == "0"))
