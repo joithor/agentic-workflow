@@ -145,7 +145,7 @@ public sealed class GetLensesTests : IDisposable
 
         Assert.Equal((ContextErrors.NoMap.Code, ContextErrors.NoDraftMap.Code), (none.Error.Code, noDraft.Error.Code));
         Assert.Contains("context map propose <file>", noDraft.Error.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain("map build", noDraft.Error.Message, StringComparison.Ordinal);   // pending:API-P6, answers SND-CLI-001
+        Assert.Contains("context map build", noDraft.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

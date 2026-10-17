@@ -121,6 +121,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddRecipeBlocks()
             .AddRegistrySlices()
             .AddContextSlices()
+            .AddContextJobs()
             .AddEngineSlices()
             .AddSessionSlices();
         return services;
