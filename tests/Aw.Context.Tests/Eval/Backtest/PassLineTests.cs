@@ -35,8 +35,16 @@ public sealed class PassLineTests
     [Fact, Trait("Lane", "unit")]
     public void Overall_says_so_when_only_the_leaky_arm_ran_and_is_null_when_nothing_was_judged()
     {
-        Assert.Equal("no non-leaky arm ran", PassLine.Overall([Row("graph+reviewed", Verdicts.Pass, leaky: true)]));
+        Assert.Equal("no comparable arm ran", PassLine.Overall([Row("graph+reviewed", Verdicts.Pass, leaky: true)]));
         Assert.Null(PassLine.Overall([Row("linear", overall: null)]));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Overall_never_comes_from_the_brief_baseline()
+    {
+        Assert.Equal(Verdicts.NotPassed, PassLine.Overall([Row("brief", Verdicts.Pass), Row("graph", Verdicts.NotPassed)]));   // --arms brief,graph: the baseline can't pass the engine
+        Assert.Equal("no comparable arm ran", PassLine.Overall([Row("brief", Verdicts.Pass)]));
+        Assert.Equal("no comparable arm ran", PassLine.Overall([Row("brief", Verdicts.Pass), Row("graph+reviewed", Verdicts.Pass, leaky: true)]));
     }
 
     [Fact, Trait("Lane", "unit")]
