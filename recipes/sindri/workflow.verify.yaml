@@ -1,0 +1,24 @@
+schema: 1
+id: workflow.verify
+version: 1
+description: "Block recipe: the verify journey with its lenses and evidence pack, then the design check when screen baselines match. Always runs."
+inputs:
+  - { key: fact:phasePacket, label: "Phase packet", type: packet, kind: packet }
+  - { key: fact:workspace, label: "Workspace", type: text, kind: text }
+outputs:
+  - { key: fact:evidencePack, label: "Evidence pack", type: evidence, from: journey }
+initial: journey
+states:
+  journey: { kind: active, step: step.verify.journey, timeout: { after: 4h, then: park },
+             next: "Run the verify journey for {item} through its lenses and record the evidence pack." }
+  design:  { kind: active, step: step.verify.design, timeout: { after: 2h, then: park },
+             next: "Compare the screens of {item} with their baselines, or skip when none match." }
+  passed:  { kind: terminal, outcome: resolved }
+  failed:  { kind: terminal, outcome: unresolved }
+transitions:
+  - { from: journey, to: design, on: step.completed, when: { outcome: pass }, produces: [fact:evidencePack] }
+  - { from: journey, to: failed, on: step.completed, when: { outcome: fail }, produces: [fact:evidencePack] }
+  - { from: design,  to: passed, on: step.completed, when: { outcome: pass } }
+  - { from: design,  to: passed, on: step.completed, when: { outcome: skipped } }
+  - { from: design,  to: failed, on: step.completed, when: { outcome: fail } }
+evals: [evals/workflow.verify/happy.jsonl, evals/workflow.verify/journey-fail.jsonl, evals/workflow.verify/design-skipped.jsonl]
