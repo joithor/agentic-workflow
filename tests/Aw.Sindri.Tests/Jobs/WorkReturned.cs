@@ -1,3 +1,5 @@
+using Aw.Kernel.Testing;
+
 namespace Aw.Sindri.Tests.Jobs;
 
 /// <summary>Makes "the work has returned and the job is parked on its pending cancel" a fact before a test lets the cancel settle (API P6 review 3, I1).</summary>
@@ -24,6 +26,6 @@ internal static class WorkReturned
     public static void Await(Task returned)
     {
         _ = returned.Wait(_bound, TestContext.Current.CancellationToken);
-        Thread.Sleep(_grace);
+        RealTime.Sleep(_grace);
     }
 }
