@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Launches;
 
 namespace Aw.Sindri.Features.SampleSessionUsage;
@@ -43,7 +44,7 @@ internal sealed class SessionUsageSampler(LaunchLiveness liveness, ILaunchViews 
             }
 
             var number = (int)Math.Floor(Math.Max(0, (now - (row.OutcomeAt ?? row.RequestedAt)) / LaunchRules.UsageEvery)) + 1;
-            if ((await events.Usage(launch, row.Item.Value, number, input, output, cancellationToken).ConfigureAwait(false)).IsSuccess)
+            if ((await events.Usage(row.Item.Value, new SessionUsage(launch, number, input, output), cancellationToken).ConfigureAwait(false)).IsSuccess)
             {
                 appended++;
             }
