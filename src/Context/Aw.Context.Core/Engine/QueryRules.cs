@@ -79,11 +79,6 @@ public static class QueryRules
             return depthError;
         }
 
-        if (Map.MapRead.Of(query.Draft, query.MapVersion) is { IsError: true } badRead)
-        {
-            return badRead.Error;
-        }
-
         if (query.Budget is <= 0 and var budget)
         {
             return OutOfRange(BudgetMessage, budget.ToString(CultureInfo.InvariantCulture));

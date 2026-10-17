@@ -31,6 +31,18 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
     /// <summary>The most text kept from one record after cleaning (spec §8.3: 64 KB).</summary>
     internal const int MaxRecordText = 64 * 1024;
 
+    // The question's own rules, then its map read (a draft together with a version, or a malformed version, is refused here, not in Core's rules).
+    private static Result<ValidQuery> Checked(ContextQuery query, ContextSettings settings)
+    {
+        var valid = QueryRules.Check(query, settings);
+        if (valid.IsSuccess && MapRead.Of(query.Draft, query.MapVersion) is { IsError: true } badRead)
+        {
+            return badRead.Error;
+        }
+
+        return valid;
+    }
+
     /// <summary>Answers one question over the given map and catalog.</summary>
     /// <param name="request">The question and its scope.</param>
     /// <param name="inputs">Where the map and the sources come from: the live ones for a query, an as-of view for a backtest arm.</param>
@@ -42,7 +54,7 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
         var settings = SettingsReader.Read(request.Scope.Settings);
         var scrubbers = settings.Bind(s => scrubberFactory.For(s.ExtraPatterns));
         var repos = scrubbers.Bind(_ => ScopeRules.Resolve(settings.Value, request.Scope.Repos, request.Scope.Caller));
-        var valid = repos.Bind(_ => QueryRules.Check(request.Query, settings.Value));
+        var valid = repos.Bind(_ => Checked(request.Query, settings.Value));
         if (valid.IsError)
         {
             return valid.Error;
