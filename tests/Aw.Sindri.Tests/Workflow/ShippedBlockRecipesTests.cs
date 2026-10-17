@@ -1,7 +1,7 @@
-using Aw._sindri.Core.Workflow.Recipes;
-using Aw._sindri.Testing.Workflow;
+using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Testing.Workflow;
 
-namespace Aw._sindri.Tests.Workflow;
+namespace Aw.Sindri.Tests.Workflow;
 
 /// <summary>The shipped block recipes (decision-tree recipes DT-R2): how they nest, and the two rules every parent and every route follows.</summary>
 public sealed class ShippedBlockRecipesTests
