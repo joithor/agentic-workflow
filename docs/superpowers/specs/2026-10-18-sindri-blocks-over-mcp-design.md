@@ -151,8 +151,8 @@ P8 keeps only `X-Sindri-Repo` of the `X-Sindri-*` headers on MCP, and the launch
     to splice into Codex's `-c` overrides.
   - A header that doesn't match the grammar is refused (`SND-CONTEXT-022`), never dropped, so a Step session can't
     silently turn into a plain one.
-  - The endpoint's header filter becomes a two-entry allowlist (`X-Sindri-Repo`, `X-Sindri-Run`), and its existing
-    header-drop test gains the second entry.
+  - The endpoint's header filter becomes an allowlist of three (`X-Sindri-Repo`, `X-Sindri-Run`, and `X-Sindri-Lane`
+    from §A.6, whose value must be empty or `^[a-z0-9-]{1,40}$`), and its existing header-drop test gains both.
 - **No proof, by design.** The run token is a public counter, so the header names the run without proving the caller
   is that run's session. Under the non-adversarial threat model, the guard is against a session reaching the wrong run
   by mistake, not against forging.
