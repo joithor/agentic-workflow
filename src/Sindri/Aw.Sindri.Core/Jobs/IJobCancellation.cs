@@ -20,8 +20,9 @@ public interface IJobCancellation
 
     /// <summary>Whether the cancel of <paramref name="job"/> that is under way ended up recorded, waiting for it to settle: a work that must not record its own end only when the cancel is on the ledger asks this.</summary>
     /// <param name="job">The job.</param>
+    /// <param name="cancellationToken">Stops the wait.</param>
     /// <returns>True when 'job.cancelled' is recorded; false when no cancel is under way or it was withdrawn.</returns>
-    public ValueTask<bool> CancelRecorded(JobId job);
+    public ValueTask<bool> CancelRecorded(JobId job, CancellationToken cancellationToken);
 
     /// <summary>Whether a cancel of <paramref name="job"/> has been requested or recorded.</summary>
     /// <param name="job">The job.</param>
