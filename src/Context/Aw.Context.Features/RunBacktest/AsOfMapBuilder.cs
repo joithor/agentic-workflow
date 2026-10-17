@@ -47,7 +47,7 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
 
         // The same cut every reader makes of the current map: the deny globs hide what they hide, and a pending proposal is no part of a map as of a day.
         var view = MapAccess.View(Join(authored.Value, extraction.Value.Map), [.. overrides.Value.Where(o => o.At < sample.CreatedAt)], request.Scope, pending: false, callerScope: false);
-        return view.IsError ? view.Error : new AsOfGraph(view.Value.Applied, extraction.Value.Cached, extraction.Value.Clustered);
+        return view.IsError ? view.Error : new AsOfGraph(view.Value.Applied, extraction.Value.Cached, extraction.Value.Clustered, extraction.Value.TimedOut);
     }
 
     private async ValueTask<Result<Found>> Cut(AsOfRequest request, IReadOnlyList<string> files, RecognizerSet recognizers, CancellationToken cancellationToken)
@@ -65,11 +65,17 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
             return built.Error;
         }
 
+        // A map that lost a recognizer's matches to the timeout depends on the load of the day, so it is never cached under the permanent key; the next build extracts again.
+        if (built.Value.TimedOut)
+        {
+            return new Found(built.Value.Map, Cached: false, set.Available, TimedOut: true);
+        }
+
         // A cache that can't be written costs the next run its time, not this one its map; only a refused store folder (005) stops the run.
-        var written = await cache.WriteMap(key, built.Value, cancellationToken).ConfigureAwait(false);
+        var written = await cache.WriteMap(key, built.Value.Map, cancellationToken).ConfigureAwait(false);
         return written.IsError && string.Equals(written.Error.Code, ContextErrors.PathInWorktree.Code, StringComparison.Ordinal)
             ? written.Error
-            : new Found(built.Value, Cached: false, set.Available);
+            : new Found(built.Value.Map, Cached: false, set.Available);
     }
 
     // A clustered extraction is cached under its own key and found without calling the cluster source; otherwise the source is asked, and the plain key is read only when it has no clusters.
@@ -95,7 +101,7 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
         return hit.IsError ? hit.Error : Results.Success<Found?>(hit.Value is { } map ? new Found(map, Cached: true, clustered) : null);
     }
 
-    private async ValueTask<Result<ExtractedMap>> Extract(AsOfRequest request, RecognizerSet recognizers, (IReadOnlyList<string> Tree, ClusterSet Set) cut, CancellationToken cancellationToken)
+    private async ValueTask<Result<Extraction>> Extract(AsOfRequest request, RecognizerSet recognizers, (IReadOnlyList<string> Tree, ClusterSet Set) cut, CancellationToken cancellationToken)
     {
         var (repo, sample) = (request.Repo, request.Sample);
         var set = cut.Set;
@@ -111,8 +117,9 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
             files.Add(new RepoFile(path, text.Value));
         }
 
-        var extracted = MapExtractor.Extract(repo.Name, files, recognizers).Map;
-        return extracted.Plus(ClusterFeatures.Propose(repo.Name, set, [], extracted));
+        var extraction = MapExtractor.Extract(repo.Name, files, recognizers);
+        var extracted = extraction.Map;
+        return new Extraction(extracted.Plus(ClusterFeatures.Propose(repo.Name, set, [], extracted)), extraction.TimedOut);
     }
 
     // A cluster source that fails reads like one that is absent; a denied path never reaches the graph.
@@ -152,5 +159,7 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
 
     private sealed record Probe(Found? Hit, string Key, ClusterSet Set);
 
-    private sealed record Found(ExtractedMap Map, bool Cached, bool Clustered);
+    private sealed record Found(ExtractedMap Map, bool Cached, bool Clustered, bool TimedOut = false);
+
+    private sealed record Extraction(ExtractedMap Map, bool TimedOut);
 }
