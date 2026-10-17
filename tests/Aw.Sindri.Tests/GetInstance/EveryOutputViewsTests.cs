@@ -33,10 +33,12 @@ public sealed class EveryOutputViewsTests
     }
 
     /// <summary>Review run 2 (R2-1): 'fact:decision' of a choice Step is the engine's to write, so the desk form, the fact row and the row sentence don't ask the human for it.</summary>
-    [Fact]
-    public void An_engine_filled_output_is_not_asked_of_the_human()
+    [Theory]
+    [InlineData("step.desk.choose")]
+    [InlineData("step.judge.choose")]   // reports [uncertain], so the desk checks read the outcome branch (CallerWritesOn)
+    public void An_engine_filled_output_is_not_asked_of_the_human(string step)
     {
-        var view = DeskView("step.desk.choose", "decision");
+        var view = DeskView(step, "decision");
 
         Assert.DoesNotContain(view.Desk!.Outputs, static o => o.Key == "fact:decision");
         Assert.DoesNotContain("decision.", string.Concat(view.Desk.Checks), StringComparison.Ordinal);

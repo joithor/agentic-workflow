@@ -14,9 +14,9 @@ internal static class DeskChecks
     /// <summary>Whether the engine checks <paramref name="output"/> on a report for <paramref name="task"/>.</summary>
     /// <param name="task">The open desk task.</param>
     /// <param name="output">One of the Step's declared outputs.</param>
-    /// <returns>True when the output is required on the outcome the form's command reports.</returns>
+    /// <returns>True when the output is required on the outcome the form's command reports and the engine doesn't fill it.</returns>
     public static bool Applies(DeskTask task, OutputSpec output) =>
-        task.Outcomes.Count == 0 ? StepOutputs.RequiredSomewhere(output) : StepOutputs.RequiredOn(output, task.Outcomes[0]);
+        task.Outcomes.Count == 0 ? StepOutputs.CallerWritesSomewhere(output) : StepOutputs.CallerWritesOn(output, task.Outcomes[0]);
 
     /// <summary>The id of the check on <paramref name="fact"/>.</summary>
     /// <param name="interpreted">The recipe, which declares the output's type.</param>

@@ -113,7 +113,6 @@ public sealed class HumanOnlyReportTests
         Assert.EndsWith($"sindri workflow complete T-7/evidence/1 --run {RunToken.For(1, 1).Value} --outcome {outcome}{outputs}", refused.Error.Message, StringComparison.Ordinal);
     }
 
-    /// <summary>Review run 1 (arch-r1-1): the view read for the human-only rule serves the engine-filled outputs and the approval check too.</summary>
     /// <summary>Review run 1 (qa-r1-2): a retry with a nonce that is already claimed is refused before anything else, and the claim stays.</summary>
     [Fact(Timeout = 30_000)]
     public async Task A_session_retry_on_a_claimed_nonce_is_refused_and_keeps_the_claim()
@@ -140,6 +139,7 @@ public sealed class HumanOnlyReportTests
         Assert.Empty(desk.Attempted);
     }
 
+    /// <summary>Review run 1 (arch-r1-1): the view read for the human-only rule serves the engine-filled outputs and the approval check too.</summary>
     [Fact(Timeout = 30_000)]
     public async Task A_session_report_reads_the_instance_once()
     {

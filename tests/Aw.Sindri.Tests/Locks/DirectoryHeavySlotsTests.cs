@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Infrastructure.Locks;
 using Microsoft.Extensions.Time.Testing;
 
@@ -13,7 +14,7 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
 
     private static string Pid => Environment.ProcessId.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
-    private static string Now => DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture);
+    private static string Now => RealTime.NowDateTime.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture);
 
     private string Lock => Path.Combine(_root, "locks", "heavy-job.lock");
 
@@ -92,7 +93,7 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
     public async Task A_slot_with_no_owner_record_stays_held_before_the_six_hour_last_resort_because_locks_sh_and_ui_evidence_write_none()
     {
         Directory.CreateDirectory(Lock);
-        Directory.SetLastWriteTimeUtc(Lock, DateTime.UtcNow.AddHours(-6).AddMinutes(1));   // just under the boundary
+        Directory.SetLastWriteTimeUtc(Lock, RealTime.NowDateTime.AddHours(-6).AddMinutes(1));   // just under the boundary
 
         var taken = (await Slots(slots: 1).Take("x", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken)).Value;
 
@@ -104,7 +105,7 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
     public async Task A_slot_with_no_record_is_taken_only_after_the_six_hour_last_resort_the_TS_sindri_uses()
     {
         Directory.CreateDirectory(Lock);
-        Directory.SetLastWriteTimeUtc(Lock, DateTime.UtcNow.AddHours(-7));
+        Directory.SetLastWriteTimeUtc(Lock, RealTime.NowDateTime.AddHours(-7));
 
         await using var lease = await Taken(Slots(slots: 1));
 
@@ -127,7 +128,7 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
     {
         Directory.CreateDirectory(Lock);
         await File.WriteAllTextAsync(Lock + ".holder.json", $"{{\"kind\":\"index-build:x\",\"pid\":2147483646,\"host\":\"{Environment.MachineName}\",\"startedAt\":\"2026-10-01T00:00:00Z\"}}", TestContext.Current.CancellationToken);
-        File.SetLastWriteTimeUtc(Lock + ".holder.json", DateTime.UtcNow.AddMinutes(1));
+        File.SetLastWriteTimeUtc(Lock + ".holder.json", RealTime.NowDateTime.AddMinutes(1));
 
         await using var lease = await Taken(Slots(slots: 1));
 
@@ -139,7 +140,7 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
     {
         Directory.CreateDirectory(Lock);
         await File.WriteAllTextAsync(Lock + ".holder.json", "{\"kind\":\"k\",\"pid\":2147483646,\"host\":\"some-other-box\",\"startedAt\":\"2026-10-01T00:00:00Z\"}", TestContext.Current.CancellationToken);
-        File.SetLastWriteTimeUtc(Lock + ".holder.json", DateTime.UtcNow.AddMinutes(1));
+        File.SetLastWriteTimeUtc(Lock + ".holder.json", RealTime.NowDateTime.AddMinutes(1));
 
         var taken = (await Slots(slots: 1).Take("x", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken)).Value;
 
@@ -233,7 +234,7 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
     {
         Directory.CreateDirectory(Lock);
         await File.WriteAllTextAsync(Path.Combine(Lock, "owner"), string.Empty, TestContext.Current.CancellationToken);
-        var later = new FakeTimeProvider(DateTimeOffset.UtcNow + DirectoryHeavySlots.NoRecordGrace + TimeSpan.FromHours(1));   // the slot is older than the takeover age
+        var later = new FakeTimeProvider(RealTime.NowOffset + DirectoryHeavySlots.NoRecordGrace + TimeSpan.FromHours(1));   // the slot is older than the takeover age
 
         var taken = (await new DirectoryHeavySlots(new HeavyLockSettings(Lock, 1, Held: false), later).Take("x", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken)).Value;
 
@@ -245,7 +246,7 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
     public async Task A_slot_with_no_owner_file_at_all_is_taken_over_past_the_six_hours()
     {
         Directory.CreateDirectory(Lock);
-        var later = new FakeTimeProvider(DateTimeOffset.UtcNow + DirectoryHeavySlots.NoRecordGrace + TimeSpan.FromHours(1));
+        var later = new FakeTimeProvider(RealTime.NowOffset + DirectoryHeavySlots.NoRecordGrace + TimeSpan.FromHours(1));
 
         var taken = (await new DirectoryHeavySlots(new HeavyLockSettings(Lock, 1, Held: false), later).Take("x", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken)).Value;
 
@@ -274,8 +275,8 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
     {
         Directory.CreateDirectory(Lock);
         await File.WriteAllTextAsync(Lock + ".holder.json", $"{{\"kind\":\"k\",\"pid\":2147483646,\"host\":\"{Environment.MachineName}\",\"startedAt\":\"2026-10-01T00:00:00Z\"}}", TestContext.Current.CancellationToken);
-        File.SetLastWriteTimeUtc(Lock + ".holder.json", DateTime.UtcNow.AddHours(-1));
-        Directory.SetLastWriteTimeUtc(Lock, DateTime.UtcNow);   // a locks.sh holder took the slot after the record was written
+        File.SetLastWriteTimeUtc(Lock + ".holder.json", RealTime.NowDateTime.AddHours(-1));
+        Directory.SetLastWriteTimeUtc(Lock, RealTime.NowDateTime);   // a locks.sh holder took the slot after the record was written
 
         var taken = (await OneSlot().Take("x", TimeSpan.Zero, waiting: null, TestContext.Current.CancellationToken)).Value;
 
@@ -287,7 +288,7 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
     {
         Directory.CreateDirectory(Lock);
         await File.WriteAllTextAsync(Lock + ".holder.json", $"{{\"kind\":\"k\",\"pid\":2147483646,\"host\":\"{Environment.MachineName}.local\",\"startedAt\":\"2026-10-01T00:00:00Z\"}}", TestContext.Current.CancellationToken);
-        File.SetLastWriteTimeUtc(Lock + ".holder.json", DateTime.UtcNow.AddMinutes(1));
+        File.SetLastWriteTimeUtc(Lock + ".holder.json", RealTime.NowDateTime.AddMinutes(1));
 
         await using var lease = await Taken(OneSlot());
 
@@ -310,7 +311,7 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
     {
         Directory.CreateDirectory(Lock);
         await File.WriteAllTextAsync(Path.Combine(Lock, "owner"), $"{Pid} {Now} long job\n", TestContext.Current.CancellationToken);
-        Directory.SetLastWriteTimeUtc(Lock, DateTime.UtcNow.AddHours(-7));
+        Directory.SetLastWriteTimeUtc(Lock, RealTime.NowDateTime.AddHours(-7));
 
         await using var lease = await Taken(OneSlot());
 
@@ -321,7 +322,7 @@ public sealed class DirectoryHeavySlotsTests : IDisposable
     public async Task Two_waiters_that_both_judged_a_record_less_old_slot_stale_leave_the_slot_to_the_one_that_retook_it()
     {
         Directory.CreateDirectory(Lock);
-        Directory.SetLastWriteTimeUtc(Lock, DateTime.UtcNow.AddHours(-7));
+        Directory.SetLastWriteTimeUtc(Lock, RealTime.NowDateTime.AddHours(-7));
         var slots = new DirectoryHeavySlots(new HeavyLockSettings(Lock, 1, Held: false), TimeProvider.System)
         {
             BeforeTakeover = directory =>

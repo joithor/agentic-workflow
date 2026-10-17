@@ -3,6 +3,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Infrastructure.Eval;
 using Aw.Context.Infrastructure.Git;
 using Aw.Context.Testing.Fixtures;
+using Aw.Kernel.Testing;
 
 namespace Aw.Context.Tests.Eval.Backtest;
 
@@ -42,7 +43,7 @@ public sealed class MergeHistoryTests
     [Fact, Trait("Lane", "integration")]
     public async Task MergeHistory_of_a_missing_checkout_is_048()
     {
-        var repo = new ContextRepo(ContextRepoName.From("aw-split-panes"), Path.Combine(Path.GetTempPath(), "aw-no-such-repo-" + Guid.NewGuid().ToString("N")));
+        var repo = new ContextRepo(ContextRepoName.From("aw-split-panes"), Path.Combine(Path.GetTempPath(), "aw-no-such-repo-" + RealTime.NewGuid().ToString("N")));
 
         var history = await new GitMergeHistory(new GitCli()).History(repo, TestContext.Current.CancellationToken);
 

@@ -26,7 +26,7 @@ public static class CompleteCommand
         }
 
         _ = line.Append(reported.Value);
-        foreach (var output in outputs.Where(o => StepOutputs.RequiredOn(o, reported) && o.EngineFilled != true))
+        foreach (var output in outputs.Where(o => StepOutputs.CallerWritesOn(o, reported)))
         {
             _ = line.Append(" --output ").Append(output.Fact.Value).Append("=<file>");
         }
