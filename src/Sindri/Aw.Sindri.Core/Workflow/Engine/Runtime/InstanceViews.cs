@@ -1,5 +1,7 @@
 using System.Text;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Rules;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Views;
@@ -61,7 +63,7 @@ public static class InstanceViews
             LegacyDetail(recipe) ?? (task is not null ? "desk task" : words.Detail()),
             since,
             words.Next(task),
-            Allowed(instance, task),
+            Allowed(instance, task, words.AnswerLine()),
             instance.Suspension is { } s ? new OpenQuestion(s.Kind, s.Reason, s.Question) : null,
             task,
             instance.Frame.Run?.Token,
@@ -169,8 +171,9 @@ public static class InstanceViews
     /// </summary>
     /// <param name="instance">The interpreter's state.</param>
     /// <param name="task">The open desk task, if any.</param>
-    /// <returns>Each command's action id and CLI line.</returns>
-    public static IReadOnlyList<AllowedCommand> Allowed(WorkflowInstance instance, DeskTask? task)
+    /// <param name="primary">The answer the status line offers (its budget grant is the one printed); computed with a placeholder grant when null.</param>
+    /// <returns>Each command's action id and CLI line; an open park or escalation gets one 'answer' entry per variant that fits, each with its full CLI.</returns>
+    public static IReadOnlyList<AllowedCommand> Allowed(WorkflowInstance instance, DeskTask? task, StatusAnswer? primary = null)
     {
         ArgumentNullException.ThrowIfNull(instance);
         if (instance.Ended)
@@ -182,7 +185,7 @@ public static class InstanceViews
         var commands = new List<AllowedCommand>();
         if (instance.Suspension is { Kind: not SuspensionKind.Takeover } open && Answerable(open))
         {
-            commands.Add(new("ApplyCommand:answer", $"sindri workflow answer {address}"));
+            commands.AddRange(AnswerCommands(instance, open, primary));
         }
 
         if (task is not null)
@@ -222,6 +225,38 @@ public static class InstanceViews
         }
 
         return line.ToString();
+    }
+
+    /// <summary>
+    /// One command per answer variant that fits the suspension (the §3.8 row, the rule the answer check uses), the status line's
+    /// own answer first with exactly its CLI, each other variant with its option spelled out.
+    /// </summary>
+    private static IEnumerable<AllowedCommand> AnswerCommands(WorkflowInstance instance, Suspension suspension, StatusAnswer? primary)
+    {
+        var shape = new ParkShape(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation);
+        var line = primary ?? ParkAnswers.For(shape, instance.Address);
+        var answering = $"sindri workflow answer {instance.Address.Value}";
+        if (line is { Kind: not AnswerKind.CancelOnly })
+        {
+            yield return new(line.ActionId.Value, line.Cli);
+        }
+
+        foreach (var variant in FitRow.For(suspension, instance.Address.Value, instance.Recipe).Variants)
+        {
+            var (kind, id, option) = variant switch   // Reject has no status-line kind: it is never the primary
+            {
+                AnswerVariant.Text => ((AnswerKind?)AnswerKind.Text, "answer-text", "--text <answer>"),
+                AnswerVariant.Resume => (AnswerKind.Resume, "answer-resume", "--resume"),
+                AnswerVariant.Grant => (AnswerKind.Grant, "answer-grant", "--grant 1"),
+                AnswerVariant.GrantTokens => (AnswerKind.GrantTokens, "answer-grant-tokens", "--grant-tokens <n>"),
+                AnswerVariant.Accept => (AnswerKind.Accept, "answer-accept", "--accept"),
+                AnswerVariant.Reject or _ => (null, "answer-reject", "--reject"),
+            };
+            if (line is null || line.Kind != kind)
+            {
+                yield return new($"ApplyCommand:{id}", $"{answering} {option}");
+            }
+        }
     }
 
     private static bool Answerable(Suspension suspension) =>
