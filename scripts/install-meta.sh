@@ -145,7 +145,11 @@ fi
 [ -x "$BIN/aw-meta" ] && echo "  meta: $(meta_version_line "$BIN/aw-meta")"
 
 # 2. Hooks.
+# sq <text>: the text as one single-quoted shell word (a ' inside becomes '\''), so a path with a space, a $, a backtick or a
+# quote reaches the hook's shell as exactly that path. Every hook command below goes through it.
+sq() { printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"; }
 aw_hooks_init "$AW_PROVIDER"
+hooks_before="$(cat "$AW_HOOKS_CONFIG" 2> /dev/null || true)"
 if [ "$AW_PROVIDER" = claude ]; then
   if dry; then
     echo "  [dry-run] would install meta-stop-gate (Stop) and meta-outbox (PostToolUse SendMessage) in $AW_HOOKS_CONFIG"
@@ -156,8 +160,8 @@ if [ "$AW_PROVIDER" = claude ]; then
       chmod +x "$AW_HOOKS_INSTALL_DIR/$h"
     done
     cp "$SCRIPT_DIR/config/lib/failopen.sh" "$AW_HOOKS_INSTALL_DIR/lib/failopen.sh"
-    stop=$(jq -nc --arg c "\"$AW_HOOKS_INSTALL_DIR/meta-stop-gate.sh\" # aw:meta-stop-gate" '{hooks:[{type:"command",command:$c,timeout:20}]}')
-    out=$(jq -nc --arg c "\"$AW_HOOKS_INSTALL_DIR/meta-outbox.sh\" # aw:meta-outbox" '{matcher:"SendMessage",hooks:[{type:"command",command:$c,timeout:10}]}')
+    stop=$(jq -nc --arg c "$(sq "$AW_HOOKS_INSTALL_DIR/meta-stop-gate.sh") # aw:meta-stop-gate" '{hooks:[{type:"command",command:$c,timeout:20}]}')
+    out=$(jq -nc --arg c "$(sq "$AW_HOOKS_INSTALL_DIR/meta-outbox.sh") # aw:meta-outbox" '{matcher:"SendMessage",hooks:[{type:"command",command:$c,timeout:10}]}')
     merge_hook "$AW_HOOKS_CONFIG" Stop aw:meta-stop-gate "$stop"
     merge_hook "$AW_HOOKS_CONFIG" PostToolUse aw:meta-outbox "$out"
     echo "  meta: hooks installed in $AW_HOOKS_CONFIG"
@@ -168,9 +172,9 @@ else
   else
     mkdir -p "$(dirname "$AW_HOOKS_CONFIG")"
     aw_hooks_stage
-    # the adapter and the script are quoted in the command (a HOME with a space), which aw_hook_set does not do
+    # the adapter and the script are single-quoted in the command (a HOME with a space or a $), which aw_hook_set does not do
     lane_hook() { # lane_hook <event> <id> <script> <timeout>
-      aw_hook_set_cmd "$1" "$2" "\"$AW_HOOKS_INSTALL_DIR/adapters/$AW_HOOK_PROVIDER.sh\" ${AW_HOOK_ADAPTER_FLAGS:+$AW_HOOK_ADAPTER_FLAGS }\"$AW_HOOKS_INSTALL_DIR/$3\"" "" "$4"
+      aw_hook_set_cmd "$1" "$2" "$(sq "$AW_HOOKS_INSTALL_DIR/adapters/$AW_HOOK_PROVIDER.sh") ${AW_HOOK_ADAPTER_FLAGS:+$AW_HOOK_ADAPTER_FLAGS }$(sq "$AW_HOOKS_INSTALL_DIR/$3")" "" "$4"
     }
     if [ "$AW_PROVIDER" = codex ]; then
       lane_hook SessionStart aw:session-id-report session-id-report.sh 10
@@ -186,6 +190,9 @@ else
   fi
   # Codex records trust against each hook's hash and runs only trusted hooks: after every install (a changed command needs it again).
   if [ "$AW_PROVIDER" = codex ]; then
+    if ! dry && [ "$(cat "$AW_HOOKS_CONFIG" 2> /dev/null || true)" != "$hooks_before" ]; then
+      echo "  meta: the hook commands changed in $AW_HOOKS_CONFIG (the hook text is what Codex's trust hash covers): trust them again"
+    fi
     echo "  meta: open \`codex\` and run \`/hooks\` to trust the \`aw:*\` hooks (until then a Codex lane shows \"hooks not running\" in aw-meta health)"
   fi
 fi
