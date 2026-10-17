@@ -102,12 +102,24 @@ public sealed class EvidenceParentFactsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Evidence_drops_with_nothing_recorded_when_evidence_all_is_unresolved()
+    public void Evidence_ends_all_failed_with_nothing_recorded_when_evidence_all_is_unresolved()
     {
         var simulation = Fold("sindri/workflow.evidence.yaml",
             """{"trigger":{"kind":"step.completed","outcome":"all"},"expect":{"state":"evidence-all"}}""",
-            Child("dropped", "unresolved", "partial"));
+            Child("all-failed", "unresolved", "partial"));
 
+        Assert.Equal("unresolved", simulation.Instance.Outcome?.Value);
+        Assert.DoesNotContain(FactKey.From("fact:evidenceSummary"), simulation.Instance.Facts.Keys);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Evidence_drops_when_evidence_all_is_cancelled()
+    {
+        var simulation = Fold("sindri/workflow.evidence.yaml",
+            """{"trigger":{"kind":"step.completed","outcome":"all"},"expect":{"state":"evidence-all"}}""",
+            Child("dropped", "cancelled"));
+
+        Assert.Equal("unresolved", simulation.Instance.Outcome?.Value);
         Assert.DoesNotContain(FactKey.From("fact:evidenceSummary"), simulation.Instance.Facts.Keys);
     }
 
