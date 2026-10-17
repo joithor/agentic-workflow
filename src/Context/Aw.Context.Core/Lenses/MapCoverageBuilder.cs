@@ -5,7 +5,22 @@ namespace Aw.Context.Core.Lenses;
 /// <summary>Counts how well the map covers the files behind a scope (scoping spec C13), from the same rollup 'context filemap' uses so the two never disagree.</summary>
 internal static class MapCoverageBuilder
 {
-    /// <summary>The coverage of the files that implement <paramref name="own"/> nodes.</summary>
-    internal static MapCoverage Of(GraphSnapshot graph, IReadOnlySet<string> own, LensBasis basis) =>
-        throw new NotSupportedException("red");
+    private const int MaxPaths = 50;
+    private const string CodePrefix = "code:";
+
+    /// <summary>The coverage of the files that implement <paramref name="own"/> nodes: their directories (50 at most), and the repo's files under them counted by status.</summary>
+    internal static MapCoverage Of(GraphSnapshot graph, IReadOnlySet<string> own, LensBasis basis)
+    {
+        var directories = graph.Edges.Where(e => e.Type == EdgeType.Implements && own.Contains(e.To.Value) && IsFile(e.From.Value))
+            .Select(e => Directory(e.From.Value[CodePrefix.Length..])).Where(d => d.Length > 0).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        var paths = directories.Take(MaxPaths).ToList();
+        var under = basis.Files.Where(f => paths.Exists(p => f.StartsWith(p, StringComparison.Ordinal))).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        var totals = FileMapBuilder.Totals(under, new FileLinks(graph));
+        var created = basis.MapCreated ?? basis.AsOf;
+        return new MapCoverage(paths, directories.Count > MaxPaths, totals.Files, totals.Unmapped, totals.Suggested, created, Math.Max(0, (int)(basis.AsOf - created).TotalDays));
+    }
+
+    private static bool IsFile(string key) => key.StartsWith(CodePrefix, StringComparison.Ordinal) && !key.Contains('#', StringComparison.Ordinal);
+
+    private static string Directory(string path) => path[..(path.LastIndexOf('/') + 1)];
 }

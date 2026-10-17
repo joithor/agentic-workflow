@@ -109,7 +109,9 @@ public static class QueryRules
     public static Error? CheckAnchors(IReadOnlyList<string> anchors)
     {
         ArgumentNullException.ThrowIfNull(anchors);
-        throw new NotSupportedException("red");
+        return anchors.Count is >= 1 and <= MaxAnchors
+            ? null
+            : ContextErrors.QueryInvalid.With(string.Create(CultureInfo.InvariantCulture, $"a lenses call takes 1 to {MaxAnchors} anchors, not {anchors.Count}"));
     }
 
     private static Result<int?> ParseWhole(string? text, string rule, int min, int max)

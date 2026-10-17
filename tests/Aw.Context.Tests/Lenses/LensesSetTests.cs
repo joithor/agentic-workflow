@@ -81,14 +81,14 @@ public sealed class LensesSetTests
     [Fact, Trait("Lane", "unit")]
     public void Item_reached_by_two_anchors_lists_both_in_request_order()
     {
-        var view = Set(Tabs(), [Groups, Manager]);
+        var view = Set(Tabs(), [Groups, Manager], depth: 0);
 
         var surface = view.Bands.Product.Own.Single(i => i.Node.Value == "surface:command/group-tabs");
         Assert.Equal([Groups, Manager], surface.Anchors);
         var onlyManager = view.Bands.Product.Own.Single(i => i.Node.Value == "surface:command/switch-tab");
         Assert.Equal([Manager], onlyManager.Anchors);
         Assert.All(view.Bands.Product.Own, i => Assert.Equal(0, i.Depth));
-        var reversed = Set(Tabs(), [Manager, Groups]).Bands.Product.Own.Single(i => i.Node.Value == "surface:command/group-tabs");
+        var reversed = Set(Tabs(), [Manager, Groups], depth: 0).Bands.Product.Own.Single(i => i.Node.Value == "surface:command/group-tabs");
         Assert.Equal([Manager, Groups], reversed.Anchors);
     }
 
@@ -119,7 +119,7 @@ public sealed class LensesSetTests
         {
             var single = One(graph, key).Coverage;
             var by = view.Coverage.ByAnchor![key];
-            Assert.Equal(single with { Map = null }, by);
+            Assert.Equivalent(single with { Map = null }, by);
             Assert.Null(by.ByAnchor);
             Assert.Null(by.Map);
         }
@@ -208,7 +208,8 @@ public sealed class LensesSetTests
         var searched = Set(Tabs(), [Manager, Layout], basis: basis).Searched;
 
         Assert.Equal([Manager, Layout], searched.Anchors);
-        Assert.Equal(("v2", 2, ["state", "dependency", "flow"]), (searched.MapVersion, searched.Depth, searched.Hops.ToArray()));
+        Assert.Equal(("v2", 2), (searched.MapVersion, searched.Depth));
+        Assert.Equal(["state", "dependency", "flow"], searched.Hops);
         Assert.Equal(
             [(SourceId.From("map"), SearchedState.Ok, null, null, _created), (SourceId.From("onyx"), SearchedState.Error, null, "SND-CONTEXT-010", null), (SourceId.From("code-index"), SearchedState.Unavailable, "index-not-built", null, null)],
             searched.Sources.Select(s => (s.Id, s.State, s.Reason, s.Code, s.AsOf)));
@@ -262,7 +263,8 @@ public sealed class LensesSetTests
         var view = Set(Tabs(), [Groups, Manager]);
 
         var file = view.Bands.Code.Files.Single(f => f.Path == "src/tabs/TabManager.ts");
-        Assert.Equal(([Manager], 0), (file.Anchors, file.Depth));
+        Assert.Equal([Manager], file.Anchors);
+        Assert.Equal(0, file.Depth);
         var decision = Assert.Single(view.Bands.Intent.Decisions, d => d.Decides.Any(k => k.Value == Groups) && d.Anchors!.Count > 0 && d.Supersedes.Count > 0);
         Assert.Equal([Groups, Manager], decision.Anchors);
         _ = Assert.Single(view.Conflicts);
