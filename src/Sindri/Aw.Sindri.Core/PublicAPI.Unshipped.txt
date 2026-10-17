@@ -3186,7 +3186,7 @@ Aw.Sindri.Core.Workflow.Engine.Instances.PinnedRecipe.Version.get -> int
 Aw.Sindri.Core.Workflow.Engine.Instances.PinnedRecipe.Version.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark
 Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark!
-Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.Deconstruct(out string? Findings, out string? Failure, out bool EmptyDiff) -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.Deconstruct(out string? Findings, out string? Failure, out bool EmptyDiff, out System.Collections.Generic.IReadOnlyList<string!>? FindingKeys) -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.EmptyDiff.get -> bool
 Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.EmptyDiff.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.Equals(Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark? other) -> bool
@@ -3194,7 +3194,7 @@ Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.Failure.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.Failure.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.Findings.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.Findings.init -> void
-Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.ProgressMark(string? Findings, string? Failure, bool EmptyDiff) -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.ProgressMark(string? Findings, string? Failure, bool EmptyDiff, System.Collections.Generic.IReadOnlyList<string!>? FindingKeys = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.RemainingTimer
 Aw.Sindri.Core.Workflow.Engine.Instances.RemainingTimer.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Instances.RemainingTimer!
 Aw.Sindri.Core.Workflow.Engine.Instances.RemainingTimer.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.DeadlineKind Kind, out System.TimeSpan Left) -> void
@@ -9555,8 +9555,8 @@ Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Decision.init -> void
 Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Step, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Outputs, out string? Decision) -> void
 Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.Decision.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.Decision.init -> void
-Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.Deconstruct(out string! Actor, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Outputs, out int Tokens, out Aw.Sindri.Core.Workflow.Engine.StepRuntime Via, out string! ReportSha256, out string? Decision) -> void
-Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.StepCompleted(string! Actor, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Outputs, int Tokens, Aw.Sindri.Core.Workflow.Engine.StepRuntime Via, string! ReportSha256, string? Decision = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.Deconstruct(out string! Actor, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Outputs, out int Tokens, out Aw.Sindri.Core.Workflow.Engine.StepRuntime Via, out string! ReportSha256, out string? Decision, out System.Collections.Generic.IReadOnlyList<string!>? FindingKeys, out bool EmptyDiff) -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.StepCompleted(string! Actor, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Outputs, int Tokens, Aw.Sindri.Core.Workflow.Engine.StepRuntime Via, string! ReportSha256, string? Decision = null, System.Collections.Generic.IReadOnlyList<string!>? FindingKeys = null, bool EmptyDiff = false) -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.MatchMiss.EngineOwnedRun = 5 -> Aw.Sindri.Core.Workflow.Engine.Decisions.MatchMiss
 Aw.Sindri.Core.Workflow.Blocks.BlockLimits
 static Aw.Sindri.Core.Workflow.Blocks.BlockLimits.MaxDuration(Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor! descriptor) -> System.TimeSpan
@@ -10102,3 +10102,11 @@ override Aw.Sindri.Core.Profile.WorkflowAgentSettings.GetHashCode() -> int
 override Aw.Sindri.Core.Profile.WorkflowAgentSettings.ToString() -> string!
 static Aw.Sindri.Core.Profile.WorkflowAgentSettings.operator !=(Aw.Sindri.Core.Profile.WorkflowAgentSettings? left, Aw.Sindri.Core.Profile.WorkflowAgentSettings? right) -> bool
 static Aw.Sindri.Core.Profile.WorkflowAgentSettings.operator ==(Aw.Sindri.Core.Profile.WorkflowAgentSettings? left, Aw.Sindri.Core.Profile.WorkflowAgentSettings? right) -> bool
+Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.FindingKeys.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.FindingKeys.init -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.FindingKeys.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.FindingKeys.init -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.EmptyDiff.get -> bool
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.EmptyDiff.init -> void
+Aw.Sindri.Core.Workflow.Engine.Rules.FindingKeys
+static Aw.Sindri.Core.Workflow.Engine.Rules.FindingKeys.Of(System.ReadOnlySpan<byte> findings) -> System.Collections.Generic.IReadOnlyList<string!>?

@@ -8,6 +8,7 @@ using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
+using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -30,7 +31,7 @@ namespace Aw.Sindri.Features.CompleteStep;
 /// <param name="nonces">The nonce table.</param>
 /// <param name="callers">The caller the API chain classed: its actor reports.</param>
 /// <param name="engineFilled">Which outputs the engine fills, and how it writes them.</param>
-internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, IFactStore facts, ICommandNonces nonces, ICallerContextAccessor callers, EngineFilledReport engineFilled)
+internal sealed partial class CompleteStepService(IInstanceDirectory directory, IInstanceRuntime runtime, IApprovedRecipes recipes, IFactStore facts, ICommandNonces nonces, ICallerContextAccessor callers, EngineFilledReport engineFilled)
     : IService<CompleteStepRequest, CompleteStepResponse>
 {
     public async ValueTask<Result<CompleteStepResponse>> Handle(CompleteStepRequest request, CancellationToken cancellationToken)
@@ -111,7 +112,7 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
             return await GiveBack(sentReport.Nonce, sentReport.Claim, stored.Error, cancellationToken).ConfigureAwait(false);
         }
 
-        var report = new StepCompleted(step.Actor, step.Request.Run, step.Request.Outcome, stored.Value, Tokens: 0, StepRuntime.Desk, step.Sha);
+        var report = new StepCompleted(step.Actor, step.Request.Run, step.Request.Outcome, stored.Value, Tokens: 0, StepRuntime.Desk, step.Sha, FindingKeys: FindingKeysOf(step.Outputs));
         return await Send(address, sentReport, report, cancellationToken).ConfigureAwait(false);
     }
 

@@ -153,6 +153,7 @@ public static partial class TransitionDecision
     private static ProgressMark Progress(Trigger trigger) => trigger switch
     {
         StepFailed failed => new ProgressMark(Findings: null, RefusalRules.Digest(failed.Reason), EmptyDiff: false),
+        StepCompleted done => new ProgressMark(Outputs(trigger).GetValueOrDefault(_findings)?.Sha256, Failure: null, done.EmptyDiff, done.FindingKeys),
         _ => new ProgressMark(Outputs(trigger).GetValueOrDefault(_findings)?.Sha256, Failure: null, EmptyDiff: false),
     };
 
