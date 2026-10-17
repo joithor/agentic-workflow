@@ -27,6 +27,7 @@ internal static class RecipeTypes
         [typeof(RecipeOutput)] = "an output",
         [typeof(RecipeRef)] = "a base",
         [typeof(WithValue)] = "a with value",
+        [typeof(ProducedFact)] = "a produces entry",
     };
 
     private static readonly Dictionary<Type, string> _expected = new()
@@ -38,6 +39,7 @@ internal static class RecipeTypes
         [typeof(RecipeId)] = "a recipe id ('workflow.<name>', kebab-case)",
         [typeof(BlockId)] = "a block id ('<gate|step|effect|evidence|input>.[<area>.]<name>')",
         [typeof(FactKey)] = "a fact key ('fact:<name>' or 'evidence:<kind>@<base|head>')",
+        [typeof(ProducedFact)] = "a fact key, or { fact, from }",
         [typeof(EventKind)] = "an event kind ('<area>.<name>')",
         [typeof(OutcomeName)] = "an outcome name (a camelCase word)",
         [typeof(AnswerId)] = "an answer id (a camelCase or kebab-case word)",

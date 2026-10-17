@@ -635,8 +635,30 @@
           "produces": {
             "type": "array",
             "items": {
-              "type": "string",
-              "pattern": "^(fact:[a-z][A-Za-z0-9]*|evidence:[a-z][a-z0-9]*([.-][a-z0-9]+)*@(base|head))$"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(fact:[a-z][A-Za-z0-9]*|evidence:[a-z][a-z0-9]*([.-][a-z0-9]+)*@(base|head))$"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "fact": {
+                      "type": "string",
+                      "pattern": "^(fact:[a-z][A-Za-z0-9]*|evidence:[a-z][a-z0-9]*([.-][a-z0-9]+)*@(base|head))$"
+                    },
+                    "from": {
+                      "type": "string",
+                      "pattern": "^(fact:[a-z][A-Za-z0-9]*|evidence:[a-z][a-z0-9]*([.-][a-z0-9]+)*@(base|head))$"
+                    }
+                  },
+                  "required": [
+                    "fact",
+                    "from"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
             }
           }
         },
