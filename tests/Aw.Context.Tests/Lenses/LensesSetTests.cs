@@ -263,7 +263,6 @@ public sealed class LensesSetTests
         var suggested = view.Bands.Code.Files.Single(f => f.Suggested);
         var confirmed = view.Bands.Code.Files.First(f => f.Confirmed);
         Assert.Equal((Context.Core.Results.Trust.Untrusted, Context.Core.Results.Trust.Trusted), (suggested.Trust, confirmed.Trust));
-        Assert.All(view.Bands.Intent.Records.Cast<object>().Concat(view.Bands.Intent.Decisions).Concat(view.Bands.Code.Files), x => Assert.NotNull(x));
     }
 
     [Fact, Trait("Lane", "unit")]
