@@ -10110,3 +10110,65 @@ Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.EmptyDiff.get -> bool
 Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.EmptyDiff.init -> void
 Aw.Sindri.Core.Workflow.Engine.Rules.FindingKeys
 static Aw.Sindri.Core.Workflow.Engine.Rules.FindingKeys.Of(System.ReadOnlySpan<byte> findings) -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.AgentLaunchFailure(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailureKind Kind, string! Code, string! Message) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Code.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Code.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailureKind Kind, out string! Code, out string! Message) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Kind.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailureKind
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Kind.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Message.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Message.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Text.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailureKind
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailureKind.Park = 1 -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailureKind
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailureKind.StepFailed = 2 -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailureKind
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailures
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailures.Of(Aw.Sindri.Core.Launch.FailedLaunch! failed) -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.LaunchIdFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run) -> Aw.Sindri.Core.Workflow.Engine.LaunchId
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.RequestFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target) -> Aw.Sindri.Core.Launch.LaunchRequest!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.WorktreeFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target) -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Address.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.AgentStepRun(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Workflow, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Launch.StepRef! Step, bool WriteScope) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Workflow, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Launch.StepRef! Step, out bool WriteScope) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Run.get -> Aw.Sindri.Core.Workflow.Engine.RunToken
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Run.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Step.get -> Aw.Sindri.Core.Launch.StepRef!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Step.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Workflow.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Workflow.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.WriteScope.get -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.WriteScope.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Agent.get -> Aw.Sindri.Core.Launch.AgentId
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Agent.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.AgentStepTarget(Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Launch.AgentId Agent, string! RepoPath) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Launch.AgentId Agent, out string! RepoPath) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Item.get -> Aw.Sindri.Core.Ids.ItemId
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Item.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.RepoPath.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.RepoPath.init -> void
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? right) -> bool

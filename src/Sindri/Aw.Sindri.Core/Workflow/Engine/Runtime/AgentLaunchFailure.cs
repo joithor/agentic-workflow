@@ -7,5 +7,5 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 public sealed record AgentLaunchFailure(AgentLaunchFailureKind Kind, string Code, string Message)
 {
     /// <summary>The text of the park's question or of the 'step.failed' reason.</summary>
-    public string Text => throw new NotSupportedException("AgentLaunchFailure.Text is not built yet");
+    public string Text => Kind == AgentLaunchFailureKind.Park ? $"{Code}: {Message}" : $"launch: {Code}: {Message}";
 }
