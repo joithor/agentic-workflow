@@ -10,6 +10,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Views;
 
 namespace Aw.Sindri.Features.ListInstances;
 
@@ -23,13 +24,14 @@ namespace Aw.Sindri.Features.ListInstances;
 /// </summary>
 /// <param name="directory">Resolves an address or a bare item ('address').</param>
 /// <param name="instances">The visibility query.</param>
-/// <param name="runtime">Each instance's 'GetInstance' Query; one that ended between the list and its query (SND-WF-001) is left out.</param>
+/// <param name="runtime">Each instance's 'GetInstance' view (a Query for a running one, remembered for an ended one); one that ended between the list and its query (SND-WF-001) is left out.</param>
 /// <param name="itemViews">The 'items' view, read by key for the titles of the items the instances are on.</param>
-/// <param name="callers">The caller, whose repo scope decides which item titles it may see.</param>
+/// <param name="repos">Where each item belongs, from the ledger: a session lists only its own repo's instances.</param>
+/// <param name="callers">The caller, whose repo scope decides which instances and item titles it may see.</param>
 /// <param name="clock">The time the rows are read at: their ages and timeouts are worked out from it, not from when the workflow last ran.</param>
-internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, IInstanceReader runtime, IViewReader itemViews, ICallerContextAccessor callers, TimeProvider clock) : IService<ListInstancesRequest, ListInstancesResponse>
+internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, EndedInstanceViews runtime, IViewReader itemViews, IItemRepos repos, ICallerContextAccessor callers, TimeProvider clock) : IService<ListInstancesRequest, InstanceList>
 {
-    public async ValueTask<Result<ListInstancesResponse>> Handle(ListInstancesRequest request, CancellationToken cancellationToken)
+    public async ValueTask<Result<InstanceList>> Handle(ListInstancesRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         if (request.Address is { } reference)
@@ -42,29 +44,63 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             return refused;
         }
 
-        var needsMe = Flag(request.NeedsMe) == true;
+        var open = Flag(request.Open) == true;
         var filter = Filter(request);
-        var ended = request.Item is not null || request.State is not null;
         var rows = request.Query is { Length: > 0 } query
-            ? await instances.List(Joined(InstanceFilters.ToQuery(filter), query), ended, cancellationToken).ConfigureAwait(false)
-            : await instances.List(filter, ended, cancellationToken).ConfigureAwait(false);
-        if (rows.IsError)
+            ? await instances.List(Joined(InstanceFilters.ToQuery(filter), query), ended: !open, cancellationToken).ConfigureAwait(false)
+            : await instances.List(filter, ended: !open, cancellationToken).ConfigureAwait(false);
+        var visible = rows.IsError ? rows.Error : await Scoped(rows.Value, cancellationToken).ConfigureAwait(false);
+        if (visible.IsError)
         {
-            return rows.Error;
+            return visible.Error;
         }
 
-        var views = await Views(rows.Value, cancellationToken).ConfigureAwait(false);
+        var known = new Dictionary<string, InstanceView>(StringComparer.Ordinal);
+        var views = await Views(visible.Value, known, cancellationToken).ConfigureAwait(false);
         if (views.IsError)
         {
             return views.Error;
         }
 
-        var titles = await Titles(views.Value, cancellationToken).ConfigureAwait(false);
-        return Listed(needsMe, Matching(views.Value, request.Subject, titles), titles);
+        var counts = await RootCounts(known, cancellationToken).ConfigureAwait(false);   // over the root set, before 'recipe' or 'open' narrows the rows
+        if (counts.IsError)
+        {
+            return counts.Error;
+        }
+
+        var unfinished = open ? views.Value.FindAll(static v => v.Outcome is null) : views.Value;
+        var kept = Flag(request.NeedsMe) == true ? [.. NeedsYouList.Shown(unfinished)] : unfinished;
+        var titles = await Titles(kept, cancellationToken).ConfigureAwait(false);
+        return Listed(Matching(kept, request.Subject, titles), counts.Value, titles, Empty(request));
     }
 
-    /// <summary>Each row's 'GetInstance' view; one that ended between the list and its query is left out.</summary>
-    private async ValueTask<Result<List<InstanceView>>> Views(IReadOnlyList<InstanceRow> rows, CancellationToken cancellationToken)
+    /// <summary>
+    /// The counts of every root instance, ended ones included: the root set listed twice, all and running only. A root that is no longer running
+    /// is finished (its chip is DONE) and is counted from the listing; only the running ones are asked for their view, reusing the views the first call read.
+    /// </summary>
+    private async ValueTask<Result<ListCounts>> RootCounts(Dictionary<string, InstanceView> known, CancellationToken cancellationToken)
+    {
+        var all = await instances.List(new InstanceFilter(Root: true), ended: true, cancellationToken).ConfigureAwait(false);
+        var running = all.IsError ? all.Error : await instances.List(new InstanceFilter(Root: true), ended: false, cancellationToken).ConfigureAwait(false);
+        var visible = running.IsError ? running.Error : await Scoped(all.Value, cancellationToken).ConfigureAwait(false);
+        if (visible.IsError)
+        {
+            return visible.Error;
+        }
+
+        var live = running.Value.Select(static r => r.Address).ToHashSet(StringComparer.Ordinal);
+        var open = visible.Value.Where(r => live.Contains(r.Address)).ToList();
+        var finished = visible.Value.Count(r => !live.Contains(r.Address) && InstanceAddress.TryFrom(r.Address, out _));
+        var views = await Views(open, known, cancellationToken).ConfigureAwait(false);
+        return views.IsError ? views.Error : InstanceCounts.Of(views.Value) with { Done = InstanceCounts.Of(views.Value).Done + finished };
+    }
+
+    /// <summary>The rows the caller may read: all of them, or for a session its own repo's. No caller means the service is called inside the process, with no scope to apply.</summary>
+    private async ValueTask<Result<IReadOnlyList<InstanceRow>>> Scoped(IReadOnlyList<InstanceRow> rows, CancellationToken cancellationToken) =>
+        callers.Current is { } caller ? await InstanceScope.Visible(caller, rows, repos, cancellationToken).ConfigureAwait(false) : Results.Success(rows);
+
+    /// <summary>Each row's 'GetInstance' view (read once per address through <paramref name="known"/>); one that ended between the list and its query is left out.</summary>
+    private async ValueTask<Result<List<InstanceView>>> Views(IReadOnlyList<InstanceRow> rows, Dictionary<string, InstanceView> known, CancellationToken cancellationToken)
     {
         var views = new List<InstanceView>();
         foreach (var row in rows)
@@ -74,9 +110,16 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
                 continue;   // not an instance address: no RecipeWorkflow of this build started it
             }
 
-            var view = await runtime.Get(address, cancellationToken).ConfigureAwait(false);
+            if (known.TryGetValue(address.Value, out var cached))
+            {
+                views.Add(cached);
+                continue;
+            }
+
+            var view = await runtime.Get(row, address, cancellationToken).ConfigureAwait(false);
             if (view.IsSuccess)
             {
+                known[address.Value] = view.Value;
                 views.Add(view.Value);
             }
             else if (view.Error.Code != WorkflowErrors.InstanceNotFound.Code)
@@ -101,11 +144,16 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             return SindriErrors.InvalidInput.With($"'{urgency}' isn't an urgency (fix: urgency incident, triage or work)");
         }
 
-        return NotTrueOrFalse(request.NeedsMe, "needsMe", "true for what needs you") ?? NotTrueOrFalse(request.Root, "root", "true for top-level instances, false for children");
+        return NotTrueOrFalse(request.NeedsMe, "needsMe", "true for what needs you")
+            ?? NotTrueOrFalse(request.Root, "root", "true for top-level instances, false for children")
+            ?? NotTrueOrFalse(request.Open, "open", "true for the unfinished instances only");
     }
 
-    /// <summary>The one instance an address or bare item names, as 'GetInstance' shows it (its id included).</summary>
-    private async ValueTask<Result<ListInstancesResponse>> One(string reference, CancellationToken cancellationToken)
+    /// <summary>
+    /// The one instance an address or bare item names, as a one-row list (its id included). An id lookup is not a list, so its counts cover
+    /// the row alone, not the root set.
+    /// </summary>
+    private async ValueTask<Result<InstanceList>> One(string reference, CancellationToken cancellationToken)
     {
         var address = await directory.Resolve(reference, cancellationToken).ConfigureAwait(false);
         if (address.IsError)
@@ -114,7 +162,17 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
         }
 
         var view = await runtime.Get(address.Value, cancellationToken).ConfigureAwait(false);
-        return view.IsError ? view.Error : Rows(new ListInstancesResponse([view.Value], NeedsYou: null, Empty: null), await Titles([view.Value], cancellationToken).ConfigureAwait(false));
+        if (view.IsError)
+        {
+            return view.Error;
+        }
+
+        if (callers.Current is { } caller && await InstanceScope.Refusal(caller, view.Value.ItemId, reference, repos, cancellationToken).ConfigureAwait(false) is { } refused)
+        {
+            return refused;
+        }
+
+        return Listed([view.Value], InstanceCounts.Of([view.Value]), await Titles([view.Value], cancellationToken).ConfigureAwait(false), empty: null);
     }
 
     /// <summary>
@@ -127,23 +185,12 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
             ? views
             : [.. views.Where(v => InstanceSummaries.SubjectOf(v, titles.For(v)) is var s && (string.Equals(s.Key, subject, StringComparison.Ordinal) || s.Label.Contains(subject, StringComparison.OrdinalIgnoreCase)))];
 
-    private ListInstancesResponse Listed(bool needsMe, List<InstanceView> views, ItemTitles titles)
-    {
-        if (needsMe)
-        {
-            var sections = NeedsYouList.Of(views);
-            return Rows(new([.. sections.Decisions, .. sections.Tasks], sections, sections.IsEmpty ? NeedsYouList.Nothing : null), titles);
-        }
-
-        var sorted = views.Order(new InstanceOrder(titles)).ToList();   // API spec §3.8: one order on every list path
-        return Rows(new(sorted, NeedsYou: null, sorted.Count == 0 ? "no instances match" : null), titles);
-    }
-
-    /// <summary>The response with a list row per instance, each built by <see cref="InstanceSummaries.Of"/>.</summary>
-    private ListInstancesResponse Rows(ListInstancesResponse listed, ItemTitles titles)
+    /// <summary>The list: the rows in the API order (§3.8: one order on every list path), each built by <see cref="InstanceSummaries.Of"/>.</summary>
+    private InstanceList Listed(List<InstanceView> views, ListCounts counts, ItemTitles titles, string? empty)
     {
         var now = clock.GetUtcNow();
-        return listed with { Rows = [.. listed.Instances.Select(v => InstanceSummaries.Of(v, new InstanceSummaryContext(now, ItemTitle: titles.For(v))))] };
+        var rows = views.Order(new InstanceOrder(titles)).Select(v => InstanceSummaries.Of(v, new InstanceSummaryContext(now, ItemTitle: titles.For(v)))).ToList();
+        return new InstanceList(rows, counts, rows.Count == 0 ? empty : null, now);
     }
 
     /// <summary>
@@ -169,6 +216,12 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
 
         return new ItemTitles(titles);
     }
+
+    /// <summary>The sentence for an empty list that matches the filter: nothing needs you, no open workflows, or no workflow matches.</summary>
+    private static string Empty(ListInstancesRequest request) =>
+        Flag(request.NeedsMe) == true ? NeedsYouList.Nothing
+        : Flag(request.Open) == true ? InstanceList.EmptyText
+        : InstanceList.NoMatchText;
 
     private static Error? NotTrueOrFalse(string? value, string name, string meaning) =>
         value is not null && Flag(value) is null

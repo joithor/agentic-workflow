@@ -3,15 +3,16 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ListInstances;
 
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// 'sindri workflow list [--needs-me | --item &lt;id&gt; | --state &lt;s&gt;] [--recipe &lt;id&gt;] [--urgency incident|triage|work] [--subject &lt;fact&gt;] [--root true|false] [--query &lt;visibility query&gt;] [--json]'
-/// (engine spec §6.3; engine P4 unit (e)): one status header per line. A client of serve's 'GET /workflow/instances' (review run 2); it never starts serve. '--needs-me' shows <b>Decisions</b> and then
+/// (engine spec §6.3; engine P4 unit (e)): one header line per instance, built from the served 'InstanceList' rows; '--json' prints that list. A client of serve's 'GET /workflow/instances' (review run 2); it never starts serve. '--needs-me' shows <b>Decisions</b> and then
 /// <b>Tasks</b>, each under its heading; the typed filters AND together and the list is in the API order (<see cref="InstanceOrder"/>:
-/// unfinished before finished, not parked or escalated before parked or escalated, incident, triage, then work, the subject label, the address); empty, it prints 'nothing needs you', and the other filters 'no instances match'.
+/// unfinished before finished, not parked or escalated before parked or escalated, incident, triage, then work, the subject label, the address); empty, it prints the sentence the server served for the filter ('nothing needs you', 'No workflows are open.' or 'No workflows match.'), and 'nothing needs you' when no row falls under either heading.
 /// Exit 0, empty included; 1 when Sindri isn't running; 2 on any other error.
 /// </summary>
 internal static class ListCommand
@@ -27,13 +28,15 @@ internal static class ListCommand
             return await output.Error(SindriErrors.InvalidInput.With(problem)).ConfigureAwait(false);
         }
 
-        var request = Parse(rest);
-        if (request is null)
+        var parsed = Parse(rest);
+        if (parsed is null)
         {
             return await output.Error(SindriErrors.InvalidInput.With(Usage)).ConfigureAwait(false);
         }
 
-        var listed = await desk.Client.Get<ListInstancesResponse>(Route(request), ct).ConfigureAwait(false);
+        var request = parsed.Item is null && parsed.State is null ? parsed with { Open = "true" } : parsed;   // the list shows running instances unless an item or a state is asked for
+
+        var listed = await desk.Client.Get<InstanceList>(Route(request), ct).ConfigureAwait(false);
         if (listed.IsError)
         {
             return await output.Error(InstanceReads.NotRunning(listed.Error)).ConfigureAwait(false);
@@ -41,7 +44,7 @@ internal static class ListCommand
 
         return json
             ? await output.Json(listed.Value.Value, 0).ConfigureAwait(false)
-            : await output.Text(Text(listed.Value.Value, services.GetRequiredService<TimeProvider>().GetUtcNow()), 0).ConfigureAwait(false);
+            : await output.Text(Text(listed.Value.Value, request, services.GetRequiredService<TimeProvider>().GetUtcNow()), 0).ConfigureAwait(false);
     }
 
     /// <summary>'GET /workflow/instances' with each filter given as its query parameter.</summary>
@@ -56,6 +59,7 @@ internal static class ListCommand
             ("urgency", request.Urgency),
             ("subject", request.Subject),
             ("root", request.Root),
+            ("open", request.Open),
             ("query", request.Query),
         ];
         var parts = filters.Where(static f => f.Value is not null).Select(static f => $"{f.Name}={Uri.EscapeDataString(f.Value!)}");   // why: Where kept only the non-null values
@@ -122,40 +126,45 @@ internal static class ListCommand
         _ => null,
     };
 
-    private static string Text(ListInstancesResponse listed, DateTimeOffset now)
+    private static string Text(InstanceList listed, ListInstancesRequest request, DateTimeOffset now)
     {
-        if (listed.Empty is { } empty)
+        if (listed.Instances.Count == 0)
         {
-            return empty + "\n";
+            return (listed.Empty ?? InstanceList.NoMatchText) + "\n";   // the served sentence matches the filter
         }
 
         var text = new StringBuilder();
-        if (listed.NeedsYou is { } sections)
+        if (request.NeedsMe is not null)
         {
-            Section(text, "Decisions", sections.Decisions, now);
-            Section(text, "Tasks", sections.Tasks, now);
-            return text.ToString();
+            Section(text, "Decisions", [.. listed.Instances.Where(static r => Chip(r, StateChip.Parked) || Chip(r, StateChip.Escalated) || Chip(r, StateChip.WithYou))], now);
+            Section(text, "Tasks", [.. listed.Instances.Where(static r => Chip(r, StateChip.Decision))], now);
+            return text.Length == 0 ? NeedsYouList.Nothing + "\n" : text.ToString();   // rows that are in neither section (queued, running) need nobody
         }
 
-        foreach (var view in listed.Instances)
+        foreach (var row in listed.Instances)
         {
-            _ = text.Append(InstanceHeader.Line(view, now)).Append('\n');
+            _ = text.Append(Line(row, now)).Append('\n');
         }
 
         return text.ToString();
     }
 
-    private static void Section(StringBuilder text, string heading, IReadOnlyList<InstanceView> views, DateTimeOffset now)
+    /// <summary>One row as a header line: the address, the recipe at its hash, the state with its 'now' sentence, and how long it has been there.</summary>
+    private static string Line(InstanceSummary row, DateTimeOffset now) => $"{row.Address.Value}  {row.Recipe.Id.Value}@{StatusText.Hash12(row.Recipe.Hash.Value)}  {row.State}: {row.Now}  since {StatusText.Clock(row.Since, now)} ({StatusText.Duration(now - row.Since)})";
+
+    private static bool Chip(InstanceSummary row, string word) => string.Equals(row.Chip.Word, word, StringComparison.Ordinal);
+
+    private static void Section(StringBuilder text, string heading, IReadOnlyList<InstanceSummary> rows, DateTimeOffset now)
     {
-        if (views.Count == 0)
+        if (rows.Count == 0)
         {
             return;
         }
 
         _ = text.Append(heading).Append('\n');
-        foreach (var view in views)
+        foreach (var row in rows.OrderBy(static r => r.Address.Value, StringComparer.Ordinal))   // spec §6.3: each section by address
         {
-            _ = text.Append("  ").Append(InstanceHeader.Line(view, now)).Append('\n');
+            _ = text.Append("  ").Append(Line(row, now)).Append('\n');
         }
     }
 }

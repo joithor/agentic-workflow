@@ -2,7 +2,7 @@ using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Features.ListInstances;
+using Aw.Sindri.Core.Workflow.Views;
 
 namespace Aw.Sindri.Host.Commands;
 
@@ -27,7 +27,7 @@ internal static class InstanceReads
     /// <returns>The id, SND-WF-001 for no such instance, or SND-API-001 when serve isn't running.</returns>
     internal static async Task<Result<WorkflowInstanceId>> IdOf(RecipeDesk desk, string reference, CancellationToken ct)
     {
-        var listed = await desk.Client.Get<ListInstancesResponse>($"{Instances}?address={Uri.EscapeDataString(reference)}", ct).ConfigureAwait(false);
+        var listed = await desk.Client.Get<InstanceList>($"{Instances}?address={Uri.EscapeDataString(reference)}", ct).ConfigureAwait(false);
         if (listed.IsError)
         {
             return listed.Error;
