@@ -38,6 +38,18 @@ public sealed class OnyxStatusTests
         return await Status(rig);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task Status_reports_the_memory_row_failed_when_other_containers_use_it_up()
+    {
+        var rig = new OnyxUpRig();
+        rig.Runtime.OutsideMemoryBytes = 12L << 30;
+
+        var memory = Assert.Single((await Status(rig)).Checks, static c => c.Name == "memory");
+
+        Assert.Equal(CheckState.Fail, memory.State);
+        Assert.Equal("SND-ONYX-003", memory.Problem?.Code);
+    }
+
     private static async Task<OnyxUpRig> RunningRig()
     {
         var rig = new OnyxUpRig();

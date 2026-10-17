@@ -70,6 +70,12 @@ public sealed class OnyxFacts(IContainerRuntime runtime, IHostProbes probes, ISi
     public Result<IReadOnlyList<ComposeContainer>> Containers(ComposeProject project, CancellationToken cancellationToken)
         => DockerProblem(cancellationToken) is { } problem ? problem : runtime.Ps(project, cancellationToken);
 
+    /// <summary>Reads the memory the containers outside Sindri's Onyx project use.</summary>
+    /// <param name="cancellationToken">Cancels the reading.</param>
+    /// <returns>The bytes, or the error (Docker isn't usable here, or the read failed).</returns>
+    public Result<long> MemoryUsedByOthers(CancellationToken cancellationToken)
+        => DockerProblem(cancellationToken) is { } problem ? problem : runtime.MemoryUsedOutside(Project, cancellationToken);
+
     private ContainerRuntimeFacts Docker(CancellationToken cancellationToken) => _docker ??= runtime.Inspect(cancellationToken);
 
     /// <summary>Finds the port our own Onyx holds: the one the project's live nginx publishes on 127.0.0.1, whatever state.json says (a start that failed or timed out leaves it up, and a lost state file doesn't make it someone else's). The one reading of it, for `up`, doctor and status.</summary>

@@ -84,6 +84,8 @@ public sealed class DockerCliRuntimeContractTests : ContainerRuntimeContract
             "version" when arguments.Contains("{{.Server.Os}}/{{.Server.Arch}}", StringComparer.Ordinal) => facts.DaemonAnswers ? Exited("linux/aarch64\n") : Exited("", 1),
             "version" => facts.DaemonAnswers ? Exited(facts.ServerVersion + "\n") : Exited("", 1),
             "context" => facts.Endpoint is null ? Exited("", 1) : Exited(facts.Endpoint + "\n"),
+            "ps" => facts.DaemonAnswers ? Exited("") : Exited("", 1),
+            "stats" => facts.DaemonAnswers ? Exited("abc123def456|1.5GiB / 15.66GiB\n") : Exited("", 1),
             "image" => facts.DaemonAnswers ? Inspect(arguments[^1]) : Exited("", 1),
             _ => facts.MemoryBytes is null && facts.DataRoot is null
                 ? Exited("", 1)

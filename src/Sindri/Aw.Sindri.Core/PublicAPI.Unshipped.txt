@@ -8538,7 +8538,6 @@ static Aw.Sindri.Core.Onyx.OnyxConfig.EnvKeys.get -> System.Collections.Generic.
 static Aw.Sindri.Core.Onyx.OnyxPaths.For(string! sindriHome) -> Aw.Sindri.Core.Onyx.OnyxPaths!
 static Aw.Sindri.Core.Onyx.OnyxPaths.operator !=(Aw.Sindri.Core.Onyx.OnyxPaths? left, Aw.Sindri.Core.Onyx.OnyxPaths? right) -> bool
 static Aw.Sindri.Core.Onyx.OnyxPaths.operator ==(Aw.Sindri.Core.Onyx.OnyxPaths? left, Aw.Sindri.Core.Onyx.OnyxPaths? right) -> bool
-static Aw.Sindri.Core.Onyx.OnyxPreflight.Evaluate(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! docker, Aw.Sindri.Core.Onyx.HostFacts! host, Aw.Sindri.Core.Onyx.OnyxPins! pins, int? ownPort = null) -> Aw.Sindri.Core.Onyx.PreflightReport!
 static Aw.Sindri.Core.Onyx.OnyxSetupState.operator !=(Aw.Sindri.Core.Onyx.OnyxSetupState? left, Aw.Sindri.Core.Onyx.OnyxSetupState? right) -> bool
 static Aw.Sindri.Core.Onyx.OnyxSetupState.operator ==(Aw.Sindri.Core.Onyx.OnyxSetupState? left, Aw.Sindri.Core.Onyx.OnyxSetupState? right) -> bool
 static Aw.Sindri.Core.Onyx.OnyxSteps.Stamp(params string![]! parts) -> string!
@@ -8745,3 +8744,6 @@ Aw.Sindri.Core.Onyx.OnyxFacts.Containers(Aw.Sindri.Core.Onyx.ComposeProject! pro
 static Aw.Sindri.Core.Onyx.ComposeFailures.WithHint(Aw.Kernel.Error! error, string! hint) -> Aw.Kernel.Error!
 Aw.Sindri.Core.Onyx.OnyxState.Unknown = 3 -> Aw.Sindri.Core.Onyx.OnyxState
 Aw.Sindri.Core.Onyx.OnyxFacts.ProjectInUse(Aw.Sindri.Core.Onyx.IOnyxWorkspace! workspace) -> Aw.Kernel.Result<(Aw.Sindri.Core.Onyx.ComposeProject! Project, System.Collections.Generic.IReadOnlyList<string!>! Missing)>!
+Aw.Sindri.Core.Onyx.IContainerRuntime.MemoryUsedOutside(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<long>!
+Aw.Sindri.Core.Onyx.OnyxFacts.MemoryUsedByOthers(System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<long>!
+static Aw.Sindri.Core.Onyx.OnyxPreflight.Evaluate(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! docker, Aw.Sindri.Core.Onyx.HostFacts! host, Aw.Sindri.Core.Onyx.OnyxPins! pins, int? ownPort = null, Aw.Kernel.Result<long>? usedByOthers = null) -> Aw.Sindri.Core.Onyx.PreflightReport!

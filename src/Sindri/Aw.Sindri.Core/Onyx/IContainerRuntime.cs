@@ -57,4 +57,10 @@ public interface IContainerRuntime
     /// <param name="cancellationToken">Kills the command.</param>
     /// <returns>Each reference mapped to its RepoDigests as <see cref="ImageNames.WithoutDefaults"/> spells them; an image that isn't present maps to an empty list.</returns>
     public Result<IReadOnlyDictionary<string, IReadOnlyList<string>>> RepoDigests(IReadOnlyList<string> images, CancellationToken cancellationToken);
+
+    /// <summary>Reads how much memory the running containers outside the project use (`docker stats --no-stream`, 5 s): what Docker's VM has already given away before Onyx starts.</summary>
+    /// <param name="project">The project whose own containers are not counted.</param>
+    /// <param name="cancellationToken">Kills the command.</param>
+    /// <returns>The bytes the other containers use, or the error (SND-ONYX-001 when Docker isn't answering, SND-ONYX-011 when the command fails or its output can't be read).</returns>
+    public Result<long> MemoryUsedOutside(ComposeProject project, CancellationToken cancellationToken);
 }

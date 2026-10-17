@@ -1,3 +1,4 @@
+using Aw.Sindri.Core;
 using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.OnyxUp;
@@ -180,6 +181,30 @@ public sealed class OnyxUpTests
         Assert.Contains("HOST_PORT=3001\n", rig.Workspace.Files[rig.Paths.Env], StringComparison.Ordinal);
         Assert.Contains("\"127.0.0.1:3001:80\"", rig.Workspace.Files[rig.Paths.Override], StringComparison.Ordinal);
         Assert.Equal(3001, rig.Workspace.State!.Port);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Other_containers_using_the_memory_block_before_any_fetch()
+    {
+        var rig = new OnyxUpRig();
+        rig.Runtime.OutsideMemoryBytes = 12L << 30;
+
+        var error = (await rig.Up(Token)).Error;
+
+        Assert.Equal("SND-ONYX-003", error.Code);
+        Assert.Contains("other containers already use 12.0 GiB", error.Message, StringComparison.Ordinal);
+        Assert.Equal(0, rig.Files.Fetches);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_failed_read_of_other_containers_memory_warns_and_the_start_goes_on()
+    {
+        var rig = new OnyxUpRig();
+        rig.Runtime.FailNext("MemoryUsedOutside", SindriErrors.OnyxComposeFailed.With("`docker stats` failed (exit 1): boom"));
+
+        var response = (await rig.Up(Token)).Value;
+
+        Assert.Contains(response.Warnings, static w => w.StartsWith("memory:", StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -21,12 +21,14 @@ public static class OnyxPreflight
     /// <param name="host">What the host reports: the disk at the Sindri home, the disk at Docker's data root when that is a directory here, and the loopback ports.</param>
     /// <param name="pins">What the pinned release needs.</param>
     /// <param name="ownPort">The port our own running Onyx holds, when setup already ran: the port row is then ok at that port, taken or not.</param>
+    /// <param name="usedByOthers">What the containers outside Onyx's project use of Docker's memory: null when it wasn't asked, an error when the read failed (the memory row then only warns).</param>
     /// <returns>The five checks and the port setup would use.</returns>
-    public static PreflightReport Evaluate(ContainerRuntimeFacts docker, HostFacts host, OnyxPins pins, int? ownPort = null)
+    public static PreflightReport Evaluate(ContainerRuntimeFacts docker, HostFacts host, OnyxPins pins, int? ownPort = null, Result<long>? usedByOthers = null)
     {
         ArgumentNullException.ThrowIfNull(docker);
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(pins);
+        _ = usedByOthers;   // red: not used yet
         var dockerCheck = Docker(docker);
         var needsDocker = dockerCheck.State != CheckState.Ok;
         PreflightCheck[] checks =

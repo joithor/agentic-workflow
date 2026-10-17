@@ -120,6 +120,49 @@ public sealed class OnyxPreflightTests
         Assert.Contains("set Docker's memory to at least 6 GiB in Docker Desktop → Settings → Resources", memory.Problem?.Message, StringComparison.Ordinal);
     }
 
+    private static PreflightCheck MemoryWith(Kernel.Result<long> usedByOthers)
+        => Check(OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new HostFacts(_roomy, DataRoot: null, _free), _pins, usedByOthers: usedByOthers), "memory");
+
+    [Fact, Trait("Lane", "unit")]
+    public void Evaluate_fails_003_when_other_containers_already_use_so_much_that_the_stack_will_not_fit()
+    {
+        var memory = MemoryWith(11 * Gib);   // 15.7 GiB for Docker, 11 in use elsewhere: 4.7 left for a stack that needs 5.5
+
+        Assert.Equal(CheckState.Fail, memory.State);
+        Assert.Equal("SND-ONYX-003", memory.Problem?.Code);
+        Assert.Contains("11.0 GiB used by other containers", memory.Detail, StringComparison.Ordinal);
+        Assert.Contains("other containers already use 11.0 GiB", memory.Problem?.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Evaluate_passes_when_what_other_containers_leave_covers_the_stack()
+    {
+        var memory = MemoryWith(2 * Gib);
+
+        Assert.Equal(CheckState.Ok, memory.State);
+        Assert.Contains("2.0 GiB used by other containers", memory.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Evaluate_only_warns_when_other_containers_memory_cannot_be_read()
+    {
+        var memory = MemoryWith(SindriErrors.OnyxComposeFailed.With("`docker stats` failed (exit 1): boom"));
+
+        Assert.Equal(CheckState.Warn, memory.State);
+        Assert.Null(memory.Problem);
+        Assert.Contains("other containers", memory.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Evaluate_still_fails_when_Docker_alone_is_short_and_the_read_failed()
+    {
+        var docker = FakeContainerRuntime.Healthy with { MemoryBytes = 4 * Gib };
+
+        var memory = Check(OnyxPreflight.Evaluate(docker, new HostFacts(_roomy, DataRoot: null, _free), _pins, usedByOthers: SindriErrors.OnyxComposeFailed.With("boom")), "memory");
+
+        Assert.Equal(CheckState.Fail, memory.State);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Evaluate_passes_a_6_GiB_vm_whose_MemTotal_reads_5_8_GiB()
     {

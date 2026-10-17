@@ -509,4 +509,41 @@ public sealed class DockerCliRuntimeTests
     [Fact, Trait("Lane", "unit")]
     public void RepoDigests_is_001_when_the_daemon_is_gone()
         => Assert.Equal("SND-ONYX-001", Cli(new FakeToolRunner(ToolRun.Missing)).RepoDigests(["a@sha256:b"], Token).Error.Code);
+
+    private static readonly ComposeProject _ownProject = OnyxPaths.For(OnyxUpRig.Home).Project;
+
+    private static FakeToolRunner Stats(string ours, ToolRun stats) => new((_, arguments) => arguments[0] == "ps" ? Ok(ours) : stats);
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_memory_other_containers_use_leaves_out_this_projects_own_and_reads_every_unit()
+    {
+        var runner = Stats("aaaaaaaaaaaa\nbbbbbbbbbbbb", Ok("aaaaaaaaaaaa|7GiB / 15GiB\nbbbbbbbbbbbb|1GiB / 15GiB\ncccccccccccc|512MiB / 15GiB\ndddddddddddd|1024KiB / 15GiB\neeeeeeeeeeee|2048B / 15GiB\nffffffffffff|1.5GB / 15GiB\n111111111111|1MB / 15GiB"));
+
+        var bytes = Cli(runner).MemoryUsedOutside(_ownProject, Token).Value;
+
+        Assert.Equal((512L << 20) + (1L << 20) + 2048 + 1_500_000_000 + 1_000_000, bytes);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_memory_read_runs_ps_by_label_then_stats_with_no_stream_inside_five_seconds()
+    {
+        var runner = Stats("", Ok(""));
+
+        _ = Cli(runner).MemoryUsedOutside(_ownProject, Token);
+
+        Assert.Equal(["ps", "-q", "--filter", "label=com.docker.compose.project=" + _ownProject.Name], runner.Calls[0].Arguments, StringComparer.Ordinal);
+        Assert.Equal(["stats", "--no-stream", "--format"], runner.Calls[1].Arguments.Take(3), StringComparer.Ordinal);
+        Assert.Equal(TimeSpan.FromSeconds(5), runner.Calls[1].Timeout);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("exit")]
+    [InlineData("timeout")]
+    [InlineData("garbage")]
+    public void A_failed_or_unreadable_stats_is_an_error_not_zero(string how)
+    {
+        var stats = how switch { "exit" => Fails, "timeout" => ToolRun.TimedOut, _ => Ok("cccccccccccc|lots") };
+
+        Assert.True(Cli(Stats("", stats)).MemoryUsedOutside(_ownProject, Token).IsError);
+    }
 }

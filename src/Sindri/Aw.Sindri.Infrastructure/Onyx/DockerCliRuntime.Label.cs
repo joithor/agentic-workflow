@@ -13,6 +13,9 @@ internal sealed partial class DockerCliRuntime
     private const string ProjectLabel = "com.docker.compose.project";
     private const string ServiceLabel = "com.docker.compose.service";
 
+    /// <inheritdoc />
+    public Result<long> MemoryUsedOutside(ComposeProject project, CancellationToken cancellationToken) => throw new NotSupportedException();
+
     private Result<Unit> StopByLabel(ComposeProject project, CancellationToken cancellationToken)
     {
         var live = LabelFilter(project) is { } filter ? Direct(["ps", "-q", "--filter", filter], new Call("ps", _shortTimeout), cancellationToken) : NotOurs(project);

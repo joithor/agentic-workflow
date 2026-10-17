@@ -25,7 +25,7 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     /// <summary>Gets or sets the facts the fake reports.</summary>
     public ContainerRuntimeFacts Facts { get; set; } = facts;
 
-    /// <summary>Gets the operations called, in order: Inspect, ServerPlatform, Pull, RenderedConfig, Up, Stop, Ps, RepoDigests.</summary>
+    /// <summary>Gets the operations called, in order: Inspect, ServerPlatform, Pull, RenderedConfig, Up, Stop, Ps, RepoDigests, MemoryUsedOutside.</summary>
     public IList<string> Calls { get; } = [];
 
     /// <summary>Gets or sets a callback told the name of each operation as it starts, before it can fail or be cancelled (a test cancels a token from it).</summary>
@@ -42,6 +42,9 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
 
     /// <summary>Gets the operations (Ps, Stop) called on a project that names no files (<see cref="ComposeProject.ByLabel"/>), in order.</summary>
     public IList<string> LabelOnlyCalls { get; } = [];
+
+    /// <summary>Gets or sets the bytes the containers outside the project use, as <see cref="MemoryUsedOutside"/> reports.</summary>
+    public long OutsideMemoryBytes { get; set; }
 
     /// <summary>Gets the services <see cref="Stop"/> leaves running (a container that ignores the stop).</summary>
     public IList<string> StubbornServices { get; } = [];
@@ -171,6 +174,13 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
         IReadOnlyDictionary<string, IReadOnlyList<string>> map = images.Distinct(StringComparer.Ordinal)
             .ToDictionary(static i => i, i => (IReadOnlyList<string>)(LocalImages.TryGetValue(i, out var digests) ? digests : []), StringComparer.Ordinal);
         return Results.Success(map);
+    }
+
+    /// <inheritdoc />
+    public Result<long> MemoryUsedOutside(ComposeProject project, CancellationToken cancellationToken)
+    {
+        Projects.Add(project.Name);
+        return Begin("MemoryUsedOutside") is { } error ? error : OutsideMemoryBytes;
     }
 
     private void TrackLabelOnly(ComposeProject project, string operation)

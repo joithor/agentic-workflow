@@ -123,6 +123,16 @@ public abstract class ContainerRuntimeContract
         Expect.Equal("SND-ONYX-001", runtime.RepoDigests(["a@sha256:b"], Token).Error.Code);
     }
 
+    /// <summary>The memory the containers outside the project use is a plain non-negative byte count.</summary>
+    [Fact]
+    public void The_memory_other_containers_use_is_a_byte_count()
+        => Expect.True(Create(FakeContainerRuntime.Healthy).MemoryUsedOutside(Project, Token).Value >= 0);
+
+    /// <summary>A daemon that isn't answering fails the memory read with SND-ONYX-001.</summary>
+    [Fact]
+    public void A_down_daemon_fails_the_outside_memory_read_with_001()
+        => Expect.Equal("SND-ONYX-001", Create(FakeContainerRuntime.DaemonDown).MemoryUsedOutside(Project, Token).Error.Code);
+
     /// <summary>A missing CLI fails the same way.</summary>
     [Fact]
     public void A_missing_cli_fails_compose_operations_with_001()
