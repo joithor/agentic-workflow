@@ -138,6 +138,7 @@ public sealed class ContextJobVerbsTests : IDisposable
     [Theory, Trait("Lane", "unit")]
     [InlineData("eval", "backtest", "--limit", "many")]
     [InlineData("eval", "backtest", "--since", "yesterday-ish")]
+    [InlineData("eval", "backtest", "--until", "9999-12-31")]   // the last day has no end tick: refused, not thrown
     [InlineData("eval", "backtest", "--arms")]
     [InlineData("eval", "backtest", "stray")]
     public async Task Eval_backtest_with_a_bad_option_is_invalid_input_and_posts_nothing(params string[] args)
