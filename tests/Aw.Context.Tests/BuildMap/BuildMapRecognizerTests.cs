@@ -1,4 +1,5 @@
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Map;
 using Aw.Context.Tests.Map;
 
 namespace Aw.Context.Tests.BuildMap;
@@ -28,6 +29,7 @@ public sealed class BuildMapRecognizerTests
         Assert.Equal(0.8, flag.Confidence);
         Assert.Equal(["code:config/flags.yaml"], flag.Files.Select(f => f.Value), StringComparer.Ordinal);
         Assert.DoesNotContain(without.Proposed, p => p.Key.Value.StartsWith("surface:flag/", StringComparison.Ordinal));
+        Assert.Contains(with.Proposed, p => string.Equals(p.Key.Value, "surface:flag/private-flag", StringComparison.Ordinal));   // the control: without a deny glob the private file is read
         Assert.DoesNotContain("recognizers", with.Degraded, StringComparer.Ordinal);
     }
 
@@ -58,5 +60,6 @@ public sealed class BuildMapRecognizerTests
         Assert.True(report.IsSuccess, report.IsError ? report.Error.Message : null);
         Assert.Contains("recognizers", report.Value.Degraded, StringComparer.Ordinal);
         Assert.Contains(report.Value.Proposed, p => string.Equals(p.Key.Value, "surface:command/close-pane", StringComparison.Ordinal));
+        Assert.Equal(MapVersionStatus.Draft, report.Value.Draft.Status);
     }
 }
