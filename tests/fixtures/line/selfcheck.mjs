@@ -555,4 +555,6 @@ function main(argv) {
   return failed.length ? 1 : 0;
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) process.exit(main(process.argv.slice(2)));
+// Real paths on both sides: on macOS a temp dir is reached through the /var -> /private/var symlink, and a plain
+// path compare there never runs main, so a copy of the fixture would "pass" by doing nothing.
+if (process.argv[1] && fs.realpathSync(path.resolve(process.argv[1])) === fs.realpathSync(fileURLToPath(import.meta.url))) process.exit(main(process.argv.slice(2)));
