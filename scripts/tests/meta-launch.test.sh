@@ -5,7 +5,7 @@
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fail=0
-[ "$(uname -s)" = Darwin ] && { echo "skip: aw-meta is Linux-only"; exit 0; }
+[ "$(uname -s)" = Darwin ] && { echo "skip: this suite (the golden transcript, GNU tools, uuid case, wc padding) is Linux-only; the launcher check against a stale aw-meta runs everywhere in meta-version.test.sh"; exit 0; }
 check() {
   if [ "$2" == "$3" ]; then echo "ok - $1"; else
     echo "not ok - $1"; echo "  expected: $3"; echo "  actual:   $2"; fail=1
