@@ -141,8 +141,8 @@ public sealed class BlockRuntimeInterpreterTests : IDisposable
 
     private static async Task WaitFor(Func<bool> condition, CancellationToken ct)
     {
-        var deadline = DateTime.UtcNow.AddSeconds(20);
-        while (!condition() && DateTime.UtcNow < deadline)
+        var deadline = RealTime.NowDateTime.AddSeconds(20);
+        while (!condition() && RealTime.NowDateTime < deadline)
         {
             await Task.Delay(50, ct);
         }
