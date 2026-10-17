@@ -6,11 +6,11 @@ using Aw.Kernel;
 namespace Aw.Forge.Infrastructure.Credentials;
 
 /// <summary>
-/// A token from a command run per call (command:&lt;argv&gt;). The command prints either a bare token or JSON
+/// A token, bound to one host, from a command run per call (command:&lt;argv&gt;). The command prints either a bare token or JSON
 /// {"token": "...", "expiresAt": "ISO-8601"}. A token with an expiry is cached until five minutes before it; a bare token is
 /// cached for five minutes. A refresh (after a 401) runs the command again.
 /// </summary>
-internal sealed class CommandCredentialSource(IReadOnlyList<string> argv, TimeProvider clock) : ICredentialSource, IDisposable
+internal sealed class CommandCredentialSource(string boundHost, IReadOnlyList<string> argv, TimeProvider clock) : ICredentialSource, IDisposable
 {
     private static readonly TimeSpan _margin = TimeSpan.FromMinutes(5);
     private static readonly TimeSpan _bareLifetime = TimeSpan.FromMinutes(5);
@@ -20,6 +20,11 @@ internal sealed class CommandCredentialSource(IReadOnlyList<string> argv, TimePr
 
     public async ValueTask<Result<string>> Token(string host, bool refresh, CancellationToken cancellationToken)
     {
+        if (!BoundHost.Matches(boundHost, host))
+        {
+            return BoundHost.Refusal(host);
+        }
+
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {

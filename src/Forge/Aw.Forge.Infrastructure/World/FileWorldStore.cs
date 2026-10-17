@@ -48,12 +48,17 @@ internal sealed class FileWorldStore : IWorldStore
             {
                 return new FileStream(_lock, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.None);
             }
-            catch (IOException) when (Environment.TickCount64 < deadline)
+            catch (IOException e) when (IsContention(e) && Environment.TickCount64 < deadline)
             {
                 spin.SpinOnce();   // backs off to a short sleep inside SpinWait; Thread.Sleep is banned
             }
         }
     }
+
+    // A held lock is a plain IOException (a sharing violation, or EWOULDBLOCK on Unix). A missing directory, a bad path or a
+    // full disk is also an IOException, and waiting ten seconds will not fix it: those surface at once.
+    private static bool IsContention(IOException e) =>
+        e is not (DirectoryNotFoundException or FileNotFoundException or PathTooLongException or DriveNotFoundException);
 
     private WorldState Load()
     {

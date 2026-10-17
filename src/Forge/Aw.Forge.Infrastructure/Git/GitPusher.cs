@@ -94,7 +94,7 @@ internal sealed class GitPusher(IRedactor redactor, string gitProgram = "git")
 
         var has = await Git(["cat-file", "-e", request.Sha + "^{commit}"], environment, cancellationToken).ConfigureAwait(false);
         return has is { ExitCode: 0 }
-            ? Outcome(await Git(PushArguments(request), environment, cancellationToken).ConfigureAwait(false))
+            ? Outcome(await Git(PushArguments(request), environment, cancellationToken).ConfigureAwait(false), authorizationHeader)
             : ForgeErrors.Invalid.With("sha: not a commit in the repository");
     }
 
@@ -108,7 +108,7 @@ internal sealed class GitPusher(IRedactor redactor, string gitProgram = "git")
         "--", request.Remote, request.Sha + ":refs/heads/" + request.Branch,
     ];
 
-    private Result<PushOutcome> Outcome(ProcessResult? pushed)
+    private Result<PushOutcome> Outcome(ProcessResult? pushed, string? authorizationHeader)
     {
         if (pushed is null)
         {
@@ -126,8 +126,20 @@ internal sealed class GitPusher(IRedactor redactor, string gitProgram = "git")
             return PushOutcome.HeadMoved;
         }
 
-        var tail = redactor.Scrub(text.Trim()).Text;
+        var tail = redactor.Scrub(WithoutHeader(text.Trim(), authorizationHeader)).Text;
         return ForgeErrors.PushFailed.With(tail.Length > 400 ? tail[^400..] : tail);
+    }
+
+    // git (or a hook on the remote's side) may print the environment it was given; the credential never leaves in the error.
+    private static string WithoutHeader(string text, string? header)
+    {
+        if (header is null)
+        {
+            return text;
+        }
+
+        var encoded = header[(header.LastIndexOf(' ') + 1)..];
+        return text.Replace(header, "[redacted]", StringComparison.Ordinal).Replace(encoded, "[redacted]", StringComparison.Ordinal);
     }
 
     private async Task<Result<string>> ObjectsDirectory(string repoDir, Dictionary<string, string> environment, CancellationToken cancellationToken)

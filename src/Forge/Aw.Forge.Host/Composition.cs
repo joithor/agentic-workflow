@@ -24,6 +24,11 @@ internal static class Composition
         }
 
         var hosts = new ForgeHosts((environment("AW_FORGE_HOSTS") ?? (github ? "github.com" : "forge.test")).Split(','));
+        if (github && hosts.Names.Count != 1)
+        {
+            throw new InvalidOperationException("AW_FORGE_HOSTS: the github adapter takes exactly one host (its credential is bound to it)");
+        }
+
         _ = services
             .AddSingleton(clock)
             .AddKernelTelemetry(TelemetryOptions.FromEnvironment("aw-forge-fake", environment, clock))   // JSON lines on stderr (AW_LOG_LEVEL); exports off

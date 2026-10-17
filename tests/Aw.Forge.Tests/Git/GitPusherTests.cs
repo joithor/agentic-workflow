@@ -130,17 +130,37 @@ public sealed class GitPusherTests : IDisposable
     }
 
     [Fact]
-    public async Task A_remote_that_cannot_be_reached_is_AW_FORGE_008_and_never_echoes_the_credential_header()
+    public async Task A_remote_that_cannot_be_reached_is_AW_FORGE_008()
+    {
+        await Arrange();
+
+        var result = await _pusher.Push(Request(_first!, lease: null, remote: Path.Combine(_root.FullName, "missing.git")), authorizationHeader: null, TestContext.Current.CancellationToken);
+
+        Assert.Equal(ForgeErrors.PushFailed.Code, result.Error.Code);
+    }
+
+    [Fact]
+    public async Task The_credential_header_reaches_git_through_the_environment_and_is_in_no_output()
     {
         await Arrange();
         const string secret = "sekret-value-0002";
         var header = GitPusher.BasicHeader(secret);
+        var encoded = header[(header.LastIndexOf(' ') + 1)..];
+        var seen = Path.Combine(_root.FullName, "hook-env.txt");
+        var hook = Path.Combine(Remote, "hooks", "pre-receive");
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(hook)!);
+        // A pre-receive hook on the remote runs inside the push (a file:// remote, so git's own environment reaches it): it records
+        // the header git was given and prints it to the push's stderr before refusing, the worst case for an echo.
+        await File.WriteAllTextAsync(hook, "#!/bin/sh\necho \"$GIT_CONFIG_VALUE_0\" > \"" + seen + "\"\necho \"remote saw: $GIT_CONFIG_VALUE_0\" >&2\nexit 1\n", TestContext.Current.CancellationToken);
+        Executable.Make(hook);
 
-        var result = await _pusher.Push(Request(_first!, lease: null, remote: Path.Combine(_root.FullName, "missing.git")), header, TestContext.Current.CancellationToken);
+        var result = await _pusher.Push(Request(_first!, lease: null, remote: new Uri(Remote).AbsoluteUri), header, TestContext.Current.CancellationToken);
 
+        Assert.Equal(header, (await File.ReadAllTextAsync(seen, TestContext.Current.CancellationToken)).Trim());
         Assert.Equal(ForgeErrors.PushFailed.Code, result.Error.Code);
         Assert.DoesNotContain(secret, result.Error.ToString(), StringComparison.Ordinal);
-        Assert.DoesNotContain(Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("x-access-token:" + secret)), result.Error.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(encoded, result.Error.ToString(), StringComparison.Ordinal);
+        Assert.Contains("remote saw", result.Error.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]

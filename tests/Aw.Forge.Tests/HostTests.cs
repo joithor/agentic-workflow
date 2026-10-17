@@ -48,6 +48,15 @@ public sealed class HostTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void The_github_adapter_refuses_more_than_one_host_because_its_credential_is_bound_to_one()
+    {
+        _ = Assert.Throws<InvalidOperationException>(() => Compose(adapter: "github", hosts: "github.com,ghe.example"));
+
+        using var one = Compose(adapter: "github", hosts: "ghe.example").BuildServiceProvider();
+        Assert.Equal(ForgeKind.GitHub, one.GetRequiredService<IForge>().Kind);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Telemetry_is_composed_and_exports_nothing()
     {
         var services = Compose();
@@ -74,7 +83,7 @@ public sealed class HostTests
         Assert.True(logger.IsEnabled(LogLevel.Warning));
     }
 
-    private static IServiceCollection Compose(string? logLevel = null, string? adapter = null, string? credential = null)
+    private static IServiceCollection Compose(string? logLevel = null, string? adapter = null, string? credential = null, string? hosts = null)
         => Composition.Compose(
             new ServiceCollection(),
             name => name switch
@@ -83,6 +92,7 @@ public sealed class HostTests
                 "AW_LOG_LEVEL" => logLevel,
                 "AW_FORGE_ADAPTER" => adapter,
                 "AW_FORGE_CREDENTIAL" => credential,
+                "AW_FORGE_HOSTS" => hosts,
                 _ => null,
             },
             new FakeTimeProvider());

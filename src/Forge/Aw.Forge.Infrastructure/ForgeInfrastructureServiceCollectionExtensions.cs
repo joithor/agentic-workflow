@@ -32,19 +32,26 @@ public static class ForgeInfrastructureServiceCollectionExtensions
     /// <summary>Adds the GitHub adapter (workflow.forge.adapter: github).</summary>
     /// <param name="services">The service collection.</param>
     /// <param name="environment">Reads an environment variable.</param>
-    /// <param name="hosts">The allowed hosts (workflow.forge.hosts), such as github.com.</param>
+    /// <param name="hosts">The allowed hosts (workflow.forge.hosts), such as github.com. Exactly one: the credential is bound to it.</param>
     /// <param name="credential">workflow.forge.credential; the default is env:AW_FORGE_TOKEN.</param>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddForgeGitHubInfrastructure(this IServiceCollection services, Func<string, string?> environment, ForgeHosts hosts, ForgeCredentialSpec? credential = null)
     {
         ArgumentNullException.ThrowIfNull(environment);
         ArgumentNullException.ThrowIfNull(hosts);
+        if (hosts.Names.Count != 1)
+        {
+            // One credential is bound to one host (spec 10.2); with several hosts it would reach hosts it was not issued for.
+            throw new ArgumentException("the GitHub adapter takes exactly one host in workflow.forge.hosts (a credential is bound to one host)", nameof(hosts));
+        }
+
+        var bound = hosts.Names.Single();
         var spec = credential ?? ForgeCredentialSpec.Default;
         return services
             .AddSingleton(SettingsFromEnvironment.Read(environment))
             .AddSingleton<ICredentialSource>(provider => spec.Kind == ForgeCredentialKind.Env
-                ? new EnvCredentialSource(spec.Name!, environment) // why: a ForgeCredentialSpec of kind Env always carries the variable's name (its parser rejects env: with no name).
-                : new CommandCredentialSource(spec.Argv, provider.GetService<TimeProvider>() ?? TimeProvider.System))
+                ? new EnvCredentialSource(bound, spec.Name!, environment) // why: a ForgeCredentialSpec of kind Env always carries the variable's name (its parser rejects env: with no name).
+                : new CommandCredentialSource(bound, spec.Argv, provider.GetService<TimeProvider>() ?? TimeProvider.System))
             .AddSingleton<IForge>(provider =>
             {
                 var source = provider.GetRequiredService<ICredentialSource>();
