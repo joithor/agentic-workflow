@@ -121,8 +121,8 @@ internal sealed partial class ChoiceRules : IRecipeRules
             ChoiceFaultKind.NotText => source.Finding("RCP-CHOICE-002", at, $"{entry} is {fault.Detail}, not text", EntryFix),
             ChoiceFaultKind.NoSeparator => source.Finding("RCP-CHOICE-002", at, $"{entry} has no ': ' after its outcome", EntryFix),
             ChoiceFaultKind.BadName => source.Finding(
-                "RCP-CHOICE-002", at, $"{entry} names outcome '{fault.Detail}', which isn't [a-z][a-z0-9]{{0,31}}",
-                "start with a-z and use only a-z and 0-9, at most 32 characters"),
+                "RCP-CHOICE-002", at, $"{entry} names outcome '{fault.Detail}', which isn't [a-z][A-Za-z0-9]{{0,31}}",
+                "start with a-z and use only letters and digits, at most 32 characters"),
             ChoiceFaultKind.BadLength => source.Finding("RCP-CHOICE-002", at, $"{entry} has a criterion of {fault.Detail} characters", "write a criterion of 1 to 400 characters"),
             _ => throw new ArgumentOutOfRangeException(nameof(fault), fault.Kind, "Not a choice fault."),
         };
