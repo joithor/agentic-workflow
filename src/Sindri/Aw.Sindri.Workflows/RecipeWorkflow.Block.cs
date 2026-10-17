@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
@@ -14,10 +15,12 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <summary>
 /// The block runtime of <see cref="RecipeWorkflow"/> (DT spec §8.2; DT-J2): a Step the build registered with AddBlockStep runs in one
 /// 'RunBlockStep' activity, attempted once, and its result becomes the trigger the engine reports for it, with no desk task. The activity is
-/// bounded by the shorter of the state's timeout and the descriptor's 'maxDuration'; running out is step.failed 'timeout', not a timer park.
+/// bounded by the descriptor's 'maxDuration' (BlockLimits); RCP-TIME-003 keeps the state's timeout longer than that, so the Step's own bound always ends it first and running out is step.failed 'timeout', never a timer park.
 /// </summary>
 internal sealed partial class RecipeWorkflow
 {
+    private static readonly TimeSpan _blockHeartbeat = TimeSpan.FromSeconds(10);
+
     /// <summary>
     /// Runs the open block run: starts the activity, applies the commands an Update submits while it runs (a cancel or takeover ends the run, so
     /// the activity is cancelled), and decides the Step's result like a desk report. The activity's id is 'block:{token}:{n}'.
@@ -64,6 +67,7 @@ internal sealed partial class RecipeWorkflow
                 ActivityId = string.Create(CultureInfo.InvariantCulture, $"block:{open.Token.Value}:{_runs}"),
                 TaskQueue = StepTaskQueue.For(state, Workflow.Info.TaskQueue),
                 StartToCloseTimeout = Limit(recipe, state, open, step),
+                HeartbeatTimeout = _blockHeartbeat,   // Temporal throttles a heartbeat to 80% of this (8 s), so a cancel or takeover reaches the Step within about that
                 RetryPolicy = new RetryPolicy { MaximumAttempts = 1 },   // a judge call is never retried: a second ask is a second decision (DT spec §8.2)
                 CancellationToken = token,
             });
@@ -104,18 +108,11 @@ internal sealed partial class RecipeWorkflow
         return (instance, false);
     }
 
-    /// <summary>The activity's bound: the state's timeout (a block run has no desk floor), or the descriptor's 'maxDuration' when that is shorter.</summary>
+    /// <summary>The activity's bound: the descriptor's 'maxDuration' (two minutes when it sets none), or the state's timeout when that is shorter (a recipe RCP-TIME-003 refuses, kept as a guard for one that predates the rule).</summary>
     private TimeSpan Limit(InterpretedRecipe recipe, RecipeState state, OpenRun open, StepUse step)
     {
-        var timeout = StateTimers.Timeout(state, open, _deskTimeout);
-        var max = recipe.Catalog.Find(step.Use)?.MaxDuration;
-        return (timeout, max) switch
-        {
-            ({ } t, { } m) => t < m ? t : m,
-            ({ } t, null) => t,
-            (null, { } m) => m,
-            _ => TimeSpan.FromMinutes(2),
-        };
+        var max = recipe.Catalog.Find(step.Use) is { } descriptor ? BlockLimits.MaxDuration(descriptor) : BlockLimits.Fallback;
+        return StateTimers.Timeout(state, open, _deskTimeout) is { } timeout && timeout < max ? timeout : max;
     }
 
     /// <summary>The activity's result as the trigger the engine reports: a completed result, or step.failed for a failure, a timeout or an invalid result.</summary>

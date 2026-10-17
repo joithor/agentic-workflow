@@ -283,7 +283,7 @@ Every state has `kind: active | wait | terminal`. State, loop and parameter (`wi
 `{ child: { recipe, inputs, onParked: propagate | ignore } }`. No resource has an allocator in this build, so a resource
 wait is reported as information (`RCP-RES-001`); at run time it parks with `SND-WF-010` until one lands. `then: retry`
 re-arms the deadline in the same frame and re-sends the entering transition's effects; it isn't allowed on a child wait
-(`RCP-TIME-002`), nor on a state whose Step runs on the block runtime (`RCP-TIME-003`).
+(`RCP-TIME-002`), nor on a state whose Step runs on the block runtime, whose timeout must also outlast the Step's `maxDuration` (`RCP-TIME-003`).
 
 ### Transitions
 
@@ -376,7 +376,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-EXIT-001` | Every non-terminal state has a path to a terminal state | Add a transition towards a terminal state |
 | `RCP-TIME-001` | Every active and wait state has a timeout | Add `timeout: { after, then }` |
 | `RCP-TIME-002` | A child wait doesn't `retry` | Use `park` or `escalate` |
-| `RCP-TIME-003` | A state whose Step runs on the block runtime doesn't `retry` | Use `then: park` (a block call that runs out ends as `step.failed`, which the route sends to its desk twin) |
+| `RCP-TIME-003` | A state whose Step runs on the block runtime doesn't `retry`, and its `timeout.after` is longer than the Step's `maxDuration` (two minutes when the descriptor sets none) | Use `then: park` (a block call that runs out ends as `step.failed`, which the route sends to its desk twin); make the state timeout longer than the Step's `maxDuration` |
 | `RCP-LOOP-001` | A state's `loop` is declared, every loop's `cap` is at least 1, and every cycle of step and wait transitions passes through a state with a `loop` (a cycle closed by a `command.<verb>` or by the answer to an `answer` wait is a human's, and a cycle with no way out is `RCP-EXIT-001`'s) | Declare it under `loops`, or add `loop` to a state on the cycle |
 | `RCP-LOOP-002` | A looped state has a transition back into it | Add it, or remove `loop` |
 | `RCP-LOOP-003` | `noProgress` isn't empty | Name a signal, or leave it out |
@@ -1027,7 +1027,7 @@ registered runtime keeps opening a desk run and stays human-only.
   recorded (`A_pre_DT_J_history_replays_on_the_desk_path`). New instances write the marker at start. The patch is
   deprecated only after the cutover.
 - **Events:** a block result's `workflow.transition` carries `via: block` and the judge `decision` id. `sindri workflow
-  events` prints `via block - decision <id> (sindri workflow why <address>)`; the API's event detail has `via` and
-  `decision`. Desk reports carry neither.
+  events` prints `via block · decision <id>` (a `sindri workflow why` verb that explains the decision comes with DT-J3); the API's event detail has `via` and
+  `decision`, left out when null. Desk reports carry neither.
 - **Profile:** `workflow.judge.providers` (and `repos[].workflow.judge.providers`) narrows which providers a Judge
   Step may ask; see `sindri-profile.md`.

@@ -35,7 +35,7 @@ public sealed class InvalidFixturesTests
     private static readonly string[] _childOutputs = ["RCP-WIRE-003"];
 
     /// <summary>Fixtures that are a second fault of a rule, named after it: RCP-CHOICE-002's unquoted entry, RCP-CHOICE-005's computed twin source, and a route without an uncertain transition.</summary>
-    private static readonly string[] _variants = ["RCP-CHOICE-002-mapping", "RCP-CHOICE-005-computed", "RCP-OUTCOME-001-uncertain", "RCP-SCHEMA-002-camel", "RCP-WIRE-003-cancelled", "RCP-WIRE-002-child", "RCP-WIRE-002-rename", "RCP-SCHEMA-001-produces"];
+    private static readonly string[] _variants = ["RCP-CHOICE-002-mapping", "RCP-CHOICE-005-computed", "RCP-OUTCOME-001-uncertain", "RCP-SCHEMA-002-camel", "RCP-WIRE-003-cancelled", "RCP-WIRE-002-child", "RCP-WIRE-002-rename", "RCP-SCHEMA-001-produces", "RCP-TIME-003-short"];
 
     public static TheoryData<string> Rules => [.. InvalidFixtureCases.All.Keys.Order(StringComparer.Ordinal)];
 

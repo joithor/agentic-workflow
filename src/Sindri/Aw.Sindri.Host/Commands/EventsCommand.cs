@@ -118,7 +118,7 @@ internal static class EventsCommand
 
         if (t.Via is { } via)
         {
-            parts.Add(t.Decision is { } decision ? $"via {via} · decision {decision} (sindri workflow why <address>)" : $"via {via}");
+            parts.Add(t.Decision is { } decision ? $"via {via} · decision {decision}" : $"via {via}");
         }
 
         parts.Add(e.Actor);

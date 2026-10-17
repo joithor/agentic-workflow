@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Aw.Sindri.Features.GetInstanceEvents;
 
 /// <summary>
@@ -11,7 +13,7 @@ namespace Aw.Sindri.Features.GetInstanceEvents;
 /// <param name="Run">The run token.</param>
 /// <param name="Via">'block' when the engine ran the Step on the block runtime.</param>
 /// <param name="Decision">The Judge decision id of a block Step's result.</param>
-public sealed record InstanceEventFields(string? From = null, string? To = null, string? Trigger = null, string? Outcome = null, string? Run = null, string? Via = null, string? Decision = null)
+public sealed record InstanceEventFields(string? From = null, string? To = null, string? Trigger = null, string? Outcome = null, string? Run = null, [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Via = null, [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Decision = null)
 {
     /// <summary>No fields: a payload that doesn't read as a workflow transition.</summary>
     public static InstanceEventFields None { get; } = new();

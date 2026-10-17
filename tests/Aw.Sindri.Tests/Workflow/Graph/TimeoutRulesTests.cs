@@ -1,4 +1,7 @@
+using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Tests.Workflow.Engine;
 using Aw.Sindri.Tests.Workflow.Choice;
 using static Aw.Sindri.Tests.Workflow.Graph.GraphRecipe;
 
@@ -75,5 +78,26 @@ public sealed class TimeoutRulesTests
         var yaml = RouteRecipes.Fixture("RCP-TIME-003").Replace("then: retry", then, StringComparison.Ordinal);
 
         Assert.Empty(RouteRecipes.Lines(yaml, "RCP-TIME-003.yaml"));
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("1m", 1)]
+    [InlineData("2m", 1)]
+    [InlineData("3m", 0)]
+    [InlineData("2d", 0)]
+    public void A_block_runtime_state_timeout_must_outlast_the_Steps_maxDuration(string after, int findings)
+    {
+        var yaml = RouteRecipes.Edit(RouteRecipes.Fixture("RCP-TIME-003"), "timeout: { after: 2d, then: retry }", $"timeout: {{ after: {after}, then: park }}");
+
+        Assert.Equal(findings, RouteRecipes.Lines(yaml, "RCP-TIME-003.yaml").Count);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_Step_without_a_maxDuration_is_bounded_at_two_minutes_and_a_set_one_wins()
+    {
+        var judge = EngineFixture.Catalog.Find(BlockId.From("step.judge.choose"))!;
+
+        Assert.Equal(TimeSpan.FromMinutes(2), BlockLimits.MaxDuration(judge with { MaxDuration = null }));
+        Assert.Equal(TimeSpan.FromSeconds(5), BlockLimits.MaxDuration(judge with { MaxDuration = TimeSpan.FromSeconds(5) }));
     }
 }

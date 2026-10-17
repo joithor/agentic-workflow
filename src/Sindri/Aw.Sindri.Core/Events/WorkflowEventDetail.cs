@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
@@ -45,8 +46,8 @@ public sealed record WorkflowEventDetail(
     RefusalRecord? Refusal,
     IReadOnlyList<string> Effects,
     WorkflowEventDelta Delta,
-    string? Via = null,
-    string? Decision = null)
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Via = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Decision = null)
 {
     /// <summary>
     /// The detail of a row mirrored without a decision: a desk timeout's park, or a held event's expiry. It names the trigger

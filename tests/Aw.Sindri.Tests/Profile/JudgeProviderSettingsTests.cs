@@ -66,4 +66,40 @@ public sealed class JudgeProviderSettingsTests
         Assert.Equal(["rules"], JudgeProviders.Effective(_valid, repo: null, recipeLiteral: ["codex-cli-not-listed"]));
         Assert.Equal(["claude-cli", "rules"], JudgeProviders.Effective(_valid, repo: null, recipeLiteral: ["rules", "claude-cli"]));
     }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_profile_with_a_workflow_section_and_a_repo_but_no_judge_key_keeps_the_hash_it_had()
+    {
+        using var files = new ProfileFiles();
+        files.Write("schemaVersion: 1\nuser: thor\nworkflow:\n  deskTimeout: 1m\nrepos:\n  - name: app\n    path: /a\n");
+
+        var loaded = await files.Source.Load(TestContext.Current.CancellationToken);
+
+        Assert.False(loaded.IsError, loaded.IsError ? loaded.Error.Message : null);
+        Assert.Equal("f0c0d2e9113ea87a51435a8c47fe1d605e1976c9c40111572426613f5c2d5545", loaded.Value.Hash.Value);   // pinned: a new optional key left out when null must not move the hash of a profile that never set it
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_unknown_provider_in_a_repo_list_names_the_repo_and_the_index()
+    {
+        var profile = _valid with { Repos = [new RepoEntry("app", "/a", Workflow: new(Judge: new(Providers: ["rules", "gpt"])))] };
+
+        var error = ProfileRules.Check(profile).Error;
+
+        Assert.Equal(SindriErrors.ProfileInvalid.Code, error.Code);
+        Assert.StartsWith("repos.app.workflow.judge.providers[1]: 'gpt' is not a judge provider", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_diff_names_the_box_and_the_repo_provider_keys()
+    {
+        var live = ProfileRules.Check(_valid).Value;
+        var edited = live with
+        {
+            Workflow = new(Judge: new(Providers: ["jev"])),
+            Repos = [new RepoEntry("app", "/a", Workflow: new(Judge: new(Providers: ["rules"])))],
+        };
+
+        Assert.Equal(["repos.app", "repos.app.workflow.judge.providers", "workflow.judge.providers"], [.. ProfileDiff.Between(live, edited).Order(StringComparer.Ordinal)]);
+    }
 }
