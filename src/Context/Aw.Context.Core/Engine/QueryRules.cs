@@ -25,6 +25,12 @@ public static class QueryRules
     /// <summary>The most anchors one lenses call takes (scoping spec C1).</summary>
     public const int MaxAnchors = 20;
 
+    /// <summary>The most keys a subgraph GET takes (scoping spec C14).</summary>
+    public const int MaxSubgraphGet = 20;
+
+    /// <summary>The most keys a subgraph POST takes (scoping spec C14).</summary>
+    public const int MaxSubgraphPost = 1_000;
+
     /// <summary>What a bad depth's 006 starts with (a transport adds its own hint after it).</summary>
     public const string DepthMessage = "depth must be a whole number from 0 to 4";
 
