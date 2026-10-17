@@ -224,7 +224,7 @@ internal sealed class SessionDiscovery(IProcessTable processes, IClaudeSessionRe
     {
         var process = found.Process;
         var hook = hooks.FirstOrDefault(h => h.Provider.Equals(found.Agent.Id) && h.AgentPid == process.Pid && h.AgentStartTicks == process.StartTicks);
-        var files = pass.Value("open-files", _ => processes.OpenFiles(process.Pid), (IReadOnlyList<string>)[]);
+        var files = pass.Value("open-files", _ => processes.OpenFiles(process.Pid), []);
         var known = hook?.Session ?? RolloutId(found.Agent, files);
         return new Candidate(process, found.Agent, known ?? SessionId.OfProcess(process.Pid, process.StartTicks), IdKnown: known is not null, pass.Value("environment", _ => processes.Environment(process.Pid), _emptyEnvironment))
         {
