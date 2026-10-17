@@ -8,8 +8,8 @@ namespace Aw.Forge.Infrastructure.World;
 /// </summary>
 internal sealed class FileWorldStore : IWorldStore
 {
-    private static readonly System.Text.Json.JsonSerializerOptions Json = AwJson.CreateOptions(ForgeFileJsonContext.Default, indented: true);
-    private static readonly TimeSpan LockWait = TimeSpan.FromSeconds(10);
+    private static readonly System.Text.Json.JsonSerializerOptions _json = AwJson.CreateOptions(ForgeFileJsonContext.Default, indented: true);
+    private static readonly TimeSpan _lockWait = TimeSpan.FromSeconds(10);
 
     private readonly string _file;
     private readonly string _lock;
@@ -33,14 +33,15 @@ internal sealed class FileWorldStore : IWorldStore
         var state = Load();
         var result = write(state);
         var temporary = _file + ".tmp";
-        File.WriteAllBytes(temporary, AwJson.Serialize(state, Json));
+        File.WriteAllBytes(temporary, AwJson.Serialize(state, _json));
         File.Move(temporary, _file, overwrite: true);
         return result;
     }
 
     private FileStream Acquire()
     {
-        var deadline = Environment.TickCount64 + (long)LockWait.TotalMilliseconds;
+        var deadline = Environment.TickCount64 + (long)_lockWait.TotalMilliseconds;
+        var spin = new SpinWait();
         while (true)
         {
             try
@@ -49,7 +50,7 @@ internal sealed class FileWorldStore : IWorldStore
             }
             catch (IOException) when (Environment.TickCount64 < deadline)
             {
-                Thread.Sleep(20);
+                spin.SpinOnce();   // backs off to a short sleep inside SpinWait; Thread.Sleep is banned
             }
         }
     }
@@ -61,7 +62,7 @@ internal sealed class FileWorldStore : IWorldStore
             return new WorldState();
         }
 
-        var parsed = AwJson.Deserialize<WorldState>(File.ReadAllBytes(_file), Json);
+        var parsed = AwJson.Deserialize<WorldState>(File.ReadAllBytes(_file), _json);
         return parsed.IsSuccess
             ? parsed.Value
             : throw new InvalidDataException($"The forge state file is not valid: {parsed.Error.Message} ({_file})");

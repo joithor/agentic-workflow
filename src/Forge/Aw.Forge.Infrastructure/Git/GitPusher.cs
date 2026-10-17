@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text;
 using Aw.Forge.Core;
 using Aw.Forge.Core.Pulls;
@@ -15,7 +14,8 @@ namespace Aw.Forge.Infrastructure.Git;
 /// </summary>
 internal sealed class GitPusher(IRedactor redactor, string gitProgram = "git")
 {
-    private static readonly TimeSpan Timeout = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan _timeout = TimeSpan.FromMinutes(2);
+    private static readonly string _nullDevice = OperatingSystem.IsWindows() ? "NUL" : "/dev/null";
 
     internal async Task<Result<PushOutcome>> Push(PushRequest request, string? authorizationHeader, CancellationToken cancellationToken)
     {
@@ -43,8 +43,7 @@ internal sealed class GitPusher(IRedactor redactor, string gitProgram = "git")
             return ForgeErrors.Invalid.With("sha: 40 or 64 hexadecimal characters");
         }
 
-        if (request.Branch.Length == 0 || request.Branch.StartsWith('-') || request.Branch.Contains("..", StringComparison.Ordinal)
-            || request.Branch.Any(c => !(char.IsAsciiLetterOrDigit(c) || c is '/' or '.' or '_' or '-')))
+        if (!IsBranch(request.Branch))
         {
             return ForgeErrors.Invalid.With("branch: letters, digits, '/', '.', '_' and '-' only");
         }
@@ -59,12 +58,16 @@ internal sealed class GitPusher(IRedactor redactor, string gitProgram = "git")
 
     private static bool IsSha(string value) => value.Length is 40 or 64 && value.All(char.IsAsciiHexDigit);
 
+    private static bool IsBranch(string branch) =>
+        branch.Length > 0 && !branch.StartsWith('-') && !branch.Contains("..", StringComparison.Ordinal)
+        && branch.All(c => char.IsAsciiLetterOrDigit(c) || c is '/' or '.' or '_' or '-');
+
     private async Task<Result<PushOutcome>> PushFrom(string scratch, PushRequest request, string? authorizationHeader, CancellationToken cancellationToken)
     {
         var baseEnvironment = new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["GIT_CONFIG_NOSYSTEM"] = "1",
-            ["GIT_CONFIG_GLOBAL"] = OperatingSystem.IsWindows() ? "NUL" : "/dev/null",
+            ["GIT_CONFIG_GLOBAL"] = _nullDevice,
             ["GIT_TERMINAL_PROMPT"] = "0",
             ["GIT_ASKPASS"] = "true",
             ["GIT_SSH_COMMAND"] = "ssh -o BatchMode=yes",
@@ -76,7 +79,7 @@ internal sealed class GitPusher(IRedactor redactor, string gitProgram = "git")
             return objects.Error;
         }
 
-        var init = await Git(["init", "--quiet", "--bare", scratch], baseEnvironment, null, cancellationToken).ConfigureAwait(false);
+        var init = await Git(["init", "--quiet", "--bare", scratch], baseEnvironment, cancellationToken).ConfigureAwait(false);
         if (init is not { ExitCode: 0 })
         {
             return ForgeErrors.PushFailed.With("git init failed");
@@ -89,26 +92,21 @@ internal sealed class GitPusher(IRedactor redactor, string gitProgram = "git")
         };
         AddHeader(environment, authorizationHeader);
 
-        var has = await Git(["cat-file", "-e", request.Sha + "^{commit}"], environment, null, cancellationToken).ConfigureAwait(false);
-        if (has is not { ExitCode: 0 })
-        {
-            return ForgeErrors.Invalid.With("sha: not a commit in the repository");
-        }
-
-        var lease = string.Create(CultureInfo.InvariantCulture, $"--force-with-lease=refs/heads/{request.Branch}:{request.LeaseSha}");
-        var pushed = await Git(
-            [
-                "-c", "core.hooksPath=" + (OperatingSystem.IsWindows() ? "NUL" : "/dev/null"),
-                "-c", "credential.helper=",
-                "-c", "protocol.ext.allow=never",
-                "push", "--no-verify", "--no-recurse-submodules", "--porcelain", lease,
-                "--", request.Remote, $"{request.Sha}:refs/heads/{request.Branch}",
-            ],
-            environment,
-            null,
-            cancellationToken).ConfigureAwait(false);
-        return Outcome(pushed);
+        var has = await Git(["cat-file", "-e", request.Sha + "^{commit}"], environment, cancellationToken).ConfigureAwait(false);
+        return has is { ExitCode: 0 }
+            ? Outcome(await Git(PushArguments(request), environment, cancellationToken).ConfigureAwait(false))
+            : ForgeErrors.Invalid.With("sha: not a commit in the repository");
     }
+
+    private static string[] PushArguments(PushRequest request) =>
+    [
+        "-c", "core.hooksPath=" + _nullDevice,
+        "-c", "credential.helper=",
+        "-c", "protocol.ext.allow=never",
+        "push", "--no-verify", "--no-recurse-submodules", "--porcelain",
+        "--force-with-lease=refs/heads/" + request.Branch + ":" + request.LeaseSha,
+        "--", request.Remote, request.Sha + ":refs/heads/" + request.Branch,
+    ];
 
     private Result<PushOutcome> Outcome(ProcessResult? pushed)
     {
@@ -134,7 +132,7 @@ internal sealed class GitPusher(IRedactor redactor, string gitProgram = "git")
 
     private async Task<Result<string>> ObjectsDirectory(string repoDir, Dictionary<string, string> environment, CancellationToken cancellationToken)
     {
-        var common = await Git(["-C", repoDir, "rev-parse", "--path-format=absolute", "--git-common-dir"], environment, null, cancellationToken).ConfigureAwait(false);
+        var common = await Git(["-C", repoDir, "rev-parse", "--path-format=absolute", "--git-common-dir"], environment, cancellationToken).ConfigureAwait(false);
         if (common is not { ExitCode: 0 })
         {
             return ForgeErrors.Invalid.With("repoDir: not a git repository");
@@ -143,8 +141,8 @@ internal sealed class GitPusher(IRedactor redactor, string gitProgram = "git")
         return Path.Combine(common.Output.Trim(), "objects");
     }
 
-    private Task<ProcessResult?> Git(IReadOnlyList<string> arguments, IReadOnlyDictionary<string, string> environment, string? cwd, CancellationToken cancellationToken) =>
-        ProcessRunner.Run(gitProgram, arguments, environment, cwd, Timeout, cancellationToken);
+    private Task<ProcessResult?> Git(IReadOnlyList<string> arguments, IReadOnlyDictionary<string, string> environment, CancellationToken cancellationToken) =>
+        ProcessRunner.Run(new ProcessSpec(gitProgram, arguments, environment, WorkingDirectory: null, Timeout: _timeout), cancellationToken);
 
     private static void AddHeader(Dictionary<string, string> environment, string? header)
     {

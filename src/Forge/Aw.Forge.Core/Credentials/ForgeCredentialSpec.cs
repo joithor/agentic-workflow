@@ -31,7 +31,7 @@ public sealed record ForgeCredentialSpec(ForgeCredentialKind Kind, string? Name,
         {
             var argv = value[8..].Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
             return argv.Length > 0
-                ? new ForgeCredentialSpec(ForgeCredentialKind.Command, null, argv)
+                ? new ForgeCredentialSpec(ForgeCredentialKind.Command, Name: null, Argv: argv)
                 : ForgeErrors.Invalid.With("credential: command: needs a program");
         }
 

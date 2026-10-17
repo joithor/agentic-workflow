@@ -7,5 +7,5 @@ internal interface ICredentialSource
 {
     /// <summary>The token for a host.</summary>
     /// <param name="refresh">True after a 401: drop what is cached and ask again.</param>
-    ValueTask<Result<string>> Token(string host, bool refresh, CancellationToken cancellationToken);
+    public ValueTask<Result<string>> Token(string host, bool refresh, CancellationToken cancellationToken);
 }

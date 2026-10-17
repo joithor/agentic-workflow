@@ -55,6 +55,9 @@
       "aw.kernel": {
         "type": "Project"
       },
+      "aw.redaction": {
+        "type": "Project"
+      },
       "Vogen": {
         "type": "CentralTransitive",
         "requested": "[8.0.7, 8.0.7]",

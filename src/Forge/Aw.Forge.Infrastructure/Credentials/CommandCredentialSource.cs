@@ -10,10 +10,10 @@ namespace Aw.Forge.Infrastructure.Credentials;
 /// {"token": "...", "expiresAt": "ISO-8601"}. A token with an expiry is cached until five minutes before it; a bare token is
 /// cached for five minutes. A refresh (after a 401) runs the command again.
 /// </summary>
-internal sealed class CommandCredentialSource(IReadOnlyList<string> argv, TimeProvider clock) : ICredentialSource
+internal sealed class CommandCredentialSource(IReadOnlyList<string> argv, TimeProvider clock) : ICredentialSource, IDisposable
 {
-    private static readonly TimeSpan Margin = TimeSpan.FromMinutes(5);
-    private static readonly TimeSpan BareLifetime = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan _margin = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan _bareLifetime = TimeSpan.FromMinutes(5);
     private readonly SemaphoreSlim _gate = new(1, 1);
     private string? _token;
     private DateTimeOffset _validUntil;
@@ -28,7 +28,7 @@ internal sealed class CommandCredentialSource(IReadOnlyList<string> argv, TimePr
                 return _token;
             }
 
-            var ran = await ProcessRunner.Run(argv[0], [.. argv.Skip(1)], new Dictionary<string, string>(), null, TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false);
+            var ran = await ProcessRunner.Run(new ProcessSpec(argv[0], [.. argv.Skip(1)], new Dictionary<string, string>(StringComparer.Ordinal), WorkingDirectory: null, Timeout: TimeSpan.FromSeconds(30)), cancellationToken).ConfigureAwait(false);
             if (ran is not { ExitCode: 0 })
             {
                 return ForgeErrors.Unauthorized.With("the credential command failed");
@@ -46,7 +46,7 @@ internal sealed class CommandCredentialSource(IReadOnlyList<string> argv, TimePr
     {
         var now = clock.GetUtcNow();
         var token = output;
-        var until = now + BareLifetime;
+        var until = now + _bareLifetime;
         if (output.StartsWith('{'))
         {
             try
@@ -56,7 +56,7 @@ internal sealed class CommandCredentialSource(IReadOnlyList<string> argv, TimePr
                 token = root.TryGetProperty("token", out var t) && t.ValueKind == JsonValueKind.String ? t.GetString() ?? string.Empty : string.Empty;
                 if (root.TryGetProperty("expiresAt", out var e) && e.ValueKind == JsonValueKind.String && e.TryGetDateTimeOffset(out var expiry))
                 {
-                    until = expiry - Margin;
+                    until = expiry - _margin;
                 }
             }
             catch (JsonException)
@@ -74,4 +74,6 @@ internal sealed class CommandCredentialSource(IReadOnlyList<string> argv, TimePr
         _validUntil = until;
         return token;
     }
+
+    public void Dispose() => _gate.Dispose();
 }
