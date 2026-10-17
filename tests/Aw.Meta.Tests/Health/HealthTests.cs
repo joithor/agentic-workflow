@@ -9,7 +9,7 @@ namespace Aw.Meta.Tests.Health;
 public sealed class HealthTests
 {
     private const string Temporal = "temporal server start-dev --port 7233 --db-filename /tmp/aw-sindri-ab12/temporal.db";
-    private const string Headroom = "node /x/headroom-mcp.js";
+    private const string McpServer = "node /x/fetch-mcp.js";
     private readonly MetaWorld _world = new();
 
     private HealthService Service() => new(
@@ -200,12 +200,12 @@ public sealed class HealthTests
         _world.Processes.Add(new ProcessInfo(10, 1, "claude", 1, 100));
         foreach (var pid in Enumerable.Range(20, 4))
         {
-            _world.Processes.Add(new ProcessInfo(pid, 10, Headroom, 1, 100));
+            _world.Processes.Add(new ProcessInfo(pid, 10, McpServer, 1, 100));
         }
 
         var health = await Check();
 
-        Assert.Equal([new DuplicateServer(Headroom, 4, 2)], health.Duplicates);
+        Assert.Equal([new DuplicateServer(McpServer, 4, 2)], health.Duplicates);
         Assert.False(health.Attention);
     }
 
