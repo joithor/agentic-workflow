@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../../scripts/lib/test-grep.sh"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$DIR/../../.." && pwd)"
 
@@ -22,7 +23,7 @@ test_refuses_without_judge_on_path() {
   rc=$?
   set -e
   [ "$rc" -ne 0 ] || { echo "FAIL: expected a nonzero exit when judge isn't installed, got 0: $out"; exit 1; }
-  echo "$out" | grep -qi "judge" || { echo "FAIL: expected the refusal message to mention judge, got: $out"; exit 1; }
+  echo "$out" | has -i "judge" || { echo "FAIL: expected the refusal message to mention judge, got: $out"; exit 1; }
   jq -e '.hooks.Stop' "$settings" > /dev/null 2>&1 \
     && { echo "FAIL: refusal must not install any hook entries"; exit 1; }
   echo "PASS: test_refuses_without_judge_on_path"

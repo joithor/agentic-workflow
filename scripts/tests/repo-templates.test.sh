@@ -4,6 +4,7 @@
 # runners) or, where Ruby is missing (a stock Ubuntu box), with python3's PyYAML (apt python3-yaml); JSONC with node
 # after stripping comment lines.
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../scripts/lib/test-grep.sh"
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
@@ -38,7 +39,7 @@ check "Dockerfile exists" "[ -f $DF ]"
 sdk="$(node -e 'console.log(JSON.parse(require("fs").readFileSync("global.json","utf8")).sdk.version)')"
 check "base image tag is the global.json SDK ($sdk)" "grep -qE '^FROM mcr\.microsoft\.com/dotnet/sdk:${sdk//./\\.}-[a-z]+@sha256:[0-9a-f]{64}\$' $DF"
 check "every FROM and COPY --from image is pinned by digest" \
-  "! grep -E '^(FROM|COPY --from=)' $DF | grep -vqE '@sha256:[0-9a-f]{64}'"
+  "! grep -E '^(FROM|COPY --from=)' $DF | has -vE '@sha256:[0-9a-f]{64}'"
 nvm="$(tr -d '[:space:]v' < .nvmrc)"
 check "Node major matches .nvmrc ($nvm)" "grep -qE '^ARG NODE_VERSION=${nvm%%.*}\\.[0-9]+\\.[0-9]+\$' $DF"
 check "Node tarball is checksum-verified" "grep -q 'sha256sum -c' $DF && grep -qE '^ARG NODE_SHA256_X64=[0-9a-f]{64}\$' $DF && grep -qE '^ARG NODE_SHA256_ARM64=[0-9a-f]{64}\$' $DF"
@@ -86,7 +87,7 @@ echo "PR template"
 PT=.github/pull_request_template.md
 check "PR template exists" "[ -f $PT ]"
 check "PR template has the pr-body sections in order" \
-  "awk '/^## /{print}' $PT | tr '\n' '|' | grep -q '^## Summary|## Key decisions|## Evidence|## Tests|## Coverage|## Review resolution|'"
+  "awk '/^## /{print}' $PT | tr '\n' '|' | has '^## Summary|## Key decisions|## Evidence|## Tests|## Coverage|## Review resolution|'"
 
 echo "labels"
 LB=.github/labels.yml

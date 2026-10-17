@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../../scripts/lib/test-grep.sh"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$DIR/../../.." && pwd)"
 # The installer puts its files under $AW_STATE_DIR when set, else under the HOME each case passes (a temp dir): never an inherited state dir.
@@ -36,7 +37,7 @@ test_refuses_without_judge_on_path() {
   rc=$?
   set -e
   [ "$rc" -ne 0 ] || { echo "FAIL: expected a nonzero exit when judge isn't installed, got 0: $out"; exit 1; }
-  echo "$out" | grep -qi "judge" || { echo "FAIL: expected the refusal message to mention judge, got: $out"; exit 1; }
+  echo "$out" | has -i "judge" || { echo "FAIL: expected the refusal message to mention judge, got: $out"; exit 1; }
   jq -e '.hooks.PreToolUse' "$settings" > /dev/null 2>&1 \
     && { echo "FAIL: refusal must not install any hook entries"; exit 1; }
   echo "PASS: test_refuses_without_judge_on_path"
@@ -104,7 +105,7 @@ test_uninstall_removes_empty_state_dirs_but_keeps_queued_items() {
 
   local out
   out="$(PATH="$bin_dir:$PATH" CLAUDE_SETTINGS_FILE="$settings" HOME="$home" bash "$ROOT/scripts/install-wake-gating.sh" --uninstall)"
-  echo "$out" | grep -qi "queued" || { echo "FAIL: expected a warning about queued items, got: $out"; exit 1; }
+  echo "$out" | has -i "queued" || { echo "FAIL: expected a warning about queued items, got: $out"; exit 1; }
   [ -f "$home/.agentic-workflow/judge/outbox/s1.jsonl" ] || { echo "FAIL: expected the queued outbox file to be kept"; exit 1; }
   echo "PASS: test_uninstall_removes_empty_state_dirs_but_keeps_queued_items"
 }
