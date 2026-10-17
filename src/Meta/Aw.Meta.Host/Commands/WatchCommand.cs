@@ -24,8 +24,8 @@ internal static class WatchCommand
 
         async ValueTask Print(string line)
         {
-            await context.Io.Out.WriteLineAsync(line).ConfigureAwait(false);
-            await context.Io.Out.FlushAsync().ConfigureAwait(false);
+            await context.Io.Out.WriteLineAsync(line.AsMemory(), context.Cancellation).ConfigureAwait(false);
+            await context.Io.Out.FlushAsync(context.Cancellation).ConfigureAwait(false);
         }
 
         return CommandOutput.Call<WatchRequest, WatchResponse>(context, new WatchRequest(interval, duration, Print), static _ => string.Empty);
