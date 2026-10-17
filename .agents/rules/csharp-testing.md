@@ -80,7 +80,7 @@ The test framework is decided (R7, R1a spike): xUnit v3 on Microsoft.Testing.Pla
 ## Test data
 
 - Builders with sensible defaults: `AnItem().WithSize(S).Build()`.
-- Deterministic ids (a fake `IIdGenerator`) and `FakeTimeProvider`; never the wall clock or `Guid.NewGuid` in a test.
+- Deterministic ids (a fake `IIdGenerator`) and `FakeTimeProvider`; never the wall clock, `Guid.NewGuid` or `Thread.Sleep` in a test (`BannedSymbols.Tests.txt` checks it; `Aw.Kernel.Testing.RealTime` is the named exception for real time, GUID names and sleeps). `CA2000`, `CA2213`, `CA2100` and `CA1508` are off under `tests/` (`tests/.editorconfig`).
 - No shared mutable fixtures; each test builds its own state.
 - Golden files for CLI output and JSON contracts, recorded from the **C# build** (the golden-file assertions live in `Aw.Kernel.Testing`). Compare after the declared normalization (ids, times), never by loose matching. Update a golden file only in a reviewed change that says why the contract changed.
 
@@ -101,6 +101,7 @@ ArchUnitNET (not NetArchTest), in the `integration` lane (owner, 2026-10-16), in
 | `ARCH-PORT-001`, `002` | No technology type in Core, Features or the small shape's `App.Commands`; only `Composition` uses Infrastructure |
 | `ARCH-ID-001`, `002` | `TypedIdGuard`: the VogenDefaults block, and every id and id property (`docs/csharp/typed-ids.md`) |
 | `ARCH-REG-001`, `002`, `003` | `Packages.cs` lists every production project in the solution (by project name; analyzers excluded), each one's assembly (its `<AssemblyName>` if set) loads, and a project that is neither tier 0 nor a layer project is declared in `Packages.Unshaped` (the UI and its heads) |
+| `ARCH-ASYNC-001` | Every `Task`/`ValueTask` method on a Core interface (a port) takes a `CancellationToken`; `DisposeAsync` is exempt |
 | `ARCH-UI-001` | The UI package: no UI type uses a Sindri type; a view model uses no `Avalonia.*` type; a platform head holds no view or view model |
 
 The layer rules apply to shaped packages (assemblies named `Aw.<Pkg>.Core`, `.Features`, `.Infrastructure`, `.Host`

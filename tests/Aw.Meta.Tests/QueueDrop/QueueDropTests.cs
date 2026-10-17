@@ -1,11 +1,13 @@
 using System.Globalization;
 using Aw.Meta.Core;
+using Aw.Meta.Core.Health;
 using Aw.Meta.Core.Ids;
 using Aw.Meta.Core.Messages;
 using Aw.Meta.Core.Obligations;
 using Aw.Meta.Features.QueueDrop;
 using Aw.Meta.Features.Status;
 using Aw.Meta.Testing;
+using Aw.Meta.Tests.Reserve;
 
 namespace Aw.Meta.Tests.QueueDrop;
 
@@ -13,22 +15,16 @@ public sealed class QueueDropTests
 {
     private readonly MetaWorld _world = new();
 
-    private QueueDropService Drop() => new(_world.Messages, _world.Gates, _world.Values, _world.Log, _world.Clock);
+    private QueueDropService Drop() => new(_world.Messages, _world.Gates, _world.Values, _world.Log, Worlds.Reservation(_world), _world.Clock);
 
-    private StatusService Service() => new(_world.Config, new StatusReader(_world.Reader, _world.Messages, _world.Gates, _world.Owner, _world.Lanes), _world.Values, _world.Clock);
-
-    private async Task Receive(string id, string name, string body)
-    {
-        _world.Transcripts.Write(MetaWorld.Transcript, MetaWorld.PeerLine(id, name, body));
-        _ = await _world.Sync.Run(MetaWorld.Transcript, CancellationToken.None);
-    }
+    private StatusService Service() => new(_world.Config, Worlds.StatusReader(_world), _world.Values, _world.Resources, Worlds.Advisor(_world), _world.Clock);
 
     [Fact, Trait("Lane", "unit")]
     public async Task Dropping_removes_the_queue_entry_and_logs_the_reason()
     {
         await _world.Ready();
-        await Receive("m1", "t1-api", "ready #250 079c2541");
-        await Receive("m2", "t1-ui", "ready #251 079c2542");
+        await _world.Receive("m1", "t1-api", "ready #250 079c2541");
+        await _world.Receive("m2", "t1-ui", "ready #251 079c2542");
 
         var dropped = await Drop().Handle(new QueueDropRequest(250, "a status line, not a ready"), CancellationToken.None);
         var status = await Service().Handle(new StatusRequest(), CancellationToken.None);
@@ -53,7 +49,7 @@ public sealed class QueueDropTests
     public async Task A_second_drop_finds_nothing_left_to_remove()
     {
         await _world.Ready();
-        await Receive("m1", "t1-api", "ready #250 079c2541");
+        await _world.Receive("m1", "t1-api", "ready #250 079c2541");
         _ = await Drop().Handle(new QueueDropRequest(250, "x"), CancellationToken.None);
 
         var again = await Drop().Handle(new QueueDropRequest(250, "x"), CancellationToken.None);
@@ -65,7 +61,7 @@ public sealed class QueueDropTests
     public async Task A_merged_pull_request_has_no_queue_entry_to_drop()
     {
         await _world.Ready();
-        await Receive("m1", "t1-api", "ready #250 079c2541");
+        await _world.Receive("m1", "t1-api", "ready #250 079c2541");
         _ = await _world.Gates.RecordMerge(new MergeRecord(250, "abcdef123", A.At(3)), CancellationToken.None);
 
         var dropped = await Drop().Handle(new QueueDropRequest(250, "x"), CancellationToken.None);
@@ -77,7 +73,7 @@ public sealed class QueueDropTests
     public async Task A_pull_request_the_watch_saw_end_has_no_queue_entry_to_drop()
     {
         await _world.Ready();
-        await Receive("m1", "t1-api", "ready #250 079c2541");
+        await _world.Receive("m1", "t1-api", "ready #250 079c2541");
         _ = await _world.Values.Set(KvKeys.EndedPrs, "250", CancellationToken.None);
 
         var dropped = await Drop().Handle(new QueueDropRequest(250, "x"), CancellationToken.None);
@@ -102,6 +98,28 @@ public sealed class QueueDropTests
         var status = await Service().Handle(new StatusRequest(), CancellationToken.None);
 
         Assert.Equal(queued ? [250] : [], status.Value.MergeQueue.Select(q => q.Pr));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_drop_stands_when_the_reservation_cannot_be_kept()
+    {
+        await _world.Ready();
+        for (var n = 0; n < 3; n++)
+        {
+            await _world.Receive("m" + n.ToString(CultureInfo.InvariantCulture), "t1-api", string.Create(CultureInfo.InvariantCulture, $"ready #{250 + n} 079c2541"));
+        }
+
+        _world.Heavy.Record = new HeavyReserveRecord(1, 3, _world.Clock.GetUtcNow());   // depth 2 after the drop wants 0, so the write is reached
+        _world.Heavy.FailWrites = true;
+
+        var dropped = await Drop().Handle(new QueueDropRequest(250, "not ready"), CancellationToken.None);
+        var status = await Service().Handle(new StatusRequest(), CancellationToken.None);
+
+        Assert.True(dropped.IsSuccess, dropped.IsError ? dropped.Error.Message : string.Empty);
+        Assert.Equal(0, _world.Heavy.Writes);
+        Assert.Equal(1, _world.Heavy.Reserve);
+        Assert.Equal([251, 252], status.Value.MergeQueue.Select(q => q.Pr));
+        Assert.Contains(_world.Log.Lines, line => line.Contains("queue-drop #250", StringComparison.Ordinal));
     }
 
     [Theory, Trait("Lane", "unit")]

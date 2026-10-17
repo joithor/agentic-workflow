@@ -61,7 +61,7 @@ internal sealed class RunServiceService(IEnumerable<IScheduledService> scheduled
         var run = new ScheduledRun(grant, clock.GetUtcNow());
         var outcome = await Outcome(service, run, cancellationToken).ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();   // a cancelled run writes no 'service.ran'
-        if (await cancellation.CancelRecorded(job.Job).ConfigureAwait(false))
+        if (await cancellation.CancelRecorded(job.Job, cancellationToken).ConfigureAwait(false))
         {
             throw new OperationCanceledException(cancellationToken);   // CancelJob is recording the cancel and has not yet tripped the token; a cancel that could not be recorded is withdrawn and the run is recorded as usual
         }

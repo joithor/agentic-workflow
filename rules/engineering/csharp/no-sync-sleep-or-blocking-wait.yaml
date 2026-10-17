@@ -1,0 +1,21 @@
+schemaVersion: 1
+id: engineering.csharp.no-sync-sleep-or-blocking-wait
+kind: engineering
+section: "4b.3"
+text: "No Thread.Sleep, TaskAwaiter or ValueTaskAwaiter GetResult, Task.Wait, WaitAll, WaitAny, Task<T>.Result or ValueTask<T>.Result in production code: await instead."
+why: "Blocking a thread on a task starves the pool and deadlocks under a synchronization context."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: banned-symbols
+    id: "RS0030"
+    ref: "BannedSymbols.All.txt"
+    entries: ["P:System.Threading.Tasks.Task`1.Result", "M:System.Threading.Tasks.Task.Wait", "M:System.Threading.Tasks.Task.Wait(System.Int32)", "M:System.Threading.Tasks.Task.Wait(System.TimeSpan)", "M:System.Threading.Tasks.Task.Wait(System.Threading.CancellationToken)", "M:System.Threading.Tasks.Task.Wait(System.Int32,System.Threading.CancellationToken)", "M:System.Threading.Tasks.Task.Wait(System.TimeSpan,System.Threading.CancellationToken)", "M:System.Threading.Thread.Sleep(System.Int32)", "M:System.Threading.Thread.Sleep(System.TimeSpan)", "M:System.Runtime.CompilerServices.TaskAwaiter.GetResult", "M:System.Runtime.CompilerServices.TaskAwaiter`1.GetResult", "P:System.Threading.Tasks.ValueTask`1.Result", "M:System.Threading.Tasks.Task.WaitAll", "M:System.Threading.Tasks.Task.WaitAny", "M:System.Runtime.CompilerServices.ValueTaskAwaiter.GetResult", "M:System.Runtime.CompilerServices.ValueTaskAwaiter`1.GetResult", "M:System.Runtime.CompilerServices.ConfiguredTaskAwaitable.ConfiguredTaskAwaiter.GetResult", "M:System.Runtime.CompilerServices.ConfiguredTaskAwaitable`1.ConfiguredTaskAwaiter.GetResult", "M:System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable.ConfiguredValueTaskAwaiter.GetResult", "M:System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable`1.ConfiguredValueTaskAwaiter.GetResult"]
+    status: active
+gap: partial
+gapNote: "The ban list covers every blocking wait on Task and ValueTask (Wait, WaitAll, WaitAny, Result, awaiter GetResult, configured awaiters). The existing blocking waits (ten RS0030 suppressions, at process edges and sync-only callbacks) are suppressed in place with a reason each, not fixed; review checks that a new suppression has a true reason."
+source:
+  type: desk
+  ref: "https://github.com/davidfowl/AspNetCoreDiagnosticScenarios/blob/master/AsyncGuidance.md"
+status: active

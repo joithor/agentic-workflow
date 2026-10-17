@@ -1,0 +1,21 @@
+schemaVersion: 1
+id: engineering.csharp.dispose-owned-resources
+kind: engineering
+section: "4b.3"
+text: "Dispose what you create and own, on every path, and dispose disposable fields in the owner's Dispose."
+why: "A leaked connection, process or handle is the slowest bug to find."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: analyzer
+    id: "CA2000"
+    status: active
+  - type: analyzer
+    id: "CA2213"
+    status: active
+gap: closed
+source:
+  type: desk
+  ref: "https://learn.microsoft.com/dotnet/standard/design-guidelines/"
+status: active

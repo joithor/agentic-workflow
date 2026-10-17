@@ -69,7 +69,9 @@ internal sealed class PostgresReadSession(NpgsqlConnection connection) : IReadSe
 
     private async ValueTask RunAsync(string sql, CancellationToken cancellationToken)
     {
+#pragma warning disable CA2100 // RunAsync runs only fixed text (the session setup statements), never the caller's SQL
         var command = new NpgsqlCommand(sql, connection);
+#pragma warning restore CA2100
         await using (command.ConfigureAwait(false))
         {
             _ = await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -99,7 +101,9 @@ internal sealed class PostgresReadSession(NpgsqlConnection connection) : IReadSe
 
     private async ValueTask<(Rows Rows, List<(uint Table, short Number)?> Origins)> ReadRowsAsync(string sql, int rowLimit, CancellationToken cancellationToken)
     {
+#pragma warning disable CA2100 // running the caller's own SQL is this tool's job; the session is read-only and WriteStatements refuses writes first
         var command = new NpgsqlCommand(sql, connection);
+#pragma warning restore CA2100
         await using (command.ConfigureAwait(false))
         {
             var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);

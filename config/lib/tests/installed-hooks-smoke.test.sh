@@ -9,6 +9,7 @@
 # hook copy — from the temp HOOKS_DIR, never the repo — with realistic
 # sample stdin, and assert it doesn't choke on a missing dependency.
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../../scripts/lib/test-grep.sh"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$DIR/../../.." && pwd)"
 
@@ -65,7 +66,7 @@ assert_installed_hook_runs_clean() {
   set -e
   local errtext; errtext="$(cat "$err")"
   [ "$rc" -eq 0 ] || { echo "FAIL: $label — exit $rc, stderr: $errtext"; exit 1; }
-  if printf '%s' "$errtext" | grep -qiE 'no such file|command not found'; then
+  if printf '%s' "$errtext" | has -iE 'no such file|command not found'; then
     echo "FAIL: $label — installed copy hit a missing dependency: $errtext"
     exit 1
   fi
@@ -135,7 +136,7 @@ test_installed_send_gate_batches_then_attaches_the_digest() {
     "$(jq -nc --arg s "$sid" '{session_id:$s, tool_input:{to:"main", message:"final result text", type:"message"}}')")"
   echo "$out2" | jq -e '.hookSpecificOutput.updatedInput.message' > /dev/null \
     || { echo "FAIL: expected the second (send) call to emit updatedInput carrying the digest, got: $out2"; exit 1; }
-  echo "$out2" | jq -r '.hookSpecificOutput.updatedInput.message' | grep -q "QUEUED-DIGEST-TEXT" \
+  echo "$out2" | jq -r '.hookSpecificOutput.updatedInput.message' | has "QUEUED-DIGEST-TEXT" \
     || { echo "FAIL: updatedInput.message doesn't carry the queued text, got: $out2"; exit 1; }
   [ -s "$STATE_DIR/judge/outbox/$sid.jsonl" ] \
     && { echo "FAIL: expected the outbox to be emptied after the digest was attached"; exit 1; }

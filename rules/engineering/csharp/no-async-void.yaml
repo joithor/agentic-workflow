@@ -1,0 +1,18 @@
+schemaVersion: 1
+id: engineering.csharp.no-async-void
+kind: engineering
+section: "4b.3"
+text: "No async void; a UI event handler that must be async void says why in a // why: comment."
+why: "An exception in async void is unobservable and crashes the process."
+select:
+  languages: [csharp]
+  paths: ["src/**"]
+checks:
+  - type: analyzer
+    id: "MA0155"
+    status: active
+gap: closed
+source:
+  type: desk
+  ref: "https://github.com/davidfowl/AspNetCoreDiagnosticScenarios/blob/master/AsyncGuidance.md"
+status: active
