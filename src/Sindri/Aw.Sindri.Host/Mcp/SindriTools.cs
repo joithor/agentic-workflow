@@ -4,6 +4,8 @@ using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Views;
+using Aw.Sindri.Features.FileRequest;
 using Aw.Sindri.Features.GetItem;
 using Aw.Sindri.Features.GetItemTimeline;
 using Aw.Sindri.Features.GetJob;
@@ -229,12 +231,42 @@ internal static class SindriTools
         return McpResults.From(services, answer, McpSummaries.Job, FencePlan.Job);
     }
 
-    /// <summary>Runs Request (contract stub).</summary>
+    /// <summary>Runs sindri_request: files the request through the command chain, then waits for the views to hold it (API P8 D5).</summary>
     /// <param name="services">The request's services.</param>
     /// <param name="arguments">The call's arguments.</param>
     /// <param name="ct">Cancels the call.</param>
     /// <returns>The tool result.</returns>
-    internal static ValueTask<CallToolResult> CallRequest(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct) => NotYet(Request, services, arguments, ct);
+    internal static async ValueTask<CallToolResult> CallRequest(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
+    {
+        var bound = BindRequest(arguments);
+        if (bound.IsError)
+        {
+            return McpResults.Failure(services, bound.Error);
+        }
+
+        var answer = await services.GetRequiredService<IService<FileRequestRequest, RequestFiledResponse>>().Handle(bound.Value, ct).ConfigureAwait(false);
+        if (answer.IsError)
+        {
+            return McpResults.Failure(services, answer.Error);
+        }
+
+        // why: X-Sindri-After isn't honoured on this endpoint, so the tool reads its own write before it answers; a timeout is not a failure
+        var caught = await services.GetRequiredService<IProjectorStatus>().WaitFor(answer.Value.Accepted.Sequence, ReadYourWrites.Limit, ct).ConfigureAwait(false);
+        return McpResults.Success(services, answer.Value, McpSummaries.Request(answer.Value, bound.Value.Kind, viewsCaughtUp: !caught.IsError));
+    }
+
+    private static Result<FileRequestRequest> BindRequest(IDictionary<string, JsonElement>? arguments)
+    {
+        if (McpArguments.Only(Request, arguments, "kind", "text", "itemId") is { } refused)
+        {
+            return refused;
+        }
+
+        var kind = McpArguments.RequiredEnum(Request, arguments, "kind", SindriJsonContext.Default.RequestKind);
+        var text = McpArguments.RequiredString(Request, arguments, "text", "Split this into two items.");
+        var item = McpArguments.OptionalString(Request, arguments, "itemId").Bind(ItemRoute.ItemFilter);
+        return kind.Bind(k => text.Bind(t => item.Map(i => new FileRequestRequest(k, t, i))));
+    }
 
     private static Result<ItemRef> BindItem(string tool, IDictionary<string, JsonElement>? arguments, params string[] more) =>
         McpArguments.Only(tool, arguments, ["itemId", .. more]) is { } refused
@@ -250,11 +282,5 @@ internal static class SindriTools
 
         var text = McpArguments.OptionalString(tool, arguments, "itemId");
         return text.IsError ? text.Error : ItemRoute.ItemFilter(text.Value);
-    }
-
-    private static ValueTask<CallToolResult> NotYet(string tool, IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
-    {
-        _ = (services, arguments, ct);   // why: the stubs take the signature the real handlers will have
-        throw new NotSupportedException($"{tool} is a contract stub");
     }
 }

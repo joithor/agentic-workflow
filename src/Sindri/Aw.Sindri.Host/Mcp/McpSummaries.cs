@@ -5,7 +5,10 @@ using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
 using Aw.Sindri.Core.Decisions;
 using Aw.Sindri.Core.Items.Vocabulary;
+using Aw.Sindri.Core.Requests;
+using Aw.Sindri.Features.FileRequest;
 using Aw.Sindri.Features.GetItem;
+using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Features.GetItemTimeline;
 using Aw.Sindri.Features.GetJob;
 using Aw.Sindri.Features.GetQueue;
@@ -131,6 +134,14 @@ internal static class McpSummaries
     /// <returns>The text.</returns>
     internal static string Job(JobView job) =>
         $"{job.Id.Value} · {job.Kind.Value} · {job.State.ToString().ToLowerInvariant()}{(job.Code is null ? string.Empty : " · " + job.Code)}\n{Fenced}";
+
+    /// <summary>sindri_request's summary: the ids and who settles it; a note when the views were slow to hold it.</summary>
+    /// <param name="filed">The answer.</param>
+    /// <param name="kind">What was asked for.</param>
+    /// <param name="viewsCaughtUp">Whether the views reached the request in time.</param>
+    /// <returns>The text.</returns>
+    internal static string Request(RequestFiledResponse filed, RequestKind kind, bool viewsCaughtUp) =>
+        $"filed {filed.RequestId.Value} ({RequestVerbArguments.KindName(kind)}) as {filed.DecisionId.Value}; a human settles it{(viewsCaughtUp ? string.Empty : " (views catching up: sindri_pending_decisions may not list it yet)")}";
 
     private static string ViewsWord(GetStatusResponse status) => status.Views switch
     {

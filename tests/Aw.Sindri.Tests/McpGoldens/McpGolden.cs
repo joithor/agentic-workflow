@@ -22,13 +22,23 @@ internal static class McpGolden
             ["structuredContent"] = result.StructuredContent is { } structured ? JsonNode.Parse(structured.GetRawText()) : null,
             ["content"] = new JsonArray([.. result.Content.OfType<TextContentBlock>().Select(b => (JsonNode?)JsonValue.Create(b.Text))]),
         };
+        // why: a filed request's ids and sequence depend on how many ids the projector pump drew while the call waited
+        NormalizationRule[] filed =
+        [
+            new("command", "\"commandId\": \"[0-9a-f-]+\"", "\"commandId\": \"<command>\""),
+            new("sequence", "\"sequence\": [0-9]+", "\"sequence\": <n>"),
+            new("request", "REQ-[0-9a-f]{32}", "REQ-<id>"),
+            new("decision", "DEC-[0-9a-f]{32}", "DEC-<id>"),
+        ];
         Golden.Match(
             ApiGolden.Reindent(json.ToJsonString()),
             typeof(McpGolden).Assembly,
             $"Golden/Mcp/{tool}/{scenario}.json",
-            new Normalization(
+            new Normalization([
                 new NormalizationRule("home", System.Text.RegularExpressions.Regex.Escape(home), "<home>"),
                 new NormalizationRule("port", "port [0-9]+", "port <port>"),
-                new NormalizationRule("build", "sindri [^,\"]+, port", "sindri <build>, port")));
+                new NormalizationRule("build", "sindri [^,\"]+, port", "sindri <build>, port"),
+                .. string.Equals(tool, "sindri_request", StringComparison.Ordinal) ? filed : [],
+            ]));
     }
 }
