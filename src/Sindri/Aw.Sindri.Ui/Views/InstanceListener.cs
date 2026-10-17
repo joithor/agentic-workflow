@@ -14,6 +14,9 @@ namespace Aw.Sindri.Ui.Views;
 /// <param name="instance">The claimed instance.</param>
 internal sealed class InstanceListener(ISingleInstance instance)
 {
+    // The UI dispatcher, taken where the listener is built (on the UI thread). Listen resumes on pool threads, and the static
+    // Dispatcher.UIThread read from one binds an unbound dispatcher to it (the headless tests reset it for every test).
+    private readonly Dispatcher _ui = Dispatcher.UIThread;
     private readonly Lock _gate = new();
     private Action<string>? _receive;
     private string? _kept;

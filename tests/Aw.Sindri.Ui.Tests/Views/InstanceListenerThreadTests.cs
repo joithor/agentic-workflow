@@ -25,15 +25,15 @@ public sealed class InstanceListenerThreadTests
         using var stop = new CancellationTokenSource();
         Task? listening = null;
 
-        var dispatched = session.Dispatch(async () =>
+        var dispatched = session.Dispatch(() =>
         {
             var listener = new InstanceListener(instance);
             listener.Deliver(static _ => { });
             listening = listener.Listen(stop.Token);
             ResetDispatcher();   // the window between two tests, in which nothing owns the dispatcher yet
 
-            await Task.Run(() => instance.Arrive("focus"), TestContext.Current.CancellationToken);
-            await Task.Delay(300, TestContext.Current.CancellationToken);   // the listener reads the message at once; this is its grace
+            instance.Arrive("focus");   // no await from here: its continuation would post to the dispatcher just reset
+            RealTime.Sleep(TimeSpan.FromMilliseconds(300));   // the listener reads the message at once; this is its grace
 
             return Dispatcher.UIThread.CheckAccess();
         }, TestContext.Current.CancellationToken);
