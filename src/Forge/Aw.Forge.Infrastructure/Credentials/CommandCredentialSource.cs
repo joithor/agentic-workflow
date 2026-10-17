@@ -1,0 +1,77 @@
+using System.Text.Json;
+using Aw.Forge.Core;
+using Aw.Forge.Infrastructure.Git;
+using Aw.Kernel;
+
+namespace Aw.Forge.Infrastructure.Credentials;
+
+/// <summary>
+/// A token from a command run per call (command:&lt;argv&gt;). The command prints either a bare token or JSON
+/// {"token": "...", "expiresAt": "ISO-8601"}. A token with an expiry is cached until five minutes before it; a bare token is
+/// cached for five minutes. A refresh (after a 401) runs the command again.
+/// </summary>
+internal sealed class CommandCredentialSource(IReadOnlyList<string> argv, TimeProvider clock) : ICredentialSource
+{
+    private static readonly TimeSpan Margin = TimeSpan.FromMinutes(5);
+    private static readonly TimeSpan BareLifetime = TimeSpan.FromMinutes(5);
+    private readonly SemaphoreSlim _gate = new(1, 1);
+    private string? _token;
+    private DateTimeOffset _validUntil;
+
+    public async ValueTask<Result<string>> Token(string host, bool refresh, CancellationToken cancellationToken)
+    {
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            if (!refresh && _token is not null && clock.GetUtcNow() < _validUntil)
+            {
+                return _token;
+            }
+
+            var ran = await ProcessRunner.Run(argv[0], [.. argv.Skip(1)], new Dictionary<string, string>(), null, TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false);
+            if (ran is not { ExitCode: 0 })
+            {
+                return ForgeErrors.Unauthorized.With("the credential command failed");
+            }
+
+            return Accept(ran.Output.Trim());
+        }
+        finally
+        {
+            _ = _gate.Release();
+        }
+    }
+
+    private Result<string> Accept(string output)
+    {
+        var now = clock.GetUtcNow();
+        var token = output;
+        var until = now + BareLifetime;
+        if (output.StartsWith('{'))
+        {
+            try
+            {
+                using var document = JsonDocument.Parse(output);
+                var root = document.RootElement;
+                token = root.TryGetProperty("token", out var t) && t.ValueKind == JsonValueKind.String ? t.GetString() ?? string.Empty : string.Empty;
+                if (root.TryGetProperty("expiresAt", out var e) && e.ValueKind == JsonValueKind.String && e.TryGetDateTimeOffset(out var expiry))
+                {
+                    until = expiry - Margin;
+                }
+            }
+            catch (JsonException)
+            {
+                return ForgeErrors.Unauthorized.With("the credential command printed invalid JSON");
+            }
+        }
+
+        if (token.Length == 0)
+        {
+            return ForgeErrors.Unauthorized.With("the credential command printed no token");
+        }
+
+        _token = token;
+        _validUntil = until;
+        return token;
+    }
+}

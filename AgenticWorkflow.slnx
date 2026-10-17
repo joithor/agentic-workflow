@@ -8,7 +8,6 @@
   </Folder>
   <Folder Name="/src/Forge/">
     <Project Path="src/Forge/Aw.Forge.Core/Aw.Forge.Core.csproj" />
-    <Project Path="src/Forge/Aw.Forge.Features/Aw.Forge.Features.csproj" />
     <Project Path="src/Forge/Aw.Forge.Infrastructure/Aw.Forge.Infrastructure.csproj" />
     <Project Path="src/Forge/Aw.Forge.Host/Aw.Forge.Host.csproj" />
   </Folder>
