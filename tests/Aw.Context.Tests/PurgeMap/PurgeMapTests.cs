@@ -17,6 +17,7 @@ public sealed class PurgeMapTests : IDisposable
             _ = await _world.ImportFixture();
         }
 
+        _world.Clock.Advance(TimeSpan.FromDays(91));   // past the eval window: nothing a backtest reads is among the surplus
         var old = (await _world.Map.ExportMap("old.json", MapWorld.Human, MapWorld.None)).Value.Path;
         var fresh = (await _world.Map.ExportMap("fresh.json", MapWorld.Human, MapWorld.None)).Value.Path;
         _world.Exports.Touch(old, _world.Clock.GetUtcNow().AddDays(-14).AddSeconds(-1));
@@ -30,6 +31,73 @@ public sealed class PurgeMapTests : IDisposable
         Assert.Equal(21, versions.Count);
         Assert.Equal(23, versions[0].Number);
         Assert.Equal(MapHealthState.Ok, (await _world.Map.CheckRetention(MapWorld.None)).Value.State);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Purge_keeps_every_version_that_was_current_within_the_eval_window_even_past_the_newest_20()
+    {
+        for (var i = 0; i < 30; i++)
+        {
+            _ = await _world.ImportFixture();
+            _world.Clock.Advance(TimeSpan.FromDays(1));
+        }
+
+        var report = (await _world.Map.PurgeExpired(MapWorld.None)).Value;
+
+        Assert.Equal(0, report.Versions);
+        Assert.Equal(30, (await _world.Store.Versions(MapWorld.None)).Value.Count);
+        Assert.Equal(MapHealthState.Ok, (await _world.Map.CheckRetention(MapWorld.None)).Value.State);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Purge_drops_versions_whose_successor_is_older_than_the_eval_window_once_past_the_newest_20()
+    {
+        for (var i = 0; i < 30; i++)
+        {
+            _ = await _world.ImportFixture();
+            _world.Clock.Advance(TimeSpan.FromDays(1));
+        }
+
+        _world.Clock.Advance(TimeSpan.FromDays(75));   // v1..v9 were replaced more than 90 days ago, v10 and later less
+
+        var report = (await _world.Map.PurgeExpired(MapWorld.None)).Value;
+
+        Assert.Equal(9, report.Versions);
+        Assert.Equal(21, (await _world.Store.Versions(MapWorld.None)).Value.Count);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Purge_keeps_a_surplus_version_whose_successor_is_inside_the_window_however_old_the_version_itself_is()
+    {
+        _ = await _world.ImportFixture();   // v1, created today
+        _world.Clock.Advance(TimeSpan.FromDays(100));
+        for (var i = 0; i < 22; i++)
+        {
+            _ = await _world.ImportFixture();   // v2..v23 within a minute of each other
+        }
+
+        _world.Clock.Advance(TimeSpan.FromDays(10));   // v1 is 110 days old but was current until v2, 10 days ago: a backtest of an issue from those days reads it
+
+        var report = (await _world.Map.PurgeExpired(MapWorld.None)).Value;
+
+        Assert.Equal(0, report.Versions);
+        Assert.Equal(23, (await _world.Store.Versions(MapWorld.None)).Value.Count);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Retention_health_ok_text_does_not_claim_at_most_20_versions_when_the_eval_window_keeps_more()
+    {
+        for (var i = 0; i < 30; i++)
+        {
+            _ = await _world.ImportFixture();
+            _world.Clock.Advance(TimeSpan.FromDays(1));
+        }
+
+        var health = (await _world.Map.CheckRetention(MapWorld.None)).Value;
+
+        Assert.Equal(MapHealthState.Ok, health.State);
+        Assert.DoesNotContain("at most 20", health.Detail, StringComparison.Ordinal);   // 30 versions are kept: each was current within the 90-day window
+        Assert.Contains("90-day", health.Detail, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

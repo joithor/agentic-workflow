@@ -1,5 +1,7 @@
 using Aw.Context.Core;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
+using Aw.Context.Core.Eval.MapQuality;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Results;
 using Aw.Kernel;
@@ -24,8 +26,29 @@ internal sealed class ContextEvalVerbs(ControlPlaneClient client, Output output,
     internal Task<int> Run(string[] args, CancellationToken ct) => args switch
     {
         ["probes", .. var rest] when Options(rest) is { } o => Probes(o.File, o.Json, ct),
-        _ => output.Error(SindriErrors.UnknownVerb.With($"'context eval {string.Join(' ', args)}' is not an eval command: context eval probes [--file <probes.json>] [--json]")),
+        ["map", .. var rest] when rest is [] or ["--json"] => Map(rest.Length == 1, ct),
+        ["purge", .. var rest] when rest is [] or ["--all"] => Purge(rest.Length == 1, ct),
+        _ => output.Error(SindriErrors.UnknownVerb.With($"'context eval {string.Join(' ', args)}' is not an eval command: context eval probes [--file <probes.json>] [--json] | map [--json] | purge [--all] | backtest [--arms a,b|all] [--since D] [--until D] [--limit N] [--detach] [--json]")),
     };
+
+    private async Task<int> Map(bool json, CancellationToken ct)
+    {
+        var run = await client.Get<MapQualityRun>("/sindri/context/eval/map", ct).ConfigureAwait(false);
+        if (run.IsError)
+        {
+            return await Failed(run.Error).ConfigureAwait(false);
+        }
+
+        return json ? await output.Raw(run.Value.Body, 0).ConfigureAwait(false) : await output.Text(ContextEvalText.Map(run.Value.Value), 0).ConfigureAwait(false);
+    }
+
+    /// <summary>Runs in this process (as 'eval probes' does): it deletes report files under $AW_SINDRI_HOME, so it needs no route. As whoever runs it: the engine refuses a session (SND-CONTEXT-020).</summary>
+    private async Task<int> Purge(bool all, CancellationToken ct)
+    {
+        var scope = new ContextScope(Settings: null, [], new ContextCaller(client.SessionReason is null ? ContextCallerKind.Human : ContextCallerKind.Session, Repo: null, ContextClient.Cli));
+        var purged = await engine.EvalPurge(new EvalPurgeRequest(scope, all), ct).ConfigureAwait(false);
+        return purged.IsError ? await Failed(purged.Error).ConfigureAwait(false) : await output.Text(ContextEvalText.Purge(purged.Value, all), 0).ConfigureAwait(false);
+    }
 
     private async Task<int> Probes(string? file, bool json, CancellationToken ct)
     {

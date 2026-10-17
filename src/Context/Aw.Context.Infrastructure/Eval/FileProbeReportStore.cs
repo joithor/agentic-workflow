@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Context.Core;
 using Aw.Context.Core.Eval;
+using Aw.Context.Infrastructure.Map;
 using Aw.Context.Infrastructure.Store;
 using Aw.Kernel;
 using Aw.Kernel.Json;
@@ -14,7 +15,7 @@ namespace Aw.Context.Infrastructure.Eval;
 /// written by temp file and rename at 0600. The baseline of a probe file is the newest report carrying its hash that was
 /// complete and did not regress; a report that doesn't parse is skipped.
 /// </summary>
-internal sealed class FileProbeReportStore(ContextStoreSettings settings, JsonSerializerOptions options) : IProbeReportStore
+internal sealed class FileProbeReportStore(ContextStoreSettings settings) : IProbeReportStore
 {
     public async ValueTask<Result<ProbeReport?>> Baseline(string probeFileHash, CancellationToken cancellationToken)
     {
@@ -28,7 +29,7 @@ internal sealed class FileProbeReportStore(ContextStoreSettings settings, JsonSe
         {
             foreach (var file in Directory.EnumerateFiles(folder, "probes-*.json").Order(StringComparer.Ordinal).Reverse())
             {
-                var read = AwJson.Deserialize<ProbeReport>(WithBaselineName(await File.ReadAllBytesAsync(file, cancellationToken).ConfigureAwait(false)), options);
+                var read = AwJson.Deserialize<ProbeReport>(WithBaselineName(await File.ReadAllBytesAsync(file, cancellationToken).ConfigureAwait(false)), EvalFileJson.Options);
                 if (read.IsSuccess && read.Value.IsBaseline && string.Equals(read.Value.ProbeFileHash, probeFileHash, StringComparison.Ordinal))
                 {
                     return read.Value;
@@ -65,12 +66,17 @@ internal sealed class FileProbeReportStore(ContextStoreSettings settings, JsonSe
     public ValueTask<Result<string>> Write(ProbeReport report, DateTimeOffset runAt, CancellationToken cancellationToken)
     {
         var path = Path.Combine(settings.ProbesDirectory, "probes-" + runAt.UtcDateTime.ToString("yyyyMMdd'T'HHmmssfff'Z'", CultureInfo.InvariantCulture) + ".json");
+        if (Worktrees.Containing(Path.Combine(settings.Home, "x")) is { } worktree)
+        {
+            return ValueTask.FromResult<Result<string>>(ContextErrors.PathInWorktree.With($"{settings.Home} is inside the git worktree {worktree} (fix: point AW_SINDRI_HOME outside every repo)"));
+        }
+
         try
         {
             OwnerOnly.EnsureDirectory(settings.Home);
             OwnerOnly.EnsureDirectory(settings.EvalDirectory);
             OwnerOnly.EnsureDirectory(settings.ProbesDirectory);
-            OwnerOnly.WriteAtomically(path, AwJson.Serialize(report, options));
+            OwnerOnly.WriteAtomically(path, AwJson.Serialize(report, EvalFileJson.Options));
             return ValueTask.FromResult(Results.Success(path));
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
