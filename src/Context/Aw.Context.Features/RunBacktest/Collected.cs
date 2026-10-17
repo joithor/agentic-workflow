@@ -21,6 +21,9 @@ internal sealed record Collected(IReadOnlyList<CorpusSample> Kept, Dictionary<Ar
     /// <summary>Kept samples whose as-of map was built (or cached) without a clusters pass, on a run whose arms read the map.</summary>
     public int WithoutClusters { get; init; }
 
+    /// <summary>Kept samples whose as-of map lost a profile recognizer's matches to the match timeout (the map was not cached).</summary>
+    public int RecognizerTimeouts { get; init; }
+
     /// <summary>The code of the model error that stopped adjudication, or null.</summary>
     public string? AdjudicationError { get; init; }
 
