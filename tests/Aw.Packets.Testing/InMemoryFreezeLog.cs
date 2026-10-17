@@ -1,6 +1,7 @@
 using Aw.Kernel;
 using Aw.Packets.Core;
 using Aw.Packets.Core.Model;
+using Aw.Packets.Core.Values;
 
 namespace Aw.Packets.Testing;
 
@@ -27,4 +28,8 @@ internal sealed class InMemoryFreezeLog : IFreezeLog
         var added = _records.TryAdd(location, record);
         return ValueTask.FromResult<Result<FreezeReceipt>>(new FreezeReceipt(location, AlreadyFrozen: !added));
     }
+
+    /// <inheritdoc />
+    public ValueTask<Result<FreezeRecord?>> Find(PacketIdentity packet, PacketHash hash, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(Results.Success<FreezeRecord?>(_records.GetValueOrDefault(FreezeLocation.Of(packet.Repo, packet.Packet, hash))));
 }

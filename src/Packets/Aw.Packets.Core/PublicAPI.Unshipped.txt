@@ -24,7 +24,19 @@ Aw.Packets.Core.Checks.CheckState.Unchecked = 3 -> Aw.Packets.Core.Checks.CheckS
 Aw.Packets.Core.Checks.PacketRules
 Aw.Packets.Core.Digest.PacketDigest
 Aw.Packets.Core.FreezeLocation
+Aw.Packets.Core.HashedPacket
+Aw.Packets.Core.HashedPacket.<Clone>$() -> Aw.Packets.Core.HashedPacket!
+Aw.Packets.Core.HashedPacket.Deconstruct(out Aw.Packets.Core.Values.PacketHash Hash, out System.Collections.Generic.IReadOnlyList<string!>! Files, out Aw.Packets.Core.Model.PacketIdentity? Identity) -> void
+Aw.Packets.Core.HashedPacket.Equals(Aw.Packets.Core.HashedPacket? other) -> bool
+Aw.Packets.Core.HashedPacket.Files.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Packets.Core.HashedPacket.Files.init -> void
+Aw.Packets.Core.HashedPacket.Hash.get -> Aw.Packets.Core.Values.PacketHash
+Aw.Packets.Core.HashedPacket.Hash.init -> void
+Aw.Packets.Core.HashedPacket.HashedPacket(Aw.Packets.Core.Values.PacketHash Hash, System.Collections.Generic.IReadOnlyList<string!>! Files, Aw.Packets.Core.Model.PacketIdentity? Identity) -> void
+Aw.Packets.Core.HashedPacket.Identity.get -> Aw.Packets.Core.Model.PacketIdentity?
+Aw.Packets.Core.HashedPacket.Identity.init -> void
 Aw.Packets.Core.IFreezeLog
+Aw.Packets.Core.IFreezeLog.Find(Aw.Packets.Core.Model.PacketIdentity! packet, Aw.Packets.Core.Values.PacketHash hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.FreezeRecord?>!>
 Aw.Packets.Core.IFreezeLog.Record(Aw.Packets.Core.Model.FreezeRecord! record, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.FreezeReceipt!>!>
 Aw.Packets.Core.IPacketSource
 Aw.Packets.Core.IPacketSource.Load(string! packetDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.LoadedPacket!>!>
@@ -235,6 +247,7 @@ Aw.Packets.Core.Kinds.Line.LinePacketFiles.Present.get -> System.Collections.Gen
 Aw.Packets.Core.Kinds.Line.LinePacketFiles.Present.init -> void
 Aw.Packets.Core.Kinds.Line.LinePacketFiles.Unlisted.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Packets.Core.Kinds.Line.LinePacketFiles.Unlisted.init -> void
+Aw.Packets.Core.Kinds.Line.LinePacketIdentity
 Aw.Packets.Core.Kinds.Line.LinePacketInspector
 Aw.Packets.Core.Kinds.Line.LinePacketInspector.Inspect(Aw.Packets.Core.Kinds.PacketKind! kind, string! packetDirectory, string! repoDirectory, Aw.Packets.Core.Model.SizesFile? sizes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Kinds.Line.LineInspection!>!>
 Aw.Packets.Core.Kinds.Line.LinePacketInspector.LinePacketInspector(Aw.Packets.Core.Kinds.Line.ILinePacketSource! source, Aw.Packets.Core.IRepoSnapshot! repo, System.Text.Json.JsonSerializerOptions! json) -> void
@@ -700,6 +713,15 @@ Aw.Packets.Core.Model.Packet.OutOfScope.init -> void
 Aw.Packets.Core.Model.Packet.Packet(Aw.Packets.Core.Model.PacketManifest! Manifest, Aw.Packets.Core.Model.DecisionLog! Decisions, Aw.Packets.Core.Model.OutOfScope! OutOfScope, Aw.Packets.Core.Model.TaskPlan! Tasks) -> void
 Aw.Packets.Core.Model.Packet.Tasks.get -> Aw.Packets.Core.Model.TaskPlan!
 Aw.Packets.Core.Model.Packet.Tasks.init -> void
+Aw.Packets.Core.Model.PacketIdentity
+Aw.Packets.Core.Model.PacketIdentity.<Clone>$() -> Aw.Packets.Core.Model.PacketIdentity!
+Aw.Packets.Core.Model.PacketIdentity.Deconstruct(out Aw.Packets.Core.Values.RepoSlug Repo, out Aw.Packets.Core.Ids.PacketId Packet) -> void
+Aw.Packets.Core.Model.PacketIdentity.Equals(Aw.Packets.Core.Model.PacketIdentity? other) -> bool
+Aw.Packets.Core.Model.PacketIdentity.Packet.get -> Aw.Packets.Core.Ids.PacketId
+Aw.Packets.Core.Model.PacketIdentity.Packet.init -> void
+Aw.Packets.Core.Model.PacketIdentity.PacketIdentity(Aw.Packets.Core.Values.RepoSlug Repo, Aw.Packets.Core.Ids.PacketId Packet) -> void
+Aw.Packets.Core.Model.PacketIdentity.Repo.get -> Aw.Packets.Core.Values.RepoSlug
+Aw.Packets.Core.Model.PacketIdentity.Repo.init -> void
 Aw.Packets.Core.Model.PacketLinks
 Aw.Packets.Core.Model.PacketLinks.<Clone>$() -> Aw.Packets.Core.Model.PacketLinks!
 Aw.Packets.Core.Model.PacketLinks.Decisions.get -> string!
@@ -853,6 +875,9 @@ Aw.Packets.Core.Model.Workstream.Id.init -> void
 Aw.Packets.Core.Model.Workstream.Title.get -> string!
 Aw.Packets.Core.Model.Workstream.Title.init -> void
 Aw.Packets.Core.Model.Workstream.Workstream(Aw.Packets.Core.Ids.WorkstreamId Id, string! Title) -> void
+Aw.Packets.Core.PacketHasher
+Aw.Packets.Core.PacketHasher.Hash(Aw.Packets.Core.Kinds.PacketKind! kind, string! packetDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.HashedPacket!>!>
+Aw.Packets.Core.PacketHasher.PacketHasher(Aw.Packets.Core.IPacketSource! builds, Aw.Packets.Core.Kinds.Scoping.IScopingPacketSource! scoping, Aw.Packets.Core.Kinds.Line.ILinePacketSource! lines, System.Text.Json.JsonSerializerOptions! json) -> void
 Aw.Packets.Core.PacketInspector
 Aw.Packets.Core.PacketInspector.Inspect(string! packetDirectory, string! repoDirectory, Aw.Packets.Core.Model.SizesFile? sizes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Inspection!>!>
 Aw.Packets.Core.PacketInspector.PacketInspector(Aw.Packets.Core.IPacketSource! source, Aw.Packets.Core.IRepoSnapshot! repo) -> void
@@ -923,6 +948,9 @@ const Aw.Packets.Core.PacketReader.SchemaVersion = 1 -> int
 override Aw.Packets.Core.Checks.CheckResult.Equals(object? obj) -> bool
 override Aw.Packets.Core.Checks.CheckResult.GetHashCode() -> int
 override Aw.Packets.Core.Checks.CheckResult.ToString() -> string!
+override Aw.Packets.Core.HashedPacket.Equals(object? obj) -> bool
+override Aw.Packets.Core.HashedPacket.GetHashCode() -> int
+override Aw.Packets.Core.HashedPacket.ToString() -> string!
 override Aw.Packets.Core.Ids.ExampleId.Equals(object? obj) -> bool
 override Aw.Packets.Core.Ids.ExampleId.GetHashCode() -> int
 override Aw.Packets.Core.Ids.ExampleId.ToString() -> string!
@@ -1061,6 +1089,9 @@ override Aw.Packets.Core.Model.OutOfScope.ToString() -> string!
 override Aw.Packets.Core.Model.Packet.Equals(object? obj) -> bool
 override Aw.Packets.Core.Model.Packet.GetHashCode() -> int
 override Aw.Packets.Core.Model.Packet.ToString() -> string!
+override Aw.Packets.Core.Model.PacketIdentity.Equals(object? obj) -> bool
+override Aw.Packets.Core.Model.PacketIdentity.GetHashCode() -> int
+override Aw.Packets.Core.Model.PacketIdentity.ToString() -> string!
 override Aw.Packets.Core.Model.PacketLinks.Equals(object? obj) -> bool
 override Aw.Packets.Core.Model.PacketLinks.GetHashCode() -> int
 override Aw.Packets.Core.Model.PacketLinks.ToString() -> string!
@@ -1107,6 +1138,9 @@ static Aw.Packets.Core.Digest.PacketDigest.Compute(Aw.Packets.Core.Kinds.PacketK
 static Aw.Packets.Core.Digest.PacketDigest.Compute(Aw.Packets.Core.Kinds.Scoping.ScopingFiles! files) -> Aw.Kernel.Result<Aw.Packets.Core.Values.PacketHash>!
 static Aw.Packets.Core.Digest.PacketDigest.Compute(Aw.Packets.Core.Model.LoadedPacket! loaded) -> Aw.Kernel.Result<Aw.Packets.Core.Values.PacketHash>!
 static Aw.Packets.Core.FreezeLocation.Of(Aw.Packets.Core.Model.FreezeRecord! record) -> string!
+static Aw.Packets.Core.FreezeLocation.Of(Aw.Packets.Core.Values.RepoSlug repo, Aw.Packets.Core.Ids.PacketId packet, Aw.Packets.Core.Values.PacketHash hash) -> string!
+static Aw.Packets.Core.HashedPacket.operator !=(Aw.Packets.Core.HashedPacket? left, Aw.Packets.Core.HashedPacket? right) -> bool
+static Aw.Packets.Core.HashedPacket.operator ==(Aw.Packets.Core.HashedPacket? left, Aw.Packets.Core.HashedPacket? right) -> bool
 static Aw.Packets.Core.Ids.ExampleId.From(string! value) -> Aw.Packets.Core.Ids.ExampleId
 static Aw.Packets.Core.Ids.ExampleId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Packets.Core.Ids.ExampleId
 static Aw.Packets.Core.Ids.ExampleId.TryFrom(string? value, out Aw.Packets.Core.Ids.ExampleId vo) -> bool
@@ -1164,6 +1198,7 @@ static Aw.Packets.Core.Kinds.Line.LineManifest.operator !=(Aw.Packets.Core.Kinds
 static Aw.Packets.Core.Kinds.Line.LineManifest.operator ==(Aw.Packets.Core.Kinds.Line.LineManifest? left, Aw.Packets.Core.Kinds.Line.LineManifest? right) -> bool
 static Aw.Packets.Core.Kinds.Line.LinePacketFiles.operator !=(Aw.Packets.Core.Kinds.Line.LinePacketFiles? left, Aw.Packets.Core.Kinds.Line.LinePacketFiles? right) -> bool
 static Aw.Packets.Core.Kinds.Line.LinePacketFiles.operator ==(Aw.Packets.Core.Kinds.Line.LinePacketFiles? left, Aw.Packets.Core.Kinds.Line.LinePacketFiles? right) -> bool
+static Aw.Packets.Core.Kinds.Line.LinePacketIdentity.Of(Aw.Packets.Core.Kinds.PacketKind! kind, Aw.Packets.Core.Kinds.Line.LinePacketFiles! files, System.Text.Json.JsonSerializerOptions! json) -> Aw.Packets.Core.Model.PacketIdentity?
 static Aw.Packets.Core.Kinds.Line.LinePacketManifest<TLinks>.operator !=(Aw.Packets.Core.Kinds.Line.LinePacketManifest<TLinks>? left, Aw.Packets.Core.Kinds.Line.LinePacketManifest<TLinks>? right) -> bool
 static Aw.Packets.Core.Kinds.Line.LinePacketManifest<TLinks>.operator ==(Aw.Packets.Core.Kinds.Line.LinePacketManifest<TLinks>? left, Aw.Packets.Core.Kinds.Line.LinePacketManifest<TLinks>? right) -> bool
 static Aw.Packets.Core.Kinds.Line.LineRuleSet.operator !=(Aw.Packets.Core.Kinds.Line.LineRuleSet? left, Aw.Packets.Core.Kinds.Line.LineRuleSet? right) -> bool
@@ -1242,6 +1277,8 @@ static Aw.Packets.Core.Model.OutOfScope.operator !=(Aw.Packets.Core.Model.OutOfS
 static Aw.Packets.Core.Model.OutOfScope.operator ==(Aw.Packets.Core.Model.OutOfScope? left, Aw.Packets.Core.Model.OutOfScope? right) -> bool
 static Aw.Packets.Core.Model.Packet.operator !=(Aw.Packets.Core.Model.Packet? left, Aw.Packets.Core.Model.Packet? right) -> bool
 static Aw.Packets.Core.Model.Packet.operator ==(Aw.Packets.Core.Model.Packet? left, Aw.Packets.Core.Model.Packet? right) -> bool
+static Aw.Packets.Core.Model.PacketIdentity.operator !=(Aw.Packets.Core.Model.PacketIdentity? left, Aw.Packets.Core.Model.PacketIdentity? right) -> bool
+static Aw.Packets.Core.Model.PacketIdentity.operator ==(Aw.Packets.Core.Model.PacketIdentity? left, Aw.Packets.Core.Model.PacketIdentity? right) -> bool
 static Aw.Packets.Core.Model.PacketLinks.operator !=(Aw.Packets.Core.Model.PacketLinks? left, Aw.Packets.Core.Model.PacketLinks? right) -> bool
 static Aw.Packets.Core.Model.PacketLinks.operator ==(Aw.Packets.Core.Model.PacketLinks? left, Aw.Packets.Core.Model.PacketLinks? right) -> bool
 static Aw.Packets.Core.Model.PacketManifest.operator !=(Aw.Packets.Core.Model.PacketManifest? left, Aw.Packets.Core.Model.PacketManifest? right) -> bool

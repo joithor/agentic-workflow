@@ -49,7 +49,7 @@ public sealed class ScopingSlicesTests
     public async Task HashPacket_of_a_scope_packet_is_the_digest_freeze_records()
     {
         var files = A.ScopingPacket().Build();
-        var hashed = await new HashPacketService(new InMemoryPacketSource(), Source(files), new InMemoryLinePacketSource())
+        var hashed = await new HashPacketService(new PacketHasher(new InMemoryPacketSource(), Source(files), new InMemoryLinePacketSource(), PacketFiles.Json))
             .Handle(new HashPacketRequest("scoping", "pkt"), CancellationToken.None);
         var log = new InMemoryFreezeLog();
         var frozen = await Freezer(files, log).Handle(Request, CancellationToken.None);
@@ -65,7 +65,7 @@ public sealed class ScopingSlicesTests
         var packet = A.Packet().Build();
         var source = new InMemoryPacketSource().With("pkt", PacketFiles.Of(packet));
 
-        var hashed = await new HashPacketService(source, new InMemoryScopingPacketSource(), new InMemoryLinePacketSource()).Handle(new HashPacketRequest("build", "pkt"), CancellationToken.None);
+        var hashed = await new HashPacketService(new PacketHasher(source, new InMemoryScopingPacketSource(), new InMemoryLinePacketSource(), PacketFiles.Json)).Handle(new HashPacketRequest("build", "pkt"), CancellationToken.None);
 
         var loaded = await source.Load("pkt", CancellationToken.None);
         Assert.Equal(PacketDigest.Compute(loaded.Value).Value, hashed.Value.Hash);
@@ -75,7 +75,7 @@ public sealed class ScopingSlicesTests
     [Fact, Trait("Lane", "unit")]
     public async Task HashPacket_errors_name_the_missing_directory_or_file()
     {
-        var service = new HashPacketService(new InMemoryPacketSource(), Source(A.ScopingPacket().Without("runs.json").Build()), new InMemoryLinePacketSource());
+        var service = new HashPacketService(new PacketHasher(new InMemoryPacketSource(), Source(A.ScopingPacket().Without("runs.json").Build()), new InMemoryLinePacketSource(), PacketFiles.Json));
 
         var noFile = await service.Handle(new HashPacketRequest("scoping", "pkt"), CancellationToken.None);
         var noDirectory = await service.Handle(new HashPacketRequest("scoping", "nowhere"), CancellationToken.None);

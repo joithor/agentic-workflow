@@ -123,7 +123,7 @@ public sealed class LineSlicesTests
         var lines = new InMemoryLinePacketSource().With("pkt", files);
         var log = new InMemoryFreezeLog();
 
-        var hashed = await new HashPacketService(new InMemoryPacketSource(), new InMemoryScopingPacketSource(), lines).Handle(new HashPacketRequest(name, "pkt"), CancellationToken.None);
+        var hashed = await new HashPacketService(new PacketHasher(new InMemoryPacketSource(), new InMemoryScopingPacketSource(), lines, PacketFiles.Json)).Handle(new HashPacketRequest(name, "pkt"), CancellationToken.None);
         var frozen = await Freezer(A.LinePacket(kind).Build(), log).Handle(new FreezeLinePacketRequest(name, "pkt"), CancellationToken.None);
 
         Assert.Equal(frozen.Value.Hash, hashed.Value.Hash);

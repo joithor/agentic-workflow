@@ -86,6 +86,26 @@ public abstract class FreezeLogContract
         Expect.That(other.IsSuccess && !other.Value.AlreadyFrozen && ReadBack(log).Count == 2, "another repo's packet with the same id and hash is its own record");
     }
 
+    /// <summary>Find returns the record by repository, packet and hash.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Find_returns_the_record_of_that_hash_and_nothing_for_another()
+    {
+        var log = Create();
+        _ = await log.Record(ARecord() with { By = FreezeBy.Owner }, CancellationToken.None);
+        var identity = new PacketIdentity(RepoSlug.From("example/repo"), PacketId.From("demo-packet"));
+
+        var found = await log.Find(identity, PacketHash.From(HashA), CancellationToken.None);
+        var otherHash = await log.Find(identity, PacketHash.From(HashB), CancellationToken.None);
+        var otherRepo = await log.Find(identity with { Repo = RepoSlug.From("other/repo") }, PacketHash.From(HashA), CancellationToken.None);
+        var otherPacket = await log.Find(identity with { Packet = PacketId.From("other-packet") }, PacketHash.From(HashA), CancellationToken.None);
+
+        Expect.That(found.IsSuccess && found.Value is { } record && Same(ARecord(), record) && record.By == FreezeBy.Owner, "the recorded freeze is found, with who froze it");
+        Expect.That(otherHash.IsSuccess && otherHash.Value is null, "another hash of the packet was never frozen");
+        Expect.That(otherRepo.IsSuccess && otherRepo.Value is null, "the same packet id in another repository is another packet");
+        Expect.That(otherPacket.IsSuccess && otherPacket.Value is null, "another packet is not found");
+    }
+
     /// <summary>A log that can't write fails with AW-PACKETS-007.</summary>
     /// <returns>A task.</returns>
     [Fact]

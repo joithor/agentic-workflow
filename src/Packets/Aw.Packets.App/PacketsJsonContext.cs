@@ -7,6 +7,7 @@ using Aw.Packets.App.Features.HashPacket;
 using Aw.Packets.App.Features.ValidateLinePacket;
 using Aw.Packets.App.Features.ValidatePacket;
 using Aw.Packets.App.Features.ValidateScopingPacket;
+using Aw.Packets.App.Features.VerifyPacket;
 using Aw.Packets.Core.Kinds.Line;
 using Aw.Packets.Core.Kinds.Scoping;
 using Aw.Packets.Core.Model;
@@ -21,6 +22,8 @@ namespace Aw.Packets.App;
 [JsonSerializable(typeof(TaskPlan))]
 [JsonSerializable(typeof(FreezeRecord))]
 [JsonSerializable(typeof(SizesFile))]
+[JsonSerializable(typeof(VerifyPacketRequest))]
+[JsonSerializable(typeof(VerifyPacketResponse))]
 [JsonSerializable(typeof(ValidatePacketRequest))]
 [JsonSerializable(typeof(ValidatePacketResponse))]
 [JsonSerializable(typeof(FreezePacketRequest))]
