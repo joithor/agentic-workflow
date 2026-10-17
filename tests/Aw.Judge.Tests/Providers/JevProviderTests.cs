@@ -193,6 +193,24 @@ public sealed class JevProviderTests
 
     private static FakeSecretSource Secrets() => new(new Dictionary<SecretName, string> { [SecretName.TypeSafeApiKey] = Key });
 
+    [Fact]
+    public async Task Jev_gets_the_call_s_criteria_as_a_choice_question()
+    {
+        var input = new Aw.Judge.Core.Questions.ChooseInput(
+            "Which evidence?",
+            new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal) { ["diff"] = System.Text.Json.JsonDocument.Parse("\"M a.ts\"").RootElement },
+            [new("ui", "only UI files changed"), new("api", "a route changed")]);
+        var question = Aw.Judge.Core.Questions.ChooseQuestion.For(input).ToRef(input);
+        var handler = FakeHttpHandler.Answering(HttpStatusCode.OK, """{"answers":{"decision":{"type":"choice","choice":"api","confidence":0.7,"probabilities":{"ui":0.2,"api":0.7}}}}""");
+        using var provider = new JevProvider(new HttpClient(handler), Secrets(), new FakeInputRedactor());
+
+        var result = await provider.Decide(question, Questions.Input, Questions.Budget, TestContext.Current.CancellationToken);
+
+        Assert.Equal("api", Assert.IsType<ProviderDecided>(result).Decision);
+        var sent = JsonNode.Parse(Assert.Single(handler.Requests).Body)!["questions"]!["decision"]!;   // why: the provider always sends a JSON body
+        Assert.Equal("""{"ui":"only UI files changed","api":"a route changed"}""", sent["criteria"]!.ToJsonString());
+    }
+
     private static async Task<ProviderResult> Decide(FakeHttpHandler handler, FakeSecretSource? secrets = null)
     {
         using var provider = new JevProvider(new HttpClient(handler), secrets ?? Secrets(), new FakeInputRedactor());

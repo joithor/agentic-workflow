@@ -30,10 +30,14 @@ internal sealed class QuestionRun
     }
 
     /// <summary>Asks a question by its catalog name (the path the CLI takes), so a per-call question builds its definition from the input.</summary>
-    public ValueTask<EvaluationOutcome> AskByName(string name, string input, params IModelProvider[] providers)
+    public ValueTask<EvaluationOutcome> AskByName(string name, string input, params IModelProvider[] providers) =>
+        AskByName(name, input, entry: null, providers);
+
+    /// <summary>Asks by catalog name with the question's config.json entry (<paramref name="entry"/>), when there is one.</summary>
+    public ValueTask<EvaluationOutcome> AskByName(string name, string input, QuestionOverride? entry, params IModelProvider[] providers)
     {
         var evaluator = new QuestionEvaluator(Log, new FakeInputRedactor(), new SequentialIdGenerator(), new FakeTimeProvider(KnownInstants.Epoch), Json);
-        return evaluator.Ask(name, input, new EvaluationContext { Providers = providers }, CancellationToken.None);
+        return evaluator.Ask(name, input, new EvaluationContext { Providers = providers, Override = entry }, CancellationToken.None);
     }
 
     /// <summary>The outcome is a pre-rule's: the decision, by rules, confidence 1.</summary>

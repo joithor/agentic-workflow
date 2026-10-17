@@ -976,3 +976,17 @@ static Aw.Judge.Core.Questions.ChoiceInput.operator ==(Aw.Judge.Core.Questions.C
 static Aw.Judge.Core.Questions.ChooseInput.operator !=(Aw.Judge.Core.Questions.ChooseInput? left, Aw.Judge.Core.Questions.ChooseInput? right) -> bool
 static Aw.Judge.Core.Questions.ChooseInput.operator ==(Aw.Judge.Core.Questions.ChooseInput? left, Aw.Judge.Core.Questions.ChooseInput? right) -> bool
 static Aw.Judge.Core.Questions.ChooseQuestion.For(Aw.Judge.Core.Questions.ChooseInput! input) -> Aw.Judge.Core.Questions.QuestionDefinition<Aw.Judge.Core.Questions.ChooseInput!>!
+Aw.Judge.Core.Evaluation.DecidedOutcome.Probabilities.get -> System.Collections.Generic.IReadOnlyDictionary<string!, double>?
+Aw.Judge.Core.Evaluation.DecidedOutcome.Probabilities.init -> void
+Aw.Judge.Core.Evaluation.EscalatedOutcome.Id.get -> Aw.Judge.Core.Ids.DecisionId?
+Aw.Judge.Core.Evaluation.EscalatedOutcome.Id.init -> void
+Aw.Judge.Core.Evaluation.EscalatedOutcome.Probabilities.get -> System.Collections.Generic.IReadOnlyDictionary<string!, double>?
+Aw.Judge.Core.Evaluation.EscalatedOutcome.Probabilities.init -> void
+Aw.Judge.Core.Providers.QuestionRef.AskConfidence.get -> bool
+Aw.Judge.Core.Providers.QuestionRef.AskConfidence.init -> void
+Aw.Judge.Core.Questions.CheckKind.ApiEvidence = 3 -> Aw.Judge.Core.Questions.CheckKind
+Aw.Judge.Core.Questions.CheckKind.DbEvidence = 4 -> Aw.Judge.Core.Questions.CheckKind
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.AskConfidence.get -> bool
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.AskConfidence.init -> void
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ReportsTrace.get -> bool
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ReportsTrace.init -> void
