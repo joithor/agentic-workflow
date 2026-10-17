@@ -178,6 +178,31 @@ public sealed class OnyxDownTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Down_with_a_permission_denied_socket_gives_the_docker_group_fix()
+    {
+        var rig = await RunningRig();
+        rig.Runtime.Facts = FakeContainerRuntime.PermissionDenied;
+
+        var error = (await Down(rig)).Error;
+
+        Assert.Equal("SND-ONYX-001", error.Code);
+        Assert.Contains("add your user to the docker group", error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("Stop", rig.Runtime.Calls, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Down_with_a_daemon_that_may_be_starting_says_to_wait()
+    {
+        var rig = await RunningRig();
+        rig.Runtime.Facts = FakeContainerRuntime.Starting;
+
+        var error = (await Down(rig)).Error;
+
+        Assert.Equal("SND-ONYX-001", error.Code);
+        Assert.Contains("may still be starting", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Down_with_an_unreadable_endpoint_says_so_under_010()
     {
         var rig = await RunningRig();

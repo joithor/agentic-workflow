@@ -201,6 +201,18 @@ public sealed class OnyxStackDoctorTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_permission_denied_socket_warns_with_the_docker_group_fix()
+    {
+        Stack();
+        _runtime.Facts = FakeContainerRuntime.PermissionDenied;
+
+        var check = await Doctor().Check(Token);
+
+        Assert.Equal(CheckState.Warn, check!.State);
+        Assert.Contains("add your user to the docker group", check.Fix, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task The_doctor_run_includes_the_row_after_the_core_rows_only_when_state_exists()
     {
         Stack();
