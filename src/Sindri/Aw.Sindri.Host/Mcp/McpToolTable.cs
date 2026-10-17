@@ -14,7 +14,8 @@ namespace Aw.Sindri.Host.Mcp;
 /// </summary>
 internal static class McpToolTable
 {
-    private static readonly IReadOnlyList<Tool> _tools = [ContextTools.QueryTool, ContextTools.SourcesTool, ContextTools.LensesTool, GraphTools.NodeTool, GraphTools.NeighborsTool];
+    private static readonly IReadOnlyList<Tool> _tools = [ContextTools.QueryTool, ContextTools.SourcesTool, ContextTools.LensesTool, GraphTools.NodeTool, GraphTools.NeighborsTool,
+        SindriTools.StatusTool, SindriTools.QueueTool, SindriTools.ItemTool, SindriTools.TimelineTool, SindriTools.PendingDecisionsTool, SindriTools.JobTool, SindriTools.RequestTool];
 
     /// <summary>tools/list: every tool, whatever the profile says (a refused call explains itself; context spec §8.6).</summary>
     /// <param name="_">The request (unused).</param>
@@ -50,6 +51,13 @@ internal static class McpToolTable
             ContextTools.Lenses => ContextTools.CallLenses(services, call.Arguments, cancellationToken),
             GraphTools.Node => GraphTools.CallNode(services, call.Arguments, cancellationToken),
             GraphTools.Neighbors => GraphTools.CallNeighbors(services, call.Arguments, cancellationToken),
+            SindriTools.Status => SindriTools.CallStatus(services, call.Arguments, cancellationToken),
+            SindriTools.Queue => SindriTools.CallQueue(services, call.Arguments, cancellationToken),
+            SindriTools.Item => SindriTools.CallItem(services, call.Arguments, cancellationToken),
+            SindriTools.Timeline => SindriTools.CallTimeline(services, call.Arguments, cancellationToken),
+            SindriTools.PendingDecisions => SindriTools.CallPendingDecisions(services, call.Arguments, cancellationToken),
+            SindriTools.Job => SindriTools.CallJob(services, call.Arguments, cancellationToken),
+            SindriTools.Request => SindriTools.CallRequest(services, call.Arguments, cancellationToken),
             _ => throw new UnreachableException($"McpToolTable lists '{call.Name}' but has no handler for it"),
         };
     }

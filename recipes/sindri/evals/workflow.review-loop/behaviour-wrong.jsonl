@@ -1,0 +1,2 @@
+{"start":{"inputs":{"fact:change":{"head":"abc123"},"fact:phasePacket":{"phase":"1"}}}}
+{"trigger":{"kind":"step.completed","outcome":"behaviourWrong","outputs":{"fact:review":{"blocking":1,"behaviour":"wrong"}}},"expect":{"state":"wrong","outcome":"failed"}}

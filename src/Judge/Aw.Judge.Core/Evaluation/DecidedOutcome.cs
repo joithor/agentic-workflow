@@ -15,4 +15,7 @@ public sealed record DecidedOutcome(string Decision, double Confidence, Provider
 {
     /// <summary>The provider's response fields beyond the decision, when it gave any.</summary>
     public JsonObject? Extra { get; init; }
+
+    /// <summary>The providers' probabilities per output; set only for a question that reports its trace (choose).</summary>
+    public IReadOnlyDictionary<string, double>? Probabilities { get; init; }
 }
