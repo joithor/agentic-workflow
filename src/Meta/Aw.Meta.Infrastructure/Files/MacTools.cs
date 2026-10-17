@@ -6,14 +6,14 @@ using Aw.Meta.Core.Ports;
 
 namespace Aw.Meta.Infrastructure.Files;
 
-/// <summary>Runs one of the macOS tools (sysctl, vm_stat, ps) through the command runner and returns its output, or AW-META-010 naming the tool and why.</summary>
+/// <summary>Runs one of the macOS tools (sysctl, vm_stat, ps) through the command runner and returns all of its output (ps lists far more than the runner's default tail), or AW-META-010 naming the tool and why.</summary>
 internal static class MacTools
 {
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(15);
 
     internal static async ValueTask<Result<string>> Output(ICommandRunner runner, IReadOnlyList<string> argv, CancellationToken cancellationToken)
     {
-        var ran = await runner.Run(new CommandRequest(argv, _timeout), cancellationToken).ConfigureAwait(false);
+        var ran = await runner.Run(new CommandRequest(argv, _timeout) { TailCharacters = int.MaxValue }, cancellationToken).ConfigureAwait(false);
         var tool = string.Join(' ', argv);
         if (ran.IsError)
         {

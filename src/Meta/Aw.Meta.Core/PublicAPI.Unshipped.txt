@@ -1755,3 +1755,6 @@ static readonly Aw.Meta.Core.MetaErrors.TranscriptUnreadable -> Aw.Kernel.ErrorD
 static readonly Aw.Meta.Core.MetaErrors.UnknownLane -> Aw.Kernel.ErrorDefinition!
 ~override Aw.Meta.Core.Config.ReserveSlots.Equals(object obj) -> bool
 ~override Aw.Meta.Core.Config.ReserveSlots.ToString() -> string
+Aw.Meta.Core.Commands.CommandRequest.TailCharacters.get -> int
+Aw.Meta.Core.Commands.CommandRequest.TailCharacters.init -> void
+const Aw.Meta.Core.Commands.CommandRequest.DefaultTailCharacters = 65536 -> int
