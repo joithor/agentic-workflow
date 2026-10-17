@@ -5,6 +5,7 @@ using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
 using Aw.Sindri.Core.Decisions;
 using Aw.Sindri.Core.Items.Vocabulary;
+using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Requests;
 using Aw.Sindri.Features.FileRequest;
 using Aw.Sindri.Features.GetItem;
@@ -132,7 +133,7 @@ internal static class McpSummaries
     /// <param name="job">The job.</param>
     /// <returns>The text.</returns>
     internal static string Job(JobView job) =>
-        $"{job.Id.Value} · {job.Kind.Value} · {job.State.ToString().ToLowerInvariant()}{(job.Code is null ? string.Empty : " · " + job.Code)}\n{Fenced}";
+        $"{job.Id.Value} · {job.Kind.Value} · {JobStateWord(job.State)}{(job.Code is null ? string.Empty : " · " + job.Code)}\n{Fenced}";
 
     /// <summary>sindri_request's summary: the ids and who settles it; a note when the views were slow to hold it.</summary>
     /// <param name="filed">The answer.</param>
@@ -141,6 +142,18 @@ internal static class McpSummaries
     /// <returns>The text.</returns>
     internal static string Request(RequestFiledResponse filed, RequestKind kind, bool viewsCaughtUp) =>
         $"filed {filed.RequestId.Value} ({KindWord(kind)}) as {filed.DecisionId.Value}; a human settles it{(viewsCaughtUp ? string.Empty : " (views catching up: sindri_pending_decisions may not list it yet)")}";
+
+    /// <summary>A job state as the API writes it (kebab-case, the JSON name), not the enum member's name.</summary>
+    /// <param name="state">The state.</param>
+    /// <returns>The word.</returns>
+    internal static string JobStateWord(JobState state) => state switch
+    {
+        JobState.Running => "running",
+        JobState.Succeeded => "succeeded",
+        JobState.Failed => "failed",
+        JobState.Cancelled => "cancelled",
+        _ => throw new ArgumentOutOfRangeException(nameof(state), state, "not a job state"),
+    };
 
     private static string KindWord(RequestKind kind) => kind switch
     {
