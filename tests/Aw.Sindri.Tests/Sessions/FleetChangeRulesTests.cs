@@ -25,6 +25,28 @@ public sealed class FleetChangeRulesTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Gone_carries_the_repo_host_and_launch_the_session_appeared_with()
+    {
+        var s = Session("claude-code", "a1") with { Repo = Core.Ids.RepoName.From("api"), Host = new HostInfo("tmux", "tmux"), LaunchId = Core.Workflow.Engine.LaunchId.From("LCH-00000000000000000000000000000001") };
+        var seen = Pass(Pass(FleetTrackerState.Empty, T0, sessions: s).State, T0.AddSeconds(2), sessions: s);
+
+        var gone = Assert.Single(Pass(seen.State, T0.AddSeconds(4)).Changes);
+
+        Assert.Equal((FleetChangeKind.Gone, "api", "tmux", "LCH-00000000000000000000000000000001"), (gone.Kind, gone.Repo!.Value.Value, gone.HostKind, gone.LaunchId!.Value.Value));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Gone_after_a_restart_still_carries_the_repo_of_the_restored_row()
+    {
+        var row = new FleetHistoryRow(Session("claude-code", "a1").Ref, FleetChangeKind.Appeared, T0) { Repo = Core.Ids.RepoName.From("api"), HostKind = "tmux" };
+        var restored = FleetChangeRules.Restore([row]);
+
+        var gone = Assert.Single(Pass(restored, T0.AddSeconds(4)).Changes);
+
+        Assert.Equal((FleetChangeKind.Gone, "api", "tmux"), (gone.Kind, gone.Repo!.Value.Value, gone.HostKind));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Changes_do_not_ledger_a_session_seen_for_one_pass()
     {
         var s = Session("claude-code", "a1");

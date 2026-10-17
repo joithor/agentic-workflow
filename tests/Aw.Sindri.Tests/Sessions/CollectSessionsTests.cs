@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Sessions;
+using Aw.Sindri.Features.Sessions;
 using Aw.Sindri.Testing;
 using static Aw.Sindri.Tests.Sessions.SessionData;
 
@@ -29,6 +30,29 @@ public sealed class CollectSessionsTests
         var session = Assert.Single(_c.Snapshot.Current!.Sessions);
         Assert.True(response.Good);
         Assert.Equal(($"claude-code/{Id}", SessionState.Running, StateSource.Record, true, "api work", "/w/api"), (session.Ref.ToString(), session.State, session.Source, session.IdKnown, session.Title, session.Cwd));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Pass_turns_a_throwing_source_into_one_problem_row_and_keeps_the_other_sources()
+    {
+        ClaudeRuns();
+        _ = _c.Records.With(LiveRecord());
+        var guarded = new SessionDiscovery(new ThrowingEnvironmentTable(_c.Fake), _c.Records, _c.Fleet, new Infrastructure.Launch.AgentCatalog(Agents), _c.Settings);
+
+        var found = await Task.Run(() => guarded.Discover(TestContext.Current.CancellationToken), TestContext.Current.CancellationToken);
+
+        Assert.True(found.Good);
+        Assert.Equal("claude-code/" + Id, Assert.Single(found.Candidates).Ref.ToString());
+        var problem = Assert.Single(found.Problems);
+        Assert.Equal(("environment", "SND-SESSION-001"), (problem.Source, problem.Code));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_cancelled_process_table_read_is_a_failed_source_not_SND_SESSION_002()
+    {
+        var problem = SessionProblems.ProcessTable(Core.SindriErrors.ApiTimeout.With("the process table read was cancelled"));
+
+        Assert.Equal(("processes", "SND-SESSION-001"), (problem.Source, problem.Code));
     }
 
     [Fact, Trait("Lane", "unit")]

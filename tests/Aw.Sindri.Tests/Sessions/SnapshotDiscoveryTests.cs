@@ -23,7 +23,7 @@ public sealed class SnapshotDiscoveryTests
     private static async Task<SessionSnapshot> Discover(FakeTimeProvider clock)
     {
         using var fleet = new TempFleet();
-        var catalog = new AgentCatalog(LauncherFile.Read(SessionFixtures.Builtins(), Encoding.UTF8.GetBytes(Aider)).Value.Agents);
+        var catalog = new AgentCatalog(LauncherConfigFile.Read(SessionFixtures.Builtins(), Encoding.UTF8.GetBytes(Aider)).Value.Agents);
         var providers = catalog.All.Select(static a => a.Id).ToList();
         var discovery = new SessionDiscovery(new ProcProcessTable(SessionFixtures.Proc, SessionFixtures.OwnUid), new ClaudeSessionRecords(SessionFixtures.ClaudeSessions),
             new FleetStateFiles(fleet.Root, providers, pruning: false), catalog, SessionSettings.Defaults);

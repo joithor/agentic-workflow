@@ -14,7 +14,7 @@ public sealed class FleetChangesLedgerTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private RecordFleetChangesService Recorder => new(_h.Store, _h.Events);
+    private RecordFleetChangesService Recorder => new(_h.Store, _h.Events, new CollectorMemory());
 
     private static FleetChange Change(string id, FleetChangeKind kind, DateTimeOffset at) =>
         new(Session("claude-code", id).Ref, kind, SessionState.Running, at) { HostKind = "tmux" };

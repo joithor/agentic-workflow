@@ -10,7 +10,7 @@ namespace Aw.Sindri.Infrastructure.Launch;
 /// Reads launcher.json (launcher spec §4, schemas/launcher.schema.json) over the built-in entries. This build reads 'agents' and 'sessions';
 /// 'viewer', 'host' and 'meta' are checked (unknown keys and kinds are errors) and not read, until SL-2 reads them.
 /// </summary>
-internal static class LauncherFile
+internal static class LauncherConfigFile
 {
     internal static readonly System.Text.Json.JsonSerializerOptions Json = AwJson.CreateOptions(LauncherJsonContext.Default);
 
@@ -55,7 +55,7 @@ internal static class LauncherFile
         d.Schema != 1 ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"schema {d.Schema} isn't supported; this build reads 1")
         : Viewer(d.Viewer) ?? Host(d.Host) ?? Meta(d.Meta) ?? Sessions(d.Sessions);
 
-    private static string? Viewer(ViewerSection? v)
+    internal static string? Viewer(ViewerSection? v)
     {
         if (v is null)
         {
@@ -73,7 +73,7 @@ internal static class LauncherFile
             : AgentSections.Argv(v.Argv, "viewer.argv");
     }
 
-    private static string? Host(HostSection? h) =>
+    internal static string? Host(HostSection? h) =>
         h is null || _hostKinds.Contains(h.Kind, StringComparer.Ordinal) ? null : $"host.kind '{h.Kind}' isn't one of {string.Join(", ", _hostKinds)}";
 
     private static string? Meta(MetaSection? m)
@@ -87,7 +87,7 @@ internal static class LauncherFile
         return ids.Find(static id => !AgentId.TryFrom(id, out _)) is { } bad ? $"meta: '{bad}' isn't an agent id" : null;
     }
 
-    private static string? Sessions(SessionsSection? s)
+    internal static string? Sessions(SessionsSection? s)
     {
         if (s is null)
         {

@@ -73,10 +73,10 @@ public sealed class ProcProcessTableTests
     }
 
     [Fact, Trait("Lane", "integration")]
-    public void A_missing_root_is_proc_unreadable()
+    public void A_missing_root_is_an_unsupported_platform()
     {
         var read = new ProcProcessTable("/nonexistent-fixture-root/proc", SessionFixtures.OwnUid).Read(TestContext.Current.CancellationToken);
 
-        Assert.Equal(("SND-SESSION-002", "proc-unreadable"), (read.Error.Code, read.Error.Message));
+        Assert.Equal(("SND-SESSION-002", "unsupported-platform"), (read.Error.Code, read.Error.Message));
     }
 }

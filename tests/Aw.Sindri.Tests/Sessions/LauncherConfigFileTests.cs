@@ -7,7 +7,7 @@ using Aw.Sindri.Infrastructure.Launch;
 namespace Aw.Sindri.Tests.Sessions;
 
 /// <summary>The launcher.json reader and the agent catalog (collector spec CA-0): the same verdicts as the schema, built-ins merged with the file's entries.</summary>
-public sealed class LauncherFileTests
+public sealed class LauncherConfigFileTests
 {
     private static byte[] Text(string json) => Encoding.UTF8.GetBytes(json);
 
@@ -16,7 +16,7 @@ public sealed class LauncherFileTests
     {
         var user = Text("""{ "schema": 1, "agents": { "aider": { "label": "Aider", "bin": "aider", "open": ["{bin}", "--message", "{seed}"], "sessionId": "none", "processName": "aider" }, "claude-code": { "override": true, "bin": "/opt/claude/bin/claude" } } }""");
 
-        var config = LauncherFile.Read(SessionFixtures.Builtins(), user).Value;
+        var config = LauncherConfigFile.Read(SessionFixtures.Builtins(), user).Value;
         var catalog = new AgentCatalog(config.Agents);
 
         Assert.Equal(["claude-code", "codex", "cursor", "aider"], catalog.All.Select(static a => a.Id.Value), StringComparer.Ordinal);
@@ -30,7 +30,7 @@ public sealed class LauncherFileTests
     [Fact, Trait("Lane", "unit")]
     public void Builtins_alone_give_the_three_agents_with_their_process_names_and_transcripts()
     {
-        var entries = LauncherFile.Read(SessionFixtures.Builtins(), user: null).Value.Agents;
+        var entries = LauncherConfigFile.Read(SessionFixtures.Builtins(), user: null).Value.Agents;
 
         Assert.Equal([("claude-code", "claude"), ("codex", "codex"), ("cursor", "agent")], entries.Select(static e => (e.Id.Value, e.MatchName)));
         Assert.Equal("~/.claude/projects/*/{sessionId}.jsonl", entries[0].Transcripts);
@@ -49,7 +49,7 @@ public sealed class LauncherFileTests
             var file = fixture.GetProperty("file").GetString()!;
             var expected = fixture.GetProperty("schema").GetString() == "valid";
 
-            var read = LauncherFile.Read(builtins, File.ReadAllBytes(Path.Combine(SessionFixtures.Launcher, file)));
+            var read = LauncherConfigFile.Read(builtins, File.ReadAllBytes(Path.Combine(SessionFixtures.Launcher, file)));
 
             Assert.True(read.IsSuccess == expected, $"{file}: expected {(expected ? "valid" : "invalid")}, got {(read.IsError ? read.Error.Message : "valid")}");
         }
@@ -58,8 +58,8 @@ public sealed class LauncherFileTests
     [Fact, Trait("Lane", "unit")]
     public void A_sessions_section_with_an_unknown_key_or_a_poll_out_of_range_is_refused()
     {
-        var bogus = LauncherFile.Read(SessionFixtures.Builtins(), Text("""{ "schema": 1, "sessions": { "nope": 1 } }"""));
-        var range = LauncherFile.Read(SessionFixtures.Builtins(), Text("""{ "schema": 1, "sessions": { "pollSeconds": 31 } }"""));
+        var bogus = LauncherConfigFile.Read(SessionFixtures.Builtins(), Text("""{ "schema": 1, "sessions": { "nope": 1 } }"""));
+        var range = LauncherConfigFile.Read(SessionFixtures.Builtins(), Text("""{ "schema": 1, "sessions": { "pollSeconds": 31 } }"""));
 
         Assert.Equal(["SND-LAUNCH-011", "SND-LAUNCH-011"], [bogus.Error.Code, range.Error.Code]);
     }
@@ -67,7 +67,7 @@ public sealed class LauncherFileTests
     [Fact, Trait("Lane", "unit")]
     public void The_viewer_host_and_meta_sections_are_accepted_and_not_read()
     {
-        var config = LauncherFile.Read(SessionFixtures.Builtins(), Text("""
+        var config = LauncherConfigFile.Read(SessionFixtures.Builtins(), Text("""
             { "schema": 1, "viewer": { "kind": "print" }, "host": { "kind": "none" }, "meta": { "lanesAgent": "codex", "lanes": { "review": "claude-code" } } }
             """)).Value;
 
@@ -103,5 +103,57 @@ public sealed class LauncherFileTests
         Assert.Equal(3, load.Catalog.All.Count);
         Assert.NotNull(load.Sessions.ConfigProblem);
         Assert.True(load.Sessions.Enabled);
+    }
+
+    private static LauncherLoad LoadText(string json)
+    {
+        var directory = Directory.CreateTempSubdirectory("aw-launcher").FullName;
+        try
+        {
+            var file = Path.Combine(directory, "launcher.json");
+            File.WriteAllText(file, json);
+            return LauncherStartup.Load(name => name == "AW_LAUNCHER_CONFIG" ? file : null, new SindriSettings(directory, Path.Combine(directory, "profile.yaml")));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public void A_typo_under_meta_leaves_the_collector_off_and_raises_no_problem()
+    {
+        var load = LoadText("""{ "schema": 1, "sessions": { "enabled": false }, "meta": { "lanesAgent": "claude-code", "typo": 1 } }""");
+
+        Assert.Equal((false, null), (load.Sessions.Enabled, load.Sessions.ConfigProblem));
+        Assert.Empty(load.AttendedProblems);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public void A_bad_viewer_or_host_is_recorded_for_attended_opens_and_not_for_the_collector()
+    {
+        var load = LoadText("""{ "schema": 1, "sessions": { "pollSeconds": 7 }, "viewer": { "kind": "nope" }, "host": { "kind": "screen" } }""");
+
+        Assert.Equal((7, null), (load.Sessions.PollSeconds, load.Sessions.ConfigProblem));
+        Assert.Equal(2, load.AttendedProblems.Count);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public void A_bad_agent_entry_drops_only_itself()
+    {
+        var load = LoadText("""{ "schema": 1, "agents": { "broken": { "label": "x" }, "aider": { "label": "Aider", "bin": "aider", "open": ["{bin}"], "sessionId": "none", "processName": "aider" } } }""");
+
+        Assert.Equal(["claude-code", "codex", "cursor", "aider"], load.Catalog.All.Select(static a => a.Id.Value), StringComparer.Ordinal);
+        Assert.NotNull(load.Sessions.ConfigProblem);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public void A_bad_sessions_section_falls_back_to_the_defaults_but_never_turns_a_disabled_collector_on()
+    {
+        var off = LoadText("""{ "schema": 1, "sessions": { "enabled": false, "pollSeconds": 99 } }""");
+        var on = LoadText("""{ "schema": 1, "sessions": { "pollSeconds": 99 } }""");
+
+        Assert.Equal((false, true), (off.Sessions.Enabled, off.Sessions.ConfigProblem is not null));
+        Assert.Equal((true, 2, true), (on.Sessions.Enabled, on.Sessions.PollSeconds, on.Sessions.ConfigProblem is not null));
     }
 }

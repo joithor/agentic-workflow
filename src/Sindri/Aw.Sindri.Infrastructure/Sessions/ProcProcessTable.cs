@@ -17,6 +17,11 @@ internal sealed class ProcProcessTable(string root, int ownUid) : IProcessTable
 
     public Result<IReadOnlyList<ProcessEntry>> Read(CancellationToken cancellationToken)
     {
+        if (!Directory.Exists(root))
+        {
+            return UnavailableReasons.ToError(UnavailableReason.UnsupportedPlatform);   // no /proc here (macOS, Windows)
+        }
+
         IEnumerable<string> directories;
         try
         {
@@ -61,7 +66,7 @@ internal sealed class ProcProcessTable(string root, int ownUid) : IProcessTable
         }
     }
 
-    private static Error Unreadable() => SindriErrors.SessionsUnavailable.With("proc-unreadable");
+    private static Error Unreadable() => UnavailableReasons.ToError(UnavailableReason.ProcUnreadable);
 
     private string Dir(int pid) => Path.Combine(root, pid.ToString(CultureInfo.InvariantCulture));
 

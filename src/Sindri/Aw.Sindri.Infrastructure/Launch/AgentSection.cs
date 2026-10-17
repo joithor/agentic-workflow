@@ -33,4 +33,10 @@ internal sealed record AgentSection
     public string? Usage { get; init; }
 
     public string? Mcp { get; init; }
+
+    /// <summary>The per-run model form (scoping-station spec L-17): read and checked here, applied by the launcher; a null is not absent.</summary>
+    public JsonElement Model { get; init; }
+
+    /// <summary>The per-launch policy form (scoping-station spec L-17): read and checked here, applied by the launcher.</summary>
+    public JsonElement Policy { get; init; }
 }
