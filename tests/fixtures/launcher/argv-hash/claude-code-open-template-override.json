@@ -14,6 +14,6 @@
       "{seed}"
     ]
   },
-  "canonical": "{\"bin\":\"claude\",\"mcp\":\"claude-config-file\",\"open\":[\"{bin}\",\"--session-id\",\"{sessionId}\",\"-n\",\"{name}\",\"--model\",\"opus\",\"{seed}\"],\"resume\":[\"{bin}\",\"--resume\",\"{sessionId}\"],\"sessionId\":\"pre-chosen-uuid\"}",
-  "argvHash": "sha256:e5f92b69370f63b89ab902ea23c16dd65d119544e046afde6e62a24b9ace3281"
+  "canonical": "{\"bin\":\"claude\",\"mcp\":\"claude-config-file\",\"model\":\"claude-flag\",\"open\":[\"{bin}\",\"--session-id\",\"{sessionId}\",\"-n\",\"{name}\",\"--model\",\"opus\",\"{seed}\"],\"policy\":\"claude-settings-file\",\"resume\":[\"{bin}\",\"--resume\",\"{sessionId}\"],\"sessionId\":\"pre-chosen-uuid\"}",
+  "argvHash": "sha256:78f3eadcd27843a2be1c7d53b0168946a4a6ac01be75a6df4ab3e6a2f69045ff"
 }

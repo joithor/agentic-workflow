@@ -1,0 +1,6 @@
+M:System.Environment.Exit(System.Int32);Return an exit code to the Host; only a Host ends the process (engineering.csharp.small-bans)
+M:System.GC.Collect;Let the runtime schedule collections; only a Host may force one (engineering.csharp.small-bans)
+M:System.GC.Collect(System.Int32);Let the runtime schedule collections; only a Host may force one (engineering.csharp.small-bans)
+M:System.GC.Collect(System.Int32,System.GCCollectionMode);Let the runtime schedule collections; only a Host may force one (engineering.csharp.small-bans)
+M:System.GC.Collect(System.Int32,System.GCCollectionMode,System.Boolean);Let the runtime schedule collections; only a Host may force one (engineering.csharp.small-bans)
+M:System.GC.Collect(System.Int32,System.GCCollectionMode,System.Boolean,System.Boolean);Let the runtime schedule collections; only a Host may force one (engineering.csharp.small-bans)

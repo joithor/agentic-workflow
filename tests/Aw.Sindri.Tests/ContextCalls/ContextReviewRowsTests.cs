@@ -10,7 +10,7 @@ namespace Aw.Sindri.Tests.ContextCalls;
 /// <summary>
 /// The classes of the S-4 context commands (README X63; context spec §8.5, §8.7): single decisions, the bulk deterministic accept,
 /// undo and the orphan repoint and drop are desk (a reversible override row with Undo); applying a review file, merge, add, delete
-/// and promote are protected; proposing is a job callable from the terminal, the app and the engine's services; building waits for API P6.
+/// and promote are protected; proposing is a job callable from the terminal, the app and the engine's services; building and syncing sources are jobs on the P6 runtime.
 /// </summary>
 public sealed class ContextReviewRowsTests
 {
@@ -63,22 +63,46 @@ public sealed class ContextReviewRowsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Map_build_is_a_job_row_that_waits_for_API_P6_with_no_command_type()
+    public void Map_build_is_a_ready_job_row_for_the_build_request()
     {
         var build = Row("BuildContextMap");
 
-        Assert.Equal((ActionClass.Job, "pending:API-P6", "POST", "/sindri/context/map/build"), (build.Class, build.Ui, build.Method, build.Route));
-        Assert.Null(build.CommandType);
+        Assert.Equal((ActionClass.Job, "ready", "POST", "/sindri/context/map/build"), (build.Class, build.Ui, build.Method, build.Route));
+        Assert.Equal(typeof(BuildContextMapRequest), build.CommandType);
         Assert.Equal("sindri context map build", build.Cli.Text);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Sync_sources_is_a_job_row_that_waits_for_API_P6_with_no_command_type()
+    public void Run_context_backtest_is_a_ready_job_row_for_the_backtest_request()
+    {
+        var backtest = Row("RunContextBacktest");
+
+        Assert.Equal((ActionClass.Job, "ready", "POST", "/sindri/context/eval/backtest"), (backtest.Class, backtest.Ui, backtest.Method, backtest.Route));
+        Assert.Equal(typeof(RunContextBacktestRequest), backtest.CommandType);
+        Assert.Equal("sindri context eval backtest", backtest.Cli.Text);
+        Assert.False(Table.Decide(backtest.Class, A.Caller().Session().Build(), backtest).Allowed);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Sync_sources_is_a_ready_job_row_for_the_sync_request()
     {
         var sync = Row("SyncSources");
 
-        Assert.Equal((ActionClass.Job, "pending:API-P6", "POST", "/sindri/context/sources/sync"), (sync.Class, sync.Ui, sync.Method, sync.Route));
-        Assert.Null(sync.CommandType);   // the S-5B part is in (the context-sync service); only the job runtime is missing
+        Assert.Equal((ActionClass.Job, "ready", "POST", "/sindri/context/sources/sync"), (sync.Class, sync.Ui, sync.Method, sync.Route));
+        Assert.Equal(typeof(SyncContextSourcesRequest), sync.CommandType);
+        Assert.Equal("sindri context sources sync", sync.Cli.Text);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_two_context_jobs_are_refused_to_a_session_and_allowed_to_the_terminal_the_app_and_a_service()
+    {
+        foreach (var row in new[] { Row("BuildContextMap"), Row("SyncSources") })
+        {
+            Assert.True(Table.Decide(row.Class, A.Caller().AtTerminal().Build(), row).Allowed);
+            Assert.True(Table.Decide(row.Class, A.Caller().Human().Build(), row).Allowed);
+            Assert.True(Table.Decide(row.Class, A.Caller().Service("engine").Build(), row).Allowed);
+            Assert.False(Table.Decide(row.Class, A.Caller().Session().Build(), row).Allowed);
+        }
     }
 
     [Theory, Trait("Lane", "unit")]

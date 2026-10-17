@@ -60,7 +60,11 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddScoped<IValidator<TeamInitRequest>, TeamInitValidator>()
         .Validated<TeamInitService, TeamInitRequest, TeamConfig>()
         .AddScoped<TeamShowService>()
-        .Plain<TeamShowService, TeamShowRequest, TeamConfig>();
+        .Plain<TeamShowService, TeamShowRequest, TeamConfig>()
+        .AddScoped<TeamListService>()
+        .Plain<TeamListService, TeamListRequest, TeamListResponse>()
+        .AddScoped<TeamMigrateService>()
+        .Plain<TeamMigrateService, TeamMigrateRequest, TeamMigration>();
 
     private static IServiceCollection AddInboxSlices(this IServiceCollection services) => services
         .AddScoped<SyncInboxService>()

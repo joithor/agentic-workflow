@@ -33,7 +33,7 @@ public sealed class LegacyRecipeRowTests
     }
 
     /// <summary>workflow.step as it was registered before P2b: the file with its inputs in the bare-key short form it had then.</summary>
-    private static string LegacyStep() => ShippedRecipes.Read("sindri/workflow.step.yaml")
+    internal static string LegacyStep() => ShippedRecipes.Read("sindri/workflow.step.yaml")
         .Replace("version: 2\n", "version: 1\n", StringComparison.Ordinal)
         .Replace("inputs:\n  - { key: fact:spec, label: \"Spec\", type: text, kind: text }\n", "inputs: [fact:spec]\n", StringComparison.Ordinal);
 
@@ -135,7 +135,7 @@ public sealed class LegacyRecipeRowTests
 
         await r.ApproveAsInThePast(row);
         var line = await r.Line(row);
-        var shown = await r.Show(row.Id, row.Hash.Display);
+        var shown = await r.Preview(row.Id, row.Hash.Display);
         var issued = (await r.Issue($"revoke workflow.step@{row.Hash.Display}")).Value;
         var revoked = await r.Run<RevokeRecipeRequest, RevokeRecipeResponse>(
             new RevokeRecipeRequest(row.Id, row.Hash, new ChallengeAnswer(issued.Challenge, issued.Action)), RegistryHarness.Human);
@@ -143,7 +143,7 @@ public sealed class LegacyRecipeRowTests
         Assert.Equal(RecipeStanding.Approved, line.Standing);
         Assert.Equal([StaleReason.LegacyShape], line.Stale);
         Assert.True(shown.IsSuccess, shown.IsError ? shown.Error.ToString() : null);
-        Assert.Equal(row.Hash, shown.Value.Recipe.Hash);
+        Assert.Equal(row.Hash, shown.Value.Hash);
         Assert.True(revoked.IsSuccess, revoked.IsError ? revoked.Error.ToString() : null);
         Assert.Equal(row.Hash, revoked.Value.Revocation.Hash);
         Assert.Equal(RecipeStanding.Revoked, (await r.Line(row)).Standing);
@@ -157,10 +157,10 @@ public sealed class LegacyRecipeRowTests
         await r.ApproveAsInThePast(row);
         var next = await r.Register(RecipeReaderTests.Bind(LegacyStep()) with { Version = 2, Description = "A reworded step." });
 
-        var shown = await r.Show(next.Id, next.Hash.Display);
+        var shown = await r.Preview(next.Id, next.Hash.Display);
 
         Assert.True(shown.IsSuccess, shown.IsError ? shown.Error.ToString() : null);
-        var changed = shown.Value.Preview.Diff!.Split('\n').Where(l => (l.StartsWith('+') || l.StartsWith('-')) && !l.StartsWith("+++", StringComparison.Ordinal) && !l.StartsWith("---", StringComparison.Ordinal)).ToList();
+        var changed = shown.Value.Diff!.Split('\n').Where(l => (l.StartsWith('+') || l.StartsWith('-')) && !l.StartsWith("+++", StringComparison.Ordinal) && !l.StartsWith("---", StringComparison.Ordinal)).ToList();
         Assert.Contains(changed, l => l.Contains("A reworded step.", StringComparison.Ordinal));
         Assert.DoesNotContain(changed, l => l.Contains("urgency", StringComparison.Ordinal) || l.Contains("outputs", StringComparison.Ordinal) || l.Contains("\"kind\": null", StringComparison.Ordinal));
     }

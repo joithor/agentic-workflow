@@ -8,6 +8,9 @@ namespace Aw.Context.Core.Extract;
 /// <summary>Composes the recognizers over a repo's files at one commit (S-4): deterministic nodes, each with a file-level 'implements' edge from the file that defines it.</summary>
 public static class MapExtractor
 {
+    /// <summary>The recognizers' version. A backtest's as-of map cache is keyed by it, so a change to what the recognizers find bumps it.</summary>
+    public const int Version = 1;
+
     /// <summary>Extracts the map from the files.</summary>
     /// <param name="repo">The repo (its name joins the evidence keys).</param>
     /// <param name="files">The files at the commit.</param>

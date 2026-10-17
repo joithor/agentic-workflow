@@ -97,6 +97,107 @@ public abstract class RepoReaderContract
         Expect.That(new[] { env, secret, docsRead }.All(r => r.Error.Code == "SND-CONTEXT-048"), test, "a denied read wasn't SND-CONTEXT-048");
     }
 
+    /// <summary>The range from the merge base lists exactly what the branch changed, and nothing 'main' changed after the branch point.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Changes_lists_name_status_from_the_merge_base_to_head()
+    {
+        const string test = nameof(Changes_lists_name_status_from_the_merge_base_to_head);
+        var reader = CreateChangeReader(out var repo, out var world);
+
+        var changes = Expect.Ok(await reader.Changes(repo, new DiffRange(world.Base, world.Head), None), test);
+
+        Expect.That((changes.Base, changes.Head, changes.MergeBase) == (world.Base, world.Head, world.MergeBase), test, $"shas were {changes.Base}, {changes.Head}, {changes.MergeBase}");
+        Expect.That(changes.Files.SequenceEqual(world.Expected), test, $"files were {string.Join(", ", changes.Files.Select(f => f.Path + ":" + f.Change))}");
+    }
+
+    /// <summary>An abbreviated sha comes back as the full one.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Changes_answers_full_shas_for_abbreviated_ones()
+    {
+        const string test = nameof(Changes_answers_full_shas_for_abbreviated_ones);
+        var reader = CreateChangeReader(out var repo, out var world);
+
+        var changes = Expect.Ok(await reader.Changes(repo, new DiffRange(world.Base[..9], world.Head[..9]), None), test);
+
+        Expect.That((changes.Base, changes.Head, changes.MergeBase) == (world.Base, world.Head, world.MergeBase), test, $"shas were {changes.Base}, {changes.Head}, {changes.MergeBase}");
+    }
+
+    /// <summary>A sha the clone doesn't hold is SND-CONTEXT-110, on either side.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Changes_with_a_sha_the_clone_lacks_is_110()
+    {
+        const string test = nameof(Changes_with_a_sha_the_clone_lacks_is_110);
+        var reader = CreateChangeReader(out var repo, out var world);
+
+        var first = await reader.Changes(repo, new DiffRange(ChangeWorld.Absent, world.Head), None);
+        var second = await reader.Changes(repo, new DiffRange(world.Base, ChangeWorld.Absent), None);
+
+        Expect.That(first.IsError && second.IsError, test, "a missing commit was accepted");
+        Expect.That(first.Error.Code == "SND-CONTEXT-110" && second.Error.Code == "SND-CONTEXT-110", test, $"codes were {first.Error.Code}, {second.Error.Code}");
+    }
+
+    /// <summary>Commits with no history in common are SND-CONTEXT-111.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Changes_with_unrelated_histories_is_111()
+    {
+        const string test = nameof(Changes_with_unrelated_histories_is_111);
+        var reader = CreateChangeReader(out var repo, out var world);
+
+        var result = await reader.Changes(repo, new DiffRange(world.Unrelated, world.Head), None);
+
+        Expect.That(result.IsError && result.Error.Code == "SND-CONTEXT-111", test, result.IsError ? result.Error.Code : "an answer");
+    }
+
+    /// <summary>A rename is a deletion plus an addition, whatever the repo's own diff settings say.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Changes_treats_a_rename_as_delete_and_add()
+    {
+        const string test = nameof(Changes_treats_a_rename_as_delete_and_add);
+        var reader = CreateChangeReader(out var repo, out var world);
+
+        var changes = Expect.Ok(await reader.Changes(repo, new DiffRange(world.Head, world.RenameHead), None), test);
+
+        Expect.That(changes.Files.SequenceEqual(world.RenameExpected), test, $"files were {string.Join(", ", changes.Files.Select(f => f.Path + ":" + f.Change))}");
+    }
+
+    /// <summary>A commit against itself changes nothing.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Changes_of_head_against_itself_is_empty()
+    {
+        const string test = nameof(Changes_of_head_against_itself_is_empty);
+        var reader = CreateChangeReader(out var repo, out var world);
+
+        var changes = Expect.Ok(await reader.Changes(repo, new DiffRange(world.Head, world.Head), None), test);
+
+        Expect.That(changes.Files.Count == 0 && changes.MergeBase == world.Head, test, $"files {changes.Files.Count}, merge base {changes.MergeBase}");
+    }
+
+    /// <summary>A missing checkout is SND-CONTEXT-048.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Changes_on_a_missing_checkout_is_048()
+    {
+        const string test = nameof(Changes_on_a_missing_checkout_is_048);
+        var reader = CreateChangeReader(out _, out var world);
+        var missing = new ContextRepo(ContextRepoName.From("nowhere"), Path.Combine(Path.GetTempPath(), "aw-no-such-checkout"));
+
+        var result = await reader.Changes(missing, new DiffRange(world.Base, world.Head), None);
+
+        Expect.That(result.IsError && result.Error.Code == "SND-CONTEXT-048", test, result.IsError ? result.Error.Code : "an answer");
+    }
+
+    /// <summary>A reader with a repo that holds the history of <see cref="ChangeWorld"/>.</summary>
+    /// <param name="repo">The repo.</param>
+    /// <param name="world">The commits and what they changed.</param>
+    /// <returns>The reader.</returns>
+    protected abstract IRepoReader CreateChangeReader(out ContextRepo repo, out ChangeWorld world);
+
     /// <summary>A reader with a repo that holds <see cref="Committed"/> at one commit.</summary>
     /// <param name="repo">The repo.</param>
     /// <param name="commit">Its HEAD commit.</param>

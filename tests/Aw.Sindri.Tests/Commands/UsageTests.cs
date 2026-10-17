@@ -17,6 +17,37 @@ public sealed class UsageTests
     public void Help_lists_every_workflow_verb(string verb) =>
         Assert.Single(Lines(), l => l.StartsWith($"sindri workflow {verb} ", StringComparison.Ordinal));
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("services [")]
+    [InlineData("services run ")]
+    [InlineData("services pause|resume ")]
+    [InlineData("jobs [")]
+    [InlineData("jobs show ")]
+    [InlineData("jobs cancel ")]
+    public void Help_lists_every_service_and_job_verb(string verb) =>
+        Assert.Single(Lines(), l => l.StartsWith($"sindri {verb}", StringComparison.Ordinal));
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(new[] { "services", "run", "heartbeat" }, true)]
+    [InlineData(new[] { "services", "run", "heartbeat", "--detach" }, false)]
+    [InlineData(new[] { "services" }, false)]
+    [InlineData(new[] { "jobs", "show", "x" }, false)]
+    public void Only_a_following_run_takes_a_second_ctrl_c(string[] args, bool follows) => Assert.Equal(follows, Interrupt.FollowsJob(args));
+
+    [Fact, Trait("Lane", "unit")]
+    public void Every_verb_that_takes_detach_is_a_job_follower_and_listens_for_ctrl_c_unless_detached()
+    {
+        var verbs = Lines().Where(l => l.Contains("--detach", StringComparison.Ordinal))
+            .Select(l => l.Split(' ', StringSplitOptions.RemoveEmptyEntries).Skip(1).TakeWhile(w => !w.StartsWith('[') && !w.StartsWith('<')).ToArray()).ToList();
+
+        Assert.Contains(verbs, v => v.SequenceEqual(["context", "eval", "backtest"]));   // the list is read from the help, so a new job verb can't be left out
+        Assert.All(verbs, v =>
+        {
+            Assert.True(Interrupt.FollowsJob(v), $"'sindri {string.Join(' ', v)}' takes --detach but Interrupt.FollowsJob doesn't list it, so Ctrl-C would kill the CLI and leave the job running");
+            Assert.False(Interrupt.FollowsJob([.. v, "--detach"]));
+        });
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Help_names_no_option_the_workflow_verbs_dropped() =>
         Assert.DoesNotContain(Lines(), l => l.StartsWith("sindri workflow ", StringComparison.Ordinal) && (l.Contains("--temporal", StringComparison.Ordinal) || l.Contains("--no-wait", StringComparison.Ordinal)));

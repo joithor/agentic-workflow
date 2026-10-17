@@ -1,5 +1,6 @@
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Sources;
 
 namespace Aw.Context.Testing.Graph;
 
@@ -30,15 +31,16 @@ public sealed class GraphBuilder
     /// <param name="order">The flow order, for step-of.</param>
     /// <param name="provenance">Its provenance.</param>
     /// <param name="confidence">Its confidence.</param>
+    /// <param name="evidence">The key of the one record it rests on (such as 'repo:aw-split-panes/src/a.ts'), or null.</param>
     /// <returns>This builder.</returns>
-    public GraphBuilder Edge(string from, EdgeType type, string to, int? order = null, Provenance provenance = Provenance.Human, double confidence = 1.0)
+    public GraphBuilder Edge(string from, EdgeType type, string to, int? order = null, Provenance provenance = Provenance.Human, double confidence = 1.0, string? evidence = null)
     {
         foreach (var key in new[] { from, to }.Where(k => !_nodes.Exists(n => n.Key.Value == k)))
         {
             _ = Node(key);
         }
 
-        _edges.Add(new GraphEdge(NodeKey.From(from), NodeKey.From(to), type, provenance, confidence, Order: order));
+        _edges.Add(new GraphEdge(NodeKey.From(from), NodeKey.From(to), type, provenance, confidence, Order: order, Evidence: evidence is null ? null : [new EvidenceRef(RecordKey.From(evidence))]));
         return this;
     }
 

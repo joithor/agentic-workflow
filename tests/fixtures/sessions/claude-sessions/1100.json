@@ -1,0 +1,17 @@
+{
+  "pid": 1100,
+  "sessionId": "cccccccc-0000-4000-8000-000000001100",
+  "cwd": "/home/dev/recycled",
+  "startedAt": 1760000001100,
+  "procStart": "8000",
+  "version": "2.1.301",
+  "kind": "interactive",
+  "entrypoint": "cli",
+  "name": "dead session",
+  "nameSource": "user",
+  "status": "busy",
+  "statusUpdatedAt": 1760000101100,
+  "updatedAt": 1760000101100,
+  "pidDomain": "host",
+  "peerProtocol": 1
+}

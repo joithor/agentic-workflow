@@ -6,7 +6,7 @@ using Aw.Sindri.Core.Workflow.Recipes;
 namespace Aw.Sindri.Core.Workflow.Validation;
 
 /// <summary>
-/// The wiring rules (spec §9.1 "Inputs upstream", W2: checked on every path): RCP-WIRE-001/002, RCP-WHEN-001/002, RCP-OUTCOME-001 and RCP-CHILD-001.
+/// The wiring rules (spec §9.1 "Inputs upstream", W2: checked on every path): RCP-WIRE-001/002/003, RCP-WHEN-001/002, RCP-OUTCOME-001 and RCP-CHILD-001.
 /// Pure: they read the bound recipe, the catalog and the child resolver. A block, event or child that isn't found is
 /// the block rules' (or RCP-CHILD-001's) to report, so these rules skip what they can't resolve; a state name the
 /// recipe doesn't declare is the schema rules' to report. The findings come back ordered by where their node starts
@@ -27,6 +27,7 @@ internal sealed partial class WiringRules : IRecipeRules
         [
             .. Upstream(recipe, context.Catalog, source),
             .. Produced(recipe, context, source),
+            .. ChildOutputsProduced(recipe, context, source),
             .. Conditions(recipe, context, source),
             .. Unhandled(recipe, context, source),
             .. Terminals(recipe, source),
@@ -49,7 +50,8 @@ internal sealed partial class WiringRules : IRecipeRules
     /// <param name="Name">How findings name it: "step 'step.produce'", "event 'item.routed'".</param>
     /// <param name="Outcomes">The outcomes it reports; empty when it reports none.</param>
     /// <param name="Facts">The facts it records, which a transition may list in 'produces'.</param>
-    private sealed record TriggerSource(string Name, IReadOnlyList<OutcomeName> Outcomes, IReadOnlyList<FactKey> Facts);
+    /// <param name="ChildId">The child recipe's id when the source is a child, whose declared outputs are the facts; null otherwise.</param>
+    private sealed record TriggerSource(string Name, IReadOnlyList<OutcomeName> Outcomes, IReadOnlyList<FactKey> Facts, string? ChildId = null);
 
     /// <summary>The source of a transition from <paramref name="from"/> on <paramref name="on"/>, or null when it can't be resolved (an unknown state, block, event or child, or a trigger that doesn't fit the state, which other rules report).</summary>
     private static TriggerSource? SourceOf(Recipe recipe, string from, string on, ValidationContext context)
@@ -97,7 +99,7 @@ internal sealed partial class WiringRules : IRecipeRules
         var terminals = found.Recipe.States.Values
             .Where(s => s.Kind == StateKind.Terminal && s.Outcome is not null)
             .Select(s => s.Outcome.GetValueOrDefault());
-        return new TriggerSource($"child '{child.Recipe.Value}'", [.. terminals.Append(_cancelled).Distinct()], []);
+        return new TriggerSource($"child '{child.Recipe.Value}'", [.. terminals.Append(_cancelled).Distinct()], ChildOutputs.Declared(found.Recipe), child.Recipe.Value);
     }
 
     /// <summary>Each state a transition leaves from, with its trigger's source where that resolves.</summary>

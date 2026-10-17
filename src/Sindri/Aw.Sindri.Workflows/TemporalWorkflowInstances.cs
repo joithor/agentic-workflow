@@ -35,8 +35,7 @@ internal sealed class TemporalWorkflowInstances(TemporalFrontend frontend) : IWo
         var rows = new List<InstanceRow>();
         try
         {
-            await foreach (var execution in client.Value.ListWorkflowsAsync(query is { Length: > 0 } ? $"({query}) AND {(ended ? Recipes : Open)}" : ended ? Recipes : Open)
-                .WithCancellation(cancellationToken).ConfigureAwait(false))
+            foreach (var execution in await TemporalReads.List(client.Value, query is { Length: > 0 } ? $"({query}) AND {(ended ? Recipes : Open)}" : ended ? Recipes : Open, cancellationToken).ConfigureAwait(false))
             {
                 rows.Add(Row(execution));
             }

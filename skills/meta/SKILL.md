@@ -45,9 +45,12 @@ it prints what you owe and the command that settles it. Settle it, don't argue w
 ## Set up a team (once)
 
 1. `aw-meta team-init --team <name> --repo <absolute repo path> --lanes <a,b,c> [--meta-lane meta] [--log <file>]`
-   writes `$AW_STATE_DIR/meta/team.json`. Then edit its `gate.scopes` (the merge gate, step by step), `mergeOrder`,
+   writes `$AW_STATE_DIR/meta/teams/<name>/team.json` (the team's own state directory: `meta.db`, `gates/`, `lane-sessions/`,
+   `log.md`; another team is never touched). Then edit its `gate.scopes` (the merge gate, step by step), `mergeOrder`,
    `knownFlakes` and `prompts` (a directory of `<lane>.md` kickoff prompts). Example:
-   `$HOME/.agentic-workflow/toolkit/skills/meta/examples/agentic-workflow.team.json`.
+   `$HOME/.agentic-workflow/toolkit/skills/meta/examples/agentic-workflow.team.json` (to use it, copy it to
+   `$AW_STATE_DIR/meta/teams/<team>/team.json`; the directory name must equal the file's `team`, since selection uses the
+   directory and the session and tmux names use the file).
 2. `aw-meta-launch` opens one Warp window with a pane per lane, each attached to tmux session `<team>-<lane>` running
    that lane's Claude session, named `<team>-<lane>` so its name never changes. Rerun it after a crash: it recreates
    the dead tmux sessions, restarts a lane whose Claude exited, and resumes each lane by its session id. From the
@@ -61,6 +64,33 @@ it prints what you owe and the command that settles it. Settle it, don't argue w
    (for example `tmux -L sindri attach -t sindri-ideas`), and list its sessions with `tmux -L <team> ls`. A bare
    `tmux attach` looks at tmux's default socket, which the team no longer uses. A team launched before this change
    stays on the default socket until it is relaunched.
+
+### Named teams: several meta sessions at once
+
+Every team has its own config and state, so one meta session per team can run at the same time without seeing the
+others' messages, obligations, role, gates or lane sessions. `aw-meta team-list` shows the teams (layout, repo, lanes,
+the registered meta session and whether it is running). Which team a command acts on:
+
+- `--team <name>` (any command) or `AW_META_TEAM=<name>`; the flag wins. `aw-meta-launch --team <name>` starts that team.
+- `aw-meta-launch` exports `AW_META_TEAM` (and `AW_META_DIR`, the team's state directory) into every pane it opens, so a
+  lane or meta session and its hooks need nothing more. The Claude Stop and outbox hooks also take the team from the
+  tmux socket they run on (the launcher names it after the team) when `AW_META_TEAM` is unset, but only for a team that
+  exists on disk.
+- With one team on disk none needs selecting. With several and none selected a command exits 2 with `AW-META-019`
+  listing them: pick one, never guess. The hooks (`stop-check`, `outbox-record`) pass straight through instead, so an
+  unrelated session is never blocked.
+- `AW_META_CONFIG` still overrides the config file path.
+
+An older install has the flat layout (`$AW_STATE_DIR/meta/team.json` and `meta.db` directly under `meta/`). It keeps
+working unchanged while no team is selected (or when the selected name is that config's own team). Moving it into
+`teams/<its team>/` is opt-in: first run `worktree-sweep` for the old `meta/gates` trees (after the migration the sweep
+roots are `teams/<team>/gates`, so the old directory is never swept again), stop every session of the team (the meta and
+the lanes: `team-migrate` refuses while one runs), run `aw-meta team-migrate --dry-run`, then `aw-meta team-migrate`, then
+relaunch with `aw-meta-launch`. `gates/` stays where it is. Never run it from the meta session of a live team.
+
+Teams on the same repo share the default worktree roots (`~/repos/aw-wt`, `<repo>/.claude/worktrees`), so one team's
+`worktree-sweep` or merge trigger may remove another team's finished worktrees (the other rules still apply: an ended pull
+request, nothing unpushed, no process inside). Give each team its own `worktrees.roots` in its `team.json` to keep them apart.
 
 ## Start (or after any restart)
 

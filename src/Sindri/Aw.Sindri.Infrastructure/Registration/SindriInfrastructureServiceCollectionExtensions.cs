@@ -9,6 +9,7 @@ using Aw.Sindri.Core.Locks;
 using Aw.Sindri.Core.Mcp;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Secrets;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
@@ -54,6 +55,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<ViewsDatabase>()
             .AddSingleton<IViewStore, SqliteViewStore>()
             .AddSingleton<IViewReader, SqliteViewReader>()
+            .AddSingleton<IJobViews, SqliteJobViews>().AddSingleton<IServicePauses, ViewServicePauses>()
             .AddSingleton<IProfileSource, YamlProfileSource>()
             .AddSingleton<IApprovals, FileApprovals>()
             .AddSingleton<IApprovedProfile>(static sp => sp.GetRequiredService<IApprovals>())
@@ -79,9 +81,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IHarnessVersions, CommandHarnessVersions>()
             .AddSingleton<IOsNotifier, OsascriptNotifier>()          // engine P6 unit (c): the only OS notifier (README X5, X50)
             .AddSingleton<IDeskNotices, FileDeskNotices>()           // engine P6 unit (c): notifications.jsonl
-            .AddSingleton(McpSettings.Read(environment))
-            .AddSingleton<IClaudeCli, ProcessClaudeCli>()
-            .AddSingleton<IProviderFiles, ProviderConfigFiles>()
+            .AddMcpAdapters(environment)
             .AddOnyxInfrastructure()
             .AddSingleton<ITextScrubber>(new RedactingScrubber(Redactor.Default));
 
@@ -90,6 +90,13 @@ public static class SindriInfrastructureServiceCollectionExtensions
         => services
             .AddSingleton(SettingsFromEnvironment.Read(environment))
             .AddSingleton<ISindriHome, SettingsSindriHome>();
+
+    // The MCP registration adapters: its settings, the claude CLI and the provider config files.
+    private static IServiceCollection AddMcpAdapters(this IServiceCollection services, Func<string, string?> environment)
+        => services
+            .AddSingleton(McpSettings.Read(environment))
+            .AddSingleton<IClaudeCli, ProcessClaudeCli>()
+            .AddSingleton<IProviderFiles, ProviderConfigFiles>();
 
     private static IServiceCollection AddOnyxInfrastructure(this IServiceCollection services)
         => services

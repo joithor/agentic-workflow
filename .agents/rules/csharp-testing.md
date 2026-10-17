@@ -51,7 +51,7 @@ Lanes are xUnit traits named `Lane`. Every test carries exactly one. A budget co
 | Lane | What | Budget (whole lane, per package) |
 |---|---|---|
 | `unit` | `Core` logic and services with in-memory fakes. No I/O | < 10 s |
-| `integration` | Repositories on a real temp SQLite file; endpoints on the real host on loopback (`LoopbackBinding` + `Pipeline.Configure`, as the scaffolded tests do) or through `WebApplicationFactory`; the architecture tests (`Aw.Architecture.Tests`: they load every assembly, and four take 22 to 27 s each, over the unit per-test cap; owner, 2026-10-16) | < 60 s; `SindriUi` < 90 s (headless Avalonia rendering; owner, 2026-10-16, `PACKAGE_BUDGETS` in `scripts/ci/lane-budgets.mjs`) |
+| `integration` | Repositories on a real temp SQLite file; endpoints on the real host on loopback (`LoopbackBinding` + `Pipeline.Configure`, as the scaffolded tests do) or through `WebApplicationFactory`; the architecture tests (`Aw.Architecture.Tests`: they load every assembly, and four take 22 to 27 s each, over the unit per-test cap; owner, 2026-10-16) | < 60 s; `SindriUi` < 90 s (headless Avalonia rendering; owner, 2026-10-16, `PACKAGE_BUDGETS` in `scripts/ci/lane-budgets.mjs`); `Sindri` < 120 s (real Temporal servers; owner, 2026-10-16: 63.7 s in CI after fail-fast + 8 threads) |
 | `heavy` | Real containers, browsers, index builds, multi-megabyte real-clock scale cases | none; nightly, or under a slot of the heavy-job lock (at most two heavy jobs at a time) |
 
 ```csharp
@@ -80,7 +80,7 @@ The test framework is decided (R7, R1a spike): xUnit v3 on Microsoft.Testing.Pla
 ## Test data
 
 - Builders with sensible defaults: `AnItem().WithSize(S).Build()`.
-- Deterministic ids (a fake `IIdGenerator`) and `FakeTimeProvider`; never the wall clock or `Guid.NewGuid` in a test.
+- Deterministic ids (a fake `IIdGenerator`) and `FakeTimeProvider`; never the wall clock, `Guid.NewGuid` or `Thread.Sleep` in a test (`BannedSymbols.Tests.txt` checks it once the cleanup PR lands). `CA2000`, `CA2213` and `CA2100` are off under `tests/` (`tests/.editorconfig`).
 - No shared mutable fixtures; each test builds its own state.
 - Golden files for CLI output and JSON contracts, recorded from the **C# build** (the golden-file assertions live in `Aw.Kernel.Testing`). Compare after the declared normalization (ids, times), never by loose matching. Update a golden file only in a reviewed change that says why the contract changed.
 
@@ -101,6 +101,7 @@ ArchUnitNET (not NetArchTest), in the `integration` lane (owner, 2026-10-16), in
 | `ARCH-PORT-001`, `002` | No technology type in Core, Features or the small shape's `App.Commands`; only `Composition` uses Infrastructure |
 | `ARCH-ID-001`, `002` | `TypedIdGuard`: the VogenDefaults block, and every id and id property (`docs/csharp/typed-ids.md`) |
 | `ARCH-REG-001`, `002`, `003` | `Packages.cs` lists every production project in the solution (by project name; analyzers excluded), each one's assembly (its `<AssemblyName>` if set) loads, and a project that is neither tier 0 nor a layer project is declared in `Packages.Unshaped` (the UI and its heads) |
+| `ARCH-ASYNC-001` | Every `Task`/`ValueTask` method on a Core interface (a port) takes a `CancellationToken`; `DisposeAsync` is exempt |
 | `ARCH-UI-001` | The UI package: no UI type uses a Sindri type; a view model uses no `Avalonia.*` type; a platform head holds no view or view model |
 
 The layer rules apply to shaped packages (assemblies named `Aw.<Pkg>.Core`, `.Features`, `.Infrastructure`, `.Host`

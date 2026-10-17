@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+  "title": "SND-JOB-409",
+  "status": 409,
+  "detail": "A scheduled run of heartbeat is in flight (fix: wait for it to end, then run it again)",
+  "traceId": "<trace>"
+}

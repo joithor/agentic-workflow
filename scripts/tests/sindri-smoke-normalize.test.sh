@@ -25,4 +25,5 @@ check "an item id is ITM-ID, its time and sequence fixed words" "ITM-00000000000
 check "an item add's sequence is SEQ" "ITM-00000000000000000000000000000014 created (sequence 12)" "ITM-ID created (sequence SEQ)"
 check "a request and its decision id are REQ-ID and DEC-ID" "REQ-0192a1b2c3d4e5f6a7b8c9d0e1f2a301 filed; DEC-0192a1b2c3d4e5f6a7b8c9d0e1f2a302 waits for a human (sequence 14)" "REQ-ID filed; DEC-ID waits for a human (sequence SEQ)"
 check "a decision's command line names DEC-ID" "  sindri decide DEC-0192a1b2c3d4e5f6a7b8c9d0e1f2a302 accept" "  sindri decide DEC-ID accept"
+check "a job id is JOB-ID" "job JOB-0123456789abcdef0123456789abcdef started" "job JOB-ID started"
 [ "$fail" -eq 0 ] && echo "PASS: sindri-smoke-normalize tests" || { echo "FAIL: sindri-smoke-normalize tests"; exit 1; }

@@ -12,9 +12,11 @@ internal sealed class FileLinks
     private readonly Dictionary<string, HashSet<string>> _records = new(StringComparer.Ordinal);
     private readonly Dictionary<string, HashSet<string>> _decisions = new(StringComparer.Ordinal);
 
-    internal FileLinks(GraphSnapshot graph)
+    /// <param name="graph">The graph.</param>
+    /// <param name="repo">The repo whose links are read, or null for every link: an edge whose file evidence ('repo:&lt;repo&gt;/&lt;path&gt;') names only other repos is left out; one with no repo evidence counts for any repo.</param>
+    internal FileLinks(GraphSnapshot graph, Engine.ContextRepoName? repo = null)
     {
-        _byFile = graph.Edges.Where(e => e.Type is EdgeType.Implements or EdgeType.Tests && e.From.Value.StartsWith(CodePrefix, StringComparison.Ordinal) && !e.From.Value.Contains('#', StringComparison.Ordinal))
+        _byFile = graph.Edges.Where(e => e.Type is EdgeType.Implements or EdgeType.Tests && BelongsTo(e, repo) && e.From.Value.StartsWith(CodePrefix, StringComparison.Ordinal) && !e.From.Value.Contains('#', StringComparison.Ordinal))
             .GroupBy(e => e.From.Value[CodePrefix.Length..], StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
         foreach (var edge in graph.Edges.Where(e => e.Type is EdgeType.Mentions or EdgeType.Decides))
         {
@@ -26,6 +28,17 @@ internal sealed class FileLinks
 
             _ = from.Add(edge.From.Value);
         }
+    }
+
+    private static bool BelongsTo(GraphEdge edge, Engine.ContextRepoName? repo)
+    {
+        if (repo is not { } wanted)
+        {
+            return true;
+        }
+
+        var files = edge.EvidenceOrEmpty.Select(r => r.Key.Value).Where(k => k.StartsWith("repo:", StringComparison.Ordinal)).ToList();
+        return files.Count == 0 || files.Exists(k => k.StartsWith($"repo:{wanted.Value}/", StringComparison.Ordinal));
     }
 
     /// <summary>Mapped (a confirmed 'implements' edge), suggested (only unconfirmed ones) or unmapped.</summary>

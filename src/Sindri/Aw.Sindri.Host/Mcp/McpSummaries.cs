@@ -23,6 +23,12 @@ internal static class McpSummaries
         var text = new StringBuilder(string.Create(CultureInfo.InvariantCulture, $"{items} items in {result.Sections.Count} sections; {result.Conflicts.Count} conflicts; degraded: {degraded}"))
             .AppendLine(result.Truncated ? "; truncated to the budget" : string.Empty)
             .AppendLine($"anchors: {(result.Anchors.Count == 0 ? "none" : string.Join(", ", result.Anchors))}");
+        if (result.Diff is { } diff)
+        {
+            var c = diff.Counts;
+            _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"diff: {c.Changed} changed: {c.Mapped} mapped, {c.Suggested} suggested, {c.Unmapped} unmapped, {c.Denied} denied{(diff.Truncated ? " (file list truncated)" : string.Empty)}"));
+        }
+
         if (result.SuggestedAnchors.Count > 0)
         {
             _ = text.AppendLine($"suggested anchors: {string.Join(", ", result.SuggestedAnchors)}");
