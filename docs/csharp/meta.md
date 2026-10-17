@@ -166,15 +166,15 @@ skipped quietly, so a reinstall never leaves an old binary in place without a si
 version, and the launcher warns when the binary is older than the Meta sources it runs from (below).
 
 What reads the host differs; everything else (the SQLite stores, the team config, the CLI, gate and merge, the launcher) is the same
-code. One internal function (`AddHostAdapters`, over a `HostPlatform`) picks the adapters for the process table, host resources and process liveness when the host composes (`AddMetaInfrastructure`); on an OS that is neither Linux nor macOS those three answer `AW-META-010` "unavailable on <OS>", and `lsof` and the tools below are never run.
+code. One internal function (`AddHostAdapters`, over a `HostPlatform`) picks the adapters for the process table, host resources, process liveness and process locations when the host composes (`AddMetaInfrastructure`); on an OS that is neither Linux nor macOS those four answer `AW-META-010` "unavailable on <OS>", and `lsof` and the tools below are never run. Nothing sniffs `/proc` at run time to pick one.
 
 | Need | Linux | macOS |
 |------|-------|-------|
 | Memory total and available (`health`, `status`, `watch`'s `MEMORY LOW`) | `/proc/meminfo` (`MemAvailable`) | `sysctl -n hw.memsize`; available is the free, inactive and speculative pages of `vm_stat` times its page size |
 | Swap used and total | `/proc/meminfo` | `sysctl -n vm.swapusage` |
 | The process table (orphans, duplicate MCP servers, process groups, `health`'s counts) | `/proc/<pid>/stat` and `cmdline`; age from the process start time | `ps -axww -o pid=,ppid=,etime=,rss=,stat=,args=`; age from `etime`, so no time-zone or boot-time arithmetic. Zombies are left out on both |
-| Is this pid running, and is it the process the file names (live sessions, heavy-lock holders; `IProcessLiveness`) | `/proc/<pid>/stat` start time against `/proc/uptime` | `ps -o etime= -p <pid>`: the start time is now minus the elapsed time |
-| What a process holds (worktree cleanup's idle test) | `/proc/<pid>/cwd` and `fd` | `lsof -w -n -F pcn` (cwd, open files, executables) |
+| Is this pid running, and is it the process the file names (live sessions, heavy-lock holders; `IProcessLiveness`) | `/proc/<pid>/stat` start time against `/proc/uptime` | `ps -o etime= -p <pid>`: the start time is now (read before `ps` runs) minus the elapsed time. Many pids at once (`IProcessLiveness.Running`: the session list, the heavy-lock holders) go through one `ps -axo pid=,etime=` |
+| What a process holds (worktree cleanup's idle test) | `/proc/<pid>/cwd` and `fd` | `lsof -w -n -F pcnR` (cwd, open files, executables, parent pid), run like the other tools. The scanning process and its ancestors (the shell that ran it) are marked as invokers, from lsof's parent field here and the `/proc` stat there, so a wrapper shell is never counted as a running gate |
 | Termination (`health`'s orphan kill) | `kill -TERM` | `kill -TERM` |
 | Disk free space, the heavy-job lock directories | the same on both | the same on both |
 
@@ -182,11 +182,11 @@ code. One internal function (`AddHostAdapters`, over a `HostPlatform`) picks the
 pid to a new process once the old one exits. Liveness therefore also compares the process's start time with the file's last write: a
 process that started more than 2 seconds after the file was written (`ProcessStart.Tolerance`; `ps` and `/proc` count whole seconds) is
 another process, and the session or lock is not live. The check is as good as the file's modified time: a record that is rewritten
-later by something other than its own process would hide a reuse, and a start time that cannot be read (a failed `ps`) makes the
-listing fail with `AW-META-010` instead of guessing.
+later by something other than its own process would hide a reuse, and a start time that cannot be read (a failed `ps`) makes that
+pid unknown, not dead: the session or lock is kept (one pid the host can't be asked about never fails the whole listing), and on Linux a `/proc/uptime` that is unreadable or earlier than the process's start (inconsistent clocks) is `AW-META-010`, never "not running" or a reused pid.
 
 A macOS tool that cannot run, times out or prints something unreadable makes the figure unavailable: the command fails with
-`AW-META-010` and a reason that starts "unavailable on macOS: <tool> ..." (for example `/usr/sbin/sysctl -n vm.swapusage exited 1: ...`; at most 300 characters of the tool's stderr are quoted). A number too large for a 64-bit integer in a tool's output is the same error, never an exception. Each tool runs by the absolute path macOS ships it at (`/usr/sbin/sysctl`, `/usr/bin/vm_stat`, `/bin/ps`, `/bin/kill`, `/usr/sbin/lsof`) when that file exists, so a PATH that something else controls can't substitute another program; the bare name is used only when the absolute path does not exist. It is
+`AW-META-010` and a reason that starts "unavailable on macOS: <tool> ..." (for example `/usr/sbin/sysctl -n vm.swapusage exited 1: ...`; at most 300 characters of the tool's stderr are quoted). A number too large for a 64-bit integer in a tool's output is the same error, never an exception. Each tool runs by the absolute path macOS ships it at (`/usr/sbin/sysctl`, `/usr/bin/vm_stat`, `/bin/ps`, `/bin/kill`, `/usr/sbin/lsof`) so a PATH that something else controls can't substitute another program; a tool missing at its path fails to run, which is the `AW-META-010` above, never a lookup by bare name. It is
 never replaced by a made-up value, and `health` does not guess from the rest. The tools' output is read up to 16 MiB (`ps` lists far
 more than the command runner's default 64 KB tail; 16 MiB is about thirty times a busy machine's list, and past it the start is dropped). Symlinked paths: git reports a worktree's physical path (`/private/var/...`),
 while a team config may name it through a symlink (`/var/...`); put worktree roots in `worktrees.roots` by their physical path on
