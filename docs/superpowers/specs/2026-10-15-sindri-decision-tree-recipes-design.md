@@ -539,7 +539,7 @@ caller class `human` (API §4). A session gets `SND-AUTH-002`, as for a protecte
 It applies to `step.desk.choose`, `step.evidence.desk` and `step.owner.decide`, and to any `deskCapable` Step whose
 runtime is `block` while it runs on the desk (`step.judge.choose` before DT-J, or on a fallback), so a session can't
 pick a branch through the route state itself. Every desk completion event already
-records its actor, which `workflow events` shows.
+records its actor, which `workflow events` shows. The refusal lives in `CompleteStep` (`EngineFilledReport.HumanOnlyRefusal`), before the nonce claim, so nothing is consumed; a session report on an instance that can't be read is refused with that read error.
 
 ### 8.6 Tracing a route (engine; DT-J)
 

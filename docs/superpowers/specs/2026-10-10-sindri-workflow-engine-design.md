@@ -260,7 +260,7 @@ Reserved state names: `cancelled`, `escalated`, `parked`, `taken-over`.
 | Duration | `<n>m`, `<n>h` or `<n>d`, at least `1m` |
 | Tokens | int, or with a `k`/`M` suffix |
 | Fact type | `text \| file \| item \| link \| scope-map \| packet \| evidence \| decision \| payload` (UI E-22, §5.2). `text`, `file` and `item` are the input types of rev 7; the rest are for outputs and for inputs that carry a structured value. The type picks a viewer in the app and nothing else: the engine stores every fact as a hashed blob, and a type it doesn't know is `RCP-TYPE-001`, not a runtime error |
-| Subject kind | `item \| linear-project \| webhook \| file \| text \| link` (UI E-22, §5.4). Each input declares one (`RCP-INPUT-001`). `item` pairs with type `item`, `file` with `file`, `text` with `text`, `link` with `link`, and `linear-project` and `webhook` with `payload`. Any other pairing is `RCP-TYPE-003` |
+| Subject kind | `item \| linear-project \| webhook \| file \| text \| link \| packet \| payload` (UI E-22, §5.4; `packet` and `payload` added by DT-R1, owner decision 2026-10-16). Each input declares one (`RCP-INPUT-001`). `item` pairs with type `item`, `file` with `file`, `text` with `text`, `link` with `link`, `packet` with `packet`, and `linear-project`, `webhook` and `payload` with `payload`. Any other pairing is `RCP-TYPE-003` |
 | `with:` value | A literal (string, number, bool or a list of these), `{ fact }` or `{ profile }`. Capability parameters take only literals or `{ profile }` (`RCP-CAP-007`) |
 
 ### 3.4 States
@@ -1754,3 +1754,5 @@ Merged (#179). Unchanged by rev 8.
   `complete --run` moves the instance to `checks`, and the event records `via: agent` and the token usage. The same
   `complete` from another session exits 2 with `SND-AUTH-002`. Killing the tmux session parks the Step through
   `step.failed(exit)` within 150 s.
+
+> DT-R1 note: block descriptors gain optional `Runtime` (`desk|block|agent`) and `HumanOnly` fields (written only when set; DT spec §8.5, scoping-station W3); `workflow complete` on a human-only Step needs a human caller.
