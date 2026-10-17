@@ -577,22 +577,31 @@ severity: fail | warn }] }`, written as `fact:findings` and printed by `--json`.
   | `index-not-built` | Code (callers, callees, symbols) | The code lens's `symbols` block with `state: unavailable` and the text "index not built" (`LensSymbols`) | `unavailable` | `index-not-built` | none | Decided | Wait for the code index (S-9) |
   | `history-unlinked` | History (ticket mentions) | Nothing: no source row says it. The intent band has no linked tickets while the ticket linker (S-5B) is not built; the gather step records it for the ticket-mentions band until then | `unavailable` | `history-unlinked` | none | Decided | Wait for the ticket linker (S-5B) |
   | `commit-not-held` | Code | A code-lens source `unavailable` with code SND-CONTEXT-110. Today 110 is a thrown not-found error; the context lane widens it to a source code on a 200 answer for the as-of read (an ask through the meta, C3) | `unavailable` | `commit-not-held` | SND-CONTEXT-110 | Owner-approved (2026-10-16) | Fetch the commit into the profile repo's checkout, then regather |
-  | `not-synced` | History (an intent source) | A history-lens intent source whose searched row is `unavailable` with code SND-CONTEXT-161 (never synced). The history answer also carries `sync: {state, jobId}` when a sync job is queued or running, read from the jobs view. A source whose sync ran and failed or whose row is `degraded` for any other reason is not this limit and still fails `SCP-COV-002` | `unavailable` | `not-synced` | SND-CONTEXT-161 (S-H assigns it from 160–169; kind Unavailable) | Owner-approved, 2026-10-18 ("allow, show the gap, queue or start the sync") | None needed from the owner: Sindri starts the source's sync itself (below); rescope once it has run |
+  | `not-synced` | History (an intent source) | A history-lens intent source whose searched row is `unavailable` with code SND-CONTEXT-161 (never synced). Sindri's history reader adds `sync` (the last `SyncSources` job in any state, below). A source whose sync ran and failed or whose row is `degraded` for any other reason is not this limit and still fails `SCP-COV-002` | `unavailable` | `not-synced` | SND-CONTEXT-161 (S-H assigns it from 160–169; kind Unavailable) | Owner-approved, 2026-10-18 ("allow, show the gap, queue or start the sync") | None needed from the owner: Sindri starts the source's sync itself (below); rescope once it has run |
   | `not-configured` | Any lens (incidents today) | A source with `state: not-configured` | `not-configured` | `not-configured` | none | Decided | Name the source in the profile, then regather |
 
   **The never-synced source closes itself** (owner, 2026-10-18; how it starts, rev 3.8). The read stays pure: when a
   lens read meets an intent source that was never synced, the history answer's searched row for it is `unavailable`,
-  reason `not-synced`, code SND-CONTEXT-161 (a searched row's code, never a route failure), plus `sync: {state, jobId}`
-  when a sync job is queued or running. The start comes from a small Sindri background service, `context-sync-gaps`,
-  on the existing scheduler, acting as the system and not as the reading session: when any configured intent source
-  has never synced, it starts a full `SyncSources` job (Source null) and checks again after it finishes. The job key
-  is the constant `sync` (one sync at a time); a second start while one is queued or running gets SND-JOB-409 with
-  `runningJob`, so nothing is doubled and the stop reports that job's id and state. The scoping steps stay
-  read-only: they only read the job's state through the history answer. The stop's row reads, by job state:
-  queued "not searched: never synced — sync queued"; running "not searched: never synced — sync running";
-  finished "not searched: never synced — synced since; rescope to include it"; failed "not searched: never synced —
-  the sync failed (<code>); see `sindri jobs show <id>`". Approval is allowed in every one of these states. The
-  owner's `rescope` (or a `regather` for another reason) reads the history lens again and picks the synced source up;
+  reason `not-synced`, code SND-CONTEXT-161 (a searched row's code, never a route failure). The `sync` pair is added
+  Sindri-side, by the layer that serves the history and lenses answer and composes Context's (Aw.Context sits below
+  Sindri and does not read Sindri's jobs view): it carries the last `SyncSources` job in any state,
+  `sync: {state: queued|running|finished|failed, jobId, at, code?}`, or `sync: null` when none has run, taken from the
+  reader's profile repo only. The start is a gap check inside the existing `context-sync` Sindri service (the
+  scheduled service that syncs intent sources; it is opt-in, but the gap check runs even when the periodic sync is
+  off), acting as the system and not as the reading session: when a configured intent source of the profile has never
+  synced, it starts one full `SyncSources` job (Source null). There is one sync driver. The job's ledger row carries
+  actor `system` and cause "never-synced intent source <id>". The job key is the constant `sync` (one sync at a time);
+  a second start while one is queued or running gets SND-JOB-409 with `runningJob`, so nothing is doubled. Backoff
+  and cap: after a failed gap sync the check waits 1 h, then doubles up to 24 h; after 3 failures in a row it stops
+  starting syncs for the gap until the profile changes or a sync succeeds (any sync, such as the owner's
+  `sindri context sources sync`). The scoping steps stay read-only: they only read the `sync` pair. The stop's row
+  reads, by the pair, in five sentences: `sync: null` "not searched: never synced — a sync starts shortly"; queued
+  "not searched: never synced — sync queued"; running "not searched: never synced — sync running"; finished "not
+  searched: never synced — synced since; rescope to include it"; failed "not searched: never synced — the sync
+  failed (<code>); retrying at <time>" or "…stopped after 3 failures: run `sindri context sources sync` once it's
+  fixed". (A source whose sync failed before the read carries its own error code and regathers; the failed sentence
+  shows when the job fails after the gather.) Approval is allowed in every one of these states. The owner's
+  `rescope` (or a `regather` for another reason) reads the history lens again and picks the synced source up;
   nothing rescopes by itself.
 
   The fix lines live in one constant map in `Aw.Sindri.Features/Scoping/` (SC-K), read by the CLI and the app, so they cannot drift.
@@ -844,8 +853,8 @@ Every ask to another lane is a row here; this doc edits no other spec, except th
 | C2 | **Surface kinds** `notification`, `permission`, `report`, `flag`, with extractor rules as the profile setting `context.extract.recognizers`, never rules for one app's registries | App-agnostic profile setting | SC-L (S-SK), SC-F |
 | C3 | **`input.context.code`** in the answer's shape: files, tests, data things, schema files; callers and callees report `unavailable` ("index not built") until S-9, which the gather step records as `index-not-built`; `commit-not-held` (SND-CONTEXT-110) on a code source whose as-of commit isn't on disk, also recorded (the rows are §8.2's Recorded limits table; the context lane widens 110's row in the context spec to name the as-of read and to carry it as a source code on a 200 answer, not a thrown error, an ask sent through the meta; until it lands, SC-K's `commit-not-held` proof uses the fixture shape) | No TS index named | SC-L (S-CL) |
 | C4 | **A component hop**, in the answer's shape (confirmed `implements` only, fan-out cap) | — | SC-L (S-CH) |
-| C5 | **`input.context.history`** in the answer's shape: stored edges and `git-history` first; ticket mentions report `history-unlinked` until S-5B; incidents `not-configured`; an intent source never synced reports `unavailable` with code SND-CONTEXT-161 (S-H assigns it from 160–169; a searched row's code, never a route failure), which the gather step records as `not-synced` (owner-approved 2026-10-18; §8.2's Recorded limits table); the answer carries `sync: {state, jobId}` when a sync job is queued or running, read from the jobs view, so the stop can say queued, running, finished or failed. The read never starts the sync (a query can't issue a command, ARCH-CQRS-001, and Aw.Context sits below Sindri). SND-CONTEXT-110's widening (C3) is also the context lane's, with S-H | Recorded states named; the never-synced source's row and the `sync` pair in the answer | SC-L (S-H) |
-| C5b | **`context-sync-gaps`**, a small Sindri background service on the existing scheduler, acting as the system: when any configured intent source has never synced, it starts a full `SyncSources` job (Source null, job key `sync`; a second start gets SND-JOB-409 with `runningJob`) and re-checks after it finishes. Owner: the context lane proposes it, sindri-api reviews the command side (provisional owner default) | No such service today | SC-L (S-H) |
+| C5 | **`input.context.history`** in the answer's shape: stored edges and `git-history` first; ticket mentions report `history-unlinked` until S-5B; incidents `not-configured`; an intent source never synced reports `unavailable` with code SND-CONTEXT-161 (S-H assigns it from 160–169; a searched row's code, never a route failure), which the gather step records as `not-synced` (owner-approved 2026-10-18; §8.2's Recorded limits table); Sindri's history reader (ContextCalls, Features), not Aw.Context, adds `sync: {state: queued|running|finished|failed, jobId, at, code?}` (the last `SyncSources` job in any state) or `sync: null`, from its own jobs view and the reader's profile repo only, so the stop can say none, queued, running, finished or failed. The read never starts the sync (a query can't issue a command, ARCH-CQRS-001, and Aw.Context sits below Sindri). SND-CONTEXT-110's widening (C3) is also the context lane's, with S-H | Recorded states named; the never-synced source's row in the answer (the `sync` pair is Sindri-side) | SC-L (S-H) |
+| C5b | **The gap check in the existing `context-sync` service** (`ContextSyncService`, a Sindri scheduled service; opt-in, but the check runs even when the periodic sync is off), acting as the system with actor `system` and cause "never-synced intent source <id>": when a configured intent source of the profile has never synced, it starts one full `SyncSources` job (Source null, job key `sync`; a second start gets SND-JOB-409 with `runningJob`). Backoff 1 h doubling to 24 h after a failure; stops after 3 failures in a row until the profile changes or any sync succeeds. A start refused for another reason counts as a failure. Owner: the context lane proposes it, sindri-api reviews the command side (provisional owner default) | The `context-sync` service exists (`ContextSyncService`); the gap check is new | SC-L (S-H)
 | C6 | **`searched`** as an extension of `SourceState` with `not-configured` and a code per source, plus per-band `empty`, reusing the lens result's existing `coverage`, `gaps` and `degraded[]` rather than a parallel set; `fetchedAt` on every ref | Reuse, not a parallel vocabulary | SC-L (S-LB) |
 | C7 | **The `diff` shape** over refs only (base and head shas), with `unmapped` paths. `read-change` resolves a PR to its shas | Refs only | SC-T (S-D) |
 | C8 | **The tracker port** `ITrackerSource` in `Aw.Context.Core` and `GET /sindri/context/record?key=&children=&comments=`, profile key `context.sources.<name>`. The route answers `service:engine` and the human only (owner decision B); before S-6, one issue by key through Onyx | Absorbs the review's tracker-port row; session rule added | SC-T (S-6, S-TR) |
@@ -1105,12 +1114,17 @@ The owner's decision ("allow, show the gap, queue or start the sync") is unchang
 
 | Where | What changed |
 |---|---|
-| §8.2 table row, C5 | The read stays pure: the searched row is `unavailable`, reason `not-synced`, code SND-CONTEXT-161 (S-H assigns it from 160–169), plus `sync: {state, jobId}` from the jobs view. This replaces the `Degraded` with no `LastSync` mapping and the `degraded` state |
-| §8.2 paragraph | A Sindri background service, `context-sync-gaps`, on the existing scheduler, starts a full `SyncSources` job as the system and re-checks after it finishes |
+| §8.2 table row, C5 | The read stays pure: the searched row is `unavailable`, reason `not-synced`, code SND-CONTEXT-161 (S-H assigns it from 160–169), plus Sindri's `sync` pair (last `SyncSources` job in any state, or null). This replaces the `Degraded` with no `LastSync` mapping and the `degraded` state |
+| §8.2 paragraph | A gap check in the existing `context-sync` Sindri service starts a full `SyncSources` job as the system (also when the periodic sync is off) |
 | §8.2 paragraph | The job key is the constant `sync`; a second start gets SND-JOB-409 with `runningJob`, so the stop reports that job's id and state |
-| §8.2 paragraph | Unchanged: approval allowed in every state, a rescope picks it up and nothing rescopes by itself, the scoping steps stay read-only, the stop's four sentences |
-| C5, C5b | C5 asks the context lane for the row and the code, and for SND-CONTEXT-110's widening (with S-H). New row C5b: `context-sync-gaps`, owned as the context lane proposes it and sindri-api reviews the command side (provisional owner default) |
+| §8.2 paragraph | Unchanged: approval allowed in every state, a rescope picks it up and nothing rescopes by itself, the scoping steps stay read-only; the stop's sentences become five (round below) |
+| C5, C5b | C5 asks the context lane for the row and the code, and for SND-CONTEXT-110's widening (with S-H). New row C5b: the `context-sync` service's gap check, owned as the context lane proposes it and sindri-api reviews the command side (provisional owner default) |
 | Q11, eval `not-synced-accepted` | Q11 names the service; the case reads the `unavailable` row with code SND-CONTEXT-161 |
+| Round (one /autoplan, 2026-10-18) | Product NEEDS_WORK (1 HIGH), design BLOCKED (2 HIGH), arch NEEDS_WORK (2 HIGH), devex PASS, security PASS; all applied, dispositions in the plan directory |
+| §8.2, C5b (arch F1) | No second service: the start is a gap check in the existing `context-sync` service (`ContextSyncService`), which runs even when the periodic sync is off. One sync driver |
+| §8.2, C5 (arch F2, design x2, devex) | The `sync` pair is added Sindri-side, carries the last `SyncSources` job in any state (or `null`), and the stop has five sentences, including "a sync starts shortly" |
+| §8.2, C5b (product HIGH, security MED, devex) | Backoff 1 h doubling to 24 h; stops after 3 failures in a row until the profile changes or a sync succeeds; the failed sentence's retry line |
+| §8.2, C5b (security LOW) | Job ledger row: actor `system`, cause "never-synced intent source <id>"; the pair comes from the reader's profile repo only |
 | Status | Revision 3.8; this table |
 
 ## 14. Phases
@@ -1184,7 +1198,7 @@ Each has a provisional answer. All are reversible unless marked.
 | Q8 | How much owner time per error-analysis cycle? (prompting.md) | About an hour per agent Step per cycle: 30 traces every four weeks while the station is new, fewer once regression cases hold. Calibration labels for the four gating judges first (about 80 labels), the rest later |
 | Q9 | Add `step.scout` (IDEA-017) as a fifth evidence source? | Not in version 1. Add it after SC-B if missed items cluster in code the lenses can't see |
 | Q10 | Should the interview's caps (5 per round, 4 rounds) be profile values? | No: the recipe's (DT Q7). The owner's experience after SC-P decides whether to change them |
-| Q11 | Can the owner approve at the stop with a lens not searched? | No: a transient source failure sends the instance back to `gather` (`regather`) and parks at the `rescope` cap with the source named. Recorded limits (`index-not-built`, `history-unlinked`, `commit-not-held`, `not-synced`, `not-configured`) and a lens the profile marks `none` for a repo (`not-applicable` with its reason) pass and show at the stop as "not searched: <limit> — <fix line>". `not-synced` is owner-approved (2026-10-18): approval is allowed, the gap is shown, and Sindri's `context-sync-gaps` service starts the source's sync (§8.2) |
+| Q11 | Can the owner approve at the stop with a lens not searched? | No: a transient source failure sends the instance back to `gather` (`regather`) and parks at the `rescope` cap with the source named. Recorded limits (`index-not-built`, `history-unlinked`, `commit-not-held`, `not-synced`, `not-configured`) and a lens the profile marks `none` for a repo (`not-applicable` with its reason) pass and show at the stop as "not searched: <limit> — <fix line>". `not-synced` is owner-approved (2026-10-18): approval is allowed, the gap is shown, and the `context-sync` service's gap check starts the source's sync (§8.2) |
 | Q12 | Do the challenger and drafter need different vendors, or only different models? | Different models, and different vendors when the repo's profile allows more than one (SC7 says "model or vendor"). `SCP-CHAL-002` reads the runtime's record (W8) |
 | Q13 | Does the station write tracker issues from the scope? | No. Writing to a tracker is an ask-first effect for the plan station, never scoping's |
 | Q14 | What happens to a cancelled instance's proposals? | They stay, tagged with the run, and map review shows them; `withdraw` runs only on `drop`. A cancel hook is a later engine question |
@@ -1320,7 +1334,7 @@ The prompt and choices are in §6.1. They are model-facing text under SC10: chec
 | `regather-source-down` | check `regather` twice with identical findings | parks `rescope` no-progress |
 | `index-not-built-accepted` | coverage with code callers `index-not-built`, history `history-unlinked` | check `pass`, reaches `stop` |
 | `commit-not-held-accepted` | coverage with a code source `unavailable`, reason `commit-not-held` (SND-CONTEXT-110) | check `pass`, reaches `stop` |
-| `not-synced-accepted` | coverage with a history intent source row `unavailable`, code SND-CONTEXT-161 (never synced), reason `not-synced` | check `pass`, reaches `stop` |
+| `not-synced-accepted` | coverage with a history intent source row `unavailable`, code SND-CONTEXT-161 (never synced), reason `not-synced`, with `sync: null` (and a variant with `sync` failed after the gather, code carried) | check `pass`, reaches `stop`; the stop row reads the sentence for the pair |
 | `interview-rescope` | apply `rescope` → reanchor | back through gather with new anchors |
 | `interview-cap` | four interview rounds; each `pass` carries the same warnings | check's second `pass` goes to challenge; no no-progress park |
 | `done-asking` | interview `doneAsking` | interviewClosed set, check → challenge |
