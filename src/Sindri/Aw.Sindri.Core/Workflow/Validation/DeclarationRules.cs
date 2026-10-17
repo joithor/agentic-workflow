@@ -111,7 +111,7 @@ internal sealed class DeclarationRules : IRecipeRules
         if (input.Kind is null)
         {
             yield return source.Finding("RCP-INPUT-001", path, $"{what} declares no kind",
-                "add kind: item | link | linear-project | webhook | file | text | packet | payload, paired with its type (item/item, file/file, text/text, link/link, packet/packet, payload, linear-project and webhook/payload)");
+                "add kind: item | link | linear-project | webhook | file | text | packet | payload, paired with its type (item/item, file/file, text/text, link/link, packet/packet; payload, linear-project and webhook pair with payload)");
         }
 
         if (badType is null && badKind is null && Unpaired(input, what, path, source) is { } unpaired)

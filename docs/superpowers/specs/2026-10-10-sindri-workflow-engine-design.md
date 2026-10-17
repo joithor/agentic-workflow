@@ -405,7 +405,7 @@ Example: `name: "{fact:scope} · {start:date}"` and `generate: "triage {start:da
 - `item`: its `ITM-` id (not the title).
 - `text`: the first non-empty line, trimmed.
 - `file`: the file name.
-- `link`: the `title` field, else the URL's host.
+- `linear-project`, `webhook`, `payload` and `packet`: the payload's `id` field, else `number`, else the bare key (`SubjectRefs.PayloadId`, the same text a subject label shows).
 - `linear-project` and `webhook`: the payload's `id` field, else `number`, else the bare key.
 
 Each value has its control characters and newlines replaced by a space. The value is then cut to 40 characters
@@ -1061,7 +1061,7 @@ directory when not (so `workflow.item.yaml` finds `workflow.step.yaml`).
 Error lines for the P4c rules, in this section's format (`RCP-NAME-001` is taken by state names, §3.4, so the template rules start at `002`):
 
 ```
-RCP-INPUT-001: input 'fact:spec' declares no kind at workflow.step.yaml:4:9 (inputs[0]); fix: add kind: item | link | linear-project | webhook | file | text, paired with its type (item/item, file/file, text/text, link/link, linear-project and webhook/payload)
+RCP-INPUT-001: input 'fact:spec' declares no kind at workflow.step.yaml:4:9 (inputs[0]); fix: add kind: item | link | linear-project | webhook | file | text | packet | payload, paired with its type (item/item, file/file, text/text, link/link, packet/packet; payload, linear-project and webhook pair with payload)
 RCP-INPUT-002: the recipe declares no input at workflow.x.yaml:1:1 (inputs); fix: declare at least one input; a scheduled recipe gives it generate: "<template>"
 RCP-NAME-002: the name template is empty or longer than 200 characters at …:5:7 (name); fix: write literal text with {fact:<input>} or {start:date|time}
 RCP-NAME-003: unknown placeholder '{owner}' at …:5:7 (name); fix: use {fact:<input>}, {start:date} or {start:time}, and write {{ or }} for a literal brace
