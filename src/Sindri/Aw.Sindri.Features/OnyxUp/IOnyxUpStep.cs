@@ -8,18 +8,17 @@ internal interface IOnyxUpStep
     /// <summary>Gets the step's name as state.json records it.</summary>
     public string Name { get; }
 
-    /// <summary>Gets the name of the step whose stamp this step's stamp is built from, or null for the first step. Composition checks the list is in order.</summary>
-    public string? After { get; }
-
-    /// <summary>Hashes the step's inputs; earlier steps' stamps are in <see cref="OnyxUpContext.Done"/>.</summary>
+    /// <summary>Hashes the step's inputs and the stamp of the step before it.</summary>
     /// <param name="context">The run's shared facts.</param>
+    /// <param name="upstream">The stamp of the step before this one in the plan; null for the first step. The plan computes the chain, so a step never names its upstream.</param>
     /// <returns>The stamp.</returns>
-    public string Stamp(OnyxUpContext context);
+    public string Stamp(OnyxUpContext context, string? upstream);
 
     /// <summary>Makes the step's result hold: does nothing when the recorded stamp is the current one and what the step made is still as it should be, and does the work otherwise.</summary>
     /// <param name="context">The run's shared facts.</param>
+    /// <param name="stamp">The step's current stamp (see <see cref="Stamp"/>).</param>
     /// <param name="recorded">The stamp state.json holds for the step, or null.</param>
     /// <param name="cancellationToken">Cancels the step.</param>
     /// <returns>What it did, or the error that stops `onyx up` (nothing is recorded for the step).</returns>
-    public ValueTask<Result<OnyxStepOutcome>> Execute(OnyxUpContext context, string? recorded, CancellationToken cancellationToken);
+    public ValueTask<Result<OnyxStepOutcome>> Execute(OnyxUpContext context, string stamp, string? recorded, CancellationToken cancellationToken);
 }

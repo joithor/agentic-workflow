@@ -12,13 +12,11 @@ internal sealed class OnyxStartStep(IContainerRuntime runtime, IOnyxHealth healt
 
     public string Name => OnyxSteps.Start;
 
-    public string? After => OnyxSteps.Pull;
+    public string Stamp(OnyxUpContext context, string? upstream) => OnyxSteps.Stamp(context.Done.GetValueOrDefault(OnyxSteps.Pull, ""), "start");
 
-    public string Stamp(OnyxUpContext context) => OnyxSteps.Stamp(context.Upstream(OnyxSteps.Pull), "start");
-
-    public async ValueTask<Result<OnyxStepOutcome>> Execute(OnyxUpContext context, string? recorded, CancellationToken cancellationToken)
+    public async ValueTask<Result<OnyxStepOutcome>> Execute(OnyxUpContext context, string stamp, string? recorded, CancellationToken cancellationToken)
     {
-        if (await IsDone(context, recorded, cancellationToken).ConfigureAwait(false))
+        if (await IsDone(context, stamp, recorded, cancellationToken).ConfigureAwait(false))
         {
             return OnyxStepOutcome.Skipped;
         }
@@ -28,9 +26,9 @@ internal sealed class OnyxStartStep(IContainerRuntime runtime, IOnyxHealth healt
         return ran.IsError ? ran.Error : OnyxStepOutcome.Ran;
     }
 
-    private async ValueTask<bool> IsDone(OnyxUpContext context, string? recorded, CancellationToken cancellationToken)
+    private async ValueTask<bool> IsDone(OnyxUpContext context, string stamp, string? recorded, CancellationToken cancellationToken)
     {
-        if (!string.Equals(recorded, Stamp(context), StringComparison.Ordinal))
+        if (!string.Equals(recorded, stamp, StringComparison.Ordinal))
         {
             return false;
         }

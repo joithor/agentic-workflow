@@ -9,13 +9,11 @@ internal sealed class OnyxPullStep(IContainerRuntime runtime, IOnyxWorkspace wor
 {
     public string Name => OnyxSteps.Pull;
 
-    public string? After => OnyxSteps.Config;
+    public string Stamp(OnyxUpContext context, string? upstream) => OnyxSteps.Stamp(context.Done.GetValueOrDefault(OnyxSteps.Config, ""));
 
-    public string Stamp(OnyxUpContext context) => OnyxSteps.Stamp(context.Upstream(OnyxSteps.Config));
-
-    public ValueTask<Result<OnyxStepOutcome>> Execute(OnyxUpContext context, string? recorded, CancellationToken cancellationToken)
+    public ValueTask<Result<OnyxStepOutcome>> Execute(OnyxUpContext context, string stamp, string? recorded, CancellationToken cancellationToken)
     {
-        if (string.Equals(recorded, Stamp(context), StringComparison.Ordinal))
+        if (string.Equals(recorded, stamp, StringComparison.Ordinal))
         {
             return ValueTask.FromResult<Result<OnyxStepOutcome>>(OnyxStepOutcome.Skipped);
         }

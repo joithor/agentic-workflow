@@ -10,11 +10,9 @@ internal sealed class OnyxFetchStep(IDeployFiles files, IOnyxProgress progress) 
 {
     public string Name => OnyxSteps.Fetch;
 
-    public string? After => null;
+    public string Stamp(OnyxUpContext context, string? upstream) => OnyxSteps.Stamp([.. context.Pins.Files.Select(static f => f.Path + " " + f.Sha256)]);
 
-    public string Stamp(OnyxUpContext context) => OnyxSteps.Stamp([.. context.Pins.Files.Select(static f => f.Path + " " + f.Sha256)]);
-
-    public async ValueTask<Result<OnyxStepOutcome>> Execute(OnyxUpContext context, string? recorded, CancellationToken cancellationToken)
+    public async ValueTask<Result<OnyxStepOutcome>> Execute(OnyxUpContext context, string stamp, string? recorded, CancellationToken cancellationToken)
     {
         var announced = false;
         void Announce()
@@ -40,7 +38,7 @@ internal sealed class OnyxFetchStep(IDeployFiles files, IOnyxProgress progress) 
             return fetched.Error;
         }
 
-        var changed = fetched.Value.Downloaded > 0 || !string.Equals(recorded, Stamp(context), StringComparison.Ordinal);
+        var changed = fetched.Value.Downloaded > 0 || !string.Equals(recorded, stamp, StringComparison.Ordinal);
         if (changed)
         {
             Announce();

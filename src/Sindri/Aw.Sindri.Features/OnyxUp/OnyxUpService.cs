@@ -78,7 +78,8 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
         foreach (var step in _steps)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var outcome = await RunStep(step, context, recorded, cancellationToken).ConfigureAwait(false);
+            var stamp = step.Stamp(context, upstream: null);
+            var outcome = await RunStep(step, stamp, context, recorded, cancellationToken).ConfigureAwait(false);
             if (outcome.IsError)
             {
                 return outcome.Error;
@@ -91,11 +92,10 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
     }
 
     // The step makes its result hold; its stamp is recorded once it does.
-    private async ValueTask<Result<OnyxStepOutcome>> RunStep(IOnyxUpStep step, OnyxUpContext context, Dictionary<string, string> recorded, CancellationToken cancellationToken)
+    private async ValueTask<Result<OnyxStepOutcome>> RunStep(IOnyxUpStep step, string stamp, OnyxUpContext context, Dictionary<string, string> recorded, CancellationToken cancellationToken)
     {
-        var stamp = step.Stamp(context);
         _ = recorded.TryGetValue(step.Name, out var before);
-        var outcome = await step.Execute(context, before, cancellationToken).ConfigureAwait(false);
+        var outcome = await step.Execute(context, stamp, before, cancellationToken).ConfigureAwait(false);
         if (outcome.IsError)
         {
             return outcome.Error;

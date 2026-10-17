@@ -12,19 +12,17 @@ internal sealed class OnyxConfigStep(IOnyxWorkspace workspace, IComposeServices 
 
     public string Name => OnyxSteps.Config;
 
-    public string? After => OnyxSteps.Fetch;
-
-    public string Stamp(OnyxUpContext context)
-        => OnyxSteps.Stamp(context.Upstream(OnyxSteps.Fetch), context.Port.ToString(System.Globalization.CultureInfo.InvariantCulture), context.Platform, context.Pins.Version, ImageRows(context));
+    public string Stamp(OnyxUpContext context, string? upstream)
+        => OnyxSteps.Stamp(context.Done.GetValueOrDefault(OnyxSteps.Fetch, ""), context.Port.ToString(System.Globalization.CultureInfo.InvariantCulture), context.Platform, context.Pins.Version, ImageRows(context));
 
     // The override names every image by its digest, so the digests this platform runs are inputs of the step (a moved pin re-renders, re-pulls and restarts).
     private static string ImageRows(OnyxUpContext context)
         => string.Join('\n', context.Pins.Images.Where(i => i.Platform == context.Platform).Select(static i => i.Repository + "@" + i.Digest).Order(StringComparer.Ordinal));
 
-    public ValueTask<Result<OnyxStepOutcome>> Execute(OnyxUpContext context, string? recorded, CancellationToken cancellationToken)
+    public ValueTask<Result<OnyxStepOutcome>> Execute(OnyxUpContext context, string stamp, string? recorded, CancellationToken cancellationToken)
     {
         var files = ReadFiles(context.Paths);
-        return Done(files.IsError ? files.Error : Render(context, recorded, files.Value));
+        return Done(files.IsError ? files.Error : Render(context, stamp, recorded, files.Value));
     }
 
     // What is on disk now; a file that exists but can't be read is SND-ONYX-012, not a missing one.
@@ -34,7 +32,7 @@ internal sealed class OnyxConfigStep(IOnyxWorkspace workspace, IComposeServices 
         return reads.FirstOrDefault(static r => r.IsError) is { } failed ? failed.Error : new Files(reads[0].Value, reads[1].Value, reads[2].Value, reads[3].Value);
     }
 
-    private Result<OnyxStepOutcome> Render(OnyxUpContext context, string? recorded, Files files)
+    private Result<OnyxStepOutcome> Render(OnyxUpContext context, string stamp, string? recorded, Files files)
     {
         if (files.Compose is null || files.Template is null)
         {
@@ -50,7 +48,7 @@ internal sealed class OnyxConfigStep(IOnyxWorkspace workspace, IComposeServices 
         }
 
         var env = OnyxConfig.RenderEnv(files.Template, settings);
-        var stale = !string.Equals(recorded, Stamp(context), StringComparison.Ordinal)
+        var stale = !string.Equals(recorded, stamp, StringComparison.Ordinal)
             || !string.Equals(files.Env, env, StringComparison.Ordinal)
             || !string.Equals(files.Override, rendered.Value, StringComparison.Ordinal);
         if (stale)
