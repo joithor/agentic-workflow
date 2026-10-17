@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Features.Blocks.Gate;
 using Aw.Sindri.Host;
+using System.Reflection;
 using Aw.Sindri.Testing.Workflow;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
@@ -167,6 +168,27 @@ public sealed class ShippedBlocksTests
     [Fact, Trait("Lane", "unit")]
     public void Every_effect_is_capability_bearing() =>
         Assert.All(FixtureCatalog.WithFixtures().Blocks.Where(b => b.Kind == BlockKind.Effect), b => Assert.True(b.Capabilities.HasFlag(Capability.Effects)));
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Every_composed_block_has_exactly_one_descriptor_contract()
+    {
+        await using var provider = Composed();
+        var catalogIds = provider.GetRequiredService<BlockCatalog>().Blocks.Select(b => b.Id.Value).ToHashSet(StringComparer.Ordinal);
+        var contractIds = typeof(ShippedBlocksTests).Assembly.GetTypes()
+            .Where(t => !t.IsAbstract && typeof(DescriptorContract).IsAssignableFrom(t))
+            .Select(t => ((BlockDescriptor)typeof(DescriptorContract)
+                .GetProperty("Descriptor", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(Activator.CreateInstance(t, nonPublic: true))!).Id.Value)
+            .ToList();
+
+        var withoutContract = catalogIds.Except(contractIds, StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        var withoutBlock = contractIds.Except(catalogIds, StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        var duplicated = contractIds.GroupBy(i => i, StringComparer.Ordinal).Where(g => g.Skip(1).Any()).Select(g => g.Key).Order(StringComparer.Ordinal).ToList();
+
+        Assert.True(
+            withoutContract.Count == 0 && withoutBlock.Count == 0 && duplicated.Count == 0,
+            $"catalog blocks with no contract: [{string.Join(", ", withoutContract)}]; contracts for no catalog block: [{string.Join(", ", withoutBlock)}]; duplicated contracts: [{string.Join(", ", duplicated)}]");
+    }
 
     private static ServiceProvider Composed() =>
         Composition.Compose(new ServiceCollection(), name => name == "AW_STATE_DIR" ? _stateRoot : null, new FakeTimeProvider())

@@ -34,7 +34,14 @@ public abstract class DescriptorContract
 
     /// <summary>The descriptor hashes to the pinned value.</summary>
     [Fact]
-    public void Descriptor_hash_is_pinned() => Expect.Equal(ExpectedHash, PinRules.Hash(Descriptor, Json).Value);
+    public void Descriptor_hash_is_pinned()
+    {
+        var provider = Compose();
+        using var lifetime = provider as IDisposable;
+        var composed = provider.GetRequiredService<BlockCatalog>().Find(Descriptor.Id);
+
+        Expect.Equal(ExpectedHash, PinRules.Hash(composed!, Json).Value);
+    }
 
     /// <summary>The kind matches the id prefix ('gate.', 'step.', 'effect.', 'input.', 'evidence.').</summary>
     [Fact]
