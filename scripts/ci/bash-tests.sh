@@ -36,7 +36,7 @@ if [ "${1:-}" = "--run-one" ]; then
   # Fail closed on state: every suite gets its own fresh HOME and AW_STATE_DIR (a temp dir, removed afterwards), whatever the caller
   # exported, so no suite can read or write the real ~/.agentic-workflow or a state dir a caller pointed at. What the real HOME
   # holds for tools stays reachable by explicit pointers (git identity and config, the .NET SDK, the NuGet and npm caches).
-  sandbox="$(mktemp -d)" && mkdir -p "$sandbox/home" "$sandbox/state" || {
+  sandbox="$(mktemp -d)" && mkdir -p "$sandbox/home" "$sandbox/state" "$sandbox/tmp" || {
     echo "bash-tests: could not make a sandbox for $suite" > "$out/$idx.log"; echo 2 > "$out/$idx.rc"; echo 0 > "$out/$idx.secs"
     printf 'FAIL  %s  %s  0s  exit 2 (no sandbox)\n' "$mode" "$suite"; exit 0
   }
@@ -56,8 +56,15 @@ if [ "${1:-}" = "--run-one" ]; then
     AW_META_TEAM AW_META_DIR AW_META_LANE AW_META_LANE_PID AW_META_LANE_AGENT AW_META_LANE_PROC AW_SINDRI_CHILD AW_SINDRI_LAUNCH AW_LAUNCHER_CONFIG TMUX TMUX_PANE; do
     unset_flags+=(-u "$v")
   done
-  env "${unset_flags[@]}" HOME="$sandbox/home" AW_STATE_DIR="$sandbox/state" bash "$suite" >"$out/$idx.log" 2>&1 </dev/null
+  # TMPDIR is inside the sandbox too: every `mktemp` a suite (or a hook or tool it runs) makes lands under it and goes with it, so a
+  # suite that forgets its trap, or is killed, leaves nothing in /tmp (100k+ stray tmp.* dirs and ~3 GB private NuGet caches did).
+  env "${unset_flags[@]}" HOME="$sandbox/home" AW_STATE_DIR="$sandbox/state" TMPDIR="$sandbox/tmp" bash "$suite" >"$out/$idx.log" 2>&1 </dev/null
   rc=$?
+  # A suite that restores NuGet packages into its sandbox HOME (NUGET_PACKAGES unset or overridden) fills the disk with a private ~2.7 GB cache.
+  if [ -d "$sandbox/home/.nuget/packages" ]; then
+    echo "bash-tests: $suite populated a private NuGet cache in its sandbox HOME; keep NUGET_PACKAGES at the shared cache" >>"$out/$idx.log"
+    [ "$rc" -ne 0 ] || rc=1
+  fi
   find "$sandbox" -delete 2>/dev/null
   secs=$((SECONDS - start))
   echo "$rc" >"$out/$idx.rc"; echo "$secs" >"$out/$idx.secs"
