@@ -1,4 +1,3 @@
-using System.Text;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
@@ -207,22 +206,8 @@ public static class InstanceViews
     /// The complete command with the outcome it reports (the Step's first declared) and an '--output &lt;fact&gt;=&lt;file&gt;' flag for each
     /// output required on that outcome (API spec §3.8 'desk runtime'); '&lt;outcome&gt;' when the Step declares none.
     /// </summary>
-    private static string CompleteCli(string address, DeskTask task)
-    {
-        var line = new StringBuilder($"sindri workflow complete {address} --run {task.Run.Value} --outcome ");
-        if (task.Outcomes.Count == 0)
-        {
-            return line.Append("<outcome>").ToString();
-        }
-
-        _ = line.Append(task.Outcomes[0].Value);
-        foreach (var output in task.Outputs.Where(o => o.RequiredOn.Contains(task.Outcomes[0])))
-        {
-            _ = line.Append(" --output ").Append(output.Fact.Value).Append("=<file>");
-        }
-
-        return line.ToString();
-    }
+    private static string CompleteCli(string address, DeskTask task) =>
+        CompleteCommand.Line(address, task.Run, task.Outcomes.Count > 0 ? task.Outcomes[0] : null, task.Outputs);
 
     private static bool Answerable(Suspension suspension) =>
         suspension.ParkKind is not (ParkKind.Revoked or ParkKind.ChildRevoked or ParkKind.Drift);

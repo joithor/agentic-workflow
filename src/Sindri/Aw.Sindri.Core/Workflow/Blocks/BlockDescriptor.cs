@@ -20,6 +20,8 @@ namespace Aw.Sindri.Core.Workflow.Blocks;
 /// <param name="DeskCapable">A Step only: it may run on the desk runtime (W5, W20).</param>
 /// <param name="OutcomesFrom">Null, or the list parameter whose entries name the outcomes (DT spec §8.1): a list parameter ("choices"), or "&lt;stateParam&gt;.&lt;listParam&gt;" for a twin that reads another state's Step ("from.choices"). Written only when set, so a descriptor without it hashes as before.</param>
 /// <param name="InputsFrom">Null, or the list parameter whose entries are the fact keys the Step reads, named as <paramref name="OutcomesFrom"/> names its list.</param>
+/// <param name="HumanOnly">True when only a human may report this Step's run (DT spec §8.5); written only when true, never false, so a descriptor without it hashes as before.</param>
+/// <param name="Runtime">Null, or where the Step runs by default (DT spec §8.2); descriptor-only until the block runtime (DT-J). Written only when set.</param>
 public sealed record BlockDescriptor(
     BlockId Id,
     BlockKind Kind,
@@ -32,4 +34,6 @@ public sealed record BlockDescriptor(
     Rung? Rung,
     bool DeskCapable,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? OutcomesFrom = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? InputsFrom = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? InputsFrom = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] bool? HumanOnly = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] BlockRuntime? Runtime = null);

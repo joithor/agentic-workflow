@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Views;
@@ -130,7 +131,7 @@ public sealed partial class WorkflowEngineInvariantsTests
             return [];
         }
 
-        var required = block.Outputs.Where(o => o.RequiredOn.Contains(block.Outcomes[0])).Select(o => o.Fact.Value).ToList();
+        var required = block.Outputs.Where(o => StepOutputs.CallerWritesOn(o, block.Outcomes[0])).Select(o => o.Fact.Value).ToList();
         var failures = new List<string>();
         if (!required.SequenceEqual(desk.Outputs.Where(o => o.Required).Select(o => o.Key), StringComparer.Ordinal))
         {
