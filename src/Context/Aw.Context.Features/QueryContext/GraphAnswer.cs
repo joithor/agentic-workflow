@@ -159,6 +159,6 @@ internal static class GraphAnswer
         var number = string.Create(CultureInfo.InvariantCulture, $"v{map.Snapshot.Version.Number}");
         var trust = candidates.TrueForAll(c => c.Item.Trust == Trust.Trusted) ? Trust.Trusted : Trust.Untrusted;
         return new Citation(RecordKey.From($"map:{map.Snapshot.Version.Repo.Value}/{number}"),
-            [new CitationRef(SourceId.From("map"), ExternalId.From(number), SourceVersion.From(map.Snapshot.Label))], Permalink: null, trust, CitationState.Current);
+            [new CitationRef(SourceId.From("map"), ExternalId.From(number), SourceVersion.From(map.Snapshot.Label)) { FetchedAt = map.Snapshot.Version.Created }], Permalink: null, trust, CitationState.Current);
     }
 }

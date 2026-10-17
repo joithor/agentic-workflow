@@ -10,4 +10,8 @@ public sealed record CitationRef(SourceId Source, ExternalId Id, SourceVersion V
 {
     /// <summary>The source's current version when the citation is stale, else null.</summary>
     public SourceVersion? Current { get; init; }
+
+    /// <summary>When the record was fetched. Map-authored: the version's created. Live source hits: when this answer fetched them (the answer's asOf). A synced record: the intent store's 'fetched_at'.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public DateTimeOffset? FetchedAt { get; init; }
 }

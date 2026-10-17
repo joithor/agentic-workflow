@@ -166,7 +166,7 @@ public sealed class GetLensesTests : IDisposable
 
         var view = (await Ask("surface:command/split-vertical", Drafts.Scope, draft: true)).Value;
 
-        Assert.Equal((true, Drafts.Label(draft)), (view.Draft, view.MapVersion));
+        Assert.Equal((true, Drafts.Short(draft), MapWorld.Head[..7]), (view.Draft, view.MapVersion, view.MapCommit));
         Assert.Contains(view.Bands.Code.Files, f => f.Path == "src/commands/ids.ts" && f.Confirmed);
     }
 

@@ -22,7 +22,8 @@
           ],
           "trust": "untrusted",
           "state": "unchecked",
-          "cites": []
+          "cites": [],
+          "kind": "record"
         }
       ],
       "decisions": [
@@ -42,7 +43,9 @@
             "record": "linear:issue/0e5a1b00-0000-4000-8000-000000000201",
             "text": "a tab group collapses to a single tab in the strip",
             "trust": "untrusted"
-          }
+          },
+          "label": "A tab group collapses to one tab in the strip.",
+          "kind": "decision"
         },
         {
           "node": "decision:ef895edc359f6f847ce34baeacb3670a81a824b521e4cd14371b5dc8894ea1c2",
@@ -62,7 +65,9 @@
             "record": "linear:issue/0e5a1b00-0000-4000-8000-000000000202",
             "text": "a tab group stays expanded; collapsing is a per-user setting",
             "trust": "untrusted"
-          }
+          },
+          "label": "A tab group stays expanded; collapsing is a per-user setting.",
+          "kind": "decision"
         }
       ],
       "counts": {
@@ -196,7 +201,10 @@
           "confidence": 0.74,
           "confirmed": false,
           "suggested": true,
-          "linkId": "edge:402b8bed42f6611c"
+          "linkId": "edge:402b8bed42f6611c",
+          "label": "src/tabs/TabGroups.ts",
+          "kind": "code",
+          "trust": "untrusted"
         },
         {
           "path": "src/tabs/TabManager.ts",
@@ -209,7 +217,10 @@
           "confidence": 1,
           "confirmed": true,
           "suggested": false,
-          "linkId": null
+          "linkId": null,
+          "label": "src/tabs/TabManager.ts",
+          "kind": "code",
+          "trust": "trusted"
         }
       ],
       "symbols": {
@@ -356,7 +367,64 @@
         ],
         "note": null
       }
-    ]
+    ],
+    "map": {
+      "paths": [
+        "src/tabs/"
+      ],
+      "truncated": false,
+      "files": 3,
+      "unmapped": 1,
+      "suggested": 1,
+      "created": "2026-01-01T00:00:00.0000000Z",
+      "ageDays": 0
+    }
+  },
+  "searched": {
+    "anchors": [
+      "feature:tabs.tab-manager"
+    ],
+    "mapVersion": "v1",
+    "depth": 1,
+    "hops": [
+      "state",
+      "dependency",
+      "flow"
+    ],
+    "sources": [
+      {
+        "id": "map",
+        "state": "ok",
+        "reason": null,
+        "code": null,
+        "asOf": "2026-01-01T00:00:00.0000000Z"
+      },
+      {
+        "id": "onyx",
+        "state": "not-configured",
+        "reason": "not-configured",
+        "code": null,
+        "asOf": null
+      },
+      {
+        "id": "code-index",
+        "state": "unavailable",
+        "reason": "index-not-built",
+        "code": null,
+        "asOf": null
+      }
+    ],
+    "bands": {
+      "intent": {
+        "empty": false
+      },
+      "product": {
+        "empty": false
+      },
+      "code": {
+        "empty": false
+      }
+    }
   },
   "degraded": [],
   "cites": {}
