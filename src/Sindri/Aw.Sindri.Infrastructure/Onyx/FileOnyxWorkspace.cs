@@ -29,7 +29,7 @@ internal sealed class FileOnyxWorkspace(ISindriHome home, JsonSerializerOptions 
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
         {
-            return Results.Success<string?>(value: null);
+            return SindriErrors.OnyxWorkspaceUnusable.With($"Sindri can't read {path}: {exception.Message}; make it readable by you (or remove it if it is a leftover), then run this again");
         }
     }
 

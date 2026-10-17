@@ -23,26 +23,36 @@ internal sealed class OnyxConfigStep(IOnyxWorkspace workspace, IComposeServices 
 
     public ValueTask<Result<OnyxStepOutcome>> Execute(OnyxUpContext context, string? recorded, CancellationToken cancellationToken)
     {
-        var compose = workspace.Read(context.Paths.Compose).OrNull();
-        var template = workspace.Read(context.Paths.EnvTemplate).OrNull();
-        if (compose is null || template is null)
+        var files = ReadFiles(context.Paths);
+        return Done(files.IsError ? files.Error : Render(context, recorded, files.Value));
+    }
+
+    // What is on disk now; a file that exists but can't be read is SND-ONYX-012, not a missing one.
+    private Result<Files> ReadFiles(OnyxPaths paths)
+    {
+        var reads = new[] { workspace.Read(paths.Compose), workspace.Read(paths.EnvTemplate), workspace.Read(paths.Env), workspace.Read(paths.Override) };
+        return reads.FirstOrDefault(static r => r.IsError) is { } failed ? failed.Error : new Files(reads[0].Value, reads[1].Value, reads[2].Value, reads[3].Value);
+    }
+
+    private Result<OnyxStepOutcome> Render(OnyxUpContext context, string? recorded, Files files)
+    {
+        if (files.Compose is null || files.Template is null)
         {
-            return Done(SindriErrors.OnyxPinsMalformed.With("the fetched compose file or env.template is missing; run `sindri onyx up` again to fetch them"));
+            return SindriErrors.OnyxPinsMalformed.With("the fetched compose file or env.template is missing; run `sindri onyx up` again to fetch them");
         }
 
-        var existing = OnyxConfig.ReadSecret(workspace.Read(context.Paths.Env).OrNull());
-        var key = existing ?? random.Hex(AuthKeyBytes);
+        var key = OnyxConfig.ReadSecret(files.Env) ?? random.Hex(AuthKeyBytes);
         var settings = context.Settings(key);
-        var rendered = services.Read(compose).Bind(list => OnyxConfig.RenderOverride(list, settings, context.Pins, context.Platform));
+        var rendered = services.Read(files.Compose).Bind(list => OnyxConfig.RenderOverride(list, settings, context.Pins, context.Platform));
         if (rendered.IsError)
         {
-            return Done(rendered.Error);
+            return rendered.Error;
         }
 
-        var env = OnyxConfig.RenderEnv(template, settings);
+        var env = OnyxConfig.RenderEnv(files.Template, settings);
         var stale = !string.Equals(recorded, Stamp(context), StringComparison.Ordinal)
-            || !string.Equals(workspace.Read(context.Paths.Env).OrNull(), env, StringComparison.Ordinal)
-            || !string.Equals(workspace.Read(context.Paths.Override).OrNull(), rendered.Value, StringComparison.Ordinal);
+            || !string.Equals(files.Env, env, StringComparison.Ordinal)
+            || !string.Equals(files.Override, rendered.Value, StringComparison.Ordinal);
         if (stale)
         {
             progress.Line($"{Name}: running");
@@ -50,8 +60,10 @@ internal sealed class OnyxConfigStep(IOnyxWorkspace workspace, IComposeServices 
 
         var wrote = workspace.WriteIfChanged(context.Paths.Env, env, secret: true);
         wrote |= workspace.WriteIfChanged(context.Paths.Override, rendered.Value, secret: false);
-        return Done(stale || wrote ? OnyxStepOutcome.Ran : OnyxStepOutcome.Skipped);
+        return stale || wrote ? OnyxStepOutcome.Ran : OnyxStepOutcome.Skipped;
     }
 
     private static ValueTask<Result<OnyxStepOutcome>> Done(Result<OnyxStepOutcome> result) => ValueTask.FromResult(result);
+
+    private sealed record Files(string? Compose, string? Template, string? Env, string? Override);
 }

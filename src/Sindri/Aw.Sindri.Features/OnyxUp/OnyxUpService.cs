@@ -98,7 +98,13 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
     private Result<(int Port, string Platform, IReadOnlyList<string> Warnings)> Preflight(OnyxSetupState? state, OnyxPins pins, CancellationToken cancellationToken)
     {
         var (docker, host) = facts.Read(state?.Port, cancellationToken);
-        var report = OnyxPreflight.Evaluate(docker, host, pins, OwnPort(state, docker, cancellationToken));
+        var ownPort = OwnPort(state, docker, cancellationToken);
+        if (ownPort.IsError)
+        {
+            return ownPort.Error;
+        }
+
+        var report = OnyxPreflight.Evaluate(docker, host, pins, ownPort.Value);
         if (report.Blocks)
         {
             return report.Checks.First(static c => c.State == CheckState.Fail).Problem!;   // why: a failed check always carries its error
@@ -111,16 +117,27 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
     }
 
     // The port our own running nginx publishes, whatever state.json says: a start that failed or timed out leaves it up, and a lost state file doesn't make it someone else's.
-    private int? OwnPort(OnyxSetupState? state, ContainerRuntimeFacts docker, CancellationToken cancellationToken)
+    private Result<int?> OwnPort(OnyxSetupState? state, ContainerRuntimeFacts docker, CancellationToken cancellationToken)
     {
-        if (!docker.DaemonAnswers || workspace.Read(facts.Paths.Compose).OrNull() is null)
+        if (!docker.DaemonAnswers)
         {
-            return null;   // no compose file yet means no project to ask about
+            return Results.Success<int?>(value: null);
+        }
+
+        var compose = workspace.Read(facts.Paths.Compose);
+        if (compose.IsError)
+        {
+            return compose.Error;
+        }
+
+        if (compose.Value is null)
+        {
+            return Results.Success<int?>(value: null);   // no compose file yet means no project to ask about
         }
 
         var containers = facts.Containers(state, cancellationToken);
-        return containers.IsSuccess
+        return Results.Success(containers.IsSuccess
             ? containers.Value.Where(static c => c.Service == "nginx" && ComposeContainer.IsLive(c.State)).SelectMany(static c => c.Publishers).FirstOrDefault(static p => p.Address == "127.0.0.1")?.PublishedPort
-            : null;
+            : null);
     }
 }

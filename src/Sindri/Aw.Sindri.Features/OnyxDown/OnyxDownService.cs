@@ -2,7 +2,6 @@ using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Onyx;
-using Aw.Sindri.Features.OnyxUp;
 
 namespace Aw.Sindri.Features.OnyxDown;
 
@@ -31,7 +30,13 @@ internal sealed class OnyxDownService(IOnyxWorkspace workspace, OnyxFacts facts,
 
     private Result<OnyxDownResponse> Stop(CancellationToken cancellationToken)
     {
-        if (workspace.Read(facts.Paths.Compose).OrNull() is null)
+        var compose = workspace.Read(facts.Paths.Compose);
+        if (compose.IsError)
+        {
+            return compose.Error;
+        }
+
+        if (compose.Value is null)
         {
             return new OnyxDownResponse(WasRunning: false, []);   // the fetched files never landed: no project to ask docker about
         }

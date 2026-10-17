@@ -2,7 +2,6 @@ using System.Globalization;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Onyx;
-using Aw.Sindri.Features.OnyxUp;
 
 namespace Aw.Sindri.Features.OnyxStatus;
 
@@ -14,7 +13,13 @@ internal sealed class OnyxStatusService(IOnyxPinsSource pinsSource, OnyxFacts fa
         var pins = pinsSource.Pins;
         var state = workspace.ReadState();
         var (docker, host) = facts.Read(cancellationToken);
-        var setUp = IsSetUp(state);
+        var compose = workspace.Read(facts.Paths.Compose);
+        if (compose.IsError)
+        {
+            return compose.Error;
+        }
+
+        var setUp = IsSetUp(state, compose.Value);
         var running = setUp && docker.DaemonAnswers && IsRunning(state, cancellationToken);
         var report = OnyxPreflight.Evaluate(docker, host, pins, running ? state?.Port : null);
         var onyx = Classify(setUp, running);
@@ -23,7 +28,7 @@ internal sealed class OnyxStatusService(IOnyxPinsSource pinsSource, OnyxFacts fa
     }
 
     // Set up means `onyx up` finished its start step and the fetched files are still there.
-    private bool IsSetUp(OnyxSetupState? state) => state is not null && state.Steps.ContainsKey(OnyxSteps.Start) && workspace.Read(facts.Paths.Compose).OrNull() is not null;
+    private static bool IsSetUp(OnyxSetupState? state, string? compose) => state is not null && state.Steps.ContainsKey(OnyxSteps.Start) && compose is not null;
 
     private static OnyxState Classify(bool setUp, bool running) => !setUp ? OnyxState.NotSetUp : running ? OnyxState.Running : OnyxState.Stopped;
 
