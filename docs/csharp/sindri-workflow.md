@@ -461,7 +461,7 @@ A block is a class with a static descriptor, registered explicitly (no assembly 
 ### Block catalog (decision-tree Steps)
 
 Descriptor-only Steps (`AddBlockDescriptor`): recipes that name them validate, they run on the desk or are unavailable until their runtime
-(DT-J, DT-B) ships. `evidence.check` is a descriptor-only evidence provider (runtime in DT-B). Facts are `fact:` keys. Outputs are
+(DT-J, DT-B) ships. `evidence.check` is a descriptor-only evidence provider (runtime in DT-B): a recipe that guards a transition with it validates (no `RCP-EVID-001`), the engine refuses the transition at run time ("no runtime for evidence checks in this build"), and `recipe eval` still answers every evidence check as holding, since an eval line has no evidence answer yet (a known gap until DT-B). Facts are `fact:` keys. Outputs are
 what a report must carry, on which outcomes; "every outcome" outputs are on all of them.
 
 | Step | Runtime | Inputs | Outcomes | Outputs |
