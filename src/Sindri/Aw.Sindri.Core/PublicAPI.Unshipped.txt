@@ -8184,7 +8184,7 @@ static Aw.Sindri.Core.Onyx.OnyxFilePin.Sha256Of(System.ReadOnlySpan<byte> conten
 Aw.Sindri.Core.Onyx.IComposeServices
 Aw.Sindri.Core.Onyx.IComposeServices.Read(string! composeText) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeService!>!>!
 Aw.Sindri.Core.Onyx.IOnyxWorkspace
-Aw.Sindri.Core.Onyx.IOnyxWorkspace.Read(string! path) -> string?
+Aw.Sindri.Core.Onyx.IOnyxWorkspace.Read(string! path) -> Aw.Kernel.Result<string?>!
 Aw.Sindri.Core.Onyx.IOnyxWorkspace.ReadState() -> Aw.Sindri.Core.Onyx.OnyxSetupState?
 Aw.Sindri.Core.Onyx.IOnyxWorkspace.WriteIfChanged(string! path, string! content, bool secret) -> bool
 Aw.Sindri.Core.Onyx.IOnyxWorkspace.WriteState(Aw.Sindri.Core.Onyx.OnyxSetupState! state) -> void

@@ -21,12 +21,24 @@ internal sealed class FileOnyxWorkspace(ISindriHome home, JsonSerializerOptions 
     private readonly OnyxPaths _paths = OnyxPaths.For(home.Path);
 
     /// <inheritdoc />
-    public string? Read(string path) => File.Exists(path) ? File.ReadAllText(path) : null;
+    public Result<string?> Read(string path)
+    {
+        try
+        {
+            return Results.Success(ReadText(path));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return Results.Success<string?>(value: null);
+        }
+    }
+
+    private static string? ReadText(string path) => File.Exists(path) ? File.ReadAllText(path) : null;
 
     /// <inheritdoc />
     public bool WriteIfChanged(string path, string content, bool secret)
     {
-        if (Read(path) is { } have && string.Equals(have, content, StringComparison.Ordinal))
+        if (ReadText(path) is { } have && string.Equals(have, content, StringComparison.Ordinal))
         {
             if (secret)
             {

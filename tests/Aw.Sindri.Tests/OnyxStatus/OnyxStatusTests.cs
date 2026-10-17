@@ -46,6 +46,17 @@ public sealed class OnyxStatusTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Status_with_an_unreadable_fetched_file_reports_SND_ONYX_012_instead_of_calling_it_not_set_up()
+    {
+        var rig = await RunningRig();
+        _ = rig.Workspace.Unreadable.Add(rig.Paths.Compose);
+
+        var result = await Service(rig).Handle(new OnyxStatusRequest(), Token);
+
+        Assert.Equal("SND-ONYX-012", result.IsError ? result.Error.Code : "no error: status said " + result.Value.Detail);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Status_measures_a_data_root_that_is_a_directory_on_this_host()
     {
         var status = await StatusWithDataRoot(onThisHost: true);

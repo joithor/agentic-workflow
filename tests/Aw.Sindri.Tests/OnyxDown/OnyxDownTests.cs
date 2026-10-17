@@ -117,6 +117,18 @@ public sealed class OnyxDownTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Down_with_an_unreadable_compose_file_reports_SND_ONYX_012_and_stops_nothing()
+    {
+        var rig = await RunningRig();
+        _ = rig.Workspace.Unreadable.Add(rig.Paths.Compose);
+
+        var result = await Down(rig);
+
+        Assert.Equal("SND-ONYX-012", result.IsError ? result.Error.Code : "no error: down said WasRunning=" + result.Value.WasRunning);
+        Assert.DoesNotContain("Stop", rig.Runtime.Calls, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Down_on_a_box_never_set_up_is_a_no_op()
     {
         var rig = new OnyxUpRig();

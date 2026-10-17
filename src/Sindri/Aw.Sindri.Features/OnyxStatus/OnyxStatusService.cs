@@ -2,6 +2,7 @@ using System.Globalization;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Onyx;
+using Aw.Sindri.Features.OnyxUp;
 
 namespace Aw.Sindri.Features.OnyxStatus;
 
@@ -22,7 +23,7 @@ internal sealed class OnyxStatusService(IOnyxPinsSource pinsSource, OnyxFacts fa
     }
 
     // Set up means `onyx up` finished its start step and the fetched files are still there.
-    private bool IsSetUp(OnyxSetupState? state) => state is not null && state.Steps.ContainsKey(OnyxSteps.Start) && workspace.Read(facts.Paths.Compose) is not null;
+    private bool IsSetUp(OnyxSetupState? state) => state is not null && state.Steps.ContainsKey(OnyxSteps.Start) && workspace.Read(facts.Paths.Compose).OrNull() is not null;
 
     private static OnyxState Classify(bool setUp, bool running) => !setUp ? OnyxState.NotSetUp : running ? OnyxState.Running : OnyxState.Stopped;
 

@@ -23,14 +23,14 @@ internal sealed class OnyxConfigStep(IOnyxWorkspace workspace, IComposeServices 
 
     public ValueTask<Result<OnyxStepOutcome>> Execute(OnyxUpContext context, string? recorded, CancellationToken cancellationToken)
     {
-        var compose = workspace.Read(context.Paths.Compose);
-        var template = workspace.Read(context.Paths.EnvTemplate);
+        var compose = workspace.Read(context.Paths.Compose).OrNull();
+        var template = workspace.Read(context.Paths.EnvTemplate).OrNull();
         if (compose is null || template is null)
         {
             return Done(SindriErrors.OnyxPinsMalformed.With("the fetched compose file or env.template is missing; run `sindri onyx up` again to fetch them"));
         }
 
-        var existing = OnyxConfig.ReadSecret(workspace.Read(context.Paths.Env));
+        var existing = OnyxConfig.ReadSecret(workspace.Read(context.Paths.Env).OrNull());
         var key = existing ?? random.Hex(AuthKeyBytes);
         var settings = context.Settings(key);
         var rendered = services.Read(compose).Bind(list => OnyxConfig.RenderOverride(list, settings, context.Pins, context.Platform));
@@ -41,8 +41,8 @@ internal sealed class OnyxConfigStep(IOnyxWorkspace workspace, IComposeServices 
 
         var env = OnyxConfig.RenderEnv(template, settings);
         var stale = !string.Equals(recorded, Stamp(context), StringComparison.Ordinal)
-            || !string.Equals(workspace.Read(context.Paths.Env), env, StringComparison.Ordinal)
-            || !string.Equals(workspace.Read(context.Paths.Override), rendered.Value, StringComparison.Ordinal);
+            || !string.Equals(workspace.Read(context.Paths.Env).OrNull(), env, StringComparison.Ordinal)
+            || !string.Equals(workspace.Read(context.Paths.Override).OrNull(), rendered.Value, StringComparison.Ordinal);
         if (stale)
         {
             progress.Line($"{Name}: running");

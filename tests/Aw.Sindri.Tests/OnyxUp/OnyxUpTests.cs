@@ -59,6 +59,18 @@ public sealed class OnyxUpTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task An_unreadable_env_file_is_SND_ONYX_012_and_starts_nothing()
+    {
+        var rig = new OnyxUpRig();
+        _ = rig.Workspace.Unreadable.Add(rig.Paths.Env);
+
+        var result = await rig.Up(Token);
+
+        Assert.Equal("SND-ONYX-012", result.IsError ? result.Error.Code : "no error: ran " + string.Join(',', result.Value.Ran));
+        Assert.DoesNotContain("Up", rig.Runtime.Calls, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_fail_row_blocks_before_any_fetch()
     {
         var rig = new OnyxUpRig();

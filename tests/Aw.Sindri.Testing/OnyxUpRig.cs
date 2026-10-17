@@ -92,7 +92,7 @@ public sealed class OnyxUpRig
 
     // Compose reads HOST_PORT from the rendered .env, so the fake config answers with it (3000 before the env exists).
     private int RenderedPort()
-        => Workspace.Read(Paths.Env)?.Split('\n').FirstOrDefault(static l => l.StartsWith("HOST_PORT=", StringComparison.Ordinal)) is { } line
+        => (Workspace.Read(Paths.Env) is { IsSuccess: true } read ? read.Value : null)?.Split('\n').FirstOrDefault(static l => l.StartsWith("HOST_PORT=", StringComparison.Ordinal)) is { } line
             && int.TryParse(line["HOST_PORT=".Length..], System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var port)
                 ? port
                 : 3000;

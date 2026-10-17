@@ -7,8 +7,8 @@ public interface IOnyxWorkspace
 {
     /// <summary>Reads a text file.</summary>
     /// <param name="path">The file's path (one of <see cref="OnyxPaths"/>).</param>
-    /// <returns>Its text, or null when it doesn't exist.</returns>
-    public string? Read(string path);
+    /// <returns>Its text, null when it doesn't exist, or SND-ONYX-012 when it exists and can't be read (no permission, an I/O error).</returns>
+    public Result<string?> Read(string path);
 
     /// <summary>Writes a text file only when its content differs, atomically (a temporary file renamed over the target, so a reader sees the old or the new content, never a partial one).</summary>
     /// <param name="path">The file's path; missing parent directories are created.</param>

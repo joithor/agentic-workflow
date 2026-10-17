@@ -32,6 +32,31 @@ public sealed class FileOnyxWorkspaceTests : IDisposable
 
     [Fact, Trait("Lane", "integration")]
     [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+    public void A_file_that_exists_but_cannot_be_read_is_SND_ONYX_012_not_an_exception_or_a_missing_file()
+    {
+        if (Environment.IsPrivilegedProcess)
+        {
+            return;   // root reads a mode-000 file
+        }
+
+        _ = _workspace.WriteIfChanged(_paths.Env, "A=1\n", secret: true);
+        File.SetUnixFileMode(_paths.Env, UnixFileMode.None);
+        try
+        {
+            var read = _workspace.Read(_paths.Env);
+
+            Assert.True(read.IsError, "read of an unreadable file succeeded with " + (read.IsSuccess ? read.Value ?? "null" : ""));
+            Assert.Equal("SND-ONYX-012", read.Error.Code);
+            Assert.Contains(_paths.Env, read.Error.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.SetUnixFileMode(_paths.Env, OwnerFile);
+        }
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
     public void A_protected_file_is_0600_and_its_directory_0700()
     {
         _ = _workspace.WriteIfChanged(_paths.Env, "A=1\n", secret: true);
@@ -127,7 +152,7 @@ public sealed class FileOnyxWorkspaceTests : IDisposable
             {
                 while (!stop.IsCancellationRequested)
                 {
-                    lengths.Add(_workspace.Read(_paths.Override)?.Length ?? -1);
+                    lengths.Add(_workspace.Read(_paths.Override).Value?.Length ?? -1);
                 }
             },
             CancellationToken.None);

@@ -8,6 +8,9 @@ public sealed class FakeOnyxWorkspace : IOnyxWorkspace
     /// <summary>Gets the text files by path.</summary>
     public IDictionary<string, string> Files { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
+    /// <summary>Gets the paths that exist but can't be read: <see cref="Read"/> fails with SND-ONYX-012 for each.</summary>
+    public ISet<string> Unreadable { get; } = new HashSet<string>(StringComparer.Ordinal);
+
     /// <summary>Gets or sets the state; null reads as missing.</summary>
     public OnyxSetupState? State { get; set; }
 
@@ -24,7 +27,10 @@ public sealed class FakeOnyxWorkspace : IOnyxWorkspace
     public int StateWrites { get; private set; }
 
     /// <inheritdoc />
-    public string? Read(string path) => Files.TryGetValue(path, out var text) ? text : null;
+    public Kernel.Result<string?> Read(string path)
+        => Unreadable.Contains(path)
+            ? Sindri.Core.SindriErrors.OnyxWorkspaceUnusable.With($"Sindri can't read {path}: access denied; make it readable by you, then run this again")
+            : Kernel.Results.Success(Files.TryGetValue(path, out var text) ? text : null);
 
     /// <inheritdoc />
     public bool WriteIfChanged(string path, string content, bool secret)

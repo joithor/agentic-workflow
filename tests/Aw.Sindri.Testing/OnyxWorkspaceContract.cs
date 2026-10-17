@@ -16,10 +16,10 @@ public abstract class OnyxWorkspaceContract
     {
         using var rig = Create();
 
-        Expect.True(rig.Workspace.Read(rig.Paths.Env) is null);
+        Expect.True(rig.Workspace.Read(rig.Paths.Env).Value is null);
         Expect.True(rig.Workspace.WriteIfChanged(rig.Paths.Env, "A=1\n", secret: true));
 
-        Expect.Equal("A=1\n", rig.Workspace.Read(rig.Paths.Env) ?? "");
+        Expect.Equal("A=1\n", rig.Workspace.Read(rig.Paths.Env).Value ?? "");
     }
 
     /// <summary>Identical content writes nothing; changed content writes.</summary>
@@ -31,7 +31,7 @@ public abstract class OnyxWorkspaceContract
 
         Expect.True(!rig.Workspace.WriteIfChanged(rig.Paths.Override, "a\n", secret: false));
         Expect.True(rig.Workspace.WriteIfChanged(rig.Paths.Override, "b\n", secret: false));
-        Expect.Equal("b\n", rig.Workspace.Read(rig.Paths.Override) ?? "");
+        Expect.Equal("b\n", rig.Workspace.Read(rig.Paths.Override).Value ?? "");
     }
 
     /// <summary>A missing state is null.</summary>

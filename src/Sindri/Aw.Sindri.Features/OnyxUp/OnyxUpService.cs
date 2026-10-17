@@ -113,7 +113,7 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
     // The port our own running nginx publishes, whatever state.json says: a start that failed or timed out leaves it up, and a lost state file doesn't make it someone else's.
     private int? OwnPort(OnyxSetupState? state, ContainerRuntimeFacts docker, CancellationToken cancellationToken)
     {
-        if (!docker.DaemonAnswers || workspace.Read(facts.Paths.Compose) is null)
+        if (!docker.DaemonAnswers || workspace.Read(facts.Paths.Compose).OrNull() is null)
         {
             return null;   // no compose file yet means no project to ask about
         }
