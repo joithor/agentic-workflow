@@ -421,8 +421,9 @@ Fits `.agents/rules/csharp-testing.md`:
   batch.
 - The meta's own pane stays Claude Code in this batch: its inbound messages come from its Claude transcript
   (`docs/csharp/meta.md`). The lanes may run any catalog agent (SL6, SL-1b).
-- Remote runners (X61b) aren't designed here; `ISessionHost` is where they would fit. Pane capture (X59c) will pass
-  through `Aw.Redaction` before anything is stored.
+- Remote runners (X61b) aren't designed here; `ISessionHost` is where they would fit. Pane capture that is stored (X59c)
+  will pass through `Aw.Redaction` first. The live preview (collector spec CA-9) stores nothing and is served
+  unscrubbed, to the human only (owner, 2026-10-17).
 - Each teammate runs their own Sindri, profile copy and `launcher.json` (review C20). One shared Sindri for a team is
   X61. `launch.started` records the viewer kind, the target and the catalog source (L-10), and doctor's `launcher`
   section prints one line from the `launches` projection: opens in the last 30 days by viewer and by agent. That is
