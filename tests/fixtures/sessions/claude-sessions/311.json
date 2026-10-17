@@ -1,7 +1,7 @@
 {
   "pid": 311,
   "sessionId": "bbbbbbbb-0000-4000-8000-000000000311",
-  "cwd": "/home/dev/other",
+  "cwd": "/nonexistent-fixture-root/home/dev/other",
   "startedAt": 1760000000311,
   "procStart": "2100",
   "version": "2.1.301",
