@@ -47,13 +47,13 @@ if [ "${1:-}" = "--run-one" ]; then
   # One list of what a suite must not inherit, built as `env -u` flags. Two families:
   #  - the hook and provider overrides the install helpers honour: a caller's must not steer a suite at real files;
   #  - the lane environment: every lane and meta pane exports AW_META_LANE*, AW_META_TEAM, AW_META_DIR, AW_SINDRI_CHILD,
-  #    AW_SINDRI_LAUNCH, TMUX and TMUX_PANE. Hooks (session-id-report, meta-lane-gate) and meta-launch branch on them, so a
+  #    AW_SINDRI_LAUNCH, AW_LAUNCHER_CONFIG, TMUX and TMUX_PANE. Hooks (session-id-report, meta-lane-gate) and meta-launch branch on them, so a
   #    suite run from a lane fails on state it never set. Suites that need one set it themselves.
   # GIT_CONFIG_GLOBAL, DOTNET_ROOT, NUGET_PACKAGES, npm_config_cache and PATH are deliberately kept.
   unset_flags=()
   for v in CLAUDE_SETTINGS_FILE CLAUDE_HOOKS_DIR CLAUDE_DIR CODEX_HOOKS_FILE CODEX_HOME CURSOR_HOOKS_FILE AW_HOOKS_DIR AW_HOOK_ADAPTER_FLAGS \
     AW_META_CONFIG AW_SINDRI_HOME CLAUDE_LOCAL_BIN \
-    AW_META_TEAM AW_META_DIR AW_META_LANE AW_META_LANE_PID AW_META_LANE_AGENT AW_META_LANE_PROC AW_SINDRI_CHILD AW_SINDRI_LAUNCH TMUX TMUX_PANE; do
+    AW_META_TEAM AW_META_DIR AW_META_LANE AW_META_LANE_PID AW_META_LANE_AGENT AW_META_LANE_PROC AW_SINDRI_CHILD AW_SINDRI_LAUNCH AW_LAUNCHER_CONFIG TMUX TMUX_PANE; do
     unset_flags+=(-u "$v")
   done
   env "${unset_flags[@]}" HOME="$sandbox/home" AW_STATE_DIR="$sandbox/state" bash "$suite" >"$out/$idx.log" 2>&1 </dev/null
