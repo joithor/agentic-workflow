@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using Aw.Kernel;
 using Aw.Sindri.Core.Sessions;
 
@@ -37,8 +38,7 @@ internal sealed class SourcePass(Dictionary<string, Task> abandoned, TimeSpan bu
             return (SourceOutcome.TimedOut, default);
         }
 
-        var cancel = CancellationTokenSource.CreateLinkedTokenSource(shutdown);
-        var (task, finished) = Race(read, remaining, cancel.Token);
+        var (task, cancel, answer, finished) = Race(read, remaining);
         _spent[name] = used + time.GetElapsedTime(begun);
         if (!finished)
         {
@@ -50,16 +50,18 @@ internal sealed class SourcePass(Dictionary<string, Task> abandoned, TimeSpan bu
         }
 
         cancel.Dispose();
-        var (ok, value) = task.Result;
+        var (ok, value) = answer.Value;
         return ok ? (SourceOutcome.Done, value) : (SourceOutcome.Failed, default);
     }
 
     /// <summary>Starts the read and waits for it or for the injected clock's deadline, whichever comes first. The deadline timer exists before the read starts, so a test that sees the read begin can make it late.</summary>
-    private (Task<(bool Ok, T? Value)> Task, bool Finished) Race<T>(Func<CancellationToken, T> read, TimeSpan remaining, CancellationToken readToken)
+    private (Task Task, CancellationTokenSource Cancel, StrongBox<(bool Ok, T? Value)> Answer, bool Finished) Race<T>(Func<CancellationToken, T> read, TimeSpan remaining)
     {
+        var cancel = CancellationTokenSource.CreateLinkedTokenSource(shutdown);
+        var answer = new StrongBox<(bool Ok, T? Value)>();
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(shutdown);
         var timer = Task.Delay(remaining, time, deadline.Token);
-        var task = Task.Run(() => Attempt(read, readToken), CancellationToken.None);
+        var task = Task.Run(() => answer.Value = Attempt(read, cancel.Token), CancellationToken.None);
         try
         {
             _ = Task.WaitAny([task, timer], shutdown);
@@ -69,7 +71,7 @@ internal sealed class SourcePass(Dictionary<string, Task> abandoned, TimeSpan bu
             deadline.Cancel();
         }
 
-        return (task, task.IsCompleted);
+        return (task, cancel, answer, task.IsCompleted);
     }
 
     /// <summary>The processes table gets the whole budget; the others a fifth; an environment read at least 250 ms (never more than the budget), so a loaded box doesn't turn healthy pids unknown.</summary>
