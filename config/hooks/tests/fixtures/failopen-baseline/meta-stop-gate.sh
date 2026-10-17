@@ -9,6 +9,16 @@ set -uo pipefail
 failopen() { :; }   # baseline: the hook without its fail-open logging
 [ -n "${AW_JUDGE_CHILD:-}" ] && exit 0
 
+# The team: AW_META_TEAM when the lane launcher set it; else the tmux socket the session runs on (the launcher names it after the
+# team), taken only when that team exists on disk (teams/<name>/team.json, or the legacy config's own team) and is not "default" (tmux's
+# own socket). Anything else: no team selected. Mirrors scripts/meta-team-lib.sh.
+if [ -z "${AW_META_TEAM:-}" ] && [ -n "${TMUX:-}" ]; then
+  sock="${TMUX%%,*}"; sock="${sock##*/}"
+  mroot="${AW_STATE_DIR:-$HOME/.agentic-workflow}/meta"
+  if [[ "$sock" =~ ^[a-z0-9][a-z0-9-]*$ ]] && [ "$sock" != default ] && { [ -f "$mroot/teams/$sock/team.json" ] || [ "$(jq -r 'if (.team | type) == "string" then .team else empty end' "$mroot/team.json" 2> /dev/null)" = "$sock" ]; }; then
+    export AW_META_TEAM="$sock"
+  fi
+fi
 META="${AW_META_BIN:-${AW_STATE_DIR:-$HOME/.agentic-workflow}/bin/aw-meta}"
 [ -x "$META" ] || exit 0   # not installed: nothing to gate
 

@@ -375,6 +375,24 @@ Aw.Meta.Features.OwnerAsk.AskOwnerResponse.Deconstruct(out int Number) -> void
 Aw.Meta.Features.OwnerAsk.AskOwnerResponse.Equals(Aw.Meta.Features.OwnerAsk.AskOwnerResponse? other) -> bool
 Aw.Meta.Features.OwnerAsk.AskOwnerResponse.Number.get -> int
 Aw.Meta.Features.OwnerAsk.AskOwnerResponse.Number.init -> void
+Aw.Meta.Features.QueueDrop.QueueDropRequest
+Aw.Meta.Features.QueueDrop.QueueDropRequest.<Clone>$() -> Aw.Meta.Features.QueueDrop.QueueDropRequest!
+Aw.Meta.Features.QueueDrop.QueueDropRequest.Deconstruct(out int Pr, out string! Reason) -> void
+Aw.Meta.Features.QueueDrop.QueueDropRequest.Equals(Aw.Meta.Features.QueueDrop.QueueDropRequest? other) -> bool
+Aw.Meta.Features.QueueDrop.QueueDropRequest.Pr.get -> int
+Aw.Meta.Features.QueueDrop.QueueDropRequest.Pr.init -> void
+Aw.Meta.Features.QueueDrop.QueueDropRequest.QueueDropRequest(int Pr, string! Reason) -> void
+Aw.Meta.Features.QueueDrop.QueueDropRequest.Reason.get -> string!
+Aw.Meta.Features.QueueDrop.QueueDropRequest.Reason.init -> void
+Aw.Meta.Features.QueueDrop.QueueDropResponse
+Aw.Meta.Features.QueueDrop.QueueDropResponse.<Clone>$() -> Aw.Meta.Features.QueueDrop.QueueDropResponse!
+Aw.Meta.Features.QueueDrop.QueueDropResponse.Deconstruct(out int Pr, out string! Line) -> void
+Aw.Meta.Features.QueueDrop.QueueDropResponse.Equals(Aw.Meta.Features.QueueDrop.QueueDropResponse? other) -> bool
+Aw.Meta.Features.QueueDrop.QueueDropResponse.Line.get -> string!
+Aw.Meta.Features.QueueDrop.QueueDropResponse.Line.init -> void
+Aw.Meta.Features.QueueDrop.QueueDropResponse.Pr.get -> int
+Aw.Meta.Features.QueueDrop.QueueDropResponse.Pr.init -> void
+Aw.Meta.Features.QueueDrop.QueueDropResponse.QueueDropResponse(int Pr, string! Line) -> void
 Aw.Meta.Features.Roles.SetRoleRequest
 Aw.Meta.Features.Roles.SetRoleRequest.<Clone>$() -> Aw.Meta.Features.Roles.SetRoleRequest!
 Aw.Meta.Features.Roles.SetRoleRequest.Deconstruct(out Aw.Meta.Core.Ids.SessionId Session, out string! Name) -> void
@@ -484,6 +502,24 @@ Aw.Meta.Features.Team.TeamInitRequest.Repo.init -> void
 Aw.Meta.Features.Team.TeamInitRequest.Team.get -> string!
 Aw.Meta.Features.Team.TeamInitRequest.Team.init -> void
 Aw.Meta.Features.Team.TeamInitRequest.TeamInitRequest(string! Team, string! Repo, System.Collections.Generic.IReadOnlyList<string!>! Lanes, string! MetaLane, string? Log, bool Force) -> void
+Aw.Meta.Features.Team.TeamListRequest
+Aw.Meta.Features.Team.TeamListRequest.<Clone>$() -> Aw.Meta.Features.Team.TeamListRequest!
+Aw.Meta.Features.Team.TeamListRequest.Equals(Aw.Meta.Features.Team.TeamListRequest? other) -> bool
+Aw.Meta.Features.Team.TeamListRequest.TeamListRequest() -> void
+Aw.Meta.Features.Team.TeamListResponse
+Aw.Meta.Features.Team.TeamListResponse.<Clone>$() -> Aw.Meta.Features.Team.TeamListResponse!
+Aw.Meta.Features.Team.TeamListResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Ports.TeamSummary!>! Teams) -> void
+Aw.Meta.Features.Team.TeamListResponse.Equals(Aw.Meta.Features.Team.TeamListResponse? other) -> bool
+Aw.Meta.Features.Team.TeamListResponse.TeamListResponse(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Ports.TeamSummary!>! Teams) -> void
+Aw.Meta.Features.Team.TeamListResponse.Teams.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Ports.TeamSummary!>!
+Aw.Meta.Features.Team.TeamListResponse.Teams.init -> void
+Aw.Meta.Features.Team.TeamMigrateRequest
+Aw.Meta.Features.Team.TeamMigrateRequest.<Clone>$() -> Aw.Meta.Features.Team.TeamMigrateRequest!
+Aw.Meta.Features.Team.TeamMigrateRequest.Deconstruct(out bool DryRun) -> void
+Aw.Meta.Features.Team.TeamMigrateRequest.DryRun.get -> bool
+Aw.Meta.Features.Team.TeamMigrateRequest.DryRun.init -> void
+Aw.Meta.Features.Team.TeamMigrateRequest.Equals(Aw.Meta.Features.Team.TeamMigrateRequest? other) -> bool
+Aw.Meta.Features.Team.TeamMigrateRequest.TeamMigrateRequest(bool DryRun) -> void
 Aw.Meta.Features.Team.TeamShowRequest
 Aw.Meta.Features.Team.TeamShowRequest.<Clone>$() -> Aw.Meta.Features.Team.TeamShowRequest!
 Aw.Meta.Features.Team.TeamShowRequest.Equals(Aw.Meta.Features.Team.TeamShowRequest? other) -> bool
@@ -655,6 +691,12 @@ override Aw.Meta.Features.OwnerAsk.AskOwnerRequest.ToString() -> string!
 override Aw.Meta.Features.OwnerAsk.AskOwnerResponse.Equals(object? obj) -> bool
 override Aw.Meta.Features.OwnerAsk.AskOwnerResponse.GetHashCode() -> int
 override Aw.Meta.Features.OwnerAsk.AskOwnerResponse.ToString() -> string!
+override Aw.Meta.Features.QueueDrop.QueueDropRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.QueueDrop.QueueDropRequest.GetHashCode() -> int
+override Aw.Meta.Features.QueueDrop.QueueDropRequest.ToString() -> string!
+override Aw.Meta.Features.QueueDrop.QueueDropResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.QueueDrop.QueueDropResponse.GetHashCode() -> int
+override Aw.Meta.Features.QueueDrop.QueueDropResponse.ToString() -> string!
 override Aw.Meta.Features.Roles.SetRoleRequest.Equals(object? obj) -> bool
 override Aw.Meta.Features.Roles.SetRoleRequest.GetHashCode() -> int
 override Aw.Meta.Features.Roles.SetRoleRequest.ToString() -> string!
@@ -688,6 +730,15 @@ override Aw.Meta.Features.SyncInbox.SyncInboxResponse.ToString() -> string!
 override Aw.Meta.Features.Team.TeamInitRequest.Equals(object? obj) -> bool
 override Aw.Meta.Features.Team.TeamInitRequest.GetHashCode() -> int
 override Aw.Meta.Features.Team.TeamInitRequest.ToString() -> string!
+override Aw.Meta.Features.Team.TeamListRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.Team.TeamListRequest.GetHashCode() -> int
+override Aw.Meta.Features.Team.TeamListRequest.ToString() -> string!
+override Aw.Meta.Features.Team.TeamListResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.Team.TeamListResponse.GetHashCode() -> int
+override Aw.Meta.Features.Team.TeamListResponse.ToString() -> string!
+override Aw.Meta.Features.Team.TeamMigrateRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.Team.TeamMigrateRequest.GetHashCode() -> int
+override Aw.Meta.Features.Team.TeamMigrateRequest.ToString() -> string!
 override Aw.Meta.Features.Team.TeamShowRequest.Equals(object? obj) -> bool
 override Aw.Meta.Features.Team.TeamShowRequest.GetHashCode() -> int
 override Aw.Meta.Features.Team.TeamShowRequest.ToString() -> string!
@@ -785,6 +836,10 @@ static Aw.Meta.Features.OwnerAsk.AskOwnerRequest.operator !=(Aw.Meta.Features.Ow
 static Aw.Meta.Features.OwnerAsk.AskOwnerRequest.operator ==(Aw.Meta.Features.OwnerAsk.AskOwnerRequest? left, Aw.Meta.Features.OwnerAsk.AskOwnerRequest? right) -> bool
 static Aw.Meta.Features.OwnerAsk.AskOwnerResponse.operator !=(Aw.Meta.Features.OwnerAsk.AskOwnerResponse? left, Aw.Meta.Features.OwnerAsk.AskOwnerResponse? right) -> bool
 static Aw.Meta.Features.OwnerAsk.AskOwnerResponse.operator ==(Aw.Meta.Features.OwnerAsk.AskOwnerResponse? left, Aw.Meta.Features.OwnerAsk.AskOwnerResponse? right) -> bool
+static Aw.Meta.Features.QueueDrop.QueueDropRequest.operator !=(Aw.Meta.Features.QueueDrop.QueueDropRequest? left, Aw.Meta.Features.QueueDrop.QueueDropRequest? right) -> bool
+static Aw.Meta.Features.QueueDrop.QueueDropRequest.operator ==(Aw.Meta.Features.QueueDrop.QueueDropRequest? left, Aw.Meta.Features.QueueDrop.QueueDropRequest? right) -> bool
+static Aw.Meta.Features.QueueDrop.QueueDropResponse.operator !=(Aw.Meta.Features.QueueDrop.QueueDropResponse? left, Aw.Meta.Features.QueueDrop.QueueDropResponse? right) -> bool
+static Aw.Meta.Features.QueueDrop.QueueDropResponse.operator ==(Aw.Meta.Features.QueueDrop.QueueDropResponse? left, Aw.Meta.Features.QueueDrop.QueueDropResponse? right) -> bool
 static Aw.Meta.Features.Roles.SetRoleRequest.operator !=(Aw.Meta.Features.Roles.SetRoleRequest? left, Aw.Meta.Features.Roles.SetRoleRequest? right) -> bool
 static Aw.Meta.Features.Roles.SetRoleRequest.operator ==(Aw.Meta.Features.Roles.SetRoleRequest? left, Aw.Meta.Features.Roles.SetRoleRequest? right) -> bool
 static Aw.Meta.Features.Roles.ShowRoleRequest.operator !=(Aw.Meta.Features.Roles.ShowRoleRequest? left, Aw.Meta.Features.Roles.ShowRoleRequest? right) -> bool
@@ -807,6 +862,12 @@ static Aw.Meta.Features.SyncInbox.SyncInboxResponse.operator !=(Aw.Meta.Features
 static Aw.Meta.Features.SyncInbox.SyncInboxResponse.operator ==(Aw.Meta.Features.SyncInbox.SyncInboxResponse? left, Aw.Meta.Features.SyncInbox.SyncInboxResponse? right) -> bool
 static Aw.Meta.Features.Team.TeamInitRequest.operator !=(Aw.Meta.Features.Team.TeamInitRequest? left, Aw.Meta.Features.Team.TeamInitRequest? right) -> bool
 static Aw.Meta.Features.Team.TeamInitRequest.operator ==(Aw.Meta.Features.Team.TeamInitRequest? left, Aw.Meta.Features.Team.TeamInitRequest? right) -> bool
+static Aw.Meta.Features.Team.TeamListRequest.operator !=(Aw.Meta.Features.Team.TeamListRequest? left, Aw.Meta.Features.Team.TeamListRequest? right) -> bool
+static Aw.Meta.Features.Team.TeamListRequest.operator ==(Aw.Meta.Features.Team.TeamListRequest? left, Aw.Meta.Features.Team.TeamListRequest? right) -> bool
+static Aw.Meta.Features.Team.TeamListResponse.operator !=(Aw.Meta.Features.Team.TeamListResponse? left, Aw.Meta.Features.Team.TeamListResponse? right) -> bool
+static Aw.Meta.Features.Team.TeamListResponse.operator ==(Aw.Meta.Features.Team.TeamListResponse? left, Aw.Meta.Features.Team.TeamListResponse? right) -> bool
+static Aw.Meta.Features.Team.TeamMigrateRequest.operator !=(Aw.Meta.Features.Team.TeamMigrateRequest? left, Aw.Meta.Features.Team.TeamMigrateRequest? right) -> bool
+static Aw.Meta.Features.Team.TeamMigrateRequest.operator ==(Aw.Meta.Features.Team.TeamMigrateRequest? left, Aw.Meta.Features.Team.TeamMigrateRequest? right) -> bool
 static Aw.Meta.Features.Team.TeamShowRequest.operator !=(Aw.Meta.Features.Team.TeamShowRequest? left, Aw.Meta.Features.Team.TeamShowRequest? right) -> bool
 static Aw.Meta.Features.Team.TeamShowRequest.operator ==(Aw.Meta.Features.Team.TeamShowRequest? left, Aw.Meta.Features.Team.TeamShowRequest? right) -> bool
 static Aw.Meta.Features.Watch.WatchRequest.operator !=(Aw.Meta.Features.Watch.WatchRequest? left, Aw.Meta.Features.Watch.WatchRequest? right) -> bool
@@ -821,31 +882,3 @@ static Aw.Meta.Features.WorktreeSweep.SweepWorktreesRequest.operator !=(Aw.Meta.
 static Aw.Meta.Features.WorktreeSweep.SweepWorktreesRequest.operator ==(Aw.Meta.Features.WorktreeSweep.SweepWorktreesRequest? left, Aw.Meta.Features.WorktreeSweep.SweepWorktreesRequest? right) -> bool
 static Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse.operator !=(Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse? left, Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse? right) -> bool
 static Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse.operator ==(Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse? left, Aw.Meta.Features.WorktreeSweep.SweepWorktreesResponse? right) -> bool
-Aw.Meta.Features.QueueDrop.QueueDropRequest
-Aw.Meta.Features.QueueDrop.QueueDropRequest.<Clone>$() -> Aw.Meta.Features.QueueDrop.QueueDropRequest!
-Aw.Meta.Features.QueueDrop.QueueDropRequest.Deconstruct(out int Pr, out string! Reason) -> void
-Aw.Meta.Features.QueueDrop.QueueDropRequest.Equals(Aw.Meta.Features.QueueDrop.QueueDropRequest? other) -> bool
-Aw.Meta.Features.QueueDrop.QueueDropRequest.Pr.get -> int
-Aw.Meta.Features.QueueDrop.QueueDropRequest.Pr.init -> void
-Aw.Meta.Features.QueueDrop.QueueDropRequest.QueueDropRequest(int Pr, string! Reason) -> void
-Aw.Meta.Features.QueueDrop.QueueDropRequest.Reason.get -> string!
-Aw.Meta.Features.QueueDrop.QueueDropRequest.Reason.init -> void
-Aw.Meta.Features.QueueDrop.QueueDropResponse
-Aw.Meta.Features.QueueDrop.QueueDropResponse.<Clone>$() -> Aw.Meta.Features.QueueDrop.QueueDropResponse!
-Aw.Meta.Features.QueueDrop.QueueDropResponse.Deconstruct(out int Pr, out string! Line) -> void
-Aw.Meta.Features.QueueDrop.QueueDropResponse.Equals(Aw.Meta.Features.QueueDrop.QueueDropResponse? other) -> bool
-Aw.Meta.Features.QueueDrop.QueueDropResponse.Line.get -> string!
-Aw.Meta.Features.QueueDrop.QueueDropResponse.Line.init -> void
-Aw.Meta.Features.QueueDrop.QueueDropResponse.Pr.get -> int
-Aw.Meta.Features.QueueDrop.QueueDropResponse.Pr.init -> void
-Aw.Meta.Features.QueueDrop.QueueDropResponse.QueueDropResponse(int Pr, string! Line) -> void
-override Aw.Meta.Features.QueueDrop.QueueDropRequest.Equals(object? obj) -> bool
-override Aw.Meta.Features.QueueDrop.QueueDropRequest.GetHashCode() -> int
-override Aw.Meta.Features.QueueDrop.QueueDropRequest.ToString() -> string!
-override Aw.Meta.Features.QueueDrop.QueueDropResponse.Equals(object? obj) -> bool
-override Aw.Meta.Features.QueueDrop.QueueDropResponse.GetHashCode() -> int
-override Aw.Meta.Features.QueueDrop.QueueDropResponse.ToString() -> string!
-static Aw.Meta.Features.QueueDrop.QueueDropRequest.operator !=(Aw.Meta.Features.QueueDrop.QueueDropRequest? left, Aw.Meta.Features.QueueDrop.QueueDropRequest? right) -> bool
-static Aw.Meta.Features.QueueDrop.QueueDropRequest.operator ==(Aw.Meta.Features.QueueDrop.QueueDropRequest? left, Aw.Meta.Features.QueueDrop.QueueDropRequest? right) -> bool
-static Aw.Meta.Features.QueueDrop.QueueDropResponse.operator !=(Aw.Meta.Features.QueueDrop.QueueDropResponse? left, Aw.Meta.Features.QueueDrop.QueueDropResponse? right) -> bool
-static Aw.Meta.Features.QueueDrop.QueueDropResponse.operator ==(Aw.Meta.Features.QueueDrop.QueueDropResponse? left, Aw.Meta.Features.QueueDrop.QueueDropResponse? right) -> bool

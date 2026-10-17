@@ -618,6 +618,7 @@ Aw.Meta.Core.Merge.MergeFacts.RepoGatePassedOnHead.init -> void
 Aw.Meta.Core.Merge.MergeFacts.ScopeRuns.get -> System.Collections.Generic.IReadOnlyDictionary<string!, int>?
 Aw.Meta.Core.Merge.MergeFacts.ScopeRuns.init -> void
 Aw.Meta.Core.Merge.MergeGate
+Aw.Meta.Core.Merge.QueueDrops
 Aw.Meta.Core.Messages.Classification
 Aw.Meta.Core.Messages.Classification.<Clone>$() -> Aw.Meta.Core.Messages.Classification!
 Aw.Meta.Core.Messages.Classification.Classification(Aw.Meta.Core.Messages.MessageKind Kind, int? Pr = null, string? Lane = null) -> void
@@ -879,6 +880,9 @@ Aw.Meta.Core.Ports.IRunningLog
 Aw.Meta.Core.Ports.IRunningLog.Append(string! line, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Meta.Core.Ports.ISessionDirectory
 Aw.Meta.Core.Ports.ISessionDirectory.Live(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LiveSession!>!>!>
+Aw.Meta.Core.Ports.ITeamCatalog
+Aw.Meta.Core.Ports.ITeamCatalog.List(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Ports.TeamSummary!>!>!>
+Aw.Meta.Core.Ports.ITeamCatalog.Migrate(bool dryRun, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Ports.TeamMigration!>!>
 Aw.Meta.Core.Ports.ITranscriptReader
 Aw.Meta.Core.Ports.ITranscriptReader.ReadFrom(string! path, long offset, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Messages.TranscriptChunk!>!>
 Aw.Meta.Core.Ports.IWorktreeFiles
@@ -896,7 +900,58 @@ Aw.Meta.Core.Ports.ProcessLocation.Paths.init -> void
 Aw.Meta.Core.Ports.ProcessLocation.Pid.get -> int
 Aw.Meta.Core.Ports.ProcessLocation.Pid.init -> void
 Aw.Meta.Core.Ports.ProcessLocation.ProcessLocation(int Pid, string! Command, System.Collections.Generic.IReadOnlyList<string!>! Paths, bool IsInvoker = false) -> void
+Aw.Meta.Core.Ports.TeamMigration
+Aw.Meta.Core.Ports.TeamMigration.<Clone>$() -> Aw.Meta.Core.Ports.TeamMigration!
+Aw.Meta.Core.Ports.TeamMigration.Deconstruct(out string! Team, out string! From, out string! To, out System.Collections.Generic.IReadOnlyList<string!>! Moved, out System.Collections.Generic.IReadOnlyList<string!>! Left, out bool DryRun) -> void
+Aw.Meta.Core.Ports.TeamMigration.DryRun.get -> bool
+Aw.Meta.Core.Ports.TeamMigration.DryRun.init -> void
+Aw.Meta.Core.Ports.TeamMigration.Equals(Aw.Meta.Core.Ports.TeamMigration? other) -> bool
+Aw.Meta.Core.Ports.TeamMigration.From.get -> string!
+Aw.Meta.Core.Ports.TeamMigration.From.init -> void
+Aw.Meta.Core.Ports.TeamMigration.Left.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Ports.TeamMigration.Left.init -> void
+Aw.Meta.Core.Ports.TeamMigration.Moved.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Ports.TeamMigration.Moved.init -> void
+Aw.Meta.Core.Ports.TeamMigration.Team.get -> string!
+Aw.Meta.Core.Ports.TeamMigration.Team.init -> void
+Aw.Meta.Core.Ports.TeamMigration.TeamMigration(string! Team, string! From, string! To, System.Collections.Generic.IReadOnlyList<string!>! Moved, System.Collections.Generic.IReadOnlyList<string!>! Left, bool DryRun) -> void
+Aw.Meta.Core.Ports.TeamMigration.To.get -> string!
+Aw.Meta.Core.Ports.TeamMigration.To.init -> void
+Aw.Meta.Core.Ports.TeamSummary
+Aw.Meta.Core.Ports.TeamSummary.<Clone>$() -> Aw.Meta.Core.Ports.TeamSummary!
+Aw.Meta.Core.Ports.TeamSummary.Deconstruct(out string! Name, out string! Layout, out string! Repo, out System.Collections.Generic.IReadOnlyList<string!>! Lanes, out string? MetaSession, out bool Live, out bool Selected) -> void
+Aw.Meta.Core.Ports.TeamSummary.Equals(Aw.Meta.Core.Ports.TeamSummary? other) -> bool
+Aw.Meta.Core.Ports.TeamSummary.Lanes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Ports.TeamSummary.Lanes.init -> void
+Aw.Meta.Core.Ports.TeamSummary.Layout.get -> string!
+Aw.Meta.Core.Ports.TeamSummary.Layout.init -> void
+Aw.Meta.Core.Ports.TeamSummary.Live.get -> bool
+Aw.Meta.Core.Ports.TeamSummary.Live.init -> void
+Aw.Meta.Core.Ports.TeamSummary.MetaSession.get -> string?
+Aw.Meta.Core.Ports.TeamSummary.MetaSession.init -> void
+Aw.Meta.Core.Ports.TeamSummary.Name.get -> string!
+Aw.Meta.Core.Ports.TeamSummary.Name.init -> void
+Aw.Meta.Core.Ports.TeamSummary.Repo.get -> string!
+Aw.Meta.Core.Ports.TeamSummary.Repo.init -> void
+Aw.Meta.Core.Ports.TeamSummary.Selected.get -> bool
+Aw.Meta.Core.Ports.TeamSummary.Selected.init -> void
+Aw.Meta.Core.Ports.TeamSummary.TeamSummary(string! Name, string! Layout, string! Repo, System.Collections.Generic.IReadOnlyList<string!>! Lanes, string? MetaSession, bool Live, bool Selected) -> void
 Aw.Meta.Core.Registration.MetaCoreServiceCollectionExtensions
+Aw.Meta.Core.TeamLayout
+Aw.Meta.Core.TeamLayout.<Clone>$() -> Aw.Meta.Core.TeamLayout!
+Aw.Meta.Core.TeamLayout.Ambiguous.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.TeamLayout.Ambiguous.init -> void
+Aw.Meta.Core.TeamLayout.Deconstruct(out string! MetaRoot, out string? Team, out bool Legacy, out System.Collections.Generic.IReadOnlyList<string!>! Ambiguous, out string? Problem) -> void
+Aw.Meta.Core.TeamLayout.Equals(Aw.Meta.Core.TeamLayout? other) -> bool
+Aw.Meta.Core.TeamLayout.Legacy.get -> bool
+Aw.Meta.Core.TeamLayout.Legacy.init -> void
+Aw.Meta.Core.TeamLayout.MetaRoot.get -> string!
+Aw.Meta.Core.TeamLayout.MetaRoot.init -> void
+Aw.Meta.Core.TeamLayout.Problem.get -> string?
+Aw.Meta.Core.TeamLayout.Problem.init -> void
+Aw.Meta.Core.TeamLayout.Team.get -> string?
+Aw.Meta.Core.TeamLayout.Team.init -> void
+Aw.Meta.Core.TeamLayout.TeamLayout(string! MetaRoot, string? Team, bool Legacy, System.Collections.Generic.IReadOnlyList<string!>! Ambiguous, string? Problem = null) -> void
 Aw.Meta.Core.Watch.EndedPrs
 Aw.Meta.Core.Watch.PrState
 Aw.Meta.Core.Watch.PrState.Closed = 2 -> Aw.Meta.Core.Watch.PrState
@@ -1027,6 +1082,7 @@ const Aw.Meta.Core.Health.ProcessGroups.Mcp = "headroom/mcp" -> string!
 const Aw.Meta.Core.Health.ProcessGroups.Temporal = "temporal" -> string!
 const Aw.Meta.Core.KvKeys.EndedPrs = "watch.ended-prs" -> string!
 const Aw.Meta.Core.KvKeys.HealthLast = "health.last" -> string!
+const Aw.Meta.Core.KvKeys.QueueDropped = "queue.dropped" -> string!
 const Aw.Meta.Core.KvKeys.StopCount = "stopcheck.count" -> string!
 const Aw.Meta.Core.KvKeys.StopFingerprint = "stopcheck.fingerprint" -> string!
 const Aw.Meta.Core.KvKeys.WatchHeartbeat = "watch.heartbeat" -> string!
@@ -1201,6 +1257,15 @@ override Aw.Meta.Core.Owner.OwnerQuestion.ToString() -> string!
 override Aw.Meta.Core.Ports.ProcessLocation.Equals(object? obj) -> bool
 override Aw.Meta.Core.Ports.ProcessLocation.GetHashCode() -> int
 override Aw.Meta.Core.Ports.ProcessLocation.ToString() -> string!
+override Aw.Meta.Core.Ports.TeamMigration.Equals(object? obj) -> bool
+override Aw.Meta.Core.Ports.TeamMigration.GetHashCode() -> int
+override Aw.Meta.Core.Ports.TeamMigration.ToString() -> string!
+override Aw.Meta.Core.Ports.TeamSummary.Equals(object? obj) -> bool
+override Aw.Meta.Core.Ports.TeamSummary.GetHashCode() -> int
+override Aw.Meta.Core.Ports.TeamSummary.ToString() -> string!
+override Aw.Meta.Core.TeamLayout.Equals(object? obj) -> bool
+override Aw.Meta.Core.TeamLayout.GetHashCode() -> int
+override Aw.Meta.Core.TeamLayout.ToString() -> string!
 override Aw.Meta.Core.Watch.PrView.Equals(object? obj) -> bool
 override Aw.Meta.Core.Watch.PrView.GetHashCode() -> int
 override Aw.Meta.Core.Watch.PrView.ToString() -> string!
@@ -1352,6 +1417,8 @@ static Aw.Meta.Core.Merge.MergeCheck.operator ==(Aw.Meta.Core.Merge.MergeCheck? 
 static Aw.Meta.Core.Merge.MergeFacts.operator !=(Aw.Meta.Core.Merge.MergeFacts? left, Aw.Meta.Core.Merge.MergeFacts? right) -> bool
 static Aw.Meta.Core.Merge.MergeFacts.operator ==(Aw.Meta.Core.Merge.MergeFacts? left, Aw.Meta.Core.Merge.MergeFacts? right) -> bool
 static Aw.Meta.Core.Merge.MergeGate.Evaluate(Aw.Meta.Core.Merge.MergeFacts! facts) -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.MergeCheck!>!
+static Aw.Meta.Core.Merge.QueueDrops.Parse(string? stored) -> System.Collections.Generic.IReadOnlyDictionary<int, System.DateTimeOffset>!
+static Aw.Meta.Core.Merge.QueueDrops.With(string? stored, int pr, System.DateTimeOffset at) -> string!
 static Aw.Meta.Core.Messages.Classification.operator !=(Aw.Meta.Core.Messages.Classification? left, Aw.Meta.Core.Messages.Classification? right) -> bool
 static Aw.Meta.Core.Messages.Classification.operator ==(Aw.Meta.Core.Messages.Classification? left, Aw.Meta.Core.Messages.Classification? right) -> bool
 static Aw.Meta.Core.Messages.DueTime.Parse(string! text, System.DateTimeOffset now) -> System.DateTimeOffset?
@@ -1387,7 +1454,14 @@ static Aw.Meta.Core.Owner.OwnerQuestion.operator ==(Aw.Meta.Core.Owner.OwnerQues
 static Aw.Meta.Core.Owner.OwnerQuestionText.From(string! body) -> string!
 static Aw.Meta.Core.Ports.ProcessLocation.operator !=(Aw.Meta.Core.Ports.ProcessLocation? left, Aw.Meta.Core.Ports.ProcessLocation? right) -> bool
 static Aw.Meta.Core.Ports.ProcessLocation.operator ==(Aw.Meta.Core.Ports.ProcessLocation? left, Aw.Meta.Core.Ports.ProcessLocation? right) -> bool
+static Aw.Meta.Core.Ports.TeamMigration.operator !=(Aw.Meta.Core.Ports.TeamMigration? left, Aw.Meta.Core.Ports.TeamMigration? right) -> bool
+static Aw.Meta.Core.Ports.TeamMigration.operator ==(Aw.Meta.Core.Ports.TeamMigration? left, Aw.Meta.Core.Ports.TeamMigration? right) -> bool
+static Aw.Meta.Core.Ports.TeamSummary.operator !=(Aw.Meta.Core.Ports.TeamSummary? left, Aw.Meta.Core.Ports.TeamSummary? right) -> bool
+static Aw.Meta.Core.Ports.TeamSummary.operator ==(Aw.Meta.Core.Ports.TeamSummary? left, Aw.Meta.Core.Ports.TeamSummary? right) -> bool
 static Aw.Meta.Core.Registration.MetaCoreServiceCollectionExtensions.AddMetaCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Meta.Core.TeamLayout.IsValidName(string! name) -> bool
+static Aw.Meta.Core.TeamLayout.operator !=(Aw.Meta.Core.TeamLayout? left, Aw.Meta.Core.TeamLayout? right) -> bool
+static Aw.Meta.Core.TeamLayout.operator ==(Aw.Meta.Core.TeamLayout? left, Aw.Meta.Core.TeamLayout? right) -> bool
 static Aw.Meta.Core.Watch.EndedPrs.Added(string? stored, System.Collections.Generic.IEnumerable<Aw.Meta.Core.Watch.PrView!>! prs) -> System.Collections.Generic.IReadOnlyList<int>!
 static Aw.Meta.Core.Watch.EndedPrs.Merge(string? stored, System.Collections.Generic.IEnumerable<Aw.Meta.Core.Watch.PrView!>! prs) -> string?
 static Aw.Meta.Core.Watch.EndedPrs.Parse(string? stored) -> System.Collections.Generic.IReadOnlySet<int>!
@@ -1427,10 +1501,8 @@ static readonly Aw.Meta.Core.MetaErrors.LogUnwritable -> Aw.Kernel.ErrorDefiniti
 static readonly Aw.Meta.Core.MetaErrors.MessageNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.NoTeamConfig -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.QuestionNotFound -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Meta.Core.MetaErrors.QueueEntryNotFound -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Meta.Core.MetaErrors.TeamAmbiguous -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Meta.Core.MetaErrors.TeamMigrationRefused -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.TranscriptUnreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.UnknownLane -> Aw.Kernel.ErrorDefinition!
-Aw.Meta.Core.Merge.QueueDrops
-const Aw.Meta.Core.KvKeys.QueueDropped = "queue.dropped" -> string!
-static Aw.Meta.Core.Merge.QueueDrops.Parse(string? stored) -> System.Collections.Generic.IReadOnlyDictionary<int, System.DateTimeOffset>!
-static Aw.Meta.Core.Merge.QueueDrops.With(string? stored, int pr, System.DateTimeOffset at) -> string!
-static readonly Aw.Meta.Core.MetaErrors.QueueEntryNotFound -> Aw.Kernel.ErrorDefinition!

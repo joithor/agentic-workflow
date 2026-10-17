@@ -27,8 +27,9 @@ import { parseYaml } from "../deps/yaml.mjs";
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const BUDGETS = { unit: 10, integration: 60 };
 // Per-package exceptions to the lane budget, each an owner decision: SindriUi's headless Avalonia tests (real fonts, rendering)
-// cannot run in 60 s on CI (owner, 2026-10-16). An explicit --budget for a lane overrides this table too.
-const PACKAGE_BUDGETS = { SindriUi: { integration: 90 } };
+// cannot run in 60 s on CI (owner, 2026-10-16). Sindri's integration lane is wait-bound on real Temporal servers: 120 s
+// (owner, 2026-10-16: 63.7 s in CI after fail-fast + 8 threads). An explicit --budget for a lane overrides this table too.
+const PACKAGE_BUDGETS = { SindriUi: { integration: 90 }, Sindri: { integration: 120 } };
 const SOLUTION = "AgenticWorkflow.slnx";
 
 class ToolError extends Error {}

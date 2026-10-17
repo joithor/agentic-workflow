@@ -30,6 +30,9 @@ public static class SubjectKinds
         return input.Type ?? (input.Kind is { } kind ? PairedType(kind) : null) ?? FactTypes.Default;
     }
 
+    /// <summary>What a recipe view serves as the kind of an input a pre-P4c recipe declared without one (the CLI prints it as kind=-).</summary>
+    public const string NoKind = "-";
+
     /// <summary>The fix a pre-P4c recipe's refusals and marks name (RCP-VERSION-001 lets the new file register over the old row).</summary>
     public const string LegacyFix = "register the current file at a new version and approve it";
 

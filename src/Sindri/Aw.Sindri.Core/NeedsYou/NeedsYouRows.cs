@@ -11,7 +11,7 @@ using Aw.Sindri.Core.Views;
 namespace Aw.Sindri.Core.NeedsYou;
 
 /// <summary>Builds the needs-you rows (P4 plan §1.3): pure, every free-text field through <see cref="SafeText"/>, every CLI line through CliForm.Fill.</summary>
-public static class NeedsYouRows
+public static partial class NeedsYouRows
 {
     private const int TitleMax = 120;
     private const int ReasonMax = 300;

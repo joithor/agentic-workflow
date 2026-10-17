@@ -1,6 +1,6 @@
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
-using Aw.Sindri.Core.Workflow.Validation;
+using Aw.Sindri.Testing.Workflow;
 using static Aw.Sindri.Tests.Workflow.Wiring.WiringRecipe;
 
 namespace Aw.Sindri.Tests.Workflow.Wiring;
@@ -139,24 +139,33 @@ public sealed class DeclarationRulesTests
         Assert.Empty(CheckDeclarations(Waiting(WaitForEvent("no.such"), "fact:report")));
     }
 
-    [Fact, Trait("Lane", "unit")]
-    public void An_output_from_a_state_waiting_on_a_child_is_information_when_nothing_records_it()
+    private static Recipe WaitingOnKid() => Of(
+        "running",
+        [("running", WaitForChild("workflow.kid")), ("done", Terminal())],
+        [Go("running", "done", "wait.satisfied", AnyOf(Outcome("resolved"), Outcome("cancelled")))]) with
     {
-        var recipe = Of(
-            "running",
-            [("running", WaitForChild("workflow.step")), ("done", Terminal())],
-            [Go("running", "done", "wait.satisfied", AnyOf(Outcome("resolved"), Outcome("cancelled")))]) with
-        {
-            Outputs = [Out("fact:result", "running")],
-        };
+        Outputs = [Out("fact:result", "running")],
+    };
 
-        var finding = Assert.Single(CheckDeclarations(recipe, At(("outputs[0].from", 5, 48))));
+    private static Located WithKid(string declared) => At(("outputs[0].from", 5, 48)) with
+    {
+        Children = new InMemoryChildRecipes().With(Child(
+            Of("produce", _produceThenDone, [Go("produce", "done", when: Outcome("done"))], inputs: [], id: "workflow.kid") with { Outputs = [OutputOf(declared, "produce")] })),
+    };
 
-        Assert.Equal(FindingSeverity.Information, finding.Severity);
+    [Fact, Trait("Lane", "unit")]
+    public void An_output_from_a_child_wait_is_recorded_by_the_childs_outputs() =>
+        Assert.Empty(CheckDeclarations(WaitingOnKid(), WithKid("fact:result")));
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_output_the_child_doesnt_declare_is_RCP_OUT_002() =>
         Assert.Equal(
-            "RCP-OUT-002: output 'fact:result' comes from state 'running', which waits on child 'workflow.step'; whether the child's outcome carries it can't be checked here at r.yaml:5:48 (outputs[0].from); list 'fact:result' in 'produces' on the transition leaving 'running' if the recipe should record it",
-            finding.ToLine());
-    }
+            ["RCP-OUT-002: output 'fact:result' comes from state 'running', but nothing there records it (child 'workflow.kid' records fact:other) at r.yaml:5:48 (outputs[0].from); have the state's Step, a transition leaving it ('produces') or its wait record 'fact:result', or name the state that does"],
+            CheckDeclarations(WaitingOnKid(), WithKid("fact:other")).Lines());
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_unresolved_child_gives_no_OUT_002() =>
+        Assert.Empty(CheckDeclarations(WaitingOnKid(), At(("outputs[0].from", 5, 48))));
 
     [Fact, Trait("Lane", "unit")]
     public void A_duplicate_output_key_and_an_output_key_that_is_an_input_key_are_reported()

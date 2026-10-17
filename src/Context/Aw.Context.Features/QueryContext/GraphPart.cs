@@ -21,5 +21,8 @@ internal sealed record GraphPart(IReadOnlyList<PackCandidate> Candidates, IReadO
     /// <summary>The keys of the records the answer's nodes are linked to, to tell whether any still waits for decision extraction.</summary>
     internal IReadOnlyList<string> LinkedRecords { get; init; } = [];
 
+    /// <summary>The diff shape's facts, or null for every other shape.</summary>
+    internal DiffPart? Diff { get; init; }
+
     internal static GraphPart None { get; } = new([], new Dictionary<string, Citation>(StringComparer.Ordinal), [], MapVersion: null, []);
 }

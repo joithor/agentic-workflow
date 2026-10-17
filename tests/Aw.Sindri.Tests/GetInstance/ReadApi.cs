@@ -5,10 +5,12 @@ using System.Web;
 using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.GetInstance;
 using Aw.Sindri.Features.GetInstanceEvents;
 using Aw.Sindri.Features.ListInstances;
@@ -29,6 +31,7 @@ namespace Aw.Sindri.Tests.GetInstance;
 internal sealed class ReadApi : HttpMessageHandler
 {
     private const string Instances = "/sindri/workflow/instances";
+    private static readonly CallerContext _human = new CallerContextBuilder().Human().Build();
     private readonly ServiceProvider _services;
     private readonly Lock _gate = new();
     private readonly List<string> _calls = [];
@@ -63,13 +66,21 @@ internal sealed class ReadApi : HttpMessageHandler
     /// <param name="instances">The one instance the directory and reader know.</param>
     /// <param name="configure">Adds the services the routes call.</param>
     /// <returns>The API.</returns>
-    public static ReadApi Over(OneInstance instances, Action<IServiceCollection>? configure = null) => new(services =>
+    public static ReadApi Over(OneInstance instances, Action<IServiceCollection>? configure = null) => OverAt(instances, new FakeTimeProvider(), configure);
+
+    /// <summary>The routes over <paramref name="instances"/>, reading at <paramref name="at"/>.</summary>
+    /// <param name="instances">The one instance the directory and reader know.</param>
+    /// <param name="at">The clock the services read.</param>
+    /// <param name="configure">Adds the services the routes call.</param>
+    /// <returns>The API.</returns>
+    public static ReadApi OverAt(OneInstance instances, TimeProvider at, Action<IServiceCollection>? configure = null) => new(services =>
     {
+        var clock = at;
         _ = services
             .AddSingleton<IInstanceDirectory>(instances)
             .AddSingleton<IInstanceReader>(instances)
-            .AddSingleton<IService<GetInstanceRequest, GetInstanceResponse>>(new GetInstanceService(instances, instances))
-            .AddSingleton<IService<ListInstancesRequest, ListInstancesResponse>>(new ListInstancesService(instances, new NoRows(), instances, new ListInstances.FixedItemViews(), new ListInstances.FixedCaller(current: null), clock: new FakeTimeProvider()));
+            .AddSingleton<IService<GetInstanceRequest, InstanceDetail>>(new GetInstanceService(instances, instances, new DetailViews(), new FixedRepos(), new ListInstances.FixedCaller(_human), clock))
+            .AddSingleton<IService<ListInstancesRequest, InstanceList>>(new ListInstancesService(instances, new NoRows(), new EndedInstanceViews(instances), new ListInstances.FixedItemViews(), new FixedRepos(), new ListInstances.FixedCaller(current: null), clock));
         configure?.Invoke(services);
     }, running: true);
 
@@ -97,14 +108,14 @@ internal sealed class ReadApi : HttpMessageHandler
         if (uri.AbsolutePath == Instances)
         {
             var item = query["item"];
-            var list = new ListInstancesRequest(query["needsMe"], item is null ? null : ItemKey.From(item), query["state"], query["query"], query["address"], query["recipe"], query["urgency"], query["subject"], query["root"]);
-            return Answer(await _services.GetRequiredService<IService<ListInstancesRequest, ListInstancesResponse>>().Handle(list, cancellationToken).ConfigureAwait(false), json);
+            var list = new ListInstancesRequest(query["needsMe"], item is null ? null : ItemKey.From(item), query["state"], query["query"], query["address"], query["recipe"], query["urgency"], query["subject"], query["root"], query["open"]);
+            return Answer(await _services.GetRequiredService<IService<ListInstancesRequest, InstanceList>>().Handle(list, cancellationToken).ConfigureAwait(false), json);
         }
 
         var rest = uri.AbsolutePath[(Instances.Length + 1)..].Split('/');
         return rest switch
         {
-            [var id] => Answer(await _services.GetRequiredService<IService<GetInstanceRequest, GetInstanceResponse>>().Handle(new GetInstanceRequest(id), cancellationToken).ConfigureAwait(false), json),
+            [var id] => Answer(await _services.GetRequiredService<IService<GetInstanceRequest, InstanceDetail>>().Handle(new GetInstanceRequest(id), cancellationToken).ConfigureAwait(false), json),
             [var id, "events"] => Answer(await _services.GetRequiredService<IService<GetInstanceEventsRequest, GetInstanceEventsResponse>>()
                 .Handle(new GetInstanceEventsRequest(id, long.Parse(query["after"] ?? "0", System.Globalization.CultureInfo.InvariantCulture)), cancellationToken).ConfigureAwait(false), json),
             _ => new HttpResponseMessage(HttpStatusCode.NotFound),
