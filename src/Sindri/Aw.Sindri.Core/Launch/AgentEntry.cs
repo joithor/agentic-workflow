@@ -12,6 +12,15 @@ public sealed record AgentEntry(AgentId Id, string Label, string Bin, string? Pr
     /// <summary>The regex whose first group is the session id in a transcript path (the entry's reportedId.capture), or null.</summary>
     public string? IdCapture { get; init; }
 
+    /// <summary>The argv template that opens a new session ('{bin}', '{cwd}', '{name}', '{seed}', '{sessionId}', '{mcpConfig}'). P10a's addition.</summary>
+    public IReadOnlyList<string> Open { get; init; } = [];
+
+    /// <summary>Where the entry's session id comes from; none by default. P10a's addition.</summary>
+    public SessionIdMode SessionIdMode { get; init; } = SessionIdMode.None;
+
+    /// <summary>The regex a session id must match before it is used or resumed (run non-backtracking with a 100 ms timeout), or null. P10a's addition.</summary>
+    public string? SessionIdPattern { get; init; }
+
     /// <summary>How the entry takes a Step's model id (launcher L-17); none by default, as for a user-added entry. P10a's addition.</summary>
     public ModelForm ModelForm { get; init; } = ModelForm.None;
 
