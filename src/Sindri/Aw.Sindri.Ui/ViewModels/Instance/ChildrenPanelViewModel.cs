@@ -28,6 +28,7 @@ internal sealed class ChildrenPanelViewModel : ObservableObject
 
         Heading = Groups.Count > 0 ? Labels.ChildrenCount(Groups.Sum(g => g.Total)) : Labels.ChildrenHeading;
         Name = Labels.ChildrenName(detail.Address);
+        EmptyText = detail.States.Any(s => s.Child) ? Labels.NoChildrenYet : Labels.NoChildren;
     }
 
     /// <summary>Raised when a row asks to open its child's frame.</summary>
@@ -48,10 +49,8 @@ internal sealed class ChildrenPanelViewModel : ObservableObject
     /// <summary>"CHILDREN 9".</summary>
     public string Heading { get; }
 
-    /// <summary>The words when there are no children.</summary>
-#pragma warning disable CA1822, MA0041 // a fixed sentence is a property because the view binds it
-    public string EmptyText => Labels.NoChildren;
-#pragma warning restore CA1822, MA0041
+    /// <summary>The words when there are no children: "no children yet" when a state of the recipe marks children, else that the recipe declares none.</summary>
+    public string EmptyText { get; }
 
     /// <summary>The panel's accessible name.</summary>
     public string Name { get; }
