@@ -1,8 +1,8 @@
 using Aw.Meta.Core;
 using Aw.Meta.Core.Commands;
-using Aw.Meta.Testing;
 using Aw.Meta.Infrastructure.Files;
 using Aw.Meta.Infrastructure.Processes;
+using Aw.Meta.Testing;
 
 namespace Aw.Meta.Tests.Adapters;
 
