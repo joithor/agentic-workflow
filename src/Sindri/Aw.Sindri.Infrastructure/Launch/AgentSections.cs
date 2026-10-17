@@ -53,8 +53,18 @@ internal static partial class AgentSections
             : new AgentEntry(agentId, section.Label!, section.Bin!, Text(section.ProcessName), Text(section.Transcripts), Strings(section.Resume)) // why: Problem() proved label and bin are set
             {
                 IdCapture = Capture(section.ReportedId),
+                Open = section.Open!, // why: Problem() proved open is set
+                SessionIdMode = Mode(section.SessionId),
+                SessionIdPattern = Text(section.SessionIdPattern),
             };
     }
+
+    private static SessionIdMode Mode(string? value) => value switch
+    {
+        "pre-chosen-uuid" => SessionIdMode.PreChosenUuid,
+        "reported" => SessionIdMode.Reported,
+        _ => SessionIdMode.None,
+    };
 
     private static string? Problem(AgentSection s)
     {
