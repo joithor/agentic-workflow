@@ -7,7 +7,7 @@ namespace Aw.Sindri.Features.OnyxDown;
 
 /// <summary>
 /// Stops the project's containers (`docker compose stop`: it removes no container, volume or image, and Sindri's files stay). Stops whatever containers `docker compose ps` shows live (running, restarting or paused) for the project (also after a start that failed, or with an unreadable state.json) and does nothing
-/// when none runs or the fetched files were never laid down. With the compose override or .env gone it stops by the compose project label alone (`docker compose -p <project> stop`) and says so. Refuses a Docker that points at another machine (SND-ONYX-010), and takes the same lock as `onyx up`, so it never stops a stack that is being started.
+/// when none runs or the fetched files were never laid down. With the compose override or .env gone it stops by the compose project label alone (`docker compose -p {project} stop`) and says so. Refuses a Docker that points at another machine (SND-ONYX-010), and takes the same lock as `onyx up`, so it never stops a stack that is being started.
 /// </summary>
 internal sealed class OnyxDownService(IOnyxWorkspace workspace, OnyxFacts facts, IContainerRuntime runtime) : IService<OnyxDownRequest, OnyxDownResponse>
 {
