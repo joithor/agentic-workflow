@@ -34,28 +34,44 @@ public sealed class FakeLauncher : ILauncher
     /// <param name="stage">Where it stopped.</param>
     public void FailNextWith(Error error, LaunchStage stage = LaunchStage.Host) => _nextFailure = (error, stage);
 
+    /// <summary>When set, 'Launch' waits for it (and its caller's cancellation) before answering: a launch that is still running.</summary>
+    public Task? Hold { get; set; }
+
+    /// <summary>What the viewer did for an attended launch; null opens it.</summary>
+    public ViewerOutcome? Viewer { get; set; }
+
     /// <inheritdoc/>
-    public ValueTask<LaunchResult> Launch(LaunchRequest request, CancellationToken cancellationToken)
+    public async ValueTask<LaunchResult> Launch(LaunchRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
         _requests.Add(request);
+        if (Hold is { } hold)
+        {
+            await hold.WaitAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        return Answer(request);
+    }
+
+    private LaunchResult Answer(LaunchRequest request)
+    {
         if (_live.TryGetValue(request.Launch, out var existing))
         {
-            return ValueTask.FromResult<LaunchResult>(existing);
+            return existing;
         }
 
         if (_nextFailure is { } failure)
         {
             _nextFailure = null;
-            return ValueTask.FromResult<LaunchResult>(new FailedLaunch(failure.Error, failure.Stage));
+            return new FailedLaunch(failure.Error, failure.Stage);
         }
 
         var host = new HostRef(HostKind.Tmux, "snd-" + request.Launch.Value);
         var started = new StartedLaunch(
-            host, request.Attended ? ViewerOutcome.Opened : ViewerOutcome.Skipped,
+            host, request.Attended ? Viewer ?? ViewerOutcome.Opened : ViewerOutcome.Skipped,
             ["tmux", "-L", "sindri", "attach-session", "-t", "=" + host.Name], CatalogSource.Builtin, "fake-argv-hash");
         _live[request.Launch] = started;
-        return ValueTask.FromResult<LaunchResult>(started);
+        return started;
     }
 
     /// <inheritdoc/>

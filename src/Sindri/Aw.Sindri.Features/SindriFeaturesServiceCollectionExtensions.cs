@@ -43,6 +43,7 @@ using Aw.Sindri.Features.GetItem;
 using Aw.Sindri.Features.GetItemTimeline;
 using Aw.Sindri.Features.GetJob;
 using Aw.Sindri.Features.GetLaunch;
+using Aw.Sindri.Features.Launching;
 using Aw.Sindri.Features.GetNeedsYou;
 using Aw.Sindri.Features.GetProfile;
 using Aw.Sindri.Features.GetQueue;
@@ -127,7 +128,8 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddContextSlices()
             .AddContextJobs()
             .AddEngineSlices()
-            .AddSessionSlices();
+            .AddSessionSlices()
+            .AddLaunchSlices();
         return services;
     }
 
