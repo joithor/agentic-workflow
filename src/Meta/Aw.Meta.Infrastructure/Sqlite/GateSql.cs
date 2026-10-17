@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Kernel.Data;
 using Aw.Meta.Core.Gate;
 using Aw.Meta.Core.Obligations;
@@ -19,9 +20,10 @@ internal static class GateSql
     internal static IEnumerable<SqlStatement> Insert(GateRecord gate)
     {
         yield return new SqlStatement(
-            "INSERT INTO gates (pr, run, head, main, scopes, verdict, at) VALUES ($pr, $run, $head, $main, $scopes, $verdict, $at)",
+            "INSERT INTO gates (pr, run, head, main, scopes, verdict, at, tree, stack) VALUES ($pr, $run, $head, $main, $scopes, $verdict, $at, $tree, $stack)",
             c => c.Bind("$pr", gate.Pr).Bind("$run", gate.Run).Bind("$head", gate.Head).Bind("$main", gate.Main)
-                .Bind("$scopes", string.Join(ScopeSeparator, gate.Scopes)).Bind("$verdict", gate.Verdict.ToString()).Bind("$at", gate.At),
+                .Bind("$scopes", string.Join(ScopeSeparator, gate.Scopes)).Bind("$verdict", gate.Verdict.ToString()).Bind("$at", gate.At)
+                .Bind("$tree", gate.Tree).Bind("$stack", string.Join(ScopeSeparator, gate.Stack.Select(s => string.Create(CultureInfo.InvariantCulture, $"{s.Pr}:{s.Head}")))),
             "gate");
         for (var position = 0; position < gate.Steps.Count; position++)
         {
@@ -36,12 +38,12 @@ internal static class GateSql
     }
 
     internal static SqlStatement Latest(int pr) => new(
-        "SELECT pr, run, head, main, scopes, verdict, at FROM gates WHERE pr = $pr ORDER BY run DESC LIMIT 1",
+        "SELECT pr, run, head, main, scopes, verdict, at, tree, stack FROM gates WHERE pr = $pr ORDER BY run DESC LIMIT 1",
         c => c.Bind("$pr", pr),
         "latest gate");
 
     internal static SqlStatement All(int pr) => new(
-        "SELECT pr, run, head, main, scopes, verdict, at FROM gates WHERE pr = $pr ORDER BY run DESC",
+        "SELECT pr, run, head, main, scopes, verdict, at, tree, stack FROM gates WHERE pr = $pr ORDER BY run DESC",
         c => c.Bind("$pr", pr),
         "gate history");
 
@@ -85,7 +87,15 @@ internal static class GateSql
         SqliteRead.GetTimestamp(r, 6))
     {
         Run = checked((int)r.GetInt64(1)),
+        Tree = r.IsDBNull(7) ? null : r.GetString(7),
+        Stack = [.. r.GetString(8).Split(ScopeSeparator, StringSplitOptions.RemoveEmptyEntries).Select(ReadStacked)],
     };
+
+    private static StackedPr ReadStacked(string entry)
+    {
+        var colon = entry.IndexOf(':', StringComparison.Ordinal);
+        return new StackedPr(int.Parse(entry.AsSpan(0, colon), CultureInfo.InvariantCulture), entry[(colon + 1)..]);
+    }
 
     internal static GateStep ReadStep(SqliteDataReader r) =>
         new(r.GetString(0), Enum.Parse<GateVerdict>(r.GetString(1)), r.GetString(2));
