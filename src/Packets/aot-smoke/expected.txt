@@ -68,6 +68,17 @@ pass      PKT-SCP-003 packet: every file is well formed
 pass      PKT-SCP-004 packet: lenses.json matches its schema
 pass      PKT-SCP-005 packet: every lens item id is unique and names its own lens
 exit 1
+## line validate
+aw-packets validate: review packet smoke-review — PASS (0 failed, 0 unchecked)
+pass      PKT-REV-001 packet: all 3 review files are present
+pass      PKT-REV-002 packet: the directory holds only the review files
+pass      PKT-REV-003 packet: every file is well formed
+pass      PKT-REV-004 packet: packet.json matches the review schema
+pass      PKT-REV-005 packet: links name each file of the kind, and index.json
+pass      PKT-REV-006 packet: index.json matches its schema and says the kind
+pass      PKT-BASE-001 packet: base commit <sha> is in the repository
+## line hash
+sha256:<hex>
 ## build hash
 sha256:<hex>
 ## no arguments
