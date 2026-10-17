@@ -49,10 +49,10 @@ internal sealed class OnyxStartStep(IContainerRuntime runtime, IOnyxHealth healt
     private async ValueTask<Result<Unit>> Run(OnyxUpContext context, CancellationToken cancellationToken)
     {
         var begun = clock.GetUtcNow();
-        var started = runtime.Up(context.Project, _ => progress.Tick(), cancellationToken);
+        var started = runtime.Up(context.Project, _ => progress.Tick(), Left(begun), cancellationToken);
         if (started.IsError)
         {
-            if (!DependencyStillStarting(started.Error))
+            if (!StillStarting(started.Error))
             {
                 return started.Error;
             }
@@ -66,7 +66,7 @@ internal sealed class OnyxStartStep(IContainerRuntime runtime, IOnyxHealth healt
             }
         }
 
-        var ready = await readiness.Wait(context, progress, cancellationToken, OnyxReadiness.Deadline - (clock.GetUtcNow() - begun)).ConfigureAwait(false);
+        var ready = await readiness.Wait(context, progress, cancellationToken, Left(begun)).ConfigureAwait(false);
         if (ready.IsError)
         {
             return ready.Error;
@@ -76,16 +76,24 @@ internal sealed class OnyxStartStep(IContainerRuntime runtime, IOnyxHealth healt
         return Results.Ok();
     }
 
+    // What is left of the 15-minute window; never negative, so a start that used it all still gets one readiness probe.
+    private TimeSpan Left(DateTimeOffset begun)
+    {
+        var left = OnyxReadiness.Deadline - (clock.GetUtcNow() - begun);
+        return left > TimeSpan.Zero ? left : TimeSpan.Zero;
+    }
+
     private async ValueTask<Result<Unit>> RetryUp(OnyxUpContext context, DateTimeOffset begun, CancellationToken cancellationToken)
     {
         while (true)
         {
-            if (clock.GetUtcNow() - begun >= OnyxReadiness.Deadline)
+            var left = Left(begun);
+            if (left <= TimeSpan.Zero)
             {
                 return readiness.TimedOut(context, cancellationToken);
             }
 
-            await Task.Delay(RetryInterval, clock, cancellationToken).ConfigureAwait(false);
+            await Task.Delay(left < RetryInterval ? left : RetryInterval, clock, cancellationToken).ConfigureAwait(false);
             progress.Tick();
             var containers = runtime.Ps(context.Project, cancellationToken);
             if (!containers.IsError && Running(containers.Value, "nginx"))
@@ -93,18 +101,26 @@ internal sealed class OnyxStartStep(IContainerRuntime runtime, IOnyxHealth healt
                 return Results.Ok();
             }
 
-            var again = runtime.Up(context.Project, _ => progress.Tick(), cancellationToken);
+            if ((left = Left(begun)) <= TimeSpan.Zero)
+            {
+                return readiness.TimedOut(context, cancellationToken);
+            }
+
+            var again = runtime.Up(context.Project, _ => progress.Tick(), left, cancellationToken);
             if (!again.IsError)
             {
                 return Results.Ok();
             }
 
-            if (!DependencyStillStarting(again.Error))
+            if (!StillStarting(again.Error))
             {
                 return again.Error;
             }
         }
     }
+
+    // A dependency that is still coming up, or an `up` that ran out of its own time inside the window, is waited out; anything else stops the run.
+    private static bool StillStarting(Error error) => ComposeFailures.IsTimeout(error) || DependencyStillStarting(error);
 
     // Compose words it "dependency failed to start: container X is unhealthy" (older and newer releases differ), and it is only this one that waiting fixes.
     private static bool DependencyStillStarting(Error error)

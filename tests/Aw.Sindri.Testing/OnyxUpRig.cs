@@ -2,7 +2,6 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Features.OnyxUp;
 using Aw.Sindri.Infrastructure.Onyx;
-using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Testing;
 
@@ -28,7 +27,7 @@ public sealed class OnyxUpRig
             Written = Mirror,
         };
         Random = new FakeRandomHex();
-        Clock = new FakeTimeProvider();
+        Clock = new RigClock();
         foreach (var pin in Pins.Pins.Images.Where(static i => i.Platform == "linux/arm64"))
         {
             Runtime.LocalImages[pin.Repository + "@" + pin.Digest] = [ImageNames.WithoutDefaults(pin.Repository + "@" + pin.Digest)];
@@ -60,7 +59,7 @@ public sealed class OnyxUpRig
     public FakeRandomHex Random { get; }
 
     /// <summary>Gets the clock.</summary>
-    public FakeTimeProvider Clock { get; }
+    public RigClock Clock { get; }
 
     /// <summary>Gets the paths under the home.</summary>
     public OnyxPaths Paths { get; }

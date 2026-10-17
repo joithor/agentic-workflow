@@ -256,11 +256,33 @@ public sealed class DockerCliRuntimeTests
     {
         var runner = new FakeToolRunner(Exit(0));
 
-        Assert.True(Cli(runner).Up(_project, static _ => { }, Token).IsSuccess);
+        Assert.True(Cli(runner).Up(_project, static _ => { }, limit: null, Token).IsSuccess);
 
         var call = Assert.Single(runner.Calls);
         Assert.Equal([.. _composePrefix, "up", "-d", "--no-build"], call.Arguments);
         Assert.Equal(TimeSpan.FromMinutes(5), call.Timeout);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Up_never_runs_longer_than_the_time_left_the_caller_passes()
+    {
+        var runner = new FakeToolRunner(Exit(0));
+
+        _ = Cli(runner).Up(_project, static _ => { }, TimeSpan.FromSeconds(40), Token);
+        _ = Cli(runner).Up(_project, static _ => { }, TimeSpan.FromHours(1), Token);
+
+        Assert.Equal([TimeSpan.FromSeconds(40), TimeSpan.FromMinutes(5)], runner.Calls.Select(static c => c.Timeout));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_up_stopped_at_a_short_limit_is_cut_short_011_not_a_hung_docker()
+    {
+        var runner = new FakeToolRunner(ToolRun.TimedOut);
+
+        var error = Cli(runner).Up(_project, static _ => { }, TimeSpan.FromSeconds(20), Token).Error;
+
+        Assert.Equal("SND-ONYX-011", error.Code);
+        Assert.True(ComposeFailures.IsTimeout(error));
     }
 
     [Fact, Trait("Lane", "unit")]

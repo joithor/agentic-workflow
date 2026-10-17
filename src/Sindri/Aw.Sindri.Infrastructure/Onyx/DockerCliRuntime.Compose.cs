@@ -23,7 +23,7 @@ internal sealed partial class DockerCliRuntime
     {
         var tail = new Tail();
         var run = runner.Run("docker", ["version", "--format", "{{.Server.Os}}/{{.Server.Arch}}"], _timeout, tail.Add, cancellationToken);
-        if (Failed(run, tail, "version", _timeout, cancellationToken) is { } error)
+        if (Failed(run, tail, new Call("version", _timeout), cancellationToken) is { } error)
         {
             return error;
         }
@@ -37,19 +37,19 @@ internal sealed partial class DockerCliRuntime
 
     /// <inheritdoc />
     public Result<Unit> Pull(ComposeProject project, Action<string> progress, CancellationToken cancellationToken)
-        => Compose(project, ["pull"], _pullTimeout, progress, cancellationToken).Map(static _ => Unit.Value);
+        => Compose(project, ["pull"], new Call("compose pull", _pullTimeout, CutShort: true), progress, cancellationToken).Map(static _ => Unit.Value);
 
     /// <inheritdoc />
-    public Result<Unit> Up(ComposeProject project, Action<string> progress, CancellationToken cancellationToken)
-        => Compose(project, ["up", "-d", "--no-build"], _upTimeout, progress, cancellationToken).Map(static _ => Unit.Value);
+    public Result<Unit> Up(ComposeProject project, Action<string> progress, TimeSpan? limit, CancellationToken cancellationToken)
+        => Compose(project, ["up", "-d", "--no-build"], new Call("compose up", limit is { } left && left < _upTimeout ? left : _upTimeout, CutShort: true), progress, cancellationToken).Map(static _ => Unit.Value);
 
     /// <inheritdoc />
     public Result<Unit> Stop(ComposeProject project, CancellationToken cancellationToken)
-        => Compose(project, ["stop"], _shortTimeout, progress: null, cancellationToken).Map(static _ => Unit.Value);
+        => Compose(project, ["stop"], new Call("compose stop", _shortTimeout), progress: null, cancellationToken).Map(static _ => Unit.Value);
 
     /// <inheritdoc />
     public Result<IReadOnlyList<ComposeContainer>> Ps(ComposeProject project, CancellationToken cancellationToken)
-        => Compose(project, ["ps", "-a", "--format", "json"], _shortTimeout, progress: null, cancellationToken).Bind(ParsePs);
+        => Compose(project, ["ps", "-a", "--format", "json"], new Call("compose ps", _shortTimeout), progress: null, cancellationToken).Bind(ParsePs);
 
     /// <inheritdoc />
     public Result<IReadOnlyDictionary<string, IReadOnlyList<string>>> RepoDigests(IReadOnlyList<string> images, CancellationToken cancellationToken)
@@ -83,7 +83,7 @@ internal sealed partial class DockerCliRuntime
             return Results.Success<IReadOnlyList<string>>([]);   // `No such image`: not pulled yet
         }
 
-        if (Failed(run, tail, "image inspect", _shortTimeout, cancellationToken) is { } error)
+        if (Failed(run, tail, new Call("image inspect", _shortTimeout), cancellationToken) is { } error)
         {
             return error;
         }
@@ -94,28 +94,28 @@ internal sealed partial class DockerCliRuntime
             : Results.Success<IReadOnlyList<string>>([.. (parsed.Value ?? []).Select(ImageNames.WithoutDefaults)]);
     }
 
-    private Result<string> Compose(ComposeProject project, string[] verb, TimeSpan timeout, Action<string>? progress, CancellationToken cancellationToken)
+    private Result<string> Compose(ComposeProject project, string[] verb, Call call, Action<string>? progress, CancellationToken cancellationToken)
     {
         string[] arguments = ["compose", "-p", ComposeProject.Name, "-f", project.ComposeFile, "-f", project.OverrideFile, "--env-file", project.EnvFile, .. verb];
         var tail = new Tail();
-        var run = runner.Run("docker", arguments, timeout, line =>
+        var run = runner.Run("docker", arguments, call.Timeout, line =>
         {
             tail.Add(line);
             progress?.Invoke(line);
         }, cancellationToken);
-        return Failed(run, tail, "compose " + verb[0], timeout, cancellationToken) is { } error ? error : run.Output;
+        return Failed(run, tail, call, cancellationToken) is { } error ? error : run.Output;
     }
 
     // The error a finished run stands for, or null when it succeeded. Missing and an unreachable daemon are 001; a command that failed is 011 with what it printed last.
-    private static Error? Failed(ToolRun run, Tail tail, string what, TimeSpan timeout, CancellationToken cancellationToken) => run.Outcome switch
+    private static Error? Failed(ToolRun run, Tail tail, Call call, CancellationToken cancellationToken) => run.Outcome switch
     {
         ToolOutcome.Cancelled => throw new OperationCanceledException(cancellationToken),
         ToolOutcome.Missing => SindriErrors.OnyxDockerUnavailable.With("Docker isn't installed: install Docker Desktop (or Docker Engine), then run this again"),
-        ToolOutcome.TimedOut when timeout <= _shortTimeout => SindriErrors.OnyxDockerUnavailable.With("Docker isn't answering (a command hung): start or restart Docker Desktop (or the docker service) and wait until it is ready, then run this again"),
-        ToolOutcome.TimedOut => SindriErrors.OnyxComposeFailed.With(string.Create(CultureInfo.InvariantCulture, $"`docker {what}` didn't finish within {timeout.TotalMinutes:0} minutes and was stopped; run `sindri onyx up` again to resume")),
+        ToolOutcome.TimedOut when !call.CutShort && call.Timeout <= _shortTimeout => SindriErrors.OnyxDockerUnavailable.With("Docker isn't answering (a command hung): start or restart Docker Desktop (or the docker service) and wait until it is ready, then run this again"),
+        ToolOutcome.TimedOut => ComposeFailures.TimedOut(call.What, call.Timeout),
         ToolOutcome.Exited when run.ExitCode == 0 => null,
         _ when tail.DaemonUnreachable => SindriErrors.OnyxDockerUnavailable.With("Docker isn't running: start Docker Desktop (or the docker service) and wait until it is ready, then run this again"),
-        _ => SindriErrors.OnyxComposeFailed.With(string.Create(CultureInfo.InvariantCulture, $"`docker {what}` failed (exit {run.ExitCode}): {tail.Text()}; fix what it says, then run `sindri onyx up` again to resume")),
+        _ => SindriErrors.OnyxComposeFailed.With(string.Create(CultureInfo.InvariantCulture, $"`docker {call.What}` failed (exit {run.ExitCode}): {tail.Text()}; fix what it says, then run `sindri onyx up` again to resume")),
     };
 
     private static Result<IReadOnlyList<ComposeContainer>> ParsePs(string output)
@@ -160,6 +160,9 @@ internal sealed partial class DockerCliRuntime
     }
 
     private static Error Unreadable() => SindriErrors.OnyxComposeFailed.With("`docker compose ps --format json` printed something Sindri can't read; update Docker Compose to v2.21 or newer, then run this again");
+
+    // What a docker command is called in a message, how long it may run, and whether running out of time means it was cut short (a long command) or that docker isn't answering (a short read).
+    private sealed record Call(string What, TimeSpan Timeout, bool CutShort = false);
 
     // The last lines a command printed on standard error, for an error message (printable characters only, bounded).
     private sealed class Tail

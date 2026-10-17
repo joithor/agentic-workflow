@@ -29,9 +29,10 @@ public interface IContainerRuntime
     /// <summary>Creates and starts the project's containers (`docker compose up -d --no-build`: the images are pulled, no build context exists on disk).</summary>
     /// <param name="project">The project.</param>
     /// <param name="progress">Called with each line the command prints on standard error while it runs.</param>
+    /// <param name="limit">The most the command may run, at most the runtime's own limit; null for the runtime's own limit (a caller with a window to keep passes what is left of it).</param>
     /// <param name="cancellationToken">Kills the command.</param>
-    /// <returns>Success, or the error.</returns>
-    public Result<Unit> Up(ComposeProject project, Action<string> progress, CancellationToken cancellationToken);
+    /// <returns>Success, or the error (SND-ONYX-011 for a command stopped at its limit: <see cref="ComposeFailures.IsTimeout"/>).</returns>
+    public Result<Unit> Up(ComposeProject project, Action<string> progress, TimeSpan? limit, CancellationToken cancellationToken);
 
     /// <summary>Stops the project's containers and keeps them, their volumes and their images (`docker compose stop`).</summary>
     /// <param name="project">The project.</param>

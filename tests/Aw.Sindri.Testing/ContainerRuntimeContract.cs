@@ -69,7 +69,7 @@ public abstract class ContainerRuntimeContract
         var runtime = Create(FakeContainerRuntime.Healthy);
 
         Expect.True(runtime.Pull(Project, static _ => { }, Token).IsSuccess);
-        Expect.True(runtime.Up(Project, static _ => { }, Token).IsSuccess);
+        Expect.True(runtime.Up(Project, static _ => { }, limit: null, Token).IsSuccess);
         Expect.True(runtime.Stop(Project, Token).IsSuccess);
     }
 
@@ -80,7 +80,7 @@ public abstract class ContainerRuntimeContract
         var runtime = Create(FakeContainerRuntime.Healthy);
         Expect.True(runtime.Ps(Project, Token).Value.Count == 0);
 
-        _ = runtime.Up(Project, static _ => { }, Token);
+        _ = runtime.Up(Project, static _ => { }, limit: null, Token);
         var running = runtime.Ps(Project, Token).Value;
         var nginx = running.Single(static c => c.Service == "nginx");
         Expect.Equal("running", nginx.State);
@@ -111,7 +111,7 @@ public abstract class ContainerRuntimeContract
 
         Expect.Equal("SND-ONYX-001", runtime.ServerPlatform(Token).Error.Code);
         Expect.Equal("SND-ONYX-001", runtime.Pull(Project, static _ => { }, Token).Error.Code);
-        Expect.Equal("SND-ONYX-001", runtime.Up(Project, static _ => { }, Token).Error.Code);
+        Expect.Equal("SND-ONYX-001", runtime.Up(Project, static _ => { }, limit: null, Token).Error.Code);
         Expect.Equal("SND-ONYX-001", runtime.Stop(Project, Token).Error.Code);
         Expect.Equal("SND-ONYX-001", runtime.Ps(Project, Token).Error.Code);
         Expect.Equal("SND-ONYX-001", runtime.RepoDigests(["a@sha256:b"], Token).Error.Code);

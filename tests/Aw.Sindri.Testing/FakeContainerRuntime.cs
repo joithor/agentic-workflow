@@ -34,6 +34,9 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     /// <summary>Gets the containers of the project: <see cref="Up"/> fills them, <see cref="Stop"/> marks them exited.</summary>
     public IList<ComposeContainer> Containers { get; } = [];
 
+    /// <summary>Gets the limit each <see cref="Up"/> call was given (TimeSpan.MaxValue when it was given none), in order.</summary>
+    public IList<TimeSpan> UpLimits { get; } = [];
+
     /// <summary>Gets the services <see cref="Up"/> starts: the eight Onyx runs with no profile.</summary>
     public IList<string> StartedServices { get; } = ["api_server", "background", "cache", "inference_model_server", "nginx", "opensearch", "relational_db", "web_server"];
 
@@ -81,8 +84,9 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     }
 
     /// <inheritdoc />
-    public Result<Unit> Up(ComposeProject project, Action<string> progress, CancellationToken cancellationToken)
+    public Result<Unit> Up(ComposeProject project, Action<string> progress, TimeSpan? limit, CancellationToken cancellationToken)
     {
+        UpLimits.Add(limit ?? TimeSpan.MaxValue);
         if (Begin("Up") is { } error)
         {
             return error;
