@@ -14,7 +14,7 @@ namespace Aw.Context.Infrastructure.Eval;
 /// that doesn't exist (036), one inside a git worktree (SND-CONTEXT-005) and one that doesn't parse or check (035), and
 /// hashes its bytes so runs of the same file can be compared.
 /// </summary>
-internal sealed class ProbeFileReader(ContextStoreSettings settings, JsonSerializerOptions options) : IProbeFileReader
+internal sealed class ProbeFileReader(ContextStoreSettings settings) : IProbeFileReader
 {
     private const long MaxBytes = 4 * 1024 * 1024;
 
@@ -33,7 +33,7 @@ internal sealed class ProbeFileReader(ContextStoreSettings settings, JsonSeriali
             return bytes.Error;
         }
 
-        var set = AwJson.Deserialize<ProbeSet>(bytes.Value, options);
+        var set = AwJson.Deserialize<ProbeSet>(bytes.Value, EvalFileJson.Options);
         if (set.IsError)
         {
             return ContextErrors.ProbeFileInvalid.With($"{full}: {Reason(bytes.Value, set.Error.Message)}; nothing was run");
@@ -46,11 +46,11 @@ internal sealed class ProbeFileReader(ContextStoreSettings settings, JsonSeriali
     /// Why the file didn't parse. An unknown key is named at its key path ('probes[0].expect.nodez: unknown key'), the way the
     /// shape checks name theirs; any other parse error keeps the parser's message.
     /// </summary>
-    private string Reason(byte[] bytes, string parserMessage)
+    private static string Reason(byte[] bytes, string parserMessage)
     {
         try
         {
-            _ = JsonSerializer.Deserialize(bytes, options.GetTypeInfo(typeof(ProbeSet)));
+            _ = JsonSerializer.Deserialize(bytes, EvalFileJson.Options.GetTypeInfo(typeof(ProbeSet)));
         }
         catch (JsonException e) when (e.Message.Contains("could not be mapped", StringComparison.Ordinal) && e.Path is { Length: > 2 } path)
         {

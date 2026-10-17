@@ -1,6 +1,8 @@
 using System.Text.Json;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
+using Aw.Context.Core.Eval.Backtest;
+using Aw.Context.Core.Eval.MapQuality;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
@@ -9,7 +11,6 @@ using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
 using Aw.Context.Core.Trust;
-using Aw.Context.Features.EvalProbes;
 using Aw.Context.Features.QueryContext;
 using Aw.Kernel;
 using Aw.Kernel.Services;
@@ -26,7 +27,7 @@ internal sealed class ContextEngine(
     IScrubberFactory scrubbers,
     IContextMap map,
     ContextGraph graph,
-    IService<EvalProbesRequest, ProbeRun> probes) : IContextEngine
+    ContextEval eval) : IContextEngine
 {
     public Result<ContextSettings> CheckSettings(JsonElement? section, IReadOnlyList<ProfileRepoEntry> repos) =>
         SettingsReader.Read(section).Bind(read => scrubbers.For(read.ExtraPatterns)).Bind(_ => SettingsReader.Check(section, repos));   // the keys, then the patterns, then the repos
@@ -43,7 +44,13 @@ internal sealed class ContextEngine(
     public ValueTask<Result<SyncReport>> Sync(string? source, ContextScope scope, CancellationToken cancellationToken) => sources.Sync(source, scope, cancellationToken);
 
     public ValueTask<Result<ProbeRun>> EvalProbes(string? file, Func<ProbeCase, CancellationToken, ValueTask<Result<ContextResult>>> ask, CancellationToken cancellationToken) =>
-        probes.Handle(new EvalProbesRequest(file, ask), cancellationToken);
+        eval.Probes(file, ask, cancellationToken);
+
+    public ValueTask<Result<BacktestRun>> EvalBacktest(BacktestRequest request, CancellationToken cancellationToken) => eval.Backtest(request, cancellationToken);
+
+    public ValueTask<Result<MapQualityRun>> EvalMap(MapQualityRequest request, CancellationToken cancellationToken) => eval.Map(request, cancellationToken);
+
+    public ValueTask<Result<EvalPurgeReport>> EvalPurge(EvalPurgeRequest request, CancellationToken cancellationToken) => eval.Purge(request, cancellationToken);
 
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => graph.ShowNode(key, scope, cancellationToken);
 
