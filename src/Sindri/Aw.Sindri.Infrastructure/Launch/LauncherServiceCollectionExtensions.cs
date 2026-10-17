@@ -14,6 +14,7 @@ internal static class LauncherServiceCollectionExtensions
         string? BuiltinHash(AgentId id) => builtinHashes.GetValueOrDefault(id.Value);
         return services
             .AddSingleton(static _ => new TmuxSessionHost(new TmuxHostOptions()))
+            .AddSingleton<ISessionHost>(static sp => sp.GetRequiredService<TmuxSessionHost>())   // the launcher service polls it for attached clients (API P10a U9)
             .AddSingleton<NoSessionHost>()
             .AddSingleton<ITerminalViewer>(sp => Viewer(sp, environment))
             .AddSingleton<ILauncher>(sp => new Launcher(Parts(sp, environment, settings, BuiltinHash)))

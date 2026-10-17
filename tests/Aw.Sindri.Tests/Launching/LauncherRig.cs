@@ -3,6 +3,7 @@ using Aw.Kernel.Json;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
@@ -63,10 +64,26 @@ internal sealed class LauncherRig
 
     public void Restart() => Work = new LaunchWork();
 
+    private LaunchOutcomes Outcomes => new(Slice.Store, Slice.Events, Viewer);
+
+    private RunLaunch Run => new(
+        new LaunchRecovery(Slice.Store, Status, H.Views, Outcomes, Work, Timings), new LaunchIntake(Slice.Store, Slice.Events, Work), Outcomes, Host, Work, Timings);
+
+    private ProcessLaunch Process
+    {
+        get
+        {
+            var plans = new LaunchPlans(H.Views, Slice.Profiles);
+            return new ProcessLaunch(
+                Outcomes, new TakeoverWait(Status, Slice.Store, H.Views, Runtime, Timings), Port,
+                new AttachFlow(new LaunchViews(H.Views), Viewer, Port, plans, Outcomes, Timings), plans, Work, Timings);
+        }
+    }
+
     public async Task<IReadOnlyList<PendingLaunch>> Tick()
     {
         await Sync();
-        var ticked = await new RunLaunch().Handle(new RunLaunchRequest(Grant), TestContext.Current.CancellationToken);
+        var ticked = await Run.Handle(new RunLaunchRequest(Grant), TestContext.Current.CancellationToken);
         Assert.True(ticked.IsSuccess, ticked.IsError ? ticked.Error.ToString() : null);
         await Sync();
         return ticked.Value.Due;
@@ -75,7 +92,7 @@ internal sealed class LauncherRig
     public async Task<bool> Launch(PendingLaunch pending)
     {
         await Sync();
-        var done = await new ProcessLaunch().Handle(new ProcessLaunchRequest(Grant, pending), TestContext.Current.CancellationToken);
+        var done = await Process.Handle(new ProcessLaunchRequest(Grant, pending), TestContext.Current.CancellationToken);
         Assert.True(done.IsSuccess, done.IsError ? done.Error.ToString() : null);
         await Sync();
         return done.Value.Launched;

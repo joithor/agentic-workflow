@@ -2682,3 +2682,69 @@ Aw.Sindri.Features.GetLaunch.LaunchView.State.get -> Aw.Sindri.Core.Launches.Lau
 Aw.Sindri.Features.GetLaunch.LaunchView.Ended.get -> Aw.Sindri.Core.Launches.LaunchEnd?
 Aw.Sindri.Features.GetLaunch.LaunchView.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Id, out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Launch.LaunchMode Mode, out Aw.Sindri.Core.Launches.LaunchState State, out Aw.Sindri.Core.Launch.AgentId Target, out string! ChosenBy, out System.DateTimeOffset RequestedAt, out System.DateTimeOffset? OutcomeAt, out string? Code, out string? Detail, out Aw.Sindri.Core.Launch.LaunchStage? Stage, out Aw.Sindri.Core.Sessions.SessionId? SessionId, out string? TabTitle, out Aw.Sindri.Core.Events.LaunchViewer? Viewer, out bool Late, out System.Collections.Generic.IReadOnlyList<string!>? Attach, out Aw.Sindri.Core.Launch.CatalogSource? CatalogSource, out string? ArgvHash, out Aw.Sindri.Core.Launches.LaunchEnd? Ended, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
 Aw.Sindri.Features.GetLaunch.LaunchView.LaunchView(Aw.Sindri.Core.Workflow.Engine.LaunchId Id, Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Launch.LaunchMode Mode, Aw.Sindri.Core.Launches.LaunchState State, Aw.Sindri.Core.Launch.AgentId Target, string! ChosenBy, System.DateTimeOffset RequestedAt, System.DateTimeOffset? OutcomeAt, string? Code, string? Detail, Aw.Sindri.Core.Launch.LaunchStage? Stage, Aw.Sindri.Core.Sessions.SessionId? SessionId, string? TabTitle, Aw.Sindri.Core.Events.LaunchViewer? Viewer, bool Late, System.Collections.Generic.IReadOnlyList<string!>? Attach, Aw.Sindri.Core.Launch.CatalogSource? CatalogSource, string? ArgvHash, Aw.Sindri.Core.Launches.LaunchEnd? Ended, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.Launching.PendingLaunch
+Aw.Sindri.Features.Launching.PendingLaunch.<Clone>$() -> Aw.Sindri.Features.Launching.PendingLaunch!
+Aw.Sindri.Features.Launching.PendingLaunch.At.get -> System.DateTimeOffset
+Aw.Sindri.Features.Launching.PendingLaunch.At.init -> void
+Aw.Sindri.Features.Launching.PendingLaunch.Deconstruct(out Aw.Sindri.Core.Events.ItemOpenRequested! Request, out long Sequence, out System.DateTimeOffset At) -> void
+Aw.Sindri.Features.Launching.PendingLaunch.Equals(Aw.Sindri.Features.Launching.PendingLaunch? other) -> bool
+Aw.Sindri.Features.Launching.PendingLaunch.PendingLaunch(Aw.Sindri.Core.Events.ItemOpenRequested! Request, long Sequence, System.DateTimeOffset At) -> void
+Aw.Sindri.Features.Launching.PendingLaunch.Request.get -> Aw.Sindri.Core.Events.ItemOpenRequested!
+Aw.Sindri.Features.Launching.PendingLaunch.Request.init -> void
+Aw.Sindri.Features.Launching.PendingLaunch.Sequence.get -> long
+Aw.Sindri.Features.Launching.PendingLaunch.Sequence.init -> void
+Aw.Sindri.Features.Launching.ProcessLaunchRequest
+Aw.Sindri.Features.Launching.ProcessLaunchRequest.<Clone>$() -> Aw.Sindri.Features.Launching.ProcessLaunchRequest!
+Aw.Sindri.Features.Launching.ProcessLaunchRequest.Deconstruct(out Aw.Sindri.Core.Lease.LeaseGrant! Grant, out Aw.Sindri.Features.Launching.PendingLaunch! Pending) -> void
+Aw.Sindri.Features.Launching.ProcessLaunchRequest.Equals(Aw.Sindri.Features.Launching.ProcessLaunchRequest? other) -> bool
+Aw.Sindri.Features.Launching.ProcessLaunchRequest.Grant.get -> Aw.Sindri.Core.Lease.LeaseGrant!
+Aw.Sindri.Features.Launching.ProcessLaunchRequest.Grant.init -> void
+Aw.Sindri.Features.Launching.ProcessLaunchRequest.Pending.get -> Aw.Sindri.Features.Launching.PendingLaunch!
+Aw.Sindri.Features.Launching.ProcessLaunchRequest.Pending.init -> void
+Aw.Sindri.Features.Launching.ProcessLaunchRequest.ProcessLaunchRequest(Aw.Sindri.Core.Lease.LeaseGrant! Grant, Aw.Sindri.Features.Launching.PendingLaunch! Pending) -> void
+Aw.Sindri.Features.Launching.ProcessLaunchResponse
+Aw.Sindri.Features.Launching.ProcessLaunchResponse.<Clone>$() -> Aw.Sindri.Features.Launching.ProcessLaunchResponse!
+Aw.Sindri.Features.Launching.ProcessLaunchResponse.Deconstruct(out bool Launched) -> void
+Aw.Sindri.Features.Launching.ProcessLaunchResponse.Equals(Aw.Sindri.Features.Launching.ProcessLaunchResponse? other) -> bool
+Aw.Sindri.Features.Launching.ProcessLaunchResponse.Launched.get -> bool
+Aw.Sindri.Features.Launching.ProcessLaunchResponse.Launched.init -> void
+Aw.Sindri.Features.Launching.ProcessLaunchResponse.ProcessLaunchResponse(bool Launched) -> void
+Aw.Sindri.Features.Launching.RunLaunchRequest
+Aw.Sindri.Features.Launching.RunLaunchRequest.<Clone>$() -> Aw.Sindri.Features.Launching.RunLaunchRequest!
+Aw.Sindri.Features.Launching.RunLaunchRequest.Deconstruct(out Aw.Sindri.Core.Lease.LeaseGrant! Grant) -> void
+Aw.Sindri.Features.Launching.RunLaunchRequest.Equals(Aw.Sindri.Features.Launching.RunLaunchRequest? other) -> bool
+Aw.Sindri.Features.Launching.RunLaunchRequest.Grant.get -> Aw.Sindri.Core.Lease.LeaseGrant!
+Aw.Sindri.Features.Launching.RunLaunchRequest.Grant.init -> void
+Aw.Sindri.Features.Launching.RunLaunchRequest.RunLaunchRequest(Aw.Sindri.Core.Lease.LeaseGrant! Grant) -> void
+Aw.Sindri.Features.Launching.RunLaunchResponse
+Aw.Sindri.Features.Launching.RunLaunchResponse.<Clone>$() -> Aw.Sindri.Features.Launching.RunLaunchResponse!
+Aw.Sindri.Features.Launching.RunLaunchResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Launching.PendingLaunch!>! Due) -> void
+Aw.Sindri.Features.Launching.RunLaunchResponse.Due.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Launching.PendingLaunch!>!
+Aw.Sindri.Features.Launching.RunLaunchResponse.Due.init -> void
+Aw.Sindri.Features.Launching.RunLaunchResponse.Equals(Aw.Sindri.Features.Launching.RunLaunchResponse? other) -> bool
+Aw.Sindri.Features.Launching.RunLaunchResponse.RunLaunchResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Launching.PendingLaunch!>! Due) -> void
+override Aw.Sindri.Features.Launching.PendingLaunch.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Launching.PendingLaunch.GetHashCode() -> int
+override Aw.Sindri.Features.Launching.PendingLaunch.ToString() -> string!
+override Aw.Sindri.Features.Launching.ProcessLaunchRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Launching.ProcessLaunchRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Launching.ProcessLaunchRequest.ToString() -> string!
+override Aw.Sindri.Features.Launching.ProcessLaunchResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Launching.ProcessLaunchResponse.GetHashCode() -> int
+override Aw.Sindri.Features.Launching.ProcessLaunchResponse.ToString() -> string!
+override Aw.Sindri.Features.Launching.RunLaunchRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Launching.RunLaunchRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Launching.RunLaunchRequest.ToString() -> string!
+override Aw.Sindri.Features.Launching.RunLaunchResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Launching.RunLaunchResponse.GetHashCode() -> int
+override Aw.Sindri.Features.Launching.RunLaunchResponse.ToString() -> string!
+static Aw.Sindri.Features.Launching.PendingLaunch.operator !=(Aw.Sindri.Features.Launching.PendingLaunch? left, Aw.Sindri.Features.Launching.PendingLaunch? right) -> bool
+static Aw.Sindri.Features.Launching.PendingLaunch.operator ==(Aw.Sindri.Features.Launching.PendingLaunch? left, Aw.Sindri.Features.Launching.PendingLaunch? right) -> bool
+static Aw.Sindri.Features.Launching.ProcessLaunchRequest.operator !=(Aw.Sindri.Features.Launching.ProcessLaunchRequest? left, Aw.Sindri.Features.Launching.ProcessLaunchRequest? right) -> bool
+static Aw.Sindri.Features.Launching.ProcessLaunchRequest.operator ==(Aw.Sindri.Features.Launching.ProcessLaunchRequest? left, Aw.Sindri.Features.Launching.ProcessLaunchRequest? right) -> bool
+static Aw.Sindri.Features.Launching.ProcessLaunchResponse.operator !=(Aw.Sindri.Features.Launching.ProcessLaunchResponse? left, Aw.Sindri.Features.Launching.ProcessLaunchResponse? right) -> bool
+static Aw.Sindri.Features.Launching.ProcessLaunchResponse.operator ==(Aw.Sindri.Features.Launching.ProcessLaunchResponse? left, Aw.Sindri.Features.Launching.ProcessLaunchResponse? right) -> bool
+static Aw.Sindri.Features.Launching.RunLaunchRequest.operator !=(Aw.Sindri.Features.Launching.RunLaunchRequest? left, Aw.Sindri.Features.Launching.RunLaunchRequest? right) -> bool
+static Aw.Sindri.Features.Launching.RunLaunchRequest.operator ==(Aw.Sindri.Features.Launching.RunLaunchRequest? left, Aw.Sindri.Features.Launching.RunLaunchRequest? right) -> bool
+static Aw.Sindri.Features.Launching.RunLaunchResponse.operator !=(Aw.Sindri.Features.Launching.RunLaunchResponse? left, Aw.Sindri.Features.Launching.RunLaunchResponse? right) -> bool
+static Aw.Sindri.Features.Launching.RunLaunchResponse.operator ==(Aw.Sindri.Features.Launching.RunLaunchResponse? left, Aw.Sindri.Features.Launching.RunLaunchResponse? right) -> bool

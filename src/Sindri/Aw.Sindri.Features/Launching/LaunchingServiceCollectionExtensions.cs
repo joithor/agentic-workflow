@@ -9,6 +9,11 @@ internal static class LaunchingServiceCollectionExtensions
         .AddSingleton<LaunchWork>()
         .AddSingleton(static sp => LaunchTimings.For(sp.GetRequiredService<TimeProvider>()))
         .AddScoped<LaunchOutcomes>()
+        .AddScoped<LaunchIntake>()
+        .AddScoped<LaunchRecovery>()
+        .AddScoped<LaunchPlans>()
+        .AddScoped<TakeoverWait>()
+        .AddScoped<AttachFlow>()
         .AddScoped<IService<RunLaunchRequest, RunLaunchResponse>, RunLaunch>()
         .AddScoped<IService<ProcessLaunchRequest, ProcessLaunchResponse>, ProcessLaunch>();
 }

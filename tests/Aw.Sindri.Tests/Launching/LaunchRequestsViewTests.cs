@@ -26,15 +26,16 @@ public sealed class LaunchRequestsViewTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static LaunchRequestsView Adapter => new();
+    private LaunchRequestsView Adapter => new(new LaunchViews(_h.Views), _h.Slice.Clock);
 
     private async Task<InstanceStart?> Start()
     {
         var runtime = new Capturing();
         var service = new StartInstanceService(new OneItem(), new OneRecipe(), new NoInstances(), new StartFacts(new InMemoryFactStore(), _h.Slice.Clock), runtime, Adapter,
             new ClaimHolders(new InMemoryWorkflowClaims(), new FakeInstanceLiveness()));
-        _ = await service.Handle(new StartInstanceRequest("workflow.step", A.FirstItemId.Value, NextAttempt: false,
-            new Dictionary<FactKey, StartFact> { [_fact] = new("item.json", Encoding.UTF8.GetBytes("{}")) }), Token);
+        var handled = await service.Handle(new StartInstanceRequest("workflow.step", A.FirstItemId.Value, NextAttempt: false,
+            new Dictionary<FactKey, StartFact> { [_fact] = new("item.json", Encoding.UTF8.GetBytes($"{{\"id\":\"{A.FirstItemId.Value}\"}}")) }), Token);
+        Assert.True(runtime.Started is not null, handled.IsError ? handled.Error.ToString() : "no start");
         return runtime.Started;
     }
 
@@ -98,12 +99,12 @@ public sealed class LaunchRequestsViewTests
         public ValueTask<Result<InstanceView>> Start(InstanceStart start, CancellationToken cancellationToken)
         {
             Started = start;
-            return ValueTask.FromResult<Result<InstanceView>>(Aw.Sindri.Core.SindriErrors.ViewsBehind.With("the capture stops here"));
+            return ValueTask.FromResult<Result<InstanceView>>(Core.SindriErrors.ViewsBehind.With("the capture stops here"));
         }
 
         public ValueTask<Result<InstanceView>> Get(InstanceAddress address, CancellationToken cancellationToken) => throw new NotSupportedException();
 
-        public ValueTask<Result<CommandResult>> Send(InstanceAddress address, CommandNonce nonce, Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger command, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public ValueTask<Result<CommandResult>> Send(InstanceAddress address, CommandNonce nonce, Trigger command, CancellationToken cancellationToken) => throw new NotSupportedException();
 
         public ValueTask<Result<CommandResult>> OpenRequest(InstanceAddress address, LaunchId launch, CancellationToken cancellationToken) => throw new NotSupportedException();
 

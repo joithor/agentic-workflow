@@ -6,4 +6,4 @@ namespace Aw.Sindri.Features.Launching;
 /// <param name="Request">The 'item.open-requested' payload.</param>
 /// <param name="Sequence">The request's ledger sequence: the views must reach it before the launcher looks for an active instance (E-1).</param>
 /// <param name="At">When the request was recorded: the 30 s deadline counts from here.</param>
-internal sealed record PendingLaunch(ItemOpenRequested Request, long Sequence, DateTimeOffset At);
+public sealed record PendingLaunch(ItemOpenRequested Request, long Sequence, DateTimeOffset At);
