@@ -196,11 +196,11 @@ public sealed class JevProviderTests
     [Fact]
     public async Task Jev_gets_the_call_s_criteria_as_a_choice_question()
     {
-        var input = new Aw.Judge.Core.Questions.ChooseInput(
+        var input = new ChooseInput(
             "Which evidence?",
             new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal) { ["diff"] = System.Text.Json.JsonDocument.Parse("\"M a.ts\"").RootElement },
             [new("ui", "only UI files changed"), new("api", "a route changed")]);
-        var question = Aw.Judge.Core.Questions.ChooseQuestion.For(input).ToRef(input);
+        var question = ChooseQuestion.For(input).ToRef(input);
         var handler = FakeHttpHandler.Answering(HttpStatusCode.OK, """{"answers":{"decision":{"type":"choice","choice":"api","confidence":0.7,"probabilities":{"ui":0.2,"api":0.7}}}}""");
         using var provider = new JevProvider(new HttpClient(handler), Secrets(), new FakeInputRedactor());
 
