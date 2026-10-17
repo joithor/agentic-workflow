@@ -2,23 +2,13 @@ using Aw.Sindri.Core.Onyx;
 
 namespace Aw.Sindri.Features.OnyxUp;
 
-/// <summary>What the steps of one `onyx up` run share: the pins, the paths, the chosen port, the server's platform, and the stamps of the steps done so far.</summary>
+/// <summary>What the steps of one `onyx up` run share: the pins, the paths, the chosen port and the server's platform.</summary>
 /// <param name="Pins">The lock.</param>
 /// <param name="Paths">Where the files live.</param>
 /// <param name="Port">The loopback port.</param>
 /// <param name="Platform">The Docker server's platform.</param>
 internal sealed record OnyxUpContext(OnyxPins Pins, OnyxPaths Paths, int Port, string Platform)
 {
-    /// <summary>Gets the stamp of each step done in this run or recorded and still right, by step name.</summary>
-    public Dictionary<string, string> Done { get; } = new(StringComparer.Ordinal);
-
-    /// <summary>Gets the stamp of the step that ran before the asking one.</summary>
-    /// <param name="step">The upstream step's name.</param>
-    /// <returns>Its stamp.</returns>
-    /// <exception cref="InvalidOperationException">The step hasn't run: the step list is out of order (composition checks it, so this is a broken invariant).</exception>
-    public string Upstream(string step)
-        => Done.TryGetValue(step, out var stamp) ? stamp : throw new InvalidOperationException($"the {step} step has no stamp yet; the steps of `onyx up` run out of order");
-
     /// <summary>Gets or sets the release the running Onyx reported once the start step finished.</summary>
     public string? Version { get; set; }
 

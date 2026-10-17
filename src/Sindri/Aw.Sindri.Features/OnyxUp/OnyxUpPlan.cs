@@ -16,4 +16,12 @@ internal static class OnyxUpPlan
 
         return list;
     }
+
+    /// <summary>Gives a step the stamp of the step before it.</summary>
+    /// <param name="step">The asking step's name.</param>
+    /// <param name="upstream">What the plan passed.</param>
+    /// <returns>The upstream stamp.</returns>
+    /// <exception cref="InvalidOperationException">There is none: the step ran first or outside the plan (a broken invariant, since composition checks the order).</exception>
+    internal static string Upstream(string step, string? upstream)
+        => upstream ?? throw new InvalidOperationException($"the {step} step needs the stamp of the step before it; the steps of `onyx up` run out of order");
 }

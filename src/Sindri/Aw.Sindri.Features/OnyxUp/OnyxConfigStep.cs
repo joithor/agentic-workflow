@@ -13,7 +13,7 @@ internal sealed class OnyxConfigStep(IOnyxWorkspace workspace, IComposeServices 
     public string Name => OnyxSteps.Config;
 
     public string Stamp(OnyxUpContext context, string? upstream)
-        => OnyxSteps.Stamp(context.Done.GetValueOrDefault(OnyxSteps.Fetch, ""), context.Port.ToString(System.Globalization.CultureInfo.InvariantCulture), context.Platform, context.Pins.Version, ImageRows(context));
+        => OnyxSteps.Stamp(OnyxUpPlan.Upstream(Name, upstream), context.Port.ToString(System.Globalization.CultureInfo.InvariantCulture), context.Platform, context.Pins.Version, ImageRows(context));
 
     // The override names every image by its digest, so the digests this platform runs are inputs of the step (a moved pin re-renders, re-pulls and restarts).
     private static string ImageRows(OnyxUpContext context)

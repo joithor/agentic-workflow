@@ -12,7 +12,7 @@ internal sealed class OnyxStartStep(IContainerRuntime runtime, IOnyxHealth healt
 
     public string Name => OnyxSteps.Start;
 
-    public string Stamp(OnyxUpContext context, string? upstream) => OnyxSteps.Stamp(context.Done.GetValueOrDefault(OnyxSteps.Pull, ""), "start");
+    public string Stamp(OnyxUpContext context, string? upstream) => OnyxSteps.Stamp(OnyxUpPlan.Upstream(Name, upstream), "start");
 
     public async ValueTask<Result<OnyxStepOutcome>> Execute(OnyxUpContext context, string stamp, string? recorded, CancellationToken cancellationToken)
     {

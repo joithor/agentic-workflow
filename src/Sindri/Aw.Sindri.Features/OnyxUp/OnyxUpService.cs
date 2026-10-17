@@ -75,10 +75,11 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
     private async ValueTask<Result<List<OnyxStepResult>>> RunSteps(OnyxUpContext context, Dictionary<string, string> recorded, CancellationToken cancellationToken)
     {
         List<OnyxStepResult> results = [];
+        string? upstream = null;
         foreach (var step in _steps)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var stamp = step.Stamp(context, upstream: null);
+            var stamp = step.Stamp(context, upstream);
             var outcome = await RunStep(step, stamp, context, recorded, cancellationToken).ConfigureAwait(false);
             if (outcome.IsError)
             {
@@ -86,6 +87,7 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
             }
 
             results.Add(new OnyxStepResult(step.Name, outcome.Value));
+            upstream = stamp;
         }
 
         return results;
@@ -106,7 +108,6 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
             progress.Line($"{step.Name}: already done");
         }
 
-        context.Done[step.Name] = stamp;
         if (!string.Equals(before, stamp, StringComparison.Ordinal))
         {
             recorded[step.Name] = stamp;

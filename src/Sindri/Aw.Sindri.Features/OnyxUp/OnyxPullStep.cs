@@ -9,7 +9,7 @@ internal sealed class OnyxPullStep(IContainerRuntime runtime, IOnyxWorkspace wor
 {
     public string Name => OnyxSteps.Pull;
 
-    public string Stamp(OnyxUpContext context, string? upstream) => OnyxSteps.Stamp(context.Done.GetValueOrDefault(OnyxSteps.Config, ""));
+    public string Stamp(OnyxUpContext context, string? upstream) => OnyxSteps.Stamp(OnyxUpPlan.Upstream(Name, upstream));
 
     public ValueTask<Result<OnyxStepOutcome>> Execute(OnyxUpContext context, string stamp, string? recorded, CancellationToken cancellationToken)
     {
