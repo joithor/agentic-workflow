@@ -2,7 +2,9 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Tests.Workflow.Engine;
+using RecipeDocument = Aw.Sindri.Core.Workflow.Recipes.Recipe;
 
 namespace Aw.Sindri.Tests.GetInstance;
 
@@ -49,7 +51,7 @@ internal static class StatusCases
     /// <summary>The recipe a case runs: the shipped workflow.step, or it with the case's own budget.</summary>
     /// <param name="name">The case.</param>
     /// <returns>The recipe.</returns>
-    public static Aw.Sindri.Core.Workflow.Recipes.Recipe RecipeOf(string name) => (Build(name).Recipe ?? Recipe).Recipe;
+    public static RecipeDocument RecipeOf(string name) => (Build(name).Recipe ?? Recipe).Recipe;
 
     private sealed record Built(WorkflowInstance Instance, DateTimeOffset Since, DateTimeOffset? TimeoutAt, IReadOnlyList<ChildView>? Children, InterpretedRecipe? Recipe = null);
 
@@ -107,7 +109,7 @@ internal static class StatusCases
     {
         Recipe = Recipe.Recipe with
         {
-            States = Recipe.Recipe.States.ToDictionary(static s => s.Key, s => s.Key == "produce" ? s.Value with { Budget = new Aw.Sindri.Core.Workflow.Recipes.BudgetSpec(tokens) } : s.Value, StringComparer.Ordinal),
+            States = Recipe.Recipe.States.ToDictionary(static s => s.Key, s => s.Key == "produce" ? s.Value with { Budget = new BudgetSpec(tokens) } : s.Value, StringComparer.Ordinal),
         },
     };
 
