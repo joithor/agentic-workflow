@@ -132,6 +132,9 @@ internal sealed class BuildMapService(
     private static string[] Degraded(ClusterSet clusters, Result<LabelPass> labels, bool timedOut) =>
         [.. clusters.Available ? [] : new[] { "clusters" }, .. labels.IsError || !labels.Value.Complete ? new[] { "labels" } : [], .. timedOut ? new[] { "recognizers" } : []];
 
+    // A denied path is never read, whatever a recognizer wants.
+    private static bool Readable(ContextRepo repo, RecognizerSet recognizers, string path) => !repo.Denies(path) && (Recognizers.MayRead(path) || recognizers.Wants(path));
+
     // HEAD's tree minus the denied paths, and the text of each file the extractor may read.
     private async ValueTask<Result<(string Commit, List<RepoFile> Files)>> ReadFiles(IProgress<string>? progress, ContextRepo repo, RecognizerSet recognizers, CancellationToken cancellationToken)
     {
@@ -142,7 +145,7 @@ internal sealed class BuildMapService(
             return head.IsError ? head.Error : listed.Error;
         }
 
-        var wanted = listed.Value.Where(p => !repo.Denies(p) && (Recognizers.MayRead(p) || recognizers.Wants(p))).ToList();
+        var wanted = listed.Value.Where(p => Readable(repo, recognizers, p)).ToList();
         var files = new List<RepoFile>(wanted.Count);
         foreach (var path in wanted)
         {
