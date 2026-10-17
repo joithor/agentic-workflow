@@ -35,7 +35,7 @@ internal sealed class InstanceListener(ISingleInstance instance)
                     // Claimed on the UI thread just before acting: the claim is also the sender's answer, so a message
                     // whose wait ended while the UI thread was busy is never acted on late, and one acted on is never
                     // answered "not handled" (review run 4, julik-frontend-races-reviewer-1).
-                    await Dispatcher.UIThread.InvokeAsync(() =>
+                    await _ui.InvokeAsync(() =>
                     {
                         if (message.TryAct())
                         {
