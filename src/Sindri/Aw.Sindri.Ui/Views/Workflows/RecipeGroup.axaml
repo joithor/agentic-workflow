@@ -7,15 +7,20 @@
   <!-- One recipe's group (screens spec §4.2): a header with the recipe and its count, which collapses the rows ("show all" brings them
        back), then the column heads (the recipe's states in the served order) and the rows. -->
   <StackPanel>
-    <Button x:Name="WorkflowGroupToggle" Classes="group-toggle" Click="OnToggle" AutomationProperties.Name="{Binding ToggleName}">
-      <Grid ColumnDefinitions="*,Auto">
-        <StackPanel Orientation="Horizontal" Spacing="8">
-          <TextBlock Classes="body-strong" Text="{Binding Recipe}" AutomationProperties.AccessibilityView="Raw" />
-          <TextBlock Classes="caption subtle" Text="{Binding Count}" AutomationProperties.AccessibilityView="Raw" />
-        </StackPanel>
-        <TextBlock Grid.Column="1" Classes="caption subtle" Text="{Binding ShowAllText}" AutomationProperties.AccessibilityView="Raw" />
-      </Grid>
-    </Button>
+    <Grid ColumnDefinitions="*,Auto">
+      <Button x:Name="WorkflowGroupToggle" Classes="group-toggle" Click="OnToggle" AutomationProperties.Name="{Binding ToggleName}">
+        <Grid ColumnDefinitions="*,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <TextBlock Classes="body-strong" Text="{Binding Recipe}" AutomationProperties.AccessibilityView="Raw" />
+            <TextBlock Classes="caption subtle" Text="{Binding Count}" AutomationProperties.AccessibilityView="Raw" />
+          </StackPanel>
+          <TextBlock Grid.Column="1" Classes="caption subtle" Text="{Binding ShowAllText}" AutomationProperties.AccessibilityView="Raw" />
+        </Grid>
+      </Button>
+      <!-- A button cannot sit inside the toggle, so the recipe link is its own control beside it. -->
+      <Button x:Name="WorkflowGroupRecipe" Grid.Column="1" Content="{Binding RecipeLinkText}" Click="OnRecipe" VerticalAlignment="Center" Margin="8,0,0,0"
+              AutomationProperties.Name="{Binding RecipeLinkName}" />
+    </Grid>
     <StackPanel IsVisible="{Binding IsExpanded}">
       <Border x:Name="WorkflowColumnHeads" Classes="column-heads">
         <Grid ColumnDefinitions="220,150,*,180">

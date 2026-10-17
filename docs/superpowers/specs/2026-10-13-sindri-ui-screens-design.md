@@ -234,6 +234,8 @@ subject  PagerDuty P-2211 (webhook) · feature:outbox.dispatch                  
 
 ### 4.3 Recipes
 
+> **Build note (U10a).** The inspector without stats is built first, as the read-only sheet `recipe/<id>[@hash]`; the Recipes list page and the stats (E-24, E-25) are U10b. See `docs/csharp/sindri-ui.md` "U10a" for what the recipe route serves and the gaps G1 to G8.
+
 **List.** Execution numbers over a window (default 30 days). "Human" is the share of runs that needed a person: a
 park answered, an escalation decided, or a takeover.
 

@@ -23,7 +23,7 @@ internal sealed class DiffAnswer(MapReader graphs, IRepoReader repos)
     {
         var query = request.Query;
         var repo = Addressed(context.Settings, request.Scope, query.Repo);
-        var map = repo.IsError ? repo.Error : await graphs.ReadView(request.Scope, query.Draft, cancellationToken).ConfigureAwait(false);
+        var map = repo.IsError ? repo.Error : await graphs.ReadViewAt(request.Scope, QueryReads.Of(query), cancellationToken).ConfigureAwait(false);
         var changes = map.IsError ? map.Error : await repos.Changes(repo.Value, diff, cancellationToken).ConfigureAwait(false);
         if (repo.IsError || map.IsError || changes.IsError)
         {

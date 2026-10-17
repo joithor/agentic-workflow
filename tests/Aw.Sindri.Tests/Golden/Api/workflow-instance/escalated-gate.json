@@ -134,6 +134,13 @@
           "confirm": null
         },
         {
+          "verb": "answer",
+          "actionId": "ApplyCommand:answer-reject",
+          "class": "desk",
+          "cli": "sindri workflow answer ITM-01JK6/triage-alert/1 --reject",
+          "confirm": null
+        },
+        {
           "verb": "takeover",
           "actionId": "ApplyCommand:takeover",
           "class": "pause",
@@ -228,6 +235,7 @@
   },
   "actions": [
     "ApplyCommand:answer-accept",
+    "ApplyCommand:answer-reject",
     "ApplyCommand:takeover",
     "ApplyCommand:cancel"
   ],

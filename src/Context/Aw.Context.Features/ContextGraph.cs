@@ -2,6 +2,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
+using Aw.Context.Core.Map;
 using Aw.Context.Features.FindPath;
 using Aw.Context.Features.GetFileMap;
 using Aw.Context.Features.GetLenses;
@@ -18,6 +19,7 @@ internal sealed class ContextGraph(
     IService<ListNeighborsRequest, NeighborsView> neighbors,
     IService<FindPathRequest, PathView> path,
     IService<GetLensesRequest, LensesView> lenses,
+    IService<GetLensesSetRequest, LensesSetView> lensesSet,
     IService<GetFileMapRequest, FileMapView> fileMap) : IContextGraph, IContextLenses
 {
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) =>
@@ -29,8 +31,14 @@ internal sealed class ContextGraph(
     public ValueTask<Result<PathView>> Path(string from, string to, ContextScope scope, CancellationToken cancellationToken) =>
         path.Handle(new FindPathRequest(from, to, scope), cancellationToken);
 
+    public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
+        lenses.Handle(new GetLensesRequest(anchor, read, depth, scope), cancellationToken);
+
+    public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
+        lensesSet.Handle(new GetLensesSetRequest(anchors, read, depth, scope), cancellationToken);
+
     public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
-        lenses.Handle(new GetLensesRequest(anchor, draft, depth, scope), cancellationToken);
+        Lenses(anchor, draft ? MapRead.NewestDraft : MapRead.Current, depth, scope, cancellationToken);
 
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         fileMap.Handle(new GetFileMapRequest(query, scope), cancellationToken);

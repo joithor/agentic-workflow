@@ -14,17 +14,30 @@ internal static class LensProduct
     /// <returns>The band and its item keys.</returns>
     internal static (ProductBand Band, HashSet<string> Keys) Build(LensScope scope, int depth)
     {
+        var lists = Lists(scope, depth);
+        var (own, neighbors, affects, seen) = (lists.Own, lists.Neighbors, lists.Affects, lists.Seen);
+        var edges = Edges(scope.Graph, seen);
+        return (Band(own, neighbors, affects, edges), seen);
+    }
+
+    /// <summary>The band from whole lists: each cut at <see cref="LensesBuilder.BandCap"/>, the counts full.</summary>
+    internal static ProductBand Band(IReadOnlyList<LensItem> own, IReadOnlyList<LensReach> neighbors, IReadOnlyList<LensReach> affects, IReadOnlyList<LensEdge> edges)
+    {
+        var cut = own.Count > LensesBuilder.BandCap || neighbors.Count > LensesBuilder.BandCap || affects.Count > LensesBuilder.BandCap || edges.Count > LensesBuilder.BandCap;
+        return new ProductBand([.. own.Take(LensesBuilder.BandCap)], [.. neighbors.Take(LensesBuilder.BandCap)], [.. affects.Take(LensesBuilder.BandCap)],
+            new ProductCounts(own.Count, affects.Count), [.. edges.Take(LensesBuilder.BandCap)], cut);
+    }
+
+    /// <summary>The whole lists of one anchor's scope (nothing cut) and the keys of every item.</summary>
+    internal static ProductLists Lists(LensScope scope, int depth)
+    {
         var own = scope.Cascade.OwnScope.Where(k => scope.Nodes.ContainsKey(k.Value)).Select(k => LensScope.Item(scope.Nodes[k.Value])).ToList();
         var seen = own.Select(i => i.Node.Value).ToHashSet(StringComparer.Ordinal);
         var neighbors = Neighbors(scope, depth, seen);
         seen.UnionWith(neighbors.Select(n => n.Node.Value));
         var affects = Affects(scope, seen);
         seen.UnionWith(affects.Select(a => a.Node.Value));
-        var edges = Edges(scope.Graph, seen);
-        var cut = own.Count > LensesBuilder.BandCap || neighbors.Count > LensesBuilder.BandCap || affects.Count > LensesBuilder.BandCap || edges.Count > LensesBuilder.BandCap;
-        var band = new ProductBand([.. own.Take(LensesBuilder.BandCap)], [.. neighbors.Take(LensesBuilder.BandCap)], [.. affects.Take(LensesBuilder.BandCap)],
-            new ProductCounts(own.Count, affects.Count), [.. edges.Take(LensesBuilder.BandCap)], cut);
-        return (band, seen);
+        return new ProductLists(own, neighbors, affects, seen);
     }
 
     private static List<LensReach> Neighbors(LensScope scope, int depth, HashSet<string> taken)
@@ -55,7 +68,7 @@ internal static class LensProduct
         return new LensReach(item.Node, item.Label, item.Kind, item.Provenance, item.Confidence, item.Confirmed, item.Trust, depth, path);
     }
 
-    private static List<LensEdge> Edges(GraphSnapshot graph, HashSet<string> items) =>
+    internal static List<LensEdge> Edges(GraphSnapshot graph, HashSet<string> items) =>
         [.. graph.Edges.Where(e => _structure.Contains(e.Type) && items.Contains(e.From.Value) && items.Contains(e.To.Value))
             .OrderBy(e => e.Type).ThenBy(e => e.From.Value, StringComparer.Ordinal).ThenBy(e => e.To.Value, StringComparer.Ordinal)
             .Select(LensEdges.Of)];
