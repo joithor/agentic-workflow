@@ -164,6 +164,19 @@ public sealed class OnyxStackDoctorTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_crash_looping_container_with_the_rest_exited_fails_instead_of_reading_as_stopped()
+    {
+        Stack(s => Container(s, state: s == "api_server" ? "restarting" : "exited"));
+
+        var check = await Doctor().Check(Token);
+
+        Assert.Equal(CheckState.Fail, check!.State);
+        Assert.Contains("api_server", check.Detail, StringComparison.Ordinal);
+        Assert.Contains("crash-looping", check.Detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("stopped", check.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_set_up_stack_with_no_containers_at_all_is_stopped()
     {
         _runtime.Containers.Clear();

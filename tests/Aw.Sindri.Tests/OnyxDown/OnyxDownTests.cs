@@ -98,6 +98,24 @@ public sealed class OnyxDownTests
         Assert.DoesNotContain("Stop", rig.Runtime.Calls, StringComparer.Ordinal);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("restarting")]
+    [InlineData("paused")]
+    public async Task Down_stops_a_project_whose_only_live_container_is_not_in_the_running_state(string state)
+    {
+        var rig = await RunningRig();
+        for (var i = 0; i < rig.Runtime.Containers.Count; i++)
+        {
+            rig.Runtime.Containers[i] = rig.Runtime.Containers[i] with { State = rig.Runtime.Containers[i].Service == "api_server" ? state : "exited" };
+        }
+
+        var response = (await Down(rig)).Value;
+
+        Assert.True(response.WasRunning);
+        Assert.Equal(["api_server"], response.Stopped);
+        Assert.Contains("Stop", rig.Runtime.Calls, StringComparer.Ordinal);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Down_on_a_box_never_set_up_is_a_no_op()
     {
