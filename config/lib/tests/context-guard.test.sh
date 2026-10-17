@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../../scripts/lib/test-grep.sh"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK="$DIR/../../hooks/context-guard.sh"
 
@@ -145,7 +146,7 @@ test_wording_differs_for_a_main_session_with_no_agent_id() {
   write_transcript "$transcript" 5000 250000
   out="$(run_hook "{\"session_id\":\"s1\",\"transcript_path\":\"$transcript\"}" "$cfg" "$state" 100)"
   local msg; msg="$(echo "$out" | jq -r '.hookSpecificOutput.additionalContext')"
-  if echo "$msg" | grep -qi "re-dispatch"; then
+  if echo "$msg" | has -i "re-dispatch"; then
     echo "FAIL: a main session has nowhere to be re-dispatched to, wording must not imply it (RF-4): $msg"; exit 1
   fi
   echo "PASS: test_wording_differs_for_a_main_session_with_no_agent_id"
