@@ -1,0 +1,10 @@
+{
+  "isError": true,
+  "structuredContent": {
+    "code": "SND-CLI-003",
+    "message": "'not-an-item' isn't an item id (ITM-…) or a tracker key (ENG-142)"
+  },
+  "content": [
+    "SND-CLI-003 'not-an-item' isn't an item id (ITM-…) or a tracker key (ENG-142)"
+  ]
+}

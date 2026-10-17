@@ -941,3 +941,59 @@ static Aw.Judge.Core.Evaluation.EvaluationReasons.BeforeChain.get -> System.Coll
 Aw.Judge.Core.Secrets.SecretNames
 static Aw.Judge.Core.Secrets.SecretNames.Variable(Aw.Judge.Core.Secrets.SecretName name) -> string!
 static Aw.Judge.Core.Secrets.SecretNames.Variables.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Judge.Core.Questions.ChoiceInput
+Aw.Judge.Core.Questions.ChoiceInput.<Clone>$() -> Aw.Judge.Core.Questions.ChoiceInput!
+Aw.Judge.Core.Questions.ChoiceInput.ChoiceInput(string! Name, string! Criterion) -> void
+Aw.Judge.Core.Questions.ChoiceInput.Criterion.get -> string!
+Aw.Judge.Core.Questions.ChoiceInput.Criterion.init -> void
+Aw.Judge.Core.Questions.ChoiceInput.Deconstruct(out string! Name, out string! Criterion) -> void
+Aw.Judge.Core.Questions.ChoiceInput.Equals(Aw.Judge.Core.Questions.ChoiceInput? other) -> bool
+Aw.Judge.Core.Questions.ChoiceInput.Name.get -> string!
+Aw.Judge.Core.Questions.ChoiceInput.Name.init -> void
+Aw.Judge.Core.Questions.ChooseInput
+Aw.Judge.Core.Questions.ChooseInput.<Clone>$() -> Aw.Judge.Core.Questions.ChooseInput!
+Aw.Judge.Core.Questions.ChooseInput.Choices.get -> System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Questions.ChoiceInput!>!
+Aw.Judge.Core.Questions.ChooseInput.Choices.init -> void
+Aw.Judge.Core.Questions.ChooseInput.ChooseInput(string! Prompt, System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! State, System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Questions.ChoiceInput!>! Choices, double? Threshold = null) -> void
+Aw.Judge.Core.Questions.ChooseInput.Deconstruct(out string! Prompt, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! State, out System.Collections.Generic.IReadOnlyList<Aw.Judge.Core.Questions.ChoiceInput!>! Choices, out double? Threshold) -> void
+Aw.Judge.Core.Questions.ChooseInput.Equals(Aw.Judge.Core.Questions.ChooseInput? other) -> bool
+Aw.Judge.Core.Questions.ChooseInput.Prompt.get -> string!
+Aw.Judge.Core.Questions.ChooseInput.Prompt.init -> void
+Aw.Judge.Core.Questions.ChooseInput.State.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>!
+Aw.Judge.Core.Questions.ChooseInput.State.init -> void
+Aw.Judge.Core.Questions.ChooseInput.Threshold.get -> double?
+Aw.Judge.Core.Questions.ChooseInput.Threshold.init -> void
+Aw.Judge.Core.Questions.ChooseQuestion
+const Aw.Judge.Core.Questions.ChooseQuestion.Name = "choose" -> string!
+override Aw.Judge.Core.Questions.ChoiceInput.Equals(object? obj) -> bool
+override Aw.Judge.Core.Questions.ChoiceInput.GetHashCode() -> int
+override Aw.Judge.Core.Questions.ChoiceInput.ToString() -> string!
+override Aw.Judge.Core.Questions.ChooseInput.Equals(object? obj) -> bool
+override Aw.Judge.Core.Questions.ChooseInput.GetHashCode() -> int
+override Aw.Judge.Core.Questions.ChooseInput.ToString() -> string!
+static Aw.Judge.Core.Questions.ChoiceInput.operator !=(Aw.Judge.Core.Questions.ChoiceInput? left, Aw.Judge.Core.Questions.ChoiceInput? right) -> bool
+static Aw.Judge.Core.Questions.ChoiceInput.operator ==(Aw.Judge.Core.Questions.ChoiceInput? left, Aw.Judge.Core.Questions.ChoiceInput? right) -> bool
+static Aw.Judge.Core.Questions.ChooseInput.operator !=(Aw.Judge.Core.Questions.ChooseInput? left, Aw.Judge.Core.Questions.ChooseInput? right) -> bool
+static Aw.Judge.Core.Questions.ChooseInput.operator ==(Aw.Judge.Core.Questions.ChooseInput? left, Aw.Judge.Core.Questions.ChooseInput? right) -> bool
+static Aw.Judge.Core.Questions.ChooseQuestion.For(Aw.Judge.Core.Questions.ChooseInput! input) -> Aw.Judge.Core.Questions.QuestionDefinition<Aw.Judge.Core.Questions.ChooseInput!>!
+Aw.Judge.Core.Evaluation.DecidedOutcome.Probabilities.get -> System.Collections.Generic.IReadOnlyDictionary<string!, double>?
+Aw.Judge.Core.Evaluation.DecidedOutcome.Probabilities.init -> void
+Aw.Judge.Core.Evaluation.EscalatedOutcome.Id.get -> Aw.Judge.Core.Ids.DecisionId?
+Aw.Judge.Core.Evaluation.EscalatedOutcome.Id.init -> void
+Aw.Judge.Core.Evaluation.EscalatedOutcome.Probabilities.get -> System.Collections.Generic.IReadOnlyDictionary<string!, double>?
+Aw.Judge.Core.Evaluation.EscalatedOutcome.Probabilities.init -> void
+Aw.Judge.Core.Providers.QuestionRef.AskConfidence.get -> bool
+Aw.Judge.Core.Providers.QuestionRef.AskConfidence.init -> void
+Aw.Judge.Core.Questions.CheckKind.ApiEvidence = 3 -> Aw.Judge.Core.Questions.CheckKind
+Aw.Judge.Core.Questions.CheckKind.DbEvidence = 4 -> Aw.Judge.Core.Questions.CheckKind
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.AskConfidence.get -> bool
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.AskConfidence.init -> void
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ReportsTrace.get -> bool
+Aw.Judge.Core.Questions.QuestionDefinition<TInput>.ReportsTrace.init -> void
+Aw.Judge.Core.Evaluation.QuestionEvaluator.EvaluateChoose(string! rawInput, Aw.Judge.Core.Evaluation.EvaluationContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Judge.Core.Evaluation.EvaluationOutcome!>
+const Aw.Judge.Core.Questions.ChooseQuestion.DefaultThreshold = 0.6 -> double
+const Aw.Judge.Core.Questions.ChooseQuestion.MaxChoices = 32 -> int
+const Aw.Judge.Core.Questions.ChooseQuestion.MaxCriterionLength = 400 -> int
+const Aw.Judge.Core.Questions.ChooseQuestion.MaxNameLength = 32 -> int
+const Aw.Judge.Core.Questions.ChooseQuestion.Uncertain = "uncertain" -> string!
+static Aw.Judge.Core.Questions.ChooseQuestion.Unreadable.get -> Aw.Judge.Core.Questions.QuestionDefinition<Aw.Judge.Core.Questions.ChooseInput!>!

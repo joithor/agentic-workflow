@@ -1,0 +1,14 @@
+{
+  "isError": false,
+  "structuredContent": {
+    "accepted": {
+      "commandId": "<command>",
+      "sequence": "<n>"
+    },
+    "requestId": "REQ-<id>",
+    "decisionId": "DEC-<id>"
+  },
+  "content": [
+    "filed REQ-<id> (rescope) as DEC-<id>; a human settles it"
+  ]
+}

@@ -529,6 +529,14 @@ The Step inputs `input.context.lenses`, `input.context.code` and `input.context.
 `step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and human-only; their hashes moved once when the two fields
 landed (provisional owner default); every other shipped descriptor hashes as before (`ShippedBlocksTests` pins all of them).
 
+### Block recipes
+
+The shipped block recipes (`recipes/sindri/`: report, investigate, reproduce, implement, hand-test, verify, the evidence
+family and review-loop) are listed with their inputs, outputs and terminals in `recipes/sindri/README.md`. The inputs are
+`issue` (report), `issue`, `expected` and `actual` (investigate), `issue` and `rootCause` (reproduce, implement), `phasePacket` and `workspace` (hand-test, verify), `phasePacket` and `built`
+(every evidence recipe) and `change` and `phasePacket` (review-loop). `phasePacket` and `change` use the `packet` and
+`payload` subject kinds. Approve the leaf recipes first, then `workflow.evidence-all`, then `workflow.evidence`.
+
 ## Writing a decision tree
 
 A route is a `step.judge.choose` state that picks one of a recipe's branches, and a desk twin, a `step.desk.choose` state
