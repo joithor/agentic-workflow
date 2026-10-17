@@ -102,7 +102,7 @@ public static class StatusText
 
         if (status.Commands.Count > 0)
         {
-            var verbs = status.Commands.Select(c => c.Verb == StatusVerb.Answer && status.Child is not null ? "answer (forwarded)" : StatusVerbNames.Of(c.Verb));
+            var verbs = status.Commands.Select(c => c.Verb == StatusVerb.Answer && status.Child is not null ? "answer (forwarded)" : StatusVerbNames.Of(c.Verb)).Distinct(StringComparer.Ordinal);
             yield return ("commands", string.Join(", ", verbs));
         }
     }
