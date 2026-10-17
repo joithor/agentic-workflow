@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
@@ -59,7 +60,7 @@ public sealed class RecipeSheetViewModelTests
         var sheet = await Opened(id);
         var golden = Golden(id);
 
-        Assert.Equal($"{id}@{Hash12(id)} · v{Text(golden["version"])} · {Text(golden["urgency"])}", sheet.Identity);
+        Assert.Equal($"{id}@{Hash12(id)} · v{golden["version"]!.GetValue<int>().ToString(CultureInfo.InvariantCulture)} · {Text(golden["urgency"])}", sheet.Identity);
     }
 
     [Fact]
