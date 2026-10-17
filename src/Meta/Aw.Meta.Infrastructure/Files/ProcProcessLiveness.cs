@@ -28,23 +28,36 @@ internal sealed class ProcProcessLiveness(TimeProvider time, Func<string, Cancel
             return false;
         }
 
+        string stat;
         try
         {
-            var stat = await read("/proc/" + pid.ToString(CultureInfo.InvariantCulture) + "/stat", cancellationToken).ConfigureAwait(false);
+            stat = await read("/proc/" + pid.ToString(CultureInfo.InvariantCulture) + "/stat", cancellationToken).ConfigureAwait(false);
+        }
+        catch (IOException)
+        {
+            return false;   // no /proc entry: the process exited
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return MetaErrors.HostUnreadable.With("/proc could not be read: " + exception.Message);
+        }
+
+        try
+        {
             if (ProcFormat.Stat(stat) is not { } fields)
             {
                 return false;
             }
 
+            // An unreadable uptime is not an answer about the process, and an uptime shorter than the process's start (the two
+            // clocks disagree) can't give an age: both are AW-META-010, never "not running" or a reused pid.
             var uptime = double.Parse((await read("/proc/uptime", cancellationToken).ConfigureAwait(false)).Split(' ')[0], CultureInfo.InvariantCulture);
-            var age = TimeSpan.FromSeconds(Math.Max(0, uptime - (fields.StartTicks / ClockTicksPerSecond)));
-            return !ProcessStart.IsReused(time.GetUtcNow() - age, recordedAt);
+            var started = fields.StartTicks / ClockTicksPerSecond;
+            return uptime < started
+                ? MetaErrors.HostUnreadable.With(string.Create(CultureInfo.InvariantCulture, $"/proc is inconsistent: uptime {uptime}s is before pid {pid}'s start at {started}s"))
+                : !ProcessStart.IsReused(time.GetUtcNow() - TimeSpan.FromSeconds(uptime - started), recordedAt);
         }
-        catch (IOException)
-        {
-            return false;
-        }
-        catch (Exception exception) when (exception is UnauthorizedAccessException or FormatException or OverflowException)
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or FormatException or OverflowException)
         {
             return MetaErrors.HostUnreadable.With("/proc could not be read: " + exception.Message);
         }
