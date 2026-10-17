@@ -17,7 +17,7 @@ internal sealed class OnyxBriefSource(ISourceCatalog catalog) : IBriefSource
 {
     private const int MaxHits = 50;
     private static readonly TimeSpan _deadline = TimeSpan.FromSeconds(30);
-    private static readonly string _onyx = "onyx";
+    private const string OnyxId = "onyx";
 
     public async ValueTask<Result<BriefListing>> Issues(BriefScope scope, DateTimeOffset? since, CancellationToken cancellationToken)
     {
@@ -100,7 +100,7 @@ internal sealed class OnyxBriefSource(ISourceCatalog catalog) : IBriefSource
             return Results.Success<Brief?>(value: null);
         }
 
-        var record = await source.Fetch(new SourceRef(SourceId.From(_onyx), external, version, Permalink: null, canonical), cancellationToken).ConfigureAwait(false);
+        var record = await source.Fetch(new SourceRef(SourceId.From(OnyxId), external, version, Permalink: null, canonical), cancellationToken).ConfigureAwait(false);
         if (record.IsError)
         {
             return record.Error.Kind == ErrorKind.NotFound
@@ -133,7 +133,7 @@ internal sealed class OnyxBriefSource(ISourceCatalog catalog) : IBriefSource
     }
 
     private IContextSource? Onyx(BriefScope scope) =>
-        scope.Settings.Onyx is null ? null : catalog.For(scope.Settings, scope.Repos, scope.Scrubbers).FirstOrDefault(s => string.Equals(s.Describe().Id.Value, _onyx, StringComparison.Ordinal));
+        scope.Settings.Onyx is null ? null : catalog.For(scope.Settings, scope.Repos, scope.Scrubbers).FirstOrDefault(s => string.Equals(s.Describe().Id.Value, OnyxId, StringComparison.Ordinal));
 
     private static Error NoSource() =>
         ContextErrors.NoBriefSource.With("no configured source can supply issue briefs: needs 'context.sources.onyx' and 'context.sources.linear.teams' in the approved profile (fix: sindri context sources status)");

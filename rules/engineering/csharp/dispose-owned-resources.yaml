@@ -10,14 +10,11 @@ select:
 checks:
   - type: analyzer
     id: "CA2000"
-    severity: suggestion
     status: active
   - type: analyzer
     id: "CA2213"
-    severity: suggestion
     status: active
-gap: open
-gapNote: "20 CA2000 and 1 CA2213 sites in src on main; tests are out of scope (tests/.editorconfig turns both off: xUnit owns fixture disposal). Set to suggestion until the cleanup PR (branch chore/style-cleanup) fixes the flagged sites and raises it to error; followed by hand until then."
+gap: closed
 source:
   type: desk
   ref: "https://learn.microsoft.com/dotnet/standard/design-guidelines/"

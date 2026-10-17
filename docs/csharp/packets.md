@@ -1,4 +1,4 @@
-# Packets — `aw-packets validate | freeze`
+# Packets — `aw-packets validate | freeze | hash`
 
 `Aw.Packets` (`src/Packets`, tier 1, small shape: `Aw.Packets.Core` + `Aw.Packets.App`) checks and freezes handoff
 packets (factory addendum §17.4). Before the switch it is the standalone NativeAOT CLI `aw-packets`, which writes only
@@ -55,7 +55,7 @@ failure, one per passing or unchecked rule; each failure has `rule`, `subject`, 
 
 Runs the same checks. A packet with a failed check isn't frozen and nothing is written. Otherwise its canonical hash
 is recorded at `packets/<owner>/<name>/<id>/frozen/<hex>.json` (per repository: a packet id is unique only within one) (`FreezeRecord`: `schemaVersion`, `repo`, packet, hash,
-`digestVersion`, `baseSha`, `frozenAt`, the files the hash covers). Freezing the same hash again writes nothing and says `already frozen`. The
+`digestVersion`, `kind` (`build` unless the record says otherwise), `baseSha` (left out for a kind that has none), `frozenAt`, the files the hash covers). Freezing the same hash again writes nothing and says `already frozen`. The
 packet directory itself is never changed; the record under `packets/` is authoritative (the ledger of the C# Sindri
 application takes over once it exists, spec §4c; Sindri is built new, not ported, factory addendum §17.29).
 
@@ -63,6 +63,55 @@ application takes over once it exists, spec §4c; Sindri is built new, not porte
 `{"digestVersion":1,"files":{<path>:<entry>}}`. A JSON packet file's entry is the file itself without its `$schema` editor hint (and `packet.json` without
 `status` and `hash`); any other linked file's entry is `sha256:<hex of its bytes>`. Canonical JSON sorts object keys by
 ordinal, drops whitespace, keeps numbers as written, and writes strings as System.Text.Json's relaxed encoder does (the Kernel profile): `"` and `\` escaped, control characters in their short or `\u00XX` form, U+2028/U+2029 and characters outside the Basic Multilingual Plane as `\u` escapes (surrogate pairs), everything else as UTF-8. `CanonicalJsonTests` pins examples and one packet's hash; changing these bytes needs a new `digestVersion`.
+
+## Packet kinds (`--kind build|scoping`)
+
+`PacketKinds` (`Aw.Packets.Core.Kinds`) is the registry: a kind is a name and the fixed files its schema lists. Every
+command takes `--kind` (anywhere in its arguments; `build`, the packet above, when it isn't given; an unknown kind is a
+usage error, exit 2). The `build` kind has no fixed list (`packet.json` links its files); the `scoping` kind (scoping
+station spec §8.3, P1) lists twelve.
+
+| File | Format | Checked here |
+|---|---|---|
+| `scope-map.json`, `acceptance.json`, `coverage.json`, `size.json`, `questions.json`, `challenge.json`, `runs.json`, `sources.json` | one JSON object | well formed (`PKT-SCP-003`) |
+| `lenses.json` | one JSON object, `LensesFile` (`schemas/packets/lenses.schema.json`) | well formed, and the schema (`PKT-SCP-004`, `-005`) |
+| `answers.jsonl`, `rounds.jsonl` | one JSON object per line (blank lines allowed) | well formed |
+| `brief.md` | UTF-8 text | well formed |
+
+**Rules (schema only).** What the files mean (citations, coverage, trust, and every check across files) stays in
+Sindri's `ScopePacketChecks`, which `aw-packets` (tier 1) must not reference (tier 3); Sindri calls `aw-packets` through
+its `cli` edge. That includes `SCP-LENS-001`, the check that `lenses.json` agrees with `coverage.json`: it reads two
+files, so it lives in Sindri, not here. The ids are `PKT-SCP-*`, never `PKT-SCOPE-001/002` (the build kind's write-scope
+rules).
+
+| Rule | Holds when |
+|---|---|
+| `PKT-SCP-001` | all twelve files are present |
+| `PKT-SCP-002` | the directory holds no other entry (a sub-directory counts, and is named with a trailing `/`) |
+| `PKT-SCP-003` | each JSON file is one strict JSON object (UTF-8, no byte order mark, no duplicate key, no null in a list), each JSON-lines line is one object, `brief.md` is valid UTF-8 |
+| `PKT-SCP-004` | `lenses.json` has `schemaVersion` 1 and the four lenses (`code`, `product`, `related`, `history`); each has `anchors`, `depth` (0 to 32) and `hops` (the hop kinds walked, each of `state`, `flow`, `dependency`, `component` at most once, in any order, empty at depth 0), `mapVersion` (a non-empty string, as the context engine writes it, for example `v12@a41b07d`), `foundCount` (at least the nodes and items listed, more when a band is `truncated`), `nodes[]`, `edges[]`, `items[]` and `truncated[]` (bands `code`, `product`, `intent`, each once); ids match `^L-(code\|product\|related\|history)-[1-9][0-9]*$`; `band` and `trust` (`untrusted`, `owner`) are from their enums; no unknown field |
+| `PKT-SCP-005` | the lens item ids are unique across the file, and each names the lens it sits in |
+
+`PKT-SCP-004` and `-005` are `unchecked` when `lenses.json` is missing or not well formed.
+
+**`validate --kind scoping <packet-dir> [--json]`** runs those five rules; the output is the build kind's (`kind` is
+`scoping`, and there is no `packet`). Exit 0 passed, 1 a check failed, 2 the directory is missing. It takes no `--repo`
+and writes nothing.
+
+**`hash <packet-dir> [--kind build|scoping] [--json]`** prints the canonical hash and runs no check; with `--json` it
+writes `{schemaVersion, kind, hash, digestVersion, files}` (`files` sorted). It is the one canonicalization:
+Sindri's `evidence` and `freeze` Steps call it, and `freeze` records the same value. A scope packet with a file
+missing, or a JSON file with a duplicate key, has no hash (`AW-PACKETS-003`, exit 1). Entries the kind doesn't list are
+not hashed (`validate` fails them).
+
+**`freeze --kind scoping <packet-dir> --repo-slug <owner/name> --instance <slug> [--json]`** validates, then records the
+hash at `packets/<owner>/<name>/<instance>/frozen/<hex>.json` (`instance` is a `PacketId`; the record's `kind` is
+`scoping` and it has no `baseSha`). A failed check freezes nothing (exit 1); the same hash again says `already frozen`.
+
+**The scoping hash** is the build kind's canonical form over the twelve files, with `"kind":"scoping"` added to the hashed
+document so no build packet can collide with it: a JSON file's entry is the file without its `$schema` hint, a
+JSON-lines or text file's entry is `sha256:<hex of its bytes>`. `ScopingDigestTests` pins one packet's hash, computed
+independently of the C# code.
 
 ## Exit codes and errors
 
@@ -79,6 +128,7 @@ Errors go to stderr as `aw-packets: <code> <message>` (with `--json`, the `Error
 | Port (`Aw.Packets.Core`) | Adapter (`Aw.Packets.App.Infrastructure`) | Fake and contract (`tests/Aw.Packets.Testing`) |
 |---|---|---|
 | `IPacketSource` | `FileSystemPacketSource` | `InMemoryPacketSource`, `PacketSourceContract` |
+| `IScopingPacketSource` | `FileSystemScopingPacketSource` (the twelve listed files, a symbolic link refused; the other top-level names, never their content) | `InMemoryScopingPacketSource`, `ScopingPacketSourceContract` |
 | `IRepoSnapshot` | `GitRepoSnapshot` (`git ls-tree -r -z`, 30 s limit per run) | `InMemoryRepoSnapshot`, `RepoSnapshotContract` |
 | `IFreezeLog` | `FileFreezeLog` (temp file, then move) | `InMemoryFreezeLog`, `FreezeLogContract` |
 | `TimeProvider` (BCL) | `TimeProvider.System` | `FakeTimeProvider` |
