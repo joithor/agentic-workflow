@@ -17,7 +17,7 @@ public sealed class ReloadingCatalogTests : IDisposable
     {
         var path = Path.Combine(_home, name);
         File.WriteAllText(path, text);
-        File.SetLastWriteTimeUtc(path, stamp ?? DateTime.UtcNow);
+        File.SetLastWriteTimeUtc(path, stamp ?? new DateTime(2026, 10, 16, 8, 0, 0, DateTimeKind.Utc));
         return path;
     }
 
