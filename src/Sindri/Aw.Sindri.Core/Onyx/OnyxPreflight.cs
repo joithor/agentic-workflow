@@ -46,13 +46,41 @@ public static class OnyxPreflight
     /// <returns>For example 11.0.</returns>
     public static string Gib(long bytes) => (bytes / (double)(1L << 30)).ToString("F1", CultureInfo.InvariantCulture);
 
-    private static PreflightCheck Docker(ContainerRuntimeFacts docker) => docker switch
+    private static PreflightCheck Docker(ContainerRuntimeFacts docker) => DockerProblem(docker) is not { } problem
+        ? Ok("docker", docker.ServerVersion ?? "unreadable version")
+        : new PreflightCheck("docker", CheckState.Fail, DockerFailure(docker), problem);
+
+    private static string DockerFailure(ContainerRuntimeFacts docker) => docker switch
     {
-        { CliFound: false } => Fail("docker", "docker CLI not found", SindriErrors.OnyxDockerUnavailable, "Docker isn't installed: install Docker Desktop (or Docker Engine), then run this again"),
-        _ when !IsLocalEndpoint(docker.Endpoint) => new PreflightCheck("docker", CheckState.Fail, "docker points at another machine", RemoteDocker(docker.Endpoint)),
-        { DaemonAnswers: false } => Fail("docker", "docker CLI found, daemon not answering", SindriErrors.OnyxDockerUnavailable, "Docker isn't running: start Docker Desktop (or the docker service) and wait until it is ready, then run this again"),
-        _ => Ok("docker", docker.ServerVersion ?? "unreadable version"),
+        { CliFound: false } => "docker CLI not found",
+        _ when docker.Endpoint is not null && !IsLocalEndpoint(docker.Endpoint) => "docker points at another machine",
+        { DaemonAnswers: false } => "docker CLI found, daemon not answering",
+        _ => "docker endpoint unreadable",
     };
+
+    /// <summary>Judges whether Docker can be used here, in the order a person would fix it: no CLI, an endpoint on another machine, a daemon that doesn't answer, then an endpoint nobody could read.</summary>
+    /// <param name="docker">What the container runtime reports.</param>
+    /// <returns>The error (SND-ONYX-001 or SND-ONYX-010, with its fix), or null when Docker is usable here.</returns>
+    public static Error? DockerProblem(ContainerRuntimeFacts docker)
+    {
+        ArgumentNullException.ThrowIfNull(docker);
+        if (!docker.CliFound)
+        {
+            return SindriErrors.OnyxDockerUnavailable.With("Docker isn't installed: install Docker Desktop (or Docker Engine), then run this again");
+        }
+
+        if (docker.Endpoint is not null && !IsLocalEndpoint(docker.Endpoint))
+        {
+            return RemoteDocker(docker.Endpoint);
+        }
+
+        if (!docker.DaemonAnswers)
+        {
+            return SindriErrors.OnyxDockerUnavailable.With("Docker isn't running: start Docker Desktop (or the docker service) and wait until it is ready, then run this again");
+        }
+
+        return docker.Endpoint is null ? RemoteDocker(endpoint: null) : null;
+    }
 
     /// <summary>Tells whether a Docker endpoint is on this machine: a unix socket, or a named pipe on Windows. An endpoint nobody could read (null) isn't, since it may be anywhere.</summary>
     /// <param name="endpoint">The endpoint from <see cref="ContainerRuntimeFacts.Endpoint"/>.</param>
@@ -61,10 +89,12 @@ public static class OnyxPreflight
         => endpoint is not null && (endpoint.StartsWith("unix://", StringComparison.Ordinal) || endpoint.StartsWith("npipe://", StringComparison.Ordinal));
 
     /// <summary>The error for a Docker that points at another machine: SND-ONYX-010 naming the endpoint and the fix.</summary>
-    /// <param name="endpoint">The endpoint, or null when it couldn't be read (shown as unknown).</param>
+    /// <param name="endpoint">The endpoint, or null when it couldn't be read (its own message: the context inspect failed).</param>
     /// <returns>The error.</returns>
     public static Error RemoteDocker(string? endpoint)
-        => SindriErrors.OnyxRemoteDocker.With($"Docker points at another machine ({endpoint ?? "unknown"}): Sindri only runs Onyx on this one; switch to the local context (`docker context use default`, and unset DOCKER_HOST), then run this again");
+        => endpoint is null
+            ? SindriErrors.OnyxRemoteDocker.With("Docker is there but Sindri couldn't read Docker's endpoint (`docker context inspect` failed); check `docker context ls`, then run this again")
+            : SindriErrors.OnyxRemoteDocker.With($"Docker points at another machine ({endpoint}): Sindri only runs Onyx on this one; switch to the local context (`docker context use default`, and unset DOCKER_HOST), then run this again");
 
     /// <summary>The first Compose release that reads the `!override` tag Sindri's compose override uses.</summary>
     public static readonly Version ComposeFloor = new(2, 24, 0);
