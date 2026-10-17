@@ -41,7 +41,9 @@
       "processName",
       "transcripts",
       "usage",
-      "mcp"
+      "mcp",
+      "model",
+      "policy"
     ],
     "sessionIdModes": [
       "pre-chosen-uuid",
@@ -62,6 +64,18 @@
     "mcpForms": [
       "claude-config-file",
       "codex-overrides",
+      "none"
+    ],
+    "modelForms": [
+      "claude-flag",
+      "codex-flag",
+      "cursor-flag",
+      "none"
+    ],
+    "policyForms": [
+      "claude-settings-file",
+      "codex-overrides",
+      "cursor-config",
       "none"
     ],
     "meta": [
@@ -426,6 +440,24 @@
             "none"
           ],
           "description": "Absent means \"none\" (the argvHash default)."
+        },
+        "model": {
+          "enum": [
+            "claude-flag",
+            "codex-flag",
+            "cursor-flag",
+            "none"
+          ],
+          "description": "Decided (owner, 2026-10-16). The built-in form that passes a per-run model id (cursor-flag is reserved and parks with SND-LAUNCH-013 until verified) on an unattended Step launch only (scoping-station spec L-17). Absent means \"none\" (the argvHash default). The form name is an argvHash input; the model id is not. The bash reader accepts the key and never applies it."
+        },
+        "policy": {
+          "enum": [
+            "claude-settings-file",
+            "codex-overrides",
+            "cursor-config",
+            "none"
+          ],
+          "description": "Decided (owner, 2026-10-16). The built-in form that passes a per-launch policy (a file for claude-settings-file; typed -c overrides, no file, for codex-overrides; cursor-config is reserved and parks with SND-LAUNCH-013 until verified) on an unattended Step launch only (scoping-station spec L-17). Absent means \"none\" (the argvHash default). The form name is an argvHash input; the policy path is not. The bash reader accepts the key and never applies it."
         }
       },
       "additionalProperties": false,

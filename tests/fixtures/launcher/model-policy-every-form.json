@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "agents": {
+    "a1": {
+      "label": "A1",
+      "bin": "a1",
+      "open": [
+        "{bin}"
+      ],
+      "sessionId": "none",
+      "model": "claude-flag",
+      "policy": "claude-settings-file"
+    },
+    "a2": {
+      "label": "A2",
+      "bin": "a2",
+      "open": [
+        "{bin}"
+      ],
+      "sessionId": "none",
+      "model": "codex-flag",
+      "policy": "codex-overrides"
+    },
+    "a3": {
+      "label": "A3",
+      "bin": "a3",
+      "open": [
+        "{bin}"
+      ],
+      "sessionId": "none",
+      "model": "cursor-flag",
+      "policy": "cursor-config"
+    },
+    "a4": {
+      "label": "A4",
+      "bin": "a4",
+      "open": [
+        "{bin}"
+      ],
+      "sessionId": "none",
+      "model": "none",
+      "policy": "none"
+    }
+  }
+}
