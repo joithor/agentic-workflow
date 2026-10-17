@@ -19,7 +19,7 @@ internal sealed partial class ShellViewModel
     // shape until P11): a sentence, never an empty box. Any other failure leaves the rows as they were and the next event tries again.
     private async Task ReadStrip(Uri url, CancellationToken cancellationToken)
     {
-        var list = await _api.Instances(url, new InstanceQuery(Root: true), cancellationToken).ConfigureAwait(true);
+        var list = await _api.Instances(url, new InstanceQuery(Root: true, Open: true), cancellationToken).ConfigureAwait(true);
         if (list.IsSuccess)
         {
             Strip.Update(list.Value);

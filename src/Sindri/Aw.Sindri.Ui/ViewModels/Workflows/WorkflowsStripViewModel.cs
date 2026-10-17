@@ -183,9 +183,9 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
         ? Math.Clamp(HomeFold.LargeBudget - NeedsYouShown, 0, HomeFold.StripLargeCap)
         : Math.Clamp(HomeFold.Budget - NeedsYouShown, 0, Cap);
 
-    // An instance is open unless it has ended: the engine's chip says DONE (counts.open is computed by it, a cancelled root included), or its current state's cell is terminal.
+    // The server filters open=true (the same filter as the Workflows page); a row whose current state's cell is terminal is dropped here as a belt.
     private static bool IsOpen(InstanceSummary row) =>
-        !string.Equals(row.Chip.Word, "DONE", StringComparison.Ordinal) && !row.States.Any(s => s.Terminal && string.Equals(s.State, row.State, StringComparison.Ordinal));
+        !row.States.Any(s => s.Terminal && string.Equals(s.State, row.State, StringComparison.Ordinal));
 
     private bool IsSelectedRow(StripRowViewModel row) => SelectedAddress is { } address && string.Equals(row.Address, address, StringComparison.Ordinal);
 
