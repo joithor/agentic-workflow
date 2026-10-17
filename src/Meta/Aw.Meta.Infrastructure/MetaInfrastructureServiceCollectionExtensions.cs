@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Aw.Meta.Core.Ports;
+using Aw.Meta.Infrastructure.Build;
 using Aw.Meta.Infrastructure.Config;
 using Aw.Meta.Infrastructure.Files;
 using Aw.Meta.Infrastructure.Processes;
@@ -46,6 +47,7 @@ public static class MetaInfrastructureServiceCollectionExtensions
                 ? new MacProcessTable(settings.StateDirectory, sp.GetRequiredService<ICommandRunner>())
                 : new ProcProcessTable(settings.StateDirectory))
             .AddSingleton<IProcessLocations, ProcessScanner>()
+            .AddSingleton<IBuildInfo, AssemblyBuildInfo>()
             .AddSingleton<IHostResources>(sp => OperatingSystem.IsMacOS()
                 ? new MacHostResources(settings.StateDirectory, settings.HeavyLock, sp.GetRequiredService<ICommandRunner>())
                 : new ProcHostResources(settings.StateDirectory, settings.HeavyLock))

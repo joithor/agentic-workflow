@@ -18,6 +18,7 @@ internal static class CommandTable
         TeamInitCommand.Entry,
         TeamShowCommand.Entry,
         TeamListCommand.Entry,
+        VersionCommand.Entry,
         TeamMigrateCommand.Entry,
         SyncInboxCommand.Entry,
         StopCheckCommand.Entry,
