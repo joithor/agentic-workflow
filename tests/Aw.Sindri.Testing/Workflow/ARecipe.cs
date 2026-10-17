@@ -38,6 +38,23 @@ public static class ARecipe
         Evals: [],
         Hash: null);
 
+    /// <summary><paramref name="recipe"/> with each of its Steps naming the input blocks <paramref name="inputs"/>, in order.</summary>
+    /// <param name="recipe">The recipe.</param>
+    /// <param name="inputs">The input block ids ('input.…').</param>
+    /// <returns>The recipe.</returns>
+    public static Recipe WithStepInputs(Recipe recipe, params string[] inputs)
+    {
+        ArgumentNullException.ThrowIfNull(recipe);
+        var uses = inputs.Select(i => new BlockUse(BlockId.From(i), NoArguments)).ToList();
+        return recipe with
+        {
+            States = recipe.States.ToDictionary(
+                static s => s.Key,
+                s => s.Value.Step is { } step ? s.Value with { Step = step with { Inputs = uses } } : s.Value,
+                StringComparer.Ordinal),
+        };
+    }
+
     /// <summary>A '{ outcome }' condition.</summary>
     /// <param name="outcome">The outcome.</param>
     /// <returns>The condition.</returns>
