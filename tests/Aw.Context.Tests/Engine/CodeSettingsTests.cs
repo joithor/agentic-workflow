@@ -15,7 +15,8 @@ public sealed class CodeSettingsTests
     {
         var settings = Read("""{"code":{"schemaGlobs":["db/**/*.sql"],"testGlobs":["spec/**"]}}""").Value;
 
-        Assert.Equal((["db/**/*.sql"], ["spec/**"]), (settings.SchemaGlobs.ToArray(), settings.TestGlobs.ToArray()));
+        Assert.Equal(["db/**/*.sql"], settings.SchemaGlobs, StringComparer.Ordinal);
+        Assert.Equal(["spec/**"], settings.TestGlobs, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

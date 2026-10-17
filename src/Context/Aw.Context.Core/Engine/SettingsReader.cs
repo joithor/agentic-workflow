@@ -43,7 +43,12 @@ public static partial class SettingsReader
 
         if (UnknownKey(element) is { } unknown)
         {
-            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, cascadeDepth, deadline, maxBudget, minHits, labeling, scrub, sessions, sources, eval)");
+            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, cascadeDepth, deadline, maxBudget, minHits, labeling, scrub, sessions, sources, eval, code)");
+        }
+
+        if (CodeUnknownKey(element) is { } codeKey)
+        {
+            return Invalid("context.code." + codeKey, "is not a code-lens setting this build knows (schemaGlobs, testGlobs)");
         }
 
         if (SourcesReader.Shape(element) is { } shape)
@@ -66,22 +71,86 @@ public static partial class SettingsReader
             ({ } problem, _, _) => problem,
             (_, null, _) => Invalid("context.deadline", "is a duration from 100ms to 60s, such as 4s or 500ms"),
             (_, _, { IsError: true }) => sources.Error,
-            _ => settings with
-            {
-                Repos = section.Repos?.Select(ContextRepoName.From).ToList(),
-                DocGlobs = globs,
-                Deadline = deadline.Value,
-                MaxBudget = section.MaxBudget ?? settings.MaxBudget,
-                MinHits = section.MinHits ?? settings.MinHits,
-                CascadeDepth = section.CascadeDepth ?? settings.CascadeDepth,
-                SessionsEnabled = section.Sessions?.Enabled ?? false,
-                Onyx = sources.Value.Onyx,
-                LinearTeams = sources.Value.Teams,
-                ExtraPatterns = Patterns(section.Scrub),
-                Labeling = Labeling(section.Labeling),
-                Adjudicator = Adjudicates(section.Eval),
-            },
+            _ => WithCode(
+                settings with
+                {
+                    Repos = section.Repos?.Select(ContextRepoName.From).ToList(),
+                    DocGlobs = globs,
+                    Deadline = deadline.Value,
+                    MaxBudget = section.MaxBudget ?? settings.MaxBudget,
+                    MinHits = section.MinHits ?? settings.MinHits,
+                    CascadeDepth = section.CascadeDepth ?? settings.CascadeDepth,
+                    SessionsEnabled = section.Sessions?.Enabled ?? false,
+                    Onyx = sources.Value.Onyx,
+                    LinearTeams = sources.Value.Teams,
+                    ExtraPatterns = Patterns(section.Scrub),
+                    Labeling = Labeling(section.Labeling),
+                    Adjudicator = Adjudicates(section.Eval),
+                },
+                section.Code),
         };
+    }
+
+    private const int MaxCodeGlobs = 50;
+    private const int MaxCodeGlobLength = 200;
+
+    private static ContextSettings WithCode(ContextSettings settings, CodeSection? code) =>
+        settings with
+        {
+            SchemaGlobs = Globs(code?.SchemaGlobs, settings.SchemaGlobs),
+            TestGlobs = Globs(code?.TestGlobs, settings.TestGlobs),
+        };
+
+    private static IReadOnlyList<string> Globs(IReadOnlyList<string?>? written, IReadOnlyList<string> defaults) =>
+        written is null ? defaults : [.. written.OfType<string>()];   // why: CodeProblem refused a null entry
+
+    /// <summary>The first refused 'context.code' glob list: more than 50 entries (151) or an entry that isn't a repo-relative glob (150).</summary>
+    private static Error? CodeProblem(CodeSection? code) =>
+        code is null ? null : CodeListProblem("schemaGlobs", code.SchemaGlobs) ?? CodeListProblem("testGlobs", code.TestGlobs);
+
+    private static Error? CodeListProblem(string key, IReadOnlyList<string?>? globs)
+    {
+        if (globs is null)
+        {
+            return null;
+        }
+
+        if (globs.Count > MaxCodeGlobs)
+        {
+            return ContextErrors.CodeGlobsTooMany.With($"context.code.{key}: at most {MaxCodeGlobs.ToString(CultureInfo.InvariantCulture)} globs (has {globs.Count.ToString(CultureInfo.InvariantCulture)})");
+        }
+
+        for (var i = 0; i < globs.Count; i++)
+        {
+            if (CodeGlobFault(globs[i]) is { } fault)
+            {
+                return ContextErrors.CodeGlobInvalid.With(string.Create(CultureInfo.InvariantCulture, $"context.code.{key}[{i}]: {fault}"));
+            }
+        }
+
+        return null;
+    }
+
+    private static string? CodeGlobFault(string? glob) =>
+        glob switch
+        {
+            null or "" => "is empty; write a repo-relative glob such as 'db/**/*.sql'",
+            { Length: > MaxCodeGlobLength } => $"is over {MaxCodeGlobLength.ToString(CultureInfo.InvariantCulture)} characters",
+            _ when glob.Any(char.IsControl) => "has a control character",
+            _ when glob[0] == '/' => "is absolute; globs are repo-relative with no leading '/'",
+            _ when glob.Split('/').Contains("..", StringComparer.Ordinal) => "has a '..' segment; globs stay inside the repo",
+            _ => null,
+        };
+
+    private static string? CodeUnknownKey(JsonElement element)
+    {
+        if (!element.TryGetProperty("code", out var code) || code.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        string[] known = ["schemaGlobs", "testGlobs"];
+        return code.EnumerateObject().Select(p => p.Name).FirstOrDefault(n => !known.Contains(n, StringComparer.Ordinal)) is { } name ? Printable(name) : null;
     }
 
     private static bool Adjudicates(EvalSection? section) => section?.Adjudicator ?? false;
@@ -130,7 +199,7 @@ public static partial class SettingsReader
             { CascadeDepth: < 0 or > QueryRules.MaxDepth } => Invalid("context.cascadeDepth", "is 0 to 4 steps"),
             { Labeling.MaxTokens: < 1_000 or > 20_000_000 } => Invalid("context.labeling.maxTokens", "is 1000 to 20000000 tokens"),
             { Labeling.MaxTokensPerSync: < 1 or > 20_000_000 } => Invalid("context.labeling.maxTokensPerSync", "is 1 to 20000000 tokens"),
-            _ => null,
+            _ => CodeProblem(section.Code),
         };
     }
 
@@ -144,7 +213,7 @@ public static partial class SettingsReader
 
     private static string? UnknownKey(JsonElement element)
     {
-        string[] known = ["repos", "docs", "cascadeDepth", "deadline", "maxBudget", "minHits", "labeling", "scrub", "sessions", "sources", "eval"];
+        string[] known = ["repos", "docs", "cascadeDepth", "deadline", "maxBudget", "minHits", "labeling", "scrub", "sessions", "sources", "eval", "code"];
         return element.EnumerateObject().Select(p => p.Name).FirstOrDefault(n => !known.Contains(n, StringComparer.Ordinal)) is { } name ? Printable(name) : null;
     }
 
