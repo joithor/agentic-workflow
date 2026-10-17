@@ -142,6 +142,20 @@ public sealed class OnyxUpTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_remote_endpoint_is_refused_with_010_before_any_compose_ps_even_when_setup_already_ran()
+    {
+        var rig = new OnyxUpRig();
+        _ = (await rig.Up(Token)).Value;
+        rig.Runtime.Calls.Clear();
+        rig.Runtime.Facts = FakeContainerRuntime.Healthy with { Endpoint = "tcp://10.0.0.5:2375" };
+
+        var error = (await rig.Up(Token)).Error;
+
+        Assert.Equal("SND-ONYX-010", error.Code);
+        Assert.DoesNotContain("Ps", rig.Runtime.Calls, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_second_up_while_the_first_holds_the_lock_is_busy()
     {
         var rig = new OnyxUpRig();
