@@ -246,7 +246,18 @@ step() { # step <installer exit code> -> "<step rc>:<warnings>:<installer calls>
   echo "$rc:$(printf '%s' "$out" | grep -c 'NOT installed'):$(wc -l < "$WORK/calls" | tr -d ' ')"
 }
 check "setup step: a tree refusal (3) warns for each provider and returns 0" "$(step 3)" "0:2:2"
-check "setup step: a publish failure (1) fails the step at once" "$(step 1)" "1:0:1"
+check "setup step: a publish failure (1) fails the step, after the remaining providers were tried" "$(step 1)" "1:0:2"
+# one provider failing does not leave the later ones uninstalled: the first failure's code is returned at the end
+per_provider() { # per_provider <exit code for claude> <exit code for codex> -> "<step rc>:<providers tried>"
+  printf '#!/usr/bin/env bash\necho "$2" >> "%s/calls"\ncase "$2" in claude) exit %s ;; *) exit %s ;; esac\n' "$WORK" "$1" "$2" > "$WORK/fake/scripts/install-meta.sh"
+  : > "$WORK/calls"
+  local rc=0
+  ( source "$DIR/../config/lib/setup-meta-step.sh"; aw_setup_meta_step "$WORK/fake" claude codex ) > /dev/null 2>&1 || rc=$?
+  echo "$rc:$(tr '\n' ',' < "$WORK/calls")"
+}
+check "setup step: the first provider failing still installs the second, and the first code is returned" "$(per_provider 4 0)" "4:claude,codex,"
+check "setup step: the second failing returns its code after the first succeeded" "$(per_provider 0 5)" "5:claude,codex,"
+check "setup step: two failures return the first one's code" "$(per_provider 4 5)" "4:claude,codex,"
 check "setup step: a failure says setup fails at the end and the installed binary may be stale" "$( ( source "$DIR/../config/lib/setup-meta-step.sh"; step 1 > /dev/null; aw_setup_meta_step "$WORK/fake" claude ) 2>&1 | grep -c 'install-meta.sh failed for claude (exit 1); setup goes on and fails at the end')" "1"
 check "setup step: an installer success returns 0, no warning" "$(step 0)" "0:0:2"
 
