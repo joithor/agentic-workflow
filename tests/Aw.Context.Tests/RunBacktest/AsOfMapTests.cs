@@ -125,6 +125,28 @@ public sealed class AsOfMapTests
         Assert.Contains(built.Value.Graph.Nodes, n => n.Key.Kind == NodeKind.Surface);
     }
 
+    private const string FlagSection = ",\"extract\":{\"recognizers\":[{\"kind\":\"flag\",\"glob\":\"src/**/*.ts\",\"pattern\":\"export (?:type|class|function|const) (?<n>[A-Za-z]+)\",\"keyFrom\":\"n\"}]}";
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Backtest_as_of_map_holds_what_a_profile_recognizer_finds_and_a_different_set_misses_the_cache()
+    {
+        await using var world = await BacktestWorld.Start(BacktestWorld.AfterAllCuts);
+        var sample = await SampleOf(world, "SPL-105");
+        var repo = world.Profile.Single(r => r.Name == sample.Repo);
+        var builder = world.Services.GetRequiredService<AsOfMapBuilder>();
+        var ct = TestContext.Current.CancellationToken;
+
+        var plain = (await builder.Build(new AsOfRequest(repo, sample, world.Human()), ct)).Value;
+        var withFlags = (await builder.Build(new AsOfRequest(repo, sample, world.Human(FlagSection)), ct)).Value;
+        var again = (await builder.Build(new AsOfRequest(repo, sample, world.Human(FlagSection)), ct)).Value;
+
+        Assert.DoesNotContain(plain.Graph.Nodes, n => n.Key.Value.StartsWith("surface:flag/", StringComparison.Ordinal));
+        Assert.False(withFlags.Cached);   // the plain run's cached map is not served to a profile with recognizers
+        Assert.Contains(withFlags.Graph.Nodes, n => n.Key.Value.StartsWith("surface:flag/", StringComparison.Ordinal));
+        Assert.True(again.Cached);
+        Assert.Equal(withFlags.Graph.Nodes.Select(n => n.Key.Value), again.Graph.Nodes.Select(n => n.Key.Value), StringComparer.Ordinal);
+    }
+
     private sealed class WriteFailingCache(IEvalStore inner) : IEvalStore
     {
         public ValueTask<Result<string>> WriteReport<T>(EvalReportKind kind, T report, DateTimeOffset at, CancellationToken cancellationToken)

@@ -30,6 +30,13 @@ public static class MapExtractor
         return ExtractedMap.Empty.Plus(new ExtractedMap([.. nodes, .. codeNodes], [.. implements, .. related]));
     }
 
+    /// <summary>Extracts the map with the profile's recognizers added to the built-in table.</summary>
+    /// <param name="repo">The repo.</param>
+    /// <param name="files">The files at the commit.</param>
+    /// <param name="recognizers">The profile's recognizers.</param>
+    /// <returns>The map, and whether a recognizer timed out.</returns>
+    public static MapExtraction Extract(ContextRepoName repo, IReadOnlyList<RepoFile> files, RecognizerSet recognizers) => throw new NotSupportedException();
+
     private static GraphNode Node(ContextRepoName repo, List<(RepoFile File, Found Found)> hits)
     {
         var best = hits.OrderByDescending(h => h.Found.Named).ThenByDescending(h => h.Found.Confidence).First().Found;

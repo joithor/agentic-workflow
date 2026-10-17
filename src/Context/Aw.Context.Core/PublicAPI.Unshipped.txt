@@ -4692,3 +4692,24 @@ Aw.Context.Core.Extract.ProfileRecognizer.Pattern.get -> string!
 Aw.Context.Core.Extract.ProfileRecognizer.ProfileRecognizer(string! kind, string! glob, string! pattern, string! keyFrom) -> void
 static readonly Aw.Context.Core.ContextErrors.RecognizerInvalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Context.Core.ContextErrors.RecognizerOverCap -> Aw.Kernel.ErrorDefinition!
+Aw.Context.Core.Extract.MapExtraction
+Aw.Context.Core.Extract.MapExtraction.Map.get -> Aw.Context.Core.Extract.ExtractedMap!
+Aw.Context.Core.Extract.MapExtraction.TimedOut.get -> bool
+Aw.Context.Core.Extract.RecognizerSet
+Aw.Context.Core.Extract.RecognizerSet.Hash.get -> string!
+Aw.Context.Core.Extract.RecognizerSet.Wants(string! path) -> bool
+static Aw.Context.Core.Extract.MapExtractor.Extract(Aw.Context.Core.Engine.ContextRepoName repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.RepoFile!>! files, Aw.Context.Core.Extract.RecognizerSet! recognizers) -> Aw.Context.Core.Extract.MapExtraction!
+static Aw.Context.Core.Extract.RecognizerSet.From(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.ProfileRecognizer!>! recognizers) -> Aw.Context.Core.Extract.RecognizerSet!
+static Aw.Context.Core.Extract.RecognizerSet.None.get -> Aw.Context.Core.Extract.RecognizerSet!
+static Aw.Context.Core.Eval.Backtest.AsOfMapCache.Key(Aw.Context.Core.Engine.ContextRepoName repo, string! commit, int extractorVersion, bool clustered, Aw.Context.Core.Extract.RecognizerSet! recognizers) -> string!
+Aw.Context.Core.Extract.MapExtraction.<Clone>$() -> Aw.Context.Core.Extract.MapExtraction!
+Aw.Context.Core.Extract.MapExtraction.Deconstruct(out Aw.Context.Core.Extract.ExtractedMap! Map, out bool TimedOut) -> void
+Aw.Context.Core.Extract.MapExtraction.Equals(Aw.Context.Core.Extract.MapExtraction? other) -> bool
+Aw.Context.Core.Extract.MapExtraction.Map.init -> void
+Aw.Context.Core.Extract.MapExtraction.MapExtraction(Aw.Context.Core.Extract.ExtractedMap! Map, bool TimedOut) -> void
+Aw.Context.Core.Extract.MapExtraction.TimedOut.init -> void
+override Aw.Context.Core.Extract.MapExtraction.Equals(object? obj) -> bool
+override Aw.Context.Core.Extract.MapExtraction.GetHashCode() -> int
+override Aw.Context.Core.Extract.MapExtraction.ToString() -> string!
+static Aw.Context.Core.Extract.MapExtraction.operator !=(Aw.Context.Core.Extract.MapExtraction? left, Aw.Context.Core.Extract.MapExtraction? right) -> bool
+static Aw.Context.Core.Extract.MapExtraction.operator ==(Aw.Context.Core.Extract.MapExtraction? left, Aw.Context.Core.Extract.MapExtraction? right) -> bool

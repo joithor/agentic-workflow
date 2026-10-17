@@ -20,13 +20,13 @@ public interface IEvalStore
         where T : class;
 
     /// <summary>Reads a cached as-of extraction.</summary>
-    /// <param name="key">The <see cref="AsOfMapCache.Key"/>.</param>
+    /// <param name="key">The <see cref="AsOfMapCache.Key(Engine.ContextRepoName, string, int, bool, Extract.RecognizerSet)"/>.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The extraction, or null when there is none (or the file doesn't parse).</returns>
     public ValueTask<Result<ExtractedMap?>> ReadMap(string key, CancellationToken cancellationToken);
 
     /// <summary>Caches an as-of extraction.</summary>
-    /// <param name="key">The <see cref="AsOfMapCache.Key"/>.</param>
+    /// <param name="key">The <see cref="AsOfMapCache.Key(Engine.ContextRepoName, string, int, bool, Extract.RecognizerSet)"/>.</param>
     /// <param name="map">The extraction.</param>
     /// <param name="cancellationToken">Cancels the write.</param>
     /// <returns>Unit.</returns>
