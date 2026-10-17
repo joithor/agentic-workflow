@@ -36,6 +36,11 @@ internal sealed class OnyxStackDoctor(IOnyxWorkspace workspace, OnyxFacts facts,
             return workspace.StateIsUnreadable() ? new DoctorCheck(Name, CheckState.Warn, "state file unreadable; `sindri onyx up` rebuilds it", "sindri onyx up") : null;
         }
 
+        if (facts.DockerProblem(cancellationToken) is { } problem)
+        {
+            return NotChecked(problem, facts.Project);   // nothing below is sent to a Docker that isn't usable here
+        }
+
         var containers = facts.Containers(cancellationToken);
         var platform = facts.Platform(cancellationToken);
         if (containers.IsError || platform.IsError)
@@ -47,6 +52,14 @@ internal sealed class OnyxStackDoctor(IOnyxWorkspace workspace, OnyxFacts facts,
             ? new DoctorCheck(Name, CheckState.Warn, "stopped: no Onyx container is running", "sindri onyx up")
             : Failure(containers.Value, platform.Value) ?? Ok(containers.Value);
     }
+
+    // Docker pointing at another machine (010) is never asked; the rest of what stops us is the same as a read that failed.
+    private static DoctorCheck NotChecked(Error problem, ComposeProject project)
+        => problem.Code == SindriErrors.OnyxRemoteDocker.Code
+            ? new DoctorCheck(Name, CheckState.Warn, $"{Lead(problem.Message)}; {Name} not checked", "switch to the local Docker context (`docker context use default`, and unset DOCKER_HOST), then run sindri doctor again")
+            : Unreadable(problem, project);
+
+    private static string Lead(string message) => message.IndexOf(": ", StringComparison.Ordinal) is var at and > 0 ? message[..at] : message;
 
     // Docker not answering (001) and docker answering but a command failing or being cut short (011) are different problems with different fixes.
     private static DoctorCheck Unreadable(Error error, ComposeProject project)

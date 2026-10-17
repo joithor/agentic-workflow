@@ -41,11 +41,6 @@ internal sealed class OnyxDownService(IOnyxWorkspace workspace, OnyxFacts facts,
             return new OnyxDownResponse(WasRunning: false, [], []);   // the fetched files never landed: no project to ask docker about
         }
 
-        if (OnyxPreflight.DockerProblem(runtime.Inspect(cancellationToken)) is { } problem)
-        {
-            return problem;
-        }
-
         // What runs is what docker says this home's project has, whatever state.json recorded: a start that failed halfway leaves containers up too.
         IReadOnlyList<string> warnings = facts.ForeignProjectWarning(workspace.ReadState()) is { } foreign ? [foreign] : [];
         var containers = facts.Containers(cancellationToken);

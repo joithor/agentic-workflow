@@ -20,7 +20,7 @@ internal sealed class OnyxStatusService(IOnyxPinsSource pinsSource, OnyxFacts fa
         }
 
         var setUp = IsSetUp(state, compose.Value);
-        var (running, servingPort) = Serving(setUp && docker.DaemonAnswers, state, cancellationToken);
+        var (running, servingPort) = Serving(setUp, state, cancellationToken);
         var report = OnyxPreflight.Evaluate(docker, host, pins, running ? servingPort : null);
         var onyx = Classify(setUp, running);
         var (url, version) = running ? await Running(report.Port, cancellationToken).ConfigureAwait(false) : (null, null);

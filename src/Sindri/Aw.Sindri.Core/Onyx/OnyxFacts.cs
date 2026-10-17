@@ -9,6 +9,9 @@ namespace Aw.Sindri.Core.Onyx;
 /// <param name="home">The Sindri home.</param>
 public sealed class OnyxFacts(IContainerRuntime runtime, IHostProbes probes, ISindriHome home)
 {
+    // One inspection per instance (registered per scope): every question below is judged against the same answer.
+    private ContainerRuntimeFacts? _docker;
+
     /// <summary>Gets the files' paths under the Sindri home.</summary>
     public OnyxPaths Paths { get; } = OnyxPaths.For(home.Path);
 
@@ -23,7 +26,7 @@ public sealed class OnyxFacts(IContainerRuntime runtime, IHostProbes probes, ISi
     /// <returns>The runtime's facts and the host's.</returns>
     public (ContainerRuntimeFacts Docker, HostFacts Host) Read(int? stickyPort, CancellationToken cancellationToken)
     {
-        var docker = runtime.Inspect(cancellationToken);
+        var docker = Docker(cancellationToken);
         var sticky = stickyPort is >= 1024 and <= 65535 and not OnyxPreflight.PreferredPort ? stickyPort : null;
         var ports = sticky is { } kept
             ? probes.Ports(kept, OnyxPreflight.PreferredPort, OnyxPreflight.FallbackLast)
@@ -37,8 +40,14 @@ public sealed class OnyxFacts(IContainerRuntime runtime, IHostProbes probes, ISi
 
     /// <summary>Reads the Docker server's platform.</summary>
     /// <param name="cancellationToken">Cancels the reading.</param>
-    /// <returns>linux/arm64 or linux/amd64, or the error.</returns>
-    public Result<string> Platform(CancellationToken cancellationToken) => runtime.ServerPlatform(cancellationToken);
+    /// <returns>linux/arm64 or linux/amd64, or the error (also when Docker isn't usable here).</returns>
+    public Result<string> Platform(CancellationToken cancellationToken)
+        => DockerProblem(cancellationToken) is { } problem ? problem : runtime.ServerPlatform(cancellationToken);
+
+    /// <summary>Tells why Docker can't be used here: the one guard every docker or compose command against the daemon goes through (<see cref="Containers"/>, <see cref="Platform"/>), so nothing is sent to a missing CLI, a stopped daemon or a Docker that points at another machine.</summary>
+    /// <param name="cancellationToken">Cancels the inspection (made once per instance).</param>
+    /// <returns>The error (<see cref="OnyxPreflight.DockerProblem"/>), or null when Docker is local and answering.</returns>
+    public Error? DockerProblem(CancellationToken cancellationToken) => OnyxPreflight.DockerProblem(Docker(cancellationToken));
 
     /// <summary>Gets the compose project to act on: always this home's own. A name recorded in state.json is never trusted to point elsewhere (see <see cref="ForeignProjectWarning"/>).</summary>
     public ComposeProject Project => Paths.Project;
@@ -51,8 +60,11 @@ public sealed class OnyxFacts(IContainerRuntime runtime, IHostProbes probes, ISi
 
     /// <summary>Lists the containers of Sindri's Onyx project.</summary>
     /// <param name="cancellationToken">Cancels the reading.</param>
-    /// <returns>The containers, or the error (Docker isn't answering).</returns>
-    public Result<IReadOnlyList<ComposeContainer>> Containers(CancellationToken cancellationToken) => runtime.Ps(Project, cancellationToken);
+    /// <returns>The containers, or the error (Docker isn't usable here, or isn't answering).</returns>
+    public Result<IReadOnlyList<ComposeContainer>> Containers(CancellationToken cancellationToken)
+        => DockerProblem(cancellationToken) is { } problem ? problem : runtime.Ps(Project, cancellationToken);
+
+    private ContainerRuntimeFacts Docker(CancellationToken cancellationToken) => _docker ??= runtime.Inspect(cancellationToken);
 
     /// <summary>Finds the port our own Onyx holds: the one the project's live nginx publishes on 127.0.0.1, whatever state.json says (a start that failed or timed out leaves it up, and a lost state file doesn't make it someone else's). The one reading of it, for `up`, doctor and status.</summary>
     /// <param name="containers">The containers of Sindri's Onyx project.</param>
