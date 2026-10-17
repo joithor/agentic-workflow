@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Context.Core.Engine;
 
 namespace Aw.Context.Core.Results;
@@ -16,6 +17,7 @@ namespace Aw.Context.Core.Results;
 /// <param name="Truncated">True when an item didn't fit the budget and is listed as a reference only.</param>
 /// <param name="Budget">The budget asked and used.</param>
 /// <param name="Cites">The citations, by marker ('C1', 'C2', …).</param>
+/// <param name="Diff">The diff shape's facts, or null for every other shape (left out of JSON).</param>
 public sealed record ContextResult(
     int SchemaVersion,
     QueryId QueryId,
@@ -29,7 +31,8 @@ public sealed record ContextResult(
     IReadOnlyList<DegradedSource> Degraded,
     bool Truncated,
     BudgetUse Budget,
-    IReadOnlyDictionary<string, Citation> Cites)
+    IReadOnlyDictionary<string, Citation> Cites,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] DiffPart? Diff = null)
 {
     /// <summary>The result format this build writes.</summary>
     public const int CurrentSchemaVersion = 1;

@@ -26,4 +26,11 @@ public interface IRepoReader
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The text.</returns>
     public ValueTask<Result<string>> Read(ContextRepo repo, string commit, string path, CancellationToken cancellationToken);
+
+    /// <summary>Lists what a repo changed from the merge base of two commits to the second (the diff shape). Commit contents are never read, only which paths changed and how.</summary>
+    /// <param name="repo">The repo: its name and checkout.</param>
+    /// <param name="range">The two commit shas (7 to 64 lower-case hex characters each; abbreviated ones are expanded in the answer).</param>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The full shas, the merge base and the changed paths (a rename is a deletion plus an addition); SND-CONTEXT-110 when the clone doesn't hold a sha, 111 when the commits share no merge base, 048 when the checkout can't be read.</returns>
+    public ValueTask<Result<RepoChanges>> Changes(ContextRepo repo, DiffRange range, CancellationToken cancellationToken);
 }
