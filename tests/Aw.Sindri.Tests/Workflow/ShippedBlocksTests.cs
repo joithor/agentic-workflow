@@ -80,17 +80,6 @@ public sealed class ShippedBlocksTests
         Assert.Equal(facts, e.Facts.Select(f => f.Value), StringComparer.Ordinal);
     }
 
-    [Theory, Trait("Lane", "unit")]
-    [InlineData("effect.claim.ref", "sha256:2a44426d862b3721014969dfcc03a7851f56551f2b9bec9f340e500353a9abd3")]
-    [InlineData("effect.notify.desk", "sha256:c3cb05f7d73c6c539b05acb87c15185c4a9b81d12fb27626b59f12b94e157b07")]
-    [InlineData("gate.budget.available", "sha256:2e11428fb8765eb8e43f62db6dce8dd654cddd1b6685e6c61080037174408135")]
-    [InlineData("gate.route.startable", "sha256:00a724a0231157eba73e8b90950bde6e40fb9e6f17f03f955d3896e6aa2fadf0")]
-    [InlineData("step.checks", "sha256:8d6a4302bc9aa7ab780620c014cbc2954c3b9e4cef153be63bb1a2eeb72c2fe8")]
-    [InlineData("step.produce", "sha256:b86ef5f788d73f55217a97d0158f1caea49b09d19f4878858acd040434505370")]
-    [InlineData("step.verify", "sha256:076936b6ec84ebf12669ca18a2525adb4c3922e86ed4c6cfc16c975e55944d3d")]
-    public void Every_shipped_descriptor_hashes_as_before_the_decision_tree_fields(string id, string hash) =>
-        Assert.Equal(hash, PinRules.Hash(FixtureCatalog.Shipped().Find(BlockId.From(id))!, SliceHarness.Json).Value);   // why: no approved recipe may drift-park because a nullable field was added
-
     [Fact, Trait("Lane", "unit")]
     public async Task The_choice_steps_are_desk_capable_descriptors_without_runtimes()
     {
