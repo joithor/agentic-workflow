@@ -108,6 +108,7 @@ echo "$*" >> "$STUB_LOG"
 case "$*" in
   "profile validate --json") echo '{"valid":true,"hash":"abcdef0123456789","approved":false}' ;;
   "profile approve abcdef0123456789") IFS= read -r line; echo "typed=$line" >> "$STUB_LOG" ;;
+  "context map import "*) IFS= read -r line; echo "typed=$line" >> "$STUB_LOG"; [ -z "${STUB_FAIL_IMPORT:-}" ] || { echo "SND-AUTH-002 refused" >&2; exit 1; } ;;
   "item add "*) n=$(($(cat "$STUB_LOG.n" 2>/dev/null || echo 0) + 1)); echo "$n" > "$STUB_LOG.n"; echo "added ITM-0$n" ;;
   "workflow start "*)
     for a in "$@"; do case "$a" in fact:*=*) echo "fact ${a%%=*} $(cat "${a#*=}")" >> "$STUB_LOG" ;; esac; done
@@ -267,5 +268,59 @@ for v in "workflows" "workflows --large" "incident start" "incident stop"; do
   # shellcheck disable=SC2086
   AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" $v >/dev/null 2>&1; check "every_workflow_verb_refuses_an_unguarded_home: $v" "$?" "2"
 done
+
+# --- T-F: context up | draft | down (the Context page's data, U9) ---
+C="$TMPDIR/ctx"
+mkdir -p "$C"
+AW_SINDRI_HOME="$C" SINDRI="$STUB" bash "$FIXTURE" up >/dev/null 2>&1
+: > "$STUB_LOG"
+out="$(AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" context up 2>&1)"; check "context up refuses outside a guarded home" "$?" "2"
+contains "the refusal is the prover's" "$out" "sindri-prove:"
+check "the refused context up wrote nothing" "$(ls -A "$WORK/elsewhere")" ""
+for v in draft down; do AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" context $v >/dev/null 2>&1; check "context $v refuses outside a guarded home" "$?" "2"; done
+AW_SINDRI_HOME="$C" bash "$FIXTURE" context >/dev/null 2>&1; check "context needs up, draft or down (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$C" bash "$FIXTURE" context sideways >/dev/null 2>&1; check "context refuses another word (exit 2)" "$?" "2"
+
+: > "$STUB_LOG"
+out="$(AW_SINDRI_HOME="$C" SINDRI="$STUB" bash "$FIXTURE" context up 2>/dev/null)"; check "context up exits 0" "$?" "0"
+check "context up prints the repo name" "$out" "aw-split-panes"
+R="$C/ui-fixture-context/aw-split-panes"
+for f in src/tabs/TabManager.ts src/tabs/TabGroups.ts src/tabs/Pinned.ts src/layout/Grid.ts README.md .env; do
+  check "context up writes $f" "$([ -f "$R/$f" ] && echo yes || echo no)" "yes"
+done
+check "the repo is a git repo on main with one commit" "$(git -C "$R" rev-list --count main 2>/dev/null)" "1"
+check "the repo is clean" "$(git -C "$R" status --porcelain)" ""
+check "the repo's sha is the same on every run (fixed author and date)" "$(git -C "$R" log -1 --format='%an|%aI')" "Fixture Author|2026-07-01T09:00:00+00:00"
+contains "the repo is one of the profile's repos" "$(cat "$C/profile/profile.yaml")" "name: aw-split-panes, path: $R"
+contains "the profile keeps its other keys" "$(cat "$C/profile/profile.yaml")" "heartbeat: { every: 5s }"
+calls="$(tr '\n' ';' < "$STUB_LOG")"
+contains "the changed profile is approved by typing the hash's first six characters" "$calls" "profile approve abcdef0123456789;typed=approve profile abcdef;"
+want="import map $(sha256sum "$ROOT/tests/Aw.Context.Testing/Fixtures/map-tabs.json" | cut -c1-6)"
+contains "the tabs map is imported by typing 'import map' and the file's hash6, under the human pty" "$calls" "context map import $C/ui-fixture-context/tabs-map.json;typed=$want;"
+check "the imported file is the tabs map" "$(cmp "$C/ui-fixture-context/tabs-map.json" "$ROOT/tests/Aw.Context.Testing/Fixtures/map-tabs.json" && echo same)" "same"
+: > "$STUB_LOG"
+AW_SINDRI_HOME="$C" SINDRI="$STUB" bash "$FIXTURE" context up >/dev/null 2>&1; check "a second context up exits 0" "$?" "0"
+check "a second context up adds the repo to the profile once" "$(grep -c 'name: aw-split-panes' "$C/profile/profile.yaml")" "1"
+check "a second context up keeps one commit" "$(git -C "$R" rev-list --count main)" "1"
+absent "a second context up does not approve again" "$(cat "$STUB_LOG")" "profile approve"
+out="$(STUB_FAIL_IMPORT=1 AW_SINDRI_HOME="$C" SINDRI="$STUB" bash "$FIXTURE" context up 2>&1)"; check "a refused import exits non-zero" "$([ "$?" -ne 0 ] && echo yes || echo no)" "yes"
+contains "a refused import carries the CLI's refusal" "$out" "SND-AUTH-002 refused"
+
+: > "$STUB_LOG"
+AW_SINDRI_HOME="$C" SINDRI="$STUB" bash "$FIXTURE" context draft >/dev/null 2>&1; check "context draft exits 0" "$?" "0"
+check "context draft builds the draft: map build as the owner" "$(cat "$STUB_LOG")" "context map build"
+
+: > "$STUB_LOG"
+AW_SINDRI_HOME="$C" SINDRI="$STUB" bash "$FIXTURE" context down >/dev/null 2>&1; check "context down exits 0" "$?" "0"
+check "context down removes the repo and the map copy" "$([ -e "$C/ui-fixture-context" ] && echo present || echo gone)" "gone"
+absent "context down removes the profile entry" "$(cat "$C/profile/profile.yaml")" "aw-split-panes"
+absent "context down leaves no empty repos: key" "$(cat "$C/profile/profile.yaml")" "repos:"
+contains "context down keeps the rest of the profile" "$(cat "$C/profile/profile.yaml")" "heartbeat: { every: 5s }"
+contains "context down approves the changed profile" "$(cat "$STUB_LOG")" "typed=approve profile abcdef"
+before="$(cat "$C/profile/profile.yaml")"; : > "$STUB_LOG"
+AW_SINDRI_HOME="$C" SINDRI="$STUB" bash "$FIXTURE" context down >/dev/null 2>&1; check "context down twice exits 0 (idempotent)" "$?" "0"
+check "the second context down changes nothing" "$(cat "$C/profile/profile.yaml")" "$before"
+check "the second context down approves nothing" "$(cat "$STUB_LOG")" ""
+AW_SINDRI_HOME="$C" SINDRI="$STUB" bash "$FIXTURE" context up >/dev/null 2>&1; check "context up works again after down" "$?" "0"
 
 exit "$fail"
