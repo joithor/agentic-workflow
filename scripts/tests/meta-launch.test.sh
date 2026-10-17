@@ -524,6 +524,49 @@ check "a start lock held by a live process: the lane waits about AW_META_ID_WAIT
 check "the live holder's lock is left alone" "$(readlink "$ids/.reported.lock")" "$holder"
 kill "$p1" "$holder" 2> /dev/null; killstubs; wait 2> /dev/null; unlink "$ids/.reported.lock" 2> /dev/null
 
+# The start lock's takeover of a dead owner: no gap lets a second lane in, and an owner that is not a positive integer is stale.
+# meta-start-lock.sh is sourced in a subshell per taker; its test seam (start_lock_hook) plays the other lanes at the exact
+# points where they could interleave.
+mkdir -p "$WORK/lk"; lk="$WORK/lk/.reported.lock"
+dead="$(sh -c 'echo $$')"   # a pid that has exited
+sleep 60 & live_b=$!
+sleep 60 & live_c=$!
+run_acquire() { # <lane_pid> [hook body]: acquire with no wait at all, prints the exit status
+  ( start_lock="$lk"; lane_pid="$1"; lane=t; AW_META_ID_WAIT=0
+    . "$DIR/meta-start-lock.sh"
+    [ -z "${2:-}" ] || eval "start_lock_hook() { $2; }"
+    acquire_start_lock 2> /dev/null; echo $? )
+}
+reset_lock() { unlink "$lk" 2> /dev/null; rmdir "$lk.takeover" 2> /dev/null; rm -f "$WORK/lk/c"; }
+# two takers of a dead lock: the other one finishes its takeover between our check and ours, and a newcomer tries the gap
+reset_lock; ln -s "$dead" "$lk"
+rc="$(run_acquire 4242 'case "$1" in checked) unlink "$start_lock"; ln -s '"$live_b"' "$start_lock" ;; gap) ln -s '"$live_c"' "$start_lock" && : > '"$WORK/lk/c"' ;; esac')"
+check "takeover: a taker that lost the race leaves the other's live lock alone, and no newcomer gets in" "$rc:$(readlink "$lk"):$(test -e "$WORK/lk/c" && echo newcomer || echo none)" "1:$live_b:none"
+# a newcomer in the gap of a real takeover: exactly one of the two holds the lock
+reset_lock; ln -s "$dead" "$lk"
+rc="$(run_acquire 4242 'case "$1" in gap) ln -s '"$live_c"' "$start_lock" && : > '"$WORK/lk/c"' ;; esac')"
+owner="$(readlink "$lk")"
+if [ -e "$WORK/lk/c" ]; then want="1:$live_c"; else want="0:4242"; fi
+check "takeover: a newcomer in the gap and the taker never both hold the lock" "$rc:$owner" "$want"
+# six lanes taking over one dead lock together: never two in the critical section
+reset_lock; ln -s "$dead" "$lk"; rm -f "$WORK/lk/violations" "$WORK/lk/entered"; rmdir "$WORK/lk/crit" 2> /dev/null
+for _ in 1 2 3 4 5 6; do
+  ( start_lock="$lk"; lane_pid="$(sh -c 'echo $PPID')"; lane=t; AW_META_ID_WAIT=5
+    . "$DIR/meta-start-lock.sh"
+    acquire_start_lock 2> /dev/null || exit 0
+    mkdir "$WORK/lk/crit" 2> /dev/null || echo v >> "$WORK/lk/violations"
+    echo e >> "$WORK/lk/entered"; sleep 0.3; rmdir "$WORK/lk/crit" 2> /dev/null; release_start_lock ) &
+done
+wait $(jobs -p | grep -v -e "^$live_b\$" -e "^$live_c\$") 2> /dev/null
+check "takeover: six lanes take a dead lock over one at a time" "$(wc -l < "$WORK/lk/entered" | tr -d ' '):$(test -e "$WORK/lk/violations" && echo overlap || echo none)" "6:none"
+# an owner that is not a positive integer (0 signals the process group, -1 every process) is stale, never a live holder
+for bad in 0 -1 not-a-pid 12x; do
+  reset_lock; ln -s -- "$bad" "$lk"
+  rc="$(run_acquire 4242)"
+  check "takeover: an owner of '$bad' is stale and taken over" "$rc:$(readlink "$lk")" "0:4242"
+done
+reset_lock; kill "$live_b" "$live_c" 2> /dev/null; wait "$live_b" "$live_c" 2> /dev/null
+
 # The launcher scripts run on macOS's bash 3.2 and BSD tools: no flock, fd-number redirections, BASHPID, mapfile or associative arrays.
 check "the launcher scripts use no flock, exec {fd}, BASHPID, mapfile, readarray or declare -A" "$(grep -n -E 'flock|exec \{[a-z_]+\}|BASHPID|mapfile|readarray|declare -A|\$\{[A-Za-z_]+(,,|\^\^)\}' "$DIR/meta-lane.sh" "$DIR/meta-launch.sh" "$DIR/launcher-lib.sh" "$DIR/meta-team-lib.sh" | grep -v -E '^[^:]+:[0-9]+:[[:space:]]*#' | wc -l | tr -d ' ')" "0"
 
