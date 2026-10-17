@@ -32,6 +32,17 @@ public sealed class BlockRuntimeTests
     }
 
     [Fact]
+    public void A_registered_Step_whose_descriptor_is_not_a_block_one_opens_a_desk_run_like_an_unregistered_one()
+    {
+        var deskTwin = BlockId.From("step.desk.choose");
+        var context = EngineFixture.Context() with { BlockRuntimes = new HashSet<BlockId> { deskTwin } };
+
+        var entered = StateEntry.Enter(EngineFixture.At(_route, "route-evidence-desk"), _route, "route-evidence-desk", context);
+
+        Assert.Equal(StepRuntime.Desk, entered.Frame.Run?.Runtime);
+    }
+
+    [Fact]
     public void A_block_run_has_no_desk_task_or_desk_floor()
     {
         var instance = BlockRun();

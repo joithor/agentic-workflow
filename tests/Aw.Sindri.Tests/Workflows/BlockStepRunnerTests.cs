@@ -3,6 +3,7 @@ using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -22,6 +23,8 @@ public sealed class BlockStepRunnerTests
 {
     private static readonly BlockId _judge = BlockId.From("step.judge.choose");
     private static readonly FactKey _change = FactKey.From("fact:change");
+    private static readonly string[] _choices = ["ui", "api"];
+    private static readonly string[] _factNames = ["fact:change"];
     private static readonly string[] _defaults = ["claude-cli", "codex-cli", "cursor-cli", "rules"];
 
     private readonly InMemoryFactStore _store = new();
@@ -53,7 +56,7 @@ public sealed class BlockStepRunnerTests
     [Fact]
     public async Task A_repo_list_of_rules_stays_rules_when_the_live_file_is_broken()
     {
-        await Approve(Profile(Workflow: null) with { Repos = [new RepoEntry("app", "/a", Workflow: new WorkflowSettings(Judge: new JudgeSettings(Providers: ["rules"])))] });
+        await Approve(Profile(workflow: null) with { Repos = [new RepoEntry("app", "/a", Workflow: new RepoWorkflowSettings(Judge: new JudgeSettings(Providers: ["rules"])))] });
         _profiles.Live = SindriErrors.ProfileInvalid.With("the live file is broken");
 
         _ = await Runner(_profiles).Run(await RunOf("app"), TestContext.Current.CancellationToken);
@@ -113,7 +116,7 @@ public sealed class BlockStepRunnerTests
         Assert.Null(outcome.Outputs);
     }
 
-    private static SindriProfile Profile(WorkflowSettings? Workflow) => new(SindriProfile.CurrentSchemaVersion, "tester", Workflow: Workflow);
+    private static SindriProfile Profile(WorkflowSettings? workflow) => new(SindriProfile.CurrentSchemaVersion, "tester", Workflow: workflow);
 
     private static ProfileHash Hash(char c) => ProfileHash.From(new string(c, 64));
 
@@ -137,11 +140,11 @@ public sealed class BlockStepRunnerTests
     private async Task<BlockStepRun> RunOf(string? repo, WithValue? prompt = null)
     {
         var put = await _store.Put(Encoding.UTF8.GetBytes("Add a button"), TestContext.Current.CancellationToken);
-        var with = new Dictionary<string, WithValue>
+        var with = new Dictionary<string, WithValue>(StringComparer.Ordinal)
         {
             ["prompt"] = prompt ?? new WithValue(JsonSerializer.SerializeToElement("pick"), Fact: null, Profile: null),
-            ["choices"] = new WithValue(JsonSerializer.SerializeToElement(new[] { "ui", "api" }), Fact: null, Profile: null),
-            ["facts"] = new WithValue(JsonSerializer.SerializeToElement(new[] { "fact:change" }), Fact: null, Profile: null),
+            ["choices"] = new WithValue(JsonSerializer.SerializeToElement(_choices), Fact: null, Profile: null),
+            ["facts"] = new WithValue(JsonSerializer.SerializeToElement(_factNames), Fact: null, Profile: null),
             ["providers"] = new WithValue(Literal: null, Fact: null, Profile: "workflow.judge.providers"),
         };
         return new BlockStepRun("T-1/workflow.x/1", "route-evidence", "1.1", _judge, with, new Dictionary<FactKey, FactValue> { [_change] = put.Value }, repo);

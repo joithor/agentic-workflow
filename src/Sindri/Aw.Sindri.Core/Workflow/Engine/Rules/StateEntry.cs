@@ -1,4 +1,3 @@
-using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Recipes;
@@ -64,7 +63,7 @@ internal static class StateEntry
             return null;
         }
 
-        if (context.BlockRuntimes.Contains(step.Use) && context.Catalog.Find(step.Use) is { Runtime: BlockRuntime.Block })
+        if (context.RunsAsBlock(step.Use))
         {
             return new OpenRun(RunToken.For(entry, 1), StepRuntime.Block, Launch: null, Task: null);   // DT spec §8.2: the engine runs it, no desk task
         }

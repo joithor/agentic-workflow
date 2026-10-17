@@ -99,7 +99,7 @@ public sealed class BlockRuntimeInterpreterTests : IDisposable
             var view = await WorkflowsHarness.Until(handle, static v => v.Run is not null && v.State == "route-evidence");
             await WaitFor(() => fake.Runs > 0, ct);
             var output = new FactValue("fact:sha256:" + new string('e', 64), new string('e', 64), HeadSha: null);
-            var report = new StepCompleted(actor, view.Run!, OutcomeName.From("ui"), new Dictionary<FactKey, FactValue> { [FactKey.From("fact:decision")] = output }, Tokens: 0, StepRuntime.Desk, new string('f', 64));
+            var report = new StepCompleted(actor, view.Run!.Value, OutcomeName.From("ui"), new Dictionary<FactKey, FactValue> { [FactKey.From("fact:decision")] = output }, Tokens: 0, StepRuntime.Desk, new string('f', 64));
 
             var first = await Assert.ThrowsAsync<WorkflowUpdateFailedException>(() => handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(new string('a', 32))).WaitAsync(TimeSpan.FromSeconds(20), ct));
             var second = await Assert.ThrowsAsync<WorkflowUpdateFailedException>(() => handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(new string('b', 32))).WaitAsync(TimeSpan.FromSeconds(20), ct));
