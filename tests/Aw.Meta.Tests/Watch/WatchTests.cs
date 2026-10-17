@@ -220,6 +220,24 @@ public sealed class WatchTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_poll_goes_on_when_the_reservation_cannot_be_kept()
+    {
+        await _world.Ready();
+        for (var n = 0; n < 3; n++)
+        {
+            await _world.Receive("m" + n.ToString(CultureInfo.InvariantCulture), "t1-api", string.Create(CultureInfo.InvariantCulture, $"ready #{190 + n} 079c2541"));
+        }
+
+        _world.Heavy.FailWrites = true;   // depth 3 wants one slot, so the write is reached
+        Script([List(Pr(190, "OPEN", "aaa1111")), List(Pr(190, "OPEN", "aaa1111"), Pr(191, "OPEN", "bbb2222"))]);
+
+        _ = await Watch(TimeSpan.FromSeconds(240));
+
+        Assert.Equal(0, _world.Heavy.Writes);
+        Assert.Contains(_lines, l => l.Contains("#191", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Nearly_full_swap_counts_as_low_memory_even_with_memory_to_spare()
     {
         await _world.Ready();

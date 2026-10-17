@@ -481,6 +481,7 @@ Aw.Meta.Core.Health.HeavySlots.HeavySlots(int Cap, int Reserve, int Depth, Syste
 Aw.Meta.Core.Health.HeavySlots.Line() -> string!
 Aw.Meta.Core.Health.HeavySlots.Reserve.get -> int
 Aw.Meta.Core.Health.HeavySlots.Reserve.init -> void
+Aw.Meta.Core.Health.HeavySlots.ScriptDepth.get -> int
 Aw.Meta.Core.Health.HeavySlots.Stale.get -> bool
 Aw.Meta.Core.Health.HeavySlots.Stale.init -> void
 Aw.Meta.Core.Health.HostResources
