@@ -29,19 +29,6 @@ public static class ForgeInfrastructureServiceCollectionExtensions
             .AddSingleton<IForgeSeed>(provider => provider.GetRequiredService<FileForge>());
     }
 
-    /// <summary>Adds the in-memory forge, whose world lives and dies with the process (proofs and in-process composition).</summary>
-    /// <param name="services">The service collection.</param>
-    /// <param name="hosts">The allowed hosts (workflow.forge.hosts).</param>
-    /// <returns>The same collection.</returns>
-    public static IServiceCollection AddForgeMemoryInfrastructure(this IServiceCollection services, ForgeHosts hosts)
-    {
-        ArgumentNullException.ThrowIfNull(hosts);
-        return services
-            .AddSingleton(_ => new MemoryForge(hosts, Redactor.Default))
-            .AddSingleton<IForge>(provider => provider.GetRequiredService<MemoryForge>())
-            .AddSingleton<IForgeSeed>(provider => provider.GetRequiredService<MemoryForge>());
-    }
-
     /// <summary>Adds the GitHub adapter (workflow.forge.adapter: github).</summary>
     /// <param name="services">The service collection.</param>
     /// <param name="environment">Reads an environment variable.</param>

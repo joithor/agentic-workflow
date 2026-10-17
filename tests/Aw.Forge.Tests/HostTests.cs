@@ -1,5 +1,6 @@
+using Aw.Forge.Core.Ports;
+using Aw.Forge.Core.Refs;
 using Aw.Forge.Host;
-using Aw.Kernel.Services;
 using Aw.Kernel.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -12,21 +13,38 @@ public sealed class HostTests
     private static readonly string _stateRoot = Path.Combine(Path.GetTempPath(), "aw-forge-di-test");
 
     [Fact, Trait("Lane", "unit")]
-    public void Every_registered_service_resolves_in_a_scope()
+    public void Every_registered_service_resolves_in_a_validated_container()
     {
         var services = Compose();
-        var serviceTypes = services
-            .Select(d => d.ServiceType)
-            .Where(t => t.IsGenericType && t.GetGenericTypeDefinition() == typeof(IService<,>))
-            .ToList();
+        var serviceTypes = services.Select(d => d.ServiceType).Where(t => !t.ContainsGenericParameters).Distinct().ToList();
 
         using var provider = services.BuildServiceProvider(
             new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
         _ = provider.GetRequiredService<TelemetryRuntime>();   // so the container disposes it, as Program.cs does
         using var scope = provider.CreateScope();
 
-        Assert.NotEmpty(serviceTypes);
+        Assert.Contains(typeof(IForge), serviceTypes);
+        Assert.Contains(typeof(IForgeSeed), serviceTypes);
         Assert.All(serviceTypes, t => Assert.NotNull(scope.ServiceProvider.GetRequiredService(t)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_file_adapter_is_the_default_and_github_is_chosen_by_the_environment()
+    {
+        using var file = Compose().BuildServiceProvider();
+        using var github = Compose(adapter: "github").BuildServiceProvider();
+
+        Assert.Equal(ForgeKind.File, file.GetRequiredService<IForge>().Kind);
+        Assert.Equal(ForgeKind.GitHub, github.GetRequiredService<IForge>().Kind);
+        Assert.NotNull(file.GetService<IForgeSeed>());
+        Assert.Null(github.GetService<IForgeSeed>());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_bad_adapter_or_credential_is_refused_at_composition()
+    {
+        _ = Assert.Throws<InvalidOperationException>(() => Compose(adapter: "gitlab"));
+        _ = Assert.Throws<InvalidOperationException>(() => Compose(adapter: "github", credential: "not-a-credential"));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -56,9 +74,16 @@ public sealed class HostTests
         Assert.True(logger.IsEnabled(LogLevel.Warning));
     }
 
-    private static IServiceCollection Compose(string? logLevel = null)
+    private static IServiceCollection Compose(string? logLevel = null, string? adapter = null, string? credential = null)
         => Composition.Compose(
             new ServiceCollection(),
-            name => name switch { "AW_STATE_DIR" => _stateRoot, "AW_LOG_LEVEL" => logLevel, _ => null },
+            name => name switch
+            {
+                "AW_STATE_DIR" => _stateRoot,
+                "AW_LOG_LEVEL" => logLevel,
+                "AW_FORGE_ADAPTER" => adapter,
+                "AW_FORGE_CREDENTIAL" => credential,
+                _ => null,
+            },
             new FakeTimeProvider());
 }

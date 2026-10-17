@@ -14,7 +14,6 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Forge/Aw.Forge.Core/Aw.Forge.Core.csproj" />
-    <ProjectReference Include="../../src/Forge/Aw.Forge.Features/Aw.Forge.Features.csproj" />
     <ProjectReference Include="../../src/Forge/Aw.Forge.Infrastructure/Aw.Forge.Infrastructure.csproj" />
     <ProjectReference Include="../../src/Forge/Aw.Forge.Host/Aw.Forge.Host.csproj" />
     <ProjectReference Include="../Aw.Forge.Testing/Aw.Forge.Testing.csproj" />

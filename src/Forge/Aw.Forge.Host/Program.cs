@@ -4,7 +4,18 @@ using Aw.Kernel.Json;
 using Aw.Kernel.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 
-var services = Composition.Compose(new ServiceCollection(), Environment.GetEnvironmentVariable, TimeProvider.System);
+ServiceCollection services;
+try
+{
+    services = [];
+    _ = Composition.Compose(services, Environment.GetEnvironmentVariable, TimeProvider.System);
+}
+catch (InvalidOperationException ex)
+{
+    Console.Error.WriteLine($"error: {ex.Message}");
+    return 2;
+}
+
 var json = AwJson.CreateOptions(ForgeJsonContext.Default);   // the one Kernel JSON profile
 var provider = services.BuildServiceProvider();   // validation runs in HostTests, not at CLI startup
 await using (provider.ConfigureAwait(false))

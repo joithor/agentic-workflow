@@ -1,6 +1,8 @@
-namespace Aw.Forge.Infrastructure.World;
+using Aw.Forge.Infrastructure.World;
 
-/// <summary>The world in memory, for the fake.</summary>
+namespace Aw.Forge.Testing;
+
+/// <summary>The fake forge's world: in memory, gone with the process.</summary>
 internal sealed class MemoryWorldStore : IWorldStore
 {
     private readonly Lock _gate = new();

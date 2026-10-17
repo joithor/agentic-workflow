@@ -7,8 +7,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- [Fact] for the contract bases; like Aw.Kernel.Testing they throw ContractViolationException, not Assert. -->
+    <PackageReference Include="xunit.v3.extensibility.core" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../../src/Forge/Aw.Forge.Core/Aw.Forge.Core.csproj" />
-    <ProjectReference Include="../../src/Forge/Aw.Forge.Features/Aw.Forge.Features.csproj" />
+    <ProjectReference Include="../../src/Forge/Aw.Forge.Infrastructure/Aw.Forge.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Redaction/Aw.Redaction/Aw.Redaction.csproj" />
     <ProjectReference Include="../Aw.Kernel.Testing/Aw.Kernel.Testing.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- FakeForge and FileForgeUnderTest derive from Infrastructure's internal WorldForge. -->
+    <InternalsVisibleTo Include="Aw.Forge.Tests" />
   </ItemGroup>
 </Project>
