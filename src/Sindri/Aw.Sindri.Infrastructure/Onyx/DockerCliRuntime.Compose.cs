@@ -18,8 +18,6 @@ internal sealed partial class DockerCliRuntime
     private static readonly TimeSpan _shortTimeout = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan _stopTimeout = TimeSpan.FromMinutes(2);
 
-    // Compose reads its own COMPOSE_* variables and any variable that is also a key of the .env from the shell before the .env, so the child gets none of them: the rendered .env is authoritative.
-    private static readonly IReadOnlyDictionary<string, string?> _composeEnvironment = ComposeProject.StrippedVariables.ToDictionary(static name => name, static _ => (string?)null, StringComparer.Ordinal);
     private static readonly JsonSerializerOptions _wire = AwJson.CreateOptions(ComposeWireJsonContext.Default);
 
     /// <inheritdoc />
@@ -108,8 +106,41 @@ internal sealed partial class DockerCliRuntime
                 tail.Add(line);
                 progress?.Invoke(line);
             },
-            _composeEnvironment), cancellationToken);
+            ComposeEnvironment(project)), cancellationToken);
         return Failed(run, tail, call, cancellationToken) is { } error ? error : run.Output;
+    }
+
+    // Compose reads its own COMPOSE_* variables and any variable that is also a key of the .env from the shell before the .env, so the child gets none of them: the rendered
+    // .env is authoritative. Every key the file holds is unset (the shipped env.template has more than the six Sindri writes), plus the COMPOSE_* settings.
+    private static Dictionary<string, string?> ComposeEnvironment(ComposeProject project)
+    {
+        var environment = ComposeProject.StrippedVariables.ToDictionary(static name => name, static _ => (string?)null, StringComparer.Ordinal);
+        foreach (var key in EnvKeys(project.EnvFile))
+        {
+            environment[key] = null;
+        }
+
+        return environment;
+    }
+
+    private static IEnumerable<string> EnvKeys(string envFile)
+    {
+        string[] lines;
+        try
+        {
+            lines = File.Exists(envFile) ? File.ReadAllLines(envFile) : [];
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return [];   // the compose call reports an unreadable env file itself
+        }
+
+        return lines
+            .Select(static l => l.TrimStart())
+            .Where(static l => l.Length > 0 && l[0] != '#')
+            .Select(static l => l.StartsWith("export ", StringComparison.Ordinal) ? l["export ".Length..].TrimStart() : l)
+            .Select(static l => l.Split('=', 2)[0].TrimEnd())
+            .Where(static k => k.Length > 0 && !char.IsAsciiDigit(k[0]) && k.All(static c => char.IsAsciiLetterOrDigit(c) || c == '_'));
     }
 
     // The error a finished run stands for, or null when it succeeded. Missing and an unreachable daemon are 001; a command that failed is 011 with what it printed last.
