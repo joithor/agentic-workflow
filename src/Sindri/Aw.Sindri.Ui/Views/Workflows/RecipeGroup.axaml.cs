@@ -30,5 +30,7 @@ internal sealed partial class RecipeGroup : UserControl
         }
     }
 
+    private void OnRecipe(object? sender, RoutedEventArgs e) => Group?.OpenRecipe();
+
     private void OnToggle(object? sender, RoutedEventArgs e) => RaiseEvent(new RoutedEventArgs(ToggleEvent, this));
 }

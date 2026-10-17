@@ -26,4 +26,7 @@ internal enum FrameFocus
 
     /// <summary>The expanded state's child pointer, which the user came back from.</summary>
     ChildPointer,
+
+    /// <summary>The header's Recipe link (Back from the recipe sheet it opened).</summary>
+    Recipe,
 }

@@ -8,6 +8,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Tests.GetInstance;
 using Aw.Sindri.Tests.Items;
 
 namespace Aw.Sindri.Tests.NeedsYou;
@@ -29,6 +30,46 @@ public sealed class ParkRowsTests
         Assert.Equal(("park:" + WorkflowInstanceId.Of(_address).Value, AnswerKind.Grant, ActionId.From("ApplyCommand:answer-grant"), Urgency.Pulse), (row.Id.Value, row.AnswerKind, row.PrimaryAction, row.Urgency));
         Assert.Equal(("the item", ItemQueryHarness.Id('1'), "sindri workflow answer " + _address.Value + " --grant 1"), (row.Title, row.Item, row.Cli));
         Assert.Equal(_since, row.Since);
+        Assert.Null(row.Via);   // a park the engine can answer itself is no pointer
+    }
+
+    [Theory]
+    [InlineData("parked-no-progress-child")]
+    [InlineData("escalated-child")]
+    [InlineData("parked-mirrored-needs-answer")]
+    [InlineData("parked-mirrored-rounds")]
+    [InlineData("parked-mirrored-timeout")]
+    [InlineData("parked-mirrored-no-runtime")]
+    [InlineData("parked-mirrored-budget")]
+    [InlineData("parked-mirrored-spec-conflict")]
+    [InlineData("parked-mirrored-needs-answer-wait")]
+    public void A_mirrored_park_row_carries_the_same_action_and_cli_as_the_status_answer_line(string name)
+    {
+        var instance = StatusCases.Instance(name);
+        var suspension = instance.Suspension!;
+        var summary = new SuspensionSummary(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors?.Value);
+
+        var row = NeedsYouRows.ForPark(Item(), instance.Address, summary, _since, _plain);
+
+        var line = StatusCases.View(name).AnswerLine!;
+        Assert.Equal((line.ActionId, line.Cli, line.Kind, line.Via), (row.PrimaryAction, row.Cli, row.AnswerKind, row.Via));
+    }
+
+    [Theory]
+    [InlineData("parked-mirrored-needs-answer")]
+    [InlineData("parked-mirrored-needs-answer-wait")]
+    [InlineData("parked-mirrored-budget")]
+    [InlineData("parked-mirrored-spec-conflict")]
+    public void A_mirrored_park_the_child_decides_points_its_row_at_the_child(string name)
+    {
+        var suspension = StatusCases.Instance(name).Suspension!;
+        var summary = new SuspensionSummary(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors?.Value);
+
+        var row = NeedsYouRows.ForPark(Item(), _address, summary, _since, _plain);
+
+        Assert.EndsWith("<the child's answer>", row.Cli, StringComparison.Ordinal);
+        Assert.Equal(ActionId.From("ApplyCommand:answer-text"), row.PrimaryAction);
+        Assert.Equal("child", row.Via);
     }
 
     [Fact]

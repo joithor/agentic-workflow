@@ -124,7 +124,8 @@ public sealed class WorkflowViewStatusWordsTests
         var wait = Assert.Single(statuses, s => s.Answer is { Kind: AnswerKind.Resume });
         Assert.EndsWith("--resume [--text <answer>]", wait.Answer!.Cli, StringComparison.Ordinal);
         Assert.Equal(ActionClass.Desk, wait.Answer.Class);
-        Assert.All(statuses.Where(s => s.Child is null && s.Header.State == "parked"), s => Assert.DoesNotContain(") in ", s.Next, StringComparison.Ordinal));
+        // a child pointer with no child listed still says "the child"; the rest name none
+        Assert.All(statuses.Where(s => s.Child is null && s.Answer?.Via is null && s.Header.State == "parked"), s => Assert.DoesNotContain(") in ", s.Next, StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]
