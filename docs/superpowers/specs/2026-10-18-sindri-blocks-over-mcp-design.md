@@ -1,6 +1,6 @@
-# Sindri blocks over MCP: two generic tools, `list_tools` and `execute_tool_call`
+# Sindri blocks over MCP: two generic tools, `sindri_list_tools` and `sindri_execute_tool_call`
 
-**Status:** design, draft for the owner's read (not approved) · **Date:** 2026-10-18 · **Owner decisions:** 2026-10-17
+**Status:** design; every owner choice answered (2026-10-18); the owner's read of the whole spec pending · **Date:** 2026-10-18 · **Owner decisions:** 2026-10-17
 (the two-tool shape, below), 2026-10-18 (sessions outside a Step may call blocks, C3) · **Amends:** the API surface spec `2026-10-10-sindri-api-surface-design.md` (API), §4.1, §4.2,
 ARCH-CQRS-001, §8 and §9; the workflow engine spec `2026-10-10-sindri-workflow-engine-design.md` (ENG), §2, §3.4 and §6.5; the session
 launcher spec `2026-10-15-sindri-session-launcher-design.md` (LCH), the per-launch MCP config · **Lanes:** the API lane
@@ -10,11 +10,11 @@ record) ·
 
 The owner decided (2026-10-17): an agent session reaches Sindri's blocks through **two generic MCP tools**, not one
 tool per block.
-- `list_tools` returns the blocks this Step may call, each with its input schema.
-- `execute_tool_call` asks Sindri to run one named block under the Step's policy and records the call on the Step.
+- `sindri_list_tools` returns the blocks this Step may call, each with its input schema.
+- `sindri_execute_tool_call` asks Sindri to run one named block under the Step's policy and records the call on the Step.
 
 So the MCP tool list, and the tokens it costs every session, stay fixed as blocks are added. A session sees a new block
-through `list_tools` only when a recipe lets its Step call it.
+through `sindri_list_tools` only when a recipe lets its Step call it.
 
 ## Terms
 
@@ -24,7 +24,7 @@ through `list_tools` only when a recipe lets its Step call it.
 - **Plain session:** every other session that reaches `/sindri/mcp` with the repo header: the owner's own Claude Code
   in the repo, or a session opened by `OpenItem` with no run. It may call blocks too (owner, 2026-10-18), from a
   narrower set and with no Step to record against (§A.6, §B.5).
-- **Call:** one `execute_tool_call`, named by its call id. Its state is `running` until it ends, and it ends `ok` (the
+- **Call:** one `sindri_execute_tool_call`, named by its call id. Its state is `running` until it ends, and it ends `ok` (the
   block ran and passed or answered), `failed` (the block ran and failed, timed out, or was cut off) or `refused`
   (Sindri didn't run it; the session got a tool error).
 - **Calls** is the word the app and the docs use for these, everywhere. "Evidence" stays the evidence packs,
@@ -37,24 +37,24 @@ through `list_tools` only when a recipe lets its Step call it.
 ### A.1 The two tools
 
 They join API §8's table after `sindri_job` and follow its rules: the repo comes from `X-Sindri-Repo`, every call is
-stamped `session`, and errors are tool errors carrying the SND code. Their names are choice C2. The text below uses the
-owner's literal names.
+stamped `session`, and errors are tool errors carrying the SND code. Their names are the owner's C2 decision,
+with the `sindri_` prefix of Sindri's other tools.
 
 | Tool | Arguments | Handler | Kind |
 |---|---|---|---|
-| `list_tools` | none | `ListCallableBlocks` (also `GET /workflow/instances/{id}/runs/{token}/tools` and `GET /tools?repo=R`, §A.4) | query (`readOnlyHint`) |
-| `execute_tool_call` | `name`, `arguments` (an object), `callId?`; plain sessions also `ref?`, `itemId?` (§A.6) | `ExecuteBlockCall`: **MCP only**, no HTTP route (§A.2) | `block-call`, a new session-only action class (§A.4) |
+| `sindri_list_tools` | none | `ListCallableBlocks` (also `GET /workflow/instances/{id}/runs/{token}/tools` and `GET /tools?repo=R`, §A.4) | query (`readOnlyHint`) |
+| `sindri_execute_tool_call` | `name`, `arguments` (an object), `callId?`; plain sessions also `ref?`, `itemId?` (§A.6) | `ExecuteBlockCall`: **MCP only**, no HTTP route (§A.2) | `block-call`, a new session-only action class (§A.4) |
 
 **What the agent is told.**
-- The `list_tools` description says: "The Sindri blocks you may run here, with their inputs. Call this before
-  `execute_tool_call`."
-- The `execute_tool_call` description says: "Run one Sindri block from `list_tools`. A long block answers `running`;
+- The `sindri_list_tools` description says: "The Sindri blocks you may run here, with their inputs. Call this before
+  `sindri_execute_tool_call`."
+- The `sindri_execute_tool_call` description says: "Run one Sindri block from `sindri_list_tools`. A long block answers `running`;
   send the `callId` from that answer again to get its result. Outside a Step, pass `ref`, the full commit sha to run
   against. Every call is recorded."
 - A Step's seed (UI §6.2's template) gains one line, but only when the state lists tools: "Sindri blocks you can run
-  are listed by `list_tools`."
+  are listed by `sindri_list_tools`."
 
-**`list_tools`** answers `{ scope, run?, tools, reason? }`:
+**`sindri_list_tools`** answers `{ scope, run?, tools, reason? }`:
 - `scope` is `step` or `plain`, and `run` is the run's address for a Step session.
 - `tools` is `[{ name, descriptorHash, description, inputSchema, mode, timeoutSeconds, readsCode }]`, ordered by name.
   - `name` is the block id.
@@ -73,7 +73,7 @@ owner's literal names.
   (every listed block needs repo config that isn't committed on the base, such as `checks.json`, §B.1). A single
   block left out for that reason, or for `needs-recipe-pin` (§A.6), is named in `omitted: [{ name, reason }]`, so the agent and the owner see why.
 
-**`execute_tool_call`** answers
+**`sindri_execute_tool_call`** answers
 `{ callId, scope, state, waiting?, busy?, commit?, outcome?, reason?, result?, reasons?, truncated?, spent?, ledgerSeq?, startedAt, durationMs? }`:
 - `state` is `running` or `ended`. `outcome` (`ok` or `failed`), `durationMs` and `ledgerSeq` are set once it
   has ended.
@@ -97,11 +97,11 @@ owner's literal names.
      when a Step session sends `ref` or `itemId`.
   2. **The stored-call lookup comes first.** A `callId` already stored in this scope is answered from the store
      (below) and nothing else is checked: a poll never spends budget, never meets `-006`, and still works after
-     `list_tools` has emptied.
+     `sindri_list_tools` has emptied.
   3. The run: for a Step session, the run is open and is the instance's open attempt (`SND-TOOL-404`, which wins over
-     the empty list's `-001`), and if C5 is "no", not taken over (`SND-AUTH-003`).
+     the empty list's `-001`). A takeover doesn't refuse a call (C5): it runs and is marked `duringTakeover`.
   4. Size: `arguments` are at most 16 KiB of JSON. Otherwise `SND-TOOL-002`.
-  5. `name` must be in this session's `list_tools`. Otherwise `SND-TOOL-001`.
+  5. `name` must be in this session's `sindri_list_tools`. Otherwise `SND-TOOL-001`.
   6. `arguments` must validate against its `inputSchema`. Otherwise `SND-TOOL-002`, with each JSON-pointer path and
      message in the error's `violations` (A.3). The validator is built in Sindri from `ParameterSpec`'s closed type
      set; no JSON Schema library is added.
@@ -156,8 +156,8 @@ P8 keeps only `X-Sindri-Repo` of the `X-Sindri-*` headers on MCP, and the launch
   by mistake, not against forging.
 - **Server checks for a Step session:** the run is the instance's open attempt on the agent runtime, and its repo is
   the header's repo (`SND-TOOL-404` otherwise; where the engine's "not the open attempt" and 404 overlap, the engine
-  decides and it's 404). Takeover is choice C5.
-- **No HTTP route for `execute_tool_call` in v1.** An HTTP route would take the run from its URL, and any `session`
+  decides and it's 404). During a takeover calls still run (C5).
+- **No HTTP route for `sindri_execute_tool_call` in v1.** An HTTP route would take the run from its URL, and any `session`
   curl could then reach another run by mistake. The MCP endpoint calls the `ExecuteBlockCall` service through the
   same chain as every command (gate, audit, authorization, validation). This is ARCH-CQRS-001's fifth carve-out, an
   MCP-only command; the list stays one place.
@@ -178,14 +178,13 @@ P8 keeps only `X-Sindri-Repo` of the `X-Sindri-*` headers on MCP, and the launch
 
 | Code | Kind (status) | When | Message (fix) |
 |---|---|---|---|
-| `SND-TOOL-001` | Invalid (400) | The named block isn't in this session's `list_tools` | "`<name>` isn't a block you can run here (fix: call `list_tools`)" |
+| `SND-TOOL-001` | Invalid (400) | The named block isn't in this session's `sindri_list_tools` | "`<name>` isn't a block you can run here (fix: call `sindri_list_tools`)" |
 | `SND-TOOL-002` | Invalid (400) | `arguments` are over 16 KiB or don't validate against the block's `inputSchema` (extension `violations: [{path, message}]`); a plain call to a `readsCode` block without `ref`, or with a `ref` that isn't a commit in the repo | "The arguments for `<name>` don't fit its inputs (fix: see `violations`; outside a Step, pass `ref` as a full commit sha)" |
 | `SND-TOOL-004` | Forbidden (403) | This run's call budget is spent (`workflow.calls.perRun`, §B.4). It doesn't refill within the run | "This Step has used its `<n>` calls (fix: finish the Step, or raise `workflow.calls.perRun` in the profile)" |
 | `SND-TOOL-006` | Conflict (409) | A call is already running for this run, or the repo already runs `workflow.calls.plainConcurrent` plain calls (default 2), §B.4 | "Another call is still running (fix: wait for it to end, then call again; your own running call is polled with its `callId`)" |
 | `SND-TOOL-404` | NotFound (404) | No open agent run at `X-Sindri-Run` in this repo | "No open Step run `<run>` in `<repo>` (fix: this Step has ended; there is nothing left to call or report)" |
 | `SND-TOOL-409` | Conflict (409) | The same `callId` came with a different `name`, `arguments`, `ref` or `itemId` | "Call `<callId>` was sent with other inputs (fix: use a new `callId`)" |
 | `SND-ITEM-404` | NotFound (404) | A plain call's `itemId` isn't an item of this repo (the existing code) | its existing message |
-| `SND-AUTH-003` | Forbidden (403) | Only if C5 is "no": the instance is taken over. Its message for MCP callers names the takeover, not the launch secret | "The Step is taken over by a human (fix: wait for handback)" |
 
 - **The MCP error carries extensions.** `McpToolError` gains an optional `Extensions` object, written only when set,
   so a code's extension members (API §9: cleaned, arrays cut at 100) reach the agent. Today only the code and the
@@ -221,7 +220,7 @@ P8 keeps only `X-Sindri-Repo` of the `X-Sindri-*` headers on MCP, and the launch
 - **Step report:** `CompleteStep` (`sindri workflow complete --run`) gains the optional `calls: [<callId>, ...]` of
   §B.3. The API binds it and passes it through; the engine validates it. The CLI flag is `--call <id>`
   (repeatable). The request golden changes.
-- **Goldens:** every read route, the `list_tools` answer for each scope and reason, the `execute_tool_call` answer
+- **Goldens:** every read route, the `sindri_list_tools` answer for each scope and reason, the `sindri_execute_tool_call` answer
   for `ended`/`ok`, `ended`/`failed`, `running`, `truncated` and each error code, and the tools/list golden with the
   two tools after `sindri_job`.
 - **Telemetry** (`Aw.Kernel.Telemetry`): one span per call, `sindri.block_call`, with the block, the scope, the outcome
@@ -260,7 +259,7 @@ P8 keeps only `X-Sindri-Repo` of the `X-Sindri-*` headers on MCP, and the launch
 
 API §8's proof shape, with a launched Step session in place of `claude -p`. A recipe with one state lists two
 callable blocks, one `sync` and one `async`. The journey:
-1. `list_tools` shows exactly those two, with their descriptions, schemas and modes.
+1. `sindri_list_tools` shows exactly those two, with their descriptions, schemas and modes.
 2. A bad argument gets `SND-TOOL-002`, and the agent sees its `violations` path.
 3. A good `sync` call answers `ended`/`ok`, and its `ledgerSeq` is in `workflow events`.
 4. The same `callId` again runs nothing (the block's own counter is unchanged), and the same `callId` with other
@@ -268,7 +267,7 @@ callable blocks, one `sync` and one `async`. The journey:
 5. The `async` call answers `running`, the run's calls route lists it running, and polling the same `callId` ends it.
    (BU-1's proof shows the same in the app.)
 6. A step report citing both call ids is accepted, and one citing an unknown id is refused.
-7. With a repo-local `sindri` server registered too, the Step session reaches `sindri-step` (`list_tools` says
+7. With a repo-local `sindri` server registered too, the Step session reaches `sindri-step` (`sindri_list_tools` says
    `scope: step`), its `mcp__sindri__*` tools are denied, and serena is still listed among its MCP servers.
 8. A plain session in the same repo (no run header) gets every callable block (`scope: plain`), a `Network` one included. A call without `ref` to a
    `readsCode` block is refused; with `ref` it runs, answers the `commit`, and is a `session.tool-called` event on
@@ -287,7 +286,7 @@ C6). The engine side is §B.5.
   included. Everything below is the owner's treatment.
 - **Bound to the repo only.** No run header. MCP is stateless and Claude Code sends no session id, so "the session"
   is just `caller: session` plus the repo: the cap and the record are per repo.
-- **`list_tools` for a plain session** is every Callable block (§B.5), Network and Budget ones included; only the
+- **`sindri_list_tools` for a plain session** is every Callable block (§B.5), Network and Budget ones included; only the
   owner's optional `workflow.tools.plain` list narrows it. `scope: plain`. A block with a required parameter that
   has no default and can only be pinned in a recipe is left out with `omitted` reason `needs-recipe-pin`.
 - **High priority** (C6). An owner's call takes its heavy slot ahead of merge trains, transition gates, Step calls and
@@ -298,7 +297,7 @@ C6). The engine side is §B.5.
 - **Sensitivity** (owner, 2026-10-18, C10 option (b)): an owner's call is handled as an agent's call is, and marked as
   the owner's (`caller: owner` on its events and in the app). Its result is scrubbed as every result is and kept
   30 days.
-- **`execute_tool_call`** takes an optional `itemId` and `ref`:
+- **`sindri_execute_tool_call`** takes an optional `itemId` and `ref`:
   - `itemId`: the item the call is about. The call shows on its Timeline as "plain call, not proof" (choice C8).
   - `ref`: the full 40-hex sha of the commit the block runs against, in a scratch checkout Sindri makes and removes
     (choice C7). It is required for a block that `readsCode`, because the registered repo's HEAD is rarely what a
@@ -327,8 +326,8 @@ list of failed reasons are §A.1's; §B cites them and never restates them.
 - **The descriptor opts in.** `BlockDescriptor` gains these fields, each written only when set, so every existing
   descriptor hashes as before (like `HumanOnly`):
   - `Callable` (`bool?`).
-  - `Description` (`string?`), Sindri's own one-line text, which `list_tools` serves (§A.1).
-  - `ReadsCode` (`bool?`, written only when true): the block runs against a checkout. `list_tools` shows it as
+  - `Description` (`string?`), Sindri's own one-line text, which `sindri_list_tools` serves (§A.1).
+  - `ReadsCode` (`bool?`, written only when true): the block runs against a checkout. `sindri_list_tools` shows it as
     `readsCode`, a plain call to it must pass `ref` (§A.1 check 7, §A.6), and its answers carry `commit` (§A.1).
   - `MaxDuration`, from DT-J2 (draft PR #306, not merged yet). The catalog test checks `descriptor.MaxDuration`
     itself, never `BlockLimits`' 2-minute fallback.
@@ -376,7 +375,7 @@ list of failed reasons are §A.1's; §B cites them and never restates them.
 | `RCP-TOOL-004` | A required parameter that isn't session-settable has no pinned value and no default, or a pin names a parameter the block doesn't have, or a pin sets a capability field to anything but a literal or `{ profile }` |
 | `RCP-TOOL-005` | A `ReadsCode` block is named in a transition's `gates:`. v1 builds no checkout for a transition gate (B.2, "A called gate does not stand in") |
 
-- **`list_tools` is computed, not stored.** `ListCallableBlocks` returns, for an open agent run, the state's `tools:`
+- **`sindri_list_tools` is computed, not stored.** `ListCallableBlocks` returns, for an open agent run, the state's `tools:`
   entries whose block is Callable in the running build, ordered by id.
   - Each entry carries `mode`: `sync` when `MaxDuration` ≤ 30 s, otherwise `async` (§A.1).
   - An `EnumSource` parameter's `enum` is filled in `inputSchema` at that moment, from the run's `checks.json` copy
@@ -464,7 +463,7 @@ list of failed reasons are §A.1's; §B cites them and never restates them.
   3. The Update's validator refuses before anything enters history, from the workflow's run call state. Each
      refusal is a typed result that the API maps to §A.3, so no new `SND-WF` code is needed:
      - the run is not the instance's open attempt, or its Step isn't on the agent runtime: `SND-TOOL-404`;
-     - the block is not in `list_tools`: `SND-TOOL-001`;
+     - the block is not in `sindri_list_tools`: `SND-TOOL-001`;
      - another call of this run is in flight: `SND-TOOL-006` (one call in flight per run, B.4);
      - the budget is spent: `SND-TOOL-004`.
   4. The handler runs the `MarkCallStarted` local activity. It updates the row's `started` (the row stays
@@ -491,7 +490,7 @@ list of failed reasons are §A.1's; §B cites them and never restates them.
       the phase's Steps share one folder (DTC4): a call from one Step then waits for another Step's call.
     - The agent's own build doesn't take that lock in v1. The heavy wrapper lives on the box, outside the repo, so it
       can't change through a reviewed PR.
-    - While a call holds the lock, `list_tools` and the answers carry `busy` (§A.1).
+    - While a call holds the lock, `sindri_list_tools` and the answers carry `busy` (§A.1).
     - Making the wrapper take the same lock is a follow-up. It is done once the wrapper is versioned in the repo.
     - Time spent waiting on either lock is slot wait (`waiting: heavy-lock`, §A.1's timing rule).
 - **Restarts (R1-13).** A single-attempt activity is not resumed. When the host restarts, the activity's heartbeat
@@ -633,7 +632,7 @@ handled exactly like a Step's calls (C10: the same visibility, the same reads), 
     input fill means nothing as a call.
   - A required parameter that the session can't set and that has no default must be pinned by a recipe's
     `{block, with}` or by `workflow.tools.plain`'s `{block, with}`. A plain session has no recipe, so without a pin in
-    `workflow.tools.plain` the block can't be called: `list_tools` names it in `omitted` with reason
+    `workflow.tools.plain` the block can't be called: `sindri_list_tools` names it in `omitted` with reason
     `needs-recipe-pin`.
   - `workflow.tools.plain: [<block id> | { block, with }]` is optional, at box level or under a `repos[]` entry. It
     supplies pins and can narrow the list. `ProfileRules` checks each entry, as RCP-TOOL-001 and RCP-TOOL-004 do.
@@ -696,46 +695,28 @@ handled exactly like a Step's calls (C10: the same visibility, the same reads), 
     refusal cap equals its default budget of 50). Past it, one `session.tool-refusals-capped` event for that day,
     so the ledger stays bounded.
 
-## C. Owner choices (plain words)
+## C. Owner decisions (2026-10-18)
 
-**Answered.** C3 (2026-10-18): "my own sessions should be able to use sindri block tools". Your sessions outside a
-Step get the block tools (§A.6, §B.5). C6 (2026-10-18): "my sessions can use every block. no matter what. if i'm
-steering it's high priority and sensitivity": every callable block, network and money-spending ones included, at high
-priority. C10 (2026-10-18): (b), the owner's calls are handled as agent calls and marked as the owner's. C11
-(2026-10-18): "sindri can know if the session is owned by a sindri workflow. otherwise it's me". C7 and C8 are the
-details still open.
+Every choice was put to the owner in plain words; these are the answers. C3, C6 and C11 are quoted; the rest are
+"the other questions are rest as recommended".
 
-1. **How Sindri knows which Step a call belongs to.** The Step's id goes in that session's tool config, with no
-   secret, so anything in the session could read it. This loosens your 2026-10-16 rule that only the repo header
-   travels over MCP. *Recommended:* yes. The other way is sending the launch secret over MCP, which you ruled out.
-2. **Tool names.** Exactly `list_tools` and `execute_tool_call`, or `sindri_list_tools` and
-   `sindri_execute_tool_call` to match Sindri's other tools. *Recommended:* the `sindri_` names, because some agent
-   CLIs show tools without the server's name, and a bare `list_tools` could be mistaken for the agent's own.
-3. *(answered, above)*
-4. **Refused calls** (wrong block name, bad arguments, over the limit). *Recommended:* record them too, as a short
-   entry with no result, so a session that keeps retrying until something passes is visible. Failed calls are
-   always recorded.
-5. **While you've taken a Step over.** Can block calls still run from that session, whether you or the agent makes
-   them? *Recommended:* yes. They're recorded and marked "during takeover", and they can't be cited as the Step's
-   proof. Otherwise the tools switch off exactly when you join the agent.
-6. *(answered, above)*
-7. **What your own session's block runs against.** A commit your session names (by its full id), in a scratch copy Sindri makes and
-   throws away, or your session's own folder, uncommitted changes included? *Recommended:* the named commit in a
-   scratch copy. A test run writes build output, and the scratch copy keeps that out of your working folder and the
-   shared checkout. The session commits first and passes the commit, and every answer says which commit ran. Sindri
-   can't see which folder your session is in, so "your own folder" would need the session to send its path.
-8. **What your own session's calls count for.** *Recommended:* they're logged (repo, block, outcome, result) and
-   kept 30 days, but they never count as proof for a work item or a Step, even when they name an item. Later, if
-   you want, a Step could adopt one as proof (not in v1).
-9. **What an agent's Step block call tests.** When an agent's Step runs a block such as the tests, should it test the
-   agent's working folder as it is, uncommitted edits included, or a clean copy of its last commit? *Recommended:*
-   the folder as it is. It is Sindri's own working folder for that phase of the item, shared by the phase's Steps
-   and never yours. A call takes a lock on it, the agent is told not to build there while a call runs, and each call
-   records exactly which code it saw (the commit, a fingerprint of the working tree, whether there were uncommitted
-   edits, and whether the folder changed during the call).
-10. *(answered: (b), owner, 2026-10-18; §A.6)*
-11. *(answered, owner, 2026-10-18: "sindri can know if the session is owned by a sindri workflow. otherwise it's me";
-    §A.6)*
+1. **Binding a call to its Step:** the Step's id travels in that session's tool settings (`X-Sindri-Run`), with no
+   secret. This loosens the 2026-10-16 rule that only the repo header rides MCP (§A.2).
+2. **Tool names:** `sindri_list_tools` and `sindri_execute_tool_call`.
+3. **Sessions outside a Step get the block tools:** "my own sessions should be able to use sindri block tools"
+   (§A.6, §B.5).
+4. **Refused calls are recorded** as short entries with no result (§A.3, §B.3).
+5. **During a takeover**, calls still run, are marked `duringTakeover`, and never count as the Step's proof.
+6. **Every block for the owner's sessions, at high priority:** "my sessions can use every block. no matter what. if
+   i'm steering it's high priority and sensitivity" (§A.6, §B.5).
+7. **What the owner's call runs against:** a commit named by its full id, in a scratch copy Sindri makes and throws
+   away; every answer names the commit.
+8. **What the owner's calls count for:** logged and kept 30 days, never proof for an item or a Step.
+9. **What a Step's call tests:** the Step's working folder as it is (Sindri's own folder for that phase of the item),
+   locked during the call, with the exact code it saw recorded.
+10. **Sensitivity:** (b). The owner's calls are handled as agent calls are, marked `caller: owner`.
+11. **Who is the owner:** "sindri can know if the session is owned by a sindri workflow. otherwise it's me". Only a
+   session with `X-Sindri-Run` is a workflow's; every other session is the owner's, team lanes included.
 
 ## D. Phases
 
@@ -744,7 +725,7 @@ Contract first, so the two lanes build in parallel.
 | Phase | Lane | Holds | Waits on | Docs it updates |
 |---|---|---|---|---|
 | **BM-0** | engine | The contract, red: `Callable`, `Description`, `ReadsCode` and the `ParameterSpec` fields (`EnumSource` among them); `tools:` with the RCP-TOOL-001..005 fixtures; `BlockContext` and `GateContext.Checkout`; `IBlockCallStore`, `IBlockCallLog`, the request and response records for `ListCallableBlocks` and `ExecuteBlockCall`, with stub services; the `*.tool-started` and `*.tool-called` records; the typed refusals | P8 (the agent runtime), DT-J2 (`MaxDuration`; draft PR #306, not merged), the owner's C2 answer (the tool names) | none |
-| **BM-1** | engine | The validator rows; the catalog test; `gate.tests.green`, `checks.json` read from the base (`fact:change.base`, else the default branch), `needs-repo-config`, `schemas/checks.schema.json`, a `sindri doctor` check that validates every registered repo's `checks.json` and names a repo that has none, and the `deps.yaml` file edge for it (`node scripts/check-deps.mjs`); `list_tools` with its enum sources and `omitted`; the `block_calls` and `block_call_bodies` migration; the run call state in `RecipeWorkflow`; the `block-call` Update, `MarkCallStarted` and `RunBlockCall` (the runner), with the events' idempotency keys; the heavy slot through `IHeavySlots` with its wait ceiling, the `High` priority for plain calls, the box cap file, the memory guard (never skipped), meta's reserve, the `heavy-owner-waiting` count and the cap − 1 limit on plain calls; the commit, tree, dirty and `changedDuringCall` record; the per-folder lock (calls only); the restart sweep (rows, scratch worktrees, scratch `TMPDIR`s); the environment base and denylist; the bodies and the 30-day sweep; the budget and concurrency keys; `calls:` validation; `BlockCallRunner` for plain calls (`caller: owner`), `BlockContext.Spend` and `spent`; `workflow.review-loop`'s `fix` `tools:` and the recipe test that keeps it through DTC4. Tests: unit (filtering, refusals, schema building, enum sources, path confinement, `invalid-argument`, the denylist, `ref` checking, the filter as one argv value, the plain pin rule); integration (an Update through the time-skipping server, single flight, cancel on run end, takeover per C5, the restart sweep, a Step call in a dirty folder, a folder edited during a call, a slot-wait timeout, a plain call in a scratch worktree, a waiting plain call beating a waiting Step call and a waiting wrapper job, plain calls never holding the last slot, a `Budget` block's `spent` with no run) | BM-0; meta's wrapper change (the wrapper reads `heavy-owner-waiting` like `heavy-meta-reserve`, B.5), owned by meta and landed on the box, before BM-1's priority test can pass against wrapper jobs | `docs/csharp/sindri-workflow.md` (`tools:`, RCP-TOOL rows, a "Block calls" section), `docs/csharp/sindri-profile.md` (the keys), `docs/csharp/sindri.md` (the events, the tables, the doctor check), a `checks.json` reference in `docs/csharp/` (targets come from the base) |
+| **BM-1** | engine | The validator rows; the catalog test; `gate.tests.green`, `checks.json` read from the base (`fact:change.base`, else the default branch), `needs-repo-config`, `schemas/checks.schema.json`, a `sindri doctor` check that validates every registered repo's `checks.json` and names a repo that has none, and the `deps.yaml` file edge for it (`node scripts/check-deps.mjs`); `sindri_list_tools` with its enum sources and `omitted`; the `block_calls` and `block_call_bodies` migration; the run call state in `RecipeWorkflow`; the `block-call` Update, `MarkCallStarted` and `RunBlockCall` (the runner), with the events' idempotency keys; the heavy slot through `IHeavySlots` with its wait ceiling, the `High` priority for plain calls, the box cap file, the memory guard (never skipped), meta's reserve, the `heavy-owner-waiting` count and the cap − 1 limit on plain calls; the commit, tree, dirty and `changedDuringCall` record; the per-folder lock (calls only); the restart sweep (rows, scratch worktrees, scratch `TMPDIR`s); the environment base and denylist; the bodies and the 30-day sweep; the budget and concurrency keys; `calls:` validation; `BlockCallRunner` for plain calls (`caller: owner`), `BlockContext.Spend` and `spent`; `workflow.review-loop`'s `fix` `tools:` and the recipe test that keeps it through DTC4. Tests: unit (filtering, refusals, schema building, enum sources, path confinement, `invalid-argument`, the denylist, `ref` checking, the filter as one argv value, the plain pin rule); integration (an Update through the time-skipping server, single flight, cancel on run end, takeover per C5, the restart sweep, a Step call in a dirty folder, a folder edited during a call, a slot-wait timeout, a plain call in a scratch worktree, a waiting plain call beating a waiting Step call and a waiting wrapper job, plain calls never holding the last slot, a `Budget` block's `spent` with no run) | BM-0; meta's wrapper change (the wrapper reads `heavy-owner-waiting` like `heavy-meta-reserve`, B.5), owned by meta and landed on the box, before BM-1's priority test can pass against wrapper jobs | `docs/csharp/sindri-workflow.md` (`tools:`, RCP-TOOL rows, a "Block calls" section), `docs/csharp/sindri-profile.md` (the keys), `docs/csharp/sindri.md` (the events, the tables, the doctor check), a `checks.json` reference in `docs/csharp/` (targets come from the base) |
 | **BA-1** | api | §A: the two MCP tools, the routes, `X-Sindri-Run` and the launcher's per-launch MCP form change, schema validation, the stored-call lookup, the claim and the 409 check, the refusal recording, the catalog rows, the goldens. Built against BM-0's records and stubs, so it starts the day BM-0 lands. Its gate also runs `Aw.Sindri.Ui.Tests`, which pins the catalog rows | BM-0 | §A's list |
 | **BA-2** | api, with engine | §A.5's proof end to end, with a real launched Step session and a plain session | BM-1, BA-1 | the proof log |
 | **BU-1** | ui | The calls on a Step (cited, uncited, waiting, running), the plain calls (§A.4), and the app steps of §A.5's proof | BM-1, BA-1 | `docs/csharp/sindri-ui.md` |
