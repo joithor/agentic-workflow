@@ -52,18 +52,16 @@ public sealed class WorkflowsStripViewModelTests
         Assert.Equal((WorkflowsStripViewModel.Cap, true, Labels.MoreRows(_openAddresses.Length - WorkflowsStripViewModel.Cap)), (strip.Rows.Count, strip.HasMore, strip.MoreText));
     }
 
-    // A cancelled root reads like a done one but its state need not be a terminal cell of the recipe: the chip is the engine's word for it.
+    // The server decides what is open (the strip sends the page's query); "… N more" reads the served counts.open, not the rows sent.
     [Fact]
-    public void N_more_counts_open_roots_only_and_cancelled_rows_stay_off_the_strip()
+    public void N_more_reads_counts_open_not_the_rows_sent()
     {
         var root = FixtureInstances.Root;
-        var done = root.Instances.First(r => !FixtureInstances.IsOpen(r));
-        var cancelled = new[] { done with { Address = "ITM-CANCEL1/triage-alert/1", State = "cancelled" }, done with { Address = "ITM-CANCEL2/triage-alert/1", State = "cancelled" } };
-        var strip = Strip(root with { Instances = [.. root.Instances.Where(FixtureInstances.IsOpen), .. cancelled] });
+        var open = root.Instances.Where(FixtureInstances.IsOpen).Take(2).ToList();
+        var strip = Strip(root with { Instances = open, Counts = root.Counts with { Open = 9 } });
         strip.SetNeedsYouShown(0);
 
-        Assert.DoesNotContain(strip.Rows, r => r.Address.StartsWith("ITM-CANCEL", StringComparison.Ordinal));
-        Assert.Equal((true, Labels.MoreRows(root.Counts.Open - strip.Rows.Count)), (strip.HasMore, strip.MoreText));
+        Assert.Equal((open.Count, true, Labels.MoreRows(9 - open.Count)), (strip.Rows.Count, strip.HasMore, strip.MoreText));
     }
 
     [Fact]

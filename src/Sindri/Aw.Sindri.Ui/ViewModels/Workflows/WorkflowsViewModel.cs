@@ -83,6 +83,9 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
     /// <summary>The subject the list is narrowed to; null for all.</summary>
     public string? SubjectFilter { get; private set => Set(ref field, value); }
 
+    /// <summary>How many lists this page has drawn: the page's own reads, which the strip's identical query can't stand in for.</summary>
+    internal int Drawn { get; private set; }
+
     /// <summary>Re-reads the list (on connect and on every event).</summary>
     /// <param name="url">The API's base URL.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
@@ -174,6 +177,7 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
 
     private void Show(InstanceList list)
     {
+        Drawn++;
         var before = WalkAddresses();
         IsUnreadable = false;
         OnChanged(nameof(UnreadableText));

@@ -12,11 +12,8 @@ internal sealed partial class FakeSindriApi
     private int _instancesCalls;
     private readonly List<InstanceQuery> _instanceQueries = [];
 
-    /// <summary>Every instance-list query made, in order: which reader made a call is told by its query (the Workflows page asks Root and Open; the strip asks Root).</summary>
+    /// <summary>Every instance-list query made, in order: the Workflows page and the strip send the same root, open query, so a query can't tell which reader made a call: count the page's reads on the page (WorkflowsViewModel.Drawn).</summary>
     public IReadOnlyList<InstanceQuery> InstanceQueries { get { lock (_instanceQueries) { return [.. _instanceQueries]; } } }
-
-    /// <summary>How many times the Workflows page's list was read (the root, open query).</summary>
-    public int WorkflowsListReads => InstanceQueries.Count(q => q is { Root: true, Open: true, Recipe: null, Subject: null });
 
     /// <summary>How many times the instance list was read.</summary>
     public int InstancesCalls => Volatile.Read(ref _instancesCalls);

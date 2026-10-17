@@ -43,11 +43,11 @@ public sealed class ShellWorkflowsTests : FrameHost
     {
         var (window, shell) = await Connected(s => s.Workflows.Groups.Count > 0);
         shell.GoTo(PageId.Workflows);
-        var reads = Server.WorkflowsListReads;
+        var reads = shell.Workflows.Drawn;
 
         Server.Push(A.Event(80, "workflow.started"));
 
-        await Until(window, () => Server.WorkflowsListReads > reads, "the Workflows list was not read again");
+        await Until(window, () => shell.Workflows.Drawn > reads, "the Workflows list was not read again");
     });
 
     [Fact]
@@ -64,10 +64,10 @@ public sealed class ShellWorkflowsTests : FrameHost
         scroll.Offset = new Avalonia.Vector(0, 40);
         Settle(window);
         Assert.True(scroll.Offset.Y > 0, "the page must be scrolled for the check to mean anything");
-        var (focused, offset, reads) = (window.FocusManager?.GetFocusedElement(), scroll.Offset, Server.WorkflowsListReads);
+        var (focused, offset, reads) = (window.FocusManager?.GetFocusedElement(), scroll.Offset, shell.Workflows.Drawn);
 
         Server.Push(A.Event(81, "workflow.started"));
-        await Until(window, () => Server.WorkflowsListReads > reads, "the Workflows list was not read again");
+        await Until(window, () => shell.Workflows.Drawn > reads, "the Workflows list was not read again");
         Settle(window);
 
         Assert.Same(focused, window.FocusManager?.GetFocusedElement());
