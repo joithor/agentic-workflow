@@ -55,8 +55,9 @@ internal sealed record BacktestLine(RunContextBacktestRequest Request, bool Deta
         DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var date) ? date : null;
 
     // A date alone ('2026-09-30') names the whole day: the window ends at its last tick, so the issues created that day are in. A full timestamp is the instant it says.
+    // The last representable day has no next midnight to count back from: it is refused (null) like any other value that names no window.
     private static DateTimeOffset? Until(string text) =>
         DateOnly.TryParseExact(text, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var day)
-            ? new DateTimeOffset(day.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).AddTicks(-1)
+            ? day == DateOnly.MaxValue ? null : new DateTimeOffset(day.AddDays(1).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero).AddTicks(-1)
             : Date(text);
 }
