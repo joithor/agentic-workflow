@@ -318,4 +318,44 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.True(promoted.Status == HttpStatusCode.OK, promoted.Body);
         Assert.NotNull(recorded.Value);
     }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task EvalMap_route_answers_numbers_and_refuses_sessions_020()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+
+        var human = await host.Http.Ask(Get("/sindri/context/eval/map", Terminal(host)));
+        var session = await host.Http.Ask(Get("/sindri/context/eval/map", Session()));
+
+        Assert.Equal(HttpStatusCode.OK, human.Status);
+        var run = Json(human.Body);
+        Assert.Equal(1, run.GetProperty("report").GetProperty("schemaVersion").GetInt32());
+        Assert.True(run.GetProperty("report").TryGetProperty("nodePrecision", out _));
+        Assert.StartsWith("map", Path.GetFileName(run.GetProperty("path").GetString()), StringComparison.Ordinal);
+        Assert.Contains(Path.Combine("eval", "map"), run.GetProperty("path").GetString(), StringComparison.Ordinal);
+        Assert.Equal("SND-CONTEXT-020", session.Code);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task ContextPurge_service_applies_eval_ttl()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+        var made = Json((await host.Http.Ask(Get("/sindri/context/eval/map", Terminal(host)))).Body).GetProperty("path").GetString()!;
+        var fresh = made.Replace("map-", "map-fresh-", StringComparison.Ordinal);
+        File.Copy(made, fresh);
+        var now = Clock(host).GetUtcNow().UtcDateTime;   // the host runs on a fake clock
+        File.SetLastWriteTimeUtc(made, now.AddDays(-100));
+        File.SetLastWriteTimeUtc(fresh, now);
+        await using var scope = host.App.Services.CreateAsyncScope();
+        var service = scope.ServiceProvider.GetServices<Core.Scheduling.IScheduledService>().Single(s => s.Identity().Value == "context-purge");
+        var grant = host.App.Services.GetRequiredService<HeldLease>().Current!;   // why: the started host holds the lease
+
+        var ran = await service.Run(new Core.Scheduling.ScheduledRun(grant, Clock(host).GetUtcNow()), TestContext.Current.CancellationToken);
+
+        Assert.True(ran.IsSuccess);
+        Assert.False(File.Exists(made));
+        Assert.True(File.Exists(fresh));
+    }
 }

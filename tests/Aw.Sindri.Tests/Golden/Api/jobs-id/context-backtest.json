@@ -1,0 +1,84 @@
+{
+  "id": "JOB-00000000000000000000000000000001",
+  "kind": "RunContextBacktest",
+  "key": "backtest",
+  "item": null,
+  "repo": null,
+  "service": null,
+  "state": "succeeded",
+  "startedBy": "service:host",
+  "startedAt": "2026-01-01T00:00:00.0000000Z",
+  "endedAt": "2026-01-01T00:00:00.0000000Z",
+  "progress": [
+    {
+      "round": 1,
+      "line": "corpus: 5 samples",
+      "at": "2026-01-01T00:00:00.0000000Z"
+    },
+    {
+      "round": 2,
+      "line": "arm graph 5/5",
+      "at": "2026-01-01T00:00:00.0000000Z"
+    }
+  ],
+  "rounds": 2,
+  "summary": "5 samples, brief+graph, owner decision needed (small sample)",
+  "code": null,
+  "result": {
+    "samples": 5,
+    "smallSample": true,
+    "leftOut": 1,
+    "arms": [
+      {
+        "arm": "brief",
+        "notAvailable": null,
+        "overall": "owner decision needed (small sample)",
+        "leaky": false,
+        "score": {
+          "samples": 5,
+          "nodeRecall": 0.5,
+          "nodePrecision": 0.4,
+          "fileRecallAt20": 0.3,
+          "leakyShare": 1,
+          "tokens": 0
+        }
+      },
+      {
+        "arm": "graph",
+        "notAvailable": null,
+        "overall": "owner decision needed (small sample)",
+        "leaky": false,
+        "score": {
+          "samples": 5,
+          "nodeRecall": 0,
+          "nodePrecision": null,
+          "fileRecallAt20": 0,
+          "leakyShare": 1,
+          "tokens": 0
+        }
+      },
+      {
+        "arm": "linear",
+        "notAvailable": "S-6",
+        "overall": null,
+        "leaky": false,
+        "score": null
+      }
+    ],
+    "passLine": "owner decision needed (small sample)",
+    "report": "<home>/context/eval/backtest/20260101T000000Z.json",
+    "degraded": [
+      "clusters unavailable: 1 of 5 sample maps were built without clusters, so the map-reading arms ran on thinner maps (fix: install graphify, or sindri doctor)"
+    ]
+  },
+  "cancelledBy": null,
+  "actions": [],
+  "cli": null,
+  "asOf": {
+    "cursor": 8,
+    "ledgerHead": 8,
+    "projectedAt": "2026-01-01T00:00:00.0000000Z",
+    "rebuilding": false,
+    "stalled": false
+  }
+}
