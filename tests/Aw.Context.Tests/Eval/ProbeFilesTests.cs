@@ -5,6 +5,7 @@ using Aw.Context.Infrastructure.Store;
 using Aw.Context.Testing.Fixtures;
 using Aw.Context.Tests.Map;
 using Aw.Kernel;
+using TempGitRepo = Aw.Context.Tests.Infrastructure.TempGitRepo;
 
 namespace Aw.Context.Tests.Eval;
 
@@ -27,7 +28,7 @@ public sealed class ProbeFilesTests : IDisposable
     [Fact]
     public async Task The_fixture_probe_file_reads_with_its_hash_and_a_bad_missing_or_worktree_file_is_refused()
     {
-        var reader = new ProbeFileReader(_settings, EvalJson.Options);
+        var reader = new ProbeFileReader(_settings);
         var good = Place("probes.json", SplitPanesFixture.ReadText("probes.json"));
         var bad = Place("bad.json", """{"probes":[{"id":"a","question":"q","expect":{},"extra":1}]}""");
         var repo = Path.Combine(_home.Root, "repo");
@@ -51,7 +52,7 @@ public sealed class ProbeFilesTests : IDisposable
     [Fact]
     public async Task An_unknown_key_is_SND_CONTEXT_035_at_its_key_path_without_the_parser_s_type_names()
     {
-        var reader = new ProbeFileReader(_settings, EvalJson.Options);
+        var reader = new ProbeFileReader(_settings);
         var bad = Place("unknown.json", """{"probes":[{"id":"a","question":"q","expect":{"nodez":[]}}]}""");
 
         var error = (await reader.Read(bad, None)).Error;
@@ -64,7 +65,7 @@ public sealed class ProbeFilesTests : IDisposable
     [Fact]
     public async Task A_report_is_written_0600_in_a_0700_folder_and_the_baseline_is_the_newest_of_the_same_file()
     {
-        var store = new FileProbeReportStore(_settings, EvalJson.Options);
+        var store = new FileProbeReportStore(_settings);
         var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
 
         var first = await store.Write(Report("hash-a", 0.4, at), at, None);
@@ -84,9 +85,22 @@ public sealed class ProbeFilesTests : IDisposable
     }
 
     [Fact]
+    public async Task A_report_is_refused_with_005_inside_a_git_worktree_and_nothing_is_written()
+    {
+        using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["a.txt"] = "a" });
+        var inside = new ContextStoreSettings(Path.Combine(repo.Path, "ctx"));
+        var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
+
+        var written = await new FileProbeReportStore(inside).Write(Report("hash-a", 0.4, at), at, None);
+
+        Assert.Equal(ContextErrors.PathInWorktree.Code, written.Error.Code);
+        Assert.False(Directory.Exists(Path.Combine(repo.Path, "ctx")));
+    }
+
+    [Fact]
     public async Task The_baseline_is_the_newest_complete_run_that_did_not_regress()
     {
-        var store = new FileProbeReportStore(_settings, EvalJson.Options);
+        var store = new FileProbeReportStore(_settings);
         var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
         _ = await store.Write(Report("hash-a", 0.6, at), at, None);
         _ = await store.Write(Report("hash-a", 0.2, at.AddMinutes(1)) with { Regressed = true }, at.AddMinutes(1), None);
@@ -101,7 +115,7 @@ public sealed class ProbeFilesTests : IDisposable
     [Fact]
     public async Task A_file_that_is_not_JSON_among_the_reports_is_skipped_and_the_rest_still_read()
     {
-        var store = new FileProbeReportStore(_settings, EvalJson.Options);
+        var store = new FileProbeReportStore(_settings);
         var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
         _ = await store.Write(Report("hash-a", 0.6, at), at, None);
         await File.WriteAllTextAsync(Path.Combine(_settings.ProbesDirectory, "probes-20991231T000000000Z.json"), "not json", None);
@@ -114,7 +128,7 @@ public sealed class ProbeFilesTests : IDisposable
     [Fact]
     public async Task A_report_with_both_the_baseline_and_the_previous_key_keeps_the_baseline()
     {
-        var store = new FileProbeReportStore(_settings, EvalJson.Options);
+        var store = new FileProbeReportStore(_settings);
         var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
         _ = await store.Write(Report("hash-a", 0.6, at) with { Baseline = new ProbeTotals(0.5, 1.0, 1, at.AddDays(-1)) }, at, None);
         var written = Directory.EnumerateFiles(_settings.ProbesDirectory).Single();
@@ -129,7 +143,7 @@ public sealed class ProbeFilesTests : IDisposable
     [Fact]
     public async Task A_report_written_before_the_rename_still_reads_with_its_previous_totals_as_the_baseline()
     {
-        var store = new FileProbeReportStore(_settings, EvalJson.Options);
+        var store = new FileProbeReportStore(_settings);
         var at = new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero);
         _ = await store.Write(Report("hash-a", 0.6, at) with { Baseline = new ProbeTotals(0.5, 1.0, 1, at.AddDays(-1)) }, at, None);
         var written = Directory.EnumerateFiles(_settings.ProbesDirectory).Single();
@@ -145,7 +159,7 @@ public sealed class ProbeFilesTests : IDisposable
     [Fact]
     public async Task A_regressed_run_then_an_identical_rerun_is_SND_CONTEXT_038_both_times()
     {
-        var store = new FileProbeReportStore(_settings, EvalJson.Options);
+        var store = new FileProbeReportStore(_settings);
         var clock = new Microsoft.Extensions.Time.Testing.FakeTimeProvider(new DateTimeOffset(2026, 10, 14, 9, 0, 0, TimeSpan.Zero));
         var service = new Features.EvalProbes.EvalProbesService(new OneFile(), store, clock);
         async Task<ProbeReport> Run(bool good)
