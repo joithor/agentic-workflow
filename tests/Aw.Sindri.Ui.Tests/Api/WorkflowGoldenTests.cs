@@ -190,6 +190,20 @@ public sealed class WorkflowGoldenTests
         Assert.Equal(GoldenFiles.Api("workflow-recipe", "not-found"), refused.Body);
     }
 
+    [Theory]
+    [InlineData(8, true)]
+    [InlineData(12, true)]
+    [InlineData(7, false)]
+    public void A_recipe_asked_for_by_a_prefix_of_its_hash_is_served_when_the_prefix_has_eight_digits(int digits, bool served)
+    {
+        var id = WorkflowAnswers.NamedRecipeGoldens.Values.First();
+        var own = (string)JsonNode.Parse(GoldenFiles.Api("workflow-recipe", id))!["hash"]!; // why: a recipe golden carries its hash
+        var hex = own["sha256:".Length..];
+
+        Assert.Equal(served, WorkflowAnswers.Recipe(id, hex[..digits]).Status == HttpStatusCode.OK);
+        Assert.Equal(served, WorkflowAnswers.Recipe(id, "sha256:" + hex[..digits]).Status == HttpStatusCode.OK);
+    }
+
     [Fact]
     public void Unknown_fact_type_reads_as_payload()
     {

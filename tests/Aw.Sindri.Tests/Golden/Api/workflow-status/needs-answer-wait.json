@@ -28,7 +28,7 @@
       "verb": "answer",
       "actionId": "ApplyCommand:answer-resume",
       "class": "desk",
-      "cli": "sindri workflow answer ITM-01JL4/dev-triage-three-state/1 --resume [--text <answer>]",
+      "cli": "sindri workflow answer ITM-01JL4/dev-triage-three-state/1 --resume",
       "confirm": null
     },
     {

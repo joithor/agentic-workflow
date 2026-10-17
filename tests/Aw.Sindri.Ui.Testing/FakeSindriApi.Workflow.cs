@@ -51,8 +51,14 @@ internal sealed partial class FakeSindriApi
     public Task<Result<FactView>> InstanceFact(Uri api, string id, string key, CancellationToken cancellationToken) =>
         Task.FromResult(Answer<FactView>(api, WorkflowRoutes.Fact(id, key), FactAnswer(id, key)));
 
-    public Task<Result<RecipeView>> Recipe(Uri api, string recipe, string? hash, CancellationToken cancellationToken) =>
-        Task.FromResult(Answer<RecipeView>(api, WorkflowRoutes.Recipe(recipe, hash), RecipeAnswer(recipe, hash)));
+    public Task<Result<RecipeView>> Recipe(Uri api, string recipe, string? hash, CancellationToken cancellationToken)
+    {
+        LastRecipeRead = (recipe, hash);
+        return Task.FromResult(Answer<RecipeView>(api, WorkflowRoutes.Recipe(recipe, hash), RecipeAnswer(recipe, hash)));
+    }
+
+    /// <summary>The recipe and hash of the latest recipe read; null before the first.</summary>
+    public (string Recipe, string? Hash)? LastRecipeRead { get; private set; }
 
     /// <summary>What GET /workflow/instances answers for a query.</summary>
     /// <param name="query">The query.</param>

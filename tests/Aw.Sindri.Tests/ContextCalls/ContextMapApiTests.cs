@@ -169,7 +169,9 @@ public sealed class ContextMapApiTests
 
         Assert.False(JsonDocument.Parse(plain.Body).RootElement.TryGetProperty("coverage", out _));
         var coverage = JsonDocument.Parse(withAnchor.Body).RootElement.GetProperty("coverage");
-        Assert.Equal(JsonDocument.Parse(lenses.Body).RootElement.GetProperty("coverage").GetRawText(), coverage.GetRawText());
+        var lensesCoverage = System.Text.Json.Nodes.JsonNode.Parse(lenses.Body)!["coverage"]!.AsObject();
+        Assert.True(lensesCoverage.Remove("map"));   // the repo-file part of the lenses' coverage (C13) is theirs alone: status counts the map's own scope
+        Assert.Equal(lensesCoverage.ToJsonString(), coverage.GetRawText());
         Assert.Equal((6, 2, 6, 2), (coverage.GetProperty("scope").GetInt32(), coverage.GetProperty("intent").GetProperty("covered").GetInt32(),
             coverage.GetProperty("product").GetProperty("confirmed").GetInt32(), coverage.GetProperty("code").GetProperty("implemented").GetInt32()));
         Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-003"), (unknown.Status, unknown.Code));

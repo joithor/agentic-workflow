@@ -7,4 +7,5 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <param name="Reason">The park reason.</param>
 /// <param name="ParkKind">What the park is about.</param>
 /// <param name="Escalation">The escalation kind.</param>
-public sealed record ParkShape(SuspensionKind Kind, ParkReason? Reason, ParkKind? ParkKind, EscalationKind? Escalation);
+/// <param name="Mirrors">Whether the suspension mirrors a child, whose own fit the answer is forwarded to.</param>
+public sealed record ParkShape(SuspensionKind Kind, ParkReason? Reason, ParkKind? ParkKind, EscalationKind? Escalation, bool Mirrors = false);

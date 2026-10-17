@@ -9,6 +9,7 @@
         xmlns:queue="using:Aw.Sindri.Ui.Views.Queue"
         xmlns:wfv="using:Aw.Sindri.Ui.Views.Workflows"
         xmlns:iv="using:Aw.Sindri.Ui.Views.Instance"
+        xmlns:rv="using:Aw.Sindri.Ui.Views.Recipes"
         xmlns:item="using:Aw.Sindri.Ui.Views.Item"
         xmlns:ny="using:Aw.Sindri.Ui.Views.NeedsYou"
         x:Class="Aw.Sindri.Ui.Views.Shell.ShellWindow"
@@ -265,9 +266,13 @@
                   <ny:DecisionSheet x:Name="DecisionSheet" DataContext="{Binding Decision}" />
                 </ScrollViewer>
                 <!-- LANE ANCHOR U3': the sheet content for the kinds U3' claims (kinds: NeedsYou, Decision). Insert immediately above this marker, never between the markers. -->
-                <!-- LANE ANCHOR U8: the sheet content for the kinds U8 claims (kinds: Workflow); the item sheet's re-base (U8b) is content only. Recipe, Node, Session, System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers. -->
+                <!-- LANE ANCHOR U8: the sheet content for the kinds U8 claims (kinds: Workflow); the item sheet's re-base (U8b) is content only. Insert immediately below this marker, never between the markers. -->
                 <ScrollViewer x:Name="InstanceSheetScroll" IsVisible="{Binding IsInstanceSheet}">
                   <iv:InstanceFrameView x:Name="InstanceSheetFrame" DataContext="{Binding Instance}" />
+                </ScrollViewer>
+                <!-- LANE ANCHOR U10: the sheet content for the kinds U10 claims (kinds: Recipe). Node, Session, System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers. -->
+                <ScrollViewer x:Name="RecipeSheetScroll" IsVisible="{Binding IsRecipeSheet}">
+                  <rv:RecipeSheetView x:Name="RecipeSheetContent" DataContext="{Binding Recipe}" />
                 </ScrollViewer>
               </Panel>
             </DockPanel>
