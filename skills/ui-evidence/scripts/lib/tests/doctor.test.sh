@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../../../../scripts/lib/test-grep.sh"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REAL_DOCTOR="$DIR/../../doctor.sh"
 
@@ -55,7 +56,7 @@ test_foreign_process_on_3000_is_refused_not_double_driven() {
   if out="$(run_doctor "$skill" "$bin_dir" UI_EVIDENCE_APP_TITLE="TestApp")"; then
     echo "FAIL: expected a non-zero exit when :3000 isn't this app (RF-1)"; exit 1
   fi
-  echo "$out" | grep -qi "not.*this app\|foreign" || { echo "FAIL: expected a clear refusal reason, got: $out"; exit 1; }
+  echo "$out" | has -i "not.*this app\|foreign" || { echo "FAIL: expected a clear refusal reason, got: $out"; exit 1; }
   echo "PASS: test_foreign_process_on_3000_is_refused_not_double_driven"
 }
 
@@ -63,7 +64,7 @@ test_configured_postgres_not_ready_fails_naming_the_container() {
   local skill bin_dir out; skill="$(new_skill)"; bin_dir="$(mktemp -d)"
   setup_fake_bins "$bin_dir" "<title>TestApp</title>" 0 1
   if out="$(run_doctor "$skill" "$bin_dir" UI_EVIDENCE_APP_TITLE="TestApp" UI_EVIDENCE_DB_CONTAINER="db_1")"; then echo "FAIL: expected non-zero when postgres isn't ready"; exit 1; fi
-  echo "$out" | grep -q "postgres in container db_1" || { echo "FAIL: expected postgres and the container named in the failure, got: $out"; exit 1; }
+  echo "$out" | has "postgres in container db_1" || { echo "FAIL: expected postgres and the container named in the failure, got: $out"; exit 1; }
   echo "PASS: test_configured_postgres_not_ready_fails_naming_the_container"
 }
 
@@ -80,7 +81,7 @@ test_configured_api_port_not_open_fails_naming_the_port() {
   local skill bin_dir out; skill="$(new_skill)"; bin_dir="$(mktemp -d)"
   setup_fake_bins "$bin_dir" "<title>TestApp</title>" 1 0
   if out="$(run_doctor "$skill" "$bin_dir" UI_EVIDENCE_APP_TITLE="TestApp" UI_EVIDENCE_API_PORT="5100")"; then echo "FAIL: expected non-zero when the API port isn't open"; exit 1; fi
-  echo "$out" | grep -q "api-server (:5100)" || { echo "FAIL: expected the api port named in the failure, got: $out"; exit 1; }
+  echo "$out" | has "api-server (:5100)" || { echo "FAIL: expected the api port named in the failure, got: $out"; exit 1; }
   grep -q "^nc -z localhost 5100$" "$bin_dir/calls" || { echo "FAIL: expected nc on the configured port, got: $(cat "$bin_dir/calls")"; exit 1; }
   echo "PASS: test_configured_api_port_not_open_fails_naming_the_port"
 }
@@ -91,7 +92,7 @@ test_missing_app_title_config_fails_with_reason() {
   if out="$(run_doctor "$skill" "$bin_dir" UI_EVIDENCE_CONFIG="/nonexistent")"; then
     echo "FAIL: expected non-zero when UI_EVIDENCE_APP_TITLE isn't configured"; exit 1
   fi
-  echo "$out" | grep -qi "UI_EVIDENCE_APP_TITLE" || { echo "FAIL: expected the missing config var named in the failure, got: $out"; exit 1; }
+  echo "$out" | has -i "UI_EVIDENCE_APP_TITLE" || { echo "FAIL: expected the missing config var named in the failure, got: $out"; exit 1; }
   echo "PASS: test_missing_app_title_config_fails_with_reason"
 }
 
