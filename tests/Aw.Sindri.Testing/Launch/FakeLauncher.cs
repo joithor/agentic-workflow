@@ -10,7 +10,7 @@ namespace Aw.Sindri.Testing.Launch;
 /// </summary>
 public sealed class FakeLauncher : ILauncher
 {
-    private readonly Dictionary<LaunchId, LaunchResult.Started> _live = [];
+    private readonly Dictionary<LaunchId, StartedLaunch> _live = [];
     private readonly List<LaunchRequest> _requests = [];
     private readonly List<LaunchId> _stops = [];
     private (Error Error, LaunchStage Stage)? _nextFailure;
@@ -47,11 +47,11 @@ public sealed class FakeLauncher : ILauncher
         if (_nextFailure is { } failure)
         {
             _nextFailure = null;
-            return ValueTask.FromResult<LaunchResult>(new LaunchResult.Failed(failure.Error, failure.Stage));
+            return ValueTask.FromResult<LaunchResult>(new FailedLaunch(failure.Error, failure.Stage));
         }
 
         var host = new HostRef(HostKind.Tmux, "snd-" + request.Launch.Value);
-        var started = new LaunchResult.Started(
+        var started = new StartedLaunch(
             host, request.Attended ? ViewerOutcome.Opened : ViewerOutcome.Skipped,
             ["tmux", "-L", "sindri", "attach-session", "-t", "=" + host.Name], CatalogSource.Builtin, "fake-argv-hash");
         _live[request.Launch] = started;
