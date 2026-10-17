@@ -1,8 +1,8 @@
+using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Features.ApproveRecipe;
-using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Testing.Workflow;
 using Microsoft.Extensions.DependencyInjection;
 

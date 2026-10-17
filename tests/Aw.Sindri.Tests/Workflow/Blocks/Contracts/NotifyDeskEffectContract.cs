@@ -20,6 +20,6 @@ public sealed class NotifyDeskEffectContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new NotifyDeskEffect(new Aw.Sindri.Testing.Workflow.InMemoryDeskNotices(), TimeProvider.System)
+        _ = await new NotifyDeskEffect(new InMemoryDeskNotices(), TimeProvider.System)
             .Dispatch(ShippedComposition.Effect("effect.notify.desk"), cancellationToken);
 }
