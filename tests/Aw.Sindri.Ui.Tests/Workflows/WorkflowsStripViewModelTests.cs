@@ -52,6 +52,20 @@ public sealed class WorkflowsStripViewModelTests
         Assert.Equal((WorkflowsStripViewModel.Cap, true, Labels.MoreRows(_openAddresses.Length - WorkflowsStripViewModel.Cap)), (strip.Rows.Count, strip.HasMore, strip.MoreText));
     }
 
+    // A cancelled root reads like a done one but its state need not be a terminal cell of the recipe: the chip is the engine's word for it.
+    [Fact]
+    public void N_more_counts_open_roots_only_and_cancelled_rows_stay_off_the_strip()
+    {
+        var root = FixtureInstances.Root;
+        var done = root.Instances.First(r => !FixtureInstances.IsOpen(r));
+        var cancelled = new[] { done with { Address = "ITM-CANCEL1/triage-alert/1", State = "cancelled" }, done with { Address = "ITM-CANCEL2/triage-alert/1", State = "cancelled" } };
+        var strip = Strip(root with { Instances = [.. root.Instances.Where(FixtureInstances.IsOpen), .. cancelled] });
+        strip.SetNeedsYouShown(0);
+
+        Assert.DoesNotContain(strip.Rows, r => r.Address.StartsWith("ITM-CANCEL", StringComparison.Ordinal));
+        Assert.Equal((true, Labels.MoreRows(root.Counts.Open - strip.Rows.Count)), (strip.HasMore, strip.MoreText));
+    }
+
     [Fact]
     public void N_more_opens_Workflows()
     {
