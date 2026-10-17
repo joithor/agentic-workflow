@@ -66,9 +66,15 @@ internal sealed partial class ShellWindow
         return true;
     }
 
-    // The item sheet's first control, or the decision sheet's first option button.
+    // The item sheet's first control, or the decision sheet's first option button; the instance frame's first read action (Open in, else Copy status).
     private bool FocusFirstSheetAction()
     {
+        if (Shell is { IsInstanceSheet: true } shell)
+        {
+            shell.Instance.FocusInitial();
+            return true;
+        }
+
         var descendants = SheetPanel.GetVisualDescendants().ToList();
         return descendants.OfType<Controls.CommandControl>().FirstOrDefault(c => c.IsEffectivelyVisible)?.FocusRun() == true
             || descendants.OfType<Button>().FirstOrDefault(b => b.Classes.Contains("decision-option") && b.IsEffectivelyVisible && b.IsEnabled)?.Focus(NavigationMethod.Tab) == true;
@@ -96,11 +102,12 @@ internal sealed partial class ShellWindow
 
     // The frame of the row that the focused control is in, when that row is the one the sheet shows.
     private Border? OpenRowFrame(Visual focused) =>
-        focused.GetSelfAndVisualAncestors().OfType<Border>().FirstOrDefault(b => string.Equals(b.Name, "RowFrame", StringComparison.Ordinal))
+        focused.GetSelfAndVisualAncestors().OfType<Border>().FirstOrDefault(b => string.Equals(b.Name, "RowFrame", StringComparison.Ordinal) || string.Equals(b.Name, "WorkflowRowFrame", StringComparison.Ordinal))
             is { } frame && IsOpenRow(frame.DataContext) ? frame : null;
 
     private bool IsOpenRow(object? row) => row switch
     {
+        ViewModels.Workflows.InstanceRowViewModel workflow => Shell is { IsSelectedWorkflowOpen: true } && string.Equals(workflow.Address, Shell.Instance.Address, StringComparison.Ordinal),
         ViewModels.Queue.ItemRowViewModel item => string.Equals(item.Id, Shell?.Item.ItemId, StringComparison.Ordinal),
         ViewModels.NeedsYou.NeedsYouRowViewModel need => string.Equals(need.Id, Shell?.NeedsYou.SheetRowId, StringComparison.Ordinal),
         _ => false,
@@ -149,6 +156,14 @@ internal sealed partial class ShellWindow
         if (shell.Create.IsOpen)
         {
             shell.Create.Close();
+            return true;
+        }
+
+        if (shell is { IsSheetShown: true, IsInstanceSheet: true, Instance.Expanded.IsConfirmingCancel: true })
+        {
+            // The frame's Cancel question: Esc answers Keep, as it does in the item sheet, and focus returns to the control that asked.
+            shell.Instance.Expanded.Keep();
+            _ = SheetPanel.GetVisualDescendants().OfType<Button>().FirstOrDefault(b => string.Equals(b.Name, "CommandAsk", StringComparison.Ordinal) && b.IsEffectivelyVisible)?.Focus(Method());
             return true;
         }
 
