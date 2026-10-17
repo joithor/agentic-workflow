@@ -10,12 +10,11 @@ internal sealed class PassHostSources(SourcePass pass, IProcessTable processes, 
     private readonly Dictionary<int, string?> _socketOf = [];
     private readonly Dictionary<string, int> _serverOf = new(StringComparer.Ordinal);
     private readonly Dictionary<string, TmuxServerView?> _views = new(StringComparer.Ordinal);
-    private IReadOnlyList<TeamNames>? _teams;
     private IReadOnlyDictionary<long, string>? _sockets;
 
     public IReadOnlyList<TerminalName> Terminals => terminals.All;
 
-    public IReadOnlyList<TeamNames> Teams => _teams ??= pass.Value("team-names", _ => teams.Read(), []);
+    public IReadOnlyList<TeamNames> Teams => field ??= pass.Value("team-names", _ => teams.Read(), []);
 
     public IReadOnlyDictionary<string, string> Environment(int pid)
     {
@@ -58,7 +57,7 @@ internal sealed class PassHostSources(SourcePass pass, IProcessTable processes, 
     {
         _sockets ??= pass.Value("unix-sockets", _ => sockets.Read(), new Dictionary<long, string>());
         var files = pass.Value("open-files", serverPid, _ => processes.OpenFiles(serverPid), []);
-        return files.Select(Inode).Where(static i => i is not null).Select(i => _sockets.GetValueOrDefault(i!.Value)).FirstOrDefault(static p => p is not null);
+        return files.Select(Inode).OfType<long>().Select(i => _sockets.GetValueOrDefault(i)).FirstOrDefault(static p => p is not null);
     }
 
     /// <summary>'socket:[12345]' is the link a socket file descriptor has; its number is the inode /proc/net/unix lists.</summary>

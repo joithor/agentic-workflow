@@ -8,7 +8,10 @@ internal sealed class TerminalProcessNames : ITerminalNames
 {
     private static readonly System.Text.Json.JsonSerializerOptions _json = AwJson.CreateOptions(LauncherJsonContext.Default);
 
-    private TerminalProcessNames(IReadOnlyList<TerminalName> all) => All = all;
+    private TerminalProcessNames(IReadOnlyList<TerminalName> all)
+    {
+        All = all;
+    }
 
     public IReadOnlyList<TerminalName> All { get; }
 

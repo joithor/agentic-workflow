@@ -65,7 +65,7 @@ public static class HostChain
 
         if (terminals.FirstOrDefault(t => t.ProcessNames.Any(p => Matches(process, names, p))) is { } terminal)
         {
-            return (HostKind.Terminal, terminal.Id);
+            return (HostKind.Terminal, terminal.Name);
         }
 
         if (names.Exists(static n => _warp.Contains(n, StringComparer.Ordinal)))

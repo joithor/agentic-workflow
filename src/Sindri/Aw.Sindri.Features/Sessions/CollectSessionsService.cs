@@ -66,18 +66,22 @@ internal sealed partial class CollectSessionsService(SessionDiscovery discovery,
     /// <summary>One debug line per session whose host kind changed (refs and kinds only: no socket path, no cwd, no title).</summary>
     private void LogHostChanges(List<ObservedSession> sessions)
     {
-        foreach (var session in sessions)
+        if (!logger.IsEnabled(LogLevel.Debug))
         {
-            var before = memory.Previous.GetValueOrDefault(session.Ref)?.Host;
-            if (before?.Kind != session.Host.Kind || before?.Tmux?.SocketKind != session.Host.Tmux?.SocketKind)
-            {
-                LogHost(logger, session.Ref.ToString(), session.Host.Kind, session.Host.Tmux?.SocketKind ?? "-");
-            }
+            return;
+        }
+
+        foreach (var session in sessions.Where(s => HostChanged(memory.Previous.GetValueOrDefault(s.Ref)?.Host, s.Host)))
+        {
+            LogHost(logger, session.Ref, session.Host.Kind, session.Host.Tmux?.SocketKind ?? "-");
         }
     }
 
+    private static bool HostChanged(HostInfo? before, HostInfo now) =>
+        before?.Kind != now.Kind || before?.Tmux?.SocketKind != now.Tmux?.SocketKind;
+
     [LoggerMessage(Level = LogLevel.Debug, Message = "session {Ref} host {Kind} tmux socket kind {SocketKind}")]
-    private static partial void LogHost(ILogger logger, string @ref, string kind, string socketKind);
+    private static partial void LogHost(ILogger logger, SessionRef @ref, string kind, string socketKind);
 
     private async Task<Discovered?> Discover(TimeSpan budget, CancellationToken cancellationToken)
     {

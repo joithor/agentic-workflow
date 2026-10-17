@@ -106,6 +106,7 @@ internal sealed class TmuxCli(TimeProvider time, string executable, TimeSpan cal
 
     private string? Wait(Process child, string socket, CancellationTokenSource limit)
     {
+        // why: Register hands back the object passed in, which is this Process
         using var kill = limit.Token.Register(static state => Kill((Process)state!), child);
         var output = child.StandardOutput.ReadToEnd();
         _ = child.StandardError.ReadToEnd();

@@ -27,7 +27,8 @@ public static partial class HostRules
             HostKind.Tmux => Tmux(query, chain, hit, sources),
             HostKind.Ssh => new HostInfo("ssh", "ssh") { Terminal = new TerminalFacts("ssh", hit.Process.Pid) },
             HostKind.Ide => new HostInfo("ide", hit.Name) { Ide = hit.Name },
-            _ => Terminal(hit, sources) is { } terminal ? Shown(terminal) : HostInfo.Unknown,
+            HostKind.Terminal or HostKind.Warp => Terminal(hit, sources) is { } terminal ? Shown(terminal) : HostInfo.Unknown,
+            _ => HostInfo.Unknown,
         };
     }
 
@@ -39,7 +40,7 @@ public static partial class HostRules
     public static string SocketKind(string? socket, string? session, IReadOnlyList<TeamNames> teams)
     {
         ArgumentNullException.ThrowIfNull(teams);
-        var name = socket is null ? null : socket[(socket.LastIndexOf('/') + 1)..];
+        var name = socket?[(socket.LastIndexOf('/') + 1)..];
         if (string.Equals(name, "sindri", StringComparison.Ordinal))
         {
             return "sindri";
@@ -65,10 +66,10 @@ public static partial class HostRules
         return query.T3 ? new HostInfo("t3", "t3") : HostInfo.Unknown;
     }
 
-    private static HostInfo Shown(TerminalFacts terminal) => terminal.Id switch
+    private static HostInfo Shown(TerminalFacts terminal) => terminal.Name switch
     {
         "warp" => new HostInfo("warp", "Warp") { Terminal = terminal },
-        _ => new HostInfo("terminal", terminal.Id) { Terminal = terminal },
+        _ => new HostInfo("terminal", terminal.Name) { Terminal = terminal },
     };
 
     /// <summary>The terminal facts of a hit, read from the shell under it; a Warp shell is Warp whichever process name the terminal runs under.</summary>
@@ -80,22 +81,22 @@ public static partial class HostRules
             ? new TerminalFacts("warp", hit.Process.Pid) { WarpFocusUrl = FocusUrl(env) }
             : new TerminalFacts(hit.Name, hit.Process.Pid)
             {
-                WindowId = env.GetValueOrDefault("WINDOWID"),
-                KittyWindowId = env.GetValueOrDefault("KITTY_WINDOW_ID"),
+                XWindow = env.GetValueOrDefault("WINDOWID"),
+                KittyWindow = env.GetValueOrDefault("KITTY_WINDOW_ID"),
                 KittyListenOn = env.GetValueOrDefault("KITTY_LISTEN_ON"),
                 WeztermPane = env.GetValueOrDefault("WEZTERM_PANE"),
             };
     }
 
     private static string? FocusUrl(IReadOnlyDictionary<string, string> env) =>
-        env.TryGetValue("WARP_FOCUS_URL", out var url) && WarpUrl().IsMatch(url) ? url : null;
+        env.TryGetValue("WARP_FOCUS_URL", out var url) && WarpUrl.IsMatch(url) ? url : null;
 
     private static HostInfo Tmux(HostQuery query, IReadOnlyList<ProcessEntry> chain, HostHit hit, IHostSources sources)
     {
         var socket = SocketOf(query, hit.Process.Pid, sources);
         var view = socket is null ? null : sources.View(socket);
         var pane = view is null ? null : PaneOf(view, query.Agent, chain);
-        var (session, paneId) = pane is not null ? (pane.Session, pane.PaneId) : FromRecord(query.RecordTmux);
+        var (session, paneId) = pane is not null ? (pane.Session, pane.Pane) : FromRecord(query.RecordTmux);
         var terminal = view is null || session is null ? null : ClientTerminal(query, view, session, sources);
         var facts = new TmuxFacts(socket, SocketKind(socket, session, sources.Teams), session, paneId);
         return new HostInfo("tmux", terminal is null ? "tmux" : "tmux · " + Label(terminal)) { Tmux = facts, Terminal = terminal };
@@ -149,8 +150,8 @@ public static partial class HostRules
         return null;
     }
 
-    private static string Label(TerminalFacts terminal) => string.Equals(terminal.Id, "warp", StringComparison.Ordinal) ? "Warp" : terminal.Id;
+    private static string Label(TerminalFacts terminal) => string.Equals(terminal.Name, "warp", StringComparison.Ordinal) ? "Warp" : terminal.Name;
 
     [GeneratedRegex("^warp://session/[0-9a-f]{32}$", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex WarpUrl();
+    private static partial Regex WarpUrl { get; }
 }
