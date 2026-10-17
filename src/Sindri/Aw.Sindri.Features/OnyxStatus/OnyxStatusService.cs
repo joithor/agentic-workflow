@@ -20,8 +20,8 @@ internal sealed class OnyxStatusService(IOnyxPinsSource pinsSource, OnyxFacts fa
         }
 
         var setUp = IsSetUp(state, compose.Value);
-        var running = setUp && docker.DaemonAnswers && IsRunning(cancellationToken);
-        var report = OnyxPreflight.Evaluate(docker, host, pins, running ? state?.Port : null);
+        var (running, servingPort) = Serving(setUp && docker.DaemonAnswers, state, cancellationToken);
+        var report = OnyxPreflight.Evaluate(docker, host, pins, running ? servingPort : null);
         var onyx = Classify(setUp, running);
         var (url, version) = running ? await Running(report.Port, cancellationToken).ConfigureAwait(false) : (null, null);
         return new OnyxStatusResponse(onyx, pins.Version, pins.Commit, report.Checks, report.Port, report.Ok ? 0 : 1, url, version, Detail(onyx));
@@ -47,13 +47,22 @@ internal sealed class OnyxStatusService(IOnyxPinsSource pinsSource, OnyxFacts fa
         _ => "",
     };
 
+    // Whether Onyx is serving and the port it holds: the one nginx publishes (as in up and doctor), and state.json's only when no nginx publishes one; a state another home wrote is ignored.
+    private (bool Running, int? Port) Serving(bool ask, OnyxSetupState? state, CancellationToken cancellationToken)
+    {
+        var containers = ask ? facts.Containers(cancellationToken) : null;
+        if (containers is not { IsSuccess: true })
+        {
+            return (false, null);
+        }
+
+        var recorded = facts.ForeignProjectWarning(state) is null ? state?.Port : null;
+        return (IsServing(containers.Value), OnyxFacts.OwnPort(containers.Value) ?? recorded);
+    }
+
     // nginx and the API server both running is what "Onyx is up" means here; anything else is stopped. "Status" means "Onyx is serving" on purpose: down, doctor and
     // own-port use ComposeContainer.IsLive instead, because a restarting container is live (it holds its port and must be stopped) but not serving.
-    private bool IsRunning(CancellationToken cancellationToken)
-    {
-        var containers = facts.Containers(cancellationToken);
-        return containers.IsSuccess
-            && containers.Value.Any(static c => c.Service == "nginx" && c.State == "running")
-            && containers.Value.Any(static c => c.Service == "api_server" && c.State == "running");
-    }
+    private static bool IsServing(IReadOnlyList<ComposeContainer> containers)
+        => containers.Any(static c => c.Service == "nginx" && c.State == "running")
+            && containers.Any(static c => c.Service == "api_server" && c.State == "running");
 }

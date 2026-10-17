@@ -78,7 +78,7 @@ internal sealed class OnyxStackDoctor(IOnyxWorkspace workspace, OnyxFacts facts,
 
     private static DoctorCheck Ok(IReadOnlyList<ComposeContainer> containers)
     {
-        var port = containers.SelectMany(static c => c.Publishers).FirstOrDefault(static p => p.Address == Loopback)?.PublishedPort;
+        var port = OnyxFacts.OwnPort(containers);
         return new DoctorCheck(Name, CheckState.Ok, string.Create(CultureInfo.InvariantCulture, $"{containers.Count} containers running, healthy, bound to {Loopback}:{port}, digests match the pins"), Fix: null);
     }
 

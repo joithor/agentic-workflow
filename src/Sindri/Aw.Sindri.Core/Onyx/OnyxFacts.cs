@@ -53,4 +53,15 @@ public sealed class OnyxFacts(IContainerRuntime runtime, IHostProbes probes, ISi
     /// <param name="cancellationToken">Cancels the reading.</param>
     /// <returns>The containers, or the error (Docker isn't answering).</returns>
     public Result<IReadOnlyList<ComposeContainer>> Containers(CancellationToken cancellationToken) => runtime.Ps(Project, cancellationToken);
+
+    /// <summary>Finds the port our own Onyx holds: the one the project's live nginx publishes on 127.0.0.1, whatever state.json says (a start that failed or timed out leaves it up, and a lost state file doesn't make it someone else's). The one reading of it, for `up`, doctor and status.</summary>
+    /// <param name="containers">The containers of Sindri's Onyx project.</param>
+    /// <returns>The published port, or null when no live nginx publishes on loopback (stopped, or never started).</returns>
+    public static int? OwnPort(IEnumerable<ComposeContainer> containers)
+    {
+        ArgumentNullException.ThrowIfNull(containers);
+        return containers.Where(static c => c.Service == "nginx" && ComposeContainer.IsLive(c.State))
+            .SelectMany(static c => c.Publishers)
+            .FirstOrDefault(static p => p.Address == "127.0.0.1")?.PublishedPort;
+    }
 }

@@ -8225,6 +8225,7 @@ Aw.Sindri.Core.Onyx.OnyxPaths.ProjectName.get -> string!
 Aw.Sindri.Core.Onyx.OnyxPaths.ProjectName.init -> void
 Aw.Sindri.Core.Onyx.OnyxBindings
 static Aw.Sindri.Core.Onyx.OnyxPreflight.DockerProblem(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! docker) -> Aw.Kernel.Error?
+static Aw.Sindri.Core.Onyx.OnyxFacts.OwnPort(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Onyx.ComposeContainer!>! containers) -> int?
 static Aw.Sindri.Core.Onyx.OnyxPreflight.IsLocalEndpoint(string? endpoint) -> bool
 static Aw.Sindri.Core.Onyx.OnyxPreflight.RemoteDocker(string? endpoint) -> Aw.Kernel.Error!
 static Aw.Sindri.Core.Onyx.OnyxPreflight.TryParseComposeVersion(string? text, out System.Version! version) -> bool

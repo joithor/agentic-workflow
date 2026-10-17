@@ -163,8 +163,6 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
         }
 
         var containers = facts.Containers(cancellationToken);
-        return Results.Success(containers.IsSuccess
-            ? containers.Value.Where(static c => c.Service == "nginx" && ComposeContainer.IsLive(c.State)).SelectMany(static c => c.Publishers).FirstOrDefault(static p => p.Address == "127.0.0.1")?.PublishedPort
-            : null);
+        return Results.Success(containers.IsSuccess ? OnyxFacts.OwnPort(containers.Value) : null);
     }
 }
