@@ -35,20 +35,20 @@ public class SyncRunningOnZeta : DispatchProxy
     /// <inheritdoc />
     protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
     {
-        ArgumentNullException.ThrowIfNull(targetMethod);
-        ArgumentNullException.ThrowIfNull(args);
-        if (string.Equals(targetMethod.Name, nameof(IContextEngine.Sources), StringComparison.Ordinal))
+        var method = targetMethod ?? throw new ArgumentNullException(nameof(targetMethod));
+        var arguments = args ?? throw new ArgumentNullException(nameof(args));
+        if (string.Equals(method.Name, nameof(IContextEngine.Sources), StringComparison.Ordinal))
         {
-            return new ValueTask<Result<SourcesView>>(Sources((ContextScope)args[0]!, (CancellationToken)args[1]!));
+            return new ValueTask<Result<SourcesView>>(Sources((ContextScope)arguments[0]!, (CancellationToken)arguments[1]!));
         }
 
-        var busy = string.Equals(targetMethod.Name, nameof(IContextEngine.Sync), StringComparison.Ordinal) && (args[0] is null || string.Equals(args[0] as string, "zeta", StringComparison.Ordinal));
+        var busy = string.Equals(method.Name, nameof(IContextEngine.Sync), StringComparison.Ordinal) && (arguments[0] is null || string.Equals(arguments[0] as string, "zeta", StringComparison.Ordinal));
         if (busy)
         {
             return new ValueTask<Result<SyncReport>>(ContextErrors.SyncRunning.With("zeta is being synced already (fix: wait for it; sindri context sources status)"));
         }
 
-        return Forward(targetMethod, args);
+        return Forward(method, arguments);
     }
 
     private object? Forward(MethodInfo method, object?[] args)
