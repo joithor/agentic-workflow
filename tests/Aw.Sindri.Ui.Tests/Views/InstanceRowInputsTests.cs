@@ -25,7 +25,21 @@ public sealed class InstanceRowInputsTests
         window.Show();
         Dispatcher.UIThread.RunJobs();
         var frame = row.GetVisualDescendants().OfType<Border>().First(b => b.Name == "WorkflowRowFrame");
-        var reached = Heard.Tree(frame);
+        var reached = new List<(string Name, AutomationControlType Type)>();
+        void Walk(AutomationPeer peer)
+        {
+            foreach (var child in peer.GetChildren())
+            {
+                if (child.IsControlElement())   // the control view is what AT-SPI lists as stops; raw peers are walked through but not heard
+                {
+                    reached.Add((child.GetName(), child.GetAutomationControlType()));
+                }
+
+                Walk(child);
+            }
+        }
+
+        Walk(ControlAutomationPeer.CreatePeerForElement(frame));
         window.Close();
         return reached;
     }
