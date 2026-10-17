@@ -34,6 +34,7 @@ namespace Aw.Judge.Host;
 [JsonSerializable(typeof(TurnProgressInput))]
 [JsonSerializable(typeof(UiElementRepairInput))]
 [JsonSerializable(typeof(VisualCritiqueInput))]
+[JsonSerializable(typeof(ChooseInput))]
 [JsonSerializable(typeof(DecidedEnvelope))]
 [JsonSerializable(typeof(EscalatedEnvelope))]
 [JsonSerializable(typeof(GetHealthRequest))]

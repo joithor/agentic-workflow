@@ -20,6 +20,9 @@ public sealed record QuestionRef
     /// <summary>Response fields beyond the decision (a JSON Schema fragment each, e.g. {"type":"integer"}); they ride back as extra.</summary>
     public IReadOnlyDictionary<string, JsonObject>? ExtraProperties { get; init; }
 
+    /// <summary>Whether the answer must state a confidence (choose: the agent CLIs' schema then requires one, so their answers can fall below the threshold).</summary>
+    public bool AskConfidence { get; init; }
+
     /// <summary>What each output means, for providers that take criteria.</summary>
     public IReadOnlyDictionary<string, string>? Criteria { get; init; }
 }

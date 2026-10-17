@@ -29,6 +29,24 @@ internal sealed class QuestionRun
         return evaluator.Evaluate(question, input, new EvaluationContext { Providers = providers }, CancellationToken.None);
     }
 
+    /// <summary>Asks a question by its catalog name (the path the CLI takes), so a per-call question builds its definition from the input.</summary>
+    public ValueTask<EvaluationOutcome> AskByName(string name, string input, params IModelProvider[] providers) =>
+        AskByName(name, input, entry: null, providers);
+
+    /// <summary>Asks by catalog name with the question's config.json entry (<paramref name="entry"/>), when there is one.</summary>
+    public ValueTask<EvaluationOutcome> AskByName(string name, string input, QuestionOverride? entry, params IModelProvider[] providers) =>
+        AskByName(name, input, ChainSpec.Default, entry, providers);
+
+    /// <summary>Asks by catalog name over an explicit chain.</summary>
+    public ValueTask<EvaluationOutcome> AskByName(string name, string input, ChainSpec chain, params IModelProvider[] providers) =>
+        AskByName(name, input, chain, entry: null, providers);
+
+    private ValueTask<EvaluationOutcome> AskByName(string name, string input, ChainSpec chain, QuestionOverride? entry, IModelProvider[] providers)
+    {
+        var evaluator = new QuestionEvaluator(Log, new FakeInputRedactor(), new SequentialIdGenerator(), new FakeTimeProvider(KnownInstants.Epoch), Json);
+        return evaluator.Ask(name, input, new EvaluationContext { Providers = providers, Chain = chain, Override = entry }, CancellationToken.None);
+    }
+
     /// <summary>The outcome is a pre-rule's: the decision, by rules, confidence 1.</summary>
     public static void AssertPreRule(string decision, EvaluationOutcome outcome)
     {

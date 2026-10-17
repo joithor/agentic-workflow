@@ -48,6 +48,12 @@ public sealed record QuestionDefinition<TInput>
     /// <summary>What each output means.</summary>
     public IReadOnlyDictionary<string, string>? Criteria { get; init; }
 
+    /// <summary>Whether the answer must state a confidence (see <see cref="QuestionRef.AskConfidence"/>); only choose sets it.</summary>
+    public bool AskConfidence { get; init; }
+
+    /// <summary>Whether the outcome carries the decision id (escalations) and the providers' probabilities; only choose sets it, so the hook questions' envelopes stay as they are.</summary>
+    public bool ReportsTrace { get; init; }
+
     /// <summary>What a provider sees of this question for one input.</summary>
     /// <param name="input">The validated input.</param>
     /// <returns>The reference.</returns>
@@ -59,5 +65,6 @@ public sealed record QuestionDefinition<TInput>
         ContentClass = ContentClass,
         ExtraProperties = ExtraProperties,
         Criteria = Criteria,
+        AskConfidence = AskConfidence,
     };
 }
