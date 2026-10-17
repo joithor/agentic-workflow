@@ -108,7 +108,9 @@ public static class SqliteQueries
         ArgumentNullException.ThrowIfNull(session);
         ArgumentNullException.ThrowIfNull(statement);
         var command = session.Connection.CreateCommand();
+#pragma warning disable CA2100 // SqlStatement is the reviewed type for command text: a constant, with values bound as parameters
         command.CommandText = statement.Sql;
+#pragma warning restore CA2100
         command.Transaction = session.Transaction;
         statement.Bind?.Invoke(command);
         return command;
