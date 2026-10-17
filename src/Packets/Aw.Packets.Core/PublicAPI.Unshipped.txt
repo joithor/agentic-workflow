@@ -24,48 +24,52 @@ Aw.Packets.Core.Checks.CheckState.Unchecked = 3 -> Aw.Packets.Core.Checks.CheckS
 Aw.Packets.Core.Checks.PacketRules
 Aw.Packets.Core.Digest.PacketDigest
 Aw.Packets.Core.FreezeLocation
+Aw.Packets.Core.IFreezeLog
+Aw.Packets.Core.IFreezeLog.Record(Aw.Packets.Core.Model.FreezeRecord! record, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.FreezeReceipt!>!>
+Aw.Packets.Core.IPacketSource
+Aw.Packets.Core.IPacketSource.Load(string! packetDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.LoadedPacket!>!>
+Aw.Packets.Core.IRepoSnapshot
+Aw.Packets.Core.IRepoSnapshot.Files(string! repoDirectory, Aw.Packets.Core.Values.CommitSha commitSha, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlySet<string!>!>!>
 Aw.Packets.Core.Ids.ExampleId
-Aw.Packets.Core.Ids.ExampleId.Equals(Aw.Packets.Core.Ids.ExampleId other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Ids.ExampleId>! comparer) -> bool
 Aw.Packets.Core.Ids.ExampleId.Equals(Aw.Packets.Core.Ids.ExampleId other) -> bool
+Aw.Packets.Core.Ids.ExampleId.Equals(Aw.Packets.Core.Ids.ExampleId other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Ids.ExampleId>! comparer) -> bool
 Aw.Packets.Core.Ids.ExampleId.ExampleId() -> void
 Aw.Packets.Core.Ids.ExampleId.GetTypeCode() -> System.TypeCode
 Aw.Packets.Core.Ids.ExampleId.IsInitialized() -> bool
 Aw.Packets.Core.Ids.ExampleId.ToString(System.IFormatProvider? provider) -> string!
 Aw.Packets.Core.Ids.ExampleId.Value.get -> string!
 Aw.Packets.Core.Ids.PacketId
-Aw.Packets.Core.Ids.PacketId.Equals(Aw.Packets.Core.Ids.PacketId other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Ids.PacketId>! comparer) -> bool
 Aw.Packets.Core.Ids.PacketId.Equals(Aw.Packets.Core.Ids.PacketId other) -> bool
+Aw.Packets.Core.Ids.PacketId.Equals(Aw.Packets.Core.Ids.PacketId other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Ids.PacketId>! comparer) -> bool
 Aw.Packets.Core.Ids.PacketId.GetTypeCode() -> System.TypeCode
 Aw.Packets.Core.Ids.PacketId.IsInitialized() -> bool
 Aw.Packets.Core.Ids.PacketId.PacketId() -> void
 Aw.Packets.Core.Ids.PacketId.ToString(System.IFormatProvider? provider) -> string!
 Aw.Packets.Core.Ids.PacketId.Value.get -> string!
 Aw.Packets.Core.Ids.QuestionId
-Aw.Packets.Core.Ids.QuestionId.Equals(Aw.Packets.Core.Ids.QuestionId other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Ids.QuestionId>! comparer) -> bool
 Aw.Packets.Core.Ids.QuestionId.Equals(Aw.Packets.Core.Ids.QuestionId other) -> bool
+Aw.Packets.Core.Ids.QuestionId.Equals(Aw.Packets.Core.Ids.QuestionId other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Ids.QuestionId>! comparer) -> bool
 Aw.Packets.Core.Ids.QuestionId.GetTypeCode() -> System.TypeCode
 Aw.Packets.Core.Ids.QuestionId.IsInitialized() -> bool
 Aw.Packets.Core.Ids.QuestionId.QuestionId() -> void
 Aw.Packets.Core.Ids.QuestionId.ToString(System.IFormatProvider? provider) -> string!
 Aw.Packets.Core.Ids.QuestionId.Value.get -> string!
 Aw.Packets.Core.Ids.TaskId
-Aw.Packets.Core.Ids.TaskId.Equals(Aw.Packets.Core.Ids.TaskId other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Ids.TaskId>! comparer) -> bool
 Aw.Packets.Core.Ids.TaskId.Equals(Aw.Packets.Core.Ids.TaskId other) -> bool
+Aw.Packets.Core.Ids.TaskId.Equals(Aw.Packets.Core.Ids.TaskId other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Ids.TaskId>! comparer) -> bool
 Aw.Packets.Core.Ids.TaskId.GetTypeCode() -> System.TypeCode
 Aw.Packets.Core.Ids.TaskId.IsInitialized() -> bool
 Aw.Packets.Core.Ids.TaskId.TaskId() -> void
 Aw.Packets.Core.Ids.TaskId.ToString(System.IFormatProvider? provider) -> string!
 Aw.Packets.Core.Ids.TaskId.Value.get -> string!
 Aw.Packets.Core.Ids.WorkstreamId
-Aw.Packets.Core.Ids.WorkstreamId.Equals(Aw.Packets.Core.Ids.WorkstreamId other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Ids.WorkstreamId>! comparer) -> bool
 Aw.Packets.Core.Ids.WorkstreamId.Equals(Aw.Packets.Core.Ids.WorkstreamId other) -> bool
+Aw.Packets.Core.Ids.WorkstreamId.Equals(Aw.Packets.Core.Ids.WorkstreamId other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Ids.WorkstreamId>! comparer) -> bool
 Aw.Packets.Core.Ids.WorkstreamId.GetTypeCode() -> System.TypeCode
 Aw.Packets.Core.Ids.WorkstreamId.IsInitialized() -> bool
 Aw.Packets.Core.Ids.WorkstreamId.ToString(System.IFormatProvider? provider) -> string!
 Aw.Packets.Core.Ids.WorkstreamId.Value.get -> string!
 Aw.Packets.Core.Ids.WorkstreamId.WorkstreamId() -> void
-Aw.Packets.Core.IFreezeLog
-Aw.Packets.Core.IFreezeLog.Record(Aw.Packets.Core.Model.FreezeRecord! record, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.FreezeReceipt!>!>
 Aw.Packets.Core.Inspection
 Aw.Packets.Core.Inspection.<Clone>$() -> Aw.Packets.Core.Inspection!
 Aw.Packets.Core.Inspection.Checks.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Checks.CheckResult!>!
@@ -76,10 +80,138 @@ Aw.Packets.Core.Inspection.Inspection(Aw.Packets.Core.Model.LoadedPacket! Loaded
 Aw.Packets.Core.Inspection.Loaded.get -> Aw.Packets.Core.Model.LoadedPacket!
 Aw.Packets.Core.Inspection.Loaded.init -> void
 Aw.Packets.Core.Inspection.Passed.get -> bool
-Aw.Packets.Core.IPacketSource
-Aw.Packets.Core.IPacketSource.Load(string! packetDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Model.LoadedPacket!>!>
-Aw.Packets.Core.IRepoSnapshot
-Aw.Packets.Core.IRepoSnapshot.Files(string! repoDirectory, Aw.Packets.Core.Values.CommitSha commitSha, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlySet<string!>!>!>
+Aw.Packets.Core.Kinds.PacketFileFormat
+Aw.Packets.Core.Kinds.PacketFileFormat.Json = 1 -> Aw.Packets.Core.Kinds.PacketFileFormat
+Aw.Packets.Core.Kinds.PacketFileFormat.JsonLines = 2 -> Aw.Packets.Core.Kinds.PacketFileFormat
+Aw.Packets.Core.Kinds.PacketFileFormat.Text = 3 -> Aw.Packets.Core.Kinds.PacketFileFormat
+Aw.Packets.Core.Kinds.PacketFileSpec
+Aw.Packets.Core.Kinds.PacketFileSpec.<Clone>$() -> Aw.Packets.Core.Kinds.PacketFileSpec!
+Aw.Packets.Core.Kinds.PacketFileSpec.Deconstruct(out string! Name, out Aw.Packets.Core.Kinds.PacketFileFormat Format) -> void
+Aw.Packets.Core.Kinds.PacketFileSpec.Equals(Aw.Packets.Core.Kinds.PacketFileSpec? other) -> bool
+Aw.Packets.Core.Kinds.PacketFileSpec.Format.get -> Aw.Packets.Core.Kinds.PacketFileFormat
+Aw.Packets.Core.Kinds.PacketFileSpec.Format.init -> void
+Aw.Packets.Core.Kinds.PacketFileSpec.Name.get -> string!
+Aw.Packets.Core.Kinds.PacketFileSpec.Name.init -> void
+Aw.Packets.Core.Kinds.PacketFileSpec.PacketFileSpec(string! Name, Aw.Packets.Core.Kinds.PacketFileFormat Format) -> void
+Aw.Packets.Core.Kinds.PacketKind
+Aw.Packets.Core.Kinds.PacketKind.<Clone>$() -> Aw.Packets.Core.Kinds.PacketKind!
+Aw.Packets.Core.Kinds.PacketKind.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.PacketFileSpec!>! Files) -> void
+Aw.Packets.Core.Kinds.PacketKind.Equals(Aw.Packets.Core.Kinds.PacketKind? other) -> bool
+Aw.Packets.Core.Kinds.PacketKind.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.PacketFileSpec!>!
+Aw.Packets.Core.Kinds.PacketKind.Files.init -> void
+Aw.Packets.Core.Kinds.PacketKind.IsManifestDriven.get -> bool
+Aw.Packets.Core.Kinds.PacketKind.Name.get -> string!
+Aw.Packets.Core.Kinds.PacketKind.Name.init -> void
+Aw.Packets.Core.Kinds.PacketKind.PacketKind(string! Name, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.PacketFileSpec!>! Files) -> void
+Aw.Packets.Core.Kinds.PacketKinds
+Aw.Packets.Core.Kinds.Scoping.IScopingPacketSource
+Aw.Packets.Core.Kinds.Scoping.IScopingPacketSource.Read(string! packetDirectory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Packets.Core.Kinds.Scoping.ScopingFiles!>!>
+Aw.Packets.Core.Kinds.Scoping.LensBand
+Aw.Packets.Core.Kinds.Scoping.LensBand.Code = 1 -> Aw.Packets.Core.Kinds.Scoping.LensBand
+Aw.Packets.Core.Kinds.Scoping.LensBand.Intent = 3 -> Aw.Packets.Core.Kinds.Scoping.LensBand
+Aw.Packets.Core.Kinds.Scoping.LensBand.Product = 2 -> Aw.Packets.Core.Kinds.Scoping.LensBand
+Aw.Packets.Core.Kinds.Scoping.LensEdge
+Aw.Packets.Core.Kinds.Scoping.LensEdge.<Clone>$() -> Aw.Packets.Core.Kinds.Scoping.LensEdge!
+Aw.Packets.Core.Kinds.Scoping.LensEdge.Confirmed.get -> bool
+Aw.Packets.Core.Kinds.Scoping.LensEdge.Confirmed.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensEdge.Deconstruct(out string! From, out string! To, out string! Type, out string! Provenance, out bool Confirmed, out Aw.Packets.Core.Kinds.Scoping.LensTrust Trust) -> void
+Aw.Packets.Core.Kinds.Scoping.LensEdge.Equals(Aw.Packets.Core.Kinds.Scoping.LensEdge? other) -> bool
+Aw.Packets.Core.Kinds.Scoping.LensEdge.From.get -> string!
+Aw.Packets.Core.Kinds.Scoping.LensEdge.From.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensEdge.LensEdge(string! From, string! To, string! Type, string! Provenance, bool Confirmed, Aw.Packets.Core.Kinds.Scoping.LensTrust Trust) -> void
+Aw.Packets.Core.Kinds.Scoping.LensEdge.Provenance.get -> string!
+Aw.Packets.Core.Kinds.Scoping.LensEdge.Provenance.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensEdge.To.get -> string!
+Aw.Packets.Core.Kinds.Scoping.LensEdge.To.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensEdge.Trust.get -> Aw.Packets.Core.Kinds.Scoping.LensTrust
+Aw.Packets.Core.Kinds.Scoping.LensEdge.Trust.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensEdge.Type.get -> string!
+Aw.Packets.Core.Kinds.Scoping.LensEdge.Type.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensEntry
+Aw.Packets.Core.Kinds.Scoping.LensEntry.<Clone>$() -> Aw.Packets.Core.Kinds.Scoping.LensEntry!
+Aw.Packets.Core.Kinds.Scoping.LensEntry.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Packets.Core.Kinds.Scoping.LensEntry.Anchors.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensEntry.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out int Depth, out int Hops, out int MapVersion, out int FoundCount, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensNode!>! Nodes, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensEdge!>! Edges, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensFound!>! Items, out System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensBand>! Truncated) -> void
+Aw.Packets.Core.Kinds.Scoping.LensEntry.Depth.get -> int
+Aw.Packets.Core.Kinds.Scoping.LensEntry.Depth.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensEntry.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensEdge!>!
+Aw.Packets.Core.Kinds.Scoping.LensEntry.Edges.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensEntry.Equals(Aw.Packets.Core.Kinds.Scoping.LensEntry? other) -> bool
+Aw.Packets.Core.Kinds.Scoping.LensEntry.FoundCount.get -> int
+Aw.Packets.Core.Kinds.Scoping.LensEntry.FoundCount.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensEntry.Hops.get -> int
+Aw.Packets.Core.Kinds.Scoping.LensEntry.Hops.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensEntry.Items.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensFound!>!
+Aw.Packets.Core.Kinds.Scoping.LensEntry.Items.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensEntry.LensEntry(System.Collections.Generic.IReadOnlyList<string!>! Anchors, int Depth, int Hops, int MapVersion, int FoundCount, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensNode!>! Nodes, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensEdge!>! Edges, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensFound!>! Items, System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensBand>! Truncated) -> void
+Aw.Packets.Core.Kinds.Scoping.LensEntry.MapVersion.get -> int
+Aw.Packets.Core.Kinds.Scoping.LensEntry.MapVersion.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensEntry.Nodes.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensNode!>!
+Aw.Packets.Core.Kinds.Scoping.LensEntry.Nodes.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensEntry.Truncated.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Scoping.LensBand>!
+Aw.Packets.Core.Kinds.Scoping.LensEntry.Truncated.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensFound
+Aw.Packets.Core.Kinds.Scoping.LensFound.<Clone>$() -> Aw.Packets.Core.Kinds.Scoping.LensFound!
+Aw.Packets.Core.Kinds.Scoping.LensFound.Citations.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Packets.Core.Kinds.Scoping.LensFound.Citations.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensFound.Deconstruct(out string! LensItem, out string! Kind, out string! Label, out System.Collections.Generic.IReadOnlyList<string!>! Citations, out Aw.Packets.Core.Kinds.Scoping.LensTrust Trust) -> void
+Aw.Packets.Core.Kinds.Scoping.LensFound.Equals(Aw.Packets.Core.Kinds.Scoping.LensFound? other) -> bool
+Aw.Packets.Core.Kinds.Scoping.LensFound.Kind.get -> string!
+Aw.Packets.Core.Kinds.Scoping.LensFound.Kind.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensFound.Label.get -> string!
+Aw.Packets.Core.Kinds.Scoping.LensFound.Label.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensFound.LensFound(string! LensItem, string! Kind, string! Label, System.Collections.Generic.IReadOnlyList<string!>! Citations, Aw.Packets.Core.Kinds.Scoping.LensTrust Trust) -> void
+Aw.Packets.Core.Kinds.Scoping.LensFound.LensItem.get -> string!
+Aw.Packets.Core.Kinds.Scoping.LensFound.LensItem.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensFound.Trust.get -> Aw.Packets.Core.Kinds.Scoping.LensTrust
+Aw.Packets.Core.Kinds.Scoping.LensFound.Trust.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensNode
+Aw.Packets.Core.Kinds.Scoping.LensNode.<Clone>$() -> Aw.Packets.Core.Kinds.Scoping.LensNode!
+Aw.Packets.Core.Kinds.Scoping.LensNode.Band.get -> Aw.Packets.Core.Kinds.Scoping.LensBand
+Aw.Packets.Core.Kinds.Scoping.LensNode.Band.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensNode.Deconstruct(out string! Key, out string! Kind, out string! Label, out Aw.Packets.Core.Kinds.Scoping.LensBand Band, out string! LensItem, out Aw.Packets.Core.Kinds.Scoping.LensTrust Trust) -> void
+Aw.Packets.Core.Kinds.Scoping.LensNode.Equals(Aw.Packets.Core.Kinds.Scoping.LensNode? other) -> bool
+Aw.Packets.Core.Kinds.Scoping.LensNode.Key.get -> string!
+Aw.Packets.Core.Kinds.Scoping.LensNode.Key.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensNode.Kind.get -> string!
+Aw.Packets.Core.Kinds.Scoping.LensNode.Kind.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensNode.Label.get -> string!
+Aw.Packets.Core.Kinds.Scoping.LensNode.Label.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensNode.LensItem.get -> string!
+Aw.Packets.Core.Kinds.Scoping.LensNode.LensItem.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensNode.LensNode(string! Key, string! Kind, string! Label, Aw.Packets.Core.Kinds.Scoping.LensBand Band, string! LensItem, Aw.Packets.Core.Kinds.Scoping.LensTrust Trust) -> void
+Aw.Packets.Core.Kinds.Scoping.LensNode.Trust.get -> Aw.Packets.Core.Kinds.Scoping.LensTrust
+Aw.Packets.Core.Kinds.Scoping.LensNode.Trust.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensTrust
+Aw.Packets.Core.Kinds.Scoping.LensTrust.Owner = 2 -> Aw.Packets.Core.Kinds.Scoping.LensTrust
+Aw.Packets.Core.Kinds.Scoping.LensTrust.Untrusted = 1 -> Aw.Packets.Core.Kinds.Scoping.LensTrust
+Aw.Packets.Core.Kinds.Scoping.LensesFile
+Aw.Packets.Core.Kinds.Scoping.LensesFile.<Clone>$() -> Aw.Packets.Core.Kinds.Scoping.LensesFile!
+Aw.Packets.Core.Kinds.Scoping.LensesFile.Code.get -> Aw.Packets.Core.Kinds.Scoping.LensEntry!
+Aw.Packets.Core.Kinds.Scoping.LensesFile.Code.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensesFile.Equals(Aw.Packets.Core.Kinds.Scoping.LensesFile? other) -> bool
+Aw.Packets.Core.Kinds.Scoping.LensesFile.History.get -> Aw.Packets.Core.Kinds.Scoping.LensEntry!
+Aw.Packets.Core.Kinds.Scoping.LensesFile.History.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensesFile.LensesFile() -> void
+Aw.Packets.Core.Kinds.Scoping.LensesFile.Product.get -> Aw.Packets.Core.Kinds.Scoping.LensEntry!
+Aw.Packets.Core.Kinds.Scoping.LensesFile.Product.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensesFile.Related.get -> Aw.Packets.Core.Kinds.Scoping.LensEntry!
+Aw.Packets.Core.Kinds.Scoping.LensesFile.Related.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensesFile.Schema.get -> string?
+Aw.Packets.Core.Kinds.Scoping.LensesFile.Schema.init -> void
+Aw.Packets.Core.Kinds.Scoping.LensesFile.SchemaVersion.get -> int
+Aw.Packets.Core.Kinds.Scoping.LensesFile.SchemaVersion.init -> void
+Aw.Packets.Core.Kinds.Scoping.ScopingChecks
+Aw.Packets.Core.Kinds.Scoping.ScopingFiles
+Aw.Packets.Core.Kinds.Scoping.ScopingFiles.<Clone>$() -> Aw.Packets.Core.Kinds.Scoping.ScopingFiles!
+Aw.Packets.Core.Kinds.Scoping.ScopingFiles.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<string!, System.ReadOnlyMemory<byte>>! Present, out System.Collections.Generic.IReadOnlyList<string!>! Unlisted) -> void
+Aw.Packets.Core.Kinds.Scoping.ScopingFiles.Equals(Aw.Packets.Core.Kinds.Scoping.ScopingFiles? other) -> bool
+Aw.Packets.Core.Kinds.Scoping.ScopingFiles.Present.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.ReadOnlyMemory<byte>>!
+Aw.Packets.Core.Kinds.Scoping.ScopingFiles.Present.init -> void
+Aw.Packets.Core.Kinds.Scoping.ScopingFiles.ScopingFiles(System.Collections.Generic.IReadOnlyDictionary<string!, System.ReadOnlyMemory<byte>>! Present, System.Collections.Generic.IReadOnlyList<string!>! Unlisted) -> void
+Aw.Packets.Core.Kinds.Scoping.ScopingFiles.Unlisted.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Packets.Core.Kinds.Scoping.ScopingFiles.Unlisted.init -> void
+Aw.Packets.Core.Kinds.Scoping.ScopingRules
 Aw.Packets.Core.Model.AcceptanceExample
 Aw.Packets.Core.Model.AcceptanceExample.<Clone>$() -> Aw.Packets.Core.Model.AcceptanceExample!
 Aw.Packets.Core.Model.AcceptanceExample.AcceptanceExample() -> void
@@ -123,7 +255,7 @@ Aw.Packets.Core.Model.FreezeReceipt.Location.get -> string!
 Aw.Packets.Core.Model.FreezeReceipt.Location.init -> void
 Aw.Packets.Core.Model.FreezeRecord
 Aw.Packets.Core.Model.FreezeRecord.<Clone>$() -> Aw.Packets.Core.Model.FreezeRecord!
-Aw.Packets.Core.Model.FreezeRecord.BaseSha.get -> Aw.Packets.Core.Values.CommitSha
+Aw.Packets.Core.Model.FreezeRecord.BaseSha.get -> Aw.Packets.Core.Values.CommitSha?
 Aw.Packets.Core.Model.FreezeRecord.BaseSha.init -> void
 Aw.Packets.Core.Model.FreezeRecord.DigestVersion.get -> int
 Aw.Packets.Core.Model.FreezeRecord.DigestVersion.init -> void
@@ -135,6 +267,8 @@ Aw.Packets.Core.Model.FreezeRecord.FrozenAt.get -> System.DateTimeOffset
 Aw.Packets.Core.Model.FreezeRecord.FrozenAt.init -> void
 Aw.Packets.Core.Model.FreezeRecord.Hash.get -> Aw.Packets.Core.Values.PacketHash
 Aw.Packets.Core.Model.FreezeRecord.Hash.init -> void
+Aw.Packets.Core.Model.FreezeRecord.Kind.get -> string!
+Aw.Packets.Core.Model.FreezeRecord.Kind.init -> void
 Aw.Packets.Core.Model.FreezeRecord.Packet.get -> Aw.Packets.Core.Ids.PacketId
 Aw.Packets.Core.Model.FreezeRecord.Packet.init -> void
 Aw.Packets.Core.Model.FreezeRecord.Repo.get -> Aw.Packets.Core.Values.RepoSlug
@@ -301,15 +435,15 @@ Aw.Packets.Core.PacketsCoreServiceCollectionExtensions
 Aw.Packets.Core.PacketsErrors
 Aw.Packets.Core.Values.CommitSha
 Aw.Packets.Core.Values.CommitSha.CommitSha() -> void
-Aw.Packets.Core.Values.CommitSha.Equals(Aw.Packets.Core.Values.CommitSha other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Values.CommitSha>! comparer) -> bool
 Aw.Packets.Core.Values.CommitSha.Equals(Aw.Packets.Core.Values.CommitSha other) -> bool
+Aw.Packets.Core.Values.CommitSha.Equals(Aw.Packets.Core.Values.CommitSha other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Values.CommitSha>! comparer) -> bool
 Aw.Packets.Core.Values.CommitSha.GetTypeCode() -> System.TypeCode
 Aw.Packets.Core.Values.CommitSha.IsInitialized() -> bool
 Aw.Packets.Core.Values.CommitSha.ToString(System.IFormatProvider? provider) -> string!
 Aw.Packets.Core.Values.CommitSha.Value.get -> string!
 Aw.Packets.Core.Values.PacketHash
-Aw.Packets.Core.Values.PacketHash.Equals(Aw.Packets.Core.Values.PacketHash other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Values.PacketHash>! comparer) -> bool
 Aw.Packets.Core.Values.PacketHash.Equals(Aw.Packets.Core.Values.PacketHash other) -> bool
+Aw.Packets.Core.Values.PacketHash.Equals(Aw.Packets.Core.Values.PacketHash other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Values.PacketHash>! comparer) -> bool
 Aw.Packets.Core.Values.PacketHash.GetTypeCode() -> System.TypeCode
 Aw.Packets.Core.Values.PacketHash.Hex.get -> string!
 Aw.Packets.Core.Values.PacketHash.IsInitialized() -> bool
@@ -317,8 +451,8 @@ Aw.Packets.Core.Values.PacketHash.PacketHash() -> void
 Aw.Packets.Core.Values.PacketHash.ToString(System.IFormatProvider? provider) -> string!
 Aw.Packets.Core.Values.PacketHash.Value.get -> string!
 Aw.Packets.Core.Values.RepoSlug
-Aw.Packets.Core.Values.RepoSlug.Equals(Aw.Packets.Core.Values.RepoSlug other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Values.RepoSlug>! comparer) -> bool
 Aw.Packets.Core.Values.RepoSlug.Equals(Aw.Packets.Core.Values.RepoSlug other) -> bool
+Aw.Packets.Core.Values.RepoSlug.Equals(Aw.Packets.Core.Values.RepoSlug other, System.Collections.Generic.IEqualityComparer<Aw.Packets.Core.Values.RepoSlug>! comparer) -> bool
 Aw.Packets.Core.Values.RepoSlug.GetTypeCode() -> System.TypeCode
 Aw.Packets.Core.Values.RepoSlug.IsInitialized() -> bool
 Aw.Packets.Core.Values.RepoSlug.RepoSlug() -> void
@@ -339,6 +473,12 @@ const Aw.Packets.Core.Checks.PacketRules.TaskInWorkstream = "PKT-WS-001" -> stri
 const Aw.Packets.Core.Checks.PacketRules.UniqueIds = "PKT-ID-001" -> string!
 const Aw.Packets.Core.Checks.PacketRules.WorkflowCoverage = "PKT-FLOW-001" -> string!
 const Aw.Packets.Core.Digest.PacketDigest.Version = 1 -> int
+const Aw.Packets.Core.Kinds.Scoping.ScopingChecks.MaxReach = 32 -> int
+const Aw.Packets.Core.Kinds.Scoping.ScopingRules.FilesPresent = "PKT-SCP-001" -> string!
+const Aw.Packets.Core.Kinds.Scoping.ScopingRules.LensIds = "PKT-SCP-005" -> string!
+const Aw.Packets.Core.Kinds.Scoping.ScopingRules.LensesSchema = "PKT-SCP-004" -> string!
+const Aw.Packets.Core.Kinds.Scoping.ScopingRules.NoUnlisted = "PKT-SCP-002" -> string!
+const Aw.Packets.Core.Kinds.Scoping.ScopingRules.WellFormed = "PKT-SCP-003" -> string!
 const Aw.Packets.Core.PacketReader.ManifestFile = "packet.json" -> string!
 const Aw.Packets.Core.PacketReader.MaxTasks = 2000 -> int
 const Aw.Packets.Core.PacketReader.SchemaVersion = 1 -> int
@@ -363,6 +503,30 @@ override Aw.Packets.Core.Ids.WorkstreamId.ToString() -> string!
 override Aw.Packets.Core.Inspection.Equals(object? obj) -> bool
 override Aw.Packets.Core.Inspection.GetHashCode() -> int
 override Aw.Packets.Core.Inspection.ToString() -> string!
+override Aw.Packets.Core.Kinds.PacketFileSpec.Equals(object? obj) -> bool
+override Aw.Packets.Core.Kinds.PacketFileSpec.GetHashCode() -> int
+override Aw.Packets.Core.Kinds.PacketFileSpec.ToString() -> string!
+override Aw.Packets.Core.Kinds.PacketKind.Equals(object? obj) -> bool
+override Aw.Packets.Core.Kinds.PacketKind.GetHashCode() -> int
+override Aw.Packets.Core.Kinds.PacketKind.ToString() -> string!
+override Aw.Packets.Core.Kinds.Scoping.LensEdge.Equals(object? obj) -> bool
+override Aw.Packets.Core.Kinds.Scoping.LensEdge.GetHashCode() -> int
+override Aw.Packets.Core.Kinds.Scoping.LensEdge.ToString() -> string!
+override Aw.Packets.Core.Kinds.Scoping.LensEntry.Equals(object? obj) -> bool
+override Aw.Packets.Core.Kinds.Scoping.LensEntry.GetHashCode() -> int
+override Aw.Packets.Core.Kinds.Scoping.LensEntry.ToString() -> string!
+override Aw.Packets.Core.Kinds.Scoping.LensFound.Equals(object? obj) -> bool
+override Aw.Packets.Core.Kinds.Scoping.LensFound.GetHashCode() -> int
+override Aw.Packets.Core.Kinds.Scoping.LensFound.ToString() -> string!
+override Aw.Packets.Core.Kinds.Scoping.LensNode.Equals(object? obj) -> bool
+override Aw.Packets.Core.Kinds.Scoping.LensNode.GetHashCode() -> int
+override Aw.Packets.Core.Kinds.Scoping.LensNode.ToString() -> string!
+override Aw.Packets.Core.Kinds.Scoping.LensesFile.Equals(object? obj) -> bool
+override Aw.Packets.Core.Kinds.Scoping.LensesFile.GetHashCode() -> int
+override Aw.Packets.Core.Kinds.Scoping.LensesFile.ToString() -> string!
+override Aw.Packets.Core.Kinds.Scoping.ScopingFiles.Equals(object? obj) -> bool
+override Aw.Packets.Core.Kinds.Scoping.ScopingFiles.GetHashCode() -> int
+override Aw.Packets.Core.Kinds.Scoping.ScopingFiles.ToString() -> string!
 override Aw.Packets.Core.Model.AcceptanceExample.Equals(object? obj) -> bool
 override Aw.Packets.Core.Model.AcceptanceExample.GetHashCode() -> int
 override Aw.Packets.Core.Model.AcceptanceExample.ToString() -> string!
@@ -420,40 +584,62 @@ override Aw.Packets.Core.Values.RepoSlug.ToString() -> string!
 static Aw.Packets.Core.Checks.CheckResult.operator !=(Aw.Packets.Core.Checks.CheckResult? left, Aw.Packets.Core.Checks.CheckResult? right) -> bool
 static Aw.Packets.Core.Checks.CheckResult.operator ==(Aw.Packets.Core.Checks.CheckResult? left, Aw.Packets.Core.Checks.CheckResult? right) -> bool
 static Aw.Packets.Core.Digest.PacketDigest.Canonical(System.Text.Json.Nodes.JsonNode! node) -> byte[]!
+static Aw.Packets.Core.Digest.PacketDigest.Compute(Aw.Packets.Core.Kinds.Scoping.ScopingFiles! files) -> Aw.Kernel.Result<Aw.Packets.Core.Values.PacketHash>!
 static Aw.Packets.Core.Digest.PacketDigest.Compute(Aw.Packets.Core.Model.LoadedPacket! loaded) -> Aw.Kernel.Result<Aw.Packets.Core.Values.PacketHash>!
 static Aw.Packets.Core.FreezeLocation.Of(Aw.Packets.Core.Model.FreezeRecord! record) -> string!
 static Aw.Packets.Core.Ids.ExampleId.From(string! value) -> Aw.Packets.Core.Ids.ExampleId
-static Aw.Packets.Core.Ids.ExampleId.operator !=(Aw.Packets.Core.Ids.ExampleId left, Aw.Packets.Core.Ids.ExampleId right) -> bool
-static Aw.Packets.Core.Ids.ExampleId.operator ==(Aw.Packets.Core.Ids.ExampleId left, Aw.Packets.Core.Ids.ExampleId right) -> bool
 static Aw.Packets.Core.Ids.ExampleId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Packets.Core.Ids.ExampleId
 static Aw.Packets.Core.Ids.ExampleId.TryFrom(string? value, out Aw.Packets.Core.Ids.ExampleId vo) -> bool
 static Aw.Packets.Core.Ids.ExampleId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Packets.Core.Ids.ExampleId result) -> bool
+static Aw.Packets.Core.Ids.ExampleId.operator !=(Aw.Packets.Core.Ids.ExampleId left, Aw.Packets.Core.Ids.ExampleId right) -> bool
+static Aw.Packets.Core.Ids.ExampleId.operator ==(Aw.Packets.Core.Ids.ExampleId left, Aw.Packets.Core.Ids.ExampleId right) -> bool
 static Aw.Packets.Core.Ids.PacketId.From(string! value) -> Aw.Packets.Core.Ids.PacketId
-static Aw.Packets.Core.Ids.PacketId.operator !=(Aw.Packets.Core.Ids.PacketId left, Aw.Packets.Core.Ids.PacketId right) -> bool
-static Aw.Packets.Core.Ids.PacketId.operator ==(Aw.Packets.Core.Ids.PacketId left, Aw.Packets.Core.Ids.PacketId right) -> bool
 static Aw.Packets.Core.Ids.PacketId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Packets.Core.Ids.PacketId
 static Aw.Packets.Core.Ids.PacketId.TryFrom(string? value, out Aw.Packets.Core.Ids.PacketId vo) -> bool
 static Aw.Packets.Core.Ids.PacketId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Packets.Core.Ids.PacketId result) -> bool
+static Aw.Packets.Core.Ids.PacketId.operator !=(Aw.Packets.Core.Ids.PacketId left, Aw.Packets.Core.Ids.PacketId right) -> bool
+static Aw.Packets.Core.Ids.PacketId.operator ==(Aw.Packets.Core.Ids.PacketId left, Aw.Packets.Core.Ids.PacketId right) -> bool
 static Aw.Packets.Core.Ids.QuestionId.From(string! value) -> Aw.Packets.Core.Ids.QuestionId
-static Aw.Packets.Core.Ids.QuestionId.operator !=(Aw.Packets.Core.Ids.QuestionId left, Aw.Packets.Core.Ids.QuestionId right) -> bool
-static Aw.Packets.Core.Ids.QuestionId.operator ==(Aw.Packets.Core.Ids.QuestionId left, Aw.Packets.Core.Ids.QuestionId right) -> bool
 static Aw.Packets.Core.Ids.QuestionId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Packets.Core.Ids.QuestionId
 static Aw.Packets.Core.Ids.QuestionId.TryFrom(string? value, out Aw.Packets.Core.Ids.QuestionId vo) -> bool
 static Aw.Packets.Core.Ids.QuestionId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Packets.Core.Ids.QuestionId result) -> bool
+static Aw.Packets.Core.Ids.QuestionId.operator !=(Aw.Packets.Core.Ids.QuestionId left, Aw.Packets.Core.Ids.QuestionId right) -> bool
+static Aw.Packets.Core.Ids.QuestionId.operator ==(Aw.Packets.Core.Ids.QuestionId left, Aw.Packets.Core.Ids.QuestionId right) -> bool
 static Aw.Packets.Core.Ids.TaskId.From(string! value) -> Aw.Packets.Core.Ids.TaskId
-static Aw.Packets.Core.Ids.TaskId.operator !=(Aw.Packets.Core.Ids.TaskId left, Aw.Packets.Core.Ids.TaskId right) -> bool
-static Aw.Packets.Core.Ids.TaskId.operator ==(Aw.Packets.Core.Ids.TaskId left, Aw.Packets.Core.Ids.TaskId right) -> bool
 static Aw.Packets.Core.Ids.TaskId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Packets.Core.Ids.TaskId
 static Aw.Packets.Core.Ids.TaskId.TryFrom(string? value, out Aw.Packets.Core.Ids.TaskId vo) -> bool
 static Aw.Packets.Core.Ids.TaskId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Packets.Core.Ids.TaskId result) -> bool
+static Aw.Packets.Core.Ids.TaskId.operator !=(Aw.Packets.Core.Ids.TaskId left, Aw.Packets.Core.Ids.TaskId right) -> bool
+static Aw.Packets.Core.Ids.TaskId.operator ==(Aw.Packets.Core.Ids.TaskId left, Aw.Packets.Core.Ids.TaskId right) -> bool
 static Aw.Packets.Core.Ids.WorkstreamId.From(string! value) -> Aw.Packets.Core.Ids.WorkstreamId
-static Aw.Packets.Core.Ids.WorkstreamId.operator !=(Aw.Packets.Core.Ids.WorkstreamId left, Aw.Packets.Core.Ids.WorkstreamId right) -> bool
-static Aw.Packets.Core.Ids.WorkstreamId.operator ==(Aw.Packets.Core.Ids.WorkstreamId left, Aw.Packets.Core.Ids.WorkstreamId right) -> bool
 static Aw.Packets.Core.Ids.WorkstreamId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Packets.Core.Ids.WorkstreamId
 static Aw.Packets.Core.Ids.WorkstreamId.TryFrom(string? value, out Aw.Packets.Core.Ids.WorkstreamId vo) -> bool
 static Aw.Packets.Core.Ids.WorkstreamId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Packets.Core.Ids.WorkstreamId result) -> bool
+static Aw.Packets.Core.Ids.WorkstreamId.operator !=(Aw.Packets.Core.Ids.WorkstreamId left, Aw.Packets.Core.Ids.WorkstreamId right) -> bool
+static Aw.Packets.Core.Ids.WorkstreamId.operator ==(Aw.Packets.Core.Ids.WorkstreamId left, Aw.Packets.Core.Ids.WorkstreamId right) -> bool
 static Aw.Packets.Core.Inspection.operator !=(Aw.Packets.Core.Inspection? left, Aw.Packets.Core.Inspection? right) -> bool
 static Aw.Packets.Core.Inspection.operator ==(Aw.Packets.Core.Inspection? left, Aw.Packets.Core.Inspection? right) -> bool
+static Aw.Packets.Core.Kinds.PacketFileSpec.operator !=(Aw.Packets.Core.Kinds.PacketFileSpec? left, Aw.Packets.Core.Kinds.PacketFileSpec? right) -> bool
+static Aw.Packets.Core.Kinds.PacketFileSpec.operator ==(Aw.Packets.Core.Kinds.PacketFileSpec? left, Aw.Packets.Core.Kinds.PacketFileSpec? right) -> bool
+static Aw.Packets.Core.Kinds.PacketKind.operator !=(Aw.Packets.Core.Kinds.PacketKind? left, Aw.Packets.Core.Kinds.PacketKind? right) -> bool
+static Aw.Packets.Core.Kinds.PacketKind.operator ==(Aw.Packets.Core.Kinds.PacketKind? left, Aw.Packets.Core.Kinds.PacketKind? right) -> bool
+static Aw.Packets.Core.Kinds.PacketKinds.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.PacketKind!>!
+static Aw.Packets.Core.Kinds.PacketKinds.Build.get -> Aw.Packets.Core.Kinds.PacketKind!
+static Aw.Packets.Core.Kinds.PacketKinds.Find(string! name) -> Aw.Packets.Core.Kinds.PacketKind?
+static Aw.Packets.Core.Kinds.PacketKinds.Scoping.get -> Aw.Packets.Core.Kinds.PacketKind!
+static Aw.Packets.Core.Kinds.Scoping.LensEdge.operator !=(Aw.Packets.Core.Kinds.Scoping.LensEdge? left, Aw.Packets.Core.Kinds.Scoping.LensEdge? right) -> bool
+static Aw.Packets.Core.Kinds.Scoping.LensEdge.operator ==(Aw.Packets.Core.Kinds.Scoping.LensEdge? left, Aw.Packets.Core.Kinds.Scoping.LensEdge? right) -> bool
+static Aw.Packets.Core.Kinds.Scoping.LensEntry.operator !=(Aw.Packets.Core.Kinds.Scoping.LensEntry? left, Aw.Packets.Core.Kinds.Scoping.LensEntry? right) -> bool
+static Aw.Packets.Core.Kinds.Scoping.LensEntry.operator ==(Aw.Packets.Core.Kinds.Scoping.LensEntry? left, Aw.Packets.Core.Kinds.Scoping.LensEntry? right) -> bool
+static Aw.Packets.Core.Kinds.Scoping.LensFound.operator !=(Aw.Packets.Core.Kinds.Scoping.LensFound? left, Aw.Packets.Core.Kinds.Scoping.LensFound? right) -> bool
+static Aw.Packets.Core.Kinds.Scoping.LensFound.operator ==(Aw.Packets.Core.Kinds.Scoping.LensFound? left, Aw.Packets.Core.Kinds.Scoping.LensFound? right) -> bool
+static Aw.Packets.Core.Kinds.Scoping.LensNode.operator !=(Aw.Packets.Core.Kinds.Scoping.LensNode? left, Aw.Packets.Core.Kinds.Scoping.LensNode? right) -> bool
+static Aw.Packets.Core.Kinds.Scoping.LensNode.operator ==(Aw.Packets.Core.Kinds.Scoping.LensNode? left, Aw.Packets.Core.Kinds.Scoping.LensNode? right) -> bool
+static Aw.Packets.Core.Kinds.Scoping.LensesFile.operator !=(Aw.Packets.Core.Kinds.Scoping.LensesFile? left, Aw.Packets.Core.Kinds.Scoping.LensesFile? right) -> bool
+static Aw.Packets.Core.Kinds.Scoping.LensesFile.operator ==(Aw.Packets.Core.Kinds.Scoping.LensesFile? left, Aw.Packets.Core.Kinds.Scoping.LensesFile? right) -> bool
+static Aw.Packets.Core.Kinds.Scoping.ScopingChecks.Run(Aw.Packets.Core.Kinds.Scoping.ScopingFiles! files, System.Text.Json.JsonSerializerOptions! json) -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Checks.CheckResult!>!
+static Aw.Packets.Core.Kinds.Scoping.ScopingFiles.operator !=(Aw.Packets.Core.Kinds.Scoping.ScopingFiles? left, Aw.Packets.Core.Kinds.Scoping.ScopingFiles? right) -> bool
+static Aw.Packets.Core.Kinds.Scoping.ScopingFiles.operator ==(Aw.Packets.Core.Kinds.Scoping.ScopingFiles? left, Aw.Packets.Core.Kinds.Scoping.ScopingFiles? right) -> bool
 static Aw.Packets.Core.Model.AcceptanceExample.operator !=(Aw.Packets.Core.Model.AcceptanceExample? left, Aw.Packets.Core.Model.AcceptanceExample? right) -> bool
 static Aw.Packets.Core.Model.AcceptanceExample.operator ==(Aw.Packets.Core.Model.AcceptanceExample? left, Aw.Packets.Core.Model.AcceptanceExample? right) -> bool
 static Aw.Packets.Core.Model.DecisionLog.operator !=(Aw.Packets.Core.Model.DecisionLog? left, Aw.Packets.Core.Model.DecisionLog? right) -> bool
@@ -489,23 +675,23 @@ static Aw.Packets.Core.PacketReader.Load(Aw.Packets.Core.PacketReader.FileReader
 static Aw.Packets.Core.PacketsCoreServiceCollectionExtensions.AddPacketsCore(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Packets.Core.PacketsErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 static Aw.Packets.Core.Values.CommitSha.From(string! value) -> Aw.Packets.Core.Values.CommitSha
-static Aw.Packets.Core.Values.CommitSha.operator !=(Aw.Packets.Core.Values.CommitSha left, Aw.Packets.Core.Values.CommitSha right) -> bool
-static Aw.Packets.Core.Values.CommitSha.operator ==(Aw.Packets.Core.Values.CommitSha left, Aw.Packets.Core.Values.CommitSha right) -> bool
 static Aw.Packets.Core.Values.CommitSha.Parse(string! s, System.IFormatProvider? provider) -> Aw.Packets.Core.Values.CommitSha
 static Aw.Packets.Core.Values.CommitSha.TryFrom(string? value, out Aw.Packets.Core.Values.CommitSha vo) -> bool
 static Aw.Packets.Core.Values.CommitSha.TryParse(string? s, System.IFormatProvider? provider, out Aw.Packets.Core.Values.CommitSha result) -> bool
+static Aw.Packets.Core.Values.CommitSha.operator !=(Aw.Packets.Core.Values.CommitSha left, Aw.Packets.Core.Values.CommitSha right) -> bool
+static Aw.Packets.Core.Values.CommitSha.operator ==(Aw.Packets.Core.Values.CommitSha left, Aw.Packets.Core.Values.CommitSha right) -> bool
 static Aw.Packets.Core.Values.PacketHash.From(string! value) -> Aw.Packets.Core.Values.PacketHash
-static Aw.Packets.Core.Values.PacketHash.operator !=(Aw.Packets.Core.Values.PacketHash left, Aw.Packets.Core.Values.PacketHash right) -> bool
-static Aw.Packets.Core.Values.PacketHash.operator ==(Aw.Packets.Core.Values.PacketHash left, Aw.Packets.Core.Values.PacketHash right) -> bool
 static Aw.Packets.Core.Values.PacketHash.Parse(string! s, System.IFormatProvider? provider) -> Aw.Packets.Core.Values.PacketHash
 static Aw.Packets.Core.Values.PacketHash.TryFrom(string? value, out Aw.Packets.Core.Values.PacketHash vo) -> bool
 static Aw.Packets.Core.Values.PacketHash.TryParse(string? s, System.IFormatProvider? provider, out Aw.Packets.Core.Values.PacketHash result) -> bool
+static Aw.Packets.Core.Values.PacketHash.operator !=(Aw.Packets.Core.Values.PacketHash left, Aw.Packets.Core.Values.PacketHash right) -> bool
+static Aw.Packets.Core.Values.PacketHash.operator ==(Aw.Packets.Core.Values.PacketHash left, Aw.Packets.Core.Values.PacketHash right) -> bool
 static Aw.Packets.Core.Values.RepoSlug.From(string! value) -> Aw.Packets.Core.Values.RepoSlug
-static Aw.Packets.Core.Values.RepoSlug.operator !=(Aw.Packets.Core.Values.RepoSlug left, Aw.Packets.Core.Values.RepoSlug right) -> bool
-static Aw.Packets.Core.Values.RepoSlug.operator ==(Aw.Packets.Core.Values.RepoSlug left, Aw.Packets.Core.Values.RepoSlug right) -> bool
 static Aw.Packets.Core.Values.RepoSlug.Parse(string! s, System.IFormatProvider? provider) -> Aw.Packets.Core.Values.RepoSlug
 static Aw.Packets.Core.Values.RepoSlug.TryFrom(string? value, out Aw.Packets.Core.Values.RepoSlug vo) -> bool
 static Aw.Packets.Core.Values.RepoSlug.TryParse(string? s, System.IFormatProvider? provider, out Aw.Packets.Core.Values.RepoSlug result) -> bool
+static Aw.Packets.Core.Values.RepoSlug.operator !=(Aw.Packets.Core.Values.RepoSlug left, Aw.Packets.Core.Values.RepoSlug right) -> bool
+static Aw.Packets.Core.Values.RepoSlug.operator ==(Aw.Packets.Core.Values.RepoSlug left, Aw.Packets.Core.Values.RepoSlug right) -> bool
 static readonly Aw.Packets.Core.PacketsErrors.CommitNotFound -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Packets.Core.PacketsErrors.FreezeLogUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Packets.Core.PacketsErrors.Invalid -> Aw.Kernel.ErrorDefinition!
