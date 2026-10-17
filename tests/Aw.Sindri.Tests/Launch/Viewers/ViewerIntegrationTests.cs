@@ -41,22 +41,22 @@ public sealed class ViewerIntegrationTests : IDisposable
         return new ExecTemplateViewer(new ExecTemplateOptions("stub", [path, "{title}", "{cmd...}"]) { Environment = env }, _host, TimeProvider.System);
     }
 
-    [Fact]
+    [Fact(Timeout = 30_000)]
     public async Task A_viewer_that_attaches_is_opened()
     {
         var request = await Started();
 
-        var outcome = await Viewer(Attach).Open(request, CancellationToken.None);
+        var outcome = await Viewer(Attach).Open(request, TestContext.Current.CancellationToken);
 
         Expect.Equal(ViewerOutcome.Opened, outcome);
     }
 
-    [Fact]
+    [Fact(Timeout = 30_000)]
     public async Task A_viewer_that_attaches_late_is_unconfirmed_and_the_client_arrives_after()
     {
         var request = await Started();
 
-        var outcome = await Viewer("sleep 2.5\n" + Attach).Open(request, CancellationToken.None);
+        var outcome = await Viewer("sleep 2.5\n" + Attach).Open(request, TestContext.Current.CancellationToken);
 
         Expect.Equal(ViewerOutcome.Unconfirmed, outcome);
         var late = false;
@@ -69,22 +69,22 @@ public sealed class ViewerIntegrationTests : IDisposable
         Expect.True(late);
     }
 
-    [Fact]
+    [Fact(Timeout = 30_000)]
     public async Task A_viewer_that_exits_0_without_attaching_is_unconfirmed()
     {
         var request = await Started();
 
-        var outcome = await Viewer("exit 0").Open(request, CancellationToken.None);
+        var outcome = await Viewer("exit 0").Open(request, TestContext.Current.CancellationToken);
 
         Expect.Equal(ViewerOutcome.Unconfirmed, outcome);
     }
 
-    [Fact]
+    [Fact(Timeout = 30_000)]
     public async Task A_viewer_that_fails_is_failed_with_its_stderr_and_the_session_stays_attachable()
     {
         var request = await Started();
 
-        var outcome = await Viewer("echo 'cannot open display' >&2; exit 1").Open(request, CancellationToken.None);
+        var outcome = await Viewer("echo 'cannot open display' >&2; exit 1").Open(request, TestContext.Current.CancellationToken);
 
         Expect.Equal(ViewerOutcomeKind.Failed, outcome.Kind);
         Expect.Equal(SindriErrors.LaunchViewerFailed.Code, outcome.Code);

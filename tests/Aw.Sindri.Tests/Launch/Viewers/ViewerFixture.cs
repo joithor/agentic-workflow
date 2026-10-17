@@ -46,7 +46,7 @@ internal sealed class ViewerFixture : IDisposable
             Clock.Advance(TimeSpan.FromMilliseconds(250));
         }
 
-        return await task;
+        return await task.WaitAsync(TimeSpan.FromSeconds(30), TimeProvider.System, TestContext.Current.CancellationToken);   // a hang fails the test, never holds the slot
     }
 
     public void Dispose() => Directory.Delete(Dir, recursive: true);

@@ -14,18 +14,18 @@ public sealed class PrintViewerTests : TerminalViewerContract
     protected override ViewerRequest Request() =>
         new(new HostRef(HostKind.Tmux, "snd-one"), ["tmux", "attach"], "sindri ITM-1", TimeSpan.FromSeconds(3));
 
-    [Fact]
+    [Fact(Timeout = 30_000)]
     public async Task Nothing_opens_and_the_outcome_is_skipped()
     {
-        var outcome = await Create().Open(Request(), CancellationToken.None);
+        var outcome = await Create().Open(Request(), TestContext.Current.CancellationToken);
 
         Expect.Equal(ViewerOutcome.Skipped, outcome);
     }
 
-    [Fact]
+    [Fact(Timeout = 30_000)]
     public async Task Print_is_always_present()
     {
-        var facts = await new PrintViewer("detected").Probe(CancellationToken.None);
+        var facts = await new PrintViewer("detected").Probe(TestContext.Current.CancellationToken);
 
         Expect.Equal(new TerminalFacts("print", "print", Present: true, "detected", ConfigPath: null, Problem: null, Detail: null), facts);
     }
