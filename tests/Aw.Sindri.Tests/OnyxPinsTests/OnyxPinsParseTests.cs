@@ -46,8 +46,6 @@ public sealed class OnyxPinsParseTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("version 4.9 0123456789abcdef0123456789abcdef01234567")]
-    [InlineData("version v4.9.0 notacommit")]
     [InlineData("frobnicate x")]
     [InlineData("file /abs/path aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
     [InlineData("image docker.io/o/app v1 linux/arm64 sha256:abc")]
@@ -59,6 +57,22 @@ public sealed class OnyxPinsParseTests
 
         Assert.Equal(SindriErrors.OnyxPinsMalformed.Code, result.Error.Code);
         Assert.StartsWith("the Onyx pins are malformed: ", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    // The bad row REPLACES the valid version row (appended it would be a second version row, which hides the tag and commit checks).
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("version 4.9 " + Commit, "version tag \"4.9\" is not vX.Y.Z")]
+    [InlineData("version v4.9 " + Commit, "version tag \"v4.9\" is not vX.Y.Z")]
+    [InlineData("version v4.9.0 notacommit", "version commit is not 40 lowercase hex digits")]
+    [InlineData("version v4.9.0 0123456789ABCDEF0123456789abcdef01234567", "version commit is not 40 lowercase hex digits")]
+    [InlineData("version v4.9.0 0123456789abcdef", "version commit is not 40 lowercase hex digits")]
+    [InlineData("version v4.9.0", "version wants 2 fields (tag commit), got 1")]
+    public void Parse_refuses_a_bad_version_row_for_its_own_reason(string versionRow, string reason)
+    {
+        var result = OnyxPins.Parse(Fixture().Replace($"version v4.9.0 {Commit}", versionRow, StringComparison.Ordinal));
+
+        Assert.Equal(SindriErrors.OnyxPinsMalformed.Code, result.Error.Code);
+        Assert.Contains("line 3: " + reason, result.Error.Message, StringComparison.Ordinal);
     }
 
     // The same malformed fixtures as scripts/tests/onyx-lock.test.sh (its "parity" cases): each is the valid file with one row
