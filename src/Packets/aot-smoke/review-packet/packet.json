@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "kind": "review",
+  "id": "smoke-review",
+  "repo": "example/repo",
+  "baseSha": "__BASE_SHA__",
+  "status": "draft",
+  "hash": null,
+  "links": { "review": "review.json", "index": "index.json" }
+}
