@@ -55,6 +55,16 @@ public sealed class StripRequeryTests
         Assert.True(_server.InstancesCalls > strip && _server.NeedsYouCalls > needsYou);
     }, Token);
 
+    // The strip asks for what the Workflows page asks for: the served open filter decides who is open (a cancelled root included), never a chip word.
+    [Fact]
+    public Task The_strip_asks_for_open_roots_so_the_server_decides_who_is_open() => UiThread.Run(async () =>
+    {
+        _ = await Connected();
+
+        Assert.NotEmpty(_server.InstanceQueries);
+        Assert.All(_server.InstanceQueries, q => Assert.Equal(new Aw.Sindri.Ui.Api.Workflow.InstanceQuery(Root: true, Open: true), q));
+    }, Token);
+
     [Fact]
     public Task A_started_incident_moves_to_the_top_without_a_click() => UiThread.Run(async () =>
     {
