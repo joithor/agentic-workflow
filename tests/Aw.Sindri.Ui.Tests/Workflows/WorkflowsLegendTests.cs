@@ -25,4 +25,14 @@ public sealed class WorkflowsLegendTests
         Assert.All(marks, m => Assert.DoesNotContain(m, list.LegendName, StringComparison.Ordinal));
         Assert.All((string[])["Enter", "A", "B", "X"], k => Assert.Contains(k, list.LegendText, StringComparison.Ordinal));
     }
+
+    // A does nothing on a parked desk-class row (its answer is a command to copy), so the legend says when it applies (L6).
+    [Fact]
+    public void The_legend_says_when_A_applies()
+    {
+        var list = new WorkflowsViewModel(_server, new FakeClipboard(), new FakeTimeProvider(A.Noon));
+
+        Assert.Contains("A answers a decision or a desk task", list.LegendText, StringComparison.Ordinal);
+        Assert.Contains("A answers a decision or a desk task", list.LegendName, StringComparison.Ordinal);
+    }
 }
