@@ -1114,7 +1114,7 @@ One port launches every agent session: the human handoff (`OpenItem`) and the en
   run), in the item's repo or the Step's worktree, with the seed as the initial prompt. **Warp is a viewer:** opening
   for a human also opens a Warp tab that runs `tmux attach -t <session>`; the `--headless` box opens no Warp and the
   session simply runs detached. So attended and unattended runs are the same process, Sindri can see the session
-  (`tmux has-session`, `capture-pane`), and the human can join any Step live. Non-interactive runs (`claude -p`,
+  (`tmux has-session`; the human-only live preview's read-only `capture-pane` is served unscrubbed and never stored, owner 2026-10-17, collector CA-9), and the human can join any Step live. Non-interactive runs (`claude -p`,
   `codex exec`) are never launched as a Step. The tmux socket is Sindri's own (`-L sindri`), so the human's own tmux
   is untouched.
 - **Ids only at launch.** The command line carries the item id, the repo path and, for a Step, the run token. Context,
