@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Infrastructure.Launch;
 
 namespace Aw.Sindri.Tests.Launch;
@@ -9,7 +10,7 @@ namespace Aw.Sindri.Tests.Launch;
 /// </summary>
 internal sealed class PrivateTmux : IDisposable
 {
-    public string Socket { get; } = "t1-" + Guid.NewGuid().ToString("N")[..12];
+    public string Socket { get; } = "t1-" + RealTime.NewGuid().ToString("N")[..12];
 
     public string Scratch { get; } = Directory.CreateTempSubdirectory("aw-tmux-").FullName;
 

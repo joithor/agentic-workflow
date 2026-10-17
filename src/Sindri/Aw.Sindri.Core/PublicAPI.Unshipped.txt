@@ -8616,29 +8616,29 @@ Aw.Sindri.Core.Launch.LaunchRequest.Step.init -> void
 Aw.Sindri.Core.Launch.LaunchRequest.Worktree.get -> string?
 Aw.Sindri.Core.Launch.LaunchRequest.Worktree.init -> void
 Aw.Sindri.Core.Launch.LaunchResult
-Aw.Sindri.Core.Launch.LaunchResult.Failed
-Aw.Sindri.Core.Launch.LaunchResult.Failed.Deconstruct(out Aw.Kernel.Error! Error, out Aw.Sindri.Core.Launch.LaunchStage Stage) -> void
-Aw.Sindri.Core.Launch.LaunchResult.Failed.Equals(Aw.Sindri.Core.Launch.LaunchResult.Failed? other) -> bool
-Aw.Sindri.Core.Launch.LaunchResult.Failed.Error.get -> Aw.Kernel.Error!
-Aw.Sindri.Core.Launch.LaunchResult.Failed.Error.init -> void
-Aw.Sindri.Core.Launch.LaunchResult.Failed.Failed(Aw.Kernel.Error! Error, Aw.Sindri.Core.Launch.LaunchStage Stage) -> void
-Aw.Sindri.Core.Launch.LaunchResult.Failed.Stage.get -> Aw.Sindri.Core.Launch.LaunchStage
-Aw.Sindri.Core.Launch.LaunchResult.Failed.Stage.init -> void
+Aw.Sindri.Core.Launch.FailedLaunch
+Aw.Sindri.Core.Launch.FailedLaunch.Deconstruct(out Aw.Kernel.Error! Error, out Aw.Sindri.Core.Launch.LaunchStage Stage) -> void
+Aw.Sindri.Core.Launch.FailedLaunch.Equals(Aw.Sindri.Core.Launch.FailedLaunch? other) -> bool
+Aw.Sindri.Core.Launch.FailedLaunch.Error.get -> Aw.Kernel.Error!
+Aw.Sindri.Core.Launch.FailedLaunch.Error.init -> void
+Aw.Sindri.Core.Launch.FailedLaunch.FailedLaunch(Aw.Kernel.Error! Error, Aw.Sindri.Core.Launch.LaunchStage Stage) -> void
+Aw.Sindri.Core.Launch.FailedLaunch.Stage.get -> Aw.Sindri.Core.Launch.LaunchStage
+Aw.Sindri.Core.Launch.FailedLaunch.Stage.init -> void
 Aw.Sindri.Core.Launch.LaunchResult.LaunchResult(Aw.Sindri.Core.Launch.LaunchResult! original) -> void
-Aw.Sindri.Core.Launch.LaunchResult.Started
-Aw.Sindri.Core.Launch.LaunchResult.Started.ArgvHash.get -> string!
-Aw.Sindri.Core.Launch.LaunchResult.Started.ArgvHash.init -> void
-Aw.Sindri.Core.Launch.LaunchResult.Started.Attach.get -> System.Collections.Generic.IReadOnlyList<string!>!
-Aw.Sindri.Core.Launch.LaunchResult.Started.Attach.init -> void
-Aw.Sindri.Core.Launch.LaunchResult.Started.CatalogSource.get -> Aw.Sindri.Core.Launch.CatalogSource
-Aw.Sindri.Core.Launch.LaunchResult.Started.CatalogSource.init -> void
-Aw.Sindri.Core.Launch.LaunchResult.Started.Deconstruct(out Aw.Sindri.Core.Launch.HostRef! Host, out Aw.Sindri.Core.Launch.ViewerOutcome! Viewer, out System.Collections.Generic.IReadOnlyList<string!>! Attach, out Aw.Sindri.Core.Launch.CatalogSource CatalogSource, out string! ArgvHash) -> void
-Aw.Sindri.Core.Launch.LaunchResult.Started.Equals(Aw.Sindri.Core.Launch.LaunchResult.Started? other) -> bool
-Aw.Sindri.Core.Launch.LaunchResult.Started.Host.get -> Aw.Sindri.Core.Launch.HostRef!
-Aw.Sindri.Core.Launch.LaunchResult.Started.Host.init -> void
-Aw.Sindri.Core.Launch.LaunchResult.Started.Started(Aw.Sindri.Core.Launch.HostRef! Host, Aw.Sindri.Core.Launch.ViewerOutcome! Viewer, System.Collections.Generic.IReadOnlyList<string!>! Attach, Aw.Sindri.Core.Launch.CatalogSource CatalogSource, string! ArgvHash) -> void
-Aw.Sindri.Core.Launch.LaunchResult.Started.Viewer.get -> Aw.Sindri.Core.Launch.ViewerOutcome!
-Aw.Sindri.Core.Launch.LaunchResult.Started.Viewer.init -> void
+Aw.Sindri.Core.Launch.StartedLaunch
+Aw.Sindri.Core.Launch.StartedLaunch.ArgvHash.get -> string!
+Aw.Sindri.Core.Launch.StartedLaunch.ArgvHash.init -> void
+Aw.Sindri.Core.Launch.StartedLaunch.Attach.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Launch.StartedLaunch.Attach.init -> void
+Aw.Sindri.Core.Launch.StartedLaunch.CatalogSource.get -> Aw.Sindri.Core.Launch.CatalogSource
+Aw.Sindri.Core.Launch.StartedLaunch.CatalogSource.init -> void
+Aw.Sindri.Core.Launch.StartedLaunch.Deconstruct(out Aw.Sindri.Core.Launch.HostRef! Host, out Aw.Sindri.Core.Launch.ViewerOutcome! Viewer, out System.Collections.Generic.IReadOnlyList<string!>! Attach, out Aw.Sindri.Core.Launch.CatalogSource CatalogSource, out string! ArgvHash) -> void
+Aw.Sindri.Core.Launch.StartedLaunch.Equals(Aw.Sindri.Core.Launch.StartedLaunch? other) -> bool
+Aw.Sindri.Core.Launch.StartedLaunch.Host.get -> Aw.Sindri.Core.Launch.HostRef!
+Aw.Sindri.Core.Launch.StartedLaunch.Host.init -> void
+Aw.Sindri.Core.Launch.StartedLaunch.StartedLaunch(Aw.Sindri.Core.Launch.HostRef! Host, Aw.Sindri.Core.Launch.ViewerOutcome! Viewer, System.Collections.Generic.IReadOnlyList<string!>! Attach, Aw.Sindri.Core.Launch.CatalogSource CatalogSource, string! ArgvHash) -> void
+Aw.Sindri.Core.Launch.StartedLaunch.Viewer.get -> Aw.Sindri.Core.Launch.ViewerOutcome!
+Aw.Sindri.Core.Launch.StartedLaunch.Viewer.init -> void
 Aw.Sindri.Core.Launch.LaunchStage
 Aw.Sindri.Core.Launch.LaunchStage.Backstop = 1 -> Aw.Sindri.Core.Launch.LaunchStage
 Aw.Sindri.Core.Launch.LaunchStage.Host = 0 -> Aw.Sindri.Core.Launch.LaunchStage
@@ -9186,15 +9186,15 @@ override Aw.Sindri.Core.Launch.LaunchRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Launch.LaunchRequest.GetHashCode() -> int
 override Aw.Sindri.Core.Launch.LaunchRequest.ToString() -> string!
 override Aw.Sindri.Core.Launch.LaunchResult.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Launch.LaunchResult.Failed.<Clone>$() -> Aw.Sindri.Core.Launch.LaunchResult.Failed!
-override Aw.Sindri.Core.Launch.LaunchResult.Failed.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Launch.LaunchResult.Failed.GetHashCode() -> int
-override Aw.Sindri.Core.Launch.LaunchResult.Failed.ToString() -> string!
+override Aw.Sindri.Core.Launch.FailedLaunch.<Clone>$() -> Aw.Sindri.Core.Launch.FailedLaunch!
+override Aw.Sindri.Core.Launch.FailedLaunch.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launch.FailedLaunch.GetHashCode() -> int
+override Aw.Sindri.Core.Launch.FailedLaunch.ToString() -> string!
 override Aw.Sindri.Core.Launch.LaunchResult.GetHashCode() -> int
-override Aw.Sindri.Core.Launch.LaunchResult.Started.<Clone>$() -> Aw.Sindri.Core.Launch.LaunchResult.Started!
-override Aw.Sindri.Core.Launch.LaunchResult.Started.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Launch.LaunchResult.Started.GetHashCode() -> int
-override Aw.Sindri.Core.Launch.LaunchResult.Started.ToString() -> string!
+override Aw.Sindri.Core.Launch.StartedLaunch.<Clone>$() -> Aw.Sindri.Core.Launch.StartedLaunch!
+override Aw.Sindri.Core.Launch.StartedLaunch.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launch.StartedLaunch.GetHashCode() -> int
+override Aw.Sindri.Core.Launch.StartedLaunch.ToString() -> string!
 override Aw.Sindri.Core.Launch.LaunchResult.ToString() -> string!
 override Aw.Sindri.Core.Launch.RepoFacts.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Launch.RepoFacts.GetHashCode() -> int
@@ -9277,8 +9277,8 @@ override Aw.Sindri.Core.Sessions.SessionSnapshot.ToString() -> string!
 override Aw.Sindri.Core.Sessions.StateInputs.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Sessions.StateInputs.GetHashCode() -> int
 override Aw.Sindri.Core.Sessions.StateInputs.ToString() -> string!
-override sealed Aw.Sindri.Core.Launch.LaunchResult.Failed.Equals(Aw.Sindri.Core.Launch.LaunchResult? other) -> bool
-override sealed Aw.Sindri.Core.Launch.LaunchResult.Started.Equals(Aw.Sindri.Core.Launch.LaunchResult? other) -> bool
+override sealed Aw.Sindri.Core.Launch.FailedLaunch.Equals(Aw.Sindri.Core.Launch.LaunchResult? other) -> bool
+override sealed Aw.Sindri.Core.Launch.StartedLaunch.Equals(Aw.Sindri.Core.Launch.LaunchResult? other) -> bool
 static Aw.Sindri.Core.Events.FleetChanged.operator !=(Aw.Sindri.Core.Events.FleetChanged? left, Aw.Sindri.Core.Events.FleetChanged? right) -> bool
 static Aw.Sindri.Core.Events.FleetChanged.operator ==(Aw.Sindri.Core.Events.FleetChanged? left, Aw.Sindri.Core.Events.FleetChanged? right) -> bool
 static Aw.Sindri.Core.Events.ItemOpenRequested.operator !=(Aw.Sindri.Core.Events.ItemOpenRequested? left, Aw.Sindri.Core.Events.ItemOpenRequested? right) -> bool
@@ -9329,12 +9329,12 @@ static Aw.Sindri.Core.Launch.LaunchProbed.operator !=(Aw.Sindri.Core.Launch.Laun
 static Aw.Sindri.Core.Launch.LaunchProbed.operator ==(Aw.Sindri.Core.Launch.LaunchProbed? left, Aw.Sindri.Core.Launch.LaunchProbed? right) -> bool
 static Aw.Sindri.Core.Launch.LaunchRequest.operator !=(Aw.Sindri.Core.Launch.LaunchRequest? left, Aw.Sindri.Core.Launch.LaunchRequest? right) -> bool
 static Aw.Sindri.Core.Launch.LaunchRequest.operator ==(Aw.Sindri.Core.Launch.LaunchRequest? left, Aw.Sindri.Core.Launch.LaunchRequest? right) -> bool
-static Aw.Sindri.Core.Launch.LaunchResult.Failed.operator !=(Aw.Sindri.Core.Launch.LaunchResult.Failed? left, Aw.Sindri.Core.Launch.LaunchResult.Failed? right) -> bool
-static Aw.Sindri.Core.Launch.LaunchResult.Failed.operator ==(Aw.Sindri.Core.Launch.LaunchResult.Failed? left, Aw.Sindri.Core.Launch.LaunchResult.Failed? right) -> bool
+static Aw.Sindri.Core.Launch.FailedLaunch.operator !=(Aw.Sindri.Core.Launch.FailedLaunch? left, Aw.Sindri.Core.Launch.FailedLaunch? right) -> bool
+static Aw.Sindri.Core.Launch.FailedLaunch.operator ==(Aw.Sindri.Core.Launch.FailedLaunch? left, Aw.Sindri.Core.Launch.FailedLaunch? right) -> bool
 static Aw.Sindri.Core.Launch.LaunchResult.operator !=(Aw.Sindri.Core.Launch.LaunchResult? left, Aw.Sindri.Core.Launch.LaunchResult? right) -> bool
 static Aw.Sindri.Core.Launch.LaunchResult.operator ==(Aw.Sindri.Core.Launch.LaunchResult? left, Aw.Sindri.Core.Launch.LaunchResult? right) -> bool
-static Aw.Sindri.Core.Launch.LaunchResult.Started.operator !=(Aw.Sindri.Core.Launch.LaunchResult.Started? left, Aw.Sindri.Core.Launch.LaunchResult.Started? right) -> bool
-static Aw.Sindri.Core.Launch.LaunchResult.Started.operator ==(Aw.Sindri.Core.Launch.LaunchResult.Started? left, Aw.Sindri.Core.Launch.LaunchResult.Started? right) -> bool
+static Aw.Sindri.Core.Launch.StartedLaunch.operator !=(Aw.Sindri.Core.Launch.StartedLaunch? left, Aw.Sindri.Core.Launch.StartedLaunch? right) -> bool
+static Aw.Sindri.Core.Launch.StartedLaunch.operator ==(Aw.Sindri.Core.Launch.StartedLaunch? left, Aw.Sindri.Core.Launch.StartedLaunch? right) -> bool
 static Aw.Sindri.Core.Launch.RepoFacts.operator !=(Aw.Sindri.Core.Launch.RepoFacts? left, Aw.Sindri.Core.Launch.RepoFacts? right) -> bool
 static Aw.Sindri.Core.Launch.RepoFacts.operator ==(Aw.Sindri.Core.Launch.RepoFacts? left, Aw.Sindri.Core.Launch.RepoFacts? right) -> bool
 static Aw.Sindri.Core.Launch.StepArgs.operator !=(Aw.Sindri.Core.Launch.StepArgs? left, Aw.Sindri.Core.Launch.StepArgs? right) -> bool

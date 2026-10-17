@@ -4,7 +4,7 @@ namespace Aw.Sindri.Infrastructure.Launch;
 /// <param name="Executable">The tmux program ('tmux' on the login PATH).</param>
 /// <param name="Socket">The server's socket name ('-L'; 'sindri-launch').</param>
 /// <param name="TmuxTmpDir">The directory tmux keeps its sockets in (TMUX_TMPDIR), or null for tmux's own default.</param>
-internal sealed record TmuxHostOptions(string Executable = "tmux", string Socket = DefaultSocket, string? TmuxTmpDir = null)
+internal sealed record TmuxHostOptions(string Executable = "tmux", string Socket = TmuxHostOptions.DefaultSocket, string? TmuxTmpDir = null)
 {
     /// <summary>The launcher's own tmux server. Never "sindri": that is the socket of the aw-meta team of the same name, and a launch must not land on it.</summary>
     public const string DefaultSocket = "sindri-launch";
