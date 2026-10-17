@@ -1,7 +1,5 @@
 using System.Text;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
-using Aw.Sindri.Core.Workflow.Engine.Rules;
-using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Views;
@@ -14,7 +12,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// 'allowedCommands', and the rendered words status prints: the header's detail, 'next' (§3.8, §3.7), the answer line
 /// per park reason, a drift waiting behind a park, and the token budgets (engine P4 unit (e)).
 /// </summary>
-public static class InstanceViews
+public static partial class InstanceViews
 {
     /// <summary>The state of a view whose workflow has not built its instance yet (the Query answers before the start finishes): it carries no layout.</summary>
     public const string StartingState = "starting";
@@ -225,38 +223,6 @@ public static class InstanceViews
         }
 
         return line.ToString();
-    }
-
-    /// <summary>
-    /// One command per answer variant that fits the suspension (the §3.8 row, the rule the answer check uses), the status line's
-    /// own answer first with exactly its CLI, each other variant with its option spelled out.
-    /// </summary>
-    private static IEnumerable<AllowedCommand> AnswerCommands(WorkflowInstance instance, Suspension suspension, StatusAnswer? primary)
-    {
-        var shape = new ParkShape(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation);
-        var line = primary ?? ParkAnswers.For(shape, instance.Address);
-        var answering = $"sindri workflow answer {instance.Address.Value}";
-        if (line is { Kind: not AnswerKind.CancelOnly })
-        {
-            yield return new(line.ActionId.Value, line.Cli);
-        }
-
-        foreach (var variant in FitRow.For(suspension, instance.Address.Value, instance.Recipe).Variants)
-        {
-            var (kind, id, option) = variant switch   // Reject has no status-line kind: it is never the primary
-            {
-                AnswerVariant.Text => ((AnswerKind?)AnswerKind.Text, "answer-text", "--text <answer>"),
-                AnswerVariant.Resume => (AnswerKind.Resume, "answer-resume", "--resume"),
-                AnswerVariant.Grant => (AnswerKind.Grant, "answer-grant", "--grant 1"),
-                AnswerVariant.GrantTokens => (AnswerKind.GrantTokens, "answer-grant-tokens", "--grant-tokens <n>"),
-                AnswerVariant.Accept => (AnswerKind.Accept, "answer-accept", "--accept"),
-                AnswerVariant.Reject or _ => (null, "answer-reject", "--reject"),
-            };
-            if (line is null || line.Kind != kind)
-            {
-                yield return new($"ApplyCommand:{id}", $"{answering} {option}");
-            }
-        }
     }
 
     private static bool Answerable(Suspension suspension) =>

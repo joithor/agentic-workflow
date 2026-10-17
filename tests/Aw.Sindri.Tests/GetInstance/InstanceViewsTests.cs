@@ -1,5 +1,10 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Views;
+using Aw.Sindri.Tests.Workflow.Engine;
 
 namespace Aw.Sindri.Tests.GetInstance;
 
@@ -134,6 +139,50 @@ public sealed class InstanceViewsTests
     [InlineData("desk-task")]
     public void A_state_that_takes_no_answer_serves_no_answer_command(string name)
         => Assert.DoesNotContain(StatusCases.View(name).AllowedCommands, c => c.Action.StartsWith("ApplyCommand:answer", StringComparison.Ordinal));
+
+    [Fact]
+    public void The_variants_served_agree_with_the_answer_check_on_every_suspension_shape()
+    {
+        var instance = FrameFixture.Producing();
+        var shapes = new List<Suspension>();
+        foreach (var reason in Enum.GetValues<ParkReason>())
+        {
+            foreach (var kind in (ParkKind?[])[null, .. Enum.GetValues<ParkKind>().Cast<ParkKind?>()])
+            {
+                shapes.Add(FrameFixture.Park(reason, kind, ResumeKind.Transition));
+            }
+        }
+
+        foreach (var escalation in Enum.GetValues<EscalationKind>())
+        {
+            shapes.Add(FrameFixture.Park(ParkReason.Rounds, kind: null, ResumeKind.Transition) with { Kind = SuspensionKind.Escalation, Reason = null, Escalation = escalation });
+        }
+
+        Assert.All(shapes, shape => Assert.Equal(
+            [.. AnswerFit.Variants(shape, instance.Address, instance.Recipe)],
+            [.. InstanceViews.Fitting(shape)]));
+    }
+
+    [Theory]
+    [InlineData("parked-rounds")]
+    [InlineData("parked-budget")]
+    [InlineData("parked-needs-answer-step")]
+    [InlineData("parked-needs-answer-wait")]
+    [InlineData("parked-timeout")]
+    [InlineData("escalated-gate")]
+    public void The_status_commands_carry_each_answer_variants_full_cli_equal_to_the_served_list(string name)
+    {
+        var view = StatusCases.View(name);
+        var status = InstanceViews.Status(view, StatusCases.Now);
+
+        var answers = status.Commands.Where(c => c.Verb == StatusVerb.Answer).ToList();
+
+        Assert.Equal(
+            [.. view.AllowedCommands.Where(c => c.Action.StartsWith("ApplyCommand:answer", StringComparison.Ordinal)).Select(c => (c.Action, c.Cli))],
+            [.. answers.Select(a => (a.ActionId.Value, a.Cli))]);
+        Assert.Equal(status.Answer!.Cli, answers[0].Cli, StringComparer.Ordinal);
+        Assert.All(answers, a => Assert.Contains(" --", a.Cli, StringComparison.Ordinal));
+    }
 
     private static string Hash12() => StatusCases.Recipe.Version.Hash.Value["sha256:".Length..][..12];
 }
