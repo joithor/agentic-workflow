@@ -80,6 +80,7 @@ states:
                    next: "Record that the always-run checks are the evidence for {item}." }
   done:    { kind: terminal, outcome: resolved }
   failed:  { kind: terminal, outcome: unresolved }
+  all-failed: { kind: terminal, outcome: unresolved }
   dropped: { kind: terminal, outcome: unresolved }
 transitions:
   - { from: [route-evidence, route-evidence-desk], to: evidence-ui, on: step.completed, when: { outcome: ui }, produces: [fact:decision] }
@@ -92,7 +93,7 @@ transitions:
   - { from: route-evidence, to: route-evidence-desk, on: step.failed }
   - { from: [evidence-ui, evidence-api, evidence-db, evidence-all, evidence-other], to: done, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:evidenceSummary] }
   - { from: [evidence-ui, evidence-api, evidence-db, evidence-other], to: failed, on: wait.satisfied, when: { outcome: unresolved }, produces: [fact:evidenceSummary] }
-  - { from: evidence-all, to: dropped, on: wait.satisfied, when: { outcome: unresolved } }
+  - { from: evidence-all, to: all-failed, on: wait.satisfied, when: { outcome: unresolved } }
   - { from: evidence-ui, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
   - { from: evidence-api, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
   - { from: evidence-db, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
@@ -111,6 +112,7 @@ evals:
   - evals/workflow.evidence/failed.jsonl
   - evals/workflow.evidence/leaf-failed.jsonl
   - evals/workflow.evidence/all-unresolved.jsonl
+  - evals/workflow.evidence/all-cancelled.jsonl
   - evals/workflow.evidence/cancelled.jsonl
   - evals/workflow.evidence/other-failed.jsonl
   - evals/workflow.evidence/child-parks.jsonl

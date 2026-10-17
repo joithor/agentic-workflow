@@ -29,9 +29,13 @@ public static class FileMapBuilder
         var tree = new FileLinks(graph);
         var entries = FileMapRollup.Entries(path, under, tree);
         var suggested = under.SelectMany(tree.Suggestions).ToList();
-        var totals = new FileMapTotals(under.Count, under.Count(f => tree.StatusOf(f) == FileMapStatus.Mapped), under.Count(f => tree.StatusOf(f) == FileMapStatus.Suggested),
-            under.Count(f => tree.StatusOf(f) == FileMapStatus.Unmapped));
+        var totals = Totals(under, tree);
         return new FileMapView(1, query.Repo, basis.Sha, basis.MapVersion, query.Draft, path, [.. query.UnmappedOnly ? entries.Where(e => e.Status != FileMapStatus.Mapped) : entries],
             [.. entries.Where(e => e.Status == FileMapStatus.Unmapped).Select(e => new FileMapUnmapped(e.Path, e.Files))], suggested, totals, LensSymbols.Unavailable);
     }
+
+    /// <summary>Counts by status over <paramref name="under"/>: the one rollup 'context filemap' and a lens answer's map coverage share.</summary>
+    internal static FileMapTotals Totals(IReadOnlyList<string> under, FileLinks tree) =>
+        new(under.Count, under.Count(f => tree.StatusOf(f) == FileMapStatus.Mapped), under.Count(f => tree.StatusOf(f) == FileMapStatus.Suggested),
+            under.Count(f => tree.StatusOf(f) == FileMapStatus.Unmapped));
 }

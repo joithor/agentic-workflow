@@ -31,14 +31,14 @@ internal static class LensIntent
         };
     }
 
-    private static List<LensRecord> Records(LensScope scope) =>
+    internal static List<LensRecord> Records(LensScope scope) =>
         [.. scope.IntoScope(EdgeType.Mentions).Where(e => scope.Nodes.ContainsKey(e.From.Value))
             .GroupBy(e => e.From.Value, StringComparer.Ordinal).OrderBy(g => g.Key, StringComparer.Ordinal)
             .Select(g => new LensRecord(scope.Nodes[g.Key].Key, scope.Nodes[g.Key].Label, Source(scope.Nodes[g.Key].Key),
                 [.. g.Select(e => e.To).DistinctBy(k => k.Value, StringComparer.Ordinal).OrderBy(k => k.Value, StringComparer.Ordinal)],
-                Results.Trust.Untrusted, CitationState.Unchecked, []))];
+                Results.Trust.Untrusted, CitationState.Unchecked, [], NodeKind.Record))];
 
-    private static List<LensDecision> Decisions(LensScope scope) =>
+    internal static List<LensDecision> Decisions(LensScope scope) =>
         [.. scope.IntoScope(EdgeType.Decides).Where(e => scope.Nodes.ContainsKey(e.From.Value))
             .GroupBy(e => e.From.Value, StringComparer.Ordinal).OrderBy(g => g.Key, StringComparer.Ordinal)
             .Select(g => Decision(scope, scope.Nodes[g.Key], [.. g.Select(e => e.To).DistinctBy(k => k.Value, StringComparer.Ordinal).OrderBy(k => k.Value, StringComparer.Ordinal)]))];
@@ -50,7 +50,7 @@ internal static class LensIntent
             .Select(e => e.To).OrderBy(k => k.Value, StringComparer.Ordinal).ToList();
         var confirmed = LensScope.Confirmed(node.Provenance);
         return new LensDecision(node.Key, row?.Wording ?? node.Label, decides, supersedes, Quotes: null, node.Provenance, confirmed, TrustPolicy.For(node.Provenance, confirmed),
-            row?.At ?? node.At, row is null ? null : Quote(row));
+            row?.At ?? node.At, row is null ? null : Quote(row), node.Label, NodeKind.Decision);
     }
 
     private static LensQuote Quote(DecisionRow row) => new(row.Record, row.Quote, Results.Trust.Untrusted);

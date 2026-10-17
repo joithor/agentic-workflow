@@ -23,4 +23,7 @@ internal enum FrameIntent
 
     /// <summary>A frame opened by stacking (a child entry, the child pointer): focus lands on its first read action once it is read.</summary>
     OpenInitial,
+
+    /// <summary>Back from the recipe sheet the frame opened: focus returns to the frame's Recipe link.</summary>
+    FocusRecipe,
 }

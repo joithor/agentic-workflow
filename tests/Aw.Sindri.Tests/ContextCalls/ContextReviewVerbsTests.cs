@@ -180,9 +180,50 @@ public sealed class ContextReviewVerbsTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Cli_context_lenses_takes_several_keys_and_map_version()
+    {
+        var several = new ScriptedApi(Problem(HttpStatusCode.NotFound, "SND-CONTEXT-120", "map version v99 isn't held"));
+
+        var exit = await Lens(several, "lenses", "feature:a", "feature:b", "--map-version", "v99", "--depth", "2");
+        var none = await Lens(new ScriptedApi(Ok("{}")), "lenses", "--map-version", "v1");
+
+        Assert.Equal("/sindri/context/lenses?anchor=feature%3Aa&anchor=feature%3Ab&depth=2&mapVersion=v99", several.Calls[0].Route);
+        Assert.Equal((1, 2), (exit, none));   // 120 is attention; no key is a usage error sent nowhere
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_context_lenses_refuses_draft_with_map_version_as_006_naming_both_flags()
+    {
+        var api = new ScriptedApi(Ok("{}"));
+
+        var exit = await Lens(api, "lenses", "feature:a", "--draft", "--map-version", "v1");
+
+        var text = _error.ToString();
+        Assert.Equal(1, exit);   // 006 is attention on the CLI, like every other 006 refusal
+        Assert.Empty(api.Calls);
+        Assert.Contains("SND-CONTEXT-006", text, StringComparison.Ordinal);
+        Assert.Contains("--draft", text, StringComparison.Ordinal);
+        Assert.Contains("--map-version", text, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Cli_context_lenses_reads_a_schema_2_answer_with_its_missing_anchors()
+    {
+        const string Set = """{"schemaVersion":2,"anchors":[{"key":"feature:a","label":"A","kind":"feature","trust":"trusted"},{"key":"feature:b","label":"B","kind":"feature","trust":"trusted"}],"missingAnchors":["nope:x"],"mapVersion":"v2","draft":false,"depth":2,"asOf":"2026-10-14T09:12:40Z","bands":{"intent":{"records":[],"decisions":[],"counts":{"records":0,"decisions":0,"orphaned":null},"truncated":false},"product":{"own":[],"neighbors":[],"affects":[],"counts":{"own":0,"affects":0},"edges":[],"truncated":false},"code":{"files":[],"symbols":{"state":"unavailable","reason":"index not built","items":[]},"counts":{"files":0,"symbols":0,"featuresWithNoCode":0},"truncated":false}},"edges":[],"conflicts":[],"coverage":{"scope":0,"intent":{"covered":0,"of":0},"product":{"confirmed":0,"of":0},"code":{"implemented":0,"of":0,"level":"file","suggested":0},"gaps":[],"byAnchor":{}},"searched":{"anchors":["feature:a","feature:b"],"mapVersion":"v2","depth":2,"hops":["state","dependency","flow"],"sources":[{"id":"map","state":"ok","reason":null,"code":null,"asOf":"2026-10-14T09:00:00Z"},{"id":"onyx","state":"degraded","reason":null,"code":"SND-CONTEXT-010","asOf":null},{"id":"code-index","state":"unavailable","reason":"index-not-built","code":null,"asOf":null}],"bands":{"intent":{"empty":true},"product":{"empty":true},"code":{"empty":true}}},"degraded":[],"cites":{}}""";
+        var api = new ScriptedApi(Ok(Set));
+
+        var exit = await Lens(api, "lenses", "feature:a", "feature:b", "nope:x");
+
+        Assert.True(exit == 0, _error.ToString());
+        Assert.Contains("2 anchors", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("missing anchor: nope:x", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("onyx degraded (SND-CONTEXT-010)", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Lenses_send_the_depth_and_a_human_cli_fences_the_untrusted_labels_a_session_cli_leaves_them()
     {
-        const string Lenses = """{"schemaVersion":1,"anchor":{"key":"feature:a","label":"A","kind":"feature","trust":"trusted"},"mapVersion":"v1","draft":false,"depth":3,"asOf":"2026-10-14T09:12:40Z","bands":{"intent":{"records":[{"key":"record:linear:issue/1","label":"Spec <x>","source":"linear","mentions":["feature:a"],"trust":"untrusted","state":"unchecked","cites":[]}],"decisions":[],"counts":{"records":1,"decisions":0,"orphaned":null},"truncated":false},"product":{"own":[],"neighbors":[],"affects":[],"counts":{"own":0,"affects":0},"edges":[],"truncated":false},"code":{"files":[],"symbols":{"state":"unavailable","reason":"index not built","items":[]},"counts":{"files":0,"symbols":0,"featuresWithNoCode":0},"truncated":false}},"edges":[],"conflicts":[],"coverage":{"scope":1,"intent":{"covered":1,"of":1},"product":{"confirmed":1,"of":1},"code":{"implemented":0,"of":1,"level":"file","suggested":0},"gaps":[]},"degraded":[],"cites":{}}""";
+        const string Lenses = """{"schemaVersion":1,"anchor":{"key":"feature:a","label":"A","kind":"feature","trust":"trusted"},"mapVersion":"v1","draft":false,"depth":3,"asOf":"2026-10-14T09:12:40Z","bands":{"intent":{"records":[{"key":"record:linear:issue/1","label":"Spec <x>","source":"linear","mentions":["feature:a"],"trust":"untrusted","state":"unchecked","cites":[],"kind":"record"}],"decisions":[],"counts":{"records":1,"decisions":0,"orphaned":null},"truncated":false},"product":{"own":[],"neighbors":[],"affects":[],"counts":{"own":0,"affects":0},"edges":[],"truncated":false},"code":{"files":[],"symbols":{"state":"unavailable","reason":"index not built","items":[]},"counts":{"files":0,"symbols":0,"featuresWithNoCode":0},"truncated":false}},"edges":[],"conflicts":[],"coverage":{"scope":1,"intent":{"covered":1,"of":1},"product":{"confirmed":1,"of":1},"code":{"implemented":0,"of":1,"level":"file","suggested":0},"gaps":[]},"searched":{"anchors":["feature:a"],"mapVersion":"v1","depth":3,"hops":["state"],"sources":[{"id":"map","state":"ok","reason":null,"code":null,"asOf":"2026-10-14T09:00:00Z"}],"bands":{"intent":{"empty":false},"product":{"empty":true},"code":{"empty":true}}},"degraded":[],"cites":{}}""";
         var human = new ScriptedApi(Ok(Lenses));
         var humanExit = await LensAs(new AgentSession(Signal: null, Terminal: true, Prover: false), human, "lenses", "feature:a", "--depth", "3");
         var humanText = _out.ToString();

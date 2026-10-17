@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Workflow;
+using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
 
 namespace Aw.Sindri.Ui.ViewModels.Workflows;
@@ -20,6 +21,9 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
 
     /// <summary>Raised when a row asks to open its instance.</summary>
     internal event EventHandler<OpenRequestedEventArgs>? OpenRequested;
+
+    /// <summary>Raised when a group head asks to open its recipe's sheet.</summary>
+    internal event EventHandler<RecipeRequestedEventArgs>? RecipeRequested;
 
     /// <summary>The groups, in the order the API first served their recipes.</summary>
     public ObservableCollection<RecipeGroupViewModel> Groups { get; } = [];
@@ -219,6 +223,7 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
         if (!_groups.TryGetValue(recipe, out var group))
         {
             group = new RecipeGroupViewModel(recipe);
+            group.RecipeRequested += (_, e) => RecipeRequested?.Invoke(this, e);
             _groups[recipe] = group;
         }
 
