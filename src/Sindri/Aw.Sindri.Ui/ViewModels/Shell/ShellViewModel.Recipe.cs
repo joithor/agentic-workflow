@@ -12,5 +12,21 @@ internal sealed partial class ShellViewModel
     /// <summary>True when the sheet's subject is a recipe.</summary>
     public bool IsRecipeSheet => SheetLink?.Kind == DeepLinkKind.Recipe;
 
+    // The recipe part of opening the sheet (OnSheetOpened): the sheet names its recipe at once and reads it.
+    private void OnRecipeSheetOpened(DeepLink link)
+    {
+        Changed(nameof(IsRecipeSheet), nameof(ShownSheetWidth));
+        if (link.Kind != DeepLinkKind.Recipe || link.Subject is not { } subject)
+        {
+            return;
+        }
+
+        Recipe.Show(subject);
+        if (Health.ApiUrl() is { } url)
+        {
+            _ = Recipe.Open(url, subject, CancellationToken.None);
+        }
+    }
+
     private void InitRecipe() => Health.Follow((url, token) => IsRecipeSheet ? Recipe.Refresh(url, token) : Task.CompletedTask);
 }
