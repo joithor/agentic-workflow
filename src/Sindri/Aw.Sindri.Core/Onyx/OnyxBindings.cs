@@ -9,12 +9,13 @@ public static class OnyxBindings
     private const string Loopback = "127.0.0.1";
 
     /// <summary>Checks that the only published port across all services is nginx's 80 on 127.0.0.1 at the chosen port.</summary>
-    /// <param name="published">What the rendered compose publishes.</param>
+    /// <param name="config">What the rendered compose publishes and which services reach the host another way.</param>
     /// <param name="port">The loopback port Sindri chose.</param>
     /// <returns>Null when the bindings are exactly the expected one; else SND-ONYX-004 naming the first service published anywhere else (or the missing nginx binding).</returns>
-    public static Error? Verify(IReadOnlyList<ComposePublishedPort> published, int port)
+    public static Error? Verify(ComposeConfigFacts config, int port)
     {
-        ArgumentNullException.ThrowIfNull(published);
+        ArgumentNullException.ThrowIfNull(config);
+        var published = config.Ports;
         var expected = (Service: "nginx", HostIp: Loopback, Published: port, Target: 80);
         var other = published.FirstOrDefault(p => (p.Service, p.HostIp, p.Published, p.Target) != expected);
         if (other is not null)

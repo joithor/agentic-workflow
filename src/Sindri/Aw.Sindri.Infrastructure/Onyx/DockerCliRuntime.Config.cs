@@ -10,11 +10,11 @@ namespace Aw.Sindri.Infrastructure.Onyx;
 internal sealed partial class DockerCliRuntime
 {
     /// <inheritdoc />
-    public Result<IReadOnlyList<ComposePublishedPort>> PublishedPorts(ComposeProject project, CancellationToken cancellationToken)
+    public Result<ComposeConfigFacts> RenderedConfig(ComposeProject project, CancellationToken cancellationToken)
         => Compose(project, ["config", "--format", "json"], new Call("compose config", _shortTimeout), progress: null, cancellationToken).Bind(ParseConfig);
 
     // The output holds the whole environment (the auth key too), so nothing of it goes into an error.
-    private static Result<IReadOnlyList<ComposePublishedPort>> ParseConfig(string output)
+    private static Result<ComposeConfigFacts> ParseConfig(string output)
     {
         var wire = AwJson.Deserialize<ComposeConfigWire>(Encoding.UTF8.GetBytes(output), _wire);
         if (wire.IsError || wire.Value.Services is null)
@@ -22,8 +22,10 @@ internal sealed partial class DockerCliRuntime
             return SindriErrors.OnyxComposeFailed.With("`docker compose config --format json` printed something Sindri can't read; update Docker Compose to v2.24 or newer, then run this again");
         }
 
-        return Results.Success<IReadOnlyList<ComposePublishedPort>>([.. wire.Value.Services
-            .OrderBy(static s => s.Key, StringComparer.Ordinal)
-            .SelectMany(static s => (s.Value.Ports ?? []).Select(p => new ComposePublishedPort(s.Key, p.HostIp ?? "", p.Published ?? 0, p.Target ?? 0)))]);
+        return new ComposeConfigFacts(
+            [.. wire.Value.Services
+                .OrderBy(static s => s.Key, StringComparer.Ordinal)
+                .SelectMany(static s => (s.Value.Ports ?? []).Select(p => new ComposePublishedPort(s.Key, p.HostIp ?? "", p.Published ?? 0, p.Target ?? 0)))],
+            []);
     }
 }

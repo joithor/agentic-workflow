@@ -288,11 +288,11 @@ public sealed class DockerCliRuntimeTests
     private const string ConfigJson = "{\"name\":\"sindri-onyx\",\"services\":{\"nginx\":{\"image\":\"nginx@sha256:aaa\",\"environment\":{\"USER_AUTH_SECRET\":\"hunter2-secret\"},\"ports\":[{\"mode\":\"ingress\",\"host_ip\":\"127.0.0.1\",\"target\":80,\"published\":\"3000\",\"protocol\":\"tcp\"}]},\"cache\":{\"image\":\"redis\"},\"relational_db\":{\"ports\":[{\"mode\":\"ingress\",\"target\":5432,\"protocol\":\"tcp\"}]}}}";
 
     [Fact, Trait("Lane", "unit")]
-    public void PublishedPorts_reads_compose_config_json_and_names_a_port_with_no_address_or_host_port()
+    public void RenderedConfig_reads_compose_config_json_and_names_a_port_with_no_address_or_host_port()
     {
         var runner = new FakeToolRunner(Exit(0, ConfigJson));
 
-        var ports = Cli(runner).PublishedPorts(_project, Token).Value;
+        var ports = Cli(runner).RenderedConfig(_project, Token).Value.Ports;
 
         Assert.Equal([.. _composePrefix, "config", "--format", "json"], Assert.Single(runner.Calls).Arguments);
         Assert.Equal(
@@ -301,9 +301,22 @@ public sealed class DockerCliRuntimeTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void PublishedPorts_output_it_cannot_read_is_011_and_never_echoes_the_environment()
+    public void RenderedConfig_reports_each_service_that_has_the_hosts_network_processes_or_privileges()
     {
-        var error = Cli(new FakeToolRunner(Exit(0, "not json hunter2-secret"))).PublishedPorts(_project, Token).Error;
+        const string json = "{\"services\":{\"api_server\":{\"network_mode\":\"host\"},\"background\":{\"privileged\":true},\"web_server\":{\"pid\":\"host\"},"
+            + "\"cache\":{\"privileged\":false,\"network_mode\":\"bridge\",\"pid\":\"service:cache\"},\"nginx\":{\"image\":\"nginx\"}}}";
+
+        var access = Cli(new FakeToolRunner(Exit(0, json))).RenderedConfig(_project, Token).Value.HostAccess;
+
+        Assert.Equal(
+            [new ComposeHostAccess("api_server", "network_mode: host"), new ComposeHostAccess("background", "privileged: true"), new ComposeHostAccess("web_server", "pid: host")],
+            access);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void RenderedConfig_output_it_cannot_read_is_011_and_never_echoes_the_environment()
+    {
+        var error = Cli(new FakeToolRunner(Exit(0, "not json hunter2-secret"))).RenderedConfig(_project, Token).Error;
 
         Assert.Equal("SND-ONYX-011", error.Code);
         Assert.DoesNotContain("hunter2", error.Message, StringComparison.Ordinal);
@@ -319,7 +332,7 @@ public sealed class DockerCliRuntimeTests
         _ = cli.Up(_project, static _ => { }, limit: null, Token);
         _ = cli.Stop(_project, Token);
         _ = cli.Ps(_project, Token);
-        _ = cli.PublishedPorts(_project, Token);
+        _ = cli.RenderedConfig(_project, Token);
 
         string[] expected = ["COMPOSE_PROFILES", "COMPOSE_FILE", "COMPOSE_PROJECT_NAME", "COMPOSE_ENV_FILES", "COMPOSE_PATH_SEPARATOR", "IMAGE_TAG", "DISABLE_TELEMETRY", "AUTH_TYPE", "USER_AUTH_SECRET", "INDEXING_MODEL_SERVER_HOST", "HOST_PORT"];
         Assert.Equal(5, runner.Calls.Count);

@@ -46,11 +46,11 @@ public interface IContainerRuntime
     /// <returns>The containers, or the error.</returns>
     public Result<IReadOnlyList<ComposeContainer>> Ps(ComposeProject project, CancellationToken cancellationToken);
 
-    /// <summary>Reads the ports the rendered compose would publish on the host (`docker compose config --format json`: nothing is started or created).</summary>
+    /// <summary>Reads what the rendered compose would publish on the host and which services reach the host another way (`docker compose config --format json`: nothing is started or created).</summary>
     /// <param name="project">The project.</param>
     /// <param name="cancellationToken">Kills the command.</param>
-    /// <returns>Every published port of every service in the compose's active profiles, or the error (SND-ONYX-011 when the output can't be read).</returns>
-    public Result<IReadOnlyList<ComposePublishedPort>> PublishedPorts(ComposeProject project, CancellationToken cancellationToken);
+    /// <returns>Every published port and host-access setting of every service in the compose's active profiles, or the error (SND-ONYX-011 when the output can't be read).</returns>
+    public Result<ComposeConfigFacts> RenderedConfig(ComposeProject project, CancellationToken cancellationToken);
 
     /// <summary>Reads which repository digests each image has locally.</summary>
     /// <param name="images">Image references, such as docker.io/library/nginx@sha256:….</param>

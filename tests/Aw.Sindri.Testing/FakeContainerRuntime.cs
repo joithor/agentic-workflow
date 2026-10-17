@@ -25,7 +25,7 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     /// <summary>Gets or sets the facts the fake reports.</summary>
     public ContainerRuntimeFacts Facts { get; set; } = facts;
 
-    /// <summary>Gets the operations called, in order: Inspect, ServerPlatform, Pull, PublishedPorts, Up, Stop, Ps, RepoDigests.</summary>
+    /// <summary>Gets the operations called, in order: Inspect, ServerPlatform, Pull, RenderedConfig, Up, Stop, Ps, RepoDigests.</summary>
     public IList<string> Calls { get; } = [];
 
     /// <summary>Gets or sets a callback told the name of each operation as it starts, before it can fail or be cancelled (a test cancels a token from it).</summary>
@@ -55,8 +55,11 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     /// <summary>Gets the images present locally, each reference with its RepoDigests as Docker spells them.</summary>
     public IDictionary<string, string[]> LocalImages { get; } = new Dictionary<string, string[]>(StringComparer.Ordinal);
 
-    /// <summary>Gets or sets what <see cref="PublishedPorts"/> answers for a project: by default nginx on loopback at <see cref="PublishedPort"/> and nothing else; a rig answers from the rendered .env, as Compose reads it.</summary>
+    /// <summary>Gets or sets what <see cref="RenderedConfig"/> answers for the ports for a project: by default nginx on loopback at <see cref="PublishedPort"/> and nothing else; a rig answers from the rendered .env, as Compose reads it.</summary>
     public Func<ComposeProject, IReadOnlyList<ComposePublishedPort>>? Config { get; set; }
+
+    /// <summary>Gets the host-access settings <see cref="RenderedConfig"/> reports (none by default).</summary>
+    public IList<ComposeHostAccess> HostAccess { get; } = [];
 
     private readonly Dictionary<string, Error> _failures = new(StringComparer.Ordinal);
 
@@ -138,12 +141,12 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     }
 
     /// <inheritdoc />
-    public Result<IReadOnlyList<ComposePublishedPort>> PublishedPorts(ComposeProject project, CancellationToken cancellationToken)
+    public Result<ComposeConfigFacts> RenderedConfig(ComposeProject project, CancellationToken cancellationToken)
     {
         Projects.Add(project.Name);
-        return Begin("PublishedPorts") is { } error
+        return Begin("RenderedConfig") is { } error
             ? error
-            : Results.Success(Config?.Invoke(project) ?? [new ComposePublishedPort("nginx", "127.0.0.1", PublishedPort, 80)]);
+            : new ComposeConfigFacts(Config?.Invoke(project) ?? [new ComposePublishedPort("nginx", "127.0.0.1", PublishedPort, 80)], [.. HostAccess]);
     }
 
     /// <inheritdoc />
