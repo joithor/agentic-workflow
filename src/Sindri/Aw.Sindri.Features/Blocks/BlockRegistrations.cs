@@ -47,6 +47,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(ReviewSteps.Fix)
         .AddBlockDescriptor(ReviewSteps.Recheck)
         .AddBlockDescriptor(OwnerSteps.Decide)
+        .AddScopingBlocks()
         .AddBlockDescriptor(EvidenceProviders.Check)
         .AddGate<BudgetAvailableGate>()
         .AddBlockDescriptor(PendingRuntimes.RouteStartable)
@@ -55,4 +56,35 @@ internal static class BlockRegistrations
         .AddEvent(RecipeEvents.ItemRouted)
         .AddEvent(RecipeEvents.ClaimCreated)
         .AddEvent(RecipeEvents.NotifyDelivered);
+
+    /// <summary>Registers the scoping station's Steps and the context Step inputs it names (scoping spec §9), descriptors only.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddScopingBlocks(this IServiceCollection services) => services
+        .AddBlockDescriptor(ScopingSteps.Intake)
+        .AddBlockDescriptor(ScopingSteps.ReadBrief)
+        .AddBlockDescriptor(ScopingSteps.ReadTracker)
+        .AddBlockDescriptor(ScopingSteps.ReadChange)
+        .AddBlockDescriptor(ScopingSteps.BriefSeed)
+        .AddBlockDescriptor(ScopingSteps.BriefQuestions)
+        .AddBlockDescriptor(ScopingSteps.BriefWrite)
+        .AddBlockDescriptor(ScopingSteps.Anchor)
+        .AddBlockDescriptor(ScopingSteps.Gather)
+        .AddBlockDescriptor(ScopingSteps.Draft)
+        .AddBlockDescriptor(ScopingSteps.Check)
+        .AddBlockDescriptor(ScopingSteps.InterviewQuestions)
+        .AddBlockDescriptor(ScopingSteps.InterviewAnswer)
+        .AddBlockDescriptor(ScopingSteps.InterviewRecord)
+        .AddBlockDescriptor(ScopingSteps.InterviewApply)
+        .AddBlockDescriptor(ScopingSteps.Reanchor)
+        .AddBlockDescriptor(ScopingSteps.Challenge)
+        .AddBlockDescriptor(ScopingSteps.ChallengeLog)
+        .AddBlockDescriptor(ScopingSteps.Propose)
+        .AddBlockDescriptor(ScopingSteps.Evidence)
+        .AddBlockDescriptor(ScopingSteps.Review)
+        .AddBlockDescriptor(ScopingSteps.Freeze)
+        .AddBlockDescriptor(ScopingSteps.Withdraw)
+        .AddBlockDescriptor(PendingInputs.Lenses)
+        .AddBlockDescriptor(PendingInputs.Code)
+        .AddBlockDescriptor(PendingInputs.History);
 }
