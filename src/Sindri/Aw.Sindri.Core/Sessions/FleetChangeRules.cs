@@ -33,7 +33,7 @@ public static class FleetChangeRules
             {
                 if (prior.Candidates.Contains(session.Ref))
                 {
-                    reported[session.Ref] = new ReportedSession(session.Pid, session.StartTicks, AskingReported: false, []);
+                    reported[session.Ref] = new ReportedSession(session.Pid, session.StartTicks, AskingReported: false, []) { Repo = session.Repo, HostKind = session.Host.Kind, LaunchId = session.LaunchId };
                     changes.Add(Change(session, FleetChangeKind.Appeared, now));
                 }
                 else
@@ -63,7 +63,7 @@ public static class FleetChangeRules
             switch (row.Kind)
             {
                 case FleetChangeKind.Appeared:
-                    reported[row.Ref] = new ReportedSession(Pid: null, StartTicks: null, AskingReported: false, []);
+                    reported[row.Ref] = new ReportedSession(Pid: null, StartTicks: null, AskingReported: false, []) { Repo = row.Repo, HostKind = row.HostKind, LaunchId = row.LaunchId };
                     break;
                 case FleetChangeKind.Gone:
                     _ = reported.Remove(row.Ref);
@@ -99,7 +99,7 @@ public static class FleetChangeRules
             }
             else
             {
-                changes.Add(new FleetChange(reference, FleetChangeKind.Gone, SessionState.Unknown, now));
+                changes.Add(new FleetChange(reference, FleetChangeKind.Gone, SessionState.Unknown, now) { Repo = known.Repo, HostKind = known.HostKind, LaunchId = known.LaunchId });
             }
         }
     }

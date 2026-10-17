@@ -16,6 +16,7 @@ internal sealed class RecordFleetChangesService(ILedgerStore ledger, EventFactor
     {
         ArgumentNullException.ThrowIfNull(request);
         var recorded = 0;
+        var done = 0;
         foreach (var change in request.Changes)
         {
             var key = string.Create(CultureInfo.InvariantCulture, $"{EventTypes.FleetChanged}:{change.Ref.Provider.Value}:{change.Ref.Id.Value}:{change.Kind.ToString().ToLowerInvariant()}:{change.ObservedAt.ToUnixTimeMilliseconds()}");
@@ -23,13 +24,15 @@ internal sealed class RecordFleetChangesService(ILedgerStore ledger, EventFactor
             var appended = await ledger.Append(events.Entry(EventTypes.FleetChanged, payload, key), request.Grant, cancellationToken).ConfigureAwait(false);
             if (appended.IsError)
             {
+                memory.Pending = [.. memory.Pending.Skip(done)];   // the ones before this one are in the ledger; this one and the rest wait for the next pass
                 return appended.Error;
             }
 
+            done++;
             recorded += appended.Value.AlreadyRecorded ? 0 : 1;
         }
 
-        memory.Pending = [.. memory.Pending.Skip(request.Changes.Count)];   // the loop is the only writer, so what it passed in is the head of the queue
+        memory.Pending = [.. memory.Pending.Skip(done)];   // the loop is the only writer, so what it passed in is the head of the queue
         return new RecordFleetChangesResponse(recorded);
     }
 

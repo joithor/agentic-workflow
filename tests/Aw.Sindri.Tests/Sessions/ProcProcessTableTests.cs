@@ -12,16 +12,6 @@ public sealed class ProcProcessTableTests
     private static IReadOnlyList<ProcessEntry> Table(int uid = SessionFixtures.OwnUid) => Fixture(uid).Read(TestContext.Current.CancellationToken).Value;
 
     [Fact, Trait("Lane", "integration")]
-    public void A_system_without_a_proc_directory_is_unsupported_not_unreadable()
-    {
-        var missing = Path.Combine(Path.GetTempPath(), "aw-no-proc-" + Guid.NewGuid().ToString("N"));
-
-        var result = new ProcProcessTable(missing, SessionFixtures.OwnUid).Read(TestContext.Current.CancellationToken);
-
-        Assert.Equal("unsupported-platform", result.Error.Message);
-    }
-
-    [Fact, Trait("Lane", "integration")]
     public void The_table_holds_the_fixture_users_live_processes_and_skips_zombies_and_other_users()
     {
         var pids = Table().Select(static p => p.Pid).ToList();
@@ -83,10 +73,10 @@ public sealed class ProcProcessTableTests
     }
 
     [Fact, Trait("Lane", "integration")]
-    public void A_missing_root_is_proc_unreadable()
+    public void A_missing_root_is_an_unsupported_platform()
     {
         var read = new ProcProcessTable("/nonexistent-fixture-root/proc", SessionFixtures.OwnUid).Read(TestContext.Current.CancellationToken);
 
-        Assert.Equal(("SND-SESSION-002", "proc-unreadable"), (read.Error.Code, read.Error.Message));
+        Assert.Equal(("SND-SESSION-002", "unsupported-platform"), (read.Error.Code, read.Error.Message));
     }
 }

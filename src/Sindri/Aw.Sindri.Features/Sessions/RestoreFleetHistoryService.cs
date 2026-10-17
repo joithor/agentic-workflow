@@ -49,6 +49,6 @@ internal sealed class RestoreFleetHistoryService(ILedgerReader reader, EventFact
     private FleetHistoryRow? Row(LedgerEvent recorded)
     {
         var payload = events.Payload<FleetChanged>(recorded);
-        return payload.IsError ? null : new FleetHistoryRow(new SessionRef(payload.Value.Provider, payload.Value.SessionId), payload.Value.Change, recorded.Envelope.OccurredAt);
+        return payload.IsError ? null : new FleetHistoryRow(new SessionRef(payload.Value.Provider, payload.Value.SessionId), payload.Value.Change, recorded.Envelope.OccurredAt) { Repo = payload.Value.Repo, HostKind = payload.Value.Host, LaunchId = payload.Value.LaunchId };
     }
 }

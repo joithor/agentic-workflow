@@ -7,13 +7,14 @@ namespace Aw.Sindri.Features.Sessions;
 /// <summary>The problem rows of a pass: a fixed sentence per code, never an exception message (collector spec §4.1, §9).</summary>
 internal static class SessionProblems
 {
-    internal static SessionProblem ProcessTable(Error error) => error.Message switch
-    {
-        "unsupported-platform" => new("processes", SindriErrors.SessionsUnavailable.Code, "Sindri can't see agent sessions on this system: unsupported-platform"),
-        _ => new("processes", SindriErrors.SessionsUnavailable.Code, "Sindri can't see agent sessions on this system: proc-unreadable"),
-    };
+    /// <summary>SND-SESSION-002 when the error carries a reason; any other failure (a cancelled read, say) is a failed 'processes' source, never -002.</summary>
+    internal static SessionProblem ProcessTable(Error error) =>
+        UnavailableReasons.TryFrom(error, out var reason) ? Unavailable("processes", reason) : Source("processes");
 
-    internal static SessionProblem Disabled { get; } = new("collector", SindriErrors.SessionsUnavailable.Code, "Sindri can't see agent sessions on this system: disabled");
+    internal static SessionProblem Disabled { get; } = Unavailable("collector", UnavailableReason.Disabled);
+
+    private static SessionProblem Unavailable(string source, UnavailableReason reason) =>
+        new(source, SindriErrors.SessionsUnavailable.Code, $"Sindri can't see agent sessions on this system: {UnavailableReasons.Text(reason)}");
 
     internal static SessionProblem TestOverride { get; } = new("collector", SindriErrors.SessionsTestOverride.Code, "A test override is set in this run: the sessions shown may be fixtures");
 

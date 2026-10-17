@@ -104,4 +104,56 @@ public sealed class LauncherConfigFileTests
         Assert.NotNull(load.Sessions.ConfigProblem);
         Assert.True(load.Sessions.Enabled);
     }
+
+    private static LauncherLoad LoadText(string json)
+    {
+        var directory = Directory.CreateTempSubdirectory("aw-launcher").FullName;
+        try
+        {
+            var file = Path.Combine(directory, "launcher.json");
+            File.WriteAllText(file, json);
+            return LauncherStartup.Load(name => name == "AW_LAUNCHER_CONFIG" ? file : null, new SindriSettings(directory, Path.Combine(directory, "profile.yaml")));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public void A_typo_under_meta_leaves_the_collector_off_and_raises_no_problem()
+    {
+        var load = LoadText("""{ "schema": 1, "sessions": { "enabled": false }, "meta": { "lanesAgent": "claude-code", "typo": 1 } }""");
+
+        Assert.Equal((false, null), (load.Sessions.Enabled, load.Sessions.ConfigProblem));
+        Assert.Empty(load.AttendedProblems);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public void A_bad_viewer_or_host_is_recorded_for_attended_opens_and_not_for_the_collector()
+    {
+        var load = LoadText("""{ "schema": 1, "sessions": { "pollSeconds": 7 }, "viewer": { "kind": "nope" }, "host": { "kind": "screen" } }""");
+
+        Assert.Equal((7, null), (load.Sessions.PollSeconds, load.Sessions.ConfigProblem));
+        Assert.Equal(2, load.AttendedProblems.Count);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public void A_bad_agent_entry_drops_only_itself()
+    {
+        var load = LoadText("""{ "schema": 1, "agents": { "broken": { "label": "x" }, "aider": { "label": "Aider", "bin": "aider", "open": ["{bin}"], "sessionId": "none", "processName": "aider" } } }""");
+
+        Assert.Equal(["claude-code", "codex", "cursor", "aider"], load.Catalog.All.Select(static a => a.Id.Value), StringComparer.Ordinal);
+        Assert.NotNull(load.Sessions.ConfigProblem);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public void A_bad_sessions_section_falls_back_to_the_defaults_but_never_turns_a_disabled_collector_on()
+    {
+        var off = LoadText("""{ "schema": 1, "sessions": { "enabled": false, "pollSeconds": 99 } }""");
+        var on = LoadText("""{ "schema": 1, "sessions": { "pollSeconds": 99 } }""");
+
+        Assert.Equal((false, true), (off.Sessions.Enabled, off.Sessions.ConfigProblem is not null));
+        Assert.Equal((true, 2, true), (on.Sessions.Enabled, on.Sessions.PollSeconds, on.Sessions.ConfigProblem is not null));
+    }
 }

@@ -4,4 +4,14 @@ namespace Aw.Sindri.Core.Sessions;
 /// <param name="Ref">The session.</param>
 /// <param name="Kind">What the row said.</param>
 /// <param name="At">When the row was observed.</param>
-public sealed record FleetHistoryRow(SessionRef Ref, FleetChangeKind Kind, DateTimeOffset At);
+public sealed record FleetHistoryRow(SessionRef Ref, FleetChangeKind Kind, DateTimeOffset At)
+{
+    /// <summary>The repo the row carried.</summary>
+    public Ids.RepoName? Repo { get; init; }
+
+    /// <summary>The host kind the row carried.</summary>
+    public string HostKind { get; init; } = "unknown";
+
+    /// <summary>The launch the row carried.</summary>
+    public Workflow.Engine.LaunchId? LaunchId { get; init; }
+}

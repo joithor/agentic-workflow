@@ -43,9 +43,14 @@ public static class SindriInfrastructureServiceCollectionExtensions
     /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs, a lambda in tests).</param>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddSindriInfrastructure(this IServiceCollection services, Func<string, string?> environment)
-        => services
-            .AddSingleton(SettingsFromEnvironment.Read(environment))
-            .AddSindriSessions(environment, SettingsFromEnvironment.Read(environment))
+    {
+        var settings = SettingsFromEnvironment.Read(environment);
+        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriAdapters(environment);
+    }
+
+    private static IServiceCollection AddSindriAdapters(this IServiceCollection services, Func<string, string?> environment)
+    {
+        return services
             .AddSingleton<IIdGenerator, GuidV7Ids>().AddSingleton<IProcessProbe, PosixProcessProbe>()
             .AddSingleton<LedgerDatabase>()
             .AddSingleton<ILedgerStore, SqliteLedger>()
@@ -84,6 +89,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IClaudeCli, ProcessClaudeCli>()
             .AddSingleton<IProviderFiles, ProviderConfigFiles>()
             .AddSingleton<ITextScrubber>(new RedactingScrubber(Redactor.Default));
+    }
 
     /// <summary>
     /// Makes the secret-pointer resolver (env:, file:, keychain:, op:) over <paramref name="environment"/>, for Composition to
