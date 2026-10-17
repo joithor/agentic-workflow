@@ -71,6 +71,12 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
             return await Fail(output, answer.Error).ConfigureAwait(false);
         }
 
+        var progress = services.GetRequiredService<IOnyxProgress>();
+        foreach (var warning in answer.Value.Warnings)
+        {
+            progress.Line(warning);
+        }
+
         return json
             ? await output.Json(answer.Value, 0).ConfigureAwait(false)
             : await output.Text(answer.Value.WasRunning
@@ -90,7 +96,6 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
 
     private static string Steps(IReadOnlyList<string> steps) => steps.Count == 0 ? "none" : string.Join(", ", steps);
 
-    // The printed refusal: SND-AUTH-002, exit 1 (attention, not a tool error), with nothing called.
     // Through the progress writer, which ends an open row of dots before the line, so the resume line never starts mid-row.
     private int Interrupted(string text)
     {
@@ -98,6 +103,7 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
         return Output.InterruptedExit;
     }
 
+    // The printed refusal: SND-AUTH-002, exit 1 (attention, not a tool error), with nothing called.
     private async Task<int> Refused(string verb, string what)
     {
         _ = await output.Error(SindriErrors.AuthRefused.With(

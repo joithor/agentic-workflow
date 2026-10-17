@@ -36,16 +36,16 @@ internal sealed class OnyxStackDoctor(IOnyxWorkspace workspace, OnyxFacts facts,
             return workspace.StateIsUnreadable() ? new DoctorCheck(Name, CheckState.Warn, "state file unreadable; `sindri onyx up` rebuilds it", "sindri onyx up") : null;
         }
 
-        var containers = facts.Containers(state, cancellationToken);
+        var containers = facts.Containers(cancellationToken);
         var platform = facts.Platform(cancellationToken);
         if (containers.IsError || platform.IsError)
         {
-            return Unreadable(containers.IsError ? containers.Error : platform.Error, facts.ProjectOf(state));
+            return Unreadable(containers.IsError ? containers.Error : platform.Error, facts.Project);
         }
 
         return !containers.Value.Any(static c => ComposeContainer.IsLive(c.State))
             ? new DoctorCheck(Name, CheckState.Warn, "stopped: no Onyx container is running", "sindri onyx up")
-            : Failure(state, containers.Value, platform.Value) ?? Ok(containers.Value);
+            : Failure(containers.Value, platform.Value) ?? Ok(containers.Value);
     }
 
     // Docker not answering (001) and docker answering but a command failing or being cut short (011) are different problems with different fixes.
@@ -54,12 +54,12 @@ internal sealed class OnyxStackDoctor(IOnyxWorkspace workspace, OnyxFacts facts,
             ? new DoctorCheck(Name, CheckState.Warn, $"docker isn't running ({error.Code}); the Onyx stack can't be read", "start Docker Desktop (or the docker service), then run sindri doctor again")
             : new DoctorCheck(Name, CheckState.Warn, $"docker answered but the Onyx stack couldn't be read ({error.Code}): {error.Message}", $"run `docker compose -p {project.Name} ps` to see why, then run sindri doctor again");
 
-    private DoctorCheck? Failure(OnyxSetupState state, IReadOnlyList<ComposeContainer> containers, string platform)
+    private DoctorCheck? Failure(IReadOnlyList<ComposeContainer> containers, string platform)
     {
         if (containers.FirstOrDefault(static c => c.State != "running" || c.Health == "unhealthy") is { } down)
         {
             var crashLooping = down.State == "restarting" ? " (crash-looping)" : "";
-            return Fail($"{down.Service} is {down.State}{crashLooping}{(down.Health is null ? "" : $" ({down.Health})")}", $"docker compose -p {facts.ProjectOf(state).Name} logs " + down.Service + ", then sindri onyx up");
+            return Fail($"{down.Service} is {down.State}{crashLooping}{(down.Health is null ? "" : $" ({down.Health})")}", $"docker compose -p {facts.Project.Name} logs " + down.Service + ", then sindri onyx up");
         }
 
         foreach (var container in containers)

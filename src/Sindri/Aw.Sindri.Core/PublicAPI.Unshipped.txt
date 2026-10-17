@@ -8217,10 +8217,8 @@ Aw.Sindri.Core.Onyx.OnyxFacts
 Aw.Sindri.Core.Onyx.OnyxFacts.OnyxFacts(Aw.Sindri.Core.Onyx.IContainerRuntime! runtime, Aw.Sindri.Core.Onyx.IHostProbes! probes, Aw.Sindri.Core.Control.ISindriHome! home) -> void
 Aw.Sindri.Core.Onyx.OnyxFacts.Paths.get -> Aw.Sindri.Core.Onyx.OnyxPaths!
 Aw.Sindri.Core.Onyx.OnyxFacts.Platform(System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<string!>!
-Aw.Sindri.Core.Onyx.OnyxFacts.ProjectOf(Aw.Sindri.Core.Onyx.OnyxSetupState? state) -> Aw.Sindri.Core.Onyx.ComposeProject!
 Aw.Sindri.Core.Onyx.OnyxFacts.Read(System.Threading.CancellationToken cancellationToken) -> (Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! Docker, Aw.Sindri.Core.Onyx.HostFacts! Host)
 Aw.Sindri.Core.Onyx.OnyxFacts.Read(int? stickyPort, System.Threading.CancellationToken cancellationToken) -> (Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! Docker, Aw.Sindri.Core.Onyx.HostFacts! Host)
-Aw.Sindri.Core.Onyx.OnyxFacts.Containers(Aw.Sindri.Core.Onyx.OnyxSetupState? state, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeContainer!>!>!
 Aw.Sindri.Core.Onyx.OnyxPaths.EnvTemplate.get -> string!
 Aw.Sindri.Core.Onyx.OnyxPaths.Project.get -> Aw.Sindri.Core.Onyx.ComposeProject!
 Aw.Sindri.Core.Onyx.OnyxPaths.ProjectName.get -> string!
@@ -8259,3 +8257,6 @@ static Aw.Sindri.Core.Onyx.ComposeConfigFacts.operator ==(Aw.Sindri.Core.Onyx.Co
 static Aw.Sindri.Core.Onyx.ComposeHostAccess.operator !=(Aw.Sindri.Core.Onyx.ComposeHostAccess? left, Aw.Sindri.Core.Onyx.ComposeHostAccess? right) -> bool
 static Aw.Sindri.Core.Onyx.ComposeHostAccess.operator ==(Aw.Sindri.Core.Onyx.ComposeHostAccess? left, Aw.Sindri.Core.Onyx.ComposeHostAccess? right) -> bool
 static Aw.Sindri.Core.Onyx.OnyxBindings.Verify(Aw.Sindri.Core.Onyx.ComposeConfigFacts! config, int port) -> Aw.Kernel.Error?
+Aw.Sindri.Core.Onyx.OnyxFacts.Containers(System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeContainer!>!>!
+Aw.Sindri.Core.Onyx.OnyxFacts.ForeignProjectWarning(Aw.Sindri.Core.Onyx.OnyxSetupState? state) -> string?
+Aw.Sindri.Core.Onyx.OnyxFacts.Project.get -> Aw.Sindri.Core.Onyx.ComposeProject!

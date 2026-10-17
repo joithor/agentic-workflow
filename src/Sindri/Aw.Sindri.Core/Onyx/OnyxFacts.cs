@@ -40,15 +40,17 @@ public sealed class OnyxFacts(IContainerRuntime runtime, IHostProbes probes, ISi
     /// <returns>linux/arm64 or linux/amd64, or the error.</returns>
     public Result<string> Platform(CancellationToken cancellationToken) => runtime.ServerPlatform(cancellationToken);
 
-    /// <summary>Gets the compose project to act on: the one `onyx up` recorded in state.json when it is a name Sindri could have made, else this home's own.</summary>
+    /// <summary>Gets the compose project to act on: always this home's own. A name recorded in state.json is never trusted to point elsewhere (see <see cref="ForeignProjectWarning"/>).</summary>
+    public ComposeProject Project => Paths.Project;
+
+    /// <summary>Tells when state.json names a compose project other than this home's own, which stop, ps and start refuse to act on.</summary>
     /// <param name="state">The setup state, or null when there is none.</param>
-    /// <returns>The project.</returns>
-    public ComposeProject ProjectOf(OnyxSetupState? state)
-        => ComposeProject.IsOurs(state?.Project) ? Paths.Project with { Name = state!.Project! } : Paths.Project;   // why: IsOurs is false for null
+    /// <returns>The warning to show, or null when the state records no project or this home's own.</returns>
+    public string? ForeignProjectWarning(OnyxSetupState? state)
+        => state?.Project is { } recorded && !string.Equals(recorded, Paths.Project.Name, StringComparison.Ordinal) ? "state names another home's project; ignoring it" : null;
 
     /// <summary>Lists the containers of Sindri's Onyx project.</summary>
-    /// <param name="state">The setup state (which project to ask about), or null.</param>
     /// <param name="cancellationToken">Cancels the reading.</param>
     /// <returns>The containers, or the error (Docker isn't answering).</returns>
-    public Result<IReadOnlyList<ComposeContainer>> Containers(OnyxSetupState? state, CancellationToken cancellationToken) => runtime.Ps(ProjectOf(state), cancellationToken);
+    public Result<IReadOnlyList<ComposeContainer>> Containers(CancellationToken cancellationToken) => runtime.Ps(Project, cancellationToken);
 }

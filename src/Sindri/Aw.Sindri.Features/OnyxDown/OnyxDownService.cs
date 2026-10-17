@@ -47,9 +47,9 @@ internal sealed class OnyxDownService(IOnyxWorkspace workspace, OnyxFacts facts,
             return OnyxPreflight.RemoteDocker(endpoint);
         }
 
-        // What runs is what docker says the project has, whatever state.json recorded: a start that failed halfway leaves containers up too.
-        var state = workspace.ReadState();
-        var containers = facts.Containers(state, cancellationToken);
+        // What runs is what docker says this home's project has, whatever state.json recorded: a start that failed halfway leaves containers up too.
+        IReadOnlyList<string> warnings = facts.ForeignProjectWarning(workspace.ReadState()) is { } foreign ? [foreign] : [];
+        var containers = facts.Containers(cancellationToken);
         if (containers.IsError)
         {
             return containers.Error;
@@ -58,10 +58,10 @@ internal sealed class OnyxDownService(IOnyxWorkspace workspace, OnyxFacts facts,
         IReadOnlyList<string> running = [.. containers.Value.Where(static c => ComposeContainer.IsLive(c.State)).Select(static c => c.Service).Order(StringComparer.Ordinal)];
         if (running.Count == 0)
         {
-            return new OnyxDownResponse(WasRunning: false, [], []);
+            return new OnyxDownResponse(WasRunning: false, [], warnings);
         }
 
-        var stopped = runtime.Stop(facts.ProjectOf(state), cancellationToken);
-        return stopped.IsError ? stopped.Error : new OnyxDownResponse(WasRunning: true, running, []);
+        var stopped = runtime.Stop(facts.Project, cancellationToken);
+        return stopped.IsError ? stopped.Error : new OnyxDownResponse(WasRunning: true, running, warnings);
     }
 }

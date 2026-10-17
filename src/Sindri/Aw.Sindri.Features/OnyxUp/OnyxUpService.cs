@@ -42,6 +42,12 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
             progress.Line("state.json is unreadable; starting over from the first step (each step checks what is already there)");
         }
 
+        var foreign = facts.ForeignProjectWarning(state);
+        if (foreign is not null)
+        {
+            progress.Line(foreign);
+        }
+
         var pins = pinsSource.Pins;
         var preflight = Preflight(state, pins, cancellationToken);
         if (preflight.IsError)
@@ -50,8 +56,24 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
         }
 
         var (port, platform, warnings) = preflight.Value;
-        var context = new OnyxUpContext(pins, facts.Paths, port, platform) { Project = facts.ProjectOf(state) };
+        var context = new OnyxUpContext(pins, facts.Paths, port, platform) { Project = facts.Project };
         var recorded = new Dictionary<string, string>(state?.Steps ?? new Dictionary<string, string>(StringComparer.Ordinal), StringComparer.Ordinal);
+        var results = await RunSteps(context, recorded, cancellationToken).ConfigureAwait(false);
+        if (results.IsError)
+        {
+            return results.Error;
+        }
+
+        if (foreign is not null)
+        {
+            workspace.WriteState(new OnyxSetupState(context.Port, new Dictionary<string, string>(recorded, StringComparer.Ordinal), context.Project.Name));   // put this home's own name back
+        }
+
+        return new OnyxUpResponse(port, string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}"), context.Version ?? pins.Version, warnings, results.Value);
+    }
+
+    private async ValueTask<Result<List<OnyxStepResult>>> RunSteps(OnyxUpContext context, Dictionary<string, string> recorded, CancellationToken cancellationToken)
+    {
         List<OnyxStepResult> results = [];
         foreach (var step in _steps)
         {
@@ -65,7 +87,7 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
             results.Add(new OnyxStepResult(step.Name, outcome.Value));
         }
 
-        return new OnyxUpResponse(port, string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}"), context.Version ?? pins.Version, warnings, results);
+        return results;
     }
 
     // The step makes its result hold; its stamp is recorded once it does.
@@ -98,7 +120,7 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
     private Result<(int Port, string Platform, IReadOnlyList<string> Warnings)> Preflight(OnyxSetupState? state, OnyxPins pins, CancellationToken cancellationToken)
     {
         var (docker, host) = facts.Read(state?.Port, cancellationToken);
-        var ownPort = OwnPort(state, docker, cancellationToken);
+        var ownPort = OwnPort(docker, cancellationToken);
         if (ownPort.IsError)
         {
             return ownPort.Error;
@@ -117,7 +139,7 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
     }
 
     // The port our own running nginx publishes, whatever state.json says: a start that failed or timed out leaves it up, and a lost state file doesn't make it someone else's.
-    private Result<int?> OwnPort(OnyxSetupState? state, ContainerRuntimeFacts docker, CancellationToken cancellationToken)
+    private Result<int?> OwnPort(ContainerRuntimeFacts docker, CancellationToken cancellationToken)
     {
         if (!docker.DaemonAnswers)
         {
@@ -135,7 +157,7 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
             return Results.Success<int?>(value: null);   // no compose file yet means no project to ask about
         }
 
-        var containers = facts.Containers(state, cancellationToken);
+        var containers = facts.Containers(cancellationToken);
         return Results.Success(containers.IsSuccess
             ? containers.Value.Where(static c => c.Service == "nginx" && ComposeContainer.IsLive(c.State)).SelectMany(static c => c.Publishers).FirstOrDefault(static p => p.Address == "127.0.0.1")?.PublishedPort
             : null);
