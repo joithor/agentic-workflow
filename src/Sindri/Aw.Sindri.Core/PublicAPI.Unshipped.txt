@@ -9707,3 +9707,95 @@ Aw.Sindri.Core.Launches.LaunchEnd.ExitCode.init -> void
 Aw.Sindri.Core.Launches.LaunchRow.Message.init -> void
 Aw.Sindri.Core.Launches.ILaunchViews.ForRepo(Aw.Sindri.Core.Ids.RepoName repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.LaunchRow!>!>!>
 static Aw.Sindri.Core.Launches.LaunchBudgets.Of(Aw.Sindri.Core.Profile.AgentSettings? agents, Aw.Sindri.Core.Launch.AgentId target, decimal? spentToday) -> Aw.Sindri.Core.Launches.LaunchBudgetState
+Aw.Sindri.Core.Launch.AgentEntry.ReportedNewestFile.get -> string?
+Aw.Sindri.Core.Launch.AgentEntry.ReportedNewestFile.init -> void
+Aw.Sindri.Core.Launch.CaptureRule
+Aw.Sindri.Core.Launch.CaptureRule.<Clone>$() -> Aw.Sindri.Core.Launch.CaptureRule!
+Aw.Sindri.Core.Launch.CaptureRule.Capture.get -> string?
+Aw.Sindri.Core.Launch.CaptureRule.Capture.init -> void
+Aw.Sindri.Core.Launch.CaptureRule.CaptureRule(string? SessionIdPattern, string? NewestFile, string? Capture) -> void
+Aw.Sindri.Core.Launch.CaptureRule.Deconstruct(out string? SessionIdPattern, out string? NewestFile, out string? Capture) -> void
+Aw.Sindri.Core.Launch.CaptureRule.Equals(Aw.Sindri.Core.Launch.CaptureRule? other) -> bool
+Aw.Sindri.Core.Launch.CaptureRule.NewestFile.get -> string?
+Aw.Sindri.Core.Launch.CaptureRule.NewestFile.init -> void
+Aw.Sindri.Core.Launch.CaptureRule.SessionIdPattern.get -> string?
+Aw.Sindri.Core.Launch.CaptureRule.SessionIdPattern.init -> void
+Aw.Sindri.Core.Launch.ISindriHome
+Aw.Sindri.Core.Launch.ISindriHome.Path.get -> string!
+Aw.Sindri.Core.Launch.LaunchFiles
+Aw.Sindri.Core.Launch.SessionIdCapture
+Aw.Sindri.Core.Launch.SessionIdScan
+Aw.Sindri.Core.Launch.SessionIdScan.<Clone>$() -> Aw.Sindri.Core.Launch.SessionIdScan!
+Aw.Sindri.Core.Launch.SessionIdScan.Ambiguous.get -> bool
+Aw.Sindri.Core.Launch.SessionIdScan.Ambiguous.init -> void
+Aw.Sindri.Core.Launch.SessionIdScan.Deconstruct(out Aw.Sindri.Core.Sessions.SessionId? Id, out bool Ambiguous) -> void
+Aw.Sindri.Core.Launch.SessionIdScan.Equals(Aw.Sindri.Core.Launch.SessionIdScan? other) -> bool
+Aw.Sindri.Core.Launch.SessionIdScan.Id.get -> Aw.Sindri.Core.Sessions.SessionId?
+Aw.Sindri.Core.Launch.SessionIdScan.Id.init -> void
+Aw.Sindri.Core.Launch.SessionIdScan.SessionIdScan(Aw.Sindri.Core.Sessions.SessionId? Id, bool Ambiguous) -> void
+Aw.Sindri.Core.Launches.ILaunchFiles
+Aw.Sindri.Core.Launches.ILaunchFiles.Forget(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> void
+Aw.Sindri.Core.Launches.ILaunchFiles.SweepStale(System.DateTimeOffset now, System.TimeSpan olderThan, System.Func<Aw.Sindri.Core.Workflow.Engine.LaunchId, bool>! live) -> int
+Aw.Sindri.Core.Launches.ILaunchFiles.Verify(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, Aw.Sindri.Core.Launches.LaunchSecret secret) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+Aw.Sindri.Core.Launches.ILostSessions
+Aw.Sindri.Core.Launches.ILostSessions.Sweep(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int>
+Aw.Sindri.Core.Launches.LaunchLiveness
+Aw.Sindri.Core.Launches.LaunchLiveness.Beat(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.DateTimeOffset at) -> void
+Aw.Sindri.Core.Launches.LaunchLiveness.End(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> void
+Aw.Sindri.Core.Launches.LaunchLiveness.IsReported(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> bool
+Aw.Sindri.Core.Launches.LaunchLiveness.LaunchLiveness() -> void
+Aw.Sindri.Core.Launches.LaunchLiveness.MarkReported(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> void
+Aw.Sindri.Core.Launches.LaunchLiveness.Silent(System.DateTimeOffset now, System.TimeSpan silence) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.LaunchId>!
+Aw.Sindri.Core.Launches.LaunchSecret
+Aw.Sindri.Core.Launches.LaunchSecret.Deconstruct(out string! Value) -> void
+Aw.Sindri.Core.Launches.LaunchSecret.Equals(Aw.Sindri.Core.Launches.LaunchSecret other) -> bool
+Aw.Sindri.Core.Launches.LaunchSecret.LaunchSecret() -> void
+Aw.Sindri.Core.Launches.LaunchSecret.LaunchSecret(string! Value) -> void
+Aw.Sindri.Core.Launches.LaunchSecret.Value.get -> string!
+Aw.Sindri.Core.Launches.LaunchSecret.Value.init -> void
+const Aw.Sindri.Core.Launch.LaunchFiles.Directory = "launches" -> string!
+override Aw.Sindri.Core.Launch.CaptureRule.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launch.CaptureRule.GetHashCode() -> int
+override Aw.Sindri.Core.Launch.CaptureRule.ToString() -> string!
+override Aw.Sindri.Core.Launch.SessionIdScan.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launch.SessionIdScan.GetHashCode() -> int
+override Aw.Sindri.Core.Launch.SessionIdScan.ToString() -> string!
+override Aw.Sindri.Core.Launches.LaunchSecret.GetHashCode() -> int
+override Aw.Sindri.Core.Launches.LaunchSecret.ToString() -> string!
+static Aw.Sindri.Core.Launch.CaptureRule.operator !=(Aw.Sindri.Core.Launch.CaptureRule? left, Aw.Sindri.Core.Launch.CaptureRule? right) -> bool
+static Aw.Sindri.Core.Launch.CaptureRule.operator ==(Aw.Sindri.Core.Launch.CaptureRule? left, Aw.Sindri.Core.Launch.CaptureRule? right) -> bool
+static Aw.Sindri.Core.Launch.LaunchFiles.CaptureName(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> string!
+static Aw.Sindri.Core.Launch.LaunchFiles.SessionIdName(Aw.Sindri.Core.Workflow.Engine.LaunchId launch) -> string!
+static Aw.Sindri.Core.Launch.SessionIdCapture.Choose(Aw.Sindri.Core.Launch.CaptureRule! rule, System.Collections.Generic.IReadOnlyList<string!>! paths, System.Collections.Generic.IReadOnlySet<string!>! claimed) -> Aw.Sindri.Core.Launch.SessionIdScan!
+static Aw.Sindri.Core.Launch.SessionIdScan.None.get -> Aw.Sindri.Core.Launch.SessionIdScan!
+static Aw.Sindri.Core.Launch.SessionIdScan.operator !=(Aw.Sindri.Core.Launch.SessionIdScan? left, Aw.Sindri.Core.Launch.SessionIdScan? right) -> bool
+static Aw.Sindri.Core.Launch.SessionIdScan.operator ==(Aw.Sindri.Core.Launch.SessionIdScan? left, Aw.Sindri.Core.Launch.SessionIdScan? right) -> bool
+static Aw.Sindri.Core.Launches.LaunchRules.HeartbeatEvery.get -> System.TimeSpan
+static Aw.Sindri.Core.Launches.LaunchRules.LostAfter.get -> System.TimeSpan
+static Aw.Sindri.Core.Launches.LaunchSecret.operator !=(Aw.Sindri.Core.Launches.LaunchSecret left, Aw.Sindri.Core.Launches.LaunchSecret right) -> bool
+static Aw.Sindri.Core.Launches.LaunchSecret.operator ==(Aw.Sindri.Core.Launches.LaunchSecret left, Aw.Sindri.Core.Launches.LaunchSecret right) -> bool
+~override Aw.Sindri.Core.Launches.LaunchSecret.Equals(object obj) -> bool
+Aw.Sindri.Core.Launches.AdmittedLaunch
+Aw.Sindri.Core.Launches.AdmittedLaunch.<Clone>$() -> Aw.Sindri.Core.Launches.AdmittedLaunch!
+Aw.Sindri.Core.Launches.AdmittedLaunch.Accepted.get -> bool
+Aw.Sindri.Core.Launches.AdmittedLaunch.Accepted.init -> void
+Aw.Sindri.Core.Launches.AdmittedLaunch.AdmittedLaunch(string? Item, bool Accepted) -> void
+Aw.Sindri.Core.Launches.AdmittedLaunch.Deconstruct(out string? Item, out bool Accepted) -> void
+Aw.Sindri.Core.Launches.AdmittedLaunch.Equals(Aw.Sindri.Core.Launches.AdmittedLaunch? other) -> bool
+Aw.Sindri.Core.Launches.AdmittedLaunch.Item.get -> string?
+Aw.Sindri.Core.Launches.AdmittedLaunch.Item.init -> void
+Aw.Sindri.Core.Launches.LaunchSessionEvents
+Aw.Sindri.Core.Launches.LaunchSessionEvents.Beat(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, Aw.Sindri.Core.Sessions.SessionId? reported, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Launches.LaunchSessionEvents.End(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, Aw.Sindri.Core.Events.SessionEndReason reason, int? exitCode, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Launches.LaunchSessionEvents.LaunchSessionEvents(Aw.Sindri.Core.Launches.ILaunchFiles! files, Aw.Sindri.Core.Launches.LaunchLiveness! liveness, Aw.Sindri.Core.Launches.ReportedIdAdmission! admission, Aw.Sindri.Core.Lease.HeldLease! held, Aw.Sindri.Core.Ledger.ILedgerStore! ledger, Aw.Sindri.Core.Events.EventFactory! events, System.TimeProvider! clock) -> void
+Aw.Sindri.Core.Launches.LaunchSessionEvents.Report(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, Aw.Sindri.Core.Sessions.SessionId? reported, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Launches.LaunchSessionEvents.Verify(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, Aw.Sindri.Core.Launches.LaunchSecret secret) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+Aw.Sindri.Core.Launches.ReportedIdAdmission
+Aw.Sindri.Core.Launches.ReportedIdAdmission.Admit(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, Aw.Sindri.Core.Sessions.SessionId? id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Launches.AdmittedLaunch!>
+Aw.Sindri.Core.Launches.ReportedIdAdmission.ReportedIdAdmission(Aw.Sindri.Core.Launches.ILaunchViews! views, Aw.Sindri.Core.Launch.IAgentCatalog! catalog) -> void
+override Aw.Sindri.Core.Launches.AdmittedLaunch.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launches.AdmittedLaunch.GetHashCode() -> int
+override Aw.Sindri.Core.Launches.AdmittedLaunch.ToString() -> string!
+static Aw.Sindri.Core.Launch.SessionIdCapture.Accepts(string? pattern, Aw.Sindri.Core.Sessions.SessionId id) -> bool
+static Aw.Sindri.Core.Launches.AdmittedLaunch.operator !=(Aw.Sindri.Core.Launches.AdmittedLaunch? left, Aw.Sindri.Core.Launches.AdmittedLaunch? right) -> bool
+static Aw.Sindri.Core.Launches.AdmittedLaunch.operator ==(Aw.Sindri.Core.Launches.AdmittedLaunch? left, Aw.Sindri.Core.Launches.AdmittedLaunch? right) -> bool

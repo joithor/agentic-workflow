@@ -162,4 +162,34 @@ public sealed class LauncherTests : IDisposable
         Expect.Equal(HostKind.Tmux, probed.Host.Kind);
         Assert.Equal(["claude-code", "aider"], probed.Targets.Select(t => t.Id.Value), StringComparer.Ordinal);
     }
+
+    [Fact]
+    public async Task A_reported_entry_gets_a_0600_capture_rule_that_stop_deletes()
+    {
+        var codex = AgentEntries.Codex with { IdCapture = "rollout-(.*)\\.jsonl$", ReportedNewestFile = "~/.codex/sessions/*/*/*/rollout-*.jsonl" };
+        var launcher = Make(hostFor: null, viewer: null, codex);
+        var request = A.LaunchRequest().WithAgent(codex.Id).Build();
+
+        _ = await launcher.Launch(request, CancellationToken.None);
+
+        var file = Path.Combine(Options.LaunchesDirectory, LaunchFiles.CaptureName(request.Launch));
+        var rule = System.Text.Json.JsonDocument.Parse(await File.ReadAllTextAsync(file, TestContext.Current.CancellationToken)).RootElement;
+        Expect.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(file));
+        Expect.Equal((codex.SessionIdPattern, codex.ReportedNewestFile, codex.IdCapture), (rule.GetProperty("sessionIdPattern").GetString(), rule.GetProperty("newestFile").GetString(), rule.GetProperty("capture").GetString()));
+        Expect.True(!(await File.ReadAllTextAsync(file, TestContext.Current.CancellationToken)).Contains(_host.Started.Single().Env["AW_SINDRI_LAUNCH_SECRET"], StringComparison.Ordinal));
+
+        _ = await launcher.Stop(request.Launch, CancellationToken.None);
+
+        Expect.True(!File.Exists(file));
+    }
+
+    [Fact]
+    public async Task A_pre_chosen_entry_gets_no_capture_rule()
+    {
+        var request = A.LaunchRequest().Build();
+
+        _ = await Make().Launch(request, CancellationToken.None);
+
+        Expect.True(!File.Exists(Path.Combine(Options.LaunchesDirectory, LaunchFiles.CaptureName(request.Launch))));
+    }
 }

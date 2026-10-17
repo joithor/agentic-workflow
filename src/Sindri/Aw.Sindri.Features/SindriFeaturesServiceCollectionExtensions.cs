@@ -62,6 +62,9 @@ using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.OpenItem;
+using Aw.Sindri.Features.SessionExit;
+using Aw.Sindri.Features.SessionHeartbeat;
+using Aw.Sindri.Features.SweepLostSessions;
 using Aw.Sindri.Features.PauseService;
 using Aw.Sindri.Features.PingProcess;
 using Aw.Sindri.Features.ReadLedger;
@@ -140,6 +143,9 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddRunService();
         _ = services.AddScoped<IValidator<CloseItemRequest>, CloseItemValidator>().AddCommand<CloseItemRequest, CommandAccepted, CloseItemService>();
         _ = services.AddScoped<IValidator<OpenItemRequest>, OpenItemValidator>().AddCommand<OpenItemRequest, LaunchRequested, OpenItemService>().AddScoped<OpenChecks>().AddScoped<OpenTarget>().AddSingleton<ILaunchSpend, NoLaunchSpend>();
+        _ = services.AddScoped<ILostSessions, LostSessions>()   // API P10a U10: 'session wrap' says the session is alive and when it exited (issues, proven by the launch secret)
+            .AddScoped<IValidator<SessionHeartbeatRequest>, AcceptAllValidator<SessionHeartbeatRequest>>().AddIssue<SessionHeartbeatRequest, SessionHeartbeatResponse, SessionHeartbeatService>()
+            .AddScoped<IValidator<SessionExitRequest>, AcceptAllValidator<SessionExitRequest>>().AddIssue<SessionExitRequest, SessionExitResponse, SessionExitService>();
         _ = services.AddScoped<IValidator<DecideRequest>, DecideValidator>().AddCommand<DecideRequest, CommandAccepted, DecideService>();
         _ = services.AddScoped<IValidator<FileRequestRequest>, FileRequestValidator>().AddCommand<FileRequestRequest, RequestFiledResponse, FileRequestService>();
         _ = services.AddScoped<IValidator<CreateItemRequest>, CreateItemValidator>().AddCommand<CreateItemRequest, ItemCreatedResponse, CreateItemService>();

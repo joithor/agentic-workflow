@@ -1,5 +1,6 @@
 using Aw.Redaction;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Profile;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,7 +17,10 @@ internal static class LauncherServiceCollectionExtensions
             .AddSingleton(static _ => new TmuxSessionHost(new TmuxHostOptions()))
             .AddSingleton<NoSessionHost>()
             .AddSingleton<ITerminalViewer>(sp => Viewer(sp, environment))
-            .AddSingleton<ILauncher>(sp => new Launcher(Parts(sp, environment, settings, BuiltinHash)))
+            .AddSingleton<ISindriHome>(new SindriHome(settings.Home))
+            .AddSingleton(_ => Options(environment, settings))
+            .AddSingleton<ILaunchFiles>(static sp => new LaunchFileStore(sp.GetRequiredService<LauncherOptions>()))
+            .AddSingleton<ILauncher>(sp => new Launcher(Parts(sp, BuiltinHash)))
             .AddSingleton<ILaunchSetup>(sp => new LauncherInit(new LauncherInitParts(sp.GetRequiredService<ReloadingAgentCatalog>(), Detection(sp, environment))
             {
                 BuiltinHash = BuiltinHash,
@@ -24,17 +28,18 @@ internal static class LauncherServiceCollectionExtensions
             }));
     }
 
-    private static LauncherParts Parts(IServiceProvider sp, Func<string, string?> environment, SindriSettings settings, Func<AgentId, string?> builtinHash)
+    private static LauncherOptions Options(Func<string, string?> environment, SindriSettings settings) => new(settings.Home)
+    {
+        SindriExecutable = Environment.ProcessPath ?? "sindri",
+        SindriHome = LauncherStartup.NonEmpty(environment("AW_SINDRI_HOME")),
+    };
+
+    private static LauncherParts Parts(IServiceProvider sp, Func<AgentId, string?> builtinHash)
     {
         var catalog = sp.GetRequiredService<ReloadingAgentCatalog>();
         var tmux = sp.GetRequiredService<TmuxSessionHost>();
         var none = sp.GetRequiredService<NoSessionHost>();
-        var options = new LauncherOptions(settings.Home)
-        {
-            SindriExecutable = Environment.ProcessPath ?? "sindri",
-            SindriHome = LauncherStartup.NonEmpty(environment("AW_SINDRI_HOME")),
-        };
-        return new LauncherParts(catalog, attended => attended && string.Equals(catalog.Current.Host?.Kind, "none", StringComparison.Ordinal) ? none : tmux, sp.GetRequiredService<ITerminalViewer>(), options, sp.GetRequiredService<TimeProvider>())
+        return new LauncherParts(catalog, attended => attended && string.Equals(catalog.Current.Host?.Kind, "none", StringComparison.Ordinal) ? none : tmux, sp.GetRequiredService<ITerminalViewer>(), sp.GetRequiredService<LauncherOptions>(), sp.GetRequiredService<TimeProvider>())
         {
             BuiltinHash = builtinHash,
             Approved = Approved(sp),

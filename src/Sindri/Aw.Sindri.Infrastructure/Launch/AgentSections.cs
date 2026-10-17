@@ -57,6 +57,7 @@ internal static partial class AgentSections
             : new AgentEntry(agentId, section.Label!, section.Bin!, Text(section.ProcessName), Text(section.Transcripts), Strings(section.Resume)) // why: Problem() proved label and bin are set
             {
                 IdCapture = Capture(section.ReportedId),
+                ReportedNewestFile = ReportedText(section.ReportedId, "newestFile"),
                 Open = section.Open!, // why: Problem() proved open is set
                 SessionIdMode = Mode(section.SessionId),
                 SessionIdPattern = Text(section.SessionIdPattern),
@@ -136,8 +137,10 @@ internal static partial class AgentSections
 
     private static bool Present(JsonElement element) => element.ValueKind != JsonValueKind.Undefined;
 
-    private static string? Capture(JsonElement reported) =>
-        reported.ValueKind == JsonValueKind.Object && reported.TryGetProperty("capture", out var capture) ? Text(capture) : null;
+    private static string? Capture(JsonElement reported) => ReportedText(reported, "capture");
+
+    private static string? ReportedText(JsonElement reported, string name) =>
+        reported.ValueKind == JsonValueKind.Object && reported.TryGetProperty(name, out var value) ? Text(value) : null;
 
     private static string? Text(JsonElement element) => element.ValueKind == JsonValueKind.String ? element.GetString() : null;
 
