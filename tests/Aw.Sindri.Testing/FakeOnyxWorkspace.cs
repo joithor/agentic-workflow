@@ -29,7 +29,7 @@ public sealed class FakeOnyxWorkspace : IOnyxWorkspace
     /// <inheritdoc />
     public Kernel.Result<string?> Read(string path)
         => Unreadable.Contains(path)
-            ? Sindri.Core.SindriErrors.OnyxWorkspaceUnusable.With($"Sindri can't read {path}: access denied; make it readable by you, then run this again")
+            ? Core.SindriErrors.OnyxWorkspaceUnusable.With($"Sindri can't read {path}: access denied; make it readable by you, then run this again")
             : Kernel.Results.Success(Files.TryGetValue(path, out var text) ? text : null);
 
     /// <inheritdoc />

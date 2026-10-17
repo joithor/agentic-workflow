@@ -50,7 +50,7 @@ public sealed class OnyxUpStepsTests
     private static (OnyxUpRig Rig, OnyxUpContext Context, IOnyxUpStep[] Steps) Chain()
     {
         var rig = new OnyxUpRig();
-        var compose = new Aw.Sindri.Infrastructure.Onyx.YamlComposeServices();
+        var compose = new Infrastructure.Onyx.YamlComposeServices();
         IOnyxUpStep[] steps =
         [
             new OnyxFetchStep(rig.Files, rig.Progress),
