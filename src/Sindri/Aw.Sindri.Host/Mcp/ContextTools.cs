@@ -111,10 +111,9 @@ internal static class ContextTools
     /// <returns>The tool result.</returns>
     internal static async ValueTask<CallToolResult> CallSources(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
     {
-        if (arguments is { Count: > 0 })
+        if (McpArguments.None("context_sources", arguments) is { } refused)
         {
-            return McpResults.Failure(services, ContextErrors.McpArgumentsInvalid.With(
-                $"context_sources takes no arguments, got '{string.Join("', '", arguments.Keys)}' (fix: call it with {{}})"));
+            return McpResults.Failure(services, refused);
         }
 
         var port = services.GetRequiredService<IHttpContextAccessor>().HttpContext?.Connection.LocalPort ?? 0;
@@ -186,7 +185,7 @@ internal static class ContextTools
         return document.RootElement.Clone();
     }
 
-    internal static JsonObject Property(string type, string description, int? minimum = null)
+    internal static JsonObject Property(string type, string description, int? minimum = null, PropertyBounds? bounds = null)
     {
         var property = new JsonObject { ["type"] = type, ["description"] = description };
         if (minimum is { } min)
@@ -194,6 +193,27 @@ internal static class ContextTools
             property["minimum"] = min;
         }
 
+        if (bounds?.Allowed is { } allowed)
+        {
+            property["enum"] = new JsonArray([.. allowed.Select(a => (JsonNode?)JsonValue.Create(a))]);
+        }
+
+        if (bounds?.MinLength is { } shortest)
+        {
+            property["minLength"] = shortest;
+        }
+
+        if (bounds?.MaxLength is { } longest)
+        {
+            property["maxLength"] = longest;
+        }
+
         return property;
     }
+
+    /// <summary>The optional limits of a string property.</summary>
+    /// <param name="Allowed">The only values allowed, or null.</param>
+    /// <param name="MinLength">The fewest characters, or null.</param>
+    /// <param name="MaxLength">The most characters, or null.</param>
+    internal sealed record PropertyBounds(string[]? Allowed = null, int? MinLength = null, int? MaxLength = null);
 }

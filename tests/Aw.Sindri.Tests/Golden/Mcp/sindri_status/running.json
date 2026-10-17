@@ -1,0 +1,43 @@
+{
+  "isError": false,
+  "structuredContent": {
+    "running": true,
+    "pid": 4242,
+    "epoch": 1,
+    "leaseExpiresAt": "2026-01-01T00:01:00.0000000Z",
+    "profile": {
+      "approved": "5c015ad3abd0d4f05cff14776c2ab1487015078db908658acda7e9a1cfadcf97",
+      "live": "5c015ad3abd0d4f05cff14776c2ab1487015078db908658acda7e9a1cfadcf97",
+      "changedSinceApproval": false,
+      "problem": null,
+      "source": "<home>/profile/profile.yaml",
+      "needsApproval": false
+    },
+    "services": [
+      {
+        "name": "heartbeat",
+        "every": "5s",
+        "lastRun": null
+      }
+    ],
+    "apiVersion": 1,
+    "views": {
+      "cursor": 119,
+      "ledgerHead": 119,
+      "projectedAt": "2026-01-01T00:00:00.0000000Z",
+      "rebuilding": false,
+      "stalled": false,
+      "stalledAt": null,
+      "stalledType": null,
+      "text": null
+    },
+    "health": {
+      "word": "healthy",
+      "problems": [],
+      "sentence": null
+    }
+  },
+  "content": [
+    "sindri <build>, port <port>: running, health healthy, views fresh, 1 services"
+  ]
+}
