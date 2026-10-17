@@ -12,11 +12,11 @@ public static class ProcessGroups
     /// <summary>The Temporal dev server.</summary>
     public const string Temporal = "temporal";
 
-    /// <summary>headroom and the MCP servers sessions start.</summary>
-    public const string Mcp = "headroom/mcp";
+    /// <summary>The MCP servers sessions start.</summary>
+    public const string Mcp = "mcp";
 
     private static readonly string[] _order = [Claude, Dotnet, Temporal, Mcp, "docker/qemu", "onyx/opensearch/vespa", "node", "other"];
-    private static readonly string[] _mcpMarkers = ["headroom", "mcp", "serena", "context7"];
+    private static readonly string[] _mcpMarkers = ["mcp", "serena", "context7"];
     private static readonly string[] _containerMarkers = ["docker", "qemu", "vpnkit", "containerd"];
     private static readonly string[] _searchMarkers = ["onyx", "opensearch", "vespa"];
 
