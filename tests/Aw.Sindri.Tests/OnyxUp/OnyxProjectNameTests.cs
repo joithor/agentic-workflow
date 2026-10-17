@@ -74,6 +74,17 @@ public sealed class OnyxProjectNameTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_state_that_names_another_home_is_not_trusted_for_its_step_stamps_either()
+    {
+        var rig = await Running();
+
+        var rerun = (await rig.Up(Token)).Value;
+
+        Assert.Equal(["fetch", "config", "pull", "start"], rerun.Ran, StringComparer.Ordinal);
+        Assert.Equal(1, rig.Progress.Lines.Count(static l => l.Contains(Foreign, StringComparison.Ordinal)));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_recorded_name_that_is_not_ours_is_ignored()
     {
         var rig = await Running("--help");
