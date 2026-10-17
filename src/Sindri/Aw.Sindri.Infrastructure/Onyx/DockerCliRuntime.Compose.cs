@@ -9,7 +9,7 @@ using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Infrastructure.Onyx;
 
-// The compose operations: `docker compose -p sindri-onyx -f <compose> -f <override> --env-file <env> <verb>`, arguments as a list.
+// The compose operations: `docker compose -p <project> -f <compose> -f <override> --env-file <env> <verb>`, arguments as a list.
 internal sealed partial class DockerCliRuntime
 {
     private const int TailLines = 5;
@@ -99,7 +99,7 @@ internal sealed partial class DockerCliRuntime
 
     private Result<string> Compose(ComposeProject project, string[] verb, Call call, Action<string>? progress, CancellationToken cancellationToken)
     {
-        string[] arguments = ["compose", "-p", ComposeProject.Name, "-f", project.ComposeFile, "-f", project.OverrideFile, "--env-file", project.EnvFile, .. verb];
+        string[] arguments = ["compose", "-p", project.Name, "-f", project.ComposeFile, "-f", project.OverrideFile, "--env-file", project.EnvFile, .. verb];
         var tail = new Tail();
         var run = runner.Run("docker", arguments, call.Timeout, new ToolRunOptions(
             line =>

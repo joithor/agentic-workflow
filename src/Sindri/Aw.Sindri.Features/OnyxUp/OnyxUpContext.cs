@@ -15,8 +15,8 @@ internal sealed record OnyxUpContext(OnyxPins Pins, OnyxPaths Paths, int Port, s
     /// <summary>Gets or sets the release the running Onyx reported once the start step finished.</summary>
     public string? Version { get; set; }
 
-    /// <summary>Gets the compose project the docker operations act on.</summary>
-    public ComposeProject Project => Paths.Project;
+    /// <summary>Gets the compose project the docker operations act on: the one state.json recorded, or this home's own.</summary>
+    public ComposeProject Project { get; init; } = Paths.Project;
 
     /// <summary>Gets the settings the .env and the override are rendered with, for a given key.</summary>
     /// <param name="authKey">The USER_AUTH_SECRET value.</param>

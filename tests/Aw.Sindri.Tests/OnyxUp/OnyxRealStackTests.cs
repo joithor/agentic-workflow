@@ -42,17 +42,23 @@ public sealed class OnyxRealStackTests
         Assert.SkipWhen(!docker.CliFound || !docker.DaemonAnswers, "Docker isn't available on this box");
         Assert.SkipWhen(provider.GetRequiredService<IHostProbes>().FreeDisk(Path.GetTempPath()).FreeBytes < provider.GetRequiredService<IOnyxPinsSource>().Pins.DiskBytes, "not enough free disk for the Onyx images");
         var paths = OnyxPaths.For(home);
+        string? created = null;
         try
         {
-            await Cycle(provider, paths);
+            await Cycle(provider, paths, name => created = name);
         }
         finally
         {
-            _ = new ProcessToolRunner().Run(
-                "docker",
-                ["compose", "-p", ComposeProject.Name, "-f", paths.Compose, "-f", paths.Override, "--env-file", paths.Env, "down", "-v"],
-                TimeSpan.FromMinutes(5),
-                cancellationToken: CancellationToken.None);
+            // Only the project this test's own home started is removed: its name is per home (never the owner's), and it is the one state.json recorded after `up`.
+            if (created is not null && string.Equals(created, paths.Project.Name, StringComparison.Ordinal) && ComposeProject.IsOurs(created))
+            {
+                _ = new ProcessToolRunner().Run(
+                    "docker",
+                    ["compose", "-p", created, "-f", paths.Compose, "-f", paths.Override, "--env-file", paths.Env, "down", "-v"],
+                    TimeSpan.FromMinutes(5),
+                    cancellationToken: CancellationToken.None);
+            }
+
             if (Directory.Exists(home))
             {
                 Directory.Delete(home, recursive: true);
@@ -60,12 +66,15 @@ public sealed class OnyxRealStackTests
         }
     }
 
-    private static async Task Cycle(ServiceProvider provider, OnyxPaths paths)
+    private static async Task Cycle(ServiceProvider provider, OnyxPaths paths, Action<string> started)
     {
         await using var scope = provider.CreateAsyncScope();
         var services = scope.ServiceProvider;
         var runtime = services.GetRequiredService<IContainerRuntime>();
         var up = (await services.GetRequiredService<IService<OnyxUpRequest, OnyxUpResponse>>().Handle(new OnyxUpRequest(), Token)).Value;
+        var recorded = services.GetRequiredService<IOnyxWorkspace>().ReadState()?.Project;
+        Assert.Equal(paths.Project.Name, recorded);   // the project this home started: per home, never a shared name
+        started(paths.Project.Name);
         using var http = new HttpClient();
 
         Assert.Contains("v4.9.0", await http.GetStringAsync(new Uri(up.Url + OnyxRoutes.Version), Token), StringComparison.Ordinal);

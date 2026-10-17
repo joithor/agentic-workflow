@@ -56,7 +56,7 @@ internal sealed class OnyxReadiness(IOnyxHealth health, IContainerRuntime runtim
     /// <param name="cancellationToken">Cancels the container listing.</param>
     /// <returns>The error naming each container's state.</returns>
     internal Error TimedOut(OnyxUpContext context, CancellationToken cancellationToken)
-        => SindriErrors.OnyxNotReady.With(string.Create(CultureInfo.InvariantCulture, $"Onyx didn't answer within {Deadline.TotalMinutes:0} minutes ({Summary(context, cancellationToken)}); check `docker compose -p sindri-onyx logs`, give Docker more memory or disk if a service keeps restarting, then run `sindri onyx up` again"));
+        => SindriErrors.OnyxNotReady.With(string.Create(CultureInfo.InvariantCulture, $"Onyx didn't answer within {Deadline.TotalMinutes:0} minutes ({Summary(context, cancellationToken)}); check `docker compose -p {context.Project.Name} logs`, give Docker more memory or disk if a service keeps restarting, then run `sindri onyx up` again"));
 
     // The containers as `service: state (health)` joined by `; `, so the message says which one never came up.
     private string Summary(OnyxUpContext context, CancellationToken cancellationToken)

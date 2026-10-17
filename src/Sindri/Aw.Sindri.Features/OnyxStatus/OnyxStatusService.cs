@@ -14,7 +14,7 @@ internal sealed class OnyxStatusService(IOnyxPinsSource pinsSource, OnyxFacts fa
         var state = workspace.ReadState();
         var (docker, host) = facts.Read(cancellationToken);
         var setUp = IsSetUp(state);
-        var running = setUp && docker.DaemonAnswers && IsRunning(cancellationToken);
+        var running = setUp && docker.DaemonAnswers && IsRunning(state, cancellationToken);
         var report = OnyxPreflight.Evaluate(docker, host, pins, running ? state?.Port : null);
         var onyx = Classify(setUp, running);
         var (url, version) = running ? await Running(report.Port, cancellationToken).ConfigureAwait(false) : (null, null);
@@ -42,9 +42,9 @@ internal sealed class OnyxStatusService(IOnyxPinsSource pinsSource, OnyxFacts fa
     };
 
     // nginx and the API server both running is what "Onyx is up" means here; anything else is stopped.
-    private bool IsRunning(CancellationToken cancellationToken)
+    private bool IsRunning(OnyxSetupState? state, CancellationToken cancellationToken)
     {
-        var containers = facts.Containers(cancellationToken);
+        var containers = facts.Containers(state, cancellationToken);
         return containers.IsSuccess
             && containers.Value.Any(static c => c.Service == "nginx" && c.State == "running")
             && containers.Value.Any(static c => c.Service == "api_server" && c.State == "running");

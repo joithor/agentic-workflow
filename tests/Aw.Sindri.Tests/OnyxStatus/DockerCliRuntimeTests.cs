@@ -208,9 +208,9 @@ public sealed class DockerCliRuntimeTests
     public void Inspect_reports_no_endpoint_when_the_cli_is_missing()
         => Assert.Null(Cli(new FakeToolRunner(ToolRun.Missing), static _ => "tcp://10.0.0.5:2375").Inspect(Token).Endpoint);
 
-    private static readonly ComposeProject _project = new("/o/docker-compose.yml", "/o/docker-compose.override.yml", "/o/.env");
+    private static readonly ComposeProject _project = new("sindri-onyx-0a1b2c3d", "/o/docker-compose.yml", "/o/docker-compose.override.yml", "/o/.env");
 
-    private static readonly string[] _composePrefix = ["compose", "-p", "sindri-onyx", "-f", "/o/docker-compose.yml", "-f", "/o/docker-compose.override.yml", "--env-file", "/o/.env"];
+    private static readonly string[] _composePrefix = ["compose", "-p", "sindri-onyx-0a1b2c3d", "-f", "/o/docker-compose.yml", "-f", "/o/docker-compose.override.yml", "--env-file", "/o/.env"];
 
     private static ToolRun Exit(int code, string output = "") => new(ToolOutcome.Exited, code, output);
 

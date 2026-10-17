@@ -25,14 +25,14 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
 
         var state = workspace.ReadState();
         var pins = pinsSource.Pins;
-        var preflight = Preflight(pins, cancellationToken);
+        var preflight = Preflight(state, pins, cancellationToken);
         if (preflight.IsError)
         {
             return preflight.Error;
         }
 
         var (port, platform, warnings) = preflight.Value;
-        var context = new OnyxUpContext(pins, facts.Paths, port, platform);
+        var context = new OnyxUpContext(pins, facts.Paths, port, platform) { Project = facts.ProjectOf(state) };
         var recorded = new Dictionary<string, string>(state?.Steps ?? new Dictionary<string, string>(StringComparer.Ordinal), StringComparer.Ordinal);
         List<string> ran = [];
         List<string> skipped = [];
@@ -71,17 +71,17 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
         if (!string.Equals(before, stamp, StringComparison.Ordinal))
         {
             recorded[step.Name] = stamp;
-            workspace.WriteState(new OnyxSetupState(context.Port, new Dictionary<string, string>(recorded, StringComparer.Ordinal)));
+            workspace.WriteState(new OnyxSetupState(context.Port, new Dictionary<string, string>(recorded, StringComparer.Ordinal), context.Project.Name));
         }
 
         return outcome;
     }
 
     // Step 1. The port row accepts the port our own running nginx holds; a failed row stops everything before anything is fetched or written.
-    private Result<(int Port, string Platform, IReadOnlyList<string> Warnings)> Preflight(OnyxPins pins, CancellationToken cancellationToken)
+    private Result<(int Port, string Platform, IReadOnlyList<string> Warnings)> Preflight(OnyxSetupState? state, OnyxPins pins, CancellationToken cancellationToken)
     {
         var (docker, host) = facts.Read(cancellationToken);
-        var report = OnyxPreflight.Evaluate(docker, host, pins, OwnPort(docker, cancellationToken));
+        var report = OnyxPreflight.Evaluate(docker, host, pins, OwnPort(state, docker, cancellationToken));
         if (report.Blocks)
         {
             return report.Checks.First(static c => c.State == CheckState.Fail).Problem!;   // why: a failed check always carries its error
@@ -94,14 +94,14 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
     }
 
     // The port our own running nginx publishes, whatever state.json says: a start that failed or timed out leaves it up, and a lost state file doesn't make it someone else's.
-    private int? OwnPort(ContainerRuntimeFacts docker, CancellationToken cancellationToken)
+    private int? OwnPort(OnyxSetupState? state, ContainerRuntimeFacts docker, CancellationToken cancellationToken)
     {
         if (!docker.DaemonAnswers || workspace.Read(facts.Paths.Compose) is null)
         {
             return null;   // no compose file yet means no project to ask about
         }
 
-        var containers = facts.Containers(cancellationToken);
+        var containers = facts.Containers(state, cancellationToken);
         return containers.IsSuccess
             ? containers.Value.Where(static c => c.Service == "nginx" && c.State == "running").SelectMany(static c => c.Publishers).FirstOrDefault(static p => p.Address == "127.0.0.1")?.PublishedPort
             : null;

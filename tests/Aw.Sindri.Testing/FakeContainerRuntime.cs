@@ -37,6 +37,9 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     /// <summary>Gets the limit each <see cref="Up"/> call was given (TimeSpan.MaxValue when it was given none), in order.</summary>
     public IList<TimeSpan> UpLimits { get; } = [];
 
+    /// <summary>Gets the compose project name of each compose operation called, in order.</summary>
+    public IList<string> Projects { get; } = [];
+
     /// <summary>Gets the services <see cref="Up"/> starts: the eight Onyx runs with no profile.</summary>
     public IList<string> StartedServices { get; } = ["api_server", "background", "cache", "inference_model_server", "nginx", "opensearch", "relational_db", "web_server"];
 
@@ -75,6 +78,7 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     /// <inheritdoc />
     public Result<Unit> Pull(ComposeProject project, Action<string> progress, CancellationToken cancellationToken)
     {
+        Projects.Add(project.Name);
         if (Begin("Pull") is { } error)
         {
             return error;
@@ -89,6 +93,7 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     /// <inheritdoc />
     public Result<Unit> Up(ComposeProject project, Action<string> progress, TimeSpan? limit, CancellationToken cancellationToken)
     {
+        Projects.Add(project.Name);
         UpLimits.Add(limit ?? TimeSpan.MaxValue);
         if (Begin("Up") is { } error)
         {
@@ -110,6 +115,7 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
     /// <inheritdoc />
     public Result<Unit> Stop(ComposeProject project, CancellationToken cancellationToken)
     {
+        Projects.Add(project.Name);
         if (Begin("Stop") is { } error)
         {
             return error;
@@ -126,13 +132,19 @@ public sealed class FakeContainerRuntime(ContainerRuntimeFacts facts) : IContain
 
     /// <inheritdoc />
     public Result<IReadOnlyList<ComposeContainer>> Ps(ComposeProject project, CancellationToken cancellationToken)
-        => Begin("Ps") is { } error ? error : Results.Success<IReadOnlyList<ComposeContainer>>([.. Containers]);
+    {
+        Projects.Add(project.Name);
+        return Begin("Ps") is { } error ? error : Results.Success<IReadOnlyList<ComposeContainer>>([.. Containers]);
+    }
 
     /// <inheritdoc />
     public Result<IReadOnlyList<ComposePublishedPort>> PublishedPorts(ComposeProject project, CancellationToken cancellationToken)
-        => Begin("PublishedPorts") is { } error
+    {
+        Projects.Add(project.Name);
+        return Begin("PublishedPorts") is { } error
             ? error
             : Results.Success(Config?.Invoke(project) ?? [new ComposePublishedPort("nginx", "127.0.0.1", PublishedPort, 80)]);
+    }
 
     /// <inheritdoc />
     public Result<IReadOnlyDictionary<string, IReadOnlyList<string>>> RepoDigests(IReadOnlyList<string> images, CancellationToken cancellationToken)

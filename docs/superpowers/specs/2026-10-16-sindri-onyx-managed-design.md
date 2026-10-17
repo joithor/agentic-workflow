@@ -72,7 +72,8 @@ Slack (OAuth, in Onyx's UI). From then on every `sindri-app` (through `serve`) k
 ## 3. Terms
 
 - **Managed Onyx:** the profile says `context.sources.onyx.managed: true`. Sindri owns its files under
-  `$AW_SINDRI_HOME/onyx/` and its compose project `sindri-onyx`. Without `managed` (or `false`), Onyx is the owner's,
+  `$AW_SINDRI_HOME/onyx/` and its compose project `sindri-onyx-<8 hex>` (per Sindri home: the first 8 hex digits of the
+  sha256 of the full `AW_SINDRI_HOME` path, recorded in `state.json`). Without `managed` (or `false`), Onyx is the owner's,
   as today, and none of §4 runs.
 - **The pins:** `context/onyx.lock` in this repo (§6), read by the build, never fetched.
 - **Provisioning:** the setup-only requests of §5.2.
@@ -114,7 +115,7 @@ Each step is idempotent and checks before it acts; the run records each complete
    `docs/sindri/onyx.md` (OpenSearch heap 1 GB and `mem_limit: 2g`; `indexing_model_server` and `code-interpreter`
    behind profiles; worker concurrency 1; the Slack and Discord bots off). Rewritten only when its content would change.
 4. **Pull** the pinned images (`docker compose pull`), with progress.
-5. **Start** (`docker compose -p sindri-onyx up -d`) and **wait** for readiness: `GET /api/health` answers, then
+5. **Start** (`docker compose -p sindri-onyx-<8 hex> up -d`) and **wait** for readiness: `GET /api/health` answers, then
    `GET /api/version` reports `v4.9.0` (else `SND-ONYX-005`), under a deadline the builder sets from measurement
    (first start downloads models).
 6. **The owner's initial setup** (first run only): open Onyx's sign-up page in the browser and wait at the terminal
@@ -144,7 +145,7 @@ Each step is idempotent and checks before it acts; the run records each complete
   never a failed serve; queries degrade as they do today when Onyx doesn't answer (`SND-CONTEXT-010`).
 - `serve` never fetches, pulls or bootstraps: a box where `onyx up` never completed gets a needs-you row "Run `sindri
   onyx up`".
-- `stop` runs `docker compose -p sindri-onyx stop` after the control plane's own shutdown, bounded; a timeout is
+- `stop` runs `docker compose -p sindri-onyx-<8 hex> stop` after the control plane's own shutdown, bounded; a timeout is
   reported, not fatal.
 - An unmanaged Onyx: nothing here runs.
 
@@ -277,8 +278,8 @@ lists them instead.
 Settled after the builder check (2026-10-16, the writer's calls):
 - **Another Onyx already on the box** (an unmanaged stack, or anything else on port 3000): never adopted, migrated or
   stopped. Step 1 picks the next free loopback port for the managed one and preflight's memory check counts what Docker
-  already uses, refusing with `SND-ONYX-003` when two stacks won't fit. A compose project named `sindri-onyx` is Sindri's
-  own and is reused.
+  already uses, refusing with `SND-ONYX-003` when two stacks won't fit. The compose project of this Sindri home (`sindri-onyx-<8 hex>`) is Sindri's
+  own and is reused; another home's project is never touched.
 - **Disk:** preflight refuses with the measured need, where it's needed (Docker's data root, `$AW_SINDRI_HOME`) and how
   much is free; there is no reduced-model fallback. The owner's box (11 GiB free on 2026-10-16) needs space freed before
   the heavy proof.

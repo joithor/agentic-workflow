@@ -30,8 +30,15 @@ public sealed class OnyxFacts(IContainerRuntime runtime, IHostProbes probes, ISi
     /// <returns>linux/arm64 or linux/amd64, or the error.</returns>
     public Result<string> Platform(CancellationToken cancellationToken) => runtime.ServerPlatform(cancellationToken);
 
+    /// <summary>Gets the compose project to act on: the one `onyx up` recorded in state.json when it is a name Sindri could have made, else this home's own.</summary>
+    /// <param name="state">The setup state, or null when there is none.</param>
+    /// <returns>The project.</returns>
+    public ComposeProject ProjectOf(OnyxSetupState? state)
+        => ComposeProject.IsOurs(state?.Project) ? Paths.Project with { Name = state!.Project! } : Paths.Project;   // why: IsOurs is false for null
+
     /// <summary>Lists the containers of Sindri's Onyx project.</summary>
+    /// <param name="state">The setup state (which project to ask about), or null.</param>
     /// <param name="cancellationToken">Cancels the reading.</param>
     /// <returns>The containers, or the error (Docker isn't answering).</returns>
-    public Result<IReadOnlyList<ComposeContainer>> Containers(CancellationToken cancellationToken) => runtime.Ps(Paths.Project, cancellationToken);
+    public Result<IReadOnlyList<ComposeContainer>> Containers(OnyxSetupState? state, CancellationToken cancellationToken) => runtime.Ps(ProjectOf(state), cancellationToken);
 }

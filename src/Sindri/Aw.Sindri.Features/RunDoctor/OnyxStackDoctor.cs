@@ -29,12 +29,12 @@ internal sealed class OnyxStackDoctor(IOnyxWorkspace workspace, OnyxFacts facts,
 
     private DoctorCheck? Judge(CancellationToken cancellationToken)
     {
-        if (workspace.ReadState() is null)
+        if (workspace.ReadState() is not { } state)
         {
             return null;
         }
 
-        var containers = facts.Containers(cancellationToken);
+        var containers = facts.Containers(state, cancellationToken);
         var platform = facts.Platform(cancellationToken);
         if (containers.IsError || platform.IsError)
         {
@@ -43,14 +43,14 @@ internal sealed class OnyxStackDoctor(IOnyxWorkspace workspace, OnyxFacts facts,
 
         return containers.Value.All(static c => c.State != "running")
             ? new DoctorCheck(Name, CheckState.Warn, "stopped: no Onyx container is running", "sindri onyx up")
-            : Failure(containers.Value, platform.Value) ?? Ok(containers.Value);
+            : Failure(state, containers.Value, platform.Value) ?? Ok(containers.Value);
     }
 
-    private DoctorCheck? Failure(IReadOnlyList<ComposeContainer> containers, string platform)
+    private DoctorCheck? Failure(OnyxSetupState state, IReadOnlyList<ComposeContainer> containers, string platform)
     {
         if (containers.FirstOrDefault(static c => c.State != "running" || c.Health == "unhealthy") is { } down)
         {
-            return Fail($"{down.Service} is {down.State}{(down.Health is null ? "" : $" ({down.Health})")}", "docker compose -p sindri-onyx logs " + down.Service + ", then sindri onyx up");
+            return Fail($"{down.Service} is {down.State}{(down.Health is null ? "" : $" ({down.Health})")}", $"docker compose -p {facts.ProjectOf(state).Name} logs " + down.Service + ", then sindri onyx up");
         }
 
         foreach (var container in containers)

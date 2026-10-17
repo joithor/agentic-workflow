@@ -36,7 +36,8 @@ internal sealed class OnyxDownService(IOnyxWorkspace workspace, OnyxFacts facts,
         }
 
         // What runs is what docker says the project has, whatever state.json recorded: a start that failed halfway leaves containers up too.
-        var containers = facts.Containers(cancellationToken);
+        var state = workspace.ReadState();
+        var containers = facts.Containers(state, cancellationToken);
         if (containers.IsError)
         {
             return containers.Error;
@@ -48,7 +49,7 @@ internal sealed class OnyxDownService(IOnyxWorkspace workspace, OnyxFacts facts,
             return new OnyxDownResponse(WasRunning: false, []);
         }
 
-        var stopped = runtime.Stop(facts.Paths.Project, cancellationToken);
+        var stopped = runtime.Stop(facts.ProjectOf(state), cancellationToken);
         return stopped.IsError ? stopped.Error : new OnyxDownResponse(WasRunning: true, running);
     }
 }

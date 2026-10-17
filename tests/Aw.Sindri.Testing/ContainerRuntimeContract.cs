@@ -21,7 +21,7 @@ public abstract class ContainerRuntimeContract
     protected abstract IContainerRuntime Create(ContainerRuntimeFacts facts, IReadOnlyDictionary<string, string[]> localImages);
 
     /// <summary>The project the compose cases run against.</summary>
-    protected static ComposeProject Project { get; } = new("/o/docker-compose.yml", "/o/docker-compose.override.yml", "/o/.env");
+    protected static ComposeProject Project { get; } = new("sindri-onyx-0a1b2c3d", "/o/docker-compose.yml", "/o/docker-compose.override.yml", "/o/.env");
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
