@@ -5,7 +5,6 @@ using Aw.Context.Core.Graph;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
-using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Map;
 
 namespace Aw.Context.Tests.Map;
@@ -84,6 +83,7 @@ public sealed class AsOfReadTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task As_of_read_applies_todays_extra_scrub_pattern()
     {
+        const string Distinct = "ACME-123456";
         const string record = "record:linear:issue/0e5a1b00-0000-4000-8000-000000000a02";
         const string recordId = "linear:issue/0e5a1b00-0000-4000-8000-000000000a01";
         var decision = DecisionRow.KeyFor(RecordKey.From(recordId), "keep the pane in view").Value;
@@ -91,23 +91,25 @@ public sealed class AsOfReadTests : IDisposable
             "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
             "  - {key: \"feature:in\", label: \"In scope\"}",
             "  - {key: \"code:src/in.ts\", label: \"in.ts\", provenance: deterministic}",
-            $"  - {{key: \"{record}\", label: \"Title {FakeScrubber.Secret}\"}}",
+            $"  - {{key: \"{record}\", label: \"Title {Distinct}\"}}",
             $"  - {{key: \"record:{recordId}\", label: \"Quoted record\"}}",
             "edges:",
             "  - {from: \"code:src/in.ts\", to: \"feature:in\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/src/in.ts\"}]}",
             $"  - {{from: \"{record}\", to: \"feature:in\", type: mentions}}",
             $"  - {{from: \"{decision}\", to: \"feature:in\", type: decides}}",
             "decisions:",
-            $"  - {{record: \"{recordId}\", quote: \"keep the pane in view\", wording: \"Keep it {FakeScrubber.Secret}.\", at: 2026-07-15T10:00:00Z}}"));   // v1
+            $"  - {{record: \"{recordId}\", quote: \"keep the pane in view\", wording: \"Keep it {Distinct}.\", at: 2026-07-15T10:00:00Z}}"));   // v1
         _ = await _world.ImportYaml(MapWorld.Yaml("schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:", "  - {key: \"feature:only-in-two\", label: \"Two\"}"));   // v2
-        var session = MapWorld.Session(FixtureMap.Repo);
+        using var section = JsonDocument.Parse("""{"sessions":{"enabled":true},"scrub":{"extraPatterns":[{"id":"acme-id","pattern":"ACME-[0-9]{6}"}]}}""");
+        var session = new ContextScope(section.RootElement.Clone(), MapWorld.Repos, new ContextCaller(ContextCallerKind.Session, ContextRepoName.From(FixtureMap.Repo), ContextClient.Http));
 
         var one = await _world.Engine.Lenses("feature:in", At("v1"), depth: null, session, MapWorld.None);
         var set = await _world.Engine.LensesOf(["feature:in", record], At("v1"), depth: null, session, MapWorld.None);
         var query = await _world.Engine.Query(new ContextQuery(Text: null, Node: record) { MapVersion = "v1" }, session, MapWorld.None);
 
         var all = new[] { JsonSerializer.Serialize(one.Value), JsonSerializer.Serialize(set.Value), JsonSerializer.Serialize(query.Value) };
-        Assert.All(all, json => Assert.DoesNotContain(FakeScrubber.Secret, json, StringComparison.Ordinal));
+        Assert.All(all, json => Assert.DoesNotContain(Distinct, json, StringComparison.Ordinal));
+        Assert.All(all, json => Assert.Contains("[REDACTED:acme-id]", json, StringComparison.Ordinal));
         Assert.NotEmpty(set.Value.Bands.Intent.Records);
         Assert.All(set.Value.Bands.Intent.Records, r => Assert.StartsWith("<untrusted source=\"map\">", r.Label, StringComparison.Ordinal));
         var record1 = Assert.Single(one.Value.Bands.Intent.Records);
