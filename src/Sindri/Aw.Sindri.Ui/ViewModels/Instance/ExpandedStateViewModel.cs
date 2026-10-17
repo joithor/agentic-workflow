@@ -36,19 +36,25 @@ internal sealed class ExpandedStateViewModel : ObservableObject
         StatusCopy = new CopyAction(clipboard, clock, Labels.CopyStatus, Labels.CopyStatus);
     }
 
-    // Interim until the engine serves one entry per answer variant: the generic "ApplyCommand:answer" entry carries a bare CLI the
-    // CLI rejects, so it shows the status's answer CLI instead (hidden when there is no answer). Variant entries keep their own.
+    // Interim until the engine serves the full CLI in commands[].cli: an answer command whose actionId is the status answer's shows
+    // answer.cli (the bare form is rejected by the CLI). The bare generic "ApplyCommand:answer" entry is dropped (its variant carries the answer),
+    // and an answer CLI is never listed twice. Variant entries with another actionId keep their own cli.
     private static IEnumerable<StatusCommand> ServedCommands(StatusFields status)
     {
+        var shown = new HashSet<string>(StringComparer.Ordinal);
         foreach (var command in status.Commands)
         {
-            if (!string.Equals(command.ActionId, "ApplyCommand:answer", StringComparison.Ordinal))
+            if (string.Equals(command.ActionId, "ApplyCommand:answer", StringComparison.Ordinal) && !string.Equals(status.Answer?.ActionId, command.ActionId, StringComparison.Ordinal))
             {
-                yield return command;
+                continue;
             }
-            else if (status.Answer is { } answer)
+
+            var served = command.Verb == StatusVerb.Answer && status.Answer is { } answer && string.Equals(command.ActionId, answer.ActionId, StringComparison.Ordinal)
+                ? command with { Cli = answer.Cli }
+                : command;
+            if (served.Verb != StatusVerb.Answer || shown.Add(served.Cli))
             {
-                yield return command with { Cli = answer.Cli };
+                yield return served;
             }
         }
     }
