@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Aw.Kernel;
 using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Messages;
+using Aw.Meta.Core.Ports;
 using Aw.Meta.Features.CheckMerge;
 using Aw.Meta.Features.GateRerun;
 using Aw.Meta.Features.GateRun;
@@ -25,6 +26,7 @@ using Aw.Meta.Features.Roles;
 using Aw.Meta.Features.Status;
 using Aw.Meta.Features.StopCheck;
 using Aw.Meta.Features.SyncInbox;
+using Aw.Meta.Features.Team;
 using Aw.Meta.Features.Watch;
 using Aw.Meta.Features.WorktreeList;
 using Aw.Meta.Features.WorktreeSweep;
@@ -36,6 +38,8 @@ namespace Aw.Meta.Host;
 [JsonSerializable(typeof(Error))]
 [JsonSerializable(typeof(TeamConfig))]
 [JsonSerializable(typeof(MetaRole))]
+[JsonSerializable(typeof(TeamListResponse))]
+[JsonSerializable(typeof(TeamMigration))]
 [JsonSerializable(typeof(ShowRoleResponse))]
 [JsonSerializable(typeof(ListInboxResponse))]
 [JsonSerializable(typeof(DismissInboxResponse))]

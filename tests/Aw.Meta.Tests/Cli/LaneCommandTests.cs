@@ -8,7 +8,7 @@ public sealed class LaneCommandTests : IDisposable
 {
     private readonly CliHarness _cli = new();
 
-    private string LaneSessions => _cli.File("meta/lane-sessions");
+    private string LaneSessions => _cli.File("meta/teams/t1/lane-sessions");
 
     private string TmuxLog => _cli.File("tmux.log");
 
