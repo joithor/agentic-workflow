@@ -13,7 +13,7 @@ public sealed class ProcessScannerContractTests : ProcessLocationsContract, IDis
     private readonly List<Process> _started = [];
     private readonly List<string> _directories = [];
 
-    protected override IProcessLocations Create() => new ProcessScanner(MacToolPaths.Resolve(File.Exists).Lsof);
+    protected override IProcessLocations Create() => new ProcessScanner(MacToolPaths.Default.Lsof);
 
     protected override int StartProcessIn(string directory)
     {

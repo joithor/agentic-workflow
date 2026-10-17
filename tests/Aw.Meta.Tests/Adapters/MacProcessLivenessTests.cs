@@ -14,7 +14,7 @@ public sealed class MacProcessLivenessTests
     {
         var runner = script(new InMemoryCommandRunner());
         var clock = new FakeTimeProvider(_now);
-        return (new MacProcessLiveness(new MacHostReader("/state", runner, MacToolPaths.Resolve(_ => false), _ => 0), clock), runner);
+        return (new MacProcessLiveness(new MacHostReader("/state", runner, MacToolPaths.Default, _ => 0), clock), runner);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -25,7 +25,7 @@ public sealed class MacProcessLivenessTests
         var alive = await liveness.IsRunning(321, _now - TimeSpan.FromMinutes(5), TestContext.Current.CancellationToken);
 
         Assert.True(alive.Value);
-        Assert.Equal(["ps -o etime= -p 321"], runner.Lines);
+        Assert.Equal(["/bin/ps -o etime= -p 321"], runner.Lines);
     }
 
     [Fact, Trait("Lane", "unit")]

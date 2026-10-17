@@ -21,7 +21,7 @@ public sealed class ProcessScannerLsofTests
     {
         Assert.SkipUnless(OperatingSystem.IsMacOS(), "the lsof fallback only runs where there is no /proc");
 
-        var locations = await new ProcessScanner(MacToolPaths.Resolve(File.Exists).Lsof).Locations(TestContext.Current.CancellationToken);
+        var locations = await new ProcessScanner(MacToolPaths.Default.Lsof).Locations(TestContext.Current.CancellationToken);
 
         Assert.Contains(locations.Value, location => location.Pid == Environment.ProcessId);
     }

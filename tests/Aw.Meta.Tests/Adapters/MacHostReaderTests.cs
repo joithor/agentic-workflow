@@ -12,7 +12,7 @@ public sealed class MacHostReaderTests
         var runner = new InMemoryCommandRunner()
             .When("hw.memsize", MacOutput.MemSize).When("vm_stat", MacOutput.VmStat).When("vm.swapusage", MacOutput.Swap)
             .When("-axww", MacOutput.Ps).When("etime=", "01:00\n").When("-TERM", string.Empty);
-        var reader = new MacHostReader("/state", runner, MacToolPaths.Resolve(_ => true), _ => 1);
+        var reader = new MacHostReader("/state", runner, MacToolPaths.Default, _ => 1);
         var token = TestContext.Current.CancellationToken;
 
         _ = await reader.TotalMemoryKb(token);
@@ -31,16 +31,5 @@ public sealed class MacHostReaderTests
                 "/bin/kill -TERM 7",
             ],
             runner.Lines);
-    }
-
-    [Fact, Trait("Lane", "unit")]
-    public async Task A_tool_whose_absolute_path_does_not_exist_runs_by_its_bare_name()
-    {
-        var runner = new InMemoryCommandRunner().When("vm_stat", MacOutput.VmStat).When("vm.swapusage", MacOutput.Swap);
-        var reader = new MacHostReader("/state", runner, MacToolPaths.Resolve(path => path == "/usr/sbin/sysctl"), _ => 1);
-
-        _ = await reader.Memory(TestContext.Current.CancellationToken);
-
-        Assert.Equal(["vm_stat", "/usr/sbin/sysctl -n vm.swapusage"], runner.Lines);
     }
 }

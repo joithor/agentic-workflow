@@ -16,7 +16,7 @@ public sealed class MacProcessTableContractTests : ProcessTableContract, IDispos
     protected override IProcessTable Create()
     {
         Assert.SkipUnless(OperatingSystem.IsMacOS(), "the macOS adapter runs on macOS");
-        return new MacProcessTable(new MacHostReader(Path.GetTempPath(), new SystemCommandRunner(), MacToolPaths.Resolve(File.Exists), DiskSpace.Free));
+        return new MacProcessTable(new MacHostReader(Path.GetTempPath(), new SystemCommandRunner(), MacToolPaths.Default, DiskSpace.Free));
     }
 
     protected override int StartProcess()

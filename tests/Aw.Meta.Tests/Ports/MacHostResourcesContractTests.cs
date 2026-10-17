@@ -20,7 +20,7 @@ public sealed class MacHostResourcesContractTests : HostResourcesContract, IDisp
     protected override IHostResources Create()
     {
         Assert.SkipUnless(OperatingSystem.IsMacOS(), "the macOS adapter runs on macOS");
-        return new MacHostResources(new MacHostReader(_state.Path, new SystemCommandRunner(), MacToolPaths.Resolve(File.Exists), DiskSpace.Free), Lock, RealLiveness.Create());
+        return new MacHostResources(new MacHostReader(_state.Path, new SystemCommandRunner(), MacToolPaths.Default, DiskSpace.Free), Lock, RealLiveness.Create());
     }
 
     protected override void TakeLock(IHostResources resources, int pid)

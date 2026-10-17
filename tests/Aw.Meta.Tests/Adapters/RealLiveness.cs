@@ -9,6 +9,6 @@ internal static class RealLiveness
 {
     internal static IProcessLiveness Create() =>
         OperatingSystem.IsMacOS()
-            ? new MacProcessLiveness(new MacHostReader(Path.GetTempPath(), new SystemCommandRunner(), MacToolPaths.Resolve(File.Exists), DiskSpace.Free), TimeProvider.System)
+            ? new MacProcessLiveness(new MacHostReader(Path.GetTempPath(), new SystemCommandRunner(), MacToolPaths.Default, DiskSpace.Free), TimeProvider.System)
             : new ProcProcessLiveness(TimeProvider.System);
 }

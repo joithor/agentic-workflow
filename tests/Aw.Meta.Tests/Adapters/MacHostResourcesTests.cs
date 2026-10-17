@@ -8,13 +8,13 @@ namespace Aw.Meta.Tests.Adapters;
 public sealed class MacHostResourcesTests
 {
     private const long DiskFree = 123_456_789;
-    private static readonly string[] _inOrder = ["sysctl -n hw.memsize", "vm_stat", "sysctl -n vm.swapusage"];
+    private static readonly string[] _inOrder = ["/usr/sbin/sysctl -n hw.memsize", "/usr/bin/vm_stat", "/usr/sbin/sysctl -n vm.swapusage"];
 
     private static (MacHostResources Resources, InMemoryCommandRunner Runner) Make(Func<InMemoryCommandRunner, InMemoryCommandRunner>? script = null)
     {
         var runner = new InMemoryCommandRunner();
         _ = (script ?? (r => r.When("hw.memsize", MacOutput.MemSize).When("vm_stat", MacOutput.VmStat).When("vm.swapusage", MacOutput.Swap)))(runner);
-        var reader = new MacHostReader("/state", runner, MacToolPaths.Resolve(_ => false), _ => DiskFree);
+        var reader = new MacHostReader("/state", runner, MacToolPaths.Default, _ => DiskFree);
         return (new MacHostResources(reader, "/state/locks/heavy-job.lock", new InMemoryProcessLiveness()), runner);
     }
 
@@ -48,7 +48,7 @@ public sealed class MacHostResourcesTests
 
         Assert.Equal(MetaErrors.HostUnreadable.Code, read.Error.Code);
         Assert.Contains("sysctl -n hw.memsize exited 1", read.Error.Message, StringComparison.Ordinal);
-        Assert.Equal(["sysctl -n hw.memsize"], runner.Lines);
+        Assert.Equal(["/usr/sbin/sysctl -n hw.memsize"], runner.Lines);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -69,7 +69,7 @@ public sealed class MacHostResourcesTests
         var read = await resources.Read(TestContext.Current.CancellationToken);
 
         Assert.Equal(MetaErrors.HostUnreadable.Code, read.Error.Code);
-        Assert.Contains("unavailable on macOS: sysctl -n hw.memsize could not be run", read.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("unavailable on macOS: /usr/sbin/sysctl -n hw.memsize could not be run", read.Error.Message, StringComparison.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]

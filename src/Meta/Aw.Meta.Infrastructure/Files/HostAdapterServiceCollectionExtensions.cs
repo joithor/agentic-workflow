@@ -18,7 +18,7 @@ internal static class HostAdapterServiceCollectionExtensions
     internal static IServiceCollection AddHostAdapters(this IServiceCollection services, HostPlatform platform, string stateDirectory, string heavyLock)
     {
         ArgumentNullException.ThrowIfNull(platform);
-        _ = services.AddSingleton(MacToolPaths.Resolve(File.Exists));
+        _ = services.AddSingleton(MacToolPaths.Default);
         switch (platform.Kind)
         {
             case HostKind.Mac:

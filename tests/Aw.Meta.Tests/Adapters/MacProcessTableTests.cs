@@ -13,7 +13,7 @@ public sealed class MacProcessTableTests
     {
         var runner = new InMemoryCommandRunner();
         _ = (script ?? (r => r.When("ps -axww", MacOutput.Ps).When("vm_stat", MacOutput.VmStat).When("vm.swapusage", MacOutput.Swap).When("kill -TERM 4242")))(runner);
-        return (new MacProcessTable(new MacHostReader("/state", runner, MacToolPaths.Resolve(_ => false), _ => DiskFree)), runner);
+        return (new MacProcessTable(new MacHostReader("/state", runner, MacToolPaths.Default, _ => DiskFree)), runner);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -23,7 +23,7 @@ public sealed class MacProcessTableTests
 
         _ = await table.Snapshot(TestContext.Current.CancellationToken);
 
-        Assert.Equal(["ps -axww -o pid=,ppid=,etime=,rss=,stat=,args=", "vm_stat", "sysctl -n vm.swapusage"], runner.Lines);
+        Assert.Equal(["/bin/ps -axww -o pid=,ppid=,etime=,rss=,stat=,args=", "/usr/bin/vm_stat", "/usr/sbin/sysctl -n vm.swapusage"], runner.Lines);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -48,7 +48,7 @@ public sealed class MacProcessTableTests
 
         Assert.Equal(MetaErrors.HostUnreadable.Code, snapshot.Error.Code);
         Assert.Contains("exited 1", snapshot.Error.Message, StringComparison.Ordinal);
-        Assert.StartsWith("ps -axww", Assert.Single(runner.Lines), StringComparison.Ordinal);
+        Assert.StartsWith("/bin/ps -axww", Assert.Single(runner.Lines), StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -80,7 +80,7 @@ public sealed class MacProcessTableTests
         var done = await table.Terminate(4242, TestContext.Current.CancellationToken);
 
         Assert.True(done.IsSuccess);
-        Assert.Equal(["kill -TERM 4242"], runner.Lines);
+        Assert.Equal(["/bin/kill -TERM 4242"], runner.Lines);
     }
 
     [Fact, Trait("Lane", "unit")]
