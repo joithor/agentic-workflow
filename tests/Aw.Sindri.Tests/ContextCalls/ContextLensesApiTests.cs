@@ -76,7 +76,7 @@ public sealed class ContextLensesApiTests : IDisposable
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
 
-        var two = await host.Http.Ask(Get(Lenses(A(Anchor), A("feature:tabs.tab-groups")), Terminal(host)));
+        var two = await host.Http.Ask(Get(Lenses(A(Anchor), A("feature:layout.split-pane")), Terminal(host)));
         var repeat = await host.Http.Ask(Get(Lenses(A(Anchor), A(Anchor)), Terminal(host)));
         var partly = await host.Http.Ask(Get(Lenses(A(Anchor), A("feature:nope.x")), Terminal(host)));
 
@@ -108,7 +108,7 @@ public sealed class ContextLensesApiTests : IDisposable
         await using var host = await Host();
 
         var gone = await host.Http.Ask(Get(Lenses(A(Anchor), "mapVersion=v99"), Terminal(host)));
-        var goneSet = await host.Http.Ask(Get(Lenses(A(Anchor), A("feature:tabs.tab-groups"), "mapVersion=v99"), Terminal(host)));
+        var goneSet = await host.Http.Ask(Get(Lenses(A(Anchor), A("feature:layout.split-pane"), "mapVersion=v99"), Terminal(host)));
         var held = await host.Http.Ask(Get(Lenses(A(Anchor), "mapVersion=v1"), Terminal(host)));
 
         Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-120"), (gone.Status, gone.Code));
