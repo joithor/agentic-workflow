@@ -12,6 +12,6 @@
     "sessionId": "none",
     "mcp": "none"
   },
-  "canonical": "{\"bin\":\"tool\",\"mcp\":\"none\",\"open\":[\"{bin}\",\"--say=héllo \\\"q\\\" \\\\  \",\"{seed}\"],\"resume\":null,\"sessionId\":\"none\"}",
-  "argvHash": "sha256:a9fc154258f962bacb5c20f15c78df84dec5b568b1090f3d976e55890dcc7063"
+  "canonical": "{\"bin\":\"tool\",\"mcp\":\"none\",\"model\":\"none\",\"open\":[\"{bin}\",\"--say=héllo \\\"q\\\" \\\\  \",\"{seed}\"],\"policy\":\"none\",\"resume\":null,\"sessionId\":\"none\"}",
+  "argvHash": "sha256:3cd69dc6313cd5097f82d7de7c91a12dd5f3999ba7bfb01cab9006cf00d86321"
 }

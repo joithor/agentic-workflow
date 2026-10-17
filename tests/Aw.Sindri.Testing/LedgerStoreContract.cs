@@ -70,6 +70,31 @@ public abstract class LedgerStoreContract
         _ = Expect.Only((await ledger.ReadAfter(0, 10, Token)).Value);
     }
 
+    /// <summary>An append whose token is already cancelled throws and writes nothing (CancelJob appends with no token for this reason; the real ledger passes the token to its connection).</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Append_with_a_cancelled_token_throws_and_writes_nothing()
+    {
+        var (lease, ledger) = await Create(Clock, Probe);
+        var grant = (await lease.Acquire(Probe.Self(), Token)).Value;
+        using var cancelled = new CancellationTokenSource();
+        await cancelled.CancelAsync();
+
+        var threw = false;
+        try
+        {
+            _ = await ledger.Append(Entry("service.heartbeat", "k"), grant, cancelled.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            threw = true;
+        }
+
+        Expect.True(threw);
+
+        Expect.Equal(0, (await ledger.ReadAfter(0, 10, Token)).Value.Count);
+    }
+
     /// <summary>An append under an epoch that isn't current is refused and writes nothing (fencing).</summary>
     /// <returns>The test.</returns>
     [Fact]

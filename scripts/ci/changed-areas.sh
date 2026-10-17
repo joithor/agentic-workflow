@@ -81,7 +81,12 @@ classify_changes() {
       # the launcher checks (check-launcher.mjs, check-profile-doc.mjs) read these; they sit under src/ and tests/ (dotnet) or docs/ (neither)
       src/Sindri/Aw.Sindri.Core/Profile/*) dotnet=true; bash=true ;;
       tests/fixtures/launcher/*|config/launcher/*|schemas/launcher.schema.json) bash=true ;;
+      # scripts/tests/scoping-fixture.test.sh builds the fixture's history and runs its self-check (dotnet comes from tests/*)
+      tests/fixtures/scoping/*) dotnet=true; bash=true ;;
       docs/csharp/sindri-profile.md|docs/csharp/sindri-launcher.md) bash=true ;;
+      # check-fleet.mjs (and its suite) validate the fleet state schema's fixtures and the /proc-shaped sessions tree; both sit under tests/ (dotnet) too
+      tests/fixtures/fleet/*|tests/fixtures/sessions/*) bash=true ;;
+      docs/csharp/sindri-sessions.md) bash=true ;;
     esac
     for pkg in "${TS_PACKAGES[@]}"; do
       case "$file" in

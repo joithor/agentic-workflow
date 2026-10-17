@@ -11,7 +11,7 @@ using Aw.Sindri.Core.Views;
 namespace Aw.Sindri.Core.NeedsYou;
 
 /// <summary>Builds the needs-you rows (P4 plan §1.3): pure, every free-text field through <see cref="SafeText"/>, every CLI line through CliForm.Fill.</summary>
-public static class NeedsYouRows
+public static partial class NeedsYouRows
 {
     private const int TitleMax = 120;
     private const int ReasonMax = 300;
@@ -70,13 +70,14 @@ public static class NeedsYouRows
             return SindriErrors.InvalidInput.With($"{service.Name.Value}'s last run didn't fail, so it has no failure row");
         }
 
-        var cli = CliForm.Parse("sindri status");   // 'sindri services run <name>' arrives with RunService (P6); until then the human looks at the status
+        var name = service.Name.Value;
+        var unknown = string.Equals(last.Code, SindriErrors.ServiceNotFound.Code, StringComparison.Ordinal);
+        var cli = unknown ? CliForm.Parse("sindri profile validate") : Cli("sindri services run <name>", "name", service.Name);
         if (cli.IsError)
         {
             return cli.Error;
         }
 
-        var name = service.Name.Value;
         return new NeedsYouRow(
             NeedsYouRowId.From("failure:service:" + name),
             NeedsYouKind.Failure,
@@ -84,15 +85,15 @@ public static class NeedsYouRows
             new NeedsYouSubject(SubjectKind.Service, SubjectId.From(name)),
             Item: null,
             name + " failed",
-            Reason(last, scrubber),
+            unknown ? UnknownReason(name, scrubber) : Reason(last, scrubber),
             Repo: null,
             Urgency.Colour,
             since,
             RecordedOnly: false,
             Notice: null,
             AnswerKind: null,
-            _runService,
-            [_runService, _pauseService],
+            unknown ? null : _runService,
+            unknown ? [_pauseService] : [_runService, _pauseService],
             cli.Value.Text);
     }
 
@@ -138,6 +139,9 @@ public static class NeedsYouRows
     private static Result<CliForm> Cli<TId>(string form, string placeholder, TId id)
         where TId : struct, Kernel.Ids.ITypedId<TId, string> =>
         CliForm.Parse(form).Bind(parsed => parsed.Fill(placeholder, id));
+
+    private static string UnknownReason(string name, ITextScrubber scrubber) =>
+        SafeText.Clean(scrubber, $"{SindriErrors.ServiceNotFound.Code}: this build has no service '{name}'; remove or rename it in the profile", ReasonMax);
 
     private static string Reason(LastRun last, ITextScrubber scrubber)
     {

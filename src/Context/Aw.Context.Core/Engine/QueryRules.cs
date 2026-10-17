@@ -40,6 +40,9 @@ public static class QueryRules
     /// <summary>The 006 message for an empty or overlong symbol anchor.</summary>
     public const string SymbolMessage = "a symbol anchor is a file path of 1 to 2000 characters";
 
+    /// <summary>The 006 message for a repo given without a diff.</summary>
+    public const string RepoMessage = "a repo goes with a diff only (it names the repo whose commits the range is read in)";
+
     /// <summary>Whether a value, percent-encoded, fits <see cref="MaxEncodedText"/>.</summary>
     /// <param name="value">The question text or node name.</param>
     /// <returns>True when a GET query string can carry it.</returns>
@@ -57,10 +60,15 @@ public static class QueryRules
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(settings);
-        var shapes = new[] { query.Text, query.Node, query.Item, query.Symbol }.Count(s => s is not null);
+        var shapes = new object?[] { query.Text, query.Node, query.Item, query.Symbol, query.Diff }.Count(s => s is not null);
         if (shapes != 1)
         {
             return ContextErrors.QueryInvalid.With(ShapeMessage);
+        }
+
+        if (query.Repo is not null && query.Diff is null)
+        {
+            return ContextErrors.QueryInvalid.With(RepoMessage);
         }
 
         if (CheckDepth(query.Depth) is { } depthError)
@@ -129,9 +137,14 @@ public static class QueryRules
             : new ValidQuery([], budget);
     }
 
-    /// <summary>The one shape's own checks: a node name's length; a file path; the text's words; an item not yet (003).</summary>
+    /// <summary>The one shape's own checks: a diff's two shas; a node name's length; a file path; the text's words; an item not yet (003).</summary>
     private static Result<ValidQuery> Shaped(ContextQuery query, int budget)
     {
+        if (query.Diff is { } diff)
+        {
+            return diff.IsValid() ? new ValidQuery([], budget) : ContextErrors.QueryInvalid.With(DiffRange.Message);
+        }
+
         if (query.Node is { } node)
         {
             return string.IsNullOrWhiteSpace(node) || node.Length > MaxTextLength
@@ -164,7 +177,7 @@ public static class QueryRules
     private static string Fix(IReadOnlyList<string> suggested, bool syncConfigured)
     {
         var next = syncConfigured
-            ? "the record isn't linked yet or the key is unknown: check the key, wait for the next context-sync slot, or watch sindri context sources status"
+            ? "the record isn't linked yet or the key is unknown: check the key, run sindri context sources sync, wait for the next context-sync slot, or watch sindri context sources status"
             : "name the context-sync service under services: in the profile";
         return suggested.Count == 0 ? next : syncConfigured ? $"try {string.Join(", ", suggested)}; {next}" : "try " + string.Join(", ", suggested);
     }

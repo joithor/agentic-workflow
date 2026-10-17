@@ -12,7 +12,9 @@
       "processName": "claude",
       "transcripts": "~/.claude/projects/*/{sessionId}.jsonl",
       "usage": "claude-code",
-      "mcp": "claude-config-file"
+      "mcp": "claude-config-file",
+      "model": "claude-flag",
+      "policy": "claude-settings-file"
     },
     "codex": {
       "label": "Codex",
@@ -29,7 +31,9 @@
       "processName": "codex",
       "transcripts": "~/.codex/sessions/*/*/*/rollout-*-{sessionId}.jsonl",
       "usage": "codex",
-      "mcp": "codex-overrides"
+      "mcp": "codex-overrides",
+      "model": "codex-flag",
+      "policy": "codex-overrides"
     },
     "cursor": {
       "label": "Cursor",
@@ -46,7 +50,9 @@
       "processName": "agent",
       "transcripts": null,
       "usage": "cursor",
-      "mcp": "none"
+      "mcp": "none",
+      "model": "none",
+      "policy": "none"
     }
   }
 }

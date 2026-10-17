@@ -4,7 +4,7 @@ using Aw.Architecture.Tests.Rules;
 namespace Aw.Architecture.Tests;
 
 /// <summary>Each rule fails on a fixture package that breaks it, with the rule id, what it found and the fix.</summary>
-[Trait("Lane", "unit")]
+[Trait("Lane", "integration")]
 public sealed class FixtureTests
 {
     private static readonly string[] _compliant = ["Good", "SmallGood"];

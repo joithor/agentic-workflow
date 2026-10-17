@@ -65,21 +65,6 @@ public sealed class ContextCliTests
         Assert.Contains("SND-CONTEXT-006", error.ToString(), StringComparison.Ordinal);
     }
 
-    [Fact, Trait("Lane", "unit")]
-    public async Task Sources_sync_is_pending_API_P6_and_names_the_context_sync_service()
-    {
-        using var error = new StringWriter();
-        var output = new Output(TextWriter.Null, error, AwJson.CreateOptions(SindriJsonContext.Default));
-        var verbs = new ContextVerbs(null!, output);   // why: a pending form answers before the client is touched
-
-        var exit = await verbs.Run(["sources", "sync"], TestContext.Current.CancellationToken);
-
-        Assert.Equal(2, exit);
-        Assert.Contains("SND-CLI-001", error.ToString(), StringComparison.Ordinal);
-        Assert.Contains("pending:API-P6", error.ToString(), StringComparison.Ordinal);
-        Assert.Contains("context-sync", error.ToString(), StringComparison.Ordinal);
-    }
-
     [Theory, Trait("Lane", "unit")]
     [InlineData("x", "--node", "feature:a")]
     public void The_cli_spells_its_flags_in_the_shape_and_node_006s(string word, string flag, string value)

@@ -13,18 +13,60 @@ internal sealed partial class WiringRules
     private static readonly HashSet<OutcomeName> _recipeOutcomes =
         [OutcomeName.From("resolved"), OutcomeName.From("unresolved"), OutcomeName.From("alreadySatisfied"), OutcomeName.From("failed")];
 
+    /// <summary>RCP-WIRE-002: every 'produces' entry reads a fact its trigger's source records (a child records its declared outputs), only a child's output is renamed, and no fact is written twice.</summary>
     private static IEnumerable<RecipeFinding> Produced(Recipe recipe, ValidationContext context, RecipeSource source) =>
-        recipe.Transitions
-            .SelectMany((t, i) => t.Produces.SelectMany((fact, j) => Sources(recipe, t, context)
-                .Where(s => !s.Source.Facts.Contains(fact))
-                .Take(1)
-                .Select(s => source.Finding(
-                    "RCP-WIRE-002",
-                    $"transitions[{Inv(i)}].produces[{Inv(j)}]",
-                    $"transition from '{s.From}' produces '{fact.Value}', which {s.Source.Name} doesn't record",
-                    s.Source.Facts.Count == 0
-                        ? $"remove it, since {s.Source.Name} records no facts"
-                        : $"list only what it records ({List(s.Source.Facts)}), or remove it"))));
+        recipe.Transitions.SelectMany((t, i) => Duplicated(t, i, source).Concat(t.Produces.SelectMany((entry, j) =>
+            Sources(recipe, t, context)
+                .Select(s => ProducedFinding(s.From, s.Source, entry, $"transitions[{Inv(i)}].produces[{Inv(j)}]", source))
+                .OfType<RecipeFinding>()
+                .Take(1))));
+
+    private static RecipeFinding? ProducedFinding(string from, TriggerSource trigger, ProducedFact entry, string path, RecipeSource source)
+    {
+        if (entry.From is { } renamed && trigger.ChildId is null)
+        {
+            return source.Finding(
+                "RCP-WIRE-002", path, $"transition from '{from}' renames '{renamed.Value}' to '{entry.Fact.Value}', but only a child's outputs can be renamed",
+                $"write the bare key '{renamed.Value}', or rename on a transition from a child wait");
+        }
+
+        if (trigger.Facts.Contains(entry.SourceKey()))
+        {
+            return null;
+        }
+
+        var produces = entry.From is null ? $"produces '{entry.Fact.Value}'" : $"produces '{entry.Fact.Value}' from '{entry.SourceKey().Value}'";
+        var at = entry.From is null ? path : path + ".from";
+        if (trigger.ChildId is { } child)
+        {
+            return trigger.Facts.Count == 0
+                ? source.Finding("RCP-WIRE-002", at, $"transition from '{from}' {produces}, which {trigger.Name} declares no outputs", $"remove it, or declare it in {child}'s outputs")
+                : source.Finding("RCP-WIRE-002", at, $"transition from '{from}' {produces}, which {trigger.Name} doesn't declare as an output",
+                    $"list only its outputs ({List(trigger.Facts)}), or declare '{entry.SourceKey().Value}' in {child}'s outputs");
+        }
+
+        return source.Finding(
+            "RCP-WIRE-002", at, $"transition from '{from}' {produces}, which {trigger.Name} doesn't record",
+            trigger.Facts.Count == 0
+                ? $"remove it, since {trigger.Name} records no facts"
+                : $"list only what it records ({List(trigger.Facts)}), or remove it");
+    }
+
+    private static IEnumerable<RecipeFinding> Duplicated(RecipeTransition transition, int index, RecipeSource source)
+    {
+        var from = string.Join(", ", transition.From.Select(f => $"'{f}'"));
+        for (var j = 1; j < transition.Produces.Count; j++)
+        {
+            var fact = transition.Produces[j].Fact;
+            var first = transition.Produces.Take(j).ToList().FindIndex(p => p.Fact == fact);
+            if (first >= 0)
+            {
+                yield return source.Finding(
+                    "RCP-WIRE-002", $"transitions[{Inv(index)}].produces[{Inv(j)}]",
+                    $"transition from {from} writes '{fact.Value}' twice (produces[{Inv(first)}] and produces[{Inv(j)}])", "write each fact once; rename one of them");
+            }
+        }
+    }
 
     private static IEnumerable<RecipeFinding> Conditions(Recipe recipe, ValidationContext context, RecipeSource source) =>
         recipe.Transitions

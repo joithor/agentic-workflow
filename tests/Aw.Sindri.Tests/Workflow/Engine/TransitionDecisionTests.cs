@@ -251,4 +251,40 @@ public sealed class TransitionDecisionTests
     }
 
     private static WhenClause ARecipeWhen(string outcome) => ARecipe.When(OutcomeName.From(outcome));
+
+    private static Recipe ChildParent => RecipeComposition.ReadClean(ShippedRecipes.Read("dev/workflow.dev-child-outputs.yaml"), "workflow.dev-child-outputs.yaml").Recipe;
+
+    /// <summary>The dev parent waiting in 'run', its child finished as resolved with fact:output.</summary>
+    private static (WorkflowInstance Waiting, WaitSatisfied Ended) ChildEnded()
+    {
+        var run = At(ChildParent, "run");
+        var waiting = run with { Frame = run.Frame with { Child = ChildId } };
+        var ended = new WaitSatisfied(
+            "service:workflow.inbox", new ChildWaitSource(ChildId, TriggerKey.For(ChildId, "end")), OutcomeName.From("resolved"),
+            new Dictionary<FactKey, FactValue> { [FactKey.From("fact:output")] = Fact("summary-week-41.csv") });
+        return (waiting, ended);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_renamed_child_output_is_stored_under_its_new_key()
+    {
+        var (waiting, ended) = ChildEnded();
+
+        var applied = Assert.IsType<Applied>(Decide(waiting, ChildParent, ended));
+
+        var after = applied.Changes[0].After;
+        Assert.Equal("review", after.State);
+        Assert.Equal(Fact("summary-week-41.csv"), after.Facts[FactKey.From("fact:exported")]);
+        Assert.Equal(Fact("summary-week-41.csv"), applied.Changes[0].Event.Delta.Facts?[FactKey.From("fact:exported")]);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_bare_child_output_is_stored_under_its_key()
+    {
+        var (waiting, ended) = ChildEnded();
+
+        var applied = Assert.IsType<Applied>(Decide(waiting, ChildParent, ended));
+
+        Assert.Equal(Fact("summary-week-41.csv"), applied.Changes[0].After.Facts[FactKey.From("fact:output")]);
+    }
 }

@@ -98,9 +98,7 @@ public sealed class CommandPaletteTests : IDisposable
     private static void Frame(Window window, string name)
     {
         Settle(window);
-        var dir = Path.Combine(AppContext.BaseDirectory, "frames");
-        _ = Directory.CreateDirectory(dir);
-        window.CaptureRenderedFrame()?.Save(Path.Combine(dir, name + ".png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+        FrameFile.Save(window, name);
     }
 
     // The entries drawn (each a button named by its label and status), in order.
@@ -120,7 +118,7 @@ public sealed class CommandPaletteTests : IDisposable
         var names = EntryNames(window);
         Assert.All(shell.Health.Catalog.Controls, c => Assert.Single(names, n => n.StartsWith(c.Label + ", ", StringComparison.Ordinal)));
         Assert.Contains("Run doctor, Copy: sindri doctor", names, StringComparer.Ordinal);
-        Assert.Contains("Cancel job, arrives in P6", names, StringComparer.Ordinal);
+        Assert.Contains("Check launch targets again, arrives in P10a", names, StringComparer.Ordinal);
         Assert.Equal(["Actions", "Go to", "Sindri"], Named<ItemsControl>(window, "PaletteSections").GetVisualDescendants().OfType<TextBlock>()
             .Where(t => t.Classes.Contains("palette-heading")).Select(t => t.Text ?? string.Empty), StringComparer.Ordinal);
         Frame(window, "palette");

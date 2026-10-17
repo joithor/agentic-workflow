@@ -1,5 +1,8 @@
 using Aw.Kernel.Services;
 using Aw.Kernel.Telemetry;
+using Aw.Sindri.Core.Items;
+using Aw.Sindri.Core.NeedsYou;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Registration;
 using Aw.Sindri.Host.Server;
@@ -41,12 +44,25 @@ public sealed class HostTests
 
         var hosted = provider.GetServices<IHostedService>().ToList();
 
-        Assert.Equal(5, hosted.Count);
+        Assert.Equal(6, hosted.Count);
         _ = Assert.Single(hosted.OfType<ServeListenerCheck>());
         _ = Assert.Single(hosted.OfType<SchedulerHost>());
         _ = Assert.Single(hosted.OfType<ProjectorHost>());
         _ = Assert.Single(hosted.OfType<ProfileWatch>());
         _ = Assert.Single(hosted.OfType<LeaseRenewer>());
+        _ = Assert.Single(hosted.OfType<JobRecoveryHost>());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_items_projection_folds_each_event_before_the_needs_you_projection()
+    {
+        using var provider = Compose().BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        _ = provider.GetRequiredService<TelemetryRuntime>();
+
+        var order = provider.GetServices<IProjection>().Select(static p => p.GetType()).ToList();
+
+        Assert.True(order.IndexOf(typeof(ItemsProjection)) is var items and >= 0 && order.IndexOf(typeof(NeedsYouProjection)) is var needs and >= 0 && items < needs,
+            "NeedsYouProjection reads the item row's engine part, which ItemsProjection folds from the same event first");
     }
 
     [Fact, Trait("Lane", "unit")]

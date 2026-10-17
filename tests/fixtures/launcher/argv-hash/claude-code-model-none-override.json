@@ -1,0 +1,10 @@
+{
+  "note": "a built-in with its model form overridden to none: the form name is an input, so the hash differs from claude-code.json (the per-run model id never is)",
+  "builtin": "claude-code",
+  "override": {
+    "override": true,
+    "model": "none"
+  },
+  "canonical": "{\"bin\":\"claude\",\"mcp\":\"claude-config-file\",\"model\":\"none\",\"open\":[\"{bin}\",\"--session-id\",\"{sessionId}\",\"-n\",\"{name}\",\"{seed}\"],\"policy\":\"claude-settings-file\",\"resume\":[\"{bin}\",\"--resume\",\"{sessionId}\"],\"sessionId\":\"pre-chosen-uuid\"}",
+  "argvHash": "sha256:8adc112e1fc6b6f6e872c9bebb89f6d3307220d2555a38dd3fd66ae624f5a4bf"
+}

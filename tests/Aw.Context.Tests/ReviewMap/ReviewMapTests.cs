@@ -44,7 +44,7 @@ public sealed class ReviewMapTests : IDisposable
 
         Assert.Equal(ContextErrors.NoDraftMap.Code, queue.Error.Code);
         Assert.Contains("context map propose <file>", queue.Error.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain("map build", queue.Error.Message, StringComparison.Ordinal);   // pending:API-P6, answers SND-CLI-001
+        Assert.Contains("context map build", queue.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

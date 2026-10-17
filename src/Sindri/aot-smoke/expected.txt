@@ -130,6 +130,34 @@ false
 ["item.created","item.state-changed"]
 ## GET /sindri/events/catalog | jq (public types, their invalidates)
 {"commandHandled":false,"itemCreated":["queue","items","item","timeline"]}
+## sindri services --json | jq (name, every, paused, job)
+[{"name":"heartbeat","every":"5s","paused":false,"job":null}]
+## sindri services run heartbeat (human, terminal)
+job JOB-ID started
+run heartbeat (manual)
+succeeded: ok: worked
+## sindri services run heartbeat (session)
+SND-AUTH-002 RunService is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri services run <name> (this CLI ran as a session: CLAUDECODE is set)
+exit 2
+## sindri jobs show JOB-ID
+JOB-ID  succeeded  RunService  heartbeat
+started by human:prover at TIME
+run heartbeat (manual)
+succeeded: ok: worked
+result: {"idle":false,"summary":null}
+## sindri jobs --state succeeded
+JOB-ID  succeeded  RunService  heartbeat  TIME  1 line  ok: worked
+## sindri services pause heartbeat (human, terminal)
+heartbeat paused (sequence SEQ)
+## sindri services pause heartbeat (session)
+SND-AUTH-002 PauseService is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri services pause <name> (this CLI ran as a session: CLAUDECODE is set)
+exit 2
+## sindri services
+heartbeat  every 5s  paused  last: ok  next: paused
+## sindri services resume heartbeat (human, terminal)
+heartbeat resumed (sequence SEQ)
+## sindri services
+heartbeat  every 5s  last: ok  next: TIME
 ## sindri stop (session)
 SND-AUTH-002 StopProcess is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri stop (this CLI ran as a session: CLAUDECODE is set)
 exit 2

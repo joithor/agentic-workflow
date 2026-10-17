@@ -17,6 +17,23 @@ public sealed class UsageTests
     public void Help_lists_every_workflow_verb(string verb) =>
         Assert.Single(Lines(), l => l.StartsWith($"sindri workflow {verb} ", StringComparison.Ordinal));
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("services [")]
+    [InlineData("services run ")]
+    [InlineData("services pause|resume ")]
+    [InlineData("jobs [")]
+    [InlineData("jobs show ")]
+    [InlineData("jobs cancel ")]
+    public void Help_lists_every_service_and_job_verb(string verb) =>
+        Assert.Single(Lines(), l => l.StartsWith($"sindri {verb}", StringComparison.Ordinal));
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(new[] { "services", "run", "heartbeat" }, true)]
+    [InlineData(new[] { "services", "run", "heartbeat", "--detach" }, false)]
+    [InlineData(new[] { "services" }, false)]
+    [InlineData(new[] { "jobs", "show", "x" }, false)]
+    public void Only_a_following_run_takes_a_second_ctrl_c(string[] args, bool follows) => Assert.Equal(follows, Interrupt.FollowsJob(args));
+
     [Fact, Trait("Lane", "unit")]
     public void Help_names_no_option_the_workflow_verbs_dropped() =>
         Assert.DoesNotContain(Lines(), l => l.StartsWith("sindri workflow ", StringComparison.Ordinal) && (l.Contains("--temporal", StringComparison.Ordinal) || l.Contains("--no-wait", StringComparison.Ordinal)));

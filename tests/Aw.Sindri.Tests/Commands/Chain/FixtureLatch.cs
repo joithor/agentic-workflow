@@ -12,6 +12,9 @@ internal sealed class FixtureLatch
     /// <summary>Completes when the first run is inside the handler.</summary>
     public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+    /// <summary>Completes when a 'stubborn' or 'own-cancel' work has finished waiting and is leaving its handler.</summary>
+    public TaskCompletionSource Returned { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     public void Start()
     {
         _ = Interlocked.Increment(ref _started);

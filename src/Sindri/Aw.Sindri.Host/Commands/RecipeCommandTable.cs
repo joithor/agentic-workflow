@@ -20,7 +20,7 @@ internal static partial class RecipeCommandTable
     private const string ApproveUsage = "usage: sindri recipe approve <file|id@hash>";
     private const string RevokeUsage = "usage: sindri recipe revoke <id@hash>";
     private const string RegisterUsage = "usage: sindri recipe register <file>";
-    private const string ShowUsage = "usage: sindri recipe show <id@hash> [--json]";
+    private const string ShowUsage = "usage: sindri recipe show <id|id@hash> [--json]";
     private const string ListUsage = "usage: sindri recipe list [--stale] [--json]";
 
     internal static Task<int> Run(string[] args, IServiceProvider services, Output output, CancellationToken ct) => Run(args, services, output, desk: null, ct);
@@ -35,12 +35,12 @@ internal static partial class RecipeCommandTable
         ["eval", .. var rest] => RunEval(rest, services, output, ct),
         ["register", var file] when !IsFlag(file) && desk is not null => new RecipeRegistryCommands(desk, services, output).Register(file, ct),
         ["register", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe register needs one recipe file ({RegisterUsage})")),
-        ["show", var target] when target.Contains('@', StringComparison.Ordinal) && desk is not null => new RecipeRegistryCommands(desk, services, output).Show(target, json: false, ct),
-        ["show", var target, "--json"] when target.Contains('@', StringComparison.Ordinal) && desk is not null =>
+        ["show", var target] when !IsFlag(target) && desk is not null => new RecipeRegistryCommands(desk, services, output).Show(target, json: false, ct),
+        ["show", var target, "--json"] when !IsFlag(target) && desk is not null =>
             new RecipeRegistryCommands(desk, services, output).Show(target, json: true, ct),
-        ["show", "--json", var target] when target.Contains('@', StringComparison.Ordinal) && desk is not null =>
+        ["show", "--json", var target] when !IsFlag(target) && desk is not null =>
             new RecipeRegistryCommands(desk, services, output).Show(target, json: true, ct),
-        ["show", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe show needs one id@hash and takes only --json ({ShowUsage})")),
+        ["show", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe show needs one id or id@hash and takes only --json ({ShowUsage})")),
         ["list", .. var flags] when ListFlags(flags) is { } list && desk is not null => new RecipeRegistryCommands(desk, services, output).List(list.Stale, list.Json, ct),
         ["list", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe list takes only --stale and --json ({ListUsage})")),
         ["approve", var target] when !IsFlag(target) && desk is not null => new RecipeDeskCommands(desk, services, output).Approve(target, ct),
