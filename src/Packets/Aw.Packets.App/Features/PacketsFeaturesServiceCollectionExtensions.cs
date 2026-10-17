@@ -6,6 +6,7 @@ using Aw.Packets.App.Features.HashPacket;
 using Aw.Packets.App.Features.ValidateLinePacket;
 using Aw.Packets.App.Features.ValidatePacket;
 using Aw.Packets.App.Features.ValidateScopingPacket;
+using Aw.Packets.App.Features.VerifyPacket;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Packets.App.Features;
@@ -72,6 +73,18 @@ internal static class PacketsFeaturesServiceCollectionExtensions
                 new ValidatingService<FreezeLinePacketRequest, FreezeLinePacketResponse>(
                     sp.GetRequiredService<FreezeLinePacketService>(),
                     sp.GetRequiredService<IValidator<FreezeLinePacketRequest>>()));
+        return services.AddVerifyFeature();
+    }
+
+    private static IServiceCollection AddVerifyFeature(this IServiceCollection services)
+    {
+        _ = services
+            .AddScoped<VerifyPacketService>()
+            .AddScoped<IValidator<VerifyPacketRequest>, VerifyPacketValidator>()
+            .AddScoped<IService<VerifyPacketRequest, VerifyPacketResponse>>(static sp =>
+                new ValidatingService<VerifyPacketRequest, VerifyPacketResponse>(
+                    sp.GetRequiredService<VerifyPacketService>(),
+                    sp.GetRequiredService<IValidator<VerifyPacketRequest>>()));
         return services;
     }
 }

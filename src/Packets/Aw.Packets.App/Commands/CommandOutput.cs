@@ -32,6 +32,16 @@ internal static class CommandOutput
         return passed ? 0 : 1;
     }
 
+    /// <summary>Says when a freeze found its hash already frozen by someone else: the first freeze's 'by' is kept, so this call's was not recorded.</summary>
+    internal static void AlreadyFrozenNote(Core.Model.FreezeBy? firstFrozenBy)
+    {
+        if (firstFrozenBy is { } first)
+        {
+            var name = first == Core.Model.FreezeBy.Owner ? "owner" : "machine";
+            Console.Out.WriteLine($"  note: alreadyFrozenBy {name}: this hash was already frozen by {name}; a freeze is write-once, so this call's --by was not recorded");
+        }
+    }
+
     internal static void Checks(IReadOnlyList<CheckResult> checks)
     {
         foreach (var check in checks)
