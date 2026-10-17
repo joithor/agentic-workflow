@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Aw.Packets.Core.Kinds;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Packets.App.Commands;
@@ -6,22 +7,34 @@ namespace Aw.Packets.App.Commands;
 /// <summary>Command name → handler. Each handler binds its arguments, calls one service and maps the result to an exit code.</summary>
 internal static class CommandTable
 {
+    internal const string Usage = "validate|freeze|hash <packet-dir> [--kind build|scoping] [--json] (build: validate and freeze take [--repo <dir>]; scoping: freeze takes --repo-slug <owner/name> --instance <slug>)";
+
     internal static async Task<int> Run(string[] args, IServiceProvider provider)
     {
         if (args.Length == 0)
         {
-            return CommandOutput.Usage("validate|freeze <packet-dir> [--repo <dir>] [--json]");
+            return CommandOutput.Usage(Usage);
+        }
+
+        if (KindArgument.Extract(args[1..]) is not { } kindArgs)
+        {
+            return CommandOutput.Usage($"--kind takes one of: {string.Join(", ", PacketKinds.All.Select(static k => k.Name))}");
         }
 
         var json = provider.GetRequiredService<JsonSerializerOptions>();   // the one Kernel JSON profile Composition registered
         var scope = provider.CreateAsyncScope();
         await using (scope.ConfigureAwait(false))
         {
-            var rest = args[1..];
+            var (kind, rest) = kindArgs;
+            var services = scope.ServiceProvider;
+            var scoping = kind == PacketKinds.Scoping;
             return args[0] switch
             {
-                ValidatePacketCommand.Name => await ValidatePacketCommand.Run(rest, scope.ServiceProvider, json).ConfigureAwait(false),
-                FreezePacketCommand.Name => await FreezePacketCommand.Run(rest, scope.ServiceProvider, json).ConfigureAwait(false),
+                ValidatePacketCommand.Name when scoping => await ValidateScopingPacketCommand.Run(rest, services, json).ConfigureAwait(false),
+                ValidatePacketCommand.Name => await ValidatePacketCommand.Run(rest, services, json).ConfigureAwait(false),
+                FreezePacketCommand.Name when scoping => await FreezeScopingPacketCommand.Run(rest, services, json).ConfigureAwait(false),
+                FreezePacketCommand.Name => await FreezePacketCommand.Run(rest, services, json).ConfigureAwait(false),
+                HashPacketCommand.Name => await HashPacketCommand.Run(kind, rest, services, json).ConfigureAwait(false),
                 _ => CommandOutput.Usage($"unknown command '{args[0]}'"),
             };
         }
