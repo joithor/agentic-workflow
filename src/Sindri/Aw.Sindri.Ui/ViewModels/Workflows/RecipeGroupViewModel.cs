@@ -1,10 +1,14 @@
 using System.Collections.ObjectModel;
+using Aw.Sindri.Ui.Navigation;
 
 namespace Aw.Sindri.Ui.ViewModels.Workflows;
 
 /// <summary>One recipe's group on the Workflows list: its rows, and the columns its recipe's states draw (screens §4.2).</summary>
 internal sealed class RecipeGroupViewModel(string recipe) : ObservableObject
 {
+    /// <summary>Raised when the group's Recipe button asks to open the recipe's sheet.</summary>
+    internal event EventHandler<RecipeRequestedEventArgs>? RecipeRequested;
+
     /// <summary>The recipe's id.</summary>
     public string Recipe { get; } = recipe;
 
@@ -28,6 +32,17 @@ internal sealed class RecipeGroupViewModel(string recipe) : ObservableObject
 
     /// <summary>The toggle's name for screen readers: the recipe, its count and whether the rows show.</summary>
     public string ToggleName => $"{Header}, {(IsExpanded ? Labels.GroupExpanded : Labels.GroupCollapsed)}";
+
+    /// <summary>The Recipe button's words.</summary>
+#pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
+    public string RecipeLinkText => Labels.RecipeLink;
+#pragma warning restore CA1822, MA0041
+
+    /// <summary>The Recipe button's accessible name.</summary>
+    public string RecipeLinkName => Labels.OpenRecipeName(Recipe);
+
+    /// <summary>Opens the recipe's approved version.</summary>
+    internal void OpenRecipe() => RecipeRequested?.Invoke(this, new RecipeRequestedEventArgs(Recipe));
 
     /// <summary>Collapses the group to its count, or shows its rows again.</summary>
     internal void Toggle()

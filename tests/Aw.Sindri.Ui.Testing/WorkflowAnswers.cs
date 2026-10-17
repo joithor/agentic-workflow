@@ -107,9 +107,22 @@ internal static class WorkflowAnswers
     // A recipe's hash is the golden's own, or whatever an instance of it reports running; none named means the current one.
     private static bool HashKnown(JsonObject recipe, string? hash) =>
         string.IsNullOrEmpty(hash)
-        || Is(recipe["hash"], hash)
+        || Names(recipe["hash"], hash)
         || Served("workflow-instance").Select(g => g.Body["recipe"]).Concat(Rows().Select(r => r["recipe"]))
-            .Any(r => Is(r?["id"], (string?)recipe["id"]) && Is(r?["hash"], hash));
+            .Any(r => Is(r?["id"], (string?)recipe["id"]) && Names(r?["hash"], hash));
+
+    // The API takes a hash whole or by a prefix of eight or more hex digits, with or without 'sha256:' (engine spec §3.1).
+    private static bool Names(JsonNode? full, string? named)
+    {
+        const string scheme = "sha256:";
+        if (Is(full, named))
+        {
+            return true;
+        }
+
+        var digits = named is not null && named.StartsWith(scheme, StringComparison.Ordinal) ? named[scheme.Length..] : named;
+        return (string?)full is { } whole && digits is { Length: >= 8 } && digits.All(char.IsAsciiHexDigitLower) && whole[scheme.Length..].StartsWith(digits, StringComparison.Ordinal);
+    }
 
     private static IEnumerable<JsonNode> Rows() => ((JsonObject)JsonNode.Parse(GoldenFiles.Api("workflow-instances", AllRoots))!)["instances"]!.AsArray().Select(r => r!); // why: as above
 

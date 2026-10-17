@@ -67,6 +67,14 @@ internal static class FixtureInstances
     /// <returns>The instance as served.</returns>
     internal static InstanceDetail Detail(string scenario) => Read<InstanceDetail>(GoldenFiles.Api("workflow-instance", scenario));
 
+    /// <summary>One recipe golden in full, read through the app's records.</summary>
+    /// <param name="id">The recipe id ('workflow.project'); a recipe golden is named by the id its body carries.</param>
+    /// <returns>The recipe as served.</returns>
+    internal static RecipeView Recipe(string id) => Read<RecipeView>(GoldenFiles.Api("workflow-recipe", id));
+
+    /// <summary>Every recipe golden's id (the not-found refusal is not one).</summary>
+    internal static IReadOnlyList<string> RecipeIds => [.. WorkflowAnswers.NamedRecipeGoldens.Values.Order(StringComparer.Ordinal)];
+
     /// <summary>One status golden, read through the app's records (a state the instance goldens don't show in full, such as taken-over).</summary>
     /// <param name="scenario">The scenario ('taken-over', 'parked-drift').</param>
     /// <returns>The status as served.</returns>

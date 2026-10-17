@@ -66,6 +66,71 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-044"), (draft.Status, draft.Code));
     }
 
+    private static string Lenses(params string[] pairs) => "/sindri/context/lenses?" + string.Join('&', pairs);
+
+    private static string A(string key) => "anchor=" + Uri.EscapeDataString(key);
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Lenses_route_repeated_anchor_answers_schema_2_and_a_repeat_of_one_value_stays_schema_1()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+
+        var two = await host.Http.Ask(Get(Lenses(A(Anchor), A("feature:layout.split-pane")), Terminal(host)));
+        var repeat = await host.Http.Ask(Get(Lenses(A(Anchor), A(Anchor)), Terminal(host)));
+        var partly = await host.Http.Ask(Get(Lenses(A(Anchor), A("feature:nope.x")), Terminal(host)));
+
+        Assert.Equal(HttpStatusCode.OK, two.Status);
+        Assert.Equal((2, 2), (Json(two.Body).GetProperty("schemaVersion").GetInt32(), Json(two.Body).GetProperty("anchors").GetArrayLength()));
+        Assert.Equal(1, Json(repeat.Body).GetProperty("schemaVersion").GetInt32());
+        Assert.Equal(["feature:nope.x"], Json(partly.Body).GetProperty("missingAnchors").EnumerateArray().Select(e => e.GetString()), StringComparer.Ordinal);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Lenses_route_21_anchors_is_006_problem_and_a_draft_with_a_map_version_is_006()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+
+        var many = await host.Http.Ask(Get(Lenses([.. Enumerable.Range(0, 21).Select(i => A("feature:nope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture)))]), Terminal(host)));
+        var both = await host.Http.Ask(Get(Lenses(A(Anchor), "draft=true", "mapVersion=v1"), Terminal(host)));
+        var malformed = await host.Http.Ask(Get(Lenses(A(Anchor), "mapVersion=latest"), Terminal(host)));
+
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (many.Status, many.Code));
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (both.Status, both.Code));
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (malformed.Status, malformed.Code));
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Lenses_route_mapVersion_unretained_is_120_problem_404_and_a_held_version_reads_as_v_N()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+
+        var gone = await host.Http.Ask(Get(Lenses(A(Anchor), "mapVersion=v99"), Terminal(host)));
+        var goneSet = await host.Http.Ask(Get(Lenses(A(Anchor), A("feature:layout.split-pane"), "mapVersion=v99"), Terminal(host)));
+        var held = await host.Http.Ask(Get(Lenses(A(Anchor), "mapVersion=v1"), Terminal(host)));
+
+        Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-120"), (gone.Status, gone.Code));
+        Assert.Equal((HttpStatusCode.NotFound, "SND-CONTEXT-120"), (goneSet.Status, goneSet.Code));
+        Assert.Equal("v1", Json(held.Body).GetProperty("mapVersion").GetString());
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Lenses_route_one_anchor_keeps_schema_1_and_adds_searched_and_map_coverage()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+
+        var one = Json((await host.Http.Ask(Get(Lenses(A(Anchor)), Terminal(host)))).Body);
+
+        Assert.Equal(1, one.GetProperty("schemaVersion").GetInt32());
+        Assert.True(one.TryGetProperty("anchor", out _));
+        Assert.False(one.TryGetProperty("anchors", out _));
+        Assert.True(one.GetProperty("searched").TryGetProperty("sources", out _));
+        Assert.True(one.GetProperty("coverage").TryGetProperty("map", out _));
+    }
+
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
     public async Task Filemap_lists_direct_children_with_rollups_and_a_repo_outside_the_profile_or_a_session_scope_gives_the_same_045()
     {
