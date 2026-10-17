@@ -50,8 +50,8 @@ public sealed class ChoiceRulesTests
             "RCP-CHOICE-002: entry 1 of choices in state 'route' names outcome 'Ui', which isn't [a-z][A-Za-z0-9]{0,31}", "start with a-z and use only letters and digits, at most 32 characters");
 
     [Fact, Trait("Lane", "unit")]
-    public void A_camelCase_choice_name_is_accepted() =>
-        Assert.DoesNotContain(RouteRecipes.Lines(RouteRecipes.Edit(RouteRecipes.Compact, "\"ui: what a user", "\"notStartable: what a user")), static l => l.StartsWith("RCP-CHOICE-002", StringComparison.Ordinal));
+    public void A_camelCase_choice_name_is_accepted_and_routes() =>
+        Assert.Empty(RouteRecipes.Lines(RouteRecipes.Edit(RouteRecipes.Edit(RouteRecipes.Compact, "\"ui: what a user", "\"notStartable: what a user"), "outcome: ui", "outcome: notStartable")));
 
     [Fact, Trait("Lane", "unit")]
     public void A_hyphenated_choice_name_is_RCP_CHOICE_002() =>

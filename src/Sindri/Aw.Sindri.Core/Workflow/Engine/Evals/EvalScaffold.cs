@@ -117,7 +117,7 @@ public static partial class EvalScaffold
     /// <summary>The outputs a Step must write on <paramref name="outcome"/>, as placeholder content.</summary>
     private static Dictionary<FactKey, JsonElement>? Outputs(BlockDescriptor descriptor, OutcomeName outcome)
     {
-        var required = descriptor.Outputs.Where(o => StepOutputs.RequiredOn(o, outcome) && o.EngineFilled != true).ToDictionary(
+        var required = descriptor.Outputs.Where(o => StepOutputs.CallerWritesOn(o, outcome)).ToDictionary(
             static o => o.Fact, o => EvalFacts.OfText($"{o.Fact.Value} from {descriptor.Id.Value} ({outcome.Value})"));
         return required.Count == 0 ? null : required;
     }
