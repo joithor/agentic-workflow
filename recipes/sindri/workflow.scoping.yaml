@@ -93,7 +93,8 @@ transitions:
   - { from: [read-brief, read-tracker, read-change], to: gather,  on: step.completed, when: { outcome: read }, produces: [fact:brief, fact:anchors] }
   - { from: [read-brief, read-tracker, read-change], to: dropped, on: step.completed, when: { outcome: empty } }
   - { from: idea, to: gather,  on: wait.satisfied, when: { outcome: resolved }, produces: [fact:brief, fact:anchors, fact:answerLog] }
-  - { from: idea, to: dropped, on: wait.satisfied, when: { any: [ { outcome: unresolved }, { outcome: cancelled } ] } }
+  - { from: idea, to: dropped, on: wait.satisfied, when: { outcome: unresolved } }
+  - { from: idea, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
   - { from: gather, to: draft, on: step.completed, when: { outcome: gathered }, produces: [fact:lenses, fact:coverage] }
   - { from: draft,  to: check, on: step.completed, when: { outcome: drafted },  produces: [fact:scopeMap, fact:acceptance] }
   - { from: check,  to: gather,    on: step.completed, when: { outcome: regather }, produces: [fact:findings] }
