@@ -57,7 +57,7 @@ public sealed class OnyxStatusCommandTests : IDisposable
     [Fact, Trait("Lane", "integration")]
     public async Task Onyx_status_prints_the_seven_rows_and_exits_1_when_a_check_fails()
     {
-        var code = await Run(11 * Gib, "onyx", "status");
+        var code = await Run(9 * Gib, "onyx", "status");
 
         Assert.Equal(1, code);
         var lines = _out.ToString().TrimEnd('\n').Split('\n');
@@ -67,8 +67,8 @@ public sealed class OnyxStatusCommandTests : IDisposable
                 "pinned    v4.9.0 (f1738ed)",
                 "docker    ok 29.4.0",
                 "compose   ok v2.40.3",
-                "memory    ok 15.7 GiB for Docker, needs a 6 GiB setting",
-                "disk      fail 11.0 GiB free at /sindri-home, needs 16.3 GiB; Docker's data lives in a VM here; its disk image size is capped separately (Docker Desktop: Settings → Resources) (SND-ONYX-003: Not enough disk: 11.0 GiB free at /sindri-home, needs 16.3 GiB; Docker's data lives in a VM here; its disk image size is capped separately (Docker Desktop: Settings → Resources). Free space on that volume, then run this again)",
+                "memory    ok 15.7 GiB for Docker, 0.0 GiB used by other containers, needs 5.5 GiB free",
+                "disk      fail 9.0 GiB free at /sindri-home, needs 10.5 GiB; Docker's data lives in a VM here; its disk image size is capped separately (Docker Desktop: Settings → Resources) (SND-ONYX-003: Not enough disk: 9.0 GiB free at /sindri-home, needs 10.5 GiB; Docker's data lives in a VM here; its disk image size is capped separately (Docker Desktop: Settings → Resources). Free space on that volume, then run this again)",
                 "port      ok 3000 free",
             ],
             lines,
@@ -82,7 +82,7 @@ public sealed class OnyxStatusCommandTests : IDisposable
     [Fact, Trait("Lane", "integration")]
     public async Task Onyx_status_json_parses_as_the_response()
     {
-        var code = await Run(11 * Gib, "onyx", "status", "--json");
+        var code = await Run(9 * Gib, "onyx", "status", "--json");
 
         var written = _out.ToString();
         var status = AwJson.Deserialize<OnyxStatusResponse>(Encoding.UTF8.GetBytes(written), _json).Value;

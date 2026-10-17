@@ -32,7 +32,7 @@ public sealed class OnyxStatusTests
         if (onThisHost)
         {
             _ = rig.Probes.Directories.Add("/var/lib/docker");
-            rig.Probes.VolumeFreeBytes["/var/lib/docker"] = 12 * Gib;
+            rig.Probes.VolumeFreeBytes["/var/lib/docker"] = 8 * Gib;
         }
 
         return await Status(rig);
@@ -76,7 +76,7 @@ public sealed class OnyxStatusTests
         var disk = Assert.Single(status.Checks, static c => c.Name == "disk");
         Assert.Equal(CheckState.Fail, disk.State);
         Assert.Equal(1, status.ExitCode);
-        Assert.StartsWith("12.0 GiB free at /var/lib/docker", disk.Detail, StringComparison.Ordinal);
+        Assert.StartsWith("8.0 GiB free at /var/lib/docker", disk.Detail, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -86,7 +86,7 @@ public sealed class OnyxStatusTests
 
         var disk = Assert.Single(status.Checks, static c => c.Name == "disk");
         Assert.Equal(CheckState.Ok, disk.State);
-        Assert.Equal("100.0 GiB free at /sindri-home, needs 16.3 GiB; Docker's data lives in a VM here; its disk image size is capped separately (Docker Desktop: Settings → Resources)", disk.Detail);
+        Assert.Equal("100.0 GiB free at /sindri-home, needs 10.5 GiB; Docker's data lives in a VM here; its disk image size is capped separately (Docker Desktop: Settings → Resources)", disk.Detail);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -109,7 +109,7 @@ public sealed class OnyxStatusTests
     [Fact, Trait("Lane", "unit")]
     public async Task Status_exit_1_when_disk_is_short()
     {
-        var status = await Status(11 * Gib);
+        var status = await Status(9 * Gib);
 
         Assert.Equal(1, status.ExitCode);
         Assert.Equal("SND-ONYX-003", status.Checks.Single(static c => c.Name == "disk").Problem?.Code);
