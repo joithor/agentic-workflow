@@ -231,7 +231,7 @@ public sealed class DeclarationRulesTests
     public void An_input_that_declares_no_kind_is_reported_and_the_type_is_not_enough()
     {
         Assert.Equal(
-            ["RCP-INPUT-001: input 'fact:item' declares no kind at r.yaml:5:9 (inputs[0]); add kind: item | link | linear-project | webhook | file | text | packet | payload, paired with its type (item/item, file/file, text/text, link/link, packet/packet, payload, linear-project and webhook/payload)"],
+            ["RCP-INPUT-001: input 'fact:item' declares no kind at r.yaml:5:9 (inputs[0]); add kind: item | link | linear-project | webhook | file | text | packet | payload, paired with its type (item/item, file/file, text/text, link/link, packet/packet; payload, linear-project and webhook pair with payload)"],
             CheckDeclarations(Base(inputs: [In("fact:item", "item", kind: null)]), At(("inputs[0]", 5, 9))).Lines());
     }
 

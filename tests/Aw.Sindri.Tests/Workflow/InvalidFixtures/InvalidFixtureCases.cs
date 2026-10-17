@@ -256,7 +256,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-INPUT-001"] = new(
             FixtureSetup.Shipped,
-            "RCP-INPUT-001: input 'fact:item' declares no kind at RCP-INPUT-001.yaml:5:5 (inputs[0]); add kind: item | link | linear-project | webhook | file | text | packet | payload, paired with its type (item/item, file/file, text/text, link/link, packet/packet, payload, linear-project and webhook/payload)",
+            "RCP-INPUT-001: input 'fact:item' declares no kind at RCP-INPUT-001.yaml:5:5 (inputs[0]); add kind: item | link | linear-project | webhook | file | text | packet | payload, paired with its type (item/item, file/file, text/text, link/link, packet/packet; payload, linear-project and webhook pair with payload)",
             []),
         ["RCP-INPUT-002"] = new(
             FixtureSetup.Shipped,

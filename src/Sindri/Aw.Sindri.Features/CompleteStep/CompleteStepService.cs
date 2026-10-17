@@ -46,13 +46,14 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
             return SindriErrors.AuthRefused.With("CompleteStep needs a caller");
         }
 
-        var located = await Located(request, caller, cancellationToken).ConfigureAwait(false);
+        var located = await Locate(request, caller, cancellationToken).ConfigureAwait(false);
         if (located.IsError)
         {
             return located.Error;   // a human-only refusal comes before the nonce is claimed: nothing is consumed
         }
 
-        var address = located.Value;
+        var address = located.Value.Address;
+        var read = located.Value.View;
         var nonce = request.Nonce ?? nonces.Issue();
         var reportSha = ReportSha(request, request.Outputs.ToDictionary(static o => o.Key, static o => Convert.ToHexStringLower(SHA256.HashData(o.Value.Span))));   // the caller's outputs: a retry after the engine-filled ones stopped applying hashes the same
         var subject = address.Value + "\n" + reportSha;
@@ -62,27 +63,32 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
             return claim.Error;
         }
 
-        var filled = await Filled(address, request, caller.Actor, claim.Value, cancellationToken).ConfigureAwait(false);
+        var filled = await Filled(located.Value, request, caller.Actor, claim.Value, cancellationToken).ConfigureAwait(false);
         if (filled.IsError)
         {
             return await GiveBack(nonce, claim.Value, filled.Error, cancellationToken).ConfigureAwait(false);
         }
 
         var outputs = engineFilled.Merge(request.Outputs, filled.Value);
-        return await Report(address, new SentReport(nonce, subject, claim.Value), new StepReport(request, caller.Actor, reportSha, outputs), cancellationToken).ConfigureAwait(false);
+        return await Report(address, new SentReport(nonce, subject, claim.Value), new StepReport(request, caller.Actor, reportSha, outputs), read, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
     /// Resolves the instance and applies the human-only refusal (DT spec §8.5): a session report reads the instance and asks the catalog
-    /// about its open task; a session report on an instance that can't be read is refused with that read error (plan Q7), not let
-    /// through. A human's report isn't read here: a fresh one fails on the same read when it fills the engine's outputs.
+    /// about its open task; a session report on an instance that can't be read is refused with that read error (every session report: plan Q7, DT spec §8.5), not let
+    /// through. A session report passes the view it read on to the engine-filled outputs and the approval check, so it reads the instance once. A human's report isn't read here: a fresh one reads on demand when it fills the engine's outputs.
     /// </summary>
-    private async ValueTask<Result<InstanceAddress>> Located(CompleteStepRequest request, CallerContext caller, CancellationToken cancellationToken)
+    private async ValueTask<Result<Located>> Locate(CompleteStepRequest request, CallerContext caller, CancellationToken cancellationToken)
     {
         var resolved = await directory.Resolve(request.Instance, cancellationToken).ConfigureAwait(false);
-        if (resolved.IsError || caller.Class == CallerClass.Human)
+        if (resolved.IsError)
         {
-            return resolved;
+            return resolved.Error;
+        }
+
+        if (caller.Class == CallerClass.Human)
+        {
+            return new Located(resolved.Value, View: null);
         }
 
         var view = await runtime.Get(resolved.Value, cancellationToken).ConfigureAwait(false);
@@ -91,13 +97,13 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
             return view.Error;
         }
 
-        return engineFilled.HumanOnlyRefusal(view.Value, request, caller) is { } refusal ? refusal : resolved;
+        return engineFilled.HumanOnlyRefusal(view.Value, request, caller) is { } refusal ? refusal : new Located(resolved.Value, view.Value);
     }
 
     /// <summary>Checks approval (a fresh claim only, as ApplyCommand does), stores the outputs and sends the report.</summary>
-    private async ValueTask<Result<CompleteStepResponse>> Report(InstanceAddress address, SentReport sentReport, StepReport step, CancellationToken cancellationToken)
+    private async ValueTask<Result<CompleteStepResponse>> Report(InstanceAddress address, SentReport sentReport, StepReport step, InstanceView? read, CancellationToken cancellationToken)
     {
-        var stored = sentReport.Claim == NonceClaim.Fresh && await Approved(address, cancellationToken).ConfigureAwait(false) is { IsError: true } refused
+        var stored = sentReport.Claim == NonceClaim.Fresh && await Approved(address, read, cancellationToken).ConfigureAwait(false) is { IsError: true } refused
             ? refused.Error
             : await Store(step.Outputs, cancellationToken).ConfigureAwait(false);
         if (stored.IsError)
@@ -118,9 +124,9 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
             : null;
 
     /// <summary>A report is not exempt from the approval check (spec §5.2): the instance's recipe must still hold, else nothing is stored or sent.</summary>
-    private async ValueTask<Result<Unit>> Approved(InstanceAddress address, CancellationToken cancellationToken)
+    private async ValueTask<Result<Unit>> Approved(InstanceAddress address, InstanceView? read, CancellationToken cancellationToken)
     {
-        var view = await runtime.Get(address, cancellationToken).ConfigureAwait(false);
+        var view = read is null ? await runtime.Get(address, cancellationToken).ConfigureAwait(false) : Results.Success(read);
         if (view.IsError)
         {
             return view.Error;
@@ -156,13 +162,16 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
         return refusal;
     }
 
+    /// <summary>The instance a request names and, for a session report, the view read to apply the human-only rule (null for a human, whose report reads on demand).</summary>
+    private readonly record struct Located(InstanceAddress Address, InstanceView? View);
+
     /// <summary>The nonce a report went out with, the subject it claimed it for and what the claim found.</summary>
     private readonly record struct SentReport(CommandNonce Nonce, string Subject, NonceClaim Claim);
 
-    /// <summary>The engine-filled outputs; a retry (a pending or applied claim) needs no view and sends without them when the instance can't be read: Temporal answers its Update id with the first result.</summary>
-    private async ValueTask<Result<IReadOnlyDictionary<FactKey, DecisionFact>>> Filled(InstanceAddress address, CompleteStepRequest request, string actor, NonceClaim claim, CancellationToken cancellationToken)
+    /// <summary>The engine-filled outputs, from the view a session report already read (a human's reads on demand); a retry (a pending or applied claim) needs no view and sends without them when the instance can't be read: Temporal answers its Update id with the first result.</summary>
+    private async ValueTask<Result<IReadOnlyDictionary<FactKey, DecisionFact>>> Filled(Located located, CompleteStepRequest request, string actor, NonceClaim claim, CancellationToken cancellationToken)
     {
-        var filled = await EngineFilled(address, request, actor, cancellationToken).ConfigureAwait(false);
+        var filled = await EngineFilled(located, request, actor, cancellationToken).ConfigureAwait(false);
         return filled.IsError && claim != NonceClaim.Fresh
             ? Results.Success<IReadOnlyDictionary<FactKey, DecisionFact>>(new Dictionary<FactKey, DecisionFact>())
             : filled;
@@ -174,9 +183,9 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
     /// on, or a stale run: the send answers). Reads the instance, so a fresh report on an instance that can't be read is that
     /// error; a retry sends without (see <see cref="Handle"/>). A hand-written engine-filled output was refused before this.
     /// </summary>
-    private async ValueTask<Result<IReadOnlyDictionary<FactKey, DecisionFact>>> EngineFilled(InstanceAddress address, CompleteStepRequest request, string actor, CancellationToken cancellationToken)
+    private async ValueTask<Result<IReadOnlyDictionary<FactKey, DecisionFact>>> EngineFilled(Located located, CompleteStepRequest request, string actor, CancellationToken cancellationToken)
     {
-        var view = await runtime.Get(address, cancellationToken).ConfigureAwait(false);
+        var view = located.View is null ? await runtime.Get(located.Address, cancellationToken).ConfigureAwait(false) : Results.Success(located.View);
         if (view.IsError)
         {
             return view.Error;

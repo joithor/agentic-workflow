@@ -38,6 +38,14 @@ public sealed class ShippedBlocksTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void No_shipped_descriptor_says_human_only_false()
+    {
+        var catalog = FixtureCatalog.Shipped();
+
+        Assert.DoesNotContain(catalog.Blocks, static b => b.HumanOnly == false);   // written only when true (DT spec 8.5): false would change the descriptor hash for nothing
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task The_budget_gate_and_the_two_effects_have_runtimes_and_the_desk_steps_run_on_the_desk()
     {
         await using var provider = Composed();
