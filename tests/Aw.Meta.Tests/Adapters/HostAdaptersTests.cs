@@ -25,6 +25,7 @@ public sealed class HostAdaptersTests
         _ = Assert.IsType<ProcProcessTable>(provider.GetRequiredService<IProcessTable>());
         _ = Assert.IsType<ProcHostResources>(provider.GetRequiredService<IHostResources>());
         _ = Assert.IsType<ProcProcessLiveness>(provider.GetRequiredService<IProcessLiveness>());
+        _ = Assert.IsType<ProcProcessLocations>(provider.GetRequiredService<IProcessLocations>());
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -35,6 +36,7 @@ public sealed class HostAdaptersTests
         _ = Assert.IsType<MacProcessTable>(provider.GetRequiredService<IProcessTable>());
         _ = Assert.IsType<MacHostResources>(provider.GetRequiredService<IHostResources>());
         _ = Assert.IsType<MacProcessLiveness>(provider.GetRequiredService<IProcessLiveness>());
+        _ = Assert.IsType<MacProcessLocations>(provider.GetRequiredService<IProcessLocations>());
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -47,8 +49,9 @@ public sealed class HostAdaptersTests
         var locks = await provider.GetRequiredService<IHostResources>().HeavyLocks(TestContext.Current.CancellationToken);
         var alive = await provider.GetRequiredService<IProcessLiveness>().IsRunning(5, DateTimeOffset.UnixEpoch, TestContext.Current.CancellationToken);
         var stop = await provider.GetRequiredService<IProcessTable>().Terminate(5, TestContext.Current.CancellationToken);
+        var scan = await provider.GetRequiredService<IProcessLocations>().Locations(TestContext.Current.CancellationToken);
 
-        foreach (var error in new[] { snapshot.Error, resources.Error, locks.Error, alive.Error, stop.Error })
+        foreach (var error in new[] { snapshot.Error, resources.Error, locks.Error, alive.Error, stop.Error, scan.Error })
         {
             Assert.Equal(MetaErrors.HostUnreadable.Code, error.Code);
             Assert.Contains("FreeBSD 14.1", error.Message, StringComparison.Ordinal);

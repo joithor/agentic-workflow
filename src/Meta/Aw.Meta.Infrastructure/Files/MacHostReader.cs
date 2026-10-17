@@ -54,6 +54,12 @@ internal sealed class MacHostReader(string stateDirectory, ICommandRunner runner
         return ps.IsError ? ps.Error : Parsed(() => MacFormat.Processes(ps.Value));
     }
 
+    /// <summary>The working directory and open files of every process this user can inspect ("lsof -F pcnR": pid, parent, command, names).</summary>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>lsof's field output, or AW-META-010.</returns>
+    internal ValueTask<Result<string>> Lsof(CancellationToken cancellationToken) =>
+        MacTools.Output(runner, [paths.Lsof, "-w", "-n", "-F", "pcnR"], cancellationToken);
+
     /// <summary>How long a process has run ("ps -o etime= -p pid"), or null when there is no such process.</summary>
     /// <param name="pid">The process id.</param>
     /// <param name="cancellationToken">Cancels the call.</param>

@@ -44,7 +44,6 @@ public static class MetaInfrastructureServiceCollectionExtensions
                 new DirectorySessionDirectory(settings.SessionsDirectory, sp.GetRequiredService<IProcessLiveness>()), sp.GetRequiredService<IMetaConfig>(), sp.GetRequiredService<ILaneFiles>(), sp.GetRequiredService<ILanePane>()))
             .AddScoped<ITeamCatalog>(sp => new FileTeamCatalog(settings.Layout, sp.GetRequiredService<ISessionDirectory>(), sp.GetRequiredService<JsonSerializerOptions>(), sp.GetRequiredService<TimeProvider>()))
             .AddHostAdapters(HostPlatform.Current, settings.StateDirectory, settings.HeavyLock)
-            .AddSingleton<IProcessLocations>(sp => new ProcessScanner(sp.GetRequiredService<MacToolPaths>().Lsof))
             .AddSingleton<IBuildInfo, AssemblyBuildInfo>()
             .AddSingleton<IHeavyReserve>(new FileHeavyReserve(settings.StateDirectory))
             .AddSingleton<ILogFiles, FileLogFiles>()
