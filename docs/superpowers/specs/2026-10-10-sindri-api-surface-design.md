@@ -447,7 +447,7 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 
 **Engine parks and gates aren't `Decide` decisions.** The engine answers them with `ApplyCommand`. The needs-you
 projection folds the engine's park and gate events into rows of kind `park`, whose `primaryAction` is the engine's
-action id, for example `ApplyCommand:answer`.
+action id, for example `ApplyCommand:answer-resume` (an open park serves one `answer-<variant>` entry per fitting variant, primary first).
 
 ### 3.5 Ownership with the workflow engine spec
 
@@ -510,10 +510,10 @@ How items move through the states:
 | `active` with an agent run | `running` | `running` | — |
 | `active` with an open desk task | `needs-answer` | `waitingOnYou` | "Desk task" → `CompleteStep` (UI form), or `OpenItem` |
 | `wait` (event, child, resource) | `running` | `running` | — |
-| `parked` (any reason) | `parked` | `waitingOnYou` | Reason and question → the §3.8 answer's action id (`cli-only` when `protected`) |
-| `escalated` (gate) | `parked` | `waitingOnYou` | `answerKind: accept` → `ApplyCommand:answer-accept` (`cli-only`); reject is `answer` |
-| `escalated` (timeout) | `parked` | `waitingOnYou` | `answerKind: resume` → `ApplyCommand:answer` |
-| `escalated` (child) | `parked` | `waitingOnYou` | The child's `answerKind`, forwarded |
+| `parked` (any reason) | `parked` | `waitingOnYou` | Reason and question → the §3.8 answer's action id (`cli-only` when `protected`). A park mirroring a child whose fit the child decides (needs-answer, budget, spec-conflict) is the escalated-child case below |
+| `escalated` (gate) | `parked` | `waitingOnYou` | `answerKind: accept` → `ApplyCommand:answer-accept` (`cli-only`); reject is `ApplyCommand:answer-reject` |
+| `escalated` (timeout) | `parked` | `waitingOnYou` | `answerKind: resume` → `ApplyCommand:answer-resume` |
+| `escalated` (child) | `parked` | `waitingOnYou` | Forwarded to the child, whose fit this build does not know: `answerKind: text`, action `ApplyCommand:answer-text` with the placeholder cli `<the child's answer>`, a pointer to the child and not an answer form, marked on the status `answer` record as `via: "child"` and `child: <the child's address>` (both omitted otherwise; `child` is present when the view knows the mirrored child, so until P7 wires child propagation into the served view expect `via: "child"` without `child`); the needs-you row carries the same `via`; `allowedCommands` has no `answer` entry for it. The same holds for a mirrored needs-answer, budget or spec-conflict park |
 | `taken-over` | `taken-over` | `withYou` | After `takeoverIdle`: "hand back?" → `ApplyCommand:handback` |
 | terminal | `done` or `cancelled` | — | — |
 | no instance yet, started by a router (router phase; P11 does not produce it) | `queued` | `queued` | — |
@@ -534,6 +534,7 @@ How items move through the states:
 | `recordedOnly` | Whether the decision is recorded only (before S2) |
 | `notice` | The sentence that says so, served by the API (`recorded; acted on once the workflow engine runs`) so no client keeps its own copy; `null` when `recordedOnly` is false. A `DecisionView` voided by closing its item carries the voided sentence (`voided: the item was closed`) in `notice` and `cleared` |
 | `answerKind` | For `park` rows: `text`, `resume`, `grant`, `grantTokens`, `accept` (with reject), or `cancel-only`, taken from the engine's resume action (engine §5.8), so the app shows the right control |
+| `via?` | `"child"` when `cli` points at a child that decides the answer; omitted otherwise |
 | `primaryAction` | A catalog action id (no P4 row is `cli-only`, so none serves `copy:<cli>`). Per kind: <ul><li>`decision` → `Decide`;</li><li>`park` → the engine's action id;</li><li>`failure` → `RunService` (served since P6, with `cli` `sindri services run <name>`), or **null** for a failure of a service this build doesn't have (`SND-SVC-404`: `actions` is `[PauseService]` and `cli` is `sindri profile validate`; golden `needs-you/unknown-service`);</li><li>`profile` → `ApproveProfile` (protected: terminal-only, so the app copies the row's `cli`, `sindri profile approve <hash>`, instead of calling it).</li></ul> |
 | `cli` | The CLI form |
 

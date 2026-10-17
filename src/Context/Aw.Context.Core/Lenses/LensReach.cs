@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
 
@@ -22,4 +23,9 @@ public sealed record LensReach(
     bool Confirmed,
     Results.Trust Trust,
     int Depth,
-    IReadOnlyList<string> Path);
+    IReadOnlyList<string> Path)
+{
+    /// <summary>Schema 2 only: every anchor that reached it, in request order.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? Anchors { get; init; }
+}
