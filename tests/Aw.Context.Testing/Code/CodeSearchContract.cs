@@ -164,4 +164,19 @@ public abstract class CodeSearchContract
 
         Expect.That(hits is { Truncated: false, Paths.Count: 0 }, test, "found something");
     }
+
+    /// <summary>More terms or paths than one call carries are searched in chunks and joined.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Many_terms_and_paths_are_searched_in_chunks()
+    {
+        const string test = nameof(Many_terms_and_paths_are_searched_in_chunks);
+        var search = CreateSearch(out var repo, out var commit);
+        var terms = Enumerable.Range(0, 250).Select(i => "absent-" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append("shared_link").ToList();
+        var paths = Enumerable.Range(0, 250).Select(i => "none/" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)).Append("migrations/002.sql").ToList();
+
+        var hits = Expect.Ok(await search.FilesNaming(new CodeSearchQuery(repo, commit, terms, paths, Max: 100), None), test);
+
+        Expect.That(hits.Paths.SequenceEqual(["migrations/002.sql"], StringComparer.Ordinal), test, $"found {string.Join(", ", hits.Paths)}");
+    }
 }
