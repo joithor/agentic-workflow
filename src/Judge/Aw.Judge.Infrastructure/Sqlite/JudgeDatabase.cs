@@ -21,7 +21,7 @@ internal sealed class JudgeDatabase(SqliteOptions options, TimeProvider clock)
     private volatile bool _ready;
 
     /// <summary>The options for decisions.sqlite in the judge's state directory.</summary>
-    /// <param name="stateDirectory">$AW_STATE_DIR/judge (JudgeSettings.StateDirectory).</param>
+    /// <param name="stateDirectory">JudgeSettings.StateDirectory: $AW_JUDGE_STATE_DIR, else $AW_STATE_DIR/judge.</param>
     /// <returns>The options.</returns>
     internal static SqliteOptions OptionsFor(string stateDirectory) =>
         new(Path.Combine(stateDirectory, FileName)) { BusyTimeout = BusyTimeout };

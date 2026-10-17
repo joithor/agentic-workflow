@@ -6,6 +6,8 @@ namespace Aw.Judge.Infrastructure.Providers;
 /// <summary>The JSON Schema of an answer: the decision, one of the question's outputs, plus its extra properties.</summary>
 internal static class AnswerSchema
 {
+    private const string Confidence = "confidence";
+
     /// <summary>The decision is required, the extras optional (claude's --json-schema, cursor's prompt).</summary>
     /// <param name="question">The question.</param>
     /// <returns>The schema.</returns>
@@ -17,7 +19,13 @@ internal static class AnswerSchema
             properties[name] = fragment.DeepClone();
         }
 
-        return new JsonObject { ["type"] = "object", ["properties"] = properties, ["required"] = new JsonArray("decision") };
+        var required = question.AskConfidence ? new JsonArray("decision", Confidence) : new JsonArray("decision");
+        if (question.AskConfidence)
+        {
+            properties[Confidence] = new JsonObject { ["type"] = "number", ["minimum"] = 0, ["maximum"] = 1 };
+        }
+
+        return new JsonObject { ["type"] = "object", ["properties"] = properties, ["required"] = required };
     }
 
     /// <summary>
@@ -32,6 +40,12 @@ internal static class AnswerSchema
         foreach (var (name, fragment) in Extras(question))
         {
             properties[name] = Nullable(fragment);
+        }
+
+        if (question.AskConfidence)
+        {
+            // why: strict mode takes no range keywords; AgentAnswer rejects a value outside 0 to 1.
+            properties[Confidence] = new JsonObject { ["type"] = "number" };
         }
 
         var required = new JsonArray([.. properties.Select(p => (JsonNode?)JsonValue.Create(p.Key))]);

@@ -1,0 +1,10 @@
+{
+  "isError": true,
+  "structuredContent": {
+    "code": "SND-REQ-001",
+    "message": "The text is longer than 2000 characters (fix: shorten it)"
+  },
+  "content": [
+    "SND-REQ-001 The text is longer than 2000 characters (fix: shorten it)"
+  ]
+}

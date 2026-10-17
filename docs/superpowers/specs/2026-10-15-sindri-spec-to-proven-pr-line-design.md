@@ -1,8 +1,8 @@
 # Sindri spec-to-proven-PR line: the line contract, design, plan and the per-phase child
 
-**Status:** design, revision 2.3 (after /autoplan pass 1, a narrow re-check, #263's asks and #258 rev 3.2's scope graphs, §14) (draft; not built until every station is specced, LN1) · **Date:** 2026-10-15 ·
+**Status:** design, revision 2.4 (after /autoplan pass 1, a narrow re-check, #263's asks, #258 rev 3.2's scope graphs and the #308 review rulings, §14) (draft; not built until every station is specced, LN1) · **Date:** 2026-10-15 ·
 **Owner decisions:** 2026-10-15 and 2026-10-16 (§1) · **Builds on:** the scoping station spec
-`2026-10-15-sindri-scoping-station-design.md` (SC, #258), rev 3.2, branch `docs/sindri-scoping-station`; the
+`2026-10-15-sindri-scoping-station-design.md` (SC, #258), rev 3.3, branch `docs/sindri-scoping-station`; the
 decision-tree recipes spec `2026-10-15-sindri-decision-tree-recipes-design.md` (DT, #240), rev 4; the parked PR
 babysitter and docs sync draft `2026-10-15-sindri-pr-babysitter-docs-sync-design.md` (PB), branch
 `docs/sindri-pr-babysitter-docs-sync`; the workflow engine spec `2026-10-10-sindri-workflow-engine-design.md` (WF), rev
@@ -49,7 +49,7 @@ value form: a pack is named by a plain string parameter (LN-WF5). Every request 
 | LN12 | **No seed reuses a prompt as-is** (owner, IDEA-098; carried from SC10). Every agent Step's seed on the line, including the #240 blocks the line uses, is written new against PR-R's rubric and evidence loop | §10. It amends DT7's /enhancePrompt porting (DTC7) |
 | LN13 | **Packets, not facts, cross stations; facts never do** (carried from SC §3) | A station reads its input packet by hash and verifies it against the freeze record; it never reads another instance's facts |
 | LN15 | **The scope opens in Context** (owner, 2026-10-16; the five pieces confirmed: "yes add those"; #258 SC11). The scope packet freezes `lenses.json` (per lens: found nodes and edges, anchors, depth, map version); the context lane extends C1 and C10 and adds C15 (`subgraph`); #258 API9 reads a packet's file by hash, after a purge too; #258 U7 opens U9 from the stop and the scope viewers, pinned as of the stop (drawn from `lenses.json`) with a live toggle, per scope lens, with empty states (UI R8-14); W13's `scope-packet` type is what the viewer switches on. For the line: stop 1 carries the action, and every packet viewer reads its files through API9 (LN-UI4) | The owner reads a scope's blast radius as a graph, as it stood at the stop. One file route serves every packet kind, so the line's viewers don't need a second one |
-| LN16 | **The line spec set is approved for build** (owner, 2026-10-16: "approved. build that shit"). The approval covers #258 (scoping station, rev 3.2), #262 (the line, rev 2.3) and #263 (PR babysitter and docs sync); Q16 stays as specced (the pinned view draws from `lenses.json`) | The owner read the set together. The build follows each spec's phases and waves, starting with the phases provable on what main holds |
+| LN16 | **The line spec set is approved for build** (owner, 2026-10-16: "approved. build that shit"). The approval covers #258 (scoping station, rev 3.3), #262 (the line, rev 2.3) and #263 (PR babysitter and docs sync); Q16 stays as specced (the pinned view draws from `lenses.json`) | The owner read the set together. The build follows each spec's phases and waves, starting with the phases provable on what main holds |
 
 ## 2. Terms
 
@@ -92,18 +92,21 @@ input ─► [scoping] ─► scope ─► [design] ─► design ─► [plan] 
 
 ### 3.2 The packet chain
 
-Every packet is an `aw-packets` kind (LN10; LN-PKT1), hashed by `aw-packets hash`, and carries `index.json`: its kind, its
-parents' hashes, and the hash of the acceptance chain it extends. A reader verifies its input with `aw-packets verify
+Every packet is an `aw-packets` kind (LN10; LN-PKT1), hashed by `aw-packets hash`. Every packet after the scope packet
+carries `index.json`: its kind, its parents' hashes, and `acceptance: { self, extends }`, where `self` is the sha256 of the
+packet's own `acceptance.json` and `extends` is the parent acceptance's hash. `self` is null when the packet kind has no `acceptance.json` (the plan). `index.json` carries no
+`id`; the packet id lives in `packet.json`. The scope packet is the chain's root: its files are #258 §8.3's twelve, and the
+design packet's `index.json` `parents` carries the scope packet's hash. A reader verifies its input with `aw-packets verify
 <dir> --hash <h>` (LN-PKT2) before it reads anything.
 
 | # | Packet (kind) | Made by | Files | Frozen fields | Hash and freeze | Evidence it adds |
 |---|---|---|---|---|---|---|
 | 1 | **Scope packet** (`scoping`) | `workflow.scoping` (#258 §8.3) | #258 §8.3 | All files | Owner-frozen at stop 1 by `step.scope.freeze` | #258 SC7: citations, four lens coverage rows, an all-failing acceptance list, a clean challenge; the lens graphs as of stop 1 (`lenses.json`, #258 SC11) |
-| 2 | **Design packet** (`design`) | `workflow.design` (§4) | `spec.md`, `sections.json`, `coverage.json`, `decisions.json`, `acceptance.json`, `signals.json`, `contracts.json`, `lens-rounds.jsonl`, `style.json`, `escapes.json`, `runs.json` | All; `decisions.json`'s chosen options are filled at stop 2 | Candidate at `step.design.evidence`; **owner-frozen at stop 2** by `step.plan.freeze`, with the plan | Surface coverage, a proof signal per acceptance item, every lens round, contract-edit checks, style conformance, escapes (§4.5) |
-| 3 | **Plan graph** (`plan`) | `workflow.plan` (§6) | `packet.json` with `links.tasks` (PKT's task plan: one task per phase), `graph.json` (stacks, waves, bases), `exec-review.json`, `holdout.json` (set hashes and counts, no text), `answers.jsonl` | All | Candidate at `step.plan.evidence`; owner-frozen at stop 2 by `step.plan.freeze` | Every acceptance item in exactly one phase, PKT's rules, the executability review, sizes within the cap (§6.3) |
-| 4 | **Phase packet** (`phase`), one per phase | `step.plan.freeze`, by code from the plan and design; an **amended** phase packet by `step.build.amend` | `phase.json` (goal, kind, deps, size, base rule, `allowedFiles`, `testChange`, read seeds, budget; an amended one adds `amends: { parent, paths, reason, at }`), `acceptance.json` (its items), `signals.json` (its verification plan), `holdout.json` (set hash and count), `design.md` (the sections covering its items) | All | Owner-frozen at stop 2 with the plan. A scope grant (§7.2) never edits it: `step.build.amend` writes a **new child packet** whose `index.json` parent is the old hash, owner-frozen on `scope-desk`'s human-only `allow`, and every later station gets the new hash | Nothing new: it is the build's contract; an amendment adds the grant and its reason |
-| 5 | **Proof pack** (`proof`) | `workflow.prove` (§7.3) | `proof.json` (per item: `passing`, evidence refs `{kind, path, sha256, commit, at}`), `red.json`, `app-run/`, `evidence/`, `before-after.json`, `holdout.json` (ids, verdicts, commit, `spent`; no text), `not-proven.md`, `acceptance.json` | All | Machine-frozen by `step.prove.evidence` on `complete` | Every item passing on one commit, the real-app run, fail-before/pass-after for fixes, the hidden scenarios' verdicts (§7.3) |
-| 6 | **Review result** (`review`) | `workflow.review-loop` (DT §4.1, DTC4) | `review.json` (rounds, each finding with its class and its resolution, the last run's verdict, the head sha) | All | Machine-frozen by `step.review.record` on `clean` (DTC4) | Zero blocking and zero issue on the reviewed head; every suggestion answered in writing |
+| 2 | **Design packet** (`design`) | `workflow.design` (§4) | `packet.json`, `index.json`, `spec.md`, `sections.json`, `coverage.json`, `decisions.json`, `acceptance.json`, `signals.json`, `contracts.json`, `lens-rounds.jsonl`, `style.json`, `escapes.json`, `runs.json` | All; `decisions.json`'s chosen options are filled at stop 2 | Candidate at `step.design.evidence`; **owner-frozen at stop 2** by `step.plan.freeze`, with the plan | Surface coverage, a proof signal per acceptance item, every lens round, contract-edit checks, style conformance, escapes (§4.5) |
+| 3 | **Plan graph** (`plan`) | `workflow.plan` (§6) | `packet.json` with `links.tasks`, `index.json`, (PKT's task plan: one task per phase), `tasks.json` (the file `links.tasks` names; the build kind's links are relative paths, `docs/csharp/packets.md`), `graph.json` (stacks, waves, bases), `exec-review.json`, `holdout.json` (set hashes and counts, no text), `answers.jsonl` | All | Candidate at `step.plan.evidence`; owner-frozen at stop 2 by `step.plan.freeze` | Every acceptance item in exactly one phase, PKT's rules, the executability review, sizes within the cap (§6.3) |
+| 4 | **Phase packet** (`phase`), one per phase | `step.plan.freeze`, by code from the plan and design; an **amended** phase packet by `step.build.amend` | `index.json`, `phase.json` (goal, kind, deps, size, base rule, `allowedFiles`, `testChange`, read seeds, budget; an amended one adds `amends: { parent, paths, reason, at }`), `acceptance.json` (its items), `signals.json` (its verification plan), `holdout.json` (set hash and count), `design.md` (the sections covering its items) | All | Owner-frozen at stop 2 with the plan. A scope grant (§7.2) never edits it: `step.build.amend` writes a **new child packet** whose `index.json` parent is the old hash, owner-frozen on `scope-desk`'s human-only `allow`, and every later station gets the new hash | Nothing new: it is the build's contract; an amendment adds the grant and its reason |
+| 5 | **Proof pack** (`proof`) | `workflow.prove` (§7.3) | `index.json`, `proof.json` (per item: `passing`, evidence refs `{kind, path, sha256, commit, at}`; `sha256` values carry the `sha256:` prefix), `red.json`, `app-run/`, `evidence/`, `before-after.json`, `holdout.json` (ids, verdicts, commit, `spent`; no text), `not-proven.md`, `acceptance.json` | All | Machine-frozen by `step.prove.evidence` on `complete` | Every item passing on one commit, the real-app run, fail-before/pass-after for fixes, the hidden scenarios' verdicts (§7.3) |
+| 6 | **Review result** (`review`) | `workflow.review-loop` (DT §4.1, DTC4) | `index.json`, `review.json` (rounds, each finding with its class and its resolution, the last run's verdict, the head sha) | All | Machine-frozen by `step.review.record` on `clean` (DTC4) | Zero blocking and zero issue on the reviewed head; every suggestion answered in writing |
 | 7 | **PR hand-off** (`handoff`) | `workflow.ship` (§7.5) | `pr.json` (base, head branch, head sha, stack parent, title, labels), `body.md` (the evidence pack as the PR body), `green.json`, `index.json` over packets 1–6 | All | Machine-frozen by `step.ship.freeze` when the local GREEN gate passes and the three shas agree, just before the PR opens (no owner stop) | The GREEN gate's run on the head, and the body the PR opens with |
 | 8 | **Merge record** (appended, not a packet) | `workflow.pr-babysitter` and `workflow.docs-sync` (PB, §7.6) | `babysit.jsonl` in the phase's run area: each push, CI run, comment handled, the docs PR and its result, the final snapshot | — | Appended; never edits packets 1–7 | CI green on the head, the docs PR complete, every comment handled: the ready-to-merge stop's preconditions (BD3, BD5) |
 
@@ -112,7 +115,7 @@ parents' hashes, and the hash of the acceptance chain it extends. A reader verif
 | Rule | Says |
 |---|---|
 | **LC-1 Packets only** | A station's input is a packet hash in a fact. The station verifies it (`aw-packets verify`, LN-PKT2: against its freeze record, or with `--candidate` by recomputing the hash for a candidate such as the design packet at plan intake) and reads the files; it never reads another instance's facts (LN13) |
-| **LC-2 Acceptance chain** | `acceptance.json` in every packet has `parent: <hash of the previous acceptance.json>`. Ids and texts never change (IDEA-003, SC §3). Design may append items and mark old ones `superseded`, confirmed at stop 2. Only the proof pack flips `status` to `passing`, each flip with evidence `{kind, path, sha256, commit, at}`. `LC-ACC-001`, run by every station's evidence check, recomputes the chain from the scope packet and refuses any text edit |
+| **LC-2 Acceptance chain** | `acceptance.json`, in every packet that has one, has `parent: <hash of the previous acceptance.json>`. Ids and texts never change (IDEA-003, SC §3). Design may append items and mark old ones `superseded` with `supersededBy: <item id>` (the successor), confirmed at stop 2. Only the proof pack flips `status` to `passing`, each flip with evidence `{kind, path, sha256, commit, at}` (`sha256` carries the `sha256:` prefix). `LC-ACC-001`, run by every station's evidence check, recomputes the chain from the scope packet and refuses any text edit |
 | **LC-3 Evidence accumulates** | No packet drops what its parents proved; each adds its own (the right column of §3.2). `index.json` makes the chain walkable, and `sindri line show <address>` (LN-API1) prints it, oldest first |
 | **LC-4 Tied to a commit** | From the phase packet on, every artifact names the commit it ran on. The proof pack, the review result and the hand-off must agree on one head sha before the PR opens (`SHIP-SHA-001`); a head that moved sends the phase back to prove (§7.1) |
 | **LC-5 One freezer** | Each packet has exactly one freezing block, named in §3.2 (an amended phase packet's is `step.build.amend`). Owner-frozen packets are frozen only on a human-only act (DT §8.5): an approve, or `scope-desk`'s `allow` |
@@ -223,7 +226,7 @@ exit 0 pass, 1 findings, 2 usage, tool error or not running).
 | `DSN-COV-002` | draft | Every scope open question is answered by a section, carried as an open decision, or deferred with an owner and a `buildMayAssume` default |
 | `DSN-ACC-001` | draft | Every live acceptance item has at least one proof signal: an evidence kind from FA §17.11's list, an observable statement, and where it runs (`head`, or `base+head` for a fix) |
 | `DSN-ACC-002` | draft | Signals are measurable: FA §17.23.14's unmeasurable terms ("fast", "clean", "intuitive" …) without a number or a reference artifact are refused. The term list is a rule pack |
-| `DSN-ACC-003` | evidence | `LC-ACC-001`: scope's ids and texts unchanged; every added item cites a section or decision; every `superseded` item names its successor and is flagged for stop 2 |
+| `DSN-ACC-003` | evidence | `LC-ACC-001`: scope's ids and texts unchanged; every added item cites a section or decision; every `superseded` item carries `supersededBy: <item id>` (its successor) and is flagged for stop 2 |
 | `DSN-DEC-001` | draft | Every open decision has 2–3 options with trade-offs and citations, exactly one recommended, a non-empty `affects`, and each affected section carries its `assumes:` marker |
 | `DSN-CITE-001` | draft | Every section cites scope ids (`S-*`, `AC-*`, `A*`, `R*`, `L-*`) or a decision; an uncited section is flagged as in #258 |
 | `DSN-XSPEC-001` | draft | Every cross-spec contract edit in `contracts.json` names a target file and heading that exist at the scope packet's base sha |
@@ -957,6 +960,22 @@ only where packets and stops are touched.
 | §3.2, §3.4 | The scope packet's evidence adds `lenses.json`; stop 1 shows #258 U7's Open in Context ▸ |
 | §12 | The cited #258 ids gain C15, U7, API9, API10; LN-UI4 and LN-API1 read packet files through #258's API9 |
 | §13.1, §13.2 | Step 2 places #258 SC-V beside SC-P; LN-U needs #258 SC-K, which serves API9 (moved there by #258's /autoplan on the delta, so the line waits on no UI phase) |
+
+### 14.4 Rev 2.4, the #308 review rulings
+
+Rulings from the #308 review, which follow LN-PKT1's own row. Nothing else changes.
+
+| Where | What changed |
+|---|---|
+| §3.2 table, design row | File list gains `packet.json` (LN-PKT1: every kind has one linking all its files) |
+| §3.2 table, plan row | File list gains `tasks.json`, the file `packet.json`'s `links.tasks` names (the build kind's links are relative paths, `docs/csharp/packets.md`) |
+| §3.2 intro | "Every packet" carrying `index.json` becomes every packet after the scope packet; the scope packet is the root (its files are #258 §8.3's twelve) and the design packet's `index.json` `parents` carries its hash |
+| §3.2 intro | `index.json`'s acceptance field is `acceptance: { self, extends }`; no `id` in `index.json` (it lives in `packet.json`) |
+| §3.3 LC-2, §4 DSN-ACC-003 | A `superseded` item carries `supersededBy: <item id>` |
+| §3.2 intro | `extends` loses "(null for the first)", since every packet carrying `index.json` has a parent; `self` is null when the kind has no `acceptance.json` (the plan); LC-2 reads "in every packet that has one" |
+| §3.2 Files column | `index.json` added to the design, plan, phase, proof and review rows (the hand-off row already had it) |
+| Header, LN16 | Citations of the scoping spec move from rev 3.2 to rev 3.3 |
+| §3.2 proof row, §3.3 LC-2 | Evidence `sha256` values carry the `sha256:` prefix |
 
 ## 15. Open questions
 
