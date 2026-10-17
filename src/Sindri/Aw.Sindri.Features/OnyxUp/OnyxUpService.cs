@@ -146,9 +146,9 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
     // The port our own running nginx publishes, whatever state.json says: a start that failed or timed out leaves it up, and a lost state file doesn't make it someone else's.
     private Result<int?> OwnPort(ContainerRuntimeFacts docker, CancellationToken cancellationToken)
     {
-        if (!docker.DaemonAnswers)
+        if (!docker.DaemonAnswers || !OnyxPreflight.IsLocalEndpoint(docker.Endpoint))
         {
-            return Results.Success<int?>(value: null);
+            return Results.Success<int?>(value: null);   // a remote or unreadable endpoint is refused by the preflight; nothing asks it anything before that
         }
 
         var compose = workspace.Read(facts.Paths.Compose);
