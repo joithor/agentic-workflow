@@ -27,7 +27,12 @@
 #                       its commit stamp (`aw-meta version`) is older than the Meta sources of this checkout (scripts/meta-version-lib.sh)
 #   AW_META_NO_STALE_CHECK=1  skip that check
 set -euo pipefail
-here="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"   # through the ~/.local/bin/aw-meta-launch symlink too
+self="$0"   # through the ~/.local/bin/aw-meta-launch symlink too; no readlink -f (older macOS has none)
+while [ -L "$self" ]; do
+  d="$(cd "$(dirname "$self")" && pwd)"; t="$(readlink "$self")"
+  case "$t" in /*) self="$t" ;; *) self="$d/$t" ;; esac
+done
+here="$(cd "$(dirname "$self")" && pwd)"
 only=""; team_sel="${AW_META_TEAM:-}"; open=1; dry=0; allow_legacy="${AW_META_ALLOW_LEGACY:-0}"; init=0; init_viewer=""; init_force=0; init_stdout=0
 while [ $# -gt 0 ]; do
   case "$1" in
