@@ -447,7 +447,7 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 
 **Engine parks and gates aren't `Decide` decisions.** The engine answers them with `ApplyCommand`. The needs-you
 projection folds the engine's park and gate events into rows of kind `park`, whose `primaryAction` is the engine's
-action id, for example `ApplyCommand:answer`.
+action id, for example `ApplyCommand:answer-resume` (an open park serves one `answer-<variant>` entry per fitting variant, primary first).
 
 ### 3.5 Ownership with the workflow engine spec
 
@@ -511,8 +511,8 @@ How items move through the states:
 | `active` with an open desk task | `needs-answer` | `waitingOnYou` | "Desk task" → `CompleteStep` (UI form), or `OpenItem` |
 | `wait` (event, child, resource) | `running` | `running` | — |
 | `parked` (any reason) | `parked` | `waitingOnYou` | Reason and question → the §3.8 answer's action id (`cli-only` when `protected`) |
-| `escalated` (gate) | `parked` | `waitingOnYou` | `answerKind: accept` → `ApplyCommand:answer-accept` (`cli-only`); reject is `answer` |
-| `escalated` (timeout) | `parked` | `waitingOnYou` | `answerKind: resume` → `ApplyCommand:answer` |
+| `escalated` (gate) | `parked` | `waitingOnYou` | `answerKind: accept` → `ApplyCommand:answer-accept` (`cli-only`); reject is `ApplyCommand:answer-reject` |
+| `escalated` (timeout) | `parked` | `waitingOnYou` | `answerKind: resume` → `ApplyCommand:answer-resume` |
 | `escalated` (child) | `parked` | `waitingOnYou` | The child's `answerKind`, forwarded |
 | `taken-over` | `taken-over` | `withYou` | After `takeoverIdle`: "hand back?" → `ApplyCommand:handback` |
 | terminal | `done` or `cancelled` | — | — |
