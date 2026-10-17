@@ -101,6 +101,7 @@ case "$(uname -s)/$(uname -m)" in
 esac
 sha256() { shasum -a 256 2>/dev/null || sha256sum; }
 mkdir -p "$base" "$cache"
+base="$(cd "$base" && pwd -P)"   # the resolved path: a running plane's command line shows it (in_use)
 inputs="$cache/inputs.$$"
 trap 'rm -f "$inputs"' EXIT
 # A tracked file deleted in the working tree is left out: it isn't part of the build, and tar would fail on it.

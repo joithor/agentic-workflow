@@ -164,4 +164,30 @@ check "I3: --rebuild of the build in use does not publish or delete it" \
 kill "$HOLD" 2>/dev/null; wait "$HOLD" 2>/dev/null
 rm -f "$AW_STATE_DIR/sindri-app/control.json"
 
+# A linked worktree creates no PATH link (its link would dangle once the worktree is removed).
+rm -f "$L"
+git -C "$R" -c user.email=t@t -c user.name=t add -A >/dev/null 2>&1
+git -C "$R" -c user.email=t@t -c user.name=t commit -qm wip >/dev/null 2>&1
+git -C "$R" worktree add -q "$WORK/wt" -b wt >/dev/null 2>&1
+bash "$WORK/wt/scripts/sindri-app.sh" >/dev/null 2>&1
+check "a linked worktree creates no sindri-app link" "$(test -e "$L" || test -L "$L" || echo none)" "none"
+git -C "$R" worktree remove --force "$WORK/wt" >/dev/null 2>&1
+
+# In use through a symlinked state dir: the plane's command line shows the resolved path.
+mkdir -p "$WORK/realstate"; ln -s "$WORK/realstate" "$WORK/linkstate"
+export AW_STATE_DIR="$WORK/linkstate"
+AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" >/dev/null 2>&1
+RB="$WORK/realstate/bin/sindri-app"
+S_OLD="$(cat "$RB/current")"
+bash -c 'sleep 15; :' "$RB/$S_OLD/sindri" >/dev/null 2>&1 &
+HOLD=$!
+mkdir -p "$WORK/realstate/sindri-app"
+printf '{"pid": %s}\n' "$HOLD" > "$WORK/realstate/sindri-app/control.json"
+for n in 1 2; do
+  echo "// sym $n" >> "$NEWCS"
+  AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" >/dev/null 2>&1
+done
+check "I3: the in-use build is kept when the state dir is a symlink" "$(test -d "$RB/$S_OLD" && echo kept)" "kept"
+kill "$HOLD" 2>/dev/null; wait "$HOLD" 2>/dev/null
+
 exit "$fail"
