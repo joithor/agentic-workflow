@@ -43,7 +43,9 @@ mutate() { # mutate <name> <expect-text> <command run inside the copy of tests/f
 }
 # an unmutated copy passes clean, so a mutation failing means something
 mkdir -p "$WORK/clean" && cp -R "$FX" "$WORK/clean/line" && cp -R "$ROOT/tests/fixtures/scoping" "$WORK/clean/scoping"
-node "$WORK/clean/line/selfcheck.mjs" >/dev/null 2>&1; check "an unmutated copy of the fixture passes selfcheck (exit 0)" "$?" "0"
+clean_out="$(node "$WORK/clean/line/selfcheck.mjs" 2>&1)"; check "an unmutated copy of the fixture passes selfcheck (exit 0)" "$?" "0"
+# and it really ran: a selfcheck that never reaches main also exits 0, with no output
+if [[ "${clean_out##*$'\n'}" =~ ^[0-9]+/[0-9]+\ checks\ pass$ ]]; then echo "ok - ...and it ran its checks"; else echo "not ok - an unmutated copy printed no checks: '$clean_out'"; fail=1; fi
 mutate hops-integer "lenses.json agrees with coverage.json" "sedi 's/\"hops\": \\[\\]/\"hops\": 0/' gold/scope/expiry/lenses.json"
 mutate p2-p3-share-a-file "PKT-SCOPE-002" "sedi 's|\"web/api-client.ts\"|\"src/sharing/routes.ts\"|' gold/plan/expiry/packet.json"
 mutate canary-leaked-to-readme "canary phrase appears" "echo '$PHRASE' >> README.md"
