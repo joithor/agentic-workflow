@@ -262,9 +262,10 @@ lists them instead.
 ## 11. Phases (for /specToProvenPR)
 
 1. **P1 — pins and preflight:** `context/onyx.lock` with the measured numbers, its check and test; `IContainerRuntime`
-   and the preflight; `sindri onyx status`; `SND-ONYX-001..003, 006`.
+   and the preflight (its memory check is the `MemTotal` floor only); `sindri onyx status`; `SND-ONYX-001..003, 006`.
 2. **P2 — files, config, start:** fetch and verify, `.env` and the override, pull, start, readiness, `sindri onyx down`,
-   doctor `onyx:stack`; `SND-ONYX-004, 005`.
+   doctor `onyx:stack`; `SND-ONYX-004, 005`; the memory check that counts what Docker's existing containers already use (§12),
+   moved here from P1 by owner decision 2026-10-17.
 3. **P3 — owner setup, key, secret, profile:** the sign-up hand-off, the provisioning client and its allowlist, the
    secret writer, the profile write and inline approval, `sindri onyx open`; `SND-ONYX-007..009`.
 4. **P4 — the entry path, serve and stop:** the first-run offer in bare `sindri-app` (O6), the lifecycle hooks,
