@@ -200,4 +200,9 @@ step() { # step <installer exit code> -> "<step rc>:<warnings>:<installer calls>
 check "setup step: a tree refusal (3) warns for each provider and returns 0" "$(step 3)" "0:2:2"
 check "setup step: a publish failure (1) fails the step at once" "$(step 1)" "1:0:1"
 check "setup step: an installer success returns 0, no warning" "$(step 0)" "0:0:2"
+
+# setup.sh --with-meta runs the meta step on every OS (it used to print "skipped" on macOS), under the real uname
+mkdir -p "$WORK/shome"
+OUT="$(PATH="${PATH#"$WORK/linuxbin:"}" HOME="$WORK/shome" AW_STATE_DIR="$WORK/sstate" AW_NO_SYSTEM_INSTALL=1 AW_SKIP_BUILD= bash "$DIR/../setup.sh" --providers claude --dry-run --with-meta 2>&1)"; RC=$?
+check "setup.sh --with-meta --dry-run: the meta step is planned, never skipped" "$RC:$(printf '%s' "$OUT" | grep -c 'would run scripts/install-meta.sh --provider claude'):$(printf '%s' "$OUT" | grep -c 'meta: skipped')" "0:1:0"
 exit $fail
