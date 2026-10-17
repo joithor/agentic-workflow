@@ -77,6 +77,18 @@ public sealed class RepoCommands(ICommandRunner runner, MetaPaths paths)
     /// <returns>The sha, or an error.</returns>
     public ValueTask<Result<string>> Sha(string cwd, string revision) => Git(cwd, "rev-parse", "--verify", "--quiet", revision + "^{commit}");
 
+    /// <summary>The tree "git merge-tree --write-tree" gives for merging a head onto a main commit, without touching any checkout.</summary>
+    /// <param name="repo">The repo directory.</param>
+    /// <param name="main">The main commit.</param>
+    /// <param name="head">The head to merge onto it.</param>
+    /// <returns>The tree sha, or null when the merge conflicts or git can't tell.</returns>
+    public async ValueTask<string?> MergeTree(string repo, string main, string head)
+    {
+        var merged = await Git(repo, "merge-tree", "--write-tree", main, head).ConfigureAwait(false);
+        var first = merged.IsError ? null : merged.Value.Split('\n', 2)[0].Trim();
+        return string.IsNullOrEmpty(first) ? null : first;
+    }
+
     /// <summary>The paths a range changes.</summary>
     /// <param name="repo">The repo directory.</param>
     /// <param name="range">A git range: "origin/main...abc" or "abc..def".</param>

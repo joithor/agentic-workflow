@@ -8,4 +8,8 @@ namespace Aw.Meta.Core.Coordination;
 /// <param name="Tree">The worktree's directory.</param>
 /// <param name="Merged">False when the head conflicts with main.</param>
 /// <param name="Changed">The paths the pull request changes against main; empty unless asked for.</param>
-public sealed record PreparedGate(PrDetails Pr, string Main, string Tree, bool Merged, IReadOnlyList<string> Changed);
+public sealed record PreparedGate(PrDetails Pr, string Main, string Tree, bool Merged, IReadOnlyList<string> Changed)
+{
+    /// <summary>The git tree sha of the worktree after the merge (HEAD^{tree}); null when the head conflicted.</summary>
+    public string? TreeSha { get; init; }
+}

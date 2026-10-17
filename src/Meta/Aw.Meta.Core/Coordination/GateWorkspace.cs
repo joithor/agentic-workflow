@@ -66,11 +66,20 @@ public sealed class GateWorkspace(RepoCommands repo, GateTree trees, MetaPaths p
             return merged.Error;
         }
 
-        var changed = listChanged && merged.Value
-            ? await repo.Changed(config.Repo, "origin/main..." + view.Value.Head).ConfigureAwait(false)
-            : Results.Success<IReadOnlyList<string>>([]);
-        return changed.IsError ? changed.Error : new PreparedGate(view.Value, main.Value, tree, merged.Value, changed.Value);
+        return await Describe(config.Repo, new PreparedGate(view.Value, main.Value, tree, merged.Value, []), listChanged).ConfigureAwait(false);
     }
+
+    private async ValueTask<Result<PreparedGate>> Describe(string repoDirectory, PreparedGate prepared, bool listChanged)
+    {
+        var treeSha = await TreeSha(prepared.Tree, prepared.Merged).ConfigureAwait(false);
+        var changed = treeSha.IsSuccess && listChanged && prepared.Merged
+            ? await repo.Changed(repoDirectory, "origin/main..." + prepared.Pr.Head).ConfigureAwait(false)
+            : Results.Success<IReadOnlyList<string>>([]);
+        return treeSha.IsError ? treeSha.Error : changed.IsError ? changed.Error : prepared with { Changed = changed.Value, TreeSha = treeSha.Value.Length == 0 ? null : treeSha.Value };
+    }
+
+    private async ValueTask<Result<string>> TreeSha(string tree, bool merged) =>
+        merged ? await repo.Git(tree, "rev-parse", "HEAD^{tree}").ConfigureAwait(false) : string.Empty;
 
     /// <summary>Checks the plain-main tree out at the main the gate ran on, so a failure there predates the pull request.</summary>
     /// <param name="config">The team config (its repo).</param>

@@ -1770,3 +1770,26 @@ Aw.Meta.Core.Gate.StepGraph.Steps.get -> System.Collections.Generic.IReadOnlyLis
 Aw.Meta.Core.Gate.StepScheduler
 static Aw.Meta.Core.Gate.StepGraph.Build(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.StepConfig!>! selected, System.Collections.Generic.IReadOnlyCollection<string!>! configured) -> Aw.Kernel.Result<Aw.Meta.Core.Gate.StepGraph!>!
 static Aw.Meta.Core.Gate.StepScheduler.Run<T>(Aw.Meta.Core.Gate.StepGraph! graph, int limit, System.Func<Aw.Meta.Core.Config.StepConfig!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<T>!>>! run, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<T>!>!>!
+Aw.Meta.Core.Coordination.PreparedGate.TreeSha.get -> string?
+Aw.Meta.Core.Coordination.PreparedGate.TreeSha.init -> void
+Aw.Meta.Core.Coordination.RepoCommands.MergeTree(string! repo, string! main, string! head) -> System.Threading.Tasks.ValueTask<string?>
+Aw.Meta.Core.Gate.GateRecord.Stack.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Gate.StackedPr!>!
+Aw.Meta.Core.Gate.GateRecord.Stack.init -> void
+Aw.Meta.Core.Gate.GateRecord.Tree.get -> string?
+Aw.Meta.Core.Gate.GateRecord.Tree.init -> void
+Aw.Meta.Core.Gate.StackedPr
+Aw.Meta.Core.Gate.StackedPr.<Clone>$() -> Aw.Meta.Core.Gate.StackedPr!
+Aw.Meta.Core.Gate.StackedPr.Deconstruct(out int Pr, out string! Head) -> void
+Aw.Meta.Core.Gate.StackedPr.Equals(Aw.Meta.Core.Gate.StackedPr? other) -> bool
+Aw.Meta.Core.Gate.StackedPr.Head.get -> string!
+Aw.Meta.Core.Gate.StackedPr.Head.init -> void
+Aw.Meta.Core.Gate.StackedPr.Pr.get -> int
+Aw.Meta.Core.Gate.StackedPr.Pr.init -> void
+Aw.Meta.Core.Gate.StackedPr.StackedPr(int Pr, string! Head) -> void
+Aw.Meta.Core.Merge.MergeFacts.MergedTree.get -> string?
+Aw.Meta.Core.Merge.MergeFacts.MergedTree.init -> void
+override Aw.Meta.Core.Gate.StackedPr.Equals(object? obj) -> bool
+override Aw.Meta.Core.Gate.StackedPr.GetHashCode() -> int
+override Aw.Meta.Core.Gate.StackedPr.ToString() -> string!
+static Aw.Meta.Core.Gate.StackedPr.operator !=(Aw.Meta.Core.Gate.StackedPr? left, Aw.Meta.Core.Gate.StackedPr? right) -> bool
+static Aw.Meta.Core.Gate.StackedPr.operator ==(Aw.Meta.Core.Gate.StackedPr? left, Aw.Meta.Core.Gate.StackedPr? right) -> bool
