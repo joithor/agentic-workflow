@@ -152,6 +152,21 @@ public sealed class SystemCommandRunnerTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task A_descendant_that_ignores_SIGTERM_is_killed_after_the_grace_even_when_the_root_exits_on_it()
+    {
+        var pidFile = Path.Combine(_dir.Path, "survivor.pid");
+        using var cancel = new CancellationTokenSource();
+        var request = new CommandRequest(["bash", "-c", "(trap '' TERM; sleep 60) & echo $! > \"$1\"; wait", "bash", pidFile], TimeSpan.FromSeconds(60)) { TermGrace = TimeSpan.FromMilliseconds(200) };
+        var running = new SystemCommandRunner().Run(request, cancel.Token).AsTask();
+        var survivor = ProcessTree.Snapshot(await WaitForPid(pidFile))[0];
+
+        await cancel.CancelAsync();
+        _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await running.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken));
+
+        await AssertGone(survivor);
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task A_grandchild_gets_the_SIGTERM_too_so_its_own_trap_runs()
     {
         var marker = Path.Combine(_dir.Path, "grandchild-trapped");

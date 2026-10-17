@@ -102,7 +102,7 @@ public sealed class RepoCommands(ICommandRunner runner, MetaPaths paths)
     /// <returns>True when it conflicts, false when it merges cleanly, an error when git could not tell.</returns>
     public async ValueTask<Result<bool>> Conflicts(string repo, string main, string head)
     {
-        var ran = await runner.Run(new CommandRequest(["git", "merge-tree", "--write-tree", main, head], _limit) { Cwd = repo }, CancellationToken.None).ConfigureAwait(false);
+        var ran = await runner.Run(new CommandRequest(["git", "merge-tree", "--write-tree", main, head], _limit) { Cwd = repo }, _cancellation).ConfigureAwait(false);
         if (ran.IsError)
         {
             return ran.Error;
