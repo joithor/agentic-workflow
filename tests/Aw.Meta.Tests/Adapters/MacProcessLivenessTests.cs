@@ -1,4 +1,5 @@
 using Aw.Meta.Core;
+using Aw.Meta.Core.Commands;
 using Aw.Meta.Infrastructure.Files;
 using Aw.Meta.Testing;
 using Microsoft.Extensions.Time.Testing;
@@ -94,5 +95,23 @@ public sealed class MacProcessLivenessTests
         var alive = await liveness.IsRunning(321, _now, TestContext.Current.CancellationToken);
 
         Assert.Equal(MetaErrors.HostUnreadable.Code, alive.Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_clock_is_read_before_ps_runs_so_a_slow_ps_cannot_make_a_live_process_look_reused()
+    {
+        var runner = new InMemoryCommandRunner();
+        var clock = new FakeTimeProvider(_now);
+        _ = runner.When("etime=", _ =>
+        {
+            clock.Advance(TimeSpan.FromMinutes(10));   // ps took ten minutes (a loaded host)
+            return new CommandResult(0, "   01:00\n", string.Empty, TimedOut: false);
+        });
+        var liveness = new MacProcessLiveness(new MacHostReader("/state", runner, MacToolPaths.Default, _ => 0), clock);
+
+        // the file was written 30 s before the call; the process is a minute old when ps looks at it: it started before the file
+        var alive = await liveness.IsRunning(321, _now - TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
+
+        Assert.True(alive.Value);
     }
 }
