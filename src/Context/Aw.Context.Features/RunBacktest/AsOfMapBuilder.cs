@@ -20,13 +20,19 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
     {
         ArgumentNullException.ThrowIfNull(request);
         var (repo, sample) = (request.Repo, request.Sample);
+        var settings = SettingsReader.Read(request.Scope.Settings);
+        if (settings.IsError)
+        {
+            return settings.Error;
+        }
+
         var listed = await repos.ListFiles(repo, sample.Cut, cancellationToken).ConfigureAwait(false);
         if (listed.IsError)
         {
             return listed.Error;
         }
 
-        var extraction = await Cut(request, listed.Value, cancellationToken).ConfigureAwait(false);
+        var extraction = await Cut(request, listed.Value, RecognizerSet.From(settings.Value.Recognizers), cancellationToken).ConfigureAwait(false);
         if (extraction.IsError)
         {
             return extraction.Error;
@@ -44,16 +50,16 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
         return view.IsError ? view.Error : new AsOfGraph(view.Value.Applied, extraction.Value.Cached, extraction.Value.Clustered);
     }
 
-    private async ValueTask<Result<Found>> Cut(AsOfRequest request, IReadOnlyList<string> files, CancellationToken cancellationToken)
+    private async ValueTask<Result<Found>> Cut(AsOfRequest request, IReadOnlyList<string> files, RecognizerSet recognizers, CancellationToken cancellationToken)
     {
-        var looked = await Look(request, cancellationToken).ConfigureAwait(false);
+        var looked = await Look(request, recognizers, cancellationToken).ConfigureAwait(false);
         if (looked.IsError || looked.Value.Hit is not null)
         {
             return looked.IsError ? looked.Error : looked.Value.Hit!;   // why: a non-null hit was just checked
         }
 
         var (key, set) = (looked.Value.Key, looked.Value.Set);
-        var built = await Extract(request, (files, set), cancellationToken).ConfigureAwait(false);
+        var built = await Extract(request, recognizers, (files, set), cancellationToken).ConfigureAwait(false);
         if (built.IsError)
         {
             return built.Error;
@@ -67,10 +73,10 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
     }
 
     // A clustered extraction is cached under its own key and found without calling the cluster source; otherwise the source is asked, and the plain key is read only when it has no clusters.
-    private async ValueTask<Result<Probe>> Look(AsOfRequest request, CancellationToken cancellationToken)
+    private async ValueTask<Result<Probe>> Look(AsOfRequest request, RecognizerSet recognizers, CancellationToken cancellationToken)
     {
         var (repo, sample) = (request.Repo, request.Sample);
-        var clustered = AsOfMapCache.Key(repo.Name, sample.Cut, MapExtractor.Version, clustered: true);
+        var clustered = AsOfMapCache.Key(repo.Name, sample.Cut, MapExtractor.Version, clustered: true, recognizers);
         var first = await Cached(clustered, clustered: true, cancellationToken).ConfigureAwait(false);
         if (first.IsError || first.Value is not null)
         {
@@ -78,7 +84,7 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
         }
 
         var set = await Clusters(repo, sample.Cut, cancellationToken).ConfigureAwait(false);
-        var plain = AsOfMapCache.Key(repo.Name, sample.Cut, MapExtractor.Version, clustered: false);
+        var plain = AsOfMapCache.Key(repo.Name, sample.Cut, MapExtractor.Version, clustered: false, recognizers);
         var second = set.Available ? Results.Success<Found?>(value: null) : await Cached(plain, clustered: false, cancellationToken).ConfigureAwait(false);
         return second.IsError ? second.Error : new Probe(second.Value, set.Available ? clustered : plain, set);
     }
@@ -89,12 +95,12 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
         return hit.IsError ? hit.Error : Results.Success<Found?>(hit.Value is { } map ? new Found(map, Cached: true, clustered) : null);
     }
 
-    private async ValueTask<Result<ExtractedMap>> Extract(AsOfRequest request, (IReadOnlyList<string> Tree, ClusterSet Set) cut, CancellationToken cancellationToken)
+    private async ValueTask<Result<ExtractedMap>> Extract(AsOfRequest request, RecognizerSet recognizers, (IReadOnlyList<string> Tree, ClusterSet Set) cut, CancellationToken cancellationToken)
     {
         var (repo, sample) = (request.Repo, request.Sample);
         var set = cut.Set;
         var files = new List<RepoFile>();
-        foreach (var path in cut.Tree.Where(p => !repo.Denies(p) && Recognizers.MayRead(p)))
+        foreach (var path in cut.Tree.Where(p => !repo.Denies(p) && (Recognizers.MayRead(p) || recognizers.Wants(p))))
         {
             var text = await repos.Read(repo, sample.Cut, path, cancellationToken).ConfigureAwait(false);
             if (text.IsError)
@@ -105,7 +111,7 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
             files.Add(new RepoFile(path, text.Value));
         }
 
-        var extracted = MapExtractor.Extract(repo.Name, files);
+        var extracted = MapExtractor.Extract(repo.Name, files, recognizers).Map;
         return extracted.Plus(ClusterFeatures.Propose(repo.Name, set, [], extracted));
     }
 

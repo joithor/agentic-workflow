@@ -1,5 +1,4 @@
 using Aw.Context.Core.Engine;
-using Aw.Context.Core.Graph;
 using Aw.Context.Tests.Map;
 
 namespace Aw.Context.Tests.BuildMap;
@@ -52,7 +51,7 @@ public sealed class BuildMapRecognizerTests
         var files = Files();
         files["config/flags.yaml"] = new string('a', 60) + "!";
         using var world = new MapWorld(new LeakyRepoReader(MapWorld.Head, files));
-        var section = """{"repos":["aw-split-panes"],"extract":{"recognizers":[{"kind":"flag","glob":"config/*.yaml","pattern":"(?<name>(a+)+)b","keyFrom":"name"}]}}""";
+        var section = """{"repos":["aw-split-panes"],"extract":{"recognizers":[{"kind":"flag","glob":"config/*.yaml","pattern":"^(?<name>(a+)+)$","keyFrom":"name"}]}}""";
 
         var report = await world.Map.BuildMap(progress: null, MapWorld.HumanWith(section), MapWorld.None);
 

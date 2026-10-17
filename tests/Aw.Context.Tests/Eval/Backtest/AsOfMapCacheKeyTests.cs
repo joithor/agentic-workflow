@@ -6,8 +6,8 @@ namespace Aw.Context.Tests.Eval.Backtest;
 
 public sealed class AsOfMapCacheKeyTests
 {
-    private static readonly ContextRepoName _repo = ContextRepoName.From("aw-split-panes");
     private const string Commit = "0123456789abcdef0123";
+    private static readonly ContextRepoName _repo = ContextRepoName.From("aw-split-panes");
 
     [Fact, Trait("Lane", "unit")]
     public void An_empty_recognizer_set_leaves_the_key_as_it_was()

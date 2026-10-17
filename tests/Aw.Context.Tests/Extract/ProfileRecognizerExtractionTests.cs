@@ -50,7 +50,7 @@ public sealed class ProfileRecognizerExtractionTests
     [Fact, Trait("Lane", "unit")]
     public void A_pattern_that_runs_out_of_time_marks_the_extraction_timed_out_and_keeps_the_rest()
     {
-        var catastrophic = new ProfileRecognizer("flag", "config/*.yaml", "(?<name>(a+)+)b", "name");
+        var catastrophic = new ProfileRecognizer("flag", "config/*.yaml", "^(?<name>(a+)+)$", "name");
         var files = new[] { new RepoFile("config/flags.yaml", new string('a', 60) + "!"), _files[1] };
 
         var found = MapExtractor.Extract(_repo, files, RecognizerSet.From([catastrophic]));
@@ -75,8 +75,8 @@ public sealed class ProfileRecognizerExtractionTests
         var other = new ProfileRecognizer("flag", "config/*.yaml", "toggle: (?<name>[a-z-]+)", "name");
         var same = new ProfileRecognizer("flag", "config/*.yaml", "rollout: (?<name>[a-z-]+)", "name");
 
-        Assert.Equal("", RecognizerSet.None.Hash);
-        Assert.Equal("", RecognizerSet.From([]).Hash);
+        Assert.Equal("", RecognizerSet.None.Hash, StringComparer.Ordinal);
+        Assert.Equal("", RecognizerSet.From([]).Hash, StringComparer.Ordinal);
         Assert.Matches("^r[0-9a-f]{8}$", RecognizerSet.From([_flags]).Hash);
         Assert.Equal(RecognizerSet.From([_flags]).Hash, RecognizerSet.From([same]).Hash, StringComparer.Ordinal);
         Assert.NotEqual(RecognizerSet.From([_flags]).Hash, RecognizerSet.From([other]).Hash, StringComparer.Ordinal);
