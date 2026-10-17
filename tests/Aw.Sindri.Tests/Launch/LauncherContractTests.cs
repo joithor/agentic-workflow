@@ -2,17 +2,21 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Infrastructure.Launch;
 using Aw.Sindri.Testing.Launch;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.Launch;
 
-/// <summary>
-/// Red on purpose until U7 (API P10a): the real launcher is a stub whose members throw. The contract itself is proven green
-/// against <see cref="FakeLauncherContractTests"/>. U7 swaps <see cref="Create"/> for the composed launcher over the fake host and viewer.
-/// </summary>
+/// <summary>The real launcher over the fake host and viewer honours the same contract as <see cref="FakeLauncherContractTests"/>' fake.</summary>
 [Lane(TestLane.Unit)]
-public sealed class LauncherContractTests : LauncherContract
+public sealed class LauncherContractTests : LauncherContract, IDisposable
 {
-    protected override ILauncher Create() => new Launcher();
+    private readonly string _home = Directory.CreateTempSubdirectory("aw-launcher-").FullName;
+    private readonly FakeSessionHost _host = new();
 
-    protected override int SessionCount() => 0;
+    public void Dispose() => Directory.Delete(_home, recursive: true);
+
+    protected override ILauncher Create() =>
+        new Launcher(new LauncherParts(new AgentCatalog([AgentEntries.ClaudeCode]), _ => _host, new FakeTerminalViewer(), new LauncherOptions(_home), new FakeTimeProvider(KnownInstants.Epoch)));
+
+    protected override int SessionCount() => _host.LiveCount;
 }

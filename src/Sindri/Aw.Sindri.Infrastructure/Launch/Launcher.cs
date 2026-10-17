@@ -6,21 +6,23 @@ using Aw.Sindri.Core.Workflow.Engine;
 namespace Aw.Sindri.Infrastructure.Launch;
 
 /// <summary>
-/// The real <see cref="ILauncher"/> (API P10a, unit U7): catalog, host and viewer composed. A red stub until U7: every member
-/// throws, so <c lang="csharp">LauncherContract</c> fails against it by design.
+/// The real <see cref="ILauncher"/> (API P10a, unit U7): catalog, host and viewer composed. A red stub until U7 is green: every
+/// member throws, so the launcher tests fail against it by design.
 /// </summary>
-[SuppressMessage("Major Code Smell", "MA0182:Avoid unused internal types", Justification = "Registered in U7 (API P10a); a red stub until then.")]
-internal sealed class Launcher : ILauncher
+[SuppressMessage("Major Code Smell", "MA0182:Avoid unused internal types", Justification = "Registered in U7 (API P10a).")]
+internal sealed class Launcher(LauncherParts parts) : ILauncher
 {
+    private readonly LauncherParts _parts = parts;
+
     /// <inheritdoc/>
     public ValueTask<LaunchResult> Launch(LaunchRequest request, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("Launcher: make LauncherContract pass (U7)");
+        throw new NotSupportedException("Launcher: make the launcher tests pass (U7) " + _parts.Options.Home);
 
     /// <inheritdoc/>
     public ValueTask<Result<Unit>> Stop(LaunchId launch, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("Launcher: make LauncherContract pass (U7)");
+        throw new NotSupportedException("Launcher: make the launcher tests pass (U7) " + _parts.Options.Home);
 
     /// <inheritdoc/>
     public ValueTask<LaunchProbed> Probe(CancellationToken cancellationToken) =>
-        throw new NotSupportedException("Launcher: make LauncherContract pass (U7)");
+        throw new NotSupportedException("Launcher: make the launcher tests pass (U7) " + _parts.Options.Home);
 }

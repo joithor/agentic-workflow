@@ -9528,3 +9528,84 @@ override Aw.Sindri.Core.Profile.AgentSettingsJsonConverter.Write(System.Text.Jso
 override Aw.Sindri.Core.Profile.HashListJsonConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> System.Collections.Generic.IReadOnlyList<string!>!
 override Aw.Sindri.Core.Profile.HashListJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, System.Collections.Generic.IReadOnlyList<string!>! value, System.Text.Json.JsonSerializerOptions! options) -> void
 Aw.Sindri.Core.Profile.AgentSettings.StepArgvHashes(Aw.Sindri.Core.Launch.AgentId id) -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Launch.ILaunchSetup
+Aw.Sindri.Core.Launch.ILaunchSetup.Init(Aw.Sindri.Core.Launch.LaunchInitRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Launch.LaunchInitReport!>!>
+Aw.Sindri.Core.Launch.ILaunchSetup.Show(Aw.Sindri.Core.Launch.AgentId? only, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Launch.LaunchShowReport!>!>
+Aw.Sindri.Core.Launch.LaunchInitReport
+Aw.Sindri.Core.Launch.LaunchInitReport.<Clone>$() -> Aw.Sindri.Core.Launch.LaunchInitReport!
+Aw.Sindri.Core.Launch.LaunchInitReport.Deconstruct(out string! Viewer, out string! Reason, out string? Path, out string! Json) -> void
+Aw.Sindri.Core.Launch.LaunchInitReport.Equals(Aw.Sindri.Core.Launch.LaunchInitReport? other) -> bool
+Aw.Sindri.Core.Launch.LaunchInitReport.Json.get -> string!
+Aw.Sindri.Core.Launch.LaunchInitReport.Json.init -> void
+Aw.Sindri.Core.Launch.LaunchInitReport.LaunchInitReport(string! Viewer, string! Reason, string? Path, string! Json) -> void
+Aw.Sindri.Core.Launch.LaunchInitReport.Path.get -> string?
+Aw.Sindri.Core.Launch.LaunchInitReport.Path.init -> void
+Aw.Sindri.Core.Launch.LaunchInitReport.Reason.get -> string!
+Aw.Sindri.Core.Launch.LaunchInitReport.Reason.init -> void
+Aw.Sindri.Core.Launch.LaunchInitReport.Viewer.get -> string!
+Aw.Sindri.Core.Launch.LaunchInitReport.Viewer.init -> void
+Aw.Sindri.Core.Launch.LaunchInitRequest
+Aw.Sindri.Core.Launch.LaunchInitRequest.<Clone>$() -> Aw.Sindri.Core.Launch.LaunchInitRequest!
+Aw.Sindri.Core.Launch.LaunchInitRequest.Deconstruct(out string? Viewer, out bool Force, out bool ToStdout) -> void
+Aw.Sindri.Core.Launch.LaunchInitRequest.Equals(Aw.Sindri.Core.Launch.LaunchInitRequest? other) -> bool
+Aw.Sindri.Core.Launch.LaunchInitRequest.Force.get -> bool
+Aw.Sindri.Core.Launch.LaunchInitRequest.Force.init -> void
+Aw.Sindri.Core.Launch.LaunchInitRequest.LaunchInitRequest(string? Viewer, bool Force, bool ToStdout) -> void
+Aw.Sindri.Core.Launch.LaunchInitRequest.ToStdout.get -> bool
+Aw.Sindri.Core.Launch.LaunchInitRequest.ToStdout.init -> void
+Aw.Sindri.Core.Launch.LaunchInitRequest.Viewer.get -> string?
+Aw.Sindri.Core.Launch.LaunchInitRequest.Viewer.init -> void
+Aw.Sindri.Core.Launch.LaunchShowEntry
+Aw.Sindri.Core.Launch.LaunchShowEntry.ArgvHash.get -> string?
+Aw.Sindri.Core.Launch.LaunchShowEntry.ArgvHash.init -> void
+Aw.Sindri.Core.Launch.LaunchShowEntry.Bin.get -> string!
+Aw.Sindri.Core.Launch.LaunchShowEntry.Bin.init -> void
+Aw.Sindri.Core.Launch.LaunchShowEntry.<Clone>$() -> Aw.Sindri.Core.Launch.LaunchShowEntry!
+Aw.Sindri.Core.Launch.LaunchShowEntry.Deconstruct(out Aw.Sindri.Core.Launch.AgentId Id, out Aw.Sindri.Core.Launch.CatalogSource Source, out string! Bin, out string? ResolvedBin, out string? ArgvHash, out bool StepOk, out string? ParkLine) -> void
+Aw.Sindri.Core.Launch.LaunchShowEntry.Equals(Aw.Sindri.Core.Launch.LaunchShowEntry? other) -> bool
+Aw.Sindri.Core.Launch.LaunchShowEntry.Id.get -> Aw.Sindri.Core.Launch.AgentId
+Aw.Sindri.Core.Launch.LaunchShowEntry.Id.init -> void
+Aw.Sindri.Core.Launch.LaunchShowEntry.LaunchShowEntry(Aw.Sindri.Core.Launch.AgentId Id, Aw.Sindri.Core.Launch.CatalogSource Source, string! Bin, string? ResolvedBin, string? ArgvHash, bool StepOk, string? ParkLine) -> void
+Aw.Sindri.Core.Launch.LaunchShowEntry.ParkLine.get -> string?
+Aw.Sindri.Core.Launch.LaunchShowEntry.ParkLine.init -> void
+Aw.Sindri.Core.Launch.LaunchShowEntry.ResolvedBin.get -> string?
+Aw.Sindri.Core.Launch.LaunchShowEntry.ResolvedBin.init -> void
+Aw.Sindri.Core.Launch.LaunchShowEntry.Source.get -> Aw.Sindri.Core.Launch.CatalogSource
+Aw.Sindri.Core.Launch.LaunchShowEntry.Source.init -> void
+Aw.Sindri.Core.Launch.LaunchShowEntry.StepOk.get -> bool
+Aw.Sindri.Core.Launch.LaunchShowEntry.StepOk.init -> void
+Aw.Sindri.Core.Launch.LaunchShowReport
+Aw.Sindri.Core.Launch.LaunchShowReport.<Clone>$() -> Aw.Sindri.Core.Launch.LaunchShowReport!
+Aw.Sindri.Core.Launch.LaunchShowReport.ConfigPath.get -> string!
+Aw.Sindri.Core.Launch.LaunchShowReport.ConfigPath.init -> void
+Aw.Sindri.Core.Launch.LaunchShowReport.Deconstruct(out string! Terminal, out string! TerminalSource, out string! ConfigPath, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.LaunchShowEntry!>! Entries, out System.Collections.Generic.IReadOnlyList<string!>! Problems) -> void
+Aw.Sindri.Core.Launch.LaunchShowReport.Entries.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.LaunchShowEntry!>!
+Aw.Sindri.Core.Launch.LaunchShowReport.Entries.init -> void
+Aw.Sindri.Core.Launch.LaunchShowReport.Equals(Aw.Sindri.Core.Launch.LaunchShowReport? other) -> bool
+Aw.Sindri.Core.Launch.LaunchShowReport.LaunchShowReport(string! Terminal, string! TerminalSource, string! ConfigPath, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.LaunchShowEntry!>! Entries, System.Collections.Generic.IReadOnlyList<string!>! Problems) -> void
+Aw.Sindri.Core.Launch.LaunchShowReport.Problems.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Launch.LaunchShowReport.Problems.init -> void
+Aw.Sindri.Core.Launch.LaunchShowReport.Terminal.get -> string!
+Aw.Sindri.Core.Launch.LaunchShowReport.Terminal.init -> void
+Aw.Sindri.Core.Launch.LaunchShowReport.TerminalSource.get -> string!
+Aw.Sindri.Core.Launch.LaunchShowReport.TerminalSource.init -> void
+override Aw.Sindri.Core.Launch.LaunchInitReport.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launch.LaunchInitReport.GetHashCode() -> int
+override Aw.Sindri.Core.Launch.LaunchInitReport.ToString() -> string!
+override Aw.Sindri.Core.Launch.LaunchInitRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launch.LaunchInitRequest.GetHashCode() -> int
+override Aw.Sindri.Core.Launch.LaunchInitRequest.ToString() -> string!
+override Aw.Sindri.Core.Launch.LaunchShowEntry.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launch.LaunchShowEntry.GetHashCode() -> int
+override Aw.Sindri.Core.Launch.LaunchShowEntry.ToString() -> string!
+override Aw.Sindri.Core.Launch.LaunchShowReport.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launch.LaunchShowReport.GetHashCode() -> int
+override Aw.Sindri.Core.Launch.LaunchShowReport.ToString() -> string!
+static Aw.Sindri.Core.Launch.LaunchInitReport.operator !=(Aw.Sindri.Core.Launch.LaunchInitReport? left, Aw.Sindri.Core.Launch.LaunchInitReport? right) -> bool
+static Aw.Sindri.Core.Launch.LaunchInitReport.operator ==(Aw.Sindri.Core.Launch.LaunchInitReport? left, Aw.Sindri.Core.Launch.LaunchInitReport? right) -> bool
+static Aw.Sindri.Core.Launch.LaunchInitRequest.operator !=(Aw.Sindri.Core.Launch.LaunchInitRequest? left, Aw.Sindri.Core.Launch.LaunchInitRequest? right) -> bool
+static Aw.Sindri.Core.Launch.LaunchInitRequest.operator ==(Aw.Sindri.Core.Launch.LaunchInitRequest? left, Aw.Sindri.Core.Launch.LaunchInitRequest? right) -> bool
+static Aw.Sindri.Core.Launch.LaunchShowEntry.operator !=(Aw.Sindri.Core.Launch.LaunchShowEntry? left, Aw.Sindri.Core.Launch.LaunchShowEntry? right) -> bool
+static Aw.Sindri.Core.Launch.LaunchShowEntry.operator ==(Aw.Sindri.Core.Launch.LaunchShowEntry? left, Aw.Sindri.Core.Launch.LaunchShowEntry? right) -> bool
+static Aw.Sindri.Core.Launch.LaunchShowReport.operator !=(Aw.Sindri.Core.Launch.LaunchShowReport? left, Aw.Sindri.Core.Launch.LaunchShowReport? right) -> bool
+static Aw.Sindri.Core.Launch.LaunchShowReport.operator ==(Aw.Sindri.Core.Launch.LaunchShowReport? left, Aw.Sindri.Core.Launch.LaunchShowReport? right) -> bool

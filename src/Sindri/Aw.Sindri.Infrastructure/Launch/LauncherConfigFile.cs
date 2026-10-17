@@ -36,7 +36,7 @@ internal static class LauncherConfigFile
         }
 
         var agents = Agents(baseline.Value.Agents ?? [], file.Value?.Agents);
-        return agents.IsError ? agents.Error : new LauncherConfig(agents.Value, file.Value?.Sessions);
+        return agents.IsError ? agents.Error : new LauncherConfig(agents.Value, file.Value?.Sessions) { Viewer = file.Value?.Viewer, Host = file.Value?.Host };
     }
 
     private static Result<LauncherDocument> Parse(byte[] bytes)

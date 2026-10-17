@@ -21,4 +21,10 @@ internal sealed record LauncherConfig(IReadOnlyList<AgentEntry> Agents, Sessions
 
     /// <summary>The 1-based line of the parse error when the file isn't JSON, else 0.</summary>
     public int ProblemLine { get; init; }
+
+    /// <summary>The file's <c lang="text">viewer</c> section when it is valid, else null (a bad one is in <see cref="AttendedProblems"/>).</summary>
+    public ViewerSection? Viewer { get; init; }
+
+    /// <summary>The file's <c lang="text">host</c> section when it is valid, else null.</summary>
+    public HostSection? Host { get; init; }
 }

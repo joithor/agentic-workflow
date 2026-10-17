@@ -57,28 +57,31 @@ internal static class IsolatedLauncherRead
             problems.Add($"unknown key '{name}'");
         }
 
-        Attended<ViewerSection>(root, "viewer", LauncherConfigFile.Viewer, attended);
-        Attended<HostSection>(root, "host", LauncherConfigFile.Host, attended);
+        var viewer = Attended<ViewerSection>(root, "viewer", LauncherConfigFile.Viewer, attended);
+        var host = Attended<HostSection>(root, "host", LauncherConfigFile.Host, attended);
         var sessions = Sessions(root, problems);
         var dropped = new List<DroppedEntry>();
         var agents = Agents(builtins, user, root, problems, dropped);
-        return new LauncherConfig(agents, sessions) { Problem = problems.Count == 0 ? null : string.Join("; ", problems), AttendedProblems = attended, Dropped = dropped };
+        return new LauncherConfig(agents, sessions) { Problem = problems.Count == 0 ? null : string.Join("; ", problems), AttendedProblems = attended, Dropped = dropped, Viewer = viewer, Host = host };
     }
 
-    private static void Attended<T>(JsonElement root, string name, Func<T?, string?> check, List<string> attended)
+    private static T? Attended<T>(JsonElement root, string name, Func<T?, string?> check, List<string> attended)
         where T : class
     {
         if (!root.TryGetProperty(name, out var element))
         {
-            return;
+            return null;
         }
 
         var section = Section<T>(element);
         var problem = section is null ? $"{name} isn't valid" : check(section);
-        if (problem is not null)
+        if (problem is null)
         {
-            attended.Add(problem);
+            return section;
         }
+
+        attended.Add(problem);
+        return null;
     }
 
     private static SessionsSection? Sessions(JsonElement root, List<string> problems)
