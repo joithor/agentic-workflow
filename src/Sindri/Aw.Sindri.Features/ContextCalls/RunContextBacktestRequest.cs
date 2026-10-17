@@ -9,6 +9,6 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// </summary>
 /// <param name="Arms">The arms, comma-separated ('brief,graph'), or 'all'/null for every available arm; an unknown arm is refused at the start (SND-CONTEXT-082).</param>
 /// <param name="Since">Only issues created at or after this, or null.</param>
-/// <param name="Until">Only issues created at or before this, or null.</param>
+/// <param name="Until">Only issues created at or before this instant, or null. It is an exact instant here; the CLI turns a date alone ('2026-09-30') into that day's last tick before it posts.</param>
 /// <param name="Limit">At most this many samples (the earliest first), or null.</param>
 public sealed record RunContextBacktestRequest(string? Arms = null, DateTimeOffset? Since = null, DateTimeOffset? Until = null, int? Limit = null) : IJob<RunContextBacktestResult>;

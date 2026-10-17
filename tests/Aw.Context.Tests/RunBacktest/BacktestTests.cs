@@ -250,7 +250,7 @@ public sealed class BacktestTests
         var run = await world.Run("graph");
 
         Assert.Equal(ContextErrors.NoEligibleSample.Code, run.Error.Code);
-        Assert.Contains("brief source", run.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("5 dropped for an unavailable brief source (SND-CONTEXT-011)", run.Error.Message, StringComparison.Ordinal);   // the why-counts, not the template
         Assert.False(Directory.Exists(world.Settings.BacktestDirectory) && Directory.EnumerateFiles(world.Settings.BacktestDirectory).Any());
     }
 
