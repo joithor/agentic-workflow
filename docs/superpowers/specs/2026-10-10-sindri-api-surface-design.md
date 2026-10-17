@@ -510,10 +510,10 @@ How items move through the states:
 | `active` with an agent run | `running` | `running` | — |
 | `active` with an open desk task | `needs-answer` | `waitingOnYou` | "Desk task" → `CompleteStep` (UI form), or `OpenItem` |
 | `wait` (event, child, resource) | `running` | `running` | — |
-| `parked` (any reason) | `parked` | `waitingOnYou` | Reason and question → the §3.8 answer's action id (`cli-only` when `protected`) |
+| `parked` (any reason) | `parked` | `waitingOnYou` | Reason and question → the §3.8 answer's action id (`cli-only` when `protected`). A park mirroring a child whose fit the child decides (needs-answer, budget, spec-conflict) is the escalated-child case below |
 | `escalated` (gate) | `parked` | `waitingOnYou` | `answerKind: accept` → `ApplyCommand:answer-accept` (`cli-only`); reject is `ApplyCommand:answer-reject` |
 | `escalated` (timeout) | `parked` | `waitingOnYou` | `answerKind: resume` → `ApplyCommand:answer-resume` |
-| `escalated` (child) | `parked` | `waitingOnYou` | The child's `answerKind`, forwarded |
+| `escalated` (child) | `parked` | `waitingOnYou` | Forwarded to the child, whose fit this build does not know: `answerKind: text`, action `ApplyCommand:answer-text` with the placeholder cli `<the child's answer>`, a pointer to the child and not an answer form, marked on the status `answer` record as `via: "child"` and `child: <the child's address>` (both omitted otherwise); `allowedCommands` has no `answer` entry for it. The same holds for a mirrored needs-answer, budget or spec-conflict park |
 | `taken-over` | `taken-over` | `withYou` | After `takeoverIdle`: "hand back?" → `ApplyCommand:handback` |
 | terminal | `done` or `cancelled` | — | — |
 | no instance yet, started by a router (router phase; P11 does not produce it) | `queued` | `queued` | — |

@@ -122,6 +122,9 @@ public sealed class InstanceViewsTests
     [InlineData("parked-mirrored-timeout", "answer-resume=--resume")]
     [InlineData("parked-mirrored-no-runtime", "answer-resume=--resume")]
     [InlineData("parked-mirrored-budget")]
+    [InlineData("parked-budget-no-cap")]
+    [InlineData("parked-mirrored-spec-conflict")]
+    [InlineData("parked-mirrored-needs-answer-wait")]
     [InlineData("parked-needs-answer-step", "answer-text=--text <answer>")]
     [InlineData("parked-needs-answer-wait", "answer-resume=--resume")]
     [InlineData("parked-timeout", "answer-resume=--resume")]
@@ -225,6 +228,27 @@ public sealed class InstanceViewsTests
         Assert.Contains("(forwarded to T-3/step/1/step.4)", InstanceViews.Status(StatusCases.View(name), StatusCases.Now).Text, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("escalated-child", true)]
+    [InlineData("parked-mirrored-needs-answer", true)]
+    [InlineData("parked-mirrored-needs-answer-wait", true)]
+    [InlineData("parked-mirrored-budget", true)]
+    [InlineData("parked-mirrored-spec-conflict", true)]
+    [InlineData("parked-no-progress-child", false)]
+    [InlineData("parked-mirrored-rounds", false)]
+    [InlineData("parked-mirrored-timeout", false)]
+    [InlineData("parked-rounds", false)]
+    [InlineData("parked-budget-no-cap", false)]
+    [InlineData("escalated-gate", false)]
+    public void Only_a_child_pointer_is_marked_via_child_and_names_the_child(string name, bool pointsAtChild)
+    {
+        var answer = StatusCases.View(name).AnswerLine!;
+
+        Assert.Equal(pointsAtChild ? "child" : null, answer.Via);
+        Assert.Equal(pointsAtChild ? "T-3/step/1/step.4" : null, answer.Child);
+        Assert.Equal(pointsAtChild, answer.Cli.EndsWith("<the child's answer>", StringComparison.Ordinal));
+    }
+
     [Fact]
     public void The_status_answer_is_the_first_variant_the_one_table_lists_for_every_park_shape()
     {
@@ -250,6 +274,10 @@ public sealed class InstanceViewsTests
         if (fitting.Count > 0)
         {
             Assert.Equal(AnswerRow.For(fitting[0]).Action, line!.ActionId.Value);
+        }
+        else if (shape is { Kind: SuspensionKind.Park, Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Revoked or ParkKind.ChildRevoked or ParkKind.Drift })
+        {
+            Assert.True(line is null || line.Kind == AnswerKind.CancelOnly, "a revoked or drifted park takes no answer");
         }
     }
 

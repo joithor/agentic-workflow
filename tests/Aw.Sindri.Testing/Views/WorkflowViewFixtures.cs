@@ -104,6 +104,9 @@ public static class WorkflowViewFixtures
         _item.Cells("running", change: Shape(("running", c => c with { Children = new Progress(0, 1) }))),
         "parked child", "ApplyCommand:answer-grant", "ApplyCommand:answer-text", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
+    // The same instance mirroring a child that decides the answer: it takes only takeover and cancel (no answer entry is served).
+    private static readonly InstanceSummary _itemChildPointer = _itemParked with { Address = InstanceAddress.From("ITM-01JC9/item/1"), Actions = Acts("ApplyCommand:takeover", "ApplyCommand:cancel") };
+
     private static readonly InstanceSummary _budgetStep = Row("ITM-01JH5/step/1", _step, "produce", Today(11, 54), new EngineOwnedBadge(EngineOwnedKind.Parked, "budget"),
         Subject("text", "ITM-01JH5", "ITM-01JH5"), _step.Cells("produce"), "parked: budget", "ApplyCommand:answer-grant-tokens", "ApplyCommand:takeover", "ApplyCommand:cancel");
 
@@ -285,6 +288,9 @@ public static class WorkflowViewFixtures
         _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "no answer for this kind"),
     };
 
+    private static StatusAnswer ChildPointer(string address, string child) =>
+        new(AnswerKind.Text, Act("ApplyCommand:answer-text"), ActionClass.Desk, $"sindri workflow answer {address} <the child's answer>", AtTerminal: false, Via: "child", Child: child);
+
     /// <summary>What the cancel sentence and the complete command need from the instance's open work; N and M come from the fixture until engine P4b.</summary>
     /// <param name="RunningSteps">The open run's running steps (N).</param>
     /// <param name="OpenChildren">The open children (M).</param>
@@ -326,6 +332,18 @@ public static class WorkflowViewFixtures
         "Parked (no-progress) in ITM-01JC8/item/1/step.4: checks failed twice with the same findings. Grant more rounds at a terminal, or cancel.",
         new OpenWork(OpenChildren: 1),
         new StatusLines { Answer = Answer(AnswerKind.Grant, "ITM-01JC8/item/1"), Child = new StatusChild(WorkflowInstanceId.Of(InstanceAddress.From("ITM-01JC8/item/1/step.4")), InstanceAddress.From("ITM-01JC8/item/1/step.4"), "parked", "no-progress") });
+
+    /// <summary>An escalation from a child: the status answer is a pointer to the child (`via: "child"`), and no answer entry is served.</summary>
+    public static StatusFields StatusEscalatedChild() => Status(_itemChildPointer, "escalated (child)",
+        "Escalated in ITM-01JC9/item/1/step.4: the child's gate escalated.",
+        new OpenWork(OpenChildren: 1),
+        new StatusLines { Answer = ChildPointer("ITM-01JC9/item/1", "ITM-01JC9/item/1/step.4"), Child = new StatusChild(WorkflowInstanceId.Of(InstanceAddress.From("ITM-01JC9/item/1/step.4")), InstanceAddress.From("ITM-01JC9/item/1/step.4"), "escalated", "gate") });
+
+    /// <summary>A park mirroring a child's budget park: the cap is the child's, so the status answer is a pointer to the child.</summary>
+    public static StatusFields StatusMirroredBudget() => Status(_itemChildPointer, "budget (child)",
+        "Parked (budget) in ITM-01JC9/item/1/step.4: the child used 50k of 50k tokens.",
+        new OpenWork(OpenChildren: 1),
+        new StatusLines { Answer = ChildPointer("ITM-01JC9/item/1", "ITM-01JC9/item/1/step.4"), Child = new StatusChild(WorkflowInstanceId.Of(InstanceAddress.From("ITM-01JC9/item/1/step.4")), InstanceAddress.From("ITM-01JC9/item/1/step.4"), "parked", "budget") });
 
     /// <summary>Layout 2: an open desk task with its inputs, a parking timeout and the state and instance budgets.</summary>
     public static StatusFields StatusDeskTask() => Status(_sentry8812, "desk task",
@@ -376,7 +394,7 @@ public static class WorkflowViewFixtures
     /// <returns>The statuses.</returns>
     public static IReadOnlyList<StatusFields> AllStatuses() =>
     [
-        StatusParkedChild(), StatusDeskTask(), StatusParkedBudget(), StatusEscalatedGate(), StatusTakenOver(), StatusDone(),
+        StatusParkedChild(), StatusEscalatedChild(), StatusMirroredBudget(), StatusDeskTask(), StatusParkedBudget(), StatusEscalatedGate(), StatusTakenOver(), StatusDone(),
         StatusParkedDrift(), StatusNeedsAnswerStep(), StatusNeedsAnswerWait(), .. AllDetails().Select(d => d.Current.Status),
     ];
 

@@ -18,23 +18,27 @@ public static class ParkAnswers
     /// <param name="shape">The suspension's kind, reason, park kind and escalation.</param>
     /// <param name="address">The instance's address.</param>
     /// <param name="grantTokens">The token amount a budget park's grant line offers.</param>
+    /// <param name="child">The mirrored child's address, when known: a pointer line (`via: "child"`) names it.</param>
     /// <returns>The answer, or null when the suspension takes none (a drift, a revoked child or a takeover).</returns>
-    public static StatusAnswer? For(ParkShape shape, InstanceAddress address, string grantTokens = "<n>")
+    public static StatusAnswer? For(ParkShape shape, InstanceAddress address, string grantTokens = "<n>", string? child = null)
     {
         ArgumentNullException.ThrowIfNull(shape);
         var answering = $"sindri workflow answer {address.Value}";
         return shape switch
         {
-            { Kind: SuspensionKind.Park, Mirrors: true } when !AnswerVariants.ReasonFixesChildFit(shape.Reason) => Line(AnswerKind.Text, $"{answering} <the child's answer>"),
+            { Kind: SuspensionKind.Park, Mirrors: true } when !AnswerVariants.ReasonFixesChildFit(shape.Reason) => Pointer(answering, child),
             { Kind: SuspensionKind.Park, Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Drift or ParkKind.ChildRevoked } => null,
             { Kind: SuspensionKind.Park, Reason: ParkReason.SpecConflict, ParkKind: ParkKind.Revoked } => Line(AnswerKind.CancelOnly, $"sindri workflow cancel {address.Value}"),
             { Kind: SuspensionKind.Park } => Park(shape, answering, grantTokens),
             { Kind: SuspensionKind.Escalation, Escalation: EscalationKind.Gate } => Line(AnswerKind.Accept, $"{answering} --accept", atTerminal: true),
             { Kind: SuspensionKind.Escalation, Escalation: EscalationKind.Timeout } => Line(AnswerKind.Resume, $"{answering} --resume"),
-            { Kind: SuspensionKind.Escalation } => Line(AnswerKind.Text, $"{answering} <the child's answer>"),
+            { Kind: SuspensionKind.Escalation } => Pointer(answering, child),
             _ => null,
         };
     }
+
+    /// <summary>The line for a suspension the child decides: the cli is a pointer to it, marked `via: "child"` so a client never reads the text.</summary>
+    private static StatusAnswer Pointer(string answering, string? child) => Line(AnswerKind.Text, $"{answering} <the child's answer>") with { Via = "child", Child = child };
 
     private static StatusAnswer Park(ParkShape park, string answering, string grantTokens) => park.Reason switch
     {

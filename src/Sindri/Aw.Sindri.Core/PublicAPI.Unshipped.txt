@@ -5387,11 +5387,11 @@ Aw.Sindri.Core.Workflow.Views.StatusAnswer.Class.get -> Aw.Sindri.Core.Commands.
 Aw.Sindri.Core.Workflow.Views.StatusAnswer.Class.init -> void
 Aw.Sindri.Core.Workflow.Views.StatusAnswer.Cli.get -> string!
 Aw.Sindri.Core.Workflow.Views.StatusAnswer.Cli.init -> void
-Aw.Sindri.Core.Workflow.Views.StatusAnswer.Deconstruct(out Aw.Sindri.Core.Workflow.Views.AnswerKind Kind, out Aw.Sindri.Core.Ids.ActionId ActionId, out Aw.Sindri.Core.Commands.ActionClass Class, out string! Cli, out bool AtTerminal) -> void
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Deconstruct(out Aw.Sindri.Core.Workflow.Views.AnswerKind Kind, out Aw.Sindri.Core.Ids.ActionId ActionId, out Aw.Sindri.Core.Commands.ActionClass Class, out string! Cli, out bool AtTerminal, out string? Via, out string? Child) -> void
 Aw.Sindri.Core.Workflow.Views.StatusAnswer.Equals(Aw.Sindri.Core.Workflow.Views.StatusAnswer? other) -> bool
 Aw.Sindri.Core.Workflow.Views.StatusAnswer.Kind.get -> Aw.Sindri.Core.Workflow.Views.AnswerKind
 Aw.Sindri.Core.Workflow.Views.StatusAnswer.Kind.init -> void
-Aw.Sindri.Core.Workflow.Views.StatusAnswer.StatusAnswer(Aw.Sindri.Core.Workflow.Views.AnswerKind Kind, Aw.Sindri.Core.Ids.ActionId ActionId, Aw.Sindri.Core.Commands.ActionClass Class, string! Cli, bool AtTerminal) -> void
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.StatusAnswer(Aw.Sindri.Core.Workflow.Views.AnswerKind Kind, Aw.Sindri.Core.Ids.ActionId ActionId, Aw.Sindri.Core.Commands.ActionClass Class, string! Cli, bool AtTerminal, string? Via = null, string? Child = null) -> void
 Aw.Sindri.Core.Workflow.Views.StatusBudget
 Aw.Sindri.Core.Workflow.Views.StatusBudget.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusBudget!
 Aw.Sindri.Core.Workflow.Views.StatusBudget.Deconstruct(out string! Scope, out long Used, out long? Limit, out Aw.Sindri.Core.Workflow.Views.BudgetFigures! Instance) -> void
@@ -8191,7 +8191,7 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Reason.init -> void
 override Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.ToString() -> string!
-static Aw.Sindri.Core.Workflow.Engine.Runtime.ParkAnswers.For(Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape! shape, Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, string! grantTokens = "<n>") -> Aw.Sindri.Core.Workflow.Views.StatusAnswer?
+static Aw.Sindri.Core.Workflow.Engine.Runtime.ParkAnswers.For(Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape! shape, Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, string! grantTokens = "<n>", string? child = null) -> Aw.Sindri.Core.Workflow.Views.StatusAnswer?
 static Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape? left, Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape? left, Aw.Sindri.Core.Workflow.Engine.Runtime.ParkShape? right) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceCounts
@@ -8268,3 +8268,7 @@ Aw.Sindri.Core.Workflow.Engine.HumanOnlySteps
 static Aw.Sindri.Core.Workflow.Engine.HumanOnlySteps.Applies(Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor! step, Aw.Sindri.Core.Workflow.Engine.StepRuntime runOn) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.CompleteCommand
 static Aw.Sindri.Core.Workflow.Engine.Runtime.CompleteCommand.Line(string! address, Aw.Sindri.Core.Workflow.Engine.RunToken run, Aw.Sindri.Core.Workflow.Ids.OutcomeName? outcome, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! outputs) -> string!
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Via.get -> string?
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Via.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Child.get -> string?
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Child.init -> void
