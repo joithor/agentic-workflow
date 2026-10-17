@@ -674,7 +674,9 @@ sources status, doctor row, item query), `ContextCliTests` and `ContextReviewRow
 | `SND-CONTEXT-082` | Invalid (400) | 1 | `--arms` names an unknown arm (the message lists the arms and which are not available yet) |
 | `SND-CONTEXT-083` | degraded | 0 | Adjudication stopped at the 1.5M-token cap |
 
-084-086 are reserved for review findings, 087-089 for S-7B. Reused: 020, 030, 040, 048 (a cut git can't read: that sample is dropped and counted), 005, 001, 011.
+084-086 are reserved for review findings, 087-089 for S-7B. Reused: 020, 030, 040, 048 (a cut git can't read: that sample is dropped and counted), 005, 004 (a cache or context.db read failing stops the run with its own code), 001, 011.
+
+The Onyx issue listing is one admin search per profile team. Onyx v4.9.0's admin search takes no offset and returns at most 50 hits, so it can't be paged: a team whose search returns 50 is reported as `issue listing capped: <team>` (a degraded note, and in the 080 message when nothing was eligible), and `--since` goes into the search as Onyx's update-time filter (`time_cutoff`; an issue is never updated before it was created, so none created in the window is lost) so the cap is spent inside the window. `--until` has no source filter and applies after the listing.
 
 ### Tests
 
