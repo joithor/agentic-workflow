@@ -71,13 +71,16 @@ owner's literal names.
 - `reason` is set only when `tools` is empty: `no-tools-listed` (the state lists none), `run-not-open`, `taken-over`
   (C5), `none-callable-in-this-build`, `no-plain-tools` (the owner narrowed `workflow.tools.plain` to nothing) or `needs-repo-config`
   (every listed block needs repo config that isn't committed on the base, such as `checks.json`, §B.1). A single
-  block left out for that reason is named in `omitted: [{ name, reason }]`, so the agent and the owner see why.
+  block left out for that reason, or for `needs-recipe-pin` (§A.6), is named in `omitted: [{ name, reason }]`, so the agent and the owner see why.
 
 **`execute_tool_call`** answers
-`{ callId, scope, state, waiting?, busy?, commit?, outcome?, reason?, result?, reasons?, truncated?, ledgerSeq?, startedAt, durationMs? }`:
+`{ callId, scope, state, waiting?, busy?, commit?, outcome?, reason?, result?, reasons?, truncated?, spent?, ledgerSeq?, startedAt, durationMs? }`:
 - `state` is `running` or `ended`. `outcome` (`ok` or `failed`), `durationMs` and `ledgerSeq` are set once it
   has ended.
   - `waiting` is `heavy-lock` while the call waits for a heavy slot, and absent once it runs.
+  - `spent` is what a `Budget` block reported spending (§B.5), in the profile's currency.
+  - Under C10's option (c), a plain call's ended answer is given once; later polls answer `result: "gone"` with only
+    its `resultSha256`.
   - `commit` is the commit (and, for a Step, the folder's tree hash, a `dirty` flag and `changedDuringCall`, §B.2) the
     block runs against. It is set on every answer of a block that `readsCode` once the slot and lock are held, so
     a `waiting` answer has none.
@@ -180,7 +183,6 @@ P8 keeps only `X-Sindri-Repo` of the `X-Sindri-*` headers on MCP, and the launch
 | `SND-TOOL-001` | Invalid (400) | The named block isn't in this session's `list_tools` | "`<name>` isn't a block you can run here (fix: call `list_tools`)" |
 | `SND-TOOL-002` | Invalid (400) | `arguments` are over 16 KiB or don't validate against the block's `inputSchema` (extension `violations: [{path, message}]`); a plain call to a `readsCode` block without `ref`, or with a `ref` that isn't a commit in the repo | "The arguments for `<name>` don't fit its inputs (fix: see `violations`; outside a Step, pass `ref` as a full commit sha)" |
 | `SND-TOOL-004` | Forbidden (403) | This run's call budget is spent (`workflow.calls.perRun`, §B.4). It doesn't refill within the run | "This Step has used its `<n>` calls (fix: finish the Step, or raise `workflow.calls.perRun` in the profile)" |
-| `SND-TOOL-005` | — | Retired (owner, 2026-10-18: the owner's own sessions are never refused for a daily count; `workflow.calls.plainPerDay` is a notice, §A.6) | — |
 | `SND-TOOL-006` | Conflict (409) | A call is already running for this run, or the repo already runs `workflow.calls.plainConcurrent` plain calls (default 2), §B.4 | "Another call is still running (fix: wait for it to end, then call again; your own running call is polled with its `callId`)" |
 | `SND-TOOL-404` | NotFound (404) | No open agent run at `X-Sindri-Run` in this repo | "No open Step run `<run>` in `<repo>` (fix: this Step has ended; there is nothing left to call or report)" |
 | `SND-TOOL-409` | Conflict (409) | The same `callId` came with a different `name`, `arguments`, `ref` or `itemId` | "Call `<callId>` was sent with other inputs (fix: use a new `callId`)" |
@@ -207,8 +209,10 @@ P8 keeps only `X-Sindri-Repo` of the `X-Sindri-*` headers on MCP, and the launch
 - **Read routes** (queries, all from the one `block_calls` store, §B.2):
   - `GET /workflow/instances/{id}/runs/{token}/tools` (a Step's list) and `GET /tools?repo=R` (what a plain session may call);
   - `GET /workflow/instances/{id}/runs/{token}/calls` (the run's calls, running ones included, each with `cited`);
-  - `GET /calls?repo=R[&item=ITM-…][&after=seq]` (plain calls);
-  - `GET /calls/result?scope=<scope>&callId=<id>` (one call's body, fenced as in the answer). The scope is a query
+  - `GET /calls?repo=R[&item=ITM-…][&after=seq]` (plain calls; **human only**, C10: a session caller gets
+    `SND-AUTH-002`, and so does `sindri calls --repo` or `sindri call <id> --repo` run inside a session);
+  - `GET /calls/result?scope=<scope>&callId=<id>` (one call's body, fenced as in the answer; human only for a
+    `repo:` scope, as above; a plain session reads its own result by sending its `callId` again). The scope is a query
     value, so its `:` and a repo name need only URL-encoding.
   The app refreshes on `step.tool-started`/`session.tool-started` and `*.tool-called` (ids and the block only, §B.3),
   so a running call shows as soon as it starts.
@@ -274,26 +278,45 @@ callable blocks, one `sync` and one `async`. The journey:
    `readsCode` block is refused; with `ref` it runs, answers the `commit`, and is a `session.tool-called` event on
    the item's Timeline it names, not on the Step.
 9. With `workflow.calls.plainPerDay: 1`, a second plain call still runs; its event carries `capPassed: true` and the log
-   says so. A Step agent's MCP reads and `sindri_*` tools never return a plain call's result (C10).
+   says so. Under C10's answer: a Step session's `sindri_item_timeline` doesn't show the plain call's line, and its
+   `sindri calls --repo` and `GET /calls/result` get `SND-AUTH-002`, while the human's CLI shows the result.
+10. A plain session with `AW_META_LANE` set (a team lane) sends `X-Sindri-Lane` and gets the lane set (no `Budget`
+   block in `list_tools`, `scope: plain`, `caller: lane`). The setup lists one `Network` block for step 8.
 
 ### A.6 Calls outside a Step (owner, 2026-10-18)
 
 The owner's own sessions may call blocks: "my own sessions should be able to use sindri block tools" (C3), and "my
 sessions can use every block. no matter what. if i'm steering it's high priority and sensitivity" (owner, 2026-10-18,
 C6). The engine side is §B.5.
-- **Whose session.** Sindri can't tell from a stateless MCP call whether the owner or an agent (a team lane in the same
-  repo) is typing. In v1 every plain session counts as the owner's (choice C11).
+- **Whose session** (choice C11). Sindri can't tell from a stateless MCP call whether the owner or an agent is typing,
+  but it can tell a team lane: every lane runs with `AW_META_LANE` set. The repo's registration (`sindri mcp register`)
+  writes the header `X-Sindri-Lane: ${AW_META_LANE:-}`, which Claude Code expands per session, and the endpoint keeps
+  it as a third allowed header (A.2). A non-empty value makes the caller a **lane**; every other plain session is the
+  **owner's**. If the registration's scope doesn't expand variables, `aw-meta-launch` passes the lane's own MCP
+  config with the header set; BA-1's proof shows which. A lane gets the agent treatment: Callable blocks within
+  `{Tools}` plus `Network` blocks the owner names, no `Budget` blocks, default priority, and results readable as an
+  agent's are. Everything below the next bullet is the owner's treatment.
 - **Bound to the repo only.** No run header. MCP is stateless and Claude Code sends no session id, so "the session"
   is just `caller: session` plus the repo: the cap and the record are per repo.
 - **`list_tools` for a plain session** is every Callable block (§B.5), Network and Budget ones included; only the
   owner's optional `workflow.tools.plain` list narrows it. `scope: plain`. A block with a required parameter that
   has no default and can only be pinned in a recipe is left out with `omitted` reason `needs-recipe-pin`.
-- **High priority** (C6). A plain call takes its heavy slot ahead of Step calls, agent work and transition gates
-  (§B.5). The timing rule (§A.1) is unchanged: a sync call still waits at most 30 s before answering `running`.
-- **High sensitivity** (choice C10, recommended (a)): a plain call's result is private. Only the calling session's
-  own answer, the app and the CLI show it. No other session's MCP tool, no Step agent, the Judge and nothing Sindri
-  sends out ever read it. The `session.*` events are private in the event stream. The body is scrubbed as every
-  result is, and deleted after 30 days.
+- **High priority** (C6). An owner's call takes its heavy slot ahead of merge trains, transition gates, Step calls and
+  agent work, including jobs waiting through the box's heavy wrapper (§B.5: Sindri publishes how many owner calls
+  wait, and the wrapper holds that many slots back, as it does for the meta's reserve). Owner calls hold at most the
+  box's slot cap minus one, so a gate or a merge train always gets a slot. The timing rule (§A.1) is unchanged: a
+  sync call still waits at most 30 s before answering `running`.
+- **High sensitivity** (choice C10, recommended (a)): an owner's call result is private.
+  - **Who sees it:** the calling session's own answer (polled by its `callId`), the app, and the CLI run by the human.
+    Plain sessions in a repo share one scope, so "the calling session" means any owner's session in that repo.
+  - **Reads:** every repo-scoped call read is human only (A.4).
+  - **Events:** the `session.*` events get a new visibility, `human`. It reaches the app's stream and human ledger
+    reads, and never a session's stream, `sindri ledger` from a session, or `sindri_item_timeline`: the item's
+    Timeline line is filtered out for session callers.
+  - **Other readers:** these skip `human` events and bodies, each pinned by an architecture test: the context engine
+    (retrieval and export), evolve, observe and shape, the Judge's inputs, and telemetry (spans carry no `reason` for
+    an owner's call). What the session itself prints into its own transcript is outside Sindri.
+  - **Storage:** the body is scrubbed as every result is, and deleted after 30 days.
 - **`execute_tool_call`** takes an optional `itemId` and `ref`:
   - `itemId`: the item the call is about. The call shows on its Timeline as "plain call, not proof" (choice C8).
   - `ref`: the full 40-hex sha of the commit the block runs against, in a scratch checkout Sindri makes and removes
@@ -302,10 +325,12 @@ C6). The engine side is §B.5.
     The commit must exist in the registered repo (a lane worktree's commits do, since worktrees share the object
     store), else `SND-TOOL-002`. A session gets it with `git rev-parse HEAD` after committing. A block that doesn't
     read code runs with no checkout.
-- **Caps:** none refuses a call for its count. `workflow.calls.plainPerDay` (default 200) is a notice: past it the
-  event carries `capPassed: true` and the log says so. The only bound is `workflow.calls.plainConcurrent` (default 2)
-  calls running at once per repo, then `SND-TOOL-006`, so one repo's calls can't take every heavy slot on the box.
+- **Caps:** none refuses an owner's call for its count. `workflow.calls.plainPerDay` (default 200) is a notice: past
+  it the event carries `capPassed: true` and the log says so. `workflow.calls.plainConcurrent` (default 2) calls run
+  at once per repo, then `SND-TOOL-006`, and the box-wide bound above keeps a slot for gates and trains.
 - **Budget blocks** spend from no run: their spend is recorded on the call (`spent`) and is never refused (§B.5).
+- **The owner sees the totals.** `GET /status` (human only) gains `plainCalls: [{ repo, today, spentToday,
+  capPassed }]`, and the app's Health page shows one line per repo ("`<repo>`: `<n>` calls today, `<spent>` spent").
 - **Record:** `session.tool-called` on the repo, kept 30 days (§B.5). It never satisfies a gate and is never citable
   in a step report.
 
@@ -716,11 +741,13 @@ priority. C7, C8, C10 and C11 are the details these answers open.
    yours. (c) Private as in (a), and also never kept: you get the result once, and Sindri keeps only its fingerprint.
    *Recommended:* (a). The scrub only removes secrets from what is stored, so it protects the logs, not you from your
    own results.
-11. **How Sindri knows you are steering.** Sindri can't tell whether you or an agent in your team's lanes typed into
-   a session outside a Step. (a) Every session outside a Step counts as yours: it gets every block at high priority
-   and private results. The team's lane sessions in the same repo get the same treatment. (b) Only sessions where you
-   typed recently count as yours, read from the session collector's hook (a later phase); the others get agent
-   priority. *Recommended:* (a) for v1, (b) once the collector can tell.
+11. **How Sindri knows you are steering.** Sindri can't see who typed into a session, but it can tell your team's
+   lane sessions apart: each runs with a lane marker, which its tool settings pass to Sindri. (a) Sessions with the
+   lane marker get the agents' treatment (no money-spending blocks, normal priority, results agents can read), and
+   every other session outside a Step is yours (every block, top priority, private results). (b) Every session
+   outside a Step counts as yours, lanes included, so a looping lane agent would also get top priority and money
+   blocks that are never refused. *Recommended:* (a). Later, once the session collector can tell whether you typed
+   recently, "yours" can narrow to that.
 
 ## D. Phases
 
