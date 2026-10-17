@@ -52,6 +52,7 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
                 AdjudicationCapped = spend.Capped,
                 AdjudicationError = spend.Error,
                 SourceDown = dropped.GetValueOrDefault(Outcome.SourceDown),
+                CappedTeams = loaded.CappedTeams,
                 WithoutClusters = running.Exists(static a => a != Arm.Docs) ? dropped.GetValueOrDefault(Outcome.ScoredWithoutClusters) : 0,   // the docs arm reads no map
             };
     }

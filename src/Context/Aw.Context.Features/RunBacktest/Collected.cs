@@ -15,6 +15,9 @@ internal sealed record Collected(IReadOnlyList<CorpusSample> Kept, Dictionary<Ar
     /// <summary>Samples dropped because the brief source was unavailable (SND-CONTEXT-011).</summary>
     public int SourceDown { get; init; }
 
+    /// <summary>The teams whose issue listing was capped by the source.</summary>
+    public IReadOnlyList<string> CappedTeams { get; init; } = [];
+
     /// <summary>Kept samples whose as-of map was built (or cached) without a clusters pass, on a run whose arms read the map.</summary>
     public int WithoutClusters { get; init; }
 

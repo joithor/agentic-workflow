@@ -37,6 +37,11 @@ internal static class ReportAssembly
             notes.Add(string.Create(CultureInfo.InvariantCulture, $"SND-CONTEXT-011: {left.SourceDown} sample(s) dropped because the brief source was unavailable (fix: sindri context sources status)"));
         }
 
+        if (collected.CappedTeams.Count > 0)
+        {
+            notes.Add($"issue listing capped: {string.Join(", ", collected.CappedTeams)} reached the source's per-search limit and the source has no next page, so issues past it are not in this corpus (fix: narrow --since)");
+        }
+
         if (collected.WithoutClusters > 0)
         {
             notes.Add(string.Create(CultureInfo.InvariantCulture,

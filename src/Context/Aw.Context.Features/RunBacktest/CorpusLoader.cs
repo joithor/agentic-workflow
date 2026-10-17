@@ -38,8 +38,8 @@ internal sealed class CorpusLoader(IBriefSource briefs, IMergeHistory history)
         var corpus = CorpusBuilder.Build(issues.Value.Issues, histories, world.Settings.LinearTeams, path => world.Repos.Any(r => r.Denies(path)));
         var samples = Window(corpus.Samples, request);
         return samples.Count == 0
-            ? NoSample(corpus, issues.Value.Issues.Count)
-            : new LoadedCorpus(corpus, samples, issues.Value.Issues.ToDictionary(i => i.Key, StringComparer.Ordinal));
+            ? NoSample(corpus, issues.Value)
+            : new LoadedCorpus(corpus, samples, issues.Value.Issues.ToDictionary(i => i.Key, StringComparer.Ordinal)) { CappedTeams = issues.Value.CappedTeams };
     }
 
     private static List<CorpusSample> Window(IReadOnlyList<CorpusSample> samples, BacktestRequest request) =>
@@ -48,7 +48,7 @@ internal sealed class CorpusLoader(IBriefSource briefs, IMergeHistory history)
             .OrderBy(s => s.CreatedAt).ThenBy(s => s.IssueKey, StringComparer.Ordinal).Take(request.Limit ?? int.MaxValue),
     ];
 
-    private static Error NoSample(Corpus corpus, int issues) =>
+    private static Error NoSample(Corpus corpus, BriefListing listing) =>
         ContextErrors.NoEligibleSample.With(string.Create(CultureInfo.InvariantCulture,
-            $"no eligible backtest sample: {issues} issues listed, {corpus.Samples.Count} with a merged PR, none in the window; left out: {corpus.LeftOut.NoMerge} with no merged PR, {corpus.LeftOut.OutsideTeams} outside the profile's teams (fix: widen --since/--until, or list the team in context.sources.linear.teams)"));
+            $"no eligible backtest sample: {listing.Issues.Count} issues listed{(listing.CappedTeams.Count > 0 ? $" (listing capped: {string.Join(", ", listing.CappedTeams)}; the source has no next page, so more may exist)" : string.Empty)}, {corpus.Samples.Count} with a merged PR, none in the window; left out: {corpus.LeftOut.NoMerge} with no merged PR, {corpus.LeftOut.OutsideTeams} outside the profile's teams (fix: widen --since/--until, or list the team in context.sources.linear.teams)"));
 }

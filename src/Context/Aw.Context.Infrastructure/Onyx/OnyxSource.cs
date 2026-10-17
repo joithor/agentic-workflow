@@ -11,7 +11,7 @@ namespace Aw.Context.Infrastructure.Onyx;
 
 /// <summary>
 /// The 'onyx' source (spec §5.2): Onyx CE v4.9.0 over its admin search and document routes, live, without as-of cuts.
-/// Search sends one 'POST /api/admin/search' (each term quoted as a phrase), keeps Onyx's order as the rank (its score
+/// Search sends one 'POST /api/admin/search' (each term quoted as a phrase; a query's UpdatedSince goes as the filter 'time_cutoff'), keeps Onyx's order as the rank (its score
 /// is discarded, D3), drops documents an Onyx admin hid (admin search includes them; a standard search doesn't), keys
 /// each hit with <see cref="OnyxRecordKeys"/>, marks hits changed after the query's as-of time
 /// leaky, and applies the limit itself (Onyx returns up to 50). Fetch reads 'document-size-info', then 'chunk-info' per
@@ -48,7 +48,7 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
             return Array.Empty<SourceHit>();
         }
 
-        var body = AwJson.Serialize(new OnyxAdminSearchRequest(text, new OnyxSearchFilters()), OnyxWire.Options);
+        var body = AwJson.Serialize(new OnyxAdminSearchRequest(text, new OnyxSearchFilters(query.UpdatedSince)), OnyxWire.Options);
         var reply = await client.Call<OnyxAdminSearchReply>(OnyxCall.Post(SearchRoute, body), query.Deadline, cancellationToken).ConfigureAwait(false);
         if (reply.IsError)
         {

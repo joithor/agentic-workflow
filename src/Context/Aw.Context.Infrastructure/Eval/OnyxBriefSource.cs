@@ -9,7 +9,8 @@ namespace Aw.Context.Infrastructure.Eval;
 
 /// <summary>
 /// Briefs from the onyx source (S-5A) through its own allowlisted routes only: a search for each profile team's key, the issues whose Onyx alias is
-/// 'TEAM-n', then each record's text. It is the eval harness's read, not the onyx arm. Onyx keeps no content history, so a record edited after its
+/// 'TEAM-n', then each record's text. Onyx's admin search takes no offset, so a team's listing cannot be paged: a search that returns the 50 hits Onyx
+/// allows is reported as capped, and the window's start goes into the search as an update-time filter so the cap spends its hits inside the window. It is the eval harness's read, not the onyx arm. Onyx keeps no content history, so a record edited after its
 /// creation is leaky (spec §9.1, §12); the corpus labels it. The native Linear brief, with the project's PRD and TDD documents, comes with S-6.
 /// </summary>
 internal sealed class OnyxBriefSource(ISourceCatalog catalog) : IBriefSource
@@ -29,36 +30,58 @@ internal sealed class OnyxBriefSource(ISourceCatalog catalog) : IBriefSource
 
         var issues = new List<BriefIssue>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
+        var capped = new List<string>();
         foreach (var team in scope.Settings.LinearTeams)
         {
-            var hits = await source.Search(new SourceQuery([team], AsOf: null, MaxHits, _deadline), cancellationToken).ConfigureAwait(false);
-            if (hits.IsError)
+            var listed = await Team(source, (scope, team, since), cancellationToken).ConfigureAwait(false);
+            if (listed.IsError)
             {
-                return ContextErrors.AllSourcesUnavailable.With($"the brief source can't be searched ({hits.Error.Code}); fix: sindri context sources status");
+                return listed.Error;
             }
 
-            foreach (var hit in hits.Value)
+            if (listed.Value.Capped)
             {
-                var key = hit.Aliases.FirstOrDefault(a => IssueKey(team).IsMatch(a));
-                if (key is null || !seen.Add(key))
-                {
-                    continue;
-                }
+                capped.Add(team);
+            }
 
-                var issue = await Issue(source, scope, (key, hit), cancellationToken).ConfigureAwait(false);
-                if (issue.IsError)
-                {
-                    return issue.Error;   // an Onyx that fails mid-listing fails the run: a corpus that shrank in silence would pass for a small sample
-                }
+            issues.AddRange(listed.Value.Issues.Where(i => seen.Add(i.Key)));
+        }
 
-                if (issue.Value is { } found)
-                {
-                    issues.Add(found);
-                }
+        return new BriefListing([.. issues.OrderBy(i => i.Key, StringComparer.Ordinal)], capped);
+    }
+
+    private static async ValueTask<Result<(List<BriefIssue> Issues, bool Capped)>> Team(IContextSource source, (BriefScope Scope, string Team, DateTimeOffset? Since) what, CancellationToken cancellationToken)
+    {
+        var (scope, team, since) = what;
+        var hits = await source.Search(new SourceQuery([team], AsOf: null, MaxHits, _deadline) { UpdatedSince = since }, cancellationToken).ConfigureAwait(false);
+        if (hits.IsError)
+        {
+            return ContextErrors.AllSourcesUnavailable.With($"the brief source can't be searched ({hits.Error.Code}); fix: sindri context sources status");
+        }
+
+        var issues = new List<BriefIssue>();
+        var keys = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var hit in hits.Value)
+        {
+            var key = hit.Aliases.FirstOrDefault(a => IssueKey(team).IsMatch(a));
+            if (key is null || !keys.Add(key))
+            {
+                continue;
+            }
+
+            var issue = await Issue(source, scope, (key, hit), cancellationToken).ConfigureAwait(false);
+            if (issue.IsError)
+            {
+                return issue.Error;   // an Onyx that fails mid-listing fails the run: a corpus that shrank in silence would pass for a small sample
+            }
+
+            if (issue.Value is { } found)
+            {
+                issues.Add(found);
             }
         }
 
-        return new BriefListing([.. issues.OrderBy(i => i.Key, StringComparer.Ordinal)], []);
+        return (issues, Capped: hits.Value.Count >= MaxHits);   // every hit Onyx would give is used up and the route has no next page
     }
 
     public async ValueTask<Result<Brief?>> Brief(BriefScope scope, BriefIssue issue, CancellationToken cancellationToken)
