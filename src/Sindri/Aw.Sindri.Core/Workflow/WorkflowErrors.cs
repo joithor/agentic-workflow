@@ -84,6 +84,7 @@ public static class WorkflowErrors
         RecipeChallengeStale, RecipeUnreadable,
         InstanceNotFound, TriggerNotAllowed, GateRefused, StaleRunToken, AmbiguousAddress, MalformedReport,
         NonceRefused, NoRuntime, EffectNotAllowed, EarlierAttemptLive, WorkflowChallengeStale, ItemMismatch, EffectFailed,
+        StepInputNoRuntime,
     ];
 
     /// <summary>

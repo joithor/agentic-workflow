@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Recipes;
 
@@ -17,6 +18,19 @@ public static class StepInputRefusals
     {
         ArgumentNullException.ThrowIfNull(recipe);
         ArgumentNullException.ThrowIfNull(runtimes);
-        return null;   // red stub (PR-A S2): refuses nothing yet
+        foreach (var (name, state) in recipe.States.OrderBy(static s => s.Key, StringComparer.Ordinal))
+        {
+            var inputs = state.Step?.Inputs ?? [];
+            for (var k = 0; k < inputs.Count; k++)
+            {
+                if (!runtimes.Has(inputs[k].Use))
+                {
+                    return WorkflowErrors.StepInputNoRuntime.With(string.Create(CultureInfo.InvariantCulture,
+                        $"states.{name}.step.inputs[{k}] uses {inputs[k].Use.Value}, which this build has no runtime for (fix: build with its runtime, or remove the input)"));
+                }
+            }
+        }
+
+        return null;
     }
 }
