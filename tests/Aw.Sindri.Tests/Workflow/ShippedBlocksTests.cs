@@ -136,7 +136,7 @@ public sealed class ShippedBlocksTests
         "step.evidence.ui-run sha256:cc61bf599ffbc47677b7e719566da7511d3e9674489741c98e862529912e7ad9",
         "step.handtest.run sha256:3ec327e0820b5cb0b02b62c6ee95b93f74f626a800f095d751811aff55bd4a49",
         "step.intake.ticket sha256:ea24ee0f0a02b06b48469073d11591f0ed25a9c803c86c8e439cf096e0e2b04f",
-        "step.judge.choose sha256:7e172d1a423e48ffc9c053c3a5d4ff4edfa5753518e339170a73c685f726b2a6",
+        "step.judge.choose sha256:270ab4f63fe46487ca948e4f254eb80cb50f028acb1bf70419d492db359851a2",
         "step.owner.decide sha256:8df7dfe0c17e2b53dc326b5dc77352b48520495c3e64ec3d52e12e662992237b",
         "step.produce sha256:b86ef5f788d73f55217a97d0158f1caea49b09d19f4878858acd040434505370",
         "step.report.write sha256:d7b9f03e2b946166e8d958866b8d9543e16286bcf21d0f31e0815d29918c40c1",
