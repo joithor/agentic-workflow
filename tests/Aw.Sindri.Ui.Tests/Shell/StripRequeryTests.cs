@@ -62,7 +62,7 @@ public sealed class StripRequeryTests
         _ = await Connected();
 
         Assert.NotEmpty(_server.InstanceQueries);
-        Assert.All(_server.InstanceQueries, q => Assert.Equal(new Aw.Sindri.Ui.Api.Workflow.InstanceQuery(Root: true, Open: true), q));
+        Assert.All(_server.InstanceQueries, q => Assert.Equal(new Ui.Api.Workflow.InstanceQuery(Root: true, Open: true), q));
     }, Token);
 
     [Fact]

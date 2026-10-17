@@ -69,6 +69,9 @@ internal sealed class InstanceRowViewModel : ObservableObject
     /// <summary>The cells under the group's column heads, one per column in the group's order (a blank where this row has no such state).</summary>
     public IReadOnlyList<StageCellViewModel> Cells { get; private set => Set(ref field, value); }
 
+    /// <summary>True when the row declares inputs; with none the inputs column has nothing to name and stays out of the control view.</summary>
+    public bool HasInputs => Inputs.Count > 0;
+
     /// <summary>What a screen reader hears for the inputs column: the cells' names in one.</summary>
     public string InputsName => string.Join(", ", Inputs.Select(i => i.Name));
 

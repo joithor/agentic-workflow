@@ -41,10 +41,13 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
     public ObservableCollection<StripRowViewModel> Rows { get; } = [];
 
     /// <summary>True when the cap leaves open rows out.</summary>
-    public bool HasMore => !IsNotServed && !IsUnreadable && _open.Count > _shown.Count;
+    public bool HasMore => !IsNotServed && !IsUnreadable && OpenTotal > _shown.Count;
+
+    // The open total is the one the server counted for the same open filter (the Workflows page's), not a count of the rows sent.
+    private int OpenTotal => Counts?.Open ?? _open.Count;
 
     /// <summary>"… 3 more"; empty without overflow.</summary>
-    public string MoreText => HasMore ? Labels.MoreRows(_open.Count - _shown.Count) : string.Empty;
+    public string MoreText => HasMore ? Labels.MoreRows(OpenTotal - _shown.Count) : string.Empty;
 
     /// <summary>True when the list is empty and served.</summary>
     public bool IsEmpty => !IsNotServed && !IsUnreadable && Counts is not null && _open.Count == 0;
