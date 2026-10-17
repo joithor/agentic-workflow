@@ -116,12 +116,12 @@ public sealed class CollectSessionsTests
     [Fact, Trait("Lane", "unit")]
     public async Task Pass_takes_launch_and_lane_from_the_allowlisted_environment_only()
     {
-        _ = _c.Fake.With(Proc(10, 1, "claude", argv0: "claude"), Env(("AW_SINDRI_LAUNCH", "L-0001"), ("AW_META_TEAM", "t1"), ("AW_META_LANE", "api"), ("ANTHROPIC_API_KEY", ProcessTableContract.PlantedToken)));
+        _ = _c.Fake.With(Proc(10, 1, "claude", argv0: "claude"), Env(("AW_SINDRI_LAUNCH", "LCH-00000000000000000000000000000001"), ("AW_META_TEAM", "t1"), ("AW_META_LANE", "api"), ("ANTHROPIC_API_KEY", ProcessTableContract.PlantedToken)));
 
         _ = await _c.Pass();
 
         var session = Assert.Single(_c.Snapshot.Current!.Sessions);
-        Assert.Equal(("L-0001", "t1", "api"), (session.LaunchId!.Value.Value, session.Team, session.Lane));
+        Assert.Equal(("LCH-00000000000000000000000000000001", "t1", "api"), (session.LaunchId!.Value.Value, session.Team, session.Lane));
         Assert.DoesNotContain(ProcessTableContract.PlantedToken, System.Text.Json.JsonSerializer.Serialize(session.Host) + session.Cwd + session.Title + session.Team + session.Lane, StringComparison.Ordinal);
     }
 

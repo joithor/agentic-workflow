@@ -61,7 +61,7 @@ public sealed class ProcProcessTableTests
         Assert.Equal(["TERM_PROGRAM", "WARP_FOCUS_URL"], environment.Keys.Order(StringComparer.Ordinal), StringComparer.Ordinal);
         Assert.DoesNotContain(ProcessTableContract.PlantedToken, environment.Values, StringComparer.Ordinal);
         Assert.Contains("AW_JUDGE_CHILD", Fixture().Environment(212).Keys, StringComparer.Ordinal);
-        Assert.Equal("L-0001", Fixture().Environment(411)["AW_SINDRI_LAUNCH"]);
+        Assert.Equal("LCH-00000000000000000000000000000001", Fixture().Environment(411)["AW_SINDRI_LAUNCH"]);
     }
 
     [Fact, Trait("Lane", "integration")]

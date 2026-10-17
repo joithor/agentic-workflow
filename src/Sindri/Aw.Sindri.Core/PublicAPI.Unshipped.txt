@@ -562,12 +562,12 @@ Aw.Sindri.Core.Events.FleetChanged
 Aw.Sindri.Core.Events.FleetChanged.<Clone>$() -> Aw.Sindri.Core.Events.FleetChanged!
 Aw.Sindri.Core.Events.FleetChanged.Change.get -> Aw.Sindri.Core.Sessions.FleetChangeKind
 Aw.Sindri.Core.Events.FleetChanged.Change.init -> void
-Aw.Sindri.Core.Events.FleetChanged.Deconstruct(out Aw.Sindri.Core.Launch.AgentId Provider, out Aw.Sindri.Core.Sessions.SessionId SessionId, out Aw.Sindri.Core.Sessions.FleetChangeKind Change, out Aw.Sindri.Core.Sessions.SessionState State, out Aw.Sindri.Core.Sessions.AskingReason? Reason, out Aw.Sindri.Core.Ids.RepoName? Repo, out string! Host, out Aw.Sindri.Core.Launch.LaunchId? LaunchId) -> void
+Aw.Sindri.Core.Events.FleetChanged.Deconstruct(out Aw.Sindri.Core.Launch.AgentId Provider, out Aw.Sindri.Core.Sessions.SessionId SessionId, out Aw.Sindri.Core.Sessions.FleetChangeKind Change, out Aw.Sindri.Core.Sessions.SessionState State, out Aw.Sindri.Core.Sessions.AskingReason? Reason, out Aw.Sindri.Core.Ids.RepoName? Repo, out string! Host, out Aw.Sindri.Core.Workflow.Engine.LaunchId? LaunchId) -> void
 Aw.Sindri.Core.Events.FleetChanged.Equals(Aw.Sindri.Core.Events.FleetChanged? other) -> bool
-Aw.Sindri.Core.Events.FleetChanged.FleetChanged(Aw.Sindri.Core.Launch.AgentId Provider, Aw.Sindri.Core.Sessions.SessionId SessionId, Aw.Sindri.Core.Sessions.FleetChangeKind Change, Aw.Sindri.Core.Sessions.SessionState State, Aw.Sindri.Core.Sessions.AskingReason? Reason, Aw.Sindri.Core.Ids.RepoName? Repo, string! Host, Aw.Sindri.Core.Launch.LaunchId? LaunchId) -> void
+Aw.Sindri.Core.Events.FleetChanged.FleetChanged(Aw.Sindri.Core.Launch.AgentId Provider, Aw.Sindri.Core.Sessions.SessionId SessionId, Aw.Sindri.Core.Sessions.FleetChangeKind Change, Aw.Sindri.Core.Sessions.SessionState State, Aw.Sindri.Core.Sessions.AskingReason? Reason, Aw.Sindri.Core.Ids.RepoName? Repo, string! Host, Aw.Sindri.Core.Workflow.Engine.LaunchId? LaunchId) -> void
 Aw.Sindri.Core.Events.FleetChanged.Host.get -> string!
 Aw.Sindri.Core.Events.FleetChanged.Host.init -> void
-Aw.Sindri.Core.Events.FleetChanged.LaunchId.get -> Aw.Sindri.Core.Launch.LaunchId?
+Aw.Sindri.Core.Events.FleetChanged.LaunchId.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId?
 Aw.Sindri.Core.Events.FleetChanged.LaunchId.init -> void
 Aw.Sindri.Core.Events.FleetChanged.Provider.get -> Aw.Sindri.Core.Launch.AgentId
 Aw.Sindri.Core.Events.FleetChanged.Provider.init -> void
@@ -1491,14 +1491,14 @@ Aw.Sindri.Core.Launch.AgentId.Value.get -> string!
 Aw.Sindri.Core.Launch.IAgentCatalog
 Aw.Sindri.Core.Launch.IAgentCatalog.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.AgentEntry!>!
 Aw.Sindri.Core.Launch.IAgentCatalog.Resolve(Aw.Sindri.Core.Launch.AgentId id) -> Aw.Sindri.Core.Launch.AgentEntry?
-Aw.Sindri.Core.Launch.LaunchId
-Aw.Sindri.Core.Launch.LaunchId.Equals(Aw.Sindri.Core.Launch.LaunchId other) -> bool
-Aw.Sindri.Core.Launch.LaunchId.Equals(Aw.Sindri.Core.Launch.LaunchId other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Launch.LaunchId>! comparer) -> bool
-Aw.Sindri.Core.Launch.LaunchId.GetTypeCode() -> System.TypeCode
-Aw.Sindri.Core.Launch.LaunchId.IsInitialized() -> bool
-Aw.Sindri.Core.Launch.LaunchId.LaunchId() -> void
-Aw.Sindri.Core.Launch.LaunchId.ToString(System.IFormatProvider? provider) -> string!
-Aw.Sindri.Core.Launch.LaunchId.Value.get -> string!
+Aw.Sindri.Core.Workflow.Engine.LaunchId
+Aw.Sindri.Core.Workflow.Engine.LaunchId.Equals(Aw.Sindri.Core.Workflow.Engine.LaunchId other) -> bool
+Aw.Sindri.Core.Workflow.Engine.LaunchId.Equals(Aw.Sindri.Core.Workflow.Engine.LaunchId other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Workflow.Engine.LaunchId>! comparer) -> bool
+Aw.Sindri.Core.Workflow.Engine.LaunchId.GetTypeCode() -> System.TypeCode
+Aw.Sindri.Core.Workflow.Engine.LaunchId.IsInitialized() -> bool
+Aw.Sindri.Core.Workflow.Engine.LaunchId.LaunchId() -> void
+Aw.Sindri.Core.Workflow.Engine.LaunchId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Sindri.Core.Workflow.Engine.LaunchId.Value.get -> string!
 Aw.Sindri.Core.Lease.HeldLease
 Aw.Sindri.Core.Lease.HeldLease.Clear() -> void
 Aw.Sindri.Core.Lease.HeldLease.Current.get -> Aw.Sindri.Core.Lease.LeaseGrant?
@@ -2052,7 +2052,7 @@ Aw.Sindri.Core.Sessions.FleetChange.HostKind.get -> string!
 Aw.Sindri.Core.Sessions.FleetChange.HostKind.init -> void
 Aw.Sindri.Core.Sessions.FleetChange.Kind.get -> Aw.Sindri.Core.Sessions.FleetChangeKind
 Aw.Sindri.Core.Sessions.FleetChange.Kind.init -> void
-Aw.Sindri.Core.Sessions.FleetChange.LaunchId.get -> Aw.Sindri.Core.Launch.LaunchId?
+Aw.Sindri.Core.Sessions.FleetChange.LaunchId.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId?
 Aw.Sindri.Core.Sessions.FleetChange.LaunchId.init -> void
 Aw.Sindri.Core.Sessions.FleetChange.ObservedAt.get -> System.DateTimeOffset
 Aw.Sindri.Core.Sessions.FleetChange.ObservedAt.init -> void
@@ -2182,7 +2182,7 @@ Aw.Sindri.Core.Sessions.ObservedSession.IdKnown.get -> bool
 Aw.Sindri.Core.Sessions.ObservedSession.IdKnown.init -> void
 Aw.Sindri.Core.Sessions.ObservedSession.Lane.get -> string?
 Aw.Sindri.Core.Sessions.ObservedSession.Lane.init -> void
-Aw.Sindri.Core.Sessions.ObservedSession.LaunchId.get -> Aw.Sindri.Core.Launch.LaunchId?
+Aw.Sindri.Core.Sessions.ObservedSession.LaunchId.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId?
 Aw.Sindri.Core.Sessions.ObservedSession.LaunchId.init -> void
 Aw.Sindri.Core.Sessions.ObservedSession.ObservedSession(Aw.Sindri.Core.Sessions.SessionRef Ref, int Pid, long StartTicks, Aw.Sindri.Core.Sessions.SessionState State, Aw.Sindri.Core.Sessions.StateSource Source, System.DateTimeOffset Since) -> void
 Aw.Sindri.Core.Sessions.ObservedSession.Pid.get -> int
@@ -3771,14 +3771,6 @@ Aw.Sindri.Core.Workflow.Engine.ItemKey.IsInitialized() -> bool
 Aw.Sindri.Core.Workflow.Engine.ItemKey.ItemKey() -> void
 Aw.Sindri.Core.Workflow.Engine.ItemKey.ToString(System.IFormatProvider? provider) -> string!
 Aw.Sindri.Core.Workflow.Engine.ItemKey.Value.get -> string!
-Aw.Sindri.Core.Workflow.Engine.LaunchId
-Aw.Sindri.Core.Workflow.Engine.LaunchId.Equals(Aw.Sindri.Core.Workflow.Engine.LaunchId other) -> bool
-Aw.Sindri.Core.Workflow.Engine.LaunchId.Equals(Aw.Sindri.Core.Workflow.Engine.LaunchId other, System.Collections.Generic.IEqualityComparer<Aw.Sindri.Core.Workflow.Engine.LaunchId>! comparer) -> bool
-Aw.Sindri.Core.Workflow.Engine.LaunchId.GetTypeCode() -> System.TypeCode
-Aw.Sindri.Core.Workflow.Engine.LaunchId.IsInitialized() -> bool
-Aw.Sindri.Core.Workflow.Engine.LaunchId.LaunchId() -> void
-Aw.Sindri.Core.Workflow.Engine.LaunchId.ToString(System.IFormatProvider? provider) -> string!
-Aw.Sindri.Core.Workflow.Engine.LaunchId.Value.get -> string!
 Aw.Sindri.Core.Workflow.Engine.ParkKind
 Aw.Sindri.Core.Workflow.Engine.ParkKind.ChildRevoked = 6 -> Aw.Sindri.Core.Workflow.Engine.ParkKind
 Aw.Sindri.Core.Workflow.Engine.ParkKind.Dispatch = 8 -> Aw.Sindri.Core.Workflow.Engine.ParkKind
@@ -6426,9 +6418,9 @@ override Aw.Sindri.Core.Launch.AgentEntry.ToString() -> string!
 override Aw.Sindri.Core.Launch.AgentId.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Launch.AgentId.GetHashCode() -> int
 override Aw.Sindri.Core.Launch.AgentId.ToString() -> string!
-override Aw.Sindri.Core.Launch.LaunchId.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Launch.LaunchId.GetHashCode() -> int
-override Aw.Sindri.Core.Launch.LaunchId.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Engine.LaunchId.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.LaunchId.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.LaunchId.ToString() -> string!
 override Aw.Sindri.Core.Lease.LeaseGrant.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Lease.LeaseGrant.GetHashCode() -> int
 override Aw.Sindri.Core.Lease.LeaseGrant.ToString() -> string!
@@ -6851,9 +6843,6 @@ override Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance.ToString() ->
 override Aw.Sindri.Core.Workflow.Engine.ItemKey.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Engine.ItemKey.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Engine.ItemKey.ToString() -> string!
-override Aw.Sindri.Core.Workflow.Engine.LaunchId.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Workflow.Engine.LaunchId.GetHashCode() -> int
-override Aw.Sindri.Core.Workflow.Engine.LaunchId.ToString() -> string!
 override Aw.Sindri.Core.Workflow.Engine.RefusedEffect.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Engine.RefusedEffect.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Engine.RefusedEffect.ToString() -> string!
@@ -7748,12 +7737,12 @@ static Aw.Sindri.Core.Launch.AgentId.operator ==(Aw.Sindri.Core.Launch.AgentId l
 static Aw.Sindri.Core.Launch.AgentId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Launch.AgentId
 static Aw.Sindri.Core.Launch.AgentId.TryFrom(string? value, out Aw.Sindri.Core.Launch.AgentId vo) -> bool
 static Aw.Sindri.Core.Launch.AgentId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Launch.AgentId result) -> bool
-static Aw.Sindri.Core.Launch.LaunchId.From(string! value) -> Aw.Sindri.Core.Launch.LaunchId
-static Aw.Sindri.Core.Launch.LaunchId.operator !=(Aw.Sindri.Core.Launch.LaunchId left, Aw.Sindri.Core.Launch.LaunchId right) -> bool
-static Aw.Sindri.Core.Launch.LaunchId.operator ==(Aw.Sindri.Core.Launch.LaunchId left, Aw.Sindri.Core.Launch.LaunchId right) -> bool
-static Aw.Sindri.Core.Launch.LaunchId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Launch.LaunchId
-static Aw.Sindri.Core.Launch.LaunchId.TryFrom(string? value, out Aw.Sindri.Core.Launch.LaunchId vo) -> bool
-static Aw.Sindri.Core.Launch.LaunchId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Launch.LaunchId result) -> bool
+static Aw.Sindri.Core.Workflow.Engine.LaunchId.From(string! value) -> Aw.Sindri.Core.Workflow.Engine.LaunchId
+static Aw.Sindri.Core.Workflow.Engine.LaunchId.operator !=(Aw.Sindri.Core.Workflow.Engine.LaunchId left, Aw.Sindri.Core.Workflow.Engine.LaunchId right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.LaunchId.operator ==(Aw.Sindri.Core.Workflow.Engine.LaunchId left, Aw.Sindri.Core.Workflow.Engine.LaunchId right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.LaunchId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Workflow.Engine.LaunchId
+static Aw.Sindri.Core.Workflow.Engine.LaunchId.TryFrom(string? value, out Aw.Sindri.Core.Workflow.Engine.LaunchId vo) -> bool
+static Aw.Sindri.Core.Workflow.Engine.LaunchId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Workflow.Engine.LaunchId result) -> bool
 static Aw.Sindri.Core.Lease.LeaseDecision.Acquire(Aw.Sindri.Core.Lease.LeaseRow? row, Aw.Sindri.Core.Lease.LeaseHolder! candidate, System.DateTimeOffset now, Aw.Sindri.Core.Lease.HolderLiveness liveness) -> Aw.Kernel.Result<Aw.Sindri.Core.Lease.LeaseGrant!>!
 static Aw.Sindri.Core.Lease.LeaseDecision.Holds(Aw.Sindri.Core.Lease.LeaseRow? row, Aw.Sindri.Core.Lease.LeaseGrant! grant) -> bool
 static Aw.Sindri.Core.Lease.LeaseDecision.Liveness(Aw.Sindri.Core.Lease.LeaseHolder! holder, Aw.Sindri.Core.Lease.LeaseHolder! self, Aw.Sindri.Core.Lease.ProcessFacts! facts) -> Aw.Sindri.Core.Lease.HolderLiveness
@@ -8170,12 +8159,6 @@ static Aw.Sindri.Core.Workflow.Engine.ItemKey.Parse(string! s, System.IFormatPro
 static Aw.Sindri.Core.Workflow.Engine.ItemKey.TryFrom(string? value, out Aw.Sindri.Core.Workflow.Engine.ItemKey vo) -> bool
 static Aw.Sindri.Core.Workflow.Engine.ItemKey.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Workflow.Engine.ItemKey result) -> bool
 static Aw.Sindri.Core.Workflow.Engine.LaunchId.For(System.Guid value) -> Aw.Sindri.Core.Workflow.Engine.LaunchId
-static Aw.Sindri.Core.Workflow.Engine.LaunchId.From(string! value) -> Aw.Sindri.Core.Workflow.Engine.LaunchId
-static Aw.Sindri.Core.Workflow.Engine.LaunchId.operator !=(Aw.Sindri.Core.Workflow.Engine.LaunchId left, Aw.Sindri.Core.Workflow.Engine.LaunchId right) -> bool
-static Aw.Sindri.Core.Workflow.Engine.LaunchId.operator ==(Aw.Sindri.Core.Workflow.Engine.LaunchId left, Aw.Sindri.Core.Workflow.Engine.LaunchId right) -> bool
-static Aw.Sindri.Core.Workflow.Engine.LaunchId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Sindri.Core.Workflow.Engine.LaunchId
-static Aw.Sindri.Core.Workflow.Engine.LaunchId.TryFrom(string? value, out Aw.Sindri.Core.Workflow.Engine.LaunchId vo) -> bool
-static Aw.Sindri.Core.Workflow.Engine.LaunchId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Sindri.Core.Workflow.Engine.LaunchId result) -> bool
 static Aw.Sindri.Core.Workflow.Engine.RefusedEffect.operator !=(Aw.Sindri.Core.Workflow.Engine.RefusedEffect? left, Aw.Sindri.Core.Workflow.Engine.RefusedEffect? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.RefusedEffect.operator ==(Aw.Sindri.Core.Workflow.Engine.RefusedEffect? left, Aw.Sindri.Core.Workflow.Engine.RefusedEffect? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Rules.StateTimers.Between(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! before, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! after, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, System.TimeSpan deskFloor) -> Aw.Sindri.Core.Workflow.Engine.Runtime.TimerAction!

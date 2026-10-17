@@ -65,7 +65,7 @@
       "pid": 411,
       "title": null,
       "cwd": "/nonexistent-fixture-root/home/dev/repo",
-      "launchId": "L-0001",
+      "launchId": "LCH-00000000000000000000000000000001",
       "team": "t1",
       "lane": "api",
       "since": "2026-01-01T00:00:00Z"
