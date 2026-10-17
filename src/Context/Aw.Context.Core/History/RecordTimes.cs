@@ -9,5 +9,9 @@ public sealed record RecordTimes(DateTimeOffset? CreatedAt, DateTimeOffset? Upda
     /// <param name="createdAt">The stored creation instant, or null.</param>
     /// <param name="version">The source's version string.</param>
     /// <returns>The times; <see cref="UpdatedAt"/> is null when the version isn't a timestamp.</returns>
-    public static RecordTimes Of(DateTimeOffset? createdAt, string version) => throw new NotSupportedException();
+    public static RecordTimes Of(DateTimeOffset? createdAt, string version)
+    {
+        ArgumentNullException.ThrowIfNull(version);
+        return new RecordTimes(createdAt, HistoryWindow.TryInstant(version, out var updated) ? updated : null);
+    }
 }
