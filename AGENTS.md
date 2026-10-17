@@ -148,7 +148,7 @@ scripts/check-env-example.sh            # Every env var the code reads is in .en
 
 # Bash tests (CI: scripts/ci/bash-tests.sh runs every tracked suite, independent ones in parallel and
 # its SERIAL list, the timing-sensitive ones, one at a time afterwards; --serial prints them with reasons)
-bash scripts/ci/bash-tests.sh   # each suite runs with its own fresh temp HOME and AW_STATE_DIR (tools keep working through GIT_CONFIG_GLOBAL, DOTNET_ROOT, NUGET_PACKAGES, npm_config_cache)
+bash scripts/ci/bash-tests.sh   # each suite runs with its own fresh temp HOME and AW_STATE_DIR and without the lane environment (AW_META_LANE*, AW_SINDRI_CHILD, TMUX, ...) (tools keep working through GIT_CONFIG_GLOBAL, DOTNET_ROOT, NUGET_PACKAGES, npm_config_cache)
 bash providers/tests/install.test.sh
 bash scripts/tests/sync-rules.test.sh
 bash scripts/tests/test-grep.test.sh
