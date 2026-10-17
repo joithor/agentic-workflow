@@ -14,6 +14,13 @@ public static class TestBlocks
         Outputs: [new OutputSpec(FactKey.From("fact:output"), [OutcomeName.From("done")])],
         Outcomes: [OutcomeName.From("done")], Capability.None, Parameters: [], Rung: null, DeskCapable: true);
 
+    /// <summary>A Step input descriptor with no parameters.</summary>
+    /// <param name="id">The input's id ('input.…').</param>
+    /// <returns>The descriptor.</returns>
+    public static BlockDescriptor StepInput(string id) => new(
+        BlockId.From(id), BlockKind.StepInput, Version: 1, Inputs: [], Outputs: [], Outcomes: [], Capability.None, Parameters: [],
+        Rung: null, DeskCapable: false);
+
     /// <summary>A deterministic gate descriptor.</summary>
     /// <param name="id">The gate's id.</param>
     /// <returns>The descriptor.</returns>
