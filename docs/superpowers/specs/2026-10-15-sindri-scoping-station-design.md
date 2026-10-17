@@ -1,7 +1,7 @@
 # Sindri scoping station: the first station of spec-to-proven-PR, as block recipes
 
-**Status:** design, revision 3.3 (after /autoplan passes 1–2, a narrow re-check, the owner's scope-graph request
-of 2026-10-16 and two recorded limits, §13) · **Date:** 2026-10-15, amended 2026-10-16 · **Owner decisions:** 2026-10-15 and 2026-10-16 (§1) · **Engine decision:** 2026-10-15, fact keys stay camelCase (W5) ·
+**Status:** design, revision 3.4 (after /autoplan passes 1–2, a narrow re-check, the owner's scope-graph request
+of 2026-10-16, two recorded limits and the #309 /autoplan follow-up, §13) · **Date:** 2026-10-15, amended 2026-10-16 · **Owner decisions:** 2026-10-15 and 2026-10-16 (§1) · **Engine decision:** 2026-10-15, fact keys stay camelCase (W5) ·
 **Builds on:** the decision-tree recipes spec `2026-10-15-sindri-decision-tree-recipes-design.md` (DT, #240), rev 4;
 the workflow engine spec `2026-10-10-sindri-workflow-engine-design.md` (WF), rev 8.2, schema 1;
 `docs/csharp/sindri-workflow.md` (REF); the context retrieval spec `2026-10-10-sindri-context-retrieval-design.md`
@@ -38,7 +38,7 @@ block, W6–W14, sequenced before SC-L and SC-R.
 | SC4 | **Inputs** (owner, 2026-10-15). Any one of: a brief or spec doc (a whole file or one section); a tracker project or issue, read through a tracker port, never hard-wired to one tracker; a rough idea typed in the app, first turned into a brief by an interview; a PR or branch, to scope an existing change (§4) | Work arrives in all four forms. One station with four readers means one scope packet shape for the design station |
 | SC5 | **Four blast-radius lenses** (owner, 2026-10-15). **Code:** files, symbols, callers and callees, covering tests, and data and schema touched. **Product surfaces:** screens, APIs, jobs, notifications, permissions, reports and flags, from the product map. **Related features:** features that share data, flows or components with the change. **History:** past tickets, incidents, PRs and decisions on the same areas (§5) | Each lens is a place today's scoping misses things. Naming them makes "nothing found" a recorded result instead of a silence |
 | SC6 | **Behaviour gaps are closed by an interview** (owner, 2026-10-15). Each question carries pre-arranged options (drafted answers, each with a short rationale and its citations) plus "other" with fill-in text. It is the app's form and the CLI's prompt, the same shape as a typed answer form (IDEA-002). Every answer is recorded in the ledger (§7) | Drafted options make an answer a click when the evidence is clear, and "other" keeps the owner's own words. A recorded answer is evidence a later station can cite |
-| SC7 | **Evidence before the after-scoping stop** (owner, 2026-10-15): every surface cited (uncited items dropped or flagged); per-lens coverage (for each lens, what was searched, what was found, and an explicit "nothing found"); an acceptance list (EARS where possible), all failing at the start, that later stations must prove; a challenger on another model or vendor found nothing new, in surfaces or in behaviours (§8) | The owner's stop reads evidence, not a claim. A deterministic check (`step.scope.evidence`) refuses the stop until all four are present |
+| SC7 | **Evidence before the after-scoping stop** (owner, 2026-10-15): every surface cited (uncited items dropped or flagged); per-lens coverage (for each lens, what was searched, what was found, and an explicit "nothing found"; a lens with a recorded limit reads "not searched: <limit> — <fix line>" instead, §8.2); an acceptance list (EARS where possible), all failing at the start, that later stations must prove; a challenger on another model or vendor found nothing new, in surfaces or in behaviours (§8) | The owner's stop reads evidence, not a claim. A deterministic check (`step.scope.evidence`) refuses the stop until all four are present |
 | SC8 | **The lenses run in one state, as Step inputs, with no chaining between them** (this doc, §5.2; rev 2: the "history uses product anchors" claim is dropped, and the data hand-off is W6) | They are independent read-only queries with nothing to decide between them. One state gives one coverage fact over all four lenses and one way back for re-scoping |
 | SC9 | **Deterministic checks are Steps with outcomes, not transition gates** (this doc, §8.2) | A failing check must route back to the drafter, or to `gather`, with its findings. A gate refusal parks instead (WF §5.8, DT §5.5) |
 | SC10 | **No seed reuses a prompt as-is** (owner, IDEA-098). Every agent Step's seed, and the size route's prompt, is written new against `research/prompting.md`'s principles and rubric, after an error analysis of real traces, with eval cases and graders, and scored before the recipe is approved (§10) | Today's prompts have no evals. The station's prompts start with them |
@@ -126,10 +126,10 @@ TypeScript build.
 
 | Lens | Covers (SC5) | Version 1 source | Input block | Recorded limits in version 1 |
 |---|---|---|---|---|
-| **Code** | files, symbols, callers and callees, covering tests, data and schema touched | CTX lenses code band (files with `implements` and `tests` edges); S-CL's code lens: test files that name an implementing file, `Thing` nodes the scope `writes` and `reads`, migration and schema files under `context.code.schemaGlobs`; C13's lexical source (identifier and string search, file level) | `input.context.code` (C3) | callers, callees and symbols: `index-not-built` until S-9, which waits on a C# code index that has no spec yet; `commit-not-held` (SND-CONTEXT-110): the as-of map version's commit isn't on disk, the context engine never fetches, so a regather can't fix it |
+| **Code** | files, symbols, callers and callees, covering tests, data and schema touched | CTX lenses code band (files with `implements` and `tests` edges); S-CL's code lens: test files that name an implementing file, `Thing` nodes the scope `writes` and `reads`, migration and schema files under `context.code.schemaGlobs`; C13's lexical source (identifier and string search, file level) | `input.context.code` (C3) | callers, callees and symbols: `index-not-built` until S-9, which waits on a C# code index that has no spec yet; `commit-not-held` (SND-CONTEXT-110): the as-of map version's commit isn't on disk, the context engine never fetches, so a regather alone can't fix it (fetching the commit into the checkout does, then regather); see §8.2's Recorded limits table |
 | **Product surfaces** | screens, APIs, jobs, notifications, permissions, reports, flags | CTX lenses product band `own` (the anchors' features, surfaces and actions) | `input.context.lenses` (C1) | kinds `notification`, `permission`, `report`, `flag` arrive with S-SK (C2) |
 | **Related features** | features that share data, flows or components with the change | CTX cascade `affects`: the state, flow and dependency hops, plus the component hop (C4) | `input.context.lenses` (C1) | — |
-| **History** | past tickets, incidents, PRs and decisions on the same areas | CTX intent band (records with `mentions`, decisions with `decides` and `supersedes`, from stored edges); S-H's `git-history` adapter for merged PRs and commits | `input.context.history` (C5) | ticket `mentions`: `history-unlinked` until S-5B; incidents: `not-configured` until a source exists; `not-synced` (provisional owner default): an intent source that was never synced, which a regather can't sync |
+| **History** | past tickets, incidents, PRs and decisions on the same areas | CTX intent band (records with `mentions`, decisions with `decides` and `supersedes`, from stored edges); S-H's `git-history` adapter for merged PRs and commits | `input.context.history` (C5) | ticket `mentions`: `history-unlinked` until S-5B; incidents: `not-configured` until a source exists; `not-synced` (provisional owner default): an intent source that was never synced, which a regather can't sync; see §8.2's Recorded limits table |
 
 Every lens result carries **`searched`** (C6): the anchors, each source with its `SourceState` (`ok`, `degraded`,
 `unavailable`, `not-configured`) and a code, the map version, the depth and the hops; and **map coverage** (C13): the
@@ -303,10 +303,11 @@ transitions:
   - { from: withdraw, to: dropped, on: step.completed, when: { outcome: withdrawn } }
 loops: { rounds: { cap: 6 }, rescope: { cap: 3 }, interview: { cap: 4 }, challenge: { cap: 4 }, refreeze: { cap: 2 } }
 budget: { tokens: 2500k }
-evals:   # 22 cases; Appendix B says what each walks and expects
+evals:   # 25 cases; Appendix B says what each walks and expects
   - evals/workflow.scoping/brief-happy.jsonl
   - evals/workflow.scoping/tracker-happy.jsonl
   - evals/workflow.scoping/idea-child.jsonl
+  - evals/workflow.scoping/idea-child-unresolved.jsonl
   - evals/workflow.scoping/change-happy.jsonl
   - evals/workflow.scoping/empty-input.jsonl
   - evals/workflow.scoping/check-gaps-redraft.jsonl
@@ -536,10 +537,10 @@ severity: fail | warn }] }`, written as `fact:findings` and printed by `--json`.
 | `SCP-CITE-001` | draft | Every surface, implication and acceptance item cites at least one id that resolves: a lens item in `fact:lenses`, a ref in `fact:brief.refs`, or an answer in `fact:answerLog` |
 | `SCP-CITE-002` | draft | An item with no resolving citation is reported. `evidence` removes it from the map and lists it under `flagged` with its reason; a flagged item never reaches the acceptance list |
 | `SCP-COV-001` | draft | `fact:coverage` has one row per lens: `code`, `product`, `related`, `history` |
-| `SCP-COV-002` | draft | Each row is `found` (count > 0) or `nothing-found` (count 0, every source `ok` or in a recorded-limit state named in §8.2). A source `degraded` or `unavailable` in any other state or code makes the row `not-searched`: outcome `regather` |
+| `SCP-COV-002` | draft | Each row is `found` (count > 0) or `nothing-found` (count 0, every source `ok` or in a recorded-limit state named in §8.2's Recorded limits table, matched on `state` plus `reason`; the reason string is the key, and `code` is shown, never matched). A source `degraded` or `unavailable` in any other state or code makes the row `not-searched`: outcome `regather` |
 | `SCP-COV-003` | evidence | Every lens item with `depth ≤ 1` is in the map or listed under `excluded` with a one-line reason |
 | `SCP-COV-004` | evidence | For a `change` input, every changed file is mapped or listed under `unmapped` in the packet |
-| `SCP-COV-005` | evidence (warn) | A row whose map coverage is below `workflow.scoping.mapCoverageFloor` (default 0.5) is shown at the top of the stop as "nothing found, map thin: n of m nodes mapped". It never refuses |
+| `SCP-COV-005` | evidence (warn) | A row whose map coverage is below `workflow.scoping.mapCoverageFloor` (default 0.5) is shown at the top of the stop as "nothing found, map thin: n of m nodes mapped". A row with a recorded limit never reads "nothing found": it reads "not searched: <limit> — <fix line>" (§8.2). It never refuses |
 | `SCP-LENS-001` | evidence | rev 3.2: `lenses.json` has one entry per lens; each lens's anchors, depth and `mapVersion` equal its `coverage.json` row's `searched`; its node and item ids are the row's `found` ids (all of them, or, for a band marked `truncated`, the first 100 the lens returned, with `foundCount` the full count); every edge's two ends are its found ids or anchors; every node, item and edge carries `trust` stamped as `SCP-TRUST-001` says |
 | `SCP-ACC-001` | draft | The list is non-empty; every item has an id, `status: failing`, and `form: ears`, or `form: plain` with a reason |
 | `SCP-ACC-002` | draft | Every in-scope surface has at least one item, or is marked `no-behaviour-change` with a reason |
@@ -555,12 +556,20 @@ severity: fail | warn }] }`, written as `fact:findings` and printed by `--json`.
 - **Outcomes.** `check`: `pass`, `gaps`, or `regather` when every failing rule is `SCP-COV-002`. `evidence`:
   `complete`, `incomplete`, or `regather` on the same condition. Warnings never change an outcome and are never
   reported as `fact:findings` (the stop view re-runs the checks to show them).
-- **Recorded limits pass.** `index-not-built` (code callers, callees, symbols), `history-unlinked` (ticket mentions
-  before S-5B), `commit-not-held` (a code-lens source `unavailable` with reason `commit-not-held`, code
-  SND-CONTEXT-110: the as-of commit isn't on disk; owner-approved), `not-synced` (an intent source `unavailable`
-  with reason `not-synced`, code assigned by the context lane's S-H: never synced; provisional owner default),
-  `not-configured`, and a lens the profile marks `none` for a repo (shown `not-applicable` with its reason)
-  are recorded states. They appear on the row and at the stop, and never refuse it.
+- **Recorded limits pass.** The four limits in the table below, `not-configured`, and a lens the profile marks `none`
+  for a repo (shown `not-applicable` with its reason) are recorded states. They appear on the row and at the stop,
+  and never refuse it. At the stop a limited row reads "not searched: <limit> — <fix line>", never "nothing found",
+  and the coverage header counts limited lenses ("2 of 4 lenses limited").
+
+  **Recorded limits** (the one table; §5.1, C3, C5 and `SCP-COV-002` point here):
+
+  | Limit name | Lens | `SourceState` | `reason` string | `code` | Owner status | Fix line |
+  |---|---|---|---|---|---|---|
+  | `index-not-built` | Code (callers, callees, symbols) | `unavailable` | `index-not-built` | `index-not-built` | Decided | Wait for the code index (S-9) |
+  | `history-unlinked` | History (ticket mentions) | `unavailable` | `history-unlinked` | `history-unlinked` | Decided | Wait for the ticket linker (S-5B) |
+  | `commit-not-held` | Code | `unavailable` | `commit-not-held` | SND-CONTEXT-110 | Owner-approved (2026-10-16) | Fetch the commit into the profile repo's checkout, then regather |
+  | `not-synced` | History (an intent source) | `unavailable` | `not-synced` | Assigned by the context lane's S-H | Provisional; owner to confirm (Q11) | Sync the intent source, then regather |
+
 - **The verbs.** `sindri scoping check (<address> | --facts <dir>) [--draft <dir>] [--stage draft|evidence] [--json]`
   and `sindri scoping show (<address> | --facts <dir>) [--json]`. With `--facts` they run in the CLI over a directory
   of fact files (class `local`, API3): no instance, no server. SC-K's proofs, the prompt-eval runner, B.2's graders and
@@ -622,7 +631,7 @@ facts, each section marked "not yet" with the state that writes it; an empty sec
 Session callers get untrusted text inside the fence (CTX "Egress by caller"). Its order, so the owner reads behaviour
 and blast radius before the ticks:
 
-1. SC7's checklist: each rule with its live status (re-run), then warnings (`SCP-COV-005`) and recorded limits.
+1. SC7's checklist: each rule with its live status (re-run), then warnings (`SCP-COV-005`) and recorded limits, under a coverage header that counts the limited lenses ("2 of 4 lenses limited").
 2. Flagged items, with reasons, and next to them the unresolved findings (`fact:scopeMap.unresolved[]`), each with its rule and why.
 3. Excluded surfaces, with reasons, and `unmapped` files.
 4. The acceptance items with their citations and the answers behind them.
@@ -806,9 +815,9 @@ Every ask to another lane is a row here; this doc edits no other spec, except th
 |---|---|---|---|
 | C1 | **`input.context.lenses`** over the multi-anchor `lenses` route, in the answer's shape. It runs as `service:engine` with the instance's repo scope, the session cut of owner decision B. The data hand-off to the Step is W6's, not this row's. The anchor resolver is the `text` shape's `suggestedAnchors`, called by `read-brief` and `step.scope.anchor`. **rev 3.2 (SC11):** the multi-anchor route is also the app's read (UI E-26, amended): U7's "Anchors' stack ▸" opens U9's ordinary stack over a packet's anchor set on the current map. More than 20 anchors is `SND-CONTEXT-006`; anchors the map doesn't hold (or outside a session's repo scope, the same answer) are listed in `missingAnchors[]` and the rest answer. One anchor keeps today's `LensesView` (schema 1); a set answers `LensesView` schema 2, with `anchors[]` in place of `anchor`, `anchors[]` on each item, `edges` over the union and `coverage.byAnchor`. API10 carries the wire change | Data channel moved to W6; scope cut added; rev 3.2: a UI read | SC-L (S-LB), SC-V |
 | C2 | **Surface kinds** `notification`, `permission`, `report`, `flag`, with extractor rules as the profile setting `context.extract.recognizers`, never rules for one app's registries | App-agnostic profile setting | SC-L (S-SK), SC-F |
-| C3 | **`input.context.code`** in the answer's shape: files, tests, data things, schema files; callers and callees report `unavailable` with code `index-not-built` until S-9, a recorded state; `commit-not-held` (SND-CONTEXT-110) on a code source whose as-of commit isn't on disk, also recorded | No TS index named | SC-L (S-CL) |
+| C3 | **`input.context.code`** in the answer's shape: files, tests, data things, schema files; callers and callees report `unavailable` with code `index-not-built` until S-9, a recorded state; `commit-not-held` (SND-CONTEXT-110) on a code source whose as-of commit isn't on disk, also recorded (the rows are §8.2's Recorded limits table; the context lane widens 110's row in the context spec to name the as-of read, an ask sent through the meta) | No TS index named | SC-L (S-CL) |
 | C4 | **A component hop**, in the answer's shape (confirmed `implements` only, fan-out cap) | — | SC-L (S-CH) |
-| C5 | **`input.context.history`** in the answer's shape: stored edges and `git-history` first; ticket mentions report `history-unlinked` until S-5B; incidents `not-configured`; an intent source never synced reports `unavailable` with reason `not-synced` (provisional), recorded | Recorded states named | SC-L (S-H) |
+| C5 | **`input.context.history`** in the answer's shape: stored edges and `git-history` first; ticket mentions report `history-unlinked` until S-5B; incidents `not-configured`; an intent source never synced reports `unavailable` with reason `not-synced` (provisional), recorded (§8.2's Recorded limits table) | Recorded states named | SC-L (S-H) |
 | C6 | **`searched`** as an extension of `SourceState` with `not-configured` and a code per source, plus per-band `empty`, reusing the lens result's existing `coverage`, `gaps` and `degraded[]` rather than a parallel set; `fetchedAt` on every ref | Reuse, not a parallel vocabulary | SC-L (S-LB) |
 | C7 | **The `diff` shape** over refs only (base and head shas), with `unmapped` paths. `read-change` resolves a PR to its shas | Refs only | SC-T (S-D) |
 | C8 | **The tracker port** `ITrackerSource` in `Aw.Context.Core` and `GET /sindri/context/record?key=&children=&comments=`, profile key `context.sources.<name>`. The route answers `service:engine` and the human only (owner decision B); before S-6, one issue by key through Onyx | Absorbs the review's tracker-port row; session rule added | SC-T (S-6, S-TR) |
@@ -1021,7 +1030,19 @@ Review follow-ups (#309 consistency review):
 | §6.1 eval list, B.1 | Cases `commit-not-held-accepted` and `not-synced-accepted` beside `index-not-built-accepted` |
 | Appendix C note, review row (b) | The stale limit lists include the two new limits |
 
+If the owner rejects `not-synced`, remove it from: the §8.2 Recorded limits table row, the `not-synced-accepted` eval case (§6.1 list, B.1), Q11, C5 (§12.1), and the 13.5 row above.
+
 `SourceState` (C6, §5.1) is `ok`, `degraded`, `unavailable` or `not-configured`, so `error` is not a state; no text implied it, and none changed for it.
+
+### 13.6 Rev 3.4, the #309 /autoplan follow-up
+
+| Id | Where | What changed |
+|---|---|---|
+| S1 | §6.1 eval list, B.1, SC-Y, SC-K | The list was 24 cases (22 plus the two limit cases) and now has 25, with `idea-child-unresolved` (the child ends `unresolved`, so the parent is `dropped`), matching the SC-Y recipe's list; the recipe comment and SC-Y's proof say 25; SC-K's proof names a coverage row for each recorded limit |
+| S2 | §8.2, §5.1, C3, C5, `SCP-COV-002` | One Recorded limits table (limit, lens, `SourceState`, reason, code, owner status, fix line); `SCP-COV-002` matches on `state` plus `reason`; the other places point at it |
+| S3 | §5.1 (Code row), C3 | "A regather alone can't fix it" and the fix (fetch the commit into the checkout, then regather); C3 asks the context lane to widen 110's row to name the as-of read |
+| S4 | SC7, §8.2, §8.4, `SCP-COV-005`, Q11, §13.5 | A limited row reads "not searched: <limit> — <fix line>", never "nothing found"; the stop's header counts limited lenses; Q11 names `not-synced` provisional, owner to confirm; §13.5 lists what to remove if the owner rejects it |
+| S5 | Status line, §13.6 | Revision 3.4; this table |
 
 ## 14. Phases
 
@@ -1031,8 +1052,8 @@ more than one. **(owner)** steps run through `scripts/sindri-prove.sh human`.
 | Phase | What | Where | Size | Needs | Proof | Docs | Lane |
 |---|---|---|---|---|---|---|---|
 | **SC-F** (owner) | The fixture (§10.3): repo, map, probes, history script with the planted injection and fake token, both changes, gold, scripted answers | `tests/fixtures/scoping/` | M | None (today's kinds) | **(owner)** `context map import` loads `map.yaml` with 0 errors; `context eval probes` runs `probes.json`; the history script builds a repo whose `git log` holds the revocation PR; a gold self-check scores the gold scope 1.0 recall and precision and a decoy-only scope 0.0 | `tests/fixtures/scoping/README.md` | ideas |
-| **SC-Y** | Both recipes (§6), every Step descriptor (descriptor-only, `deskCapable`, `Runtime: block` and read-only as §9 says, declared inputs as §9 lists), the schemas in `schemas/scoping/`, the engine evals | `recipes/sindri/`, `Aw.Sindri.Features/Blocks/`, `schemas/scoping/` | M | DT-V, DT-C (child outputs: `idea → gather`), DT-R (`HumanOnly`) | `sindri recipe validate` exits 0 on both (the `refreeze` loop closes the stop cycle); `recipe eval` passes all 22 scoping cases and 3 child cases (Appendix B.1) | REF block catalog rows; `recipes/sindri/README` | ideas |
-| **SC-K** | `ScopePacketChecks`, `sindri scoping check` and `show` (both modes), `scoping desk`, the packet assembler (with `lenses.json`, rev 3.2), API9's packet-file route (rev 3.2), the `ScopingView` read model and API2's route, catalog row and golden, the `scoping.approved` and `scoping.escape` kinds, the `scoping` kind with the packets owner | `Aw.Sindri.Features/Scoping/`, `Host/`, `src/Packets/` | M | SC-F; SC-Y; P1 agreed; W11 (a temp run area until then); API P11 (API2's route only) | `scoping check --facts` on the gold facts exits 0; one broken fixture per failing rule exits 1 naming it; a draft dir inside a worktree exits 2 `SND-SCOPING-002`; `index-not-built` and `history-unlinked` rows pass; `aw-packets hash`, `validate` and `freeze` accept the gold packet; `scoping show --facts --json` and API2 on a desk instance match the golden, with serve down `scoping show <address>` exits 2 `SND-API-001`; the gate runs `Aw.Sindri.Ui.Tests` | `docs/csharp/sindri-scoping.md` (new) | ideas |
+| **SC-Y** | Both recipes (§6), every Step descriptor (descriptor-only, `deskCapable`, `Runtime: block` and read-only as §9 says, declared inputs as §9 lists), the schemas in `schemas/scoping/`, the engine evals | `recipes/sindri/`, `Aw.Sindri.Features/Blocks/`, `schemas/scoping/` | M | DT-V, DT-C (child outputs: `idea → gather`), DT-R (`HumanOnly`) | `sindri recipe validate` exits 0 on both (the `refreeze` loop closes the stop cycle); `recipe eval` passes all 25 scoping cases and 3 child cases (Appendix B.1) | REF block catalog rows; `recipes/sindri/README` | ideas |
+| **SC-K** | `ScopePacketChecks`, `sindri scoping check` and `show` (both modes), `scoping desk`, the packet assembler (with `lenses.json`, rev 3.2), API9's packet-file route (rev 3.2), the `ScopingView` read model and API2's route, catalog row and golden, the `scoping.approved` and `scoping.escape` kinds, the `scoping` kind with the packets owner | `Aw.Sindri.Features/Scoping/`, `Host/`, `src/Packets/` | M | SC-F; SC-Y; P1 agreed; W11 (a temp run area until then); API P11 (API2's route only) | `scoping check --facts` on the gold facts exits 0; one broken fixture per failing rule exits 1 naming it; a draft dir inside a worktree exits 2 `SND-SCOPING-002`; a coverage row for each recorded limit passes: `index-not-built`, `history-unlinked`, `commit-not-held`, `not-synced`; `aw-packets hash`, `validate` and `freeze` accept the gold packet; `scoping show --facts --json` and API2 on a desk instance match the golden, with serve down `scoping show <address>` exits 2 `SND-API-001`; the gate runs `Aw.Sindri.Ui.Tests` | `docs/csharp/sindri-scoping.md` (new) | ideas |
 | **SC-E** | The prompt-eval runner: case schema, `sindri recipe prompt-eval <recipe> --step <block> [--model <role>] [--trials 3] [--json]`, `check:` graders, `judge:` calibration with a held-out split, results per model, a heavy-job slot, the egress check | `Aw.Sindri.Features/Recipes/PromptEvals/` | M | DT-J (Judge providers); W8's profile keys (or the default model until then) | On a toy seed with five cases: the runner reports pass^3 per case, a baseline arm, TPR and TNR on the held-out split; with no allowed provider it refuses before sending; it takes and releases a heavy slot | REF "Prompt evals"; `research/prompting.md` Part 4 note | ideas |
 | **SC-S** (owner) | Error analysis (`failure-modes.md`), the seeds, references and examples, the size prompt, ≥ 20 cases per agent Step and for size, graders, calibration labels, baselines, rubric scores | `Seeds/`, `recipes/sindri/evals/workflow.scoping/prompts/` | M | SC-F; SC-E for the proof; SC-W traces for the second cycle | **(owner)** labels the calibration sets; every seed scores ≥ 2 on R1, R2, R6, R9, R13 (recorded); each seed beats its baseline on the held-out change; each gating judge's TPR and TNR ≥ 0.8 on held-out labels | `Seeds/README.md` | ideas |
 | **SC-W** (owner) | Desk walk on one real brief: a `brief` input on an owner repo, the recipe at the desk on a real serve with no external provider (every agent run `via: desk`), every block Step on the path completed through `scoping desk` (§8.2: lens JSON from `context lenses --json`, anchors from `context query --json`, the proposals' answer from `context map propose --json`; `--out` the instance's run area), the v0 seeds followed by an attended session in plan or read-only permission mode (W7 and W9 aren't in yet), `scoping show` read by the owner | — | S | SC-Y, SC-K | **(owner)** a real brief reaches `stop` at the desk, with `SCP-CHAL-002` shown as a warning; `scoping show` lists all nine sections; the traces are kept for SC-S's error analysis | runbook in `docs/csharp/sindri-scoping.md` | ideas |
@@ -1094,7 +1115,7 @@ Each has a provisional answer. All are reversible unless marked.
 | Q8 | How much owner time per error-analysis cycle? (prompting.md) | About an hour per agent Step per cycle: 30 traces every four weeks while the station is new, fewer once regression cases hold. Calibration labels for the four gating judges first (about 80 labels), the rest later |
 | Q9 | Add `step.scout` (IDEA-017) as a fifth evidence source? | Not in version 1. Add it after SC-B if missed items cluster in code the lenses can't see |
 | Q10 | Should the interview's caps (5 per round, 4 rounds) be profile values? | No: the recipe's (DT Q7). The owner's experience after SC-P decides whether to change them |
-| Q11 | Can the owner approve at the stop with a lens not searched? | No: a transient source failure sends the instance back to `gather` (`regather`) and parks at the `rescope` cap with the source named. Recorded limits (`index-not-built`, `history-unlinked`, `commit-not-held`, `not-synced`, `not-configured`) and a lens the profile marks `none` for a repo (`not-applicable` with its reason) pass and show at the stop. *Owner should confirm* |
+| Q11 | Can the owner approve at the stop with a lens not searched? | No: a transient source failure sends the instance back to `gather` (`regather`) and parks at the `rescope` cap with the source named. Recorded limits (`index-not-built`, `history-unlinked`, `commit-not-held`, `not-synced`, `not-configured`) and a lens the profile marks `none` for a repo (`not-applicable` with its reason) pass and show at the stop as "not searched: <limit> — <fix line>". `not-synced` is provisional: the owner is to confirm it. *Owner should confirm* |
 | Q12 | Do the challenger and drafter need different vendors, or only different models? | Different models, and different vendors when the repo's profile allows more than one (SC7 says "model or vendor"). `SCP-CHAL-002` reads the runtime's record (W8) |
 | Q13 | Does the station write tracker issues from the scope? | No. Writing to a tracker is an ask-first effect for the plan station, never scoping's |
 | Q14 | What happens to a cancelled instance's proposals? | They stay, tagged with the run, and map review shows them; `withdraw` runs only on `drop`. A cancel hook is a later engine question |
@@ -1222,6 +1243,7 @@ The prompt and choices are in §6.1. They are model-facing text under SC10: chec
 | `brief-happy` | intake `brief` → read → gather → draft → check `pass` → questions `none` → challenge `nothingNew` → challenge-log → size `m` → propose → evidence → stop `approve` → freeze | `scoped` |
 | `tracker-happy` | the same from `tracker` | `scoped` |
 | `idea-child` | intake `idea` → the child resolves → gather | the child's brief, anchors and log in the parent |
+| `idea-child-unresolved` | intake `idea` → the child ends `unresolved` | the parent is `dropped` |
 | `change-happy` | the same from `change` | `scoped` |
 | `empty-input` | a reader reports `empty` | `dropped` |
 | `check-gaps-redraft` | check `gaps` once, then `pass` | `rounds` at 2 |
