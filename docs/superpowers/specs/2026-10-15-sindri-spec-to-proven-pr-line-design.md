@@ -1,8 +1,8 @@
 # Sindri spec-to-proven-PR line: the line contract, design, plan and the per-phase child
 
-**Status:** design, revision 2.6 (after /autoplan pass 1, a narrow re-check, #263's asks, #258 rev 3.2's scope graphs, the #308 review rulings, the #309 /autoplan follow-up and its round 2, §14) (draft; not built until every station is specced, LN1) · **Date:** 2026-10-15 ·
+**Status:** design, revision 2.7 (after /autoplan pass 1, a narrow re-check, #263's asks, #258 rev 3.2's scope graphs, the #308 review rulings, the #309 /autoplan follow-up and its rounds 2 and 3, §14) (draft; not built until every station is specced, LN1) · **Date:** 2026-10-15 ·
 **Owner decisions:** 2026-10-15 and 2026-10-16 (§1) · **Builds on:** the scoping station spec
-`2026-10-15-sindri-scoping-station-design.md` (SC, #258), rev 3.5, branch `docs/sindri-scoping-station`; the
+`2026-10-15-sindri-scoping-station-design.md` (SC, #258), rev 3.6, branch `docs/sindri-scoping-station`; the
 decision-tree recipes spec `2026-10-15-sindri-decision-tree-recipes-design.md` (DT, #240), rev 4; the parked PR
 babysitter and docs sync draft `2026-10-15-sindri-pr-babysitter-docs-sync-design.md` (PB), branch
 `docs/sindri-pr-babysitter-docs-sync`; the workflow engine spec `2026-10-10-sindri-workflow-engine-design.md` (WF), rev
@@ -96,7 +96,7 @@ Every packet is an `aw-packets` kind (LN10; LN-PKT1), hashed by `aw-packets hash
 carries `index.json`: its kind, its parents' hashes, and `acceptance: { self, extends }`, where `self` is the sha256 of the
 packet's own `acceptance.json` and `extends` is the parent acceptance's hash. `self` is null for every kind without `acceptance.json`: plan, review and handoff (`aw-packets` refuses a non-null `self` there). `extends` equals the `parent` of the packet's own `acceptance.json` (`aw-packets` checks they match); in a kind without `acceptance.json` it carries the nearest ancestor's acceptance hash (not checked by `aw-packets`). Every hash field (`parents[]`, `self`, `extends`, `parent`, evidence `sha256`) is `sha256:` plus 64 lowercase hex. `index.json` carries no
 `id`; the packet id lives in `packet.json`. The scope packet is the chain's root: its files are #258 §8.3's twelve, and the
-design packet's `index.json` `parents` carries the scope packet's hash. The walk (LC-3, `sindri line show`) starts at the newest packet (the hand-off, whose `index.json` lists packets 1-6) and reaches the root through each packet's `parents`; the design-to-scope link (the scope packet's hash) is the one `aw-packets verify` checks. A reader verifies its input with `aw-packets verify
+design packet's `index.json` `parents` carries the scope packet's hash. The walk (LC-3, `sindri line show`) starts at the newest packet (the hand-off, whose `index.json` lists packets 1-6) and reaches the root through each packet's `parents`; `aw-packets verify` checks a packet's own hash (LN-PKT2), not its `parents`; that each `parents` hash resolves to a frozen packet is checked by the line's reader step before it reads (LN-PKT6). A reader verifies its input with `aw-packets verify
 <dir> --hash <h>` (LN-PKT2) before it reads anything.
 
 | # | Packet (kind) | Made by | Files | Frozen fields | Hash and freeze | Evidence it adds |
@@ -782,6 +782,7 @@ cited, never re-filed (rev 2.3: #258 rev 3.2 adds C15, U7, API9 and API10, cited
 | LN-PKT3 | **Answers PKT's size question:** `PKT-SIZE-001` checks each task against a sizes file, `validate --sizes <file>` (files, items, budget per size), which Sindri writes from `workflow.plan.sizes`, so tier-1 aw-packets never reads Sindri's profile. It is packets.md's `sizeBudget`: PKT owns the shape, the profile the values | LN-K |
 | LN-PKT4 | **Answers PKT's holdout-store question:** the store's path and format (§9.1), `seal.json`, the canary per set; `PKT-HOLD-003`: a phase packet's set hash matches a seal. An amended phase packet is written by Sindri (`step.build.amend`) in its run area; aw-packets only hashes, validates and freezes it, and still writes only under `packets/` | LN-H |
 | LN-PKT5 | **Who froze it:** `aw-packets freeze <dir> --by owner\|machine` (default `machine`), stored as `by` in PKT's `FreezeRecord` and printed by `verify`; `step.build.amend` and the stop blocks pass `owner`, every other freeze `machine` (§2) | LN-K |
+| LN-PKT6 | **Parent resolution (follow-up row):** the line's reader step (the `line show` walk, and a station's intake) checks, before it reads a packet, that each hash in its `parents` resolves to a frozen packet (a freeze record, LN-PKT2's lookup); a parent that does not resolve is a mismatch, `SND-LINE-001`. `aw-packets verify` does not check `parents`; `LineContext` only rejects a duplicate parent | LN-K |
 
 ### 12.5 Launcher (LN-LCH)
 
@@ -852,7 +853,7 @@ phase is one PR through /specToProvenPR. **(owner)** steps run through `scripts/
 |---|---|---|---|---|---|---|
 | **LN-F** (owner) | The fixture (§10.3) | M | SC-F | Gold self-checks: the gold design passes `design check --facts`, the gold plan passes `plan check --facts` and `aw-packets validate`; each planted fault fails its rule | `tests/fixtures/line/README.md` | ideas |
 | **LN-Y1** | `workflow.design` and `workflow.plan` (Appendix C.1–C.2), descriptors (descriptor-only, `deskCapable`), `schemas/line/`, engine evals; LN-CTX2 | M | DT-V, DT-C, DT-R, engine P7; SC-Y | `recipe validate` exits 0 on both; `recipe eval` passes B.1's design and plan cases, `revise-cap` included | REF block-catalog rows | ideas |
-| **LN-K** | `DesignPacketChecks`, `PlanChecks`, the packet assemblers, `design\|plan check\|show`, `line desk`, `DesignStopView` (LN-API2), LN-CTX1, LN-WF9 | M | LN-F, LN-Y1, LN-PKT1–3 | Every DSN and PLN rule fails its planted fixture and passes the gold; LN-API2 matches its golden; the gate runs `Aw.Sindri.Ui.Tests` | `docs/csharp/sindri-line.md` (stations, checks, codes) | ideas |
+| **LN-K** | `DesignPacketChecks`, `PlanChecks`, the packet assemblers, the parent-resolution check (LN-PKT6), `design\|plan check\|show`, `line desk`, `DesignStopView` (LN-API2), LN-CTX1, LN-WF9 | M | LN-F, LN-Y1, LN-PKT1–3 | Every DSN and PLN rule fails its planted fixture and passes the gold; LN-API2 matches its golden; the gate runs `Aw.Sindri.Ui.Tests` | `docs/csharp/sindri-line.md` (stations, checks, codes) | ideas |
 | **LN-PK** | Packs: schemas, resolution, pins, `pack check`, built-in `plain`, `design-five`, `code-review`; LN-WF5, LN-UI5, LN-API8 | M | LN-Y1 | A repo pack wins over the profile's; a pin mismatch parks `SND-PACK-002`; `formal` makes `DSN-STYLE-001` fail a `plain` draft; an 11-lens pack is refused | `docs/csharp/packs.md`, the pack-authoring guide | ideas, engine |
 | **LN-S1** (owner) | Seeds A.1–A.6 and the lens frame, error analysis, cases, graders, baselines | M | SC-E, LN-F; LN-W traces | Every seed scores ≥ 2 on R1, R2, R6, R9, R13 and beats its baseline on `archive`; gating judges TPR and TNR ≥ 0.8 | `failure-modes.md` (under `$AW_STATE_DIR`) | ideas |
 | **LN-W** (owner) | Desk walk: SC-W's real scope packet through design and plan to stop 2, at the desk | S | LN-K, LN-PK | Stop 2 shows §6.4's seven sections; one decision answered against the recommendation sends the line back to design in revise mode; approve freezes three packet kinds | — | ideas |
@@ -999,6 +1000,13 @@ Fixes to match what #308 built (`schemas/packets/*.schema.json`, `LineContext.cs
 | R9-L2 | §3.2 intro (LC-3 walk) | The walk starts at the newest packet (the hand-off, `index.json` over packets 1-6), not the design packet; the design-to-scope link is the one `aw-packets verify` checks |
 | R9-L3 | §14.4 last row | It no longer says citations move to rev 3.3: the header cites the current scoping rev, LN16 keeps rev 3.2 |
 | R9-L4 | Header, status line | Builds on the scoping spec's rev 3.5; revision 2.6 |
+
+### 14.7 Rev 2.7, the #309 /autoplan follow-up, round 3
+
+| Id | Where | What changed |
+|---|---|---|
+| T5 | §3.2 intro (LC-3 walk), §12.4, LN-K | The intro no longer says `aw-packets verify` checks the design-to-scope link: `verify` checks a packet's own hash (LN-PKT2); a new row LN-PKT6 (owned by LN-K) has the line's reader step check that each `parents` hash resolves to a frozen packet |
+| T5-2 | Header, status line | Builds on the scoping spec's rev 3.6; revision 2.7; this table |
 
 ## 15. Open questions
 
