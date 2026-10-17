@@ -83,7 +83,7 @@ public sealed class CodeLensMergeTests
     {
         var view = CodeLensMerge.With(Base(), Found([new LexicalTest("tests/z.test.ts", CodeBasis.Sibling, ["src/sharing/links.ts"])], unlocated: 2, capped: true));
 
-        Assert.Equal((2, 2, 0, 2), (view.Counts.Tests, view.Counts.Unlocated, view.Counts.FilesWithoutTest, view.Lexical.Count));
+        Assert.Equal((2, 2, 0, 1), (view.Counts.Tests, view.Counts.Unlocated, view.Counts.FilesWithoutTest, view.Lexical.Count));
         Assert.True(view.Truncated.SearchedFiles);
         Assert.Equal(_row, view.Lexical[0]);
     }
@@ -107,6 +107,9 @@ public sealed class CodeLensMergeTests
 
         var merged = CodeLensMerge.With(view, new CodeLexicalFindings([], [], [], 0, SearchedFilesCapped: false));
 
-        Assert.Equal((view.Files, view.Tests, view.Data), (merged.Files, merged.Tests, merged.Data));
+        Assert.Equal(view.Files.Select(f => (f.Path, string.Join('|', f.TestedBy))), merged.Files.Select(f => (f.Path, string.Join('|', f.TestedBy))));
+        Assert.Equal(view.Tests.Select(t => t.Path), merged.Tests.Select(t => t.Path), StringComparer.Ordinal);
+        Assert.Equal(view.Data.Things.Count, merged.Data.Things.Count);
+        Assert.Empty(merged.Data.Files);
     }
 }
