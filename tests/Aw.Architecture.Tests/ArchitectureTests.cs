@@ -26,6 +26,10 @@ public sealed class ArchitectureTests
         Verify.None(InfrastructureRules.Check(Production.Architecture.Types, Production.Scope));
 
     [Fact]
+    public void Every_task_returning_port_method_takes_a_cancellation_token() =>
+        Verify.None(AsyncRules.Check(Production.Architecture.Types, Production.Scope));
+
+    [Fact]
     public void Every_type_of_a_package_sits_in_a_layer_namespace() =>
         Verify.None(PlacementRules.Check(Production.Architecture.Types, Production.Scope));
 

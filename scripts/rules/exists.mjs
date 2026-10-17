@@ -213,15 +213,17 @@ function analyzer(tree, c) {
 }
 
 function bannedSymbols(tree, c) {
-  const banned = tree.text("BannedSymbols.txt");
-  const wired = /<AdditionalFiles\s[^>]*Include="[^"]*BannedSymbols\.txt"/.test(tree.text("Directory.Build.props") ?? "");
+  // `ref` names the file when the check isn't in the Core list (BannedSymbols.All.txt, BannedSymbols.Tests.txt, ...).
+  const file = c.ref ?? "BannedSymbols.txt";
+  const banned = tree.text(file);
+  const wired = new RegExp(`<AdditionalFiles\\s[^>]*Include="[^"]*${escapeRe(file)}"`).test(tree.text("Directory.Build.props") ?? "");
   const listed = new Set((banned ?? "").split("\n").map((l) => l.split(";")[0].trim()).filter(Boolean));
   const missing = (c.entries ?? []).filter((e) => !listed.has(e));
   if (c.id !== "RS0030") return { found: false, where: "banned-symbols checks are RS0030 (BannedApiAnalyzers)" };
-  if (banned === null) return { found: false, where: "BannedSymbols.txt (missing)" };
-  if (!wired) return { found: false, where: "Directory.Build.props (no AdditionalFiles item wires BannedSymbols.txt)" };
-  if (missing.length) return { found: false, where: `BannedSymbols.txt (missing: ${missing.join(", ")})` };
-  return { found: true, where: "BannedSymbols.txt wired in Directory.Build.props" };
+  if (banned === null) return { found: false, where: `${file} (missing)` };
+  if (!wired) return { found: false, where: `Directory.Build.props (no AdditionalFiles item wires ${file})` };
+  if (missing.length) return { found: false, where: `${file} (missing: ${missing.join(", ")})` };
+  return { found: true, where: `${file} wired in Directory.Build.props` };
 }
 
 // stepNames(text) — the names of workflow steps: `name:` keys of the items of a `steps:` list (not jobs or `with:`).
