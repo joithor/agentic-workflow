@@ -33,6 +33,20 @@ internal static class AgentAnswer
             return new ProviderErrored(ProviderReasons.OutOfEnum);
         }
 
+        var confidence = Confidence(fields, question.AskConfidence);
+        if (confidence is not { } stated)
+        {
+            return new ProviderErrored(ProviderReasons.UnparseableAnswer);
+        }
+
+        return Extras(fields, question) is { } extra
+            ? new ProviderDecided(decision, stated, ProviderReasons.Model) { Extra = extra.Count > 0 ? extra : null }
+            : new ProviderErrored(ProviderReasons.ExtraOutOfSchema);
+    }
+
+    // The declared extras that are present, or null when one doesn't match its fragment.
+    private static JsonObject? Extras(JsonObject fields, QuestionRef question)
+    {
         var extra = new JsonObject();
         foreach (var (name, fragment) in question.ExtraProperties ?? new Dictionary<string, JsonObject>(StringComparer.Ordinal))
         {
@@ -43,13 +57,13 @@ internal static class AgentAnswer
 
             if (!Matches(fragment, field))
             {
-                return new ProviderErrored(ProviderReasons.ExtraOutOfSchema);
+                return null;
             }
 
             extra[name] = field.DeepClone();
         }
 
-        return new ProviderDecided(decision, Confidence(fields), ProviderReasons.Model) { Extra = extra.Count > 0 ? extra : null };
+        return extra;
     }
 
     /// <summary>
@@ -77,10 +91,12 @@ internal static class AgentAnswer
         return null;
     }
 
-    private static double Confidence(JsonObject fields) =>
+    // A question that asks for a confidence (choose) gets none by default: an answer without a usable one is unusable,
+    // never certain. The others take DefaultConfidence for one that is missing or out of range.
+    private static double? Confidence(JsonObject fields, bool asked) =>
         fields["confidence"] is JsonValue value && value.TryGetValue<double>(out var confidence) && confidence is >= 0 and <= 1
             ? confidence
-            : DefaultConfidence;
+            : asked ? null : DefaultConfidence;
 
     // The fragment's 'type' (a name or a list of names) against the value's JSON kind; array items are checked too.
     private static bool Matches(JsonObject fragment, JsonNode value)
