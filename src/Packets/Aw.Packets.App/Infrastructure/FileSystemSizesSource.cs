@@ -17,7 +17,7 @@ internal sealed class FileSystemSizesSource(JsonSerializerOptions json) : ISizes
         try
         {
             var info = new FileInfo(path);
-            if (!info.Exists || info.Attributes.HasFlag(FileAttributes.Device))
+            if (!info.Exists)
             {
                 return PacketsErrors.SizesUnusable.With($"No sizes file at {path}.");
             }

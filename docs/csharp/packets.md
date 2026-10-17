@@ -72,7 +72,7 @@ All five sizes are present. A limit is zero or more; a `budget` field left out i
 - its `budget.tokens`, `turns` or `wallMinutes` exceed the limit (a field the task leaves out is not compared).
 
 The failure is one record per task, naming each limit it is over, with the fix (split the task or raise its size). It is
-`unchecked` when the base commit can't be read (the files can't be counted). A sizes file that is missing, not a regular file, unreadable,
+`unchecked` when the base commit can't be read (the files can't be counted). A sizes file that is missing (or a directory), unreadable,
 larger than 64 KB, malformed, not `schemaVersion` 1 or with a negative limit is `AW-PACKETS-009` (exit 2), never a check
 result. `freeze` takes no `--sizes` (Sindri validates first).
 
