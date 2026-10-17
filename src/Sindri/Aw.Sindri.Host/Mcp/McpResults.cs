@@ -16,10 +16,11 @@ internal static class McpResults
     /// <param name="services">The request's services (for the host's JSON options).</param>
     /// <param name="value">The answer.</param>
     /// <param name="summary">The text block.</param>
+    /// <param name="fence">The free-text fields to fence in the answer, or null when it carries none.</param>
     /// <returns>The tool result.</returns>
-    internal static CallToolResult Success<T>(IServiceProvider services, T value, string summary) => new()
+    internal static CallToolResult Success<T>(IServiceProvider services, T value, string summary, FencePlan? fence = null) => new()
     {
-        StructuredContent = Element(services, value),
+        StructuredContent = fence is null ? Element(services, value) : McpFencing.Apply(Element(services, value), fence),
         Content = [new TextContentBlock { Text = summary }],
     };
 
