@@ -6,10 +6,14 @@ HOOK="$DIR/../../hooks/send-gate.sh"
 AW_STATE_DIR="$(mktemp -d)" || exit 2; export AW_STATE_DIR
 trap 'find "$AW_STATE_DIR" -delete 2> /dev/null' EXIT
 
+# Every fake judge reads all of stdin before it answers, like the real one. The hook runs under pipefail, so a stub that
+# exits without reading lets the hook's `printf | judge` die of SIGPIPE (141) when the stub wins the race, which a loaded
+# box makes common: a spurious fail-open allow where the test expects deny or a queued item.
 setup_fake_judge() {
   local bin_dir decision; bin_dir="$(mktemp -d)"; decision="$1"
   cat > "$bin_dir/judge" <<EOF
 #!/usr/bin/env bash
+cat > /dev/null
 printf '%s' "\${AW_SESSION_ID:-}" > "$bin_dir/session-id"
 echo '{"decision":"$decision","confidence":0.9,"model":"claude-cli","reason_code":"model","id":"fixed-id"}'
 EOF
@@ -57,6 +61,7 @@ test_a_judge_failure_fails_open_to_allow_rf1() {
   local bin_dir out outbox; bin_dir="$(mktemp -d)"; outbox="$(mktemp -d)"
   cat > "$bin_dir/judge" <<'EOF'
 #!/usr/bin/env bash
+cat > /dev/null
 exit 1
 EOF
   chmod +x "$bin_dir/judge"
@@ -142,6 +147,7 @@ test_control_messages_bypass_the_classifier_entirely_f6() {
   local bin_dir out outbox; bin_dir="$(mktemp -d)"; outbox="$(mktemp -d)"
   cat > "$bin_dir/judge" <<'EOF'
 #!/usr/bin/env bash
+cat > /dev/null
 echo "FAIL: judge must never be called for a control message" >&2
 exit 1
 EOF

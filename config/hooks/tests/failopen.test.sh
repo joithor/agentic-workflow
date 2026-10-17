@@ -18,6 +18,8 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 HOOKS="$ROOT/config/hooks"
 LIBDIR="$ROOT/config/lib"
 fail=0
+# The cases set a lane's variables themselves ($LANE); the suite must not inherit another lane's or a Sindri launch's.
+unset TMUX TMUX_PANE AW_META_CONFIG AW_META_TEAM AW_META_LANE AW_META_LANE_PID AW_META_LANE_AGENT AW_META_LANE_PROC AW_SINDRI_CHILD AW_SINDRI_LAUNCH AW_SINDRI_HOME AW_LAUNCHER_CONFIG AW_JUDGE_CHILD
 SECRET="SENTINEL-PAYLOAD-7f3a"
 
 BASELINE="$HOOKS/tests/fixtures/failopen-baseline"
@@ -58,8 +60,12 @@ FAKE_BIN="$(mktemp -d)"
 JQ_DIR="$(dirname "$(command -v jq)")"
 BASE_PATH="/usr/bin:/bin:$JQ_DIR"
 # judge stub: JUDGE_MODE picks the behavior for every subcommand.
+# It reads all of stdin first, like the real judge: the hooks run `printf | judge` under pipefail, so a stub that answers
+# without reading lets printf die of SIGPIPE (141) whenever the stub wins the race. On a loaded box that is a different
+# cause or decision in the current run and the baseline run, a flake in the comparison below, not a hook difference.
 cat > "$FAKE_BIN/judge" <<'EOF'
 #!/usr/bin/env bash
+cat > /dev/null
 case "${JUDGE_MODE:-}" in
   exit1) exit 1 ;;
   garbage) echo 'not-json'; exit 0 ;;
@@ -270,6 +276,7 @@ INJECT=': "${AW_NOPE_UNSET:?}"' WANT_RC=1 run_case "scope-gate: unbound abort ke
 # fast as the baseline (no trap deferring the signal), within a bounded wait.
 SLOW_BIN="$(mktemp -d)"
 printf '#!/usr/bin/env bash
+cat > /dev/null
 sleep 4
 echo "{\\"decision\\":\\"send\\"}"
 ' > "$SLOW_BIN/judge"; chmod +x "$SLOW_BIN/judge"
