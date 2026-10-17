@@ -5,6 +5,7 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Sindri.Ui.ViewModels.Instance;
 using Aw.Sindri.Ui.ViewModels.Shell;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 using Aw.Sindri.Ui.Views.Workflows;
 
 namespace Aw.Sindri.Ui.Views.Shell;
@@ -61,7 +62,13 @@ internal sealed partial class ShellWindow
     private void OnBack(object? sender, RoutedEventArgs e) => Shell?.Back();
 
     // Where focus goes when the sheet closes: the strip row, the Workflows row or the queue row that opened it, the edge tab, else the row the selection moved to.
-    private Control? SheetOpenerFrame() => OpenerStripFrame() ?? OpenerWorkflowFrame() ?? OpenerRowFrame() ?? Usable(_sheetOpener) ?? SelectedRowFrame();
+    private Control? SheetOpenerFrame() => OpenerStripFrame() ?? OpenerWorkflowFrame() ?? OpenerRecipeFrame() ?? OpenerRowFrame() ?? Usable(_sheetOpener) ?? SelectedRowFrame();
+
+    // The Workflows group head whose Recipe button opened the sheet.
+    private Control? OpenerRecipeFrame() => Shell?.OpenerRecipeGroup is { } recipe
+        ? Usable(this.Get<Border>("Page").GetVisualDescendants().OfType<Button>()
+            .FirstOrDefault(b => b.IsEffectivelyVisible && string.Equals(b.Name, "WorkflowGroupRecipe", StringComparison.Ordinal) && b.DataContext is RecipeGroupViewModel group && string.Equals(group.Recipe, recipe, StringComparison.Ordinal)))
+        : null;
 
     private Control? OpenerWorkflowFrame() => Shell?.OpenerWorkflow is { } address
         ? Usable(this.Get<Border>("Page").GetVisualDescendants().OfType<InstanceRow>()

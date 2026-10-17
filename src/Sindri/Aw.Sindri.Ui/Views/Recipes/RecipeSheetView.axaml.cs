@@ -1,0 +1,16 @@
+using Avalonia.Controls;
+using Avalonia.Interactivity;
+using Aw.Sindri.Ui.ViewModels.Shell;
+
+namespace Aw.Sindri.Ui.Views.Recipes;
+
+/// <summary>The recipe sheet inside the shell's sheet: Back returns to the frame or sheet this one was opened from, else closes the sheet like Esc.</summary>
+internal sealed partial class RecipeSheetView : UserControl
+{
+    public RecipeSheetView()
+    {
+        InitializeComponent();
+    }
+
+    private void OnBack(object? sender, RoutedEventArgs e) => (TopLevel.GetTopLevel(this)?.DataContext as ShellViewModel)?.Back();
+}

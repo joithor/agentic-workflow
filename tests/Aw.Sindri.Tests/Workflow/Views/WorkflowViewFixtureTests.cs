@@ -111,9 +111,33 @@ public sealed class WorkflowViewFixtureTests
             {
                 Assert.True(catalog.TryGetValue(answer.ActionId.Value, out var actionClass), $"{answer.ActionId.Value} is not a catalog row");
                 Assert.Equal(actionClass, answer.Class);
-                Assert.Equal(answer.ActionId, status.Commands.Single(c => c.Verb == StatusVerb.Answer).ActionId);
+                if (answer.Via is not null)
+                {
+                    Assert.DoesNotContain(status.Commands, c => c.Verb == StatusVerb.Answer);   // a child pointer serves no answer entry
+                    continue;
+                }
+
+                Assert.Equal(answer.ActionId, status.Commands.First(c => c.Verb == StatusVerb.Answer).ActionId);   // the status answer's variant is the first served
             }
         }
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Every_fixture_status_names_each_verb_once_on_its_commands_line()
+    {
+        foreach (var status in WorkflowViewFixtures.AllStatuses())
+        {
+            var line = status.Text.Split('\n').Select(static l => l.Trim()).FirstOrDefault(static l => l.StartsWith("commands", StringComparison.Ordinal));
+            if (line is null)
+            {
+                continue;
+            }
+
+            var verbs = line["commands".Length..].Split(',', StringSplitOptions.TrimEntries);
+            Assert.Equal(verbs.Distinct(StringComparer.Ordinal).ToArray(), verbs);
+        }
+
+        Assert.Contains(WorkflowViewFixtures.AllStatuses(), static s => s.Commands.Where(static c => c.Verb == StatusVerb.Answer).Skip(1).Any());   // the repeated-answer shapes are in the set
     }
 
     [Fact, Trait("Lane", "unit")]

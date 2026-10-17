@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Context.Core.Graph;
 using Aw.Sindri.Host;
+using Aw.Sindri.Tests.ContextCalls;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 using static Aw.Sindri.Tests.Callers.CallerRequests;
@@ -41,6 +42,22 @@ internal sealed class Scenario(GoldenHost host)
     {
         ct.ThrowIfCancellationRequested();
         return (await host.Http.Ask(Get(route, AppHeaders()))).Body;
+    }
+
+    /// <summary>GET as an agent session of the fixture repo (X-Sindri-Repo): its scope, not the human's.</summary>
+    public async Task<string> FetchAsSession(string route, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        return (await host.Http.Ask(Get(route, (SindriHeaders.Caller, "session"), (SindriHeaders.Repo, "aw-split-panes")))).Body;
+    }
+
+    /// <summary>Imports a second, smaller map (so the first is a retained version), then GET as the app.</summary>
+    public async Task<string> FetchAfterSecondMap(string route, CancellationToken ct)
+    {
+        var file = Path.Combine(host.Home, "second-map.yaml");
+        await File.WriteAllTextAsync(file, string.Join('\n', "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:", "  - {key: \"feature:only.in.two\", label: \"Only in two\"}") + "\n", ct);
+        await ContextMapApiTests.Import(host, file);
+        return await Fetch(route, ct);
     }
 
     /// <summary>POST map/review as an agent session: refused before the review runs.</summary>

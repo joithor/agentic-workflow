@@ -179,6 +179,27 @@ $out"
   echo "PASS: test_every_suite_gets_its_own_fresh_home_and_state_dir_whatever_the_caller_exported"
 }
 
+test_a_suites_temp_files_and_nuget_cache_stay_in_its_sandbox() {
+  local d m out rc=0 t
+  d="$(mktemp -d)"; m="$(mktemp -d)"
+  git -C "$d" init -q; mkdir -p "$d/t"
+  printf '%s\n' 'mkdir "$(mktemp -d | tee -a "$MARK/tmpdirs")/leak"; echo "$TMPDIR" >> "$MARK/tmpdir"' > "$d/t/a.test.sh"
+  printf '%s\n' 'echo "${NUGET_PACKAGES:-unset}" >> "$MARK/nuget"' > "$d/t/b.test.sh"
+  git -C "$d" add t
+  out="$(MARK="$m" TMPDIR="$m" NUGET_PACKAGES=/shared/nuget BASH_TESTS_ROOT="$d" BASH_TESTS_JOBS=1 BASH_TESTS_SERIAL="" BASH_TESTS_EXCLUDED="" bash "$RUNNER" 2>&1)" || rc=$?
+  [ "$rc" -eq 0 ] || fail "the run failed (exit $rc): $out"
+  [ "$(cat "$m/nuget")" = /shared/nuget ] || fail "NUGET_PACKAGES not kept: $(cat "$m/nuget")"
+  [ "$(cat "$m/tmpdir")" != "$m" ] || fail "the suite's TMPDIR is the caller's"
+  while IFS= read -r t; do [ ! -e "$t" ] || fail "a suite's temp dir outlived it: $t"; done < "$m/tmpdirs"
+  [ "$(find "$m" -mindepth 1 -maxdepth 1 -type d | wc -l | tr -d ' ')" = 0 ] || fail "the runner left a directory in the caller's TMPDIR: $(ls "$m")"
+  printf '%s\n' 'mkdir -p "$HOME/.nuget/packages/x"' > "$d/t/c.test.sh"; git -C "$d" add t
+  rc=0; out="$(MARK="$m" BASH_TESTS_ROOT="$d" BASH_TESTS_JOBS=1 BASH_TESTS_SERIAL="" BASH_TESTS_EXCLUDED="" bash "$RUNNER" 2>&1)" || rc=$?
+  [ "$rc" -eq 1 ] || fail "a private NuGet cache must fail the suite (exit $rc): $out"
+  printf '%s\n' "$out" | has 'private NuGet cache' || fail "the failure does not say why: $out"
+  rm -r "$d" "$m"
+  echo "PASS: test_a_suites_temp_files_and_nuget_cache_stay_in_its_sandbox"
+}
+
 test_a_suite_whose_sandbox_cannot_be_made_fails_instead_of_running() {
   local o out
   o="$(mktemp -d)"; : > "$o/x.test.sh"
@@ -247,6 +268,7 @@ test_no_pool_suite_builds_judge
 test_pool_runs_in_parallel_and_serial_suites_run_alone
 test_a_failing_suite_fails_the_run_and_shows_its_log
 test_every_suite_gets_its_own_fresh_home_and_state_dir_whatever_the_caller_exported
+test_a_suites_temp_files_and_nuget_cache_stay_in_its_sandbox
 test_a_suite_whose_sandbox_cannot_be_made_fails_instead_of_running
 test_the_sindri_home_and_local_bin_overrides_are_scrubbed_per_suite
 test_the_lane_environment_is_stripped_per_suite
