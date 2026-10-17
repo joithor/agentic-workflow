@@ -33,7 +33,9 @@ public sealed class AgentLaunchesTests
         Assert.False(request.Attended);
         Assert.Equal(LaunchMode.Open, request.Mode);
         Assert.Equal(AgentLaunches.LaunchIdFor(run), request.Launch);
-        Assert.Equal(("/work/web", _address, run.Run), (request.RepoPath, request.Instance, request.Run));
+        Assert.Equal("/work/web", request.RepoPath);
+        Assert.Equal(_address, request.Instance);
+        Assert.Equal(run.Run, request.Run);
         Assert.Equal($"/work/web/.claude/worktrees/sindri-{run.Workflow.Value}-2.1", request.Worktree);
         Assert.Equal(run.Step, request.Step?.Ref);
         Assert.Null(request.Step?.Model);
@@ -44,7 +46,8 @@ public sealed class AgentLaunchesTests
     {
         var policy = AgentLaunches.RequestFor(Run(writes: false), _target).Step?.Policy;
 
-        Assert.Equal((StepPermissionMode.ReadOnly, (string?)null), (policy?.Mode, policy?.WritablePath));
+        Assert.Equal(StepPermissionMode.ReadOnly, policy?.Mode);
+        Assert.Null(policy?.WritablePath);
         Assert.Empty(policy!.AllowedTools);   // why: the Assert above fails first when null
     }
 
@@ -53,6 +56,7 @@ public sealed class AgentLaunchesTests
     {
         var request = AgentLaunches.RequestFor(Run(), _target);
 
-        Assert.Equal((StepPermissionMode.Default, request.Worktree), (request.Step?.Policy?.Mode, request.Step?.Policy?.WritablePath));
+        Assert.Equal(StepPermissionMode.Default, request.Step?.Policy?.Mode);
+        Assert.Equal(request.Worktree, request.Step?.Policy?.WritablePath);
     }
 }

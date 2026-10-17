@@ -32,7 +32,8 @@ public sealed class StateEntryTests
 
         var entered = StateEntry.Enter(EngineFixture.At(EngineFixture.Step, "produce"), EngineFixture.Step, "produce", context);
 
-        Assert.Equal((StepRuntime.Agent, (string?)null), (entered.Frame.Run?.Runtime, entered.Frame.Run?.Task));
+        Assert.Equal(StepRuntime.Agent, entered.Frame.Run?.Runtime);
+        Assert.Null(entered.Frame.Run?.Task);
     }
 
     [Fact]
