@@ -1,0 +1,86 @@
+using System.Globalization;
+using Aw.Sindri.Ui.Api.Workflow;
+
+namespace Aw.Sindri.Ui.ViewModels.Workflows;
+
+/// <summary>
+/// One stage cell of a Workflows row (screens §4.2): a glyph, then what the cell serves (the round, desk, child or progress). An engine
+/// badge takes the glyph's place; so does the blocked dash on the state the instance waits in while a required input is missing.
+/// Every part is a served field; the cell works nothing out from the recipe.
+/// </summary>
+internal sealed class StageCellViewModel
+{
+    private readonly StateCell _cell;
+
+    internal StageCellViewModel(StateCell cell, bool isCurrent, bool isBlocked, bool isMissing = false)
+    {
+        IsMissing = isMissing;
+        _cell = cell;
+        IsCurrent = isCurrent;
+        IsBlocked = isBlocked;
+        var badge = cell.Badge is { } b ? Labels.CellBadge(b.Kind, b.Reason) : string.Empty;
+        Glyph = isMissing ? string.Empty : isBlocked ? Labels.BlockedMark : badge.Length > 0 ? badge : Mark(cell.Glyph);
+        Detail = isMissing ? string.Empty : string.Join(' ', new[] { isBlocked ? badge : string.Empty, Parts(cell) }.Where(p => p.Length > 0));
+    }
+
+    /// <summary>The state this cell is.</summary>
+    public string State => _cell.State;
+
+    /// <summary>The leading mark: the progress glyph, the engine badge, or the blocked dash.</summary>
+    public string Glyph { get; }
+
+    /// <summary>What follows the mark: the round, desk, child or progress.</summary>
+    public string Detail { get; }
+
+    /// <summary>The cell's words, the mark then the detail.</summary>
+    public string Text => Detail.Length > 0 ? $"{Glyph} {Detail}" : Glyph;
+
+    /// <summary>True when a required input is missing and this is the state the instance waits in.</summary>
+    public bool IsBlocked { get; }
+
+    /// <summary>True for the state the instance is in.</summary>
+    public bool IsCurrent { get; }
+
+    /// <summary>The name screen readers hear: the state, what the cell says in words, and "current" for the state the instance is in.</summary>
+    public string Name => IsMissing ? string.Empty : $"{_cell.State}, {Words()}{(IsCurrent ? ", " + Labels.StageCurrent : string.Empty)}";
+
+    /// <summary>True for the blank under a column head whose state this row does not have (a row on another hash of the recipe).</summary>
+    public bool IsMissing { get; }
+
+    /// <summary>The blank for a column this row has no state for.</summary>
+    /// <param name="state">The column's state.</param>
+    /// <returns>A cell that draws nothing.</returns>
+    internal static StageCellViewModel Missing(string state) =>
+        new(new StateCell(state, Order: null, BranchOf: null, Api.Workflow.StateGlyph.Pending, Badge: null, Round: null, Loops: [], Desk: false, Child: false, Children: null, Outcome: null, Terminal: false), isCurrent: false, isBlocked: false, isMissing: true);
+
+    internal static string Mark(Api.Workflow.StateGlyph glyph) => glyph switch
+    {
+        Api.Workflow.StateGlyph.Done => Labels.MarkDone,
+        Api.Workflow.StateGlyph.Active => Labels.MarkActive,
+        Api.Workflow.StateGlyph.Pending => Labels.MarkPending,
+        _ => throw new ArgumentOutOfRangeException(nameof(glyph), glyph, message: null),
+    };
+
+    private static string Parts(StateCell cell) => string.Join(
+        ' ',
+        new[]
+        {
+            cell.Round is { } r ? string.Create(CultureInfo.InvariantCulture, $"r{r.N}/{r.Max}") : string.Empty,
+            cell.Children is { } c ? string.Create(CultureInfo.InvariantCulture, $"{c.Done}/{c.Total}") : string.Empty,
+            cell.Desk ? "desk" : string.Empty,
+            cell.Child && cell.Children is null ? "child" : string.Empty,
+        }.Where(p => p.Length > 0));
+
+    // Glyphs are never the only sign (spec §11): the same cell in words.
+    private string Words()
+    {
+        var progress = _cell.Glyph switch
+        {
+            Api.Workflow.StateGlyph.Done => Labels.StageDone,
+            Api.Workflow.StateGlyph.Active => Labels.StageActive,
+            Api.Workflow.StateGlyph.Pending => Labels.StagePending,
+            _ => Labels.StagePending,
+        };
+        return string.Join(", ", new[] { IsBlocked ? Labels.StageBlocked : progress, Detail }.Where(p => p.Length > 0));
+    }
+}

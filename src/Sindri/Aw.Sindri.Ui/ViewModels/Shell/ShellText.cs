@@ -66,9 +66,6 @@ internal sealed class ShellText
     /// <summary><see cref="Labels.System"/>.</summary>
     public string System { get; } = Labels.System;
 
-    /// <summary>What the Workflows page waits for (<see cref="Labels.ArrivesWith"/>).</summary>
-    public string ArrivesWorkflows { get; } = Labels.ArrivesWorkflows;
-
     /// <summary>What the Work page waits for (<see cref="Labels.ArrivesWith"/>).</summary>
     public string ArrivesWork { get; } = Labels.ArrivesWork;
 

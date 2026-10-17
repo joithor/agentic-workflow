@@ -160,7 +160,7 @@ internal sealed partial class ShellWindow : Window
         var covers = width > 0 && width < below;
         var changed = covers != SheetPanel.Classes.Contains("covers");
         SheetPanel.Classes.Set("covers", covers);
-        SheetPanel.Width = covers ? double.NaN : Shell?.SheetWidth ?? double.NaN;
+        SheetPanel.Width = covers ? double.NaN : Shell?.ShownSheetWidth ?? double.NaN;
         CoverPage();
         if (changed && Shell is { IsSheetShown: true })
         {
@@ -193,7 +193,7 @@ internal sealed partial class ShellWindow : Window
     {
         switch (e.PropertyName)
         {
-            case nameof(ShellViewModel.SheetWidth):
+            case nameof(ShellViewModel.SheetWidth) or nameof(ShellViewModel.ShownSheetWidth):
                 Cover(Bounds.Width);
                 break;
             case nameof(ShellViewModel.State):
@@ -224,9 +224,17 @@ internal sealed partial class ShellWindow : Window
     // accessibility-tester-0): then the heading gets it too, never a hidden control.
     private void FocusOpenedSheet()
     {
-        if (Shell is { IsSheetShown: true } && (Covering || !HasUsableFocus))
+        if (Shell is { IsSheetShown: true } shell && (Covering || !HasUsableFocus))
         {
             _ = this.Get<Border>("SheetTitle").Focus(Method());
+            if (NoOpener(shell))
+            {
+                EnterOpenedFrame(shell);   // a link with no row behind it goes on to the frame; a row's open stays on the heading (§11.2)
+            }
+        }
+        else if (Shell is { IsSheetShown: true, IsInstanceSheet: true } opened && NoOpener(opened))
+        {
+            EnterOpenedFrame(opened);   // a link with no row behind it (a deep link, a pointer): nothing on the page to stay on
         }
     }
 

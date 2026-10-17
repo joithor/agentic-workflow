@@ -7,6 +7,8 @@
         xmlns:controls="using:Aw.Sindri.Ui.Views.Controls"
         xmlns:root="using:Aw.Sindri.Ui.Views.Palette"
         xmlns:queue="using:Aw.Sindri.Ui.Views.Queue"
+        xmlns:wfv="using:Aw.Sindri.Ui.Views.Workflows"
+        xmlns:iv="using:Aw.Sindri.Ui.Views.Instance"
         xmlns:item="using:Aw.Sindri.Ui.Views.Item"
         xmlns:ny="using:Aw.Sindri.Ui.Views.NeedsYou"
         x:Class="Aw.Sindri.Ui.Views.Shell.ShellWindow"
@@ -190,7 +192,7 @@
             <ScrollViewer x:Name="Pages" IsVisible="{Binding IsPageVisible}">
               <Panel x:Name="PageContent" Classes="page-content" Classes.edge="{Binding IsEdgeTabShown}">
                 <views:HomePage x:Name="HomePage" IsVisible="{Binding IsHome}" />
-                <views:PlaceholderPage x:Name="WorkflowsPage" Title="{Binding Text.Workflows}" Note="{Binding Text.ArrivesWorkflows}" IsVisible="{Binding IsWorkflows}" />
+                <Panel IsVisible="{Binding IsWorkflows}"><wfv:WorkflowsPage x:Name="WorkflowsPage" DataContext="{Binding Workflows}" /></Panel>
                 <queue:QueuePage x:Name="QueuePage" IsVisible="{Binding IsWork}" />
                 <views:PlaceholderPage x:Name="RecipesPage" Title="{Binding Text.Recipes}" Note="{Binding Text.ArrivesRecipes}" IsVisible="{Binding IsRecipes}" />
                 <views:PlaceholderPage x:Name="ContextPage" Title="{Binding Text.Context}" Note="{Binding Text.ArrivesContext}" IsVisible="{Binding IsContext}" />
@@ -229,14 +231,14 @@
                    AutomationProperties.Name="{Binding Text.Sheet}" />
             <DockPanel Margin="24,16">
               <Grid DockPanel.Dock="Top" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,12">
-                <Button x:Name="SheetBack" Classes="back" Content="{Binding Text.Back}" Click="OnCloseSheet"
+                <Button x:Name="SheetBack" Classes="back" Classes.trail="{Binding HasTrail}" Content="{Binding Text.Back}" Click="OnBack"
                         AutomationProperties.Name="{Binding Text.Back}" Margin="0,0,12,0" />
                 <!-- The focus target is a Text-typed wrapper named for the kind and subject ("Workflow WFI-1"); the visible subject inside it is Raw, as ChordHint's key is (a TextBlock's peer reads its Text and ignores a Name). -->
                 <Border x:Name="SheetTitle" Grid.Column="1" Focusable="True" VerticalAlignment="Center"
                         AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text"
                         AutomationProperties.Name="{Binding SheetName}">
-                  <TextBlock x:Name="SheetSubjectText" Classes="detail-title mono" Text="{Binding SheetSubject}"
-                             AutomationProperties.AccessibilityView="Raw" />
+                  <TextBlock x:Name="SheetSubjectText" Classes="detail-title mono" Text="{Binding SheetSubject}" TextTrimming="CharacterEllipsis"
+                             ToolTip.Tip="{Binding SheetSubject}" AutomationProperties.AccessibilityView="Raw" />
                 </Border>
                 <Button x:Name="SheetClose" Grid.Column="2" Click="OnCloseSheet" Margin="12,0,0,0"
                         AutomationProperties.Name="{Binding Text.CloseSheetName}">
@@ -263,7 +265,10 @@
                   <ny:DecisionSheet x:Name="DecisionSheet" DataContext="{Binding Decision}" />
                 </ScrollViewer>
                 <!-- LANE ANCHOR U3': the sheet content for the kinds U3' claims (kinds: NeedsYou, Decision). Insert immediately above this marker, never between the markers. -->
-                <!-- LANE ANCHOR U8: the sheet content for the kinds U8 claims (kinds: Workflow); the item sheet's re-base is content only. Recipe, Node, Session, System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers. -->
+                <!-- LANE ANCHOR U8: the sheet content for the kinds U8 claims (kinds: Workflow); the item sheet's re-base (U8b) is content only. Recipe, Node, Session, System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers. -->
+                <ScrollViewer x:Name="InstanceSheetScroll" IsVisible="{Binding IsInstanceSheet}">
+                  <iv:InstanceFrameView x:Name="InstanceSheetFrame" DataContext="{Binding Instance}" />
+                </ScrollViewer>
               </Panel>
             </DockPanel>
           </DockPanel>
