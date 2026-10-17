@@ -6,10 +6,9 @@ using Aw.Kernel;
 
 namespace Aw.Context.Features.QueryContext;
 
-/// <summary>The symbol shape in its file-path form: a file resolves to the features it implements, which are the anchors.</summary>
-internal static class SymbolAnswer
+internal sealed partial class QueryPipeline
 {
-    internal static Result<(GraphPart Graph, IReadOnlyList<string> Terms)> Build(Result<VisibleMap> map, string symbol, int depth, MapText text)
+    private static Result<(GraphPart Graph, IReadOnlyList<string> Terms)> Symbolic(Result<VisibleMap> map, string symbol, int depth, MapText text)
     {
         var implemented = map.Bind(m => FileFeatures(m.Graph, symbol));
         return implemented.IsError
