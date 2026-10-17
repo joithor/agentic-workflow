@@ -4,4 +4,14 @@ namespace Aw.Context.Core.Lenses;
 /// <param name="Map">The map read ('v13@7c3e1a2').</param>
 /// <param name="Draft">True when the draft was read.</param>
 /// <param name="AsOf">When the view is built.</param>
-public sealed record LensBasis(string Map, bool Draft, DateTimeOffset AsOf);
+public sealed record LensBasis(string Map, bool Draft, DateTimeOffset AsOf)
+{
+    /// <summary>When the map version was written (the answer's map source and map coverage read it); null when the caller has none, which reads as <see cref="AsOf"/>.</summary>
+    public DateTimeOffset? MapCreated { get; init; }
+
+    /// <summary>The repo's tracked files, for map coverage; empty counts nothing.</summary>
+    public IReadOnlyList<string> Files { get; init; } = [];
+
+    /// <summary>The intent sources' rows (the builder adds the map and the code index).</summary>
+    public IReadOnlyList<SearchedSource> IntentSources { get; init; } = [];
+}

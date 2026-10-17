@@ -1,6 +1,8 @@
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
 
+using System.Text.Json.Serialization;
+
 namespace Aw.Context.Core.Lenses;
 
 /// <summary>A record (a ticket, a doc, a thread) that mentions scope nodes. Its text is never fetched here.</summary>
@@ -11,4 +13,14 @@ namespace Aw.Context.Core.Lenses;
 /// <param name="Trust">Record text is untrusted.</param>
 /// <param name="State">The citation's state; 'unchecked' until a source is read.</param>
 /// <param name="Cites">The citation markers (empty in S-4).</param>
-public sealed record LensRecord(NodeKey Key, string Label, string Source, IReadOnlyList<NodeKey> Mentions, Results.Trust Trust, CitationState State, IReadOnlyList<string> Cites);
+/// <param name="Kind">Its kind (always a record).</param>
+public sealed record LensRecord(NodeKey Key, string Label, string Source, IReadOnlyList<NodeKey> Mentions, Results.Trust Trust, CitationState State, IReadOnlyList<string> Cites, NodeKind Kind)
+{
+    /// <summary>Schema 2 only: every anchor that reached it, in request order.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? Anchors { get; init; }
+
+    /// <summary>Schema 2 only: the fewest edges or cascade levels from any anchor that reached it (0 for an anchor's own scope).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Depth { get; init; }
+}

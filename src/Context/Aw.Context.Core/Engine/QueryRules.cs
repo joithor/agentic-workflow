@@ -22,6 +22,9 @@ public static class QueryRules
     /// <summary>The longest value, percent-encoded, a query URL carries: under Kestrel's 8 KB request line, with room for the rest of the URL. The CLI and probe files both refuse a longer one with a clear code.</summary>
     public const int MaxEncodedText = 6_000;
 
+    /// <summary>The most anchors one lenses call takes (scoping spec C1).</summary>
+    public const int MaxAnchors = 20;
+
     /// <summary>What a bad depth's 006 starts with (a transport adds its own hint after it).</summary>
     public const string DepthMessage = "depth must be a whole number from 0 to 4";
 
@@ -91,6 +94,15 @@ public static class QueryRules
     /// <returns>Null when absent or 0 to <see cref="MaxDepth"/>, else the error.</returns>
     public static Error? CheckDepth(int? depth) =>
         depth is { } value && value is < 0 or > MaxDepth ? OutOfRange(DepthMessage, value.ToString(CultureInfo.InvariantCulture)) : null;
+
+    /// <summary>The 006 for an anchor set that is empty or holds more than <see cref="MaxAnchors"/> distinct values.</summary>
+    /// <param name="anchors">The distinct anchor values.</param>
+    /// <returns>Null when the count is 1 to <see cref="MaxAnchors"/>, else the error.</returns>
+    public static Error? CheckAnchors(IReadOnlyList<string> anchors)
+    {
+        ArgumentNullException.ThrowIfNull(anchors);
+        throw new NotSupportedException("red");
+    }
 
     private static Result<int?> ParseWhole(string? text, string rule, int min, int max)
     {

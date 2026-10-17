@@ -13,6 +13,7 @@ namespace Aw.Context.Core.Lenses;
 /// <param name="Edges">Edges across the bands.</param>
 /// <param name="Conflicts">Typed disagreements, one per decided node.</param>
 /// <param name="Coverage">Counts over the anchor's own scope.</param>
+/// <param name="Searched">What was searched: the anchors, the map version, each source's state, which bands are empty (scoping spec C6).</param>
 /// <param name="Degraded">Sources that couldn't be read (none in S-4: the view reads stored edges only).</param>
 /// <param name="Cites">The citations by marker (empty in S-4: record citations come with the source stages).</param>
 public sealed record LensesView(
@@ -26,5 +27,6 @@ public sealed record LensesView(
     IReadOnlyList<LensEdge> Edges,
     IReadOnlyList<LensConflict> Conflicts,
     LensCoverage Coverage,
+    LensSearched Searched,
     IReadOnlyList<string> Degraded,
     IReadOnlyDictionary<string, Citation> Cites);

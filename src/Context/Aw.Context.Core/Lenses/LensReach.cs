@@ -1,6 +1,8 @@
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
 
+using System.Text.Json.Serialization;
+
 namespace Aw.Context.Core.Lenses;
 
 /// <summary>A node outside the own scope that the anchor's neighborhood or cascade reaches.</summary>
@@ -22,4 +24,9 @@ public sealed record LensReach(
     bool Confirmed,
     Results.Trust Trust,
     int Depth,
-    IReadOnlyList<string> Path);
+    IReadOnlyList<string> Path)
+{
+    /// <summary>Schema 2 only: every anchor that reached it, in request order.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? Anchors { get; init; }
+}

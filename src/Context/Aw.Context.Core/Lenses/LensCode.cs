@@ -26,7 +26,7 @@ internal static class LensCode
         var best = edges.OrderByDescending(e => LensScope.Confirmed(e.Provenance)).ThenByDescending(e => e.Confidence).ThenBy(e => e.To.Value, StringComparer.Ordinal).First();
         var confirmed = edges.Exists(e => LensScope.Confirmed(e.Provenance));
         return new LensFile(best.From.Name, Targets(edges, EdgeType.Implements), Targets(edges, EdgeType.Tests), best.Provenance, best.Confidence, confirmed, Suggested: !confirmed,
-            confirmed ? null : LinkIds.For(best));
+            confirmed ? null : LinkIds.For(best), string.Empty, NodeKind.Code, Results.Trust.Trusted);
     }
 
     private static IReadOnlyList<NodeKey> Targets(List<GraphEdge> edges, EdgeType type) =>

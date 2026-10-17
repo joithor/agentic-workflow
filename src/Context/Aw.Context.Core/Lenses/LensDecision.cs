@@ -1,6 +1,8 @@
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
 
+using System.Text.Json.Serialization;
+
 namespace Aw.Context.Core.Lenses;
 
 /// <summary>A decision that decides scope nodes.</summary>
@@ -14,6 +16,8 @@ namespace Aw.Context.Core.Lenses;
 /// <param name="Trust">Whether its wording may be read as instructions.</param>
 /// <param name="At">When it was made, or null.</param>
 /// <param name="Quote">The stored quote span and the record it came from, or null.</param>
+/// <param name="Label">The decision node's label as the caller reads it, so the item can be drawn alone.</param>
+/// <param name="Kind">Its kind (always a decision).</param>
 public sealed record LensDecision(
     NodeKey Node,
     string Text,
@@ -24,4 +28,15 @@ public sealed record LensDecision(
     bool Confirmed,
     Results.Trust Trust,
     DateTimeOffset? At,
-    LensQuote? Quote);
+    LensQuote? Quote,
+    string Label,
+    NodeKind Kind)
+{
+    /// <summary>Schema 2 only: every anchor that reached it, in request order.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? Anchors { get; init; }
+
+    /// <summary>Schema 2 only: the fewest edges or cascade levels from any anchor that reached it (0 for an anchor's own scope).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Depth { get; init; }
+}
