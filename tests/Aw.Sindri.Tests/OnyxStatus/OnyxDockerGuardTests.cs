@@ -62,7 +62,9 @@ public sealed class OnyxDockerGuardTests
         var status = (await service.Handle(new OnyxStatusRequest(), Token)).Value;
 
         Assert.Equal("SND-ONYX-010", Assert.Single(status.Checks, static c => c.Name == "docker").Problem?.Code);
-        Assert.Equal(OnyxState.Stopped, status.State);
+        Assert.Equal(OnyxState.Unknown, status.State);
+        Assert.Null(status.Url);
+        Assert.Null(status.RunningVersion);
         Assert.All(rig.Runtime.Calls, static c => Assert.Equal("Inspect", c));
     }
 

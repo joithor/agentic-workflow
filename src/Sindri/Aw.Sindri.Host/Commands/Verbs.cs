@@ -136,6 +136,7 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
         OnyxState.NotSetUp => "not set up (run `sindri onyx up`)",
         OnyxState.Stopped => "stopped (run `sindri onyx up` to start it)",
         OnyxState.Running => "running",
+        OnyxState.Unknown => "unknown",
         _ => state.ToString(),
     };
 

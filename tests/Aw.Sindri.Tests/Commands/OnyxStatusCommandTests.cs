@@ -141,6 +141,21 @@ public sealed class OnyxStatusCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task Status_is_unknown_not_stopped_when_docker_points_at_another_machine()
+    {
+        var rig = new OnyxUpRig();
+        _ = (await rig.Up(TestContext.Current.CancellationToken)).Value;
+        rig.Runtime.Facts = FakeContainerRuntime.Healthy with { Endpoint = "tcp://10.0.0.5:2375" };
+
+        _ = await RunOver(rig, "onyx", "status");
+
+        var text = _out.ToString();
+        Assert.StartsWith("onyx      unknown (Docker isn't usable here: docker points at another machine)\npinned ", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("sindri onyx up` to start", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("url ", text, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task Status_maps_a_Result_error_to_an_error_line_and_exit_1()
     {
         var code = await CommandTable.Run(["onyx", "status"], Environment, TimeProvider.System, services => services

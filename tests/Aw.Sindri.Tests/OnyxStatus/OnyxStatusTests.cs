@@ -192,14 +192,14 @@ public sealed class OnyxStatusTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Status_is_stopped_when_docker_is_down_and_the_docker_row_fails()
+    public async Task Status_is_unknown_when_docker_is_down_and_the_docker_row_fails()
     {
         var rig = await RunningRig();
         rig.Runtime.Facts = FakeContainerRuntime.DaemonDown;
 
         var status = await Status(rig);
 
-        Assert.Equal(OnyxState.Stopped, status.State);
+        Assert.Equal(OnyxState.Unknown, status.State);
         var docker = Assert.Single(status.Checks, static c => c.Name == "docker");
         Assert.Equal("SND-ONYX-001", docker.Problem?.Code);
         Assert.Equal(1, status.ExitCode);

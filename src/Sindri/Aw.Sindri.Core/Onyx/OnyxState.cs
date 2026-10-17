@@ -17,4 +17,8 @@ public enum OnyxState
     /// <summary>Set up, and not running (stopped by `onyx down`, or Docker isn't answering).</summary>
     [JsonStringEnumMemberName("stopped")]
     Stopped,
+
+    /// <summary>Set up, but Docker isn't usable here (a remote endpoint, no daemon, no CLI), so whether it runs can't be told.</summary>
+    [JsonStringEnumMemberName("unknown")]
+    Unknown,
 }

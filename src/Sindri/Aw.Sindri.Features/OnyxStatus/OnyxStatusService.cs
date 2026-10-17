@@ -44,6 +44,7 @@ internal sealed class OnyxStatusService(IOnyxPinsSource pinsSource, OnyxFacts fa
         OnyxState.NotSetUp => "not set up: run `sindri onyx up`",
         OnyxState.Stopped => "stopped: run `sindri onyx up` to start it",
         OnyxState.Running => "running",
+        OnyxState.Unknown => "",
         _ => "",
     };
 
