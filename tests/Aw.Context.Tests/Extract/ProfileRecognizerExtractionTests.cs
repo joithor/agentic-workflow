@@ -39,8 +39,8 @@ public sealed class ProfileRecognizerExtractionTests
     [Fact, Trait("Lane", "unit")]
     public void A_value_that_is_not_a_valid_key_is_skipped_not_a_failure()
     {
-        var odd = new RepoFile("config/flags.yaml", "rollout: ok\nrollout: Not A Key\n");
-        var loose = new ProfileRecognizer("flag", "config/*.yaml", "rollout: (?<name>.+)", "name");
+        var odd = new RepoFile("config/flags.yaml", "rollout: ok\nrollout: \nrollout: a\tb\n");
+        var loose = new ProfileRecognizer("flag", "config/*.yaml", "rollout: (?<name>[^\\n]*)", "name");
 
         var found = MapExtractor.Extract(_repo, [odd], RecognizerSet.From([loose]));
 

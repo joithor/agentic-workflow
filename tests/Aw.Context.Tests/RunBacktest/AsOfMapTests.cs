@@ -125,7 +125,7 @@ public sealed class AsOfMapTests
         Assert.Contains(built.Value.Graph.Nodes, n => n.Key.Kind == NodeKind.Surface);
     }
 
-    private const string FlagSection = ",\"extract\":{\"recognizers\":[{\"kind\":\"flag\",\"glob\":\"src/**/*.ts\",\"pattern\":\"export (?:type|class|function|const) (?<n>[A-Za-z]+)\",\"keyFrom\":\"n\"}]}";
+    private const string FlagSection = "\"extract\":{\"recognizers\":[{\"kind\":\"flag\",\"glob\":\"src/**/*.ts\",\"pattern\":\"export (?:type|class|function|const) (?<n>[A-Za-z]+)\",\"keyFrom\":\"n\"}]}";
 
     [Fact, Trait("Lane", "integration")]
     public async Task Backtest_as_of_map_holds_what_a_profile_recognizer_finds_and_a_different_set_misses_the_cache()

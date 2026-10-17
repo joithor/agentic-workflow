@@ -81,7 +81,7 @@ public sealed class RecognizerSet
                 foreach (Match match in regex.Matches(file.Text))
                 {
                     var group = match.Groups[recognizer.KeyFrom];
-                    if (group.Success && NodeKey.TryFrom($"surface:{recognizer.Kind}/{group.Value}", out var key) && NodeKinds.HasValidSurfaceKind(key))
+                    if (group.Length > 0 && NodeKey.TryFrom($"surface:{recognizer.Kind}/{group.Value}", out var key) && NodeKinds.HasValidSurfaceKind(key))
                     {
                         hits.Add((file, new Found(key, group.Value, Confidence, Named: true, [])));
                     }
