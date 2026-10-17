@@ -37,6 +37,13 @@
               "superseded"
             ]
           },
+          "supersededBy": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "\\S"
+          },
           "evidence": {
             "type": "array",
             "items": {
