@@ -8,7 +8,6 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Host;
 using Aw.Sindri.Tests.ApiGoldens;
-using Aw.Sindri.Tests.Callers;
 using Aw.Sindri.Tests.ContextCalls;
 using Aw.Sindri.Tests.McpGoldens;
 using Microsoft.AspNetCore.Http;
@@ -16,12 +15,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Protocol;
-using static Aw.Sindri.Tests.Callers.CallerRequests;
 
 namespace Aw.Sindri.Tests.Mcp;
 
 /// <summary>sindri_request (API spec §8, P8 unit D): the one command a session has over MCP. It files a request as 'session:mcp', which a human settles.</summary>
-public sealed class SindriRequestToolTests
+public sealed class SindriRequestToolTests(SharedMcpWorld shared) : IClassFixture<SharedMcpWorld>
 {
     // why: the caller's secrets and the request's own words must not be mistaken for each other in a log scan
     private const string Words = "zebra quokka rescope plea";
@@ -30,7 +28,7 @@ public sealed class SindriRequestToolTests
     public async Task Sindri_request_files_a_rescope_that_a_human_sees_in_needs_you()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var world = await World.Start(ct);
+        var world = shared.World;
         await using var mcp = await McpSession.Open(world.Host, "alpha", ct);
 
         var result = await mcp.Call("sindri_request", Request("rescope", "Split the work in two.", world.AlphaItem), ct);
@@ -53,7 +51,7 @@ public sealed class SindriRequestToolTests
     public async Task A_request_without_itemId_records_the_sessions_repo()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var world = await World.Start(ct);
+        var world = shared.World;
         await using var mcp = await McpSession.Open(world.Host, "beta", ct);
 
         var result = await mcp.Call("sindri_request", Request("note", "Nothing is blocking, FYI."), ct);
@@ -70,7 +68,7 @@ public sealed class SindriRequestToolTests
     public async Task A_request_against_another_repos_item_is_SND_ITEM_404_and_writes_only_the_audit_row()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var world = await World.Start(ct);
+        await using var world = await McpWorld.Start(ct);
         await using var mcp = await McpSession.Open(world.Host, "alpha", ct);
 
         var result = await mcp.Call("sindri_request", Request("rescope", "Not yours.", world.BetaItem), ct);
@@ -86,7 +84,7 @@ public sealed class SindriRequestToolTests
     public async Task Text_over_2000_is_SND_REQ_001()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var world = await World.Start(ct);
+        var world = shared.World;
         await using var mcp = await McpSession.Open(world.Host, "alpha", ct);
 
         var result = await mcp.Call("sindri_request", Request("note", new string('x', 2001)), ct);
@@ -99,7 +97,7 @@ public sealed class SindriRequestToolTests
     public async Task The_21st_open_request_in_a_repo_is_SND_REQ_002()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var world = await World.Start(ct);
+        await using var world = await McpWorld.Start(ct);
         await using var mcp = await McpSession.Open(world.Host, "alpha", ct);
         for (var n = 1; n <= 20; n++)
         {
@@ -117,7 +115,7 @@ public sealed class SindriRequestToolTests
     public async Task A_request_is_audited_as_command_handled_by_session_mcp()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var world = await World.Start(ct);
+        await using var world = await McpWorld.Start(ct);
         await using var mcp = await McpSession.Open(world.Host, "alpha", ct);
 
         _ = await mcp.Call("sindri_request", Request("note", "Audit me."), ct);
@@ -132,7 +130,7 @@ public sealed class SindriRequestToolTests
     public async Task Pending_decisions_right_after_a_request_includes_it()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var world = await World.Start(ct);
+        var world = shared.World;
         await using var mcp = await McpSession.Open(world.Host, "alpha", ct);
 
         var filed = await mcp.Call("sindri_request", Request("handback", "Take it back.", world.AlphaItem), ct);
@@ -147,7 +145,7 @@ public sealed class SindriRequestToolTests
     {
         var ct = TestContext.Current.CancellationToken;
         var spy = new WaitSpy();
-        await using var world = await World.Start(ct, pump: false, extra: spy.Register);
+        await using var world = await McpWorld.Start(ct, pump: false, extra: spy.Register);
         long behind = -1;
         spy.OnLaterWait = async (inner, sequence, limit, token) =>
         {
@@ -172,7 +170,7 @@ public sealed class SindriRequestToolTests
     {
         var ct = TestContext.Current.CancellationToken;
         var spy = new WaitSpy();
-        await using var world = await World.Start(ct, pump: false, extra: spy.Register);
+        await using var world = await McpWorld.Start(ct, pump: false, extra: spy.Register);
         spy.OnLaterWait = (_, sequence, _, _) => ValueTask.FromResult<Result<Unit>>(SindriErrors.ViewsBehind.With(string.Create(CultureInfo.InvariantCulture, $"the views didn't reach {sequence}")));
         await using var mcp = await McpSession.Open(world.Host, "alpha", ct);
 
@@ -188,7 +186,7 @@ public sealed class SindriRequestToolTests
     public async Task A_human_caller_terminal_and_token_header_on_the_mcp_endpoint_still_files_as_session_mcp()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var world = await World.Start(ct);
+        var world = shared.World;
         await using var mcp = await McpSession.Open(world.Host, "alpha", ct,
             (SindriHeaders.Caller, "human"), (SindriHeaders.Terminal, "1"), (SindriHeaders.Token, world.Host.Token.Value));
 
@@ -228,7 +226,7 @@ public sealed class SindriRequestToolTests
             .Replace(ServiceDescriptor.Singleton(runtime.LoggerFactory)));
         await ViewScenarios.Approve(host, ct);
         var item = await ItemScenarios.Create(host, "Quagga title text", "alpha", body: "Wildebeest body text");
-        await using var pump = Pump.Start(host);
+        await using var pump = McpPump.Start(host);
         await using var mcp = await McpSession.Open(host, "alpha", ct);
 
         var filed = await mcp.Call("sindri_request", Request("rescope", Words, item), ct);
@@ -247,7 +245,7 @@ public sealed class SindriRequestToolTests
     public async Task The_endpoints_own_refusals_are_021_022_and_023()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var world = await World.Start(ct);
+        var world = shared.World;
         await using var mcp = await McpSession.Open(world.Host, "alpha", ct);
         await using var none = await McpSession.Open(world.Host, repo: null, ct);
 
@@ -266,7 +264,7 @@ public sealed class SindriRequestToolTests
     public async Task Blank_text_and_blank_ids_get_the_codes_the_http_routes_give()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var world = await World.Start(ct);
+        var world = shared.World;
         await using var mcp = await McpSession.Open(world.Host, "alpha", ct);
 
         var blankText = await mcp.Call("sindri_request", """{"kind":"note","text":"  "}""", ct);
@@ -286,7 +284,7 @@ public sealed class SindriRequestToolTests
     public async Task A_call_without_a_repo_matches_its_golden()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var world = await World.Start(ct);
+        var world = shared.World;
         await using var none = await McpSession.Open(world.Host, repo: null, ct);
 
         var result = await none.Call("sindri_request", Request("note", "Hello."), ct);
@@ -298,7 +296,7 @@ public sealed class SindriRequestToolTests
     public async Task An_unknown_argument_matches_its_golden()
     {
         var ct = TestContext.Current.CancellationToken;
-        await using var world = await World.Start(ct);
+        var world = shared.World;
         await using var mcp = await McpSession.Open(world.Host, "alpha", ct);
 
         var result = await mcp.Call("sindri_request", """{"kind":"note","text":"Hi.","priority":1}""", ct);
@@ -312,86 +310,6 @@ public sealed class SindriRequestToolTests
     private static string Text(CallToolResult result) => string.Concat(result.Content.OfType<TextContentBlock>().Select(b => b.Text));
 
     private static string? Code(CallToolResult result) => result.StructuredContent is { } s && s.TryGetProperty("code", out var code) ? code.GetString() : null;
-
-    /// <summary>A fresh two-repo host with an item in each, whose views a background pump keeps caught up (the host runs no projector of its own).</summary>
-    private sealed class World : IAsyncDisposable
-    {
-        private Pump? _pump;
-
-        public required GoldenHost Host { get; init; }
-
-        public required string AlphaItem { get; init; }
-
-        public required string BetaItem { get; init; }
-
-        public static async Task<World> Start(CancellationToken ct, bool pump = true, Action<IServiceCollection>? extra = null)
-        {
-            var host = await GoldenHost.Start(temporary: true, ct, SeededMcp.Profile, extra: extra);
-            await ViewScenarios.Approve(host, ct);
-            var world = new World
-            {
-                Host = host,
-                AlphaItem = await ItemScenarios.Create(host, "Alpha one", "alpha"),
-                BetaItem = await ItemScenarios.Create(host, "Beta one", "beta"),
-            };
-            await ViewScenarios.CatchUp(host, ct);
-            world._pump = pump ? Pump.Start(host) : null;
-            return world;
-        }
-
-        public async Task<string> Human(string route, CancellationToken ct)
-        {
-            await Settle(ct);
-            return (await Host.Http.Ask(Get(route, CallerRequests.Human(Host.Token.Value)))).Body;
-        }
-
-        public Task Settle(CancellationToken ct) => ViewScenarios.CatchUp(Host, ct);
-
-        public async ValueTask DisposeAsync()
-        {
-            if (_pump is not null)
-            {
-                await _pump.DisposeAsync();
-            }
-
-            await Host.DisposeAsync();
-        }
-    }
-
-    /// <summary>Drives the projector while a test waits on a command (a command waits for the views to reach the ledger head).</summary>
-    private sealed class Pump : IAsyncDisposable
-    {
-        private readonly CancellationTokenSource _stop = new();
-        private Task _loop = Task.CompletedTask;
-
-        public static Pump Start(GoldenHost host)
-        {
-            var pump = new Pump();
-            pump._loop = Task.Run(async () =>
-            {
-                while (!pump._stop.IsCancellationRequested)
-                {
-                    try
-                    {
-                        await ViewScenarios.CatchUp(host, pump._stop.Token);
-                        await Task.Delay(10, pump._stop.Token);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        break;
-                    }
-                }
-            }, pump._stop.Token);
-            return pump;
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            await _stop.CancelAsync();
-            await _loop;
-            _stop.Dispose();
-        }
-    }
 
     /// <summary>The projector's status with every wait recorded; from the second wait on (the first is the command's own, for the ledger head) a test can answer in place of the projector.</summary>
     private sealed class WaitSpy : IProjectorStatus
