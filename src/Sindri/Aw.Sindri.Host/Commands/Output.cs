@@ -9,7 +9,8 @@ namespace Aw.Sindri.Host.Commands;
 /// <summary>Where a command writes: text or JSON on stdout, errors as 'CODE message' on stderr. No colour, so state is always a word.</summary>
 internal sealed class Output(TextWriter stdout, TextWriter stderr, JsonSerializerOptions options)
 {
-    private const int InterruptedExit = 130;
+    /// <summary>The shell's exit code for a command ended by SIGINT.</summary>
+    internal const int InterruptedExit = 130;
 
     public TextWriter Out { get; } = stdout;
 
@@ -39,15 +40,6 @@ internal sealed class Output(TextWriter stdout, TextWriter stderr, JsonSerialize
     {
         await Out.WriteAsync(text).ConfigureAwait(false);
         return exitCode;
-    }
-
-    /// <summary>Prints that the command was interrupted (Ctrl-C or SIGTERM) and what to run to resume.</summary>
-    /// <param name="text">The line.</param>
-    /// <returns>130, the shell's code for a command ended by SIGINT.</returns>
-    public async Task<int> Interrupted(string text)
-    {
-        await stderr.WriteLineAsync(text).ConfigureAwait(false);
-        return InterruptedExit;
     }
 
     /// <summary>

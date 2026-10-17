@@ -1,6 +1,7 @@
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Features.OnyxDown;
 using Aw.Sindri.Features.OnyxUp;
 
@@ -33,7 +34,7 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             // The runner killed the docker child, the services released the lock and removed their temporary files on the way out; each step is recorded only once done.
-            return await output.Interrupted("interrupted; run `sindri onyx up` again to resume").ConfigureAwait(false);
+            return Interrupted("interrupted; run `sindri onyx up` again to resume");
         }
 
         if (answer.IsError)
@@ -62,7 +63,7 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
-            return await output.Interrupted("interrupted; run `sindri onyx down` again to finish stopping Onyx").ConfigureAwait(false);
+            return Interrupted("interrupted; run `sindri onyx down` again to finish stopping Onyx");
         }
 
         if (answer.IsError)
@@ -90,6 +91,13 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
     private static string Steps(IReadOnlyList<string> steps) => steps.Count == 0 ? "none" : string.Join(", ", steps);
 
     // The printed refusal: SND-AUTH-002, exit 1 (attention, not a tool error), with nothing called.
+    // Through the progress writer, which ends an open row of dots before the line, so the resume line never starts mid-row.
+    private int Interrupted(string text)
+    {
+        services.GetRequiredService<IOnyxProgress>().Line(text);
+        return Output.InterruptedExit;
+    }
+
     private async Task<int> Refused(string verb, string what)
     {
         _ = await output.Error(SindriErrors.AuthRefused.With(
