@@ -123,7 +123,7 @@ public sealed class MapReader(IGraphStore store, IIntentStore intents)
             parts.Add($"current: {MapVersionRef.Tag(current.Number)}");
         }
 
-        parts.Add(retained.Count == 0 ? "no earlier version is retained" : $"retained: {MapVersionRef.Tag(retained[0])}..{MapVersionRef.Tag(retained[^1])}");
+        parts.Add(retained.Count == 0 ? "no earlier version is retained" : retained.Count == 1 ? $"retained: {MapVersionRef.Tag(retained[0])}" : $"retained: {MapVersionRef.Tag(retained[0])}..{MapVersionRef.Tag(retained[^1])}");
         return ContextErrors.MapVersionNotRetained.With($"map version {asked.Label} isn't held ({string.Join("; ", parts)}) (fix: read the current map, or name a version in that range)");
     }
 
