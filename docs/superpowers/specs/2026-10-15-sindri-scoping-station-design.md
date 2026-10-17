@@ -1,7 +1,7 @@
 # Sindri scoping station: the first station of spec-to-proven-PR, as block recipes
 
-**Status:** design, revision 3.4 (after /autoplan passes 1–2, a narrow re-check, the owner's scope-graph request
-of 2026-10-16, two recorded limits and the #309 /autoplan follow-up, §13) · **Date:** 2026-10-15, amended 2026-10-16 · **Owner decisions:** 2026-10-15 and 2026-10-16 (§1) · **Engine decision:** 2026-10-15, fact keys stay camelCase (W5) ·
+**Status:** design, revision 3.5 (after /autoplan passes 1–2, a narrow re-check, the owner's scope-graph request
+of 2026-10-16, two recorded limits, the #309 /autoplan follow-up and its round 2, §13) · **Date:** 2026-10-15, amended 2026-10-16 · **Owner decisions:** 2026-10-15 and 2026-10-16 (§1) · **Engine decision:** 2026-10-15, fact keys stay camelCase (W5) ·
 **Builds on:** the decision-tree recipes spec `2026-10-15-sindri-decision-tree-recipes-design.md` (DT, #240), rev 4;
 the workflow engine spec `2026-10-10-sindri-workflow-engine-design.md` (WF), rev 8.2, schema 1;
 `docs/csharp/sindri-workflow.md` (REF); the context retrieval spec `2026-10-10-sindri-context-retrieval-design.md`
@@ -537,7 +537,7 @@ severity: fail | warn }] }`, written as `fact:findings` and printed by `--json`.
 | `SCP-CITE-001` | draft | Every surface, implication and acceptance item cites at least one id that resolves: a lens item in `fact:lenses`, a ref in `fact:brief.refs`, or an answer in `fact:answerLog` |
 | `SCP-CITE-002` | draft | An item with no resolving citation is reported. `evidence` removes it from the map and lists it under `flagged` with its reason; a flagged item never reaches the acceptance list |
 | `SCP-COV-001` | draft | `fact:coverage` has one row per lens: `code`, `product`, `related`, `history` |
-| `SCP-COV-002` | draft | Each row is `found` (count > 0) or `nothing-found` (count 0, every source `ok` or in a recorded-limit state named in §8.2's Recorded limits table, matched on `state` plus `reason`; the reason string is the key, and `code` is shown, never matched). A source `degraded` or `unavailable` in any other state or code makes the row `not-searched`: outcome `regather` |
+| `SCP-COV-002` | draft | Each row is `found` (count > 0), `nothing-found` (count 0 and every source `ok`), `not-applicable` (a lens the profile marks `none`) or `not-searched`. A source `degraded`, `unavailable` or `not-configured` is a recorded limit only when it matches a row of §8.2's Recorded limits table on (lens, `state`, `reason`), inside that lens's own row only; `code` is shown, never matched. A row with count 0 and a recorded limit is `not-searched` and passes: it is shown "not searched: <limit> — <fix line>" and is never `nothing-found`. A source `degraded` or `unavailable` that matches no row, a `degraded` source that is not never-synced and a limit's reason on the wrong lens included, fails the rule: outcome `regather` |
 | `SCP-COV-003` | evidence | Every lens item with `depth ≤ 1` is in the map or listed under `excluded` with a one-line reason |
 | `SCP-COV-004` | evidence | For a `change` input, every changed file is mapped or listed under `unmapped` in the packet |
 | `SCP-COV-005` | evidence (warn) | A row whose map coverage is below `workflow.scoping.mapCoverageFloor` (default 0.5) is shown at the top of the stop as "nothing found, map thin: n of m nodes mapped". A row with a recorded limit never reads "nothing found": it reads "not searched: <limit> — <fix line>" (§8.2). It never refuses |
@@ -557,18 +557,30 @@ severity: fail | warn }] }`, written as `fact:findings` and printed by `--json`.
   `complete`, `incomplete`, or `regather` on the same condition. Warnings never change an outcome and are never
   reported as `fact:findings` (the stop view re-runs the checks to show them).
 - **Recorded limits pass.** The four limits in the table below, `not-configured`, and a lens the profile marks `none`
-  for a repo (shown `not-applicable` with its reason) are recorded states. They appear on the row and at the stop,
-  and never refuse it. At the stop a limited row reads "not searched: <limit> — <fix line>", never "nothing found",
-  and the coverage header counts limited lenses ("2 of 4 lenses limited").
+  for a repo are recorded states. In `coverage.json` a lens with a recorded limit and nothing found is a row with state
+  `not-searched` (the value the schema already has); `not-configured` is a `not-searched` row with reason
+  `not-configured`; a lens the profile marks `none` is `not-applicable` with its reason. A lens that found items stays
+  `found` and carries the limit in its `searched.sources`. No row with a limit is ever `nothing-found`. They appear on
+  the row and at the stop, and never refuse it. At the stop a limited row reads "not searched: <limit> — <fix line>",
+  never "nothing found", and the coverage header counts limited lenses ("2 of 4 lenses limited").
+
+  **Who writes `reason`.** The context engine never emits a `reason` string for a source: its source rows carry
+  `state`, `detail` and `code`, and the code lens's symbols block carries `state: unavailable` with the text "index not
+  built". The gather step (`step.scope.gather`, code) writes the scope packet's own `reason` when it maps the context
+  answer into `fact:coverage`, by the "Context emits" column below. `SCP-COV-002` matches that `reason`, so the key
+  belongs to this spec, and the context lane owes only the shapes in that column (C3, C5).
 
   **Recorded limits** (the one table; §5.1, C3, C5 and `SCP-COV-002` point here):
 
-  | Limit name | Lens | `SourceState` | `reason` string | `code` | Owner status | Fix line |
-  |---|---|---|---|---|---|---|
-  | `index-not-built` | Code (callers, callees, symbols) | `unavailable` | `index-not-built` | `index-not-built` | Decided | Wait for the code index (S-9) |
-  | `history-unlinked` | History (ticket mentions) | `unavailable` | `history-unlinked` | `history-unlinked` | Decided | Wait for the ticket linker (S-5B) |
-  | `commit-not-held` | Code | `unavailable` | `commit-not-held` | SND-CONTEXT-110 | Owner-approved (2026-10-16) | Fetch the commit into the profile repo's checkout, then regather |
-  | `not-synced` | History (an intent source) | `unavailable` | `not-synced` | Assigned by the context lane's S-H | Provisional; owner to confirm (Q11) | Sync the intent source, then regather |
+  | Limit name | Lens | Context emits (what the gather step maps) | `SourceState` | `reason` (the packet's key) | `code` | Owner status | Fix line |
+  |---|---|---|---|---|---|---|---|
+  | `index-not-built` | Code (callers, callees, symbols) | The code lens's `symbols` block with `state: unavailable` and the text "index not built" (`LensSymbols`) | `unavailable` | `index-not-built` | none | Decided | Wait for the code index (S-9) |
+  | `history-unlinked` | History (ticket mentions) | Nothing: no source row says it. The intent band has no linked tickets while the ticket linker (S-5B) is not built; the gather step records it for the ticket-mentions band until then | `unavailable` | `history-unlinked` | none | Decided | Wait for the ticket linker (S-5B) |
+  | `commit-not-held` | Code | A code-lens source `unavailable` with code SND-CONTEXT-110. Today 110 is a thrown not-found error; the context lane widens it to a source code on a 200 answer for the as-of read (an ask through the meta, C3) | `unavailable` | `commit-not-held` | SND-CONTEXT-110 | Owner-approved (2026-10-16) | Fetch the commit into the profile repo's checkout, then regather |
+  | `not-synced` | History (an intent source) | A history-lens intent source `degraded` whose last sync never ran (`SourcesStatusService` reports a never-synced source as degraded). A `degraded` source that did sync is not this limit | `degraded` | `not-synced` | Assigned by the context lane's S-H | Provisional; owner to confirm (Q11) | Sync the intent source, then regather |
+  | `not-configured` | Any lens (incidents today) | A source with `state: not-configured` | `not-configured` | `not-configured` | none | Decided | Name the source in the profile, then regather |
+
+  The fix lines live in one constant map in `Aw.Sindri.Features/Scoping/` (SC-K), read by the CLI and the app, so they cannot drift.
 
 - **The verbs.** `sindri scoping check (<address> | --facts <dir>) [--draft <dir>] [--stage draft|evidence] [--json]`
   and `sindri scoping show (<address> | --facts <dir>) [--json]`. With `--facts` they run in the CLI over a directory
@@ -815,9 +827,9 @@ Every ask to another lane is a row here; this doc edits no other spec, except th
 |---|---|---|---|
 | C1 | **`input.context.lenses`** over the multi-anchor `lenses` route, in the answer's shape. It runs as `service:engine` with the instance's repo scope, the session cut of owner decision B. The data hand-off to the Step is W6's, not this row's. The anchor resolver is the `text` shape's `suggestedAnchors`, called by `read-brief` and `step.scope.anchor`. **rev 3.2 (SC11):** the multi-anchor route is also the app's read (UI E-26, amended): U7's "Anchors' stack ▸" opens U9's ordinary stack over a packet's anchor set on the current map. More than 20 anchors is `SND-CONTEXT-006`; anchors the map doesn't hold (or outside a session's repo scope, the same answer) are listed in `missingAnchors[]` and the rest answer. One anchor keeps today's `LensesView` (schema 1); a set answers `LensesView` schema 2, with `anchors[]` in place of `anchor`, `anchors[]` on each item, `edges` over the union and `coverage.byAnchor`. API10 carries the wire change | Data channel moved to W6; scope cut added; rev 3.2: a UI read | SC-L (S-LB), SC-V |
 | C2 | **Surface kinds** `notification`, `permission`, `report`, `flag`, with extractor rules as the profile setting `context.extract.recognizers`, never rules for one app's registries | App-agnostic profile setting | SC-L (S-SK), SC-F |
-| C3 | **`input.context.code`** in the answer's shape: files, tests, data things, schema files; callers and callees report `unavailable` with code `index-not-built` until S-9, a recorded state; `commit-not-held` (SND-CONTEXT-110) on a code source whose as-of commit isn't on disk, also recorded (the rows are §8.2's Recorded limits table; the context lane widens 110's row in the context spec to name the as-of read, an ask sent through the meta) | No TS index named | SC-L (S-CL) |
+| C3 | **`input.context.code`** in the answer's shape: files, tests, data things, schema files; callers and callees report `unavailable` ("index not built") until S-9, which the gather step records as `index-not-built`; `commit-not-held` (SND-CONTEXT-110) on a code source whose as-of commit isn't on disk, also recorded (the rows are §8.2's Recorded limits table; the context lane widens 110's row in the context spec to name the as-of read and to carry it as a source code on a 200 answer, not a thrown error, an ask sent through the meta; until it lands, SC-K's `commit-not-held` proof uses the fixture shape) | No TS index named | SC-L (S-CL) |
 | C4 | **A component hop**, in the answer's shape (confirmed `implements` only, fan-out cap) | — | SC-L (S-CH) |
-| C5 | **`input.context.history`** in the answer's shape: stored edges and `git-history` first; ticket mentions report `history-unlinked` until S-5B; incidents `not-configured`; an intent source never synced reports `unavailable` with reason `not-synced` (provisional), recorded (§8.2's Recorded limits table) | Recorded states named | SC-L (S-H) |
+| C5 | **`input.context.history`** in the answer's shape: stored edges and `git-history` first; ticket mentions report `history-unlinked` until S-5B; incidents `not-configured`; an intent source never synced reports `degraded` (as `SourcesStatusService` does today), which the gather step records as `not-synced` (provisional) (§8.2's Recorded limits table) | Recorded states named | SC-L (S-H) |
 | C6 | **`searched`** as an extension of `SourceState` with `not-configured` and a code per source, plus per-band `empty`, reusing the lens result's existing `coverage`, `gaps` and `degraded[]` rather than a parallel set; `fetchedAt` on every ref | Reuse, not a parallel vocabulary | SC-L (S-LB) |
 | C7 | **The `diff` shape** over refs only (base and head shas), with `unmapped` paths. `read-change` resolves a PR to its shas | Refs only | SC-T (S-D) |
 | C8 | **The tracker port** `ITrackerSource` in `Aw.Context.Core` and `GET /sindri/context/record?key=&children=&comments=`, profile key `context.sources.<name>`. The route answers `service:engine` and the human only (owner decision B); before S-6, one issue by key through Onyx | Absorbs the review's tracker-port row; session rule added | SC-T (S-6, S-TR) |
@@ -1017,7 +1029,7 @@ text, focus, band cap on `subgraph`, and §12's "edits no other spec" line. Not 
 
 | Where | What changed | Source |
 |---|---|---|
-| §2, §5.1 (Code row), §8.2, Q11 | `commit-not-held` is a recorded limit: a code-lens source answers `unavailable` with reason `commit-not-held` and code SND-CONTEXT-110 when the as-of map version's commit isn't on disk. The context engine never fetches, so a regather can't fix it. It passes `SCP-COV-002` and shows at the stop | Owner-approved |
+| §2, §5.1 (Code row), §8.2, Q11 | `commit-not-held` is a recorded limit: a code-lens source answers `unavailable` with reason `commit-not-held` and code SND-CONTEXT-110 when the as-of map version's commit isn't on disk. The context engine never fetches, so a regather alone can't fix it; fetching the commit does. It passes `SCP-COV-002` and shows at the stop | Owner-approved |
 | §2, §5.1 (History row), §8.2, Q11 | `not-synced` is a recorded limit: an intent source that was never synced, which a regather can't sync | **Provisional owner default; owner to confirm** |
 
 Review follow-ups (#309 consistency review):
@@ -1025,12 +1037,12 @@ Review follow-ups (#309 consistency review):
 | Where | What changed |
 |---|---|
 | `SCP-COV-002` (§8.2 table) | Defers to §8.2's recorded-limit list: a source in a named recorded-limit state counts as searched; any other `degraded` or `unavailable` makes the row `not-searched` |
-| §8.2 | `not-synced` has its form: state `unavailable`, reason `not-synced`, code assigned by the context lane's S-H (as `commit-not-held` has SND-CONTEXT-110); the long bullet is wrapped |
+| §8.2 | `not-synced` has its form: state `degraded` (round 2; rev 3.3 said `unavailable`), reason `not-synced`, code assigned by the context lane's S-H (as `commit-not-held` has SND-CONTEXT-110); the long bullet is wrapped |
 | C3, C5 (§12.1) | C3 names `commit-not-held`; C5 names `not-synced` (provisional) |
 | §6.1 eval list, B.1 | Cases `commit-not-held-accepted` and `not-synced-accepted` beside `index-not-built-accepted` |
 | Appendix C note, review row (b) | The stale limit lists include the two new limits |
 
-If the owner rejects `not-synced`, remove it from: the §8.2 Recorded limits table row, the `not-synced-accepted` eval case (§6.1 list, B.1), Q11, C5 (§12.1), and the 13.5 row above.
+If the owner rejects `not-synced`, remove every mention of it: grep the doc for `not-synced`. The places are the §2 Terms list, the §5.1 History row, the §8.2 Recorded limits table row, the `not-synced-accepted` eval case (§6.1 list, B.1), SC-K's proof, Q11, C5 (§12.1), the Appendix C note and review row (b), the 13.5 row above, and LN16 in the line spec.
 
 `SourceState` (C6, §5.1) is `ok`, `degraded`, `unavailable` or `not-configured`, so `error` is not a state; no text implied it, and none changed for it.
 
@@ -1044,6 +1056,15 @@ If the owner rejects `not-synced`, remove it from: the §8.2 Recorded limits tab
 | S4 | SC7, §8.2, §8.4, `SCP-COV-005`, Q11, §13.5 | A limited row reads "not searched: <limit> — <fix line>", never "nothing found"; the stop's header counts limited lenses; Q11 names `not-synced` provisional, owner to confirm; §13.5 lists what to remove if the owner rejects it |
 | S5 | Status line, §13.6 | Revision 3.4; this table |
 
+### 13.7 Rev 3.5, the #309 /autoplan follow-up, round 2
+
+| Id | Where | What changed |
+|---|---|---|
+| R1 | §8.2 table, `SCP-COV-002`, C3, C5 | `reason` is this spec's own limit key, written by the gather step; the table gains "Context emits" and keeps "Lens"; the match is (lens, `state`, `reason`) inside that lens's row; `code` is shown, never matched; context emits no `reason` strings. `history-unlinked` maps from the missing ticket linker (S-5B), `commit-not-held` from the 110 widening ask |
+| R2 | §8.2 table, C5, eval `not-synced-accepted` | `not-synced` is `degraded`, the state `SourcesStatusService` reports for a never-synced source; a `degraded` source that is not never-synced still fails `SCP-COV-002` |
+| R3 | §8.2, `SCP-COV-002` | A limited lens with nothing found is a `not-searched` row; `not-configured` is a row and a table line; a `none` lens is `not-applicable`; no limited row is `nothing-found` |
+| R9 | SC-K proof, §6.1 evals, B.1, §13.5, §8.2 | A show golden for the limited rows and the header; "limit shown" left to that golden, as `recipe eval` has no view; negative cases for a non-never-synced `degraded` source and the wrong lens; `not-configured` proof; 13.5 removal list made complete; "a regather alone can't fix it"; fix lines held in one constant map; the commit-not-held proof waits on the 110 widening or uses the fixture shape |
+
 ## 14. Phases
 
 Each phase is one PR, driven by /specToProvenPR in the named lane. Sizes: S is a few files, M one subsystem slice, L
@@ -1053,7 +1074,7 @@ more than one. **(owner)** steps run through `scripts/sindri-prove.sh human`.
 |---|---|---|---|---|---|---|---|
 | **SC-F** (owner) | The fixture (§10.3): repo, map, probes, history script with the planted injection and fake token, both changes, gold, scripted answers | `tests/fixtures/scoping/` | M | None (today's kinds) | **(owner)** `context map import` loads `map.yaml` with 0 errors; `context eval probes` runs `probes.json`; the history script builds a repo whose `git log` holds the revocation PR; a gold self-check scores the gold scope 1.0 recall and precision and a decoy-only scope 0.0 | `tests/fixtures/scoping/README.md` | ideas |
 | **SC-Y** | Both recipes (§6), every Step descriptor (descriptor-only, `deskCapable`, `Runtime: block` and read-only as §9 says, declared inputs as §9 lists), the schemas in `schemas/scoping/`, the engine evals | `recipes/sindri/`, `Aw.Sindri.Features/Blocks/`, `schemas/scoping/` | M | DT-V, DT-C (child outputs: `idea → gather`), DT-R (`HumanOnly`) | `sindri recipe validate` exits 0 on both (the `refreeze` loop closes the stop cycle); `recipe eval` passes all 25 scoping cases and 3 child cases (Appendix B.1) | REF block catalog rows; `recipes/sindri/README` | ideas |
-| **SC-K** | `ScopePacketChecks`, `sindri scoping check` and `show` (both modes), `scoping desk`, the packet assembler (with `lenses.json`, rev 3.2), API9's packet-file route (rev 3.2), the `ScopingView` read model and API2's route, catalog row and golden, the `scoping.approved` and `scoping.escape` kinds, the `scoping` kind with the packets owner | `Aw.Sindri.Features/Scoping/`, `Host/`, `src/Packets/` | M | SC-F; SC-Y; P1 agreed; W11 (a temp run area until then); API P11 (API2's route only) | `scoping check --facts` on the gold facts exits 0; one broken fixture per failing rule exits 1 naming it; a draft dir inside a worktree exits 2 `SND-SCOPING-002`; a coverage row for each recorded limit passes: `index-not-built`, `history-unlinked`, `commit-not-held`, `not-synced`; `aw-packets hash`, `validate` and `freeze` accept the gold packet; `scoping show --facts --json` and API2 on a desk instance match the golden, with serve down `scoping show <address>` exits 2 `SND-API-001`; the gate runs `Aw.Sindri.Ui.Tests` | `docs/csharp/sindri-scoping.md` (new) | ideas |
+| **SC-K** | `ScopePacketChecks`, `sindri scoping check` and `show` (both modes), `scoping desk`, the packet assembler (with `lenses.json`, rev 3.2), API9's packet-file route (rev 3.2), the `ScopingView` read model and API2's route, catalog row and golden, the `scoping.approved` and `scoping.escape` kinds, the `scoping` kind with the packets owner | `Aw.Sindri.Features/Scoping/`, `Host/`, `src/Packets/` | M | SC-F; SC-Y; P1 agreed; W11 (a temp run area until then); API P11 (API2's route only) | `scoping check --facts` on the gold facts exits 0; one broken fixture per failing rule exits 1 naming it; a draft dir inside a worktree exits 2 `SND-SCOPING-002`; a coverage row for each recorded limit passes: `index-not-built`, `history-unlinked`, `commit-not-held`, `not-synced`, `not-configured`; a `degraded` source that is not never-synced, and a limit's reason on the wrong lens, each exit 1 naming `SCP-COV-002`; `scoping show --facts --json` on a two-limited-lens fixture matches a golden holding the exact row text ("not searched: <limit> — <fix line>") and the header "2 of 4 lenses limited", and no limited row contains "nothing found"; `aw-packets hash`, `validate` and `freeze` accept the gold packet; `scoping show --facts --json` and API2 on a desk instance match the golden, with serve down `scoping show <address>` exits 2 `SND-API-001`; the gate runs `Aw.Sindri.Ui.Tests` | `docs/csharp/sindri-scoping.md` (new) | ideas |
 | **SC-E** | The prompt-eval runner: case schema, `sindri recipe prompt-eval <recipe> --step <block> [--model <role>] [--trials 3] [--json]`, `check:` graders, `judge:` calibration with a held-out split, results per model, a heavy-job slot, the egress check | `Aw.Sindri.Features/Recipes/PromptEvals/` | M | DT-J (Judge providers); W8's profile keys (or the default model until then) | On a toy seed with five cases: the runner reports pass^3 per case, a baseline arm, TPR and TNR on the held-out split; with no allowed provider it refuses before sending; it takes and releases a heavy slot | REF "Prompt evals"; `research/prompting.md` Part 4 note | ideas |
 | **SC-S** (owner) | Error analysis (`failure-modes.md`), the seeds, references and examples, the size prompt, ≥ 20 cases per agent Step and for size, graders, calibration labels, baselines, rubric scores | `Seeds/`, `recipes/sindri/evals/workflow.scoping/prompts/` | M | SC-F; SC-E for the proof; SC-W traces for the second cycle | **(owner)** labels the calibration sets; every seed scores ≥ 2 on R1, R2, R6, R9, R13 (recorded); each seed beats its baseline on the held-out change; each gating judge's TPR and TNR ≥ 0.8 on held-out labels | `Seeds/README.md` | ideas |
 | **SC-W** (owner) | Desk walk on one real brief: a `brief` input on an owner repo, the recipe at the desk on a real serve with no external provider (every agent run `via: desk`), every block Step on the path completed through `scoping desk` (§8.2: lens JSON from `context lenses --json`, anchors from `context query --json`, the proposals' answer from `context map propose --json`; `--out` the instance's run area), the v0 seeds followed by an attended session in plan or read-only permission mode (W7 and W9 aren't in yet), `scoping show` read by the owner | — | S | SC-Y, SC-K | **(owner)** a real brief reaches `stop` at the desk, with `SCP-CHAL-002` shown as a warning; `scoping show` lists all nine sections; the traces are kept for SC-S's error analysis | runbook in `docs/csharp/sindri-scoping.md` | ideas |
@@ -1250,8 +1271,8 @@ The prompt and choices are in §6.1. They are model-facing text under SC10: chec
 | `gaps-repeat-no-progress` | check `gaps` twice with identical findings | parks `rounds` no-progress |
 | `regather-source-down` | check `regather` twice with identical findings | parks `rescope` no-progress |
 | `index-not-built-accepted` | coverage with code callers `index-not-built`, history `history-unlinked` | check `pass`, reaches `stop` |
-| `commit-not-held-accepted` | coverage with a code source `unavailable`, reason `commit-not-held` (SND-CONTEXT-110) | check `pass`, reaches `stop`, the limit shown |
-| `not-synced-accepted` | coverage with an intent source `unavailable`, reason `not-synced` (provisional) | check `pass`, reaches `stop`, the limit shown |
+| `commit-not-held-accepted` | coverage with a code source `unavailable`, reason `commit-not-held` (SND-CONTEXT-110) | check `pass`, reaches `stop` |
+| `not-synced-accepted` | coverage with a history intent source `degraded` (never synced), reason `not-synced` (provisional) | check `pass`, reaches `stop` |
 | `interview-rescope` | apply `rescope` → reanchor | back through gather with new anchors |
 | `interview-cap` | four interview rounds; each `pass` carries the same warnings | check's second `pass` goes to challenge; no no-progress park |
 | `done-asking` | interview `doneAsking` | interviewClosed set, check → challenge |
