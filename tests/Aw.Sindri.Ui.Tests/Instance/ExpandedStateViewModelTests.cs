@@ -250,4 +250,37 @@ public sealed class ExpandedStateViewModelTests
         Assert.Contains(FixtureInstances.Detail("incident-loop").Address, agent.AttachName, StringComparison.Ordinal);
         Assert.Equal((false, string.Empty), (desk.HasAttach, desk.AttachChip));
     }
+
+    // Interim (engine lane): a generic "ApplyCommand:answer" entry carries a bare CLI that the CLI rejects; the status's answer.cli is the full one.
+    private static StatusFields WithGenericAnswer(bool answered)
+    {
+        var status = FixtureInstances.Detail("escalated-gate").Current.Status;
+        var bare = $"sindri workflow answer {status.Header.Address}";
+        var generic = status.Commands[0] with { ActionId = "ApplyCommand:answer", Class = "desk", Cli = bare };
+        return status with
+        {
+            Commands = [generic, .. status.Commands.Skip(1)],
+            Answer = answered ? status.Answer! with { Kind = AnswerKind.Resume, ActionId = "ApplyCommand:answer-resume", Class = "desk", Cli = bare + " --resume" } : null,
+        };
+    }
+
+    [Fact]
+    public async Task A_generic_answer_command_draws_and_copies_the_status_answer_cli()
+    {
+        var status = WithGenericAnswer(answered: true);
+        var answer = OfStatus("escalated-gate", status).Commands.Single(c => c.Verb == StatusVerb.Answer);
+
+        await answer.Copy(Token);
+
+        Assert.Equal((status.Answer!.Cli, status.Answer.Cli), (answer.Cli, _clipboard.Text));
+        Assert.Contains("--resume", answer.Cli, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_generic_answer_command_with_no_answer_is_hidden_and_a_variant_keeps_its_own_cli()
+    {
+        Assert.DoesNotContain(OfStatus("escalated-gate", WithGenericAnswer(answered: false)).Commands, c => c.Verb == StatusVerb.Answer);
+        var served = FixtureInstances.Detail("escalated-gate").Current.Status;
+        Assert.Equal(served.Commands[0].Cli, OfStatus("escalated-gate", served).Commands[0].Cli);
+    }
 }
