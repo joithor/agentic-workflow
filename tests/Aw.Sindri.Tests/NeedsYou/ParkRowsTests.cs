@@ -8,6 +8,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Tests.GetInstance;
 using Aw.Sindri.Tests.Items;
 
 namespace Aw.Sindri.Tests.NeedsYou;
@@ -43,13 +44,13 @@ public sealed class ParkRowsTests
     [InlineData("parked-mirrored-needs-answer-wait")]
     public void A_mirrored_park_row_carries_the_same_action_and_cli_as_the_status_answer_line(string name)
     {
-        var instance = Aw.Sindri.Tests.GetInstance.StatusCases.Instance(name);
+        var instance = StatusCases.Instance(name);
         var suspension = instance.Suspension!;
         var summary = new SuspensionSummary(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors?.Value);
 
         var row = NeedsYouRows.ForPark(Item(), instance.Address, summary, _since, _plain);
 
-        var line = Aw.Sindri.Tests.GetInstance.StatusCases.View(name).AnswerLine!;
+        var line = StatusCases.View(name).AnswerLine!;
         Assert.Equal((line.ActionId, line.Cli, line.Kind), (row.PrimaryAction, row.Cli, row.AnswerKind));
     }
 
@@ -60,7 +61,7 @@ public sealed class ParkRowsTests
     [InlineData("parked-mirrored-spec-conflict")]
     public void A_mirrored_park_the_child_decides_points_its_row_at_the_child(string name)
     {
-        var suspension = Aw.Sindri.Tests.GetInstance.StatusCases.Instance(name).Suspension!;
+        var suspension = StatusCases.Instance(name).Suspension!;
         var summary = new SuspensionSummary(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors?.Value);
 
         var row = NeedsYouRows.ForPark(Item(), _address, summary, _since, _plain);

@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Aw.Sindri.Ui.Api.Workflow;
 
 /// <summary>How the instance is answered.</summary>
@@ -14,5 +16,5 @@ internal sealed record StatusAnswer(
     string Class,
     string Cli,
     bool AtTerminal,
-    string? Via = null,
-    string? Child = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Via = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Child = null);
