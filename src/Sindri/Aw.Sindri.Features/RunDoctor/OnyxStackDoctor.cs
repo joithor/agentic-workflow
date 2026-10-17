@@ -57,7 +57,15 @@ internal sealed class OnyxStackDoctor(IOnyxWorkspace workspace, OnyxFacts facts,
     private static DoctorCheck NotChecked(Error problem, ComposeProject project)
         => problem.Code == SindriErrors.OnyxRemoteDocker.Code
             ? new DoctorCheck(Name, CheckState.Warn, $"{Lead(problem.Message)}; {Name} not checked", "switch to the local Docker context (`docker context use default`, and unset DOCKER_HOST), then run sindri doctor again")
+            : IsSpecific(problem) ? new DoctorCheck(Name, CheckState.Warn, $"{Lead(problem.Message)}; {Name} not checked", Fix(problem.Message))
             : Unreadable(problem, project);
+
+    // The preflight names a cause it could tell (a permission denied socket, a missing context, a daemon still starting) with its own fix; plain "isn't running" keeps the generic row.
+    private static bool IsSpecific(Error problem)
+        => problem.Code == SindriErrors.OnyxDockerUnavailable.Code && !problem.Message.StartsWith("Docker isn't running", StringComparison.Ordinal) && problem.Message.Contains(": ", StringComparison.Ordinal);
+
+    private static string Fix(string message)
+        => message[(message.IndexOf(": ", StringComparison.Ordinal) + 2)..].Replace("run this again", "run sindri doctor again", StringComparison.Ordinal);
 
     private static string Lead(string message) => message.IndexOf(": ", StringComparison.Ordinal) is var at and > 0 ? message[..at] : message;
 
