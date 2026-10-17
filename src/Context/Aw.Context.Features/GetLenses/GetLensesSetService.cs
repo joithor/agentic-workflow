@@ -23,7 +23,8 @@ internal sealed class GetLensesSetService(MapReader reader, LensBasisReader base
         }
 
         var depth = request.Depth ?? settings.Value.CascadeDepth;
-        if ((QueryRules.CheckAnchors(request.Anchors) ?? QueryRules.CheckDepth(depth)) is { } refused)
+        var anchors = request.Anchors.Distinct(StringComparer.Ordinal).ToList();
+        if ((QueryRules.CheckAnchors(anchors) ?? QueryRules.CheckDepth(depth)) is { } refused)
         {
             return refused;
         }
@@ -35,7 +36,7 @@ internal sealed class GetLensesSetService(MapReader reader, LensBasisReader base
         }
 
         var basis = await bases.For(read.Value, settings.Value, request.Scope, request.Read.Draft, cancellationToken).ConfigureAwait(false);
-        var view = LensesBuilder.BuildSet(basis, read.Value.Graph, request.Anchors, depth, read.Value.Conflicts);
+        var view = LensesBuilder.BuildSet(basis, read.Value.Graph, anchors, depth, read.Value.Conflicts);
         return view.Map(v => LensTexts.Clean(v, new MapText(built.Value, FencePolicies.For(request.Scope.Caller))));
     }
 }
