@@ -115,8 +115,11 @@ Aw.Packets.Core.Kinds.Line.AcceptanceItem.Equals(Aw.Packets.Core.Kinds.Line.Acce
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Evidence.get -> System.Collections.Generic.IReadOnlyList<Aw.Packets.Core.Kinds.Line.EvidenceRef!>!
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Evidence.init -> void
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Id.get -> Aw.Packets.Core.Ids.ItemId
+Aw.Packets.Core.Kinds.Line.AcceptanceItem.Id.init -> void
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Status.get -> Aw.Packets.Core.Kinds.Line.AcceptanceStatus
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Status.init -> void
+Aw.Packets.Core.Kinds.Line.AcceptanceItem.SupersededBy.get -> Aw.Packets.Core.Ids.ItemId?
+Aw.Packets.Core.Kinds.Line.AcceptanceItem.SupersededBy.init -> void
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Text.get -> string!
 Aw.Packets.Core.Kinds.Line.AcceptanceItem.Text.init -> void
 Aw.Packets.Core.Kinds.Line.AcceptanceStatus
@@ -198,6 +201,7 @@ Aw.Packets.Core.Kinds.Line.LineInspection.LineInspection(Aw.Packets.Core.Kinds.P
 Aw.Packets.Core.Kinds.Line.LineInspection.Manifest.get -> Aw.Packets.Core.Kinds.Line.LineManifest?
 Aw.Packets.Core.Kinds.Line.LineInspection.Manifest.init -> void
 Aw.Packets.Core.Kinds.Line.LineInspection.Passed.get -> bool
+Aw.Packets.Core.Kinds.Line.LineKindsServiceCollectionExtensions
 Aw.Packets.Core.Kinds.Line.LineLimits
 Aw.Packets.Core.Kinds.Line.LineManifest
 Aw.Packets.Core.Kinds.Line.LineManifest.<Clone>$() -> Aw.Packets.Core.Kinds.Line.LineManifest!
@@ -624,6 +628,9 @@ Aw.Packets.Core.Model.Deferral.Deferral(string! Owner, string! BuildMayAssume) -
 Aw.Packets.Core.Model.Deferral.Equals(Aw.Packets.Core.Model.Deferral? other) -> bool
 Aw.Packets.Core.Model.Deferral.Owner.get -> string!
 Aw.Packets.Core.Model.Deferral.Owner.init -> void
+Aw.Packets.Core.Model.FreezeBy
+Aw.Packets.Core.Model.FreezeBy.Machine = 1 -> Aw.Packets.Core.Model.FreezeBy
+Aw.Packets.Core.Model.FreezeBy.Owner = 2 -> Aw.Packets.Core.Model.FreezeBy
 Aw.Packets.Core.Model.FreezeReceipt
 Aw.Packets.Core.Model.FreezeReceipt.<Clone>$() -> Aw.Packets.Core.Model.FreezeReceipt!
 Aw.Packets.Core.Model.FreezeReceipt.AlreadyFrozen.get -> bool
@@ -637,6 +644,8 @@ Aw.Packets.Core.Model.FreezeRecord
 Aw.Packets.Core.Model.FreezeRecord.<Clone>$() -> Aw.Packets.Core.Model.FreezeRecord!
 Aw.Packets.Core.Model.FreezeRecord.BaseSha.get -> Aw.Packets.Core.Values.CommitSha?
 Aw.Packets.Core.Model.FreezeRecord.BaseSha.init -> void
+Aw.Packets.Core.Model.FreezeRecord.By.get -> Aw.Packets.Core.Model.FreezeBy
+Aw.Packets.Core.Model.FreezeRecord.By.init -> void
 Aw.Packets.Core.Model.FreezeRecord.DigestVersion.get -> int
 Aw.Packets.Core.Model.FreezeRecord.DigestVersion.init -> void
 Aw.Packets.Core.Model.FreezeRecord.Equals(Aw.Packets.Core.Model.FreezeRecord? other) -> bool
@@ -862,6 +871,7 @@ const Aw.Packets.Core.Kinds.Line.LineRules.PhaseId = 7 -> int
 const Aw.Packets.Core.Kinds.Line.LineRules.PhaseSchema = 8 -> int
 const Aw.Packets.Core.Kinds.Line.LineRules.PullRequestSchema = 7 -> int
 const Aw.Packets.Core.Kinds.Line.LineRules.TasksSchema = 7 -> int
+const Aw.Packets.Core.Kinds.PacketKind.ManifestFile = "packet.json" -> string!
 const Aw.Packets.Core.Kinds.Scoping.ScopingChecks.MaxReach = 32 -> int
 const Aw.Packets.Core.Kinds.Scoping.ScopingRules.FilesPresent = "PKT-SCP-001" -> string!
 const Aw.Packets.Core.Kinds.Scoping.ScopingRules.LensIds = "PKT-SCP-005" -> string!
@@ -1101,6 +1111,7 @@ static Aw.Packets.Core.Kinds.Line.HandoffLinks.operator !=(Aw.Packets.Core.Kinds
 static Aw.Packets.Core.Kinds.Line.HandoffLinks.operator ==(Aw.Packets.Core.Kinds.Line.HandoffLinks? left, Aw.Packets.Core.Kinds.Line.HandoffLinks? right) -> bool
 static Aw.Packets.Core.Kinds.Line.LineInspection.operator !=(Aw.Packets.Core.Kinds.Line.LineInspection? left, Aw.Packets.Core.Kinds.Line.LineInspection? right) -> bool
 static Aw.Packets.Core.Kinds.Line.LineInspection.operator ==(Aw.Packets.Core.Kinds.Line.LineInspection? left, Aw.Packets.Core.Kinds.Line.LineInspection? right) -> bool
+static Aw.Packets.Core.Kinds.Line.LineKindsServiceCollectionExtensions.AddLinePacketKinds(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Packets.Core.Kinds.Line.LineManifest.operator !=(Aw.Packets.Core.Kinds.Line.LineManifest? left, Aw.Packets.Core.Kinds.Line.LineManifest? right) -> bool
 static Aw.Packets.Core.Kinds.Line.LineManifest.operator ==(Aw.Packets.Core.Kinds.Line.LineManifest? left, Aw.Packets.Core.Kinds.Line.LineManifest? right) -> bool
 static Aw.Packets.Core.Kinds.Line.LinePacketFiles.operator !=(Aw.Packets.Core.Kinds.Line.LinePacketFiles? left, Aw.Packets.Core.Kinds.Line.LinePacketFiles? right) -> bool
@@ -1228,9 +1239,3 @@ static readonly Aw.Packets.Core.PacketsErrors.RepoUnavailable -> Aw.Kernel.Error
 static readonly Aw.Packets.Core.PacketsErrors.Unreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Packets.Core.PacketsErrors.UnsupportedSchema -> Aw.Kernel.ErrorDefinition!
 virtual Aw.Packets.Core.PacketReader.FileReader.Invoke(string! relativePath) -> Aw.Kernel.Result<System.ReadOnlyMemory<byte>?>!
-Aw.Packets.Core.Kinds.Line.AcceptanceItem.Id.init -> void
-const Aw.Packets.Core.Kinds.PacketKind.ManifestFile = "packet.json" -> string!
-Aw.Packets.Core.Kinds.Line.AcceptanceItem.SupersededBy.get -> Aw.Packets.Core.Ids.ItemId?
-Aw.Packets.Core.Kinds.Line.AcceptanceItem.SupersededBy.init -> void
-Aw.Packets.Core.Kinds.Line.LineKindsServiceCollectionExtensions
-static Aw.Packets.Core.Kinds.Line.LineKindsServiceCollectionExtensions.AddLinePacketKinds(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!

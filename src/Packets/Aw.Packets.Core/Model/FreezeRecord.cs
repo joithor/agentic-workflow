@@ -30,6 +30,9 @@ public sealed record FreezeRecord
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public CommitSha? BaseSha { get; init; }
 
+    /// <summary>Who froze it; 'machine' when the record doesn't say (every record from before 'by' existed was a machine freeze).</summary>
+    public FreezeBy By { get; init; } = FreezeBy.Machine;
+
     /// <summary>When it was frozen (UTC).</summary>
     public required DateTimeOffset FrozenAt { get; init; }
 

@@ -1,5 +1,6 @@
 using Aw.Packets.Core.Checks;
 using Aw.Packets.Core.Ids;
+using Aw.Packets.Core.Model;
 using Aw.Packets.Core.Values;
 
 namespace Aw.Packets.App.Features.FreezeLinePacket;
@@ -15,6 +16,9 @@ internal sealed record FreezeLinePacketResponse
 
     /// <summary>The packet id; null when packet.json can't be read.</summary>
     public PacketId? Packet { get; init; }
+
+    /// <summary>Who froze it, as this call asked (an already frozen hash keeps the 'by' it was first recorded with).</summary>
+    public FreezeBy By { get; init; } = FreezeBy.Machine;
 
     /// <summary>True when the packet passed its checks and the freeze is recorded (now or before).</summary>
     public required bool Frozen { get; init; }

@@ -1,5 +1,6 @@
 using Aw.Packets.Core.Checks;
 using Aw.Packets.Core.Ids;
+using Aw.Packets.Core.Model;
 using Aw.Packets.Core.Values;
 
 namespace Aw.Packets.App.Features.FreezeScopingPacket;
@@ -15,6 +16,9 @@ internal sealed record FreezeScopingPacketResponse
 
     /// <summary>The scoping instance the freeze is recorded under.</summary>
     public required PacketId Instance { get; init; }
+
+    /// <summary>Who froze it, as this call asked (an already frozen hash keeps the 'by' it was first recorded with).</summary>
+    public FreezeBy By { get; init; } = FreezeBy.Machine;
 
     /// <summary>True when the packet passed its checks and the freeze is recorded (now or before).</summary>
     public required bool Frozen { get; init; }
