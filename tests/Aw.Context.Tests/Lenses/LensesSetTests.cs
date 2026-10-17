@@ -262,7 +262,7 @@ public sealed class LensesSetTests
         Assert.All(view.Bands.Code.Files, f => Assert.Equal((NodeKind.Code, f.Path), (f.Kind, f.Label)));
         var suggested = view.Bands.Code.Files.Single(f => f.Suggested);
         var confirmed = view.Bands.Code.Files.First(f => f.Confirmed);
-        Assert.Equal((Aw.Context.Core.Results.Trust.Untrusted, Aw.Context.Core.Results.Trust.Trusted), (suggested.Trust, confirmed.Trust));
+        Assert.Equal((Context.Core.Results.Trust.Untrusted, Context.Core.Results.Trust.Trusted), (suggested.Trust, confirmed.Trust));
         Assert.All(view.Bands.Intent.Records.Cast<object>().Concat(view.Bands.Intent.Decisions).Concat(view.Bands.Code.Files), x => Assert.NotNull(x));
     }
 

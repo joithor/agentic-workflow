@@ -1,7 +1,6 @@
+using System.Text.Json.Serialization;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
-
-using System.Text.Json.Serialization;
 
 namespace Aw.Context.Core.Lenses;
 
