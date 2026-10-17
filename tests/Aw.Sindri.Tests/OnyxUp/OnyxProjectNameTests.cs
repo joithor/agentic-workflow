@@ -46,16 +46,31 @@ public sealed class OnyxProjectNameTests
         Assert.All(rig.Runtime.Projects, name => Assert.Equal(rig.Paths.Project.Name, name));
     }
 
+    private const string Foreign = "state names another home's project; ignoring it";
+
     [Fact, Trait("Lane", "unit")]
-    public async Task A_rerun_manages_the_recorded_project_not_a_recomputed_one()
+    public async Task A_rerun_with_this_homes_own_recorded_name_manages_it_without_a_warning()
+    {
+        var rig = await Running(new OnyxUpRig().Paths.Project.Name);
+
+        _ = (await rig.Up(Token)).Value;
+
+        Assert.NotEmpty(rig.Runtime.Projects);
+        Assert.All(rig.Runtime.Projects, name => Assert.Equal(rig.Paths.Project.Name, name));
+        Assert.DoesNotContain(rig.Progress.Lines, static l => l.Contains(Foreign, StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_rerun_refuses_a_project_name_recorded_by_another_home_warns_and_manages_its_own()
     {
         var rig = await Running();
 
         _ = (await rig.Up(Token)).Value;
 
         Assert.NotEmpty(rig.Runtime.Projects);
-        Assert.All(rig.Runtime.Projects, name => Assert.Equal(Recorded, name));
-        Assert.Equal(Recorded, rig.Workspace.State!.Project);
+        Assert.All(rig.Runtime.Projects, name => Assert.Equal(rig.Paths.Project.Name, name));
+        Assert.Equal(rig.Paths.Project.Name, rig.Workspace.State!.Project);
+        Assert.Contains(rig.Progress.Lines, static l => l.Contains(Foreign, StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -69,35 +84,36 @@ public sealed class OnyxProjectNameTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Down_stops_the_recorded_project()
+    public async Task Down_stops_this_homes_project_not_a_name_recorded_by_another_home_and_says_so()
     {
         var rig = await Running();
 
-        _ = (await new OnyxDownService(rig.Workspace, new OnyxFacts(rig.Runtime, rig.Probes, new FakeSindriHome(OnyxUpRig.Home)), rig.Runtime).Handle(new OnyxDownRequest(), Token)).Value;
+        var response = (await new OnyxDownService(rig.Workspace, new OnyxFacts(rig.Runtime, rig.Probes, new FakeSindriHome(OnyxUpRig.Home)), rig.Runtime).Handle(new OnyxDownRequest(), Token)).Value;
 
         Assert.NotEmpty(rig.Runtime.Projects);
-        Assert.All(rig.Runtime.Projects, name => Assert.Equal(Recorded, name));
+        Assert.All(rig.Runtime.Projects, name => Assert.Equal(rig.Paths.Project.Name, name));
+        Assert.Contains(Foreign, response.Warnings, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Status_reads_the_recorded_project()
+    public async Task Status_reads_this_homes_project_not_a_name_recorded_by_another_home()
     {
         var rig = await Running();
 
         _ = (await new OnyxStatusService(rig.Pins, new OnyxFacts(rig.Runtime, rig.Probes, new FakeSindriHome(OnyxUpRig.Home)), rig.Health, rig.Workspace).Handle(new OnyxStatusRequest(), Token)).Value;
 
         Assert.NotEmpty(rig.Runtime.Projects);
-        Assert.All(rig.Runtime.Projects, name => Assert.Equal(Recorded, name));
+        Assert.All(rig.Runtime.Projects, name => Assert.Equal(rig.Paths.Project.Name, name));
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Doctor_reads_the_recorded_project()
+    public async Task Doctor_reads_this_homes_project_not_a_name_recorded_by_another_home()
     {
         var rig = await Running();
 
         _ = await new OnyxStackDoctor(rig.Workspace, new OnyxFacts(rig.Runtime, rig.Probes, new FakeSindriHome(OnyxUpRig.Home)), rig.Pins).Check(Token);
 
         Assert.NotEmpty(rig.Runtime.Projects);
-        Assert.All(rig.Runtime.Projects, name => Assert.Equal(Recorded, name));
+        Assert.All(rig.Runtime.Projects, name => Assert.Equal(rig.Paths.Project.Name, name));
     }
 }

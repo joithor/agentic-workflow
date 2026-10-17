@@ -2148,8 +2148,6 @@ Aw.Sindri.Features.OnyxDown.OnyxDownResponse.<Clone>$() -> Aw.Sindri.Features.On
 Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Equals(Aw.Sindri.Features.OnyxDown.OnyxDownResponse? other) -> bool
 Aw.Sindri.Features.OnyxDown.OnyxDownResponse.WasRunning.get -> bool
 Aw.Sindri.Features.OnyxDown.OnyxDownResponse.WasRunning.init -> void
-Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Deconstruct(out bool WasRunning, out System.Collections.Generic.IReadOnlyList<string!>! Stopped) -> void
-Aw.Sindri.Features.OnyxDown.OnyxDownResponse.OnyxDownResponse(bool WasRunning, System.Collections.Generic.IReadOnlyList<string!>! Stopped) -> void
 Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Stopped.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Stopped.init -> void
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.Deconstruct(out Aw.Sindri.Core.Onyx.OnyxState State, out string! PinnedVersion, out string! PinnedCommit, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>! Checks, out int Port, out int ExitCode, out string? Url, out string? RunningVersion, out string? Detail) -> void
@@ -2170,3 +2168,7 @@ static Aw.Sindri.Features.OnyxDown.OnyxDownRequest.operator !=(Aw.Sindri.Feature
 static Aw.Sindri.Features.OnyxDown.OnyxDownRequest.operator ==(Aw.Sindri.Features.OnyxDown.OnyxDownRequest? left, Aw.Sindri.Features.OnyxDown.OnyxDownRequest? right) -> bool
 static Aw.Sindri.Features.OnyxDown.OnyxDownResponse.operator !=(Aw.Sindri.Features.OnyxDown.OnyxDownResponse? left, Aw.Sindri.Features.OnyxDown.OnyxDownResponse? right) -> bool
 static Aw.Sindri.Features.OnyxDown.OnyxDownResponse.operator ==(Aw.Sindri.Features.OnyxDown.OnyxDownResponse? left, Aw.Sindri.Features.OnyxDown.OnyxDownResponse? right) -> bool
+Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Deconstruct(out bool WasRunning, out System.Collections.Generic.IReadOnlyList<string!>! Stopped, out System.Collections.Generic.IReadOnlyList<string!>! Warnings) -> void
+Aw.Sindri.Features.OnyxDown.OnyxDownResponse.OnyxDownResponse(bool WasRunning, System.Collections.Generic.IReadOnlyList<string!>! Stopped, System.Collections.Generic.IReadOnlyList<string!>! Warnings) -> void
+Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Warnings.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Warnings.init -> void

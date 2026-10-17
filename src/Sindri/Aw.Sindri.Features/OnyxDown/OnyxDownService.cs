@@ -38,7 +38,7 @@ internal sealed class OnyxDownService(IOnyxWorkspace workspace, OnyxFacts facts,
 
         if (compose.Value is null)
         {
-            return new OnyxDownResponse(WasRunning: false, []);   // the fetched files never landed: no project to ask docker about
+            return new OnyxDownResponse(WasRunning: false, [], []);   // the fetched files never landed: no project to ask docker about
         }
 
         var endpoint = runtime.Inspect(cancellationToken).Endpoint;
@@ -58,10 +58,10 @@ internal sealed class OnyxDownService(IOnyxWorkspace workspace, OnyxFacts facts,
         IReadOnlyList<string> running = [.. containers.Value.Where(static c => ComposeContainer.IsLive(c.State)).Select(static c => c.Service).Order(StringComparer.Ordinal)];
         if (running.Count == 0)
         {
-            return new OnyxDownResponse(WasRunning: false, []);
+            return new OnyxDownResponse(WasRunning: false, [], []);
         }
 
         var stopped = runtime.Stop(facts.ProjectOf(state), cancellationToken);
-        return stopped.IsError ? stopped.Error : new OnyxDownResponse(WasRunning: true, running);
+        return stopped.IsError ? stopped.Error : new OnyxDownResponse(WasRunning: true, running, []);
     }
 }
