@@ -30,6 +30,12 @@ public static class KvKeys
     /// <summary>Pull requests the watch saw end whose worktrees it could not yet sweep (the sweep could not run), comma separated; retried on each poll.</summary>
     public const string WorktreesPending = "worktrees.pending-prs";
 
+    /// <summary>The disk and memory state the last watch reported ("disk=low mem=ok"), so a re-armed watch does not announce an unchanged state again.</summary>
+    public const string WatchResources = "watch.resources";
+
     /// <summary>When the owner or meta dropped a pull request's merge-queue entry (aw-meta queue-drop), as "pr=ticks" pairs; a ready message newer than the drop queues it again.</summary>
     public const string QueueDropped = "queue.dropped";
+
+    /// <summary>The running (or last) merge-train's summary lines, as the status shows them.</summary>
+    public const string Train = "train.state";
 }

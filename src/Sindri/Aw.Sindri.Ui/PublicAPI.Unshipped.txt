@@ -69,6 +69,7 @@ Aw.Sindri.Ui.Platform.TrayView.TrayView(Aw.Sindri.Ui.Platform.TrayState State, s
 Aw.Sindri.Ui.Views.AppTrayIcons
 Aw.Sindri.Ui.Views.SindriApp
 Aw.Sindri.Ui.Views.SindriApp.SindriApp() -> void
+Aw.Sindri.Ui.Views.SindriApp.Dispose() -> void
 const Aw.Sindri.Ui.Platform.InstanceMessages.Focus = "focus" -> string!
 const Aw.Sindri.Ui.Platform.InstanceMessages.MaxLength = 512 -> int
 const Aw.Sindri.Ui.Views.SindriApp.FailedExitCode = 2 -> int

@@ -42,6 +42,8 @@ internal sealed class CliHarness : IDisposable
         _env[name] = value;
     }
 
+    internal string Env(string name) => _env[name];
+
     internal Task<CliResult> Run(params string[] args) => RunWithInput(string.Empty, args);
 
     internal async Task<CliResult> RunWithInput(string stdin, params string[] args)
@@ -61,7 +63,7 @@ internal sealed class CliHarness : IDisposable
         await using (provider.ConfigureAwait(false))
         {
             _ = provider.GetRequiredService<TelemetryRuntime>();
-            var exit = await CommandTable.Run(arguments, provider, provider.GetRequiredService<JsonSerializerOptions>(), io).ConfigureAwait(false);
+            var exit = await CommandTable.Run(arguments, provider, provider.GetRequiredService<JsonSerializerOptions>(), io, TestContext.Current.CancellationToken).ConfigureAwait(false);
             return new CliResult(exit, output.ToString(), error.ToString());
         }
     }

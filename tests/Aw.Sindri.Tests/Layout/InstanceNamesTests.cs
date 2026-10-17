@@ -78,10 +78,17 @@ public sealed class InstanceNamesTests
     public void A_link_is_its_title_else_its_host(string content, string expected) => Assert.Equal(expected, Render("{fact:scope}", content, kind: "link"));
 
     [Theory]
-    [InlineData("""{"id":"P-2211","number":8}""", "P-2211")]
-    [InlineData("""{"number":8812}""", "8812")]
-    [InlineData("""{"other":1}""", "scope")]
-    public void A_payload_is_its_id_else_its_number_else_the_bare_key(string content, string expected) => Assert.Equal(expected, Render("{fact:scope}", content, kind: "webhook"));
+    [InlineData("webhook", """{"id":"P-2211","number":8}""", "P-2211")]
+    [InlineData("webhook", """{"number":8812}""", "8812")]
+    [InlineData("webhook", """{"other":1}""", "scope")]
+    [InlineData("payload", """{"id":"P-2211","number":8}""", "P-2211")]
+    [InlineData("payload", """{"number":8812}""", "8812")]
+    [InlineData("payload", """{"other":1}""", "scope")]
+    [InlineData("packet", """{"id":"P-2211","number":8}""", "P-2211")]
+    [InlineData("packet", """{"number":8812}""", "8812")]
+    [InlineData("packet", """{"other":1}""", "scope")]
+    [InlineData("linear-project", """{"id":"P-2211","number":8}""", "P-2211")]
+    public void A_payload_is_its_id_else_its_number_else_the_bare_key(string kind, string content, string expected) => Assert.Equal(expected, Render("{fact:scope}", content, kind: kind));
 
     [Fact]
     public void The_facts_a_name_reads_are_listed_once_in_order_of_use() =>

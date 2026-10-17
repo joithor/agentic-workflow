@@ -40,7 +40,7 @@
         "key": { "$ref": "#/$defs/FactKey" },
         "label": { "type": ["string", "null"] },
         "type": { "enum": ["text", "file", "item", "link", "scope-map", "packet", "evidence", "decision", "payload", null] },
-        "kind": { "enum": ["item", "linear-project", "webhook", "file", "text", "link"] },
+        "kind": { "enum": ["item", "linear-project", "webhook", "file", "text", "link", "packet", "payload"] },
         "generate": { "type": ["string", "null"], "maxLength": 200, "description": "A template for the value when the start supplies none: literals, {start:date}, {start:time}; kind text only (spec section 3.11)." }
       }
     },

@@ -602,7 +602,7 @@ two desk states in `workflow.project`, not UI logic.
 
 An instance's **subject** is its first declared input. A subject kind has an adapter in the app for the header line
 and the list's SUBJECT cell: `item` (id and title, from the queue), `linear-project` (team and name, the PRD document
-if the project has one, `Open in Linear`), `webhook` (source, id, received at), `file` (name), `text` (first line).
+if the project has one, `Open in Linear`), `webhook` (source, id, received at), `file` (name), `text` (first line); `packet` and `payload` render the payload's id and title, else the key.
 Kinds are the API's `inputs[].kind` (E-22); an unknown kind renders the key.
 
 ### 5.5 Children
