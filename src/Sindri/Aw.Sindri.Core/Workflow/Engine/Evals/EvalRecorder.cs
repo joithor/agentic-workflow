@@ -153,7 +153,7 @@ public static class EvalRecorder
             return (EvalVariant.Text, null);
         }
 
-        var fits = suspension.Mirrors is null ? AnswerFit.Variants(suspension, before.Address, before.Recipe) : [];
+        var fits = suspension.Mirrors is null ? AnswerVariants.Fitting(suspension) : [];
         (AnswerVariant Variant, int? Amount)? chosen = recorded switch
         {
             { Grant.Rounds: { } rounds } when fits.Contains(AnswerVariant.Grant) => (AnswerVariant.Grant, rounds),

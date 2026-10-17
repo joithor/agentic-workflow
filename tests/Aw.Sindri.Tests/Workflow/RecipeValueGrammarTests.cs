@@ -41,4 +41,23 @@ public sealed class RecipeValueGrammarTests
     [InlineData("")]
     public void Tokens_out_of_grammar_are_refused(string text) =>
         Assert.False(TokenCounts.TryParse(text, out _));
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(1, "1")]
+    [InlineData(12_500, "12500")]
+    [InlineData(100_000, "100k")]
+    [InlineData(1_500_000, "1500k")]
+    [InlineData(2_000_000, "2M")]
+    public void Format_writes_whole_k_or_M_else_the_plain_integer(int count, string text) => Assert.Equal(text, TokenCounts.Format(count));
+
+    [Fact, Trait("Lane", "unit")]
+    public void Format_round_trips_through_TryParse_for_odd_and_even_budgets()
+    {
+        var counts = Enumerable.Range(1, 3_000).Concat([12_499, 12_500, 12_501, 24_999, 25_000, 999_999, 1_000_000, 1_000_001, 1_500_000, 1_999_999, 2_147_000_000, int.MaxValue]);
+        foreach (var count in counts)
+        {
+            Assert.True(TokenCounts.TryParse(TokenCounts.Format(count), out var back), string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{count} -> {TokenCounts.Format(count)}"));
+            Assert.Equal(count, back);
+        }
+    }
 }

@@ -113,7 +113,7 @@ public sealed class DeniedPathReadTests : IDisposable
         var lenses = (await _world.Engine.Lenses("feature:kept", draft: false, depth: null, scope, MapWorld.None)).Value;
         var denied = await _world.Map.MapStatus("code:private/a.ts", scope, MapWorld.None);
 
-        Assert.Equivalent(lenses.Coverage, status.Coverage);
+        Assert.Equivalent(lenses.Coverage with { Map = null }, status.Coverage);
         Assert.Equal(1, status.Coverage!.Code.Implemented);
         Assert.Equal(ContextErrors.UnknownAnchor.Code, denied.Error.Code);
         Assert.Equal(3, status.Counts.Nodes);

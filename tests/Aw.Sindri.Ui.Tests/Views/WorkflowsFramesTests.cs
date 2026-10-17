@@ -44,6 +44,9 @@ public sealed class WorkflowsFramesTests : FrameHost
         Assert.Equal(locked.Answer!.Cli, ((ViewModels.Components.ProtectedActionViewModel)Assert.Single(locks).DataContext!).Cli);   // the one lock sits on the Locked row
         Assert.Equal((true, shell.Workflows.LegendText), (Visible(window, "WorkflowsLegend"), Named<TextBlock>(window, "WorkflowsLegend").Text));
         Assert.Equal(shell.Workflows.Groups.Count, window.GetVisualDescendants().OfType<Button>().Count(t => t.Name == "WorkflowGroupToggle"));
+        var recipeButtons = window.GetVisualDescendants().OfType<Button>().Where(b => b.Name == "WorkflowGroupRecipe" && b.IsEffectivelyVisible).ToList();
+        Expect.Sequence(shell.Workflows.Groups.Select(g => g.RecipeLinkName), recipeButtons.Select(Heard.Name));   // reached and named, by the peer
+        Assert.All(recipeButtons, b => Assert.StartsWith(b.Content!.ToString()![..^2], Heard.Name(b), StringComparison.Ordinal));
         AssistiveNames(window, shell);
         Frame(window, "u8-workflows-open", Prefix);
     });

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Results;
 
@@ -12,6 +13,9 @@ namespace Aw.Context.Core.Lenses;
 /// <param name="Confirmed">True when some link of it is confirmed.</param>
 /// <param name="Suggested">True when every link of it is an unconfirmed (model) suggestion.</param>
 /// <param name="LinkId">The best unconfirmed link, to accept or reject it; null unless suggested.</param>
+/// <param name="Label">The path, as the caller reads it, so the item can be drawn alone.</param>
+/// <param name="Kind">Its kind (always code).</param>
+/// <param name="Trust">Whether its label may be read as instructions (the best link's).</param>
 public sealed record LensFile(
     string Path,
     IReadOnlyList<NodeKey> Implements,
@@ -20,4 +24,16 @@ public sealed record LensFile(
     double Confidence,
     bool Confirmed,
     bool Suggested,
-    LinkId? LinkId);
+    LinkId? LinkId,
+    string Label,
+    NodeKind Kind,
+    Results.Trust Trust)
+{
+    /// <summary>Schema 2 only: every anchor that reached it, in request order.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<string>? Anchors { get; init; }
+
+    /// <summary>Schema 2 only: the fewest edges or cascade levels from any anchor that reached it (0 for an anchor's own scope).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Depth { get; init; }
+}
