@@ -46,40 +46,37 @@ public static class OnyxPreflight
     /// <returns>For example 11.0.</returns>
     public static string Gib(long bytes) => (bytes / (double)(1L << 30)).ToString("F1", CultureInfo.InvariantCulture);
 
-    private static PreflightCheck Docker(ContainerRuntimeFacts docker) => DockerProblem(docker) is not { } problem
-        ? Ok("docker", docker.ServerVersion ?? "unreadable version")
-        : new PreflightCheck("docker", CheckState.Fail, DockerFailure(docker), problem);
-
-    private static string DockerFailure(ContainerRuntimeFacts docker) => docker switch
+    private static PreflightCheck Docker(ContainerRuntimeFacts docker)
     {
-        { CliFound: false } => "docker CLI not found",
-        _ when docker.Endpoint is not null && !IsLocalEndpoint(docker.Endpoint) => "docker points at another machine",
-        { DaemonAnswers: false } => "docker CLI found, daemon not answering",
-        _ => "docker endpoint unreadable",
-    };
+        var (detail, problem) = JudgeDocker(docker);
+        return problem is null ? Ok("docker", detail) : new PreflightCheck("docker", CheckState.Fail, detail, problem);
+    }
 
     /// <summary>Judges whether Docker can be used here, in the order a person would fix it: no CLI, an endpoint on another machine, a daemon that doesn't answer, then an endpoint nobody could read.</summary>
     /// <param name="docker">What the container runtime reports.</param>
     /// <returns>The error (SND-ONYX-001 or SND-ONYX-010, with its fix), or null when Docker is usable here.</returns>
-    public static Error? DockerProblem(ContainerRuntimeFacts docker)
+    public static Error? DockerProblem(ContainerRuntimeFacts docker) => JudgeDocker(docker).Problem;
+
+    // The docker row's detail and its error come out of this one judgment, so the text a person reads and the code a caller branches on can't disagree.
+    private static (string Detail, Error? Problem) JudgeDocker(ContainerRuntimeFacts docker)
     {
         ArgumentNullException.ThrowIfNull(docker);
         if (!docker.CliFound)
         {
-            return SindriErrors.OnyxDockerUnavailable.With("Docker isn't installed: install Docker Desktop (or Docker Engine), then run this again");
+            return ("docker CLI not found", SindriErrors.OnyxDockerUnavailable.With("Docker isn't installed: install Docker Desktop (or Docker Engine), then run this again"));
         }
 
         if (docker.Endpoint is not null && !IsLocalEndpoint(docker.Endpoint))
         {
-            return RemoteDocker(docker.Endpoint);
+            return ("docker points at another machine", RemoteDocker(docker.Endpoint));
         }
 
         if (!docker.DaemonAnswers)
         {
-            return SindriErrors.OnyxDockerUnavailable.With("Docker isn't running: start Docker Desktop (or the docker service) and wait until it is ready, then run this again");
+            return ("docker CLI found, daemon not answering", SindriErrors.OnyxDockerUnavailable.With("Docker isn't running: start Docker Desktop (or the docker service) and wait until it is ready, then run this again"));
         }
 
-        return docker.Endpoint is null ? RemoteDocker(endpoint: null) : null;
+        return docker.Endpoint is null ? ("docker endpoint unreadable", RemoteDocker(endpoint: null)) : (docker.ServerVersion ?? "unreadable version", null);
     }
 
     /// <summary>Tells whether a Docker endpoint is on this machine: a unix socket, or a named pipe on Windows. An endpoint nobody could read (null) isn't, since it may be anywhere.</summary>
