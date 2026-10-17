@@ -41,10 +41,13 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
     public ObservableCollection<StripRowViewModel> Rows { get; } = [];
 
     /// <summary>True when the cap leaves open rows out.</summary>
-    public bool HasMore => !IsNotServed && !IsUnreadable && _open.Count > _shown.Count;
+    public bool HasMore => !IsNotServed && !IsUnreadable && OpenTotal > _shown.Count;
+
+    // The open total is the one the server counted for the same open filter (the Workflows page's), not a count of the rows sent.
+    private int OpenTotal => Counts?.Open ?? _open.Count;
 
     /// <summary>"… 3 more"; empty without overflow.</summary>
-    public string MoreText => HasMore ? Labels.MoreRows(_open.Count - _shown.Count) : string.Empty;
+    public string MoreText => HasMore ? Labels.MoreRows(OpenTotal - _shown.Count) : string.Empty;
 
     /// <summary>True when the list is empty and served.</summary>
     public bool IsEmpty => !IsNotServed && !IsUnreadable && Counts is not null && _open.Count == 0;
@@ -183,8 +186,9 @@ internal sealed class WorkflowsStripViewModel(IClipboard clipboard, TimeProvider
         ? Math.Clamp(HomeFold.LargeBudget - NeedsYouShown, 0, HomeFold.StripLargeCap)
         : Math.Clamp(HomeFold.Budget - NeedsYouShown, 0, Cap);
 
-    // An instance is open unless its current state's cell is terminal (the one rule counts.open is computed by).
-    private static bool IsOpen(InstanceSummary row) => !row.States.Any(s => s.Terminal && string.Equals(s.State, row.State, StringComparison.Ordinal));
+    // The server filters open=true (the same filter as the Workflows page); a row whose current state's cell is terminal is dropped here as a belt.
+    private static bool IsOpen(InstanceSummary row) =>
+        !row.States.Any(s => s.Terminal && string.Equals(s.State, row.State, StringComparison.Ordinal));
 
     private bool IsSelectedRow(StripRowViewModel row) => SelectedAddress is { } address && string.Equals(row.Address, address, StringComparison.Ordinal);
 
