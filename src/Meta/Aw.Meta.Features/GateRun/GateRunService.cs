@@ -44,7 +44,7 @@ internal sealed class GateRunService(IMetaConfig config, GateWorkspace workspace
             return plan.Error;
         }
 
-        var ran = plan.Value.Prepared.Merged ? await RunSteps(plan.Value, team.Value.Gate, cancellationToken).ConfigureAwait(false) : Results.Success<IReadOnlyList<GateStep>>([]);
+        var ran = plan.Value.Prepared.Merged ? await RunSteps(plan.Value, team.Value.Gate, team.Value.Heavy.EffectiveCap, cancellationToken).ConfigureAwait(false) : Results.Success<IReadOnlyList<GateStep>>([]);
         return ran.IsError ? ran.Error : await Record(plan.Value, ran.Value, cancellationToken).ConfigureAwait(false);
     }
 
@@ -63,7 +63,7 @@ internal sealed class GateRunService(IMetaConfig config, GateWorkspace workspace
     private static IReadOnlyList<string> Scopes(GateRunRequest request, GateConfig gate, IReadOnlyList<string> changed) =>
         request.Scopes.Count > 0 ? [.. request.Scopes.Distinct(StringComparer.Ordinal)] : ScopePlanner.Plan(changed, gate);
 
-    private async ValueTask<Result<IReadOnlyList<GateStep>>> RunSteps(GatePlan plan, GateConfig gate, CancellationToken cancellationToken)
+    private async ValueTask<Result<IReadOnlyList<GateStep>>> RunSteps(GatePlan plan, GateConfig gate, int heavyCap, CancellationToken cancellationToken)
     {
         var configured = plan.Scopes.SelectMany(scope => gate.Scopes[scope].Steps).ToList();
         if (configured.GroupBy(s => s.Name, StringComparer.Ordinal).FirstOrDefault(g => g.Skip(1).Any()) is { } twice)
@@ -71,19 +71,18 @@ internal sealed class GateRunService(IMetaConfig config, GateWorkspace workspace
             return MetaErrors.ConfigInvalid.With($"two gate steps are named '{twice.Key}'; step names must be unique across the selected scopes");
         }
 
-        var done = new List<GateStep>();
-        foreach (var step in configured)
+        var graph = StepGraph.Build(configured, [.. gate.Scopes.Values.SelectMany(scope => scope.Steps).Select(step => step.Name)]);
+        if (graph.IsError)
         {
-            var result = await steps.Run(step, plan.Prepared.Tree, workspace.LogPath(plan.Pr, plan.Run, step.Name), cancellationToken).ConfigureAwait(false);
-            if (result.IsError)
-            {
-                return result.Error;
-            }
-
-            done.Add(result.Value);
+            return graph.Error;
         }
 
-        return done;
+        var ran = await StepScheduler.Run(
+            graph.Value,
+            Math.Max(1, gate.ParallelSteps ?? heavyCap),
+            (step, token) => steps.Run(step, plan.Prepared.Tree, workspace.LogPath(plan.Pr, plan.Run, step.Name), token),
+            cancellationToken).ConfigureAwait(false);
+        return ran.IsError ? ran.Error : Results.Success<IReadOnlyList<GateStep>>(ran.Value);
     }
 
     private async ValueTask<Result<GateRunResponse>> Record(GatePlan plan, IReadOnlyList<GateStep> ran, CancellationToken cancellationToken)

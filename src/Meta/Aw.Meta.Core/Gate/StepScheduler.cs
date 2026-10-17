@@ -1,0 +1,93 @@
+using Aw.Kernel;
+using Aw.Meta.Core.Config;
+
+namespace Aw.Meta.Core.Gate;
+
+/// <summary>Runs a <see cref="StepGraph"/>: a step starts when everything it waits for has finished.</summary>
+public static class StepScheduler
+{
+    /// <summary>Runs every step; heavy steps are limited to <paramref name="limit"/> at once, other steps start as soon as they are free.</summary>
+    /// <typeparam name="T">What a step yields.</typeparam>
+    /// <param name="graph">The steps and their order of dependence.</param>
+    /// <param name="limit">The most heavy steps running at once (at least 1).</param>
+    /// <param name="run">Runs one step.</param>
+    /// <param name="cancellationToken">Cancels every running step.</param>
+    /// <returns>The results in config order, or the first error (by config order); an error cancels the steps still running.</returns>
+    public static async Task<Result<IReadOnlyList<T>>> Run<T>(StepGraph graph, int limit, Func<StepConfig, CancellationToken, ValueTask<Result<T>>> run, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(graph);
+        ArgumentNullException.ThrowIfNull(run);
+        var count = graph.Steps.Count;
+        using var slots = new SemaphoreSlim(Math.Max(1, limit));
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var done = Enumerable.Range(0, count).Select(_ => new TaskCompletionSource<Result<T>?>(TaskCreationOptions.RunContinuationsAsynchronously)).ToArray();
+
+        await Task.WhenAll(Enumerable.Range(0, count).Select(i => Node(new Shared<T>(graph, done, slots, run, stop), i))).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        var results = new List<T>(count);
+        foreach (var task in done)
+        {
+            var outcome = await task.Task.ConfigureAwait(false);
+            if (outcome is null)
+            {
+                continue;
+            }
+
+            if (outcome.IsError)
+            {
+                return outcome.Error;
+            }
+
+            results.Add(outcome.Value);
+        }
+
+        return results;
+    }
+
+    private static async Task Node<T>(Shared<T> all, int i)
+    {
+        var (graph, done, slots, run, stop) = all;
+        Result<T>? outcome = null;
+        try
+        {
+            foreach (var dependency in graph.DependenciesOf(i))
+            {
+                _ = await done[dependency].Task.WaitAsync(stop.Token).ConfigureAwait(false);
+            }
+
+            outcome = await RunOne(graph.Steps[i], slots, run, stop.Token).ConfigureAwait(false);
+            if (outcome.IsError)
+            {
+                await stop.CancelAsync().ConfigureAwait(false);
+            }
+        }
+        catch (OperationCanceledException) when (stop.IsCancellationRequested)
+        {
+            // Cancelled by a sibling's error or by the caller; the error (or the caller's exception) is reported by Run.
+        }
+        finally
+        {
+            done[i].SetResult(outcome);
+        }
+    }
+
+    private static async Task<Result<T>> RunOne<T>(StepConfig step, SemaphoreSlim slots, Func<StepConfig, CancellationToken, ValueTask<Result<T>>> run, CancellationToken cancellationToken)
+    {
+        if (!step.Heavy)
+        {
+            return await run(step, cancellationToken).ConfigureAwait(false);
+        }
+
+        await slots.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return await run(step, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _ = slots.Release();
+        }
+    }
+
+    private sealed record Shared<T>(StepGraph Graph, TaskCompletionSource<Result<T>?>[] Done, SemaphoreSlim Slots, Func<StepConfig, CancellationToken, ValueTask<Result<T>>> Run, CancellationTokenSource Stop);
+}

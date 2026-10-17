@@ -32,11 +32,9 @@ Aw.Meta.Core.Config.GateConfig
 Aw.Meta.Core.Config.GateConfig.<Clone>$() -> Aw.Meta.Core.Config.GateConfig!
 Aw.Meta.Core.Config.GateConfig.Always.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Core.Config.GateConfig.Always.init -> void
-Aw.Meta.Core.Config.GateConfig.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Always, out System.Collections.Generic.IReadOnlyList<string!>! DocsOnly, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Meta.Core.Config.ScopeConfig!>! Scopes) -> void
 Aw.Meta.Core.Config.GateConfig.DocsOnly.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Core.Config.GateConfig.DocsOnly.init -> void
 Aw.Meta.Core.Config.GateConfig.Equals(Aw.Meta.Core.Config.GateConfig? other) -> bool
-Aw.Meta.Core.Config.GateConfig.GateConfig(System.Collections.Generic.IReadOnlyList<string!>! Always, System.Collections.Generic.IReadOnlyList<string!>! DocsOnly, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Meta.Core.Config.ScopeConfig!>! Scopes) -> void
 Aw.Meta.Core.Config.GateConfig.Scopes.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Meta.Core.Config.ScopeConfig!>!
 Aw.Meta.Core.Config.GateConfig.Scopes.init -> void
 Aw.Meta.Core.Config.MergeOrderRule
@@ -59,7 +57,6 @@ Aw.Meta.Core.Config.ScopeConfig.Steps.get -> System.Collections.Generic.IReadOnl
 Aw.Meta.Core.Config.ScopeConfig.Steps.init -> void
 Aw.Meta.Core.Config.StepConfig
 Aw.Meta.Core.Config.StepConfig.<Clone>$() -> Aw.Meta.Core.Config.StepConfig!
-Aw.Meta.Core.Config.StepConfig.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<string!>! Run, out bool Heavy, out System.Collections.Generic.IReadOnlyList<string!>? Rerun) -> void
 Aw.Meta.Core.Config.StepConfig.Equals(Aw.Meta.Core.Config.StepConfig? other) -> bool
 Aw.Meta.Core.Config.StepConfig.Heavy.get -> bool
 Aw.Meta.Core.Config.StepConfig.Heavy.init -> void
@@ -69,7 +66,6 @@ Aw.Meta.Core.Config.StepConfig.Rerun.get -> System.Collections.Generic.IReadOnly
 Aw.Meta.Core.Config.StepConfig.Rerun.init -> void
 Aw.Meta.Core.Config.StepConfig.Run.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Core.Config.StepConfig.Run.init -> void
-Aw.Meta.Core.Config.StepConfig.StepConfig(string! Name, System.Collections.Generic.IReadOnlyList<string!>! Run, bool Heavy = false, System.Collections.Generic.IReadOnlyList<string!>? Rerun = null) -> void
 Aw.Meta.Core.Config.TeamConfig
 Aw.Meta.Core.Config.TeamConfig.<Clone>$() -> Aw.Meta.Core.Config.TeamConfig!
 Aw.Meta.Core.Config.TeamConfig.Equals(Aw.Meta.Core.Config.TeamConfig? other) -> bool
@@ -1510,10 +1506,8 @@ Aw.Meta.Core.Config.BuildersConfig.WorktreeGb.get -> int
 Aw.Meta.Core.Config.BuildersConfig.WorktreeGb.init -> void
 Aw.Meta.Core.Config.HeavyConfig
 Aw.Meta.Core.Config.HeavyConfig.<Clone>$() -> Aw.Meta.Core.Config.HeavyConfig!
-Aw.Meta.Core.Config.HeavyConfig.Deconstruct(out Aw.Meta.Core.Config.ReserveSetting? Reserve) -> void
 Aw.Meta.Core.Config.HeavyConfig.EffectiveReserve.get -> Aw.Meta.Core.Config.ReserveSetting!
 Aw.Meta.Core.Config.HeavyConfig.Equals(Aw.Meta.Core.Config.HeavyConfig? other) -> bool
-Aw.Meta.Core.Config.HeavyConfig.HeavyConfig(Aw.Meta.Core.Config.ReserveSetting? Reserve = null) -> void
 Aw.Meta.Core.Config.HeavyConfig.Reserve.get -> Aw.Meta.Core.Config.ReserveSetting?
 Aw.Meta.Core.Config.HeavyConfig.Reserve.init -> void
 Aw.Meta.Core.Config.ReserveSetting
@@ -1711,3 +1705,22 @@ Aw.Meta.Core.Commands.CommandRequest.UnsetEnv.get -> System.Collections.Generic.
 Aw.Meta.Core.Commands.CommandRequest.UnsetEnv.init -> void
 Aw.Meta.Core.Coordination.GateWorkspace.RerunLogPath(int pr, int run, string! step, string! test, string! where) -> string!
 static Aw.Meta.Core.Gate.GatePriority.Scrubbed.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Config.GateConfig.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Always, out System.Collections.Generic.IReadOnlyList<string!>! DocsOnly, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Meta.Core.Config.ScopeConfig!>! Scopes, out int? ParallelSteps) -> void
+Aw.Meta.Core.Config.GateConfig.GateConfig(System.Collections.Generic.IReadOnlyList<string!>! Always, System.Collections.Generic.IReadOnlyList<string!>! DocsOnly, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Meta.Core.Config.ScopeConfig!>! Scopes, int? ParallelSteps = null) -> void
+Aw.Meta.Core.Config.GateConfig.ParallelSteps.get -> int?
+Aw.Meta.Core.Config.GateConfig.ParallelSteps.init -> void
+Aw.Meta.Core.Config.HeavyConfig.Cap.get -> int?
+Aw.Meta.Core.Config.HeavyConfig.Cap.init -> void
+Aw.Meta.Core.Config.HeavyConfig.Deconstruct(out Aw.Meta.Core.Config.ReserveSetting? Reserve, out int? Cap) -> void
+Aw.Meta.Core.Config.HeavyConfig.EffectiveCap.get -> int
+Aw.Meta.Core.Config.HeavyConfig.HeavyConfig(Aw.Meta.Core.Config.ReserveSetting? Reserve = null, int? Cap = null) -> void
+Aw.Meta.Core.Config.StepConfig.After.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Meta.Core.Config.StepConfig.After.init -> void
+Aw.Meta.Core.Config.StepConfig.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<string!>! Run, out bool Heavy, out System.Collections.Generic.IReadOnlyList<string!>? Rerun, out System.Collections.Generic.IReadOnlyList<string!>? After) -> void
+Aw.Meta.Core.Config.StepConfig.StepConfig(string! Name, System.Collections.Generic.IReadOnlyList<string!>! Run, bool Heavy = false, System.Collections.Generic.IReadOnlyList<string!>? Rerun = null, System.Collections.Generic.IReadOnlyList<string!>? After = null) -> void
+Aw.Meta.Core.Gate.StepGraph
+Aw.Meta.Core.Gate.StepGraph.DependenciesOf(int index) -> System.Collections.Generic.IReadOnlyList<int>!
+Aw.Meta.Core.Gate.StepGraph.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.StepConfig!>!
+Aw.Meta.Core.Gate.StepScheduler
+static Aw.Meta.Core.Gate.StepGraph.Build(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.StepConfig!>! selected, System.Collections.Generic.IReadOnlyCollection<string!>! configured) -> Aw.Kernel.Result<Aw.Meta.Core.Gate.StepGraph!>!
+static Aw.Meta.Core.Gate.StepScheduler.Run<T>(Aw.Meta.Core.Gate.StepGraph! graph, int limit, System.Func<Aw.Meta.Core.Config.StepConfig!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<T>!>>! run, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<T>!>!>!

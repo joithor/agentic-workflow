@@ -1,4 +1,6 @@
 using Aw.Meta.Core;
+using Aw.Meta.Core.Commands;
+using Aw.Meta.Core.Config;
 using Aw.Meta.Core.Coordination;
 using Aw.Meta.Core.Gate;
 using Aw.Meta.Features.GateRun;
@@ -73,6 +75,87 @@ public sealed class GateRunTests
             ["/state/meta/gates/190/1/sync-rules.log", "/state/meta/gates/190/1/build.log", "/state/meta/gates/190/1/unit.log"],
             response.Gate.Steps.Select(s => s.Log),
             StringComparer.Ordinal);
+    }
+
+    private async Task SaveParallelGate(int? parallel, params StepConfig[] steps)
+    {
+        await _world.Ready();
+        var gate = new GateConfig(
+            ["repo"],
+            [],
+            new Dictionary<string, ScopeConfig>(StringComparer.Ordinal) { ["repo"] = new(["**"], steps) },
+            parallel);
+        _ = await _world.Config.Save(new TeamConfig("t1", "/work", ["meta", "api", "ui"], "meta") { Gate = gate }, CancellationToken.None);
+    }
+
+    private void ScriptGit() =>
+        _world.Runner
+            .When("gh pr view 190", """{"headRefOid":"headsha","headRefName":"feat/x","isDraft":false,"title":"Add x"}""")
+            .When("rev-parse --verify --quiet origin/main", "mainsha\n")
+            .When("git diff --name-only origin/main...headsha", "src/a.cs\n")
+            .When("git");
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Independent_steps_run_together_and_the_record_keeps_config_order()
+    {
+        await SaveParallelGate(parallel: null, new StepConfig("a", ["scripts/a.sh"], Heavy: true), new StepConfig("b", ["scripts/b.sh"], Heavy: true));
+        var bStarted = new TaskCompletionSource();
+        ScriptGit();
+        _ = _world.Runner
+            .When("scripts/a.sh", async _ =>
+            {
+                await bStarted.Task.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken);
+                return new CommandResult(0, string.Empty, string.Empty, TimedOut: false);
+            })
+            .When("scripts/b.sh", request =>
+            {
+                _ = request;
+                _ = bStarted.TrySetResult();
+                return new CommandResult(1, string.Empty, string.Empty, TimedOut: false);
+            });
+
+        var response = await Run();
+
+        Assert.Equal([("a", GateVerdict.Pass), ("b", GateVerdict.Fail)], response.Gate.Steps.Select(s => (s.Name, s.Verdict)));
+        Assert.Equal(GateVerdict.Fail, response.Gate.Verdict);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Parallel_steps_of_one_runs_the_steps_one_at_a_time()
+    {
+        await SaveParallelGate(parallel: 1, new StepConfig("a", ["scripts/a.sh"], Heavy: true), new StepConfig("b", ["scripts/b.sh"], Heavy: true));
+        var aDone = false;
+        var bSawAFinished = false;
+        ScriptGit();
+        _ = _world.Runner
+            .When("scripts/a.sh", async _ =>
+            {
+                await Task.Delay(TimeSpan.FromMilliseconds(50), TimeProvider.System, TestContext.Current.CancellationToken);
+                aDone = true;
+                return new CommandResult(0, string.Empty, string.Empty, TimedOut: false);
+            })
+            .When("scripts/b.sh", _ =>
+            {
+                bSawAFinished = aDone;
+                return new CommandResult(0, string.Empty, string.Empty, TimedOut: false);
+            });
+
+        _ = await Run();
+
+        Assert.True(bSawAFinished);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_unknown_step_in_after_stops_the_gate_with_a_config_error_before_any_step_runs()
+    {
+        await SaveParallelGate(parallel: null, new StepConfig("a", ["scripts/a.sh"], After: ["nope"]));
+        ScriptGit();
+
+        var result = await Service().Handle(new GateRunRequest(190, []), CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Contains("nope", result.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(_world.Runner.Requests, r => r.LogFile is not null);
     }
 
     [Fact, Trait("Lane", "unit")]
