@@ -22,11 +22,17 @@ public abstract class GateStoreContract
         ["repo", "dotnet"],
         [new GateStep("repo", GateVerdict.Pass, "/logs/repo.log"), new GateStep("unit", GateVerdict.Fail, "/logs/unit.log")],
         verdict,
-        A.At(5));
+        A.At(5))
+    {
+        Tree = "tree-" + head,
+        Stack = [new StackedPr(188, "h188"), new StackedPr(189, "h189")],
+    };
 
     private static bool Same(GateRecord? a, GateRecord b) =>
         a is not null && a.Pr == b.Pr && a.Run == b.Run && a.Head == b.Head && a.Main == b.Main && a.Verdict == b.Verdict && a.At == b.At
-        && a.Scopes.SequenceEqual(b.Scopes, StringComparer.Ordinal) && a.Steps.Select(Key).SequenceEqual(b.Steps.Select(Key), StringComparer.Ordinal);
+        && SameTrain(a, b) && a.Scopes.SequenceEqual(b.Scopes, StringComparer.Ordinal) && a.Steps.Select(Key).SequenceEqual(b.Steps.Select(Key), StringComparer.Ordinal);
+
+    private static bool SameTrain(GateRecord a, GateRecord b) => a.Tree == b.Tree && a.Stack.SequenceEqual(b.Stack);
 
     private static string Key(GateStep step) => $"{step.Name}|{step.Verdict}|{step.Log}|{string.Join(',', step.Reruns.Select(r => r.Test + "=" + r.Verdict))}";
 
@@ -47,6 +53,26 @@ public abstract class GateStoreContract
         Expect.That(Same(latest.Value, second.Value), "the latest run reads back with every field");
         Expect.That(latest.Value!.Steps.Select(s => s.Name).SequenceEqual(["repo", "unit"], StringComparer.Ordinal), "steps keep their order");
         Expect.That(none.IsSuccess && none.Value is null, "no run is null");
+    }
+
+    /// <summary>A gate's tested tree and its stack read back through Latest and History; a gate without them reads back with a null tree and an empty stack.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task The_tree_and_the_stack_round_trip()
+    {
+        var store = await Create();
+        var plain = Gate(190, "h1") with { Tree = null, Stack = [] };
+        _ = await store.Save(plain, _none);
+        _ = await store.Save(Gate(191, "h2"), _none);
+
+        var legacy = await store.Latest(190, _none);
+        var stacked = await store.Latest(191, _none);
+        var history = await store.History(191, _none);
+
+        Expect.That(legacy.Value!.Tree is null && legacy.Value.Stack.Count == 0, "no tree and no stack read back as null and empty");
+        Expect.That(stacked.Value!.Tree == "tree-h2", "the tree reads back");
+        Expect.That(stacked.Value.Stack.SequenceEqual([new StackedPr(188, "h188"), new StackedPr(189, "h189")]), "the stack reads back in order");
+        Expect.That(history.Value[0].Tree == "tree-h2" && history.Value[0].Stack.Count == 2, "history carries both too");
     }
 
     /// <summary>The history lists every run of the pull request newest first, with steps.</summary>

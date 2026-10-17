@@ -6,6 +6,11 @@ namespace Aw.Meta.Core.Coordination;
 /// <param name="repo">The git calls.</param>
 public sealed class GateTree(RepoCommands repo)
 {
+    /// <summary>The same worktree handling with every git call bound to a token.</summary>
+    /// <param name="cancellationToken">The token.</param>
+    /// <returns>A copy bound to the token.</returns>
+    public GateTree Cancelling(CancellationToken cancellationToken) => new(repo.Cancelling(cancellationToken));
+
     private static readonly string[] _identity = ["-c", "user.name=aw-meta", "-c", "user.email=aw-meta@localhost"];
 
     /// <summary>Checks the tree out at <paramref name="revision"/>, creating the worktree on first use and discarding anything left in it.</summary>
@@ -59,5 +64,24 @@ public sealed class GateTree(RepoCommands repo)
 
         _ = await repo.Git(tree, "merge", "--abort").ConfigureAwait(false);
         return false;
+    }
+
+    /// <summary>Merges commits into the tree one after the other.</summary>
+    /// <param name="tree">The worktree's directory.</param>
+    /// <param name="heads">The commits to merge, in order.</param>
+    /// <returns>True when all merged; false on the first conflict (that merge is aborted); or AW-META-012.</returns>
+    public async ValueTask<Result<bool>> MergeAll(string tree, IReadOnlyList<string> heads)
+    {
+        ArgumentNullException.ThrowIfNull(heads);
+        foreach (var head in heads)
+        {
+            var merged = await Merge(tree, head).ConfigureAwait(false);
+            if (merged.IsError || !merged.Value)
+            {
+                return merged;
+            }
+        }
+
+        return true;
     }
 }

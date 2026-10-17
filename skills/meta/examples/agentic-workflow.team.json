@@ -26,7 +26,7 @@
           { "name": "unit", "run": ["dotnet", "test", "--solution", "AgenticWorkflow.slnx", "--no-build", "--filter-trait", "Lane=unit", "--ignore-exit-code", "8"], "heavy": true },
           { "name": "integration", "run": ["dotnet", "test", "--solution", "AgenticWorkflow.slnx", "--no-build", "--filter-trait", "Lane=integration", "--ignore-exit-code", "8"], "heavy": true },
           { "name": "format", "run": ["dotnet", "format", "AgenticWorkflow.slnx", "--verify-no-changes", "-v", "q"], "heavy": true },
-          { "name": "verify-packages", "run": ["scripts/dotnet-verify-packages.sh"], "heavy": false }
+          { "name": "verify-packages", "run": ["scripts/dotnet-verify-packages.sh"], "heavy": false, "after": ["build"] }
         ]
       },
       "aot-smoke": {

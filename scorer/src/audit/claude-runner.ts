@@ -13,7 +13,7 @@ export interface ExecOptions {
 }
 export type ExecFn = (file: string, args: string[], opts: ExecOptions, input: string) => Promise<string>;
 
-// The child gets PATH, HOME and USER plus what claude needs to authenticate. Nothing else leaks in.
+// The child gets PATH, HOME and USER plus what claude needs to authenticate, and AW_JUDGE_CHILD=1. Nothing else leaks in.
 const ENV_ALLOWLIST = ["PATH", "HOME", "USER", "ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN", "CLAUDE_CONFIG_DIR"] as const;
 
 export function childEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
@@ -22,6 +22,7 @@ export function childEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
     const v = env[k];
     if (v !== undefined) out[k] = v;
   }
+  out.AW_JUDGE_CHILD = "1";   // a harness child: Sindri's session collector must not list the labeler's claude -p as a session
   return out;
 }
 
