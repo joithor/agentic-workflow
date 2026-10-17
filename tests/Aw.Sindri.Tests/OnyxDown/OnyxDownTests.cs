@@ -147,7 +147,7 @@ public sealed class OnyxDownTests
     public async Task Down_while_another_onyx_command_holds_the_lock_is_busy()
     {
         var rig = await RunningRig();
-        using var held = rig.Workspace.TryLock();
+        using var held = rig.Workspace.TryLock().Value;
 
         Assert.Equal("SND-API-009", (await Down(rig)).Error.Code);
     }

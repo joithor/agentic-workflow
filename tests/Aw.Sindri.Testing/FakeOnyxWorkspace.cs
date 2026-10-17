@@ -53,15 +53,15 @@ public sealed class FakeOnyxWorkspace : IOnyxWorkspace
     }
 
     /// <inheritdoc />
-    public IDisposable? TryLock()
+    public Kernel.Result<IDisposable?> TryLock()
     {
         if (LockHeld)
         {
-            return null;
+            return Kernel.Results.Success<IDisposable?>(value: null);
         }
 
         LockHeld = true;
-        return new Release(this);
+        return Kernel.Results.Success<IDisposable?>(new Release(this));
     }
 
     private sealed class Release(FakeOnyxWorkspace owner) : IDisposable

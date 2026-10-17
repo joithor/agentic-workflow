@@ -1,3 +1,5 @@
+using Aw.Kernel;
+
 namespace Aw.Sindri.Core.Onyx;
 
 /// <summary>The files `sindri onyx up` keeps under the Sindri home: the rendered .env and compose override, and the setup state.</summary>
@@ -28,6 +30,6 @@ public interface IOnyxWorkspace
     public void WriteState(OnyxSetupState state);
 
     /// <summary>Takes the exclusive lock of the onyx directory, so one `onyx up` runs at a time (a second one is refused, not queued).</summary>
-    /// <returns>The held lock (dispose it to release), or null when another holder has it.</returns>
-    public IDisposable? TryLock();
+    /// <returns>The held lock (dispose it to release), null when another holder has it, or SND-ONYX-012 when the directory can't be used (no permission).</returns>
+    public Result<IDisposable?> TryLock();
 }

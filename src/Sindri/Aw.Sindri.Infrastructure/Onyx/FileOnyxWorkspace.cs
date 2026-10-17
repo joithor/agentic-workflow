@@ -1,6 +1,8 @@
 using System.Text;
+using Aw.Kernel;
 using System.Text.Json;
 using Aw.Kernel.Json;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Onyx;
 
@@ -26,6 +28,11 @@ internal sealed class FileOnyxWorkspace(ISindriHome home, JsonSerializerOptions 
     {
         if (Read(path) is { } have && string.Equals(have, content, StringComparison.Ordinal))
         {
+            if (secret)
+            {
+                NarrowToOwner(path);   // the content is right but someone may have widened the mode
+            }
+
             return false;
         }
 
@@ -68,16 +75,28 @@ internal sealed class FileOnyxWorkspace(ISindriHome home, JsonSerializerOptions 
     }
 
     /// <inheritdoc />
-    public IDisposable? TryLock()
+    public Result<IDisposable?> TryLock()
     {
-        OwnerOnly.EnsureDirectory(_paths.Root);
         try
         {
+            OwnerOnly.EnsureDirectory(_paths.Root);
             return new FileStream(_paths.Root + "/.lock", new FileStreamOptions { Mode = FileMode.OpenOrCreate, Access = FileAccess.ReadWrite, Share = FileShare.None });
         }
         catch (IOException)
         {
-            return null;   // another `onyx up` holds it
+            return Results.Success<IDisposable?>(value: null);   // another `onyx` command holds it
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return SindriErrors.OnyxWorkspaceUnusable.With($"Sindri can't use its Onyx directory {_paths.Root}: {exception.Message}; make it owned by you and writable (or remove it if it is a leftover), then run this again");
+        }
+    }
+
+    private static void NarrowToOwner(string path)
+    {
+        if (!OperatingSystem.IsWindows() && File.GetUnixFileMode(path) != OwnerOnlyFile)
+        {
+            File.SetUnixFileMode(path, OwnerOnlyFile);
         }
     }
 

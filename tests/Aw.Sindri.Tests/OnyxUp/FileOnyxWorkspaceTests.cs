@@ -42,6 +42,53 @@ public sealed class FileOnyxWorkspaceTests : IDisposable
 
     [Fact, Trait("Lane", "integration")]
     [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+    public void A_protected_file_that_is_wider_than_0600_is_narrowed_even_when_its_content_is_unchanged()
+    {
+        _ = _workspace.WriteIfChanged(_paths.Env, "A=1\n", secret: true);
+        File.SetUnixFileMode(_paths.Env, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+
+        var wrote = _workspace.WriteIfChanged(_paths.Env, "A=1\n", secret: true);
+
+        Assert.False(wrote);
+        Assert.Equal(OwnerFile, File.GetUnixFileMode(_paths.Env));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+    public void A_file_that_is_not_protected_keeps_the_mode_it_has()
+    {
+        _ = _workspace.WriteIfChanged(_paths.Override, "a\n", secret: false);
+        File.SetUnixFileMode(_paths.Override, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.GroupRead | UnixFileMode.OtherRead);
+
+        _ = _workspace.WriteIfChanged(_paths.Override, "a\n", secret: false);
+
+        Assert.NotEqual(OwnerFile, File.GetUnixFileMode(_paths.Override));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
+    public void A_lock_the_user_may_not_create_is_a_clear_error_not_a_crash_or_a_busy_answer()
+    {
+        _ = _workspace.WriteIfChanged(_paths.Env, "A=1\n", secret: true);
+        File.SetUnixFileMode(_paths.Root, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        try
+        {
+            Assert.SkipWhen(Environment.UserName == "root", "root ignores directory permissions");
+
+            var result = _workspace.TryLock();
+
+            Assert.True(result.IsError);
+            Assert.Equal("SND-ONYX-012", result.Error.Code);
+            Assert.Contains(_paths.Root, result.Error.Message, StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.SetUnixFileMode(_paths.Root, OwnerDirectory);
+        }
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
     public void A_changed_protected_file_stays_0600()
     {
         _ = _workspace.WriteIfChanged(_paths.Env, "A=1\n", secret: true);

@@ -590,6 +590,7 @@ blocks.
 | `SND-ONYX-005` | Onyx didn't answer within 15 minutes of the start, or answered with a version other than the pinned one; the message summarizes `service: state (health)` of every container |
 | `SND-ONYX-006` | Onyx's port 3000 is taken by something else and so is every fallback port 3001-3010 |
 | `SND-ONYX-010` | Docker points at another machine (`DOCKER_HOST` or the current docker context isn't a local unix socket or named pipe, or couldn't be read); the message names the endpoint and says to switch to the local context |
+| `SND-ONYX-012` | Sindri can't use its Onyx directory under the Sindri home (no permission to create or lock a file in it); the message names the directory |
 | `SND-ONYX-011` | A `docker compose` command failed (`pull`, `up`, `stop` or `ps`); the message ends with the last lines it printed. A command that couldn't reach the daemon is `SND-ONYX-001` instead |
 | `SND-VIEW-001` | The views are stalled or can't be updated: the projector stalled on an event (logged with its sequence and type), or it can't run (views.db or the ledger can't be used). `sindri views rebuild` clears an event stall or a views.db cause; `sindri doctor` diagnoses a ledger cause |
 

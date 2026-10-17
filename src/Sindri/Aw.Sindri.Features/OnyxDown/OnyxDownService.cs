@@ -13,7 +13,13 @@ internal sealed class OnyxDownService(IOnyxWorkspace workspace, OnyxFacts facts,
 {
     public ValueTask<Result<OnyxDownResponse>> Handle(OnyxDownRequest request, CancellationToken cancellationToken)
     {
-        using var held = workspace.TryLock();
+        var lockAttempt = workspace.TryLock();
+        if (lockAttempt.IsError)
+        {
+            return ValueTask.FromResult<Result<OnyxDownResponse>>(lockAttempt.Error);
+        }
+
+        using var held = lockAttempt.Value;
         if (held is null)
         {
             return ValueTask.FromResult<Result<OnyxDownResponse>>(SindriErrors.CommandBusy.With("another `sindri onyx` command is running; wait for it to finish, then run this again"));

@@ -8070,6 +8070,7 @@ static Aw.Sindri.Core.Onyx.OnyxSteps.Order.get -> System.Collections.Generic.IRe
 static readonly Aw.Sindri.Core.SindriErrors.OnyxComposeFailed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.OnyxNotReady -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.OnyxRemoteDocker -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.OnyxWorkspaceUnusable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Onyx.OnyxPreflight.ComposeFloor -> System.Version!
 Aw.Sindri.Core.Onyx.ComposeContainer
 Aw.Sindri.Core.Onyx.ComposeContainer.<Clone>$() -> Aw.Sindri.Core.Onyx.ComposeContainer!
@@ -8208,8 +8209,8 @@ static Aw.Sindri.Core.Onyx.OnyxProbe.operator ==(Aw.Sindri.Core.Onyx.OnyxProbe? 
 Aw.Sindri.Core.Onyx.IOnyxProgress
 Aw.Sindri.Core.Onyx.IOnyxProgress.Line(string! text) -> void
 Aw.Sindri.Core.Onyx.IOnyxProgress.Tick() -> void
-Aw.Sindri.Core.Onyx.IOnyxWorkspace.TryLock() -> System.IDisposable?
 Aw.Sindri.Core.Onyx.IOnyxWorkspace.StateIsUnreadable() -> bool
+Aw.Sindri.Core.Onyx.IOnyxWorkspace.TryLock() -> Aw.Kernel.Result<System.IDisposable?>!
 Aw.Sindri.Core.Onyx.IRandomHex
 Aw.Sindri.Core.Onyx.IRandomHex.Hex(int bytes) -> string!
 Aw.Sindri.Core.Onyx.OnyxFacts

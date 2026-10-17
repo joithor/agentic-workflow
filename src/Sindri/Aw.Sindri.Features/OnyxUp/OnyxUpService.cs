@@ -19,12 +19,23 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
 
     public async ValueTask<Result<OnyxUpResponse>> Handle(OnyxUpRequest request, CancellationToken cancellationToken)
     {
-        using var held = workspace.TryLock();
+        var lockAttempt = workspace.TryLock();
+        if (lockAttempt.IsError)
+        {
+            return lockAttempt.Error;
+        }
+
+        using var held = lockAttempt.Value;
         if (held is null)
         {
             return SindriErrors.CommandBusy.With("another `sindri onyx up` is running; wait for it to finish, then run this again");
         }
 
+        return await Run(cancellationToken).ConfigureAwait(false);
+    }
+
+    private async ValueTask<Result<OnyxUpResponse>> Run(CancellationToken cancellationToken)
+    {
         var state = workspace.ReadState();
         if (state is null && workspace.StateIsUnreadable())
         {

@@ -110,12 +110,12 @@ public abstract class OnyxWorkspaceContract
     {
         using var rig = Create();
 
-        var first = rig.Workspace.TryLock();
+        var first = rig.Workspace.TryLock().Value;
         Expect.True(first is not null);
-        Expect.True(rig.Workspace.TryLock() is null);
+        Expect.True(rig.Workspace.TryLock().Value is null);
 
         first?.Dispose();
-        using var again = rig.Workspace.TryLock();
+        using var again = rig.Workspace.TryLock().Value;
         Expect.True(again is not null);
     }
 }

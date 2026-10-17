@@ -156,7 +156,7 @@ public sealed class OnyxUpCommandTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Up_maps_a_busy_lock_to_exit_1()
     {
-        using var held = _rig.Workspace.TryLock();
+        using var held = _rig.Workspace.TryLock().Value;
 
         var code = await Verbs(Human).Up(json: false, TestContext.Current.CancellationToken);
 

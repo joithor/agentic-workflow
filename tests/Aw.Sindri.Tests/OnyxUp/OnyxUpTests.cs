@@ -106,7 +106,7 @@ public sealed class OnyxUpTests
     public async Task A_second_up_while_the_first_holds_the_lock_is_busy()
     {
         var rig = new OnyxUpRig();
-        using var held = rig.Workspace.TryLock();
+        using var held = rig.Workspace.TryLock().Value;
 
         var error = (await rig.Up(Token)).Error;
 
