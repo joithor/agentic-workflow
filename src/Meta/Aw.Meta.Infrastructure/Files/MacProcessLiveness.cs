@@ -16,12 +16,13 @@ internal sealed class MacProcessLiveness(MacHostReader reader, TimeProvider time
             return false;
         }
 
+        var now = time.GetUtcNow();   // before ps runs: a slow ps must not move the start time of a live process past the file's
         var age = await reader.ProcessAge(pid, cancellationToken).ConfigureAwait(false);
         if (age.IsError)
         {
             return age.Error;
         }
 
-        return age.Value is { } running && !ProcessStart.IsReused(time.GetUtcNow() - running, recordedAt);
+        return age.Value is { } running && !ProcessStart.IsReused(now - running, recordedAt);
     }
 }
