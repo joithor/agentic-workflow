@@ -46,13 +46,13 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
             return SindriErrors.AuthRefused.With("CompleteStep needs a caller");
         }
 
-        var resolved = await directory.Resolve(request.Instance, cancellationToken).ConfigureAwait(false);
-        if (resolved.IsError)
+        var located = await Located(request, caller, cancellationToken).ConfigureAwait(false);
+        if (located.IsError)
         {
-            return resolved.Error;
+            return located.Error;   // a human-only refusal comes before the nonce is claimed: nothing is consumed
         }
 
-        var address = resolved.Value;
+        var address = located.Value;
         var nonce = request.Nonce ?? nonces.Issue();
         var reportSha = ReportSha(request, request.Outputs.ToDictionary(static o => o.Key, static o => Convert.ToHexStringLower(SHA256.HashData(o.Value.Span))));   // the caller's outputs: a retry after the engine-filled ones stopped applying hashes the same
         var subject = address.Value + "\n" + reportSha;
@@ -70,6 +70,28 @@ internal sealed class CompleteStepService(IInstanceDirectory directory, IInstanc
 
         var outputs = engineFilled.Merge(request.Outputs, filled.Value);
         return await Report(address, new SentReport(nonce, subject, claim.Value), new StepReport(request, caller.Actor, reportSha, outputs), cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Resolves the instance and applies the human-only refusal (DT spec §8.5): a session report reads the instance and asks the catalog
+    /// about its open task; a session report on an instance that can't be read is refused with that read error (plan Q7), not let
+    /// through. A human's report isn't read here: a fresh one fails on the same read when it fills the engine's outputs.
+    /// </summary>
+    private async ValueTask<Result<InstanceAddress>> Located(CompleteStepRequest request, CallerContext caller, CancellationToken cancellationToken)
+    {
+        var resolved = await directory.Resolve(request.Instance, cancellationToken).ConfigureAwait(false);
+        if (resolved.IsError || caller.Class == CallerClass.Human)
+        {
+            return resolved;
+        }
+
+        var view = await runtime.Get(resolved.Value, cancellationToken).ConfigureAwait(false);
+        if (view.IsError)
+        {
+            return view.Error;
+        }
+
+        return engineFilled.HumanOnlyRefusal(view.Value, request, caller) is { } refusal ? refusal : resolved;
     }
 
     /// <summary>Checks approval (a fresh claim only, as ApplyCommand does), stores the outputs and sends the report.</summary>
