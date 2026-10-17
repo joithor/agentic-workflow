@@ -3,6 +3,7 @@ using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -28,8 +29,16 @@ internal sealed class EngineFilledReport(BlockCatalog catalog, JsonSerializerOpt
     /// <param name="request">The report.</param>
     /// <param name="caller">Who reports.</param>
     /// <returns>The refusal; null when the report may go on.</returns>
-    public Error? HumanOnlyRefusal(InstanceView view, CompleteStepRequest request, CallerContext caller) =>
-        caller.Class == CallerClass.Service && view.Task is { } task && request.Run == task.Run && catalog.Find(task.Step) is null ? SindriErrors.AuthRefused.With("unknown Step") : null;
+    public Error? HumanOnlyRefusal(InstanceView view, CompleteStepRequest request, CallerContext caller)
+    {
+        if (caller.Class == CallerClass.Human || view.Task is not { } task || task.Run != request.Run || catalog.Find(task.Step) is not { } step || !HumanOnlySteps.Applies(step, StepRuntime.Desk))
+        {
+            return null;
+        }
+
+        return SindriErrors.AuthRefused.With(
+            $"CompleteStep on '{task.Step.Value}' (state '{task.State}') is a human-only Step. Ask the human to run it in a terminal or the Sindri app: sindri workflow complete {view.Address.Value} --run {request.Run.Value} --outcome {request.Outcome.Value}");
+    }
 
     /// <summary>The caller's outputs and the engine-filled ones, written.</summary>
     /// <param name="given">The caller's outputs.</param>
