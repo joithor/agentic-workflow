@@ -16,6 +16,7 @@ namespace Aw.Sindri.Core.Onyx;
 public sealed record OnyxPins(
     string Version, string Commit, IReadOnlyList<OnyxFilePin> Files, IReadOnlyList<OnyxImagePin> Images, long DiskBytes, long DockerMemoryBytes)
 {
+    private const string ComposeFile = "docker_compose/docker-compose.yml";
     private static readonly char[] _separators = [' ', '\t'];
     private static readonly char[] _controls = ['\r', '\v', '\f'];
     private static readonly string[] _platforms = ["linux/arm64", "linux/amd64"];
@@ -89,6 +90,16 @@ public sealed record OnyxPins(
             if (_version is null)
             {
                 return "no version row";
+            }
+
+            if (_images.Count == 0)
+            {
+                return "no image rows";
+            }
+
+            if (!_files.Exists(static f => f.Path == ComposeFile))
+            {
+                return $"no file row for {ComposeFile}";
             }
 
             foreach (var repository in _images.Select(static i => i.Repository).Distinct(StringComparer.Ordinal))

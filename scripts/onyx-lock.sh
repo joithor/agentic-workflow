@@ -4,8 +4,8 @@
 #
 # Usage: scripts/onyx-lock.sh check [--file F]
 #        scripts/onyx-lock.sh verify [--file F]
-#   check  every row is well formed, there is exactly one version row, every image has both platforms once, and the two
-#          need rows are present once. Prints one line per problem: 'ONYX-LOCK-00n <line>: <what>'.
+#   check  every row is well formed, there is exactly one version row, there is at least one image and every image has both
+#          platforms once, the compose file docker_compose/docker-compose.yml has a file row, and the two need rows are present once. Prints one line per problem: 'ONYX-LOCK-00n <line>: <what>'.
 #   verify maintainer-run, needs the network and docker buildx, never in CI: runs check, then downloads every `file` row from
 #          raw.githubusercontent.com/onyx-dot-app/onyx/<commit>/deployment/<path> and compares its sha256, compares every
 #          `image` row with `docker buildx imagetools inspect <repository>:<tag> --raw` for its platform, and confirms the
@@ -106,6 +106,8 @@ LC_ALL=C awk '
   END {
     if (versions == 0) { print "ONYX-LOCK-001 0: no version row"; failed = 1 }
     if (versions > 1) { print "ONYX-LOCK-001 0: " versions " version rows, want 1"; failed = 1 }
+    if (length(repos) == 0) { print "ONYX-LOCK-003 0: no image rows"; failed = 1 }
+    if (!("docker_compose/docker-compose.yml" in files)) { print "ONYX-LOCK-002 0: no file row for docker_compose/docker-compose.yml"; failed = 1 }
     for (r in repos) {
       if (!((r SUBSEP "linux/arm64") in seen)) { printf "ONYX-LOCK-003 %s: no linux/arm64 row\n", r; failed = 1 }
       if (!((r SUBSEP "linux/amd64") in seen)) { printf "ONYX-LOCK-003 %s: no linux/amd64 row\n", r; failed = 1 }
