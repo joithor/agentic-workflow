@@ -2808,3 +2808,26 @@ Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.Steps.get -> System.Collectio
 Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Deconstruct(out int Port, out string! Url, out string! Version, out System.Collections.Generic.IReadOnlyList<string!>! Warnings, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxStepResult!>! Steps) -> void
 Aw.Sindri.Features.OnyxUp.OnyxUpResponse.OnyxUpResponse(int Port, string! Url, string! Version, System.Collections.Generic.IReadOnlyList<string!>! Warnings, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxStepResult!>! Steps) -> void
 Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxStepResult!>!
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest.<Clone>$() -> Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest!
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest.Equals(Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest? other) -> bool
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest.OnyxEnsureRequest() -> void
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.<Clone>$() -> Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse!
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.Deconstruct(out Aw.Sindri.Core.Control.OnyxEndpoint? Endpoint, out string? Detail) -> void
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.Detail.get -> string?
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.Detail.init -> void
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.Endpoint.get -> Aw.Sindri.Core.Control.OnyxEndpoint?
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.Endpoint.init -> void
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.Equals(Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse? other) -> bool
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.OnyxEnsureResponse(Aw.Sindri.Core.Control.OnyxEndpoint? Endpoint, string? Detail) -> void
+override Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest.GetHashCode() -> int
+override Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest.ToString() -> string!
+override Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.GetHashCode() -> int
+override Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.ToString() -> string!
+static Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest.operator !=(Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest? left, Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest? right) -> bool
+static Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest.operator ==(Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest? left, Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest? right) -> bool
+static Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.operator !=(Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse? left, Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse? right) -> bool
+static Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.operator ==(Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse? left, Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse? right) -> bool

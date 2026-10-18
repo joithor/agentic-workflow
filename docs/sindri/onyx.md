@@ -2,12 +2,53 @@
 
 Sindri's `onyx` source reads business intent (Linear issues with their comments, Slack, docs spaces) from a local Onyx
 Community Edition. Onyx stays unmodified; Sindri uses it for recall only and does its own ranking (context spec D2,
-D3). This page sets Onyx up so it is pinned, bound to loopback, keeps all data on the machine, and gives Sindri one
-admin key on its own service account (§5). Connecting Onyx to company Linear and Slack uses company OAuth: get sign-off first. Sindri never connects a
+D3). Connecting Onyx to company Linear and Slack uses company OAuth: get sign-off first. Sindri never connects a
 source itself.
 
 `$SINDRI` is the C# Sindri build (before the switch, `~/.local/bin/sindri` is still the TS one); see
 [context.md](context.md).
+
+## Quick start: Sindri sets Onyx up
+
+Docker (Docker Desktop, or Docker Engine with Compose v2) is the one thing you install yourself. Then, at a terminal:
+
+```bash
+sindri-app onyx up        # or: $SINDRI onyx up. The first bare `sindri` at a terminal offers the same thing.
+```
+
+It runs the pinned Onyx v4.9.0 (`context/onyx.lock`) as the compose project `sindri-onyx-<hash>` under `$AW_SINDRI_HOME/onyx/`: preflight
+(docker, compose, memory, disk, port), the deployment files fetched at the pinned commit and checked against their
+sha256, `.env` and a compose override (nginx on `127.0.0.1` only, every image by digest, telemetry off, local models,
+one-user sizing), the pull and the start. Then it needs you twice:
+
+1. **Your account.** It opens Onyx's sign-up page; create your own account (the first account is Onyx's admin) and press
+   Enter. Sindri registers nobody and never sees the account's password except at step 2.
+2. **Sindri's key.** It asks once for that account's email and password (not shown, not stored), makes the
+   `sindri-onyx` key on its own admin service account, stores it in the OS secret store (`keychain:onyx/sindri-onyx`;
+   an owner-only file under `$AW_SINDRI_HOME/secrets/` when there is none), writes `context.sources.onyx` into your profile
+   (`managed: true`) and shows the profile approval to confirm.
+
+Last it opens Onyx's connectors page and prints the checklist: connect Linear (the product's teams, with a start date that
+covers the backtests) and Slack (the product's channels) with the company's OAuth, in Onyx's UI. `$SINDRI doctor` then
+shows `context:onyx` and `onyx:stack`.
+
+Day to day:
+
+| What | Command |
+|---|---|
+| Where Onyx stands, and whether this box can run it | `$SINDRI onyx status` |
+| Open it in the browser (sign-up page until your account is recorded, then the connectors page) | `$SINDRI onyx open` |
+| Start or stop it by hand | `$SINDRI onyx up` / `$SINDRI onyx down` (containers only; data, images and files are kept) |
+| With Sindri | `serve` brings a managed Onyx up in the background and `stop` stops its containers; an unmanaged Onyx is never touched |
+
+A box where Onyx isn't set up shows a "Set up Onyx" row in the needs-you list (after a managed profile, or after you
+said no to the first-run offer); a managed Onyx that `serve` couldn't start shows "Onyx didn't start". Nothing here
+deletes Onyx's data: `docker compose -p sindri-onyx-<hash> down -v` stays a manual step.
+
+Everything below is the manual setup, kept for an Onyx you run yourself (`managed` unset): the same pins, loopback
+binding and key rules, done by hand.
+
+# Appendix: the manual setup
 
 ## 1. Pin the release
 

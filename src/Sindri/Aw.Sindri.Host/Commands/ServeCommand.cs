@@ -123,6 +123,7 @@ internal static class ServeCommand
         var url = new Uri(app.Urls.First());
         var endpoint = new ControlEndpoint(url, grant.Holder.Pid, grant.Epoch) { Temporal = started.Temporal };   // the dev server's pid and ports
         _ = await endpoints.Write(endpoint, CancellationToken.None).ConfigureAwait(false);
+        var onyx = OnyxServeHooks.Start(app, endpoint, endpoints, either.Token);   // a managed Onyx comes up in the background; an unmanaged one is left alone
         try
         {
             await Task.Delay(Timeout.Infinite, either.Token).ConfigureAwait(false);
@@ -143,6 +144,7 @@ internal static class ServeCommand
         _ = await endpoints.Remove(grant.Holder.Pid, CancellationToken.None).ConfigureAwait(false);
         await DropToken(app).ConfigureAwait(false);
         await app.StopAsync(CancellationToken.None).ConfigureAwait(false);
+        await OnyxServeHooks.Stop(app, onyx, Console.Error).ConfigureAwait(false);   // after the control plane's own shutdown, bounded
         return app.Services.GetRequiredService<IExitCode>().Code;
     }
 

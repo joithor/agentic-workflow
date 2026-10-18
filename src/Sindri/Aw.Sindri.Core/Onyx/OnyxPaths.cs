@@ -10,6 +10,12 @@ namespace Aw.Sindri.Core.Onyx;
 /// <param name="ProjectName">The compose project name of this Sindri home (see <see cref="ComposeProject.NameFor"/>).</param>
 public sealed record OnyxPaths(string Root, string State, string DeployDir, string Compose, string Env, string Override, string ProjectName)
 {
+    /// <summary>Gets the marker `onyx up`'s first-run offer leaves when the human said no (an empty file); while it exists the offer is not repeated.</summary>
+    public string Declined => Root + "/offer-declined";
+
+    /// <summary>Gets the note `serve` leaves about the last time it brought Onyx up: `running`, `needs-setup`, or `failed: ` and the reason.</summary>
+    public string Ensure => Root + "/ensure.txt";
+
     /// <summary>Gets the fetched env.template the .env is rendered from.</summary>
     public string EnvTemplate => DeployDir + "/docker_compose/env.template";
 

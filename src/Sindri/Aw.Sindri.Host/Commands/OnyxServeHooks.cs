@@ -1,0 +1,84 @@
+using Aw.Kernel.Services;
+using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Onyx;
+using Aw.Sindri.Features.OnyxDown;
+using Aw.Sindri.Features.OnyxEnsure;
+
+namespace Aw.Sindri.Host.Commands;
+
+/// <summary>
+/// Onyx beside `sindri serve` (spec §4.2, O4), only when the approved profile says Sindri manages it: <see cref="Start"/> runs in the background once the control plane is listening (it never blocks the API and never fails serve) and records
+/// what it found in control.json beside Temporal; <see cref="Stop"/> runs `compose stop` after serve's own shutdown, bounded. An unmanaged Onyx is never touched.
+/// </summary>
+internal static class OnyxServeHooks
+{
+    private static readonly TimeSpan _stopBudget = TimeSpan.FromMinutes(2);
+
+    /// <summary>Brings the managed Onyx up and rewrites control.json with its state.</summary>
+    /// <param name="app">The running host.</param>
+    /// <param name="endpoint">What serve wrote to control.json.</param>
+    /// <param name="endpoints">The control.json file.</param>
+    /// <param name="cancellationToken">Ends with serve.</param>
+    /// <returns>A task that ends when Onyx answers, failed, or serve stops; it never throws.</returns>
+    internal static Task Start(WebApplication app, ControlEndpoint endpoint, IEndpointFile endpoints, CancellationToken cancellationToken)
+        => Task.Run(async () =>
+        {
+            try
+            {
+                var answer = await InScope<OnyxEnsureRequest, OnyxEnsureResponse>(app, new OnyxEnsureRequest(), cancellationToken).ConfigureAwait(false);
+                if (answer is { IsSuccess: true, Value.Endpoint: { } onyx })
+                {
+                    _ = await endpoints.Write(endpoint with { Onyx = onyx }, CancellationToken.None).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // serve is stopping: the stop hook below takes it from here
+            }
+        }, CancellationToken.None);
+
+    /// <summary>Waits for <paramref name="started"/> to give up, then stops the managed Onyx's containers (kept volumes), bounded; a timeout or a failure is reported on standard error, never fatal.</summary>
+    /// <param name="app">The host.</param>
+    /// <param name="started">The task <see cref="Start"/> returned.</param>
+    /// <param name="error">Where a failure is told.</param>
+    /// <returns>A task that ends when the stop is done or its budget is spent.</returns>
+    internal static async Task Stop(WebApplication app, Task started, TextWriter error)
+    {
+        using var budget = new CancellationTokenSource(_stopBudget);
+        try
+        {
+            await started.WaitAsync(budget.Token).ConfigureAwait(false);
+            var scope = app.Services.CreateAsyncScope();
+            await using (scope.ConfigureAwait(false))
+            {
+                var managed = await scope.ServiceProvider.GetRequiredService<IManagedOnyx>().Is(budget.Token).ConfigureAwait(false);
+                if (managed is { IsSuccess: true, Value: true })
+                {
+                    var stopped = await InScope<OnyxDownRequest, OnyxDownResponse>(app, new OnyxDownRequest(), budget.Token).ConfigureAwait(false);
+                    if (stopped.IsError)
+                    {
+                        await error.WriteLineAsync($"{stopped.Error.Code} serve could not stop Onyx: {stopped.Error.Message}").ConfigureAwait(false);
+                    }
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            await error.WriteLineAsync("serve stopped waiting for Onyx to stop; run `sindri onyx down`").ConfigureAwait(false);
+        }
+    }
+
+    private static async Task<Kernel.Result<TRes>> InScope<TReq, TRes>(WebApplication app, TReq request, CancellationToken cancellationToken)
+        where TReq : notnull
+    {
+        using (app.Services.GetRequiredService<ICallerContextAccessor>().EnterService("host"))
+        {
+            var scope = app.Services.CreateAsyncScope();
+            await using (scope.ConfigureAwait(false))
+            {
+                return await scope.ServiceProvider.GetRequiredService<IService<TReq, TRes>>().Handle(request, cancellationToken).ConfigureAwait(false);
+            }
+        }
+    }
+}

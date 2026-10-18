@@ -14,6 +14,9 @@ namespace Aw.Sindri.Host.Commands;
 internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLauncher launcher, ControlPlaneClient client, Output output, TimeProvider clock,
     AgentSession? session = null, Func<string>? openUi = null)
 {
+    /// <summary>Gets a step that runs after the banner and before the control plane is looked for or started: the first-run Onyx offer, for bare 'sindri' at a terminal.</summary>
+    internal Func<CancellationToken, Task>? BeforeStart { get; init; }
+
     /// <summary>How long a start waits for the control plane to answer.</summary>
     internal static readonly TimeSpan Budget = TimeSpan.FromSeconds(10);
 
@@ -23,6 +26,11 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
     internal async Task<int> Run(CancellationToken ct)
     {
         await output.Out.WriteLineAsync(Banner.Text).ConfigureAwait(false);
+        if (BeforeStart is not null)
+        {
+            await BeforeStart(ct).ConfigureAwait(false);   // the first-run Onyx offer, for bare 'sindri' at a terminal
+        }
+
         var found = await FindOrLaunch(ct).ConfigureAwait(false);
         if (found.IsError)
         {

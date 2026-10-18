@@ -140,6 +140,7 @@ scripts/binaries-lock.sh check          # Shape of binaries.lock: six fields, on
 scripts/binaries-lock.sh fetch <name>   # Download this platform's row, verify its sha256, install under $AW_STATE_DIR/cache/bin/<name>-<version>/
 
 sindri onyx status [--json]            # Can this box run the pinned Onyx? Docker, Compose, memory, disk and port checks; read-only, no control plane, an agent session may run it; exit 0 all ok, 1 attention, 2 usage
+sindri onyx up|down|open                  # The C# Sindri's Onyx: `up` stands the pinned stack up and continues with your account, Sindri's key and the profile section; `down` stops its containers; `open` opens the sign-up or connectors page (the human's verbs, a session is refused)
 # Onyx pins (context/onyx.lock: the Onyx version and commit, deployment-file sha256s, image digests per platform, preflight needs; spec docs/superpowers/specs/2026-10-16-sindri-onyx-managed-design.md §6)
 scripts/onyx-lock.sh check              # Shape of context/onyx.lock: one version row, every image on both platforms, both need rows; exit 0 ok, 1 a check failed
 scripts/onyx-lock.sh verify             # Maintainer-run, network, never in CI: recompute each file sha256 from raw.githubusercontent.com and each image digest from `docker buildx imagetools inspect`, and check the compose names only pinned images; exit 0 all match, 1 a mismatch, 2 usage or network
