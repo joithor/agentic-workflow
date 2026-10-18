@@ -51,6 +51,7 @@ case "$EVENT" in
   PermissionRequest) STATE=asking; REASON=approval ;;
   PostToolUse)
     # Running again after an approval: only when the file says asking, else nothing to change.
+    # (The grep matches the compact JSON this hook itself writes with jq -c; a pretty-printed hand edit would never clear.)
     [ -f "$FILE" ] || exit 0
     grep -q '"state":"asking"' "$FILE" || exit 0
     STATE=running ;;

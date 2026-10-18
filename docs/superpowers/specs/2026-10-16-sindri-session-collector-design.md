@@ -1,6 +1,6 @@
 # Sindri session collector: every live agent session on the box, its state, its host, and focus
 
-**Status:** design, revision 2.6 (rev 2.6 records what CO-3 shipped, §15; rev 2.1 approved; rev 2.2 adds the live read-only preview, CA-9, Q4; rev 2.3 the #324 /autoplan follow-up, §15; rev 2.4 its round 2; rev 2.5 its round 3) · **Date:** 2026-10-16, rev 2.2 2026-10-17, rev 2.3 to 2.5 2026-10-18 · **Owner decisions:** 2026-10-16
+**Status:** design, revision 2.7 (rev 2.7 records what CO-1 shipped, §15; rev 2.6 records what CO-3 shipped, §15; rev 2.1 approved; rev 2.2 adds the live read-only preview, CA-9, Q4; rev 2.3 the #324 /autoplan follow-up, §15; rev 2.4 its round 2; rev 2.5 its round 3) · **Date:** 2026-10-16, rev 2.2 2026-10-17, rev 2.3 to 2.5 2026-10-18 · **Owner decisions:** 2026-10-16
 (§1, CO1), 2026-10-17 (the preview, Q4) · **Builds on:** the dashboard design `2026-10-09-sindri-dashboard-design.md` (DB), whose collector (§4), hook
 spool (§4.2), states (§4.3) and attach (§7) this doc rewrites for the C# app; the API surface spec
 `2026-10-10-sindri-api-surface-design.md` (API), §3, §4, §5, §9 and §11 ("these need their own spec once the collector
@@ -195,7 +195,7 @@ an `AgentId` string) and every fixture in `tests/fixtures/fleet/` follow this ma
 | Claude Code | `SessionStart` | `idle` | CO-1 |
 | | `UserPromptSubmit` | `running` | CO-1 |
 | | `PermissionRequest` | `asking` `approval` (with `tool`) | CO-1 |
-| | `Notification` with `notification_type` `permission_prompt` / `elicitation_dialog` / `idle_prompt` | `asking` `approval` / `asking` `input` / `idle`; other types write nothing | CO-1 |
+| | `Notification` with `notification_type` `elicitation_dialog` / `idle_prompt` | `asking` `input` / `idle`; **`permission_prompt` and every other type write nothing** (`PermissionRequest` owns `asking` `approval`: the notification arrives seconds after it with no link to a request, so after a quick approval it would turn `running` back into an `asking` nothing clears; rev 2.7) | CO-1 |
 | | `PostToolUse` (matcher `.*`) | `running`, written **only when the file's current state is `asking`** (a `grep -q` on the file before anything else; otherwise exit 0 at once) | CO-1 |
 | | `Stop` | `idle` | CO-1 |
 | | `SessionEnd` | `ended` | CO-1 |
@@ -203,11 +203,11 @@ an `AgentId` string) and every fixture in `tests/fixtures/fleet/` follow this ma
 | Cursor | `sessionStart`, `beforeSubmitPrompt`, `stop` | `idle`, `running`, `idle` | CO-1b, through `adapters/cursor.sh`, which prints Cursor's required JSON; no asking state exists |
 
 Which of Claude's `PermissionRequest` and `Notification` payloads arrive in the installed version is recorded first,
-by CO-1's first task (it adds those events to `scripts/probe.sh`); the hook takes either.
+by CO-1's first task (it adds those events to `scripts/probe.sh`). Probed on Claude Code 2.1.302: a permission prompt fires `PermissionRequest` (with the tool), then a `permission_prompt` `Notification` seconds later; `PermissionRequest` alone drives `asking approval`. A Claude without that event never shows `asking` from this hook.
 
 **Merge rule** (pure, `SessionStateRules.Merge`): the newer of the record's `statusUpdatedAt` and the file's `at` wins,
 except that a hook `asking` stays until a later hook event or a later record status. As a slow fallback only (a
-missed `PostToolUse`), `asking` ends when the transcript's modification time passes `at + 10 s`. The transcript is only
+missed `PostToolUse`, a deny, or an Esc: probed on 2.1.302, a denied permission and an Esc at the dialog fire **no** hook event, not even `Stop`), `asking` ends when the transcript's modification time passes `at + 10 s`, or earlier when a newer Claude record status wins (an interrupt turns the record `idle`). The fallback shows `running` with `estimated: true`, not `idle`; a deny within 10 s of the prompt keeps `asking` until the next transcript write. The transcript is only
 `stat`ed, never read. `ended` in a file whose process is still live reads `unknown`.
 
 ### 5.3 Without a hook
@@ -653,4 +653,5 @@ Each has a provisional answer, used until the owner says otherwise.
 | R10-7 | R7, CO-7b, CO-7c | R7 lists the launcher spec's aligned note; CO-7b's API edit is "the one further cross-spec edit" and names the `GET /sessions` route list; the CO-7c owner proof reads the panel, not a counter (the counter stays as telemetry) |
 | R10-8 | Status line, §15 | Revision 2.5; this table |
 
+- **Rev 2.7 (2026-10-18):** what CO-1 shipped, written back (#354 review). `Notification` `permission_prompt` never writes: `PermissionRequest` owns `asking` `approval`, and the notification, which arrives seconds later with no link to a request, would undo `running` after a quick approval (§5.2). Deny and Esc fire no hook event on Claude Code 2.1.302 (probed), so `asking` ends by the record's newer status or the 10 s transcript-mtime fallback, which shows `running (estimated)` (§5.2 merge rule). The fixtures for the hook's input are `tests/fixtures/fleet-input/` (real payloads, `provenance.json`).
 - **Rev 2.6 (2026-10-18):** decision (API lane, #344 review): `startedAt` can be null (Codex and Cursor rows have none); in CA-4 and CA-9, when `startedAt` is null the caller sends `expectStartedAt` null and the server skips the start-time comparison, matching on provider, sessionId and pid alone. `focus.why` is the stable code `not-built` until CO-4a (the catalog row keeps `pending:CO-4a`). The Claude-records source failing is `SND-SESSION-001`, never a fourth `-002` reason. Also: what CO-3 shipped, written back (#344 review I1): `recentlyEnded[]` is `{session, endedAt, resume}`; `inWorkflow` means "has a launch" until CA-6; `SessionView` is `{session, cwd, stateHistory, asOf}`; the sessions goldens are `empty`, `fixture-three-providers`, `session-scoped`, `problems-source-failed`, `recently-ended` and the 503 `-002` bodies `unsupported-platform`, `proc-unreadable`, `disabled`; the status counts are box-wide for every caller.
