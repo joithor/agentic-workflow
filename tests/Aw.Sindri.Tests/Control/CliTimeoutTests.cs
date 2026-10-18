@@ -1,9 +1,9 @@
 using System.Net;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Features.GetStatus;
-using Aw.Sindri.Tests.Commands;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Tests.Commands;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.Control;
