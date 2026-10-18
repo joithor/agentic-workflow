@@ -102,7 +102,7 @@ that graph plus rank fusion across adapters.
   Integration tests assert both checks for `/sindri/mcp` and for each POST route.
 - **MCP registration is per work repo, never user-wide:** one Sindri MCP endpoint serves these tools and the API
   spec's `sindri_*` tools (API §8). `sindri mcp register` prints, or with `--apply` runs, `claude mcp add --transport
-  http --scope local --header "X-Sindri-Repo: <name>" sindri http://127.0.0.1:<port>/sindri/mcp` inside the work repo
+  http --scope local sindri http://127.0.0.1:<port>/sindri/mcp --header "X-Sindri-Repo: <name>"` inside the work repo
   so personal-repo sessions (where Prism is registered) never see work context. Codex and Cursor are never
   registered: `ILauncher` passes the endpoint at launch time (API §8, §8.1). Doctor check `context:mcp-scope` warns on
   any user-wide `sindri` entry in `~/.claude.json`, `~/.codex/config.toml` or `~/.cursor/mcp.json`. S-1M, which

@@ -95,6 +95,7 @@ SERIAL=(
   "config/hooks/tests/failopen.test.sh	SIGTERMs hooks 0.5 s into a 4 s fake-judge wait and runs each hook under a 10 s watchdog; a loaded machine shifts both"
   "config/lib/tests/failopen.test.sh	runs hooks against hung and slow fake judges under a short watchdog (rc=hung) and checks the fail-open path within the hook's own timeout"
   "config/lib/tests/statusline.test.sh	asserts the statusline returns within 1 s while a 3 s scorer runs, then polls a 10 s deadline for the cache"
+  "config/hooks/tests/fleet-state.test.sh	asserts every aw:fleet hook event runs under 100 ms (best of 5), which CPU contention from a parallel suite can turn into a false failure"
   "config/hooks/tests/sindri-nudge.test.sh	asserts the nudge gives up within a 300 ms budget (AW_SINDRI_NUDGE_BUDGET_MS) against a 5 s sleeping sindri"
   "config/lib/tests/prompt-sort.test.sh	asserts the hook gives up within a 600 ms budget (AW_PROMPT_SORT_BUDGET_MS) against a 5 s sleeping sorter"
   "config/lib/tests/aw-state-dir-isolation.test.sh	snapshots the real HOME's install-target locations around a sandboxed installer run and fails on any change, so another suite writing there at the same time is a false failure"
