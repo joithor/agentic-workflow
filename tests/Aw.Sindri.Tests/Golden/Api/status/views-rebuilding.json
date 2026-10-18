@@ -39,5 +39,10 @@
       }
     ],
     "sentence": "Sindri is rebuilding: the views are replaying (cursor 4 of 4)."
+  },
+  "sessions": {
+    "live": 0,
+    "asking": 0,
+    "problems": 0
   }
 }

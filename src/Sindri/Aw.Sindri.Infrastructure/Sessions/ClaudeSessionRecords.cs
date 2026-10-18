@@ -28,7 +28,7 @@ internal sealed class ClaudeSessionRecords(string directory) : IClaudeSessionRec
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return SindriErrors.SessionsUnavailable.With("claude-records-unreadable");
+            return SindriErrors.SessionSourceFailed.With("claude-records-unreadable");
         }
 
         var records = new List<ClaudeRecord>();

@@ -38,5 +38,10 @@
       }
     ],
     "sentence": "Sindri is stalled: the views stopped at event 2 and the profile isn't approved."
+  },
+  "sessions": {
+    "live": 0,
+    "asking": 0,
+    "problems": 0
   }
 }
