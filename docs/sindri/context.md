@@ -168,9 +168,13 @@ Registration is per work repo and never user-wide, so sessions in personal repos
 work context. In the work repo's main checkout:
 
 ```bash
-$SINDRI mcp register            # prints the command (any caller may run this)
-$SINDRI mcp register --apply    # runs it: a human at a terminal only (a session gets SND-AUTH-002)
+$SINDRI mcp register            # prints each provider's change (any caller may run this)
+$SINDRI mcp register --apply    # writes it: a human at a terminal only (a session gets SND-AUTH-002)
+$SINDRI mcp register --apply --providers claude,codex,cursor|all   # more than Claude Code (the default is claude alone)
 ```
+
+`scripts/sindri-app.sh` (a bare run) does the last line itself once the control plane's port is known, so the owner
+needs nothing else: it is idempotent (an entry that is already right is not written) and re-registers when the port moves.
 
 It prints, and with `--apply` runs in the repo's main checkout:
 
@@ -178,16 +182,28 @@ It prints, and with `--apply` runs in the repo's main checkout:
 claude mcp add --transport http --scope local sindri http://127.0.0.1:<port>/sindri/mcp --header 'X-Sindri-Repo: <repo>'
 ```
 
+Per provider (each line of the answer is `registered`, `unchanged`, `skipped` (not installed), `registered, needs trust`
+or `failed` with a fix line; one failing never stops the others):
+
+| Provider | Where | Scope |
+|----------|-------|-------|
+| Claude Code | `claude mcp add --scope local` run in the main checkout; a changed port or repo is `claude mcp remove --scope local sindri`, then add | per repo |
+| Cursor | the checkout's `.cursor/mcp.json`: the `sindri` entry (`url`, `headers`) merged, every other entry untouched | per repo |
+| Codex | the checkout's `.codex/config.toml`: a `[mcp_servers.sindri]` table (`url`, `http_headers`); Codex loads it only for a trusted project, so `--apply` also adds `[projects."<checkout>"] trust_level = "trusted"` to the user's Codex config (`$CODEX_HOME/config.toml`, else `~/.codex/config.toml`), a one-row append that changes nothing else. A row with another level is never overwritten: that line is `registered, needs trust` | per repo; the trust row is user-level but names only this checkout |
+
+A project file git tracks that would change is `failed`, not edited (`.cursor/mcp.json` and `.codex/config.toml` are not tracked in
+this repo; where they aren't ignored either, they show as untracked). A file that isn't valid JSON or TOML the tool can edit is `failed`.
+Installed means `claude`, `codex` or `cursor-agent` on PATH (Cursor also by its `~/.cursor` directory).
+
 Exit codes (spec §8.6): `0` printed or registered · `1` attention: not a profile repo (`024`) or `--apply` from a
-session (`SND-AUTH-002`) · `2` a tool error: `claude` couldn't run or failed (`025`), a usage error.
+session (`SND-AUTH-002`) · `2` a tool error: a provider `failed` (`025`; the others were still registered), a usage error.
 
 `<repo>` is the profile repo the working directory belongs to (a linked worktree resolves to its main checkout), or
 `--repo NAME`. `<port>` is the running instance's, else the profile's `api.port` (default 7410). Outside every
 profile repo, or with an unknown `--repo`, it answers `SND-CONTEXT-024`; a `claude` that can't be started or fails
 answers `SND-CONTEXT-025` (run the printed line by hand to see why). `AW_SINDRI_CLAUDE_BIN` names another `claude`
-executable (tests point it at a recording stub). Codex and Cursor are never registered: Codex keeps MCP servers only
-in user config, and Cursor's project file sits inside the repo, so Sindri passes them the endpoint when it launches
-them (API spec §8.1).
+executable (tests point it at a recording stub). Codex and Cursor take project files (above); Sindri also passes them
+the endpoint when it launches them (API spec §8.1).
 
 **Worktrees.** Claude Code keys a local-scope entry by directory. Whether that entry also reaches sessions started in
 the repo's linked worktrees is checked by the owner with the real `claude` (S-1M `owner-check.md`, step 6b); no agent

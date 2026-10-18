@@ -200,7 +200,7 @@ printf '{"pid": %s, "url": "http://127.0.0.1:7480/"}\n' "$PLANE" > "$AW_STATE_DI
 : > "$CALLS"
 unset AW_SINDRI_APP_NO_MCP
 waitfor() { local i; for i in $(seq 1 40); do grep -q "$1" "$CALLS" && return 0; sleep 0.25; done; return 1; }
-AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" >"$WORK/out" 2>"$WORK/err"; RC=$?
+(cd "$WORK" && AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" >"$WORK/out" 2>"$WORK/err"); RC=$?
 waitfor "^sindri mcp register" ; sleep 0.5
 check "mcp: a bare run registers every provider after the plane is up" "$(grep '^sindri mcp' "$CALLS")" "sindri mcp register --apply --providers all"
 check "mcp: the bare run's exit is unaffected" "$RC" "0"
@@ -208,7 +208,7 @@ check "mcp: the report goes to stderr, never stdout" "$(grep -c 'codex: register
 check "mcp: the report reaches stderr" "$(grep -c 'codex: registered' "$WORK/err")" "1"
 
 : > "$CALLS"
-AW_SINDRI_MCP_REPO=demo AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" serve >/dev/null 2>&1
+(cd "$WORK" && AW_SINDRI_MCP_REPO=demo AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" serve >/dev/null 2>&1)
 waitfor "^sindri mcp register"; sleep 0.5
 check "mcp: AW_SINDRI_MCP_REPO is passed as --repo (serve registers too)" "$(grep '^sindri mcp' "$CALLS")" "sindri mcp register --apply --providers all --repo demo"
 
@@ -220,12 +220,12 @@ check "mcp: from a linked worktree the main checkout's name is passed as --repo"
 git -C "$R" worktree remove --force "$WORK/wt2" >/dev/null 2>&1
 
 : > "$CALLS"
-MCP_EXIT=2 AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" >"$WORK/out" 2>"$WORK/err"; RC=$?
+(cd "$WORK" && MCP_EXIT=2 AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" >"$WORK/out" 2>"$WORK/err"); RC=$?
 waitfor "^sindri mcp register"; sleep 0.5
 check "mcp: a failing registration never fails the start" "$RC:$(grep -c 'needs attention' "$WORK/err")" "0:1"
 
 : > "$CALLS"
-AW_SINDRI_APP_NO_MCP=1 AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" >/dev/null 2>&1; sleep 1
+(cd "$WORK" && AW_SINDRI_APP_NO_MCP=1 AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" >/dev/null 2>&1); sleep 1
 check "mcp: AW_SINDRI_APP_NO_MCP=1 registers nothing" "$(grep -c '^sindri mcp' "$CALLS")" "0"
 
 : > "$CALLS"

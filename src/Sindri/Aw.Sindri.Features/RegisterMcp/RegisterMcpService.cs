@@ -44,7 +44,7 @@ internal sealed class RegisterMcpService(IApprovedProfile approvals, IRepoLocato
         var (repo, checkout) = entry.Value;
         var port = McpRegistration.Port(running.IsSuccess ? running.Value?.Url : null, loaded.Profile.Api?.Port);
         var arguments = McpRegistration.Arguments(repo, port);
-        var url = arguments[^1];
+        var url = arguments[arguments.ToList().IndexOf(McpScope.ServerName) + 1];   // why: the header is last, so the URL isn't
         var results = new List<ProviderResult>();
         foreach (var provider in (request.Providers is { Count: > 0 } asked ? asked : [ProviderFile.Claude]).Distinct())
         {
