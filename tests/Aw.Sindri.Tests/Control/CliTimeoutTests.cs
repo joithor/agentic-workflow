@@ -37,19 +37,90 @@ public sealed class CliTimeoutTests
         Assert.Contains(CliTimeout.Variable, read.Error.Message, StringComparison.Ordinal);
     }
 
-    [Fact, Trait("Lane", "unit")]
+    [Fact(Timeout = 15_000), Trait("Lane", "unit")]
     public async Task A_slow_answer_succeeds_when_no_cap_is_set()
     {
         var ct = TestContext.Current.CancellationToken;
         var clock = new FakeTimeProvider();
-        using var client = new ControlPlaneClient(_probe, SliceHarness.Json, handler: new LateHandler(clock, TimeSpan.FromSeconds(41)));
+        var handler = new LateHandler(clock, TimeSpan.FromSeconds(41));
+        using var client = new ControlPlaneClient(_probe, SliceHarness.Json, handler: handler);
 
-        var call = client.Get<GetStatusResponse>("/sindri/context/map/review", ct);
+        var call = client.Get<GetStatusResponse>("/sindri/context/map/review", CancellationToken.None);
+        await handler.Started.Task.WaitAsync(ct);
         clock.Advance(TimeSpan.FromSeconds(41));
         var answer = await call;
 
-        Assert.Equal(Timeout.InfiniteTimeSpan, client.CallTimeout);
         Assert.True(answer.IsSuccess);
+        Assert.Equal(Timeout.InfiniteTimeSpan, client.CallTimeout);   // HttpClient's timeout runs on real time, so it is read, not waited out (the old default was 10 s)
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_cap_is_the_clients_call_timeout()
+    {
+        using var client = new ControlPlaneClient(_probe, SliceHarness.Json, timeout: TimeSpan.FromSeconds(30));
+
+        Assert.Equal(TimeSpan.FromSeconds(30), client.CallTimeout);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("2147483", true)]
+    [InlineData("2147484", false)]
+    [InlineData("99999999999", false)]
+    public void The_cap_is_bounded_to_what_HttpClient_accepts(string value, bool valid)
+    {
+        var read = CliTimeout.Read(_ => value);
+
+        Assert.Equal(valid, read.IsSuccess);
+        if (valid)
+        {
+            using var http = new HttpClient { Timeout = read.Value!.Value };   // why: valid means a cap
+            Assert.Equal(read.Value.Value, http.Timeout);
+        }
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_malformed_cap_refuses_the_calls_and_never_reaches_the_handler()
+    {
+        var handler = new LateHandler(new FakeTimeProvider(), TimeSpan.Zero);
+        var refusal = CliTimeout.Read(_ => "abc").Error;
+        using var client = new ControlPlaneClient(_probe, SliceHarness.Json, handler: handler, refusal: refusal);
+
+        var answer = await client.Get<GetStatusResponse>("/sindri/status", TestContext.Current.CancellationToken);
+
+        Assert.Equal("SND-CLI-003", answer.Error.Code);
+        Assert.False(handler.Called);
+    }
+
+    [Fact(Timeout = 15_000), Trait("Lane", "unit")]
+    public async Task A_stream_that_does_not_open_within_the_cap_is_SND_API_002_not_a_crash()
+    {
+        using var client = new ControlPlaneClient(_probe, SliceHarness.Json, timeout: TimeSpan.FromMilliseconds(50), handler: new LateHandler(new FakeTimeProvider(), TimeSpan.FromHours(1)));
+
+        var frames = new List<Aw.Kernel.Result<StreamFrame>>();
+        await foreach (var frame in client.Stream("/sindri/events", TestContext.Current.CancellationToken))
+        {
+            frames.Add(frame);
+        }
+
+        var error = Assert.Single(frames).Error;
+        Assert.Equal("SND-API-002", error.Code);
+        Assert.Contains("didn't open /sindri/events", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 15_000), Trait("Lane", "unit")]
+    public async Task A_hung_services_run_start_is_ended_by_the_interrupt()
+    {
+        var handler = new LateHandler(new FakeTimeProvider(), TimeSpan.FromHours(1));
+        using var client = new ControlPlaneClient(_probe, SliceHarness.Json, handler: handler);
+        var output = new Output(new StringWriter(), new StringWriter(), SliceHarness.Json);
+        var verbs = new ServiceVerbs(client, output, new JobFollower(client, output, TimeProvider.System));
+        using var interrupt = new CancellationTokenSource();
+
+        var run = verbs.Run(["run", "flaky"], interrupt.Token, CancellationToken.None);
+        await handler.Started.Task.WaitAsync(TestContext.Current.CancellationToken);
+        await interrupt.CancelAsync();
+
+        _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => run);
     }
 
     [Fact(Timeout = 15_000), Trait("Lane", "unit")]
@@ -76,7 +147,7 @@ public sealed class CliTimeoutTests
         Assert.Contains("couldn't connect to 127.0.0.1:7410 within 5 s", answer.Error.Message, StringComparison.Ordinal);
     }
 
-    [Fact(Timeout = 15_000), Trait("Lane", "unit")]
+    [Fact(Timeout = 15_000), Trait("Lane", "integration")]
     public async Task A_closed_port_fails_fast_through_the_real_handler()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -85,8 +156,7 @@ public sealed class CliTimeoutTests
 
         var answer = await client.Get<GetStatusResponse>("/sindri/status", ct);
 
-        Assert.True(answer.IsError);
-        Assert.StartsWith("SND-API-", answer.Error.Code, StringComparison.Ordinal);
+        Assert.Equal("SND-API-001", answer.Error.Code);   // a refused connect is 'went away'; only a connect that times out is SND-API-002
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -103,8 +173,14 @@ public sealed class CliTimeoutTests
 
     private sealed class LateHandler(TimeProvider clock, TimeSpan delay) : HttpMessageHandler
     {
+        public TaskCompletionSource Started { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public bool Called { get; private set; }
+
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            Called = true;
+            _ = Started.TrySetResult();
             await Task.Delay(delay, clock, cancellationToken);
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(FollowRig.Status(needsApproval: false)) };
         }

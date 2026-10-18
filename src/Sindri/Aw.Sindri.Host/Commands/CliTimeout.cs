@@ -17,6 +17,9 @@ internal static class CliTimeout
     /// <summary>How long the CLI waits to connect to the recorded port before it reports SND-API-002 (the connection, not the answer).</summary>
     internal static readonly TimeSpan Connect = TimeSpan.FromSeconds(5);
 
+    /// <summary>The largest cap HttpClient.Timeout accepts, in whole seconds (int.MaxValue milliseconds, about 24.8 days).</summary>
+    internal const int MaxSeconds = int.MaxValue / 1000;
+
     /// <summary>Reads the cap from the environment.</summary>
     /// <param name="environment">Reads an environment variable.</param>
     /// <returns>The cap, null for none, or SND-CLI-003 for a value that isn't a whole number of seconds.</returns>
@@ -28,9 +31,9 @@ internal static class CliTimeout
             return (TimeSpan?)null;
         }
 
-        if (!int.TryParse(text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var seconds))
+        if (!int.TryParse(text.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var seconds) || seconds > MaxSeconds)
         {
-            return SindriErrors.InvalidInput.With($"{Variable} must be a whole number of seconds (0 or unset: no cap), not '{SafeText.Line(text, 40)}'");
+            return SindriErrors.InvalidInput.With($"{Variable} must be a whole number of seconds up to {MaxSeconds} (0 or unset: no cap), not '{SafeText.Line(text, 40)}'");
         }
 
         return seconds == 0 ? (TimeSpan?)null : TimeSpan.FromSeconds(seconds);
