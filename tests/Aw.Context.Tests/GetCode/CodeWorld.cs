@@ -44,7 +44,7 @@ internal sealed class CodeWorld : IDisposable
     public void Dispose() => World.Dispose();
 
     /// <summary>The sharing map: two implementing files, one edge test, a thing the feature writes.</summary>
-    internal Task<Context.Core.Map.MapImported> ImportSharing(string? commit = null, string[]? extraNodes = null, string[]? extraEdges = null) =>
+    internal Task<Context.Core.Map.MapImported> ImportSharing(string? commit = null, string[]? extraNodes = null, string[]? extraEdges = null, bool edgeTest = true) =>
         World.ImportYaml(
             (commit is null ? string.Empty : $"commit: {commit}\n") + Header + "nodes:\n" + string.Join('\n',
             [
@@ -54,7 +54,7 @@ internal sealed class CodeWorld : IDisposable
                 "  - {key: \"thing:shared-link\", label: \"Shared link\"}",
                 "  - {key: \"code:src/sharing/links.ts\", label: \"links.ts\", provenance: deterministic}",
                 "  - {key: \"code:src/sharing/routes.ts\", label: \"routes.ts\", provenance: deterministic}",
-                "  - {key: \"code:tests/edge.test.ts\", label: \"edge.test.ts\", provenance: deterministic}",
+                .. edgeTest ? (string[])["  - {key: \"code:tests/edge.test.ts\", label: \"edge.test.ts\", provenance: deterministic}"] : [],
                 .. extraNodes ?? [],
             ]) + "\nedges:\n" + string.Join('\n',
             [
@@ -63,7 +63,7 @@ internal sealed class CodeWorld : IDisposable
                 "  - {from: \"action:sharing.create\", to: \"thing:shared-link\", type: writes}",
                 "  - {from: \"code:src/sharing/links.ts\", to: \"feature:sharing\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/src/sharing/links.ts\"}]}",
                 "  - {from: \"code:src/sharing/routes.ts\", to: \"feature:sharing\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/src/sharing/routes.ts\"}]}",
-                "  - {from: \"code:tests/edge.test.ts\", to: \"feature:sharing\", type: tests, provenance: deterministic}",
+                .. edgeTest ? (string[])["  - {from: \"code:tests/edge.test.ts\", to: \"feature:sharing\", type: tests, provenance: deterministic}"] : [],
                 .. extraEdges ?? [],
             ]) + "\n");
 

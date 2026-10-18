@@ -16,14 +16,15 @@ public sealed class GetCodeReviewTests
     [Fact, Trait("Lane", "unit")]
     public async Task More_than_100_candidate_tests_truncate_the_tests_list_and_the_row_says_capped()
     {
-        var files = new Dictionary<string, string>(CodeWorld.Files, StringComparer.Ordinal);
+        // No edge test and no other test file, so the list holds exactly the 100 candidates read: only the scan's own cap says the answer is cut.
+        var files = CodeWorld.Files.Where(f => !f.Key.StartsWith("tests/", StringComparison.Ordinal)).ToDictionary(f => f.Key, f => f.Value, StringComparer.Ordinal);
         for (var i = 0; i < 150; i++)
         {
             files[$"tests/gen/g{N(i)}.test.ts"] = "import { x } from '../../src/sharing/links';";
         }
 
         using var world = new CodeWorld(files);
-        _ = await world.ImportSharing();
+        _ = await world.ImportSharing(edgeTest: false);
 
         var view = (await world.Code()).Value;
 
