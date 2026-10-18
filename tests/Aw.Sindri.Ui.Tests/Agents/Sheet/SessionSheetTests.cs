@@ -118,7 +118,7 @@ public sealed class SessionSheetTests : FrameHost
         var (window, shell) = await Connected(width: 1000, height: 1000);   // narrow: the sheet covers the page and takes focus
         shell.GoTo(PageId.Agents);
         await Until(window, () => shell.Agents.Drawn > 0, "the Agents page never read the list");
-        var row = window.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "SessionRowFrame" && b.IsEffectivelyVisible && b.DataContext is SessionRowViewModel { Ref: Claude });
+        var row = window.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "SessionRowFrame" && b.IsEffectivelyVisible && b.DataContext is SessionRowViewModel r && string.Equals(r.Ref, Claude, StringComparison.Ordinal));
         Assert.True(row.Focus(NavigationMethod.Tab));
 
         shell.Agents.RequestOpen(new SessionOpenRequestedEventArgs(Link(Claude)));
