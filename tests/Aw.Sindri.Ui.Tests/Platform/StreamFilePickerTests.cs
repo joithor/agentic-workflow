@@ -55,7 +55,7 @@ public sealed class StreamFilePickerTests : FilePickerContract
 
         public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
-            var read = base.Read(buffer.Span);
+            var read = Read(buffer.Span);
             Total += read;
             return ValueTask.FromResult(read);
         }
