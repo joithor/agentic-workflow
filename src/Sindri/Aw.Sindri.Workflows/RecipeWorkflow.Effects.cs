@@ -66,6 +66,7 @@ internal sealed partial class RecipeWorkflow
     /// <param name="change">The type of the change's ledger event: a 'workflow.notified' one is takeoverIdle's (P5).</param>
     private void Emit(WorkflowInstance? before, WorkflowInstance after, IReadOnlyList<EffectCommand> effects, WorkflowEventType change = WorkflowEventType.Transition)
     {
+        Announce(before, after);   // engine P7: a child tells its parent about a park, escalation or resume
         List<EffectCommand> all = [.. effects.Where(e => e.Identity.Instance == after.Id), .. Notices(before, after, change)];
         if (all.Count > 0)
         {
@@ -101,7 +102,7 @@ internal sealed partial class RecipeWorkflow
     /// carries its own text in its arguments, so it has none here.
     /// </summary>
     private string? TextOf(WorkflowInstance after, EffectCommand effect) =>
-        effect.Origin == CommandOrigin.Recipe && _recipe is { } recipe ? InstanceViews.Of(after, recipe, _since, timeoutAt: null, new InstanceViewContext(_mirrored, _provenance, Subject: _subject, Contents: _contents)).Next : null;
+        effect.Origin == CommandOrigin.Recipe && _recipe is { } recipe ? InstanceViews.Of(after, recipe, _since, timeoutAt: null, ViewContext()).Next : null;
 
     /// <summary>Waits until every effect the instance emitted has settled (the run's end), surfacing a failed one.</summary>
     private async Task Settle()

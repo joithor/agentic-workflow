@@ -21,6 +21,17 @@ internal static class GraphifyGraph
     public static Result<IReadOnlyList<FileCluster>> Clusters(string json, IReadOnlyList<string> roots)
     {
         ArgumentNullException.ThrowIfNull(json);
+        using var bytes = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+        return Clusters(bytes, roots);
+    }
+
+    /// <summary>Parses the graph from a stream (no whole-file string is made).</summary>
+    /// <param name="json">graph.json's UTF-8 bytes.</param>
+    /// <param name="roots">The snapshot directory's names (as given and resolved).</param>
+    /// <returns>The clusters, in community order, or an error when the text isn't a graph.</returns>
+    public static Result<IReadOnlyList<FileCluster>> Clusters(Stream json, IReadOnlyList<string> roots)
+    {
+        ArgumentNullException.ThrowIfNull(json);
         ArgumentNullException.ThrowIfNull(roots);
         try
         {

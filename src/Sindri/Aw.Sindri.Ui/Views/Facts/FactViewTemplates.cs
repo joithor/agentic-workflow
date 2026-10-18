@@ -18,6 +18,7 @@ internal static class FactViewTemplates
         [typeof(ItemFactViewer)] = () => new ItemFactView(),
         [typeof(LinkFactViewer)] = () => new LinkFactView(),
         [typeof(PayloadFactViewer)] = () => new PayloadFactView(),
+        [typeof(ScopeMapViewer)] = () => new ScopeMapFactView(),
     };
 
     /// <summary>Whether a viewer type has a view of its own (every viewer the registry makes should: one without reads as its summary).</summary>
