@@ -16,23 +16,23 @@
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="facts:ScopeSurfaceRow">
             <Grid ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,6" ColumnSpacing="12">
-              <Border x:Name="ScopeChipName" Grid.Column="0" MinWidth="96" VerticalAlignment="Top" IsVisible="{Binding HasChip}"
+              <Border Name="ScopeChipName" Grid.Column="0" MinWidth="96" VerticalAlignment="Top" IsVisible="{Binding HasChip}"
                       AutomationProperties.Name="{Binding Chip}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-                <TextBlock x:Name="ScopeChip" Classes="caption mono" Text="{Binding Chip}" AutomationProperties.AccessibilityView="Raw" />
+                <TextBlock Name="ScopeChip" Classes="caption mono" Text="{Binding Chip}" AutomationProperties.AccessibilityView="Raw" />
               </Border>
               <StackPanel Grid.Column="1">
-                <Border x:Name="ScopeTitleName" HorizontalAlignment="Left" AutomationProperties.Name="{Binding Title}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-                  <TextBlock x:Name="ScopeTitle" Classes="body-strong" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                <Border Name="ScopeTitleName" HorizontalAlignment="Left" AutomationProperties.Name="{Binding Title}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                  <TextBlock Name="ScopeTitle" Classes="body-strong" Text="{Binding Title}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
                 </Border>
-                <Border x:Name="ScopeMetaName" HorizontalAlignment="Left" IsVisible="{Binding HasMeta}" AutomationProperties.Name="{Binding Meta}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-                  <TextBlock x:Name="ScopeMeta" Classes="caption mono subtle" Text="{Binding Meta}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                <Border Name="ScopeMetaName" HorizontalAlignment="Left" IsVisible="{Binding HasMeta}" AutomationProperties.Name="{Binding Meta}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                  <TextBlock Name="ScopeMeta" Classes="caption mono subtle" Text="{Binding Meta}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
                 </Border>
-                <Border x:Name="ScopeDetailName" HorizontalAlignment="Left" IsVisible="{Binding HasDetail}" AutomationProperties.Name="{Binding Detail}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-                  <TextBlock x:Name="ScopeDetail" Classes="caption" Text="{Binding Detail}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                <Border Name="ScopeDetailName" HorizontalAlignment="Left" IsVisible="{Binding HasDetail}" AutomationProperties.Name="{Binding Detail}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                  <TextBlock Name="ScopeDetail" Classes="caption" Text="{Binding Detail}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
                 </Border>
               </StackPanel>
-              <Border x:Name="ScopeCountName" Grid.Column="2" VerticalAlignment="Top" IsVisible="{Binding HasCount}" AutomationProperties.Name="{Binding Count}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-                <TextBlock x:Name="ScopeCount" Classes="caption mono" Text="{Binding Count}" AutomationProperties.AccessibilityView="Raw" />
+              <Border Name="ScopeCountName" Grid.Column="2" VerticalAlignment="Top" IsVisible="{Binding HasCount}" AutomationProperties.Name="{Binding Count}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                <TextBlock Name="ScopeCount" Classes="caption mono" Text="{Binding Count}" AutomationProperties.AccessibilityView="Raw" />
               </Border>
             </Grid>
           </DataTemplate>
@@ -42,14 +42,14 @@
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="facts:ScopeSection">
             <StackPanel Margin="0,4,0,4">
-              <Border x:Name="ScopeHeadingName" HorizontalAlignment="Left" AutomationProperties.Name="{Binding Heading}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-                <TextBlock x:Name="ScopeHeading" Classes="caption subtle" Text="{Binding Heading}" AutomationProperties.AccessibilityView="Raw" />
+              <Border Name="ScopeHeadingName" HorizontalAlignment="Left" AutomationProperties.Name="{Binding Heading}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                <TextBlock Name="ScopeHeading" Classes="caption subtle" Text="{Binding Heading}" AutomationProperties.AccessibilityView="Raw" />
               </Border>
               <ItemsControl ItemsSource="{Binding Lines}">
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="x:String">
-                    <Border x:Name="ScopeLineName" HorizontalAlignment="Left" AutomationProperties.Name="{Binding}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-                      <TextBlock x:Name="ScopeLine" Classes="caption" Text="{Binding}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
+                    <Border Name="ScopeLineName" HorizontalAlignment="Left" AutomationProperties.Name="{Binding}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                      <TextBlock Name="ScopeLine" Classes="caption" Text="{Binding}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
                     </Border>
                   </DataTemplate>
                 </ItemsControl.ItemTemplate>
