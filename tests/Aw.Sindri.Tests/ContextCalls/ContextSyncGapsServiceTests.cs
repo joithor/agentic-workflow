@@ -1,8 +1,5 @@
-using System.Reflection;
 using System.Text.Json;
-using Aw.Context.Core.Facade;
 using Aw.Context.Core.Lenses;
-using Aw.Context.Core.Results;
 using Aw.Context.Core.Linking;
 using Aw.Context.Core.Sources;
 using Aw.Context.Testing.Linking;
@@ -42,7 +39,6 @@ public sealed class ContextSyncGapsServiceTests
     private const string OnyxSection = """{"sources":{"onyx":{"url":"http://127.0.0.1:3000","token":"on_live-key-0123","version":"v4.9.0"}}}""";
     private static readonly SourceId _onyx = SourceId.From("onyx");
     private readonly FakeIntentStore _intents = new();
-    private readonly ProbeCountingEngine _engine = new();
     private readonly CountingJobViews _counted;
     private readonly CapturingLogger _log = new();
 
@@ -52,7 +48,7 @@ public sealed class ContextSyncGapsServiceTests
         var loaded = SliceHarness.Profile("5s");
         loaded = loaded with { Profile = loaded.Profile with { Context = context ? JsonDocument.Parse(onyx ? OnyxSection : "{}").RootElement.Clone() : null } };
         _ = await _h.Profiles.Save(loaded, Ct);
-        return new ContextSyncGapsService(new ContextScopes(_h.Profiles, _h.Callers), _engine.Proxy, _intents, _counted, _start, _h.Clock, _log);
+        return new ContextSyncGapsService(new ContextScopes(_h.Profiles, _h.Callers), _intents, _counted, _start, _h.Clock, _log);
     }
 
     private async Task Synced() => _ = await _intents.CommitPage(new IntentPage(_onyx, [], [], Cursor: null, _now), Ct);
@@ -97,7 +93,7 @@ public sealed class ContextSyncGapsServiceTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_quiet_tick_reads_only_the_stored_sync_state_no_live_probe_and_no_job_view()
+    public async Task A_quiet_tick_reads_only_the_stored_sync_state_and_no_job_view()
     {
         await Synced();
         var service = await Service(context: true);
@@ -105,7 +101,6 @@ public sealed class ContextSyncGapsServiceTests
         var result = await Run(service);
 
         Assert.True(result.Value.Idle);
-        Assert.Equal(0, _engine.SourcesCalls);   // engine.Sources probes every live source: a tick must not
         Assert.Equal(0, _counted.Lists);
         Assert.Empty(_log.Lines);
     }
@@ -152,7 +147,7 @@ public sealed class ContextSyncGapsServiceTests
     [Fact, Trait("Lane", "unit")]
     public async Task A_tick_with_no_approved_profile_is_quiet_not_a_failed_run()
     {
-        var service = new ContextSyncGapsService(new ContextScopes(_h.Profiles, _h.Callers), _engine.Proxy, _intents, _counted, _start, _h.Clock, _log);
+        var service = new ContextSyncGapsService(new ContextScopes(_h.Profiles, _h.Callers), _intents, _counted, _start, _h.Clock, _log);
 
         var result = await Run(service);
 
@@ -256,19 +251,6 @@ public sealed class ContextSyncGapsServiceTests
         Assert.Equal("context-sync-gaps", ContextSyncGapsService.BuiltIn.Name.Value);
         var row = Aw.Sindri.Tests.Commands.Authorization.Rows.Of(ActionClass.Job, "SyncSources");
         Assert.Null(Authorization.Decide(ActionClass.Job, CallerContext.Service("context-sync-gaps", _h.Ids), row).Refusal);
-    }
-
-    private sealed class ProbeCountingEngine
-    {
-        internal ProbeCountingEngine()
-        {
-            Proxy = DispatchProxy.Create<IContextEngine, EngineSourcesProxy>();
-            ((EngineSourcesProxy)(object)Proxy).View = new SourcesView([], SessionsEnabled: false, DateTimeOffset.UnixEpoch);
-        }
-
-        internal IContextEngine Proxy { get; }
-
-        internal int SourcesCalls => ((EngineSourcesProxy)(object)Proxy).Calls;
     }
 
     private sealed class CountingJobViews(InMemoryJobViews inner) : IJobViews
