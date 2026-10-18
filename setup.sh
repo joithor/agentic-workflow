@@ -4,7 +4,8 @@
 # Usage:
 #   ./setup.sh [--providers claude,codex,cursor] [--dry-run]
 #   ./setup.sh --install-agents [--providers ...] [--dry-run]
-#   ./setup.sh [--providers ...] --with-sindri   # also build and install the sindri CLI (opt-in)
+#   ./setup.sh [--providers ...] --with-sindri   # also build and install the sindri CLI (opt-in), and stand the pinned Onyx up
+#   ./setup.sh [--providers ...] --with-sindri --no-onyx   # ... without the Onyx step (run `sindri-app onyx up` later)
 #   ./setup.sh [--providers ...] --with-meta     # also install the /meta harness: aw-meta CLI, hooks, launcher (opt-in)
 #   ./setup.sh --profile <web-app|ios|personal> --target <dir> [--dry-run]
 #
@@ -25,7 +26,7 @@ CLAUDE_DIR="$HOME/.claude"
 ALL_PROVIDERS="claude codex cursor"
 
 usage() {
-  sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 # System packages are installed when missing (config/lib/sys-pkg.sh: Homebrew on macOS, sudo + the distro's package
@@ -136,6 +137,7 @@ PROVIDERS_ARG=""
 AW_DRY_RUN=0
 WITH_SINDRI=0
 WITH_META=0
+WITH_ONYX=1
 while [ $# -gt 0 ]; do
   case "$1" in
     --providers) PROVIDERS_ARG="${2:-}"; shift 2 || { echo "--providers needs a value"; exit 1; } ;;
@@ -144,6 +146,7 @@ while [ $# -gt 0 ]; do
     --dry-run) AW_DRY_RUN=1; shift ;;
     --with-sindri) WITH_SINDRI=1; shift ;;
     --with-meta) WITH_META=1; shift ;;
+    --no-onyx) WITH_ONYX=0; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown option: $1"; echo ""; usage; exit 1 ;;
   esac
@@ -610,6 +613,20 @@ if [ "$WITH_META" = "1" ]; then
   fi
 fi
 
+# --- Onyx (with --with-sindri unless --no-onyx; owner decision 2026-10-18): the pinned Onyx, stood up by the C# Sindri's
+# `onyx up` (scripts/install-onyx.sh). It needs Docker, which the Serena step above installs and starts, and the human at
+# a terminal; without them it warns with the command to run later and setup goes on (exit 3). A failed `onyx up` is
+# reported at the very end, after everything else has been installed (set -e must not end setup here) ---
+ONYX_RC=0
+if [ "$WITH_SINDRI" = "1" ] && [ "$WITH_ONYX" = "1" ]; then
+  echo ""
+  if aw_dry; then
+    bash "$SCRIPT_DIR/scripts/install-onyx.sh"
+  else
+    bash "$SCRIPT_DIR/scripts/install-onyx.sh" || ONYX_RC=$?
+  fi
+fi
+
 # --- Provider registry (read by the skill preamble) ---
 echo ""
 echo "Writing provider registry..."
@@ -650,3 +667,9 @@ esac
 echo "Custom agents:      run ./setup.sh --install-agents to install lean agent types"
 # The meta step's failure (if any) comes last, after everything else has been installed.
 if [ "$WITH_META" = "1" ]; then aw_setup_meta_finish "$META_RC" || exit "$?"; fi
+# The Onyx step's failure (if any) comes last too. 3 is a skip with its warning already printed, not a failure.
+if [ "$ONYX_RC" = "1" ]; then
+  echo ""
+  echo "Onyx was not set up (see above). The rest of setup is done; rerun: sindri-app onyx up   (or ./setup.sh --with-sindri)"
+  exit 1
+fi
