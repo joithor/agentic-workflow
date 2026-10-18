@@ -78,13 +78,16 @@ public sealed class ScopingGoldFactsTests
     }
 
     /// <summary>Every directory under tests/fixtures/line/gold/scope, so a new gold packet is checked without a test edit.</summary>
-    public static TheoryData<string> Changes() => [.. Directory.EnumerateDirectories(_scopes).Select(static d => Path.GetFileName(d)).Order(StringComparer.Ordinal)];
+    public static IEnumerable<string> Discovered() => Directory.EnumerateDirectories(_scopes).Select(static d => Path.GetFileName(d)).Order(StringComparer.Ordinal);
+
+    /// <summary>The same, as theory rows.</summary>
+    public static TheoryData<string> Changes() => [.. Discovered()];
 
     [Fact, Trait("Lane", "integration")]
     public void The_discovery_finds_the_known_gold_packets()
     {
-        Assert.Contains("expiry", Changes().Select(static d => (string)d[0]!), StringComparer.Ordinal);
-        Assert.Contains("archive", Changes().Select(static d => (string)d[0]!), StringComparer.Ordinal);
+        Assert.Contains("expiry", Discovered(), StringComparer.Ordinal);
+        Assert.Contains("archive", Discovered(), StringComparer.Ordinal);
     }
 
     [Theory, Trait("Lane", "integration")]   // reads the line fixture from the source tree
