@@ -14,6 +14,7 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(ProblemView))]
 [JsonSerializable(typeof(QueueView))]
 [JsonSerializable(typeof(ItemView))]
+[JsonSerializable(typeof(ItemLaunchView))]
 [JsonSerializable(typeof(TimelineView))]
 [JsonSerializable(typeof(CreateItemRequest))]
 [JsonSerializable(typeof(ItemCreatedView))]

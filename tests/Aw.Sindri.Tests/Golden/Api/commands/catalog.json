@@ -337,6 +337,22 @@
       "shortcut": null
     },
     {
+      "action": "FocusSession",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/sessions/{provider}/{id}/focus",
+      "cli": "sindri agents focus <ref>",
+      "ui": "pending:CO-4a",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
       "action": "ImportContextMap",
       "class": "protected",
       "allowedCallers": [
@@ -485,7 +501,7 @@
       "method": "POST",
       "route": "/sindri/launch/targets/probe",
       "cli": "sindri launch probe",
-      "ui": "pending:P10a",
+      "ui": "ready",
       "destructive": false,
       "readsViews": false,
       "shortcut": null

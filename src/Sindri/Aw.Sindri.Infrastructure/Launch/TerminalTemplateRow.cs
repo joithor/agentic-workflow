@@ -6,4 +6,5 @@ namespace Aw.Sindri.Infrastructure.Launch;
 /// <param name="Bin">The program.</param>
 /// <param name="TermProgram">The <c lang="text">$TERM_PROGRAM</c> values.</param>
 /// <param name="Argv">The argv.</param>
-internal sealed record TerminalTemplateRow(string Id, string Name, string Bin, IReadOnlyList<string>? TermProgram, IReadOnlyList<string> Argv);
+/// <param name="ProcessNames">The process names host detection matches (collector spec CO-2b), or null.</param>
+internal sealed record TerminalTemplateRow(string Id, string Name, string Bin, IReadOnlyList<string>? TermProgram, IReadOnlyList<string> Argv, IReadOnlyList<string>? ProcessNames = null);

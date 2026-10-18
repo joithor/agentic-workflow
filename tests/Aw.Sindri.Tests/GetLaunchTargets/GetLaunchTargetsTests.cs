@@ -21,7 +21,7 @@ public sealed class GetLaunchTargetsTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private GetLaunchTargetsService Service() => new(_v.Slice.Store, _v.Slice.Events, _v.Slice.Profiles, _spend, _v.Progress);
+    private GetLaunchTargetsService Service() => new(new LaunchTargetsReader(_v.Slice.Store, _v.Slice.Events, _v.Slice.Profiles, _spend, _v.Progress));
 
     private async Task Probed(params TargetFacts[] targets)
     {

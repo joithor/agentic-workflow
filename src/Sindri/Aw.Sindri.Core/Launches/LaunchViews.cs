@@ -18,6 +18,12 @@ internal sealed class LaunchViews(IViewReader reader) : ILaunchViews
     public async ValueTask<Result<IReadOnlyList<LaunchRow>>> ForRepo(RepoName repo, CancellationToken cancellationToken) =>
         Newest(await reader.Where<LaunchRow>(ViewNames.Launches, ViewColumn.Repo, repo.Value, cancellationToken).ConfigureAwait(false));
 
+    public async ValueTask<Result<IReadOnlyList<LaunchRow>>> Since(DateTimeOffset since, CancellationToken cancellationToken)
+    {
+        var all = await reader.List<LaunchRow>(ViewNames.Launches, cancellationToken).ConfigureAwait(false);
+        return all.IsError ? all.Error : Newest(Results.Success<IReadOnlyList<LaunchRow>>([.. all.Value.Where(r => r.RequestedAt >= since)]));
+    }
+
     private static Result<IReadOnlyList<LaunchRow>> Newest(Result<IReadOnlyList<LaunchRow>> rows) =>
         rows.IsError ? rows.Error : Results.Success<IReadOnlyList<LaunchRow>>([.. rows.Value.OrderByDescending(static r => r.RequestedAt).ThenByDescending(static r => r.Sequence)]);
 }

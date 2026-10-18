@@ -32,6 +32,7 @@ internal static partial class Labels
         ["Decide"] = "Decide",
         ["FileRequest"] = "File a request",
         ["ImportContextMap"] = "Import context map",
+        ["FocusSession"] = "Focus",
         ["IssueChallenge"] = "Get approval challenge",
         ["IssueNonce"] = "Get command nonce",
         ["OpenItem:attach"] = "Attach",
