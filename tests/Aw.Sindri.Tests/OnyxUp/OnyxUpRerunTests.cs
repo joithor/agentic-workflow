@@ -9,6 +9,17 @@ public sealed class OnyxUpRerunTests
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_finished_up_answers_the_failed_note_serve_left()
+    {
+        var rig = new OnyxUpRig();
+        rig.Workspace.Files[rig.Paths.Ensure] = "failed: Docker isn't running\n";
+
+        _ = (await rig.Up(Token)).Value;
+
+        Assert.Equal("running", rig.Workspace.Files[rig.Paths.Ensure].Trim());
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_rerun_after_the_images_are_pulled_warns_about_low_disk_and_carries_on()
     {
         var rig = new OnyxUpRig();

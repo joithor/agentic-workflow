@@ -10,13 +10,14 @@ public static class OnyxNoticeRules
     /// <param name="managed">The approved profile names a managed Onyx.</param>
     /// <param name="setUp">`onyx up` finished its start step on this box.</param>
     /// <param name="declined">The human said no to the first-run offer.</param>
+    /// <param name="configured">The approved profile names an Onyx of any kind (a declined offer no longer applies then).</param>
     /// <param name="ensure">What `serve` noted last about starting Onyx (`running`, `needs-setup`, `failed: ...`), or null.</param>
     /// <returns>The notice, or null when nothing needs the human.</returns>
-    public static OnyxNotice? Decide(bool managed, bool setUp, bool declined, string? ensure)
+    public static OnyxNotice? Decide(bool managed, bool setUp, bool declined, string? ensure, bool configured = false)
     {
         if (!setUp)
         {
-            return managed || declined
+            return managed || (declined && !configured)
                 ? new OnyxNotice("Set up Onyx", "Onyx (Sindri's business-context search) isn't set up on this box; `sindri onyx up` does it", Command)
                 : null;
         }

@@ -9923,4 +9923,4 @@ static Aw.Sindri.Core.Control.OnyxEndpoint.operator ==(Aw.Sindri.Core.Control.On
 static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForOnyx(Aw.Sindri.Core.Onyx.OnyxNotice! notice, System.DateTimeOffset since, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Kernel.Result<Aw.Sindri.Core.NeedsYou.NeedsYouRow!>!
 static Aw.Sindri.Core.Onyx.OnyxNotice.operator !=(Aw.Sindri.Core.Onyx.OnyxNotice? left, Aw.Sindri.Core.Onyx.OnyxNotice? right) -> bool
 static Aw.Sindri.Core.Onyx.OnyxNotice.operator ==(Aw.Sindri.Core.Onyx.OnyxNotice? left, Aw.Sindri.Core.Onyx.OnyxNotice? right) -> bool
-static Aw.Sindri.Core.Onyx.OnyxNoticeRules.Decide(bool managed, bool setUp, bool declined, string? ensure) -> Aw.Sindri.Core.Onyx.OnyxNotice?
+static Aw.Sindri.Core.Onyx.OnyxNoticeRules.Decide(bool managed, bool setUp, bool declined, string? ensure, bool configured = false) -> Aw.Sindri.Core.Onyx.OnyxNotice?

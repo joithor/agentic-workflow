@@ -54,6 +54,16 @@ public sealed class OnyxOfferTests : IDisposable
         Assert.False(_rig.Workspace.Files.ContainsKey(_rig.Paths.Declined));
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task End_of_input_neither_starts_onyx_nor_remembers_a_no()
+    {
+        await Run(Human, answer: null);
+
+        Assert.Equal(1, _asked);
+        Assert.Equal(0, _ups);
+        Assert.False(_rig.Workspace.Files.ContainsKey(_rig.Paths.Declined));
+    }
+
     [Theory, Trait("Lane", "unit")]
     [InlineData("n")]
     [InlineData("no")]

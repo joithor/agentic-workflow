@@ -22,6 +22,21 @@ public sealed class OnyxNoticeTests
         => Assert.Equal(expected, OnyxNoticeRules.Decide(managed, setUp, declined, ensure) is not null);
 
     [Fact, Trait("Lane", "unit")]
+    public void A_declined_offer_no_longer_shows_once_the_profile_names_an_onyx()
+        => Assert.Null(OnyxNoticeRules.Decide(managed: false, setUp: false, declined: true, ensure: null, configured: true));
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_declined_offer_with_an_unmanaged_onyx_in_the_profile_shows_no_row()
+    {
+        var rig = new OnyxUpRig();
+        var managed = new FakeManagedOnyx { Configured = true };
+        var notices = new OnyxNotices(managed, rig.Workspace, new OnyxFacts(rig.Runtime, rig.Probes, new FakeSindriHome(OnyxUpRig.Home)));
+        rig.Workspace.Files[rig.Paths.Declined] = string.Empty;
+
+        Assert.Null((await notices.Current(Token)).Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_setup_notice_names_the_command_and_a_failure_names_why()
     {
         Assert.Equal("sindri onyx up", OnyxNoticeRules.Decide(managed: true, setUp: false, declined: false, ensure: null)!.Command);

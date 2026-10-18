@@ -34,6 +34,7 @@ internal sealed class OnyxEnsureService(IManagedOnyx managed, IOnyxWorkspace wor
 
         var url = string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{state.Port}");
         var failure = await Bring(state, cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();   // serve stopping mid-start is an interruption, not a failure to note
         return failure is null ? Note(project, state.Port, "running", detail: null) : Note(project, state.Port, "failed", failure, url);
     }
 
