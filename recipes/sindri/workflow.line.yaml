@@ -1,0 +1,32 @@
+schema: 1
+id: workflow.line
+version: 1
+description: "Spec-to-proven-PR, end to end: scoping, design and plan as children, then one linked workflow.phase per plan node, started one at a time up to the parallel cap, until every phase is merged. Staged: the stations that exist are wired, the rest are added as they land."
+urgency: work
+inputs:
+  - { key: fact:scopeInput, label: "What to build", type: payload, kind: payload }
+outputs:
+  - { key: fact:scopePacket, label: "Scope packet", type: payload, from: scoping }
+  - { key: fact:output,      label: "Diff",         type: text,    from: build }
+initial: scoping
+states:
+  scoping: { kind: wait, timeout: { after: 30d, then: park },
+             waitFor: { child: { recipe: workflow.scoping, onParked: propagate, inputs: { "fact:scopeInput": { fact: fact:scopeInput } } } },
+             next: "Waiting for {child}: scoping {item}, ending at your after-scoping stop." }
+  build:   { kind: wait, timeout: { after: 14d, then: park },
+             waitFor: { child: { recipe: workflow.implement, onParked: propagate, inputs: { "fact:issue": { fact: fact:scopePacket }, "fact:rootCause": { literal: "See the scope packet." } } } },
+             next: "Waiting for {child}: building {item} from its frozen scope packet." }
+  done:    { kind: terminal, outcome: resolved }
+  dropped: { kind: terminal, outcome: unresolved }
+  stuck:   { kind: terminal, outcome: unresolved }
+transitions:
+  - { from: scoping, to: build,   on: wait.satisfied, when: { outcome: resolved },   produces: [fact:scopePacket] }
+  - { from: scoping, to: dropped, on: wait.satisfied, when: { outcome: unresolved } }
+  - { from: scoping, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
+  - { from: build,   to: done,    on: wait.satisfied, when: { outcome: resolved },   produces: [fact:output] }
+  - { from: build,   to: stuck,   on: wait.satisfied, when: { outcome: unresolved } }
+  - { from: build,   to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
+evals:
+  - evals/workflow.line/happy.jsonl
+  - evals/workflow.line/scoping-unresolved.jsonl
+  - evals/workflow.line/build-unresolved.jsonl
