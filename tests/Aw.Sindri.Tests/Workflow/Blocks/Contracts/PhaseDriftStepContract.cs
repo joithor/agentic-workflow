@@ -12,7 +12,7 @@ public sealed class PhaseDriftStepContract : DescriptorContract
 {
     protected override BlockDescriptor Descriptor => PhaseSteps.Drift;
 
-    protected override string ExpectedHash => "sha256:0000000000000000000000000000000000000000000000000000000000000000";
+    protected override string ExpectedHash => "sha256:b5605417cc265fa86f6f93042dfb1218434307d27f3c0f7379a549733b0b477e";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

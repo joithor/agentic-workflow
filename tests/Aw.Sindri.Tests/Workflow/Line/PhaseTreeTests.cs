@@ -77,11 +77,11 @@ public sealed partial class PhaseTreeTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Producing_the_active_packet_on_an_unresolved_build_is_refused_by_RCP_WIRE_003()
+    public void Taking_the_proof_pack_from_an_unresolved_prove_is_refused_by_RCP_WIRE_003()
     {
         var text = ShippedRecipes.Read("sindri/workflow.phase.yaml").Replace(
-            "{ from: build, to: owner,   on: wait.satisfied, when: { outcome: unresolved } }",
-            "{ from: build, to: owner,   on: wait.satisfied, when: { outcome: unresolved }, produces: [{ fact: fact:buildNotes, from: fact:activePacket }] }",
+            "{ from: prove, to: build,   on: wait.satisfied, when: { outcome: unresolved }, produces: [{ fact: fact:buildNotes, from: fact:findings }] }",
+            "{ from: prove, to: build,   on: wait.satisfied, when: { outcome: unresolved }, produces: [{ fact: fact:buildNotes, from: fact:findings }, fact:proofPack] }",
             StringComparison.Ordinal);
         Assert.NotEqual(ShippedRecipes.Read("sindri/workflow.phase.yaml"), text, StringComparer.Ordinal);
 
