@@ -95,6 +95,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
 
     private static IServiceCollection AddOnyxInfrastructure(this IServiceCollection services)
         => services
+            .AddSingleton<ISindriHome, SettingsSindriHome>()
             .AddSingleton<IOnyxPinsSource, EmbeddedOnyxPins>()                                            // context/onyx.lock, embedded
             .AddSingleton<IContainerRuntime>(static _ => new DockerCliRuntime(new ProcessToolRunner()))   // Docker facts, read-only
             .AddSingleton<IHostProbes>(static _ => new HostProbes());                                     // free disk and loopback ports

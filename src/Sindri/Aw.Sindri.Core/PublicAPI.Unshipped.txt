@@ -8829,18 +8829,6 @@ const Aw.Sindri.Core.Workflow.Engine.Runtime.EndedInstanceViews.Capacity = 512 -
 Aw.Sindri.Core.Workflow.Engine.Runtime.EndedInstanceViews.Get(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.EndedInstanceViews.Get(Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow! row, Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>!>
 Aw.Sindri.Core.Jobs.IJobCancellation.CancelRecorded(Aw.Sindri.Core.Ids.JobId job, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
-Aw.Sindri.Core.Scheduling.ServiceRunGuard.Unreserve(Aw.Sindri.Core.Ids.ServiceName service) -> void
-Aw.Sindri.Core.Scheduling.ServiceRunGuard.TryClaimReserved(Aw.Sindri.Core.Ids.ServiceName service, out System.IDisposable! claim) -> bool
-Aw.Sindri.Core.Scheduling.ServiceRunGuard.TryReserveManual(Aw.Sindri.Core.Ids.ServiceName service) -> bool
-Aw.Sindri.Core.Jobs.IJobAdmission<TRequest>.Rollback(TRequest request) -> void
-Aw.Sindri.Core.Jobs.JobOrder
-static Aw.Sindri.Core.Jobs.JobOrder.NewestFirst(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Jobs.JobRow!>! rows) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Jobs.JobRow!>!
-static Aw.Sindri.Core.Jobs.JobOrder.OldestFirst(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Jobs.JobRow!>! rows) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Jobs.JobRow!>!
-Aw.Sindri.Core.Jobs.JobStateNames
-static Aw.Sindri.Core.Jobs.JobStateNames.Of(Aw.Sindri.Core.Jobs.JobState state) -> string!
-const Aw.Sindri.Core.Jobs.JobRules.NoSuchJob = "No such job (fix: run `sindri jobs` to list them)" -> string!
-static Aw.Sindri.Core.Scheduling.ServiceSchedule.From(Aw.Sindri.Core.Profile.SindriProfile? profile, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Scheduling.BuiltInService!>! builtIns, System.DateTimeOffset now, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Ids.ServiceName, System.DateTimeOffset>! lastRuns) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.ServiceSchedule!>!
-static Aw.Sindri.Core.Scheduling.ServiceSchedule.FirstSlot(System.DateTimeOffset? lastRun, Aw.Sindri.Core.Profile.Cadence! cadence, System.DateTimeOffset now) -> System.DateTimeOffset
 Aw.Sindri.Core.Onyx.IOnyxPinsSource
 Aw.Sindri.Core.Onyx.IOnyxPinsSource.Pins.get -> Aw.Sindri.Core.Onyx.OnyxPins!
 Aw.Sindri.Core.Onyx.OnyxFilePin
