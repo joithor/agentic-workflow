@@ -346,8 +346,8 @@ edges:
   - from: Sindri
     to: Judge
     kind: cli
-    status: current
-    note: "the sandbox's hook canary (SandboxCanaries.cs, SB-2) runs `judge brief get task:selfcheck` inside the session, the hooks' own round trip"
+    status: planned
+    note: "the sandbox's hook canary (SandboxCanaries.cs, SB-2) runs `judge brief get task:selfcheck` inside the session, the hooks' own round trip; check-deps does not scan C# for cli edges"
   - from: Sindri
     to: Judge
     kind: file
