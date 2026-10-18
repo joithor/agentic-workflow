@@ -14,7 +14,7 @@ namespace Aw.Sindri.Testing.Workflow;
 /// </summary>
 public abstract class DescriptorContract
 {
-    private static readonly Type[] _runtimeKinds = [typeof(IGate), typeof(IStep), typeof(IEffectKind), typeof(IStepInput), typeof(IEvidenceProvider)];
+    private static readonly Type[] _runtimeKinds = [typeof(IGate), typeof(IStep), typeof(IBlockStep), typeof(IEffectKind), typeof(IStepInput), typeof(IEvidenceProvider)];
 
     /// <summary>The descriptor under test.</summary>
     protected abstract BlockDescriptor Descriptor { get; }

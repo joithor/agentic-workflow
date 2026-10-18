@@ -1,0 +1,42 @@
+{
+  "running": true,
+  "pid": 4242,
+  "epoch": 1,
+  "leaseExpiresAt": "2026-01-01T00:01:00.0000000Z",
+  "profile": {
+    "approved": "fb59c06aa6f48a04a925118dcc5888eb86291989ccb7978e9b9ad96ed90d352b",
+    "live": "fb59c06aa6f48a04a925118dcc5888eb86291989ccb7978e9b9ad96ed90d352b",
+    "changedSinceApproval": false,
+    "problem": null,
+    "source": "<home>/profile/profile.yaml",
+    "needsApproval": false
+  },
+  "services": [
+    {
+      "name": "heartbeat",
+      "every": "5s",
+      "lastRun": null
+    }
+  ],
+  "apiVersion": 1,
+  "views": {
+    "cursor": 0,
+    "ledgerHead": 4,
+    "projectedAt": null,
+    "rebuilding": false,
+    "stalled": false,
+    "stalledAt": null,
+    "stalledType": null,
+    "text": null
+  },
+  "health": {
+    "word": "healthy",
+    "problems": [],
+    "sentence": null
+  },
+  "sessions": {
+    "live": 3,
+    "asking": 1,
+    "problems": 1
+  }
+}

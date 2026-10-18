@@ -26,4 +26,7 @@ public sealed record GetStatusResponse(
 
     /// <summary>The one-word health and its problems (UI spec E-14).</summary>
     public HealthReport? Health { get; init; }
+
+    /// <summary>What the session collector sees (collector spec CA-8): additive, for the tray tooltip and the Agents tab count.</summary>
+    public SessionStatus? Sessions { get; init; }
 }
