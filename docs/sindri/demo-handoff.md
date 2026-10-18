@@ -67,15 +67,15 @@ Important: the approval holds while the profile file is unchanged. Edit the file
 
 Registration is per work repo, never user-wide. Run it from the checkout `<path>` (a git worktree of it is refused with `SND-CONTEXT-024`; add `--repo <work-repo>` to override). Note the port: `sindri status` shows the one the control plane is on. If the control plane comes back on another port, register again.
 
-**Path A: a fix is landing tonight (LANDING TONIGHT).** On Claude Code 2.1.302 the line `sindri mcp register` prints, and `--apply`, fail with `error: missing required argument 'name'` (`SND-CONTEXT-025`): the variadic `--header` swallows the server name. A fix is on the branch `fix/mcp-register-argv`. A second change is also landing: `scripts/sindri-app.sh` registers Claude Code, Codex and Cursor itself. Check what your checkout has:
+**Path A: the argv fix is on main (PR #367, merged; main was `62ad6cd` when this was updated).** If your checkout has it, `sindri mcp register --apply --repo <work-repo>` works on Claude Code 2.1.302 (**owner types it**). Before the fix, the printed line and `--apply` failed with `error: missing required argument 'name'` (`SND-CONTEXT-025`) because the variadic `--header` swallowed the server name. Check that your checkout has the fix. **Still LANDING TONIGHT:** a separate change so `scripts/sindri-app.sh` registers Claude Code, Codex and Cursor itself; the `grep` below tells you whether it is there.
 
 ```bash
 sindri help | grep -n "mcp"             # the mcp verbs this build has
 grep -n "mcp" scripts/sindri-app.sh      # any hits mean sindri-app.sh registers agents itself
-git log --oneline -20 -- src/Sindri/Aw.Sindri.Core/Mcp/McpRegistration.cs   # the argv fix shows here once it is on main
+git log --oneline -20 -- src/Sindri/Aw.Sindri.Core/Mcp/McpRegistration.cs   # #367's argv fix shows here
 ```
 
-If `scripts/sindri-app.sh` mentions `mcp`, follow its output and the header comment of that script for what it registers and what the owner must confirm, then go to step 5 below. If the `McpRegistration.cs` history has a new commit about argument order, `sindri mcp register --apply --repo <work-repo>` works: **owner types it**.
+If `scripts/sindri-app.sh` mentions `mcp`, follow its output and the header comment of that script for what it registers and what the owner must confirm, then go to step 5 below. Otherwise use `sindri mcp register --apply --repo <work-repo>` (**owner types it**).
 
 **Path B: workaround (main without the fix).** Run in `<path>`, replacing `<port>` with the port from `sindri status`:
 
@@ -153,7 +153,11 @@ sindri context lenses <anchor-key> --json            # the anchor key comes from
 
 ## 6. Recipes
 
-**LANDING TONIGHT.** `workflow.scoping` registers and validates on main but cannot be approved until its context-lens runtime lands (`SND-WF-016: states.gather.step.inputs[0] uses input.context.lenses, which this build has no runtime for`). `workflow.line` and its stations (build/prove, ship/docs-sync, design, plan, phase, review-loop) are not on main as of writing. Verify:
+**Merged:** #367 (register fix), #371 P7 (child workflows start), #356 (app crash fix), #364. **Still LANDING TONIGHT:** `workflow.scoping` registers and validates on main but cannot be approved until context's PR-B (#370) and S-LB2 land (`SND-WF-016: states.gather.step.inputs[0] uses input.context.lenses, which this build has no runtime for`). `workflow.line` and its stations are not on main as of writing.
+
+The line is `LN-WF8`. Its stations run in sequence as child workflows: scoping, then design, then plan, then phase, then docs-sync.
+
+Verify:
 
 ```bash
 ls recipes/sindri/workflow.line.yaml                    # present once the line recipe has landed
@@ -164,7 +168,7 @@ sindri recipe eval recipes/sindri/workflow.line.yaml       # runs the recipe's e
 
 If `workflow.line.yaml` is missing, stop and tell the owner: the line half of the demo is not available on this commit. The scoping half still works from the agent session with no recipe.
 
-Register and approve, **children first** (a recipe cannot be approved before the recipes it starts). Registering is yours; approving is the owner's:
+Register and approve, **children first**. Approve child recipes before their parents: approving `workflow.scoping` before `workflow.idea-to-brief` is registered fails with `RCP-CHILD-001` (the child must exist). Registering is yours; approving is the owner's:
 
 ```bash
 sindri recipe register recipes/sindri/<child-or-station>.yaml      # agent: repeat for each, children before parents
