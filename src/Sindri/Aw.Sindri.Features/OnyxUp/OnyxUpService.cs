@@ -138,6 +138,7 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
         }
 
         var report = OnyxPreflight.Evaluate(docker, host, pins, ownPort.Value, facts.MemoryUsedByOthers(cancellationToken));
+        string? demoted = null;
         if (report.Blocks)
         {
             var failed = report.Checks.Where(static c => c.State == CheckState.Fail).ToList();
@@ -147,11 +148,18 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
             }
 
             // The images are already on this box, so the space they use is no longer free: that is not a reason to stop a rerun, which changes nothing.
-            progress.Line($"disk: {failed[0].Detail} (the images are already pulled, so this isn't blocking)");
+            var note = $"disk: {failed[0].Detail} (the images are already pulled, so this isn't blocking)";
+            progress.Line(note);
+            demoted = note;
         }
 
         var warnings = report.Checks.Where(static c => c.State == CheckState.Warn).Select(static c => $"{c.Name}: {c.Detail}").ToList();
         warnings.ForEach(progress.Line);
+        if (demoted is not null)
+        {
+            warnings.Add(demoted);   // already shown above; kept here so --json carries it
+        }
+
         var platform = facts.Platform(cancellationToken);
         return platform.IsError ? platform.Error : (report.Port, platform.Value, warnings);
     }
