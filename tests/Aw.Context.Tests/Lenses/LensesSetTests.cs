@@ -214,6 +214,16 @@ public sealed class LensesSetTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Map_coverage_counts_the_files_under_the_anchors_paths()
+    {
+        var basis = Basis(["src/tabs/TabManager.ts", "src/tabs/TabGroups.ts", "src/tabs/Pinned.ts", "src/other/Elsewhere.ts"]);
+
+        var map = One(Tabs(), Manager, basis: basis).Coverage.Map!;
+
+        Assert.Equal((3, 1, 1, false), (map.Files, map.Unmapped, map.Suggested, map.Truncated));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Searched_lists_map_intent_sources_and_code_index_with_states_codes_and_reasons()
     {
         var onyx = new SearchedSource(SourceId.From("onyx"), SearchedState.Degraded, Reason: null, "SND-CONTEXT-010", AsOf: null);
