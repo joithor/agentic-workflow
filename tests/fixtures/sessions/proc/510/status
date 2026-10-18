@@ -3,5 +3,5 @@ Umask:	0022
 State:	S (sleeping)
 Pid:	510
 PPid:	500
-Uid:	0	0	0	0
+Uid:	1000	1000	1000	1000
 Gid:	0	0	0	0

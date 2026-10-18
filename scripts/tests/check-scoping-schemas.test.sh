@@ -29,6 +29,8 @@ copy() {
   cp -R "$REPO/schemas/scoping" "$d/schemas/"
   cp "$REPO/recipes/sindri/workflow.scoping.yaml" "$d/recipes/sindri/"
   cp -R "$REPO/recipes/sindri/evals" "$d/recipes/sindri/"
+  mkdir -p "$d/tests/fixtures/line/gold"
+  cp -R "$REPO/tests/fixtures/line/gold/scope" "$d/tests/fixtures/line/gold/"
   echo "$d"
 }
 
@@ -57,14 +59,43 @@ run "$d"; expect_rc "a seed the recipe's intake writes but seeds.json lacks fail
 d="$(copy badseed)"; edit "$d/schemas/scoping/seeds.json" '."fact:acceptance" = {"items": [{"id": "x"}]}'
 run "$d"; expect_rc "a seed its schema refuses fails" 1; expect_out "names the fact" "fact:acceptance"
 
-d="$(copy payload)"; sed -i 's/"ref":"7"/"pr":7/' "$d/recipes/sindri/evals/workflow.scoping/change-happy.jsonl"
+d="$(copy payload)"; sed 's/"ref":"7"/"pr":7/' "$d/recipes/sindri/evals/workflow.scoping/change-happy.jsonl" > "$d/recipes/sindri/evals/workflow.scoping/change-happy.jsonl".tmp && mv "$d/recipes/sindri/evals/workflow.scoping/change-happy.jsonl".tmp "$d/recipes/sindri/evals/workflow.scoping/change-happy.jsonl"
 run "$d"; expect_rc "an eval payload its schema refuses fails" 1; expect_out "names the eval and the fact" "change-happy.jsonl:1"
 
-d="$(copy stringpayload)"; sed -i 's/"fact:brief":{.*},"fact:anchors"/"fact:brief":"text","fact:anchors"/' "$d/recipes/sindri/evals/workflow.scoping/brief-happy.jsonl"
+d="$(copy stringpayload)"; sed 's/"fact:brief":{.*},"fact:anchors"/"fact:brief":"text","fact:anchors"/' "$d/recipes/sindri/evals/workflow.scoping/brief-happy.jsonl" > "$d/recipes/sindri/evals/workflow.scoping/brief-happy.jsonl".tmp && mv "$d/recipes/sindri/evals/workflow.scoping/brief-happy.jsonl".tmp "$d/recipes/sindri/evals/workflow.scoping/brief-happy.jsonl"
 run "$d"; expect_rc "a string where the fact has a schema fails" 1; expect_out "names the fact" "fact:brief"
 
 d="$(copy nosource)"; edit "$d/schemas/scoping/examples/manifest.json" '.examples[0].source = ""'
 run "$d"; expect_rc "a valid example with no source fails" 1; expect_out "names the requirement" "names its source"
+
+echo "gold scope packets"
+G=tests/fixtures/line/gold/scope/expiry
+d="$(copy goldmissing)"; mv "$d/tests/fixtures/line/gold/scope" "$d/tests/fixtures/line/gold/elsewhere"
+run "$d"; expect_rc "a missing gold scope dir fails" 1; expect_out "names the dir" "gold/scope"
+
+d="$(copy goldschema)"; edit "$d/$G/scope-map.json" 'del(.schemaVersion)'
+run "$d"; expect_rc "a gold file its schema refuses fails" 1; expect_out "names the file" "$G/scope-map.json"
+
+d="$(copy golddangling)"; edit "$d/$G/scope-map.json" '.surfaces[0].citations += ["L-code-999"]'
+run "$d"; expect_rc "a gold citation that resolves nowhere fails" 1; expect_out "names the id" "L-code-999"
+
+d="$(copy goldnothing)"; edit "$d/$G/coverage.json" '.lenses[0].state = "nothing-found" | .lenses[0].limits = ["x"]'
+run "$d"; expect_rc "a nothing-found gold row with a limit fails" 1; expect_out "names the rule" "nothing-found"
+
+d="$(copy goldempty)"; edit "$d/$G/questions.json" '.questions = []'
+run "$d"; expect_rc "an empty gold questions list fails" 1; expect_out "names the file" "$G/questions.json"
+
+d="$(copy goldsurface)"; edit "$d/$G/questions.json" '.questions[0].surfaces = ["S99"]'
+run "$d"; expect_rc "a gold question naming an unknown surface fails" 1; expect_out "names the surface" "S99"
+
+d="$(copy goldblocks)"; edit "$d/$G/questions.json" '.questions[0].blocks = ["AC-99"]'
+run "$d"; expect_rc "a gold question blocking an unknown acceptance item fails" 1; expect_out "names the item" "AC-99"
+
+d="$(copy goldacsurface)"; edit "$d/$G/acceptance.json" '.items[0].surfaces = ["S99"]'
+run "$d"; expect_rc "a gold acceptance item naming an unknown surface fails" 1; expect_out "names the surface" "S99"
+
+d="$(copy goldrecorded)"; sed 's/"AC-2"/"AC-98"/' "$d/$G/answers.jsonl" > "$d/$G/answers.new" && mv "$d/$G/answers.new" "$d/$G/answers.jsonl"
+run "$d"; expect_rc "an answer recording an unknown acceptance item fails" 1; expect_out "names the item" "AC-98"
 
 echo
 echo "passed $PASS, failed $FAIL"

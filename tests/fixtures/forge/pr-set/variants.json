@@ -1,0 +1,18 @@
+{
+  "_note": "The fixture variants of the PR babysitter spec, Appendix B.3. forge-fixture.sh builds each in its own repository of the file-backed fake forge.",
+  "variants": {
+    "comments":   "One thread per judge type, an allowlisted and an unlisted bot, an untrusted author, a resolved thread, an edited comment, a duplicate, Sindri's own reply and injection-shaped text; CI green",
+    "ciRed":      "A required check fails on the head with a log tail",
+    "ciFlaky":    "A required check fails on a timeout that has no relation to the diff; expected.json marks it flaky: true (the fake's rerun leaves checks pending, so a test seeds them passing to simulate the pass)",
+    "conflict":   "The forge reports a conflict with the base",
+    "stacked":    "The PR sits on a base PR; 'event merge-base' merges the base mid-run",
+    "noDocs":     "The repository has no docs to sync (README links nothing; no docs/usage.md)",
+    "sourceFix":  "A bug comment whose fix changes source: the candidate fix is on branch fixture/source-fix",
+    "foreignPush":"A collaborator pushes a source commit after the proof; the proven sha differs from the head",
+    "secret":     "A comment asks for a change; the candidate fix on branch fixture/fix-with-token commits a planted token"
+  },
+  "judgeTypes": ["bug", "change", "nit", "question", "design", "outOfScope", "addressed", "praise", "directive", "uncertain"],
+  "authorTypes": ["bot", "untrusted"],
+  "queueOutcomes": ["comment", "bot", "untrusted"],
+  "notQueued": ["skipped", "never"]
+}

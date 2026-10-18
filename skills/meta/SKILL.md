@@ -15,7 +15,7 @@ gate and merge their PRs, relay between them and the owner, and keep the box hea
 Every step below is an `aw-meta` call. Don't improvise a step the CLI has a command for, and never edit its state
 (`$AW_STATE_DIR/meta/`) by hand. Works for any project: everything team-specific is in the team config.
 
-`aw-meta` is on PATH after `./setup.sh --with-meta` (Linux only for now: aw-meta reads /proc; on macOS setup skips it) (else `$HOME/.agentic-workflow/bin/aw-meta`). Every command takes
+`aw-meta` is on PATH after `./setup.sh --with-meta` (Linux and macOS; `aw-meta version` shows which commit it was built from) (else `$HOME/.agentic-workflow/bin/aw-meta`). Every command takes
 `--json`. Exit 0 ok, 1 attention (read the output and act on it), 2 usage or tool error. Reference:
 `$HOME/.agentic-workflow/toolkit/docs/csharp/meta.md`.
 
@@ -160,7 +160,7 @@ computed from the merge queue (sized against `heavy.cap`; not what the wrapper's
 
 The box has a fixed amount of memory, disk and heavy-job slots. Watch them and adapt, so lanes never find out by crashing the
 machine. The thresholds are the team config's `resources`, `builders` and `heavy` keys (defaults: disk floor 30 GB, memory floor
-8 GB, swap 90%, 4 builders per lane of 4 GB each; see the reference doc). Nothing below is specific to one project.
+8 GB, 4 builders per lane of 4 GB each; see the reference doc). Nothing below is specific to one project.
 
 **Gates.**
 - Run gates **only through `aw-meta gate-run`** (and reruns through `gate-rerun`). They carry `AW_HEAVY_PRIORITY=meta`, so the
@@ -186,7 +186,7 @@ machine. The thresholds are the team config's `resources`, `builders` and `heavy
 
 **Builders per lane.** `aw-meta health` prints `builders: N per lane (...)` (and `status` the same line): the number of builder
 subagents each lane may run at once now, never below 1. It falls as free disk gets close to the floor plus every lane's builder
-worktrees, and is 1 while memory is low (the same rule as `MEMORY LOW`: under its floor, or swap nearly full). Check it after `DISK`/`MEMORY` events and at each `health`, and **tell
+worktrees, and is 1 while memory is low (the same rule as `MEMORY LOW`: available memory under its floor; swap use alone never counts). Check it after `DISK`/`MEMORY` events and at each `health`, and **tell
 the lanes when it changes** (one message to every lane: "builders per lane: N"). Every builder gets its **own worktree and
 branch**; never two builders on one branch or in one worktree. The disk floor is a rule, not a hint: below it, no new builder
 starts whatever the advice says for a lane that is idle.
