@@ -73,11 +73,16 @@ public sealed class ItemRoutingTests(DevServer server) : IClassFixture<DevServer
                 Assert.Equal("notStartable", payload.RootElement.GetProperty("outcome").GetString());
             }
 
-            _ = await Append(sindri, "T-52", """{"outcome":"startable"}""");   // another router's word: the gate still reads the profile
+            await Run(sindri, EventBridge.ServiceId);
+            _ = await WorkflowsHarness.Until(item, static v => v.State == "dropped");   // the router's word 'notStartable' drops it
+
+            var other = await Start(sindri, "T-54");   // started after the router ran: nothing has routed it
+            await Visible(sindri, "T-54");
+            _ = await Append(sindri, "T-54", """{"outcome":"startable"}""");   // another router's word: the gate still reads the profile
             await Run(sindri, EventBridge.ServiceId);
 
             await WaitFor(async () => (await Types(sindri)).Contains("workflow.refused", StringComparer.Ordinal));
-            Assert.Equal("triaged", (await item.QueryAsync(static wf => wf.GetInstance())).State);   // 'gate.route.startable' failed: no move
+            Assert.Equal("parked", (await other.QueryAsync(static wf => wf.GetInstance())).State);   // the refused gate parks it at triaged: no move to startable
         }, TestContext.Current.CancellationToken);
     }
 
