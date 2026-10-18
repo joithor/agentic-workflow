@@ -21,10 +21,10 @@ public static class AsOfMapCache
     /// <param name="key">A clustered key.</param>
     /// <param name="limits">The profile's limits.</param>
     /// <returns>The key, with '-g&lt;timeout&gt;.&lt;snapshot&gt;.&lt;file&gt;.&lt;graph&gt;' when the limits are not the shipped ones.</returns>
-    public static string WithLimits(string key, Engine.ClusterLimits limits)
+    public static string WithLimits(string key, ClusterLimits limits)
     {
         ArgumentNullException.ThrowIfNull(limits);
-        return limits == Engine.ClusterLimits.Default ? key : string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{key}-g{limits.TimeoutMinutes}.{limits.MaxSnapshotMB}.{limits.MaxFileMB}.{limits.MaxGraphMB}");
+        return limits == ClusterLimits.Default ? key : string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{key}-g{limits.TimeoutMinutes}.{limits.MaxSnapshotMB}.{limits.MaxFileMB}.{limits.MaxGraphMB}");
     }
 
     /// <summary>The key of an extraction that also ran the profile's recognizers: the plain key and, when the set is not empty, its hash, so a changed recognizer set never reuses a cached map.</summary>
