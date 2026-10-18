@@ -5882,7 +5882,6 @@ Aw.Sindri.Core.Workflow.Views.StatusFields.Child.get -> Aw.Sindri.Core.Workflow.
 Aw.Sindri.Core.Workflow.Views.StatusFields.Child.init -> void
 Aw.Sindri.Core.Workflow.Views.StatusFields.Commands.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StatusCommand!>!
 Aw.Sindri.Core.Workflow.Views.StatusFields.Commands.init -> void
-Aw.Sindri.Core.Workflow.Views.StatusFields.Deconstruct(out Aw.Sindri.Core.Workflow.Views.StatusHeader! Header, out string? Next, out Aw.Sindri.Core.Workflow.Views.StatusAnswer? Answer, out Aw.Sindri.Core.Workflow.Views.StatusChild? Child, out Aw.Sindri.Core.Workflow.Views.StatusDrift? Drift, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StatusInput!>! Inputs, out Aw.Sindri.Core.Workflow.Views.StatusTimeout? Timeout, out Aw.Sindri.Core.Workflow.Views.StatusBudget? Budget, out Aw.Sindri.Core.Workflow.Views.StatusPaused? Paused, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StatusCommand!>! Commands, out string! Text) -> void
 Aw.Sindri.Core.Workflow.Views.StatusFields.Drift.get -> Aw.Sindri.Core.Workflow.Views.StatusDrift?
 Aw.Sindri.Core.Workflow.Views.StatusFields.Drift.init -> void
 Aw.Sindri.Core.Workflow.Views.StatusFields.Equals(Aw.Sindri.Core.Workflow.Views.StatusFields? other) -> bool
@@ -5894,7 +5893,6 @@ Aw.Sindri.Core.Workflow.Views.StatusFields.Next.get -> string?
 Aw.Sindri.Core.Workflow.Views.StatusFields.Next.init -> void
 Aw.Sindri.Core.Workflow.Views.StatusFields.Paused.get -> Aw.Sindri.Core.Workflow.Views.StatusPaused?
 Aw.Sindri.Core.Workflow.Views.StatusFields.Paused.init -> void
-Aw.Sindri.Core.Workflow.Views.StatusFields.StatusFields(Aw.Sindri.Core.Workflow.Views.StatusHeader! Header, string? Next, Aw.Sindri.Core.Workflow.Views.StatusAnswer? Answer, Aw.Sindri.Core.Workflow.Views.StatusChild? Child, Aw.Sindri.Core.Workflow.Views.StatusDrift? Drift, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StatusInput!>! Inputs, Aw.Sindri.Core.Workflow.Views.StatusTimeout? Timeout, Aw.Sindri.Core.Workflow.Views.StatusBudget? Budget, Aw.Sindri.Core.Workflow.Views.StatusPaused? Paused, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StatusCommand!>! Commands, string! Text) -> void
 Aw.Sindri.Core.Workflow.Views.StatusFields.Text.get -> string!
 Aw.Sindri.Core.Workflow.Views.StatusFields.Text.init -> void
 Aw.Sindri.Core.Workflow.Views.StatusFields.Timeout.get -> Aw.Sindri.Core.Workflow.Views.StatusTimeout?
@@ -8912,10 +8910,8 @@ static Aw.Sindri.Core.Profile.RepoWorkflowSettings.operator !=(Aw.Sindri.Core.Pr
 static Aw.Sindri.Core.Profile.RepoWorkflowSettings.operator ==(Aw.Sindri.Core.Profile.RepoWorkflowSettings? left, Aw.Sindri.Core.Profile.RepoWorkflowSettings? right) -> bool
 Aw.Sindri.Core.Events.WorkflowEventDetail.Decision.get -> string?
 Aw.Sindri.Core.Events.WorkflowEventDetail.Decision.init -> void
-Aw.Sindri.Core.Events.WorkflowEventDetail.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.TriggerKey TriggerId, out string! TriggerActor, out long? SourceSequence, out string? ArgumentsSha256, out string? ReportSha256, out Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer, out int? Amount, out string? Reason, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.GateRecord!>! Gates, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.EvidenceRecord!>! Evidence, out Aw.Sindri.Core.Workflow.Engine.Events.GrantRecord? Grant, out Aw.Sindri.Core.Workflow.Engine.Events.OverrideRecord? Override, out Aw.Sindri.Core.Workflow.Engine.Events.RefusalRecord? Refusal, out System.Collections.Generic.IReadOnlyList<string!>! Effects, out Aw.Sindri.Core.Events.WorkflowEventDelta! Delta, out string? Via, out string? Decision) -> void
 Aw.Sindri.Core.Events.WorkflowEventDetail.Via.get -> string?
 Aw.Sindri.Core.Events.WorkflowEventDetail.Via.init -> void
-Aw.Sindri.Core.Events.WorkflowEventDetail.WorkflowEventDetail(Aw.Sindri.Core.Workflow.Engine.TriggerKey TriggerId, string! TriggerActor, long? SourceSequence, string? ArgumentsSha256, string? ReportSha256, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer, int? Amount, string? Reason, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.GateRecord!>! Gates, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.EvidenceRecord!>! Evidence, Aw.Sindri.Core.Workflow.Engine.Events.GrantRecord? Grant, Aw.Sindri.Core.Workflow.Engine.Events.OverrideRecord? Override, Aw.Sindri.Core.Workflow.Engine.Events.RefusalRecord? Refusal, System.Collections.Generic.IReadOnlyList<string!>! Effects, Aw.Sindri.Core.Events.WorkflowEventDelta! Delta, string? Via = null, string? Decision = null) -> void
 Aw.Sindri.Core.Events.WorkflowEventPayload.Decision.get -> string?
 Aw.Sindri.Core.Events.WorkflowEventPayload.Decision.init -> void
 Aw.Sindri.Core.Events.WorkflowEventPayload.Via.get -> string?
@@ -9541,3 +9537,30 @@ Aw.Sindri.Core.Sessions.SessionProblem.Reason.get -> Aw.Sindri.Core.Sessions.Una
 Aw.Sindri.Core.Sessions.SessionProblem.Reason.init -> void
 static Aw.Sindri.Core.Sessions.SessionRows.Find(Aw.Sindri.Core.Sessions.SessionSnapshot! pass, Aw.Sindri.Core.Sessions.SessionRef reference, Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Sindri.Core.Sessions.ObservedSession?
 static Aw.Sindri.Core.Sessions.SessionRows.RefuseSession(Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Kernel.Error?
+Aw.Sindri.Core.Events.WorkflowEventDetail.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.TriggerKey TriggerId, out string! TriggerActor, out long? SourceSequence, out string? ArgumentsSha256, out string? ReportSha256, out Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer, out int? Amount, out string? Reason, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.GateRecord!>! Gates, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.EvidenceRecord!>! Evidence, out Aw.Sindri.Core.Workflow.Engine.Events.GrantRecord? Grant, out Aw.Sindri.Core.Workflow.Engine.Events.OverrideRecord? Override, out Aw.Sindri.Core.Workflow.Engine.Events.RefusalRecord? Refusal, out System.Collections.Generic.IReadOnlyList<string!>! Effects, out Aw.Sindri.Core.Events.WorkflowEventDelta! Delta, out string? Via, out string? Decision, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionEntry!>? Injection) -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.Injection.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionEntry!>?
+Aw.Sindri.Core.Events.WorkflowEventDetail.Injection.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.WorkflowEventDetail(Aw.Sindri.Core.Workflow.Engine.TriggerKey TriggerId, string! TriggerActor, long? SourceSequence, string? ArgumentsSha256, string? ReportSha256, Aw.Sindri.Core.Workflow.Engine.Triggers.AnswerVariant? Answer, int? Amount, string? Reason, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.GateRecord!>! Gates, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Events.EvidenceRecord!>! Evidence, Aw.Sindri.Core.Workflow.Engine.Events.GrantRecord? Grant, Aw.Sindri.Core.Workflow.Engine.Events.OverrideRecord? Override, Aw.Sindri.Core.Workflow.Engine.Events.RefusalRecord? Refusal, System.Collections.Generic.IReadOnlyList<string!>! Effects, Aw.Sindri.Core.Events.WorkflowEventDelta! Delta, string? Via = null, string? Decision = null, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionEntry!>? Injection = null) -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.Deconstruct(out Aw.Sindri.Core.Workflow.Views.StatusHeader! Header, out string? Next, out Aw.Sindri.Core.Workflow.Views.StatusAnswer? Answer, out Aw.Sindri.Core.Workflow.Views.StatusChild? Child, out Aw.Sindri.Core.Workflow.Views.StatusDrift? Drift, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StatusInput!>! Inputs, out Aw.Sindri.Core.Workflow.Views.StatusTimeout? Timeout, out Aw.Sindri.Core.Workflow.Views.StatusBudget? Budget, out Aw.Sindri.Core.Workflow.Views.StatusPaused? Paused, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StatusCommand!>! Commands, out string! Text, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StatusInjection!>? Injection) -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.Injection.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StatusInjection!>!
+Aw.Sindri.Core.Workflow.Views.StatusFields.Injection.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.StatusFields(Aw.Sindri.Core.Workflow.Views.StatusHeader! Header, string? Next, Aw.Sindri.Core.Workflow.Views.StatusAnswer? Answer, Aw.Sindri.Core.Workflow.Views.StatusChild? Child, Aw.Sindri.Core.Workflow.Views.StatusDrift? Drift, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StatusInput!>! Inputs, Aw.Sindri.Core.Workflow.Views.StatusTimeout? Timeout, Aw.Sindri.Core.Workflow.Views.StatusBudget? Budget, Aw.Sindri.Core.Workflow.Views.StatusPaused? Paused, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StatusCommand!>! Commands, string! Text, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.StatusInjection!>? Injection = null) -> void
+Aw.Sindri.Core.Workflow.Views.StatusInjection
+Aw.Sindri.Core.Workflow.Views.StatusInjection.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusInjection!
+Aw.Sindri.Core.Workflow.Views.StatusInjection.Bytes.get -> int
+Aw.Sindri.Core.Workflow.Views.StatusInjection.Bytes.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusInjection.Deconstruct(out string! Section, out string! Input, out int Bytes, out string! Hash) -> void
+Aw.Sindri.Core.Workflow.Views.StatusInjection.Equals(Aw.Sindri.Core.Workflow.Views.StatusInjection? other) -> bool
+Aw.Sindri.Core.Workflow.Views.StatusInjection.Hash.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusInjection.Hash.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusInjection.Input.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusInjection.Input.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusInjection.Section.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusInjection.Section.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusInjection.StatusInjection(string! Section, string! Input, int Bytes, string! Hash) -> void
+const Aw.Sindri.Core.Events.EventTypes.WorkflowInjection = "workflow.injection" -> string!
+override Aw.Sindri.Core.Workflow.Views.StatusInjection.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.StatusInjection.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.StatusInjection.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Views.StatusInjection.operator !=(Aw.Sindri.Core.Workflow.Views.StatusInjection? left, Aw.Sindri.Core.Workflow.Views.StatusInjection? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusInjection.operator ==(Aw.Sindri.Core.Workflow.Views.StatusInjection? left, Aw.Sindri.Core.Workflow.Views.StatusInjection? right) -> bool

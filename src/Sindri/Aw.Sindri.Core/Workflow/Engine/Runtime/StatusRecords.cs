@@ -26,7 +26,8 @@ internal static class StatusRecords
         view is { Task: not null, Budget: { } budget } ? new StatusBudget("state", budget.State, budget.StateCap, new BudgetFigures(budget.Instance, budget.InstanceCap)) : null,
         view.Paused is { } left ? new StatusPaused(Seconds(left)) : null,
         Commands(view),
-        StatusLayout.Render(view, now));
+        StatusLayout.Render(view, now),
+        [.. view.Task?.Injection.Select(static i => new StatusInjection(i.Section, i.Input.Value, i.Bytes, StatusText.Prefixed(i.Sha256))) ?? []]);
 
     private static StatusHeader Header(InstanceView view, DateTimeOffset now) => new(
         view.Address,

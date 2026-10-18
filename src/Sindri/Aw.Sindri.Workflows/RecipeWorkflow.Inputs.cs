@@ -1,7 +1,10 @@
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -43,14 +46,7 @@ internal sealed partial class RecipeWorkflow
     /// </summary>
     private async Task<Filling> FillInputs(WorkflowInstance instance, OpenRun open, RecipeState state)
     {
-        var fresh = !string.Equals(_filled, open.Token.Value, StringComparison.Ordinal);
-        _filled = open.Token.Value;
-        if (fresh)
-        {
-            _injection = InjectionPlan.Empty;   // the plan shown is the open run's
-            _fills = [];
-        }
-
+        var fresh = StartRun(open);
         if (!fresh || !_fillsInputs || state.Step is not { Inputs.Count: > 0 } step)
         {
             return default;
@@ -81,7 +77,27 @@ internal sealed partial class RecipeWorkflow
 
         _fills = fills;
         _injection = InjectionPlans.Merge([.. fills.Select(static f => f.Recorded)]);
+        await MirrorInjection(instance, open).ConfigureAwait(true);
         return default;
+    }
+
+    /// <summary>
+    /// Mirrors the run's injection plan (metadata only) once per run that has inputs: a 'workflow.injection' row. It is not a
+    /// transition, so it neither counts as a version nor changes the item's or the needs-you views.
+    /// </summary>
+    private async Task MirrorInjection(WorkflowInstance instance, OpenRun open)
+    {
+        if (_injection.Entries.Count == 0)
+        {
+            return;
+        }
+
+        var filled = new StepCompleted("engine:inputs", open.Token, OutcomeName.From("filled"), new Dictionary<FactKey, FactValue>(), Tokens: 0, StepRuntime.Desk, string.Empty);
+        var detail = WorkflowEventDetail.Of(filled, instance.Id, suspension: null) with { Injection = _injection.Entries };
+        // why: a Step runs only after RunAsync set _start
+        var start = _start!;
+        var record = new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowInjection, start.Item.Value, instance.Frame.State, instance.Frame.State, "inputs", Outcome: null, open.Token.Value, "engine:inputs", start.Tenant, start.Ring, detail);
+        _ = await Workflow.ExecuteLocalActivityAsync((RecordEventActivities a) => a.RecordAsync(record), RecordEventActivities.LocalOptions).ConfigureAwait(true);
     }
 
     /// <summary>
@@ -101,6 +117,20 @@ internal sealed partial class RecipeWorkflow
         await Workflow.ExecuteLocalActivityAsync(
             (StepInputActivities a) => a.DropInjectionAsync(address),
             new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(10), CancellationToken = CancellationToken.None }).ConfigureAwait(true);
+    }
+
+    /// <summary>Notes the run token the plan belongs to; a new token clears the previous run's plan (the plan shown is the open run's).</summary>
+    private bool StartRun(OpenRun open)
+    {
+        var fresh = !string.Equals(_filled, open.Token.Value, StringComparison.Ordinal);
+        _filled = open.Token.Value;
+        if (fresh)
+        {
+            _injection = InjectionPlan.Empty;
+            _fills = [];
+        }
+
+        return fresh;
     }
 
     private static ActivityOptions FillOptions(OpenRun open, int n, RecipeState state) => new()

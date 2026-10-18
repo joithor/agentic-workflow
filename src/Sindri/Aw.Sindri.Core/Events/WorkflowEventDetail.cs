@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 
 namespace Aw.Sindri.Core.Events;
@@ -30,6 +31,7 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Delta">The post-state delta.</param>
 /// <param name="Via">'block' for a Step the engine ran on the block runtime; null otherwise.</param>
 /// <param name="Decision">The Judge decision id of a block Step's result; null otherwise.</param>
+/// <param name="Injection">On a 'workflow.injection' row: the sections the run's Step inputs filled (name, input, size, digest; never text); null otherwise.</param>
 public sealed record WorkflowEventDetail(
     TriggerKey TriggerId,
     string TriggerActor,
@@ -47,7 +49,8 @@ public sealed record WorkflowEventDetail(
     IReadOnlyList<string> Effects,
     WorkflowEventDelta Delta,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Via = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Decision = null)
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Decision = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<InjectionEntry>? Injection = null)
 {
     /// <summary>
     /// The detail of a row mirrored without a decision: a desk timeout's park, or a held event's expiry. It names the trigger

@@ -14,6 +14,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="Paused">The paused line.</param>
 /// <param name="Commands">The instance's verbs.</param>
 /// <param name="Text">The CLI's text form.</param>
+/// <param name="Injection">The sections the open run's Step inputs filled, by metadata only; empty without inputs.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record StatusFields(
     StatusHeader Header,
@@ -26,4 +27,9 @@ public sealed record StatusFields(
     StatusBudget? Budget,
     StatusPaused? Paused,
     IReadOnlyList<StatusCommand> Commands,
-    string Text);
+    string Text,
+    IReadOnlyList<StatusInjection>? Injection = null)
+{
+    /// <summary>The open run's injection sections (metadata only), never null; empty without inputs.</summary>
+    public IReadOnlyList<StatusInjection> Injection { get; init; } = Injection ?? [];
+}

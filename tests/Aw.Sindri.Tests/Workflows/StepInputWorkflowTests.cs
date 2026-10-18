@@ -1,6 +1,7 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -176,6 +177,24 @@ public sealed class StepInputWorkflowTests(SindriTimeSkippingServer server) : IC
 
             Assert.Equal("broken", result.State);
             Assert.Null(texts.Get(new InjectionKey(run.Handle.Id, "checks", "1.1", BlockId.From(ProbeInput.Id))));
+        });
+    }
+
+    [Fact]
+    public async Task One_injection_row_per_run_holds_the_plan_metadata_and_no_text_anywhere_in_the_ledger()
+    {
+        await Run("T-79", [ProbeInput.Id, SecondProbeInput.Id], async run =>
+        {
+            _ = await run.Desk.Until(static v => v.Task is not null);
+            await WaitForRunStep(run.Handle);
+
+            var rows = await run.Desk.Payloads("workflow.injection");
+            var injection = Assert.Single(rows).GetProperty("detail").GetProperty("injection");
+
+            Assert.Equal(["notes"], injection.EnumerateArray().Select(static e => e.GetProperty("section").GetString()).Distinct(StringComparer.Ordinal), StringComparer.Ordinal);
+            Assert.Equal(StepInputRunner.Sha(InputProbe.Planted), injection[0].GetProperty("sha256").GetString());
+            var ledger = await run.Desk.Sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 1000, TestContext.Current.CancellationToken);
+            Assert.DoesNotContain(ledger.Value, static e => e.Envelope.Payload.Contains(InputProbe.Planted, StringComparison.Ordinal));
         });
     }
 

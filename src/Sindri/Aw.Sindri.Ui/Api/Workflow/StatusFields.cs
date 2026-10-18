@@ -23,4 +23,9 @@ internal sealed record StatusFields(
     StatusBudget? Budget,
     StatusPaused? Paused,
     IReadOnlyList<StatusCommand> Commands,
-    string Text);
+    string Text,
+    IReadOnlyList<StatusInjection>? Injection = null)
+{
+    /// <summary>The injection sections, never null.</summary>
+    public IReadOnlyList<StatusInjection> Injection { get; init; } = Injection ?? [];
+}
