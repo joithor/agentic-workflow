@@ -190,11 +190,31 @@ The `-015 worktree-outside-repo` reason also covers a bad home, state directory,
 A repo declaration cannot add `github` or `packages` beyond what the session kind allows. The inner policy carries `DefaultMode` (`dontAsk` for a Step, `default` for an attended session) and
 `DisableBypassPermissions`: **SB-5a's rendered settings must write `permissions.defaultMode` and `disableBypassPermissionsMode: "disable"` explicitly**, because the owner's own settings may say
 `bypassPermissions` (spike items 1 and 6); an attended session gets `Ask` rules for Bash, Edit and Write and no Bash allow. SB-5a test names: `Rendered_settings_set_the_default_mode_explicitly`,
-`Rendered_attended_settings_ask_for_bash`. Not in SB-1, for SB-2 and SB-5a: the `control.json` directory bind for the `sindri` CLI (spike item 7), the `expiresAt` margin of `-017 expired`.
+`Rendered_attended_settings_ask_for_bash`. Not in SB-1: the `control.json` directory bind for the `sindri` CLI (spike item 7; SB-5a). The `expiresAt` margin of `-017 expired` is in SB-2.
 
 **The owner's open question about hooks** (spike item 6): hooks that print `permissionDecision: allow` defeat `dontAsk`, and `rtk-rewrite` turns `git push` into `rtk git push` before the rules are matched.
 Default (the lead's proposal): the session omits the five permission-answering hooks and the deny rules also list the rtk forms. The answer is a one-line change of
 `HookPermissionPolicy.OmitPermissionAnsweringHooks` and `HookPermissionPolicy.IncludeRtkForms`; the tests follow the constants.
+
+## SB-2: the bubblewrap adapter and the owner-copy login
+
+`Aw.Sindri.Infrastructure/Sandbox/` holds `BubblewrapSandbox` (Probe, Plan, Wrap, SelfCheck), `BubblewrapArgv` (plan to arguments), `OwnerCopyCredentialSource`, the canaries and the run-area preparer.
+`AddSindriBubblewrapSandbox` registers them; **nothing calls it until SB-5a**, and a test pins that the product Host registers only `UnavailableSandbox`.
+
+- **Argv.** `--die-with-parent --unshare-net --clearenv`, then the mount stack in plan order (`--ro-bind`, `--bind`, `--dev`, `--proc`, `--perms 0700 --size N --tmpfs` for the home and `/run`), then `--setenv` for every
+  valued variable, `--chdir`. A denied path under a tmpfs, or whose link target is, adds nothing; a denied directory is an empty read-only tmpfs (writable while the hook inventory is bound into it);
+  a denied file is an empty read-only file. A variable the plan leaves to the launcher (the launch secret, a model key) is asked of a resolver the Host passes; its value is on the bwrap command line (same-user only).
+  No pid namespace (SB6). `PlanMount.Optional` marks the entries that use the `-try` forms (toolchain directories, the hook inventory).
+- **The plan gained** a `/run` tmpfs (the net directory needs a place to bind on a read-only root), `AW_STATE_DIR` when the state directory is not `~/.agentic-workflow`, and this worktree's
+  `projects/<key>` bound read-write from the owner's agent home into the config directory (its `memory/` read-only), so Sindri's readers and a resume find the transcripts.
+- **Owner-copy login.** `launches/<launch>/login` (0700) gets `.credentials.json` and `.claude.json` (0600, temp file and rename) and is bound at `~/.claude-run` (`CLAUDE_CONFIG_DIR`); every other entry of
+  `~/.claude` outside the write set is bound read-only into it; the original `.credentials.json` stays masked in the read-only `~/.claude` bind. A login that expires within the planned wall plus a margin
+  (default 4 h 25 min, `OwnerCopyOptions.MinRemaining`) is `-017 expired` (spike item 2: assume a refresh rotates the token). Codex gets `~/.codex-run` with `auth.json`, the config read-only and `sessions/` shared.
+  `SweepStale` is the crash sweep; `Release` removes a copy.
+- **Self-check.** `fs-deny`, `fs-write`, `git-ref` (the sandbox's git settings win; two ref updates in the run's directory work; another ref does not; the `selfcheck` ref is removed from outside afterwards),
+  `env`, `login`, the three-part `hooks-run` (under bash: `lib/failopen.sh` is bash) and the direct-connect half of `net-deny`. `net-forward` and the proxy half of `net-deny` need the forwarders (SB-4a, SB-5a wires them).
+- **Contract.** `ISandboxContract` (in `Aw.Sindri.Testing`) runs on the pass-through (confinement cases skipped) and on the real bubblewrap; it skips cleanly where bwrap cannot make a user namespace. Its `SandboxBox` is a
+  fixture repo, worktree, state directory and fake login under the test output directory, with the owner's real home (toolchains, hooks, the judge wrapper) and nothing of the owner's state or login.
 
 ## Phases
 
@@ -210,5 +230,4 @@ Default (the lead's proposal): the session omits the five permission-answering h
 ## Environment
 
 `AW_SANDBOX_BWRAP`, `AW_SANDBOX_SYSTEMD_RUN` and `AW_SANDBOX_SOCAT` redirect the three host binaries for a test. No variable switches the
-sandbox off. `deps.yaml` declares the host-tool edges; `setup.sh` and `scripts/install-deps.sh` gain `bubblewrap` and `socat` in SB-2, the
-first phase that needs them.
+sandbox off. `deps.yaml` declares the host-tool edges; `scripts/install-deps.sh` (which `setup.sh` runs) checks `bubblewrap` and `socat`, and warns when `systemd-run --user --scope` does not work.
