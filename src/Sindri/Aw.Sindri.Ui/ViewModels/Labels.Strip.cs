@@ -8,6 +8,27 @@ internal static partial class Labels
     /// <summary>The strip row's desk answer button.</summary>
     internal const string Answer = "Answer";
 
+    /// <summary>The words of a row whose answer a child instance decides: the row points at the child instead of offering an answer.</summary>
+    internal const string AnswerInChild = "Answer in the child";
+
+    /// <summary>The accessible name of the "Answer in the child" control: the drawn words lead (WCAG 2.5.3), then the instance it opens.</summary>
+    /// <param name="address">The address of the instance the control opens.</param>
+    /// <returns>The name.</returns>
+    internal static string AnswerInChildName(string address) => $"{AnswerInChild} {address}";
+
+    /// <summary>The accessible name of the control when no child was served: it opens the parent's frame at its Children, so it says so rather than name an address that is not the child's.</summary>
+    /// <param name="parentAddress">The parked instance's address.</param>
+    /// <returns>The name.</returns>
+    internal static string AnswerInChildParentName(string parentAddress) => $"{AnswerInChild}, opens {parentAddress} children";
+
+    /// <summary>The accessible name of the control on a needs-you row, which is served no child: it opens the instance the row stands for (or the row's own sheet), so it names that rather than a child.</summary>
+    /// <param name="shownId">What the row shows as its id.</param>
+    /// <returns>The name.</returns>
+    internal static string AnswerInChildOpensName(string shownId) => $"{AnswerInChild}, opens {shownId}";
+
+    /// <summary>The accessible name of the expanded state's control when no child was served: it moves focus to this frame's Children panel.</summary>
+    internal const string AnswerInChildPanelName = AnswerInChild + ", moves to the Children panel";
+
     /// <summary>What the strip says while the workflow list route is not served yet (screens §4.8).</summary>
     internal const string ArrivesWorkflowStrip = "arrives with API P11";
 

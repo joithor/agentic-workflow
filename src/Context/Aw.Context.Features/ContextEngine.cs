@@ -112,6 +112,12 @@ internal sealed class ContextEngine(
     public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
         graph.LensesOf(anchors, read, depth, scope, cancellationToken);
 
+    public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.Lenses(anchor, read, range, scope, cancellationToken);
+
+    public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.LensesOf(anchors, read, range, scope, cancellationToken);
+
     public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
         graph.Lenses(anchor, draft, depth, scope, cancellationToken);
 

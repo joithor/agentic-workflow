@@ -348,7 +348,7 @@ routes through the real pipeline (preview, protected import and its refusals, ev
   - `ProbeRunner`. `Run` asks through a delegate and compares with the baseline (038: lower means, or a probe with more absent nodes than the same probe in the baseline); `Check` validates the file (035 with a key path).
   - `ProbeReport` and `ProbeTotals`.
   - The ports `IProbeFileReader` and `IProbeReportStore`.
-- **Core settings and errors.** `ContextSettings.CascadeDepth` (`context.cascadeDepth`, 0–4, default 2).
+- **Core settings and errors.** `ContextSettings.CascadeDepth` (`context.cascadeDepth`, 0–4, default 2) and `ContextSettings.CascadeComponentFanOut` (`context.cascadeComponentFanOut`, 1–50, default 5).
   `ContextErrors.Attention`, the CLI's exit-1 set, moved here from the verbs (S-3a's follow-up).
 - **Features.** `IContextGraph` (`ShowNode`, `Neighbors`, `Path`; `IContextEngine` extends it) over the slices
   `ShowNode`, `ListNeighbors`, `FindPath` and `EvalProbes` (`IContextEngine.EvalProbes`, `EvalProbesService` over
@@ -467,7 +467,7 @@ The goldens under `tests/Aw.Sindri.Tests/Golden/Api/context-*/` pin every body b
 
 | Route | Request | Response |
 |---|---|---|
-| `GET /sindri/context/lenses` | `anchor` (repeat it for up to 20; one distinct value answers schema 1, several schema 2), `depth` (0–4, default `context.cascadeDepth`; else 006 / 400), `draft`, `mapVersion` (S-LB1a; not with `draft`) | `{schemaVersion, anchor{key,label,kind,trust}, mapVersion, mapCommit?, draft, depth, asOf, bands{intent,product,code}, edges[], conflicts[], coverage, searched, degraded[], cites{}}` (spec §8.9); several anchors answer schema 2, see "S-LB1a" below |
+| `GET /sindri/context/lenses` | `anchor` (repeat it for up to 20; one distinct value answers schema 1, several schema 2), `depth` (0–4, default `context.cascadeDepth`; else 006 / 400), `hops` (S-CH: a comma list of `state`, `flow`, `dependency`, `component`; default the first three; else `SND-CONTEXT-140` / 400), `draft`, `mapVersion` (S-LB1a; not with `draft`) | `{schemaVersion, anchor{key,label,kind,trust}, mapVersion, mapCommit?, draft, depth, asOf, bands{intent,product,code}, edges[], conflicts[], coverage, searched, degraded[], cites{}, skippedComponents?}` (spec §8.9; S-CH, only with `hops` and a unit over the cap); several anchors answer schema 2, see "S-LB1a" below |
 | `GET /sindri/context/filemap` | `repo`, `path`, `unmapped`, `draft` | `{schemaVersion, repo, sha, mapVersion, draft, path, entries[{name,path,type,status,files,features[{key,provenance,confidence?,confirmed,linkId?,edge}],intent{records,decisions}\|null}], unmapped[], suggested[{linkId,file,feature,confidence,evidence[]}], totals{files,mapped,suggested,unmapped}, symbols}` |
 | `GET /sindri/context/map` | `anchor` (optional) | the map status; with an anchor also `coverage`, the lenses' record from the same Core function (`LensCoverageBuilder`) |
 | `GET /sindri/context/map/review` | `limit` (per group, default 100, max 1000; else 006) | `{draft, version{number,commit}, entries[…, trust], decided, proposals, counts{deterministic,model,orphaned}, byKind{}, truncated{…}, undecided}`; `decided` counts the proposals of this draft with a standing decision, `proposals` = decided + deterministic + model |
@@ -716,3 +716,16 @@ The fifth query shape (`ContextQuery.Diff = new DiffRange(base, head)`, optional
 - **Not-synced gaps.** `SearchedSources.Intent` gives a never-synced configured source `unavailable` / `not-synced` / `SND-CONTEXT-161`. The Sindri services (`GetContextHistoryService`, and the two lenses services) add `sync: {state, jobId}` from the `jobs` view (`SyncGaps`, ARCH-CQRS-001: the engine reads no jobs); `ApiViews.ContextLenses` and `ApiViews.ContextHistory` are invalidated by `job.started`, `job.finished` and `job.cancelled`. `ContextSyncGapsService` (built-in, every minute, a quiet run when nothing is missing) starts `SyncContextSourcesRequest` through its command chain as `service:context-sync-gaps` (the authorization table already lets class `service` run action class `job`): `SND-JOB-409` is a quiet run, any other refusal fails the run (needs-you `failure:service:context-sync-gaps`), it never starts a second sync while one runs, and after failed syncs in a row it re-checks on the scheduler tick by reading the jobs view; the scheduler has no event trigger. The decision is the pure `SyncGapDecision` (Core): nothing, job running, backoff not due (5, 10, 20, 40, 60 minutes at most; a success resets), start. A tick with nothing to do is only view reads: no command, no ledger write, no log.
 - **Errors.** `SND-CONTEXT-160` (Timeout, the git step ran out of `context.deadline`) and `161` (Unavailable, a configured source never synced) are codes of `searched` rows, never a route failure; 162 to 169 are reserved. Reused: `003`, `006` (more than 20 anchors, a malformed or relative or reversed window, a draft with a version), `037`, `048`, `110` (also the as-of map version's commit missing from the clone), `120`.
 - **Tests.** `HistoryWindowTests`, `MergeSubjectTests`, `RecordTimesTests`, `HistoryCutTests`, `FileHistoryContract` (fake and git), `GetHistoryTests`, the intent store contract's `created_at`/`fetched_at` cases, `ContextHistoryApiTests`, `ContextSyncGapsServiceTests`, `ContextSyncGapsHostTests`, `ContextHistoryTextTests`, the `context-history` goldens.
+
+## S-CH: the opt-in component hop
+
+`hops=` (query string, `--hops` on `sindri context query|lenses`, an optional string `hops` on MCP `context_query` and `context_lenses`) lists
+the cascade hops to walk, exactly as written: `hops=component` walks only that hop. Absent, the cascade keeps its three hops and every answer is
+byte-identical to before. A name outside `state`, `flow`, `dependency`, `component` is `SND-CONTEXT-140`. `neighbors` takes no `hops`.
+
+The component hop goes from an own-scope node through a confirmed `implements` edge to its code unit and through another confirmed
+`implements` edge to another node, ascended to its feature, at cost 1. Its path steps read `component <code key>` then `implements <node key>`.
+A suggested `implements` never counts. A code unit implementing more than `context.cascadeComponentFanOut` features (1-50, default 5; counted on
+the caller's visible graph) is not walked: when that withheld a node, the answer carries a top-level `skippedComponents: [{unit, features}]`
+(ordinal by unit, omitted when empty) on `lenses`, `lenses` sets and `query`. `searched.hops` echoes the hops that ran in cascade order
+(`state`, `dependency`, `flow`, `component`), whatever order the request listed them. The same hop runs under `diff=`.

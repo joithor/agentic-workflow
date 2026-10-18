@@ -23,7 +23,7 @@ internal sealed class GetContextLensesService(ContextScopes scopes, IContextEngi
             return scope.Error;
         }
 
-        var view = await engine.Lenses(request.Anchor, read.Value, request.Depth, scope.Value, cancellationToken).ConfigureAwait(false);
+        var view = await engine.Lenses(request.Anchor, read.Value, new LensRange(request.Depth, request.Hops), scope.Value, cancellationToken).ConfigureAwait(false);
         return view.IsError ? view.Error : view.Value with { Searched = await gaps.Mark(view.Value.Searched, cancellationToken).ConfigureAwait(false) };
     }
 }
