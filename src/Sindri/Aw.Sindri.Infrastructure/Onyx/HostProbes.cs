@@ -96,9 +96,11 @@ internal sealed class HostProbes(bool ipv6Available) : IHostProbes
         }
     }
 
+    // Exclusive use only on Windows. On Unix `false` sets SO_REUSEADDR, so a port left in TIME_WAIT by `onyx down` (the stack's own connections closed first) reads free instead of
+    // making the next `onyx up` move to another port; the two connect probes, which don't depend on it, stay the authority that nothing listens there.
     private static bool CanBind(int port)
     {
-        var listener = new TcpListener(IPAddress.Loopback, port) { ExclusiveAddressUse = true };
+        var listener = new TcpListener(IPAddress.Loopback, port) { ExclusiveAddressUse = OperatingSystem.IsWindows() };
         try
         {
             listener.Start();

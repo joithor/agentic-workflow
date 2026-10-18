@@ -109,6 +109,43 @@ public sealed class OnyxPreflightTests
         Assert.Equal("SND-ONYX-002", compose.Problem?.Code);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("2.24.0", true)]
+    [InlineData("v2.29.7", true)]
+    [InlineData("5.1.2", true)]
+    [InlineData("2.40.3-desktop.1", true)]
+    [InlineData("2.23.9", false)]
+    [InlineData("v2.20.0", false)]
+    [InlineData("1.29.2", false)]
+    public void Evaluate_judges_the_compose_version_against_the_override_floor(string version, bool ok)
+    {
+        var docker = FakeContainerRuntime.Healthy with { ComposeVersion = version };
+
+        var compose = Check(OnyxPreflight.Evaluate(docker, new HostFacts(_roomy, DataRoot: null, _free), _pins), "compose");
+
+        Assert.Equal(ok ? CheckState.Ok : CheckState.Fail, compose.State);
+        if (!ok)
+        {
+            Assert.Equal("SND-ONYX-002", compose.Problem?.Code);
+            Assert.Contains("update Compose", compose.Problem!.Message, StringComparison.Ordinal);
+            Assert.Contains("2.24.0", compose.Problem.Message, StringComparison.Ordinal);
+        }
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(null)]
+    [InlineData("dev")]
+    public void Evaluate_warns_and_does_not_block_on_an_unreadable_compose_version(string? version)
+    {
+        var docker = FakeContainerRuntime.Healthy with { ComposeVersion = version };
+
+        var report = OnyxPreflight.Evaluate(docker, new HostFacts(_roomy, DataRoot: null, _free), _pins);
+
+        Assert.Equal(CheckState.Warn, Check(report, "compose").State);
+        Assert.Equal("unreadable version", Check(report, "compose").Detail);
+        Assert.False(report.Blocks);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Evaluate_fails_003_when_docker_memory_is_short()
     {
@@ -120,6 +157,49 @@ public sealed class OnyxPreflightTests
         Assert.Equal("4.0 GiB for Docker, needs a 6 GiB setting", memory.Detail);
         Assert.Equal("SND-ONYX-003", memory.Problem?.Code);
         Assert.Contains("set Docker's memory to at least 6 GiB in Docker Desktop → Settings → Resources", memory.Problem?.Message, StringComparison.Ordinal);
+    }
+
+    private static PreflightCheck MemoryWith(Kernel.Result<long> usedByOthers)
+        => Check(OnyxPreflight.Evaluate(FakeContainerRuntime.Healthy, new HostFacts(_roomy, DataRoot: null, _free), _pins, usedByOthers: usedByOthers), "memory");
+
+    [Fact, Trait("Lane", "unit")]
+    public void Evaluate_fails_003_when_other_containers_already_use_so_much_that_the_stack_will_not_fit()
+    {
+        var memory = MemoryWith(11 * Gib);   // 15.7 GiB for Docker, 11 in use elsewhere: 4.7 left for a stack that needs 5.5
+
+        Assert.Equal(CheckState.Fail, memory.State);
+        Assert.Equal("SND-ONYX-003", memory.Problem?.Code);
+        Assert.Contains("11.0 GiB used by other containers", memory.Detail, StringComparison.Ordinal);
+        Assert.Contains("other containers already use 11.0 GiB", memory.Problem?.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Evaluate_passes_when_what_other_containers_leave_covers_the_stack()
+    {
+        var memory = MemoryWith(2 * Gib);
+
+        Assert.Equal(CheckState.Ok, memory.State);
+        Assert.Contains("2.0 GiB used by other containers", memory.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Evaluate_only_warns_when_other_containers_memory_cannot_be_read()
+    {
+        var memory = MemoryWith(SindriErrors.OnyxComposeFailed.With("`docker stats` failed (exit 1): boom"));
+
+        Assert.Equal(CheckState.Warn, memory.State);
+        Assert.Null(memory.Problem);
+        Assert.Contains("other containers", memory.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Evaluate_still_fails_when_Docker_alone_is_short_and_the_read_failed()
+    {
+        var docker = FakeContainerRuntime.Healthy with { MemoryBytes = 4 * Gib };
+
+        var memory = Check(OnyxPreflight.Evaluate(docker, new HostFacts(_roomy, DataRoot: null, _free), _pins, usedByOthers: SindriErrors.OnyxComposeFailed.With("boom")), "memory");
+
+        Assert.Equal(CheckState.Fail, memory.State);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -261,10 +341,10 @@ public sealed class OnyxPreflightTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void The_catalogue_lists_every_onyx_code_the_preflight_can_return()
+    public void The_catalogue_lists_every_onyx_code()
     {
         var codes = SindriErrors.All.Select(static e => e.Code).Where(static c => c.StartsWith("SND-ONYX-", StringComparison.Ordinal)).Order(StringComparer.Ordinal);
 
-        Assert.Equal(["SND-ONYX-001", "SND-ONYX-002", "SND-ONYX-003", "SND-ONYX-004", "SND-ONYX-006"], codes, StringComparer.Ordinal);
+        Assert.Equal(["SND-ONYX-001", "SND-ONYX-002", "SND-ONYX-003", "SND-ONYX-004", "SND-ONYX-005", "SND-ONYX-006", "SND-ONYX-010", "SND-ONYX-011", "SND-ONYX-012"], codes, StringComparer.Ordinal);
     }
 }
