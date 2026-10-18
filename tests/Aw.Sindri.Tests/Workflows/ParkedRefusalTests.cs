@@ -1,9 +1,7 @@
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
-using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.Workflow.Engine;
-using Aw.Sindri.Workflows;
-using Xunit;
 
 namespace Aw.Sindri.Tests.Workflows;
 
@@ -30,27 +28,27 @@ public sealed class ParkedRefusalTests
     {
         var block = which is Case.ParkBlock or Case.TakeoverBlock or Case.TakeoverOverParkBlock;
         var instance = Build(which, block);
-        var run = instance.Frame.Run!.Token;
+        var run = RunToken.For(3, 1);
+        var suspension = Assert.IsType<Suspension>(instance.Suspension);
 
-        var text = RecipeWorkflow.ParkedRefusal(instance, instance.Suspension!, run);
+        var text = RecipeWorkflow.ParkedRefusal(instance, suspension, run);
 
         var address = instance.Address.Value;
-        Assert.Equal($"{address} is parked ({ReasonOf(instance)}); " + tail.Replace("ADDR", address, StringComparison.Ordinal).Replace("RUN", run.Value, StringComparison.Ordinal), text);
+        Assert.Equal($"{address} is parked ({suspension.Reason?.ToString() ?? suspension.Kind.ToString()}); " + tail.Replace("ADDR", address, StringComparison.Ordinal).Replace("RUN", run.Value, StringComparison.Ordinal), text);
     }
-
-    private static string ReasonOf(WorkflowInstance instance) => instance.Suspension!.Reason?.ToString() ?? instance.Suspension.Kind.ToString();
 
     private static WorkflowInstance Build(Case which, bool block)
     {
         var producing = FrameFixture.Producing();
         var runtime = block ? StepRuntime.Block : StepRuntime.Desk;
-        var from = producing with { Frame = producing.Frame with { Run = producing.Frame.Run! with { Runtime = runtime } } };
+        var from = producing with { Frame = producing.Frame with { Run = new OpenRun(RunToken.For(3, 1), runtime, Launch: null, Task: null) } };
         var park = FrameFixture.Park(ParkReason.Budget, ParkKind.Step, ResumeKind.Transition);
         return which switch
         {
             Case.ParkDesk or Case.ParkBlock => FrameFixture.Suspended(park, from),
             Case.TakeoverDesk or Case.TakeoverBlock => FrameFixture.Suspended(FrameFixture.Takeover(), from),
-            _ => FrameFixture.Suspended(FrameFixture.Takeover(), FrameFixture.Suspended(park, from)),
+            Case.TakeoverOverParkDesk or Case.TakeoverOverParkBlock => FrameFixture.Suspended(FrameFixture.Takeover(), FrameFixture.Suspended(park, from)),
+            _ => throw new ArgumentOutOfRangeException(nameof(which)),
         };
     }
 }
