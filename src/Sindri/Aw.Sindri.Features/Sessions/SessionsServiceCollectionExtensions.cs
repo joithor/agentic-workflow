@@ -12,6 +12,7 @@ internal static class SessionsServiceCollectionExtensions
     internal static IServiceCollection AddSessionSlices(this IServiceCollection services) => services
         .AddSingleton<CollectorMemory>()
         .AddSingleton<SessionRepos>()
+        .AddSingleton<SessionHosts>()
         .AddSingleton<SessionDiscovery>()
         .AddSingleton<SessionObserver>()
         .AddScoped<IService<CollectSessionsRequest, CollectSessionsResponse>, CollectSessionsService>()
