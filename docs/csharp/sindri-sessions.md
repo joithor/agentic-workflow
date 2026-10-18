@@ -160,18 +160,19 @@ snapshot; both are queries and have no catalog row. `Core/Sessions/SessionRows` 
   and one in another repo.
 - **Row:** `ref`, `provider`, `providerLabel`, `id`, `idKnown`, `state`, `asking`, `stateSource` (`none`, `record`, `hook`, `transcript`), `estimated`, `repo`, `worktree` (the directory
   below the repo's checkout in the approved profile, else null), `host{kind, label, socketKind, attachedClients, terminal}`, `lane{team, lane}`, `launchId`, `startedAt`, `since`,
-  `focus`. `focus` is `{method: none, possible: false, why: pending:CO-4a}` until CO-4a (the `FocusSession` catalog row says `pending:CO-4a` too). `item` and `instance` come with CA-6.
+  `focus`. `focus` is `{method: none, possible: false, why: not-built}` until CO-4a (a stable code; the `FocusSession` catalog row keeps the phase label `pending:CO-4a`). `item` and `instance` come with CA-6.
   `inWorkflow` means "has a Sindri launch" until the launch join exists.
 - **`SessionList`:** `sessions`, `recentlyEnded` (each `{session, endedAt, resume}`), `problems`, `counts{live, asking, outsideWorkflow}` (over what the caller may see, before the
-  filters), `empty` (`No agent sessions are running.` when no row is shown), `asOf` (the last pass). Before the first pass the list is empty. A `SND-SESSION-002` problem in the pass
+  filters), `empty` (`No agent sessions are running.` when no row is shown), `asOf` (the last pass). Before the first pass the list is empty, with `asOf` the time of the request (no pass has run yet; `GetSession` answers 404). A `SND-SESSION-002` problem in the pass
   replaces the list (`503`, `detail` the reason); `-001` and `-003` stay problem rows.
 - **`SessionView`:** `{session, cwd, stateHistory, asOf}`. `stateHistory` is the snapshot's `History` (`StateHistoryRules`): per live session, the first state and each change of state or
   asking reason, at most 20, oldest first, in memory for this Sindri run.
-- **Status:** `GET /status` has `sessions{live, asking, problems}`.
+- **Status:** `GET /status` has `sessions{live, asking, problems}`, box-wide for every caller and deliberately public: a `session` caller sees the numbers (also through the MCP `sindri_status` tool), never the rows. `problems` counts every problem row, `SND-SESSION-003` (a test override) included.
+- **Startup window:** the repo of a directory is looked up off the pass and cached, so for the first seconds after `serve` starts (and right after a profile approval) a row can show no repo (`-` in the CLI); it fills in on a later pass.
 - **CLI:** `sindri agents [--provider P] [--state S] [--repo R] [--json]` and `sindri agents show <provider>/<id> [--json]` (`Host/Commands/AgentsVerbs`) call the routes and never
   start the control plane. Exit 0 (an empty list too), 1 when Sindri isn't running (`SND-API-001`) or a problem row is present, 2 on usage or another error. `--json` is the raw body.
 - **Goldens:** `tests/Aw.Sindri.Tests/Golden/Api/sessions/` (`empty`, `fixture-three-providers`, `session-scoped`, `problems-source-failed`, `recently-ended`, `unsupported-platform`,
-  `proc-unreadable`, `disabled`), `sessions-id/` (`claude-tmux`, `codex-hook`, `not-found`, `session-caller-hidden-fields`) and `status/sessions.json`, from
+  `proc-unreadable`, `disabled`; these three are the `SND-SESSION-002` bodies, 503 problem+json), `sessions-id/` (`claude-tmux`, `codex-hook`, `not-found`, `session-caller-hidden-fields`) and `status/sessions.json`, from
   `ApiGoldens/SessionScenarios` (the snapshot is published into the host's store). `Aw.Sindri.Ui.Tests` reads every API golden and is in the gate.
 
 ## API rows for review

@@ -84,7 +84,7 @@ public sealed class GetSessionTests
     [Fact, Trait("Lane", "unit")]
     public async Task GetSession_answers_the_collectors_unavailable_error_as_the_list_does()
     {
-        _ = _r.Publish(SessionsRig.Three, problems: [new SessionProblem("collector", "SND-SESSION-002", "Sindri can't see agent sessions on this system: disabled")]);
+        _ = _r.Publish(SessionsRig.Three, problems: [new SessionProblem("collector", "SND-SESSION-002", "Sindri can't see agent sessions on this system: disabled") { Reason = UnavailableReason.Disabled }]);
         using var human = _r.Human();
 
         var result = await Service().Handle(new GetSessionRequest(_claude), SessionsRig.Token);

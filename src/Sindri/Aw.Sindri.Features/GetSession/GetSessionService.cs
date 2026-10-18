@@ -23,13 +23,14 @@ internal sealed class GetSessionService(ISessionSnapshot snapshot, IAgentCatalog
             return SindriErrors.AuthRefused.With("a session needs a caller");
         }
 
-        if (snapshot.Current is { } current && SessionRows.Unavailable(current.Problems) is { } unavailable)
+        var now = snapshot.Current;   // one read: the check, the row and the history all come from the same pass
+        if (now is not null && SessionRows.Unavailable(now.Problems) is { } unavailable)
         {
             return unavailable;
         }
 
-        var found = snapshot.Current?.Sessions.FirstOrDefault(s => s.Ref.Equals(request.Ref));
-        if (snapshot.Current is not { } now || found is null || !SessionRows.Visible(caller, found))
+        var found = now is null ? null : SessionRows.Find(now, request.Ref, caller);
+        if (now is null || found is null)
         {
             return SindriErrors.SessionNotFound.With("no live session has that ref (or it is outside this caller's repo)");
         }

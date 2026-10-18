@@ -29,7 +29,7 @@ public sealed class ListSessionsTests
         Assert.Equal(("Claude Code", true, SessionState.Running, StateSource.Record, "private title", 111), (claude.ProviderLabel, claude.IdKnown, claude.State, claude.StateSource, claude.Title, claude.Pid));
         Assert.Equal(("tmux", "tmux · Warp", "default", 1, "warp", "main", "%3"), (claude.Host.Kind, claude.Host.Label, claude.Host.SocketKind, claude.Host.AttachedClients, claude.Host.Terminal, claude.Host.Session, claude.Host.Pane));
         Assert.Equal((new SessionLane("sindri", "ideas"), ".claude/worktrees/ideas", "api"), (claude.Lane, claude.Worktree, claude.Repo!.Value.Value));
-        Assert.Equal(new SessionFocus("none", Possible: false, "pending:CO-4a"), claude.Focus);
+        Assert.Equal(new SessionFocus("none", Possible: false, "not-built"), claude.Focus);
         Assert.Equal(new SessionCounts(Live: 3, Asking: 1, OutsideWorkflow: 2), list.Counts);
         Assert.Null(list.Empty);
         Assert.Equal(SessionData.T0.AddMinutes(5), list.AsOf);
@@ -152,7 +152,7 @@ public sealed class ListSessionsTests
     [InlineData(UnavailableReason.Disabled, "disabled")]
     public async Task ListSessions_answers_SND_SESSION_002_when_the_collector_cannot_run_and_shows_no_stale_rows(UnavailableReason reason, string detail)
     {
-        var problem = new SessionProblem("processes", "SND-SESSION-002", $"Sindri can't see agent sessions on this system: {detail}");
+        var problem = new SessionProblem("processes", "SND-SESSION-002", $"Sindri can't see agent sessions on this system: {detail}") { Reason = reason };
         _ = _r.Publish(SessionsRig.Three, problems: [problem]);
         using var human = _r.Human();
 

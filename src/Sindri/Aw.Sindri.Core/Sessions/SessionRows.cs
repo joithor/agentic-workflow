@@ -17,13 +17,34 @@ public static class SessionRows
         return caller.Class != CallerClass.Session || (caller.Repo is { } repo && Equals(repo, session.Repo));
     }
 
-    /// <summary>True when the caller gets the human-only fields (title, pid, tmux session and pane, resume, cwd, socket, history).</summary>
+    /// <summary>The live session named <paramref name="reference"/> in <paramref name="pass"/> that <paramref name="caller"/> may see, or null: an unknown, ended or other-repo ref all answer null.</summary>
+    /// <param name="pass">One snapshot, read once by the caller.</param>
+    /// <param name="reference">The ref.</param>
     /// <param name="caller">The caller.</param>
-    /// <returns>True for a human or service caller.</returns>
+    /// <returns>The session, or null.</returns>
+    public static ObservedSession? Find(SessionSnapshot pass, SessionRef reference, CallerContext caller)
+    {
+        ArgumentNullException.ThrowIfNull(pass);
+        ArgumentNullException.ThrowIfNull(caller);
+        return pass.Sessions.FirstOrDefault(s => s.Ref.Equals(reference)) is { } found && Visible(caller, found) ? found : null;
+    }
+
+    /// <summary>SND-AUTH-002 for a <c>session</c> caller, else null: for a human-only read to call before it looks a ref up, so a session cannot probe which refs exist.</summary>
+    /// <param name="caller">The caller.</param>
+    /// <returns>The refusal, or null.</returns>
+    public static Kernel.Error? RefuseSession(CallerContext caller)
+    {
+        ArgumentNullException.ThrowIfNull(caller);
+        return caller.Class == CallerClass.Session ? SindriErrors.AuthRefused.With("a session caller can't read this; ask the human") : null;
+    }
+
+    /// <summary>True when the caller gets the human-only fields (title, pid, tmux session and pane, resume, cwd, socket, history); a service caller is in-process and never serves a client.</summary>
+    /// <param name="caller">The caller.</param>
+    /// <returns>True for a human caller.</returns>
     public static bool SeesHumanFields(CallerContext caller)
     {
         ArgumentNullException.ThrowIfNull(caller);
-        return caller.Class != CallerClass.Session;
+        return caller.Class == CallerClass.Human;
     }
 
     /// <summary>The row of <paramref name="session"/>.</summary>
@@ -107,17 +128,6 @@ public static class SessionRows
     public static Kernel.Error? Unavailable(IReadOnlyList<SessionProblem> problems)
     {
         ArgumentNullException.ThrowIfNull(problems);
-        foreach (var problem in problems.Where(static p => string.Equals(p.Code, SindriErrors.SessionsUnavailable.Code, StringComparison.Ordinal)))
-        {
-            foreach (var reason in Enum.GetValues<UnavailableReason>())
-            {
-                if (problem.Text.EndsWith(UnavailableReasons.Text(reason), StringComparison.Ordinal))
-                {
-                    return UnavailableReasons.ToError(reason);
-                }
-            }
-        }
-
-        return null;
+        return problems.Select(static p => p.Reason).FirstOrDefault(static r => r is not null) is { } reason ? UnavailableReasons.ToError(reason) : null;
     }
 }

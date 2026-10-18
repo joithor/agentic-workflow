@@ -6,6 +6,6 @@ namespace Aw.Sindri.Core.Sessions;
 /// <param name="Why">Why not, when it can't; null otherwise.</param>
 public sealed record SessionFocus(string Method, bool Possible, string? Why)
 {
-    /// <summary>What every row says until CO-4a: the catalog's FocusSession row is 'pending:CO-4a'.</summary>
-    public static SessionFocus Pending { get; } = new("none", Possible: false, "pending:CO-4a");
+    /// <summary>What every row says until CO-4a: the stable code 'not-built' (the catalog's FocusSession row carries the phase label 'pending:CO-4a').</summary>
+    public static SessionFocus Pending { get; } = new("none", Possible: false, "not-built");
 }
