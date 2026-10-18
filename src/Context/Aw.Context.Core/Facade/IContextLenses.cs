@@ -12,15 +12,6 @@ namespace Aw.Context.Core.Facade;
 /// </summary>
 public interface IContextLenses
 {
-    /// <summary>The intent, product and code bands around one node.</summary>
-    /// <param name="anchor">A node key, alias or label.</param>
-    /// <param name="draft">True to read the latest draft instead of the current map.</param>
-    /// <param name="depth">How far the neighbors reach and the cascade runs (0 to 4), or null for the profile's 'context.cascadeDepth'.</param>
-    /// <param name="scope">The profile's context section and repos, and the caller.</param>
-    /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The lenses, or SND-CONTEXT-001/003/004/006/020/030/037/044.</returns>
-    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken);
-
     /// <summary>The lenses around one node in the map <paramref name="read"/> names: the current version, the draft or a retained version (scoping spec C10).</summary>
     /// <param name="anchor">A node key, alias or label.</param>
     /// <param name="read">Which map.</param>

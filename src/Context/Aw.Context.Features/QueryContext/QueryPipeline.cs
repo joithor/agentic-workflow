@@ -31,18 +31,6 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
     /// <summary>The most text kept from one record after cleaning (spec §8.3: 64 KB).</summary>
     internal const int MaxRecordText = 64 * 1024;
 
-    // The question's own rules, then its map read (a draft together with a version, or a malformed version, is refused here, not in Core's rules).
-    private static Result<ValidQuery> Checked(ContextQuery query, ContextSettings settings)
-    {
-        var valid = QueryRules.Check(query, settings);
-        if (valid.IsSuccess && MapRead.Of(query.Draft, query.MapVersion) is { IsError: true } badRead)
-        {
-            return badRead.Error;
-        }
-
-        return valid;
-    }
-
     /// <summary>Answers one question over the given map and catalog.</summary>
     /// <param name="request">The question and its scope.</param>
     /// <param name="inputs">Where the map and the sources come from: the live ones for a query, an as-of view for a backtest arm.</param>
@@ -54,7 +42,7 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
         var settings = SettingsReader.Read(request.Scope.Settings);
         var scrubbers = settings.Bind(s => scrubberFactory.For(s.ExtraPatterns));
         var repos = scrubbers.Bind(_ => ScopeRules.Resolve(settings.Value, request.Scope.Repos, request.Scope.Caller));
-        var valid = repos.Bind(_ => Checked(request.Query, settings.Value));
+        var valid = repos.Bind(_ => CheckedQuery.Of(request.Query, settings.Value));
         if (valid.IsError)
         {
             return valid.Error;
@@ -87,7 +75,7 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
         await NoteQueuedDecisions(graph, sources, degraded, cancellationToken).ConfigureAwait(false);
         var versions = await Versions(fetched, sources, deadline, cancellationToken).ConfigureAwait(false);
         var assembly = new ResultAssembly(scrubbers.Value.Egress, QueryId.From("q_" + ids.NewId().ToString("N", CultureInfo.InvariantCulture)), clock.GetUtcNow());
-        return assembly.Build(request.Query, valid.Value.Budget, new RecordPart(fetched, versions, degraded), graph);
+        return assembly.Build(request.Query, valid.Value.Valid.Budget, new RecordPart(fetched, versions, degraded), graph);
     }
 
     /// <summary>
@@ -95,13 +83,14 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
     /// (030 without one, 003 for an unknown name, 037 for an ambiguous one); a text question goes on without it unless it
     /// asked for the draft or the store failed.
     /// </summary>
-    private static async ValueTask<Result<(GraphPart Graph, IReadOnlyList<string> Terms)>> Anchored(QueryContextRequest request, ValidQuery valid,
+    private static async ValueTask<Result<(GraphPart Graph, IReadOnlyList<string> Terms)>> Anchored(QueryContextRequest request, CheckedQuery checkedQuery,
         (ContextSettings Settings, Scrubbers Scrubbers) context, IMapProvider graphs, CancellationToken cancellationToken)
     {
         var (settings, scrubbers) = context;
+        var (valid, read) = (checkedQuery.Valid, checkedQuery.Read);
         var query = request.Query;
         var depth = query.Depth ?? settings.CascadeDepth;
-        var map = await graphs.Read(request.Scope, QueryReads.Of(query), cancellationToken).ConfigureAwait(false);
+        var map = await graphs.Read(request.Scope, read, cancellationToken).ConfigureAwait(false);
         if (query.Node is { } node)
         {
             var anchor = map.Bind(m => AnchorMatch.Resolve(m.Graph, node));
@@ -130,23 +119,23 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
         return (GraphAnswer.Build(map.Value, anchors, found.Suggested, depth, new MapText(scrubbers)), valid.Terms);
     }
 
-    private static async ValueTask<Result<(GraphPart Graph, IReadOnlyList<string> Terms, ItemMiss? Miss)>> AnchorFor(QueryContextRequest request, ValidQuery valid,
+    private static async ValueTask<Result<(GraphPart Graph, IReadOnlyList<string> Terms, ItemMiss? Miss)>> AnchorFor(QueryContextRequest request, CheckedQuery checkedQuery,
         (ContextSettings Settings, Scrubbers Scrubbers) context, PipelineInputs inputs, CancellationToken cancellationToken)
     {
         var (graphs, diffs) = (inputs.Map, inputs.Diff);
         if (request.Query.Item is { } item)
         {
-            return await ItemAnchored(request, item, context, graphs, cancellationToken).ConfigureAwait(false);
+            return await ItemAnchored(request, item, context, (graphs, checkedQuery.Read), cancellationToken).ConfigureAwait(false);
         }
 
         if (request.Query.Diff is { } diff)
         {
             return diffs is null
                 ? ContextErrors.QueryInvalid.With("the diff shape is answered by the live query only")
-                : (await diffs.Build(request, diff, context, cancellationToken).ConfigureAwait(false)).Map(a => (a.Graph, a.Terms, (ItemMiss?)null));
+                : (await diffs.Build(request, diff, checkedQuery.Read, context, cancellationToken).ConfigureAwait(false)).Map(a => (a.Graph, a.Terms, (ItemMiss?)null));
         }
 
-        var anchored = await Anchored(request, valid, context, graphs, cancellationToken).ConfigureAwait(false);
+        var anchored = await Anchored(request, checkedQuery, context, graphs, cancellationToken).ConfigureAwait(false);
         return anchored.Map(a => (a.Graph, a.Terms, (ItemMiss?)null));
     }
 
@@ -158,9 +147,9 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
     /// on its alias and those nodes' names. A key no sync linked is looked up live for a human or a service, and is unknown for a session (spec §3 source rule).
     /// </summary>
     private static async ValueTask<Result<(GraphPart Graph, IReadOnlyList<string> Terms, ItemMiss? Miss)>> ItemAnchored(QueryContextRequest request, string item,
-        (ContextSettings Settings, Scrubbers Scrubbers) context, IMapProvider graphs, CancellationToken cancellationToken)
+        (ContextSettings Settings, Scrubbers Scrubbers) context, (IMapProvider Graphs, MapRead Read) source, CancellationToken cancellationToken)
     {
-        var map = await graphs.Read(request.Scope, QueryReads.Of(request.Query), cancellationToken).ConfigureAwait(false);
+        var map = await source.Graphs.Read(request.Scope, source.Read, cancellationToken).ConfigureAwait(false);
         var unmapped = map.IsError && !request.Query.Draft && (string.Equals(map.Error.Code, ContextErrors.NoMap.Code, StringComparison.Ordinal) || string.Equals(map.Error.Code, ContextErrors.UnknownAnchor.Code, StringComparison.Ordinal));   // no map, or nothing of it this session's repo implements
         if (map.IsError && !unmapped)
         {

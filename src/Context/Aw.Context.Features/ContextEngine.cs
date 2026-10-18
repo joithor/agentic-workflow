@@ -112,9 +112,6 @@ internal sealed class ContextEngine(
     public ValueTask<Result<SubgraphView>> Subgraph(SubgraphQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         graph.Subgraph(query, scope, cancellationToken);
 
-    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
-        graph.Lenses(anchor, draft, depth, scope, cancellationToken);
-
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         graph.FileMap(query, scope, cancellationToken);
 }

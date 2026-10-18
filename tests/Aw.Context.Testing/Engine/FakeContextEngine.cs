@@ -137,9 +137,6 @@ public sealed class FakeContextEngine : IContextEngine
     public ValueTask<Result<ProposalsView>> Proposals(string run, ContextScope scope, CancellationToken cancellationToken) => NoMap<ProposalsView>();
 
     /// <inheritdoc/>
-    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) => NoMap<LensesView>();
-
-    /// <inheritdoc/>
     public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) => NoMap<LensesView>();
 
     /// <inheritdoc/>

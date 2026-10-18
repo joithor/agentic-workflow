@@ -43,9 +43,6 @@ internal sealed class ContextGraph(
     public ValueTask<Result<SubgraphView>> Subgraph(SubgraphQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         subgraph.Handle(new GetSubgraphRequest(query, scope), cancellationToken);
 
-    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
-        Lenses(anchor, draft ? MapRead.NewestDraft : MapRead.Current, depth, scope, cancellationToken);
-
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         fileMap.Handle(new GetFileMapRequest(query, scope), cancellationToken);
 }
