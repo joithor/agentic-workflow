@@ -148,6 +148,27 @@ public sealed class GetSessionPreviewTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Preview_answers_sessions_unavailable_before_the_ref()
+    {
+        var service = Service();
+        _ = _r.Publish(SessionsRig.Three, problems: [new SessionProblem("collector", "SND-SESSION-002", "Sindri can't see agent sessions on this system: disabled") { Reason = UnavailableReason.Disabled }]);
+        Kernel.Result<GetSessionPreviewResponse> known, unknown, session;
+        using (_r.Human())
+        {
+            known = await service.Handle(Ask(), SessionsRig.Token);
+            unknown = await service.Handle(Ask(new SessionRef(AgentId.From("codex"), SessionId.From("nope"))), SessionsRig.Token);
+        }
+
+        using (_r.SessionOf("api"))
+        {
+            session = await service.Handle(Ask(), SessionsRig.Token);
+        }
+
+        Assert.Equal(["SND-SESSION-002", "SND-SESSION-002", "SND-AUTH-002"], [known.Error.Code, unknown.Error.Code, session.Error.Code]);   // never a 404: an unreadable collector is not an ended session
+        Assert.Equal(0, _panes.Reads);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Preview_conflicts_on_a_stale_startedAt()
     {
         var service = Service();
