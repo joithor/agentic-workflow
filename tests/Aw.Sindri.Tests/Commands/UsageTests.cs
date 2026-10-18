@@ -17,6 +17,15 @@ public sealed class UsageTests
     public void Help_lists_every_workflow_verb(string verb) =>
         Assert.Single(Lines(), l => l.StartsWith($"sindri workflow {verb} ", StringComparison.Ordinal));
 
+    [Fact, Trait("Lane", "unit")]
+    public void Help_describes_mcp_register_for_all_three_providers_with_the_providers_flag()
+    {
+        var line = Assert.Single(Lines(), l => l.StartsWith("sindri mcp register ", StringComparison.Ordinal));
+
+        Assert.Contains("--providers claude,codex,cursor|all", line, StringComparison.Ordinal);
+        Assert.Contains("Claude Code, Codex and Cursor", line, StringComparison.Ordinal);
+    }
+
     [Theory, Trait("Lane", "unit")]
     [InlineData("sindri context query ")]
     [InlineData("sindri context lenses ")]

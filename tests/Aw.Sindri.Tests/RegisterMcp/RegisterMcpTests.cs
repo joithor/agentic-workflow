@@ -213,6 +213,81 @@ public sealed class RegisterMcpTests
         Assert.Equal([ProviderOutcome.Registered, ProviderOutcome.Failed, ProviderOutcome.Failed], all.Providers.Select(p => p.Outcome));
     }
 
+    [Fact]
+    public async Task A_checkout_whose_path_needs_escaping_gets_one_trust_row_and_a_rerun_writes_nothing()
+    {
+        const string checkout = "/work/my \"demo\" \\ repo";
+        await Approve(apiPort: null, checkout);
+
+        var first = (await Service().Handle(new RegisterMcpRequest(checkout, "demo", Apply: true, [ProviderFile.Codex]), Token)).Value.Providers.Single();
+        var user = _host.Files["/home/u/.codex/config.toml"];
+        var again = (await Service().Handle(new RegisterMcpRequest(checkout, "demo", Apply: true, [ProviderFile.Codex]), Token)).Value.Providers.Single();
+
+        Assert.Equal(ProviderOutcome.Registered, first.Outcome);
+        Assert.Equal(ProviderOutcome.Unchanged, again.Outcome);
+        Assert.Equal(user, _host.Files["/home/u/.codex/config.toml"]);
+        Assert.Equal(1, user.Split("[projects.").Length - 1);
+    }
+
+    [Fact]
+    public async Task With_the_trust_switch_off_codex_needs_trust_and_the_user_config_is_not_written()
+    {
+        await Approve(apiPort: null);
+        const string user = "model = \"x\"\n";
+        _host.Files["/home/u/.codex/config.toml"] = user;
+
+        var codex = (await new RegisterMcpService(_profiles, _locator, _endpoint, _claude, _host) { WriteCodexTrust = false }.Handle(new RegisterMcpRequest("/work/demo", "demo", Apply: true, [ProviderFile.Codex]), Token)).Value.Providers.Single();
+
+        Assert.Equal(ProviderOutcome.NeedsTrust, codex.Outcome);
+        Assert.Contains("the project isn't trusted", codex.Detail, StringComparison.Ordinal);
+        Assert.Equal(user, _host.Files["/home/u/.codex/config.toml"]);
+        Assert.True(_host.Files.ContainsKey("/work/demo/.codex/config.toml"));
+    }
+
+    [Fact]
+    public async Task Without_apply_codex_previews_the_trust_row_and_writes_nothing()
+    {
+        await Approve(apiPort: null);
+
+        var codex = (await Service().Handle(new RegisterMcpRequest("/work/demo", "demo", Apply: false, [ProviderFile.Codex]), Token)).Value.Providers.Single();
+
+        Assert.Contains("would register; trust this project in /home/u/.codex/config.toml", codex.Detail, StringComparison.Ordinal);
+        Assert.Empty(_host.Files);
+    }
+
+    [Fact]
+    public async Task A_changed_claude_entry_is_previewed_without_apply_and_a_failed_removal_is_reported()
+    {
+        await Approve(apiPort: 7444);
+        _host.Files["/home/u/.claude.json"] = Claude(7000);
+
+        var preview = (await Service().Handle(new RegisterMcpRequest("/work/demo", "demo", Apply: false, [ProviderFile.Claude]), Token)).Value.Providers.Single();
+        _claude.Answer = new ClaudeRun(1, "no such server");
+        var removal = (await Service().Handle(new RegisterMcpRequest("/work/demo", "demo", Apply: true, [ProviderFile.Claude]), Token)).Value.Providers.Single();
+
+        Assert.StartsWith("would replace the entry, then run: claude mcp add", preview.Detail, StringComparison.Ordinal);
+        Assert.Equal((ProviderOutcome.Failed, "removing the old entry failed"), (removal.Outcome, removal.Detail));
+        _ = Assert.Single(_claude.Runs);
+    }
+
+    [Theory]
+    [InlineData(".cursor/mcp.json", ProviderFile.Cursor)]
+    [InlineData(".codex/config.toml", ProviderFile.Codex)]
+    public async Task The_tracked_file_refusal_names_the_file_and_the_entry_to_add_by_hand(string relative, ProviderFile provider)
+    {
+        await Approve(apiPort: 7444);
+        var path = "/work/demo/" + relative;
+        _host.Files[path] = provider == ProviderFile.Cursor ? "{}" : "model = \"x\"\n";
+        _ = _host.WithTracked(path);
+
+        var fix = (await Service().Handle(new RegisterMcpRequest("/work/demo", "demo", Apply: true, [provider]), Token)).Value.Providers.Single().Fix;
+
+        Assert.Contains(relative, fix, StringComparison.Ordinal);
+        Assert.Contains("http://127.0.0.1:7444/sindri/mcp", fix, StringComparison.Ordinal);
+        Assert.Contains("X-Sindri-Repo", fix, StringComparison.Ordinal);
+        Assert.Contains("untrack", fix, StringComparison.Ordinal);
+    }
+
     private static readonly ProviderFile[] _allProviders = [ProviderFile.Claude, ProviderFile.Cursor, ProviderFile.Codex];
 
     private static string Claude(int port) =>
@@ -220,10 +295,10 @@ public sealed class RegisterMcpTests
 
     private RegisterMcpService Service() => new(_profiles, _locator, _endpoint, _claude, _host);
 
-    private async Task Approve(int? apiPort)
+    private async Task Approve(int? apiPort, string checkout = "/work/demo")
     {
         var live = SliceHarness.Profile();
-        var profile = live.Profile with { Repos = [new RepoEntry("demo", "/work/demo")], Api = apiPort is { } port ? new ApiSettings(port) : null };
+        var profile = live.Profile with { Repos = [new RepoEntry("demo", checkout)], Api = apiPort is { } port ? new ApiSettings(port) : null };
         _ = await _profiles.Save(live with { Profile = profile }, Token);
     }
 }

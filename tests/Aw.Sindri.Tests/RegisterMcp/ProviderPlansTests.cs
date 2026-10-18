@@ -110,4 +110,68 @@ public sealed class ProviderPlansTests
         Assert.Equal("[projects.\"/work/demo\"]\ntrust_level = \"trusted\"\nnote = 1\n[other]\na = 1\n", after);
         Assert.Equal(1, after.Split("[projects.").Length - 1);
     }
+
+    [Theory]
+    [InlineData("/work/my\"repo")]
+    [InlineData("C:\\work\\repo")]
+    [InlineData("/work/my repo")]
+    public void A_trust_row_for_a_path_with_a_quote_backslash_or_space_is_found_on_the_next_run(string checkout)
+    {
+        var row = CodexTrustRow(userConfig: null, checkout);
+
+        Assert.Equal("trusted", CodexTrust(row, checkout));
+        Assert.Null(CodexTrust(row, checkout + "x"));
+    }
+
+    [Fact]
+    public void A_port_change_keeps_the_keys_and_comments_the_owner_added_to_the_sindri_table()
+    {
+        const string existing = "[mcp_servers.sindri]\n# mine\nurl = \"http://127.0.0.1:7000/sindri/mcp\"\nstartup_timeout_sec = 30\nhttp_headers = { \"X-Sindri-Repo\" = \"demo\" }\nenabled = true\n\n[mcp_servers.sindri.env]\nA = \"1\"\n";
+
+        var moved = Codex(existing, Url, "demo").Text!;
+
+        Assert.Contains("# mine", moved, StringComparison.Ordinal);
+        Assert.Contains("startup_timeout_sec = 30", moved, StringComparison.Ordinal);
+        Assert.Contains("enabled = true", moved, StringComparison.Ordinal);
+        Assert.Contains("[mcp_servers.sindri.env]\nA = \"1\"", moved, StringComparison.Ordinal);
+        Assert.Contains("url = \"" + Url + "\"", moved, StringComparison.Ordinal);
+        Assert.DoesNotContain("7000", moved, StringComparison.Ordinal);
+        Assert.Equal(1, moved.Split("[mcp_servers.sindri]").Length - 1);
+        Assert.Equal(new FilePlan(Text: null, Problem: null), Codex(moved, Url, "demo"));
+    }
+
+    [Fact]
+    public void A_sindri_table_header_with_a_trailing_comment_is_recognised()
+    {
+        var existing = "[mcp_servers.sindri] # mine\nurl = \"" + Url + "\"\nhttp_headers = { \"X-Sindri-Repo\" = \"demo\" }\n";
+
+        Assert.Equal(new FilePlan(Text: null, Problem: null), Codex(existing, Url, "demo"));
+        Assert.Equal(1, Codex(existing, "http://127.0.0.1:7481/sindri/mcp", "demo").Text!.Split("[mcp_servers.").Length - 1);
+    }
+
+    [Theory]
+    [InlineData("mcp_servers.sindri.url = \"x\"\n")]
+    [InlineData("[mcp_servers]\nsindri.url = \"x\"\n")]
+    [InlineData("[mcp_servers.sindri.http_headers]\nX-Sindri-Repo = \"demo\"\n")]
+    public void Codex_refuses_a_dotted_or_table_form_it_cannot_edit(string existing) =>
+        Assert.NotNull(Codex(existing, Url, "demo").Problem);
+
+    [Fact]
+    public void A_sibling_server_whose_name_starts_with_sindri_is_not_mistaken_for_it()
+    {
+        var plan = Codex("[mcp_servers]\nsindri2 = { url = \"x\" }\n", Url, "demo");
+
+        Assert.Null(plan.Problem);
+        Assert.Contains("sindri2 = { url = \"x\" }", plan.Text, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("{\"a\": 1, \"a\": 2}")]
+    [InlineData("{\"mcpServers\": {\"x\": {}, \"x\": {}}}")]
+    public void A_cursor_file_with_a_duplicate_key_is_a_problem_not_a_crash(string existing) =>
+        Assert.NotNull(Cursor(existing, Url, "demo").Problem);
+
+    [Fact]
+    public void The_cursor_file_keeps_other_servers_values_unescaped() =>
+        Assert.Contains("\"a+b <c>\"", Cursor("{\"mcpServers\": {\"x\": {\"command\": \"a+b <c>\"}}}", Url, "demo").Text, StringComparison.Ordinal);
 }

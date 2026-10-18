@@ -19,8 +19,8 @@ namespace Aw.Sindri.Features.RegisterMcp;
 internal sealed class RegisterMcpService(IApprovedProfile approvals, IRepoLocator locator, IEndpointFile endpoint, IClaudeCli claude, IProviderHost host)
     : IService<RegisterMcpRequest, RegisterMcpResponse>
 {
-    /// <summary>Owner's call (A): also mark the checkout trusted in Codex's user config so its project file loads at once. False: the human trusts the project in Codex (B).</summary>
-    internal static bool WriteCodexTrust { get; } = true;
+    /// <summary>Owner's call (A), the default: also mark the checkout trusted in Codex's user config so its project file loads at once. False: the human trusts the project in Codex (B).</summary>
+    internal bool WriteCodexTrust { get; init; } = true;
 
     private const string CursorFile = ".cursor/mcp.json";
     private const string CodexFile = ".codex/config.toml";

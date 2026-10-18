@@ -208,9 +208,10 @@ check "mcp: the report goes to stderr, never stdout" "$(grep -c 'codex: register
 check "mcp: the report reaches stderr" "$(grep -c 'codex: registered' "$WORK/err")" "1"
 
 : > "$CALLS"
-(cd "$WORK" && AW_SINDRI_MCP_REPO=demo AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" serve >/dev/null 2>&1)
+(cd "$WORK" && AW_SINDRI_MCP_REPO=demo AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" serve >/dev/null 2>"$WORK/err")
 waitfor "^sindri mcp register"; sleep 0.5
 check "mcp: AW_SINDRI_MCP_REPO is passed as --repo (serve registers too)" "$(grep '^sindri mcp' "$CALLS")" "sindri mcp register --apply --providers all --repo demo"
+check "mcp: the report names the repo it registered" "$(grep -c '^sindri-app: mcp (--repo demo): ' "$WORK/err")" "1"
 
 git -C "$R" worktree add -q "$WORK/wt2" -b wt2 >/dev/null 2>&1
 : > "$CALLS"
