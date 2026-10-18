@@ -21,18 +21,24 @@
       <Button x:Name="WorkflowGroupRecipe" Grid.Column="1" Content="{Binding RecipeLinkText}" Click="OnRecipe" VerticalAlignment="Center" Margin="8,0,0,0"
               AutomationProperties.Name="{Binding RecipeLinkName}" />
     </Grid>
-    <StackPanel IsVisible="{Binding IsExpanded}">
+    <!-- The grid keeps a readable width per state (Size.StageCell) and scrolls sideways when the recipe has more states than fit. -->
+    <ScrollViewer x:Name="WorkflowGroupScroll" IsVisible="{Binding IsExpanded}" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+    <StackPanel>
       <Border x:Name="WorkflowColumnHeads" Classes="column-heads">
         <Grid ColumnDefinitions="220,150,*,180">
           <TextBlock Classes="eyebrow" Text="SUBJECT" />
           <TextBlock Grid.Column="1" Classes="eyebrow" Text="INPUTS" />
           <ItemsControl x:Name="WorkflowGroupColumns" Grid.Column="2" ItemsSource="{Binding Columns}">
             <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate><UniformGrid Rows="1" /></ItemsPanelTemplate>
+              <ItemsPanelTemplate><StackPanel Orientation="Horizontal" /></ItemsPanelTemplate>
             </ItemsControl.ItemsPanel>
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="x:String">
-                <TextBlock Classes="eyebrow" Text="{Binding}" TextTrimming="CharacterEllipsis" Margin="0,0,6,0" />
+                <!-- The full state name is the tooltip and the accessible name; the text is one line, never wrapped. -->
+                <Border Name="WorkflowColumnHead" Width="{DynamicResource Size.StageCell}" ToolTip.Tip="{Binding}" AutomationProperties.Name="{Binding}"
+                        AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+                  <TextBlock Classes="eyebrow" Text="{Binding}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,6,0" AutomationProperties.AccessibilityView="Raw" />
+                </Border>
               </DataTemplate>
             </ItemsControl.ItemTemplate>
           </ItemsControl>
@@ -47,5 +53,6 @@
         </ItemsControl.ItemTemplate>
       </ItemsControl>
     </StackPanel>
+    </ScrollViewer>
   </StackPanel>
 </UserControl>

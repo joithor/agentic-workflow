@@ -359,8 +359,8 @@ edges:
   - from: Hooks
     to: Sindri
     kind: file
-    status: planned
-    note: "the aw:fleet hook (config/hooks/fleet-state.sh, session collector CO-1) writes one state file per session under $AW_FLEET_DIR (default $AW_STATE_DIR/fleet), which Sindri's collector reads and prunes (spec 2026-10-16-sindri-session-collector-design.md §5). Planned until CO-1 adds the script: check-deps fails a current edge the source lacks (DEPS-STALE-001) and a planned one it finds (DEPS-STALE-002). ~/.claude/sessions and the provider folders are outside the state root, so not edges"
+    status: current
+    note: "the aw:fleet hook (config/hooks/fleet-state.sh, session collector CO-1) writes one state file per session under $AW_FLEET_DIR (default $AW_STATE_DIR/fleet), which Sindri's collector reads and prunes (spec 2026-10-16-sindri-session-collector-design.md §5). ~/.claude/sessions and the provider folders are outside the state root, so not edges"
   - from: Statusline
     to: Judge
     kind: cli
