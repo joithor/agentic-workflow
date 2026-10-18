@@ -1,0 +1,8 @@
+{
+  "name": "tally",
+  "version": "0.3.0",
+  "description": "Count words, lines and characters in files.",
+  "type": "module",
+  "bin": { "tally": "src/index.js" },
+  "scripts": { "test": "node --test test/*.test.js" }
+}

@@ -44,4 +44,24 @@ public abstract class LaneFilesContract
         Expect.That(string.Equals(a.Agent?.Transcripts, "~/.codex/{sessionId}.jsonl", StringComparison.Ordinal), "the transcript glob");
         Expect.That(u.Session is null && !u.Agent!.Hooks && u.Ambiguous, "ambiguous with no session and no hooks");
     }
+
+    /// <summary>RecordSession replaces the id, keeps the agent facts and refuses a name that could escape the directory.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Recording_a_session_replaces_the_id_keeps_the_agent_and_refuses_an_escaping_name()
+    {
+        var (files, put) = await Create();
+        await put(new LaneRecord("api", Core.Ids.SessionId.From("s-1"), new LaneAgent("codex", "codex", Hooks: true)));
+
+        var fresh = await files.RecordSession("api", Core.Ids.SessionId.From("s-2"), DateTimeOffset.UnixEpoch.AddDays(20000), _none);
+        var brandNew = await files.RecordSession("ui", Core.Ids.SessionId.From("s-3"), DateTimeOffset.UnixEpoch.AddDays(20000), _none);
+        var escaping = await files.RecordSession("../x", Core.Ids.SessionId.From("s-4"), DateTimeOffset.UnixEpoch.AddDays(20000), _none);
+
+        var api = (await files.Record("api", _none)).Value!;
+        var ui = (await files.Record("ui", _none)).Value!;
+        Expect.That(fresh.IsSuccess && brandNew.IsSuccess, "both recorded");
+        Expect.That(api.Session?.Value == "s-2" && string.Equals(api.Agent?.Agent, "codex", StringComparison.Ordinal), "the id is replaced and the agent kept");
+        Expect.That(ui.Session?.Value == "s-3" && ui.Agent is null, "a lane with no record gets one with just the id");
+        Expect.That(escaping.IsError && (await files.Record("../x", _none)).Value is null, "an escaping name is refused");
+    }
 }
