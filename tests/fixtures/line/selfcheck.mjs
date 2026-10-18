@@ -171,16 +171,16 @@ function run() {
     scopes[c] = { sm, acc, cov, ln };
     const g = scopingGold[c];
     const surf = { id: "string", key: "string", kind: "string", title: "string", detail: "string", citations: ["string"], trust: "string", lens: "string", graphStatus: "string" };
-    shapeOk(`${dir}/scope-map.json`, sm, { schemaVersion: "integer", change: "string", baseSha: "string", surfaces: [surf], implications: [{ id: "string", text: "string", surfaces: ["string"] }], workstreams: [{ id: "string", title: "string", surfaces: ["string"], deps: ["string"] }], flagged: [{}], excluded: [{ key: "string", reason: "string" }], unmapped: [{ path: "string", reason: "string", trust: "string" }], unresolved: [{}] });
+    shapeOk(`${dir}/scope-map.json`, sm, { schemaVersion: "integer", change: "string", baseSha: "string", surfaces: [surf], implications: [{ id: "string", text: "string", citations: ["string"], surfaces: ["string"] }], workstreams: [{ id: "string", title: "string", surfaces: ["string"], deps: ["string"] }], flagged: [{ item: "string", reason: "string" }], excluded: [{ item: "string", reason: "string" }], unmapped: [{ path: "string", reason: "string", trust: "string" }], unresolved: [{}] });
     ok(`${dir}: baseSha is the scoping fixture's head`, sm.baseSha === scopingHead);
     ok(`${dir}: every surface is a map node, or a new one the gold names; ids are S1..Sn`, sm.surfaces.every((s, i) => s.id === `S${i + 1}` && (mapKeys.has(s.key) ? s.graphStatus === "mapped" : s.graphStatus === "new" && g.newSurfaces.some((n) => n.key === s.key) || s.key.startsWith("code:") && repoHas(s.key.slice(5)))), sm.surfaces.filter((s) => !mapKeys.has(s.key)).map((s) => s.key).join(","));
-    ok(`${dir}: excluded equals the scoping gold's decoys; unmapped its unmapped paths`, JSON.stringify(sm.excluded.map((e) => e.key)) === JSON.stringify(g.decoys.map((d) => d.key)) && JSON.stringify(sm.unmapped.map((u) => u.path)) === JSON.stringify(g.unmapped.map((u) => u.path)));
+    ok(`${dir}: excluded equals the scoping gold's decoys; unmapped its unmapped paths`, JSON.stringify(sm.excluded.map((e) => e.item)) === JSON.stringify(g.decoys.map((d) => d.key)) && JSON.stringify(sm.unmapped.map((u) => u.path)) === JSON.stringify(g.unmapped.map((u) => u.path)));
     ok(`${dir}: no decoy is a surface`, !sm.surfaces.some((s) => g.decoys.some((d) => d.key === s.key)));
     shapeOk(`${dir}/acceptance.json`, acc, { schemaVersion: "integer", parent: "null", items: [{ id: "string", text: "string", form: "string", surfaces: ["string"], citations: ["string"], trust: "string", status: "string", evidence: [], parent: "null" }] });
     ok(`${dir}: acceptance equals the scoping gold's ids and texts, all failing with no evidence`, JSON.stringify(acc.items.map((a) => [a.id, a.text])) === JSON.stringify(g.acceptance.map((a) => [a.id, a.text])) && acc.items.every((a) => a.status === "failing" && a.evidence.length === 0), "differs");
-    ok(`${dir}: every acceptance surface is a scope surface`, acc.items.every((a) => a.surfaces.every((k) => sm.surfaces.some((s) => s.key === k))));
+    ok(`${dir}: every acceptance surface is a scope surface`, acc.items.every((a) => a.surfaces.every((id) => sm.surfaces.some((s) => s.id === id))));
     // coverage and lenses (SCP-LENS-001)
-    shapeOk(`${dir}/coverage.json`, cov, { schemaVersion: "integer", lenses: [{ lens: "string", state: "string", searched: { anchors: ["string"], sources: ["string"], mapVersion: "string", depth: "integer", hops: ["string"] }, limits: [{}], mapCoverage: {}, found: { count: "integer", ids: ["string"] } }] });
+    shapeOk(`${dir}/coverage.json`, cov, { schemaVersion: "integer", lenses: [{ lens: "string", state: "string", searched: { anchors: ["string"], sources: [{ id: "string", state: "string", "reason?": "string" }], mapVersion: "string", depth: "integer", hops: ["string"] }, limits: [{}], mapCoverage: {}, found: { count: "integer", ids: ["string"] } }] });
     const lensShape = { anchors: ["string"], depth: "integer", hops: ["string"], mapVersion: "string", foundCount: "integer", nodes: [{ key: "string", kind: "string", label: "string", band: "string", lensItem: "string", trust: "string" }], edges: [{ from: "string", to: "string", type: "string", provenance: "string", confirmed: "boolean", trust: "string" }], items: [{ lensItem: "string", kind: "string", label: "string", citations: ["string"], trust: "string" }], truncated: ["string"] };
     shapeOk(`${dir}/lenses.json`, lnRaw, { schemaVersion: "integer", code: lensShape, product: lensShape, related: lensShape, history: lensShape });
     ok(`${dir}/lenses.json: a closed file, with the four lens keys and each lens's nodes in exactly the shape {key, kind, label, band, lensItem, trust} (schemas/packets/lenses.schema.json of LN-PKT1)`, JSON.stringify(Object.keys(lnRaw).sort()) === JSON.stringify(["code", "history", "product", "related", "schemaVersion"]) && LENSES.every((l) => lnRaw[l].nodes.every((n) => JSON.stringify(Object.keys(n).sort()) === JSON.stringify(["band", "key", "kind", "label", "lensItem", "trust"])) && JSON.stringify(Object.keys(lnRaw[l]).sort()) === JSON.stringify(["anchors", "depth", "edges", "foundCount", "hops", "items", "mapVersion", "nodes", "truncated"])));
@@ -236,9 +236,9 @@ function run() {
     const answersLog = readJsonl(at("gold", dir, "answers.jsonl"));
     ok(`${dir}/answers.jsonl: one batch per scripted batch of the scoping answers`, answersLog.length === readJson(path.join(SCOPING, "answers", `${c}.json`)).batches.length);
     const challenge = j("challenge.json");
-    ok(`${dir}/challenge.json: the last round is empty`, challenge.rounds.length >= 2 && challenge.rounds.at(-1).findings.length === 0);
+    ok(`${dir}/challenge.json: the last round is empty`, challenge.rounds.length >= 2 && challenge.rounds.at(-1).verdict === "nothingNew" && !challenge.rounds.at(-1).surfaces && !challenge.rounds.at(-1).behaviours);
     ok(`${dir}: has no index.json (the scoping kind lists twelve files; its hash is the frozen record)`, !fs.existsSync(at("gold", dir, "index.json")));
-    ok(`${dir}/questions.json: every question answered, one recommended option each`, j("questions.json").questions.every((q) => q.status === "answered" && q.options.filter((o) => o.recommended).length === 1));
+    ok(`${dir}/questions.json: every question answered, one recommended option each`, (() => { const asked = new Set(readJsonl(at("gold", dir, "answers.jsonl")).flatMap((b) => b.questionIds)); return j("questions.json").questions.every((q) => asked.has(q.id) && q.options.filter((o) => o.recommended).length === 1); })());
   }
 
   // ---------------- design packet ----------------
@@ -271,7 +271,7 @@ function run() {
   ok("DSN-COV-001: every scope surface is covered by a section or excluded with a reason", scopes.expiry.sm.surfaces.every((s) => covered.has(s.key) !== excluded.has(s.key) || (covered.has(s.key) && excluded.has(s.key) && false)) && dcov.excluded.every((e) => e.reason.length > 10), scopes.expiry.sm.surfaces.filter((s) => !covered.has(s.key) && !excluded.has(s.key)).map((s) => s.key).join(","));
   const secById = new Map(sections.sections.map((s) => [s.id, s]));
   ok("DSN-COV-001: coverage.json agrees with each section's covers", dcov.surfaces.every((c) => c.sections.length > 0 && c.sections.every((sid) => secById.get(sid)?.covers.includes(c.id))) && sections.sections.every((s) => s.covers.every((id) => surfaceById.has(id))));
-  ok("DSN-COV-002: every scope question was answered at the scope stage, so none is open", readJson(at("gold", "scope/expiry", "questions.json")).questions.every((q) => q.status === "answered"));
+  ok("DSN-COV-002: every scope question was answered at the scope stage, so none is open", (() => { const asked = new Set(readJsonl(at("gold", "scope/expiry", "answers.jsonl")).flatMap((b) => b.questionIds)); return readJson(at("gold", "scope/expiry", "questions.json")).questions.every((q) => asked.has(q.id)); })());
   // spec.md vs sections.json
   const headings = [...spec.matchAll(/^(#{2,3}) (.+?)\s*$/gm)].map((m) => ({ level: m[1].length, text: m[2] }));
   ok("spec.md headings are exactly sections.json's, in order", JSON.stringify(headings.map((h) => h.text)) === JSON.stringify(sections.sections.map((s) => s.heading)), headings.map((h) => h.text).join("|"));
@@ -293,7 +293,7 @@ function run() {
   // ACC-003 / LC-ACC-001
   const scopeAcc = new Map(scopes.expiry.acc.items.map((a) => [a.id, a]));
   const addedItems = dacc.items.filter((a) => !scopeAcc.has(a.id));
-  ok("DSN-ACC-003 (LC-ACC-001): scope ids and texts unchanged; each added item cites a section or decision", [...scopeAcc.values()].every((a) => dacc.items.find((x) => x.id === a.id)?.text === a.text) && addedItems.length === 1 && addedItems[0].id === "RG-4" && addedItems[0].citations.every((c) => secById.has(c) || decisions.decisions.some((d) => d.id === c)));
+  ok("DSN-ACC-003 (LC-ACC-001): scope ids and texts unchanged; each added item cites a section or decision", [...scopeAcc.values()].every((a) => dacc.items.find((x) => x.id === a.id)?.text === a.text) && addedItems.length === 1 && addedItems[0].id === "AC-11" && addedItems[0].citations.every((c) => secById.has(c) || decisions.decisions.some((d) => d.id === c)));
   ok("DSN-ACC: every item stays failing with no evidence (only the proof pack flips it)", dacc.items.every((a) => a.status === "failing" && a.evidence.length === 0));
   // DEC-001 and the D3 shape
   const decErr = [];
@@ -351,7 +351,7 @@ function run() {
   ok("DSN-LENS-003: every MEDIUM and LOW of every round has a written resolution; every HIGH has one too", lensRounds.flatMap((r) => r.findings).every((f) => f.resolution && f.resolution.length > 10 && secById.has(f.cite)));
   const fiveDir = at("packs", "lenses", "design-five"), twoDir = at("packs", "lenses", "design-two");
   ok("style.json pins the plain and design-five packs by the packs' hashes", style.style.id === "plain" && style.style.hash === dirHash(at("packs", "style", "plain")) && style.lenses.id === "design-five" && style.lenses.hash === dirHash(fiveDir) && lensRounds.every((r) => r.packHash === style.lenses.hash));
-  ok("DSN-ESC-001: items and surfaces the scope packet lacks are listed as escapes", addedItems.every((a) => escapes.escapes.some((e) => e.kind === "acceptance" && e.id === a.id)) && escapes.escapes.filter((e) => e.kind === "surface").every((e) => !surfaceByKey.has(e.id) && scopes.expiry.sm.excluded.some((x) => x.key === e.id)));
+  ok("DSN-ESC-001: items and surfaces the scope packet lacks are listed as escapes", addedItems.every((a) => escapes.escapes.some((e) => e.kind === "acceptance" && e.id === a.id)) && escapes.escapes.filter((e) => e.kind === "surface").every((e) => !surfaceByKey.has(e.id) && scopes.expiry.sm.excluded.some((x) => x.item === e.id)));
 
   // ---------------- lens and style packs ----------------
   const packs = {};

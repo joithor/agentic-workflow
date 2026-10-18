@@ -299,7 +299,7 @@
       "regression": false
     },
     {
-      "id": "RG-1",
+      "id": "AC-5",
       "form": "event",
       "text": "When someone opens a live shared link, the system shall return its note, as it does today.",
       "surfaces": [
@@ -308,7 +308,7 @@
       "regression": true
     },
     {
-      "id": "RG-2",
+      "id": "AC-6",
       "form": "event",
       "text": "When the nightly job purges the trash, the system shall delete notes trashed more than 30 days, as it does today.",
       "surfaces": [
