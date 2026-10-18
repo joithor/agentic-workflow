@@ -52,9 +52,11 @@ public sealed class RegisterMcpTests
         await Approve(apiPort: null);
         var defaultPort = (await Service().Handle(new RegisterMcpRequest("/elsewhere", "demo", Apply: false), Token)).Value;
 
-        Assert.EndsWith("127.0.0.1:7444/sindri/mcp", profilePort.Arguments[^1], StringComparison.Ordinal);
-        Assert.EndsWith($"127.0.0.1:{ApiSettings.DefaultPort}/sindri/mcp", defaultPort.Arguments[^1], StringComparison.Ordinal);
+        Assert.EndsWith("127.0.0.1:7444/sindri/mcp", Url(profilePort.Arguments), StringComparison.Ordinal);
+        Assert.EndsWith($"127.0.0.1:{ApiSettings.DefaultPort}/sindri/mcp", Url(defaultPort.Arguments), StringComparison.Ordinal);
     }
+
+    private static string Url(IReadOnlyList<string> arguments) => arguments.Single(a => a.StartsWith("http://", StringComparison.Ordinal));
 
     [Fact]
     public async Task Outside_every_profile_repo_or_with_an_unknown_repo_it_is_024()
