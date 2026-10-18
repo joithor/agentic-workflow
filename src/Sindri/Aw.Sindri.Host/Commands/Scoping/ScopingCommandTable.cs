@@ -217,6 +217,7 @@ internal static class ScopingCommandTable
             return await Fail(output, facts.Error).ConfigureAwait(false);
         }
 
+        await ScopingFactDirectory.OverlayRounds(facts.Value, outDirectory, ct).ConfigureAwait(false);
         var result = await services.GetRequiredService<IService<ScopingDeskRequest, ScopingDeskResponse>>()
             .Handle(new ScopingDeskRequest(block, facts.Value), ct).ConfigureAwait(false);
         if (result.IsError)

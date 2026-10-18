@@ -42,7 +42,7 @@ A `not-synced` source reads by its `sync` pair (`null`, queued, running, finishe
 
 `desk` runs `intake`, `check`, `challenge-log`, `record`, `seed` and `evidence` (short or full ids). It writes each output fact to `<out>/<key>.json`,
 `report.json` (`{ block, outcome, outputs: { "fact:<key>": "<file>" }, files, findings, warnings }`, what `workflow complete --outcome … --output fact:<key>=<file>` takes),
-`check` appends `rounds.jsonl`, and `evidence` writes `<out>/scope-packet/` (twelve files, trust stamped by code, `lenses.json` untrusted throughout) and
+`check` appends `rounds.jsonl` to `<out>`, and every block reads the past rounds from `<out>/rounds.jsonl` when it exists (else from `--facts`), so the round number, trigger and diff are right when the two directories differ; and `evidence` writes `<out>/scope-packet/` (twelve files, trust stamped by code, `lenses.json` untrusted throughout) and
 adds `fact:scopePacket` from `aw-packets hash --kind scoping` (`AW_PACKETS_BIN`, else `aw-packets` on the PATH).
 Not covered yet: `read-brief`, `gather`, `anchor`, `reanchor`, `propose`.
 

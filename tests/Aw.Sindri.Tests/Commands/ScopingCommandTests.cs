@@ -138,7 +138,12 @@ public sealed class ScopingCommandTests : IDisposable
         using var report = JsonDocument.Parse(await File.ReadAllTextAsync(Path.Combine(outDir, "report.json"), TestContext.Current.CancellationToken));
         Assert.Equal("pass", report.RootElement.GetProperty("outcome").GetString());
         Assert.Equal("step.scope.check", report.RootElement.GetProperty("block").GetString());
-        Assert.Equal(2, (await File.ReadAllLinesAsync(Path.Combine(outDir, "rounds.jsonl"), TestContext.Current.CancellationToken)).Length);
+        var rounds = (await File.ReadAllLinesAsync(Path.Combine(outDir, "rounds.jsonl"), TestContext.Current.CancellationToken)).Select(static l => JsonNode.Parse(l)!).ToList();
+        Assert.Equal([1, 2], rounds.Select(static r => r["round"]!.GetValue<int>()));
+        Assert.Equal(["first", "revise"], rounds.Select(static r => r["trigger"]!.GetValue<string>()), StringComparer.Ordinal);
+        Assert.Equal(10, rounds[0]["added"]!.AsArray().Count);   // the first round adds every item
+        Assert.Empty(rounds[1]["added"]!.AsArray());   // the second diffs against the first, which only the out directory holds
+        Assert.Empty(rounds[1]["changed"]!.AsArray());
     }
 
     [Fact, Trait("Lane", "integration")]
