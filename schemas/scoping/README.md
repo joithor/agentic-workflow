@@ -13,7 +13,7 @@ JSON Schemas for the scoping station's facts (scoping spec `docs/superpowers/spe
 | `challenge.json` | `{ rounds }` | `schemaVersion` |
 | `coverage.json` | `{ lenses }` | `schemaVersion` |
 
-`questions.json`, `open-questions.json`, `brief.json`, `scope-input.json` and `challenge-round.json` are facts only (`questions.json` in the packet is a different, ranked record the packet kind keeps).
+`questions.json`, `open-questions.json`, `brief.json`, `scope-input.json` and `challenge-round.json` are facts only (the packet's `questions.json` is `{ schemaVersion, questions: <questions.json items> }`, every question asked over the rounds; open questions are not carried in it yet, as no spec text names a key for them).
 
 ## Field names, and where the spec is silent
 
