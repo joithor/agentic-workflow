@@ -15,6 +15,7 @@ using Aw.Sindri.Infrastructure.Notifications;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.Ledger;
 using Aw.Sindri.Tests.Notifications;
+using Aw.Sindri.Tests.Workflow;
 using Aw.Sindri.Tests.Workflows.Spike;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -180,8 +181,8 @@ internal sealed class WorkflowsHarness : IDisposable
         using var sindri = Sindri();
         var document = sindri.GetRequiredService<IRecipeReader>().Read(yaml, "recipe.yaml").Document;
         Assert.NotNull(document);
-        var row = new RegisteredRecipe(document.Recipe.Id, document.Recipe.Version, Aw.Sindri.Tests.Workflow.LegacyRecipeRows.Hash(yaml),
-            Aw.Sindri.Tests.Workflow.LegacyRecipeRows.Json(yaml).ToJsonString(), Base: null, RealTime.NowOffset);
+        var row = new RegisteredRecipe(document.Recipe.Id, document.Recipe.Version, LegacyRecipeRows.Hash(yaml),
+            LegacyRecipeRows.Json(yaml).ToJsonString(), Base: null, RealTime.NowOffset);
         var added = sindri.GetRequiredService<IRecipeStore>().Add(row, TestContext.Current.CancellationToken).AsTask().GetAwaiter().GetResult();
         Assert.False(added.IsError, added.IsError ? added.Error.Message : null);
         var approvals = sindri.GetRequiredService<IRecipeApprovals>();
