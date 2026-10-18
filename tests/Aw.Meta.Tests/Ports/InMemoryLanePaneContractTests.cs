@@ -10,6 +10,11 @@ public sealed class InMemoryLanePaneContractTests : LanePaneContract
     protected override ValueTask<(ILanePane Pane, Action<string, string, int> Start)> Create()
     {
         var pane = new InMemoryLanePane();
-        return ValueTask.FromResult<(ILanePane, Action<string, string, int>)>((pane, pane.Put));
+        return ValueTask.FromResult<(ILanePane, Action<string, string, int>)>((pane, (session, command, clients) =>
+        {
+            pane.Put(session, command, clients);
+            pane.SetPid(session, 4242);
+        }
+        ));
     }
 }
