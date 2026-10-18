@@ -18,6 +18,7 @@ internal sealed partial class GitCli
 {
     private readonly TimeSpan _timeout = TimeSpan.FromSeconds(30);
     private readonly TimeSpan _archiveTimeout = TimeSpan.FromMinutes(5);
+    private readonly TimeSpan _drainGrace = TimeSpan.FromSeconds(2);
 
     /// <summary>The commit HEAD points at.</summary>
     /// <param name="repo">The repo's checkout.</param>
@@ -107,7 +108,9 @@ internal sealed partial class GitCli
             var stderr = git.StandardError.ReadToEndAsync(timeout.Token);
             await consume(git.StandardOutput.BaseStream, timeout.Token).ConfigureAwait(false);
             await git.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
-            _ = await stderr.ConfigureAwait(false);
+            // git is gone, so everything it wrote is already in the pipe. Its end of stderr closed with it; a stray fork of a parallel
+            // process may still hold another copy, and waiting for that EOF held this call to the whole archive timeout (a gate hung 5 min here).
+            _ = await Task.WhenAny(stderr, Task.Delay(_drainGrace, timeout.Token)).ConfigureAwait(false);
             return git.ExitCode == 0 ? Unit.Value : Failed("archive", git.ExitCode);
         }
         catch (OperationCanceledException)
