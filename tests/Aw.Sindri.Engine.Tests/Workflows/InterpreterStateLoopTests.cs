@@ -113,7 +113,7 @@ public sealed class InterpreterStateLoopTests(SindriTimeSkippingServer server) :
     }
 
     /// <summary>
-    /// 'item.routed' with outcome startable matches triaged -> startable, whose gate has no runtime in the interpreter yet,
+    /// 'item.routed' with outcome startable matches triaged -> startable, whose gate (here one with no runtime; the shipped one has had its own since engine P7)
     /// so it refuses (fail closed, W5) and the wait parks with needs-answer (refusal precedence, §5.8): NeedsYou flips,
     /// and the ledger has the start and the refusal, one row each. This 'fact:item' names no repo, so 'Repo' stays unset.
     /// </summary>
@@ -124,7 +124,7 @@ public sealed class InterpreterStateLoopTests(SindriTimeSkippingServer server) :
         var env = server.Environment;
         await using var sindri = _harness.Sindri();
         await WorkflowsHarness.HoldLease(sindri, ct);
-        _harness.Recipe("workflow.item", WorkflowsHarness.Shipped("sindri/workflow.item.yaml"));
+        _harness.Recipe("workflow.item", WorkflowsHarness.Shipped("sindri/workflow.item.yaml").Replace("version: 2", "version: 3", StringComparison.Ordinal).Replace("gates: [gate.route.startable]", "gates: [gate.test.check]", StringComparison.Ordinal));   // a gate with no runtime refuses (the shipped gate has one since engine P7)
         using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
 
         await worker.ExecuteAsync(async () =>

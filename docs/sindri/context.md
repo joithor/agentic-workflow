@@ -175,7 +175,7 @@ $SINDRI mcp register --apply    # runs it: a human at a terminal only (a session
 It prints, and with `--apply` runs in the repo's main checkout:
 
 ```bash
-claude mcp add --transport http --scope local --header 'X-Sindri-Repo: <repo>' sindri http://127.0.0.1:<port>/sindri/mcp
+claude mcp add --transport http --scope local sindri http://127.0.0.1:<port>/sindri/mcp --header 'X-Sindri-Repo: <repo>'
 ```
 
 Exit codes (spec §8.6): `0` printed or registered · `1` attention: not a profile repo (`024`) or `--apply` from a

@@ -1,7 +1,9 @@
 using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Temporalio.Client;
 using Temporalio.Exceptions;
 
@@ -47,6 +49,62 @@ internal static class TemporalUpdates
         public void Dispose() => _patience.Dispose();
     }
 
+    /// <summary>
+    /// The one catch ladder every Update on an instance's workflow shares (arch-r4-3): the validator's refusal comes back as the
+    /// catalogue error its ApplicationFailure names, a Temporal without the namespace is SND-API-001, an Update no worker took in
+    /// <see cref="Patience"/> is decided by <see cref="NoAnswer(string?, Func{RpcOptions, Task{bool}}, InstanceAddress, CommandNonce, CancellationToken)"/>,
+    /// no running execution is SND-WF-001, and a frontend that went away is SND-API-001 with the nonce to resend.
+    /// </summary>
+    /// <param name="frontend">The Temporal the Update goes to.</param>
+    /// <param name="address">The instance.</param>
+    /// <param name="updateId">The Update's id (a nonce, or the engine's own).</param>
+    /// <param name="send">Sends the Update with the RPC options it is given.</param>
+    /// <param name="cancellationToken">The caller's token.</param>
+    /// <returns>The outcome, or the error the failure maps to.</returns>
+    internal static async ValueTask<Result<CommandResult>> Execute(UpdateFrontend frontend, InstanceAddress address, string updateId, Func<RpcOptions, Task<CommandResult>> send, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(frontend);
+        ArgumentNullException.ThrowIfNull(send);
+        using var patience = Wait(cancellationToken);
+        try
+        {
+            return await send(patience.Options).ConfigureAwait(false);
+        }
+        catch (WorkflowUpdateFailedException e) when (e.InnerException is ApplicationFailureException { ErrorType: { } code } refusal) // boundary: the validator's refusal is the caller's answer
+        {
+            return (WorkflowErrors.All.FirstOrDefault(d => d.Code == code) ?? WorkflowErrors.TriggerNotAllowed).With(refusal.Message);
+        }
+        catch (RpcException e) when (NoNamespace(e)) // boundary: not serve's Temporal; says nothing about the instance
+        {
+            return NotServes(frontend, e);
+        }
+        catch (Exception e) when (!cancellationToken.IsCancellationRequested && e is WorkflowUpdateRpcTimeoutOrCanceledException or RpcException { Code: RpcException.StatusCode.DeadlineExceeded }) // boundary: no worker took it
+        {
+            return await NoAnswer(frontend, address, updateId, cancellationToken).ConfigureAwait(false);
+        }
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound) // boundary: no running execution with that id
+        {
+            return WorkflowErrors.InstanceNotFound.With($"no running instance {address.Value} (fix: sindri workflow list)");
+        }
+        catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable) // boundary: the dev server died under a live serve
+        {
+            return Down(frontend.Host, e.Message, CommandNonce.TryFrom(updateId, out var nonce) ? nonce : null);
+        }
+    }
+
+    /// <summary>What the ladder needs to know of the Temporal an Update goes to.</summary>
+    /// <param name="Host">The frontend's host:port.</param>
+    /// <param name="Namespace">The namespace the client is on.</param>
+    /// <param name="Healthy">The health check, run with its 2 s RPC options.</param>
+    internal sealed record UpdateFrontend(string? Host, string Namespace, Func<RpcOptions, Task<bool>> Healthy)
+    {
+        /// <summary>The frontend <paramref name="client"/> is connected to.</summary>
+        /// <param name="client">The client.</param>
+        /// <returns>Its facts.</returns>
+        internal static UpdateFrontend Of(ITemporalClient client) =>
+            new(client.Connection.Options.TargetHost, client.Options.Namespace, options => client.Connection.CheckHealthAsync(options: options));
+    }
+
     /// <summary>Whether <paramref name="e"/> is the frontend saying it has no such namespace.</summary>
     /// <param name="e">The RPC failure.</param>
     /// <returns>True for a NotFound that names the namespace as the missing thing, not a workflow execution inside it.</returns>
@@ -58,8 +116,14 @@ internal static class TemporalUpdates
     /// <param name="client">The client, on the settings' namespace.</param>
     /// <param name="e">The RPC failure.</param>
     /// <returns>The error.</returns>
-    internal static Error NotServes(ITemporalClient client, RpcException e) =>
-        SindriErrors.NotRunning.With($"Temporal at {client.Connection.Options.TargetHost} has no '{client.Options.Namespace}' namespace: {e.Message} "
+    internal static Error NotServes(ITemporalClient client, RpcException e) => NotServes(UpdateFrontend.Of(client), e);
+
+    /// <summary><see cref="NotServes(ITemporalClient, RpcException)"/> for a frontend known by its facts.</summary>
+    /// <param name="frontend">The frontend.</param>
+    /// <param name="e">The RPC failure.</param>
+    /// <returns>The error.</returns>
+    internal static Error NotServes(UpdateFrontend frontend, RpcException e) =>
+        SindriErrors.NotRunning.With($"Temporal at {frontend.Host} has no '{frontend.Namespace}' namespace: {e.Message} "
             + "(fix: start sindri serve on this home, or set AW_SINDRI_TEMPORAL_NAMESPACE to the namespace serve uses)");
 
     /// <summary>
@@ -133,21 +197,30 @@ internal static class TemporalUpdates
     /// <param name="cancellationToken">The caller's token.</param>
     /// <returns>The error.</returns>
     internal static ValueTask<Error> NoAnswer(ITemporalClient client, InstanceAddress address, string updateId, CancellationToken cancellationToken) =>
-        CommandNonce.TryFrom(updateId, out var nonce)
-            ? NoAnswer(client, address, nonce, cancellationToken)
-            : NoAnswerEngine(client, address, updateId, cancellationToken);
+        NoAnswer(UpdateFrontend.Of(client), address, updateId, cancellationToken);
 
-    private static async ValueTask<Error> NoAnswerEngine(ITemporalClient client, InstanceAddress address, string updateId, CancellationToken cancellationToken)
+    /// <summary><see cref="NoAnswer(ITemporalClient, InstanceAddress, string, CancellationToken)"/> over a frontend's facts.</summary>
+    /// <param name="frontend">The frontend.</param>
+    /// <param name="address">The instance.</param>
+    /// <param name="updateId">The Update's id.</param>
+    /// <param name="cancellationToken">The caller's token.</param>
+    /// <returns>The error.</returns>
+    internal static ValueTask<Error> NoAnswer(UpdateFrontend frontend, InstanceAddress address, string updateId, CancellationToken cancellationToken) =>
+        CommandNonce.TryFrom(updateId, out var nonce)
+            ? NoAnswer(frontend.Host, frontend.Healthy, address, nonce, cancellationToken)
+            : NoAnswerEngine(frontend, address, updateId, cancellationToken);
+
+    private static async ValueTask<Error> NoAnswerEngine(UpdateFrontend frontend, InstanceAddress address, string updateId, CancellationToken cancellationToken)
     {
         try
         {
-            return await client.Connection.CheckHealthAsync(options: new RpcOptions { Timeout = TimeSpan.FromSeconds(2), CancellationToken = cancellationToken }).ConfigureAwait(false)
+            return await frontend.Healthy(new RpcOptions { Timeout = TimeSpan.FromSeconds(2), CancellationToken = cancellationToken }).ConfigureAwait(false)
                 ? NoWorker(address, updateId)
-                : Down(client, "its health check failed", nonce: null);
+                : Down(frontend.Host, "its health check failed", nonce: null);
         }
         catch (RpcException e) // boundary: the probe says the frontend is gone
         {
-            return Down(client, e);
+            return Down(frontend.Host, e.Message, nonce: null);
         }
     }
 
