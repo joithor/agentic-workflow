@@ -31,6 +31,8 @@ namespace Aw.Sindri.Features.ListInstances;
 /// <param name="clock">The time the rows are read at: their ages and timeouts are worked out from it, not from when the workflow last ran.</param>
 internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, EndedInstanceViews runtime, IViewReader itemViews, IItemRepos repos, ICallerContextAccessor callers, TimeProvider clock) : IService<ListInstancesRequest, InstanceList>
 {
+    private static readonly HashSet<string> _resolvedOutcomes = new(["resolved", "alreadySatisfied"], StringComparer.Ordinal);
+
     public async ValueTask<Result<InstanceList>> Handle(ListInstancesRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -98,11 +100,10 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
         }
 
         var today = clock.GetLocalNow().Date;
-        var done = ended.Value.Count(v => ResolvedStates.Contains(v.Outcome?.Value ?? string.Empty) && v.Since.ToOffset(clock.GetLocalNow().Offset).Date >= today);
-        return InstanceCounts.Of(open.Value) with { Done = done };
+        var finished = ended.Value.Concat(open.Value.Where(static v => v.Outcome is not null));   // a root listed as running whose view already has its outcome ended in between
+        var done = finished.Count(v => _resolvedOutcomes.Contains(v.Outcome?.Value ?? string.Empty) && v.Since.ToOffset(clock.GetLocalNow().Offset).Date >= today);
+        return InstanceCounts.Of(open.Value.Where(static v => v.Outcome is null)) with { Done = done };
     }
-
-    private static readonly HashSet<string> ResolvedStates = new(["resolved", "alreadySatisfied"], StringComparer.Ordinal);
 
     /// <summary>The rows the caller may read: all of them, or for a session its own repo's. No caller means the service is called inside the process, with no scope to apply.</summary>
     private async ValueTask<Result<IReadOnlyList<InstanceRow>>> Scoped(IReadOnlyList<InstanceRow> rows, CancellationToken cancellationToken) =>
