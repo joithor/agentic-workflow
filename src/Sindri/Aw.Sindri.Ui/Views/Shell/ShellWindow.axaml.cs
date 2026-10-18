@@ -218,14 +218,7 @@ internal sealed partial class ShellWindow : Window
                 Dispatcher.UIThread.Post(Shell is { IsVersionMismatch: true } ? FocusMismatchCard : KeepFocus, DispatcherPriority.Loaded);
                 break;
             case nameof(ShellViewModel.CurrentPage):
-                // A page switch (a G-chord) hides the page the focused control was on: focus goes to the page region, which is named, so the new page is spoken.
-                // Arrowing along the nav tabs keeps focus on the tab (Y1); every other page change lands on the region.
-                if (!_openingSettings)
-                {
-                    Dispatcher.UIThread.Post(_navArrowing ? KeepFocus : KeepFocusOrReannounce, DispatcherPriority.Loaded);
-                    _navArrowing = false;
-                }
-
+                OnPageChanged();
                 break;
             case nameof(ShellViewModel.IsSheetShown):
                 CoverPage();
@@ -233,6 +226,24 @@ internal sealed partial class ShellWindow : Window
                 break;
             default:
                 break;
+        }
+    }
+
+    // A page switch (a G-chord) hides the page the focused control was on: focus goes to the page region, which is named, so the new page is spoken.
+    // Arrowing along the nav tabs keeps focus on the tab (Y1); every other page change lands on the region.
+    private void OnPageChanged()
+    {
+        if (_openingSettings)
+        {
+            return;
+        }
+
+        Dispatcher.UIThread.Post(_navArrowing ? KeepFocus : KeepFocusOrReannounce, DispatcherPriority.Loaded);
+        var arrowing = _navArrowing;
+        _navArrowing = false;
+        if (!arrowing)
+        {
+            FocusContextAnchor();   // the page was opened (click, chord, link), not arrowed onto: arrows keep focus on the tab (Y1)
         }
     }
 
