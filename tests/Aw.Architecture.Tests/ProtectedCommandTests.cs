@@ -54,7 +54,7 @@ public sealed class ProtectedCommandTests
     {
         var rows = HostIntrospection.Catalog().Rows.Where(r => r.Class == ActionClass.Protected).ToList();
         var types = rows.Select(r => r.CommandType?.FullName).OfType<string>().Append(typeof(ChallengeAnswer).FullName).ToHashSet(StringComparer.Ordinal);
-        var routes = rows.Select(r => r.Route).OfType<string>().SelectMany(r => new[] { r, r.Replace("/sindri", string.Empty, StringComparison.Ordinal) }).ToHashSet(StringComparer.Ordinal);
+        var routes = ProtectedOnlyRoutes(HostIntrospection.Catalog().Rows).SelectMany(r => new[] { r, r.Replace("/sindri", string.Empty, StringComparison.Ordinal) }).ToHashSet(StringComparer.Ordinal);
 
         var found = Production.Architecture.Types
             .Where(t => IsClient(t.Assembly.Name) || InMcp(t.Namespace.FullName))
@@ -64,6 +64,32 @@ public sealed class ProtectedCommandTests
 
         Assert.True(found.Count == 0, string.Join(Environment.NewLine, found)
             + ". Fix: a protected action is typed at a terminal; the app shows the CLI form to copy (engine spec §4.2, UI spec E-9)");
+    }
+
+    /// <summary>
+    /// The routes only protected rows serve. One route can carry many verbs, class by verb (a desk accept and a protected merge
+    /// share POST /context/map/review, and a GET reads it), so a shared route is not banned from the app: the type half of the
+    /// rule already bans sending a protected verb, since that needs a ChallengeAnswer.
+    /// </summary>
+    /// <param name="rows">The catalog's rows.</param>
+    /// <returns>The routes no desk or other row serves.</returns>
+    internal static IReadOnlyList<string> ProtectedOnlyRoutes(IEnumerable<CommandRow> rows) =>
+        [.. rows
+            .Where(r => r.Route is not null)
+            .GroupBy(r => r.Route!, StringComparer.Ordinal)
+            .Where(g => g.All(r => r.Class == ActionClass.Protected))
+            .Select(g => g.Key)
+            .Order(StringComparer.Ordinal)];
+
+    [Fact]
+    public void The_banned_routes_are_the_protected_only_ones_and_the_shared_review_route_is_not_banned()
+    {
+        var all = HostIntrospection.Catalog().Rows.ToList();
+        var banned = ProtectedOnlyRoutes(all);
+
+        Assert.NotEmpty(banned);
+        Assert.DoesNotContain("/sindri/context/map/review", banned, StringComparer.Ordinal);
+        Assert.All(banned, route => Assert.All(all.Where(r => string.Equals(r.Route, route, StringComparison.Ordinal)), r => Assert.Equal(ActionClass.Protected, r.Class)));
     }
 
     /// <summary>The Avalonia app (SindriUi, spec §4a 'UI') and any MCP server: clients that never sit at a terminal.</summary>

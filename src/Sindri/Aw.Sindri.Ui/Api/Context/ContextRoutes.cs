@@ -8,10 +8,8 @@ internal static class ContextRoutes
 {
     private const string Root = "/sindri/context";
 
-    // Built at run time, not folded into one literal: the review route is shared by the desk verbs the app sends and the protected
-    // verbs it never sends (one route, class by verb), and the architecture test that keeps protected routes out of the app reads literals.
     /// <summary>POST and GET /sindri/context/map/review.</summary>
-    internal static readonly string Review = string.Join('/', Root, "map", "review");
+    internal const string Review = Root + "/map/review";
 
     /// <summary>GET /sindri/context/sources.</summary>
     internal const string Sources = Root + "/sources";
