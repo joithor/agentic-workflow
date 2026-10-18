@@ -70,4 +70,15 @@ public sealed class MacToolsTests
         Assert.Equal(16 * 1024 * 1024, Assert.Single(runner.Requests).TailCharacters);
         Assert.Equal(16 * 1024 * 1024, MacTools.OutputCharacterCap);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_tool_cut_off_by_the_timeout_after_filling_the_cap_is_reported_as_over_the_cap()
+    {
+        var runner = new InMemoryCommandRunner().When("slow", _ => new CommandResult(-1, new string('x', MacTools.OutputCharacterCap), string.Empty, TimedOut: true));
+
+        var output = await MacTools.Output(runner, ["slow"], TestContext.Current.CancellationToken);
+
+        Assert.Contains("output over the cap", output.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("timed out", output.Error.Message, StringComparison.Ordinal);
+    }
 }

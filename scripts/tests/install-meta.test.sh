@@ -97,10 +97,10 @@ printf '#!/usr/bin/env bash\nexit 0\n' > "$AW_STATE_DIR/bin/aw-meta"; chmod +x "
 mkdir -p "$WORK/fakebin"
 printf '#!/usr/bin/env bash\necho Darwin\n' > "$WORK/fakebin/uname"; chmod +x "$WORK/fakebin/uname"
 OUT="$(PATH="$WORK/fakebin:$PATH" CLAUDE_LOCAL_BIN="$WORK/darwin-bin" bash "$DIR/install-meta.sh" --provider claude 2>&1)"; RC=$?
-check "Darwin: installs, exit 0, no refusal" "$RC:$(printf '%s' "$OUT" | grep -c 'Linux-only')" "0:0"
+check "Darwin: installs, exit 0, no refusal" "$RC:$(printf '%s' "$OUT" | grep -c 'supported on Linux and macOS only')" "0:0"
 check "Darwin: linked" "$(readlink "$WORK/darwin-bin/aw-meta")" "$AW_STATE_DIR/bin/aw-meta"
 OUT="$(PATH="$WORK/fakebin:$PATH" CLAUDE_LOCAL_BIN="$WORK/darwin-bin2" bash "$DIR/install-meta.sh" --provider codex 2>&1)"; RC=$?
-check "Darwin, another provider: installs too" "$RC:$(printf '%s' "$OUT" | grep -c 'Linux-only')" "0:0"
+check "Darwin, another provider: installs too" "$RC:$(printf '%s' "$OUT" | grep -c 'supported on Linux and macOS only')" "0:0"
 mkdir -p "$WORK/bsdbin"
 printf '#!/usr/bin/env bash\necho FreeBSD\n' > "$WORK/bsdbin/uname"; chmod +x "$WORK/bsdbin/uname"
 OUT="$(PATH="$WORK/bsdbin:$PATH" CLAUDE_LOCAL_BIN="$WORK/bsd-bin" bash "$DIR/install-meta.sh" --provider claude 2>&1)"; RC=$?

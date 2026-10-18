@@ -113,6 +113,8 @@ public sealed class InMemoryCommandRunner : ICommandRunner
             await File.AppendAllTextAsync(log, text, cancellationToken);
         }
 
-        return new CommandResult(argv[1] == "exits" ? int.Parse(argv[2], CultureInfo.InvariantCulture) : 0, text, string.Empty, TimedOut: false);
+        return new CommandResult(argv[1] == "exits" ? int.Parse(argv[2], CultureInfo.InvariantCulture) : 0, Tail(text, request.TailCharacters), string.Empty, TimedOut: false);
     }
+
+    private static string Tail(string text, int characters) => text.Length > characters ? text[^characters..] : text;
 }

@@ -197,10 +197,10 @@ another process, and the session or lock is not live. The check is as good as th
 later by something other than its own process would hide a reuse, and a start time that cannot be read (a failed `ps`) makes that
 pid unknown, not dead: the session or lock is kept (one pid the host can't be asked about never fails the whole listing), and on Linux a `/proc/uptime` that is unreadable or earlier than the process's start (inconsistent clocks) is `AW-META-010`, never "not running" or a reused pid.
 
-A macOS tool that cannot run, times out or prints something unreadable makes the figure unavailable: the command fails with
+A macOS tool that cannot run, times out, exits non-zero (`lsof` exiting 1 with output is still read, since it could not read some files), prints 16 MiB or more, or prints something unreadable makes the figure unavailable: the command fails with
 `AW-META-010` and a reason that starts "unavailable on macOS: <tool> ..." (for example `/usr/sbin/sysctl -n vm.swapusage exited 1: ...`; at most 300 characters of the tool's stderr are quoted). A number too large for a 64-bit integer in a tool's output is the same error, never an exception. Each tool runs by the absolute path macOS ships it at (`/usr/sbin/sysctl`, `/usr/bin/vm_stat`, `/bin/ps`, `/bin/kill`, `/usr/sbin/lsof`) so a PATH that something else controls can't substitute another program; a tool missing at its path fails to run, which is the `AW-META-010` above, never a lookup by bare name. It is
 never replaced by a made-up value, and `health` does not guess from the rest. The tools' output is read up to 16 MiB (`ps` lists far
-more than the command runner's default 64 KB tail; 16 MiB is about thirty times a busy machine's list, and past it the start is dropped). Symlinked paths: git reports a worktree's physical path (`/private/var/...`),
+more than the command runner's default 64 KB tail; 16 MiB is about thirty times a busy machine's list, and output that reaches it is refused, because the runner keeps only the end: `AW-META-010` "... output over the cap"). Symlinked paths: git reports a worktree's physical path (`/private/var/...`),
 while a team config may name it through a symlink (`/var/...`); put worktree roots in `worktrees.roots` by their physical path on
 macOS.
 

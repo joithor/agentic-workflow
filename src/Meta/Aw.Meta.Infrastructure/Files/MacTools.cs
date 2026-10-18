@@ -6,7 +6,7 @@ using Aw.Meta.Core.Ports;
 
 namespace Aw.Meta.Infrastructure.Files;
 
-/// <summary>Runs one of the macOS tools (sysctl, vm_stat, ps) through the command runner and returns all of its output (ps lists far more than the runner's default tail), or AW-META-010 naming the tool and why.</summary>
+/// <summary>Runs one of the macOS tools (sysctl, vm_stat, ps, lsof, kill) through the command runner and returns all of its output (ps lists far more than the runner's default tail), or AW-META-010 naming the tool and why.</summary>
 internal static class MacTools
 {
     /// <summary>
@@ -35,15 +35,18 @@ internal static class MacTools
             return MetaErrors.HostUnreadable.With($"unavailable on macOS: {tool} could not be run ({ran.Error.Message})");
         }
 
+        if (ran.Value.Stdout.Length >= OutputCharacterCap)
+        {
+            return MetaErrors.HostUnreadable.With($"unavailable on macOS: {Path.GetFileName(argv[0])} output over the cap");
+        }
+
         var usableExit = ran.Value.ExitCode == 0 || (exit1WithOutputIsUsable && ran.Value.ExitCode == 1 && ran.Value.Stdout.Length > 0);
         if (ran.Value.TimedOut || !usableExit)
         {
             return MetaErrors.HostUnreadable.With($"unavailable on macOS: {tool} {(ran.Value.TimedOut ? "timed out" : string.Create(CultureInfo.InvariantCulture, $"exited {ran.Value.ExitCode}"))}: {Clip(ran.Value.Stderr.Trim())}");
         }
 
-        return ran.Value.Stdout.Length >= OutputCharacterCap
-            ? MetaErrors.HostUnreadable.With($"unavailable on macOS: {Path.GetFileName(argv[0])} output over the cap")
-            : ran.Value.Stdout;
+        return ran.Value.Stdout;
     }
 
     /// <summary>Cuts a tool's stderr to <see cref="StderrCharacterCap"/> characters, marking the cut.</summary>
