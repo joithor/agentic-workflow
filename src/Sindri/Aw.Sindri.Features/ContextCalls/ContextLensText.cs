@@ -12,23 +12,23 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// A human's answer carries clean labels beside their trust, so the text fences the untrusted ones itself; a session's answer was
 /// fenced by the server already.
 /// </summary>
-internal static class ContextLensText
+public static class ContextLensText
 {
     internal static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
 
-    internal static string Lenses(LensesView view, bool fence)
+    public static string Lenses(LensesView view, bool fence)
     {
         var text = new StringBuilder(Invariant($"lenses of {view.Anchor.Key.Value} ({Fenced(view.Anchor.Label, view.Anchor.Trust, fence)}) · map {MapName(view.MapVersion, view.MapCommit)}{(view.Draft ? " (draft)" : string.Empty)} · depth {view.Depth}\n"));
         return Body(text, new LensParts(view.Bands, view.Edges, view.Conflicts, view.Coverage, view.Searched), fence);
     }
 
-    internal static string LensesSet(LensesSetView view, bool fence)
+    public static string LensesSet(LensesSetView view, bool fence)
     {
         var anchors = string.Join(", ", view.Anchors.Select(a => Invariant($"{a.Key.Value} ({Fenced(a.Label, a.Trust, fence)})")));
         var text = new StringBuilder(Invariant($"lenses of {view.Anchors.Count} anchors ({anchors}) · map {MapName(view.MapVersion, view.MapCommit)}{(view.Draft ? " (draft)" : string.Empty)} · depth {view.Depth}\n"));
         foreach (var missing in view.MissingAnchors)
         {
-            _ = text.AppendLine($"missing anchor: {missing}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"missing anchor: {missing}");
         }
 
         return Body(text, new LensParts(view.Bands, view.Edges, view.Conflicts, view.Coverage, view.Searched), fence);
@@ -51,7 +51,7 @@ internal static class ContextLensText
 
         foreach (var conflict in conflicts)
         {
-            _ = text.AppendLine($"conflict {conflict.Kind.ToString().ToLowerInvariant()}: {conflict.Decision.Value} over {conflict.Other} on {conflict.Node.Value}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"conflict {conflict.Kind.ToString().ToLowerInvariant()}: {conflict.Decision.Value} over {conflict.Other} on {conflict.Node.Value}");
         }
 
         _ = text.Append(Searched(searched)).Append(Coverage(coverage));
@@ -81,7 +81,7 @@ internal static class ContextLensText
         {
             if (band.Empty)
             {
-                _ = text.AppendLine($"  {name} band: empty");
+                _ = text.AppendLine(CultureInfo.InvariantCulture, $"  {name} band: empty");
             }
         }
 
@@ -100,7 +100,7 @@ internal static class ContextLensText
     /// <summary>The coverage block, one line per count and one per gap; 'map status --anchor' prints it too.</summary>
     /// <param name="c">The coverage.</param>
     /// <returns>The lines.</returns>
-    internal static string Coverage(LensCoverage c)
+    public static string Coverage(LensCoverage c)
     {
         var text = new StringBuilder(Invariant($"coverage: scope {c.Scope} · intent {c.Intent.Covered} of {c.Intent.Of} · product {c.Product.Confirmed} of {c.Product.Of} confirmed · code {c.Code.Implemented} of {c.Code.Of} implemented ({c.Code.Level} level), {c.Code.Suggested} suggested\n"));
         if (c.Map is { } m)
@@ -110,13 +110,13 @@ internal static class ContextLensText
 
         foreach (var gap in c.Gaps)
         {
-            _ = text.AppendLine($"gap: {gap.Node.Value} missing {string.Join(", ", gap.Missing.Select(m => m.ToString().ToLowerInvariant()))}{(gap.Note is { } note ? " (" + note + ")" : string.Empty)}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"gap: {gap.Node.Value} missing {string.Join(", ", gap.Missing.Select(m => m.ToString().ToLowerInvariant()))}{(gap.Note is { } note ? " (" + note + ")" : string.Empty)}");
         }
 
         return text.ToString();
     }
 
-    internal static string FileMap(FileMapView view)
+    public static string FileMap(FileMapView view)
     {
         var text = new StringBuilder(Invariant($"{view.Repo.Value} {view.Path} · map {view.MapVersion}{(view.Draft ? " (draft)" : string.Empty)} · at {view.Sha}\n"));
         if (view.Entries.Count == 0)
@@ -151,12 +151,12 @@ internal static class ContextLensText
 
         foreach (var record in band.Records)
         {
-            _ = text.AppendLine($"  record  {Fenced(record.Label, record.Trust, fence)}  {record.Source}  {record.Key.Value}  mentions {string.Join(", ", record.Mentions.Select(m => m.Value))}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"  record  {Fenced(record.Label, record.Trust, fence)}  {record.Source}  {record.Key.Value}  mentions {string.Join(", ", record.Mentions.Select(m => m.Value))}");
         }
 
         foreach (var d in band.Decisions)
         {
-            _ = text.AppendLine($"  decision  {Fenced(d.Text, d.Trust, fence)}  {d.Provenance.ToString().ToLowerInvariant()} {(d.Confirmed ? "confirmed" : "suggested")}  {d.Node.Value}  decides {string.Join(", ", d.Decides.Select(k => k.Value))}{(d.Supersedes.Count == 0 ? string.Empty : "  supersedes " + string.Join(", ", d.Supersedes.Select(k => k.Value)))}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"  decision  {Fenced(d.Text, d.Trust, fence)}  {d.Provenance.ToString().ToLowerInvariant()} {(d.Confirmed ? "confirmed" : "suggested")}  {d.Node.Value}  decides {string.Join(", ", d.Decides.Select(k => k.Value))}{(d.Supersedes.Count == 0 ? string.Empty : "  supersedes " + string.Join(", ", d.Supersedes.Select(k => k.Value)))}");
         }
     }
 

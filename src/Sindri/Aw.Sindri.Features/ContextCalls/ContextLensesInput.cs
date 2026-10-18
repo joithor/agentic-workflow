@@ -4,9 +4,8 @@ using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Features.ContextCalls;
 
-namespace Aw.Sindri.Features.Blocks.Input;
+namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>
 /// 'input.context.lenses' (scoping spec C1, W6): the product band, the cascade, 'searched' and the map coverage for the anchors, read in process from

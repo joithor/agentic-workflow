@@ -4,9 +4,8 @@ using Aw.Context.Core.History;
 using Aw.Context.Core.Map;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Features.ContextCalls;
 
-namespace Aw.Sindri.Features.Blocks.Input;
+namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>
 /// 'input.context.history' (scoping spec C5, W6): the records, decisions and landed changes behind the anchors inside a window, read in process from the
@@ -84,6 +83,7 @@ internal sealed class ContextHistoryInput(IContextHistory history, ContextInputS
         {
             JsonValueKind.String => HistoryWindow.Of(value.GetString(), before: null),
             JsonValueKind.Object => HistoryWindow.Of(Text(value, "since"), Text(value, "before")),
+            JsonValueKind.Undefined or JsonValueKind.Array or JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False or JsonValueKind.Null => HistoryWindow.Open,
             _ => HistoryWindow.Open,
         };
     }

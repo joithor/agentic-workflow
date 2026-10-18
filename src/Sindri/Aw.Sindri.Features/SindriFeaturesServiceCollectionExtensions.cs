@@ -24,6 +24,7 @@ using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ApplyCommand;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.ApproveRecipe;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks;
 using Aw.Sindri.Features.CancelJob;
 using Aw.Sindri.Features.CheckProfile;
@@ -201,6 +202,9 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IScheduledService, ContextSyncGapsService>()
             .AddSingleton(ContextSyncGapsService.BuiltIn)
             .AddScoped<SyncGaps>()
+            .AddScoped<ContextInputScopes>()
+            .AddStepInput<ContextLensesInput>()
+            .AddStepInput<ContextHistoryInput>()
             .AddSingleton<IHeavyJobLock>(static sp => new SindriHeavyJobLock(sp.GetRequiredService<IHeavySlots>(), SindriHeavyJobLock.DefaultWait));
         _ = services.AddScoped<IValidator<PromoteContextMapRequest>, AcceptAllValidator<PromoteContextMapRequest>>().AddCommand<PromoteContextMapRequest, PromoteContextMapResponse, PromoteContextMapService>();
         _ = services.AddScoped<IValidator<ProposeContextMapRequest>, AcceptAllValidator<ProposeContextMapRequest>>().AddCommand<ProposeContextMapRequest, ProposeContextMapResponse, ProposeContextMapService>();

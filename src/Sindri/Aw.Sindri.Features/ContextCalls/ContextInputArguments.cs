@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Aw.Sindri.Core.Workflow.Blocks;
 
-namespace Aw.Sindri.Features.Blocks.Input;
+namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>Reads the 'with:' arguments the context Step inputs share.</summary>
 internal static class ContextInputArguments
@@ -17,11 +17,13 @@ internal static class ContextInputArguments
             return [];
         }
 
-        return value.ValueKind switch
+        if (value.ValueKind == JsonValueKind.String)
         {
-            JsonValueKind.String => value.GetString() is { Length: > 0 } one ? [one] : [],
-            JsonValueKind.Array => [.. value.EnumerateArray().Where(static e => e.ValueKind == JsonValueKind.String).Select(static e => e.GetString() ?? string.Empty).Where(static s => s.Length > 0)],
-            _ => [],
-        };
+            return value.GetString() is { Length: > 0 } one ? [one] : [];
+        }
+
+        return value.ValueKind == JsonValueKind.Array
+            ? [.. value.EnumerateArray().Where(static e => e.ValueKind == JsonValueKind.String).Select(static e => e.GetString() ?? string.Empty).Where(static s => s.Length > 0)]
+            : [];
     }
 }

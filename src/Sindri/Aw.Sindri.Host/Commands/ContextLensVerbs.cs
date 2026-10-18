@@ -3,7 +3,6 @@ using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Sindri.Core;
 using Aw.Sindri.Features.ContextCalls;
-using Aw.Sindri.Host.Text;
 
 namespace Aw.Sindri.Host.Commands;
 

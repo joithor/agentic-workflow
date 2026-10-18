@@ -4,9 +4,8 @@ using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Profile;
-using Aw.Sindri.Features.ContextCalls;
 
-namespace Aw.Sindri.Features.Blocks.Input;
+namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>
 /// The scope a context Step input reads under (scoping spec C1, C3, C5): the engine as a service, never as the caller, cut to the one repo the

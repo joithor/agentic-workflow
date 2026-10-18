@@ -22,6 +22,5 @@
     <InternalsVisibleTo Include="Aw.Sindri.Tests" />
     <InternalsVisibleTo Include="Aw.Sindri.Engine.Tests" />
     <InternalsVisibleTo Include="Aw.Sindri.Testing" />
-    <InternalsVisibleTo Include="Aw.Sindri.Host" />
   </ItemGroup>
 </Project>

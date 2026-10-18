@@ -16,6 +16,6 @@ internal static class PendingInputs
 
     private static ParameterSpec Anchors => new("anchors", ParameterType.Text, Required: true, IsCapabilityField: false);
 
-        private static BlockDescriptor Input(string id, params ParameterSpec[] parameters) => new(
+    private static BlockDescriptor Input(string id, params ParameterSpec[] parameters) => new(
         BlockId.From(id), BlockKind.StepInput, Version: 1, Inputs: [], Outputs: [], Outcomes: [], Capability.Tools, parameters, Rung: null, DeskCapable: false);
 }

@@ -9,7 +9,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Features.Blocks.Input;
+using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Input;
