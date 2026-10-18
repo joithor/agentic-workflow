@@ -156,6 +156,31 @@ tmux status lines (`statusline.txt`, `statusline-attended.txt`, each under 80 ch
 banner (`takeover-banner.txt`) and the in-pane refusal (`refusal.txt`) are goldens under `tests/Aw.Sindri.Tests/Golden/Sandbox/`.
 `Aw.Sindri.Ui.Tests` links the directory and reads it, so a change to any of them runs the UI lane (SB-6 builds the view models over it).
 
+## The pure core (SB-1)
+
+`Aw.Sindri.Core.Sandbox.Plan` builds the plan with no I/O: `SandboxPlanner.Build(mechanism, SandboxRequest)` returns a `SandboxPlan` or a refusal, and every adapter's
+`ISandbox.Plan` calls it. The host gives it the box's facts (`SandboxHostFacts`: home, state directory, RAM, cores, the environment the allowlist copies from), so Core reads no
+environment. `ISandbox` is `Probe`, `Plan`, `SelfCheck` and `Wrap`, all returning `Result`. The product registers `UnavailableSandbox` (every call is `-014 unsupported-platform`);
+`PassThroughSandbox` and `RecordingSandbox` live in `Aw.Sindri.Testing` and only test hosts register them (`Product_host_registers_only_UnavailableSandbox`).
+
+| Piece | Rule |
+|---|---|
+| Mount stack | Bottom to top, a later entry wins: root read-only, `/dev`, `/proc`, scratch as `/tmp`, an empty sized home, the home allowlist (defaults plus profile plus repo), the agent home from the prepared login, the permanent denies, the hook inventory, the per-launch files, the writable set, then `sandbox.fs.denyExtra` and the line's extra denies last |
+| Agent home | The login's files are rewritten by rename, so they are bound by directory; a file bind of `.credentials.json`, `.claude.json` or `auth.json`, or a writable agent-home root, is `-016 login`. The owner's original `.credentials.json` and `auth.json` are masked inside the read-only bind |
+| Git directory | Read-only, with `objects/`, `worktrees/<name>/`, `refs/heads/<ns>/` and `logs/refs/heads/<ns>/` writable for a WriteScope session. The branch is `<ns>/work` |
+| Hook inventory | `HookInventory` lists the state paths the installed hooks use and each hook with an "answers permissions" column; `Hook_inventory_matches_config_hooks` reads `config/hooks` so it cannot drift |
+| Environment | `EnvironmentAllowlist` lists every name with a reason; the host environment is never copied wholesale; `AW_HEAVY_LOCK_HELD` is never set; a secret-shaped name in the login's environment is `-016 env` |
+| Git settings | `GIT_CONFIG_COUNT/KEY_n/VALUE_n` (command-line scope, so they beat the repo's config) and an empty `GIT_CONFIG_GLOBAL` |
+| Limits | `LimitsResolver`: memory auto is a fifth of RAM up to 12 GiB, CPU is cores times the share, wall is timeout plus grace (4 h without a timeout, at most `longMax` plus grace), the loose ceiling adds `parkMax`; an attended session has neither unless `sandbox.attended.wall` is set |
+| Host groups | `HostGroups`: `model` follows the target, `packages` for a session that may write, `github` only with `agent-app` and never attended, profile groups replace built-ins of the same name, the repo adds groups and hosts, a Step may remove a group |
+| Login source | `LoginSourceResolver`: repo, then target, then profile; a Step's ask is the stricter of the two. `ModelCredentialSources` never falls back: a source that cannot deliver is `-017` with its id |
+| `planHash` | 12 hex digits of SHA-256 over a canonical text of the plan with per-launch paths replaced by placeholders, so one policy hashes the same across launches; it includes the login source |
+| Renderer | `SandboxPlanRenderer.Show` and `Explain` are pure over the plan (goldens in `tests/Aw.Sindri.Tests/Sandbox/Plan/Golden/`) |
+
+**The owner's open question about hooks** (spike item 6): hooks that print `permissionDecision: allow` defeat `dontAsk`, and `rtk-rewrite` turns `git push` into `rtk git push` before the rules are matched.
+Default (the lead's proposal): the session omits the five permission-answering hooks and the deny rules also list the rtk forms. The answer is a one-line change of
+`HookPermissionPolicy.OmitPermissionAnsweringHooks` and `HookPermissionPolicy.IncludeRtkForms`; the tests follow the constants.
+
 ## Phases
 
 | Phase | Builds |
