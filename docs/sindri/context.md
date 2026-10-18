@@ -706,13 +706,16 @@ embeddings, telemetry off, connectors, the service account and its key) is `docs
 ```yaml
 context:
   sources:
-    onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "v4.9.0" }
+    onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "v4.9.0" }   # add managed: true when `sindri onyx up` runs it
     linear: { teams: [ENG, APP] }      # the Linear team keys an Onyx identifier alias (ENG-482) may name
 ```
 
 - `url`: http or https on a loopback host (`127.0.0.0/8`, `[::1]`, `localhost`), no user, password, query or
   fragment. Anything else is `SND-CONTEXT-055`.
 - `version`: the release tag that runs (`v4.9.0`), never `latest`; missing or `latest` is `SND-CONTEXT-055`.
+- `managed`: optional, default `false`. `sindri onyx up` writes `managed: true` for the Onyx it runs; when true, `url` must be
+  exactly `http://127.0.0.1:<port>` (not `localhost`, `[::1]`, https or another host), else `SND-CONTEXT-055`. Example:
+  `onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "v4.9.0", managed: true }`.
 - `token`: a **secret pointer** to the Onyx admin key of a service account Sindri alone uses, never the key itself.
   Missing, or text that isn't a pointer, is `SND-CONTEXT-002`; the message doesn't repeat the text (rotate a key that
   was written into the profile).
