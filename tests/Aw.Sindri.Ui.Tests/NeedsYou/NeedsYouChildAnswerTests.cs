@@ -17,7 +17,7 @@ public sealed class NeedsYouChildAnswerTests
         where T : class =>
         AwJson.Deserialize<T>(Encoding.UTF8.GetBytes(GoldenFiles.Api(slug, scenario)), SindriApiClient.Json).Value;
 
-    private static NeedsYouRowViewModel Row(string? via)
+    internal static NeedsYouRowViewModel Row(string? via)
     {
         var list = Golden<NeedsYouList>("needs-you", "park");
         var served = list with { Rows = [list.Rows[0] with { Via = via }] };
@@ -37,6 +37,19 @@ public sealed class NeedsYouChildAnswerTests
     }
 
     [Fact]
+    public void A_child_pointer_row_is_mapped_without_the_placeholder_action_so_no_answer_control_is_built()
+    {
+        var served = Golden<NeedsYouList>("needs-you", "park").Rows[0];
+        Assert.NotEmpty(served.Actions);   // the engine does serve a placeholder action on it: the row must drop it
+
+        var row = Row("child");
+
+        Assert.Empty(row.Controls);
+        Assert.Empty(row.Entry.Actions);
+        Assert.Empty(row.Entry.PrimaryAction);
+    }
+
+    [Fact]
     public void A_row_without_via_is_unchanged()
     {
         var served = Golden<NeedsYouList>("needs-you", "park").Rows[0];
@@ -45,5 +58,6 @@ public sealed class NeedsYouChildAnswerTests
 
         Assert.Null(row.ChildAnswer);
         Assert.Equal(served.Cli, row.Cli);
+        Assert.NotEmpty(row.Controls);
     }
 }

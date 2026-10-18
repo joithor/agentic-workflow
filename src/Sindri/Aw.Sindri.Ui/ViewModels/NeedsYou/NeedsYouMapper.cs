@@ -42,6 +42,7 @@ internal static class NeedsYouMapper
     private static NeedsYouEntry Entry(NeedsYouRowView row, Dictionary<string, (ActionReadiness Readiness, string Stage, string Cli)> readiness, DecisionList? decisions, bool read)
     {
         var subject = row.Subject is { } s ? new NeedsYouSubject(s.Kind, s.Id) : null;
+        row = Unanswerable(row);
         return new NeedsYouEntry(row.Id, UrgencyOf(row.Urgency))
         {
             Kind = row.Kind,
@@ -56,13 +57,17 @@ internal static class NeedsYouMapper
             Actions = [.. row.Actions.SelectMany(id => Actions(row, subject, id, readiness, decisions).Select(a => a with { CatalogRead = read }))],
             Subject = subject,
             ItemId = row.Item,
-            Cli = InstanceRules.IsChildVia(row.Via) ? string.Empty : row.Cli,   // the placeholder of a child pointer is not a command to copy
+            Cli = row.Cli,
             Via = row.Via,
             RecordedOnly = row.RecordedOnly,
             Notice = row.Notice ?? string.Empty,
             Question = PendingDecision(subject?.DecisionId, decisions)?.Question ?? string.Empty,
         };
     }
+
+    // A child pointer has no answer control and no command to copy: its served action and cli are the engine's placeholder, so the row drops them.
+    private static NeedsYouRowView Unanswerable(NeedsYouRowView row) =>
+        InstanceRules.IsChildVia(row.Via) ? row with { PrimaryAction = null, Actions = [], Cli = string.Empty } : row;
 
     // The id shown at rest: the decision's own on a decision row, else the row's item.
     private static string ShownOf(NeedsYouRowView row, NeedsYouSubject? subject) => subject?.DecisionId ?? row.Item ?? string.Empty;

@@ -16,6 +16,11 @@ internal static partial class Labels
     /// <returns>The name.</returns>
     internal static string AnswerInChildName(string address) => $"{AnswerInChild} {address}";
 
+    /// <summary>The accessible name of the control when no child was served: it opens the parent's frame at its Children, so it says so rather than name an address that is not the child's.</summary>
+    /// <param name="parentAddress">The parked instance's address.</param>
+    /// <returns>The name.</returns>
+    internal static string AnswerInChildParentName(string parentAddress) => $"{AnswerInChild}, opens {parentAddress} children";
+
     /// <summary>What the strip says while the workflow list route is not served yet (screens §4.8).</summary>
     internal const string ArrivesWorkflowStrip = "arrives with API P11";
 

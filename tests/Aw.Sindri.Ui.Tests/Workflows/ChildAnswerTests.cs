@@ -79,7 +79,8 @@ public sealed class ChildAnswerTests
             Assert.Equal(new DeepLink(DeepLinkKind.Workflow, served.Address), answer.Link);
             Assert.Equal(FrameIntent.FocusChildren, answer.Intent);
             Assert.False(answer.OpensChild);
-            Assert.Equal(Labels.AnswerInChildName(served.Address), answer.Name);
+            Assert.Equal(Labels.AnswerInChildParentName(served.Address), answer.Name);   // it says it opens the parent's children, not that it answers at an address that is not the child's
+            Assert.Contains("children", answer.Name, StringComparison.Ordinal);
         }
     }
 

@@ -96,7 +96,7 @@ internal sealed partial class InstanceFrameViewModel
             return awaiting is null ? (InitialFocus, null) : (FrameFocus.PendingOutput, awaiting);
         }
 
-        return intent == FrameIntent.OpenInitial ? (InitialFocus, null) : ReturnTarget(intent) is { } target ? (target, key) : null;
+        return intent == FrameIntent.OpenInitial ? (InitialFocus, null) : ReturnTarget(intent) is { } target ? (target == FrameFocus.Children ? ChildrenFocus : target, key) : null;
     }
 
     private static FrameFocus? ReturnTarget(FrameIntent intent) => intent switch
@@ -105,10 +105,13 @@ internal sealed partial class InstanceFrameViewModel
         FrameIntent.FocusChildItem => FrameFocus.ChildItem,
         FrameIntent.FocusPointer => FrameFocus.ChildPointer,
         FrameIntent.FocusRecipe => FrameFocus.Recipe,
-        FrameIntent.FocusChildren => FrameFocus.Children,
+        FrameIntent.FocusChildren => FrameFocus.Children,   // see ChildrenFocus: a frame with no children falls back at once
         FrameIntent.None or FrameIntent.PendingOutput or FrameIntent.AskCancel or FrameIntent.OpenInitial => null,
         _ => null,
     };
+
+    /// <summary>Where "Answer in the child" puts focus: the Children panel when it draws a child, else (no children, or none yet) the frame's first read action, decided now.</summary>
+    internal FrameFocus ChildrenFocus => Children?.HasGroups == true ? FrameFocus.Children : InitialFocus;
 
     /// <summary>Asks for focus on the frame's first read action (UI spec §11.2), unless a key already asked for another part.</summary>
     internal void FocusInitial()

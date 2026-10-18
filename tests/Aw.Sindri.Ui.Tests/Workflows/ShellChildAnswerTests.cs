@@ -1,3 +1,5 @@
+using System.Net;
+using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
@@ -52,5 +54,23 @@ public sealed class ShellChildAnswerTests
 
         Assert.Equal(new DeepLink(DeepLinkKind.Workflow, detail.Address), shell.SheetLink);
         Assert.Equal(FrameFocus.Children, shell.Instance.WantedFocus!.Target);
+    }, Token);
+
+    [Fact]
+    public Task Without_a_child_and_with_no_children_to_draw_focus_goes_to_the_first_read_action_at_once() => UiThread.Run(async () =>
+    {
+        var shell = await Connected();
+        var detail = FixtureInstances.Detail("project-build");
+        var bare = JsonNode.Parse(GoldenFiles.Api("workflow-instance", "project-build"))!;
+        bare["children"] = new JsonArray();
+        _server.InstanceBody = id => string.Equals(id, detail.Id, StringComparison.Ordinal) ? new RouteAnswer(HttpStatusCode.OK, bare.ToJsonString()) : null;
+        shell.OpenInstance(detail.Address, detail.Id);
+        await ShellWait.Until(shell, () => shell.Instance.Phase == FramePhase.Shown && shell.Instance.Address == detail.Address, Token);
+
+        shell.FollowChildAnswer(ChildAnswerViewModel.ForInstance(detail.Address, childAddress: null));
+
+        var wanted = shell.Instance.WantedFocus!.Target;
+        Assert.NotEqual(FrameFocus.Children, wanted);   // no Children panel is drawn: asking for it would wait out the retries on nothing
+        Assert.Equal(shell.Instance.InitialFocus, wanted);
     }, Token);
 }

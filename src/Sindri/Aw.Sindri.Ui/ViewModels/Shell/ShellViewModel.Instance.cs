@@ -57,6 +57,25 @@ internal sealed partial class ShellViewModel
         Navigate(link);
     }
 
+    /// <summary>"Answer in the child" on a strip row: followed like the row's other controls, and the row is where Esc returns.</summary>
+    /// <param name="rowAddress">The strip row's address.</param>
+    /// <param name="answer">The pointer.</param>
+    internal void FollowChildAnswerFromStrip(string rowAddress, ChildAnswerViewModel answer)
+    {
+        SelectStripRow(rowAddress);
+        FollowChildAnswer(answer);
+        OpenerStrip = rowAddress;
+    }
+
+    /// <summary>"Answer in the child" on a needs-you row: the row is selected (Esc returns to it) and its parent's frame opens when a row knows the instance.</summary>
+    /// <param name="rowId">The needs-you row's id.</param>
+    /// <param name="answer">The pointer.</param>
+    internal void FollowChildAnswerFromNeedsYou(string rowId, ChildAnswerViewModel answer)
+    {
+        SelectNeedsYouRow(rowId);
+        FollowChildAnswer(answer);
+    }
+
     // A needs-you row is served the instance it stands for as its subject (the address or the id) and no address of the child: its parent's
     // frame when a row of the strip or the list knows that instance, else the row's own sheet. The child is never guessed.
     private DeepLink ParentOfNeedsYouRow(string? rowId)

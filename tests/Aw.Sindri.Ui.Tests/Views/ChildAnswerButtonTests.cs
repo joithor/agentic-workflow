@@ -2,9 +2,10 @@ using Avalonia.Automation.Peers;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Threading;
-using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Tests.NeedsYou;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.Views.NeedsYou;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Workflows;
 using Aw.Sindri.Ui.Views.Workflows;
@@ -19,16 +20,16 @@ public sealed class ChildAnswerButtonTests
     private static Task<T> OnUi<T>(Func<T> body) =>
         HeadlessUnitTestSession.GetOrStartForAssembly(typeof(ChildAnswerButtonTests).Assembly).Dispatch(body, TestContext.Current.CancellationToken);
 
-    private static (string Name, bool Control, string? Lock) InRow(Control row)
+    // What a screen reader reaches walking the automation tree down from the row, not a peer made for the control by hand.
+    private static (string[] Controls, bool Lock) InRow(Control row)
     {
         var window = new Window { Content = row, Width = 1300, Height = 240 };
         window.Show();
         Dispatcher.UIThread.RunJobs();
-        var control = row.GetVisualDescendants().OfType<Button>().First(b => b.Name == "AnswerInChild" && b.IsEffectivelyVisible);
-        var peer = ControlAutomationPeer.CreatePeerForElement(control);
-        var hasLock = row.GetVisualDescendants().OfType<Button>().Any(b => b.Name == "LockButton" && b.IsEffectivelyVisible);
+        var tree = Heard.Tree(row);
         window.Close();
-        return (peer.GetName(), peer.IsControlElement(), hasLock ? "lock" : null);
+        string[] buttons = [.. tree.Where(n => n.Type == AutomationControlType.Button).Select(n => n.Name)];
+        return (buttons, Array.Exists([.. tree], n => n.Name.Contains("protected", StringComparison.OrdinalIgnoreCase)));
     }
 
     [Fact]
@@ -38,8 +39,9 @@ public sealed class ChildAnswerButtonTests
 
         var heard = await OnUi(() => InRow(new InstanceRow { DataContext = new InstanceRowViewModel(served, new FakeClipboard(), new FakeTimeProvider(A.Noon)) }));
 
-        Assert.Equal((Labels.AnswerInChildName(served.Answer!.Child!), true, null), heard);
-        Assert.StartsWith(Labels.AnswerInChild, heard.Name, StringComparison.Ordinal);
+        Assert.Contains(Labels.AnswerInChildName(served.Answer!.Child!), heard.Controls, StringComparer.Ordinal);
+        Assert.StartsWith(Labels.AnswerInChild, heard.Controls.First(n => n.StartsWith(Labels.AnswerInChild, StringComparison.Ordinal)), StringComparison.Ordinal);
+        Assert.False(heard.Lock);
     }
 
     [Fact]
@@ -49,6 +51,18 @@ public sealed class ChildAnswerButtonTests
 
         var heard = await OnUi(() => InRow(new StripRow { DataContext = new StripRowViewModel(served, new FakeClipboard(), new FakeTimeProvider(A.Noon)) }));
 
-        Assert.Equal((Labels.AnswerInChildName(served.Answer!.Child!), true, null), heard);
+        Assert.Contains(Labels.AnswerInChildName(served.Answer!.Child!), heard.Controls, StringComparer.Ordinal);
+        Assert.False(heard.Lock);
+    }
+
+    [Fact]
+    public async Task A_needs_you_row_reaches_the_screen_reader_with_the_one_control_and_no_answer_button()
+    {
+        var row = NeedsYouChildAnswerTests.Row("child");
+
+        var heard = await OnUi(() => InRow(new NeedsYouRow { DataContext = row }));
+
+        _ = Assert.Single(heard.Controls, n => n.StartsWith(Labels.AnswerInChild, StringComparison.Ordinal));
+        Assert.DoesNotContain(heard.Controls, n => !n.StartsWith(Labels.AnswerInChild, StringComparison.Ordinal) && !n.StartsWith("Open", StringComparison.Ordinal));
     }
 }
