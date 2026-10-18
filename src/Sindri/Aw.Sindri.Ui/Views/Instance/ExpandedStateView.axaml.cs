@@ -60,6 +60,8 @@ internal sealed partial class ExpandedStateView : UserControl
         }
     }
 
+    private void OnAnswerInChild(object? sender, RoutedEventArgs e) => _state?.AnswerInTheChild();
+
     private void OnChild(object? sender, RoutedEventArgs e) => _state?.Child?.Open();
 
     private void OnAsk(object? sender, RoutedEventArgs e) => _state?.AskCancel();
