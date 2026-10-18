@@ -8948,3 +8948,8 @@ Aw.Sindri.Core.Workflow.Views.StatusAnswer.Child.get -> string?
 Aw.Sindri.Core.Workflow.Views.StatusAnswer.Child.init -> void
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Via.get -> string?
 Aw.Sindri.Core.NeedsYou.NeedsYouRow.Via.init -> void
+static Aw.Sindri.Core.Workflow.Blocks.BlockLimits.Bound(System.TimeSpan max, System.TimeSpan? timerLeft) -> System.TimeSpan
+static Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers.IsBlockActor(string! actor) -> bool
+static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.BlockFactUnreadable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.BlockProfileUnreadable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.BlockRepoUnreadable -> Aw.Kernel.ErrorDefinition!

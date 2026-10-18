@@ -36,7 +36,7 @@ public static partial class TransitionDecision
             var trigger = Answered is { } answer
                 ? new TriggerRecord(answer.Name, Key, answer.Actor, Outcome: null)
                 : new TriggerRecord(Trigger.Name, Key, Trigger.Actor, Outcome(Trigger), (Trigger as StepFailed)?.Reason,
-                    Via: Trigger is StepCompleted { Via: StepRuntime.Block } ? "block" : null, Decision: (Trigger as StepCompleted)?.Decision);
+                    Via: Trigger is StepCompleted { Via: StepRuntime.Block } || (Trigger is StepFailed && BlockStepTriggers.IsBlockActor(Trigger.Actor)) ? "block" : null, Decision: (Trigger as StepCompleted)?.Decision);
             return new InstanceChange(after, new WorkflowEvent(
                 type, after.Id, trigger, Started: null, Rules.Delta(before, after),
                 records.Gates, records.Evidence, Grant: null, Override: null, Refusal: null, Effects: []));

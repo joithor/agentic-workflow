@@ -240,18 +240,19 @@ internal sealed partial class RecipeWorkflow
         }
     }
 
-    /// <summary>The repo 'fact:item' names ('ReadItemRepo', a local activity on start); none when it can't be read.</summary>
-    private static async Task<string?> RepoOf(FactValue item)
+    /// <summary>The repo 'fact:item' names ('ReadItemRepo', a local activity on start); none when it names none, and Unreadable when it can't be read (a block Step that needs the repo then fails instead of using the box's list).</summary>
+    private static async Task<(string? Repo, bool Unreadable)> RepoOf(FactValue item)
     {
         try
         {
-            return await Workflow.ExecuteLocalActivityAsync(
+            var repo = await Workflow.ExecuteLocalActivityAsync(
                 (FactReadActivities a) => a.ReadRepoAsync(item),
                 new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(10), RetryPolicy = new RetryPolicy { MaximumAttempts = 3 } }).ConfigureAwait(true);
+            return (repo, false);
         }
         catch (Exception failed) when (IsActivityFailure(failed))
         {
-            return null; // boundary: a fact:item that can't be read leaves 'Repo' unset (spec §5.1); the start goes on
+            return (null, true); // boundary: a fact:item that can't be read leaves 'Repo' unset (spec §5.1); the start goes on
         }
     }
 

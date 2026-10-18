@@ -376,7 +376,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-EXIT-001` | Every non-terminal state has a path to a terminal state | Add a transition towards a terminal state |
 | `RCP-TIME-001` | Every active and wait state has a timeout | Add `timeout: { after, then }` |
 | `RCP-TIME-002` | A child wait doesn't `retry` | Use `park` or `escalate` |
-| `RCP-TIME-003` | A state whose Step runs on the block runtime doesn't `retry`, and its `timeout.after` is longer than the Step's `maxDuration` (two minutes when the descriptor sets none) | Use `then: park` (a block call that runs out ends as `step.failed`, which the route sends to its desk twin); make the state timeout longer than the Step's `maxDuration` |
+| `RCP-TIME-003` | A state whose Step's descriptor says `runtime: block` (whether or not this build registers a runtime for it) doesn't `retry`, and its `timeout.after` is longer than the Step's `maxDuration` (two minutes when the descriptor sets none) | Use `then: park` (a block call that runs out ends as `step.failed`, which the route sends to its desk twin); make the state timeout longer than the Step's `maxDuration` |
 | `RCP-LOOP-001` | A state's `loop` is declared, every loop's `cap` is at least 1, and every cycle of step and wait transitions passes through a state with a `loop` (a cycle closed by a `command.<verb>` or by the answer to an `answer` wait is a human's, and a cycle with no way out is `RCP-EXIT-001`'s) | Declare it under `loops`, or add `loop` to a state on the cycle |
 | `RCP-LOOP-002` | A looped state has a transition back into it | Add it, or remove `loop` |
 | `RCP-LOOP-003` | `noProgress` isn't empty | Name a signal, or leave it out |
@@ -1062,17 +1062,40 @@ Engine spec rev 8.1 §3.8, §5.2, §5.5, §5.8, §6.2; UI spec E-6, E-19.
 A Step whose descriptor says `runtime: block` and that has a registered `IBlockStep` runs without a desk: the workflow
 opens a run with no launch and no desk task, calls the `RunBlockStep` activity (one attempt, no retry; heartbeating so a
 `cancel` is delivered) and feeds the result back as `step.completed` (actor `service:block:<step>`), validated like a
-desk report. An invalid result, a failure or a run past the descriptor's `maxDuration` becomes `step.failed`
-(`invalid-result: <code>`, `failed: <type>`, `timeout`); the route sends it on to the desk twin. A Step with no
-registered runtime keeps opening a desk run and stays human-only.
+desk report. An invalid result, a failure or a run past the descriptor's `maxDuration` becomes `step.failed`; the route
+sends it on to the desk twin. A Step with no registered runtime keeps opening a desk run and stays human-only.
 
+- **A desk report on a block run is refused** (`SND-WF-003`): the engine runs this Step, so only its own result applies. The
+  human waits for the result, runs `cancel`, or answers the desk twin once the run fails. There is no takeover override:
+  a takeover cancels the activity and pauses the run, and a `complete` while taken over is refused like any report to a
+  parked instance (`is parked (Takeover); answer --resume first`); a handback runs the Step again (a second Judge call).
+- **The `step.failed` reason** (what `sameFailure` compares and `--record` writes) is exactly one of:
+
+  | Reason | When |
+  |--------|------|
+  | the Step's own text, as it returned it (`no provider answered`) | the `IBlockStep` returned `BlockStepResult.Failed(text)` |
+  | `invalid-result: <code> <message>` | the result fails the desk-report validation of WF §5.3 (an undeclared outcome, a missing required output) |
+  | `timeout` | the activity ran past its bound (below) |
+  | `failed: <ErrorType>` | the Step threw; the type is the exception's, `error` when it has none |
+  | `profile-unreadable: <code>` | the approved profile could not be read for the `providers` list (`SND-BLOCK-002`) |
+  | `repo-unreadable` | `fact:item` could not be read, so the per-repo keys are unknown (`SND-BLOCK-003`); the box list is never used instead |
+  | `the fact <key> can't be read: <message>` | a `{ fact }` argument or a fact the Step names could not be read (`SND-BLOCK-001`) |
+  | the store's message (`disk full`) | an output could not be stored |
+
+  (The workflow also falls back to `failed` and `the Step returned nothing` when Temporal reports no inner failure or
+  the outcome is empty; the runner never produces either.)
+- **The bound:** the activity (queue time included, `ScheduleToCloseTimeout`) is bounded by the descriptor's `maxDuration`
+  and by the time left on the state timer less a second (`BlockLimits.Bound`), so after a takeover and handback, when the
+  timer resumes with only what was left, the Step's own `timeout` still ends the run before the timer would park it.
+- **`providers` is checked at validate time:** a literal list may name only `jev`, `claude-cli`, `codex-cli`, `cursor-cli`
+  or `rules`; a non-list or a `{ fact }` is refused (`RCP-BLOCK-003`).
 - **Which Steps:** `LoadedRecipe.BlockRuntimes` records the registered block ids the recipe uses, so a worker with other
   registrations replays the same set.
 - **Replay: patch ids.** `Workflow.Patched("dt-j-block-runtime")` is the first call in `Begin`. A history started
   before DT-J has no marker, so it replays with the empty set and a `judge.choose` run stays a desk task exactly as
   recorded (`A_pre_DT_J_history_replays_on_the_desk_path`). New instances write the marker at start. The patch is
   deprecated only after the cutover.
-- **Events:** a block result's `workflow.transition` carries `via: block` and the judge `decision` id. `sindri workflow
+- **Events:** a block run's `workflow.transition` (a result or a `step.failed`) carries `via: block` and the judge `decision` id. `sindri workflow
   events` prints `via block · decision <id>` (a `sindri workflow why` verb that explains the decision comes with DT-J3); the API's event detail has `via` and
   `decision`, left out when null. Desk reports carry neither.
 - **Profile:** `workflow.judge.providers` (and `repos[].workflow.judge.providers`) narrows which providers a Judge

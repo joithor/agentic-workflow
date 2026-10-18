@@ -74,6 +74,18 @@ public sealed class BlockStepRunnerTests
     }
 
     [Fact]
+    public async Task An_unreadable_item_repo_fails_the_run_and_never_uses_the_box_list()
+    {
+        await Approve(Profile(new WorkflowSettings(Judge: new JudgeSettings(Providers: ["claude-cli"]))));
+        var run = await RunOf(repo: null) with { RepoUnreadable = true };
+
+        var outcome = await Runner(_profiles).Run(run, TestContext.Current.CancellationToken);
+
+        Assert.Equal("repo-unreadable", outcome.Failure);
+        Assert.Null(_seen);
+    }
+
+    [Fact]
     public async Task A_fact_argument_reads_the_stored_content()
     {
         var run = await RunOf(repo: null, prompt: new WithValue(Literal: null, _change, Profile: null));
