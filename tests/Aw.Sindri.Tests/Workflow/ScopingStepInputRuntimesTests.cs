@@ -1,6 +1,7 @@
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Testing.Workflow;
+using Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Tests.Workflow;

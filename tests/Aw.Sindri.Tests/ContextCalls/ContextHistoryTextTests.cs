@@ -7,7 +7,7 @@ using Aw.Context.Core.Sources;
 using Aw.Kernel.Json;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
-using Aw.Sindri.Host.Text;
+using Aw.Sindri.Features.ContextCalls;
 
 namespace Aw.Sindri.Tests.ContextCalls;
 

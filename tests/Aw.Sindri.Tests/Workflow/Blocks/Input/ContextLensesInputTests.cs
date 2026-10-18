@@ -39,8 +39,10 @@ public sealed class ContextLensesInputTests
         public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
+    private static readonly string[] _hops = ["state", "flow"];
+
     internal static ContextLensesInput Input(StubLenses lenses, bool profile = true) =>
-        new(lenses, new ContextInputScopes(new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null)), Aw.Sindri.Testing.Workflow.ShippedComposition.Json);
+        new(lenses, new ContextInputScopes(new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null)), ShippedComposition.Json);
 
     private static StepInputContext Context(RepoName? repo, params string[] anchors) => new(
         BlockId.From(ContextLensesInput.Id), BlockId.From("step.scope.gather"),
@@ -48,7 +50,7 @@ public sealed class ContextLensesInputTests
         {
             ["anchors"] = JsonSerializer.SerializeToElement(anchors),
             ["depth"] = JsonSerializer.SerializeToElement(2),
-            ["hops"] = JsonSerializer.SerializeToElement(new[] { "state", "flow" }),
+            ["hops"] = JsonSerializer.SerializeToElement(_hops),
         },
         new Dictionary<FactKey, JsonElement>(), repo);
 

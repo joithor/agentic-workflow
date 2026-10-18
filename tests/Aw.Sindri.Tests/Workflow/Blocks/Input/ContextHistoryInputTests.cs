@@ -12,6 +12,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.ContextCalls;
+using Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Input;
 
@@ -33,7 +34,7 @@ public sealed class ContextHistoryInputTests
     }
 
     internal static ContextHistoryInput Input(StubHistory history, InMemoryJobViews? jobs = null, bool profile = true) =>
-        new(history, new ContextInputScopes(new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null)), new SyncGaps(jobs ?? new InMemoryJobViews()), Aw.Sindri.Testing.Workflow.ShippedComposition.Json);
+        new(history, new ContextInputScopes(new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null)), new SyncGaps(jobs ?? new InMemoryJobViews()), ShippedComposition.Json);
 
     private static StepInputContext Context(RepoName? repo, JsonElement? window, params string[] anchors)
     {
@@ -50,15 +51,15 @@ public sealed class ContextHistoryInputTests
     public async Task Fill_reads_the_window_as_the_service_cut_to_the_instances_repo_and_returns_text_and_the_typed_view()
     {
         var history = new StubHistory(() => ContextHistoryTextTests.View());
-        var window = JsonSerializer.SerializeToElement(new { since = "2026-01-01", before = "2026-07-01" });
+        var request = JsonSerializer.SerializeToElement(new { since = "2026-01-01", before = "2026-07-01" });
 
-        var filled = await Input(history).Fill(Context(ContextInputFixtures.Web, window, "feature:layout.split-pane"), TestContext.Current.CancellationToken);
+        var filled = await Input(history).Fill(Context(ContextInputFixtures.Web, request, "feature:layout.split-pane"), TestContext.Current.CancellationToken);
 
-        var call = Assert.Single(history.Calls);
-        Assert.Equal(["feature:layout.split-pane"], call.Anchors);
-        Assert.Equal(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), call.Window.Since);
-        Assert.Equal(ContextCallerKind.Service, call.Scope.Caller.Kind);
-        Assert.Equal("web", Assert.Single(call.Scope.Repos).Name.Value);
+        var (anchors, window, scope) = Assert.Single(history.Calls);
+        Assert.Equal(["feature:layout.split-pane"], anchors);
+        Assert.Equal(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), window.Since);
+        Assert.Equal(ContextCallerKind.Service, scope.Caller.Kind);
+        Assert.Equal("web", Assert.Single(scope.Repos).Name.Value);
         Assert.False(string.IsNullOrWhiteSpace(filled.Sections["history"]));
         Assert.Equal(JsonValueKind.Array, filled.Result!.Value.GetProperty("records").ValueKind);
     }
