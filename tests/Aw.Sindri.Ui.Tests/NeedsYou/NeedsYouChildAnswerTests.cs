@@ -2,6 +2,7 @@ using System.Text;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
@@ -67,7 +68,7 @@ public sealed class NeedsYouChildAnswerTests
 
         Assert.Equal($"Answer in the child {served.Child}", row.ChildAnswer!.Name);
         Assert.True(row.ChildAnswer.OpensChild);
-        Assert.Equal(new Aw.Sindri.Ui.Navigation.DeepLink(Aw.Sindri.Ui.Navigation.DeepLinkKind.Workflow, served.Child!), row.ChildAnswer.Link);
+        Assert.Equal(new DeepLink(DeepLinkKind.Workflow, served.Child!), row.ChildAnswer.Link);
         Assert.Empty(row.Cli);   // the placeholder is still never copied
         Assert.Empty(row.Controls);
     }

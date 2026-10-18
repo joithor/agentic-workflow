@@ -59,12 +59,15 @@ internal static class NeedsYouMapper
             ItemId = row.Item,
             Cli = row.Cli,
             Via = row.Via,
-            Child = InstanceRules.IsChildVia(row.Via) && !string.IsNullOrEmpty(row.Child) ? row.Child : null,
+            Child = ChildOf(row),
             RecordedOnly = row.RecordedOnly,
             Notice = row.Notice ?? string.Empty,
             Question = PendingDecision(subject?.DecisionId, decisions)?.Question ?? string.Empty,
         };
     }
+
+    // The child's address a via child row names; a row that is not via child names none, whatever it carries.
+    private static string? ChildOf(NeedsYouRowView row) => InstanceRules.IsChildVia(row.Via) && row.Child is { Length: > 0 } child ? child : null;
 
     // A child pointer has no answer control and no command to copy: its served action and cli are the engine's placeholder, so the row drops them.
     private static NeedsYouRowView Unanswerable(NeedsYouRowView row) =>

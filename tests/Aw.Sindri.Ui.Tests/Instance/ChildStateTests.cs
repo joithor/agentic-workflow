@@ -47,10 +47,7 @@ public sealed class ChildStateTests
     [InlineData("done")]
     [InlineData("Unreachable")]
     [InlineData("review.unreachable")]
-    public void Only_the_exact_word_is_the_unreachable_case(string state)
-    {
-        Assert.Equal(state, Labels.ChildStateWords(state));
-    }
+    public void Only_the_exact_word_is_the_unreachable_case(string state) => Assert.Equal(state, Labels.ChildStateWords(state));
 
     [Fact]
     public void A_child_row_draws_an_unreachable_state_as_its_own_case()
