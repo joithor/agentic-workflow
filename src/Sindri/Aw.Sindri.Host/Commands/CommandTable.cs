@@ -77,7 +77,6 @@ internal static class CommandTable
         var harnesses = new ProbeCommands(services.GetRequiredService<IProcessAncestry>(), services.GetRequiredService<IHarnessVersions>(), environment, Interactive());
         return args switch
         {
-            // ---- verbs: one arm per verb ----
             [] => await Start(headless: false).Run(ct).ConfigureAwait(false),
             ["--headless"] => await start.Run(ct).ConfigureAwait(false),
             ["status", .. var rest] when Follow(rest) is { } json => await new FollowVerbs(client, probe, output, services.GetRequiredService<TimeProvider>()).Run(json, ct).ConfigureAwait(false),
