@@ -31,7 +31,7 @@ internal sealed class CodeWorld : IDisposable
     {
         var plain = new FakeCodeSearch(MapWorld.Repos[0], MapWorld.Head, files ?? Files);
         Search = new RecordingCodeSearch(decorate is null ? plain : decorate(plain));
-        World = new MapWorld(new Aw.Context.Testing.Extract.FakeRepoReader(MapWorld.Repos[0], MapWorld.Head, files ?? Files), intent: null, codeSearch: Search);
+        World = new MapWorld(new Testing.Extract.FakeRepoReader(MapWorld.Repos[0], MapWorld.Head, files ?? Files), intent: null, codeSearch: Search);
     }
 
     internal MapWorld World { get; }
@@ -41,7 +41,7 @@ internal sealed class CodeWorld : IDisposable
     public void Dispose() => World.Dispose();
 
     /// <summary>The sharing map: two implementing files, one edge test, a thing the feature writes.</summary>
-    internal Task<Aw.Context.Core.Map.MapImported> ImportSharing(string? commit = null, string[]? extraNodes = null, string[]? extraEdges = null) =>
+    internal Task<Context.Core.Map.MapImported> ImportSharing(string? commit = null, string[]? extraNodes = null, string[]? extraEdges = null) =>
         World.ImportYaml(
             (commit is null ? string.Empty : $"commit: {commit}\n") + Header + "nodes:\n" + string.Join('\n',
             [

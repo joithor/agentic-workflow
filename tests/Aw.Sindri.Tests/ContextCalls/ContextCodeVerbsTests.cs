@@ -40,8 +40,8 @@ public sealed class ContextCodeVerbsTests : IDisposable
         var searched = new LensSearched(
             ["feature:sharing"], "v2", 0, [],
             [
-                SearchedSources.Lexical(Aw.Context.Core.Sources.SourceId.From("lexical-tests"), SearchedState.Unavailable, "commit-not-held", "SND-CONTEXT-110", asOf: null),
-                SearchedSources.Lexical(Aw.Context.Core.Sources.SourceId.From("lexical-schema"), SearchedState.Degraded, reason: null, "SND-CONTEXT-152", at),
+                SearchedSources.Lexical(Context.Core.Sources.SourceId.From("lexical-tests"), SearchedState.Unavailable, "commit-not-held", "SND-CONTEXT-110", asOf: null),
+                SearchedSources.Lexical(Context.Core.Sources.SourceId.From("lexical-schema"), SearchedState.Degraded, reason: null, "SND-CONTEXT-152", at),
             ],
             new SearchedBands(Intent: new BandSearched(Empty: true), Product: new BandSearched(Empty: false), Code: new BandSearched(Empty: false)));
         var coverage = new LensCoverage(Scope: 1, new CoverageIntent(Covered: 0, Of: 1), new CoverageProduct(Confirmed: 1, Of: 1), new CoverageCode(Implemented: 1, Of: 1, Level: "file", Suggested: 0), []);

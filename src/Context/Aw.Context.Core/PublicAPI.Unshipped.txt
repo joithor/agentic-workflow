@@ -5357,7 +5357,7 @@ Aw.Context.Core.Facade.IContextCode
 Aw.Context.Core.Facade.IContextCode.Code(System.Collections.Generic.IReadOnlyList<string!>! anchors, bool draft, string? mapVersion, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Code.CodeView!>!>
 static Aw.Context.Core.Code.CodeLensBuilder.ThingTerms(Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Graph.NodeKey thing, System.Func<string!, string!>! clean) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Context.Core.Lenses.SearchedSources.Lexical(Aw.Context.Core.Sources.SourceId id, Aw.Context.Core.Lenses.SearchedState state, string? reason, string? code, System.DateTimeOffset? asOf) -> Aw.Context.Core.Lenses.SearchedSource!
-Aw.Context.Core.Lenses.LensBasisReader
-Aw.Context.Core.Lenses.LensBasisReader.For(Aw.Context.Core.Map.VisibleMap! map, Aw.Context.Core.Engine.ContextSettings! settings, Aw.Context.Core.Engine.ContextScope! scope, bool draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Context.Core.Lenses.LensBasis!>
-Aw.Context.Core.Lenses.LensBasisReader.LensBasisReader(Aw.Context.Core.Extract.IRepoReader! repos, Aw.Context.Core.Linking.IIntentStore! intents, System.TimeProvider! clock) -> void
-static Aw.Context.Core.Lenses.LensBasisReader.ShortCommit(string? commit) -> string?
+Aw.Context.Core.Map.LensBasisReader
+Aw.Context.Core.Map.LensBasisReader.For(Aw.Context.Core.Map.VisibleMap! map, Aw.Context.Core.Engine.ContextSettings! settings, Aw.Context.Core.Engine.ContextScope! scope, bool draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Context.Core.Lenses.LensBasis!>
+Aw.Context.Core.Map.LensBasisReader.LensBasisReader(Aw.Context.Core.Extract.IRepoReader! repos, Aw.Context.Core.Linking.IIntentStore! intents, System.TimeProvider! clock) -> void
+static Aw.Context.Core.Map.LensBasisReader.ShortCommit(string? commit) -> string?

@@ -193,7 +193,7 @@ public sealed class GetCodeTests : IDisposable
         _ = await _code.ImportSharing();
 
         var code = (await _code.Code()).Value;
-        var lenses = (await _code.World.Engine.LensesOf([CodeWorld.Anchor], Aw.Context.Core.Map.MapRead.Current, depth: 0, MapWorld.Human, MapWorld.None)).Value;
+        var lenses = (await _code.World.Engine.LensesOf([CodeWorld.Anchor], Context.Core.Map.MapRead.Current, depth: 0, MapWorld.Human, MapWorld.None)).Value;
 
         Assert.Equal(JsonSerializer.Serialize(lenses.Coverage), JsonSerializer.Serialize(code.Coverage));
         Assert.NotNull(code.Coverage.Map);
