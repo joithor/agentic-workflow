@@ -67,6 +67,20 @@ public sealed class WorkflowEventDetailTests
     }
 
     [Fact]
+    public void A_forwarded_answer_row_names_the_parent_it_came_from()
+    {
+        var stamp = new CommandStamp(CommandNonce.From(new string('c', 32)), new string('d', 64));
+        var forwarded = new AnswerGiven("human:cli", stamp, AnswerVariant.Grant, Text: null, Amount: 1, new OnBehalfOf(_instance, "human:cli"));
+        var direct = forwarded with { Forwarded = null };
+
+        var viaParent = WorkflowEventDetail.Of(Event(WorkflowEventType.Transition, "answer"), forwarded);
+        var own = WorkflowEventDetail.Of(Event(WorkflowEventType.Transition, "answer"), direct);
+
+        Assert.Equal((_instance.Value, null), (viaParent.OnBehalfOf, own.OnBehalfOf));
+        Assert.DoesNotContain("onBehalfOf", System.Text.Json.JsonSerializer.Serialize(own, SliceHarness.Json), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void The_facts_a_row_added_are_their_digests_only()
     {
         var facts = new Dictionary<FactKey, FactValue> { [FactKey.From("fact:output")] = new("fact:sha256:" + new string('e', 64), new string('e', 64), HeadSha: null) };
