@@ -145,6 +145,12 @@ public sealed class FakeContextEngine : IContextEngine
     public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) => NoMap<LensesSetView>();
 
     /// <inheritdoc/>
+    public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) => NoMap<LensesView>();
+
+    /// <inheritdoc/>
+    public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) => NoMap<LensesSetView>();
+
+    /// <inheritdoc/>
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) => NoMap<FileMapView>();
 
     /// <inheritdoc/>

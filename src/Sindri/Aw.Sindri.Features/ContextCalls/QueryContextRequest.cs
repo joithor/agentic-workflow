@@ -14,5 +14,6 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// <param name="Diff">Two commit shas, 'base..head' (the diff shape), or null.</param>
 /// <param name="Repo">The repo the diff is read in, or null (the only repo in the caller's scope).</param>
 /// <param name="MapVersion">A retained map version to read the graph as of, or null for the current one; not valid with <paramref name="Draft"/>.</param>
+/// <param name="Hops">A comma list of state, flow, dependency and component for the cascade, or null for the first three (anything else is SND-CONTEXT-140).</param>
 public sealed record QueryContextRequest(string? Q, string? Node = null, string? Item = null, string? Symbol = null, string? Depth = null,
-    string? Budget = null, bool Draft = false, string? Diff = null, string? Repo = null, string? MapVersion = null) : IQuery<ContextResult>;
+    string? Budget = null, bool Draft = false, string? Diff = null, string? Repo = null, string? MapVersion = null, string? Hops = null) : IQuery<ContextResult>;
