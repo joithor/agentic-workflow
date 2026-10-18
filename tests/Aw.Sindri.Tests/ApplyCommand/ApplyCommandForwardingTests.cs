@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Features.ApplyCommand;
+using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Testing.Challenges;
 using Aw.Sindri.Testing.Workflow;
 using Microsoft.Extensions.Time.Testing;
@@ -76,6 +77,23 @@ public sealed class ApplyCommandForwardingTests
 
         Assert.Equal("SND-WF-013", wrong.IsError ? wrong.Error.Code : "accepted");
         Assert.False(right.IsError, right.IsError ? right.Error.Message : null);
+        Assert.Equal(_child, Assert.Single(_instance.Delivered).To);
+    }
+
+    [Fact(Timeout = 30_000)]
+    public async Task The_challenge_issued_for_a_mirroring_parent_names_the_child_and_redeems_on_the_forwarded_answer()
+    {
+        var issuer = new IssueChallengeService(null!, null!, _challenges, null!, _instance, _instance);   // why: a protected answer's issue path reads only the directory, the runtime and the challenges
+
+        var issued = await issuer.Handle(new IssueChallengeRequest("grant 1 " + _instance.Address.Value), TestContext.Current.CancellationToken);
+        Assert.False(issued.IsError, issued.IsError ? issued.Error.Message : null);
+        var typed = issued.Value.Action;
+        var sent = await _service.Handle(
+            new ApplyCommandRequest(_instance.Address.Value, ApplyCommandKind.Answer, AnswerVariant.Grant, Amount: 1, Challenge: new ChallengeAnswer(issued.Value.Challenge, typed)),
+            TestContext.Current.CancellationToken);
+
+        Assert.Equal("grant 1 " + _child.Value, typed);
+        Assert.False(sent.IsError, sent.IsError ? sent.Error.Message : null);
         Assert.Equal(_child, Assert.Single(_instance.Delivered).To);
     }
 
