@@ -2,6 +2,7 @@ using System.Globalization;
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Temporalio.Client;
 using Temporalio.Exceptions;
 
@@ -45,6 +46,34 @@ internal static class TemporalUpdates
         internal RpcOptions Options { get; }
 
         public void Dispose() => _patience.Dispose();
+    }
+
+    /// <summary>
+    /// The one catch ladder every Update on an instance's workflow shares (arch-r4-3): the validator's refusal comes back as the
+    /// catalogue error its ApplicationFailure names, a Temporal without the namespace is SND-API-001, an Update no worker took in
+    /// <see cref="Patience"/> is decided by <see cref="NoAnswer(string?, Func{RpcOptions, Task{bool}}, InstanceAddress, CommandNonce, CancellationToken)"/>,
+    /// no running execution is SND-WF-001, and a frontend that went away is SND-API-001 with the nonce to resend.
+    /// </summary>
+    /// <param name="frontend">The Temporal the Update goes to.</param>
+    /// <param name="address">The instance.</param>
+    /// <param name="updateId">The Update's id (a nonce, or the engine's own).</param>
+    /// <param name="send">Sends the Update with the RPC options it is given.</param>
+    /// <param name="cancellationToken">The caller's token.</param>
+    /// <returns>The outcome, or the error the failure maps to.</returns>
+    internal static ValueTask<Result<CommandResult>> Execute(UpdateFrontend frontend, InstanceAddress address, string updateId, Func<RpcOptions, Task<CommandResult>> send, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("the Update catch ladder is not written yet");
+
+    /// <summary>What the ladder needs to know of the Temporal an Update goes to.</summary>
+    /// <param name="Host">The frontend's host:port.</param>
+    /// <param name="Namespace">The namespace the client is on.</param>
+    /// <param name="Healthy">The health check, run with its 2 s RPC options.</param>
+    internal sealed record UpdateFrontend(string? Host, string Namespace, Func<RpcOptions, Task<bool>> Healthy)
+    {
+        /// <summary>The frontend <paramref name="client"/> is connected to.</summary>
+        /// <param name="client">The client.</param>
+        /// <returns>Its facts.</returns>
+        internal static UpdateFrontend Of(ITemporalClient client) =>
+            new(client.Connection.Options.TargetHost, client.Options.Namespace, options => client.Connection.CheckHealthAsync(options: options));
     }
 
     /// <summary>Whether <paramref name="e"/> is the frontend saying it has no such namespace.</summary>
