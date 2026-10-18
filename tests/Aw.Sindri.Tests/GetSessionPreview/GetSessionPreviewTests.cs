@@ -29,7 +29,7 @@ public sealed class GetSessionPreviewTests
         return Build();
     }
 
-    private static GetSessionPreviewService Build() => new();
+    private GetSessionPreviewService Build() => new(_r.Snapshot, _r.Base.Callers, new PaneCaptures(_panes), _table, _r.Base.Clock);
 
     private static GetSessionPreviewRequest Ask(SessionRef? reference = null, DateTimeOffset? expect = null) => new(reference ?? _claude, expect);
 

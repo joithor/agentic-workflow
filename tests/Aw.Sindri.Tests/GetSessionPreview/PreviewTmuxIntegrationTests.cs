@@ -35,8 +35,7 @@ public sealed class PreviewTmuxIntegrationTests : IDisposable
         var (paneId, panePid) = pane!.Value;
         var table = new ProcProcessTable("/proc", OwnUid.Read());
         var cli = new TmuxCli(new FakeTimeProvider(SessionData.T0), "tmux", TimeSpan.FromSeconds(5));
-        var service = new GetSessionPreviewService();
-        _ = cli;
+        var service = new GetSessionPreviewService(_r.Snapshot, _r.Base.Callers, new PaneCaptures(cli), table, _r.Base.Clock);
         var self = table.Read(SessionsRig.Token).Value.First(p => p.Pid == panePid);
         Publish(panePid, self.StartTicks, server.Socket, paneId);
         using var human = _r.Human();
