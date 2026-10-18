@@ -4950,3 +4950,74 @@ Aw.Context.Core.Lenses.LensesView.MapCommit.get -> string?
 Aw.Context.Core.Lenses.LensesView.MapCommit.init -> void
 Aw.Context.Core.Lenses.SearchedState.Degraded = 3 -> Aw.Context.Core.Lenses.SearchedState
 Aw.Context.Core.Map.MapReader.ReadAt(Aw.Context.Core.Engine.ContextScope! scope, Aw.Context.Core.Map.MapRead read, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>
+Aw.Context.Core.Engine.CascadeHops
+Aw.Context.Core.Engine.CascadeHops.Component = 8 -> Aw.Context.Core.Engine.CascadeHops
+Aw.Context.Core.Engine.CascadeHops.Default = Aw.Context.Core.Engine.CascadeHops.State | Aw.Context.Core.Engine.CascadeHops.Flow | Aw.Context.Core.Engine.CascadeHops.Dependency -> Aw.Context.Core.Engine.CascadeHops
+Aw.Context.Core.Engine.CascadeHops.Dependency = 4 -> Aw.Context.Core.Engine.CascadeHops
+Aw.Context.Core.Engine.CascadeHops.Flow = 2 -> Aw.Context.Core.Engine.CascadeHops
+Aw.Context.Core.Engine.CascadeHops.None = 0 -> Aw.Context.Core.Engine.CascadeHops
+Aw.Context.Core.Engine.CascadeHops.State = 1 -> Aw.Context.Core.Engine.CascadeHops
+Aw.Context.Core.Engine.CascadeOptions
+Aw.Context.Core.Engine.CascadeOptions.CascadeOptions(Aw.Context.Core.Engine.CascadeHops Hops = Aw.Context.Core.Engine.CascadeHops.Default, int ComponentFanOut = 5) -> void
+Aw.Context.Core.Engine.CascadeOptions.<Clone>$() -> Aw.Context.Core.Engine.CascadeOptions!
+Aw.Context.Core.Engine.CascadeOptions.ComponentFanOut.get -> int
+Aw.Context.Core.Engine.CascadeOptions.ComponentFanOut.init -> void
+Aw.Context.Core.Engine.CascadeOptions.Deconstruct(out Aw.Context.Core.Engine.CascadeHops Hops, out int ComponentFanOut) -> void
+Aw.Context.Core.Engine.CascadeOptions.Equals(Aw.Context.Core.Engine.CascadeOptions? other) -> bool
+Aw.Context.Core.Engine.CascadeOptions.Hops.get -> Aw.Context.Core.Engine.CascadeHops
+Aw.Context.Core.Engine.CascadeOptions.Hops.init -> void
+Aw.Context.Core.Graph.CascadeResult.SkippedComponents.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SkippedComponent!>!
+Aw.Context.Core.Graph.CascadeResult.SkippedComponents.init -> void
+Aw.Context.Core.Results.SkippedComponent
+Aw.Context.Core.Results.SkippedComponent.<Clone>$() -> Aw.Context.Core.Results.SkippedComponent!
+Aw.Context.Core.Results.SkippedComponent.Deconstruct(out string! Unit, out int Features) -> void
+Aw.Context.Core.Results.SkippedComponent.Equals(Aw.Context.Core.Results.SkippedComponent? other) -> bool
+Aw.Context.Core.Results.SkippedComponent.Features.get -> int
+Aw.Context.Core.Results.SkippedComponent.Features.init -> void
+Aw.Context.Core.Results.SkippedComponent.SkippedComponent(string! Unit, int Features) -> void
+Aw.Context.Core.Results.SkippedComponent.Unit.get -> string!
+Aw.Context.Core.Results.SkippedComponent.Unit.init -> void
+const Aw.Context.Core.Engine.CascadeOptions.DefaultFanOut = 5 -> int
+override Aw.Context.Core.Engine.CascadeOptions.Equals(object? obj) -> bool
+override Aw.Context.Core.Engine.CascadeOptions.GetHashCode() -> int
+override Aw.Context.Core.Engine.CascadeOptions.ToString() -> string!
+override Aw.Context.Core.Results.SkippedComponent.Equals(object? obj) -> bool
+override Aw.Context.Core.Results.SkippedComponent.GetHashCode() -> int
+override Aw.Context.Core.Results.SkippedComponent.ToString() -> string!
+static Aw.Context.Core.Graph.Cascade.Affects(Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Graph.NodeKey anchor, int depth, Aw.Context.Core.Engine.CascadeOptions! options) -> Aw.Context.Core.Graph.CascadeResult!
+static Aw.Context.Core.Engine.CascadeOptions.Default.get -> Aw.Context.Core.Engine.CascadeOptions!
+static Aw.Context.Core.Engine.CascadeOptions.operator !=(Aw.Context.Core.Engine.CascadeOptions? left, Aw.Context.Core.Engine.CascadeOptions? right) -> bool
+static Aw.Context.Core.Engine.CascadeOptions.operator ==(Aw.Context.Core.Engine.CascadeOptions? left, Aw.Context.Core.Engine.CascadeOptions? right) -> bool
+static Aw.Context.Core.Results.SkippedComponent.operator !=(Aw.Context.Core.Results.SkippedComponent? left, Aw.Context.Core.Results.SkippedComponent? right) -> bool
+static Aw.Context.Core.Results.SkippedComponent.operator ==(Aw.Context.Core.Results.SkippedComponent? left, Aw.Context.Core.Results.SkippedComponent? right) -> bool
+static readonly Aw.Context.Core.ContextErrors.HopsInvalid -> Aw.Kernel.ErrorDefinition!
+Aw.Context.Core.Engine.ContextQuery.Hops.get -> string?
+Aw.Context.Core.Engine.ContextQuery.Hops.init -> void
+static Aw.Context.Core.Engine.QueryRules.ParseHops(string? text) -> Aw.Kernel.Result<Aw.Context.Core.Engine.CascadeHops?>!
+Aw.Context.Core.Lenses.LensBasis.Cascade.get -> Aw.Context.Core.Engine.CascadeOptions!
+Aw.Context.Core.Lenses.LensBasis.Cascade.init -> void
+Aw.Context.Core.Lenses.LensesSetView.SkippedComponents.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SkippedComponent!>?
+Aw.Context.Core.Lenses.LensesSetView.SkippedComponents.init -> void
+Aw.Context.Core.Lenses.LensesView.SkippedComponents.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SkippedComponent!>?
+Aw.Context.Core.Lenses.LensesView.SkippedComponents.init -> void
+Aw.Context.Core.Results.ContextResult.SkippedComponents.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Results.SkippedComponent!>?
+Aw.Context.Core.Results.ContextResult.SkippedComponents.init -> void
+Aw.Context.Core.Engine.ContextSettings.CascadeComponentFanOut.get -> int
+Aw.Context.Core.Engine.ContextSettings.CascadeComponentFanOut.init -> void
+static Aw.Context.Core.Engine.QueryRules.CascadeFor(Aw.Context.Core.Engine.CascadeHops? hops, Aw.Context.Core.Engine.ContextSettings! settings) -> Aw.Context.Core.Engine.CascadeOptions!
+Aw.Context.Core.Facade.IContextLenses.Lenses(string! anchor, Aw.Context.Core.Map.MapRead read, Aw.Context.Core.Lenses.LensRange! range, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Lenses.LensesView!>!>
+Aw.Context.Core.Facade.IContextLenses.LensesOf(System.Collections.Generic.IReadOnlyList<string!>! anchors, Aw.Context.Core.Map.MapRead read, Aw.Context.Core.Lenses.LensRange! range, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Lenses.LensesSetView!>!>
+Aw.Context.Core.Lenses.LensRange.<Clone>$() -> Aw.Context.Core.Lenses.LensRange!
+Aw.Context.Core.Lenses.LensRange.Deconstruct(out int? Depth, out string? Hops) -> void
+Aw.Context.Core.Lenses.LensRange.Equals(Aw.Context.Core.Lenses.LensRange? other) -> bool
+Aw.Context.Core.Lenses.LensRange
+Aw.Context.Core.Lenses.LensRange.LensRange(int? Depth, string? Hops = null) -> void
+override Aw.Context.Core.Lenses.LensRange.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.LensRange.GetHashCode() -> int
+override Aw.Context.Core.Lenses.LensRange.ToString() -> string!
+static Aw.Context.Core.Lenses.LensRange.operator !=(Aw.Context.Core.Lenses.LensRange? left, Aw.Context.Core.Lenses.LensRange? right) -> bool
+static Aw.Context.Core.Lenses.LensRange.operator ==(Aw.Context.Core.Lenses.LensRange? left, Aw.Context.Core.Lenses.LensRange? right) -> bool
+Aw.Context.Core.Lenses.LensRange.Depth.get -> int?
+Aw.Context.Core.Lenses.LensRange.Depth.init -> void
+Aw.Context.Core.Lenses.LensRange.Hops.get -> string?
+Aw.Context.Core.Lenses.LensRange.Hops.init -> void

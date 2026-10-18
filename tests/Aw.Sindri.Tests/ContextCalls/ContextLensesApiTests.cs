@@ -132,6 +132,52 @@ public sealed class ContextLensesApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Lenses_and_query_routes_take_hops_echo_it_and_refuse_an_unknown_name_with_140()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+
+        var plain = await host.Http.Ask(Get(Lenses(A(Anchor)), Terminal(host)));
+        var hops = await host.Http.Ask(Get(Lenses(A(Anchor), "hops=state,dependency,flow,component"), Terminal(host)));
+        var set = await host.Http.Ask(Get(Lenses(A(Anchor), A("feature:layout.split-pane"), "hops=component"), Terminal(host)));
+        var bogus = await host.Http.Ask(Get(Lenses(A(Anchor), "hops=bogus"), Terminal(host)));
+        var query = await host.Http.Ask(Get("/sindri/context/query?node=" + Uri.EscapeDataString(Anchor) + "&hops=bogus", Terminal(host)));
+        var queryOk = await host.Http.Ask(Get("/sindri/context/query?node=" + Uri.EscapeDataString(Anchor) + "&hops=component", Terminal(host)));
+
+        Assert.Equal(["state", "dependency", "flow"], Json(plain.Body).GetProperty("searched").GetProperty("hops").EnumerateArray().Select(e => e.GetString()), StringComparer.Ordinal);
+        Assert.Equal(["state", "dependency", "flow", "component"], Json(hops.Body).GetProperty("searched").GetProperty("hops").EnumerateArray().Select(e => e.GetString()), StringComparer.Ordinal);
+        Assert.Equal(HttpStatusCode.OK, set.Status);
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-140"), (bogus.Status, bogus.Code));
+        Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-140"), (query.Status, query.Code));
+        Assert.Equal(HttpStatusCode.OK, queryOk.Status);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Context_lenses_and_query_over_mcp_take_hops_and_refuse_an_unknown_name_with_140()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        await using var mcp = await McpSession.Open(host, FixtureMap.Repo, ct);
+
+        var tools = await mcp.Client.ListToolsAsync(cancellationToken: ct);
+        var ok = await mcp.Call("context_lenses", $$"""{"anchor":"{{Anchor}}","hops":"state,component"}""", ct);
+        var bad = await mcp.Call("context_lenses", $$"""{"anchor":"{{Anchor}}","hops":"bogus"}""", ct);
+        var queryOk = await mcp.Call("context_query", $$"""{"node":"{{Anchor}}","hops":"component"}""", ct);
+        var queryBad = await mcp.Call("context_query", $$"""{"node":"{{Anchor}}","hops":"bogus"}""", ct);
+
+        foreach (var name in (string[])["context_lenses", "context_query"])
+        {
+            Assert.Equal("string", tools.Single(t => t.Name == name).JsonSchema.GetProperty("properties").GetProperty("hops").GetProperty("type").GetString());
+        }
+
+        Assert.NotEqual(true, ok.IsError);
+        Assert.Equal(["state", "component"], ok.StructuredContent!.Value.GetProperty("searched").GetProperty("hops").EnumerateArray().Select(e => e.GetString()), StringComparer.Ordinal);
+        Assert.Contains("SND-CONTEXT-140", bad.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal);
+        Assert.NotEqual(true, queryOk.IsError);
+        Assert.Contains("SND-CONTEXT-140", queryBad.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
     public async Task Filemap_lists_direct_children_with_rollups_and_a_repo_outside_the_profile_or_a_session_scope_gives_the_same_045()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
