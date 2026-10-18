@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Sindri.Ui.Api.Context;
 using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.Api;
@@ -160,4 +161,61 @@ internal interface ISindriApi
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The started (or existing) instance, the API's refusal (SND-WF-012, SND-WF-014, SND-RECIPE-001/005/006, SND-CLI-003) as served, or SND-UI-002/003.</returns>
     public Task<Result<StartedView>> StartInstance(Uri api, StartInstanceRequest request, CancellationToken cancellationToken);
+
+    // LANE ANCHOR U9: the context reads and the review send, one method each (the client's are in SindriApiClient.Context.cs, the routes in ContextRoutes); U9e adds Subgraph. Insert immediately below this marker, never between the markers.
+
+    /// <summary>GET /sindri/context/lenses (context spec §8): the three bands around an anchor or a set of them. A read of the context database, so it never waits on the views.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="query">The anchors, depth, draft flag and pinned map version.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The lenses, the API's refusal (SND-CONTEXT-003, -006, -037, -044, -120), or SND-UI-002/003.</returns>
+    public Task<Result<LensesView>> Lenses(Uri api, LensesQuery query, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/context/filemap: one directory of a repo with its status marks.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="query">The repo, the directory and the flags.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The directory, the API's refusal (SND-CONTEXT-044, -045), or SND-UI-002/003.</returns>
+    public Task<Result<FileMapView>> FileMap(Uri api, FileMapQuery query, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/context/map/review: the draft's undecided entries.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="limit">How many entries at most, or null for the API's default.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The queue, SND-CONTEXT-044 when there is no draft, or SND-UI-002/003.</returns>
+    public Task<Result<ReviewQueueView>> ReviewQueue(Uri api, int? limit, CancellationToken cancellationToken);
+
+    /// <summary>POST /sindri/context/map/review (a desk verb): sent once, never retried by the app. The protected verbs are never sent.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="request">The verb and what it acts on.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>What was written, the API's refusal (SND-CONTEXT-047 for a stale row, SND-AUTH-002), or SND-UI-002/003.</returns>
+    public Task<Result<ReviewDecisionResponse>> ReviewDecision(Uri api, ReviewDecisionRequest request, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/context/map/review/history: the overrides written, newest first.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="limit">How many entries at most, or null for the API's default.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The history, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<ReviewHistoryView>> ReviewHistory(Uri api, int? limit, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/context/map: the map's version, counts and coverage.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="anchor">An anchor to scope the coverage to, or null.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The status, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<MapStatusView>> MapStatus(Uri api, string? anchor, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/context/node?key=: one node with its aliases and edges.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="key">The node's key (a query value, never a path).</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The node, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<NodeView>> Node(Uri api, string key, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/context/sources: each source's state (no golden yet).</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The sources, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<SourcesView>> Sources(Uri api, CancellationToken cancellationToken);
 }
