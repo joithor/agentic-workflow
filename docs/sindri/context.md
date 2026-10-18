@@ -175,6 +175,9 @@ $SINDRI mcp register --apply --providers claude,codex,cursor|all   # more than C
 
 `scripts/sindri-app.sh` (a bare run) does the last line itself once the control plane's port is known, so the owner
 needs nothing else: it is idempotent (an entry that is already right is not written) and re-registers when the port moves.
+`AW_SINDRI_MCP_REPO` is passed through as `--repo`. Without it, from a linked worktree the script passes the main
+checkout's folder name as `--repo`, which works when the profile names the repo after its folder; otherwise set
+`AW_SINDRI_MCP_REPO` to the profile's name. Its `mcp` line names the `--repo` it used.
 
 It prints, and with `--apply` runs in the repo's main checkout:
 
@@ -191,7 +194,8 @@ or `failed` with a fix line; one failing never stops the others):
 | Cursor | the checkout's `.cursor/mcp.json`: the `sindri` entry (`url`, `headers`) merged, every other entry untouched | per repo |
 | Codex | the checkout's `.codex/config.toml`: a `[mcp_servers.sindri]` table (`url`, `http_headers`); Codex loads it only for a trusted project, so `--apply` also adds `[projects."<checkout>"] trust_level = "trusted"` to the user's Codex config (`$CODEX_HOME/config.toml`, else `~/.codex/config.toml`), a one-row append that changes nothing else. A row with another level is never overwritten: that line is `registered, needs trust` | per repo; the trust row is user-level but names only this checkout |
 
-A project file git tracks that would change is `failed`, not edited (`.cursor/mcp.json` and `.codex/config.toml` are not tracked in
+A project file git tracks that would change is `failed`, not edited (a provisional owner default, stricter than warning
+and writing; the fix line names the file and the exact entry to add by hand; `.cursor/mcp.json` and `.codex/config.toml` are not tracked in
 this repo; where they aren't ignored either, they show as untracked). A file that isn't valid JSON or TOML the tool can edit is `failed`.
 Installed means `claude`, `codex` or `cursor-agent` on PATH (Cursor also by its `~/.cursor` directory).
 

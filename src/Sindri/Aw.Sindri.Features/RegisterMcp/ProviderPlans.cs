@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -11,6 +12,7 @@ internal static partial class ProviderPlans
     private const string Server = "sindri";
     private const string RepoHeader = "X-Sindri-Repo";
     private const string CodexTable = "mcp_servers.sindri";
+    private const string Unsupported = "defines the sindri server inline, with dotted keys or with an http_headers table, which sindri doesn't edit";
 
     private static readonly JsonDocumentOptions _lenient = new() { AllowTrailingCommas = true, CommentHandling = JsonCommentHandling.Skip };
 
@@ -25,67 +27,49 @@ internal static partial class ProviderPlans
     /// <summary>Claude Code's entry for <paramref name="checkout"/> in its .claude.json (a file it can't read counts as absent: the add will say why).</summary>
     internal static ClaudeState Claude(string? claudeJson, string checkout, string url, string repo)
     {
-        if (claudeJson is null || Parse(claudeJson) is not { } root
-            || root["projects"] is not JsonObject projects || projects[checkout] is not JsonObject project
-            || project["mcpServers"] is not JsonObject servers || servers[Server] is not JsonObject entry)
+        try
         {
-            return ClaudeState.Absent;
-        }
+            if (claudeJson is null || Parse(claudeJson) is not { } root
+                || root["projects"] is not JsonObject projects || projects[checkout] is not JsonObject project
+                || project["mcpServers"] is not JsonObject servers || servers[Server] is not JsonObject entry)
+            {
+                return ClaudeState.Absent;
+            }
 
-        return Matches(entry, url, repo) ? ClaudeState.Same : ClaudeState.Different;
+            return Matches(entry, url, repo) ? ClaudeState.Same : ClaudeState.Different;
+        }
+        catch (ArgumentException)
+        {
+            return ClaudeState.Absent;   // a duplicate key: the add says what claude thinks of the file
+        }
     }
 
     /// <summary>Cursor's project .cursor/mcp.json with the sindri entry merged in; other entries are untouched.</summary>
     internal static FilePlan Cursor(string? existing, string url, string repo)
     {
-        JsonObject root;
-        if (string.IsNullOrWhiteSpace(existing))
+        try
         {
-            root = [];
+            return CursorPlan(existing, url, repo);
         }
-        else if (Parse(existing) is JsonObject parsed)
+        catch (ArgumentException)
         {
-            root = parsed;
+            return new FilePlan(Text: null, Problem: "has a duplicate key");
         }
-        else
-        {
-            return new FilePlan(Text: null, Problem: "isn't a JSON object");
-        }
-
-        if (root["mcpServers"] is not null and not JsonObject)
-        {
-            return new FilePlan(Text: null, Problem: "its mcpServers isn't an object");
-        }
-
-        var servers = root["mcpServers"] as JsonObject ?? [];
-        if (servers[Server] is JsonObject current && Matches(current, url, repo))
-        {
-            return new FilePlan(Text: null, Problem: null);
-        }
-
-        servers[Server] = new JsonObject { ["url"] = url, ["headers"] = new JsonObject { [RepoHeader] = repo } };
-        root["mcpServers"] = servers;
-        return new FilePlan(Write(root), Problem: null);
     }
 
-    /// <summary>Codex's project .codex/config.toml with the sindri table written; only that table is touched.</summary>
+    /// <summary>Codex's project .codex/config.toml with the sindri table's url and http_headers written; every other line, including the owner's keys and comments in that table, is kept.</summary>
     internal static FilePlan Codex(string? existing, string url, string repo)
     {
-        string[] canonical =
-        [
-            $"[{CodexTable}]",
-            $"url = {Quoted(url)}",
-            $"http_headers = {{ {Quoted(RepoHeader)} = {Quoted(repo)} }}",
-        ];
+        string[] settings = [$"url = {Quoted(url)}", $"http_headers = {{ {Quoted(RepoHeader)} = {Quoted(repo)} }}"];
         var scan = ScanCodex(TomlLines(existing));
-        if (scan.Inline)
+        if (scan.Problem is { } problem)
         {
-            return new FilePlan(Text: null, Problem: "defines mcp_servers inline, which sindri doesn't edit");
+            return new FilePlan(Text: null, Problem: problem);
         }
 
-        return scan.Found.SequenceEqual(canonical, StringComparer.Ordinal)
+        return scan.Header >= 0 && scan.Settings.Order(StringComparer.Ordinal).SequenceEqual(settings.Order(StringComparer.Ordinal), StringComparer.Ordinal)
             ? new FilePlan(Text: null, Problem: null)
-            : new FilePlan(WithCodexTable(scan, canonical), Problem: null);
+            : new FilePlan(WithCodexSettings(scan, settings), Problem: null);
     }
 
     /// <summary>The trust level Codex's user config records for <paramref name="checkout"/> (a project .codex/config.toml loads only when it is "trusted"); null when none.</summary>
@@ -124,76 +108,47 @@ internal static partial class ProviderPlans
         return text + separator + $"[projects.{Quoted(checkout)}]\ntrust_level = \"trusted\"\n";
     }
 
-    /// <summary>The file's lines with Windows line ends folded and the final newline's empty line dropped.</summary>
-    private static List<string> TomlLines(string? existing)
+    /// <summary>The sindri entry as Codex's project file and Cursor's mcp.json spell it, for a human adding it by hand.</summary>
+    internal static string HandEntry(bool codex, string url, string repo) => codex
+        ? $"[{CodexTable}] url = {Quoted(url)}, http_headers = {{ {Quoted(RepoHeader)} = {Quoted(repo)} }}"
+        : $"\"mcpServers\": {{ \"{Server}\": {{ \"url\": \"{url}\", \"headers\": {{ \"{RepoHeader}\": \"{repo}\" }} }} }}";
+
+    private static FilePlan CursorPlan(string? existing, string url, string repo)
     {
-        var lines = (existing ?? string.Empty).Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n').ToList();
-        if (lines.Count > 0 && lines[^1].Length == 0)
+        JsonObject root;
+        if (string.IsNullOrWhiteSpace(existing))
         {
-            lines.RemoveAt(lines.Count - 1);
+            root = [];
         }
-
-        return lines;
-    }
-
-    /// <summary>Splits the file into the lines outside the sindri tables and the sindri tables' settings; stops at an inline mcp_servers.</summary>
-    private static CodexScan ScanCodex(IEnumerable<string> lines)
-    {
-        var scan = new CodexScan();
-        var table = string.Empty;
-        var sindri = false;
-        foreach (var raw in lines)
+        else if (Parse(existing) is JsonObject parsed)
         {
-            var line = raw.Trim();
-            if (line.StartsWith('['))
-            {
-                table = TableKey(line);
-                sindri = IsSindriTable(table);
-                scan.MarkTable(sindri);
-            }
-            else if (!sindri && IsInlineServers(line, table))
-            {
-                scan.Inline = true;
-                return scan;
-            }
-
-            scan.Take(raw, line, sindri);
-        }
-
-        return scan;
-    }
-
-    /// <summary>The kept lines with the canonical table where the first sindri table was, or appended after a blank line.</summary>
-    private static string WithCodexTable(CodexScan scan, string[] canonical)
-    {
-        var output = scan.Kept;
-        if (scan.First >= 0)
-        {
-            output.InsertRange(scan.First, [.. canonical, string.Empty]);
+            root = parsed;
         }
         else
         {
-            if (output.Count > 0 && output[^1].Trim().Length > 0)
-            {
-                output.Add(string.Empty);
-            }
-
-            output.AddRange(canonical);
+            return new FilePlan(Text: null, Problem: "isn't a JSON object");
         }
 
-        return string.Join('\n', output) + "\n";
+        if (root["mcpServers"] is not null and not JsonObject)
+        {
+            return new FilePlan(Text: null, Problem: "its mcpServers isn't an object");
+        }
+
+        var servers = root["mcpServers"] as JsonObject ?? [];
+        if (servers[Server] is JsonObject current && Matches(current, url, repo))
+        {
+            return new FilePlan(Text: null, Problem: null);
+        }
+
+        servers[Server] = new JsonObject { ["url"] = url, ["headers"] = new JsonObject { [RepoHeader] = repo } };
+        root["mcpServers"] = servers;
+        return new FilePlan(Write(root), Problem: null);
     }
-
-    private static bool IsSindriTable(string table) =>
-        table == CodexTable || table.StartsWith(CodexTable + ".", StringComparison.Ordinal);
-
-    private static bool IsInlineServers(string line, string table) =>
-        (table.Length == 0 && InlineServers.IsMatch(line)) || (table == "mcp_servers" && line.StartsWith(Server, StringComparison.Ordinal));
 
     private static bool IsProject(string header, string checkout)
     {
         var match = ProjectHeader.Match(header);
-        return match.Success && string.Equals(match.Groups["double"].Success ? match.Groups["double"].Value : match.Groups["single"].Value, checkout, StringComparison.Ordinal);
+        return match.Success && string.Equals(match.Groups["double"].Success ? Unescape(match.Groups["double"].Value) : match.Groups["single"].Value, checkout, StringComparison.Ordinal);
     }
 
     private static bool Matches(JsonObject entry, string url, string repo) =>
@@ -215,7 +170,7 @@ internal static partial class ProviderPlans
     private static string Write(JsonNode node)
     {
         using var stream = new MemoryStream();
-        using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
+        using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping }))
         {
             node.WriteTo(writer);
         }
@@ -225,47 +180,9 @@ internal static partial class ProviderPlans
 
     private static string Quoted(string value) => "\"" + value.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\"";
 
-    private static string TableKey(string header) =>
-        string.Join('.', header.Trim('[', ']').Split('.').Select(part => part.Trim().Trim('"', '\'')));
-
-    [GeneratedRegex("""^mcp_servers\s*=""", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
-    private static partial Regex InlineServers { get; }
-
     [GeneratedRegex("""^\[projects\.(?:"(?<double>(?:[^"\\]|\\.)*)"|'(?<single>[^']*)')\]\s*(?:#.*)?$""", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ProjectHeader { get; }
 
     [GeneratedRegex("""^trust_level\s*=\s*["'](?<level>[^"']*)["']\s*(?:#.*)?$""", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex TrustLevel { get; }
-
-    /// <summary>What a pass over a Codex config found: the lines kept, the sindri tables' settings, where the first sindri table was, and whether mcp_servers is inline.</summary>
-    private sealed class CodexScan
-    {
-        public List<string> Kept { get; } = [];
-
-        public List<string> Found { get; } = [];
-
-        public int First { get; private set; } = -1;
-
-        public bool Inline { get; set; }
-
-        public void MarkTable(bool sindri)
-        {
-            if (sindri && First < 0)
-            {
-                First = Kept.Count;
-            }
-        }
-
-        public void Take(string raw, string line, bool sindri)
-        {
-            if (!sindri)
-            {
-                Kept.Add(raw);
-            }
-            else if (line.Length > 0 && !line.StartsWith('#'))
-            {
-                Found.Add(line);
-            }
-        }
-    }
 }

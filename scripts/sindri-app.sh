@@ -32,7 +32,8 @@
 # control plane's port is known: `sindri mcp register --apply --providers all`, idempotent, re-registered when the port
 # changes. You running this script is the human --apply; an agent session is refused by sindri (SND-AUTH-002). A provider
 # that fails is reported on stderr and never stops the start. The repo is the one the directory is in, or
-# AW_SINDRI_MCP_REPO (a linked git worktree passes its main checkout's name); AW_SINDRI_APP_NO_MCP=1 skips it.
+# AW_SINDRI_MCP_REPO (passed through as --repo); a linked git worktree passes its main checkout's folder name, which
+# works when the profile names the repo after its folder (else set AW_SINDRI_MCP_REPO). AW_SINDRI_APP_NO_MCP=1 skips it.
 #
 # Exit: sindri's exit code; 1 when setup or a publish failed (the publish log's tail on stderr).
 # Bash 3.2 compatible (macOS /bin/bash).
@@ -220,7 +221,7 @@ register_mcp() { # $1 = the sindri binary; waits up to 2 minutes for a live cont
     pid="$(jq -r '.pid // empty' "$control" 2>/dev/null || true)"
     url="$(jq -r '.url // empty' "$control" 2>/dev/null || true)"
     if [ -n "$pid" ] && [ -n "$url" ] && kill -0 "$pid" 2>/dev/null; then
-      if out="$("$bin" "${args[@]}" 2>&1 </dev/null)"; then say "mcp: $out"; else say "mcp registration needs attention (the control plane is unaffected): $out"; fi
+      if out="$("$bin" "${args[@]}" 2>&1 </dev/null)"; then say "mcp${mcp_repo:+ (--repo $mcp_repo)}: $out"; else say "mcp${mcp_repo:+ (--repo $mcp_repo)} registration needs attention (the control plane is unaffected): $out"; fi
       return 0
     fi
     sleep 0.5

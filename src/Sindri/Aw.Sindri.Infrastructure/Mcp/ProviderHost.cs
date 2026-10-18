@@ -29,14 +29,19 @@ internal sealed class ProviderHost(McpSettings settings) : IProviderHost
 
     public async ValueTask Write(string path, string text, CancellationToken cancellationToken)
     {
-        var full = Path.GetFullPath(path);
-        var directory = Path.GetDirectoryName(full) ?? full;
+        var target = Target(path);
+        var directory = Path.GetDirectoryName(target) ?? target;
         _ = Directory.CreateDirectory(directory);
-        var temporary = Path.Combine(directory, "." + Path.GetFileName(full) + "." + Environment.ProcessId.ToString(CultureInfo.InvariantCulture) + ".tmp");
+        var temporary = Path.Combine(directory, "." + Path.GetFileName(target) + "." + Environment.ProcessId.ToString(CultureInfo.InvariantCulture) + ".tmp");
         try
         {
             await File.WriteAllTextAsync(temporary, text, cancellationToken).ConfigureAwait(false);
-            File.Move(temporary, full, overwrite: true);
+            if (!OperatingSystem.IsWindows() && File.Exists(target))
+            {
+                File.SetUnixFileMode(temporary, File.GetUnixFileMode(target));
+            }
+
+            File.Move(temporary, target, overwrite: true);
         }
         finally
         {
@@ -67,15 +72,30 @@ internal sealed class ProviderHost(McpSettings settings) : IProviderHost
 
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(TimeSpan.FromSeconds(10));
-            _ = git.StandardOutput.ReadToEndAsync(timeout.Token);
-            _ = git.StandardError.ReadToEndAsync(timeout.Token);
+            var output = git.StandardOutput.ReadToEndAsync(timeout.Token);
+            var error = git.StandardError.ReadToEndAsync(timeout.Token);
             await git.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
+            _ = await output.ConfigureAwait(false);
+            _ = await error.ConfigureAwait(false);
             return git.ExitCode == 0;
         }
         catch (System.ComponentModel.Win32Exception)
         {
             return false;   // no git: nothing is tracked as far as we can tell
         }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return true;    // git didn't answer in time: unknown, so the file is treated as tracked and left alone
+        }
+    }
+
+    /// <summary>The file a write lands in: a symlink's final target (so a linked dotfile keeps its link), else the full path.</summary>
+    private static string Target(string path)
+    {
+        var full = Path.GetFullPath(path);
+        return File.Exists(full) && new FileInfo(full).LinkTarget is not null
+            ? File.ResolveLinkTarget(full, returnFinalTarget: true)?.FullName ?? full
+            : full;
     }
 
     private bool OnPath(string name) =>

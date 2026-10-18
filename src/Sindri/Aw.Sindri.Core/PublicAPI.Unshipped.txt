@@ -9649,3 +9649,4 @@ Aw.Sindri.Core.Sessions.PaneRead.Capture.get -> System.ReadOnlyMemory<byte>
 static Aw.Sindri.Core.Sessions.PaneRead.Captured(int panePid, byte[]! capture) -> Aw.Sindri.Core.Sessions.PaneRead!
 Aw.Sindri.Core.Mcp.ProviderResult.Detail.get -> string!
 Aw.Sindri.Core.Mcp.ProviderResult.Detail.init -> void
+static Aw.Sindri.Core.Mcp.McpRegistration.Url(int port) -> string!

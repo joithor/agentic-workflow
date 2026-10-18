@@ -58,9 +58,7 @@ internal sealed class RegisterMcpService(IApprovedProfile approvals, IRepoLocato
     {
         var running = await endpoint.Read(cancellationToken).ConfigureAwait(false);
         var port = McpRegistration.Port(running.IsSuccess ? running.Value?.Url : null, profile.Api?.Port);
-        var arguments = McpRegistration.Arguments(entry.Repo, port);
-        var url = arguments[arguments.ToList().IndexOf(McpScope.ServerName) + 1];   // why: the header is last, so the URL isn't
-        return new Target(entry.Repo, entry.Checkout, url, arguments, apply);
+        return new Target(entry.Repo, entry.Checkout, McpRegistration.Url(port), McpRegistration.Arguments(entry.Repo, port), apply);
     }
 
     private async ValueTask<ProviderResult> Register(ProviderFile provider, Target target, CancellationToken cancellationToken)
@@ -138,7 +136,11 @@ internal sealed class RegisterMcpService(IApprovedProfile approvals, IRepoLocato
         {
             if (await host.Tracked(target.Checkout, relative, cancellationToken).ConfigureAwait(false))
             {
-                return new ProviderResult(provider, ProviderOutcome.Failed, $"{path} is tracked by git, so it isn't changed silently", "edit it by hand or untrack it, then run it again");
+                return new ProviderResult(
+                    provider,
+                    ProviderOutcome.Failed,
+                    $"{path} is tracked by git, so it isn't changed silently",
+                    $"add the sindri entry to {relative} by hand ({HandEntry(provider == ProviderFile.Codex, target.Url, target.Repo)}) and commit it, or untrack {relative}; then run it again");
             }
 
             if (target.Apply)
