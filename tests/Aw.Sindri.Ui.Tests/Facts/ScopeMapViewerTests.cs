@@ -55,7 +55,7 @@ public sealed class ScopeMapViewerTests
         Assert.Equal(["Expiry ws-1"], viewer.Sections[0].Lines);
         Assert.Equal(["S9: no resolving citation"], viewer.Sections[1].Lines);
         Assert.Equal(["L-code-3: test helper"], viewer.Sections[2].Lines);
-        Assert.Equal(["SCP-CITE-001 AC-2: the evidence cannot settle it"], viewer.Sections[3].Lines);
+        Assert.Equal(["AC-2 SCP-CITE-001: the evidence cannot settle it"], viewer.Sections[3].Lines);
     }
 
     [Fact]
