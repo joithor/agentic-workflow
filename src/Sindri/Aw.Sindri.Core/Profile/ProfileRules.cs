@@ -39,7 +39,7 @@ public static class ProfileRules
     }
 
     private static Error? Sections(SindriProfile profile) =>
-        Services(profile.Services) ?? Workflow(profile.Workflow) ?? Globs(profile) ?? LaunchKeys(profile.Launch) ?? AgentKeys(profile.Agents);
+        Services(profile.Services) ?? Workflow(profile) ?? Globs(profile) ?? LaunchKeys(profile.Launch) ?? AgentKeys(profile.Agents);
 
     /// <summary>The 'launch:' keys: the confirm window is a duration, and a repo has a name. Agent ids are checked by pattern when read, never against the catalog.</summary>
     private static Error? LaunchKeys(LaunchSettings? launch)
@@ -225,8 +225,38 @@ public static class ProfileRules
             : null;
     }
 
-    private static Error? Workflow(WorkflowSettings? workflow) =>
-        Durations(workflow) ?? Effects(workflow) ?? ForgeRules.Check(workflow?.Forge);
+    private static Error? Workflow(SindriProfile profile) => Durations(profile.Workflow) ?? Effects(profile.Workflow) ?? Judges(profile) ?? ForgeRules.Check(profile.Workflow?.Forge);
+
+    /// <summary>The judge provider lists (DT-J plan Q8): the box's and each repo's name only known providers.</summary>
+    private static Error? Judges(SindriProfile profile)
+    {
+        foreach (var (path, names) in JudgeLists(profile))
+        {
+            var unknown = names.Select(static (name, i) => (name, i)).FirstOrDefault(static n => !JudgeProviders.Known.Contains(n.name, StringComparer.Ordinal));
+            if (unknown.name is not null)
+            {
+                return Invalid(string.Create(CultureInfo.InvariantCulture, $"{path}[{unknown.i}]"), $"'{unknown.name}' is not a judge provider: {string.Join(", ", JudgeProviders.Known)}");
+            }
+        }
+
+        return null;
+    }
+
+    private static IEnumerable<(string Path, IReadOnlyList<string> Names)> JudgeLists(SindriProfile profile)
+    {
+        if (profile.Workflow?.Judge?.Providers is { } box)
+        {
+            yield return ("workflow.judge.providers", box);
+        }
+
+        foreach (var repo in profile.Repos ?? [])
+        {
+            if (repo.Workflow?.Judge?.Providers is { } own)
+            {
+                yield return ($"repos.{repo.Name}.workflow.judge.providers", own);
+            }
+        }
+    }
 
     private static Error Invalid(string keyPath, string problem) =>
         SindriErrors.ProfileInvalid.With($"{keyPath}: {problem}");

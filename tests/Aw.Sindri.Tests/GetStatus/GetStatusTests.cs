@@ -14,7 +14,7 @@ public sealed class GetStatusTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private GetStatusService Service() => new(_h.Held, _h.Profiles, _h.Profiles, _h.Store, _h.Events, new ProjectorProgress(_h.Clock), new InMemoryViewStore(SliceHarness.Json));
+    private GetStatusService Service() => new(_h.Held, new ProfileReads(_h.Profiles, _h.Profiles), _h.Store, _h.Events, new ProjectorProgress(_h.Clock), new InMemoryViewStore(SliceHarness.Json), new InMemorySessionSnapshot());
 
     [Fact, Trait("Lane", "unit")]
     public async Task GetStatus_reports_not_running_when_no_lease_is_held()
@@ -85,7 +85,7 @@ public sealed class GetStatusTests
         _h.Profiles.Live = live;
         _ = await _h.Profiles.Save(live, Token);
 
-        var status = await new GetStatusService(_h.Held, _h.Profiles, _h.Profiles, new ReadFailingLedger(_h.Store), _h.Events, new ProjectorProgress(_h.Clock), new InMemoryViewStore(SliceHarness.Json)).Handle(new GetStatusRequest(), Token);
+        var status = await new GetStatusService(_h.Held, new ProfileReads(_h.Profiles, _h.Profiles), new ReadFailingLedger(_h.Store), _h.Events, new ProjectorProgress(_h.Clock), new InMemoryViewStore(SliceHarness.Json), new InMemorySessionSnapshot()).Handle(new GetStatusRequest(), Token);
 
         Assert.Equal(ReadFailingLedger.Failure.Code, status.Error.Code);   // an error (exit 2), never "needs approval"
     }
