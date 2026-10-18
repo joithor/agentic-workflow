@@ -158,7 +158,7 @@ public static partial class SettingsReader
     private static IReadOnlyList<ProfileRecognizer> Recognizers(ExtractSection? extract) =>
         [.. (extract?.Recognizers ?? []).OfType<RecognizerEntry>().Select(e => new ProfileRecognizer(e.Kind!, e.Glob!, e.Pattern!, e.KeyFrom!))];   // why: RecognizerRules refused a missing field
 
-    private static Error? Refused(ContextSection section, IReadOnlyList<string> globs) => Problem(section, globs) ?? RecognizerRules.Problem(section.Extract?.Recognizers);
+    private static Error? Refused(ContextSection section, IReadOnlyList<string> globs) => Problem(section, globs) ?? RecognizerRules.Problem(section.Extract?.Recognizers) ?? GraphifyRules.Problem(section.Extract?.Graphify);
 
     private static bool Adjudicates(EvalSection? section) => section?.Adjudicator ?? false;
 
@@ -210,7 +210,7 @@ public static partial class SettingsReader
     }
 
     private static ContextSettings WithFanOut(ContextSettings settings, ContextSection section) =>
-        settings with { CascadeComponentFanOut = section.CascadeComponentFanOut ?? settings.CascadeComponentFanOut };
+        settings with { CascadeComponentFanOut = section.CascadeComponentFanOut ?? settings.CascadeComponentFanOut, Graphify = GraphifyRules.Limits(section.Extract?.Graphify) };
 
     private static Error? CascadeProblem(ContextSection section) => section switch
     {

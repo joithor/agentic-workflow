@@ -175,6 +175,9 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-131: more than 50 profile recognizers, or a pattern over 512 characters.</summary>
     public static readonly ErrorDefinition RecognizerOverCap = new("SND-CONTEXT-131", ErrorKind.Invalid, "Too many profile recognizers, or a pattern is too long");
 
+    /// <summary>SND-CONTEXT-133: a 'context.extract.graphify' limit (timeoutMinutes, maxSnapshotMB, maxFileMB, maxGraphMB) isn't a whole number from 0 (no limit) up. The message names the key path.</summary>
+    public static readonly ErrorDefinition GraphifyLimitInvalid = new("SND-CONTEXT-133", ErrorKind.Invalid, "A graphify limit is invalid");
+
     /// <summary>SND-CONTEXT-150: a 'context.code.schemaGlobs' or 'context.code.testGlobs' entry isn't a repo-relative glob. The message starts with the key path.</summary>
     public static readonly ErrorDefinition CodeGlobInvalid = new("SND-CONTEXT-150", ErrorKind.Invalid, "A code-lens glob is not a repo-relative glob");
 
@@ -191,7 +194,7 @@ public static class ContextErrors
          NoMap, MapFileInvalid, MapNodeUndefined, ExportOutsideHome, MapFileChanged, ProbeFileInvalid, NoProbeFile, AmbiguousAnchor, ProbesRegressed,
          HeavyLockBusy, LabelingUnavailable, ReviewFileNoMatch, NoDraftMap, RepoOutsideScope, PromoteRefused, ReviewTargetStale, ExtractionUnreadable,
          OnyxKeyRefused, OnyxUnexpectedReply, OnyxDocumentNotFound, OnyxKeyNotServiceAccount, OnyxNotPinnedOrLoopback, SyncRunning, ModelAnswerRefused, SyncSourceUnknown, SyncCapped,
-         NoEligibleSample, NoBriefSource, UnknownArm, AdjudicationCapped, CommitUnknown, NoMergeBase, MapVersionNotRetained, CodeGlobInvalid, CodeGlobsTooMany, CodeSearchTimedOut, RecognizerInvalid, RecognizerOverCap];
+         NoEligibleSample, NoBriefSource, UnknownArm, AdjudicationCapped, CommitUnknown, NoMergeBase, MapVersionNotRetained, CodeGlobInvalid, CodeGlobsTooMany, CodeSearchTimedOut, RecognizerInvalid, RecognizerOverCap, GraphifyLimitInvalid];
 
     /// <summary>
     /// The codes the CLI answers with exit 1 (attention, spec §8.6): an unknown or ambiguous anchor, a refused input or
