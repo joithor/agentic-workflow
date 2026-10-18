@@ -50,6 +50,21 @@ internal sealed partial class ShellWindow : Window
     private Border PagePanel => this.Get<Border>("Page");
 
     /// <inheritdoc />
+    protected override void OnOpened(EventArgs e)
+    {
+        base.OnOpened(e);
+
+        // A relaunch restores the last page before the window exists, so no page change lands focus on its region: do it once the window is open.
+        Dispatcher.UIThread.Post(() =>
+        {
+            if (!HasUsableFocus)
+            {
+                KeepFocusOrReannounce();
+            }
+        }, DispatcherPriority.Loaded);
+    }
+
+    /// <inheritdoc />
     protected override void OnDataContextChanged(EventArgs e)
     {
         Listen(_shell, on: false);
