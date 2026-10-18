@@ -3,6 +3,7 @@ using System.Text;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Subgraph;
 using Aw.Context.Core.Trust;
 
 namespace Aw.Sindri.Host.Text;
@@ -29,6 +30,17 @@ internal static class ContextLensText
         foreach (var missing in view.MissingAnchors)
         {
             _ = text.AppendLine($"missing anchor: {missing}");
+        }
+
+        return Body(text, new LensParts(view.Bands, view.Edges, view.Conflicts, view.Coverage, view.Searched), fence);
+    }
+
+    internal static string Subgraph(SubgraphView view, bool fence)
+    {
+        var text = new StringBuilder(Invariant($"subgraph of {view.Nodes.Count} nodes · map {MapName(view.MapVersion, view.MapCommit)} · depth {view.Depth}\n"));
+        foreach (var missing in view.Missing)
+        {
+            _ = text.AppendLine($"missing: {missing}");
         }
 
         return Body(text, new LensParts(view.Bands, view.Edges, view.Conflicts, view.Coverage, view.Searched), fence);

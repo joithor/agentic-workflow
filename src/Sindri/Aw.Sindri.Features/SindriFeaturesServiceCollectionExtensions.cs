@@ -1,6 +1,8 @@
 using Aw.Context.Core.Eval.MapQuality;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
+using Aw.Context.Core.Facade;
+using Aw.Context.Core.Subgraph;
 using Aw.Context.Core.Locks;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
@@ -181,6 +183,7 @@ public static class SindriFeaturesServiceCollectionExtensions
     {
         _ = services
             .AddScoped<ContextScopes>()
+            .AddScoped<IScopeProposals>(static sp => sp.GetRequiredService<IContextEngine>())
             .AddScoped<ContextChallenges>()
             .AddScoped<IScheduledService, ContextDocsRefreshService>()
             .AddScoped<IScheduledService, ContextPurgeService>()
@@ -194,6 +197,7 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<GetContextFileMapRequest>, AcceptAllValidator<GetContextFileMapRequest>>().AddQuery<GetContextFileMapRequest, FileMapView, GetContextFileMapService>();
         _ = services.AddScoped<IValidator<GetContextLensesRequest>, AcceptAllValidator<GetContextLensesRequest>>().AddQuery<GetContextLensesRequest, LensesView, GetContextLensesService>();
         _ = services.AddScoped<IValidator<GetContextLensesSetRequest>, AcceptAllValidator<GetContextLensesSetRequest>>().AddQuery<GetContextLensesSetRequest, LensesSetView, GetContextLensesSetService>();
+        _ = services.AddScoped<IValidator<GetContextSubgraphRequest>, AcceptAllValidator<GetContextSubgraphRequest>>().AddQuery<GetContextSubgraphRequest, SubgraphView, GetContextSubgraphService>();
         _ = services.AddScoped<IValidator<GetContextLensesAnswerRequest>, AcceptAllValidator<GetContextLensesAnswerRequest>>().AddQuery<GetContextLensesAnswerRequest, LensesAnswer, GetContextLensesAnswerService>();
         _ = services.AddScoped<IValidator<GetContextEvalMapRequest>, AcceptAllValidator<GetContextEvalMapRequest>>().AddQuery<GetContextEvalMapRequest, MapQualityRun, GetContextEvalMapService>();
         _ = services.AddScoped<IValidator<GetContextProposalsRequest>, AcceptAllValidator<GetContextProposalsRequest>>().AddQuery<GetContextProposalsRequest, ProposalsView, GetContextProposalsService>();

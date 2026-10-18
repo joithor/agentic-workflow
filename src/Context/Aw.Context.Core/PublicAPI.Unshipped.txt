@@ -418,8 +418,8 @@ Aw.Context.Core.Facade.IContextMap.MapStatus(string? anchor, Aw.Context.Core.Eng
 Aw.Context.Core.Facade.IContextMap.PreviewMap(string! path, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapFilePreview!>!>
 Aw.Context.Core.Facade.IContextMap.PreviewReviewFile(string! path, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Review.ReviewFilePreview!>!>
 Aw.Context.Core.Facade.IContextMap.Promote(Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapPromoted!>!>
-Aw.Context.Core.Facade.IContextMap.Proposals(string! run, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Proposals.ProposalsView!>!>
-Aw.Context.Core.Facade.IContextMap.Propose(Aw.Context.Core.Proposals.ScopeProposal! proposal, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Proposals.ProposeResult!>!>
+Aw.Context.Core.Facade.IScopeProposals.Proposals(string! run, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Proposals.ProposalsView!>!>
+Aw.Context.Core.Facade.IScopeProposals.Propose(Aw.Context.Core.Proposals.ScopeProposal! proposal, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Proposals.ProposeResult!>!>
 Aw.Context.Core.Facade.IContextMap.PurgeExpired(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.PurgeReport!>!>
 Aw.Context.Core.Facade.IContextMap.ReviewHistory(int? limit, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Review.ReviewHistoryView!>!>
 Aw.Context.Core.Facade.IContextMap.ReviewQueue(int? limit, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Review.ReviewQueueView!>!>
@@ -1911,13 +1911,13 @@ Aw.Context.Core.Proposals.ProposeResult
 Aw.Context.Core.Proposals.ProposeResult.<Clone>$() -> Aw.Context.Core.Proposals.ProposeResult!
 Aw.Context.Core.Proposals.ProposeResult.Added.get -> int
 Aw.Context.Core.Proposals.ProposeResult.Added.init -> void
-Aw.Context.Core.Proposals.ProposeResult.Deconstruct(out Aw.Context.Core.Map.MapVersion! Draft, out int Added, out int Existing, out int Rejected, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>? Rows) -> void
-Aw.Context.Core.Proposals.ProposeResult.Draft.get -> Aw.Context.Core.Map.MapVersion!
+Aw.Context.Core.Proposals.ProposeResult.Deconstruct(out Aw.Context.Core.Map.MapVersion? Draft, out int Added, out int Existing, out int Rejected, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>? Rows) -> void
+Aw.Context.Core.Proposals.ProposeResult.Draft.get -> Aw.Context.Core.Map.MapVersion?
 Aw.Context.Core.Proposals.ProposeResult.Draft.init -> void
 Aw.Context.Core.Proposals.ProposeResult.Equals(Aw.Context.Core.Proposals.ProposeResult? other) -> bool
 Aw.Context.Core.Proposals.ProposeResult.Existing.get -> int
 Aw.Context.Core.Proposals.ProposeResult.Existing.init -> void
-Aw.Context.Core.Proposals.ProposeResult.ProposeResult(Aw.Context.Core.Map.MapVersion! Draft, int Added, int Existing, int Rejected, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>? Rows = null) -> void
+Aw.Context.Core.Proposals.ProposeResult.ProposeResult(Aw.Context.Core.Map.MapVersion? Draft, int Added, int Existing, int Rejected, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>? Rows = null) -> void
 Aw.Context.Core.Proposals.ProposeResult.Rejected.get -> int
 Aw.Context.Core.Proposals.ProposeResult.Rejected.init -> void
 Aw.Context.Core.Proposals.ProposeResult.Rows.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>?
@@ -5012,3 +5012,12 @@ Aw.Context.Core.Facade.IContextLenses.Subgraph(Aw.Context.Core.Subgraph.Subgraph
 static Aw.Context.Core.Engine.QueryRules.CheckSubgraphGet(System.Collections.Generic.IReadOnlyList<string!>! keys) -> Aw.Kernel.Error?
 static Aw.Context.Core.Map.MapAccess.ViewWithIntentOrEmpty(Aw.Context.Core.Linking.IntentLayer! intent, Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, Aw.Context.Core.Engine.ContextScope! scope, bool pending) -> Aw.Kernel.Result<Aw.Context.Core.Map.MapView!>!
 Aw.Context.Core.Map.MapReader.ReadViewAtOrEmpty(Aw.Context.Core.Engine.ContextScope! scope, Aw.Context.Core.Map.MapRead read, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>
+
+Aw.Context.Core.Facade.IScopeProposals
+Aw.Context.Core.Proposals.ProposeResult.Withdrawn.get -> int
+Aw.Context.Core.Proposals.ProposeResult.Withdrawn.init -> void
+Aw.Context.Core.Proposals.ProposeResult.Kept.get -> int
+Aw.Context.Core.Proposals.ProposeResult.Kept.init -> void
+Aw.Context.Core.Proposals.ProposeResult.WithdrawnRows.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>?
+Aw.Context.Core.Proposals.ProposeResult.WithdrawnRows.init -> void
+static Aw.Context.Core.Proposals.ProposalPlanner.Withdraw(string! run, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, string! who, System.DateTimeOffset at) -> (System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Rows, int Kept)

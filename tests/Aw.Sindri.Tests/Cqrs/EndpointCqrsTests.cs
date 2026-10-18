@@ -37,6 +37,22 @@ public sealed class EndpointCqrsTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task EndpointCqrs_body_query_list_is_exactly_subgraph()
+    {
+        await using var app = Host();
+        var posts = Endpoints(app).Endpoints.OfType<RouteEndpoint>().SelectMany(EndpointCqrsRules.Routes)
+            .Where(route => route.StartsWith("POST ", StringComparison.Ordinal)).ToList();
+
+        Assert.Equal(["POST /sindri/context/subgraph"], EndpointCqrsRules.BodyQueries);
+        Assert.Contains("POST /sindri/context/subgraph", posts, StringComparer.Ordinal);
+        var queryPosts = Endpoints(app).Endpoints.OfType<RouteEndpoint>()
+            .Where(e => EndpointCqrsRules.Routes(e).Any(r => r.StartsWith("POST ", StringComparison.Ordinal)) && EndpointCqrsRules.Request(e) is { } request
+                && request.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IQuery<>)))
+            .SelectMany(EndpointCqrsRules.Routes).ToList();
+        Assert.Equal(["POST /sindri/context/subgraph"], queryPosts, StringComparer.Ordinal);   // why: any other POST carrying a query fails this test and the rule alike
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task Every_ready_row_route_is_mapped()
     {
         await using var app = Host();

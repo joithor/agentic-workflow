@@ -27,6 +27,12 @@ internal static partial class EndpointCqrsRules
         "POST /sindri/sessions/{}/exit",
     ];
 
+    /// <summary>
+    /// The one route a POST may carry a query on, because its question is too large for a URL (API lane, 2026-10-16): the subgraph of up to
+    /// 1000 node keys. It sits in the queries group (read-your-writes, no idempotency key, no ledger event) and refuses an Origin header as a command does.
+    /// </summary>
+    public static readonly IReadOnlyList<string> BodyQueries = ["POST /sindri/context/subgraph"];
+
     public static IReadOnlyList<string> Check(EndpointDataSource endpoints, ICommandCatalog catalog)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
@@ -85,6 +91,11 @@ internal static partial class EndpointCqrsRules
     private static string? Post(string route, Type request, ICommandCatalog catalog)
     {
         if (Is(request, typeof(ICommand<>)))
+        {
+            return null;
+        }
+
+        if (Is(request, typeof(IQuery<>)) && BodyQueries.Contains(route, StringComparer.Ordinal))
         {
             return null;
         }

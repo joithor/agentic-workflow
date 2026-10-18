@@ -414,8 +414,10 @@ Aw.Sindri.Core.Events.ContextMapProposed
 Aw.Sindri.Core.Events.ContextMapProposed.<Clone>$() -> Aw.Sindri.Core.Events.ContextMapProposed!
 Aw.Sindri.Core.Events.ContextMapProposed.Added.get -> int
 Aw.Sindri.Core.Events.ContextMapProposed.Added.init -> void
-Aw.Sindri.Core.Events.ContextMapProposed.ContextMapProposed(string! Run, string! Repo, int Draft, int Added, int Existing, int Rejected) -> void
-Aw.Sindri.Core.Events.ContextMapProposed.Deconstruct(out string! Run, out string! Repo, out int Draft, out int Added, out int Existing, out int Rejected) -> void
+Aw.Sindri.Core.Events.ContextMapProposed.ContextMapProposed(string! Run, string! Repo, int Draft, int Added, int Existing, int Rejected, int? Withdrawn = null) -> void
+Aw.Sindri.Core.Events.ContextMapProposed.Deconstruct(out string! Run, out string! Repo, out int Draft, out int Added, out int Existing, out int Rejected, out int? Withdrawn) -> void
+Aw.Sindri.Core.Events.ContextMapProposed.Withdrawn.get -> int?
+Aw.Sindri.Core.Events.ContextMapProposed.Withdrawn.init -> void
 Aw.Sindri.Core.Events.ContextMapProposed.Draft.get -> int
 Aw.Sindri.Core.Events.ContextMapProposed.Draft.init -> void
 Aw.Sindri.Core.Events.ContextMapProposed.Equals(Aw.Sindri.Core.Events.ContextMapProposed? other) -> bool

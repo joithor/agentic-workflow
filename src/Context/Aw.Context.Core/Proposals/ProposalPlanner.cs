@@ -60,6 +60,38 @@ public static class ProposalPlanner
         return new ProposalPlan(rows, existing, rejected, unmapped);
     }
 
+    /// <summary>
+    /// Plans the withdrawal of a run's undecided proposals (scoping spec C9): one 'undo' row for each of its 'propose' rows that no accept, reject, merge or delete has decided since.
+    /// The ones a person accepted stay (Kept counts them); a rejected one is decided already and needs no row. Pure.
+    /// </summary>
+    /// <param name="run">The scoping run's id; no other run's rows are touched.</param>
+    /// <param name="overrides">Every override of the draft, as the caller may see them.</param>
+    /// <param name="who">Who withdraws.</param>
+    /// <param name="at">When.</param>
+    /// <returns>The undo rows and how many accepted proposals stay.</returns>
+    public static (IReadOnlyList<MapOverride> Rows, int Kept) Withdraw(string run, IReadOnlyList<MapOverride> overrides, string who, DateTimeOffset at)
+    {
+        ArgumentNullException.ThrowIfNull(run);
+        ArgumentNullException.ThrowIfNull(overrides);
+        var active = OverrideLog.Active(overrides);
+        var decisions = active.Where(OverrideLog.Decides).ToList();
+        var (rows, kept) = (new List<MapOverride>(), 0);
+        foreach (var proposed in active.Where(o => o.Action == OverrideAction.Propose && string.Equals(o.Proposal?.Run, run, StringComparison.Ordinal)))
+        {
+            var decided = decisions.FindAll(d => d.Target.Value == proposed.Target.Value && d.At >= proposed.At);
+            if (decided.Exists(d => d.Action == OverrideAction.Accept))
+            {
+                kept++;
+            }
+            else if (decided.Count == 0)
+            {
+                rows.Add(new MapOverride(OverrideAction.Undo, proposed.Target, who, at) with { Undoes = proposed.ToId() });
+            }
+        }
+
+        return (rows, kept);
+    }
+
     // A reject names the proposal by the evidence it had when it was written: all of it before a deny glob, what the glob leaves after.
     private static bool IsRejected(List<MapOverride> rejects, NodeKey key, ProposedSurface surface, MapView view)
     {

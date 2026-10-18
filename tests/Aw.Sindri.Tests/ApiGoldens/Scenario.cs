@@ -44,6 +44,20 @@ internal sealed class Scenario(GoldenHost host)
         return (await host.Http.Ask(Get(route, AppHeaders()))).Body;
     }
 
+    /// <summary>POST a body query as the app (the subgraph route): a read, so the answer is the body of a GET for the same keys.</summary>
+    public async Task<string> PostQuery(string route, string json, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        return (await host.Http.Ask(Post(route, json, AppHeaders()))).Body;
+    }
+
+    /// <summary>POST a body query from a browser page (an Origin header): refused as a command is.</summary>
+    public async Task<string> PostQueryForeignOrigin(string route, string json, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        return (await host.Http.Ask(Post(route, json, [.. AppHeaders(), ("Origin", "http://localhost:3000")]))).Body;
+    }
+
     /// <summary>GET as an agent session of the fixture repo (X-Sindri-Repo): its scope, not the human's.</summary>
     public async Task<string> FetchAsSession(string route, CancellationToken ct)
     {

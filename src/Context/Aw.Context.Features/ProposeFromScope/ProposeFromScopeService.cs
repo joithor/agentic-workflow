@@ -28,6 +28,11 @@ internal sealed class ProposeFromScopeService(IGraphStore store, IProposalRuns r
             return refused;
         }
 
+        if (proposal.Surfaces.Count == 0)
+        {
+            return await Withdraw(proposal, request.Scope, cancellationToken).ConfigureAwait(false);
+        }
+
         var now = clock.GetUtcNow();
         var opened = await store.OpenDraft(now, cancellationToken).ConfigureAwait(false);
         var draft = opened.IsError ? opened.Error : await ReviewDrafts.Draft(store, cancellationToken).ConfigureAwait(false);
@@ -52,6 +57,39 @@ internal sealed class ProposeFromScopeService(IGraphStore store, IProposalRuns r
 
         // A planned row another identical call wrote first is already there: it counts as existing, so the counts add up and none is negative.
         return new ProposeResult(opened.Value, written.Value, plan.Existing + Math.Max(0, plan.Rows.Count - written.Value), plan.Rejected, RowsOf(proposal, plan.Rows, draft.Value.Overrides));
+    }
+
+    // An empty surface list takes the run back (scoping spec C9): one undo row for each of its undecided proposals, in the draft there is, which this never opens. Accepted ones stay.
+    private async ValueTask<Result<ProposeResult>> Withdraw(ScopeProposal proposal, ContextScope scope, CancellationToken cancellationToken)
+    {
+        var snapshot = await store.Snapshot(draft: true, cancellationToken).ConfigureAwait(false);
+        if (snapshot.IsError || snapshot.Value is not { } draft)
+        {
+            return snapshot.IsError ? snapshot.Error : new ProposeResult(Draft: null, Added: 0, Existing: 0, Rejected: 0);
+        }
+
+        var seen = MapAccess.View(draft.Graph, draft.Overrides, scope, pending: true, callerScope: false);
+        var standing = await runs.Run(proposal.Run, cancellationToken).ConfigureAwait(false);
+        if (seen.IsError || standing.IsError)
+        {
+            return seen.IsError ? seen.Error : standing.Error;
+        }
+
+        var now = clock.GetUtcNow();
+        var (rows, kept) = ProposalPlanner.Withdraw(proposal.Run, seen.Value.Overrides, Who, now);
+        var result = new ProposeResult(draft.Version, Added: 0, Existing: 0, Rejected: 0)
+        {
+            Withdrawn = rows.Count,
+            Kept = kept,
+            WithdrawnRows = [.. rows.Select(o => o.ToId()).OrderBy(id => id.Value, StringComparer.Ordinal)],
+        };
+        if (rows.Count == 0 && standing.Value is not { Surfaces.Count: > 0 })
+        {
+            return result;   // nothing to take back and no surface list standing: a second withdrawal writes nothing
+        }
+
+        var written = await runs.Propose(proposal, rows, cancellationToken).ConfigureAwait(false);
+        return written.IsError ? written.Error : result;
     }
 
     // The run's propose rows for this call's surfaces: the ones just planned and the ones the draft already held (a retry names them again).
