@@ -3,30 +3,128 @@
   "rounds": [
     {
       "round": 1,
-      "lenses": [
-        "behaviour",
-        "regression",
-        "boundaries"
-      ],
-      "findings": [
+      "walked": [
         {
-          "id": "CH-1",
-          "severity": "HIGH",
-          "text": "No acceptance item covers: While a note is archived, the system shall leave it out of the weekly digest.",
-          "cites": [
-            "AC-4"
+          "kind": "lens",
+          "name": "code"
+        },
+        {
+          "kind": "lens",
+          "name": "product"
+        },
+        {
+          "kind": "lens",
+          "name": "related"
+        },
+        {
+          "kind": "lens",
+          "name": "history"
+        },
+        {
+          "kind": "dimension",
+          "name": "who may use it"
+        },
+        {
+          "kind": "dimension",
+          "name": "success"
+        },
+        {
+          "kind": "dimension",
+          "name": "failure"
+        },
+        {
+          "kind": "dimension",
+          "name": "empty"
+        },
+        {
+          "kind": "dimension",
+          "name": "limit"
+        },
+        {
+          "kind": "dimension",
+          "name": "how long data lives"
+        },
+        {
+          "kind": "dimension",
+          "name": "what is notified"
+        },
+        {
+          "kind": "dimension",
+          "name": "what changes for existing data"
+        },
+        {
+          "kind": "dimension",
+          "name": "how it rolls out"
+        }
+      ],
+      "verdict": "found",
+      "behaviours": [
+        {
+          "text": "While a note is archived, the system shall leave it out of the weekly digest.",
+          "question": "Does an archived note appear in the weekly digest?",
+          "citations": [
+            "L-product-11"
           ]
         }
       ]
     },
     {
       "round": 2,
-      "lenses": [
-        "behaviour",
-        "regression",
-        "boundaries"
+      "walked": [
+        {
+          "kind": "lens",
+          "name": "code"
+        },
+        {
+          "kind": "lens",
+          "name": "product"
+        },
+        {
+          "kind": "lens",
+          "name": "related"
+        },
+        {
+          "kind": "lens",
+          "name": "history"
+        },
+        {
+          "kind": "dimension",
+          "name": "who may use it"
+        },
+        {
+          "kind": "dimension",
+          "name": "success"
+        },
+        {
+          "kind": "dimension",
+          "name": "failure"
+        },
+        {
+          "kind": "dimension",
+          "name": "empty"
+        },
+        {
+          "kind": "dimension",
+          "name": "limit"
+        },
+        {
+          "kind": "dimension",
+          "name": "how long data lives"
+        },
+        {
+          "kind": "dimension",
+          "name": "what is notified"
+        },
+        {
+          "kind": "dimension",
+          "name": "what changes for existing data"
+        },
+        {
+          "kind": "dimension",
+          "name": "how it rolls out"
+        }
       ],
-      "findings": []
+      "verdict": "nothingNew"
     }
   ]
 }
