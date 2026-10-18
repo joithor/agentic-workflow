@@ -363,7 +363,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-CHOICE-006` | A route state's `uncertain` and `step.failed` transitions come after its branch transitions (the app takes the first transition as the main path) | List the branches first |
 | `RCP-CHILD-001` | A child recipe resolves (registered, or next to the recipe) and gets its inputs | Register it, or put `<id>.yaml` beside the recipe; pass the inputs it declares |
 | `RCP-CHILD-002` | Child recipes form no cycle | Remove a child wait |
-| `RCP-CHILD-003` | Children nest at most 4 deep | Flatten the chain |
+| `RCP-CHILD-003` | Children nest at most 5 deep | Flatten the chain |
 | `RCP-CAP-001` | **Generated recipes only** (run against the base; `recipe validate` doesn't): a generated recipe adds no capability use its base doesn't have | Remove it, or generate from a base that has it |
 | `RCP-CAP-002` | **Generated recipes only:** a generated recipe keeps its base's capability parameters | Set them to the base's values |
 | `RCP-CAP-003` | The recipe's hash is approved and its pinned blocks match the build (registry, P2) | Approve it |
@@ -583,7 +583,7 @@ transition decides which to keep (decision-tree spec §8.4, DT-C). The complete 
 
 A `waitFor: { child }` state's entry starts the child as a Temporal child workflow (`ParentClosePolicy.Terminate`) whose
 workflow id is the child's address, `{parent}/{recipe name}.{entry}`; a looped child wait therefore starts a new child on
-each entry, and a child may wait on its own child (RCP-CHILD-003 allows depth 4). The child is created from the hash its
+each entry, and a child may wait on its own child (RCP-CHILD-003 allows depth 5). The child is created from the hash its
 parent's approval pinned: `LoadChildren`, a local activity, reads the pinned children and their pinned children, and an
 unpinned or re-hashed child is refused (`SND-RECIPE-002`).
 
