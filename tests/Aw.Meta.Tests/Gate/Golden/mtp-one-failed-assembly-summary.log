@@ -1,0 +1,22 @@
+Running tests from /g/tree/artifacts/bin/Aw.Sindri.Tests/debug/Aw.Sindri.Tests.dll (net10.0|x64)
+skipped Aw.Sindri.Ui.Tests.Desktop.MacDockBadgeContractTests.Shows_a_count
+  the dock tile is macOS only
+  from /g/tree/artifacts/bin/Aw.Sindri.Ui.Tests/debug/Aw.Sindri.Ui.Tests.dll (net10.0|x64)
+  time=2026-10-18T14:07:00.419 level=ERROR msg="Operation failed with internal error." error="CreateTaskQueue operation failed. Failed to make task queue 1 of type Activity."
+failed Aw.Sindri.Tests.Control.CommandHarnessVersionsContractTests.Stderr_output_does_not_hide_the_version (50ms)
+  from /g/tree/artifacts/bin/Aw.Sindri.Tests/debug/Aw.Sindri.Tests.dll (net10.0|x64)
+  Xunit.MicrosoftTestingPlatform.XunitException: contract: was , expected 1.2.3
+    at Aw.Sindri.Testing.Expect.Equal[T](T expected, T actual, String expression) in /g/tree/tests/Aw.Sindri.Testing/Expect.cs:29
+/g/tree/artifacts/bin/Aw.Sindri.Tests/debug/Aw.Sindri.Tests.dll (net10.0|x64) failed with 1 error(s) (1m 47s 158ms)
+Exit code: 2
+
+Test run summary: Failed!
+  /g/tree/artifacts/bin/Aw.Kernel.Tests/debug/Aw.Kernel.Tests.dll (net10.0|x64) passed (348ms)
+  /g/tree/artifacts/bin/Aw.Sindri.Tests/debug/Aw.Sindri.Tests.dll (net10.0|x64) failed with 1 error(s) (1m 47s 158ms)
+
+  total: 3496
+  failed: 1
+  succeeded: 3474
+  skipped: 21
+  duration: 2m 53s 393ms
+Test run completed with non-success exit code: 2 (see: https://aka.ms/testingplatform/exitcodes)
