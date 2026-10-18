@@ -20,12 +20,30 @@ public sealed partial class HookInventoryTests
     private static IReadOnlyList<string> HookFiles() =>
         [.. Directory.GetFiles(Path.Combine(RepoRoot(), "config", "hooks"), "*.sh", SearchOption.TopDirectoryOnly).Order(StringComparer.Ordinal)];
 
+    private static IEnumerable<HookScript> ScriptRows() => HookInventory.Scripts.Where(s => s.Source.StartsWith("config/hooks/", StringComparison.Ordinal));
+
+    private static HookScript RowFor(string file) =>
+        HookInventory.Scripts.Single(s => string.Equals(s.Source, "config/hooks/" + Path.GetFileName(file), StringComparison.Ordinal));
+
     [Fact, Trait("Lane", "unit")]
     public void Hook_inventory_matches_config_hooks()
     {
         var installed = HookFiles().Select(f => Path.GetFileNameWithoutExtension(f)).Order(StringComparer.Ordinal).ToList();
 
-        Assert.Equal(installed, [.. HookInventory.Scripts.Select(s => s.Name).Order(StringComparer.Ordinal)]);
+        Assert.Equal(installed, [.. ScriptRows().Select(s => s.Name).Order(StringComparer.Ordinal)]);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_inline_and_mod_rows_are_installed_where_they_say()
+    {
+        var settings = File.ReadAllText(Path.Combine(RepoRoot(), "config", "settings.json"));
+
+        foreach (var row in HookInventory.Scripts.Where(s => !s.Source.StartsWith("config/hooks/", StringComparison.Ordinal)))
+        {
+            Assert.True(
+                string.Equals(row.Source, "config/settings.json", StringComparison.Ordinal) ? settings.Contains("# aw:" + row.Name, StringComparison.Ordinal) : Directory.Exists(Path.Combine(RepoRoot(), row.Source)),
+                $"{row.Name}: not found in {row.Source}");
+        }
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -34,9 +52,21 @@ public sealed partial class HookInventoryTests
         foreach (var file in HookFiles())
         {
             var answers = AllowDecision.IsMatch(File.ReadAllText(file));
-            var entry = HookInventory.Scripts.Single(s => string.Equals(s.Name, Path.GetFileNameWithoutExtension(file), StringComparison.Ordinal));
+            var entry = RowFor(file);
 
             Assert.True(entry.AnswersPermissions == answers, $"{entry.Name}: inventory says {entry.AnswersPermissions}, the script says {answers}");
+        }
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_rewrites_column_matches_what_the_hooks_print()
+    {
+        foreach (var file in HookFiles())
+        {
+            var rewrites = File.ReadAllText(file).Contains("updatedInput", StringComparison.Ordinal);
+            var entry = RowFor(file);
+
+            Assert.True(entry.RewritesInput == rewrites, $"{entry.Name}: inventory says {entry.RewritesInput}, the script says {rewrites}");
         }
     }
 
@@ -74,16 +104,12 @@ public sealed partial class HookInventoryTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_session_omits_the_permission_answering_hooks_when_the_policy_says_so()
+    public void Only_a_hook_that_answers_allow_is_dropped_and_only_a_rewriting_hook_has_its_forms_denied()
     {
-        var answering = HookInventory.Scripts.Where(s => s.AnswersPermissions).Select(s => s.Name).Order(StringComparer.Ordinal).ToList();
-
-        var hooks = HookInventory.ForSession();
-
-        Assert.Equal(["external-write-guard", "record-teammate-name", "rtk-rewrite", "scope-gate", "send-gate"], answering);
-        Assert.Equal(HookPermissionPolicy.OmitPermissionAnsweringHooks ? answering : [], [.. hooks.Omitted.Order(StringComparer.Ordinal)]);
-        Assert.Equal(HookInventory.Scripts.Count, hooks.Kept.Count + hooks.Omitted.Count);
-        Assert.Empty(hooks.Kept.Intersect(hooks.Omitted, StringComparer.Ordinal));
+        Assert.All(HookInventory.Scripts.Where(s => s.Treatment == HookTreatment.Drop), s => Assert.True(s.AnswersPermissions, s.Name));
+        Assert.All(HookInventory.Scripts.Where(s => s.Treatment == HookTreatment.KeepDenyRewrites), s => Assert.True(s.RewritesInput && s.RewritePrefix is { Length: > 0 }, s.Name));
+        Assert.All(HookInventory.Scripts, s => Assert.False(string.IsNullOrWhiteSpace(s.Why), s.Name));
+        Assert.Equal(HookInventory.Scripts.Count, HookInventory.Scripts.Select(s => s.Name).Distinct(StringComparer.Ordinal).Count());
     }
 
     [GeneratedRegex("permissionDecision\"?\\s*:\\s*\"allow\"", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]

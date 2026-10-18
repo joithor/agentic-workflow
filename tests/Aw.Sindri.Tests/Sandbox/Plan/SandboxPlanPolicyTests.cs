@@ -31,11 +31,16 @@ public sealed class SandboxPlanPolicyTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void The_rtk_forms_are_denied_too_when_the_policy_includes_them()
+    public void The_rtk_forms_are_denied_too_while_rtk_rewrite_is_kept()
     {
         var plan = SandboxPlannerTests.Build(Req.WriteScope);
+        var withoutRtk = SandboxPlannerTests.Build(Req.WriteScope with { Host = Req.Host with { InstalledHooks = ["block-destructive"] } });
 
-        Assert.Equal(HookPermissionPolicy.IncludeRtkForms, Has(plan, InnerRuleEffect.Deny, "Bash", p => p == "rtk git push:*"));
+        Assert.Contains("rtk-rewrite", plan.Hooks.Kept, StringComparer.Ordinal);
+        Assert.True(Has(plan, InnerRuleEffect.Deny, "Bash", p => p == "rtk git push:*"));
+        Assert.True(Has(plan, InnerRuleEffect.Deny, "Bash", p => p == "rtk gh:*"));
+        Assert.True(Has(plan, InnerRuleEffect.Deny, "Bash", p => p == "rtk env"));
+        Assert.False(Has(withoutRtk, InnerRuleEffect.Deny, "Bash", p => p.StartsWith("rtk ", StringComparison.Ordinal)));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -69,7 +74,7 @@ public sealed class SandboxPlanPolicyTests
     [Fact, Trait("Lane", "unit")]
     public void Hooks_in_the_plan_are_the_session_inventory()
     {
-        var expected = HookInventory.ForSession();
+        var expected = HookPermissionPolicy.ForSession();
 
         var hooks = SandboxPlannerTests.Build(Req.WriteScope).Hooks;
 
