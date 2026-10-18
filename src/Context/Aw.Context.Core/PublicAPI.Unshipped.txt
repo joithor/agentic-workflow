@@ -320,10 +320,8 @@ Aw.Context.Core.Extract.ClusterSet
 Aw.Context.Core.Extract.ClusterSet.<Clone>$() -> Aw.Context.Core.Extract.ClusterSet!
 Aw.Context.Core.Extract.ClusterSet.Available.get -> bool
 Aw.Context.Core.Extract.ClusterSet.Available.init -> void
-Aw.Context.Core.Extract.ClusterSet.ClusterSet(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.FileCluster!>! Clusters, bool Available) -> void
 Aw.Context.Core.Extract.ClusterSet.Clusters.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.FileCluster!>!
 Aw.Context.Core.Extract.ClusterSet.Clusters.init -> void
-Aw.Context.Core.Extract.ClusterSet.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.FileCluster!>! Clusters, out bool Available) -> void
 Aw.Context.Core.Extract.ClusterSet.Equals(Aw.Context.Core.Extract.ClusterSet? other) -> bool
 Aw.Context.Core.Extract.ExtractedMap
 Aw.Context.Core.Extract.ExtractedMap.<Clone>$() -> Aw.Context.Core.Extract.ExtractedMap!
@@ -362,7 +360,6 @@ Aw.Context.Core.Extract.Found.Label.init -> void
 Aw.Context.Core.Extract.Found.Named.get -> bool
 Aw.Context.Core.Extract.Found.Named.init -> void
 Aw.Context.Core.Extract.IClusterSource
-Aw.Context.Core.Extract.IClusterSource.Clusters(Aw.Context.Core.Engine.ContextRepo! repo, string! commit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Extract.ClusterSet!>!>
 Aw.Context.Core.Extract.ILabeler
 Aw.Context.Core.Extract.ILabeler.Label(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.FileCluster!>! clusters, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Trust.ScrubPattern!>! extraPatterns, int maxTokens, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Extract.LabelPass!>!>
 Aw.Context.Core.Extract.IRepoReader
@@ -5021,3 +5018,33 @@ Aw.Context.Core.Lenses.LensRange.Depth.get -> int?
 Aw.Context.Core.Lenses.LensRange.Depth.init -> void
 Aw.Context.Core.Lenses.LensRange.Hops.get -> string?
 Aw.Context.Core.Lenses.LensRange.Hops.init -> void
+Aw.Context.Core.Engine.ContextSettings.Graphify.get -> Aw.Context.Core.Engine.GraphifyLimits!
+Aw.Context.Core.Engine.ContextSettings.Graphify.init -> void
+Aw.Context.Core.Engine.GraphifyLimits
+Aw.Context.Core.Engine.GraphifyLimits.<Clone>$() -> Aw.Context.Core.Engine.GraphifyLimits!
+Aw.Context.Core.Engine.GraphifyLimits.Equals(Aw.Context.Core.Engine.GraphifyLimits? other) -> bool
+Aw.Context.Core.Engine.GraphifyLimits.GraphifyLimits() -> void
+Aw.Context.Core.Engine.GraphifyLimits.MaxFileBytes.get -> long?
+Aw.Context.Core.Engine.GraphifyLimits.MaxFileMB.get -> int
+Aw.Context.Core.Engine.GraphifyLimits.MaxFileMB.init -> void
+Aw.Context.Core.Engine.GraphifyLimits.MaxGraphBytes.get -> long?
+Aw.Context.Core.Engine.GraphifyLimits.MaxGraphMB.get -> int
+Aw.Context.Core.Engine.GraphifyLimits.MaxGraphMB.init -> void
+Aw.Context.Core.Engine.GraphifyLimits.MaxSnapshotBytes.get -> long?
+Aw.Context.Core.Engine.GraphifyLimits.MaxSnapshotMB.get -> int
+Aw.Context.Core.Engine.GraphifyLimits.MaxSnapshotMB.init -> void
+Aw.Context.Core.Engine.GraphifyLimits.Timeout.get -> System.TimeSpan?
+Aw.Context.Core.Engine.GraphifyLimits.TimeoutMinutes.get -> int
+Aw.Context.Core.Engine.GraphifyLimits.TimeoutMinutes.init -> void
+Aw.Context.Core.Extract.ClusterSet.ClusterSet(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.FileCluster!>! Clusters, bool Available, string? Reason = null) -> void
+Aw.Context.Core.Extract.ClusterSet.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.FileCluster!>! Clusters, out bool Available, out string? Reason) -> void
+Aw.Context.Core.Extract.ClusterSet.Reason.get -> string?
+Aw.Context.Core.Extract.ClusterSet.Reason.init -> void
+Aw.Context.Core.Extract.IClusterSource.Clusters(Aw.Context.Core.Engine.ContextRepo! repo, string! commit, Aw.Context.Core.Engine.GraphifyLimits! limits, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Extract.ClusterSet!>!>
+override Aw.Context.Core.Engine.GraphifyLimits.Equals(object? obj) -> bool
+override Aw.Context.Core.Engine.GraphifyLimits.GetHashCode() -> int
+override Aw.Context.Core.Engine.GraphifyLimits.ToString() -> string!
+static Aw.Context.Core.Engine.GraphifyLimits.Default.get -> Aw.Context.Core.Engine.GraphifyLimits!
+static Aw.Context.Core.Engine.GraphifyLimits.operator !=(Aw.Context.Core.Engine.GraphifyLimits? left, Aw.Context.Core.Engine.GraphifyLimits? right) -> bool
+static Aw.Context.Core.Engine.GraphifyLimits.operator ==(Aw.Context.Core.Engine.GraphifyLimits? left, Aw.Context.Core.Engine.GraphifyLimits? right) -> bool
+static readonly Aw.Context.Core.ContextErrors.GraphifyLimitInvalid -> Aw.Kernel.ErrorDefinition!

@@ -32,7 +32,7 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
             return listed.Error;
         }
 
-        var extraction = await Cut(request, listed.Value, RecognizerSet.From(settings.Value.Recognizers), cancellationToken).ConfigureAwait(false);
+        var extraction = await Cut(request, listed.Value, (RecognizerSet.From(settings.Value.Recognizers), settings.Value.Graphify), cancellationToken).ConfigureAwait(false);
         if (extraction.IsError)
         {
             return extraction.Error;
@@ -50,9 +50,10 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
         return view.IsError ? view.Error : new AsOfGraph(view.Value.Applied, extraction.Value.Cached, extraction.Value.Clustered, RecognizersTimedOut: extraction.Value.TimedOut);
     }
 
-    private async ValueTask<Result<Found>> Cut(AsOfRequest request, IReadOnlyList<string> files, RecognizerSet recognizers, CancellationToken cancellationToken)
+    private async ValueTask<Result<Found>> Cut(AsOfRequest request, IReadOnlyList<string> files, (RecognizerSet Recognizers, GraphifyLimits Limits) rules, CancellationToken cancellationToken)
     {
-        var looked = await Look(request, recognizers, cancellationToken).ConfigureAwait(false);
+        var recognizers = rules.Recognizers;
+        var looked = await Look(request, rules, cancellationToken).ConfigureAwait(false);
         if (looked.IsError || looked.Value.Hit is not null)
         {
             return looked.IsError ? looked.Error : looked.Value.Hit!;   // why: a non-null hit was just checked
@@ -79,9 +80,10 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
     }
 
     // A clustered extraction is cached under its own key and found without calling the cluster source; otherwise the source is asked, and the plain key is read only when it has no clusters.
-    private async ValueTask<Result<Probe>> Look(AsOfRequest request, RecognizerSet recognizers, CancellationToken cancellationToken)
+    private async ValueTask<Result<Probe>> Look(AsOfRequest request, (RecognizerSet Recognizers, GraphifyLimits Limits) rules, CancellationToken cancellationToken)
     {
         var (repo, sample) = (request.Repo, request.Sample);
+        var recognizers = rules.Recognizers;
         var clustered = AsOfMapCache.Key(repo.Name, sample.Cut, MapExtractor.Version, clustered: true, recognizers);
         var first = await Cached(clustered, clustered: true, cancellationToken).ConfigureAwait(false);
         if (first.IsError || first.Value is not null)
@@ -89,7 +91,7 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
             return first.IsError ? first.Error : new Probe(first.Value, clustered, new ClusterSet([], Available: true));
         }
 
-        var set = await Clusters(repo, sample.Cut, cancellationToken).ConfigureAwait(false);
+        var set = await Clusters(repo, sample.Cut, rules.Limits, cancellationToken).ConfigureAwait(false);
         var plain = AsOfMapCache.Key(repo.Name, sample.Cut, MapExtractor.Version, clustered: false, recognizers);
         var second = set.Available ? Results.Success<Found?>(value: null) : await Cached(plain, clustered: false, cancellationToken).ConfigureAwait(false);
         return second.IsError ? second.Error : new Probe(second.Value, set.Available ? clustered : plain, set);
@@ -123,9 +125,9 @@ internal sealed class AsOfMapBuilder(IRepoReader repos, IClusterSource clusters,
     }
 
     // A cluster source that fails reads like one that is absent; a denied path never reaches the graph.
-    private async ValueTask<ClusterSet> Clusters(ContextRepo repo, string commit, CancellationToken cancellationToken)
+    private async ValueTask<ClusterSet> Clusters(ContextRepo repo, string commit, GraphifyLimits limits, CancellationToken cancellationToken)
     {
-        var set = await clusters.Clusters(repo, commit, cancellationToken).ConfigureAwait(false);
+        var set = await clusters.Clusters(repo, commit, limits, cancellationToken).ConfigureAwait(false);
         return set.IsError || !set.Value.Available
             ? new ClusterSet([], Available: false)
             : new ClusterSet([.. set.Value.Clusters.Select(c => c with { Files = [.. c.Files.Where(f => !repo.Denies(f))] }).Where(c => c.Files.Count > 0)], Available: true);
