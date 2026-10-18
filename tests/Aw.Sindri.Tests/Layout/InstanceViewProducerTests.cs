@@ -133,6 +133,27 @@ public sealed class InstanceViewProducerTests
     }
 
     [Fact]
+    public void An_instance_parked_on_a_branch_state_after_a_loop_shows_every_state_it_visited_as_done()
+    {
+        var plain = _incident.Recipe;
+        var branching = _incident with
+        {
+            Recipe = plain with
+            {
+                States = new Dictionary<string, RecipeState>(plain.States, StringComparer.Ordinal) { ["review"] = plain.States["checks"] },
+                Transitions = [.. plain.Transitions, plain.Transitions[0] with { From = ["checks"], To = "review" }],
+            },
+        };
+        var instance = EngineFixture.At(branching.Recipe, "review") with { Visited = ["produce", "checks", "verify", "review"] };   // produce, checks, verify, back to produce, checks, then the branch
+
+        var view = InstanceViews.Of(instance, branching, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
+
+        Assert.Equal(
+            [("produce", StateGlyph.Done), ("checks", StateGlyph.Done), ("verify", StateGlyph.Done), ("review", StateGlyph.Active), ("done", StateGlyph.Pending)],
+            view.States.Select(static c => (c.State, c.Glyph)));
+    }
+
+    [Fact]
     public void A_finished_instance_has_its_terminal_state_done_with_the_outcome_and_every_main_path_state_done()
     {
         var view = StatusCases.View("done");
