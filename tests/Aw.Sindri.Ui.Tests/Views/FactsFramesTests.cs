@@ -43,7 +43,7 @@ public sealed class FactsFramesTests : FrameHost
         Click(button);
         await Until(window, () => alert.Viewer is PayloadFactViewer { IsLoading: false });
 
-        Assert.IsType<PayloadFactViewer>(alert.Viewer);
+        _ = Assert.IsType<PayloadFactViewer>(alert.Viewer);
         Assert.Equal(FixtureInstances.Detail("incident-loop").Facts.Count, window.GetVisualDescendants().OfType<TextBlock>().Count(t => t.Name == "FactLabel"));
         Assert.False(Visible(window, "PayloadScalar"));   // the body is drawn once, as the tree
         Assert.True(Visible(window, "PayloadTree"));

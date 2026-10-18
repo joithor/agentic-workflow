@@ -111,7 +111,7 @@ public sealed class InstanceFramesTests : FrameHost
         Assert.Empty(Buttons(window, "LockButton"));
         Assert.All(Texts(window, "CommandCli"), t => Assert.Equal(TextWrapping.Wrap, t.TextWrapping));   // a long CLI wraps inside the frame, never clipped at the right
         var scrolls = Named<Border>(window, "ExpandedState").GetVisualAncestors().OfType<ScrollViewer>().ToList();
-        Assert.Equal("InstanceSheetScroll", Assert.Single(scrolls.Where(sv => sv.Name?.EndsWith("SheetScroll", StringComparison.Ordinal) == true)).Name);   // the frame scrolls once
+        Assert.Equal("InstanceSheetScroll", Assert.Single(scrolls, sv => sv.Name?.EndsWith("SheetScroll", StringComparison.Ordinal) == true).Name);   // the frame scrolls once
         Assert.Empty(Named<Border>(window, "ExpandedState").GetVisualDescendants().OfType<ScrollViewer>());   // and the expanded state has no scroll region of its own
         Frame(window, "incident-loop");
 

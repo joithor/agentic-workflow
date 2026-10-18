@@ -58,7 +58,7 @@ public sealed class WorkflowsFramesTests : FrameHost
     private static void StateColumns(Window window, ShellViewModel shell)
     {
         var group = shell.Workflows.Groups[0];
-        var heads = window.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "WorkflowColumnHead" && b.IsEffectivelyVisible && group.Columns.Contains((string)b.DataContext!)).ToList();
+        var heads = window.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "WorkflowColumnHead" && b.IsEffectivelyVisible && group.Columns.Contains((string)b.DataContext!, StringComparer.Ordinal)).ToList();
         Assert.Equal(group.Columns.Count, heads.Count);
         Assert.All(heads, h => Assert.Equal((h.DataContext, TextWrapping.NoWrap), (ToolTip.GetTip(h), h.GetVisualDescendants().OfType<TextBlock>().Single().TextWrapping)));
         Assert.All(heads, h => Assert.Equal((string)h.DataContext!, Heard.Wrapper(h)));
