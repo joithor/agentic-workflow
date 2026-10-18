@@ -72,6 +72,7 @@ using Aw.Sindri.Features.PauseService;
 using Aw.Sindri.Features.PingProcess;
 using Aw.Sindri.Features.ReadLedger;
 using Aw.Sindri.Features.RebuildViews;
+using Aw.Sindri.Features.RecordEval;
 using Aw.Sindri.Features.RecordHeartbeat;
 using Aw.Sindri.Features.RegisterMcp;
 using Aw.Sindri.Features.RegisterRecipe;
@@ -129,6 +130,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddSingleton<IJobRunner>(static sp => sp.GetRequiredService<JobRunner>()).AddSingleton<IJobCancellation>(static sp => sp.GetRequiredService<JobRunner>())
             .AddScoped<IService<ValidateRecipeRequest, ValidateRecipeResponse>, ValidateRecipeService>()
             .AddScoped<IService<EvalRecipeRequest, EvalRecipeResponse>, EvalRecipeService>()
+            .AddScoped<IService<RecordEvalRequest, RecordEvalResponse>, RecordEvalService>()
             .AddRecipeBlocks()
             .AddRegistrySlices()
             .AddContextSlices()

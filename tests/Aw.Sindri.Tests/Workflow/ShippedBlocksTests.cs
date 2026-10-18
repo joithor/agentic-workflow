@@ -51,12 +51,12 @@ public sealed class ShippedBlocksTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task The_budget_gate_and_the_two_effects_have_runtimes_and_the_desk_steps_run_on_the_desk()
+    public async Task The_two_gates_and_the_two_effects_have_runtimes_and_the_desk_steps_run_on_the_desk()
     {
         await using var provider = Composed();
         await using var scope = provider.CreateAsyncScope();
 
-        _ = Assert.IsType<BudgetAvailableGate>(Assert.Single(scope.ServiceProvider.GetServices<IGate>()));
+        Assert.Equal([typeof(BudgetAvailableGate), typeof(RouteStartableGate)], scope.ServiceProvider.GetServices<IGate>().Select(static g => g.GetType()));   // engine P7 adds the route stub
         Assert.Empty(scope.ServiceProvider.GetServices<IStep>());
         Assert.Equal([typeof(ClaimRefEffect), typeof(NotifyDeskEffect)], scope.ServiceProvider.GetServices<IEffectKind>().Select(static e => e.GetType()));   // engine P6
     }
@@ -85,7 +85,7 @@ public sealed class ShippedBlocksTests
         Assert.Equal(capabilities, FixtureCatalog.Shipped().Find(BlockId.From(id))!.Capabilities);   // why: the catalog test pins every shipped id
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("item.routed", "router.stub", EventRoute.Item, new[] { "startable", "notStartable" }, new[] { "fact:stepSpec" })]
+    [InlineData("item.routed", "service:router-stub", EventRoute.Item, new[] { "startable", "notStartable" }, new[] { "fact:stepSpec" })]
     [InlineData("claim.created", "system:dispatcher", EventRoute.Causation, new[] { "created", "claimExists" }, new string[0])]
     [InlineData("notify.delivered", "system:dispatcher", EventRoute.Causation, new[] { "delivered" }, new string[0])]
     public void Each_event_declares_its_producer_route_outcomes_and_facts(string kind, string producer, EventRoute route, string[] outcomes, string[] facts)

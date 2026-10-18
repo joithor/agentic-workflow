@@ -107,8 +107,7 @@ The same eval run twice prints the same output.
 `--scaffold <file>` prints a happy-path case for the recipe on stdout, marked `"scaffold": true` on line 1: the start
 with a placeholder for each input, then, from the initial state, the first of each state's declared outcomes whose
 transition moves into a state not yet visited, until a terminal state. Every gate passes, and each line expects what the
-engine did, so it passes once it is in the recipe's `evals:`. `--record <address> --out <file>` writes a live instance's
-history in the same format; it needs the server's instances (P4) and exits 2 until then.
+engine did, so it passes once it is in the recipe's `evals:`. `--record <address> --out <file>` (engine P7) writes a served instance's history in the same format, read from the ledger and the stored facts without contacting serve: the recipe is the address's recipe as approved now. A child's park, resume and escalation come back as `child.parked`, `child.resumed` and `child.escalated`, and its end as `wait.satisfied` with the child's outcome and the child's declared outputs the parent kept under the child's own keys (a renamed output is not recorded under the rename). A trigger an eval line can't name (a held event's expiry, a drift wake) refuses the recording. It writes nothing when the file exists or the ledger has no event of the address (`SND-WF-001`).
 
 A recipe with a route state (a `step.judge.choose`, see "Writing a decision tree") has a path per choice, plus `uncertain` and `step_failed` (the Step failing); `--scaffold <file> --out <dir>` writes each as `<dir>/scaffold-<branch>.jsonl` and prints the paths. It refuses when any of those files exists (`SND-CLI-003`) and writes nothing then.
 
@@ -116,7 +115,7 @@ A recipe with a route state (a `step.judge.choose`, see "Writing a decision tree
 |---|---|
 | 0 | Every case passes, or the recipe declares none |
 | 1 | A case fails (`<case> fail at <file>:<line>: <detail>`) |
-| 2 | A usage error (no file, `--record` without an address and `--out`: `SND-CLI-003`; an unknown argument: `SND-CLI-001`; `--record` itself until P4: `SND-CLI-001 … needs the server (P4)`), or a tool error: the recipe can't be read (`SND-RECIPE-010`) or doesn't bind (`SND-RECIPE-001`, fix: `sindri recipe validate`), a listed eval file is missing, unreadable or outside the recipe's directory (`SND-RECIPE-008`), or a bug inside `sindri` (`SND-API-005 recipe eval failed inside sindri: …`) |
+| 2 | A usage error (no file, `--record` without an address and `--out`: `SND-CLI-003`; an unknown argument: `SND-CLI-001`; `--record` of an address the ledger never saw: `SND-WF-001`; an `--out` file that exists: `SND-CLI-003`), or a tool error: the recipe can't be read (`SND-RECIPE-010`) or doesn't bind (`SND-RECIPE-001`, fix: `sindri recipe validate`), a listed eval file is missing, unreadable or outside the recipe's directory (`SND-RECIPE-008`), or a bug inside `sindri` (`SND-API-005 recipe eval failed inside sindri: …`) |
 
 ## `sindri recipe register`, `show` and `list`
 
@@ -580,6 +579,34 @@ transition decides which to keep (decision-tree spec §8.4, DT-C). The complete 
   child's keys. A parent branch that tests the renamed fact (`when: { fact: fact:exported, is: present }`) is reached only
   if the line carried it. The test of a `when` runs before the transition's own `produces`, so it reads facts recorded earlier. A `when` reads the trigger's outputs under the child's keys, not the renamed ones.
 
+## Children, gates and the item stubs (engine P7)
+
+A `waitFor: { child }` state's entry starts the child as a Temporal child workflow (`ParentClosePolicy.Terminate`) whose
+workflow id is the child's address, `{parent}/{recipe name}.{entry}`; a looped child wait therefore starts a new child on
+each entry, and a child may wait on its own child (RCP-CHILD-003 allows depth 4). The child is created from the hash its
+parent's approval pinned: `LoadChildren`, a local activity, reads the pinned children and their pinned children, and an
+unpinned or re-hashed child is refused (`SND-RECIPE-002`).
+
+- **Up:** the child signals its parent (`child`) when it parks, escalates or resumes; the parent decides it through the
+  pure rules (`onParked: propagate` mirrors the park as `parked: <reason> (child)`, an escalation always escalates the parent
+  as `child`, a resume ends the mirror). A change the parent can't take while it is suspended by something else is held and
+  tried again after the parent's next change.
+- **Down:** an answer to a parent that mirrors a child goes to the child (see "Start, answer, command and cancel"). A parent that ends,
+  by a cancel or any other ending, signals each live child to cancel (`parentCancel`, origin `parent`; workflow code can't send an
+  Update), so each records its own `cancelled` and frees its claim; the parent waits up to 30 seconds for them, then the parent-close
+  terminate backstops. A history without the `p7-children` marker starts no child.
+- **The end:** the child's workflow result carries its outcome and its declared `outputs` present at its end, **whichever
+  outcome fired but `cancelled`**; the parent's `wait.satisfied` carries them and its `produces` picks (and renames) from them
+  (DT spec §8.4). A child that fails or is terminated from outside ends the wait as `cancelled`.
+- **Status reads each child live:** the parent's own view lists its live children; `GetInstance` through the control plane
+  replaces each child's state with the answer of that child's own query (`unreachable` when none answers). The needs-you row of a
+  mirrored park names the child's address in `child` (the `workflow.*` event's suspension carries `mirrorsAddress`, omitted otherwise).
+- **Gates:** before the loop decides a trigger it asks which transition the trigger matches; when that transition has gates, the
+  `EvaluateGates` local activity runs each over the registered runtimes (`gate.route.startable`, `gate.budget.available`).
+- **Item stubs (spec §12):** `workflow.item` is routed by the router stub, a hosted service that appends `item.routed` when a
+  `workflow.item` starts, with the outcome `workflow.route: { startable: all|none }` of the approved profile says; a `slot` wait is granted at once by
+  the interpreter. Nothing but `workflow.route: { startable: none }` holds an item back.
+
 ## Temporal foundation
 
 Engine rev 8 runs recipe instances on Temporal (engine spec §0, §5; README X53). Temporal is decided (owner,
@@ -732,9 +759,8 @@ digests). It never holds an answer's text or a parked question, and no row but `
 row carries the start's key and actor, plus the subject as named at start (`delta.subject`: kind, key and the label or rendered
 name, §3.11: a text subject's key and label are cut to 40/80 and the rendered name to 40 per value and 80 in all, while a
 link or payload subject's key and label are copied as stored) and each input's producer (`delta.producers`,
-`engine:generate` for a generated input); a held event's expiry and the desk deadline's park, which have no decision, carry no `detail`. Gates have no runtime in the interpreter yet, so a matched transition's gate refuses (fail closed, W5) and the
-refusal follows §5.8's precedence. A wait state's timer wakes the wait like a delivered event, and `TransitionDecision.Expired` decides the expiry (park, escalate, or retry once); a child wait doesn't
-start its child until P7.
+`engine:generate` for a generated input); a held event's expiry and the desk deadline's park, which have no decision, carry no `detail`. A matched transition's gates run in the `EvaluateGates` local activity (engine P7, "Children, gates and the item stubs" below); a gate with no runtime refuses (fail closed, W5) and the
+refusal follows §5.8's precedence. A wait state's timer wakes the wait like a delivered event, and `TransitionDecision.Expired` decides the expiry (park, escalate, or retry once); a child wait starts its child as a Temporal child workflow (engine P7, below).
 
 | Search attribute | Value |
 |---|---|
@@ -784,7 +810,7 @@ The `--json` output is the served body as the CLI's serializer prints it: `list`
   outcome and the outputs required on it), the answer line per park reason (`--grant 1`, `--grant-tokens <half the
   state's budget>`, `--text`, `--resume [--text]`, `--resume`, `--accept`, and the approval or cancel a spec-conflict
   needs), the drift line for a drift recorded behind a park, the budgets, and `allowedCommands`. A spec-conflict park
-  whose only way out is an approval or a cancel (revoked, child revoked, drift) offers no `answer`. An open park or escalation serves one `answer` entry per fitting variant, each under its catalog id (`answer-text`, `answer-resume`, `answer-grant`, `answer-grant-tokens`, `answer-accept`, `answer-reject`), the status line's own variant first, each with the full command that runs it (the status line itself may keep its hint form, such as `--resume [--text <answer>]`; `--text <answer>` stays a template because the text is the person's). A suspension that mirrors a child serves only the variants its reason alone fixes (rounds, no-progress, timeout, no-runtime). An escalation from a child and a mirrored needs-answer, budget or spec-conflict park serve none, and their status `answer` line points at the child (`sindri workflow answer <address> <the child's answer>`, `(forwarded to <child>)`, action id `answer-text`) and is marked explicitly: `via: "child"` and `child: <the child's address>` on the status answer record (both omitted on every other answer; `child` is present only when the served view lists the mirrored child, matched by its instance id, and the control plane does not list children yet, so expect `via: "child"` without `child` until P7 wires child propagation into the served view); the needs-you row carries the same `via` marker, so a client never reads the cli text to tell a pointer from a form. A budget grant's amount is whole `k` or `M` when exact, else the plain integer, so it parses (`TokenCounts.Format`) whenever a cap exists to halve; a budget park with no cap (a `gate.budget` refusal on a recipe with no budget) serves no `answer-grant-tokens` entry, and its status line keeps the `--grant-tokens <n>` hint. The one table of which variants fit is `AnswerVariants.Fitting`, shared by the answer check and the served list.
+  whose only way out is an approval or a cancel (revoked, child revoked, drift) offers no `answer`. An open park or escalation serves one `answer` entry per fitting variant, each under its catalog id (`answer-text`, `answer-resume`, `answer-grant`, `answer-grant-tokens`, `answer-accept`, `answer-reject`), the status line's own variant first, each with the full command that runs it (the status line itself may keep its hint form, such as `--resume [--text <answer>]`; `--text <answer>` stays a template because the text is the person's). A suspension that mirrors a child serves only the variants its reason alone fixes (rounds, no-progress, timeout, no-runtime). An escalation from a child and a mirrored needs-answer, budget or spec-conflict park serve none, and their status `answer` line points at the child (`sindri workflow answer <address> <the child's answer>`, `(forwarded to <child>)`, action id `answer-text`) and is marked explicitly: `via: "child"` and `child: <the child's address>` on the status answer record (both omitted on every other answer; `child` is present only when the served view lists the mirrored child, matched by its instance id, and a parent's view lists its live children, each with the state that child answers now (engine P7); a child the status read cannot reach shows the state `unreachable`, never its last known one); the needs-you row carries the same `via` marker, so a client never reads the cli text to tell a pointer from a form. A budget grant's amount is whole `k` or `M` when exact, else the plain integer, so it parses (`TokenCounts.Format`) whenever a cap exists to halve; a budget park with no cap (a `gate.budget` refusal on a recipe with no budget) serves no `answer-grant-tokens` entry, and its status line keeps the `--grant-tokens <n>` hint. The one table of which variants fit is `AnswerVariants.Fitting`, shared by the answer check and the served list.
 - **Layout** (`StatusLayout`): the labels take 12 columns, `next` wraps at 120, and the lines come in a fixed order:
   next, child, inputs, drift, timeout, paused, budget (beside an open desk task, as §6.4 shows it), answer, commands.
   An input's digest prints as its first four hex digits and `...` (ASCII for §6.4's ellipsis). The answer note is set
@@ -895,6 +921,10 @@ the code's kind, or is absorbed when the same revoke already parked it.
 - **Effect rows are ledger events**, payload `EffectRow` (identity, command id, kind, origin `recipe` or `engine`, state
   `pending`, `dispatched`, `refused` or `cancelled`, instance, code, reason). `outbox list` folds them by command. Kernel's
   `outbox_commands` and `IOutbox` are not used by the engine.
+- **Claim cleanup (engine P7, IDEA-033).** After any ending, `cancelled` included, `RecipeWorkflow.Cleanup.cs` runs the
+  `ReleaseClaim` activity in a detached scope (a cancel of the workflow itself does not skip it): if this instance still owns
+  the item's claim it deletes `refs/sindri/{user}/{item}` and frees the `workflow_claims` row; a claim another instance took
+  over is left alone. Histories without the `p7-children` marker run no cleanup. P8's worktree removal joins the same seam.
 - **Identity** is `{instance id}:{entry}:{index}`; an engine notice's is `{instance id}:{entry}:n{version}`
   (`EffectIdentity.ForNotice`); `effect.claim.ref` keys by item through `workflow_claims`. A re-emission (a `retry`, a
   resumed dispatch park) gets a new command id under the same identity, and the block's existence check makes it harmless.

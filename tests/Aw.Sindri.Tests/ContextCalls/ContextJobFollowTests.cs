@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Tests.Commands;
 using static Aw.Sindri.Tests.Commands.JobRig;
@@ -16,7 +17,7 @@ public sealed class ContextJobFollowTests : IDisposable
     [InlineData("/sindri/context/map/build", "map", "build")]
     public async Task Without_detach_the_verb_follows_the_started_job_to_its_result(string route, params string[] args)
     {
-        var api = new JobApi().Ok("POST", route, Body(Started));
+        var api = new JobApi().Ok("POST", route, Body(Started)).Ok("GET", "/sindri/jobs/" + Id, View(JobState.Succeeded, rounds: 2, summary: "done"));   // a build reads the final job for its result
         var verbs = new ContextJobVerbs(Client(api), _rig.Output(), _rig.Follower(api));
         var run = Task.Run(() => verbs.Run(args, _rig.Interrupted, _rig.Again), TestContext.Current.CancellationToken);
         await api.Until(() => api.Streams == 1);

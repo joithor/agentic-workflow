@@ -85,6 +85,11 @@ internal sealed class StartCommand(IControlPlaneProbe probe, IControlPlaneLaunch
 
     private async Task<Result<(ControlEndpoint Endpoint, Ping Ping)>> Find(bool launch, CancellationToken ct)
     {
+        if (client.SettingRefusal is { } refused)
+        {
+            return refused;   // a malformed setting is refused before a start launches anything
+        }
+
         var found = await probe.Check(ct).ConfigureAwait(false);
         if (found.IsSuccess || found.Error.Code != SindriErrors.NotRunning.Code)
         {
