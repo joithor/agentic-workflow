@@ -34,9 +34,10 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<FactReadActivities>()
             .AddSingleton<EffectDispatch>(static provider => (context, ct) => DispatchScoped(provider, context, ct))   // engine P6 unit (a): RunEffect runs a scoped block by id
             .AddSingleton<EffectActivities>()                          // engine P6: RecordEffect, RecheckEffect, RunEffect
-            .AddSingleton(provider => SindriWorker.Options(settings,
-                provider.GetRequiredService<RunStepActivities>(), provider.GetRequiredService<RecordEventActivities>(),
-                provider.GetRequiredService<FactReadActivities>(), provider.GetRequiredService<EffectActivities>()))
+            .AddStepInputRuntime()
+            .AddSingleton(static provider => new WorkerActivities(provider.GetRequiredService<RunStepActivities>(), provider.GetRequiredService<RecordEventActivities>(),
+                provider.GetRequiredService<FactReadActivities>(), provider.GetRequiredService<EffectActivities>(), provider.GetRequiredService<StepInputActivities>()))
+            .AddSingleton(provider => SindriWorker.Options(settings, provider.GetRequiredService<WorkerActivities>()))
             .AddSingleton<TemporalFrontend>()
             .AddSingleton<KnownInstances>()                            // engine P4: the opaque ids this process has seen (spec §6.3)
             .AddSingleton<IItems, SelfItems>()                       // stub until API P3's items
@@ -63,6 +64,13 @@ public static class SindriWorkflowsServiceCollectionExtensions
     }
 
     /// <summary>The <see cref="EffectDispatch"/> registration: resolves the block AddEffect keyed by the effect's id, in its own scope.</summary>
+    /// <summary>The Step inputs' run time: the in-memory texts (no text is stored), the one runner, the FillInput activity, and the in-process Step's context (no IStep runtime ships yet).</summary>
+    private static IServiceCollection AddStepInputRuntime(this IServiceCollection services) => services
+        .AddSingleton<IInjectionTexts, MemoryInjectionTexts>()
+        .AddSingleton<IStepInputRunner, StepInputRunner>()
+        .AddSingleton<StepInputActivities>()
+        .AddSingleton<StepContexts>();
+
     private static async ValueTask<Result<EffectDone>> DispatchScoped(IServiceProvider provider, EffectContext context, CancellationToken cancellationToken)
     {
         var scope = provider.CreateAsyncScope();

@@ -88,6 +88,7 @@ internal sealed partial class RecipeWorkflow
     {
         ArgumentNullException.ThrowIfNull(start);
         _start = start;
+        _fillsInputs = Workflow.Patched("step-inputs-v1");   // read once: an instance that began before the patch never starts filling halfway through
         _since = Now;
         var loaded = await Workflow.ExecuteLocalActivityAsync(
             (RunStepActivities a) => a.LoadRecipeAsync(start.Recipe),
@@ -120,7 +121,7 @@ internal sealed partial class RecipeWorkflow
     {
         var start = _start ?? throw new InvalidOperationException("the instance has no input yet");
         return (_instance, _recipe) is ({ } instance, { } recipe)
-            ? InstanceViews.Of(instance, recipe, _since, _timers.FiresAt(), new InstanceViewContext(_mirrored, _provenance, Subject: _subject, Contents: _contents)) with { Id = instance.Id }
+            ? InstanceViews.Of(instance, recipe, _since, _timers.FiresAt(), new InstanceViewContext(_mirrored, _provenance, Subject: _subject, Contents: _contents, Injection: _injection)) with { Id = instance.Id }
             : InstanceViews.Starting(start.WorkflowId(), start.Recipe, _since, start.Item, _subject);
     }
 

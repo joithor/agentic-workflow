@@ -77,7 +77,13 @@ internal sealed partial class RecipeWorkflow
     /// </summary>
     private async Task<WorkflowInstance> RunDeskStep(WorkflowInstance instance, OpenRun open, Interpreting context)
     {
-        if (await RunStep(instance, open, context.Recipe.States[instance.Frame.State]).ConfigureAwait(true) is not { } trigger)
+        var filling = await FillInputs(instance, open, context.Recipe.States[instance.Frame.State]).ConfigureAwait(true);
+        if (filling.Parked is { } parked)
+        {
+            return parked;
+        }
+
+        if ((filling.Failed ?? await RunStep(instance, open, context.Recipe.States[instance.Frame.State]).ConfigureAwait(true)) is not { } trigger)
         {
             return await ApplySubmitted(instance, context).ConfigureAwait(true);
         }

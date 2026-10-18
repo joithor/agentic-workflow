@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Blocks;
@@ -8,8 +9,12 @@ namespace Aw.Sindri.Core.Workflow.Blocks;
 /// <param name="Step">The Step it fills for.</param>
 /// <param name="Arguments">Its 'with:' arguments, resolved to values.</param>
 /// <param name="Facts">The instance's facts.</param>
+/// <param name="Repo">The repo the instance's item belongs to (from the ledger, never from a caller); null when it has none.</param>
+/// <param name="Scope">The repo a session caller is scoped to when the fill is a pull on its behalf; null in the run's own fill.</param>
 public sealed record StepInputContext(
     BlockId Input,
     BlockId Step,
     IReadOnlyDictionary<string, JsonElement> Arguments,
-    IReadOnlyDictionary<FactKey, JsonElement> Facts);
+    IReadOnlyDictionary<FactKey, JsonElement> Facts,
+    RepoName? Repo = null,
+    RepoName? Scope = null);

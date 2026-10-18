@@ -8,8 +8,14 @@ namespace Aw.Sindri.Core.Workflow.Blocks;
 /// <param name="Arguments">Its 'with:' arguments, resolved to values.</param>
 /// <param name="Facts">The instance's facts.</param>
 /// <param name="Injection">The sections its Step inputs filled.</param>
+/// <param name="InputResults">The typed results of its Step inputs by input id (W6): read-only, empty when the Step has none, and an input that returned no result is absent.</param>
 public sealed record StepContext(
     BlockId Step,
     IReadOnlyDictionary<string, JsonElement> Arguments,
     IReadOnlyDictionary<FactKey, JsonElement> Facts,
-    InjectionSections Injection);
+    InjectionSections Injection,
+    IReadOnlyDictionary<string, JsonElement>? InputResults = null)
+{
+    /// <summary>The typed results of the Step's inputs, never null.</summary>
+    public IReadOnlyDictionary<string, JsonElement> InputResults { get; init; } = InputResults ?? new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+}

@@ -151,7 +151,7 @@ internal sealed class WorkflowsHarness : IDisposable
     }
 
     /// <summary>Registers and approves <paramref name="yaml"/> (the recipe <paramref name="id"/>) in the home's ledger.</summary>
-    public void Recipe(string id, string yaml) => Assert.Equal(id, Approve(yaml).Id.Value);
+    public void Recipe(string id, string yaml, Action<IServiceCollection>? replace = null) => Assert.Equal(id, Registry(yaml, approve: true, replace).Id.Value);
 
     /// <summary>
     /// Registers <paramref name="yaml"/> in the home's ledger as 'recipe register' keeps it (its normalized long form by
@@ -188,10 +188,10 @@ internal sealed class WorkflowsHarness : IDisposable
         return added.Value.Recipe;
     }
 
-    private RegisteredRecipe Registry(string yaml, bool approve)
+    private RegisteredRecipe Registry(string yaml, bool approve, Action<IServiceCollection>? replace = null)
     {
         var ct = TestContext.Current.CancellationToken;
-        using var sindri = Sindri();
+        using var sindri = replace is null ? Sindri() : Sindri(replace);
         var json = sindri.GetRequiredService<JsonSerializerOptions>();
         var document = sindri.GetRequiredService<IRecipeReader>().Read(yaml, "recipe.yaml").Document;
         Assert.NotNull(document);
