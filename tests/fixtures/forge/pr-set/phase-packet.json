@@ -1,0 +1,9 @@
+{
+  "_synthetic": true,
+  "kind": "phase",
+  "id": "fixture-line-P1",
+  "allowedFiles": ["src/**", "test/**", "README.md", "docs/**", "CHANGELOG.md"],
+  "testPaths": ["test/**"],
+  "unitCommand": "npm test",
+  "proofHead": "@PROVEN@"
+}

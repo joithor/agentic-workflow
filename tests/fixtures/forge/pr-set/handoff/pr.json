@@ -1,0 +1,9 @@
+{
+  "_synthetic": true,
+  "base": "@BASE@",
+  "headBranch": "@HEADREF@",
+  "headSha": "@PROVEN@",
+  "stackParent": @STACKPARENT@,
+  "title": "feat: print results as JSON with --json",
+  "labels": ["fixture"]
+}
