@@ -32,7 +32,7 @@ public abstract class BlockContract : DescriptorContract
         var kind = Descriptor.Kind switch
         {
             BlockKind.Gate => typeof(IGate),
-            BlockKind.Step => typeof(IStep),
+            BlockKind.Step => Descriptor.Runtime == BlockRuntime.Block ? typeof(IBlockStep) : typeof(IStep),   // a block-runtime Step is an IBlockStep, not an IStep
             BlockKind.Effect => typeof(IEffectKind),
             BlockKind.StepInput => typeof(IStepInput),
             BlockKind.EvidenceProvider => typeof(IEvidenceProvider),
