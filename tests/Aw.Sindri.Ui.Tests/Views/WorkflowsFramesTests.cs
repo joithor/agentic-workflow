@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json.Nodes;
 using Avalonia.Automation.Peers;
 using Avalonia.Controls;
+using Avalonia.Media;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
@@ -48,8 +49,26 @@ public sealed class WorkflowsFramesTests : FrameHost
         Expect.Sequence(shell.Workflows.Groups.Select(g => g.RecipeLinkName), recipeButtons.Select(Heard.Name));   // reached and named, by the peer
         Assert.All(recipeButtons, b => Assert.StartsWith(b.Content!.ToString()![..^2], Heard.Name(b), StringComparison.Ordinal));
         AssistiveNames(window, shell);
+        StateColumns(window, shell);
         Frame(window, "u8-workflows-open", Prefix);
     });
+
+    // A recipe with many states stays readable: every state has the same fixed width under its head and in each row, a head and a cell are one line
+    // (a long name is cut with an ellipsis, never wrapped mid-word) and carry the full words as their tooltip, and the grid scrolls sideways.
+    private static void StateColumns(Window window, ShellViewModel shell)
+    {
+        var group = shell.Workflows.Groups[0];
+        var scope = window.GetVisualDescendants().OfType<Ui.Views.Workflows.RecipeGroup>().First(g => ReferenceEquals(g.DataContext, group));
+        var heads = scope.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "WorkflowColumnHead" && b.IsEffectivelyVisible).ToList();
+        Assert.Equal(group.Columns.Count, heads.Count);
+        Assert.All(heads, h => Assert.Equal((h.DataContext, TextWrapping.NoWrap), (ToolTip.GetTip(h), h.GetVisualDescendants().OfType<TextBlock>().Single().TextWrapping)));
+        Assert.All(heads, h => Assert.Equal((string)h.DataContext!, Heard.Wrapper(h)));
+        var cells = scope.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "WorkflowStageCell" && b.IsEffectivelyVisible).ToList();
+        Assert.NotEmpty(cells);
+        Assert.All(cells, c => Assert.Equal((heads[0].Bounds.Width, TextWrapping.NoWrap), (c.Bounds.Width, c.GetVisualDescendants().OfType<TextBlock>().Single().TextWrapping)));
+        Assert.All(heads, h => Assert.Equal(heads[0].Bounds.Width, h.Bounds.Width));
+        Assert.NotNull(window.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault(s => s.Name == "WorkflowGroupScroll" && s.HorizontalScrollBarVisibility == Avalonia.Controls.Primitives.ScrollBarVisibility.Auto));
+    }
 
     // What assistive tech hears, from each control's automation peer (a TextBlock's peer ignores a Name, so these sit on wrappers): review run 2, W5 and W6.
     private static void AssistiveNames(Window window, ShellViewModel shell)

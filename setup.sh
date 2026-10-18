@@ -6,6 +6,7 @@
 #   ./setup.sh --install-agents [--providers ...] [--dry-run]
 #   ./setup.sh [--providers ...] --with-sindri   # also build and install the sindri CLI (opt-in)
 #   ./setup.sh [--providers ...] --with-meta     # also install the /meta harness: aw-meta CLI, hooks, launcher (opt-in)
+#   ./setup.sh [--providers ...] --with-fleet    # also install the aw:fleet session-state hook for Sindri's session collector (opt-in)
 #   ./setup.sh --profile <web-app|ios|personal> --target <dir> [--dry-run]
 #
 # --providers defaults to every provider whose CLI is installed
@@ -25,7 +26,7 @@ CLAUDE_DIR="$HOME/.claude"
 ALL_PROVIDERS="claude codex cursor"
 
 usage() {
-  sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'
 }
 
 # System packages are installed when missing (config/lib/sys-pkg.sh: Homebrew on macOS, sudo + the distro's package
@@ -136,6 +137,7 @@ PROVIDERS_ARG=""
 AW_DRY_RUN=0
 WITH_SINDRI=0
 WITH_META=0
+WITH_FLEET=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --providers) PROVIDERS_ARG="${2:-}"; shift 2 || { echo "--providers needs a value"; exit 1; } ;;
@@ -144,6 +146,7 @@ while [ $# -gt 0 ]; do
     --dry-run) AW_DRY_RUN=1; shift ;;
     --with-sindri) WITH_SINDRI=1; shift ;;
     --with-meta) WITH_META=1; shift ;;
+    --with-fleet) WITH_FLEET=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown option: $1"; echo ""; usage; exit 1 ;;
   esac
@@ -608,6 +611,19 @@ if [ "$WITH_META" = "1" ]; then
     # (set -e must not end setup here: the rc is kept, the rest of setup runs, and the exit code and message come last)
     aw_setup_meta_step "$SCRIPT_DIR" $PROVIDERS || META_RC=$?
   fi
+fi
+
+# --- Session state hook (opt-in: ./setup.sh --with-fleet): the aw:fleet hook writes one small state file per session
+# (running, asking, idle, ended; never a prompt or tool input) for Sindri's session collector. Per provider, after the provider
+# install, since its entries merge into the settings that install copies from the template. ---
+if [ "$WITH_FLEET" = "1" ]; then
+  for _p in $PROVIDERS; do
+    if aw_dry; then
+      echo "  [dry-run] would run scripts/install-fleet.sh --provider $_p"
+    else
+      bash "$SCRIPT_DIR/scripts/install-fleet.sh" --provider "$_p"
+    fi
+  done
 fi
 
 # --- Provider registry (read by the skill preamble) ---
