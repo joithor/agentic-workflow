@@ -13,8 +13,11 @@ public static class DenyRuleExpansion
     {
         ArgumentNullException.ThrowIfNull(rules);
         ArgumentNullException.ThrowIfNull(hooks);
-        var include = true;
-        if (!include)
+        var prefixes = hooks.Kept.Select(HookInventory.Find)
+            .Where(h => h is { Treatment: HookTreatment.KeepDenyRewrites, RewritePrefix.Length: > 0 })
+            .Select(h => h!.RewritePrefix!)
+            .ToList();
+        if (prefixes.Count == 0)
         {
             return rules;
         }
@@ -23,16 +26,15 @@ public static class DenyRuleExpansion
         foreach (var rule in rules)
         {
             expanded.Add(rule);
-            if (rule.Effect != InnerRuleEffect.Deny || !string.Equals(rule.Tool, "Bash", StringComparison.Ordinal) || !rule.Pattern.EndsWith(Prefix, StringComparison.Ordinal))
+            if (rule.Effect != InnerRuleEffect.Deny || !string.Equals(rule.Tool, "Bash", StringComparison.Ordinal))
             {
                 continue;
             }
 
-            expanded.Add(rule with { Pattern = "rtk " + rule.Pattern });
-            var command = rule.Pattern[..^Prefix.Length];
-            if (command.Contains(' ', StringComparison.Ordinal))
+            expanded.AddRange(prefixes.Select(p => rule with { Pattern = p + rule.Pattern }));
+            if (rule.Pattern.EndsWith(Prefix, StringComparison.Ordinal) && rule.Pattern[..^Prefix.Length] is var command && command.Contains(' ', StringComparison.Ordinal))
             {
-                expanded.Add(rule with { Pattern = "*" + command + "*" });
+                expanded.Add(rule with { Pattern = "*" + command + "*" });   // why: a rewrite may also move the command (wrappers, 'cd x &&')
             }
         }
 

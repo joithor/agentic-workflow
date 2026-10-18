@@ -12,19 +12,20 @@ public static class HookPermissionPolicy
     public static HookTreatment TreatmentOf(string hook)
     {
         ArgumentNullException.ThrowIfNull(hook);
-        return HookTreatment.Keep;
+        return HookInventory.Find(hook)?.Treatment ?? HookTreatment.Keep;
     }
 
     /// <summary>The hooks a sandboxed session keeps and leaves out.</summary>
     /// <param name="installed">The hooks installed on the box, or null for the inventory itself.</param>
-    /// <returns>The kept and omitted names, with a note for every installed hook the inventory doesn't list.</returns>
+    /// <returns>The kept and omitted names, in inventory order then the unlisted ones, with a note for every installed hook the inventory doesn't list.</returns>
     public static PlanHooks ForSession(IReadOnlyList<string>? installed = null)
     {
-        _ = installed;
-        var scripts = HookInventory.Scripts;
+        var names = installed is null ? HookInventory.Scripts.Select(s => s.Name).ToList() : [.. installed.Distinct(StringComparer.Ordinal)];
+        var listed = HookInventory.Scripts.Select(s => s.Name).Where(n => names.Contains(n, StringComparer.Ordinal)).ToList();
+        var unlisted = names.Where(n => HookInventory.Find(n) is null).ToList();
         return new PlanHooks(
-            [.. scripts.Where(s => !s.AnswersPermissions).Select(s => s.Name)],
-            [.. scripts.Where(s => s.AnswersPermissions).Select(s => s.Name)],
-            []);
+            [.. listed.Where(n => TreatmentOf(n) != HookTreatment.Drop), .. unlisted],
+            [.. listed.Where(n => TreatmentOf(n) == HookTreatment.Drop)],
+            [.. unlisted.Select(n => $"hook '{n}' is not in the sandbox's hook inventory, so it is kept (the default); add it to HookInventory with its treatment")]);
     }
 }
