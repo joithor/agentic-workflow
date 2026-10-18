@@ -2,13 +2,14 @@ using Aw.Meta.Core;
 using Aw.Meta.Core.Health;
 using Aw.Meta.Features.Health;
 using Aw.Meta.Testing;
+using Aw.Meta.Tests.Reserve;
 
 namespace Aw.Meta.Tests.Health;
 
 public sealed class HealthTests
 {
     private const string Temporal = "temporal server start-dev --port 7233 --db-filename /tmp/aw-sindri-ab12/temporal.db";
-    private const string Headroom = "node /x/headroom-mcp.js";
+    private const string McpServer = "node /x/fetch-mcp.js";
     private readonly MetaWorld _world = new();
 
     private HealthService Service() => new(
@@ -16,6 +17,8 @@ public sealed class HealthTests
         new LaneCheck(_world.Config, _world.Sessions, _world.Messages, _world.Lanes, _world.LaneHealth),
         new OrphanKiller(_world.Processes, _world.Log, _world.Clock),
         _world.Values,
+        _world.Config,
+        Worlds.Advisor(_world),
         _world.Clock);
 
     private async Task<HealthResponse> Check(bool kill = false)
@@ -40,13 +43,71 @@ public sealed class HealthTests
         AllLanesLive();
         _world.Processes.Add(new ProcessInfo(10, 1, "claude --resume a", RssKb: 1_048_576, AgeSeconds: 5000));
         _world.Processes.Add(new ProcessInfo(11, 1, "dotnet build X.slnx", RssKb: 524_288, AgeSeconds: 60));
-        _world.Resources.Resources = new HostResources(16_000_000, 8_000_000, 100_000, 50_000_000_000);
+        _world.Resources.Resources = new HostResources(24_000_000, 12_000_000, 100_000, 50_000_000_000);
 
         var health = await Check();
 
         Assert.Equal([new ProcessGroup("claude", 1, 1024), new ProcessGroup("dotnet", 1, 512)], health.Groups);
         Assert.Equal((2, 50), (health.ProcessCount, health.Host.AvailablePercent));
         Assert.False(health.Attention);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_heavy_slots_the_reservation_and_the_builders_advice_are_reported()
+    {
+        await _world.Ready();
+        AllLanesLive();
+        _world.Heavy.Record = new HeavyReserveRecord(2, 5, A.At(50));
+        _world.Resources.Resources = new HostResources(64_000_000, 16_000_000, 0, DiskFreeBytes: 132L * 1024 * 1024 * 1024);
+
+        var health = await Check();
+
+        Assert.Equal(new HeavySlots(3, 2, 5, A.At(50)), health.Heavy);
+        Assert.Equal("heavy reservation: 2 of 3 slots (queue depth 5) - set it with meta-gate-reserve 5", health.Heavy!.Line());
+        Assert.Equal("builders: 4 per lane (disk 132 GB free, mem 15 GB available)", health.Builders!.Line());
+        Assert.False(health.Attention);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_reservation_nobody_recomputed_for_half_an_hour_is_reported_stale()
+    {
+        await _world.Ready();
+        AllLanesLive();
+        _world.Heavy.Record = new HeavyReserveRecord(2, 5, A.At(20));
+
+        var health = await Check();
+
+        Assert.True(health.Heavy!.Stale);
+        Assert.EndsWith("[stale: computed 04:20Z; run status or gate-run to recompute]", health.Heavy.Line(), StringComparison.Ordinal);
+        Assert.Equal(_world.Heavy.Record, await KeptRecord());   // health only reads
+    }
+
+    private async Task<HeavyReserveRecord?> KeptRecord() => (await _world.Heavy.Read(CancellationToken.None)).Value;
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_builders_advice_follows_the_team_configs_thresholds()
+    {
+        _ = await _world.Config.Save(
+            new Core.Config.TeamConfig("t1", "/work", ["meta", "api", "ui"]) { Builders = new Core.Config.BuildersConfig(MaxPerLane: 3, WorktreeGb: 10) },
+            CancellationToken.None);
+        _world.Resources.Resources = new HostResources(64_000_000, 32_000_000, 0, DiskFreeBytes: 80L * 1024 * 1024 * 1024);
+
+        var health = await Check();
+
+        // meta is not a lane that builds: 2 lanes; 30 + 2 x 3 x 10 = 90 > 80, 30 + 2 x 2 x 10 = 70 fits
+        Assert.Equal((2, 3), (health.Builders!.PerLane, health.Builders.MaxPerLane));
+        Assert.Equal("builders: 2 per lane (disk below floor+headroom)", health.Builders.Line());
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Without_a_team_config_the_advice_uses_the_defaults()
+    {
+        _world.Resources.Resources = new HostResources(64_000_000, 32_000_000, 0, DiskFreeBytes: 200L * 1024 * 1024 * 1024);
+
+        var health = await Check();
+
+        Assert.Equal(4, health.Builders!.PerLane);
+        Assert.Null(health.Heavy);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -95,6 +156,21 @@ public sealed class HealthTests
         Assert.True(health.Attention);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(7_000_000, true)]    // 7 GB available of 64: under the 8 GB floor, though over a tenth of the total
+    [InlineData(9_000_000, false)]
+    public async Task Memory_is_low_by_the_same_floor_the_watch_uses(long availableKb, bool low)
+    {
+        await _world.Ready();
+        AllLanesLive();
+        _world.Resources.Resources = new HostResources(64_000_000, availableKb, 0, 50_000_000_000);
+
+        var health = await Check();
+
+        Assert.Equal(low, health.MemoryLow);
+        Assert.Equal(low, health.Attention);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task A_configured_lane_with_no_live_session_is_missing()
     {
@@ -124,12 +200,12 @@ public sealed class HealthTests
         _world.Processes.Add(new ProcessInfo(10, 1, "claude", 1, 100));
         foreach (var pid in Enumerable.Range(20, 4))
         {
-            _world.Processes.Add(new ProcessInfo(pid, 10, Headroom, 1, 100));
+            _world.Processes.Add(new ProcessInfo(pid, 10, McpServer, 1, 100));
         }
 
         var health = await Check();
 
-        Assert.Equal([new DuplicateServer(Headroom, 4, 2)], health.Duplicates);
+        Assert.Equal([new DuplicateServer(McpServer, 4, 2)], health.Duplicates);
         Assert.False(health.Attention);
     }
 

@@ -26,7 +26,7 @@ public sealed class PassLineTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Overall_picks_the_best_verdict_among_non_leaky_arms_and_the_later_arm_on_a_tie()
+    public void Overall_picks_the_best_verdict_among_non_leaky_arms_and_keeps_a_shared_verdict()
     {
         Assert.Equal(Verdicts.Pass, PassLine.Overall([Row("brief", Verdicts.NotPassed), Row("docs", Verdicts.Pass), Row("graph", Verdicts.NotMeasured)]));
         Assert.Equal(Verdicts.OwnerDecision, PassLine.Overall([Row("brief", Verdicts.OwnerDecision), Row("graph", Verdicts.OwnerDecision)]));

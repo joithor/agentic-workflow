@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/packets/phase-packet.schema.json",
+  "title": "Packet phase-packet file (schemaVersion 1)",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "kind": {
+      "type": "string",
+      "const": "phase"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)+?(?:-a[1-9][0-9]*)?$"
+    },
+    "repo": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._-]*[A-Za-z0-9_-]/[A-Za-z0-9._-]*[A-Za-z0-9_-]$",
+      "description": "owner/name; aw-packets also refuses Windows device names (con, prn, aux, nul, com1-9, lpt1-9) on either side"
+    },
+    "baseSha": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "frozen"
+      ]
+    },
+    "hash": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "links": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "phase": {
+          "type": "string"
+        },
+        "acceptance": {
+          "type": "string"
+        },
+        "signals": {
+          "type": "string"
+        },
+        "holdout": {
+          "type": "string"
+        },
+        "design": {
+          "type": "string"
+        },
+        "index": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "phase",
+        "acceptance",
+        "signals",
+        "holdout",
+        "design",
+        "index"
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "kind",
+    "id",
+    "repo",
+    "baseSha",
+    "status",
+    "links"
+  ],
+  "additionalProperties": false
+}

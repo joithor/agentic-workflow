@@ -51,9 +51,9 @@ Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.Hash.get -> Aw.Sindri.Co
 Aw.Sindri.Features.ApproveProfile.ApproveProfileRequest.Hash.init -> void
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.<Clone>$() -> Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse!
-Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.ApproveProfileResponse(Aw.Sindri.Core.Ids.ProfileHash Hash, System.Collections.Generic.IReadOnlyList<string!>! Changes, bool Approved, long? Sequence) -> void
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Approved.get -> bool
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Approved.init -> void
+Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.ApproveProfileResponse(Aw.Sindri.Core.Ids.ProfileHash Hash, System.Collections.Generic.IReadOnlyList<string!>! Changes, bool Approved, long? Sequence) -> void
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Changes.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Changes.init -> void
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.Deconstruct(out Aw.Sindri.Core.Ids.ProfileHash Hash, out System.Collections.Generic.IReadOnlyList<string!>! Changes, out bool Approved, out long? Sequence) -> void
@@ -217,13 +217,11 @@ Aw.Sindri.Features.ContextCalls.GetContextLensesRequest
 Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextLensesRequest!
 Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.Anchor.get -> string!
 Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.Anchor.init -> void
-Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.Deconstruct(out string! Anchor, out bool Draft, out int? Depth) -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.Depth.get -> int?
 Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.Depth.init -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.Draft.get -> bool
 Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.Draft.init -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextLensesRequest? other) -> bool
-Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.GetContextLensesRequest(string! Anchor, bool Draft = false, int? Depth = null) -> void
 Aw.Sindri.Features.ContextCalls.GetContextMapRequest
 Aw.Sindri.Features.ContextCalls.GetContextMapRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextMapRequest!
 Aw.Sindri.Features.ContextCalls.GetContextMapRequest.Anchor.get -> string?
@@ -2170,6 +2168,55 @@ Aw.Sindri.Features.RunService.RunServiceRequest.Equals(Aw.Sindri.Features.RunSer
 Aw.Sindri.Features.RunService.RunServiceRequest.Name.get -> Aw.Sindri.Core.Ids.ServiceName
 Aw.Sindri.Features.RunService.RunServiceRequest.Name.init -> void
 Aw.Sindri.Features.RunService.RunServiceRequest.RunServiceRequest(Aw.Sindri.Core.Ids.ServiceName Name) -> void
+Aw.Sindri.Features.Sessions.CollectSessionsRequest
+Aw.Sindri.Features.Sessions.CollectSessionsRequest.<Clone>$() -> Aw.Sindri.Features.Sessions.CollectSessionsRequest!
+Aw.Sindri.Features.Sessions.CollectSessionsRequest.Budget.get -> System.TimeSpan
+Aw.Sindri.Features.Sessions.CollectSessionsRequest.Budget.init -> void
+Aw.Sindri.Features.Sessions.CollectSessionsRequest.CollectSessionsRequest(System.TimeSpan Budget) -> void
+Aw.Sindri.Features.Sessions.CollectSessionsRequest.Deconstruct(out System.TimeSpan Budget) -> void
+Aw.Sindri.Features.Sessions.CollectSessionsRequest.Equals(Aw.Sindri.Features.Sessions.CollectSessionsRequest? other) -> bool
+Aw.Sindri.Features.Sessions.CollectSessionsResponse
+Aw.Sindri.Features.Sessions.CollectSessionsResponse.<Clone>$() -> Aw.Sindri.Features.Sessions.CollectSessionsResponse!
+Aw.Sindri.Features.Sessions.CollectSessionsResponse.Changes.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.FleetChange!>!
+Aw.Sindri.Features.Sessions.CollectSessionsResponse.Changes.init -> void
+Aw.Sindri.Features.Sessions.CollectSessionsResponse.CollectSessionsResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.FleetChange!>! Changes, bool Good, int Sessions, int Pruned) -> void
+Aw.Sindri.Features.Sessions.CollectSessionsResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.FleetChange!>! Changes, out bool Good, out int Sessions, out int Pruned) -> void
+Aw.Sindri.Features.Sessions.CollectSessionsResponse.Equals(Aw.Sindri.Features.Sessions.CollectSessionsResponse? other) -> bool
+Aw.Sindri.Features.Sessions.CollectSessionsResponse.Good.get -> bool
+Aw.Sindri.Features.Sessions.CollectSessionsResponse.Good.init -> void
+Aw.Sindri.Features.Sessions.CollectSessionsResponse.Overran.get -> bool
+Aw.Sindri.Features.Sessions.CollectSessionsResponse.Overran.init -> void
+Aw.Sindri.Features.Sessions.CollectSessionsResponse.Pruned.get -> int
+Aw.Sindri.Features.Sessions.CollectSessionsResponse.Pruned.init -> void
+Aw.Sindri.Features.Sessions.CollectSessionsResponse.Sessions.get -> int
+Aw.Sindri.Features.Sessions.CollectSessionsResponse.Sessions.init -> void
+Aw.Sindri.Features.Sessions.RecordFleetChangesRequest
+Aw.Sindri.Features.Sessions.RecordFleetChangesRequest.<Clone>$() -> Aw.Sindri.Features.Sessions.RecordFleetChangesRequest!
+Aw.Sindri.Features.Sessions.RecordFleetChangesRequest.Changes.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.FleetChange!>!
+Aw.Sindri.Features.Sessions.RecordFleetChangesRequest.Changes.init -> void
+Aw.Sindri.Features.Sessions.RecordFleetChangesRequest.Deconstruct(out Aw.Sindri.Core.Lease.LeaseGrant! Grant, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.FleetChange!>! Changes) -> void
+Aw.Sindri.Features.Sessions.RecordFleetChangesRequest.Equals(Aw.Sindri.Features.Sessions.RecordFleetChangesRequest? other) -> bool
+Aw.Sindri.Features.Sessions.RecordFleetChangesRequest.Grant.get -> Aw.Sindri.Core.Lease.LeaseGrant!
+Aw.Sindri.Features.Sessions.RecordFleetChangesRequest.Grant.init -> void
+Aw.Sindri.Features.Sessions.RecordFleetChangesRequest.RecordFleetChangesRequest(Aw.Sindri.Core.Lease.LeaseGrant! Grant, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.FleetChange!>! Changes) -> void
+Aw.Sindri.Features.Sessions.RecordFleetChangesResponse
+Aw.Sindri.Features.Sessions.RecordFleetChangesResponse.<Clone>$() -> Aw.Sindri.Features.Sessions.RecordFleetChangesResponse!
+Aw.Sindri.Features.Sessions.RecordFleetChangesResponse.Deconstruct(out int Recorded) -> void
+Aw.Sindri.Features.Sessions.RecordFleetChangesResponse.Equals(Aw.Sindri.Features.Sessions.RecordFleetChangesResponse? other) -> bool
+Aw.Sindri.Features.Sessions.RecordFleetChangesResponse.Recorded.get -> int
+Aw.Sindri.Features.Sessions.RecordFleetChangesResponse.Recorded.init -> void
+Aw.Sindri.Features.Sessions.RecordFleetChangesResponse.RecordFleetChangesResponse(int Recorded) -> void
+Aw.Sindri.Features.Sessions.RestoreFleetHistoryRequest
+Aw.Sindri.Features.Sessions.RestoreFleetHistoryRequest.<Clone>$() -> Aw.Sindri.Features.Sessions.RestoreFleetHistoryRequest!
+Aw.Sindri.Features.Sessions.RestoreFleetHistoryRequest.Equals(Aw.Sindri.Features.Sessions.RestoreFleetHistoryRequest? other) -> bool
+Aw.Sindri.Features.Sessions.RestoreFleetHistoryRequest.RestoreFleetHistoryRequest() -> void
+Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse
+Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse.<Clone>$() -> Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse!
+Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse.Deconstruct(out int Reported) -> void
+Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse.Equals(Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse? other) -> bool
+Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse.Reported.get -> int
+Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse.Reported.init -> void
+Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse.RestoreFleetHistoryResponse(int Reported) -> void
 Aw.Sindri.Features.SindriJobServiceCollectionExtensions
 override Aw.Sindri.Features.CancelJob.CancelJobRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.CancelJob.CancelJobRequest.GetHashCode() -> int
@@ -2258,6 +2305,24 @@ override Aw.Sindri.Features.ResumeService.ResumeServiceRequest.ToString() -> str
 override Aw.Sindri.Features.RunService.RunServiceRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.RunService.RunServiceRequest.GetHashCode() -> int
 override Aw.Sindri.Features.RunService.RunServiceRequest.ToString() -> string!
+override Aw.Sindri.Features.Sessions.CollectSessionsRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Sessions.CollectSessionsRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Sessions.CollectSessionsRequest.ToString() -> string!
+override Aw.Sindri.Features.Sessions.CollectSessionsResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Sessions.CollectSessionsResponse.GetHashCode() -> int
+override Aw.Sindri.Features.Sessions.CollectSessionsResponse.ToString() -> string!
+override Aw.Sindri.Features.Sessions.RecordFleetChangesRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Sessions.RecordFleetChangesRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Sessions.RecordFleetChangesRequest.ToString() -> string!
+override Aw.Sindri.Features.Sessions.RecordFleetChangesResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Sessions.RecordFleetChangesResponse.GetHashCode() -> int
+override Aw.Sindri.Features.Sessions.RecordFleetChangesResponse.ToString() -> string!
+override Aw.Sindri.Features.Sessions.RestoreFleetHistoryRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Sessions.RestoreFleetHistoryRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Sessions.RestoreFleetHistoryRequest.ToString() -> string!
+override Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse.GetHashCode() -> int
+override Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse.ToString() -> string!
 static Aw.Sindri.Features.CancelJob.CancelJobRequest.operator !=(Aw.Sindri.Features.CancelJob.CancelJobRequest? left, Aw.Sindri.Features.CancelJob.CancelJobRequest? right) -> bool
 static Aw.Sindri.Features.CancelJob.CancelJobRequest.operator ==(Aw.Sindri.Features.CancelJob.CancelJobRequest? left, Aw.Sindri.Features.CancelJob.CancelJobRequest? right) -> bool
 static Aw.Sindri.Features.ContextCalls.BuildContextMapRequest.operator !=(Aw.Sindri.Features.ContextCalls.BuildContextMapRequest? left, Aw.Sindri.Features.ContextCalls.BuildContextMapRequest? right) -> bool
@@ -2319,10 +2384,8 @@ override Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest.GetHashCode() 
 override Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest.ToString() -> string!
 static Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest? left, Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest? right) -> bool
 static Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest? left, Aw.Sindri.Features.ContextCalls.GetContextEvalMapRequest? right) -> bool
-Aw.Sindri.Features.ContextCalls.QueryContextRequest.Deconstruct(out string? Q, out string? Node, out string? Item, out string? Symbol, out string? Depth, out string? Budget, out bool Draft, out string? Diff, out string? Repo) -> void
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Diff.get -> string?
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Diff.init -> void
-Aw.Sindri.Features.ContextCalls.QueryContextRequest.QueryContextRequest(string? Q, string? Node = null, string? Item = null, string? Symbol = null, string? Depth = null, string? Budget = null, bool Draft = false, string? Diff = null, string? Repo = null) -> void
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Repo.get -> string?
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Repo.init -> void
 Aw.Sindri.Features.ListInstances.ListInstancesRequest.Deconstruct(out string? NeedsMe, out Aw.Sindri.Core.Workflow.Engine.ItemKey? Item, out string? State, out string? Query, out string? Address, out string? Recipe, out string? Urgency, out string? Subject, out string? Root, out string? Open) -> void
@@ -2338,6 +2401,18 @@ static Aw.Sindri.Features.ResumeService.ResumeServiceRequest.operator !=(Aw.Sind
 static Aw.Sindri.Features.ResumeService.ResumeServiceRequest.operator ==(Aw.Sindri.Features.ResumeService.ResumeServiceRequest? left, Aw.Sindri.Features.ResumeService.ResumeServiceRequest? right) -> bool
 static Aw.Sindri.Features.RunService.RunServiceRequest.operator !=(Aw.Sindri.Features.RunService.RunServiceRequest? left, Aw.Sindri.Features.RunService.RunServiceRequest? right) -> bool
 static Aw.Sindri.Features.RunService.RunServiceRequest.operator ==(Aw.Sindri.Features.RunService.RunServiceRequest? left, Aw.Sindri.Features.RunService.RunServiceRequest? right) -> bool
+static Aw.Sindri.Features.Sessions.CollectSessionsRequest.operator !=(Aw.Sindri.Features.Sessions.CollectSessionsRequest? left, Aw.Sindri.Features.Sessions.CollectSessionsRequest? right) -> bool
+static Aw.Sindri.Features.Sessions.CollectSessionsRequest.operator ==(Aw.Sindri.Features.Sessions.CollectSessionsRequest? left, Aw.Sindri.Features.Sessions.CollectSessionsRequest? right) -> bool
+static Aw.Sindri.Features.Sessions.CollectSessionsResponse.operator !=(Aw.Sindri.Features.Sessions.CollectSessionsResponse? left, Aw.Sindri.Features.Sessions.CollectSessionsResponse? right) -> bool
+static Aw.Sindri.Features.Sessions.CollectSessionsResponse.operator ==(Aw.Sindri.Features.Sessions.CollectSessionsResponse? left, Aw.Sindri.Features.Sessions.CollectSessionsResponse? right) -> bool
+static Aw.Sindri.Features.Sessions.RecordFleetChangesRequest.operator !=(Aw.Sindri.Features.Sessions.RecordFleetChangesRequest? left, Aw.Sindri.Features.Sessions.RecordFleetChangesRequest? right) -> bool
+static Aw.Sindri.Features.Sessions.RecordFleetChangesRequest.operator ==(Aw.Sindri.Features.Sessions.RecordFleetChangesRequest? left, Aw.Sindri.Features.Sessions.RecordFleetChangesRequest? right) -> bool
+static Aw.Sindri.Features.Sessions.RecordFleetChangesResponse.operator !=(Aw.Sindri.Features.Sessions.RecordFleetChangesResponse? left, Aw.Sindri.Features.Sessions.RecordFleetChangesResponse? right) -> bool
+static Aw.Sindri.Features.Sessions.RecordFleetChangesResponse.operator ==(Aw.Sindri.Features.Sessions.RecordFleetChangesResponse? left, Aw.Sindri.Features.Sessions.RecordFleetChangesResponse? right) -> bool
+static Aw.Sindri.Features.Sessions.RestoreFleetHistoryRequest.operator !=(Aw.Sindri.Features.Sessions.RestoreFleetHistoryRequest? left, Aw.Sindri.Features.Sessions.RestoreFleetHistoryRequest? right) -> bool
+static Aw.Sindri.Features.Sessions.RestoreFleetHistoryRequest.operator ==(Aw.Sindri.Features.Sessions.RestoreFleetHistoryRequest? left, Aw.Sindri.Features.Sessions.RestoreFleetHistoryRequest? right) -> bool
+static Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse.operator !=(Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse? left, Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse? right) -> bool
+static Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse.operator ==(Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse? left, Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse? right) -> bool
 static Aw.Sindri.Features.SindriJobServiceCollectionExtensions.AddJob<TRequest, TResult, TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<TRequest!, Aw.Sindri.Core.Ids.JobKey>! key, System.Func<TResult, string!>! summary, System.Func<TRequest!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>>? precheck = null, System.Func<TRequest!, Aw.Sindri.Core.Ids.RepoName?>? repo = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 Aw.Sindri.Features.ContextCalls.BacktestArmLine
 Aw.Sindri.Features.ContextCalls.BacktestArmLine.<Clone>$() -> Aw.Sindri.Features.ContextCalls.BacktestArmLine!
@@ -2454,3 +2529,61 @@ static Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest.operator !=(Aw.Sindri.Fea
 static Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest.operator ==(Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest? left, Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest? right) -> bool
 static Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.operator !=(Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse? left, Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse? right) -> bool
 static Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.operator ==(Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse? left, Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse? right) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.Deconstruct(out string! Anchor, out bool Draft, out int? Depth, out string? MapVersion) -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.GetContextLensesRequest(string! Anchor, bool Draft = false, int? Depth = null, string? MapVersion = null) -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.MapVersion.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.MapVersion.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest
+Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest!
+Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Anchors.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out bool Draft, out int? Depth, out string? MapVersion) -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Depth.get -> int?
+Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Depth.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Draft.get -> bool
+Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.GetContextLensesSetRequest(System.Collections.Generic.IReadOnlyList<string!>! Anchors, bool Draft = false, int? Depth = null, string? MapVersion = null) -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.MapVersion.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.MapVersion.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Deconstruct(out string? Q, out string? Node, out string? Item, out string? Symbol, out string? Depth, out string? Budget, out bool Draft, out string? Diff, out string? Repo, out string? MapVersion) -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.MapVersion.get -> string?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.MapVersion.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.QueryContextRequest(string? Q, string? Node = null, string? Item = null, string? Symbol = null, string? Depth = null, string? Budget = null, bool Draft = false, string? Diff = null, string? Repo = null, string? MapVersion = null) -> void
+override Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest? left, Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest? left, Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest? right) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest!
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Anchors.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out bool Draft, out int? Depth, out string? MapVersion) -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Depth.get -> int?
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Depth.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Draft.get -> bool
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.GetContextLensesAnswerRequest(System.Collections.Generic.IReadOnlyList<string!>! Anchors, bool Draft = false, int? Depth = null, string? MapVersion = null) -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.MapVersion.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.MapVersion.init -> void
+Aw.Sindri.Features.ContextCalls.LensesAnswer
+Aw.Sindri.Features.ContextCalls.LensesAnswer.<Clone>$() -> Aw.Sindri.Features.ContextCalls.LensesAnswer!
+Aw.Sindri.Features.ContextCalls.LensesAnswer.Equals(Aw.Sindri.Features.ContextCalls.LensesAnswer? other) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.ToString() -> string!
+override Aw.Sindri.Features.ContextCalls.LensesAnswer.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.LensesAnswer.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.LensesAnswer.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest? left, Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest? left, Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.LensesAnswer.operator !=(Aw.Sindri.Features.ContextCalls.LensesAnswer? left, Aw.Sindri.Features.ContextCalls.LensesAnswer? right) -> bool
+static Aw.Sindri.Features.ContextCalls.LensesAnswer.operator ==(Aw.Sindri.Features.ContextCalls.LensesAnswer? left, Aw.Sindri.Features.ContextCalls.LensesAnswer? right) -> bool
+Aw.Sindri.Features.ContextCalls.LensesAnswer.Deconstruct(out Aw.Context.Core.Lenses.LensesView? One, out Aw.Context.Core.Lenses.LensesSetView? Many) -> void
+Aw.Sindri.Features.ContextCalls.LensesAnswer.LensesAnswer(Aw.Context.Core.Lenses.LensesView? One, Aw.Context.Core.Lenses.LensesSetView? Many) -> void
+Aw.Sindri.Features.ContextCalls.LensesAnswer.Many.get -> Aw.Context.Core.Lenses.LensesSetView?
+Aw.Sindri.Features.ContextCalls.LensesAnswer.Many.init -> void
+Aw.Sindri.Features.ContextCalls.LensesAnswer.One.get -> Aw.Context.Core.Lenses.LensesView?
+Aw.Sindri.Features.ContextCalls.LensesAnswer.One.init -> void

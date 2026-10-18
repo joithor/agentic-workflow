@@ -143,6 +143,11 @@ internal sealed class StartInstanceService(IItems items, IApprovedRecipes recipe
             return refused;
         }
 
+        if (facts.NoRuntime(recipe.Value.Recipe) is { } noRuntime)
+        {
+            return noRuntime;
+        }
+
         return recipe.Value.Recipe.Inputs.FirstOrDefault(i => i.Generate is null && !request.Facts.ContainsKey(i.Key)) is { } missing
             ? SindriErrors.InvalidInput.With($"{recipe.Value.Version.Id.Value} needs input {missing.Key.Value} (fix: --fact {missing.Key.Value}=<file>)")
             : (item.Value, recipe.Value);

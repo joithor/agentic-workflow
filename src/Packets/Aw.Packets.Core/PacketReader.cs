@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Kernel.Json;
+using Aw.Packets.Core.Checks;
 using Aw.Packets.Core.Model;
 
 namespace Aw.Packets.Core;
@@ -21,8 +22,6 @@ public static class PacketReader
 
     /// <summary>The schemaVersion this build reads.</summary>
     public const int SchemaVersion = 1;
-
-    private static readonly JsonDocumentOptions _strict = new() { AllowDuplicateProperties = false };
 
     /// <summary>Reads one file by its path relative to the packet directory.</summary>
     /// <param name="relativePath">The path, with '/' separators.</param>
@@ -126,56 +125,6 @@ public static class PacketReader
             : PacketsErrors.UnsupportedSchema.With(string.Create(CultureInfo.InvariantCulture, $"{path}: schemaVersion {declared}; this build reads {SchemaVersion}."));
     }
 
-    private static Result<Unit> Strict(string path, ReadOnlySpan<byte> bytes)
-    {
-        if (bytes.StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF]))
-        {
-            return PacketsErrors.Malformed.With($"{path} starts with a UTF-8 byte order mark; save it as UTF-8 without one.");
-        }
-
-        try
-        {
-            using var document = JsonDocument.Parse(bytes.ToArray(), _strict);   // throws on a duplicate key at any depth
-            return NullInList(document.RootElement, "$") is { } where
-                ? PacketsErrors.Malformed.With($"{path}: {where} is null; lists hold values, never null.")
-                : Unit.Value;
-        }
-        catch (JsonException ex)
-        {
-            return PacketsErrors.Malformed.With($"{path}: {ex.Message}");
-        }
-    }
-
-    // The JSON path of the first null inside an array (in document order), or null. Iterative, so a deep document
-    // can't overflow the stack: children are pushed in reverse so they pop in document order.
-    private static string? NullInList(JsonElement root, string rootPath)
-    {
-        var pending = new Stack<(JsonElement Element, string Path)>();
-        pending.Push((root, rootPath));
-        while (pending.TryPop(out var next))
-        {
-            if (next.Element.ValueKind == JsonValueKind.Object)
-            {
-                foreach (var property in next.Element.EnumerateObject().Reverse())
-                {
-                    pending.Push((property.Value, $"{next.Path}.{property.Name}"));
-                }
-            }
-            else if (next.Element.ValueKind == JsonValueKind.Array)
-            {
-                var items = next.Element.EnumerateArray().ToList();
-                if (items.FindIndex(static i => i.ValueKind == JsonValueKind.Null) is var at and >= 0)
-                {
-                    return string.Create(CultureInfo.InvariantCulture, $"{next.Path}[{at}]");
-                }
-
-                for (var index = items.Count - 1; index >= 0; index--)
-                {
-                    pending.Push((items[index], string.Create(CultureInfo.InvariantCulture, $"{next.Path}[{index}]")));
-                }
-            }
-        }
-
-        return null;
-    }
+    internal static Result<Unit> Strict(string path, ReadOnlySpan<byte> bytes) =>
+        PacketFileShape.StrictProblem(path, bytes) is { } problem ? PacketsErrors.Malformed.With(problem) : Unit.Value;
 }

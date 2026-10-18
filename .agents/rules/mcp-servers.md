@@ -24,8 +24,15 @@ Skill text refers to MCP tools as `mcp: <server>/<tool>`; map that to your host'
 | `github` | GitHub API — PRs, issues, releases, comments | `gh` CLI for read operations |
 | `design-comparison` | Visual diff between implementation and design reference | Manual screenshot comparison |
 | `xcodebuildmcp` | iOS Simulator control — build, launch, snapshot_ui, screenshot, tap, swipe | Manual iOS testing |
-| `headroom` | Content compression — compress large file reads, API responses, structured data | Reading large files raw when token budget is tight |
 | `prism-mcp` | Persistent memory, semantic search, conversation visualization (Mind Palace) | Manual context passing between sessions |
+
+### Per-repo servers
+
+Not registered by `setup.sh`, and absent from most sessions.
+
+| Server | Purpose | Registration |
+|--------|---------|--------------|
+| `sindri` | Sindri's `sindri_*` tools (status, queue, item, timeline, pending decisions, job, `sindri_request`) and the `context_*` tools, served by the local Sindri process at `/sindri/mcp`; text in results is fenced as untrusted | The owner runs `sindri mcp register` (or `--apply`) inside a work repo: `claude mcp add --scope local` with an `X-Sindri-Repo` header. Never user-wide; never by `setup.sh` or a provider installer. `sindri doctor` warns on a user-wide entry |
 
 ## When to use Serena vs search/read
 

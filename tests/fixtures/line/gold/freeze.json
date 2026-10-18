@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "frozen": [
+    {
+      "packet": "scope/expiry",
+      "kind": "scoping",
+      "hash": "sha256:99689489b23bf26628e02ce106179c4ecf0aade4860e303b2ce7e2bd7e15ab57",
+      "by": "owner",
+      "station": "step.scope.freeze",
+      "at": "2026-10-16T09:30:00Z"
+    },
+    {
+      "packet": "scope/archive",
+      "kind": "scoping",
+      "hash": "sha256:f78ae36dfb51456a5da5e5d581a0c910b48da6c1a355aea550c676dd68514174",
+      "by": "owner",
+      "station": "step.scope.freeze",
+      "at": "2026-10-16T09:40:00Z"
+    },
+    {
+      "packet": "design/expiry",
+      "kind": "design",
+      "hash": "sha256:43b7aeb5311ea8e2d9def822cc2d1c3afbec3237ee1d060f41b62d68c80a72c4",
+      "by": "owner",
+      "station": "step.plan.freeze",
+      "at": "2026-10-16T11:05:00Z"
+    },
+    {
+      "packet": "plan/expiry",
+      "kind": "plan",
+      "hash": "sha256:37eed967a625067cced0afa7a980fad7a1f764966b7111f4487d3f8cc995cc38",
+      "by": "owner",
+      "station": "step.plan.freeze",
+      "at": "2026-10-16T11:05:00Z"
+    }
+  ],
+  "note": "Stand-in for the records aw-packets freeze writes. Hashes are real `aw-packets hash` values, checked by LineFixtureTests."
+}

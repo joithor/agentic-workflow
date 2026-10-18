@@ -1,7 +1,7 @@
+using System.Reflection;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Features.Blocks.Gate;
 using Aw.Sindri.Host;
@@ -24,12 +24,30 @@ public sealed class ShippedBlocksTests
 
         Assert.Equal(
             [
-                "effect.claim.ref", "effect.notify.desk", "gate.budget.available", "gate.route.startable", "step.checks", "step.desk.choose",
-                "step.judge.choose", "step.produce", "step.verify",
+                "effect.claim.ref", "effect.notify.desk", "evidence.check", "gate.budget.available", "gate.route.startable", "input.context.code",
+                "input.context.history", "input.context.lenses", "step.brief.questions", "step.brief.seed", "step.brief.write", "step.bugfix.judge",
+                "step.bugfix.recheck", "step.bugfix.record-candidate", "step.bugfix.start-attempt", "step.checks", "step.desk.choose",
+                "step.evidence.api-plan", "step.evidence.api-run", "step.evidence.combine", "step.evidence.db-plan", "step.evidence.db-run",
+                "step.evidence.desk", "step.evidence.none", "step.evidence.ui-plan", "step.evidence.ui-run", "step.handtest.run",
+                "step.intake.ticket", "step.interview.answer", "step.interview.apply", "step.interview.questions", "step.interview.record",
+                "step.judge.choose", "step.owner.decide", "step.produce", "step.report.write", "step.reproduce.test-check", "step.reproduce.ui-check",
+                "step.review.fix", "step.review.recheck", "step.review.run", "step.rootcause.investigate", "step.scope.anchor",
+                "step.scope.challenge", "step.scope.challenge-log", "step.scope.check", "step.scope.draft", "step.scope.evidence",
+                "step.scope.freeze", "step.scope.gather", "step.scope.intake", "step.scope.propose", "step.scope.read-brief",
+                "step.scope.read-change", "step.scope.read-tracker", "step.scope.reanchor", "step.scope.review", "step.scope.withdraw", "step.verify",
+                "step.verify.design", "step.verify.journey",
             ],
             catalog.Blocks.Select(b => b.Id.Value).Order(StringComparer.Ordinal),
             StringComparer.Ordinal);
         Assert.Equal(["claim.created", "item.routed", "notify.delivered"], catalog.Events.Select(e => e.Kind.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void No_shipped_descriptor_says_human_only_false()
+    {
+        var catalog = FixtureCatalog.Shipped();
+
+        Assert.DoesNotContain(catalog.Blocks, static b => b.HumanOnly == false);   // written only when true (DT spec 8.5): false would change the descriptor hash for nothing
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -80,17 +98,6 @@ public sealed class ShippedBlocksTests
         Assert.Equal(facts, e.Facts.Select(f => f.Value), StringComparer.Ordinal);
     }
 
-    [Theory, Trait("Lane", "unit")]
-    [InlineData("effect.claim.ref", "sha256:2a44426d862b3721014969dfcc03a7851f56551f2b9bec9f340e500353a9abd3")]
-    [InlineData("effect.notify.desk", "sha256:c3cb05f7d73c6c539b05acb87c15185c4a9b81d12fb27626b59f12b94e157b07")]
-    [InlineData("gate.budget.available", "sha256:2e11428fb8765eb8e43f62db6dce8dd654cddd1b6685e6c61080037174408135")]
-    [InlineData("gate.route.startable", "sha256:00a724a0231157eba73e8b90950bde6e40fb9e6f17f03f955d3896e6aa2fadf0")]
-    [InlineData("step.checks", "sha256:8d6a4302bc9aa7ab780620c014cbc2954c3b9e4cef153be63bb1a2eeb72c2fe8")]
-    [InlineData("step.produce", "sha256:b86ef5f788d73f55217a97d0158f1caea49b09d19f4878858acd040434505370")]
-    [InlineData("step.verify", "sha256:076936b6ec84ebf12669ca18a2525adb4c3922e86ed4c6cfc16c975e55944d3d")]
-    public void Every_shipped_descriptor_hashes_as_before_the_decision_tree_fields(string id, string hash) =>
-        Assert.Equal(hash, PinRules.Hash(FixtureCatalog.Shipped().Find(BlockId.From(id))!, SliceHarness.Json).Value);   // why: no approved recipe may drift-park because a nullable field was added
-
     [Fact, Trait("Lane", "unit")]
     public async Task The_choice_steps_are_desk_capable_descriptors_without_runtimes()
     {
@@ -107,6 +114,9 @@ public sealed class ShippedBlocksTests
             Assert.Equal(("fact:decision", true, true), (decision.Fact.Value, decision.Every, decision.EngineFilled));
             Assert.Empty(decision.RequiredOn);
         }
+
+        Assert.True(catalog.Find(BlockId.From("step.desk.choose"))!.HumanOnly);   // why: the catalog test pins both ids
+        Assert.Equal(BlockRuntime.Block, catalog.Find(BlockId.From("step.judge.choose"))!.Runtime);
 
         Assert.Empty(scope.ServiceProvider.GetServices<IStep>());   // no runtime until the block runtime (DT-J)
     }
@@ -138,6 +148,8 @@ public sealed class ShippedBlocksTests
         Assert.DoesNotContain("inputsFrom", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("every", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("engineFilled", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("humanOnly", json, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("runtime", json, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -161,6 +173,27 @@ public sealed class ShippedBlocksTests
     [Fact, Trait("Lane", "unit")]
     public void Every_effect_is_capability_bearing() =>
         Assert.All(FixtureCatalog.WithFixtures().Blocks.Where(b => b.Kind == BlockKind.Effect), b => Assert.True(b.Capabilities.HasFlag(Capability.Effects)));
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Every_composed_block_has_exactly_one_descriptor_contract()
+    {
+        await using var provider = Composed();
+        var catalogIds = provider.GetRequiredService<BlockCatalog>().Blocks.Select(b => b.Id.Value).ToHashSet(StringComparer.Ordinal);
+        var contractIds = typeof(ShippedBlocksTests).Assembly.GetTypes()
+            .Where(t => !t.IsAbstract && typeof(DescriptorContract).IsAssignableFrom(t))
+            .Select(t => ((BlockDescriptor)typeof(DescriptorContract)
+                .GetProperty("Descriptor", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(Activator.CreateInstance(t, nonPublic: true))!).Id.Value)
+            .ToList();
+
+        var withoutContract = catalogIds.Except(contractIds, StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        var withoutBlock = contractIds.Except(catalogIds, StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        var duplicated = contractIds.GroupBy(i => i, StringComparer.Ordinal).Where(g => g.Skip(1).Any()).Select(g => g.Key).Order(StringComparer.Ordinal).ToList();
+
+        Assert.True(
+            withoutContract.Count == 0 && withoutBlock.Count == 0 && duplicated.Count == 0,
+            $"catalog blocks with no contract: [{string.Join(", ", withoutContract)}]; contracts for no catalog block: [{string.Join(", ", withoutBlock)}]; duplicated contracts: [{string.Join(", ", duplicated)}]");
+    }
 
     private static ServiceProvider Composed() =>
         Composition.Compose(new ServiceCollection(), name => name == "AW_STATE_DIR" ? _stateRoot : null, new FakeTimeProvider())

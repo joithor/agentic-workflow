@@ -15,6 +15,7 @@ public sealed class InMemoryCommandRunner : ICommandRunner
     private const string Marker = "fake-command";
 
     private readonly List<CommandRequest> _requests = [];
+    private readonly Lock _gate = new();
 
     /// <summary>A command that prints <paramref name="text"/> and exits 0.</summary>
     /// <param name="text">The text.</param>
@@ -34,7 +35,7 @@ public sealed class InMemoryCommandRunner : ICommandRunner
     /// <returns>The argument vector.</returns>
     public static IReadOnlyList<string> Missing() => [Marker, "missing"];
 
-    private readonly List<(Func<CommandRequest, bool> Match, Func<CommandRequest, CommandResult> Result)> _script = [];
+    private readonly List<(Func<CommandRequest, bool> Match, Func<CommandRequest, Task<CommandResult>> Result)> _script = [];
 
     /// <summary>Answers every command whose argument vector, joined by spaces, contains <paramref name="text"/> (earlier rules win).</summary>
     /// <param name="text">What the command line contains.</param>
@@ -51,25 +52,48 @@ public sealed class InMemoryCommandRunner : ICommandRunner
     public InMemoryCommandRunner When(string text, Func<CommandRequest, CommandResult> result)
     {
         ArgumentNullException.ThrowIfNull(result);
+        return When(text, request => Task.FromResult(result(request)));
+    }
+
+    /// <summary>Answers every command whose argument vector, joined by spaces, contains <paramref name="text"/> with a result that may take time (a step that has to be released by the test).</summary>
+    /// <param name="text">What the command line contains.</param>
+    /// <param name="result">Computes the result from the request.</param>
+    /// <returns>This fake.</returns>
+    public InMemoryCommandRunner When(string text, Func<CommandRequest, Task<CommandResult>> result)
+    {
+        ArgumentNullException.ThrowIfNull(result);
         _script.Add((request => string.Join(' ', request.Argv).Contains(text, StringComparison.Ordinal), result));
         return this;
     }
 
     /// <summary>The command lines run (argument vectors joined by spaces), in order.</summary>
-    public IReadOnlyList<string> Lines => [.. _requests.Select(r => string.Join(' ', r.Argv))];
+    public IReadOnlyList<string> Lines => [.. Requests.Select(r => string.Join(' ', r.Argv))];
 
     /// <summary>Every request run, in order.</summary>
-    public IReadOnlyList<CommandRequest> Requests => _requests;
+    public IReadOnlyList<CommandRequest> Requests
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return [.. _requests];
+            }
+        }
+    }
 
     /// <inheritdoc />
     public async ValueTask<Result<CommandResult>> Run(CommandRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
-        _requests.Add(request);
+        lock (_gate)
+        {
+            _requests.Add(request);
+        }
+
         var argv = request.Argv;
         if (_script.FirstOrDefault(rule => rule.Match(request)) is { Result: { } answer })
         {
-            return answer(request);
+            return await answer(request).WaitAsync(cancellationToken);
         }
 
         if (argv.Count < 2 || argv[0] != Marker || argv[1] == "missing")
@@ -89,6 +113,8 @@ public sealed class InMemoryCommandRunner : ICommandRunner
             await File.AppendAllTextAsync(log, text, cancellationToken);
         }
 
-        return new CommandResult(argv[1] == "exits" ? int.Parse(argv[2], CultureInfo.InvariantCulture) : 0, text, string.Empty, TimedOut: false);
+        return new CommandResult(argv[1] == "exits" ? int.Parse(argv[2], CultureInfo.InvariantCulture) : 0, Tail(text, request.TailCharacters), string.Empty, TimedOut: false);
     }
+
+    private static string Tail(string text, int characters) => text.Length > characters ? text[^characters..] : text;
 }

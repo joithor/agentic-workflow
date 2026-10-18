@@ -41,6 +41,24 @@ internal sealed class CliWorkspace : IDisposable
     public string WritePacket(PacketBuilder packet, string name = "demo") =>
         _root.Write(Path.Combine("repo", "packets", name), PacketFiles.Of(packet.Base(Sha).Build()));
 
+    /// <summary>Writes a scope packet at repo/packets/&lt;name&gt;.</summary>
+    /// <param name="packet">The packet's files.</param>
+    /// <param name="name">The directory name.</param>
+    /// <returns>The packet directory.</returns>
+    public string WriteScopingPacket(ScopingPacketBuilder packet, string name = "scope") =>
+        _root.Write(Path.Combine("repo", "packets", name), packet.Build());
+
+    /// <summary>Writes a line packet at repo/packets/&lt;name&gt; based on the repository's commit.</summary>
+    /// <param name="packet">The packet's files (its base sha is replaced).</param>
+    /// <param name="name">The directory name.</param>
+    /// <returns>The packet directory.</returns>
+    public string WriteLinePacket(LinePacketBuilder packet, string name = "line")
+    {
+        var files = packet.Build();
+        files["packet.json"] = System.Text.Encoding.UTF8.GetBytes(System.Text.Encoding.UTF8.GetString(files["packet.json"]).Replace(PacketBuilder.BaseSha, Sha, StringComparison.Ordinal));
+        return _root.Write(Path.Combine("repo", "packets", name), files);
+    }
+
     /// <summary>Every file under the state root, relative to it.</summary>
     /// <returns>The paths, sorted.</returns>
     public IReadOnlyList<string> StateFiles() =>

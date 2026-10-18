@@ -9,6 +9,7 @@
 # hook copy — from the temp HOOKS_DIR, never the repo — with realistic
 # sample stdin, and assert it doesn't choke on a missing dependency.
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../../scripts/lib/test-grep.sh"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$DIR/../../.." && pwd)"
 
@@ -18,6 +19,7 @@ fake_judge_bin() {
 #!/usr/bin/env bash
 if [ "$1" = "health" ]; then echo '{"status":"ok","failures24h":0}'; exit 0; fi
 if [ "$1" = "wake-gate" ]; then
+  cat >/dev/null  # drain stdin first, like the real judge (src/Judge/Aw.Judge.Host/Commands/CommandOutput.cs): else the hook's printf can die of SIGPIPE (141) and fail open
   N=0
   [ -n "${WAKE_GATE_COUNT_FILE:-}" ] && N="$(cat "$WAKE_GATE_COUNT_FILE" 2>/dev/null || echo 0)"
   N=$((N + 1))
@@ -25,7 +27,7 @@ if [ "$1" = "wake-gate" ]; then
   if [ "$N" -eq 1 ]; then echo '{"decision":"batch"}'; else echo '{"decision":"send"}'; fi
   exit 0
 fi
-if [ "$1" = "ask-check" ]; then echo '{"decision":"ask"}'; exit 2; fi
+if [ "$1" = "ask-check" ]; then cat >/dev/null; echo '{"decision":"ask"}'; exit 2; fi
 if [ "$1" = "brief" ] && [ "$2" = "get" ]; then exit 1; fi
 echo '{"decision":"fine","confidence":1,"reason_code":"stub"}'
 EOF
@@ -65,7 +67,7 @@ assert_installed_hook_runs_clean() {
   set -e
   local errtext; errtext="$(cat "$err")"
   [ "$rc" -eq 0 ] || { echo "FAIL: $label — exit $rc, stderr: $errtext"; exit 1; }
-  if printf '%s' "$errtext" | grep -qiE 'no such file|command not found'; then
+  if printf '%s' "$errtext" | has -iE 'no such file|command not found'; then
     echo "FAIL: $label — installed copy hit a missing dependency: $errtext"
     exit 1
   fi
@@ -135,7 +137,7 @@ test_installed_send_gate_batches_then_attaches_the_digest() {
     "$(jq -nc --arg s "$sid" '{session_id:$s, tool_input:{to:"main", message:"final result text", type:"message"}}')")"
   echo "$out2" | jq -e '.hookSpecificOutput.updatedInput.message' > /dev/null \
     || { echo "FAIL: expected the second (send) call to emit updatedInput carrying the digest, got: $out2"; exit 1; }
-  echo "$out2" | jq -r '.hookSpecificOutput.updatedInput.message' | grep -q "QUEUED-DIGEST-TEXT" \
+  echo "$out2" | jq -r '.hookSpecificOutput.updatedInput.message' | has "QUEUED-DIGEST-TEXT" \
     || { echo "FAIL: updatedInput.message doesn't carry the queued text, got: $out2"; exit 1; }
   [ -s "$STATE_DIR/judge/outbox/$sid.jsonl" ] \
     && { echo "FAIL: expected the outbox to be emptied after the digest was attached"; exit 1; }

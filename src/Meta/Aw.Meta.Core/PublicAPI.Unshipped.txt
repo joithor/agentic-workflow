@@ -28,17 +28,34 @@ Aw.Meta.Core.Commands.CommandResult.Stdout.init -> void
 Aw.Meta.Core.Commands.CommandResult.TimedOut.get -> bool
 Aw.Meta.Core.Commands.CommandResult.TimedOut.init -> void
 Aw.Meta.Core.Commands.ProgramPath
+Aw.Meta.Core.Config.BuildersConfig
+Aw.Meta.Core.Config.BuildersConfig.<Clone>$() -> Aw.Meta.Core.Config.BuildersConfig!
+Aw.Meta.Core.Config.BuildersConfig.BuildersConfig(int MaxPerLane = 4, int WorktreeGb = 4) -> void
+Aw.Meta.Core.Config.BuildersConfig.Deconstruct(out int MaxPerLane, out int WorktreeGb) -> void
+Aw.Meta.Core.Config.BuildersConfig.Equals(Aw.Meta.Core.Config.BuildersConfig? other) -> bool
+Aw.Meta.Core.Config.BuildersConfig.MaxPerLane.get -> int
+Aw.Meta.Core.Config.BuildersConfig.MaxPerLane.init -> void
+Aw.Meta.Core.Config.BuildersConfig.WorktreeGb.get -> int
+Aw.Meta.Core.Config.BuildersConfig.WorktreeGb.init -> void
 Aw.Meta.Core.Config.GateConfig
 Aw.Meta.Core.Config.GateConfig.<Clone>$() -> Aw.Meta.Core.Config.GateConfig!
 Aw.Meta.Core.Config.GateConfig.Always.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Core.Config.GateConfig.Always.init -> void
-Aw.Meta.Core.Config.GateConfig.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Always, out System.Collections.Generic.IReadOnlyList<string!>! DocsOnly, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Meta.Core.Config.ScopeConfig!>! Scopes) -> void
 Aw.Meta.Core.Config.GateConfig.DocsOnly.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Core.Config.GateConfig.DocsOnly.init -> void
 Aw.Meta.Core.Config.GateConfig.Equals(Aw.Meta.Core.Config.GateConfig? other) -> bool
-Aw.Meta.Core.Config.GateConfig.GateConfig(System.Collections.Generic.IReadOnlyList<string!>! Always, System.Collections.Generic.IReadOnlyList<string!>! DocsOnly, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Meta.Core.Config.ScopeConfig!>! Scopes) -> void
 Aw.Meta.Core.Config.GateConfig.Scopes.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Meta.Core.Config.ScopeConfig!>!
 Aw.Meta.Core.Config.GateConfig.Scopes.init -> void
+Aw.Meta.Core.Config.HeavyConfig
+Aw.Meta.Core.Config.HeavyConfig.<Clone>$() -> Aw.Meta.Core.Config.HeavyConfig!
+Aw.Meta.Core.Config.HeavyConfig.Cap.get -> int
+Aw.Meta.Core.Config.HeavyConfig.Cap.init -> void
+Aw.Meta.Core.Config.HeavyConfig.Deconstruct(out Aw.Meta.Core.Config.ReserveSetting? Reserve, out int Cap) -> void
+Aw.Meta.Core.Config.HeavyConfig.EffectiveReserve.get -> Aw.Meta.Core.Config.ReserveSetting!
+Aw.Meta.Core.Config.HeavyConfig.Equals(Aw.Meta.Core.Config.HeavyConfig? other) -> bool
+Aw.Meta.Core.Config.HeavyConfig.HeavyConfig(Aw.Meta.Core.Config.ReserveSetting? Reserve = null, int Cap = 3) -> void
+Aw.Meta.Core.Config.HeavyConfig.Reserve.get -> Aw.Meta.Core.Config.ReserveSetting?
+Aw.Meta.Core.Config.HeavyConfig.Reserve.init -> void
 Aw.Meta.Core.Config.MergeOrderRule
 Aw.Meta.Core.Config.MergeOrderRule.<Clone>$() -> Aw.Meta.Core.Config.MergeOrderRule!
 Aw.Meta.Core.Config.MergeOrderRule.After.get -> int
@@ -48,6 +65,48 @@ Aw.Meta.Core.Config.MergeOrderRule.Before.init -> void
 Aw.Meta.Core.Config.MergeOrderRule.Deconstruct(out int Before, out int After) -> void
 Aw.Meta.Core.Config.MergeOrderRule.Equals(Aw.Meta.Core.Config.MergeOrderRule? other) -> bool
 Aw.Meta.Core.Config.MergeOrderRule.MergeOrderRule(int Before, int After) -> void
+Aw.Meta.Core.Config.ReserveSetting
+Aw.Meta.Core.Config.ReserveSetting.<Clone>$() -> Aw.Meta.Core.Config.ReserveSetting!
+Aw.Meta.Core.Config.ReserveSetting.Deconstruct(out bool Enabled, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.ReserveTier!>! Tiers) -> void
+Aw.Meta.Core.Config.ReserveSetting.Enabled.get -> bool
+Aw.Meta.Core.Config.ReserveSetting.Enabled.init -> void
+Aw.Meta.Core.Config.ReserveSetting.Equals(Aw.Meta.Core.Config.ReserveSetting? other) -> bool
+Aw.Meta.Core.Config.ReserveSetting.For(int depth, int cap) -> int
+Aw.Meta.Core.Config.ReserveSetting.ReserveSetting(bool Enabled, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.ReserveTier!>! Tiers) -> void
+Aw.Meta.Core.Config.ReserveSetting.Tiers.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.ReserveTier!>!
+Aw.Meta.Core.Config.ReserveSetting.Tiers.init -> void
+Aw.Meta.Core.Config.ReserveSettingConverter
+Aw.Meta.Core.Config.ReserveSettingConverter.ReserveSettingConverter() -> void
+Aw.Meta.Core.Config.ReserveSlots
+Aw.Meta.Core.Config.ReserveSlots.Count.get -> int?
+Aw.Meta.Core.Config.ReserveSlots.Count.init -> void
+Aw.Meta.Core.Config.ReserveSlots.Deconstruct(out int? Count) -> void
+Aw.Meta.Core.Config.ReserveSlots.Equals(Aw.Meta.Core.Config.ReserveSlots other) -> bool
+Aw.Meta.Core.Config.ReserveSlots.ReserveSlots() -> void
+Aw.Meta.Core.Config.ReserveSlots.ReserveSlots(int? Count) -> void
+Aw.Meta.Core.Config.ReserveSlots.Resolve(int cap) -> int
+Aw.Meta.Core.Config.ReserveSlotsConverter
+Aw.Meta.Core.Config.ReserveSlotsConverter.ReserveSlotsConverter() -> void
+Aw.Meta.Core.Config.ReserveTier
+Aw.Meta.Core.Config.ReserveTier.<Clone>$() -> Aw.Meta.Core.Config.ReserveTier!
+Aw.Meta.Core.Config.ReserveTier.Deconstruct(out int MinDepth, out Aw.Meta.Core.Config.ReserveSlots Slots) -> void
+Aw.Meta.Core.Config.ReserveTier.Equals(Aw.Meta.Core.Config.ReserveTier? other) -> bool
+Aw.Meta.Core.Config.ReserveTier.MinDepth.get -> int
+Aw.Meta.Core.Config.ReserveTier.MinDepth.init -> void
+Aw.Meta.Core.Config.ReserveTier.ReserveTier(int MinDepth, Aw.Meta.Core.Config.ReserveSlots Slots) -> void
+Aw.Meta.Core.Config.ReserveTier.Slots.get -> Aw.Meta.Core.Config.ReserveSlots
+Aw.Meta.Core.Config.ReserveTier.Slots.init -> void
+Aw.Meta.Core.Config.ResourcesConfig
+Aw.Meta.Core.Config.ResourcesConfig.<Clone>$() -> Aw.Meta.Core.Config.ResourcesConfig!
+Aw.Meta.Core.Config.ResourcesConfig.Deconstruct(out int DiskFloorGb, out int MemFloorGb, out int SwapHighPct) -> void
+Aw.Meta.Core.Config.ResourcesConfig.DiskFloorGb.get -> int
+Aw.Meta.Core.Config.ResourcesConfig.DiskFloorGb.init -> void
+Aw.Meta.Core.Config.ResourcesConfig.Equals(Aw.Meta.Core.Config.ResourcesConfig? other) -> bool
+Aw.Meta.Core.Config.ResourcesConfig.MemFloorGb.get -> int
+Aw.Meta.Core.Config.ResourcesConfig.MemFloorGb.init -> void
+Aw.Meta.Core.Config.ResourcesConfig.ResourcesConfig(int DiskFloorGb = 30, int MemFloorGb = 8, int SwapHighPct = 90) -> void
+Aw.Meta.Core.Config.ResourcesConfig.SwapHighPct.get -> int
+Aw.Meta.Core.Config.ResourcesConfig.SwapHighPct.init -> void
 Aw.Meta.Core.Config.ScopeConfig
 Aw.Meta.Core.Config.ScopeConfig.<Clone>$() -> Aw.Meta.Core.Config.ScopeConfig!
 Aw.Meta.Core.Config.ScopeConfig.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Paths, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.StepConfig!>! Steps) -> void
@@ -59,7 +118,6 @@ Aw.Meta.Core.Config.ScopeConfig.Steps.get -> System.Collections.Generic.IReadOnl
 Aw.Meta.Core.Config.ScopeConfig.Steps.init -> void
 Aw.Meta.Core.Config.StepConfig
 Aw.Meta.Core.Config.StepConfig.<Clone>$() -> Aw.Meta.Core.Config.StepConfig!
-Aw.Meta.Core.Config.StepConfig.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<string!>! Run, out bool Heavy, out System.Collections.Generic.IReadOnlyList<string!>? Rerun) -> void
 Aw.Meta.Core.Config.StepConfig.Equals(Aw.Meta.Core.Config.StepConfig? other) -> bool
 Aw.Meta.Core.Config.StepConfig.Heavy.get -> bool
 Aw.Meta.Core.Config.StepConfig.Heavy.init -> void
@@ -69,12 +127,15 @@ Aw.Meta.Core.Config.StepConfig.Rerun.get -> System.Collections.Generic.IReadOnly
 Aw.Meta.Core.Config.StepConfig.Rerun.init -> void
 Aw.Meta.Core.Config.StepConfig.Run.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Core.Config.StepConfig.Run.init -> void
-Aw.Meta.Core.Config.StepConfig.StepConfig(string! Name, System.Collections.Generic.IReadOnlyList<string!>! Run, bool Heavy = false, System.Collections.Generic.IReadOnlyList<string!>? Rerun = null) -> void
 Aw.Meta.Core.Config.TeamConfig
 Aw.Meta.Core.Config.TeamConfig.<Clone>$() -> Aw.Meta.Core.Config.TeamConfig!
+Aw.Meta.Core.Config.TeamConfig.Builders.get -> Aw.Meta.Core.Config.BuildersConfig!
+Aw.Meta.Core.Config.TeamConfig.Builders.init -> void
 Aw.Meta.Core.Config.TeamConfig.Equals(Aw.Meta.Core.Config.TeamConfig? other) -> bool
 Aw.Meta.Core.Config.TeamConfig.Gate.get -> Aw.Meta.Core.Config.GateConfig!
 Aw.Meta.Core.Config.TeamConfig.Gate.init -> void
+Aw.Meta.Core.Config.TeamConfig.Heavy.get -> Aw.Meta.Core.Config.HeavyConfig!
+Aw.Meta.Core.Config.TeamConfig.Heavy.init -> void
 Aw.Meta.Core.Config.TeamConfig.KnownFlakes.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Meta.Core.Config.TeamConfig.KnownFlakes.init -> void
 Aw.Meta.Core.Config.TeamConfig.Lanes.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -89,11 +150,14 @@ Aw.Meta.Core.Config.TeamConfig.Prompts.get -> string?
 Aw.Meta.Core.Config.TeamConfig.Prompts.init -> void
 Aw.Meta.Core.Config.TeamConfig.Repo.get -> string!
 Aw.Meta.Core.Config.TeamConfig.Repo.init -> void
+Aw.Meta.Core.Config.TeamConfig.Resources.get -> Aw.Meta.Core.Config.ResourcesConfig!
+Aw.Meta.Core.Config.TeamConfig.Resources.init -> void
 Aw.Meta.Core.Config.TeamConfig.Team.get -> string!
 Aw.Meta.Core.Config.TeamConfig.Team.init -> void
-Aw.Meta.Core.Config.TeamConfig.TeamConfig(string! team, string! repo, System.Collections.Generic.IReadOnlyList<string!>! lanes, string! metaLane = "meta", string? log = null, string? prompts = null, Aw.Meta.Core.Config.GateConfig? gate = null, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.MergeOrderRule!>? mergeOrder = null, System.Collections.Generic.IReadOnlyList<string!>? knownFlakes = null, Aw.Meta.Core.Config.WorktreeConfig? worktrees = null) -> void
+Aw.Meta.Core.Config.TeamConfig.TeamConfig(string! team, string! repo, System.Collections.Generic.IReadOnlyList<string!>! lanes, string! metaLane = "meta", string? log = null, string? prompts = null, Aw.Meta.Core.Config.GateConfig? gate = null, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.MergeOrderRule!>? mergeOrder = null, System.Collections.Generic.IReadOnlyList<string!>? knownFlakes = null, Aw.Meta.Core.Config.WorktreeConfig? worktrees = null, Aw.Meta.Core.Config.ResourcesConfig? resources = null, Aw.Meta.Core.Config.BuildersConfig? builders = null, Aw.Meta.Core.Config.HeavyConfig? heavy = null) -> void
 Aw.Meta.Core.Config.TeamConfig.Worktrees.get -> Aw.Meta.Core.Config.WorktreeConfig!
 Aw.Meta.Core.Config.TeamConfig.Worktrees.init -> void
+Aw.Meta.Core.Config.ThresholdChecks
 Aw.Meta.Core.Config.WorktreeConfig
 Aw.Meta.Core.Config.WorktreeConfig.<Clone>$() -> Aw.Meta.Core.Config.WorktreeConfig!
 Aw.Meta.Core.Config.WorktreeConfig.BuildOutputs.get -> System.Collections.Generic.IReadOnlyList<string!>?
@@ -115,9 +179,12 @@ Aw.Meta.Core.Coordination.GateWorkspace
 Aw.Meta.Core.Coordination.GateWorkspace.GateWorkspace(Aw.Meta.Core.Coordination.RepoCommands! repo, Aw.Meta.Core.Coordination.GateTree! trees, Aw.Meta.Core.MetaPaths! paths) -> void
 Aw.Meta.Core.Coordination.GateWorkspace.LogPath(int pr, int run, string! name) -> string!
 Aw.Meta.Core.Coordination.GateWorkspace.MainTreePath(int pr) -> string!
-Aw.Meta.Core.Coordination.GateWorkspace.Prepare(Aw.Meta.Core.Config.TeamConfig! config, int pr, bool listChanged) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Coordination.PreparedGate!>!>
 Aw.Meta.Core.Coordination.GateWorkspace.PrepareMain(Aw.Meta.Core.Config.TeamConfig! config, int pr, string! main) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Meta.Core.Coordination.GateWorkspace.TreePath(int pr) -> string!
+Aw.Meta.Core.Coordination.HeavyReservation
+Aw.Meta.Core.Coordination.HeavyReservation.Apply(Aw.Meta.Core.Config.TeamConfig! team, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Health.HeavySlots?>!>
+Aw.Meta.Core.Coordination.HeavyReservation.Apply(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Health.HeavySlots?>!>
+Aw.Meta.Core.Coordination.HeavyReservation.HeavyReservation(Aw.Meta.Core.Ports.IHeavyReserve! reserve, Aw.Meta.Core.Coordination.MergeQueueReader! queue, Aw.Meta.Core.Ports.IRunningLog! log, Aw.Meta.Core.Ports.IMetaConfig! config, System.TimeProvider! clock) -> void
 Aw.Meta.Core.Coordination.InboxSync
 Aw.Meta.Core.Coordination.InboxSync.InboxSync(Aw.Meta.Core.Ports.ITranscriptReader! transcripts, Aw.Meta.Core.Ports.IMessageStore! messages, Aw.Meta.Core.Ports.IOwnerStore! owner, System.TimeProvider! clock) -> void
 Aw.Meta.Core.Coordination.InboxSync.Run(string! transcript, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Ids.MessageId>!>!>
@@ -158,6 +225,9 @@ Aw.Meta.Core.Coordination.MergeAssessment.Pr.init -> void
 Aw.Meta.Core.Coordination.MergeAssessment.Ready.get -> bool
 Aw.Meta.Core.Coordination.MergeAssessment.Team.get -> Aw.Meta.Core.Config.TeamConfig!
 Aw.Meta.Core.Coordination.MergeAssessment.Team.init -> void
+Aw.Meta.Core.Coordination.MergeQueueReader
+Aw.Meta.Core.Coordination.MergeQueueReader.MergeQueueReader(Aw.Meta.Core.Ports.IMessageStore! messages, Aw.Meta.Core.Ports.IGateStore! gates, Aw.Meta.Core.Ports.IKeyValueStore! values) -> void
+Aw.Meta.Core.Coordination.MergeQueueReader.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.QueuedPr!>!>!>
 Aw.Meta.Core.Coordination.MergeReadiness
 Aw.Meta.Core.Coordination.MergeReadiness.Assess(int pr, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Coordination.MergeAssessment!>!>
 Aw.Meta.Core.Coordination.MergeReadiness.MergeReadiness(Aw.Meta.Core.Ports.IMetaConfig! config, Aw.Meta.Core.Ports.IGateStore! gates, Aw.Meta.Core.Coordination.RepoCommands! repo, Aw.Meta.Core.Ports.ILogFiles! logs) -> void
@@ -197,6 +267,18 @@ Aw.Meta.Core.Coordination.RepoCommands.RemoteMain(string! repo) -> System.Thread
 Aw.Meta.Core.Coordination.RepoCommands.RepoCommands(Aw.Meta.Core.Ports.ICommandRunner! runner, Aw.Meta.Core.MetaPaths! paths) -> void
 Aw.Meta.Core.Coordination.RepoCommands.Sha(string! cwd, string! revision) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Meta.Core.Coordination.RepoCommands.View(string! repo, int pr, string! fields) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Github.PrDetails!>!>
+Aw.Meta.Core.Coordination.ResourceAdvice
+Aw.Meta.Core.Coordination.ResourceAdvice.<Clone>$() -> Aw.Meta.Core.Coordination.ResourceAdvice!
+Aw.Meta.Core.Coordination.ResourceAdvice.Builders.get -> Aw.Meta.Core.Health.BuilderAdvice!
+Aw.Meta.Core.Coordination.ResourceAdvice.Builders.init -> void
+Aw.Meta.Core.Coordination.ResourceAdvice.Deconstruct(out Aw.Meta.Core.Health.HeavySlots? Heavy, out Aw.Meta.Core.Health.BuilderAdvice! Builders) -> void
+Aw.Meta.Core.Coordination.ResourceAdvice.Equals(Aw.Meta.Core.Coordination.ResourceAdvice? other) -> bool
+Aw.Meta.Core.Coordination.ResourceAdvice.Heavy.get -> Aw.Meta.Core.Health.HeavySlots?
+Aw.Meta.Core.Coordination.ResourceAdvice.Heavy.init -> void
+Aw.Meta.Core.Coordination.ResourceAdvice.ResourceAdvice(Aw.Meta.Core.Health.HeavySlots? Heavy, Aw.Meta.Core.Health.BuilderAdvice! Builders) -> void
+Aw.Meta.Core.Coordination.ResourceAdvisor
+Aw.Meta.Core.Coordination.ResourceAdvisor.Advise(Aw.Meta.Core.Config.TeamConfig? team, Aw.Meta.Core.Health.HostResources! host, bool refresh, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Coordination.ResourceAdvice!>!>
+Aw.Meta.Core.Coordination.ResourceAdvisor.ResourceAdvisor(Aw.Meta.Core.Ports.IHeavyReserve! reserve, Aw.Meta.Core.Coordination.HeavyReservation! reservation, System.TimeProvider! clock) -> void
 Aw.Meta.Core.Coordination.StopGuard
 Aw.Meta.Core.Coordination.StopGuard.Decide(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>! open, bool hookActive, int max, System.DateTimeOffset now, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Coordination.StopOutcome!>!>
 Aw.Meta.Core.Coordination.StopGuard.StopGuard(Aw.Meta.Core.Ports.IKeyValueStore! values, Aw.Meta.Core.Ports.IRunningLog! log) -> void
@@ -215,6 +297,7 @@ Aw.Meta.Core.Gate.FlakeVerdict
 Aw.Meta.Core.Gate.FlakeVerdict.Flake = 1 -> Aw.Meta.Core.Gate.FlakeVerdict
 Aw.Meta.Core.Gate.FlakeVerdict.Real = 2 -> Aw.Meta.Core.Gate.FlakeVerdict
 Aw.Meta.Core.Gate.GateCommand
+Aw.Meta.Core.Gate.GatePriority
 Aw.Meta.Core.Gate.GateRecord
 Aw.Meta.Core.Gate.GateRecord.<Clone>$() -> Aw.Meta.Core.Gate.GateRecord!
 Aw.Meta.Core.Gate.GateRecord.At.get -> System.DateTimeOffset
@@ -328,6 +411,22 @@ Aw.Meta.Core.Guard.GuardState.Fingerprint.get -> string!
 Aw.Meta.Core.Guard.GuardState.Fingerprint.init -> void
 Aw.Meta.Core.Guard.GuardState.GuardState(string! Fingerprint, int Count) -> void
 Aw.Meta.Core.Guard.StopLoopGuard
+Aw.Meta.Core.Health.BuilderAdvice
+Aw.Meta.Core.Health.BuilderAdvice.<Clone>$() -> Aw.Meta.Core.Health.BuilderAdvice!
+Aw.Meta.Core.Health.BuilderAdvice.BuilderAdvice(int PerLane, int MaxPerLane, long DiskFreeGb, long MemAvailableGb, string? Limit) -> void
+Aw.Meta.Core.Health.BuilderAdvice.Deconstruct(out int PerLane, out int MaxPerLane, out long DiskFreeGb, out long MemAvailableGb, out string? Limit) -> void
+Aw.Meta.Core.Health.BuilderAdvice.DiskFreeGb.get -> long
+Aw.Meta.Core.Health.BuilderAdvice.DiskFreeGb.init -> void
+Aw.Meta.Core.Health.BuilderAdvice.Equals(Aw.Meta.Core.Health.BuilderAdvice? other) -> bool
+Aw.Meta.Core.Health.BuilderAdvice.Limit.get -> string?
+Aw.Meta.Core.Health.BuilderAdvice.Limit.init -> void
+Aw.Meta.Core.Health.BuilderAdvice.Line() -> string!
+Aw.Meta.Core.Health.BuilderAdvice.MaxPerLane.get -> int
+Aw.Meta.Core.Health.BuilderAdvice.MaxPerLane.init -> void
+Aw.Meta.Core.Health.BuilderAdvice.MemAvailableGb.get -> long
+Aw.Meta.Core.Health.BuilderAdvice.MemAvailableGb.init -> void
+Aw.Meta.Core.Health.BuilderAdvice.PerLane.get -> int
+Aw.Meta.Core.Health.BuilderAdvice.PerLane.init -> void
 Aw.Meta.Core.Health.DuplicateServer
 Aw.Meta.Core.Health.DuplicateServer.<Clone>$() -> Aw.Meta.Core.Health.DuplicateServer!
 Aw.Meta.Core.Health.DuplicateServer.Allowed.get -> int
@@ -352,20 +451,51 @@ Aw.Meta.Core.Health.HeavyLock.Path.get -> string!
 Aw.Meta.Core.Health.HeavyLock.Path.init -> void
 Aw.Meta.Core.Health.HeavyLock.Pid.get -> int?
 Aw.Meta.Core.Health.HeavyLock.Pid.init -> void
+Aw.Meta.Core.Health.HeavyReserveRecord
+Aw.Meta.Core.Health.HeavyReserveRecord.<Clone>$() -> Aw.Meta.Core.Health.HeavyReserveRecord!
+Aw.Meta.Core.Health.HeavyReserveRecord.At.get -> System.DateTimeOffset
+Aw.Meta.Core.Health.HeavyReserveRecord.At.init -> void
+Aw.Meta.Core.Health.HeavyReserveRecord.Deconstruct(out int Reserve, out int Depth, out System.DateTimeOffset At) -> void
+Aw.Meta.Core.Health.HeavyReserveRecord.Depth.get -> int
+Aw.Meta.Core.Health.HeavyReserveRecord.Depth.init -> void
+Aw.Meta.Core.Health.HeavyReserveRecord.Equals(Aw.Meta.Core.Health.HeavyReserveRecord? other) -> bool
+Aw.Meta.Core.Health.HeavyReserveRecord.HeavyReserveRecord(int Reserve, int Depth, System.DateTimeOffset At) -> void
+Aw.Meta.Core.Health.HeavyReserveRecord.Reserve.get -> int
+Aw.Meta.Core.Health.HeavyReserveRecord.Reserve.init -> void
+Aw.Meta.Core.Health.HeavySlots
+Aw.Meta.Core.Health.HeavySlots.<Clone>$() -> Aw.Meta.Core.Health.HeavySlots!
+Aw.Meta.Core.Health.HeavySlots.Cap.get -> int
+Aw.Meta.Core.Health.HeavySlots.Cap.init -> void
+Aw.Meta.Core.Health.HeavySlots.ComputedAt.get -> System.DateTimeOffset
+Aw.Meta.Core.Health.HeavySlots.ComputedAt.init -> void
+Aw.Meta.Core.Health.HeavySlots.Deconstruct(out int Cap, out int Reserve, out int Depth, out System.DateTimeOffset ComputedAt, out bool Stale) -> void
+Aw.Meta.Core.Health.HeavySlots.Depth.get -> int
+Aw.Meta.Core.Health.HeavySlots.Depth.init -> void
+Aw.Meta.Core.Health.HeavySlots.Equals(Aw.Meta.Core.Health.HeavySlots? other) -> bool
+Aw.Meta.Core.Health.HeavySlots.HeavySlots(int Cap, int Reserve, int Depth, System.DateTimeOffset ComputedAt, bool Stale = false) -> void
+Aw.Meta.Core.Health.HeavySlots.Line() -> string!
+Aw.Meta.Core.Health.HeavySlots.Reserve.get -> int
+Aw.Meta.Core.Health.HeavySlots.Reserve.init -> void
+Aw.Meta.Core.Health.HeavySlots.ScriptDepth.get -> int
+Aw.Meta.Core.Health.HeavySlots.Stale.get -> bool
+Aw.Meta.Core.Health.HeavySlots.Stale.init -> void
 Aw.Meta.Core.Health.HostResources
 Aw.Meta.Core.Health.HostResources.<Clone>$() -> Aw.Meta.Core.Health.HostResources!
 Aw.Meta.Core.Health.HostResources.AvailablePercent.get -> int
-Aw.Meta.Core.Health.HostResources.Deconstruct(out long MemTotalKb, out long MemAvailableKb, out long SwapUsedKb, out long DiskFreeBytes) -> void
+Aw.Meta.Core.Health.HostResources.Deconstruct(out long MemTotalKb, out long MemAvailableKb, out long SwapUsedKb, out long DiskFreeBytes, out long SwapTotalKb) -> void
 Aw.Meta.Core.Health.HostResources.DiskFreeBytes.get -> long
 Aw.Meta.Core.Health.HostResources.DiskFreeBytes.init -> void
 Aw.Meta.Core.Health.HostResources.Equals(Aw.Meta.Core.Health.HostResources? other) -> bool
-Aw.Meta.Core.Health.HostResources.HostResources(long MemTotalKb, long MemAvailableKb, long SwapUsedKb, long DiskFreeBytes) -> void
+Aw.Meta.Core.Health.HostResources.HostResources(long MemTotalKb, long MemAvailableKb, long SwapUsedKb, long DiskFreeBytes, long SwapTotalKb = 0) -> void
 Aw.Meta.Core.Health.HostResources.MemAvailableKb.get -> long
 Aw.Meta.Core.Health.HostResources.MemAvailableKb.init -> void
 Aw.Meta.Core.Health.HostResources.MemTotalKb.get -> long
 Aw.Meta.Core.Health.HostResources.MemTotalKb.init -> void
+Aw.Meta.Core.Health.HostResources.SwapTotalKb.get -> long
+Aw.Meta.Core.Health.HostResources.SwapTotalKb.init -> void
 Aw.Meta.Core.Health.HostResources.SwapUsedKb.get -> long
 Aw.Meta.Core.Health.HostResources.SwapUsedKb.init -> void
+Aw.Meta.Core.Health.HostResources.SwapUsedPercent.get -> int
 Aw.Meta.Core.Health.HostRules
 Aw.Meta.Core.Health.HostSnapshot
 Aw.Meta.Core.Health.HostSnapshot.<Clone>$() -> Aw.Meta.Core.Health.HostSnapshot!
@@ -408,6 +538,7 @@ Aw.Meta.Core.Health.ProcessInfo.Ppid.init -> void
 Aw.Meta.Core.Health.ProcessInfo.ProcessInfo(int Pid, int Ppid, string! Cmdline, long RssKb, long AgeSeconds) -> void
 Aw.Meta.Core.Health.ProcessInfo.RssKb.get -> long
 Aw.Meta.Core.Health.ProcessInfo.RssKb.init -> void
+Aw.Meta.Core.Health.ResourceRules
 Aw.Meta.Core.Ids.MessageId
 Aw.Meta.Core.Ids.MessageId.Equals(Aw.Meta.Core.Ids.MessageId other) -> bool
 Aw.Meta.Core.Ids.MessageId.Equals(Aw.Meta.Core.Ids.MessageId other, System.Collections.Generic.IEqualityComparer<Aw.Meta.Core.Ids.MessageId>! comparer) -> bool
@@ -619,6 +750,17 @@ Aw.Meta.Core.Merge.MergeFacts.ScopeRuns.get -> System.Collections.Generic.IReadO
 Aw.Meta.Core.Merge.MergeFacts.ScopeRuns.init -> void
 Aw.Meta.Core.Merge.MergeGate
 Aw.Meta.Core.Merge.QueueDrops
+Aw.Meta.Core.Merge.QueuedPr
+Aw.Meta.Core.Merge.QueuedPr.<Clone>$() -> Aw.Meta.Core.Merge.QueuedPr!
+Aw.Meta.Core.Merge.QueuedPr.Deconstruct(out int Pr, out string! From, out string! Gate) -> void
+Aw.Meta.Core.Merge.QueuedPr.Equals(Aw.Meta.Core.Merge.QueuedPr? other) -> bool
+Aw.Meta.Core.Merge.QueuedPr.From.get -> string!
+Aw.Meta.Core.Merge.QueuedPr.From.init -> void
+Aw.Meta.Core.Merge.QueuedPr.Gate.get -> string!
+Aw.Meta.Core.Merge.QueuedPr.Gate.init -> void
+Aw.Meta.Core.Merge.QueuedPr.Pr.get -> int
+Aw.Meta.Core.Merge.QueuedPr.Pr.init -> void
+Aw.Meta.Core.Merge.QueuedPr.QueuedPr(int Pr, string! From, string! Gate) -> void
 Aw.Meta.Core.Messages.Classification
 Aw.Meta.Core.Messages.Classification.<Clone>$() -> Aw.Meta.Core.Messages.Classification!
 Aw.Meta.Core.Messages.Classification.Classification(Aw.Meta.Core.Messages.MessageKind Kind, int? Pr = null, string? Lane = null) -> void
@@ -833,6 +975,9 @@ Aw.Meta.Core.Ports.IGateStore.Latest(int pr, System.Threading.CancellationToken 
 Aw.Meta.Core.Ports.IGateStore.LatestMerge(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Obligations.MergeRecord?>!>
 Aw.Meta.Core.Ports.IGateStore.RecordMerge(Aw.Meta.Core.Obligations.MergeRecord! merge, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Meta.Core.Ports.IGateStore.Save(Aw.Meta.Core.Gate.GateRecord! gate, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Gate.GateRecord!>!>
+Aw.Meta.Core.Ports.IHeavyReserve
+Aw.Meta.Core.Ports.IHeavyReserve.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Health.HeavyReserveRecord?>!>
+Aw.Meta.Core.Ports.IHeavyReserve.Write(Aw.Meta.Core.Health.HeavyReserveRecord! record, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Meta.Core.Ports.IHostResources
 Aw.Meta.Core.Ports.IHostResources.HeavyLocks(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>!>!>
 Aw.Meta.Core.Ports.IHostResources.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Health.HostResources!>!>
@@ -974,20 +1119,33 @@ Aw.Meta.Core.Watch.PrView.State.get -> Aw.Meta.Core.Watch.PrState
 Aw.Meta.Core.Watch.PrView.State.init -> void
 Aw.Meta.Core.Watch.WatchDiff
 Aw.Meta.Core.Watch.WatchDuration
+Aw.Meta.Core.Watch.WatchResources
+Aw.Meta.Core.Watch.WatchResources.<Clone>$() -> Aw.Meta.Core.Watch.WatchResources!
+Aw.Meta.Core.Watch.WatchResources.Deconstruct(out bool DiskLow, out bool MemoryLow) -> void
+Aw.Meta.Core.Watch.WatchResources.DiskLow.get -> bool
+Aw.Meta.Core.Watch.WatchResources.DiskLow.init -> void
+Aw.Meta.Core.Watch.WatchResources.Equals(Aw.Meta.Core.Watch.WatchResources? other) -> bool
+Aw.Meta.Core.Watch.WatchResources.MemoryLow.get -> bool
+Aw.Meta.Core.Watch.WatchResources.MemoryLow.init -> void
+Aw.Meta.Core.Watch.WatchResources.WatchResources(bool DiskLow, bool MemoryLow) -> void
 Aw.Meta.Core.Watch.WatchSnapshot
 Aw.Meta.Core.Watch.WatchSnapshot.<Clone>$() -> Aw.Meta.Core.Watch.WatchSnapshot!
-Aw.Meta.Core.Watch.WatchSnapshot.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Watch.PrView!>! Prs, out string! MainSha, out bool DiskLow) -> void
+Aw.Meta.Core.Watch.WatchSnapshot.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Watch.PrView!>! Prs, out string! MainSha, out bool DiskLow, out bool MemoryLow) -> void
 Aw.Meta.Core.Watch.WatchSnapshot.DiskLow.get -> bool
 Aw.Meta.Core.Watch.WatchSnapshot.DiskLow.init -> void
 Aw.Meta.Core.Watch.WatchSnapshot.Equals(Aw.Meta.Core.Watch.WatchSnapshot? other) -> bool
 Aw.Meta.Core.Watch.WatchSnapshot.MainSha.get -> string!
 Aw.Meta.Core.Watch.WatchSnapshot.MainSha.init -> void
+Aw.Meta.Core.Watch.WatchSnapshot.MemoryLow.get -> bool
+Aw.Meta.Core.Watch.WatchSnapshot.MemoryLow.init -> void
 Aw.Meta.Core.Watch.WatchSnapshot.Prs.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Watch.PrView!>!
 Aw.Meta.Core.Watch.WatchSnapshot.Prs.init -> void
-Aw.Meta.Core.Watch.WatchSnapshot.WatchSnapshot(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Watch.PrView!>! Prs, string! MainSha, bool DiskLow) -> void
+Aw.Meta.Core.Watch.WatchSnapshot.WatchSnapshot(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Watch.PrView!>! Prs, string! MainSha, bool DiskLow, bool MemoryLow = false) -> void
 Aw.Meta.Core.Watch.WatchState
 Aw.Meta.Core.Watch.WatchState.<Clone>$() -> Aw.Meta.Core.Watch.WatchState!
-Aw.Meta.Core.Watch.WatchState.Deconstruct(out bool Initialized, out System.Collections.Generic.IReadOnlyDictionary<int, Aw.Meta.Core.Watch.WatchedPr!>! Prs, out string? MainSha, out bool DiskLow) -> void
+Aw.Meta.Core.Watch.WatchState.Deconstruct(out bool Initialized, out System.Collections.Generic.IReadOnlyDictionary<int, Aw.Meta.Core.Watch.WatchedPr!>! Prs, out string? MainSha, out bool DiskLow, out bool MemoryLow, out bool DiskFlipSeen, out bool MemoryFlipSeen) -> void
+Aw.Meta.Core.Watch.WatchState.DiskFlipSeen.get -> bool
+Aw.Meta.Core.Watch.WatchState.DiskFlipSeen.init -> void
 Aw.Meta.Core.Watch.WatchState.DiskLow.get -> bool
 Aw.Meta.Core.Watch.WatchState.DiskLow.init -> void
 Aw.Meta.Core.Watch.WatchState.Equals(Aw.Meta.Core.Watch.WatchState? other) -> bool
@@ -995,9 +1153,13 @@ Aw.Meta.Core.Watch.WatchState.Initialized.get -> bool
 Aw.Meta.Core.Watch.WatchState.Initialized.init -> void
 Aw.Meta.Core.Watch.WatchState.MainSha.get -> string?
 Aw.Meta.Core.Watch.WatchState.MainSha.init -> void
+Aw.Meta.Core.Watch.WatchState.MemoryFlipSeen.get -> bool
+Aw.Meta.Core.Watch.WatchState.MemoryFlipSeen.init -> void
+Aw.Meta.Core.Watch.WatchState.MemoryLow.get -> bool
+Aw.Meta.Core.Watch.WatchState.MemoryLow.init -> void
 Aw.Meta.Core.Watch.WatchState.Prs.get -> System.Collections.Generic.IReadOnlyDictionary<int, Aw.Meta.Core.Watch.WatchedPr!>!
 Aw.Meta.Core.Watch.WatchState.Prs.init -> void
-Aw.Meta.Core.Watch.WatchState.WatchState(bool Initialized, System.Collections.Generic.IReadOnlyDictionary<int, Aw.Meta.Core.Watch.WatchedPr!>! Prs, string? MainSha, bool DiskLow) -> void
+Aw.Meta.Core.Watch.WatchState.WatchState(bool Initialized, System.Collections.Generic.IReadOnlyDictionary<int, Aw.Meta.Core.Watch.WatchedPr!>! Prs, string? MainSha, bool DiskLow, bool MemoryLow = false, bool DiskFlipSeen = false, bool MemoryFlipSeen = false) -> void
 Aw.Meta.Core.Watch.WatchStep
 Aw.Meta.Core.Watch.WatchStep.<Clone>$() -> Aw.Meta.Core.Watch.WatchStep!
 Aw.Meta.Core.Watch.WatchStep.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Lines, out Aw.Meta.Core.Watch.WatchState! State) -> void
@@ -1073,12 +1235,16 @@ Aw.Meta.Core.Worktrees.WorktreeSweeper
 Aw.Meta.Core.Worktrees.WorktreeSweeper.Sweep(Aw.Meta.Core.Config.TeamConfig! team, Aw.Meta.Core.Worktrees.WorktreeScope! scope, Aw.Meta.Core.Worktrees.SweepMode mode, string! trigger, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Worktrees.SweepOutcome!>!>
 Aw.Meta.Core.Worktrees.WorktreeSweeper.Triggered(Aw.Meta.Core.Config.TeamConfig! team, System.Collections.Generic.IReadOnlyCollection<int>! prs, string! trigger, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Meta.Core.Worktrees.WorktreeSweeper.WorktreeSweeper(Aw.Meta.Core.Worktrees.WorktreeInspector! inspector, Aw.Meta.Core.Coordination.RepoCommands! repo, Aw.Meta.Core.Ports.IRunningLog! log, Aw.Meta.Core.Ports.IKeyValueStore! values, System.TimeProvider! clock) -> void
+const Aw.Meta.Core.Config.HeavyConfig.DefaultCap = 3 -> int
 const Aw.Meta.Core.Coordination.LaneHealthReader.CursorLoopLimit = 5 -> int
-const Aw.Meta.Core.Health.HostRules.LowMemoryPercent = 10 -> int
+const Aw.Meta.Core.Gate.GatePriority.Meta = "meta" -> string!
+const Aw.Meta.Core.Gate.GatePriority.Variable = "AW_HEAVY_PRIORITY" -> string!
+const Aw.Meta.Core.Health.BuilderAdvice.DiskLimit = "disk below floor+headroom" -> string!
+const Aw.Meta.Core.Health.BuilderAdvice.MemoryLimit = "memory low" -> string!
 const Aw.Meta.Core.Health.OrphanRule.MinimumAgeSeconds = 300 -> long
 const Aw.Meta.Core.Health.ProcessGroups.Claude = "claude" -> string!
 const Aw.Meta.Core.Health.ProcessGroups.Dotnet = "dotnet" -> string!
-const Aw.Meta.Core.Health.ProcessGroups.Mcp = "headroom/mcp" -> string!
+const Aw.Meta.Core.Health.ProcessGroups.Mcp = "mcp" -> string!
 const Aw.Meta.Core.Health.ProcessGroups.Temporal = "temporal" -> string!
 const Aw.Meta.Core.KvKeys.EndedPrs = "watch.ended-prs" -> string!
 const Aw.Meta.Core.KvKeys.HealthLast = "health.last" -> string!
@@ -1087,6 +1253,7 @@ const Aw.Meta.Core.KvKeys.StopCount = "stopcheck.count" -> string!
 const Aw.Meta.Core.KvKeys.StopFingerprint = "stopcheck.fingerprint" -> string!
 const Aw.Meta.Core.KvKeys.WatchHeartbeat = "watch.heartbeat" -> string!
 const Aw.Meta.Core.KvKeys.WatchInterval = "watch.interval" -> string!
+const Aw.Meta.Core.KvKeys.WatchResources = "watch.resources" -> string!
 const Aw.Meta.Core.KvKeys.WorktreesLast = "worktrees.last" -> string!
 const Aw.Meta.Core.KvKeys.WorktreesPending = "worktrees.pending-prs" -> string!
 const Aw.Meta.Core.KvKeys.WorktreesSweepStart = "worktrees.sweep-start" -> string!
@@ -1098,12 +1265,32 @@ override Aw.Meta.Core.Commands.CommandRequest.ToString() -> string!
 override Aw.Meta.Core.Commands.CommandResult.Equals(object? obj) -> bool
 override Aw.Meta.Core.Commands.CommandResult.GetHashCode() -> int
 override Aw.Meta.Core.Commands.CommandResult.ToString() -> string!
+override Aw.Meta.Core.Config.BuildersConfig.Equals(object? obj) -> bool
+override Aw.Meta.Core.Config.BuildersConfig.GetHashCode() -> int
+override Aw.Meta.Core.Config.BuildersConfig.ToString() -> string!
 override Aw.Meta.Core.Config.GateConfig.Equals(object? obj) -> bool
 override Aw.Meta.Core.Config.GateConfig.GetHashCode() -> int
 override Aw.Meta.Core.Config.GateConfig.ToString() -> string!
+override Aw.Meta.Core.Config.HeavyConfig.Equals(object? obj) -> bool
+override Aw.Meta.Core.Config.HeavyConfig.GetHashCode() -> int
+override Aw.Meta.Core.Config.HeavyConfig.ToString() -> string!
 override Aw.Meta.Core.Config.MergeOrderRule.Equals(object? obj) -> bool
 override Aw.Meta.Core.Config.MergeOrderRule.GetHashCode() -> int
 override Aw.Meta.Core.Config.MergeOrderRule.ToString() -> string!
+override Aw.Meta.Core.Config.ReserveSetting.Equals(object? obj) -> bool
+override Aw.Meta.Core.Config.ReserveSetting.GetHashCode() -> int
+override Aw.Meta.Core.Config.ReserveSetting.ToString() -> string!
+override Aw.Meta.Core.Config.ReserveSettingConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Aw.Meta.Core.Config.ReserveSetting!
+override Aw.Meta.Core.Config.ReserveSettingConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Aw.Meta.Core.Config.ReserveSetting! value, System.Text.Json.JsonSerializerOptions! options) -> void
+override Aw.Meta.Core.Config.ReserveSlots.GetHashCode() -> int
+override Aw.Meta.Core.Config.ReserveSlotsConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> Aw.Meta.Core.Config.ReserveSlots
+override Aw.Meta.Core.Config.ReserveSlotsConverter.Write(System.Text.Json.Utf8JsonWriter! writer, Aw.Meta.Core.Config.ReserveSlots value, System.Text.Json.JsonSerializerOptions! options) -> void
+override Aw.Meta.Core.Config.ReserveTier.Equals(object? obj) -> bool
+override Aw.Meta.Core.Config.ReserveTier.GetHashCode() -> int
+override Aw.Meta.Core.Config.ReserveTier.ToString() -> string!
+override Aw.Meta.Core.Config.ResourcesConfig.Equals(object? obj) -> bool
+override Aw.Meta.Core.Config.ResourcesConfig.GetHashCode() -> int
+override Aw.Meta.Core.Config.ResourcesConfig.ToString() -> string!
 override Aw.Meta.Core.Config.ScopeConfig.Equals(object? obj) -> bool
 override Aw.Meta.Core.Config.ScopeConfig.GetHashCode() -> int
 override Aw.Meta.Core.Config.ScopeConfig.ToString() -> string!
@@ -1125,6 +1312,9 @@ override Aw.Meta.Core.Coordination.MergeAssessment.ToString() -> string!
 override Aw.Meta.Core.Coordination.PreparedGate.Equals(object? obj) -> bool
 override Aw.Meta.Core.Coordination.PreparedGate.GetHashCode() -> int
 override Aw.Meta.Core.Coordination.PreparedGate.ToString() -> string!
+override Aw.Meta.Core.Coordination.ResourceAdvice.Equals(object? obj) -> bool
+override Aw.Meta.Core.Coordination.ResourceAdvice.GetHashCode() -> int
+override Aw.Meta.Core.Coordination.ResourceAdvice.ToString() -> string!
 override Aw.Meta.Core.Coordination.StopOutcome.Equals(object? obj) -> bool
 override Aw.Meta.Core.Coordination.StopOutcome.GetHashCode() -> int
 override Aw.Meta.Core.Coordination.StopOutcome.ToString() -> string!
@@ -1152,12 +1342,21 @@ override Aw.Meta.Core.Guard.GuardDecision.ToString() -> string!
 override Aw.Meta.Core.Guard.GuardState.Equals(object? obj) -> bool
 override Aw.Meta.Core.Guard.GuardState.GetHashCode() -> int
 override Aw.Meta.Core.Guard.GuardState.ToString() -> string!
+override Aw.Meta.Core.Health.BuilderAdvice.Equals(object? obj) -> bool
+override Aw.Meta.Core.Health.BuilderAdvice.GetHashCode() -> int
+override Aw.Meta.Core.Health.BuilderAdvice.ToString() -> string!
 override Aw.Meta.Core.Health.DuplicateServer.Equals(object? obj) -> bool
 override Aw.Meta.Core.Health.DuplicateServer.GetHashCode() -> int
 override Aw.Meta.Core.Health.DuplicateServer.ToString() -> string!
 override Aw.Meta.Core.Health.HeavyLock.Equals(object? obj) -> bool
 override Aw.Meta.Core.Health.HeavyLock.GetHashCode() -> int
 override Aw.Meta.Core.Health.HeavyLock.ToString() -> string!
+override Aw.Meta.Core.Health.HeavyReserveRecord.Equals(object? obj) -> bool
+override Aw.Meta.Core.Health.HeavyReserveRecord.GetHashCode() -> int
+override Aw.Meta.Core.Health.HeavyReserveRecord.ToString() -> string!
+override Aw.Meta.Core.Health.HeavySlots.Equals(object? obj) -> bool
+override Aw.Meta.Core.Health.HeavySlots.GetHashCode() -> int
+override Aw.Meta.Core.Health.HeavySlots.ToString() -> string!
 override Aw.Meta.Core.Health.HostResources.Equals(object? obj) -> bool
 override Aw.Meta.Core.Health.HostResources.GetHashCode() -> int
 override Aw.Meta.Core.Health.HostResources.ToString() -> string!
@@ -1215,6 +1414,9 @@ override Aw.Meta.Core.Merge.MergeCheck.ToString() -> string!
 override Aw.Meta.Core.Merge.MergeFacts.Equals(object? obj) -> bool
 override Aw.Meta.Core.Merge.MergeFacts.GetHashCode() -> int
 override Aw.Meta.Core.Merge.MergeFacts.ToString() -> string!
+override Aw.Meta.Core.Merge.QueuedPr.Equals(object? obj) -> bool
+override Aw.Meta.Core.Merge.QueuedPr.GetHashCode() -> int
+override Aw.Meta.Core.Merge.QueuedPr.ToString() -> string!
 override Aw.Meta.Core.Messages.Classification.Equals(object? obj) -> bool
 override Aw.Meta.Core.Messages.Classification.GetHashCode() -> int
 override Aw.Meta.Core.Messages.Classification.ToString() -> string!
@@ -1269,6 +1471,9 @@ override Aw.Meta.Core.TeamLayout.ToString() -> string!
 override Aw.Meta.Core.Watch.PrView.Equals(object? obj) -> bool
 override Aw.Meta.Core.Watch.PrView.GetHashCode() -> int
 override Aw.Meta.Core.Watch.PrView.ToString() -> string!
+override Aw.Meta.Core.Watch.WatchResources.Equals(object? obj) -> bool
+override Aw.Meta.Core.Watch.WatchResources.GetHashCode() -> int
+override Aw.Meta.Core.Watch.WatchResources.ToString() -> string!
 override Aw.Meta.Core.Watch.WatchSnapshot.Equals(object? obj) -> bool
 override Aw.Meta.Core.Watch.WatchSnapshot.GetHashCode() -> int
 override Aw.Meta.Core.Watch.WatchSnapshot.ToString() -> string!
@@ -1295,17 +1500,33 @@ static Aw.Meta.Core.Commands.CommandRequest.operator ==(Aw.Meta.Core.Commands.Co
 static Aw.Meta.Core.Commands.CommandResult.operator !=(Aw.Meta.Core.Commands.CommandResult? left, Aw.Meta.Core.Commands.CommandResult? right) -> bool
 static Aw.Meta.Core.Commands.CommandResult.operator ==(Aw.Meta.Core.Commands.CommandResult? left, Aw.Meta.Core.Commands.CommandResult? right) -> bool
 static Aw.Meta.Core.Commands.ProgramPath.Resolve(string! program, string? cwd) -> string!
+static Aw.Meta.Core.Config.BuildersConfig.operator !=(Aw.Meta.Core.Config.BuildersConfig? left, Aw.Meta.Core.Config.BuildersConfig? right) -> bool
+static Aw.Meta.Core.Config.BuildersConfig.operator ==(Aw.Meta.Core.Config.BuildersConfig? left, Aw.Meta.Core.Config.BuildersConfig? right) -> bool
 static Aw.Meta.Core.Config.GateConfig.Empty.get -> Aw.Meta.Core.Config.GateConfig!
 static Aw.Meta.Core.Config.GateConfig.operator !=(Aw.Meta.Core.Config.GateConfig? left, Aw.Meta.Core.Config.GateConfig? right) -> bool
 static Aw.Meta.Core.Config.GateConfig.operator ==(Aw.Meta.Core.Config.GateConfig? left, Aw.Meta.Core.Config.GateConfig? right) -> bool
+static Aw.Meta.Core.Config.HeavyConfig.operator !=(Aw.Meta.Core.Config.HeavyConfig? left, Aw.Meta.Core.Config.HeavyConfig? right) -> bool
+static Aw.Meta.Core.Config.HeavyConfig.operator ==(Aw.Meta.Core.Config.HeavyConfig? left, Aw.Meta.Core.Config.HeavyConfig? right) -> bool
 static Aw.Meta.Core.Config.MergeOrderRule.operator !=(Aw.Meta.Core.Config.MergeOrderRule? left, Aw.Meta.Core.Config.MergeOrderRule? right) -> bool
 static Aw.Meta.Core.Config.MergeOrderRule.operator ==(Aw.Meta.Core.Config.MergeOrderRule? left, Aw.Meta.Core.Config.MergeOrderRule? right) -> bool
+static Aw.Meta.Core.Config.ReserveSetting.Default.get -> Aw.Meta.Core.Config.ReserveSetting!
+static Aw.Meta.Core.Config.ReserveSetting.Off.get -> Aw.Meta.Core.Config.ReserveSetting!
+static Aw.Meta.Core.Config.ReserveSetting.operator !=(Aw.Meta.Core.Config.ReserveSetting? left, Aw.Meta.Core.Config.ReserveSetting? right) -> bool
+static Aw.Meta.Core.Config.ReserveSetting.operator ==(Aw.Meta.Core.Config.ReserveSetting? left, Aw.Meta.Core.Config.ReserveSetting? right) -> bool
+static Aw.Meta.Core.Config.ReserveSlots.All.get -> Aw.Meta.Core.Config.ReserveSlots
+static Aw.Meta.Core.Config.ReserveSlots.operator !=(Aw.Meta.Core.Config.ReserveSlots left, Aw.Meta.Core.Config.ReserveSlots right) -> bool
+static Aw.Meta.Core.Config.ReserveSlots.operator ==(Aw.Meta.Core.Config.ReserveSlots left, Aw.Meta.Core.Config.ReserveSlots right) -> bool
+static Aw.Meta.Core.Config.ReserveTier.operator !=(Aw.Meta.Core.Config.ReserveTier? left, Aw.Meta.Core.Config.ReserveTier? right) -> bool
+static Aw.Meta.Core.Config.ReserveTier.operator ==(Aw.Meta.Core.Config.ReserveTier? left, Aw.Meta.Core.Config.ReserveTier? right) -> bool
+static Aw.Meta.Core.Config.ResourcesConfig.operator !=(Aw.Meta.Core.Config.ResourcesConfig? left, Aw.Meta.Core.Config.ResourcesConfig? right) -> bool
+static Aw.Meta.Core.Config.ResourcesConfig.operator ==(Aw.Meta.Core.Config.ResourcesConfig? left, Aw.Meta.Core.Config.ResourcesConfig? right) -> bool
 static Aw.Meta.Core.Config.ScopeConfig.operator !=(Aw.Meta.Core.Config.ScopeConfig? left, Aw.Meta.Core.Config.ScopeConfig? right) -> bool
 static Aw.Meta.Core.Config.ScopeConfig.operator ==(Aw.Meta.Core.Config.ScopeConfig? left, Aw.Meta.Core.Config.ScopeConfig? right) -> bool
 static Aw.Meta.Core.Config.StepConfig.operator !=(Aw.Meta.Core.Config.StepConfig? left, Aw.Meta.Core.Config.StepConfig? right) -> bool
 static Aw.Meta.Core.Config.StepConfig.operator ==(Aw.Meta.Core.Config.StepConfig? left, Aw.Meta.Core.Config.StepConfig? right) -> bool
 static Aw.Meta.Core.Config.TeamConfig.operator !=(Aw.Meta.Core.Config.TeamConfig? left, Aw.Meta.Core.Config.TeamConfig? right) -> bool
 static Aw.Meta.Core.Config.TeamConfig.operator ==(Aw.Meta.Core.Config.TeamConfig? left, Aw.Meta.Core.Config.TeamConfig? right) -> bool
+static Aw.Meta.Core.Config.ThresholdChecks.Problem(Aw.Meta.Core.Config.TeamConfig! team) -> string?
 static Aw.Meta.Core.Config.WorktreeConfig.DefaultBuildOutputs.get -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Meta.Core.Config.WorktreeConfig.operator !=(Aw.Meta.Core.Config.WorktreeConfig? left, Aw.Meta.Core.Config.WorktreeConfig? right) -> bool
 static Aw.Meta.Core.Config.WorktreeConfig.operator ==(Aw.Meta.Core.Config.WorktreeConfig? left, Aw.Meta.Core.Config.WorktreeConfig? right) -> bool
@@ -1316,12 +1537,15 @@ static Aw.Meta.Core.Coordination.MergeAssessment.operator !=(Aw.Meta.Core.Coordi
 static Aw.Meta.Core.Coordination.MergeAssessment.operator ==(Aw.Meta.Core.Coordination.MergeAssessment? left, Aw.Meta.Core.Coordination.MergeAssessment? right) -> bool
 static Aw.Meta.Core.Coordination.PreparedGate.operator !=(Aw.Meta.Core.Coordination.PreparedGate? left, Aw.Meta.Core.Coordination.PreparedGate? right) -> bool
 static Aw.Meta.Core.Coordination.PreparedGate.operator ==(Aw.Meta.Core.Coordination.PreparedGate? left, Aw.Meta.Core.Coordination.PreparedGate? right) -> bool
+static Aw.Meta.Core.Coordination.ResourceAdvice.operator !=(Aw.Meta.Core.Coordination.ResourceAdvice? left, Aw.Meta.Core.Coordination.ResourceAdvice? right) -> bool
+static Aw.Meta.Core.Coordination.ResourceAdvice.operator ==(Aw.Meta.Core.Coordination.ResourceAdvice? left, Aw.Meta.Core.Coordination.ResourceAdvice? right) -> bool
 static Aw.Meta.Core.Coordination.StopOutcome.operator !=(Aw.Meta.Core.Coordination.StopOutcome? left, Aw.Meta.Core.Coordination.StopOutcome? right) -> bool
 static Aw.Meta.Core.Coordination.StopOutcome.operator ==(Aw.Meta.Core.Coordination.StopOutcome? left, Aw.Meta.Core.Coordination.StopOutcome? right) -> bool
 static Aw.Meta.Core.Gate.FailureExcerpt.For(string! log, string! test) -> string!
 static Aw.Meta.Core.Gate.FlakeRule.Classify(Aw.Meta.Core.Gate.RerunOutcome! alone, Aw.Meta.Core.Gate.RerunOutcome! onMain, string! gateFailure) -> Aw.Meta.Core.Gate.FlakeVerdict
 static Aw.Meta.Core.Gate.GateCommand.For(Aw.Meta.Core.Config.StepConfig! step, string? heavy) -> System.Collections.Generic.IReadOnlyList<string!>!
 static Aw.Meta.Core.Gate.GateCommand.Rerun(Aw.Meta.Core.Config.StepConfig! step, string! test, string? heavy) -> System.Collections.Generic.IReadOnlyList<string!>?
+static Aw.Meta.Core.Gate.GatePriority.Environment.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 static Aw.Meta.Core.Gate.GateRecord.operator !=(Aw.Meta.Core.Gate.GateRecord? left, Aw.Meta.Core.Gate.GateRecord? right) -> bool
 static Aw.Meta.Core.Gate.GateRecord.operator ==(Aw.Meta.Core.Gate.GateRecord? left, Aw.Meta.Core.Gate.GateRecord? right) -> bool
 static Aw.Meta.Core.Gate.GateStep.operator !=(Aw.Meta.Core.Gate.GateStep? left, Aw.Meta.Core.Gate.GateStep? right) -> bool
@@ -1354,14 +1578,20 @@ static Aw.Meta.Core.Guard.GuardState.operator !=(Aw.Meta.Core.Guard.GuardState? 
 static Aw.Meta.Core.Guard.GuardState.operator ==(Aw.Meta.Core.Guard.GuardState? left, Aw.Meta.Core.Guard.GuardState? right) -> bool
 static Aw.Meta.Core.Guard.StopLoopGuard.Decide(Aw.Meta.Core.Guard.GuardState! previous, string! fingerprint, bool hookActive, int max) -> Aw.Meta.Core.Guard.GuardDecision!
 static Aw.Meta.Core.Guard.StopLoopGuard.Fingerprint(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Obligations.Obligation!>! open) -> string!
+static Aw.Meta.Core.Health.BuilderAdvice.Compute(Aw.Meta.Core.Health.HostResources! host, Aw.Meta.Core.Config.ResourcesConfig! limits, Aw.Meta.Core.Config.BuildersConfig! builders, int lanes) -> Aw.Meta.Core.Health.BuilderAdvice!
+static Aw.Meta.Core.Health.BuilderAdvice.operator !=(Aw.Meta.Core.Health.BuilderAdvice? left, Aw.Meta.Core.Health.BuilderAdvice? right) -> bool
+static Aw.Meta.Core.Health.BuilderAdvice.operator ==(Aw.Meta.Core.Health.BuilderAdvice? left, Aw.Meta.Core.Health.BuilderAdvice? right) -> bool
 static Aw.Meta.Core.Health.DuplicateServer.operator !=(Aw.Meta.Core.Health.DuplicateServer? left, Aw.Meta.Core.Health.DuplicateServer? right) -> bool
 static Aw.Meta.Core.Health.DuplicateServer.operator ==(Aw.Meta.Core.Health.DuplicateServer? left, Aw.Meta.Core.Health.DuplicateServer? right) -> bool
 static Aw.Meta.Core.Health.HeavyLock.operator !=(Aw.Meta.Core.Health.HeavyLock? left, Aw.Meta.Core.Health.HeavyLock? right) -> bool
 static Aw.Meta.Core.Health.HeavyLock.operator ==(Aw.Meta.Core.Health.HeavyLock? left, Aw.Meta.Core.Health.HeavyLock? right) -> bool
+static Aw.Meta.Core.Health.HeavyReserveRecord.operator !=(Aw.Meta.Core.Health.HeavyReserveRecord? left, Aw.Meta.Core.Health.HeavyReserveRecord? right) -> bool
+static Aw.Meta.Core.Health.HeavyReserveRecord.operator ==(Aw.Meta.Core.Health.HeavyReserveRecord? left, Aw.Meta.Core.Health.HeavyReserveRecord? right) -> bool
+static Aw.Meta.Core.Health.HeavySlots.operator !=(Aw.Meta.Core.Health.HeavySlots? left, Aw.Meta.Core.Health.HeavySlots? right) -> bool
+static Aw.Meta.Core.Health.HeavySlots.operator ==(Aw.Meta.Core.Health.HeavySlots? left, Aw.Meta.Core.Health.HeavySlots? right) -> bool
 static Aw.Meta.Core.Health.HostResources.operator !=(Aw.Meta.Core.Health.HostResources? left, Aw.Meta.Core.Health.HostResources? right) -> bool
 static Aw.Meta.Core.Health.HostResources.operator ==(Aw.Meta.Core.Health.HostResources? left, Aw.Meta.Core.Health.HostResources? right) -> bool
 static Aw.Meta.Core.Health.HostRules.Duplicates(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! processes) -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>!
-static Aw.Meta.Core.Health.HostRules.MemoryLow(Aw.Meta.Core.Health.HostResources! resources) -> bool
 static Aw.Meta.Core.Health.HostRules.Orphans(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! processes) -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>!
 static Aw.Meta.Core.Health.HostSnapshot.operator !=(Aw.Meta.Core.Health.HostSnapshot? left, Aw.Meta.Core.Health.HostSnapshot? right) -> bool
 static Aw.Meta.Core.Health.HostSnapshot.operator ==(Aw.Meta.Core.Health.HostSnapshot? left, Aw.Meta.Core.Health.HostSnapshot? right) -> bool
@@ -1372,6 +1602,10 @@ static Aw.Meta.Core.Health.ProcessGroups.Group(System.Collections.Generic.IReadO
 static Aw.Meta.Core.Health.ProcessGroups.Of(Aw.Meta.Core.Health.ProcessInfo! process) -> string!
 static Aw.Meta.Core.Health.ProcessInfo.operator !=(Aw.Meta.Core.Health.ProcessInfo? left, Aw.Meta.Core.Health.ProcessInfo? right) -> bool
 static Aw.Meta.Core.Health.ProcessInfo.operator ==(Aw.Meta.Core.Health.ProcessInfo? left, Aw.Meta.Core.Health.ProcessInfo? right) -> bool
+static Aw.Meta.Core.Health.ResourceRules.DiskFreeGb(Aw.Meta.Core.Health.HostResources! host) -> long
+static Aw.Meta.Core.Health.ResourceRules.DiskLow(Aw.Meta.Core.Health.HostResources! host, Aw.Meta.Core.Config.ResourcesConfig! limits) -> bool
+static Aw.Meta.Core.Health.ResourceRules.MemAvailableGb(Aw.Meta.Core.Health.HostResources! host) -> long
+static Aw.Meta.Core.Health.ResourceRules.MemoryLow(Aw.Meta.Core.Health.HostResources! host, Aw.Meta.Core.Config.ResourcesConfig! limits) -> bool
 static Aw.Meta.Core.Ids.MessageId.From(string! value) -> Aw.Meta.Core.Ids.MessageId
 static Aw.Meta.Core.Ids.MessageId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Meta.Core.Ids.MessageId
 static Aw.Meta.Core.Ids.MessageId.TryFrom(string? value, out Aw.Meta.Core.Ids.MessageId vo) -> bool
@@ -1419,6 +1653,8 @@ static Aw.Meta.Core.Merge.MergeFacts.operator ==(Aw.Meta.Core.Merge.MergeFacts? 
 static Aw.Meta.Core.Merge.MergeGate.Evaluate(Aw.Meta.Core.Merge.MergeFacts! facts) -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Merge.MergeCheck!>!
 static Aw.Meta.Core.Merge.QueueDrops.Parse(string? stored) -> System.Collections.Generic.IReadOnlyDictionary<int, System.DateTimeOffset>!
 static Aw.Meta.Core.Merge.QueueDrops.With(string? stored, int pr, System.DateTimeOffset at) -> string!
+static Aw.Meta.Core.Merge.QueuedPr.operator !=(Aw.Meta.Core.Merge.QueuedPr? left, Aw.Meta.Core.Merge.QueuedPr? right) -> bool
+static Aw.Meta.Core.Merge.QueuedPr.operator ==(Aw.Meta.Core.Merge.QueuedPr? left, Aw.Meta.Core.Merge.QueuedPr? right) -> bool
 static Aw.Meta.Core.Messages.Classification.operator !=(Aw.Meta.Core.Messages.Classification? left, Aw.Meta.Core.Messages.Classification? right) -> bool
 static Aw.Meta.Core.Messages.Classification.operator ==(Aw.Meta.Core.Messages.Classification? left, Aw.Meta.Core.Messages.Classification? right) -> bool
 static Aw.Meta.Core.Messages.DueTime.Parse(string! text, System.DateTimeOffset now) -> System.DateTimeOffset?
@@ -1469,8 +1705,13 @@ static Aw.Meta.Core.Watch.PrView.operator !=(Aw.Meta.Core.Watch.PrView? left, Aw
 static Aw.Meta.Core.Watch.PrView.operator ==(Aw.Meta.Core.Watch.PrView? left, Aw.Meta.Core.Watch.PrView? right) -> bool
 static Aw.Meta.Core.Watch.WatchDiff.Step(Aw.Meta.Core.Watch.WatchState! state, Aw.Meta.Core.Watch.WatchSnapshot! snapshot) -> Aw.Meta.Core.Watch.WatchStep!
 static Aw.Meta.Core.Watch.WatchDuration.TryParse(string! text, out System.TimeSpan duration) -> bool
+static Aw.Meta.Core.Watch.WatchResources.None.get -> Aw.Meta.Core.Watch.WatchResources!
+static Aw.Meta.Core.Watch.WatchResources.Parse(string? text) -> Aw.Meta.Core.Watch.WatchResources!
+static Aw.Meta.Core.Watch.WatchResources.operator !=(Aw.Meta.Core.Watch.WatchResources? left, Aw.Meta.Core.Watch.WatchResources? right) -> bool
+static Aw.Meta.Core.Watch.WatchResources.operator ==(Aw.Meta.Core.Watch.WatchResources? left, Aw.Meta.Core.Watch.WatchResources? right) -> bool
 static Aw.Meta.Core.Watch.WatchSnapshot.operator !=(Aw.Meta.Core.Watch.WatchSnapshot? left, Aw.Meta.Core.Watch.WatchSnapshot? right) -> bool
 static Aw.Meta.Core.Watch.WatchSnapshot.operator ==(Aw.Meta.Core.Watch.WatchSnapshot? left, Aw.Meta.Core.Watch.WatchSnapshot? right) -> bool
+static Aw.Meta.Core.Watch.WatchState.Continuing(Aw.Meta.Core.Watch.WatchResources! resources) -> Aw.Meta.Core.Watch.WatchState!
 static Aw.Meta.Core.Watch.WatchState.Initial.get -> Aw.Meta.Core.Watch.WatchState!
 static Aw.Meta.Core.Watch.WatchState.operator !=(Aw.Meta.Core.Watch.WatchState? left, Aw.Meta.Core.Watch.WatchState? right) -> bool
 static Aw.Meta.Core.Watch.WatchState.operator ==(Aw.Meta.Core.Watch.WatchState? left, Aw.Meta.Core.Watch.WatchState? right) -> bool
@@ -1486,6 +1727,7 @@ static Aw.Meta.Core.Worktrees.WorktreeScope.All.get -> Aw.Meta.Core.Worktrees.Wo
 static Aw.Meta.Core.Worktrees.WorktreeScope.ForPrs(System.Collections.Generic.IEnumerable<int>! prs) -> Aw.Meta.Core.Worktrees.WorktreeScope!
 static Aw.Meta.Core.Worktrees.WorktreeScope.operator !=(Aw.Meta.Core.Worktrees.WorktreeScope? left, Aw.Meta.Core.Worktrees.WorktreeScope? right) -> bool
 static Aw.Meta.Core.Worktrees.WorktreeScope.operator ==(Aw.Meta.Core.Worktrees.WorktreeScope? left, Aw.Meta.Core.Worktrees.WorktreeScope? right) -> bool
+static readonly Aw.Meta.Core.Coordination.HeavyReservation.StaleAfter -> System.TimeSpan
 static readonly Aw.Meta.Core.MetaErrors.ClaudeLane -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.CommandFailed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.CommandNotStarted -> Aw.Kernel.ErrorDefinition!
@@ -1506,3 +1748,187 @@ static readonly Aw.Meta.Core.MetaErrors.TeamAmbiguous -> Aw.Kernel.ErrorDefiniti
 static readonly Aw.Meta.Core.MetaErrors.TeamMigrationRefused -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.TranscriptUnreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Meta.Core.MetaErrors.UnknownLane -> Aw.Kernel.ErrorDefinition!
+~override Aw.Meta.Core.Config.ReserveSlots.Equals(object obj) -> bool
+~override Aw.Meta.Core.Config.ReserveSlots.ToString() -> string
+Aw.Meta.Core.Commands.CommandRequest.TailCharacters.get -> int
+Aw.Meta.Core.Commands.CommandRequest.TailCharacters.init -> void
+const Aw.Meta.Core.Commands.CommandRequest.DefaultTailCharacters = 65536 -> int
+Aw.Meta.Core.Ports.BuildInfo
+Aw.Meta.Core.Ports.BuildInfo.<Clone>$() -> Aw.Meta.Core.Ports.BuildInfo!
+Aw.Meta.Core.Ports.BuildInfo.BuildInfo(string! Commit, string! BuiltAt, string! Os, string! Rid) -> void
+Aw.Meta.Core.Ports.BuildInfo.BuiltAt.get -> string!
+Aw.Meta.Core.Ports.BuildInfo.BuiltAt.init -> void
+Aw.Meta.Core.Ports.BuildInfo.Commit.get -> string!
+Aw.Meta.Core.Ports.BuildInfo.Commit.init -> void
+Aw.Meta.Core.Ports.BuildInfo.Deconstruct(out string! Commit, out string! BuiltAt, out string! Os, out string! Rid) -> void
+Aw.Meta.Core.Ports.BuildInfo.Equals(Aw.Meta.Core.Ports.BuildInfo? other) -> bool
+Aw.Meta.Core.Ports.BuildInfo.Os.get -> string!
+Aw.Meta.Core.Ports.BuildInfo.Os.init -> void
+Aw.Meta.Core.Ports.BuildInfo.Rid.get -> string!
+Aw.Meta.Core.Ports.BuildInfo.Rid.init -> void
+Aw.Meta.Core.Ports.IBuildInfo
+Aw.Meta.Core.Ports.IBuildInfo.Read() -> Aw.Meta.Core.Ports.BuildInfo!
+override Aw.Meta.Core.Ports.BuildInfo.Equals(object? obj) -> bool
+override Aw.Meta.Core.Ports.BuildInfo.GetHashCode() -> int
+override Aw.Meta.Core.Ports.BuildInfo.ToString() -> string!
+static Aw.Meta.Core.Ports.BuildInfo.operator !=(Aw.Meta.Core.Ports.BuildInfo? left, Aw.Meta.Core.Ports.BuildInfo? right) -> bool
+static Aw.Meta.Core.Ports.BuildInfo.operator ==(Aw.Meta.Core.Ports.BuildInfo? left, Aw.Meta.Core.Ports.BuildInfo? right) -> bool
+Aw.Meta.Core.Health.ProcessStart
+Aw.Meta.Core.Ports.IProcessLiveness
+Aw.Meta.Core.Ports.IProcessLiveness.IsRunning(int pid, System.DateTimeOffset recordedAt, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+static Aw.Meta.Core.Health.ProcessStart.IsReused(System.DateTimeOffset startedAt, System.DateTimeOffset recordedAt) -> bool
+static Aw.Meta.Core.Health.ProcessStart.Tolerance.get -> System.TimeSpan
+Aw.Meta.Core.Ports.LivenessVerdicts
+Aw.Meta.Core.Ports.ProcessClaim.Pid.get -> int
+Aw.Meta.Core.Ports.ProcessClaim.RecordedAt.get -> System.DateTimeOffset
+Aw.Meta.Core.Ports.ProcessClaim
+Aw.Meta.Core.Ports.ProcessClaim.Pid.init -> void
+Aw.Meta.Core.Ports.ProcessClaim.RecordedAt.init -> void
+override Aw.Meta.Core.Ports.ProcessClaim.ToString() -> string!
+static Aw.Meta.Core.Ports.ProcessClaim.operator !=(Aw.Meta.Core.Ports.ProcessClaim? left, Aw.Meta.Core.Ports.ProcessClaim? right) -> bool
+static Aw.Meta.Core.Ports.ProcessClaim.operator ==(Aw.Meta.Core.Ports.ProcessClaim? left, Aw.Meta.Core.Ports.ProcessClaim? right) -> bool
+override Aw.Meta.Core.Ports.ProcessClaim.GetHashCode() -> int
+override Aw.Meta.Core.Ports.ProcessClaim.Equals(object? obj) -> bool
+Aw.Meta.Core.Ports.ProcessClaim.Equals(Aw.Meta.Core.Ports.ProcessClaim? other) -> bool
+Aw.Meta.Core.Ports.ProcessClaim.<Clone>$() -> Aw.Meta.Core.Ports.ProcessClaim!
+Aw.Meta.Core.Ports.ProcessClaim.Deconstruct(out int Pid, out System.DateTimeOffset RecordedAt) -> void
+Aw.Meta.Core.Ports.ProcessClaim.ProcessClaim(int Pid, System.DateTimeOffset RecordedAt) -> void
+static Aw.Meta.Core.Ports.LivenessVerdicts.IsLiveOrUnknown(this Aw.Kernel.Result<bool>! verdict) -> bool
+Aw.Meta.Core.Ports.IProcessLiveness.Running(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Ports.ProcessClaim!>! claims, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Kernel.Result<bool>!>!>
+Aw.Meta.Core.Commands.CommandRequest.Isolated.get -> bool
+Aw.Meta.Core.Commands.CommandRequest.Isolated.init -> void
+Aw.Meta.Core.Commands.CommandRequest.UnsetEnv.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Commands.CommandRequest.UnsetEnv.init -> void
+Aw.Meta.Core.Coordination.GateWorkspace.RerunLogPath(int pr, int run, string! step, string! test, string! where) -> string!
+static Aw.Meta.Core.Gate.GatePriority.Scrubbed.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Config.GateConfig.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Always, out System.Collections.Generic.IReadOnlyList<string!>! DocsOnly, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Meta.Core.Config.ScopeConfig!>! Scopes, out int? ParallelSteps) -> void
+Aw.Meta.Core.Config.GateConfig.GateConfig(System.Collections.Generic.IReadOnlyList<string!>! Always, System.Collections.Generic.IReadOnlyList<string!>! DocsOnly, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Meta.Core.Config.ScopeConfig!>! Scopes, int? ParallelSteps = null) -> void
+Aw.Meta.Core.Config.GateConfig.ParallelSteps.get -> int?
+Aw.Meta.Core.Config.GateConfig.ParallelSteps.init -> void
+Aw.Meta.Core.Config.StepConfig.After.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Meta.Core.Config.StepConfig.After.init -> void
+Aw.Meta.Core.Config.StepConfig.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<string!>! Run, out bool Heavy, out System.Collections.Generic.IReadOnlyList<string!>? Rerun, out System.Collections.Generic.IReadOnlyList<string!>? After, out int? TermGraceSeconds) -> void
+Aw.Meta.Core.Config.StepConfig.StepConfig(string! Name, System.Collections.Generic.IReadOnlyList<string!>! Run, bool Heavy = false, System.Collections.Generic.IReadOnlyList<string!>? Rerun = null, System.Collections.Generic.IReadOnlyList<string!>? After = null, int? TermGraceSeconds = null) -> void
+Aw.Meta.Core.Gate.StepGraph
+Aw.Meta.Core.Gate.StepGraph.DependenciesOf(int index) -> System.Collections.Generic.IReadOnlyList<int>!
+Aw.Meta.Core.Gate.StepGraph.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.StepConfig!>!
+Aw.Meta.Core.Gate.StepScheduler
+static Aw.Meta.Core.Gate.StepGraph.Build(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.StepConfig!>! selected, System.Collections.Generic.IReadOnlyCollection<string!>! configured) -> Aw.Kernel.Result<Aw.Meta.Core.Gate.StepGraph!>!
+static Aw.Meta.Core.Gate.StepScheduler.Run<T>(Aw.Meta.Core.Gate.StepGraph! graph, int limit, System.Func<Aw.Meta.Core.Config.StepConfig!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<T>!>>! run, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<T>!>!>!
+Aw.Meta.Core.Coordination.PreparedGate.TreeSha.get -> string?
+Aw.Meta.Core.Coordination.PreparedGate.TreeSha.init -> void
+Aw.Meta.Core.Coordination.RepoCommands.MergeTree(string! repo, string! main, string! head) -> System.Threading.Tasks.ValueTask<string?>
+Aw.Meta.Core.Gate.GateRecord.Stack.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Gate.StackedPr!>!
+Aw.Meta.Core.Gate.GateRecord.Stack.init -> void
+Aw.Meta.Core.Gate.GateRecord.Tree.get -> string?
+Aw.Meta.Core.Gate.GateRecord.Tree.init -> void
+Aw.Meta.Core.Gate.StackedPr
+Aw.Meta.Core.Gate.StackedPr.<Clone>$() -> Aw.Meta.Core.Gate.StackedPr!
+Aw.Meta.Core.Gate.StackedPr.Deconstruct(out int Pr, out string! Head) -> void
+Aw.Meta.Core.Gate.StackedPr.Equals(Aw.Meta.Core.Gate.StackedPr? other) -> bool
+Aw.Meta.Core.Gate.StackedPr.Head.get -> string!
+Aw.Meta.Core.Gate.StackedPr.Head.init -> void
+Aw.Meta.Core.Gate.StackedPr.Pr.get -> int
+Aw.Meta.Core.Gate.StackedPr.Pr.init -> void
+Aw.Meta.Core.Gate.StackedPr.StackedPr(int Pr, string! Head) -> void
+Aw.Meta.Core.Merge.MergeFacts.MergedTree.get -> string?
+Aw.Meta.Core.Merge.MergeFacts.MergedTree.init -> void
+override Aw.Meta.Core.Gate.StackedPr.Equals(object? obj) -> bool
+override Aw.Meta.Core.Gate.StackedPr.GetHashCode() -> int
+override Aw.Meta.Core.Gate.StackedPr.ToString() -> string!
+static Aw.Meta.Core.Gate.StackedPr.operator !=(Aw.Meta.Core.Gate.StackedPr? left, Aw.Meta.Core.Gate.StackedPr? right) -> bool
+static Aw.Meta.Core.Gate.StackedPr.operator ==(Aw.Meta.Core.Gate.StackedPr? left, Aw.Meta.Core.Gate.StackedPr? right) -> bool
+Aw.Meta.Core.Coordination.GateBase
+Aw.Meta.Core.Coordination.GateBase.<Clone>$() -> Aw.Meta.Core.Coordination.GateBase!
+Aw.Meta.Core.Coordination.GateBase.Deconstruct(out string? Main, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Gate.StackedPr!>! Stack) -> void
+Aw.Meta.Core.Coordination.GateBase.Equals(Aw.Meta.Core.Coordination.GateBase? other) -> bool
+Aw.Meta.Core.Coordination.GateBase.GateBase(string? Main, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Gate.StackedPr!>! Stack) -> void
+Aw.Meta.Core.Coordination.GateBase.Main.get -> string?
+Aw.Meta.Core.Coordination.GateBase.Main.init -> void
+Aw.Meta.Core.Coordination.GateBase.Stack.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Gate.StackedPr!>!
+Aw.Meta.Core.Coordination.GateBase.Stack.init -> void
+Aw.Meta.Core.Coordination.GateTree.MergeAll(string! tree, System.Collections.Generic.IReadOnlyList<string!>! heads) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+Aw.Meta.Core.Coordination.GateWorkspace.Prepare(Aw.Meta.Core.Config.TeamConfig! config, int pr, bool listChanged, Aw.Meta.Core.Coordination.GateBase? onto = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Coordination.PreparedGate!>!>
+Aw.Meta.Core.Coordination.PreparedGate.ConflictsWith.get -> Aw.Meta.Core.Gate.StackedPr?
+Aw.Meta.Core.Coordination.PreparedGate.ConflictsWith.init -> void
+Aw.Meta.Core.Gate.SlotPool
+Aw.Meta.Core.Gate.SlotPool.Acquire(int job, int step, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.IDisposable!>
+Aw.Meta.Core.Gate.SlotPool.SlotPool(int limit) -> void
+Aw.Meta.Core.Gate.TrainEntry
+Aw.Meta.Core.Gate.TrainEntry.<Clone>$() -> Aw.Meta.Core.Gate.TrainEntry!
+Aw.Meta.Core.Gate.TrainEntry.Base.get -> string!
+Aw.Meta.Core.Gate.TrainEntry.Base.init -> void
+Aw.Meta.Core.Gate.TrainEntry.Deconstruct(out int Position, out int Pr, out string! Base, out Aw.Meta.Core.Gate.TrainState State, out string! Note) -> void
+Aw.Meta.Core.Gate.TrainEntry.Equals(Aw.Meta.Core.Gate.TrainEntry? other) -> bool
+Aw.Meta.Core.Gate.TrainEntry.Note.get -> string!
+Aw.Meta.Core.Gate.TrainEntry.Note.init -> void
+Aw.Meta.Core.Gate.TrainEntry.Position.get -> int
+Aw.Meta.Core.Gate.TrainEntry.Position.init -> void
+Aw.Meta.Core.Gate.TrainEntry.Pr.get -> int
+Aw.Meta.Core.Gate.TrainEntry.Pr.init -> void
+Aw.Meta.Core.Gate.TrainEntry.State.get -> Aw.Meta.Core.Gate.TrainState
+Aw.Meta.Core.Gate.TrainEntry.State.init -> void
+Aw.Meta.Core.Gate.TrainEntry.TrainEntry(int Position, int Pr, string! Base, Aw.Meta.Core.Gate.TrainState State, string! Note = "") -> void
+Aw.Meta.Core.Gate.TrainOrder
+Aw.Meta.Core.Gate.TrainState
+Aw.Meta.Core.Gate.TrainState.Cancelled = 4 -> Aw.Meta.Core.Gate.TrainState
+Aw.Meta.Core.Gate.TrainState.Dropped = 3 -> Aw.Meta.Core.Gate.TrainState
+Aw.Meta.Core.Gate.TrainState.Error = 5 -> Aw.Meta.Core.Gate.TrainState
+Aw.Meta.Core.Gate.TrainState.Fail = 2 -> Aw.Meta.Core.Gate.TrainState
+Aw.Meta.Core.Gate.TrainState.Gating = 0 -> Aw.Meta.Core.Gate.TrainState
+Aw.Meta.Core.Gate.TrainState.Pass = 1 -> Aw.Meta.Core.Gate.TrainState
+Aw.Meta.Core.Gate.TrainState.Skipped = 6 -> Aw.Meta.Core.Gate.TrainState
+Aw.Meta.Core.Gate.TrainText
+const Aw.Meta.Core.KvKeys.Train = "train.state" -> string!
+override Aw.Meta.Core.Coordination.GateBase.Equals(object? obj) -> bool
+override Aw.Meta.Core.Coordination.GateBase.GetHashCode() -> int
+override Aw.Meta.Core.Coordination.GateBase.ToString() -> string!
+override Aw.Meta.Core.Gate.TrainEntry.Equals(object? obj) -> bool
+override Aw.Meta.Core.Gate.TrainEntry.GetHashCode() -> int
+override Aw.Meta.Core.Gate.TrainEntry.ToString() -> string!
+static Aw.Meta.Core.Coordination.GateBase.operator !=(Aw.Meta.Core.Coordination.GateBase? left, Aw.Meta.Core.Coordination.GateBase? right) -> bool
+static Aw.Meta.Core.Coordination.GateBase.operator ==(Aw.Meta.Core.Coordination.GateBase? left, Aw.Meta.Core.Coordination.GateBase? right) -> bool
+static Aw.Meta.Core.Gate.StepScheduler.Run<T>(Aw.Meta.Core.Gate.StepGraph! graph, Aw.Meta.Core.Gate.SlotPool! slots, int job, System.Func<Aw.Meta.Core.Config.StepConfig!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<T>!>>! run, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<T>!>!>!
+static Aw.Meta.Core.Gate.TrainEntry.operator !=(Aw.Meta.Core.Gate.TrainEntry? left, Aw.Meta.Core.Gate.TrainEntry? right) -> bool
+static Aw.Meta.Core.Gate.TrainEntry.operator ==(Aw.Meta.Core.Gate.TrainEntry? left, Aw.Meta.Core.Gate.TrainEntry? right) -> bool
+static Aw.Meta.Core.Gate.TrainOrder.Sort(System.Collections.Generic.IReadOnlyList<int>! queue, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Config.MergeOrderRule!>! rules) -> System.Collections.Generic.IReadOnlyList<int>!
+static Aw.Meta.Core.Gate.TrainText.BaseOf(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Gate.StackedPr!>! stack) -> string!
+static Aw.Meta.Core.Gate.TrainText.Summary(string! main, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Gate.TrainEntry!>! entries) -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Gate.GateGraphs
+Aw.Meta.Core.Coordination.GateStepRunner
+Aw.Meta.Core.Coordination.GateStepRunner.GateStepRunner(Aw.Meta.Core.Ports.ICommandRunner! runner, Aw.Meta.Core.MetaPaths! paths) -> void
+Aw.Meta.Core.Coordination.TrainCandidates
+Aw.Meta.Core.Coordination.TrainCandidates.<Clone>$() -> Aw.Meta.Core.Coordination.TrainCandidates!
+Aw.Meta.Core.Coordination.TrainCandidates.Deconstruct(out Aw.Meta.Core.Config.TeamConfig! Team, out System.Collections.Generic.IReadOnlyList<int>! Prs) -> void
+Aw.Meta.Core.Coordination.TrainCandidates.Equals(Aw.Meta.Core.Coordination.TrainCandidates? other) -> bool
+Aw.Meta.Core.Coordination.TrainCandidates.Prs.get -> System.Collections.Generic.IReadOnlyList<int>!
+Aw.Meta.Core.Coordination.TrainCandidates.Prs.init -> void
+Aw.Meta.Core.Coordination.TrainCandidates.Team.get -> Aw.Meta.Core.Config.TeamConfig!
+Aw.Meta.Core.Coordination.TrainCandidates.Team.init -> void
+Aw.Meta.Core.Coordination.TrainCandidates.TrainCandidates(Aw.Meta.Core.Config.TeamConfig! Team, System.Collections.Generic.IReadOnlyList<int>! Prs) -> void
+override Aw.Meta.Core.Coordination.TrainCandidates.Equals(object? obj) -> bool
+override Aw.Meta.Core.Coordination.TrainCandidates.GetHashCode() -> int
+override Aw.Meta.Core.Coordination.TrainCandidates.ToString() -> string!
+static Aw.Meta.Core.Gate.GateGraphs.Build(System.Collections.Generic.IReadOnlyList<string!>! scopes, Aw.Meta.Core.Config.GateConfig! gate) -> Aw.Kernel.Result<Aw.Meta.Core.Gate.StepGraph!>!
+static Aw.Meta.Core.Coordination.TrainCandidates.operator !=(Aw.Meta.Core.Coordination.TrainCandidates? left, Aw.Meta.Core.Coordination.TrainCandidates? right) -> bool
+static Aw.Meta.Core.Coordination.TrainCandidates.operator ==(Aw.Meta.Core.Coordination.TrainCandidates? left, Aw.Meta.Core.Coordination.TrainCandidates? right) -> bool
+Aw.Meta.Core.Coordination.TrainSelection
+Aw.Meta.Core.Coordination.TrainSelection.Choose(System.Collections.Generic.IReadOnlyList<int>! named, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Coordination.TrainCandidates!>!>
+Aw.Meta.Core.Coordination.TrainSelection.TrainSelection(Aw.Meta.Core.Ports.IMetaConfig! config, Aw.Meta.Core.Coordination.MergeQueueReader! queue) -> void
+Aw.Meta.Core.Coordination.GateStepRunner.Run(Aw.Meta.Core.Config.StepConfig! step, string! tree, string! log, int heavySlots, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Meta.Core.Gate.GateStep!>!>
+const Aw.Meta.Core.Gate.GatePriority.LockTimeout = 75 -> int
+const Aw.Meta.Core.Gate.GatePriority.SessionSlots = "AW_SESSION_HEAVY_SLOTS" -> string!
+static Aw.Meta.Core.Gate.GatePriority.EnvironmentFor(int heavySlots) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Meta.Core.Commands.CommandRequest.TermGrace.get -> System.TimeSpan?
+Aw.Meta.Core.Commands.CommandRequest.TermGrace.init -> void
+Aw.Meta.Core.Config.StepConfig.TermGraceSeconds.get -> int?
+Aw.Meta.Core.Config.StepConfig.TermGraceSeconds.init -> void
+Aw.Meta.Core.Coordination.GateTree.Cancelling(System.Threading.CancellationToken cancellationToken) -> Aw.Meta.Core.Coordination.GateTree!
+Aw.Meta.Core.Coordination.RepoCommands.Cancelling(System.Threading.CancellationToken cancellationToken) -> Aw.Meta.Core.Coordination.RepoCommands!
+static Aw.Meta.Core.Gate.TrainText.MarkStale(string? board, System.Func<int, bool>! isRunning) -> string?
+static Aw.Meta.Core.Gate.GatePriority.HookOverrides.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Meta.Core.Gate.GatePriority.SuiteUnset.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Core.Commands.CommandRequest.IsolatedFrom.get -> int
+Aw.Meta.Core.Commands.CommandRequest.IsolatedFrom.init -> void
+Aw.Meta.Core.Coordination.RepoCommands.Conflicts(string! repo, string! main, string! head) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+Aw.Meta.Core.Coordination.GateWorkspace.CurrentTree(int pr) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>

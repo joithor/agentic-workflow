@@ -13,6 +13,12 @@ namespace Aw.Meta.Core.Coordination;
 public sealed class RepoCommands(ICommandRunner runner, MetaPaths paths)
 {
     private static readonly TimeSpan _limit = TimeSpan.FromMinutes(5);
+    private CancellationToken _cancellation;
+
+    /// <summary>The same calls, each stopped (its process tree killed, the cancellation thrown) when the token fires.</summary>
+    /// <param name="cancellationToken">The token.</param>
+    /// <returns>A copy bound to the token.</returns>
+    public RepoCommands Cancelling(CancellationToken cancellationToken) => new(runner, paths) { _cancellation = cancellationToken };
 
     /// <summary>Runs git in a directory.</summary>
     /// <param name="cwd">The working directory.</param>
@@ -77,6 +83,37 @@ public sealed class RepoCommands(ICommandRunner runner, MetaPaths paths)
     /// <returns>The sha, or an error.</returns>
     public ValueTask<Result<string>> Sha(string cwd, string revision) => Git(cwd, "rev-parse", "--verify", "--quiet", revision + "^{commit}");
 
+    /// <summary>The tree "git merge-tree --write-tree" gives for merging a head onto a main commit, without touching any checkout.</summary>
+    /// <param name="repo">The repo directory.</param>
+    /// <param name="main">The main commit.</param>
+    /// <param name="head">The head to merge onto it.</param>
+    /// <returns>The tree sha, or null when the merge conflicts or git can't tell.</returns>
+    public async ValueTask<string?> MergeTree(string repo, string main, string head)
+    {
+        var merged = await Git(repo, "merge-tree", "--write-tree", main, head).ConfigureAwait(false);
+        var first = merged.IsError ? null : merged.Value.Split('\n', 2)[0].Trim();
+        return string.IsNullOrEmpty(first) ? null : first;
+    }
+
+    /// <summary>Whether merging a head onto a main commit conflicts (merge-tree exits 1), as opposed to git failing (any other non-zero exit).</summary>
+    /// <param name="repo">The repo directory.</param>
+    /// <param name="main">The main commit.</param>
+    /// <param name="head">The head to merge onto it.</param>
+    /// <returns>True when it conflicts, false when it merges cleanly, an error when git could not tell.</returns>
+    public async ValueTask<Result<bool>> Conflicts(string repo, string main, string head)
+    {
+        var ran = await runner.Run(new CommandRequest(["git", "merge-tree", "--write-tree", main, head], _limit) { Cwd = repo }, _cancellation).ConfigureAwait(false);
+        if (ran.IsError)
+        {
+            return ran.Error;
+        }
+
+        var result = ran.Value;
+        return result is { TimedOut: false, ExitCode: 0 or 1 }
+            ? result.ExitCode == 1
+            : MetaErrors.CommandFailed.With($"git merge-tree: {(result.TimedOut ? "timed out" : FirstLine(result.Stderr.Length > 0 ? result.Stderr : result.Stdout))}");
+    }
+
     /// <summary>The paths a range changes.</summary>
     /// <param name="repo">The repo directory.</param>
     /// <param name="range">A git range: "origin/main...abc" or "abc..def".</param>
@@ -108,7 +145,7 @@ public sealed class RepoCommands(ICommandRunner runner, MetaPaths paths)
 
     private async ValueTask<Result<string>> Run(string cwd, IReadOnlyList<string> argv)
     {
-        var ran = await runner.Run(new CommandRequest(argv, _limit) { Cwd = cwd }, CancellationToken.None).ConfigureAwait(false);
+        var ran = await runner.Run(new CommandRequest(argv, _limit) { Cwd = cwd }, _cancellation).ConfigureAwait(false);
         if (ran.IsError)
         {
             return ran.Error;

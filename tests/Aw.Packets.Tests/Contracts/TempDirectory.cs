@@ -1,3 +1,5 @@
+using Aw.Kernel.Testing;
+
 namespace Aw.Packets.Tests.Contracts;
 
 /// <summary>A fresh directory under the system temp path, deleted on dispose.</summary>
@@ -6,7 +8,7 @@ public sealed class TempDirectory : IDisposable
     /// <summary>Creates the directory.</summary>
     public TempDirectory()
     {
-        Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "aw-packets-test-" + Guid.NewGuid().ToString("N"));
+        Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "aw-packets-test-" + RealTime.NewGuid().ToString("N"));
         _ = Directory.CreateDirectory(Path);
     }
 

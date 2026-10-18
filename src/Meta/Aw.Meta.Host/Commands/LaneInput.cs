@@ -23,7 +23,7 @@ internal static class LaneInput
 
         if (stdin)
         {
-            return await context.Io.In.ReadToEndAsync().ConfigureAwait(false);
+            return await context.Io.In.ReadToEndAsync(context.Cancellation).ConfigureAwait(false);
         }
 
         try

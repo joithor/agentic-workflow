@@ -15,7 +15,7 @@ gate and merge their PRs, relay between them and the owner, and keep the box hea
 Every step below is an `aw-meta` call. Don't improvise a step the CLI has a command for, and never edit its state
 (`$AW_STATE_DIR/meta/`) by hand. Works for any project: everything team-specific is in the team config.
 
-`aw-meta` is on PATH after `./setup.sh --with-meta` (Linux only for now: aw-meta reads /proc; on macOS setup skips it) (else `$HOME/.agentic-workflow/bin/aw-meta`). Every command takes
+`aw-meta` is on PATH after `./setup.sh --with-meta` (Linux and macOS; `aw-meta version` shows which commit it was built from) (else `$HOME/.agentic-workflow/bin/aw-meta`). Every command takes
 `--json`. Exit 0 ok, 1 attention (read the output and act on it), 2 usage or tool error. Reference:
 `$HOME/.agentic-workflow/toolkit/docs/csharp/meta.md`.
 
@@ -101,7 +101,8 @@ request, nothing unpushed, no process inside). Give each team its own `worktrees
 3. `aw-meta lanes --announce` and **send the printed text to every lane** (the `broadcast-lanes` obligation stays open
    until each mapped lane got it).
 4. **Watch in the background**: `aw-meta watch --for 29m`. When it prints `WATCH EXPIRING`, start it
-   again; if you forget, the Stop hook opens `rearm-watch`.
+   again; if you forget, the Stop hook opens `rearm-watch`. Act on `DISK LOW` and `MEMORY LOW` as described in
+   "Resources and adaptation".
 5. `aw-meta status` and `aw-meta health`.
 
 ## A lane says `ready #N`
@@ -109,7 +110,7 @@ request, nothing unpushed, no process inside). Give each team its own `worktrees
 A lane queues a pull request with exactly `ready #N <sha>` on the **first line** of its message (any case; the sha, 7 to 40 hex digits, may sit in backticks), details on the lines below. A bare `ready #N`, a ready in the middle of a sentence, or a first line with "not ready" or "follows" in it is **ignored**: it is an ordinary request. Put this in every lane's kickoff prompt (`prompts/<lane>.md`) so lanes use the format. If something else queued a pull request, `aw-meta queue-drop N --reason "…"` removes the entry and logs why; a pull request that already merged or ended has no entry (`AW-META-018`).
 
 1. `aw-meta merge-check N`. Read every FAIL line. A merge-order FAIL means wait: tell the lane why.
-2. `aw-meta gate-run N`. Scopes come from the diff and the team config; name them to override (`gate-run N repo`).
+2. `aw-meta gate-run N` (never a hand-run gate: see "Resources and adaptation"). Scopes come from the diff and the team config; name them to override (`gate-run N repo`).
    Defer the lane's message while it runs. A docs-only delta on an already-gated head needs only the `always` scopes;
    the CLI picks that itself.
 3. For each red test the PR doesn't touch: `aw-meta gate-rerun N --step <step> --test <filter>`. It reruns the test
@@ -118,6 +119,13 @@ A lane queues a pull request with exactly `ready #N <sha>` on the **first line**
 5. Send the printed "main moved to <sha>" text to **every lane**. `merge-run` has already swept that PR's worktrees (its
    branch's and its gate trees); the `WORKTREES …` line it printed says what was removed and what was kept and why. A kept
    one is not an error: it has work, a process or an unpushed commit in it, and nothing removes it by age.
+
+**With several ready pull requests, gate them as a train** instead of one `gate-run` at a time:
+
+1. `aw-meta queue-gate [--max K]` takes the first K ready pull requests in merge-queue order (K defaults to the team's heavy cap; `queue-gate 12 13` names them). The first gates on `origin/main`; each later one on `origin/main` with the heads ahead of it merged in order, so one round proves them all in the order they will merge. The gates run side by side and share the heavy slots.
+2. Read the `TRAIN` table at the end (position, PR, base, RESULT). `DROPPED #N: conflicts with #M at <sha>` means that head conflicts with the train so far: tell its lane to rebase; the rest of the train is unaffected. A `CANCELLED` gate was stopped because a gate below it failed and was not recorded; it stays queued for the next round.
+3. Red steps: `gate-rerun` as in step 3 above (it works on a train gate), then merge in **train order**: `aw-meta merge-check N`, `aw-meta merge-run N` for position 1, then position 2, and so on. After each merge, main is the previous gate's tested tree, so `merge-check` accepts the next gate (it compares the merge result's tree with the tree the gate tested, whatever merge style gh used). A gate that fails ends the train there: later positions need a new `queue-gate` once it is fixed.
+4. `aw-meta status` shows the running train (position, PR, state).
 
 ## OWNER QUESTION messages
 
@@ -143,9 +151,52 @@ kept worktree with every reason.
 ## Health
 
 `aw-meta health` groups memory (Claude sessions, builds, Temporal, MCP servers, Docker, other), finds orphaned Temporal
-dev servers, duplicate MCP server copies, lanes with no live session and heavy-lock holders. `aw-meta health
+dev servers, duplicate MCP server copies, lanes with no live session and heavy-lock holders, and reports the heavy reservation aw-meta
+computed from the merge queue (sized against `heavy.cap`; not what the wrapper's gates actually hold) and the builders-per-lane advice (see Resources and adaptation). `aw-meta health
 --kill-orphans` kills only orphans that match the rule (parent `systemd --user` or init, `--db-filename` under
 `/tmp/aw-sindri-*`, older than 5 min), by pid. Never `pkill -f` a pattern.
+
+## Resources and adaptation
+
+The box has a fixed amount of memory, disk and heavy-job slots. Watch them and adapt, so lanes never find out by crashing the
+machine. The thresholds are the team config's `resources`, `builders` and `heavy` keys (defaults: disk floor 30 GB, memory floor
+8 GB, swap 90%, 4 builders per lane of 4 GB each; see the reference doc). Nothing below is specific to one project.
+
+**Gates.**
+- Run gates **only through `aw-meta gate-run`** (and reruns through `gate-rerun`). They carry `AW_HEAVY_PRIORITY=meta`, so the
+  heavy-job wrapper lets them use any box-wide slot. aw-meta computes the slot reservation from the merge-queue depth (the more
+  ready pull requests wait, the more slots the gates should keep) and prints it as `heavy reservation: N of C slots (queue depth
+  D) - set it with meta-gate-reserve A` in `status`, `health` and `gate-run`. **Before each gate, run `meta-gate-reserve A`** with
+  the argument `aw-meta status` just printed (not the queue depth: the script's tiers are fixed, so aw-meta prints the argument that gives its computed slots; `gate-run` prints the line after its steps, so read it from `status` first); aw-meta never writes the wrapper's files itself. When the queue empties (or the line says
+  `[stale: ...]`) run `status` again and apply it, or `meta-gate-reserve --clear`. A gate you run by hand has no priority and
+  waits behind that reservation: don't.
+- Gates run **one at a time** (serial): start the next `gate-run` only when the previous one is recorded. A `queue-gate` train is one run: do not start another gate beside it.
+- **Re-gate after any merge**: main moved, so every queued pull request's gate is stale (`merge-check` says so).
+- A gate failure whose log shows only a **heavy lock wait** (the step never started its build or test, it sat waiting for a
+  slot, or timed out waiting) is **infrastructure, not code**: don't send it back to the lane, re-run the gate.
+
+**Watch events** (from `aw-meta watch`; act on each when it prints):
+- `DISK LOW`: tell every lane to **stop starting new builders**; run `aw-meta worktree-sweep` (the safe cleanup: only finished
+  worktrees); then if disk is still low, **ask the owner before deleting anything else**: list what is rebuildable (build output,
+  package caches, proof binaries, old gate trees) with sizes via `aw-meta owner-ask`, and delete only what the owner approves,
+  never with a recursive delete you were not told to run.
+- `DISK LOW` / `MEMORY LOW` print only after two polls agree, and a re-armed watch does not repeat a state it already reported.
+- `MEMORY LOW`: tell every lane to **pause starting builders and heavy jobs** until it clears; jobs already running finish.
+- `DISK OK` / `MEMORY OK`: tell the lanes to **resume**.
+
+**Builders per lane.** `aw-meta health` prints `builders: N per lane (...)` (and `status` the same line): the number of builder
+subagents each lane may run at once now, never below 1. It falls as free disk gets close to the floor plus every lane's builder
+worktrees, and is 1 while memory is low (the same rule as `MEMORY LOW`: under its floor, or swap nearly full). Check it after `DISK`/`MEMORY` events and at each `health`, and **tell
+the lanes when it changes** (one message to every lane: "builders per lane: N"). Every builder gets its **own worktree and
+branch**; never two builders on one branch or in one worktree. The disk floor is a rule, not a hint: below it, no new builder
+starts whatever the advice says for a lane that is idle.
+
+**Worktrees are part of the disk story.** `merge-run` and the watch already sweep a pull request's worktrees when it merges or
+closes (see Worktrees); a kept worktree is still holding disk, so ask its lane to clear the reason (commit and push, stop the
+process) and sweep again.
+
+**Announcements.** Any message to a lane that announces main moving must carry the new **short sha** (the text `merge-run`
+prints does: send it verbatim). The Stop hook closes the `announce-main` obligation by matching that sha in what you sent.
 
 ## The running log
 

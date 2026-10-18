@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "kind": "design",
+  "parents": [
+    "sha256:99689489b23bf26628e02ce106179c4ecf0aade4860e303b2ce7e2bd7e15ab57"
+  ],
+  "acceptance": {
+    "self": "sha256:a7713ef36ab506570cd726986f4bf5154a68623e217227b0a78d1cb8a79bfe5f",
+    "extends": "sha256:96d38c8b7f5e63a37f5f78f95adfe9a34f172d10db3043854f7e0ac939c8dd8d"
+  }
+}

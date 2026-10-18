@@ -1,3 +1,5 @@
+using Aw.Kernel.Testing;
+
 namespace Aw.Meta.Tests.Adapters;
 
 /// <summary>A fresh directory under the system temp directory, deleted on dispose.</summary>
@@ -5,7 +7,7 @@ public sealed class TempDirectory : IDisposable
 {
     public TempDirectory()
     {
-        Path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "aw-meta-test-" + Guid.NewGuid().ToString("N"));
+        Path = RealPath.Of(System.IO.Path.Combine(System.IO.Path.GetTempPath(), "aw-meta-test-" + RealTime.NewGuid().ToString("N")));
         _ = Directory.CreateDirectory(Path);
     }
 

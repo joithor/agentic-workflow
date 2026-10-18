@@ -66,14 +66,16 @@ internal static class ScopeChecks
     {
         var graph = new TaskGraph(packet.Tasks.Tasks);
         var tasks = packet.Tasks.Tasks.OrderBy(static t => t.Id.Value, StringComparer.Ordinal).ToList();
-        var writes = tasks.ToDictionary(static t => t, t => PathIndex.Words(Written(scopes[t], index)));
+        // by index, not by task or id: the pair loop runs n²/2 times (two million at the task limit), so it hashes nothing
+        var writes = tasks.Select(t => PathIndex.Words(Written(scopes[t], index))).ToArray();
+        var at = tasks.Select(t => graph.Position(t.Id)).ToArray();
         for (var i = 0; i < tasks.Count; i++)
         {
             for (var j = i + 1; j < tasks.Count; j++)
             {
                 var (a, b) = (tasks[i], tasks[j]);
-                // the shared path first: reachability is only computed for tasks that share one
-                if (a.Id != b.Id && index.FirstShared(writes[a], writes[b]) is { } path && !graph.Ordered(a.Id, b.Id))
+                // the shared path first: reachability is only computed for tasks that share one; a repeated id has one position
+                if (at[i] != at[j] && index.FirstShared(writes[i], writes[j]) is { } path && !graph.Ordered(at[i], at[j]))
                 {
                     yield return ($"tasks {a.Id.Value}, {b.Id.Value}",
                         $"tasks {a.Id.Value} and {b.Id.Value} can run at the same time and both write '{path}'",

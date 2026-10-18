@@ -1,7 +1,15 @@
 using System.Text.Json.Serialization;
 using Aw.Kernel;
+using Aw.Packets.App.Features.FreezeLinePacket;
 using Aw.Packets.App.Features.FreezePacket;
+using Aw.Packets.App.Features.FreezeScopingPacket;
+using Aw.Packets.App.Features.HashPacket;
+using Aw.Packets.App.Features.ValidateLinePacket;
 using Aw.Packets.App.Features.ValidatePacket;
+using Aw.Packets.App.Features.ValidateScopingPacket;
+using Aw.Packets.App.Features.VerifyPacket;
+using Aw.Packets.Core.Kinds.Line;
+using Aw.Packets.Core.Kinds.Scoping;
 using Aw.Packets.Core.Model;
 
 namespace Aw.Packets.App;
@@ -13,8 +21,33 @@ namespace Aw.Packets.App;
 [JsonSerializable(typeof(OutOfScope))]
 [JsonSerializable(typeof(TaskPlan))]
 [JsonSerializable(typeof(FreezeRecord))]
+[JsonSerializable(typeof(SizesFile))]
+[JsonSerializable(typeof(VerifyPacketRequest))]
+[JsonSerializable(typeof(VerifyPacketResponse))]
 [JsonSerializable(typeof(ValidatePacketRequest))]
 [JsonSerializable(typeof(ValidatePacketResponse))]
 [JsonSerializable(typeof(FreezePacketRequest))]
 [JsonSerializable(typeof(FreezePacketResponse))]
+[JsonSerializable(typeof(LensesFile))]
+[JsonSerializable(typeof(ValidateScopingPacketRequest))]
+[JsonSerializable(typeof(ValidateScopingPacketResponse))]
+[JsonSerializable(typeof(HashPacketRequest))]
+[JsonSerializable(typeof(HashPacketResponse))]
+[JsonSerializable(typeof(FreezeScopingPacketRequest))]
+[JsonSerializable(typeof(FreezeScopingPacketResponse))]
+[JsonSerializable(typeof(ValidateLinePacketRequest))]
+[JsonSerializable(typeof(ValidateLinePacketResponse))]
+[JsonSerializable(typeof(FreezeLinePacketRequest))]
+[JsonSerializable(typeof(FreezeLinePacketResponse))]
+[JsonSerializable(typeof(LinePacketManifest<DesignLinks>))]
+[JsonSerializable(typeof(LinePacketManifest<PlanLinks>))]
+[JsonSerializable(typeof(LinePacketManifest<PhaseLinks>))]
+[JsonSerializable(typeof(LinePacketManifest<ProofLinks>))]
+[JsonSerializable(typeof(LinePacketManifest<ReviewLinks>))]
+[JsonSerializable(typeof(LinePacketManifest<HandoffLinks>))]
+[JsonSerializable(typeof(PacketIndex))]
+[JsonSerializable(typeof(AcceptanceFile))]
+[JsonSerializable(typeof(PhaseFile))]
+[JsonSerializable(typeof(PhaseHoldout))]
+[JsonSerializable(typeof(PullRequestFile))]
 internal sealed partial class PacketsJsonContext : JsonSerializerContext;

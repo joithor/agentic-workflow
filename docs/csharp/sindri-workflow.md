@@ -248,8 +248,8 @@ needs re-approval.
 ### Fact types and subject kinds
 
 Fact type: `text`, `file`, `item`, `link`, `scope-map`, `packet`, `evidence`, `decision`, `payload` (`FactTypes`). It picks a viewer in
-the app and nothing else. Subject kind: `item`, `linear-project`, `webhook`, `file`, `text`, `link` (`SubjectKinds`); `item`, `file`, `text` and `link`
-pair with the type of the same name, `linear-project` and `webhook` with `payload`; an input with no `type` has its kind's. Both are strings in the long form, so a bad value
+the app and nothing else. Subject kind: `item`, `linear-project`, `webhook`, `file`, `text`, `link`, `packet`, `payload` (`SubjectKinds`); `item`, `file`, `text`, `link` and `packet`
+pair with the type of the same name, `linear-project`, `webhook` and `payload` with `payload` (owner decision 2026-10-16: a packet or a plain payload as a subject); an input with no `type` has its kind's. Both are strings in the long form, so a bad value
 reaches its rule (`RCP-TYPE-001` to `-003`, `RCP-INPUT-001`/`-002`, `RCP-NAME-002` to `-006`, `RCP-OUT-001` to `-003`, `RCP-URG-001`) instead of a reader error. Those rules
 (the Declarations rows under Rules) run on every path that validates a recipe, so a value of another spelling is refused with its rule's line.
 
@@ -357,7 +357,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-WHEN-002` | `when: { loop }` names a declared loop, and `when: { outcome }` isn't used on a trigger that reports no outcome | Declare the loop |
 | `RCP-OUTCOME-001` | Every outcome a Step, event or child reports is handled by a transition, and terminal outcomes are `resolved`, `unresolved`, `alreadySatisfied` or `failed` | Add a transition for it, or use one of those outcomes |
 | `RCP-CHOICE-001` | A `step.judge.choose` state's `choices` has 2 to 32 entries | List 2 to 32 choices, each `"<outcome>: <criterion>"` |
-| `RCP-CHOICE-002` | `choices` is a literal list (not `{ fact }` or `{ profile }`) and each entry is text `"<outcome>: <criterion>"`: the outcome is `[a-z][a-z0-9]{0,31}`, the criterion 1 to 400 characters. An unquoted `- ui: ...` is a YAML mapping and gets the quote fix | Quote the entry; write the choices as a literal list |
+| `RCP-CHOICE-002` | `choices` is a literal list (not `{ fact }` or `{ profile }`) and each entry is text `"<outcome>: <criterion>"`: the outcome is `[a-z][A-Za-z0-9]{0,31}` (camelCase), the criterion 1 to 400 characters. An unquoted `- ui: ...` is a YAML mapping and gets the quote fix | Quote the entry; write the choices as a literal list |
 | `RCP-CHOICE-003` | Outcome names are distinct, and none is `uncertain` (the Step adds it) | Give each choice its own outcome |
 | `RCP-CHOICE-004` | `facts` is a literal list of at least one fact key; a hyphenated key gets the camelCase fix | List the facts the question reads |
 | `RCP-CHOICE-005` | Every route state routes `uncertain`, if it does, to a `step.desk.choose` state whose `from` names it, and has a `step.failed` transition to that twin; a twin's `from` is a literal naming a route state (not `{ fact }` or `{ profile }`) | Route to the desk twin; set `from:` to the route state |
@@ -392,9 +392,9 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-OUT-002` | An output's `from` isn't a terminal or engine-owned state, and the state's Step, its leaving transitions' `produces` or its wait records the output's key. For a state that waits on a child, the child's declared outputs | Record the fact there, or name the state that does |
 | `RCP-OUT-003` | Output keys are unique and none is also an input key | Give each output its own key |
 | `RCP-TYPE-001` | An input's or output's `type` is a fact type | Use one of the nine types |
-| `RCP-TYPE-002` | An input's `kind` is a subject kind | Use one of the six kinds |
+| `RCP-TYPE-002` | An input's `kind` is a subject kind | Use one of the eight kinds |
 | `RCP-TYPE-003` | An input's `kind` pairs with its `type` (an absent `type` takes its kind's); not reported for an entry with a bad type or kind | Set `type` to the kind's, or change `kind` |
-| `RCP-INPUT-001` | Every input declares a `kind` | Add `kind: item \| link \| linear-project \| webhook \| file \| text`, paired with its type |
+| `RCP-INPUT-001` | Every input declares a `kind` | Add `kind: item \| link \| linear-project \| webhook \| file \| text \| packet \| payload`, paired with its type |
 | `RCP-INPUT-002` | The recipe declares at least one input | Declare one; a scheduled recipe gives it `generate: "<template>"` |
 | `RCP-NAME-002` | A `name` or `generate` template isn't empty and is at most 200 characters | Write literal text with placeholders |
 | `RCP-NAME-003` | A template has no unknown placeholder, unbalanced `{` or `}`, or control character | Use `{fact:<input>}`, `{start:date}`, `{start:time}`; write `{{` or `}}` for a literal brace |
@@ -443,13 +443,99 @@ A block is a class with a static descriptor, registered explicitly (no assembly 
    A Step whose outcomes or inputs depend on its parameters sets `OutcomesFrom` and `InputsFrom`: a list parameter's name
    (`choices`), or `<stateParam>.<listParam>` for a twin that reads another state's Step (`from.choices`). Read outcomes
    and inputs through `StepOutcomes.Of` and `StepInputs.Of`, never from the descriptor directly: the validator, the report validation and the eval read through them (the desk's views still read the descriptor and move onto them in DT-V2). An output that every
-   outcome must carry is `Every: true` (read it with `StepOutputs.RequiredOn`), and one the engine writes when a report
+   outcome must carry is `Every: true` (read it with `StepOutputs.RequiredOn`; what a caller must write, in the views, the commands and the eval scaffold, is `StepOutputs.CallerWritesOn` (`CallerWritesSomewhere` when the Step declares no outcomes, and for a fact row's required flag), which leaves out engine-filled outputs), and one the engine writes when a report
    omits it is `EngineFilled: true`. These descriptor fields are written only when set, so a descriptor without them
    keeps its hash; `ShippedBlocksTests` pins every shipped hash.
+
+   Two more optional fields are written only when set: `Runtime` (`desk`, `block` or `agent`: who runs the Step; descriptor-only
+   until DT-J, absent means today's rule) and `HumanOnly` (true or absent, never false). A Step is **human-only** when its descriptor
+   says `HumanOnly`, or when its `Runtime` is `block` and it runs on the desk (`HumanOnlySteps.Applies`). `workflow complete` on a
+   human-only Step is `SND-AUTH-002` unless the caller is a human (the app or a terminal): the refusal sits in `CompleteStep`, before
+   the nonce is claimed, so nothing is consumed, and a session report on an instance that can't be read is refused with that read
+   error, not let through. The message names the Step, its state and the command the human runs. Today `CompleteStep` is a desk-class command, so the command chain (`AuthorizingService`) refuses every session with its generic `SND-AUTH-002` before the service runs; this per-Step check is defence in depth, and takes over once a non-human class can reach `CompleteStep` (step reports open to sessions, P10).
 4. **Use it in a recipe** and run `sindri recipe validate` on it.
 5. **A behaviour change bumps `Version`** in the descriptor, in the reviewed change that makes it. Once approvals pin
    blocks (P2), a changed descriptor parks the instances of every recipe approved against the old one until it is
    re-approved (`SND-RECIPE-006`).
+
+### Block catalog (decision-tree Steps)
+
+Descriptor-only Steps (`AddBlockDescriptor`): recipes that name them validate, they run on the desk or are unavailable until their runtime
+(DT-J, DT-B) ships. `evidence.check` is a descriptor-only evidence provider (runtime in DT-B): a recipe that guards a transition with it validates (no `RCP-EVID-001`), the engine refuses the transition at run time ("no runtime for evidence checks in this build"), and `recipe eval` still answers every evidence check as holding, since an eval line has no evidence answer yet (a known gap until DT-B). Facts are `fact:` keys. Outputs are
+what a report must carry, on which outcomes; "every outcome" outputs are on all of them.
+
+| Step | Runtime | Inputs | Outcomes | Outputs |
+|---|---|---|---|---|
+| `step.intake.ticket` | desk | - | `done` | `issue` on done; `expected` on done; `actual` on done |
+| `step.rootcause.investigate` | agent | `issue`, `expected`, `actual` | `diagnosed`, `unfixed` | `rootCause` on diagnosed; `findings` on unfixed |
+| `step.reproduce.ui-check` | agent | `issue`, `rootCause` | `reproduced`, `notReproduced` | `check` on reproduced; `baseline` on reproduced; `findings` on notReproduced |
+| `step.reproduce.test-check` | agent | `issue`, `rootCause` | `reproduced`, `notReproduced` | `check` on reproduced; `baseline` on reproduced; `findings` on notReproduced |
+| `step.bugfix.start-attempt` | block | `decision` | `single`, `split`, `capReached` | `attempt` on single,split |
+| `step.bugfix.record-candidate` | block | `diff` | `recorded` | `candidate` on recorded |
+| `step.bugfix.recheck` | block | `check`, `candidate` | `passed`, `failed` | `recheck` (every outcome) |
+| `step.bugfix.judge` | block | `check`, `candidate`, `evidenceSummary` | `resolved`, `partial`, `unresolved`, `needsHuman` | `verdict` (every outcome) |
+| `step.report.write` | agent | `issue` | `done` | `resolution` on done |
+| `step.handtest.run` | agent | `phasePacket`, `workspace` | `works`, `broken` | `manualTest` (every outcome) |
+| `step.verify.journey` | agent | `phasePacket`, `workspace` | `pass`, `fail` | `evidencePack` (every outcome) |
+| `step.verify.design` | agent | `phasePacket`, `workspace` | `pass`, `fail`, `skipped` | `designCheck` on pass,fail |
+| `step.evidence.ui-plan` | agent | `phasePacket`, `built` | `planned`, `noTarget` | `evidencePlan` on planned; `evidenceSummary` on noTarget |
+| `step.evidence.api-plan` | agent | `phasePacket`, `built` | `planned`, `noTarget` | `evidencePlan` on planned; `evidenceSummary` on noTarget |
+| `step.evidence.db-plan` | agent | `phasePacket`, `built` | `planned`, `noTarget` | `evidencePlan` on planned; `evidenceSummary` on noTarget |
+| `step.evidence.ui-run` | agent | `evidencePlan`, `built` | `passed`, `failed`, `broken` | `evidenceSummary` (every outcome) |
+| `step.evidence.api-run` | agent | `evidencePlan`, `built` | `passed`, `failed` | `evidenceSummary` (every outcome) |
+| `step.evidence.db-run` | agent | `evidencePlan`, `built` | `passed`, `failed` | `evidenceSummary` (every outcome) |
+| `step.evidence.none` | block | `built` | `done` | `evidenceSummary` on done |
+| `step.evidence.combine` | block | `evidenceUi`, `evidenceApi`, `evidenceDb` | `done` | `evidenceSummary` on done |
+| `step.evidence.desk` | desk, human-only | `built` | `recorded`, `noneFound` | `evidenceSummary` (every outcome); `evidenceReason` (every outcome) |
+| `step.review.run` | agent | `change`, `phasePacket` | `clean`, `findings`, `behaviourWrong` | `review` (every outcome) |
+| `step.review.fix` | agent | `change`, `review` | `fixed` | `change` on fixed |
+| `step.review.recheck` | agent | `change`, `review` | `clean`, `findings`, `behaviourWrong` | `review` (every outcome) |
+| `step.owner.decide` | desk, human-only | - | `retry`, `stop` | `notes` on retry |
+
+
+### Block catalog (scoping station)
+
+Descriptor-only too (`ScopingSteps`, `PendingInputs` in `Aw.Sindri.Features/Blocks/`); the recipes are `workflow.scoping` and `workflow.idea-to-brief` (scoping spec §6, §9). Every Step is desk-capable. An agent Step reaches only `Tools` (the read-only rule is W9's, enforced at launch).
+
+| Step | Runtime | Inputs | Outcomes | Outputs |
+|---|---|---|---|---|
+| `step.scope.intake` | block | `scopeInput` | `brief`, `tracker`, `idea`, `change` | the eight seeds (`scopeMap`, `acceptance`, `findings`, `answers`, `answerLog`, `challenge`, `questions`, `openQuestions`) on all four |
+| `step.scope.read-brief`, `step.scope.read-change` | block | `scopeInput` | `read`, `empty` | `brief`, `anchors` on read |
+| `step.scope.read-tracker` | block (`Network`) | `scopeInput` | `read`, `empty` | `brief`, `anchors` on read |
+| `step.brief.seed` | block | - | `seeded` | `answers`, `answerLog` on seeded |
+| `step.brief.questions` | agent | `idea`, `answers`, `answerLog` | `asked`, `ready` | `questions` on asked; `interviewClosed` on ready |
+| `step.brief.write` | agent | `idea`, `answers`, `answerLog` | `written`, `empty` | `brief` on written |
+| `step.scope.anchor` | block | `brief` | `anchored` | `anchors` on anchored |
+| `step.scope.gather` | block | `anchors` (+ its Step inputs) | `gathered` | `lenses`, `coverage` on gathered |
+| `step.scope.draft` | agent | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `findings`, `answerLog`, `challenge` | `drafted` | `scopeMap`, `acceptance` on drafted |
+| `step.scope.check` | block | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answers`, `answerLog` | `pass`, `gaps`, `regather` | `findings` on gaps, regather |
+| `step.interview.questions` | agent | `scopeMap`, `acceptance`, `lenses`, `answerLog`, `challenge`, `openQuestions` | `asked`, `none` | `questions` on asked; `openQuestions` on asked, none |
+| `step.interview.answer` | desk, human-only | `questions`, `answerLog` | `answered`, `doneAsking` | `answers` on both; `interviewClosed` on doneAsking |
+| `step.interview.record` | block | `answers`, `answerLog` | `recorded` | `answerLog` on recorded |
+| `step.interview.apply` | agent | ten facts (spec §9) | `updated`, `rescope` | `scopeMap`, `acceptance`, `openQuestions` on both |
+| `step.scope.reanchor` | block | `scopeMap`, `anchors`, `lenses` | `anchored` | `anchors` on anchored |
+| `step.scope.challenge` | agent | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answerLog`, `challenge` | `nothingNew`, `found` | `challengeRound` (every outcome) |
+| `step.scope.challenge-log` | block | `challenge`, `challengeRound` | `nothingNew`, `found` | `challenge` (every outcome); `findings` on found |
+| `step.scope.propose` | block | `scopeMap` | `proposed`, `skipped` | `scopeMap` (every outcome) |
+| `step.scope.evidence` | block | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answers`, `answerLog`, `challenge`, `openQuestions`, `decision`, `anchors`, `questions` | `complete`, `incomplete`, `regather` | five facts on complete; `findings` on incomplete, regather |
+| `step.scope.review` | desk, human-only | `scopePacket` | `approve`, `revise`, `drop` | `answers` on revise |
+| `step.scope.freeze` | block | `scopePacket`, `answerLog` | `frozen`, `mismatch` | `findings` on mismatch |
+| `step.scope.withdraw` | block | - | `withdrawn` | - |
+
+`step.interview.answer` and `step.scope.review` carry no form yet: the answer form built from `fact:questions` and the stop's fixed form (approve, revise, drop) await W2, so at the desk they complete with plain outcomes and outputs. The output schemas, their fact-or-packet-file design and field-name choices are in `schemas/scoping/README.md`.
+
+The Step inputs `input.context.lenses`, `input.context.code` and `input.context.history` are registered as descriptors (parameters `anchors`, `depth`, `hops`, `window`) so the recipe validates; the context lane replaces them with the blocks (C1, C3, C5, W6). The output schemas are `schemas/scoping/` (`node scripts/check-scoping-schemas.mjs`).
+
+`step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and human-only; their hashes moved once when the two fields
+landed (provisional owner default); every other shipped descriptor hashes as before (`ShippedBlocksTests` pins all of them).
+
+### Block recipes
+
+The shipped block recipes (`recipes/sindri/`: report, investigate, reproduce, implement, hand-test, verify, the evidence
+family and review-loop) are listed with their inputs, outputs and terminals in `recipes/sindri/README.md`. The inputs are
+`issue` (report), `issue`, `expected` and `actual` (investigate), `issue` and `rootCause` (reproduce, implement), `phasePacket` and `workspace` (hand-test, verify), `phasePacket` and `built`
+(every evidence recipe) and `change` and `phasePacket` (review-loop). `phasePacket` and `change` use the `packet` and
+`payload` subject kinds. Approve the leaf recipes first, then `workflow.evidence-all`, then `workflow.evidence`.
 
 ## Writing a decision tree
 
@@ -458,7 +544,7 @@ that lets a person pick when the judge is unsure or fails. Until the block runti
 complete example is `recipes/dev/workflow.dev-evidence-route.yaml`.
 
 - **The route state** gives `prompt`, `facts` (what the question reads; each must be produced on every path into the
-  state) and `choices`, each entry quoted `"<outcome>: <criterion>"`. Its outcomes are the choice names plus `uncertain`.
+  state) and `choices`, each entry quoted `"<outcome>: <criterion>"` with a camelCase outcome (`notStartable`, `[a-z][A-Za-z0-9]{0,31}`). Its outcomes are the choice names plus `uncertain`.
   The choices are literal, so approving the recipe fixes its branches.
 - **The desk twin** is `step: { use: step.desk.choose, with: { from: <route state> } }`. Its outcomes are the route's choices.
 - **Transitions:** one per choice, listing both states in `from`, each `produces: [fact:decision]`; then
@@ -697,7 +783,7 @@ The `--json` output is the served body as the CLI's serializer prints it: `list`
   outcome and the outputs required on it), the answer line per park reason (`--grant 1`, `--grant-tokens <half the
   state's budget>`, `--text`, `--resume [--text]`, `--resume`, `--accept`, and the approval or cancel a spec-conflict
   needs), the drift line for a drift recorded behind a park, the budgets, and `allowedCommands`. A spec-conflict park
-  whose only way out is an approval or a cancel (revoked, child revoked, drift) offers no `answer`.
+  whose only way out is an approval or a cancel (revoked, child revoked, drift) offers no `answer`. An open park or escalation serves one `answer` entry per fitting variant, each under its catalog id (`answer-text`, `answer-resume`, `answer-grant`, `answer-grant-tokens`, `answer-accept`, `answer-reject`), the status line's own variant first, each with the full command that runs it (the status line itself may keep its hint form, such as `--resume [--text <answer>]`; `--text <answer>` stays a template because the text is the person's). A suspension that mirrors a child serves only the variants its reason alone fixes (rounds, no-progress, timeout, no-runtime). An escalation from a child and a mirrored needs-answer, budget or spec-conflict park serve none, and their status `answer` line points at the child (`sindri workflow answer <address> <the child's answer>`, `(forwarded to <child>)`, action id `answer-text`) and is marked explicitly: `via: "child"` and `child: <the child's address>` on the status answer record (both omitted on every other answer; `child` is present only when the served view lists the mirrored child, matched by its instance id, and the control plane does not list children yet, so expect `via: "child"` without `child` until P7 wires child propagation into the served view); the needs-you row carries the same `via` marker, so a client never reads the cli text to tell a pointer from a form. A budget grant's amount is whole `k` or `M` when exact, else the plain integer, so it parses (`TokenCounts.Format`) whenever a cap exists to halve; a budget park with no cap (a `gate.budget` refusal on a recipe with no budget) serves no `answer-grant-tokens` entry, and its status line keeps the `--grant-tokens <n>` hint. The one table of which variants fit is `AnswerVariants.Fitting`, shared by the answer check and the served list.
 - **Layout** (`StatusLayout`): the labels take 12 columns, `next` wraps at 120, and the lines come in a fixed order:
   next, child, inputs, drift, timeout, paused, budget (beside an open desk task, as §6.4 shows it), answer, commands.
   An input's digest prints as its first four hex digits and `...` (ASCII for §6.4's ellipsis). The answer note is set
@@ -754,6 +840,10 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
   `{item}/{recipe}/1`, `/2` … so a start never waits on visibility. Without `--attempt` the latest attempt is used (a
   live one is returned as it is; an ended one is shown with `start a new one with --attempt next`); `--attempt next`
   is refused while the latest is live (`SND-WF-012`). It prints the status header.
+  A recipe whose Step names an input with a registered descriptor but no runtime in this build is refused with
+  `SND-WF-016` naming `states.<s>.step.inputs[k]`, here and at `recipe approve` (the challenge too); `recipe show`, `recipe validate`
+  and `recipe eval` still accept it, and eval ignores inputs. An input id with no registration at all is not this case: it is
+  `RCP-BLOCK-001` at `recipe validate` and at register.
 - **`workflow answer`, `command <verb>`, `cancel`, `takeover`, `handback`** run the `ApplyCommand` slice, in this order: resolve the address
   (a bare item is the root of its latest attempt, `SND-WF-006` listing the candidates when the item has roots of more
   than one recipe); check the arguments; claim the nonce for exactly this command (`SND-WF-009`); for a protected
@@ -777,6 +867,9 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
   item>`, which answers the one instance it names; the CLI resolves there first, then calls the id routes. An address in
   a route is a 400 (`SND-CLI-003`); an id no instance has is `SND-WF-001`. The server finds an id among the instances it
   has started or shown (`KnownInstances`), else by minting the id of every instance visibility lists.
+- **The start request.** `POST /workflow/instances` takes `{ recipe, item, nextAttempt, facts }`, where `facts` maps a fact key
+  to `{ name, content }`. `content` is the base64 of the raw bytes (the System.Text.Json default for `ReadOnlyMemory<byte>`),
+  not the text; the golden `workflow-instances-start/request.json` pins it, and `started.json` carries the sha256 of the decoded bytes.
 - **Failures of an Update (§5.2, §5.3).** Each Update waits at most 4 s for a worker (`TemporalUpdates.Patience`): a
   command that first waited the 5 s command gate still answers inside the CLI's 10 s HTTP timeout. No worker in that
   time is `SND-API-002`, naming the nonce: the Update may still apply once a worker runs, so the claim stays and the same

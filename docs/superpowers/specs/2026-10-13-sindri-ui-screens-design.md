@@ -118,8 +118,8 @@ instances first, then by age.
 ### 4.2 Workflows
 
 **List.** Root instances grouped by recipe. Each group's columns are its recipe's states in path order (§5.1), so the
-groups differ on purpose. The Linear group sorts first; groups with a running incident or triage instance sort above
-it while one runs.
+groups differ on purpose. The drawings in this section are illustrative; states come from the recipe (the recipe files and goldens, not these pictures, say which states a recipe has and what they are called). The groups follow the order the list serves: the engine puts the groups with a running incident or triage instance first,
+and the app keeps that order.
 
 ```
 Workflows    8 open · 2 need you · 1 with you                                     [Recipe ▾] [Subject ▾]      [Start… ⌘N]
@@ -139,7 +139,7 @@ Workflows    8 open · 2 need you · 1 with you                                 
 ├ intake.linear  2  ·  scoping.project (standalone)  0 ────────────────────────────────────────────────────────── show all ▾ ┤
 │ 4 done today ▸ (collapsed)                                                                                                │
 └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-   ● done   ◐ in progress   ○ not started   ▲ escalated   ▌parked   ⇄ loop        Enter opens · A answer · B hand back · X cancel
+   ● done   ◐ in progress   ○ not started   ▲ escalated   ▌parked   ⇄ loop        Enter opens · A answers a decision or completes a desk task · B hand back · X cancel
 ```
 
 - **SUBJECT** is the instance's first input rendered by its kind's adapter (§5.4): a Linear project shows team and
@@ -148,7 +148,7 @@ Workflows    8 open · 2 need you · 1 with you                                 
 - A stage cell shows the glyph, then the loop counter (`r2/3`), `desk` for a desk state, `child` when the state waits
   on children, `n/m` for a children state's progress, or an engine-owned badge (`▲ escalated: <reason>`,
   `▌ parked: <reason>`) in place of the glyph.
-- **NOW** is the engine's `next` sentence, shortened to the cell (full text in the sheet).
+- **NOW** is the served `now` sentence of the row (the list serves it on each instance), shortened to the cell; the frame's expanded state shows the engine's `next` sentence whole.
 - **Start…** opens rev 7's start form (X34): approved recipes and their declared inputs; a subject kind's adapter
   offers a picker (the profile's Linear teams' projects, for `item` kind the queue).
 - Keys: `Enter` opens the instance; `A` answers a park or escalation (desk answers inline, protected ones as CLI);
@@ -174,7 +174,7 @@ subject  Linear APP · PRD-sync.md (linear:doc) · feature:sync                 
 │ fact:packet       ● packet.json · frozen sha256:3f1c09 · 9 tasks · checks 9/9 ✓                                   [View ▸]   │
 │ fact:evidence     ◐ 4 of 9 packs                                                                                              │
 └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-┌ CHILDREN  9 · builder.feature, grouped by packet workstream ─────────────────────────────────────────────────────────────────┐
+┌ CHILDREN  9 · workflow.step, grouped by packet workstream ─────────────────────────────────────────────────────────────────┐
 │ ws-1 UI      ITM-01JE7 Sync status pill    ◐ running produce 2/3 · Claude Code 6m   [Open ▾] [Take over T]                    │
 │              ITM-01JF0 Conflict resolver   ○ queued after ITM-01JE7                                                           │
 │ ws-3 Mobile  ITM-01JC8 Background sync     ▌parked no-progress · mirrored here           [⌂ Grant rounds — at a terminal]     │
@@ -186,7 +186,7 @@ subject  Linear APP · PRD-sync.md (linear:doc) · feature:sync                 
 The same frame carrying an incident; nothing in the chrome changes:
 
 ```
-workflow/INC-14   Outbox retry storm                              incident.response@5d90e1b2 · v4 · mitigate r1/3 · since 11:02 (1h 24m)   Esc ✕
+workflow/INC-14   Outbox retry storm                              incident.response@5d90e1b2 · v4 · mitigate · since 11:02 (1h 24m)   Esc ✕
 subject  PagerDuty P-2211 (webhook) · feature:outbox.dispatch                                    [Open in PagerDuty ↗]  [Open in Context ▸]
 
 ┌ STATES ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -209,6 +209,7 @@ subject  PagerDuty P-2211 (webhook) · feature:outbox.dispatch                  
   Timeline 18   Decisions 1   Requests 0   Context 6
 ```
 
+- **Header:** the state word is the status header's served `state`, followed by `: <detail>` when the engine serves a detail (for example `escalated: gate`). The loop round (`r1/3`) is not in the header: it stays on the band's cell. The frame's drawings are illustrative; states come from the recipe.
 - **STATES band:** the recipe's states in path order (§5.1); the current state is expanded with its Step or children
   declaration, its exit gates with thresholds, the engine's `next`, budget and timeout lines, and the commands the
   engine lists, as buttons with rev 7 §7's classes. Engine-owned states (parked, escalated, taken-over) are badges on
@@ -232,6 +233,8 @@ subject  PagerDuty P-2211 (webhook) · feature:outbox.dispatch                  
   (WF §6.4) as structured fields (E-23), the ledger timeline (API P3), context (CTX).
 
 ### 4.3 Recipes
+
+> **Build note (U10a).** The inspector without stats is built first, as the read-only sheet `recipe/<id>[@hash]`; the Recipes list page and the stats (E-24, E-25) are U10b. See `docs/csharp/sindri-ui.md` "U10a" for what the recipe route serves and the gaps G1 to G8.
 
 **List.** Execution numbers over a window (default 30 days). "Human" is the share of runs that needed a person: a
 park answered, an escalation decided, or a takeover.
@@ -601,7 +604,7 @@ two desk states in `workflow.project`, not UI logic.
 
 An instance's **subject** is its first declared input. A subject kind has an adapter in the app for the header line
 and the list's SUBJECT cell: `item` (id and title, from the queue), `linear-project` (team and name, the PRD document
-if the project has one, `Open in Linear`), `webhook` (source, id, received at), `file` (name), `text` (first line).
+if the project has one, `Open in Linear`), `webhook` (source, id, received at), `file` (name), `text` (first line); `packet` and `payload` render the payload's id and title, else the key.
 Kinds are the API's `inputs[].kind` (E-22); an unknown kind renders the key.
 
 ### 5.5 Children

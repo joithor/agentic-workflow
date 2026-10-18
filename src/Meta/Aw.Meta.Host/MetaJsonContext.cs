@@ -22,6 +22,7 @@ using Aw.Meta.Features.Owner;
 using Aw.Meta.Features.OwnerAnswer;
 using Aw.Meta.Features.OwnerAsk;
 using Aw.Meta.Features.QueueDrop;
+using Aw.Meta.Features.QueueGate;
 using Aw.Meta.Features.Roles;
 using Aw.Meta.Features.Status;
 using Aw.Meta.Features.StopCheck;
@@ -38,6 +39,7 @@ namespace Aw.Meta.Host;
 [JsonSerializable(typeof(Error))]
 [JsonSerializable(typeof(TeamConfig))]
 [JsonSerializable(typeof(MetaRole))]
+[JsonSerializable(typeof(BuildInfo))]
 [JsonSerializable(typeof(TeamListResponse))]
 [JsonSerializable(typeof(TeamMigration))]
 [JsonSerializable(typeof(ShowRoleResponse))]
@@ -54,6 +56,7 @@ namespace Aw.Meta.Host;
 [JsonSerializable(typeof(StatusResponse))]
 [JsonSerializable(typeof(StopCheckResponse))]
 [JsonSerializable(typeof(GateRunResponse))]
+[JsonSerializable(typeof(QueueGateResponse))]
 [JsonSerializable(typeof(GateRerunResponse))]
 [JsonSerializable(typeof(CheckMergeResponse))]
 [JsonSerializable(typeof(MergeRunResponse))]

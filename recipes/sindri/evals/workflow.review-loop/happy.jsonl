@@ -1,0 +1,4 @@
+{"start":{"inputs":{"fact:change":{"head":"abc123"},"fact:phasePacket":{"phase":"1"}}}}
+{"trigger":{"kind":"step.completed","outcome":"findings","outputs":{"fact:review":{"blocking":2}}},"expect":{"state":"fix"}}
+{"trigger":{"kind":"step.completed","outcome":"fixed","outputs":{"fact:change":{"head":"def456"}}},"expect":{"state":"review"}}
+{"trigger":{"kind":"step.completed","outcome":"clean","outputs":{"fact:review":{"blocking":0}}},"expect":{"state":"clean","outcome":"resolved"}}

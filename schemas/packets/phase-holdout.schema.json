@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/packets/phase-holdout.schema.json",
+  "title": "Packet phase-holdout file (schemaVersion 1)",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "setHash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "count": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "setHash",
+    "count"
+  ],
+  "additionalProperties": false
+}

@@ -48,6 +48,12 @@ internal static class ReportAssembly
                 $"clusters unavailable: {collected.WithoutClusters} of {collected.Kept.Count} sample maps were built without clusters, so the map-reading arms ran on thinner maps (fix: install graphify, or sindri doctor)"));
         }
 
+        if (collected.RecognizerTimeouts > 0)
+        {
+            notes.Add(string.Create(CultureInfo.InvariantCulture,
+                $"recognizers timed out: {collected.RecognizerTimeouts} of {collected.Kept.Count} sample maps lost profile recognizer matches to the one-second match timeout and were not cached (fix: simplify the pattern in context.extract.recognizers)"));
+        }
+
         if (collected.AdjudicationCapped)
         {
             notes.Add("SND-CONTEXT-083: adjudication stopped at the 1.5M-token cap; the rest are unjudged and adjudicated precision is not measured");

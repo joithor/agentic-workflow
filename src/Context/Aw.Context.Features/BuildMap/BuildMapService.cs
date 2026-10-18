@@ -108,14 +108,15 @@ internal sealed class BuildMapService(
 
     private async ValueTask<Result<RepoExtraction>> Extract(IProgress<string>? progress, ContextSettings settings, ContextRepo repo, CancellationToken cancellationToken)
     {
-        var read = await ReadFiles(progress, repo, cancellationToken).ConfigureAwait(false);
+        var recognizers = RecognizerSet.From(settings.Recognizers);
+        var read = await ReadFiles(progress, repo, recognizers, cancellationToken).ConfigureAwait(false);
         if (read.IsError)
         {
             return read.Error;
         }
 
         var (commit, files) = read.Value;
-        var extracted = MapExtractor.Extract(repo.Name, files);
+        var (extracted, timedOut) = MapExtractor.Extract(repo.Name, files, recognizers);
         var clusters = await Clusters(repo, commit, cancellationToken).ConfigureAwait(false);
         var labels = await Labels(progress, settings, clusters, cancellationToken).ConfigureAwait(false);
         if (labels.IsError && labels.Error.Code == ContextErrors.LabelingUnavailable.Code)
@@ -125,12 +126,17 @@ internal sealed class BuildMapService(
 
         // A model that couldn't answer leaves the clusters their file-derived names.
         var features = ClusterFeatures.Propose(repo.Name, clusters, labels.IsError ? [] : labels.Value.Labels, extracted);
-        string[] degraded = [.. clusters.Available ? [] : new[] { "clusters" }, .. labels.IsError || !labels.Value.Complete ? new[] { "labels" } : []];
-        return new RepoExtraction(extracted.Plus(features), commit, degraded);
+        return new RepoExtraction(extracted.Plus(features), commit, Degraded(clusters, labels, timedOut));
     }
 
+    private static string[] Degraded(ClusterSet clusters, Result<LabelPass> labels, bool timedOut) =>
+        [.. clusters.Available ? [] : new[] { "clusters" }, .. labels.IsError || !labels.Value.Complete ? new[] { "labels" } : [], .. timedOut ? new[] { "recognizers" } : []];
+
+    // A denied path is never read, whatever a recognizer wants.
+    private static bool Readable(ContextRepo repo, RecognizerSet recognizers, string path) => !repo.Denies(path) && (Recognizers.MayRead(path) || recognizers.Wants(path));
+
     // HEAD's tree minus the denied paths, and the text of each file the extractor may read.
-    private async ValueTask<Result<(string Commit, List<RepoFile> Files)>> ReadFiles(IProgress<string>? progress, ContextRepo repo, CancellationToken cancellationToken)
+    private async ValueTask<Result<(string Commit, List<RepoFile> Files)>> ReadFiles(IProgress<string>? progress, ContextRepo repo, RecognizerSet recognizers, CancellationToken cancellationToken)
     {
         var head = await repos.Head(repo, cancellationToken).ConfigureAwait(false);
         var listed = head.IsError ? head.Error : await repos.ListFiles(repo, head.Value, cancellationToken).ConfigureAwait(false);
@@ -139,7 +145,7 @@ internal sealed class BuildMapService(
             return head.IsError ? head.Error : listed.Error;
         }
 
-        var wanted = listed.Value.Where(p => !repo.Denies(p) && Recognizers.MayRead(p)).ToList();
+        var wanted = listed.Value.Where(p => Readable(repo, recognizers, p)).ToList();
         var files = new List<RepoFile>(wanted.Count);
         foreach (var path in wanted)
         {

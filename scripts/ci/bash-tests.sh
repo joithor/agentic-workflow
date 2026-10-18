@@ -4,7 +4,7 @@
 # new suite can't be missed by a glob; a suite is skipped only through EXCLUDED below,
 # with its reason.
 #
-# Every suite runs with a fresh temp HOME and AW_STATE_DIR (see --run-one), never the caller's.
+# Every suite runs with a fresh temp HOME and AW_STATE_DIR (see --run-one), never the caller's, and without the lane environment.
 #
 # Two phases:
 #   1. the pool: every suite not in SERIAL, BASH_TESTS_JOBS at a time (default: the CPU
@@ -36,7 +36,7 @@ if [ "${1:-}" = "--run-one" ]; then
   # Fail closed on state: every suite gets its own fresh HOME and AW_STATE_DIR (a temp dir, removed afterwards), whatever the caller
   # exported, so no suite can read or write the real ~/.agentic-workflow or a state dir a caller pointed at. What the real HOME
   # holds for tools stays reachable by explicit pointers (git identity and config, the .NET SDK, the NuGet and npm caches).
-  sandbox="$(mktemp -d)" && mkdir -p "$sandbox/home" "$sandbox/state" || {
+  sandbox="$(mktemp -d)" && mkdir -p "$sandbox/home" "$sandbox/state" "$sandbox/tmp" || {
     echo "bash-tests: could not make a sandbox for $suite" > "$out/$idx.log"; echo 2 > "$out/$idx.rc"; echo 0 > "$out/$idx.secs"
     printf 'FAIL  %s  %s  0s  exit 2 (no sandbox)\n' "$mode" "$suite"; exit 0
   }
@@ -44,10 +44,27 @@ if [ "${1:-}" = "--run-one" ]; then
   [ ! -f "$real_home/.gitconfig" ] || export GIT_CONFIG_GLOBAL="${GIT_CONFIG_GLOBAL:-$real_home/.gitconfig}"
   [ ! -d "$real_home/.dotnet" ] || export DOTNET_ROOT="${DOTNET_ROOT:-$real_home/.dotnet}" PATH="$real_home/.dotnet:$PATH"
   export NUGET_PACKAGES="${NUGET_PACKAGES:-$real_home/.nuget/packages}" npm_config_cache="${npm_config_cache:-$real_home/.npm}"
-  # The hook and provider overrides the install helpers honour are scrubbed too: a caller's must not steer a suite at real files.
-  env -u CLAUDE_SETTINGS_FILE -u CLAUDE_HOOKS_DIR -u CLAUDE_DIR -u CODEX_HOOKS_FILE -u CODEX_HOME -u CURSOR_HOOKS_FILE -u AW_HOOKS_DIR \
-    -u AW_HOOK_ADAPTER_FLAGS -u AW_META_CONFIG -u AW_SINDRI_HOME -u CLAUDE_LOCAL_BIN -u TMUX HOME="$sandbox/home" AW_STATE_DIR="$sandbox/state" bash "$suite" >"$out/$idx.log" 2>&1 </dev/null
+  # One list of what a suite must not inherit, built as `env -u` flags. Two families:
+  #  - the hook and provider overrides the install helpers honour: a caller's must not steer a suite at real files;
+  #  - the lane environment: every lane and meta pane exports AW_META_LANE*, AW_META_TEAM, AW_META_DIR, AW_SINDRI_CHILD,
+  #    AW_SINDRI_LAUNCH, AW_LAUNCHER_CONFIG, TMUX and TMUX_PANE. Hooks (session-id-report, meta-lane-gate) and meta-launch branch on them, so a
+  #    suite run from a lane fails on state it never set. Suites that need one set it themselves.
+  # GIT_CONFIG_GLOBAL, DOTNET_ROOT, NUGET_PACKAGES, npm_config_cache and PATH are deliberately kept.
+  unset_flags=()
+  for v in CLAUDE_SETTINGS_FILE CLAUDE_HOOKS_DIR CLAUDE_DIR CODEX_HOOKS_FILE CODEX_HOME CURSOR_HOOKS_FILE AW_HOOKS_DIR AW_HOOK_ADAPTER_FLAGS \
+    AW_META_CONFIG AW_SINDRI_HOME CLAUDE_LOCAL_BIN \
+    AW_META_TEAM AW_META_DIR AW_META_LANE AW_META_LANE_PID AW_META_LANE_AGENT AW_META_LANE_PROC AW_SINDRI_CHILD AW_SINDRI_LAUNCH AW_LAUNCHER_CONFIG TMUX TMUX_PANE; do
+    unset_flags+=(-u "$v")
+  done
+  # TMPDIR is inside the sandbox too: every `mktemp` a suite (or a hook or tool it runs) makes lands under it and goes with it, so a
+  # suite that forgets its trap, or is killed, leaves nothing in /tmp (100k+ stray tmp.* dirs and ~3 GB private NuGet caches did).
+  env "${unset_flags[@]}" HOME="$sandbox/home" AW_STATE_DIR="$sandbox/state" TMPDIR="$sandbox/tmp" bash "$suite" >"$out/$idx.log" 2>&1 </dev/null
   rc=$?
+  # A suite that restores NuGet packages into its sandbox HOME (NUGET_PACKAGES unset or overridden) fills the disk with a private ~2.7 GB cache.
+  if [ -d "$sandbox/home/.nuget/packages" ]; then
+    echo "bash-tests: $suite populated a private NuGet cache in its sandbox HOME; keep NUGET_PACKAGES at the shared cache" >>"$out/$idx.log"
+    [ "$rc" -ne 0 ] || rc=1
+  fi
   find "$sandbox" -delete 2>/dev/null
   secs=$((SECONDS - start))
   echo "$rc" >"$out/$idx.rc"; echo "$secs" >"$out/$idx.secs"
@@ -123,7 +140,7 @@ serial_paths="$(paths_of ${SERIAL[@]+"${SERIAL[@]}"})"
 # timing-sensitive suite into the pool.
 while IFS= read -r p; do
   [ -n "$p" ] || continue
-  printf '%s\n' "$all" | grep -qxF "$p" \
+  grep -qxF -- "$p" <<<"$all" \
     || { echo "bash-tests: serial suite '$p' is not a tracked, non-excluded *.test.sh" >&2; exit 2; }
 done <<<"$serial_paths"
 pool="$(printf '%s\n' "$all" | { grep -vxF -f <(printf '%s\n' "$serial_paths" '//none//') || true; } | sed '/^$/d')"
