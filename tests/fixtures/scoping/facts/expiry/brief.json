@@ -8,6 +8,14 @@
       "version": "fixture",
       "trust": "untrusted",
       "fetchedAt": "2026-10-16T09:00:00Z"
+    },
+    {
+      "id": "R2",
+      "source": "change",
+      "key": "changes/expiry",
+      "version": "fixture",
+      "trust": "untrusted",
+      "fetchedAt": "2026-10-16T09:00:00Z"
     }
   ],
   "subject": "Shared links expire after a chosen time"

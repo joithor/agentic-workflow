@@ -2,5 +2,7 @@
   "surface:route/links-create",
   "surface:route/link-resolve",
   "surface:screen/share-dialog",
-  "surface:api/weekly-digest-email"
+  "surface:api/weekly-digest-email",
+  "code:src/sharing/links.ts",
+  "code:migrations/006_link_expiry.sql"
 ]
