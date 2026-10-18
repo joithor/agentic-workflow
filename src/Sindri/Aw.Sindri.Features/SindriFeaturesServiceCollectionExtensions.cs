@@ -48,6 +48,7 @@ using Aw.Sindri.Features.GetNeedsYou;
 using Aw.Sindri.Features.GetProfile;
 using Aw.Sindri.Features.GetQueue;
 using Aw.Sindri.Features.GetSession;
+using Aw.Sindri.Features.GetSessionPreview;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Features.IssueNonce;
@@ -191,6 +192,8 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<ListServicesRequest>, AcceptAllValidator<ListServicesRequest>>().AddQuery<ListServicesRequest, ListServicesResponse, ListServicesService>();
         _ = services.AddScoped<IValidator<ListSessionsRequest>, AcceptAllValidator<ListSessionsRequest>>().AddQuery<ListSessionsRequest, SessionList, ListSessionsService>();
         _ = services.AddScoped<IValidator<GetSessionRequest>, AcceptAllValidator<GetSessionRequest>>().AddQuery<GetSessionRequest, SessionView, GetSessionService>();
+        _ = services.AddSingleton<PaneCaptures>();
+        _ = services.AddScoped<IValidator<GetSessionPreviewRequest>, AcceptAllValidator<GetSessionPreviewRequest>>().AddQuery<GetSessionPreviewRequest, GetSessionPreviewResponse, GetSessionPreviewService>();
         _ = services.AddScoped<IValidator<PingProcessRequest>, AcceptAllValidator<PingProcessRequest>>().AddQuery<PingProcessRequest, Ping, PingProcessService>();
         _ = services.AddScoped<IValidator<ShowContextNodeRequest>, AcceptAllValidator<ShowContextNodeRequest>>().AddQuery<ShowContextNodeRequest, NodeView, ShowContextNodeService>();
         _ = services.AddScoped<IValidator<ListContextNeighborsRequest>, AcceptAllValidator<ListContextNeighborsRequest>>().AddQuery<ListContextNeighborsRequest, NeighborsView, ListContextNeighborsService>();
