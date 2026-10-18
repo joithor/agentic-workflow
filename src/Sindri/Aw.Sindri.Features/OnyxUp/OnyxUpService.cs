@@ -31,7 +31,17 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
             return SindriErrors.CommandBusy.With("another `sindri onyx up` is running; wait for it to finish, then run this again");
         }
 
-        var result = await Run(cancellationToken).ConfigureAwait(false);
+        Result<OnyxUpResponse> result;
+        try
+        {
+            result = await Run(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // A file the steps write (the deployment files, .env, the override, state.json) could not be written: the workspace is unusable, not a crash.
+            result = SindriErrors.OnyxWorkspaceUnusable.With($"Sindri couldn't write under {facts.Paths.Root}: {e.Message}; make that directory writable by you, then run this again");
+        }
+
         return result.IsError ? ComposeFailures.WithHint(result.Error, "run `sindri onyx up` again to resume") : result;
     }
 
@@ -130,7 +140,14 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
         var report = OnyxPreflight.Evaluate(docker, host, pins, ownPort.Value, facts.MemoryUsedByOthers(cancellationToken));
         if (report.Blocks)
         {
-            return report.Checks.First(static c => c.State == CheckState.Fail).Problem!;   // why: a failed check always carries its error
+            var failed = report.Checks.Where(static c => c.State == CheckState.Fail).ToList();
+            if (!AlreadyPulled(state) || failed.Exists(static c => c.Name != "disk"))
+            {
+                return failed[0].Problem!;   // why: a failed check always carries its error
+            }
+
+            // The images are already on this box, so the space they use is no longer free: that is not a reason to stop a rerun, which changes nothing.
+            progress.Line($"disk: {failed[0].Detail} (the images are already pulled, so this isn't blocking)");
         }
 
         var warnings = report.Checks.Where(static c => c.State == CheckState.Warn).Select(static c => $"{c.Name}: {c.Detail}").ToList();
@@ -138,6 +155,8 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
         var platform = facts.Platform(cancellationToken);
         return platform.IsError ? platform.Error : (report.Port, platform.Value, warnings);
     }
+
+    private static bool AlreadyPulled(OnyxSetupState? state) => state is not null && state.Steps.ContainsKey(OnyxSteps.Pull) && state.Steps.ContainsKey(OnyxSteps.Start);
 
     // The port our own running nginx publishes, whatever state.json says: a start that failed or timed out leaves it up, and a lost state file doesn't make it someone else's.
     private Result<int?> OwnPort(CancellationToken cancellationToken)

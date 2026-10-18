@@ -118,6 +118,19 @@ public abstract class ContainerRuntimeContract
         Expect.True(runtime.Ps(Project, Token).Value.All(static c => c.State == "exited"));
     }
 
+    /// <summary>A project known only by its label (its files are gone) lists what up started and stops it, the way `down` finds a stack without its files.</summary>
+    [Fact]
+    public void A_project_by_label_lists_and_stops_what_up_started()
+    {
+        var runtime = Create(FakeContainerRuntime.Healthy);
+        _ = runtime.Up(Project, static _ => { }, limit: null, Token);
+        var byLabel = ComposeProject.ByLabel(Project.Name);
+
+        Expect.True(runtime.Ps(byLabel, Token).Value.Any(static c => c.Service == "nginx" && c.State == "running"));
+        Expect.True(runtime.Stop(byLabel, Token).IsSuccess);
+        Expect.True(runtime.Ps(byLabel, Token).Value.All(static c => c.State == "exited"));
+    }
+
     /// <summary>The rendered compose's published ports are what a healthy box's Onyx publishes: nginx's 80 on loopback.</summary>
     [Fact]
     public void The_published_ports_of_a_healthy_box_are_nginx_on_loopback()

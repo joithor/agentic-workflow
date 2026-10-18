@@ -20,6 +20,9 @@ public sealed class FakeOnyxWorkspace : IOnyxWorkspace
     /// <summary>Gets the paths written, in order (a write that changed nothing isn't listed), and whether each was written as a protected file.</summary>
     public IList<(string Path, bool Protected)> Writes { get; } = [];
 
+    /// <summary>Gets or sets a value indicating whether writes fail the way a read-only directory does (an IOException).</summary>
+    public bool WritesFail { get; set; }
+
     /// <summary>Gets a value indicating whether the lock is held.</summary>
     public bool LockHeld { get; private set; }
 
@@ -35,6 +38,11 @@ public sealed class FakeOnyxWorkspace : IOnyxWorkspace
     /// <inheritdoc />
     public bool WriteIfChanged(string path, string content, bool secret)
     {
+        if (WritesFail)
+        {
+            throw new IOException("read-only file system");
+        }
+
         if (Files.TryGetValue(path, out var have) && string.Equals(have, content, StringComparison.Ordinal))
         {
             return false;
@@ -54,6 +62,11 @@ public sealed class FakeOnyxWorkspace : IOnyxWorkspace
     /// <inheritdoc />
     public void WriteState(OnyxSetupState state)
     {
+        if (WritesFail)
+        {
+            throw new IOException("read-only file system");
+        }
+
         (State, StateIsCorrupt) = (state, false);
         StateWrites++;
     }

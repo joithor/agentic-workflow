@@ -225,6 +225,9 @@ A new code range `SND-ONYX-0xx` in `SindriErrors`, each with a one-line fix:
 | `SND-ONYX-007` | The Onyx login given isn't an admin (fix: make that account an admin in Onyx's users page, or log in as the first user) |
 | `SND-ONYX-008` | Minting or verifying the key failed |
 | `SND-ONYX-009` | Writing a secret failed (and the `file:` fallback did too) |
+| `SND-ONYX-010` | Docker points at another machine; Sindri only runs Onyx on this one (fix: switch to the local context, unset `DOCKER_HOST`) |
+| `SND-ONYX-011` | A `docker compose` command (`pull`, `up`, `stop`, `ps`) failed; the message ends with the last lines it printed |
+| `SND-ONYX-012` | Sindri can't read or write its Onyx directory under the Sindri home (fix: make it writable by you) |
 
 Doctor gains `onyx:stack` (when Sindri's Onyx state exists): the compose project's containers and their health, the bound address (fails
 on anything but loopback), the image digests running vs the pins. The existing `context:onyx` row is unchanged. The
@@ -265,7 +268,7 @@ lists them instead.
 1. **P1 — pins and preflight:** `context/onyx.lock` with the measured numbers, its check and test; `IContainerRuntime`
    and the preflight (its memory check is the `MemTotal` floor only); `sindri onyx status`; `SND-ONYX-001..003, 006`.
 2. **P2 — files, config, start:** fetch and verify, `.env` and the override, pull, start, readiness, `sindri onyx down`,
-   doctor `onyx:stack`; `SND-ONYX-004, 005`. The memory check that counts what other containers already use (Docker's
+   doctor `onyx:stack`; `SND-ONYX-004, 005, 010, 011, 012`. The memory check that counts what other containers already use (Docker's
    `MemTotal` minus their use must cover the need) moved from P1 into P2 by owner decision, 2026-10-17.
 3. **P3 — owner setup, key, secret, profile:** the sign-up hand-off, the provisioning client and its allowlist, the
    secret writer, the profile write and inline approval, `sindri onyx open`; `SND-ONYX-007..009`.

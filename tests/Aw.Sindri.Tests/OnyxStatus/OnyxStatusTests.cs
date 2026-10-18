@@ -201,6 +201,18 @@ public sealed class OnyxStatusTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Status_is_unknown_not_stopped_when_the_containers_cannot_be_listed()
+    {
+        var rig = await RunningRig();
+        rig.Runtime.FailNext("Ps", Core.SindriErrors.OnyxComposeFailed.With("compose ps failed"));
+
+        var status = await Status(rig);
+
+        Assert.Equal(OnyxState.Unknown, status.State);
+        Assert.Null(status.Url);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Status_shows_the_own_port_not_taken_while_running()
     {
         var rig = await RunningRig();
