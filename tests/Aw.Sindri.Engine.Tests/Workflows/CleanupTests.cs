@@ -17,7 +17,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.CompleteStep;
-using Aw.Sindri.Tests.Workflow.Effects;
+using Aw.Sindri.Tests.Workflows.Effects;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Temporalio.Client;
