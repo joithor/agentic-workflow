@@ -863,7 +863,7 @@ Not new questions: each is a default this revision chose where the answers left 
 1. **Attended sessions have no wall-clock limit** (memory, CPU and pids still apply). `sandbox.attended.wall` can set one.
 2. **An attended session works in a worktree, never in your main checkout** (SB5 keeps the git directory protected). If you want `sindri open` to write in the main checkout, that needs a different git-directory rule.
 3. **Until SB-5b merges, `sindri open` through Sindri is refused** (`-014`), like a Step; your own terminal is unaffected.
-4. **A Step asking for a stricter login source** is a new optional field in the engine's `StepPolicy`, which P8 D8 does not have; if the engine lane declines it, the source is per profile, target and repo only and nothing else changes.
+4. **A Step asking for a stricter login source** (agreed with the engine lane, 2026-10-18): `StepPolicy.LoginSource`, type `ModelLoginSource?` (`OwnerCopy` < `SeparateLogin`; null = no ask, omitted from JSON when null), added in SB-0. The engine adds the optional recipe/descriptor field and passes only the Step's ask (P8 U9); the launcher takes the stricter of the ask and the profile/repo/target value, so a looser ask never loosens.
 5. **Attended sessions never get the GitHub App token**, even once SB-7 exists; push from your own terminal.
 
 ## 14. Revision 2 (autoplan round 1), Revision 3 (autoplan round 2) and review record
