@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using Aw.Context.Core.Graph;
 using Aw.Kernel;
 
 namespace Aw.Context.Core.Engine;
@@ -91,6 +92,11 @@ public static class QueryRules
     /// <param name="text">The text, or null.</param>
     /// <returns>The depth (null when absent); SND-CONTEXT-006 when it is not a whole number or is out of range. The message names no flag: a transport adds its own hint.</returns>
     public static Result<int?> ParseDepth(string? text) => ParseWhole(text, DepthMessage, 0, MaxDepth);
+
+    /// <summary>The cascade hops as a transport sent them: absent, or a comma list of state, flow, dependency and component (repeated keys joined with commas).</summary>
+    /// <param name="text">The text, or null.</param>
+    /// <returns>The hops (null when absent); SND-CONTEXT-140 when a name is unknown or the list is empty.</returns>
+    public static Result<CascadeHops?> ParseHops(string? text) => throw new NotSupportedException();
 
     /// <summary>A token budget as a transport sent it: absent, or a whole number of 1 or more.</summary>
     /// <param name="text">The text, or null.</param>

@@ -4990,3 +4990,15 @@ static Aw.Context.Core.Graph.CascadeOptions.operator !=(Aw.Context.Core.Graph.Ca
 static Aw.Context.Core.Graph.CascadeOptions.operator ==(Aw.Context.Core.Graph.CascadeOptions? left, Aw.Context.Core.Graph.CascadeOptions? right) -> bool
 static Aw.Context.Core.Graph.SkippedComponent.operator !=(Aw.Context.Core.Graph.SkippedComponent? left, Aw.Context.Core.Graph.SkippedComponent? right) -> bool
 static Aw.Context.Core.Graph.SkippedComponent.operator ==(Aw.Context.Core.Graph.SkippedComponent? left, Aw.Context.Core.Graph.SkippedComponent? right) -> bool
+static readonly Aw.Context.Core.ContextErrors.HopsInvalid -> Aw.Kernel.ErrorDefinition!
+Aw.Context.Core.Engine.ContextQuery.Hops.get -> string?
+Aw.Context.Core.Engine.ContextQuery.Hops.init -> void
+static Aw.Context.Core.Engine.QueryRules.ParseHops(string? text) -> Aw.Kernel.Result<Aw.Context.Core.Graph.CascadeHops?>!
+Aw.Context.Core.Lenses.LensBasis.Cascade.get -> Aw.Context.Core.Graph.CascadeOptions!
+Aw.Context.Core.Lenses.LensBasis.Cascade.init -> void
+Aw.Context.Core.Lenses.LensesSetView.SkippedComponents.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.SkippedComponent!>?
+Aw.Context.Core.Lenses.LensesSetView.SkippedComponents.init -> void
+Aw.Context.Core.Lenses.LensesView.SkippedComponents.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.SkippedComponent!>?
+Aw.Context.Core.Lenses.LensesView.SkippedComponents.init -> void
+Aw.Context.Core.Results.ContextResult.SkippedComponents.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.SkippedComponent!>?
+Aw.Context.Core.Results.ContextResult.SkippedComponents.init -> void

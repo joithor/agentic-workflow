@@ -1,5 +1,6 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Graph;
 
 namespace Aw.Context.Tests.Core;
 
@@ -176,4 +177,24 @@ public sealed class QueryRulesTests
         Assert.True(QueryRules.FitsQueryUrl(new string('a', QueryRules.MaxEncodedText)));
         Assert.False(QueryRules.FitsQueryUrl(new string('a', QueryRules.MaxEncodedText + 1)));
     }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(null, null)]
+    [InlineData("component", CascadeHops.Component)]
+    [InlineData("state,flow,dependency,component", CascadeHops.Default | CascadeHops.Component)]
+    [InlineData(" Flow , state ,flow", CascadeHops.State | CascadeHops.Flow)]
+    public void Hops_from_text_are_absent_or_a_comma_list_in_any_order_case_and_repeat(string? text, CascadeHops? expected) =>
+        Assert.Equal(expected, QueryRules.ParseHops(text).Value);
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("bogus")]
+    [InlineData("state,neighbors")]
+    [InlineData("")]
+    [InlineData("state,,flow")]
+    public void An_unknown_or_empty_hop_is_140(string text) =>
+        Assert.Equal(ContextErrors.HopsInvalid.Code, QueryRules.ParseHops(text).Error.Code);
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_query_with_a_bad_hops_list_is_140_before_any_source_sees_it() =>
+        Assert.Equal(ContextErrors.HopsInvalid.Code, QueryRules.Check(new ContextQuery("x") { Hops = "bogus" }, new()).Error.Code);
 }
