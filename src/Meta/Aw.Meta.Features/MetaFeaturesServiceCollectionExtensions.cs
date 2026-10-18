@@ -11,8 +11,10 @@ using Aw.Meta.Features.Inbox;
 using Aw.Meta.Features.InboxDefer;
 using Aw.Meta.Features.InboxDismiss;
 using Aw.Meta.Features.LaneInbox;
+using Aw.Meta.Features.LaneRecycle;
 using Aw.Meta.Features.LaneReply;
 using Aw.Meta.Features.Lanes;
+using Aw.Meta.Features.LanesContext;
 using Aw.Meta.Features.LaneSend;
 using Aw.Meta.Features.LaneStopCheck;
 using Aw.Meta.Features.LogAppend;
@@ -97,6 +99,13 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddScoped<LaneSendService>()
         .AddScoped<IValidator<LaneSendRequest>, LaneSendValidator>()
         .Validated<LaneSendService, LaneSendRequest, LaneSendResponse>()
+        .AddScoped<LanesContextService>()
+        .Plain<LanesContextService, LanesContextRequest, LanesContextResponse>()
+        .AddScoped<RecycleGuard>()
+        .AddScoped<RecycleRunner>()
+        .AddScoped<LaneRecycleService>()
+        .AddScoped<IValidator<LaneRecycleRequest>, LaneRecycleValidator>()
+        .Validated<LaneRecycleService, LaneRecycleRequest, LaneRecycleResponse>()
         .AddScoped<LaneInboxService>()
         .Plain<LaneInboxService, LaneInboxRequest, LaneInboxResponse>()
         .AddScoped<LaneStopCheckService>()
