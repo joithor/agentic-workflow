@@ -50,6 +50,9 @@ internal sealed class SqliteWorkflowClaims(LedgerDatabase database, TimeProvider
         }, cancellationToken);
     }
 
+    public ValueTask<Result<bool>> Release(ItemKey item, InstanceAddress owner, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("SqliteWorkflowClaims.Release is engine P7 unit U5");
+
     private static SqlStatement ByItem(ItemKey item) => new(ClaimSql.SelectClaim, c => c.Bind("$item", item.Value));
 
     private SqlStatement Insert(WorkflowClaim claim) => new(ClaimSql.InsertClaim, c => Bound(c, claim), $"claim on {claim.Item.Value}");

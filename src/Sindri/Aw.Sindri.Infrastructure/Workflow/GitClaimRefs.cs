@@ -59,6 +59,9 @@ internal sealed class GitClaimRefs : IClaimRefs
             : WorkflowErrors.NoRuntime.With($"git update-ref {reference} failed in {repository}: {created.Error.Trim()} (fix: check the repo, then resume the parked instance to send the claim again)");
     }
 
+    public ValueTask<Result<bool>> Unmark(string repository, string reference, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("GitClaimRefs.Unmark is engine P7 unit U5");
+
     /// <summary>The commit <paramref name="name"/> names, if it names one.</summary>
     private static Task<GitRun> Commit(string repository, string name, CancellationToken cancellationToken) =>
         Git(repository, ["rev-parse", "--verify", "--quiet", name + "^{commit}"], cancellationToken);

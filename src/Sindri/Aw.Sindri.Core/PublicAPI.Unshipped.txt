@@ -8884,10 +8884,8 @@ Aw.Sindri.Core.Profile.RepoWorkflowSettings.Equals(Aw.Sindri.Core.Profile.RepoWo
 Aw.Sindri.Core.Profile.RepoWorkflowSettings.Judge.get -> Aw.Sindri.Core.Profile.JudgeSettings?
 Aw.Sindri.Core.Profile.RepoWorkflowSettings.Judge.init -> void
 Aw.Sindri.Core.Profile.RepoWorkflowSettings.RepoWorkflowSettings(Aw.Sindri.Core.Profile.JudgeSettings? Judge = null) -> void
-Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.JudgeSettings? Judge) -> void
 Aw.Sindri.Core.Profile.WorkflowSettings.Judge.get -> Aw.Sindri.Core.Profile.JudgeSettings?
 Aw.Sindri.Core.Profile.WorkflowSettings.Judge.init -> void
-Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.JudgeSettings? Judge = null) -> void
 const Aw.Sindri.Core.Profile.JudgeProviders.Jev = "jev" -> string!
 const Aw.Sindri.Core.Profile.JudgeProviders.Rules = "rules" -> string!
 override Aw.Sindri.Core.Profile.JudgeSettings.Equals(object? obj) -> bool
@@ -8953,3 +8951,29 @@ static Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers.IsBlockActor(strin
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.BlockFactUnreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.BlockProfileUnreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.BlockRepoUnreadable -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Profile.RouteSettings
+Aw.Sindri.Core.Profile.RouteSettings.<Clone>$() -> Aw.Sindri.Core.Profile.RouteSettings!
+Aw.Sindri.Core.Profile.RouteSettings.Deconstruct(out string? Startable) -> void
+Aw.Sindri.Core.Profile.RouteSettings.Equals(Aw.Sindri.Core.Profile.RouteSettings? other) -> bool
+Aw.Sindri.Core.Profile.RouteSettings.RouteSettings(string? Startable = null) -> void
+Aw.Sindri.Core.Profile.RouteSettings.Startable.get -> string?
+Aw.Sindri.Core.Profile.RouteSettings.Startable.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.JudgeSettings? Judge, out Aw.Sindri.Core.Profile.RouteSettings? Route) -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Route.get -> Aw.Sindri.Core.Profile.RouteSettings?
+Aw.Sindri.Core.Profile.WorkflowSettings.Route.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.JudgeSettings? Judge = null, Aw.Sindri.Core.Profile.RouteSettings? Route = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Effects.IClaimRefs.Unmark(string! repository, string! reference, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+Aw.Sindri.Core.Workflow.Engine.Effects.IWorkflowClaims.Release(Aw.Sindri.Core.Workflow.Engine.ItemKey item, Aw.Sindri.Core.Workflow.Engine.InstanceAddress owner, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+Aw.Sindri.Core.Workflow.Engine.Rules.ChildResults
+Aw.Sindri.Core.Workflow.Validation.PinnedChildRecipes
+Aw.Sindri.Core.Workflow.Validation.PinnedChildRecipes.PinnedChildRecipes(System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.RecipeId, Aw.Sindri.Core.Workflow.Validation.ChildRecipe!>! loaded, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.RecipeId, Aw.Sindri.Core.Workflow.Ids.RecipeHash>! pins) -> void
+Aw.Sindri.Core.Workflow.Validation.PinnedChildRecipes.Resolve(Aw.Sindri.Core.Workflow.Ids.RecipeId id) -> Aw.Sindri.Core.Workflow.Validation.ChildRecipe?
+const Aw.Sindri.Core.Profile.RouteSettings.All = "all" -> string!
+const Aw.Sindri.Core.Profile.RouteSettings.None = "none" -> string!
+override Aw.Sindri.Core.Profile.RouteSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.RouteSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.RouteSettings.ToString() -> string!
+static Aw.Sindri.Core.Profile.RouteSettings.StartableOf(Aw.Sindri.Core.Profile.SindriProfile! profile) -> bool
+static Aw.Sindri.Core.Profile.RouteSettings.operator !=(Aw.Sindri.Core.Profile.RouteSettings? left, Aw.Sindri.Core.Profile.RouteSettings? right) -> bool
+static Aw.Sindri.Core.Profile.RouteSettings.operator ==(Aw.Sindri.Core.Profile.RouteSettings? left, Aw.Sindri.Core.Profile.RouteSettings? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Rules.ChildResults.Outputs(Aw.Sindri.Core.Workflow.Recipes.Recipe! child, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! ended) -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>!
