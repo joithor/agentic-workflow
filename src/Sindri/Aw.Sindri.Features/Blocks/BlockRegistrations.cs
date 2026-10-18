@@ -48,9 +48,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(ReviewSteps.Recheck)
         .AddBlockDescriptor(OwnerSteps.Decide)
         .AddScopingBlocks()
-        .AddStandInBlocks()      // TEMPORARY: drop with the stand-in recipes when engine's build, prove and ship land
-        .AddStandInBlocks()      // TEMPORARY: drop with the stand-in recipes when engine's build, prove and ship land
-        .AddStandInBlocks()      // TEMPORARY: drop with the stand-in recipes when engine's build, prove and ship land
+        .AddLineBlocks()
         .AddBlockDescriptor(EvidenceProviders.Check)
         .AddGate<BudgetAvailableGate>()
         .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
@@ -60,19 +58,20 @@ internal static class BlockRegistrations
         .AddEvent(RecipeEvents.ClaimCreated)
         .AddEvent(RecipeEvents.NotifyDelivered);
 
-    /// <summary>TEMPORARY: registers the stand-in Steps of workflow.build, workflow.prove and workflow.ship until engine's recipes land.</summary>
+    /// <summary>Registers the line's blocks: the per-phase child's, and the TEMPORARY stand-ins that go when engine's build, prove and ship land.</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
-    private static IServiceCollection AddStandInBlocks(this IServiceCollection services) => services
-        .AddBlockDescriptor(StandInBuildSteps.Build);
+    private static IServiceCollection AddLineBlocks(this IServiceCollection services) => services.AddPhaseBlocks().AddStandInBlocks();
 
-    /// <summary>TEMPORARY: registers the stand-in Steps of workflow.build, workflow.prove and workflow.ship until engine's recipes land.</summary>
+    /// <summary>Registers the per-phase child's Steps, the babysitter stub's Step and the line report effect (line spec §7, App. C.6), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
-    private static IServiceCollection AddStandInBlocks(this IServiceCollection services) => services
-        .AddBlockDescriptor(StandInBuildSteps.Build)
-        .AddBlockDescriptor(StandInProveSteps.Prove)
-        .AddBlockDescriptor(StandInProveSteps.ProveLog);
+    private static IServiceCollection AddPhaseBlocks(this IServiceCollection services) => services
+        .AddBlockDescriptor(PhaseSteps.Seed)
+        .AddBlockDescriptor(PhaseSteps.Drift)
+        .AddBlockDescriptor(PhaseSteps.Decide)
+        .AddBlockDescriptor(BabysitSteps.Watch)
+        .AddBlockDescriptor(LineEffects.Report);
 
     /// <summary>TEMPORARY: registers the stand-in Steps of workflow.build, workflow.prove and workflow.ship until engine's recipes land.</summary>
     /// <param name="services">The service collection.</param>
