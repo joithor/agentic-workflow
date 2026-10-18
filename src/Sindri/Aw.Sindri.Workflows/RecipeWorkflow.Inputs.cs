@@ -4,11 +4,11 @@ using System.Text;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
-using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Temporalio.Common;
 using Temporalio.Exceptions;
@@ -153,7 +153,7 @@ internal sealed partial class RecipeWorkflow
     };
 
     /// <summary>Parks the instance for the input whose runtime is gone, mirrors it, and stops the Step from opening.</summary>
-    private async Task<WorkflowInstance> ParkNoRuntime(WorkflowInstance before, OpenRun open, StepUse step, Core.Workflow.Ids.BlockId input)
+    private async Task<WorkflowInstance> ParkNoRuntime(WorkflowInstance before, OpenRun open, StepUse step, BlockId input)
     {
         var parked = Enter(InputParks.Park(before, input, step.Use, "engine:inputs"), "engine:inputs");
         var trigger = new StepFailed("engine:inputs", open.Token, InputParks.Question(input, step.Use), Tokens: 0, ReportSha256: string.Empty);   // why: the row's trigger; the park is not decided through it

@@ -38,7 +38,7 @@ public sealed class StepInputRegistrationTests
         var (name, state) = one.States.First(static s => s.Value.Step is not null);
         var reversed = one with
         {
-            States = new Dictionary<string, Aw.Sindri.Core.Workflow.Recipes.RecipeState>(StringComparer.Ordinal) { ["zeta"] = state, ["alpha"] = state, [name] = state },
+            States = new Dictionary<string, Core.Workflow.Recipes.RecipeState>(StringComparer.Ordinal) { ["zeta"] = state, ["alpha"] = state, [name] = state },
         };
 
         var refused = StepInputRefusals.Check(reversed, new StepInputRuntimes([]));

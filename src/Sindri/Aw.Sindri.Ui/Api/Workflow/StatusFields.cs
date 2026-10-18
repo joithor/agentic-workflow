@@ -10,6 +10,7 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="Timeout">Timeout, as served.</param>
 /// <param name="Budget">Budget, as served.</param>
 /// <param name="Paused">Paused, as served.</param>
+/// <param name="Injection">The injection sections, as served.</param>
 /// <param name="Commands">Commands, as served.</param>
 /// <param name="Text">Text, as served.</param>
 internal sealed record StatusFields(
