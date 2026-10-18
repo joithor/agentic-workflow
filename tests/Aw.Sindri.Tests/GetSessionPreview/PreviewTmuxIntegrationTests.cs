@@ -32,7 +32,7 @@ public sealed class PreviewTmuxIntegrationTests : IDisposable
             "exec sleep 300") + "\n", SessionsRig.Token);
         var pane = server.NewPane($"sh {script}");
         Assert.SkipWhen(pane is null, "tmux refused a new window");
-        var (paneId, panePid) = pane!.Value;
+        var (paneId, panePid) = pane.Value;
         var table = new ProcProcessTable("/proc", OwnUid.Read());
         var cli = new TmuxCli(new FakeTimeProvider(SessionData.T0), "tmux", TimeSpan.FromSeconds(5));
         var service = new GetSessionPreviewService(_r.Snapshot, _r.Base.Callers, new PaneCaptures(cli), table, _r.Base.Clock);

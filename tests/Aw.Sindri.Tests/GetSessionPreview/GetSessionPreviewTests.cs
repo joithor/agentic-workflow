@@ -33,7 +33,7 @@ public sealed class GetSessionPreviewTests
 
     private static GetSessionPreviewRequest Ask(SessionRef? reference = null, DateTimeOffset? expect = null) => new(reference ?? _claude, expect);
 
-    private static SessionPreviewUnavailable Unavailable(Aw.Kernel.Result<GetSessionPreviewResponse> result) => Assert.IsType<SessionPreviewUnavailable>(result.Value);
+    private static SessionPreviewUnavailable Unavailable(Kernel.Result<GetSessionPreviewResponse> result) => Assert.IsType<SessionPreviewUnavailable>(result.Value);
 
     [Fact, Trait("Lane", "unit")]
     public async Task Preview_gives_a_human_the_pane_text_and_the_row_facts()
