@@ -45,6 +45,11 @@ public static class ProfileDiff
             values[key] = value;
         }
 
+        foreach (var (key, value) in SandboxDiff.Keys(p.Sandbox))
+        {
+            values[key] = value;
+        }
+
         return values;
     }
 
