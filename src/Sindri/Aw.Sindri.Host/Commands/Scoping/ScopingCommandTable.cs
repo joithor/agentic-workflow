@@ -94,7 +94,8 @@ internal static class ScopingCommandTable
             return await Fail(output, result.Error).ConfigureAwait(false);
         }
 
-        return parsed.Json ? await output.Json(result.Value, 0).ConfigureAwait(false) : await output.Text(ScopingText.View(result.Value), 0).ConfigureAwait(false);
+        var view = desk.Client.SessionReason is null ? result.Value : ScopingFencing.Fence(result.Value);   // a session's text is fenced
+        return parsed.Json ? await output.Json(view, 0).ConfigureAwait(false) : await output.Text(ScopingText.View(view), 0).ConfigureAwait(false);
     }
 
     /// <summary>Exactly one of an address and --facts.</summary>

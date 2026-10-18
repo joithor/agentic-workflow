@@ -127,6 +127,19 @@ public sealed class ScopingCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task Show_fences_the_untrusted_text_for_a_session()
+    {
+        await Put(ScopingFacts.Expiry());
+        _session = true;   // AW_SINDRI_CHILD makes the caller a session whatever process runs the test
+
+        Assert.Equal(0, await Run("scoping", "show", "--facts", Facts));
+
+        var shown = _out.ToString();
+        Assert.Contains("<untrusted source=\"scoping\">AC-1 [ears] When a member shares a note and picks an expiry time", shown, StringComparison.Ordinal);   // acceptance text
+        Assert.Contains("<untrusted source=\"scoping\">▣ S1 feature:sharing — Public link sharing</untrusted>", shown, StringComparison.Ordinal);   // a map title drawn from a lens
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task Desk_check_writes_the_report_and_appends_rounds_to_the_out_dir()
     {
         await Put(ScopingFacts.Expiry().Without("rounds"));
@@ -202,7 +215,9 @@ public sealed class ScopingCommandTests : IDisposable
         Assert.Contains("(fix: ", _error.ToString(), StringComparison.Ordinal);
     }
 
-    private string? Environment(string name) => name switch { "AW_SINDRI_HOME" => _home.Path, _ => null };
+    private bool _session;
+
+    private string? Environment(string name) => name switch { "AW_SINDRI_HOME" => _home.Path, "AW_SINDRI_CHILD" when _session => "1", _ => null };
 
     private Task<int> Run(params string[] args) => CommandTable.Run(args, Environment, TimeProvider.System);
 }

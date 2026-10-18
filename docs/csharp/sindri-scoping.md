@@ -24,6 +24,7 @@ sindri scoping desk  <block> --facts <dir> --out <dir> [--json]
 Exit 0 pass, 1 findings, 2 usage, tool error or serve not running (`SND-API-001`, serve is never started). `--draft` overlays draft files and,
 like `desk --out`, is refused inside a git worktree (`SND-SCOPING-002`); with an address it must sit under `$AW_SINDRI_HOME/workflow/runs/`.
 `check --json` prints `{ stage, outcome, findings, warnings, rules }`; `findings` holds failures only and is the `fact:findings` body.
+`show` run as a session (an agent) wraps every row's text and lines in the pack fence (`<untrusted source="scoping">…</untrusted>`, text and `--json`); a human gets the view plain.
 
 ## Rules
 
