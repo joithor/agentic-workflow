@@ -73,6 +73,7 @@ internal sealed partial class RecipeWorkflow
             instance = instance switch
             {
                 { Suspension: null, Frame.Run: { Runtime: StepRuntime.Block } block } => await RunBlockStep(instance, block, context).ConfigureAwait(true),
+                { Suspension: null, Frame.Run: { Runtime: StepRuntime.Agent } agent } => await RunAgentStep(instance, agent, context).ConfigureAwait(true),
                 { Suspension: null, Frame.Run: { } open } => await RunDeskStep(instance, open, context).ConfigureAwait(true),
                 _ => await Wait(instance, context).ConfigureAwait(true),
             };

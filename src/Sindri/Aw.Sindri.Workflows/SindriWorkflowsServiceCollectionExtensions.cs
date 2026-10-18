@@ -37,9 +37,8 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<BlockStepDispatch>(static provider => (step, context, ct) => RunBlockScoped(provider, step, context, ct))   // DT-J2: RunBlockStep runs a scoped block Step by id
             .AddSingleton<BlockStepRunner>().AddSingleton<AgentStepSelection>()
             .AddSingleton<EffectActivities>()                          // engine P6: RecordEffect, RecheckEffect, RunEffect
-            .AddSingleton(provider => SindriWorker.Options(settings,
-                provider.GetRequiredService<RunStepActivities>(), provider.GetRequiredService<RecordEventActivities>(),
-                provider.GetRequiredService<FactReadActivities>(), provider.GetRequiredService<EffectActivities>()))
+            .AddAgentRuntime()
+            .AddSingleton(provider => SindriWorker.Options(settings, provider.GetRequiredService<WorkerActivities>()))
             .AddSingleton<TemporalFrontend>()
             .AddSingleton<KnownInstances>()                            // engine P4: the opaque ids this process has seen (spec §6.3)
             .AddSingleton<IItems, SelfItems>()                       // stub until API P3's items
@@ -64,6 +63,12 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddScoped<IScheduledService, EventBridge>()               // engine P4 unit (d): the ledger-to-Temporal bridge
             .AddSingleton(EventBridge.BuiltIn);                        // engine P4 unit (d): runs without a profile entry (S1-D8)
     }
+
+    // Engine P8 U3: LaunchAgentStep, WatchAgentStep, CloseAgentStep and what they use, and the worker's set of activity classes.
+    private static IServiceCollection AddAgentRuntime(this IServiceCollection services) => services
+        .AddSingleton<AgentStepActivities>().AddSingleton<AgentLaunching>().AddSingleton<AgentClosing>()
+        .AddSingleton<AgentTargetResolver>().AddSingleton<AgentLaunchRecorder>().AddSingleton(AgentRuntimeOptions.Default)
+        .AddSingleton<WorkerActivities>();
 
     private static async ValueTask<BlockStepResult> RunBlockScoped(IServiceProvider provider, BlockId step, StepContext context, CancellationToken cancellationToken)
     {
