@@ -17,7 +17,7 @@ public sealed class StatusSessionsTests
     [Fact, Trait("Lane", "unit")]
     public async Task Status_counts_the_live_asking_and_problem_sessions_of_the_last_pass()
     {
-        _snapshot.Publish(new SessionSnapshot(SessionsRig.Three, [], [new SessionProblem("processes", "SND-SESSION-001", "x")], Aw.Sindri.Tests.Sessions.SessionData.T0));
+        _snapshot.Publish(new SessionSnapshot(SessionsRig.Three, [], [new SessionProblem("processes", "SND-SESSION-001", "x")], Sessions.SessionData.T0));
 
         var status = (await Service().Handle(new GetStatusRequest(), TestContext.Current.CancellationToken)).Value;
 

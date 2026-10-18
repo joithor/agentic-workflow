@@ -10,7 +10,7 @@ public sealed class CollectHistoryTests
 
     private readonly CollectorHarness _c = new();
 
-    private static SessionRef Ref => new(Aw.Sindri.Core.Launch.AgentId.From("claude-code"), SessionId.From(Id));
+    private static SessionRef Ref => new(Core.Launch.AgentId.From("claude-code"), SessionId.From(Id));
 
     private async Task PassWith(string status)
     {
