@@ -50,7 +50,6 @@ internal sealed class BacktestWorld : IAsyncDisposable
 
     private BacktestWorld(FixtureRepo repo, (FakeOnyxServer Onyx, OnyxSourceHarness Harness) onyx, FakeTimeProvider clock, (Func<IRepoReader, IRepoReader>? Wrap, string? HomeUnder) options)
     {
-        var wrap = options.Wrap;
         _home = Directory.CreateDirectory(Path.Combine(options.HomeUnder ?? Path.GetTempPath(), "aw-backtest-home-" + Path.GetRandomFileName())).FullName;
         Repo = repo;
         (Onyx, Harness) = onyx;
@@ -73,7 +72,7 @@ internal sealed class BacktestWorld : IAsyncDisposable
             .AddSingleton<IIdGenerator>(new SequentialIdGenerator())
             .AddSingleton<IProbeFileReader>(new NoProbes())
             .AddSingleton<IProbeReportStore>(new NoProbes())
-            .AddSingleton(wrap?.Invoke(new GitRepoReader(git)) ?? new GitRepoReader(git))
+            .AddSingleton(options.Wrap?.Invoke(new GitRepoReader(git)) ?? new GitRepoReader(git))
             .AddSingleton<Context.Core.Code.ICodeSearch>(new Testing.Code.FakeCodeSearch(new ContextRepo(ContextRepoName.From("none"), "/none"), "0000000", new Dictionary<string, string>(StringComparer.Ordinal)))   // the backtest never asks the code lens
             .AddSingleton<IIntentStore>(Intents)
             .AddSingleton<IModelPort>(Model)
