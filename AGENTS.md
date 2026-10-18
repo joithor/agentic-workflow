@@ -51,7 +51,7 @@ Domain-specific rules live in `.agents/rules/` — one file per rule, the only c
 agentic-workflow/
 ├── skills/        # 52 provider-neutral skills (linked into each provider's skills dir)
 ├── bootstrap/     # /bootstrap skill — repo documentation generator
-├── config/        # Settings, MCP config, statusline, safety hooks, sindri-nudge SessionStart hook, meta Stop/outbox hooks, non-Claude lane hooks (meta-lane-gate, session-id-report) (+ hooks/adapters/ per provider)
+├── config/        # Settings, MCP config, statusline, safety hooks, sindri-nudge SessionStart hook, meta Stop/outbox hooks, non-Claude lane hooks (meta-lane-gate, session-id-report), the opt-in aw:fleet session-state hook (fleet-state, `--with-fleet`) (+ hooks/adapters/ per provider)
 ├── providers/     # Per-provider installers (claude, codex, cursor)
 ├── scorer/        # Daily cost/involvement report from provider session transcripts
 ├── judge/         # Cheap-agent-harness judge CLI (decisions, config, health)
@@ -126,6 +126,7 @@ bash src/Sindri/Aw.Sindri.Ui.AotSmoke/run.sh [<dir>]   # sindri-ui under NativeA
 
 dotnet run --project src/Meta/Aw.Meta.Host -- <command> [--json]   # aw-meta, the /meta harness CLI (docs/csharp/meta.md): obligations (inbox-sync, stop-check, outbox-record, inbox-*), lanes-*, gate-run, gate-rerun, merge-check, merge-run, owner-*, health, watch, log-append, status, version, team-*, role-*; exit 0 ok, 1 attention, 2 usage or tool error
 bash src/Meta/aot-smoke/run.sh           # aw-meta under NativeAOT: publish (on a copy), drive the obligation flow in a temp state dir, compare with expected.txt
+scripts/install-fleet.sh [--provider claude] [--uninstall]   # The aw:fleet hook (Sindri session collector, CO-1): one state file per session under $AW_FLEET_DIR (or ./setup.sh --with-fleet); off: AW_FLEET_DISABLE=1 per session or --uninstall
 scripts/install-meta.sh                  # Publish aw-meta (NativeAOT, stamped with the commit and build time) to $AW_STATE_DIR/bin, install its hooks, link aw-meta and aw-meta-launch, print the installed version (or ./setup.sh --with-meta; Linux and macOS, other OSes fail loudly; aw-meta-launch warns when the binary is older than the Meta sources)
 scripts/meta-launch.sh [--lanes a,b] [--no-open] [--dry-run]   # The team in one Warp window: a pane per lane on tmux session <team>-<lane>, resumed by id (team config: aw-meta team-init)
 # Rules (edit .agents/rules/, then regenerate)
@@ -207,6 +208,8 @@ bash config/hooks/tests/provider-install-hooks.test.sh
 bash config/hooks/tests/probe-log.test.sh
 bash config/hooks/tests/judge-health.test.sh
 bash config/hooks/tests/sindri-nudge.test.sh
+bash config/hooks/tests/fleet-state.test.sh   # the aw:fleet hook: every Claude event's state file against the schema, PostToolUse before jq, refusals, modes, under 100 ms (real payloads in tests/fixtures/fleet-input/)
+bash scripts/tests/install-fleet.test.sh      # install-fleet.sh install and --uninstall (only # aw:fleet entries), setup.sh --with-fleet --dry-run
 bash config/hooks/tests/failopen.test.sh
 bash config/hooks/tests/meta-hooks.test.sh
 for t in config/lib/tests/*.test.sh; do bash "$t" || echo "FAILED: $t"; done  # merge-hook, levers, installers, and judge-cs-hook-surface (the hook contract: real hooks vs the C# judge, and the TS judge when judge/dist is built; needs dotnet)
