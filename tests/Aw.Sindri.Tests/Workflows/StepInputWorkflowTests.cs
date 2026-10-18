@@ -129,7 +129,7 @@ public sealed class StepInputWorkflowTests(SindriTimeSkippingServer server) : IC
     }
 
     [Fact]
-    public async Task Texts_are_kept_while_the_Step_is_open_and_dropped_when_it_ends()
+    public async Task Texts_are_kept_while_the_Step_is_open_and_dropped_when_the_Step_is_reported()
     {
         await Run("T-76", [ProbeInput.Id], async run =>
         {
@@ -138,7 +138,8 @@ public sealed class StepInputWorkflowTests(SindriTimeSkippingServer server) : IC
             var key = new InjectionKey(run.Handle.Id, "checks", task.Run!.Value.Value, BlockId.From(ProbeInput.Id));
 
             Assert.Equal(InputProbe.Planted, texts.Get(key)!.Sections["notes"]);
-            _ = await run.Desk.Complete("--run", task.Run.Value.Value, "--outcome", "passed");
+            var report = new StepCompleted("human:cli", task.Run!.Value, OutcomeName.From("passed"), new Dictionary<FactKey, FactValue>(), Tokens: 0, StepRuntime.Desk, new string('f', 64));
+            _ = await run.Handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(new string('a', 32)));
             _ = await run.Handle.GetResultAsync();
 
             Assert.Null(texts.Get(key));
