@@ -80,8 +80,9 @@ internal sealed partial class RecipeWorkflow
             throw;
         }
 
+        await CancelChildren(instance).ConfigureAwait(true);   // engine P7: a child still live when this ends is cancelled, so it frees its own claim
         await Cleanup().ConfigureAwait(true);   // engine P7: the item's claim goes with the instance, whatever the ending
-        return new RecipeResult(instance.State, instance.Outcome?.Value);
+        return new RecipeResult(instance.State, instance.Outcome?.Value, OutputsOf(instance));
     }
 
     /// <summary>
@@ -99,17 +100,19 @@ internal sealed partial class RecipeWorkflow
         var loaded = await Workflow.ExecuteLocalActivityAsync(
             (RunStepActivities a) => a.LoadRecipeAsync(start.Recipe),
             new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(30) }).ConfigureAwait(true);
+        var pins = await LoadChildPins(loaded).ConfigureAwait(true);   // engine P7: the children the approval pinned
         var catalog = new BlockCatalog(loaded.Blocks, []);
         _recipe = new InterpretedRecipe(loaded.Version, loaded.Recipe, catalog, start.Inputs);
         _deskTimeout = loaded.DeskTimeout;
         _eventHold = loaded.EventHold;
         _dispatchDelay = loaded.DispatchDelay;
         var blocks = blockRuntime ? loaded.BlockRuntimes ?? [] : [];
-        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, new HashSet<BlockId>(), NoChildRecipes.Instance) { DeskTimeout = loaded.DeskTimeout, BlockRuntimes = blocks.ToHashSet() };
+        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, new HashSet<BlockId>(), pins.Resolver()) { DeskTimeout = loaded.DeskTimeout, BlockRuntimes = blocks.ToHashSet() };
         _context = new Interpreting(loaded.Recipe, decisions);
         (_repo, _repoUnreadable) = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : (null, false);
         (_subject, _contents) = await NamedSubject(_recipe, start).ConfigureAwait(true);
-        var change = Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions));
+        var decided = TransitionDecision.Start(StartOf(start, loaded, pins), loaded.Recipe, decisions);
+        var change = Started(decided);
         var instance = Enter(change.After, Desk);
         foreach (var key in start.Inputs.Where(static i => i.Value.Generated).Select(static i => i.Key))
         {
@@ -118,6 +121,7 @@ internal sealed partial class RecipeWorkflow
 
         await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null, Detail: Named(WorkflowEventDetail.Of(change.Event, trigger: null), start), Causation: start.OpenLaunch), NeedsYou(instance)).ConfigureAwait(true);
         Emit(before: null, instance, []);
+        Spawn(decided);
         return (instance, _context);
     }
 
@@ -128,7 +132,7 @@ internal sealed partial class RecipeWorkflow
     {
         var start = _start ?? throw new InvalidOperationException("the instance has no input yet");
         return (_instance, _recipe) is ({ } instance, { } recipe)
-            ? InstanceViews.Of(instance, recipe, _since, _timers.FiresAt(), new InstanceViewContext(_mirrored, _provenance, Subject: _subject, Contents: _contents)) with { Id = instance.Id }
+            ? InstanceViews.Of(instance, recipe, _since, _timers.FiresAt(), ViewContext()) with { Id = instance.Id }
             : InstanceViews.Starting(start.WorkflowId(), start.Recipe, _since, start.Item, _subject);
     }
 
@@ -257,7 +261,7 @@ internal sealed partial class RecipeWorkflow
     /// <summary>The workflow's deterministic clock, as an offset in UTC.</summary>
     private static DateTimeOffset Now => new(Workflow.UtcNow, TimeSpan.Zero);
 
-    private static StartRequest StartOf(InstanceStart start, LoadedRecipe loaded)
+    private static StartRequest StartOf(InstanceStart start, LoadedRecipe loaded, ChildPins pins)
     {
         var address = start.WorkflowId();
         var id = WorkflowInstanceId.Of(address);
@@ -265,10 +269,10 @@ internal sealed partial class RecipeWorkflow
             TriggerKey.For(id, "start"),
             id,
             address,
-            new PinnedRecipe(loaded.Version.Id, loaded.Version.Version, loaded.Version.Hash, new Dictionary<RecipeId, RecipeHash>()),
+            new PinnedRecipe(loaded.Version.Id, loaded.Version.Version, loaded.Version.Hash, pins.Of(loaded.Recipe)),
             start.Item,
             start.Attempt,
-            Parent: null,
+            Parent: start.ParentId,
             start.Inputs.ToDictionary(static i => i.Key, static i => i.Value.Value),
             Desk,
             TakenOver: start.OpenLaunch is not null,

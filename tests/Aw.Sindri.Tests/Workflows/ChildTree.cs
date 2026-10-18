@@ -42,7 +42,7 @@ internal sealed record ChildTree(IServiceProvider Sindri, Temporalio.Testing.Wor
         instance.SignalAsync(wf => wf.EventAsync(new WaitSatisfied("service:workflow.events", new EventWaitSource(EventKind.From("t.go"), 1), Outcome: null, new Dictionary<FactKey, FactValue>())));
 
     /// <summary>Lets an hour pass and a bit: a child that waits for 't.go' reaches its timeout.</summary>
-    public Task PastTheHour() => Environment.DelayAsync(TimeSpan.FromMinutes(65), TestContext.Current.CancellationToken);
+    public Task PastTheHour() => WorkflowsHarness.Skip(Environment, TimeSpan.FromMinutes(65), TestContext.Current.CancellationToken);
 
     /// <summary>The 'answer --resume' a human gives <paramref name="instance"/>.</summary>
     public static Task<CommandResult> Resume(WorkflowHandle<RecipeWorkflow, RecipeResult> instance) =>

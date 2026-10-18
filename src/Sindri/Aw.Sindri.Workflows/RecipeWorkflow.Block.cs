@@ -50,6 +50,7 @@ internal sealed partial class RecipeWorkflow
         instance = Enter(instance, trigger.Actor);
         await Mirror(DeskRow(decided, instance, trigger, open, decision), NeedsYou(instance)).ConfigureAwait(true);
         Emit(decided, instance, EffectsOf(decision));
+        Spawn(decision);
         return instance;
     }
 

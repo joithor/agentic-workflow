@@ -13,7 +13,7 @@ namespace Aw.Sindri.Tests.Workflows;
 /// cancel reaches its live children; a looped wait starts a new child per entry; a grandchild starts under its child; every history replays clean.
 /// </summary>
 [Lane(TestLane.Integration)]
-public sealed class ChildWorkflowTests(SindriTimeSkippingServer server) : IClassFixture<SindriTimeSkippingServer>, IDisposable
+public sealed class ChildWorkflowTests : IDisposable
 {
     private readonly WorkflowsHarness _harness = new();
 
@@ -168,20 +168,21 @@ public sealed class ChildWorkflowTests(SindriTimeSkippingServer server) : IClass
     [Fact(Timeout = 180_000)]
     public async Task The_parents_status_names_its_children_and_answer_child()
     {
-        await Run([ChildRecipes.Child(), ChildRecipes.Parent()], async tree =>
+        await Run([ChildRecipes.Child("escalate"), ChildRecipes.Parent()], async tree =>
         {
             var parent = await tree.Start("workflow.t-parent", "T-79");
             var (running, address) = await ChildTree.OneChild(parent);
             _ = await WorkflowsHarness.Until(tree.At(address), static v => v.State == "waiting");
             await tree.PastTheHour();
-            var mirrored = await WorkflowsHarness.Until(parent, static v => v.State == "parked");
+            var escalated = await WorkflowsHarness.Until(parent, static v => v.State == "escalated");
 
             Assert.Equal(address, Assert.Single(running.Children).Address.Value);
-            Assert.Contains($"forwarded to {address}", mirrored.Next, StringComparison.Ordinal);   // 'answer.child' reads the child's address, not "the child"
+            Assert.Equal(("child", address), (escalated.AnswerLine?.Via, escalated.AnswerLine?.Child));   // 'answer.child' reads the child's address, not "the child"
             await parent.TerminateAsync("test over").WaitAsync(TestContext.Current.CancellationToken);
         });
     }
 
+    /// <summary>Runs <paramref name="body"/> against the approved <paramref name="recipes"/> on a time-skipping server of its own: a test that skips time must not move the clock under another.</summary>
     private async Task Run(string[] recipes, Func<ChildTree, Task> body)
     {
         var ct = TestContext.Current.CancellationToken;
@@ -190,6 +191,8 @@ public sealed class ChildWorkflowTests(SindriTimeSkippingServer server) : IClass
             _ = _harness.Approve(yaml);
         }
 
+        await using var server = new SindriTimeSkippingServer();
+        await server.InitializeAsync();
         await using var sindri = _harness.Sindri();
         await WorkflowsHarness.HoldLease(sindri, ct);
         using var worker = new TemporalWorker(server.Environment.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
