@@ -9194,3 +9194,19 @@ static Aw.Sindri.Core.Sessions.TmuxServerView.operator !=(Aw.Sindri.Core.Session
 static Aw.Sindri.Core.Sessions.TmuxServerView.operator ==(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
 Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.JudgeSettings? Judge, out Aw.Sindri.Core.Profile.ForgeSettings? Forge, out Aw.Sindri.Core.Profile.RouteSettings? Route) -> void
 Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.JudgeSettings? Judge = null, Aw.Sindri.Core.Profile.ForgeSettings? Forge = null, Aw.Sindri.Core.Profile.RouteSettings? Route = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Rules.MatchedTransition
+Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem
+Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem!
+Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem.Deconstruct(out string! Outcome, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Facts) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem.Facts.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Engine.FactValue!>!
+Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem.Facts.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem.Outcome.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem.Outcome.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem.RoutedItem(string! Outcome, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Facts) -> void
+override Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Engine.Rules.MatchedTransition.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger! trigger) -> Aw.Sindri.Core.Workflow.Recipes.RecipeTransition?
+static Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem? left, Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem? left, Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem? right) -> bool
