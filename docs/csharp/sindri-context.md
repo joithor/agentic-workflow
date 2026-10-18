@@ -729,3 +729,7 @@ A suggested `implements` never counts. A code unit implementing more than `conte
 the caller's visible graph) is not walked: when that withheld a node, the answer carries a top-level `skippedComponents: [{unit, features}]`
 (ordinal by unit, omitted when empty) on `lenses`, `lenses` sets and `query`. `searched.hops` echoes the hops that ran in cascade order
 (`state`, `dependency`, `flow`, `component`), whatever order the request listed them. The same hop runs under `diff=`.
+
+## S-LB2: the context Step inputs
+
+`input.context.lenses`, `input.context.history` and `input.context.code` are the scoping recipe's gather inputs (scoping spec C1, C3, C5). Each calls its facade in process (`IContextLenses.LensesOf`, `IContextHistory.History`, `IContextCode.Code`) as `service:engine` with a `ContextScope` cut to the instance's repo (`ContextInputScopes`: the profile's repos filtered to the one repo of the instance's item; a missing repo or a repo outside the profile is `SND-CONTEXT-045`, a missing profile `SND-PROFILE-005`). The answer reaches the Step as a text section and as the typed view; a refusal becomes a section that says so. Details and the section names: `docs/csharp/sindri-workflow.md` "The context inputs (S-LB2)". The plain-text renderers (`ContextLensText`, `ContextHistoryText`, `ContextCodeText`) live in `Features/ContextCalls` and are shared by the CLI verbs (the host sees them through `InternalsVisibleTo`).

@@ -891,6 +891,20 @@ Before a desk Step opens, each input in its `step.inputs` list runs as a `FillIn
 - **An input whose runtime is gone after approval parks the instance** with the existing `ParkReason.NoRuntime` (shown as `SND-WF-010`); the question reads `input <id> of <step> has no runtime in this build (SND-WF-016; fix: install the block pack or rebuild, then restart)`. A restart runs Fill again and parks again the same way while the runtime is missing; nothing fails and nothing loops.
 - **An in-process Step** gets `StepContext.Injection` (the sections) and `StepContext.InputResults` (the typed results by input id; read-only, empty when it has none) from `StepContexts`. On a cache miss the input runs again and its digests must equal the recorded ones; otherwise `SND-WF-018` and the Step does not run on different data.
 
+### The context inputs (S-LB2)
+
+The scoping recipe's `gather` Step names three real inputs, so `sindri recipe approve` of `workflow.scoping` passes the `SND-WF-016` check only when this build has a runtime for each. All of them live in `Features/ContextCalls` (they share `ContextScopes` and `SyncGaps`) and are registered by `AddSindriFeatures`.
+
+| Input | Section | Typed result (`StepContext.InputResults`) | Reads |
+|---|---|---|---|
+| `input.context.lenses {anchors, depth?, hops?}` | `lenses` | `LensesSetView` (schema 2) | `IContextLenses.LensesOf` on the current map |
+| `input.context.history {anchors, window?}` | `history` | `HistoryView`, with its not-synced rows marked by the running `SyncSources` job | `IContextHistory.History`; `window` is `{since?, before?}` (RFC 3339 or a date) or a bare string meaning `since` |
+| `input.context.code {anchors}` | `code` | `CodeView` | `IContextCode.Code` on the current map |
+
+- **`service:engine`, the instance's repo.** Each call runs as the engine's service caller with a scope cut to the one repo of the instance's item (`StepInputContext.Repo`, from the ledger), never from a caller (`ContextInputScopes`).
+- **Honest sections.** An empty anchor list, a bad window, an item with no repo, a repo outside the approved profile, no approved profile, and any refusal from the engine (`SND-CONTEXT-*`) become one section ("The context lenses are unavailable for this Step (code: message); it runs without them.") with no typed result. They never throw; a degraded source stays visible in the view's `searched` rows.
+- **Text.** The section is the same plain text the `sindri context lenses|history|code` verbs print, with untrusted labels fenced; the typed result is the view in the route's JSON shape. The runner scrubs and caps both (256 KiB per section).
+
 ## Effects as activities (engine P6)
 
 Engine spec rev 8.1 §5.7. A transition's effects run after the transition's ledger event, each on its own path in
