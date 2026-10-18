@@ -164,6 +164,9 @@ public static class SindriErrors
     /// <summary>SND-SESSION-404: no live session has that ref, or it is outside a session caller's repo (collector spec CA-5).</summary>
     public static readonly ErrorDefinition SessionNotFound = new("SND-SESSION-404", ErrorKind.NotFound, "No such live session");
 
+    /// <summary>SND-SESSION-409: the session at that ref is a different process than the caller looked at (collector spec CA-4, CA-5, CA-9).</summary>
+    public static readonly ErrorDefinition SessionConflict = new("SND-SESSION-409", ErrorKind.Conflict, "The session at that ref is a different process");
+
     /// <summary>Every Sindri error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
@@ -171,6 +174,6 @@ public static class SindriErrors
         ProfileNotApproved, ApprovalsUnavailable, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, PortInUse, ApiNoCode, ApiInternal,
         CallerUnknown, OriginRefused, CommandBusy, AuthTokenRequired, AuthRefused, UnknownVerb, StartFailed,
         InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, JobNotFound, JobConflict, JobInterrupted, JobsRateLimited, ServiceNotFound, OnyxDockerUnavailable, OnyxComposeMissing, OnyxNotEnoughResources, OnyxPinsMalformed, OnyxPortTaken, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
-        LauncherInvalid, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride, SessionNotFound,
+        LauncherInvalid, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride, SessionNotFound, SessionConflict,
     ];
 }
