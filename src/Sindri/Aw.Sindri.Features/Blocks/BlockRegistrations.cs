@@ -48,7 +48,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(ReviewSteps.Recheck)
         .AddBlockDescriptor(OwnerSteps.Decide)
         .AddScopingBlocks()
-        .AddLineStationBlocks()
+        .AddShipDocsBlocks()
         .AddBlockDescriptor(EvidenceProviders.Check)
         .AddGate<BudgetAvailableGate>()
         .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
@@ -92,7 +92,7 @@ internal static class BlockRegistrations
     /// <summary>Registers the line stations' Steps (ship, docs sync), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
-    private static IServiceCollection AddLineStationBlocks(this IServiceCollection services) => services.AddShipBlocks().AddDocsBlocks();
+    private static IServiceCollection AddShipDocsBlocks(this IServiceCollection services) => services.AddShipBlocks().AddDocsBlocks();
 
     private static IServiceCollection AddShipBlocks(this IServiceCollection services) => services
         .AddBlockDescriptor(ShipSteps.Green)
