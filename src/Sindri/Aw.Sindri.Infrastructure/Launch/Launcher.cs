@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launch.Argv;
 using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Core.Workflow.Engine;
+using HostKind = Aw.Sindri.Core.Launch.HostKind;
 
 namespace Aw.Sindri.Infrastructure.Launch;
 
