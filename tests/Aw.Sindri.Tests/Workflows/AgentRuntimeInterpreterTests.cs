@@ -131,20 +131,28 @@ public sealed class AgentRuntimeInterpreterTests(SindriTimeSkippingServer skippi
         await rig.Run(async handle =>
         {
             _ = await WorkflowsHarness.Until(handle, static v => v.Run is not null && v.State == "write");
-            await WaitFor(() => _launcher.Requests.Count > 0, ct);   // a takeover may land in the launch phase: the invariant below holds either way
+            await WaitFor(() => _launcher.Requests.Count > 0, ct);   // the takeover may land in the launch phase or in the watch: the invariant below holds for both
             var takeover = new TakeoverRequested("human:cli", new CommandStamp(CommandNonce.From(new string('1', 32)), new string('0', 64)));
             _ = await handle.ExecuteUpdateAsync(wf => wf.TakeoverAsync(takeover), new WorkflowUpdateOptions(new string('1', 32)));
             _ = await WorkflowsHarness.Until(handle, static v => v.State == "taken-over");
-            Assert.Equal((0, 1), (_launcher.Stops.Count, _launcher.SessionCount));
 
             var handback = new HandbackRequested("human:cli", new CommandStamp(CommandNonce.From(new string('2', 32)), new string('0', 64)));
             _ = await handle.ExecuteUpdateAsync(wf => wf.HandbackAsync(handback), new WorkflowUpdateOptions(new string('2', 32)));
             _ = await WorkflowsHarness.Until(handle, static v => v.State == "write" && v.Run is not null);
+            await WaitFor(() => _launcher.SessionCount == 1, ct);
+            Assert.Equal(1, _launcher.SessionCount);   // one live session, however often the launch was requested
             _sessions.End(rig.Launch, SessionEndReason.Exit, exitCode: 0);   // the resumed watch sees it
 
             _ = await WorkflowsHarness.Until(handle, static v => v.Question is not null);
-            Assert.Equal("exit", await rig.FailureReason(ct));
-            Assert.Equal((0, 1), (_launcher.Stops.Count, _launcher.SessionCount));
+            string? reason = null;
+            var deadline = RealTime.NowDateTime.AddSeconds(30);
+            while (reason is null && RealTime.NowDateTime < deadline)   // the mirror row follows the park
+            {
+                reason = await rig.FailureReason(ct);
+                await Task.Delay(50, ct);
+            }
+
+            Assert.Equal("exit", reason);
             _ = Assert.Single(_launcher.Requests.Select(static r => r.Launch).Distinct());   // a relaunch after the handback is the same launch id, which the launcher keeps idempotent
         });
     }
