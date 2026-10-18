@@ -1,0 +1,59 @@
+{
+  "recipes": [
+    {
+      "id": "workflow.step",
+      "version": 2,
+      "hash": "sha256:1c1173a162a77736c33620e985d6d75473cf3755963adc5c46eb9049434f5276",
+      "standing": "approved",
+      "via": "desk",
+      "stale": [],
+      "inputs": [
+        {
+          "key": "fact:spec",
+          "label": "Spec",
+          "type": "text",
+          "kind": "text",
+          "generate": null
+        }
+      ],
+      "urgency": "work",
+      "outputs": [],
+      "orderedBy": "path",
+      "states": [
+        {
+          "id": "produce",
+          "order": 1,
+          "branchOf": null
+        },
+        {
+          "id": "checks",
+          "order": 2,
+          "branchOf": null
+        },
+        {
+          "id": "verify",
+          "order": 3,
+          "branchOf": null
+        },
+        {
+          "id": "done",
+          "order": 4,
+          "branchOf": null
+        }
+      ],
+      "loops": [
+        {
+          "name": "revisions",
+          "from": "verify",
+          "to": "produce"
+        },
+        {
+          "name": "revisions",
+          "from": "checks",
+          "to": "produce"
+        }
+      ],
+      "name": null
+    }
+  ]
+}
