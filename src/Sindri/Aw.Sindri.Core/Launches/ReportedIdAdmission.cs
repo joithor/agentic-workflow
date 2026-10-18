@@ -54,9 +54,9 @@ public sealed class ReportedIdAdmission(ILaunchViews views, IAgentCatalog catalo
             var (input, output) = ModelTokens.Totals(tokens);
             return (input, output);
         }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        catch (Exception e) when (e is not OperationCanceledException)
         {
-            return (null, null);   // a transcript the reader can't read ends the session without a total; the end itself still counts
+            return (null, null);   // a transcript the reader can't read (or surprises it) ends the session without a total; the end itself still counts
         }
     }
 }
