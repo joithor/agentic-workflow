@@ -27,7 +27,7 @@ internal static class ContextApiScenarios
 
     private const string ThreeKeys = "nodes=feature%3Atabs.tab-manager&nodes=feature%3Atabs.tab-groups&nodes=feature%3Anope.x";
 
-    /// <summary>The POST body for the same three keys as the GET's query.</summary>
+    /// <summary>The POST body: a mixed set of four keys (a surface, a code file, a decision, one absent), not the GET's three feature keys.</summary>
     internal const string SubgraphBody = """{"nodes":["surface:command/switch-tab","code:src/tabs/TabManager.ts","decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b","feature:nope.x"]}""";   // a real mixed set: a surface, a code file, a decision, one absent key
 
     private static string Subgraph(string query) => "/sindri/context/subgraph?" + query;

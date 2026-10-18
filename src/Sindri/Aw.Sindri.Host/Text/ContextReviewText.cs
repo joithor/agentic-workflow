@@ -106,7 +106,7 @@ internal static class ContextReviewText
             return "No draft map: nothing to withdraw\n";
         }
 
-        var lead = result.Withdrawn > 0 || result.Kept > 0 ? Invariant($"Withdrew {result.Withdrawn} undecided proposals ({result.Kept} accepted stay) in draft") : "Proposed into draft";
+        var lead = result.Withdrawn > 0 || result.Kept > 0 ? Invariant($"Withdrew {result.Withdrawn} undecided proposals ({result.Kept} a person decided stay) in draft") : "Proposed into draft";
         return Invariant($"{lead} v{draft.Number}: {result.Added} added, {result.Existing} already mapped, {result.Rejected} rejected earlier{recorded}\n");
     }
 

@@ -9,7 +9,7 @@ public interface IScopeProposals
 {
     /// <summary>
     /// Writes a scoping run's surfaces as 'propose' rows in the latest draft (opening one as a copy of current when there is none); never changes current.
-    /// An empty surface list withdraws the run's undecided proposals instead: one 'undo' row each, accepted ones stay, and no draft is opened.
+    /// An empty surface list withdraws the run's undecided proposals instead: one 'undo' row each, ones a person accepted, merged, renamed or moved stay, and no draft is opened.
     /// </summary>
     /// <param name="proposal">The run's surfaces.</param>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>

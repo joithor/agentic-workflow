@@ -431,6 +431,27 @@ public sealed class ContextLensesApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Each_withdraw_event_counts_its_own_withdrawal_across_withdraw_repropose_withdraw()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await ContextHosts.Approved(_repo, sessions: true, ct,
+            s => { _ = s.RemoveAll<IClusterSource>(); _ = s.AddSingleton<IClusterSource>(new FakeClusterSource()); }, name: FixtureMap.Repo);
+        await ContextMapApiTests.Import(host);
+        var body = $$"""{"run":"scope-6","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"Zoom","kind":"feature"},{"name":"Swap","kind":"feature"}]}""";
+        var empty = $$"""{"run":"scope-6","repo":"{{FixtureMap.Repo}}","surfaces":[]}""";
+
+        _ = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+        var first = await host.Http.Ask(Post("/sindri/context/map/proposals", empty, App(host)));
+        _ = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+        var second = await host.Http.Ask(Post("/sindri/context/map/proposals", empty, App(host)));
+
+        var events = (await host.App.Services.GetRequiredService<ILedgerStore>().ReadAfter(0, 500, ct)).Value.Where(e => e.Envelope.Type == EventTypes.ContextMapProposed)
+            .Select(e => Json(e.Envelope.Payload)).Where(p => p.TryGetProperty("withdrawn", out _)).Select(p => p.GetProperty("withdrawn").GetInt32()).ToList();
+        Assert.Equal((2, 2), (Json(first.Body).GetProperty("result").GetProperty("withdrawn").GetInt32(), Json(second.Body).GetProperty("result").GetProperty("withdrawn").GetInt32()));
+        Assert.Equal([2, 2], events);   // each event says what its own call withdrew, not the run's running total
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
     public async Task A_draft_opened_from_a_map_imported_without_a_commit_promotes_instead_of_failing()
     {
         var ct = TestContext.Current.CancellationToken;

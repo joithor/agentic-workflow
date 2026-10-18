@@ -103,6 +103,93 @@ public sealed class WithdrawTests : IDisposable
         Assert.Equal(first.WithdrawnRows.Select(i => i.Value), again.WithdrawnRows!.Select(i => i.Value), StringComparer.Ordinal);   // but the rows the first call wrote are named again
     }
 
+    private static readonly ContextRepoName _other = ContextRepoName.From("other");
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_withdraw_in_another_repo_with_the_same_run_id_leaves_the_first_repos_run_untouched()
+    {
+        _ = await _world.ImportFixture();
+        _ = await Propose(Run());
+        var before = await Overrides();
+        var runBefore = (await _world.Store.Run("run-1", TestContext.Current.CancellationToken)).Value!;
+
+        var withdrawn = await Propose(new ScopeProposal("run-1", _other, []));
+
+        Assert.Equal((0, 0), (withdrawn.Withdrawn, withdrawn.Kept));
+        Assert.Empty(withdrawn.WithdrawnRows ?? []);
+        Assert.Equal(before.Count, (await Overrides()).Count);   // no undo row for the first repo's proposals
+        var runAfter = (await _world.Store.Run("run-1", TestContext.Current.CancellationToken)).Value!;
+        Assert.Equal((runBefore.Repo, runBefore.Surfaces.Count), (runAfter.Repo, runAfter.Surfaces.Count));   // and its run record still belongs to it
+        var own = await Propose(Empty());
+        Assert.Equal(2, own.Withdrawn);   // the first repo can still withdraw its own run
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_planner_withdraws_only_the_named_repos_rows_of_a_run()
+    {
+        var at = DateTimeOffset.UnixEpoch;
+        var mine = new MapOverride(OverrideAction.Propose, _zoom, "service:engine", at, "Zoom", Proposal: new ProposalPayload("run-1", _repo, NodeKind.Feature));
+        var theirs = new MapOverride(OverrideAction.Propose, _restore, "service:engine", at, "Restore", Proposal: new ProposalPayload("run-1", _other, NodeKind.Feature));
+
+        var (rows, kept) = ProposalPlanner.Withdraw("run-1", _repo, [mine, theirs], "service:engine", at.AddMinutes(1));
+
+        Assert.Equal([_zoom.Value], rows.Select(r => r.Target.Value), StringComparer.Ordinal);
+        Assert.Equal(0, kept);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_merged_proposal_is_kept_and_the_latest_of_rename_then_reject_closes_it()
+    {
+        var at = DateTimeOffset.UnixEpoch;
+        MapOverride Proposed(NodeKey key) => new(OverrideAction.Propose, key, "service:engine", at, key.Value, Proposal: new ProposalPayload("run-1", _repo, NodeKind.Feature));
+        var merged = new MapOverride(OverrideAction.Merge, _restore, "thor", at.AddMinutes(1), Other: _zoom);
+        var renamed = new MapOverride(OverrideAction.Rename, _zoom, "thor", at.AddMinutes(1), "Zoom in");
+        var rejected = new MapOverride(OverrideAction.Reject, _zoom, "thor", at.AddMinutes(2));
+
+        var (mergeRows, mergeKept) = ProposalPlanner.Withdraw("run-1", _repo, [Proposed(_restore), merged], "service:engine", at.AddMinutes(3));
+        var (closedRows, closedKept) = ProposalPlanner.Withdraw("run-1", _repo, [Proposed(_zoom), renamed, rejected], "service:engine", at.AddMinutes(3));
+
+        Assert.Equal((0, 1), (mergeRows.Count, mergeKept));
+        Assert.Equal((0, 0), (closedRows.Count, closedKept));   // a reject closes it whatever came first: no undo row, not counted as kept
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_withdraw_event_covers_this_calls_rows_only_across_withdraw_repropose_withdraw()
+    {
+        _ = await _world.ImportFixture();
+        _ = await Propose(Run());
+        var first = await Propose(Empty());
+        _world.Clock.Advance(TimeSpan.FromMinutes(1));
+        _ = await Propose(Run());
+        _world.Clock.Advance(TimeSpan.FromMinutes(1));
+
+        var second = await Propose(Empty());
+        var repeat = await Propose(Empty());
+
+        Assert.Equal((2, 2), (first.WithdrawnRows!.Count, second.WithdrawnRows!.Count));   // this withdrawal's rows, not the run's whole history
+        Assert.Empty(first.WithdrawnRows.Select(i => i.Value).Intersect(second.WithdrawnRows.Select(i => i.Value), StringComparer.Ordinal));
+        Assert.Equal(0, repeat.Withdrawn);
+        Assert.Equal(second.WithdrawnRows.Select(i => i.Value), repeat.WithdrawnRows!.Select(i => i.Value), StringComparer.Ordinal);   // a repeat names the latest withdrawal again
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_persons_undo_of_a_proposal_is_not_counted_among_the_withdrawals_rows()
+    {
+        _ = await _world.ImportFixture();
+        _ = await Propose(Run());
+        var restore = (await Overrides()).First(o => o.Action == OverrideAction.Propose && o.Target.Value == _restore.Value);
+        _world.Clock.Advance(TimeSpan.FromMinutes(1));
+        Assert.True((await _world.Map.ApplyReview(new ReviewDecision(ReviewVerb.Undo, Undoes: restore.ToId()), MapWorld.Human, MapWorld.None)).IsSuccess);
+        _world.Clock.Advance(TimeSpan.FromMinutes(1));
+
+        var withdrawn = await Propose(Empty());
+        var repeat = await Propose(Empty());
+
+        Assert.Equal(1, withdrawn.Withdrawn);   // only the zoom proposal was still active
+        _ = Assert.Single(withdrawn.WithdrawnRows!);
+        _ = Assert.Single(repeat.WithdrawnRows!);   // the person's undo of the restore row is not a withdrawal row
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Withdraw_with_no_draft_opens_none_and_writes_nothing()
     {

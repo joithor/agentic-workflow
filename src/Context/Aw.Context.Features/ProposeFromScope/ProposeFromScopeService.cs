@@ -75,28 +75,49 @@ internal sealed class ProposeFromScopeService(IGraphStore store, IProposalRuns r
             return seen.IsError ? seen.Error : standing.Error;
         }
 
+        if (IsAnotherReposRun(standing.Value, proposal))
+        {
+            return new ProposeResult(draft.Version, Added: 0, Existing: 0, Rejected: 0);   // the run id is another repo's run: not this caller's to withdraw, nor its list to replace
+        }
+
         var now = clock.GetUtcNow();
-        var (rows, kept) = ProposalPlanner.Withdraw(proposal.Run, seen.Value.Overrides, Who, now);
-        var result = new ProposeResult(draft.Version, Added: 0, Existing: 0, Rejected: 0)
+        var (rows, kept) = ProposalPlanner.Withdraw(proposal.Run, proposal.Repo, seen.Value.Overrides, Who, now);
+        var result = Outcome(proposal, draft.Version, rows, kept, seen.Value.Overrides);
+        return await Record(proposal, rows, HasSurfaces(standing.Value), result, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Saves the undo rows and the emptied surface list, unless there is nothing to take back and no list standing: a second withdrawal writes nothing.
+    private async ValueTask<Result<ProposeResult>> Record(ScopeProposal proposal, IReadOnlyList<MapOverride> rows, bool listStanding, ProposeResult result, CancellationToken cancellationToken)
+    {
+        if (rows.Count == 0 && !listStanding)
         {
-            Withdrawn = rows.Count,
-            Kept = kept,
-            WithdrawnRows = [.. rows.Select(o => o.ToId()).Concat(EarlierUndos(proposal.Run, seen.Value.Overrides)).DistinctBy(id => id.Value, StringComparer.Ordinal).OrderBy(id => id.Value, StringComparer.Ordinal)],
-        };
-        if (rows.Count == 0 && standing.Value is not { Surfaces.Count: > 0 })
-        {
-            return result;   // nothing to take back and no surface list standing: a second withdrawal writes nothing
+            return result;
         }
 
         var written = await runs.Propose(proposal, rows, cancellationToken).ConfigureAwait(false);
         return written.IsError ? written.Error : result;
     }
 
-    // The undo rows an earlier withdrawal of this run wrote: a retry names them again, so a withdrawal whose event failed to append is recorded by the retry (the event is keyed by these ids).
-    private static IEnumerable<OverrideId> EarlierUndos(string run, IReadOnlyList<MapOverride> overrides)
+    private static bool IsAnotherReposRun(ScopeProposal? standing, ScopeProposal proposal) => standing is not null && standing.Repo != proposal.Repo;
+
+    private static bool HasSurfaces(ScopeProposal? standing) => standing is { Surfaces.Count: > 0 };
+
+    private static ProposeResult Outcome(ScopeProposal proposal, MapVersion version, IReadOnlyList<MapOverride> rows, int kept, IReadOnlyList<MapOverride> overrides) =>
+        new(version, Added: 0, Existing: 0, Rejected: 0)
+        {
+            Withdrawn = rows.Count,
+            Kept = kept,
+            WithdrawnRows = rows.Count > 0 ? [.. rows.Select(o => o.ToId()).OrderBy(id => id.Value, StringComparer.Ordinal)] : LatestWithdrawal(proposal, overrides),
+        };
+
+    // The undo rows of the run's latest withdrawal (they share one timestamp): a repeat or a retry names them again, so a withdrawal whose event failed to append is recorded by the retry,
+    // and the event covers that one withdrawal. Only the engine's own undo rows count; a person's undo of a proposal is not a withdrawal.
+    private static List<OverrideId> LatestWithdrawal(ScopeProposal proposal, IReadOnlyList<MapOverride> overrides)
     {
-        var proposed = overrides.Where(o => o.Action == OverrideAction.Propose && string.Equals(o.Proposal?.Run, run, StringComparison.Ordinal)).Select(o => o.ToId().Value).ToHashSet(StringComparer.Ordinal);
-        return overrides.Where(o => o.Action == OverrideAction.Undo && o.Undoes is { } undone && proposed.Contains(undone.Value) && string.Equals(o.Who, Who, StringComparison.Ordinal)).Select(o => o.ToId());
+        var proposed = overrides.Where(o => o.Action == OverrideAction.Propose && string.Equals(o.Proposal?.Run, proposal.Run, StringComparison.Ordinal) && o.Proposal?.Repo == proposal.Repo)
+            .Select(o => o.ToId().Value).ToHashSet(StringComparer.Ordinal);
+        var undos = overrides.Where(o => o.Action == OverrideAction.Undo && o.Undoes is { } undone && proposed.Contains(undone.Value) && string.Equals(o.Who, Who, StringComparison.Ordinal)).ToList();
+        return undos.Count == 0 ? [] : [.. undos.Where(o => o.At == undos.Max(u => u.At)).Select(o => o.ToId()).OrderBy(id => id.Value, StringComparer.Ordinal)];
     }
 
     // The run's propose rows for this call's surfaces: the ones just planned and the ones the draft already held (a retry names them again).

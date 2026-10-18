@@ -15,10 +15,10 @@ public sealed record ProposeResult(MapVersion? Draft, int Added, int Existing, i
     /// <summary>Undecided proposals of the run that this call withdrew (an empty surface list). Zero otherwise.</summary>
     public int Withdrawn { get; init; }
 
-    /// <summary>The run's proposals a person accepted, which a withdrawal leaves in place. Zero otherwise.</summary>
+    /// <summary>The run's proposals a person accepted, merged, renamed or moved, which a withdrawal leaves in place. Zero otherwise.</summary>
     public int Kept { get; init; }
 
-    /// <summary>The ids of the 'undo' rows a withdrawal wrote now, in id order: what the event about the withdrawal is keyed by. Not on the wire.</summary>
+    /// <summary>The ids of the 'undo' rows of the run's latest withdrawal, in id order: the rows this call wrote, or (when it wrote none, a repeat or a retry) the ones the latest withdrawal wrote. What the event about that withdrawal is keyed by, so it is written once. Not on the wire.</summary>
     [JsonIgnore]
     public IReadOnlyList<OverrideId>? WithdrawnRows { get; init; }
 
