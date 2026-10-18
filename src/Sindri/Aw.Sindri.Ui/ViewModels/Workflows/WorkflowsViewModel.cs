@@ -167,6 +167,18 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
         }
     }
 
+    /// <summary>Raised when a row's "Answer in the child" was pressed.</summary>
+    internal event EventHandler<ChildAnswerRequestedEventArgs>? ChildAnswerRequested;
+
+    /// <summary>Follows a row's "Answer in the child": the row is selected and the shell opens the child's frame (or the row's own at its Children).</summary>
+    /// <param name="address">The row's address.</param>
+    /// <param name="answer">The pointer.</param>
+    internal void FollowChildAnswer(string address, ChildAnswerViewModel answer)
+    {
+        _ = Select(address);
+        ChildAnswerRequested?.Invoke(this, new ChildAnswerRequestedEventArgs(address, answer));
+    }
+
     /// <summary>Asks to open a row's instance.</summary>
     /// <param name="address">The instance's address.</param>
     internal void Open(string address)
