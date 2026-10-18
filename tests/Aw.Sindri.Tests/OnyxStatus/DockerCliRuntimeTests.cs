@@ -108,7 +108,7 @@ public sealed class DockerCliRuntimeTests
         var error = "WARNING: Error loading config file: /home/u/.docker/config.json: open /home/u/.docker/config.json: permission denied\nCannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?";
         var runner = Docker(new ToolRun(ToolOutcome.Exited, 1, "", error), Ok("v2.40.3"), Fails);
 
-        var facts = new DockerCliRuntime(runner).Inspect(Token);
+        var facts = Cli(runner).Inspect(Token);
 
         Assert.Equal(DaemonProblem.NotRunning, facts.DaemonProblem);
     }
