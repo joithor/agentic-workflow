@@ -67,7 +67,7 @@ public sealed class IntentStoreFileTests : IDisposable
         {
             await connection.OpenAsync(TestContext.Current.CancellationToken);
             await using var insert = connection.CreateCommand();
-            insert.CommandText = "INSERT INTO intent_record (key, source, version, title, aliases, fetched_at, extraction_state) VALUES ('" + _r103.Value + "', 'onyx', '2026-07-23T09:30:00Z', 'Old row', 'SPL-103', '2026-10-12T09:00:00Z', 'done')";
+            insert.CommandText = "INSERT INTO intent_record (key, source, version, title, aliases, fetched_at, extraction_state) VALUES ('" + _r103.Value + "', 'onyx', '2026-07-23T09:30:00Z', 'Old row', 'SPL-103', '2026-10-12T09:00:00.0000000Z', 'done')";
             _ = await insert.ExecuteNonQueryAsync(TestContext.Current.CancellationToken);
         }
 

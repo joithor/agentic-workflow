@@ -73,12 +73,23 @@ public sealed class GetHistoryTests : IDisposable
         _ = await world.Intents.CommitPage(new IntentPage(_onyx, rows, links, Cursor: null, Utc("2026-07-30T00:00:00Z")), MapWorld.None);
     }
 
+    // A person's decision on the orientation node, made on 2026-07-15, quoting a ticket that was created in June.
+    private static async Task SeedDecision(MapWorld world)
+    {
+        var record = RecordKey.From("linear:issue/0301");
+        var row = new IntentRecord(record, _onyx, "2026-06-05T00:00:00Z", "Decision ticket", []) { CreatedAt = Utc("2026-06-01T00:00:00Z") };
+        _ = await world.Intents.CommitPage(new IntentPage(_onyx, [row], [new IntentLink(record, NodeKey.From(Orientation), LinkRule.Identifier, 0.7, "bb")], Cursor: null, Utc("2026-07-30T00:00:00Z")), MapWorld.None);
+        var decision = new DecisionRow(record, "keep the focus", "Keeps focus on the first pane.", Provenance.Human, Utc("2026-07-15T10:00:00Z"));
+        _ = await world.Intents.SaveDecisions(new DecisionBatch(record, row.Version, [decision], [new GraphEdge(decision.ToKey(), NodeKey.From(Orientation), EdgeType.Decides, Provenance.Human, 1.0, At: Utc("2026-07-15T10:00:00Z"))]), MapWorld.None);
+    }
+
     private static SearchedSource Row(HistoryView view, string id) => view.Searched.Sources.Single(s => s.Id.Value == id);
 
     [Fact, Trait("Lane", "unit")]
     public async Task Stored_band_is_the_lenses_intent_band_for_the_own_scope()
     {
         var world = await Start(Fake(Landed()));
+        await SeedDecision(world);
         await Seed(world, ("0001", "2026-06-01T00:00:00Z", "2026-06-05T00:00:00Z"));
 
         var view = (await Ask(world)).Value;
@@ -87,7 +98,7 @@ public sealed class GetHistoryTests : IDisposable
         Assert.Equal([.. lenses.Bands.Intent.Records.Select(r => r.Key.Value).Order(StringComparer.Ordinal)], [.. view.Records.Select(r => r.Key.Value).Order(StringComparer.Ordinal)], StringComparer.Ordinal);
         Assert.Equal([.. lenses.Bands.Intent.Decisions.Select(d => d.Node.Value).Order(StringComparer.Ordinal)], [.. view.Decisions.Select(d => d.Node.Value).Order(StringComparer.Ordinal)], StringComparer.Ordinal);
         Assert.Equal(1, view.SchemaVersion);
-        Assert.Equal(Utc("2026-06-01T00:00:00Z"), Assert.Single(view.Records).CreatedAt);
+        Assert.Equal(Utc("2026-06-01T00:00:00Z"), view.Records.Single(r => r.Key.Value.EndsWith("0001", StringComparison.Ordinal)).CreatedAt);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -125,12 +136,13 @@ public sealed class GetHistoryTests : IDisposable
     {
         var history = Fake(Landed());
         var world = await Start(history);
+        await SeedDecision(world);
         await Seed(world, ("0201", "2026-06-01T00:00:00Z", "2026-06-05T00:00:00Z"), ("0202", "2026-07-16T00:00:00Z", "2026-07-16T00:00:00Z"), ("0203", "2026-06-15T00:00:00Z", "2026-07-23T00:00:00Z"));
 
         var view = (await Ask(world, before: "2026-07-01T00:00:00Z")).Value;
 
         Assert.Equal([Sha('2'), Sha('1')], [.. view.Changes.Select(c => c.Sha)], StringComparer.Ordinal);
-        Assert.Equal(["record:linear:issue/0201", "record:linear:issue/0203"], [.. view.Records.Select(r => r.Key.Value).Order(StringComparer.Ordinal)], StringComparer.Ordinal);
+        Assert.Equal(["record:linear:issue/0201", "record:linear:issue/0203", "record:linear:issue/0301"], [.. view.Records.Select(r => r.Key.Value).Order(StringComparer.Ordinal)], StringComparer.Ordinal);
         Assert.False(view.Records.Single(r => r.Key.Value.EndsWith("0201", StringComparison.Ordinal)).Leaky);
         Assert.True(view.Records.Single(r => r.Key.Value.EndsWith("0203", StringComparison.Ordinal)).Leaky);
         Assert.Empty(view.Decisions);
@@ -142,6 +154,7 @@ public sealed class GetHistoryTests : IDisposable
     public async Task Since_cuts_changes_but_never_a_decision()
     {
         var world = await Start(Fake(Landed()));
+        await SeedDecision(world);
 
         var view = (await Ask(world, since: "2026-07-01T00:00:00Z")).Value;
 
@@ -207,6 +220,7 @@ public sealed class GetHistoryTests : IDisposable
     {
         var history = new ScriptedHistory(new FakeFileHistory(MapWorld.Repos[0], Landed()), (_, _, _) => ValueTask.FromResult<Result<FileHistory>>(ContextErrors.CommitUnknown.With("not held")));
         var world = await Start(history);
+        await SeedDecision(world);
 
         var view = (await Ask(world)).Value;
 
@@ -238,6 +252,7 @@ public sealed class GetHistoryTests : IDisposable
             return ContextErrors.StoreUnavailable.With("unreachable");
         });
         var world = await Start(history);
+        await SeedDecision(world);
 
         var view = (await Engines.Advancing(world.Clock, () => Ask(world, scope: MapWorld.HumanWith("""{"deadline":"100ms"}""")).AsTask())).Value;
 
@@ -321,7 +336,8 @@ public sealed class GetHistoryTests : IDisposable
 
         Assert.DoesNotContain(view.Searched.Sources, s => s.Id.Value == "code-index");
         Assert.Equal(lenses.Coverage.Scope, view.Coverage.Scope);
-        Assert.Equal(lenses.Coverage.Map, view.Coverage.Map);
+        Assert.Equal((lenses.Coverage.Map!.Files, lenses.Coverage.Map.Unmapped, lenses.Coverage.Map.Suggested, lenses.Coverage.Map.Created), (view.Coverage.Map!.Files, view.Coverage.Map.Unmapped, view.Coverage.Map.Suggested, view.Coverage.Map.Created));
+        Assert.Equal(lenses.Coverage.Map.Paths, view.Coverage.Map.Paths, StringComparer.Ordinal);
         Assert.Equal([Anchor, Orientation], view.Searched.Anchors, StringComparer.Ordinal);
     }
 
@@ -338,12 +354,15 @@ public sealed class GetHistoryTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task Map_version_commit_is_the_upper_bound()
     {
-        var history = Fake(Landed());
+        var history = Fake(Log(new FileChange(MapWorld.Head, Utc("2026-07-30T10:00:00Z"), "Add the commands (#7)", Parents: 1, ["src/commands/ids.ts"])));
         var world = await Start(history, import: false);
         var draft = (await ReviewMap.Drafts.Build(world)).Draft;
         _ = draft;
 
-        var view = (await Ask(world, ["surface:command/split-vertical"], ReviewMap.Drafts.Scope, read: MapRead.NewestDraft)).Value;
+        var lens = (await world.Engine.Lenses("surface:command/split-vertical", draft: true, depth: 0, ReviewMap.Drafts.Scope, MapWorld.None)).Value;
+        var target = lens.Bands.Code.Files.First(f => string.Equals(f.Path, "src/commands/ids.ts", StringComparison.Ordinal)).Implements[0].Value;
+
+        var view = (await Ask(world, [target], ReviewMap.Drafts.Scope, read: MapRead.NewestDraft)).Value;
 
         Assert.True(view.Draft);
         Assert.All(history.Calls, c => Assert.Equal(MapWorld.Head, c.Query.UpTo));

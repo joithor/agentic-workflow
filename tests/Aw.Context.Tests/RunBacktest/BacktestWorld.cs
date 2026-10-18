@@ -3,6 +3,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Extract;
+using Aw.Context.Core.History;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Linking;
 using Aw.Context.Core.Locks;
@@ -81,6 +82,7 @@ internal sealed class BacktestWorld : IAsyncDisposable
             .AddSingleton<IReviewFileStore>(new FakeReviewFileStore())
             .AddSingleton<ICurrentUser>(new FakeCurrentUser())
             .AddSingleton<IMergeHistory>(new GitMergeHistory(git))
+            .AddSingleton<IFileHistory>(new GitFileHistory(git))
             .AddSingleton<IBriefSource>(Briefs)
             .AddSingleton<IAsOfDocs>(new AsOfDocsFactory(git, Clock))
             .AddSingleton<IEvalStore>(new FileEvalStore(Settings))
