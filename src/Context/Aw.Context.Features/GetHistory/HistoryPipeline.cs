@@ -6,7 +6,6 @@ using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Linking;
 using Aw.Context.Core.Results;
-using Aw.Context.Features.LensReading;
 using Aw.Kernel;
 
 namespace Aw.Context.Features.GetHistory;

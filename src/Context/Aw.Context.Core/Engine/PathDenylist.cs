@@ -29,10 +29,24 @@ public static class PathDenylist
         return globs.Any(g => _compiled.GetOrAdd(g, Compile).IsMatch(path));
     }
 
+    /// <summary>Whether a path matches any glob, with the case of the path and the glob compared exactly.</summary>
+    /// <param name="path">The repo-relative path.</param>
+    /// <param name="globs">The globs.</param>
+    /// <returns>True when a glob matches.</returns>
+    public static bool MatchesExactCase(string path, IReadOnlyList<string> globs)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        ArgumentNullException.ThrowIfNull(globs);
+        return globs.Any(g => _compiledExact.GetOrAdd(g, glob => Compile(glob, RegexOptions.None)).IsMatch(path));
+    }
+
     // Each glob is compiled once per process: a build asks per tracked file.
     private static readonly ConcurrentDictionary<string, Regex> _compiled = new(StringComparer.Ordinal);
+    private static readonly ConcurrentDictionary<string, Regex> _compiledExact = new(StringComparer.Ordinal);
 
-    private static Regex Compile(string glob)
+    private static Regex Compile(string glob) => Compile(glob, RegexOptions.IgnoreCase);
+
+    private static Regex Compile(string glob, RegexOptions caseOption)
     {
         var pattern = new StringBuilder("^");
         for (var i = 0; i < glob.Length; i++)
@@ -62,6 +76,6 @@ public static class PathDenylist
             }
         }
 
-        return new Regex(pattern.Append('$').ToString(), RegexOptions.CultureInvariant | RegexOptions.IgnoreCase | RegexOptions.Singleline, TimeSpan.FromSeconds(1));
+        return new Regex(pattern.Append('$').ToString(), RegexOptions.CultureInvariant | caseOption | RegexOptions.Singleline, TimeSpan.FromSeconds(1));
     }
 }
