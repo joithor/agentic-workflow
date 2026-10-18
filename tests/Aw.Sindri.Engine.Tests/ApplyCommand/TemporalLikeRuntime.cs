@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Views;
 
 namespace Aw.Sindri.Tests.ApplyCommand;
 
@@ -27,6 +28,15 @@ internal sealed class TemporalLikeRuntime : IInstanceDirectory, IInstanceRuntime
     private bool _refuseNext;
 
     public InstanceAddress Address { get; } = InstanceAddress.From("T-1/step/1");
+
+    /// <summary>The child the parent's open park mirrors; null when it mirrors none.</summary>
+    public InstanceAddress? Child { get; private set; }
+
+    /// <summary>Every Update a Send handed over, with the instance it went to, in order.</summary>
+    public List<(InstanceAddress To, Trigger Trigger)> Delivered { get; } = [];
+
+    /// <summary>The parent's open park now mirrors <paramref name="child"/> (a no-progress park inside it).</summary>
+    public void MirrorChild(InstanceAddress child) => Child = child;
 
     /// <summary>How many Updates the instance applied.</summary>
     public int Applied { get; private set; }
@@ -77,12 +87,13 @@ internal sealed class TemporalLikeRuntime : IInstanceDirectory, IInstanceRuntime
     public ValueTask<Result<InstanceView>> Get(InstanceAddress address, CancellationToken cancellationToken)
     {
         Gets++;
-        return ValueTask.FromResult(GetFails is { } failure ? (Result<InstanceView>)failure : View());
+        return ValueTask.FromResult(GetFails is { } failure ? (Result<InstanceView>)failure : View(address, version: 4 + Applied));
     }
 
     public async ValueTask<Result<CommandResult>> Send(InstanceAddress address, CommandNonce nonce, Trigger command, CancellationToken cancellationToken)
     {
         _sent.Add(nonce);
+        Delivered.Add((address, command));
         if (_first.TryGetValue(nonce, out var known))
         {
             return known;
@@ -137,8 +148,10 @@ internal sealed class TemporalLikeRuntime : IInstanceDirectory, IInstanceRuntime
 
     public IDisposable EnterService(string name) => throw new NotSupportedException("the caller is fixed");
 
-    private InstanceView View(int version) => new(
-        Address,
+    private InstanceView View(int version) => View(Address, version);
+
+    private InstanceView View(InstanceAddress address, int version) => new(
+        address,
         _recipe,
         "parked",
         Detail: null,
@@ -150,5 +163,9 @@ internal sealed class TemporalLikeRuntime : IInstanceDirectory, IInstanceRuntime
         Run: null,
         Children: [],
         Outcome: null)
-    { Id = WorkflowInstanceId.Of(Address), Version = version };
+    {
+        Id = WorkflowInstanceId.Of(address),
+        Version = version,
+        ChildPark = Child is { } child && address == Address ? new StatusChild(WorkflowInstanceId.Of(child), child, "parked", "no-progress") : null,
+    };
 }

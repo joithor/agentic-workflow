@@ -30,10 +30,10 @@ public static partial class NeedsYouRows
     public static NeedsYouRow ForPark(ItemRow item, InstanceAddress address, SuspensionSummary suspension, DateTimeOffset since, ITextScrubber scrubber)
     {
         ArgumentNullException.ThrowIfNull(suspension);
-        var answer = ParkAnswers.For(new ParkShape(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null), address);
+        var answer = ParkAnswers.For(new ParkShape(suspension.Kind, suspension.Reason, suspension.ParkKind, suspension.Escalation, suspension.Mirrors is not null), address, child: suspension.MirrorsAddress);
         var (label, words) = Words(suspension);
         var shape = new EngineRow("park:", label, $"{words} ({address.Value})", Urgency.Pulse, answer?.Kind,
-            answer?.ActionId ?? _approveRecipe, answer is null ? [_approveRecipe, _cancel] : [answer.ActionId], answer?.Cli ?? Status(address), answer?.Via);
+            answer?.ActionId ?? _approveRecipe, answer is null ? [_approveRecipe, _cancel] : [answer.ActionId], answer?.Cli ?? Status(address), answer?.Via, answer?.Child);
         return Row(item, address, shape, since, scrubber);
     }
 
@@ -57,7 +57,7 @@ public static partial class NeedsYouRows
 
     private static string Status(InstanceAddress address) => $"sindri workflow status {address.Value}";
 
-    private sealed record EngineRow(string Prefix, string Label, string Reason, Urgency Urgency, Workflow.Views.AnswerKind? AnswerKind, ActionId Primary, IReadOnlyList<ActionId> Actions, string Cli, string? Via = null);
+    private sealed record EngineRow(string Prefix, string Label, string Reason, Urgency Urgency, Workflow.Views.AnswerKind? AnswerKind, ActionId Primary, IReadOnlyList<ActionId> Actions, string Cli, string? Via = null, string? Child = null);
 
     private static NeedsYouRow Row(ItemRow item, InstanceAddress address, EngineRow shape, DateTimeOffset since, ITextScrubber scrubber)
     {
@@ -81,7 +81,8 @@ public static partial class NeedsYouRows
             shape.Primary,
             shape.Actions,
             shape.Cli,
-            shape.Via);
+            shape.Via,
+            shape.Child);
     }
 
     private static (string Label, string Words) Words(SuspensionSummary s) => s switch

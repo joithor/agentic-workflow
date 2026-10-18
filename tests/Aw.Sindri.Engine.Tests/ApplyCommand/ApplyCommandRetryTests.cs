@@ -50,7 +50,7 @@ public sealed class ApplyCommandRetryTests
         Assert.False(retry.IsError, retry.IsError ? retry.Error.Message : null);
         Assert.Equal("resumed (transition): -> produce", retry.Value.Result.Happened);
         Assert.Equal(1, _instance.Applied);
-        Assert.Equal(1, _instance.Gets);   // the retry skipped the check
+        Assert.Equal(2, _instance.Gets);   // the retry skipped the check; it read the view once more to learn where an answer goes (a mirroring parent forwards it, P7 D5)
         Assert.Equal([_nonce, _nonce], _instance.Sent);
         Assert.Equal(NonceClaim.Applied, claim.Value);
     }

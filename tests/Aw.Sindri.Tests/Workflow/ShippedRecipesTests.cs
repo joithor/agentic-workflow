@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Validation;
 using Aw.Sindri.Testing.Workflow;
 
@@ -78,6 +79,41 @@ public sealed partial class ShippedRecipesTests
         Assert.True(lines.Length >= 2, $"{path}: a start line and at least one trigger line");
         EvalFormat.AssertStart(lines[0]);
         Assert.All(lines.Skip(1), EvalFormat.AssertStep);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [MemberData(nameof(Recipes))]
+    public void Every_shipped_child_wait_resolves_its_pinned_child(string path)
+    {
+        var document = RecipeComposition.ReadClean(ShippedRecipes.Read(path), Path.GetFileName(path));
+        var siblings = Siblings(path);
+        var named = document.Recipe.States.Values.Select(static s => s.WaitFor?.Child?.Recipe).OfType<RecipeId>().Distinct().ToList();
+        var found = named.ToDictionary(static id => id, siblings.Resolve);
+        Assert.All(found, static f => Assert.NotNull(f.Value));
+        var pinned = new PinnedChildRecipes(found.ToDictionary(static f => f.Key, static f => f.Value!), found.ToDictionary(static f => f.Key, static f => f.Value!.Hash));   // why: the Assert.All above holds each
+
+        Assert.All(named, id => Assert.Equal(found[id]!.Hash, pinned.Resolve(id)?.Hash));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_shipped_child_waits_are_the_ones_the_engine_starts_children_for()
+    {
+        var pairs = ShippedRecipes.Recipes
+            .SelectMany(path => RecipeComposition.ReadClean(ShippedRecipes.Read(path), Path.GetFileName(path)).Recipe.States.Values
+                .Select(static s => s.WaitFor?.Child?.Recipe).OfType<RecipeId>().Select(child => (Path.GetFileNameWithoutExtension(path), child.Value)))
+            .Order()
+            .ToList();
+
+        Assert.Equal(
+            [
+                ("workflow.dev-child-outputs", "workflow.dev-child-summary"),
+                ("workflow.evidence", "workflow.evidence-all"), ("workflow.evidence", "workflow.evidence-api"), ("workflow.evidence", "workflow.evidence-db"),
+                ("workflow.evidence", "workflow.evidence-other"), ("workflow.evidence", "workflow.evidence-ui"),
+                ("workflow.evidence-all", "workflow.evidence-api"), ("workflow.evidence-all", "workflow.evidence-db"), ("workflow.evidence-all", "workflow.evidence-ui"),
+                ("workflow.item", "workflow.step"),
+                ("workflow.scoping", "workflow.idea-to-brief"),
+            ],
+            pairs);
     }
 
     private static InMemoryChildRecipes Siblings(string path)

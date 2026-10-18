@@ -162,7 +162,13 @@ public static class ProfileRules
             : null;
     }
 
-    private static Error? Workflow(SindriProfile profile) => Durations(profile.Workflow) ?? Effects(profile.Workflow) ?? Judges(profile) ?? ForgeRules.Check(profile.Workflow?.Forge);
+    private static Error? Workflow(SindriProfile profile) => Durations(profile.Workflow) ?? Effects(profile.Workflow) ?? Judges(profile) ?? ForgeRules.Check(profile.Workflow?.Forge) ?? Route(profile.Workflow?.Route);
+
+    /// <summary>The router stub's key (engine P7 plan D8): 'workflow.route.startable' is all or none.</summary>
+    private static Error? Route(RouteSettings? route) =>
+        route?.Startable is { } startable && startable is not (RouteSettings.All or RouteSettings.None)
+            ? Invalid("workflow.route.startable", $"'{startable}' is not all or none")
+            : null;
 
     /// <summary>The judge provider lists (DT-J plan Q8): the box's and each repo's name only known providers.</summary>
     private static Error? Judges(SindriProfile profile)

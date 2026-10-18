@@ -333,6 +333,12 @@ public static class WorkflowViewFixtures
         new OpenWork(OpenChildren: 1),
         new StatusLines { Answer = Answer(AnswerKind.Grant, "ITM-01JC8/item/1"), Child = new StatusChild(WorkflowInstanceId.Of(InstanceAddress.From("ITM-01JC8/item/1/step.4")), InstanceAddress.From("ITM-01JC8/item/1/step.4"), "parked", "no-progress") });
 
+    /// <summary>The same park as <see cref="StatusParkedChild"/> when the live lookup of the child gets no answer (engine P7, Q2): the child shows as `unreachable` with no reason, never as its last known state.</summary>
+    public static StatusFields StatusUnreachableChild() => Status(_itemParked, "no-progress (child)",
+        "Parked (no-progress) in ITM-01JC8/item/1/step.4: checks failed twice with the same findings. Grant more rounds at a terminal, or cancel.",
+        new OpenWork(OpenChildren: 1),
+        new StatusLines { Answer = Answer(AnswerKind.Grant, "ITM-01JC8/item/1"), Child = new StatusChild(WorkflowInstanceId.Of(InstanceAddress.From("ITM-01JC8/item/1/step.4")), InstanceAddress.From("ITM-01JC8/item/1/step.4"), "unreachable", Reason: null) });
+
     /// <summary>An escalation from a child: the status answer is a pointer to the child (`via: "child"`), and no answer entry is served.</summary>
     public static StatusFields StatusEscalatedChild() => Status(_itemChildPointer, "escalated (child)",
         "Escalated in ITM-01JC9/item/1/step.4: the child's gate escalated.",
@@ -400,7 +406,7 @@ public static class WorkflowViewFixtures
     /// <returns>The statuses.</returns>
     public static IReadOnlyList<StatusFields> AllStatuses() =>
     [
-        StatusParkedChild(), StatusEscalatedChild(), StatusMirroredBudget(), StatusMirroredBudgetNoChild(), StatusDeskTask(), StatusParkedBudget(), StatusEscalatedGate(), StatusTakenOver(), StatusDone(),
+        StatusParkedChild(), StatusUnreachableChild(), StatusEscalatedChild(), StatusMirroredBudget(), StatusMirroredBudgetNoChild(), StatusDeskTask(), StatusParkedBudget(), StatusEscalatedGate(), StatusTakenOver(), StatusDone(),
         StatusParkedDrift(), StatusNeedsAnswerStep(), StatusNeedsAnswerWait(), .. AllDetails().Select(d => d.Current.Status),
     ];
 
