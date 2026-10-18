@@ -31,7 +31,7 @@ public sealed class NeedsYouChildAnswerTests
         var row = Row("child");
 
         Assert.Equal(Labels.AnswerInChild, row.ChildAnswer!.Text);
-        Assert.Equal(Labels.AnswerInChildName(row.ShownId), row.ChildAnswer.Name);
+        Assert.Equal(Labels.AnswerInChildOpensName(row.ShownId), row.ChildAnswer.Name);   // it opens the instance the row stands for, never a named child
         Assert.Equal(row.Id, row.ChildAnswer.NeedsYouRowId);
         Assert.Empty(row.Cli);
     }

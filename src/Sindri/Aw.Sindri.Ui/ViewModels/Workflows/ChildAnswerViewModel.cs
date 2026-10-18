@@ -12,7 +12,12 @@ internal sealed class ChildAnswerViewModel
     private ChildAnswerViewModel(string? parentAddress, string? childAddress, string? needsYouRowId, string shownAddress)
     {
         (ParentAddress, ChildAddress, NeedsYouRowId) = (parentAddress, childAddress, needsYouRowId);
-        Name = childAddress is null && parentAddress is not null ? Labels.AnswerInChildParentName(parentAddress) : Labels.AnswerInChildName(shownAddress);
+        Name = (parentAddress, childAddress) switch
+        {
+            (_, not null) => Labels.AnswerInChildName(childAddress),
+            (not null, null) => Labels.AnswerInChildParentName(parentAddress),
+            _ => Labels.AnswerInChildOpensName(shownAddress),
+        };
     }
 
     /// <summary>A pointer on an instance row.</summary>

@@ -34,7 +34,7 @@ internal sealed class ExpandedStateViewModel : ObservableObject
         if (InstanceRules.IsChildPointer(status.Answer))
         {
             AnswerChild = status.Answer;
-            AnswerInChildName = Labels.AnswerInChildName(address);
+            AnswerInChildName = ServedChild(status) is { } childAddress ? Labels.AnswerInChildName(childAddress) : Labels.AnswerInChildPanelName;
         }
 
         HasAttach = current.Step is { } step && string.Equals(step.Ref, "step.agent", StringComparison.Ordinal) && status.Paused is null;
@@ -125,7 +125,7 @@ internal sealed class ExpandedStateViewModel : ObservableObject
             return;
         }
 
-        if (_current.Status.Child is { } child && Child is not null && string.Equals(child.Address, AnswerChild.Child, StringComparison.Ordinal))
+        if (Child is not null && ServedChild(_current.Status) is not null)
         {
             Child.Open();
         }
@@ -134,6 +134,10 @@ internal sealed class ExpandedStateViewModel : ObservableObject
             ChildrenRequested?.Invoke(this, EventArgs.Empty);
         }
     }
+
+    // The served child pointer's address when it is the answer's child: "Answer in the child" opens that child, so its name says so; null when the Children panel is the target.
+    private static string? ServedChild(StatusFields status) =>
+        status.Child is { } child && string.Equals(child.Address, status.Answer?.Child, StringComparison.Ordinal) ? child.Address : null;
 
     /// <summary>Raised when "Answer in the child" has no served child to open: this frame's Children panel is where the answer goes.</summary>
     internal event EventHandler? ChildrenRequested;

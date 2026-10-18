@@ -21,6 +21,14 @@ internal static partial class Labels
     /// <returns>The name.</returns>
     internal static string AnswerInChildParentName(string parentAddress) => $"{AnswerInChild}, opens {parentAddress} children";
 
+    /// <summary>The accessible name of the control on a needs-you row, which is served no child: it opens the instance the row stands for (or the row's own sheet), so it names that rather than a child.</summary>
+    /// <param name="shownId">What the row shows as its id.</param>
+    /// <returns>The name.</returns>
+    internal static string AnswerInChildOpensName(string shownId) => $"{AnswerInChild}, opens {shownId}";
+
+    /// <summary>The accessible name of the expanded state's control when no child was served: it moves focus to this frame's Children panel.</summary>
+    internal const string AnswerInChildPanelName = AnswerInChild + ", moves to the Children panel";
+
     /// <summary>What the strip says while the workflow list route is not served yet (screens §4.8).</summary>
     internal const string ArrivesWorkflowStrip = "arrives with API P11";
 

@@ -29,9 +29,28 @@ public sealed class ExpandedChildAnswerTests
 
         Assert.True(expanded.AnswersInChild);
         Assert.Equal(Labels.AnswerInChild, expanded.AnswerInChildText);
-        Assert.Equal(Labels.AnswerInChildName(status.Header.Address), expanded.AnswerInChildName);
         Assert.False(expanded.HasAnswer);
         Assert.DoesNotContain(expanded.Commands, c => c.Protected is not null || c.Cli.Contains(status.Answer!.Cli, StringComparison.Ordinal));
+    }
+
+    [Theory]
+    [InlineData("escalated-child")]
+    [InlineData("mirrored-budget")]
+    public void With_a_served_child_its_name_is_the_child_it_opens(string scenario)
+    {
+        var status = FixtureInstances.Status(scenario);
+
+        var expanded = Of(status);
+
+        Assert.Equal(Labels.AnswerInChildName(status.Child!.Address), expanded.AnswerInChildName);
+    }
+
+    [Fact]
+    public void Without_a_child_its_name_says_it_moves_to_the_children_panel()
+    {
+        var expanded = Of(FixtureInstances.Status("mirrored-budget-no-child"));
+
+        Assert.Equal(Labels.AnswerInChildPanelName, expanded.AnswerInChildName);
     }
 
     [Theory]
