@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Onyx;
 using System.Text.Json.Serialization;
 
 namespace Aw.Sindri.Features.OnyxUp;

@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Features.OnyxUp;
 
 namespace Aw.Sindri.Features.OnyxAccount;

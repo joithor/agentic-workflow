@@ -34,6 +34,52 @@ public sealed class HttpDeployFilesTests : IDisposable
         }
     }
 
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_connection_dropped_mid_download_is_a_download_failure_not_a_workspace_error()
+    {
+        using var dropping = new HttpClient(new DroppingHandler());
+
+        var error = (await Fetch(new HttpDeployFiles(dropping, _server.BaseUri))).Error;
+
+        Assert.Equal("SND-ONYX-004", error.Code);
+        Assert.Contains("connection dropped", error.Message, StringComparison.Ordinal);
+        Assert.False(Written);
+    }
+
+    // A server that sends its headers and then loses the connection while the body is read.
+    private sealed class DroppingHandler : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            => Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK) { RequestMessage = request, Content = new StreamContent(new DroppedStream()) });
+
+        private sealed class DroppedStream : Stream
+        {
+            public override bool CanRead => true;
+
+            public override bool CanSeek => false;
+
+            public override bool CanWrite => false;
+
+            public override long Length => throw new NotSupportedException();
+
+            public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+            public override void Flush()
+            {
+            }
+
+            public override int Read(byte[] buffer, int offset, int count) => throw new IOException("the response ended prematurely");
+
+            public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) => throw new IOException("the response ended prematurely");
+
+            public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+            public override void SetLength(long value) => throw new NotSupportedException();
+
+            public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        }
+    }
+
     [Theory, Trait("Lane", "integration")]
     [InlineData("same")]
     [InlineData("http://example.invalid/x")]

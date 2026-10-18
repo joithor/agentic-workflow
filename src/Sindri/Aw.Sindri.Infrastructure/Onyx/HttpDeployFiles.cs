@@ -129,6 +129,10 @@ internal sealed class HttpDeployFiles : IDeployFiles
         {
             return pin.Unavailable($"{exception.GetType().Name}: {exception.Message}");
         }
+        catch (IOException exception)
+        {
+            return pin.Unavailable($"the connection dropped while downloading ({exception.GetType().Name}: {exception.Message})");   // HttpIOException is an IOException, not an HttpRequestException
+        }
     }
 
     private static async Task<Result<byte[]>> ReadCapped(HttpResponseMessage response, OnyxFilePin pin, CancellationToken cancellationToken)
