@@ -51,6 +51,7 @@ internal static class BlockRegistrations
         .AddLineStationBlocks()
         .AddLineDesignBlocks()
         .AddLineBlocks()
+        .AddBuildProveBlocks()
         .AddBlockDescriptor(EvidenceProviders.Check)
         .AddGate<BudgetAvailableGate>()
         .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
