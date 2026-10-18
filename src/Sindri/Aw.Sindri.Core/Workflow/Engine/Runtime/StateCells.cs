@@ -7,8 +7,8 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <summary>
 /// The state band of an instance (UI screens E-20, API spec §3.8): one cell per state of the recipe in path order, built
 /// from <see cref="StatePathOrder"/> so the order, the branches and the loop edges are the ones the recipe shows. Exactly
-/// one cell is active (the state the instance is in, with the engine's badge when it interrupted it); main-path states
-/// before it are done and the others pending; once the instance ended, its terminal state and every main-path state are done.
+/// one cell is active (the state the instance is in, with the engine's badge when it interrupted it); states the instance entered (else, for an instance that recorded none, main-path states
+/// before it) are done and the others pending; once the instance ended, its terminal state and every main-path state are done.
 /// </summary>
 public static class StateCells
 {
@@ -60,7 +60,12 @@ public static class StateCells
             return StateGlyph.Active;
         }
 
-        return !terminal && place.Order is { } order && order < at.ActiveOrder ? StateGlyph.Done : StateGlyph.Pending;
+        if (at.Instance.Visited is { } visited)
+        {
+            return visited.Contains(place.State, StringComparer.Ordinal) ? StateGlyph.Done : StateGlyph.Pending;   // a branch state or one before a loop's re-entry counts too
+        }
+
+        return !terminal && place.Order is { } order && order < at.ActiveOrder ? StateGlyph.Done : StateGlyph.Pending;   // an instance that recorded no visits: path order
     }
 
     /// <summary>The path position of the active state; a branch state counts as the main-path state it is folded under.</summary>
