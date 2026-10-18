@@ -61,6 +61,13 @@ public static class ProfileDiff
             ("workflow.dispatchDelay", workflow?.DispatchDelay),
             ("workflow.judge.providers", workflow?.Judge?.Providers is { } providers ? string.Join(", ", providers) : null),
         ];
-        return keys.Where(static k => k.Value is not null).Select(static k => (k.Key, k.Value!));   // why: the nulls are filtered out just before
+        return keys.Concat(Forge(workflow?.Forge)).Where(static k => k.Value is not null).Select(static k => (k.Key, k.Value!));   // why: the nulls are filtered out just before
     }
+
+    private static (string Key, string? Value)[] Forge(ForgeSettings? forge) =>
+    [
+        ("workflow.forge.adapter", forge?.Adapter),
+        ("workflow.forge.hosts", forge?.Hosts is { } hosts ? string.Join(", ", hosts) : null),
+        ("workflow.forge.credential", forge?.Credential),
+    ];
 }
