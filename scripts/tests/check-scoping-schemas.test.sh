@@ -59,10 +59,10 @@ run "$d"; expect_rc "a seed the recipe's intake writes but seeds.json lacks fail
 d="$(copy badseed)"; edit "$d/schemas/scoping/seeds.json" '."fact:acceptance" = {"items": [{"id": "x"}]}'
 run "$d"; expect_rc "a seed its schema refuses fails" 1; expect_out "names the fact" "fact:acceptance"
 
-d="$(copy payload)"; sed -i 's/"ref":"7"/"pr":7/' "$d/recipes/sindri/evals/workflow.scoping/change-happy.jsonl"
+d="$(copy payload)"; sed 's/"ref":"7"/"pr":7/' "$d/recipes/sindri/evals/workflow.scoping/change-happy.jsonl" > "$d/recipes/sindri/evals/workflow.scoping/change-happy.jsonl".tmp && mv "$d/recipes/sindri/evals/workflow.scoping/change-happy.jsonl".tmp "$d/recipes/sindri/evals/workflow.scoping/change-happy.jsonl"
 run "$d"; expect_rc "an eval payload its schema refuses fails" 1; expect_out "names the eval and the fact" "change-happy.jsonl:1"
 
-d="$(copy stringpayload)"; sed -i 's/"fact:brief":{.*},"fact:anchors"/"fact:brief":"text","fact:anchors"/' "$d/recipes/sindri/evals/workflow.scoping/brief-happy.jsonl"
+d="$(copy stringpayload)"; sed 's/"fact:brief":{.*},"fact:anchors"/"fact:brief":"text","fact:anchors"/' "$d/recipes/sindri/evals/workflow.scoping/brief-happy.jsonl" > "$d/recipes/sindri/evals/workflow.scoping/brief-happy.jsonl".tmp && mv "$d/recipes/sindri/evals/workflow.scoping/brief-happy.jsonl".tmp "$d/recipes/sindri/evals/workflow.scoping/brief-happy.jsonl"
 run "$d"; expect_rc "a string where the fact has a schema fails" 1; expect_out "names the fact" "fact:brief"
 
 d="$(copy nosource)"; edit "$d/schemas/scoping/examples/manifest.json" '.examples[0].source = ""'
