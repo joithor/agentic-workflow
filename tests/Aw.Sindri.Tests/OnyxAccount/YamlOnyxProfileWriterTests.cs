@@ -5,7 +5,7 @@ using Aw.Sindri.Infrastructure.Profile;
 namespace Aw.Sindri.Tests.OnyxAccount;
 
 // Spec §4.1 step 9: the profile section is written and every other key and comment stays as it was.
-[Lane(TestLane.Unit)]
+[Lane(TestLane.Integration)]
 public sealed class YamlOnyxProfileWriterTests : IDisposable
 {
     private const string Url = "http://127.0.0.1:3000";

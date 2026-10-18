@@ -208,7 +208,7 @@ $SINDRI context sources status
 | `SND-CONTEXT-002` | The key's pointer doesn't resolve to a usable key (queries degrade with it as the cause) | `$SINDRI doctor` names the `SND-SECRET` reason |
 | `SND-CONTEXT-050` | Onyx refused the key (403: missing, wrong, or not admin) | Recreate the key as in §5 and update the pointer |
 | `SND-CONTEXT-053` | The admin key isn't a service account's | Create a service account for Sindri (§5) |
-| `SND-CONTEXT-055` | `onyx.url` isn't loopback, or Onyx reports a version other than the pinned one | §1, §2 |
+| `SND-CONTEXT-055` | `onyx.url` isn't loopback, or `managed: true` is set with a url that isn't `http://127.0.0.1:<port>`, or Onyx reports a version other than the pinned one | §1, §2 |
 | `SND-CONTEXT-051` | Onyx answered with a shape the pinned v4.9.0 doesn't have | Check `version` against what Onyx runs (§1) |
 | `SND-CONTEXT-010` | Onyx didn't answer; queries continue without it (`degraded`) | `docker compose ps`, `sources status` |
 

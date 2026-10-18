@@ -30,7 +30,7 @@ internal sealed class KeychainSecretWriter(IToolRunner runner, ISindriHome home,
             return SindriErrors.OnyxSecretNotStored.With("the key's store name is malformed");   // unreachable for the fixed names Sindri passes
         }
 
-        if (IsPlain(secret) && StoredInKeychain(service, account, secret))
+        if (IsPlain(secret) && StoredInKeychain(service, account, secret) && ReadsBack(pointer.Value, secret))
         {
             return pointer;
         }
@@ -51,6 +51,13 @@ internal sealed class KeychainSecretWriter(IToolRunner runner, ISindriHome home,
             _ => throw new ArgumentOutOfRangeException(nameof(service), _platform, "unknown platform"),
         };
         return run is { Outcome: ToolOutcome.Exited, ExitCode: 0 };
+    }
+
+    // `security -i` can exit 0 after a command it refused, so a clean exit isn't proof: the pointer must resolve to the secret just stored, or the file takes it.
+    private bool ReadsBack(SecretPointer pointer, string secret)
+    {
+        var read = new PointerSecrets(static _ => null, runner, _platform).Resolve(pointer);
+        return read is { IsSuccess: true } && string.Equals(read.Value, secret, StringComparison.Ordinal);
     }
 
     private Result<SecretPointer> ToFile(string service, string account, string secret)

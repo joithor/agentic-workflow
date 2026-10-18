@@ -1,6 +1,7 @@
 using System.Globalization;
 using Aw.Kernel;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Onyx;
 
 namespace Aw.Sindri.Features.OnyxAccount;
@@ -13,6 +14,24 @@ internal sealed class OnyxAccountService(IOnyxWorkspace workspace, IOnyxPrompts 
     : IService<OnyxAccountRequest, OnyxAccountResponse>
 {
     public async ValueTask<Result<OnyxAccountResponse>> Handle(OnyxAccountRequest request, CancellationToken cancellationToken)
+    {
+        // The same workspace lock `up` and `down` take: a second `up` or a `down` can't run while this one waits for the owner at a prompt.
+        var lockAttempt = workspace.TryLock();
+        if (lockAttempt.IsError)
+        {
+            return lockAttempt.Error;
+        }
+
+        using var held = lockAttempt.Value;
+        if (held is null)
+        {
+            return SindriErrors.CommandBusy.With("another `sindri onyx` command is running; wait for it to finish, then run this again");
+        }
+
+        return await Run(request, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async ValueTask<Result<OnyxAccountResponse>> Run(OnyxAccountRequest request, CancellationToken cancellationToken)
     {
         var url = string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{request.Port}");
         var state = workspace.ReadState() ?? new OnyxSetupState(request.Port, new Dictionary<string, string>(StringComparer.Ordinal));
@@ -81,10 +100,15 @@ internal sealed class OnyxAccountService(IOnyxWorkspace workspace, IOnyxPrompts 
 
     private async ValueTask<Result<(string? Pointer, OnyxStepOutcome Outcome)>> Key(int port, Dictionary<string, string> steps, string? pointer, CancellationToken cancellationToken)
     {
-        if (steps.ContainsKey(OnyxSteps.Key) && await minter.Stands(port, pointer, cancellationToken).ConfigureAwait(false))
+        if (steps.ContainsKey(OnyxSteps.Key))
         {
-            progress.Line("key: already done");
-            return (pointer, OnyxStepOutcome.Skipped);
+            if (await minter.Stands(port, pointer, cancellationToken).ConfigureAwait(false))
+            {
+                progress.Line("key: already done");
+                return (pointer, OnyxStepOutcome.Skipped);
+            }
+
+            progress.Line($"key: the recorded key no longer works. {OnyxKeyMinter.LeftoverNote}");
         }
 
         if (!prompts.Interactive)

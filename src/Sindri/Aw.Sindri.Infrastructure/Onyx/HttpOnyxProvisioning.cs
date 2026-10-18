@@ -30,19 +30,24 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
         (HttpMethod.Get, "/api/me"),
     ];
 
+    private static readonly TimeSpan _logoutTimeout = TimeSpan.FromSeconds(5);
+
     private readonly Func<HttpMessageHandler> _handler;
+    private readonly TimeSpan _logout;
 
     /// <summary>Initializes the adapter for production: a handler per session, no redirect, no proxy.</summary>
     public HttpOnyxProvisioning()
-        : this(static () => new SocketsHttpHandler { AllowAutoRedirect = false, UseProxy = false, UseCookies = true })
+        : this(static () => new SocketsHttpHandler { AllowAutoRedirect = false, UseProxy = false, UseCookies = true }, _logoutTimeout)
     {
     }
 
     /// <summary>Initializes the adapter over a handler factory (a test hands one pointing at a fake server).</summary>
     /// <param name="handler">Makes the handler a session's client uses; it must keep cookies.</param>
-    internal HttpOnyxProvisioning(Func<HttpMessageHandler> handler)
+    /// <param name="logoutTimeout">How long disposing a session waits for the logout; null takes 5 s.</param>
+    internal HttpOnyxProvisioning(Func<HttpMessageHandler> handler, TimeSpan? logoutTimeout = null)
     {
         _handler = handler;
+        _logout = logoutTimeout ?? _logoutTimeout;
     }
 
     /// <summary>Whether a request is on the provisioning allowlist: the method and the path (no query), exactly.</summary>
@@ -55,7 +60,7 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
 #pragma warning disable CA2000 // the session owns its client and disposes both when the caller disposes the session
     public async ValueTask<Result<IOnyxSession>> SignIn(int port, string email, string password, CancellationToken cancellationToken)
     {
-        var session = new Session(NewClient(), Origin(port));
+        var session = new Session(NewClient(), Origin(port), _logout);
         using var body = new FormUrlEncodedContent(new Dictionary<string, string>(StringComparer.Ordinal) { ["username"] = email, ["password"] = password });
         var sent = await session.Send(HttpMethod.Post, "/api/auth/login", body, cancellationToken).ConfigureAwait(false);
         if (sent.IsError || !sent.Value.Success)
@@ -77,7 +82,7 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
         using var client = NewClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", key);
 #pragma warning disable CA2000 // a Session only borrows the client, which the using above disposes
-        var session = new Session(client, Origin(port));
+        var session = new Session(client, Origin(port), _logout);
 #pragma warning restore CA2000
         var sent = await session.Send(HttpMethod.Get, "/api/me", content: null, cancellationToken).ConfigureAwait(false);
         if (sent.IsError)
@@ -107,7 +112,7 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
         public bool Success => (int)Status is >= 200 and < 300;
     }
 
-    private sealed class Session(HttpClient client, Uri origin) : IOnyxSession
+    private sealed class Session(HttpClient client, Uri origin, TimeSpan logoutTimeout) : IOnyxSession
     {
         public async ValueTask<Result<int>> AdminGroup(CancellationToken cancellationToken)
         {
@@ -153,9 +158,19 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
 
         public async ValueTask DisposeAsync()
         {
-            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-            _ = await Send(HttpMethod.Post, "/api/auth/logout", content: null, deadline.Token).ConfigureAwait(false);   // best effort: the cookie is dropped with the client either way
-            client.Dispose();
+            try
+            {
+                using var deadline = new CancellationTokenSource(logoutTimeout);
+                _ = await Send(HttpMethod.Post, "/api/auth/logout", content: null, deadline.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // best effort: a slow logout must not decide the outcome (the key is already made); the cookie is dropped with the client either way
+            }
+            finally
+            {
+                client.Dispose();
+            }
         }
 
         // The one place a request leaves: the allowlist first, then the send. Neither the password nor the key reaches an error.
