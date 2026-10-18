@@ -22,7 +22,8 @@
 #                                  the mid-run event of the stacked variant: the base pull request merges (the PR is then a restack)
 #   forge-fixture.sh status        the links of the variants that are up (exit 1 when none)
 #   forge-fixture.sh list          the variants and what each is
-#   forge-fixture.sh down [--all]  remove the variants and the world; --all also removes the aw-forge-fake build kept in <home>/bin
+#   forge-fixture.sh down [--all]  remove the variants and the world (only those: other entries of the home stay); --all removes the whole
+#                                  home, including the aw-forge-fake build kept in <home>/bin
 #
 # The home is FORGE_FIXTURE_HOME (default ${TMPDIR:-/tmp}/aw-forge-fixture-<uid>). The guard runs first for every verb that touches it:
 # its real path must be strictly inside realpath(${TMPDIR:-/tmp}) or inside a proof folder, <AW_STATE_DIR or ~/.agentic-workflow>/<repo
@@ -60,7 +61,8 @@ known_variant() { case " $VARIANTS " in *" $1 "*) return 0 ;; *) return 1 ;; esa
 # --- the guard -------------------------------------------------------------------------------------------------------
 real() { (cd "$1" 2>/dev/null && pwd -P); }
 guard() {
-  HOME_DIR="${FORGE_FIXTURE_HOME:-${TMPDIR:-/tmp}/aw-forge-fixture-$(id -u)}"
+  local tmp_root="${TMPDIR:-/tmp}"; tmp_root="${tmp_root%/}"
+  HOME_DIR="${FORGE_FIXTURE_HOME:-${tmp_root}/aw-forge-fixture-$(id -u)}"
   local msg="FORGE_FIXTURE_HOME must be under \$TMPDIR or a proof folder, with no '..' (got ${HOME_DIR})"
   case "$HOME_DIR" in /*) ;; *) die "$msg" ;; esac
   case "$HOME_DIR/" in */../* | */./* | *//*) die "$msg" ;; esac
@@ -92,7 +94,7 @@ ensure_bin() {
   fi
   need dotnet
   local dll="$HOME_DIR/bin/aw-forge-fake.dll"
-  if [ ! -f "$dll" ] || [ -n "$(find "$ROOT/src/Forge" "$ROOT/src/Aw.Kernel" -name '*.cs' -newer "$dll" -print -quit 2>/dev/null)" ]; then
+  if [ ! -f "$dll" ] || [ -n "$(find "$ROOT/src/Forge" "$ROOT/src/Aw.Kernel" "$ROOT/src/Aw.Kernel.Telemetry" "$ROOT/src/Redaction/Aw.Redaction" -name '*.cs' -newer "$dll" -print -quit 2>/dev/null)" ]; then
     echo "forge-fixture: building aw-forge-fake into $HOME_DIR/bin" >&2
     mkdir -p "$HOME_DIR/bin"
     dotnet build "$ROOT/src/Forge/Aw.Forge.Host" -c Release -o "$HOME_DIR/bin" -v q --nologo >&2 || die "dotnet build of aw-forge-fake failed"
@@ -132,6 +134,7 @@ build_repo() { # <variant> <work dir>
   if [ "$v" = noDocs ]; then
     rm -r "$w/docs"
     sed -i.bak '/docs\/usage.md/d' "$w/README.md" && rm -f "$w/README.md.bak"
+    sed -i.bak 's/ and `docs\/`//' "$w/AGENTS.md" && rm -f "$w/AGENTS.md.bak"
   fi
   git_fx "$w" tally-dev add -A && git_fx "$w" tally-dev commit -q -m "chore: tally 0.3.0"
   if [ "$v" = stacked ]; then
@@ -143,6 +146,7 @@ build_repo() { # <variant> <work dir>
   fi
   [ "$v" != stacked ] || git_fx "$w" tally-dev checkout -q -b "$BRANCH"
   overlay head "$w"
+  [ "$v" != noDocs ] || git -C "$w" show main:CHANGELOG.md >"$w/CHANGELOG.md"   # the changelog line would name the change
   git_fx "$w" tally-dev add -A && git_fx "$w" tally-dev commit -q -m "feat: print results as JSON with --json"
 }
 
@@ -385,9 +389,10 @@ case "$verb" in
     if [ "$all" = 1 ]; then
       rm -r -- "$HOME_DIR"
     else
-      for d in "$HOME_DIR"/*; do
-        [ -e "$d" ] || continue
-        [ "$(basename "$d")" = bin ] || rm -r -- "$d"
+      # only what this script makes: the world and the variant folders, never other entries of the home
+      [ ! -d "$HOME_DIR/state" ] || rm -r -- "$HOME_DIR/state"
+      for v in $VARIANTS; do
+        [ ! -d "$HOME_DIR/$(kebab "$v")" ] || rm -r -- "$HOME_DIR/$(kebab "$v")"
       done
     fi
     echo "removed"

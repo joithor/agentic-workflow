@@ -6,7 +6,7 @@ repository. `scripts/forge-fixture.sh` loads one variant into the file-backed fa
 temp home and prints the pull request link.
 
 **Everything here is synthetic.** The repository is `tally`, a small word-count CLI in plain Node (nine source and test files). Its pull request adds `--json` and leaves
-`docs/usage.md` stale. No real company, app or person appears, and no file holds a secret-shaped string (the planted token is built at run time).
+`docs/usage.md` stale; that file names `parseArgs` in `src/args.js`, so a docs scope by changed symbol or path lists it. No real company, app or person appears, and no file holds a secret-shaped string (the planted token is built at run time).
 
 | Part | What |
 |---|---|
@@ -21,12 +21,12 @@ temp home and prints the pull request link.
 
 | Variant | What it loads | Consumed by |
 |---|---|---|
-| `comments` | The 17 items below; CI green on the head | PB-S1 (classify, reply, fix traces), PB-B (queue, snapshot `comments`), PB-P1 (parks at `ready` with three held) |
+| `comments` | The 17 items below; CI green on the head | PB-S1 (classify, reply, fix traces), PB-B (queue, snapshot `comments`), PB-P1 (parks at `ready` with five held: three judged, `design`, `directive` and `uncertain`, and two untrusted, `stranger-lou` and `relaybot[bot]`) |
 | `ciRed` | A required check (`unit`) fails on the head, with a log tail | `ci-fix`; snapshot `ciRed` |
 | `ciFlaky` | `integration` fails on a network timeout unrelated to the diff (`expected.json` has `flaky: true`) | `ci-fix` must rerun, not edit (`flaky-without-evidence`) |
 | `conflict` | The forge reports `mergeable: false` | snapshot `conflict` |
 | `stacked` | PR 2 sits on PR 1's branch (`feature/json-base`); `forge-fixture.sh event merge-base` merges PR 1 mid-run | snapshot `restack`; `stacked` refuses merge until its base merges |
-| `noDocs` | No `docs/` and no link to it | docs scope `none` |
+| `noDocs` | No `docs/`, no link to it, no mention of a changed thing in any remaining doc (the changelog line is dropped; AGENTS.md names only `README.md`) | docs scope `none` |
 | `sourceFix` | A bug comment on `src/count.js`; the candidate fix is branch `fixture/source-fix` (trailer `Sindri-Comment: <thread key>`) | the `stale` recheck after a fix that changes source |
 | `foreignPush` | A collaborator's source commit lands after the proof: the head is past `provenSha` (the hand-off's `headSha`) | snapshot `stale` whoever pushed |
 | `secret` | A comment asks for a config; the candidate fix, branch `fixture/fix-with-token`, commits a planted `ghp_` token in `src/config.js` | `gate.pr.secret-scan` must refuse the push |
@@ -49,6 +49,8 @@ Queue outcomes (§5.2) of `step.pr.next-comment` and the snapshot's `comments`:
 
 `edited` is seeded, then its body is replaced in the world. The forge port has no `editedAt` yet (`ForgeThread` carries no edit time), so
 the fixture shows the edit as new text only; `fact:comment.editedAt` and the `(comment_id, edited_at)` mark key (§5.4) need the port to grow the field.
+
+**Held-out variant.** PB-S1 tunes on `comments` and must report on a held-out variant. This PR ships none: PB-S1 adds a second comment set (different wording per type) as its own variant, so the tuning set is never the report set.
 
 ## Using it
 
