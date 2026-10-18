@@ -1,4 +1,5 @@
-using Aw.Context.Core.Overrides;
+using Aw.Context.Core.Results;
+
 
 namespace Aw.Context.Core.Graph;
 
@@ -29,5 +30,5 @@ internal static class ComponentHop
         }
     }
 
-    private static bool Confirmed(GraphEdge edge) => Confirmation.Of(edge.Provenance);
+    private static bool Confirmed(GraphEdge edge) => edge.Provenance != Provenance.Model;
 }
