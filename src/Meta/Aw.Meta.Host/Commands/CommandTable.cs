@@ -44,6 +44,8 @@ internal static class CommandTable
         WorktreeListCommand.Entry,
         WorktreeSweepCommand.Entry,
         LaneSendCommand.Entry,
+        LanesContextCommand.Entry,
+        LaneRecycleCommand.Entry,
         LaneInboxCommand.Entry,
         LaneStopCheckCommand.Entry,
         LaneReplyCommand.Entry,
