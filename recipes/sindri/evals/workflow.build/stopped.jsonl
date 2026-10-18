@@ -1,0 +1,2 @@
+{"start":{"inputs":{"fact:phasePacket":{"phase":"1"},"fact:workspace":"/work/phase-1","fact:buildNotes":{},"fact:lineContext":{"base":"origin/main"}}}}
+{"trigger":{"kind":"step.completed","outcome":"stopped"},"expect":{"state":"stopped","outcome":"unresolved"}}
