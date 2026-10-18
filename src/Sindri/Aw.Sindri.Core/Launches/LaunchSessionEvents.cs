@@ -97,4 +97,21 @@ public sealed class LaunchSessionEvents(ILaunchFiles files, LaunchLiveness liven
         liveness.End(launch);
         return Unit.Value;
     }
+
+    /// <summary>Appends one private 'session.usage' sample.</summary>
+    /// <param name="item">The launch's item.</param>
+    /// <param name="usage">The launch, the sample's number and the totals so far.</param>
+    /// <param name="cancellationToken">Cancels the append.</param>
+    /// <returns>Success, or why the ledger refused.</returns>
+    public async ValueTask<Result<Unit>> Usage(string item, SessionUsage usage, CancellationToken cancellationToken)
+    {
+        if (held.Current is not { } grant)
+        {
+            return SindriErrors.NotRunning.With("the control plane doesn't hold the lease (fix: sindri)");
+        }
+
+        var key = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{EventTypes.SessionUsage}:{usage.Launch.Value}:{usage.Sample}");
+        var appended = await ledger.Append(events.Entry(EventTypes.SessionUsage, usage, key, item), grant, cancellationToken).ConfigureAwait(false);
+        return appended.IsError ? appended.Error : Unit.Value;
+    }
 }

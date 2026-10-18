@@ -55,6 +55,16 @@ public sealed class LaunchLiveness
         }
     }
 
+    /// <summary>The launches this process is tracking: started or beating, and not ended.</summary>
+    /// <returns>The launches, in no set order.</returns>
+    public IReadOnlyList<LaunchId> Active()
+    {
+        lock (_gate)
+        {
+            return [.. _last.Keys];
+        }
+    }
+
     /// <summary>The launches whose last heartbeat is at least <paramref name="silence"/> old.</summary>
     /// <param name="now">The time now.</param>
     /// <param name="silence">How long without a heartbeat.</param>
