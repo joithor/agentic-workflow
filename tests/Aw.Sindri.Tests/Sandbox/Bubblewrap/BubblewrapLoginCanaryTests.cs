@@ -37,7 +37,10 @@ public sealed class BubblewrapLoginCanaryTests
 
         var failure = await SelfCheckReason(static plan => plan);
 
-        Assert.DoesNotContain("login", failure ?? string.Empty, StringComparison.Ordinal);
+        // SelfCheck stops at the first failure, so "no login failure" proves the login canary ran only if every canary before it passed: the failure, if any, must come from one after it.
+        Assert.True(
+            failure is null || failure.StartsWith("hooks-run: ", StringComparison.Ordinal) || failure.StartsWith("net-deny: ", StringComparison.Ordinal),
+            failure);
     }
 
     [Fact]
