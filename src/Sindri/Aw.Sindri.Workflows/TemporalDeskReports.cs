@@ -1,10 +1,8 @@
 using Aw.Kernel;
-using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Temporalio.Client;
-using Temporalio.Exceptions;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
@@ -34,37 +32,12 @@ internal sealed class TemporalDeskReports(TemporalFrontend frontend)
             return client.Error;
         }
 
-        using var patience = TemporalUpdates.Wait(cancellationToken);
         var handle = client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value);
-        try
-        {
-            return await handle.ExecuteUpdateAsync(
-                wf => wf.CompleteAsync(report),
-                new WorkflowUpdateOptions(nonce.Value) { Rpc = patience.Options }).ConfigureAwait(false);
-        }
-        catch (WorkflowUpdateFailedException e) when (e.InnerException is ApplicationFailureException { ErrorType: { } code } refusal)
-        {
-            return Refusal(code, refusal.Message);
-        }
-        catch (RpcException e) when (TemporalUpdates.NoNamespace(e)) // boundary: not serve's Temporal; says nothing about the run
-        {
-            return TemporalUpdates.NotServes(client.Value, e);
-        }
-        catch (Exception e) when (!cancellationToken.IsCancellationRequested && e is WorkflowUpdateRpcTimeoutOrCanceledException or RpcException { Code: RpcException.StatusCode.DeadlineExceeded }) // boundary: no worker took it
-        {
-            return await TemporalUpdates.NoAnswer(client.Value, address, nonce, cancellationToken).ConfigureAwait(false);
-        }
-        catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound)
-        {
-            return WorkflowErrors.InstanceNotFound.With($"no running instance {address.Value} (fix: sindri workflow list)");
-        }
-        catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable) // boundary: the dev server died under a live serve
-        {
-            return TemporalUpdates.Down(client.Value, e, nonce);
-        }
+        return await TemporalUpdates.Execute(
+            TemporalUpdates.UpdateFrontend.Of(client.Value),
+            address,
+            nonce.Value,
+            rpc => handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(nonce.Value) { Rpc = rpc }),
+            cancellationToken).ConfigureAwait(false);
     }
-
-    /// <summary>The catalogue error a validator's ApplicationFailure names; an unknown type stays a not-allowed trigger.</summary>
-    private static Error Refusal(string code, string message) =>
-        (WorkflowErrors.All.FirstOrDefault(d => d.Code == code) ?? WorkflowErrors.TriggerNotAllowed).With(message);
 }
