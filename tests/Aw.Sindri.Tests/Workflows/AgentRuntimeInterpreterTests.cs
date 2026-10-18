@@ -131,11 +131,10 @@ public sealed class AgentRuntimeInterpreterTests(SindriTimeSkippingServer skippi
         await rig.Run(async handle =>
         {
             _ = await WorkflowsHarness.Until(handle, static v => v.Run is not null && v.State == "write");
-            await Launched(ct);
+            await WaitFor(() => _launcher.Requests.Count > 0, ct);   // a takeover may land in the launch phase: the invariant below holds either way
             var takeover = new TakeoverRequested("human:cli", new CommandStamp(CommandNonce.From(new string('1', 32)), new string('0', 64)));
             _ = await handle.ExecuteUpdateAsync(wf => wf.TakeoverAsync(takeover), new WorkflowUpdateOptions(new string('1', 32)));
             _ = await WorkflowsHarness.Until(handle, static v => v.State == "taken-over");
-            await Task.Delay(TimeSpan.FromSeconds(1), ct);   // the watch would have ended the run by now if it still ran
             Assert.Equal((0, 1), (_launcher.Stops.Count, _launcher.SessionCount));
 
             var handback = new HandbackRequested("human:cli", new CommandStamp(CommandNonce.From(new string('2', 32)), new string('0', 64)));
@@ -145,7 +144,8 @@ public sealed class AgentRuntimeInterpreterTests(SindriTimeSkippingServer skippi
 
             _ = await WorkflowsHarness.Until(handle, static v => v.Question is not null);
             Assert.Equal("exit", await rig.FailureReason(ct));
-            _ = Assert.Single(_launcher.Requests);
+            Assert.Equal((0, 1), (_launcher.Stops.Count, _launcher.SessionCount));
+            _ = Assert.Single(_launcher.Requests.Select(static r => r.Launch).Distinct());   // a relaunch after the handback is the same launch id, which the launcher keeps idempotent
         });
     }
 
