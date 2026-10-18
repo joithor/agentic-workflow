@@ -15,7 +15,7 @@ constraints for P8 (cited **engine P8 D3, D8, D9, D10, D11**; D4, D7 and the 202
 and its review of this spec (E1-…, §14) · **Lanes:** the API lane builds the sandbox inside the launcher (SB-1…SB-5b); the
 ideas lane runs the spike and builds the macOS adapter, the GitHub credential path and the per-repo declaration; the
 engine lane (P8) consumes the contract, owns the engine side of §6 and §7, and reviewed it; the UI lane builds the copy
-(SB-6) · **Spike:** SB-S1 first batch (items 1, 2, 3, 9, 11, with parts of 5, 6, 7) recorded in §15, 2026-10-18; the rest follows · **Next:** the owner's final read (§13 has no open question), then /specToProvenPR takes each phase to PRs.
+(SB-6) · **Spike:** SB-S1 recorded in §15, 2026-10-18 (items 2 and 12 provisional on passive evidence; the live rotation check is an owner step) · **Next:** the owner's final read (§13 has no open question), then /specToProvenPR takes each phase to PRs.
 
 Co-written with the engine lane (P8 consumes it).
 
@@ -988,7 +988,7 @@ The owner's answers of 2026-10-18 (§13), folded in. No review round; the change
 ## 15. Spike record
 
 Filled in by SB-S1 (ideas lane, 2026-10-18). SB-2 to SB-4 start only when this section holds the answers they use.
-**First batch: items 1, 2, 3, 9, 11** (they gate SB-2 and SB-4a). Items 4 to 8, 10 and 12 follow in the next update to this section.
+**Items 1, 2, 3, 9, 11** (they gate SB-2 and SB-4a) come first; 4, 5, 6, 7, 8, 10 and 12 follow. Items 2 and 12 (rotation) are provisional.
 
 **Box and versions.** Ubuntu, kernel 6.17.0-40-generic; bubblewrap 0.9.0 (`/usr/bin/bwrap`); systemd 255 (`systemd-run --user --scope`, cgroup v2, `cpu memory pids` delegated to `user@1000.service`); socat 1.8.0.0; tmux 3.4;
 Claude Code 2.1.302; Codex CLI 0.139.0 (0.141.0 is available); .NET SDK 10.0.401; node v24.14.1;
@@ -1117,3 +1117,28 @@ Both start inside Sindri's bwrap on this box (AppArmor restriction on): Claude C
 
 ### Item 7 (answered, needed by the §3.1 table): the discovery file
 The C# `sindri` client verbs read **`$AW_SINDRI_HOME/control.json`** (default `$AW_STATE_DIR/sindri-app/control.json`, 0600; `ControlEndpoint {Url, Pid, Epoch, Temporal?}`; `src/Sindri/Aw.Sindri.Infrastructure/Control/FileEndpoint.cs`), and refuse a stale record by pid and epoch. `AW_SINDRI_PORT` is the serve-side port variable only. The record is replaced by temp + rename, so bind its **directory form**: a per-launch `AW_SINDRI_HOME` containing a `control.json` whose `Url` names the forwarder's port (same pid and epoch as the real one), no `auth/`. The TS `sindri` (`~/.local/bin/sindri`) uses the ledger directly and no endpoint file.
+
+### Item 4. `systemd-run --user --scope`, the tty, and the OOM kill: **yes**
+Command: `systemd-run --user --scope --unit=<u> --slice=<s>.slice -p MemoryMax=256M -p MemorySwapMax=0 -p OOMPolicy=kill -p TasksMax=512 -- bwrap … -- python3 alloc.py` inside a tmux pane (systemd 255).
+- **The tty is kept**: `isatty` is true inside (shown as `/dev/console` in the fresh `/dev`), and the interactive Claude/Codex runs of item 1 were attachable; with `SBX_SYSTEMD=1` there was no change in behaviour.
+- **After an OOM kill** the shell saw exit **137**; `systemctl --user show <scope> -p ActiveState,Result` still answers (`ActiveState=failed`, `Result=oom-kill`) until `reset-failed`, and the journal says "A process of this unit has been killed by the OOM killer." So `session wrap` reads `Result` from the failed scope. **`memory.events` is readable only while the scope is alive** (the cgroup is removed at death, and `MemoryPeak` afterwards is meaningless): poll `memory.events`/`memory.peak` on the tick and keep the last sample.
+- **`MemoryHigh` throttles instead of killing**: with `MemoryHigh=200M` the allocator crawled (the `high` counter climbed about 100 per second) and was not killed in 90 s; the kill came at `MemoryMax`. The 80 %-of-max `MemoryHigh` of §3.3 therefore makes a runaway session slow before it dies; say so in the `limit` copy, or set `MemoryHigh` closer to the max.
+- A slice named `sindri-steps.slice` nests as `sindri.slice/sindri-steps.slice` under `user@<uid>.service` (the dash is a hierarchy); the parent-slice cap in §3.3 must be set on the right unit.
+
+### Item 8. The nested-heavy rule with the real wrapper: **confirmed, with two corrections**
+Command: the real `~/.agentic-workflow/bin-r1b/heavy` run inside the stack against a scratch `locks/` directory and fake `dotnet`/`npm`/`npx` that print the wrapper's environment.
+- A bare absolute path with no flag is classified **light** (`mode=light`, no box-wide slot): the §3.3 note is right. `heavy --expensive /abs/tool` takes `heavy-job.lock` (`AW_HEAVY_SLOT` set); `--light` takes only the session slot.
+- With `AW_HEAVY_LOCK_HELD=1` the wrapper `exec`s the command straight away and sets **no** resource environment (`DOTNET_PROCESSOR_COUNT`, `MSBUILDDISABLENODEREUSE`, `DOTNET_CLI_USE_MSBUILD_SERVER` all unset): rule 4 is right, the sandbox must always set them. `heavy` inside `heavy` runs straight through (no deadlock). The sandbox environment (`--clearenv`) does not carry `AW_HEAVY_LOCK_HELD`.
+- **Correction 1:** the wrapper puts `$HOME/.dotnet` first on `PATH`, so `heavy dotnet build` (a bare name) resolves the **real** `dotnet`, not the shim; it is still classified expensive by its text, so nothing is bypassed, but the "bare name loops back into the shim" statement holds only for `npm` and `npx`.
+- **Correction 2 (session key):** the session slot key is the nearest `claude` ancestor, else the parent; for a process orphaned to the user manager that was `1781`, the systemd `--user` pid. In a Step the scope's `claude` is an ancestor, so this only matters for Codex (already in §11).
+- Stale slots: after `kill -9` of the holder the next `heavy` reclaimed the box-wide and session slots at once (`kill -0` on the recorded owner pid, which is a host pid because there is no pid namespace). A leftover `heavy-session/<pid>.lock` of a different key stays listed until reused: the sweep only has litter to remove, no lock to unwedge.
+- The cap files (`heavy-slots-cap` = 3, `heavy-meta-reserve` = 0) are readable through the read-only binds.
+
+### Item 10 (informational). A relaunch on the pre-chosen session id: **Claude yes; Codex not run**
+`claude -p "remember PINEAPPLE-42" --session-id <uuid>` and then, in a second sandbox launch on the same config directory, `claude -p "what was the word?" --resume <uuid>` answered `PINEAPPLE-42` with the same session id: the conversation survives a relaunch as long as `projects/<key>/<id>.jsonl` is in the bound config directory. `codex resume` was not run (it needs a live Codex login, see items 1 and 2).
+
+### Item 12 (passive only): the credential sources on the pinned CLIs
+`CLAUDE_CONFIG_DIR` pointing at a directory other than `~/.claude` works end to end (every run in this section used one). `CODEX_HOME` pointing at a separate home is honoured by Codex 0.139.0 (`codex debug prompt-input`, `codex` TUI). Whether sessions sharing one separate login race on a refresh: Claude Code 2.1.302 carries a cross-process refresh lock and race-recovery code (the `tengu_oauth_token_refresh_lock_*` and `…_race_recovered` strings of item 2), which suggests the shared login is safe for Claude; Codex was not examined. **Provisional, same as item 2; the definitive check is steps 5 and 6 of the owner procedure in item 2.**
+
+### Item 5 and item 6: what is still open
+Item 5 is answered for both pinned CLIs on this box (above). Item 6 is answered for the keys in the "partial" paragraph above; still open: `AllowedTools`-style narrowing for Codex, whether Codex tolerates an outer-layer-only write to the run directory under `sandbox_mode="read-only"` (needs a live Codex turn, owner step with the throwaway login), and Cursor (reserved).
