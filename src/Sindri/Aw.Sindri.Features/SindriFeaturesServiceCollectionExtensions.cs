@@ -45,6 +45,7 @@ using Aw.Sindri.Features.GetNeedsYou;
 using Aw.Sindri.Features.GetProfile;
 using Aw.Sindri.Features.GetQueue;
 using Aw.Sindri.Features.GetSession;
+using Aw.Sindri.Features.GetSessionPreview;
 using Aw.Sindri.Features.GetStatus;
 using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Features.IssueNonce;
@@ -61,6 +62,7 @@ using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.ListSessions;
+using Aw.Sindri.Features.OnyxStatus;
 using Aw.Sindri.Features.PauseService;
 using Aw.Sindri.Features.PingProcess;
 using Aw.Sindri.Features.ReadLedger;
@@ -108,6 +110,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<CheckProfileRequest, CheckProfileResponse>, CheckProfileService>()
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
             .AddDoctor()
+            .AddOnyxStatus()
             .AddScoped<ServeRecords>()
             .AddScoped<IService<RegisterMcpRequest, RegisterMcpResponse>, RegisterMcpService>()
             .AddScoped<IScheduledService, HeartbeatService>()
@@ -173,6 +176,8 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<ListServicesRequest>, AcceptAllValidator<ListServicesRequest>>().AddQuery<ListServicesRequest, ListServicesResponse, ListServicesService>();
         _ = services.AddScoped<IValidator<ListSessionsRequest>, AcceptAllValidator<ListSessionsRequest>>().AddQuery<ListSessionsRequest, SessionList, ListSessionsService>();
         _ = services.AddScoped<IValidator<GetSessionRequest>, AcceptAllValidator<GetSessionRequest>>().AddQuery<GetSessionRequest, SessionView, GetSessionService>();
+        _ = services.AddSingleton<PaneCaptures>();
+        _ = services.AddScoped<IValidator<GetSessionPreviewRequest>, AcceptAllValidator<GetSessionPreviewRequest>>().AddQuery<GetSessionPreviewRequest, GetSessionPreviewResponse, GetSessionPreviewService>();
         _ = services.AddScoped<IValidator<PingProcessRequest>, AcceptAllValidator<PingProcessRequest>>().AddQuery<PingProcessRequest, Ping, PingProcessService>();
         _ = services.AddScoped<IValidator<ShowContextNodeRequest>, AcceptAllValidator<ShowContextNodeRequest>>().AddQuery<ShowContextNodeRequest, NodeView, ShowContextNodeService>();
         _ = services.AddScoped<IValidator<ListContextNeighborsRequest>, AcceptAllValidator<ListContextNeighborsRequest>>().AddQuery<ListContextNeighborsRequest, NeighborsView, ListContextNeighborsService>();
@@ -233,6 +238,10 @@ public static class SindriFeaturesServiceCollectionExtensions
         .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>>(static sp =>
             new WithMoreChecks(sp.GetRequiredService<RunDoctorService>(), sp.GetServices<IDoctorChecks>()))
         .AddScoped<IDoctorChecks, ContextDoctorChecks>();
+
+    /// <summary>Onyx's status (P1): read-only and in process, like the doctor, but its own slice.</summary>
+    private static IServiceCollection AddOnyxStatus(this IServiceCollection services) => services
+        .AddScoped<IService<OnyxStatusRequest, OnyxStatusResponse>, OnyxStatusService>();
 
     /// <summary>The registry's slices (engine P2): register, approve and revoke (commands), the challenge (an issue), list and show (queries).</summary>
     private static IServiceCollection AddRegistrySlices(this IServiceCollection services)
