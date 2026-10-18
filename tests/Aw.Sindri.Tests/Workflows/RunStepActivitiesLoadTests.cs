@@ -27,7 +27,7 @@ public sealed class RunStepActivitiesLoadTests
         var profiles = new InMemoryProfiles();
         var facts = new InMemoryFactStore();
         var runner = new BlockStepRunner(new BlockStepRuntimes([]), catalog, static (_, _, _) => throw new NotSupportedException(), facts, facts, profiles);
-        var activities = new RunStepActivities(new Approved(new ApprovedRecipe(version, recipe)), catalog, new ProfileWorkflowTimes(profiles, profiles), runner, NullLogger<RunStepActivities>.Instance);
+        var activities = new RunStepActivities(new Approved(new ApprovedRecipe(version, recipe)), catalog, new ProfileWorkflowTimes(profiles, profiles), runner, new AgentStepSelection(profiles, []), NullLogger<RunStepActivities>.Instance);
 
         var loaded = await new ActivityEnvironment().RunAsync(() => activities.LoadRecipeAsync(version));
 

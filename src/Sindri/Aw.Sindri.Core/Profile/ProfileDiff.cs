@@ -120,11 +120,13 @@ public static class ProfileDiff
         [
             ("workflow.deskTimeout", workflow?.DeskTimeout),
             ("workflow.eventHold", workflow?.EventHold),
-            ("workflow.effects", workflow?.Effects is { } effects ? string.Join(", ", effects) : null),
+            ("workflow.effects", Joined(workflow?.Effects)),
             ("workflow.dispatchDelay", workflow?.DispatchDelay),
             ("workflow.agent.target", workflow?.Agent?.Target?.Value),
-            ("workflow.judge.providers", workflow?.Judge?.Providers is { } providers ? string.Join(", ", providers) : null),
+            ("workflow.judge.providers", Joined(workflow?.Judge?.Providers)),
         ];
         return keys.Where(static k => k.Value is not null).Select(static k => (k.Key, k.Value!));   // why: the nulls are filtered out just before
     }
+
+    private static string? Joined(IReadOnlyList<string>? values) => values is null ? null : string.Join(", ", values);
 }

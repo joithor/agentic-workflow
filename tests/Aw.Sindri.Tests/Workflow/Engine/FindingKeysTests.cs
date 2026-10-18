@@ -16,7 +16,7 @@ public sealed class FindingKeysTests
 
         Assert.NotNull(a);
         Assert.Equal(a, b);
-        Assert.Single(a);
+        _ = Assert.Single(a);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -25,7 +25,7 @@ public sealed class FindingKeysTests
         var keys = Of("""[{"file":"b","check":"c","message":"m"},{"file":"a","check":"c","message":"m"},{"file":"a","check":"c","message":"M"}]""");
 
         Assert.Equal(2, keys?.Count);
-        Assert.Equal(keys!.Order(StringComparer.Ordinal), keys); // why: the Assert above fails first when null
+        Assert.Equal(keys!.Order(StringComparer.Ordinal), keys, StringComparer.Ordinal); // why: the Assert above fails first when null
     }
 
     [Theory, Trait("Lane", "unit")]

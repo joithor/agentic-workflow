@@ -35,8 +35,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<FactReadActivities>()
             .AddSingleton<EffectDispatch>(static provider => (context, ct) => DispatchScoped(provider, context, ct))   // engine P6 unit (a): RunEffect runs a scoped block by id
             .AddSingleton<BlockStepDispatch>(static provider => (step, context, ct) => RunBlockScoped(provider, step, context, ct))   // DT-J2: RunBlockStep runs a scoped block Step by id
-            .AddSingleton<BlockStepRunner>()
-            .AddSingleton<AgentStepSelection>()                      // engine P8: which Steps an agent runs, from workflow.agent.target and the registered launcher
+            .AddSingleton<BlockStepRunner>().AddSingleton<AgentStepSelection>()
             .AddSingleton<EffectActivities>()                          // engine P6: RecordEffect, RecheckEffect, RunEffect
             .AddSingleton(provider => SindriWorker.Options(settings,
                 provider.GetRequiredService<RunStepActivities>(), provider.GetRequiredService<RecordEventActivities>(),

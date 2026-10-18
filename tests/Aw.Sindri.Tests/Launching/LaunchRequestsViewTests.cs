@@ -2,6 +2,7 @@ using System.Text;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Launches;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -31,7 +32,7 @@ public sealed class LaunchRequestsViewTests
     private async Task<InstanceStart?> Start()
     {
         var runtime = new Capturing();
-        var service = new StartInstanceService(new OneItem(), new OneRecipe(), new NoInstances(), new StartFacts(new InMemoryFactStore(), _h.Slice.Clock), runtime, Adapter,
+        var service = new StartInstanceService(new OneItem(), new OneRecipe(), new NoInstances(), new StartFacts(new InMemoryFactStore(), _h.Slice.Clock, new StepInputRuntimes([])), runtime, Adapter,
             new ClaimHolders(new InMemoryWorkflowClaims(), new FakeInstanceLiveness()));
         var handled = await service.Handle(new StartInstanceRequest("workflow.step", A.FirstItemId.Value, NextAttempt: false,
             new Dictionary<FactKey, StartFact> { [_fact] = new("item.json", Encoding.UTF8.GetBytes($"{{\"id\":\"{A.FirstItemId.Value}\"}}")) }), Token);

@@ -1,10 +1,11 @@
+using System.Globalization;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
-using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Infrastructure.Workflow;
@@ -17,8 +18,6 @@ namespace Aw.Sindri.Tests.Workflows;
 [Lane(TestLane.Integration)]
 public sealed class LedgerAgentSessionsContractTests : AgentSessionsContract
 {
-    private static readonly LaunchId _other = LaunchId.From("LCH-00000000000000000000000000000002");
-
     private readonly SliceHarness _slice = new();
     private LeaseGrant? _grant;
 
@@ -32,7 +31,7 @@ public sealed class LedgerAgentSessionsContractTests : AgentSessionsContract
         await Append(EventTypes.SessionEnded, new SessionEnded(launch, reason, exitCode), $"{EventTypes.SessionEnded}:{launch.Value}");
 
     protected override async ValueTask Spend(IAgentSessions sessions, LaunchId launch, int sample, long tokens) =>
-        await Append(EventTypes.SessionUsage, new SessionUsage(launch, sample, tokens / 2, tokens - (tokens / 2)), $"{EventTypes.SessionUsage}:{launch.Value}:{sample}");
+        await Append(EventTypes.SessionUsage, new SessionUsage(launch, sample, tokens / 2, tokens - (tokens / 2)), string.Create(CultureInfo.InvariantCulture, $"{EventTypes.SessionUsage}:{launch.Value}:{sample}"));
 
     private async ValueTask Append<T>(string type, T payload, string key)
     {

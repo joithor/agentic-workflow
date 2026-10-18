@@ -2,7 +2,6 @@ using Aw.Kernel;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
@@ -16,9 +15,9 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="launchers">The registered launchers; none when the host has no launcher.</param>
 internal sealed class AgentStepSelection(IApprovedProfile approved, IEnumerable<ILauncher> launchers)
 {
-    private static readonly IReadOnlyList<BlockId> None = [];
+    private static readonly IReadOnlyList<BlockId> _none = [];
 
-    private static Result<IReadOnlyList<BlockId>> Wrap(IReadOnlyList<BlockId> ids) => ids;
+    private static Result<IReadOnlyList<BlockId>> Wrap(IReadOnlyList<BlockId> ids) => Results.Success(ids);
 
     /// <summary>The agent Steps among <paramref name="used"/>, in id order.</summary>
     /// <param name="used">The descriptors of the Steps a recipe uses.</param>
@@ -29,7 +28,7 @@ internal sealed class AgentStepSelection(IApprovedProfile approved, IEnumerable<
         ArgumentNullException.ThrowIfNull(used);
         if (!launchers.Any())
         {
-            return Wrap(None);
+            return Wrap(_none);
         }
 
         var latest = await approved.Latest(cancellationToken).ConfigureAwait(false);
@@ -39,7 +38,7 @@ internal sealed class AgentStepSelection(IApprovedProfile approved, IEnumerable<
         }
 
         return latest.Value?.Profile.Workflow?.Agent?.Target is null
-            ? Wrap(None)
+            ? Wrap(_none)
             : Wrap([.. used.Where(static d => d is { Kind: BlockKind.Step, Runtime: BlockRuntime.Agent }).Select(static d => d.Id).OrderBy(static id => id.Value, StringComparer.Ordinal)]);
     }
 }

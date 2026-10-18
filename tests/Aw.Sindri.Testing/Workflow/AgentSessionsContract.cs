@@ -55,7 +55,7 @@ public abstract class AgentSessionsContract
         var sessions = await Create();
         var other = LaunchId.From("LCH-00000000000000000000000000000002");
         await End(sessions, A.FirstLaunchId, SessionEndReason.Exit, 3);
-        await End(sessions, other, SessionEndReason.Lost, null);
+        await End(sessions, other, SessionEndReason.Lost, exitCode: null);
 
         var exit = await sessions.Watch(A.FirstLaunchId, Token);
         var lost = await sessions.Watch(other, Token);
