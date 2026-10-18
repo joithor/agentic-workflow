@@ -46,6 +46,7 @@ internal sealed class CodeWorld : IDisposable
             (commit is null ? string.Empty : $"commit: {commit}\n") + Header + "nodes:\n" + string.Join('\n',
             [
                 "  - {key: \"feature:sharing\", label: \"Sharing\"}",
+                "  - {key: \"surface:screen/share\", label: \"Share\"}",
                 "  - {key: \"action:sharing.create\", label: \"Create a link\"}",
                 "  - {key: \"thing:shared-link\", label: \"Shared link\"}",
                 "  - {key: \"code:src/sharing/links.ts\", label: \"links.ts\", provenance: deterministic}",
@@ -54,7 +55,8 @@ internal sealed class CodeWorld : IDisposable
                 .. extraNodes ?? [],
             ]) + "\nedges:\n" + string.Join('\n',
             [
-                "  - {from: \"action:sharing.create\", to: \"feature:sharing\", type: part-of}",
+                "  - {from: \"surface:screen/share\", to: \"feature:sharing\", type: part-of}",
+                "  - {from: \"action:sharing.create\", to: \"surface:screen/share\", type: on}",
                 "  - {from: \"action:sharing.create\", to: \"thing:shared-link\", type: writes}",
                 "  - {from: \"code:src/sharing/links.ts\", to: \"feature:sharing\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/src/sharing/links.ts\"}]}",
                 "  - {from: \"code:src/sharing/routes.ts\", to: \"feature:sharing\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/src/sharing/routes.ts\"}]}",

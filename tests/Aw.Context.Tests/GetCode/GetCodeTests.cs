@@ -207,11 +207,13 @@ public sealed class GetCodeTests : IDisposable
         _ = await _code.World.ImportYaml(MapWorld.Yaml(
             "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
             "  - {key: \"feature:sharing\", label: \"Sharing\"}",
+            "  - {key: \"surface:screen/share\", label: \"Share\"}",
             "  - {key: \"action:sharing.create\", label: \"Create\"}",
             "  - {key: \"thing:shared-link\", label: \"Shared ACME-123456 link\"}",
             "  - {key: \"code:src/sharing/links.ts\", label: \"links.ts\", provenance: deterministic}",
             "edges:",
-            "  - {from: \"action:sharing.create\", to: \"feature:sharing\", type: part-of}",
+            "  - {from: \"surface:screen/share\", to: \"feature:sharing\", type: part-of}",
+            "  - {from: \"action:sharing.create\", to: \"surface:screen/share\", type: on}",
             "  - {from: \"action:sharing.create\", to: \"thing:shared-link\", type: writes}",
             "  - {from: \"code:src/sharing/links.ts\", to: \"feature:sharing\", type: implements, provenance: deterministic, evidence: [{key: \"repo:aw-split-panes/src/sharing/links.ts\"}]}"));
         var scope = MapWorld.HumanWith("""{"scrub":{"extraPatterns":[{"id":"acme-id","pattern":"ACME-[0-9]{6}"}]}}""");

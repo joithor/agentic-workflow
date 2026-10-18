@@ -73,6 +73,7 @@ internal sealed class BacktestWorld : IAsyncDisposable
             .AddSingleton<IProbeFileReader>(new NoProbes())
             .AddSingleton<IProbeReportStore>(new NoProbes())
             .AddSingleton(wrap?.Invoke(new GitRepoReader(git)) ?? new GitRepoReader(git))
+            .AddSingleton<Aw.Context.Core.Code.ICodeSearch>(new Aw.Context.Testing.Code.FakeCodeSearch(new ContextRepo(ContextRepoName.From("none"), "/none"), "0000000", new Dictionary<string, string>(StringComparer.Ordinal)))   // the backtest never asks the code lens
             .AddSingleton<IIntentStore>(Intents)
             .AddSingleton<IModelPort>(Model)
             .AddSingleton<IClusterSource>(Clusters)
