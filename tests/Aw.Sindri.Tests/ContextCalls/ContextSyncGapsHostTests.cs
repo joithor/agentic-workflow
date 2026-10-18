@@ -47,9 +47,8 @@ public sealed class ContextSyncGapsHostTests : IDisposable
         Assert.Equal(("unavailable", "not-synced", "SND-CONTEXT-161"), (gap.GetProperty("state").GetString(), gap.GetProperty("reason").GetString(), gap.GetProperty("code").GetString()));
         Assert.False(gap.TryGetProperty("sync", out _));
         Assert.False(first.Value.Idle);
-        var jobs = await host.Http.Ask(Get("/sindri/jobs?kind=SyncSources", Human(host.Token.Value)));
         var healed = Onyx(after.Body);
-        Assert.True(healed.GetProperty("state").GetString() == "ok", healed.GetRawText() + " jobs: " + jobs.Body);
+        Assert.True(healed.GetProperty("state").GetString() == "ok", healed.GetRawText());
         Assert.True(second.Value.Idle);
         Assert.Equal("service:context-sync-gaps", started.Value!.Envelope.Actor);
     }
@@ -75,15 +74,13 @@ public sealed class ContextSyncGapsHostTests : IDisposable
         return await gaps.Run(new ScheduledRun(grant, DateTimeOffset.UnixEpoch), ct);
     }
 
-    // The jobs view follows the ledger: wait until it shows a sync job and none running.
+    // The test host does not project views on its own, so wait on the ledger: the sync job is over when 'job.finished' is recorded.
     private static async Task WaitForSyncToEnd(GoldenHost host, CancellationToken ct)
     {
+        var ledger = host.App.Services.GetRequiredService<ILedgerStore>();
         for (var i = 0; i < 160; i++)
         {
-            var all = await host.Http.Ask(Get("/sindri/jobs?kind=SyncSources", Human(host.Token.Value)));
-            using var list = JsonDocument.Parse(all.Body);
-            var jobs = list.RootElement.GetProperty("jobs").EnumerateArray().ToList();
-            if (jobs.Count > 0 && jobs.TrueForAll(j => j.GetProperty("state").GetString() != "running"))
+            if ((await ledger.Latest(EventTypes.JobFinished, ct)).Value is not null)
             {
                 return;
             }
