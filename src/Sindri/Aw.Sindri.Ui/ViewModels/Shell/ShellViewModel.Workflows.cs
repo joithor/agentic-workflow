@@ -29,6 +29,11 @@ internal sealed partial class ShellViewModel
             Navigate(e.Link);
             OpenerWorkflow = e.Link.Subject;
         };
+        Workflows.ChildAnswerRequested += (_, e) =>
+        {
+            FollowChildAnswer(e.Answer);
+            OpenerWorkflow = e.RowAddress;   // Esc comes back to this row
+        };
         Workflows.PropertyChanged += (_, e) =>
         {
             if (string.Equals(e.PropertyName, nameof(WorkflowsViewModel.NavCount), StringComparison.Ordinal))
