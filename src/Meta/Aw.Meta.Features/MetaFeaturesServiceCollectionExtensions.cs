@@ -22,6 +22,7 @@ using Aw.Meta.Features.Owner;
 using Aw.Meta.Features.OwnerAnswer;
 using Aw.Meta.Features.OwnerAsk;
 using Aw.Meta.Features.QueueDrop;
+using Aw.Meta.Features.QueueGate;
 using Aw.Meta.Features.Roles;
 using Aw.Meta.Features.ShowVersion;
 using Aw.Meta.Features.Status;
@@ -126,11 +127,13 @@ public static class MetaFeaturesServiceCollectionExtensions
         .Plain<StatusService, StatusRequest, StatusResponse>();
 
     private static IServiceCollection AddGateSlices(this IServiceCollection services) => services
-        .AddScoped<GateStepRunner>()
         .AddScoped<RerunExecutor>()
         .AddScoped<GateRunService>()
         .AddScoped<IValidator<GateRunRequest>, GateRunValidator>()
         .Validated<GateRunService, GateRunRequest, GateRunResponse>()
+        .AddScoped<QueueGateService>()
+        .AddScoped<IValidator<QueueGateRequest>, QueueGateValidator>()
+        .Validated<QueueGateService, QueueGateRequest, QueueGateResponse>()
         .AddScoped<GateRerunService>()
         .AddScoped<IValidator<GateRerunRequest>, GateRerunValidator>()
         .Validated<GateRerunService, GateRerunRequest, GateRerunResponse>()

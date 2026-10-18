@@ -7,5 +7,5 @@ namespace Aw.Context.Features.QueryContext;
 /// <summary>The live map: what <see cref="MapReader"/> gives the caller.</summary>
 internal sealed class LiveMap(MapReader reader) : IMapProvider
 {
-    public ValueTask<Result<VisibleMap>> Read(ContextScope scope, bool draft, CancellationToken cancellationToken) => reader.Read(scope, draft, cancellationToken);
+    public ValueTask<Result<VisibleMap>> Read(ContextScope scope, MapRead read, CancellationToken cancellationToken) => reader.ReadAt(scope, read, cancellationToken);
 }

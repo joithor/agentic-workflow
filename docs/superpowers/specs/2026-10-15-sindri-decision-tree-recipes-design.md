@@ -116,12 +116,12 @@ states:
       use: step.judge.choose
       with:
         prompt: "Which evidence proves this change works?"
-        facts: [fact:issue, fact:diff]
+        facts: [fact:phasePacket, fact:built]
         choices:
           - "ui: what a user sees or does in a web app changed"
           - "api: an HTTP or CLI contract changed: a route, a verb, an exit code or a response shape"
           - "db: what is persisted changed: a schema, a migration, or the rows a command writes"
-          - "all: more than one of ui, api and db changed"
+          - "all: all three of ui, api and db changed"
           - "none: the always-run checks already prove it (the verify pack, or the frozen bug check)"
           - "other: none of these would prove it"
     timeout: { after: 2d, then: park }
@@ -146,7 +146,17 @@ transitions:
   uncertain one (§8.6).
 - `none` goes to `evidence-none`, a block-runtime Step (`step.evidence.none`, pure) that writes a
   `fact:evidenceSummary` saying the always-run checks are the proof, then joins the other branches. No desk task is
-  spent on it, and every path out of the route carries a summary.
+  spent on it. A summary leaves the route on `resolved`, and from a failed leaf child. Every other end has none
+  (`RCP-WIRE-003`):
+  - **`failed`**: a single leaf ran and did not hold. For `other`, that means no evidence was found.
+  - **`all-failed`**: the `all` branch ended unresolved. `evidence-all` stops at its first check that fails, so
+    usually one of ui, api and db failed, not all three. A check cancelled *inside* `evidence-all` also ends here,
+    because `evidence-all` reports it as its own unresolved `dropped` and a terminal can't declare `cancelled`.
+  - **`dropped`**: the child run this instance waited on (a leaf, or `evidence-all` itself) was cancelled.
+
+  All three declare the outcome `unresolved` (owner, 2026-10-17: `all-failed` is kept apart from `dropped`), so a
+  parent waiting on `workflow.evidence` can't route on which one it was. The `workflow.evidence` child instance's
+  state name shows it, in `workflow status`, the ledger and the app.
 - The route state's `next` is written as an instruction, because before DT-J it runs at the desk and a human acts in
   it (REF "Voice"). Its timeout is the desk's 2 days for that reason. On the block runtime the call is bounded by
   `MaxDuration` (2 minutes, §8.2), which ends it as `step.failed` long before the state's timer.
@@ -220,8 +230,8 @@ its terminal outcomes.
 | `workflow.plan` | A stage plan, a verification plan written before code, and a judge check that it states an observable signal | `step.plan.write`, `step.plan.verification`, `step.judge.choose` (`ready`, `underspecified`) | `fact:plan`, `fact:verificationPlan` | `resolved`, `unresolved` | specToProvenPR 1–2 |
 | `workflow.investigate` | Root cause to `diagnosed`, with a confirmed hypothesis | `step.rootcause.investigate` (`diagnosed`, `unfixed`) | `fact:rootCause` | `resolved`, `unresolved` | bugFix 2 |
 | `workflow.reproduce` | A route between a UI check and a test check, then a check that fails on the base for the reported reason, frozen as the baseline | `step.judge.choose` (`uiCheck`, `testCheck`), `step.reproduce.ui-check` / `step.reproduce.test-check` (`reproduced`, `notReproduced`), each through `bugfix-state` | `fact:check` (kind, file, command), `fact:baseline` | `resolved`, `unresolved` (not reproduced) | bugFix 3 |
-| `workflow.implement` | Test-first build in a per-run worktree, looping on the checks | `step.produce`, `step.checks` (the existing Steps) under `loop: revisions` | `fact:diff`, `fact:branch` | `resolved`, `unresolved` | specToProvenPR 3; bugFix 4 (mode A) |
-| `workflow.implement-split` | Mode C: one implementer per area, in sequence on one worktree, each given the previous diff | `step.produce` per area, under `loop: areas` | `fact:diff`, `fact:branch` | `resolved`, `unresolved` | bugFix 4 (mode C) |
+| `workflow.implement` | Test-first build in a per-run worktree, looping on the checks | `step.produce`, `step.checks` (the existing Steps) under `loop: revisions` | `fact:output` (the diff; no `branch` until a Step writes it) | `resolved`, `unresolved` | specToProvenPR 3; bugFix 4 (mode A) |
+| `workflow.implement-split` | Mode C: one implementer per area, in sequence on one worktree, each given the previous diff. **Deferred to DT-B** (it needs an areas signal; DT-R2 doesn't ship it) | `step.produce` per area, under `loop: areas` | `fact:output` | `resolved`, `unresolved` | bugFix 4 (mode C) |
 | `workflow.hand-test` | Use the change by hand in the running app; record what was done, expected and seen | `step.handtest.run` (`works`, `broken`) | `fact:manualTest` | `resolved`, `unresolved` | specToProvenPR 4 |
 | `workflow.verify` | **Always runs.** The `verify-app` journey with its lenses and evidence pack, and `/design-verify` when screen baselines match | `step.verify.journey` (`pass`, `fail`), `step.verify.design` (`pass`, `fail`, `skipped`) | `fact:evidencePack` | `resolved`, `unresolved` | specToProvenPR 5 (the PROOF gate) |
 | `workflow.evidence-ui` | A `ui-evidence` run: plan, run, lint, critique | `step.evidence.ui-plan`, `step.evidence.ui-run` (`passed`, `failed`, `broken`) | `fact:evidenceSummary` | `resolved`, `unresolved` | specToProvenPR 6 |
@@ -233,6 +243,11 @@ its terminal outcomes.
 | `workflow.review-loop` | `/review` to 0 blocking and 0 issue findings, cap 5, then one narrow re-check (§4.1) | `step.review.run`, `step.review.fix`, `step.review.recheck` | `fact:review` | `resolved`, `unresolved`, `failed` (behaviour wrong) | specToProvenPR 8 |
 | `workflow.ready` | The GREEN gate (the full suite and CI on the PR head), the proof re-check if review changed non-test source, the PR body, `ready #N` to the merge orchestrator | `step.ready.green` (`green`, `red`), `step.ready.recheck` (`pass`, `fail`, `skipped`), `step.ready.body` (`done`); effect `effect.notify.desk` on the last transition | `fact:ready` (head sha, gate scopes, proof and review state; input `fact:pr` isn't re-declared, `RCP-OUT-003`) | `resolved`, `unresolved` | specToProvenPR 9 |
 | `workflow.report` | The bugfix report: `resolution.md` and the ask-first offer to post it, for a fixed or an unfixed bug alike. No PR | `step.report.write` (`done`) | `fact:resolution` | `resolved` (the report is written; the parent's own terminal says whether the bug was fixed, §6.1) | bugFix 6 |
+
+DT-R applied DTC2 to DTC9 to this table: the subject kinds `packet` and `payload`, the long-form child outputs, and the
+inputs the shipped recipes declare (`phasePacket` and `built` for the evidence recipes, `change` and `phasePacket` for
+`workflow.review-loop`). Where a row differs from the shipped recipe in `recipes/sindri/`, the shipped recipe is
+current (`recipes/sindri/README.md` lists them).
 
 Steps that the meta recipes use directly: `step.intake.ticket` (desk, `done`; writes `fact:issue`, `fact:expected`,
 `fact:actual`), `step.pr.open-draft` (desk, `done`; writes `fact:pr`), and three bugfix Steps over `bugfix-state`:
@@ -250,13 +265,14 @@ id: workflow.review-loop
 version: 1
 description: "Block recipe: /review to zero blocking and issue findings, at most 5 runs, then one narrow re-check."
 inputs:
-  - { key: fact:pr, label: "Pull request", type: link }
+  - { key: fact:change, label: "Change", type: payload, kind: payload }
+  - { key: fact:phasePacket, label: "Phase packet", type: packet, kind: packet }
 outputs:
   - { key: fact:review, label: "Last review", type: payload, from: review }
 initial: review
 states:
   review:  { kind: active, step: step.review.run, loop: rounds, timeout: { after: 2h, then: park },
-             next: "Run review {loop.rounds}/{loop.rounds.cap} on {item}'s pull request." }
+             next: "Run review {loop.rounds}/{loop.rounds.cap} on {item}'s change." }
   fix:     { kind: active, step: step.review.fix, timeout: { after: 4h, then: park },
              next: "Fix the blocking and issue findings of run {loop.rounds}; answer the rest in writing." }
   recheck: { kind: active, step: step.review.recheck, timeout: { after: 1h, then: park },
@@ -268,14 +284,16 @@ transitions:
   - { from: [review, recheck], to: clean, on: step.completed, when: { outcome: clean },           produces: [fact:review] }
   - { from: review,  to: fix,     on: step.completed, when: { outcome: findings },        produces: [fact:review] }
   - { from: [review, recheck], to: wrong, on: step.completed, when: { outcome: behaviourWrong }, produces: [fact:review] }
-  - { from: fix,     to: review,  on: step.completed, when: { all: [ { outcome: fixed }, { loop: rounds, below: cap } ] } }
-  - { from: fix,     to: recheck, on: step.completed, when: { all: [ { outcome: fixed }, { not: { loop: rounds, below: cap } } ] } }
+  - { from: fix,     to: review,  on: step.completed, when: { all: [ { outcome: fixed }, { loop: rounds, below: cap } ] }, produces: [fact:change] }
+  - { from: fix,     to: recheck, on: step.completed, when: { all: [ { outcome: fixed }, { not: { loop: rounds, below: cap } } ] }, produces: [fact:change] }
   - { from: recheck, to: stuck,   on: step.completed, when: { outcome: findings },        produces: [fact:review] }
 loops: { rounds: { cap: 5 } }
 evals:
   - evals/workflow.review-loop/happy.jsonl
   - evals/workflow.review-loop/cap-then-recheck.jsonl
   - evals/workflow.review-loop/behaviour-wrong.jsonl
+  - evals/workflow.review-loop/recheck-clean.jsonl
+  - evals/workflow.review-loop/recheck-wrong.jsonl
 ```
 
 - `step.review.run` reports `clean` (0 blocking and 0 issue findings, classified by substance as specToProvenPR's

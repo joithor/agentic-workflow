@@ -1,9 +1,12 @@
 using Aw.Kernel.Services;
+using Aw.Packets.App.Features.FreezeLinePacket;
 using Aw.Packets.App.Features.FreezePacket;
 using Aw.Packets.App.Features.FreezeScopingPacket;
 using Aw.Packets.App.Features.HashPacket;
+using Aw.Packets.App.Features.ValidateLinePacket;
 using Aw.Packets.App.Features.ValidatePacket;
 using Aw.Packets.App.Features.ValidateScopingPacket;
+using Aw.Packets.App.Features.VerifyPacket;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Packets.App.Features;
@@ -51,6 +54,37 @@ internal static class PacketsFeaturesServiceCollectionExtensions
                 new ValidatingService<FreezeScopingPacketRequest, FreezeScopingPacketResponse>(
                     sp.GetRequiredService<FreezeScopingPacketService>(),
                     sp.GetRequiredService<IValidator<FreezeScopingPacketRequest>>()));
+        return services.AddLinePacketFeatures();
+    }
+
+    private static IServiceCollection AddLinePacketFeatures(this IServiceCollection services)
+    {
+        _ = services
+            .AddScoped<ValidateLinePacketService>()
+            .AddScoped<IValidator<ValidateLinePacketRequest>, ValidateLinePacketValidator>()
+            .AddScoped<IService<ValidateLinePacketRequest, ValidateLinePacketResponse>>(static sp =>
+                new ValidatingService<ValidateLinePacketRequest, ValidateLinePacketResponse>(
+                    sp.GetRequiredService<ValidateLinePacketService>(),
+                    sp.GetRequiredService<IValidator<ValidateLinePacketRequest>>()));
+        _ = services
+            .AddScoped<FreezeLinePacketService>()
+            .AddScoped<IValidator<FreezeLinePacketRequest>, FreezeLinePacketValidator>()
+            .AddScoped<IService<FreezeLinePacketRequest, FreezeLinePacketResponse>>(static sp =>
+                new ValidatingService<FreezeLinePacketRequest, FreezeLinePacketResponse>(
+                    sp.GetRequiredService<FreezeLinePacketService>(),
+                    sp.GetRequiredService<IValidator<FreezeLinePacketRequest>>()));
+        return services.AddVerifyFeature();
+    }
+
+    private static IServiceCollection AddVerifyFeature(this IServiceCollection services)
+    {
+        _ = services
+            .AddScoped<VerifyPacketService>()
+            .AddScoped<IValidator<VerifyPacketRequest>, VerifyPacketValidator>()
+            .AddScoped<IService<VerifyPacketRequest, VerifyPacketResponse>>(static sp =>
+                new ValidatingService<VerifyPacketRequest, VerifyPacketResponse>(
+                    sp.GetRequiredService<VerifyPacketService>(),
+                    sp.GetRequiredService<IValidator<VerifyPacketRequest>>()));
         return services;
     }
 }

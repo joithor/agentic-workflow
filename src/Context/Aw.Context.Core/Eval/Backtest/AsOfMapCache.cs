@@ -16,4 +16,14 @@ public static class AsOfMapCache
         ArgumentNullException.ThrowIfNull(commit);
         return string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{repo.Value}-{commit[..Math.Min(12, commit.Length)]}-x{extractorVersion}-c{(clustered ? 1 : 0)}");
     }
+
+    /// <summary>The key of an extraction that also ran the profile's recognizers: the plain key and, when the set is not empty, its hash, so a changed recognizer set never reuses a cached map.</summary>
+    /// <param name="repo">The repo.</param>
+    /// <param name="commit">The cut commit (a full sha).</param>
+    /// <param name="extractorVersion">The recognizers' version.</param>
+    /// <param name="clustered">True when the cluster source answered.</param>
+    /// <param name="recognizers">The profile's recognizers.</param>
+    /// <returns>The plain key when the set is empty, else that key and '-&lt;hash&gt;'.</returns>
+    public static string Key(ContextRepoName repo, string commit, int extractorVersion, bool clustered, Extract.RecognizerSet recognizers) =>
+        recognizers.Hash.Length == 0 ? Key(repo, commit, extractorVersion, clustered) : $"{Key(repo, commit, extractorVersion, clustered)}-{recognizers.Hash}";
 }

@@ -15,8 +15,9 @@
 //       The deterministic overlap check of spec 9.3: an observed line that shares a run of 8 or more words with a
 //       scenario of the phase's hidden set. Exit 0 clean, 1 leaks.
 //
-// Hashes here (dirHash, fileHash) are the fixture's stand-in for `aw-packets hash`, which arrives with LN-PKT1; see
-// README.md, "Choices". Exit: 0 every check passes, 1 a check fails, 2 usage or an unreadable input.
+// Packet hashes (the parents in index.json, freeze.json) are real `aw-packets hash` values; this script checks that they
+// agree with each other, not that they are the hash (Aw.Packets.Tests' LineFixtureTests does that against the tool). The
+// pack pins and file hashes (dirHash, fileHash) are the fixture's own; see README.md, "Choices". Exit: 0 every check passes, 1 a check fails, 2 usage or an unreadable input.
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -123,9 +124,9 @@ const REAL_APP = ["ui-browser", "api-transcript", "cli-transcript", "ios-sim"];
 const UNMEASURABLE = ["fast", "quick", "clean", "intuitive", "easy", "seamless", "robust", "user-friendly", "smooth"];
 const HOPS = ["state", "dependency", "flow", "component"];
 const SIZE_LIMITS = { XS: { files: 3, items: 2 }, S: { files: 8, items: 4 }, M: { files: 20, items: 8 } };
-const SCOPE_FILES = ["scope-map.json", "acceptance.json", "coverage.json", "lenses.json", "size.json", "questions.json", "answers.jsonl", "challenge.json", "rounds.jsonl", "runs.json", "sources.json", "brief.md", "index.json"];
-const DESIGN_FILES = ["spec.md", "sections.json", "coverage.json", "decisions.json", "acceptance.json", "signals.json", "contracts.json", "lens-rounds.jsonl", "style.json", "escapes.json", "runs.json", "index.json"];
-const PLAN_FILES = ["packet.json", "graph.json", "exec-review.json", "holdout.json", "answers.jsonl", "index.json"];
+const SCOPE_FILES = ["scope-map.json", "acceptance.json", "coverage.json", "lenses.json", "size.json", "questions.json", "answers.jsonl", "challenge.json", "rounds.jsonl", "runs.json", "sources.json", "brief.md"];
+const DESIGN_FILES = ["packet.json", "spec.md", "sections.json", "coverage.json", "decisions.json", "acceptance.json", "signals.json", "contracts.json", "lens-rounds.jsonl", "style.json", "escapes.json", "runs.json", "index.json"];
+const PLAN_FILES = ["packet.json", "tasks.json", "graph.json", "exec-review.json", "holdout.json", "answers.jsonl", "index.json"];
 
 function parseMapEdges() {
   const lines = readText(path.join(SCOPING, "map.yaml")).split("\n");
@@ -153,7 +154,7 @@ function run() {
   const freeze = readJson(at("gold", "freeze.json"));
   shapeOk("gold/freeze.json", freeze, { schemaVersion: "integer", frozen: [{ packet: "string", kind: "string", hash: "string", by: "string", station: "string", at: "string" }] });
   const frozenBy = new Map(freeze.frozen.map((f) => [f.packet, f]));
-  for (const f of freeze.frozen) ok(`${f.packet}: freeze record hash equals the directory's hash (owner-frozen)`, f.by === "owner" && f.hash === dirHash(at("gold", f.packet)), `${f.hash} vs ${dirHash(at("gold", f.packet))}`);
+  for (const f of freeze.frozen) ok(`${f.packet}: freeze record is owner-frozen, names a sha256 hash and a kind its packet directory agrees with`, f.by === "owner" && /^sha256:[0-9a-f]{64}$/.test(f.hash) && fs.existsSync(at("gold", f.packet)) && f.kind === f.packet.split("/")[0].replace("scope", "scoping"), `${f.packet} ${f.kind} ${f.hash}`);
   const idx = (p) => readJson(at("gold", p, "index.json"));
   const accFile = (p) => at("gold", p, "acceptance.json");
 
@@ -236,7 +237,7 @@ function run() {
     ok(`${dir}/answers.jsonl: one batch per scripted batch of the scoping answers`, answersLog.length === readJson(path.join(SCOPING, "answers", `${c}.json`)).batches.length);
     const challenge = j("challenge.json");
     ok(`${dir}/challenge.json: the last round is empty`, challenge.rounds.length >= 2 && challenge.rounds.at(-1).findings.length === 0);
-    ok(`${dir}/index.json: kind scoping, no parents, acceptance chain starts here`, idx(dir).kind === "scoping" && idx(dir).parents.length === 0 && idx(dir).acceptance.extends === null && idx(dir).acceptance.self === fileHash(accFile(dir)));
+    ok(`${dir}: has no index.json (the scoping kind lists twelve files; its hash is the frozen record)`, !fs.existsSync(at("gold", dir, "index.json")));
     ok(`${dir}/questions.json: every question answered, one recommended option each`, j("questions.json").questions.every((q) => q.status === "answered" && q.options.filter((o) => o.recommended).length === 1));
   }
 
@@ -251,12 +252,17 @@ function run() {
   shapeOk(`${D}/sections.json`, sections, { schemaVersion: "integer", sections: [{ id: "string", parent: "string|null", heading: "string", covers: ["string"], cites: ["string"], assumes: ["string"] }] });
   shapeOk(`${D}/coverage.json`, dcov, { schemaVersion: "integer", surfaces: [{ key: "string", id: "string", sections: ["string"] }], excluded: [{ key: "string", id: "string", reason: "string" }], unmapped: [{ path: "string", sections: ["string"] }] });
   shapeOk(`${D}/decisions.json`, decisions, { schemaVersion: "integer", decisions: [{ id: "string", question: "string", affects: ["string"], cites: ["string"], options: [{ id: "string", answer: "string", tradeoffs: "string", "recommended?": "boolean" }], status: "string", chosen: "string" }] });
-  shapeOk(`${D}/acceptance.json`, dacc, { schemaVersion: "integer", parent: "string", items: [{ id: "string", text: "string", status: "string", evidence: [], trust: "string" }], superseded: [] });
+  shapeOk(`${D}/acceptance.json`, dacc, { schemaVersion: "integer", parent: "string", items: [{ id: "string", text: "string", status: "string", evidence: [], trust: "string" }] });
   shapeOk(`${D}/contracts.json`, contracts, { schemaVersion: "integer", baseSha: "string", edits: [{ id: "string", lane: "string", target: { file: "string", heading: "string" }, quote: "string", change: "string", row: "integer" }] });
   shapeOk(`${D}/style.json`, style, { schemaVersion: "integer", style: { id: "string", version: "string", hash: "string" }, lenses: { id: "string", version: "string", hash: "string" } });
   shapeOk(`${D}/escapes.json`, escapes, { schemaVersion: "integer", escapes: [{ from: "string", station: "string", kind: "string", id: "string", why: "string" }] });
   shapeOk(`${D}/runs.json`, druns, { schemaVersion: "integer", runs: [{ step: "string", via: "string", seedHash: "string", model: "string", vendor: "string", effort: "string", tokens: "integer" }] });
   const si = idx(D);
+  const IDX = { schemaVersion: "integer", kind: "string", parents: ["string"], acceptance: { self: "string|null", extends: "string|null" } };
+  shapeOk(`${D}/index.json`, si, IDX);
+  const dpk = readJson(at("gold", D, "packet.json"));
+  shapeOk(`${D}/packet.json`, dpk, { schemaVersion: "integer", kind: "string", id: "string", repo: "string", baseSha: "string", status: "string", hash: "null", links: Object.fromEntries(["spec", "sections", "coverage", "decisions", "acceptance", "signals", "contracts", "lensRounds", "style", "escapes", "runs", "index"].map((k) => [k, "string"])) });
+  ok(`${D}/packet.json: kind design, baseSha is the scoping head, links name each of the packet's files`, dpk.kind === "design" && dpk.baseSha === scopingHead && Object.values(dpk.links).sort().join() === DESIGN_FILES.filter((f) => f !== "packet.json").sort().join());
   ok(`${D}/index.json: kind design, parent is the frozen expiry scope packet, chain extends its acceptance`, si.kind === "design" && JSON.stringify(si.parents) === JSON.stringify([frozenBy.get("scope/expiry").hash]) && si.acceptance.extends === fileHash(accFile("scope/expiry")) && si.acceptance.self === fileHash(accFile(D)) && dacc.parent === fileHash(accFile("scope/expiry")));
   const surfaceByKey = new Map(scopes.expiry.sm.surfaces.map((s) => [s.key, s]));
   const surfaceById = new Map(scopes.expiry.sm.surfaces.map((s) => [s.id, s]));
@@ -380,12 +386,14 @@ function run() {
   const P = "plan/expiry";
   const pnames = walk(at("gold", P));
   ok(`${P}: holds exactly the files of line spec 3.2 row 3`, JSON.stringify(pnames) === JSON.stringify([...PLAN_FILES].sort()), pnames.join(","));
-  const pk = readJson(at("gold", P, "packet.json")), graph = readJson(at("gold", P, "graph.json")), exec = readJson(at("gold", P, "exec-review.json")), hold = readJson(at("gold", P, "holdout.json"));
+  const pk = readJson(at("gold", P, "packet.json")), plan = readJson(at("gold", P, "tasks.json")), graph = readJson(at("gold", P, "graph.json")), exec = readJson(at("gold", P, "exec-review.json")), hold = readJson(at("gold", P, "holdout.json"));
   const task = { id: "string", workstream: "string", title: "string", deps: ["string"], size: "string", writeScope: ["string"], readSeeds: ["string"], acceptance: [{ id: "string", "text?": "string", evidence: ["string"], holdout: "boolean" }], rules: ["string"], budget: { tokens: "integer", turns: "integer", wallMinutes: "integer" } };
-  shapeOk(`${P}/packet.json`, pk, { schemaVersion: "integer", id: "string", repo: "string", baseSha: "string", status: "string", hash: "null", links: { tasks: { workstreams: [{ id: "string", title: "string" }], tasks: [task] } } });
-  const tasks = pk.links.tasks.tasks;
+  shapeOk(`${P}/packet.json`, pk, { schemaVersion: "integer", kind: "string", id: "string", repo: "string", baseSha: "string", status: "string", hash: "null", links: { tasks: "string", graph: "string", execReview: "string", holdout: "string", answers: "string", index: "string" } });
+  shapeOk(`${P}/tasks.json`, plan, { schemaVersion: "integer", workstreams: [{ id: "string", title: "string" }], tasks: [task] });
+  ok(`${P}/packet.json: kind plan, links name each of the packet's files`, pk.kind === "plan" && Object.values(pk.links).sort().join() === PLAN_FILES.filter((f) => f !== "packet.json").sort().join());
+  const tasks = plan.tasks;
   const byId = new Map(tasks.map((t) => [t.id, t]));
-  ok("PKT: baseSha is the scoping head; ids unique; workstreams declared; deps resolve", pk.baseSha === scopingHead && new Set(tasks.map((t) => t.id)).size === tasks.length && tasks.every((t) => pk.links.tasks.workstreams.some((w) => w.id === t.workstream) && t.deps.every((d) => byId.has(d))));
+  ok("PKT: baseSha is the scoping head; ids unique; workstreams declared; deps resolve", pk.baseSha === scopingHead && new Set(tasks.map((t) => t.id)).size === tasks.length && tasks.every((t) => plan.workstreams.some((w) => w.id === t.workstream) && t.deps.every((d) => byId.has(d))));
   ok("the plan has four phases P1..P4", JSON.stringify(tasks.map((t) => t.id)) === JSON.stringify(PHASES));
   const reach = (from) => { const seen = new Set(); const go = (id) => { for (const d of byId.get(id).deps) if (!seen.has(d)) { seen.add(d); go(d); } }; go(from); return seen; };
   ok("PKT-GRAPH-002: the task graph is acyclic", tasks.every((t) => !reach(t.id).has(t.id)));
@@ -433,7 +441,8 @@ function run() {
   shapeOk(`${P}/exec-review.json`, exec, { schemaVersion: "integer", model: "string", result: "string", phases: [{ id: "string", executable: "boolean", contextMissing: ["string"], allowedFilesEnough: "boolean", signalsCheckable: "boolean" }], objections: [] });
   ok("PLN-EXEC-001: the executability review reports executable for every phase, on the builder model", exec.result === "executable" && exec.phases.length === 4 && exec.phases.every((p) => p.executable && p.allowedFilesEnough && p.signalsCheckable) && exec.model === "fixture-builder-model");
   const pi = idx(P);
-  ok(`${P}/index.json: kind plan, parents design then scope, chain extends the design's acceptance`, pi.kind === "plan" && JSON.stringify(pi.parents) === JSON.stringify([frozenBy.get("design/expiry").hash, frozenBy.get("scope/expiry").hash]) && pi.acceptance.extends === fileHash(accFile(D)));
+  shapeOk(`${P}/index.json`, pi, IDX);
+  ok(`${P}/index.json: kind plan, parents design then scope, chain extends the design's acceptance`, pi.kind === "plan" && pi.acceptance.self === null && JSON.stringify(pi.parents) === JSON.stringify([frozenBy.get("design/expiry").hash, frozenBy.get("scope/expiry").hash]) && pi.acceptance.extends === fileHash(accFile(D)));
 
   // ---------------- hidden sets ----------------
   shapeOk(`${P}/holdout.json`, hold, { schemaVersion: "integer", minPerPhase: "integer", phases: [{ id: "string", setHash: "string", count: "integer", canaries: "integer", scenarioIds: ["string"] }] });
@@ -511,8 +520,8 @@ function run() {
 }
 
 function diffScope(repo, base, head, phase) {
-  const pk = readJson(at("gold", "plan", "expiry", "packet.json"));
-  const task = pk.links.tasks.tasks.find((t) => t.id === phase);
+  const plan = readJson(at("gold", "plan", "expiry", "tasks.json"));
+  const task = plan.tasks.find((t) => t.id === phase);
   const out = execFileSync("git", ["-C", repo, "diff", "--name-status", "--no-renames", `${base}..${head}`], { encoding: "utf8" });
   const changed = out.split("\n").filter(Boolean).map((l) => { const [status, ...f] = l.split("\t"); return { status, file: f.join("\t") }; });
   return outsideAllowed(task, changed).map((c) => c.file);

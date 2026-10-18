@@ -37,7 +37,7 @@ The setup script performs the following (per-provider steps live in `providers/<
 
 ### 3. MCP Servers
 
-`setup.sh` registers `serena`, `headroom`, `prism-mcp` and, on macOS, `xcodebuildmcp` with every selected provider, and removes an old `agentic-bridge` registration on re-run. Agents hand off through Prism handoffs (`session_save_handoff` / `session_load_context`), judge's outbox and teammate names (agent teams), and Sindri's ledger; there is no bridge server.
+`setup.sh` registers `serena`, `prism-mcp` and, on macOS, `xcodebuildmcp` with every selected provider, and removes old `agentic-bridge` and `headroom` registrations on re-run. Agents hand off through Prism handoffs (`session_save_handoff` / `session_load_context`), judge's outbox and teammate names (agent teams), and Sindri's ledger; there is no bridge server.
 
 ## Running Tests
 

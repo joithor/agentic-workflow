@@ -18,6 +18,7 @@ internal sealed class BudgetAvailableGate : IGate, IDescribedBlock
     public ValueTask<GateResult> Evaluate(GateContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
+        cancellationToken.ThrowIfCancellationRequested();
         return ValueTask.FromResult(context.TokensLeft is null or > 0 ? Pass : Spent);
     }
 

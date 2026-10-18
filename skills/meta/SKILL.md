@@ -120,6 +120,13 @@ A lane queues a pull request with exactly `ready #N <sha>` on the **first line**
    branch's and its gate trees); the `WORKTREES …` line it printed says what was removed and what was kept and why. A kept
    one is not an error: it has work, a process or an unpushed commit in it, and nothing removes it by age.
 
+**With several ready pull requests, gate them as a train** instead of one `gate-run` at a time:
+
+1. `aw-meta queue-gate [--max K]` takes the first K ready pull requests in merge-queue order (K defaults to the team's heavy cap; `queue-gate 12 13` names them). The first gates on `origin/main`; each later one on `origin/main` with the heads ahead of it merged in order, so one round proves them all in the order they will merge. The gates run side by side and share the heavy slots.
+2. Read the `TRAIN` table at the end (position, PR, base, RESULT). `DROPPED #N: conflicts with #M at <sha>` means that head conflicts with the train so far: tell its lane to rebase; the rest of the train is unaffected. A `CANCELLED` gate was stopped because a gate below it failed and was not recorded; it stays queued for the next round.
+3. Red steps: `gate-rerun` as in step 3 above (it works on a train gate), then merge in **train order**: `aw-meta merge-check N`, `aw-meta merge-run N` for position 1, then position 2, and so on. After each merge, main is the previous gate's tested tree, so `merge-check` accepts the next gate (it compares the merge result's tree with the tree the gate tested, whatever merge style gh used). A gate that fails ends the train there: later positions need a new `queue-gate` once it is fixed.
+4. `aw-meta status` shows the running train (position, PR, state).
+
 ## OWNER QUESTION messages
 
 `aw-meta owner` lists the queue. **Ask the user** each question (offer the lane's recommended default first), then
@@ -163,7 +170,7 @@ machine. The thresholds are the team config's `resources`, `builders` and `heavy
   the argument `aw-meta status` just printed (not the queue depth: the script's tiers are fixed, so aw-meta prints the argument that gives its computed slots; `gate-run` prints the line after its steps, so read it from `status` first); aw-meta never writes the wrapper's files itself. When the queue empties (or the line says
   `[stale: ...]`) run `status` again and apply it, or `meta-gate-reserve --clear`. A gate you run by hand has no priority and
   waits behind that reservation: don't.
-- Gates run **one at a time** (serial): start the next `gate-run` only when the previous one is recorded.
+- Gates run **one at a time** (serial): start the next `gate-run` only when the previous one is recorded. A `queue-gate` train is one run: do not start another gate beside it.
 - **Re-gate after any merge**: main moved, so every queued pull request's gate is stale (`merge-check` says so).
 - A gate failure whose log shows only a **heavy lock wait** (the step never started its build or test, it sat waiting for a
   slot, or timed out waiting) is **infrastructure, not code**: don't send it back to the lane, re-run the gate.

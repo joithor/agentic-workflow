@@ -1,15 +1,18 @@
-using Aw.Context.Core.Lenses;
 using Aw.Kernel.Services;
 using Aw.Sindri.Features.ContextCalls;
 
 namespace Aw.Sindri.Host.Endpoints;
 
+/// <summary>GET /sindri/context/lenses?anchor=&amp;depth=&amp;draft=&amp;mapVersion=: one distinct anchor answers schema 1, a repeated 'anchor' of several answers schema 2.</summary>
 internal static class GetContextLensesEndpoint
 {
     internal static RouteGroupBuilder MapGetContextLenses(this RouteGroupBuilder group)
     {
-        _ = group.MapGet("/context/lenses", static async (string? anchor, int? depth, bool? draft, IService<GetContextLensesRequest, LensesView> service, CancellationToken ct)
-            => (await service.Handle(new GetContextLensesRequest(anchor ?? string.Empty, draft ?? false, depth), ct).ConfigureAwait(false)).ToHttpResult());
+        _ = group.MapGet("/context/lenses", static async (string[]? anchor, int? depth, bool? draft, string? mapVersion, IService<GetContextLensesAnswerRequest, LensesAnswer> lenses, CancellationToken ct) =>
+        {
+            var answer = await lenses.Handle(new GetContextLensesAnswerRequest(anchor ?? [], draft ?? false, depth, mapVersion), ct).ConfigureAwait(false);
+            return answer.IsError ? HttpResults.Problem(answer.Error) : answer.Value.Many is { } many ? TypedResults.Ok(many) : TypedResults.Ok(answer.Value.One);
+        });
         return group;
     }
 }

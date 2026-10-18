@@ -12,7 +12,7 @@ pass      PKT-EVID-001 packet: every acceptance example maps to an evidence kind
 pass      PKT-DEC-001 packet: every question is answered or deferred with an owner and a default
 pass      PKT-HOLD-001 packet: every task holds an acceptance example out
 pass      PKT-HOLD-002 packet: no held-out example keeps its text in the packet
-unchecked PKT-SIZE-001 packet: the size-class budgets aren't defined yet, so each task's size and budget are recorded but not compared
+unchecked PKT-SIZE-001 packet: no sizes file was given (validate --sizes <file>), so each task's size and budget are recorded but not compared
 unchecked PKT-FLOW-001 packet: workflow coverage (addendum §17.7) needs the lens catalog and workflow generation, which don't exist yet
 ## validate broken
 aw-packets validate: packet aot-smoke — FAIL (1 failed, 2 unchecked)
@@ -29,7 +29,7 @@ pass      PKT-EVID-001 packet: every acceptance example maps to an evidence kind
 pass      PKT-DEC-001 packet: every question is answered or deferred with an owner and a default
 pass      PKT-HOLD-001 packet: every task holds an acceptance example out
 pass      PKT-HOLD-002 packet: no held-out example keeps its text in the packet
-unchecked PKT-SIZE-001 packet: the size-class budgets aren't defined yet, so each task's size and budget are recorded but not compared
+unchecked PKT-SIZE-001 packet: no sizes file was given (validate --sizes <file>), so each task's size and budget are recorded but not compared
 unchecked PKT-FLOW-001 packet: workflow coverage (addendum §17.7) needs the lens catalog and workflow generation, which don't exist yet
 exit 1
 ## freeze
@@ -68,11 +68,46 @@ pass      PKT-SCP-003 packet: every file is well formed
 pass      PKT-SCP-004 packet: lenses.json matches its schema
 pass      PKT-SCP-005 packet: every lens item id is unique and names its own lens
 exit 1
+## line validate
+aw-packets validate: review packet smoke-review — PASS (0 failed, 0 unchecked)
+pass      PKT-REV-001 packet: all 3 review files are present
+pass      PKT-REV-002 packet: the directory holds only the review files
+pass      PKT-REV-003 packet: every file is well formed
+pass      PKT-REV-004 packet: packet.json matches the review schema
+pass      PKT-REV-005 packet: links name each file of the kind, and index.json
+pass      PKT-REV-006 packet: index.json matches its schema and says the kind
+pass      PKT-BASE-001 packet: base commit <sha> is in the repository
+## line hash
+sha256:<hex>
 ## build hash
 sha256:<hex>
+## sizes
+pass      PKT-SIZE-001 packet: every task fits its size class's files, items and budget
+FAIL      PKT-SIZE-001 task t1: is size S but its write scope covers 2 files, and S allows at most 1
+exit 1
+exit 1
+aw-packets: AW-PACKETS-009 No sizes file at <tmp>/missing.json.
+exit 2
+## freeze by owner
+aw-packets freeze: scoping packet idea-3 — frozen sha256:<hex> (packets/example/repo/idea-3/frozen/<hex>.json)
+usage: aw-packets freeze <packet-dir> [--repo <dir>] [--by owner|machine] [--json]
+exit 2
+## verify
+aw-packets verify: packet aot-smoke — verified sha256:<hex>, frozen by machine at <time> (packets/example/repo/aot-smoke/frozen/<hex>.json)
+"by":"machine"
+aw-packets verify: packet aot-smoke — MISMATCH: the packet hashes to sha256:<hex>, not sha256:<hex>
+exit 1
+aw-packets verify: packet aot-smoke — MISMATCH: the packet hashes to sha256:<hex>, not sha256:<hex>
+exit 1
+usage: aw-packets verify <packet-dir> --hash <sha256:hex> [--candidate] [--kind build|scoping|design|plan|phase|proof|review|handoff] [--repo-slug <owner/name> --instance <slug> (scoping)] [--json]
+exit 2
+aw-packets verify: scoping packet idea-3 — verified sha256:<hex>, frozen by owner at <time> (packets/example/repo/idea-3/frozen/<hex>.json)
+aw-packets verify: scoping packet idea-9 — NOT FROZEN: no freeze record for sha256:<hex> (looked at packets/example/repo/idea-9/frozen/<hex>.json)
+exit 1
 ## no arguments
-usage: aw-packets validate|freeze|hash <packet-dir> [--kind build|scoping] [--json] (build: validate and freeze take [--repo <dir>]; scoping: freeze takes --repo-slug <owner/name> --instance <slug>)
+usage: aw-packets validate|freeze|hash|verify <packet-dir> [--kind build|scoping|design|plan|phase|proof|review|handoff] [--json] (build and the line kinds design, plan, phase, proof, review, handoff: validate and freeze take [--repo <dir>]; validate takes [--sizes <file>] (build and plan), freeze takes [--by owner|machine]; verify takes --hash <sha256:hex> [--candidate]; scoping: freeze takes --repo-slug <owner/name> --instance <slug> [--by owner|machine])
 exit 2
 ## state files
 ./packets/example/repo/aot-smoke/frozen/<hex>.json
 ./packets/example/repo/idea-1/frozen/<hex>.json
+./packets/example/repo/idea-3/frozen/<hex>.json

@@ -23,8 +23,8 @@ Once it's installed, every Claude Code, Codex, or Cursor session on your machine
 |-------|----------------------|
 | **Skills** (`/officeHours`, `/review`, `/rootCause`, …) | Packaged workflows for planning, design, building, reviewing, debugging, and shipping. They work the same way in every provider. |
 | **Safety hooks** | Block `rm -rf`, `git reset --hard`, force-push, pushes to `main`/`master`, and commands that contain secrets. They also add git context when a session starts. |
-| **MCP servers** | `serena` (symbol navigation), `headroom` (compression), `prism-mcp` (memory across sessions), `xcodebuildmcp` (iOS simulator, macOS only) |
-| **Token savers** | `rtk` rewrites noisy shell commands into compact ones. `headroom` compresses large reads. |
+| **MCP servers** | `serena` (symbol navigation), `prism-mcp` (memory across sessions), `xcodebuildmcp` (iOS simulator, macOS only) |
+| **Token savers** | `rtk` rewrites noisy shell commands into compact ones. |
 | **Judge + scorer** | `judge` makes quick, low-cost decisions for the hooks. `scorer` reports what your agent sessions cost and how much input they needed from you. |
 
 You don't install anything per repo. Skills and hooks are global. The only per-repo step is running `/bootstrap` once (see [§4](#4-bootstrap-a-repo-once-per-repo)).
@@ -40,9 +40,8 @@ You don't install anything per repo. Skills and hooks are global. The only per-r
 - Docker Desktop, **installed and running** (Serena needs it)
 - `gh`, installed and logged in (`gh auth login`)
 - `jq` (`brew install jq`)
-- Python 3 + pip (for headroom)
 
-`setup.sh` installs `rtk` and `headroom` for you.
+`setup.sh` installs `rtk` for you.
 
 ### Run setup
 

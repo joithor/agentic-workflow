@@ -71,7 +71,7 @@ internal sealed class ResultAssembly(IEgressScrubber egress, QueryId queryId, Da
         {
             var (state, current) = CitationStates.Of(hit.Ref.Version, versions.GetValueOrDefault(hit.Ref, (false, null)), record.Text.Blocked);
             states.Add(state);
-            refs.Add(new CitationRef(hit.Ref.Source, ExternalId.From(Scrubbed(hit.Ref.Id.Value)), Scrubbed(hit.Ref.Version)) { Current = current is { } c ? Scrubbed(c) : null });
+            refs.Add(new CitationRef(hit.Ref.Source, ExternalId.From(Scrubbed(hit.Ref.Id.Value)), Scrubbed(hit.Ref.Version)) { Current = current is { } c ? Scrubbed(c) : null, FetchedAt = asOf });
         }
 
         var best = record.Item.Hits[0];

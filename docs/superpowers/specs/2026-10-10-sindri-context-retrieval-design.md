@@ -257,7 +257,7 @@ all source refs listed under one citation.
 | Node | Meaning | Key example |
 |---|---|---|
 | `Feature` | A named capability; nested by `part-of` | `feature:layout.split-pane.orientation` |
-| `Surface` | Where a person meets it. `kind`: screen, pane, dialog, command, keybinding, setting, menu, route, api, job | `surface:command/split-vertical` |
+| `Surface` | Where a person meets it. `kind`: screen, pane, dialog, command, keybinding, setting, menu, route, api, job, notification, permission, report, flag (the last four arrived with S-SK) | `surface:command/split-vertical` |
 | `Action` | What a person or system does on a surface; preconditions, effects | `action:split-pane.split-vertical` |
 | `Thing` | State or data the actions read and write, with its states | `thing:pane-layout` |
 | `Flow` | An ordered path through surfaces and actions | `flow:open-tab-split-resize` |
@@ -424,7 +424,7 @@ build at a time.
 ### 8.4 Result
 
 ```json
-{ "schemaVersion": 1, "queryId": "q_01JC…", "query": {...}, "anchors": [...], "mapVersion": "v12@a41b07d",
+{ "schemaVersion": 1, "queryId": "q_01JC…", "query": {...}, "anchors": [...], "mapVersion": "v12", "mapCommit": "a41b07d",
   "asOf": "2026-10-10T18:02:11Z",
   "sections": [
     { "name": "affects", "items": [{ "kind": "feature", "node": "feature:tabs.tab-manager", "depth": 1,

@@ -26,7 +26,7 @@ public sealed class ProtectedCommandTests
     [Fact]
     public void Every_protected_engine_command_requires_the_challenge()
     {
-        var rows = Catalog().Rows.Where(r => r.Class == ActionClass.Protected).ToList();
+        var rows = HostIntrospection.Catalog().Rows.Where(r => r.Class == ActionClass.Protected).ToList();
 
         var unbound = rows.Where(r => !r.NeedsTerminal).Select(r => $"{r.Action.Value} isn't terminal-bound").ToList();
         var unchallenged = rows
@@ -52,12 +52,12 @@ public sealed class ProtectedCommandTests
     [Fact]
     public void No_client_references_a_protected_request_or_route()
     {
-        var rows = Catalog().Rows.Where(r => r.Class == ActionClass.Protected).ToList();
+        var rows = HostIntrospection.Catalog().Rows.Where(r => r.Class == ActionClass.Protected).ToList();
         var types = rows.Select(r => r.CommandType?.FullName).OfType<string>().Append(typeof(ChallengeAnswer).FullName).ToHashSet(StringComparer.Ordinal);
         var routes = rows.Select(r => r.Route).OfType<string>().SelectMany(r => new[] { r, r.Replace("/sindri", string.Empty, StringComparison.Ordinal) }).ToHashSet(StringComparer.Ordinal);
 
         var found = Production.Architecture.Types
-            .Where(t => IsClient(t.Assembly.Name))
+            .Where(t => IsClient(t.Assembly.Name) || InMcp(t.Namespace.FullName))
             .SelectMany(t => t.Dependencies.Where(d => types.Contains(d.Target.FullName)).Select(d => $"{t.FullName} uses {d.Target.FullName}"))
             .Concat(Production.Assemblies.Where(a => IsClient(a.GetName().Name ?? string.Empty)).SelectMany(a => Strings(a).Where(routes.Contains).Select(s => $"{a.GetName().Name} holds route '{s}'")))
             .ToList();
@@ -70,16 +70,15 @@ public sealed class ProtectedCommandTests
     private static bool IsClient(string assembly) =>
         assembly.StartsWith("Aw.Sindri.Ui", StringComparison.Ordinal) || assembly.Contains(".Mcp", StringComparison.Ordinal);
 
+    /// <summary>
+    /// The Sindri host's MCP namespace: its types depend on no protected request. The host holds every route, so the
+    /// route-string half of this rule can't read its whole assembly; McpSurfaceTests reads the MCP methods' literals.
+    /// </summary>
+    private static bool InMcp(string ns) =>
+        ns == McpSurfaceTests.McpNamespace || ns.StartsWith(McpSurfaceTests.McpNamespace + ".", StringComparison.Ordinal);
+
     private static bool Redeems(Type request) =>
         request.GetProperties(BindingFlags.Public | BindingFlags.Instance).Any(p => p.PropertyType == typeof(ChallengeAnswer));
-
-    /// <summary>The Sindri host's command catalog (internal to the host, so made by name).</summary>
-    private static ICommandCatalog Catalog()
-    {
-        var host = Production.Assemblies.Single(a => a.GetName().Name == Solution.AssemblyOf("Aw.Sindri.Host"));
-        var type = host.GetType("Aw.Sindri.Host.Catalog.CommandCatalog", throwOnError: true)!;
-        return (ICommandCatalog)Activator.CreateInstance(type, nonPublic: true)!;
-    }
 
     /// <summary>The string literals compiled into <paramref name="assembly"/> (its user-string heap).</summary>
     private static List<string> Strings(Assembly assembly)
