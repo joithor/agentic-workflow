@@ -15,6 +15,9 @@ public sealed record CodeLexicalFindings(
     int Unlocated,
     bool SearchedFilesCapped)
 {
+    /// <summary>True when the search found more candidate test files than it read, so the list of tests is not the whole answer.</summary>
+    public bool TestsTruncated { get; init; }
+
     /// <summary>The 'lexical-tests' row of 'searched.sources'; null when the lexical step did not run.</summary>
     public SearchedSource? TestsRow { get; init; }
 

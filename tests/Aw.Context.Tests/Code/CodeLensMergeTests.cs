@@ -101,6 +101,16 @@ public sealed class CodeLensMergeTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_capped_candidate_scan_says_tests_are_truncated_even_when_the_list_is_not_full()
+    {
+        var found = Found([new LexicalTest("tests/t.test.ts", CodeBasis.Imports, ["src/sharing/links.ts"])]) with { TestsTruncated = true };
+
+        var view = CodeLensMerge.With(Base(), found);
+
+        Assert.True(view.Truncated.Tests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Merging_no_findings_keeps_the_graph_half()
     {
         var view = Base();
