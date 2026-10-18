@@ -1,3 +1,4 @@
+using System.Globalization;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Ids;
@@ -119,7 +120,7 @@ public sealed class RegisterMcpTests
     public async Task All_providers_each_get_their_own_result_and_the_files_are_written_in_the_checkout()
     {
         await Approve(apiPort: 7444);
-        var all = (await Service().Handle(new RegisterMcpRequest("/work/demo", "demo", Apply: true, AllProviders), Token)).Value;
+        var all = (await Service().Handle(new RegisterMcpRequest("/work/demo", "demo", Apply: true, _allProviders), Token)).Value;
 
         Assert.Equal([ProviderOutcome.Registered, ProviderOutcome.Registered, ProviderOutcome.Registered], all.Providers.Select(p => p.Outcome));
         Assert.Contains("7444", _host.Files["/work/demo/.cursor/mcp.json"], StringComparison.Ordinal);
@@ -134,10 +135,10 @@ public sealed class RegisterMcpTests
     {
         await Approve(apiPort: null);
 
-        var plan = (await Service().Handle(new RegisterMcpRequest("/work/demo", "demo", Apply: false, AllProviders), Token)).Value;
+        var plan = (await Service().Handle(new RegisterMcpRequest("/work/demo", "demo", Apply: false, _allProviders), Token)).Value;
 
         Assert.All(plan.Providers, p => Assert.Equal(ProviderOutcome.Registered, p.Outcome));
-        Assert.Empty(_host.Files.Keys.Where(k => k.StartsWith("/work", StringComparison.Ordinal)));
+        Assert.DoesNotContain(_host.Files.Keys, k => k.StartsWith("/work", StringComparison.Ordinal));
         Assert.Empty(_claude.Runs);
     }
 
@@ -147,7 +148,7 @@ public sealed class RegisterMcpTests
         await Approve(apiPort: null);
         _ = _host.WithoutProvider(ProviderFile.Codex).WithoutProvider(ProviderFile.Cursor);
 
-        var all = (await Service().Handle(new RegisterMcpRequest("/work/demo", "demo", Apply: true, AllProviders), Token)).Value;
+        var all = (await Service().Handle(new RegisterMcpRequest("/work/demo", "demo", Apply: true, _allProviders), Token)).Value;
 
         Assert.Equal([ProviderOutcome.Registered, ProviderOutcome.Skipped, ProviderOutcome.Skipped], all.Providers.Select(p => p.Outcome));
         Assert.False(_host.Files.ContainsKey("/work/demo/.codex/config.toml"));
@@ -205,15 +206,15 @@ public sealed class RegisterMcpTests
         _host.Files["/work/demo/.cursor/mcp.json"] = "{ nope";
         _ = _host.Unwritable.Add("/work/demo/.codex/config.toml");
 
-        var all = (await Service().Handle(new RegisterMcpRequest("/work/demo", "demo", Apply: true, AllProviders), Token)).Value;
+        var all = (await Service().Handle(new RegisterMcpRequest("/work/demo", "demo", Apply: true, _allProviders), Token)).Value;
 
         Assert.Equal([ProviderOutcome.Registered, ProviderOutcome.Failed, ProviderOutcome.Failed], all.Providers.Select(p => p.Outcome));
     }
 
-    private static readonly ProviderFile[] AllProviders = [ProviderFile.Claude, ProviderFile.Cursor, ProviderFile.Codex];
+    private static readonly ProviderFile[] _allProviders = [ProviderFile.Claude, ProviderFile.Cursor, ProviderFile.Codex];
 
     private static string Claude(int port) =>
-        $$"""{"projects":{"/work/demo":{"mcpServers":{"sindri":{"type":"http","url":"http://127.0.0.1:{{port}}/sindri/mcp","headers":{"X-Sindri-Repo":"demo"}}}}}}""";
+        $$"""{"projects":{"/work/demo":{"mcpServers":{"sindri":{"type":"http","url":"http://127.0.0.1:{{port.ToString(CultureInfo.InvariantCulture)}}/sindri/mcp","headers":{"X-Sindri-Repo":"demo"} } } } } }""";
 
     private RegisterMcpService Service() => new(_profiles, _locator, _endpoint, _claude, _host);
 

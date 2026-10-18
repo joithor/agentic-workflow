@@ -9,7 +9,7 @@ public sealed class FakeProviderHost : IProviderHost
     private readonly HashSet<string> _tracked = new(StringComparer.Ordinal);
 
     /// <summary>Every file by path.</summary>
-    public Dictionary<string, string> Files { get; } = new(StringComparer.Ordinal);
+    public IDictionary<string, string> Files { get; } = new Dictionary<string, string>(StringComparer.Ordinal);
 
     /// <summary>Paths whose write throws an IOException.</summary>
     public ISet<string> Unwritable { get; } = new HashSet<string>(StringComparer.Ordinal);
@@ -40,7 +40,8 @@ public sealed class FakeProviderHost : IProviderHost
     {
         ProviderFile.Claude => "/home/u/.claude.json",
         ProviderFile.Codex => "/home/u/.codex/config.toml",
-        _ => "/home/u/.cursor/mcp.json",
+        ProviderFile.Cursor => "/home/u/.cursor/mcp.json",
+        _ => throw new ArgumentOutOfRangeException(nameof(provider), provider, "Not a provider"),
     };
 
     /// <inheritdoc/>

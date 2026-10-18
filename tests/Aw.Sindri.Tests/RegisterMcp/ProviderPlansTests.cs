@@ -1,6 +1,5 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
-using Aw.Sindri.Features.RegisterMcp;
 using static Aw.Sindri.Features.RegisterMcp.ProviderPlans;
 
 namespace Aw.Sindri.Tests.RegisterMcp;
@@ -11,12 +10,12 @@ public sealed class ProviderPlansTests
     private const string Url = "http://127.0.0.1:7480/sindri/mcp";
 
     private static string ClaudeJson(string url, string repo) =>
-        $$"""{"projects":{"/work/demo":{"mcpServers":{"sindri":{"type":"http","url":"{{url}}","headers":{"X-Sindri-Repo":"{{repo}}"}}}}}}""";
+        $$"""{"projects":{"/work/demo":{"mcpServers":{"sindri":{"type":"http","url":"{{url}}","headers":{"X-Sindri-Repo":"{{repo}}"} } } } } }""";
 
     [Fact]
     public void Claude_entry_is_absent_same_or_different()
     {
-        Assert.Equal(ClaudeState.Absent, Claude(null, "/work/demo", Url, "demo"));
+        Assert.Equal(ClaudeState.Absent, Claude(claudeJson: null, "/work/demo", Url, "demo"));
         Assert.Equal(ClaudeState.Absent, Claude("""{"projects":{}}""", "/work/demo", Url, "demo"));
         Assert.Equal(ClaudeState.Same, Claude(ClaudeJson(Url, "demo"), "/work/demo", Url, "demo"));
         Assert.Equal(ClaudeState.Different, Claude(ClaudeJson("http://127.0.0.1:7481/sindri/mcp", "demo"), "/work/demo", Url, "demo"));
@@ -26,7 +25,7 @@ public sealed class ProviderPlansTests
     [Fact]
     public void Cursor_creates_the_file_and_leaves_other_servers_alone()
     {
-        var created = Cursor(null, Url, "demo");
+        var created = Cursor(existing: null, Url, "demo");
         var merged = Cursor("""{"mcpServers":{"other":{"command":"x"}}}""", Url, "demo");
 
         Assert.Null(created.Problem);
@@ -41,9 +40,9 @@ public sealed class ProviderPlansTests
     [Fact]
     public void Cursor_is_unchanged_when_right_replaced_when_the_port_moved_and_refused_when_not_json()
     {
-        var written = Cursor(null, Url, "demo").Text!;
+        var written = Cursor(existing: null, Url, "demo").Text!;
 
-        Assert.Equal(new FilePlan(null, null), Cursor(written, Url, "demo"));
+        Assert.Equal(new FilePlan(Text: null, Problem: null), Cursor(written, Url, "demo"));
         var moved = Cursor(written, "http://127.0.0.1:7481/sindri/mcp", "demo");
         Assert.Contains("7481", moved.Text, StringComparison.Ordinal);
         Assert.DoesNotContain("7480", moved.Text, StringComparison.Ordinal);
@@ -66,7 +65,7 @@ public sealed class ProviderPlansTests
     {
         var written = Codex("[mcp_servers.other]\ncommand = \"y\"\n", Url, "demo").Text!;
 
-        Assert.Equal(new FilePlan(null, null), Codex(written, Url, "demo"));
+        Assert.Equal(new FilePlan(Text: null, Problem: null), Codex(written, Url, "demo"));
         var moved = Codex(written + "\n[tail]\na = 1\n", "http://127.0.0.1:7481/sindri/mcp", "demo").Text!;
         Assert.Contains("7481", moved, StringComparison.Ordinal);
         Assert.DoesNotContain("7480", moved, StringComparison.Ordinal);
@@ -76,10 +75,8 @@ public sealed class ProviderPlansTests
     }
 
     [Fact]
-    public void Codex_refuses_an_inline_mcp_servers_table_it_cannot_edit()
-    {
+    public void Codex_refuses_an_inline_mcp_servers_table_it_cannot_edit() =>
         Assert.NotNull(Codex("mcp_servers = { sindri = { url = \"x\" } }\n", Url, "demo").Problem);
-    }
 
     [Fact]
     public void Codex_trust_level_is_read_from_the_user_config()
@@ -89,7 +86,7 @@ public sealed class ProviderPlansTests
         Assert.Equal("trusted", CodexTrust(trusted, "/work/demo"));
         Assert.Null(CodexTrust(trusted, "/work/other"));
         Assert.Equal("untrusted", CodexTrust("[projects.\"/work/demo\"]\ntrust_level = \"untrusted\"\n", "/work/demo"));
-        Assert.Null(CodexTrust(null, "/work/demo"));
+        Assert.Null(CodexTrust(userConfig: null, "/work/demo"));
     }
 
     [Fact]

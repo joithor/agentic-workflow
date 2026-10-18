@@ -1132,11 +1132,13 @@ Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Equals(Aw.Sindri.Fe
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.RecordServiceRunResponse(long Sequence) -> void
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Sequence.get -> long
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Sequence.init -> void
-Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Deconstruct(out string! Directory, out string? Repo, out bool Apply) -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Deconstruct(out string! Directory, out string? Repo, out bool Apply, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Mcp.ProviderFile>? Providers) -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Directory.get -> string!
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Directory.init -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Equals(Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest? other) -> bool
-Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.RegisterMcpRequest(string! Directory, string? Repo, bool Apply) -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Providers.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Mcp.ProviderFile>?
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Providers.init -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.RegisterMcpRequest(string! Directory, string? Repo, bool Apply, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Mcp.ProviderFile>? Providers = null) -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Repo.get -> string?
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Repo.init -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse
@@ -1147,9 +1149,11 @@ Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Arguments.get -> System.Colle
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Arguments.init -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Checkout.get -> string!
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Checkout.init -> void
-Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Deconstruct(out Aw.Sindri.Core.Ids.RepoName Repo, out string! Checkout, out System.Collections.Generic.IReadOnlyList<string!>! Arguments, out bool Applied) -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Deconstruct(out Aw.Sindri.Core.Ids.RepoName Repo, out string! Checkout, out System.Collections.Generic.IReadOnlyList<string!>! Arguments, out bool Applied, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Mcp.ProviderResult!>! Providers) -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Equals(Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse? other) -> bool
-Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.RegisterMcpResponse(Aw.Sindri.Core.Ids.RepoName Repo, string! Checkout, System.Collections.Generic.IReadOnlyList<string!>! Arguments, bool Applied) -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Providers.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Mcp.ProviderResult!>!
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Providers.init -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.RegisterMcpResponse(Aw.Sindri.Core.Ids.RepoName Repo, string! Checkout, System.Collections.Generic.IReadOnlyList<string!>! Arguments, bool Applied, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Mcp.ProviderResult!>! Providers) -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Repo.get -> Aw.Sindri.Core.Ids.RepoName
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Repo.init -> void
 Aw.Sindri.Features.RegisterRecipe.RegisterRecipeRequest

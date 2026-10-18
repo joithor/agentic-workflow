@@ -41,9 +41,21 @@ internal sealed class McpVerbs(IServiceProvider services, Output output, AgentSe
                 : await output.Error(answer.Error).ConfigureAwait(false);
         }
 
-        var failed = answer.Value.Providers.Where(p => p.Outcome == ProviderOutcome.Failed).ToList();
-        var exit = options.Json ? await output.Json(answer.Value, failed.Count == 0 ? 0 : 2).ConfigureAwait(false) : await output.Text(Text(answer.Value), failed.Count == 0 ? 0 : 2).ConfigureAwait(false);
-        foreach (var provider in options.Json ? [] : failed)
+        return await Answer(answer.Value, options.Json).ConfigureAwait(false);
+    }
+
+    /// <summary>The registration as JSON or text, then (text only) one error line per failed provider; exit 2 when any failed.</summary>
+    private async Task<int> Answer(RegisterMcpResponse registration, bool json)
+    {
+        var failed = registration.Providers.Where(p => p.Outcome == ProviderOutcome.Failed).ToList();
+        var code = failed.Count == 0 ? 0 : 2;
+        if (json)
+        {
+            return await output.Json(registration, code).ConfigureAwait(false);
+        }
+
+        var exit = await output.Text(Text(registration), code).ConfigureAwait(false);
+        foreach (var provider in failed)
         {
             _ = await output.Error(ContextErrors.McpRegisterFailed.With($"{Name(provider.Provider)}: {provider.Detail} (fix: {provider.Fix})")).ConfigureAwait(false);
         }
@@ -65,7 +77,8 @@ internal sealed class McpVerbs(IServiceProvider services, Output output, AgentSe
     {
         ProviderFile.Claude => "claude",
         ProviderFile.Codex => "codex",
-        _ => "cursor",
+        ProviderFile.Cursor => "cursor",
+        _ => throw new ArgumentOutOfRangeException(nameof(provider), provider, "Not a provider"),
     };
 
     private static string Text(RegisterMcpResponse registration)
@@ -81,7 +94,8 @@ internal sealed class McpVerbs(IServiceProvider services, Output output, AgentSe
                 ProviderOutcome.Failed => "failed",
                 ProviderOutcome.Skipped => "skipped",
                 ProviderOutcome.Unchanged => "unchanged",
-                _ => registration.Applied ? "registered" : "would register",
+                ProviderOutcome.Registered => registration.Applied ? "registered" : "would register",
+                _ => throw new ArgumentOutOfRangeException(nameof(registration), provider.Outcome, "Not a provider outcome"),
             };
             text.Append("  ").Append(Name(provider.Provider)).Append(": ").Append(outcome).Append(" - ").Append(provider.Detail).Append('\n');
             if (provider.Fix is { } fix && provider.Outcome != ProviderOutcome.Failed)
@@ -93,7 +107,7 @@ internal sealed class McpVerbs(IServiceProvider services, Output output, AgentSe
         return text + (registration.Applied ? string.Empty : "A human at a terminal can write them with: sindri mcp register --apply\n");
     }
 
-    private static IReadOnlyList<ProviderFile>? ParseProviders(string value)
+    private static List<ProviderFile>? ParseProviders(string value)
     {
         if (string.Equals(value, "all", StringComparison.Ordinal))
         {
@@ -115,30 +129,40 @@ internal sealed class McpVerbs(IServiceProvider services, Output output, AgentSe
         return providers;
     }
 
+    /// <summary>The register options; null for an unknown option, a missing value or an option given twice.</summary>
     private static (string? Repo, bool Apply, bool Json, IReadOnlyList<ProviderFile>? Providers)? Options(string[] rest)
     {
-        (string? Repo, bool Apply, bool Json, IReadOnlyList<ProviderFile>? Providers) options = (null, false, false, null);
+        string? repo = null;
+        var apply = false;
+        var json = false;
+        List<ProviderFile>? providers = null;
+        var seen = new HashSet<string>(StringComparer.Ordinal);
         for (var i = 0; i < rest.Length; i++)
         {
+            if (!seen.Add(rest[i]))
+            {
+                return null;
+            }
+
             switch (rest[i])
             {
-                case "--apply" when !options.Apply:
-                    options.Apply = true;
+                case "--apply":
+                    apply = true;
                     break;
-                case "--json" when !options.Json:
-                    options.Json = true;
+                case "--json":
+                    json = true;
                     break;
-                case "--repo" when options.Repo is null && i + 1 < rest.Length:
-                    options.Repo = rest[++i];
+                case "--repo" when i + 1 < rest.Length:
+                    repo = rest[++i];
                     break;
-                case "--providers" when options.Providers is null && i + 1 < rest.Length && ParseProviders(rest[++i]) is { } providers:
-                    options.Providers = providers;
+                case "--providers" when i + 1 < rest.Length && ParseProviders(rest[++i]) is { } parsed:
+                    providers = parsed;
                     break;
                 default:
                     return null;
             }
         }
 
-        return options;
+        return (repo, apply, json, providers);
     }
 }

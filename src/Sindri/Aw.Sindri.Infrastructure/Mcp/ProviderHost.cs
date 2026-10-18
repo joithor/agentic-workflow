@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using Aw.Sindri.Core.Mcp;
 
 namespace Aw.Sindri.Infrastructure.Mcp;
@@ -11,14 +12,16 @@ internal sealed class ProviderHost(McpSettings settings) : IProviderHost
     {
         ProviderFile.Claude => OnPath(settings.ClaudeBin),
         ProviderFile.Codex => OnPath("codex"),
-        _ => OnPath("cursor-agent") || Directory.Exists(Path.Combine(settings.Home, ".cursor")),
+        ProviderFile.Cursor => OnPath("cursor-agent") || Directory.Exists(Path.Combine(settings.Home, ".cursor")),
+        _ => throw new ArgumentOutOfRangeException(nameof(provider), provider, "Not a provider"),
     };
 
     public string UserConfigPath(ProviderFile provider) => provider switch
     {
         ProviderFile.Claude => Path.Combine(settings.ClaudeConfigDir ?? settings.Home, ".claude.json"),
         ProviderFile.Codex => Path.Combine(settings.CodexHome ?? Path.Combine(settings.Home, ".codex"), "config.toml"),
-        _ => Path.Combine(settings.Home, ".cursor", "mcp.json"),
+        ProviderFile.Cursor => Path.Combine(settings.Home, ".cursor", "mcp.json"),
+        _ => throw new ArgumentOutOfRangeException(nameof(provider), provider, "Not a provider"),
     };
 
     public async ValueTask<string?> Read(string path, CancellationToken cancellationToken) =>
@@ -26,13 +29,14 @@ internal sealed class ProviderHost(McpSettings settings) : IProviderHost
 
     public async ValueTask Write(string path, string text, CancellationToken cancellationToken)
     {
-        var directory = Path.GetDirectoryName(path)!;
+        var full = Path.GetFullPath(path);
+        var directory = Path.GetDirectoryName(full) ?? full;
         _ = Directory.CreateDirectory(directory);
-        var temporary = Path.Combine(directory, "." + Path.GetFileName(path) + "." + Environment.ProcessId + ".tmp");
+        var temporary = Path.Combine(directory, "." + Path.GetFileName(full) + "." + Environment.ProcessId.ToString(CultureInfo.InvariantCulture) + ".tmp");
         try
         {
             await File.WriteAllTextAsync(temporary, text, cancellationToken).ConfigureAwait(false);
-            File.Move(temporary, path, overwrite: true);
+            File.Move(temporary, full, overwrite: true);
         }
         finally
         {

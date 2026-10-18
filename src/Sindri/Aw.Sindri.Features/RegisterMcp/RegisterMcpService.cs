@@ -20,7 +20,7 @@ internal sealed class RegisterMcpService(IApprovedProfile approvals, IRepoLocato
     : IService<RegisterMcpRequest, RegisterMcpResponse>
 {
     /// <summary>Owner's call (A): also mark the checkout trusted in Codex's user config so its project file loads at once. False: the human trusts the project in Codex (B).</summary>
-    internal const bool WriteCodexTrust = true;
+    internal static bool WriteCodexTrust { get; } = true;
 
     private const string CursorFile = ".cursor/mcp.json";
     private const string CodexFile = ".codex/config.toml";
@@ -33,28 +33,37 @@ internal sealed class RegisterMcpService(IApprovedProfile approvals, IRepoLocato
             return approved.IsError ? approved.Error : SindriErrors.ProfileNotApproved.With("no profile is approved, so no repo is mapped (fix: sindri profile approve)");
         }
 
-        var repos = loaded.Profile.Repos ?? [];
-        var entry = await Entry(request, repos, cancellationToken).ConfigureAwait(false);
+        var entry = await Entry(request, loaded.Profile.Repos ?? [], cancellationToken).ConfigureAwait(false);
         if (entry.IsError)
         {
             return entry.Error;
         }
 
-        var running = await endpoint.Read(cancellationToken).ConfigureAwait(false);
-        var (repo, checkout) = entry.Value;
-        var port = McpRegistration.Port(running.IsSuccess ? running.Value?.Url : null, loaded.Profile.Api?.Port);
-        var arguments = McpRegistration.Arguments(repo, port);
-        var url = arguments[arguments.ToList().IndexOf(McpScope.ServerName) + 1];   // why: the header is last, so the URL isn't
+        var target = await TargetFor(entry.Value, loaded.Profile, request.Apply, cancellationToken).ConfigureAwait(false);
         var results = new List<ProviderResult>();
-        foreach (var provider in (request.Providers is { Count: > 0 } asked ? asked : [ProviderFile.Claude]).Distinct())
+        foreach (var provider in Requested(request))
         {
-            results.Add(await Register(provider, request.Apply, repo.Value, checkout, url, arguments, cancellationToken).ConfigureAwait(false));
+            results.Add(await Register(provider, target, cancellationToken).ConfigureAwait(false));
         }
 
-        return new RegisterMcpResponse(repo, checkout, arguments, request.Apply, results);
+        return new RegisterMcpResponse(target.RepoName, target.Checkout, target.Arguments, request.Apply, results);
     }
 
-    private async ValueTask<ProviderResult> Register(ProviderFile provider, bool apply, string repo, string checkout, string url, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    /// <summary>The requested providers, each once; Claude Code alone when none are named.</summary>
+    private static IEnumerable<ProviderFile> Requested(RegisterMcpRequest request) =>
+        (request.Providers is { Count: > 0 } asked ? asked : [ProviderFile.Claude]).Distinct();
+
+    /// <summary>The repo, its checkout and the URL on the running control plane's port (else the profile's).</summary>
+    private async ValueTask<Target> TargetFor((RepoName Repo, string Checkout) entry, SindriProfile profile, bool apply, CancellationToken cancellationToken)
+    {
+        var running = await endpoint.Read(cancellationToken).ConfigureAwait(false);
+        var port = McpRegistration.Port(running.IsSuccess ? running.Value?.Url : null, profile.Api?.Port);
+        var arguments = McpRegistration.Arguments(entry.Repo, port);
+        var url = arguments[arguments.ToList().IndexOf(McpScope.ServerName) + 1];   // why: the header is last, so the URL isn't
+        return new Target(entry.Repo, entry.Checkout, url, arguments, apply);
+    }
+
+    private async ValueTask<ProviderResult> Register(ProviderFile provider, Target target, CancellationToken cancellationToken)
     {
         if (!host.Installed(provider))
         {
@@ -65,9 +74,10 @@ internal sealed class RegisterMcpService(IApprovedProfile approvals, IRepoLocato
         {
             return provider switch
             {
-                ProviderFile.Claude => await RegisterClaude(apply, repo, checkout, url, arguments, cancellationToken).ConfigureAwait(false),
-                ProviderFile.Cursor => await RegisterFile(provider, apply, checkout, CursorFile, Cursor(await host.Read(Path.Combine(checkout, CursorFile), cancellationToken).ConfigureAwait(false), url, repo), trust: false, cancellationToken).ConfigureAwait(false),
-                _ => await RegisterFile(provider, apply, checkout, CodexFile, Codex(await host.Read(Path.Combine(checkout, CodexFile), cancellationToken).ConfigureAwait(false), url, repo), trust: true, cancellationToken).ConfigureAwait(false),
+                ProviderFile.Claude => await RegisterClaude(target, cancellationToken).ConfigureAwait(false),
+                ProviderFile.Cursor => await RegisterFile(provider, target, CursorFile, Cursor(await ReadInCheckout(target, CursorFile, cancellationToken).ConfigureAwait(false), target.Url, target.Repo), cancellationToken).ConfigureAwait(false),
+                ProviderFile.Codex => await RegisterFile(provider, target, CodexFile, Codex(await ReadInCheckout(target, CodexFile, cancellationToken).ConfigureAwait(false), target.Url, target.Repo), cancellationToken).ConfigureAwait(false),
+                _ => throw new ArgumentOutOfRangeException(nameof(provider), provider, "Not a provider"),
             };
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
@@ -76,16 +86,20 @@ internal sealed class RegisterMcpService(IApprovedProfile approvals, IRepoLocato
         }
     }
 
-    private async ValueTask<ProviderResult> RegisterClaude(bool apply, string repo, string checkout, string url, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
+    private ValueTask<string?> ReadInCheckout(Target target, string relative, CancellationToken cancellationToken) =>
+        host.Read(Path.Combine(target.Checkout, relative), cancellationToken);
+
+    private async ValueTask<ProviderResult> RegisterClaude(Target target, CancellationToken cancellationToken)
     {
-        var state = Claude(await host.Read(host.UserConfigPath(ProviderFile.Claude), cancellationToken).ConfigureAwait(false), checkout, url, repo);
-        var line = McpRegistration.CommandLine(arguments);
+        var checkout = target.Checkout;
+        var state = Claude(await host.Read(host.UserConfigPath(ProviderFile.Claude), cancellationToken).ConfigureAwait(false), checkout, target.Url, target.Repo);
+        var line = McpRegistration.CommandLine(target.Arguments);
         if (state == ClaudeState.Same)
         {
             return new ProviderResult(ProviderFile.Claude, ProviderOutcome.Unchanged, $"local scope in {checkout}", Fix: null);
         }
 
-        if (!apply)
+        if (!target.Apply)
         {
             return new ProviderResult(ProviderFile.Claude, ProviderOutcome.Registered, (state == ClaudeState.Different ? "would replace the entry, then run: " : "would run: ") + line, Fix: null);
         }
@@ -93,12 +107,12 @@ internal sealed class RegisterMcpService(IApprovedProfile approvals, IRepoLocato
         if (state == ClaudeState.Different
             && await claude.Run(["mcp", "remove", "--scope", "local", McpScope.ServerName], checkout, cancellationToken).ConfigureAwait(false) is not { ExitCode: 0 })
         {
-            return Failed(checkout, null, "removing the old entry failed", line);
+            return Failed(checkout, exit: null, "removing the old entry failed", line);
         }
 
-        return await claude.Run(arguments, checkout, cancellationToken).ConfigureAwait(false) switch
+        return await claude.Run(target.Arguments, checkout, cancellationToken).ConfigureAwait(false) switch
         {
-            null => Failed(checkout, null, $"the claude CLI couldn't be started in {checkout}", line),
+            null => Failed(checkout, exit: null, $"the claude CLI couldn't be started in {checkout}", line),
             { ExitCode: not 0 } failed => Failed(checkout, failed.ExitCode, failed.ErrorTail, line),
             _ => new ProviderResult(ProviderFile.Claude, ProviderOutcome.Registered, $"local scope in {checkout}", Fix: null),
         };
@@ -110,23 +124,24 @@ internal sealed class RegisterMcpService(IApprovedProfile approvals, IRepoLocato
         exit is { } code ? string.Create(CultureInfo.InvariantCulture, $"claude exited {code}{(tail.Length == 0 ? string.Empty : ": " + tail)}") : tail,
         $"run it by hand in {checkout}: {line} (install Claude Code or set AW_SINDRI_CLAUDE_BIN if it wasn't found)");
 
-    private async ValueTask<ProviderResult> RegisterFile(ProviderFile provider, bool apply, string checkout, string relative, FilePlan plan, bool trust, CancellationToken cancellationToken)
+    /// <summary>Writes a project file's plan (Codex's also needs the project trusted); a tracked file is never changed.</summary>
+    private async ValueTask<ProviderResult> RegisterFile(ProviderFile provider, Target target, string relative, FilePlan plan, CancellationToken cancellationToken)
     {
-        var path = Path.Combine(checkout, relative);
+        var path = Path.Combine(target.Checkout, relative);
         if (plan.Problem is { } problem)
         {
-            return new ProviderResult(provider, ProviderOutcome.Failed, $"{path} {problem}", $"add the sindri server to it by hand (sindri mcp register prints the entry), or fix the file and run it again");
+            return new ProviderResult(provider, ProviderOutcome.Failed, $"{path} {problem}", "add the sindri server to it by hand (sindri mcp register prints the entry), or fix the file and run it again");
         }
 
         var outcome = ProviderOutcome.Unchanged;
         if (plan.Text is { } text)
         {
-            if (await host.Tracked(checkout, relative, cancellationToken).ConfigureAwait(false))
+            if (await host.Tracked(target.Checkout, relative, cancellationToken).ConfigureAwait(false))
             {
-                return new ProviderResult(provider, ProviderOutcome.Failed, $"{path} is tracked by git, so it isn't changed silently", $"edit it by hand or untrack it, then run it again");
+                return new ProviderResult(provider, ProviderOutcome.Failed, $"{path} is tracked by git, so it isn't changed silently", "edit it by hand or untrack it, then run it again");
             }
 
-            if (apply)
+            if (target.Apply)
             {
                 await host.Write(path, text, cancellationToken).ConfigureAwait(false);
             }
@@ -134,33 +149,40 @@ internal sealed class RegisterMcpService(IApprovedProfile approvals, IRepoLocato
             outcome = ProviderOutcome.Registered;
         }
 
-        return trust ? await WithTrust(provider, apply, checkout, path, outcome, cancellationToken).ConfigureAwait(false) : new ProviderResult(provider, outcome, path, Fix: null);
+        return provider == ProviderFile.Codex ? await WithTrust(target, path, outcome, cancellationToken).ConfigureAwait(false) : new ProviderResult(provider, outcome, path, Fix: null);
     }
 
     /// <summary>Codex loads a project file only for a trusted project: add the trust row when there is none, leave any existing level alone.</summary>
-    private async ValueTask<ProviderResult> WithTrust(ProviderFile provider, bool apply, string checkout, string path, ProviderOutcome outcome, CancellationToken cancellationToken)
+    private async ValueTask<ProviderResult> WithTrust(Target target, string path, ProviderOutcome outcome, CancellationToken cancellationToken)
     {
         var userPath = host.UserConfigPath(ProviderFile.Codex);
         var user = await host.Read(userPath, cancellationToken).ConfigureAwait(false);
-        var level = CodexTrust(user, checkout);
+        var level = CodexTrust(user, target.Checkout);
         if (string.Equals(level, "trusted", StringComparison.Ordinal))
         {
-            return new ProviderResult(provider, outcome, path, Fix: null);
+            return new ProviderResult(ProviderFile.Codex, outcome, path, Fix: null);
         }
 
-        if (level is not null || !WriteCodexTrust)
+        if (level is not null)
         {
-            var why = level is null ? "the project isn't trusted" : $"project trust is \"{level}\", not changed";
-            return new ProviderResult(provider, ProviderOutcome.NeedsTrust, $"{(apply ? "registered" : "would register")}; {why} - Codex won't load {path} until it is trusted", "trust this project in Codex");
+            return NeedsTrust(target.Apply, path, $"project trust is \"{level}\", not changed");
         }
 
-        if (apply)
+        if (!WriteCodexTrust)
         {
-            await host.Write(userPath, CodexTrustRow(user, checkout), cancellationToken).ConfigureAwait(false);
+            return NeedsTrust(target.Apply, path, "the project isn't trusted");
         }
 
-        return new ProviderResult(provider, ProviderOutcome.Registered, $"{(apply ? "registered; trusted" : "would register; trust")} this project in {userPath}", Fix: null);
+        if (target.Apply)
+        {
+            await host.Write(userPath, CodexTrustRow(user, target.Checkout), cancellationToken).ConfigureAwait(false);
+        }
+
+        return new ProviderResult(ProviderFile.Codex, ProviderOutcome.Registered, $"{(target.Apply ? "registered; trusted" : "would register; trust")} this project in {userPath}", Fix: null);
     }
+
+    private static ProviderResult NeedsTrust(bool apply, string path, string why) =>
+        new(ProviderFile.Codex, ProviderOutcome.NeedsTrust, $"{(apply ? "registered" : "would register")}; {why} - Codex won't load {path} until it is trusted", "trust this project in Codex");
 
     /// <summary>The named repo, or the one the directory is in (a worktree resolves to its main checkout); else SND-CONTEXT-024.</summary>
     private async ValueTask<Result<(RepoName Repo, string Checkout)>> Entry(RegisterMcpRequest request, IReadOnlyList<RepoEntry> repos, CancellationToken cancellationToken)
@@ -176,5 +198,16 @@ internal sealed class RegisterMcpService(IApprovedProfile approvals, IRepoLocato
         return ContextErrors.McpRegisterRepoUnknown.With(request.Repo is { } asked
             ? $"'{asked}' is not a repo the profile names (fix: one of: {string.Join(", ", repos.Select(r => r.Name))})"
             : $"{request.Directory} is in no repo the profile names (fix: run it in the work repo, or pass --repo NAME)");
+    }
+
+    /// <summary>Where and what to register: the repo, its main checkout, the MCP URL, the claude CLI's arguments, and whether to write.</summary>
+    /// <param name="RepoName">The repo.</param>
+    /// <param name="Checkout">Its main checkout.</param>
+    /// <param name="Url">The /sindri/mcp URL.</param>
+    /// <param name="Arguments">The claude CLI's arguments.</param>
+    /// <param name="Apply">True to write.</param>
+    private sealed record Target(RepoName RepoName, string Checkout, string Url, IReadOnlyList<string> Arguments, bool Apply)
+    {
+        public string Repo => RepoName.Value;
     }
 }

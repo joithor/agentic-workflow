@@ -9592,3 +9592,5 @@ static Aw.Sindri.Core.Sessions.PreviewText.operator ==(Aw.Sindri.Core.Sessions.P
 static readonly Aw.Sindri.Core.SindriErrors.SessionConflict -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Sessions.PaneRead.Capture.get -> System.ReadOnlyMemory<byte>
 static Aw.Sindri.Core.Sessions.PaneRead.Captured(int panePid, byte[]! capture) -> Aw.Sindri.Core.Sessions.PaneRead!
+Aw.Sindri.Core.Mcp.ProviderResult.Detail.get -> string!
+Aw.Sindri.Core.Mcp.ProviderResult.Detail.init -> void
