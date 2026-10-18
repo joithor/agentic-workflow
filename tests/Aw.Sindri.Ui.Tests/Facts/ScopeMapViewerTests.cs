@@ -38,9 +38,9 @@ public sealed class ScopeMapViewerTests
 
         Assert.True(viewer.ShowsTable);
         Assert.Equal("4 surfaces · 2 mapped · 1 new · 1 unmapped", viewer.Counts);
-        Assert.Equal(["sync store", "status pill", "conflict dialog", "background sync (iOS)"], viewer.Surfaces.Select(s => s.Title));
-        Assert.Equal(["▣ mapped", "▣ mapped", "◇ new", "░ unmapped"], viewer.Surfaces.Select(s => s.Chip));
-        Assert.Equal(["3 files", "1 file", "2 files", "3 files"], viewer.Surfaces.Select(s => s.Count));
+        Assert.Equal(["sync store", "status pill", "conflict dialog", "background sync (iOS)"], viewer.Surfaces.Select(s => s.Title), StringComparer.Ordinal);
+        Assert.Equal(["▣ mapped", "▣ mapped", "◇ new", "░ unmapped"], viewer.Surfaces.Select(s => s.Chip), StringComparer.Ordinal);
+        Assert.Equal(["3 files", "1 file", "2 files", "3 files"], viewer.Surfaces.Select(s => s.Count), StringComparer.Ordinal);
         Assert.Empty(viewer.Sections);
     }
 
@@ -51,7 +51,7 @@ public sealed class ScopeMapViewerTests
 
         var surface = viewer.Surfaces.Single();
         Assert.Equal(("Invitations", "S1 · feature · product", "Sent by email", "▣ mapped", "2 citations"), (surface.Title, surface.Meta, surface.Detail, surface.Chip, surface.Count));
-        Assert.Equal([Labels.ScopeWorkstreams, Labels.ScopeFlagged, Labels.ScopeExcluded, Labels.ScopeUnresolved], viewer.Sections.Select(s => s.Heading));
+        Assert.Equal([Labels.ScopeWorkstreams, Labels.ScopeFlagged, Labels.ScopeExcluded, Labels.ScopeUnresolved], viewer.Sections.Select(s => s.Heading), StringComparer.Ordinal);
         Assert.Equal(["ws-1 Expiry"], viewer.Sections[0].Lines);
         Assert.Equal(["S9: no resolving citation"], viewer.Sections[1].Lines);
         Assert.Equal(["L-code-3: test helper"], viewer.Sections[2].Lines);
@@ -63,7 +63,7 @@ public sealed class ScopeMapViewerTests
     {
         var viewer = await Loaded("""{"surfaces":[{"name":"a","graph":"stale"},{"name":"b","graph":"mapped"},{"name":"c"}]}""");
 
-        Assert.Equal(["stale", "▣ mapped", string.Empty], viewer.Surfaces.Select(s => s.Chip));
+        Assert.Equal(["stale", "▣ mapped", string.Empty], viewer.Surfaces.Select(s => s.Chip), StringComparer.Ordinal);
         Assert.Equal("3 surfaces · 1 mapped · 1 stale", viewer.Counts);
     }
 
@@ -73,7 +73,7 @@ public sealed class ScopeMapViewerTests
         var viewer = await Loaded("""{"brief":"PRD.md"}""");
 
         Assert.Equal((false, true, false), (viewer.ShowsTable, viewer.ShowsTree, viewer.HasSurfaces));
-        Assert.Equal(["brief"], viewer.Tree.Select(n => n.Key));
+        Assert.Equal(["brief"], viewer.Tree.Select(n => n.Key), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public sealed class ScopeMapViewerTests
         var odd = await Loaded("""{"surfaces":[1,{"name":"a","files":"x"}],"flagged":[3,"loose",{"reason":"r"}]}""");
         var notArray = await Loaded("""{"surfaces":"none"}""");
 
-        Assert.Equal(["a"], odd.Surfaces.Select(s => s.Title));
+        Assert.Equal(["a"], odd.Surfaces.Select(s => s.Title), StringComparer.Ordinal);
         Assert.Equal(["loose", "r"], odd.Sections.Single().Lines);
         Assert.False(notArray.HasSurfaces);
     }

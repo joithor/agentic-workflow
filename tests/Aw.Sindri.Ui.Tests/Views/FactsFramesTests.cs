@@ -64,9 +64,9 @@ public sealed class FactsFramesTests : FrameHost
         Assert.Equal(viewer.Counts, Named<TextBlock>(window, "ScopeCounts").Text);
         var table = Named<StackPanel>(window, "ScopeTable");
         var heard = Heard.Tree(table).Select(h => h.Name).ToList();
-        Assert.Contains(viewer.Counts, heard);
-        Assert.All(viewer.Surfaces, s => Assert.Contains(s.Title, heard));
-        Assert.All(viewer.Surfaces, s => Assert.Contains(s.Chip, heard));
+        Assert.Contains(heard, h => string.Equals(h, viewer.Counts, StringComparison.Ordinal));
+        Assert.All(viewer.Surfaces, s => Assert.Contains(heard, h => string.Equals(h, s.Title, StringComparison.Ordinal)));
+        Assert.All(viewer.Surfaces, s => Assert.Contains(heard, h => string.Equals(h, s.Chip, StringComparison.Ordinal)));
         Assert.False(Visible(window, "ScopeTree"));
         Click(Named<Button>(window, "ScopeToggle"));
         await Until(window, () => Visible(window, "ScopeTree"));
