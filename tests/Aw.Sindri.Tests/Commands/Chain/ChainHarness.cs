@@ -12,6 +12,7 @@ using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Views;
+using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Features.ApproveProfile;
 using Aw.Sindri.Features.Commands;
 using Aw.Sindri.Features.StopProcess;
@@ -57,6 +58,8 @@ internal sealed class ChainHarness : IAsyncDisposable
             .AddSingleton<IApprovals>(H.Profiles)
             .AddSingleton<IChallenges>(H.Challenges)
             .AddSingleton<IContextEngine>(FakeContextEngine.Instance)
+            .AddSingleton<IAgentCatalog>(new FixedAgentCatalog())
+            .AddScoped<ProfileChecks>()
             .AddSingleton<ICommandCatalog>(new InMemoryCommandCatalog([.. ShellRows.All, fixture]))
             .AddSingleton(Latch)
             .AddSingleton<IProjectorStatus>(Progress)

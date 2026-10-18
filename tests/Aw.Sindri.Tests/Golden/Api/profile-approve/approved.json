@@ -8,5 +8,6 @@
     "user"
   ],
   "approved": true,
-  "sequence": 3
+  "sequence": 3,
+  "stepArgv": []
 }
