@@ -70,18 +70,17 @@ internal sealed partial class RecipeWorkflow
     public async Task<RecipeResult> RunAsync(InstanceStart start)
     {
         var (instance, context) = await Begin(start).ConfigureAwait(true);
-        while (!instance.Ended)
+        try
         {
-            instance = instance switch
-            {
-                { Suspension: null, Frame.Run: { Runtime: StepRuntime.Block } block } => await RunBlockStep(instance, block, context).ConfigureAwait(true),
-                { Suspension: null, Frame.Run: { } open } => await RunDeskStep(instance, open, context).ConfigureAwait(true),
-                _ => await Wait(instance, context).ConfigureAwait(true),
-            };
+            instance = await Interpret(instance, context).ConfigureAwait(true);
+        }
+        catch (Exception failed) when (TemporalException.IsCanceledException(failed))
+        {
+            await Cleanup().ConfigureAwait(true);   // the workflow itself was cancelled: the claim is still released (detached scope)
+            throw;
         }
 
-        await Settle().ConfigureAwait(true);   // every effect it emitted is dispatched, refused or aborted (§5.7)
-        await SettleLeftovers(instance, context).ConfigureAwait(true);
+        await Cleanup().ConfigureAwait(true);   // engine P7: the item's claim goes with the instance, whatever the ending
         return new RecipeResult(instance.State, instance.Outcome?.Value);
     }
 

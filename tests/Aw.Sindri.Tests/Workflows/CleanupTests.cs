@@ -35,7 +35,7 @@ public sealed class CleanupTests(DevServer server) : IClassFixture<DevServer>, I
     private static readonly string _claimThenDone = string.Join(
         "\n",
         "schema: 1",
-        "id: test.claim-done",
+        "id: workflow.claim-done",
         "version: 1",
         "inputs:",
         "  - { key: fact:item, label: \"Item\", type: item, kind: item }",
@@ -47,6 +47,7 @@ public sealed class CleanupTests(DevServer server) : IClassFixture<DevServer>, I
         "transitions:",
         "  - { from: waiting, to: claimed, on: wait.satisfied, effects: [effect.claim.ref] }",
         "  - { from: claimed, to: done,    on: wait.satisfied, when: { outcome: created } }",
+        "  - { from: claimed, to: done,    on: wait.satisfied, when: { outcome: claimExists } }",
         "evals: []");
 
     private static readonly TimeSpan _patience = TimeSpan.FromSeconds(30);
@@ -68,9 +69,9 @@ public sealed class CleanupTests(DevServer server) : IClassFixture<DevServer>, I
     [Fact(Timeout = 120_000)]
     public async Task A_done_item_releases_its_claim_ref()
     {
-        await Serve(_claimThenDone, "test.claim-done", async (sindri, repo) =>
+        await Serve(_claimThenDone, "workflow.claim-done", async (sindri, repo) =>
         {
-            var item = await Start(sindri, "test.claim-done", "T-61");
+            var item = await Start(sindri, "workflow.claim-done", "T-61");
             _ = await Append(sindri, "T-61");
             await Finish(sindri, item);   // claim.created reaches the instance, which ends 'done'
 
@@ -81,9 +82,9 @@ public sealed class CleanupTests(DevServer server) : IClassFixture<DevServer>, I
     [Fact(Timeout = 120_000)]
     public async Task A_cancelled_item_releases_its_claim_ref()
     {
-        await Serve(_claimThenDone, "test.claim-done", async (sindri, repo) =>
+        await Serve(_claimThenDone, "workflow.claim-done", async (sindri, repo) =>
         {
-            var item = await Start(sindri, "test.claim-done", "T-62");
+            var item = await Start(sindri, "workflow.claim-done", "T-62");
             _ = await Append(sindri, "T-62");
             await Run(sindri, EventBridge.ServiceId);
             await Held(sindri, repo, "T-62");
@@ -97,9 +98,9 @@ public sealed class CleanupTests(DevServer server) : IClassFixture<DevServer>, I
     [Fact(Timeout = 120_000)]
     public async Task A_claim_taken_over_by_another_instance_is_left_alone()
     {
-        await Serve(_claimThenDone, "test.claim-done", async (sindri, repo) =>
+        await Serve(_claimThenDone, "workflow.claim-done", async (sindri, repo) =>
         {
-            var item = await Start(sindri, "test.claim-done", "T-63");
+            var item = await Start(sindri, "workflow.claim-done", "T-63");
             _ = await Append(sindri, "T-63");
             await Run(sindri, EventBridge.ServiceId);
             await Held(sindri, repo, "T-63");
@@ -118,9 +119,9 @@ public sealed class CleanupTests(DevServer server) : IClassFixture<DevServer>, I
     [Fact(Timeout = 120_000)]
     public async Task Cleanup_runs_after_a_cancel_that_cancels_the_workflow()
     {
-        await Serve(_claimThenDone, "test.claim-done", async (sindri, repo) =>
+        await Serve(_claimThenDone, "workflow.claim-done", async (sindri, repo) =>
         {
-            var item = await Start(sindri, "test.claim-done", "T-64");
+            var item = await Start(sindri, "workflow.claim-done", "T-64");
             _ = await Append(sindri, "T-64");
             await Run(sindri, EventBridge.ServiceId);
             await Held(sindri, repo, "T-64");

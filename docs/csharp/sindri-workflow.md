@@ -895,6 +895,10 @@ the code's kind, or is absorbed when the same revoke already parked it.
 - **Effect rows are ledger events**, payload `EffectRow` (identity, command id, kind, origin `recipe` or `engine`, state
   `pending`, `dispatched`, `refused` or `cancelled`, instance, code, reason). `outbox list` folds them by command. Kernel's
   `outbox_commands` and `IOutbox` are not used by the engine.
+- **Claim cleanup (engine P7, IDEA-033).** After any ending, `cancelled` included, `RecipeWorkflow.Cleanup.cs` runs the
+  `ReleaseClaim` activity in a detached scope (a cancel of the workflow itself does not skip it): if this instance still owns
+  the item's claim it deletes `refs/sindri/{user}/{item}` and frees the `workflow_claims` row; a claim another instance took
+  over is left alone. Histories without the `p7-children` marker run no cleanup. P8's worktree removal joins the same seam.
 - **Identity** is `{instance id}:{entry}:{index}`; an engine notice's is `{instance id}:{entry}:n{version}`
   (`EffectIdentity.ForNotice`); `effect.claim.ref` keys by item through `workflow_claims`. A re-emission (a `retry`, a
   resumed dispatch park) gets a new command id under the same identity, and the block's existence check makes it harmless.

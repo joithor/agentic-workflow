@@ -71,6 +71,8 @@ public static class SindriWorkflowsServiceCollectionExtensions
         .AddSingleton<BlockStepRunner>()
         .AddSingleton<GateDispatch>(static provider => (gate, context, ct) => RunGateScoped(provider, gate, context, ct))   // engine P7: EvaluateGates runs a scoped gate by id
         .AddSingleton<GateActivities>()                            // engine P7: EvaluateGates
+        .AddSingleton<CleanupActivities>()                         // engine P7: ReleaseClaim
+        .AddSingleton<EngineActivities>()
         .AddSingleton<EffectActivities>()                          // engine P6: RecordEffect, RecheckEffect, RunEffect
         .AddSingleton<WorkerActivities>();
 

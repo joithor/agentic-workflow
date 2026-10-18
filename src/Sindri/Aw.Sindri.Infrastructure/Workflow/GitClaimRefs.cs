@@ -59,8 +59,30 @@ internal sealed class GitClaimRefs : IClaimRefs
             : WorkflowErrors.NoRuntime.With($"git update-ref {reference} failed in {repository}: {created.Error.Trim()} (fix: check the repo, then resume the parked instance to send the claim again)");
     }
 
-    public ValueTask<Result<bool>> Unmark(string repository, string reference, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("GitClaimRefs.Unmark is engine P7 unit U5");
+    public async ValueTask<Result<bool>> Unmark(string repository, string reference, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(repository);
+        ArgumentNullException.ThrowIfNull(reference);
+        if (await Commit(repository, reference, cancellationToken).ConfigureAwait(false) is not { Exit: 0 })
+        {
+            return false;   // no marker (never made, or an earlier cleanup took it): nothing to do
+        }
+
+        var deleted = await Git(repository, ["update-ref", "-m", "sindri: release claim", "-d", reference], cancellationToken).ConfigureAwait(false);
+        if (deleted.Exit == 0)
+        {
+            return true;
+        }
+
+        if (await Commit(repository, reference, cancellationToken).ConfigureAwait(false) is not { Exit: 0 })
+        {
+            return false;   // deleted by a concurrent cleanup between the check and the write
+        }
+
+        return deleted.Error.Contains(".lock", StringComparison.Ordinal)
+            ? WorkflowErrors.EffectFailed.With($"git update-ref -d {reference} in {repository} is locked: {deleted.Error.Trim()} (retrying)")
+            : WorkflowErrors.NoRuntime.With($"git update-ref -d {reference} failed in {repository}: {deleted.Error.Trim()}");
+    }
 
     /// <summary>The commit <paramref name="name"/> names, if it names one.</summary>
     private static Task<GitRun> Commit(string repository, string name, CancellationToken cancellationToken) =>
