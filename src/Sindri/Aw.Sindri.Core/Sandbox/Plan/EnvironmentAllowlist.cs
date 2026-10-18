@@ -34,7 +34,7 @@ public static class EnvironmentAllowlist
         ["npm_config_ignore_scripts"] = "install scripts are off",
         ["NODE_OPTIONS"] = "only when the repo sets it",
         ["DISABLE_TELEMETRY"] = "the inner policy turns telemetry off",
-        ["DISABLE_AUTOUPDATER"] = "no auto-update call to the download host (spike item 11)",
+        ["DISABLE_AUTOUPDATER"] = "no auto-update call to the download host (spike item 1, note 6)",
         ["CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"] = "the inner policy turns update checks off",
         ["GIT_CONFIG_COUNT"] = "the sandbox's git settings at command-line scope",
         ["GIT_CONFIG_GLOBAL"] = "an empty file: the owner's .gitconfig is absent",
