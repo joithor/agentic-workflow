@@ -25,7 +25,7 @@ internal sealed class ContextSubgraphVerbs(ControlPlaneClient client, Output out
         }
 
         var o = parsed.Value;
-        var answer = o.UsePost
+        var answer = o.UseBody
             ? await client.Post<GetContextSubgraphRequest, SubgraphView>(Route, new GetContextSubgraphRequest(o.Keys, QueryRules.ParseDepth(o.Depth).Value, o.MapVersion), ct).ConfigureAwait(false)
             : await client.Get<SubgraphView>(Route + o.QueryString, ct).ConfigureAwait(false);
         return answer.IsError ? ContextExit.For(answer.Error, await output.Error(answer.Error).ConfigureAwait(false))

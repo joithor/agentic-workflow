@@ -12,7 +12,7 @@ using static Aw.Sindri.Tests.Callers.CallerRequests;
 
 namespace Aw.Sindri.Tests.ContextCalls;
 
-/// <summary>GET and POST /sindri/context/subgraph (scoping spec C14; API lane conditions 2 to 4): one handler, one session filter, one set of limits.</summary>
+/// <summary>GET and QUERY /sindri/context/subgraph (scoping spec C14; API lane conditions 2 to 4): one handler, one session filter, one set of limits.</summary>
 public sealed class ContextSubgraphApiTests : IDisposable
 {
     private const string Manager = "feature:tabs.tab-manager";
@@ -70,13 +70,13 @@ public sealed class ContextSubgraphApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Subgraph_post_1000_keys_answers_and_1001_is_006()
+    public async Task Subgraph_query_1000_keys_answers_and_1001_is_006()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
 
-        var ok = await host.Http.Ask(Post("/sindri/context/subgraph", Body(Fake(1000)), Terminal(host)));
-        var over = await host.Http.Ask(Post("/sindri/context/subgraph", Body(Fake(1001)), Terminal(host)));
+        var ok = await host.Http.Ask(Query("/sindri/context/subgraph", Body(Fake(1000)), Terminal(host)));
+        var over = await host.Http.Ask(Query("/sindri/context/subgraph", Body(Fake(1001)), Terminal(host)));
 
         Assert.Equal(HttpStatusCode.OK, ok.Status);
         Assert.Equal(1000, Json(ok.Body).GetProperty("missing").GetArrayLength());
@@ -84,7 +84,7 @@ public sealed class ContextSubgraphApiTests : IDisposable
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Subgraph_get_and_post_for_the_same_keys_answer_byte_identical_bodies_also_for_a_session()
+    public async Task Subgraph_get_and_query_for_the_same_keys_answer_byte_identical_bodies_also_for_a_session()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
@@ -92,46 +92,61 @@ public sealed class ContextSubgraphApiTests : IDisposable
         (string Name, string Value)[] session = [(SindriHeaders.Caller, "session"), (SindriHeaders.Repo, FixtureMap.Repo)];
 
         var get = await host.Http.Ask(Get("/sindri/context/subgraph?" + Nodes(keys) + "&depth=2", Terminal(host)));
-        var post = await host.Http.Ask(Post("/sindri/context/subgraph", Body(keys, depth: 2), Terminal(host)));
+        var query = await host.Http.Ask(Query("/sindri/context/subgraph", Body(keys, depth: 2), Terminal(host)));
         var otherGet = await host.Http.Ask(Get("/sindri/context/subgraph?" + Nodes(keys) + "&depth=2", session));
-        var otherPost = await host.Http.Ask(Post("/sindri/context/subgraph", Body(keys, depth: 2), session));
+        var otherQuery = await host.Http.Ask(Query("/sindri/context/subgraph", Body(keys, depth: 2), session));
 
-        Assert.Equal(get.Body, post.Body);
-        Assert.Equal(otherGet.Body, otherPost.Body);
-        Assert.Equal(2, Json(otherPost.Body).GetProperty("nodes").GetArrayLength());
+        Assert.Equal(get.Body, query.Body);
+        Assert.Equal(otherGet.Body, otherQuery.Body);
+        Assert.Equal(2, Json(otherQuery.Body).GetProperty("nodes").GetArrayLength());
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Subgraph_post_from_foreign_origin_is_403_SND_API_008()
+    public async Task Subgraph_query_from_foreign_origin_is_403_SND_API_008_with_the_body_query_wording()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
 
-        var refused = await host.Http.Ask(Post("/sindri/context/subgraph", Body([Manager]), [.. Terminal(host), ("Origin", "http://localhost:3000")]));
+        var refused = await host.Http.Ask(Query("/sindri/context/subgraph", Body([Manager]), [.. Terminal(host), ("Origin", "http://localhost:3000")]));
 
         Assert.Equal((HttpStatusCode.Forbidden, "SND-API-008"), (refused.Status, refused.Code));
+        Assert.Contains("a body query from a foreign Origin is refused", refused.Body, StringComparison.Ordinal);
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Subgraph_post_honours_X_Sindri_After()
+    public async Task Subgraph_query_honours_X_Sindri_After()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
 
-        var malformed = await host.Http.Ask(Post("/sindri/context/subgraph", Body([Manager]), [.. Terminal(host), (SindriHeaders.After, "soon")]));
+        var malformed = await host.Http.Ask(Query("/sindri/context/subgraph", Body([Manager]), [.. Terminal(host), (SindriHeaders.After, "soon")]));
 
         Assert.Equal(HttpStatusCode.BadRequest, malformed.Status);
         Assert.Contains("X-Sindri-After", malformed.Body, StringComparison.Ordinal);
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
-    public async Task Subgraph_post_with_an_empty_body_list_is_006()
+    public async Task Subgraph_query_with_an_empty_body_list_is_006()
     {
         TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
         await using var host = await Host();
 
-        var none = await host.Http.Ask(Post("/sindri/context/subgraph", Body([]), Terminal(host)));
+        var none = await host.Http.Ask(Query("/sindri/context/subgraph", Body([]), Terminal(host)));
 
         Assert.Equal((HttpStatusCode.BadRequest, "SND-CONTEXT-006"), (none.Status, none.Code));
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Subgraph_post_is_not_a_route_405_and_a_query_with_a_body_works_through_the_factory_client()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        await using var host = await Host();
+
+        var post = await host.Http.Ask(Post("/sindri/context/subgraph", Body([Manager]), Terminal(host)));
+        var query = await host.Http.Ask(Query("/sindri/context/subgraph", Body([Manager, Other]), Terminal(host)));
+
+        Assert.Equal(HttpStatusCode.MethodNotAllowed, post.Status);
+        Assert.Equal(HttpStatusCode.OK, query.Status);
+        Assert.Equal(2, Json(query.Body).GetProperty("nodes").GetArrayLength());
     }
 }

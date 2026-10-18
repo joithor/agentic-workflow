@@ -15,7 +15,7 @@ namespace Aw.Sindri.Host.Commands;
 internal sealed record ContextSubgraphArguments(IReadOnlyList<string> Keys, string? Depth, string? MapVersion, bool Json)
 {
     /// <summary>Whether the question needs a body: more than 20 keys, or keys that together pass the encoded-text cap once percent-encoded.</summary>
-    internal bool UsePost => QueryRules.CheckSubgraphGet(Keys) is not null || Keys.Sum(static k => Uri.EscapeDataString(k).Length) > QueryRules.MaxEncodedText;
+    internal bool UseBody => QueryRules.CheckSubgraphGet(Keys) is not null || Keys.Sum(static k => Uri.EscapeDataString(k).Length) > QueryRules.MaxEncodedText;
 
     /// <summary>The query string of the GET.</summary>
     internal string QueryString => "?" + string.Join('&', Keys.Select(static k => "nodes=" + Uri.EscapeDataString(k)))
