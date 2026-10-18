@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace Aw.Sindri.Infrastructure.Secrets;
 
-/// <summary>IToolRunner over System.Diagnostics.Process: no shell, standard output captured, standard error drained and dropped.</summary>
+/// <summary>IToolRunner over System.Diagnostics.Process: no shell, standard output and standard error captured.</summary>
 internal sealed class ProcessToolRunner : IToolRunner
 {
     /// <inheritdoc />
@@ -50,9 +50,8 @@ internal sealed class ProcessToolRunner : IToolRunner
         }
 
         process.WaitForExit();   // the tool has exited; its streams reach end of file
-#pragma warning disable RS0030 // the child has exited, so its stream reaches end of file at once; this short-lived tool leaves no grandchild holding the pipe
-        _ = error.GetAwaiter().GetResult();
-        return new ToolRun(ToolOutcome.Exited, process.ExitCode, output.GetAwaiter().GetResult());
+#pragma warning disable RS0030 // the child has exited, so its streams reach end of file at once; this short-lived tool leaves no grandchild holding the pipe
+        return new ToolRun(ToolOutcome.Exited, process.ExitCode, output.GetAwaiter().GetResult(), error.GetAwaiter().GetResult());
 #pragma warning restore RS0030
     }
 }
