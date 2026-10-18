@@ -187,7 +187,7 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
         var policyPath = step?.Policy is { } policy && entry.PolicyForm == PolicyForm.ClaudeSettingsFile
             ? StepPolicyFile.Write(parts.Options.PolicyDirectory, request.Launch, policy)
             : null;
-        var session = PreChosen(entry);
+        var session = request.Mode == LaunchMode.Resume && request.Resume is { } resumed ? resumed : PreChosen(entry);
         var seed = ArgvBuilder.Seed(request.Item) + (step is null ? string.Empty : $" This is the {step.Ref.State} step, block {step.Ref.Block}.");
         var (mcpPath, mcpArguments) = McpLaunchConfig.Prepare(entry.McpForm, entry.McpForm == McpForm.None ? null : await parts.McpFor(request.RepoPath, cancellationToken).ConfigureAwait(false), parts.Options.LaunchDirectory, request.Launch);
         var built = ArgvBuilder.Build(entry, request.Mode, new ArgvInputs(request.Item, workDir, SessionName(request.Launch), seed, session, mcpPath, step, policyPath));

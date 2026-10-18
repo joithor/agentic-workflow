@@ -8354,7 +8354,6 @@ Aw.Sindri.Core.Launch.LaunchRequest.Agent.get -> Aw.Sindri.Core.Launch.AgentId
 Aw.Sindri.Core.Launch.LaunchRequest.Agent.init -> void
 Aw.Sindri.Core.Launch.LaunchRequest.Attended.get -> bool
 Aw.Sindri.Core.Launch.LaunchRequest.Attended.init -> void
-Aw.Sindri.Core.Launch.LaunchRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Launch.AgentId Agent, out Aw.Sindri.Core.Launch.LaunchMode Mode, out bool Attended, out string! RepoPath, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance, out string? Worktree, out Aw.Sindri.Core.Launch.StepArgs? Step, out Aw.Sindri.Core.Workflow.Engine.RunToken? Run) -> void
 Aw.Sindri.Core.Launch.LaunchRequest.Equals(Aw.Sindri.Core.Launch.LaunchRequest? other) -> bool
 Aw.Sindri.Core.Launch.LaunchRequest.Instance.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress?
 Aw.Sindri.Core.Launch.LaunchRequest.Instance.init -> void
@@ -8362,7 +8361,6 @@ Aw.Sindri.Core.Launch.LaunchRequest.Item.get -> Aw.Sindri.Core.Ids.ItemId
 Aw.Sindri.Core.Launch.LaunchRequest.Item.init -> void
 Aw.Sindri.Core.Launch.LaunchRequest.Launch.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId
 Aw.Sindri.Core.Launch.LaunchRequest.Launch.init -> void
-Aw.Sindri.Core.Launch.LaunchRequest.LaunchRequest(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Launch.AgentId Agent, Aw.Sindri.Core.Launch.LaunchMode Mode, bool Attended, string! RepoPath, Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance, string? Worktree, Aw.Sindri.Core.Launch.StepArgs? Step, Aw.Sindri.Core.Workflow.Engine.RunToken? Run) -> void
 Aw.Sindri.Core.Launch.LaunchRequest.Mode.get -> Aw.Sindri.Core.Launch.LaunchMode
 Aw.Sindri.Core.Launch.LaunchRequest.Mode.init -> void
 Aw.Sindri.Core.Launch.LaunchRequest.RepoPath.get -> string!
@@ -10662,3 +10660,7 @@ override Aw.Sindri.Core.Launch.TerminalDetail.GetHashCode() -> int
 override Aw.Sindri.Core.Launch.TerminalDetail.ToString() -> string!
 static Aw.Sindri.Core.Launch.TerminalDetail.operator !=(Aw.Sindri.Core.Launch.TerminalDetail? left, Aw.Sindri.Core.Launch.TerminalDetail? right) -> bool
 static Aw.Sindri.Core.Launch.TerminalDetail.operator ==(Aw.Sindri.Core.Launch.TerminalDetail? left, Aw.Sindri.Core.Launch.TerminalDetail? right) -> bool
+Aw.Sindri.Core.Launch.LaunchRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Launch.AgentId Agent, out Aw.Sindri.Core.Launch.LaunchMode Mode, out bool Attended, out string! RepoPath, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance, out string? Worktree, out Aw.Sindri.Core.Launch.StepArgs? Step, out Aw.Sindri.Core.Workflow.Engine.RunToken? Run, out Aw.Sindri.Core.Sessions.SessionId? Resume) -> void
+Aw.Sindri.Core.Launch.LaunchRequest.LaunchRequest(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Launch.AgentId Agent, Aw.Sindri.Core.Launch.LaunchMode Mode, bool Attended, string! RepoPath, Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance, string? Worktree, Aw.Sindri.Core.Launch.StepArgs? Step, Aw.Sindri.Core.Workflow.Engine.RunToken? Run, Aw.Sindri.Core.Sessions.SessionId? Resume = null) -> void
+Aw.Sindri.Core.Launch.LaunchRequest.Resume.get -> Aw.Sindri.Core.Sessions.SessionId?
+Aw.Sindri.Core.Launch.LaunchRequest.Resume.init -> void
