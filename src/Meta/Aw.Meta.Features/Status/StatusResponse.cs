@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Meta.Core.Health;
 using Aw.Meta.Core.Lanes;
 using Aw.Meta.Core.Merge;
@@ -21,6 +22,10 @@ public sealed record StatusResponse(IReadOnlyList<Obligation> Obligations, IRead
 
     /// <summary>The running (or last) merge train's summary lines; null when no train ran.</summary>
     public string? Train { get; init; }
+
+    /// <summary>Each lane's context size; null when it could not be read.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<LaneContext>? Context { get; init; }
 
     /// <summary>The builders per lane to run now; null when the host could not be read.</summary>
     public BuilderAdvice? Builders { get; init; }

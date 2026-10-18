@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Aw.Kernel;
+using Aw.Meta.Core;
 using Aw.Meta.Core.Ids;
 using Aw.Meta.Core.Lanes;
 using Aw.Meta.Core.Ports;
@@ -28,6 +29,34 @@ internal sealed class DirectoryLaneFiles(string directory) : ILaneFiles
         return session is null && agent is null && !ambiguous
             ? Results.Success<LaneRecord?>(value: null)
             : Results.Success<LaneRecord?>(new LaneRecord(lane, session?.Id, agent, session?.At, ambiguous));
+    }
+
+    public async ValueTask<Result<Unit>> RecordSession(string lane, SessionId session, DateTimeOffset at, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(lane);
+        if (!IsLaneName(lane))
+        {
+            return MetaErrors.UnknownLane.With($"'{lane}' is not a lane name");
+        }
+
+        var temporary = Path.Combine(directory, "." + lane + "." + Guid.NewGuid().ToString("N"));
+        try
+        {
+            _ = Directory.CreateDirectory(directory);
+            await File.WriteAllTextAsync(temporary, session.Value + "\n", cancellationToken).ConfigureAwait(false);
+            if (!OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(temporary, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+            }
+
+            File.Move(temporary, Path.Combine(directory, lane), overwrite: true);
+            File.Delete(Path.Combine(directory, lane + ".ambiguous"));
+            return Results.Ok();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            return MetaErrors.CommandFailed.With($"lane-sessions/{lane} can't be written: {exception.Message}");
+        }
     }
 
     // The characters team-init accepts for a lane: letters, digits, '.', '_' and '-'. A name of only dots would name the directory
