@@ -31,6 +31,7 @@ public static class Cascade
         var ownKeys = own.Select(d => d.Key.Value).ToHashSet(StringComparer.Ordinal);
         var visited = new HashSet<string>(ownKeys, StringComparer.Ordinal);
         var affected = new List<AffectedNode>();
+        var skipped = new Dictionary<string, int>(StringComparer.Ordinal);
         var reported = new HashSet<string>(ownKeys, StringComparer.Ordinal);
         var frontier = own.Select(d => new Reach(d.Key, d.Path, d.Edges)).OrderBy(r => OwnsHops(r.Path)).ThenBy(r => r.Node.Value, StringComparer.Ordinal).ToList();
         for (var level = 1; level <= depth && frontier.Count > 0; level++)
@@ -38,7 +39,7 @@ public static class Cascade
             var next = new List<Reach>();
             foreach (var reach in frontier)
             {
-                foreach (var step in Steps(index, reach.Node).Where(s => visited.Add(s.Node.Value)))
+                foreach (var step in Steps(index, reach.Node, options, visited, skipped).Where(s => visited.Add(s.Node.Value)))
                 {
                     var reached = new Reach(step.Node, [.. reach.Path, .. step.Path], [.. reach.Edges, .. step.Edges]);
                     next.Add(reached);
@@ -53,7 +54,10 @@ public static class Cascade
             frontier = [.. next.OrderBy(r => OwnsHops(r.Path)).ThenBy(r => r.Node.Value, StringComparer.Ordinal)];
         }
 
-        return new CascadeResult([.. own.Select(d => d.Key)], [.. affected.OrderBy(a => a.Depth).ThenBy(a => a.Node.Value, StringComparer.Ordinal)]);
+        return new CascadeResult([.. own.Select(d => d.Key)], [.. affected.OrderBy(a => a.Depth).ThenBy(a => a.Node.Value, StringComparer.Ordinal)])
+        {
+            SkippedComponents = [.. skipped.OrderBy(k => k.Key, StringComparer.Ordinal).Select(k => new SkippedComponent(k.Key, k.Value))],
+        };
     }
 
     /// <summary>
@@ -87,11 +91,20 @@ public static class Cascade
         return [root, .. rest];
     }
 
-    private static IEnumerable<Step> Steps(GraphIndex index, NodeKey node) => node.Kind switch
+    private static IEnumerable<Step> Steps(GraphIndex index, NodeKey node, CascadeOptions options, HashSet<string> visited, Dictionary<string, int> skipped)
     {
-        NodeKind.Feature => index.In(node, EdgeType.DependsOn).Select(e => new Step(e.From, [$"depended-on-by {e.From.Value}"], [e])),
-        NodeKind.Surface or NodeKind.Action => StateHops(index, node).Concat(FlowHops(index, node)),
-        NodeKind.Thing => Readers(index, node, prefix: null),
+        var own = OwnSteps(index, node, options.Hops);
+        var component = options.Hops.HasFlag(CascadeHops.Component) && node.Kind is NodeKind.Feature or NodeKind.Surface or NodeKind.Action
+            ? ComponentHop.From(index, node, options.ComponentFanOut, visited, skipped)
+            : [];
+        return own.Concat(component);
+    }
+
+    private static IEnumerable<Step> OwnSteps(GraphIndex index, NodeKey node, CascadeHops hops) => node.Kind switch
+    {
+        NodeKind.Feature => hops.HasFlag(CascadeHops.Dependency) ? index.In(node, EdgeType.DependsOn).Select(e => new Step(e.From, [$"depended-on-by {e.From.Value}"], [e])) : [],
+        NodeKind.Surface or NodeKind.Action => (hops.HasFlag(CascadeHops.State) ? StateHops(index, node) : []).Concat(hops.HasFlag(CascadeHops.Flow) ? FlowHops(index, node) : []),
+        NodeKind.Thing => hops.HasFlag(CascadeHops.State) ? Readers(index, node, prefix: null) : [],
         NodeKind.Flow or NodeKind.Decision or NodeKind.Record or NodeKind.Code => [],
         _ => [],
     };
@@ -110,7 +123,7 @@ public static class Cascade
                 .Select(next => new Step(next.From, [$"step-of {own.To.Value}", $"next {next.From.Value}"], [own, next])));
 
     /// <summary>A surface's owning feature (part-of), an action's through its surface (on, then part-of); the node itself when it has none.</summary>
-    private static NodeKey Ascend(GraphIndex index, NodeKey node)
+    internal static NodeKey Ascend(GraphIndex index, NodeKey node)
     {
         var surface = node.Kind == NodeKind.Action ? index.Out(node, EdgeType.On).Select(e => (NodeKey?)e.To).FirstOrDefault() : node;
         if (surface is not { Kind: NodeKind.Surface } s)
@@ -137,5 +150,5 @@ public static class Cascade
 
     private sealed record Reach(NodeKey Node, IReadOnlyList<string> Path, IReadOnlyList<GraphEdge> Edges);
 
-    private sealed record Step(NodeKey Node, IReadOnlyList<string> Path, IReadOnlyList<GraphEdge> Edges);
+    internal sealed record Step(NodeKey Node, IReadOnlyList<string> Path, IReadOnlyList<GraphEdge> Edges);
 }
