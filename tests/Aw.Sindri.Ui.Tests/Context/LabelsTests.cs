@@ -16,7 +16,7 @@ public sealed class LabelsTests
             .Select(f => (f.Name, Value: (string)f.GetRawConstantValue()!))
             .ToList();
 
-        var twice = words.GroupBy(w => w.Value, StringComparer.Ordinal).Where(g => g.Count() > 1).Select(g => $"'{g.Key}' by {string.Join(", ", g.Select(w => w.Name))}").ToList();
+        var twice = words.GroupBy(w => w.Value, StringComparer.Ordinal).Where(g => g.Skip(1).Any()).Select(g => $"'{g.Key}' by {string.Join(", ", g.Select(w => w.Name))}").ToList();
 
         Assert.NotEmpty(words);
         Assert.True(twice.Count == 0, string.Join("; ", twice));
