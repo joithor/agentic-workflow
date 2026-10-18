@@ -11,8 +11,10 @@ using Aw.Meta.Features.Inbox;
 using Aw.Meta.Features.InboxDefer;
 using Aw.Meta.Features.InboxDismiss;
 using Aw.Meta.Features.LaneInbox;
+using Aw.Meta.Features.LaneRecycle;
 using Aw.Meta.Features.LaneReply;
 using Aw.Meta.Features.Lanes;
+using Aw.Meta.Features.LanesContext;
 using Aw.Meta.Features.LaneSend;
 using Aw.Meta.Features.LaneStopCheck;
 using Aw.Meta.Features.LogAppend;
@@ -65,6 +67,8 @@ namespace Aw.Meta.Host;
 [JsonSerializable(typeof(ListWorktreesResponse))]
 [JsonSerializable(typeof(SweepWorktreesResponse))]
 [JsonSerializable(typeof(LaneSendResponse))]
+[JsonSerializable(typeof(LanesContextResponse))]
+[JsonSerializable(typeof(LaneRecycleResponse))]
 [JsonSerializable(typeof(LaneInboxResponse))]
 [JsonSerializable(typeof(LaneStopCheckResponse))]
 [JsonSerializable(typeof(LaneReplyResponse))]

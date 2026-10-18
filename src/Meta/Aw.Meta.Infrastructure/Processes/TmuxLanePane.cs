@@ -40,6 +40,53 @@ internal sealed class TmuxLanePane(ICommandRunner runner, string tmux, string? s
         return Results.Success<PaneState?>(new PaneState(command.Value.Stdout.Trim(), count));
     }
 
+    public async ValueTask<Result<int?>> PanePid(string session, CancellationToken cancellationToken)
+    {
+        var name = await SocketName(cancellationToken).ConfigureAwait(false);
+        if (name.IsError)
+        {
+            return Results.Success<int?>(value: null);
+        }
+
+        var shown = await Run(name.Value, ["display-message", "-p", "-t", Target(session), "#{pane_pid}"], cancellationToken).ConfigureAwait(false);
+        return Results.Success<int?>(
+            shown.IsSuccess && shown.Value.ExitCode == 0 && int.TryParse(shown.Value.Stdout.Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var pid) ? pid : null);
+    }
+
+    public async ValueTask<Result<Unit>> Type(string session, string text, CancellationToken cancellationToken) =>
+        await Keys(session, ["send-keys", "-t", Target(session), "-l", text], cancellationToken).ConfigureAwait(false);
+
+    public async ValueTask<Result<Unit>> PressEnter(string session, CancellationToken cancellationToken) =>
+        await Keys(session, ["send-keys", "-t", Target(session), "Enter"], cancellationToken).ConfigureAwait(false);
+
+    public async ValueTask<Result<string>> Capture(string session, CancellationToken cancellationToken)
+    {
+        var name = await SocketName(cancellationToken).ConfigureAwait(false);
+        if (name.IsError)
+        {
+            return name.Error;
+        }
+
+        var shown = await Run(name.Value, ["capture-pane", "-p", "-t", Target(session)], cancellationToken).ConfigureAwait(false);
+        return shown.IsError
+            ? shown.Error
+            : shown.Value.ExitCode == 0 ? shown.Value.Stdout : MetaErrors.CommandFailed.With("tmux capture-pane exited " + shown.Value.ExitCode.ToString(System.Globalization.CultureInfo.InvariantCulture) + ": " + shown.Value.Stderr.Trim());
+    }
+
+    private async ValueTask<Result<Unit>> Keys(string session, string[] arguments, CancellationToken cancellationToken)
+    {
+        var name = await SocketName(cancellationToken).ConfigureAwait(false);
+        if (name.IsError)
+        {
+            return name.Error;
+        }
+
+        var ran = await Run(name.Value, arguments, cancellationToken).ConfigureAwait(false);
+        return ran.IsError
+            ? ran.Error
+            : ran.Value.ExitCode == 0 ? Results.Ok() : MetaErrors.CommandFailed.With("tmux " + arguments[0] + " exited " + ran.Value.ExitCode.ToString(System.Globalization.CultureInfo.InvariantCulture) + " for " + session + ": " + ran.Value.Stderr.Trim());
+    }
+
     public async ValueTask<Result<Unit>> Wake(string session, string line, CancellationToken cancellationToken)
     {
         var name = await SocketName(cancellationToken).ConfigureAwait(false);

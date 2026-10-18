@@ -20,6 +20,12 @@ public static class A
     /// <returns>The time.</returns>
     public static DateTimeOffset At(int minutes) => T0.AddMinutes(minutes);
 
+    /// <summary>A transcript line for an assistant turn whose last API call used the given context.</summary>
+    /// <param name="tokens">The context tokens, counted as input tokens.</param>
+    /// <returns>The JSONL line without its line ending.</returns>
+    public static string UsageLine(long tokens) =>
+        "{\"type\":\"assistant\",\"message\":{\"role\":\"assistant\",\"usage\":{\"input_tokens\":" + tokens.ToString(System.Globalization.CultureInfo.InvariantCulture) + ",\"output_tokens\":5}}}";
+
     /// <summary>An inbound message with deterministic defaults.</summary>
     /// <param name="id">The message id.</param>
     /// <param name="name">The sender's session name.</param>
