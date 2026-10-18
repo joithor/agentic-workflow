@@ -7,48 +7,80 @@ namespace Aw.Sindri.Tests.Workflows;
 
 public sealed class ParkedRefusalTests
 {
-    public enum Case
-    {
-        ParkDesk,
-        ParkBlock,
-        TakeoverDesk,
-        TakeoverBlock,
-        TakeoverOverParkDesk,
-        TakeoverOverParkBlock,
-    }
+    private static readonly RunToken _run = RunToken.For(3, 1);
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_takeover_with_no_queue_on_a_desk_run_hands_back_then_completes_with_the_same_token() =>
+        Assert.Equal(
+            "WF is parked (Takeover); hand it back first: sindri workflow handback WF, then complete run " + _run.Value,
+            Refuse(FrameFixture.Suspended(FrameFixture.Takeover(), Open(StepRuntime.Desk))));
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_takeover_with_no_queue_on_a_block_run_hands_back_and_the_step_runs_again() =>
+        Assert.Equal(
+            "WF is parked (Takeover); hand it back first: sindri workflow handback WF (the handback runs the Step again)",
+            Refuse(FrameFixture.Suspended(FrameFixture.Takeover(), Open(StepRuntime.Block))));
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData(Case.ParkDesk, "answer --resume first, then complete run RUN")]
-    [InlineData(Case.ParkBlock, "answer --resume first (the resume runs the Step again)")]
-    [InlineData(Case.TakeoverDesk, "hand it back first: sindri workflow handback ADDR, then complete run RUN")]
-    [InlineData(Case.TakeoverBlock, "hand it back first: sindri workflow handback ADDR (the handback runs the Step again)")]
-    [InlineData(Case.TakeoverOverParkDesk, "hand it back first: sindri workflow handback ADDR, then answer --resume, then complete run RUN")]
-    [InlineData(Case.TakeoverOverParkBlock, "hand it back first: sindri workflow handback ADDR, then answer --resume (the resume runs the Step again)")]
-    public void ParkedRefusal_names_the_next_step_for_the_suspension_and_runtime(Case which, string tail)
+    [InlineData(StepRuntime.Desk)]
+    [InlineData(StepRuntime.Block)]
+    public void A_takeover_over_an_unapproved_park_points_at_status_and_claims_no_rerun(StepRuntime runtime) =>
+        Assert.Equal(
+            "WF is parked (Takeover); hand it back first: sindri workflow handback WF; a park follows, and sindri workflow status WF shows the answer it takes",
+            Refuse(FrameFixture.Suspended(FrameFixture.Takeover(), FrameFixture.Suspended(Park(ParkReason.Budget), Open(runtime)))));
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_takeover_over_an_approved_park_is_a_plain_desk_handback()
     {
-        var block = which is Case.ParkBlock or Case.TakeoverBlock or Case.TakeoverOverParkBlock;
-        var instance = Build(which, block);
-        var run = RunToken.For(3, 1);
-        var suspension = Assert.IsType<Suspension>(instance.Suspension);
+        var instance = Approved(FrameFixture.Suspended(FrameFixture.Takeover(), FrameFixture.Suspended(Park(ParkReason.SpecConflict), Open(StepRuntime.Desk))));
 
-        var text = RecipeWorkflow.ParkedRefusal(instance, suspension, run);
-
-        var address = instance.Address.Value;
-        Assert.Equal($"{address} is parked ({suspension.Reason?.ToString() ?? suspension.Kind.ToString()}); " + tail.Replace("ADDR", address, StringComparison.Ordinal).Replace("RUN", run.Value, StringComparison.Ordinal), text);
+        Assert.Equal("WF is parked (Takeover); hand it back first: sindri workflow handback WF, then complete run " + _run.Value, Refuse(instance));
     }
 
-    private static WorkflowInstance Build(Case which, bool block)
+    [Fact, Trait("Lane", "unit")]
+    public void A_takeover_over_an_approved_park_is_a_plain_block_handback()
+    {
+        var instance = Approved(FrameFixture.Suspended(FrameFixture.Takeover(), FrameFixture.Suspended(Park(ParkReason.SpecConflict), Open(StepRuntime.Block))));
+
+        Assert.Equal("WF is parked (Takeover); hand it back first: sindri workflow handback WF (the handback runs the Step again)", Refuse(instance));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_timeout_park_points_at_status() =>
+        Assert.Equal(
+            "WF is parked (Timeout); answer it first: sindri workflow status WF shows the answer it takes",
+            Refuse(FrameFixture.Suspended(Park(ParkReason.Timeout), Open(StepRuntime.Desk))));
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_budget_park_on_a_block_run_names_neither_resume_nor_a_rerun()
+    {
+        var text = Refuse(FrameFixture.Suspended(Park(ParkReason.Budget), Open(StepRuntime.Block)));
+
+        Assert.Equal("WF is parked (Budget); answer it first: sindri workflow status WF shows the answer it takes", text);
+        Assert.DoesNotContain("--resume", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("again", text, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_park_with_an_unapproved_park_queued_behind_it_points_at_status() =>
+        Assert.Equal(
+            "WF is parked (Budget); answer it first: sindri workflow status WF shows the answer it takes",
+            Refuse(FrameFixture.Suspended(Park(ParkReason.Rounds), FrameFixture.Suspended(Park(ParkReason.Budget), Open(StepRuntime.Block)))));
+
+    private static Suspension Park(ParkReason reason) => FrameFixture.Park(reason, ParkKind.Step, ResumeKind.Transition);
+
+    private static WorkflowInstance Open(StepRuntime runtime)
     {
         var producing = FrameFixture.Producing();
-        var runtime = block ? StepRuntime.Block : StepRuntime.Desk;
-        var from = producing with { Frame = producing.Frame with { Run = new OpenRun(RunToken.For(3, 1), runtime, Launch: null, Task: null) } };
-        var park = FrameFixture.Park(ParkReason.Budget, ParkKind.Step, ResumeKind.Transition);
-        return which switch
-        {
-            Case.ParkDesk or Case.ParkBlock => FrameFixture.Suspended(park, from),
-            Case.TakeoverDesk or Case.TakeoverBlock => FrameFixture.Suspended(FrameFixture.Takeover(), from),
-            Case.TakeoverOverParkDesk or Case.TakeoverOverParkBlock => FrameFixture.Suspended(FrameFixture.Takeover(), FrameFixture.Suspended(park, from)),
-            _ => throw new ArgumentOutOfRangeException(nameof(which)),
-        };
+        return producing with { Frame = producing.Frame with { Run = new OpenRun(_run, runtime, Launch: null, Task: null) } };
+    }
+
+    private static WorkflowInstance Approved(WorkflowInstance instance) =>
+        instance with { PendingPark = Assert.IsType<Suspension>(instance.PendingPark) with { Approved = true } };
+
+    private static string Refuse(WorkflowInstance instance)
+    {
+        var suspension = Assert.IsType<Suspension>(instance.Suspension);
+        return RecipeWorkflow.ParkedRefusal(instance, suspension, _run).Replace(instance.Address.Value, "WF", StringComparison.Ordinal);
     }
 }
