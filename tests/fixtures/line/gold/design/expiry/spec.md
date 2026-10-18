@@ -11,7 +11,7 @@ reverses decision 0001 only for links that choose a time (S1).
 ### Creating a link
 
 The create route (S2, S5) takes an optional expiry time. It refuses a time that is not in the future and creates no
-link (AC-4). Any editor may set one; a viewer still cannot create a link (RG-3).
+link (AC-4). Any editor may set one; a viewer still cannot create a link (AC-10).
 
 ### Opening a link
 
@@ -39,7 +39,7 @@ The Share dialog (S4, S22) offers four choices: no expiry, 1 day, 7 days and 30 
 ### The digest notice
 
 The weekly digest lists the owner's links that expire within 7 days, one line for each (S17, S18, AC-6). A week with
-no changed note and no expiring link sends nothing (RG-2).
+no changed note and no expiring link sends nothing (AC-9).
 
 ## Data
 
@@ -52,8 +52,8 @@ suffix. Old rows stay null (AC-7). The public route reads the column on each req
 
 Each item has a signal in `signals.json`. Create, refuse and open are shown with API transcripts at the head. The
 picker is shown in a browser. Migration 006 is shown on a database that already holds two links (AC-7). The
-regressions are compared at the base and at the head: revoke (RG-1), the quiet digest (RG-2), the viewer refusal
-(RG-3) and the export (RG-4, an added item under sec-4).
+regressions are compared at the base and at the head: revoke (AC-8), the quiet digest (AC-9), the viewer refusal
+(AC-10) and the export (AC-11, an added item under sec-4).
 
 ## Rows to other lanes
 

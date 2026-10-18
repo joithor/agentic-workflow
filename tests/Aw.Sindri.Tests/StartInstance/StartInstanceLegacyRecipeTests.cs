@@ -2,6 +2,7 @@ using System.Text;
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -78,7 +79,7 @@ public sealed class StartInstanceLegacyRecipeTests
     private static (StartInstanceService Service, Capturing Runtime) Service(IReadOnlyList<RecipeInput> inputs, ApprovalCheck check = ApprovalCheck.Holds)
     {
         var runtime = new Capturing();
-        return (new StartInstanceService(new OneItem(), new OneRecipe(inputs, check), new NoInstances(), new StartFacts(new InMemoryFactStore(), TimeProvider.System), runtime, new NoLaunches(), new ClaimHolders(new InMemoryWorkflowClaims(), new FakeInstanceLiveness())), runtime);
+        return (new StartInstanceService(new OneItem(), new OneRecipe(inputs, check), new NoInstances(), new StartFacts(new InMemoryFactStore(), TimeProvider.System, new StepInputRuntimes([])), runtime, new NoLaunches(), new ClaimHolders(new InMemoryWorkflowClaims(), new FakeInstanceLiveness())), runtime);
     }
 
     private sealed class Capturing : IInstanceRuntime

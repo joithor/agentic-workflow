@@ -24,7 +24,8 @@ namespace Aw.Sindri.Core.Workflow.Registry;
 /// <param name="catalog">This build's blocks.</param>
 /// <param name="json">The package's AwJson options (they read the stored text and hash the pins).</param>
 /// <param name="profile">The approved profile's facts (its effect allowlist, which the preview marks each effect against).</param>
-public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals approvals, IRecipeWake wake, BlockCatalog catalog, JsonSerializerOptions json, IRecipeProfileFacts profile)
+/// <param name="inputRuntimes">The Step inputs this build runs (an approval refuses one with no runtime, SND-WF-016).</param>
+public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals approvals, IRecipeWake wake, BlockCatalog catalog, JsonSerializerOptions json, IRecipeProfileFacts profile, StepInputRuntimes inputRuntimes)
 {
     /// <summary>The plan for 'approve &lt;id&gt; &lt;version&gt;': the version registered under that id.</summary>
     /// <param name="id">The recipe id.</param>
@@ -190,6 +191,11 @@ public sealed class RecipeApprovalPlanner(IRecipeStore store, IRecipeApprovals a
         if ((parsed.IsError ? parsed.Error : await Shape(recipe, parsed.Value, cancellationToken).ConfigureAwait(false)) is { } refused)
         {
             return refused;
+        }
+
+        if (StepInputRefusals.Check(parsed.Value, inputRuntimes) is { } noRuntime)
+        {
+            return noRuntime;
         }
 
         var current = await approvals.Current(cancellationToken).ConfigureAwait(false);
