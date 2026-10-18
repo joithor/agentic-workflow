@@ -17,6 +17,7 @@ public static class ThresholdChecks
             : resources.SwapHighPct is < 1 or > 100 ? Message("resources.swapHighPct", "1 to 100", resources.SwapHighPct)
             : builders.MaxPerLane < 1 ? Message("builders.maxPerLane", "1 or more", builders.MaxPerLane)
             : builders.WorktreeGb < 0 ? Message("builders.worktreeGb", "0 or more", builders.WorktreeGb)
+            : team.Context.RecycleAt < 1 ? Message("context.recycleAt", "1 or more", team.Context.RecycleAt)
             : heavy.Cap < 1 ? Message("heavy.cap", "1 or more", heavy.Cap)
             : null;
     }
