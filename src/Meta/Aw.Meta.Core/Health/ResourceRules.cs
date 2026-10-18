@@ -19,7 +19,7 @@ public static class ResourceRules
         return host.DiskFreeBytes < limits.DiskFloorGb * BytesPerGb;
     }
 
-    /// <summary>Whether available memory is under the floor, or swap is nearly all in use.</summary>
+    /// <summary>Whether available memory is under the floor. Swap never counts: a box can sit at full swap with memory to spare.</summary>
     /// <param name="host">The host's figures.</param>
     /// <param name="limits">The thresholds.</param>
     /// <returns>True when memory is low.</returns>
@@ -27,7 +27,7 @@ public static class ResourceRules
     {
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(limits);
-        return host.MemAvailableKb < limits.MemFloorGb * KbPerGb || (host.SwapTotalKb > 0 && host.SwapUsedPercent >= limits.SwapHighPct);
+        return host.MemAvailableKb < limits.MemFloorGb * KbPerGb;
     }
 
     /// <summary>Whole gigabytes of free disk.</summary>
