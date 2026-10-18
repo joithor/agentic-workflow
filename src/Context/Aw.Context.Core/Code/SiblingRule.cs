@@ -4,8 +4,8 @@ namespace Aw.Context.Core.Code;
 public static class SiblingRule
 {
     private static readonly string[] _generic = ["index", "main", "mod", "__init__", "utils", "util", "helpers", "types", "common", "constants"];
-    private static readonly string[] _dottedSuffixes = [".test", ".spec", "_test"];
-    private static readonly string[] _pascalSuffixes = ["Tests", "Test"];
+    private static readonly string[] _dottedSuffixes = [".test", ".spec", "_test", "_tests", "_spec"];
+    private static readonly string[] _pascalSuffixes = ["Tests", "Test", "Spec"];
 
     /// <summary>Whether a test file ties an implementing file by name.</summary>
     /// <param name="testPath">The test file's path.</param>

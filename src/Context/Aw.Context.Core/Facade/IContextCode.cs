@@ -4,7 +4,7 @@ using Aw.Kernel;
 
 namespace Aw.Context.Core.Facade;
 
-/// <summary>The code lens (S-CL, scoping station C3): the files, tests and data around some anchors. IContextEngine extends it; the workflow engine's 'input.context.code' calls it in process.</summary>
+/// <summary>The code lens (S-CL, scoping station C3): the files, tests and data around some anchors. IContextEngine extends it; the workflow engine's 'input.context.code' block will call it in process (its descriptor is still pending).</summary>
 public interface IContextCode
 {
     /// <summary>The code lens around one to 20 anchors, read from one map snapshot with a lexical search of the repo at the map's commit.</summary>
