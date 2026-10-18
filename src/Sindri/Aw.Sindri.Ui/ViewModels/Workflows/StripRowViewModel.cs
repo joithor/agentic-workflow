@@ -21,7 +21,7 @@ internal sealed class StripRowViewModel : ObservableObject
         var answer = row.Answer;
         if (InstanceRules.IsChildPointer(answer))
         {
-            ChildAnswer = ChildAnswerViewModel.ForInstance(row.Address, answer!.Child); // why: IsChildPointer is true only with an answer
+            ChildAnswer = ChildAnswerViewModel.ForInstance(row.Address, answer.Child);
         }
         else if (answer is not null && InstanceRules.HasProtectedAnswer(row))
         {

@@ -121,4 +121,18 @@ public sealed class ChildAnswerTests
         Assert.NotEqual(Strip(served).Signature, Strip(WithoutChild(served)).Signature, StringComparer.Ordinal);
         Assert.NotEqual(Listed(served).Signature, Listed(WithoutChild(served)).Signature, StringComparer.Ordinal);
     }
+
+    [Theory]
+    [MemberData(nameof(Pointers))]
+    public void A_pointer_whose_served_class_is_protected_still_shows_no_lock(string scenario)
+    {
+        // An in-memory copy of the pointer golden with class "protected": the lock must stay off, or the row would offer a protected answer the child decides.
+        var served = FixtureInstances.Summary(scenario);
+        var protectedPointer = served with { Answer = served.Answer! with { Class = "protected" } };
+
+        Assert.False(InstanceRules.HasProtectedAnswer(protectedPointer));
+        Assert.Null(Strip(protectedPointer).Protected);
+        Assert.Null(Listed(protectedPointer).Protected);
+        Assert.NotNull(Strip(protectedPointer).ChildAnswer);
+    }
 }

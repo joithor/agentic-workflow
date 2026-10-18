@@ -27,7 +27,7 @@ internal sealed class InstanceRowViewModel : ObservableObject
         })];
         if (InstanceRules.IsChildPointer(row.Answer))
         {
-            ChildAnswer = ChildAnswerViewModel.ForInstance(row.Address, row.Answer!.Child); // why: IsChildPointer is true only with an answer
+            ChildAnswer = ChildAnswerViewModel.ForInstance(row.Address, row.Answer.Child);
         }
         else if (InstanceRules.HasProtectedAnswer(row))
         {

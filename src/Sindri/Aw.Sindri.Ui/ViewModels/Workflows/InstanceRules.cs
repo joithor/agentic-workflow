@@ -17,7 +17,7 @@ internal static class InstanceRules
     /// <summary>True when the answer is a pointer to a child that decides it (via is "child"): the row shows "Answer in the child" and offers no answer form. Keys on the served via only, never on the cli text.</summary>
     /// <param name="answer">The served answer, or null.</param>
     /// <returns>True for a child pointer.</returns>
-    internal static bool IsChildPointer(StatusAnswer? answer) => answer is not null && string.Equals(answer.Via, ChildVia, StringComparison.Ordinal);
+    internal static bool IsChildPointer([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] StatusAnswer? answer) => answer is not null && string.Equals(answer.Via, ChildVia, StringComparison.Ordinal);
 
     /// <summary>The same test on a served via word (a needs-you row carries only that).</summary>
     /// <param name="via">The served word, or null.</param>

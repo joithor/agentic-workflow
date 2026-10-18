@@ -26,8 +26,16 @@ public sealed class ChildAnswerButtonTests
         var window = new Window { Content = row, Width = 1300, Height = 240 };
         window.Show();
         Dispatcher.UIThread.RunJobs();
-        var tree = Heard.Tree(row);
-        window.Close();
+        List<(string Name, AutomationControlType Type)> tree;
+        try
+        {
+            tree = Heard.Tree(row);
+        }
+        finally
+        {
+            window.Close();
+        }
+
         string[] buttons = [.. tree.Where(n => n.Type == AutomationControlType.Button).Select(n => n.Name)];
         return (buttons, Array.Exists([.. tree], n => n.Name.Contains("protected", StringComparison.OrdinalIgnoreCase)));
     }
