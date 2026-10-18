@@ -62,8 +62,7 @@ public sealed class SandboxPlanReviewRound1Tests
 
         Assert.Equal("dontAsk", step.DefaultMode);
         Assert.Equal("default", attended.DefaultMode);
-        Assert.True(step.DisableBypassPermissions);
-        Assert.True(attended.DisableBypassPermissions);
+        Assert.True(InnerPolicy.DisableBypassPermissions);
     }
 
     [Fact, Trait("Lane", "unit")]

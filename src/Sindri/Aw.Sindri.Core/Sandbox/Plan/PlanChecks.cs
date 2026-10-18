@@ -1,28 +1,66 @@
 using System.Text;
+using System.Text.RegularExpressions;
 using Aw.Kernel;
+using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Sandbox.Credentials;
 
 namespace Aw.Sindri.Core.Sandbox.Plan;
 
-/// <summary>The checks that decide whether a request can be planned at all: the paths (-015), the socket path (-016) and the prepared login (-016, -017's neighbours).</summary>
-internal static class PlanChecks
+/// <summary>
+/// The checks that decide whether a request can be planned at all: the policy and the paths (-015), the socket path (-016) and the
+/// prepared login (-016). Nothing is bound from a string these checks have not seen: an empty or unnormalized path must not widen a bind.
+/// </summary>
+internal static partial class PlanChecks
 {
     private const int SocketPathLimit = 104;
 
     private static readonly string[] _renameWritten = [".credentials.json", ".claude.json", "auth.json"];
 
-    internal static Error? Validate(PlanContext c) => Worktree(c) ?? Socket(c) ?? Login(c);
+    internal static Error? Validate(PlanContext c) => Mode(c) ?? Paths(c) ?? Namespace(c) ?? Worktree(c) ?? Socket(c) ?? Login(c);
+
+    private static Error? Mode(PlanContext c) =>
+        c.Request.Policy is { Mode: not StepPermissionMode.Default, WritablePath: not null }
+            ? Unconfinable("a Step in a read-only or plan mode names a writable path")
+            : null;
+
+    private static Error? Paths(PlanContext c)
+    {
+        var r = c.Request;
+        var p = r.Paths;
+        (string? Path, string What)[] clean =
+        [
+            (p.Repo, "the repo path"), (p.GitCommonDir, "the git directory"), (p.RunDirectory, "the run directory"), (p.RunArea, "the run area"),
+            (p.Worktree ?? p.Repo, "the worktree"), (r.Host.Home, "the home"), (r.Host.StateDir, "the state directory"), (r.Host.SindriHome, "the Sindri home"), (r.Net.NetDir, "the socket directory"),
+        ];
+        var bad = clean.FirstOrDefault(x => !IsClean(x.Path));
+        if (bad.What is not null)
+        {
+            return Unconfinable($"{bad.What} is not an absolute normalized path");
+        }
+
+        if (p.Worktree is { } worktree && !Inside(worktree, p.Repo))
+        {
+            return Unconfinable("the worktree is not inside the repo");
+        }
+
+        return !Inside(p.RunDirectory, r.Host.SindriHome) || !Inside(p.RunArea, r.Host.SindriHome)
+            ? Unconfinable("the run directory and the run area belong inside the Sindri home")
+            : null;
+    }
+
+    private static Error? Namespace(PlanContext c)
+    {
+        var ns = c.Request.RunNamespace;
+        return !RunNamespace.IsMatch(ns) || ns.Split('/').Any(s => string.Equals(s, ".", StringComparison.Ordinal) || string.Equals(s, "..", StringComparison.Ordinal) || s.EndsWith(".lock", StringComparison.Ordinal))
+            ? Unconfinable("the run namespace is not sindri/<instance>/<run>")
+            : null;
+    }
 
     private static Error? Worktree(PlanContext c)
     {
         var paths = c.Request.Paths;
-        if (paths.Worktree is { } worktree && !worktree.StartsWith(paths.Repo.TrimEnd('/') + "/", StringComparison.Ordinal))
-        {
-            return SandboxRefusal.For(SindriErrors.LaunchUnconfinable, SandboxReasons.WorktreeOutsideRepo, "the worktree is not inside the repo");
-        }
-
         return c.WritablePath is { } writable && !string.Equals(writable, paths.Worktree, StringComparison.Ordinal)
-            ? SandboxRefusal.For(SindriErrors.LaunchUnconfinable, SandboxReasons.WorktreeOutsideRepo, "the writable path is not the run's worktree")
+            ? Unconfinable("the writable path is not the run's worktree")
             : null;
     }
 
@@ -40,7 +78,7 @@ internal static class PlanChecks
 
         if (login.Source != c.Login)
         {
-            return SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, SandboxReasons.Login, "the prepared login is not from the source the plan resolved");
+            return Failed(SandboxReasons.Login, "the prepared login is not from the source the plan resolved");
         }
 
         return LoginMount(c, login) ?? LoginEnvironment(login);
@@ -48,25 +86,62 @@ internal static class PlanChecks
 
     private static Error? LoginMount(PlanContext c, PreparedLogin login)
     {
-        var roots = new[] { c.Home + "/.claude", c.Home + "/.codex" };
         foreach (var mount in login.Mounts)
         {
             if (_renameWritten.Any(f => mount.SandboxPath.EndsWith("/" + f, StringComparison.Ordinal)))
             {
-                return SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, SandboxReasons.Login, "a login file is rewritten by rename: bind its directory, not the file");
+                return Failed(SandboxReasons.Login, "a login file is rewritten by rename: bind its directory, not the file");
             }
 
-            if (mount.Mode == MountMode.ReadWrite && roots.Contains(mount.SandboxPath, StringComparer.Ordinal))
+            if (mount.Mode == MountMode.ReadWrite && OutsideWriteSet(c.Home, mount.SandboxPath))
             {
-                return SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, SandboxReasons.Login, "the agent home must be read-only");
+                return Failed(SandboxReasons.Login, "the agent home is read-only except its named write set");
             }
         }
 
         return null;
     }
 
-    private static Error? LoginEnvironment(PreparedLogin login) =>
-        login.Environment.Keys.FirstOrDefault(n => !EnvironmentAllowlist.IsListed(n)) is { } name
-            ? SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, SandboxReasons.Env, $"the login sets {name}, which is not on the environment allowlist")
+    private static bool OutsideWriteSet(string home, string path)
+    {
+        foreach (var agentHome in new[] { home + "/.claude", home + "/.codex" })
+        {
+            if (string.Equals(path, agentHome, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            if (path.StartsWith(agentHome + "/", StringComparison.Ordinal))
+            {
+                return !AgentHomeWriteSet.Allows(agentHome, path[(agentHome.Length + 1)..]);
+            }
+        }
+
+        return false;
+    }
+
+    private static Error? LoginEnvironment(PreparedLogin login)
+    {
+        if (login.Environment.Keys.FirstOrDefault(n => !EnvironmentAllowlist.IsCredentialName(n)) is { } name)
+        {
+            return Failed(SandboxReasons.Env, $"the login sets {name}: a credential source may set only the agent home and the model key");
+        }
+
+        return login.Environment.TryGetValue("CODEX_HOME", out var codex) && (string.Equals(codex, "/tmp", StringComparison.Ordinal) || codex.StartsWith("/tmp/", StringComparison.Ordinal))
+            ? Failed(SandboxReasons.Login, "Codex will not make its helper binaries under /tmp")
             : null;
+    }
+
+    private static bool IsClean(string? path) =>
+        !string.IsNullOrEmpty(path) && path[0] == '/' && path.Length > 1 && !path.EndsWith('/') && !path.Contains("//", StringComparison.Ordinal)
+        && !path.Split('/').Any(s => string.Equals(s, ".", StringComparison.Ordinal) || string.Equals(s, "..", StringComparison.Ordinal));
+
+    private static bool Inside(string path, string root) => path.StartsWith(root + "/", StringComparison.Ordinal);
+
+    private static Error Unconfinable(string detail) => SandboxRefusal.For(SindriErrors.LaunchUnconfinable, SandboxReasons.WorktreeOutsideRepo, detail);
+
+    private static Error Failed(string reason, string detail) => SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, reason, detail);
+
+    [GeneratedRegex("^sindri(/[A-Za-z0-9._-]+){2,}\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
+    private static partial Regex RunNamespace { get; }
 }

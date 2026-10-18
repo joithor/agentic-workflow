@@ -59,7 +59,7 @@ public static class HostGroups
             names.Add(Github);
         }
 
-        names.AddRange((input.Repo?.Groups ?? []).Where(g => !names.Contains(g, StringComparer.Ordinal)));
+        names.AddRange((input.Repo?.Groups ?? []).Where(g => !names.Contains(g, StringComparer.Ordinal) && RepoMayAdd(g, input)));
         return names;
     }
 
@@ -85,6 +85,13 @@ public static class HostGroups
         ArgumentNullException.ThrowIfNull(groups);
         return groups.FirstOrDefault(g => g.Hosts.Any(p => Matches(p, host)));
     }
+
+    private static bool RepoMayAdd(string group, GroupsInput input) => group switch
+    {
+        Github => input.Github == GithubCredentials.AgentApp && !input.Attended,
+        Packages => input.WriteScope,
+        _ => true,
+    };
 
     private static string[] ModelHosts(string target) => target switch
     {

@@ -97,7 +97,9 @@ public sealed class SandboxPlanEnvironmentTests
             Environment = new Dictionary<string, string>(Req.Host.Environment, StringComparer.Ordinal) { ["AW_HEAVY_CPUS"] = "6" },
         };
 
-        var env = Env(SandboxPlannerTests.Build(Req.WriteScope with { Host = host }));
+        var paths = Req.WriteScope.Paths with { RunDirectory = "/custom/home/runs/1", RunArea = "/custom/home/areas/1" };
+
+        var env = Env(SandboxPlannerTests.Build(Req.WriteScope with { Host = host, Paths = paths }));
 
         Assert.Equal("/custom/home", env["AW_SINDRI_HOME"]);
         Assert.Equal("6", env["DOTNET_PROCESSOR_COUNT"]);

@@ -1,4 +1,4 @@
-Sandbox 140fbe280e12 (pass-through) for a session you opened
+Sandbox 3e633ce507f5 (pass-through) for a session you opened
 Launch: LCH-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 Files, bottom to top (a later line wins):
@@ -17,7 +17,7 @@ Files, bottom to top (a later line wins):
   read-only /home/owner/repos/toolkit  (the toolkit checkout the judge wrapper runs)
   read-only /home/owner/.claude  (the agent home, from the owner-copy login source)
   writable  /home/owner/.claude-run  (the agent home, from the owner-copy login source)
-  blocked   /home/owner/.claude/.credentials.json  (always blocked: the owner's original login; the session has its own copy)
+  blocked   /home/owner/.claude/.credentials.json  (always blocked: the owner's own login file; a session gets its login from its credential source)
   blocked   /home/owner/.agentic-workflow  (always blocked: the ledger, profile, tokens and other runs' areas live here)
   blocked   /home/owner/.agentic-workflow/sindri-app  (always blocked: Sindri's own state: the ledger, tokens and other runs' areas)
   blocked   /var/run/docker.sock  (always blocked: the Docker socket is root on the host)
@@ -62,6 +62,6 @@ Limits:
   memory 6.4GiB (slowed at 5.1GiB), cpu 400%, processes 2048, sessions 3, home 256MiB, time none
 
 Credentials: GitHub none, model login owner-copy
-The agent's own policy: asks, 42 rules; its own sandbox: auto
+The agent's own policy: asks, 45 rules; its own sandbox: auto
 Hooks kept: block-destructive, block-push-main, context-guard, detect-secrets, done-gate, done-gate-annotate, git-context, judge-health, meta-lane-gate, meta-outbox, meta-stop-gate, outbox-flush, prism-context, probe-log, prompt-sort, session-id-report, sindri-nudge, subagent-start-map, turn-origin
 Hooks left out: external-write-guard, record-teammate-name, rtk-rewrite, scope-gate, send-gate

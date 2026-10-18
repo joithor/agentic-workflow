@@ -28,6 +28,7 @@ internal static class PlanMounts
         ];
         AddHomeAllow(m, c);
         AddLogin(m, c);
+        AddMasks(m, c);
         m.AddRange(c.Denied().Select(d => new PlanMount(d.Path, PlanMountKind.Deny, Reason: d.Reason)));
         AddInventory(m, c);
         AddLaunchFiles(m, c);
@@ -61,15 +62,25 @@ internal static class PlanMounts
             var kind = mount.Mode == MountMode.ReadWrite ? PlanMountKind.ReadWrite : PlanMountKind.ReadOnly;
             m.Add(new PlanMount(mount.SandboxPath, kind, string.Equals(mount.HostPath, mount.SandboxPath, StringComparison.Ordinal) ? null : mount.HostPath, Reason: $"the agent home, from the {SandboxWire.Name(c.Login)} login source"));
         }
+    }
 
-        foreach (var (home, file) in new[] { (c.Home + "/.claude", ".credentials.json"), (c.Home + "/.codex", "auth.json") })
+    private static void AddMasks(List<PlanMount> m, PlanContext c)
+    {
+        foreach (var path in new[] { c.Home + "/.claude/.credentials.json", c.Home + "/.codex/auth.json" })
         {
-            if (login.Mounts.Any(x => string.Equals(x.SandboxPath, home, StringComparison.Ordinal) && x.Mode == MountMode.ReadOnly))
+            if (m.Exists(x => Covers(x, path, c.Home)))
             {
-                m.Add(new PlanMount($"{home}/{file}", PlanMountKind.Deny, Reason: PlanContext.Always + "the owner's original login; the session has its own copy"));
+                m.Add(new PlanMount(path, PlanMountKind.Deny, Reason: PlanContext.Always + "the owner's own login file; a session gets its login from its credential source"));
             }
         }
     }
+
+    // The owner's real home is what is bound at its own path (no other host source); the root and the empty home don't count.
+    private static bool Covers(PlanMount mount, string path, string home) =>
+        mount.Kind is PlanMountKind.ReadOnly or PlanMountKind.ReadWrite
+        && mount.Source is null
+        && mount.Path.StartsWith(home + "/", StringComparison.Ordinal)
+        && (string.Equals(mount.Path, path, StringComparison.Ordinal) || path.StartsWith(mount.Path + "/", StringComparison.Ordinal));
 
     private static void AddInventory(List<PlanMount> m, PlanContext c)
     {

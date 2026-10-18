@@ -5,6 +5,8 @@ namespace Aw.Sindri.Core.Sandbox.Plan;
 /// <summary>Builds the inner policy (sandbox spec §5): target-neutral allow and deny rules that SB-5a renders for each agent CLI.</summary>
 internal static class PlanPolicy
 {
+    private static readonly string[] _readOnlyCommands = ["git status", "git diff", "git log", "git show", "sindri"];
+
     internal static InnerPolicy Build(PlanContext c)
     {
         var r = c.Request;
@@ -35,12 +37,14 @@ internal static class PlanPolicy
         c.Denied().Concat(c.OwnerDenied()).Select(d => d.Path).Concat(c.Request.Login?.DeniedReads ?? []).Distinct(StringComparer.Ordinal);
 
     private static List<InnerRule> AttendedAllows() =>
-        [Allow("Read", string.Empty), Allow("Glob", string.Empty), Allow("Grep", string.Empty)];
+        [Allow("Read", string.Empty), Allow("Glob", string.Empty), Allow("Grep", string.Empty), Ask("Bash"), Ask("Edit"), Ask("Write")];
+
+    private static InnerRule Ask(string tool) => new(InnerRuleEffect.Ask, tool, string.Empty);
 
     private static List<InnerRule> StepAllows(PlanContext c, StepPolicy policy)
     {
         List<string> roots = c.WritablePath is { } worktree ? [worktree, c.Request.Paths.RunDirectory] : [c.Request.Paths.RunDirectory];
-        List<InnerRule> allows = policy.AllowedTools.Count > 0 ? [.. policy.AllowedTools.SelectMany(t => FromTool(t, roots))] : [.. Defaults(c, roots)];
+        List<InnerRule> allows = policy.AllowedTools.Count > 0 ? [.. policy.AllowedTools.SelectMany(t => FromTool(t, roots, c.WriteScope)).Distinct()] : [.. Defaults(c, roots)];
         allows.Add(Allow("mcp__sindri-step__*", string.Empty));
         return allows;
     }
@@ -62,32 +66,30 @@ internal static class PlanPolicy
             yield break;
         }
 
-        foreach (var command in new[] { "git status", "git diff", "git log", "git show", "sindri" })
+        foreach (var command in _readOnlyCommands)
         {
             yield return Allow("Bash", command + ":*");
         }
     }
 
-    private static IEnumerable<InnerRule> FromTool(string tool, List<string> roots)
+    private static IEnumerable<InnerRule> FromTool(string tool, List<string> roots, bool writeScope)
     {
         var open = tool.IndexOf('(', StringComparison.Ordinal);
-        if (open > 0 && tool.EndsWith(')'))
+        var name = open > 0 && tool.EndsWith(')') ? tool[..open] : tool;
+        var pattern = open > 0 && tool.EndsWith(')') ? tool[(open + 1)..^1] : string.Empty;
+        if (string.Equals(name, "Bash", StringComparison.Ordinal) && !writeScope)
         {
-            yield return Allow(tool[..open], tool[(open + 1)..^1]);
-            yield break;
+            return _readOnlyCommands.Select(cmd => Allow("Bash", cmd + ":*"));   // a read-only Step only tightens: its Bash stays the read-only set
         }
 
-        if (string.Equals(tool, "Edit", StringComparison.Ordinal) || string.Equals(tool, "Write", StringComparison.Ordinal))
+        if (string.Equals(name, "Edit", StringComparison.Ordinal) || string.Equals(name, "Write", StringComparison.Ordinal))
         {
-            foreach (var root in roots)
-            {
-                yield return Allow(tool, root + "/**");
-            }
-
-            yield break;
+            return pattern.Length == 0
+                ? roots.Select(root => Allow(name, root + "/**"))
+                : roots.Where(root => pattern.StartsWith(root + "/", StringComparison.Ordinal)).Take(1).Select(_ => Allow(name, pattern));
         }
 
-        yield return Allow(tool, string.Empty);
+        return [Allow(name, pattern)];
     }
 
     private static InnerRule Allow(string tool, string pattern) => new(InnerRuleEffect.Allow, tool, pattern);

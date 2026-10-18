@@ -177,6 +177,18 @@ environment. `ISandbox` is `Probe`, `Plan`, `SelfCheck` and `Wrap`, all returnin
 | `planHash` | 12 hex digits of SHA-256 over a canonical text of the plan with per-launch paths replaced by placeholders, so one policy hashes the same across launches; it includes the login source |
 | Renderer | `SandboxPlanRenderer.Show` and `Explain` are pure over the plan (goldens in `tests/Aw.Sindri.Tests/Sandbox/Plan/Golden/`) |
 
+**Fix round 1 (#355 run 1).** The builder refuses, with `-015 worktree-outside-repo` (the closest closed reason; the detail says which), a ReadOnly or Plan Step that names a writable path, and
+any path that is not absolute and normalized (no `..`, no `.`, no `//`, no trailing slash, not empty): the repo, the worktree (strictly inside the repo), the git directory, the run directory and
+run area (inside the Sindri home), the home, the state directory, the Sindri home and the socket directory; the run namespace must be `sindri/<instance>/<run>`. A credential source may set
+only `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and the model key (`-016 env` otherwise), and a Codex home under `/tmp` is `-016 login`. A read-write bind inside the owner's `~/.claude` or `~/.codex` must be
+in `AgentHomeWriteSet` (Claude: projects, sessions, session-env, shell-snapshots, file-history, todos, history.jsonl, backups, cache, state; Codex: sessions, log, memories, shell_snapshots, cache, tmp).
+The credential masks follow what is bound: the owner's `.credentials.json` and `auth.json` are masked whenever the owner's real home covers them (a `homeAllow` entry included), and not when a
+`separate-login` home from another host path is bound there. `PATH` is the shims, then `$AW_STATE_DIR/bin-r1b` (so the shims find `heavy`), then the host tools outside the state directory.
+A repo declaration cannot add `github` or `packages` beyond what the session kind allows. The inner policy carries `DefaultMode` (`dontAsk` for a Step, `default` for an attended session) and
+`DisableBypassPermissions`: **SB-5a's rendered settings must write `permissions.defaultMode` and `disableBypassPermissionsMode: "disable"` explicitly**, because the owner's own settings may say
+`bypassPermissions` (spike items 1 and 6); an attended session gets `Ask` rules for Bash, Edit and Write and no Bash allow. SB-5a test names: `Rendered_settings_set_the_default_mode_explicitly`,
+`Rendered_attended_settings_ask_for_bash`. Not in SB-1, for SB-2 and SB-5a: the `control.json` directory bind for the `sindri` CLI (spike item 7), the `expiresAt` margin of `-017 expired`.
+
 **The owner's open question about hooks** (spike item 6): hooks that print `permissionDecision: allow` defeat `dontAsk`, and `rtk-rewrite` turns `git push` into `rtk git push` before the rules are matched.
 Default (the lead's proposal): the session omits the five permission-answering hooks and the deny rules also list the rtk forms. The answer is a one-line change of
 `HookPermissionPolicy.OmitPermissionAnsweringHooks` and `HookPermissionPolicy.IncludeRtkForms`; the tests follow the constants.

@@ -1,11 +1,14 @@
 using System.Globalization;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Aw.Sindri.Core.Sandbox.Plan;
 
 /// <summary>The text of 'sindri sandbox show' and 'sindri sandbox explain': pure over the plan, so a session can ask with the state directory denied.</summary>
-public static class SandboxPlanRenderer
+public static partial class SandboxPlanRenderer
 {
+    private static readonly string[] _fileExtensions = ["sh", "md", "exe", "cs", "js", "ts", "json", "txt", "yml", "yaml", "py", "rb", "go", "rs", "toml", "xml", "html", "css", "log", "lock", "csproj", "slnx", "mjs", "cjs"];
+
     private const string Always = "always blocked: ";
 
     /// <summary>The whole plan as text.</summary>
@@ -58,9 +61,7 @@ public static class SandboxPlanRenderer
             return ExplainPath(plan, q);
         }
 
-        return !q.Contains(' ', StringComparison.Ordinal) && q.Contains('.', StringComparison.Ordinal) && !q.Contains('/', StringComparison.Ordinal)
-            ? ExplainHost(plan, q)
-            : ExplainCommand(plan, q);
+        return LooksLikeHost(q) ? ExplainHost(plan, q) : ExplainCommand(plan, q);
     }
 
     private static List<string> EnvironmentNames(SandboxPlan plan)
@@ -94,7 +95,7 @@ public static class SandboxPlanRenderer
     private static string ExplainPath(SandboxPlan plan, string query)
     {
         var home = plan.Mounts.FirstOrDefault(m => m.Kind == PlanMountKind.Tmpfs)?.Path ?? string.Empty;
-        var path = query.StartsWith("~/", StringComparison.Ordinal) ? home + query[1..] : query;
+        var path = Normalize(query.StartsWith('~') ? home + query[1..] : query);
         var mount = plan.Mounts.LastOrDefault(m => string.Equals(m.Path, path, StringComparison.Ordinal) || path.StartsWith(m.Path.TrimEnd('/') + "/", StringComparison.Ordinal));
         return mount switch
         {
@@ -134,6 +135,31 @@ public static class SandboxPlanRenderer
             : $"'{command}' is blocked in the sandbox (rule: {rule.Pattern}).\nPush and secrets are blocked. Run it in a new terminal window outside the sandbox, or let Sindri send it.\n";
     }
 
+    private static bool LooksLikeHost(string q) =>
+        HostShape.IsMatch(q) && !_fileExtensions.Contains(q[(q.LastIndexOf('.') + 1)..].ToLowerInvariant(), StringComparer.Ordinal);
+
+    // Resolves '.', '..', repeated and trailing slashes lexically, so a path can't hide from a rule by how it is written.
+    private static string Normalize(string path)
+    {
+        List<string> kept = [];
+        foreach (var segment in path.Split('/', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (string.Equals(segment, "..", StringComparison.Ordinal))
+            {
+                if (kept.Count > 0)
+                {
+                    kept.RemoveAt(kept.Count - 1);
+                }
+            }
+            else if (!string.Equals(segment, ".", StringComparison.Ordinal))
+            {
+                kept.Add(segment);
+            }
+        }
+
+        return "/" + string.Join('/', kept);
+    }
+
     private static bool Matches(string pattern, string command)
     {
         if (pattern.EndsWith(":*", StringComparison.Ordinal))
@@ -142,11 +168,9 @@ public static class SandboxPlanRenderer
             return string.Equals(command, prefix, StringComparison.Ordinal) || command.StartsWith(prefix + " ", StringComparison.Ordinal);
         }
 
-        if (pattern.StartsWith('*') && pattern.EndsWith('*') && pattern.Length > 2)
-        {
-            return command.Contains(pattern[1..^1], StringComparison.Ordinal);
-        }
-
-        return pattern.EndsWith('*') ? command.StartsWith(pattern[..^1], StringComparison.Ordinal) : string.Equals(command, pattern, StringComparison.Ordinal);
+        return Regex.IsMatch(command, "^" + Regex.Escape(pattern).Replace("\\*", ".*", StringComparison.Ordinal) + "\\z", RegexOptions.CultureInvariant, TimeSpan.FromMilliseconds(100));
     }
+
+    [GeneratedRegex("^[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)+\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
+    private static partial Regex HostShape { get; }
 }

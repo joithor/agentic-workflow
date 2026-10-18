@@ -9,6 +9,10 @@ public static class PlanHasher
 {
     private const int Length = 12;
 
+    // Variables whose value differs on every launch (or carries a port); the paths in the others are normalized like the mounts.
+    private static readonly string[] _perLaunchEnvironment =
+        ["AW_SINDRI_LAUNCH", "AW_SINDRI_ITEM", "AW_SINDRI_INSTANCE", "HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY", "https_proxy", "http_proxy", "all_proxy"];
+
     /// <summary>Hashes a plan.</summary>
     /// <param name="plan">The plan (its own PlanHash is ignored).</param>
     /// <param name="perLaunchPaths">Placeholder and path pairs ('$WORKTREE', '/work/x'), replaced longest path first.</param>
@@ -35,7 +39,7 @@ public static class PlanHasher
         ];
         lines.AddRange(plan.Network.Groups.Select(g => $"group {g.Name}={string.Join(',', g.Hosts)}"));
         lines.AddRange(plan.Mounts.Select(m => string.Create(inv, $"mount {m.Kind} {norm(m.Path)} <- {norm(m.Source)} {m.Size}")));
-        lines.AddRange(plan.Environment.Select(e => "env " + e.Name));
+        lines.AddRange(plan.Environment.Select(e => _perLaunchEnvironment.Contains(e.Name, StringComparer.Ordinal) || e.Value is null ? "env " + e.Name : $"env {e.Name}={norm(e.Value)}"));
         lines.AddRange(plan.Git.Select(g => $"git {g.Key}={norm(g.Value)}"));
         lines.Add("policy " + plan.Policy.Mode);
         lines.AddRange(plan.Policy.Rules.Select(r => $"rule {r.Effect} {r.Tool} {norm(r.Pattern)}"));

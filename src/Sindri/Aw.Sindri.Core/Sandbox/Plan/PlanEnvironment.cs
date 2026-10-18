@@ -14,7 +14,7 @@ internal static class PlanEnvironment
         string FromHost(string name, string fallback) => host.TryGetValue(name, out var v) && v.Length > 0 ? v : fallback;
         List<PlanEnvVar> env =
         [
-            Var("PATH", $"{c.RunArea}/shims:{ToolPath(r.Host, FromHost("PATH", FallbackPath))}"),
+            Var("PATH", $"{c.RunArea}/shims:{c.StateDir}/bin-r1b:{ToolPath(r.Host, FromHost("PATH", FallbackPath))}"),
             Var("HOME", c.Home),
             Var("LANG", FromHost("LANG", "C.UTF-8")),
             Var("TERM", FromHost("TERM", "xterm-256color")),
@@ -38,11 +38,6 @@ internal static class PlanEnvironment
             Var("MSBUILDDISABLENODEREUSE", "1"),
             Var("DOTNET_CLI_USE_MSBUILD_SERVER", "0"),
         ];
-        if (host.TryGetValue("NODE_OPTIONS", out var node) && node.Length > 0)
-        {
-            env.Add(Var("NODE_OPTIONS", node));
-        }
-
         env.AddRange(GitSettings.ToEnvironment(Git(c), c.RunArea + "/gitconfig.empty"));
         env.AddRange(Proxy(r.Net.ProxyPort));
         env.AddRange(Sindri(c));

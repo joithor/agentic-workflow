@@ -2,7 +2,7 @@ using Aw.Kernel;
 
 namespace Aw.Sindri.Core.Sandbox.Plan;
 
-/// <summary>The product default until SB-5a: no sandbox is built into this release, so every call is SND-LAUNCH-014. The launcher does not consult it for an attended open before SB-5b.</summary>
+/// <summary>The product default until SB-5a: no sandbox is built into this release, so every call is SND-LAUNCH-014. Until SB-5b nothing asks the port for an attended open (a test pins that), so it refuses Steps only in practice.</summary>
 public sealed class UnavailableSandbox : ISandbox
 {
     private static Error Refusal() =>

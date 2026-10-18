@@ -8,6 +8,7 @@ public static class EnvironmentAllowlist
 
     private static readonly string[] _secretSuffixes = ["_TOKEN", "_KEY", "_SECRET"];
     private static readonly string[] _secretPrefixes = ["AWS_", "GH_", "GITHUB_", "AGENT_APP_"];
+    private static readonly string[] _credentialNames = ["CLAUDE_CONFIG_DIR", "CODEX_HOME", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"];
     private static readonly string[] _secretExceptions = ["AW_SINDRI_LAUNCH_SECRET", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"];
 
     /// <summary>Every name the plan may set, with the reason it is on the list. 'GIT_CONFIG_KEY_n' and 'GIT_CONFIG_VALUE_n' are listed by <see cref="IsListed"/>.</summary>
@@ -64,6 +65,11 @@ public static class EnvironmentAllowlist
         ["AW_SINDRI_HOME"] = "only when it is not the default",
         ["AW_SINDRI_LAUNCH_SECRET"] = "the launch secret, supplied by session wrap at start",
     };
+
+    /// <summary>Whether a credential source may set <paramref name="name"/>: only the agent home and the target's own model key (sandbox spec §3.4).</summary>
+    /// <param name="name">The variable name.</param>
+    /// <returns>True when it may.</returns>
+    public static bool IsCredentialName(string name) => _credentialNames.Contains(name, StringComparer.Ordinal);
 
     /// <summary>Whether a name looks like a secret: *_TOKEN, *_KEY, *_SECRET, *PASSWORD*, AWS_*, GH_*, GITHUB_*, AGENT_APP_*.</summary>
     /// <param name="name">The variable name.</param>
