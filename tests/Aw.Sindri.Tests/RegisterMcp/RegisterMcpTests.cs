@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Mcp;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.RegisterMcp;
@@ -27,10 +28,20 @@ public sealed class RegisterMcpTests
 
         Assert.Equal("demo", registration.Repo.Value);
         Assert.Equal("/work/demo", registration.Checkout);
-        Assert.Equal(["mcp", "add", "--transport", "http", "--scope", "local", "--header", "X-Sindri-Repo: demo", "sindri", "http://127.0.0.1:7495/sindri/mcp"],
+        Assert.Equal(["mcp", "add", "--transport", "http", "--scope", "local", "sindri", "http://127.0.0.1:7495/sindri/mcp", "--header", "X-Sindri-Repo: demo"],
             registration.Arguments);
         Assert.False(registration.Applied);
         Assert.Empty(_claude.Runs);
+    }
+
+    [Fact]
+    public void The_server_name_and_url_come_before_the_header_because_claude_reads_every_later_argument_as_a_header()
+    {
+        var arguments = McpRegistration.Arguments(RepoName.From("demo"), 7495);
+
+        var header = arguments.ToList().IndexOf("--header");
+        Assert.True(header > arguments.ToList().IndexOf(McpScope.ServerName), "the name must precede the variadic --header");
+        Assert.Equal(arguments.Count - 2, header);   // why: claude mcp add's -H <header...> swallows every argument after it
     }
 
     [Fact]
