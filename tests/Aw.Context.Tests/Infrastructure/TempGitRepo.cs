@@ -47,12 +47,19 @@ internal sealed class TempGitRepo : IDisposable
         }
 
         using var git = Process.Start(start)!;   // why: git is on the test machine's PATH
-        var stdout = git.StandardOutput.ReadToEndAsync();
-        var stderr = git.StandardError.ReadToEndAsync();
-        if (!git.WaitForExit(_gitTimeout) || !stdout.Wait(_gitTimeout) || !stderr.Wait(_gitTimeout))
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        limit.CancelAfter(_gitTimeout);
+        var stdout = git.StandardOutput.ReadToEndAsync(limit.Token);
+        var stderr = git.StandardError.ReadToEndAsync(limit.Token);
+        var exited = git.WaitForExitAsync(limit.Token);
+        try
+        {
+            Task.WaitAll([exited, stdout, stderr], limit.Token);
+        }
+        catch (Exception e) when (e is OperationCanceledException or AggregateException { InnerException: OperationCanceledException })
         {
             git.Kill(entireProcessTree: true);
-            throw new TimeoutException(string.Create(CultureInfo.InvariantCulture, $"git {string.Join(' ', args)} did not finish in {_gitTimeout.TotalSeconds} s: a stuck git, or a pipe a concurrent fork still holds"));
+            throw new TimeoutException(string.Create(CultureInfo.InvariantCulture, $"git {string.Join(' ', args)} did not finish in {_gitTimeout.TotalSeconds} s: a stuck git, or a pipe a concurrent fork still holds"), e);
         }
 
         return git.ExitCode == 0 ? stdout.Result.Trim() : throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"git {string.Join(' ', args)} exited {git.ExitCode}: {stderr.Result}"));

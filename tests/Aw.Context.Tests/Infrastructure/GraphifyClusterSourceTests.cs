@@ -20,9 +20,9 @@ public sealed class GraphifyClusterSourceTests
         {
             return await source.Clusters(repo.Repo, repo.Head, bounded.Token);
         }
-        catch (OperationCanceledException) when (!Ct.IsCancellationRequested)
+        catch (OperationCanceledException e) when (!Ct.IsCancellationRequested)
         {
-            throw new TimeoutException($"GraphifyClusterSource.Clusters did not finish in {limit.TotalSeconds:0.#} s: a child process (git archive or the graphify stub) is hung, or the box is starved");
+            throw new TimeoutException(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"GraphifyClusterSource.Clusters did not finish in {limit.TotalSeconds} s: a child process (git archive or the graphify stub) is hung, or the box is starved"), e);
         }
     }
 
@@ -133,7 +133,7 @@ public sealed class GraphifyClusterSourceTests
         var thrown = await Assert.ThrowsAsync<TimeoutException>(async () => await Clusters(source, repo, TimeSpan.FromSeconds(3)));
 
         Assert.Contains("did not finish in 3 s", thrown.Message, StringComparison.Ordinal);
-        Assert.True(started.Elapsed < TimeSpan.FromSeconds(20), $"the deadline must cut the hang short, it took {started.Elapsed.TotalSeconds:0} s");
+        Assert.True(started.Elapsed < TimeSpan.FromSeconds(20), string.Create(System.Globalization.CultureInfo.InvariantCulture, $"the deadline must cut the hang short, it took {started.Elapsed.TotalSeconds} s"));
     }
 
     [Fact, Trait("Lane", "integration")]
