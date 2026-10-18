@@ -1,3 +1,4 @@
+using Aw.Kernel.Testing;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Host;
@@ -12,7 +13,7 @@ public sealed class FileOnyxWorkspaceTests : IDisposable
     private const UnixFileMode OwnerFile = UnixFileMode.UserRead | UnixFileMode.UserWrite;
     private const UnixFileMode OwnerDirectory = UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute;
 
-    private readonly string _home = Path.Combine(Path.GetTempPath(), "aw-onyx-ws-" + Guid.NewGuid().ToString("N"));
+    private readonly string _home = Path.Combine(Path.GetTempPath(), "aw-onyx-ws-" + RealTime.NewGuid().ToString("N"));
     private readonly FileOnyxWorkspace _workspace;
     private readonly OnyxPaths _paths;
 

@@ -1,3 +1,4 @@
+using Aw.Kernel.Testing;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Onyx;
@@ -24,7 +25,7 @@ public sealed class OnyxRealStackTests
     [Fact, Trait("Lane", "heavy")]
     public async Task Up_down_cycle_on_the_real_docker()
     {
-        var home = Path.Combine(Path.GetTempPath(), "aw-onyx-real-" + Guid.NewGuid().ToString("N"));
+        var home = Path.Combine(Path.GetTempPath(), "aw-onyx-real-" + RealTime.NewGuid().ToString("N"));
         string? Environment(string name) => string.Equals(name, "AW_SINDRI_HOME", StringComparison.Ordinal) || string.Equals(name, "AW_STATE_DIR", StringComparison.Ordinal) ? home : null;
         // The host's own composition (what Program.cs runs), so this cannot drift from main; only the progress sink is swapped, to keep the console quiet.
         await using var provider = Composition.Compose(new ServiceCollection(), Environment, TimeProvider.System)

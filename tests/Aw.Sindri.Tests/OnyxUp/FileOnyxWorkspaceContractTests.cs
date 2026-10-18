@@ -15,7 +15,7 @@ public sealed class FileOnyxWorkspaceContractTests : OnyxWorkspaceContract
 
     private sealed class FileRig : OnyxWorkspaceRig
     {
-        private readonly string _home = Path.Combine(Path.GetTempPath(), "aw-onyx-ws-" + Guid.NewGuid().ToString("N"));
+        private readonly string _home = Path.Combine(Path.GetTempPath(), "aw-onyx-ws-" + RealTime.NewGuid().ToString("N"));
 
         public FileRig()
         {
@@ -33,14 +33,14 @@ public sealed class FileOnyxWorkspaceContractTests : OnyxWorkspaceContract
             File.WriteAllText(Paths.State, text);
         }
 
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
             if (Directory.Exists(_home))
             {
                 Directory.Delete(_home, recursive: true);
             }
 
-            base.Dispose();
+            base.Dispose(disposing);
         }
     }
 }

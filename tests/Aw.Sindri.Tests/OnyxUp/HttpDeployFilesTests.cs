@@ -14,7 +14,7 @@ public sealed class HttpDeployFilesTests : IDisposable
 
     private readonly LoopbackFileServer _server = new(new Dictionary<string, byte[]>(StringComparer.Ordinal) { [_path] = _good });
     private readonly HttpClient _client = new(new SocketsHttpHandler { AllowAutoRedirect = false });
-    private readonly string _dir = Path.Combine(Path.GetTempPath(), "aw-deploy-" + Guid.NewGuid().ToString("N"));
+    private readonly string _dir = Path.Combine(Path.GetTempPath(), "aw-deploy-" + RealTime.NewGuid().ToString("N"));
 
     private static OnyxPins Pins(byte[] content) => new(
         "v4.9.0", new string('a', 40), [new OnyxFilePin("docker_compose/docker-compose.yml", OnyxFilePin.Sha256Of(content))], [], DiskBytes: 1, DockerMemoryBytes: 1);

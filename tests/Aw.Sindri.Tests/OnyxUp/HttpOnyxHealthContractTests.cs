@@ -42,11 +42,11 @@ public sealed class HttpOnyxHealthContractTests : OnyxHealthContract
 
         public override int Port { get; }
 
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
             _server?.Dispose();
             _client.Dispose();
-            base.Dispose();
+            base.Dispose(disposing);
         }
     }
 }

@@ -9336,7 +9336,6 @@ Aw.Sindri.Core.Onyx.OnyxFacts.ProjectInUse(Aw.Sindri.Core.Onyx.IOnyxWorkspace! w
 Aw.Sindri.Core.Onyx.IContainerRuntime.MemoryUsedOutside(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<long>!
 Aw.Sindri.Core.Onyx.OnyxFacts.MemoryUsedByOthers(System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<long>!
 static Aw.Sindri.Core.Onyx.OnyxPreflight.Evaluate(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! docker, Aw.Sindri.Core.Onyx.HostFacts! host, Aw.Sindri.Core.Onyx.OnyxPins! pins, int? ownPort = null, Aw.Kernel.Result<long>? usedByOthers = null) -> Aw.Sindri.Core.Onyx.PreflightReport!
-static Aw.Sindri.Core.Onyx.OnyxPreflight.Evaluate(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! docker, Aw.Sindri.Core.Onyx.HostFacts! host, Aw.Sindri.Core.Onyx.OnyxPins! pins) -> Aw.Sindri.Core.Onyx.PreflightReport!
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.HumanOnly.get -> bool?
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.HumanOnly.init -> void
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.Runtime.get -> Aw.Sindri.Core.Workflow.Blocks.BlockRuntime?

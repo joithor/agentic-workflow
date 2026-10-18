@@ -1,3 +1,4 @@
+using Aw.Kernel.Testing;
 using Aw.Sindri.Infrastructure.Processes;
 
 namespace Aw.Sindri.Tests.Processes;
@@ -59,7 +60,7 @@ public sealed class ProcessToolRunnerTests
     [Fact, Trait("Lane", "integration")]
     public void An_already_cancelled_token_returns_cancelled_without_starting_the_tool()
     {
-        var marker = Path.Combine(Path.GetTempPath(), "aw-runner-started-" + Guid.NewGuid().ToString("N"));
+        var marker = Path.Combine(Path.GetTempPath(), "aw-runner-started-" + RealTime.NewGuid().ToString("N"));
         try
         {
             var run = _runner.Run("sh", ["-c", $"touch {marker}"], TimeSpan.FromSeconds(5), cancellationToken: new CancellationToken(canceled: true));
@@ -79,7 +80,7 @@ public sealed class ProcessToolRunnerTests
         using var cancel = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
         var options = new ToolRunOptions(StandardErrorLine: _ =>
         {
-            Thread.Sleep(TimeSpan.FromMilliseconds(500));   // the child printed its line and exited long ago
+            RealTime.Sleep(TimeSpan.FromMilliseconds(500));   // the child printed its line and exited long ago
             cancel.Cancel();
         });
 

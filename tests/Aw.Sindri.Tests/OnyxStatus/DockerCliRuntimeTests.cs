@@ -1,3 +1,4 @@
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Infrastructure.Onyx;
 using Aw.Sindri.Infrastructure.Processes;
@@ -414,7 +415,7 @@ public sealed class DockerCliRuntimeTests
     [Fact, Trait("Lane", "integration")]
     public void Every_compose_call_also_unsets_each_key_present_in_the_rendered_env_whatever_Sindri_wrote()
     {
-        var directory = Path.Combine(Path.GetTempPath(), "aw-onyx-env-" + Guid.NewGuid().ToString("N"));
+        var directory = Path.Combine(Path.GetTempPath(), "aw-onyx-env-" + RealTime.NewGuid().ToString("N"));
         _ = Directory.CreateDirectory(directory);
         try
         {

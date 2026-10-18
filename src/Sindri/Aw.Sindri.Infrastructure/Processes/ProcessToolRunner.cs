@@ -90,8 +90,10 @@ internal sealed class ProcessToolRunner : IToolRunner
         }
 
         process.WaitForExit();   // flushes the redirected streams
+#pragma warning disable RS0030 // the child has exited, so its streams reach end of file at once; this short-lived tool leaves no grandchild holding the pipe
         var errorText = error.GetAwaiter().GetResult();
         var text = output.GetAwaiter().GetResult();
+#pragma warning restore RS0030
         return Volatile.Read(ref killedByCancel) ? ToolRun.Cancelled : new ToolRun(ToolOutcome.Exited, process.ExitCode, text, errorText);
     }
 

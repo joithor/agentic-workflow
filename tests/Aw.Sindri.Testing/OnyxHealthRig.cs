@@ -12,5 +12,15 @@ public abstract class OnyxHealthRig : IDisposable
     public abstract int Port { get; }
 
     /// <inheritdoc />
-    public virtual void Dispose() => GC.SuppressFinalize(this);
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary>Releases what a concrete rig holds.</summary>
+    /// <param name="disposing">True when called from Dispose.</param>
+    protected virtual void Dispose(bool disposing)
+    {
+    }
 }

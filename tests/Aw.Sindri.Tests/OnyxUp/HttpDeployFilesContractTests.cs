@@ -33,7 +33,7 @@ public sealed class HttpDeployFilesContractTests : DeployFilesContract
         public static HttpRig Start(IReadOnlyDictionary<string, byte[]> remote, IReadOnlyDictionary<string, byte[]> local)
         {
             var served = remote.ToDictionary(static f => "/" + new string('a', 40) + "/deployment/" + f.Key, static f => f.Value, StringComparer.Ordinal);
-            var dir = Path.Combine(Path.GetTempPath(), "aw-deploy-" + Guid.NewGuid().ToString("N"));
+            var dir = Path.Combine(Path.GetTempPath(), "aw-deploy-" + RealTime.NewGuid().ToString("N"));
             foreach (var (path, bytes) in local)
             {
                 _ = Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(dir, path))!);   // why: the path always has a directory
@@ -49,7 +49,7 @@ public sealed class HttpDeployFilesContractTests : DeployFilesContract
             return File.Exists(full) ? File.ReadAllBytes(full) : null;
         }
 
-        public override void Dispose()
+        protected override void Dispose(bool disposing)
         {
             _server.Dispose();
             _client.Dispose();
@@ -58,7 +58,7 @@ public sealed class HttpDeployFilesContractTests : DeployFilesContract
                 Directory.Delete(_dir, recursive: true);
             }
 
-            base.Dispose();
+            base.Dispose(disposing);
         }
     }
 }

@@ -33,7 +33,9 @@ internal sealed class HttpOnyxHealth : IOnyxHealth
 
     /// <summary>Builds the client production uses: no redirect is followed and no proxy is used (the address is 127.0.0.1:port and nowhere else, whatever the environment's proxy settings or a server's Location say).</summary>
     /// <returns>The client.</returns>
+#pragma warning disable CA2000 // the client owns the handler and disposes it
     internal static HttpClient CreateClient() => new(new SocketsHttpHandler { AllowAutoRedirect = false, UseProxy = false });
+#pragma warning restore CA2000
 
     /// <inheritdoc />
     public async ValueTask<OnyxProbe> Probe(int port, CancellationToken cancellationToken)
