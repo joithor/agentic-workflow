@@ -9,9 +9,9 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// Plain text for 'context history': every state is a word ('ok', 'not-configured', 'leaky'), never colour. A human's answer carries clean labels beside their trust, so the text
 /// fences the untrusted ones itself; a session's answer was fenced by the server already.
 /// </summary>
-public static class ContextHistoryText
+internal static class ContextHistoryText
 {
-    public static string History(HistoryView view, bool fence)
+    internal static string History(HistoryView view, bool fence)
     {
         var text = new StringBuilder(Header(view, fence));
         foreach (var missing in view.MissingAnchors)

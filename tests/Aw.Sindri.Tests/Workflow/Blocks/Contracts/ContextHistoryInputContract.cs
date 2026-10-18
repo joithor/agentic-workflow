@@ -24,7 +24,7 @@ public sealed class ContextHistoryInputContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await ContextHistoryInputTests.Input(new ContextHistoryInputTests.History(() => ContextHistoryTextTests.View())).Fill(
+        _ = await ContextHistoryInputTests.Input(new ContextHistoryInputTests.StubHistory(() => ContextHistoryTextTests.View())).Fill(
             new StepInputContext(BlockId.From(ContextHistoryInput.Id), BlockId.From("step.scope.gather"), new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<FactKey, JsonElement>()),
             cancellationToken);
 }

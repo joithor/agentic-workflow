@@ -12,17 +12,17 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// A human's answer carries clean labels beside their trust, so the text fences the untrusted ones itself; a session's answer was
 /// fenced by the server already.
 /// </summary>
-public static class ContextLensText
+internal static class ContextLensText
 {
     internal static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
 
-    public static string Lenses(LensesView view, bool fence)
+    internal static string Lenses(LensesView view, bool fence)
     {
         var text = new StringBuilder(Invariant($"lenses of {view.Anchor.Key.Value} ({Fenced(view.Anchor.Label, view.Anchor.Trust, fence)}) · map {MapName(view.MapVersion, view.MapCommit)}{(view.Draft ? " (draft)" : string.Empty)} · depth {view.Depth}\n"));
         return Body(text, new LensParts(view.Bands, view.Edges, view.Conflicts, view.Coverage, view.Searched), fence);
     }
 
-    public static string LensesSet(LensesSetView view, bool fence)
+    internal static string LensesSet(LensesSetView view, bool fence)
     {
         var anchors = string.Join(", ", view.Anchors.Select(a => Invariant($"{a.Key.Value} ({Fenced(a.Label, a.Trust, fence)})")));
         var text = new StringBuilder(Invariant($"lenses of {view.Anchors.Count} anchors ({anchors}) · map {MapName(view.MapVersion, view.MapCommit)}{(view.Draft ? " (draft)" : string.Empty)} · depth {view.Depth}\n"));
@@ -100,7 +100,7 @@ public static class ContextLensText
     /// <summary>The coverage block, one line per count and one per gap; 'map status --anchor' prints it too.</summary>
     /// <param name="c">The coverage.</param>
     /// <returns>The lines.</returns>
-    public static string Coverage(LensCoverage c)
+    internal static string Coverage(LensCoverage c)
     {
         var text = new StringBuilder(Invariant($"coverage: scope {c.Scope} · intent {c.Intent.Covered} of {c.Intent.Of} · product {c.Product.Confirmed} of {c.Product.Of} confirmed · code {c.Code.Implemented} of {c.Code.Of} implemented ({c.Code.Level} level), {c.Code.Suggested} suggested\n"));
         if (c.Map is { } m)
@@ -116,7 +116,7 @@ public static class ContextLensText
         return text.ToString();
     }
 
-    public static string FileMap(FileMapView view)
+    internal static string FileMap(FileMapView view)
     {
         var text = new StringBuilder(Invariant($"{view.Repo.Value} {view.Path} · map {view.MapVersion}{(view.Draft ? " (draft)" : string.Empty)} · at {view.Sha}\n"));
         if (view.Entries.Count == 0)

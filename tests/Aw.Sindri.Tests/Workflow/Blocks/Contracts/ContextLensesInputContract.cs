@@ -23,7 +23,7 @@ public sealed class ContextLensesInputContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await ContextLensesInputTests.Input(new ContextLensesInputTests.Lenses(a => ContextInputFixtures.SmallSet([.. a]))).Fill(
+        _ = await ContextLensesInputTests.Input(new ContextLensesInputTests.StubLenses(a => ContextInputFixtures.SmallSet([.. a]))).Fill(
             new StepInputContext(BlockId.From(ContextLensesInput.Id), BlockId.From("step.scope.gather"), new Dictionary<string, JsonElement>(StringComparer.Ordinal), new Dictionary<FactKey, JsonElement>()),
             cancellationToken);
 }

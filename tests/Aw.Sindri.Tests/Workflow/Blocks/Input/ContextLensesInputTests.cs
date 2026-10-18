@@ -18,7 +18,7 @@ namespace Aw.Sindri.Tests.Workflow.Blocks.Input;
 [Lane(TestLane.Unit)]
 public sealed class ContextLensesInputTests
 {
-    internal sealed class Lenses(Func<IReadOnlyList<string>, Result<LensesSetView>> answer) : IContextLenses
+    internal sealed class StubLenses(Func<IReadOnlyList<string>, Result<LensesSetView>> answer) : IContextLenses
     {
         public List<(IReadOnlyList<string> Anchors, LensRange Range, ContextScope Scope)> Calls { get; } = [];
 
@@ -39,7 +39,7 @@ public sealed class ContextLensesInputTests
         public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 
-    internal static ContextLensesInput Input(Lenses lenses, bool profile = true) =>
+    internal static ContextLensesInput Input(StubLenses lenses, bool profile = true) =>
         new(lenses, new ContextInputScopes(new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null)), Aw.Sindri.Testing.Workflow.ShippedComposition.Json);
 
     private static StepInputContext Context(RepoName? repo, params string[] anchors) => new(
@@ -55,7 +55,7 @@ public sealed class ContextLensesInputTests
     [Fact]
     public async Task Fill_reads_the_anchor_set_as_the_service_cut_to_the_instances_repo_and_returns_text_and_the_typed_view()
     {
-        var lenses = new Lenses(a => ContextInputFixtures.SmallSet([.. a]));
+        var lenses = new StubLenses(a => ContextInputFixtures.SmallSet([.. a]));
 
         var filled = await Input(lenses).Fill(Context(ContextInputFixtures.Web, "feature:a", "feature:b"), TestContext.Current.CancellationToken);
 
@@ -73,7 +73,7 @@ public sealed class ContextLensesInputTests
     [Fact]
     public async Task An_engine_refusal_is_an_honest_section_with_no_typed_result()
     {
-        var lenses = new Lenses(_ => ContextErrors.UnknownAnchor.With("no anchor resolved"));
+        var lenses = new StubLenses(_ => ContextErrors.UnknownAnchor.With("no anchor resolved"));
 
         var filled = await Input(lenses).Fill(Context(ContextInputFixtures.Web, "feature:zzz"), TestContext.Current.CancellationToken);
 
@@ -85,7 +85,7 @@ public sealed class ContextLensesInputTests
     [Fact]
     public async Task An_instance_without_a_repo_never_reaches_the_engine()
     {
-        var lenses = new Lenses(a => ContextInputFixtures.SmallSet([.. a]));
+        var lenses = new StubLenses(a => ContextInputFixtures.SmallSet([.. a]));
 
         var filled = await Input(lenses).Fill(Context(repo: null, "feature:a"), TestContext.Current.CancellationToken);
 
@@ -96,7 +96,7 @@ public sealed class ContextLensesInputTests
     [Fact]
     public async Task A_repo_outside_the_profile_never_reaches_the_engine()
     {
-        var lenses = new Lenses(a => ContextInputFixtures.SmallSet([.. a]));
+        var lenses = new StubLenses(a => ContextInputFixtures.SmallSet([.. a]));
 
         var filled = await Input(lenses).Fill(Context(RepoName.From("other"), "feature:a"), TestContext.Current.CancellationToken);
 
@@ -107,7 +107,7 @@ public sealed class ContextLensesInputTests
     [Fact]
     public async Task No_approved_profile_is_a_section_not_an_exception()
     {
-        var lenses = new Lenses(a => ContextInputFixtures.SmallSet([.. a]));
+        var lenses = new StubLenses(a => ContextInputFixtures.SmallSet([.. a]));
 
         var filled = await Input(lenses, profile: false).Fill(Context(ContextInputFixtures.Web, "feature:a"), TestContext.Current.CancellationToken);
 
@@ -118,7 +118,7 @@ public sealed class ContextLensesInputTests
     [Fact]
     public async Task No_anchors_is_a_section()
     {
-        var lenses = new Lenses(a => ContextInputFixtures.SmallSet([.. a]));
+        var lenses = new StubLenses(a => ContextInputFixtures.SmallSet([.. a]));
 
         var filled = await Input(lenses).Fill(Context(ContextInputFixtures.Web), TestContext.Current.CancellationToken);
 
