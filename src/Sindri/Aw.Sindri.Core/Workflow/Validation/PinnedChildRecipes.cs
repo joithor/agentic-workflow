@@ -16,6 +16,6 @@ public sealed class PinnedChildRecipes(IReadOnlyDictionary<RecipeId, ChildRecipe
     {
         ArgumentNullException.ThrowIfNull(loaded);
         ArgumentNullException.ThrowIfNull(pins);
-        throw new NotSupportedException("PinnedChildRecipes.Resolve is engine P7 unit U1");
+        return loaded.TryGetValue(id, out var child) && pins.TryGetValue(id, out var pin) && pin == child.Hash ? child : null;
     }
 }

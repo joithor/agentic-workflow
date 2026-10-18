@@ -21,6 +21,23 @@ internal sealed class RouteStartableGate(IApprovedProfile profile) : IGate, IDes
     {
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(profile);
-        throw new NotSupportedException("RouteStartableGate.Evaluate is engine P7 unit U1");
+        cancellationToken.ThrowIfCancellationRequested();
+        return EvaluateAsync(cancellationToken);
     }
+
+    private async ValueTask<GateResult> EvaluateAsync(CancellationToken cancellationToken)
+    {
+        var approved = await profile.Latest(cancellationToken).ConfigureAwait(false);
+        if (approved.IsError)
+        {
+            return new GateResult(GateVerdict.Fail, Score: null, [$"the approved profile couldn't be read: {approved.Error.Message}"]);
+        }
+
+        return approved.Value is not { } loaded || RouteSettings.StartableOf(loaded.Profile) ? Pass : Stopped;
+    }
+
+    private static GateResult Pass { get; } = new(GateVerdict.Pass, Score: null, Reasons: []);
+
+    private static GateResult Stopped { get; } = new(GateVerdict.Fail, Score: null,
+        Reasons: ["workflow.route.startable is 'none' in the approved profile, so the router stops this item (fix: set it to 'all', approve the profile, then resume)"]);
 }

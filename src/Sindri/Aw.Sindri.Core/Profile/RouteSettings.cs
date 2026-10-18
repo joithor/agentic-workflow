@@ -22,6 +22,6 @@ public sealed record RouteSettings([property: JsonIgnore(Condition = JsonIgnoreC
     public static bool StartableOf(SindriProfile profile)
     {
         ArgumentNullException.ThrowIfNull(profile);
-        throw new NotSupportedException("RouteSettings.StartableOf is engine P7 unit U1");
+        return !string.Equals(profile.Workflow?.Route?.Startable, None, StringComparison.Ordinal);
     }
 }

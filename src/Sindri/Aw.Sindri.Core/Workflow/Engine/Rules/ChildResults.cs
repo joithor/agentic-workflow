@@ -20,6 +20,12 @@ public static class ChildResults
     {
         ArgumentNullException.ThrowIfNull(child);
         ArgumentNullException.ThrowIfNull(ended);
-        throw new NotSupportedException("ChildResults.Outputs is engine P7 unit U1");
+        if (ended.Outcome is { } outcome && string.Equals(outcome.Value, "cancelled", StringComparison.Ordinal))
+        {
+            return new Dictionary<FactKey, FactValue>();
+        }
+
+        var declared = child.Outputs.Select(static o => o.Key).ToHashSet();
+        return ended.Facts.Where(f => declared.Contains(f.Key)).ToDictionary(f => f.Key, f => f.Value);
     }
 }
