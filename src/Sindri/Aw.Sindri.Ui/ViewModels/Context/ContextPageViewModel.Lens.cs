@@ -66,6 +66,7 @@ internal sealed partial class ContextPageViewModel
 
         if (anchors.Count > MaxAnchors)
         {
+            _generation++;   // a read still in flight must not draw over the refusal
             Show(view: null, choices: []);
             Problem = Labels.ContextTooMany(MaxAnchors);
             Refresh();
@@ -231,7 +232,7 @@ internal sealed partial class ContextPageViewModel
             lines.Add(new ContextLine(Labels.ContextTruncated));
         }
 
-        return new ContextBandViewModel(Labels.ContextBandHeader(Labels.ContextProduct, lines.Count), lines);
+        return new ContextBandViewModel(Labels.ContextBandHeader(Labels.ContextProduct, product.Own.Count + product.Neighbors.Count + product.Affects.Count), lines);
     }
 
     private static ContextBandViewModel Code(LensesView view)

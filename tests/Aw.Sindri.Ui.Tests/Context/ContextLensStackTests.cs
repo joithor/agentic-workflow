@@ -132,4 +132,42 @@ public sealed class ContextLensStackTests
         Assert.Equal(calls, server.ContextCalls);
         Assert.Equal(Labels.ContextTooMany(20), page.Problem);
     }
+
+    [Fact]
+    public async Task A_truncated_product_band_counts_its_nodes_not_the_truncation_line()
+    {
+        var golden = Golden("map-tabs");
+        var body = golden.DeepClone();
+        body["bands"]!["product"]!["truncated"] = true;
+        var server = new FakeSindriApi { LensesAnswer = _ => new RouteAnswer(System.Net.HttpStatusCode.OK, body.ToJsonString()) };
+        var page = Page(server);
+        page.AnchorText = (string)golden["anchor"]!["key"]!;
+
+        await page.Submit(Token);
+
+        var product = golden["bands"]!["product"]!;
+        var nodes = product["own"]!.AsArray().Count + product["neighbors"]!.AsArray().Count + product["affects"]!.AsArray().Count;
+        Assert.Equal(Labels.ContextBandHeader(Labels.ContextProduct, nodes), page.Bands[1].Header);
+        Assert.Equal(nodes + 1, page.Bands[1].Lines.Count);
+    }
+
+    [Fact]
+    public async Task A_read_in_flight_does_not_overwrite_the_too_many_refusal()
+    {
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var server = new FakeSindriApi { LensesGate = gate };
+        var page = Page(server);
+        page.AnchorText = (string)Golden("map-tabs")["anchor"]!["key"]!;
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        limit.CancelAfter(TimeSpan.FromSeconds(20));
+        var first = page.Submit(limit.Token);
+
+        page.AnchorText = string.Join(' ', Enumerable.Range(0, 21).Select(i => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"a:{i}")));
+        await page.Submit(limit.Token);
+        gate.SetResult();
+        await first;
+
+        Assert.Equal(Labels.ContextTooMany(20), page.Problem);
+        Assert.False(page.HasStack);
+    }
 }
