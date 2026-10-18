@@ -153,7 +153,7 @@ sindri context lenses <anchor-key> --json            # the anchor key comes from
 
 ## 6. Recipes
 
-**Merged:** #367 (register fix), #371 P7 (child workflows start), #356 (app crash fix), #364. **Still LANDING TONIGHT:** `workflow.scoping` registers and validates on main but cannot be approved until context's PR-B (#370) and S-LB2 land (`SND-WF-016: states.gather.step.inputs[0] uses input.context.lenses, which this build has no runtime for`). `workflow.line` and its stations are not on main as of writing.
+**Merged:** #367 (register fix), #371 P7 (child workflows start), #356 (app crash fix), #364, #354 (the `aw:fleet` hook: optional, `scripts/install-fleet.sh --provider claude`; then `sindri agents` shows a session as ASKING while a permission prompt is open), #372 (Workflows polish), #377 (Context page, read-only: anchor box and lens stack) and #381 (the styled scope-map table in the facts panel, with a Show raw toggle). **Still LANDING TONIGHT:** the Agents page (#369), the child-workflow view (#379), visited states shown as done (#373), the ship and docs-sync stations (#376), PR-B (#370) plus S-LB2, and the MCP providers PR. In particular `workflow.scoping` registers and validates on main but cannot be approved until context's PR-B (#370) and S-LB2 land (`SND-WF-016: states.gather.step.inputs[0] uses input.context.lenses, which this build has no runtime for`). `workflow.line` and its stations are not on main as of writing.
 
 The line is `LN-WF8`. Its stations run in sequence as child workflows: scoping, then design, then plan, then phase, then docs-sync.
 
@@ -193,6 +193,18 @@ Do this twice: once now, once the morning of the demo after the 08:00 pull. The 
 | 7 | Agent | `sindri workflow status <address>` | prints the next command | read only |
 | 8 | Owner | run that command, e.g. `sindri workflow complete <address> --run <token> --outcome <o> --output fact:<name>=<file>` | the state advances | Home strip and the instance frame update live |
 | 9 | Owner | repeat 7 and 8 for each Step | each station shows as a child while the parent waits on it | the children panel |
+
+### Page tour (what is on main)
+
+Keys: Home `G H`, Workflows `G W`, Context `G C`. Everything here is read-only.
+
+1. **Home.** The health strip, then the queue frames.
+2. **Workflows (`G W`).** The instance list with the states band. Enter on a row opens the **instance frame**: header, subject, states band, the next sentence, copyable CLI.
+3. **The facts panel in the instance frame.** A `scope-map` fact draws as a table (#381): a counts line, a row per surface with its title, id, kind and graph chip, and a files or citations count. **Show raw** swaps it for the payload tree and back.
+4. **Context (`G C`, #377).** Enter one anchor key (take it from `sindri context query`) and the lens stack shows its bands. **Click into the anchor box before you type.** Keys typed before focus reaches the box go to the window as shortcuts and can create junk queue items (for example `N`). If that happens, clean up with `sindri items` and `sindri item close <item> --cancelled`.
+5. **Agents (`G A`).** Optional. With the fleet hook (#354) installed, `scripts/install-fleet.sh --provider claude` (`--uninstall` removes it), `sindri agents` shows a session as ASKING while a permission prompt is open. **The Agents page itself is LANDING TONIGHT (#369).** Check: `sindri agents` runs on main; whether the page has content depends on #369.
+
+Not on main yet (LANDING TONIGHT): the child-workflow view (#379), visited states drawn as done (#373).
 
 Every Step runs at the desk, attended: this build has no agent launcher, so the owner completes each Step with `workflow complete`. The app is read-only for commands: it shows each command as copyable CLI text, not a button, and **Start (`N`) is not in the app on main** (the app Start form is PR #351, open; check `gh pr view 351 --repo jthorare/agentic-workflow --json state`).
 
