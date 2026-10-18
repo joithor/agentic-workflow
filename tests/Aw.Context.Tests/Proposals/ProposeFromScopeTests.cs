@@ -48,7 +48,7 @@ public sealed class ProposeFromScopeTests : IDisposable
         var result = await Propose();
 
         Assert.Equal((1, 1, 0), (result.Added, result.Existing, result.Rejected));   // the mapped node, the vague surface (no row either way)
-        Assert.Equal(MapVersionStatus.Draft, result.Draft.Status);
+        Assert.Equal(MapVersionStatus.Draft, result.Draft!.Status);
         var versions = (await _world.Store.Versions(MapWorld.None)).Value;
         Assert.Equal(current.Number, Assert.Single(versions, v => v.Status == MapVersionStatus.Current).Number);
         var row = Assert.Single((await _world.Store.Overrides(MapWorld.None)).Value, o => o.Action == OverrideAction.Propose);
@@ -136,7 +136,7 @@ public sealed class ProposeFromScopeTests : IDisposable
         _ = await Drafts.Build(_world);
 
         var queue = (await _world.Map.ReviewQueue(limit: null, MapWorld.Human, MapWorld.None)).Value;
-        Assert.Equal(MapVersionStatus.Draft, result.Draft.Status);
+        Assert.Equal(MapVersionStatus.Draft, result.Draft!.Status);
         Assert.Contains(queue.Entries, e => e.Node.Value == _restore.Value && e.Group == ReviewGroup.Model);
     }
 

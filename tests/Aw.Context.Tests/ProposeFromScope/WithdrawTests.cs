@@ -43,7 +43,7 @@ public sealed class WithdrawTests : IDisposable
         Assert.Equal((2, 0), (withdrawn.Withdrawn, withdrawn.Kept));
         var rows = await Overrides();
         Assert.Equal(2, rows.Count(o => o.Action == OverrideAction.Undo));
-        Assert.Empty(OverrideLog.Active(rows).Where(o => o.Action == OverrideAction.Propose));
+        Assert.DoesNotContain(OverrideLog.Active(rows), o => o.Action == OverrideAction.Propose);
     }
 
     [Fact, Trait("Lane", "unit")]
