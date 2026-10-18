@@ -82,7 +82,7 @@ public sealed class SubgraphBuilderTests
         Assert.Equal((1, 1, 2), (near[B], near[Surface], near[Act]));
         Assert.Equal([1], view.Bands.Intent.Records.Select(r => r.Depth ?? -1));
         Assert.Equal([1, 1], view.Bands.Intent.Decisions.Select(d => d.Depth ?? -1));
-        Assert.Equal([1], view.Bands.Code.Files.Select(f => f.Depth ?? -1).Distinct());
+        Assert.Equal([1, 2], view.Bands.Code.Files.Select(f => f.Depth ?? -1).Order());   // a.ts implements A (1 hop); b.ts implements B, one more
         Assert.Equal([A], view.Nodes.Select(n => n.Value), StringComparer.Ordinal);
         Assert.Contains(view.Bands.Product.Neighbors, n => n.Node.Value == Act && n.Path.Count == 2);
     }
@@ -111,7 +111,7 @@ public sealed class SubgraphBuilderTests
     public void Band_over_100_truncated_with_full_counts()
     {
         var builder = new GraphBuilder();
-        var keys = Enumerable.Range(0, 150).Select(i => $"feature:f{i:D3}").ToArray();
+        var keys = Enumerable.Range(0, 150).Select(i => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"feature:f{i:D3}")).ToArray();
         foreach (var key in keys)
         {
             _ = builder.Node(key);
@@ -152,7 +152,7 @@ public sealed class SubgraphBuilderTests
     [Fact, Trait("Lane", "unit")]
     public void More_than_1000_keys_is_006()
     {
-        var keys = Enumerable.Range(0, QueryRules.MaxSubgraphPost + 1).Select(i => $"feature:f{i}").ToArray();
+        var keys = Enumerable.Range(0, QueryRules.MaxSubgraphPost + 1).Select(i => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"feature:f{i}")).ToArray();
 
         var over = SubgraphBuilder.Build(_basis, Graph(), keys, 0, []);
         var none = SubgraphBuilder.Build(_basis, Graph(), [], 0, []);

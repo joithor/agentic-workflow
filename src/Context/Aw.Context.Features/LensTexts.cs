@@ -1,7 +1,8 @@
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Subgraph;
 
-namespace Aw.Context.Features.GetLenses;
+namespace Aw.Context.Features;
 
 /// <summary>Cleans every piece of map text in a lenses view the way every answer's is cleaned (spec §7): scrubbed, one line for a label, fenced when the caller's policy fences untrusted text.</summary>
 internal static class LensTexts
@@ -16,6 +17,12 @@ internal static class LensTexts
     {
         Anchors = [.. view.Anchors.Select(a => a with { Label = text.Label(a.Label, a.Trust) })],
         MissingAnchors = [.. view.MissingAnchors.Select(text.Line)],
+        Bands = Bands(view.Bands, text),
+    };
+
+    internal static SubgraphView Clean(SubgraphView view, MapText text) => view with
+    {
+        Missing = [.. view.Missing.Select(text.Line)],
         Bands = Bands(view.Bands, text),
     };
 

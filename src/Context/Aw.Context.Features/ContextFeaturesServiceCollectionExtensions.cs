@@ -5,6 +5,7 @@ using Aw.Context.Core.Extract;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
+using Aw.Context.Core.Subgraph;
 using Aw.Context.Core.Locks;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
@@ -23,6 +24,7 @@ using Aw.Context.Features.ExportReview;
 using Aw.Context.Features.FindPath;
 using Aw.Context.Features.GetFileMap;
 using Aw.Context.Features.GetLenses;
+using Aw.Context.Features.GetSubgraph;
 using Aw.Context.Features.GetProposals;
 using Aw.Context.Features.ImportMap;
 using Aw.Context.Features.ListNeighbors;
@@ -68,6 +70,7 @@ public static class ContextFeaturesServiceCollectionExtensions
 
     private static IServiceCollection AddContextSlices(this IServiceCollection services) => services
         .AddBacktest()
+        .AddLenses()
         .AddScoped<IService<QueryContextRequest, ContextResult>, QueryContextService>()
         .AddScoped<IService<SourcesStatusRequest, SourcesView>, SourcesStatusService>()
         .AddScoped<IService<RefreshDocsRequest, RefreshReport>, RefreshDocsService>()
@@ -94,10 +97,6 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<PromoteMapRequest, MapPromoted>, PromoteMapService>()
         .AddScoped<IService<ProposeFromScopeRequest, ProposeResult>, ProposeFromScopeService>()
         .AddScoped<IService<GetProposalsRequest, ProposalsView>, GetProposalsService>()
-        .AddScoped<IService<GetLensesRequest, LensesView>, GetLensesService>()
-        .AddScoped<IService<GetLensesSetRequest, LensesSetView>, GetLensesSetService>()
-        .AddScoped<LensBasisReader>()
-        .AddScoped<IService<GetFileMapRequest, FileMapView>, GetFileMapService>()
         .AddScoped<MapReader>()
         .AddScoped<MapAdmin>()
         .AddScoped<MapReview>()
@@ -107,6 +106,13 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IContextGraph>(static sp => sp.GetRequiredService<ContextGraph>())
         .AddScoped<IContextLenses>(static sp => sp.GetRequiredService<ContextGraph>())
         .AddScoped<IContextEngine, ContextEngine>();
+
+    private static IServiceCollection AddLenses(this IServiceCollection services) => services
+        .AddScoped<IService<GetLensesRequest, LensesView>, GetLensesService>()
+        .AddScoped<IService<GetLensesSetRequest, LensesSetView>, GetLensesSetService>()
+        .AddScoped<IService<GetSubgraphRequest, SubgraphView>, GetSubgraphService>()
+        .AddScoped<LensBasisReader>()
+        .AddScoped<IService<GetFileMapRequest, FileMapView>, GetFileMapService>();
 
     private static IServiceCollection AddBacktest(this IServiceCollection services) => services
         .AddScoped<IService<EvalProbesRequest, ProbeRun>, EvalProbesService>()

@@ -6,6 +6,8 @@ using Aw.Context.Core.Map;
 using Aw.Context.Features.FindPath;
 using Aw.Context.Features.GetFileMap;
 using Aw.Context.Features.GetLenses;
+using Aw.Context.Features.GetSubgraph;
+using Aw.Context.Core.Subgraph;
 using Aw.Context.Features.ListNeighbors;
 using Aw.Context.Features.ShowNode;
 using Aw.Kernel;
@@ -20,7 +22,8 @@ internal sealed class ContextGraph(
     IService<FindPathRequest, PathView> path,
     IService<GetLensesRequest, LensesView> lenses,
     IService<GetLensesSetRequest, LensesSetView> lensesSet,
-    IService<GetFileMapRequest, FileMapView> fileMap) : IContextGraph, IContextLenses
+    IService<GetFileMapRequest, FileMapView> fileMap,
+    IService<GetSubgraphRequest, SubgraphView> subgraph) : IContextGraph, IContextLenses
 {
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) =>
         show.Handle(new ShowNodeRequest(key, scope), cancellationToken);
@@ -36,6 +39,9 @@ internal sealed class ContextGraph(
 
     public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
         lensesSet.Handle(new GetLensesSetRequest(anchors, read, depth, scope), cancellationToken);
+
+    public ValueTask<Result<SubgraphView>> Subgraph(SubgraphQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        subgraph.Handle(new GetSubgraphRequest(query, scope), cancellationToken);
 
     public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
         Lenses(anchor, draft ? MapRead.NewestDraft : MapRead.Current, depth, scope, cancellationToken);
