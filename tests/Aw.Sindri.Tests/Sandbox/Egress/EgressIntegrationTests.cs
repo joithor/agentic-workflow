@@ -9,6 +9,7 @@ using Aw.Sindri.Infrastructure.Sandbox;
 namespace Aw.Sindri.Tests.Sandbox.Egress;
 
 /// <summary>The real listeners on unix sockets in a temp directory, with loopback stubs for Sindri and the allowed host.</summary>
+[Collection(EgressProcesses.Name)]
 public sealed class EgressIntegrationTests : IAsyncDisposable
 {
     private readonly string _root = Directory.CreateTempSubdirectory("egress-it").FullName;

@@ -10,6 +10,7 @@ using Aw.Sindri.Infrastructure.Sandbox;
 namespace Aw.Sindri.Tests.Sandbox.Egress;
 
 /// <summary>Runs the rendered init under sh, with a fake socat that records what it sees, and with the real socat.</summary>
+[Collection(EgressProcesses.Name)]
 public sealed class EgressInitRunTests : IDisposable
 {
     private readonly TempDirectory _temp = new();
