@@ -43,5 +43,6 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Aw.Sindri.Tests" />
+    <InternalsVisibleTo Include="Aw.Sindri.Engine.Tests" />
   </ItemGroup>
 </Project>

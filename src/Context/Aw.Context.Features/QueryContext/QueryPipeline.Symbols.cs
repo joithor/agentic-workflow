@@ -8,12 +8,12 @@ namespace Aw.Context.Features.QueryContext;
 
 internal sealed partial class QueryPipeline
 {
-    private static Result<(GraphPart Graph, IReadOnlyList<string> Terms)> Symbolic(Result<VisibleMap> map, string symbol, int depth, MapText text)
+    private static Result<(GraphPart Graph, IReadOnlyList<string> Terms)> Symbolic(Result<VisibleMap> map, string symbol, CascadeReach reach, MapText text)
     {
         var implemented = map.Bind(m => FileFeatures(m.Graph, symbol));
         return implemented.IsError
             ? implemented.Error
-            : (GraphAnswer.Build(map.Value, implemented.Value, [], depth, text), [.. implemented.Value.SelectMany(a => text.SearchTerms(a.Label)).Distinct(StringComparer.Ordinal)]);
+            : (GraphAnswer.Build(map.Value, implemented.Value, [], reach, text), [.. implemented.Value.SelectMany(a => text.SearchTerms(a.Label)).Distinct(StringComparer.Ordinal)]);
     }
 
     /// <summary>The nodes a file implements (the symbol shape's file-path form): SND-CONTEXT-003 when the map has no such file or it implements nothing.</summary>

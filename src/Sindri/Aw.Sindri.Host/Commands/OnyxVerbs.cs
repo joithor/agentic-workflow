@@ -16,7 +16,7 @@ namespace Aw.Sindri.Host.Commands;
 /// <param name="output">Where answers go.</param>
 /// <param name="session">Who runs the CLI.</param>
 /// <param name="approve">Runs `profile approve [hash]` the way the CLI does (preview without a hash, the typed challenge with one), for the approval `onyx up` shows inline; null skips the offer.</param>
-internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentSession session, Func<string?, CancellationToken, Task<int>>? approve = null)
+internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentSession session, Func<string?, Output, CancellationToken, Task<int>>? approve = null)
 {
     internal async Task<int> Up(bool json, CancellationToken ct)
     {

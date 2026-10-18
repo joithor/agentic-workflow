@@ -92,7 +92,7 @@ internal static class CommandTable
             ["ledger", .. var rest] => await new LedgerVerbs(client, output, (launch, c) => start.EnsureRunning(launch, c)).Run(rest, ct).ConfigureAwait(false),
             ["services" or "jobs", ..] => await JobCommands.Run(args, (client, output), start.EnsureRunning, services.GetRequiredService<TimeProvider>(), (ct, interrupt.Again)).ConfigureAwait(false),
             ["doctor", ..] => await Doctor(args, verbs, harnesses, output, ct).ConfigureAwait(false),
-            ["onyx", .. var rest] => await Onyx(rest, verbs, new OnyxVerbs(services, output, session, (hash, c) => new Verbs(client, probe, output, services, e => start.EnsureRunning(launch: true, e)).Approve(hash, Interactive(), Console.In, c)), output, ct).ConfigureAwait(false),
+            ["onyx", .. var rest] => await Onyx(rest, verbs, new OnyxVerbs(services, output, session, (hash, to, c) => new Verbs(client, probe, to, services, e => start.EnsureRunning(launch: true, e)).Approve(hash, Interactive(), Console.In, c)), output, ct).ConfigureAwait(false),
             ["mcp", .. var rest] => await new McpVerbs(services, output, session).Run(rest, ct).ConfigureAwait(false),
             ["context", ..] => await Context(args, client, output, services, (ct, interrupt.Again)).ConfigureAwait(false),
             ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
@@ -127,7 +127,7 @@ internal static class CommandTable
                 await Console.Error.WriteAsync(question).ConfigureAwait(false);
                 return await Console.In.ReadLineAsync(ct).ConfigureAwait(false);
             },
-            c => Onyx(["up"], new Verbs(wire.Client, wire.Probe, wire.Output, services), new OnyxVerbs(services, wire.Output, session, (hash, a) => Approve(services, session, wire, hash, a)), wire.Output, c),
+            c => Onyx(["up"], new Verbs(wire.Client, wire.Probe, wire.Output, services), new OnyxVerbs(services, wire.Output, session, (hash, to, a) => Approve(services, session, (wire.Client, wire.Probe, to), hash, a)), wire.Output, c),
             Console.Error).Run(ct);
 
     /// <summary>'sindri onyx status|up|down [--json]'.</summary>
