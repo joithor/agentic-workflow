@@ -1,5 +1,3 @@
-using Aw.Sindri.Ui.Api;
-
 namespace Aw.Sindri.Ui.ViewModels.Context;
 
 /// <summary>
@@ -10,14 +8,17 @@ namespace Aw.Sindri.Ui.ViewModels.Context;
 internal sealed partial class ContextPageViewModel : ObservableObject
 {
     /// <summary>The page over the API.</summary>
-    /// <param name="api">Sindri's API.</param>
-    internal ContextPageViewModel(ISindriApi api)
+    /// <param name="ports">What the page and its stages read through.</param>
+    internal ContextPageViewModel(ContextPorts ports)
     {
-        Api = api;
+        Ports = ports;
+        InitReview();
+        InitFileMap();
+        InitSide();
     }
 
-    /// <summary>Sindri's API, for the stages that read through it.</summary>
-    internal ISindriApi Api { get; }
+    /// <summary>What the page and its stages read through.</summary>
+    internal ContextPorts Ports { get; }
 
     /// <summary>The page's title.</summary>
     public string Title { get; } = Labels.Context;

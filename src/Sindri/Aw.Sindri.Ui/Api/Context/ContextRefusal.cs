@@ -29,9 +29,9 @@ internal static class ContextRefusal
                 error = error.WithExtension(member.Name, member.Value);
             }
         }
-        catch (JsonException)
+        catch (Exception e) when (e is JsonException or ArgumentException)
         {
-            // why: a body that does not parse has no extras to carry; the code and detail were already read from it
+            // why: a body that does not parse, or repeats a member name, has no extras to carry; the code and detail were already read from it
         }
 
         return error;

@@ -2,7 +2,6 @@ using System.ComponentModel;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Platform;
-using Aw.Sindri.Ui.ViewModels.Context;
 using Aw.Sindri.Ui.ViewModels.Instance;
 using Aw.Sindri.Ui.ViewModels.Item;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
@@ -80,7 +79,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         InitInstance();
         Recipe = new RecipeSheetViewModel(api);
         InitRecipe();
-        Context = new ContextPageViewModel(api);
+        InitContext(api, clipboard);
         Queue.PropertyChanged += OnQueueChanged;
         InitAnnouncements();
         Attention = AttentionSummary.For(feed: null, State, _clock.GetUtcNow());
