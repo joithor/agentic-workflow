@@ -16,6 +16,14 @@ public sealed class TestPathsTests
     [InlineData("tests/test_links.py", true)]
     [InlineData("src/sharing/links.ts", false)]
     [InlineData("src/sharing/testing.ts", false)]
+    [InlineData("src/FooTest.cs", true)]
+    [InlineData("src/foo.test.ts", true)]
+    [InlineData("pkg/foo_test.go", true)]
+    [InlineData("src/Links.Tests/Links.cs", false)]
+    [InlineData("Tests/Links.cs", true)]
+    [InlineData("src/latest.ts", false)]
+    [InlineData("src/contest.js", false)]
+    [InlineData("src/attest.py", false)]
     public void TestPath_default_globs_mark_the_usual_test_files(string path, bool expected) =>
         Assert.Equal(expected, TestPaths.IsTest(path, ContextSettings.DefaultTestGlobs));
 
@@ -29,8 +37,11 @@ public sealed class TestPathsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void TestPath_matches_without_regard_to_case() =>
-        Assert.True(TestPaths.IsTest("Tests/Links.TEST.ts", ContextSettings.DefaultTestGlobs));
+    public void TestPath_globs_match_case_sensitively()
+    {
+        Assert.False(TestPaths.IsTest("src/Links.TEST.ts", ContextSettings.DefaultTestGlobs));
+        Assert.False(TestPaths.IsTest("src/TESTS/links.ts", ContextSettings.DefaultTestGlobs));
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void TestPath_no_globs_mark_nothing() =>

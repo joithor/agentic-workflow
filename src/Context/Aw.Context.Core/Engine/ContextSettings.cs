@@ -18,7 +18,7 @@ public sealed record ContextSettings
 
     /// <summary>The default 'context.code.testGlobs': the paths that mark a file as a test.</summary>
     public static IReadOnlyList<string> DefaultTestGlobs { get; } =
-        ["**/test/**", "**/tests/**", "**/__tests__/**", "**/spec/**", "**/specs/**", "**/*.test.*", "**/*.spec.*", "**/*_test.*", "**/*Test.*", "**/*Tests.*", "**/test_*.*"];
+        ["**/test/**", "**/tests/**", "**/Test/**", "**/Tests/**", "**/__tests__/**", "**/spec/**", "**/specs/**", "**/*.test.*", "**/*.spec.*", "**/*_test.*", "**/*Test.*", "**/*Tests.*", "**/test_*.*"];
 
     /// <summary>The profile repos the engine maps, or null for all of them.</summary>
     public IReadOnlyList<ContextRepoName>? Repos { get; init; }
