@@ -17,7 +17,7 @@ internal static class ParkScenarios
     public static IReadOnlyList<(string Slug, string Scenario)> All { get; } =
     [
         ("queue", "running"), ("queue", "parked"), ("items-id", "running"),
-        ("needs-you", "park"), ("needs-you", "desk-task"), ("needs-you", "idle-takeover"),
+        ("needs-you", "park"), ("needs-you", "park-mirrored-child"), ("needs-you", "desk-task"), ("needs-you", "idle-takeover"),
     ];
 
     /// <summary>Whether <paramref name="slug"/> and <paramref name="scenario"/> belong to this class.</summary>
@@ -42,6 +42,12 @@ internal static class ParkScenarios
                 await Append(host, item, EventTypes.WorkflowStarted, Row(address, "produce", "start", Desk(), suspension: null), "started", ct);
                 var park = new SuspensionSummary(SuspensionKind.Park, ParkReason.Rounds, ParkKind.Loop, Escalation: null, Mirrors: null);
                 await Append(host, item, EventTypes.WorkflowTransition, Row(address, "produce", "step.completed", frame: null, park), "parked", ct);
+                break;
+            case "park-mirrored-child":
+                await Append(host, item, EventTypes.WorkflowStarted, Row(address, "running", "start", new FrameSummary("running", 1, Run: null, Child: null), suspension: null), "started", ct);
+                var childAddress = address + "/step.4";
+                var mirrored = new SuspensionSummary(SuspensionKind.Park, ParkReason.NoProgress, ParkKind.Loop, Escalation: null, Mirrors: WorkflowInstanceId.Of(InstanceAddress.From(childAddress)).Value, MirrorsAddress: childAddress);
+                await Append(host, item, EventTypes.WorkflowTransition, Row(address, "running", "child.parked", frame: null, mirrored), "parked", ct);
                 break;
             default:   // 'idle-takeover'
                 await Append(host, item, EventTypes.WorkflowStarted, Row(address, "produce", "start", Desk(), suspension: null), "started", ct);
