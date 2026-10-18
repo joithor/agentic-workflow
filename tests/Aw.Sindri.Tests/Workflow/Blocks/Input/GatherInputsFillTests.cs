@@ -1,15 +1,12 @@
 using System.Text.Json;
 using Aw.Context.Core.Facade;
-using Aw.Context.Core.History;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Host;
 using Aw.Sindri.Tests.ContextCalls;
-using Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
 
@@ -39,9 +36,11 @@ public sealed class GatherInputsFillTests : IDisposable
         .AddSingleton<IApprovedProfile>(new ContextInputFixtures.Profiles(ContextInputFixtures.Profile()))
         .BuildServiceProvider();
 
-    private static StepInputContext Context(string input, params (string Name, object Value)[] with) => new(
+    private static readonly string[] _anchors = ["feature:sharing"];
+
+    private static StepInputContext Context(string input) => new(
         BlockId.From(input), BlockId.From("step.scope.gather"),
-        new[] { ("anchors", (object)new[] { "feature:sharing" }) }.Concat(with).ToDictionary(static w => w.Item1, static w => JsonSerializer.SerializeToElement(w.Item2), StringComparer.Ordinal),
+        new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["anchors"] = JsonSerializer.SerializeToElement(_anchors) },
         new Dictionary<FactKey, JsonElement>(), ContextInputFixtures.Web);
 
     [Theory]
@@ -66,6 +65,10 @@ public sealed class GatherInputsFillTests : IDisposable
     {
         await using var provider = Compose();
 
-        Assert.All(["input.context.lenses", "input.context.history", "input.context.code"], id => Assert.True(provider.GetRequiredService<StepInputRuntimes>().Has(BlockId.From(id))));
+        var runtimes = provider.GetRequiredService<StepInputRuntimes>();
+
+        Assert.True(runtimes.Has(BlockId.From("input.context.lenses")));
+        Assert.True(runtimes.Has(BlockId.From("input.context.history")));
+        Assert.True(runtimes.Has(BlockId.From("input.context.code")));
     }
 }
