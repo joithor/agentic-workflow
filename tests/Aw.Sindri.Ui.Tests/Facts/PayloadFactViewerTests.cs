@@ -113,7 +113,7 @@ public sealed class PayloadFactViewerTests
         {
             if (string.Equals(e.PropertyName, nameof(PayloadFactViewer.ProblemText), StringComparison.Ordinal))
             {
-                announcingWhenShown.TrySetResult(viewer.Voice.IsAnnouncing);
+                _ = announcingWhenShown.TrySetResult(viewer.Voice.IsAnnouncing);
             }
         };
         using var bound = CancellationTokenSource.CreateLinkedTokenSource(Token);
