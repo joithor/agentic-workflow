@@ -9042,3 +9042,9 @@ static Aw.Sindri.Core.Sessions.TmuxPane.operator !=(Aw.Sindri.Core.Sessions.Tmux
 static Aw.Sindri.Core.Sessions.TmuxPane.operator ==(Aw.Sindri.Core.Sessions.TmuxPane? left, Aw.Sindri.Core.Sessions.TmuxPane? right) -> bool
 static Aw.Sindri.Core.Sessions.TmuxServerView.operator !=(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
 static Aw.Sindri.Core.Sessions.TmuxServerView.operator ==(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
+Aw.Sindri.Core.Scoping.ScopingErrors
+static Aw.Sindri.Core.Scoping.ScopingErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static Aw.Sindri.Core.Scoping.ScopingErrors.Retired.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static readonly Aw.Sindri.Core.Scoping.ScopingErrors.DraftOutsideRunArea -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.Scoping.ScopingErrors.NotAScopingInstance -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.Scoping.ScopingErrors.PacketPurged -> Aw.Kernel.ErrorDefinition!

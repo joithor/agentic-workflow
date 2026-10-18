@@ -28,5 +28,7 @@
     <EmbeddedResource Include="Workflow/Recipes/**/*.yaml" LogicalName="recipes/%(RecursiveDir)%(Filename)%(Extension)" />
     <!-- The shipped recipes, their evals and the dev profile (spec §12), read by ShippedRecipes without file I/O. -->
     <EmbeddedResource Include="../../recipes/**/*.yaml;../../recipes/**/*.jsonl" LogicalName="shipped/%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- The scoping station's gold facts (SC-K), read by ScopingFacts without file I/O. -->
+    <EmbeddedResource Include="../fixtures/scoping/facts/**/*.json" LogicalName="scoping-facts/%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>
