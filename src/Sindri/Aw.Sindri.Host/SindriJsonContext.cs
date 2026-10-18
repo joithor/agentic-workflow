@@ -71,12 +71,14 @@ using Aw.Sindri.Features.ResumeService;
 using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Features.RunDoctor;
 using Aw.Sindri.Features.RunService;
+using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Features.StartInstance;
 using Aw.Sindri.Features.StopProcess;
 using Aw.Sindri.Features.ValidateProfile;
 using Aw.Sindri.Features.ValidateRecipe;
 using Aw.Sindri.Host.Commands.Probe;
 using Aw.Sindri.Host.Commands.Recipe;
+using Aw.Sindri.Host.Commands.Scoping;
 using Aw.Sindri.Host.Endpoints;
 using Aw.Sindri.Host.Mcp;
 
@@ -112,6 +114,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(TimelineResponse)), JsonSerializable(typeof(Recipe)), JsonSerializable(typeof(BlockDescriptor)), JsonSerializable(typeof(ValidateRecipeResponse))]
 [JsonSerializable(typeof(EvalRecipeResponse)), JsonSerializable(typeof(WorkflowEvent)), JsonSerializable(typeof(EvalStartLine)), JsonSerializable(typeof(EvalStepLine))]
 [JsonSerializable(typeof(RecipeValidationView)), JsonSerializable(typeof(CompleteStepResponse)), JsonSerializable(typeof(InstanceView)), JsonSerializable(typeof(ListOutboxResponse))]
+[JsonSerializable(typeof(ScopingView)), JsonSerializable(typeof(ScopingCheckResponse)), JsonSerializable(typeof(ScopingDeskReport))]   // SC-K: the scoping verbs
 [JsonSerializable(typeof(OnyxStatusResponse))]
 [JsonSerializable(typeof(RequestKind))]   // API P8: the sindri_request kind argument binds through it
 [JsonSerializable(typeof(FleetChanged))]
