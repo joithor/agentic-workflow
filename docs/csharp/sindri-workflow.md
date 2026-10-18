@@ -1072,7 +1072,7 @@ sends it on to the desk twin. A Step with no registered runtime keeps opening a 
   human waits for the result, runs `cancel`, or answers the desk twin once the run fails. There is no takeover override:
   a takeover cancels the activity and pauses the run, and a `complete` while taken over is refused like any report to a
   parked instance (`is parked (Takeover); hand it back first: sindri workflow handback <address> (the handback runs the Step again)`);
-  the handback runs the Step again (a second Judge call), so no report follows it. A desk run's refusal ends `then complete run <token>` instead.
+  after the handback the Step runs again (a second Judge call) unless the takeover covered an unapproved park, so no report follows it. A takeover that covered an unapproved park hands back to that park (`…handback <address>; a park follows, and sindri workflow status <address> shows the answer it takes`), and a plain park is refused with `answer it first: sindri workflow status <address> shows the answer it takes`: each park takes its own answer (for example `--resume`, `--grant-tokens`, `--grant`, `--text`, `--accept` or `--reject`), and `status` shows the one it takes. A desk run's refusal after a takeover with no unapproved park ends `then complete run <token>` instead.
 - **The `step.failed` reason** (what `sameFailure` compares and `--record` writes) is exactly one of:
 
   | Reason | When |

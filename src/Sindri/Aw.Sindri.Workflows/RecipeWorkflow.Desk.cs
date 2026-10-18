@@ -71,17 +71,27 @@ internal sealed partial class RecipeWorkflow
         }
     }
 
-    // A takeover ends with the handback and a park with 'answer --resume'; a block run starts over on the handback, so no report follows it.
-    private static string ParkedRefusal(WorkflowInstance instance, Suspension suspension, RunToken run)
+    // Precise only where it is certain. A takeover with no unapproved park queued ends with the handback (EndCurrent skips approved
+    // parks): a block run's Step then runs again, and a desk run completes with its unchanged token. Past that point the way out
+    // depends on the park (its answer, and whether the Step runs again), so the text points at 'status', which shows the answer.
+    internal static string ParkedRefusal(WorkflowInstance instance, Suspension suspension, RunToken run)
     {
-        var parked = $"{instance.Address.Value} is parked ({suspension.Reason?.ToString() ?? suspension.Kind.ToString()})";
+        var address = instance.Address.Value;
+        var parked = $"{address} is parked ({suspension.Reason?.ToString() ?? suspension.Kind.ToString()}); ";
         if (suspension.Kind != SuspensionKind.Takeover)
         {
-            return $"{parked}; answer --resume first, then complete run {run.Value}";
+            return $"{parked}answer it first: sindri workflow status {address} shows the answer it takes";
         }
 
-        var handback = $"{parked}; hand it back first: sindri workflow handback {instance.Address.Value}";
-        return instance.Frame.Run is { Runtime: StepRuntime.Block } ? $"{handback} (the handback runs the Step again)" : $"{handback}, then complete run {run.Value}";
+        var handback = $"{parked}hand it back first: sindri workflow handback {address}";
+        if (instance.PendingPark is { Approved: false } || instance.LaterParks?.Any(static p => !p.Approved) == true)
+        {
+            return $"{handback}; a park follows, and sindri workflow status {address} shows the answer it takes";
+        }
+
+        return instance.Frame.Run is { Runtime: StepRuntime.Block }
+            ? $"{handback} (the handback runs the Step again)"
+            : $"{handback}, then complete run {run.Value}";
     }
 
     /// <summary>
