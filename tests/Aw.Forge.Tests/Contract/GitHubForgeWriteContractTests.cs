@@ -1,6 +1,7 @@
+using System.Globalization;
 using Aw.Forge.Core;
-using Aw.Forge.Core.Pulls;
 using Aw.Forge.Core.Ports;
+using Aw.Forge.Core.Pulls;
 using Aw.Forge.Core.Refs;
 using Aw.Forge.Infrastructure;
 using Aw.Forge.Infrastructure.Git;
@@ -33,11 +34,11 @@ public sealed class GitHubForgeWriteContractTests : IDisposable
             return;
         }
 
-        using var provider = new ServiceCollection()
+        await using var provider = new ServiceCollection()
             .AddForgeGitHubInfrastructure(Environment.GetEnvironmentVariable, new ForgeHosts(["github.com"]))
             .BuildServiceProvider();
         var forge = provider.GetRequiredService<IForge>();
-        var scene = new Scene(new ForgeRepo("github.com", owner, name), GitPusher.BasicHeader(credential), TimeProvider.System.GetUtcNow().ToUnixTimeSeconds(), Path.Combine(_work.FullName, "repo"));
+        var scene = new Scene(new ForgeRepo("github.com", owner, name), GitPusher.BasicHeader(credential), TimeProvider.System.GetUtcNow().ToUnixTimeSeconds().ToString(CultureInfo.InvariantCulture), Path.Combine(_work.FullName, "repo"));
         try
         {
             var pull = await Arrange(forge, scene);
@@ -56,14 +57,14 @@ public sealed class GitHubForgeWriteContractTests : IDisposable
     private async Task<ForgeRef> Arrange(IForge forge, Scene scene)
     {
         var cancel = TestContext.Current.CancellationToken;
-        _ = await Run(cancel, scene.Header, _work.FullName, "clone", "--quiet", scene.Remote, "repo");
+        _ = await Run(scene.Header, _work.FullName, ["clone", "--quiet", scene.Remote, "repo"], cancel);
         var main = Expect(await forge.DefaultBranch(scene.Repo, cancel));
-        var mainTip = await Run(cancel, scene.Header, scene.Dir, "rev-parse", "HEAD");
-        _ = await Run(cancel, scene.Header, scene.Dir, "checkout", "--quiet", "-b", scene.Head);
-        _ = await Run(cancel, scene.Header, scene.Dir, "commit", "--quiet", "--allow-empty", "-m", "forge contract: one");
-        scene.One = await Run(cancel, scene.Header, scene.Dir, "rev-parse", "HEAD");
-        _ = await Run(cancel, scene.Header, scene.Dir, "commit", "--quiet", "--allow-empty", "-m", "forge contract: two");
-        scene.Two = await Run(cancel, scene.Header, scene.Dir, "rev-parse", "HEAD");
+        var mainTip = await Run(scene.Header, scene.Dir, ["rev-parse", "HEAD"], cancel);
+        _ = await Run(scene.Header, scene.Dir, ["checkout", "--quiet", "-b", scene.Head], cancel);
+        _ = await Run(scene.Header, scene.Dir, ["commit", "--quiet", "--allow-empty", "-m", "forge contract: one"], cancel);
+        scene.One = await Run(scene.Header, scene.Dir, ["rev-parse", "HEAD"], cancel);
+        _ = await Run(scene.Header, scene.Dir, ["commit", "--quiet", "--allow-empty", "-m", "forge contract: two"], cancel);
+        scene.Two = await Run(scene.Header, scene.Dir, ["rev-parse", "HEAD"], cancel);
 
         Assert.Equal(PushOutcome.Pushed, Expect(await forge.Push(new PushRequest(scene.Dir, scene.One, scene.Remote, scene.Head, LeaseSha: null), cancel)));
         Assert.Equal(PushOutcome.Pushed, Expect(await forge.Push(new PushRequest(scene.Dir, mainTip, scene.Remote, scene.Other, LeaseSha: null), cancel)));
@@ -102,13 +103,13 @@ public sealed class GitHubForgeWriteContractTests : IDisposable
         Assert.True(merged.Status is MergeStatus.Merged or MergeStatus.Blocked, $"the merge on the current head is Merged, or Blocked by the scratch repository's rules, not {merged.Status}");
     }
 
-    private sealed class Scene(ForgeRepo repo, string header, long stamp, string dir)
+    private sealed class Scene(ForgeRepo repo, string header, string stamp, string dir)
     {
         internal ForgeRepo Repo { get; } = repo;
 
         internal string Header { get; } = header;
 
-        internal long Stamp { get; } = stamp;
+        internal string Stamp { get; } = stamp;
 
         internal string Dir { get; } = dir;
 
@@ -127,13 +128,13 @@ public sealed class GitHubForgeWriteContractTests : IDisposable
         internal string Main { get; set; } = string.Empty;
     }
 
-    private static T Expect<T>(Aw.Kernel.Result<T> result)
+    private static T Expect<T>(Kernel.Result<T> result)
     {
         Assert.True(result.IsSuccess, result.IsError ? result.Error.ToString() : string.Empty);
         return result.Value;
     }
 
-    private static async Task<string> Run(CancellationToken cancel, string header, string directory, params string[] arguments)
+    private static async Task<string> Run(string header, string directory, string[] arguments, CancellationToken cancel)
     {
         var ran = await TryRun(header, directory, arguments, cancel);
         Assert.True(ran is { ExitCode: 0 }, $"git {arguments[0]} failed");

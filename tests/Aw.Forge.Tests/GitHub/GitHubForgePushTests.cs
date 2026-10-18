@@ -47,9 +47,9 @@ public sealed class GitHubForgePushTests : IDisposable
 
         Assert.Equal(PushOutcome.Pushed, result.Value);
         var seen = await File.ReadAllLinesAsync(recorded, TestContext.Current.CancellationToken);
-        Assert.Contains("count=1", seen);
-        Assert.Contains("key=http.extraHeader", seen);
-        Assert.Contains("value=" + GitPusher.BasicHeader(Secret), seen);
+        Assert.Contains("count=1", seen, StringComparer.Ordinal);
+        Assert.Contains("key=http.extraHeader", seen, StringComparer.Ordinal);
+        Assert.Contains("value=" + GitPusher.BasicHeader(Secret), seen, StringComparer.Ordinal);
         var arguments = seen.Single(l => l.StartsWith("args=", StringComparison.Ordinal));
         Assert.Contains("https://github.com/acme/widgets.git", arguments, StringComparison.Ordinal);
         Assert.DoesNotContain(Secret, arguments, StringComparison.Ordinal);
