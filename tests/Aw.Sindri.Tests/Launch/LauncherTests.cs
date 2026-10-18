@@ -114,7 +114,7 @@ public sealed class LauncherTests : IDisposable
     [Fact]
     public async Task A_resume_runs_the_resume_template_with_the_session_it_was_given()
     {
-        var id = Aw.Sindri.Core.Sessions.SessionId.From("0b1f6c3e-52d4-4c7a-9a58-3d1e7f9a2b10");
+        var id = Core.Ids.SessionId.From("0b1f6c3e-52d4-4c7a-9a58-3d1e7f9a2b10");
         var request = A.LaunchRequest().Resuming(id).Build();
 
         _ = await Make().Launch(request, CancellationToken.None);

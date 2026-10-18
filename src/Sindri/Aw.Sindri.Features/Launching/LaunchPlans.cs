@@ -60,7 +60,7 @@ internal sealed class LaunchPlans(IViewReader reader, IApprovedProfile profile, 
     }
 
     /// <summary>The session a resume addresses: the newest started launch of the picked agent that has an id (the same rule the open admitted it by).</summary>
-    private async ValueTask<Core.Sessions.SessionId?> ResumableSession(Core.Events.ItemOpenRequested request, CancellationToken cancellationToken)
+    private async ValueTask<SessionId?> ResumableSession(Core.Events.ItemOpenRequested request, CancellationToken cancellationToken)
     {
         var history = await launches.ForItem(request.Item, cancellationToken).ConfigureAwait(false);
         return history.IsError ? null : history.Value.FirstOrDefault(row => row.Target == request.Target && row.State == LaunchState.Started && row.ResumableId is not null)?.ResumableId;
