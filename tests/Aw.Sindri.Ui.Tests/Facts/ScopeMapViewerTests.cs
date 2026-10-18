@@ -101,6 +101,15 @@ public sealed class ScopeMapViewerTests
     }
 
     [Fact]
+    public async Task A_surface_with_no_readable_name_is_still_a_named_row_and_numbers_are_read_as_text()
+    {
+        var viewer = await Loaded("""{"surfaces":[{"graph":"mapped","files":[]},{"title":7,"graph":"new"}]}""");
+
+        Assert.Equal([Labels.ScopeUnnamed, "7"], viewer.Surfaces.Select(s => s.Title), StringComparer.Ordinal);
+        Assert.All(viewer.Surfaces, s => Assert.StartsWith(s.Title, s.Name, StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task A_missing_fact_shows_the_served_detail_and_no_api_says_so()
     {
         var offline = new ScopeMapViewer(FactFixtures.Row("project-build", "fact:scope"), new FactViewerContext(_server, new FakeClipboard(), _clock, () => null, FixtureInstances.Detail("project-build").Id, _ => { }));

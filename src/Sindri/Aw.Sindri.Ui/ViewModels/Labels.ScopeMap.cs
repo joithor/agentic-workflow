@@ -23,6 +23,9 @@ internal static partial class Labels
     /// <summary>The section of unresolved items.</summary>
     internal const string ScopeUnresolved = "UNRESOLVED";
 
+    /// <summary>The title of a surface that has no title, name or id the viewer can read.</summary>
+    internal const string ScopeUnnamed = "(unnamed surface)";
+
     /// <summary>The table's accessible name.</summary>
     /// <param name="label">The fact's label.</param>
     /// <returns>The words.</returns>

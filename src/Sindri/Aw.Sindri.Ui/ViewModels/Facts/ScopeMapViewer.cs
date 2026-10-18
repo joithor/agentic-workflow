@@ -130,7 +130,7 @@ internal sealed class ScopeMapViewer : ObservableObject, IFactViewer
 
     private static ScopeSurfaceRow Surface(JsonElement surface)
     {
-        var title = Text(surface, "title") is { Length: > 0 } t ? t : Text(surface, "name") is { Length: > 0 } n ? n : Text(surface, "id");
+        var title = Text(surface, "title") is { Length: > 0 } t ? t : Text(surface, "name") is { Length: > 0 } n ? n : Text(surface, "id") is { Length: > 0 } i ? i : Labels.ScopeUnnamed;
         var meta = string.Join(" · ", new[] { Text(surface, "id"), Text(surface, "kind"), Text(surface, "lens") }.Where(s => s.Length > 0 && !string.Equals(s, title, StringComparison.Ordinal)));
         var graph = Text(surface, "graph") is { Length: > 0 } g ? g : Text(surface, "graphStatus");
         var count = Length(surface, "files") is { } files ? Labels.ScopeFiles(files) : Length(surface, "citations") is { } cites ? Labels.ScopeCitations(cites) : string.Empty;
@@ -180,8 +180,15 @@ internal sealed class ScopeMapViewer : ObservableObject, IFactViewer
         return why.Length == 0 ? head : head.Length == 0 ? why : $"{head}: {why}";
     }
 
-    private static string Text(JsonElement element, string name) =>
-        element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? FactText.Scrub(value.GetString() ?? string.Empty) : string.Empty;
+    private static string Text(JsonElement element, string name)
+    {
+        if (!element.TryGetProperty(name, out var value))
+        {
+            return string.Empty;
+        }
+
+        return value.ValueKind == JsonValueKind.String ? FactText.Scrub(value.GetString() ?? string.Empty) : value.ValueKind == JsonValueKind.Number ? value.GetRawText() : string.Empty;
+    }
 
     private static int? Length(JsonElement element, string name) =>
         element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Array ? value.GetArrayLength() : null;
