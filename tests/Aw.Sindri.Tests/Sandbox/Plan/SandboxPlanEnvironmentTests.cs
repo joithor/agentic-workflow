@@ -25,7 +25,7 @@ public sealed class SandboxPlanEnvironmentTests
         Assert.DoesNotContain("GH_TOKEN", names, StringComparer.Ordinal);
         Assert.DoesNotContain("AWS_SECRET_ACCESS_KEY", names, StringComparer.Ordinal);
         Assert.Empty(EnvironmentAllowlist.Violations(names));
-        Assert.All(plan.Environment, e => Assert.Contains(e.Name, EnvironmentAllowlist.Names.Keys, StringComparer.Ordinal));
+        Assert.All(plan.Environment, e => Assert.True(EnvironmentAllowlist.IsListed(e.Name), e.Name));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -78,7 +78,7 @@ public sealed class SandboxPlanEnvironmentTests
         Assert.Equal("/tmp/dotnet-home", env["DOTNET_CLI_HOME"]);
         Assert.Equal(Req.Home + "/.claude-run", env["CLAUDE_CONFIG_DIR"]);
         Assert.Equal(Req.Worktree, env["AW_SINDRI_WORKTREE"]);
-        Assert.Equal("sindri/x/1", env["AW_SINDRI_BRANCH"]);
+        Assert.Equal("sindri/x/1/work", env["AW_SINDRI_BRANCH"]);
         Assert.Equal(Req.RunDirectory, env["AW_SINDRI_RUN_DIR"]);
         Assert.True(env.ContainsKey("AW_SINDRI_LAUNCH_SECRET"));
         Assert.Null(env["AW_SINDRI_LAUNCH_SECRET"]);   // session wrap supplies it

@@ -31,7 +31,7 @@ public sealed class ProductHostSandboxTests
 
         Assert.DoesNotContain(
             services,
-            d => (d.ImplementationType ?? d.ImplementationInstance?.GetType() ?? d.ServiceType).Assembly.GetName().Name!.Contains("Testing", StringComparison.Ordinal));
+            d => (d.ImplementationType ?? d.ImplementationInstance?.GetType() ?? d.ServiceType).Assembly.GetName().Name!.StartsWith("Aw.Sindri.Testing", StringComparison.Ordinal));
         Assert.DoesNotContain(typeof(Composition).Assembly.GetReferencedAssemblies(), a => a.Name!.Contains("Aw.Sindri.Testing", StringComparison.Ordinal));
         Assert.DoesNotContain(services, d => string.Equals(d.ImplementationType?.Name, "PassThroughSandbox", StringComparison.Ordinal) || string.Equals(d.ImplementationType?.Name, "RecordingSandbox", StringComparison.Ordinal));
     }

@@ -67,7 +67,15 @@ public sealed class SandboxPlanPolicyTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Hooks_in_the_plan_are_the_session_inventory() => Assert.Equal(HookInventory.ForSession(), SandboxPlannerTests.Build(Req.WriteScope).Hooks);
+    public void Hooks_in_the_plan_are_the_session_inventory()
+    {
+        var expected = HookInventory.ForSession();
+
+        var hooks = SandboxPlannerTests.Build(Req.WriteScope).Hooks;
+
+        Assert.Equal(expected.Kept, hooks.Kept);
+        Assert.Equal(expected.Omitted, hooks.Omitted);
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void Attended_inner_mode_asks_with_the_same_deny_rules()

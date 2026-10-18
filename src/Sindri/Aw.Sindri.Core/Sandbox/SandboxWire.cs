@@ -12,4 +12,6 @@ internal static class SandboxWire
     internal static string Name(GithubCredentials value) => value == GithubCredentials.None ? "none" : "agent-app";
 
     internal static string Name(LoginMountMode value) => value == LoginMountMode.ReadOnly ? "ro" : "rw";
+
+    internal static string Name(SandboxMechanism value) => value == SandboxMechanism.Bubblewrap ? "bubblewrap" : value == SandboxMechanism.Seatbelt ? "seatbelt" : "pass-through";
 }

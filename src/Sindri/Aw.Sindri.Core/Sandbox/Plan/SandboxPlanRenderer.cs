@@ -1,16 +1,152 @@
+using System.Globalization;
+using System.Text;
+
 namespace Aw.Sindri.Core.Sandbox.Plan;
 
 /// <summary>The text of 'sindri sandbox show' and 'sindri sandbox explain': pure over the plan, so a session can ask with the state directory denied.</summary>
 public static class SandboxPlanRenderer
 {
+    private const string Always = "always blocked: ";
+
     /// <summary>The whole plan as text.</summary>
     /// <param name="plan">The plan.</param>
     /// <returns>The text.</returns>
-    public static string Show(SandboxPlan plan) => throw new NotSupportedException();
+    public static string Show(SandboxPlan plan)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        var text = new StringBuilder();
+        var kind = plan.Attended ? "session you opened" : "Step";
+        _ = text.AppendLine(CultureInfo.InvariantCulture, $"Sandbox {plan.PlanHash} ({SandboxWire.Name(plan.Mechanism)}) for a {kind}");
+        _ = text.AppendLine(CultureInfo.InvariantCulture, $"Launch: {plan.Launch.Value}");
+        _ = text.AppendLine().AppendLine("Files, bottom to top (a later line wins):");
+        foreach (var mount in plan.Mounts)
+        {
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"  {Label(mount.Kind),-9} {mount.Path}  ({mount.Reason})");
+        }
+
+        _ = text.AppendLine().AppendLine(CultureInfo.InvariantCulture, $"Network ({SandboxWire.Name(plan.Network.Mode)}):");
+        foreach (var group in plan.Network.Groups)
+        {
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"  {group.Name}: {string.Join(", ", group.Hosts)}");
+        }
+
+        _ = text.AppendLine().AppendLine("Environment (names only):").Append("  ").AppendJoin(", ", EnvironmentNames(plan)).AppendLine();
+        _ = text.AppendLine().AppendLine("Limits:").Append("  ").AppendLine(LimitsLine(plan.Limits));
+        _ = text.AppendLine().AppendLine(CultureInfo.InvariantCulture, $"Credentials: GitHub {SandboxWire.Name(plan.Github)}, model login {SandboxWire.Name(plan.Login)}");
+        _ = text.AppendLine(CultureInfo.InvariantCulture, $"The agent's own policy: {(plan.Policy.Mode == InnerMode.Ask ? "asks" : "refuses")}, {plan.Policy.Rules.Count} rules; its own sandbox: {SandboxWire.Name(plan.Inner)}");
+        _ = text.AppendLine(CultureInfo.InvariantCulture, $"Hooks kept: {string.Join(", ", plan.Hooks.Kept)}");
+        _ = text.AppendLine(CultureInfo.InvariantCulture, $"Hooks left out: {(plan.Hooks.Omitted.Count == 0 ? "none" : string.Join(", ", plan.Hooks.Omitted))}");
+        return text.ToString();
+    }
 
     /// <summary>Why a path, a host or a command is allowed or denied, and how the owner can change it.</summary>
     /// <param name="plan">The plan.</param>
     /// <param name="query">A path, a host name or a command.</param>
     /// <returns>The answer.</returns>
-    public static string Explain(SandboxPlan plan, string query) => throw new NotSupportedException();
+    public static string Explain(SandboxPlan plan, string query)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        ArgumentNullException.ThrowIfNull(query);
+        var q = query.Trim();
+        if (q.Length == 0)
+        {
+            return "Ask about a path, a host or a command, for example: sindri sandbox explain api.github.com\n";
+        }
+
+        if (q.StartsWith('/') || q.StartsWith('~'))
+        {
+            return ExplainPath(plan, q);
+        }
+
+        return !q.Contains(' ', StringComparison.Ordinal) && q.Contains('.', StringComparison.Ordinal) && !q.Contains('/', StringComparison.Ordinal)
+            ? ExplainHost(plan, q)
+            : ExplainCommand(plan, q);
+    }
+
+    private static List<string> EnvironmentNames(SandboxPlan plan)
+    {
+        var names = plan.Environment.Select(e => e.Name).Where(n => !n.StartsWith("GIT_CONFIG_KEY_", StringComparison.Ordinal) && !n.StartsWith("GIT_CONFIG_VALUE_", StringComparison.Ordinal)).ToList();
+        var at = names.IndexOf("GIT_CONFIG_COUNT");
+        names.Insert(at + 1, "GIT_CONFIG_KEY_n and GIT_CONFIG_VALUE_n");
+        return names;
+    }
+
+    private static string Label(PlanMountKind kind) => kind switch
+    {
+        PlanMountKind.ReadOnly => "read-only",
+        PlanMountKind.ReadWrite => "writable",
+        PlanMountKind.Deny => "blocked",
+        PlanMountKind.Tmpfs => "empty",
+        PlanMountKind.PerLaunchDir => "this run",
+        PlanMountKind.Dev => "device",
+        PlanMountKind.Proc => "process",
+        _ => kind.ToString(),
+    };
+
+    private static string LimitsLine(PlanLimits l)
+    {
+        var wall = l.Wall is { } w ? SandboxUnits.FormatDuration(w) : "none";
+        return string.Create(
+            CultureInfo.InvariantCulture,
+            $"memory {SandboxUnits.FormatSize(l.MemoryMaxBytes)} (slowed at {SandboxUnits.FormatSize(l.MemoryHighBytes)}), cpu {l.CpuQuotaPercent}%, processes {l.TasksMax}, sessions {l.Sessions}, home {SandboxUnits.FormatSize(l.HomeTmpfsBytes)}, time {wall}");
+    }
+
+    private static string ExplainPath(SandboxPlan plan, string query)
+    {
+        var home = plan.Mounts.FirstOrDefault(m => m.Kind == PlanMountKind.Tmpfs)?.Path ?? string.Empty;
+        var path = query.StartsWith("~/", StringComparison.Ordinal) ? home + query[1..] : query;
+        var mount = plan.Mounts.LastOrDefault(m => string.Equals(m.Path, path, StringComparison.Ordinal) || path.StartsWith(m.Path.TrimEnd('/') + "/", StringComparison.Ordinal));
+        return mount switch
+        {
+            null => $"{path} is not listed; the system is read-only.\n",
+            { Kind: PlanMountKind.Deny } => ExplainDenied(path, mount),
+            { Kind: PlanMountKind.Tmpfs } => $"{path} is not bound in the sandbox home, so it does not exist for this session (a tool that writes there loses it with the run).\nThe owner can allow it for this repo: add it to sandbox.repos.<repo>.homeAllow in the profile.\n",
+            { Kind: PlanMountKind.ReadOnly } => $"{path} can be read, not changed ({mount.Reason}).\n",
+            _ => $"{path} is writable ({mount.Reason}).\n",
+        };
+    }
+
+    private static string ExplainDenied(string path, PlanMount mount)
+    {
+        var fix = mount.Reason.StartsWith(Always, StringComparison.Ordinal)
+            ? "No setting changes this. If you need it, ask the owner to do it in their own terminal."
+            : "The owner can lift it by removing it from the profile.";
+        var reason = mount.Reason.StartsWith(Always, StringComparison.Ordinal) ? mount.Reason[Always.Length..] : mount.Reason;
+        return $"{path} is blocked: {reason}.\n{fix}\n";
+    }
+
+    private static string ExplainHost(SandboxPlan plan, string host)
+    {
+        if (HostGroups.Allowing(plan.Network.Groups, host) is { } group)
+        {
+            return $"{host} is allowed through the '{group.Name}' group.\n";
+        }
+
+        var learn = plan.Network.Mode == NetworkMode.Learn ? "While the sandbox is learning every host is allowed and recorded.\n" : string.Empty;
+        return $"{host} is not allowed: no host group lists it.\n{learn}The owner can allow it for this repo: add it to sandbox.repos.<repo>.hosts in the profile.\n";
+    }
+
+    private static string ExplainCommand(SandboxPlan plan, string command)
+    {
+        var rule = plan.Policy.Rules.FirstOrDefault(r => r.Effect == InnerRuleEffect.Deny && string.Equals(r.Tool, "Bash", StringComparison.Ordinal) && Matches(r.Pattern, command));
+        return rule is null
+            ? $"No rule blocks '{command}'. Whether it works depends on the files and hosts it needs; ask about those.\n"
+            : $"'{command}' is blocked in the sandbox (rule: {rule.Pattern}).\nPush and secrets are blocked. Run it in a new terminal window outside the sandbox, or let Sindri send it.\n";
+    }
+
+    private static bool Matches(string pattern, string command)
+    {
+        if (pattern.EndsWith(":*", StringComparison.Ordinal))
+        {
+            var prefix = pattern[..^2];
+            return string.Equals(command, prefix, StringComparison.Ordinal) || command.StartsWith(prefix + " ", StringComparison.Ordinal);
+        }
+
+        if (pattern.StartsWith('*') && pattern.EndsWith('*') && pattern.Length > 2)
+        {
+            return command.Contains(pattern[1..^1], StringComparison.Ordinal);
+        }
+
+        return pattern.EndsWith('*') ? command.StartsWith(pattern[..^1], StringComparison.Ordinal) : string.Equals(command, pattern, StringComparison.Ordinal);
+    }
 }

@@ -23,7 +23,7 @@ public sealed partial class HookInventoryTests
     [Fact, Trait("Lane", "unit")]
     public void Hook_inventory_matches_config_hooks()
     {
-        var installed = HookFiles().Select(f => Path.GetFileNameWithoutExtension(f)).ToList();
+        var installed = HookFiles().Select(f => Path.GetFileNameWithoutExtension(f)).Order(StringComparer.Ordinal).ToList();
 
         Assert.Equal(installed, [.. HookInventory.Scripts.Select(s => s.Name).Order(StringComparer.Ordinal)]);
     }

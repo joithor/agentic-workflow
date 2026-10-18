@@ -13,5 +13,18 @@ public static class LoginSourceResolver
     /// <param name="repo">The repo.</param>
     /// <param name="stepAsk">The source the Step's policy asks for, or null.</param>
     /// <returns>The source in force.</returns>
-    public static ModelLoginSource Resolve(SandboxSettings? settings, AgentId target, RepoName repo, ModelLoginSource? stepAsk) => throw new NotSupportedException();
+    public static ModelLoginSource Resolve(SandboxSettings? settings, AgentId target, RepoName repo, ModelLoginSource? stepAsk)
+    {
+        var resolved = RepoSource(settings, repo)
+            ?? TargetSource(settings, target)
+            ?? settings?.Login?.Source
+            ?? SandboxDefaults.Login;
+        return stepAsk is { } ask && ask > resolved ? ask : resolved;
+    }
+
+    private static ModelLoginSource? RepoSource(SandboxSettings? settings, RepoName repo) =>
+        settings?.Repos is { } repos && repos.TryGetValue(repo.Value, out var declared) ? declared.Login?.Source : null;
+
+    private static ModelLoginSource? TargetSource(SandboxSettings? settings, AgentId target) =>
+        settings?.Login?.Targets is { } targets && targets.TryGetValue(target.Value, out var source) ? source : null;
 }

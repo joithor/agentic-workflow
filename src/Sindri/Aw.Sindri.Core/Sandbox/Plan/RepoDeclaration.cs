@@ -10,5 +10,6 @@ public static class RepoDeclaration
     /// <param name="settings">The profile's sandbox section, or null.</param>
     /// <param name="repo">The repo name.</param>
     /// <returns>The declaration.</returns>
-    public static SandboxRepoSettings For(SandboxSettings? settings, RepoName repo) => throw new NotSupportedException();
+    public static SandboxRepoSettings For(SandboxSettings? settings, RepoName repo) =>
+        settings?.Repos is { } repos && repos.TryGetValue(repo.Value, out var declared) ? declared : new SandboxRepoSettings();
 }

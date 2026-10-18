@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Sindri.Core.Sandbox;
 using Aw.Sindri.Core.Sandbox.Plan;
 
 namespace Aw.Sindri.Testing.Sandbox;
@@ -10,14 +11,14 @@ namespace Aw.Sindri.Testing.Sandbox;
 public sealed class PassThroughSandbox : ISandbox
 {
     /// <inheritdoc />
-    public Result<SandboxCapabilities> Probe() => throw new NotSupportedException();
+    public Result<SandboxCapabilities> Probe() => new SandboxCapabilities(SandboxMechanism.PassThrough, "test-only pass-through");
 
     /// <inheritdoc />
-    public Result<SandboxPlan> Plan(SandboxRequest request) => throw new NotSupportedException();
+    public Result<SandboxPlan> Plan(SandboxRequest request) => SandboxPlanner.Build(SandboxMechanism.PassThrough, request);
 
     /// <inheritdoc />
-    public Task<Result<Unit>> SelfCheck(SandboxPlan plan, CancellationToken ct) => throw new NotSupportedException();
+    public Task<Result<Unit>> SelfCheck(SandboxPlan plan, CancellationToken ct) => Task.FromResult<Result<Unit>>(Unit.Value);
 
     /// <inheritdoc />
-    public Result<IReadOnlyList<string>> Wrap(SandboxPlan plan, IReadOnlyList<string> argv) => throw new NotSupportedException();
+    public Result<IReadOnlyList<string>> Wrap(SandboxPlan plan, IReadOnlyList<string> argv) => Results.Success(argv);
 }
