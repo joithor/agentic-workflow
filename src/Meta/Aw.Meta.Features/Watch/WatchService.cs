@@ -30,13 +30,16 @@ internal sealed class WatchService(IMetaConfig config, WatchPoller poller, IKeyV
 
         var end = clock.GetUtcNow() + request.Duration;
         var reported = await values.Get(KvKeys.WatchResources, cancellationToken).ConfigureAwait(false);
+        var high = await values.Get(KvKeys.WatchContext, cancellationToken).ConfigureAwait(false);
         var loop = new WatchLoop(
             team.Value,
             poller,
             request.Emit,
             WatchResources.Parse(reported.IsSuccess ? reported.Value : null),
             // Advisory: if this can't be kept, a re-armed watch announces a standing LOW again.
-            async resources => _ = await values.Set(KvKeys.WatchResources, resources.ToString(), cancellationToken).ConfigureAwait(false));
+            async resources => _ = await values.Set(KvKeys.WatchResources, resources.ToString(), cancellationToken).ConfigureAwait(false),
+            ContextWatch.Parse(high.IsSuccess ? high.Value : null),
+            async lanes => _ = await values.Set(KvKeys.WatchContext, ContextWatch.Format(lanes), cancellationToken).ConfigureAwait(false));
         for (var polls = 1; ; polls++)
         {
             await loop.Tick(cancellationToken).ConfigureAwait(false);

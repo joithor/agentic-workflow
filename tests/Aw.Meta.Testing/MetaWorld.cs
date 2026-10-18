@@ -54,6 +54,15 @@ public sealed class MetaWorld
     /// <summary>Transcript files.</summary>
     public InMemoryTranscriptReader Transcripts { get; } = new();
 
+    /// <summary>Claude Code's session transcripts.</summary>
+    public InMemoryClaudeTranscripts ClaudeTranscripts { get; } = new();
+
+    /// <summary>The session each Claude lane runs now (Claude Code's sessions directory).</summary>
+    public InMemoryLaneSessions LaneSessions { get; } = new();
+
+    /// <summary>The digest files lanes wrote.</summary>
+    public InMemoryDigestFiles Digests { get; } = new();
+
     /// <summary>External programs (git, gh and the gate's steps), scripted per test.</summary>
     public InMemoryCommandRunner Runner { get; } = new();
 
@@ -116,6 +125,9 @@ public sealed class MetaWorld
         var values = new InMemoryKeyValueStore();
         return new LaneHealthReader(new InMemoryLaneFiles(), new LaneBeats(values), new InMemoryLaneMail(new InMemoryMessageStore()), new LaneStopGuard(values, new InMemoryRunningLog()));
     }
+
+    /// <summary>The lanes' context sizes.</summary>
+    public LaneContextReader Context => new(LaneFiles, LaneSessions, ClaudeTranscripts);
 
     /// <summary>The non-Claude lanes' standing.</summary>
     public LaneHealthReader LaneHealth => new(LaneFiles, Beats, LaneMail, LaneGuard);
