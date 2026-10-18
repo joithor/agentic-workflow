@@ -4,7 +4,6 @@ using Aw.Context.Core.Code;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Tests.Map;
-using Aw.Kernel;
 
 namespace Aw.Context.Tests.GetCode;
 
