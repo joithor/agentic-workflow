@@ -24,6 +24,7 @@ internal static class ApiScenarios
         ("workflow-recipe", "not-found"),
         .. ContextApiScenarios.Rows,
         .. ViewScenarios.All,
+        .. SessionScenarios.All,
         .. ItemScenarios.All,
         .. ParkScenarios.All,
         .. RequestScenarios.All,
@@ -86,6 +87,7 @@ internal static class ApiScenarios
         : ParkScenarios.Handles(slug, scenario) ? () => ParkScenarios.Body(host, slug, scenario, ct)
         : RequestScenarios.Handles(slug, scenario) ? () => RequestScenarios.Body(host, slug, scenario, ct)
         : StreamScenarios.Handles(slug, scenario) ? () => StreamScenarios.Body(host, slug, scenario, ct)
+        : SessionScenarios.Handles(slug, scenario) ? () => SessionScenarios.Body(host, slug, scenario, ct)
         : ViewScenarios.Handles(slug, scenario) ? () => ViewScenarios.Body(host, slug, scenario, ct)
         : JobScenarios.Handles(slug, scenario) ? () => JobScenarios.Body(host, slug, scenario, ct)
         : JobScopeScenarios.Handles(slug, scenario) ? () => JobScopeScenarios.Body(host, slug, scenario, ct)

@@ -9042,3 +9042,147 @@ static Aw.Sindri.Core.Sessions.TmuxPane.operator !=(Aw.Sindri.Core.Sessions.Tmux
 static Aw.Sindri.Core.Sessions.TmuxPane.operator ==(Aw.Sindri.Core.Sessions.TmuxPane? left, Aw.Sindri.Core.Sessions.TmuxPane? right) -> bool
 static Aw.Sindri.Core.Sessions.TmuxServerView.operator !=(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
 static Aw.Sindri.Core.Sessions.TmuxServerView.operator ==(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
+Aw.Sindri.Core.Sessions.SessionAsking
+Aw.Sindri.Core.Sessions.SessionAsking.<Clone>$() -> Aw.Sindri.Core.Sessions.SessionAsking!
+Aw.Sindri.Core.Sessions.SessionAsking.Deconstruct(out Aw.Sindri.Core.Sessions.AskingReason Reason, out string? Tool, out System.DateTimeOffset Since) -> void
+Aw.Sindri.Core.Sessions.SessionAsking.Equals(Aw.Sindri.Core.Sessions.SessionAsking? other) -> bool
+Aw.Sindri.Core.Sessions.SessionAsking.Reason.get -> Aw.Sindri.Core.Sessions.AskingReason
+Aw.Sindri.Core.Sessions.SessionAsking.Reason.init -> void
+Aw.Sindri.Core.Sessions.SessionAsking.SessionAsking(Aw.Sindri.Core.Sessions.AskingReason Reason, string? Tool, System.DateTimeOffset Since) -> void
+Aw.Sindri.Core.Sessions.SessionAsking.Since.get -> System.DateTimeOffset
+Aw.Sindri.Core.Sessions.SessionAsking.Since.init -> void
+Aw.Sindri.Core.Sessions.SessionAsking.Tool.get -> string?
+Aw.Sindri.Core.Sessions.SessionAsking.Tool.init -> void
+Aw.Sindri.Core.Sessions.SessionFocus
+Aw.Sindri.Core.Sessions.SessionFocus.<Clone>$() -> Aw.Sindri.Core.Sessions.SessionFocus!
+Aw.Sindri.Core.Sessions.SessionFocus.Deconstruct(out string! Method, out bool Possible, out string? Why) -> void
+Aw.Sindri.Core.Sessions.SessionFocus.Equals(Aw.Sindri.Core.Sessions.SessionFocus? other) -> bool
+Aw.Sindri.Core.Sessions.SessionFocus.Method.get -> string!
+Aw.Sindri.Core.Sessions.SessionFocus.Method.init -> void
+Aw.Sindri.Core.Sessions.SessionFocus.Possible.get -> bool
+Aw.Sindri.Core.Sessions.SessionFocus.Possible.init -> void
+Aw.Sindri.Core.Sessions.SessionFocus.SessionFocus(string! Method, bool Possible, string? Why) -> void
+Aw.Sindri.Core.Sessions.SessionFocus.Why.get -> string?
+Aw.Sindri.Core.Sessions.SessionFocus.Why.init -> void
+Aw.Sindri.Core.Sessions.SessionHostRow
+Aw.Sindri.Core.Sessions.SessionHostRow.<Clone>$() -> Aw.Sindri.Core.Sessions.SessionHostRow!
+Aw.Sindri.Core.Sessions.SessionHostRow.AttachedClients.get -> int?
+Aw.Sindri.Core.Sessions.SessionHostRow.AttachedClients.init -> void
+Aw.Sindri.Core.Sessions.SessionHostRow.Deconstruct(out string! Kind, out string! Label, out string? SocketKind, out int? AttachedClients, out string? Terminal) -> void
+Aw.Sindri.Core.Sessions.SessionHostRow.Equals(Aw.Sindri.Core.Sessions.SessionHostRow? other) -> bool
+Aw.Sindri.Core.Sessions.SessionHostRow.Kind.get -> string!
+Aw.Sindri.Core.Sessions.SessionHostRow.Kind.init -> void
+Aw.Sindri.Core.Sessions.SessionHostRow.Label.get -> string!
+Aw.Sindri.Core.Sessions.SessionHostRow.Label.init -> void
+Aw.Sindri.Core.Sessions.SessionHostRow.Pane.get -> string?
+Aw.Sindri.Core.Sessions.SessionHostRow.Pane.init -> void
+Aw.Sindri.Core.Sessions.SessionHostRow.Session.get -> string?
+Aw.Sindri.Core.Sessions.SessionHostRow.Session.init -> void
+Aw.Sindri.Core.Sessions.SessionHostRow.SessionHostRow(string! Kind, string! Label, string? SocketKind, int? AttachedClients, string? Terminal) -> void
+Aw.Sindri.Core.Sessions.SessionHostRow.Socket.get -> string?
+Aw.Sindri.Core.Sessions.SessionHostRow.Socket.init -> void
+Aw.Sindri.Core.Sessions.SessionHostRow.SocketKind.get -> string?
+Aw.Sindri.Core.Sessions.SessionHostRow.SocketKind.init -> void
+Aw.Sindri.Core.Sessions.SessionHostRow.Terminal.get -> string?
+Aw.Sindri.Core.Sessions.SessionHostRow.Terminal.init -> void
+Aw.Sindri.Core.Sessions.SessionLane
+Aw.Sindri.Core.Sessions.SessionLane.<Clone>$() -> Aw.Sindri.Core.Sessions.SessionLane!
+Aw.Sindri.Core.Sessions.SessionLane.Deconstruct(out string! Team, out string! Lane) -> void
+Aw.Sindri.Core.Sessions.SessionLane.Equals(Aw.Sindri.Core.Sessions.SessionLane? other) -> bool
+Aw.Sindri.Core.Sessions.SessionLane.Lane.get -> string!
+Aw.Sindri.Core.Sessions.SessionLane.Lane.init -> void
+Aw.Sindri.Core.Sessions.SessionLane.SessionLane(string! Team, string! Lane) -> void
+Aw.Sindri.Core.Sessions.SessionLane.Team.get -> string!
+Aw.Sindri.Core.Sessions.SessionLane.Team.init -> void
+Aw.Sindri.Core.Sessions.SessionRow
+Aw.Sindri.Core.Sessions.SessionRow.<Clone>$() -> Aw.Sindri.Core.Sessions.SessionRow!
+Aw.Sindri.Core.Sessions.SessionRow.Asking.get -> Aw.Sindri.Core.Sessions.SessionAsking?
+Aw.Sindri.Core.Sessions.SessionRow.Asking.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Deconstruct(out string! Ref, out Aw.Sindri.Core.Launch.AgentId Provider, out string! ProviderLabel, out Aw.Sindri.Core.Sessions.SessionId Id, out bool IdKnown, out Aw.Sindri.Core.Sessions.SessionState State, out Aw.Sindri.Core.Sessions.SessionAsking? Asking, out Aw.Sindri.Core.Sessions.StateSource StateSource, out bool Estimated, out Aw.Sindri.Core.Ids.RepoName? Repo, out string? Worktree, out Aw.Sindri.Core.Sessions.SessionHostRow! Host, out Aw.Sindri.Core.Sessions.SessionLane? Lane, out Aw.Sindri.Core.Workflow.Engine.LaunchId? LaunchId, out System.DateTimeOffset? StartedAt, out System.DateTimeOffset Since, out Aw.Sindri.Core.Sessions.SessionFocus! Focus) -> void
+Aw.Sindri.Core.Sessions.SessionRow.Equals(Aw.Sindri.Core.Sessions.SessionRow? other) -> bool
+Aw.Sindri.Core.Sessions.SessionRow.Estimated.get -> bool
+Aw.Sindri.Core.Sessions.SessionRow.Estimated.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Focus.get -> Aw.Sindri.Core.Sessions.SessionFocus!
+Aw.Sindri.Core.Sessions.SessionRow.Focus.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Host.get -> Aw.Sindri.Core.Sessions.SessionHostRow!
+Aw.Sindri.Core.Sessions.SessionRow.Host.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Id.get -> Aw.Sindri.Core.Sessions.SessionId
+Aw.Sindri.Core.Sessions.SessionRow.Id.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.IdKnown.get -> bool
+Aw.Sindri.Core.Sessions.SessionRow.IdKnown.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Lane.get -> Aw.Sindri.Core.Sessions.SessionLane?
+Aw.Sindri.Core.Sessions.SessionRow.Lane.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.LaunchId.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId?
+Aw.Sindri.Core.Sessions.SessionRow.LaunchId.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Pid.get -> int?
+Aw.Sindri.Core.Sessions.SessionRow.Pid.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Provider.get -> Aw.Sindri.Core.Launch.AgentId
+Aw.Sindri.Core.Sessions.SessionRow.Provider.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.ProviderLabel.get -> string!
+Aw.Sindri.Core.Sessions.SessionRow.ProviderLabel.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Ref.get -> string!
+Aw.Sindri.Core.Sessions.SessionRow.Ref.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Core.Sessions.SessionRow.Repo.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.SessionRow(string! Ref, Aw.Sindri.Core.Launch.AgentId Provider, string! ProviderLabel, Aw.Sindri.Core.Sessions.SessionId Id, bool IdKnown, Aw.Sindri.Core.Sessions.SessionState State, Aw.Sindri.Core.Sessions.SessionAsking? Asking, Aw.Sindri.Core.Sessions.StateSource StateSource, bool Estimated, Aw.Sindri.Core.Ids.RepoName? Repo, string? Worktree, Aw.Sindri.Core.Sessions.SessionHostRow! Host, Aw.Sindri.Core.Sessions.SessionLane? Lane, Aw.Sindri.Core.Workflow.Engine.LaunchId? LaunchId, System.DateTimeOffset? StartedAt, System.DateTimeOffset Since, Aw.Sindri.Core.Sessions.SessionFocus! Focus) -> void
+Aw.Sindri.Core.Sessions.SessionRow.Since.get -> System.DateTimeOffset
+Aw.Sindri.Core.Sessions.SessionRow.Since.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.StartedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Sessions.SessionRow.StartedAt.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.State.get -> Aw.Sindri.Core.Sessions.SessionState
+Aw.Sindri.Core.Sessions.SessionRow.State.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.StateSource.get -> Aw.Sindri.Core.Sessions.StateSource
+Aw.Sindri.Core.Sessions.SessionRow.StateSource.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Title.get -> string?
+Aw.Sindri.Core.Sessions.SessionRow.Title.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Worktree.get -> string?
+Aw.Sindri.Core.Sessions.SessionRow.Worktree.init -> void
+Aw.Sindri.Core.Sessions.SessionSnapshot.History.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Sessions.SessionRef, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionStateEntry!>!>!
+Aw.Sindri.Core.Sessions.SessionSnapshot.History.init -> void
+Aw.Sindri.Core.Sessions.SessionStateEntry
+Aw.Sindri.Core.Sessions.SessionStateEntry.<Clone>$() -> Aw.Sindri.Core.Sessions.SessionStateEntry!
+Aw.Sindri.Core.Sessions.SessionStateEntry.At.get -> System.DateTimeOffset
+Aw.Sindri.Core.Sessions.SessionStateEntry.At.init -> void
+Aw.Sindri.Core.Sessions.SessionStateEntry.Deconstruct(out Aw.Sindri.Core.Sessions.SessionState State, out Aw.Sindri.Core.Sessions.AskingReason? Reason, out System.DateTimeOffset At, out Aw.Sindri.Core.Sessions.StateSource Source) -> void
+Aw.Sindri.Core.Sessions.SessionStateEntry.Equals(Aw.Sindri.Core.Sessions.SessionStateEntry? other) -> bool
+Aw.Sindri.Core.Sessions.SessionStateEntry.Reason.get -> Aw.Sindri.Core.Sessions.AskingReason?
+Aw.Sindri.Core.Sessions.SessionStateEntry.Reason.init -> void
+Aw.Sindri.Core.Sessions.SessionStateEntry.SessionStateEntry(Aw.Sindri.Core.Sessions.SessionState State, Aw.Sindri.Core.Sessions.AskingReason? Reason, System.DateTimeOffset At, Aw.Sindri.Core.Sessions.StateSource Source) -> void
+Aw.Sindri.Core.Sessions.SessionStateEntry.Source.get -> Aw.Sindri.Core.Sessions.StateSource
+Aw.Sindri.Core.Sessions.SessionStateEntry.Source.init -> void
+Aw.Sindri.Core.Sessions.SessionStateEntry.State.get -> Aw.Sindri.Core.Sessions.SessionState
+Aw.Sindri.Core.Sessions.SessionStateEntry.State.init -> void
+Aw.Sindri.Core.Sessions.TmuxFacts.AttachedClients.get -> int?
+Aw.Sindri.Core.Sessions.TmuxFacts.AttachedClients.init -> void
+override Aw.Sindri.Core.Sessions.SessionAsking.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.SessionAsking.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.SessionAsking.ToString() -> string!
+override Aw.Sindri.Core.Sessions.SessionFocus.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.SessionFocus.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.SessionFocus.ToString() -> string!
+override Aw.Sindri.Core.Sessions.SessionHostRow.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.SessionHostRow.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.SessionHostRow.ToString() -> string!
+override Aw.Sindri.Core.Sessions.SessionLane.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.SessionLane.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.SessionLane.ToString() -> string!
+override Aw.Sindri.Core.Sessions.SessionRow.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.SessionRow.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.SessionRow.ToString() -> string!
+override Aw.Sindri.Core.Sessions.SessionStateEntry.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.SessionStateEntry.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.SessionStateEntry.ToString() -> string!
+static Aw.Sindri.Core.Sessions.SessionAsking.operator !=(Aw.Sindri.Core.Sessions.SessionAsking? left, Aw.Sindri.Core.Sessions.SessionAsking? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionAsking.operator ==(Aw.Sindri.Core.Sessions.SessionAsking? left, Aw.Sindri.Core.Sessions.SessionAsking? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionFocus.Pending.get -> Aw.Sindri.Core.Sessions.SessionFocus!
+static Aw.Sindri.Core.Sessions.SessionFocus.operator !=(Aw.Sindri.Core.Sessions.SessionFocus? left, Aw.Sindri.Core.Sessions.SessionFocus? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionFocus.operator ==(Aw.Sindri.Core.Sessions.SessionFocus? left, Aw.Sindri.Core.Sessions.SessionFocus? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionHostRow.operator !=(Aw.Sindri.Core.Sessions.SessionHostRow? left, Aw.Sindri.Core.Sessions.SessionHostRow? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionHostRow.operator ==(Aw.Sindri.Core.Sessions.SessionHostRow? left, Aw.Sindri.Core.Sessions.SessionHostRow? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionLane.operator !=(Aw.Sindri.Core.Sessions.SessionLane? left, Aw.Sindri.Core.Sessions.SessionLane? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionLane.operator ==(Aw.Sindri.Core.Sessions.SessionLane? left, Aw.Sindri.Core.Sessions.SessionLane? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionRow.operator !=(Aw.Sindri.Core.Sessions.SessionRow? left, Aw.Sindri.Core.Sessions.SessionRow? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionRow.operator ==(Aw.Sindri.Core.Sessions.SessionRow? left, Aw.Sindri.Core.Sessions.SessionRow? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionStateEntry.operator !=(Aw.Sindri.Core.Sessions.SessionStateEntry? left, Aw.Sindri.Core.Sessions.SessionStateEntry? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionStateEntry.operator ==(Aw.Sindri.Core.Sessions.SessionStateEntry? left, Aw.Sindri.Core.Sessions.SessionStateEntry? right) -> bool
+static readonly Aw.Sindri.Core.SindriErrors.SessionNotFound -> Aw.Kernel.ErrorDefinition!

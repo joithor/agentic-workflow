@@ -7,18 +7,20 @@ using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Core.Views;
 
 namespace Aw.Sindri.Features.GetStatus;
 
-internal sealed class GetStatusService(HeldLease held, IApprovedProfile approvals, IProfileSource live, ILedgerReader ledger, EventFactory events,
-    IProjectorStatus projector, IViewReader viewRows)
+internal sealed class GetStatusService(HeldLease held, ProfileReads profiles, ILedgerReader ledger, EventFactory events,
+    IProjectorStatus projector, IViewReader viewRows, ISessionSnapshot sessions)
     : IService<GetStatusRequest, GetStatusResponse>
 {
     public async ValueTask<Result<GetStatusResponse>> Handle(GetStatusRequest request, CancellationToken cancellationToken)
     {
-        var approved = await approvals.Latest(cancellationToken).ConfigureAwait(false);
-        var loaded = await live.Load(cancellationToken).ConfigureAwait(false);
+        _ = sessions;   // red stub: CO-3 reads the snapshot next
+        var approved = await profiles.Approved(cancellationToken).ConfigureAwait(false);
+        var loaded = await profiles.Live(cancellationToken).ConfigureAwait(false);
         var approvedProfile = approved.IsSuccess ? approved.Value : null;
         var services = await Services(approvedProfile, cancellationToken).ConfigureAwait(false);
         var recorded = RecordedApproval.From(await ledger.Latest(EventTypes.ProfileApproved, cancellationToken).ConfigureAwait(false), events);
