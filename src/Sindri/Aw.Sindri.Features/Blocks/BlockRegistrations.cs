@@ -49,6 +49,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(OwnerSteps.Decide)
         .AddScopingBlocks()
         .AddShipBlocks()
+        .AddDocsBlocks()
         .AddBlockDescriptor(EvidenceProviders.Check)
         .AddGate<BudgetAvailableGate>()
         .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
@@ -98,4 +99,13 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(ShipSteps.Freeze)
         .AddBlockDescriptor(ShipSteps.Open)
         .AddBlockDescriptor(ShipSteps.Return);
+
+    /// <summary>Registers the docs-sync station's Steps (PB spec §7), descriptors only.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddDocsBlocks(this IServiceCollection services) => services
+        .AddBlockDescriptor(DocsSteps.Scope)
+        .AddBlockDescriptor(DocsSteps.Update)
+        .AddBlockDescriptor(DocsSteps.Check)
+        .AddBlockDescriptor(DocsSteps.OpenPr);
 }

@@ -12,7 +12,7 @@ public sealed class ShipPackStepContract : DescriptorContract
 {
     protected override BlockDescriptor Descriptor => ShipSteps.Pack;
 
-    protected override string ExpectedHash => "sha256:x";
+    protected override string ExpectedHash => "sha256:23d1f6fdb7fadca6c5cae974fd3d03a76046f2d1e73a876bf630c8f1b5f8982e";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

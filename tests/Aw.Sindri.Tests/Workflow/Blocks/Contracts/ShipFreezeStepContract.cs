@@ -12,7 +12,7 @@ public sealed class ShipFreezeStepContract : DescriptorContract
 {
     protected override BlockDescriptor Descriptor => ShipSteps.Freeze;
 
-    protected override string ExpectedHash => "sha256:x";
+    protected override string ExpectedHash => "sha256:3453040d172cde0b45d927abd0eafa80b9f37fe4fcaa4c2ad67705ed5d2840f6";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

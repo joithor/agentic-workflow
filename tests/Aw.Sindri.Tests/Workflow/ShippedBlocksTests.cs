@@ -26,7 +26,7 @@ public sealed class ShippedBlocksTests
             [
                 "effect.claim.ref", "effect.notify.desk", "evidence.check", "gate.budget.available", "gate.route.startable", "input.context.code",
                 "input.context.history", "input.context.lenses", "step.brief.questions", "step.brief.seed", "step.brief.write", "step.bugfix.judge",
-                "step.bugfix.recheck", "step.bugfix.record-candidate", "step.bugfix.start-attempt", "step.checks", "step.desk.choose",
+                "step.bugfix.recheck", "step.bugfix.record-candidate", "step.bugfix.start-attempt", "step.checks", "step.desk.choose", "step.docs.check", "step.docs.open-pr", "step.docs.scope", "step.docs.update",
                 "step.evidence.api-plan", "step.evidence.api-run", "step.evidence.combine", "step.evidence.db-plan", "step.evidence.db-run",
                 "step.evidence.desk", "step.evidence.none", "step.evidence.ui-plan", "step.evidence.ui-run", "step.handtest.run",
                 "step.intake.ticket", "step.interview.answer", "step.interview.apply", "step.interview.questions", "step.interview.record",
