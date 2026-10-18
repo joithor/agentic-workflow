@@ -19,7 +19,7 @@ namespace Aw.Sindri.Tests.ApplyCommand;
 public sealed class ApplyCommandForwardingTests
 {
     private static readonly CommandNonce _nonce = CommandNonce.From(new string('c', 32));
-    private static readonly InstanceAddress _child = InstanceAddress.From("T-1/step/1/workflow.step.1");
+    private static readonly InstanceAddress _child = InstanceAddress.From("T-1/step/1/step.1");
 
     private readonly FakeTimeProvider _clock = new();
     private readonly TemporalLikeRuntime _instance = new();
