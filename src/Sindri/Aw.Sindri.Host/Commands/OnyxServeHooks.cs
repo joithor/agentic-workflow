@@ -1,6 +1,7 @@
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Features.OnyxDown;
 using Aw.Sindri.Features.OnyxEnsure;
@@ -13,8 +14,8 @@ namespace Aw.Sindri.Host.Commands;
 /// </summary>
 internal static class OnyxServeHooks
 {
-    private static readonly TimeSpan _startWait = TimeSpan.FromSeconds(30);
-    private static readonly TimeSpan _stopBudget = TimeSpan.FromMinutes(2);
+    private static readonly TimeSpan _startWait = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan _stopBudget = TimeSpan.FromSeconds(60);
 
     /// <summary>Brings the managed Onyx up and rewrites control.json with its state.</summary>
     /// <param name="app">The running host.</param>
@@ -43,13 +44,18 @@ internal static class OnyxServeHooks
             }
         }, CancellationToken.None);
 
-    /// <summary>Waits for <paramref name="started"/> to give up, then stops the managed Onyx's containers (kept volumes), bounded; a timeout or a failure is reported on standard error, never fatal.</summary>
+    /// <summary>Waits for <paramref name="started"/> to give up, then stops the managed Onyx's containers (kept volumes), bounded (about a minute); skipped when this serve no longer holds the lease; a timeout or a failure is reported on standard error, never fatal.</summary>
     /// <param name="app">The host.</param>
     /// <param name="started">The task <see cref="Start"/> returned.</param>
     /// <param name="error">Where a failure is told.</param>
     /// <returns>A task that ends when the stop is done or its budget is spent.</returns>
     internal static async Task Stop(WebApplication app, Task started, TextWriter error)
     {
+        if (app.Services.GetRequiredService<HeldLease>().Current is null)
+        {
+            return;   // the lease is lost: a successor serve may own the Onyx now, so this one leaves it alone
+        }
+
         using var budget = new CancellationTokenSource(_stopBudget);
         try
         {
