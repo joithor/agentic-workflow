@@ -34,28 +34,53 @@ internal sealed class EgressService(IEgressResolver resolver, IEgressDialer dial
         }
 
         EgressListener? proxyListener = null;
+        EgressListener? sindriListener = null;
+        var started = false;
         try
         {
             EgressSocketDirectory.Create(network.NetDir);
             _ = Directory.CreateDirectory(runDirectory);
-            var log = new EgressLog(Path.Combine(runDirectory, "egress.log"));
-            var proxy = new EgressProxy(new EgressPolicy(network.Groups, resolver), dialer, log, caps);
+            var (log, proxy) = Prepare(network, caps);
             var forward = new EgressForward(network.SindriPort);
 #pragma warning disable CA2000 // ownership passes to RunningEgress, which disposes both
             proxyListener = EgressListener.Start(Path.Combine(network.NetDir, EgressSocketDirectory.ProxySocket), proxy.Handle);
-            var sindriListener = EgressListener.Start(Path.Combine(network.NetDir, EgressSocketDirectory.SindriSocket), forward.Handle);
-            log.Flush();
-            _ = warn;
-            return new RunningEgress(socat, network.NetDir, log, proxyListener, sindriListener);
+            sindriListener = EgressListener.Start(Path.Combine(network.NetDir, EgressSocketDirectory.SindriSocket), forward.Handle);
 #pragma warning restore CA2000
+            started = true;
+            return new RunningEgress(socat, network.NetDir, log, proxyListener, sindriListener, warn ?? WriteWarning);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or SocketException)
         {
-            proxyListener?.Abort();
-            RemoveDirectory(network.NetDir);
             return SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, SandboxReasons.NetForward, "the forwarders could not start: " + e.Message);
         }
+        finally
+        {
+            if (!started)
+            {
+                Undo(network.NetDir, proxyListener, sindriListener);
+            }
+        }
     }
+
+    private static void Undo(string directory, params EgressListener?[] listeners)
+    {
+        foreach (var listener in listeners)
+        {
+            listener?.Abort();
+        }
+
+        RemoveDirectory(directory);
+    }
+
+    private (EgressLog Log, EgressProxy Proxy) Prepare(PlanNetwork network, EgressCaps caps)
+    {
+        var log = new EgressLog(Path.Combine(runDirectory, "egress.log"));
+        log.Flush();
+        return (log, new EgressProxy(new EgressPolicy(network.Groups, resolver), dialer, log, caps));
+    }
+
+    private static void WriteWarning(string message) =>
+        Console.Error.WriteLine("{\"level\":\"warn\",\"source\":\"sindri.egress\",\"message\":\"" + System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(message) + "\"}");
 
     private static void RemoveDirectory(string directory)
     {
@@ -66,7 +91,7 @@ internal sealed class EgressService(IEgressResolver resolver, IEgressDialer dial
                 Directory.Delete(directory, recursive: true);
             }
         }
-        catch (IOException)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             // Nothing more to undo; the launch is refused either way.
         }

@@ -18,6 +18,6 @@ internal sealed class EgressForward(int sindriPort)
         await socket.ConnectAsync(new IPEndPoint(IPAddress.Loopback, sindriPort), cancellationToken).ConfigureAwait(false);
         var upstream = new NetworkStream(socket, ownsSocket: false);
         await using var _ = upstream.ConfigureAwait(false);
-        await EgressRelay.Run(client, upstream, static _ => true, cancellationToken).ConfigureAwait(false);
+        await EgressRelay.Run(client, upstream, static _ => true, EgressRelay.DefaultHalfCloseGrace, cancellationToken).ConfigureAwait(false);
     }
 }

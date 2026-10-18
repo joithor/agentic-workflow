@@ -32,7 +32,9 @@ internal static class EgressInit
 
     /// <summary>
     /// Renders the init script. Its arguments are the agent's argv, which must not be empty. A TERM, INT or HUP to the init reaches the
-    /// agent, the init waits for it, then stops both forwarders; the agent's exit status is the init's. A forwarder that is not running
+    /// agent, the init waits for it, then stops both forwarders; the agent's exit status is the init's. The agent keeps the init's standard input (held on
+    /// fd 3 because a shell without job control gives a background command <c lang="sh">/dev/null</c>). Needs a POSIX <c lang="sh">sh</c>; on Linux it reads <c lang="sh">/proc</c>
+    /// to tell a dead forwarder from a zombie. The agent starts with SIGINT and SIGQUIT ignored (a POSIX rule for background commands); the launcher sends TERM. A forwarder that is not running
     /// shortly after start ends the init with <see cref="ForwarderExitCode"/> before the agent runs.
     /// </summary>
     /// <param name="network">The plan's network.</param>
@@ -50,17 +52,18 @@ internal static class EgressInit
         _ = script.Append("#!/bin/sh\n")
             .Append("# Sindri sandbox init (sandbox spec 3.2): start both forwarders, then run the agent as a child.\n")
             .Append("exec 3>&- 4>&- 5>&- 6>&- 7>&- 8>&- 9>&-\n")
-            .Append("alive() { s=$(ps -o stat= -p \"$1\" 2>/dev/null) && [ -n \"$s\" ] && [ \"${s#Z}\" = \"$s\" ]; }\n")
+            .Append("alive() { kill -0 \"$1\" 2>/dev/null || return 1; [ -r \"/proc/$1/stat\" ] || return 0; read -r l < \"/proc/$1/stat\"; l=${l##*) }; [ \"${l%% *}\" != Z ]; }\n")
             .Append(Forward(socat, socatLog, network.ProxyPort, insideDirectory + "/proxy.sock")).Append("proxy=$!\n")
             .Append(Forward(socat, socatLog, network.SindriPort, insideDirectory + "/sindri.sock")).Append("sindri=$!\n")
             .Append("trap 'kill \"$proxy\" \"$sindri\" 2>/dev/null' EXIT\n")
             .Append("trap 'exit 143' TERM INT HUP\n")
+            .Append("exec 3<&0\n")
             .Append("sleep 0.2\n")
-            .Append("alive \"$proxy\" && alive \"$sindri\" || exit ").Append(ForwarderExitCode.ToString(CultureInfo.InvariantCulture)).Append('\n')
+            .Append("alive \"$proxy\" && alive \"$sindri\" || { echo 'sindri: a network forwarder is not running; see ").Append(socatLog.Replace("'", "", StringComparison.Ordinal)).Append("' >&2; exit ").Append(ForwarderExitCode.ToString(CultureInfo.InvariantCulture)).Append("; }\n")
             .Append("export NO_PROXY='").Append(NoProxy).Append("' no_proxy='").Append(NoProxy).Append("'\n")
-            .Append("trap 'kill \"$child\" 2>/dev/null' TERM INT HUP\n")
-            .Append("\"$@\" <&0 &\n")
+            .Append("\"$@\" <&3 3<&- &\n")
             .Append("child=$!\n")
+            .Append("trap 'kill \"$child\" 2>/dev/null' TERM INT HUP\n")
             .Append("while :; do\n")
             .Append("  wait \"$child\"\n")
             .Append("  status=$?\n")

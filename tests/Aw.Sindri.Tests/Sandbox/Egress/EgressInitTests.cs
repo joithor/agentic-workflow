@@ -35,7 +35,7 @@ public sealed class EgressInitTests
 
         Assert.Contains("trap 'kill \"$child\" 2>/dev/null' TERM INT HUP", script, StringComparison.Ordinal);
         Assert.Contains("trap 'kill \"$proxy\" \"$sindri\" 2>/dev/null' EXIT", script, StringComparison.Ordinal);
-        Assert.Contains("\"$@\" <&0 &", script, StringComparison.Ordinal);
+        Assert.Contains("\"$@\" <&3 3<&- &", script, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

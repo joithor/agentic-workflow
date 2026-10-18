@@ -60,15 +60,16 @@ internal sealed class EgressProxy(EgressPolicy policy, IEgressDialer dialer, Egr
         }
 
         var decision = await policy.Decide(host, port, cancellationToken).ConfigureAwait(false);
-        log.Record(host, port, decision.Verdict);
         if (decision is not { Verdict: EgressVerdict.Allowed, Address: { } address })
         {
+            log.Record(host, port, decision.Verdict);
             await Reply(client, 403, "Forbidden", cancellationToken).ConfigureAwait(false);
             return;
         }
 
         var connect = string.Equals(parts[0], "CONNECT", StringComparison.OrdinalIgnoreCase);
         var upstream = await TryDial(client, address, port, cancellationToken).ConfigureAwait(false);
+        log.Record(host, port, upstream is null ? EgressVerdict.Failed : EgressVerdict.Allowed);
         if (upstream is null)
         {
             return;
@@ -83,7 +84,7 @@ internal sealed class EgressProxy(EgressPolicy policy, IEgressDialer dialer, Egr
                 await upstream.WriteAsync(tail, cancellationToken).ConfigureAwait(false);
             }
 
-            await EgressRelay.Run(client, upstream, c => Interlocked.Add(ref _bytes, c) <= caps.MaxBytes, cancellationToken).ConfigureAwait(false);
+            await EgressRelay.Run(client, upstream, c => Interlocked.Add(ref _bytes, c) <= caps.MaxBytes, caps.HalfCloseGrace, cancellationToken).ConfigureAwait(false);
         }
     }
 
