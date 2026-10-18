@@ -75,9 +75,6 @@ internal sealed class ShellText
     /// <summary>What the Context page waits for (<see cref="Labels.ArrivesWith"/>).</summary>
     public string ArrivesContext { get; } = Labels.ArrivesContext;
 
-    /// <summary>What the Agents page waits for (<see cref="Labels.ArrivesWith"/>).</summary>
-    public string ArrivesAgents { get; } = Labels.ArrivesAgents;
-
     /// <summary><see cref="Labels.Home"/>.</summary>
     public string Home { get; } = Labels.Home;
 

@@ -94,7 +94,7 @@ public sealed class NavTabClickTests : IDisposable
         var shown = _pages
             .Where(n => window.GetVisualDescendants().OfType<Control>().First(c => c.Name == n).IsEffectivelyVisible).ToList();
         Assert.Equal([Own(target)], shown);
-        if (target is not (PageId.Work or PageId.Workflows) && Labels.ArrivesWith(target) is { } arrives)   // Work is the queue (U2) and Workflows the list (U8), not placeholders
+        if (target is not (PageId.Work or PageId.Workflows or PageId.Agents) && Labels.ArrivesWith(target) is { } arrives)   // Work is the queue (U2), Workflows the list (U8) and Agents the sessions (U11a), not placeholders
         {
             var page = window.GetVisualDescendants().OfType<PlaceholderPage>().Single(p => p.Name == Own(target));
             Assert.Equal(arrives, page.Note);

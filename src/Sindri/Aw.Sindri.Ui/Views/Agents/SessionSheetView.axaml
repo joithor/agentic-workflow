@@ -1,0 +1,11 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ag="using:Aw.Sindri.Ui.ViewModels.Agents"
+             x:Class="Aw.Sindri.Ui.Views.Agents.SessionSheetView"
+             x:DataType="ag:SessionSheetViewModel">
+  <!-- The session sheet (collector spec CU-3), inside the shell's sheet. T0's skeleton; the sheet's builder fills it in T4 (this file is theirs). -->
+  <StackPanel x:Name="SessionSheet" Spacing="{StaticResource Space.MD}">
+    <!-- CO-7c, CU-8: the host for the live preview's disclosure button and panel. Hidden and empty until CO-7c; the preview lives in this sheet only. -->
+    <ContentControl x:Name="LivePreviewHost" IsVisible="False" />
+  </StackPanel>
+</UserControl>

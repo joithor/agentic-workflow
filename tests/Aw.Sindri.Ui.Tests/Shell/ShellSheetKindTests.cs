@@ -124,7 +124,7 @@ public sealed class ShellSheetKindTests
     [InlineData("workflow/WFI-1", "Workflow WFI-1", "Reopen workflow WFI-1")]
     [InlineData("recipe/workflow.project", "Recipe workflow.project", "Reopen recipe workflow.project")]
     [InlineData("node/src.Api", "Node src.Api", "Reopen node src.Api")]
-    [InlineData("session/S1", "Session S1", "Reopen session S1")]
+    [InlineData("session/codex/S1", "Session codex/S1", "Reopen session codex/S1")]
     [InlineData("system/docker", "System docker", "Reopen system docker")]
     [InlineData("service/serena", "Service serena", "Reopen service serena")]
     [InlineData("item/ITM-1", "ITM-1", "Reopen ITM-1")]
