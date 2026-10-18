@@ -71,18 +71,27 @@ internal sealed partial class RecipeWorkflow
         }
     }
 
-    // A takeover ends with the handback and a park with 'answer --resume'; a block run starts over on the handback, so no report follows it.
-    private static string ParkedRefusal(WorkflowInstance instance, Suspension suspension, RunToken run)
+    // A park ends with 'answer --resume' and a takeover with the handback. A takeover that covered a park hands back to that park,
+    // so 'answer --resume' follows the handback. A block run starts over on whichever of them ends the last suspension (the Step
+    // runs again, and no report follows); a desk run completes with its token.
+    internal static string ParkedRefusal(WorkflowInstance instance, Suspension suspension, RunToken run)
     {
-        var parked = $"{instance.Address.Value} is parked ({suspension.Reason?.ToString() ?? suspension.Kind.ToString()})";
+        var parked = $"{instance.Address.Value} is parked ({suspension.Reason?.ToString() ?? suspension.Kind.ToString()}); ";
+        var block = instance.Frame.Run is { Runtime: StepRuntime.Block };
         if (suspension.Kind != SuspensionKind.Takeover)
         {
-            return $"{parked}; answer --resume first, then complete run {run.Value}";
+            return $"{parked}answer --resume first{Next(block, "resume", run)}";
         }
 
-        var handback = $"{parked}; hand it back first: sindri workflow handback {instance.Address.Value}";
-        return instance.Frame.Run is { Runtime: StepRuntime.Block } ? $"{handback} (the handback runs the Step again)" : $"{handback}, then complete run {run.Value}";
+        var handback = $"{parked}hand it back first: sindri workflow handback {instance.Address.Value}";
+        return instance.PendingPark is null
+            ? $"{handback}{Next(block, "handback", run)}"
+            : $"{handback}, then answer --resume{Next(block, "resume", run)}";
     }
+
+    /// <summary>What follows the step that ends the last suspension: a block run's Step runs again, a desk run completes.</summary>
+    private static string Next(bool block, string ending, RunToken run) =>
+        block ? $" (the {ending} runs the Step again)" : $", then complete run {run.Value}";
 
     /// <summary>
     /// One pass over an active state's desk Step: wait for its report or its timeout, decide, mirror a change into the
