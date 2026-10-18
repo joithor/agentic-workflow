@@ -61,7 +61,7 @@ public static class StatusLayout
         view.Task is { } task ? [.. task.Inputs.Select(static i => $"{i.Key.Value}  {i.Value.Name}  sha256:{StatusText.Digest(i.Value.Value.Sha256)}{(i.Value.Generated ? " (generated)" : string.Empty)}")] : [];
 
     private static List<string> InjectionLines(InstanceView view) =>
-        view.Task is { } task ? [.. task.Injection.Select(static i => $"{i.Section}  {i.Input.Value}  sha256:{StatusText.Digest(i.Sha256)}  {i.Bytes.ToString(System.Globalization.CultureInfo.InvariantCulture)} B{(i.Replaced is { } replaced ? $" (replaced {replaced.Value})" : string.Empty)}")] : [];
+        view.Task is { } task ? [.. task.Injection.Select(static i => $"{i.Section}  {i.Input.Value}  sha256:{i.Sha256[..Math.Min(12, i.Sha256.Length)]}  {i.Bytes.ToString(System.Globalization.CultureInfo.InvariantCulture)} B{(i.Replaced is { } replaced ? $" (replaced {replaced.Value})" : string.Empty)}")] : [];
 
     private static void Labelled(StringBuilder text, string label, List<string> lines)
     {

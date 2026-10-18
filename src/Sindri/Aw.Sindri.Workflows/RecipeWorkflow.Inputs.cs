@@ -25,6 +25,8 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 internal sealed partial class RecipeWorkflow
 {
     private bool _fillsInputs;
+    private bool _mirrorsInjection;
+    private bool _dropsTexts;
     private string? _filled;
     private InjectionPlan _injection = InjectionPlan.Empty;
     private List<InjectionFill> _fills = [];
@@ -87,7 +89,7 @@ internal sealed partial class RecipeWorkflow
     /// </summary>
     private async Task MirrorInjection(WorkflowInstance instance, OpenRun open)
     {
-        if (_injection.Entries.Count == 0)
+        if (!_mirrorsInjection || _injection.Entries.Count == 0)
         {
             return;
         }
@@ -108,7 +110,7 @@ internal sealed partial class RecipeWorkflow
     /// <param name="address">The instance address.</param>
     private async Task DropTexts(string address)
     {
-        if (!_textsKept)
+        if (!_dropsTexts || !_textsKept)
         {
             return;
         }
@@ -117,6 +119,15 @@ internal sealed partial class RecipeWorkflow
         await Workflow.ExecuteLocalActivityAsync(
             (StepInputActivities a) => a.DropInjectionAsync(address),
             new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(10), CancellationToken = CancellationToken.None }).ConfigureAwait(true);
+    }
+
+    /// <summary>The run-close path for every runtime (desk, block, agent): once the instance ended, was suspended, or moved to another run, the process's texts for it go.</summary>
+    private async Task DropEndedRun(WorkflowInstance instance)
+    {
+        if (_textsKept && (instance.Ended || instance.Suspension is not null || !string.Equals(instance.Frame.Run?.Token.Value, _filled, StringComparison.Ordinal)))
+        {
+            await DropTexts(instance.Address.Value).ConfigureAwait(true);
+        }
     }
 
     /// <summary>Notes the run token the plan belongs to; a new token clears the previous run's plan (the plan shown is the open run's).</summary>

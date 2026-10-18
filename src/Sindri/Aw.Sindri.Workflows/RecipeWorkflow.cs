@@ -69,14 +69,23 @@ internal sealed partial class RecipeWorkflow
     public async Task<RecipeResult> RunAsync(InstanceStart start)
     {
         var (instance, context) = await Begin(start).ConfigureAwait(true);
-        while (!instance.Ended)
+        try
         {
-            instance = instance switch
+            while (!instance.Ended)
             {
-                { Suspension: null, Frame.Run: { Runtime: StepRuntime.Block } block } => await RunBlockStep(instance, block, context).ConfigureAwait(true),
-                { Suspension: null, Frame.Run: { } open } => await RunDeskStep(instance, open, context).ConfigureAwait(true),
-                _ => await Wait(instance, context).ConfigureAwait(true),
-            };
+                instance = instance switch
+                {
+                    { Suspension: null, Frame.Run: { Runtime: StepRuntime.Block } block } => await RunBlockStep(instance, block, context).ConfigureAwait(true),
+                    { Suspension: null, Frame.Run: { } open } => await RunDeskStep(instance, open, context).ConfigureAwait(true),
+                    _ => await Wait(instance, context).ConfigureAwait(true),
+                };
+                await DropEndedRun(instance).ConfigureAwait(true);
+            }
+        }
+        catch (OperationCanceledException) when (_textsKept) // boundary: the workflow was cancelled with a Step's texts still in memory (any runtime)
+        {
+            await DropTexts(instance.Address.Value).ConfigureAwait(true);
+            throw;
         }
 
         await Settle().ConfigureAwait(true);   // every effect it emitted is dispatched, refused or aborted (§5.7)
@@ -93,6 +102,8 @@ internal sealed partial class RecipeWorkflow
         ArgumentNullException.ThrowIfNull(start);
         _start = start;
         _fillsInputs = Workflow.Patched("step-inputs-v1");   // read once: an instance that began before the patch never starts filling halfway through
+        _mirrorsInjection = Workflow.Patched("step-inputs-injection-row-v1");   // the ledger row adds a local activity: its own marker
+        _dropsTexts = Workflow.Patched("step-inputs-drop-v1");   // so does the eviction at the Step's end
         _since = Now;
         // DT-J2: first, before any await, so the marker is the first command and replays at the same place; a history that began before the block runtime has no marker, so it replays with no block runtimes, on the desk path exactly as recorded (kept until the cutover; DT-J plan Q7)
         var blockRuntime = Workflow.Patched("dt-j-block-runtime");

@@ -29,16 +29,27 @@ internal sealed partial class RecipeWorkflow
     {
         var state = context.Recipe.States[instance.Frame.State];
         var step = state.Step ?? throw new InvalidOperationException($"'{instance.Frame.State}' has a block run but no Step"); // why: only an active state opens a run
-        using var cancel = new CancellationTokenSource();
-        var running = Start(instance, open, state, step, cancel.Token);
-        var (awaited, ended) = await AwaitBlock(instance, open, running, cancel, context).ConfigureAwait(true);
-        if (ended)
+        var filling = await FillInputs(instance, open, state).ConfigureAwait(true);
+        if (filling.Parked is { } parked)
         {
-            return awaited;
+            return parked;
         }
 
-        instance = awaited;
-        var trigger = await Resulting(instance, open, step, running, context).ConfigureAwait(true);
+        using var cancel = new CancellationTokenSource();
+        var trigger = filling.Failed;
+        if (trigger is null)
+        {
+            var running = Start(instance, open, state, step, cancel.Token);
+            var (awaited, ended) = await AwaitBlock(instance, open, running, cancel, context).ConfigureAwait(true);
+            if (ended)
+            {
+                return awaited;
+            }
+
+            instance = awaited;
+            trigger = await Resulting(instance, open, step, running, context).ConfigureAwait(true);
+        }
+
         var decided = instance;
         var decision = TransitionDecision.Decide(new DecisionInput(instance, context.Recipe, trigger, GateAnswers.None, context.Decisions));
         instance = After(instance, decision);
@@ -59,7 +70,7 @@ internal sealed partial class RecipeWorkflow
         _runs++;
         var start = _start ?? throw new InvalidOperationException("the workflow has not begun"); // why: the loop runs only after Begin set it
         var recipe = _recipe ?? throw new InvalidOperationException("the workflow has not begun"); // why: as above
-        var run = new BlockStepRun(start.WorkflowId().Value, instance.Frame.State, open.Token.Value, step.Use, step.With, instance.Facts, _repo, _repoUnreadable);
+        var run = new BlockStepRun(start.WorkflowId().Value, instance.Frame.State, open.Token.Value, step.Use, step.With, instance.Facts, _repo, _repoUnreadable, _fills.Count == 0 ? null : _fills);
         var bound = Limit(recipe, step);
         return Workflow.ExecuteActivityAsync(
             (RunStepActivities a) => a.RunBlockStepAsync(run),

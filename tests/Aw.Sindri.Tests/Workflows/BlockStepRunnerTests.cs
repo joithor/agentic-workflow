@@ -14,6 +14,7 @@ using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Workflow.Engine;
+using Aw.Sindri.Tests.Workflows.Inputs;
 
 namespace Aw.Sindri.Tests.Workflows;
 
@@ -29,6 +30,7 @@ public sealed class BlockStepRunnerTests
 
     private readonly InMemoryFactStore _store = new();
     private readonly InMemoryProfiles _profiles = new();
+    private readonly MemoryInjectionTexts _texts = new();
     private StepContext? _seen;
 
     [Fact]
@@ -128,6 +130,33 @@ public sealed class BlockStepRunnerTests
         Assert.Null(outcome.Outputs);
     }
 
+    [Fact]
+    public async Task A_block_Step_gets_the_injection_sections_and_the_typed_results_of_its_inputs()
+    {
+        var input = BlockId.From("input.test.a");
+        var text = "notes for the Step";
+        var typed = JsonSerializer.SerializeToElement(new { count = 2 });
+        var recorded = new FilledInput(input, 1, [new InjectionEntry("notes", input, Encoding.UTF8.GetByteCount(text), StepInputRunner.Sha(text))], new InjectionResultEntry(typed.GetRawText().Length, StepInputRunner.Sha(typed.GetRawText())));
+        _texts.Put(new InjectionKey("T-1/workflow.x/1", "route-evidence", "1.1", input), new FilledTexts(new Dictionary<string, string>(StringComparer.Ordinal) { ["notes"] = text }, typed));
+        var request = new FillInputRequest("T-1/workflow.x/1", "route-evidence", "1.1", 1, input, _judge, new Dictionary<string, WithValue>(StringComparer.Ordinal), new Dictionary<FactKey, FactValue>(), Repo: null);
+        var run = (await RunOf(repo: null)) with { Fills = [new InjectionFill(recorded, request)] };
+
+        var outcome = await Runner(_profiles).Run(run, TestContext.Current.CancellationToken);
+
+        Assert.Null(outcome.Failure);
+        Assert.Equal(text, _seen!.Injection.Sections["notes"]);
+        Assert.Equal(2, _seen.InputResults[input.Value].GetProperty("count").GetInt32());
+    }
+
+    [Fact]
+    public async Task A_block_Step_without_inputs_gets_no_sections_and_empty_results()
+    {
+        _ = await Runner(_profiles).Run(await RunOf(repo: null), TestContext.Current.CancellationToken);
+
+        Assert.Empty(_seen!.Injection.Sections);
+        Assert.Empty(_seen.InputResults);
+    }
+
     private static SindriProfile Profile(WorkflowSettings? workflow) => new(SindriProfile.CurrentSchemaVersion, "tester", Workflow: workflow);
 
     private static ProfileHash Hash(char c) => ProfileHash.From(new string(c, 64));
@@ -147,7 +176,8 @@ public sealed class BlockStepRunnerTests
         },
         _store,
         store ?? _store,
-        approved);
+        approved,
+        new StepContexts(_texts, new NoRunner()));
 
     private async Task<BlockStepRun> RunOf(string? repo, WithValue? prompt = null)
     {
