@@ -7,4 +7,5 @@ internal enum TmuxVerb
     ListPanes,
     ListClients,
     DisplayMessage,
+    CapturePane,
 }
