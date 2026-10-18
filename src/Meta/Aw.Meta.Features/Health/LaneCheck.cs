@@ -13,8 +13,16 @@ namespace Aw.Meta.Features.Health;
 /// <param name="messages">The recorded lane announcements.</param>
 /// <param name="lanes">The current lane map.</param>
 /// <param name="standing">How each non-Claude lane stands.</param>
-internal sealed class LaneCheck(IMetaConfig config, ISessionDirectory sessions, IMessageStore messages, ILaneStore lanes, LaneHealthReader standing)
+/// <param name="contexts">The lanes' context windows.</param>
+internal sealed class LaneCheck(IMetaConfig config, ISessionDirectory sessions, IMessageStore messages, ILaneStore lanes, LaneHealthReader standing, LaneContextReader contexts)
 {
+    /// <summary>Each lane's context size; null without a team config or when it can't be read.</summary>
+    internal async ValueTask<IReadOnlyList<LaneContext>?> Context(CancellationToken cancellationToken)
+    {
+        var team = await config.Load(cancellationToken).ConfigureAwait(false);
+        return await contexts.ReadOrNull(team.IsSuccess ? team.Value : null, cancellationToken).ConfigureAwait(false);
+    }
+
     /// <summary>How each non-Claude lane stands (taking part, launch-only, hooks not running...); null for a team of Claude lanes or with no team config.</summary>
     internal async ValueTask<Result<IReadOnlyList<LaneHealth>?>> Standing(CancellationToken cancellationToken)
     {
