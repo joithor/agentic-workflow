@@ -1,7 +1,7 @@
-# Sindri sandbox phase: confining an unattended Step session on the host
+# Sindri sandbox phase: confining a Step session, and the sessions you open, on the host
 
-**Status:** design, revision 4 (after /autoplan rounds 1, 2 and 3 and the engine lane's three reviews, §14) · **Date:**
-2026-10-18 · **Owner decisions:** none yet; §13 asks for them. Inherited: the threat model is honest mistakes, not a
+**Status:** design, revision 5 (owner answers folded in; after /autoplan rounds 1, 2 and 3 and the engine lane's three reviews, §14) · **Date:**
+2026-10-18 · **Owner decisions:** answered 2026-10-18 and folded in as revision 5 (§13): a takeover stays sandboxed (Q1); the model login is an injectable credential source (Q2, SB18); sessions you open with `sindri open` are sandboxed too (Q6, SB19, §3.9); the first unattended Step is read-only (Q14); every other default accepted. Inherited: the threat model is honest mistakes, not a
 deliberate bad actor (README "Gates guard against…", A §17.28.3, `docs/csharp/bugfix.md` "Threat model"); a Step only
 tightens its policy (owner, 2026-10-17; engine P8 D8); Steps run in tmux on the host (README X55) · **Closes:** README
 X59(a) · **Builds on:** the session launcher spec `2026-10-15-sindri-session-launcher-design.md` (LCH), SL4, SL8, §3, L-6,
@@ -15,7 +15,7 @@ constraints for P8 (cited **engine P8 D3, D8, D9, D10, D11**; D4, D7 and the 202
 and its review of this spec (E1-…, §14) · **Lanes:** the API lane builds the sandbox inside the launcher (SB-1…SB-5b); the
 ideas lane runs the spike and builds the macOS adapter, the GitHub credential path and the per-repo declaration; the
 engine lane (P8) consumes the contract, owns the engine side of §6 and §7, and reviewed it; the UI lane builds the copy
-(SB-6) · **Next:** the owner reads §13 (four questions block the first build wave), then /specToProvenPR takes each phase to PRs.
+(SB-6) · **Next:** the owner's final read (§13 has no open question), then /specToProvenPR takes each phase to PRs.
 
 Co-written with the engine lane (P8 consumes it).
 
@@ -31,7 +31,7 @@ tree, built from tools the box already has, with the CLI's own policy inside it 
 
 | # | Decision | Reason |
 |---|---|---|
-| SB1 | **Every Step session runs confined, or does not run.** Confinement keys on the **Step run** (a launch or a resume that carries a `StepRef`, or reuses a launch that has a stored plan), never on the `Attended` flag. A resume or an `OpenItem` of a Step's session reuses the stored plan `launches/<id>.sandbox.json` and is confined; if the plan is gone it is refused (`-015`, reason `no-stored-plan`). A bare `sindri open` of an item with no Step run, and Meta lanes, are not confined (Q6). A launch whose confinement can't be built or proven never falls back to unconfined (§6). The one loosening an owner can choose is a time-boxed network *learn mode* (Q13), which still confines the filesystem and the credentials | The owner wants Steps unattended; one unconfined run is what the spec prevents. Keying on `Attended` would let a resumed Step come back unconfined (R1-02) |
+| SB1 | **Every session Sindri launches runs confined, or does not run.** Confinement keys on the **launch**, never on the `Attended` flag: a **Step run** (a launch or a resume that carries a `StepRef`, or reuses a launch that has a stored plan) and **a session you open yourself with `sindri open`** (owner decision Q6, 2026-10-18; §3.9). A resume or an `OpenItem` of either reuses the stored plan `launches/<id>.sandbox.json` and is confined; if the plan is gone it is refused (`-015`, reason `no-stored-plan`). **Meta lane sessions are the one exception**: they are the meta team's own tmux sessions, started by `scripts/meta-launch.sh` and not through Sindri's launcher, and they stay as they are. A launch whose confinement can't be built or proven never falls back to unconfined (§6); for a one-off the owner's own terminal is outside Sindri and always available. The one loosening an owner can choose is a time-boxed network *learn mode* (Q13), which still confines the filesystem and the credentials | The owner wants Steps unattended and wants the sessions it opens itself confined too; one unconfined launch through Sindri is what the spec prevents. Keying on `Attended` would let a resumed Step come back unconfined (R1-02) |
 | SB2 | **Sindri owns the boundary; the agent CLI's own policy is the second layer.** Outer: a Sindri-built sandbox around the CLI's whole process tree (bubblewrap on Linux, Seatbelt on macOS) plus a cgroup scope for limits. Inner: L-17's per-launch policy file (mode, allow and deny rules, Codex overrides), which gives the agent a clear refusal instead of `EACCES` and still helps on a target Sindri hasn't taught the outer layer (§5) | Cursor and added entries have no usable inner sandbox, and three CLIs' sandbox behaviour changes by version. But their rules are cheap and L-17 already needs them |
 | SB3 | **Filesystem: read-only everywhere, writable in one small set.** Writable: the run's worktree, the run's own ref directory in the repo's git dir (SB5), the **run directory** (§3.1), a private scratch, and a short list of tool caches and hook spool directories. `$HOME` is an empty tmpfs rebuilt from an allowlist; Sindri's state and the secret stores are denied except named paths (§3.1). The worktree stays an ordinary host directory, readable by the engine after the session ends (engine P8 D10) | Matches `StepPolicy`: with `WriteScope` the worktree is the one writable path; without it nothing in the repo (engine P8 D8) |
 | SB4 | **Network: default deny, one allowlisting proxy, loopback to Sindri.** The session has no network of its own. It reaches Sindri's API and `/sindri/mcp` and the egress proxy, both through unix-socket forwarders; `NO_PROXY` keeps the Sindri port off the proxy (§3.2) | The honest mistakes are `curl \| sh`, a typo'd package, a push to a real remote. A namespace plus a name-checking proxy works alike on Linux and (with Seatbelt's localhost rule) macOS |
@@ -39,8 +39,8 @@ tree, built from tools the box already has, with the CLI's own policy inside it 
 | SB6 | **No process-ID namespace** (accepted limit, Q8 and Q9). The heavy-job wrapper finds a session by walking to the nearest `claude` ancestor (`~/.agentic-workflow/bin-r1b/heavy`) and the collector reads the process table (CO §4). The cost: a same-user `pkill`, and a shared `/proc` (§3.1, "what it can't stop"). The safety hooks and the inner deny rules cover the common forms | Honest-mistake model; the lock design is the owner's |
 | SB7 | **Limits are a cgroup scope under one parent slice, plus one watchdog that owns the wall clock; a kill ends the session with a named reason.** CPU, memory and pids come from `systemd-run --user --scope` properties under a parent slice with its own total memory cap. Wall time has **one owner, the `session wrap` watchdog**, which asks `GET /sindri/launches/{launch}/suspended` (SB16) and counts only unsuspended time; when that answer is unavailable (the control plane is down) the run counts as **not suspended**, so a runaway is still stopped. The scope's `RuntimeMaxSec` is only a **loose last-resort ceiling** for when wrap or tmux died; it is never the clock. It is set at start to the Step's timeout plus `wallGrace` plus `sandbox.limits.parkMax` (default 24 h) and **extended on every resume**: when a park, answer or handback ends a suspension, `session wrap` runs `systemctl --user set-property --runtime <scope> RuntimeMaxSec=<real time elapsed + unsuspended time left + wallGrace + parkMax>`, so `parkMax` is the longest **single** suspension and several long parks in a row never cost the run its scope (R3-03). A kill ends in `session.ended` with the new reason `limit` and `kind` `memory` or `wall` (§3.3); the engine maps it to `step.failed(limit)` (a new engine rule, E1-I2). **The wall clock pauses whenever the run is suspended, a park or a takeover** (E1-B2); it resumes with what remained | A runaway session must hit its own limit, not take the box down. A park keeps its session (engine P8 D11): a fixed real-time limit set at start would kill the session an owner is about to answer (R2-01) |
 | SB8 | **The engine passes a policy; the launcher maps it.** The engine gives `Attended: false`, `Mode: Open`, `Model: null`, the worktree as cwd, `StepRef` and a `StepPolicy` (`WriteScope` → the worktree is the only writable path, otherwise ReadOnly; `AllowedTools` empty = the CLI's defaults for the mode) and **never names a host, argv, bin, environment variable or mount** (engine P8 D8). The sandbox owns every other environment variable and the policy → confinement mapping (§5). `AW_SINDRI_LAUNCH_SECRET` is set by `session wrap` and survives the environment scrub | Keeps the engine out of per-CLI detail |
-| SB9 | **Confinement is fixed at launch and does not change for the life of the session.** Takeover and handback neither loosen nor re-tighten it, and never relaunch by default (§7; engine P8 D11); an explicit, per-takeover "continue unconfined" relaunch is Q1's option B, offered only if SB-S1 item 10 shows the conversation survives. Owner question Q1 | The session is one live process tree; a bubblewrap mount namespace can't be changed after the fact, and a relaunch may end the conversation the human joined (SB-S1 item 10 checks) |
-| SB10 | **No owner credentials in the session, with one named exception: the target's own model login.** The environment is built from an allowlist, not scrubbed from the owner's (§3.4). The agent home is read-only with a named write set and a per-launch copy of the login (§3.1); the inner policy denies reading the credential files (§5). GitHub access is `none` by default; the 1 h agent GitHub App token (`scripts/agent-token.sh`) is minted by the launcher outside the session and delivered through a bound directory only with `agent-app` (SB-7) | "No owner tokens"; a leak into a transcript needs the token to be reachable first |
+| SB9 | **Confinement is fixed at launch and does not change for the life of the session.** Takeover and handback neither loosen nor re-tighten it, and never relaunch (§7; engine P8 D11). **A takeover stays sandboxed** (owner decision Q1, 2026-10-18): there is no "continue unconfined" option, and a human who needs something the sandbox blocks does it in a window of their own | The session is one live process tree; a bubblewrap mount namespace can't be changed after the fact, and a relaunch may end the conversation the human joined and breaks engine P8 D11 |
+| SB10 | **No owner credentials in the session, with one named exception: the target's own model login, delivered by a pluggable credential source (SB18).** The environment is built from an allowlist, not scrubbed from the owner's (§3.4). What the login looks like inside is the credential source's business (SB18; the default `owner-copy`: the agent home read-only with a named write set and a per-launch copy of the login, §3.1); the inner policy denies reading the credential files (§5). GitHub access is `none` by default; the 1 h agent GitHub App token (`scripts/agent-token.sh`) is minted by the launcher outside the session and delivered through a bound directory only with `agent-app` (SB-7) | "No owner tokens"; a leak into a transcript needs the token to be reachable first |
 | SB11 | **Each refusal is its own `SND-LAUNCH` code with a kind, and the engine routes on the code** (engine P8 D8). Four kinds: **no runtime** (`-014`, `-017`: the Step has no agent runtime on this box right now; the rule is SB16's N1), **launch park** (`-015`, `-016`: a new engine park kind `launch` whose Resume starts a **new run**: a new run token, launch id and worktree), **step failure** (`-018`, `-019`, `-021`) and **resource wait** (`-020`: a queue condition, not a fault). A refusal is never auto-retried within the same run, except the wait (E1-B1, E1-I1, E1-I5) | The engine's park answers are fixed by kind; `spec-conflict` parks of other kinds have no resume, so a bare park could only be cancelled |
 | SB12 | **The mechanism is a port, with two non-test-only-confusable implementations.** `ISandbox` in `Aw.Sindri.Core/Sandbox/`: `Probe()`, `Plan(SandboxRequest) → Result<SandboxPlan>` (pure), `SelfCheck(SandboxPlan)`, `Wrap(SandboxPlan, argv) → argv`. Adapters: `BubblewrapSandbox` (Linux), `SeatbeltSandbox` (macOS), the product default **`UnavailableSandbox`** (always `-014`, registered until SB-5a), and two test-only types in `Aw.Sindri.Testing`: **`PassThroughSandbox`** (`Wrap` returns the argv unchanged, `SelfCheck` passes) and `RecordingSandbox`. The pass-through is registered **only** in test hosts (`WebApplicationFactory` or the dev server a test starts), never in the published product Host and never through a switch of any kind (E1-B3, R2-17) | P8 must prove a real agent launch before the real sandbox exists, without any product switch that turns confinement off. The published Host cannot load a Testing type, so P8's proof runs in process (SB16) |
 | SB13 | **`.devcontainer/` is not the sandbox** (docs/devcontainer.md, readiness spec §4d). Neither is Docker: its socket is denied inside the session. Containers stay an option for the "container's tmux later" step of WF §6.5, behind the same port (§4) | Repo rule; Docker-in-the-agent is root on the host |
@@ -48,6 +48,8 @@ tree, built from tools the box already has, with the CLI's own policy inside it 
 | SB15 | **Denials are visible and tunable.** Every denial class is counted per run and recorded; the agent is told it is confined and can ask why; the owner sees what was blocked on the item and in the failure row, and gets a one-line profile edit to allow it (§3.6). A denial that can't be seen cannot be fixed, and the first runs will need fixes | The allowlists are guesses; without this loop the first runs stall opaquely (R1-05) |
 | SB16 | **The engine contract, agreed with the engine lane (round 2 recheck, 2026-10-18).** (1) **N1:** availability enters only through the launch result, never through the recorded agent map. A `FailedLaunch` with `-014` or `-017` closes the agent run. A `deskCapable` Step then takes the **`runtime.unavailable` transition**: a distinct transition reason, not `step.failed(launch)`, with the desk run opening **in the same frame** (the desk twin gets its new token in that one transition). **It counts no round, bypasses the loop rules (rounds, retries, the Step's failure budget) and is never shown as a Step failure** (R3-01; until SB-5a every launch fails `-014`, so every `deskCapable` Step would otherwise log a failure first, and a `rounds: 1` recipe would park before its desk twin ran). Any other Step parks `NoRuntime` with a sandbox marker (§6 names its fields), and that park's Resume opens a new agent run that tries the launch again. The `launch` park gets its own `ParkReason` and `ParkKind` members (§6), a `FitRow` row and a `Fitting` entry `[Resume]`. The engine builds the transition in P8 U9. (2) **The suspension read:** `GET /sindri/launches/{launch}/suspended` returns `{suspended: bool}`, backed by an engine-owned Core port `IRunSuspensions.IsSuspended(LaunchId, ct)` (a fake and a contract base ship with it) that reads the ledger's park, takeover, answer and handback events joined through `OpenRun.Launch`; never a Temporal query per beat, never `views.db`. `session wrap` calls it with the launch secret; unavailable means not suspended. (3) **`-020` is a wait:** the launch activity retries with backoff (30 s) until the state timeout, writes no `launch.outcome` meanwhile, and the live-session count is atomic (a lock under `$AW_SINDRI_HOME/locks`). (4) **The run ref** is `sindri/<instance>/<run>/work`, so two instances on one item never collide. (5) **P8 U9** (engine-owned) lands the engine Core work before SB-5a: the `launch` park, the N1 rule, the limit rule, the "lost while suspended → Rerun" override, `IRunSuspensions` and its endpoint, the `-020` wait. (6) **P8's real-launch proof runs in process** (dev server, the real launcher, `PassThroughSandbox`, a stub agent on a private tmux socket); the binary proof is SB-10; there is no Host switch. (7) The engine's D10 git hardening (E1-S2) is P8 U7's, not SB-5b's. (8) A suspended run whose session is lost, and is answered, reruns; the answer's own effect (extra tokens, a grant) still applies to the new run | The engine lane read the rev 2 text against `main` and #295; these are its proposals, written in as decisions |
 | SB17 | **The run directory is a launcher folder per run, and the engine's "no writable path" rule is about the repository** (was owner question Q11 of rev 2; the engine accepted it). `$AW_SINDRI_HOME/workflow/runs/<instance>/<step>/<run>/` (0700), its path on `StepContext` (SC W11), created by the launcher; engine P8 D8 reads "ReadOnly = no writable path *in the repo*; the launcher adds the run directory". The inputs are written into it by the engine or SC-K **before** `Launch`. A report's named outputs must resolve inside it (checked in `CompleteStepService`, SC-K's part). Keyed per run, so a Rerun never sees a killed run's partial outputs; D10 is unaffected (the folder is outside the worktree) | Lets a read-only scoping Step hand back files without a repo write path |
+| SB18 | **The model login comes from a pluggable credential source** (owner decision Q2, 2026-10-18). Port `IModelCredentialSource` in `Aw.Sindri.Core/Sandbox/`: `Id`, `Supports(target)`, `Probe(target) → LoginStatus` (`ready`, `missing`, `expired`, with detail; cheap, no side effect), `Prepare(target, LaunchId, ct) → Result<PreparedLogin>` and `Release(handle)`. `PreparedLogin` is plain data the pure plan builder consumes: the mounts that make up the agent home, the environment names and values to add (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`), the paths the inner policy must deny reading, and a cleanup handle. One adapter per source: **`OwnerCopyCredentialSource`** (`owner-copy`, today's default: the owner's agent home read-only with a named write set and a per-launch 0600 copy of the login, §3.1) and **`SeparateLoginCredentialSource`** (`separate-login`: a Steps-only login the owner makes once with `sindri sandbox login <target>`, kept in its own agent home with the hooks installed into it; the owner's `~/.claude` and `~/.codex` are not bound at all; SB-8). `FakeModelCredentialSource` and the contract base `IModelCredentialSourceContract` ship in `Aw.Sindri.Testing`. Adapters are registered explicitly in `AddSandbox()` in a registry keyed by id; an unknown id is a profile error at approval. **The source is chosen by the profile with no code change:** `sandbox.login.source` (default `owner-copy`), overridable per target (`sandbox.login.targets.<target>`) and per repo (`sandbox.repos.<repo>.login.source`), the most specific winning (repo, then target, then profile). A recipe or Step may **ask for a stricter source** and never a looser one, so "a Step only tightens" holds (`owner-copy` < `separate-login`; §9). The resolved source is in the plan, its `planHash` and the `launch.started` summary, and is never switched mid-run (SB9). When the chosen source can't deliver, the launch is `-017` with the reason and the source id; nothing falls back to another source or to the owner's login (§3.4) | The login is the one owner credential in the session, and who holds it is the decision most likely to change; a port makes the next answer an adapter and a profile line, not a redesign |
+| SB19 | **Sessions you open yourself are sandboxed too, with a short list of differences** (owner decision Q6, 2026-10-18; the full table and reasons are §3.9). Same mechanism, plan builder, credential source, network groups, canaries and codes as a Step. Different: the inner mode asks instead of refusing (a human is there); **no wall-clock limit** while attached (memory, CPU and pids still apply); a full session cap is refused at once instead of waited on; no GitHub App token; no takeover banner (there is no run to take over), the tmux status line carries the escape instead; a failure is shown to the human, not parked. Meta lane sessions are not launched through Sindri and are unchanged | The mistakes the sandbox stops (a stray recursive delete, a leaked secret, a `curl \| sh`) do not need a Step to happen; the differences follow from a person being at the keyboard |
 
 ## 2. Terms
 
@@ -59,11 +61,15 @@ tree, built from tools the box already has, with the CLI's own policy inside it 
 - **Sandbox plan:** the data the pure builder produces: mounts (read-only, read-write, denied), network rules,
   environment allowlist, limits, credentials. Hashed (`planHash`) and summarised on `StartedLaunch` (§8).
 - **Agent home:** where a CLI keeps its login, settings and session records: `~/.claude` and `~/.claude.json` for Claude
-  Code, `~/.codex` for Codex. Today the owner's own (Q2).
+  Code, `~/.codex` for Codex. Which one the session gets comes from its credential source (SB18); by default the owner's own.
 - **Run directory:** `$AW_SINDRI_HOME/workflow/runs/<instance>/<step>/<run>/` (0700; SC W11, `AW_SINDRI_RUN_DIR`), where a Step
   leaves its output files; its path is on `StepContext`. It is a launcher-provided area, **not** a writable path of the
   `StepPolicy`: the engine's rule is about the repository (SB17).
 - **Suspension:** a park or a takeover of a run (WF §5.5). The session stays alive through both (engine P8 D11).
+- **Credential source:** the adapter behind `IModelCredentialSource` that supplies the target's model login to a session
+  (SB18): `owner-copy` (the default) or `separate-login`. Chosen by `sandbox.login.source`.
+- **Attended session:** a session the owner opens with `sindri open`, with no Step run and a person at the keyboard
+  (§3.9). Sandboxed; it differs from a Step session only where a person being there changes the answer.
 - **Threat model.** The sandbox stops the honest mistakes: `rm -rf` or a redirect in the wrong directory, a `git push` or
   `gh pr create` from a session that shouldn't, a read of a secret by accident and its leak into a transcript, a
   `curl | sh`, a build storm or runaway test that takes the box down, an agent editing another repo or the owner's
@@ -99,20 +105,21 @@ The plan is a stack of bind mounts over the host root, bottom to top:
    `~/.config/<tool>`) writes into the small tmpfs and loses it with the run; an overflow is `ENOSPC`, and the launch brief and `explain` name the setting to raise, `sandbox.limits.homeTmpfs`. A *read* of such a path
    fails as absent, and §3.6 matches it against the not-bound set so it shows up as a likely denial.
 
-   **The agent home is read-only with a named write set** (R2-10, inverted from rev 2; Q2 A). `~/.claude` is bound
+   **The agent home is read-only with a named write set** (R2-10, inverted from rev 2). This paragraph and the login copy
+   in it belong to the `owner-copy` credential source (SB18, Q2); the `separate-login` source binds a different home (§3.4). `~/.claude` is bound
    **read-only**, and only these are re-bound read-write: `projects/<this repo's key>/` (with `memory/` read-only inside it),
    `sessions/`, `todos/`, `session-env/`, `file-history/`, `shell-snapshots/`, `history.jsonl` and caches; Codex: `~/.codex`
    read-only with `sessions/`, `log/` and caches writable (SB-S1 item 2 records the exact Codex set). So `keybindings.json`,
    `rules/`, `output-styles/` and every unlisted file stay the owner's. Other repos' `projects/<key>/` stay readable
-   (read-only); the SB-8 trigger below covers that. **The login is a per-launch copy:** the launcher copies the target's login
+   (read-only); the `separate-login` trigger below covers that. **The login is a per-launch copy:** the launcher copies the target's login
    file(s) and `~/.claude.json` into a per-launch directory bound inside the home, copy in and never synced back, and points
    Claude Code at it with `CLAUDE_CONFIG_DIR` where the CLI supports it (`~/.claude.json` at the root of a tmpfs `$HOME`
    cannot be bound as a directory, which is why it lives in the copy's directory; SB-S1 item 2 decides the exact mechanism).
    The CLI process reads its own copy (it needs it), and the outer layer cannot hide it from a same-user process; the **agent's tools** are denied it by the inner policy (`Read`, `Grep` and `cat`-style reads, §5), so a debugging session does not print it into a transcript. **The copy is mode 0600, removed when the run closes (`session wrap`) and by the crash sweep** (the launcher removes the copies of launches with no live scope at `serve` start and on Check again). **Caveat the spike must settle:** if a
    token refresh *rotates* the refresh token, a copy would invalidate the owner's original login; in that case the session
-   uses the owner's own login file read-write and the spec says so plainly (it is the owner's login, shared, and Q2 says so). **The trigger for
-   SB-8:** the first time `sindri sandbox denials` shows a Step reading another session's transcript, or a second person uses
-   the box, whichever is first; the owner decides then.
+   uses the owner's own login file read-write and the spec says so plainly (it is the owner's login, shared, and `sindri doctor` says so; `separate-login` is the way out). **The trigger for
+   `separate-login` (SB-8):** the first time `sindri sandbox denials` shows a Step reading another session's transcript, or a second person uses
+   the box, whichever is first; the owner decides then and switches with one profile key (`sandbox.login.source`, SB18), with no code change.
 3. **Outside `$HOME`, a short deny list** over the read-only root:
 
    | Denied | Why |
@@ -229,10 +236,10 @@ Q5):
 |---|---|---|---|
 | Memory (per session) | `MemoryHigh` (80% of max), `MemoryMax`, `MemorySwapMax=0`, `OOMPolicy=kill` | `auto`: 20% of RAM, at most 12 GiB | The scope is killed; `session.ended reason: limit kind: memory` |
 | Memory (all Step sessions) | the parent `sindri-steps.slice` with its own `MemoryMax` | 60% of RAM | The kernel bounds the sum, so the arithmetic can't be wrong; a kill inside it ends one session as above |
-| Concurrent sessions | the launcher counts live scopes in the slice **under a lock** (count and start are one atomic step; an `flock` on a file under `$AW_SINDRI_HOME/locks`, which the kernel releases when the holder dies; the count is read from the live scopes, never stored, so a crashed launcher leaves nothing counted and no stale lock to clear) | `sandbox.limits.sessions` = 3 | The launch **waits** (SB16): the launch activity retries with backoff (30 s) until the Step's state timeout; no `launch.outcome` meanwhile; the run reads "Waiting for a free session slot"; `-020` names the wait |
+| Concurrent sessions | the launcher counts live scopes in the slice **under a lock** (count and start are one atomic step; an `flock` on a file under `$AW_SINDRI_HOME/locks`, which the kernel releases when the holder dies; the count is read from the live scopes, never stored, so a crashed launcher leaves nothing counted and no stale lock to clear) | `sandbox.limits.sessions` = 3 | The launch **waits** (SB16; an attended open is refused at once instead, §3.9): the launch activity retries with backoff (30 s) until the Step's state timeout; no `launch.outcome` meanwhile; the run reads "Waiting for a free session slot"; `-020` names the wait |
 | CPU | `CPUWeight=50` and `CPUQuota` = (cores × 50)% (systemd's quota is per CPU: 8 cores = 400%) | half of all cores | Throttled only; never a kill |
 | Processes | `TasksMax` | 2048 | New forks fail with `EAGAIN`; recorded once as `sandbox.limit-hit {kind: pids}`; no kill |
-| Wall time | the `session wrap` watchdog is the **one clock** (SIGTERM, 10 s, then `systemctl --user kill --signal=SIGKILL --kill-whom=all`); the scope's `RuntimeMaxSec` is only a loose ceiling (Step timeout + `wallGrace` + `parkMax`) for when wrap or tmux died | the Step's `timeout` plus 10 minutes; 4 h when it has none; at most `workflow.steps.longMax` plus 10 minutes (LN-WF7) | `session.ended reason: limit kind: wall`. **The clock pauses while the run is suspended** (SB7, SB16) |
+| Wall time | the `session wrap` watchdog is the **one clock** (SIGTERM, 10 s, then `systemctl --user kill --signal=SIGKILL --kill-whom=all`); the scope's `RuntimeMaxSec` is only a loose ceiling (Step timeout + `wallGrace` + `parkMax`) for when wrap or tmux died | the Step's `timeout` plus 10 minutes; 4 h when it has none; at most `workflow.steps.longMax` plus 10 minutes (LN-WF7) | `session.ended reason: limit kind: wall`. **The clock pauses while the run is suspended** (SB7, SB16). An attended session has no wall limit (§3.9) |
 | Disk | a growth check on worktree and scratch at the watchdog tick | warn at 10 GiB | `sandbox.limit-hit {kind: disk}`; no kill |
 
 **The heavy-job wrapper keeps box-wide concurrency; the cgroup only caps one session's size.** Rules:
@@ -305,13 +312,30 @@ effective values (§6).
 
 **Model login.** The one owner credential in the session is the target's own: Claude Code's login file or the macOS
 keychain item it reads, Codex's `auth.json`, or `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` in API-key mode (the model
-credential's name is on the allowlist with that reason). The CLI cannot run without it. Q2: (A) the owner's own agent home,
-read-only with a named write set and a **per-launch copy of the login** (§3.1; the copy is never synced back, and if a refresh
-turns out to rotate the token the session uses the owner's own login and the spec says so), or (B) a separate agent home
-that the owner logs in to once (`sindri sandbox login <target>`), which also keeps the owner's history and settings out of
-Step sessions but needs the readers to follow `CLAUDE_CONFIG_DIR`/`CODEX_HOME` and the hooks installed into it.
-**Recommendation: A for the first runs, B (SB-8) at the trigger in §3.1.** The login is checked at launch only; an expiry
-mid-run shows as a model error in the session and is accepted (§11).
+credential's name is on the allowlist with that reason). The CLI cannot run without it. **Where it comes from is the
+Step's credential source** (SB18, owner decision Q2, 2026-10-18), chosen by `sandbox.login.source` and nothing in code:
+
+| | `owner-copy` (default, built in SB-2) | `separate-login` (an adapter, SB-8) |
+|---|---|---|
+| Whose login | The owner's own | A login only Steps use, made once with `sindri sandbox login <target>` |
+| What it binds | The owner's agent home read-only with the named write set, plus a per-launch 0600 copy of the login (copy in, never synced back; removed at run close and by the crash sweep) and `CLAUDE_CONFIG_DIR`/`CODEX_HOME` pointing at it (§3.1). The owner's settings, hooks and skills apply, read-only | Its own agent home under `$AW_SINDRI_HOME/agent-homes/<target>/`, with the hooks installed into it, bound as the session's agent home; the login is used in place (it is Steps-only, so a refresh may rewrite it). **Nothing of the owner's `~/.claude` or `~/.codex` is bound**: their history and settings stay out |
+| Inner policy denies reading | The login copy | The login file in that home |
+| Doctor shows | `ok  login: Claude Code signed in for Steps (source: owner-copy)` | `ok  login: Claude Code signed in for Steps (source: separate-login)` |
+| Self-check | the `login` canary (§6): the copy is readable at its planned path with mode 0600, the owner's original is not writable, the inner policy denies reading the copy | the `login` canary: the login is readable at its planned path and the owner's whole agent home is absent |
+| Unavailable when | no login in the owner's home, or it expired: `-017` `no-login`/`expired`, source `owner-copy` | no separate login made yet, or it expired: `-017` `no-login`/`expired`, source `separate-login` |
+| Known limit | A session can read other repos' transcripts in the owner's `projects/` (read-only); if a refresh *rotates* the refresh token, the spike's fallback is the owner's login file read-write and doctor says so (§3.1) | The second sign-in; hooks must be installed into that home (SB-8's installer option); readers and the collector follow the directory |
+
+**Choosing and overriding.** `sandbox.login.source` is the profile default; `sandbox.login.targets.<target>` overrides it
+for one agent and `sandbox.repos.<repo>.login.source` for one repo, the most specific winning. A recipe or Step may
+**ask for a stricter source** than the profile gives (it names one in its policy: `separate-login` over `owner-copy`),
+never a looser one; moving to a stricter source needs no profile re-approval, a looser one does (§9). The same
+resolution runs at every launch and the result is in the plan, so a replayed or resumed session keeps the source it
+started with. **Unavailable is a refusal, never a fallback:** `-017` with the reason and the source id (`no-login`,
+`expired`, `source-unsupported` for a target the source has no adapter for), shown in the card's words for that source
+(§8); the launch does not try another source or the owner's own login. **Adding a source** (SB-8 is the first such case)
+is one new adapter that passes `IModelCredentialSourceContract`, one registration in `AddSandbox()`, one set of `-017`
+copy goldens and one id in the profile schema; the plan builder, the canaries and the profile code do not change. The
+login is checked at launch only; an expiry mid-run shows as a model error in the session and is accepted (§11).
 
 **GitHub.** `credentials.github: none` is the default and the only value built before SB-7. A Step that needs a push or PR
 emits an effect (WF §5.7, P6) that Sindri sends host-side, matching LN-WF6's `build` capability. With `agent-app`
@@ -421,6 +445,36 @@ repo declares what to prepare, and the launcher does it **on the host, as the ow
 - **Tests:** `Prepare_cache_key_reads_the_base_commit`, `Prepare_runs_through_heavy`, `Prepare_failure_is_021_with_its_reason`,
   `Prepare_hit_copies_without_running_install`, `Prepare_does_not_run_scripts_outside_allowScripts`.
 
+### 3.9 Sessions you open yourself (SB19)
+
+Owner decision Q6, 2026-10-18: a session started with `sindri open` (or the app's Open) on an item, with no Step run, is a
+Sindri launch and is sandboxed like a Step's. It has no `StepPolicy`, so the launcher builds an **attended plan** from the
+same builder with a fixed attended policy (Mode Default, the item's worktree writable). Everything not listed below is
+the Step answer unchanged: the mount stack, the git directory rules, the environment allowlist, the credential source,
+the hook inventory, the shims, the canaries, the denial loop and `sandbox exec`.
+
+| Aspect | Attended session | Reason |
+|---|---|---|
+| Writable | The item's worktree (created as a Step's is when the item has none, on `sindri/open/<launch>/work`), the run ref directory, the private scratch, the tool caches and hook spool paths, and a run directory for the plan, `denials.json` and `egress.log`. Never the owner's main checkout | A person editing code needs a worktree; the git-directory rules (SB5) keep one mistaken `git branch -D` away from the owner's branches, and work reaches `main` through a PR as a Step's does |
+| Inner policy | The CLI's normal asking mode (Claude Code `default`, Codex's on-request approval) with the **same deny rules**; no `dontAsk` | A person is there to answer a question, and a refusal with no way to say yes is the wrong default at the keyboard. Q12 concerns unattended sessions only |
+| Wall clock | **Not applied.** No `session wrap` wall watchdog and no `RuntimeMaxSec` on the scope; memory, CPU, pids and the parent slice's total cap apply. `sandbox.attended.wall` can set a ceiling (default `off`) | A conversation left open overnight is normal; a person's time is not a runaway. The limits that protect the box (memory, pids) are not about time |
+| Session cap | Counts against `sandbox.limits.sessions`. When the cap is full the open is **refused at once** with the `-020` words and the count; it does not wait | The person can close a session; a silent wait would look like a hang |
+| Network | The groups of a `WriteScope` Step (`model`, `packages`); `github` never. The repo's learn mode applies as it does to Steps | A `curl \| sh` or a typo'd package is as likely at the keyboard |
+| GitHub | `none`. `agent-app` is not available to an attended session | The person has a terminal outside the sandbox and can push from it; the App token is a Step credential (SB-7) |
+| Takeover, handback, banner | Not applicable: there is no run to take over and no suspension to read. The escape is carried by the tmux status line (the golden of §7 with "attended" in it) and by the first screen of `sindri open` | Nothing to hand back to |
+| Credential source | The same as Steps (SB18) | One login story |
+| A refusal | Not a park (there is no engine run). `sindri open` prints the §8 sentence for the code in the attended wording and exits 1; the app shows the same card with Check again. Check again resumes nothing for an attended open; the person presses Open again | The park machinery belongs to the engine's runs |
+| Ledger | `launch.started`'s `sandbox` summary gains `attended: true`; `sandbox.denied`, `sandbox.limit-hit` and `session.ended` (`limit/memory`) as for a Step; no `step.failed` | The same record for the same mechanism |
+| Resume or reopen | Reuses the stored plan; a missing plan is `-015 no-stored-plan` | SB1 |
+
+**Meta lane sessions are unchanged.** The meta team's own sessions are started by `scripts/meta-launch.sh` in tmux, not
+through Sindri's launcher; they are not sandboxed, their hooks and statusline are untouched, and Sindri neither lists
+nor limits them.
+
+**Until SB-5b merges**, `UnavailableSandbox` refuses a `sindri open` through the launcher with `-014`, exactly as it
+refuses a Step; the owner's own terminal, outside Sindri, is not affected. Nothing in the product opens an unconfined
+session in the meantime.
+
 ## 4. Mechanism options
 
 | Option | Filesystem | Network | Limits | Verdict |
@@ -445,8 +499,8 @@ repo declares what to prepare, and the launcher does it **on the host, as the ow
 ## 5. Per-target forms
 
 The engine's `StepPolicy` is mapped in two places: the **outer plan** (§3, the same for every target) and the **inner
-policy** (L-17's `policy` form). With no human attached, the inner policy never relies on a prompt: a call outside it is
-refused, not asked about. **The keys in this table are provisional until SB-S1 item 6 records which keys each pinned CLI
+policy** (L-17's `policy` form). With no human attached (a Step), the inner policy never relies on a prompt: a call outside it is
+refused, not asked about. An attended session asks instead (§3.9), with the same deny rules. **The keys in this table are provisional until SB-S1 item 6 records which keys each pinned CLI
 honours**; the built-in forms are tested against that record.
 
 | Engine input | Outer plan | Claude Code (`claude-settings-file`, `--settings <path>`) | Codex (`codex-overrides`, `-c`) | Cursor |
@@ -457,8 +511,8 @@ honours**; the built-in forms are tested against that record.
 | A Step only tightens (owner, 2026-10-17) | the profile's deny list and groups are the floor; a Step may remove a group from itself, never add one | same for rules | same | same |
 
 The Claude settings file also sets `sandbox.enabled: false` unless the box's `sandbox.inner` is on, sets
-`disableBypassPermissionsMode: "disable"`, and relies on the owner's hooks in the read-only agent-home `settings.json`. Q12
-asks whether `dontAsk` or `bypassPermissions` is better inside the sandbox.
+`disableBypassPermissionsMode: "disable"`, and relies on the owner's hooks in the read-only agent-home `settings.json`. Owner
+decision Q12: a Step uses `dontAsk` (refuse what is not allowed), not `bypassPermissions`.
 
 **Targets that can't be confined.** An entry whose `policy` form is `none` or reserved, whose `open` template the plan can't
 wrap (a GUI app that owns its process, the `none` host), or whose `bin` the plan can't make runnable inside the sandbox (a
@@ -471,7 +525,7 @@ not part of any entry.
 
 `ILauncher.Launch` for a Step run becomes (LCH §3's order, new steps in bold): resolve the agent → SL8 (`-012`) → L-17's form
 check (`-013`) → **build the plan from the StepPolicy (pure; `-015`)** → **probe the mechanism (cached per box, refreshed by
-Check again; `-014`)** → **session cap (`-020`: the atomic count; a wait, not a failure)** → **prepare credentials (`-017`, `-018`)** → budget (E-28) → **write the
+Check again; `-014`)** → **session cap (`-020`: the atomic count; a wait, not a failure)** → **prepare credentials from the Step's credential source (`-017`, `-018`)** → budget (E-28) → **write the
 plan file; start the outside half of the network (§3.2); run the self-check (`-016`)** → start in the host → return. The
 self-check sits inside the 4 s host-start stage of LCH §3.
 
@@ -490,6 +544,7 @@ for each grant must succeed:
 | `fs-write` | a write in the worktree, run directory and scratch succeeds |
 | `git-ref` | **in the real worktree and its real repo** (not a scratch one): the effective settings are the sandbox's (`git config --get core.hooksPath` is the per-launch directory, `commit.gpgsign` is `false`); an unsigned `git commit-tree` of `HEAD`'s tree then `git update-ref refs/heads/<ns>/selfcheck <that commit>`, and a second `update-ref` that moves it, both work; `git update-ref refs/heads/other-selfcheck HEAD` fails. **The canary never deletes a ref** (a delete needs `packed-refs.lock`, which is read-only): the launcher removes `selfcheck` from outside afterwards and at run end |
 | `env` | no secret-pattern name in the environment except the allowlist |
+| `login` | the credential source delivered what it promises (§3.4): the login is readable at its planned path (a copy has mode 0600), the owner's original login is not writable and, under `separate-login`, the owner's whole agent home is absent, and the inner policy denies reading it |
 | `hooks-run` | the three-part hook canary of §3.1: plain hooks deny, a `judge` round trip works, the fail-open log is written and the meta hooks do nothing |
 | `net-forward` | a call through the Sindri forwarder reaches the API; the proxy forwarder answers |
 | `net-deny` | a connect to a non-allowed host through the proxy is refused; a direct connect fails |
@@ -499,7 +554,7 @@ for each grant must succeed:
 | `SND-LAUNCH-014` | **no runtime** | The sandbox isn't available on this box | `no-bwrap`, `no-user-namespace`, `no-user-manager`, `no-cgroup-controllers` (which), `no-forwarder` (`socat`), `unsupported-platform` | **N1 (SB16):** the launch result closes the agent run. A `deskCapable` Step takes the **`runtime.unavailable` transition** and the desk run opens in the same frame: no round is counted, the loop rules are bypassed, and it is not presented as a Step failure (R3-01); any other Step parks NoRuntime with a sandbox marker, whose Resume opens a **new agent run** that tries again. Availability never enters the recorded agent map |
 | `SND-LAUNCH-015` | **launch park** | The target or its form can't be confined to this policy | `form-none`, `form-reserved`, `tool-not-expressible` (the tool), `bin-denied` (its path), `host-not-tmux`, `worktree-outside-repo`, `no-stored-plan` | New park kind `launch`; Resume starts a **new run** (new token, launch id, worktree `sindri-<instance>-<run+1>`) |
 | `SND-LAUNCH-016` | **launch park** | The self-check failed | `canary`, `expected`, `observed`, the failing argv and scrubbed stderr | Same `launch` park |
-| `SND-LAUNCH-017` | **no runtime** | The target's model login is missing or expired for Step sessions | `no-login`, `expired` | Same as `-014` |
+| `SND-LAUNCH-017` | **no runtime** | The target's model login is not available from the chosen credential source for this session | `no-login`, `expired`, `source-unsupported` (the target has no adapter for the source), each with the source id (`owner-copy`, `separate-login`) | Same as `-014` for a Step. An attended open has no run to park: `sindri open` shows the card (§3.9). Never falls back to another source |
 | `SND-LAUNCH-018` | **step failure** (`step.failed(launch)`) | The agent GitHub App token couldn't be minted (`agent-app` only) | `no-key`, `http-<status>`, `no-network` | The owner retries (a new run) or uses the desk twin |
 | `SND-LAUNCH-019` | **step failure** (`step.failed(limit)`) | A sandbox limit ended the session | `kind` `memory` or `wall`, the limit, the peak | **Never auto-retried in the same run.** The owner retries (a new run with a new worktree; the killed run's branch and commits are kept and named in the failure row) or uses the desk twin |
 | `SND-LAUNCH-021` | **step failure** (`step.failed(launch)`) | The host-side prepare of §3.8 failed | `install-failed`, `lockfile-missing`, `timeout` | The owner retries (a new run) or uses the desk twin; never auto-retried |
@@ -510,7 +565,7 @@ launch activity absorbs; its HTTP class (Unavailable, 503, retryable) exists for
 classes: `-014` Unavailable (503), `-015`, `-016`, `-017` Conflict (409), `-018` and `-021` Unavailable (503). Each gets a `SindriErrors`
 row with a golden per `(code, reason)`, in the owner's words (§8). Check again (§8) answers a `launch` or sandbox-marked
 NoRuntime park when every probe passes, **up to the free session slots, oldest first, after showing which**. A viewer failure
-never changes any of this (LCH SL5).
+never changes any of this (LCH SL5). **An attended open has no engine run:** `sindri open` and the app show the same sentences in the attended wording (§8); nothing parks, and Check again resumes nothing for it (§3.9).
 
 **Engine side** (the engine lane's **P8 U9**, before SB-5a; SB16). **Park names (R3-02; the engine lane may rename them in U9, the shape is fixed):** `-015` and `-016` use a **new `ParkReason.Launch`** (the member after `NoRuntime`), and `ParkKind` splits the rows inside it: `ParkKind.Unconfinable` (`-015`) and `ParkKind.SelfCheck` (`-016`), each with a `FitRow` row and `Fitting → [Resume]` with `ResumeKind.Rerun` (a new run). The sandbox case of `-014`/`-017` is **not a new kind**: it is the existing `ParkReason.NoRuntime` with a **detail field `sandbox`** (`{code: "SND-LAUNCH-014"|"SND-LAUNCH-017", reason}`); when the field is present the park's owner text is the §8 golden for that `(code, reason)` instead of NoRuntime's "no runtime in this build", and its resume kind is **`ResumeKind.Rerun`** (open a new agent run and try the launch again), not the build case's `Restart`. Also in U9: the `runtime.unavailable` transition of SB16 (desk run in the same frame, no round, no Step failure); the `-020` wait in the launch activity; the rule
 `session.ended(limit)` → `step.failed(limit)` carrying `kind`, the limit and the peak (not `lost`); the rule for a session
@@ -521,7 +576,7 @@ usage sample** for every reason, so a kill doesn't lose the heaviest minute agai
 
 ## 7. Takeover and handback
 
-**SB9, recommended: confinement stays exactly as launched.** The engine's behaviour is fixed (engine P8 D11): a park or
+**SB9 (owner decision Q1, 2026-10-18): confinement stays exactly as launched.** The engine's behaviour is fixed (engine P8 D11): a park or
 takeover suspends the run and keeps the session; the human joins the same tmux session; while taken over only a human
 report (`via: desk`) is accepted and the agent's launch secret is refused; handback resumes the watch on the same launch id;
 no second session is ever started. The sandbox adds:
@@ -544,10 +599,9 @@ run counts as not suspended**: a runaway is still stopped, at the price that a p
 `serve` is down. The scope's `RuntimeMaxSec` is only the loose ceiling of SB7.
 
 Why not relax on takeover: a live bubblewrap namespace can't be changed, so "loosen" would mean a relaunch, which may end the
-conversation the human joined (SB-S1 item 10 measures whether a relaunch on the pre-chosen session id keeps it) and breaks
-engine P8 D11. Why not re-tighten on handback: nothing was loosened. The cost: a human who joins and says "go ahead, push it"
-sees the agent refuse; they push from their own terminal. Q1 asks the owner, including the explicit per-takeover "continue
-unconfined" relaunch if the spike shows it keeps the conversation.
+conversation the human joined and breaks engine P8 D11. Why not re-tighten on handback: nothing was loosened. The cost: a
+human who joins and says "go ahead, push it" sees the agent refuse; they push from their own terminal. The owner chose this
+(Q1); an unconfined relaunch is not part of the design.
 
 **What the human sees and says** (R1-10, R2-08, R3-07): a banner on the Step sheet, with the full text "Sandboxed session.
 Pushes and secrets are blocked. The clock is paused while you're here. To push or read a secret, open a new window: it is
@@ -558,7 +612,7 @@ so a remapped prefix is right. The human who takes over by **typing in the pane*
 carries the escape too, and `sindri sandbox exec` is named in the first screen of the other takeover paths and in the refusal text. The refusal wording the inner rules return is addressed to whoever is typing and has no rule id (the id stays in the
 denial record): "Blocked by the sandbox. You can do this yourself in a new terminal window." Each takeover path has its
 surface: typing in the pane uses the status line; `OpenItem` and `sindri open` of a Step run use the takeover flow's first
-screen, which shows the same escape, not a footnote.
+screen, which shows the same escape, not a footnote. A session you open yourself (§3.9) has no takeover; its status line reads `Sandboxed (attended): push and secrets blocked. Outside it: <prefix> c` (also under 80 characters, `Golden/Sandbox/statusline-attended.txt`) and the first screen of `sindri open` carries the same escape.
 
 When a run closes (report decided, `step.failed`, cancel, instance ends; engine P8 D11) the host stops the tmux session, the
 scope ends, the proxy and forwarders stop, and `session wrap` removes the plan file, token directory and scratch.
@@ -600,12 +654,20 @@ goldens' text):
 | 016 · hooks-run | "Your safety hooks did not run inside the sandbox (`<which>`)." |
 | 016 · net-forward | "The sandbox could not reach Sindri from inside." |
 | 016 · net-deny | "The sandbox did not stop a connection it should block." |
-| 017 · no-login / expired | "Claude Code (or Codex) isn't signed in for Steps. Sign in as yourself, then press Check again." |
+| 016 · login | "The sandbox could not give the Step its sign-in without exposing yours." |
+| 017 · no-login / expired · `owner-copy` | "Claude Code (or Codex) isn't signed in for Steps. Sign in as yourself, then press Check again." |
+| 017 · no-login / expired · `separate-login` | "Steps have their own Claude Code (or Codex) sign-in, and it's missing or has expired. Run `sindri sandbox login <target>`, then press Check again." |
+| 017 · source-unsupported | "The sign-in method chosen for Steps (`<source>`) isn't available for `<target>`. Change `sandbox.login.source` in the profile, then press Check again." |
 | 018 · no-key / http-`<status>` / no-network | "Sindri couldn't get a short-lived GitHub token for this Step: the agent GitHub key is missing / GitHub refused the request (`<status>`) / there is no network to GitHub. Retry the Step, or do it at your desk." |
 | 021 · install-failed / lockfile-missing / timeout | "Sindri couldn't prepare this repo's packages for the Step (the install failed / a package list is missing / it took too long). Open the details, fix what they name, then run the Step again; or do it at your desk." |
 | 019 · memory | "This Step ran out of memory (`<limit>`) after `<time>`. Its work so far is kept on branch `<name>`. Raise `sandbox.limits.memory` in the profile (now `<limit>`; for example `<1.5 ×>`; a re-approval), then run the Step again; or do it at your desk." |
 | 019 · wall | "This Step ran out of time after `<time>`. Its work so far is kept on branch `<name>`. Run it again, or do it at your desk." |
 | 020 | "Waiting for a free session slot (`<n>` of `<cap>` running). This Step starts by itself." Shown as a waiting state, never red |
+
+**For a session you open yourself** (§3.9) the card and `sindri open` use the same goldens keyed with `attended`: "this Step
+can't run by itself" becomes "this session can't be opened", "press Check again" stays, and "or do it at your desk" is
+never added. `-020` reads "No free session slot (`<n>` of `<cap>` running). Close one, then open again." (a refusal, not a
+wait). The attended status line and start line are goldens too.
 
 A card for a `deskCapable` Step adds "or do it at your desk" to every `014` and `017` sentence. **The app's words** are
 "sandbox", "limit" and "blocked"; "scope", "plan", "canary" and "confined" never appear in an owner string (a golden test
@@ -621,19 +683,19 @@ next press. `sindri sandbox check` is the same thing from the terminal and is th
 repo onboard` run it and print its remediation block in one list.
 
 **Surfaces.**
-- `sindri doctor`, a `sandbox` section in plain terms, **generated from the same goldens as the card** (one sentence for both): `ok  sandbox ready: bubblewrap 0.9.0, limits available, 7 checks passed in 180 ms`, `ok  login: Claude Code signed in for Steps`, `ok  limits: 3 sessions × 12 GiB = 36 GiB of 62 GiB`, `warn limits: 3 × 12 GiB is more than this machine's memory (the heavy wrapper still gates slot 3)`, `fail sandbox: The sandbox needs your user session manager, which isn't running. Run loginctl enable-linger $USER`, `ok  hooks: 3 kinds verified inside a Step (plain, judge-backed, meta skipped)`, `info  agents' own sandboxes: off (not needed; Sindri's covers it)` (not a fault), `info  macOS: Steps not yet supported` (gray). A failing line is a `-014`/`-016`/`-017` reason, so the card and the line say the same sentence.
+- `sindri doctor`, a `sandbox` section in plain terms, **generated from the same goldens as the card** (one sentence for both): `ok  sandbox ready: bubblewrap 0.9.0, limits available, 8 checks passed in 180 ms`, `ok  login: Claude Code signed in for Steps (source: owner-copy)`, `fail login: Steps have their own Claude Code sign-in, and it's missing. Run sindri sandbox login claude-code` (source `separate-login`), `ok  limits: 3 sessions × 12 GiB = 36 GiB of 62 GiB`, `warn limits: 3 × 12 GiB is more than this machine's memory (the heavy wrapper still gates slot 3)`, `fail sandbox: The sandbox needs your user session manager, which isn't running. Run loginctl enable-linger $USER`, `ok  hooks: 3 kinds verified inside a Step (plain, judge-backed, meta skipped)`, `info  agents' own sandboxes: off (not needed; Sindri's covers it)` (not a fault), `info  macOS: Steps not yet supported` (gray), `info  sessions you open: sandboxed too, no time limit while you're attached`. A failing line is a `-014`/`-016`/`-017` reason, so the card and the line say the same sentence.
 - `sindri sandbox check|show|denials|explain|exec`: all read-only except `exec` (human-only, read-only mounts, §3.6). `show` leads with four lines (Can write / Can read / Network / Limits), then the mount table, the groups, the environment names (never values), the limits and the shims.
 - **Health and Settings**: the sandbox state is a row on Health ("Sandbox: ready" or the blocker) and a section in Settings → Agents (the mechanism, the groups, the limits, learn mode with its expiry). While learn mode is on, Health shows a **warning row** ("Sandbox: learning, network open for `<repo>`, ends in 6 days"). The vocabulary is "sandbox", "limit" and "blocked"; "scope", "plan", "canary" and "confined" don't appear in the app.
-- `sindri status` and `agents`: a Step session reads "sandboxed · mem 2.1/12 GiB"; an attended open reads "not sandboxed (you're at the keyboard)" in the normal ink, not a warning.
+- `sindri status` and `agents`: a Step session reads "sandboxed · mem 2.1/12 GiB"; a session you open yourself reads "sandboxed · attended · mem 2.1/12 GiB". Meta lane sessions are not Sindri's and are not listed.
 - **The app** (SB-6): the Agents sheet "Sandbox" line (writable folder, groups); the park card with the sentences above and a **Check again** button; the "Blocked" list on the item sheet; the waiting state; the limit ending; the takeover banner (§7).
 
-**States** (pinned as SB-0 goldens; `Aw.Sindri.Ui.Tests` reads them): *Check again*: idle → in flight (label kept with a spinner, "Sending…" announced after 300 ms, a second click does nothing) → still failing (the card lists every blocker, not the first) → all clear with the list ("Ready. Resume these 2 Steps?") → resumed, or partial ("Resumed 1 of 2"). *Park card*: never checked, checked stale (shows the age), checked fresh. *Sandbox line*: sandboxed, not sandboxed (attended), plan file unreadable ("details unavailable"), serve down (dimmed). *Blocked list*: none, some, many (top 5 and a link); *Allow* button: idle, Sending, "Needs your approval", allowed, refused. *Waiting*: "Waiting for a free session slot (3 of 3 running)", then started. *Limit ending*: memory, wall, with and without a kept branch. *Health row*: ready, blocked (the reason), learning (warning), serve down, never checked. *Settings → Agents section*: loaded, learn mode on (expiry shown), unreadable plan, serve down.
+**States** (pinned as SB-0 goldens; `Aw.Sindri.Ui.Tests` reads them): *Check again*: idle → in flight (label kept with a spinner, "Sending…" announced after 300 ms, a second click does nothing) → still failing (the card lists every blocker, not the first) → all clear with the list ("Ready. Resume these 2 Steps?") → resumed, or partial ("Resumed 1 of 2"). *Park card*: never checked, checked stale (shows the age), checked fresh. *Sandbox line*: sandboxed (Step), sandboxed (attended), plan file unreadable ("details unavailable"), serve down (dimmed). *Blocked list*: none, some, many (top 5 and a link); *Allow* button: idle, Sending, "Needs your approval", allowed, refused. *Waiting*: "Waiting for a free session slot (3 of 3 running)", then started. *Limit ending*: memory, wall, with and without a kept branch. *Health row*: ready, blocked (the reason), learning (warning), serve down, never checked. *Settings → Agents section*: loaded, learn mode on (expiry shown), unreadable plan, serve down.
 
 **Accessibility** (pinned in `docs/csharp/sindri-ui.md`'s terms; SB-6's done-when includes each row):
 
 | Control | Keyboard | Screen reader | Focus | Text scale 1.3 · never colour-only |
 |---|---|---|---|---|
-| Sandbox line / headroom | in the sheet's tab order | name "Sandbox: on, writes only to `<folder>`"; headroom as text "memory 2.1 of 12 GiB" | n/a | wraps; state as a word |
+| Sandbox line / headroom | in the sheet's tab order | name "Sandbox: on, writes only to `<folder>`" ("Sandbox: on, attended, writes only to `<folder>`" for a session you open); headroom as text "memory 2.1 of 12 GiB" | n/a | wraps; state as a word |
 | Park card | a `focus-region` group (`ControlTypeOverride=Group`) with a named peer; its fix text before its buttons | name "Needs you: Step `<x>` can't start, `<first clause of the golden sentence>`" (for example "This machine has no sandbox tool"), never the raw reason code | when it appears from a user action, focus goes to its heading; **when it is answered and goes, focus moves to its neighbour (the Health row or Park section heading it came from; the `KeepFocus` case) after the live region has spoken "Ready. Resuming 2 Steps"** | wraps; severity as a word and an icon |
 | **Check again** | Enter and Space; the 2 px focus ring | a zero-width transparent `TextBlock` with `LiveSetting="Polite"` already in the tree before its state; its `Text` changes (never set to `""`); "Sending…" after 300 ms, then the result | stays on the button (enabled for the keyboard) while checking; a second click does nothing; the region **rests on the label before a repeat outcome**, so a repeated "still failing" is a change | the result is text |
 | Resume list `[Resume] [Not now]` | both reachable, Resume first | the list read before the buttons | on Not now, back to Check again | text |
@@ -649,7 +711,7 @@ repo onboard` run it and print its remediation block in one list.
 Under `sandbox:` in the profile (S1's schema; one section in `docs/csharp/sindri-profile.md`, checked by
 `scripts/check-profile-doc.mjs`). A key can only tighten a Step; the profile is the owner's. **An approved profile with no
 `sandbox:` section is valid**: it gets the built-in defaults below; tightening needs no re-approval, loosening (a longer
-limit, a new group or host, learn mode, `agent-app`) does; `sindri doctor` prints "using the built-in sandbox defaults" and
+limit, a new group or host, learn mode, `agent-app`, a looser login source) does; `sindri doctor` prints "using the built-in sandbox defaults" and
 the profile preview shows the new section on the next approval.
 
 | Key | Default | Meaning |
@@ -663,7 +725,9 @@ the profile preview shows the new section on the next approval.
 | `sandbox.repos.<repo>.…` | none | Per-repo `homeAllow`, groups and hosts (§3.7) |
 | `sandbox.inner` | `auto` | `auto`, `on`, `off` |
 | `sandbox.credentials.github` | `none` | `none` or `agent-app` (SB-7) |
-| `sandbox.agentHome` | `owner` | `owner` or `isolated` (Q2; SB-8) |
+| `sandbox.login.source` | `owner-copy` | The model credential source (SB18): `owner-copy` or `separate-login`. Retires the earlier `sandbox.agentHome` key |
+| `sandbox.login.targets.<target>` / `sandbox.repos.<repo>.login.source` | none | Per-agent and per-repo overrides; the most specific wins (repo, then target, then profile). A recipe or Step may ask for a stricter source and never a looser one (`owner-copy` < `separate-login`); stricter needs no re-approval, looser does |
+| `sandbox.attended.wall` | `off` | A wall-clock ceiling for sessions you open yourself; `off` or a duration (§3.9). Setting one is a tightening |
 
 No environment variable switches the sandbox off. `.env.example` gets only paths a test redirects (`AW_SANDBOX_BWRAP`,
 `AW_SANDBOX_SYSTEMD_RUN`, `AW_SANDBOX_SOCAT`), checked by `scripts/check-env-example.sh`. `deps.yaml` declares the new `cli`
@@ -689,6 +753,7 @@ Per the C# rules (TDD, lanes, fakes with contract tests). Red first; builders on
 | Per target | built-in forms against the SB-S1 record; `cursor-config` parks `-015` | unit |
 | UI | view-model tests over the SB-0 state goldens; the accessibility rows | unit |
 | Round 2 additions | `Park_longer_than_wallGrace_keeps_the_scope`; `Unavailable_suspension_read_counts_as_not_suspended`; `Git_canary_never_deletes_a_ref`; `Git_settings_beat_the_repo_config`; `Hook_inventory_matches_config_hooks`; `Judge_hook_runs_inside_the_sandbox` and the fail-open log is visible; `Shim_takes_the_box_wide_slot`, `Shim_inside_a_held_slot_does_not_loop`, `Heavy_lock_held_is_never_in_the_environment`; `Cap_count_and_start_are_atomic`; `Check_again_resumes_no_more_than_free_slots`; `Explain_reads_only_the_plan_file` (state directory denied); `Home_tmpfs_is_sized`; `Socket_path_is_under_the_limit`; `Sandbox_exec_mounts_read_only_and_is_not_an_api_route`; `Failed_path_under_home_is_matched_as_not_bound`; `Owner_strings_use_the_sandbox_vocabulary`; `Agent_home_write_set_is_exactly_the_named_one` | unit, integration |
+| Credential source and attended sessions (rev 5) | `Credential_source_contract_holds_for_every_adapter` (`IModelCredentialSourceContract`, the fake and `OwnerCopyCredentialSource`; `SeparateLoginCredentialSource` joins in SB-8); `Unknown_source_id_is_a_profile_error`; `Repo_override_beats_target_beats_profile`; `Step_cannot_ask_for_a_looser_source`; `Unavailable_source_is_017_with_its_source_id_and_never_falls_back`; `Login_canary_fails_when_the_owner_login_is_writable`; `Source_is_in_the_plan_hash_and_survives_resume`; `Open_of_an_item_is_sandboxed`; `Attended_session_has_no_wall_watchdog_and_no_runtime_max`; `Attended_session_refuses_at_once_when_the_cap_is_full`; `Attended_session_never_gets_agent_app_or_the_github_group`; `Attended_inner_mode_asks_with_the_same_deny_rules`; `Resume_of_an_attended_session_is_confined`; `Attended_refusal_is_shown_not_parked`; the attended goldens | unit, integration |
 | Proof | §12, SB-5a, SB-5b, SB-10 | heavy |
 
 Proofs that start tmux use a private socket and unset `TMUX` (`scripts/test-tmux.sh`); no proof touches the real
@@ -697,18 +762,18 @@ temp HOME for dotnet (a NuGet cache leaks per run).
 
 ## 11. What stays out, and what is accepted
 
-Out: bare attended opens and Meta lanes (Q6); containers, a pid namespace, seccomp and anything aimed at a deliberate escape
+Out: Meta lane sessions, which Sindri's launcher does not start (Q6); containers, a pid namespace, seccomp and anything aimed at a deliberate escape
 (§2); a model proxy with a dummy credential (D §8.2's W1); per-session bandwidth and content inspection; Windows; Cursor
 (reserved, `-015`); bounded tool-less jobs (`claude -p`, X56).
 
-Accepted (the LOW findings, recorded rather than fixed): disk is warned, not enforced; a Codex Step loses per-session `heavy`
+Accepted (the LOW findings, recorded rather than fixed): disk is warned, not enforced; a session you open yourself has no wall limit (§3.9); a Codex Step loses per-session `heavy`
 serialisation; the login is checked at launch only; shared tool caches are shared state (Q4); install scripts are off by
 default but a package that needs one fails loudly (SB-11's host-side prepare is the fix for the repo's own); the shared `/proc`
 (§3.1); `locks/` and `judge/` are writable for the hooks and the heavy wrapper, so a careless cleanup inside them can hurt the
 owner's box-wide mutex or judge records (the launch brief says not to, `heavy` prints the holder with a "do not delete" line, and the inner policy denies `rm` and `mv` there); a session can read other
-repos' session history and its own login copy (Q2, SB-8); a parked session can hit its wall limit while `serve` is down (SB7);
+repos' session history and its own login copy (under `owner-copy`, SB18, SB-8); a parked session can hit its wall limit while `serve` is down (SB7);
 a replayed plan uses the profile it was built with, so a later tightening applies to new runs only. **Multiplayer** (README X61) changes the agent home (per user), the credentials (per user), the proofs (owner-run)
-and shares the profile; `sandbox.agentHome: isolated` is the multi-user path.
+and shares the profile; `sandbox.login.source: separate-login` is the multi-user path.
 
 ## 12. Phases
 
@@ -719,22 +784,22 @@ the owner's first run. P8 builds on DT-J2 and needs no P7 (E1-I7). SB-10 needs #
 
 | Phase | What | Files | Size | Depends on | Done when | Lane |
 |---|---|---|---|---|---|---|
-| **SB-S1** | **Spike (no product code).** On the owner's box, throw-away scripts outside the repo: (1) interactive Claude Code and Codex under `bwrap` (with and without `--new-session`) in tmux: attach, type, detach; (2) the agent homes, `~/.claude.json` (atomic rename), the per-launch login copy with `CLAUDE_CONFIG_DIR`, whether a token refresh **rotates** the refresh token, which paths must be writable, and the Codex write set; (3) the forwarder plumbing of §3.2 carries Sindri's MCP and the CLI's HTTPS, and `NO_PROXY` works; (4) `systemd-run --user --scope` keeps the tty, and wrap reads `memory.events` and the scope's `Result` after an OOM kill; (5) nested inner sandboxes per pinned CLI; (6) which settings and `-c` keys each pinned CLI honours (§5); (7) which discovery file `sindri` reads; (8) the nested-heavy rule with the real wrapper; (9) **the real commands of §3.5 in the sandbox, from a clean worktree**: `dotnet build -warnaserror`, the unit lane, `dotnet format`, `npm ci && npm test` in `sindri/`, `scripts/dotnet-verify-packages.sh`, one bash test; the writable list is derived from it; (10) **does a relaunch on the pre-chosen session id keep the conversation** (`claude --resume`, `codex resume`)? It decides whether Q1 has a real option B; (11) the real hooks inside the sandbox, including the `judge`-backed ones, `prism-context` and `rtk-rewrite`, with `aw-meta` absent; bubblewrap's `--size` on the pinned version; the supported transcript formats for denial reading; that the whole self-check fits the 4 s host-start stage | scratch dir; findings into §15 and `docs/csharp/sindri-sandbox.md` | S | none | Each of the eleven answered with command and version **written into §15**; SB-2 to SB-4b start only when §15 holds the answers they use. A "no" on (1) or (3) goes to the owner first | ideas |
-| **SB-0** | Contracts: `docs/csharp/sindri-sandbox.md` and the docs list of §9 (with the shims); the plan-file schema; **the types**: `SessionEndReason.Limit` and `SessionEnded`'s `kind`, `limit`, `peak`, the `StartedLaunch` sandbox summary, `FailedLaunch` reasons; codes `-014` to `-021` with kinds and the engine table; **the copy goldens, the states and the accessibility rows** of §8; profile keys; `deps.yaml` edges; `.env.example`; the README row | `docs/csharp/*`, `SindriErrors.cs`, the launch and session types, `SindriProfile` schema and `ProfileRules`, `deps.yaml`, `tests/…/Golden/Sandbox/*` | M | none (beside the spike) | `check-profile-doc`, `check-deps`, `check-env-example` pass; goldens pin every `(code, reason)`; the engine lane reads the kind table and the types | api |
-| **SB-1** | The pure core: `ISandbox` and types, the plan builder, mount stack and deny lists, the hook inventory, the environment allowlist, the git settings, the limits parsing, host-group rules, the per-repo declaration schema, `planHash`, the renderer for `show` and `explain`, `UnavailableSandbox`, `PassThroughSandbox` and `RecordingSandbox` (test-only ones in `Aw.Sindri.Testing`) | `…Core/Sandbox/*`, `…Features/Sandbox/`, `…Testing/*`, tests | M | SB-0 | The plan-builder cases pass; the environment test fails on a planted `GH_TOKEN`; the product Host registers only `UnavailableSandbox` | api |
-| **SB-2** | `BubblewrapSandbox`: argv from the plan, the run ref directory, the sized tmpfs home, the agent-home write set and login copy, the cache paths, the hook binds, the canaries incl. `git-ref` and the three-part `hooks-run` | `…Infrastructure/Sandbox/Bubblewrap*`, `…Testing/ISandboxContract` | M | SB-1, SB-S1 (1, 2, 9, 11) | The contract base passes on real `bwrap`; a `dotnet restore` fixture works; the hook canary denies `rm -rf /` and the judge round trip passes | api |
+| **SB-S1** | **Spike (no product code).** On the owner's box, throw-away scripts outside the repo: (1) interactive Claude Code and Codex under `bwrap` (with and without `--new-session`) in tmux: attach, type, detach, and as an attended `sindri open` session (the asking mode works in the pane); (2) the agent homes, `~/.claude.json` (atomic rename), the per-launch login copy with `CLAUDE_CONFIG_DIR`, whether a token refresh **rotates** the refresh token, which paths must be writable, and the Codex write set; (3) the forwarder plumbing of §3.2 carries Sindri's MCP and the CLI's HTTPS, and `NO_PROXY` works; (4) `systemd-run --user --scope` keeps the tty, and wrap reads `memory.events` and the scope's `Result` after an OOM kill; (5) nested inner sandboxes per pinned CLI; (6) which settings and `-c` keys each pinned CLI honours (§5); (7) which discovery file `sindri` reads; (8) the nested-heavy rule with the real wrapper; (9) **the real commands of §3.5 in the sandbox, from a clean worktree**: `dotnet build -warnaserror`, the unit lane, `dotnet format`, `npm ci && npm test` in `sindri/`, `scripts/dotnet-verify-packages.sh`, one bash test; the writable list is derived from it; (10) *informational only:* does a relaunch on the pre-chosen session id keep the conversation (`claude --resume`, `codex resume`)? Nothing depends on the answer (the unconfined relaunch was dropped, Q1); it is recorded in §15; (11) the real hooks inside the sandbox, including the `judge`-backed ones, `prism-context` and `rtk-rewrite`, with `aw-meta` absent; bubblewrap's `--size` on the pinned version; the supported transcript formats for denial reading; that the whole self-check fits the 4 s host-start stage; (12) the credential sources of SB18 on the pinned CLIs: `CLAUDE_CONFIG_DIR`/`CODEX_HOME` pointing at a separate home, and whether sessions sharing one separate login race on a token refresh | scratch dir; findings into §15 and `docs/csharp/sindri-sandbox.md` | S | none | Each of the twelve answered with command and version **written into §15**; SB-2 to SB-4b start only when §15 holds the answers they use. A "no" on (1) or (3) goes to the owner first | ideas |
+| **SB-0** | Contracts: `docs/csharp/sindri-sandbox.md` and the docs list of §9 (with the shims); the plan-file schema; **the types**: `SessionEndReason.Limit` and `SessionEnded`'s `kind`, `limit`, `peak`, the `StartedLaunch` sandbox summary, `FailedLaunch` reasons; codes `-014` to `-021` with kinds and the engine table; **the copy goldens, the states and the accessibility rows** of §8; profile keys (incl. `sandbox.login.*` and `sandbox.attended.wall`); the `IModelCredentialSource` port types and the `-017` source copy goldens; `deps.yaml` edges; `.env.example`; the README row | `docs/csharp/*`, `SindriErrors.cs`, the launch and session types, `SindriProfile` schema and `ProfileRules`, `deps.yaml`, `tests/…/Golden/Sandbox/*` | M | none (beside the spike) | `check-profile-doc`, `check-deps`, `check-env-example` pass; goldens pin every `(code, reason)`; the engine lane reads the kind table and the types | api |
+| **SB-1** | The pure core: `ISandbox` and types, the plan builder, mount stack and deny lists, the hook inventory, the environment allowlist, the git settings, the limits parsing, host-group rules, the per-repo declaration schema, `planHash`, the renderer for `show` and `explain`, `UnavailableSandbox`, `PassThroughSandbox` and `RecordingSandbox` (test-only ones in `Aw.Sindri.Testing`); the `IModelCredentialSource` port, its registry, `FakeModelCredentialSource` and `IModelCredentialSourceContract` | `…Core/Sandbox/*`, `…Features/Sandbox/`, `…Testing/*`, tests | M | SB-0 | The plan-builder cases pass; the environment test fails on a planted `GH_TOKEN`; the product Host registers only `UnavailableSandbox` | api |
+| **SB-2** | `BubblewrapSandbox`: argv from the plan, the run ref directory, the sized tmpfs home, the `OwnerCopyCredentialSource` (agent-home write set and login copy), the `login` canary, the cache paths, the hook binds, the canaries incl. `git-ref` and the three-part `hooks-run` | `…Infrastructure/Sandbox/Bubblewrap*`, `…Testing/ISandboxContract` | M | SB-1, SB-S1 (1, 2, 9, 11) | The contract base passes on real `bwrap`; a `dotnet restore` fixture works; the hook canary denies `rm -rf /` and the judge round trip passes | api |
 | **SB-3a** | **Wall and memory:** the scope and slice properties, the loose `RuntimeMaxSec` ceiling, the watchdog on the engine's suspension read (SB16), `memory.events` polling, `limit` and `-019`, the final usage sample | `…Infrastructure/Sandbox/SystemdScope*`, `…Host/Commands/SessionWrap*`, the heartbeat | M | SB-1, SB-S1 (4); **SL-2/P10a's `session wrap`**; P8 U9's suspension endpoint | The limits cases pass; `session.ended` carries `reason: limit` and the kind, never `lost`; the clock stops during a park **and a park longer than `wallGrace` keeps the scope** | api |
 | **SB-3b** | **Cap and heavy:** the atomic session count and the `-020` wait signal, the `TasksMax` event, the `dotnet`, `npm` and `npx` shims (explicit `heavy --expensive\|--light`, the golden shim table, the held-slot variable, heavy's resource environment), the stale-lock sweep | the same, and the waiting message in `bin-r1b/heavy` | M | SB-3a, SB-S1 (8) | The heavy cases pass (slot taken, no loop, no `AW_HEAVY_LOCK_HELD`); the cap test races two launches | api |
 | **SB-4a** | **Static egress:** the outside `EgressService`, the proxy with its static host groups and per-run caps, the short socket directory, `egress.log`, the inside init and forwarders, `NO_PROXY` | `…Infrastructure/Sandbox/Egress*` | M | SB-1, SB-S1 (3) | The network cases pass on stubs; the Sindri MCP call works through the forward and not through the proxy | api |
 | **SB-4b** | **Denials:** learn mode (the proxy enforces its expiry), the denial counter, `sandbox.denied` events, `denials` and `explain` | the same | M | SB-4a | The denial cases pass; `explain` answers with the state directory denied | api |
 | **SB-5a** | **Launcher integration, ReadOnly first, thin:** the launch flow, probe and Check again (all blockers on one card, the resume list), the `ReadOnly` policy files for `claude-settings-file` and `codex-overrides`, `-014` to `-017`, the `StartedLaunch` summary, `sandbox check\|show`, doctor lines. It needs only the model-host egress (no learn mode, no `exec`), a scope with `MemoryMax` and the loose ceiling, the watchdog and the run directory; the session cap is the parent slice alone until SB-3b. **Merging this puts a real scoping or review Step on the factory** | `…Features/Launch*`, `…Infrastructure/Launch/*`, `…Host/Commands/Sandbox*`, events, goldens (the gate runs `Aw.Sindri.Ui.Tests`) | M | SB-2 (read-only parts), SB-3a, SB-4a, **P8 U9**, P10a with SL-2 and L-17 | **Proof:** `sindri-prove.sh` starts a ReadOnly fixture Step under a private tmux socket with a stub CLI that tries each forbidden action: every one is refused, the allowed ones work; with `bwrap` renamed away a deskCapable Step runs at the desk and another parks (NoRuntime) and resumes into a **new agent run** after Check again | api |
-| **SB-5b** | **WriteScope:** the worktree and run-ref-directory binds, the `packages` group, the git canary on the real worktree, the git settings, the `WriteScope` policy files, `denials` and `explain` wired, `sandbox exec`, `-018` stub | the same | M | SB-5a, SB-3b, SB-4b, SB-2 | **Proof:** a WriteScope fixture Step commits on its branch, can't update another ref or push, `dotnet build` works, the engine reads its diff after the session | api |
+| **SB-5b** | **WriteScope:** the worktree and run-ref-directory binds, the `packages` group, the git canary on the real worktree, the git settings, the `WriteScope` policy files, `denials` and `explain` wired, `sandbox exec`, `-018` stub, **sessions you open yourself** (§3.9: the attended plan, no wall watchdog, the cap refusal, the attended copy and status line) | the same | M | SB-5a, SB-3b, SB-4b, SB-2 | **Proof:** a WriteScope fixture Step commits on its branch, can't update another ref or push, `dotnet build` works, the engine reads its diff after the session; a `sindri open` fixture session is sandboxed the same way, reads "sandboxed · attended", has no wall limit and is refused at once when the cap is full | api |
 | **SB-11** | The per-repo declaration and **prepare**: `sindri repo onboard` runs `sandbox check`, detects toolchains, offers the `sandbox.repos.<repo>` entries (incl. the host-side prepare of §3.8: cached per lockfile hash, through `heavy`, `-021` on failure); the "allow this for this repo" fix | `…Features/Onboard*`, `…Features/Prepare*`, `sandbox` commands | S | SB-5b | Onboarding a Python and a Go fixture repo offers their entries; this repo's `sindri/` tests pass in a Step after the prepare; the prepare cases of §3.8 pass | ideas |
-| **SB-6** | UI and status copy: the Sandbox line, the park card, Check again and the resume list (every state), the Blocked list and Allow, the waiting state, the takeover banner and tmux status line, the limit ending, Health and Settings rows, the fixture sections | `src/Sindri/Aw.Sindri.Ui/Views/Agents*`, `Views/Launch*`, `Views/Health*`, `Settings`, `scripts/sindri-ui-fixture.sh`, `docs/csharp/sindri-ui.md` | **M** | SB-0 (goldens), SB-5a for live data | View-model tests over the SB-0 goldens; the accessibility rows of §8 each have a test; the fixture shows every state | ui |
+| **SB-6** | UI and status copy: the Sandbox line, the park card, Check again and the resume list (every state), the Blocked list and Allow, the waiting state, the takeover banner and tmux status line (and the attended ones), the limit ending, Health and Settings rows, the fixture sections | `src/Sindri/Aw.Sindri.Ui/Views/Agents*`, `Views/Launch*`, `Views/Health*`, `Settings`, `scripts/sindri-ui-fixture.sh`, `docs/csharp/sindri-ui.md` | **M** | SB-0 (goldens), SB-5a for live data | View-model tests over the SB-0 goldens; the accessibility rows of §8 each have a test; the fixture shows every state | ui |
 | **SB-7** | The GitHub credential: `agent-app`, the mint, the token directory, the shims, the 45 min refresh, the `github` group, the branch-only pre-push refuser, `-018` | `…Infrastructure/Sandbox/AgentToken*`, shims, tests with a fake `AGENT_APP_API_URL` | M | SB-5b | With the fake API a Step pushes its run branch, not another; the token is never in `env`, `ps`, a transcript or the plan; the refresh is seen through the directory bind | ideas |
-| **SB-8** | Isolated agent home (Q2 B), when its trigger fires: `sandbox login`, hooks into the home, `CLAUDE_CONFIG_DIR`/`CODEX_HOME`, readers and the collector following the directory | `…Infrastructure/Sandbox/AgentHome*`, `providers/*/install-hooks.sh` (a target-dir option), readers | M | SB-5a, the owner's answer | A Step runs with none of the owner's `~/.claude`; its transcript is found by the usage reader and the collector | api, ideas |
+| **SB-8** | `SeparateLoginCredentialSource` (`separate-login`), an adapter behind the port of SB18 and nothing else changes: `sindri sandbox login <target>`, the agent home under `$AW_SINDRI_HOME/agent-homes/<target>/`, hooks installed into it, `CLAUDE_CONFIG_DIR`/`CODEX_HOME`, readers and the collector following the directory, its `-017` copy. Selected with `sandbox.login.source` (no code change); built when its trigger fires or the owner asks | `…Infrastructure/Sandbox/SeparateLogin*`, `providers/*/install-hooks.sh` (a target-dir option), readers | M | SB-2 (the port, the contract base and `OwnerCopyCredentialSource`), SB-5a | The adapter passes `IModelCredentialSourceContract`; a Step runs with none of the owner's `~/.claude` bound; its transcript is found by the usage reader and the collector; switching the profile key back and forth changes no other code | api, ideas |
 | **SB-9** | macOS: `SeatbeltSandbox` from the same plan, the keychain rule, the polling watchdog | `…Infrastructure/Sandbox/Seatbelt*` | M | SB-5a, a Mac | **(owner, on a Mac)** the SB-5a proof passes; a memory `limit` fires within 5 s of the ceiling | ideas |
-| **SB-10** | **(owner) The first unattended run**, the published binary, real sandbox, on P8's signal: `workflow.step` on a scratch item launches Claude Code confined, commits on its branch, cannot read `~/.ssh` or push, reports; a park keeps the session and pauses the clock (a park longer than `wallGrace` included); a takeover keeps the same confined session; handback resumes; the worktree is read by the engine afterward; a planted memory hog ends `step.failed(limit)` with its branch kept | owner's box, a scratch repo | S | SB-5b; P8's U8 and #295 | The owner records the run (events, `sandbox show`, the engine's rows) | owner |
+| **SB-10** | **(owner) The first unattended run**, the published binary, real sandbox, on P8's signal: `workflow.step` on a scratch item launches Claude Code confined, commits on its branch, cannot read `~/.ssh` or push, reports; a park keeps the session and pauses the clock (a park longer than `wallGrace` included); a takeover keeps the same confined session; handback resumes; a `sindri open` session on the scratch item is sandboxed and reads "sandboxed · attended"; the worktree is read by the engine afterward; a planted memory hog ends `step.failed(limit)` with its branch kept | owner's box, a scratch repo | S | SB-5b; P8's U8 and #295 | The owner records the run (events, `sandbox show`, the engine's rows) | owner |
 
 ### 12.1 Parallelization plan
 
@@ -750,7 +815,7 @@ P8 (engine) proves in process on PassThroughSandbox (tests only); the product re
 
 | Wave | API lane | Ideas lane | Engine lane | UI lane | Owner |
 |---|---|---|---|---|---|
-| 0 | SB-0, then SB-1 | SB-S1 | reads SB-0's table and types; **P8 U9** (park kind, N1 rule, limit rule, suspension read and endpoint, `-020` wait); P8 on `PassThroughSandbox`, in process | — | answers Q1 (provisional), Q2, Q6, Q14 |
+| 0 | SB-0, then SB-1 | SB-S1 | reads SB-0's table and types; **P8 U9** (park kind, N1 rule, limit rule, suspension read and endpoint, `-020` wait); P8 on `PassThroughSandbox`, in process | — | nothing to answer: the decisions are in §13 |
 | 1 | SB-2 and SB-4a (no common files), SB-3a once `session wrap` is on `main` | SB-7 tests against a fake token API | P8 eval cases per code kind | SB-6 on the goldens | the spike's "no" answers |
 | 2 | SB-3b and SB-4b beside SB-5a, then SB-5b | SB-11, then SB-7 | P8 U7 (the D10 git hardening) | SB-6 live | — |
 | 3 | — | SB-9 on a Mac; SB-8 if triggered | P8's binary proof is SB-10 | — | SB-10 |
@@ -759,7 +824,7 @@ P8 (engine) proves in process on PassThroughSandbox (tests only); the product re
   and SB-4b run beside SB-5a; the ideas lane writes SB-7 against a fake while SB-5 lands; the UI lane needs only goldens; the
   engine lane never waits for the real sandbox until its owner proof.
 - **ReadOnly first** (SB-5a, deliberately thin): a scoping or review Step runs sandboxed before WriteScope plumbing, the git
-  binds, the `packages` group, the shims and learn mode exist. Q14 asks which Step is first.
+  binds, the `packages` group, the shims and learn mode exist. Owner decision Q14: the first Step is a read-only one (scoping or review).
 - Hotspots (`SindriErrors.cs`, `EventCatalog.cs`, the command and endpoint tables, the JSON context, `Add…()`, `deps.yaml`):
   each phase appends at its anchor; the second to merge rebases. SB-0, SB-5a, SB-5b and SB-6 change goldens the UI tests
   read, so their gates run `Aw.Sindri.Ui.Tests`.
@@ -767,93 +832,39 @@ P8 (engine) proves in process on PassThroughSandbox (tests only); the product re
 - **P8 is not blocked and nothing runs unconfined in the product:** P8 merges with the product Host registering only
   `UnavailableSandbox`; its launcher tests and its real-launch proof run in process on `PassThroughSandbox`, which only test
   hosts register (SB12, SB16). In the product every Step has no agent runtime until SB-5a: `deskCapable` Steps run at the
-  desk, others park NoRuntime. SB1 is true by construction.
+  desk, others park NoRuntime. SB1 is true by construction; a `sindri open` through the launcher is refused with `-014` too until SB-5b (§3.9).
 
-## 13. Open questions for the owner
+## 13. Owner decisions (2026-10-18)
 
-**Before the first build wave, four need an answer: Q1 (provisional), Q2, Q6 and Q14. The other ten have safe defaults that
-apply until you say otherwise.** Each question says what its default means for you.
+The owner answered the fourteen questions of revision 4 on 2026-10-18. **No question is open.** The numbers Q1..Q14 are the
+ones the rest of the spec cites. "Accepted" means the default of revision 4 stands as written.
 
-**Q1. When you step into a running Step, does it stay sandboxed?** *Provisional: we ask this again after the early
-experiment on your machine shows whether option B can work at all.* You may want to tell the agent to push something or read
-something it was blocked from.
-- *Option A (default): yes, always.* The agent keeps exactly the limits it started with, for its whole life. If you want it
-  to do something it may not do, you do it yourself in a separate terminal window (the banner and the pane's status line say
-  how). Only the time limit changes: it pauses while the Step is waiting for you or while you are in it.
-- *Option B: you can switch the sandbox off for that Step at the moment you step in, each time, with a loud warning.* Sindri
-  restarts the agent without the sandbox, in the same conversation. It is possible only if the experiment shows the restarted
-  agent still remembers the conversation. The Step is marked "not sandboxed" for the rest of that run. This is the way to get
-  the "jump in and work with the agent" flow when you really want it.
+| # | Decision | What it means |
+|---|---|---|
+| Q1 | **A takeover stays sandboxed** (option A). The unconfined relaunch (option B) is dropped | SB9 and §7 say it plainly; there is no per-takeover "continue unconfined"; a human who needs more does it in a window of their own. SB-S1 item 10 stays only as an informational measurement |
+| Q2 | **The model login is injectable**: a credential source per Step, chosen by the profile with no code change | SB18 and §3.4: port `IModelCredentialSource`, adapters `owner-copy` (today's default) and `separate-login`; `sandbox.login.source` per profile, target and repo; a Step may only ask for a stricter source; unavailable is `-017` with the source id; SB-8 is "add an adapter" |
+| Q3 | Accepted | Every Step reaches its model provider; `WriteScope` Steps also reach the package servers; signature and release hosts stay host-side |
+| Q4 | Accepted | Steps may write the shared NuGet and npm caches; install scripts off |
+| Q5 | Accepted | 3 sessions, 20% of RAM (at most 12 GiB) each, half the CPU, 60% in total; peaks recorded |
+| Q6 | **Sessions you open with `sindri open` are sandboxed too** | SB1, SB19 and §3.9: the same sandbox, with each difference written down with its reason (asking mode, no wall limit, refused-at-once cap, no App token, a status line instead of a banner, shown not parked). Meta lane sessions are not launched through Sindri and stay as they are |
+| Q7 | Accepted | No GitHub for Steps in the first release; Sindri pushes host-side; `agent-app` is SB-7 |
+| Q8 | Accepted | A Step can `pkill` (no pid namespace) |
+| Q9 | Accepted | A Step can read other projects, `.env` included, read-only |
+| Q10 | Accepted | Disk growth warns at 10 GiB and does not kill |
+| Q11 | Accepted | Linux first, Mac second |
+| Q12 | Accepted | A Step refuses what is not allowed (`dontAsk`); an attended session asks instead, because a person is there (§3.9) |
+| Q13 | Accepted | Network learn mode for a repo's first ten runs or seven days; one-line switch off |
+| Q14 | **The first unattended Step is read-only** (scoping or review) | It needs only the model's site and its run directory, so SB-5a is enough to run it; code-changing Steps wait for SB-5b |
 
-**Q2. Whose model login do Step sessions use?** The agent must sign in to its model provider; this is the one credential of
-yours that has to be inside the sandbox.
-- *Option A (default for the first runs): yours.* Each Step gets its own private copy of your login (a file only you can
-  read, deleted when the Step ends and swept up if Sindri crashes). Steps also see your Claude and Codex settings, hooks and
-  skills, so your safety hooks apply, but they cannot change them. The agent's own tools are told not to read the login copy,
-  but nothing stops a Step from reading your other repos' conversation history. One catch: if signing in again replaces your
-  original login each time the copy refreshes, Steps would have to use your login file directly (shared with you); we would
-  tell you before that happens.
-- *Option B (built later): a separate login just for Steps.* Your history and settings stay out entirely. It needs a second
-  sign-in and the hooks installed in that separate place. Suggested trigger: the first time a Step is seen reading another
-  session's history, or when a second person uses the machine.
+### Owner notes for the final read
 
-**Q3. Which websites can a Step reach?** *Default:* every Step reaches its model provider; Steps that change code also reach
-the package servers (nuget.org and npm). Nothing else. Checking package signatures and downloading tool binaries happen
-outside the Step, on your machine's normal side.
-- *Stricter:* no package servers; a Step that needs a new package waits for you to add it.
-- *Looser:* the signature and release sites too, so the full check commands can run inside a Step.
+Not new questions: each is a default this revision chose where the answers left room. Say so if one is wrong.
 
-**Q4. May Steps write to the package caches under your home (NuGet and npm)?** *Default: yes.* A restore needs them, they
-make builds fast, and they are shared with your own builds, so a bad package a Step downloaded could end up in your cache.
-Install scripts that packages ship are switched off.
-- *Alternative:* each Step gets its own throw-away caches: no shared state, but every Step's first build is slower.
-
-**Q5. How many Steps may run at once, and how big may one get?** *Default:* three at once; each up to 20% of the machine's
-memory (at most 12 GiB) and half the CPU at lower priority; all Steps together at most 60% of memory; a fourth Step waits for a
-free slot. Real peaks are recorded on every Step so the numbers can be set from data after the first runs. Do you want a lower
-ceiling (for example 8 GiB and two at once) until then?
-
-**Q6. Should a session you open yourself (`sindri open`) also be sandboxed?** *Default: no.* You are at the keyboard, and the
-usual reason to open one is to do things the sandbox blocks. A session that belongs to a Step (including one you reopen or
-resume) is always sandboxed. Your lane sessions stay as they are.
-
-**Q7. Can Steps use GitHub?** *Default: no, not in the first release.* Steps commit to their own branch in their own
-workspace; Sindri pushes and opens pull requests from your machine's normal side. A later release can give a Step a
-one-hour GitHub token that pushes only that Step's branch, for Steps like the babysitter that must push. Say now if the first
-Step you want must push.
-
-**Q8. Can a Step stop your other running programs (`pkill`)?** *Default: yes, we accept it.* Hiding other processes would
-break the box-wide build-limit locks and the session list. The safety hooks and the agent's own rules catch the common
-mistakes.
-
-**Q9. Can a Step read your other projects on the machine?** *Default: yes, read-only,* including their `.env` files; and
-because process information is shared, a determined look can get around the hidden folders. Writing is never allowed.
-- *Alternative:* a list of projects a Step may read; a Step that looks at a sibling project then fails.
-
-**Q10. What should happen if a Step fills the disk?** *Default: Sindri warns at 10 GiB of growth and does nothing else.*
-- *Alternative:* Sindri ends the Step at a size you choose (we would add the check).
-
-**Q11. Linux first, Mac second?** *Default: yes.* The first unattended run is on this Linux machine. Until Mac support is
-built, Steps on a Mac go to your desk (if the Step can run there) or wait with "not yet supported". If a Mac must run Steps
-first, Mac support moves ahead of GitHub access, never ahead of the first Linux run.
-
-**Q12. Inside the sandbox, should Claude Code refuse what it is not allowed to do, or just run everything?** The sandbox
-already bounds what it can do, and nobody is there to answer a question.
-- *Option A (default): refuse what is not on the allowed list.* Predictable, no stalls; the agent adapts.
-- *Option B: run everything without asking, as your lane sessions do.* Fewer refusals in the first runs. Your repo's own
-  settings forbid this setting, so it needs an exception.
-
-**Q13. Should a repo's first runs be "log only" on the network?** The list of allowed sites is a guess; the first runs may
-stall on a site nobody listed. *Default: yes, for the network only.* For a new repo a Step may reach any site for its first ten
-runs or seven days, whichever comes first; Sindri records every site it reached and shows them on the Blocked list with a
-button to allow each one. The workspace, secrets and credentials stay fully protected, and the status says "learning" loudly.
-You can end it early at any time with one command (`sindri sandbox learn off`) or by setting the repo's network mode to
-`enforce` in the profile. *The trade-off:* a repo's first runs are when a careless `curl | sh` is likeliest, and learning lets
-it through; strict means the first runs stall and you fix each wait as it comes. *Alternative:* strict from the start.
-
-**Q14. Which Step do you want to run unattended first?** *Default: a read-only one (scoping or a review).* It needs only the
-model's site and its own output folder, so it can run as soon as the read-only build is merged, while code-changing Steps wait
-for the next one. If the first one you want edits code, say so and the code-changing build moves up.
+1. **Attended sessions have no wall-clock limit** (memory, CPU and pids still apply). `sandbox.attended.wall` can set one.
+2. **An attended session works in a worktree, never in your main checkout** (SB5 keeps the git directory protected). If you want `sindri open` to write in the main checkout, that needs a different git-directory rule.
+3. **Until SB-5b merges, `sindri open` through Sindri is refused** (`-014`), like a Step; your own terminal is unaffected.
+4. **A Step asking for a stricter login source** is a new optional field in the engine's `StepPolicy`, which P8 D8 does not have; if the engine lane declines it, the source is per profile, target and repo only and nothing else changes.
+5. **Attended sessions never get the GitHub App token**, even once SB-7 exists; push from your own terminal.
 
 ## 14. Revision 2 (autoplan round 1), Revision 3 (autoplan round 2) and review record
 
@@ -948,6 +959,18 @@ earlier question numbers in this section are rev 2's and rev 3's.
 | R3-07 | §7: a pinned status-line golden under 80 characters that reads the tmux prefix; §8: live-region rows for Waiting and Allow's "Needs your approval", the park card's screen-reader name uses the golden sentence's first clause, per-kind Blocked actions and row names |
 | R3-08 | New §3.8: the host-side prepare is cached per lockfile hash read from the base commit, runs through `heavy --expensive`, declares package directories, and fails as `SND-LAUNCH-021`; an `npx` shim; the shim table written out as a golden checked against heavy's case list; ENOSPC names `sandbox.limits.homeTmpfs` |
 | R3-09 | §3.3 rule 7, §5, §11: the inner policy denies `rm` and `mv` of `locks/` and `judge/`; heavy's waiting message gets a "do not delete" line (SB-3b) |
+
+### Revision 5 (owner answers)
+
+The owner's answers of 2026-10-18 (§13), folded in. No review round; the changes are the answers and what follows from them.
+
+| id | What changed |
+|---|---|
+| O-Q1 | SB9, §7, §12 (SB-S1 item 10 informational), §13: a takeover stays sandboxed; the unconfined relaunch is dropped |
+| O-Q2 | New SB18, terms, §3.1, §3.4 (source table, choosing and overriding, adding a source), §6 (`login` canary, `-017` reasons and source id), §8 (per-source `-017` copy, `016 · login`, doctor lines, 8 checks), §9 (`sandbox.login.*`, `sandbox.agentHome` retired), §10, §11, §12 (SB-0, SB-1, SB-2, SB-8 as an adapter, spike item 12) |
+| O-Q6 | SB1 rewritten, new SB19 and §3.9 (the differences and reasons), §3.3 (wall and cap rows), §5 (asking mode), §6 and §7 (attended refusal and status line), §8 (status, states, accessibility name, attended goldens, doctor line), §9 (`sandbox.attended.wall`), §10, §11, §12 (SB-5b, SB-6, SB-10, the not-blocked bullet); meta lanes explicitly unchanged |
+| O-Q14 | §12: the first Step is read-only; wave 0 owner column |
+| O-rest | Q3..Q5, Q7..Q13 accepted as written; §13 rewritten as "Owner decisions" with five owner notes |
 
 ## 15. Spike record
 
