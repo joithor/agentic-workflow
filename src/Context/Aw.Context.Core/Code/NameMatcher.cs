@@ -70,7 +70,7 @@ public static class NameMatcher
             return true;
         }
 
-        return plural && ((text[end] == 's' && Clean(text, end + 1, endsWord)) || (text.AsSpan(end).StartsWith("es", StringComparison.Ordinal) && Clean(text, end + 2, endsWord)));
+        return plural && ((char.ToLowerInvariant(text[end]) == 's' && Clean(text, end + 1, endsWord)) || (text.AsSpan(end).StartsWith("es", StringComparison.OrdinalIgnoreCase) && Clean(text, end + 2, endsWord)));
     }
 
     private static bool Clean(string text, int at, Func<char, bool> endsWord) => at >= text.Length || endsWord(text[at]);

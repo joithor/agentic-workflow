@@ -112,9 +112,11 @@ internal sealed class CodeLexicalSearch(IRepoReader repos, LexicalTestsRule test
         var run = new LexicalRun(pass, repo, commit, [.. listed.Value.Where(p => !repo.Denies(p))]);
         if (files.Count > 0)
         {
+            pass.TestsStarted = true;
             await tests.Find(run, files, cancellationToken).ConfigureAwait(false);
         }
 
+        pass.SchemaStarted = true;
         await schema.Find(run, cancellationToken).ConfigureAwait(false);
     }
 

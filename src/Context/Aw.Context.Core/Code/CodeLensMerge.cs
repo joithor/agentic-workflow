@@ -26,7 +26,7 @@ public static class CodeLensMerge
             Tests = [.. tests.Take(CodeRules.MaxListed)],
             Data = view.Data with { Files = listedSchema },
             Counts = view.Counts with { Tests = total, SchemaFiles = schemaTotal, FilesWithoutTest = withoutTest, Unlocated = findings.Unlocated },
-            Truncated = view.Truncated with { Tests = total > CodeRules.MaxListed || findings.TestsTruncated, SchemaFiles = schemaCut, SearchedFiles = findings.SearchedFilesCapped },
+            Truncated = view.Truncated with { Tests = total > CodeRules.MaxListed || findings.TestsTruncated, SchemaFiles = schemaCut || findings.SchemaTruncated, SearchedFiles = findings.SearchedFilesCapped },
             Lexical = findings.Searched,
             Searched = Searched(view, findings, tests.Count > 0, listedSchema.Count > 0),
             Degraded = [.. view.Degraded.Concat(Degraded(findings))],

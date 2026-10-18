@@ -44,6 +44,10 @@ internal sealed class LexicalPass(ContextSettings settings, GraphSnapshot graph,
 
     internal bool TimedOut { get; set; }
 
+    internal bool TestsStarted { get; set; }
+
+    internal bool SchemaStarted { get; set; }
+
     /// <summary>Notes that a source (or both) could not be read; the first failure of each source is the one its row shows.</summary>
     internal void Fail(string code, bool commitNotHeld, SourceId? source)
     {
@@ -62,17 +66,20 @@ internal sealed class LexicalPass(ContextSettings settings, GraphSnapshot graph,
         new(Tests, Schema, Searched, Unlocated, Capped)
         {
             TestsTruncated = TestsCapped,
-            TestsRow = Row(TestsId, _testsFailure, Capped || TestsCapped, now, configured: true),
-            SchemaRow = Row(SchemaId, _schemaFailure, SchemaCapped, now, Settings.SchemaGlobs.Count > 0),
+            SchemaTruncated = SchemaCapped,
+            TestsRow = Row(TestsId, new RowFacts(_testsFailure, Capped || TestsCapped, TestsStarted, Configured: true), now),
+            SchemaRow = Row(SchemaId, new RowFacts(_schemaFailure, SchemaCapped, SchemaStarted, Settings.SchemaGlobs.Count > 0), now),
         };
 
-    private SearchedSource Row(SourceId id, (string Code, bool NotHeld)? failure, bool capped, DateTimeOffset now, bool configured) =>
-        (configured, failure, TimedOut) switch
+    private readonly record struct RowFacts((string Code, bool NotHeld)? Failure, bool Capped, bool Started, bool Configured);
+
+    private SearchedSource Row(SourceId id, RowFacts facts, DateTimeOffset now) =>
+        (facts.Configured, facts.Failure, TimedOut) switch
         {
             (false, _, _) => SearchedSources.Lexical(id, SearchedState.NotConfigured, "not-configured", code: null, asOf: null),
             (_, { NotHeld: true } f, _) => SearchedSources.Lexical(id, SearchedState.Unavailable, "commit-not-held", f.Code, asOf: null),
             (_, { } f, _) => SearchedSources.Lexical(id, SearchedState.Degraded, reason: null, f.Code, asOf: null),
-            (_, _, true) => SearchedSources.Lexical(id, SearchedState.Degraded, reason: null, ContextErrors.CodeSearchTimedOut.Code, now),
-            _ => SearchedSources.Lexical(id, SearchedState.Ok, capped ? "capped" : null, code: null, now),
+            (_, _, true) => SearchedSources.Lexical(id, SearchedState.Degraded, reason: null, ContextErrors.CodeSearchTimedOut.Code, facts.Started ? now : null),   // a step that never began read nothing: no asOf
+            _ => SearchedSources.Lexical(id, SearchedState.Ok, facts.Capped ? "capped" : null, code: null, now),
         };
 }

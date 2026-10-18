@@ -15,7 +15,9 @@ internal sealed class LexicalSchemaRule(LexicalCandidates candidates)
         }
 
         var schemaPaths = run.Tracked.Where(p => PathDenylist.Matches(p, pass.Settings.SchemaGlobs)).ToList();
-        foreach (var thing in pass.Things.Where(t => t.Searchable).Take(CodeRules.MaxThings))
+        var searchable = pass.Things.Where(t => t.Searchable).ToList();
+        pass.SchemaCapped |= searchable.Count > CodeRules.MaxThings;   // the rest are reported, not dropped silently
+        foreach (var thing in searchable.Take(CodeRules.MaxThings))
         {
             var terms = CodeLensBuilder.ThingTerms(pass.Graph, thing.Key, pass.Clean);
             if (terms.Count == 0 || schemaPaths.Count == 0)
