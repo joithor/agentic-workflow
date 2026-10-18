@@ -10599,12 +10599,6 @@ static Aw.Sindri.Core.Sessions.TmuxPane.operator ==(Aw.Sindri.Core.Sessions.Tmux
 static Aw.Sindri.Core.Sessions.TmuxServerView.operator !=(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
 static Aw.Sindri.Core.Sessions.TmuxServerView.operator ==(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
 
-Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.BlockRuntimes.get -> System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.BlockId>!
-Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.BlockRuntimes.init -> void
-Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.JudgeSettings? Judge, out Aw.Sindri.Core.Profile.ForgeSettings? Forge) -> void
-Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.JudgeSettings? Judge = null, Aw.Sindri.Core.Profile.ForgeSettings? Forge = null) -> void
-Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.Deconstruct(out string! Actor, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Outputs, out int Tokens, out Aw.Sindri.Core.Workflow.Engine.StepRuntime Via, out string! ReportSha256, out string? Decision) -> void
-Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.StepCompleted(string! Actor, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Outputs, int Tokens, Aw.Sindri.Core.Workflow.Engine.StepRuntime Via, string! ReportSha256, string? Decision = null) -> void
 Aw.Sindri.Core.Sessions.SessionAsking
 Aw.Sindri.Core.Sessions.SessionAsking.<Clone>$() -> Aw.Sindri.Core.Sessions.SessionAsking!
 Aw.Sindri.Core.Sessions.SessionAsking.Deconstruct(out Aw.Sindri.Core.Sessions.AskingReason Reason, out string? Tool, out System.DateTimeOffset Since) -> void
