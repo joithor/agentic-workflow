@@ -66,7 +66,7 @@ internal sealed partial class DockerCliRuntime(IToolRunner runner, Func<string, 
     }
 
     // Why `docker version` failed, from the CLI's own stderr. The text is only matched, never shown (it may hold paths or anything else the CLI prints).
-    private static DaemonProblem Problem(ToolRun failed) => failed.Error switch
+    private static DaemonProblem Problem(ToolRun failed) => Failure(failed) switch
     {
         _ when failed.Outcome == ToolOutcome.TimedOut => DaemonProblem.Starting,
         var e when e.Contains("permission denied", StringComparison.OrdinalIgnoreCase) => DaemonProblem.PermissionDenied,
@@ -74,6 +74,10 @@ internal sealed partial class DockerCliRuntime(IToolRunner runner, Func<string, 
             && (e.Contains("does not exist", StringComparison.OrdinalIgnoreCase) || e.Contains("not found", StringComparison.OrdinalIgnoreCase)) => DaemonProblem.ContextMissing,
         _ => DaemonProblem.NotRunning,
     };
+
+    // The CLI's own failure text without its WARNING lines: a root-owned ~/.docker/config.json prints a "permission denied" warning beside an unrelated failure.
+    private static string Failure(ToolRun failed)
+        => string.Join('\n', failed.Error.Split('\n').Where(static line => !line.TrimStart().StartsWith("WARNING:", StringComparison.OrdinalIgnoreCase)));
 
     private ToolRun Docker(string[] arguments) => runner.Run("docker", arguments, _timeout);
 
