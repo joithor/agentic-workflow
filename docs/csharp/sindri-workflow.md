@@ -541,6 +541,33 @@ Descriptor-only too (`ScopingSteps`, `PendingInputs` in `Aw.Sindri.Features/Bloc
 
 `step.interview.answer` and `step.scope.review` carry no form yet: the answer form built from `fact:questions` and the stop's fixed form (approve, revise, drop) await W2, so at the desk they complete with plain outcomes and outputs. The output schemas, their fact-or-packet-file design and field-name choices are in `schemas/scoping/README.md`.
 
+### Block catalog (line design and plan stations)
+
+Descriptor-only Steps of `workflow.design` and `workflow.plan` (line spec §4-§6, LN-Y1; `Aw.Sindri.Features/Blocks/Step/{DesignSteps,LensRoundSteps,LensSteps,PlanSteps}.cs`). A served instance parks at one with SND-WF-010 until its runtime ships; at the desk each completes with plain outcomes and outputs. `bundle`, `pack` and `subject` are optional text parameters (`subject` required on `step.lens.run`), descriptor-only until LN-PK resolves packs; `workflow.packs.lenses.design` and `workflow.packs.style` are profile key names only. Neither recipe uses an `input.*` Step input.
+
+| Step | Kind | Reads | Outcomes | Writes |
+|---|---|---|---|---|
+| `step.design.intake` | block | `scopePacket`, `designRevision` | `fresh`, `revise` | the eight seeds (`scope`, `packs`, `design`, `findings`, `lensRounds`, `changedSections`, `answers`, `accepted`) on both |
+| `step.design.draft` | agent | `scope`, `packs`, `design`, `findings`, `changedSections` | `drafted` | `design`; optional `bundle` |
+| `step.design.apply` | agent | `scope`, `packs`, `design`, `designRevision`, `answers` | `applied` | `design`, `changedSections`; optional `bundle` |
+| `step.design.check` | block | `scope`, `packs`, `design` | `pass`, `gaps` | `findings` on gaps |
+| `step.design.revise` | agent | `scope`, `packs`, `design`, `findings`, `answers` | `revised` | `design`, `changedSections`; optional `bundle` |
+| `step.design.lens-desk` | desk, human-only | `findings`, `lensRounds` | `accept`, `revise`, `drop` | `accepted` on accept, `answers` on revise |
+| `step.design.evidence` | block | `scope`, `packs`, `design`, `findings`, `lensRounds`, `accepted` | `complete`, `incomplete` | `designPacket`, `design`, `lensRounds` on complete; `findings` on incomplete |
+| `step.lens.round` | block | `packs`, `lensRounds`, `changedSections` | `ready` | `lensQueue`; optional `pack` |
+| `step.lens.run` | agent | `lensQueue`, `lensRounds` | `reviewed` | `lensReport`; `subject` (required), optional `bundle` |
+| `step.lens.log` | block | `lensReport`, `lensRounds`, `lensQueue` | `next`, `clean`, `findings` | `lensRounds` on all; `lensQueue` on next; `findings` on findings |
+| `step.plan.intake` | block | `scopePacket`, `designPacket` | `loaded` | the seven seeds (`design`, `plan`, `findings`, `questions`, `answers`, `answerLog`, `holdoutSets`) |
+| `step.plan.graph` | agent | `scopePacket`, `design`, `plan`, `findings`, `answerLog` | `drafted` | `plan` |
+| `step.plan.check` | block | `scopePacket`, `design`, `plan` | `pass`, `gaps` | `findings` on gaps |
+| `step.plan.exec-review` | agent | `design`, `plan` | `executable`, `objections` | `findings` on objections |
+| `step.plan.holdout` | agent | `design`, `plan` | `written` | `holdoutSets` (ids and hashes, never scenario text) |
+| `step.plan.evidence` | block | `scopePacket`, `design`, `plan`, `holdoutSets`, `findings`, `answerLog` | `complete`, `incomplete` | `planPacket` on complete, `findings` on incomplete |
+| `step.plan.questions` | block | `design`, `answers`, `answerLog` | `asked`, `none` | `questions` on asked |
+| `step.plan.settle` | block | `design`, `answers`, `answerLog` | `assumed`, `changed`, `replan` | `designRevision` on changed |
+| `step.plan.review` | desk, human-only | `planPacket`, `design` | `approve`, `reviseDesign`, `revisePlan`, `drop` | `answers` on reviseDesign and revisePlan |
+| `step.plan.freeze` | block | `planPacket`, `design`, `plan`, `holdoutSets` | `frozen`, `mismatch` | `planPacket`, `phasePackets` on frozen; `findings` on mismatch |
+
 The Step inputs `input.context.lenses`, `input.context.code` and `input.context.history` are registered as descriptors (parameters `anchors`, `depth`, `hops`, `window`) so the recipe validates; the context lane replaces them with the blocks (C1, C3, C5, W6). The output schemas are `schemas/scoping/` (`node scripts/check-scoping-schemas.mjs`).
 
 `step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and human-only; their hashes moved once when the two fields

@@ -46,7 +46,7 @@ internal static class BlockRegistrations
         .AddReviewBlocks()
         .AddBlockDescriptor(OwnerSteps.Decide)
         .AddScopingBlocks()
-        .AddLineBlocks()
+        .AddLineBlocks().AddLineDesignBlocks()
         .AddBlockDescriptor(EvidenceProviders.Check)
         .AddGate<BudgetAvailableGate>()
         .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
@@ -103,6 +103,27 @@ internal static class BlockRegistrations
     /// <summary>Registers the scoping station's Steps and the context Step inputs it names (scoping spec §9), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
+    private static IServiceCollection AddLineDesignBlocks(this IServiceCollection services) => services
+        .AddBlockDescriptor(DesignSteps.Intake)
+        .AddBlockDescriptor(DesignSteps.Draft)
+        .AddBlockDescriptor(DesignSteps.Apply)
+        .AddBlockDescriptor(DesignSteps.Check)
+        .AddBlockDescriptor(DesignSteps.Revise)
+        .AddBlockDescriptor(DesignSteps.LensDesk)
+        .AddBlockDescriptor(DesignSteps.Evidence)
+        .AddBlockDescriptor(LensRoundSteps.Round)
+        .AddBlockDescriptor(LensRoundSteps.Log)
+        .AddBlockDescriptor(PlanSteps.Intake)
+        .AddBlockDescriptor(PlanSteps.Graph)
+        .AddBlockDescriptor(PlanSteps.Check)
+        .AddBlockDescriptor(PlanSteps.ExecReview)
+        .AddBlockDescriptor(PlanSteps.Holdout)
+        .AddBlockDescriptor(PlanSteps.Evidence)
+        .AddBlockDescriptor(PlanSteps.Questions)
+        .AddBlockDescriptor(PlanSteps.Settle)
+        .AddBlockDescriptor(PlanSteps.Review)
+        .AddBlockDescriptor(PlanSteps.Freeze);
+
     private static IServiceCollection AddScopingBlocks(this IServiceCollection services) => services
         .AddBlockDescriptor(ScopingSteps.Intake)
         .AddBlockDescriptor(ScopingSteps.ReadBrief)
