@@ -49,7 +49,7 @@
           <ItemsControl.ItemTemplate>
             <DataTemplate x:DataType="wf:StageCellViewModel">
               <!-- A fixed cell width under the head of its state (a blank cell keeps its width); one line, never wrapped mid-word; the full words are the tooltip. -->
-              <Border x:Name="WorkflowStageCell" Width="{DynamicResource Size.StageCell}" ToolTip.Tip="{Binding Name}">
+              <Border Name="WorkflowStageCell" Width="{DynamicResource Size.StageCell}" ToolTip.Tip="{Binding Name}">
                 <TextBlock Classes="caption mono" Classes.current="{Binding IsCurrent}" Text="{Binding Text}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,6,0"
                            IsVisible="{Binding !IsMissing}" AutomationProperties.AccessibilityView="Raw" />
               </Border>

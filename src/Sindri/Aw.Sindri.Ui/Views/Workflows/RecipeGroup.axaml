@@ -35,7 +35,7 @@
             <ItemsControl.ItemTemplate>
               <DataTemplate x:DataType="x:String">
                 <!-- The full state name is the tooltip and the accessible name; the text is one line, never wrapped. -->
-                <Border x:Name="WorkflowColumnHead" Width="{DynamicResource Size.StageCell}" ToolTip.Tip="{Binding}" AutomationProperties.Name="{Binding}"
+                <Border Name="WorkflowColumnHead" Width="{DynamicResource Size.StageCell}" ToolTip.Tip="{Binding}" AutomationProperties.Name="{Binding}"
                         AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
                   <TextBlock Classes="eyebrow" Text="{Binding}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" Margin="0,0,6,0" AutomationProperties.AccessibilityView="Raw" />
                 </Border>
