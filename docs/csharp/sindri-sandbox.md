@@ -64,8 +64,8 @@ words "scope", "plan", "canary" and "confined" never appear.
 | Event | Fields |
 |---|---|
 | `launch.started` | gains `sandbox` (the `SandboxSummary`) |
-| `session.ended` | `reason: limit` adds `kind`, `limit`, `peak` and `peaks`; a final usage sample precedes it. Written by `LaunchSessionEvents.EndByLimit`; the launches view's `ended` carries `kind`, `limit` and `peak` |
-| `sandbox.denied` | `{launch, kind: network\|policy\|path, target, rule, count}`; the 1st, 10th and 100th denial of each (kind, target) per run; at most 200 distinct targets, then one event with `overflow: true`, an empty `target`, rule `overflow` and `count` the denials not counted by target; a denied command line is never recorded whole |
+| `session.ended` | `reason: limit` adds `kind`, `limit`, `peak` and `peaks`; a final usage sample precedes it. Written by `LaunchSessionEvents.EndByLimit`; the launches view's `ended` carries `kind`, `limit` and `peak` only: the tripped limit is what the limit ending shows, so `peaks` stays on the event |
+| `sandbox.denied` | `{launch, kind: network\|policy\|path, target, rule, count}`; the 1st, 10th and 100th denial of each (kind, target) per run; at most 200 distinct targets, then one event per `kind` (the key includes the kind, so up to three) with `overflow: true`, an empty `target`, rule `overflow` and `count` the denials not counted by target; a denied command line is never recorded whole |
 | `sandbox.limit-hit` | `{launch, kind: pids\|memory\|disk, peak}` |
 
 Wire shapes are goldens under `Golden/Sandbox/events/`. The spec writes `launchId` in these payloads; on the wire the field is `launch`, as in every other launch event.
