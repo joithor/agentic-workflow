@@ -24,7 +24,7 @@ public sealed class McpCliTests
     public void The_json_answer_is_in_the_host_context()
     {
         var json = System.Text.Encoding.UTF8.GetString(AwJson.Serialize(
-            new RegisterMcpResponse(Core.Ids.RepoName.From("demo"), "/work/demo", ["mcp", "add"], Applied: false, [new Core.Mcp.ProviderResult(ProviderFile.Codex, ProviderOutcome.NeedsTrust, "x", Fix: null)]), AwJson.CreateOptions(SindriJsonContext.Default)));
+            new RegisterMcpResponse(Core.Ids.RepoName.From("demo"), "/work/demo", ["mcp", "add"], Applied: false, [new ProviderResult(ProviderFile.Codex, ProviderOutcome.NeedsTrust, "x", Fix: null)]), AwJson.CreateOptions(SindriJsonContext.Default)));
 
         Assert.Equal("""{"repo":"demo","checkout":"/work/demo","arguments":["mcp","add"],"applied":false,"providers":[{"provider":"codex","outcome":"needsTrust","detail":"x","fix":null}]}""", json);
     }

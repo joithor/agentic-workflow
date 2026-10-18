@@ -40,7 +40,7 @@ public sealed class ProviderPlansTests
     [Fact]
     public void Cursor_is_unchanged_when_right_replaced_when_the_port_moved_and_refused_when_not_json()
     {
-        var written = Cursor(existing: null, Url, "demo").Text!;
+        var written = Cursor(existing: null, Url, "demo").Text;
 
         Assert.Equal(new FilePlan(Text: null, Problem: null), Cursor(written, Url, "demo"));
         var moved = Cursor(written, "http://127.0.0.1:7481/sindri/mcp", "demo");
