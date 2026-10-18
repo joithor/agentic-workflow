@@ -60,8 +60,8 @@ public abstract class AgentSessionsContract
         var exit = await sessions.Watch(A.FirstLaunchId, Token);
         var lost = await sessions.Watch(other, Token);
 
-        Expect.True(exit.IsSuccess && exit.Value is { IsLive: false, EndedAs: SessionEndReason.Exit, ExitCode: 3 });
-        Expect.True(lost.IsSuccess && lost.Value is { IsLive: false, EndedAs: SessionEndReason.Lost, ExitCode: null });
+        Expect.True(exit.IsSuccess && exit.Value is { IsLive: false, EndedAs: AgentSessionEnd.Exit, ExitCode: 3 });
+        Expect.True(lost.IsSuccess && lost.Value is { IsLive: false, EndedAs: AgentSessionEnd.Lost, ExitCode: null });
     }
 
     /// <summary>Spend is the latest sample, and another launch's samples don't count.</summary>
