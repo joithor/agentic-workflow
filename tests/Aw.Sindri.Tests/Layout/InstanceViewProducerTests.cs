@@ -135,8 +135,20 @@ public sealed class InstanceViewProducerTests
     [Fact]
     public void An_instance_parked_on_a_branch_state_after_a_loop_shows_every_state_it_visited_as_done()
     {
+        var branching = Branching();
+        var instance = EngineFixture.At(branching.Recipe, "review") with { Visited = ["produce", "checks", "verify", "review"] };   // produce, checks, verify, back to produce, checks, then the branch
+
+        var view = InstanceViews.Of(instance, branching, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
+
+        Assert.Equal(
+            [("produce", StateGlyph.Done), ("checks", StateGlyph.Done), ("verify", StateGlyph.Done), ("review", StateGlyph.Active), ("done", StateGlyph.Pending)],
+            view.States.Select(static c => (c.State, c.Glyph)));
+    }
+
+    private static InterpretedRecipe Branching()
+    {
         var plain = _incident.Recipe;
-        var branching = _incident with
+        return _incident with
         {
             Recipe = plain with
             {
@@ -144,12 +156,22 @@ public sealed class InstanceViewProducerTests
                 Transitions = [.. plain.Transitions, plain.Transitions[0] with { From = ["checks"], To = "review" }],
             },
         };
-        var instance = EngineFixture.At(branching.Recipe, "review") with { Visited = ["produce", "checks", "verify", "review"] };   // produce, checks, verify, back to produce, checks, then the branch
+    }
+
+    [Fact]
+    public void A_finished_instance_that_visited_a_branch_state_shows_it_done_and_the_main_path_states_it_skipped_pending()
+    {
+        var branching = Branching();
+        var instance = EngineFixture.At(branching.Recipe, "done") with
+        {
+            Outcome = OutcomeName.From("resolved"),
+            Visited = ["produce", "checks", "review", "done"],
+        };
 
         var view = InstanceViews.Of(instance, branching, StatusCases.Now, timeoutAt: null, new InstanceViewContext());
 
         Assert.Equal(
-            [("produce", StateGlyph.Done), ("checks", StateGlyph.Done), ("verify", StateGlyph.Done), ("review", StateGlyph.Active), ("done", StateGlyph.Pending)],
+            [("produce", StateGlyph.Done), ("checks", StateGlyph.Done), ("verify", StateGlyph.Pending), ("review", StateGlyph.Done), ("done", StateGlyph.Done)],
             view.States.Select(static c => (c.State, c.Glyph)));
     }
 
