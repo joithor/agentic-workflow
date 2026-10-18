@@ -100,6 +100,19 @@ public abstract class ContextEngineContract<TEngine>
         Check(codes.All(c => c == ContextErrors.NoMap.Code), "a subgraph read, a proposals read and a propose without a map are 030");
     }
 
+    /// <summary>A withdrawal (a run with no surfaces) on a store with no map takes nothing back: success, no draft, zero counts.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task A_withdraw_on_an_empty_store_succeeds_with_no_draft_and_zero_counts()
+    {
+        var scope = new ContextScope(Settings: null, [new ContextRepo(ContextRepoName.From("split-panes"), "/repos/split-panes")],
+            new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli));
+
+        var result = await CreateDown().Propose(new ScopeProposal("run-1", ContextRepoName.From("split-panes"), []), scope, CancellationToken.None);
+
+        Check(result.IsSuccess && result.Value is { Draft: null, Added: 0, Existing: 0, Rejected: 0, Withdrawn: 0, Kept: 0 }, "a withdraw on an empty store is a success with no draft and zero counts");
+    }
+
     /// <summary>An eval with no probe file named and none on disk is SND-CONTEXT-036, whatever the engine.</summary>
     /// <returns>A task.</returns>
     [Fact]
