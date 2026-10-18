@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using System.Text.Json.Nodes;
 using Aw.Sindri.Ui.Api.Context;
 
@@ -87,7 +88,7 @@ public abstract partial class SindriApiContract
 
     // The fake holds one partly-known golden; it never answers it for a different set, so a reply always names what was asked.
     [Fact]
-    public async Task Lenses_does_not_answer_the_missing_anchor_golden_for_a_different_partly_known_set()
+    public async Task Lenses_does_not_serve_a_partly_known_set_the_golden_does_not_hold()
     {
         var api = Reach(new FakeSindriApi());
         var known = AnchorKeys("set-two-anchors");
@@ -95,8 +96,9 @@ public abstract partial class SindriApiContract
         var other = await api.Lenses(_api, new LensesQuery([known[1], "feature:tabs.nope"], Depth: null, Draft: false, MapVersion: null), Token);
         var wider = await api.Lenses(_api, new LensesQuery([.. known, "feature:tabs.nope"], Depth: null, Draft: false, MapVersion: null), Token);
 
-        Expect.Equal("SND-CONTEXT-003", other.Error.Code);
-        Expect.Equal("SND-CONTEXT-003", wider.Error.Code);
+        // Not 003 (the real server answers 200 with missingAnchors): the fake's "not served" answer, so a test relying on it fails loudly.
+        Expect.Equal((ErrorKind.NotFound, ErrorKind.NotFound), (other.Error.Kind, wider.Error.Kind));
+        Expect.True(other.Error.Code != "SND-CONTEXT-003" && wider.Error.Code != "SND-CONTEXT-003");
     }
 
     [Fact]
