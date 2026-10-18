@@ -66,6 +66,16 @@ public sealed class ComponentHopQueryTests : IDisposable
         Assert.Equal("SND-CONTEXT-140", bad.Error.Code);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_hops_echo_is_in_cascade_order_whatever_order_the_request_listed_them()
+    {
+        await Import(2);
+
+        var one = await _world.Engine.Lenses("feature:f0", MapRead.Current, new LensRange(1, "component,flow,state,dependency"), MapWorld.Human, MapWorld.None);
+
+        Assert.Equal(["state", "dependency", "flow", "component"], one.Value.Searched.Hops);
+    }
+
     private async Task<Result<ContextResult>> Query(string? hops) =>
         await _world.Engine.Query(new ContextQuery(Text: null, Node: "feature:f0") { Depth = 1, Hops = hops }, MapWorld.Human, MapWorld.None);
 

@@ -441,7 +441,7 @@ those surfaces' actions (the `graph` section). Each step costs 1:
 
 A reached surface or action is reported as the feature that owns it. Only the reached node steps on, never that
 feature's other surfaces, so a sibling such as "Pane resize" is never pulled in. The depth is `context.cascadeDepth`
-in the profile (0–4, default 2), and `--depth` overrides it. Each affected node shows its shortest path (between equally deep paths, the one with the fewest `owns` steps, then key order), starting at the anchor and naming the real hops: the `owns` steps down through the anchor's own scope to the surface or action that writes or depends, then the state, dependency or flow hops. A bad `--depth` (not a whole number, or outside 0–4) is `SND-CONTEXT-006`.
+in the profile (0–4, default 2), and `--depth` overrides it. Each affected node shows its shortest path (between equally deep paths, the one with the fewest `owns` steps, then key order), starting at the anchor and naming the real hops: the `owns` steps down through the anchor's own scope to the surface or action that writes or depends, then the state, dependency or flow hops. A bad `--depth` (not a whole number, or outside 0–4) is `SND-CONTEXT-006`. `--hops state,flow,dependency,component` adds the opt-in component hop (nodes that share a confirmed code unit); a code unit implementing more than `context.cascadeComponentFanOut` features (default 5) is skipped and listed in `skippedComponents`; an unknown hop name is `SND-CONTEXT-140`.
 
 **A session sees only its repo.** A session sees only the nodes its repo implements (`implements` edges with file
 evidence in its `X-Sindri-Repo`), the code files those edges start from, and the edges among them (so `lenses` shows its code band and
