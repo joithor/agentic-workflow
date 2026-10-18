@@ -12,7 +12,7 @@ public sealed class DocsScopeStepContract : DescriptorContract
 {
     protected override BlockDescriptor Descriptor => DocsSteps.Scope;
 
-    protected override string ExpectedHash => "sha256:x";
+    protected override string ExpectedHash => "sha256:bc6d180984e8dce30ae22e53d7d83d9a8f183086686602f106929726dd1e0ff6";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

@@ -61,7 +61,7 @@ loops:
   retries: { cap: 3 }
 budget: { tokens: 700k }
 evals:
-  - evals/workflow.docs-sync/opened.jsonl
+  - evals/workflow.docs-sync/happy.jsonl
   - evals/workflow.docs-sync/opened-updated.jsonl
   - evals/workflow.docs-sync/opening-rejected.jsonl
   - evals/workflow.docs-sync/not-needed.jsonl
