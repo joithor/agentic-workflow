@@ -1,3 +1,4 @@
+using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 
@@ -10,6 +11,7 @@ internal static class LensTexts
     {
         Anchor = view.Anchor with { Label = text.Label(view.Anchor.Label, view.Anchor.Trust) },
         Bands = Bands(view.Bands, text),
+        SkippedComponents = Units(view.SkippedComponents, text),
     };
 
     internal static LensesSetView Clean(LensesSetView view, MapText text) => view with
@@ -17,7 +19,10 @@ internal static class LensTexts
         Anchors = [.. view.Anchors.Select(a => a with { Label = text.Label(a.Label, a.Trust) })],
         MissingAnchors = [.. view.MissingAnchors.Select(text.Line)],
         Bands = Bands(view.Bands, text),
+        SkippedComponents = Units(view.SkippedComponents, text),
     };
+
+    private static IReadOnlyList<SkippedComponent>? Units(IReadOnlyList<SkippedComponent>? units, MapText text) => units is null ? null : [.. units.Select(u => u with { Unit = text.Line(u.Unit) })];
 
     private static LensBands Bands(LensBands bands, MapText text) => new(Intent(bands.Intent, text), Product(bands.Product, text), Code(bands.Code, text));
 

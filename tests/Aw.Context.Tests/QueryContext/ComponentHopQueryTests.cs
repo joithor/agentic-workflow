@@ -1,6 +1,8 @@
 using System.Globalization;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Lenses;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Context.Tests.Map;
 using Aw.Kernel;
@@ -47,6 +49,21 @@ public sealed class ComponentHopQueryTests : IDisposable
         var result = await Query("neighbors");
 
         Assert.Equal("SND-CONTEXT-140", result.Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Lenses_and_sets_take_the_hop_list_and_refuse_an_unknown_name_with_140()
+    {
+        await Import(6);
+
+        var one = await _world.Engine.Lenses("feature:f0", MapRead.Current, new LensRange(1, "component"), MapWorld.Human, MapWorld.None);
+        var set = await _world.Engine.LensesOf(["feature:f0", "feature:f1"], MapRead.Current, new LensRange(1, "component"), MapWorld.Human, MapWorld.None);
+        var bad = await _world.Engine.Lenses("feature:f0", MapRead.Current, new LensRange(1, "everything"), MapWorld.Human, MapWorld.None);
+
+        Assert.Equal([new SkippedComponent("code:src/shared.ts", 6)], one.Value.SkippedComponents);
+        Assert.Equal(["state", "dependency", "flow", "component"], one.Value.Searched.Hops);
+        Assert.Equal([new SkippedComponent("code:src/shared.ts", 6)], set.Value.SkippedComponents);
+        Assert.Equal("SND-CONTEXT-140", bad.Error.Code);
     }
 
     private async Task<Result<ContextResult>> Query(string? hops) =>

@@ -5005,3 +5005,19 @@ Aw.Context.Core.Results.ContextResult.SkippedComponents.init -> void
 Aw.Context.Core.Engine.ContextSettings.CascadeComponentFanOut.get -> int
 Aw.Context.Core.Engine.ContextSettings.CascadeComponentFanOut.init -> void
 static Aw.Context.Core.Engine.QueryRules.CascadeFor(Aw.Context.Core.Graph.CascadeHops? hops, Aw.Context.Core.Engine.ContextSettings! settings) -> Aw.Context.Core.Graph.CascadeOptions!
+Aw.Context.Core.Facade.IContextLenses.Lenses(string! anchor, Aw.Context.Core.Map.MapRead read, Aw.Context.Core.Lenses.LensRange! range, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Lenses.LensesView!>!>
+Aw.Context.Core.Facade.IContextLenses.LensesOf(System.Collections.Generic.IReadOnlyList<string!>! anchors, Aw.Context.Core.Map.MapRead read, Aw.Context.Core.Lenses.LensRange! range, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Lenses.LensesSetView!>!>
+Aw.Context.Core.Lenses.LensRange.<Clone>$() -> Aw.Context.Core.Lenses.LensRange!
+Aw.Context.Core.Lenses.LensRange.Deconstruct(out int? Depth, out string? Hops) -> void
+Aw.Context.Core.Lenses.LensRange.Equals(Aw.Context.Core.Lenses.LensRange? other) -> bool
+Aw.Context.Core.Lenses.LensRange
+Aw.Context.Core.Lenses.LensRange.LensRange(int? Depth, string? Hops = null) -> void
+override Aw.Context.Core.Lenses.LensRange.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.LensRange.GetHashCode() -> int
+override Aw.Context.Core.Lenses.LensRange.ToString() -> string!
+static Aw.Context.Core.Lenses.LensRange.operator !=(Aw.Context.Core.Lenses.LensRange? left, Aw.Context.Core.Lenses.LensRange? right) -> bool
+static Aw.Context.Core.Lenses.LensRange.operator ==(Aw.Context.Core.Lenses.LensRange? left, Aw.Context.Core.Lenses.LensRange? right) -> bool
+Aw.Context.Core.Lenses.LensRange.Depth.get -> int?
+Aw.Context.Core.Lenses.LensRange.Depth.init -> void
+Aw.Context.Core.Lenses.LensRange.Hops.get -> string?
+Aw.Context.Core.Lenses.LensRange.Hops.init -> void
