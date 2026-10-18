@@ -12,10 +12,10 @@ public static class McpRegistration
     /// <summary>The claude CLI's arguments for <paramref name="repo"/> on <paramref name="port"/>.</summary>
     /// <param name="repo">The repo.</param>
     /// <param name="port">Sindri's API port.</param>
-    /// <returns>The arguments after 'claude'.</returns>
+    /// <returns>The arguments after 'claude'; the header goes last, since claude's '--header &lt;header...&gt;' takes every later argument.</returns>
     public static IReadOnlyList<string> Arguments(RepoName repo, int port) =>
-        ["mcp", "add", "--transport", "http", "--scope", "local", "--header", "X-Sindri-Repo: " + repo.Value, McpScope.ServerName,
-            string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}/sindri/mcp")];
+        ["mcp", "add", "--transport", "http", "--scope", "local", McpScope.ServerName,
+            string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}/sindri/mcp"), "--header", "X-Sindri-Repo: " + repo.Value];
 
     /// <summary>The command as one shell line ('claude' and each argument, quoted where it needs it).</summary>
     /// <param name="arguments">The arguments after 'claude'.</param>

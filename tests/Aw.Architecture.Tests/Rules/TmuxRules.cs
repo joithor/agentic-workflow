@@ -3,7 +3,7 @@ using System.Diagnostics;
 namespace Aw.Architecture.Tests.Rules;
 
 /// <summary>
-/// Only one type in Sindri's session namespaces runs tmux, and only through four read-only verbs (collector spec CI-5). A second type may build the attach
+/// Only one type in Sindri's session namespaces runs tmux, and only through five read-only verbs (collector spec CI-5). A second type may build the attach
 /// command as data for a copy line or a viewer, and nothing that starts a process may take that line. 'Builds a tmux argv' is read from the IL: a type that
 /// loads a tmux verb as a string literal, or starts a process and names the 'tmux' executable.
 /// </summary>
@@ -12,8 +12,8 @@ public static class TmuxRules
     /// <summary>A Sessions type that builds or runs tmux outside the two allowed ones, or an allowed one that strays from its contract.</summary>
     public const string Id = "ARCH-SESS-001";
 
-    /// <summary>The verbs Sindri runs, and the only ones: the one named list, so a later phase widens it by adding a verb here (the verb is already in the known set below).</summary>
-    public static IReadOnlyList<string> ReadVerbs { get; } = ["list-sessions", "list-panes", "list-clients", "display-message"];
+    /// <summary>The verbs Sindri runs, and the only ones: the one named list; a new verb is a reviewed change here, in TmuxVerb and in TmuxCli.</summary>
+    public static IReadOnlyList<string> ReadVerbs { get; } = ["list-sessions", "list-panes", "list-clients", "display-message", "capture-pane"];
 
     private const string Executable = "tmux";
     private const string SocketFlag = "-S";
@@ -23,7 +23,7 @@ public static class TmuxRules
     [
         "attach", "attach-session", "new", "new-session", "new-window", "split-window", "send-keys", "send-prefix", "kill-server", "kill-session", "kill-window",
         "kill-pane", "switch-client", "select-pane", "select-window", "run-shell", "respawn-pane", "respawn-window", "set-option", "set-environment", "source-file",
-        "capture-pane", "pipe-pane", "paste-buffer", "load-buffer", "save-buffer", "rename-session", "detach-client", "refresh-client", "if-shell", "display-popup",
+        "pipe-pane", "paste-buffer", "load-buffer", "save-buffer", "rename-session", "detach-client", "refresh-client", "if-shell", "display-popup",
     ];
 
     /// <summary>Checks the types of Sindri's Sessions namespaces.</summary>
@@ -39,7 +39,7 @@ public static class TmuxRules
         var violations = new List<Violation>();
         if (cli is null)
         {
-            violations.Add(new Violation(Id, $"no {cliName} type in the Sessions namespaces", $"add {cliName}: the one type that runs tmux, through the four read verbs"));
+            violations.Add(new Violation(Id, $"no {cliName} type in the Sessions namespaces", $"add {cliName}: the one type that runs tmux, through the five read verbs"));
         }
 
         if (attach is null)
@@ -84,7 +84,7 @@ public static class TmuxRules
     {
         foreach (var verb in literals.Where(l => ReadVerbs.Contains(l, StringComparer.Ordinal) || _otherVerbs.Contains(l, StringComparer.Ordinal)).Order(StringComparer.Ordinal))
         {
-            yield return new Violation(Id, $"{type.FullName} names the tmux verb '{verb}'", "build tmux commands only in TmuxCli (four read verbs) and TmuxAttachLine (the attach line as data)");
+            yield return new Violation(Id, $"{type.FullName} names the tmux verb '{verb}'", "build tmux commands only in TmuxCli (five read verbs) and TmuxAttachLine (the attach line as data)");
         }
 
         if (startsProcess && literals.Contains(Executable))
