@@ -58,10 +58,10 @@ internal static class BlockRegistrations
         .AddEvent(RecipeEvents.ClaimCreated)
         .AddEvent(RecipeEvents.NotifyDelivered);
 
-    /// <summary>Registers the line's blocks (the per-phase child's).</summary>
+    /// <summary>Registers the line's blocks (the build and prove stations' and the per-phase child's).</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
-    private static IServiceCollection AddLineBlocks(this IServiceCollection services) => services.AddPhaseBlocks();
+    private static IServiceCollection AddLineBlocks(this IServiceCollection services) => services.AddLineStationBlocks().AddPhaseBlocks();
 
     /// <summary>Registers the per-phase child's Steps, the babysitter stub's Step and the line report effect (line spec §7, App. C.6), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
@@ -72,6 +72,24 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PhaseSteps.Decide)
         .AddBlockDescriptor(BabysitSteps.Watch)
         .AddBlockDescriptor(LineEffects.Report);
+
+    /// <summary>Registers the line's build and prove stations' Steps (line spec §7.2, §7.3), descriptors only.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddLineStationBlocks(this IServiceCollection services) => services
+        .AddBlockDescriptor(BuildSteps.Prepare)
+        .AddBlockDescriptor(BuildSteps.Red)
+        .AddBlockDescriptor(BuildSteps.RedCheck)
+        .AddBlockDescriptor(BuildSteps.Green)
+        .AddBlockDescriptor(BuildSteps.Checks)
+        .AddBlockDescriptor(BuildSteps.ScopeDesk)
+        .AddBlockDescriptor(BuildSteps.Amend)
+        .AddBlockDescriptor(ProveSteps.Intake)
+        .AddBlockDescriptor(ProveSteps.BeforeAfter)
+        .AddBlockDescriptor(ProveSteps.Holdout)
+        .AddBlockDescriptor(ProveSteps.HoldoutLog)
+        .AddBlockDescriptor(ProveSteps.Evidence)
+        .AddBlockDescriptor(ProveSteps.FailLog);
 
     /// <summary>Registers the scoping station's Steps and the context Step inputs it names (scoping spec §9), descriptors only.</summary>
     /// <param name="services">The service collection.</param>

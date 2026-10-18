@@ -534,6 +534,26 @@ The Step inputs `input.context.lenses`, `input.context.code` and `input.context.
 `step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and human-only; their hashes moved once when the two fields
 landed (provisional owner default); every other shipped descriptor hashes as before (`ShippedBlocksTests` pins all of them).
 
+### Block catalog (line stations: build and prove)
+
+Descriptor-only (`BuildSteps`, `ProveSteps` in `Aw.Sindri.Features/Blocks/Step/`); the recipes are `workflow.build` and `workflow.prove` (line spec §7.2, §7.3, Appendix C.3 and C.4). Every Step is desk-capable.
+
+| Step | Runtime | Outcomes | Outputs |
+|---|---|---|---|
+| `step.build.prepare` | block | `ready` | the seeds `activePacket`, `redTests`, `built`, `change`, `findings`, `answers` |
+| `step.build.red` | agent | `written` | `redTests` |
+| `step.build.red-check` | block | `red`, `vacuous` | `findings` on vacuous |
+| `step.build.green` | agent | `built`, `blocked` | `built`; `findings` on blocked |
+| `step.build.checks` | block | `pass`, `failed`, `outOfScope` | `built`, `change` on pass; `findings` otherwise |
+| `step.build.scope-desk` | desk, human-only | `allow`, `revert`, `stop` | `answers` on allow and revert |
+| `step.build.amend` | block | `amended` | `activePacket` |
+| `step.prove.intake` | block | `ready` | the seeds `findings`, `proof`, `holdoutResult`, `beforeAfter` |
+| `step.prove.before-after` | block | `pass`, `fail` | `beforeAfter` |
+| `step.prove.holdout` | agent | `ran` | `holdoutResult` |
+| `step.prove.holdout-log` | block | `passed`, `failed`, `leaked` | `holdoutResult`; `findings` on failed and leaked |
+| `step.prove.evidence` | block | `complete`, `incomplete` | `proofPack`; `findings` on incomplete |
+| `step.prove.fail-log` | block | `logged` | `findings` |
+
 ### Block recipes
 
 The shipped block recipes (`recipes/sindri/`: report, investigate, reproduce, implement, hand-test, verify, the evidence
