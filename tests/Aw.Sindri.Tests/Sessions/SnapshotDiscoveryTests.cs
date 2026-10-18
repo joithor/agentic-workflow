@@ -25,8 +25,9 @@ public sealed class SnapshotDiscoveryTests
         using var fleet = new TempFleet();
         var catalog = new AgentCatalog(LauncherConfigFile.Read(SessionFixtures.Builtins(), Encoding.UTF8.GetBytes(Aider)).Value.Agents);
         var providers = catalog.All.Select(static a => a.Id).ToList();
-        var discovery = new SessionDiscovery(new ProcProcessTable(SessionFixtures.Proc, SessionFixtures.OwnUid), new ClaudeSessionRecords(SessionFixtures.ClaudeSessions),
-            new FleetStateFiles(fleet.Root, providers, pruning: false), catalog, SessionSettings.Defaults, clock);
+        var table = new ProcProcessTable(SessionFixtures.Proc, SessionFixtures.OwnUid);
+        var discovery = new SessionDiscovery(table, new ClaudeSessionRecords(SessionFixtures.ClaudeSessions),
+            new FleetStateFiles(fleet.Root, providers, pruning: false), catalog, SessionSettings.Defaults, SessionHostData.None(table), clock);
         var repos = new SessionRepos(new FakeRepoLocator(), new InMemoryProfiles(), clock);
         var observer = new SessionObserver(new TranscriptFiles("/nonexistent-fixture-root/home"), new PassThroughScrubber(), repos);
         var snapshot = new SessionSnapshotStore();

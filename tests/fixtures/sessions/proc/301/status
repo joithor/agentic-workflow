@@ -1,0 +1,7 @@
+Name:	tmux: client
+Umask:	0022
+State:	S (sleeping)
+Pid:	301
+PPid:	305
+Uid:	1000	1000	1000	1000
+Gid:	1000	1000	1000	1000
