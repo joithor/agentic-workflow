@@ -8984,3 +8984,37 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Deconstruct(out int V
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Injection.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.Injection.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceViewContext.InstanceViewContext(int Version = 0, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.Runtime.FactProvenance!>? Provenance = null, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.ChildView!>? Children = null, Aw.Sindri.Core.Workflow.Views.SubjectRef? Subject = null, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, string!>? Contents = null, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan? Injection = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.IInjectionSources
+Aw.Sindri.Core.Workflow.Engine.Runtime.IInjectionSources.Read(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource!>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource.Context.get -> Aw.Sindri.Core.Workflow.Blocks.StepInputContext!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource.Context.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Runtime.FilledInput! Recorded, out Aw.Sindri.Core.Workflow.Blocks.StepInputContext! Context) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource.InjectionInputSource(Aw.Sindri.Core.Workflow.Engine.Runtime.FilledInput! Recorded, Aw.Sindri.Core.Workflow.Blocks.StepInputContext! Context) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource.Recorded.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.FilledInput!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource.Recorded.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.Deconstruct(out string! State, out string! Run, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource!>! Inputs) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.InjectionSource(string! State, string! Run, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource!>! Inputs) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.Inputs.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource!>!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.Inputs.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.Run.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.Run.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.State.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.State.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefills
+override Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefills.Texts(Aw.Sindri.Core.Workflow.Engine.Runtime.IInjectionTexts! texts, Aw.Sindri.Core.Workflow.Engine.Runtime.IStepInputRunner! runner, string! address, string! state, string! run, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource! input, Aw.Kernel.ErrorDefinition! mismatch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.FilledTexts!>!>

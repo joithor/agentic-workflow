@@ -23,8 +23,7 @@ internal sealed class StepInputActivities(IStepInputRunner runner, IInjectionTex
     {
         ArgumentNullException.ThrowIfNull(request);
         var cancel = ActivityExecutionContext.Current.CancellationToken;
-        var context = new StepInputContext(request.Input, request.Step, EffectContexts.Arguments(request.With, request.Facts), EffectContexts.Elements(request.Facts),
-            request.Repo is { } repo && RepoName.TryFrom(repo, out var name) ? name : null);
+        var context = request.Context();
         Result<FilledOutput> filled;
         try
         {

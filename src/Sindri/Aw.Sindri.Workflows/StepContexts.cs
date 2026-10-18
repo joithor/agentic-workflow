@@ -22,7 +22,7 @@ internal sealed class StepContexts(IInjectionTexts texts, IStepInputRunner runne
     /// <param name="inputs">The Step's inputs in declaration order.</param>
     /// <param name="cancellationToken">Cancels the refill.</param>
     /// <returns>The context; SND-WF-018 when a refilled input differs from what was recorded.</returns>
-    public async ValueTask<Result<StepContext>> For(StepRun run, StepContext seed, IReadOnlyList<InputSource> inputs, CancellationToken cancellationToken)
+    public async ValueTask<Result<StepContext>> For(StepRun run, StepContext seed, IReadOnlyList<InjectionInputSource> inputs, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(run);
         ArgumentNullException.ThrowIfNull(seed);
@@ -31,49 +31,23 @@ internal sealed class StepContexts(IInjectionTexts texts, IStepInputRunner runne
         var results = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
         foreach (var input in inputs.OrderBy(static i => i.Recorded.Index))
         {
-            var key = new InjectionKey(run.Address, run.State, run.Token, input.Recorded.Input);
-            var kept = texts.Get(key);
-            if (kept is null)
+            var kept = await InputRefills.Texts(texts, runner, run.Address, run.State, run.Token, input, WorkflowErrors.InputChanged, cancellationToken).ConfigureAwait(false);
+            if (kept.IsError)
             {
-                var again = await runner.Fill(input.Context, input.Recorded.Index, cancellationToken).ConfigureAwait(false);
-                if (again.IsError)
-                {
-                    return again.Error;
-                }
-
-                if (!Same(input.Recorded, again.Value.Metadata))
-                {
-                    return WorkflowErrors.InputChanged.With($"input {input.Recorded.Input.Value} changed since run {run.Token} recorded it (fix: re-run the Step)");
-                }
-
-                kept = again.Value.Texts;
-                texts.Put(key, kept);
+                return kept.Error;
             }
 
-            foreach (var (name, text) in kept.Sections)
+            foreach (var (name, text) in kept.Value.Sections)
             {
                 sections[name] = text;
             }
 
-            if (kept.Result is { } result)
+            if (kept.Value.Result is { } result)
             {
                 results[input.Recorded.Input.Value] = result;
             }
         }
 
         return seed with { Injection = new InjectionSections(sections), InputResults = results };
-    }
-
-    private static bool Same(FilledInput recorded, FilledInput now) =>
-        recorded.Sections.SequenceEqual(now.Sections.Select(s => s with { Replaced = null }), EntryComparer.Instance) && Equals(recorded.Result, now.Result);
-
-    private sealed class EntryComparer : IEqualityComparer<InjectionEntry>
-    {
-        public static EntryComparer Instance { get; } = new();
-
-        public bool Equals(InjectionEntry? x, InjectionEntry? y) =>
-            x is not null && y is not null && string.Equals(x.Section, y.Section, StringComparison.Ordinal) && x.Bytes == y.Bytes && string.Equals(x.Sha256, y.Sha256, StringComparison.Ordinal);
-
-        public int GetHashCode(InjectionEntry obj) => StringComparer.Ordinal.GetHashCode(obj.Section);
     }
 }

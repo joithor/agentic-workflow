@@ -1,3 +1,5 @@
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
@@ -26,4 +28,9 @@ internal sealed record FillInputRequest(
     BlockId Step,
     IReadOnlyDictionary<string, WithValue> With,
     IReadOnlyDictionary<FactKey, FactValue> Facts,
-    string? Repo);
+    string? Repo)
+{
+    /// <summary>What the input fills from: the arguments resolved against the facts, and the item's repo.</summary>
+    /// <returns>The input's context.</returns>
+    internal StepInputContext Context() => new(Input, Step, EffectContexts.Arguments(With, Facts), EffectContexts.Elements(Facts), Repo is { } repo && RepoName.TryFrom(repo, out var name) ? name : null);
+}

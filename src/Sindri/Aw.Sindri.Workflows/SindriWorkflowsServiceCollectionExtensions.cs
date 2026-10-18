@@ -69,6 +69,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
         .AddSingleton<IInjectionTexts, MemoryInjectionTexts>()
         .AddSingleton<InputDispatch>(static provider => (context, ct) => FillScoped(provider, context, ct))
         .AddSingleton<IStepInputRunner, StepInputRunner>()
+        .AddSingleton<IInjectionSources, TemporalInjectionSources>()
         .AddSingleton<StepInputActivities>()
         .AddSingleton<StepContexts>();
 

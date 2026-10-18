@@ -137,7 +137,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(StatusCommand)), JsonSerializable(typeof(StatusDrift)), JsonSerializable(typeof(StatusFields)), JsonSerializable(typeof(StatusHeader))]
 [JsonSerializable(typeof(StatusInput)), JsonSerializable(typeof(StatusPaused)), JsonSerializable(typeof(StatusTimeout)), JsonSerializable(typeof(StepDeclaration))]
 [JsonSerializable(typeof(SubjectRef)), JsonSerializable(typeof(ViewCounts)), JsonSerializable(typeof(Workstream)), JsonSerializable(typeof(StateChip))]
-[JsonSerializable(typeof(ListCounts)), JsonSerializable(typeof(ParentRef)), JsonSerializable(typeof(FactView)), JsonSerializable(typeof(MapImportChallenge))]
+[JsonSerializable(typeof(ListCounts)), JsonSerializable(typeof(ParentRef)), JsonSerializable(typeof(FactView)), JsonSerializable(typeof(Aw.Sindri.Features.ReadInjection.InjectionView)), JsonSerializable(typeof(MapImportChallenge))]
 [JsonSerializable(typeof(ContextChallenge)), JsonSerializable(typeof(ReviewContextMapRequest)), JsonSerializable(typeof(ReviewContextMapResponse)), JsonSerializable(typeof(PromoteContextMapRequest))]
 [JsonSerializable(typeof(PromoteContextMapResponse)), JsonSerializable(typeof(ProposeContextMapRequest)), JsonSerializable(typeof(ProposeContextMapResponse)), JsonSerializable(typeof(ReviewQueueView))]
 [JsonSerializable(typeof(ReviewHistoryView)), JsonSerializable(typeof(ReviewExported)), JsonSerializable(typeof(ReviewResult)), JsonSerializable(typeof(ProposalsView))]

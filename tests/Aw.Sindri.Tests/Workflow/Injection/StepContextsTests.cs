@@ -54,7 +54,7 @@ public sealed class StepContextsTests
         texts.Put(new InjectionKey(_run.Address, _run.State, _run.Token, _input), kept.Texts);
         var runner = new FakeRunner(() => throw new InvalidOperationException("a hit must not run the input"));
 
-        var context = await new StepContexts(texts, runner).For(_run, Seed, [new InputSource(kept.Metadata, Context)], TestContext.Current.CancellationToken);
+        var context = await new StepContexts(texts, runner).For(_run, Seed, [new InjectionInputSource(kept.Metadata, Context)], TestContext.Current.CancellationToken);
 
         Assert.Equal("kept text", context.Value.Injection.Sections["notes"]);
         Assert.Equal(2, context.Value.InputResults[_input.Value].GetProperty("count").GetInt32());
@@ -70,7 +70,7 @@ public sealed class StepContextsTests
         var contexts = new StepContexts(texts, new FakeRunner(() => plain));
 
         var none = await contexts.For(_run, Seed, [], TestContext.Current.CancellationToken);
-        var without = await contexts.For(_run, Seed, [new InputSource(plain.Metadata, Context)], TestContext.Current.CancellationToken);
+        var without = await contexts.For(_run, Seed, [new InjectionInputSource(plain.Metadata, Context)], TestContext.Current.CancellationToken);
 
         Assert.Empty(none.Value.InputResults);
         Assert.Empty(without.Value.InputResults);
@@ -84,7 +84,7 @@ public sealed class StepContextsTests
         var recorded = Output("same text", "{\"count\":2}");
         var runner = new FakeRunner(() => Output("same text", "{\"count\":2}"));
 
-        var context = await new StepContexts(texts, runner).For(_run, Seed, [new InputSource(recorded.Metadata, Context)], TestContext.Current.CancellationToken);
+        var context = await new StepContexts(texts, runner).For(_run, Seed, [new InjectionInputSource(recorded.Metadata, Context)], TestContext.Current.CancellationToken);
 
         Assert.Equal("same text", context.Value.Injection.Sections["notes"]);
         Assert.Equal(1, runner.Calls);
@@ -98,7 +98,7 @@ public sealed class StepContextsTests
         var recorded = Output("recorded text");
         var runner = new FakeRunner(() => Output("other text"));
 
-        var context = await new StepContexts(texts, runner).For(_run, Seed, [new InputSource(recorded.Metadata, Context)], TestContext.Current.CancellationToken);
+        var context = await new StepContexts(texts, runner).For(_run, Seed, [new InjectionInputSource(recorded.Metadata, Context)], TestContext.Current.CancellationToken);
 
         Assert.Equal(WorkflowErrors.InputChanged.Code, context.Error.Code);
         Assert.DoesNotContain("other text", context.Error.Message, StringComparison.Ordinal);
@@ -111,7 +111,7 @@ public sealed class StepContextsTests
         var recorded = Output("same text", "{\"count\":2}");
         var runner = new FakeRunner(() => Output("same text", "{\"count\":3}"));
 
-        var context = await new StepContexts(new MemoryInjectionTexts(), runner).For(_run, Seed, [new InputSource(recorded.Metadata, Context)], TestContext.Current.CancellationToken);
+        var context = await new StepContexts(new MemoryInjectionTexts(), runner).For(_run, Seed, [new InjectionInputSource(recorded.Metadata, Context)], TestContext.Current.CancellationToken);
 
         Assert.Equal(WorkflowErrors.InputChanged.Code, context.Error.Code);
     }

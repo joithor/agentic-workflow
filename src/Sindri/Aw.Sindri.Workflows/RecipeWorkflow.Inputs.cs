@@ -24,6 +24,12 @@ internal sealed partial class RecipeWorkflow
     private bool _fillsInputs;
     private string? _filled;
     private InjectionPlan _injection = InjectionPlan.Empty;
+    private List<InjectionFill> _fills = [];
+
+    /// <summary>The open run's fills (the pull route's source): metadata and the requests, never text. Empty when the run filled nothing.</summary>
+    /// <returns>The state, the run token and the fills.</returns>
+    [WorkflowQuery("GetInjection")]
+    public InjectionSnapshot GetInjection() => new(_instance?.Frame.State ?? string.Empty, _fills.Count == 0 ? string.Empty : _filled ?? string.Empty, _fills);
 
     /// <summary>What the inputs did before a run: nothing to report, a Step failure the loop decides, or a park.</summary>
     /// <param name="Failed">The failure trigger; the Step does not open.</param>
@@ -41,6 +47,7 @@ internal sealed partial class RecipeWorkflow
         if (fresh)
         {
             _injection = InjectionPlan.Empty;   // the plan shown is the open run's
+            _fills = [];
         }
 
         if (!fresh || !_fillsInputs || state.Step is not { Inputs.Count: > 0 } step)
@@ -48,13 +55,13 @@ internal sealed partial class RecipeWorkflow
             return default;
         }
 
-        List<FilledInput> filled = [];
+        List<InjectionFill> fills = [];
         for (var n = 1; n <= step.Inputs.Count; n++)
         {
             var request = new FillInputRequest(instance.Address.Value, instance.Frame.State, open.Token.Value, n, step.Inputs[n - 1].Use, step.Use, step.Inputs[n - 1].With, instance.Facts, _repo);
             try
             {
-                filled.Add(await Workflow.ExecuteActivityAsync((StepInputActivities a) => a.FillInputAsync(request), FillOptions(open, n, state)).ConfigureAwait(true));
+                fills.Add(new InjectionFill(await Workflow.ExecuteActivityAsync((StepInputActivities a) => a.FillInputAsync(request), FillOptions(open, n, state)).ConfigureAwait(true), request));
             }
             catch (ActivityFailureException e) when (e.InnerException is ApplicationFailureException { ErrorType: var type } && string.Equals(type, WorkflowErrors.StepInputNoRuntime.Code, StringComparison.Ordinal))
             {
@@ -68,7 +75,8 @@ internal sealed partial class RecipeWorkflow
             }
         }
 
-        _injection = InjectionPlans.Merge(filled);
+        _fills = fills;
+        _injection = InjectionPlans.Merge([.. fills.Select(static f => f.Recorded)]);
         return default;
     }
 

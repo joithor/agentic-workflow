@@ -38,6 +38,7 @@ using Aw.Sindri.Features.GetEventCatalog;
 using Aw.Sindri.Features.GetInstance;
 using Aw.Sindri.Features.GetInstanceEvents;
 using Aw.Sindri.Features.GetInstanceFact;
+using Aw.Sindri.Features.ReadInjection;
 using Aw.Sindri.Features.GetItem;
 using Aw.Sindri.Features.GetItemTimeline;
 using Aw.Sindri.Features.GetJob;
@@ -236,6 +237,7 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<IssueChallengeRequest>, AcceptAllValidator<IssueChallengeRequest>>().AddIssue<IssueChallengeRequest, IssueChallengeResponse, IssueChallengeService>();
         _ = services.AddScoped<IValidator<ListRecipesRequest>, AcceptAllValidator<ListRecipesRequest>>().AddQuery<ListRecipesRequest, ListRecipesResponse, ListRecipesService>();
         _ = services.AddScoped<IValidator<ShowRecipeRequest>, AcceptAllValidator<ShowRecipeRequest>>().AddQuery<ShowRecipeRequest, RecipeView, ShowRecipeService>();
+        _ = services.AddScoped<IValidator<ReadInjectionRequest>, AcceptAllValidator<ReadInjectionRequest>>().AddQuery<ReadInjectionRequest, InjectionView, ReadInjectionService>();
         _ = services.AddScoped<IValidator<GetInstanceFactRequest>, AcceptAllValidator<GetInstanceFactRequest>>().AddQuery<GetInstanceFactRequest, FactView, GetInstanceFactService>();
         _ = services.AddScoped<IValidator<ListOutboxRequest>, AcceptAllValidator<ListOutboxRequest>>().AddQuery<ListOutboxRequest, ListOutboxResponse, ListOutboxService>();   // engine P6 unit (c)
         return services;
