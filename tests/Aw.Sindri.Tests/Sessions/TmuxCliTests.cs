@@ -101,6 +101,23 @@ public sealed class TmuxCliTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void TmuxCli_production_budget_is_one_second()
+    {
+        Assert.Equal(TimeSpan.FromSeconds(1), TmuxCli.CallBudget);   // collector spec CO9
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public void TmuxCli_refuses_a_socket_that_is_not_an_absolute_path()
+    {
+        var cli = Cli();
+        var token = TestContext.Current.CancellationToken;
+
+        Assert.False(cli.Read("t1", token).IsSuccess);
+        Assert.False(cli.Read("@abstract-name", token).IsSuccess);
+        Assert.Empty(Calls());   // nothing was spawned
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void TmuxCli_without_a_tmux_program_answers_failed()
     {
         var cli = new TmuxCli(_clock, Path.Combine(_directory, "no-such-tmux"), _budget);

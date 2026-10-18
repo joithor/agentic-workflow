@@ -19,6 +19,9 @@ internal sealed class TmuxCli(TimeProvider time, string executable, TimeSpan cal
 {
     internal static readonly TimeSpan Window = TimeSpan.FromSeconds(10);
 
+    /// <summary>The longest one tmux call runs in production (collector spec CO9).</summary>
+    internal static readonly TimeSpan CallBudget = TimeSpan.FromMilliseconds(1500);
+
     private const string PaneFormat = "#{pane_pid}\t#{session_name}\t#{window_index}\t#{pane_index}\t#{pane_id}";
     private const string ClientFormat = "#{client_pid}\t#{client_tty}\t#{client_session}";
 
