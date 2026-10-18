@@ -1,0 +1,78 @@
+schema: 1
+id: workflow.plan
+version: 1
+description: "Station 3 of the line: the phase graph for a candidate design, its executability review and hidden scenarios, then the owner's after-design stop, which freezes the design, the plan and every phase packet together."
+urgency: work
+inputs:
+  - { key: fact:scopePacket,  label: "Scope packet (frozen)",     type: packet, kind: packet }
+  - { key: fact:designPacket, label: "Design packet (candidate)", type: packet, kind: packet }
+outputs:
+  - { key: fact:planPacket,     label: "Plan graph",       type: packet,  from: freeze }
+  - { key: fact:phasePackets,   label: "Phase packets",    type: payload, from: freeze }
+  - { key: fact:designRevision, label: "Design revision",  type: payload, from: settle }
+initial: intake
+states:
+  intake:      { kind: active, step: step.plan.intake, timeout: { after: 1h, then: park },
+                 next: "Load {item}'s candidate design and frozen scope packets." }
+  graph:       { kind: active, step: step.plan.graph, loop: rounds, budget: { tokens: 300k }, timeout: { after: 3h, then: park },
+                 next: "Draft {item}'s phase graph (round {loop.rounds}/{loop.rounds.cap})." }
+  check:       { kind: active, step: step.plan.check, timeout: { after: 1h, then: park },
+                 next: "Run the plan checks and aw-packets validate on {item}'s graph." }
+  exec-review: { kind: active, step: step.plan.exec-review, budget: { tokens: 150k }, timeout: { after: 2h, then: park },
+                 next: "Review each of {item}'s phases as its builder: executable, context, files, checkable signals." }
+  holdout:     { kind: active, step: step.plan.holdout, budget: { tokens: 200k }, timeout: { after: 2h, then: park },
+                 next: "Write {item}'s hidden scenarios into the holdout store." }
+  evidence:    { kind: active, step: step.plan.evidence, timeout: { after: 1h, then: park },
+                 next: "Check {item}'s design and plan evidence and assemble the candidate packets." }
+  questions:   { kind: active, step: step.plan.questions, timeout: { after: 1h, then: park },
+                 next: "Turn {item}'s open decisions into the stop's questions." }
+  decide:      { kind: active, step: step.interview.answer, timeout: { after: 2d, then: park },
+                 next: "Your stop: answer {item}'s open decisions. Each shows its options, trade-offs and the recommended one." }
+  record:      { kind: active, step: step.interview.record, timeout: { after: 1h, then: park },
+                 next: "Append {item}'s answers to the answer log." }
+  settle:      { kind: active, step: step.plan.settle, timeout: { after: 1h, then: park },
+                 next: "Compare {item}'s answers with the design's assumptions." }
+  stop:        { kind: active, step: step.plan.review, loop: revisions, timeout: { after: 7d, then: park },
+                 next: "Your stop: read {item}'s design and plan graph (`sindri plan show {instance}` or the stop view), then approve, revise the design, revise the plan, or drop." }
+  freeze:      { kind: active, step: step.plan.freeze, loop: refreeze, timeout: { after: 1h, then: park },
+                 next: "Re-check and freeze {item}'s design, plan and phase packets." }
+  approved:    { kind: terminal, outcome: resolved }
+  redesign:    { kind: terminal, outcome: unresolved }
+  dropped:     { kind: terminal, outcome: failed }
+transitions:
+  - { from: intake, to: graph, on: step.completed, when: { outcome: loaded },
+      produces: [fact:design, fact:plan, fact:findings, fact:questions, fact:answers, fact:answerLog, fact:holdoutSets] }
+  - { from: graph,  to: check, on: step.completed, when: { outcome: drafted }, produces: [fact:plan] }
+  - { from: check,  to: graph,       on: step.completed, when: { outcome: gaps }, produces: [fact:findings] }
+  - { from: check,  to: exec-review, on: step.completed, when: { outcome: pass } }
+  - { from: exec-review, to: holdout, on: step.completed, when: { outcome: executable } }
+  - { from: exec-review, to: graph,   on: step.completed, when: { outcome: objections }, produces: [fact:findings] }
+  - { from: holdout,  to: evidence,  on: step.completed, when: { outcome: written },    produces: [fact:holdoutSets] }
+  - { from: evidence, to: questions, on: step.completed, when: { outcome: complete },   produces: [fact:planPacket] }
+  - { from: evidence, to: graph,     on: step.completed, when: { outcome: incomplete }, produces: [fact:findings] }
+  - { from: questions, to: decide, on: step.completed, when: { outcome: asked }, produces: [fact:questions] }
+  - { from: questions, to: stop,   on: step.completed, when: { outcome: none } }
+  - { from: decide, to: record, on: step.completed, when: { outcome: answered },   produces: [fact:answers] }
+  - { from: decide, to: record, on: step.completed, when: { outcome: doneAsking }, produces: [fact:answers, fact:interviewClosed] }
+  - { from: record, to: settle, on: step.completed, when: { outcome: recorded }, produces: [fact:answerLog] }
+  - { from: settle, to: stop,     on: step.completed, when: { outcome: assumed } }
+  - { from: settle, to: redesign, on: step.completed, when: { outcome: changed }, produces: [fact:designRevision] }
+  - { from: settle, to: graph,    on: step.completed, when: { outcome: replan } }
+  - { from: stop, to: freeze,  on: step.completed, when: { outcome: approve } }
+  - { from: stop, to: record,  on: step.completed, when: { outcome: reviseDesign }, produces: [fact:answers] }
+  - { from: stop, to: record,  on: step.completed, when: { outcome: revisePlan },   produces: [fact:answers] }
+  - { from: stop, to: dropped, on: step.completed, when: { outcome: drop } }
+  - { from: freeze, to: approved, on: step.completed, when: { outcome: frozen },   produces: [fact:planPacket, fact:phasePackets] }
+  - { from: freeze, to: evidence, on: step.completed, when: { outcome: mismatch }, produces: [fact:findings] }
+loops: { rounds: { cap: 5 }, refreeze: { cap: 2 }, revisions: { cap: 5 } }
+budget: { tokens: 1000k }
+evals:   # the 7 cases of Appendix B.1 (plan's happy-assumed is assumed-happy: the shipped-recipe test wants a *-happy name) and two more
+  - evals/workflow.plan/assumed-happy.jsonl
+  - evals/workflow.plan/changed-decision.jsonl
+  - evals/workflow.plan/drop.jsonl
+  - evals/workflow.plan/evidence-incomplete.jsonl
+  - evals/workflow.plan/freeze-mismatch.jsonl
+  - evals/workflow.plan/no-questions.jsonl
+  - evals/workflow.plan/objections.jsonl
+  - evals/workflow.plan/revise-cap.jsonl
+  - evals/workflow.plan/revise-plan.jsonl
