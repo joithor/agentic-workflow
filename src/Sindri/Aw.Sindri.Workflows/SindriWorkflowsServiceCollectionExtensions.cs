@@ -60,11 +60,14 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<IInstanceLiveness>(static sp => sp.GetRequiredService<TemporalInstanceDirectory>())    // engine P6 unit (d): a claim holder's liveness
             .AddSingleton<IRecipeWake, TemporalRecipeWake>()          // engine P6 integration: the revoke and drift wakes as the 'wake' signal (replaces P2's no-op)
             .AddSingleton<ProfileWorkflowTimes>()                    // engine P4 unit (e): S1-D11, workflow.deskTimeout and workflow.eventHold, read by LoadRecipe
+            .AddEventBridge();
+    }
+
+    private static IServiceCollection AddEventBridge(this IServiceCollection services) => services
             .AddSingleton<HeldItemEvents>()                            // engine P4: the bridge's held window (visibility lag)
             .AddSingleton<EventBridgeCursor>()                         // engine P4 unit (d): the bridge's cursor file
             .AddScoped<IScheduledService, EventBridge>()               // engine P4 unit (d): the ledger-to-Temporal bridge
             .AddSingleton(EventBridge.BuiltIn);                        // engine P4 unit (d): runs without a profile entry (S1-D8)
-    }
 
     private static async ValueTask<BlockStepResult> RunBlockScoped(IServiceProvider provider, BlockId step, StepContext context, CancellationToken cancellationToken)
     {
