@@ -1,5 +1,5 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Workflow.Engine;
-
 
 namespace Aw.Sindri.Core.Events;
 
@@ -12,5 +12,7 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Kind">Network, policy or path.</param>
 /// <param name="Target">A host, a path or a tool name, redacted and truncated.</param>
 /// <param name="Rule">The rule that denied it.</param>
+/// <param name="Overflow">True for the one overflow event after 200 distinct targets in a run (spec §3.6); its Target is empty, its Rule is "overflow" and its Count is the denials not counted by target. Left out otherwise.</param>
 /// <param name="Count">The running count (1, 10 or 100).</param>
-public sealed record SandboxDenied(LaunchId Launch, DenialKind Kind, string Target, string Rule, int Count);
+public sealed record SandboxDenied(LaunchId Launch, DenialKind Kind, string Target, string Rule, int Count,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)] bool Overflow = false);

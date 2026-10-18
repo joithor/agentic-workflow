@@ -12,10 +12,12 @@ public static class SandboxRefusal
     /// <param name="reason">A reason from <see cref="SandboxReasons"/> (for -018 'http-' and a status).</param>
     /// <param name="detail">What happened this time (the failing argv, the missing tool), already scrubbed; or null.</param>
     /// <param name="source">The credential source for -017, or null.</param>
+    /// <param name="details">Named values the owner copy fills in ('which', 'tool', 'path', 'cap', 'running', 'limit', 'time', 'name', 'status'): each becomes an extension of that name.</param>
     /// <returns>The error.</returns>
     /// <exception cref="ArgumentOutOfRangeException">The pair isn't a defined (code, reason): a programming error.</exception>
-    public static Error For(ErrorDefinition definition, string reason, string? detail = null, ModelLoginSource? source = null)
+    public static Error For(ErrorDefinition definition, string reason, string? detail = null, ModelLoginSource? source = null, IReadOnlyDictionary<string, string>? details = null)
     {
+        _ = details;   // red stub: the named details become extensions in the next commit
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(reason);
         if (!SandboxReasons.IsDefined(definition.Code, reason))
@@ -27,6 +29,16 @@ public static class SandboxRefusal
             .WithExtension("reason", Text(reason));
         return source is { } s ? error.WithExtension("source", Text(SandboxWire.Name(s))) : error;
     }
+
+    /// <summary>Reads back the reason a sandbox refusal carries (Extensions aren't serialized with the error).</summary>
+    /// <param name="error">Any error.</param>
+    /// <returns>The reason, or null when the error isn't a sandbox refusal.</returns>
+    public static string? ReasonOf(Error error) => throw new NotSupportedException();
+
+    /// <summary>Reads back the credential source a refusal carries (-017).</summary>
+    /// <param name="error">Any error.</param>
+    /// <returns>The source, or null when the error has none.</returns>
+    public static ModelLoginSource? SourceOf(Error error) => throw new NotSupportedException();
 
     private static JsonElement Text(string value)
     {

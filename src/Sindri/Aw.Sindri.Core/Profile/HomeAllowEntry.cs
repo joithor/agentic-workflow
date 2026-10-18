@@ -9,4 +9,4 @@ namespace Aw.Sindri.Core.Profile;
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record HomeAllowEntry(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Path = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] LoginMountMode? Mode = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] MountMode? Mode = null);

@@ -1,3 +1,4 @@
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Sandbox;
 
@@ -50,6 +51,23 @@ public sealed class SandboxProfileTests : IDisposable
         Assert.NotEqual(plain.Hash, (await _files.Source.Load(Token)).Value.Hash);
         _files.Write(Base);
         Assert.Equal(plain.Hash, (await _files.Source.Load(Token)).Value.Hash);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_profile_without_a_sandbox_section_has_the_canonical_json_it_had_before_SB0() =>
+        Golden.Match(System.Text.Json.JsonSerializer.Serialize(new SindriProfile(1, "thor"), ProfileFiles.Options) + "\n", typeof(SandboxProfileTests).Assembly, "Golden/Sandbox/profile-without-sandbox.json", Normalization.None);
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task An_empty_sandbox_section_is_valid_and_changes_the_hash()
+    {
+        _files.Write(Base);
+        var plain = (await _files.Source.Load(Token)).Value;
+        _files.Write(Base + "sandbox: {}\n");
+
+        var empty = await _files.Source.Load(Token);
+
+        Assert.True(empty.IsSuccess);
+        Assert.NotEqual(plain.Hash, empty.Value.Hash);
     }
 
     [Fact, Trait("Lane", "unit")]

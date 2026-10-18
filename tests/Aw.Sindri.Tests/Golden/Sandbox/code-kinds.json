@@ -66,7 +66,8 @@
         "http-<status>",
         "no-network"
       ],
-      "engineRoute": "step.failed(launch); the owner retries (a new run) or uses the desk twin."
+      "engineRoute": "step.failed(launch); the owner retries (a new run) or uses the desk twin.",
+      "failureReason": "launch"
     },
     {
       "code": "SND-LAUNCH-019",
@@ -76,7 +77,8 @@
         "memory",
         "wall"
       ],
-      "engineRoute": "step.failed(limit) carrying kind, limit and peak; never auto-retried in the same run. Catalogue only: no HTTP class."
+      "engineRoute": "step.failed(limit) carrying kind, limit and peak; never auto-retried in the same run. Catalogue only: no HTTP class.",
+      "failureReason": "limit"
     },
     {
       "code": "SND-LAUNCH-020",
@@ -96,7 +98,8 @@
         "lockfile-missing",
         "timeout"
       ],
-      "engineRoute": "step.failed(launch); never auto-retried."
+      "engineRoute": "step.failed(launch); never auto-retried.",
+      "failureReason": "launch"
     }
   ]
 }

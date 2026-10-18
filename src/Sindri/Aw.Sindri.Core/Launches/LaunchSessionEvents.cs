@@ -74,7 +74,7 @@ public sealed class LaunchSessionEvents(ILaunchFiles files, LaunchLiveness liven
 
     /// <summary>Appends 'session.ended', then deletes the launch's files and forgets its clock.</summary>
     /// <param name="launch">The launch.</param>
-    /// <param name="reason">Exit or lost.</param>
+    /// <param name="reason">Exit, lost or limit.</param>
     /// <param name="exitCode">The exit code for an exit.</param>
     /// <param name="cancellationToken">Cancels the append.</param>
     /// <returns>Success, or why the ledger refused (the files stay).</returns>
@@ -97,6 +97,13 @@ public sealed class LaunchSessionEvents(ILaunchFiles files, LaunchLiveness liven
         liveness.End(launch);
         return Unit.Value;
     }
+
+    /// <summary>Appends 'session.ended' for a sandbox limit kill (reason limit, with the kind, the limit and the peaks), then deletes the launch's files and forgets its clock.</summary>
+    /// <param name="launch">The launch.</param>
+    /// <param name="limit">Which limit, its value and the peaks.</param>
+    /// <param name="cancellationToken">Cancels the append.</param>
+    /// <returns>Success, or why the ledger refused (the files stay).</returns>
+    public ValueTask<Result<Unit>> EndByLimit(LaunchId launch, LimitEnd limit, CancellationToken cancellationToken) => throw new NotSupportedException();
 
     /// <summary>Appends one private 'session.usage' sample.</summary>
     /// <param name="item">The launch's item.</param>
