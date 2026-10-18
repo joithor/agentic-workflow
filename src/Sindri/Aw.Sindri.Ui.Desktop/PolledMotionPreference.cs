@@ -48,7 +48,7 @@ internal sealed class PolledMotionPreference : IMotionPreference, IDisposable
         {
             return read();
         }
-        catch (Exception e) when (e is IOException or InvalidOperationException or System.ComponentModel.Win32Exception)
+        catch (Exception e) when (MotionReadFailure.Is(e))
         {
             return null;
         }

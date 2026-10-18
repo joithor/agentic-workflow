@@ -1732,11 +1732,8 @@ public sealed class ShellWindowTests : IDisposable
             seen.Add(Region());
         }
 
-        // The window opens with focus already on a region, so the cycle starts there: it still runs TopBar, Page, Sheet in order and wraps.
-        string[] cycle = ["TopBar", "Page", "Sheet"];
-        var next = (Array.IndexOf(cycle, seen[0]) + 1) % cycle.Length;
-        Assert.True(seen.Skip(1).SequenceEqual([cycle[next], cycle[(next + 1) % 3], cycle[(next + 2) % 3]], StringComparer.Ordinal), string.Join(',', seen));
-        Assert.Equal(seen[0], seen[3], StringComparer.Ordinal);
+        // The window opens with focus on the page region, so the first F6 goes to the sheet.
+        Assert.Equal(["Sheet", "TopBar", "Page", "Sheet"], seen);
     });
 
     // Owner decision F6 (2026-10-12, review run 4): on macOS ⌘⌥→ and ⌘⌥← cycle the regions forward and back, like F6

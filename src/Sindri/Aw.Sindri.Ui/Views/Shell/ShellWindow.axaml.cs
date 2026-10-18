@@ -57,7 +57,9 @@ internal sealed partial class ShellWindow : Window
         // A relaunch restores the last page before the window exists, so no page change lands focus on its region: do it once the window is open.
         Dispatcher.UIThread.Post(() =>
         {
-            if (!HasUsableFocus)
+            // The window itself is no focus: an activated desktop window puts focus on its own scope first. A sheet a deep link
+            // opened meanwhile has its own focus rule (FocusOpenedSheet).
+            if ((!HasUsableFocus || FocusManager?.GetFocusedElement() is ShellWindow) && Shell is not { IsSheetShown: true })
             {
                 KeepFocusOrReannounce();
             }

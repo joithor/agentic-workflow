@@ -1,6 +1,8 @@
 using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
@@ -65,4 +67,66 @@ public sealed class StartupFocusTests : IDisposable
             return true;
         }, bound.Token);
     }
+
+    // Runs a body on the UI thread over a shown window, bounded; the window is closed after.
+    private async Task WithWindow(Func<ShellWindow, ShellViewModel, Task> body)
+    {
+        using var bound = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        bound.CancelAfter(TimeSpan.FromSeconds(30));
+        _records.Write(A.Record());
+        _ = await HeadlessUnitTestSession.GetOrStartForAssembly(typeof(StartupFocusTests).Assembly).Dispatch(async () =>
+        {
+            try
+            {
+                var shell = new ShellViewModel(_records, _server, _clock, new Preferences(_store), new FakeClipboard());
+                await shell.Restore(bound.Token);
+                var window = new ShellWindow { DataContext = shell, Width = 1400 };
+                _windows.Add(window);
+                await body(window, shell);
+            }
+            finally
+            {
+                await _stop.CancelAsync();
+                _windows.ForEach(w => w.Close());
+                Dispatcher.UIThread.RunJobs();
+            }
+
+            return true;
+        }, bound.Token);
+    }
+
+    private static void Settle()
+    {
+        for (var i = 0; i < 20; i++)
+        {
+            Dispatcher.UIThread.RunJobs();
+        }
+    }
+
+    [Fact]
+    public Task The_landing_does_not_take_focus_a_control_already_holds() => WithWindow(async (window, shell) =>
+    {
+        window.Show();
+        var pill = window.GetVisualDescendants().OfType<Control>().First(c => c.Name == "HealthPill");
+        Assert.True(pill.Focus(NavigationMethod.Tab));
+        _ = shell.Run(_stop.Token);
+        Settle();
+
+        Assert.Same(pill, window.FocusManager?.GetFocusedElement());
+        await Task.CompletedTask;
+    });
+
+    [Fact]
+    public Task A_link_that_opens_the_sheet_during_startup_leaves_focus_to_the_sheet() => WithWindow(async (window, shell) =>
+    {
+        window.Show();
+        _ = shell.Run(_stop.Token);
+        Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        shell.Navigate(link);
+        Settle();
+
+        Assert.True(shell.IsSheetShown);
+        Assert.Same(window.Get<Border>("SheetTitle"), window.FocusManager?.GetFocusedElement());
+        await Task.CompletedTask;
+    });
 }
