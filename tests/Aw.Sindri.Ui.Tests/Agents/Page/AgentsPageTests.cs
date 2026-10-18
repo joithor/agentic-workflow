@@ -170,4 +170,15 @@ public sealed class AgentsPageTests : FrameHost
         Dispatcher.UIThread.RunJobs();
         Assert.True(shell.Agents.IsActive);
     });
+
+    [Fact]
+    public Task The_provider_and_state_filters_keep_showing_their_choice_after_the_list_fills_them() => OnUi(async () =>
+    {
+        var (window, shell) = await OnAgents();
+
+        Assert.Equal(Labels.AllProviders, Named<ComboBox>(window, "ProviderFilter").SelectedItem);
+        Assert.Equal(Labels.AllStates, Named<ComboBox>(window, "StateFilter").SelectedItem);
+        Assert.Equal(Labels.AllRepos, Named<ComboBox>(window, "RepoFilter").SelectedItem);
+        Assert.Null(shell.Agents.ProviderFilter);
+    });
 }

@@ -88,10 +88,28 @@ internal sealed partial class AgentsPageViewModel
             return;   // the control keeps its selection unless the choices themselves changed
         }
 
-        choices.Clear();
-        foreach (var value in target)
+        // Edit in place: clearing the collection would drop the combo box's selection (and so clear the filter it stands for).
+        foreach (var gone in choices.Where(c => !target.Contains(c, StringComparer.Ordinal)).ToList())
         {
-            choices.Add(value);
+            _ = choices.Remove(gone);
+        }
+
+        for (var i = 0; i < target.Count; i++)
+        {
+            if (i < choices.Count && string.Equals(choices[i], target[i], StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var at = choices.IndexOf(target[i]);
+            if (at >= 0)
+            {
+                choices.Move(at, i);
+            }
+            else
+            {
+                choices.Insert(i, target[i]);
+            }
         }
     }
 }
