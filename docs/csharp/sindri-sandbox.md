@@ -197,6 +197,9 @@ it is dropped when it answers `allow` in a way that bypasses `dontAsk`, and a ho
 `HookInventory.Scripts` holds each hook's row and `HookPermissionPolicy` applies it (`TreatmentOf`, `ForSession(installed)`); `DenyRuleExpansion.Expand(rules, hooks)` adds the rewritten
 forms for each kept `KeepDenyRewrites` hook. The adapter passes the installed hooks in `SandboxHostFacts.InstalledHooks`; a hook the inventory doesn't list is kept and named in the plan's notes
 (`PlanHooks.Notes`, printed by `sindri sandbox show` as `Note:` lines). The tests check the "answers" and "rewrites" columns against what each script prints.
+**`rtk-rewrite` is strict in Steps (owner, 2026-10-18; enforced in SB-5a).** The hook still rewrites commands to their `rtk` form, but its `allow` grants no permission inside a Step:
+a Step runs only what its own tool list names, so `npm test` or `cargo build` in their `rtk` form don't run in a read-only Step whose list doesn't name them. SB-1 records the rule;
+SB-5a's rendered settings put it into effect.
 
 | Hook | Runs on | Answers permissions | Rewrites | Treatment | Why |
 |---|---|---|---|---|---|
@@ -217,7 +220,7 @@ forms for each kept `KeepDenyRewrites` hook. The adapter passes the installed ho
 | `probe-log` | every event, while the probe is on | no | no | keep | logs the hook input; prints nothing |
 | `prompt-sort` | UserPromptSubmit | no | no | keep | may print a scaffold note; answers nothing |
 | `record-teammate-name` | PreToolUse Agent | allow | no | **drop** | always answers 'allow' to Agent, so every dispatch would pass 'dontAsk'; without it subagent-start-map uses its dispatch-order fallback |
-| `rtk-rewrite` | PreToolUse Bash | allow | yes | **keep, deny the rewritten forms** | rewrites commands to their 'rtk' form for token savings (the owner keeps it); every denied command is also denied in its 'rtk' form, so 'git push' can't pass as 'rtk git push' |
+| `rtk-rewrite` | PreToolUse Bash | allow | yes | **keep, deny the rewritten forms; strict in Steps** | rewrites commands to their 'rtk' form for token savings (the owner keeps it); every denied command is also denied in its 'rtk' form, so 'git push' can't pass as 'rtk git push'; its 'allow' grants nothing inside a Step, which runs only what its own list names (owner, 2026-10-18; enforced in SB-5a) |
 | `scope-gate` | PreToolUse Agent | allow | no | **drop** | answers 'allow' to an Agent dispatch with a good brief, so dispatches would pass 'dontAsk' |
 | `send-gate` | PreToolUse SendMessage | allow | yes | **drop** | answers 'allow' to SendMessage (and rewrites the message), so messages would pass 'dontAsk' |
 | `session-id-report` | SessionStart (Codex and Cursor) | no | no | keep | reports the session id to Sindri's launcher; answers nothing |
