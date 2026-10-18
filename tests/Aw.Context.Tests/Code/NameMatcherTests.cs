@@ -35,6 +35,12 @@ public sealed class NameMatcherTests
         Assert.Null(NameMatcher.FindPath(text, ["sharing/links", "sharing.links"]));
 
     [Theory, Trait("Lane", "unit")]
+    [InlineData("SELECT * FROM USERS;")]
+    [InlineData("select * from Users where")]
+    public void NameMatcher_plural_endings_match_without_regard_to_case(string text) =>
+        Assert.NotNull(NameMatcher.FindTerm(text, ["user", "user_"]));
+
+    [Theory, Trait("Lane", "unit")]
     [InlineData("CREATE TABLE shared_links (", "shared_link")]
     [InlineData("ALTER TABLE shared_link ADD", "shared_link")]
     [InlineData("shared_link_id int", "shared_link")]

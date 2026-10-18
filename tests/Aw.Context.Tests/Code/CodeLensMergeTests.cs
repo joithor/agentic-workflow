@@ -111,6 +111,16 @@ public sealed class CodeLensMergeTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_capped_schema_scan_says_schema_files_are_truncated()
+    {
+        var found = Found(schema: [new LexicalSchemaFile(NodeKey.From("thing:shared-link"), "migrations/m001.sql", "shared_link")]) with { SchemaTruncated = true };
+
+        var view = CodeLensMerge.With(Base(), found);
+
+        Assert.True(view.Truncated.SchemaFiles);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Merging_no_findings_keeps_the_graph_half()
     {
         var view = Base();

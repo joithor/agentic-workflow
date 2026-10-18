@@ -5363,3 +5363,5 @@ Aw.Context.Core.Map.LensBasisReader.LensBasisReader(Aw.Context.Core.Extract.IRep
 static Aw.Context.Core.Map.LensBasisReader.ShortCommit(string? commit) -> string?
 Aw.Context.Core.Code.CodeLexicalFindings.TestsTruncated.get -> bool
 Aw.Context.Core.Code.CodeLexicalFindings.TestsTruncated.init -> void
+Aw.Context.Core.Code.CodeLexicalFindings.SchemaTruncated.get -> bool
+Aw.Context.Core.Code.CodeLexicalFindings.SchemaTruncated.init -> void
