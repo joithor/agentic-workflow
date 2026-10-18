@@ -491,6 +491,15 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 | `step.review.fix` | agent | `change`, `review` | `fixed` | `change` on fixed |
 | `step.review.recheck` | agent | `change`, `review` | `clean`, `findings`, `behaviourWrong` | `review` (every outcome) |
 | `step.owner.decide` | desk, human-only | - | `retry`, `stop` | `notes` on retry |
+| `step.ship.green` | block | `phasePacket`, `workspace` | `green`, `red` | `green` on green; `findings` on red |
+| `step.ship.pack` | block | `phasePacket`, `proofPack`, `review`, `lineContext` | `packed` | `handoffDraft` on packed |
+| `step.ship.freeze` | block | `handoffDraft`, `proofPack`, `review` | `frozen`, `stale` | `handoff` on frozen; `findings` on stale |
+| `step.ship.open` | desk, human-only | `handoff`, `workspace` | `opened`, `updated`, `refused` | `pr` on opened and updated (stands in for `effect.pr.open`; nothing reaches the forge) |
+| `step.ship.return` | block | `findings` | `noted` | `returnNotes` on noted |
+| `step.docs.scope` | block | `pr`, `phasePacket` | `candidates`, `none`, `disabled`, `notOpen` | `docsResult` (every outcome); `docsScope`, `prState`, `findings`, `handoffNote`, `workspace` on candidates |
+| `step.docs.update` | agent | `docsScope`, `prState`, `findings`, `handoffNote`, `phasePacket` | `changed`, `noChange`, `blocked` | `handoffNote` (every outcome) |
+| `step.docs.check` | block | `docsScope`, `workspace` | `pass`, `fail` | `findings` on fail |
+| `step.docs.open-pr` | desk, human-only | `pr`, `workspace` | `opened`, `updated`, `rejected` | `docsPr` on opened and updated (stands in for `effect.pr.create-stacked`; nothing reaches the forge) |
 
 
 ### Block catalog (scoping station)

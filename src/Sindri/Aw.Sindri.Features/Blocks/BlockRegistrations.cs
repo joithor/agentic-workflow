@@ -106,4 +106,25 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PendingInputs.Lenses)
         .AddBlockDescriptor(PendingInputs.Code)
         .AddBlockDescriptor(PendingInputs.History);
+
+    /// <summary>Registers the line stations' Steps (ship, docs sync), descriptors only.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddLineStationBlocks(this IServiceCollection services) => services.AddShipBlocks().AddDocsBlocks();
+
+    private static IServiceCollection AddShipBlocks(this IServiceCollection services) => services
+        .AddBlockDescriptor(ShipSteps.Green)
+        .AddBlockDescriptor(ShipSteps.Pack)
+        .AddBlockDescriptor(ShipSteps.Freeze)
+        .AddBlockDescriptor(ShipSteps.Open)
+        .AddBlockDescriptor(ShipSteps.Return);
+
+    /// <summary>Registers the docs-sync station's Steps (PB spec §7), descriptors only.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddDocsBlocks(this IServiceCollection services) => services
+        .AddBlockDescriptor(DocsSteps.Scope)
+        .AddBlockDescriptor(DocsSteps.Update)
+        .AddBlockDescriptor(DocsSteps.Check)
+        .AddBlockDescriptor(DocsSteps.OpenPr);
 }
