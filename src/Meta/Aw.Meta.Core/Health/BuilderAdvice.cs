@@ -19,7 +19,7 @@ public sealed record BuilderAdvice(int PerLane, int MaxPerLane, long DiskFreeGb,
 
     /// <summary>
     /// The configured maximum, reduced while free disk is under the floor plus lanes x builders x worktree size, and to 1 while
-    /// memory is low (<see cref="ResourceRules.MemoryLow"/>: under its floor, or swap nearly all in use).
+    /// memory is low (<see cref="ResourceRules.MemoryLow"/>: under its floor; swap does not count).
     /// </summary>
     /// <param name="host">The host's figures.</param>
     /// <param name="limits">The disk and memory floors.</param>

@@ -1,0 +1,54 @@
+using System.Text;
+using Aw.Kernel;
+using Aw.Meta.Core.Ids;
+using Aw.Meta.Core.Ports;
+
+namespace Aw.Meta.Testing;
+
+/// <summary>The in-memory IClaudeTranscripts: the one fake, kept honest by ClaudeTranscriptsContract.</summary>
+public sealed class InMemoryClaudeTranscripts : IClaudeTranscripts
+{
+    private readonly HashSet<string> _unreadable = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, (string Content, DateTimeOffset At)> _files = new(StringComparer.Ordinal);
+
+    /// <summary>Makes a session's transcript unreadable (AW-META-004).</summary>
+    /// <param name="session">The session id.</param>
+    public void FailFor(string session) => _unreadable.Add(session);
+
+    /// <summary>Sets a session's transcript.</summary>
+    /// <param name="session">The session id.</param>
+    /// <param name="content">The whole text.</param>
+    /// <param name="at">When it was last written.</param>
+    public void Put(string session, string content, DateTimeOffset at) => _files[session] = (content, at);
+
+    /// <summary>Sets a session's transcript to one line carrying API usage.</summary>
+    /// <param name="session">The session id.</param>
+    /// <param name="tokens">The context tokens (all counted as input).</param>
+    /// <param name="at">When it was last written.</param>
+    public void PutUsage(string session, long tokens, DateTimeOffset at) =>
+        Put(session, "{\"type\":\"user\"}\n" + A.UsageLine(tokens) + "\n", at);
+
+    /// <inheritdoc />
+    public ValueTask<Result<TranscriptTail?>> Tail(SessionId session, int maxBytes, CancellationToken cancellationToken)
+    {
+        if (_unreadable.Contains(session.Value))
+        {
+            return Done.Failed<TranscriptTail?>(Core.MetaErrors.TranscriptUnreadable.With("unreadable"));
+        }
+
+        if (!_files.TryGetValue(session.Value, out var file))
+        {
+            return Done.Of<TranscriptTail?>(value: null);
+        }
+
+        var bytes = Encoding.UTF8.GetBytes(file.Content);
+        var start = Math.Max(0, bytes.Length - maxBytes);
+        var lines = Encoding.UTF8.GetString(bytes, start, bytes.Length - start).Split('\n').Select(static l => l.TrimEnd('\r')).ToList();
+        if (start > 0 && lines.Count > 0)
+        {
+            lines.RemoveAt(0);
+        }
+
+        return Done.Of<TranscriptTail?>(new TranscriptTail($"/claude/projects/p/{session.Value}.jsonl", file.At, [.. lines.Where(static l => l.Length > 0)]));
+    }
+}

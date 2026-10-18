@@ -22,6 +22,7 @@ public sealed record TeamConfig
     /// <param name="resources">The memory and disk thresholds; the defaults when absent.</param>
     /// <param name="builders">How many builders a lane may run; the defaults when absent.</param>
     /// <param name="heavy">The heavy-slot reservation; the defaults when absent.</param>
+    /// <param name="context">The lane context-window threshold for recycling; the defaults when absent.</param>
     [JsonConstructor]
     public TeamConfig(
         string team,
@@ -36,7 +37,8 @@ public sealed record TeamConfig
         WorktreeConfig? worktrees = null,
         ResourcesConfig? resources = null,
         BuildersConfig? builders = null,
-        HeavyConfig? heavy = null)
+        HeavyConfig? heavy = null,
+        ContextConfig? context = null)
     {
         Team = team;
         Repo = repo;
@@ -51,6 +53,7 @@ public sealed record TeamConfig
         Resources = resources ?? new ResourcesConfig();
         Builders = builders ?? new BuildersConfig();
         Heavy = heavy ?? new HeavyConfig();
+        Context = context ?? new ContextConfig();
     }
 
     /// <summary>The team name; session names are "team-lane".</summary>
@@ -91,4 +94,7 @@ public sealed record TeamConfig
 
     /// <summary>The heavy-slot reservation.</summary>
     public HeavyConfig Heavy { get; init; }
+
+    /// <summary>The lane context-window threshold for recycling.</summary>
+    public ContextConfig Context { get; init; }
 }

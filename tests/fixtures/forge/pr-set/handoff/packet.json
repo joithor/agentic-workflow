@@ -1,0 +1,8 @@
+{
+  "_synthetic": true,
+  "kind": "handoff",
+  "schemaVersion": 1,
+  "line": "fixture-line",
+  "phase": "P1",
+  "links": { "pr": "pr.json", "body": "body.md", "green": "green.json", "index": "index.json" }
+}
