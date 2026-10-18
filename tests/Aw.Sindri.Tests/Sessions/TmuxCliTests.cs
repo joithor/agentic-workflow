@@ -101,10 +101,8 @@ public sealed class TmuxCliTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void TmuxCli_production_budget_is_one_second()
-    {
+    public void TmuxCli_production_budget_is_one_second() =>
         Assert.Equal(TimeSpan.FromSeconds(1), TmuxCli.CallBudget);   // collector spec CO9
-    }
 
     [Fact, Trait("Lane", "integration")]
     public void TmuxCli_refuses_a_socket_that_is_not_an_absolute_path()

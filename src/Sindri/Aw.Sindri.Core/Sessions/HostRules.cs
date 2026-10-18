@@ -25,7 +25,7 @@ public static partial class HostRules
         return hit.Kind switch
         {
             HostKind.Tmux => Tmux(query, chain, hit, sources),
-            HostKind.Ssh => new HostInfo("ssh", "ssh") { Terminal = new TerminalFacts("ssh", hit.Process.Pid) },
+            HostKind.Ssh => new HostInfo("ssh", "ssh"),
             HostKind.Ide => new HostInfo("ide", hit.Name) { Ide = hit.Name },
             HostKind.Terminal or HostKind.Warp => Terminal(hit, sources) is { } terminal ? Shown(terminal) : HostInfo.Unknown,
             _ => HostInfo.Unknown,

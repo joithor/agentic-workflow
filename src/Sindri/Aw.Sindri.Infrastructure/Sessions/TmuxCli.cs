@@ -20,7 +20,7 @@ internal sealed class TmuxCli(TimeProvider time, string executable, TimeSpan cal
     internal static readonly TimeSpan Window = TimeSpan.FromSeconds(10);
 
     /// <summary>The longest one tmux call runs in production (collector spec CO9).</summary>
-    internal static readonly TimeSpan CallBudget = TimeSpan.FromMilliseconds(1500);
+    internal static readonly TimeSpan CallBudget = TimeSpan.FromSeconds(1);
 
     private const string PaneFormat = "#{pane_pid}\t#{session_name}\t#{window_index}\t#{pane_index}\t#{pane_id}";
     private const string ClientFormat = "#{client_pid}\t#{client_tty}\t#{client_session}";
@@ -32,6 +32,11 @@ internal sealed class TmuxCli(TimeProvider time, string executable, TimeSpan cal
     public Result<TmuxServerView> Read(string socket, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrEmpty(socket);
+        if (!Path.IsPathRooted(socket))
+        {
+            return Failed();   // CI-5: -S names an absolute socket path; a relative or abstract name is never passed on
+        }
+
         var now = time.GetUtcNow();
         lock (_gate)
         {
@@ -47,6 +52,11 @@ internal sealed class TmuxCli(TimeProvider time, string executable, TimeSpan cal
         }
 
         var view = Ask(socket, cancellationToken);
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return view;   // the caller gave up: not an answer to keep
+        }
+
         lock (_gate)
         {
             _answers[socket] = (time.GetUtcNow(), view);
@@ -103,22 +113,26 @@ internal sealed class TmuxCli(TimeProvider time, string executable, TimeSpan cal
 
         using (child)
         {
-            return child is null ? null : Wait(child, socket, limit);
+            return child is null ? null : Wait(child, socket, limit, own);
         }
     }
 
-    private string? Wait(Process child, string socket, CancellationTokenSource limit)
+    private string? Wait(Process child, string socket, CancellationTokenSource limit, CancellationTokenSource own)
     {
         // why: Register hands back the object passed in, which is this Process
         using var kill = limit.Token.Register(static state => Kill((Process)state!), child);
+        child.ErrorDataReceived += static (_, _) => { };   // stderr is drained so a full pipe can't stall the child; its text isn't used
+        child.BeginErrorReadLine();
         var output = child.StandardOutput.ReadToEnd();
-        _ = child.StandardError.ReadToEnd();
         child.WaitForExit();
         if (limit.IsCancellationRequested)
         {
-            lock (_gate)
+            if (own.IsCancellationRequested)
             {
-                _timedOut[socket] = time.GetUtcNow();
+                lock (_gate)
+                {
+                    _timedOut[socket] = time.GetUtcNow();   // only this call's own budget marks the socket; a caller's cancel is a plain failure
+                }
             }
 
             return null;

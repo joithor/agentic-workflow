@@ -36,13 +36,13 @@
     {
       "ref": "claude-code/pid-411-3100",
       "kind": "tmux",
-      "label": "tmux",
+      "label": "tmux · kitty",
       "socket": "/tmp/tmux-1000/t1",
       "socketKind": "team",
       "session": "api",
       "pane": "%0",
-      "terminal": null,
-      "terminalDetail": null
+      "terminal": "kitty",
+      "terminalDetail": "9"
     },
     {
       "ref": "claude-code/pid-521-4100",
@@ -52,7 +52,7 @@
       "socketKind": null,
       "session": null,
       "pane": null,
-      "terminal": "ssh",
+      "terminal": null,
       "terminalDetail": null
     },
     {

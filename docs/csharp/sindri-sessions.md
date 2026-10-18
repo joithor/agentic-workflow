@@ -133,9 +133,11 @@ socket, the terminals and the Meta teams), which `Features/Sessions/PassHostSour
 - **`TmuxCli`** (`Infrastructure/Sessions`) is the only code that runs tmux (ARCH-SESS-001, spec CI-5): the four read-only verbs `list-sessions`, `list-panes`,
   `list-clients`, `display-message` (the one list `TmuxRules.ReadVerbs` in the architecture test), every call as `tmux -S <absolute socket> <verb> …` with `TMUX` and
   `TMUX_PANE` removed from the child's environment, through its own bounded `Process.Start` that kills the child only. Output uses tabs (session names may hold spaces).
-  One read of a socket gives panes and clients and is kept 10 s; a socket that timed out is not asked again for 10 s. Only `list-panes` and `list-clients` are called today.
+  A socket path that is not absolute is refused before any spawn. Each call is bounded by 1 s (`TmuxCli.CallBudget`, spec CO9); one read makes two calls (panes, then clients), so a
+  silent socket costs at most 2 s before it is skipped, and a pass deadline cancels without marking the socket. One read of a socket gives panes and clients and is kept 10 s; a socket that timed out is not asked again for 10 s. Only `list-panes` and `list-clients` are called today.
 - **Debug log:** one line per session whose host kind or socket kind changed (`session <ref> host <kind> tmux socket kind <kind>`): refs and kinds only, no path, cwd or title.
-- Tests: `HostRulesTests` (unit), `TmuxCliTests` (against a stand-in program, never a real tmux), `HostSourceFilesTests`, and the host golden
+- Tests: `HostRulesTests` (unit), `TmuxCliTests` (against a stand-in program), the port contracts (`TmuxServersContract`, `UnixSocketsContract`, `TeamNamesContract`, `TerminalNamesContract` in
+  `Aw.Sindri.Testing`, bound to each fake and to its real adapter; the tmux one runs against a private `tmux -L aw-co2b-<pid>` server it starts and kills itself, skipped without tmux), `HostSourceFilesTests`, and the host golden
   `tests/Aw.Sindri.Tests/Sessions/Golden/snapshot-hosts.json` over `tests/fixtures/sessions/proc`.
 
 ## Built so far

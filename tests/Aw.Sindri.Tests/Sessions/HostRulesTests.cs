@@ -96,6 +96,7 @@ public sealed class HostRulesTests
         Assert.Equal(("warp", "Warp", "warp://session/0123456789abcdef0123456789abcdef"), (inWarp.Kind, inWarp.Label, inWarp.Terminal?.WarpFocusUrl));
         Assert.Equal(("terminal", "kitty", "7", "5"), (inKitty.Kind, inKitty.Label, inKitty.Terminal?.KittyWindow, inKitty.Terminal?.XWindow));
         Assert.Equal(("ssh", "ssh"), (overSsh.Kind, overSsh.Label));
+        Assert.Null(overSsh.Terminal);   // spec §6.1: ssh shows no terminal detail
     }
 
     [Fact, Trait("Lane", "unit")]
