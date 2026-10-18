@@ -136,13 +136,13 @@ public sealed class SandboxPlanEnvironmentTests
         var other = Req.WriteScope with
         {
             Launch = LaunchId.From("LCH-" + new string('e', 32)),
-            Paths = new SandboxPaths(Req.Repo, Req.Repo + "/.git", "/work/web/.claude/worktrees/sindri-x-2", "/runs/2", "/areas/2"),
+            Paths = new SandboxPaths(Req.Repo, Req.Repo + "/.git", "/work/web/.claude/worktrees/sindri-x-2", Req.SindriHome + "/workflow/runs/x/s/2", Req.SindriHome + "/workflow/areas/run-2"),
             RunNamespace = "sindri/x/2",
             Policy = new StepPolicy([], StepPermissionMode.Default, "/work/web/.claude/worktrees/sindri-x-2"),
             Net = new SandboxNetFacts("/run/user/1000/sindri/ffff0000", 7480, 50000),
             Login = Req.OwnerCopyLogin() with
             {
-                Mounts = [new LoginMount(Req.Home + "/.claude", Req.Home + "/.claude", MountMode.ReadOnly), new LoginMount("/areas/2/login", Req.Home + "/.claude-run", MountMode.ReadWrite)],
+                Mounts = [new LoginMount(Req.Home + "/.claude", Req.Home + "/.claude", MountMode.ReadOnly), new LoginMount(Req.SindriHome + "/workflow/areas/run-2/login", Req.Home + "/.claude-run", MountMode.ReadWrite)],
             },
         };
 

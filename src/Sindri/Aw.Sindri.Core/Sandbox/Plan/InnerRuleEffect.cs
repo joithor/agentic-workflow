@@ -8,4 +8,7 @@ public enum InnerRuleEffect
 
     /// <summary>Denies the call.</summary>
     Deny,
+
+    /// <summary>Asks the person at the keyboard (an attended session).</summary>
+    Ask,
 }

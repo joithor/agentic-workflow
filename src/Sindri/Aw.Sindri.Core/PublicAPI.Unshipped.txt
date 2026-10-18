@@ -3231,6 +3231,7 @@ Aw.Sindri.Core.Sandbox.MountMode.ReadWrite = 1 -> Aw.Sindri.Core.Sandbox.MountMo
 Aw.Sindri.Core.Sandbox.NetworkMode
 Aw.Sindri.Core.Sandbox.NetworkMode.Enforce = 0 -> Aw.Sindri.Core.Sandbox.NetworkMode
 Aw.Sindri.Core.Sandbox.NetworkMode.Learn = 1 -> Aw.Sindri.Core.Sandbox.NetworkMode
+Aw.Sindri.Core.Sandbox.Plan.AgentHomeWriteSet
 Aw.Sindri.Core.Sandbox.Plan.DenyRuleExpansion
 Aw.Sindri.Core.Sandbox.Plan.EnvironmentAllowlist
 Aw.Sindri.Core.Sandbox.Plan.GitSetting
@@ -3280,6 +3281,8 @@ Aw.Sindri.Core.Sandbox.Plan.InnerMode.Refuse = 0 -> Aw.Sindri.Core.Sandbox.Plan.
 Aw.Sindri.Core.Sandbox.Plan.InnerPolicy
 Aw.Sindri.Core.Sandbox.Plan.InnerPolicy.<Clone>$() -> Aw.Sindri.Core.Sandbox.Plan.InnerPolicy!
 Aw.Sindri.Core.Sandbox.Plan.InnerPolicy.Deconstruct(out Aw.Sindri.Core.Sandbox.Plan.InnerMode Mode, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.Plan.InnerRule!>! Rules) -> void
+Aw.Sindri.Core.Sandbox.Plan.InnerPolicy.DefaultMode.get -> string!
+Aw.Sindri.Core.Sandbox.Plan.InnerPolicy.DisableBypassPermissions.get -> bool
 Aw.Sindri.Core.Sandbox.Plan.InnerPolicy.Equals(Aw.Sindri.Core.Sandbox.Plan.InnerPolicy? other) -> bool
 Aw.Sindri.Core.Sandbox.Plan.InnerPolicy.InnerPolicy(Aw.Sindri.Core.Sandbox.Plan.InnerMode Mode, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.Plan.InnerRule!>! Rules) -> void
 Aw.Sindri.Core.Sandbox.Plan.InnerPolicy.Mode.get -> Aw.Sindri.Core.Sandbox.Plan.InnerMode
@@ -3291,6 +3294,7 @@ Aw.Sindri.Core.Sandbox.Plan.InnerRule.<Clone>$() -> Aw.Sindri.Core.Sandbox.Plan.
 Aw.Sindri.Core.Sandbox.Plan.InnerRule.Deconstruct(out Aw.Sindri.Core.Sandbox.Plan.InnerRuleEffect Effect, out string! Tool, out string! Pattern) -> void
 Aw.Sindri.Core.Sandbox.Plan.InnerRuleEffect
 Aw.Sindri.Core.Sandbox.Plan.InnerRuleEffect.Allow = 0 -> Aw.Sindri.Core.Sandbox.Plan.InnerRuleEffect
+Aw.Sindri.Core.Sandbox.Plan.InnerRuleEffect.Ask = 2 -> Aw.Sindri.Core.Sandbox.Plan.InnerRuleEffect
 Aw.Sindri.Core.Sandbox.Plan.InnerRuleEffect.Deny = 1 -> Aw.Sindri.Core.Sandbox.Plan.InnerRuleEffect
 Aw.Sindri.Core.Sandbox.Plan.InnerRule.Effect.get -> Aw.Sindri.Core.Sandbox.Plan.InnerRuleEffect
 Aw.Sindri.Core.Sandbox.Plan.InnerRule.Effect.init -> void
@@ -10665,6 +10669,7 @@ static Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.operator !=(Aw.Sindri.Core
 static Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.operator ==(Aw.Sindri.Core.Sandbox.Credentials.LoginStatus? left, Aw.Sindri.Core.Sandbox.Credentials.LoginStatus? right) -> bool
 static Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.operator !=(Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin? left, Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin? right) -> bool
 static Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.operator ==(Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin? left, Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin? right) -> bool
+static Aw.Sindri.Core.Sandbox.Plan.AgentHomeWriteSet.Allows(string! agentHome, string! relative) -> bool
 static Aw.Sindri.Core.Sandbox.Plan.DenyRuleExpansion.Expand(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.Plan.InnerRule!>! rules) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.Plan.InnerRule!>!
 static Aw.Sindri.Core.Sandbox.Plan.EnvironmentAllowlist.IsListed(string! name) -> bool
 static Aw.Sindri.Core.Sandbox.Plan.EnvironmentAllowlist.IsSecretShaped(string! name) -> bool

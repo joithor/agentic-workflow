@@ -14,7 +14,7 @@ namespace Aw.Sindri.Tests.PlanSandbox;
 /// <summary>The PlanSandbox slice: one launch planned through the registered sandbox (sandbox spec SB12).</summary>
 public sealed class PlanSandboxTests
 {
-    private static IService<PlanSandboxRequest, SandboxPlan> Service(ISandbox? replacement = null)
+    private static IService<PlanSandboxRequest, PlanSandboxResponse> Service(ISandbox? replacement = null)
     {
         var services = Composition.Compose(new ServiceCollection(), name => name == "AW_STATE_DIR" ? Path.Combine(Path.GetTempPath(), "aw-sindri-sb1-slice") : null, new FakeTimeProvider());
         if (replacement is not null)
@@ -22,7 +22,7 @@ public sealed class PlanSandboxTests
             _ = services.AddSingleton(replacement);   // what a test host does: the last registration wins
         }
 
-        return services.BuildServiceProvider().CreateScope().ServiceProvider.GetRequiredService<IService<PlanSandboxRequest, SandboxPlan>>();
+        return services.BuildServiceProvider().CreateScope().ServiceProvider.GetRequiredService<IService<PlanSandboxRequest, PlanSandboxResponse>>();
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -31,7 +31,7 @@ public sealed class PlanSandboxTests
         var result = await Service(new PassThroughSandbox()).Handle(new PlanSandboxRequest(Req.WriteScope), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(SandboxMechanism.PassThrough, result.Value.Mechanism);
+        Assert.Equal(SandboxMechanism.PassThrough, result.Value.Plan.Mechanism);
     }
 
     [Fact, Trait("Lane", "unit")]

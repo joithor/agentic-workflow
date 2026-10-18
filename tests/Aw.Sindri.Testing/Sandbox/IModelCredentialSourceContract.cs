@@ -27,6 +27,19 @@ public abstract class IModelCredentialSourceContract
     /// <returns>The source.</returns>
     protected abstract IModelCredentialSource Create(LoginState state);
 
+    /// <summary>The one-line fact every adapter shares: a ready login prepares, names this source and is released.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Credential_source_contract_holds_for_every_adapter()
+    {
+        var source = Create(LoginState.Ready);
+
+        var prepared = await source.Prepare(Target, _launch, TestContext.Current.CancellationToken);
+        source.Release(prepared.Value.Handle);
+
+        Expect.True(source.Supports(Target) && prepared.IsSuccess && prepared.Value.Source == source.Id);
+    }
+
     /// <summary>The source supports its target and not another.</summary>
     [Fact]
     public void Supports_its_target_and_not_an_unknown_one()

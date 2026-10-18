@@ -1685,6 +1685,13 @@ Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.Equals(Aw.Sindri.Features.Plan
 Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.Launch.get -> Aw.Sindri.Core.Sandbox.Plan.SandboxRequest!
 Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.Launch.init -> void
 Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.PlanSandboxRequest(Aw.Sindri.Core.Sandbox.Plan.SandboxRequest! Launch) -> void
+Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse
+Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.<Clone>$() -> Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse!
+Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.Deconstruct(out Aw.Sindri.Core.Sandbox.Plan.SandboxPlan! Plan) -> void
+Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.Equals(Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse? other) -> bool
+Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.Plan.get -> Aw.Sindri.Core.Sandbox.Plan.SandboxPlan!
+Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.Plan.init -> void
+Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.PlanSandboxResponse(Aw.Sindri.Core.Sandbox.Plan.SandboxPlan! Plan) -> void
 Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest
 Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest.<Clone>$() -> Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest!
 Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest.Equals(Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest? other) -> bool
@@ -2499,6 +2506,9 @@ override Aw.Sindri.Features.PingProcess.PingProcessRequest.ToString() -> string!
 override Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.GetHashCode() -> int
 override Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.ToString() -> string!
+override Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.GetHashCode() -> int
+override Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.ToString() -> string!
 override Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest.GetHashCode() -> int
 override Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest.ToString() -> string!
@@ -2905,6 +2915,8 @@ static Aw.Sindri.Features.PingProcess.PingProcessRequest.operator !=(Aw.Sindri.F
 static Aw.Sindri.Features.PingProcess.PingProcessRequest.operator ==(Aw.Sindri.Features.PingProcess.PingProcessRequest? left, Aw.Sindri.Features.PingProcess.PingProcessRequest? right) -> bool
 static Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.operator !=(Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest? left, Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest? right) -> bool
 static Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest.operator ==(Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest? left, Aw.Sindri.Features.PlanSandbox.PlanSandboxRequest? right) -> bool
+static Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.operator !=(Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse? left, Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse? right) -> bool
+static Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse.operator ==(Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse? left, Aw.Sindri.Features.PlanSandbox.PlanSandboxResponse? right) -> bool
 static Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest.operator !=(Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest? left, Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest? right) -> bool
 static Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest.operator ==(Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest? left, Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest? right) -> bool
 static Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.operator !=(Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult? left, Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult? right) -> bool
