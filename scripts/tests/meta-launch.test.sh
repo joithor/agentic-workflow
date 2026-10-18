@@ -485,6 +485,26 @@ check "two unclaimed new session files: no id recorded, .ambiguous left" "$(test
 check "the launcher reports the ambiguous id and still exits 0" "$RC:$(grep -c 'lane amb: ambiguous session id' <<< "$OUT")" "0:1"
 killstubs
 
+# A session id pattern is a whole-id match, as in the C# reader: an unanchored pattern that matches only part of the captured id refuses it.
+cat > "$WORK/codex-whole" <<'EOF2'
+#!/usr/bin/env bash
+mkdir -p "$HOME/.codex/sessions/2026/10/17"
+: > "$HOME/.codex/sessions/2026/10/17/rollout-2026-10-17T00-00-00-55555555-5555-5555-5555-555555555555.jsonl"
+sleep 600
+EOF2
+chmod +x "$WORK/codex-whole"
+jq -n --arg c "$WORK/codex-whole" '{schema:1, agents:{codex:{override:true, bin:$c, sessionIdPattern:"[0-9a-f]{8}-[0-9a-f]{4}"}}, meta:{lanesAgent:"codex"}}' > "$WORK/whole-partial.json"
+jq -n --arg c "$WORK/codex-whole" '{schema:1, agents:{codex:{override:true, bin:$c, sessionIdPattern:"[0-9a-f-]{36}"}}, meta:{lanesAgent:"codex"}}' > "$WORK/whole-full.json"
+rm -f "$ids/whole" "$ids/whole.settled" "$ids/whole.ambiguous"
+AW_LAUNCHER_CONFIG="$WORK/whole-partial.json" AW_META_ID_WAIT=2 bash "$DIR/meta-lane.sh" t1 whole > /dev/null 2>&1 &
+rp=$!; sleep 3.5; kill "$rp" 2> /dev/null; killstubs; wait "$rp" 2> /dev/null
+check "a pattern that matches only part of the captured id refuses it" "$(test -s "$ids/whole" && echo id || echo none)" "none"
+rm -f "$ids/whole" "$ids/whole.settled" "$ids/whole.ambiguous"
+AW_LAUNCHER_CONFIG="$WORK/whole-full.json" AW_META_ID_WAIT=8 bash "$DIR/meta-lane.sh" t1 whole > /dev/null 2>&1 &
+rp=$!; waitfor '[ -e "$ids/whole.settled" ]'
+check "a pattern that matches the whole captured id records it" "$(tr -d '[:space:]' < "$ids/whole" 2> /dev/null)" "55555555-5555-5555-5555-555555555555"
+kill "$rp" 2> /dev/null; killstubs; wait "$rp" 2> /dev/null
+
 # An agent that never reports: the launcher times out with a message and the next lane still starts.
 cat > "$WORK/codex-idle" <<'EOF2'
 #!/usr/bin/env bash
