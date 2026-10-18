@@ -10,8 +10,15 @@ internal sealed class FakeEgressDialer : IEgressDialer
 
     public TaskCompletionSource<Stream> Upstream { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
+    public Exception? Failure { get; set; }
+
     public ValueTask<Stream> Dial(IPAddress address, int port, CancellationToken cancellationToken)
     {
+        if (Failure is not null)
+        {
+            throw Failure;
+        }
+
         Dialed.Add((address, port));
         var (mine, theirs) = JoinedStream.Pair();
         _ = Upstream.TrySetResult(theirs);

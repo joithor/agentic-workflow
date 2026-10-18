@@ -12,7 +12,8 @@ namespace Aw.Sindri.Infrastructure.Sandbox;
 /// <param name="dialer">Opens outbound connections.</param>
 /// <param name="environment">Reads an environment variable (AW_SANDBOX_SOCAT, PATH).</param>
 /// <param name="runDirectory">Where egress.log goes.</param>
-internal sealed class EgressService(IEgressResolver resolver, IEgressDialer dialer, Func<string, string?> environment, string runDirectory)
+/// <param name="warn">Receives a warning line (a failed flush); null writes a JSON line to stderr.</param>
+internal sealed class EgressService(IEgressResolver resolver, IEgressDialer dialer, Func<string, string?> environment, string runDirectory, Action<string>? warn = null)
 {
     /// <summary>Starts the listeners.</summary>
     /// <param name="network">The plan's network (its NetDir is created when missing).</param>
@@ -44,6 +45,7 @@ internal sealed class EgressService(IEgressResolver resolver, IEgressDialer dial
             proxyListener = EgressListener.Start(Path.Combine(network.NetDir, EgressSocketDirectory.ProxySocket), proxy.Handle);
             var sindriListener = EgressListener.Start(Path.Combine(network.NetDir, EgressSocketDirectory.SindriSocket), forward.Handle);
             log.Flush();
+            _ = warn;
             return new RunningEgress(socat, network.NetDir, log, proxyListener, sindriListener);
 #pragma warning restore CA2000
         }

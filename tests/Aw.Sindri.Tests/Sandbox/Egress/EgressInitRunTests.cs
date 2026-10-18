@@ -33,15 +33,21 @@ public sealed class EgressInitRunTests : IDisposable
     private string Init(string socat, string inside = EgressInit.InsideDirectory) =>
         Write("init.sh", EgressInit.Render(new PlanNetwork(NetworkMode.Enforce, [], 7480, 3128, "/unused"), socat, Path.Combine(_temp.Path, "socat.log"), inside));
 
-    private Process Run(string init, params string[] agent)
+    private Process Run(string init, params string[] agent) => RunWith("/bin/sh", init, agent);
+
+    private Process RunWith(string shell, string init, params string[] agent)
     {
         // The outer sh opens fd 5 on a file, then becomes the init: the init must close it before anything else runs.
-        var outer = $"exec 5>'{Path.Combine(_temp.Path, "fd5")}'; exec /bin/sh '{init}' \"$@\"";
-        var info = new ProcessStartInfo("/bin/sh", ["-c", outer, "sh", .. agent]) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
+        var outer = $"exec 5>'{Path.Combine(_temp.Path, "fd5")}'; exec {shell} '{init}' \"$@\"";
+        var info = new ProcessStartInfo("/bin/sh", ["-c", outer, "sh", .. agent]) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true, RedirectStandardInput = true };
         return Process.Start(info)!;
     }
 
-    private static bool Alive(int pid) => Directory.Exists("/proc/" + pid.ToString(CultureInfo.InvariantCulture));
+    private static bool Alive(int pid)
+    {
+        var stat = "/proc/" + pid.ToString(CultureInfo.InvariantCulture) + "/stat";
+        return File.Exists(stat) && !File.ReadAllText(stat).Contains(") Z", StringComparison.Ordinal);
+    }
 
     private async Task<int> PidFile(string name)
     {
@@ -79,16 +85,19 @@ public sealed class EgressInitRunTests : IDisposable
         Assert.DoesNotContain(pids, Alive);
     }
 
-    [Fact, Trait("Lane", "integration")]
-    public async Task A_TERM_to_the_init_reaches_the_agent_and_the_socats_go_with_it()
+    [Theory, Trait("Lane", "integration")]
+    [InlineData("TERM")]
+    [InlineData("HUP")]
+    [InlineData("INT")]
+    public async Task A_signal_to_the_init_reaches_the_agent_and_the_socats_go_with_it(string signal)
     {
         Assert.SkipWhen(!Directory.Exists("/proc/self/fd"), "needs /proc");
         var socat = FakeSocat($"echo $$ >> '{_temp.Path}/socat-pids'; exec sleep 30\n");
-        var agent = Write("agent", $"#!/bin/sh\ntrap 'echo got-term > \"{_temp.Path}/agent-term\"; exit 3' TERM\necho $$ > '{_temp.Path}/agent-pid'\nwhile :; do sleep 0.1; done\n");
+        var agent = Write("agent", $"#!/bin/sh\ntrap 'echo got-term > \"{_temp.Path}/agent-term\"; exit 3' TERM INT HUP\necho $$ > '{_temp.Path}/agent-pid'\nwhile :; do sleep 0.1; done\n");
 
         using var init = Run(Init(socat), agent);
         var agentPid = await PidFile("agent-pid");
-        using (var kill = Process.Start("/bin/kill", ["-TERM", init.Id.ToString(CultureInfo.InvariantCulture)]))
+        using (var kill = Process.Start("/bin/kill", ["-" + signal, init.Id.ToString(CultureInfo.InvariantCulture)]))
         {
             await kill.WaitForExitAsync(TestContext.Current.CancellationToken);
         }
@@ -116,6 +125,7 @@ public sealed class EgressInitRunTests : IDisposable
         Assert.False(File.Exists(Path.Combine(_temp.Path, "agent-ran")));
         Assert.Contains("address already in use", await File.ReadAllTextAsync(Path.Combine(_temp.Path, "socat.log"), TestContext.Current.CancellationToken), StringComparison.Ordinal);
         Assert.Equal(string.Empty, await init.StandardOutput.ReadToEndAsync(TestContext.Current.CancellationToken));
+        Assert.Contains("forwarder", await init.StandardError.ReadToEndAsync(TestContext.Current.CancellationToken), StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -135,7 +145,7 @@ public sealed class EgressInitRunTests : IDisposable
         free.Start();
         var sindriPort = ((IPEndPoint)free.LocalEndpoint).Port;
         free.Stop();
-        var network = new PlanNetwork(NetworkMode.Enforce, [], sindriPort, ((IPEndPoint)stub.LocalEndpoint).Port + 0, net);
+        var network = new PlanNetwork(NetworkMode.Enforce, [], sindriPort, ((IPEndPoint)stub.LocalEndpoint).Port, net);
         var init = Write("init.sh", EgressInit.Render(network with { ProxyPort = FreePort() }, socat, Path.Combine(_temp.Path, "socat.log"), net));
         var agent = Write("agent", $"#!/bin/sh\nfor i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do\n  out=$(printf 'GET /sindri/mcp HTTP/1.0\\r\\n\\r\\n' | '{socat}' - TCP:127.0.0.1:{sindriPort.ToString(CultureInfo.InvariantCulture)} 2>/dev/null) && [ -n \"$out\" ] && break\n  sleep 0.1\ndone\nprintf '%s' \"$out\" > '{_temp.Path}/answer'\n");
 
@@ -146,6 +156,26 @@ public sealed class EgressInitRunTests : IDisposable
         Assert.Equal(0, process.ExitCode);
         Assert.EndsWith("mcp-ok", await File.ReadAllTextAsync(Path.Combine(_temp.Path, "answer"), TestContext.Current.CancellationToken), StringComparison.Ordinal);
         await served.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
+    }
+
+    [Theory, Trait("Lane", "integration")]
+    [InlineData("/bin/sh")]
+    [InlineData("dash")]
+    [InlineData("bash")]
+    public async Task The_agent_reads_the_terminal_input_the_init_got(string shell)
+    {
+        var resolved = shell.StartsWith('/') ? shell : Which(shell);
+        Assert.SkipWhen(resolved is null, shell + " is not installed");
+        var socat = FakeSocat("exec sleep 30\n");
+        var agent = Write("agent", $"#!/bin/sh\ncat > '{_temp.Path}/stdin'\n");
+
+        using var init = RunWith(resolved!, Init(socat), agent);
+        await init.StandardInput.WriteAsync("hello".AsMemory(), TestContext.Current.CancellationToken);
+        init.StandardInput.Close();
+        await init.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, init.ExitCode);
+        Assert.Equal("hello", await File.ReadAllTextAsync(Path.Combine(_temp.Path, "stdin"), TestContext.Current.CancellationToken));
     }
 
     private static int FreePort()

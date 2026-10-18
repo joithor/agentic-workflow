@@ -11,4 +11,7 @@ internal enum EgressVerdict
 
     /// <summary>The host is allowed by name but resolves to a loopback, link-local or private address, or a cap was hit.</summary>
     Refused,
+
+    /// <summary>A group allowed the host but the dial failed.</summary>
+    Failed,
 }

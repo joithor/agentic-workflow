@@ -114,7 +114,7 @@ public sealed class EgressProxyTests
     [Fact, Trait("Lane", "unit")]
     public async Task Caps_refuse_a_connection_over_the_limit_with_503()
     {
-        var (proxy, dialer, log) = Make(new EgressCaps(1, 1024, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30)));
+        var (proxy, dialer, log) = Make(new EgressCaps(1, 1024, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30)));
         var (first, firstServer) = JoinedStream.Pair();
         var firstHandled = proxy.Handle(firstServer, TestContext.Current.CancellationToken);
         await first.WriteAsync("CONNECT api.anthropic.com:443 HTTP/1.1\r\n\r\n"u8.ToArray(), TestContext.Current.CancellationToken);
@@ -134,7 +134,7 @@ public sealed class EgressProxyTests
     [Fact, Trait("Lane", "unit")]
     public async Task Bytes_cap_ends_the_relay()
     {
-        var (proxy, dialer, _) = Make(new EgressCaps(4, 8, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30)));
+        var (proxy, dialer, _) = Make(new EgressCaps(4, 8, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30)));
         var (client, server) = JoinedStream.Pair();
         var handled = proxy.Handle(server, TestContext.Current.CancellationToken);
         await client.WriteAsync("CONNECT api.anthropic.com:443 HTTP/1.1\r\n\r\n"u8.ToArray(), TestContext.Current.CancellationToken);
@@ -149,7 +149,7 @@ public sealed class EgressProxyTests
     [Fact, Trait("Lane", "unit")]
     public async Task Connection_lifetime_ends_a_connection()
     {
-        var (proxy, dialer, _) = Make(new EgressCaps(4, 1024, TimeSpan.FromMilliseconds(200), TimeSpan.FromSeconds(30)));
+        var (proxy, dialer, _) = Make(new EgressCaps(4, 1024, TimeSpan.FromMilliseconds(200), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30)));
         var (client, server) = JoinedStream.Pair();
         var handled = proxy.Handle(server, TestContext.Current.CancellationToken);
         await client.WriteAsync("CONNECT api.anthropic.com:443 HTTP/1.1\r\n\r\n"u8.ToArray(), TestContext.Current.CancellationToken);
@@ -211,11 +211,87 @@ public sealed class EgressProxyTests
     [Fact, Trait("Lane", "unit")]
     public async Task A_client_that_never_sends_its_head_is_closed_after_the_head_timeout()
     {
-        var (proxy, _, _) = Make(new EgressCaps(4, 1024, TimeSpan.FromMinutes(1), TimeSpan.FromMilliseconds(200)));
+        var (proxy, _, _) = Make(new EgressCaps(4, 1024, TimeSpan.FromMinutes(1), TimeSpan.FromMilliseconds(200), TimeSpan.FromSeconds(30)));
         var (client, server) = JoinedStream.Pair();
 
         await proxy.Handle(server, TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
 
         await client.DisposeAsync();
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_dial_failure_is_502_and_counted_failed_not_allowed()
+    {
+        var (proxy, dialer, log) = Make();
+        dialer.Failure = new System.Net.Sockets.SocketException();
+        var (client, server) = JoinedStream.Pair();
+        var handled = proxy.Handle(server, TestContext.Current.CancellationToken);
+
+        await client.WriteAsync("CONNECT api.anthropic.com:443 HTTP/1.1\r\n\r\n"u8.ToArray(), TestContext.Current.CancellationToken);
+        var head = await ReadHead(client);
+        await client.DisposeAsync();
+        await handled;
+
+        Assert.StartsWith("HTTP/1.1 502", head, StringComparison.Ordinal);
+        Assert.Equal(1, log.Count("api.anthropic.com", 443, EgressVerdict.Failed));
+        Assert.Equal(0, log.Count("api.anthropic.com", 443, EgressVerdict.Allowed));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Upstream_closing_first_half_closes_the_client_and_the_connection_ends_within_the_grace()
+    {
+        var (proxy, dialer, _) = Make(new EgressCaps(4, 1024, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30), TimeSpan.FromMilliseconds(300)));
+        var (client, server) = JoinedStream.Pair();
+        var handled = proxy.Handle(server, TestContext.Current.CancellationToken);
+        await client.WriteAsync("CONNECT api.anthropic.com:443 HTTP/1.1\r\n\r\n"u8.ToArray(), TestContext.Current.CancellationToken);
+        _ = await ReadHead(client);
+        var upstream = await dialer.Upstream.Task;
+
+        await upstream.WriteAsync("bye"u8.ToArray(), TestContext.Current.CancellationToken);
+        ((Aw.Sindri.Infrastructure.Sandbox.IHalfCloseable)upstream).ShutdownSend();
+
+        var got = new byte[3];
+        await client.ReadExactlyAsync(got, TestContext.Current.CancellationToken);
+        Assert.Equal(0, await client.ReadAsync(new byte[1], TestContext.Current.CancellationToken).AsTask().WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken));
+        await handled.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_client_half_close_reaches_the_upstream_and_the_answer_still_arrives()
+    {
+        var (proxy, dialer, _) = Make();
+        var (client, server) = JoinedStream.Pair();
+        var handled = proxy.Handle(server, TestContext.Current.CancellationToken);
+        await client.WriteAsync("CONNECT api.anthropic.com:443 HTTP/1.1\r\n\r\n"u8.ToArray(), TestContext.Current.CancellationToken);
+        _ = await ReadHead(client);
+        var upstream = await dialer.Upstream.Task;
+
+        await client.WriteAsync("ask"u8.ToArray(), TestContext.Current.CancellationToken);
+        ((Aw.Sindri.Infrastructure.Sandbox.IHalfCloseable)client).ShutdownSend();
+        var asked = new byte[3];
+        await upstream.ReadExactlyAsync(asked, TestContext.Current.CancellationToken).AsTask().WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        Assert.Equal(0, await upstream.ReadAsync(new byte[1], TestContext.Current.CancellationToken).AsTask().WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken));
+        await upstream.WriteAsync("answer"u8.ToArray(), TestContext.Current.CancellationToken);
+        var answer = new byte[6];
+        await client.ReadExactlyAsync(answer, TestContext.Current.CancellationToken).AsTask().WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        await upstream.DisposeAsync();
+        await handled.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+        Assert.Equal("answer", Encoding.ASCII.GetString(answer));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_byte_cap_cancels_both_directions_even_with_an_idle_peer_and_a_long_grace()
+    {
+        var (proxy, dialer, _) = Make(new EgressCaps(4, 8, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(5)));
+        var (client, server) = JoinedStream.Pair();
+        var handled = proxy.Handle(server, TestContext.Current.CancellationToken);
+        await client.WriteAsync("CONNECT api.anthropic.com:443 HTTP/1.1\r\n\r\n"u8.ToArray(), TestContext.Current.CancellationToken);
+        _ = await ReadHead(client);
+        _ = await dialer.Upstream.Task;
+
+        await client.WriteAsync(new byte[64], TestContext.Current.CancellationToken);
+
+        await handled.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
     }
 }

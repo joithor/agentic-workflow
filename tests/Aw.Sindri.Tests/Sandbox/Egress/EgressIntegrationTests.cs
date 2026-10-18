@@ -134,6 +134,7 @@ public sealed class EgressIntegrationTests : IAsyncDisposable
         var service = new EgressService(new FakeEgressResolver([]), dialer, n => n == SandboxEnvironment.Socat ? fake : null, Path.Combine(_root, "run"));
         var result = service.Start(new PlanNetwork(NetworkMode.Enforce, groups, sindriPort, 3128, Path.Combine(_root, "n")), EgressCaps.Default);
         Assert.True(result.IsSuccess, result.IsError ? result.Error.Message : string.Empty);
+        _cleanup.Add(result.Value);
         return result.Value;
     }
 

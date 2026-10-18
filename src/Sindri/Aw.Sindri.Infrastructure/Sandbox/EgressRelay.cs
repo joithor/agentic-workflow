@@ -43,6 +43,14 @@ internal static class EgressRelay
         }
     }
 
+    /// <summary>Ends the sending side of a stream: an <see cref="IHalfCloseable"/> or a socket stream. Never throws for a stream that is already closed.</summary>
+    /// <param name="stream">The stream.</param>
+    public static void HalfClose(Stream stream)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        throw new NotSupportedException();
+    }
+
     private static async Task Pump(Stream from, Stream to, Func<int, bool> allow, CancellationToken cancellationToken)
     {
         var buffer = new byte[16 * 1024];

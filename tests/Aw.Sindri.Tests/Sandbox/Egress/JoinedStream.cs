@@ -3,7 +3,7 @@ using System.IO.Pipelines;
 namespace Aw.Sindri.Tests.Sandbox.Egress;
 
 /// <summary>A stream that reads from one pipe and writes to another; disposing it ends its writes (the peer sees EOF).</summary>
-internal sealed class JoinedStream(Stream read, Stream write) : Stream
+internal sealed class JoinedStream(Stream read, Stream write) : Stream, Aw.Sindri.Infrastructure.Sandbox.IHalfCloseable
 {
     public override bool CanRead => true;
 
@@ -20,6 +20,8 @@ internal sealed class JoinedStream(Stream read, Stream write) : Stream
         Pipe ab = new(), ba = new();
         return (new JoinedStream(ba.Reader.AsStream(), ab.Writer.AsStream()), new JoinedStream(ab.Reader.AsStream(), ba.Writer.AsStream()));
     }
+
+    public void ShutdownSend() => write.Dispose();
 
     public override void Flush() => write.Flush();
 
