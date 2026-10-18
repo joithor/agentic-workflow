@@ -102,7 +102,7 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
     private async Task<HttpResponseMessage> ContextRoute(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var uri = request.RequestUri!; // why: HttpClient always sets it on a sent request
-        if (request.Method == HttpMethod.Post)
+        if (request.Method == HttpMethod.Post && uri.AbsolutePath.EndsWith("/map/review", StringComparison.Ordinal))
         {
             _ = await server.ReviewDecision(uri, await Body<ReviewDecisionRequest>(request, cancellationToken), cancellationToken);
             return Answer(server.ReviewDecided);

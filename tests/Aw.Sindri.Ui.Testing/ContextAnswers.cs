@@ -9,6 +9,8 @@ internal static class ContextAnswers
     private const string Lenses1 = "map-tabs";
     private const string LensesSet = "set-two-anchors";
 
+    private static string SingleAnchor { get; } = (string)GoldenFiles.Node("context-lenses", Lenses1)["anchor"]!["key"]!;
+
     /// <summary>The anchors the lens goldens hold.</summary>
     internal static IReadOnlySet<string> KnownAnchors { get; } = new HashSet<string>(
         [(string)GoldenFiles.Node("context-lenses", Lenses1)["anchor"]!["key"]!, .. GoldenFiles.Node("context-lenses", LensesSet)["anchors"]!.AsArray().Select(a => (string)a!["key"]!)],
@@ -36,17 +38,15 @@ internal static class ContextAnswers
             return RouteAnswer.Problem("context-lenses", "no-draft-044");
         }
 
-        if (anchors.Exists(a => !KnownAnchors.Contains(a)))
-        {
-            return RouteAnswer.Problem("context-lenses", "unknown-anchor-003");
-        }
-
+        var known = anchors.Where(KnownAnchors.Contains).ToList();
         return anchors.Count switch
         {
-            0 => RouteAnswer.Problem("context-lenses", "unknown-anchor-003"),
+            _ when known.Count == 0 => RouteAnswer.Problem("context-lenses", "unknown-anchor-003"),
+            1 when !string.Equals(anchors[0], SingleAnchor, StringComparison.Ordinal) => RouteAnswer.Problem("context-lenses", "unknown-anchor-003"),   // no golden answers for this one alone
             1 when query.Depth == 1 => RouteAnswer.Api("context-lenses", "depth-1"),
             1 when string.Equals(query.MapVersion, "v1", StringComparison.Ordinal) => RouteAnswer.Api("context-lenses", "map-version-v1"),
             1 => RouteAnswer.Api("context-lenses", Lenses1),
+            _ when known.Count < anchors.Count => RouteAnswer.Api("context-lenses", "set-missing-anchor"),   // some resolve, some do not: 200 with missingAnchors, as the server answers
             _ => RouteAnswer.Api("context-lenses", LensesSet),
         };
     }

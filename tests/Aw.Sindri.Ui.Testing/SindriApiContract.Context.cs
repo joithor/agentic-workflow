@@ -40,7 +40,7 @@ public abstract partial class SindriApiContract
         var queue = GoldenFiles.Node("context-map-review", "map-tabs-draft");
         var entry = queue["entries"]![0]!;
 
-        var accepted = (await api.ReviewDecision(_api, new ReviewDecisionRequest("accept", Node: (string)entry["node"]!, Link: (string?)entry["link"]), Token)).Value;
+        var accepted = (await api.ReviewDecision(_api, new ReviewDecisionRequest(DeskVerb.Accept, Node: (string)entry["node"]!, Link: (string?)entry["link"]), Token)).Value;
         var after = (await api.ReviewQueue(_api, limit: null, Token)).Value;
 
         var written = GoldenFiles.Node("context-map-review", "post-accept-link")["result"]!["written"]!.AsArray().Select(w => (string)w!);
@@ -48,7 +48,7 @@ public abstract partial class SindriApiContract
         Expect.Equal((queue["entries"]!.AsArray().Count - 1, (int)queue["undecided"]! - 1), (after.Entries.Count, after.Undecided));
         Expect.True(after.Entries.All(e => e.Node != (string)entry["node"]!));
 
-        _ = await api.ReviewDecision(_api, new ReviewDecisionRequest("undo", Overrides: [.. accepted.Result.Written]), Token);
+        _ = await api.ReviewDecision(_api, new ReviewDecisionRequest(DeskVerb.Undo, Overrides: [.. accepted.Result.Written]), Token);
         var undone = (await api.ReviewQueue(_api, limit: null, Token)).Value;
 
         Expect.Equal((queue["entries"]!.AsArray().Count, (int)queue["undecided"]!), (undone.Entries.Count, undone.Undecided));
@@ -70,6 +70,56 @@ public abstract partial class SindriApiContract
         Expect.Sequence(Names(root), top.Entries.Select(e => e.Name));
         Expect.Sequence(Names(tabs), children.Entries.Select(e => e.Name));
         Expect.Sequence(Names(unmapped), only.Entries.Select(e => e.Name));
+    }
+
+    // The server answers a set with some unresolved anchors as a 200 that names them in missingAnchors; only "nothing resolves" is 003.
+    [Fact]
+    public async Task Lenses_answers_200_with_missingAnchors_when_only_some_of_a_set_resolves()
+    {
+        var api = Reach(new FakeSindriApi());
+        var served = GoldenFiles.Node("context-lenses", "set-missing-anchor");
+
+        var lenses = (await api.Lenses(_api, new LensesQuery([AnchorKeys("set-missing-anchor")[0], "feature:tabs.nope"], Depth: null, Draft: false, MapVersion: null), Token)).Value;
+
+        Expect.Sequence(served["missingAnchors"]!.AsArray().Select(m => (string)m!), lenses.MissingAnchors);
+        Expect.Sequence(AnchorKeys("set-missing-anchor"), lenses.Anchors.Select(a => a.Key));
+    }
+
+    [Fact]
+    public async Task Lenses_answers_003_for_a_single_anchor_no_golden_names_and_for_a_set_where_nothing_resolves()
+    {
+        var api = Reach(new FakeSindriApi());
+
+        var single = await api.Lenses(_api, new LensesQuery(["feature:tabs.nope"], Depth: null, Draft: false, MapVersion: null), Token);
+        var none = await api.Lenses(_api, new LensesQuery(["feature:a.nope", "feature:b.nope"], Depth: null, Draft: false, MapVersion: null), Token);
+
+        Expect.Equal("SND-CONTEXT-003", single.Error.Code);
+        Expect.Equal("SND-CONTEXT-003", none.Error.Code);
+    }
+
+    // A read in flight that the caller cancels completes as cancelled, so a later stage can test its stale-response races.
+    [Fact]
+    public async Task A_gated_read_that_is_cancelled_completes_as_cancelled()
+    {
+        var server = new FakeSindriApi { LensesGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously) };
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        cancel.CancelAfter(TimeSpan.FromSeconds(20));   // a bound, not the test: a hang fails instead of stalling the lane
+        var read = Reach(server).Lenses(_api, new LensesQuery(AnchorKeys("set-two-anchors"), Depth: null, Draft: false, MapVersion: null), cancel.Token);
+        Expect.True(!read.IsCompleted);
+
+        await cancel.CancelAsync();
+
+        var cancelled = false;
+        try
+        {
+            _ = await read.WaitAsync(TimeSpan.FromSeconds(10), Token);
+        }
+        catch (OperationCanceledException)
+        {
+            cancelled = true;
+        }
+
+        Expect.True(cancelled);
     }
 
     private static string[] Names(JsonNode map) => [.. map["entries"]!.AsArray().Select(e => (string)e!["name"]!)];

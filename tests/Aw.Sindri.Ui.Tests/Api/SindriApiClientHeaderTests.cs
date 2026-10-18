@@ -339,7 +339,7 @@ public sealed class SindriApiClientHeaderTests
         _ = await client.Lenses(_api, new LensesQuery(["feature:x"], Depth: null, Draft: false, MapVersion: null), Token);
         _ = await client.FileMap(_api, new FileMapQuery("r", Path: null, UnmappedOnly: false, Draft: false), Token);
         _ = await client.ReviewQueue(_api, limit: null, Token);
-        _ = await client.ReviewDecision(_api, new ReviewDecisionRequest("accept", Node: "code:x"), Token);
+        _ = await client.ReviewDecision(_api, new ReviewDecisionRequest(DeskVerb.Accept, Node: "code:x"), Token);
         _ = await client.ReviewHistory(_api, limit: null, Token);
         _ = await client.MapStatus(_api, anchor: null, Token);
         _ = await client.Node(_api, "feature:x", Token);

@@ -10,7 +10,7 @@ internal sealed partial class FakeSindriApi
 {
     private static readonly RouteAnswer _notServed = new(HttpStatusCode.NotFound, "{}");
 
-    private static readonly string[] _settling = ["accept", "reject", "drop", "accept-deterministic"];
+    private static readonly DeskVerb[] _settling = [DeskVerb.Accept, DeskVerb.Reject, DeskVerb.Drop, DeskVerb.AcceptDeterministic];
     private readonly List<ReviewDecisionRequest> _reviewCalls = [];
     private readonly Dictionary<string, (int Index, JsonNode Entry)> _decidedEntries = new(StringComparer.Ordinal);
     private JsonObject? _queue;
@@ -40,6 +40,27 @@ internal sealed partial class FakeSindriApi
     /// <summary>GET /sindri/context/sources's answer: not served until the context lane writes its golden.</summary>
     public RouteAnswer SourcesAnswer { get; set; } = _notServed;
 
+    /// <summary>Held open until set: the lenses read waits for it (a read in flight); null answers at once. Cancelling the call completes it as cancelled.</summary>
+    public TaskCompletionSource? LensesGate { get; set; }
+
+    /// <summary>Held open until set: the file map read waits for it.</summary>
+    public TaskCompletionSource? FileMapGate { get; set; }
+
+    /// <summary>Held open until set: the review queue read waits for it.</summary>
+    public TaskCompletionSource? ReviewQueueGate { get; set; }
+
+    /// <summary>Held open until set: the review history read waits for it.</summary>
+    public TaskCompletionSource? ReviewHistoryGate { get; set; }
+
+    /// <summary>Held open until set: the map status read waits for it.</summary>
+    public TaskCompletionSource? MapStatusGate { get; set; }
+
+    /// <summary>Held open until set: the node read waits for it.</summary>
+    public TaskCompletionSource? NodeGate { get; set; }
+
+    /// <summary>Held open until set: the sources read waits for it.</summary>
+    public TaskCompletionSource? SourcesGate { get; set; }
+
     /// <summary>Every review decision received, in order.</summary>
     public IReadOnlyList<ReviewDecisionRequest> ReviewCalls { get { lock (_gate) { return [.. _reviewCalls]; } } }
 
@@ -62,13 +83,13 @@ internal sealed partial class FakeSindriApi
     internal RouteAnswer FileMapFor(FileMapQuery query) => FileMapAnswer ?? ContextAnswers.FileMap(query);
 
     public Task<Result<LensesView>> Lenses(Uri api, LensesQuery query, CancellationToken cancellationToken) =>
-        Context<LensesView>(api, "/sindri/context/lenses", LensesAnswer(query));
+        Context<LensesView>(api, "/sindri/context/lenses", LensesAnswer(query), LensesGate, cancellationToken);
 
     public Task<Result<FileMapView>> FileMap(Uri api, FileMapQuery query, CancellationToken cancellationToken) =>
-        Context<FileMapView>(api, "/sindri/context/filemap", FileMapFor(query));
+        Context<FileMapView>(api, "/sindri/context/filemap", FileMapFor(query), FileMapGate, cancellationToken);
 
     public Task<Result<ReviewQueueView>> ReviewQueue(Uri api, int? limit, CancellationToken cancellationToken) =>
-        Context<ReviewQueueView>(api, "/sindri/context/map/review", ReviewQueueBody());
+        Context<ReviewQueueView>(api, "/sindri/context/map/review", ReviewQueueBody(), ReviewQueueGate, cancellationToken);
 
     public async Task<Result<ReviewDecisionResponse>> ReviewDecision(Uri api, ReviewDecisionRequest request, CancellationToken cancellationToken)
     {
@@ -97,22 +118,23 @@ internal sealed partial class FakeSindriApi
     }
 
     public Task<Result<ReviewHistoryView>> ReviewHistory(Uri api, int? limit, CancellationToken cancellationToken) =>
-        Context<ReviewHistoryView>(api, "/sindri/context/map/review/history", ReviewHistoryAnswer);
+        Context<ReviewHistoryView>(api, "/sindri/context/map/review/history", ReviewHistoryAnswer, ReviewHistoryGate, cancellationToken);
 
     public Task<Result<MapStatusView>> MapStatus(Uri api, string? anchor, CancellationToken cancellationToken) =>
-        Context<MapStatusView>(api, "/sindri/context/map", MapStatusAnswer);
+        Context<MapStatusView>(api, "/sindri/context/map", MapStatusAnswer, MapStatusGate, cancellationToken);
 
     public Task<Result<NodeView>> Node(Uri api, string key, CancellationToken cancellationToken) =>
-        Context<NodeView>(api, "/sindri/context/node", NodeAnswer);
+        Context<NodeView>(api, "/sindri/context/node", NodeAnswer, NodeGate, cancellationToken);
 
     public Task<Result<SourcesView>> Sources(Uri api, CancellationToken cancellationToken) =>
-        Context<SourcesView>(api, "/sindri/context/sources", SourcesAnswer);
+        Context<SourcesView>(api, "/sindri/context/sources", SourcesAnswer, SourcesGate, cancellationToken);
 
     // A context read is synchronous to the context database: it never waits on the views and never uses a sequence up.
-    private Task<Result<T>> Context<T>(Uri api, string path, RouteAnswer answer)
+    private async Task<Result<T>> Context<T>(Uri api, string path, RouteAnswer answer, TaskCompletionSource? gate, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _contextCalls);
-        return Task.FromResult(Answer<T>(api, path, answer));
+        await WaitFor(gate, cancellationToken).ConfigureAwait(false);
+        return Answer<T>(api, path, answer);
     }
 
     private JsonObject Queue() => _queue ??= JsonNode.Parse(GoldenFiles.Api("context-map-review", "map-tabs-draft"))!.AsObject(); // why: the golden is a JSON object
@@ -121,13 +143,13 @@ internal sealed partial class FakeSindriApi
     private void Apply(ReviewDecisionRequest request, ReviewDecisionResponse reply)
     {
         var written = reply.Result?.Written ?? [];
-        if (string.Equals(request.Verb, "undo", StringComparison.Ordinal))
+        if (request.Verb == DeskVerb.Undo)
         {
             Restore([.. written.Concat(request.Overrides ?? []).Concat(request.Override is { } one ? [one] : []).Distinct(StringComparer.Ordinal)]);
         }
-        else if (_settling.Contains(request.Verb, StringComparer.Ordinal))
+        else if (_settling.Contains(request.Verb))
         {
-            Settle(request, written.Count > 0 ? written[0] : request.Verb);
+            Settle(request, written.Count > 0 ? written[0] : request.Verb.ToString());
         }
     }
 

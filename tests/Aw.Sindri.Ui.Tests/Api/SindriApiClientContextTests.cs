@@ -86,7 +86,11 @@ public sealed class SindriApiClientContextTests
 
         var served = JsonNode.Parse(golden.Body)!;
         Assert.Equal((code, (string)served["detail"]!), (lenses.Error.Code, lenses.Error.Message));
-        Assert.Equal(kind ?? lenses.Error.Kind, lenses.Error.Kind);
+        if (kind is { } expectedKind)
+        {
+            Assert.Equal(expectedKind, lenses.Error.Kind);
+        }
+
         if (extension is not null)
         {
             var values = lenses.Error.Extensions!.Single(e => e.Key == extension).Value.EnumerateArray().Select(v => v.GetString());
@@ -124,12 +128,12 @@ public sealed class SindriApiClientContextTests
         var written = (string)GoldenFiles.Node("context-map-review", "post-accept-link")["result"]!["written"]![0]!;
         server.ReviewDecided = RouteAnswer.Api("context-map-review", "post-undo-list");
 
-        _ = await client.ReviewDecision(_api, new ReviewDecisionRequest("undo", Overrides: [written]), Token);
-        _ = await client.ReviewDecision(_api, new ReviewDecisionRequest("drop", Override: written), Token);
+        _ = await client.ReviewDecision(_api, new ReviewDecisionRequest(DeskVerb.Undo, Overrides: [written]), Token);
+        _ = await client.ReviewDecision(_api, new ReviewDecisionRequest(DeskVerb.Drop, Override: written), Token);
 
         Assert.All(handler.Requests, r => Assert.Equal(("POST", "/sindri/context/map/review", "human", "ui", null), (r.Method, r.Path, r.Caller, r.Client, r.Terminal)));
         Assert.Equal(2, server.ReviewCalls.Count);
-        Assert.Equal(["undo", "drop"], server.ReviewCalls.Select(c => c.Verb), StringComparer.Ordinal);
+        Assert.Equal([DeskVerb.Undo, DeskVerb.Drop], server.ReviewCalls.Select(c => c.Verb));
         Assert.Equal([written], server.ReviewCalls[0].Overrides!, StringComparer.Ordinal);
         Assert.Equal(written, server.ReviewCalls[1].Override);
     }
@@ -140,7 +144,7 @@ public sealed class SindriApiClientContextTests
         var (client, server, _) = Reach();
         server.ReviewDecided = RouteAnswer.Problem("context-map-review", "stale-047");
 
-        var decision = await client.ReviewDecision(_api, new ReviewDecisionRequest("accept", Link: "edge:402b8bed42f6611c"), Token);
+        var decision = await client.ReviewDecision(_api, new ReviewDecisionRequest(DeskVerb.Accept, Link: "edge:402b8bed42f6611c"), Token);
 
         Assert.Equal(("SND-CONTEXT-047", ErrorKind.Conflict, (string)GoldenFiles.Node("context-map-review", "stale-047")["detail"]!), (decision.Error.Code, decision.Error.Kind, decision.Error.Message));
     }
@@ -151,7 +155,7 @@ public sealed class SindriApiClientContextTests
         var (client, server, _) = Reach();
         server.ReviewDecided = RouteAnswer.Problem("context-map-review", "session-auth-002");
 
-        var decision = await client.ReviewDecision(_api, new ReviewDecisionRequest("accept", Node: "code:x"), Token);
+        var decision = await client.ReviewDecision(_api, new ReviewDecisionRequest(DeskVerb.Accept, Node: "code:x"), Token);
 
         Assert.Equal(("SND-AUTH-002", ErrorKind.Forbidden), (decision.Error.Code, decision.Error.Kind));
     }
@@ -162,7 +166,7 @@ public sealed class SindriApiClientContextTests
         var (client, _, handler) = Reach();
         handler.Override = (HttpStatusCode.ServiceUnavailable, RouteAnswer.Problem(HttpStatusCode.ServiceUnavailable, "SND-API-011", "views behind").Body);
 
-        var decision = await client.ReviewDecision(_api, new ReviewDecisionRequest("accept", Node: "code:x"), Token);
+        var decision = await client.ReviewDecision(_api, new ReviewDecisionRequest(DeskVerb.Accept, Node: "code:x"), Token);
 
         Assert.True(decision.IsError);
         _ = Assert.Single(handler.Requests);
