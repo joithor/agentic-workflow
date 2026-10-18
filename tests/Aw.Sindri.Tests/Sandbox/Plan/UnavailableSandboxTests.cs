@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Sandbox;
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Sandbox.Plan;
@@ -12,7 +13,7 @@ public sealed class UnavailableSandboxTests
     private static void Refused(Error error)
     {
         Assert.Equal(SindriErrors.LaunchSandboxUnavailable.Code, error.Code);
-        Assert.Equal("unsupported-platform", SandboxErrors.Reason(error));
+        Assert.Equal("unsupported-platform", SandboxRefusal.ReasonOf(error));
     }
 
     [Fact, Trait("Lane", "unit")]

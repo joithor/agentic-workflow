@@ -88,8 +88,8 @@ public sealed class SandboxPlannerTests
     public void A_declared_home_entry_and_a_repo_cache_path_are_bound_and_deny_extra_wins()
     {
         var settings = new SandboxSettings(
-            Fs: new SandboxFs(HomeAllow: [new HomeAllowEntry(".config/gh", LoginMountMode.ReadOnly)], DenyExtra: [Req.Home + "/.config/gh"]),
-            Repos: new Dictionary<string, SandboxRepoSettings>(StringComparer.Ordinal) { ["web"] = new(CachePaths: [".cache/pip"], HomeAllow: [new HomeAllowEntry(".venv", LoginMountMode.ReadWrite)]) });
+            Fs: new SandboxFs(HomeAllow: [new HomeAllowEntry(".config/gh", MountMode.ReadOnly)], DenyExtra: [Req.Home + "/.config/gh"]),
+            Repos: new Dictionary<string, SandboxRepoSettings>(StringComparer.Ordinal) { ["web"] = new(CachePaths: [".cache/pip"], HomeAllow: [new HomeAllowEntry(".venv", MountMode.ReadWrite)]) });
 
         var plan = Build(Req.WriteScope with { Settings = settings });
 
@@ -114,23 +114,23 @@ public sealed class SandboxPlannerTests
     [Fact, Trait("Lane", "unit")]
     public void A_login_mount_of_a_rename_written_file_is_refused_because_a_file_bind_cannot_be_renamed_onto()
     {
-        var login = Req.OwnerCopyLogin() with { Mounts = [new LoginMount(Req.RunArea + "/c.json", Req.Home + "/.claude-run/.credentials.json", LoginMountMode.ReadWrite)] };
+        var login = Req.OwnerCopyLogin() with { Mounts = [new LoginMount(Req.RunArea + "/c.json", Req.Home + "/.claude-run/.credentials.json", MountMode.ReadWrite)] };
 
         var result = SandboxPlanner.Build(SandboxMechanism.PassThrough, Req.WriteScope with { Login = login });
 
         Assert.True(result.IsError);
         Assert.Equal(SindriErrors.LaunchSelfCheckFailed.Code, result.Error.Code);
-        Assert.Equal("login", SandboxErrors.Reason(result.Error));
+        Assert.Equal("login", SandboxRefusal.ReasonOf(result.Error));
     }
 
     [Fact, Trait("Lane", "unit")]
     public void A_writable_agent_home_root_is_refused()
     {
-        var login = Req.OwnerCopyLogin() with { Mounts = [new LoginMount(Req.Home + "/.claude", Req.Home + "/.claude", LoginMountMode.ReadWrite)] };
+        var login = Req.OwnerCopyLogin() with { Mounts = [new LoginMount(Req.Home + "/.claude", Req.Home + "/.claude", MountMode.ReadWrite)] };
 
         var result = SandboxPlanner.Build(SandboxMechanism.PassThrough, Req.WriteScope with { Login = login });
 
-        Assert.Equal("login", SandboxErrors.Reason(result.Error));
+        Assert.Equal("login", SandboxRefusal.ReasonOf(result.Error));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -141,7 +141,7 @@ public sealed class SandboxPlannerTests
         var result = SandboxPlanner.Build(SandboxMechanism.PassThrough, Req.WriteScope with { Login = login });
 
         Assert.Equal(SindriErrors.LaunchSelfCheckFailed.Code, result.Error.Code);
-        Assert.Equal("login", SandboxErrors.Reason(result.Error));
+        Assert.Equal("login", SandboxRefusal.ReasonOf(result.Error));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -202,7 +202,7 @@ public sealed class SandboxPlannerTests
         {
             Assert.True(result.IsError);
             Assert.Equal(SindriErrors.LaunchUnconfinable.Code, result.Error.Code);
-            Assert.Equal("worktree-outside-repo", SandboxErrors.Reason(result.Error));
+            Assert.Equal("worktree-outside-repo", SandboxRefusal.ReasonOf(result.Error));
         }
 
         var denied = Build(Req.WriteScope with { ExtraDeny = [Req.Worktree + "/holdout"] });
@@ -253,7 +253,7 @@ public sealed class SandboxPlannerTests
         Assert.True(System.Text.Encoding.UTF8.GetByteCount(plan.Network.NetDir + "/proxy.sock") < 104);
         Assert.True(tooLong.IsError);
         Assert.Equal(SindriErrors.LaunchSelfCheckFailed.Code, tooLong.Error.Code);
-        Assert.Equal("net-forward", SandboxErrors.Reason(tooLong.Error));
+        Assert.Equal("net-forward", SandboxRefusal.ReasonOf(tooLong.Error));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -267,7 +267,7 @@ public sealed class SandboxPlannerTests
         Assert.Same(plan, reused.Value);
         Assert.Equal(Build(Req.WriteScope).PlanHash, plan.PlanHash);
         Assert.Equal(SindriErrors.LaunchUnconfinable.Code, gone.Error.Code);
-        Assert.Equal("no-stored-plan", SandboxErrors.Reason(gone.Error));
+        Assert.Equal("no-stored-plan", SandboxRefusal.ReasonOf(gone.Error));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -276,6 +276,6 @@ public sealed class SandboxPlannerTests
         var plan = Build(Req.Attended);
 
         Assert.Same(plan, SandboxPlanner.FromStored(plan).Value);
-        Assert.Equal("no-stored-plan", SandboxErrors.Reason(SandboxPlanner.FromStored(stored: null).Error));
+        Assert.Equal("no-stored-plan", SandboxRefusal.ReasonOf(SandboxPlanner.FromStored(stored: null).Error));
     }
 }

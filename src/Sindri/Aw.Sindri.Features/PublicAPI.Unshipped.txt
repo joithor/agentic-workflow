@@ -935,10 +935,14 @@ Aw.Sindri.Features.GetLaunch.LaunchView.Mode.get -> Aw.Sindri.Core.Launch.Launch
 Aw.Sindri.Features.GetLaunch.LaunchView.Mode.init -> void
 Aw.Sindri.Features.GetLaunch.LaunchView.OutcomeAt.get -> System.DateTimeOffset?
 Aw.Sindri.Features.GetLaunch.LaunchView.OutcomeAt.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.Reason.get -> string?
+Aw.Sindri.Features.GetLaunch.LaunchView.Reason.init -> void
 Aw.Sindri.Features.GetLaunch.LaunchView.RequestedAt.get -> System.DateTimeOffset
 Aw.Sindri.Features.GetLaunch.LaunchView.RequestedAt.init -> void
 Aw.Sindri.Features.GetLaunch.LaunchView.SessionId.get -> Aw.Sindri.Core.Sessions.SessionId?
 Aw.Sindri.Features.GetLaunch.LaunchView.SessionId.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.Source.get -> string?
+Aw.Sindri.Features.GetLaunch.LaunchView.Source.init -> void
 Aw.Sindri.Features.GetLaunch.LaunchView.Stage.get -> Aw.Sindri.Core.Launch.LaunchStage?
 Aw.Sindri.Features.GetLaunch.LaunchView.Stage.init -> void
 Aw.Sindri.Features.GetLaunch.LaunchView.State.get -> Aw.Sindri.Core.Launches.LaunchState

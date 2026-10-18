@@ -15,7 +15,7 @@ public sealed class SandboxWireTests
 
     private static SandboxSummary Summary(bool attended) => new(
         SandboxMechanism.Bubblewrap, "9f2c0a41d8e6", ["/work/web/.claude/worktrees/sindri-x-1", "/home/thor/.agentic-workflow/sindri-app/workflow/runs/x/build/1"],
-        ["model", "packages"], NetworkMode.Enforce, InnerSandbox.Auto, new SandboxLimitsSummary("12GiB", "400%", 2048, attended ? null : "70m"),
+        ["model", "packages"], NetworkMode.Enforce, InnerState.On, new SandboxLimitsSummary("12GiB", "400%", 2048, attended ? null : "70m"),
         new SandboxCredentialsSummary(GithubCredentials.None), ModelLoginSource.OwnerCopy, attended);
 
     private static void Match(string json, string name) =>
@@ -30,6 +30,63 @@ public sealed class SandboxWireTests
             Summary(attended: false));
 
         Match(JsonSerializer.Serialize(started, Json), "launch-started-sandbox.json");
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_public_launch_started_carries_the_sandbox_summary_too()
+    {
+        var started = new LaunchStartedPublic(
+            A.FirstLaunchId, A.FirstItemId, LaunchMode.Open, AgentId.From("claude-code"), SessionId: null, "sindri ITM-1",
+            new LaunchViewerPublic("print", "Print", ViewerOutcomeKind.Opened, Code: null), ["tmux", "attach"], CatalogSource.Builtin, "hash", Summary(attended: false));
+
+        var json = JsonSerializer.Serialize(started, Json);
+
+        Assert.Contains("\"sandbox\":{\"mechanism\":\"bubblewrap\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"inner\":\"on\"", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("auto", json, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_failed_launch_with_a_reason_has_its_wire_shape() =>
+        Match(JsonSerializer.Serialize(new LaunchFailed(A.FirstLaunchId, A.FirstItemId, "SND-LAUNCH-017", "The agent's sign-in isn't available for Steps (expired)", Stage: null, Reason: "expired", Source: "separate-login"), Json), "launch-failed-reason.json");
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_failed_launch_without_a_reason_is_unchanged() =>
+        Assert.DoesNotContain("reason", JsonSerializer.Serialize(new LaunchFailed(A.FirstLaunchId, A.FirstItemId, "SND-LAUNCH-003", "gone", Stage: null), Json), StringComparison.Ordinal);
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_overflow_denial_has_its_wire_shape() =>
+        Match(JsonSerializer.Serialize(new SandboxDenied(A.FirstLaunchId, DenialKind.Path, Target: "", "overflow", 37, Overflow: true), Json), "sandbox-denied-overflow.json");
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_counted_denial_has_no_overflow_field() =>
+        Assert.DoesNotContain("overflow", JsonSerializer.Serialize(new SandboxDenied(A.FirstLaunchId, DenialKind.Network, "github.com", "group:github-off", 1), Json), StringComparison.OrdinalIgnoreCase);
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_limit_ending_is_built_with_all_its_fields()
+    {
+        var ended = SessionEnded.Limited(A.FirstLaunchId, new LimitEnd(LimitKind.Wall, 4_200, 4_300, new LimitPeaks(1, 2, 3, 4_300)));
+
+        Assert.Equal((SessionEndReason.Limit, null, LimitKind.Wall, 4_200L, 4_300L), (ended.Reason, ended.ExitCode, ended.Kind, ended.Limit, ended.Peak));
+        Assert.Equal(4_300L, ended.Peaks!.WallSeconds);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void An_old_session_ended_payload_still_reads()
+    {
+        var read = JsonSerializer.Deserialize<SessionEnded>("{\"launch\":\"" + A.FirstLaunchId.Value + "\",\"reason\":\"lost\",\"exitCode\":null}", Json)!;
+
+        Assert.Equal((SessionEndReason.Lost, null, null), (read.Reason, read.Kind, read.Limit));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Every_enum_member_has_the_wire_name_the_text_helpers_use()
+    {
+        Assert.All(Enum.GetValues<ModelLoginSource>(), v => Assert.Equal(JsonSerializer.Serialize(v, Json), $"\"{SandboxWire.Name(v)}\""));
+        Assert.All(Enum.GetValues<NetworkMode>(), v => Assert.Equal(JsonSerializer.Serialize(v, Json), $"\"{SandboxWire.Name(v)}\""));
+        Assert.All(Enum.GetValues<InnerSandbox>(), v => Assert.Equal(JsonSerializer.Serialize(v, Json), $"\"{SandboxWire.Name(v)}\""));
+        Assert.All(Enum.GetValues<GithubCredentials>(), v => Assert.Equal(JsonSerializer.Serialize(v, Json), $"\"{SandboxWire.Name(v)}\""));
+        Assert.All(Enum.GetValues<MountMode>(), v => Assert.Equal(JsonSerializer.Serialize(v, Json), $"\"{SandboxWire.Name(v)}\""));
     }
 
     [Fact, Trait("Lane", "unit")]

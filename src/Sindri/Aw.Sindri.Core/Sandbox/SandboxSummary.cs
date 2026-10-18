@@ -11,7 +11,7 @@ namespace Aw.Sindri.Core.Sandbox;
 /// <param name="Writable">The writable paths.</param>
 /// <param name="Network">The allowed host group names.</param>
 /// <param name="NetworkMode">Enforce or learn.</param>
-/// <param name="Inner">The agent CLI's own sandbox.</param>
+/// <param name="Inner">Whether the agent CLI's own sandbox ran (resolved: on or off, never the profile's auto).</param>
 /// <param name="Limits">The limits in force.</param>
 /// <param name="Credentials">The GitHub credentials the session has.</param>
 /// <param name="Login">The model login source the plan resolved to; fixed for the session's life.</param>
@@ -22,7 +22,7 @@ public sealed record SandboxSummary(
     IReadOnlyList<string> Writable,
     IReadOnlyList<string> Network,
     NetworkMode NetworkMode,
-    InnerSandbox Inner,
+    InnerState Inner,
     SandboxLimitsSummary Limits,
     SandboxCredentialsSummary Credentials,
     ModelLoginSource Login,

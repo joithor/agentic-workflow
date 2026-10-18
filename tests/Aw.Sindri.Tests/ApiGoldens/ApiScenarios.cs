@@ -32,7 +32,7 @@ internal static class ApiScenarios
         .. JobScenarios.All,
         .. JobScopeScenarios.All,
         .. LaunchScenarios.All,
-        .. SessionWrapScenarios.All,
+        .. WrapSessionScenarios.All,
     ];
 
     /// <summary>Whether the scenario's host must refuse the prover label (its home isn't temporary).</summary>
@@ -46,7 +46,7 @@ internal static class ApiScenarios
             ? await Jobs.JobHost.Start(ct, pump: false)
             : LaunchScenarios.Handles(slug, scenario)
             ? await LaunchScenarios.Start(scenario, ct)
-            : SessionWrapScenarios.Handles(slug, scenario)
+            : WrapSessionScenarios.Handles(slug, scenario)
             ? await GoldenHost.Start(temporary: true, ct, ItemScenarios.ProfileYaml)
             : await GoldenHost.Start(temporary: !NeedsNonTemporaryHome(slug, scenario), ct, ProfileYaml(slug, scenario));
 
@@ -93,16 +93,16 @@ internal static class ApiScenarios
         : ParkScenarios.Handles(slug, scenario) ? () => ParkScenarios.Body(host, slug, scenario, ct)
         : RequestScenarios.Handles(slug, scenario) ? () => RequestScenarios.Body(host, slug, scenario, ct)
         : StreamScenarios.Handles(slug, scenario) ? () => StreamScenarios.Body(host, slug, scenario, ct)
-        : SessionScenarios.Handles(slug, scenario) ? () => SessionScenarios.Body(host, slug, scenario, ct)
         : ViewScenarios.Handles(slug, scenario) ? () => ViewScenarios.Body(host, slug, scenario, ct)
         : JobScenarios.Handles(slug, scenario) ? () => JobScenarios.Body(host, slug, scenario, ct)
         : JobScopeScenarios.Handles(slug, scenario) ? () => JobScopeScenarios.Body(host, slug, scenario, ct)
-        : Launched(host, slug, scenario, ct);
+        : LaunchScenarios.Handles(slug, scenario) ? () => LaunchScenarios.Body(host, slug, scenario, ct)
+        : SessionBody(host, slug, scenario, ct);
 
-    /// <summary>The launch and session-wrap scenario classes' bodies (API P10a), else null.</summary>
-    private static Func<Task<string>>? Launched(GoldenHost host, string slug, string scenario, CancellationToken ct) =>
-        LaunchScenarios.Handles(slug, scenario) ? () => LaunchScenarios.Body(host, slug, scenario, ct)
-        : SessionWrapScenarios.Handles(slug, scenario) ? () => SessionWrapScenarios.Body(host, slug, scenario, ct)
+    /// <summary>The body of a collector (sessions) or wrap (launch) session scenario, else null.</summary>
+    private static Func<Task<string>>? SessionBody(GoldenHost host, string slug, string scenario, CancellationToken ct) =>
+        SessionScenarios.Handles(slug, scenario) ? () => SessionScenarios.Body(host, slug, scenario, ct)
+        : WrapSessionScenarios.Handles(slug, scenario) ? () => WrapSessionScenarios.Body(host, slug, scenario, ct)
         : null;
 
     private static (string Name, string Value)[] Session => [(SindriHeaders.Caller, "session"), (SindriHeaders.Client, "cli")];

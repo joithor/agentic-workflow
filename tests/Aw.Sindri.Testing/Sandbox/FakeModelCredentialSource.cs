@@ -58,7 +58,7 @@ public sealed class FakeModelCredentialSource(ModelLoginSource id) : IModelCrede
         var home = "/fake/home/." + target.Value;
         return Task.FromResult<Result<PreparedLogin>>(new PreparedLogin(
             Id,
-            [new LoginMount(home, home, LoginMountMode.ReadOnly), new LoginMount(dir, home + "-run", LoginMountMode.ReadWrite)],
+            [new LoginMount(home, home, MountMode.ReadOnly), new LoginMount(dir, home + "-run", MountMode.ReadWrite)],
             new Dictionary<string, string>(StringComparer.Ordinal) { ["CLAUDE_CONFIG_DIR"] = home + "-run" },
             [home + "-run"],
             handle));

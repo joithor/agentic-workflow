@@ -13,10 +13,10 @@ public static class SandboxCodes
         new(SindriErrors.LaunchUnconfinable, LaunchCodeKind.LaunchPark, HasHttpClass: true),
         new(SindriErrors.LaunchSelfCheckFailed, LaunchCodeKind.LaunchPark, HasHttpClass: true),
         new(SindriErrors.LaunchLoginUnavailable, LaunchCodeKind.NoRuntime, HasHttpClass: true),
-        new(SindriErrors.LaunchGitHubTokenFailed, LaunchCodeKind.StepFailure, HasHttpClass: true),
-        new(SindriErrors.LaunchLimitHit, LaunchCodeKind.StepFailure, HasHttpClass: false),
+        new(SindriErrors.LaunchGitHubTokenFailed, LaunchCodeKind.StepFailure, HasHttpClass: true, FailureReason: "launch"),
+        new(SindriErrors.LaunchLimitHit, LaunchCodeKind.StepFailure, HasHttpClass: false, FailureReason: "limit"),
         new(SindriErrors.LaunchSessionWait, LaunchCodeKind.ResourceWait, HasHttpClass: true),
-        new(SindriErrors.LaunchPrepareFailed, LaunchCodeKind.StepFailure, HasHttpClass: true),
+        new(SindriErrors.LaunchPrepareFailed, LaunchCodeKind.StepFailure, HasHttpClass: true, FailureReason: "launch"),
     ];
 
     /// <summary>The kind of a sandbox launch code.</summary>

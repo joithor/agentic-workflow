@@ -56,7 +56,7 @@ public sealed record SandboxPlan(
         Writable,
         [.. Network.Groups.Select(g => g.Name)],
         Network.Mode,
-        Inner,
+        Inner == InnerSandbox.On ? InnerState.On : InnerState.Off,   // auto is off until the self-check keeps the inner sandbox (spec §4)
         new SandboxLimitsSummary(SandboxUnits.FormatSize(Limits.MemoryMaxBytes), string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{Limits.CpuQuotaPercent}%"), Limits.TasksMax, Limits.Wall is { } w ? SandboxUnits.FormatDuration(w) : null),
         new SandboxCredentialsSummary(Github),
         Login,

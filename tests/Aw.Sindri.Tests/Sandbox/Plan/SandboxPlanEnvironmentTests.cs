@@ -36,7 +36,7 @@ public sealed class SandboxPlanEnvironmentTests
         var result = SandboxPlanner.Build(SandboxMechanism.PassThrough, Req.WriteScope with { Login = login });
 
         Assert.Equal(SindriErrors.LaunchSelfCheckFailed.Code, result.Error.Code);
-        Assert.Equal("env", SandboxErrors.Reason(result.Error));
+        Assert.Equal("env", SandboxRefusal.ReasonOf(result.Error));
         Assert.DoesNotContain("ghp_planted", result.Error.Message, StringComparison.Ordinal);
     }
 
@@ -143,7 +143,7 @@ public sealed class SandboxPlanEnvironmentTests
             Net = new SandboxNetFacts("/run/user/1000/sindri/ffff0000", 7480, 50000),
             Login = Req.OwnerCopyLogin() with
             {
-                Mounts = [new LoginMount(Req.Home + "/.claude", Req.Home + "/.claude", LoginMountMode.ReadOnly), new LoginMount("/areas/2/login", Req.Home + "/.claude-run", LoginMountMode.ReadWrite)],
+                Mounts = [new LoginMount(Req.Home + "/.claude", Req.Home + "/.claude", MountMode.ReadOnly), new LoginMount("/areas/2/login", Req.Home + "/.claude-run", MountMode.ReadWrite)],
             },
         };
 

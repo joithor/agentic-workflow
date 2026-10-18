@@ -9,10 +9,14 @@ namespace Aw.Sindri.Host.Commands.SessionWrap;
 internal sealed class WrapSignals : IDisposable
 {
     private readonly List<PosixSignalRegistration> _held = [];
+    private readonly TaskCompletionSource _hangup = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     private WrapSignals()
     {
     }
+
+    /// <summary>Completes when wrap is told to hang up or terminate; an interrupt (Ctrl-C) is the agent's and never completes it.</summary>
+    internal Task Hangup => _hangup.Task;
 
     /// <summary>Starts ignoring the interrupt, terminate and hang-up signals for this process.</summary>
     /// <returns>The hold; disposing it restores the defaults.</returns>
@@ -23,7 +27,14 @@ internal sealed class WrapSignals : IDisposable
         {
             foreach (var signal in new[] { PosixSignal.SIGINT, PosixSignal.SIGTERM, PosixSignal.SIGHUP })
             {
-                signals._held.Add(PosixSignalRegistration.Create(signal, static context => context.Cancel = true));
+                signals._held.Add(PosixSignalRegistration.Create(signal, context =>
+                {
+                    context.Cancel = true;
+                    if (signal != PosixSignal.SIGINT)
+                    {
+                        _ = signals._hangup.TrySetResult();
+                    }
+                }));
             }
         }
 

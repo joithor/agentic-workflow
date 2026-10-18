@@ -29,8 +29,8 @@ internal static partial class SandboxRules
             ("homeTmpfs", Optional(limits.HomeTmpfs, Size.IsMatch), "a size such as 256MiB"),
             ("wallGrace", Optional(limits.WallGrace, IsDuration), DurationHint),
             ("parkMax", Optional(limits.ParkMax, IsDuration), DurationHint),
-            ("tasks", (limits.Tasks ?? 1) >= 1, "at least 1"),
-            ("sessions", (limits.Sessions ?? 1) >= 1, "at least 1"),
+            ("tasks", (limits.Tasks ?? 1) is >= 1 and <= 1_000_000, "from 1 to 1000000"),
+            ("sessions", (limits.Sessions ?? 1) is >= 1 and <= 64, "from 1 to 64"),
         ];
         var (key, _, hint) = checks.FirstOrDefault(c => !c.Ok);
         return key is null ? null : Problem($"sandbox.limits.{key}", hint);
@@ -119,6 +119,6 @@ internal static partial class SandboxRules
     [GeneratedRegex("^[1-9][0-9]*(KiB|MiB|GiB|TiB)\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
     private static partial Regex Size { get; }
 
-    [GeneratedRegex("^(\\*\\.)?[a-z0-9]([a-z0-9.-]*[a-z0-9])?\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
+    [GeneratedRegex("^(\\*\\.)?[a-z0-9]+([.-][a-z0-9]+)*\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
     private static partial Regex Host { get; }
 }

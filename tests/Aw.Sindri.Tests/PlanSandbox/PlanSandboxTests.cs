@@ -41,6 +41,6 @@ public sealed class PlanSandboxTests
 
         Assert.True(result.IsError);
         Assert.Equal(SindriErrors.LaunchSandboxUnavailable.Code, result.Error.Code);
-        Assert.Equal("unsupported-platform", SandboxErrors.Reason(result.Error));
+        Assert.Equal("unsupported-platform", SandboxRefusal.ReasonOf(result.Error));
     }
 }

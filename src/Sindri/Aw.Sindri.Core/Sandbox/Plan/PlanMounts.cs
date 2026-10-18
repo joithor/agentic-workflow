@@ -45,7 +45,7 @@ internal static class PlanMounts
         }
 
         IEnumerable<HomeAllowEntry> declared = [.. c.Request.Settings?.Fs?.HomeAllow ?? [], .. c.Repo.HomeAllow ?? []];
-        m.AddRange(declared.Select(e => new PlanMount($"{c.Home}/{e.Path}", e.Mode == LoginMountMode.ReadWrite ? PlanMountKind.ReadWrite : PlanMountKind.ReadOnly, Reason: "allowed by the profile")));
+        m.AddRange(declared.Select(e => new PlanMount($"{c.Home}/{e.Path}", e.Mode == MountMode.ReadWrite ? PlanMountKind.ReadWrite : PlanMountKind.ReadOnly, Reason: "allowed by the profile")));
         m.AddRange((c.Repo.CachePaths ?? []).Select(p => new PlanMount($"{c.Home}/{p}", PlanMountKind.ReadWrite, Reason: "a cache path this repo declares")));
     }
 
@@ -58,13 +58,13 @@ internal static class PlanMounts
 
         foreach (var mount in login.Mounts)
         {
-            var kind = mount.Mode == LoginMountMode.ReadWrite ? PlanMountKind.ReadWrite : PlanMountKind.ReadOnly;
+            var kind = mount.Mode == MountMode.ReadWrite ? PlanMountKind.ReadWrite : PlanMountKind.ReadOnly;
             m.Add(new PlanMount(mount.SandboxPath, kind, string.Equals(mount.HostPath, mount.SandboxPath, StringComparison.Ordinal) ? null : mount.HostPath, Reason: $"the agent home, from the {SandboxWire.Name(c.Login)} login source"));
         }
 
         foreach (var (home, file) in new[] { (c.Home + "/.claude", ".credentials.json"), (c.Home + "/.codex", "auth.json") })
         {
-            if (login.Mounts.Any(x => string.Equals(x.SandboxPath, home, StringComparison.Ordinal) && x.Mode == LoginMountMode.ReadOnly))
+            if (login.Mounts.Any(x => string.Equals(x.SandboxPath, home, StringComparison.Ordinal) && x.Mode == MountMode.ReadOnly))
             {
                 m.Add(new PlanMount($"{home}/{file}", PlanMountKind.Deny, Reason: PlanContext.Always + "the owner's original login; the session has its own copy"));
             }

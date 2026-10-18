@@ -89,8 +89,8 @@ public abstract class IModelCredentialSourceContract
 
         Expect.True(result.IsError);
         Expect.Equal(SindriErrors.LaunchLoginUnavailable.Code, result.Error.Code);
-        Expect.Equal(reason, SandboxErrors.Reason(result.Error));
-        Expect.Equal(source.Id == ModelLoginSource.OwnerCopy ? "owner-copy" : "separate-login", SandboxErrors.Source(result.Error));
+        Expect.Equal(reason, SandboxRefusal.ReasonOf(result.Error));
+        Expect.Equal(source.Id == ModelLoginSource.OwnerCopy ? "owner-copy" : "separate-login", SandboxRefusal.SourceTextOf(result.Error));
     }
 
     /// <summary>A target the source has no adapter for is SND-LAUNCH-017 source-unsupported.</summary>
@@ -104,7 +104,7 @@ public abstract class IModelCredentialSourceContract
 
         Expect.True(result.IsError);
         Expect.Equal(SindriErrors.LaunchLoginUnavailable.Code, result.Error.Code);
-        Expect.Equal("source-unsupported", SandboxErrors.Reason(result.Error));
+        Expect.Equal("source-unsupported", SandboxRefusal.ReasonOf(result.Error));
     }
 
     /// <summary>Two prepares for two launches give two handles, and releasing is safe to repeat.</summary>

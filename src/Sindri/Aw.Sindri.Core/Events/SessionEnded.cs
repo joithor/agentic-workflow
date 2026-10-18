@@ -18,4 +18,15 @@ public sealed record SessionEnded(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] LimitKind? Kind = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? Limit = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? Peak = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] LimitPeaks? Peaks = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] LimitPeaks? Peaks = null)
+{
+    /// <summary>A session a sandbox limit ended: the reason is <see cref="SessionEndReason.Limit"/> and the limit's fields are all present.</summary>
+    /// <param name="launch">The launch.</param>
+    /// <param name="end">Which limit, its value and peak.</param>
+    /// <returns>The payload.</returns>
+    public static SessionEnded Limited(LaunchId launch, LimitEnd end)
+    {
+        ArgumentNullException.ThrowIfNull(end);
+        return new SessionEnded(launch, SessionEndReason.Limit, ExitCode: null, end.Kind, end.Limit, end.Peak, end.Peaks);
+    }
+}

@@ -38,7 +38,7 @@ public sealed class TestSandboxesTests
         Assert.Equal([Req.ReadOnly], sandbox.Requests);
         Assert.Equal(["codex"], Assert.Single(sandbox.Wrapped));
         Assert.Equal(2, sandbox.Checked.Count);
-        Assert.Equal("git-ref", SandboxErrors.Reason(failed.Error));
+        Assert.Equal("git-ref", SandboxRefusal.ReasonOf(failed.Error));
         Assert.True(passed.IsSuccess);
     }
 }

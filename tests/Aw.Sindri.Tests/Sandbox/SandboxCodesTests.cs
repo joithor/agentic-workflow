@@ -1,6 +1,7 @@
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Sandbox;
+using Aw.Sindri.Host;
 
 namespace Aw.Sindri.Tests.Sandbox;
 
@@ -38,7 +39,7 @@ public sealed class SandboxCodesTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Http_classes_follow_the_error_kind()
+    public void Http_classes_are_the_hosts_mapping_of_the_error_kind()
     {
         var table = SandboxGoldens.Object("code-kinds.json")["codes"]!.AsArray();
 
@@ -46,8 +47,28 @@ public sealed class SandboxCodesTests
         {
             var kind = SandboxCodes.All.Single(c => string.Equals(c.Error.Code, (string)row!["code"]!, StringComparison.Ordinal)).Error.Kind;
 
-            Assert.Equal((int)row!["http"]!, kind == ErrorKind.Conflict ? 409 : 503);
+            Assert.Equal((int)row!["http"]!, HttpResults.StatusOf(kind));
         }
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Only_the_limit_code_has_no_http_class() =>
+        Assert.Equal(["SND-LAUNCH-019"], SandboxCodes.All.Where(c => !c.HasHttpClass).Select(c => c.Error.Code), StringComparer.Ordinal);
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_failure_reason_is_data_on_the_step_failure_codes_only()
+    {
+        var table = SandboxGoldens.Object("code-kinds.json")["codes"]!.AsArray();
+
+        foreach (var row in table)
+        {
+            var code = SandboxCodes.All.Single(c => string.Equals(c.Error.Code, (string)row!["code"]!, StringComparison.Ordinal));
+
+            Assert.Equal((string?)row!["failureReason"], code.FailureReason);
+            Assert.Equal(code.Kind == LaunchCodeKind.StepFailure, code.FailureReason is not null);
+        }
+
+        Assert.Equal("limit", SandboxCodes.All.Single(c => c.Error.Code == "SND-LAUNCH-019").FailureReason);
     }
 
     [Fact, Trait("Lane", "unit")]

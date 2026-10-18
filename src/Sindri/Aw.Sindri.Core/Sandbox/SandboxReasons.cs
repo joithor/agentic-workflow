@@ -107,17 +107,17 @@ public static partial class SandboxReasons
     /// <summary>Every (code, reason) pair the spec defines; the copy goldens cover exactly these.</summary>
     public static IReadOnlyList<(string Code, string Reason)> All { get; } =
     [
-        ("SND-LAUNCH-014", NoBwrap), ("SND-LAUNCH-014", NoUserNamespace), ("SND-LAUNCH-014", NoUserManager),
-        ("SND-LAUNCH-014", NoCgroupControllers), ("SND-LAUNCH-014", NoForwarder), ("SND-LAUNCH-014", UnsupportedPlatform),
-        ("SND-LAUNCH-015", FormNone), ("SND-LAUNCH-015", FormReserved), ("SND-LAUNCH-015", ToolNotExpressible), ("SND-LAUNCH-015", BinDenied),
-        ("SND-LAUNCH-015", HostNotTmux), ("SND-LAUNCH-015", WorktreeOutsideRepo), ("SND-LAUNCH-015", NoStoredPlan),
-        ("SND-LAUNCH-016", FsDeny), ("SND-LAUNCH-016", FsWrite), ("SND-LAUNCH-016", GitRef), ("SND-LAUNCH-016", Env), ("SND-LAUNCH-016", Login),
-        ("SND-LAUNCH-016", HooksRun), ("SND-LAUNCH-016", NetForward), ("SND-LAUNCH-016", NetDeny),
-        ("SND-LAUNCH-017", NoLogin), ("SND-LAUNCH-017", Expired), ("SND-LAUNCH-017", SourceUnsupported),
-        ("SND-LAUNCH-018", NoKey), ("SND-LAUNCH-018", HttpStatus), ("SND-LAUNCH-018", NoNetwork),
-        ("SND-LAUNCH-019", Memory), ("SND-LAUNCH-019", Wall),
-        ("SND-LAUNCH-020", Sessions),
-        ("SND-LAUNCH-021", InstallFailed), ("SND-LAUNCH-021", LockfileMissing), ("SND-LAUNCH-021", Timeout),
+        (SindriErrors.LaunchSandboxUnavailable.Code, NoBwrap), (SindriErrors.LaunchSandboxUnavailable.Code, NoUserNamespace), (SindriErrors.LaunchSandboxUnavailable.Code, NoUserManager),
+        (SindriErrors.LaunchSandboxUnavailable.Code, NoCgroupControllers), (SindriErrors.LaunchSandboxUnavailable.Code, NoForwarder), (SindriErrors.LaunchSandboxUnavailable.Code, UnsupportedPlatform),
+        (SindriErrors.LaunchUnconfinable.Code, FormNone), (SindriErrors.LaunchUnconfinable.Code, FormReserved), (SindriErrors.LaunchUnconfinable.Code, ToolNotExpressible), (SindriErrors.LaunchUnconfinable.Code, BinDenied),
+        (SindriErrors.LaunchUnconfinable.Code, HostNotTmux), (SindriErrors.LaunchUnconfinable.Code, WorktreeOutsideRepo), (SindriErrors.LaunchUnconfinable.Code, NoStoredPlan),
+        (SindriErrors.LaunchSelfCheckFailed.Code, FsDeny), (SindriErrors.LaunchSelfCheckFailed.Code, FsWrite), (SindriErrors.LaunchSelfCheckFailed.Code, GitRef), (SindriErrors.LaunchSelfCheckFailed.Code, Env), (SindriErrors.LaunchSelfCheckFailed.Code, Login),
+        (SindriErrors.LaunchSelfCheckFailed.Code, HooksRun), (SindriErrors.LaunchSelfCheckFailed.Code, NetForward), (SindriErrors.LaunchSelfCheckFailed.Code, NetDeny),
+        (SindriErrors.LaunchLoginUnavailable.Code, NoLogin), (SindriErrors.LaunchLoginUnavailable.Code, Expired), (SindriErrors.LaunchLoginUnavailable.Code, SourceUnsupported),
+        (SindriErrors.LaunchGitHubTokenFailed.Code, NoKey), (SindriErrors.LaunchGitHubTokenFailed.Code, HttpStatus), (SindriErrors.LaunchGitHubTokenFailed.Code, NoNetwork),
+        (SindriErrors.LaunchLimitHit.Code, Memory), (SindriErrors.LaunchLimitHit.Code, Wall),
+        (SindriErrors.LaunchSessionWait.Code, Sessions),
+        (SindriErrors.LaunchPrepareFailed.Code, InstallFailed), (SindriErrors.LaunchPrepareFailed.Code, LockfileMissing), (SindriErrors.LaunchPrepareFailed.Code, Timeout),
     ];
 
     /// <summary>Whether <paramref name="reason"/> is one of <paramref name="code"/>'s reasons ('http-' and a three-digit status counts for -018).</summary>
@@ -125,8 +125,8 @@ public static partial class SandboxReasons
     /// <param name="reason">The reason.</param>
     /// <returns>True when the pair is defined.</returns>
     public static bool IsDefined(string code, string reason) =>
-        All.Any(p => string.Equals(p.Code, code, StringComparison.Ordinal) && string.Equals(p.Reason, reason, StringComparison.Ordinal))
-        || (string.Equals(code, "SND-LAUNCH-018", StringComparison.Ordinal) && HttpReason.IsMatch(reason));
+        (!string.Equals(reason, HttpStatus, StringComparison.Ordinal) && All.Any(p => string.Equals(p.Code, code, StringComparison.Ordinal) && string.Equals(p.Reason, reason, StringComparison.Ordinal)))
+        || (string.Equals(code, SindriErrors.LaunchGitHubTokenFailed.Code, StringComparison.Ordinal) && HttpReason.IsMatch(reason));
 
     [GeneratedRegex("^http-[0-9]{3}\\z", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 100)]
     private static partial Regex HttpReason { get; }

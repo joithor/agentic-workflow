@@ -79,8 +79,8 @@ public static class SandboxRequests
     public static PreparedLogin OwnerCopyLogin() => new(
         ModelLoginSource.OwnerCopy,
         [
-            new LoginMount(Home + "/.claude", Home + "/.claude", LoginMountMode.ReadOnly),
-            new LoginMount(RunArea + "/login", Home + "/.claude-run", LoginMountMode.ReadWrite),
+            new LoginMount(Home + "/.claude", Home + "/.claude", MountMode.ReadOnly),
+            new LoginMount(RunArea + "/login", Home + "/.claude-run", MountMode.ReadWrite),
         ],
         new Dictionary<string, string>(StringComparer.Ordinal) { ["CLAUDE_CONFIG_DIR"] = Home + "/.claude-run" },
         [Home + "/.claude-run"],

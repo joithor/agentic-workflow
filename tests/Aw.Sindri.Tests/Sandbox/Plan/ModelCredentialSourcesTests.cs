@@ -34,8 +34,8 @@ public sealed class ModelCredentialSourcesTests
         foreach (var error in new[] { prepared.Error, checkedStatus.Error })
         {
             Assert.Equal(SindriErrors.LaunchLoginUnavailable.Code, error.Code);
-            Assert.Equal("source-unsupported", SandboxErrors.Reason(error));
-            Assert.Equal("separate-login", SandboxErrors.Source(error));
+            Assert.Equal("source-unsupported", SandboxRefusal.ReasonOf(error));
+            Assert.Equal("separate-login", SandboxRefusal.SourceTextOf(error));
         }
     }
 
@@ -49,8 +49,8 @@ public sealed class ModelCredentialSourcesTests
         var result = await registry.Prepare(ModelLoginSource.SeparateLogin, _claude, _launch, TestContext.Current.CancellationToken);
 
         Assert.Equal(SindriErrors.LaunchLoginUnavailable.Code, result.Error.Code);
-        Assert.Equal("expired", SandboxErrors.Reason(result.Error));
-        Assert.Equal("separate-login", SandboxErrors.Source(result.Error));
+        Assert.Equal("expired", SandboxRefusal.ReasonOf(result.Error));
+        Assert.Equal("separate-login", SandboxRefusal.SourceTextOf(result.Error));
         Assert.Empty(owner.Prepared);
     }
 
@@ -60,7 +60,7 @@ public sealed class ModelCredentialSourcesTests
         var registry = new ModelCredentialSources([new FakeModelCredentialSource(ModelLoginSource.OwnerCopy).With(_claude, LoginState.Ready).With(AgentId.From("codex"), LoginState.Missing)]);
 
         Assert.True(registry.Check(ModelLoginSource.OwnerCopy, _claude).IsSuccess);
-        Assert.Equal("no-login", SandboxErrors.Reason(registry.Check(ModelLoginSource.OwnerCopy, AgentId.From("codex")).Error));
+        Assert.Equal("no-login", SandboxRefusal.ReasonOf(registry.Check(ModelLoginSource.OwnerCopy, AgentId.From("codex")).Error));
     }
 
     [Fact, Trait("Lane", "unit")]

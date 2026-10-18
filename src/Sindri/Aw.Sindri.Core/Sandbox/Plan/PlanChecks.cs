@@ -56,7 +56,7 @@ internal static class PlanChecks
                 return SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, SandboxReasons.Login, "a login file is rewritten by rename: bind its directory, not the file");
             }
 
-            if (mount.Mode == LoginMountMode.ReadWrite && roots.Contains(mount.SandboxPath, StringComparer.Ordinal))
+            if (mount.Mode == MountMode.ReadWrite && roots.Contains(mount.SandboxPath, StringComparer.Ordinal))
             {
                 return SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, SandboxReasons.Login, "the agent home must be read-only");
             }
