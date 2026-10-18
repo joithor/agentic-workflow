@@ -100,6 +100,17 @@ public sealed class DockerCliRuntimeTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Inspect_ignores_a_permission_warning_beside_an_unreachable_daemon()
+    {
+        var error = "WARNING: Error loading config file: /home/u/.docker/config.json: open /home/u/.docker/config.json: permission denied\nCannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?";
+        var runner = Docker(new ToolRun(ToolOutcome.Exited, 1, "", error), Ok("v2.40.3"), Fails);
+
+        var facts = new DockerCliRuntime(runner).Inspect(Token);
+
+        Assert.Equal(DaemonProblem.NotRunning, facts.DaemonProblem);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Inspect_does_not_retry_a_version_that_failed_without_timing_out()
     {
         var runner = Docker(new ToolRun(ToolOutcome.Exited, 1, "", "permission denied"), Ok("v2.40.3"), Fails);

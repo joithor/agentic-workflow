@@ -20,14 +20,26 @@ internal sealed class HostProbes(bool ipv6Available) : IHostProbes
             measured = parent;
         }
 
-        return new DiskFacts(measured, new DriveInfo(measured).AvailableFreeSpace);
+        return new DiskFacts(measured, Free(measured) ?? 0);   // unreadable: counts as no space, so the disk row fails with its fix instead of the verb crashing
+    }
+
+    private static long? Free(string path)
+    {
+        try
+        {
+            return new DriveInfo(path).AvailableFreeSpace;
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            return null;
+        }
     }
 
     /// <inheritdoc />
     public DiskFacts? FreeDiskIfExists(string path)
     {
         var full = Path.GetFullPath(path);
-        return Directory.Exists(full) ? new DiskFacts(full, new DriveInfo(full).AvailableFreeSpace) : null;
+        return Directory.Exists(full) && Free(full) is { } free ? new DiskFacts(full, free) : null;
     }
 
     /// <inheritdoc />
