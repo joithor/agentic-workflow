@@ -6,7 +6,7 @@ namespace Aw.Sindri.Core.Commands;
 /// The authorization table (API spec §4.2) as data: which caller may run which action class. Pure; the command chain's
 /// AuthorizingService asks it, and the command list renders <see cref="CallersFor"/>. A row that needs a terminal
 /// narrows any class to a human at one; a desk row may name the in-process services it grants ('service:host' →
-/// StopProcess). 'step-report' waits for P10's launch proof, and 'local' never runs through the API, so both refuse everyone.
+/// StopProcess). 'step-report' is a launched session's (its launch secret is checked by the service, API spec §8.1), and 'local' never runs through the API, so it refuses everyone.
 /// </summary>
 public static class Authorization
 {
@@ -15,7 +15,7 @@ public static class Authorization
     private static readonly Dictionary<ActionClass, Who> _table = new()
     {
         [ActionClass.Request] = Who.Terminal | Who.App | Who.Session | Who.Service,
-        [ActionClass.StepReport] = Who.None,
+        [ActionClass.StepReport] = Who.Session,
         [ActionClass.Pause] = Who.Terminal | Who.App | Who.Session | Who.Service,
         [ActionClass.Job] = Who.Terminal | Who.App | Who.Service,
         [ActionClass.Decision] = Who.Terminal | Who.App,

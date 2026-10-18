@@ -48,7 +48,7 @@ public sealed class ListCommandsTests
         Assert.Equal(["human+terminal", "human", "service"], rows["RunService"].AllowedCallers);
         Assert.Equal(["human+terminal", "human", "session", "service"], rows["PauseService"].AllowedCallers);
         Assert.Equal(["human+terminal", "human"], rows["Decide"].AllowedCallers);
-        Assert.Empty(rows["ReportStep"].AllowedCallers);
+        Assert.Equal(["session"], rows["ReportStep"].AllowedCallers);
         Assert.Equal(["human+terminal", "human", "session"], rows["IssueNonce"].AllowedCallers);
         Assert.Equal(["human+terminal"], rows["WipeItem"].AllowedCallers);   // a terminal-bound row narrows any class, grants too
         Assert.True(rows["WipeItem"].Terminal);
