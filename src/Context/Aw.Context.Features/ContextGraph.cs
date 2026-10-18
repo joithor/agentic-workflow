@@ -25,8 +25,7 @@ internal sealed class ContextGraph(
     IService<GetLensesRequest, LensesView> lenses,
     IService<GetLensesSetRequest, LensesSetView> lensesSet,
     IService<GetFileMapRequest, FileMapView> fileMap,
-    IService<GetCodeRequest, CodeView> code,
-    IService<GetHistoryRequest, HistoryView> history) : IContextGraph, IContextLenses, IContextCode, IContextHistory
+    ContextCodeHistory codeHistory) : IContextGraph, IContextLenses, IContextCode, IContextHistory
 {
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) =>
         show.Handle(new ShowNodeRequest(key, scope), cancellationToken);
@@ -56,8 +55,8 @@ internal sealed class ContextGraph(
         fileMap.Handle(new GetFileMapRequest(query, scope), cancellationToken);
 
     public ValueTask<Result<CodeView>> Code(IReadOnlyList<string> anchors, bool draft, string? mapVersion, ContextScope scope, CancellationToken cancellationToken) =>
-        code.Handle(new GetCodeRequest(anchors, draft, mapVersion, scope), cancellationToken);
+        codeHistory.Code(anchors, draft, mapVersion, scope, cancellationToken);
 
     public ValueTask<Result<HistoryView>> History(IReadOnlyList<string> anchors, HistoryWindow window, MapRead read, ContextScope scope, CancellationToken cancellationToken) =>
-        history.Handle(new GetHistoryRequest(anchors, window, read, scope), cancellationToken);
+        codeHistory.History(anchors, window, read, scope, cancellationToken);
 }
