@@ -1,10 +1,11 @@
-Sandbox ea0908e6d20e (pass-through) for a Step
+Sandbox 87f8d5b63366 (pass-through) for a Step
 Launch: LCH-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 Files, bottom to top (a later line wins):
   read-only /  (the system, toolchains and other repos can be read, not written)
   device    /dev  (a fresh /dev)
   process   /proc  (a fresh /proc)
+  empty     /run  (an empty /run: the user sockets and the Docker socket are gone, and the net directory has a place to bind)
   writable  /tmp  (private scratch, removed with the run)
   empty     /home/owner  (an empty home: only the entries below exist)
   read-only /home/owner/.dotnet  (the .NET SDK)
