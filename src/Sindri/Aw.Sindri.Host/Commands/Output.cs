@@ -14,6 +14,10 @@ internal sealed class Output(TextWriter stdout, TextWriter stderr, JsonSerialize
 
     public TextWriter Out { get; } = stdout;
 
+    /// <summary>The same output with standard output bound to standard error: text a --json run may print without breaking its one document.</summary>
+    /// <returns>An output whose text and prompts go to standard error.</returns>
+    public Output OnStandardError() => new(stderr, stderr, options);
+
     /// <summary>Reads a UTF-8 JSON document the way the API's bodies are read (camelCase names, strict).</summary>
     /// <param name="utf8Json">The document.</param>
     /// <typeparam name="T">A type in the package's JSON context.</typeparam>

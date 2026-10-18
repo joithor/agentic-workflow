@@ -65,7 +65,7 @@ public sealed class OnyxAccountTests
 
         var response = (await rig.Run()).Value;
 
-        var shown = string.Join('\n', rig.Progress.Lines) + string.Join(',', rig.Workspace.State!.Steps.Values) + rig.Workspace.State.KeyPointer + response;
+        var shown = string.Join('\n', rig.Progress.Lines) + string.Join(',', rig.Workspace.State!.Steps.Values) + rig.Workspace.State.KeyPointer + response.Url + response.KeyPointer + string.Join(',', response.Steps.Select(static s => s.Step + s.Outcome));
         Assert.DoesNotContain(LoginSecret, shown, StringComparison.Ordinal);
         Assert.DoesNotContain(MadeKey, shown, StringComparison.Ordinal);
         Assert.Equal(1, rig.Prompts.SecretsAsked);
@@ -229,5 +229,71 @@ public sealed class OnyxAccountTests
         _ = await rig.Run();
 
         Assert.Contains(rig.Progress.Lines, static l => l.Contains("http://127.0.0.1:3000/auth/signup", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_profile_that_cannot_be_written_returns_its_error_and_a_rerun_does_not_make_a_second_key()
+    {
+        var rig = new Rig();
+        rig.Profile.Fails = SindriErrors.InvalidInput.With("profile.yaml is not writable");
+
+        var failed = await rig.Run();
+
+        Assert.Equal(SindriErrors.InvalidInput.Code, failed.Error.Code);
+        Assert.Equal("keychain:onyx/sindri-onyx", rig.Workspace.State!.KeyPointer);   // the key is kept
+        rig.Profile.Fails = null;
+
+        var again = (await rig.Run()).Value;
+
+        Assert.Equal(OnyxStepOutcome.Skipped, again.Steps[0].Outcome);
+        Assert.Equal(OnyxStepOutcome.Skipped, again.Steps[1].Outcome);
+        Assert.Equal(OnyxStepOutcome.Ran, again.Steps[2].Outcome);
+        Assert.Equal(1, rig.Provisioning.SignIns);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_failed_mint_after_sign_up_keeps_the_sign_up_so_a_rerun_does_not_ask_for_it_again()
+    {
+        var rig = new Rig();
+        rig.Provisioning.SignInError = SindriErrors.OnyxKeyFailed.With("Onyx refused that login");
+        _ = await rig.Run();
+        rig.Provisioning.SignInError = null;
+        rig.Prompts.Answer("owner@example.com", LoginSecret);
+        rig.Browser.Opened.Clear();
+
+        var again = (await rig.Run()).Value;
+
+        Assert.Equal(OnyxStepOutcome.Skipped, again.Steps[0].Outcome);
+        Assert.Equal(OnyxStepOutcome.Ran, again.Steps[1].Outcome);
+        Assert.Empty(rig.Browser.Opened);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Without_a_terminal_after_sign_up_the_key_step_needs_the_human_and_writes_no_profile()
+    {
+        var rig = new Rig();
+        _ = await rig.Run();
+        rig.Secrets.Stored.Clear();
+        rig.Prompts.Interactive = false;
+
+        var response = (await rig.Run()).Value;
+
+        Assert.True(response.NeedsHuman);
+        Assert.Null(response.KeyPointer);
+        Assert.Equal(OnyxStepOutcome.NeedsHuman, response.Steps[1].Outcome);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_recorded_key_Onyx_now_rejects_is_made_again()
+    {
+        var rig = new Rig();
+        _ = await rig.Run();
+        rig.Provisioning.KeyIsAdminAnswer = false;
+        rig.Prompts.Answer("owner@example.com", LoginSecret);
+
+        var result = await rig.Run();
+
+        Assert.Equal(2, rig.Provisioning.SignIns);   // the stored key was checked, found wanting, and a new one asked for
+        Assert.Equal(SindriErrors.OnyxKeyFailed.Code, result.Error.Code);   // the fake still rejects the new one
     }
 }

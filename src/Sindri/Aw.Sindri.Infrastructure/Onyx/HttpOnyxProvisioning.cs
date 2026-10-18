@@ -34,6 +34,7 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
 
     private readonly Func<HttpMessageHandler> _handler;
     private readonly TimeSpan _logout;
+    private readonly TimeSpan _request;
 
     /// <summary>Initializes the adapter for production: a handler per session, no redirect, no proxy.</summary>
     public HttpOnyxProvisioning()
@@ -44,10 +45,12 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
     /// <summary>Initializes the adapter over a handler factory (a test hands one pointing at a fake server).</summary>
     /// <param name="handler">Makes the handler a session's client uses; it must keep cookies.</param>
     /// <param name="logoutTimeout">How long disposing a session waits for the logout; null takes 5 s.</param>
-    internal HttpOnyxProvisioning(Func<HttpMessageHandler> handler, TimeSpan? logoutTimeout = null)
+    /// <param name="requestTimeout">How long one request waits for Onyx; null takes 15 s.</param>
+    internal HttpOnyxProvisioning(Func<HttpMessageHandler> handler, TimeSpan? logoutTimeout = null, TimeSpan? requestTimeout = null)
     {
         _handler = handler;
         _logout = logoutTimeout ?? _logoutTimeout;
+        _request = requestTimeout ?? _timeout;
     }
 
     /// <summary>Whether a request is on the provisioning allowlist: the method and the path (no query), exactly.</summary>
@@ -60,7 +63,7 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
 #pragma warning disable CA2000 // the session owns its client and disposes both when the caller disposes the session
     public async ValueTask<Result<IOnyxSession>> SignIn(int port, string email, string password, CancellationToken cancellationToken)
     {
-        var session = new Session(NewClient(), Origin(port), _logout);
+        var session = new Session(NewClient(), Origin(port), _logout, _request);
         using var body = new FormUrlEncodedContent(new Dictionary<string, string>(StringComparer.Ordinal) { ["username"] = email, ["password"] = password });
         var sent = await session.Send(HttpMethod.Post, "/api/auth/login", body, cancellationToken).ConfigureAwait(false);
         if (sent.IsError || !sent.Value.Success)
@@ -82,7 +85,7 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
         using var client = NewClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", key);
 #pragma warning disable CA2000 // a Session only borrows the client, which the using above disposes
-        var session = new Session(client, Origin(port), _logout);
+        var session = new Session(client, Origin(port), _logout, _request);
 #pragma warning restore CA2000
         var sent = await session.Send(HttpMethod.Get, "/api/me", content: null, cancellationToken).ConfigureAwait(false);
         if (sent.IsError)
@@ -101,7 +104,7 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
             && wire.EffectivePermissions?.Contains("admin", StringComparer.Ordinal) == true;
     }
 
-    private HttpClient NewClient() => new(_handler(), disposeHandler: true) { Timeout = _timeout + TimeSpan.FromSeconds(5) };
+    private HttpClient NewClient() => new(_handler(), disposeHandler: true) { Timeout = _request + TimeSpan.FromSeconds(5) };
 
     private static Uri Origin(int port) => new(string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}"));
 
@@ -112,7 +115,7 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
         public bool Success => (int)Status is >= 200 and < 300;
     }
 
-    private sealed class Session(HttpClient client, Uri origin, TimeSpan logoutTimeout) : IOnyxSession
+    private sealed class Session(HttpClient client, Uri origin, TimeSpan logoutTimeout, TimeSpan timeout) : IOnyxSession
     {
         public async ValueTask<Result<int>> AdminGroup(CancellationToken cancellationToken)
         {
@@ -183,7 +186,7 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
 
             using var message = new HttpRequestMessage(method, new Uri(origin, path + query)) { Content = content };
             using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            deadline.CancelAfter(_timeout);
+            deadline.CancelAfter(timeout);
             try
             {
                 using var response = await client.SendAsync(message, deadline.Token).ConfigureAwait(false);
@@ -192,7 +195,7 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
-                return SindriErrors.OnyxKeyFailed.With($"Onyx didn't answer {method} {path} within {_timeout.TotalSeconds.ToString("0", CultureInfo.InvariantCulture)} s; check `sindri onyx status`, then run `sindri onyx up` again");
+                return SindriErrors.OnyxKeyFailed.With($"Onyx didn't answer {method} {path} within {timeout.TotalSeconds.ToString("0.##", CultureInfo.InvariantCulture)} s; check `sindri onyx status`, then run `sindri onyx up` again");
             }
             catch (HttpRequestException)
             {

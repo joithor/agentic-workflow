@@ -154,7 +154,7 @@ public sealed class OnyxUpCommandTests : IDisposable
         _prompts.Interactive = true;
         _prompts.Answer("owner@example.com", "owner-login-value-0042");
         var approvals = new List<string?>();
-        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), Human, (hash, _) =>
+        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), Human, (hash, _, _) =>
         {
             approvals.Add(hash);
             return Task.FromResult(hash is null ? 1 : 0);   // the preview says not approved, then the typed challenge succeeds
@@ -177,13 +177,102 @@ public sealed class OnyxUpCommandTests : IDisposable
     {
         _prompts.Interactive = true;
         _prompts.Answer("owner@example.com", "owner-login-value-0042");
-        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), Human, (_, _) => Task.FromResult(1));
+        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), Human, (_, _, _) => Task.FromResult(1));
 
         var code = await verbs.Up(json: false, TestContext.Current.CancellationToken);
 
         Assert.Equal(1, code);
         Assert.Contains("written but not approved yet: run `sindri profile approve`", _out.ToString(), StringComparison.Ordinal);
         Assert.True(_profile.Section is not null);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Up_json_with_an_inline_approval_keeps_standard_output_one_document()
+    {
+        _prompts.Interactive = true;
+        _prompts.Answer("owner@example.com", "owner-login-value-0042");
+        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), Human, async (hash, to, ct) =>
+        {
+            _ = await to.Text(hash is null ? "preview text\n" : "Type 'approve' to approve it: ", 0);
+            return hash is null ? 1 : 0;
+        });
+
+        var code = await verbs.Up(json: true, TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, code);
+        using var document = JsonDocument.Parse(_out.ToString());
+        Assert.Equal("keychain:onyx/sindri-onyx", document.RootElement.GetProperty("account").GetProperty("keyPointer").GetString()?[..25]);
+        Assert.Contains("preview text", _error.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("preview text", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_approval_the_preview_already_shows_approved_skips_the_typed_challenge()
+    {
+        _prompts.Interactive = true;
+        _prompts.Answer("owner@example.com", "owner-login-value-0042");
+        var approvals = new List<string?>();
+        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), Human, (hash, _, _) =>
+        {
+            approvals.Add(hash);
+            return Task.FromResult(0);
+        });
+
+        var code = await verbs.Up(json: false, TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, code);
+        _ = Assert.Single(approvals);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Without_an_approval_callback_the_offer_is_skipped_and_the_checklist_still_prints()
+    {
+        _prompts.Interactive = true;
+        _prompts.Answer("owner@example.com", "owner-login-value-0042");
+
+        var code = await Verbs(Human).Up(json: false, TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, code);
+        Assert.Contains("Linear:", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_profile_that_cannot_be_loaded_counts_as_not_approved_and_says_why()
+    {
+        await using var provider = new ServiceCollection()
+            .AddSingleton(_rig.Service())
+            .AddSingleton<IOnyxProgress>(_rig.Progress)
+            .AddSingleton<IService<OnyxAccountRequest, OnyxAccountResponse>>(_ => new OnyxAccountService(_rig.Workspace, _prompts, _browser, new OnyxKeyMinter(_prompts, _provisioning, _secrets, _secrets), _profile, _rig.Progress))
+            .AddSingleton<IBrowser>(_browser)
+            .AddSingleton<IOnyxWorkspace>(_rig.Workspace)
+            .AddSingleton<Core.Profile.IProfileSource>(new BrokenProfile())
+            .BuildServiceProvider();
+        _prompts.Interactive = true;
+        _prompts.Answer("owner@example.com", "owner-login-value-0042");
+
+        var code = await new OnyxVerbs(provider, new Output(_out, _error, _json), Human, (_, _, _) => Task.FromResult(0)).Up(json: false, TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, code);
+        Assert.Contains("profile unreadable", _error.ToString(), StringComparison.Ordinal);
+        Assert.Contains("written but not approved yet", _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_cancelled_account_stage_says_to_run_up_again()
+    {
+        using var source = new CancellationTokenSource();
+        _prompts.Interactive = true;
+        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), Human, async (_, _, _) =>
+        {
+            await source.CancelAsync();
+            throw new OperationCanceledException(source.Token);
+        });
+        _prompts.Answer("owner@example.com", "owner-login-value-0042");
+
+        var code = await verbs.Up(json: false, source.Token);
+
+        Assert.Equal(Output.InterruptedExit, code);
+        Assert.Contains("interrupted; run `sindri onyx up` again to resume", _error.ToString() + _out, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -219,6 +308,12 @@ public sealed class OnyxUpCommandTests : IDisposable
                 new Core.Profile.SindriProfile(Core.Profile.SindriProfile.CurrentSchemaVersion, "tester"),
                 Core.Ids.ProfileHash.From(new string('c', 64)),
                 "/home/profile.yaml"));
+    }
+
+    private sealed class BrokenProfile : Core.Profile.IProfileSource
+    {
+        public ValueTask<Kernel.Result<Core.Profile.LoadedProfile>> Load(CancellationToken cancellationToken)
+            => ValueTask.FromResult<Kernel.Result<Core.Profile.LoadedProfile>>(Core.SindriErrors.InvalidInput.With("profile unreadable"));
     }
 
     private sealed class StubUp(OnyxUpResponse response) : IService<OnyxUpRequest, OnyxUpResponse>
