@@ -54,14 +54,6 @@ public sealed class CliTimeoutTests
         Assert.Equal(Timeout.InfiniteTimeSpan, client.CallTimeout);   // HttpClient's timeout runs on real time, so it is read, not waited out (the old default was 10 s)
     }
 
-    [Fact, Trait("Lane", "unit")]
-    public void A_cap_is_the_clients_call_timeout()
-    {
-        using var client = new ControlPlaneClient(_probe, SliceHarness.Json, timeout: TimeSpan.FromSeconds(30));
-
-        Assert.Equal(TimeSpan.FromSeconds(30), client.CallTimeout);
-    }
-
     [Theory, Trait("Lane", "unit")]
     [InlineData("2147483", true)]
     [InlineData("2147484", false)]

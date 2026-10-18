@@ -32,6 +32,9 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
     /// <summary>The cap on one call, <see cref="Timeout.InfiniteTimeSpan"/> when none is set (tests: a call's real timeout can't be waited out).</summary>
     internal TimeSpan CallTimeout => _http.Timeout;
 
+    /// <summary>The refusal every call answers with (a malformed AW_SINDRI_CLI_TIMEOUT), or null; a start checks it before it launches the control plane.</summary>
+    internal Error? SettingRefusal { get; } = refusal;
+
     public void Dispose() => _http.Dispose();
 
     /// <summary>GET a route and read its answer as <typeparamref name="T"/>.</summary>
@@ -115,7 +118,7 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
 
     private async Task<Result<ApiAnswer<T>>> Send<T>(HttpMethod method, string route, HttpContent? content, long? after, CancellationToken ct)
     {
-        if (refusal is { } refused)
+        if (SettingRefusal is { } refused)
         {
             content?.Dispose();
             return refused;
@@ -169,7 +172,7 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
 
     private async Task<Result<HttpResponseMessage>> Open(string route, CancellationToken ct)
     {
-        if (refusal is { } refused)
+        if (SettingRefusal is { } refused)
         {
             return refused;
         }

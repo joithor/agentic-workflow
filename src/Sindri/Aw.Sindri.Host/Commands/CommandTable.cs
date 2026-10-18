@@ -40,7 +40,8 @@ internal static class CommandTable
             await using (scope.ConfigureAwait(false))
             {
                 var session = AgentSession.Detect(environment, scope.ServiceProvider.GetRequiredService<IProcessAncestry>(), Interactive());
-                return await Guarded(args, session, scope.ServiceProvider, environment).ConfigureAwait(false);
+                using var interrupt = Interrupt.For(args);   // Ctrl-C ends the streaming verbs and the job-following ones; no other verb listens
+                return await Guarded(interrupt, Console.Error, i => Dispatch(args, session, scope.ServiceProvider, environment, i)).ConfigureAwait(false);
             }
         }
     }
@@ -62,17 +63,20 @@ internal static class CommandTable
             : await output.Error(refused).ConfigureAwait(false);
     }
 
-    /// <summary>Dispatches the verb; a Ctrl-C that cancels a call in flight ends it with 'interrupted' and exit 130 instead of a stack trace.</summary>
-    private static async Task<int> Guarded(string[] args, AgentSession session, IServiceProvider services, Func<string, string?> environment)
+    /// <summary>Runs the verb; a Ctrl-C that cancels a call in flight ends it with 'interrupted' and exit 130 instead of a stack trace. Any other cancellation is a bug and propagates.</summary>
+    /// <param name="interrupt">The listener whose token the Ctrl-C cancels.</param>
+    /// <param name="stderr">Where 'interrupted' goes.</param>
+    /// <param name="dispatch">Runs the verb.</param>
+    /// <returns>The verb's exit code, or 130.</returns>
+    internal static async Task<int> Guarded(Interrupt interrupt, TextWriter stderr, Func<Interrupt, Task<int>> dispatch)
     {
-        using var interrupt = Interrupt.For(args);   // Ctrl-C ends the streaming verbs and the job-following ones; no other verb listens
         try
         {
-            return await Dispatch(args, session, services, environment, interrupt).ConfigureAwait(false);
+            return await dispatch(interrupt).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (interrupt.Token.IsCancellationRequested)
         {
-            await Console.Error.WriteLineAsync("interrupted").ConfigureAwait(false);
+            await stderr.WriteLineAsync("interrupted").ConfigureAwait(false);
             return 130;
         }
     }
