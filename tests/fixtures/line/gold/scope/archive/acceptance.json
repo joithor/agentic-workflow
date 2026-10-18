@@ -103,9 +103,7 @@
       "text": "When an export runs, the system shall leave out archived notes.",
       "form": "ears",
       "surfaces": [
-        "S18",
-        "S19",
-        "S20"
+        "S19"
       ],
       "citations": [
         "L-product-7",
@@ -122,9 +120,8 @@
       "text": "When the nightly job runs, the system shall not archive a trashed note and shall not purge an archived note.",
       "form": "ears",
       "surfaces": [
-        "S13",
-        "S14",
-        "S17"
+        "S15",
+        "S14"
       ],
       "citations": [
         "L-product-3",

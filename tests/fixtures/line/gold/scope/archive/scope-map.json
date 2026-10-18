@@ -180,7 +180,8 @@
       "trust": "untrusted",
       "lens": "product",
       "graphStatus": "mapped",
-      "id": "S13"
+      "id": "S13",
+      "noBehaviourChange": "A grouping of the trash surfaces; AC-8 covers the purge action (S14)."
     },
     {
       "key": "action:trash.purge",
@@ -233,7 +234,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S17"
+      "id": "S17",
+      "noBehaviourChange": "Code for the purge pass on the nightly job (S15); AC-8 tests it."
     },
     {
       "key": "feature:export",
@@ -246,7 +248,8 @@
       "trust": "untrusted",
       "lens": "product",
       "graphStatus": "mapped",
-      "id": "S18"
+      "id": "S18",
+      "noBehaviourChange": "A grouping of the export surfaces; AC-7 covers the export action (S19)."
     },
     {
       "key": "action:export.run",
@@ -272,7 +275,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S20"
+      "id": "S20",
+      "noBehaviourChange": "Code behind export (S19); AC-7 tests it through the action."
     },
     {
       "key": "feature:sharing",
