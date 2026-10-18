@@ -7,7 +7,7 @@
 # Stores no free text: never tool_input, the notification message, the prompt or a response.
 # Writes nothing when AW_FLEET_DISABLE=1 (a session the human wants unseen) or AW_JUDGE_CHILD is set (the toolkit's own claude -p).
 # Provider: AW_HOOK_PROVIDER (set by the Codex and Cursor adapters; unset or claude is Claude Code) -> the catalog's AgentId.
-# Bounded: no network and no CLI calls; one jq run, one mktemp, one mv. PostToolUse (every tool call) exits before jq unless the
+# Bounded: no network and no CLI calls; one jq run, one mktemp, one mv (a PostToolUse or Notification may also fork a grep). PostToolUse (every tool call) exits before jq unless the
 # file says asking.
 exec 2>/dev/null
 export LC_ALL=C
@@ -45,7 +45,7 @@ FILE="$PDIR/$SID.json"
 
 REASON=""
 case "$EVENT" in
-  SessionStart|Stop|Interrupt) STATE=idle ;;
+  SessionStart|Stop|Interrupt) STATE=idle ;;   # Interrupt is Codex's (CO-1b); Claude Code has no such event
   UserPromptSubmit) STATE=running ;;
   SessionEnd) STATE=ended ;;
   PermissionRequest) STATE=asking; REASON=approval ;;
@@ -59,9 +59,10 @@ case "$EVENT" in
     [[ $INPUT =~ $RE_TYPE ]] || exit 0
     case "${BASH_REMATCH[1]}" in
       permission_prompt)
-        # The notification follows the PermissionRequest of the same prompt: keep that file (it has the tool).
-        if [ -f "$FILE" ] && grep -q '"state":"asking"' "$FILE" && grep -q '"reason":"approval"' "$FILE"; then exit 0; fi
-        STATE=asking; REASON=approval ;;
+        # Claude fires PermissionRequest for the same prompt, and this notification arrives seconds later with no link to a
+        # request: after a quick approval it would turn running back into a tool-less asking that nothing clears. The request
+        # already wrote asking approval with the tool, so the notification never writes (the probe: 2.1.302 fires both).
+        exit 0 ;;
       elicitation_dialog) STATE=asking; REASON=input ;;
       idle_prompt) STATE=idle ;;
       *) exit 0 ;;
