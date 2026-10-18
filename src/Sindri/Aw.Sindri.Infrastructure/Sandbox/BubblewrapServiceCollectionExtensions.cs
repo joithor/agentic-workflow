@@ -10,8 +10,6 @@ namespace Aw.Sindri.Infrastructure.Sandbox;
 /// </summary>
 public static class BubblewrapServiceCollectionExtensions
 {
-    private static readonly string[] _launcherSupplied = ["AW_SINDRI_LAUNCH_SECRET", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"];
-
     /// <summary>Adds the bubblewrap sandbox and the owner-copy source.</summary>
     /// <param name="services">The service collection.</param>
     /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs, a lambda in tests).</param>
@@ -21,11 +19,12 @@ public static class BubblewrapServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(environment);
         var home = environment("HOME") is { Length: > 0 } configured ? configured : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        string? Supplied(string name) => _launcherSupplied.Contains(name, StringComparer.Ordinal) ? environment(name) : null;
         return services
             .AddSingleton<ISandboxProcesses, SandboxProcesses>()
-            .AddSingleton<ISandbox>(sp => new BubblewrapSandbox(BubblewrapOptions.From(environment), sp.GetRequiredService<ISandboxProcesses>(), new HostPaths(), Supplied))
+            .AddSingleton<LaunchSecretRegistry>()
+            .AddSingleton<ILaunchSecrets>(static sp => sp.GetRequiredService<LaunchSecretRegistry>())
+            .AddSingleton<ISandbox>(sp => new BubblewrapSandbox(BubblewrapOptions.From(environment), sp.GetRequiredService<ISandboxProcesses>(), new HostPaths(), sp.GetRequiredService<ILaunchSecrets>(), sp.GetRequiredService<TimeProvider>()))
             .AddSingleton<IModelCredentialSource>(sp => new OwnerCopyCredentialSource(
-                new OwnerCopyOptions(home, sp.GetRequiredService<SindriSettings>().Home, OwnerCopyOptions.DefaultMinRemaining), sp.GetRequiredService<TimeProvider>()));
+                new OwnerCopyOptions(home, sp.GetRequiredService<SindriSettings>().Home), sp.GetRequiredService<TimeProvider>()));
     }
 }

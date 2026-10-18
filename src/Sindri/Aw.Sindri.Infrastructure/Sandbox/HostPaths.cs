@@ -8,6 +8,26 @@ internal sealed class HostPaths : IHostPaths
         Directory.Exists(path) ? HostPathKind.Directory : Path.Exists(path) ? HostPathKind.File : HostPathKind.Missing;
 
     /// <inheritdoc />
+    public int? Uid() => CgroupControllers.UidFrom(ReadText("/proc/self/status"));
+
+    /// <inheritdoc />
+    public string? ReadText(string path)
+    {
+        try
+        {
+            return File.Exists(path) ? File.ReadAllText(path) : null;
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
+
+    /// <inheritdoc />
     public string Resolve(string path)
     {
         var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);

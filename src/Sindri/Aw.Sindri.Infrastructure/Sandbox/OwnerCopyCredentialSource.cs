@@ -17,10 +17,11 @@ internal sealed class OwnerCopyCredentialSource : IModelCredentialSource
 {
     private const string ClaudeTarget = "claude-code";
     private const string CodexTarget = "codex";
-    private const string Expiring = "login too close to expiry; open Claude Code once to refresh it";
+    private const string StaleMark = ".prepared";
 
     // What a session writes in its own config directory instead of the owner's: everything else in the agent home is bound read-only into it.
-    private static readonly string[] _claudeScratch = ["projects", "sessions", "session-env", "shell-snapshots", "file-history", "todos", "history.jsonl", "backups", "cache", "state"];
+    // The Claude Code list is the write set of spike item 2, minus the two login files (rename-written, so they live in the copy directory); a test compares it with the spike.
+    private static readonly string[] _claudeScratch = ["projects", "sessions", "session-env", "shell-snapshots", "file-history", "todos", "history.jsonl", "backups", "cache", "state", "mcp-needs-auth-cache.json", ".last-update-result.json", ".last-cleanup"];
     private static readonly string[] _codexScratch = ["sessions", "log", "memories", "shell_snapshots", "cache", "tmp"];
 
     private readonly OwnerCopyOptions _options;
@@ -48,6 +49,9 @@ internal sealed class OwnerCopyCredentialSource : IModelCredentialSource
         Codex,
     }
 
+    /// <summary>Gets the names the Claude Code session writes in its own config directory (the owner's copies are not bound).</summary>
+    internal static IReadOnlyList<string> ClaudeScratch => _claudeScratch;
+
     /// <inheritdoc />
     public ModelLoginSource Id => ModelLoginSource.OwnerCopy;
 
@@ -58,7 +62,7 @@ internal sealed class OwnerCopyCredentialSource : IModelCredentialSource
     public LoginStatus Probe(AgentId target) => Kind(target) switch
     {
         AgentKind.Claude => ProbeClaude(),
-        AgentKind.Codex => File.Exists(_codexHome + "/auth.json") ? Status(LoginState.Ready) : Status(LoginState.Missing, "no Codex login in " + _codexHome),
+        AgentKind.Codex => ProbeCodex(),
         AgentKind.None => Status(LoginState.Missing),
         _ => Status(LoginState.Missing),
     };
@@ -113,7 +117,10 @@ internal sealed class OwnerCopyCredentialSource : IModelCredentialSource
         }
     }
 
-    /// <summary>Removes the copies of launches that no longer have a live scope: the crash sweep at serve start and on Check again.</summary>
+    /// <summary>
+    /// Removes the copies of launches that no longer have a live scope: the crash sweep at serve start and on Check again. A launch is live from <see cref="Prepare"/> until
+    /// <see cref="Release"/>, so a copy younger than <see cref="OwnerCopyOptions.SweepGrace"/> is left alone even when no scope exists yet.
+    /// </summary>
     /// <param name="isLive">Whether the launch with this id (the directory name) still has a live scope.</param>
     /// <returns>How many copies were removed.</returns>
     internal int SweepStale(Func<string, bool> isLive)
@@ -128,7 +135,7 @@ internal sealed class OwnerCopyCredentialSource : IModelCredentialSource
         foreach (var launch in Directory.EnumerateDirectories(_launches))
         {
             var login = launch + "/login";
-            if (Directory.Exists(login) && !isLive(Path.GetFileName(launch)))
+            if (Directory.Exists(login) && !isLive(Path.GetFileName(launch)) && _clock.GetUtcNow() - PreparedAt(login) >= OwnerCopyOptions.SweepGrace)
             {
                 Release(new LoginHandle(login));
                 removed++;
@@ -143,20 +150,10 @@ internal sealed class OwnerCopyCredentialSource : IModelCredentialSource
 
     private static LoginStatus Status(LoginState state, string? detail = null) => new(state, ModelLoginSource.OwnerCopy, detail);
 
-    private static DateTimeOffset? ExpiresAt(string file)
-    {
-        try
-        {
-            using var document = JsonDocument.Parse(File.ReadAllBytes(file));
-            return document.RootElement.TryGetProperty("claudeAiOauth", out var oauth) && oauth.TryGetProperty("expiresAt", out var at) && at.TryGetInt64(out var ms)
-                ? DateTimeOffset.FromUnixTimeMilliseconds(ms)
-                : null;
-        }
-        catch (JsonException)
-        {
-            return null;
-        }
-    }
+    // The copy directory's last write is stamped when Prepare finishes, with the source's own clock.
+    private static DateTimeOffset PreparedAt(string login) => new(File.GetLastWriteTimeUtc(login + "/" + StaleMark), TimeSpan.Zero);
+
+    private static LoginStatus Corrupt(string what) => Status(LoginState.Missing, what + " could not be read");
 
     private static IEnumerable<LoginMount> ReadOnlyEntries(string home, string config, string[] scratch) =>
         Directory.EnumerateFileSystemEntries(home)
@@ -175,6 +172,14 @@ internal sealed class OwnerCopyCredentialSource : IModelCredentialSource
 
     // Written like the CLI writes it, a 0600 temp file in the directory and a rename.
     private static void CopyFile(string from, string to) => OwnerOnly.WriteAtomically(to, File.ReadAllBytes(from));
+
+    // Marks when the copy was made, on this source's clock, for the crash sweep's grace period.
+    private void Stamp(string directory)
+    {
+        var mark = directory + "/" + StaleMark;
+        File.WriteAllText(mark, string.Empty);
+        File.SetLastWriteTimeUtc(mark, _clock.GetUtcNow().UtcDateTime);
+    }
 
     private static void TryDelete(string directory)
     {
@@ -203,13 +208,33 @@ internal sealed class OwnerCopyCredentialSource : IModelCredentialSource
             return Status(LoginState.Missing, "no Claude Code login in " + _claudeHome);
         }
 
-        var expires = ExpiresAt(file);
-        if (expires is null)
+        return Parsed(file, "the Claude Code login", LoginFiles.ClaudeExpiry, "the Claude Code login has expired; sign in again");
+    }
+
+    private LoginStatus ProbeCodex()
+    {
+        var file = _codexHome + "/auth.json";
+        if (!File.Exists(file))
         {
-            return Status(LoginState.Ready);   // an API-key style record has no expiry to watch
+            return Status(LoginState.Missing, "no Codex login in " + _codexHome);
         }
 
-        return expires.Value - _clock.GetUtcNow() < _options.MinRemaining ? Status(LoginState.Expired, Expiring) : Status(LoginState.Ready);
+        return Parsed(file, "the Codex login", LoginFiles.CodexExpiry, "the Codex login is older than Codex's refresh window; sign in to Codex again");
+    }
+
+    // Ready with its expiry when it is still valid, Expired when it has run out; a file that cannot be read is no login.
+    private LoginStatus Parsed(string file, string what, Func<JsonElement, DateTimeOffset?> expiry, string expired)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(File.ReadAllBytes(file));
+            var at = expiry(document.RootElement);
+            return at is { } when && when <= _clock.GetUtcNow() ? Status(LoginState.Expired, expired) : new LoginStatus(LoginState.Ready, ModelLoginSource.OwnerCopy, ExpiresAt: at);
+        }
+        catch (Exception e) when (e is JsonException or IOException or UnauthorizedAccessException)
+        {
+            return Corrupt(what);
+        }
     }
 
     private Result<PreparedLogin> CopyClaude(string directory)
@@ -217,10 +242,12 @@ internal sealed class OwnerCopyCredentialSource : IModelCredentialSource
         OwnerOnly.EnsureDirectory(Path.GetDirectoryName(directory)!);   // why: the copy directory always has a parent
         OwnerOnly.EnsureDirectory(directory);
         CopyFile(_claudeHome + "/.credentials.json", directory + "/.credentials.json");
-        if (File.Exists(_options.Home + "/.claude.json"))
+        if (File.Exists(_options.Home + "/.claude.json") && LoginFiles.WithoutMcpSecrets(File.ReadAllBytes(_options.Home + "/.claude.json")) is { } settings)
         {
-            CopyFile(_options.Home + "/.claude.json", directory + "/.claude.json");
+            OwnerOnly.WriteAtomically(directory + "/.claude.json", settings);   // the owner's MCP servers keep their names, not the tokens they were given
         }
+
+        Stamp(directory);
 
         var config = _options.Home + "/.claude-run";
         List<LoginMount> mounts = [new(_claudeHome, _claudeHome, MountMode.ReadOnly), new(directory, config, MountMode.ReadWrite)];
@@ -233,6 +260,7 @@ internal sealed class OwnerCopyCredentialSource : IModelCredentialSource
         OwnerOnly.EnsureDirectory(Path.GetDirectoryName(directory)!);   // why: the copy directory always has a parent
         OwnerOnly.EnsureDirectory(directory);
         CopyFile(_codexHome + "/auth.json", directory + "/auth.json");
+        Stamp(directory);
         var config = _options.Home + "/.codex-run";
         List<LoginMount> mounts = [new(_codexHome, _codexHome, MountMode.ReadOnly), new(directory, config, MountMode.ReadWrite)];
         mounts.AddRange(ReadOnlyEntries(_codexHome, config, _codexScratch));

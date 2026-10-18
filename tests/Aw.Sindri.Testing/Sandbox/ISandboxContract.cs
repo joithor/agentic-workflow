@@ -206,7 +206,11 @@ public abstract class ISandboxContract : IDisposable
         }
     }
 
-    private void AssumeAvailable() => SkipUnless(Unavailable is null, Unavailable ?? string.Empty);
+    private void AssumeAvailable()
+    {
+        SkipUnless(SandboxBox.GitAvailable, "git is not installed: the box is a real repository");
+        SkipUnless(Unavailable is null, Unavailable ?? string.Empty);
+    }
 
     private void AssumeConfines()
     {

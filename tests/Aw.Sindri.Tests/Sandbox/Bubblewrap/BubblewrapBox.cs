@@ -1,3 +1,4 @@
+using Aw.Kernel.Testing;
 using Aw.Sindri.Infrastructure.Sandbox;
 
 namespace Aw.Sindri.Tests.Sandbox.Bubblewrap;
@@ -12,7 +13,7 @@ internal static class BubblewrapBox
 
     internal static string FixtureParent { get; } = Path.Combine(AppContext.BaseDirectory, "sandbox-fixtures");
 
-    internal static BubblewrapSandbox Create() => new(Options, new SandboxProcesses(), new HostPaths(), static _ => null);
+    internal static BubblewrapSandbox Create() => new(Options, new SandboxProcesses(), new HostPaths(), new LaunchSecretRegistry(), RealTime.Clock);
 
     private static string? Detect()
     {

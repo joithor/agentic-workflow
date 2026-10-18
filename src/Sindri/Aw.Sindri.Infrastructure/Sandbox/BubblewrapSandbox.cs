@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Sandbox;
@@ -10,11 +11,17 @@ namespace Aw.Sindri.Infrastructure.Sandbox;
 /// The Linux sandbox (sandbox spec §3.1, §4, SB12): a plan from the pure builder, turned into a bubblewrap command line, and proven inside the real thing by the canaries.
 /// The cgroup scope (SB-3a) and the network forwarders (SB-4a) wrap and join it later; this adapter is the mount stack, the environment and the self-check.
 /// </summary>
-internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProcesses processes, IHostPaths host, Func<string, string?> secretOf) : ISandbox
+/// <param name="options">The programs and the time the self-check may take.</param>
+/// <param name="processes">Runs the helper programs.</param>
+/// <param name="host">What the host's paths are.</param>
+/// <param name="secrets">The per-launch values of the variables the plan leaves to the launcher.</param>
+/// <param name="clock">The clock the self-check deadline is read against.</param>
+internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProcesses processes, IHostPaths host, ILaunchSecrets secrets, TimeProvider clock) : ISandbox
 {
-    private static readonly TimeSpan _probeTimeout = TimeSpan.FromSeconds(10);
+    // The wrapper reads the launcher-supplied --setenv pairs from a file it deletes at once, so no secret is ever an argument: $1 is the file, $2 bubblewrap, the rest its arguments.
+    private const string SecretsWrapper = "f=$1; b=$2; shift 2; exec 3<\"$f\" && rm -f \"$f\" && exec \"$b\" \"$@\"";
 
-    private static readonly string[] _controllers = ["memory", "cpu", "pids"];
+    private static readonly TimeSpan _probeTimeout = TimeSpan.FromSeconds(10);
 
     /// <inheritdoc />
     public Result<SandboxCapabilities> Probe()
@@ -42,6 +49,12 @@ internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProce
             return Unavailable(SandboxReasons.NoCgroupControllers, $"the account's cgroup lacks the {missing} controller");
         }
 
+        var limits = processes.Run(options.SystemdRun, ["--user", "--scope", "--quiet", "-p", "MemoryMax=64M", "-p", "TasksMax=64", "true"], _probeTimeout);
+        if (!limits.Succeeded)
+        {
+            return Unavailable(SandboxReasons.NoCgroupControllers, FirstLine(limits.Error, "a scope with a memory and a process limit cannot be made"));
+        }
+
         if (!processes.Run(options.Socat, ["-V"], _probeTimeout).Succeeded)
         {
             return Unavailable(SandboxReasons.NoForwarder, "socat is not installed");
@@ -57,17 +70,7 @@ internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProce
     public Result<IReadOnlyList<string>> Wrap(SandboxPlan plan, IReadOnlyList<string> argv)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        ArgumentNullException.ThrowIfNull(argv);
-        try
-        {
-            RunAreaPreparer.Prepare(plan);
-        }
-        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
-        {
-            return SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, SandboxReasons.FsWrite, "the run area could not be prepared: " + e.Message);
-        }
-
-        return Results.Success<IReadOnlyList<string>>([options.Bwrap, .. BubblewrapArgv.Build(plan, host, secretOf), "--", .. argv]);
+        return WrapWith(plan, argv, secrets.For(plan.Launch));
     }
 
     /// <inheritdoc />
@@ -79,12 +82,19 @@ internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProce
             return refusal;
         }
 
+        var start = clock.GetTimestamp();
         try
         {
             foreach (var canary in SandboxCanaries.For(plan))
             {
                 ct.ThrowIfCancellationRequested();
-                var observed = await Task.Run(() => Run(plan, canary), ct).ConfigureAwait(false);
+                var left = options.SelfCheckDeadline - clock.GetElapsedTime(start);
+                if (left <= TimeSpan.Zero)
+                {
+                    return SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, canary.Reason, $"the self-check took longer than {options.SelfCheckDeadline.TotalSeconds.ToString("0", CultureInfo.InvariantCulture)} s");
+                }
+
+                var observed = await Task.Run(() => Run(plan, canary, left < options.CanaryTimeout ? left : options.CanaryTimeout), ct).ConfigureAwait(false);
                 if (observed is not null)
                 {
                     return SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, canary.Reason, observed);
@@ -93,7 +103,7 @@ internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProce
         }
         finally
         {
-            RemoveSelfCheckRef(plan);
+            RemoveSelfCheckRefs(plan);
         }
 
         return Unit.Value;
@@ -110,33 +120,6 @@ internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProce
         return open is null ? null : SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, SandboxReasons.Login, $"the inner policy does not deny reading {open}");
     }
 
-    private string? Run(SandboxPlan plan, SandboxCanary canary)
-    {
-        var wrapped = Wrap(plan, [canary.Shell, "-c", canary.Script]);
-        if (wrapped.IsError)
-        {
-            return wrapped.Error.Message;
-        }
-
-        var result = processes.Run(wrapped.Value[0], [.. wrapped.Value.Skip(1)], options.CanaryTimeout);
-        if (!result.Started)
-        {
-            return "bubblewrap could not be started";
-        }
-
-        if (result.TimedOut)
-        {
-            return $"timed out after {options.CanaryTimeout.TotalSeconds.ToString("0", CultureInfo.InvariantCulture)} s";
-        }
-
-        if (canary.Judge is { } judge)
-        {
-            return result.ExitCode == 0 ? judge(result) : Observed(result);
-        }
-
-        return result.ExitCode == 0 ? null : Observed(result);
-    }
-
     private static string Observed(ProcessResult result)
     {
         var text = (result.Output + result.Error).Trim();
@@ -144,34 +127,92 @@ internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProce
         return line.Length > 300 ? line[..300] : line;
     }
 
-    // The git-ref canary never deletes a ref from inside; the ref is removed from outside, as the owner.
-    private void RemoveSelfCheckRef(SandboxPlan plan)
+    private static string FirstLine(string text, string fallback) =>
+        text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault() ?? fallback;
+
+    private static Error Unavailable(string reason, string detail) => SandboxRefusal.For(SindriErrors.LaunchSandboxUnavailable, reason, detail);
+
+    // The launcher's values for the variables the plan leaves open go to bubblewrap on a descriptor, from a 0600 file that the wrapper deletes as it opens it. Without any value the command is plain.
+    private Result<IReadOnlyList<string>> WrapWith(SandboxPlan plan, IReadOnlyList<string> argv, IReadOnlyDictionary<string, string> values)
+    {
+        ArgumentNullException.ThrowIfNull(argv);
+        try
+        {
+            if (RunAreaPreparer.Prepare(plan) is { } refusal)
+            {
+                return refusal;
+            }
+
+            var names = BubblewrapArgv.LauncherSupplied(plan);
+            var pairs = names.Where(values.ContainsKey).ToList();
+            if (pairs.Count == 0)
+            {
+                return Results.Success<IReadOnlyList<string>>([options.Bwrap, .. BubblewrapArgv.Build(plan, host, secretsFd: false), "--", .. argv]);
+            }
+
+            var file = WriteSecrets(plan, pairs.Select(n => (n, values[n])));
+            return Results.Success<IReadOnlyList<string>>(["/bin/sh", "-c", SecretsWrapper, "sh", file, options.Bwrap, .. BubblewrapArgv.Build(plan, host, secretsFd: true), "--", .. argv]);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, SandboxReasons.FsWrite, "the run area could not be prepared: " + e.Message);
+        }
+    }
+
+    private static string WriteSecrets(SandboxPlan plan, IEnumerable<(string Name, string Value)> pairs)
+    {
+        var directory = (RunAreaPreparer.RunAreaOf(plan) ?? throw new IOException("the plan names no run area")) + "/secrets";
+        OwnerOnly.EnsureDirectory(directory);
+        var file = Path.Combine(directory, Path.GetRandomFileName());
+        var text = string.Concat(pairs.Select(p => $"--setenv\0{p.Name}\0{p.Value}\0"));
+        OwnerOnly.WriteAtomically(file, Encoding.UTF8.GetBytes(text));
+        return file;
+    }
+
+    private string? Run(SandboxPlan plan, SandboxCanary canary, TimeSpan timeout)
+    {
+        var wrapped = WrapWith(plan, [canary.Shell, "-c", canary.Script], new Dictionary<string, string>(StringComparer.Ordinal));   // a canary needs no secret
+        if (wrapped.IsError)
+        {
+            return wrapped.Error.Message;
+        }
+
+        var result = processes.Run(wrapped.Value[0], [.. wrapped.Value.Skip(1)], timeout);
+        if (!result.Started)
+        {
+            return "bubblewrap could not be started";
+        }
+
+        if (result.TimedOut)
+        {
+            return $"timed out after {timeout.TotalSeconds.ToString("0.#", CultureInfo.InvariantCulture)} s";
+        }
+
+        if (result.ExitCode != 0)
+        {
+            return Observed(result);
+        }
+
+        return canary.Judge?.Invoke(result);
+    }
+
+    // The git-ref canary never deletes a ref from inside; the refs it made (and one it must not have made) are removed from outside, as the owner.
+    private void RemoveSelfCheckRefs(SandboxPlan plan)
     {
         if (plan.Worktree is null || !plan.Writable.Contains(plan.Worktree, StringComparer.Ordinal))
         {
             return;
         }
 
-        _ = processes.Run(options.Git, ["-C", plan.Worktree, "-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=", "update-ref", "-d", $"refs/heads/{plan.RunNamespace}/selfcheck"], _probeTimeout);
-    }
-
-    private static string? MissingController()
-    {
-        var uid = Environment.UserName.Length > 0 ? GetUid() : null;
-        var file = uid is null ? null : $"/sys/fs/cgroup/user.slice/user-{uid}.slice/user@{uid}.service/cgroup.controllers";
-        if (file is null || !File.Exists(file))
+        foreach (var reference in new[] { $"refs/heads/{plan.RunNamespace}/selfcheck", "refs/heads/other-selfcheck" })
         {
-            return null;   // not readable here: the user-scope probe above is the test
+            _ = processes.Run(options.Git, ["-C", plan.Worktree, "-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=", "update-ref", "-d", reference], _probeTimeout);
         }
-
-        var have = File.ReadAllText(file).Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        return _controllers.FirstOrDefault(c => !have.Contains(c, StringComparer.Ordinal));
     }
 
-    private static string? GetUid() => File.Exists("/proc/self/loginuid") ? File.ReadAllText("/proc/self/loginuid").Trim() : null;
-
-    private static string FirstLine(string text, string fallback) =>
-        text.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault() ?? fallback;
-
-    private static Error Unavailable(string reason, string detail) => SandboxRefusal.For(SindriErrors.LaunchSandboxUnavailable, reason, detail);
+    private string? MissingController()
+    {
+        var uid = host.Uid();
+        return uid is null ? null : CgroupControllers.FirstMissing(host.ReadText(CgroupControllers.FileFor(uid.Value)));
+    }
 }

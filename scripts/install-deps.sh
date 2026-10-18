@@ -18,6 +18,8 @@
 #            pointers), clang + zlib1g-dev (NativeAOT), lsof, tmux, curl, git
 #     macOS: tmux
 #
+#   bubblewrap and socat are SOFT until SB-5a wires the Sindri sandbox into a launch: installed when missing, but a failure to install them only warns (SOFT_PKGS below).
+#
 # Exit: 0 everything present or installed, 1 something could not be installed (system package, AppArmor fix, user-level tool).
 # Bash 3.2 compatible (macOS /bin/bash).
 set -uo pipefail
@@ -84,16 +86,28 @@ probe_systemd_run() {
   fi
 }
 
+# Installed when missing, but a failure to install them only warns until SB-5a wires the Sindri sandbox into a launch (flip this list then).
+SOFT_PKGS="bubblewrap socat"
+hard_missing() {   # the packages in $MISSING_PKGS that setup cannot go on without
+  local p hard=""
+  for p in $MISSING_PKGS; do case " $SOFT_PKGS " in *" $p "*) ;; *) hard="$hard $p" ;; esac; done
+  echo "$hard"
+}
+
 check_system
 if [ -n "$MISSING_PKGS" ]; then
   echo ""
   echo "  Installing missing system packages:$MISSING_PKGS"
+  INITIAL_HARD="$(hard_missing)"
   if aw_sys_install $MISSING_PKGS && ! dry; then
     echo "  Checking again:"
     check_system
-    if [ -n "$MISSING_PKGS" ]; then echo "  WARN: still missing after the install:$MISSING_PKGS"; FAILED=1; fi
+    if [ -n "$MISSING_PKGS" ]; then
+      echo "  WARN: still missing after the install:$MISSING_PKGS"
+      if [ -n "$(hard_missing)" ]; then FAILED=1; else echo "  (only $SOFT_PKGS: nothing needs them until the Sindri sandbox is wired in, so setup goes on)"; fi
+    fi
   elif ! dry; then
-    FAILED=1
+    if [ -n "$INITIAL_HARD" ]; then FAILED=1; else echo "  WARN: could not install$MISSING_PKGS (nothing needs them until the Sindri sandbox is wired in, so setup goes on)"; fi
   fi
 fi
 probe_bwrap

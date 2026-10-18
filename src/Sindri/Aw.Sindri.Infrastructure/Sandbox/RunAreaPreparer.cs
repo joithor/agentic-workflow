@@ -1,4 +1,7 @@
 using System.Text;
+using Aw.Kernel;
+using Aw.Sindri.Core;
+using Aw.Sindri.Core.Sandbox;
 using Aw.Sindri.Core.Sandbox.Plan;
 
 namespace Aw.Sindri.Infrastructure.Sandbox;
@@ -11,20 +14,44 @@ internal static class RunAreaPreparer
 {
     private const string RefusingPrePush = "#!/bin/sh\necho 'git push is not available in a sandboxed session: Sindri sends pushes and pull requests for you.' >&2\nexit 1\n";
 
-    /// <summary>Creates what the plan's required binds need and does not yet exist.</summary>
+    /// <summary>Gets where the run area is: the directory of the plan file that AW_SANDBOX_PLAN names.</summary>
     /// <param name="plan">The plan.</param>
-    internal static void Prepare(SandboxPlan plan)
+    /// <returns>The directory, or null when the plan names none.</returns>
+    internal static string? RunAreaOf(SandboxPlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
+        return RunArea(plan);
+    }
+
+    /// <summary>
+    /// Creates what the plan's required binds need and does not yet exist: scratch, spool and login directories, the run's ref directories and the read-write state the hooks share.
+    /// The worktree and the run directory belong to the engine: a missing worktree is -015 and a missing run directory -016, never created here.
+    /// </summary>
+    /// <param name="plan">The plan.</param>
+    /// <returns>The refusal, or null when the run area is ready.</returns>
+    internal static Error? Prepare(SandboxPlan plan)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        if (plan.Worktree is { } worktree && !Directory.Exists(worktree))
+        {
+            return SandboxRefusal.For(SindriErrors.LaunchUnconfinable, SandboxReasons.WorktreeOutsideRepo, "the worktree does not exist: " + worktree);
+        }
+
+        if (!Directory.Exists(plan.RunDirectory))
+        {
+            return SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, SandboxReasons.FsWrite, "the run directory does not exist: " + plan.RunDirectory);
+        }
+
         var area = RunArea(plan);
-        foreach (var mount in plan.Mounts.Where(m => m is { Optional: false, Kind: PlanMountKind.ReadWrite or PlanMountKind.PerLaunchDir }))
+        var engineOwned = new[] { plan.Worktree, plan.RunDirectory };
+        foreach (var mount in plan.Mounts.Where(m => m is { Optional: false, Kind: PlanMountKind.ReadWrite or PlanMountKind.PerLaunchDir } && !engineOwned.Contains(m.Path, StringComparer.Ordinal)))
         {
             _ = Directory.CreateDirectory(mount.Source ?? mount.Path);
         }
 
         if (area is null)
         {
-            return;
+            return null;
         }
 
         _ = Directory.CreateDirectory(area + "/shims");
@@ -32,6 +59,7 @@ internal static class RunAreaPreparer
         WriteIfAbsent(area + "/githooks/pre-push", RefusingPrePush, executable: true);
         WriteIfAbsent(area + "/gitconfig.empty", string.Empty, executable: false);
         WriteIfAbsent(area + "/sandbox-plan.json", "{}\n", executable: false);
+        return null;
     }
 
     // The plan file sits in the run area, and AW_SANDBOX_PLAN names it.

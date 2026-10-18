@@ -23,6 +23,7 @@ internal static class SandboxCanaries
         "[ \"$rc\" -eq 2 ] || fail \"detect-secrets let a planted key through (exit $rc)\"",
         "out=$(judge brief get task:selfcheck 2>&1); rc=$?",
         "{ [ \"$rc\" -eq 1 ] && printf '%s' \"$out\" | grep -q 'no brief'; } || fail \"the judge round trip failed (exit $rc): $out\"",
+        "[ -d \"$S/judge\" ] && [ -d \"$S/locks\" ] || fail \"the shared judge or locks directory is not bound in\"",
         "mkdir -p \"$S/judge/sessions\" && : > \"$S/judge/sessions/.sindri-selfcheck-$$\" && rm -f \"$S/judge/sessions/.sindri-selfcheck-$$\" || fail \"judge/sessions is not writable\"",
         ". \"$H/lib/failopen.sh\" || fail \"lib/failopen.sh is missing\"",
         "aw_failopen sindri-selfcheck canary",
@@ -100,6 +101,7 @@ internal static class SandboxCanaries
         var reference = $"refs/heads/{plan.RunNamespace}/selfcheck";
         var script = Prelude
             + $"cd {Quote(worktree)} || fail 'no worktree'\n"
+            + $"[ \"$(git rev-parse --show-toplevel 2>/dev/null)\" = {Quote(worktree)} ] || fail 'the worktree is not a git work tree'\n"
             + $"[ \"$(git config --get core.hooksPath)\" = {Quote(hooks)} ] || fail \"core.hooksPath is $(git config --get core.hooksPath)\"\n"
             + "[ \"$(git config --get commit.gpgsign)\" = false ] || fail \"commit.gpgsign is $(git config --get commit.gpgsign)\"\n"
             + "tree=$(git rev-parse 'HEAD^{tree}' 2>&1) || fail \"no HEAD: $tree\"\n"
@@ -153,5 +155,5 @@ internal static class SandboxCanaries
 
     // A direct connection to a public address fails: the session has a loopback and nothing else. (Through the forwarders is SB-4a's net-forward and the proxy half of this.)
     private static SandboxCanary NetDeny() =>
-        new(SandboxReasons.NetDeny, Prelude + "timeout 5 bash -c '(exec 3<>/dev/tcp/1.1.1.1/443) 2>/dev/null' && fail 'a direct connection to 1.1.1.1:443 succeeded'\nexit 0\n");
+        new(SandboxReasons.NetDeny, Prelude + "command -v timeout >/dev/null && command -v bash >/dev/null || fail 'no timeout or bash inside the sandbox'\ntimeout 2 bash -c '(exec 3<>/dev/tcp/1.1.1.1/443) 2>/dev/null' && fail 'a direct connection to 1.1.1.1:443 succeeded'\nexit 0\n");
 }

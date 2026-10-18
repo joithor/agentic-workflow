@@ -3,6 +3,7 @@ using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Sandbox;
 using Aw.Sindri.Core.Sandbox.Credentials;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Infrastructure.Sandbox;
 
 namespace Aw.Sindri.Tests.Sandbox.Bubblewrap;
 
@@ -62,17 +63,112 @@ public sealed class OwnerCopyCredentialSourceTests
         Assert.True(File.Exists(prepared.Handle.Value + "/auth.json"));
     }
 
-    [Theory]
-    [InlineData(4, true)]
-    [InlineData(5, false)]
-    public void A_login_that_expires_within_the_planned_time_and_margin_is_017_expired(int hours, bool expired)
+    [Fact]
+    public void A_valid_login_reports_when_it_runs_out_and_an_expired_one_is_expired()
     {
-        using var home = new FakeOwnerHome(LoginState.Ready, TimeSpan.FromHours(hours));
+        using var valid = new FakeOwnerHome(LoginState.Ready, TimeSpan.FromHours(3));
+        using var expired = new FakeOwnerHome(LoginState.Expired);
+
+        var ready = valid.Source().Probe(_claude);
+        var gone = expired.Source().Probe(_claude);
+
+        Assert.Equal((LoginState.Ready, FakeOwnerHome.Now + TimeSpan.FromHours(3)), (ready.State, ready.ExpiresAt));
+        Assert.Equal(LoginState.Expired, gone.State);
+        Assert.Contains("sign in again", gone.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Codex_login_older_than_its_refresh_age_is_017_expired()
+    {
+        using var home = new FakeOwnerHome(LoginState.Ready, codexRefreshedDaysAgo: 17);
+
+        var status = home.Source().Probe(AgentId.From("codex"));
+
+        Assert.Equal(LoginState.Expired, status.State);
+        Assert.Contains("Codex", status.Detail, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_recent_codex_login_is_ready_until_the_refresh_age_after_last_refresh()
+    {
+        using var home = new FakeOwnerHome(LoginState.Ready, codexRefreshedDaysAgo: 2);
+
+        var status = home.Source().Probe(AgentId.From("codex"));
+
+        Assert.Equal((LoginState.Ready, FakeOwnerHome.Now - TimeSpan.FromDays(2) + TimeSpan.FromDays(8)), (status.State, status.ExpiresAt));
+    }
+
+    [Fact]
+    public void Codex_prefers_the_access_tokens_own_exp_when_auth_json_has_a_jwt()
+    {
+        using var home = new FakeOwnerHome(LoginState.Ready, codexRefreshedDaysAgo: 17);
+        var exp = (FakeOwnerHome.Now + TimeSpan.FromHours(2)).ToUnixTimeSeconds();
+        var payload = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{{\"exp\":{exp.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}")).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        home.CodexAuth($"{{\"tokens\":{{\"access_token\":\"h.{payload}.s\"}},\"last_refresh\":\"2026-10-01T00:00:00Z\"}}");
+
+        var status = home.Source().Probe(AgentId.From("codex"));
+
+        Assert.Equal((LoginState.Ready, DateTimeOffset.FromUnixTimeSeconds(exp)), (status.State, status.ExpiresAt));
+    }
+
+    [Theory]
+    [InlineData("not json")]
+    [InlineData("")]
+    public void A_login_file_that_cannot_be_parsed_is_no_login_not_a_login_without_an_expiry(string text)
+    {
+        using var home = new FakeOwnerHome(LoginState.Ready);
+        File.WriteAllText(home.Root + "/.claude/.credentials.json", text);
 
         var status = home.Source().Probe(_claude);
 
-        Assert.Equal(expired ? LoginState.Expired : LoginState.Ready, status.State);
-        Assert.Equal(expired ? "login too close to expiry; open Claude Code once to refresh it" : null, status.Detail);
+        Assert.Equal(LoginState.Missing, status.State);
+    }
+
+    [Fact]
+    public async Task The_copied_claude_json_keeps_the_names_of_the_owners_mcp_servers_and_none_of_their_secrets()
+    {
+        using var home = new FakeOwnerHome(LoginState.Ready);
+
+        var prepared = (await home.Source().Prepare(_claude, _launch, TestContext.Current.CancellationToken)).Value;
+
+        var copy = await File.ReadAllTextAsync(prepared.Handle.Value + "/.claude.json", TestContext.Current.CancellationToken);
+        Assert.DoesNotContain("ghp_", copy, StringComparison.Ordinal);
+        Assert.DoesNotContain("ownerbearer", copy, StringComparison.Ordinal);
+        Assert.DoesNotContain("proj-secret", copy, StringComparison.Ordinal);
+        Assert.Contains("GITHUB_TOKEN", copy, StringComparison.Ordinal);
+        Assert.Contains("Authorization", copy, StringComparison.Ordinal);
+        Assert.Contains("owner@example.com", copy, StringComparison.Ordinal);
+        Assert.Contains("https://x.example", copy, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_claude_json_that_cannot_be_parsed_is_not_copied_at_all()
+    {
+        using var home = new FakeOwnerHome(LoginState.Ready);
+        await File.WriteAllTextAsync(home.Root + "/.claude.json", "{ broken", TestContext.Current.CancellationToken);
+
+        var prepared = (await home.Source().Prepare(_claude, _launch, TestContext.Current.CancellationToken)).Value;
+
+        Assert.False(File.Exists(prepared.Handle.Value + "/.claude.json"));
+        Assert.True(File.Exists(prepared.Handle.Value + "/.credentials.json"));
+    }
+
+    [Fact]
+    public async Task The_files_the_cli_writes_in_the_agent_home_are_not_bound_read_only()
+    {
+        using var home = new FakeOwnerHome(LoginState.Ready);
+
+        var prepared = (await home.Source().Prepare(_claude, _launch, TestContext.Current.CancellationToken)).Value;
+
+        Assert.DoesNotContain(prepared.Mounts, m => m.SandboxPath.EndsWith("/.last-cleanup", StringComparison.Ordinal) || m.SandboxPath.EndsWith("/mcp-needs-auth-cache.json", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void The_scratch_names_are_the_spikes_write_set_without_the_two_login_files()
+    {
+        string[] spike = ["projects", "sessions", "session-env", "shell-snapshots", "file-history", "todos", "history.jsonl", "backups", "cache", "state", "mcp-needs-auth-cache.json", ".last-update-result.json", ".last-cleanup"];
+
+        Assert.Equal(spike.Order(StringComparer.Ordinal), OwnerCopyCredentialSource.ClaudeScratch.Order(StringComparer.Ordinal));
     }
 
     [Fact]
@@ -92,7 +188,7 @@ public sealed class OwnerCopyCredentialSourceTests
     }
 
     [Fact]
-    public async Task The_crash_sweep_removes_the_copies_of_launches_with_no_live_scope()
+    public async Task The_crash_sweep_removes_the_copies_of_launches_with_no_live_scope_once_they_are_past_the_grace_period()
     {
         using var home = new FakeOwnerHome(LoginState.Ready);
         var source = home.Source();
@@ -100,8 +196,11 @@ public sealed class OwnerCopyCredentialSourceTests
         var dead = (await source.Prepare(_claude, _launch, TestContext.Current.CancellationToken)).Value;
         var kept = (await source.Prepare(_claude, live, TestContext.Current.CancellationToken)).Value;
 
+        var tooSoon = source.SweepStale(static _ => false);   // still preparing: no scope yet, but not dead
+        home.Clock.Advance(TimeSpan.FromMinutes(3));
         var removed = source.SweepStale(id => string.Equals(id, live.Value, StringComparison.Ordinal));
 
+        Assert.Equal(0, tooSoon);
         Assert.Equal(1, removed);
         Assert.False(Directory.Exists(dead.Handle.Value));
         Assert.True(Directory.Exists(kept.Handle.Value));

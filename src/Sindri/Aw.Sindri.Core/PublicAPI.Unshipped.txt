@@ -11113,11 +11113,13 @@ Aw.Sindri.Core.Sandbox.Credentials.LoginState.Missing = 1 -> Aw.Sindri.Core.Sand
 Aw.Sindri.Core.Sandbox.Credentials.LoginState.Ready = 0 -> Aw.Sindri.Core.Sandbox.Credentials.LoginState
 Aw.Sindri.Core.Sandbox.Credentials.LoginStatus
 Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.<Clone>$() -> Aw.Sindri.Core.Sandbox.Credentials.LoginStatus!
-Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.Deconstruct(out Aw.Sindri.Core.Sandbox.Credentials.LoginState State, out Aw.Sindri.Core.Sandbox.ModelLoginSource Source, out string? Detail) -> void
+Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.Deconstruct(out Aw.Sindri.Core.Sandbox.Credentials.LoginState State, out Aw.Sindri.Core.Sandbox.ModelLoginSource Source, out string? Detail, out System.DateTimeOffset? ExpiresAt) -> void
 Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.Detail.get -> string?
 Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.Detail.init -> void
 Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.Equals(Aw.Sindri.Core.Sandbox.Credentials.LoginStatus? other) -> bool
-Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.LoginStatus(Aw.Sindri.Core.Sandbox.Credentials.LoginState State, Aw.Sindri.Core.Sandbox.ModelLoginSource Source, string? Detail = null) -> void
+Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.LoginStatus(Aw.Sindri.Core.Sandbox.Credentials.LoginState State, Aw.Sindri.Core.Sandbox.ModelLoginSource Source, string? Detail = null, System.DateTimeOffset? ExpiresAt = null) -> void
+Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.ExpiresAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.ExpiresAt.init -> void
 Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.Source.get -> Aw.Sindri.Core.Sandbox.ModelLoginSource
 Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.Source.init -> void
 Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.State.get -> Aw.Sindri.Core.Sandbox.Credentials.LoginState
@@ -11217,8 +11219,10 @@ Aw.Sindri.Core.Sandbox.Credentials.LoginSourceResolver
 Aw.Sindri.Core.Sandbox.Credentials.ModelCredentialSources
 Aw.Sindri.Core.Sandbox.Credentials.ModelCredentialSources.Check(Aw.Sindri.Core.Sandbox.ModelLoginSource id, Aw.Sindri.Core.Launch.AgentId target) -> Aw.Kernel.Result<Aw.Sindri.Core.Sandbox.Credentials.LoginStatus!>!
 Aw.Sindri.Core.Sandbox.Credentials.ModelCredentialSources.Has(Aw.Sindri.Core.Sandbox.ModelLoginSource id) -> bool
-Aw.Sindri.Core.Sandbox.Credentials.ModelCredentialSources.ModelCredentialSources(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Sandbox.Credentials.IModelCredentialSource!>! sources) -> void
-Aw.Sindri.Core.Sandbox.Credentials.ModelCredentialSources.Prepare(Aw.Sindri.Core.Sandbox.ModelLoginSource id, Aw.Sindri.Core.Launch.AgentId target, Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Aw.Kernel.Result<Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin!>!>!
+Aw.Sindri.Core.Sandbox.Credentials.ModelCredentialSources.ModelCredentialSources(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Sandbox.Credentials.IModelCredentialSource!>! sources, System.TimeProvider! clock) -> void
+Aw.Sindri.Core.Sandbox.Credentials.ModelCredentialSources.Check(Aw.Sindri.Core.Sandbox.ModelLoginSource id, Aw.Sindri.Core.Launch.AgentId target, System.TimeSpan needed) -> Aw.Kernel.Result<Aw.Sindri.Core.Sandbox.Credentials.LoginStatus!>!
+static readonly Aw.Sindri.Core.Sandbox.Credentials.ModelCredentialSources.DefaultNeeded -> System.TimeSpan
+Aw.Sindri.Core.Sandbox.Credentials.ModelCredentialSources.Prepare(Aw.Sindri.Core.Sandbox.ModelLoginSource id, Aw.Sindri.Core.Launch.AgentId target, Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.TimeSpan needed, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Aw.Kernel.Result<Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin!>!>!
 Aw.Sindri.Core.Sandbox.Credentials.ModelCredentialSources.Release(Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin! prepared) -> void
 Aw.Sindri.Core.Sandbox.Plan.AgentHomeWriteSet
 Aw.Sindri.Core.Sandbox.Plan.DenyRuleExpansion

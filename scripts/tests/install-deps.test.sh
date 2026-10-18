@@ -126,16 +126,34 @@ grep -q "^sudo apt-get update" "$LOG" && grep -q "^apt-get install -y bubblewrap
 printf '%s\n' "$OUT" | has "Checking again" && printf '%s\n' "$OUT" | has "bwrap: found" \
   && ok "the packages are checked again after the install" || { fail "no re-check"; printf '%s\n' "$OUT" | sed 's/^/      | /'; }
 
-# 5b. The install runs but the command is still missing: exit 1.
-rm "$BIN/bwrap"
-run AW_DEPS_OS=Linux AW_DEPS_BWRAP_PROBE=true
-expect "a package still missing after the install fails" 1 "still missing after the install: bubblewrap"
+# The temporal binaries are cached, so only the system packages decide the exit code in the runs below and in 7.
+STATE="$TMPROOT/state"
+V="$(awk '$1=="temporal"{print $2; exit}' "$REPO/binaries.lock")"; TV="$(awk '$1=="temporal-test-server"{print $2; exit}' "$REPO/binaries.lock")"
+mkdir -p "$STATE/cache/bin/temporal-$V" "$STATE/cache/bin/temporal-test-server-$TV"
+printf '#!/bin/sh\necho "temporal version %s"\n' "$V" >"$STATE/cache/bin/temporal-$V/temporal"
+: >"$STATE/cache/bin/temporal-test-server-$TV/temporal-test-server"
+chmod +x "$STATE"/cache/bin/*/*
 
-# 5c. AW_NO_SYSTEM_INSTALL=1: nothing installed, the exact command printed, exit 1.
+# 5b. The install runs but a hard package is still missing: exit 1. A soft one (bubblewrap, socat) only warns: nothing needs them until the Sindri sandbox is wired in (SB-5a).
+rm "$BIN/tmux"
+run AW_DEPS_OS=Linux AW_DEPS_BWRAP_PROBE=true
+expect "a package still missing after the install fails" 1 "still missing after the install: tmux"
+fake tmux
+rm "$BIN/bwrap" "$BIN/socat"
+run AW_DEPS_OS=Linux AW_DEPS_BWRAP_PROBE=true AW_STATE_DIR="$STATE"
+expect "bubblewrap and socat still missing after the install only warn" 0 "still missing after the install: bubblewrap socat" "setup goes on"
+fake bwrap; fake socat
+
+# 5c. AW_NO_SYSTEM_INSTALL=1: nothing installed, the exact command printed; exit 1 for a hard package, a warning for the soft ones.
 : >"$LOG"
+rm "$BIN/tmux"
 run AW_DEPS_OS=Linux AW_NO_SYSTEM_INSTALL=1 AW_DEPS_BWRAP_PROBE=true
-expect "AW_NO_SYSTEM_INSTALL=1 prints the command and fails" 1 "sudo apt-get install -y bubblewrap"
+expect "AW_NO_SYSTEM_INSTALL=1 prints the command and fails for a hard package" 1 "sudo apt-get install -y tmux"
 grep -q "install" "$LOG" && fail "AW_NO_SYSTEM_INSTALL=1 still installed: $(cat "$LOG")" || ok "AW_NO_SYSTEM_INSTALL=1 installs nothing"
+fake tmux
+rm "$BIN/bwrap"
+run AW_DEPS_OS=Linux AW_NO_SYSTEM_INSTALL=1 AW_DEPS_BWRAP_PROBE=true AW_STATE_DIR="$STATE"
+expect "AW_NO_SYSTEM_INSTALL=1 with only bubblewrap missing prints the command and warns" 0 "sudo apt-get install -y bubblewrap" "setup goes on"
 fake bwrap
 
 # 6. macOS: no Linux-only packages are required.
@@ -150,12 +168,6 @@ grep -q "^brew install tmux$" "$LOG" && ok "macOS installs a missing tmux with b
 fake tmux
 
 # 7. Temporal: a cached fetch is found in the cache layout sindri serve reads, and `temporal --version` is run.
-STATE="$TMPROOT/state"
-V="$(awk '$1=="temporal"{print $2; exit}' "$REPO/binaries.lock")"; TV="$(awk '$1=="temporal-test-server"{print $2; exit}' "$REPO/binaries.lock")"
-mkdir -p "$STATE/cache/bin/temporal-$V" "$STATE/cache/bin/temporal-test-server-$TV"
-printf '#!/bin/sh\necho "temporal version %s"\n' "$V" >"$STATE/cache/bin/temporal-$V/temporal"
-: >"$STATE/cache/bin/temporal-test-server-$TV/temporal-test-server"
-chmod +x "$STATE"/cache/bin/*/*
 fake bwrap
 run AW_DEPS_OS=Linux AW_STATE_DIR="$STATE"
 expect "temporal is found at cache/bin/temporal-<pin>/ and runs" 0 "temporal: .*/cache/bin/temporal-$V/temporal \\(temporal version $V\\)" "temporal-test-server: .*temporal-test-server-$TV"

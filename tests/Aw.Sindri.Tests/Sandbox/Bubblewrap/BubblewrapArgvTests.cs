@@ -11,6 +11,10 @@ public sealed class BubblewrapArgvTests
 {
     private sealed class FixtureHost : IHostPaths
     {
+        public int? Uid() => 1000;
+
+        public string? ReadText(string path) => null;
+
         public HostPathKind KindOf(string path) => path switch
         {
             "/srv/aw" => HostPathKind.Directory,
@@ -26,9 +30,7 @@ public sealed class BubblewrapArgvTests
 
     private static readonly FixtureHost _host = new();
 
-    private static string? NoSecrets(string name) => string.Equals(name, "AW_SINDRI_LAUNCH_SECRET", StringComparison.Ordinal) ? "s3cret" : null;
-
-    private static List<string> Args(SandboxRequest request) => [.. BubblewrapArgv.Build(SandboxPlannerTests.Build(request), _host, NoSecrets)];
+    private static List<string> Args(SandboxRequest request) => [.. BubblewrapArgv.Build(SandboxPlannerTests.Build(request), _host, secretsFd: false)];
 
     private static int Find(List<string> args, params string[] sequence)
     {
@@ -106,20 +108,28 @@ public sealed class BubblewrapArgvTests
         Assert.True(Find(Args(Req.WriteScope), "--bind", Req.RunArea + "/spool/logs", Req.StateDir + "/logs") >= 0);
 
     [Fact, Trait("Lane", "unit")]
-    public void The_environment_is_cleared_then_set_from_the_plan_and_the_launcher_supplies_the_secret()
+    public void The_environment_is_cleared_then_set_from_the_plan_and_the_variables_the_launcher_supplies_are_not_in_it()
     {
         var args = Args(Req.WriteScope);
 
         Assert.Equal("--clearenv", args[2]);
         Assert.True(Find(args, "--setenv", "CLAUDE_CONFIG_DIR", Req.Home + "/.claude-run") >= 0);
-        Assert.True(Find(args, "--setenv", "AW_SINDRI_LAUNCH_SECRET", "s3cret") >= 0);
+        Assert.DoesNotContain("AW_SINDRI_LAUNCH_SECRET", args, StringComparer.Ordinal);
         Assert.DoesNotContain("GH_TOKEN", args, StringComparer.Ordinal);
         Assert.DoesNotContain("ghp_planted", args, StringComparer.Ordinal);
+        Assert.DoesNotContain("--args", args, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_variable_the_launcher_does_not_supply_is_left_out() =>
-        Assert.DoesNotContain("AW_SINDRI_LAUNCH_SECRET", BubblewrapArgv.Build(SandboxPlannerTests.Build(Req.WriteScope), _host, _ => null), StringComparer.Ordinal);
+    public void With_a_secrets_descriptor_the_args_option_comes_after_clearenv_and_before_the_working_directory()
+    {
+        var args = BubblewrapArgv.Build(SandboxPlannerTests.Build(Req.WriteScope), _host, secretsFd: true).ToList();
+
+        var clear = args.IndexOf("--clearenv");
+        var fd = Find(args, "--args", "3");
+        Assert.True(clear >= 0 && clear < fd && fd < args.IndexOf("--chdir"));
+        Assert.Equal(["AW_SINDRI_LAUNCH_SECRET"], BubblewrapArgv.LauncherSupplied(SandboxPlannerTests.Build(Req.WriteScope)));
+    }
 
     [Fact, Trait("Lane", "unit")]
     public void The_session_has_its_own_network_namespace_dies_with_its_parent_and_no_pid_namespace()

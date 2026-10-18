@@ -3,6 +3,7 @@ using Aw.Sindri.Core.Sandbox;
 using Aw.Sindri.Core.Sandbox.Plan;
 using Aw.Sindri.Infrastructure.Sandbox;
 using Aw.Sindri.Tests.Sandbox.Plan;
+using Microsoft.Extensions.Time.Testing;
 using Req = Aw.Sindri.Testing.Sandbox.SandboxRequests;
 
 namespace Aw.Sindri.Tests.Sandbox.Bubblewrap;
@@ -11,10 +12,10 @@ namespace Aw.Sindri.Tests.Sandbox.Bubblewrap;
 [Lane(TestLane.Unit)]
 public sealed class SandboxCanariesTests
 {
-    private static readonly BubblewrapOptions _options = new("bwrap", "systemd-run", "socat", "git", TimeSpan.FromSeconds(5));
+    private static readonly BubblewrapOptions _options = new("bwrap", "systemd-run", "socat", "git", TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(20));
+    private static readonly FakeTimeProvider _clock = new(new DateTimeOffset(2026, 10, 18, 12, 0, 0, TimeSpan.Zero));
 
-    // Nothing in the plan needs a directory made on this machine: only /dev and /proc.
-    private static SandboxPlan Bare(SandboxPlan plan) => plan with { Mounts = [.. plan.Mounts.Where(m => m.Kind is PlanMountKind.Dev or PlanMountKind.Proc)], Environment = [] };
+    private static BubblewrapSandbox Sandbox(FakeProcesses processes, ILaunchSecrets? secrets = null) => new(_options, processes, new HostPaths(), secrets ?? new LaunchSecretRegistry(), _clock);
 
     private static string[] Reasons(SandboxPlan plan) => [.. SandboxCanaries.For(plan).Select(c => c.Reason)];
 
@@ -86,9 +87,10 @@ public sealed class SandboxCanariesTests
     [Fact]
     public async Task A_failing_canary_is_016_naming_the_canary_and_what_was_observed()
     {
-        var plan = Bare(SandboxPlannerTests.Build(Req.ReadOnly));
+        using var area = new TempRunArea();
+        var plan = area.Plan;
         var processes = new FakeProcesses().When((p, _) => p == "bwrap", FakeProcesses.Failed("visible: /home/owner/.ssh"));
-        var sandbox = new BubblewrapSandbox(_options, processes, new HostPaths(), static _ => null);
+        var sandbox = Sandbox(processes);
 
         var result = await sandbox.SelfCheck(plan, TestContext.Current.CancellationToken);
 
@@ -98,44 +100,56 @@ public sealed class SandboxCanariesTests
     }
 
     [Fact]
+    public async Task The_whole_self_check_has_one_deadline_not_one_per_canary()
+    {
+        using var area = new TempRunArea();
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 10, 18, 12, 0, 0, TimeSpan.Zero));
+        var options = new BubblewrapOptions("bwrap", "systemd-run", "socat", "git", TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(4));
+        var processes = new FakeProcesses { OnRun = () => clock.Advance(TimeSpan.FromSeconds(2)) }.When((p, _) => p == "bwrap", FakeProcesses.Ok());
+
+        var result = await new BubblewrapSandbox(options, processes, new HostPaths(), new LaunchSecretRegistry(), clock).SelfCheck(area.Plan, TestContext.Current.CancellationToken);
+
+        Assert.Equal("SND-LAUNCH-016", result.Error.Code);
+        Assert.Contains("took longer than 4 s", result.Error.Message, StringComparison.Ordinal);
+        Assert.Equal(2, processes.Calls.Count(c => c.Program == "bwrap"));
+    }
+
+    [Fact]
     public async Task The_selfcheck_ref_is_removed_from_outside_after_a_write_scope_self_check_even_when_a_canary_fails()
     {
-        var built = SandboxPlannerTests.Build(Req.WriteScope);
-        var plan = Bare(built) with { Worktree = Req.Worktree, Mounts = [.. Bare(built).Mounts, new PlanMount(Req.Worktree, PlanMountKind.ReadWrite, Optional: true)] };
+        using var area = new TempRunArea();
+        var plan = area.Plan with { Worktree = area.Root + "/run", Mounts = [.. area.Plan.Mounts, new PlanMount(area.Root + "/run", PlanMountKind.ReadWrite, Optional: true)] };
         var processes = new FakeProcesses().When((p, _) => p == "bwrap", FakeProcesses.Failed("boom"));
         _ = processes.When((p, _) => p == "git", FakeProcesses.Ok());
-        var sandbox = new BubblewrapSandbox(_options, processes, new HostPaths(), static _ => null);
+        var sandbox = Sandbox(processes);
 
         _ = await sandbox.SelfCheck(plan, TestContext.Current.CancellationToken);
 
-        var git = processes.Calls.Single(c => c.Program == "git");
-        Assert.Equal(["-C", Req.Worktree, "-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=", "update-ref", "-d", "refs/heads/sindri/x/1/selfcheck"], git.Arguments);
+        var refs = processes.Calls.Where(c => c.Program == "git").Select(c => c.Arguments[^1]).ToList();
+        Assert.Equal(["refs/heads/sindri/x/1/selfcheck", "refs/heads/other-selfcheck"], refs);
+        Assert.All(processes.Calls.Where(c => c.Program == "git"), c => Assert.Equal(["-C", area.Root + "/run", "-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=", "update-ref", "-d"], c.Arguments.Take(8)));
     }
 
     [Fact]
     public async Task A_login_whose_copy_directory_the_inner_policy_does_not_deny_fails_the_login_canary_before_anything_runs()
     {
         var plan = SandboxPlannerTests.Build(Req.WriteScope);
-        var open = plan with { Policy = plan.Policy with { Rules = [.. plan.Policy.Rules.Where(r => !(r.Effect == InnerRuleEffect.Deny && r.Tool == "Read" && r.Pattern.StartsWith(Req.Home + "/.claude-run", StringComparison.Ordinal)))] } };
+        var open = plan with { Policy = plan.Policy with { Rules = [.. plan.Policy.Rules.Where(r => !(r.Effect == InnerRuleEffect.Deny && string.Equals(r.Tool, "Read", StringComparison.Ordinal) && r.Pattern.StartsWith(Req.Home + "/.claude-run", StringComparison.Ordinal)))] } };
         var processes = new FakeProcesses();
 
-        var result = await new BubblewrapSandbox(_options, processes, new HostPaths(), static _ => null).SelfCheck(open, TestContext.Current.CancellationToken);
+        var result = await Sandbox(processes).SelfCheck(open, TestContext.Current.CancellationToken);
 
         Assert.Equal("login", SandboxRefusal.ReasonOf(result.Error));
         Assert.Empty(processes.Calls);
     }
 
     [Fact]
-    public void Wrap_puts_bwrap_first_the_argv_after_dash_dash_and_asks_the_host_for_the_launch_secret()
+    public void Wrap_without_launcher_values_is_plain_bwrap_first_and_the_argv_after_dash_dash()
     {
-        var plan = SandboxPlannerTests.Build(Req.ReadOnly);
-        var bare = Bare(plan) with { Environment = [.. plan.Environment.Where(e => e.Value is null)] };
-        var sandbox = new BubblewrapSandbox(_options, new FakeProcesses(), new HostPaths(), name => string.Equals(name, "AW_SINDRI_LAUNCH_SECRET", StringComparison.Ordinal) ? "s3" : null);
-
-        var argv = sandbox.Wrap(bare, ["claude", "--x"]).Value;
+        using var area = new TempRunArea();
+        var argv = Sandbox(new FakeProcesses()).Wrap(area.Plan, ["claude", "--x"]).Value;
 
         Assert.Equal("bwrap", argv[0]);
         Assert.Equal(["--", "claude", "--x"], argv.TakeLast(3), StringComparer.Ordinal);
-        Assert.Contains("s3", argv, StringComparer.Ordinal);
     }
 }

@@ -10,16 +10,24 @@ internal static class BubblewrapArgv
 {
     private static readonly PlanMountKind[] _covering = [PlanMountKind.ReadOnly, PlanMountKind.ReadWrite, PlanMountKind.PerLaunchDir, PlanMountKind.Tmpfs];
 
+    /// <summary>Gets the names of the variables the plan leaves to the launcher (the launch secret, a model key).</summary>
+    /// <param name="plan">The plan.</param>
+    /// <returns>The names.</returns>
+    internal static IReadOnlyList<string> LauncherSupplied(SandboxPlan plan)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        return [.. plan.Environment.Where(e => e.Value is null).Select(e => e.Name)];
+    }
+
     /// <summary>Builds the arguments that come before the agent's own argv (the caller adds the program name before and '--' after).</summary>
     /// <param name="plan">The plan.</param>
     /// <param name="host">What a host path is and where its symlinks lead.</param>
-    /// <param name="secretOf">The value of a variable the plan marks as supplied at start, or null.</param>
+    /// <param name="secretsFd">True when the variables the plan leaves to the launcher arrive on file descriptor 3 (<c lang="text">--args 3</c>); no value is ever an argument.</param>
     /// <returns>The arguments.</returns>
-    internal static IReadOnlyList<string> Build(SandboxPlan plan, IHostPaths host, Func<string, string?> secretOf)
+    internal static IReadOnlyList<string> Build(SandboxPlan plan, IHostPaths host, bool secretsFd)
     {
         ArgumentNullException.ThrowIfNull(plan);
         ArgumentNullException.ThrowIfNull(host);
-        ArgumentNullException.ThrowIfNull(secretOf);
         List<string> a = ["--die-with-parent", "--unshare-net", "--clearenv"];   // no pid namespace (SB6); --new-session stays off, the tty remains the pane's
         for (var i = 0; i < plan.Mounts.Count; i++)
         {
@@ -28,10 +36,15 @@ internal static class BubblewrapArgv
 
         foreach (var e in plan.Environment)
         {
-            if ((e.Value ?? secretOf(e.Name)) is { } value)
+            if (e.Value is { } value)
             {
                 a.AddRange(["--setenv", e.Name, value]);
             }
+        }
+
+        if (secretsFd)
+        {
+            a.AddRange(["--args", "3"]);   // after --clearenv, so the launcher's --setenv pairs land in the cleared environment
         }
 
         a.AddRange(["--chdir", plan.Worktree ?? plan.RunDirectory]);
@@ -75,7 +88,7 @@ internal static class BubblewrapArgv
             HostPathKind.Directory => HasBindsBelow(mounts, index) ? ["--tmpfs", path] : ["--perms", "0555", "--tmpfs", path, "--remount-ro", path],
             HostPathKind.File => ["--ro-bind", "/dev/null", path],
             HostPathKind.Missing => [],
-            _ => [],
+            _ => throw new ArgumentOutOfRangeException(nameof(host), "unknown host path kind"),
         };
     }
 

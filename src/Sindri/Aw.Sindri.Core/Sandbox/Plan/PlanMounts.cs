@@ -120,7 +120,7 @@ internal static class PlanMounts
             return new PlanMount(path, PlanMountKind.PerLaunchDir, spool, Reason: entry.UsedBy);
         }
 
-        return new PlanMount(path, entry.Kind == StatePathKind.ReadOnly ? PlanMountKind.ReadOnly : PlanMountKind.ReadWrite, Reason: entry.UsedBy, Optional: true);
+        return new PlanMount(path, entry.Kind == StatePathKind.ReadOnly ? PlanMountKind.ReadOnly : PlanMountKind.ReadWrite, Reason: entry.UsedBy, Optional: entry.Kind == StatePathKind.ReadOnly);   // a read-write state directory is made, never skipped: a session with a private locks/ or judge/ shares nothing with the box
     }
 
     private static void AddLaunchFiles(List<PlanMount> m, PlanContext c)

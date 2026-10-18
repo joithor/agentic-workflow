@@ -13,10 +13,11 @@ namespace Aw.Sindri.Core.Sandbox.Plan;
 internal static partial class PlanChecks
 {
     private const int SocketPathLimit = 104;
+    private const int MaxProjectKey = 200;
 
     private static readonly string[] _renameWritten = [".credentials.json", ".claude.json", "auth.json"];
 
-    internal static Error? Validate(PlanContext c) => Mode(c) ?? Paths(c) ?? Namespace(c) ?? Worktree(c) ?? Socket(c) ?? HomeEntries(c) ?? Login(c);
+    internal static Error? Validate(PlanContext c) => Mode(c) ?? Paths(c) ?? Namespace(c) ?? Worktree(c) ?? TranscriptKey(c) ?? Socket(c) ?? HomeEntries(c) ?? Login(c);
 
     private static Error? Mode(PlanContext c) =>
         c.Request.Policy is { Mode: not StepPermissionMode.Default, WritablePath: not null }
@@ -68,6 +69,12 @@ internal static partial class PlanChecks
             ? Unconfinable("the writable path is not the run's worktree")
             : null;
     }
+
+    // Claude Code shortens a project key past 200 characters and appends a hash this build cannot compute: the transcript would land in the throw-away config directory and be lost with it.
+    private static Error? TranscriptKey(PlanContext c) =>
+        c.Worktree is { } worktree && c.Request.Login is not null && ProjectKey.For(worktree).Length > MaxProjectKey
+            ? Unconfinable("the worktree path is too long for Claude Code's transcript directory name")
+            : null;
 
     private static Error? Socket(PlanContext c) =>
         Encoding.UTF8.GetByteCount(c.Request.Net.NetDir + "/sindri.sock") >= SocketPathLimit

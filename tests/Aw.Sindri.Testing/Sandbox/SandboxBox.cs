@@ -75,6 +75,9 @@ public sealed partial class SandboxBox : IDisposable
     /// <summary>Gets a value indicating whether git and the .NET SDK the restore fixture needs are on this box.</summary>
     public bool HasDotnet => File.Exists(Home + "/.dotnet/dotnet") || Environment.GetEnvironmentVariable("DOTNET_ROOT") is { Length: > 0 };
 
+    /// <summary>Gets a value indicating whether git is installed: the box is a real repository.</summary>
+    public static bool GitAvailable { get; } = ProbeGit();
+
     /// <summary>Makes a box under <paramref name="parent"/> with the owner's real home.</summary>
     /// <param name="parent">A directory outside /tmp (the test assembly's output).</param>
     /// <returns>The box.</returns>
@@ -198,6 +201,18 @@ public sealed partial class SandboxBox : IDisposable
 
     [GeneratedRegex("exec node \"(?<dir>[^\"]+)/judge/dist/cli\\.js\"", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex JudgeWrapper { get; }
+
+    private static bool ProbeGit()
+    {
+        try
+        {
+            return Run("git", ["--version"]).Exit == 0;
+        }
+        catch (System.ComponentModel.Win32Exception)
+        {
+            return false;
+        }
+    }
 
     private static string ProjectKeyOf(string path) => NonAlphanumeric.Replace(path, "-");
 
