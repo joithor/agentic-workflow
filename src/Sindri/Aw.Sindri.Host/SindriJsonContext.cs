@@ -62,6 +62,7 @@ using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.ListSessions;
+using Aw.Sindri.Features.OnyxAccount;
 using Aw.Sindri.Features.OnyxDown;
 using Aw.Sindri.Features.OnyxStatus;
 using Aw.Sindri.Features.OnyxUp;
@@ -84,6 +85,7 @@ using Aw.Sindri.Host.Commands.Recipe;
 using Aw.Sindri.Host.Commands.Scoping;
 using Aw.Sindri.Host.Endpoints;
 using Aw.Sindri.Host.Mcp;
+using Aw.Sindri.Host.Onyx;
 
 namespace Aw.Sindri.Host;
 
@@ -121,6 +123,8 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(OnyxStatusResponse))]
 [JsonSerializable(typeof(OnyxSetupState))]
 [JsonSerializable(typeof(OnyxUpResponse))]
+[JsonSerializable(typeof(OnyxUpSummary))]
+[JsonSerializable(typeof(OnyxAccountResponse))]
 [JsonSerializable(typeof(OnyxStepResult))]
 [JsonSerializable(typeof(OnyxDownResponse))]
 [JsonSerializable(typeof(RequestKind))]   // API P8: the sindri_request kind argument binds through it

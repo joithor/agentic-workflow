@@ -345,6 +345,6 @@ public sealed class OnyxPreflightTests
     {
         var codes = SindriErrors.All.Select(static e => e.Code).Where(static c => c.StartsWith("SND-ONYX-", StringComparison.Ordinal)).Order(StringComparer.Ordinal);
 
-        Assert.Equal(["SND-ONYX-001", "SND-ONYX-002", "SND-ONYX-003", "SND-ONYX-004", "SND-ONYX-005", "SND-ONYX-006", "SND-ONYX-010", "SND-ONYX-011", "SND-ONYX-012"], codes, StringComparer.Ordinal);
+        Assert.Equal(["SND-ONYX-001", "SND-ONYX-002", "SND-ONYX-003", "SND-ONYX-004", "SND-ONYX-005", "SND-ONYX-006", "SND-ONYX-007", "SND-ONYX-008", "SND-ONYX-009", "SND-ONYX-010", "SND-ONYX-011", "SND-ONYX-012"], codes, StringComparer.Ordinal);
     }
 }

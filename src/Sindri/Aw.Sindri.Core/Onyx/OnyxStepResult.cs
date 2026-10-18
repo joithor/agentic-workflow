@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Features.OnyxUp;
+namespace Aw.Sindri.Core.Onyx;
 
 /// <summary>What one step of `onyx up` did in this run.</summary>
 /// <param name="Step">The step's name (fetch, config, pull, start).</param>

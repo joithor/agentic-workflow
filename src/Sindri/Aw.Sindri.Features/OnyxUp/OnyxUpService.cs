@@ -69,6 +69,7 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
         var (port, platform, warnings) = preflight.Value;
         var context = new OnyxUpContext(pins, facts.Paths, port, platform) { Project = facts.Project };
         var recorded = RecordedStamps(state, foreignState: foreign is not null);
+        context.KeyPointer = foreign is null ? state?.KeyPointer : null;
         var results = await RunSteps(context, recorded, cancellationToken).ConfigureAwait(false);
         if (results.IsError)
         {
@@ -121,7 +122,7 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
         if (!string.Equals(before, stamp, StringComparison.Ordinal))
         {
             recorded[step.Name] = stamp;
-            workspace.WriteState(new OnyxSetupState(context.Port, new Dictionary<string, string>(recorded, StringComparer.Ordinal), context.Project.Name));
+            workspace.WriteState(new OnyxSetupState(context.Port, new Dictionary<string, string>(recorded, StringComparer.Ordinal), context.Project.Name, KeyPointer: context.KeyPointer));
         }
 
         return outcome;

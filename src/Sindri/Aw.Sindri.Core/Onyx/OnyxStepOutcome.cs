@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Aw.Sindri.Features.OnyxUp;
+namespace Aw.Sindri.Core.Onyx;
 
 /// <summary>What a step of `onyx up` did in one run; written in kebab case.</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<OnyxStepOutcome>))]

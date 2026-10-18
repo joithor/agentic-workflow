@@ -18,6 +18,15 @@ public static class OnyxSteps
     /// <summary>Step 5: the stack is started and answers with the pinned version.</summary>
     public const string Start = "start";
 
+    /// <summary>Spec §4.1 step 6: the human creates their own Onyx account in the browser.</summary>
+    public const string Signup = "signup";
+
+    /// <summary>Steps 7 and 8: Sindri's admin key is minted with the owner's login and stored.</summary>
+    public const string Key = "key";
+
+    /// <summary>Step 9: the profile's `context.sources.onyx` section is written.</summary>
+    public const string Profile = "profile";
+
     /// <summary>Gets the steps in the order they run; each one's stamp is built from the one before.</summary>
     public static IReadOnlyList<string> Order { get; } = [Fetch, Config, Pull, Start];
 

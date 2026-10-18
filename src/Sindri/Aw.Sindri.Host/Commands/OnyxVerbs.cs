@@ -15,10 +15,9 @@ namespace Aw.Sindri.Host.Commands;
 /// <param name="services">The CLI's scoped services.</param>
 /// <param name="output">Where answers go.</param>
 /// <param name="session">Who runs the CLI.</param>
-internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentSession session)
+/// <param name="approve">Runs `profile approve [hash]` the way the CLI does (preview without a hash, the typed challenge with one), for the approval `onyx up` shows inline; null skips the offer.</param>
+internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentSession session, Func<string?, Output, CancellationToken, Task<int>>? approve = null)
 {
-    private const string HandOver = "Onyx is running. Account setup (sign-up and Sindri's key) comes next: `sindri onyx up` will continue it once that stage lands.";
-
     internal async Task<int> Up(bool json, CancellationToken ct)
     {
         if (!session.Human)
@@ -42,11 +41,37 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
             return await Fail(output, answer.Error).ConfigureAwait(false);
         }
 
-        var up = answer.Value;
-        var next = up.NeedsHuman is { Count: > 0 } waiting ? $"needs you: {string.Join(", ", waiting)}" : HandOver;
-        return json
-            ? await output.Json(up, 0).ConfigureAwait(false)
-            : await output.Text($"{"url",-10}{up.Url}\n{"version",-10}{up.Version}\n{"ran",-10}{Steps(up.Ran)}\n{"skipped",-10}{Steps(up.Skipped)}\n{next}\n", 0).ConfigureAwait(false);
+        try
+        {
+            return await new OnyxHandOver(services, output, approve).Finish(answer.Value, json, ct).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            return Interrupted("interrupted; run `sindri onyx up` again to resume");
+        }
+    }
+
+    /// <summary>'sindri onyx open': the sign-up page while no account was made through `onyx up`, else the connectors page.</summary>
+    /// <param name="ct">Cancels the verb.</param>
+    /// <returns>0 opened (or the address printed), 1 refused or not set up.</returns>
+    internal async Task<int> Open(CancellationToken ct)
+    {
+        if (!session.Human)
+        {
+            return await Refused("open", "opens a page in the browser").ConfigureAwait(false);
+        }
+
+        ct.ThrowIfCancellationRequested();
+        var state = services.GetRequiredService<IOnyxWorkspace>().ReadState();
+        if (state is null)
+        {
+            _ = await output.Error(SindriErrors.InvalidInput.With("Onyx isn't set up on this box (fix: run `sindri onyx up`)")).ConfigureAwait(false);
+            return 1;
+        }
+
+        var page = new Uri($"http://127.0.0.1:{state.Port.ToString(System.Globalization.CultureInfo.InvariantCulture)}" + (state.Steps.ContainsKey(OnyxSteps.Signup) ? "/admin/add-connector" : "/auth/signup"));
+        var opened = services.GetRequiredService<IBrowser>().Open(page);
+        return await output.Text(opened ? $"Opening {page}\n" : $"Open {page} in your browser.\n", 0).ConfigureAwait(false);
     }
 
     internal async Task<int> Down(bool json, CancellationToken ct)
@@ -94,7 +119,7 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
         return error.Code.StartsWith("SND-ONYX-", StringComparison.Ordinal) || error.Code == SindriErrors.CommandBusy.Code ? 1 : 2;
     }
 
-    private static string Steps(IReadOnlyList<string> steps) => steps.Count == 0 ? "none" : string.Join(", ", steps);
+    internal static string Steps(IReadOnlyList<string> steps) => steps.Count == 0 ? "none" : string.Join(", ", steps);
 
     // Through the progress writer, which ends an open row of dots before the line, so the resume line never starts mid-row.
     private int Interrupted(string text)

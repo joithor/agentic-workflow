@@ -42,7 +42,7 @@ internal sealed class ProcessToolRunner : IToolRunner
 
         using (process)
         {
-            return Wait(process, timeout, options?.StandardErrorLine, cancellationToken);
+            return Wait(process, timeout, options, cancellationToken);
         }
     }
 
@@ -66,9 +66,28 @@ internal sealed class ProcessToolRunner : IToolRunner
         }
     }
 
-    private static ToolRun Wait(Process process, TimeSpan timeout, Action<string>? standardErrorLine, CancellationToken cancellationToken)
+    // Text for the tool's standard input (how a secret reaches a tool without being an argument).
+    private static void Feed(Process process, string? input)
     {
-        process.StandardInput.Close();   // a tool that prompts reads end of input instead of waiting for a terminal
+        try
+        {
+            if (input is not null)
+            {
+                process.StandardInput.Write(input);
+            }
+
+            process.StandardInput.Close();   // flushes: a tool that prompts reads end of input instead of waiting for a terminal
+        }
+        catch (IOException)
+        {
+            // the tool closed its input early (the flush on close throws too); its exit code says what it made of what it read
+        }
+    }
+
+    private static ToolRun Wait(Process process, TimeSpan timeout, ToolRunOptions? options, CancellationToken cancellationToken)
+    {
+        var standardErrorLine = options?.StandardErrorLine;
+        Feed(process, options?.StandardInput);
         var output = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
         var error = DrainLines(process.StandardError, standardErrorLine);
         var killedByCancel = false;
