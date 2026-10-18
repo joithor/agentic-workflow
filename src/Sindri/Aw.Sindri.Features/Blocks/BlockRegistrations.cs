@@ -50,6 +50,7 @@ internal static class BlockRegistrations
         .AddScopingBlocks()
         .AddStandInBlocks()      // TEMPORARY: drop with the stand-in recipes when engine's build, prove and ship land
         .AddStandInBlocks()      // TEMPORARY: drop with the stand-in recipes when engine's build, prove and ship land
+        .AddStandInBlocks()      // TEMPORARY: drop with the stand-in recipes when engine's build, prove and ship land
         .AddBlockDescriptor(EvidenceProviders.Check)
         .AddGate<BudgetAvailableGate>()
         .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
@@ -72,6 +73,15 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(StandInBuildSteps.Build)
         .AddBlockDescriptor(StandInProveSteps.Prove)
         .AddBlockDescriptor(StandInProveSteps.ProveLog);
+
+    /// <summary>TEMPORARY: registers the stand-in Steps of workflow.build, workflow.prove and workflow.ship until engine's recipes land.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddStandInBlocks(this IServiceCollection services) => services
+        .AddBlockDescriptor(StandInBuildSteps.Build)
+        .AddBlockDescriptor(StandInProveSteps.Prove)
+        .AddBlockDescriptor(StandInProveSteps.ProveLog)
+        .AddBlockDescriptor(StandInShipSteps.Ship);
 
     /// <summary>Registers the scoping station's Steps and the context Step inputs it names (scoping spec §9), descriptors only.</summary>
     /// <param name="services">The service collection.</param>

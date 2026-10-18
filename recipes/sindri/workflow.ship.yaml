@@ -1,0 +1,26 @@
+schema: 1
+id: workflow.ship
+version: 1
+description: "TEMPORARY STAND-IN until sindri-engine's workflow.ship (line spec App. C.5) lands: one descriptor-only Step with the real inputs, outputs and terminals."
+inputs:
+  - { key: fact:phasePacket, label: "Phase packet",  type: packet,  kind: packet }
+  - { key: fact:proofPack,   label: "Proof pack",    type: packet,  kind: packet }
+  - { key: fact:review,      label: "Review result", type: payload, kind: payload }
+  - { key: fact:workspace,   label: "Workspace",     type: text,    kind: text }
+  - { key: fact:lineContext, label: "Line context",  type: payload, kind: payload }
+outputs:
+  - { key: fact:pr,          label: "Pull request",     type: link,    from: run }
+  - { key: fact:handoff,     label: "PR hand-off",      type: packet,  from: run }
+  - { key: fact:returnNotes, label: "Why it went back", type: payload, from: run }
+initial: run
+states:
+  run:      { kind: active, step: step.standin.ship, timeout: { after: 1d, then: park },
+              next: "Stand-in for {item}'s ship: the GREEN gate, then the pull request." }
+  shipped:  { kind: terminal, outcome: resolved }
+  returned: { kind: terminal, outcome: unresolved }
+  refused:  { kind: terminal, outcome: failed }
+transitions:
+  - { from: run, to: shipped,  on: step.completed, when: { outcome: shipped },  produces: [fact:pr, fact:handoff] }
+  - { from: run, to: returned, on: step.completed, when: { outcome: returned }, produces: [fact:returnNotes] }
+  - { from: run, to: refused,  on: step.completed, when: { outcome: refused } }
+evals: [evals/workflow.ship/happy.jsonl, evals/workflow.ship/returned.jsonl, evals/workflow.ship/refused.jsonl]

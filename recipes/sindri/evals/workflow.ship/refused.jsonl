@@ -1,0 +1,2 @@
+{"start":{"inputs":{"fact:phasePacket":{"phase":"1"},"fact:proofPack":{"phase":"1"},"fact:review":{"blocking":0},"fact:workspace":"/work/phase-1","fact:lineContext":{"base":"origin/main"}}}}
+{"trigger":{"kind":"step.completed","outcome":"refused"},"expect":{"state":"refused","outcome":"failed"}}
