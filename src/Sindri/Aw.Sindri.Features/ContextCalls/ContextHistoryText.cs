@@ -1,8 +1,8 @@
 using System.Text;
 using Aw.Context.Core.History;
-using static Aw.Sindri.Host.Text.ContextLensText;
+using static Aw.Sindri.Features.ContextCalls.ContextLensText;
 
-namespace Aw.Sindri.Host.Text;
+namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>
 /// Plain text for 'context history': every state is a word ('ok', 'not-configured', 'leaky'), never colour. A human's answer carries clean labels beside their trust, so the text

@@ -15,7 +15,7 @@ public sealed class ContextHistoryTextTests
 {
     private static readonly DateTimeOffset _at = new(2026, 7, 20, 10, 0, 0, TimeSpan.Zero);
 
-    private static HistoryView View()
+    internal static HistoryView View()
     {
         var split = NodeKey.From("feature:layout.split-pane");
         var record = new HistoryRecord(NodeKey.From("record:linear:issue/0203"), "Ticket 0203", "linear", [split], Trust.Untrusted, CitationState.Unchecked, [], [split], _at.AddDays(-30), _at.AddDays(3), _at, Leaky: true);

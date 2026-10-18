@@ -14,13 +14,8 @@ internal static class PendingInputs
     /// <summary>'input.context.code': the files, tests, data, callers and callees for the anchors (C3).</summary>
     public static BlockDescriptor Code { get; } = Input("input.context.code", Anchors);
 
-    /// <summary>'input.context.history': the records, decisions, changes and incidents for the anchors, inside a window (C5).</summary>
-    public static BlockDescriptor History { get; } = Input("input.context.history", Anchors, Window);
-
     private static ParameterSpec Anchors => new("anchors", ParameterType.Text, Required: true, IsCapabilityField: false);
 
-        private static ParameterSpec Window => new("window", ParameterType.Text, Required: false, IsCapabilityField: false);
-
-    private static BlockDescriptor Input(string id, params ParameterSpec[] parameters) => new(
+        private static BlockDescriptor Input(string id, params ParameterSpec[] parameters) => new(
         BlockId.From(id), BlockKind.StepInput, Version: 1, Inputs: [], Outputs: [], Outcomes: [], Capability.Tools, parameters, Rung: null, DeskCapable: false);
 }

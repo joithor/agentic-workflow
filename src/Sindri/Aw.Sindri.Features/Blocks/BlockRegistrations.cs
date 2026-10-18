@@ -86,6 +86,6 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(ScopingSteps.Withdraw)
         .AddScoped<Input.ContextInputScopes>()
         .AddStepInput<Input.ContextLensesInput>()
-        .AddBlockDescriptor(PendingInputs.Code)
-        .AddBlockDescriptor(PendingInputs.History);
+        .AddStepInput<Input.ContextHistoryInput>()
+        .AddBlockDescriptor(PendingInputs.Code);
 }
