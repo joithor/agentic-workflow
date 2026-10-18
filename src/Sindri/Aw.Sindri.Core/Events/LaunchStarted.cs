@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -19,5 +20,5 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="CatalogSource">Where the entry came from.</param>
 /// <param name="ArgvHash">The hash of the entry's argv template.</param>
 public sealed record LaunchStarted(
-    LaunchId Launch, ItemId Item, LaunchMode Mode, AgentId Target, SessionId? SessionId, string TabTitle, LaunchViewer Viewer,
+    [property: JsonPropertyName("launchId")] LaunchId Launch, ItemId Item, LaunchMode Mode, AgentId Target, SessionId? SessionId, string TabTitle, LaunchViewer Viewer,
     IReadOnlyList<string> Attach, CatalogSource CatalogSource, string ArgvHash);
