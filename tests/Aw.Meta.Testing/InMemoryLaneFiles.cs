@@ -18,6 +18,13 @@ public sealed class InMemoryLaneFiles : ILaneFiles
     }
 
     /// <inheritdoc />
+    public ValueTask<Result<Unit>> RecordSession(string lane, Core.Ids.SessionId session, DateTimeOffset at, CancellationToken cancellationToken)
+    {
+        _records[lane] = (_records.GetValueOrDefault(lane) ?? new LaneRecord(lane, Session: null, Agent: null)) with { Session = session, RecordedAt = at, Ambiguous = false };
+        return Done.Unit();
+    }
+
+    /// <inheritdoc />
     public ValueTask<Result<LaneRecord?>> Record(string lane, CancellationToken cancellationToken) =>
         Done.Of(_records.GetValueOrDefault(lane));
 }
