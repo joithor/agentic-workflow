@@ -25,6 +25,7 @@ internal sealed partial class RecipeWorkflow
     private string? _filled;
     private InjectionPlan _injection = InjectionPlan.Empty;
     private List<InjectionFill> _fills = [];
+    private bool _textsKept;
 
     /// <summary>The open run's fills (the pull route's source): metadata and the requests, never text. Empty when the run filled nothing.</summary>
     /// <returns>The state, the run token and the fills.</returns>
@@ -56,6 +57,7 @@ internal sealed partial class RecipeWorkflow
         }
 
         List<InjectionFill> fills = [];
+        _textsKept = true;   // from the first activity on, the process may hold text for this instance
         for (var n = 1; n <= step.Inputs.Count; n++)
         {
             var request = new FillInputRequest(instance.Address.Value, instance.Frame.State, open.Token.Value, n, step.Inputs[n - 1].Use, step.Use, step.Inputs[n - 1].With, instance.Facts, _repo);
@@ -65,12 +67,14 @@ internal sealed partial class RecipeWorkflow
             }
             catch (ActivityFailureException e) when (e.InnerException is ApplicationFailureException { ErrorType: var type } && string.Equals(type, WorkflowErrors.StepInputNoRuntime.Code, StringComparison.Ordinal))
             {
+                await DropTexts(instance.Address.Value).ConfigureAwait(true);
                 return new Filling(Failed: null, await ParkNoRuntime(instance, open, step, request.Input).ConfigureAwait(true));
             }
             catch (ActivityFailureException e) when (e.InnerException is not CanceledFailureException)
             {
                 var code = e.InnerException is ApplicationFailureException { ErrorType: { } t } ? t : "failed";   // never the message: it could carry text
                 var reason = $"input {request.Input.Value} failed: {code}";
+                await DropTexts(instance.Address.Value).ConfigureAwait(true);
                 return new Filling(new StepFailed("engine:inputs", open.Token, reason, Tokens: 0, Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(reason)))), Parked: null);
             }
         }
@@ -78,6 +82,25 @@ internal sealed partial class RecipeWorkflow
         _fills = fills;
         _injection = InjectionPlans.Merge([.. fills.Select(static f => f.Recorded)]);
         return default;
+    }
+
+    /// <summary>
+    /// Drops the process's kept text for this instance once its Step has ended (engine condition 2: a cancelled or failed Step leaks
+    /// no entries). A local activity, so workflow code stays free of side effects, detached from the workflow's cancellation so a
+    /// cancelled instance still cleans up. Does nothing when no input ran, so a history without fills gets no new command.
+    /// </summary>
+    /// <param name="address">The instance address.</param>
+    private async Task DropTexts(string address)
+    {
+        if (!_textsKept)
+        {
+            return;
+        }
+
+        _textsKept = false;
+        await Workflow.ExecuteLocalActivityAsync(
+            (StepInputActivities a) => a.DropInjectionAsync(address),
+            new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(10), CancellationToken = CancellationToken.None }).ConfigureAwait(true);
     }
 
     private static ActivityOptions FillOptions(OpenRun open, int n, RecipeState state) => new()

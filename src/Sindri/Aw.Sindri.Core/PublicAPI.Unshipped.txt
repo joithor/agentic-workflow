@@ -9251,3 +9251,6 @@ override Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.ToString() -> string
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefills.Texts(Aw.Sindri.Core.Workflow.Engine.Runtime.IInjectionTexts! texts, Aw.Sindri.Core.Workflow.Engine.Runtime.IStepInputRunner! runner, Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill! refill, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.FilledTexts!>!>
+Aw.Sindri.Core.Workflow.Blocks.IProveEcho
+Aw.Sindri.Core.Workflow.Blocks.IProveEcho.Log(string! line, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+Aw.Sindri.Core.Workflow.Blocks.IProveEcho.ReadText(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<string!>

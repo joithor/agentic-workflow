@@ -42,6 +42,11 @@ internal sealed class StepInputActivities(IStepInputRunner runner, IInjectionTex
         return filled.Value.Metadata;
     }
 
+    /// <summary>Drops the instance's kept texts: its Step ended (done, failed, parked or cancelled).</summary>
+    /// <param name="address">The instance address.</param>
+    [Activity("DropInjection")]
+    public void DropInjectionAsync(string address) => texts.Drop(address);
+
     /// <summary>The failure an input's throw becomes: its type only, never its message or stack, which could carry the text it filled.</summary>
     private static ApplicationFailureException Failed(FillInputRequest request, Exception thrown) =>
         new($"input {request.Input.Value} failed", errorType: thrown.GetType().Name);

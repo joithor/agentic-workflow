@@ -77,6 +77,19 @@ internal sealed partial class RecipeWorkflow
     /// </summary>
     private async Task<WorkflowInstance> RunDeskStep(WorkflowInstance instance, OpenRun open, Interpreting context)
     {
+        try
+        {
+            return await RunDeskStepOnce(instance, open, context).ConfigureAwait(true);
+        }
+        catch (OperationCanceledException) when (_textsKept) // boundary: the workflow was cancelled while a Step with inputs was open; its texts go with it
+        {
+            await DropTexts(instance.Address.Value).ConfigureAwait(true);
+            throw;
+        }
+    }
+
+    private async Task<WorkflowInstance> RunDeskStepOnce(WorkflowInstance instance, OpenRun open, Interpreting context)
+    {
         var filling = await FillInputs(instance, open, context.Recipe.States[instance.Frame.State]).ConfigureAwait(true);
         if (filling.Parked is { } parked)
         {
@@ -85,8 +98,16 @@ internal sealed partial class RecipeWorkflow
 
         if ((filling.Failed ?? await RunStep(instance, open, context.Recipe.States[instance.Frame.State]).ConfigureAwait(true)) is not { } trigger)
         {
-            return await ApplySubmitted(instance, context).ConfigureAwait(true);
+            var applied = await ApplySubmitted(instance, context).ConfigureAwait(true);
+            if (!string.Equals(applied.Frame.State, instance.Frame.State, StringComparison.Ordinal))
+            {
+                await DropTexts(instance.Address.Value).ConfigureAwait(true);   // a command moved the instance out of the Step's state
+            }
+
+            return applied;
         }
+
+        await DropTexts(instance.Address.Value).ConfigureAwait(true);   // the Step ended: its report, its failure or its deadline
 
         var reportId = _reportId;
         _reportId = null;

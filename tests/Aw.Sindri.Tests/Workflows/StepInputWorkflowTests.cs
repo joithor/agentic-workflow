@@ -2,6 +2,8 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Tests.CompleteStep;
 using Aw.Sindri.Tests.Workflows.Inputs;
@@ -123,6 +125,56 @@ public sealed class StepInputWorkflowTests(SindriTimeSkippingServer server) : IC
 
             Assert.Null(replay.ReplayFailure);
             Assert.Equal(calls, _probe.Calls.Count);
+        });
+    }
+
+    [Fact]
+    public async Task Texts_are_kept_while_the_Step_is_open_and_dropped_when_it_ends()
+    {
+        await Run("T-76", [ProbeInput.Id], async run =>
+        {
+            var task = await run.Desk.Until(static v => v.Task is not null);
+            var texts = run.Desk.Sindri.GetRequiredService<IInjectionTexts>();
+            var key = new InjectionKey(run.Handle.Id, "checks", task.Run!.Value.Value, BlockId.From(ProbeInput.Id));
+
+            Assert.Equal(InputProbe.Planted, texts.Get(key)!.Sections["notes"]);
+            _ = await run.Desk.Complete("--run", task.Run.Value.Value, "--outcome", "passed");
+            _ = await run.Handle.GetResultAsync();
+
+            Assert.Null(texts.Get(key));
+        });
+    }
+
+    [Fact]
+    public async Task A_cancelled_instance_drops_its_texts()
+    {
+        await Run("T-77", [ProbeInput.Id], async run =>
+        {
+            var task = await run.Desk.Until(static v => v.Task is not null);
+            var texts = run.Desk.Sindri.GetRequiredService<IInjectionTexts>();
+            var key = new InjectionKey(run.Handle.Id, "checks", task.Run!.Value.Value, BlockId.From(ProbeInput.Id));
+            Assert.NotNull(texts.Get(key));
+
+            await run.Handle.CancelAsync();
+            _ = await Assert.ThrowsAnyAsync<Exception>(() => run.Handle.GetResultAsync());
+
+            Assert.Null(texts.Get(key));
+        });
+    }
+
+    [Fact]
+    public async Task A_later_input_that_fails_drops_the_texts_the_earlier_inputs_filled()
+    {
+        _probe.Behavior = static c => string.Equals(c.Input.Value, SecondProbeInput.Id, StringComparison.Ordinal)
+            ? throw new InvalidOperationException("second fails")
+            : new InjectionSections(new Dictionary<string, string>(StringComparer.Ordinal) { ["notes"] = InputProbe.Planted });
+        await Run("T-78", [ProbeInput.Id, SecondProbeInput.Id], async run =>
+        {
+            var result = await run.Handle.GetResultAsync();
+            var texts = run.Desk.Sindri.GetRequiredService<IInjectionTexts>();
+
+            Assert.Equal("broken", result.State);
+            Assert.Null(texts.Get(new InjectionKey(run.Handle.Id, "checks", "1.1", BlockId.From(ProbeInput.Id))));
         });
     }
 
