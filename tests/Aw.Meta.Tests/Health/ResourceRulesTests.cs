@@ -20,16 +20,13 @@ public sealed class ResourceRulesTests
         Assert.Equal(low, ResourceRules.DiskLow(Host(diskGb: diskGb), _limits));
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData(7, 0, false, true)]
-    [InlineData(8, 0, false, false)]
-    [InlineData(16, 8, true, false)]   // 8 of 8 GB of swap is 100%
-    [InlineData(16, 7, false, false)]  // 7 of 8 GB is 87%
-    public void Memory_is_low_below_the_floor_or_when_swap_is_nearly_full(long memGb, long swapUsedGb, bool swapHigh, bool floorLow) =>
-        Assert.Equal(floorLow || swapHigh, ResourceRules.MemoryLow(Host(memGb: memGb, swapUsedGb: swapUsedGb), _limits));
-
-    [Fact, Trait("Lane", "unit")]
-    public void A_host_with_no_swap_never_trips_the_swap_rule() =>
-        Assert.False(ResourceRules.MemoryLow(Host(swapUsedGb: 0, swapTotalGb: 0), _limits));
+    [InlineData(7, 0, true)]
+    [InlineData(8, 0, false)]    // exactly at the floor is not low
+    [InlineData(16, 8, false)]   // swap 100% full with RAM to spare is not low
+    [InlineData(16, 7, false)]
+    [InlineData(7, 8, true)]     // RAM under the floor is low whatever swap is
+    public void Memory_is_low_only_when_available_ram_is_under_the_floor(long memGb, long swapUsedGb, bool low) =>
+        Assert.Equal(low, ResourceRules.MemoryLow(Host(memGb: memGb, swapUsedGb: swapUsedGb), _limits));
 
     [Fact, Trait("Lane", "unit")]
     public void Swap_used_is_a_share_of_the_total() =>
@@ -73,11 +70,11 @@ public sealed class ResourceRulesTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Nearly_full_swap_means_one_builder_like_the_watchs_memory_low()
+    public void Full_swap_with_ram_to_spare_keeps_the_configured_builders()
     {
-        var advice = BuilderAdvice.Compute(Host(diskGb: 900, memGb: 40, swapUsedGb: 8), _limits, new BuildersConfig(), lanes: 2);
+        var advice = BuilderAdvice.Compute(Host(diskGb: 900, memGb: 14, swapUsedGb: 8), _limits, new BuildersConfig(), lanes: 2);
 
-        Assert.Equal((1, BuilderAdvice.MemoryLimit), (advice.PerLane, advice.Limit));
+        Assert.Equal((4, null), (advice.PerLane, advice.Limit));
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -11,4 +11,12 @@ public interface ILaneFiles
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The record, or null when the launcher left nothing for the lane. A file that can't be read counts as absent.</returns>
     public ValueTask<Result<LaneRecord?>> Record(string lane, CancellationToken cancellationToken);
+
+    /// <summary>Records the session id a lane now runs, the way the session-id hook does (atomically, owner-only), so a relaunch resumes it.</summary>
+    /// <param name="lane">The lane name.</param>
+    /// <param name="session">The session id.</param>
+    /// <param name="at">When it was recorded (the in-memory fake keeps it; the directory adapter uses the file's own time).</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>Success, or AW-META-012 when the file can't be written or the lane name is not one.</returns>
+    public ValueTask<Result<Unit>> RecordSession(string lane, Ids.SessionId session, DateTimeOffset at, CancellationToken cancellationToken);
 }
