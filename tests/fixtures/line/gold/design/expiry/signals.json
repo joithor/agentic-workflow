@@ -81,7 +81,7 @@
         "runsAt": "head"
       }
     ],
-    "RG-1": [
+    "AC-8": [
       {
         "id": "SG-R1a",
         "kind": "api-transcript",
@@ -89,7 +89,7 @@
         "runsAt": "base+head"
       }
     ],
-    "RG-2": [
+    "AC-9": [
       {
         "id": "SG-R2a",
         "kind": "api-transcript",
@@ -97,7 +97,7 @@
         "runsAt": "base+head"
       }
     ],
-    "RG-3": [
+    "AC-10": [
       {
         "id": "SG-R3a",
         "kind": "api-transcript",
@@ -105,7 +105,7 @@
         "runsAt": "base+head"
       }
     ],
-    "RG-4": [
+    "AC-11": [
       {
         "id": "SG-R4a",
         "kind": "api-transcript",

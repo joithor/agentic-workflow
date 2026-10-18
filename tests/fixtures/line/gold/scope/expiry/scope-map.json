@@ -204,7 +204,7 @@
       "title": "Email digest",
       "detail": "Digest notice, found only after the owner's answer.",
       "citations": [
-        "L-product-5"
+        "A2"
       ],
       "trust": "owner",
       "lens": "product",
@@ -217,7 +217,7 @@
       "title": "Weekly digest email",
       "detail": "Where a notice before expiry would go.",
       "citations": [
-        "L-product-6"
+        "A2"
       ],
       "trust": "owner",
       "lens": "product",
@@ -230,7 +230,7 @@
       "title": "Send the weekly digest",
       "detail": "Builds the digest mail.",
       "citations": [
-        "L-product-7"
+        "A2"
       ],
       "trust": "owner",
       "lens": "product",
@@ -243,7 +243,7 @@
       "title": "Nightly job",
       "detail": "Runs the digest.",
       "citations": [
-        "L-product-8"
+        "A2"
       ],
       "trust": "owner",
       "lens": "product",
@@ -256,7 +256,7 @@
       "title": "digest.ts",
       "detail": "Would list expiring links.",
       "citations": [
-        "L-code-12"
+        "A2"
       ],
       "trust": "owner",
       "lens": "code",
@@ -269,7 +269,7 @@
       "title": "nightly.ts",
       "detail": "Schedules it.",
       "citations": [
-        "L-code-13"
+        "A2"
       ],
       "trust": "owner",
       "lens": "code",
@@ -282,7 +282,7 @@
       "title": "Expiry choice in the Share dialog",
       "detail": "New: Expiry choice in the Share dialog, on surface:screen/share-dialog.",
       "citations": [
-        "S4"
+        "L-code-4"
       ],
       "trust": "untrusted",
       "lens": "code",
@@ -295,7 +295,7 @@
       "title": "The page an expired link shows",
       "detail": "New: The page an expired link shows, on surface:route/link-resolve.",
       "citations": [
-        "S3"
+        "L-code-3"
       ],
       "trust": "untrusted",
       "lens": "code",
@@ -307,13 +307,21 @@
     {
       "id": "R1",
       "text": "Decision 0001 (shared links never expire) is reversed for links that choose a time.",
+      "citations": [
+        "L-history-1"
+      ],
       "surfaces": [
         "S1"
       ]
     },
     {
       "id": "R2",
-      "text": "A link can end two ways, revoked or expired; both must end it.",
+      "text": "A link can end two ways, revoked or expired; both must end it, and expiry is not behind the linkRevocation flag.",
+      "citations": [
+        "L-product-1",
+        "L-product-2",
+        "A1"
+      ],
       "surfaces": [
         "S3",
         "S13"
@@ -322,6 +330,10 @@
     {
       "id": "R3",
       "text": "Links made before this change must keep working.",
+      "citations": [
+        "L-code-3",
+        "A1"
+      ],
       "surfaces": [
         "S3"
       ]
@@ -355,48 +367,42 @@
       ]
     }
   ],
-  "flagged": [
-    {
-      "key": "feature:sharing.link-revocation",
-      "flag": "linkRevocation",
-      "note": "Revocation is behind a flag; expiry is not (owner answer, round 1)."
-    }
-  ],
+  "flagged": [],
   "excluded": [
     {
-      "key": "feature:export",
+      "item": "feature:export",
       "reason": "Export never reads links."
     },
     {
-      "key": "surface:route/export-download",
+      "item": "surface:route/export-download",
       "reason": "Same."
     },
     {
-      "key": "surface:screen/export",
+      "item": "surface:screen/export",
       "reason": "Same."
     },
     {
-      "key": "feature:audit-report",
+      "item": "feature:audit-report",
       "reason": "The report counts entries; expiry adds no new action it needs."
     },
     {
-      "key": "surface:route/audit-report",
+      "item": "surface:route/audit-report",
       "reason": "Same."
     },
     {
-      "key": "surface:screen/audit-report",
+      "item": "surface:screen/audit-report",
       "reason": "Same."
     },
     {
-      "key": "surface:setting/auditReport",
+      "item": "surface:setting/auditReport",
       "reason": "Same."
     },
     {
-      "key": "feature:trash",
+      "item": "feature:trash",
       "reason": "Trash purges notes, not links."
     },
     {
-      "key": "action:trash.purge",
+      "item": "action:trash.purge",
       "reason": "Same."
     }
   ],

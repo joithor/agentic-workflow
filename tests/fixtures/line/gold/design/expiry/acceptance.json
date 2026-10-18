@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "parent": "sha256:902302a86a1c15a279ee4b45d280a3442ce34840d7e332cd95aa2655b08398d6",
+  "parent": "sha256:96d38c8b7f5e63a37f5f78f95adfe9a34f172d10db3043854f7e0ac939c8dd8d",
   "items": [
     {
       "id": "AC-1",
@@ -114,7 +114,7 @@
       "parent": null
     },
     {
-      "id": "RG-1",
+      "id": "AC-8",
       "text": "When an editor revokes a link, the system shall stop returning its note, as it does today.",
       "form": "event",
       "surfaces": [
@@ -129,7 +129,7 @@
       "parent": null
     },
     {
-      "id": "RG-2",
+      "id": "AC-9",
       "text": "When the digest is built for a week with no changed note, the system shall send nothing.",
       "form": "event",
       "surfaces": [
@@ -144,7 +144,7 @@
       "parent": null
     },
     {
-      "id": "RG-3",
+      "id": "AC-10",
       "text": "If a viewer tries to create a link, the system shall refuse, as it does today.",
       "form": "unwanted",
       "surfaces": [
@@ -159,7 +159,7 @@
       "parent": null
     },
     {
-      "id": "RG-4",
+      "id": "AC-11",
       "form": "event",
       "text": "When a team's notes are exported, the system shall produce the same output as before this change, whether or not a note has a link with an expiry time.",
       "surfaces": [
