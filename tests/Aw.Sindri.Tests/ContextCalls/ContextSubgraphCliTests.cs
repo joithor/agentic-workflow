@@ -23,7 +23,7 @@ public sealed class ContextSubgraphCliTests
         Assert.True(long_.UsePost);
     }
 
-    [Fact, Trait("Lane", "unit")]
+    [Fact, Trait("Lane", "integration")]   // writes a temp file
     public void Cli_subgraph_keys_from_stdin_and_a_file_skip_blank_lines_and_comments_and_join_the_words()
     {
         var file = Path.GetTempFileName();
