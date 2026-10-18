@@ -12,6 +12,14 @@ namespace Aw.Context.Testing.Code;
 public sealed class FakeCodeSearch(ContextRepo known, string head, IReadOnlyDictionary<string, string> files) : ICodeSearch
 {
     /// <inheritdoc/>
+    public ValueTask<Result<string>> Resolve(ContextRepo repo, string commit, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(repo);
+        ArgumentNullException.ThrowIfNull(commit);
+        return ValueTask.FromResult<Result<string>>(repo.Name == known.Name && commit.Length >= 7 && head.StartsWith(commit, StringComparison.Ordinal) ? head : ContextErrors.CommitUnknown.With("the fake holds no such commit"));
+    }
+
+    /// <inheritdoc/>
     public ValueTask<Result<CodeSearchHits>> FilesNaming(CodeSearchQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);

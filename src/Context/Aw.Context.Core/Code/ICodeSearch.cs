@@ -1,3 +1,4 @@
+using Aw.Context.Core.Engine;
 using Aw.Kernel;
 
 namespace Aw.Context.Core.Code;
@@ -13,4 +14,11 @@ public interface ICodeSearch
     /// <param name="cancellationToken">Cancels the search.</param>
     /// <returns>The paths; SND-CONTEXT-110 when the clone holds no such commit; SND-CONTEXT-006 for a term that is empty, too long or has a control character; SND-CONTEXT-048 when git cannot read the checkout.</returns>
     public ValueTask<Result<CodeSearchHits>> FilesNaming(CodeSearchQuery query, CancellationToken cancellationToken);
+
+    /// <summary>Resolves a commit (full or abbreviated sha) to its full sha once, so a search that follows need not ask again.</summary>
+    /// <param name="repo">The repo.</param>
+    /// <param name="commit">The commit.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The full sha; SND-CONTEXT-110 when the clone holds no such commit; SND-CONTEXT-048 when git cannot read the checkout.</returns>
+    public ValueTask<Result<string>> Resolve(ContextRepo repo, string commit, CancellationToken cancellationToken);
 }

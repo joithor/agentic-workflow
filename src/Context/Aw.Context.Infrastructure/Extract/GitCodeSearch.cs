@@ -1,5 +1,6 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Code;
+using Aw.Context.Core.Engine;
 using Aw.Context.Infrastructure.Git;
 using Aw.Kernel;
 
@@ -15,10 +16,10 @@ internal sealed class GitCodeSearch(GitCli git) : ICodeSearch
     public async ValueTask<Result<CodeSearchHits>> FilesNaming(CodeSearchQuery query, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        var commit = await git.Commit(query.Repo.Path, query.Commit, cancellationToken).ConfigureAwait(false);
+        var commit = query.Resolved ? Results.Success(query.Commit) : await git.Commit(query.Repo.Path, query.Commit, cancellationToken).ConfigureAwait(false);
         if (commit.IsError)
         {
-            return Failure(query, commit.Error);
+            return Failure(query.Repo, commit.Error);
         }
 
         if (query.TermsProblem() is { } problem)
@@ -40,7 +41,7 @@ internal sealed class GitCodeSearch(GitCli git) : ICodeSearch
                 var grep = await git.GrepFiles(query.Repo.Path, commit.Value, terms, paths, cancellationToken).ConfigureAwait(false);
                 if (grep.IsError)
                 {
-                    return Unreadable(query);
+                    return Unreadable(query.Repo);
                 }
 
                 found.UnionWith(grep.Value.Where(p => !query.Repo.Denies(p)));
@@ -51,15 +52,22 @@ internal sealed class GitCodeSearch(GitCli git) : ICodeSearch
         return new CodeSearchHits([.. ordered.Take(query.Max)], ordered.Count > query.Max);
     }
 
+    public async ValueTask<Result<string>> Resolve(ContextRepo repo, string commit, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(repo);
+        var resolved = await git.Commit(repo.Path, commit, cancellationToken).ConfigureAwait(false);
+        return resolved.IsError ? Failure(repo, resolved.Error) : resolved;
+    }
+
     private static IEnumerable<IReadOnlyList<string>?> Chunks(List<string>? within) =>
         within is null ? [null] : within.Chunk(CodeRules.MaxTermsPerCall).Cast<IReadOnlyList<string>?>();
 
     // 110 is the caller's to fix and says which repo; any other git failure is the checkout (048). Neither prints what git said.
-    private static Error Failure(CodeSearchQuery query, Error error) =>
+    private static Error Failure(ContextRepo repo, Error error) =>
         error.Code == ContextErrors.CommitUnknown.Code
-            ? ContextErrors.CommitUnknown.With($"the clone of {query.Repo.Name.Value} holds no such commit, or an abbreviation of it is ambiguous or spelled like a ref (fix: fetch that commit into the profile repo's checkout, or pass the full sha)")
-            : Unreadable(query);
+            ? ContextErrors.CommitUnknown.With($"the clone of {repo.Name.Value} holds no such commit, or an abbreviation of it is ambiguous or spelled like a ref (fix: fetch that commit into the profile repo's checkout, or pass the full sha)")
+            : Unreadable(repo);
 
-    private static Error Unreadable(CodeSearchQuery query) =>
-        ContextErrors.ExtractionUnreadable.With($"git can't search {query.Repo.Name.Value} (fix: check the checkout and that the commit exists)");
+    private static Error Unreadable(ContextRepo repo) =>
+        ContextErrors.ExtractionUnreadable.With($"git can't search {repo.Name.Value} (fix: check the checkout and that the commit exists)");
 }

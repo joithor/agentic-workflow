@@ -5365,3 +5365,6 @@ Aw.Context.Core.Code.CodeLexicalFindings.TestsTruncated.get -> bool
 Aw.Context.Core.Code.CodeLexicalFindings.TestsTruncated.init -> void
 Aw.Context.Core.Code.CodeLexicalFindings.SchemaTruncated.get -> bool
 Aw.Context.Core.Code.CodeLexicalFindings.SchemaTruncated.init -> void
+Aw.Context.Core.Code.CodeSearchQuery.Resolved.get -> bool
+Aw.Context.Core.Code.CodeSearchQuery.Resolved.init -> void
+Aw.Context.Core.Code.ICodeSearch.Resolve(Aw.Context.Core.Engine.ContextRepo! repo, string! commit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>

@@ -19,7 +19,7 @@ internal sealed class LexicalCandidates(ICodeSearch search, IRepoReader repos)
         {
             foreach (var within in query.Within.Chunk(Chunk))
             {
-                var hits = await search.FilesNaming(new CodeSearchQuery(run.Repo, run.Commit, terms, within, query.Max), cancellationToken).ConfigureAwait(false);
+                var hits = await search.FilesNaming(new CodeSearchQuery(run.Repo, run.Commit, terms, within, query.Max) { Resolved = true }, cancellationToken).ConfigureAwait(false);
                 if (hits.IsError)
                 {
                     run.Pass.Fail(hits.Error.Code, hits.Error.Code == ContextErrors.CommitUnknown.Code, query.Source);

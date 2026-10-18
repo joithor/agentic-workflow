@@ -1,4 +1,5 @@
 using Aw.Context.Core.Code;
+using Aw.Context.Core.Engine;
 using Aw.Kernel;
 
 namespace Aw.Context.Tests.GetCode;
@@ -13,4 +14,6 @@ internal sealed class RecordingCodeSearch(ICodeSearch inner) : ICodeSearch
         Queries.Add(query);
         return inner.FilesNaming(query, cancellationToken);
     }
+
+    public ValueTask<Result<string>> Resolve(ContextRepo repo, string commit, CancellationToken cancellationToken) => inner.Resolve(repo, commit, cancellationToken);
 }

@@ -11,7 +11,7 @@ namespace Aw.Context.Features.GetCode;
 /// working tree) within the profile's deadline. File level: a path and the form that matched leave this class, never a line or text. A repo that can't be read, a commit the clone lacks or an expired
 /// deadline is a row of 'searched', never an error of the route.
 /// </summary>
-internal sealed class CodeLexicalSearch(IRepoReader repos, LexicalTestsRule tests, LexicalSchemaRule schema, TimeProvider clock)
+internal sealed class CodeLexicalSearch(IRepoReader repos, ICodeSearch search, LexicalTestsRule tests, LexicalSchemaRule schema, TimeProvider clock)
 {
     internal async ValueTask<CodeLexicalFindings> Find(CodeLexicalRequest request, CancellationToken cancellationToken)
     {
@@ -101,11 +101,19 @@ internal sealed class CodeLexicalSearch(IRepoReader repos, LexicalTestsRule test
             return;
         }
 
+        var resolved = await search.Resolve(repo, commit, cancellationToken).ConfigureAwait(false);
+        if (resolved.IsError)
+        {
+            // Only a commit the clone really lacks is a recorded limit (110); a checkout git can't read, or anything else, is degraded with its own code.
+            pass.Fail(resolved.Error.Code, commitNotHeld: resolved.Error.Code == ContextErrors.CommitUnknown.Code, source: null);
+            return;
+        }
+
+        commit = resolved.Value;
         var listed = await repos.ListFiles(repo, commit, cancellationToken).ConfigureAwait(false);
         if (listed.IsError)
         {
-            // A commit the map named that the clone can't list is a commit it doesn't hold; HEAD failing to list is a checkout git can't read.
-            pass.Fail(mapCommit is null ? listed.Error.Code : ContextErrors.CommitUnknown.Code, commitNotHeld: mapCommit is not null, source: null);
+            pass.Fail(listed.Error.Code, commitNotHeld: false, source: null);
             return;
         }
 

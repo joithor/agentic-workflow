@@ -71,8 +71,9 @@ internal static class Engines
     // The code lens over an empty repo: nothing to find, but the engine facade is whole.
     private static CodeLexicalSearch Lexical(FakeRepoReader repos, TimeProvider clock)
     {
-        var candidates = new LexicalCandidates(new FakeCodeSearch(Repos[0], "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567", new Dictionary<string, string>(StringComparer.Ordinal)), repos);
-        return new CodeLexicalSearch(repos, new LexicalTestsRule(candidates), new LexicalSchemaRule(candidates), clock);
+        var search = new FakeCodeSearch(Repos[0], "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567", new Dictionary<string, string>(StringComparer.Ordinal));
+        var candidates = new LexicalCandidates(search, repos);
+        return new CodeLexicalSearch(repos, search, new LexicalTestsRule(candidates), new LexicalSchemaRule(candidates), clock);
     }
 
     private static EvalProbesService Probes(TimeProvider clock) => new(new NoProbes(), new NoProbes(), clock);

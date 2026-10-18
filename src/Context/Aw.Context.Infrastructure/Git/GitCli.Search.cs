@@ -21,7 +21,7 @@ internal sealed partial class GitCli
         }
 
         string[] args = ["grep", "-l", "-I", "-i", "-F", "-z", "--no-color", .. terms.SelectMany(t => new[] { "-e", t }), commit, "--", .. (within ?? []).Select(p => ":(literal)" + p)];
-        var run = await Run(repo, args, cancellationToken).ConfigureAwait(false);
+        var run = await Run(repo, args, cancellationToken, locale: "C.UTF-8").ConfigureAwait(false);   // UTF-8 so -i folds non-ASCII letters too
         return run switch
         {
             { IsError: true } => run.Error,

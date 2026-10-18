@@ -97,6 +97,21 @@ public sealed class GetCodeReviewTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_commit_that_cannot_be_resolved_for_a_reason_other_than_missing_is_degraded_not_commit_not_held()
+    {
+        using var world = new CodeWorld(decorate: inner => new FailingSearch(inner, _ => false, resolveFails: true));
+        _ = await world.ImportSharing(commit: MapWorld.Head);
+
+        var view = (await world.Code()).Value;
+
+        foreach (var id in new[] { "lexical-tests", "lexical-schema" })
+        {
+            var row = Row(view, id);
+            Assert.Equal((SearchedState.Degraded, ContextErrors.ExtractionUnreadable.Code, null), (row.State, row.Code, row.Reason));
+        }
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_repo_that_cannot_give_its_head_degrades_both_rows_with_048()
     {
         using var world = new CodeWorld(decorateRepo: inner => new FailingRepo(inner, head: true, list: false));

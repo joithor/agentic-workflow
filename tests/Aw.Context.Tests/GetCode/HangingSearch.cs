@@ -1,4 +1,5 @@
 using Aw.Context.Core.Code;
+using Aw.Context.Core.Engine;
 using Aw.Kernel;
 
 namespace Aw.Context.Tests.GetCode;
@@ -11,4 +12,6 @@ internal sealed class HangingSearch : ICodeSearch
         await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
         return new CodeSearchHits([], Truncated: false);
     }
+
+    public ValueTask<Result<string>> Resolve(ContextRepo repo, string commit, CancellationToken cancellationToken) => ValueTask.FromResult<Result<string>>(commit);
 }

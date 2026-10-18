@@ -268,5 +268,7 @@ public sealed class GetCodeTests : IDisposable
             await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
             return new CodeSearchHits([], Truncated: false);
         }
+
+        public ValueTask<Result<string>> Resolve(ContextRepo repo, string commit, CancellationToken cancellationToken) => ValueTask.FromResult<Result<string>>(commit);
     }
 }
