@@ -55,7 +55,10 @@ public sealed class StartupFocusTests : IDisposable
                 }
 
                 Assert.Equal(Enum.Parse<PageId>(name), shell.CurrentPage);
-                Assert.Same(window.Get<Border>("Page"), window.FocusManager?.GetFocusedElement());
+                Control expected = name == "Context"
+                    ? window.Get<Control>("ContextPage").FindControl<TextBox>("AnchorBox")!
+                    : window.Get<Border>("Page");
+                Assert.Same(expected, window.FocusManager?.GetFocusedElement());
             }
             finally
             {
@@ -123,6 +126,22 @@ public sealed class StartupFocusTests : IDisposable
         shell.Navigate(link);   // a second launch's link is delivered right after Show, before Run connects
         Settle();   // the window's startup posts run while the shell is still not connected
         _ = shell.Run(_stop.Token);
+        Settle();
+
+        Assert.True(shell.IsSheetShown);
+        Assert.Same(window.Get<Border>("SheetTitle"), window.FocusManager?.GetFocusedElement());
+    });
+
+    [Fact]
+    public Task An_opened_sheet_takes_the_heading_when_the_window_itself_holds_focus() => WithWindow((window, shell) =>
+    {
+        window.Show();
+        _ = shell.Run(_stop.Token);
+        Settle();
+        Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        Assert.True(window.Focus(NavigationMethod.Tab));   // an activated desktop window holds its own focus scope
+        Assert.Same(window, window.FocusManager?.GetFocusedElement());
+        shell.Navigate(link);
         Settle();
 
         Assert.True(shell.IsSheetShown);
