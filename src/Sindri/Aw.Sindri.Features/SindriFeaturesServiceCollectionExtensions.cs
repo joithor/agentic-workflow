@@ -61,6 +61,7 @@ using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.ListSessions;
+using Aw.Sindri.Features.OnyxStatus;
 using Aw.Sindri.Features.PauseService;
 using Aw.Sindri.Features.PingProcess;
 using Aw.Sindri.Features.ReadLedger;
@@ -108,6 +109,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<CheckProfileRequest, CheckProfileResponse>, CheckProfileService>()
             .AddScoped<IService<ValidateProfileRequest, ValidateProfileResponse>, ValidateProfileService>()
             .AddDoctor()
+            .AddOnyxStatus()
             .AddScoped<ServeRecords>()
             .AddScoped<IService<RegisterMcpRequest, RegisterMcpResponse>, RegisterMcpService>()
             .AddScoped<IScheduledService, HeartbeatService>()
@@ -233,6 +235,10 @@ public static class SindriFeaturesServiceCollectionExtensions
         .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>>(static sp =>
             new WithMoreChecks(sp.GetRequiredService<RunDoctorService>(), sp.GetServices<IDoctorChecks>()))
         .AddScoped<IDoctorChecks, ContextDoctorChecks>();
+
+    /// <summary>Onyx's status (P1): read-only and in process, like the doctor, but its own slice.</summary>
+    private static IServiceCollection AddOnyxStatus(this IServiceCollection services) => services
+        .AddScoped<IService<OnyxStatusRequest, OnyxStatusResponse>, OnyxStatusService>();
 
     /// <summary>The registry's slices (engine P2): register, approve and revoke (commands), the challenge (an issue), list and show (queries).</summary>
     private static IServiceCollection AddRegistrySlices(this IServiceCollection services)

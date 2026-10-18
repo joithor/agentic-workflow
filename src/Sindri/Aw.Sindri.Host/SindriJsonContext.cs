@@ -61,6 +61,7 @@ using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.ListSessions;
+using Aw.Sindri.Features.OnyxStatus;
 using Aw.Sindri.Features.PauseService;
 using Aw.Sindri.Features.ReadLedger;
 using Aw.Sindri.Features.RebuildViews;
@@ -114,6 +115,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(EvalRecipeResponse)), JsonSerializable(typeof(WorkflowEvent)), JsonSerializable(typeof(EvalStartLine)), JsonSerializable(typeof(EvalStepLine))]
 [JsonSerializable(typeof(RecipeValidationView)), JsonSerializable(typeof(CompleteStepResponse)), JsonSerializable(typeof(InstanceView)), JsonSerializable(typeof(ListOutboxResponse))]
 [JsonSerializable(typeof(ScopingView)), JsonSerializable(typeof(ScopingCheckResponse)), JsonSerializable(typeof(ScopingDeskReport))]   // SC-K: the scoping verbs
+[JsonSerializable(typeof(OnyxStatusResponse))]
 [JsonSerializable(typeof(RequestKind))]   // API P8: the sindri_request kind argument binds through it
 [JsonSerializable(typeof(FleetChanged))]
 [JsonSerializable(typeof(SessionList)), JsonSerializable(typeof(SessionView)), JsonSerializable(typeof(SessionRow)), JsonSerializable(typeof(EndedSessionRow)), JsonSerializable(typeof(SessionStatus))]   // collector spec CA-1, CA-2, CA-8
