@@ -1,4 +1,4 @@
-Sandbox 1e207f1e03ca (pass-through) for a session you opened
+Sandbox 77fbb6306430 (pass-through) for a session you opened
 Launch: LCH-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 Files, bottom to top (a later line wins):
@@ -18,6 +18,8 @@ Files, bottom to top (a later line wins):
   read-only /home/owner/repos/toolkit  (the toolkit checkout the judge wrapper runs)
   read-only /home/owner/.claude  (the agent home, from the owner-copy login source)
   writable  /home/owner/.claude-run  (the agent home, from the owner-copy login source)
+  writable  /home/owner/.claude-run/projects/-work-web--claude-worktrees-sindri-x-1  (this worktree's transcripts, in the owner's agent home)
+  read-only /home/owner/.claude-run/projects/-work-web--claude-worktrees-sindri-x-1/memory  (the owner's memory for this project stays read-only)
   blocked   /home/owner/.claude/.credentials.json  (always blocked: the owner's own login file; a session gets its login from its credential source)
   blocked   /home/owner/.agentic-workflow  (always blocked: the ledger, profile, tokens and other runs' areas live here)
   blocked   /home/owner/.agentic-workflow/sindri-app  (always blocked: Sindri's own state: the ledger, tokens and other runs' areas)

@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Sandbox.Credentials;
 
 namespace Aw.Sindri.Core.Sandbox.Plan;
 
@@ -65,6 +66,23 @@ internal static class PlanMounts
             var kind = mount.Mode == MountMode.ReadWrite ? PlanMountKind.ReadWrite : PlanMountKind.ReadOnly;
             m.Add(new PlanMount(mount.SandboxPath, kind, string.Equals(mount.HostPath, mount.SandboxPath, StringComparison.Ordinal) ? null : mount.HostPath, Reason: $"the agent home, from the {SandboxWire.Name(c.Login)} login source"));
         }
+
+        AddTranscripts(m, c, login);
+    }
+
+    // The CLI writes under its config directory, which is a per-launch copy; only this worktree's transcripts go back to the owner's real 'projects/<key>', so
+    // Sindri's readers and a resume find them. The memory directory inside stays the owner's (spec §3.1).
+    private static void AddTranscripts(List<PlanMount> m, PlanContext c, PreparedLogin login)
+    {
+        if (c.Worktree is not { } worktree || !login.Environment.TryGetValue("CLAUDE_CONFIG_DIR", out var config))
+        {
+            return;
+        }
+
+        var key = ProjectKey.For(worktree);
+        var real = $"{c.Home}/.claude/projects/{key}";
+        m.Add(new PlanMount($"{config}/projects/{key}", PlanMountKind.ReadWrite, real, Reason: "this worktree's transcripts, in the owner's agent home"));
+        m.Add(new PlanMount($"{config}/projects/{key}/memory", PlanMountKind.ReadOnly, real + "/memory", Reason: "the owner's memory for this project stays read-only"));
     }
 
     private static void AddMasks(List<PlanMount> m, PlanContext c)
