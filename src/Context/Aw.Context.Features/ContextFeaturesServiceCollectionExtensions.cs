@@ -25,6 +25,7 @@ using Aw.Context.Features.FindPath;
 using Aw.Context.Features.GetFileMap;
 using Aw.Context.Features.GetHistory;
 using Aw.Context.Features.GetLenses;
+using Aw.Context.Features.LensReading;
 using Aw.Context.Features.GetProposals;
 using Aw.Context.Features.ImportMap;
 using Aw.Context.Features.ListNeighbors;

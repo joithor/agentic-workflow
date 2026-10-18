@@ -17,6 +17,7 @@ using Aw.Context.Features.GetHistory;
 using Aw.Context.Features.GetLenses;
 using Aw.Context.Features.GetProposals;
 using Aw.Context.Features.ImportMap;
+using Aw.Context.Features.LensReading;
 using Aw.Context.Features.ListNeighbors;
 using Aw.Context.Features.PreviewMap;
 using Aw.Context.Features.PreviewReviewFile;
