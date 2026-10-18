@@ -5,7 +5,7 @@ using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Trust;
 
-namespace Aw.Sindri.Host.Text;
+namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>
 /// Plain text for 'context lenses' and 'context filemap': every status is a word ('suggested', 'unmapped', 'conflict'), never colour.

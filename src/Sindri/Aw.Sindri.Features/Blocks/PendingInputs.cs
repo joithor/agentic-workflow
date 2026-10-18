@@ -11,9 +11,6 @@ namespace Aw.Sindri.Features.Blocks;
 /// </summary>
 internal static class PendingInputs
 {
-    /// <summary>'input.context.lenses': the product band, the cascade, 'searched' and the map coverage for the anchors (C1).</summary>
-    public static BlockDescriptor Lenses { get; } = Input("input.context.lenses", Anchors, Depth, Hops);
-
     /// <summary>'input.context.code': the files, tests, data, callers and callees for the anchors (C3).</summary>
     public static BlockDescriptor Code { get; } = Input("input.context.code", Anchors);
 
@@ -22,11 +19,7 @@ internal static class PendingInputs
 
     private static ParameterSpec Anchors => new("anchors", ParameterType.Text, Required: true, IsCapabilityField: false);
 
-    private static ParameterSpec Depth => new("depth", ParameterType.Number, Required: false, IsCapabilityField: false);
-
-    private static ParameterSpec Hops => new("hops", ParameterType.List, Required: false, IsCapabilityField: false);
-
-    private static ParameterSpec Window => new("window", ParameterType.Text, Required: false, IsCapabilityField: false);
+        private static ParameterSpec Window => new("window", ParameterType.Text, Required: false, IsCapabilityField: false);
 
     private static BlockDescriptor Input(string id, params ParameterSpec[] parameters) => new(
         BlockId.From(id), BlockKind.StepInput, Version: 1, Inputs: [], Outputs: [], Outcomes: [], Capability.Tools, parameters, Rung: null, DeskCapable: false);
