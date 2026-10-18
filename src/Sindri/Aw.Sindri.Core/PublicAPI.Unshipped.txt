@@ -9879,3 +9879,43 @@ override Aw.Sindri.Core.Onyx.OnyxStepResult.GetHashCode() -> int
 override Aw.Sindri.Core.Onyx.OnyxStepResult.ToString() -> string!
 static Aw.Sindri.Core.Onyx.OnyxStepResult.operator !=(Aw.Sindri.Core.Onyx.OnyxStepResult? left, Aw.Sindri.Core.Onyx.OnyxStepResult? right) -> bool
 static Aw.Sindri.Core.Onyx.OnyxStepResult.operator ==(Aw.Sindri.Core.Onyx.OnyxStepResult? left, Aw.Sindri.Core.Onyx.OnyxStepResult? right) -> bool
+Aw.Sindri.Core.Sessions.IPaneReader
+Aw.Sindri.Core.Sessions.IPaneReader.Read(string! socket, string! pane, System.Threading.CancellationToken cancellationToken) -> Aw.Sindri.Core.Sessions.PaneRead!
+Aw.Sindri.Core.Sessions.PaneRead
+Aw.Sindri.Core.Sessions.PaneRead.Kind.get -> Aw.Sindri.Core.Sessions.PaneReadKind
+Aw.Sindri.Core.Sessions.PaneRead.PanePid.get -> int
+Aw.Sindri.Core.Sessions.PaneReadKind
+Aw.Sindri.Core.Sessions.PaneReadKind.Captured = 0 -> Aw.Sindri.Core.Sessions.PaneReadKind
+Aw.Sindri.Core.Sessions.PaneReadKind.Gone = 1 -> Aw.Sindri.Core.Sessions.PaneReadKind
+Aw.Sindri.Core.Sessions.PaneReadKind.TimedOut = 2 -> Aw.Sindri.Core.Sessions.PaneReadKind
+Aw.Sindri.Core.Sessions.PreviewReason
+Aw.Sindri.Core.Sessions.PreviewRules
+Aw.Sindri.Core.Sessions.PreviewText
+Aw.Sindri.Core.Sessions.PreviewText.<Clone>$() -> Aw.Sindri.Core.Sessions.PreviewText!
+Aw.Sindri.Core.Sessions.PreviewText.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Lines, out bool Truncated) -> void
+Aw.Sindri.Core.Sessions.PreviewText.Equals(Aw.Sindri.Core.Sessions.PreviewText? other) -> bool
+Aw.Sindri.Core.Sessions.PreviewText.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Sessions.PreviewText.Lines.init -> void
+Aw.Sindri.Core.Sessions.PreviewText.PreviewText(System.Collections.Generic.IReadOnlyList<string!>! Lines, bool Truncated) -> void
+Aw.Sindri.Core.Sessions.PreviewText.Truncated.get -> bool
+Aw.Sindri.Core.Sessions.PreviewText.Truncated.init -> void
+const Aw.Sindri.Core.Sessions.PreviewReason.NotInTmux = "not-in-tmux" -> string!
+const Aw.Sindri.Core.Sessions.PreviewReason.NotLive = "not-live" -> string!
+const Aw.Sindri.Core.Sessions.PreviewReason.TimedOut = "timed-out" -> string!
+const Aw.Sindri.Core.Sessions.PreviewRules.MaxBytes = 65536 -> int
+const Aw.Sindri.Core.Sessions.PreviewRules.MaxHops = 64 -> int
+const Aw.Sindri.Core.Sessions.PreviewRules.MaxLineLength = 200 -> int
+const Aw.Sindri.Core.Sessions.PreviewRules.MaxLines = 40 -> int
+override Aw.Sindri.Core.Sessions.PreviewText.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.PreviewText.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.PreviewText.ToString() -> string!
+static Aw.Sindri.Core.Sessions.PaneRead.Gone.get -> Aw.Sindri.Core.Sessions.PaneRead!
+static Aw.Sindri.Core.Sessions.PaneRead.TimedOut.get -> Aw.Sindri.Core.Sessions.PaneRead!
+static Aw.Sindri.Core.Sessions.PreviewRules.InPane(int pid, long startTicks, int panePid, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.ProcessEntry!>! table) -> bool
+static Aw.Sindri.Core.Sessions.PreviewRules.Of(System.ReadOnlySpan<byte> capture) -> Aw.Sindri.Core.Sessions.PreviewText!
+static Aw.Sindri.Core.Sessions.PreviewRules.Of(string! text, bool dropped) -> Aw.Sindri.Core.Sessions.PreviewText!
+static Aw.Sindri.Core.Sessions.PreviewText.operator !=(Aw.Sindri.Core.Sessions.PreviewText? left, Aw.Sindri.Core.Sessions.PreviewText? right) -> bool
+static Aw.Sindri.Core.Sessions.PreviewText.operator ==(Aw.Sindri.Core.Sessions.PreviewText? left, Aw.Sindri.Core.Sessions.PreviewText? right) -> bool
+static readonly Aw.Sindri.Core.SindriErrors.SessionConflict -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Sessions.PaneRead.Capture.get -> System.ReadOnlyMemory<byte>
+static Aw.Sindri.Core.Sessions.PaneRead.Captured(int panePid, byte[]! capture) -> Aw.Sindri.Core.Sessions.PaneRead!

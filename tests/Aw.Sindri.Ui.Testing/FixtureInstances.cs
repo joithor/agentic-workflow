@@ -80,6 +80,11 @@ internal static class FixtureInstances
     /// <returns>The status as served.</returns>
     internal static StatusFields Status(string scenario) => Read<StatusFields>(GoldenFiles.Api("workflow-status", scenario));
 
+    /// <summary>One instance summary as the layout goldens record it (the escalated-child and parked-mirrored-budget rows carry answer.via).</summary>
+    /// <param name="scenario">The scenario ('escalated-child', 'parked-mirrored-budget').</param>
+    /// <returns>The summary as served.</returns>
+    internal static InstanceSummary Summary(string scenario) => Read<InstanceSummary>(File.ReadAllText(Path.Combine(GoldenFiles.Root, "Layout", "instance-summary-" + scenario + ".json")));
+
     /// <summary>A golden changed by a test (a member removed or nulled), read through the app's records.</summary>
     /// <typeparam name="T">The record.</typeparam>
     /// <param name="node">The edited body.</param>

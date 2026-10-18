@@ -1,3 +1,4 @@
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Results;
@@ -28,8 +29,8 @@ internal sealed class LensScope
     internal HashSet<string> Own { get; }
 
     /// <summary>The scope of <paramref name="anchor"/> (a key or an alias), cascading <paramref name="depth"/> levels; null when the graph has no such node.</summary>
-    internal static LensScope? Of(GraphSnapshot graph, NodeKey anchor, int depth) =>
-        graph.Resolve(anchor) is { } node ? new LensScope(graph, node, Core.Graph.Cascade.Affects(graph, node.Key, depth)) : null;
+    internal static LensScope? Of(GraphSnapshot graph, NodeKey anchor, int depth, CascadeOptions? options = null) =>
+        graph.Resolve(anchor) is { } node ? new LensScope(graph, node, Core.Graph.Cascade.Affects(graph, node.Key, depth, options ?? CascadeOptions.Default)) : null;
 
     /// <summary>The edges of the given types that end in the own scope.</summary>
     internal IEnumerable<GraphEdge> IntoScope(params EdgeType[] types) => Graph.Edges.Where(e => types.Contains(e.Type) && Own.Contains(e.To.Value));

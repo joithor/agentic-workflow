@@ -18,6 +18,12 @@ public sealed class UsageTests
         Assert.Single(Lines(), l => l.StartsWith($"sindri workflow {verb} ", StringComparison.Ordinal));
 
     [Theory, Trait("Lane", "unit")]
+    [InlineData("sindri context query ")]
+    [InlineData("sindri context lenses ")]
+    public void Help_lines_for_the_cascade_reads_name_the_hops_flag(string start) =>
+        Assert.Contains("--hops", Assert.Single(Lines(), l => l.TrimStart().StartsWith(start, StringComparison.Ordinal)), StringComparison.Ordinal);
+
+    [Theory, Trait("Lane", "unit")]
     [InlineData("services [")]
     [InlineData("services run ")]
     [InlineData("services pause|resume ")]
