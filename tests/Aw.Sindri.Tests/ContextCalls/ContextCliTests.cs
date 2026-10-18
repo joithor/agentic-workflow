@@ -23,6 +23,14 @@ public sealed class ContextCliTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Query_hops_flag_sends_hops()
+    {
+        var parsed = ContextVerbs.QueryArguments.Parse(["--node", "feature:tabs", "--hops", "state,component"]);
+
+        Assert.Equal("?node=feature%3Atabs&hops=state%2Ccomponent", parsed.Value.QueryString);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Query_map_version_flag_sends_mapVersion_and_a_draft_beside_it_is_still_the_servers_006()
     {
         var parsed = ContextVerbs.QueryArguments.Parse(["--node", "feature:tabs", "--map-version", "v3@a41b07d", "--json"]);
