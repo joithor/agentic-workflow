@@ -69,7 +69,7 @@ public sealed class StartupFocusTests : IDisposable
     }
 
     // Runs a body on the UI thread over a shown window, bounded; the window is closed after.
-    private async Task WithWindow(Func<ShellWindow, ShellViewModel, Task> body)
+    private async Task WithWindow(Action<ShellWindow, ShellViewModel> body)
     {
         using var bound = CancellationTokenSource.CreateLinkedTokenSource(Token);
         bound.CancelAfter(TimeSpan.FromSeconds(30));
@@ -82,7 +82,7 @@ public sealed class StartupFocusTests : IDisposable
                 await shell.Restore(bound.Token);
                 var window = new ShellWindow { DataContext = shell, Width = 1400 };
                 _windows.Add(window);
-                await body(window, shell);
+                body(window, shell);
             }
             finally
             {
@@ -104,7 +104,7 @@ public sealed class StartupFocusTests : IDisposable
     }
 
     [Fact]
-    public Task The_landing_does_not_take_focus_a_control_already_holds() => WithWindow(async (window, shell) =>
+    public Task The_landing_does_not_take_focus_a_control_already_holds() => WithWindow((window, shell) =>
     {
         window.Show();
         var pill = window.GetVisualDescendants().OfType<Control>().First(c => c.Name == "HealthPill");
@@ -113,20 +113,19 @@ public sealed class StartupFocusTests : IDisposable
         Settle();
 
         Assert.Same(pill, window.FocusManager?.GetFocusedElement());
-        await Task.CompletedTask;
     });
 
     [Fact]
-    public Task A_link_that_opens_the_sheet_during_startup_leaves_focus_to_the_sheet() => WithWindow(async (window, shell) =>
+    public Task A_link_that_opens_the_sheet_during_startup_leaves_focus_to_the_sheet() => WithWindow((window, shell) =>
     {
         window.Show();
-        _ = shell.Run(_stop.Token);
         Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
-        shell.Navigate(link);
+        shell.Navigate(link);   // a second launch's link is delivered right after Show, before Run connects
+        Settle();   // the window's startup posts run while the shell is still not connected
+        _ = shell.Run(_stop.Token);
         Settle();
 
         Assert.True(shell.IsSheetShown);
         Assert.Same(window.Get<Border>("SheetTitle"), window.FocusManager?.GetFocusedElement());
-        await Task.CompletedTask;
     });
 }

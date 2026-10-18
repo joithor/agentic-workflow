@@ -58,8 +58,8 @@ internal sealed partial class ShellWindow : Window
         Dispatcher.UIThread.Post(() =>
         {
             // The window itself is no focus: an activated desktop window puts focus on its own scope first. A sheet a deep link
-            // opened meanwhile has its own focus rule (FocusOpenedSheet).
-            if ((!HasUsableFocus || FocusManager?.GetFocusedElement() is ShellWindow) && Shell is not { IsSheetShown: true })
+            // opened meanwhile (IsSheetOpen: the shell is not connected yet, so IsSheetShown is still false) has its own focus rule (FocusOpenedSheet).
+            if ((!HasUsableFocus || FocusManager?.GetFocusedElement() is ShellWindow) && Shell is not { IsSheetOpen: true })
             {
                 KeepFocusOrReannounce();
             }
