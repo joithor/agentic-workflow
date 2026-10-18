@@ -42,6 +42,10 @@ internal sealed class RunningEgress : IAsyncDisposable
             await _stopFlushing.CancelAsync().ConfigureAwait(false);
             await _flushing.ConfigureAwait(false);
         }
+        catch (OperationCanceledException)
+        {
+            // The loop never started before dispose; there is nothing to wait for.
+        }
         finally
         {
             try

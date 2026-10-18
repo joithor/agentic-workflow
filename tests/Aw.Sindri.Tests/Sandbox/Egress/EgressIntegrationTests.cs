@@ -54,11 +54,17 @@ public sealed class EgressIntegrationTests : IAsyncDisposable
 
         _ = await socket.SendAsync("GET /sindri/mcp HTTP/1.0\r\n\r\n"u8.ToArray(), TestContext.Current.CancellationToken);
         socket.Shutdown(SocketShutdown.Send);
-        using var reader = new StreamReader(new NetworkStream(socket, ownsSocket: false), Encoding.ASCII);
-        var answer = await reader.ReadToEndAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        var answer = new StringBuilder();
+        var buffer = new byte[1024];
+        int read;
+        while ((read = await socket.ReceiveAsync(buffer, TestContext.Current.CancellationToken).AsTask().WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken)) > 0)
+        {
+            _ = answer.Append(Encoding.ASCII.GetString(buffer, 0, read));
+        }
+
         await running.DisposeAsync();
 
-        Assert.EndsWith("mcp-ok", answer, StringComparison.Ordinal);
+        Assert.EndsWith("mcp-ok", answer.ToString(), StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]

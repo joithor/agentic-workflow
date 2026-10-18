@@ -88,7 +88,7 @@ public sealed class EgressInitRunTests : IDisposable
 
         using var init = Run(Init(socat), agent);
         var agentPid = await PidFile("agent-pid");
-        using (var kill = Process.Start("/bin/kill", ["-TERM", init.Id.ToString(CultureInfo.InvariantCulture)])!)
+        using (var kill = Process.Start("/bin/kill", ["-TERM", init.Id.ToString(CultureInfo.InvariantCulture)]))
         {
             await kill.WaitForExitAsync(TestContext.Current.CancellationToken);
         }
@@ -136,7 +136,7 @@ public sealed class EgressInitRunTests : IDisposable
         var sindriPort = ((IPEndPoint)free.LocalEndpoint).Port;
         free.Stop();
         var network = new PlanNetwork(NetworkMode.Enforce, [], sindriPort, ((IPEndPoint)stub.LocalEndpoint).Port + 0, net);
-        var init = Write("init.sh", EgressInit.Render(network with { ProxyPort = FreePort() }, socat!, Path.Combine(_temp.Path, "socat.log"), net));
+        var init = Write("init.sh", EgressInit.Render(network with { ProxyPort = FreePort() }, socat, Path.Combine(_temp.Path, "socat.log"), net));
         var agent = Write("agent", $"#!/bin/sh\nfor i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do\n  out=$(printf 'GET /sindri/mcp HTTP/1.0\\r\\n\\r\\n' | '{socat}' - TCP:127.0.0.1:{sindriPort.ToString(CultureInfo.InvariantCulture)} 2>/dev/null) && [ -n \"$out\" ] && break\n  sleep 0.1\ndone\nprintf '%s' \"$out\" > '{_temp.Path}/answer'\n");
 
         using var process = Run(init, agent);
