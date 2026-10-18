@@ -53,13 +53,14 @@ public static class BlockServiceCollectionExtensions
         where T : class, IEvidenceProvider, IDescribedBlock
         => services.AddSingleton(T.Descriptor).AddScoped<T>().AddScoped<IEvidenceProvider, T>();
 
-    /// <summary>Registers the Step input <typeparamref name="T"/>.</summary>
+    /// <summary>Registers the Step input <typeparamref name="T"/>, also keyed by its block id (the fill activity runs it by id), and marks its runtime (<see cref="StepInputRuntimes"/>).</summary>
     /// <param name="services">The service collection.</param>
     /// <typeparam name="T">The Step input class.</typeparam>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddStepInput<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(this IServiceCollection services)
         where T : class, IStepInput, IDescribedBlock
-        => services.AddSingleton(T.Descriptor).AddScoped<T>().AddScoped<IStepInput, T>();
+        => services.AddSingleton(T.Descriptor).AddScoped<T>().AddScoped<IStepInput, T>().AddKeyedScoped<IStepInput, T>(T.Descriptor.Id.Value)
+            .AddSingleton(new StepInputRegistration(T.Descriptor.Id));
 
     /// <summary>
     /// Registers a block's descriptor without a runtime (spec §12: the P6 and P7 blocks ship in P1 this way), so

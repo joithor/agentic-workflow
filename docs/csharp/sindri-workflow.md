@@ -495,6 +495,40 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 | `step.review.recheck` | agent | `change`, `review` | `clean`, `findings`, `behaviourWrong` | `review` (every outcome) |
 | `step.owner.decide` | desk, human-only | - | `retry`, `stop` | `notes` on retry |
 
+
+### Block catalog (scoping station)
+
+Descriptor-only too (`ScopingSteps`, `PendingInputs` in `Aw.Sindri.Features/Blocks/`); the recipes are `workflow.scoping` and `workflow.idea-to-brief` (scoping spec §6, §9). Every Step is desk-capable. An agent Step reaches only `Tools` (the read-only rule is W9's, enforced at launch).
+
+| Step | Runtime | Inputs | Outcomes | Outputs |
+|---|---|---|---|---|
+| `step.scope.intake` | block | `scopeInput` | `brief`, `tracker`, `idea`, `change` | the eight seeds (`scopeMap`, `acceptance`, `findings`, `answers`, `answerLog`, `challenge`, `questions`, `openQuestions`) on all four |
+| `step.scope.read-brief`, `step.scope.read-change` | block | `scopeInput` | `read`, `empty` | `brief`, `anchors` on read |
+| `step.scope.read-tracker` | block (`Network`) | `scopeInput` | `read`, `empty` | `brief`, `anchors` on read |
+| `step.brief.seed` | block | - | `seeded` | `answers`, `answerLog` on seeded |
+| `step.brief.questions` | agent | `idea`, `answers`, `answerLog` | `asked`, `ready` | `questions` on asked; `interviewClosed` on ready |
+| `step.brief.write` | agent | `idea`, `answers`, `answerLog` | `written`, `empty` | `brief` on written |
+| `step.scope.anchor` | block | `brief` | `anchored` | `anchors` on anchored |
+| `step.scope.gather` | block | `anchors` (+ its Step inputs) | `gathered` | `lenses`, `coverage` on gathered |
+| `step.scope.draft` | agent | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `findings`, `answerLog`, `challenge` | `drafted` | `scopeMap`, `acceptance` on drafted |
+| `step.scope.check` | block | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answers`, `answerLog` | `pass`, `gaps`, `regather` | `findings` on gaps, regather |
+| `step.interview.questions` | agent | `scopeMap`, `acceptance`, `lenses`, `answerLog`, `challenge`, `openQuestions` | `asked`, `none` | `questions` on asked; `openQuestions` on asked, none |
+| `step.interview.answer` | desk, human-only | `questions`, `answerLog` | `answered`, `doneAsking` | `answers` on both; `interviewClosed` on doneAsking |
+| `step.interview.record` | block | `answers`, `answerLog` | `recorded` | `answerLog` on recorded |
+| `step.interview.apply` | agent | ten facts (spec §9) | `updated`, `rescope` | `scopeMap`, `acceptance`, `openQuestions` on both |
+| `step.scope.reanchor` | block | `scopeMap`, `anchors`, `lenses` | `anchored` | `anchors` on anchored |
+| `step.scope.challenge` | agent | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answerLog`, `challenge` | `nothingNew`, `found` | `challengeRound` (every outcome) |
+| `step.scope.challenge-log` | block | `challenge`, `challengeRound` | `nothingNew`, `found` | `challenge` (every outcome); `findings` on found |
+| `step.scope.propose` | block | `scopeMap` | `proposed`, `skipped` | `scopeMap` (every outcome) |
+| `step.scope.evidence` | block | `brief`, `lenses`, `coverage`, `scopeMap`, `acceptance`, `answers`, `answerLog`, `challenge`, `openQuestions`, `decision`, `anchors`, `questions` | `complete`, `incomplete`, `regather` | five facts on complete; `findings` on incomplete, regather |
+| `step.scope.review` | desk, human-only | `scopePacket` | `approve`, `revise`, `drop` | `answers` on revise |
+| `step.scope.freeze` | block | `scopePacket`, `answerLog` | `frozen`, `mismatch` | `findings` on mismatch |
+| `step.scope.withdraw` | block | - | `withdrawn` | - |
+
+`step.interview.answer` and `step.scope.review` carry no form yet: the answer form built from `fact:questions` and the stop's fixed form (approve, revise, drop) await W2, so at the desk they complete with plain outcomes and outputs. The output schemas, their fact-or-packet-file design and field-name choices are in `schemas/scoping/README.md`.
+
+The Step inputs `input.context.lenses`, `input.context.code` and `input.context.history` are registered as descriptors (parameters `anchors`, `depth`, `hops`, `window`) so the recipe validates; the context lane replaces them with the blocks (C1, C3, C5, W6). The output schemas are `schemas/scoping/` (`node scripts/check-scoping-schemas.mjs`).
+
 `step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and human-only; their hashes moved once when the two fields
 landed (provisional owner default); every other shipped descriptor hashes as before (`ShippedBlocksTests` pins all of them).
 
@@ -809,6 +843,10 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
   `{item}/{recipe}/1`, `/2` … so a start never waits on visibility. Without `--attempt` the latest attempt is used (a
   live one is returned as it is; an ended one is shown with `start a new one with --attempt next`); `--attempt next`
   is refused while the latest is live (`SND-WF-012`). It prints the status header.
+  A recipe whose Step names an input with a registered descriptor but no runtime in this build is refused with
+  `SND-WF-016` naming `states.<s>.step.inputs[k]`, here and at `recipe approve` (the challenge too); `recipe show`, `recipe validate`
+  and `recipe eval` still accept it, and eval ignores inputs. An input id with no registration at all is not this case: it is
+  `RCP-BLOCK-001` at `recipe validate` and at register.
 - **`workflow answer`, `command <verb>`, `cancel`, `takeover`, `handback`** run the `ApplyCommand` slice, in this order: resolve the address
   (a bare item is the root of its latest attempt, `SND-WF-006` listing the candidates when the item has roots of more
   than one recipe); check the arguments; claim the nonce for exactly this command (`SND-WF-009`); for a protected

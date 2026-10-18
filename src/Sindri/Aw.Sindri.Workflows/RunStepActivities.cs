@@ -38,6 +38,7 @@ internal sealed partial class RunStepActivities(IApprovedRecipes approvals, Bloc
 
         var definition = found.Value.Recipe;
         var used = definition.States.Values.Select(static s => s.Step?.Use)
+            .Concat(definition.States.Values.SelectMany(static s => s.Step?.Inputs ?? []).Select(static i => (BlockId?)i.Use))
             .Concat(definition.Transitions.SelectMany(static t => t.Gates.Select(static g => (BlockId?)g.Use).Concat(t.Effects.Select(static e => (BlockId?)e.Use))))
             .OfType<BlockId>().ToHashSet();
         var workflow = await times.Read(cancel).ConfigureAwait(false);

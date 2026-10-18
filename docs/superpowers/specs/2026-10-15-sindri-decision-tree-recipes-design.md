@@ -146,8 +146,17 @@ transitions:
   uncertain one (§8.6).
 - `none` goes to `evidence-none`, a block-runtime Step (`step.evidence.none`, pure) that writes a
   `fact:evidenceSummary` saying the always-run checks are the proof, then joins the other branches. No desk task is
-  spent on it. A summary leaves the route on `resolved`, and from a failed leaf child; an unresolved `evidence-all` and
-  every `cancelled` child end in `dropped` with none (Q6, `RCP-WIRE-003`).
+  spent on it. A summary leaves the route on `resolved`, and from a failed leaf child. Every other end has none
+  (`RCP-WIRE-003`):
+  - **`failed`**: a single leaf ran and did not hold. For `other`, that means no evidence was found.
+  - **`all-failed`**: the `all` branch ended unresolved. `evidence-all` stops at its first check that fails, so
+    usually one of ui, api and db failed, not all three. A check cancelled *inside* `evidence-all` also ends here,
+    because `evidence-all` reports it as its own unresolved `dropped` and a terminal can't declare `cancelled`.
+  - **`dropped`**: the child run this instance waited on (a leaf, or `evidence-all` itself) was cancelled.
+
+  All three declare the outcome `unresolved` (owner, 2026-10-17: `all-failed` is kept apart from `dropped`), so a
+  parent waiting on `workflow.evidence` can't route on which one it was. The `workflow.evidence` child instance's
+  state name shows it, in `workflow status`, the ledger and the app.
 - The route state's `next` is written as an instruction, because before DT-J it runs at the desk and a human acts in
   it (REF "Voice"). Its timeout is the desk's 2 days for that reason. On the block runtime the call is bounded by
   `MaxDuration` (2 minutes, §8.2), which ends it as `step.failed` long before the state's timer.

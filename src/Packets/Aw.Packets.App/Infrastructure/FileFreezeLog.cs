@@ -3,6 +3,7 @@ using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Packets.Core;
 using Aw.Packets.Core.Model;
+using Aw.Packets.Core.Values;
 
 namespace Aw.Packets.App.Infrastructure;
 
@@ -19,6 +20,30 @@ internal sealed class FileFreezeLog(PacketsSettings settings, JsonSerializerOpti
     {
         ArgumentNullException.ThrowIfNull(record);
         return ValueTask.FromResult(Write(record, FreezeLocation.Of(record)));
+    }
+
+    public async ValueTask<Result<FreezeRecord?>> Find(PacketIdentity packet, PacketHash hash, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(packet);
+        var location = FreezeLocation.Of(packet.Repo, packet.Packet, hash);
+        var target = Path.Combine(settings.StateDirectory, location);
+        try
+        {
+            if (!File.Exists(target))
+            {
+                return Results.Success<FreezeRecord?>(value: null);
+            }
+
+            var bytes = await File.ReadAllBytesAsync(target, cancellationToken).ConfigureAwait(false);
+            var parsed = AwJson.Deserialize<FreezeRecord>(bytes, json);
+            return parsed.IsError
+                ? PacketsErrors.Unreadable.With($"The freeze record {location} can't be read: {parsed.Error.Message}")
+                : Results.Success<FreezeRecord?>(parsed.Value);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return PacketsErrors.Unreadable.With($"The freeze record {location} can't be read: {ex.Message}");
+        }
     }
 
     private Result<FreezeReceipt> Write(FreezeRecord record, string location)

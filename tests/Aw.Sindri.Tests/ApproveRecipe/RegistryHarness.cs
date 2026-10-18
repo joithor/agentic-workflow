@@ -45,10 +45,10 @@ internal sealed class RegistryHarness : IAsyncDisposable
     private readonly ServiceProvider _provider;
     private readonly NoInstances _instances = new();
 
-    public RegistryHarness()
+    public RegistryHarness(Action<IServiceCollection>? configure = null)
     {
         Challenges = new InMemoryChallenges(H.Clock);
-        _provider = new ServiceCollection()
+        var services = new ServiceCollection()
             .AddSingleton<TimeProvider>(H.Clock)
             .AddSingleton<Core.Views.IProjectorStatus>(new Core.Views.ProjectorProgress(H.Clock))
             .AddSingleton<IIdGenerator>(H.Ids)
@@ -71,9 +71,8 @@ internal sealed class RegistryHarness : IAsyncDisposable
             .AddSingleton<IProfileSource>(H.Profiles)
             .AddEffectPorts(H)
             .AddRecipeBlocks()
-            .AddSingleton<BlockCatalog>()
-            .AddScoped<RecipeApprovalPlanner>()
-            .AddScoped<RecipeRevokePlanner>()
+            .AddSingleton<BlockCatalog>().AddSingleton<StepInputRuntimes>()
+            .AddScoped<RecipeApprovalPlanner>().AddScoped<RecipeRevokePlanner>()
             .AddScoped<IRecipeProfileFacts, ApprovedRecipeProfileFacts>()
             .AddScoped<RecipeRegistryReader>()
             .AddSingleton(Workflow.RecipeReaderTests.Reader)
@@ -84,9 +83,12 @@ internal sealed class RegistryHarness : IAsyncDisposable
             .AddScoped<IValidator<RegisterRecipeRequest>, AcceptAllValidator<RegisterRecipeRequest>>().AddCommand<RegisterRecipeRequest, RegisterRecipeResponse, RegisterRecipeService>()
             .AddScoped<IValidator<ListRecipesRequest>, AcceptAllValidator<ListRecipesRequest>>().AddQuery<ListRecipesRequest, ListRecipesResponse, ListRecipesService>()
             .AddScoped<IValidator<ShowRecipeRequest>, AcceptAllValidator<ShowRecipeRequest>>().AddQuery<ShowRecipeRequest, RecipeView, ShowRecipeService>()
-            .AddSingleton<Core.Workflow.Engine.Runtime.IApprovedRecipes>(sp => new RegistryApprovedRecipes(Recipes, Approvals, sp.GetRequiredService<BlockCatalog>(), SliceHarness.Json))
-            .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+            .AddSingleton<Core.Workflow.Engine.Runtime.IApprovedRecipes>(sp => new RegistryApprovedRecipes(Recipes, Approvals, sp.GetRequiredService<BlockCatalog>(), SliceHarness.Json));
+        configure?.Invoke(services);
+        _provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
     }
+
+    public IServiceProvider Services => _provider;
 
     public SliceHarness H { get; } = new();
 

@@ -5,7 +5,7 @@ namespace Aw.Meta.Tests.Health;
 public sealed class HostRulesTests
 {
     private const string Temporal = "temporal server start-dev --db-filename /tmp/aw-sindri-ab/t.db";
-    private const string Headroom = "node /x/headroom/mcp.js";
+    private const string McpServer = "node /x/fetch/mcp.js";
 
     private static ProcessInfo P(int pid, string cmd, int ppid = 100, long rssKb = 2048, long age = 900) => new(pid, ppid, cmd, rssKb, age);
 
@@ -18,9 +18,9 @@ public sealed class HostRulesTests
     [InlineData("/usr/bin/dotnet exec VBCSCompiler.dll", "dotnet")]
     [InlineData("temporal server start-dev", "temporal")]
     [InlineData("/home/u/.local/bin/temporal server start-dev", "temporal")]
-    [InlineData(Headroom, "headroom/mcp")]
-    [InlineData("npx serena-agent start", "headroom/mcp")]
-    [InlineData("node /x/context7-mcp", "headroom/mcp")]
+    [InlineData(McpServer, "mcp")]
+    [InlineData("npx serena-agent start", "mcp")]
+    [InlineData("node /x/context7-mcp", "mcp")]
     [InlineData("/usr/bin/qemu-system-x86_64 -m 4096", "docker/qemu")]
     [InlineData("dockerd -H fd://", "docker/qemu")]
     [InlineData("java -jar opensearch.jar", "onyx/opensearch/vespa")]
@@ -56,7 +56,7 @@ public sealed class HostRulesTests
     [Fact, Trait("Lane", "unit")]
     public void A_server_with_more_copies_than_sessions_plus_one_is_a_duplicate()
     {
-        List<ProcessInfo> processes = [P(1, "claude"), P(2, "claude"), .. Enumerable.Range(10, 3).Select(pid => P(pid, Headroom)), .. Enumerable.Range(20, 4).Select(pid => P(pid, "node /x/other-mcp"))];
+        List<ProcessInfo> processes = [P(1, "claude"), P(2, "claude"), .. Enumerable.Range(10, 3).Select(pid => P(pid, McpServer)), .. Enumerable.Range(20, 4).Select(pid => P(pid, "node /x/other-mcp"))];
 
         var duplicates = HostRules.Duplicates(processes);
 

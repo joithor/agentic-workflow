@@ -6,7 +6,7 @@ This project runs **locally only**. There is no cloud deployment, no containeriz
 
 ## Registering MCP Servers
 
-`./setup.sh` registers `serena`, `headroom`, `prism-mcp` and, on macOS, `xcodebuildmcp` with every selected provider (`claude mcp add --scope user`, `codex mcp add`, `mcpServers` in `~/.cursor/mcp.json`). On re-run it also removes an old `agentic-bridge` registration: the MCP bridge was retired on 2026-10-10. Agents hand off through Prism handoffs (`session_save_handoff` / `session_load_context`), judge's outbox and teammate names (agent teams), and Sindri's ledger; there is no bridge server.
+`./setup.sh` registers `serena`, `prism-mcp` and, on macOS, `xcodebuildmcp` with every selected provider (`claude mcp add --scope user`, `codex mcp add`, `mcpServers` in `~/.cursor/mcp.json`). On re-run it also removes old `agentic-bridge` and `headroom` registrations: the MCP bridge was retired on 2026-10-10, headroom (content compression, about 4.2 GB of RAM per Claude session) on 2026-10-18. Agents hand off through Prism handoffs (`session_save_handoff` / `session_load_context`), judge's outbox and teammate names (agent teams), and Sindri's ledger; there is no bridge server.
 
 ### MCP Config File
 
