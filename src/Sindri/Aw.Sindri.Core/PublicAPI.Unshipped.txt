@@ -9035,7 +9035,6 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource.operator !=(A
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource? right) -> bool
-static Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefills.Texts(Aw.Sindri.Core.Workflow.Engine.Runtime.IInjectionTexts! texts, Aw.Sindri.Core.Workflow.Engine.Runtime.IStepInputRunner! runner, string! address, string! state, string! run, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource! input, Aw.Kernel.ErrorDefinition! mismatch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.FilledTexts!>!>
 Aw.Sindri.Core.Sessions.ClaudeRecord.IsT3.get -> bool
 Aw.Sindri.Core.Sessions.HostChain
 Aw.Sindri.Core.Sessions.HostHit
@@ -9231,3 +9230,24 @@ static Aw.Sindri.Core.Sessions.TmuxPane.operator !=(Aw.Sindri.Core.Sessions.Tmux
 static Aw.Sindri.Core.Sessions.TmuxPane.operator ==(Aw.Sindri.Core.Sessions.TmuxPane? left, Aw.Sindri.Core.Sessions.TmuxPane? right) -> bool
 static Aw.Sindri.Core.Sessions.TmuxServerView.operator !=(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
 static Aw.Sindri.Core.Sessions.TmuxServerView.operator ==(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.Address.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.Address.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.Deconstruct(out string! Address, out string! State, out string! Run, out Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource! Input, out Aw.Kernel.ErrorDefinition! Mismatch) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.Input.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.Input.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.InputRefill(string! Address, string! State, string! Run, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource! Input, Aw.Kernel.ErrorDefinition! Mismatch) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.Mismatch.get -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.Mismatch.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.Run.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.Run.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.State.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.State.init -> void
+override Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefills.Texts(Aw.Sindri.Core.Workflow.Engine.Runtime.IInjectionTexts! texts, Aw.Sindri.Core.Workflow.Engine.Runtime.IStepInputRunner! runner, Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill! refill, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.FilledTexts!>!>

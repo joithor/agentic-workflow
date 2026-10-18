@@ -1,5 +1,4 @@
 using Aw.Kernel;
-using Aw.Sindri.Core.Workflow.Blocks;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
@@ -9,23 +8,19 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// </summary>
 public static class InputRefills
 {
-    /// <summary>The input's texts for <paramref name="run"/>.</summary>
+    /// <summary>The input's texts for the run.</summary>
     /// <param name="texts">The in-memory texts.</param>
     /// <param name="runner">Runs the input again.</param>
-    /// <param name="address">The instance address.</param>
-    /// <param name="state">The state whose Step runs.</param>
-    /// <param name="run">The run token.</param>
-    /// <param name="input">The input.</param>
-    /// <param name="mismatch">The error a differing refill answers.</param>
+    /// <param name="refill">Which input of which run, and the error a differing refill answers.</param>
     /// <param name="cancellationToken">Cancels the refill.</param>
-    /// <returns>The texts; the <paramref name="mismatch"/> error when the refill differs from the record.</returns>
-    public static async ValueTask<Result<FilledTexts>> Texts(IInjectionTexts texts, IStepInputRunner runner, string address, string state, string run, InjectionInputSource input, ErrorDefinition mismatch, CancellationToken cancellationToken)
+    /// <returns>The texts; the mismatch error when the refill differs from the record.</returns>
+    public static async ValueTask<Result<FilledTexts>> Texts(IInjectionTexts texts, IStepInputRunner runner, InputRefill refill, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(texts);
         ArgumentNullException.ThrowIfNull(runner);
-        ArgumentNullException.ThrowIfNull(input);
-        ArgumentNullException.ThrowIfNull(mismatch);
-        var key = new InjectionKey(address, state, run, input.Recorded.Input);
+        ArgumentNullException.ThrowIfNull(refill);
+        var input = refill.Input;
+        var key = new InjectionKey(refill.Address, refill.State, refill.Run, input.Recorded.Input);
         if (texts.Get(key) is { } kept)
         {
             return kept;
@@ -39,7 +34,7 @@ public static class InputRefills
 
         if (!Same(input.Recorded, again.Value.Metadata))
         {
-            return mismatch.With($"input {input.Recorded.Input.Value} changed since run {run} recorded it (fix: re-run the Step)");
+            return refill.Mismatch.With($"input {input.Recorded.Input.Value} changed since run {refill.Run} recorded it (fix: re-run the Step)");
         }
 
         texts.Put(key, again.Value.Texts);

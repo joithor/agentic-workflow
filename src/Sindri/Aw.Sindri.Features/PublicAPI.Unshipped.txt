@@ -2556,3 +2556,51 @@ Aw.Sindri.Features.ContextCalls.LensesAnswer.Many.get -> Aw.Context.Core.Lenses.
 Aw.Sindri.Features.ContextCalls.LensesAnswer.Many.init -> void
 Aw.Sindri.Features.ContextCalls.LensesAnswer.One.get -> Aw.Context.Core.Lenses.LensesView?
 Aw.Sindri.Features.ContextCalls.LensesAnswer.One.init -> void
+Aw.Sindri.Features.ReadInjection.InjectionSectionView
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.<Clone>$() -> Aw.Sindri.Features.ReadInjection.InjectionSectionView!
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Bytes.get -> int
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Bytes.init -> void
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Deconstruct(out string! Section, out string! Input, out int Bytes, out string! Sha256, out string! Text) -> void
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Equals(Aw.Sindri.Features.ReadInjection.InjectionSectionView? other) -> bool
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.InjectionSectionView(string! Section, string! Input, int Bytes, string! Sha256, string! Text) -> void
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Input.get -> string!
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Input.init -> void
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Section.get -> string!
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Section.init -> void
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Sha256.get -> string!
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Sha256.init -> void
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Text.get -> string!
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Text.init -> void
+Aw.Sindri.Features.ReadInjection.InjectionView
+Aw.Sindri.Features.ReadInjection.InjectionView.<Clone>$() -> Aw.Sindri.Features.ReadInjection.InjectionView!
+Aw.Sindri.Features.ReadInjection.InjectionView.Deconstruct(out string! Run, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ReadInjection.InjectionSectionView!>! Sections) -> void
+Aw.Sindri.Features.ReadInjection.InjectionView.Equals(Aw.Sindri.Features.ReadInjection.InjectionView? other) -> bool
+Aw.Sindri.Features.ReadInjection.InjectionView.InjectionView(string! Run, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ReadInjection.InjectionSectionView!>! Sections) -> void
+Aw.Sindri.Features.ReadInjection.InjectionView.Run.get -> string!
+Aw.Sindri.Features.ReadInjection.InjectionView.Run.init -> void
+Aw.Sindri.Features.ReadInjection.InjectionView.Sections.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ReadInjection.InjectionSectionView!>!
+Aw.Sindri.Features.ReadInjection.InjectionView.Sections.init -> void
+Aw.Sindri.Features.ReadInjection.ReadInjectionRequest
+Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.<Clone>$() -> Aw.Sindri.Features.ReadInjection.ReadInjectionRequest!
+Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, out string? Section) -> void
+Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.Equals(Aw.Sindri.Features.ReadInjection.ReadInjectionRequest? other) -> bool
+Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.Instance.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
+Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.Instance.init -> void
+Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.ReadInjectionRequest(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, string? Section = null) -> void
+Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.Section.get -> string?
+Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.Section.init -> void
+override Aw.Sindri.Features.ReadInjection.InjectionSectionView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ReadInjection.InjectionSectionView.GetHashCode() -> int
+override Aw.Sindri.Features.ReadInjection.InjectionSectionView.ToString() -> string!
+override Aw.Sindri.Features.ReadInjection.InjectionView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ReadInjection.InjectionView.GetHashCode() -> int
+override Aw.Sindri.Features.ReadInjection.InjectionView.ToString() -> string!
+override Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.ToString() -> string!
+static Aw.Sindri.Features.ReadInjection.InjectionSectionView.operator !=(Aw.Sindri.Features.ReadInjection.InjectionSectionView? left, Aw.Sindri.Features.ReadInjection.InjectionSectionView? right) -> bool
+static Aw.Sindri.Features.ReadInjection.InjectionSectionView.operator ==(Aw.Sindri.Features.ReadInjection.InjectionSectionView? left, Aw.Sindri.Features.ReadInjection.InjectionSectionView? right) -> bool
+static Aw.Sindri.Features.ReadInjection.InjectionView.operator !=(Aw.Sindri.Features.ReadInjection.InjectionView? left, Aw.Sindri.Features.ReadInjection.InjectionView? right) -> bool
+static Aw.Sindri.Features.ReadInjection.InjectionView.operator ==(Aw.Sindri.Features.ReadInjection.InjectionView? left, Aw.Sindri.Features.ReadInjection.InjectionView? right) -> bool
+static Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.operator !=(Aw.Sindri.Features.ReadInjection.ReadInjectionRequest? left, Aw.Sindri.Features.ReadInjection.ReadInjectionRequest? right) -> bool
+static Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.operator ==(Aw.Sindri.Features.ReadInjection.ReadInjectionRequest? left, Aw.Sindri.Features.ReadInjection.ReadInjectionRequest? right) -> bool

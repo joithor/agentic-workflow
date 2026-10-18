@@ -31,7 +31,7 @@ internal sealed class StepContexts(IInjectionTexts texts, IStepInputRunner runne
         var results = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
         foreach (var input in inputs.OrderBy(static i => i.Recorded.Index))
         {
-            var kept = await InputRefills.Texts(texts, runner, run.Address, run.State, run.Token, input, WorkflowErrors.InputChanged, cancellationToken).ConfigureAwait(false);
+            var kept = await InputRefills.Texts(texts, runner, new InputRefill(run.Address, run.State, run.Token, input, WorkflowErrors.InputChanged), cancellationToken).ConfigureAwait(false);
             if (kept.IsError)
             {
                 return kept.Error;

@@ -15,10 +15,7 @@ internal static class InjectionCommand
 
     internal static async Task<int> Run(string[] args, RecipeDesk desk, Output output, CancellationToken ct)
     {
-        var json = args.Contains("--json", StringComparer.Ordinal);
-        var section = args.SkipWhile(static a => a != "--section").Skip(1).FirstOrDefault();
-        var rest = args.Where(a => a is not "--json" and not "--section" && !string.Equals(a, section, StringComparison.Ordinal)).ToArray();
-        if (rest is not [{ Length: > 0 } text] || text.StartsWith("--", StringComparison.Ordinal) || (args.Contains("--section", StringComparer.Ordinal) && section is null))
+        if (Parse(args) is not var (text, section))
         {
             return await output.Error(SindriErrors.InvalidInput.With($"the one argument is the instance: its address (e.g. T-1/step/1) or a bare item ({Usage})")).ConfigureAwait(false);
         }
@@ -31,7 +28,15 @@ internal static class InjectionCommand
             return await output.Error(InstanceReads.NotRunning(got.Error)).ConfigureAwait(false);
         }
 
-        return json ? await output.Json(got.Value.Value, 0).ConfigureAwait(false) : await output.Text(Lines(got.Value.Value), 0).ConfigureAwait(false);
+        return args.Contains("--json", StringComparer.Ordinal) ? await output.Json(got.Value.Value, 0).ConfigureAwait(false) : await output.Text(Lines(got.Value.Value), 0).ConfigureAwait(false);
+    }
+
+    private static (string Instance, string? Section)? Parse(string[] args)
+    {
+        var section = args.SkipWhile(static a => a != "--section").Skip(1).FirstOrDefault();
+        var rest = args.Where(a => a is not "--json" and not "--section" && !string.Equals(a, section, StringComparison.Ordinal)).ToArray();
+        var sectionMissing = args.Contains("--section", StringComparer.Ordinal) && section is null;
+        return rest is [{ Length: > 0 } text] && !text.StartsWith("--", StringComparison.Ordinal) && !sectionMissing ? (text, section) : null;
     }
 
     internal static string Lines(InjectionView view)
