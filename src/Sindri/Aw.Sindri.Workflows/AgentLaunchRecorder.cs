@@ -47,7 +47,7 @@ internal sealed class AgentLaunchRecorder(ILedgerStore ledger, HeldLease lease, 
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(failed);
-        var payload = new LaunchFailed(request.Launch, request.Item, failed.Error.Code, failed.Error.Message, failed.Stage);
+        var payload = new LaunchFailed(request.Launch, request.Item, failed.Error.Code, failed.Error.Message, LaunchFailureDetail.Of(failed.Error, failed.Stage));
         _ = await Append(events.Entry(EventTypes.LaunchFailed, payload, Key(request.Launch), request.Item.Value), cancellationToken).ConfigureAwait(false);
     }
 
