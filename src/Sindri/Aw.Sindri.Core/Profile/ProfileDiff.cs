@@ -48,18 +48,6 @@ public static class ProfileDiff
         return values;
     }
 
-    private static IEnumerable<(string Key, string Value)> Repos(IReadOnlyList<RepoEntry>? repos)
-    {
-        foreach (var repo in repos ?? [])
-        {
-            yield return ($"repos.{repo.Name}", repo.Path);
-            if (repo.Workflow?.Judge?.Providers is { } providers)
-            {
-                yield return ($"repos.{repo.Name}.workflow.judge.providers", string.Join(", ", providers));
-            }
-        }
-    }
-
     /// <summary>The 'launch:' and 'agents:' keys the profile sets; an absent key has no path, so adding one shows as a change.</summary>
     private static IEnumerable<(string Key, string Value)> LaunchAndAgents(SindriProfile p)
     {
@@ -114,6 +102,18 @@ public static class ProfileDiff
             if (limits.StepArgvHash is { } hashes)
             {
                 yield return ($"agents.{id}.stepArgvHash", string.Join(", ", hashes));
+            }
+        }
+    }
+
+    private static IEnumerable<(string Key, string Value)> Repos(IReadOnlyList<RepoEntry>? repos)
+    {
+        foreach (var repo in repos ?? [])
+        {
+            yield return ($"repos.{repo.Name}", repo.Path);
+            if (repo.Workflow?.Judge?.Providers is { } providers)
+            {
+                yield return ($"repos.{repo.Name}.workflow.judge.providers", string.Join(", ", providers));
             }
         }
     }

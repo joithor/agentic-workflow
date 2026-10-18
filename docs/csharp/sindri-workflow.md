@@ -1059,8 +1059,6 @@ Engine spec rev 8.1 §3.8, §5.2, §5.5, §5.8, §6.2; UI spec E-6, E-19.
   requested the instance starts taken over (`InstanceStart.OpenLaunch`, actor `service:engine`), with the launch as the
   `workflow.started` row's `causation`, the state's full timeout kept for the handback and takeoverIdle running. The adapter
   (`LaunchRequestsView`) reads the `launches` view: the launch still `requested` and inside its 30 s deadline; a key that is no item id has none.
-  `workflow.started` row's `causation`, the state's full timeout kept for the handback and takeoverIdle running. Until
-  API P10a's launches projection lands, the adapter (`NoLaunchRequests`) reads none.
 
 ## Block runtime (DT-J2)
 

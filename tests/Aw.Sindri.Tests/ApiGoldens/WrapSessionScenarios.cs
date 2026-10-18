@@ -12,7 +12,7 @@ namespace Aw.Sindri.Tests.ApiGoldens;
 /// proof in X-Sindri-Launch-Secret. The scenario starts a launch the way the launcher would (an open request, a started outcome and the hash file) and
 /// calls as the session the wrap runs in.
 /// </summary>
-internal static class SessionWrapScenarios
+internal static class WrapSessionScenarios
 {
     /// <summary>The proof the launch's hash file holds.</summary>
     internal const string Proof = "golden-launch-proof";

@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Infrastructure.Launch;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Sessions;
+using TerminalFacts = Aw.Sindri.Core.Sessions.TerminalFacts;
 
 namespace Aw.Sindri.Tests.ListSessions;
 
@@ -44,7 +45,7 @@ internal sealed class SessionsRig
         Lane = "ideas",
         Host = new HostInfo("tmux", "tmux · Warp")
         {
-            Terminal = new Core.Sessions.TerminalFacts("warp", 99) { WarpFocusUrl = "warp://session/0123456789abcdef0123456789abcdef" },
+            Terminal = new TerminalFacts("warp", 99) { WarpFocusUrl = "warp://session/0123456789abcdef0123456789abcdef" },
             Tmux = new TmuxFacts("/tmp/tmux-1000/default", "default", "main", "%3") { AttachedClients = 1 },
         },
     };
@@ -57,7 +58,7 @@ internal sealed class SessionsRig
         Reason = AskingReason.Approval,
         Tool = "Bash",
         Cwd = "/work/web",
-        Host = new HostInfo("warp", "Warp") { Terminal = new Core.Sessions.TerminalFacts("warp", 98) },
+        Host = new HostInfo("warp", "Warp") { Terminal = new TerminalFacts("warp", 98) },
     };
 
     /// <summary>A Cursor session with no repo and an id made of its pid, launched by Sindri.</summary>
