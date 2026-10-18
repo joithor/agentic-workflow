@@ -487,7 +487,10 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 | `step.evidence.none` | block | `built` | `done` | `evidenceSummary` on done |
 | `step.evidence.combine` | block | `evidenceUi`, `evidenceApi`, `evidenceDb` | `done` | `evidenceSummary` on done |
 | `step.evidence.desk` | desk, human-only | `built` | `recorded`, `noneFound` | `evidenceSummary` (every outcome); `evidenceReason` (every outcome) |
-| `step.review.run` | agent | `change`, `phasePacket` | `clean`, `findings`, `behaviourWrong` | `review` (every outcome) |
+| `step.review.round` | block | `change`, `phasePacket` | `ready` | `lensQueue`, `lensRounds` on ready |
+| `step.lens.run` | agent; parameters `subject` (required), `bundle` | `lensQueue`, `lensRounds` | `reviewed` | `lensReport` on reviewed |
+| `step.review.log` | block | `lensReport`, `lensRounds` | `next`, `clean`, `findings`, `behaviourWrong` | `lensRounds` (every outcome); `lensQueue` on next; `review` on clean, findings, behaviourWrong |
+| `step.review.record` | block | `change`, `review`, `lensRounds` | `recorded` | `review` on recorded |
 | `step.review.fix` | agent | `change`, `review` | `fixed` | `change` on fixed |
 | `step.review.recheck` | agent | `change`, `review` | `clean`, `findings`, `behaviourWrong` | `review` (every outcome) |
 | `step.owner.decide` | desk, human-only | - | `retry`, `stop` | `notes` on retry |
