@@ -23,6 +23,7 @@ internal sealed class SessionObserver(ITranscripts transcripts, ITextScrubber sc
             Estimated = merged.Estimated,
             Cwd = candidate.Cwd,
             Repo = repos.Lookup(candidate.Cwd),
+            Host = candidate.Host,
             Title = Title(candidate.Record?.Name),
             LaunchId = env.TryGetValue("AW_SINDRI_LAUNCH", out var launch) && LaunchId.TryFrom(launch, out var id) ? id : null,
             Team = env.GetValueOrDefault("AW_META_TEAM"),
