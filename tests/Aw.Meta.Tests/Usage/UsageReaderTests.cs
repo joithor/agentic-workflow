@@ -119,16 +119,27 @@ public sealed class UsageReaderTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Only_the_tail_of_a_transcript_is_asked_for()
+    public async Task A_limit_further_back_than_the_tail_window_is_not_read()
     {
         await _w.Ready();
         _w.LaneSession("api", "s-api");
-        _w.World.ClaudeTranscripts.Put("s-api", new string('x', 2_000_000) + "\n" + LimitLineWithNewline(), A.At(58));
+        _w.World.ClaudeTranscripts.Put("s-api", LimitLineWithNewline() + new string('x', UsageReader.TailBytes + 1000) + "\n", A.At(58));
+
+        var api = (await Read())[0];
+
+        Assert.NotEqual(UsageState.Limited, api.State);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_limit_inside_the_tail_window_is_read()
+    {
+        await _w.Ready();
+        _w.LaneSession("api", "s-api");
+        _w.World.ClaudeTranscripts.Put("s-api", new string('x', UsageReader.TailBytes + 1000) + "\n" + LimitLineWithNewline(), A.At(58));
 
         var api = (await Read())[0];
 
         Assert.Equal(UsageState.Limited, api.State);
-        Assert.True(UsageReader.TailBytes <= 512 * 1024);
     }
 
     private static string LimitLineWithNewline() => UsageWorld.LimitLine + "\n";

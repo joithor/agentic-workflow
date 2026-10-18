@@ -224,7 +224,7 @@ A Claude usage limit stops every lane and your own subagents at once ("You've hi
   never typed into. You don't message them.
 - On `USAGE OK meta` (or the `usage-wait` exit): resume your own subagents with SendMessage (their ids are in your digest), re-arm
   `aw-meta watch`, then run `aw-meta usage` and confirm every lane is `ok`. A lane still `limited` after the reset
-  (`USAGE RESUME FAILED`, or it was busy or had a draft in its box) needs a nudge: SendMessage it, or `aw-meta lane-send`.
+  (`USAGE RESUME FAILED`, or it was busy or had a draft in its box) needs a nudge: SendMessage it (`aw-meta lane-send` only for a non-Claude lane; it refuses a Claude lane, AW-META-017).
 
 ## The running log
 

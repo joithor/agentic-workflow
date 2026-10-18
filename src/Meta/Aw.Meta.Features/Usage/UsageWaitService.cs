@@ -32,7 +32,8 @@ internal sealed class UsageWaitService(IMetaConfig config, UsageReader reader, I
         {
             var now = clock.GetUtcNow();
             var limited = Limited(readings.Value);
-            if (limited.Count == 0 || (!request.UntilOk && limited.TrueForAll(r => Due(r, start, now, team.Value.Usage))))
+            var unreadable = Unreadable(readings.Value, waiting);
+            if (unreadable.Count == 0 && Recovered(limited, request, start, now, team.Value.Usage))
             {
                 return new UsageWaitResponse(Ok: true, OkLines(waiting), Seconds(start, now));
             }
@@ -40,7 +41,7 @@ internal sealed class UsageWaitService(IMetaConfig config, UsageReader reader, I
             if (now - start >= request.Max)
             {
                 var minutes = ((long)request.Max.TotalMinutes).ToString(CultureInfo.InvariantCulture);
-                return new UsageWaitResponse(Ok: false, [$"USAGE WAIT TIMEOUT after {minutes}m: still limited: {string.Join(", ", limited.Select(static r => r.Subject))}"], Seconds(start, now));
+                return new UsageWaitResponse(Ok: false, [$"USAGE WAIT TIMEOUT after {minutes}m: still limited: {string.Join(", ", limited.Select(static r => r.Subject).Concat(unreadable))}"], Seconds(start, now));
             }
 
             await delay.Wait(TimeSpan.FromTicks(Math.Min(Poll.Ticks, (request.Max - (now - start)).Ticks)), cancellationToken).ConfigureAwait(false);
@@ -49,6 +50,12 @@ internal sealed class UsageWaitService(IMetaConfig config, UsageReader reader, I
 
         return readings.IsError ? readings.Error : new UsageWaitResponse(Ok: true, ["USAGE OK nothing is limited"], WaitedSeconds: 0);
     }
+
+    private static List<string> Unreadable(IReadOnlyList<UsageReading> readings, List<string> waiting) =>
+        [.. waiting.Where(w => readings.Any(r => r.State == UsageState.Unknown && string.Equals(r.Subject, w, StringComparison.Ordinal)))];
+
+    private static bool Recovered(List<UsageReading> limited, UsageWaitRequest request, DateTimeOffset start, DateTimeOffset now, UsageConfig usage) =>
+        limited.Count == 0 || (!request.UntilOk && limited.TrueForAll(r => Due(r, start, now, usage)));
 
     private static List<UsageReading> Limited(IReadOnlyList<UsageReading> readings) => [.. readings.Where(static r => r.State == UsageState.Limited)];
 

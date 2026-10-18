@@ -90,6 +90,26 @@ public sealed class UsageWaitTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_lane_that_turns_unreadable_is_not_taken_for_recovered()
+    {
+        await _w.Ready();
+        _w.LimitLane("api");
+        var waits = 0;
+
+        var response = await Wait(max: TimeSpan.FromMinutes(10), onWait: () =>
+        {
+            if (++waits == 1)
+            {
+                _w.World.Panes.Remove("t1-api");
+            }
+        });
+
+        Assert.False(response.Ok);
+        Assert.Contains("USAGE WAIT TIMEOUT", response.Lines[^1], StringComparison.Ordinal);
+        Assert.Contains("api", response.Lines[^1], StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Until_ok_keeps_waiting_past_the_reset_while_the_lane_still_shows_the_stop()
     {
         await _w.Ready();
