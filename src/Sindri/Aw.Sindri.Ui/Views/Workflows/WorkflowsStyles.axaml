@@ -1,5 +1,9 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Styles.Resources>
+    <!-- One state cell's width on the Workflows page: wide enough for a state name and "r3/3 desk", the same under the head and in every row. -->
+    <x:Double x:Key="Size.StageCell">96</x:Double>
+  </Styles.Resources>
   <!-- The Workflows strip's rows while the views are stale: marked by a muted background, kept, the text never faded (screens spec §4.1, WCAG 1.4.3). Tokens only. -->
   <Style Selector="Border.strip-row.stale">
     <Setter Property="Background" Value="{DynamicResource Brush.Surface2}" />
