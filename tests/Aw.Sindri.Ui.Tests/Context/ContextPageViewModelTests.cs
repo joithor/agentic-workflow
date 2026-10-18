@@ -10,13 +10,13 @@ namespace Aw.Sindri.Ui.Tests.Context;
 public sealed class ContextPageViewModelTests
 {
     [Fact]
-    public void Opens_empty_and_makes_no_read_before_an_anchor()
+    public void Opens_empty_with_no_map_words_and_makes_no_read_before_an_anchor()
     {
         var server = new FakeSindriApi();
 
         var page = new ContextPageViewModel(server);
 
-        Assert.Equal((Labels.Context, Labels.ContextNoMap, string.Empty), (page.Title, page.Head, page.AnchorText));
+        Assert.Equal((Labels.Context, string.Empty, false, string.Empty), (page.Title, page.Head, page.HasHead, page.AnchorText));
         Assert.Equal(0, server.ContextCalls);
     }
 

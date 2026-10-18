@@ -207,6 +207,7 @@ internal sealed partial class ShellWindow : Window
                 {
                     Dispatcher.UIThread.Post(_navArrowing ? KeepFocus : KeepFocusOrReannounce, DispatcherPriority.Loaded);
                     _navArrowing = false;
+                    FocusContextAnchor();
                 }
 
                 break;

@@ -10,7 +10,7 @@
     <Grid ColumnDefinitions="Auto,*,Auto">
       <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
         <TextBlock x:Name="ContextTitle" Classes="page-title" Text="{Binding Title}" />
-        <TextBlock x:Name="ContextHead" Classes="caption subtle" Text="{Binding Head}" VerticalAlignment="Center" />
+        <TextBlock x:Name="ContextHead" Classes="caption subtle" Text="{Binding Head}" IsVisible="{Binding HasHead}" VerticalAlignment="Center" />
       </StackPanel>
       <TextBox x:Name="AnchorBox" Grid.Column="2" MinWidth="280" Text="{Binding AnchorText, Mode=TwoWay}" PlaceholderText="{Binding AnchorHint}"
                AutomationProperties.Name="{Binding AnchorLabel}" />

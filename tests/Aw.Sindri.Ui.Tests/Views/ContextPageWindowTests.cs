@@ -49,8 +49,8 @@ public sealed class ContextPageWindowTests
                 Assert.Same(shell.Context, page.DataContext);
                 var anchor = page.GetVisualDescendants().OfType<TextBox>().Single(t => t.Name == "AnchorBox");
                 Assert.Equal(Labels.ContextAnchor, AutomationProperties.GetName(anchor));
-                string[] hosts = ["LensStackHost", "FileMapHost", "ReviewHost", "NodeHost", "SourcesHost"];
-                Assert.All(hosts, h => Assert.Contains(page.GetVisualDescendants().OfType<Control>(), c => c.Name == h));
+                Assert.Same(anchor, window.FocusManager?.GetFocusedElement());
+                AssertHosts(page);
             }
             finally
             {
@@ -61,5 +61,12 @@ public sealed class ContextPageWindowTests
 
             return true;
         }, Token);
+    }
+
+    private static void AssertHosts(Control page)
+    {
+        Assert.False(page.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "ContextHead").IsEffectivelyVisible);
+        string[] hosts = ["LensStackHost", "FileMapHost", "ReviewHost", "NodeHost", "SourcesHost"];
+        Assert.All(hosts, h => Assert.Contains(page.GetVisualDescendants().OfType<Control>(), c => c.Name == h));
     }
 }
