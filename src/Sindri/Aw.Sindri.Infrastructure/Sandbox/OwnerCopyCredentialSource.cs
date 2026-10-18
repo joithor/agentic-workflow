@@ -208,7 +208,7 @@ internal sealed class OwnerCopyCredentialSource : IModelCredentialSource
             return Status(LoginState.Missing, "no Claude Code login in " + _claudeHome);
         }
 
-        return Parsed(file, "the Claude Code login", LoginFiles.ClaudeExpiry, "the Claude Code login has expired; sign in again");
+        return Parsed(file, "the Claude Code login", LoginFiles.ClaudeExpiry, "the Claude Code login has expired; open Claude Code once to refresh it");
     }
 
     private LoginStatus ProbeCodex()
@@ -241,13 +241,13 @@ internal sealed class OwnerCopyCredentialSource : IModelCredentialSource
     {
         OwnerOnly.EnsureDirectory(Path.GetDirectoryName(directory)!);   // why: the copy directory always has a parent
         OwnerOnly.EnsureDirectory(directory);
+        Stamp(directory);   // first: a sweep that meets the copy mid-Prepare sees it as new
         CopyFile(_claudeHome + "/.credentials.json", directory + "/.credentials.json");
         if (File.Exists(_options.Home + "/.claude.json") && LoginFiles.WithoutMcpSecrets(File.ReadAllBytes(_options.Home + "/.claude.json")) is { } settings)
         {
             OwnerOnly.WriteAtomically(directory + "/.claude.json", settings);   // the owner's MCP servers keep their names, not the tokens they were given
         }
 
-        Stamp(directory);
 
         var config = _options.Home + "/.claude-run";
         List<LoginMount> mounts = [new(_claudeHome, _claudeHome, MountMode.ReadOnly), new(directory, config, MountMode.ReadWrite)];
@@ -259,8 +259,8 @@ internal sealed class OwnerCopyCredentialSource : IModelCredentialSource
     {
         OwnerOnly.EnsureDirectory(Path.GetDirectoryName(directory)!);   // why: the copy directory always has a parent
         OwnerOnly.EnsureDirectory(directory);
+        Stamp(directory);   // first: a sweep that meets the copy mid-Prepare sees it as new
         CopyFile(_codexHome + "/auth.json", directory + "/auth.json");
-        Stamp(directory);
         var config = _options.Home + "/.codex-run";
         List<LoginMount> mounts = [new(_codexHome, _codexHome, MountMode.ReadOnly), new(directory, config, MountMode.ReadWrite)];
         mounts.AddRange(ReadOnlyEntries(_codexHome, config, _codexScratch));

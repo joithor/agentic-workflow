@@ -74,7 +74,7 @@ public sealed class OwnerCopyCredentialSourceTests
 
         Assert.Equal((LoginState.Ready, FakeOwnerHome.Now + TimeSpan.FromHours(3)), (ready.State, ready.ExpiresAt));
         Assert.Equal(LoginState.Expired, gone.State);
-        Assert.Contains("sign in again", gone.Detail, StringComparison.Ordinal);
+        Assert.Contains("open Claude Code once", gone.Detail, StringComparison.Ordinal);
     }
 
     [Fact]

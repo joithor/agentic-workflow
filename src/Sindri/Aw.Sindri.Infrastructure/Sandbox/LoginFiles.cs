@@ -11,19 +11,27 @@ internal static class LoginFiles
     internal static DateTimeOffset? ClaudeExpiry(JsonElement root) =>
         root.TryGetProperty("claudeAiOauth", out var oauth) && oauth.TryGetProperty("expiresAt", out var at) && at.TryGetInt64(out var ms) ? DateTimeOffset.FromUnixTimeMilliseconds(ms) : null;
 
-    // The access token's own 'exp' when auth.json holds a JWT; else Codex's refresh age after 'last_refresh' (spike item 1: Codex refreshes an older login when it starts).
+    // The earlier of the access token's own 'exp' and Codex's refresh age after 'last_refresh' (spike item 1: Codex refreshes an older login when it starts,
+    // whatever the token still has left, and a refresh in the copy rotates the owner's refresh token, spike item 2).
     internal static DateTimeOffset? CodexExpiry(JsonElement root)
     {
-        if (root.TryGetProperty("tokens", out var tokens) && tokens.TryGetProperty("access_token", out var jwt) && jwt.ValueKind == JsonValueKind.String && JwtExpiry(jwt.GetString()) is { } exp)
+        var exp = root.TryGetProperty("tokens", out var tokens) && tokens.TryGetProperty("access_token", out var jwt) && jwt.ValueKind == JsonValueKind.String
+            ? JwtExpiry(jwt.GetString())
+            : null;
+        var stale = RefreshAgeExpiry(root);
+        return (exp, stale) switch
         {
-            return exp;
-        }
+            ({ } e, { } r) => e < r ? e : r,
+            ({ } e, null) => e,
+            (null, var r) => r,
+        };
+    }
 
-        return root.TryGetProperty("last_refresh", out var last) && last.ValueKind == JsonValueKind.String
+    private static DateTimeOffset? RefreshAgeExpiry(JsonElement root) =>
+        root.TryGetProperty("last_refresh", out var last) && last.ValueKind == JsonValueKind.String
             && DateTimeOffset.TryParse(last.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var refreshed)
             ? refreshed + OwnerCopyOptions.CodexRefreshAge
             : null;
-    }
 
     private static DateTimeOffset? JwtExpiry(string? jwt)
     {

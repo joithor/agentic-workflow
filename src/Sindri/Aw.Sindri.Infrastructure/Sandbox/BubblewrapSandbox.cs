@@ -70,12 +70,19 @@ internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProce
     public Result<IReadOnlyList<string>> Wrap(SandboxPlan plan, IReadOnlyList<string> argv)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        return WrapWith(plan, argv, secrets.For(plan.Launch));
+        return WrapWith(plan, argv, secrets.For(plan.Launch), prepare: true);
     }
 
     /// <summary>Removes what <see cref="Wrap"/> left for a launch whose wrapper never ran (the launcher's failure path).</summary>
     /// <param name="plan">The plan that was wrapped.</param>
-    internal void Discard(SandboxPlan plan) => throw new NotSupportedException();
+    internal static void Discard(SandboxPlan plan)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        if (RunAreaPreparer.RunAreaOf(plan) is { } area && Directory.Exists(area + "/secrets"))
+        {
+            Directory.Delete(area + "/secrets", recursive: true);
+        }
+    }
 
     /// <inheritdoc />
     public async Task<Result<Unit>> SelfCheck(SandboxPlan plan, CancellationToken ct)
@@ -84,6 +91,11 @@ internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProce
         if (PolicyHidesTheLogin(plan) is { } refusal)
         {
             return refusal;
+        }
+
+        if (PrepareOnce(plan) is { } refused)
+        {
+            return refused;
         }
 
         var start = clock.GetTimestamp();
@@ -113,6 +125,19 @@ internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProce
         return Unit.Value;
     }
 
+    // The host side of the plan is made once, before the first canary, and its refusal (-015 missing worktree, -016 missing run directory) is the launch's, not a canary's.
+    private static Error? PrepareOnce(SandboxPlan plan)
+    {
+        try
+        {
+            return RunAreaPreparer.Prepare(plan);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, SandboxReasons.FsWrite, "the run area could not be prepared: " + e.Message);
+        }
+    }
+
     // The login canary also proves, on the plan, that the inner policy refuses the agent's tools the config directory.
     private static Error? PolicyHidesTheLogin(SandboxPlan plan)
     {
@@ -137,12 +162,12 @@ internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProce
     private static Error Unavailable(string reason, string detail) => SandboxRefusal.For(SindriErrors.LaunchSandboxUnavailable, reason, detail);
 
     // The launcher's values for the variables the plan leaves open go to bubblewrap on a descriptor, from a 0600 file that the wrapper deletes as it opens it. Without any value the command is plain.
-    private Result<IReadOnlyList<string>> WrapWith(SandboxPlan plan, IReadOnlyList<string> argv, IReadOnlyDictionary<string, string> values)
+    private Result<IReadOnlyList<string>> WrapWith(SandboxPlan plan, IReadOnlyList<string> argv, IReadOnlyDictionary<string, string> values, bool prepare)
     {
         ArgumentNullException.ThrowIfNull(argv);
         try
         {
-            if (RunAreaPreparer.Prepare(plan) is { } refusal)
+            if (prepare && RunAreaPreparer.Prepare(plan) is { } refusal)
             {
                 return refusal;
             }
@@ -167,6 +192,11 @@ internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProce
     {
         var directory = (RunAreaPreparer.RunAreaOf(plan) ?? throw new IOException("the plan names no run area")) + "/secrets";
         OwnerOnly.EnsureDirectory(directory);
+        foreach (var old in Directory.GetFiles(directory))
+        {
+            File.Delete(old);   // a retried Wrap, or a file a crash left: only the newest wrapper's file may exist
+        }
+
         var file = Path.Combine(directory, Path.GetRandomFileName());
         var text = string.Concat(pairs.Select(p => $"--setenv\0{p.Name}\0{p.Value}\0"));
         OwnerOnly.WriteAtomically(file, Encoding.UTF8.GetBytes(text));
@@ -175,7 +205,7 @@ internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProce
 
     private string? Run(SandboxPlan plan, SandboxCanary canary, TimeSpan timeout)
     {
-        var wrapped = WrapWith(plan, [canary.Shell, "-c", canary.Script], new Dictionary<string, string>(StringComparer.Ordinal));   // a canary needs no secret
+        var wrapped = WrapWith(plan, [canary.Shell, "-c", canary.Script], new Dictionary<string, string>(StringComparer.Ordinal), prepare: false);   // a canary needs no secret, and SelfCheck prepared the run area once
         if (wrapped.IsError)
         {
             return wrapped.Error.Message;

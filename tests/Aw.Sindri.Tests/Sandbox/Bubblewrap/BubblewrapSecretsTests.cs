@@ -75,7 +75,7 @@ public sealed class BubblewrapSecretsTests
         var file = sandbox.Wrap(area.Plan, ["claude"]).Value[4];
         Assert.True(File.Exists(file));
 
-        sandbox.Discard(area.Plan);
+        BubblewrapSandbox.Discard(area.Plan);
 
         Assert.False(File.Exists(file));
         Assert.Empty(Directory.Exists(area.Root + "/area/secrets") ? Directory.GetFileSystemEntries(area.Root + "/area/secrets") : []);
