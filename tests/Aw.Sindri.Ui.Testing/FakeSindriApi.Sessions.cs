@@ -19,7 +19,32 @@ internal sealed partial class FakeSindriApi
     /// <returns>The answer.</returns>
     internal RouteAnswer SessionOneAnswer(string provider, string id) => SessionAnswer ?? SessionAnswers.One(provider, id);
 
-    public Task<Result<SessionList>> Sessions(Uri api, SessionQuery query, CancellationToken cancellationToken) => throw new NotSupportedException();
+    private int _sessionsCalls;
+    private int _sessionCalls;
 
-    public Task<Result<SessionView>> Session(Uri api, string provider, string id, CancellationToken cancellationToken) => throw new NotSupportedException();
+    /// <summary>How many times the session list was read.</summary>
+    public int SessionsCalls => Volatile.Read(ref _sessionsCalls);
+
+    /// <summary>How many times one session was read.</summary>
+    public int SessionCalls => Volatile.Read(ref _sessionCalls);
+
+    /// <summary>The query of the latest list read; null before the first.</summary>
+    public SessionQuery? LastSessionsQuery { get; private set; }
+
+    /// <summary>The ref (provider/id) of the latest one-session read; null before the first.</summary>
+    public string? LastSessionRef { get; private set; }
+
+    public Task<Result<SessionList>> Sessions(Uri api, SessionQuery query, CancellationToken cancellationToken)
+    {
+        _ = Interlocked.Increment(ref _sessionsCalls);
+        LastSessionsQuery = query;
+        return Task.FromResult(Answer<SessionList>(api, SessionRoutes.List(query), SessionListAnswer()));
+    }
+
+    public Task<Result<SessionView>> Session(Uri api, string provider, string id, CancellationToken cancellationToken)
+    {
+        _ = Interlocked.Increment(ref _sessionCalls);
+        LastSessionRef = provider + "/" + id;
+        return Task.FromResult(Answer<SessionView>(api, SessionRoutes.One(provider, id), SessionOneAnswer(provider, id)));
+    }
 }
