@@ -31,7 +31,7 @@ public sealed class ShippedBlocksTests
                 "step.evidence.desk", "step.evidence.none", "step.evidence.ui-plan", "step.evidence.ui-run", "step.handtest.run",
                 "step.intake.ticket", "step.interview.answer", "step.interview.apply", "step.interview.questions", "step.interview.record",
                 "step.judge.choose", "step.owner.decide", "step.produce", "step.report.write", "step.reproduce.test-check", "step.reproduce.ui-check",
-                "step.review.fix", "step.review.recheck", "step.review.run", "step.rootcause.investigate", "step.scope.anchor",
+                "step.lens.run", "step.review.fix", "step.review.log", "step.review.recheck", "step.review.record", "step.review.round", "step.rootcause.investigate", "step.scope.anchor",
                 "step.scope.challenge", "step.scope.challenge-log", "step.scope.check", "step.scope.draft", "step.scope.evidence",
                 "step.scope.freeze", "step.scope.gather", "step.scope.intake", "step.scope.propose", "step.scope.read-brief",
                 "step.scope.read-change", "step.scope.read-tracker", "step.scope.reanchor", "step.scope.review", "step.scope.withdraw", "step.verify",
