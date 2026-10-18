@@ -63,6 +63,13 @@ public sealed class FakeSessionHost : ISessionHost
     }
 
     /// <inheritdoc/>
+    public ValueTask<bool> Exists(HostRef host, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        return ValueTask.FromResult(_clients.ContainsKey(host.Name));
+    }
+
+    /// <inheritdoc/>
     public ValueTask<int> AttachedClients(HostRef host, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(host);

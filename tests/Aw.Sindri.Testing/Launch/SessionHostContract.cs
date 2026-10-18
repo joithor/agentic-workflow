@@ -85,6 +85,21 @@ public abstract class SessionHostContract
         Expect.Equal(0, await host.AttachedClients(started.Value, CancellationToken.None));
     }
 
+    /// <summary>A started session exists until it is stopped; a name never started does not.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_session_exists_from_its_start_until_its_stop()
+    {
+        var host = Create();
+        var started = await host.Start(Session("snd-one"), TimeSpan.FromSeconds(4), CancellationToken.None);
+        Expect.True(await host.Exists(started.Value, CancellationToken.None));
+        Expect.True(!await host.Exists(new HostRef(host.Kind, "snd-never"), CancellationToken.None));
+
+        _ = await host.Stop(started.Value, CancellationToken.None);
+
+        Expect.True(!await host.Exists(started.Value, CancellationToken.None));
+    }
+
     /// <summary>The attach command names the session.</summary>
     [Fact]
     public void The_attach_command_names_the_session() =>

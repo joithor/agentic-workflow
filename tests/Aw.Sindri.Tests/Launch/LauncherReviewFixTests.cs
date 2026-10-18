@@ -206,6 +206,8 @@ public sealed class LauncherReviewFixTests : IDisposable
 
         public ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>> Stop(HostRef host, CancellationToken cancellationToken) => inner.Stop(host, cancellationToken);
 
+        public ValueTask<bool> Exists(HostRef host, CancellationToken cancellationToken) => inner.Exists(host, cancellationToken);
+
         public ValueTask<int> AttachedClients(HostRef host, CancellationToken cancellationToken) => inner.AttachedClients(host, cancellationToken);
 
         public IReadOnlyList<string> AttachArgv(HostRef host) => inner.AttachArgv(host);
