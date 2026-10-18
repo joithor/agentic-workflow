@@ -57,7 +57,7 @@ internal static class EgressInit
             .Append(Forward(socat, socatLog, network.SindriPort, insideDirectory + "/sindri.sock")).Append("sindri=$!\n")
             .Append("trap 'kill \"$proxy\" \"$sindri\" 2>/dev/null' EXIT\n")
             .Append("trap 'exit 143' TERM INT HUP\n")
-            .Append("exec 3<&0\n")
+            .Append("exec 3<&0 || exec 3</dev/null\n")
             .Append("sleep 0.2\n")
             .Append("alive \"$proxy\" && alive \"$sindri\" || { echo 'sindri: a network forwarder is not running; see ").Append(socatLog.Replace("'", "", StringComparison.Ordinal)).Append("' >&2; exit ").Append(ForwarderExitCode.ToString(CultureInfo.InvariantCulture)).Append("; }\n")
             .Append("export NO_PROXY='").Append(NoProxy).Append("' no_proxy='").Append(NoProxy).Append("'\n")

@@ -4,12 +4,14 @@ namespace Aw.Sindri.Infrastructure.Sandbox;
 internal sealed class RunningEgress : IAsyncDisposable
 {
     private static readonly TimeSpan _flushEvery = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan _warnEvery = TimeSpan.FromMinutes(1);
     private readonly EgressListener _proxy;
     private readonly EgressListener _sindri;
     private readonly CancellationTokenSource _stopFlushing = new();
     private readonly Task _flushing;
     private readonly Action<string> _warn;
     private int _disposed;
+    private long _lastWarn = long.MinValue;
 
     internal RunningEgress(string socat, string directory, EgressLog log, EgressListener proxy, EgressListener sindri, Action<string> warn)
     {
@@ -44,9 +46,10 @@ internal sealed class RunningEgress : IAsyncDisposable
             await _stopFlushing.CancelAsync().ConfigureAwait(false);
             await _flushing.ConfigureAwait(false);
         }
-        catch (OperationCanceledException)
+        catch (Exception e) when (e is not OutOfMemoryException)
         {
-            // The loop never started before dispose; there is nothing to wait for.
+            // The loop never started before dispose, or a warning callback threw; cleanup still runs and dispose does not throw.
+            _warn("egress: the flush loop ended with " + e.GetType().Name);
         }
         finally
         {
@@ -88,6 +91,19 @@ internal sealed class RunningEgress : IAsyncDisposable
         }
     }
 
+    private void WarnFlushFailed(Exception e)
+    {
+        // The first failure of a streak, then once a minute: a full disk must not print a line a second for the rest of the run.
+        var now = Environment.TickCount64;
+        if (_lastWarn != long.MinValue && now - _lastWarn < (long)_warnEvery.TotalMilliseconds)
+        {
+            return;
+        }
+
+        _lastWarn = now;
+        _warn("egress: writing egress.log failed, retrying next tick: " + e.Message);
+    }
+
     private async Task FlushLoop()
     {
         using var timer = new PeriodicTimer(_flushEvery);
@@ -101,7 +117,7 @@ internal sealed class RunningEgress : IAsyncDisposable
                 }
                 catch (Exception e) when (e is IOException or UnauthorizedAccessException)
                 {
-                    _warn("egress: writing egress.log failed, retrying next tick: " + e.Message);
+                    WarnFlushFailed(e);
                 }
             }
         }
