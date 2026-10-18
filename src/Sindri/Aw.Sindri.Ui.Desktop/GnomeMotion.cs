@@ -44,7 +44,7 @@ internal static class GnomeMotion
             return process.ExitCode == 0 && string.Equals(output.GetAwaiter().GetResult().Trim(), "false", StringComparison.Ordinal);
 #pragma warning restore RS0030
         }
-        catch (Win32Exception)
+        catch (Exception e) when (e is Win32Exception or IOException or InvalidOperationException) // why: a deleted working directory fails Process.Start with an IOException
         {
             return false;
         }

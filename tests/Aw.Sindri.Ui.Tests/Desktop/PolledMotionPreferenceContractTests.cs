@@ -30,4 +30,20 @@ public sealed class PolledMotionPreferenceContractTests : MotionPreferenceContra
         _source = reduce;
         _clock.Advance(_interval);
     }
+
+    [Fact]
+    public void A_read_that_throws_on_a_tick_keeps_the_last_value_and_raises_nothing()
+    {
+        var fail = false;
+        using var motion = new PolledMotionPreference(() => fail ? throw new FileNotFoundException("cwd is gone") : true, _clock, _interval);
+        var changes = 0;
+        motion.Changed += (_, _) => changes++;
+        fail = true;
+
+        _clock.Advance(_interval);
+        _clock.Advance(_interval);
+
+        Assert.True(motion.ReduceMotion);
+        Assert.Equal(0, changes);
+    }
 }
