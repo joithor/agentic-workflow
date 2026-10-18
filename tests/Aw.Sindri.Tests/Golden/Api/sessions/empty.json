@@ -1,0 +1,12 @@
+{
+  "sessions": [],
+  "recentlyEnded": [],
+  "problems": [],
+  "counts": {
+    "live": 0,
+    "asking": 0,
+    "outsideWorkflow": 0
+  },
+  "empty": "No agent sessions are running.",
+  "asOf": "2026-10-16T12:05:00.0000000Z"
+}
