@@ -159,7 +159,7 @@ public sealed class AgentRuntimeInterpreterTests(SindriTimeSkippingServer skippi
             _ = await WorkflowsHarness.Until(handle, static v => v.Run is not null && v.State == "write");
             await Launched(ct);
 
-            await skipping.Environment.DelayAsync(TimeSpan.FromMinutes(2), ct);
+            await WorkflowsHarness.Skip(skipping.Environment, TimeSpan.FromMinutes(2), ct);
             var parked = await WorkflowsHarness.Until(handle, static v => v.Question is not null);
 
             Assert.Equal(ParkReason.Timeout, parked.Question?.Reason);
@@ -199,7 +199,7 @@ public sealed class AgentRuntimeInterpreterTests(SindriTimeSkippingServer skippi
 
             var result = await handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(Report(view.Run!.Value)), new WorkflowUpdateOptions(new string('b', 32)));
 
-            Assert.Equal(("write", ParkReason.Budget), (result.Instance.State, result.Instance.Question?.Reason));
+            Assert.Equal(("parked", ParkReason.Budget), (result.Instance.State, result.Instance.Question?.Reason));
         });
     }
 
@@ -223,7 +223,12 @@ public sealed class AgentRuntimeInterpreterTests(SindriTimeSkippingServer skippi
         return new StepCompleted("agent:session", run, OutcomeName.From("done"), new Dictionary<FactKey, FactValue> { [FactKey.From("fact:resolution")] = output }, Tokens: 0, StepRuntime.Agent, new string('f', 64));
     }
 
-    private async Task Launched(CancellationToken ct) => await WaitFor(() => _launcher.Requests.Count > 0, ct);
+    // The launcher has been asked and the launch activity has had time to finish; a command that lands before it does is applied in the launch phase, which the tests that need the watch avoid.
+    private async Task Launched(CancellationToken ct)
+    {
+        await WaitFor(() => _launcher.Requests.Count > 0, ct);
+        await Task.Delay(TimeSpan.FromSeconds(1), ct);
+    }
 
     private static async Task WaitFor(Func<bool> condition, CancellationToken ct, int seconds = 30)
     {
@@ -348,10 +353,10 @@ public sealed class AgentRuntimeInterpreterTests(SindriTimeSkippingServer skippi
 
         private static async Task ApproveTarget(IServiceProvider sindri, CancellationToken ct)
         {
-            var profile = new SindriProfile(SindriProfile.CurrentSchemaVersion, "tester", Repos: [new RepoEntry(_item.Repo, Repo)],
+            var declared = new SindriProfile(SindriProfile.CurrentSchemaVersion, "tester", Repos: [new RepoEntry(_item.Repo, Repo)],
                 Workflow: new WorkflowSettings(Agent: new WorkflowAgentSettings(AgentId.From("claude-code"))));
-            var json = sindri.GetRequiredService<JsonSerializerOptions>();
-            var saved = await sindri.GetRequiredService<IApprovals>().Save(new LoadedProfile(profile, ProfileHashing.Of(AwJson.Serialize(profile, json)), "/home/profile.yaml"), ct);
+            var profile = ProfileRules.Check(declared).Value;
+            var saved = await sindri.GetRequiredService<IApprovals>().Save(new LoadedProfile(profile, ProfileHashing.Of(AwJson.Serialize(profile, SliceHarness.Json)), "/home/profile.yaml"), ct);
             Assert.False(saved.IsError, saved.IsError ? saved.Error.Message : null);
         }
 
