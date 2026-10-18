@@ -8,7 +8,7 @@
 // 3. Every payload in recipes/sindri/evals/workflow.scoping and workflow.idea-to-brief whose fact has a schema (start inputs and trigger
 //    outputs) satisfies it; a string for such a fact is a failure, since the facts are JSON values.
 // 4. seeds.json holds exactly the facts recipes/sindri/workflow.scoping.yaml seeds at intake, and each seed that has a schema satisfies it.
-//    5. The line fixture's gold scope packets (tests/fixtures/line/gold/scope/*): scope-map, acceptance, challenge and coverage satisfy their schemas, questions the 7.3 shape, every cited id resolves, coverage rows follow SCP-COV-002.
+// 5. The line fixture's gold scope packets (tests/fixtures/line/gold/scope/*): scope-map, acceptance, challenge and coverage satisfy their schemas, questions the 7.3 shape, every cited id resolves, coverage rows follow SCP-COV-002.
 // Exit codes: 0 ok, 1 a check failed, 2 a tool error (missing Ajv: run `npm ci --prefix scripts`). One line per failure.
 
 import fs from "node:fs";
@@ -120,7 +120,8 @@ try {
   // 5. the line fixture's gold scope packets: each packet file satisfies its schema (a packet file carries schemaVersion)
   const GOLD_FILES = { "scope-map.json": "scope-map.json", "acceptance.json": "acceptance.json", "challenge.json": "challenge.json", "coverage.json": "coverage.json" };
   const gdir = "tests/fixtures/line/gold/scope";
-  if (fs.existsSync(path.join(ROOT, gdir))) {
+  if (!fs.existsSync(path.join(ROOT, gdir))) fail(gdir, "missing: the line fixture's gold scope packets");
+  else {
     for (const change of fs.readdirSync(path.join(ROOT, gdir))) {
       for (const [file, schemaFile] of Object.entries(GOLD_FILES)) {
         const where = `${gdir}/${change}/${file}`;
@@ -145,6 +146,20 @@ try {
         if (r.found.count === 0 && r.limits.length > 0 && r.state !== "not-searched") fail(`${gdir}/${change}/coverage.json`, `${r.lens} has a limit and nothing found, so it is not-searched`);
         if (r.state === "found" && r.found.count === 0) fail(`${gdir}/${change}/coverage.json`, `${r.lens} is found with a count of 0`);
       }
+      // ids resolve: question surfaces and blocks, acceptance surfaces, and the answers' recordedAs
+      const surfaceIds = new Set((readJson(`${gdir}/${change}/scope-map.json`).surfaces ?? []).map((x) => x.id));
+      const acceptance = readJson(`${gdir}/${change}/acceptance.json`);
+      const acIds = new Set((acceptance.items ?? []).map((x) => x.id));
+      if (!Array.isArray(qfile.questions) || qfile.questions.length === 0) fail(qwhere, "questions is empty or not a list");
+      for (const q of Array.isArray(qfile.questions) ? qfile.questions : []) {
+        for (const s of q.surfaces ?? []) if (!surfaceIds.has(s)) fail(qwhere, `${q.id} names surface ${s}, which is not in scope-map.json`);
+        for (const b of q.blocks ?? []) if (!acIds.has(b)) fail(qwhere, `${q.id} blocks ${b}, which is not in acceptance.json`);
+      }
+      for (const it of acceptance.items ?? []) for (const s of it.surfaces ?? []) if (!surfaceIds.has(s)) fail(`${gdir}/${change}/acceptance.json`, `${it.id} names surface ${s}, which is not in scope-map.json`);
+      fs.readFileSync(path.join(ROOT, gdir, change, "answers.jsonl"), "utf8").split("\n").filter(Boolean).forEach((l) => {
+        const a = JSON.parse(l);
+        for (const r of a.recordedAs ?? []) if (!acIds.has(r) && !surfaceIds.has(r)) fail(`${gdir}/${change}/answers.jsonl`, `${a.id} records ${r}, which is in neither acceptance.json nor scope-map.json`);
+      });
       const validateQ = ajv.compile({ ...allRounds, $id: undefined });
       if (!validateQ(qfile.questions)) fail(qwhere, `questions do not satisfy questions.json (${ajv.errorsText(validateQ.errors)})`);
     }
