@@ -3,10 +3,10 @@ id: workflow.build
 version: 1
 description: "Block recipe: one TDD builder for one phase in its own worktree: a failing test per acceptance item, then code in atomic commits inside the phase's allowed files."
 inputs:
-  - { key: fact:phasePacket, label: "Phase packet (frozen)", type: packet }
-  - { key: fact:workspace,   label: "Phase worktree", type: text }
-  - { key: fact:buildNotes,  label: "Notes from a later station", type: payload }
-  - { key: fact:lineContext, label: "Line context (base, stack parent, run area)", type: payload }
+  - { key: fact:phasePacket, label: "Phase packet (frozen)", type: packet, kind: packet }
+  - { key: fact:workspace,   label: "Phase worktree", type: text, kind: text }
+  - { key: fact:buildNotes,  label: "Notes from a later station", type: payload, kind: payload }
+  - { key: fact:lineContext, label: "Line context (base, stack parent, run area)", type: payload, kind: payload }
 outputs:
   - { key: fact:built,        label: "Built head",  type: payload, from: checks }
   - { key: fact:change,       label: "Change under review", type: payload, from: checks }

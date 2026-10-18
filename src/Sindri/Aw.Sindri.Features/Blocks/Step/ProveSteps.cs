@@ -30,11 +30,11 @@ internal static class ProveSteps
 
     /// <summary>'step.prove.evidence': the proof checks, then assembles and machine-freezes the proof pack; 'complete' or 'incomplete' with findings.</summary>
     public static BlockDescriptor Evidence { get; } = BlockStep("step.prove.evidence", Capability.Tools)
-        .Reads("fact:phasePacket", "fact:built", "fact:redTests", "fact:manualTest", "fact:evidencePack", "fact:evidenceSummary", "fact:beforeAfter", "fact:holdoutResult")
+        .Reads("fact:phasePacket", "fact:built", "fact:redTests", "fact:beforeAfter", "fact:holdoutResult")
         .Reports("complete", "incomplete").Writes(On("fact:proofPack", "complete"), On("fact:findings", "incomplete"));
 
     /// <summary>'step.prove.fail-log': every failure path ends here; writes what failed as findings for the builder; 'logged'.</summary>
     public static BlockDescriptor FailLog { get; } = BlockStep("step.prove.fail-log", Capability.None)
-        .Reads("fact:findings", "fact:manualTest", "fact:evidencePack", "fact:evidenceSummary", "fact:beforeAfter", "fact:holdoutResult").Reports("logged")
+        .Reads("fact:findings", "fact:beforeAfter", "fact:holdoutResult").Reports("logged")
         .Writes(On("fact:findings", "logged"));
 }

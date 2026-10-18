@@ -3,10 +3,10 @@ id: workflow.prove
 version: 1
 description: "Block recipe: prove every acceptance item of one phase on its head commit: a hand test and the verify journey in the running app, the evidence route, before and after for fixes, and the hidden scenarios; ends with a frozen proof pack."
 inputs:
-  - { key: fact:phasePacket, label: "Phase packet",  type: packet }
-  - { key: fact:built,       label: "Built head",    type: payload }
-  - { key: fact:workspace,   label: "Workspace",     type: text }
-  - { key: fact:redTests,    label: "Red tests",     type: payload }
+  - { key: fact:phasePacket, label: "Phase packet",  type: packet, kind: packet }
+  - { key: fact:built,       label: "Built head",    type: payload, kind: payload }
+  - { key: fact:workspace,   label: "Workspace",     type: text, kind: text }
+  - { key: fact:redTests,    label: "Red tests",     type: payload, kind: payload }
 outputs:
   - { key: fact:proofPack, label: "Proof pack", type: packet,  from: evidence-pack }
   - { key: fact:findings,  label: "Why not proven", type: payload, from: fail-log }
