@@ -25,6 +25,7 @@ internal sealed partial class StartFormViewModel : ObservableObject
     private bool _blocked;   // the recipes or the recipe could not be read, or there is none to start
     private bool _sentFirst;
     private bool _sentNext;
+    private bool _reading;   // the chosen recipe's inputs are being read: Start waits for them
 
     /// <summary>The form over its ports.</summary>
     /// <param name="catalog">The command catalog: its StartInstance row says whether Start is ready.</param>
@@ -81,8 +82,17 @@ internal sealed partial class StartFormViewModel : ObservableObject
         get;
         set
         {
+            var changed = !string.Equals(field, value, StringComparison.Ordinal);
             Set(ref field, value);
             ClearError();
+            if (changed)
+            {
+                ResetAttempt();   // what an earlier answer said was about the item before this one
+                if (PickedItem is { } picked && !string.Equals(picked.Id, value, StringComparison.Ordinal))
+                {
+                    PickedItem = null;   // the list must not keep showing an item the box no longer names
+                }
+            }
         }
     } = string.Empty;
 
@@ -133,8 +143,8 @@ internal sealed partial class StartFormViewModel : ObservableObject
     /// <summary>The Start button's words: the catalog's label, and "Starting…" while it is in flight.</summary>
     public string ButtonText => IsSending ? Labels.StartSending : Labels.StartWorkflow;
 
-    /// <summary>True when a press would send: ready, nothing blocks it, not in flight and not already accepted.</summary>
-    public bool CanStart => IsReady && !_blocked && !IsSending && !_sentFirst;
+    /// <summary>True when a press would send: ready, nothing blocks it, the recipe's inputs are read, not in flight and not already accepted.</summary>
+    public bool CanStart => IsReady && !_blocked && !_reading && !IsSending && !_sentFirst;
 
     /// <summary>The inline error: the API's code and detail as served, or the sentence of a field that cannot be sent; empty when none.</summary>
     public string Error { get; private set => Set(ref field, value); } = string.Empty;
@@ -178,6 +188,9 @@ internal sealed partial class StartFormViewModel : ObservableObject
 
     /// <summary>True when the new-attempt button would send: offered, not in flight and not sent yet.</summary>
     public bool CanStartNewAttempt => OffersNewAttempt && !IsSending && !_sentNext;
+
+    /// <summary>True when the last accepted start opened a new instance's frame (so the window moves focus there, not back to the opener).</summary>
+    public bool OpenedFrame { get; private set => Set(ref field, value); }
 
     private (ControlKind Kind, string Stage)? Row => _catalog.Row(Action) is { } row ? CatalogReadiness.Parse(row.Ui) : null;
 }

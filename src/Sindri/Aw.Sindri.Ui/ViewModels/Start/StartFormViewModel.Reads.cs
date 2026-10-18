@@ -16,7 +16,7 @@ internal sealed partial class StartFormViewModel
         var form = ++_form;
         (Recipe, PickedItem, _chosen) = (null, null, null);
         (Recipes, Fields, Items, _itemKey) = ([], [], [], null);
-        (_sentFirst, _sentNext, _blocked) = (false, false, false);
+        (_sentFirst, _sentNext, _blocked, _reading, OpenedFrame) = (false, false, false, false, false);
         (ItemId, Note, Outcome, IsSending, OffersNewAttempt) = (itemId ?? string.Empty, string.Empty, string.Empty, false, false);
         ClearError();
         IsOpen = true;
@@ -34,7 +34,7 @@ internal sealed partial class StartFormViewModel
         var (listed, queued) = (await recipes.ConfigureAwait(true), await queue.ConfigureAwait(true));
         if (form != _form)
         {
-            return;   // Esc and a new opening came first: this read is for a form that is gone
+            return;   // Esc, Cancel or a new opening came first (each ends this form): this read is for a form that is gone
         }
 
         IsLoading = false;
@@ -53,8 +53,12 @@ internal sealed partial class StartFormViewModel
         }
     }
 
-    /// <summary>Esc or Cancel: closes the form; nothing is sent.</summary>
-    internal void Close() => IsOpen = false;
+    /// <summary>Esc or Cancel: closes the form; nothing more is sent, and an answer still on its way opens no frame.</summary>
+    internal void Close()
+    {
+        _form++;   // ends this form's reads and sends: their answers are for a form that is gone
+        IsOpen = false;
+    }
 
     /// <summary>Chooses a recipe and reads its inputs.</summary>
     /// <param name="recipe">The recipe.</param>
@@ -72,18 +76,23 @@ internal sealed partial class StartFormViewModel
         _chosen = recipe;
         (Recipe, Fields, _itemKey, Note) = (recipe, [], null, string.Empty);
         ClearError();
+        ResetAttempt();
         if (_url() is not { } api)
         {
+            (_chosen, _reading) = (null, false);   // the same choice can be made again when the API is back
             Blocked(SindriUiErrors.NotRunning.With(SindriUiErrors.NotRunning.Title));
             return;
         }
 
+        _reading = true;
+        OnChanged(nameof(CanStart));
         var read = await _api.Recipe(api, recipe.Id, hash: null, cancellationToken).ConfigureAwait(true);
         if (form != _form || !ReferenceEquals(Recipe, recipe))
         {
             return;   // another recipe was chosen, or the form was opened again, while this one was read
         }
 
+        _reading = false;
         if (read.IsError)
         {
             _chosen = null;   // the same choice can be made again
@@ -91,9 +100,14 @@ internal sealed partial class StartFormViewModel
             return;
         }
 
+        Show(read.Value);
+    }
+
+    private void Show(RecipeView read)
+    {
         _blocked = false;
-        _itemKey = read.Value.Inputs.FirstOrDefault(i => i.Type == FactType.Item)?.Key;
-        Fields = [.. read.Value.Inputs.Where(i => i.Type != FactType.Item).Select(i => new StartFieldViewModel(i, _files))];
+        _itemKey = read.Inputs.FirstOrDefault(i => i.Type == FactType.Item)?.Key;
+        Fields = [.. read.Inputs.Where(i => i.Type != FactType.Item).Select(i => new StartFieldViewModel(i, _files))];
         foreach (var field in Fields)
         {
             field.Edited += (_, _) => ClearError();
@@ -127,6 +141,6 @@ internal sealed partial class StartFormViewModel
 
     private static List<ItemChoice> Itemised(QueueView queue) =>
     [
-        .. queue.Groups.SelectMany(g => g.Items).DistinctBy(i => i.Id, StringComparer.Ordinal).Select(i => new ItemChoice(i.Id, Labels.StartItemLine(i.Id, i.Title))),
+        .. queue.Groups.SelectMany(g => g.Items).DistinctBy(i => i.Id, StringComparer.Ordinal).Select(i => new ItemChoice(i.Id, Labels.StartItemLine(i.Id, i.Title), i.Repo)),
     ];
 }

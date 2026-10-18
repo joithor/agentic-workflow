@@ -94,11 +94,23 @@ internal sealed partial class StartFormViewModel
 
         if (_itemKey is { } itemKey)
         {
-            // SND-WF-014: a recipe's item input must name the request's item, so it is made from the one picked
-            facts[itemKey] = new StartFact(ItemFactName, Encoding.UTF8.GetBytes(new JsonObject { ["id"] = item }.ToJsonString()));
+            facts[itemKey] = ItemFact(item);   // SND-WF-014: a recipe's item input must name the request's item, so it is made from the one picked
         }
 
         return new StartInstanceRequest(recipe.Id, item, next, facts);
+    }
+
+    // The engine's item fact is {id, repo, spec}: effect.claim.ref reads the repo from it. A picked item brings its repo; a typed id the queue does not
+    // list has none, and the fact is the id alone (SND-WF-014 compares only the id).
+    private StartFact ItemFact(string item)
+    {
+        var fact = new JsonObject { ["id"] = item };
+        if (Items.FirstOrDefault(i => string.Equals(i.Id, item, StringComparison.Ordinal))?.Repo is { Length: > 0 } repo)
+        {
+            fact["repo"] = repo;
+        }
+
+        return new StartFact(ItemFactName, Encoding.UTF8.GetBytes(fact.ToJsonString()));
     }
 
     private void Accepted(StartedView started, bool next)
@@ -113,6 +125,7 @@ internal sealed partial class StartFormViewModel
         }
 
         var instance = started.Instance;
+        OpenedFrame = !started.Existing;
         OffersNewAttempt = false;
         Outcome = !started.Existing ? string.Empty : started.Finished ? Labels.StartFinished(instance.Address) : Labels.StartAlreadyRunning(instance.Address);
         OffersNewAttempt = started.Existing && started.Finished && !_sentNext;
@@ -147,5 +160,14 @@ internal sealed partial class StartFormViewModel
 
         (ErrorCode, ErrorDetail, Error) = (string.Empty, string.Empty, string.Empty);
         OnChanged(nameof(HasError));
+    }
+
+    // What an answer left behind belongs to the item and recipe it answered: another item or recipe starts clean.
+    private void ResetAttempt()
+    {
+        (_sentFirst, _sentNext) = (false, false);
+        Outcome = string.Empty;
+        OffersNewAttempt = false;
+        OnChanged(nameof(CanStart));
     }
 }
