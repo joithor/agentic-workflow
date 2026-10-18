@@ -206,8 +206,12 @@ internal sealed partial class ShellWindow : Window
                 if (!_openingSettings)
                 {
                     Dispatcher.UIThread.Post(_navArrowing ? KeepFocus : KeepFocusOrReannounce, DispatcherPriority.Loaded);
+                    var arrowing = _navArrowing;
                     _navArrowing = false;
-                    FocusContextAnchor();
+                    if (!arrowing)
+                    {
+                        FocusContextAnchor();   // the page was opened (click, chord, link), not arrowed onto: arrows keep focus on the tab (Y1)
+                    }
                 }
 
                 break;
