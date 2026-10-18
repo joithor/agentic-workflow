@@ -112,13 +112,40 @@ the Claude version (`claude --version`) and the readings here:
 
 Claude Code version: _pending_.
 
+## Host detection (CO-2b)
+
+`Core/Sessions/HostRules.Detect` answers, for one live session, what shows it (collector spec §6.1). The inputs are the process table, the agent's allowlisted
+environment and the Claude record's `tmux` field; the world comes in through `IHostSources` (environment by pid, socket by tmux server pid, the tmux view by
+socket, the terminals and the Meta teams), which `Features/Sessions/PassHostSources` backs for one pass, each read under the pass's own deadline.
+
+- **The chain:** `HostChain.Ancestors` follows parents (at most 32, ending at pid 0, a missing parent or a cycle); `Classify` takes the first ancestor that is a host:
+  a `tmux: server`, `sshd`, a `terminals.json` terminal (matched by comm, argv[0] or exe basename; comm is cut at 15 characters), Warp or an IDE (`code`, `cursor`).
+- **Kinds:** `tmux`, `warp`, `terminal`, `ide`, `ssh`, `t3` (an sdk-ts record under `.t3/worktrees`, when no ancestor is a host), `unknown`. A Warp shell (`TERM_PROGRAM=WarpTerminal`)
+  is Warp whichever process name the terminal runs under; the agent's own `TERM_PROGRAM` counts only when no ancestor is a host and it is not tmux-hosted.
+- **Tmux:** the socket comes from the server's open `socket:[inode]` files matched to `/proc/net/unix` (`UnixSockets`), never from calling tmux. The agent's own `TMUX`
+  fills in only when the table gives none and the server pid in it is this server's. The pane is the one whose pid is the agent or an ancestor. The terminal that shows a
+  tmux session comes from the chain of an attached client of that session only: the agent inherited `TERM_PROGRAM` and `WARP_*` through the server, which say nothing.
+  The label is `tmux · <terminal>`, or `tmux` with no client or a server that can't be read (that is not a problem row; only a pass-deadline timeout is).
+- **Socket kind:** `sindri` (path ends `/sindri`), `default` (ends `/default`, whatever the session is named, so the owner's lanes there show `default`), `team` (the socket
+  is named for a Meta team, or the session is `<team>-<lane>`), else `other`. Teams come from `<state>/meta/team.json` and `<state>/meta/teams/*/team.json` (`team` and `lanes` only).
+- **Facts for human callers only** (never in the ledger payload): `TerminalFacts` (`XWindow` from `WINDOWID`, `KittyWindow`, `KittyListenOn`, `WeztermPane`, `WarpFocusUrl` only when it
+  has the form `warp://session/<32 lower-case hex>`) and `TmuxFacts` (`Socket`, `SocketKind`, `Session`, `Pane`).
+- **`TmuxCli`** (`Infrastructure/Sessions`) is the only code that runs tmux (ARCH-SESS-001, spec CI-5): the four read-only verbs `list-sessions`, `list-panes`,
+  `list-clients`, `display-message` (the one list `TmuxRules.ReadVerbs` in the architecture test), every call as `tmux -S <absolute socket> <verb> …` with `TMUX` and
+  `TMUX_PANE` removed from the child's environment, through its own bounded `Process.Start` that kills the child only. Output uses tabs (session names may hold spaces).
+  A socket path that is not absolute is refused before any spawn. Each call is bounded by 1 s (`TmuxCli.CallBudget`, spec CO9); one read makes two calls (panes, then clients), so a
+  silent socket costs at most 2 s before it is skipped, and a pass deadline cancels without marking the socket. One read of a socket gives panes and clients and is kept 10 s; a socket that timed out is not asked again for 10 s. Only `list-panes` and `list-clients` are called today.
+- **Debug log:** one line per session whose host kind or socket kind changed (`session <ref> host <kind> tmux socket kind <kind>`): refs and kinds only, no path, cwd or title.
+- Tests: `HostRulesTests` (unit), `TmuxCliTests` (against a stand-in program), the port contracts (`TmuxServersContract`, `UnixSocketsContract`, `TeamNamesContract`, `TerminalNamesContract` in
+  `Aw.Sindri.Testing`, bound to each fake and to its real adapter; the tmux one runs against a private `tmux -L aw-co2b-<pid>` server it starts and kills itself, skipped without tmux), `HostSourceFilesTests`, and the host golden
+  `tests/Aw.Sindri.Tests/Sessions/Golden/snapshot-hosts.json` over `tests/fixtures/sessions/proc`.
+
 ## Built so far
 
 CO-2a (discovery): `Aw.Sindri.Core/Sessions/` (the records, the pure rules `SessionLiveness`, `AgentProcessRules`, `SessionStateRules.Merge`,
 `FleetChangeRules.Diff`/`Restore`, `EnvironmentAllowlist`, the ports), `Aw.Sindri.Core/Launch/` and `Infrastructure/Launch/` (the minimal launcher reader and agent
 catalog, CA-0), `Infrastructure/Sessions/` (`ProcProcessTable`, `ClaudeSessionRecords`, `FleetStateFiles`, `TranscriptFiles`, `SessionSnapshotStore`),
-`Features/Sessions/` (the pass, `RecordFleetChanges`, `RestoreFleetHistory`) and `Host/Server/SessionCollectorHost`. Host detection (`HostRules`, tmux, terminals) is
-CO-2b, so every session's host reads `unknown` until then; the routes and the CLI are CO-3. The event is `fleet.changed`; the codes are `SND-SESSION-001`
+`Features/Sessions/` (the pass, `RecordFleetChanges`, `RestoreFleetHistory`) and `Host/Server/SessionCollectorHost`. Host detection landed in CO-2b (the next section); the routes and the CLI are CO-3. The event is `fleet.changed`; the codes are `SND-SESSION-001`
 (a source failed), `-002` (`unsupported-platform`, `proc-unreadable`, `disabled`) and `-003` (a test override) in `docs/csharp/sindri.md`. The snapshot over
 `tests/fixtures/sessions/` is pinned by `tests/Aw.Sindri.Tests/Sessions/Golden/snapshot-discovery.json`. `LaunchId` (the engine's, `Core/Workflow/Engine/LaunchId.cs`, `LCH-` and 32 hex) is the
 typed id of `AW_SINDRI_LAUNCH`; a value of another shape is dropped.
