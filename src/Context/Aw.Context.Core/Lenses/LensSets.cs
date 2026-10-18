@@ -1,6 +1,7 @@
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Linking;
+using Aw.Context.Core.Results;
 using Aw.Kernel;
 
 namespace Aw.Context.Core.Lenses;
@@ -23,7 +24,7 @@ internal static class LensSets
             return tooMany;
         }
 
-        var resolved = AnchorSet.Resolve(graph, distinct, depth);
+        var resolved = AnchorSet.Resolve(graph, distinct, depth, basis.Cascade);
         if (resolved.IsError)
         {
             return resolved.Error;
@@ -38,10 +39,19 @@ internal static class LensSets
         var keys = scopes.Select(s => s.Anchor.Key.Value).ToList();
         var coverage = AnchorSet.Coverage(basis, graph, scopes, ownUnion);
         return new LensesSetView(2, [.. scopes.Select(Anchor)], missing, basis.Map, basis.Draft, depth, basis.AsOf, bands, LensEdges.Across(graph, items),
-            Conflicts(scopes, pairs), coverage, LensSearchedBuilder.For(basis, keys, depth, bands), [], new Dictionary<string, Results.Citation>(StringComparer.Ordinal))
+            Conflicts(scopes, pairs), coverage, LensSearchedBuilder.For(basis, keys, depth, bands), [], new Dictionary<string, Citation>(StringComparer.Ordinal))
         {
             MapCommit = basis.MapCommit,
+            SkippedComponents = Skipped(scopes),
         };
+    }
+
+    // Each skipped unit once, across the anchors, ordinal by unit; null when none.
+    private static List<SkippedComponent>? Skipped(List<LensScope> scopes)
+    {
+        var all = scopes.SelectMany(s => s.Cascade.SkippedComponents).GroupBy(c => c.Unit, StringComparer.Ordinal)
+            .OrderBy(g => g.Key, StringComparer.Ordinal).Select(g => g.OrderByDescending(c => c.Features).First()).ToList();
+        return all.Count > 0 ? all : null;
     }
 
     private static LensAnchor Anchor(LensScope scope) =>

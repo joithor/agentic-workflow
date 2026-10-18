@@ -1,3 +1,4 @@
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Kernel;
 
@@ -7,7 +8,7 @@ namespace Aw.Context.Core.Lenses;
 internal static class AnchorSet
 {
     /// <summary>The anchors that resolve (de-duplicated by node) and the values that don't (as given). An ambiguous name refuses the call; with nothing resolved the first miss is the answer.</summary>
-    internal static Result<(List<LensScope> Scopes, List<string> Missing)> Resolve(GraphSnapshot graph, IReadOnlyList<string> given, int depth)
+    internal static Result<(List<LensScope> Scopes, List<string> Missing)> Resolve(GraphSnapshot graph, IReadOnlyList<string> given, int depth, CascadeOptions? options = null)
     {
         var scopes = new List<LensScope>();
         var missing = new List<string>();
@@ -17,7 +18,7 @@ internal static class AnchorSet
             var node = AnchorMatch.Resolve(graph, raw);
             if (node.IsSuccess)
             {
-                if (!scopes.Exists(s => s.Anchor.Key.Value == node.Value.Key.Value) && LensScope.Of(graph, node.Value.Key, depth) is { } scope)
+                if (!scopes.Exists(s => s.Anchor.Key.Value == node.Value.Key.Value) && LensScope.Of(graph, node.Value.Key, depth, options) is { } scope)
                 {
                     scopes.Add(scope);
                 }

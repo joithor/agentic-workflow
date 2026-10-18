@@ -35,10 +35,16 @@ internal sealed class ContextGraph(
         path.Handle(new FindPathRequest(from, to, scope), cancellationToken);
 
     public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
-        lenses.Handle(new GetLensesRequest(anchor, read, depth, scope), cancellationToken);
+        Lenses(anchor, read, new LensRange(depth), scope, cancellationToken);
+
+    public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) =>
+        lenses.Handle(new GetLensesRequest(anchor, read, range.Depth, scope) { Hops = range.Hops }, cancellationToken);
 
     public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
-        lensesSet.Handle(new GetLensesSetRequest(anchors, read, depth, scope), cancellationToken);
+        LensesOf(anchors, read, new LensRange(depth), scope, cancellationToken);
+
+    public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) =>
+        lensesSet.Handle(new GetLensesSetRequest(anchors, read, range.Depth, scope) { Hops = range.Hops }, cancellationToken);
 
     public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
         Lenses(anchor, draft ? MapRead.NewestDraft : MapRead.Current, depth, scope, cancellationToken);

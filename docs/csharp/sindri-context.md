@@ -348,7 +348,7 @@ routes through the real pipeline (preview, protected import and its refusals, ev
   - `ProbeRunner`. `Run` asks through a delegate and compares with the baseline (038: lower means, or a probe with more absent nodes than the same probe in the baseline); `Check` validates the file (035 with a key path).
   - `ProbeReport` and `ProbeTotals`.
   - The ports `IProbeFileReader` and `IProbeReportStore`.
-- **Core settings and errors.** `ContextSettings.CascadeDepth` (`context.cascadeDepth`, 0–4, default 2).
+- **Core settings and errors.** `ContextSettings.CascadeDepth` (`context.cascadeDepth`, 0–4, default 2) and `ContextSettings.CascadeComponentFanOut` (`context.cascadeComponentFanOut`, 1–50, default 5).
   `ContextErrors.Attention`, the CLI's exit-1 set, moved here from the verbs (S-3a's follow-up).
 - **Features.** `IContextGraph` (`ShowNode`, `Neighbors`, `Path`; `IContextEngine` extends it) over the slices
   `ShowNode`, `ListNeighbors`, `FindPath` and `EvalProbes` (`IContextEngine.EvalProbes`, `EvalProbesService` over
@@ -467,7 +467,7 @@ The goldens under `tests/Aw.Sindri.Tests/Golden/Api/context-*/` pin every body b
 
 | Route | Request | Response |
 |---|---|---|
-| `GET /sindri/context/lenses` | `anchor` (repeat it for up to 20; one distinct value answers schema 1, several schema 2), `depth` (0–4, default `context.cascadeDepth`; else 006 / 400), `draft`, `mapVersion` (S-LB1a; not with `draft`) | `{schemaVersion, anchor{key,label,kind,trust}, mapVersion, mapCommit?, draft, depth, asOf, bands{intent,product,code}, edges[], conflicts[], coverage, searched, degraded[], cites{}}` (spec §8.9); several anchors answer schema 2, see "S-LB1a" below |
+| `GET /sindri/context/lenses` | `anchor` (repeat it for up to 20; one distinct value answers schema 1, several schema 2), `depth` (0–4, default `context.cascadeDepth`; else 006 / 400), `hops` (S-CH: a comma list of `state`, `flow`, `dependency`, `component`; default the first three; else `SND-CONTEXT-140` / 400), `draft`, `mapVersion` (S-LB1a; not with `draft`) | `{schemaVersion, anchor{key,label,kind,trust}, mapVersion, mapCommit?, draft, depth, asOf, bands{intent,product,code}, edges[], conflicts[], coverage, searched, degraded[], cites{}, skippedComponents?}` (spec §8.9; S-CH, only with `hops` and a unit over the cap); several anchors answer schema 2, see "S-LB1a" below |
 | `GET /sindri/context/filemap` | `repo`, `path`, `unmapped`, `draft` | `{schemaVersion, repo, sha, mapVersion, draft, path, entries[{name,path,type,status,files,features[{key,provenance,confidence?,confirmed,linkId?,edge}],intent{records,decisions}\|null}], unmapped[], suggested[{linkId,file,feature,confidence,evidence[]}], totals{files,mapped,suggested,unmapped}, symbols}` |
 | `GET /sindri/context/map` | `anchor` (optional) | the map status; with an anchor also `coverage`, the lenses' record from the same Core function (`LensCoverageBuilder`) |
 | `GET /sindri/context/map/review` | `limit` (per group, default 100, max 1000; else 006) | `{draft, version{number,commit}, entries[…, trust], decided, proposals, counts{deterministic,model,orphaned}, byKind{}, truncated{…}, undecided}`; `decided` counts the proposals of this draft with a standing decision, `proposals` = decided + deterministic + model |
@@ -716,3 +716,17 @@ The fifth query shape (`ContextQuery.Diff = new DiffRange(base, head)`, optional
 - **Errors.** `SND-CONTEXT-150` (a `context.code.schemaGlobs` or `testGlobs` entry is not a repo-relative glob; the message starts with the key path), `151` (more than 50 entries in one list), `152` (the lexical search timed out; only ever the code of a `searched` row). Reused: `003`, `006` (over 20 anchors, a malformed `mapVersion`, `draft` with `mapVersion`), `037`, `110`, `120`.
 - **Session cut.** A session reads through the same scope as `lenses`: an anchor outside its repo is not found, and the lexical step searches only repos the caller may read.
 - **Tests.** `GetCodeTests`, `CodeLensBuilderTests`, `CodeLensMergeTests`, `TestPathsTests`, the `CodeSearchContract` cases (fake and git), `ContextCodeApiTests`, `ContextCodeVerbsTests` and the `context-code` API goldens.
+
+
+## S-CH: the opt-in component hop
+
+`hops=` (query string, `--hops` on `sindri context query|lenses`, an optional string `hops` on MCP `context_query` and `context_lenses`) lists
+the cascade hops to walk, exactly as written: `hops=component` walks only that hop. Absent, the cascade keeps its three hops and every answer is
+byte-identical to before. A name outside `state`, `flow`, `dependency`, `component` is `SND-CONTEXT-140`. `neighbors` takes no `hops`.
+
+The component hop goes from an own-scope node through a confirmed `implements` edge to its code unit and through another confirmed
+`implements` edge to another node, ascended to its feature, at cost 1. Its path steps read `component <code key>` then `implements <node key>`.
+A suggested `implements` never counts. A code unit implementing more than `context.cascadeComponentFanOut` features (1-50, default 5; counted on
+the caller's visible graph) is not walked: when that withheld a node, the answer carries a top-level `skippedComponents: [{unit, features}]`
+(ordinal by unit, omitted when empty) on `lenses`, `lenses` sets and `query`. `searched.hops` echoes the hops that ran in cascade order
+(`state`, `dependency`, `flow`, `component`), whatever order the request listed them. The same hop runs under `diff=`.

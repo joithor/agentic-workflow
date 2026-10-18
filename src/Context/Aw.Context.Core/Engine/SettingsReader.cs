@@ -43,7 +43,7 @@ public static partial class SettingsReader
 
         if (UnknownKey(element) is { } unknown)
         {
-            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, cascadeDepth, deadline, maxBudget, minHits, labeling, scrub, sessions, sources, eval, code, extract)");
+            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, cascadeDepth, cascadeComponentFanOut, deadline, maxBudget, minHits, labeling, scrub, sessions, sources, eval, code, extract)");
         }
 
         if (CodeUnknownKey(element) is { } codeKey)
@@ -72,7 +72,7 @@ public static partial class SettingsReader
             (_, null, _) => Invalid("context.deadline", "is a duration from 100ms to 60s, such as 4s or 500ms"),
             (_, _, { IsError: true }) => sources.Error,
             _ => WithCode(
-                settings with
+                WithFanOut(settings, section) with
                 {
                     Repos = section.Repos?.Select(ContextRepoName.From).ToList(),
                     DocGlobs = globs,
@@ -203,12 +203,21 @@ public static partial class SettingsReader
         {
             { MaxBudget: < 1_000 or > 200_000 } => Invalid("context.maxBudget", "is 1000 to 200000 tokens"),
             { MinHits: < 0 or > 50 } => Invalid("context.minHits", "is 0 to 50"),
-            { CascadeDepth: < 0 or > QueryRules.MaxDepth } => Invalid("context.cascadeDepth", "is 0 to 4 steps"),
             { Labeling.MaxTokens: < 1_000 or > 20_000_000 } => Invalid("context.labeling.maxTokens", "is 1000 to 20000000 tokens"),
             { Labeling.MaxTokensPerSync: < 1 or > 20_000_000 } => Invalid("context.labeling.maxTokensPerSync", "is 1 to 20000000 tokens"),
-            _ => CodeProblem(section.Code),
+            _ => CascadeProblem(section),
         };
     }
+
+    private static ContextSettings WithFanOut(ContextSettings settings, ContextSection section) =>
+        settings with { CascadeComponentFanOut = section.CascadeComponentFanOut ?? settings.CascadeComponentFanOut };
+
+    private static Error? CascadeProblem(ContextSection section) => section switch
+    {
+        { CascadeDepth: < 0 or > QueryRules.MaxDepth } => Invalid("context.cascadeDepth", "is 0 to 4 steps"),
+        { CascadeComponentFanOut: < 1 or > 50 } => Invalid("context.cascadeComponentFanOut", "is 1 to 50 features"),
+        _ => CodeProblem(section.Code),   // why: the last keys checked
+    };
 
     private static Error? RepoProblem(IReadOnlyList<string>? repos)
     {
@@ -220,7 +229,7 @@ public static partial class SettingsReader
 
     private static string? UnknownKey(JsonElement element)
     {
-        string[] known = ["repos", "docs", "cascadeDepth", "deadline", "maxBudget", "minHits", "labeling", "scrub", "sessions", "sources", "eval", "code", "extract"];
+        string[] known = ["repos", "docs", "cascadeDepth", "cascadeComponentFanOut", "deadline", "maxBudget", "minHits", "labeling", "scrub", "sessions", "sources", "eval", "code", "extract"];
         return element.EnumerateObject().Select(p => p.Name).FirstOrDefault(n => !known.Contains(n, StringComparer.Ordinal)) is { } name ? Printable(name) : null;
     }
 
