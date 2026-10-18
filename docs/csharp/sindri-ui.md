@@ -806,4 +806,18 @@ U9 builds the Context page in stages that run in parallel after U9a0: the lens s
 
 ## U11a: the Agents page, the session sheet and the tray line
 
-The contract (T0) is in: `GET /sindri/sessions` and `GET /sindri/sessions/{provider}/{id}` (`ISindriApi.Sessions`, `.Session`), the `Api/Sessions` records, the fake and the handler arms, and the `session/<provider>/<id>` deep link. The page, the sheet and the tray line follow in T1 to T5.
+The contract (T0): `GET /sindri/sessions` and `GET /sindri/sessions/{provider}/{id}` (`ISindriApi.Sessions`, `.Session`), the `Api/Sessions` records, the fake and the handler arms, and the `session/<provider>/<id>` deep link.
+
+**Views.** `Views/Agents/AgentsPage` (the head "N live · M asking · K outside a workflow", the provider, state and repo filters, the problem lines, the groups and the "Recently ended" fold), `SessionGroup`, `SessionRow` (chip, provider and title as a button that opens the sheet, where it runs, how long, and the pending Focus with its copy line), `EndedSessionRow` (with the resume command and Copy) and `SessionSheetView` (the 520 px sheet: cwd, host, socket, state history, the pending Focus, and `LivePreviewHost`, the collapsed seam CO-7c fills). Rows are kept by ref across reads, so a refresh moves neither focus nor scroll. Every named line is a Border wrapper, and a row's name is provider, title, state, what it asks and host.
+
+**Routes and codes.** The page reads `GET /sindri/sessions` every 2 s while it is shown and the window is not minimised; the sheet reads `GET /sindri/sessions/{provider}/{id}` and again on every event while open. `SND-SESSION-002` (the collector cannot see sessions on this system) is the page's one line, with no rows and the filters disabled; `SND-SESSION-404` is the sheet's "This session has ended." (the sheet stays open, Focus disabled); `SND-SESSION-001` and `-003` are problem lines above a list that still draws. None of them is a Not responding banner.
+
+**Keys.** `G A` opens the page; `J` / `K` walk the rows; Enter or the title opens the sheet and Esc returns focus to the row that opened it; `O` moves focus to the row's copy line; `Y` copies it (an ended row's resume command); `E` opens or closes the fold.
+
+**Counts.** The Agents tab shows `status.sessions.live`, and the tray tooltip adds "N agents · M asking". The page's live region says "N agents · M asking" once when the figures change, only while the page is shown and never for the first figures (`AgentsPageViewModel.ObserveCounts`, fed by the list and by the status). The sheet's name is "Session <provider> <title or id8>".
+
+**Pending.** Focus is the catalog's `pending:CO-4a` control: disabled, with the CLI line `sindri agents focus <ref>` to copy; nothing is sent until U11a-f, after CO-4a serves its goldens. The live preview is CO-7c: `LivePreviewHost` exists, is silent, and nothing polls `/preview`. Recipe groups, Attach, Take over and budgets are U11.
+
+**Proof.** The owner's proof row (collector spec CO section 11, U11a): Focus on a lane brings its Warp tab forward or shows the copy line, run on the real box in U11a-f. The app proof runs on a private Xvfb with `scripts/sindri-ui-fixture.sh up` then `sessions up|ask|end|back|disable|enable|down` and AT-SPI dumps; the journeys are in the verification plan (J1 to J15).
+
+**Tests.** `Agents/Page` (view model, keys, poll: unit; `AgentsPageTests`: integration), `Agents/Sheet`, `Shell/AgentCountsTests`, `LaneAnchorTests`.
