@@ -81,6 +81,23 @@ public sealed class ProtectedCommandTests
             .Select(g => g.Key)
             .Order(StringComparer.Ordinal)];
 
+    // One route, class by verb: the review route carries desk verbs and protected ones, so the app may only hold the desk verbs.
+    // Every verb the app can put in a review request (the members of its DeskVerb enum, by wire name) must be a catalog row on
+    // that route whose class is not Protected.
+    [Fact]
+    public void Every_verb_the_app_can_send_on_the_shared_review_route_is_a_non_protected_catalog_row()
+    {
+        var ui = Production.Assemblies.Single(a => a.GetName().Name == Solution.AssemblyOf("Aw.Sindri.Ui"));
+        var verbs = ui.GetType("Aw.Sindri.Ui.Api.Context.DeskVerb", throwOnError: true)!.GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Select(f => f.GetCustomAttributes(typeof(System.Text.Json.Serialization.JsonStringEnumMemberNameAttribute), inherit: false).Cast<System.Text.Json.Serialization.JsonStringEnumMemberNameAttribute>().Single().Name)
+            .ToList();
+        var rows = HostIntrospection.Catalog().Rows.Where(r => string.Equals(r.Route, "/sindri/context/map/review", StringComparison.Ordinal)).ToList();
+
+        Assert.NotEmpty(verbs);
+        Assert.All(verbs, verb => Assert.Contains(rows, r => string.Equals(r.Variant, verb, StringComparison.Ordinal) && r.Class != ActionClass.Protected));
+        Assert.Contains(rows, r => r.Class == ActionClass.Protected);   // the route really is shared with protected verbs
+    }
+
     [Fact]
     public void The_banned_routes_are_the_protected_only_ones_and_the_shared_review_route_is_not_banned()
     {

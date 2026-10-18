@@ -9,7 +9,7 @@ namespace Aw.Sindri.Ui.Api.Context;
 /// <param name="Other">Other, as served.</param>
 /// <param name="Overrides">Overrides, as served.</param>
 internal sealed record ReviewDecisionRequest(
-    string Verb,
+    DeskVerb Verb,
     string? Node = null,
     string? Link = null,
     string? Override = null,
