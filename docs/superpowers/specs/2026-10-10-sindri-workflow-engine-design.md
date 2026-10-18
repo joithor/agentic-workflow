@@ -1209,15 +1209,15 @@ These feed A §17.2, and all of it is scrubbed.
 
 | Event | Producer | Outcomes | Facts |
 |---|---|---|---|
-| `item.routed` | `router.stub` | `startable`, `notStartable` | `fact:stepSpec` |
+| `item.routed` | `service:router-stub` | `startable`, `notStartable` | `fact:stepSpec` |
 | `claim.created` | `system:dispatcher` (route: causation) | `created`, `claimExists` | — |
 | `notify.delivered` | `system:dispatcher` (route: causation) | `delivered` | — |
 
 - **`fact:item`** is `{ id, repo, spec }`, where `id` is the `ItemId` (API §3), `repo` is a key of the profile's `repos`
   and `spec` is the Step spec text. `effect.claim.ref` creates
   `sindri/{user}/{item}` in that repo, pointing at its default branch's head, so the repo needs one commit.
-- *P7, 2026-10-18:* the `slot` stub is the interpreter itself: it grants a slot the moment an instance waits for one, as the resource allocator's `wait.satisfied` with no outcome; only the router holds an item back. The `router.stub` is a hosted service over the ledger.
-- **`workflow.route`** (P7) is `{ startable: all | none }`. The `router.stub` service fires on each
+- *P7, 2026-10-18:* the `slot` stub is the interpreter itself: it grants a slot the moment an instance waits for one, as the resource allocator's `wait.satisfied` with no outcome; only the router holds an item back. The router stub (producer `service:router-stub`, the actor the scheduler records) is a hosted service over the ledger.
+- **`workflow.route`** (P7) is `{ startable: all | none }`. The `service:router-stub` service fires on each
   `workflow.started` of `workflow.item` and emits `item.routed` with `outcome` taken from that key, and with
   `fact:stepSpec` copied from `fact:item`'s spec.
 

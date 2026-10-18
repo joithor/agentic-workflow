@@ -12,7 +12,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
 /// The router stub (workflow engine spec §12, engine P7 plan D8), a built-in service: for each 'workflow.item' instance that
-/// started, it appends one 'item.routed' event as 'router.stub', whose outcome comes from the approved profile's
+/// started, it appends one 'item.routed' event as the scheduler records it (service:router-stub), whose outcome comes from the approved profile's
 /// 'workflow.route' ('startable', or 'notStartable' for 'none') and whose 'fact:stepSpec' is the item's spec
 /// (<see cref="ItemRouter"/>). The event bridge delivers it to the instance. It reads the ledger past its own cursor, and an
 /// event is keyed by the 'workflow.started' row it answers, so a crash between the append and the cursor repeats nothing.
@@ -26,7 +26,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 internal sealed partial class RouterStub(ILedgerStore ledger, EventFactory events, ItemRouter router, RouterStubCursor cursor, ILogger<RouterStub> logger) : IScheduledService
 {
     /// <summary>The producer the 'item.routed' descriptor names.</summary>
-    public const string Actor = "router.stub";
+    public const string Actor = "service:router-stub";
 
     private const int Batch = 100;
     private const string ItemRouted = "item.routed";
