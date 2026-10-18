@@ -91,4 +91,27 @@ public abstract class ToolRunnerContract
         Expect.Equal(ToolRun.Cancelled, run);
         Expect.True(watch.Elapsed < TimeSpan.FromSeconds(5));
     }
+
+    /// <summary>Text given as standard input reaches the tool whole and flushed before the input is closed (how the key reaches `security -i` and `secret-tool store`).</summary>
+    [Fact]
+    public void Standard_input_text_reaches_the_tool()
+    {
+        var expected = new ToolRun(ToolOutcome.Exited, 0, "abc");
+
+        var run = Create(expected).Run("cat", [], TimeSpan.FromSeconds(30), new ToolRunOptions(StandardInput: "abc"), TestContext.Current.CancellationToken);
+
+        Expect.Equal(expected, run);
+    }
+
+    /// <summary>A tool that exits without reading its input still ends in its exit code; the closed pipe is not an error.</summary>
+    [Fact]
+    public void A_tool_that_never_reads_its_standard_input_still_returns_its_exit_code()
+    {
+        var expected = new ToolRun(ToolOutcome.Exited, 0, "");
+        var input = new string('x', 1_000_000);
+
+        var run = Create(expected).Run("true", [], TimeSpan.FromSeconds(30), new ToolRunOptions(StandardInput: input), TestContext.Current.CancellationToken);
+
+        Expect.Equal(expected, run);
+    }
 }

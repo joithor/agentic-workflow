@@ -14,6 +14,9 @@ internal sealed class OnyxKeyMinter(IOnyxPrompts prompts, IOnyxProvisioning prov
     private const string KeyName = "sindri-onyx";
     private const string KeyService = "onyx";
 
+    /// <summary>What the owner is told whenever a key named sindri-onyx may be left in Onyx with nobody holding it (the allowlist has no delete request).</summary>
+    internal const string LeftoverNote = "An API key named sindri-onyx may still be in Onyx and is not in use; delete it on Onyx's admin API keys page.";
+
     internal async ValueTask<bool> Stands(int port, string? pointer, CancellationToken cancellationToken)
     {
         if (pointer is null || SecretPointer.Parse(pointer) is not { IsSuccess: true } parsed)
@@ -44,7 +47,7 @@ internal sealed class OnyxKeyMinter(IOnyxPrompts prompts, IOnyxProvisioning prov
         }
 
         var stored = secrets.Store(KeyService, KeyName, minted.Value);
-        return stored.IsError ? stored.Error : stored.Value.ToString();
+        return stored.IsError ? Leftover(stored.Error) : stored.Value.ToString();
     }
 
     private async ValueTask<Result<string>> Request(int port, CancellationToken cancellationToken)
@@ -67,9 +70,17 @@ internal sealed class OnyxKeyMinter(IOnyxPrompts prompts, IOnyxProvisioning prov
         {
             var group = await session.AdminGroup(cancellationToken).ConfigureAwait(false);
             var made = group.IsError ? group.Error : await session.CreateKey(KeyName, group.Value, cancellationToken).ConfigureAwait(false);
-            return made.IsError ? made : await Verified(port, made.Value, cancellationToken).ConfigureAwait(false);
+            if (made.IsError)
+            {
+                return made;
+            }
+
+            var verified = await Verified(port, made.Value, cancellationToken).ConfigureAwait(false);
+            return verified.IsError ? Leftover(verified.Error) : verified;   // the key exists in Onyx from here on
         }
     }
+
+    private static Error Leftover(Error error) => error with { Message = $"{error.Message}. {LeftoverNote}" };
 
     private async ValueTask<Result<string>> Verified(int port, string key, CancellationToken cancellationToken)
     {

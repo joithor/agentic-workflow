@@ -69,18 +69,18 @@ internal sealed class ProcessToolRunner : IToolRunner
     // Text for the tool's standard input (how a secret reaches a tool without being an argument).
     private static void Feed(Process process, string? input)
     {
-        if (input is null)
-        {
-            return;
-        }
-
         try
         {
-            process.StandardInput.Write(input);
+            if (input is not null)
+            {
+                process.StandardInput.Write(input);
+            }
+
+            process.StandardInput.Close();   // flushes: a tool that prompts reads end of input instead of waiting for a terminal
         }
         catch (IOException)
         {
-            // the tool closed its input early; its exit code says what it made of what it read
+            // the tool closed its input early (the flush on close throws too); its exit code says what it made of what it read
         }
     }
 
@@ -88,7 +88,6 @@ internal sealed class ProcessToolRunner : IToolRunner
     {
         var standardErrorLine = options?.StandardErrorLine;
         Feed(process, options?.StandardInput);
-        process.StandardInput.Close();   // a tool that prompts reads end of input instead of waiting for a terminal
         var output = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
         var error = DrainLines(process.StandardError, standardErrorLine);
         var killedByCancel = false;
