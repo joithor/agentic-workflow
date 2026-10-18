@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Host.Commands.SessionWrap;
 using Aw.Sindri.Testing;

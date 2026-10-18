@@ -29,4 +29,4 @@ public sealed record LaunchRequest(
     string? Worktree,
     StepArgs? Step,
     RunToken? Run,
-    Sessions.SessionId? Resume = null);
+    SessionId? Resume = null);
