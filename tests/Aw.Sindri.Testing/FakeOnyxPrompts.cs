@@ -16,6 +16,9 @@ public sealed class FakeOnyxPrompts : IOnyxPrompts
     /// <summary>Gets the number of times a secret was asked for.</summary>
     public int SecretsAsked { get; private set; }
 
+    /// <summary>Gets or sets what runs when a pause is shown (a test looks at the world while the owner is "at the prompt").</summary>
+    public Action? OnPause { get; set; }
+
     /// <summary>Queues the next answers, for Ask and AskSecret in the order they are asked.</summary>
     /// <param name="answers">The answers; null ends input.</param>
     public void Answer(params string?[] answers)
@@ -30,6 +33,7 @@ public sealed class FakeOnyxPrompts : IOnyxPrompts
     public ValueTask Pause(string message, CancellationToken cancellationToken)
     {
         Asked.Add(message);
+        OnPause?.Invoke();
         return ValueTask.CompletedTask;
     }
 

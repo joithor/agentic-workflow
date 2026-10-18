@@ -141,6 +141,8 @@ public sealed class OnyxAccountTests
 
         Assert.Equal(SindriErrors.OnyxKeyFailed.Code, result.Error.Code);
         Assert.Empty(rig.Secrets.Stored);
+        Assert.Contains("sindri-onyx", result.Error.Message, StringComparison.Ordinal);   // the key made in Onyx is left there: the owner is told
+        Assert.Contains("delete it", result.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -175,6 +177,47 @@ public sealed class OnyxAccountTests
 
         Assert.Equal(SindriErrors.OnyxSecretNotStored.Code, result.Error.Code);
         Assert.Null(rig.Profile.Section);
+        Assert.Contains("delete it", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_recorded_key_that_stopped_working_tells_the_owner_the_old_one_may_still_be_in_onyx()
+    {
+        var rig = new Rig();
+        _ = await rig.Run();
+        rig.Secrets.Stored.Clear();
+        rig.Prompts.Answer("owner@example.com", LoginSecret);
+
+        _ = await rig.Run();
+
+        Assert.Contains(rig.Progress.Lines, static l => l.StartsWith("key: the recorded key no longer works", StringComparison.Ordinal) && l.Contains("delete it", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_second_account_stage_is_refused_while_the_first_holds_the_workspace_lock_and_the_lock_is_released_after()
+    {
+        var rig = new Rig();
+        using var held = rig.Workspace.TryLock().Value;
+
+        var refused = await rig.Run();
+
+        Assert.Equal(SindriErrors.CommandBusy.Code, refused.Error.Code);
+        Assert.Equal(0, rig.Provisioning.SignIns);
+        held!.Dispose();
+        Assert.True((await rig.Run()).IsSuccess);
+        Assert.False(rig.Workspace.LockHeld);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task The_workspace_lock_is_held_while_the_owner_is_at_a_prompt()
+    {
+        var rig = new Rig();
+        var heldAtPrompt = false;
+        rig.Prompts.OnPause = () => heldAtPrompt = rig.Workspace.LockHeld;
+
+        _ = await rig.Run();
+
+        Assert.True(heldAtPrompt);
     }
 
     [Fact, Trait("Lane", "unit")]
