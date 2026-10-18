@@ -52,8 +52,10 @@ internal sealed partial class InstanceFrameView : UserControl
 
     private void Satisfy()
     {
-        if (_wanted is not { } wanted)
+        if (_wanted is not { } wanted || !this.IsAttachedToVisualTree())
         {
+            // nothing wanted, or the view left its window (a closed one cannot hold focus): stop, so the queue drains
+            (_wanted, _attempts) = (null, 0);
             LayoutUpdated -= OnLayoutUpdated;
             return;
         }
@@ -69,12 +71,6 @@ internal sealed partial class InstanceFrameView : UserControl
 
         if (target is not null)
         {
-            if (++_attempts > MaxLooks)
-            {
-                GiveUp(wanted);   // a part that never holds focus (a detached view, a closed window) is not chased forever: the queue must drain
-                return;
-            }
-
             _ = target.Focus(NavigationMethod.Tab);
             Dispatcher.UIThread.Post(Satisfy, DispatcherPriority.Background);
         }
