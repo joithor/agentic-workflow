@@ -12,10 +12,9 @@ outputs:
   - { key: fact:pr, label: "Pull request", type: link, from: opening }
   - { key: fact:handoff, label: "PR hand-off", type: packet, from: freeze }
   - { key: fact:returnNotes, label: "Why it went back", type: payload, from: return }
-initial: slot
+# Follow-up: heavy grant: restore the slot wait when a heavy allocator exists (a `slot` wait on resource heavy, then `green`).
+initial: green
 states:
-  slot:    { kind: wait, waitFor: { resource: heavy }, timeout: { after: 1d, then: park },
-             next: "Waiting for a heavy-job slot for {item}'s full suite." }
   green:   { kind: active, step: step.ship.green, timeout: { after: 2h, then: park },
              next: "Run {item}'s full suite, typecheck and lint on its head." }
   pack:    { kind: active, step: step.ship.pack, timeout: { after: 1h, then: park },
@@ -30,7 +29,6 @@ states:
   returned: { kind: terminal, outcome: unresolved }
   refused:  { kind: terminal, outcome: failed }
 transitions:
-  - { from: slot, to: green, on: wait.satisfied }
   - { from: green, to: pack, on: step.completed, when: { outcome: green }, produces: [fact:green] }
   - { from: green, to: return, on: step.completed, when: { outcome: red }, produces: [fact:findings] }
   - { from: pack, to: freeze, on: step.completed, when: { outcome: packed }, produces: [fact:handoffDraft] }
