@@ -24,14 +24,14 @@ public sealed class ShippedBlocksTests
 
         Assert.Equal(
             [
-                "effect.claim.ref", "effect.notify.desk", "evidence.check", "gate.budget.available", "gate.route.startable", "input.context.code",
-                "input.context.history", "input.context.lenses", "step.brief.questions", "step.brief.seed", "step.brief.write", "step.bugfix.judge",
+                "effect.claim.ref", "effect.line.report", "effect.notify.desk", "evidence.check", "gate.budget.available", "gate.route.startable", "input.context.code",
+                "input.context.history", "input.context.lenses", "step.babysit.watch", "step.brief.questions", "step.brief.seed", "step.brief.write", "step.bugfix.judge",
                 "step.bugfix.recheck", "step.bugfix.record-candidate", "step.bugfix.start-attempt", "step.build.amend", "step.build.checks", "step.build.green",
                 "step.build.prepare", "step.build.red", "step.build.red-check", "step.build.scope-desk", "step.checks", "step.desk.choose", "step.docs.check", "step.docs.open-pr", "step.docs.scope", "step.docs.update",
                 "step.evidence.api-plan", "step.evidence.api-run", "step.evidence.combine", "step.evidence.db-plan", "step.evidence.db-run",
                 "step.evidence.desk", "step.evidence.none", "step.evidence.ui-plan", "step.evidence.ui-run", "step.handtest.run",
                 "step.intake.ticket", "step.interview.answer", "step.interview.apply", "step.interview.questions", "step.interview.record",
-                "step.judge.choose", "step.lens.run", "step.owner.decide", "step.produce", "step.prove.before-after", "step.prove.evidence", "step.prove.fail-log", "step.prove.holdout",
+                "step.judge.choose", "step.lens.run", "step.owner.decide", "step.phase.decide", "step.phase.drift", "step.phase.seed", "step.produce", "step.prove.before-after", "step.prove.evidence", "step.prove.fail-log", "step.prove.holdout",
                 "step.prove.holdout-log", "step.prove.intake", "step.report.write", "step.reproduce.test-check", "step.reproduce.ui-check",
                 "step.review.fix", "step.review.log", "step.review.recheck", "step.review.record", "step.review.round", "step.rootcause.investigate", "step.scope.anchor",
                 "step.scope.challenge", "step.scope.challenge-log", "step.scope.check", "step.scope.draft", "step.scope.evidence",

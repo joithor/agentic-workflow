@@ -1,0 +1,26 @@
+schema: 1
+id: workflow.pr-babysitter
+version: 1
+description: "STUB until the PR babysitter (BD/PB spec) lands: one human-only Step stands for babysitting, docs sync and the owner's merge; the real inputs, outputs and terminals, so workflow.phase validates and runs."
+urgency: work
+inputs:
+  - { key: fact:pr,          label: "Pull request",         type: link,    kind: link }
+  - { key: fact:handoff,     label: "PR hand-off",          type: packet,  kind: packet }
+  - { key: fact:phasePacket, label: "Phase packet",         type: packet,  kind: packet }
+  - { key: fact:lineContext, label: "Line context",         type: payload, kind: payload }
+  - { key: fact:workspace,   label: "Workspace",            type: text,    kind: text }
+outputs:
+  - { key: fact:mergedSha,   label: "Merged sha",           type: text,    from: watch }
+  - { key: fact:reworkNotes, label: "Why it goes back",     type: payload, from: watch }
+initial: watch
+states:
+  watch:  { kind: active, step: step.babysit.watch, timeout: { after: 30d, then: park },
+            next: "Stub for the PR babysitter: watch {item}'s pull request through CI, review and docs sync, then say what happened: merged, or back to build with notes." }
+  merged: { kind: terminal, outcome: resolved }
+  rework: { kind: terminal, outcome: failed }
+  stuck:  { kind: terminal, outcome: unresolved }
+transitions:
+  - { from: watch, to: merged, on: step.completed, when: { outcome: merged }, produces: [fact:mergedSha] }
+  - { from: watch, to: rework, on: step.completed, when: { outcome: rework }, produces: [fact:reworkNotes] }
+  - { from: watch, to: stuck,  on: step.completed, when: { outcome: stuck } }
+evals: [evals/workflow.pr-babysitter/happy.jsonl, evals/workflow.pr-babysitter/rework.jsonl, evals/workflow.pr-babysitter/stuck.jsonl]
