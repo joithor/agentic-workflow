@@ -7,7 +7,6 @@ using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Profile;
 
 using Aw.Sindri.Host.Commands.Probe;
-using Aw.Sindri.Host.Commands.Scoping;
 
 namespace Aw.Sindri.Host.Commands;
 

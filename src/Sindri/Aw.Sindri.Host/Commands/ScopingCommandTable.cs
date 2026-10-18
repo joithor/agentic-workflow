@@ -7,8 +7,9 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Features.GetInstanceFact;
 using Aw.Sindri.Features.Scoping;
+using Aw.Sindri.Host.Commands.Scoping;
 
-namespace Aw.Sindri.Host.Commands.Scoping;
+namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// The 'scoping' verbs (scoping spec §8.2): 'check', 'show' and 'desk'. With --facts they run in this process over a directory of fact
