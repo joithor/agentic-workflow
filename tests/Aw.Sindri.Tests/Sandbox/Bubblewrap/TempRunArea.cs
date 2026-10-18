@@ -5,7 +5,7 @@ using Req = Aw.Sindri.Testing.Sandbox.SandboxRequests;
 
 namespace Aw.Sindri.Tests.Sandbox.Bubblewrap;
 
-/// <summary>A plan whose run directory and run area are real temporary directories, so a test can prepare, wrap and read what was written. Only /dev and /proc are mounted.</summary>
+/// <summary>A plan whose run directory and run area are real temporary directories, so a test can prepare, wrap and read what was written. Only the root (read-only), /dev, /proc and the run directory are mounted.</summary>
 internal sealed class TempRunArea : IDisposable
 {
     internal TempRunArea(params string[] launcherVariables)
@@ -18,7 +18,7 @@ internal sealed class TempRunArea : IDisposable
         {
             RunDirectory = Root + "/run",
             Worktree = null,
-            Mounts = [.. built.Mounts.Where(m => m.Kind is PlanMountKind.Dev or PlanMountKind.Proc)],
+            Mounts = [.. built.Mounts.Where(m => m.Kind is PlanMountKind.Dev or PlanMountKind.Proc || m.Path == "/"), new PlanMount(Root + "/run", PlanMountKind.ReadWrite, Reason: "test")],   // the agent's working directory
             Environment = [new PlanEnvVar("AW_SANDBOX_PLAN", Root + "/area/sandbox-plan.json", "test"), .. launcherVariables.Select(n => new PlanEnvVar(n, Value: null, Reason: "test"))],
         };
     }
