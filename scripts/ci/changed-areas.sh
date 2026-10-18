@@ -87,7 +87,8 @@ classify_changes() {
       tests/fixtures/scoping/*|tests/fixtures/line/*) dotnet=true; bash=true ;;
       docs/csharp/sindri-profile.md|docs/csharp/sindri-launcher.md) bash=true ;;
       # check-fleet.mjs (and its suite) validate the fleet state schema's fixtures and the /proc-shaped sessions tree; both sit under tests/ (dotnet) too
-      tests/fixtures/fleet/*|tests/fixtures/sessions/*) bash=true ;;
+      # config/hooks/tests/fleet-state.test.sh feeds the hook the real payloads under tests/fixtures/fleet-input/
+      tests/fixtures/fleet/*|tests/fixtures/fleet-input/*|tests/fixtures/sessions/*) bash=true ;;
       docs/csharp/sindri-sessions.md) bash=true ;;
     esac
     for pkg in "${TS_PACKAGES[@]}"; do

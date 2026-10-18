@@ -83,12 +83,13 @@ All hook scripts live in `config/hooks/`:
 | `meta-outbox.sh` | PostToolUse | `SendMessage` |
 | `meta-lane-gate.sh` | UserPromptSubmit, Stop (Codex); sessionStart, postToolUse, stop (Cursor) | — |
 | `session-id-report.sh` | SessionStart (Codex); sessionStart (Cursor) | — |
+| `fleet-state.sh` | SessionStart, UserPromptSubmit, PermissionRequest, Notification, PostToolUse, Stop, SessionEnd (Claude; Codex and Cursor in CO-1b) | PostToolUse: `.*` |
 
 Each provider's `install-hooks.sh` installs them by copying, not symlinking, so they survive repo moves. Claude Code's copies go to `~/.claude/hooks/`, and Codex and Cursor copies go to `~/.agentic-workflow/hooks/`. The script then registers the command in that provider's hook config, wrapped by the adapter for Codex and Cursor.
 
 **Lever hooks** (context-guard, done-gate, scope-gate, external-write-guard, wake gating, judge-health, prompt-sort, sindri-nudge) are installed by `scripts/install-*.sh --provider claude|codex|cursor`, with `claude` as the default. `setup.sh` runs them for each selected provider. A lever with no equivalent event on a provider prints `skipped for <provider>` and writes nothing. For example, context-guard is skipped on Cursor.
 
-Tests (all run under a temp `HOME`): `config/hooks/tests/{codex-adapter,cursor-adapter,failopen,provider-install-hooks,probe-log,judge-health,sindri-nudge,meta-hooks}.test.sh`, plus `config/lib/tests/{prompt-sort,install-prompt-sort}.test.sh` (run through the `config/lib/tests/*.test.sh` glob).
+Tests (all run under a temp `HOME`): `config/hooks/tests/{codex-adapter,cursor-adapter,failopen,provider-install-hooks,probe-log,judge-health,sindri-nudge,meta-hooks,fleet-state}.test.sh`, plus `config/lib/tests/{prompt-sort,install-prompt-sort}.test.sh` (run through the `config/lib/tests/*.test.sh` glob).
 
 ## Fail-open logging (HOOK-FAILOPEN)
 
@@ -136,11 +137,22 @@ The steps below apply to **PreToolUse hooks**. SessionStart hooks have different
 
 ## Probe Hook (cheap-agent-harness rollout step 0.5)
 
-`probe-log.sh <Event>` appends raw hook stdin to `~/.agentic-workflow/probe/<Event>.jsonl`. It prints nothing and always exits 0. `scripts/probe.sh on|off|status` installs and removes it on `UserPromptSubmit`, `Stop`, `SubagentStop`, `TeammateIdle`, `SubagentStart`, and `PreToolUse`/`PostToolUse` (matcher `Agent|SendMessage`). Every probe command ends in `# aw:probe`, and `config/lib/merge-hook.sh` only ever touches commands with its own tag. `scorer probe` summarizes the logs. `scripts/probe.sh --provider codex|cursor on|off|status` installs the Codex/Cursor equivalents (no TeammateIdle; Cursor entries use the adapter's `--raw` mode) and logs to `probe/<provider>/`.
+`probe-log.sh <Event>` appends raw hook stdin to `~/.agentic-workflow/probe/<Event>.jsonl`. It prints nothing and always exits 0. `scripts/probe.sh on|off|status` installs and removes it on `UserPromptSubmit`, `Stop`, `SubagentStop`, `TeammateIdle`, `SubagentStart`, `PermissionRequest`, `Notification`, `SessionStart`, `SessionEnd`, and `PreToolUse`/`PostToolUse` (matcher `Agent|SendMessage`). The last four are the aw:fleet hook's events (a payload change shows up in the probe log first); `tests/fixtures/fleet-input/` holds real scrubbed payloads of them. Every probe command ends in `# aw:probe`, and `config/lib/merge-hook.sh` only ever touches commands with its own tag. `scorer probe` summarizes the logs. `scripts/probe.sh --provider codex|cursor on|off|status` installs the Codex/Cursor equivalents (no TeammateIdle; Cursor entries use the adapter's `--raw` mode) and logs to `probe/<provider>/`.
 
 `prompt-sort.sh` (`# aw:prompt-sort`) is the prompt sorter's UserPromptSubmit hook. It sorts the real prompt with `judge prompt-sort` (one Jev request), prints a scaffold note only when a scaffold switch is on and fires, never prints skill names (Prism's `prism-route` hook owns skill routing), always exits 0, and kills the judge after `AW_PROMPT_SORT_BUDGET_MS` (default 1500). A non-zero exit or crash of the judge is swallowed. Skips machine text, slash commands and `AW_JUDGE_CHILD`. Install opt-out: `AW_NO_PROMPT_SORT=1`.
 
 `sindri-nudge.sh` (`# aw:sindri-nudge`) is installed only by `scripts/install-sindri.sh --hook-only --provider X` (`setup.sh --with-sindri` runs it per provider); a plain `install-sindri.sh` prints the hint. It runs `sindri repo status --nudge`, which reads the approved profile read-only and never writes the ledger, prints at most one line, kills the CLI after `AW_SINDRI_NUDGE_BUDGET_MS` (default 1500), always exits 0, and is silent outside git, without sindri, before any approval, for an onboarded repo (a linked worktree counts), on any error, and for `AW_JUDGE_CHILD` / `AW_SINDRI_CHILD` sessions.
+
+## Session state hook (`aw:fleet`)
+
+`fleet-state.sh` (`# aw:fleet`) is the session collector's state source (spec `docs/superpowers/specs/2026-10-16-sindri-session-collector-design.md` 5.1, 5.2, 5.4; reader: Sindri's `FleetStateFiles`). It is installed only by `scripts/install-fleet.sh --provider claude` (`./setup.sh --with-fleet`, opt-in; `--uninstall` removes exactly the `# aw:fleet` entries and the copied script, never the state files, which the collector prunes). Codex and Cursor arrive with CO-1b; their install prints `skipped for <provider>`.
+
+- **Writes** `$AW_FLEET_DIR/<AgentId>/<sessionId>.json` (default `$AW_STATE_DIR/fleet`; file 0600, directories 0700 with a `.aw-fleet` marker; `mktemp` + `mv` under `umask 077`), valid against `schemas/fleet-state.schema.json`. `AW_HOOK_PROVIDER` unset or `claude` is `claude-code`; `codex` and `cursor` as they are; any other value writes nothing.
+- **Events (Claude):** `SessionStart` and `Stop` idle, `UserPromptSubmit` running, `PermissionRequest` asking approval with the tool name, `Notification` `permission_prompt` asking approval (a file already asking approval is left alone, so the tool from the `PermissionRequest` before it stays), `elicitation_dialog` asking input, `idle_prompt` idle (other types write nothing), `SessionEnd` ended. `PostToolUse` (every tool call) writes running only when the file says asking, and otherwise exits before `jq`: the session id and event come out of the payload with a bash regex, then one `grep -q`.
+- **Never stores free text:** not `tool_input`, the notification `message`, the prompt or a response. The tool name is kept only when it matches `[A-Za-z0-9_.:-]{1,64}`.
+- **Advisory:** prints nothing on stdout, stderr is closed, always exits 0, so it does not call `failopen`. A bad payload, an id that fails the pattern or an unwritable directory is a silent exit 0 with no file. `AW_FLEET_DISABLE=1` and `AW_JUDGE_CHILD` write nothing.
+- **`agentPid` and `agentStartTicks`:** the first ancestor (at most 8 steps up from the hook's parent, through `/proc/<pid>/stat`) whose argv[0] basename, exe path (`/claude/versions/`) or comm is the provider's agent; `null` where `/proc` is missing or nothing matches. `env` is `{}` (the macOS allowlist is CO-5).
+- Tests: `config/hooks/tests/fleet-state.test.sh` (SERIAL in `scripts/ci/bash-tests.sh`: it asserts under 100 ms per event) and `scripts/tests/install-fleet.test.sh`, on the real Claude 2.1.302 payloads in `tests/fixtures/fleet-input/claude-code/` (`provenance.json` says which are captured and which are derived).
 
 ## Meta harness hooks (`/meta`)
 

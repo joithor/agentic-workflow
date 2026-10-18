@@ -169,7 +169,9 @@ if [ -r /proc/self/stat ]; then
   check "agentStartTicks is its stat start time" "$(field .agentStartTicks)" "$(cat "$WORK/agent-ticks")"
   check "ancestor found: schema-valid" "$(valid "$FILE")" "valid"
   fresh
-  bash "$HOOK" < "$FIX/session-start.json"
+  # Orphaned (setsid -f reparents it to init), so the test passes even when it runs inside a Claude session.
+  setsid -f bash -c "bash '$HOOK' < '$FIX/session-start.json'; echo done > '$WORK/orphan-done'" < /dev/null > /dev/null 2>&1
+  for _ in $(seq 1 50); do [ -f "$WORK/orphan-done" ] && break; sleep 0.1; done
   check "no claude ancestor: pid and ticks are null" "$(field '[.agentPid, .agentStartTicks] | @json')" "[null,null]"
   check "no claude ancestor: schema-valid" "$(valid "$FILE")" "valid"
 fi
