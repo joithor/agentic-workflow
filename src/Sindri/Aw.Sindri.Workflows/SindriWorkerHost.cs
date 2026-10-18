@@ -12,13 +12,10 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// logged and serve runs on without a worker (P4 makes it a health failure).
 /// </summary>
 /// <param name="settings">The namespace and the task queue.</param>
-/// <param name="steps">The RunStep activities.</param>
-/// <param name="events">The RecordEvent activity.</param>
-/// <param name="items">The ReadItemRepo activity.</param>
-/// <param name="effects">The effect activities (engine P6).</param>
+/// <param name="activities">The activity classes the worker serves.</param>
 /// <param name="logger">The log.</param>
 internal sealed partial class SindriWorkerHost(
-    TemporalSettings settings, RunStepActivities steps, RecordEventActivities events, FactReadActivities items, EffectActivities effects, ILogger<SindriWorkerHost> logger) : ITemporalWorker
+    TemporalSettings settings, WorkerActivities activities, ILogger<SindriWorkerHost> logger) : ITemporalWorker
 {
     public async Task Run(TemporalEndpoint endpoint, CancellationToken cancellationToken)
     {
@@ -37,7 +34,7 @@ internal sealed partial class SindriWorkerHost(
 
         try
         {
-            using var worker = new TemporalWorker(client, SindriWorker.Options(settings, steps, events, items, effects));
+            using var worker = new TemporalWorker(client, SindriWorker.Options(settings, activities));
             Polling(logger, target, settings.TaskQueue);
             await worker.ExecuteAsync(cancellationToken).ConfigureAwait(false);
         }
