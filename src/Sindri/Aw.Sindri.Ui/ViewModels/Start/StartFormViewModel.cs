@@ -26,6 +26,7 @@ internal sealed partial class StartFormViewModel : ObservableObject
     private bool _sentFirst;
     private bool _sentNext;
     private bool _reading;   // the chosen recipe's inputs are being read: Start waits for them
+    private int _edits;   // counts the item and recipe changes: an answer to a send before the latest one is not about what the form shows now
 
     /// <summary>The form over its ports.</summary>
     /// <param name="catalog">The command catalog: its StartInstance row says whether Start is ready.</param>
@@ -39,6 +40,13 @@ internal sealed partial class StartFormViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(api);
         ArgumentNullException.ThrowIfNull(files);
         (_catalog, _url, _api, _files) = (catalog, url, api, files);
+        catalog.PropertyChanged += (_, e) =>
+        {
+            if (IsOpen && string.Equals(e.PropertyName, nameof(CatalogViewModel.Controls), StringComparison.Ordinal))
+            {
+                RefreshReadiness();   // the command list arrived (or changed) while the form is open
+            }
+        };
     }
 
     /// <summary>Raised for every accepted start, so the shell opens the instance's frame.</summary>
@@ -97,7 +105,15 @@ internal sealed partial class StartFormViewModel : ObservableObject
     } = string.Empty;
 
     /// <summary>True while the recipes are being read.</summary>
-    public bool IsLoading { get; private set => Set(ref field, value); }
+    public bool IsLoading
+    {
+        get;
+        private set
+        {
+            Set(ref field, value);
+            StateChanged();
+        }
+    }
 
     /// <summary>The recipes' or the recipe's read failure as served (code and detail), the empty-list sentence, or empty.</summary>
     public string Note
@@ -107,6 +123,8 @@ internal sealed partial class StartFormViewModel : ObservableObject
         {
             Set(ref field, value);
             OnChanged(nameof(HasNote));
+            OnChanged(nameof(StartHelp));
+            Announce(value);
         }
     } = string.Empty;
 
@@ -137,6 +155,8 @@ internal sealed partial class StartFormViewModel : ObservableObject
             Set(ref field, value);
             OnChanged(nameof(CanStart));
             OnChanged(nameof(ButtonText));
+            OnChanged(nameof(StartHelp));
+            Announce(value ? Labels.StartSending : string.Empty);
         }
     }
 
@@ -158,6 +178,21 @@ internal sealed partial class StartFormViewModel : ObservableObject
     /// <summary>True while <see cref="Error"/> shows.</summary>
     public bool HasError => Error.Length > 0;
 
+    /// <summary>Which control the error is about; focus goes there.</summary>
+    public StartErrorTarget ErrorTarget { get; private set => Set(ref field, value); }
+
+    /// <summary>The input the error is about, for <see cref="StartErrorTarget.Field"/>.</summary>
+    public StartFieldViewModel? ErrorField { get; private set => Set(ref field, value); }
+
+    /// <summary>True when the error line shows: an error that has no control of its own to sit under (an input's own sentence is under it).</summary>
+    public bool ShowsSummary => HasError && ErrorTarget != StartErrorTarget.Field;
+
+    /// <summary>The recipe picker's error, for its help text; empty when the error is about something else.</summary>
+    public string RecipeError => ErrorTarget == StartErrorTarget.Recipe ? Error : string.Empty;
+
+    /// <summary>The item box's error, for its help text; empty when the error is about something else.</summary>
+    public string ItemError => ErrorTarget == StartErrorTarget.Item ? Error : string.Empty;
+
     /// <summary>Counts the errors that ask the view to move focus to the inline error.</summary>
     public int ErrorFocusRequests { get; private set => Set(ref field, value); }
 
@@ -169,8 +204,40 @@ internal sealed partial class StartFormViewModel : ObservableObject
         {
             Set(ref field, value);
             OnChanged(nameof(HasOutcome));
+            OnChanged(nameof(StartHelp));
+            Announce(value);
         }
     } = string.Empty;
+
+    /// <summary>The one line a screen reader is told (a polite live region): the latest outcome, refusal, read failure, readiness or progress; empty before any.</summary>
+    public string Announcement { get; private set => Set(ref field, value); } = string.Empty;
+
+    /// <summary>True when something has been announced.</summary>
+    public bool HasAnnouncement => Announcement.Length > 0;
+
+    /// <summary>True while the recipes or the chosen recipe's inputs are being read.</summary>
+    public bool IsBusy => IsLoading || _reading;
+
+    /// <summary>What is being read, for the line shown while it is.</summary>
+    public string BusyText => _reading ? Labels.StartReadingInputs : Labels.StartLoading;
+
+    /// <summary>Why Start is off, in words (its help text); empty while it can send.</summary>
+    public string StartHelp
+    {
+        get
+        {
+            if (CanStart)
+            {
+                return string.Empty;
+            }
+
+            return !IsReady ? Readiness
+                : _blocked ? Note
+                : _reading ? Labels.StartWhyReading
+                : IsSending ? Labels.StartWhySending
+                : Labels.StartWhySent;
+        }
+    }
 
     /// <summary>True while <see cref="Outcome"/> shows.</summary>
     public bool HasOutcome => Outcome.Length > 0;
@@ -191,6 +258,25 @@ internal sealed partial class StartFormViewModel : ObservableObject
 
     /// <summary>True when the last accepted start opened a new instance's frame (so the window moves focus there, not back to the opener).</summary>
     public bool OpenedFrame { get; private set => Set(ref field, value); }
+
+    // Something to tell a screen reader: an empty line says nothing and keeps the last words in place.
+    private void Announce(string words)
+    {
+        if (words.Length > 0)
+        {
+            Announcement = words;
+            OnChanged(nameof(HasAnnouncement));
+        }
+    }
+
+    // The things that decide Start and the busy line changed together.
+    private void StateChanged()
+    {
+        OnChanged(nameof(CanStart));
+        OnChanged(nameof(StartHelp));
+        OnChanged(nameof(IsBusy));
+        OnChanged(nameof(BusyText));
+    }
 
     private (ControlKind Kind, string Stage)? Row => _catalog.Row(Action) is { } row ? CatalogReadiness.Parse(row.Ui) : null;
 }

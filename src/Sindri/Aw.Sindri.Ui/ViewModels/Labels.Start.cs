@@ -35,6 +35,24 @@ internal static partial class Labels
     /// <summary>The recipes are being read.</summary>
     internal const string StartLoading = "Reading the recipes…";
 
+    /// <summary>The chosen recipe's inputs are being read.</summary>
+    internal const string StartReadingInputs = "Reading the recipe's inputs…";
+
+    /// <summary>Why Start is off while the inputs are read.</summary>
+    internal const string StartWhyReading = "Start waits until the recipe's inputs are read.";
+
+    /// <summary>Why Start is off while the start is in flight.</summary>
+    internal const string StartWhySending = "A start is being sent.";
+
+    /// <summary>Why Start is off once the start was accepted for this item and recipe.</summary>
+    internal const string StartWhySent = "This start was already accepted; choose another item or recipe to start again.";
+
+    /// <summary>The file button's name: the input's words, then what is chosen.</summary>
+    /// <param name="caption">The input's caption.</param>
+    /// <param name="file">The file line: the file chosen, or "No file chosen".</param>
+    /// <returns>The name.</returns>
+    internal static string StartFileButtonName(string caption, string file) => $"{ChooseFile.TrimEnd('…')}, {caption}, {file}";
+
     /// <summary>No recipe can be started.</summary>
     internal const string StartNoRecipes = "No approved recipe is registered, so nothing can be started.";
 

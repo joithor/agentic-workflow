@@ -80,12 +80,13 @@ internal sealed partial class StartFormViewModel
         if (_url() is not { } api)
         {
             (_chosen, _reading) = (null, false);   // the same choice can be made again when the API is back
+            StateChanged();
             Blocked(SindriUiErrors.NotRunning.With(SindriUiErrors.NotRunning.Title));
             return;
         }
 
         _reading = true;
-        OnChanged(nameof(CanStart));
+        StateChanged();
         var read = await _api.Recipe(api, recipe.Id, hash: null, cancellationToken).ConfigureAwait(true);
         if (form != _form || !ReferenceEquals(Recipe, recipe))
         {
@@ -93,6 +94,7 @@ internal sealed partial class StartFormViewModel
         }
 
         _reading = false;
+        StateChanged();
         if (read.IsError)
         {
             _chosen = null;   // the same choice can be made again
@@ -127,7 +129,8 @@ internal sealed partial class StartFormViewModel
         OnChanged(nameof(IsReady));
         OnChanged(nameof(IsNotReady));
         OnChanged(nameof(Readiness));
-        OnChanged(nameof(CanStart));
+        StateChanged();
+        Announce(Readiness);
     }
 
     // Only an approved recipe starts; one row for each id, at the highest version (a start by id runs the latest approved).

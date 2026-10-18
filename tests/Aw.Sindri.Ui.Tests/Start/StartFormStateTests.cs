@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Start;
 
 namespace Aw.Sindri.Ui.Tests.Start;
@@ -148,6 +149,24 @@ public sealed class StartFormStateTests
         Assert.Equal((0, false, false), (opened, form.IsOpen, form.OpenedFrame));
     }
 
+    [Fact]
+    public async Task An_answer_to_a_send_made_before_the_item_changed_opens_its_frame_and_says_nothing_about_the_new_item()
+    {
+        _fixture.Answers(existing: true, finished: true);
+        var form = await _fixture.Opened("T-1");
+        form.Fields[0].Value = "the spec";
+        var opened = 0;
+        form.Started += (_, _) => opened++;
+        var gate = _fixture.Server.StartGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var sending = form.Submit(Token);
+
+        form.ItemId = "T-2";
+        gate.SetResult();
+        await sending;
+
+        Assert.Equal((1, false, false, true), (opened, form.HasOutcome, form.OffersNewAttempt, form.CanStart));
+    }
+
     // ---- recovery ----
 
     [Fact]
@@ -234,6 +253,63 @@ public sealed class StartFormStateTests
         Assert.False(string.IsNullOrEmpty((string?)ItemFact(Assert.Single(_fixture.Server.Started))["repo"]));
     }
 
+    // ---- the 1 MiB boundary, and the reads around the form ----
+
+    [Fact]
+    public async Task A_text_of_exactly_one_mebibyte_is_sent_and_one_byte_more_is_refused()
+    {
+        var form = await _fixture.Opened("T-1");
+        form.Fields[0].Value = new string('a', StartFieldViewModel.MaxBytes + 1);
+        await form.Submit(Token);
+        Assert.Equal((Labels.StartTooLarge(form.Fields[0].Label), 0), (form.ErrorDetail, _fixture.Server.Started.Count));
+
+        form.Fields[0].Value = new string('a', StartFieldViewModel.MaxBytes);
+        await form.Submit(Token);
+
+        Assert.Equal(StartFieldViewModel.MaxBytes, Assert.Single(_fixture.Server.Started).Facts.Values.Single().Content.Length);
+    }
+
+    [Fact]
+    public async Task A_queue_that_cannot_be_read_leaves_the_item_to_be_typed_and_the_form_startable()
+    {
+        _fixture.Server.QueueView = RouteAnswer.Problem(System.Net.HttpStatusCode.ServiceUnavailable, "SND-API-503", "the queue is not available");
+        var form = await _fixture.Opened("T-1");
+        form.Fields[0].Value = "the spec";
+
+        await form.Submit(Token);
+
+        Assert.Equal((0, 1), (form.Items.Count, _fixture.Server.Started.Count));
+    }
+
+    [Fact]
+    public async Task Editing_the_item_or_a_field_clears_a_served_refusal()
+    {
+        var form = await _fixture.Opened("T-1");
+        form.Fields[0].Value = "the spec";
+        _fixture.Server.StartAnswer = RouteAnswer.Problem("workflow-instances", "start-missing-input");
+        await form.Submit(Token);
+        Assert.True(form.HasError);
+        form.ItemId = "T-2";
+        Assert.False(form.HasError);
+
+        await form.Submit(Token);
+        Assert.True(form.HasError);
+        form.Fields[0].Value = "the spec, again";
+
+        Assert.Equal((false, string.Empty, string.Empty), (form.HasError, form.ErrorCode, form.ErrorDetail));
+    }
+
+    [Fact]
+    public async Task A_start_the_catalog_lists_only_for_the_cli_says_it_is_not_in_the_app_yet()
+    {
+        _fixture.CatalogSays("cli");
+        var form = await _fixture.Form();
+
+        await form.Open("T-1", Token);
+
+        Assert.Equal((false, Labels.NotInApp), (form.IsReady, form.Readiness));
+    }
+
     // ---- fact names ----
 
     [Fact]
@@ -252,5 +328,71 @@ public sealed class StartFormStateTests
 
         var names = _fixture.Server.Started.Select(s => s.Facts.Values.Single().Name).ToList();
         Assert.Equal([$"{link.Fields[0].Key["fact:".Length..]}.url", $"{payload.Fields[0].Key["fact:".Length..]}.json"], names);
+    }
+
+    // ---- why Start is off, and what is announced ----
+
+    [Fact]
+    public async Task A_start_that_is_off_says_why_and_the_reason_is_announced()
+    {
+        _fixture.Rows((StartFormFixture.Step, Approved, 2));
+        _fixture.CatalogSays("pending:P5");
+        var pending = await _fixture.Form();
+        await pending.Open("T-1", Token);
+        Assert.Equal((Labels.Arrives("P5"), Labels.Arrives("P5")), (pending.StartHelp, pending.Announcement));
+
+        _fixture.CatalogSays("ready");
+        var form = await _fixture.Form();
+        await form.Open("T-1", Token);
+        var gate = _fixture.Server.RecipeGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var choosing = form.Choose(form.Recipes[0], Token);
+        Assert.Equal((Labels.StartWhyReading, true, Labels.StartReadingInputs), (form.StartHelp, form.IsBusy, form.BusyText));
+        gate.SetResult();
+        await choosing;
+        Assert.Equal((string.Empty, false), (form.StartHelp, form.IsBusy));
+
+        _fixture.Server.WorkflowAnswer = RouteAnswer.Problem("workflow-recipe", "not-found");
+        await form.Choose(form.Recipes[0], Token);
+        Assert.Equal((form.Note, form.Note), (form.StartHelp, form.Announcement));
+    }
+
+    [Fact]
+    public async Task A_catalog_that_arrives_while_the_form_is_open_makes_start_ready()
+    {
+        _fixture.Rows((StartFormFixture.Step, Approved, 2));
+        var catalog = new ViewModels.Controls.CatalogViewModel(new FakeClipboard(), _fixture.Clock);
+        var form = new StartFormViewModel(catalog, () => StartFormFixture.Api, _fixture.Server, _fixture.Files);
+        await form.Open("T-1", Token);
+        await form.Choose(form.Recipes[0], Token);
+        Assert.Equal((false, Labels.StartNoCatalog), (form.IsReady, form.Readiness));
+
+        catalog.Show(StartFormFixture.Api, _fixture.Server, (await _fixture.Server.Commands(StartFormFixture.Api, Token)).Value);
+
+        Assert.Equal((true, true), (form.IsReady, form.CanStart));
+    }
+
+    [Fact]
+    public async Task Typing_an_item_the_list_does_not_name_clears_the_list_pick()
+    {
+        var form = await _fixture.Opened();
+        form.PickedItem = form.Items[0];
+
+        form.ItemId = "T-9";
+
+        Assert.Null(form.PickedItem);
+    }
+
+    [Fact]
+    public async Task A_refused_new_attempt_leaves_the_offer_standing()
+    {
+        _fixture.Answers(existing: true, finished: true);
+        var form = await _fixture.Opened("T-1");
+        form.Fields[0].Value = "the spec";
+        await form.Submit(Token);
+        _fixture.Server.StartAnswer = RouteAnswer.Problem("workflow-instances", "start-missing-input");
+
+        await form.StartNewAttempt(Token);
+
+        Assert.Equal((true, true), (form.HasError, form.CanStartNewAttempt));
     }
 }

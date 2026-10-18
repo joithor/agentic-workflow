@@ -66,7 +66,7 @@ internal sealed partial class ShellWindow
         return true;
     }
 
-    // The Create form is modal (L10, §11.2): ⌘K, ⌘, and ? are swallowed. ? is a character in a field, so it types there.
+    // The Create and Start forms are modal (L10, §11.2; U5'): ⌘K, ⌘, and ? are swallowed. ? is a character in a field, so it types there.
     private static bool SwallowedByForm(KeyEventArgs e) =>
         (e.Key is Key.K or Key.OemComma && e.KeyModifiers == _command) || (IsQuestionMark(e) && e.Source is not TextBox);
     private bool _openingSettings;
@@ -104,7 +104,7 @@ internal sealed partial class ShellWindow
     private static bool IsQuestionMark(KeyEventArgs e) =>
         e.KeySymbol == "?" || (e.Key == Key.OemQuestion && e.KeyModifiers == KeyModifiers.Shift);
 
-    // The palette, the ? sheet or the Create form opened: remember what had focus and move focus into it. Closed: give focus back to what
+    // The palette, the ? sheet, the Create form or the Start form opened: remember what had focus and move focus into it. Closed: give focus back to what
     // had it (the ⌘K field, a page), or the ⌘K field when that is gone.
     private void OnOverlayChanged(object? sender, PropertyChangedEventArgs e)
     {
@@ -123,6 +123,14 @@ internal sealed partial class ShellWindow
         if (OverlayOpen)
         {
             return;   // closing because another overlay opened: its opener goes on to that one, with no focus move in between
+        }
+
+        if (sender == shell.Start && shell.Start.OpenedFrame)
+        {
+            // An accepted start opened the new instance's frame: focus goes there, not back to what opened the form.
+            _overlayOpener = null;
+            Dispatcher.UIThread.Post(FocusOpenedSheet, DispatcherPriority.Loaded);
+            return;
         }
 
         var back = Usable(_overlayOpener) ?? Usable(FallbackAfter(sender, shell));

@@ -71,11 +71,8 @@
             <TextBlock Classes="eyebrow" Text="{Binding Strip.Heading}" AutomationProperties.Name="{Binding Strip.Heading}" />
             <TextBlock x:Name="WorkflowsOpen" Classes="caption subtle" Text="{Binding Strip.OpenText}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Strip.OpenText}" />
             <Button x:Name="HomeStart" Classes="command-control" Click="OnStart" AutomationProperties.Name="{Binding Text.StartWorkflow}">
-          <StackPanel Orientation="Horizontal" Spacing="6">
-            <TextBlock Classes="button" Text="{Binding Text.StartWorkflow}" VerticalAlignment="Center" />
-            <Border Classes="kbd" VerticalAlignment="Center"><TextBlock Classes="kbd" Text="N" /></Border>
-          </StackPanel>
-        </Button>
+              <TextBlock Classes="button" Text="{Binding Text.StartWorkflow}" VerticalAlignment="Center" />
+            </Button>
             <StackPanel x:Name="WorkflowsStale" Orientation="Horizontal" Spacing="4" IsVisible="{Binding Health.Banner.IsStalled}">
               <icons:StateIcon Glyph="Stale" VerticalAlignment="Center" />
               <TextBlock Classes="caption subtle" Text="{Binding Text.Stale}" VerticalAlignment="Center" />

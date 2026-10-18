@@ -96,7 +96,18 @@ internal sealed class StartFieldViewModel : ObservableObject
     } = string.Empty;
 
     /// <summary>The chosen file in one line, or "No file chosen".</summary>
-    public string FileLine { get; private set => Set(ref field, value); }
+    public string FileLine
+    {
+        get;
+        private set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(FileButtonName));
+        }
+    }
+
+    /// <summary>The file button's accessible name: what it does, which input it is for and what is chosen now.</summary>
+    public string FileButtonName => Labels.StartFileButtonName(Caption, FileLine);
 
     /// <summary>The sentence under the field when it cannot be sent, or empty.</summary>
     public string Error
@@ -106,8 +117,12 @@ internal sealed class StartFieldViewModel : ObservableObject
         {
             Set(ref field, value);
             OnChanged(nameof(HasError));
+            OnChanged(nameof(HelpText));
         }
     } = string.Empty;
+
+    /// <summary>The input's help text for assistive technology: its error while it has one, else the generated-if-empty line.</summary>
+    public string HelpText => Error.Length > 0 ? Error : Hint;
 
     /// <summary>True while <see cref="Error"/> shows.</summary>
     public bool HasError => Error.Length > 0;
@@ -156,7 +171,7 @@ internal sealed class StartFieldViewModel : ObservableObject
             return Missing();
         }
 
-        var bytes = Encoding.UTF8.GetBytes(Value);
+        var bytes = Encoding.UTF8.GetBytes(Kind == StartFieldKind.Link ? Value.Trim() : Value);   // a link is checked trimmed, so it is sent trimmed
         if (bytes.Length > MaxBytes)
         {
             return Refused(Labels.StartTooLarge(Label));

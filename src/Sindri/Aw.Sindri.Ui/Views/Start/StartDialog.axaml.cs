@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Aw.Sindri.Ui.ViewModels.Start;
 
 namespace Aw.Sindri.Ui.Views.Start;
@@ -48,14 +49,39 @@ internal sealed partial class StartDialog : UserControl
         }
     }
 
-    // A refusal or a field that cannot be sent asks for focus on the error line, wherever the press came from.
+    // A refusal or a field that cannot be sent asks for focus: on the control the error is about, or on the error line for the API's own refusal.
     private void OnForm(object? sender, PropertyChangedEventArgs e)
     {
         if (string.Equals(e.PropertyName, nameof(StartFormViewModel.ErrorFocusRequests), StringComparison.Ordinal))
         {
-            Dispatcher.UIThread.Post(() => this.Get<Border>("StartError").Focus(NavigationMethod.Tab), DispatcherPriority.Loaded);
+            Dispatcher.UIThread.Post(FocusError, DispatcherPriority.Loaded);
         }
     }
+
+    private void FocusError()
+    {
+        if (DataContext is not StartFormViewModel form)
+        {
+            return;
+        }
+
+        var target = form.ErrorTarget == StartErrorTarget.Field ? FieldControl(form.ErrorField) : null;
+        target ??= form.ErrorTarget switch
+        {
+            StartErrorTarget.Recipe => this.Get<ComboBox>("StartRecipe"),
+            StartErrorTarget.Item => this.Get<TextBox>("StartItem"),
+            StartErrorTarget.Field or StartErrorTarget.Summary => this.Get<Border>("StartError"),
+            _ => this.Get<Border>("StartError"),
+        };
+        _ = target.Focus(NavigationMethod.Tab);
+    }
+
+    // The control of an input: its visible box, or its file button.
+    private Control? FieldControl(StartFieldViewModel? field) =>
+        field is null
+            ? null
+            : this.Get<ItemsControl>("StartFields").GetVisualDescendants().OfType<Control>()
+                .FirstOrDefault(c => ReferenceEquals(c.DataContext, field) && c.IsEffectivelyVisible && ((c is TextBox && c.Classes.Contains("start-input")) || (c is Button && c.Classes.Contains("start-pick"))));
 
     private void OnRecipeChosen(object? sender, SelectionChangedEventArgs e)
     {

@@ -34,7 +34,7 @@ internal sealed partial class StartFormViewModel
             return;
         }
 
-        var form = _form;
+        var (form, edits) = (_form, _edits);
         IsSending = true;
         Result<StartedView> answer;
         try
@@ -60,7 +60,7 @@ internal sealed partial class StartFormViewModel
             return;
         }
 
-        Accepted(answer.Value, next);
+        Accepted(answer.Value, next, current: edits == _edits);
     }
 
     // What goes on the wire, or null with the reason shown: the recipe and the item first, then each input in the recipe's order.
@@ -68,21 +68,21 @@ internal sealed partial class StartFormViewModel
     {
         if (Recipe is not { } recipe)
         {
-            Refuse(Labels.StartChooseRecipe);
+            Refuse(Labels.StartChooseRecipe, StartErrorTarget.Recipe, field: null);
             return null;
         }
 
         var item = ItemId.Trim();
         if (item.Length == 0)
         {
-            Refuse(Labels.StartChooseItem);
+            Refuse(Labels.StartChooseItem, StartErrorTarget.Item, field: null);
             return null;
         }
 
         var checks = Fields.Select(f => (f.Key, Check: f.Check())).ToList();
         if (checks.FirstOrDefault(c => c.Check.Problem.Length > 0) is { Check.Problem.Length: > 0 } wrong)
         {
-            Refuse(wrong.Check.Problem);
+            Refuse(wrong.Check.Problem, StartErrorTarget.Field, Fields.First(f => string.Equals(f.Key, wrong.Key, StringComparison.Ordinal)));   // why: the key came from Fields
             return null;
         }
 
@@ -113,8 +113,15 @@ internal sealed partial class StartFormViewModel
         return new StartFact(ItemFactName, Encoding.UTF8.GetBytes(fact.ToJsonString()));
     }
 
-    private void Accepted(StartedView started, bool next)
+    private void Accepted(StartedView started, bool next, bool current)
     {
+        if (!current)
+        {
+            // The item or recipe was changed while this was on its way: the answer is for what was sent, so it opens its frame and says nothing about the form as it is now.
+            Started?.Invoke(this, new StartedEventArgs(started.Instance.Id, started.Instance.Address, started.Existing, started.Finished));
+            return;
+        }
+
         if (next)
         {
             _sentNext = true;
@@ -139,15 +146,15 @@ internal sealed partial class StartFormViewModel
 
     private void Fail(Error error)
     {
-        (ErrorCode, ErrorDetail, Error) = (error.Code, error.Message, error.Code + ": " + error.Message);
-        OnChanged(nameof(HasError));
+        (ErrorCode, ErrorDetail, Error, ErrorTarget, ErrorField) = (error.Code, error.Message, error.Code + ": " + error.Message, StartErrorTarget.Summary, null);
+        ErrorChanged();
         ErrorFocusRequests++;
     }
 
-    private void Refuse(string sentence)
+    private void Refuse(string sentence, StartErrorTarget target, StartFieldViewModel? field)
     {
-        (ErrorCode, ErrorDetail, Error) = (string.Empty, sentence, sentence);
-        OnChanged(nameof(HasError));
+        (ErrorCode, ErrorDetail, Error, ErrorTarget, ErrorField) = (string.Empty, sentence, sentence, target, field);
+        ErrorChanged();
         ErrorFocusRequests++;
     }
 
@@ -158,16 +165,26 @@ internal sealed partial class StartFormViewModel
             return;
         }
 
-        (ErrorCode, ErrorDetail, Error) = (string.Empty, string.Empty, string.Empty);
+        (ErrorCode, ErrorDetail, Error, ErrorTarget, ErrorField) = (string.Empty, string.Empty, string.Empty, StartErrorTarget.Summary, null);
+        ErrorChanged();
+    }
+
+    private void ErrorChanged()
+    {
         OnChanged(nameof(HasError));
+        OnChanged(nameof(ShowsSummary));
+        OnChanged(nameof(RecipeError));
+        OnChanged(nameof(ItemError));
+        Announce(Error);
     }
 
     // What an answer left behind belongs to the item and recipe it answered: another item or recipe starts clean.
     private void ResetAttempt()
     {
+        _edits++;
         (_sentFirst, _sentNext) = (false, false);
         Outcome = string.Empty;
         OffersNewAttempt = false;
-        OnChanged(nameof(CanStart));
+        StateChanged();
     }
 }
