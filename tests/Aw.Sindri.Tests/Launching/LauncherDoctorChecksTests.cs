@@ -20,12 +20,14 @@ public sealed class LauncherDoctorChecksTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
+    private ILaunchViews? _launches;
+
     private async Task<string> Line()
     {
         var report = new LaunchShowReport("Print", "detected", "/home/demo/launcher.json", [], []);
         var setup = new ScriptedLaunchSetup(Results.Success(new LaunchInitReport("print", "detected", Path: null, Json: "{}")), Results.Success(report));
         var reader = new LaunchTargetsReader(_v.Slice.Store, _v.Slice.Events, _v.Slice.Profiles, _spend, _v.Progress);
-        var checks = new LauncherDoctorChecks(setup, new LaunchViews(_v.Views), reader, _v.Slice.Clock);
+        var checks = new LauncherDoctorChecks(setup, _launches ?? new LaunchViews(_v.Views), reader, _v.Slice.Clock);
         var rows = await checks.Run(Token);
         return rows.Single(static r => string.Equals(r.Name, "launcher", StringComparison.Ordinal)).Detail;
     }
@@ -38,6 +40,31 @@ public sealed class LauncherDoctorChecksTests
         var line = await Line();
 
         Assert.Contains("not probed yet; 0 request(s) past their deadline; last failure none", line, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_unreadable_launches_view_is_said_so_not_counted_as_zero()
+    {
+        _ = await _v.Slice.HoldLease();
+        _launches = new UnreadableLaunches();
+
+        var line = await Line();
+
+        Assert.Contains("launches unreadable", line, StringComparison.Ordinal);
+        Assert.DoesNotContain("0 request(s)", line, StringComparison.Ordinal);
+    }
+
+    private sealed class UnreadableLaunches : ILaunchViews
+    {
+        private static readonly Error _broken = KernelErrors.Unavailable.With("views.db is locked");
+
+        public ValueTask<Result<LaunchRow?>> Get(LaunchId launch, CancellationToken cancellationToken) => ValueTask.FromResult<Result<LaunchRow?>>(_broken);
+
+        public ValueTask<Result<IReadOnlyList<LaunchRow>>> ForItem(Aw.Sindri.Core.Ids.ItemId item, CancellationToken cancellationToken) => ValueTask.FromResult<Result<IReadOnlyList<LaunchRow>>>(_broken);
+
+        public ValueTask<Result<IReadOnlyList<LaunchRow>>> ForRepo(Aw.Sindri.Core.Ids.RepoName repo, CancellationToken cancellationToken) => ValueTask.FromResult<Result<IReadOnlyList<LaunchRow>>>(_broken);
+
+        public ValueTask<Result<IReadOnlyList<LaunchRow>>> Since(DateTimeOffset since, CancellationToken cancellationToken) => ValueTask.FromResult<Result<IReadOnlyList<LaunchRow>>>(_broken);
     }
 
     [Fact]

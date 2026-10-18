@@ -89,6 +89,44 @@ public sealed class LaunchOptionsTests
         Assert.Null(takenOver.Confirm);
     }
 
+    private static LaunchRow Attached(int n, LaunchState state = LaunchState.Started, SessionId? session = null, TimeSpan? age = null) =>
+        Row(n, state, live: true, age: age) with { Mode = LaunchMode.Attach, SessionId = session ?? _session };   // an attach records the live session's id and never ends
+
+    [Fact]
+    public void An_attach_row_is_never_offered_as_a_session_to_resume()
+    {
+        var open = Row(1, LaunchState.Started, live: true) with { SessionId = _session };
+
+        var launch = For(Item(engine: Engine()), Attached(2), open);
+
+        Assert.Equal([LaunchMode.Open, LaunchMode.Attach], launch.Modes);   // attach to the running session; never a second agent on it
+        Assert.Null(launch.Resumable);
+    }
+
+    [Fact]
+    public void An_older_ended_session_is_not_resumable_while_a_newer_one_of_the_agent_runs()
+    {
+        var ended = Row(1, LaunchState.Started, live: false, reported: _session, age: TimeSpan.FromMinutes(40));
+        var running = Row(2, LaunchState.Started, live: true);
+
+        var launch = For(Item(engine: Engine()), running, ended);
+
+        Assert.DoesNotContain(LaunchMode.Resume, launch.Modes);
+        Assert.Null(launch.Resumable);
+    }
+
+    [Fact]
+    public void An_attach_row_is_not_a_start_for_the_confirm_or_the_last_started()
+    {
+        var attachOnly = For(Item(), Attached(1));
+        var afterEndedOpen = For(Item(), Attached(2), Row(1, LaunchState.Started, live: false, age: TimeSpan.FromHours(3)));
+
+        Assert.Null(attachOnly.Confirm);
+        Assert.Null(attachOnly.LastStarted);
+        Assert.Null(afterEndedOpen.Confirm);   // the open is past the window; the attach started nothing
+        Assert.Equal(_now - TimeSpan.FromHours(3), afterEndedOpen.LastStarted?.At);
+    }
+
     [Fact]
     public void A_closed_item_offers_nothing()
     {

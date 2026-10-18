@@ -160,6 +160,59 @@ public sealed class LauncherReviewFixTests : IDisposable
         Expect.Equal(accepted, SessionIdRules.Matches(pattern, id));   // the second call takes the cached regex
     }
 
+    [Fact]
+    public async Task A_caller_that_cancels_while_the_host_starts_leaves_no_session_and_Stop_waits_for_the_launch_to_unwind()
+    {
+        var host = new BlockingHost(_host);
+        var launcher = new Launcher(new LauncherParts(new AgentCatalog([AgentEntries.ClaudeCode]), _ => host, new FakeTerminalViewer(), Options, _clock) { ResolveBin = static (_, _) => ValueTask.FromResult<string?>(null) });
+        var request = A.LaunchRequest().Unattended(new StepArgs(Model: null, Policy: null, new StepRef("build", "agent"))).Build();   // no viewer step: the cancel must be seen after host.Start
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        var launching = launcher.Launch(request, cancel.Token).AsTask();
+        await host.Entered.Task.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, Token);
+
+        await cancel.CancelAsync();
+        var stopping = launcher.Stop(request.Launch, Token).AsTask();
+        host.Release.SetResult();   // the host's start finishes after the caller gave up
+
+        _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => launching);
+        Assert.True((await stopping.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, Token)).IsSuccess);
+        Expect.Equal(0, _host.LiveCount);   // the session the late start made is gone
+        Assert.False(File.Exists(LaunchSecrets.PathFor(Options.SecretsDirectory, request.Launch)));
+        var again = await launcher.Launch(request, Token);   // not answered from a stale memory of the dead launch
+        Expect.True(again is StartedLaunch);
+        Expect.Equal(2, _host.Started.Count);
+    }
+
+    private sealed class BlockingHost(FakeSessionHost inner) : ISessionHost
+    {
+        private int _starts;
+
+        public TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public HostKind Kind => inner.Kind;
+
+        public async ValueTask<Aw.Kernel.Result<HostRef>> Start(HostSession session, TimeSpan timeout, CancellationToken cancellationToken)
+        {
+            if (Interlocked.Increment(ref _starts) == 1)
+            {
+                _ = Entered.TrySetResult();
+                await Release.Task.ConfigureAwait(false);   // ignores the token, as a tmux call that has already been made does
+            }
+
+            return await inner.Start(session, timeout, CancellationToken.None).ConfigureAwait(false);
+        }
+
+        public ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>> Stop(HostRef host, CancellationToken cancellationToken) => inner.Stop(host, cancellationToken);
+
+        public ValueTask<int> AttachedClients(HostRef host, CancellationToken cancellationToken) => inner.AttachedClients(host, cancellationToken);
+
+        public IReadOnlyList<string> AttachArgv(HostRef host) => inner.AttachArgv(host);
+
+        public ValueTask<HostFacts> Probe(CancellationToken cancellationToken) => inner.Probe(cancellationToken);
+    }
+
     private sealed class CancellingViewer(CancellationTokenSource cancel) : ITerminalViewer
     {
         public string Kind => "test";

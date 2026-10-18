@@ -260,6 +260,21 @@ public sealed class LauncherServiceTests
     }
 
     [Fact]
+    public async Task A_resume_while_the_agents_session_runs_fails_006_and_starts_nothing()
+    {
+        await Boot();
+        using var caller = _rig.Caller();
+        _rig.Launcher.PreChosenSession = Core.Ids.SessionId.From("0198f2a1-0000-7000-8000-000000000001");
+        Assert.True(await _rig.Launch(await Filed(_a)));   // live, with a session id
+        Assert.True(await _rig.Launch(await Filed(_b, LaunchMode.Attach)));   // the attach row carries the same id
+
+        Assert.False(await _rig.Launch(await Filed(_c, LaunchMode.Resume)));
+
+        Expect.Equal(SindriErrors.LaunchNoSession.Code, Assert.Single(_rig.Failures).Code);
+        _ = Assert.Single(_rig.Launcher.Requests);   // only the first open started a process
+    }
+
+    [Fact]
     public async Task Attach_is_held_to_the_claim_reserve_like_a_start()
     {
         await Boot();

@@ -131,6 +131,59 @@ public sealed class SessionReviewFixTests
         Expect.Equal((0, 1), (dropped, retried));
     }
 
+    [Fact]
+    public async Task A_usage_reader_that_throws_still_ends_the_session_without_tokens()
+    {
+        await _s.Started();
+        await _s.Views.Reported(_agentSession);
+        _s.Usage = new ThrowingReader();
+
+        var ended = await _s.Events().End(A.FirstLaunchId, SessionEndReason.Exit, 0, Token);
+
+        Assert.True(ended.IsSuccess, ended.IsError ? ended.Error.ToString() : null);
+        var payload = _s.Views.Slice.Events.Payload<SessionEnded>(Assert.Single(_s.Views.Slice.Store.Events)).Value;
+        Expect.Equal(SessionEndReason.Exit, payload.Reason);
+        Assert.Null(payload.InputTokens);
+        Assert.Null(payload.OutputTokens);
+    }
+
+    [Fact]
+    public async Task A_usage_reader_that_never_answers_is_given_up_on_and_the_session_still_ends()
+    {
+        await _s.Started();
+        await _s.Views.Reported(_agentSession);
+        var slow = new HangingReader();
+        _s.Usage = slow;
+
+        var ending = _s.Events().End(A.FirstLaunchId, SessionEndReason.Exit, 0, Token).AsTask();
+        await slow.Called.Task.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, Token);
+        _s.Views.Slice.Clock.Advance(TimeSpan.FromSeconds(6));   // past the read's 5 s deadline
+        var ended = await ending.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, Token);
+
+        Assert.True(ended.IsSuccess, ended.IsError ? ended.Error.ToString() : null);
+        var payload = _s.Views.Slice.Events.Payload<SessionEnded>(Assert.Single(_s.Views.Slice.Store.Events)).Value;
+        Assert.Null(payload.InputTokens);
+        Assert.Null(payload.OutputTokens);
+    }
+
+    private sealed class ThrowingReader : ILaunchUsage
+    {
+        public ValueTask<IReadOnlyList<ModelTokens>?> OfSession(Core.Launch.AgentId target, SessionId session, CancellationToken cancellationToken) =>
+            throw new InvalidOperationException("an unexpected transcript line");
+    }
+
+    private sealed class HangingReader : ILaunchUsage
+    {
+        public TaskCompletionSource Called { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public async ValueTask<IReadOnlyList<ModelTokens>?> OfSession(Core.Launch.AgentId target, SessionId session, CancellationToken cancellationToken)
+        {
+            _ = Called.TrySetResult();
+            await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            return null;
+        }
+    }
+
     private sealed class TokensReader(SessionHarness harness) : ILaunchUsage
     {
         public ValueTask<IReadOnlyList<ModelTokens>?> OfSession(Core.Launch.AgentId target, SessionId session, CancellationToken cancellationToken) =>
