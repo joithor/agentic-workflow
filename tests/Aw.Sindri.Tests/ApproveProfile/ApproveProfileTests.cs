@@ -254,7 +254,7 @@ public sealed class ApproveProfileTests
     private async Task<(bool Preview, bool StatusNeedsApproval, bool Validated, CheckState Doctor, string Summary)> Surfaces()
     {
         var preview = (await Service().Handle(new ApproveProfileRequest(Hash: null, Answer: null), Token)).Value;
-        var status = (await new GetStatusService(_h.Held, _h.Profiles, _h.Profiles, _h.Store, _h.Events, new ProjectorProgress(_h.Clock), new InMemoryViewStore(SliceHarness.Json)).Handle(new GetStatusRequest(), Token)).Value;
+        var status = (await new GetStatusService(_h.Held, new ProfileReads(_h.Profiles, _h.Profiles), _h.Store, _h.Events, new ProjectorProgress(_h.Clock), new InMemoryViewStore(SliceHarness.Json), new InMemorySessionSnapshot()).Handle(new GetStatusRequest(), Token)).Value;
         var validated = (await new ValidateProfileService(_h.Profiles, _h.Profiles, _h.Store, _h.Events, FakeContextEngine.Instance).Handle(new ValidateProfileRequest(), Token)).Value;
         var doctor = (await new RunDoctorService(_h.Store, _h.Probe, new LedgerFacts(_h.Store, new InMemoryViewStore(SliceHarness.Json)), new ProfileFacts(_h.Profiles, _h.Profiles, _h.Store, _h.Events,
             new ContextEngineChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))))), new FakeControlPlaneProbe(), new FakeTemporalServer(), _h.Clock)

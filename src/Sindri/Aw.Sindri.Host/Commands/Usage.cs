@@ -34,6 +34,8 @@ internal static class Usage
         "       sindri launch init [--viewer <name>] [--force] [--stdout]   detect this box's terminal and write launcher.json (0600); a file that exists is refused without --force (exit 1); --stdout writes nothing",
         "       sindri launch probe [--detach] [--json]   check the launch targets again (the Check again control): a job on the running control plane that records launch.probed when what it found changed; follows the job as 'services run' does",
         "       sindri launch show [<id>] [--json]   the merged agent catalog: source, resolved bin, argvHash, whether Steps may run it (SL8) and the profile line that approves an entry that will park",
+        "       sindri agents [--provider <agent>] [--state <s>] [--repo <r>] [--json]   every live agent session on the box: state, repo and host, and the recently ended ones; reads the running control plane and never starts it; exit 1 when it isn't running or a source failed",
+        "       sindri agents show <provider>/<id> [--json]   one session in full: host, lane, launch and, at a terminal, directory and state history (SND-SESSION-404 when none)",
         "       sindri doctor [--json]        lease, ledger, views, profile, api, temporal and context checks, and the pinned harness probe; runs without the control plane",
         "       sindri doctor --probe [--harness <name>]  this process's agent variables (names only), ancestry and harness version, as JSON",
         "       sindri mcp register [--repo NAME] [--apply] [--json]   the per-repo Claude Code registration of /sindri/mcp (--apply: a human at a terminal)",

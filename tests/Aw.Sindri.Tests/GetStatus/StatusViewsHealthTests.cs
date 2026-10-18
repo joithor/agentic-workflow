@@ -21,7 +21,7 @@ public sealed class StatusViewsHealthTests
 
     private SliceHarness H => _v.Slice;
 
-    private GetStatusService Service() => new(H.Held, H.Profiles, H.Profiles, H.Store, H.Events, _v.Progress, _v.Views);
+    private GetStatusService Service() => new(H.Held, new ProfileReads(H.Profiles, H.Profiles), H.Store, H.Events, _v.Progress, _v.Views, new InMemorySessionSnapshot());
 
     private async Task RunningAndApproved()
     {
@@ -103,7 +103,7 @@ public sealed class StatusViewsHealthTests
         _v.Publish(stalledAt: null);
         var unreadable = new FlakyViewStore(_v.Views) { FailReads = true };
 
-        var status = (await new GetStatusService(H.Held, H.Profiles, H.Profiles, H.Store, H.Events, _v.Progress, unreadable).Handle(new GetStatusRequest(), Token)).Value;
+        var status = (await new GetStatusService(H.Held, new ProfileReads(H.Profiles, H.Profiles), H.Store, H.Events, _v.Progress, unreadable, new InMemorySessionSnapshot()).Handle(new GetStatusRequest(), Token)).Value;
 
         Assert.NotEqual(HealthWord.Healthy, status.Health!.Word);
         Assert.Contains(status.Health.Problems, p => p.Code == "SND-VIEW-001");

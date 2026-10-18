@@ -23,15 +23,15 @@ public sealed class SessionRoutesTests
     public async Task A_heartbeat_with_the_session_id_appends_launch_session_reported_and_no_secret_reaches_the_ledger()
     {
         await using var host = await GoldenHost.Start(temporary: true, Token, ItemScenarios.ProfileYaml);
-        var launch = await SessionScenarios.StartLaunch(host, Token);
+        var launch = await SessionWrapScenarios.StartLaunch(host, Token);
 
-        var answer = await host.Http.Ask(Post(SessionScenarios.Route(launch, "heartbeat"), $$"""{"sessionId":"{{SessionScenarios.ReportedId}}"}""", SessionScenarios.Wrap(SessionScenarios.Proof)));
+        var answer = await host.Http.Ask(Post(SessionWrapScenarios.Route(launch, "heartbeat"), $$"""{"sessionId":"{{SessionWrapScenarios.ReportedId}}"}""", SessionWrapScenarios.Wrap(SessionWrapScenarios.Proof)));
 
         Expect.Equal(HttpStatusCode.OK, answer.Status);
         var events = await Ledger(host);
         var reported = Assert.Single(events, static e => e.Envelope.Type == EventTypes.LaunchSessionReported);
         Expect.Equal($"launch.session-reported:{launch.Value}", reported.IdempotencyKey);
-        Expect.True(events.All(static e => !e.Envelope.Payload.Contains(SessionScenarios.Proof, StringComparison.Ordinal)));
+        Expect.True(events.All(static e => !e.Envelope.Payload.Contains(SessionWrapScenarios.Proof, StringComparison.Ordinal)));
         Expect.True(!events.Any(static e => e.Envelope.Type == EventTypes.SessionEnded));
     }
 
@@ -39,11 +39,11 @@ public sealed class SessionRoutesTests
     public async Task An_exit_appends_session_ended_with_the_code_and_deletes_the_hash_so_a_late_call_is_refused()
     {
         await using var host = await GoldenHost.Start(temporary: true, Token, ItemScenarios.ProfileYaml);
-        var launch = await SessionScenarios.StartLaunch(host, Token);
+        var launch = await SessionWrapScenarios.StartLaunch(host, Token);
         var hash = LaunchSecrets.PathFor(new LauncherOptions(host.Home).SecretsDirectory, launch);
 
-        var exited = await host.Http.Ask(Post(SessionScenarios.Route(launch, "exit"), """{"exitCode":7}""", SessionScenarios.Wrap(SessionScenarios.Proof)));
-        var late = await host.Http.Ask(Post(SessionScenarios.Route(launch, "heartbeat"), "{}", SessionScenarios.Wrap(SessionScenarios.Proof)));
+        var exited = await host.Http.Ask(Post(SessionWrapScenarios.Route(launch, "exit"), """{"exitCode":7}""", SessionWrapScenarios.Wrap(SessionWrapScenarios.Proof)));
+        var late = await host.Http.Ask(Post(SessionWrapScenarios.Route(launch, "heartbeat"), "{}", SessionWrapScenarios.Wrap(SessionWrapScenarios.Proof)));
 
         Expect.Equal((HttpStatusCode.OK, HttpStatusCode.Forbidden, false), (exited.Status, late.Status, File.Exists(hash)));
         Expect.True(late.Body.Contains("SND-AUTH-003", StringComparison.Ordinal));
@@ -55,10 +55,10 @@ public sealed class SessionRoutesTests
     public async Task Wrong_secret_is_SND_AUTH_003()
     {
         await using var host = await GoldenHost.Start(temporary: true, Token, ItemScenarios.ProfileYaml);
-        var launch = await SessionScenarios.StartLaunch(host, Token);
+        var launch = await SessionWrapScenarios.StartLaunch(host, Token);
 
-        var wrong = await host.Http.Ask(Post(SessionScenarios.Route(launch, "heartbeat"), "{}", SessionScenarios.Wrap("not-the-proof")));
-        var missing = await host.Http.Ask(Post(SessionScenarios.Route(launch, "exit"), """{"exitCode":0}""", (SindriHeaders.Caller, "session")));
+        var wrong = await host.Http.Ask(Post(SessionWrapScenarios.Route(launch, "heartbeat"), "{}", SessionWrapScenarios.Wrap("not-the-proof")));
+        var missing = await host.Http.Ask(Post(SessionWrapScenarios.Route(launch, "exit"), """{"exitCode":0}""", (SindriHeaders.Caller, "session")));
 
         Expect.Equal((HttpStatusCode.Forbidden, HttpStatusCode.Forbidden), (wrong.Status, missing.Status));
         Expect.True(wrong.Body.Contains("SND-AUTH-003", StringComparison.Ordinal) && missing.Body.Contains("SND-AUTH-003", StringComparison.Ordinal));
@@ -70,7 +70,7 @@ public sealed class SessionRoutesTests
     {
         await using var host = await GoldenHost.Start(temporary: true, Token, ItemScenarios.ProfileYaml);
 
-        var answer = await host.Http.Ask(Post("/sindri/sessions/not-a-launch/heartbeat", "{}", SessionScenarios.Wrap(SessionScenarios.Proof)));
+        var answer = await host.Http.Ask(Post("/sindri/sessions/not-a-launch/heartbeat", "{}", SessionWrapScenarios.Wrap(SessionWrapScenarios.Proof)));
 
         Expect.Equal(HttpStatusCode.BadRequest, answer.Status);
     }
