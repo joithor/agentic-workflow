@@ -1,5 +1,6 @@
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
+using Aw.Context.Core.Linking;
 using Aw.Context.Core.Sources;
 using Aw.Kernel;
 using Aw.Kernel.Services;
@@ -9,6 +10,7 @@ using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
+using Microsoft.Extensions.Logging;
 
 namespace Aw.Sindri.Features.ContextCalls;
 
@@ -19,10 +21,12 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// </summary>
 /// <param name="scopes">The profile's scope and the caller.</param>
 /// <param name="engine">The context engine.</param>
+/// <param name="intents">The stored sync state of the intent sources.</param>
+/// <param name="logger">Logs a refusal that is not "already running".</param>
 /// <param name="jobs">The 'jobs' view.</param>
 /// <param name="start">The SyncSources command chain.</param>
 /// <param name="clock">Dates the backoff.</param>
-internal sealed class ContextSyncGapsService(ContextScopes scopes, IContextEngine engine, IJobViews jobs, IService<SyncContextSourcesRequest, JobStartedResponse> start, TimeProvider clock) : IScheduledService
+internal sealed class ContextSyncGapsService(ContextScopes scopes, IContextEngine engine, IIntentStore intents, IJobViews jobs, IService<SyncContextSourcesRequest, JobStartedResponse> start, TimeProvider clock, ILogger<ContextSyncGapsService> logger) : IScheduledService
 {
     internal static ServiceName ServiceId { get; } = ServiceName.From("context-sync-gaps");
 
@@ -34,6 +38,7 @@ internal sealed class ContextSyncGapsService(ContextScopes scopes, IContextEngin
     public async ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(run);
+        _ = (intents, logger);   // red stage: wired by the next commit
         var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
         if (scope.IsError || scope.Value.Settings is null)
         {

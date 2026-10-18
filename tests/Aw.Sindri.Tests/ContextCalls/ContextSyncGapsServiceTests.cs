@@ -3,7 +3,10 @@ using System.Text.Json;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Linking;
 using Aw.Context.Core.Sources;
+using Aw.Context.Testing.Linking;
+using Microsoft.Extensions.Logging;
 using Aw.Kernel;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
@@ -12,6 +15,7 @@ using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Testing;
 
@@ -30,23 +34,30 @@ public sealed class ContextSyncGapsServiceTests
     public ContextSyncGapsServiceTests()
     {
         _start = new Starter(_h);
+        _counted = new CountingJobViews(_jobs);
     }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private async Task<ContextSyncGapsService> Service(bool context, params SourceStatusRow[] rows)
+    private const string OnyxSection = """{"sources":{"onyx":{"url":"http://127.0.0.1:3000","token":"on_live-key-0123","version":"v4.9.0"}}}""";
+    private static readonly SourceId _onyx = SourceId.From("onyx");
+    private readonly FakeIntentStore _intents = new();
+    private readonly ProbeCountingEngine _engine = new();
+    private readonly CountingJobViews _counted;
+    private readonly CapturingLogger _log = new();
+
+    private async Task<ContextSyncGapsService> Service(bool context, bool onyx = true)
     {
         _h.Clock.SetUtcNow(_now);
         var loaded = SliceHarness.Profile("5s");
-        loaded = loaded with { Profile = loaded.Profile with { Context = context ? JsonDocument.Parse("{}").RootElement.Clone() : null } };
+        loaded = loaded with { Profile = loaded.Profile with { Context = context ? JsonDocument.Parse(onyx ? OnyxSection : "{}").RootElement.Clone() : null } };
         _ = await _h.Profiles.Save(loaded, Ct);
-        var engine = DispatchProxy.Create<IContextEngine, EngineSourcesProxy>();
-        ((EngineSourcesProxy)(object)engine).View = new SourcesView(rows, SessionsEnabled: false, _now);
-        return new ContextSyncGapsService(new ContextScopes(_h.Profiles, _h.Callers), engine, _jobs, _start, _h.Clock);
+        return new ContextSyncGapsService(new ContextScopes(_h.Profiles, _h.Callers), _engine.Proxy, _intents, _counted, _start, _h.Clock, _log);
     }
 
-    private static SourceStatusRow Onyx(DateTimeOffset? lastSync = null, string? code = null) =>
-        new(SourceId.From("onyx"), SourceKind.Intent, Repo: null, SourceState.Degraded, "d", code, lastSync, Records: 0) { Sync = new SourceSyncStatus(lastSync, SourceState.Degraded, 0, 0, 0, 0, code) };
+    private async Task Synced() => _ = await _intents.CommitPage(new IntentPage(_onyx, [], [], Cursor: null, _now), Ct);
+
+    private async Task FailedFirstSync() => _ = await _intents.RecordFailure(_onyx, "SND-CONTEXT-010", Ct);
 
     private void Job(JobState state, TimeSpan endedAgo)
     {
@@ -66,7 +77,7 @@ public sealed class ContextSyncGapsServiceTests
     [Fact, Trait("Lane", "unit")]
     public async Task Never_synced_source_starts_one_sync_of_every_source()
     {
-        var service = await Service(context: true, Onyx());
+        var service = await Service(context: true);
 
         var result = await Run(service);
 
@@ -78,17 +89,70 @@ public sealed class ContextSyncGapsServiceTests
     [Fact, Trait("Lane", "unit")]
     public async Task Nothing_to_do_without_a_context_section_a_synced_source_or_a_failed_attempt()
     {
-        Assert.True((await Run(await Service(context: false, Onyx()))).Value.Idle);
-        Assert.True((await Run(await Service(context: true, Onyx(lastSync: _now)))).Value.Idle);
-        Assert.True((await Run(await Service(context: true, Onyx(code: "SND-CONTEXT-010")))).Value.Idle);
-        Assert.Empty(_start.Requests);   // a quiet tick only reads views: the service holds no ledger or logger, and starts nothing
+        Assert.True((await Run(await Service(context: false))).Value.Idle);
+        Assert.True((await Run(await Service(context: true, onyx: false))).Value.Idle);
+        await Synced();
+        Assert.True((await Run(await Service(context: true))).Value.Idle);
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_quiet_tick_reads_only_the_stored_sync_state_no_live_probe_and_no_job_view()
+    {
+        await Synced();
+        var service = await Service(context: true);
+
+        var result = await Run(service);
+
+        Assert.True(result.Value.Idle);
+        Assert.Equal(0, _engine.SourcesCalls);   // engine.Sources probes every live source: a tick must not
+        Assert.Equal(0, _counted.Lists);
+        Assert.Empty(_log.Lines);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_first_sync_that_failed_is_still_a_gap_and_is_retried_on_the_backoff_not_before()
+    {
+        await FailedFirstSync();
+        Job(JobState.Failed, TimeSpan.FromMinutes(3));   // ended 3 minutes ago: the first wait is 5
+        var service = await Service(context: true);
+        var waiting = await Run(service);
+        _h.Clock.Advance(TimeSpan.FromMinutes(3));
+        var elapsed = await Run(service);
+
+        Assert.True(waiting.Value.Idle);
+        Assert.False(elapsed.Value.Idle);
+        _ = Assert.Single(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_first_sync_that_failed_with_no_job_on_record_is_started()
+    {
+        await FailedFirstSync();
+
+        var result = await Run(await Service(context: true));
+
+        Assert.False(result.Value.Idle);
+        _ = Assert.Single(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Only_the_newest_runs_are_taken_for_the_failure_count()
+    {
+        for (var i = 0; i < 40; i++)
+        {
+            Job(JobState.Failed, TimeSpan.FromHours(2) + TimeSpan.FromMinutes(i));
+        }
+
+        var result = await Run(await Service(context: true));   // far more failures than the 60 minute cap needs; the last one ended 2 hours ago
+
+        Assert.False(result.Value.Idle);
     }
 
     [Fact, Trait("Lane", "unit")]
     public async Task A_tick_with_no_approved_profile_is_quiet_not_a_failed_run()
     {
-        var engine = DispatchProxy.Create<IContextEngine, EngineSourcesProxy>();
-        var service = new ContextSyncGapsService(new ContextScopes(_h.Profiles, _h.Callers), engine, _jobs, _start, _h.Clock);
+        var service = new ContextSyncGapsService(new ContextScopes(_h.Profiles, _h.Callers), _engine.Proxy, _intents, _counted, _start, _h.Clock, _log);
 
         var result = await Run(service);
 
@@ -100,7 +164,7 @@ public sealed class ContextSyncGapsServiceTests
     public async Task A_running_sync_is_never_doubled()
     {
         Job(JobState.Running, TimeSpan.Zero);
-        var service = await Service(context: true, Onyx());
+        var service = await Service(context: true);
 
         var result = await Run(service);
 
@@ -112,7 +176,7 @@ public sealed class ContextSyncGapsServiceTests
     public async Task A_failed_sync_backs_off_and_each_failure_in_a_row_doubles_the_wait()
     {
         Job(JobState.Failed, TimeSpan.FromMinutes(3));   // newest: ended 3 minutes ago, wait 5
-        var service = await Service(context: true, Onyx());
+        var service = await Service(context: true);
         var waiting = await Run(service);
         _h.Clock.Advance(TimeSpan.FromMinutes(3));   // 6 minutes after it ended
         var elapsed = await Run(service);
@@ -127,7 +191,7 @@ public sealed class ContextSyncGapsServiceTests
     {
         Job(JobState.Failed, TimeSpan.FromMinutes(20));
         Job(JobState.Failed, TimeSpan.FromMinutes(7));   // newest: wait 10 from 7 minutes ago
-        var service = await Service(context: true, Onyx());
+        var service = await Service(context: true);
         var waiting = await Run(service);
         Job(JobState.Succeeded, TimeSpan.FromMinutes(1));   // newest of all
         var reset = await Run(service);
@@ -137,16 +201,27 @@ public sealed class ContextSyncGapsServiceTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_job_conflict_is_a_quiet_run_and_any_other_refusal_is_a_failed_one()
+    public async Task The_same_sync_already_running_is_quiet_any_other_409_is_quiet_but_logged_and_any_other_refusal_fails()
     {
-        _start.Answer = SindriErrors.JobConflict.With("a sync job is already running");
-        var service = await Service(context: true, Onyx());
-        var conflict = await Run(service);
+        var service = await Service(context: true);
+        _start.Answer = Running("JOB-0000000000000001");
+        var same = await Run(service);
+        Assert.Empty(_log.Lines);
+        _start.Answer = SindriErrors.JobConflict.With("The job already ended");
+        var other = await Run(service);
         _start.Answer = SindriErrors.JobsRateLimited.With("too many jobs");
         var refused = await Run(service);
 
-        Assert.True(conflict.Value.Idle);
+        Assert.True(same.Value.Idle);
+        Assert.True(other.Value.Idle);
+        Assert.Contains(_log.Lines, l => l.Contains("SND-JOB-409", StringComparison.Ordinal));
         Assert.Equal(SindriErrors.JobsRateLimited.Code, refused.Error.Code);
+    }
+
+    private static Error Running(string job)
+    {
+        using var id = JsonDocument.Parse($"\"{job}\"");
+        return SindriErrors.JobConflict.With("A sync job is already running for sync").WithExtension("runningJob", id.RootElement.Clone());
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -181,6 +256,47 @@ public sealed class ContextSyncGapsServiceTests
         Assert.Equal("context-sync-gaps", ContextSyncGapsService.BuiltIn.Name.Value);
         var row = Aw.Sindri.Tests.Commands.Authorization.Rows.Of(ActionClass.Job, "SyncSources");
         Assert.Null(Authorization.Decide(ActionClass.Job, CallerContext.Service("context-sync-gaps", _h.Ids), row).Refusal);
+    }
+
+    private sealed class ProbeCountingEngine
+    {
+        internal ProbeCountingEngine()
+        {
+            Proxy = DispatchProxy.Create<IContextEngine, EngineSourcesProxy>();
+            ((EngineSourcesProxy)(object)Proxy).View = new SourcesView([], SessionsEnabled: false, DateTimeOffset.UnixEpoch);
+        }
+
+        internal IContextEngine Proxy { get; }
+
+        internal int SourcesCalls => ((EngineSourcesProxy)(object)Proxy).Calls;
+    }
+
+    private sealed class CountingJobViews(InMemoryJobViews inner) : IJobViews
+    {
+        internal int Lists { get; private set; }
+
+        public ValueTask<Result<JobRow?>> Get(JobId job, CancellationToken cancellationToken) => inner.Get(job, cancellationToken);
+
+        public ValueTask<Result<IReadOnlyList<JobRow>>> Running(CancellationToken cancellationToken) => inner.Running(cancellationToken);
+
+        public ValueTask<Result<IReadOnlyList<JobRow>>> List(JobState? state, JobKind? kind, CancellationToken cancellationToken)
+        {
+            Lists++;
+            return inner.List(state, kind, cancellationToken);
+        }
+    }
+
+    private sealed class CapturingLogger : ILogger<ContextSyncGapsService>
+    {
+        internal List<string> Lines { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state)
+            where TState : notnull => null;
+
+        public bool IsEnabled(LogLevel logLevel) => true;
+
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) =>
+            Lines.Add(formatter(state, exception));
     }
 
     private sealed class Starter(SliceHarness harness) : IService<SyncContextSourcesRequest, JobStartedResponse>

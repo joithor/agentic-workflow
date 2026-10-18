@@ -10,6 +10,8 @@ public class EngineSourcesProxy : DispatchProxy
 {
     public SourcesView? View { get; set; }
 
+    public int Calls { get; private set; }
+
     protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
     {
         if (targetMethod?.Name != nameof(IContextEngine.Sources))
@@ -17,6 +19,7 @@ public class EngineSourcesProxy : DispatchProxy
             throw new NotSupportedException(targetMethod?.Name);
         }
 
+        Calls++;
         Result<SourcesView> answer = View ?? throw new InvalidOperationException("no sources view set");
         return new ValueTask<Result<SourcesView>>(answer);
     }
