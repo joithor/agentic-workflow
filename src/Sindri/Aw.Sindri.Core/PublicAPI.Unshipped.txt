@@ -8324,6 +8324,16 @@ Aw.Sindri.Core.Launch.ILauncher.Launch(Aw.Sindri.Core.Launch.LaunchRequest! requ
 Aw.Sindri.Core.Launch.ILauncher.Stop(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Sindri.Core.Launch.ISessionHost
 Aw.Sindri.Core.Launch.ISessionHost.AttachArgv(Aw.Sindri.Core.Launch.HostRef! host) -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Launch.ILaunchStartup
+Aw.Sindri.Core.Launch.ViewerOutcome.ViewerKind.get -> string?
+Aw.Sindri.Core.Launch.ViewerOutcome.ViewerKind.init -> void
+Aw.Sindri.Core.Launch.ViewerOutcome.ViewerLabel.get -> string?
+Aw.Sindri.Core.Launch.ViewerOutcome.ViewerLabel.init -> void
+Aw.Sindri.Core.Launch.ILaunchStartup.Sweep() -> void
+Aw.Sindri.Core.Launch.ISessionHost.Exists(Aw.Sindri.Core.Launch.HostRef! host, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+Aw.Sindri.Core.Launches.LaunchRow.StartedProcess.get -> bool
+Aw.Sindri.Core.Launches.LaunchRow.Resumable.get -> bool
+static Aw.Sindri.Core.Launches.LaunchRules.ResumeCandidate(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Launches.LaunchRow!>! rows) -> Aw.Sindri.Core.Launches.LaunchRow?
 Aw.Sindri.Core.Launch.ISessionHost.AttachedClients(Aw.Sindri.Core.Launch.HostRef! host, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int>
 Aw.Sindri.Core.Launch.ISessionHost.Kind.get -> Aw.Sindri.Core.Launch.HostKind
 Aw.Sindri.Core.Launch.ISessionHost.Probe(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Launch.HostFacts!>
@@ -9851,6 +9861,7 @@ Aw.Sindri.Core.Launches.LaunchRow.Viewer.init -> void
 static Aw.Sindri.Core.Launches.LaunchRow.operator !=(Aw.Sindri.Core.Launches.LaunchRow? left, Aw.Sindri.Core.Launches.LaunchRow? right) -> bool
 override Aw.Sindri.Core.Launches.LaunchRow.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Launches.LaunchRow.GetHashCode() -> int
+static Aw.Sindri.Core.Launches.LaunchSessionEvents.FinalTokensBudget.get -> System.TimeSpan
 static Aw.Sindri.Core.Launches.LaunchRules.InFlight(Aw.Sindri.Core.Launches.LaunchRow! row, System.DateTimeOffset now) -> bool
 Aw.Sindri.Core.Launches.LaunchBudgets
 Aw.Sindri.Core.Launches.LaunchRow.ArgvHash.get -> string?

@@ -117,7 +117,7 @@ internal sealed class LaunchesProjection(EventFactory events) : IProjection
             return row.Error;
         }
 
-        // An outcome for a launch nobody requested (an engine launch whose request the ledger never held) has no row to change: skip it, never stall the projector on it
+        // An outcome for a launch nobody requested (an engine launch whose request the ledger never held) has no row to change: skip it, never stall the projector on it. A launch that fails before it ever started therefore shows only as the engine step's own failure (step.failed), never in the launches view: the failure carries neither mode nor agent, so no honest row can be made of it
         return row.Value is null ? Unit.Value : await rows.Put(ViewNames.Launches, key, fold(row.Value, payload.Value, recorded), cancellationToken).ConfigureAwait(false);
     }
 

@@ -5,7 +5,7 @@ namespace Aw.Sindri.Core.Events;
 
 /// <summary>
 /// The structured part of 'launch.failed' (launcher L-1, L-3): where the launch stopped, and the facts an error carried as extensions
-/// (SND-LAUNCH-012's reason, current and approved hashes). Null members are left out of the JSON.
+/// (SND-LAUNCH-012's reason, current and approved hashes). Members with nothing to say are written as null.
 /// </summary>
 /// <param name="Stage">Where the launch stopped ('host' or 'backstop'), or null for a failure before the launcher ran.</param>
 /// <param name="Reason">The error's 'reason' extension (not-approved or hash-changed), or null.</param>
