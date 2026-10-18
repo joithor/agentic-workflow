@@ -62,6 +62,7 @@ internal static partial class AgentSections
                 SessionIdMode = Mode(section.SessionId),
                 SessionIdPattern = Text(section.SessionIdPattern),
                 Usage = section.Usage,
+                McpForm = McpOf(section.Mcp),
                 ModelForm = ModelOf(Text(section.Model)),
                 PolicyForm = PolicyOf(Text(section.Policy)),
                 Source = source,
@@ -75,6 +76,13 @@ internal static partial class AgentSections
 
     private static string Hash(AgentSection s) => ArgvHash.Of(ArgvHash.Canonical(new HashInput(
         s.Bin!, s.Open!, Strings(s.Resume), s.SessionId!, s.Mcp ?? "none", Text(s.Model) ?? "none", Text(s.Policy) ?? "none"))); // why: Problem() proved bin, open and sessionId are set
+
+    private static McpForm McpOf(string? name) => name switch
+    {
+        "claude-config-file" => McpForm.ClaudeConfigFile,
+        "codex-overrides" => McpForm.CodexOverrides,
+        _ => McpForm.None,
+    };
 
     private static ModelForm ModelOf(string? name) => name switch
     {

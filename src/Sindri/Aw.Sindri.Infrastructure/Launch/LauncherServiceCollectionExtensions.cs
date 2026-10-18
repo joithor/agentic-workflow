@@ -1,6 +1,8 @@
 using Aw.Redaction;
+using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
+using Aw.Sindri.Core.Mcp;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Infrastructure.Launch.Usage;
 using Microsoft.Extensions.DependencyInjection;
@@ -50,10 +52,25 @@ internal static class LauncherServiceCollectionExtensions
         {
             BuiltinHash = builtinHash,
             Approved = Approved(sp),
+            McpFor = McpTargetFor(sp),
             Config = () => catalog.Current,
             Usage = name => sp.GetRequiredService<IReadOnlyDictionary<string, IUsageReader>>().GetValueOrDefault(name),
         };
     }
+
+    /// <summary>The repo the approved profile names for a checkout (a worktree under it counts) and the port Sindri answers on: the running instance's, else the profile's.</summary>
+    private static Func<string, CancellationToken, ValueTask<McpTarget?>> McpTargetFor(IServiceProvider sp) => async (path, ct) =>
+    {
+        var latest = await sp.GetRequiredService<IApprovedProfile>().Latest(ct).ConfigureAwait(false);
+        var repo = latest.IsError ? null : latest.Value?.Profile.Repos?.FirstOrDefault(r => string.Equals(r.Path.TrimEnd('/'), path.TrimEnd('/'), StringComparison.Ordinal));
+        if (repo is null)
+        {
+            return null;
+        }
+
+        var running = await sp.GetRequiredService<IEndpointFile>().Read(ct).ConfigureAwait(false);
+        return new McpTarget(repo.Name, McpRegistration.Port(running.IsSuccess ? running.Value?.Url : null, latest.Value?.Profile.Api?.Port));
+    };
 
     private static Func<CancellationToken, ValueTask<AgentSettings?>> Approved(IServiceProvider sp) => async ct =>
     {

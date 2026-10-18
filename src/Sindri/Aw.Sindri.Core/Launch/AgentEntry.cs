@@ -30,6 +30,9 @@ public sealed record AgentEntry(AgentId Id, string Label, string Bin, string? Pr
     /// <summary>How the entry takes a Step's policy (launcher L-17); none by default. P10a's addition.</summary>
     public PolicyForm PolicyForm { get; init; } = PolicyForm.None;
 
+    /// <summary>How the entry is told Sindri's MCP endpoint at launch; none by default. P10a's addition.</summary>
+    public McpForm McpForm { get; init; } = McpForm.None;
+
     /// <summary>Where the entry came from (launcher L-10); a built-in by default. P10a's addition.</summary>
     public CatalogSource Source { get; init; } = CatalogSource.Builtin;
 

@@ -174,16 +174,20 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
                 : null;
             var session = PreChosen(entry);
             var seed = ArgvBuilder.Seed(request.Item) + (step is null ? string.Empty : $" This is the {step.Ref.State} step, block {step.Ref.Block}.");
-            var argv = ArgvBuilder.Build(entry, request.Mode, new ArgvInputs(request.Item, workDir, SessionName(request.Launch), seed, session, McpConfigPath: null, step, policyPath));
-            if (argv.IsError)
+            var mcp = entry.McpForm == McpForm.None ? null : await parts.McpFor(request.RepoPath, cancellationToken).ConfigureAwait(false);
+            var mcpPath = mcp is not null && entry.McpForm == McpForm.ClaudeConfigFile ? McpLaunchConfig.Write(parts.Options.LaunchDirectory, request.Launch, mcp) : null;
+            var built = ArgvBuilder.Build(entry, request.Mode, new ArgvInputs(request.Item, workDir, SessionName(request.Launch), seed, session, mcpPath, step, policyPath));
+            if (built.IsError)
             {
-                return argv.Error;
+                return built.Error;
             }
+
+            IReadOnlyList<string> argv = mcp is null ? built.Value : [.. built.Value, .. McpLaunchConfig.Arguments(entry.McpForm, mcp, mcpPath)];
 
             WriteCaptureRule(request.Launch, entry);
             var secret = LaunchSecrets.Mint();
             LaunchSecrets.Write(parts.Options.SecretsDirectory, request.Launch, secret);
-            return new Prepared(workDir, argv.Value, Environment(request, secret), session?.Value);
+            return new Prepared(workDir, argv, Environment(request, secret), session?.Value);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -286,6 +290,11 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
         if (Directory.Exists(parts.Options.PolicyDirectory))
         {
             StepPolicyFile.Delete(parts.Options.PolicyDirectory, launch);
+        }
+
+        if (Directory.Exists(parts.Options.LaunchDirectory))
+        {
+            McpLaunchConfig.Delete(parts.Options.LaunchDirectory, launch);
         }
     }
 

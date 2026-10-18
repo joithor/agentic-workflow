@@ -1,8 +1,12 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Items.Vocabulary;
+using Aw.Sindri.Core.Launches;
+using Aw.Sindri.Core.Views;
+using Aw.Kernel;
 using Aw.Sindri.Features.GetItem;
 using Aw.Sindri.Features.Items;
 using Aw.Sindri.Testing;
@@ -16,7 +20,7 @@ public sealed class GetItemTests
 {
     private readonly ItemQueryHarness _q = new();
 
-    private GetItemService Service() => new(new ViewItemResolver(_q.Views.Views), _q.Views.Progress, _q.Views.Slice.Callers);
+    private GetItemService Service() => new(new ViewItemResolver(_q.Views.Views), _q.Views.Progress, _q.Views.Slice.Callers, new EmptyLaunchSource());
 
     [Fact]
     public async Task GetItem_shows_the_item_with_its_version_and_actions()
@@ -70,5 +74,12 @@ public sealed class GetItemTests
         var result = await Service().Handle(A.GetItemRequest().WithItem(ItemRef.To(ItemQueryHarness.Id('1'))).Build(), ItemQueryHarness.Token);
 
         Expect.Equal(SindriErrors.ItemNotFound.Code, result.Error.Code);
+    }
+
+    /// <summary>The launch block is decided elsewhere (LaunchOptionsTests); here an item only has to carry it.</summary>
+    private sealed class EmptyLaunchSource : IItemLaunchSource
+    {
+        public ValueTask<Result<ItemLaunch>> For(ItemRow item, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Result<ItemLaunch>>(new ItemLaunch([], AgentId.From("claude-code"), "builtIn", null, null, null, null, null, null, []));
     }
 }

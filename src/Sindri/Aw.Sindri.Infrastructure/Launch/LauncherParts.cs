@@ -24,6 +24,9 @@ internal sealed record LauncherParts(IAgentCatalog Catalog, Func<bool, ISessionH
     /// <summary>The usage reader a catalog entry's 'usage' field names, or null when there is none: the probe reports the target as limited without one.</summary>
     public Func<string, IUsageReader?> Usage { get; init; } = static _ => null;
 
+    /// <summary>The MCP endpoint and repo name for a session working in a repo path, or null when there is none to give (nothing is passed then).</summary>
+    public Func<string, CancellationToken, ValueTask<McpTarget?>> McpFor { get; init; } = static (_, _) => ValueTask.FromResult<McpTarget?>(null);
+
     /// <summary>Finds an agent CLI the way the login shell does; null when it doesn't resolve.</summary>
     public Func<string, CancellationToken, ValueTask<string?>> ResolveBin { get; init; } = BinResolver.Resolve;
 }

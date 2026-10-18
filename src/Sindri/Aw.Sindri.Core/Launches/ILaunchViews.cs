@@ -24,4 +24,10 @@ public interface ILaunchViews
     /// <param name="cancellationToken">Cancels the operation.</param>
     /// <returns>The rows.</returns>
     public ValueTask<Result<IReadOnlyList<LaunchRow>>> ForRepo(RepoName repo, CancellationToken cancellationToken);
+
+    /// <summary>Every launch requested at or after <paramref name="since"/>, newest first (doctor's adoption line).</summary>
+    /// <param name="since">The earliest request time.</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <returns>The rows.</returns>
+    public ValueTask<Result<IReadOnlyList<LaunchRow>>> Since(DateTimeOffset since, CancellationToken cancellationToken);
 }

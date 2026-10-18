@@ -41,6 +41,10 @@ internal sealed partial class LaunchFileStore(LauncherOptions options) : ILaunch
     {
         LaunchSecrets.Delete(options.SecretsDirectory, launch);
         DeleteFlat(options, launch);
+        if (Directory.Exists(options.LaunchDirectory))
+        {
+            McpLaunchConfig.Delete(options.LaunchDirectory, launch);
+        }
     }
 
     public IReadOnlyList<LaunchId> Launches()
@@ -66,12 +70,12 @@ internal sealed partial class LaunchFileStore(LauncherOptions options) : ILaunch
     public int SweepStale(DateTimeOffset now, TimeSpan olderThan, Func<LaunchId, bool> live)
     {
         ArgumentNullException.ThrowIfNull(live);
+        var removed = McpLaunchConfig.Sweep(options.LaunchDirectory, now, olderThan, live);
         if (!Directory.Exists(options.LaunchesDirectory))
         {
-            return 0;
+            return removed;
         }
 
-        var removed = 0;
         foreach (var file in Directory.EnumerateFiles(options.LaunchesDirectory))
         {
             var match = PerLaunch.Match(Path.GetFileName(file));

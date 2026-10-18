@@ -9979,3 +9979,150 @@ Aw.Sindri.Core.Launches.UsageSamples.UsageSamples() -> void
 Aw.Sindri.Core.Launches.LaunchLiveness.Active() -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.LaunchId>!
 static Aw.Sindri.Core.Launches.LaunchRules.UsageEvery.get -> System.TimeSpan
 Aw.Sindri.Core.Launches.LaunchSessionEvents.Usage(string! item, Aw.Sindri.Core.Events.SessionUsage! usage, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Launch.AgentEntry.McpForm.get -> Aw.Sindri.Core.Launch.McpForm
+Aw.Sindri.Core.Launch.AgentEntry.McpForm.init -> void
+Aw.Sindri.Core.Launch.McpForm
+Aw.Sindri.Core.Launch.McpForm.ClaudeConfigFile = 1 -> Aw.Sindri.Core.Launch.McpForm
+Aw.Sindri.Core.Launch.McpForm.CodexOverrides = 2 -> Aw.Sindri.Core.Launch.McpForm
+Aw.Sindri.Core.Launch.McpForm.None = 0 -> Aw.Sindri.Core.Launch.McpForm
+Aw.Sindri.Core.Launches.ILaunchViews.Since(System.DateTimeOffset since, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.LaunchRow!>!>!>
+Aw.Sindri.Core.Launches.ItemLaunch
+Aw.Sindri.Core.Launches.ItemLaunch.<Clone>$() -> Aw.Sindri.Core.Launches.ItemLaunch!
+Aw.Sindri.Core.Launches.ItemLaunch.Attach.get -> Aw.Sindri.Core.Launches.LaunchAttachTarget?
+Aw.Sindri.Core.Launches.ItemLaunch.Attach.init -> void
+Aw.Sindri.Core.Launches.ItemLaunch.Blockers.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.LaunchBlocker!>!
+Aw.Sindri.Core.Launches.ItemLaunch.Blockers.init -> void
+Aw.Sindri.Core.Launches.ItemLaunch.ChosenBy.get -> string!
+Aw.Sindri.Core.Launches.ItemLaunch.ChosenBy.init -> void
+Aw.Sindri.Core.Launches.ItemLaunch.Confirm.get -> Aw.Sindri.Core.Launches.LaunchConfirm?
+Aw.Sindri.Core.Launches.ItemLaunch.Confirm.init -> void
+Aw.Sindri.Core.Launches.ItemLaunch.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.LaunchMode>! Modes, out Aw.Sindri.Core.Launch.AgentId DefaultTarget, out string! ChosenBy, out Aw.Sindri.Core.Launches.LaunchAttachTarget? Attach, out Aw.Sindri.Core.Launches.LaunchResumable? Resumable, out Aw.Sindri.Core.Workflow.Engine.LaunchId? InFlight, out Aw.Sindri.Core.Launches.LaunchLastStarted? LastStarted, out Aw.Sindri.Core.Launches.LaunchConfirm? Confirm, out string? RepoPath, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.LaunchBlocker!>! Blockers) -> void
+Aw.Sindri.Core.Launches.ItemLaunch.DefaultTarget.get -> Aw.Sindri.Core.Launch.AgentId
+Aw.Sindri.Core.Launches.ItemLaunch.DefaultTarget.init -> void
+Aw.Sindri.Core.Launches.ItemLaunch.Equals(Aw.Sindri.Core.Launches.ItemLaunch? other) -> bool
+Aw.Sindri.Core.Launches.ItemLaunch.InFlight.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId?
+Aw.Sindri.Core.Launches.ItemLaunch.InFlight.init -> void
+Aw.Sindri.Core.Launches.ItemLaunch.ItemLaunch(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.LaunchMode>! Modes, Aw.Sindri.Core.Launch.AgentId DefaultTarget, string! ChosenBy, Aw.Sindri.Core.Launches.LaunchAttachTarget? Attach, Aw.Sindri.Core.Launches.LaunchResumable? Resumable, Aw.Sindri.Core.Workflow.Engine.LaunchId? InFlight, Aw.Sindri.Core.Launches.LaunchLastStarted? LastStarted, Aw.Sindri.Core.Launches.LaunchConfirm? Confirm, string? RepoPath, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.LaunchBlocker!>! Blockers) -> void
+Aw.Sindri.Core.Launches.ItemLaunch.LastStarted.get -> Aw.Sindri.Core.Launches.LaunchLastStarted?
+Aw.Sindri.Core.Launches.ItemLaunch.LastStarted.init -> void
+Aw.Sindri.Core.Launches.ItemLaunch.Modes.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launch.LaunchMode>!
+Aw.Sindri.Core.Launches.ItemLaunch.Modes.init -> void
+Aw.Sindri.Core.Launches.ItemLaunch.RepoPath.get -> string?
+Aw.Sindri.Core.Launches.ItemLaunch.RepoPath.init -> void
+Aw.Sindri.Core.Launches.ItemLaunch.Resumable.get -> Aw.Sindri.Core.Launches.LaunchResumable?
+Aw.Sindri.Core.Launches.ItemLaunch.Resumable.init -> void
+Aw.Sindri.Core.Launches.LaunchAdoption
+Aw.Sindri.Core.Launches.LaunchAttachTarget
+Aw.Sindri.Core.Launches.LaunchAttachTarget.<Clone>$() -> Aw.Sindri.Core.Launches.LaunchAttachTarget!
+Aw.Sindri.Core.Launches.LaunchAttachTarget.Argv.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Launches.LaunchAttachTarget.Argv.init -> void
+Aw.Sindri.Core.Launches.LaunchAttachTarget.Deconstruct(out Aw.Sindri.Core.Launch.AgentId Target, out string? TabTitle, out System.DateTimeOffset Since, out System.Collections.Generic.IReadOnlyList<string!>? Argv) -> void
+Aw.Sindri.Core.Launches.LaunchAttachTarget.Equals(Aw.Sindri.Core.Launches.LaunchAttachTarget? other) -> bool
+Aw.Sindri.Core.Launches.LaunchAttachTarget.LaunchAttachTarget(Aw.Sindri.Core.Launch.AgentId Target, string? TabTitle, System.DateTimeOffset Since, System.Collections.Generic.IReadOnlyList<string!>? Argv) -> void
+Aw.Sindri.Core.Launches.LaunchAttachTarget.Since.get -> System.DateTimeOffset
+Aw.Sindri.Core.Launches.LaunchAttachTarget.Since.init -> void
+Aw.Sindri.Core.Launches.LaunchAttachTarget.TabTitle.get -> string?
+Aw.Sindri.Core.Launches.LaunchAttachTarget.TabTitle.init -> void
+Aw.Sindri.Core.Launches.LaunchAttachTarget.Target.get -> Aw.Sindri.Core.Launch.AgentId
+Aw.Sindri.Core.Launches.LaunchAttachTarget.Target.init -> void
+Aw.Sindri.Core.Launches.LaunchBlocker
+Aw.Sindri.Core.Launches.LaunchBlocker.<Clone>$() -> Aw.Sindri.Core.Launches.LaunchBlocker!
+Aw.Sindri.Core.Launches.LaunchBlocker.Code.get -> string!
+Aw.Sindri.Core.Launches.LaunchBlocker.Code.init -> void
+Aw.Sindri.Core.Launches.LaunchBlocker.Deconstruct(out string! Code, out string! Detail) -> void
+Aw.Sindri.Core.Launches.LaunchBlocker.Detail.get -> string!
+Aw.Sindri.Core.Launches.LaunchBlocker.Detail.init -> void
+Aw.Sindri.Core.Launches.LaunchBlocker.Equals(Aw.Sindri.Core.Launches.LaunchBlocker? other) -> bool
+Aw.Sindri.Core.Launches.LaunchBlocker.LaunchBlocker(string! Code, string! Detail) -> void
+Aw.Sindri.Core.Launches.LaunchConfirm
+Aw.Sindri.Core.Launches.LaunchConfirm.<Clone>$() -> Aw.Sindri.Core.Launches.LaunchConfirm!
+Aw.Sindri.Core.Launches.LaunchConfirm.Deconstruct(out string! Reason) -> void
+Aw.Sindri.Core.Launches.LaunchConfirm.Equals(Aw.Sindri.Core.Launches.LaunchConfirm? other) -> bool
+Aw.Sindri.Core.Launches.LaunchConfirm.LaunchConfirm(string! Reason) -> void
+Aw.Sindri.Core.Launches.LaunchConfirm.Reason.get -> string!
+Aw.Sindri.Core.Launches.LaunchConfirm.Reason.init -> void
+Aw.Sindri.Core.Launches.LaunchLastStarted
+Aw.Sindri.Core.Launches.LaunchLastStarted.<Clone>$() -> Aw.Sindri.Core.Launches.LaunchLastStarted!
+Aw.Sindri.Core.Launches.LaunchLastStarted.At.get -> System.DateTimeOffset
+Aw.Sindri.Core.Launches.LaunchLastStarted.At.init -> void
+Aw.Sindri.Core.Launches.LaunchLastStarted.Attach.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Launches.LaunchLastStarted.Attach.init -> void
+Aw.Sindri.Core.Launches.LaunchLastStarted.Deconstruct(out Aw.Sindri.Core.Launch.AgentId Target, out System.DateTimeOffset At, out string? TabTitle, out Aw.Sindri.Core.Events.LaunchViewerPublic? Viewer, out bool Late, out System.Collections.Generic.IReadOnlyList<string!>? Attach) -> void
+Aw.Sindri.Core.Launches.LaunchLastStarted.Equals(Aw.Sindri.Core.Launches.LaunchLastStarted? other) -> bool
+Aw.Sindri.Core.Launches.LaunchLastStarted.Late.get -> bool
+Aw.Sindri.Core.Launches.LaunchLastStarted.Late.init -> void
+Aw.Sindri.Core.Launches.LaunchLastStarted.LaunchLastStarted(Aw.Sindri.Core.Launch.AgentId Target, System.DateTimeOffset At, string? TabTitle, Aw.Sindri.Core.Events.LaunchViewerPublic? Viewer, bool Late, System.Collections.Generic.IReadOnlyList<string!>? Attach) -> void
+Aw.Sindri.Core.Launches.LaunchLastStarted.TabTitle.get -> string?
+Aw.Sindri.Core.Launches.LaunchLastStarted.TabTitle.init -> void
+Aw.Sindri.Core.Launches.LaunchLastStarted.Target.get -> Aw.Sindri.Core.Launch.AgentId
+Aw.Sindri.Core.Launches.LaunchLastStarted.Target.init -> void
+Aw.Sindri.Core.Launches.LaunchLastStarted.Viewer.get -> Aw.Sindri.Core.Events.LaunchViewerPublic?
+Aw.Sindri.Core.Launches.LaunchLastStarted.Viewer.init -> void
+Aw.Sindri.Core.Launches.LaunchOptionInputs
+Aw.Sindri.Core.Launches.LaunchOptionInputs.<Clone>$() -> Aw.Sindri.Core.Launches.LaunchOptionInputs!
+Aw.Sindri.Core.Launches.LaunchOptionInputs.Equals(Aw.Sindri.Core.Launches.LaunchOptionInputs? other) -> bool
+Aw.Sindri.Core.Launches.LaunchOptionInputs.InCatalog.get -> System.Func<Aw.Sindri.Core.Launch.AgentId, bool>!
+Aw.Sindri.Core.Launches.LaunchOptionInputs.InCatalog.init -> void
+Aw.Sindri.Core.Launches.LaunchOptionInputs.Item.get -> Aw.Sindri.Core.Views.ItemRow!
+Aw.Sindri.Core.Launches.LaunchOptionInputs.Item.init -> void
+Aw.Sindri.Core.Launches.LaunchOptionInputs.LastUsedInRepo.get -> Aw.Sindri.Core.Launch.AgentId?
+Aw.Sindri.Core.Launches.LaunchOptionInputs.LastUsedInRepo.init -> void
+Aw.Sindri.Core.Launches.LaunchOptionInputs.LaunchOptionInputs() -> void
+Aw.Sindri.Core.Launches.LaunchOptionInputs.Launches.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.LaunchRow!>!
+Aw.Sindri.Core.Launches.LaunchOptionInputs.Launches.init -> void
+Aw.Sindri.Core.Launches.LaunchOptionInputs.Now.get -> System.DateTimeOffset
+Aw.Sindri.Core.Launches.LaunchOptionInputs.Now.init -> void
+Aw.Sindri.Core.Launches.LaunchOptionInputs.Probe.get -> Aw.Sindri.Core.Launches.LaunchTargets?
+Aw.Sindri.Core.Launches.LaunchOptionInputs.Probe.init -> void
+Aw.Sindri.Core.Launches.LaunchOptionInputs.RepoPath.get -> string?
+Aw.Sindri.Core.Launches.LaunchOptionInputs.RepoPath.init -> void
+Aw.Sindri.Core.Launches.LaunchOptionInputs.Settings.get -> Aw.Sindri.Core.Profile.LaunchSettings?
+Aw.Sindri.Core.Launches.LaunchOptionInputs.Settings.init -> void
+Aw.Sindri.Core.Launches.LaunchOptions
+Aw.Sindri.Core.Launches.LaunchResumable
+Aw.Sindri.Core.Launches.LaunchResumable.<Clone>$() -> Aw.Sindri.Core.Launches.LaunchResumable!
+Aw.Sindri.Core.Launches.LaunchResumable.Deconstruct(out Aw.Sindri.Core.Launch.AgentId Target, out Aw.Sindri.Core.Sessions.SessionId SessionId) -> void
+Aw.Sindri.Core.Launches.LaunchResumable.Equals(Aw.Sindri.Core.Launches.LaunchResumable? other) -> bool
+Aw.Sindri.Core.Launches.LaunchResumable.LaunchResumable(Aw.Sindri.Core.Launch.AgentId Target, Aw.Sindri.Core.Sessions.SessionId SessionId) -> void
+Aw.Sindri.Core.Launches.LaunchResumable.SessionId.get -> Aw.Sindri.Core.Sessions.SessionId
+Aw.Sindri.Core.Launches.LaunchResumable.SessionId.init -> void
+Aw.Sindri.Core.Launches.LaunchResumable.Target.get -> Aw.Sindri.Core.Launch.AgentId
+Aw.Sindri.Core.Launches.LaunchResumable.Target.init -> void
+override Aw.Sindri.Core.Launches.ItemLaunch.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launches.ItemLaunch.GetHashCode() -> int
+override Aw.Sindri.Core.Launches.ItemLaunch.ToString() -> string!
+override Aw.Sindri.Core.Launches.LaunchAttachTarget.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launches.LaunchAttachTarget.GetHashCode() -> int
+override Aw.Sindri.Core.Launches.LaunchAttachTarget.ToString() -> string!
+override Aw.Sindri.Core.Launches.LaunchBlocker.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launches.LaunchBlocker.GetHashCode() -> int
+override Aw.Sindri.Core.Launches.LaunchBlocker.ToString() -> string!
+override Aw.Sindri.Core.Launches.LaunchConfirm.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launches.LaunchConfirm.GetHashCode() -> int
+override Aw.Sindri.Core.Launches.LaunchConfirm.ToString() -> string!
+override Aw.Sindri.Core.Launches.LaunchLastStarted.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launches.LaunchLastStarted.GetHashCode() -> int
+override Aw.Sindri.Core.Launches.LaunchLastStarted.ToString() -> string!
+override Aw.Sindri.Core.Launches.LaunchOptionInputs.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launches.LaunchOptionInputs.GetHashCode() -> int
+override Aw.Sindri.Core.Launches.LaunchOptionInputs.ToString() -> string!
+override Aw.Sindri.Core.Launches.LaunchResumable.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launches.LaunchResumable.GetHashCode() -> int
+override Aw.Sindri.Core.Launches.LaunchResumable.ToString() -> string!
+static Aw.Sindri.Core.Launches.ItemLaunch.operator !=(Aw.Sindri.Core.Launches.ItemLaunch? left, Aw.Sindri.Core.Launches.ItemLaunch? right) -> bool
+static Aw.Sindri.Core.Launches.ItemLaunch.operator ==(Aw.Sindri.Core.Launches.ItemLaunch? left, Aw.Sindri.Core.Launches.ItemLaunch? right) -> bool
+static Aw.Sindri.Core.Launches.LaunchAdoption.Line(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.LaunchRow!>! rows) -> string!
+static Aw.Sindri.Core.Launches.LaunchAttachTarget.operator !=(Aw.Sindri.Core.Launches.LaunchAttachTarget? left, Aw.Sindri.Core.Launches.LaunchAttachTarget? right) -> bool
+static Aw.Sindri.Core.Launches.LaunchAttachTarget.operator ==(Aw.Sindri.Core.Launches.LaunchAttachTarget? left, Aw.Sindri.Core.Launches.LaunchAttachTarget? right) -> bool
+static Aw.Sindri.Core.Launches.LaunchBlocker.operator !=(Aw.Sindri.Core.Launches.LaunchBlocker? left, Aw.Sindri.Core.Launches.LaunchBlocker? right) -> bool
+static Aw.Sindri.Core.Launches.LaunchBlocker.operator ==(Aw.Sindri.Core.Launches.LaunchBlocker? left, Aw.Sindri.Core.Launches.LaunchBlocker? right) -> bool
+static Aw.Sindri.Core.Launches.LaunchConfirm.operator !=(Aw.Sindri.Core.Launches.LaunchConfirm? left, Aw.Sindri.Core.Launches.LaunchConfirm? right) -> bool
+static Aw.Sindri.Core.Launches.LaunchConfirm.operator ==(Aw.Sindri.Core.Launches.LaunchConfirm? left, Aw.Sindri.Core.Launches.LaunchConfirm? right) -> bool
+static Aw.Sindri.Core.Launches.LaunchLastStarted.operator !=(Aw.Sindri.Core.Launches.LaunchLastStarted? left, Aw.Sindri.Core.Launches.LaunchLastStarted? right) -> bool
+static Aw.Sindri.Core.Launches.LaunchLastStarted.operator ==(Aw.Sindri.Core.Launches.LaunchLastStarted? left, Aw.Sindri.Core.Launches.LaunchLastStarted? right) -> bool
+static Aw.Sindri.Core.Launches.LaunchOptionInputs.operator !=(Aw.Sindri.Core.Launches.LaunchOptionInputs? left, Aw.Sindri.Core.Launches.LaunchOptionInputs? right) -> bool
+static Aw.Sindri.Core.Launches.LaunchOptionInputs.operator ==(Aw.Sindri.Core.Launches.LaunchOptionInputs? left, Aw.Sindri.Core.Launches.LaunchOptionInputs? right) -> bool
+static Aw.Sindri.Core.Launches.LaunchOptions.For(Aw.Sindri.Core.Launches.LaunchOptionInputs! inputs) -> Aw.Sindri.Core.Launches.ItemLaunch!
+static Aw.Sindri.Core.Launches.LaunchResumable.operator !=(Aw.Sindri.Core.Launches.LaunchResumable? left, Aw.Sindri.Core.Launches.LaunchResumable? right) -> bool
+static Aw.Sindri.Core.Launches.LaunchResumable.operator ==(Aw.Sindri.Core.Launches.LaunchResumable? left, Aw.Sindri.Core.Launches.LaunchResumable? right) -> bool
+static readonly Aw.Sindri.Core.Launches.LaunchAdoption.Window -> System.TimeSpan
