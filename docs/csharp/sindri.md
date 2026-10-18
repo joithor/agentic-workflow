@@ -803,6 +803,7 @@ app must provide what that hook reads before it replaces the TS one.
 ```bash
 dotnet test --project tests/Aw.Sindri.Tests --filter-trait "Lane=unit"          # domain, slices, CLI text
 dotnet test --project tests/Aw.Sindri.Tests --filter-trait "Lane=integration"   # SQLite contracts, YAML files, the API on loopback, the scheduler
+dotnet test --project tests/Aw.Sindri.Engine.Tests --filter-trait "Lane=integration"   # the real-Temporal suites (Workflows, CompleteStep, ApplyCommand), split out for LANE-PKG-001
 scripts/binaries-lock.sh fetch temporal && scripts/binaries-lock.sh fetch temporal-test-server   # the Temporal tests and the smoke run these pins
 bash src/Sindri/aot-smoke/run.sh                                                # publish framework-dependent and drive the published apphost (expected.txt)
 ```

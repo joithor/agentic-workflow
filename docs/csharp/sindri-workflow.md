@@ -613,7 +613,7 @@ and the time-skipping `temporal-test-server` (1.39.0) for darwin-arm64, darwin-x
 
 ### What each server supports, the evals and the ledger mirror
 
-Tests: `tests/Aw.Sindri.Tests/Workflows/Spike/` (integration lane, about 4 s for the 19 tests, both servers started
+Tests: `tests/Aw.Sindri.Engine.Tests/Workflows/Spike/` (integration lane, about 4 s for the 19 tests, both servers started
 from `binaries.lock` with `ExistingPath`; the SDK never downloads). The interpreter there (`SpikeStepWorkflow`) is
 test-only, the eval harness: it walks `recipes/sindri/workflow.step.yaml` read by P1's `YamlRecipeReader`, with a decision
 stub (`SpikeDecision`: first matching transition, identical findings park `no-progress`, a loop past its cap parks
@@ -684,7 +684,7 @@ scrubber is wired in, the engine's ledger scrub uses `Redactor.Default`, the bui
 `context.scrub.extraPatterns` do not reach it yet. A payload the scrub blocks, or breaks so it is no longer JSON, is stored
 without its detail; one that still can't be scrubbed throws, and the activity retries.
 
-**How it was measured.** `AW_SPIKE_LOG=<file> dotnet test --project tests/Aw.Sindri.Tests -- --filter-namespace
+**How it was measured.** `AW_SPIKE_LOG=<file> dotnet test --project tests/Aw.Sindri.Engine.Tests -- --filter-namespace
 Aw.Sindri.Tests.Workflows.Spike` appends each measurement line to the file; `AW_SPIKE_LEDGER_COPY=<dir>` keeps the
 ledger replay test's `ledger.db`. Counted with `sqlite3 ledger.db "select type, count(*) from events group by type"`
 (`workflow.started|1`, `workflow.transition|3`) and `select idempotency_key, count(*) c from events group by
