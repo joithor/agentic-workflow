@@ -45,6 +45,8 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 | `workflow.evidence-all` | phasePacket, built | evidenceSummary | done / failed, dropped |
 | `workflow.evidence` | phasePacket, built | evidenceSummary, decision | done / failed, all-failed, dropped |
 | `workflow.review-loop` | change (payload), phasePacket | review | clean / stuck, wrong (failed) |
+| `workflow.docs-sync` | pr, phasePacket (`{}` when started by hand) | docsResult, docsPr | opened / not-done; alreadySatisfied (no docs to change or sync off), abandoned (failed) |
+| `workflow.ship` | phasePacket, proofPack, review, workspace, lineContext | pr, handoff, returnNotes | shipped / returned (GREEN red or head moved) , refused (failed) |
 | `workflow.pr-babysitter` | pr, handoff, phasePacket, lineContext, workspace | mergedSha, reworkNotes | merged / stuck, rework (failed). **Stub**: one human-only Step (`step.babysit.watch`) stands for babysitting, docs sync and the merge until the PR babysitter spec's recipe replaces it |
 | `workflow.phase` | phasePacket, lineContext | pr, handoff, proofPack, mergedSha | merged / dropped. The per-phase child of the line (spec App. C.6): build, prove, review, drift check, ship, babysit; `stage` 3 and `reprove` 3 |
 

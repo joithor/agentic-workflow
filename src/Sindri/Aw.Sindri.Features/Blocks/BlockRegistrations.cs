@@ -61,7 +61,7 @@ internal static class BlockRegistrations
     /// <summary>Registers the line's blocks (the build and prove stations' and the per-phase child's).</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
-    private static IServiceCollection AddLineBlocks(this IServiceCollection services) => services.AddLineStationBlocks().AddPhaseBlocks();
+    private static IServiceCollection AddLineBlocks(this IServiceCollection services) => services.AddBuildProveBlocks().AddLineStationBlocks().AddPhaseBlocks();
 
     /// <summary>Registers the per-phase child's Steps, the babysitter stub's Step and the line report effect (line spec §7, App. C.6), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
@@ -76,7 +76,7 @@ internal static class BlockRegistrations
     /// <summary>Registers the line's build and prove stations' Steps (line spec §7.2, §7.3), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
-    private static IServiceCollection AddLineStationBlocks(this IServiceCollection services) => services
+    private static IServiceCollection AddBuildProveBlocks(this IServiceCollection services) => services
         .AddBlockDescriptor(BuildSteps.Prepare)
         .AddBlockDescriptor(BuildSteps.Red)
         .AddBlockDescriptor(BuildSteps.RedCheck)
@@ -121,4 +121,25 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PendingInputs.Lenses)
         .AddBlockDescriptor(PendingInputs.Code)
         .AddBlockDescriptor(PendingInputs.History);
+
+    /// <summary>Registers the line stations' Steps (ship, docs sync), descriptors only.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddLineStationBlocks(this IServiceCollection services) => services.AddShipBlocks().AddDocsBlocks();
+
+    private static IServiceCollection AddShipBlocks(this IServiceCollection services) => services
+        .AddBlockDescriptor(ShipSteps.Green)
+        .AddBlockDescriptor(ShipSteps.Pack)
+        .AddBlockDescriptor(ShipSteps.Freeze)
+        .AddBlockDescriptor(ShipSteps.Open)
+        .AddBlockDescriptor(ShipSteps.Return);
+
+    /// <summary>Registers the docs-sync station's Steps (PB spec §7), descriptors only.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddDocsBlocks(this IServiceCollection services) => services
+        .AddBlockDescriptor(DocsSteps.Scope)
+        .AddBlockDescriptor(DocsSteps.Update)
+        .AddBlockDescriptor(DocsSteps.Check)
+        .AddBlockDescriptor(DocsSteps.OpenPr);
 }
