@@ -8,6 +8,8 @@ namespace Aw.Sindri.Core.Workflow.Validation;
 /// <summary>RCP-BLOCK-003 ('with:' arguments fit the descriptor's parameters) and RCP-THRESH-001/002 (W4: a threshold follows the gate's rung).</summary>
 internal sealed partial class BlockRules
 {
+    private const string JudgeProvidersParameter = "providers";
+
     private static IEnumerable<RecipeFinding> Parameters(BlockReference reference, BlockDescriptor descriptor, RecipeSource source)
     {
         var id = descriptor.Id.Value;
@@ -33,6 +35,32 @@ internal sealed partial class BlockRules
             yield return source.Finding(
                 "RCP-BLOCK-003", $"{reference.Path}.with.{missing.Name}", $"block '{id}' needs parameter '{missing.Name}'",
                 $"add with: {{ {missing.Name}: <{Placeholder(missing.Type)}> }}");
+        }
+    }
+
+    /// <summary>
+    /// A Judge Step's literal 'providers' narrows the profile's list (DT-J plan Q8): a name outside <see cref="JudgeProviderNames.Known"/> would silently drop
+    /// every provider, so it is refused at validate time (RCP-BLOCK-003). A fact value is no list of provider names either.
+    /// </summary>
+    private static IEnumerable<RecipeFinding> ProviderLists(BlockReference reference, BlockDescriptor descriptor, RecipeSource source)
+    {
+        if (!reference.With.TryGetValue(JudgeProvidersParameter, out var value) || !descriptor.Parameters.Any(static p => p.Name == JudgeProvidersParameter))
+        {
+            yield break;
+        }
+
+        var path = $"{reference.Path}.with.{JudgeProvidersParameter}";
+        var known = string.Join(", ", JudgeProviderNames.Known);
+        if (value.Fact is not null)
+        {
+            yield return source.Finding("RCP-BLOCK-003", path, $"parameter 'providers' of '{descriptor.Id.Value}' takes a list of provider names, not a fact", $"give it a list of {known}, or {{ profile: workflow.judge.providers }}");
+        }
+        else if (value.Literal is { ValueKind: JsonValueKind.Array } list)
+        {
+            foreach (var name in list.EnumerateArray().Where(static e => e.ValueKind == JsonValueKind.String).Select(static e => e.GetString() ?? string.Empty).Where(static n => !JudgeProviderNames.Known.Contains(n, StringComparer.Ordinal)))
+            {
+                yield return source.Finding("RCP-BLOCK-003", path, $"provider '{name}' isn't one of {known}", $"use one of {known}");
+            }
         }
     }
 
