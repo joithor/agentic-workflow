@@ -23,7 +23,7 @@ internal sealed partial class ShellViewModel
     // Everything the form needs once it exists (ShellViewModel's constructor calls this one line): an accepted start opens the instance's frame.
     private StartFormViewModel InitStart(ISindriApi api, WindowPorts window)
     {
-        var form = new StartFormViewModel(Health.Catalog, () => Health.ApiUrl(), api, window.Files);
+        var form = new StartFormViewModel(Health.Catalog, Health.ApiUrl, api, window.Files);
         form.Started += (_, e) => OpenInstance(e.Address, e.Id);
         Workflows.StartRequested += (_, _) => OpenStart();
         return form;
