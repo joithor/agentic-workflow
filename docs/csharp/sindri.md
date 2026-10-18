@@ -792,4 +792,4 @@ scripts/binaries-lock.sh fetch temporal && scripts/binaries-lock.sh fetch tempor
 bash src/Sindri/aot-smoke/run.sh                                                # publish framework-dependent and drive the published apphost (expected.txt)
 ```
 
-The session launcher (`launcher.json`, the agent catalog, terminal templates and the T3 Code fallback) is in `docs/csharp/sindri-launcher.md`; the profile reference is in `docs/csharp/sindri-profile.md`.
+The item detail route (`GET /sindri/items/{itemId}`) carries a `launch` block (modes, default agent, attach and resume targets, confirm, blockers; UI spec E-2), and doctor prints `launcher`, `launcher:agents` and `launcher:adoption` rows. The session launcher (`launcher.json`, the agent catalog, terminal templates and the T3 Code fallback) is in `docs/csharp/sindri-launcher.md`; the profile reference is in `docs/csharp/sindri-profile.md`.

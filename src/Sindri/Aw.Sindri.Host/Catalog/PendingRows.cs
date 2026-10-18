@@ -14,6 +14,6 @@ internal static class PendingRows
     internal static IReadOnlyList<CommandRow> All { get; } =
     [
         new(ActionId.From("ProbeLaunchTargets"), typeof(ProbeLaunchTargetsRequest), Variant: null, ActionClass.Job, ServiceGrants: [], NeedsTerminal: false, SelfAudited: false,
-            Destructive: false, ReadsViews: false, Shortcut: null, "POST", "/sindri/launch/targets/probe", ShellRows.Form("sindri launch probe"), "pending:P10a"),
+            Destructive: false, ReadsViews: false, Shortcut: null, "POST", "/sindri/launch/targets/probe", ShellRows.Form("sindri launch probe"), "ready"),
     ];
 }
