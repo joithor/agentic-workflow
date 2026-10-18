@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Views;
 using Aw.Sindri.Features.ListInstances;
 using Aw.Sindri.Testing;
@@ -292,7 +293,7 @@ public sealed class ListInstancesServiceTests
     private static ItemRow Titled(string id, string title, string? repo = null) =>
         new ItemRowBuilder().WithId(ItemId.From(id)).InRepo(repo is null ? null : RepoName.From(repo)).Build() with { Title = title };
 
-    private static ListInstancesService Service(IReadOnlyList<InstanceView> views, FixedItemViews items, CallerContext? caller, string? directoryAddress = null, FixedRepos? repos = null, RecordingInstances? port = null, FixedReader? reader = null) =>
+    private static ListInstancesService Service(IReadOnlyList<InstanceView> views, FixedItemViews items, CallerContext? caller, string? directoryAddress = null, FixedRepos? repos = null, RecordingInstances? port = null, FixedReader? reader = null, TimeProvider? clock = null) =>
         new(
             directoryAddress is null ? new NoDirectory() : new FixedDirectory(directoryAddress),
             port ?? new RecordingInstances([.. views.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))]),
@@ -300,7 +301,7 @@ public sealed class ListInstancesServiceTests
             items,
             repos ?? new FixedRepos(),
             new FixedCaller(caller),
-            clock: new FakeTimeProvider());
+            clock: clock ?? new FakeTimeProvider());
 
     [Fact]
     public async Task A_subject_filter_matches_the_item_title_the_row_shows_and_still_the_id_as_the_key()
@@ -436,6 +437,53 @@ public sealed class ListInstancesServiceTests
 
         Assert.Equal((1, 3), (result.Value.Counts.Open, result.Value.Counts.Done));
         Assert.Equal(["T-1/step/1"], reader.Reads, StringComparer.Ordinal);   // one Query, for the one running root
+    }
+
+    [Fact]
+    public async Task A_payload_subject_with_no_title_of_its_own_is_labelled_by_the_item_title_not_the_fact_key()
+    {
+        var view = OnItem(ItemA, $"{ItemA}/scoping/1") with { Subject = new SubjectRef("payload", "fact:scopeInput", "fact:scopeInput", Href: null) };
+        var service = Service([view], new FixedItemViews(failing: false, Titled(ItemA, "Toy scoping check")), new CallerContextBuilder().Human().Build());
+
+        var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
+
+        Assert.Equal(new SubjectRef("payload", "fact:scopeInput", "Toy scoping check", Href: null), Assert.Single(result.Value.Instances).Subject);
+    }
+
+    [Fact]
+    public async Task A_payload_subject_keeps_its_own_title_and_falls_back_to_the_key_only_when_there_is_no_title_at_all()
+    {
+        var titled = OnItem(ItemA, $"{ItemA}/scoping/1") with { Subject = new SubjectRef("payload", "fact:scopeInput", "Offline sync brief", Href: null) };
+        var bare = OnItem(ItemB, $"{ItemB}/scoping/1") with { Subject = new SubjectRef("payload", "fact:scopeInput", "fact:scopeInput", Href: null) };
+        var service = Service([titled, bare], new FixedItemViews(failing: false, Titled(ItemA, "Item title")), new CallerContextBuilder().Human().Build());
+
+        var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
+
+        Assert.Equal(["Offline sync brief", "fact:scopeInput"], result.Value.Instances.OrderBy(static r => r.Address.Value, StringComparer.Ordinal).Select(static r => r.Subject.Label), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public async Task Done_counts_only_the_roots_that_resolved_today_not_cancelled_failed_or_older_ones()
+    {
+        var now = StatusCases.Now;
+        InstanceView Ended(string address, string outcome, TimeSpan ago) => View("done", address) with { Outcome = OutcomeName.From(outcome), Since = now - ago };
+        InstanceView[] ended =
+        [
+            Ended("T-1/step/1", "resolved", TimeSpan.FromHours(1)),
+            Ended("T-2/step/1", "alreadySatisfied", TimeSpan.FromHours(2)),
+            Ended("T-3/step/1", "cancelled", TimeSpan.FromMinutes(5)),
+            Ended("T-4/step/1", "failed", TimeSpan.FromMinutes(5)),
+            Ended("T-5/step/1", "unresolved", TimeSpan.FromMinutes(5)),
+            Ended("T-6/step/1", "resolved", TimeSpan.FromDays(3)),
+        ];
+        var running = View("desk-task", "T-7/step/1");
+        InstanceView[] all = [running, .. ended];
+        var port = new RecordingInstances([.. all.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))], running: [running.Address.Value]);
+        var service = Service(all, new FixedItemViews(failing: false), new CallerContextBuilder().Human().Build(), port: port, clock: new FakeTimeProvider(now));
+
+        var result = await service.Handle(new ListInstancesRequest(Open: "true"), CancellationToken.None);
+
+        Assert.Equal((1, 2), (result.Value.Counts.Open, result.Value.Counts.Done));
     }
 
     [Fact]
