@@ -35,14 +35,22 @@ internal sealed class ViewerFixture : IDisposable
         return path;
     }
 
-    /// <summary>Awaits the task while moving the fake clock 250 ms at a time (the observation window's poll), with real pauses so processes can run.</summary>
-    public async Task<T> Drive<T>(ValueTask<T> pending, Action<int>? onTick = null)
+    /// <summary>Awaits the task while moving the fake clock 250 ms at a time (the observation window's poll), with real pauses so processes can run. While <paramref name="hold"/> says true the clock does not move.</summary>
+    public async Task<T> Drive<T>(ValueTask<T> pending, Action<int>? onTick = null, Func<bool>? hold = null)
     {
         var task = pending.AsTask();
+        var held = 0;
         for (var tick = 0; !task.IsCompleted && tick < 400; tick++)
         {
             await Task.Delay(10, TestContext.Current.CancellationToken);
+            if (hold?.Invoke() == true && held++ < 3000)   // the clock stands still, so the window cannot end before the stub has finished (30 s at most)
+            {
+                tick--;
+                continue;
+            }
+
             onTick?.Invoke(tick);
+
             Clock.Advance(TimeSpan.FromMilliseconds(250));
         }
 
