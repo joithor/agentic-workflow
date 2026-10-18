@@ -10695,12 +10695,6 @@ Aw.Sindri.Core.Profile.SindriProfile.SindriProfile(int SchemaVersion, string! Us
 Aw.Sindri.Core.Sandbox.GithubCredentials
 Aw.Sindri.Core.Sandbox.GithubCredentials.AgentApp = 1 -> Aw.Sindri.Core.Sandbox.GithubCredentials
 Aw.Sindri.Core.Sandbox.GithubCredentials.None = 0 -> Aw.Sindri.Core.Sandbox.GithubCredentials
-Aw.Sindri.Core.Sandbox.IModelCredentialSource
-Aw.Sindri.Core.Sandbox.IModelCredentialSource.Id.get -> Aw.Sindri.Core.Sandbox.ModelLoginSource
-Aw.Sindri.Core.Sandbox.IModelCredentialSource.Prepare(Aw.Sindri.Core.Launch.AgentId target, Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Aw.Kernel.Result<Aw.Sindri.Core.Sandbox.PreparedLogin!>!>!
-Aw.Sindri.Core.Sandbox.IModelCredentialSource.Probe(Aw.Sindri.Core.Launch.AgentId target) -> Aw.Sindri.Core.Sandbox.LoginStatus!
-Aw.Sindri.Core.Sandbox.IModelCredentialSource.Release(Aw.Sindri.Core.Sandbox.LoginHandle! handle) -> void
-Aw.Sindri.Core.Sandbox.IModelCredentialSource.Supports(Aw.Sindri.Core.Launch.AgentId target) -> bool
 Aw.Sindri.Core.Sandbox.InnerSandbox
 Aw.Sindri.Core.Sandbox.InnerSandbox.Auto = 0 -> Aw.Sindri.Core.Sandbox.InnerSandbox
 Aw.Sindri.Core.Sandbox.InnerSandbox.Off = 2 -> Aw.Sindri.Core.Sandbox.InnerSandbox
@@ -10710,63 +10704,15 @@ Aw.Sindri.Core.Sandbox.LaunchCodeKind.LaunchPark = 1 -> Aw.Sindri.Core.Sandbox.L
 Aw.Sindri.Core.Sandbox.LaunchCodeKind.NoRuntime = 0 -> Aw.Sindri.Core.Sandbox.LaunchCodeKind
 Aw.Sindri.Core.Sandbox.LaunchCodeKind.ResourceWait = 3 -> Aw.Sindri.Core.Sandbox.LaunchCodeKind
 Aw.Sindri.Core.Sandbox.LaunchCodeKind.StepFailure = 2 -> Aw.Sindri.Core.Sandbox.LaunchCodeKind
-Aw.Sindri.Core.Sandbox.LoginHandle
-Aw.Sindri.Core.Sandbox.LoginHandle.<Clone>$() -> Aw.Sindri.Core.Sandbox.LoginHandle!
-Aw.Sindri.Core.Sandbox.LoginHandle.Deconstruct(out string! Value) -> void
-Aw.Sindri.Core.Sandbox.LoginHandle.Equals(Aw.Sindri.Core.Sandbox.LoginHandle? other) -> bool
-Aw.Sindri.Core.Sandbox.LoginHandle.LoginHandle(string! Value) -> void
-Aw.Sindri.Core.Sandbox.LoginHandle.Value.get -> string!
-Aw.Sindri.Core.Sandbox.LoginHandle.Value.init -> void
-Aw.Sindri.Core.Sandbox.LoginMount
-Aw.Sindri.Core.Sandbox.LoginMount.<Clone>$() -> Aw.Sindri.Core.Sandbox.LoginMount!
-Aw.Sindri.Core.Sandbox.LoginMount.Deconstruct(out string! HostPath, out string! SandboxPath, out Aw.Sindri.Core.Sandbox.LoginMountMode Mode) -> void
-Aw.Sindri.Core.Sandbox.LoginMount.Equals(Aw.Sindri.Core.Sandbox.LoginMount? other) -> bool
-Aw.Sindri.Core.Sandbox.LoginMount.HostPath.get -> string!
-Aw.Sindri.Core.Sandbox.LoginMount.HostPath.init -> void
-Aw.Sindri.Core.Sandbox.LoginMount.LoginMount(string! HostPath, string! SandboxPath, Aw.Sindri.Core.Sandbox.LoginMountMode Mode) -> void
-Aw.Sindri.Core.Sandbox.LoginMount.Mode.get -> Aw.Sindri.Core.Sandbox.LoginMountMode
-Aw.Sindri.Core.Sandbox.LoginMount.Mode.init -> void
-Aw.Sindri.Core.Sandbox.LoginMount.SandboxPath.get -> string!
-Aw.Sindri.Core.Sandbox.LoginMount.SandboxPath.init -> void
 Aw.Sindri.Core.Sandbox.LoginMountMode
 Aw.Sindri.Core.Sandbox.LoginMountMode.ReadOnly = 0 -> Aw.Sindri.Core.Sandbox.LoginMountMode
 Aw.Sindri.Core.Sandbox.LoginMountMode.ReadWrite = 1 -> Aw.Sindri.Core.Sandbox.LoginMountMode
-Aw.Sindri.Core.Sandbox.LoginState
-Aw.Sindri.Core.Sandbox.LoginState.Expired = 2 -> Aw.Sindri.Core.Sandbox.LoginState
-Aw.Sindri.Core.Sandbox.LoginState.Missing = 1 -> Aw.Sindri.Core.Sandbox.LoginState
-Aw.Sindri.Core.Sandbox.LoginState.Ready = 0 -> Aw.Sindri.Core.Sandbox.LoginState
-Aw.Sindri.Core.Sandbox.LoginStatus
-Aw.Sindri.Core.Sandbox.LoginStatus.<Clone>$() -> Aw.Sindri.Core.Sandbox.LoginStatus!
-Aw.Sindri.Core.Sandbox.LoginStatus.Deconstruct(out Aw.Sindri.Core.Sandbox.LoginState State, out Aw.Sindri.Core.Sandbox.ModelLoginSource Source, out string? Detail) -> void
-Aw.Sindri.Core.Sandbox.LoginStatus.Detail.get -> string?
-Aw.Sindri.Core.Sandbox.LoginStatus.Detail.init -> void
-Aw.Sindri.Core.Sandbox.LoginStatus.Equals(Aw.Sindri.Core.Sandbox.LoginStatus? other) -> bool
-Aw.Sindri.Core.Sandbox.LoginStatus.LoginStatus(Aw.Sindri.Core.Sandbox.LoginState State, Aw.Sindri.Core.Sandbox.ModelLoginSource Source, string? Detail = null) -> void
-Aw.Sindri.Core.Sandbox.LoginStatus.Source.get -> Aw.Sindri.Core.Sandbox.ModelLoginSource
-Aw.Sindri.Core.Sandbox.LoginStatus.Source.init -> void
-Aw.Sindri.Core.Sandbox.LoginStatus.State.get -> Aw.Sindri.Core.Sandbox.LoginState
-Aw.Sindri.Core.Sandbox.LoginStatus.State.init -> void
 Aw.Sindri.Core.Sandbox.ModelLoginSource
 Aw.Sindri.Core.Sandbox.ModelLoginSource.OwnerCopy = 0 -> Aw.Sindri.Core.Sandbox.ModelLoginSource
 Aw.Sindri.Core.Sandbox.ModelLoginSource.SeparateLogin = 1 -> Aw.Sindri.Core.Sandbox.ModelLoginSource
 Aw.Sindri.Core.Sandbox.NetworkMode
 Aw.Sindri.Core.Sandbox.NetworkMode.Enforce = 0 -> Aw.Sindri.Core.Sandbox.NetworkMode
 Aw.Sindri.Core.Sandbox.NetworkMode.Learn = 1 -> Aw.Sindri.Core.Sandbox.NetworkMode
-Aw.Sindri.Core.Sandbox.PreparedLogin
-Aw.Sindri.Core.Sandbox.PreparedLogin.<Clone>$() -> Aw.Sindri.Core.Sandbox.PreparedLogin!
-Aw.Sindri.Core.Sandbox.PreparedLogin.Deconstruct(out Aw.Sindri.Core.Sandbox.ModelLoginSource Source, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.LoginMount!>! Mounts, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, out System.Collections.Generic.IReadOnlyList<string!>! DeniedReads, out Aw.Sindri.Core.Sandbox.LoginHandle! Handle) -> void
-Aw.Sindri.Core.Sandbox.PreparedLogin.DeniedReads.get -> System.Collections.Generic.IReadOnlyList<string!>!
-Aw.Sindri.Core.Sandbox.PreparedLogin.DeniedReads.init -> void
-Aw.Sindri.Core.Sandbox.PreparedLogin.Environment.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
-Aw.Sindri.Core.Sandbox.PreparedLogin.Environment.init -> void
-Aw.Sindri.Core.Sandbox.PreparedLogin.Equals(Aw.Sindri.Core.Sandbox.PreparedLogin? other) -> bool
-Aw.Sindri.Core.Sandbox.PreparedLogin.Handle.get -> Aw.Sindri.Core.Sandbox.LoginHandle!
-Aw.Sindri.Core.Sandbox.PreparedLogin.Handle.init -> void
-Aw.Sindri.Core.Sandbox.PreparedLogin.Mounts.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.LoginMount!>!
-Aw.Sindri.Core.Sandbox.PreparedLogin.Mounts.init -> void
-Aw.Sindri.Core.Sandbox.PreparedLogin.PreparedLogin(Aw.Sindri.Core.Sandbox.ModelLoginSource Source, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.LoginMount!>! Mounts, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, System.Collections.Generic.IReadOnlyList<string!>! DeniedReads, Aw.Sindri.Core.Sandbox.LoginHandle! Handle) -> void
-Aw.Sindri.Core.Sandbox.PreparedLogin.Source.get -> Aw.Sindri.Core.Sandbox.ModelLoginSource
-Aw.Sindri.Core.Sandbox.PreparedLogin.Source.init -> void
 Aw.Sindri.Core.Sandbox.SandboxCode
 Aw.Sindri.Core.Sandbox.SandboxCode.<Clone>$() -> Aw.Sindri.Core.Sandbox.SandboxCode!
 Aw.Sindri.Core.Sandbox.SandboxCode.Deconstruct(out Aw.Kernel.ErrorDefinition! Error, out Aw.Sindri.Core.Sandbox.LaunchCodeKind Kind, out bool HasHttpClass) -> void
@@ -10927,18 +10873,6 @@ override Aw.Sindri.Core.Profile.SandboxRepoSettings.ToString() -> string!
 override Aw.Sindri.Core.Profile.SandboxSettings.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Profile.SandboxSettings.GetHashCode() -> int
 override Aw.Sindri.Core.Profile.SandboxSettings.ToString() -> string!
-override Aw.Sindri.Core.Sandbox.LoginHandle.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Sandbox.LoginHandle.GetHashCode() -> int
-override Aw.Sindri.Core.Sandbox.LoginHandle.ToString() -> string!
-override Aw.Sindri.Core.Sandbox.LoginMount.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Sandbox.LoginMount.GetHashCode() -> int
-override Aw.Sindri.Core.Sandbox.LoginMount.ToString() -> string!
-override Aw.Sindri.Core.Sandbox.LoginStatus.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Sandbox.LoginStatus.GetHashCode() -> int
-override Aw.Sindri.Core.Sandbox.LoginStatus.ToString() -> string!
-override Aw.Sindri.Core.Sandbox.PreparedLogin.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Sandbox.PreparedLogin.GetHashCode() -> int
-override Aw.Sindri.Core.Sandbox.PreparedLogin.ToString() -> string!
 override Aw.Sindri.Core.Sandbox.SandboxCode.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Sandbox.SandboxCode.GetHashCode() -> int
 override Aw.Sindri.Core.Sandbox.SandboxCode.ToString() -> string!
@@ -10981,14 +10915,6 @@ static Aw.Sindri.Core.Profile.SandboxRepoSettings.operator !=(Aw.Sindri.Core.Pro
 static Aw.Sindri.Core.Profile.SandboxRepoSettings.operator ==(Aw.Sindri.Core.Profile.SandboxRepoSettings? left, Aw.Sindri.Core.Profile.SandboxRepoSettings? right) -> bool
 static Aw.Sindri.Core.Profile.SandboxSettings.operator !=(Aw.Sindri.Core.Profile.SandboxSettings? left, Aw.Sindri.Core.Profile.SandboxSettings? right) -> bool
 static Aw.Sindri.Core.Profile.SandboxSettings.operator ==(Aw.Sindri.Core.Profile.SandboxSettings? left, Aw.Sindri.Core.Profile.SandboxSettings? right) -> bool
-static Aw.Sindri.Core.Sandbox.LoginHandle.operator !=(Aw.Sindri.Core.Sandbox.LoginHandle? left, Aw.Sindri.Core.Sandbox.LoginHandle? right) -> bool
-static Aw.Sindri.Core.Sandbox.LoginHandle.operator ==(Aw.Sindri.Core.Sandbox.LoginHandle? left, Aw.Sindri.Core.Sandbox.LoginHandle? right) -> bool
-static Aw.Sindri.Core.Sandbox.LoginMount.operator !=(Aw.Sindri.Core.Sandbox.LoginMount? left, Aw.Sindri.Core.Sandbox.LoginMount? right) -> bool
-static Aw.Sindri.Core.Sandbox.LoginMount.operator ==(Aw.Sindri.Core.Sandbox.LoginMount? left, Aw.Sindri.Core.Sandbox.LoginMount? right) -> bool
-static Aw.Sindri.Core.Sandbox.LoginStatus.operator !=(Aw.Sindri.Core.Sandbox.LoginStatus? left, Aw.Sindri.Core.Sandbox.LoginStatus? right) -> bool
-static Aw.Sindri.Core.Sandbox.LoginStatus.operator ==(Aw.Sindri.Core.Sandbox.LoginStatus? left, Aw.Sindri.Core.Sandbox.LoginStatus? right) -> bool
-static Aw.Sindri.Core.Sandbox.PreparedLogin.operator !=(Aw.Sindri.Core.Sandbox.PreparedLogin? left, Aw.Sindri.Core.Sandbox.PreparedLogin? right) -> bool
-static Aw.Sindri.Core.Sandbox.PreparedLogin.operator ==(Aw.Sindri.Core.Sandbox.PreparedLogin? left, Aw.Sindri.Core.Sandbox.PreparedLogin? right) -> bool
 static Aw.Sindri.Core.Sandbox.SandboxCode.operator !=(Aw.Sindri.Core.Sandbox.SandboxCode? left, Aw.Sindri.Core.Sandbox.SandboxCode? right) -> bool
 static Aw.Sindri.Core.Sandbox.SandboxCode.operator ==(Aw.Sindri.Core.Sandbox.SandboxCode? left, Aw.Sindri.Core.Sandbox.SandboxCode? right) -> bool
 static Aw.Sindri.Core.Sandbox.SandboxCodes.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.SandboxCode!>!
@@ -11169,3 +11095,77 @@ Aw.Sindri.Core.Sessions.SessionProblem.Reason.get -> Aw.Sindri.Core.Sessions.Una
 Aw.Sindri.Core.Sessions.SessionProblem.Reason.init -> void
 static Aw.Sindri.Core.Sessions.SessionRows.Find(Aw.Sindri.Core.Sessions.SessionSnapshot! pass, Aw.Sindri.Core.Sessions.SessionRef reference, Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Sindri.Core.Sessions.ObservedSession?
 static Aw.Sindri.Core.Sessions.SessionRows.RefuseSession(Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Kernel.Error?
+Aw.Sindri.Core.Sandbox.Credentials.IModelCredentialSource
+Aw.Sindri.Core.Sandbox.Credentials.IModelCredentialSource.Id.get -> Aw.Sindri.Core.Sandbox.ModelLoginSource
+Aw.Sindri.Core.Sandbox.Credentials.IModelCredentialSource.Prepare(Aw.Sindri.Core.Launch.AgentId target, Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Aw.Kernel.Result<Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin!>!>!
+Aw.Sindri.Core.Sandbox.Credentials.IModelCredentialSource.Probe(Aw.Sindri.Core.Launch.AgentId target) -> Aw.Sindri.Core.Sandbox.Credentials.LoginStatus!
+Aw.Sindri.Core.Sandbox.Credentials.IModelCredentialSource.Release(Aw.Sindri.Core.Sandbox.Credentials.LoginHandle! handle) -> void
+Aw.Sindri.Core.Sandbox.Credentials.IModelCredentialSource.Supports(Aw.Sindri.Core.Launch.AgentId target) -> bool
+Aw.Sindri.Core.Sandbox.Credentials.LoginHandle
+Aw.Sindri.Core.Sandbox.Credentials.LoginHandle.<Clone>$() -> Aw.Sindri.Core.Sandbox.Credentials.LoginHandle!
+Aw.Sindri.Core.Sandbox.Credentials.LoginHandle.Deconstruct(out string! Value) -> void
+Aw.Sindri.Core.Sandbox.Credentials.LoginHandle.Equals(Aw.Sindri.Core.Sandbox.Credentials.LoginHandle? other) -> bool
+Aw.Sindri.Core.Sandbox.Credentials.LoginHandle.LoginHandle(string! Value) -> void
+Aw.Sindri.Core.Sandbox.Credentials.LoginHandle.Value.get -> string!
+Aw.Sindri.Core.Sandbox.Credentials.LoginHandle.Value.init -> void
+Aw.Sindri.Core.Sandbox.Credentials.LoginMount
+Aw.Sindri.Core.Sandbox.Credentials.LoginMount.<Clone>$() -> Aw.Sindri.Core.Sandbox.Credentials.LoginMount!
+Aw.Sindri.Core.Sandbox.Credentials.LoginMount.Deconstruct(out string! HostPath, out string! SandboxPath, out Aw.Sindri.Core.Sandbox.LoginMountMode Mode) -> void
+Aw.Sindri.Core.Sandbox.Credentials.LoginMount.Equals(Aw.Sindri.Core.Sandbox.Credentials.LoginMount? other) -> bool
+Aw.Sindri.Core.Sandbox.Credentials.LoginMount.HostPath.get -> string!
+Aw.Sindri.Core.Sandbox.Credentials.LoginMount.HostPath.init -> void
+Aw.Sindri.Core.Sandbox.Credentials.LoginMount.LoginMount(string! HostPath, string! SandboxPath, Aw.Sindri.Core.Sandbox.LoginMountMode Mode) -> void
+Aw.Sindri.Core.Sandbox.Credentials.LoginMount.Mode.get -> Aw.Sindri.Core.Sandbox.LoginMountMode
+Aw.Sindri.Core.Sandbox.Credentials.LoginMount.Mode.init -> void
+Aw.Sindri.Core.Sandbox.Credentials.LoginMount.SandboxPath.get -> string!
+Aw.Sindri.Core.Sandbox.Credentials.LoginMount.SandboxPath.init -> void
+Aw.Sindri.Core.Sandbox.Credentials.LoginState
+Aw.Sindri.Core.Sandbox.Credentials.LoginState.Expired = 2 -> Aw.Sindri.Core.Sandbox.Credentials.LoginState
+Aw.Sindri.Core.Sandbox.Credentials.LoginState.Missing = 1 -> Aw.Sindri.Core.Sandbox.Credentials.LoginState
+Aw.Sindri.Core.Sandbox.Credentials.LoginState.Ready = 0 -> Aw.Sindri.Core.Sandbox.Credentials.LoginState
+Aw.Sindri.Core.Sandbox.Credentials.LoginStatus
+Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.<Clone>$() -> Aw.Sindri.Core.Sandbox.Credentials.LoginStatus!
+Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.Deconstruct(out Aw.Sindri.Core.Sandbox.Credentials.LoginState State, out Aw.Sindri.Core.Sandbox.ModelLoginSource Source, out string? Detail) -> void
+Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.Detail.get -> string?
+Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.Detail.init -> void
+Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.Equals(Aw.Sindri.Core.Sandbox.Credentials.LoginStatus? other) -> bool
+Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.LoginStatus(Aw.Sindri.Core.Sandbox.Credentials.LoginState State, Aw.Sindri.Core.Sandbox.ModelLoginSource Source, string? Detail = null) -> void
+Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.Source.get -> Aw.Sindri.Core.Sandbox.ModelLoginSource
+Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.Source.init -> void
+Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.State.get -> Aw.Sindri.Core.Sandbox.Credentials.LoginState
+Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.State.init -> void
+Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin
+Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.<Clone>$() -> Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin!
+Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.Deconstruct(out Aw.Sindri.Core.Sandbox.ModelLoginSource Source, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.Credentials.LoginMount!>! Mounts, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, out System.Collections.Generic.IReadOnlyList<string!>! DeniedReads, out Aw.Sindri.Core.Sandbox.Credentials.LoginHandle! Handle) -> void
+Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.DeniedReads.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.DeniedReads.init -> void
+Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.Environment.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.Environment.init -> void
+Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.Equals(Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin? other) -> bool
+Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.Handle.get -> Aw.Sindri.Core.Sandbox.Credentials.LoginHandle!
+Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.Handle.init -> void
+Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.Mounts.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.Credentials.LoginMount!>!
+Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.Mounts.init -> void
+Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.PreparedLogin(Aw.Sindri.Core.Sandbox.ModelLoginSource Source, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.Credentials.LoginMount!>! Mounts, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, System.Collections.Generic.IReadOnlyList<string!>! DeniedReads, Aw.Sindri.Core.Sandbox.Credentials.LoginHandle! Handle) -> void
+Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.Source.get -> Aw.Sindri.Core.Sandbox.ModelLoginSource
+Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.Source.init -> void
+override Aw.Sindri.Core.Sandbox.Credentials.LoginHandle.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sandbox.Credentials.LoginHandle.GetHashCode() -> int
+override Aw.Sindri.Core.Sandbox.Credentials.LoginHandle.ToString() -> string!
+override Aw.Sindri.Core.Sandbox.Credentials.LoginMount.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sandbox.Credentials.LoginMount.GetHashCode() -> int
+override Aw.Sindri.Core.Sandbox.Credentials.LoginMount.ToString() -> string!
+override Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.GetHashCode() -> int
+override Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.ToString() -> string!
+override Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.GetHashCode() -> int
+override Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.ToString() -> string!
+static Aw.Sindri.Core.Sandbox.Credentials.LoginHandle.operator !=(Aw.Sindri.Core.Sandbox.Credentials.LoginHandle? left, Aw.Sindri.Core.Sandbox.Credentials.LoginHandle? right) -> bool
+static Aw.Sindri.Core.Sandbox.Credentials.LoginHandle.operator ==(Aw.Sindri.Core.Sandbox.Credentials.LoginHandle? left, Aw.Sindri.Core.Sandbox.Credentials.LoginHandle? right) -> bool
+static Aw.Sindri.Core.Sandbox.Credentials.LoginMount.operator !=(Aw.Sindri.Core.Sandbox.Credentials.LoginMount? left, Aw.Sindri.Core.Sandbox.Credentials.LoginMount? right) -> bool
+static Aw.Sindri.Core.Sandbox.Credentials.LoginMount.operator ==(Aw.Sindri.Core.Sandbox.Credentials.LoginMount? left, Aw.Sindri.Core.Sandbox.Credentials.LoginMount? right) -> bool
+static Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.operator !=(Aw.Sindri.Core.Sandbox.Credentials.LoginStatus? left, Aw.Sindri.Core.Sandbox.Credentials.LoginStatus? right) -> bool
+static Aw.Sindri.Core.Sandbox.Credentials.LoginStatus.operator ==(Aw.Sindri.Core.Sandbox.Credentials.LoginStatus? left, Aw.Sindri.Core.Sandbox.Credentials.LoginStatus? right) -> bool
+static Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.operator !=(Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin? left, Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin? right) -> bool
+static Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin.operator ==(Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin? left, Aw.Sindri.Core.Sandbox.Credentials.PreparedLogin? right) -> bool

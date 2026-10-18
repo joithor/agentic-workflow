@@ -127,6 +127,7 @@ public static class ProfileDiff
             ("workflow.eventHold", workflow?.EventHold),
             ("workflow.effects", workflow?.Effects is { } effects ? string.Join(", ", effects) : null),
             ("workflow.dispatchDelay", workflow?.DispatchDelay),
+            ("workflow.judge.providers", workflow?.Judge?.Providers is { } providers ? string.Join(", ", providers) : null),
         ];
         return keys.Concat(Forge(workflow?.Forge)).Where(static k => k.Value is not null).Select(static k => (k.Key, k.Value!));   // why: the nulls are filtered out just before
     }

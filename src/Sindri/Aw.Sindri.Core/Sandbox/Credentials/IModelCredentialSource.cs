@@ -2,7 +2,7 @@ using Aw.Kernel;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Workflow.Engine;
 
-namespace Aw.Sindri.Core.Sandbox;
+namespace Aw.Sindri.Core.Sandbox.Credentials;
 
 /// <summary>
 /// Supplies a target's model login to a sandboxed session (sandbox spec SB18, owner decision Q2). One adapter per source:

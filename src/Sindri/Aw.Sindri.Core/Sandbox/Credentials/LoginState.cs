@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Aw.Sindri.Core.Sandbox;
+namespace Aw.Sindri.Core.Sandbox.Credentials;
 
 /// <summary>What a credential source finds for a target (sandbox spec SB18).</summary>
 [JsonConverter(typeof(JsonStringEnumConverter<LoginState>))]

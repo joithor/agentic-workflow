@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Core.Sandbox;
+namespace Aw.Sindri.Core.Sandbox.Credentials;
 
 /// <summary>
 /// A prepared login: plain data the pure plan builder consumes (sandbox spec SB18).

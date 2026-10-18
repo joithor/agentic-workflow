@@ -32,7 +32,7 @@ mistakes, not a deliberate escape (spec §2).
 | `StartedLaunch.Sandbox`, `LaunchStarted.Sandbox`, `LaunchStartedPublic.Sandbox` | `Launch/`, `Events/` | `SandboxSummary`: mechanism, `planHash`, writable paths, network group names, network mode, inner sandbox, limits, credentials, login source, `attended`. Paths are listed, contents never. Left out when the launch was not sandboxed. |
 | `StepPolicy.LoginSource` | `Launch/` | `ModelLoginSource?`: the stricter login source a Step asks for (`OwnerCopy` < `SeparateLogin`); null means no ask and is left out of the JSON. The launcher's stricter-of merge is SB-1/SB-5a. |
 | `ModelLoginSource` | `Sandbox/` | `owner-copy`, `separate-login`. |
-| `IModelCredentialSource`, `LoginStatus`, `LoginState`, `PreparedLogin`, `LoginMount`, `LoginHandle` | `Sandbox/` | The credential port (SB18). `Prepare` returns plain data the plan builder consumes. The fake, the contract base and the adapters are SB-1 and SB-2. |
+| `IModelCredentialSource`, `LoginStatus`, `LoginState`, `PreparedLogin`, `LoginMount`, `LoginHandle` | `Sandbox/Credentials/` (its own namespace: it needs `AgentId` from `Launch`, which uses `Sandbox`) | The credential port (SB18). `Prepare` returns plain data the plan builder consumes. The fake, the contract base and the adapters are SB-1 and SB-2. |
 | `SandboxReasons`, `SandboxCodes`, `SandboxRefusal`, `LaunchCodeKind` | `Sandbox/` | The closed reason sets, the kind table, and the factory that puts `reason` (and `source`) on the error as extensions. |
 | `SandboxDenied`, `SandboxLimitHit` | `Events/` | The `sandbox.denied` and `sandbox.limit-hit` payloads (emitted from SB-4b/SB-5a). |
 | `SandboxSettings` and its records | `Profile/` | The profile's `sandbox:` section. |

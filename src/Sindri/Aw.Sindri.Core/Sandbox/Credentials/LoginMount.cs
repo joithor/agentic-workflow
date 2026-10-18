@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Core.Sandbox;
+namespace Aw.Sindri.Core.Sandbox.Credentials;
 
 /// <summary>One bind that makes up the agent home.</summary>
 /// <param name="HostPath">The path on the host.</param>

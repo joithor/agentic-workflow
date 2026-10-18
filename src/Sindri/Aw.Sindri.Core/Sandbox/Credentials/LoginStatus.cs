@@ -1,4 +1,4 @@
-namespace Aw.Sindri.Core.Sandbox;
+namespace Aw.Sindri.Core.Sandbox.Credentials;
 
 /// <summary>The cheap, side-effect-free answer of <see cref="IModelCredentialSource.Probe"/>.</summary>
 /// <param name="State">Ready, missing or expired.</param>
