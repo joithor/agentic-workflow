@@ -39,5 +39,10 @@
       }
     ],
     "sentence": "Sindri is degraded: service heartbeat failed."
+  },
+  "sessions": {
+    "live": 0,
+    "asking": 0,
+    "problems": 0
   }
 }
