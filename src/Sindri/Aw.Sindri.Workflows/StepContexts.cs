@@ -53,5 +53,5 @@ internal sealed class StepContexts(IInjectionTexts texts, IStepInputRunner runne
 
     /// <summary>The key of an entry's typed result: the input id, or 'id#n' (n = the entry's place) when the Step lists that input more than once, so the second use never overwrites the first.</summary>
     private static string ResultKey(FilledInput entry, IReadOnlyList<InjectionInputSource> all) =>
-        all.Count(i => i.Recorded.Input == entry.Input) > 1 ? $"{entry.Input.Value}#{entry.Index.ToString(System.Globalization.CultureInfo.InvariantCulture)}" : entry.Input.Value;
+        all.Where(i => i.Recorded.Input == entry.Input).Skip(1).Any() ? $"{entry.Input.Value}#{entry.Index.ToString(System.Globalization.CultureInfo.InvariantCulture)}" : entry.Input.Value;
 }
