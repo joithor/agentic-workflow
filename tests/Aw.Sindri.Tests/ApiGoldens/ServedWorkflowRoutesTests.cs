@@ -29,7 +29,7 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
     public static IReadOnlyList<(string Slug, string Scenario)> Goldens { get; } =
     [
         ("workflow-instance", "not-found"), ("workflow-instance-fact", "not-found"), ("workflow-recipes", "list"),
-        ("workflow-instances-start", "request"), ("workflow-instances-start", "started"), ("workflow-instances", "start-item-not-found"), ("workflow-instances", "start-missing-input"),
+        ("workflow-instances-start", "request"), ("workflow-instances-start", "started"), ("workflow-instances", "start-item-malformed"), ("workflow-instances", "start-missing-input"),
         ("workflow-instances", "start-item-mismatch"), ("workflow-instances", "start-earlier-attempt-live"),
         ("workflow-instances", "start-recipe-legacy"), ("workflow-instances", "start-recipe-revoked"), ("workflow-instances", "start-recipe-drifted"),
     ];
@@ -204,7 +204,7 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
         var started = await Start(served, request);
 
         Assert.Equal(HttpStatusCode.OK, started.Status);
-        Assert.Contains("\"content\": \"dGhlIHNwZWM=\"", ApiGolden.Reindent(request), StringComparison.Ordinal);   // 'the spec' as base64: StartFact has no converter
+        Assert.Contains("\"content\": \"dGhlIHNwZWM=\"", ApiGolden.Reindent(request), StringComparison.Ordinal);   // 'the spec' as base64: StartFact has no converter. The server-side decode is proven by started.json's factShas (the sha256 of 'the spec').
         ApiGolden.Match(request, _harness.Home, "workflow-instances-start", "request");
         ApiGolden.Match(started.Body, _harness.Home, "workflow-instances-start", "started", _drawn);
     }
@@ -216,21 +216,26 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
         await using var served = await Served.Start(_harness.Home, env, TestContext.Current.CancellationToken);
         var spec = ("fact:spec", "spec.md", "the spec");
 
-        var unknownItem = await Start(served, StartBody(served, "workflow.step", "no such item", next: false, spec));
+        var malformed = await Start(served, StartBody(served, "workflow.step", "no such item", next: false, spec));
         var noInput = await Start(served, StartBody(served, "workflow.step", "T-4", next: false));
         var mismatch = await Start(served, StartBody(served, "workflow.step", "T-5", next: false, spec, ("fact:item", "item.json", """{ "id": "T-9", "repo": "agentic-workflow", "spec": "the spec" }""")));
-        _ = await Start(served, StartBody(served, "workflow.step", "T-3", next: false, spec));
+        var first = await Start(served, StartBody(served, "workflow.step", "T-3", next: false, spec));
         var live = await Start(served, StartBody(served, "workflow.step", "T-3", next: true, spec));
 
-        // The wired SelfItems stub answers an unknown item as SND-CLI-003, so SND-ITEM-404 is unreachable through this host.
-        Assert.Equal(("SND-CLI-003", HttpStatusCode.BadRequest), (unknownItem.Code, unknownItem.Status));
+        // The wired SelfItems stub resolves any well-formed key to itself, so this host has no not-found refusal yet; a malformed reference is SND-CLI-003.
+        Assert.Equal(HttpStatusCode.OK, first.Status);
+        Assert.Equal(("SND-CLI-003", HttpStatusCode.BadRequest), (malformed.Code, malformed.Status));
         Assert.Equal(("SND-CLI-003", HttpStatusCode.BadRequest), (noInput.Code, noInput.Status));
         Assert.Equal(("SND-WF-014", HttpStatusCode.BadRequest), (mismatch.Code, mismatch.Status));
         Assert.Equal(("SND-WF-012", HttpStatusCode.Conflict), (live.Code, live.Status));
-        ApiGolden.Match(unknownItem.Body, _harness.Home, "workflow-instances", "start-item-not-found", _drawn);
+        ApiGolden.Match(malformed.Body, _harness.Home, "workflow-instances", "start-item-malformed", _drawn);
         ApiGolden.Match(noInput.Body, _harness.Home, "workflow-instances", "start-missing-input", _drawn);
         ApiGolden.Match(mismatch.Body, _harness.Home, "workflow-instances", "start-item-mismatch", _drawn);
         ApiGolden.Match(live.Body, _harness.Home, "workflow-instances", "start-earlier-attempt-live", _drawn);
+
+        // Documents the missing check, no golden: a well-formed unknown item starts. It should become SND-ITEM-404 when the P3 item store replaces SelfItems.
+        var unknown = await Start(served, StartBody(served, "workflow.step", "T-999", next: false, spec));
+        Assert.Equal(HttpStatusCode.OK, unknown.Status);
     }
 
     [Fact(Timeout = 120_000)]
@@ -238,11 +243,11 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
     {
         var step = WorkflowsHarness.Shipped("sindri/workflow.step.yaml");
         var original = _harness.Approve(step);
-        _ = _harness.Approve(step.Replace("version: 2\n", "version: 3\n", StringComparison.Ordinal));
+        _ = _harness.Approve(Changed(step, "version: 2\n", "version: 3\n"));
         _harness.Revoke(original);   // v3 stays approved, so the pinned v2 is found and then refused as revoked
-        _ = _harness.RegisterLegacy(step.Replace("id: workflow.step\n", "id: workflow.legacy\n", StringComparison.Ordinal)
-            .Replace("inputs:\n  - { key: fact:spec, label: \"Spec\", type: text, kind: text }\n", "inputs: [fact:spec]\n", StringComparison.Ordinal));
-        Drifted(step.Replace("id: workflow.step\n", "id: workflow.drifted\n", StringComparison.Ordinal));
+        _ = _harness.RegisterLegacy(Changed(Changed(step, "id: workflow.step\n", "id: workflow.legacy\n"),
+            "inputs:\n  - { key: fact:spec, label: \"Spec\", type: text, kind: text }\n", "inputs: [fact:spec]\n"));
+        Drifted(Changed(step, "id: workflow.step\n", "id: workflow.drifted\n"));
         await using var env = await WorkflowsHarness.StartDevServer(ct: TestContext.Current.CancellationToken);
         await using var served = await Served.Start(_harness.Home, env, TestContext.Current.CancellationToken);
         var spec = ("fact:spec", "spec.md", "the spec");
@@ -257,6 +262,14 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
         ApiGolden.Match(legacy.Body, _harness.Home, "workflow-instances", "start-recipe-legacy", _drawn);
         ApiGolden.Match(revoked.Body, _harness.Home, "workflow-instances", "start-recipe-revoked", _drawn);
         ApiGolden.Match(drifted.Body, _harness.Home, "workflow-instances", "start-recipe-drifted", _drawn);
+    }
+
+    /// <summary>Replaces <paramref name="needle"/> in <paramref name="text"/>, failing when it is missing, so a setup edit can't silently do nothing.</summary>
+    private static string Changed(string text, string needle, string replacement)
+    {
+        var changed = text.Replace(needle, replacement, StringComparison.Ordinal);
+        Assert.NotEqual(text, changed, StringComparer.Ordinal);
+        return changed;
     }
 
     /// <summary>Registers <paramref name="yaml"/> and approves it with block pins that differ from this build's, as a block that changed since the approval leaves it.</summary>

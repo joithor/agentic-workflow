@@ -867,6 +867,9 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
   item>`, which answers the one instance it names; the CLI resolves there first, then calls the id routes. An address in
   a route is a 400 (`SND-CLI-003`); an id no instance has is `SND-WF-001`. The server finds an id among the instances it
   has started or shown (`KnownInstances`), else by minting the id of every instance visibility lists.
+- **The start request.** `POST /workflow/instances` takes `{ recipe, item, nextAttempt, facts }`, where `facts` maps a fact key
+  to `{ name, content }`. `content` is the base64 of the raw bytes (the System.Text.Json default for `ReadOnlyMemory<byte>`),
+  not the text; the golden `workflow-instances-start/request.json` pins it, and `started.json` carries the sha256 of the decoded bytes.
 - **Failures of an Update (§5.2, §5.3).** Each Update waits at most 4 s for a worker (`TemporalUpdates.Patience`): a
   command that first waited the 5 s command gate still answers inside the CLI's 10 s HTTP timeout. No worker in that
   time is `SND-API-002`, naming the nonce: the Update may still apply once a worker runs, so the claim stays and the same
