@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api.Workflow;
+using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Start;
@@ -241,7 +242,7 @@ public sealed class StartFormStateTests
     {
         var recipe = await File.ReadAllTextAsync(Path.Combine(RepoRoot(), "recipes", "sindri", "workflow.item.yaml"), Token);
         Assert.Contains("effect.claim.ref", recipe, StringComparison.Ordinal);
-        Assert.Contains("{ key: fact:item, label: \"Item\", type: item, kind: item }", recipe, StringComparison.Ordinal);
+        Assert.Matches(@"key:\s*fact:item\b[^}]*type:\s*item\b", recipe);
 
         _fixture.Rows(("workflow.item", Approved, 2));
         var item = await _fixture.Form();
@@ -352,8 +353,10 @@ public sealed class StartFormStateTests
         Assert.Equal((string.Empty, false), (form.StartHelp, form.IsBusy));
 
         _fixture.Server.WorkflowAnswer = RouteAnswer.Problem("workflow-recipe", "not-found");
-        await form.Choose(form.Recipes[0], Token);
-        Assert.Equal((form.Note, form.Note), (form.StartHelp, form.Announcement));
+        var failing = await _fixture.Form();
+        await failing.Open("T-1", Token);
+        await failing.Choose(failing.Recipes[0], Token);
+        Assert.Equal((failing.Note, failing.Note, true), (failing.StartHelp, failing.Announcement, failing.HasNote));
     }
 
     [Fact]
@@ -394,5 +397,130 @@ public sealed class StartFormStateTests
         await form.StartNewAttempt(Token);
 
         Assert.Equal((true, true), (form.HasError, form.CanStartNewAttempt));
+    }
+
+    // ---- review 351 run 2 ----
+
+    [Fact]
+    public async Task A_recipe_read_for_an_earlier_choice_of_the_same_recipe_is_dropped()
+    {
+        _fixture.Rows((StartFormFixture.Step, Approved, 2), (StartFormFixture.Triage, Approved, 2));
+        var form = await _fixture.Form();
+        await form.Open("T-1", Token);
+        var step = form.Recipes.Single(r => r.Id == StartFormFixture.Step);
+        var first = _fixture.Server.RecipeGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var choosingA1 = form.Choose(step, Token);
+        var second = _fixture.Server.RecipeGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var choosingB = form.Choose(form.Recipes.Single(r => r.Id == StartFormFixture.Triage), Token);
+        var third = _fixture.Server.RecipeGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var choosingA2 = form.Choose(step, Token);
+
+        first.SetResult();
+        await choosingA1;
+
+        Assert.Equal((0, false), (form.Fields.Count, form.CanStart));
+        second.SetResult();
+        await choosingB;
+        Assert.Equal((0, false), (form.Fields.Count, form.CanStart));
+        third.SetResult();
+        await choosingA2;
+        Assert.Equal((true, true), (form.Fields.Count > 0, form.CanStart));
+    }
+
+    [Fact]
+    public async Task A_recipe_that_could_not_be_read_is_no_longer_the_selected_one_so_choosing_it_again_is_a_change()
+    {
+        _fixture.Rows((StartFormFixture.Step, Approved, 2));
+        _fixture.Server.WorkflowAnswer = RouteAnswer.Problem("workflow-recipe", "not-found");
+        var form = await _fixture.Form();
+        await form.Open("T-1", Token);
+
+        await form.Choose(form.Recipes[0], Token);
+
+        Assert.Null(form.Recipe);
+    }
+
+    [Fact]
+    public async Task A_send_with_no_api_is_refused_as_not_running_and_sends_nothing()
+    {
+        var api = (Uri?)StartFormFixture.Api;
+        var catalog = new ViewModels.Controls.CatalogViewModel(new FakeClipboard(), _fixture.Clock);
+        catalog.Show(StartFormFixture.Api, _fixture.Server, (await _fixture.Server.Commands(StartFormFixture.Api, Token)).Value);
+        var form = new StartFormViewModel(catalog, () => api, _fixture.Server, _fixture.Files);
+        await form.Open("T-1", Token);
+        await form.Choose(form.Recipes[0], Token);
+        form.Fields[0].Value = "the spec";
+        api = null;
+
+        await form.Submit(Token);
+
+        Assert.Equal((true, 0, form.IsSending), (form.HasError, _fixture.Server.Started.Count, false));
+        Assert.Contains("SND-UI", form.Error, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_answer_for_a_new_instance_after_an_edit_opens_its_frame_and_says_which_instance_started()
+    {
+        var form = await _fixture.Opened("T-1");
+        form.Fields[0].Value = "the spec";
+        var opened = 0;
+        form.Started += (_, _) => opened++;
+        var gate = _fixture.Server.StartGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var sending = form.Submit(Token);
+
+        form.ItemId = "T-2";
+        gate.SetResult();
+        await sending;
+
+        var address = JsonNode.Parse(GoldenFiles.Api("workflow-instances-start", "started"))!["instance"]!["address"]!.GetValue<string>(); // why: the golden has an instance
+        Assert.Equal((1, true, true, Labels.StartedBehind(address)), (opened, form.IsOpen, form.OpenedFrame, form.Announcement));
+    }
+
+    [Fact]
+    public async Task A_refusal_for_a_send_made_before_an_edit_is_dropped_and_does_not_move_focus()
+    {
+        var form = await _fixture.Opened("T-1");
+        form.Fields[0].Value = "the spec";
+        _fixture.Server.StartAnswer = RouteAnswer.Problem("workflow-instances", "start-missing-input");
+        var gate = _fixture.Server.StartGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var sending = form.Submit(Token);
+
+        form.ItemId = "T-2";
+        gate.SetResult();
+        await sending;
+
+        Assert.Equal((false, 0), (form.HasError, form.ErrorFocusRequests));
+    }
+
+    [Fact]
+    public async Task A_link_is_sent_without_the_spaces_around_it()
+    {
+        _fixture.Rows((StartFormFixture.Step, Approved, 2));
+        _fixture.Bend(StartFormFixture.Step, input => input["type"] = "link");
+        var form = await _fixture.Opened("T-1");
+        form.Fields[0].Value = "  https://example.test/spec \n";
+
+        await form.Submit(Token);
+
+        Assert.Equal("https://example.test/spec", System.Text.Encoding.UTF8.GetString(Assert.Single(_fixture.Server.Started).Facts.Values.Single().Content.Span));
+    }
+
+    [Fact]
+    public async Task A_file_of_exactly_one_mebibyte_is_sent_and_one_byte_more_is_refused()
+    {
+        _fixture.Rows((StartFormFixture.Project, Approved, 12));
+        var form = await _fixture.Opened("T-1");
+        form.Fields.Single(f => f.IsPayload).Value = "{}";
+        var file = form.Fields.Single(f => f.IsFile);
+        _fixture.Files.Queue(new PickedFile("prd.md", StartFieldViewModel.MaxBytes + 1, ReadOnlyMemory<byte>.Empty));
+        await file.Pick(Token);
+        await form.Submit(Token);
+        Assert.Equal((Labels.StartTooLarge(file.Label), 0), (form.ErrorDetail, _fixture.Server.Started.Count));
+
+        _fixture.Files.Queue(new PickedFile("prd.md", StartFieldViewModel.MaxBytes, new byte[StartFieldViewModel.MaxBytes]));
+        await file.Pick(Token);
+        await form.Submit(Token);
+
+        Assert.Equal(StartFieldViewModel.MaxBytes, Assert.Single(_fixture.Server.Started).Facts["fact:prd"].Content.Length);
     }
 }

@@ -56,6 +56,10 @@ internal sealed partial class StartDialog : UserControl
         {
             Dispatcher.UIThread.Post(FocusError, DispatcherPriority.Loaded);
         }
+        else if (string.Equals(e.PropertyName, nameof(StartFormViewModel.OutcomeFocusRequests), StringComparison.Ordinal))
+        {
+            Dispatcher.UIThread.Post(FocusOutcome, DispatcherPriority.Loaded);
+        }
     }
 
     private void FocusError()
@@ -73,6 +77,13 @@ internal sealed partial class StartDialog : UserControl
             StartErrorTarget.Field or StartErrorTarget.Summary => this.Get<Border>("StartError"),
             _ => this.Get<Border>("StartError"),
         };
+        _ = target.Focus(NavigationMethod.Tab);
+    }
+
+    // An existing attempt was answered: the Start button just pressed is off, so focus goes to the new-attempt button when it is offered, else the outcome line.
+    private void FocusOutcome()
+    {
+        Control target = DataContext is StartFormViewModel { OffersNewAttempt: true } ? this.Get<Button>("StartNewAttempt") : this.Get<Border>("StartOutcome");
         _ = target.Focus(NavigationMethod.Tab);
     }
 

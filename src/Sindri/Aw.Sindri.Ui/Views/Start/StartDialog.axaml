@@ -89,10 +89,10 @@
                   AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
             <TextBlock Classes="caption error" Text="{Binding Error}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
           </Border>
-          <!-- The one polite live region: the latest outcome, refusal, read failure, readiness or progress, spoken once (zero-width, never empty). -->
-          <TextBlock x:Name="StartLive" Classes="caption" Text="{Binding Announcement}" IsVisible="{Binding HasAnnouncement}" Width="0" Opacity="0"
-                     IsHitTestVisible="False" HorizontalAlignment="Left" AutomationProperties.LiveSetting="Polite" />
-          <Border x:Name="StartOutcome" IsVisible="{Binding HasOutcome}" AutomationProperties.Name="{Binding Outcome}"
+          <!-- The one polite live region, on CreateItemDialog's pattern (docs "LiveSetting on macOS"): always in the tree, live only while it speaks, resting text while dark. -->
+          <TextBlock x:Name="StartLive" Classes="caption live-region" Classes.live="{Binding IsAnnouncing}" Text="{Binding Announcement}" Width="0" Opacity="0"
+                     IsHitTestVisible="False" HorizontalAlignment="Left" />
+          <Border x:Name="StartOutcome" Focusable="True" IsVisible="{Binding HasOutcome}" AutomationProperties.Name="{Binding Outcome}"
                   AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
             <TextBlock Classes="caption" Text="{Binding Outcome}" TextWrapping="Wrap" AutomationProperties.AccessibilityView="Raw" />
           </Border>

@@ -19,6 +19,7 @@ internal sealed partial class StartFormViewModel
         (_sentFirst, _sentNext, _blocked, _reading, OpenedFrame) = (false, false, false, false, false);
         (ItemId, Note, Outcome, IsSending, OffersNewAttempt) = (itemId ?? string.Empty, string.Empty, string.Empty, false, false);
         ClearError();
+        Rest();
         IsOpen = true;
         IsLoading = true;
         RefreshReadiness();
@@ -72,14 +73,14 @@ internal sealed partial class StartFormViewModel
             return;   // the picker and a caller both say so: one read
         }
 
-        var form = _form;
+        var (form, choice) = (_form, ++_choice);
         _chosen = recipe;
         (Recipe, Fields, _itemKey, Note) = (recipe, [], null, string.Empty);
         ClearError();
         ResetAttempt();
         if (_url() is not { } api)
         {
-            (_chosen, _reading) = (null, false);   // the same choice can be made again when the API is back
+            (_chosen, _reading, Recipe) = (null, false, null);   // no recipe is chosen: the same one can be picked again when the API is back
             StateChanged();
             Blocked(SindriUiErrors.NotRunning.With(SindriUiErrors.NotRunning.Title));
             return;
@@ -88,16 +89,16 @@ internal sealed partial class StartFormViewModel
         _reading = true;
         StateChanged();
         var read = await _api.Recipe(api, recipe.Id, hash: null, cancellationToken).ConfigureAwait(true);
-        if (form != _form || !ReferenceEquals(Recipe, recipe))
+        if (form != _form || choice != _choice)
         {
-            return;   // another recipe was chosen, or the form was opened again, while this one was read
+            return;   // another choice was made (even of this recipe again), or the form was opened again, while this one was read
         }
 
         _reading = false;
         StateChanged();
         if (read.IsError)
         {
-            _chosen = null;   // the same choice can be made again
+            (_chosen, Recipe) = (null, null);   // no recipe is chosen: the picker raises a change when it is picked again
             Blocked(read.Error);
             return;
         }
@@ -130,7 +131,7 @@ internal sealed partial class StartFormViewModel
         OnChanged(nameof(IsNotReady));
         OnChanged(nameof(Readiness));
         StateChanged();
-        Announce(Readiness);
+        Say(Readiness);
     }
 
     // Only an approved recipe starts; one row for each id, at the highest version (a start by id runs the latest approved).

@@ -31,6 +31,6 @@ internal sealed class AvaloniaFilePicker(Func<TopLevel?> window) : IFilePicker
         var file = chosen[0];
         var properties = await file.GetBasicPropertiesAsync().ConfigureAwait(true);
         cancellationToken.ThrowIfCancellationRequested();
-        return new ChosenFile(file.Name, properties.Size is { } size ? (long)size : null, _ => file.OpenReadAsync());
+        return new ChosenFile(file.Name, properties.Size is { } size ? (long)size : null, _ => file.OpenReadAsync(), Owner: file);
     }
 }

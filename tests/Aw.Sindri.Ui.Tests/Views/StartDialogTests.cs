@@ -11,6 +11,7 @@ using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.Tests.Start;
 using Aw.Sindri.Ui.ViewModels;
+using Aw.Sindri.Ui.ViewModels.Instance;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Shell;
 using Aw.Sindri.Ui.Views.Start;
@@ -31,9 +32,9 @@ public sealed class StartDialogTests : FrameHost
 
     private static Control? Focused(Window window) => window.FocusManager?.GetFocusedElement() as Control;
 
-    private async Task<(ShellWindow Window, ShellViewModel Shell)> OnWorkflows()
+    private async Task<(ShellWindow Window, ShellViewModel Shell)> OnWorkflows(double width = 1400)
     {
-        var (window, shell) = await Connected(width: 1400, height: 900, ready: s => s.Workflows.Groups.Count > 0 && s.Health.Catalog.Controls.Count > 0);
+        var (window, shell) = await Connected(width: width, height: 900, ready: s => s.Workflows.Groups.Count > 0 && s.Health.Catalog.Controls.Count > 0);
         shell.GoTo(PageId.Workflows);
         Settle(window);
         return (window, shell);
@@ -222,7 +223,7 @@ public sealed class StartDialogTests : FrameHost
         Server.StartAnswer = new RouteAnswer(System.Net.HttpStatusCode.OK, existing.ToJsonString());
 
         window.KeyPress(Key.Enter, RawInputModifiers.Control, PhysicalKey.Enter, keySymbol: null);
-        await Until(window, () => shell.Start.HasOutcome && shell.IsInstanceSheet);
+        await Until(window, () => shell.Start.HasOutcome && shell.IsInstanceSheet && shell.Instance.Phase is not (FramePhase.Loading or FramePhase.Empty));
         Settle(window);
 
         var focused = Focused(window);
@@ -232,21 +233,26 @@ public sealed class StartDialogTests : FrameHost
         Assert.Equal(Labels.StartWhySent, Avalonia.Automation.AutomationProperties.GetHelpText(Named<Button>(window, "StartButton")));
     });
 
-    // A new instance's frame takes focus once the form has closed; focus does not go back to what opened the form.
-    [Fact]
-    public Task An_accepted_start_moves_focus_to_the_new_frame_not_back_to_the_opener() => OnUi(async () =>
+    // A new instance's frame takes focus once the form has closed, and focus never visits what opened the form on the way (a screen reader would read it);
+    // below 1100 px the frame covers the page, above it it sits beside it.
+    [Theory]
+    [InlineData(1400)]
+    [InlineData(1000)]
+    public Task An_accepted_start_moves_focus_to_the_new_frame_without_visiting_the_opener(int width) => OnUi(async () =>
     {
-        var (window, shell) = await OnWorkflows();
+        var (window, shell) = await OnWorkflows(width);
         var opener = Named<Button>(window, "WorkflowsStart");
         _ = opener.Focus(NavigationMethod.Tab);
         shell.OpenStart();
         await Fill(window, shell, StartGoldens.Request().Item, "the spec");
+        var visits = 0;
+        opener.GotFocus += (_, _) => visits++;
 
         window.KeyPress(Key.Enter, RawInputModifiers.Control, PhysicalKey.Enter, keySymbol: null);
         await Until(window, () => !shell.Start.IsOpen && shell.IsInstanceSheet);
         await Until(window, () => Within(Focused(window), Named<Control>(window, "Sheet")));
 
-        Assert.NotSame(opener, Focused(window));
+        Assert.Equal(0, visits);
     });
 
     // A field that cannot be sent takes focus itself and carries its sentence as help text; the error line is not said twice.
@@ -277,6 +283,174 @@ public sealed class StartDialogTests : FrameHost
         await Until(window, () => shell.Start.HasError && Focused(window) == Named<TextBox>(window, "StartItem"));
 
         Assert.Equal(Labels.StartChooseItem, Avalonia.Automation.AutomationProperties.GetHelpText(Named<TextBox>(window, "StartItem")));
+    });
+
+    private async Task<(ShellWindow Window, ShellViewModel Shell)> FilledForExisting(bool finished)
+    {
+        var (window, shell) = await OnWorkflows();
+        shell.OpenStart();
+        await Fill(window, shell, StartGoldens.Request().Item, "the spec");
+        var answer = System.Text.Json.Nodes.JsonNode.Parse(GoldenFiles.Api("workflow-instances-start", "started"))!; // why: the golden is a JSON document
+        (answer["existing"], answer["finished"]) = (true, finished);
+        Server.StartAnswer = new RouteAnswer(System.Net.HttpStatusCode.OK, answer.ToJsonString());
+        return (window, shell);
+    }
+
+    private static async Task Press(Window window, ShellViewModel shell, Func<bool> done)
+    {
+        var button = Named<Button>(window, "StartButton");
+        _ = button.Focus(NavigationMethod.Tab);
+        button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Until(window, () => done() && shell.IsInstanceSheet && shell.Instance.Phase is not (FramePhase.Loading or FramePhase.Empty));
+        Settle(window);
+    }
+
+    // Pressing the Start button disables it; focus must not be left nowhere (the next Tab would leave the form). After a finished attempt it goes to the new-attempt button.
+    [Fact]
+    public Task Pressing_Start_after_a_finished_answer_leaves_focus_on_the_new_attempt_button() => OnUi(async () =>
+    {
+        var (window, shell) = await FilledForExisting(finished: true);
+
+        await Press(window, shell, () => shell.Start.OffersNewAttempt);
+
+        Assert.Same(Named<Button>(window, "StartNewAttempt"), Focused(window));
+    });
+
+    [Fact]
+    public Task Pressing_Start_after_an_already_running_answer_leaves_focus_on_the_outcome_line() => OnUi(async () =>
+    {
+        var (window, shell) = await FilledForExisting(finished: false);
+
+        await Press(window, shell, () => shell.Start.HasOutcome);
+
+        Assert.Same(Named<Border>(window, "StartOutcome"), Focused(window));
+    });
+
+    // The frame an existing answer opened behind the form gets focus when the form closes, not the opener.
+    [Fact]
+    public Task Closing_the_form_after_an_existing_answer_hands_focus_to_the_frame_behind_it() => OnUi(async () =>
+    {
+        var (window, shell) = await FilledForExisting(finished: false);
+        await Press(window, shell, () => shell.Start.HasOutcome);
+
+        window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);
+        await Until(window, () => !shell.Start.IsOpen && Within(Focused(window), Named<Control>(window, "Sheet")));
+    });
+
+    // The polite region rests, speaks a refusal, rests again, and speaks the same refusal a second time; a reopened form starts at rest.
+    [Fact]
+    public Task The_live_region_is_in_the_tree_at_rest_says_a_repeated_refusal_again_and_starts_each_opening_clean() => OnUi(async () =>
+    {
+        var (window, shell) = await OnWorkflows();
+        shell.OpenStart();
+        await Fill(window, shell, StartGoldens.Request().Item, string.Empty);
+        var live = Named<TextBlock>(window, "StartLive");
+        Assert.True(live.IsVisible);
+        var said = new List<(string? Text, Avalonia.Automation.AutomationLiveSetting Live)>();
+        _ = live.GetObservable(TextBlock.TextProperty).Subscribe(new Observer<string?>(text => said.Add((text, Avalonia.Automation.AutomationProperties.GetLiveSetting(live)))));
+        var sentence = Labels.StartRequired(shell.Start.Fields[0].Label);
+
+        window.KeyPress(Key.Enter, RawInputModifiers.Control, PhysicalKey.Enter, keySymbol: null);
+        await Until(window, () => shell.Start.HasError);
+        window.KeyPress(Key.Enter, RawInputModifiers.Control, PhysicalKey.Enter, keySymbol: null);
+        Settle(window);
+
+        Assert.Equal(2, said.Count(s => string.Equals(s.Text, sentence, StringComparison.Ordinal) && s.Live == Avalonia.Automation.AutomationLiveSetting.Polite));
+        Assert.DoesNotContain(said, s => string.Equals(s.Text, sentence, StringComparison.Ordinal) && s.Live == Avalonia.Automation.AutomationLiveSetting.Off);
+        shell.Start.Close();
+        shell.OpenStart();
+        await Until(window, () => shell.Start.IsOpen && !shell.Start.IsLoading);
+        Assert.NotEqual(sentence, live.Text, StringComparer.Ordinal);
+    });
+
+    private sealed class Observer<T>(Action<T> next) : IObserver<T>
+    {
+        public void OnCompleted() { }
+
+        public void OnError(Exception error) { }
+
+        public void OnNext(T value) => next(value);
+    }
+
+    // Picking a recipe again after its read failed is a change of selection, so the picker reads it again.
+    [Fact]
+    public Task A_recipe_whose_read_failed_can_be_picked_again_in_the_picker() => OnUi(async () =>
+    {
+        var (window, shell) = await OnWorkflows();
+        shell.OpenStart();
+        await Until(window, () => shell.Start.Recipes.Count > 0 && !shell.Start.IsLoading);
+        var good = Server.WorkflowAnswer;
+        Server.WorkflowAnswer = RouteAnswer.Problem("workflow-recipe", "not-found");
+        var picker = Named<ComboBox>(window, "StartRecipe");
+        picker.SelectedItem = shell.Start.Recipes[0];
+        await Until(window, () => shell.Start.HasNote && picker.SelectedItem is null);
+
+        Server.WorkflowAnswer = good;
+        picker.SelectedItem = shell.Start.Recipes[0];
+
+        await Until(window, () => shell.Start.Fields.Count > 0 && shell.Start.CanStart);
+    });
+
+    // No recipe chosen: focus goes to the recipe picker. An empty required file: to its button.
+    [Fact]
+    public Task A_missing_recipe_takes_focus_to_the_picker() => OnUi(async () =>
+    {
+        var (window, shell) = await OnWorkflows();
+        shell.OpenStart();
+        await Until(window, () => shell.Start.Recipes.Count > 0 && !shell.Start.IsLoading);
+        shell.Start.ItemId = StartGoldens.Request().Item;
+
+        window.KeyPress(Key.Enter, RawInputModifiers.Control, PhysicalKey.Enter, keySymbol: null);
+
+        await Until(window, () => shell.Start.HasError && Focused(window) == Named<ComboBox>(window, "StartRecipe"));
+        Assert.Equal(Labels.StartChooseRecipe, Avalonia.Automation.AutomationProperties.GetHelpText(Named<ComboBox>(window, "StartRecipe")));
+    });
+
+    [Fact]
+    public Task An_empty_required_file_takes_focus_to_its_button() => OnUi(async () =>
+    {
+        ListProject();
+        var (window, shell) = await OnWorkflows();
+        shell.OpenStart();
+        await Until(window, () => shell.Start.Recipes.Count > 0 && !shell.Start.IsLoading);
+        await shell.Start.Choose(shell.Start.Recipes.Single(r => r.Id == StartFormFixture.Project), Token);
+        shell.Start.ItemId = StartGoldens.Request().Item;
+        shell.Start.Fields.Single(f => f.IsPayload).Value = "{}";
+        Settle(window);
+
+        window.KeyPress(Key.Enter, RawInputModifiers.Control, PhysicalKey.Enter, keySymbol: null);
+
+        await Until(window, () => shell.Start.HasError && Focused(window) is Button b && b.Classes.Contains("start-pick"));
+    });
+
+    // The chord opens the form over an open palette (one layer at a time), the palette's chord is swallowed under the form, and the scrim closes it.
+    [Fact]
+    public Task The_start_chord_replaces_an_open_palette_and_the_palette_chord_is_swallowed_under_the_form() => OnUi(async () =>
+    {
+        var (window, shell) = await OnWorkflows();
+        window.KeyPress(Key.K, _command, PhysicalKey.K, "k");
+        await Until(window, () => shell.Palette.IsOpen);
+
+        window.KeyPress(Key.N, _command, PhysicalKey.N, "n");
+        await Until(window, () => shell.Start.IsOpen && !shell.Palette.IsOpen);
+        window.KeyPress(Key.K, _command, PhysicalKey.K, "k");
+        Settle(window);
+
+        Assert.Equal((true, false), (shell.Start.IsOpen, shell.Palette.IsOpen));
+    });
+
+    [Fact]
+    public Task A_click_on_the_scrim_closes_the_form() => OnUi(async () =>
+    {
+        var (window, shell) = await OnWorkflows();
+        shell.OpenStart();
+        await Until(window, () => shell.Start.IsOpen);
+        var outside = new Point(40, 700);
+
+        window.MouseDown(outside, MouseButton.Left);
+        window.MouseUp(outside, MouseButton.Left);
+
+        await Until(window, () => !shell.Start.IsOpen);
     });
 
     private static string Wire(Ui.Api.Workflow.StartInstanceRequest request) =>

@@ -49,18 +49,23 @@ internal sealed partial class StartFormViewModel
             }
         }
 
-        if (form != _form)
+        if (form == _form)   // else the form was closed (or closed and opened again): this answer is for the one that sent it
         {
-            return;   // the form was closed and opened again: this answer is for the one that sent it
+            Answered(answer, next, current: edits == _edits);
         }
+    }
 
-        if (answer.IsError)
+    // A refusal of a send made before an edit is about a form that is gone: it neither shows nor takes focus.
+    private void Answered(Result<StartedView> answer, bool next, bool current)
+    {
+        if (!answer.IsError)
+        {
+            Accepted(answer.Value, next, current);
+        }
+        else if (current)
         {
             Fail(answer.Error);
-            return;
         }
-
-        Accepted(answer.Value, next, current: edits == _edits);
     }
 
     // What goes on the wire, or null with the reason shown: the recipe and the item first, then each input in the recipe's order.
@@ -118,6 +123,8 @@ internal sealed partial class StartFormViewModel
         if (!current)
         {
             // The item or recipe was changed while this was on its way: the answer is for what was sent, so it opens its frame and says nothing about the form as it is now.
+            OpenedFrame = true;
+            Say(Labels.StartedBehind(started.Instance.Address));
             Started?.Invoke(this, new StartedEventArgs(started.Instance.Id, started.Instance.Address, started.Existing, started.Finished));
             return;
         }
@@ -132,7 +139,7 @@ internal sealed partial class StartFormViewModel
         }
 
         var instance = started.Instance;
-        OpenedFrame = !started.Existing;
+        OpenedFrame = true;   // its frame opens, behind the form while the form stays (an existing attempt), else once it has closed
         OffersNewAttempt = false;
         Outcome = !started.Existing ? string.Empty : started.Finished ? Labels.StartFinished(instance.Address) : Labels.StartAlreadyRunning(instance.Address);
         OffersNewAttempt = started.Existing && started.Finished && !_sentNext;
@@ -141,6 +148,10 @@ internal sealed partial class StartFormViewModel
         if (!started.Existing)
         {
             Close();   // a new instance: its frame is open, there is nothing more to say here
+        }
+        else
+        {
+            OutcomeFocusRequests++;   // the Start button that was pressed is off now: focus goes to the new-attempt button or the outcome line
         }
     }
 
@@ -175,7 +186,7 @@ internal sealed partial class StartFormViewModel
         OnChanged(nameof(ShowsSummary));
         OnChanged(nameof(RecipeError));
         OnChanged(nameof(ItemError));
-        Announce(Error);
+        Say(Error);
     }
 
     // What an answer left behind belongs to the item and recipe it answered: another item or recipe starts clean.

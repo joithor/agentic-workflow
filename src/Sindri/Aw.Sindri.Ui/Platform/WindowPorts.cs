@@ -6,5 +6,5 @@ namespace Aw.Sindri.Ui.Platform;
 internal sealed record WindowPorts(ILauncher Launcher, IFilePicker Files)
 {
     /// <summary>A head with neither: nothing opens and no file is ever chosen.</summary>
-    internal static WindowPorts None { get; } = new(NullLauncher.Instance, new NullFilePicker());
+    internal static WindowPorts None { get; } = new(NullLauncher.Instance, NullFilePicker.Instance);
 }

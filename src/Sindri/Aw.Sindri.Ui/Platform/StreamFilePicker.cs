@@ -12,7 +12,15 @@ internal sealed class StreamFilePicker(Func<string, CancellationToken, Task<Chos
     {
         try
         {
-            return await choose(title, cancellationToken).ConfigureAwait(true) is { } file ? await Read(file, limit, cancellationToken).ConfigureAwait(true) : null;
+            if (await choose(title, cancellationToken).ConfigureAwait(true) is not { } file)
+            {
+                return null;
+            }
+
+            using (file.Owner)   // the platform's hold on the file ends with the read, whatever its size
+            {
+                return await Read(file, limit, cancellationToken).ConfigureAwait(true);
+            }
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
         {
@@ -27,13 +35,24 @@ internal sealed class StreamFilePicker(Func<string, CancellationToken, Task<Chos
             return new PickedFile(file.Name, known, ReadOnlyMemory<byte>.Empty);
         }
 
-        var buffer = new byte[limit + 1];
+        // Sized from the reported size when there is one (one byte more, so a size the platform under-reports still stops one byte past the limit).
+        var buffer = new byte[file.Size is { } reported ? (int)Math.Min(reported + 1, (long)limit + 1) : limit + 1];
         var read = 0;
         var stream = await file.Open(cancellationToken).ConfigureAwait(true);
         await using (stream.ConfigureAwait(true))
         {
-            while (read < buffer.Length && await stream.ReadAsync(buffer.AsMemory(read), cancellationToken).ConfigureAwait(true) is var n and > 0)
+            while (read <= limit)
             {
+                if (read == buffer.Length)
+                {
+                    Array.Resize(ref buffer, (int)Math.Min((long)buffer.Length * 2, (long)limit + 1));   // a platform that under-reports its size still gets read up to one byte past the limit
+                }
+
+                if (await stream.ReadAsync(buffer.AsMemory(read), cancellationToken).ConfigureAwait(true) is not (var n and > 0))
+                {
+                    break;
+                }
+
                 read += n;
             }
         }

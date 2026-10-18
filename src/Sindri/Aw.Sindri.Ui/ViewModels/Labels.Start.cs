@@ -47,6 +47,11 @@ internal static partial class Labels
     /// <summary>Why Start is off once the start was accepted for this item and recipe.</summary>
     internal const string StartWhySent = "This start was already accepted; choose another item or recipe to start again.";
 
+    /// <summary>An instance a send opened while the form had moved on to something else.</summary>
+    /// <param name="address">Its address.</param>
+    /// <returns>The sentence.</returns>
+    internal static string StartedBehind(string address) => $"{address} started.";
+
     /// <summary>The file button's name: the input's words, then what is chosen.</summary>
     /// <param name="caption">The input's caption.</param>
     /// <param name="file">The file line: the file chosen, or "No file chosen".</param>

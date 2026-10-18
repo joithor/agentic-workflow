@@ -26,13 +26,14 @@ internal sealed partial class StartFormViewModel : ObservableObject
     private bool _sentFirst;
     private bool _sentNext;
     private bool _reading;   // the chosen recipe's inputs are being read: Start waits for them
+    private int _choice;   // counts the recipe choices: a read answers only the latest one
     private int _edits;   // counts the item and recipe changes: an answer to a send before the latest one is not about what the form shows now
 
     /// <summary>The form over its ports.</summary>
     /// <param name="catalog">The command catalog: its StartInstance row says whether Start is ready.</param>
     /// <param name="url">The API now, or null when none is running.</param>
     /// <param name="api">The API.</param>
-    /// <param name="files">Where a file input is chosen .</param>
+    /// <param name="files">Where a file input is chosen.</param>
     internal StartFormViewModel(CatalogViewModel catalog, Func<Uri?> url, ISindriApi api, IFilePicker files)
     {
         ArgumentNullException.ThrowIfNull(catalog);
@@ -124,7 +125,7 @@ internal sealed partial class StartFormViewModel : ObservableObject
             Set(ref field, value);
             OnChanged(nameof(HasNote));
             OnChanged(nameof(StartHelp));
-            Announce(value);
+            Say(value);
         }
     } = string.Empty;
 
@@ -156,7 +157,7 @@ internal sealed partial class StartFormViewModel : ObservableObject
             OnChanged(nameof(CanStart));
             OnChanged(nameof(ButtonText));
             OnChanged(nameof(StartHelp));
-            Announce(value ? Labels.StartSending : string.Empty);
+            Say(value ? Labels.StartSending : string.Empty);
         }
     }
 
@@ -196,6 +197,9 @@ internal sealed partial class StartFormViewModel : ObservableObject
     /// <summary>Counts the errors that ask the view to move focus to the inline error.</summary>
     public int ErrorFocusRequests { get; private set => Set(ref field, value); }
 
+    /// <summary>Counts the existing-attempt answers, each of which asks the view to put focus on the outcome (the pressed Start button is off).</summary>
+    public int OutcomeFocusRequests { get; private set => Set(ref field, value); }
+
     /// <summary>"already running" or "finished" for an attempt that existed; else empty.</summary>
     public string Outcome
     {
@@ -205,15 +209,15 @@ internal sealed partial class StartFormViewModel : ObservableObject
             Set(ref field, value);
             OnChanged(nameof(HasOutcome));
             OnChanged(nameof(StartHelp));
-            Announce(value);
+            Say(value);
         }
     } = string.Empty;
 
-    /// <summary>The one line a screen reader is told (a polite live region): the latest outcome, refusal, read failure, readiness or progress; empty before any.</summary>
-    public string Announcement { get; private set => Set(ref field, value); } = string.Empty;
+    /// <summary>The words of the polite live region (<see cref="Say"/>): the latest outcome, refusal, read failure, readiness or progress; the resting text while it is dark.</summary>
+    public string Announcement { get; private set => Set(ref field, value); } = Labels.StartWorkflow;
 
-    /// <summary>True when something has been announced.</summary>
-    public bool HasAnnouncement => Announcement.Length > 0;
+    /// <summary>True while the live region is live; it goes dark first so that the same words can be said again (docs "LiveSetting on macOS").</summary>
+    public bool IsAnnouncing { get; private set => Set(ref field, value); }
 
     /// <summary>True while the recipes or the chosen recipe's inputs are being read.</summary>
     public bool IsBusy => IsLoading || _reading;
@@ -256,27 +260,8 @@ internal sealed partial class StartFormViewModel : ObservableObject
     /// <summary>True when the new-attempt button would send: offered, not in flight and not sent yet.</summary>
     public bool CanStartNewAttempt => OffersNewAttempt && !IsSending && !_sentNext;
 
-    /// <summary>True when the last accepted start opened a new instance's frame (so the window moves focus there, not back to the opener).</summary>
+    /// <summary>True once an accepted start has opened an instance's frame (a new one, or the one an existing attempt is): on close the window moves focus there, not back to the opener.</summary>
     public bool OpenedFrame { get; private set => Set(ref field, value); }
-
-    // Something to tell a screen reader: an empty line says nothing and keeps the last words in place.
-    private void Announce(string words)
-    {
-        if (words.Length > 0)
-        {
-            Announcement = words;
-            OnChanged(nameof(HasAnnouncement));
-        }
-    }
-
-    // The things that decide Start and the busy line changed together.
-    private void StateChanged()
-    {
-        OnChanged(nameof(CanStart));
-        OnChanged(nameof(StartHelp));
-        OnChanged(nameof(IsBusy));
-        OnChanged(nameof(BusyText));
-    }
 
     private (ControlKind Kind, string Stage)? Row => _catalog.Row(Action) is { } row ? CatalogReadiness.Parse(row.Ui) : null;
 }
