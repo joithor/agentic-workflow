@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Kernel.Json;
 using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.Api;
@@ -7,8 +8,9 @@ namespace Aw.Sindri.Ui.Api;
 internal sealed partial class SindriApiClient
 {
     /// <inheritdoc />
-    public Task<Result<RecipeList>> Recipes(Uri api, CancellationToken cancellationToken) => throw new NotSupportedException();
+    public Task<Result<RecipeList>> Recipes(Uri api, CancellationToken cancellationToken) => Get<RecipeList>(api, WorkflowRoutes.Recipes, cancellationToken);
 
     /// <inheritdoc />
-    public Task<Result<StartedView>> StartInstance(Uri api, StartInstanceRequest request, CancellationToken cancellationToken) => throw new NotSupportedException();
+    public Task<Result<StartedView>> StartInstance(Uri api, StartInstanceRequest request, CancellationToken cancellationToken) =>
+        Call<StartedView>(api, HttpMethod.Post, WorkflowRoutes.Start, cancellationToken, new CallOptions(Content: AwJson.Serialize(request, Json)));
 }
