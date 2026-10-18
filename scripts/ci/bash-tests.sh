@@ -102,6 +102,7 @@ SERIAL=(
   "config/lib/tests/install-wake-gating.test.sh	runs scripts/install-judge.sh without --hook-only, which npm-installs and tsc-builds the shared judge/ while the real-judge suites execute judge/dist"
   "config/lib/tests/judge-brief-real-cli.test.sh	spawns the real judge CLI (node judge/dist/cli.js, sqlite open) for each step; it flaked in the #224 and #273 gates beside heavy jobs and passes alone, so it runs on a quiet machine, after the pool, and never beside the serial suites that rebuild judge/dist"
   "config/lib/tests/send-gate-real-judge.test.sh	spawns the real judge CLI (node judge/dist/cli.js wake-gate) per sender kind; it flaked in the #224 and #273 gates beside heavy jobs and passes alone, so it runs on a quiet machine"
+  "scripts/tests/forge-fixture.test.sh	dotnet-builds src/Forge in the shared checkout (obj dirs), which races any other dotnet build there; builds once, then runs git and jq only"
   "scripts/tests/readiness-baseline.test.sh	asserts a 200 ms gh timeout (READINESS_GH_TIMEOUT_MS) fires against a 3 s stub and is reported as the timeout, not a parse error"
 )
 
