@@ -9,7 +9,5 @@ public sealed class LaunchAdoptionTests
 {
     [Fact]
     public void No_started_launch_says_so()
-    {
-        Assert.Equal("no opens in the last 30 days", LaunchAdoption.Line([]));
-    }
+        => Assert.Equal("no opens in the last 30 days", LaunchAdoption.Line([]));
 }

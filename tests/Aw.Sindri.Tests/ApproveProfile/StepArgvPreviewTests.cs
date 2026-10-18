@@ -41,7 +41,5 @@ public sealed class StepArgvPreviewTests
 
     [Fact]
     public void An_unchanged_hash_is_not_previewed()
-    {
-        Assert.Empty(Checks(Aider()).StepArgv(Profile("aider", "sha256:aaa"), ["api.port"]));
-    }
+        => Assert.Empty(Checks(Aider()).StepArgv(Profile("aider", "sha256:aaa"), ["api.port"]));
 }

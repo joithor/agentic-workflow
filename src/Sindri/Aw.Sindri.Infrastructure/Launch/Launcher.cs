@@ -152,47 +152,50 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
         return StepApproval.Resolve(parts.Catalog, request.Agent, parts.BuiltinHash(request.Agent), approved?.StepArgvHashes(request.Agent) ?? []);   // one entry: the check and the argv use the same one (SL8)
     }
 
-    private static async ValueTask<Error?> EnsureWorktree(LaunchRequest request, CancellationToken cancellationToken) =>
-        request.Worktree is { } worktree && !Directory.Exists(worktree)
-        && await ViewerProcess.Output("git", ["-C", request.RepoPath, "worktree", "add", "--detach", worktree], cancellationToken).ConfigureAwait(false) is null
-            ? SindriErrors.LaunchRepoMissing.With($"the Step's worktree could not be created at {worktree}")
-            : null;
-
     private async ValueTask<Result<Prepared>> Prepare(LaunchRequest request, AgentEntry entry, CancellationToken cancellationToken)
     {
-        if (await EnsureWorktree(request, cancellationToken).ConfigureAwait(false) is { } missing)
+        if (await LaunchWorktree.Ensure(request, cancellationToken).ConfigureAwait(false) is { } missing)
         {
             return missing;
         }
 
         var workDir = request.Worktree ?? request.RepoPath;
-        var step = request.Attended ? null : request.Step;
         try
         {
-            var policyPath = step?.Policy is { } policy && entry.PolicyForm == PolicyForm.ClaudeSettingsFile
-                ? StepPolicyFile.Write(parts.Options.PolicyDirectory, request.Launch, policy)
-                : null;
-            var session = PreChosen(entry);
-            var seed = ArgvBuilder.Seed(request.Item) + (step is null ? string.Empty : $" This is the {step.Ref.State} step, block {step.Ref.Block}.");
-            var mcp = entry.McpForm == McpForm.None ? null : await parts.McpFor(request.RepoPath, cancellationToken).ConfigureAwait(false);
-            var mcpPath = mcp is not null && entry.McpForm == McpForm.ClaudeConfigFile ? McpLaunchConfig.Write(parts.Options.LaunchDirectory, request.Launch, mcp) : null;
-            var built = ArgvBuilder.Build(entry, request.Mode, new ArgvInputs(request.Item, workDir, SessionName(request.Launch), seed, session, mcpPath, step, policyPath));
-            if (built.IsError)
+            var composed = await Compose(request, entry, workDir, cancellationToken).ConfigureAwait(false);
+            if (composed.IsError)
             {
-                return built.Error;
+                return composed.Error;
             }
-
-            IReadOnlyList<string> argv = mcp is null ? built.Value : [.. built.Value, .. McpLaunchConfig.Arguments(entry.McpForm, mcp, mcpPath)];
 
             WriteCaptureRule(request.Launch, entry);
             var secret = LaunchSecrets.Mint();
             LaunchSecrets.Write(parts.Options.SecretsDirectory, request.Launch, secret);
-            return new Prepared(workDir, argv, Environment(request, secret), session?.Value);
+            return new Prepared(workDir, composed.Value.Argv, Environment(request, secret), composed.Value.Session?.Value);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             return KernelErrors.Unavailable.With($"the launch's files could not be written: {e.Message}");
         }
+    }
+
+    private async ValueTask<Result<(IReadOnlyList<string> Argv, SessionId? Session)>> Compose(LaunchRequest request, AgentEntry entry, string workDir, CancellationToken cancellationToken)
+    {
+        var step = request.Attended ? null : request.Step;
+        var policyPath = step?.Policy is { } policy && entry.PolicyForm == PolicyForm.ClaudeSettingsFile
+            ? StepPolicyFile.Write(parts.Options.PolicyDirectory, request.Launch, policy)
+            : null;
+        var session = PreChosen(entry);
+        var seed = ArgvBuilder.Seed(request.Item) + (step is null ? string.Empty : $" This is the {step.Ref.State} step, block {step.Ref.Block}.");
+        var (mcpPath, mcpArguments) = McpLaunchConfig.Prepare(entry.McpForm, entry.McpForm == McpForm.None ? null : await parts.McpFor(request.RepoPath, cancellationToken).ConfigureAwait(false), parts.Options.LaunchDirectory, request.Launch);
+        var built = ArgvBuilder.Build(entry, request.Mode, new ArgvInputs(request.Item, workDir, SessionName(request.Launch), seed, session, mcpPath, step, policyPath));
+        if (built.IsError)
+        {
+            return built.Error;
+        }
+
+        IReadOnlyList<string> argv = [.. built.Value, .. mcpArguments];
+        return (argv, session);
     }
 
     /// <summary>The session id an entry in 'pre-chosen-uuid' mode is told to use, else none (an id reported later is recorded then, launcher L-9).</summary>
@@ -287,15 +290,8 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
     {
         LaunchSecrets.Delete(parts.Options.SecretsDirectory, launch);
         LaunchFileStore.DeleteFlat(parts.Options, launch);
-        if (Directory.Exists(parts.Options.PolicyDirectory))
-        {
-            StepPolicyFile.Delete(parts.Options.PolicyDirectory, launch);
-        }
-
-        if (Directory.Exists(parts.Options.LaunchDirectory))
-        {
-            McpLaunchConfig.Delete(parts.Options.LaunchDirectory, launch);
-        }
+        LaunchFileStore.DeleteIn(parts.Options.PolicyDirectory, StepPolicyFile.PathFor(parts.Options.PolicyDirectory, launch));
+        LaunchFileStore.DeleteIn(parts.Options.LaunchDirectory, McpLaunchConfig.PathFor(parts.Options.LaunchDirectory, launch));
     }
 
     private sealed record Prepared(string WorkDir, IReadOnlyList<string> Argv, Dictionary<string, string> Env, string? Session);

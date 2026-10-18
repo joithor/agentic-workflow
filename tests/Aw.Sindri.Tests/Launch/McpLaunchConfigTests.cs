@@ -2,7 +2,6 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Infrastructure.Launch;
-using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.Launch;
 
@@ -31,9 +30,9 @@ public sealed class McpLaunchConfigTests : IDisposable
         Assert.DoesNotContain("X-Sindri-Run", text, StringComparison.Ordinal);
         Assert.DoesNotContain("sindri-step", text, StringComparison.Ordinal);
 
-        Assert.Equal(0, McpLaunchConfig.Sweep(_directory, DateTimeOffset.UtcNow, TimeSpan.FromHours(1), static _ => false));   // too young
-        Assert.Equal(0, McpLaunchConfig.Sweep(_directory, DateTimeOffset.UtcNow.AddDays(1), TimeSpan.FromHours(1), static _ => true));   // live
-        Assert.Equal(1, McpLaunchConfig.Sweep(_directory, DateTimeOffset.UtcNow.AddDays(1), TimeSpan.FromHours(1), static _ => false));
+        Assert.Equal(0, McpLaunchConfig.Sweep(_directory, RealTime.NowOffset, TimeSpan.FromHours(1), static _ => false));   // too young
+        Assert.Equal(0, McpLaunchConfig.Sweep(_directory, RealTime.NowOffset.AddDays(1), TimeSpan.FromHours(1), static _ => true));   // live
+        Assert.Equal(1, McpLaunchConfig.Sweep(_directory, RealTime.NowOffset.AddDays(1), TimeSpan.FromHours(1), static _ => false));
         Assert.False(File.Exists(path));
         McpLaunchConfig.Delete(_directory, _launch);   // a missing file is fine
     }

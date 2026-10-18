@@ -98,6 +98,17 @@ internal sealed partial class LaunchFileStore(LauncherOptions options) : ILaunch
         _ = TryDelete(Path.Combine(options.LaunchesDirectory, Core.Launch.LaunchFiles.SessionIdName(launch)));
     }
 
+    /// <summary>Deletes <paramref name="file"/> when its <paramref name="directory"/> exists; whatever is gone is fine.</summary>
+    /// <param name="directory">The file's directory.</param>
+    /// <param name="file">The file.</param>
+    internal static void DeleteIn(string directory, string file)
+    {
+        if (Directory.Exists(directory))
+        {
+            File.Delete(file);
+        }
+    }
+
     private static bool TryDelete(string path)
     {
         try

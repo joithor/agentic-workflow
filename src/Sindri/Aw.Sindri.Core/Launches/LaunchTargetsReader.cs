@@ -1,12 +1,11 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Launch;
-using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Views;
 
-namespace Aw.Sindri.Features.GetLaunchTargets;
+namespace Aw.Sindri.Core.Launches;
 
 /// <summary>The last recorded probe with today's budgets (API spec 'GET /launch/targets'): shared by the targets route and an item's launch block.</summary>
 /// <param name="ledger">Reads the last 'launch.probed'.</param>
@@ -14,8 +13,11 @@ namespace Aw.Sindri.Features.GetLaunchTargets;
 /// <param name="approvals">The approved profile, which names the budgets.</param>
 /// <param name="spend">What each agent spent today.</param>
 /// <param name="status">How fresh the views are.</param>
-internal sealed class LaunchTargetsReader(ILedgerReader ledger, EventFactory events, IApprovedProfile approvals, ILaunchSpend spend, IProjectorStatus status)
+public sealed class LaunchTargetsReader(ILedgerReader ledger, EventFactory events, IApprovedProfile approvals, ILaunchSpend spend, IProjectorStatus status)
 {
+    /// <summary>Reads the last probe and prices today's spend against the budgets.</summary>
+    /// <param name="cancellationToken">Cancels the reads.</param>
+    /// <returns>The projection, or why a read failed.</returns>
     public async ValueTask<Result<LaunchTargets>> Read(CancellationToken cancellationToken)
     {
         var asOf = status.Current.AsOf;

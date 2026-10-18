@@ -1,4 +1,3 @@
-using System.Globalization;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
@@ -32,8 +31,8 @@ internal sealed class LauncherDoctorChecks(ILaunchSetup setup, ILaunchViews laun
 
     private static DoctorCheck Agents(LaunchShowReport report)
     {
-        var lines = report.Entries.Select(static e => string.Create(CultureInfo.InvariantCulture, $"{e.Id.Value} ({e.Source.ToString().ToLowerInvariant()}): {e.ResolvedBin ?? "not on the login PATH"}")).ToList();
-        var parked = report.Entries.Where(static e => e.ParkLine is not null).Select(static e => e.ParkLine!).ToList();
+        var lines = report.Entries.Select(static e => $"{e.Id.Value} ({e.Source.ToString().ToLowerInvariant()}): {e.ResolvedBin ?? "not on the login PATH"}").ToList();
+        var parked = report.Entries.Where(static e => e.ParkLine is not null).Select(static e => e.ParkLine).OfType<string>().ToList();
         var missing = report.Entries.Any(static e => e.ResolvedBin is null);
         var detail = string.Join("; ", lines) + (parked.Count == 0 ? string.Empty : "; " + string.Join("; ", parked));
         return new DoctorCheck("launcher:agents", missing || parked.Count > 0 ? CheckState.Warn : CheckState.Ok, detail, missing || parked.Count > 0 ? "sindri launch show" : null);

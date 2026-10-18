@@ -10162,3 +10162,6 @@ static Aw.Sindri.Core.Launches.LaunchOptions.For(Aw.Sindri.Core.Launches.LaunchO
 static Aw.Sindri.Core.Launches.LaunchResumable.operator !=(Aw.Sindri.Core.Launches.LaunchResumable? left, Aw.Sindri.Core.Launches.LaunchResumable? right) -> bool
 static Aw.Sindri.Core.Launches.LaunchResumable.operator ==(Aw.Sindri.Core.Launches.LaunchResumable? left, Aw.Sindri.Core.Launches.LaunchResumable? right) -> bool
 static readonly Aw.Sindri.Core.Launches.LaunchAdoption.Window -> System.TimeSpan
+Aw.Sindri.Core.Launches.LaunchTargetsReader
+Aw.Sindri.Core.Launches.LaunchTargetsReader.LaunchTargetsReader(Aw.Sindri.Core.Ledger.ILedgerReader! ledger, Aw.Sindri.Core.Events.EventFactory! events, Aw.Sindri.Core.Profile.IApprovedProfile! approvals, Aw.Sindri.Core.Launches.ILaunchSpend! spend, Aw.Sindri.Core.Views.IProjectorStatus! status) -> void
+Aw.Sindri.Core.Launches.LaunchTargetsReader.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Launches.LaunchTargets!>!>

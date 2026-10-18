@@ -648,13 +648,11 @@ Aw.Sindri.Features.GetItem.ItemView.CreatedAt.get -> System.DateTimeOffset
 Aw.Sindri.Features.GetItem.ItemView.CreatedAt.init -> void
 Aw.Sindri.Features.GetItem.ItemView.CreatedBy.get -> string!
 Aw.Sindri.Features.GetItem.ItemView.CreatedBy.init -> void
-Aw.Sindri.Features.GetItem.ItemView.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Id, out string! Title, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Items.Vocabulary.ItemState State, out string? Step, out System.DateTimeOffset Since, out Aw.Sindri.Core.Ids.ActionId? PrimaryAction, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out string? Owner, out long Version, out string! CreatedBy, out string? WaitingOn, out string? Instance, out System.DateTimeOffset CreatedAt, out System.DateTimeOffset UpdatedAt, out string? Body, out Aw.Sindri.Core.Ids.RecordKey? Link, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
 Aw.Sindri.Features.GetItem.ItemView.Equals(Aw.Sindri.Features.GetItem.ItemView? other) -> bool
 Aw.Sindri.Features.GetItem.ItemView.Id.get -> Aw.Sindri.Core.Ids.ItemId
 Aw.Sindri.Features.GetItem.ItemView.Id.init -> void
 Aw.Sindri.Features.GetItem.ItemView.Instance.get -> string?
 Aw.Sindri.Features.GetItem.ItemView.Instance.init -> void
-Aw.Sindri.Features.GetItem.ItemView.ItemView(Aw.Sindri.Core.Ids.ItemId Id, string! Title, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.Items.Vocabulary.ItemState State, string? Step, System.DateTimeOffset Since, Aw.Sindri.Core.Ids.ActionId? PrimaryAction, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, string? Owner, long Version, string! CreatedBy, string? WaitingOn, string? Instance, System.DateTimeOffset CreatedAt, System.DateTimeOffset UpdatedAt, string? Body, Aw.Sindri.Core.Ids.RecordKey? Link, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
 Aw.Sindri.Features.GetItem.ItemView.Link.get -> Aw.Sindri.Core.Ids.RecordKey?
 Aw.Sindri.Features.GetItem.ItemView.Link.init -> void
 Aw.Sindri.Features.GetItem.ItemView.Owner.get -> string?
@@ -2816,3 +2814,43 @@ Aw.Sindri.Features.ContextCalls.LensesAnswer.Many.get -> Aw.Context.Core.Lenses.
 Aw.Sindri.Features.ContextCalls.LensesAnswer.Many.init -> void
 Aw.Sindri.Features.ContextCalls.LensesAnswer.One.get -> Aw.Context.Core.Lenses.LensesView?
 Aw.Sindri.Features.ContextCalls.LensesAnswer.One.init -> void
+Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.StepArgv.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ApproveProfile.StepArgvLine!>!
+Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.StepArgv.init -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.<Clone>$() -> Aw.Sindri.Features.ApproveProfile.StepArgvEntry!
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Bin.get -> string!
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Bin.init -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Deconstruct(out string! Bin, out System.Collections.Generic.IReadOnlyList<string!>! Open, out System.Collections.Generic.IReadOnlyList<string!>? Resume, out Aw.Sindri.Core.Launch.CatalogSource Source) -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Equals(Aw.Sindri.Features.ApproveProfile.StepArgvEntry? other) -> bool
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Open.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Open.init -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Resume.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Resume.init -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Source.get -> Aw.Sindri.Core.Launch.CatalogSource
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Source.init -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.StepArgvEntry(string! Bin, System.Collections.Generic.IReadOnlyList<string!>! Open, System.Collections.Generic.IReadOnlyList<string!>? Resume, Aw.Sindri.Core.Launch.CatalogSource Source) -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvLine
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.<Clone>$() -> Aw.Sindri.Features.ApproveProfile.StepArgvLine!
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.Agent.get -> string!
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.Agent.init -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.Deconstruct(out string! Agent, out string! Hash, out Aw.Sindri.Features.ApproveProfile.StepArgvEntry? Entry) -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.Entry.get -> Aw.Sindri.Features.ApproveProfile.StepArgvEntry?
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.Entry.init -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.Equals(Aw.Sindri.Features.ApproveProfile.StepArgvLine? other) -> bool
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.Hash.get -> string!
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.Hash.init -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.StepArgvLine(string! Agent, string! Hash, Aw.Sindri.Features.ApproveProfile.StepArgvEntry? Entry) -> void
+Aw.Sindri.Features.GetItem.ItemView.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Id, out string! Title, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Items.Vocabulary.ItemState State, out string? Step, out System.DateTimeOffset Since, out Aw.Sindri.Core.Ids.ActionId? PrimaryAction, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out string? Owner, out long Version, out string! CreatedBy, out string? WaitingOn, out string? Instance, out System.DateTimeOffset CreatedAt, out System.DateTimeOffset UpdatedAt, out string? Body, out Aw.Sindri.Core.Ids.RecordKey? Link, out Aw.Sindri.Core.Launches.ItemLaunch! Launch, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.GetItem.ItemView.ItemView(Aw.Sindri.Core.Ids.ItemId Id, string! Title, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.Items.Vocabulary.ItemState State, string? Step, System.DateTimeOffset Since, Aw.Sindri.Core.Ids.ActionId? PrimaryAction, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, string? Owner, long Version, string! CreatedBy, string? WaitingOn, string? Instance, System.DateTimeOffset CreatedAt, System.DateTimeOffset UpdatedAt, string? Body, Aw.Sindri.Core.Ids.RecordKey? Link, Aw.Sindri.Core.Launches.ItemLaunch! Launch, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.GetItem.ItemView.Launch.get -> Aw.Sindri.Core.Launches.ItemLaunch!
+Aw.Sindri.Features.GetItem.ItemView.Launch.init -> void
+override Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ApproveProfile.StepArgvEntry.GetHashCode() -> int
+override Aw.Sindri.Features.ApproveProfile.StepArgvEntry.ToString() -> string!
+override Aw.Sindri.Features.ApproveProfile.StepArgvLine.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ApproveProfile.StepArgvLine.GetHashCode() -> int
+override Aw.Sindri.Features.ApproveProfile.StepArgvLine.ToString() -> string!
+static Aw.Sindri.Features.ApproveProfile.StepArgvEntry.operator !=(Aw.Sindri.Features.ApproveProfile.StepArgvEntry? left, Aw.Sindri.Features.ApproveProfile.StepArgvEntry? right) -> bool
+static Aw.Sindri.Features.ApproveProfile.StepArgvEntry.operator ==(Aw.Sindri.Features.ApproveProfile.StepArgvEntry? left, Aw.Sindri.Features.ApproveProfile.StepArgvEntry? right) -> bool
+static Aw.Sindri.Features.ApproveProfile.StepArgvLine.operator !=(Aw.Sindri.Features.ApproveProfile.StepArgvLine? left, Aw.Sindri.Features.ApproveProfile.StepArgvLine? right) -> bool
+static Aw.Sindri.Features.ApproveProfile.StepArgvLine.operator ==(Aw.Sindri.Features.ApproveProfile.StepArgvLine? left, Aw.Sindri.Features.ApproveProfile.StepArgvLine? right) -> bool

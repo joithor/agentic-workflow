@@ -3,7 +3,6 @@ using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Views;
-using Aw.Sindri.Features.GetLaunchTargets;
 
 namespace Aw.Sindri.Features.GetItem;
 
@@ -24,18 +23,30 @@ internal sealed class ItemLaunchSource(ILaunchViews launches, LaunchTargetsReade
             return own.Error;
         }
 
-        var inRepo = item.Repo is { } repo ? await launches.ForRepo(repo, cancellationToken).ConfigureAwait(false) : Results.Success<IReadOnlyList<LaunchRow>>([]);
-        if (inRepo.IsError)
+        var lastUsed = await LastUsed(item, cancellationToken).ConfigureAwait(false);
+        if (lastUsed.IsError)
         {
-            return inRepo.Error;
+            return lastUsed.Error;
         }
 
         var probe = await targets.Read(cancellationToken).ConfigureAwait(false);
-        if (probe.IsError)
+        return probe.IsError ? probe.Error : await Decide(item, own.Value, lastUsed.Value, probe.Value, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>The agent of the newest launch that started in the item's repo (any item).</summary>
+    private async ValueTask<Result<AgentId?>> LastUsed(ItemRow item, CancellationToken cancellationToken)
+    {
+        if (item.Repo is not { } repo)
         {
-            return probe.Error;
+            return Results.Success<AgentId?>(value: null);
         }
 
+        var inRepo = await launches.ForRepo(repo, cancellationToken).ConfigureAwait(false);
+        return inRepo.IsError ? inRepo.Error : Results.Success<AgentId?>(inRepo.Value.FirstOrDefault(static row => row.State == LaunchState.Started)?.Target);
+    }
+
+    private async ValueTask<Result<ItemLaunch>> Decide(ItemRow item, IReadOnlyList<LaunchRow> own, AgentId? lastUsed, LaunchTargets probe, CancellationToken cancellationToken)
+    {
         var approved = await approvals.Latest(cancellationToken).ConfigureAwait(false);
         if (approved.IsError)
         {
@@ -46,10 +57,10 @@ internal sealed class ItemLaunchSource(ILaunchViews launches, LaunchTargetsReade
         return LaunchOptions.For(new LaunchOptionInputs
         {
             Item = item,
-            Launches = own.Value,
-            Probe = probe.Value,
+            Launches = own,
+            Probe = probe,
             Settings = profile?.Launch,
-            LastUsedInRepo = inRepo.Value.FirstOrDefault(static row => row.State == LaunchState.Started)?.Target,
+            LastUsedInRepo = lastUsed,
             RepoPath = item.Repo is { } named ? profile?.Repos?.FirstOrDefault(r => string.Equals(r.Name, named.Value, StringComparison.Ordinal))?.Path : null,
             InCatalog = id => catalog.Resolve(id) is not null,
             Now = clock.GetUtcNow(),

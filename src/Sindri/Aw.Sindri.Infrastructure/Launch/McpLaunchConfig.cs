@@ -101,7 +101,25 @@ internal static class McpLaunchConfig
                 "-c", $"mcp_servers.{McpScope.ServerName}.url=\"{Url(target.Port)}\"",
                 "-c", $"mcp_servers.{McpScope.ServerName}.http_headers={{ {RepoHeader} = \"{target.Repo}\" }}",
             ],
+            McpForm.None or McpForm.ClaudeConfigFile => [],
             _ => [],
         };
+    }
+
+    /// <summary>Writes what the entry's form needs and returns the file path (Claude form) and the arguments to add.</summary>
+    /// <param name="form">The entry's MCP form.</param>
+    /// <param name="target">The endpoint and repo, or null when none is known (nothing is added).</param>
+    /// <param name="directory">The launcher's <c lang="text">launch/</c> directory.</param>
+    /// <param name="launch">The launch.</param>
+    /// <returns>The path of the written file, or null, and the extra arguments.</returns>
+    internal static (string? ConfigPath, IReadOnlyList<string> Arguments) Prepare(McpForm form, McpTarget? target, string directory, LaunchId launch)
+    {
+        if (target is null || form == McpForm.None)
+        {
+            return (null, []);
+        }
+
+        var path = form == McpForm.ClaudeConfigFile ? Write(directory, launch, target) : null;
+        return (path, Arguments(form, target, path));
     }
 }

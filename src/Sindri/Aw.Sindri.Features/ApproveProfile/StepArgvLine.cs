@@ -1,5 +1,3 @@
-using Aw.Sindri.Core.Launch;
-
 namespace Aw.Sindri.Features.ApproveProfile;
 
 /// <summary>One <c lang="text">agents.&lt;id&gt;.stepArgvHash</c> the approval adds or changes, with the entry on this box whose argvHash matches it (launcher L-16): the human approves argv they can read, not an opaque hash.</summary>

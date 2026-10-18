@@ -9,7 +9,6 @@ using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
-using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.Launch;
 
@@ -115,6 +114,6 @@ public sealed class LaunchOptionsTests
     {
         var launch = LaunchOptions.For(new LaunchOptionInputs { Item = Item(), Launches = [], InCatalog = static _ => true, Now = _now });
 
-        Assert.Equal([SindriErrors.LaunchRepoMissing.Code], launch.Blockers.Select(static b => b.Code));
+        Assert.Equal([SindriErrors.LaunchRepoMissing.Code], launch.Blockers.Select(static b => b.Code), StringComparer.Ordinal);
     }
 }

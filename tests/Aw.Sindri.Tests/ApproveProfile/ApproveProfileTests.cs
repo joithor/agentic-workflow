@@ -255,7 +255,7 @@ public sealed class ApproveProfileTests
     {
         var preview = (await Service().Handle(new ApproveProfileRequest(Hash: null, Answer: null), Token)).Value;
         var status = (await new GetStatusService(_h.Held, _h.Profiles, _h.Profiles, _h.Store, _h.Events, new ProjectorProgress(_h.Clock), new InMemoryViewStore(SliceHarness.Json)).Handle(new GetStatusRequest(), Token)).Value;
-        var validated = (await new ValidateProfileService(_h.Profiles, _h.Profiles, _h.Store, _h.Events, new ProfileChecks(FakeContextEngine.Instance, new FixedAgentCatalog())).Handle(new ValidateProfileRequest(), Token)).Value;
+        var validated = (await new ValidateProfileService(_h.Profiles, _h.Profiles, _h.Store, _h.Events, FakeContextEngine.Instance).Handle(new ValidateProfileRequest(), Token)).Value;
         var doctor = (await new RunDoctorService(_h.Store, _h.Probe, new LedgerFacts(_h.Store, new InMemoryViewStore(SliceHarness.Json)), new ProfileFacts(_h.Profiles, _h.Profiles, _h.Store, _h.Events,
             new ContextEngineChecks(FakeContextEngine.Instance, new OnyxDoctor(FakeContextEngine.Instance, new PointerSecrets(_ => null, new FakeToolRunner(ToolRun.Missing))))), new FakeControlPlaneProbe(), new FakeTemporalServer(), _h.Clock)
             .Handle(new RunDoctorRequest(), Token)).Value.Checks.Single(c => c.Name == "profile");

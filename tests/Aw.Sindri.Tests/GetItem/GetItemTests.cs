@@ -80,6 +80,6 @@ public sealed class GetItemTests
     private sealed class EmptyLaunchSource : IItemLaunchSource
     {
         public ValueTask<Result<ItemLaunch>> For(ItemRow item, CancellationToken cancellationToken) =>
-            ValueTask.FromResult<Result<ItemLaunch>>(new ItemLaunch([], AgentId.From("claude-code"), "builtIn", null, null, null, null, null, null, []));
+            ValueTask.FromResult<Result<ItemLaunch>>(new ItemLaunch(Modes: [], AgentId.From("claude-code"), ChosenBy: "builtIn", Attach: null, Resumable: null, InFlight: null, LastStarted: null, Confirm: null, RepoPath: null, Blockers: []));
     }
 }
