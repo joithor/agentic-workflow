@@ -48,6 +48,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(ReviewSteps.Recheck)
         .AddBlockDescriptor(OwnerSteps.Decide)
         .AddScopingBlocks()
+        .AddShipBlocks()
         .AddBlockDescriptor(EvidenceProviders.Check)
         .AddGate<BudgetAvailableGate>()
         .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
@@ -87,4 +88,14 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PendingInputs.Lenses)
         .AddBlockDescriptor(PendingInputs.Code)
         .AddBlockDescriptor(PendingInputs.History);
+
+    /// <summary>Registers the ship station's Steps (line spec §7.5), descriptors only.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddShipBlocks(this IServiceCollection services) => services
+        .AddBlockDescriptor(ShipSteps.Green)
+        .AddBlockDescriptor(ShipSteps.Pack)
+        .AddBlockDescriptor(ShipSteps.Freeze)
+        .AddBlockDescriptor(ShipSteps.Open)
+        .AddBlockDescriptor(ShipSteps.Return);
 }
