@@ -3,6 +3,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
+using Aw.Context.Testing.Engine;
 using Aw.Context.Tests.Map;
 using Aw.Kernel;
 
@@ -75,17 +76,51 @@ public sealed class ComponentHopQueryTests : IDisposable
         Assert.Equal(["state", "dependency", "flow", "component"], one.Value.Searched.Hops);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_skipped_unit_key_holding_a_secret_is_scrubbed_in_the_lenses_answer_and_the_query_answer()
+    {
+        var unit = "code:src/" + FakeScrubber.Secret + ".ts";
+        await Import(6, unit);
+
+        var lenses = await _world.Engine.Lenses("feature:f0", MapRead.Current, new LensRange(1, "component"), MapWorld.Human, MapWorld.None);
+        var set = await _world.Engine.LensesOf(["feature:f0", "feature:f1"], MapRead.Current, new LensRange(1, "component"), MapWorld.Human, MapWorld.None);
+        var query = await Query("component");
+
+        foreach (var skipped in new[] { lenses.Value.SkippedComponents, set.Value.SkippedComponents, query.Value.SkippedComponents })
+        {
+            var only = Assert.Single(skipped!);
+            Assert.DoesNotContain(FakeScrubber.Secret, only.Unit, StringComparison.Ordinal);
+            Assert.Contains("[REDACTED:fake]", only.Unit, StringComparison.Ordinal);
+            Assert.Equal(6, only.Features);
+        }
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_profile_fan_out_of_10_reaches_the_lenses_and_query_services_so_a_unit_of_6_features_is_walked()
+    {
+        await Import(6);
+        var scope = MapWorld.Human with { Settings = System.Text.Json.JsonDocument.Parse("""{"cascadeComponentFanOut":10}""").RootElement.Clone() };
+
+        var lenses = await _world.Engine.Lenses("feature:f0", MapRead.Current, new LensRange(1, "component"), scope, MapWorld.None);
+        var query = await _world.Engine.Query(new ContextQuery(Text: null, Node: "feature:f0") { Depth = 1, Hops = "component" }, scope, MapWorld.None);
+
+        Assert.Null(lenses.Value.SkippedComponents);
+        Assert.Equal(5, lenses.Value.Bands.Product.Affects.Count);
+        Assert.Null(query.Value.SkippedComponents);
+        Assert.Equal(5, Section(query.Value, "affects").Items.Count);
+    }
+
     private async Task<Result<ContextResult>> Query(string? hops) =>
         await _world.Engine.Query(new ContextQuery(Text: null, Node: "feature:f0") { Depth = 1, Hops = hops }, MapWorld.Human, MapWorld.None);
 
-    private async Task Import(int features)
+    private async Task Import(int features, string unit = "code:src/shared.ts")
     {
         var keys = Enumerable.Range(0, features).Select(i => string.Create(CultureInfo.InvariantCulture, $"feature:f{i}")).ToList();
         var lines = new List<string> { "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:" };
         lines.AddRange(keys.Select(k => $"  - {{key: \"{k}\", label: \"{k[8..]}\"}}"));
-        lines.Add("  - {key: \"code:src/shared.ts\", label: \"shared.ts\"}");
+        lines.Add($"  - {{key: \"{unit}\", label: \"shared\"}}");
         lines.Add("edges:");
-        lines.AddRange(keys.Select(k => $"  - {{from: \"code:src/shared.ts\", to: \"{k}\", type: implements}}"));
+        lines.AddRange(keys.Select(k => $"  - {{from: \"{unit}\", to: \"{k}\", type: implements}}"));
         _ = await _world.ImportYaml(MapWorld.Yaml([.. lines]));
     }
 

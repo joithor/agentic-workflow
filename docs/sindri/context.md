@@ -141,7 +141,7 @@ Phase 1 tools (both read-only):
 
 | Tool | Arguments | Answer |
 |---|---|---|
-| `context_query` | `q`, or one anchor `node` / `item` / `symbol`; `depth?`, `budget?` | `structuredContent`: the same result JSON as `context query --json`; text: counts, anchors, conflicts, degraded sources and the citation keys, never the records' text a second time |
+| `context_query` | `q`, or one anchor `node` / `item` / `symbol`; `depth?`, `hops?`, `budget?` | `structuredContent`: the same result JSON as `context query --json`; text: counts, anchors, conflicts, degraded sources and the citation keys, never the records' text a second time |
 | `context_sources` | none | `structuredContent`: the sources view plus `instance` (the Sindri build and port that answered); text: the same, then the `context sources status` table |
 
 Claude Code hands the model `structuredContent` rather than the text block when a result has both, so everything a
@@ -407,7 +407,7 @@ path (`005`), session reads off (`020`), no map (`030`), an invalid file (`031`,
 ### Asking about a node
 
 ```bash
-$SINDRI context query --node feature:layout.split-pane.orientation [--depth N] [--json]
+$SINDRI context query --node feature:layout.split-pane.orientation [--depth N] [--hops <list>] [--json]
 # context q_… · anchors: feature:layout.split-pane.orientation · map: v1 · as of …
 #
 # ## graph
@@ -441,7 +441,7 @@ those surfaces' actions (the `graph` section). Each step costs 1:
 
 A reached surface or action is reported as the feature that owns it. Only the reached node steps on, never that
 feature's other surfaces, so a sibling such as "Pane resize" is never pulled in. The depth is `context.cascadeDepth`
-in the profile (0–4, default 2), and `--depth` overrides it. Each affected node shows its shortest path (between equally deep paths, the one with the fewest `owns` steps, then key order), starting at the anchor and naming the real hops: the `owns` steps down through the anchor's own scope to the surface or action that writes or depends, then the state, dependency or flow hops. A bad `--depth` (not a whole number, or outside 0–4) is `SND-CONTEXT-006`. `--hops state,flow,dependency,component` adds the opt-in component hop (nodes that share a confirmed code unit); a code unit implementing more than `context.cascadeComponentFanOut` features (default 5) is skipped and listed in `skippedComponents`; an unknown hop name is `SND-CONTEXT-140`.
+in the profile (0–4, default 2), and `--depth` overrides it. Each affected node shows its shortest path (between equally deep paths, the one with the fewest `owns` steps, then key order), starting at the anchor and naming the real hops: the `owns` steps down through the anchor's own scope to the surface or action that writes or depends, then the state, dependency or flow hops. A bad `--depth` (not a whole number, or outside 0–4) is `SND-CONTEXT-006`. `--hops` names the hops to walk and replaces the default three (`--hops component` walks only that hop; `--hops state,flow,dependency,component` adds the opt-in component hop, nodes that share a confirmed code unit, to the default three); a code unit implementing more than `context.cascadeComponentFanOut` features (default 5) is skipped and listed in `skippedComponents`; an unknown hop name is `SND-CONTEXT-140`.
 
 **A session sees only its repo.** A session sees only the nodes its repo implements (`implements` edges with file
 evidence in its `X-Sindri-Repo`), the code files those edges start from, and the edges among them (so `lenses` shows its code band and
@@ -633,7 +633,7 @@ current map has it: after a promote) or `unmapped` (you rejected it). The `POST`
 ### Lenses and the file map
 
 ```
-$ sindri context lenses feature:tabs.tab-manager [<key>...] [--depth <0-4>] [--draft | --map-version <v>] [--json]
+$ sindri context lenses feature:tabs.tab-manager [<key>...] [--depth <0-4>] [--hops <list>] [--draft | --map-version <v>] [--json]
 lenses of feature:tabs.tab-manager · map v13
 intent (2): …
 product (7): …
@@ -664,7 +664,7 @@ $ sindri context filemap accept edge:0123456789abcdef      # or reject: one over
   takes the worst of its children). A repo that is not in the profile, or outside a session's repo, is `SND-CONTEXT-045` with
   the same answer for both, so a scope never reveals what is outside it.
 - `context query --symbol <path>` resolves a file to the features it implements, with an `affects` section; an unknown file is `003`.
-- MCP: `context_lenses {anchor}` returns the lenses as `structuredContent` and a short summary (band sizes, conflicts,
+- MCP: `context_lenses {anchor, hops?}` returns the lenses as `structuredContent` and a short summary (band sizes, conflicts,
   coverage). It never reads the draft. Off while `context.sessions.enabled` is false (`SND-CONTEXT-020`).
 - MCP: `context_node {key}` and `context_neighbors {key, depth?}` (S-3M) call the services behind `GET /sindri/context/node` and
   `/neighbors` under the session caller, so `structuredContent` equals the session's HTTP answer (labels fenced). The text gives
