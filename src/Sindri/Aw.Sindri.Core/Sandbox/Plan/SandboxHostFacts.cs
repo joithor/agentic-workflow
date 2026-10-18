@@ -11,6 +11,7 @@ namespace Aw.Sindri.Core.Sandbox.Plan;
 /// <param name="IsMacOs">True on macOS (adds the keychain deny).</param>
 /// <param name="Environment">The host environment the allowlist copies from (PATH, LANG, TERM, ...); other names are never read.</param>
 /// <param name="OtherHomes">Other users' home directories to deny, found by the adapter.</param>
+/// <param name="InstalledHooks">The owner hooks installed for the target agent (their 'aw:' tags), read by the adapter; null means the inventory itself.</param>
 public sealed record SandboxHostFacts(
     string Home,
     string StateDir,
@@ -21,4 +22,5 @@ public sealed record SandboxHostFacts(
     int CpuCores,
     bool IsMacOs,
     IReadOnlyDictionary<string, string> Environment,
-    IReadOnlyList<string> OtherHomes);
+    IReadOnlyList<string> OtherHomes,
+    IReadOnlyList<string>? InstalledHooks = null);

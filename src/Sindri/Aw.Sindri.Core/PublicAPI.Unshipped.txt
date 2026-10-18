@@ -11262,9 +11262,7 @@ Aw.Sindri.Core.Sandbox.Plan.HookScript
 Aw.Sindri.Core.Sandbox.Plan.HookScript.<Clone>$() -> Aw.Sindri.Core.Sandbox.Plan.HookScript!
 Aw.Sindri.Core.Sandbox.Plan.HookScript.AnswersPermissions.get -> bool
 Aw.Sindri.Core.Sandbox.Plan.HookScript.AnswersPermissions.init -> void
-Aw.Sindri.Core.Sandbox.Plan.HookScript.Deconstruct(out string! Name, out bool AnswersPermissions) -> void
 Aw.Sindri.Core.Sandbox.Plan.HookScript.Equals(Aw.Sindri.Core.Sandbox.Plan.HookScript? other) -> bool
-Aw.Sindri.Core.Sandbox.Plan.HookScript.HookScript(string! Name, bool AnswersPermissions) -> void
 Aw.Sindri.Core.Sandbox.Plan.HookScript.Name.get -> string!
 Aw.Sindri.Core.Sandbox.Plan.HookScript.Name.init -> void
 Aw.Sindri.Core.Sandbox.Plan.HostGroups
@@ -11344,13 +11342,11 @@ Aw.Sindri.Core.Sandbox.Plan.PlanGroup.PlanGroup(string! Name, System.Collections
 Aw.Sindri.Core.Sandbox.Plan.PlanHasher
 Aw.Sindri.Core.Sandbox.Plan.PlanHooks
 Aw.Sindri.Core.Sandbox.Plan.PlanHooks.<Clone>$() -> Aw.Sindri.Core.Sandbox.Plan.PlanHooks!
-Aw.Sindri.Core.Sandbox.Plan.PlanHooks.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Kept, out System.Collections.Generic.IReadOnlyList<string!>! Omitted) -> void
 Aw.Sindri.Core.Sandbox.Plan.PlanHooks.Equals(Aw.Sindri.Core.Sandbox.Plan.PlanHooks? other) -> bool
 Aw.Sindri.Core.Sandbox.Plan.PlanHooks.Kept.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Sandbox.Plan.PlanHooks.Kept.init -> void
 Aw.Sindri.Core.Sandbox.Plan.PlanHooks.Omitted.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Sandbox.Plan.PlanHooks.Omitted.init -> void
-Aw.Sindri.Core.Sandbox.Plan.PlanHooks.PlanHooks(System.Collections.Generic.IReadOnlyList<string!>! Kept, System.Collections.Generic.IReadOnlyList<string!>! Omitted) -> void
 Aw.Sindri.Core.Sandbox.Plan.PlanLimits
 Aw.Sindri.Core.Sandbox.Plan.PlanLimits.<Clone>$() -> Aw.Sindri.Core.Sandbox.Plan.PlanLimits!
 Aw.Sindri.Core.Sandbox.Plan.PlanLimits.CpuQuotaPercent.get -> int
@@ -11432,7 +11428,6 @@ Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts
 Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.<Clone>$() -> Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts!
 Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.CpuCores.get -> int
 Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.CpuCores.init -> void
-Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.Deconstruct(out string! Home, out string! StateDir, out string! SindriHome, out string! ToolkitDir, out int Uid, out long TotalMemoryBytes, out int CpuCores, out bool IsMacOs, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, out System.Collections.Generic.IReadOnlyList<string!>! OtherHomes) -> void
 Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.Environment.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.Environment.init -> void
 Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.Equals(Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts? other) -> bool
@@ -11442,7 +11437,6 @@ Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.IsMacOs.get -> bool
 Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.IsMacOs.init -> void
 Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.OtherHomes.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.OtherHomes.init -> void
-Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.SandboxHostFacts(string! Home, string! StateDir, string! SindriHome, string! ToolkitDir, int Uid, long TotalMemoryBytes, int CpuCores, bool IsMacOs, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, System.Collections.Generic.IReadOnlyList<string!>! OtherHomes) -> void
 Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.SindriHome.get -> string!
 Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.SindriHome.init -> void
 Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.StateDir.get -> string!
@@ -11588,8 +11582,6 @@ Aw.Sindri.Core.Sandbox.Plan.UnavailableSandbox.Probe() -> Aw.Kernel.Result<Aw.Si
 Aw.Sindri.Core.Sandbox.Plan.UnavailableSandbox.SelfCheck(Aw.Sindri.Core.Sandbox.Plan.SandboxPlan! plan, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Aw.Kernel.Result<Aw.Kernel.Unit>!>!
 Aw.Sindri.Core.Sandbox.Plan.UnavailableSandbox.UnavailableSandbox() -> void
 Aw.Sindri.Core.Sandbox.Plan.UnavailableSandbox.Wrap(Aw.Sindri.Core.Sandbox.Plan.SandboxPlan! plan, System.Collections.Generic.IReadOnlyList<string!>! argv) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!
-const Aw.Sindri.Core.Sandbox.Plan.HookPermissionPolicy.IncludeRtkForms = true -> bool
-const Aw.Sindri.Core.Sandbox.Plan.HookPermissionPolicy.OmitPermissionAnsweringHooks = true -> bool
 const Aw.Sindri.Core.Sandbox.Plan.InnerPolicy.DisableBypassPermissions = true -> bool
 override Aw.Sindri.Core.Sandbox.Plan.GitSetting.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Sandbox.Plan.GitSetting.GetHashCode() -> int
@@ -11650,7 +11642,6 @@ override Aw.Sindri.Core.Sandbox.Plan.StatePathEntry.GetHashCode() -> int
 override Aw.Sindri.Core.Sandbox.Plan.StatePathEntry.ToString() -> string!
 static Aw.Sindri.Core.Sandbox.Credentials.LoginSourceResolver.Resolve(Aw.Sindri.Core.Profile.SandboxSettings? settings, Aw.Sindri.Core.Launch.AgentId target, Aw.Sindri.Core.Ids.RepoName repo, Aw.Sindri.Core.Sandbox.ModelLoginSource? stepAsk) -> Aw.Sindri.Core.Sandbox.ModelLoginSource
 static Aw.Sindri.Core.Sandbox.Plan.AgentHomeWriteSet.Allows(string! agentHome, string! relative) -> bool
-static Aw.Sindri.Core.Sandbox.Plan.DenyRuleExpansion.Expand(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.Plan.InnerRule!>! rules) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.Plan.InnerRule!>!
 static Aw.Sindri.Core.Sandbox.Plan.EnvironmentAllowlist.IsCredentialName(string! name) -> bool
 static Aw.Sindri.Core.Sandbox.Plan.EnvironmentAllowlist.IsListed(string! name) -> bool
 static Aw.Sindri.Core.Sandbox.Plan.EnvironmentAllowlist.IsModelKey(string! name) -> bool
@@ -11663,7 +11654,6 @@ static Aw.Sindri.Core.Sandbox.Plan.GitSettings.For(string? worktree, string! hoo
 static Aw.Sindri.Core.Sandbox.Plan.GitSettings.ToEnvironment(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.Plan.GitSetting!>! settings, string! emptyGlobalFile) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.Plan.PlanEnvVar!>!
 static Aw.Sindri.Core.Sandbox.Plan.GroupsInput.operator !=(Aw.Sindri.Core.Sandbox.Plan.GroupsInput? left, Aw.Sindri.Core.Sandbox.Plan.GroupsInput? right) -> bool
 static Aw.Sindri.Core.Sandbox.Plan.GroupsInput.operator ==(Aw.Sindri.Core.Sandbox.Plan.GroupsInput? left, Aw.Sindri.Core.Sandbox.Plan.GroupsInput? right) -> bool
-static Aw.Sindri.Core.Sandbox.Plan.HookInventory.ForSession() -> Aw.Sindri.Core.Sandbox.Plan.PlanHooks!
 static Aw.Sindri.Core.Sandbox.Plan.HookInventory.Scripts.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.Plan.HookScript!>!
 static Aw.Sindri.Core.Sandbox.Plan.HookInventory.StatePaths.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.Plan.StatePathEntry!>!
 static Aw.Sindri.Core.Sandbox.Plan.HookScript.operator !=(Aw.Sindri.Core.Sandbox.Plan.HookScript? left, Aw.Sindri.Core.Sandbox.Plan.HookScript? right) -> bool
@@ -11714,3 +11704,33 @@ static Aw.Sindri.Core.Sandbox.Plan.SandboxUnits.ParsePercent(string! percent) ->
 static Aw.Sindri.Core.Sandbox.Plan.SandboxUnits.ParseSize(string! size) -> long
 static Aw.Sindri.Core.Sandbox.Plan.StatePathEntry.operator !=(Aw.Sindri.Core.Sandbox.Plan.StatePathEntry? left, Aw.Sindri.Core.Sandbox.Plan.StatePathEntry? right) -> bool
 static Aw.Sindri.Core.Sandbox.Plan.StatePathEntry.operator ==(Aw.Sindri.Core.Sandbox.Plan.StatePathEntry? left, Aw.Sindri.Core.Sandbox.Plan.StatePathEntry? right) -> bool
+Aw.Sindri.Core.Sandbox.Plan.HookScript.Source.get -> string!
+Aw.Sindri.Core.Sandbox.Plan.HookScript.Source.init -> void
+Aw.Sindri.Core.Sandbox.Plan.HookScript.Deconstruct(out string! Name, out string! Source, out string! Events, out bool AnswersPermissions, out bool RewritesInput, out Aw.Sindri.Core.Sandbox.Plan.HookTreatment Treatment, out string! Why, out string? RewritePrefix) -> void
+Aw.Sindri.Core.Sandbox.Plan.HookScript.Events.get -> string!
+Aw.Sindri.Core.Sandbox.Plan.HookScript.Events.init -> void
+Aw.Sindri.Core.Sandbox.Plan.HookScript.Treatment.get -> Aw.Sindri.Core.Sandbox.Plan.HookTreatment
+Aw.Sindri.Core.Sandbox.Plan.HookScript.RewritePrefix.get -> string?
+Aw.Sindri.Core.Sandbox.Plan.HookScript.RewritesInput.get -> bool
+Aw.Sindri.Core.Sandbox.Plan.HookScript.Treatment.init -> void
+Aw.Sindri.Core.Sandbox.Plan.HookScript.Why.get -> string!
+Aw.Sindri.Core.Sandbox.Plan.HookScript.RewritePrefix.init -> void
+Aw.Sindri.Core.Sandbox.Plan.HookScript.Why.init -> void
+Aw.Sindri.Core.Sandbox.Plan.HookTreatment.Keep = 0 -> Aw.Sindri.Core.Sandbox.Plan.HookTreatment
+Aw.Sindri.Core.Sandbox.Plan.HookScript.RewritesInput.init -> void
+Aw.Sindri.Core.Sandbox.Plan.HookTreatment
+Aw.Sindri.Core.Sandbox.Plan.HookTreatment.KeepDenyRewrites = 2 -> Aw.Sindri.Core.Sandbox.Plan.HookTreatment
+Aw.Sindri.Core.Sandbox.Plan.HookTreatment.Drop = 1 -> Aw.Sindri.Core.Sandbox.Plan.HookTreatment
+Aw.Sindri.Core.Sandbox.Plan.PlanHooks.Notes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Sandbox.Plan.PlanHooks.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Kept, out System.Collections.Generic.IReadOnlyList<string!>! Omitted, out System.Collections.Generic.IReadOnlyList<string!>! Notes) -> void
+Aw.Sindri.Core.Sandbox.Plan.PlanHooks.Notes.init -> void
+Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.Deconstruct(out string! Home, out string! StateDir, out string! SindriHome, out string! ToolkitDir, out int Uid, out long TotalMemoryBytes, out int CpuCores, out bool IsMacOs, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, out System.Collections.Generic.IReadOnlyList<string!>! OtherHomes, out System.Collections.Generic.IReadOnlyList<string!>? InstalledHooks) -> void
+Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.InstalledHooks.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.InstalledHooks.init -> void
+Aw.Sindri.Core.Sandbox.Plan.SandboxHostFacts.SandboxHostFacts(string! Home, string! StateDir, string! SindriHome, string! ToolkitDir, int Uid, long TotalMemoryBytes, int CpuCores, bool IsMacOs, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Environment, System.Collections.Generic.IReadOnlyList<string!>! OtherHomes, System.Collections.Generic.IReadOnlyList<string!>? InstalledHooks = null) -> void
+Aw.Sindri.Core.Sandbox.Plan.PlanHooks.PlanHooks(System.Collections.Generic.IReadOnlyList<string!>! Kept, System.Collections.Generic.IReadOnlyList<string!>! Omitted, System.Collections.Generic.IReadOnlyList<string!>! Notes) -> void
+Aw.Sindri.Core.Sandbox.Plan.HookScript.HookScript(string! Name, string! Source, string! Events, bool AnswersPermissions, bool RewritesInput, Aw.Sindri.Core.Sandbox.Plan.HookTreatment Treatment, string! Why, string? RewritePrefix = null) -> void
+static Aw.Sindri.Core.Sandbox.Plan.HookPermissionPolicy.TreatmentOf(string! hook) -> Aw.Sindri.Core.Sandbox.Plan.HookTreatment
+static Aw.Sindri.Core.Sandbox.Plan.HookPermissionPolicy.ForSession(System.Collections.Generic.IReadOnlyList<string!>? installed = null) -> Aw.Sindri.Core.Sandbox.Plan.PlanHooks!
+static Aw.Sindri.Core.Sandbox.Plan.HookInventory.Find(string! name) -> Aw.Sindri.Core.Sandbox.Plan.HookScript?
+static Aw.Sindri.Core.Sandbox.Plan.DenyRuleExpansion.Expand(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.Plan.InnerRule!>! rules, Aw.Sindri.Core.Sandbox.Plan.PlanHooks! hooks) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.Plan.InnerRule!>!

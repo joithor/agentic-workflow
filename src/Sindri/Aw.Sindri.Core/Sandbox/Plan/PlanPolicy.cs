@@ -8,11 +8,11 @@ internal static class PlanPolicy
     private static readonly string[] _writeTools = ["Edit", "Write", "NotebookEdit"];
     private static readonly string[] _readOnlyCommands = ["git status", "git diff", "git log", "git show", "sindri"];
 
-    internal static InnerPolicy Build(PlanContext c)
+    internal static InnerPolicy Build(PlanContext c, PlanHooks hooks)
     {
         var r = c.Request;
         var allows = r.Attended ? AttendedAllows() : StepAllows(c, r.Policy!);   // why: Build checks that a Step carries its policy
-        return new InnerPolicy(r.Attended ? InnerMode.Ask : InnerMode.Refuse, [.. allows, .. DenyRuleExpansion.Expand(DenyRules(c))]);
+        return new InnerPolicy(r.Attended ? InnerMode.Ask : InnerMode.Refuse, [.. allows, .. DenyRuleExpansion.Expand(DenyRules(c), hooks)]);
     }
 
     private static List<InnerRule> DenyRules(PlanContext c)

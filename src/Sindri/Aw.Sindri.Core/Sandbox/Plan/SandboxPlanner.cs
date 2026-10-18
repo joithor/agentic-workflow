@@ -24,6 +24,7 @@ public static class SandboxPlanner
             return refusal;
         }
 
+        var hooks = HookPermissionPolicy.ForSession(request.Host.InstalledHooks);
         var plan = new SandboxPlan(
             PlanVersion,
             mechanism,
@@ -41,8 +42,8 @@ public static class SandboxPlanner
             c.Login,
             request.Settings?.Inner ?? SandboxDefaults.Inner,
             PlanEnvironment.Git(c),
-            PlanPolicy.Build(c),
-            HookInventory.ForSession());
+            PlanPolicy.Build(c, hooks),
+            hooks);
         return plan with { PlanHash = PlanHasher.Hash(plan, PerLaunchPaths(request)) };
     }
 

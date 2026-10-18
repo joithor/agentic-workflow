@@ -39,6 +39,11 @@ public static partial class SandboxPlanRenderer
         _ = text.AppendLine(CultureInfo.InvariantCulture, $"The agent's own policy: {(plan.Policy.Mode == InnerMode.Ask ? "asks" : "refuses")}, {plan.Policy.Rules.Count} rules; its own sandbox: {SandboxWire.Name(plan.Inner)}");
         _ = text.AppendLine(CultureInfo.InvariantCulture, $"Hooks kept: {string.Join(", ", plan.Hooks.Kept)}");
         _ = text.AppendLine(CultureInfo.InvariantCulture, $"Hooks left out: {(plan.Hooks.Omitted.Count == 0 ? "none" : string.Join(", ", plan.Hooks.Omitted))}");
+        foreach (var note in plan.Hooks.Notes)
+        {
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"Note: {note}");
+        }
+
         return text.ToString();
     }
 
