@@ -21,7 +21,7 @@ public sealed class ContextHistoryTextTests
         var record = new HistoryRecord(NodeKey.From("record:linear:issue/0203"), "Ticket 0203", "linear", [split], Trust.Untrusted, CitationState.Unchecked, [], [split], _at.AddDays(-30), _at.AddDays(3), _at, Leaky: true);
         var change = new HistoryChange("commit:" + new string('a', 40), ContextRepoName.From("aw-split-panes"), new string('a', 40), _at, "Merge pull request #5 from fixture-labs/nts-130", HistoryChangeKind.Merge, "nts-130", 5,
             ["src/layout/SplitPane.ts"], [split], Trust.Untrusted);
-        var gap = new SearchedSource(SourceId.From("onyx"), SearchedState.Unavailable, "not-synced", "SND-CONTEXT-161", AsOf: null) { Sync = new SearchedSync("running", "JOB-1") };
+        var gap = new SearchedSource(SourceId.From("onyx"), SearchedState.Unavailable, "not-synced", "SND-CONTEXT-161", AsOf: null) { Sync = new SearchedSync("running", SyncJobId.From("JOB-1")) };
         var searched = new LensSearched(["feature:layout.split-pane"], "v2", 0, [], [gap, new SearchedSource(SourceId.From("git-history"), SearchedState.Ok, "capped", Code: null, _at)],
             new SearchedBands(new BandSearched(false), new BandSearched(false), new BandSearched(false)));
         return new HistoryView(1, [new LensAnchor(split, "Split pane", NodeKind.Feature, Trust.Trusted)], ["feature:nope"], "v2", Draft: false, _at, new HistoryWindow(Since: null, Before: _at),

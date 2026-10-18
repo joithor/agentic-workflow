@@ -5,9 +5,7 @@ using Aw.Context.Core.Graph;
 using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Linking;
-using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
-using Aw.Context.Features.GetLenses;
 using Aw.Kernel;
 
 namespace Aw.Context.Features.GetHistory;
@@ -45,7 +43,7 @@ internal sealed class HistoryPipeline(LensBasisReader bases, IIntentStore intent
         var degraded = git.Degraded;
         if (inputs.Window.Before is { } before && version.Created > before)
         {
-            degraded.Add(string.Create(CultureInfo.InvariantCulture, $"map {basis.Map} was written after the 'before' cut ({before:O}): its nodes and edges are the map as it stands, not as it was then (fix: ask for an older --map-version)"));
+            degraded.Add($"map {basis.Map} was written after the 'before' cut ({before.ToString("O", CultureInfo.InvariantCulture)}): its nodes and edges are the map as it stands, not as it was then (fix: ask for an older --map-version)");
         }
 
         var intentRows = basis.IntentSources.Select(row => Unlinked(row, layer.Value)).ToList();
@@ -121,7 +119,7 @@ internal sealed class HistoryPipeline(LensBasisReader bases, IIntentStore intent
         var failed = git.Errors.FirstOrDefault(e => e.Code != ContextErrors.CommitUnknown.Code);
         if (git.TimedOut)
         {
-            git.Degraded.Add(string.Create(CultureInfo.InvariantCulture, $"git-history: stopped at the deadline; {git.Changes.Count} change(s) found so far are listed (SND-CONTEXT-160; fix: raise context.deadline, or narrow the anchors)"));
+            git.Degraded.Add($"git-history: stopped at the deadline; {git.Changes.Count.ToString(CultureInfo.InvariantCulture)} change(s) found so far are listed (SND-CONTEXT-160; fix: raise context.deadline, or narrow the anchors)");
             return SearchedSources.GitHistory(SearchedState.Degraded, reason: null, ContextErrors.HistoryDeadline.Code, asOf);
         }
 

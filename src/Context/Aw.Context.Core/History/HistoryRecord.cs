@@ -31,5 +31,5 @@ public sealed record HistoryRecord(
     bool Leaky)
 {
     /// <summary>Its kind (always a record).</summary>
-    public NodeKind Kind => NodeKind.Record;
+    public NodeKind Kind { get; } = NodeKind.Record;
 }

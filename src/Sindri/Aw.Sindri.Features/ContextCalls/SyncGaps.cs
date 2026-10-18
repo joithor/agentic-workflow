@@ -34,7 +34,7 @@ internal sealed class SyncGaps(IJobViews jobs)
             return searched;
         }
 
-        var sync = new SearchedSync("running", running.Value[0].Id.Value);
+        var sync = new SearchedSync("running", SyncJobId.From(running.Value[0].Id.Value));
         return searched with { Sources = [.. searched.Sources.Select(s => s.Reason == NotSynced ? s with { Sync = sync } : s)] };
     }
 }

@@ -5267,3 +5267,139 @@ override Aw.Context.Core.History.FileHistoryQuery.GetHashCode() -> int
 override Aw.Context.Core.History.FileHistoryQuery.ToString() -> string!
 static Aw.Context.Core.History.FileHistoryQuery.operator !=(Aw.Context.Core.History.FileHistoryQuery? left, Aw.Context.Core.History.FileHistoryQuery? right) -> bool
 static Aw.Context.Core.History.FileHistoryQuery.operator ==(Aw.Context.Core.History.FileHistoryQuery? left, Aw.Context.Core.History.FileHistoryQuery? right) -> bool
+Aw.Context.Core.Facade.IContextHistory
+Aw.Context.Core.Facade.IContextHistory.History(System.Collections.Generic.IReadOnlyList<string!>! anchors, Aw.Context.Core.History.HistoryWindow! window, Aw.Context.Core.Map.MapRead read, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.History.HistoryView!>!>
+Aw.Context.Core.History.HistoryFile
+Aw.Context.Core.History.HistoryFile.<Clone>$() -> Aw.Context.Core.History.HistoryFile!
+Aw.Context.Core.History.HistoryFile.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.History.HistoryFile.Anchors.init -> void
+Aw.Context.Core.History.HistoryFile.Deconstruct(out Aw.Context.Core.Engine.ContextRepoName? Repo, out string! Path, out System.Collections.Generic.IReadOnlyList<string!>! Anchors) -> void
+Aw.Context.Core.History.HistoryFile.Equals(Aw.Context.Core.History.HistoryFile? other) -> bool
+Aw.Context.Core.History.HistoryFile.HistoryFile(Aw.Context.Core.Engine.ContextRepoName? Repo, string! Path, System.Collections.Generic.IReadOnlyList<string!>! Anchors) -> void
+Aw.Context.Core.History.HistoryFile.Path.get -> string!
+Aw.Context.Core.History.HistoryFile.Path.init -> void
+Aw.Context.Core.History.HistoryFile.Repo.get -> Aw.Context.Core.Engine.ContextRepoName?
+Aw.Context.Core.History.HistoryFile.Repo.init -> void
+Aw.Context.Core.History.HistoryIncidents
+Aw.Context.Core.History.HistoryIncidents.<Clone>$() -> Aw.Context.Core.History.HistoryIncidents!
+Aw.Context.Core.History.HistoryIncidents.Deconstruct(out Aw.Context.Core.Lenses.SearchedState State, out string! Reason, out System.Collections.Generic.IReadOnlyList<string!>! Items) -> void
+Aw.Context.Core.History.HistoryIncidents.Equals(Aw.Context.Core.History.HistoryIncidents? other) -> bool
+Aw.Context.Core.History.HistoryIncidents.HistoryIncidents(Aw.Context.Core.Lenses.SearchedState State, string! Reason, System.Collections.Generic.IReadOnlyList<string!>! Items) -> void
+Aw.Context.Core.History.HistoryIncidents.Items.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.History.HistoryIncidents.Items.init -> void
+Aw.Context.Core.History.HistoryIncidents.Reason.get -> string!
+Aw.Context.Core.History.HistoryIncidents.Reason.init -> void
+Aw.Context.Core.History.HistoryIncidents.State.get -> Aw.Context.Core.Lenses.SearchedState
+Aw.Context.Core.History.HistoryIncidents.State.init -> void
+Aw.Context.Core.History.HistoryLens
+Aw.Context.Core.History.HistoryRecord.Kind.get -> Aw.Context.Core.Graph.NodeKind
+Aw.Context.Core.History.HistoryScope
+Aw.Context.Core.History.HistoryScope.AnchorKeys.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.History.HistoryScope.Anchors.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensAnchor!>!
+Aw.Context.Core.History.HistoryScope.Decisions.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensDecision!>!
+Aw.Context.Core.History.HistoryScope.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryFile!>!
+Aw.Context.Core.History.HistoryScope.MissingAnchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.History.HistoryScope.Records.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensRecord!>!
+Aw.Context.Core.History.HistoryView
+Aw.Context.Core.History.HistoryView.<Clone>$() -> Aw.Context.Core.History.HistoryView!
+Aw.Context.Core.History.HistoryView.Anchors.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensAnchor!>!
+Aw.Context.Core.History.HistoryView.Anchors.init -> void
+Aw.Context.Core.History.HistoryView.AsOf.get -> System.DateTimeOffset
+Aw.Context.Core.History.HistoryView.AsOf.init -> void
+Aw.Context.Core.History.HistoryView.Changes.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryChange!>!
+Aw.Context.Core.History.HistoryView.Changes.init -> void
+Aw.Context.Core.History.HistoryView.Cites.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>!
+Aw.Context.Core.History.HistoryView.Cites.init -> void
+Aw.Context.Core.History.HistoryView.Counts.get -> Aw.Context.Core.History.HistoryCounts!
+Aw.Context.Core.History.HistoryView.Counts.init -> void
+Aw.Context.Core.History.HistoryView.Coverage.get -> Aw.Context.Core.Lenses.LensCoverage!
+Aw.Context.Core.History.HistoryView.Coverage.init -> void
+Aw.Context.Core.History.HistoryView.Decisions.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryDecision!>!
+Aw.Context.Core.History.HistoryView.Decisions.init -> void
+Aw.Context.Core.History.HistoryView.Deconstruct(out int SchemaVersion, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensAnchor!>! Anchors, out System.Collections.Generic.IReadOnlyList<string!>! MissingAnchors, out string! MapVersion, out bool Draft, out System.DateTimeOffset AsOf, out Aw.Context.Core.History.HistoryWindow! Window, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryRecord!>! Records, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryDecision!>! Decisions, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryChange!>! Changes, out Aw.Context.Core.History.HistoryIncidents! Incidents, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, out Aw.Context.Core.History.HistoryCounts! Counts, out Aw.Context.Core.History.HistoryTruncated! Truncated, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryGit!>! Git, out Aw.Context.Core.Lenses.LensCoverage! Coverage, out Aw.Context.Core.Lenses.LensSearched! Searched, out System.Collections.Generic.IReadOnlyList<string!>! Degraded, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
+Aw.Context.Core.History.HistoryView.Degraded.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.History.HistoryView.Degraded.init -> void
+Aw.Context.Core.History.HistoryView.Draft.get -> bool
+Aw.Context.Core.History.HistoryView.Draft.init -> void
+Aw.Context.Core.History.HistoryView.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>!
+Aw.Context.Core.History.HistoryView.Edges.init -> void
+Aw.Context.Core.History.HistoryView.Equals(Aw.Context.Core.History.HistoryView? other) -> bool
+Aw.Context.Core.History.HistoryView.Git.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryGit!>!
+Aw.Context.Core.History.HistoryView.Git.init -> void
+Aw.Context.Core.History.HistoryView.HistoryView(int SchemaVersion, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensAnchor!>! Anchors, System.Collections.Generic.IReadOnlyList<string!>! MissingAnchors, string! MapVersion, bool Draft, System.DateTimeOffset AsOf, Aw.Context.Core.History.HistoryWindow! Window, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryRecord!>! Records, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryDecision!>! Decisions, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryChange!>! Changes, Aw.Context.Core.History.HistoryIncidents! Incidents, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, Aw.Context.Core.History.HistoryCounts! Counts, Aw.Context.Core.History.HistoryTruncated! Truncated, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryGit!>! Git, Aw.Context.Core.Lenses.LensCoverage! Coverage, Aw.Context.Core.Lenses.LensSearched! Searched, System.Collections.Generic.IReadOnlyList<string!>! Degraded, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
+Aw.Context.Core.History.HistoryView.Incidents.get -> Aw.Context.Core.History.HistoryIncidents!
+Aw.Context.Core.History.HistoryView.Incidents.init -> void
+Aw.Context.Core.History.HistoryView.MapVersion.get -> string!
+Aw.Context.Core.History.HistoryView.MapVersion.init -> void
+Aw.Context.Core.History.HistoryView.MissingAnchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.History.HistoryView.MissingAnchors.init -> void
+Aw.Context.Core.History.HistoryView.Records.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.History.HistoryRecord!>!
+Aw.Context.Core.History.HistoryView.Records.init -> void
+Aw.Context.Core.History.HistoryView.SchemaVersion.get -> int
+Aw.Context.Core.History.HistoryView.SchemaVersion.init -> void
+Aw.Context.Core.History.HistoryView.Searched.get -> Aw.Context.Core.Lenses.LensSearched!
+Aw.Context.Core.History.HistoryView.Searched.init -> void
+Aw.Context.Core.History.HistoryView.Truncated.get -> Aw.Context.Core.History.HistoryTruncated!
+Aw.Context.Core.History.HistoryView.Truncated.init -> void
+Aw.Context.Core.History.HistoryView.Window.get -> Aw.Context.Core.History.HistoryWindow!
+Aw.Context.Core.History.HistoryView.Window.init -> void
+Aw.Context.Core.Lenses.SearchedSource.Sync.get -> Aw.Context.Core.Lenses.SearchedSync?
+Aw.Context.Core.Lenses.SearchedSource.Sync.init -> void
+Aw.Context.Core.Lenses.SearchedSync
+Aw.Context.Core.Lenses.SearchedSync.<Clone>$() -> Aw.Context.Core.Lenses.SearchedSync!
+Aw.Context.Core.Lenses.SearchedSync.Equals(Aw.Context.Core.Lenses.SearchedSync? other) -> bool
+Aw.Context.Core.Lenses.SearchedSync.JobId.init -> void
+Aw.Context.Core.Lenses.SearchedSync.State.get -> string!
+Aw.Context.Core.Lenses.SearchedSync.State.init -> void
+Aw.Context.Core.Linking.IntentRecord.FetchedAt.get -> System.DateTimeOffset?
+Aw.Context.Core.Linking.IntentRecord.FetchedAt.init -> void
+override Aw.Context.Core.History.HistoryFile.Equals(object? obj) -> bool
+override Aw.Context.Core.History.HistoryFile.GetHashCode() -> int
+override Aw.Context.Core.History.HistoryFile.ToString() -> string!
+override Aw.Context.Core.History.HistoryIncidents.Equals(object? obj) -> bool
+override Aw.Context.Core.History.HistoryIncidents.GetHashCode() -> int
+override Aw.Context.Core.History.HistoryIncidents.ToString() -> string!
+override Aw.Context.Core.History.HistoryView.Equals(object? obj) -> bool
+override Aw.Context.Core.History.HistoryView.GetHashCode() -> int
+override Aw.Context.Core.History.HistoryView.ToString() -> string!
+override Aw.Context.Core.Lenses.SearchedSync.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.SearchedSync.GetHashCode() -> int
+override Aw.Context.Core.Lenses.SearchedSync.ToString() -> string!
+static Aw.Context.Core.History.HistoryFile.operator !=(Aw.Context.Core.History.HistoryFile? left, Aw.Context.Core.History.HistoryFile? right) -> bool
+static Aw.Context.Core.History.HistoryFile.operator ==(Aw.Context.Core.History.HistoryFile? left, Aw.Context.Core.History.HistoryFile? right) -> bool
+static Aw.Context.Core.History.HistoryIncidents.NotConfigured.get -> Aw.Context.Core.History.HistoryIncidents!
+static Aw.Context.Core.History.HistoryIncidents.operator !=(Aw.Context.Core.History.HistoryIncidents? left, Aw.Context.Core.History.HistoryIncidents? right) -> bool
+static Aw.Context.Core.History.HistoryIncidents.operator ==(Aw.Context.Core.History.HistoryIncidents? left, Aw.Context.Core.History.HistoryIncidents? right) -> bool
+static Aw.Context.Core.History.HistoryLens.Coverage(Aw.Context.Core.History.HistoryScope! scope, Aw.Context.Core.Lenses.LensBasis! basis) -> Aw.Context.Core.Lenses.LensCoverage!
+static Aw.Context.Core.History.HistoryLens.Edges(Aw.Context.Core.History.HistoryScope! scope, System.Collections.Generic.IEnumerable<Aw.Context.Core.Graph.NodeKey>! found) -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>!
+static Aw.Context.Core.History.HistoryLens.Resolve(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<string!>! anchors) -> Aw.Kernel.Result<Aw.Context.Core.History.HistoryScope!>!
+static Aw.Context.Core.History.HistoryLens.Searched(Aw.Context.Core.History.HistoryScope! scope, Aw.Context.Core.Lenses.LensBasis! basis, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.SearchedSource!>! intentSources, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.SearchedSource!>! history, (int Intent, int Files) found) -> Aw.Context.Core.Lenses.LensSearched!
+static Aw.Context.Core.History.HistoryView.operator !=(Aw.Context.Core.History.HistoryView? left, Aw.Context.Core.History.HistoryView? right) -> bool
+static Aw.Context.Core.History.HistoryView.operator ==(Aw.Context.Core.History.HistoryView? left, Aw.Context.Core.History.HistoryView? right) -> bool
+static Aw.Context.Core.Lenses.SearchedSources.GitHistory(Aw.Context.Core.Lenses.SearchedState state, string? reason, string? code, System.DateTimeOffset asOf) -> Aw.Context.Core.Lenses.SearchedSource!
+static Aw.Context.Core.Lenses.SearchedSources.Incidents.get -> Aw.Context.Core.Lenses.SearchedSource!
+static Aw.Context.Core.Lenses.SearchedSources.Unlinked(Aw.Context.Core.Lenses.SearchedSource! row) -> Aw.Context.Core.Lenses.SearchedSource!
+static Aw.Context.Core.Lenses.SearchedSync.operator !=(Aw.Context.Core.Lenses.SearchedSync? left, Aw.Context.Core.Lenses.SearchedSync? right) -> bool
+static Aw.Context.Core.Lenses.SearchedSync.operator ==(Aw.Context.Core.Lenses.SearchedSync? left, Aw.Context.Core.Lenses.SearchedSync? right) -> bool
+static readonly Aw.Context.Core.ContextErrors.HistoryDeadline -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Context.Core.ContextErrors.IntentNotSynced -> Aw.Kernel.ErrorDefinition!
+Aw.Context.Core.Lenses.SearchedSync.Deconstruct(out string! State, out Aw.Context.Core.Lenses.SyncJobId JobId) -> void
+Aw.Context.Core.Lenses.SearchedSync.JobId.get -> Aw.Context.Core.Lenses.SyncJobId
+Aw.Context.Core.Lenses.SearchedSync.SearchedSync(string! State, Aw.Context.Core.Lenses.SyncJobId JobId) -> void
+Aw.Context.Core.Lenses.SyncJobId
+Aw.Context.Core.Lenses.SyncJobId.Equals(Aw.Context.Core.Lenses.SyncJobId other) -> bool
+Aw.Context.Core.Lenses.SyncJobId.Equals(Aw.Context.Core.Lenses.SyncJobId other, System.Collections.Generic.IEqualityComparer<Aw.Context.Core.Lenses.SyncJobId>! comparer) -> bool
+Aw.Context.Core.Lenses.SyncJobId.GetTypeCode() -> System.TypeCode
+Aw.Context.Core.Lenses.SyncJobId.IsInitialized() -> bool
+Aw.Context.Core.Lenses.SyncJobId.SyncJobId() -> void
+Aw.Context.Core.Lenses.SyncJobId.ToString(System.IFormatProvider? provider) -> string!
+Aw.Context.Core.Lenses.SyncJobId.Value.get -> string!
+override Aw.Context.Core.Lenses.SyncJobId.Equals(object? obj) -> bool
+override Aw.Context.Core.Lenses.SyncJobId.GetHashCode() -> int
+override Aw.Context.Core.Lenses.SyncJobId.ToString() -> string!
+static Aw.Context.Core.Lenses.SyncJobId.From(string! value) -> Aw.Context.Core.Lenses.SyncJobId
+static Aw.Context.Core.Lenses.SyncJobId.Parse(string! s, System.IFormatProvider? provider) -> Aw.Context.Core.Lenses.SyncJobId
+static Aw.Context.Core.Lenses.SyncJobId.TryFrom(string? value, out Aw.Context.Core.Lenses.SyncJobId vo) -> bool
+static Aw.Context.Core.Lenses.SyncJobId.TryParse(string? s, System.IFormatProvider? provider, out Aw.Context.Core.Lenses.SyncJobId result) -> bool
+static Aw.Context.Core.Lenses.SyncJobId.operator !=(Aw.Context.Core.Lenses.SyncJobId left, Aw.Context.Core.Lenses.SyncJobId right) -> bool
+static Aw.Context.Core.Lenses.SyncJobId.operator ==(Aw.Context.Core.Lenses.SyncJobId left, Aw.Context.Core.Lenses.SyncJobId right) -> bool

@@ -70,6 +70,7 @@ public static class ContextFeaturesServiceCollectionExtensions
 
     private static IServiceCollection AddContextSlices(this IServiceCollection services) => services
         .AddBacktest()
+        .AddHistory()
         .AddScoped<IService<QueryContextRequest, ContextResult>, QueryContextService>()
         .AddScoped<IService<SourcesStatusRequest, SourcesView>, SourcesStatusService>()
         .AddScoped<IService<RefreshDocsRequest, RefreshReport>, RefreshDocsService>()
@@ -98,9 +99,6 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<GetProposalsRequest, ProposalsView>, GetProposalsService>()
         .AddScoped<IService<GetLensesRequest, LensesView>, GetLensesService>()
         .AddScoped<IService<GetLensesSetRequest, LensesSetView>, GetLensesSetService>()
-        .AddScoped<LensBasisReader>()
-        .AddScoped<IService<GetHistoryRequest, HistoryView>, GetHistoryService>()
-        .AddScoped<HistoryPipeline>()
         .AddScoped<IService<GetFileMapRequest, FileMapView>, GetFileMapService>()
         .AddScoped<MapReader>()
         .AddScoped<MapAdmin>()
@@ -110,8 +108,13 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<ContextGraph>()
         .AddScoped<IContextGraph>(static sp => sp.GetRequiredService<ContextGraph>())
         .AddScoped<IContextLenses>(static sp => sp.GetRequiredService<ContextGraph>())
-        .AddScoped<IContextHistory>(static sp => sp.GetRequiredService<ContextGraph>())
         .AddScoped<IContextEngine, ContextEngine>();
+
+    private static IServiceCollection AddHistory(this IServiceCollection services) => services
+        .AddScoped<IService<GetHistoryRequest, HistoryView>, GetHistoryService>()
+        .AddScoped<HistoryPipeline>()
+        .AddScoped<LensBasisReader>()
+        .AddScoped<IContextHistory>(static sp => sp.GetRequiredService<ContextGraph>());
 
     private static IServiceCollection AddBacktest(this IServiceCollection services) => services
         .AddScoped<IService<EvalProbesRequest, ProbeRun>, EvalProbesService>()

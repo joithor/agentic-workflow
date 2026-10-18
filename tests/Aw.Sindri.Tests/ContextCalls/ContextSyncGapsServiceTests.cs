@@ -150,7 +150,7 @@ public sealed class ContextSyncGapsServiceTests
         var marked = await gaps.Mark(new LensSearched(["a"], "v1", 0, [], [notSynced, ok], new SearchedBands(new BandSearched(true), new BandSearched(true), new BandSearched(true))), Ct);
 
         Assert.Equal("running", marked.Sources[0].Sync!.State);
-        Assert.StartsWith("JOB-", marked.Sources[0].Sync!.JobId, StringComparison.Ordinal);
+        Assert.StartsWith("JOB-", marked.Sources[0].Sync!.JobId.Value, StringComparison.Ordinal);
         Assert.Null(marked.Sources[1].Sync);
     }
 

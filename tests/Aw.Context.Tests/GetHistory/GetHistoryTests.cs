@@ -10,7 +10,6 @@ using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.History;
-using Aw.Context.Testing.Map;
 using Aw.Context.Tests.Map;
 using Aw.Context.Tests.QueryContext;
 using Aw.Kernel;
@@ -101,9 +100,9 @@ public sealed class GetHistoryTests : IDisposable
 
         Assert.Equal([Sha('3'), Sha('2'), Sha('1')], [.. view.Changes.Select(c => c.Sha)], StringComparer.Ordinal);
         Assert.DoesNotContain(view.Changes.SelectMany(c => c.Files), f => f.Contains("zzz", StringComparison.Ordinal));
-        var call = Assert.Single(history.Calls);
-        Assert.Equal(_searched, [.. call.Query.Paths.Order(StringComparer.Ordinal)], StringComparer.Ordinal);
-        Assert.Equal(HistoryRules.ChangesPerRepo, call.Query.Max);
+        var (_, query) = Assert.Single(history.Calls);
+        Assert.Equal(_searched, [.. query.Paths.Order(StringComparer.Ordinal)], StringComparer.Ordinal);
+        Assert.Equal(HistoryRules.ChangesPerRepo, query.Max);
         Assert.Equal((2, 2, 3), (view.Counts.Files, view.Git.Single().Files, view.Counts.Changes));
     }
 
@@ -117,7 +116,7 @@ public sealed class GetHistoryTests : IDisposable
         var merge = changes.Single(c => c.Sha == Sha('3'));
         var squash = changes.Single(c => c.Sha == Sha('2'));
         Assert.Equal((HistoryChangeKind.Merge, 5, "nts-130-link-revocation", "commit:" + Sha('3')), (merge.Kind, merge.Pr, merge.Branch, merge.Key));
-        Assert.Equal((HistoryChangeKind.Commit, 6, (string?)null), (squash.Kind, squash.Pr, squash.Branch));
+        Assert.Equal((HistoryChangeKind.Commit, 6, null), (squash.Kind, squash.Pr, squash.Branch));
         Assert.Equal([Anchor], [.. merge.Anchors.Select(a => a.Value)], StringComparer.Ordinal);
     }
 
@@ -147,7 +146,7 @@ public sealed class GetHistoryTests : IDisposable
         var view = (await Ask(world, since: "2026-07-01T00:00:00Z")).Value;
 
         Assert.Equal([Sha('3')], [.. view.Changes.Select(c => c.Sha)], StringComparer.Ordinal);
-        Assert.Single(view.Decisions);
+        _ = Assert.Single(view.Decisions);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -175,7 +174,7 @@ public sealed class GetHistoryTests : IDisposable
         var view = (await Ask(world, scope: Denying("src/layout/SplitPane.ts"))).Value;
 
         Assert.Equal(["src/layout/PaneResize.ts"], history.Calls.Single().Query.Paths, StringComparer.Ordinal);
-        Assert.All(view.Changes, c => Assert.DoesNotContain("src/layout/SplitPane.ts", c.Files));
+        Assert.All(view.Changes, c => Assert.DoesNotContain("src/layout/SplitPane.ts", c.Files, StringComparer.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -190,7 +189,7 @@ public sealed class GetHistoryTests : IDisposable
         Assert.Equal(["feature:no.such.node"], inside.Value.MissingAnchors, StringComparer.Ordinal);
         Assert.All(history.Calls, c => Assert.Equal("aw-split-panes", c.Repo.Name.Value));
         Assert.Equal(ContextErrors.UnknownAnchor.Code, outside.Error.Code);
-        Assert.Single(history.Calls);   // the session of 'other' ran no git
+        _ = Assert.Single(history.Calls);   // the session of 'other' ran no git
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -227,7 +226,7 @@ public sealed class GetHistoryTests : IDisposable
 
         var row = Row(view, "git-history");
         Assert.Equal((SearchedState.Degraded, "SND-CONTEXT-048"), (row.State, row.Code));
-        Assert.Single(view.Degraded);
+        _ = Assert.Single(view.Degraded);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -257,7 +256,7 @@ public sealed class GetHistoryTests : IDisposable
         var cappedView = (await Ask(await Start(capped))).Value;
         var shallowView = (await Ask(await Start(shallow))).Value;
 
-        Assert.Equal((SearchedState.Ok, "capped", (string?)null), (Row(cappedView, "git-history").State, Row(cappedView, "git-history").Reason, Row(cappedView, "git-history").Code));
+        Assert.Equal((SearchedState.Ok, "capped", null), (Row(cappedView, "git-history").State, Row(cappedView, "git-history").Reason, Row(cappedView, "git-history").Code));
         Assert.Equal((SearchedState.Ok, "shallow-clone"), (Row(shallowView, "git-history").State, Row(shallowView, "git-history").Reason));
     }
 

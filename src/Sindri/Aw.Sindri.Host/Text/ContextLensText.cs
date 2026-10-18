@@ -73,7 +73,7 @@ internal static class ContextLensText
         foreach (var source in searched.Sources)
         {
             var why = string.Join(", ", new[] { source.Reason, source.Code }.Where(static w => w is not null));
-            var sync = source.Sync is { } s ? Invariant($" · sync {s.State} {s.JobId}") : string.Empty;
+            var sync = source.Sync is { } s ? Invariant($" · sync {s.State} {s.JobId.Value}") : string.Empty;
             _ = text.AppendLine(Invariant($"  {source.Id.Value} {StateWord(source.State)}{(why.Length == 0 ? string.Empty : " (" + why + ")")}{sync}"));
         }
 
