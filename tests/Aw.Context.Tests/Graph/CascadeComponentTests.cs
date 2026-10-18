@@ -81,6 +81,45 @@ public sealed class CascadeComponentTests
         Assert.Equal([("feature:b", 1), ("feature:c", 2)], depth2.Affected.Select(a => (a.Node.Value, a.Depth)));
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void Leaving_dependency_out_of_the_hops_stops_the_walk_from_taking_that_hop()
+    {
+        var graph = new GraphSnapshot(
+            [new GraphNode(NodeKey.From("feature:a"), "a"), new GraphNode(NodeKey.From("feature:b"), "b")],
+            [new GraphEdge(NodeKey.From("feature:b"), NodeKey.From("feature:a"), EdgeType.DependsOn)], [], []);
+
+        var with = Cascade.Affects(graph, NodeKey.From("feature:a"), depth: 2, new CascadeOptions(CascadeHops.Dependency));
+        var without = Cascade.Affects(graph, NodeKey.From("feature:a"), depth: 2, new CascadeOptions(CascadeHops.State | CascadeHops.Flow | CascadeHops.Component));
+
+        Assert.Equal(["feature:b"], with.Affected.Select(a => a.Node.Value), StringComparer.Ordinal);
+        Assert.Empty(without.Affected);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Leaving_flow_out_of_the_hops_stops_the_walk_from_taking_that_hop()
+    {
+        var graph = new GraphSnapshot(
+            [new GraphNode(NodeKey.From("surface:s1"), "s1"), new GraphNode(NodeKey.From("surface:s2"), "s2"), new GraphNode(NodeKey.From("flow:f"), "f")],
+            [new GraphEdge(NodeKey.From("surface:s1"), NodeKey.From("flow:f"), EdgeType.StepOf, Order: 1), new GraphEdge(NodeKey.From("surface:s2"), NodeKey.From("flow:f"), EdgeType.StepOf, Order: 2)], [], []);
+
+        var with = Cascade.Affects(graph, NodeKey.From("surface:s1"), depth: 2, new CascadeOptions(CascadeHops.Flow));
+        var without = Cascade.Affects(graph, NodeKey.From("surface:s1"), depth: 2, new CascadeOptions(CascadeHops.State | CascadeHops.Dependency | CascadeHops.Component));
+
+        Assert.Equal(["surface:s2"], with.Affected.Select(a => a.Node.Value), StringComparer.Ordinal);
+        Assert.Empty(without.Affected);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_fan_out_of_1_walks_no_unit_because_the_anchors_own_feature_counts()
+    {
+        var graph = Graph([("code:src/shared.ts", "feature:a", Provenance.Human), ("code:src/shared.ts", "feature:b", Provenance.Human)]);
+
+        var result = Cascade.Affects(graph, NodeKey.From("feature:a"), depth: 2, new CascadeOptions(CascadeHops.Component, ComponentFanOut: 1));
+
+        Assert.Empty(result.Affected);
+        Assert.Equal([new SkippedComponent("code:src/shared.ts", 2)], result.SkippedComponents);
+    }
+
     private static GraphSnapshot Graph(IReadOnlyList<(string Code, string Feature, Provenance Provenance)> implements, IReadOnlyList<(string Child, string Parent)>? parts = null)
     {
         var keys = implements.SelectMany(e => new[] { e.Code, e.Feature }).Distinct(StringComparer.Ordinal).ToList();
