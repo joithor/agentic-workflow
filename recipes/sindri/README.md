@@ -8,7 +8,7 @@ The recipes Sindri ships. Each is a YAML state machine (`docs/csharp/sindri-work
 | `workflow.step` | Produce, check, verify one Step | engine spec §12 |
 | `workflow.scoping` | Station 1 of the line: scope a brief, tracker item, idea or change; interview; challenge; park at the owner's stop with a scope packet | scoping spec §6.1 |
 | `workflow.idea-to-brief` | Block recipe, the child of `workflow.scoping`'s `idea` branch: a short interview turns an idea into a cited brief | scoping spec §6.2 |
-| `workflow.line` | A minimal first cut of the line spec's `workflow.line` (the full line, LN-L, grows it later): waits on `workflow.scoping` as a child, then on `workflow.implement` as the build child; ends `done`, `dropped` (scoping unresolved or cancelled) or `stuck` (build unresolved) | line spec §3.5, LN-WF8 |
+| `workflow.line` | The line, with sequential stations (LN-WF8): waits on `workflow.scoping`, `workflow.design` (again after a plan sent back), `workflow.plan`, one `workflow.phase` and `workflow.docs-sync` as children; ends `done`, `dropped` or `stuck`. Parallel phase dispatch comes with LN-WF1; until then it runs the plan's `fact:phasePackets` as the one phase | line spec §3.5, LN-WF8 |
 | `workflow.build` | Station 4 of the line: one TDD builder per phase in its worktree (red tests, green code, scope gate, owner-granted scope amendments) | line spec §7.2 |
 | `workflow.prove` | Station 5 of the line: prove every acceptance item on the head (hand test, verify and evidence as children, before/after, hidden scenarios), then freeze the proof pack | line spec §7.3 |
 | The block recipes below | The small recipes bugfix and spec-to-PR runs are built from | decision-tree spec (DT-R2) |

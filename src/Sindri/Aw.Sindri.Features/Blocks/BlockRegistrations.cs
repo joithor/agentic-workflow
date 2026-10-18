@@ -48,10 +48,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(ReviewSteps.Recheck)
         .AddBlockDescriptor(OwnerSteps.Decide)
         .AddScopingBlocks()
-        .AddLineDesignBlocks()
-        .AddPhaseBlocks()
-        .AddBuildProveBlocks()
-        .AddShipDocsBlocks()
+        .AddLineBlocks()
         .AddBlockDescriptor(EvidenceProviders.Check)
         .AddGate<BudgetAvailableGate>()
         .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
@@ -60,6 +57,15 @@ internal static class BlockRegistrations
         .AddEvent(RecipeEvents.ItemRouted)
         .AddEvent(RecipeEvents.ClaimCreated)
         .AddEvent(RecipeEvents.NotifyDelivered);
+
+    /// <summary>Registers every station of the line: design and plan, the per-phase child, build and prove, ship and docs sync.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddLineBlocks(this IServiceCollection services) => services
+        .AddLineDesignBlocks()
+        .AddPhaseBlocks()
+        .AddBuildProveBlocks()
+        .AddShipDocsBlocks();
 
     /// <summary>Registers the per-phase child's Steps, the babysitter stub's Step and the line report effect (line spec §7, App. C.6), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
