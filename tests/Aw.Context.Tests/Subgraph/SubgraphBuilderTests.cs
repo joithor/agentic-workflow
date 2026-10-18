@@ -111,7 +111,7 @@ public sealed class SubgraphBuilderTests
     public void Band_over_100_truncated_with_full_counts()
     {
         var builder = new GraphBuilder();
-        var keys = Enumerable.Range(0, 150).Select(i => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"feature:f{i:D3}")).ToArray();
+        var keys = Enumerable.Range(0, 150).Select(i => string.Create(CultureInfo.InvariantCulture, $"feature:f{i:D3}")).ToArray();
         foreach (var key in keys)
         {
             _ = builder.Node(key);
@@ -152,7 +152,7 @@ public sealed class SubgraphBuilderTests
     [Fact, Trait("Lane", "unit")]
     public void More_than_1000_keys_is_006()
     {
-        var keys = Enumerable.Range(0, QueryRules.MaxSubgraphPost + 1).Select(i => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"feature:f{i}")).ToArray();
+        var keys = Enumerable.Range(0, QueryRules.MaxSubgraphPost + 1).Select(i => string.Create(CultureInfo.InvariantCulture, $"feature:f{i}")).ToArray();
 
         var over = SubgraphBuilder.Build(_basis, Graph(), keys, 0, []);
         var none = SubgraphBuilder.Build(_basis, Graph(), [], 0, []);

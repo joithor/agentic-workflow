@@ -71,7 +71,7 @@ public sealed class WithdrawTests : IDisposable
 
         Assert.Null(withdrawn.Draft);
         Assert.Equal((0, 0), (withdrawn.Withdrawn, withdrawn.Kept));
-        Assert.DoesNotContain((await _world.Store.Versions(MapWorld.None)).Value, v => v.Status == Aw.Context.Core.Map.MapVersionStatus.Draft);
+        Assert.DoesNotContain((await _world.Store.Versions(MapWorld.None)).Value, v => v.Status == Context.Core.Map.MapVersionStatus.Draft);
         Assert.Equal(before.Count, (await Overrides()).Count);   // why: the imported fixture carries overrides of its own; the withdraw adds none
     }
 

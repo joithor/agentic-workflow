@@ -1,7 +1,8 @@
 using Aw.Context.Core.Lenses;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Subgraph;
 
-namespace Aw.Context.Core.Map;
+namespace Aw.Context.Core.Texts;
 
 /// <summary>Cleans every piece of map text in a lenses view the way every answer's is cleaned (spec §7): scrubbed, one line for a label, fenced when the caller's policy fences untrusted text.</summary>
 public static class LensTexts

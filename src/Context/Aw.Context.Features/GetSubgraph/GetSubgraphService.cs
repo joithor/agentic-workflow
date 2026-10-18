@@ -2,6 +2,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Subgraph;
+using Aw.Context.Core.Texts;
 using Aw.Context.Core.Trust;
 using Aw.Kernel;
 using Aw.Kernel.Services;

@@ -1,7 +1,7 @@
-using Aw.Context.Core.Map;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Linking;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Sources;
 using Aw.Context.Tests.Map;
 using static Aw.Context.Tests.SyncSources.ExtractDecisionsTests;
