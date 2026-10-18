@@ -9523,3 +9523,32 @@ Aw.Sindri.Core.Sessions.SessionProblem.Reason.get -> Aw.Sindri.Core.Sessions.Una
 Aw.Sindri.Core.Sessions.SessionProblem.Reason.init -> void
 static Aw.Sindri.Core.Sessions.SessionRows.Find(Aw.Sindri.Core.Sessions.SessionSnapshot! pass, Aw.Sindri.Core.Sessions.SessionRef reference, Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Sindri.Core.Sessions.ObservedSession?
 static Aw.Sindri.Core.Sessions.SessionRows.RefuseSession(Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Kernel.Error?
+Aw.Sindri.Core.Mcp.IProviderHost
+Aw.Sindri.Core.Mcp.IProviderHost.Installed(Aw.Sindri.Core.Mcp.ProviderFile provider) -> bool
+Aw.Sindri.Core.Mcp.IProviderHost.Read(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<string?>
+Aw.Sindri.Core.Mcp.IProviderHost.Tracked(string! directory, string! relativePath, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+Aw.Sindri.Core.Mcp.IProviderHost.UserConfigPath(Aw.Sindri.Core.Mcp.ProviderFile provider) -> string!
+Aw.Sindri.Core.Mcp.IProviderHost.Write(string! path, string! text, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+Aw.Sindri.Core.Mcp.ProviderOutcome
+Aw.Sindri.Core.Mcp.ProviderOutcome.Failed = 4 -> Aw.Sindri.Core.Mcp.ProviderOutcome
+Aw.Sindri.Core.Mcp.ProviderOutcome.NeedsTrust = 3 -> Aw.Sindri.Core.Mcp.ProviderOutcome
+Aw.Sindri.Core.Mcp.ProviderOutcome.Registered = 0 -> Aw.Sindri.Core.Mcp.ProviderOutcome
+Aw.Sindri.Core.Mcp.ProviderOutcome.Skipped = 2 -> Aw.Sindri.Core.Mcp.ProviderOutcome
+Aw.Sindri.Core.Mcp.ProviderOutcome.Unchanged = 1 -> Aw.Sindri.Core.Mcp.ProviderOutcome
+Aw.Sindri.Core.Mcp.ProviderResult
+Aw.Sindri.Core.Mcp.ProviderResult.<Clone>$() -> Aw.Sindri.Core.Mcp.ProviderResult!
+Aw.Sindri.Core.Mcp.ProviderResult.Deconstruct(out Aw.Sindri.Core.Mcp.ProviderFile Provider, out Aw.Sindri.Core.Mcp.ProviderOutcome Outcome, out string! Detail, out string? Fix) -> void
+Aw.Sindri.Core.Mcp.ProviderResult.Equals(Aw.Sindri.Core.Mcp.ProviderResult? other) -> bool
+Aw.Sindri.Core.Mcp.ProviderResult.Fix.get -> string?
+Aw.Sindri.Core.Mcp.ProviderResult.Fix.init -> void
+Aw.Sindri.Core.Mcp.ProviderResult.Outcome.get -> Aw.Sindri.Core.Mcp.ProviderOutcome
+Aw.Sindri.Core.Mcp.ProviderResult.Outcome.init -> void
+Aw.Sindri.Core.Mcp.ProviderResult.Provider.get -> Aw.Sindri.Core.Mcp.ProviderFile
+Aw.Sindri.Core.Mcp.ProviderResult.Provider.init -> void
+Aw.Sindri.Core.Mcp.ProviderResult.ProviderResult(Aw.Sindri.Core.Mcp.ProviderFile Provider, Aw.Sindri.Core.Mcp.ProviderOutcome Outcome, string! Detail, string? Fix) -> void
+override Aw.Sindri.Core.Mcp.ProviderResult.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Mcp.ProviderResult.GetHashCode() -> int
+override Aw.Sindri.Core.Mcp.ProviderResult.ToString() -> string!
+static Aw.Sindri.Core.Mcp.McpRegistration.CommandLine(System.Collections.Generic.IReadOnlyList<string!>! arguments) -> string!
+static Aw.Sindri.Core.Mcp.ProviderResult.operator !=(Aw.Sindri.Core.Mcp.ProviderResult? left, Aw.Sindri.Core.Mcp.ProviderResult? right) -> bool
+static Aw.Sindri.Core.Mcp.ProviderResult.operator ==(Aw.Sindri.Core.Mcp.ProviderResult? left, Aw.Sindri.Core.Mcp.ProviderResult? right) -> bool

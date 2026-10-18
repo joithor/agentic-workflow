@@ -89,6 +89,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IDeskNotices, FileDeskNotices>()           // engine P6 unit (c): notifications.jsonl
             .AddSingleton(McpSettings.Read(environment))
             .AddSingleton<IClaudeCli, ProcessClaudeCli>()
+            .AddSingleton<IProviderHost, ProviderHost>()
             .AddSingleton<IProviderFiles, ProviderConfigFiles>()
             .AddSingleton<ITextScrubber>(new RedactingScrubber(Redactor.Default));
     }

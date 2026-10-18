@@ -17,7 +17,8 @@ check() {
 }
 WORK="$(cd "$(mktemp -d)" && pwd -P)"
 trap 'rm -rf "$WORK"' EXIT
-unset AW_SINDRI_APP_NO_LINK AW_SINDRI_HOME CLAUDE_LOCAL_BIN DOTNET_ROOT
+unset AW_SINDRI_APP_NO_LINK AW_SINDRI_HOME CLAUDE_LOCAL_BIN DOTNET_ROOT AW_SINDRI_MCP_REPO
+export AW_SINDRI_APP_NO_MCP=1   # the MCP registration has its own tests at the end
 export HOME="$WORK/home" AW_STATE_DIR="$WORK/state"
 mkdir -p "$HOME"
 CALLS="$WORK/calls"; : > "$CALLS"
@@ -38,7 +39,7 @@ case "$1" in
     [ "${FAIL_PUBLISH:-0}" = 1 ] && { echo "error CS0001: boom"; exit 1; }
     out=""; while [ $# -gt 0 ]; do [ "$1" = -o ] && out="$2"; shift; done
     mkdir -p "$out"
-    printf '#!/usr/bin/env bash\necho "sindri $*"\necho "root=$DOTNET_ROOT" >&2\n' > "$out/sindri"; chmod +x "$out/sindri" ;;
+    printf '#!/usr/bin/env bash\necho "sindri $*"\necho "root=$DOTNET_ROOT" >&2\necho "sindri $*" >> "$CALLS"\ncase "$1" in mcp) echo "codex: registered" ; exit "${MCP_EXIT:-0}" ;; esac\n' > "$out/sindri"; chmod +x "$out/sindri" ;;
 esac
 EOF
 chmod +x "$WORK/fakebin/dotnet"
@@ -189,5 +190,47 @@ for n in 1 2; do
 done
 check "I3: the in-use build is kept when the state dir is a symlink" "$(test -d "$RB/$S_OLD" && echo kept)" "kept"
 kill "$HOLD" 2>/dev/null; wait "$HOLD" 2>/dev/null
+
+# MCP registration: a bare run registers every provider once the plane is up (a live control.json), passes --repo from a
+# linked worktree or AW_SINDRI_MCP_REPO, reports a failure without failing the start, and skips on AW_SINDRI_APP_NO_MCP=1.
+export AW_STATE_DIR="$WORK/mcpstate"
+mkdir -p "$AW_STATE_DIR/sindri-app"
+sleep 60 & PLANE=$!
+printf '{"pid": %s, "url": "http://127.0.0.1:7480/"}\n' "$PLANE" > "$AW_STATE_DIR/sindri-app/control.json"
+: > "$CALLS"
+unset AW_SINDRI_APP_NO_MCP
+waitfor() { local i; for i in $(seq 1 40); do grep -q "$1" "$CALLS" && return 0; sleep 0.25; done; return 1; }
+AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" >"$WORK/out" 2>"$WORK/err"; RC=$?
+waitfor "^sindri mcp register" ; sleep 0.5
+check "mcp: a bare run registers every provider after the plane is up" "$(grep '^sindri mcp' "$CALLS")" "sindri mcp register --apply --providers all"
+check "mcp: the bare run's exit is unaffected" "$RC" "0"
+check "mcp: the report goes to stderr, never stdout" "$(grep -c 'codex: registered' "$WORK/out")" "0"
+check "mcp: the report reaches stderr" "$(grep -c 'codex: registered' "$WORK/err")" "1"
+
+: > "$CALLS"
+AW_SINDRI_MCP_REPO=demo AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" serve >/dev/null 2>&1
+waitfor "^sindri mcp register"; sleep 0.5
+check "mcp: AW_SINDRI_MCP_REPO is passed as --repo (serve registers too)" "$(grep '^sindri mcp' "$CALLS")" "sindri mcp register --apply --providers all --repo demo"
+
+git -C "$R" worktree add -q "$WORK/wt2" -b wt2 >/dev/null 2>&1
+: > "$CALLS"
+(cd "$WORK/wt2" && AW_SINDRI_APP_NO_LINK=1 bash "$WORK/wt2/scripts/sindri-app.sh" >/dev/null 2>&1)
+waitfor "^sindri mcp register"; sleep 0.5
+check "mcp: from a linked worktree the main checkout's name is passed as --repo" "$(grep '^sindri mcp' "$CALLS")" "sindri mcp register --apply --providers all --repo repo"
+git -C "$R" worktree remove --force "$WORK/wt2" >/dev/null 2>&1
+
+: > "$CALLS"
+MCP_EXIT=2 AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" >"$WORK/out" 2>"$WORK/err"; RC=$?
+waitfor "^sindri mcp register"; sleep 0.5
+check "mcp: a failing registration never fails the start" "$RC:$(grep -c 'needs attention' "$WORK/err")" "0:1"
+
+: > "$CALLS"
+AW_SINDRI_APP_NO_MCP=1 AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" >/dev/null 2>&1; sleep 1
+check "mcp: AW_SINDRI_APP_NO_MCP=1 registers nothing" "$(grep -c '^sindri mcp' "$CALLS")" "0"
+
+: > "$CALLS"
+AW_SINDRI_APP_NO_LINK=1 bash "$R/scripts/sindri-app.sh" status >/dev/null 2>&1; sleep 1
+check "mcp: other commands register nothing" "$(grep -c '^sindri mcp' "$CALLS")" "0"
+kill "$PLANE" 2>/dev/null; wait "$PLANE" 2>/dev/null
 
 exit "$fail"

@@ -82,14 +82,35 @@ public sealed class ProviderPlansTests
     }
 
     [Fact]
-    public void Codex_trust_is_read_from_the_user_config_and_the_row_is_appended()
+    public void Codex_trust_level_is_read_from_the_user_config()
     {
         const string trusted = "[projects.\"/work/demo\"]\ntrust_level = \"trusted\"\n";
 
-        Assert.True(CodexTrusted(trusted, "/work/demo"));
-        Assert.False(CodexTrusted(trusted, "/work/other"));
-        Assert.False(CodexTrusted("[projects.\"/work/demo\"]\ntrust_level = \"untrusted\"\n", "/work/demo"));
-        Assert.False(CodexTrusted(null, "/work/demo"));
-        Assert.True(CodexTrusted(CodexTrustRow("model = \"x\"\n", "/work/demo"), "/work/demo"));
+        Assert.Equal("trusted", CodexTrust(trusted, "/work/demo"));
+        Assert.Null(CodexTrust(trusted, "/work/other"));
+        Assert.Equal("untrusted", CodexTrust("[projects.\"/work/demo\"]\ntrust_level = \"untrusted\"\n", "/work/demo"));
+        Assert.Null(CodexTrust(null, "/work/demo"));
+    }
+
+    [Fact]
+    public void The_trust_row_is_appended_and_touches_nothing_else()
+    {
+        const string user = "# my codex\nmodel = \"x\"   # keep\n\n[projects.\"/work/other\"]\ntrust_level = \"trusted\"\n\n[mcp_servers.fs]\ncommand = \"npx\"\n";
+
+        var after = CodexTrustRow(user, "/work/demo");
+
+        Assert.StartsWith(user, after, StringComparison.Ordinal);
+        Assert.Equal("trusted", CodexTrust(after, "/work/demo"));
+        Assert.Equal("trusted", CodexTrust(after, "/work/other"));
+        Assert.Equal("[projects.\"/work/demo\"]\ntrust_level = \"trusted\"\n", after[user.Length..].TrimStart('\n'));
+    }
+
+    [Fact]
+    public void A_project_table_without_a_level_gets_the_line_inside_it_not_a_second_table()
+    {
+        var after = CodexTrustRow("[projects.\"/work/demo\"]\nnote = 1\n[other]\na = 1\n", "/work/demo");
+
+        Assert.Equal("[projects.\"/work/demo\"]\ntrust_level = \"trusted\"\nnote = 1\n[other]\na = 1\n", after);
+        Assert.Equal(1, after.Split("[projects.").Length - 1);
     }
 }
