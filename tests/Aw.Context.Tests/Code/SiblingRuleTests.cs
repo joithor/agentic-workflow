@@ -13,6 +13,9 @@ public sealed class SiblingRuleTests
     [InlineData("tests/LinkServiceTest.java", "src/LinkService.java")]
     [InlineData("tests/LINKS.test.ts", "src/links.ts")]
     [InlineData("tests/foo.service.spec.ts", "src/foo.service.ts")]
+    [InlineData("spec/links_spec.rb", "lib/links.rb")]
+    [InlineData("tests/LinkServiceSpec.scala", "src/LinkService.scala")]
+    [InlineData("tests/links_tests.py", "src/links.py")]
     public void SiblingRule_a_test_stem_without_its_marker_ties_the_implementing_stem(string test, string impl) =>
         Assert.True(SiblingRule.Ties(test, impl));
 

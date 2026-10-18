@@ -75,7 +75,8 @@ public sealed class CodeLensRepo : IDisposable
 
     /// <summary>Builds the repo in a new temp directory.</summary>
     /// <returns>The built repo.</returns>
-    public static CodeLensRepo Build()
+    /// <param name="extraTests">How many more test files to commit under tests/gen, each importing src/sharing/links (to pass the lexical candidate cap).</param>
+    public static CodeLensRepo Build(int extraTests = 0)
     {
         var root = Directory.CreateTempSubdirectory("aw-code-lens-").FullName;
         try
@@ -83,7 +84,7 @@ public sealed class CodeLensRepo : IDisposable
             var path = Directory.CreateDirectory(System.IO.Path.Combine(root, "sharing")).FullName;
             var emptyConfig = System.IO.Path.Combine(root, "gitconfig");
             File.WriteAllText(emptyConfig, string.Empty);
-            foreach (var (relative, text) in _files)
+            foreach (var (relative, text) in _files.Concat(Enumerable.Range(0, extraTests).Select(i => ($"tests/gen/g{i.ToString("D3", System.Globalization.CultureInfo.InvariantCulture)}.test.ts", "import { createLink } from '../../src/sharing/links';\n"))))
             {
                 var target = System.IO.Path.Combine(path, relative);
                 _ = Directory.CreateDirectory(System.IO.Path.GetDirectoryName(target)!);   // why: a file under the repo has a directory
