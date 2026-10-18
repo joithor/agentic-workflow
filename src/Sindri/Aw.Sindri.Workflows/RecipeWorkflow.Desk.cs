@@ -62,13 +62,26 @@ internal sealed partial class RecipeWorkflow
         if (instance.Suspension is { } suspension)
         {
             // why: the parked loop never reads a report, so one accepted here would hang its Update and apply stale after the resume
-            throw Refusal(WorkflowErrors.TriggerNotAllowed.With($"{instance.Address.Value} is parked ({suspension.Reason?.ToString() ?? suspension.Kind.ToString()}); answer --resume first, then complete run {report.Run.Value}"));
+            throw Refusal(WorkflowErrors.TriggerNotAllowed.With(ParkedRefusal(instance, suspension, report.Run)));
         }
 
         if (TransitionDecision.Decide(new DecisionInput(instance, context.Recipe, report, GateAnswers.None, context.Decisions)) is Rejected rejected)
         {
             throw Refusal(rejected.Error);
         }
+    }
+
+    // A takeover ends with the handback and a park with 'answer --resume'; a block run starts over on the handback, so no report follows it.
+    private static string ParkedRefusal(WorkflowInstance instance, Suspension suspension, RunToken run)
+    {
+        var parked = $"{instance.Address.Value} is parked ({suspension.Reason?.ToString() ?? suspension.Kind.ToString()})";
+        if (suspension.Kind != SuspensionKind.Takeover)
+        {
+            return $"{parked}; answer --resume first, then complete run {run.Value}";
+        }
+
+        var handback = $"{parked}; hand it back first: sindri workflow handback {instance.Address.Value}";
+        return instance.Frame.Run is { Runtime: StepRuntime.Block } ? $"{handback} (the handback runs the Step again)" : $"{handback}, then complete run {run.Value}";
     }
 
     /// <summary>

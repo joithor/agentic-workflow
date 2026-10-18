@@ -1071,14 +1071,15 @@ sends it on to the desk twin. A Step with no registered runtime keeps opening a 
 - **A desk report on a block run is refused** (`SND-WF-003`): the engine runs this Step, so only its own result applies. The
   human waits for the result, runs `cancel`, or answers the desk twin once the run fails. There is no takeover override:
   a takeover cancels the activity and pauses the run, and a `complete` while taken over is refused like any report to a
-  parked instance (`is parked (Takeover); answer --resume first`); a handback runs the Step again (a second Judge call).
+  parked instance (`is parked (Takeover); hand it back first: sindri workflow handback <address> (the handback runs the Step again)`);
+  the handback runs the Step again (a second Judge call), so no report follows it. A desk run's refusal ends `then complete run <token>` instead.
 - **The `step.failed` reason** (what `sameFailure` compares and `--record` writes) is exactly one of:
 
   | Reason | When |
   |--------|------|
   | the Step's own text, as it returned it (`no provider answered`) | the `IBlockStep` returned `BlockStepResult.Failed(text)` |
   | `invalid-result: <code> <message>` | the result fails the desk-report validation of WF §5.3 (an undeclared outcome, a missing required output) |
-  | `timeout` | the activity ran past its bound (below) |
+  | `timeout` | the activity ran past its bound (below), or stopped heartbeating (a heartbeat timeout reports `timeout` too) |
   | `failed: <ErrorType>` | the Step threw; the type is the exception's, `error` when it has none |
   | `profile-unreadable: <code>` | the approved profile could not be read for the `providers` list (`SND-BLOCK-002`) |
   | `repo-unreadable` | `fact:item` could not be read, so the per-repo keys are unknown (`SND-BLOCK-003`); the box list is never used instead |
@@ -1098,7 +1099,7 @@ sends it on to the desk twin. A Step with no registered runtime keeps opening a 
   before DT-J has no marker, so it replays with the empty set and a `judge.choose` run stays a desk task exactly as
   recorded (`A_pre_DT_J_history_replays_on_the_desk_path`). New instances write the marker at start. The patch is
   deprecated only after the cutover.
-- **Events:** a block run's `workflow.transition` (a result or a `step.failed`) carries `via: block` and the judge `decision` id. `sindri workflow
+- **Events:** a block run's transition (a result or a `step.failed`) carries `via: block`; a result also carries the judge `decision` id when the Step recorded one. `sindri workflow
   events` prints `via block · decision <id>` (a `sindri workflow why` verb that explains the decision comes with DT-J3); the API's event detail has `via` and
   `decision`, left out when null. Desk reports carry neither.
 - **Profile:** `workflow.judge.providers` (and `repos[].workflow.judge.providers`) narrows which providers a Judge

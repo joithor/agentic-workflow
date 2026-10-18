@@ -148,7 +148,9 @@ public sealed class BlockRuntimeInterpreterTests(BlockRuntimeDevServer server) :
             var output = new FactValue("fact:sha256:" + new string('e', 64), new string('e', 64), HeadSha: null);
             var report = new StepCompleted("human:cli", running.Run!.Value, OutcomeName.From("ui"), new Dictionary<FactKey, FactValue> { [FactKey.From("fact:decision")] = output }, Tokens: 0, StepRuntime.Desk, new string('f', 64));
             var refused = await Assert.ThrowsAsync<WorkflowUpdateFailedException>(() => handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(new string('3', 32))).WaitAsync(TimeSpan.FromSeconds(20), ct));
-            Assert.Contains("answer --resume first", refused.InnerException!.Message, StringComparison.Ordinal);   // a taken-over run answers nothing; only the handback moves it
+            Assert.Contains("hand it back first: sindri workflow handback", refused.InnerException!.Message, StringComparison.Ordinal);   // a taken-over run answers nothing; only the handback moves it
+            Assert.Contains("the handback runs the Step again", refused.InnerException.Message, StringComparison.Ordinal);
+            Assert.DoesNotContain("then complete run", refused.InnerException.Message, StringComparison.Ordinal);
 
             var handback = new HandbackRequested("human:cli", new CommandStamp(CommandNonce.From(new string('2', 32)), new string('0', 64)));
             _ = await handle.ExecuteUpdateAsync(wf => wf.HandbackAsync(handback), new WorkflowUpdateOptions(new string('2', 32)));
