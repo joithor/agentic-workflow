@@ -3,6 +3,7 @@ using System.Net;
 using System.Text;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Context;
+using Aw.Sindri.Ui.Api.Sessions;
 using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.Testing;
@@ -105,6 +106,8 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             // LANE ANCHOR U3': add the Needs you routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately above this marker, never between the markers.
             // LANE ANCHOR U8: add the workflow command routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately below this marker, never between the markers.
             { } path when path.StartsWith("/sindri/context/", StringComparison.Ordinal) => await ContextRoute(request, cancellationToken),
+            // LANE ANCHOR U11a: the session reads, as arms above the workflow-read arm. Insert immediately below this marker, never between the markers.
+            { } path when request.Method == HttpMethod.Get && (path == "/sindri/sessions" || path.StartsWith("/sindri/sessions/", StringComparison.Ordinal)) => await Sessions(uri, cancellationToken),
             { } path when request.Method == HttpMethod.Get && path.StartsWith("/sindri/workflow/", StringComparison.Ordinal) => await Workflow(uri, cancellationToken),
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
         };
@@ -193,6 +196,24 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
                 var (recipe, hash) = at < 0 ? (named, null) : (named[..at], named[(at + 1)..]);
                 _ = await server.Recipe(uri, recipe, hash, cancellationToken);
                 return Answer(server.RecipeAnswer(recipe, hash));
+            default:
+                return Text(HttpStatusCode.NotFound, "{}", "application/json");
+        }
+    }
+
+    // The session reads (collector spec CA-1, CA-2): through the model (a down server or a refusal answers as it does there), then the route's golden as the model has it.
+    private async Task<HttpResponseMessage> Sessions(Uri uri, CancellationToken cancellationToken)
+    {
+        var parts = uri.AbsolutePath["/sindri/sessions".Length..].Split('/', StringSplitOptions.RemoveEmptyEntries).Select(Uri.UnescapeDataString).ToArray();
+        switch (parts)
+        {
+            case []:
+                var query = new SessionQuery(Query(uri, "provider"), Query(uri, "state"), Query(uri, "repo"), Flag(uri, "inWorkflow"));
+                _ = await server.Sessions(uri, query, cancellationToken);
+                return Answer(server.SessionListAnswer());
+            case [var provider, var id]:
+                _ = await server.Session(uri, provider, id, cancellationToken);
+                return Answer(server.SessionOneAnswer(provider, id));
             default:
                 return Text(HttpStatusCode.NotFound, "{}", "application/json");
         }

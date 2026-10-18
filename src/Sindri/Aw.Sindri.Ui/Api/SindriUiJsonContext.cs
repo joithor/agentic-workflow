@@ -42,4 +42,7 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(Context.MapStatusView))]
 [JsonSerializable(typeof(Context.NodeView))]
 [JsonSerializable(typeof(Context.SourcesView))]
+// LANE ANCHOR U11a: one [JsonSerializable] per Agents record. Insert immediately below this marker, never between the markers.
+[JsonSerializable(typeof(Sessions.SessionList))]
+[JsonSerializable(typeof(Sessions.SessionView))]
 internal sealed partial class SindriUiJsonContext : JsonSerializerContext;

@@ -10,6 +10,7 @@
         xmlns:wfv="using:Aw.Sindri.Ui.Views.Workflows"
         xmlns:iv="using:Aw.Sindri.Ui.Views.Instance"
         xmlns:rv="using:Aw.Sindri.Ui.Views.Recipes"
+        xmlns:agv="using:Aw.Sindri.Ui.Views.Agents"
         xmlns:ctxv="using:Aw.Sindri.Ui.Views.Context"
         xmlns:item="using:Aw.Sindri.Ui.Views.Item"
         xmlns:ny="using:Aw.Sindri.Ui.Views.NeedsYou"
@@ -198,7 +199,7 @@
                 <queue:QueuePage x:Name="QueuePage" IsVisible="{Binding IsWork}" />
                 <views:PlaceholderPage x:Name="RecipesPage" Title="{Binding Text.Recipes}" Note="{Binding Text.ArrivesRecipes}" IsVisible="{Binding IsRecipes}" />
                 <Panel IsVisible="{Binding IsContext}"><ctxv:ContextPage x:Name="ContextPage" DataContext="{Binding Context}" /></Panel>
-                <views:PlaceholderPage x:Name="AgentsPage" Title="{Binding Text.Agents}" Note="{Binding Text.ArrivesAgents}" IsVisible="{Binding IsAgents}" />
+                <Panel IsVisible="{Binding IsAgents}"><agv:AgentsPage x:Name="AgentsPage" DataContext="{Binding Agents}" /></Panel>
                 <!-- System hosts the control plane's health until U12 builds the rest (screens spec §4.6). -->
                 <Panel IsVisible="{Binding IsSystem}">
                   <views:HealthPage x:Name="HealthPage" DataContext="{Binding Health}" />
@@ -271,11 +272,15 @@
                 <ScrollViewer x:Name="InstanceSheetScroll" IsVisible="{Binding IsInstanceSheet}">
                   <iv:InstanceFrameView x:Name="InstanceSheetFrame" DataContext="{Binding Instance}" />
                 </ScrollViewer>
-                <!-- LANE ANCHOR U10: the sheet content for the kinds U10 claims (kinds: Recipe). Session, System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers. -->
+                <!-- LANE ANCHOR U10: the sheet content for the kinds U10 claims (kinds: Recipe). System, Service and Job are claimed later, at this switch, by the phase that renders them (screens spec §8). Insert immediately below this marker, never between the markers. -->
                 <ScrollViewer x:Name="RecipeSheetScroll" IsVisible="{Binding IsRecipeSheet}">
                   <rv:RecipeSheetView x:Name="RecipeSheetContent" DataContext="{Binding Recipe}" />
                 </ScrollViewer>
                 <!-- LANE ANCHOR U9: the sheet content for the kinds U9 claims (kinds: Node), the node card of the Context page. Insert immediately below this marker, never between the markers. -->
+                <!-- LANE ANCHOR U11a: the sheet content for the kinds U11a claims (kinds: Session), the session sheet. Insert immediately below this marker, never between the markers. -->
+                <ScrollViewer x:Name="SessionSheetScroll" IsVisible="{Binding IsSessionSheet}">
+                  <agv:SessionSheetView x:Name="SessionSheetContent" DataContext="{Binding AgentSheet}" />
+                </ScrollViewer>
               </Panel>
             </DockPanel>
           </DockPanel>

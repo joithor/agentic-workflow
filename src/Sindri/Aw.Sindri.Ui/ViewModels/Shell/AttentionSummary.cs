@@ -1,3 +1,4 @@
+using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
 
@@ -18,8 +19,9 @@ internal sealed record AttentionSummary(string Title, int Badge, TrayView Tray, 
     /// <param name="feed">The needs-you list, or null before it is known.</param>
     /// <param name="state">The shell's state.</param>
     /// <param name="now">The time the ages are read at.</param>
+    /// <param name="sessions">The status' session counts, or null when it serves none; they add a tooltip line only, never the badge or the title.</param>
     /// <returns>The summary.</returns>
-    internal static AttentionSummary For(NeedsYouFeed? feed, ShellState state, DateTimeOffset now)
+    internal static AttentionSummary For(NeedsYouFeed? feed, ShellState state, DateTimeOffset now, SessionCountsView? sessions = null)
     {
         var rows = feed?.Rows ?? [];
         var counts = feed?.Counts ?? new HomeCounts(Running: 0, WithYou: 0, Queued: 0);
@@ -29,7 +31,7 @@ internal sealed record AttentionSummary(string Title, int Badge, TrayView Tray, 
         return new AttentionSummary(
             badge > 0 ? Labels.TitleNeedsYou(badge) : Labels.Sindri,
             badge,
-            TrayFor(feed, state, now),
+            TrayFor(feed, state, now, sessions),
             feed is null ? "" : Labels.Summary(rows.Count, counts.Running, counts.WithYou, counts.Queued));
     }
 
@@ -39,13 +41,17 @@ internal sealed record AttentionSummary(string Title, int Badge, TrayView Tray, 
     internal static bool IsCounted(ShellState state) => state is ShellState.Normal or ShellState.Stale or ShellState.Unreadable;
 
     // The tray's own states win over the counts: only a running, fresh Sindri shows rows.
-    private static TrayView TrayFor(NeedsYouFeed? feed, ShellState state, DateTimeOffset now) => state switch
+    private static TrayView TrayFor(NeedsYouFeed? feed, ShellState state, DateTimeOffset now, SessionCountsView? sessions) => state switch
     {
-        ShellState.Normal => feed is null ? Plain(TrayState.Neutral, Labels.TrayRunning) : Counted(feed, now),
+        ShellState.Normal => WithAgents(feed is null ? Plain(TrayState.Neutral, Labels.TrayRunning) : Counted(feed, now), sessions),
         ShellState.NotRunning => Plain(TrayState.NotRunning, Labels.TrayNotRunning),
         ShellState.VersionMismatch or ShellState.Connecting or ShellState.Unreadable or ShellState.Stale => Plain(TrayState.Stale, Labels.TrayNotResponding),
         _ => throw new ArgumentOutOfRangeException(nameof(state), state, message: null),
     };
+
+    // A second tooltip line, "N agents · M asking", once the status serves session counts (collector spec CU-1).
+    private static TrayView WithAgents(TrayView tray, SessionCountsView? sessions) =>
+        sessions is null ? tray : tray with { Tooltip = $"{tray.Tooltip}\n{Labels.AgentsCounts(sessions.Live, sessions.Asking)}" };
 
     private static TrayView Plain(TrayState state, string tooltip) => new(state, tooltip, Labels.TrayOpen, Labels.TrayQuit);
 

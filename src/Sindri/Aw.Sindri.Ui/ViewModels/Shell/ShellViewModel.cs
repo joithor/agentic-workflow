@@ -79,6 +79,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         InitInstance();
         Recipe = new RecipeSheetViewModel(api);
         InitRecipe();
+        InitAgents(clipboard);
         InitContext(api, clipboard);
         Queue.PropertyChanged += OnQueueChanged;
         InitAnnouncements();
