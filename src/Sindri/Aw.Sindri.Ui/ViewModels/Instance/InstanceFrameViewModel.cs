@@ -251,6 +251,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         if (Expanded is null || !string.Equals(Expanded.Signature, expanded.Signature, StringComparison.Ordinal))
         {
             expanded.ChildRequested += (_, e) => OpenRequested?.Invoke(this, e);
+            expanded.ChildrenRequested += (_, _) => Focus(ChildrenFocus, key: null);
             Expanded = expanded;
         }
         else

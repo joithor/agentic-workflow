@@ -1,0 +1,7 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctx="using:Aw.Sindri.Ui.ViewModels.Context"
+             x:Class="Aw.Sindri.Ui.Views.Context.Review.MapReviewPanel"
+             x:DataType="ctx:MapReviewViewModel">
+  <!-- A seam: the stage that owns this view draws it here (U9 plan §4); nothing until then. -->
+</UserControl>
