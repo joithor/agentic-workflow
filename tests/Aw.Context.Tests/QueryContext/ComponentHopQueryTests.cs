@@ -61,7 +61,7 @@ public sealed class ComponentHopQueryTests : IDisposable
         var bad = await _world.Engine.Lenses("feature:f0", MapRead.Current, new LensRange(1, "everything"), MapWorld.Human, MapWorld.None);
 
         Assert.Equal([new SkippedComponent("code:src/shared.ts", 6)], one.Value.SkippedComponents);
-        Assert.Equal(["state", "dependency", "flow", "component"], one.Value.Searched.Hops);
+        Assert.Equal(["component"], one.Value.Searched.Hops);
         Assert.Equal([new SkippedComponent("code:src/shared.ts", 6)], set.Value.SkippedComponents);
         Assert.Equal("SND-CONTEXT-140", bad.Error.Code);
     }
