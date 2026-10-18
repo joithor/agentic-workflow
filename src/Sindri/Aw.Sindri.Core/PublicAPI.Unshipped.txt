@@ -1797,6 +1797,17 @@ Aw.Sindri.Core.Profile.EffectSettings.DispatchDelay.get -> System.TimeSpan
 Aw.Sindri.Core.Profile.EffectSettings.DispatchDelay.init -> void
 Aw.Sindri.Core.Profile.EffectSettings.EffectSettings(System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.BlockId>? Allowlist, System.TimeSpan DispatchDelay) -> void
 Aw.Sindri.Core.Profile.EffectSettings.Equals(Aw.Sindri.Core.Profile.EffectSettings? other) -> bool
+Aw.Sindri.Core.Profile.ForgeSettings
+Aw.Sindri.Core.Profile.ForgeSettings.<Clone>$() -> Aw.Sindri.Core.Profile.ForgeSettings!
+Aw.Sindri.Core.Profile.ForgeSettings.Adapter.get -> string?
+Aw.Sindri.Core.Profile.ForgeSettings.Adapter.init -> void
+Aw.Sindri.Core.Profile.ForgeSettings.Credential.get -> string?
+Aw.Sindri.Core.Profile.ForgeSettings.Credential.init -> void
+Aw.Sindri.Core.Profile.ForgeSettings.Deconstruct(out string? Adapter, out System.Collections.Generic.IReadOnlyList<string!>? Hosts, out string? Credential) -> void
+Aw.Sindri.Core.Profile.ForgeSettings.Equals(Aw.Sindri.Core.Profile.ForgeSettings? other) -> bool
+Aw.Sindri.Core.Profile.ForgeSettings.ForgeSettings(string? Adapter = null, System.Collections.Generic.IReadOnlyList<string!>? Hosts = null, string? Credential = null) -> void
+Aw.Sindri.Core.Profile.ForgeSettings.Hosts.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Profile.ForgeSettings.Hosts.init -> void
 Aw.Sindri.Core.Profile.IApprovals
 Aw.Sindri.Core.Profile.IApprovals.Save(Aw.Sindri.Core.Profile.LoadedProfile! profile, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Sindri.Core.Profile.IApprovedProfile
@@ -6492,6 +6503,9 @@ override Aw.Sindri.Core.Profile.Cadence.ToString() -> string!
 override Aw.Sindri.Core.Profile.EffectSettings.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Profile.EffectSettings.GetHashCode() -> int
 override Aw.Sindri.Core.Profile.EffectSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.ForgeSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.ForgeSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.ForgeSettings.ToString() -> string!
 override Aw.Sindri.Core.Profile.IndexSettings.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Profile.IndexSettings.GetHashCode() -> int
 override Aw.Sindri.Core.Profile.IndexSettings.ToString() -> string!
@@ -7815,6 +7829,8 @@ static Aw.Sindri.Core.Profile.EffectSettings.IsEffectId(string! entry) -> bool
 static Aw.Sindri.Core.Profile.EffectSettings.Of(Aw.Sindri.Core.Profile.SindriProfile! profile) -> Aw.Sindri.Core.Profile.EffectSettings!
 static Aw.Sindri.Core.Profile.EffectSettings.operator !=(Aw.Sindri.Core.Profile.EffectSettings? left, Aw.Sindri.Core.Profile.EffectSettings? right) -> bool
 static Aw.Sindri.Core.Profile.EffectSettings.operator ==(Aw.Sindri.Core.Profile.EffectSettings? left, Aw.Sindri.Core.Profile.EffectSettings? right) -> bool
+static Aw.Sindri.Core.Profile.ForgeSettings.operator !=(Aw.Sindri.Core.Profile.ForgeSettings? left, Aw.Sindri.Core.Profile.ForgeSettings? right) -> bool
+static Aw.Sindri.Core.Profile.ForgeSettings.operator ==(Aw.Sindri.Core.Profile.ForgeSettings? left, Aw.Sindri.Core.Profile.ForgeSettings? right) -> bool
 static Aw.Sindri.Core.Profile.IndexSettings.operator !=(Aw.Sindri.Core.Profile.IndexSettings? left, Aw.Sindri.Core.Profile.IndexSettings? right) -> bool
 static Aw.Sindri.Core.Profile.IndexSettings.operator ==(Aw.Sindri.Core.Profile.IndexSettings? left, Aw.Sindri.Core.Profile.IndexSettings? right) -> bool
 static Aw.Sindri.Core.Profile.LoadedProfile.operator !=(Aw.Sindri.Core.Profile.LoadedProfile? left, Aw.Sindri.Core.Profile.LoadedProfile? right) -> bool
@@ -8886,6 +8902,8 @@ Aw.Sindri.Core.Profile.RepoWorkflowSettings.Judge.init -> void
 Aw.Sindri.Core.Profile.RepoWorkflowSettings.RepoWorkflowSettings(Aw.Sindri.Core.Profile.JudgeSettings? Judge = null) -> void
 Aw.Sindri.Core.Profile.WorkflowSettings.Judge.get -> Aw.Sindri.Core.Profile.JudgeSettings?
 Aw.Sindri.Core.Profile.WorkflowSettings.Judge.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Forge.get -> Aw.Sindri.Core.Profile.ForgeSettings?
+Aw.Sindri.Core.Profile.WorkflowSettings.Forge.init -> void
 const Aw.Sindri.Core.Profile.JudgeProviders.Jev = "jev" -> string!
 const Aw.Sindri.Core.Profile.JudgeProviders.Rules = "rules" -> string!
 override Aw.Sindri.Core.Profile.JudgeSettings.Equals(object? obj) -> bool
@@ -8958,10 +8976,8 @@ Aw.Sindri.Core.Profile.RouteSettings.Equals(Aw.Sindri.Core.Profile.RouteSettings
 Aw.Sindri.Core.Profile.RouteSettings.RouteSettings(string? Startable = null) -> void
 Aw.Sindri.Core.Profile.RouteSettings.Startable.get -> string?
 Aw.Sindri.Core.Profile.RouteSettings.Startable.init -> void
-Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.JudgeSettings? Judge, out Aw.Sindri.Core.Profile.RouteSettings? Route) -> void
 Aw.Sindri.Core.Profile.WorkflowSettings.Route.get -> Aw.Sindri.Core.Profile.RouteSettings?
 Aw.Sindri.Core.Profile.WorkflowSettings.Route.init -> void
-Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.JudgeSettings? Judge = null, Aw.Sindri.Core.Profile.RouteSettings? Route = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Effects.IClaimRefs.Unmark(string! repository, string! reference, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
 Aw.Sindri.Core.Workflow.Engine.Effects.IWorkflowClaims.Release(Aw.Sindri.Core.Workflow.Engine.ItemKey item, Aw.Sindri.Core.Workflow.Engine.InstanceAddress owner, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
 Aw.Sindri.Core.Workflow.Engine.Rules.ChildResults
@@ -8977,3 +8993,204 @@ static Aw.Sindri.Core.Profile.RouteSettings.StartableOf(Aw.Sindri.Core.Profile.S
 static Aw.Sindri.Core.Profile.RouteSettings.operator !=(Aw.Sindri.Core.Profile.RouteSettings? left, Aw.Sindri.Core.Profile.RouteSettings? right) -> bool
 static Aw.Sindri.Core.Profile.RouteSettings.operator ==(Aw.Sindri.Core.Profile.RouteSettings? left, Aw.Sindri.Core.Profile.RouteSettings? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Rules.ChildResults.Outputs(Aw.Sindri.Core.Workflow.Recipes.Recipe! child, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! ended) -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>!
+Aw.Sindri.Core.Workflow.Blocks.JudgeProviderNames
+const Aw.Sindri.Core.Workflow.Blocks.JudgeProviderNames.Jev = "jev" -> string!
+const Aw.Sindri.Core.Workflow.Blocks.JudgeProviderNames.Rules = "rules" -> string!
+static Aw.Sindri.Core.Workflow.Blocks.JudgeProviderNames.Known.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Sessions.ClaudeRecord.IsT3.get -> bool
+Aw.Sindri.Core.Sessions.HostChain
+Aw.Sindri.Core.Sessions.HostHit
+Aw.Sindri.Core.Sessions.HostHit.<Clone>$() -> Aw.Sindri.Core.Sessions.HostHit!
+Aw.Sindri.Core.Sessions.HostHit.Deconstruct(out Aw.Sindri.Core.Sessions.HostKind Kind, out string! Name, out Aw.Sindri.Core.Sessions.ProcessEntry! Process, out Aw.Sindri.Core.Sessions.ProcessEntry? Shell) -> void
+Aw.Sindri.Core.Sessions.HostHit.Equals(Aw.Sindri.Core.Sessions.HostHit? other) -> bool
+Aw.Sindri.Core.Sessions.HostHit.HostHit(Aw.Sindri.Core.Sessions.HostKind Kind, string! Name, Aw.Sindri.Core.Sessions.ProcessEntry! Process, Aw.Sindri.Core.Sessions.ProcessEntry? Shell) -> void
+Aw.Sindri.Core.Sessions.HostHit.Kind.get -> Aw.Sindri.Core.Sessions.HostKind
+Aw.Sindri.Core.Sessions.HostHit.Kind.init -> void
+Aw.Sindri.Core.Sessions.HostHit.Name.get -> string!
+Aw.Sindri.Core.Sessions.HostHit.Name.init -> void
+Aw.Sindri.Core.Sessions.HostHit.Process.get -> Aw.Sindri.Core.Sessions.ProcessEntry!
+Aw.Sindri.Core.Sessions.HostHit.Process.init -> void
+Aw.Sindri.Core.Sessions.HostHit.Shell.get -> Aw.Sindri.Core.Sessions.ProcessEntry?
+Aw.Sindri.Core.Sessions.HostHit.Shell.init -> void
+Aw.Sindri.Core.Sessions.HostInfo.Ide.get -> string?
+Aw.Sindri.Core.Sessions.HostInfo.Ide.init -> void
+Aw.Sindri.Core.Sessions.HostInfo.Terminal.get -> Aw.Sindri.Core.Sessions.TerminalFacts?
+Aw.Sindri.Core.Sessions.HostInfo.Terminal.init -> void
+Aw.Sindri.Core.Sessions.HostInfo.Tmux.get -> Aw.Sindri.Core.Sessions.TmuxFacts?
+Aw.Sindri.Core.Sessions.HostInfo.Tmux.init -> void
+Aw.Sindri.Core.Sessions.HostKind
+Aw.Sindri.Core.Sessions.HostKind.Ide = 4 -> Aw.Sindri.Core.Sessions.HostKind
+Aw.Sindri.Core.Sessions.HostKind.Ssh = 1 -> Aw.Sindri.Core.Sessions.HostKind
+Aw.Sindri.Core.Sessions.HostKind.Terminal = 2 -> Aw.Sindri.Core.Sessions.HostKind
+Aw.Sindri.Core.Sessions.HostKind.Tmux = 0 -> Aw.Sindri.Core.Sessions.HostKind
+Aw.Sindri.Core.Sessions.HostKind.Warp = 3 -> Aw.Sindri.Core.Sessions.HostKind
+Aw.Sindri.Core.Sessions.HostQuery
+Aw.Sindri.Core.Sessions.HostQuery.<Clone>$() -> Aw.Sindri.Core.Sessions.HostQuery!
+Aw.Sindri.Core.Sessions.HostQuery.Agent.get -> Aw.Sindri.Core.Sessions.ProcessEntry!
+Aw.Sindri.Core.Sessions.HostQuery.Agent.init -> void
+Aw.Sindri.Core.Sessions.HostQuery.AgentEnvironment.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Core.Sessions.HostQuery.AgentEnvironment.init -> void
+Aw.Sindri.Core.Sessions.HostQuery.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<int, Aw.Sindri.Core.Sessions.ProcessEntry!>! Table, out Aw.Sindri.Core.Sessions.ProcessEntry! Agent, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! AgentEnvironment) -> void
+Aw.Sindri.Core.Sessions.HostQuery.Equals(Aw.Sindri.Core.Sessions.HostQuery? other) -> bool
+Aw.Sindri.Core.Sessions.HostQuery.HostQuery(System.Collections.Generic.IReadOnlyDictionary<int, Aw.Sindri.Core.Sessions.ProcessEntry!>! Table, Aw.Sindri.Core.Sessions.ProcessEntry! Agent, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! AgentEnvironment) -> void
+Aw.Sindri.Core.Sessions.HostQuery.RecordTmux.get -> string?
+Aw.Sindri.Core.Sessions.HostQuery.RecordTmux.init -> void
+Aw.Sindri.Core.Sessions.HostQuery.T3.get -> bool
+Aw.Sindri.Core.Sessions.HostQuery.T3.init -> void
+Aw.Sindri.Core.Sessions.HostQuery.Table.get -> System.Collections.Generic.IReadOnlyDictionary<int, Aw.Sindri.Core.Sessions.ProcessEntry!>!
+Aw.Sindri.Core.Sessions.HostQuery.Table.init -> void
+Aw.Sindri.Core.Sessions.HostRules
+Aw.Sindri.Core.Sessions.IHostSources
+Aw.Sindri.Core.Sessions.IHostSources.Environment(int pid) -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Core.Sessions.IHostSources.SocketOf(int serverPid) -> string?
+Aw.Sindri.Core.Sessions.IHostSources.Teams.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.TeamNames!>!
+Aw.Sindri.Core.Sessions.IHostSources.Terminals.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.TerminalName!>!
+Aw.Sindri.Core.Sessions.IHostSources.View(string! socket) -> Aw.Sindri.Core.Sessions.TmuxServerView?
+Aw.Sindri.Core.Sessions.ITeamNames
+Aw.Sindri.Core.Sessions.ITeamNames.Read() -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.TeamNames!>!
+Aw.Sindri.Core.Sessions.ITerminalNames
+Aw.Sindri.Core.Sessions.ITerminalNames.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.TerminalName!>!
+Aw.Sindri.Core.Sessions.ITmuxServers
+Aw.Sindri.Core.Sessions.ITmuxServers.Read(string! socket, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<Aw.Sindri.Core.Sessions.TmuxServerView!>!
+Aw.Sindri.Core.Sessions.IUnixSockets
+Aw.Sindri.Core.Sessions.IUnixSockets.Read() -> System.Collections.Generic.IReadOnlyDictionary<long, string!>!
+Aw.Sindri.Core.Sessions.TeamNames
+Aw.Sindri.Core.Sessions.TeamNames.<Clone>$() -> Aw.Sindri.Core.Sessions.TeamNames!
+Aw.Sindri.Core.Sessions.TeamNames.Deconstruct(out string! Team, out System.Collections.Generic.IReadOnlyList<string!>! Lanes) -> void
+Aw.Sindri.Core.Sessions.TeamNames.Equals(Aw.Sindri.Core.Sessions.TeamNames? other) -> bool
+Aw.Sindri.Core.Sessions.TeamNames.Lanes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Sessions.TeamNames.Lanes.init -> void
+Aw.Sindri.Core.Sessions.TeamNames.Team.get -> string!
+Aw.Sindri.Core.Sessions.TeamNames.Team.init -> void
+Aw.Sindri.Core.Sessions.TeamNames.TeamNames(string! Team, System.Collections.Generic.IReadOnlyList<string!>! Lanes) -> void
+Aw.Sindri.Core.Sessions.TerminalFacts
+Aw.Sindri.Core.Sessions.TerminalFacts.<Clone>$() -> Aw.Sindri.Core.Sessions.TerminalFacts!
+Aw.Sindri.Core.Sessions.TerminalFacts.Deconstruct(out string! Name, out int Pid) -> void
+Aw.Sindri.Core.Sessions.TerminalFacts.Equals(Aw.Sindri.Core.Sessions.TerminalFacts? other) -> bool
+Aw.Sindri.Core.Sessions.TerminalFacts.KittyListenOn.get -> string?
+Aw.Sindri.Core.Sessions.TerminalFacts.KittyListenOn.init -> void
+Aw.Sindri.Core.Sessions.TerminalFacts.KittyWindow.get -> string?
+Aw.Sindri.Core.Sessions.TerminalFacts.KittyWindow.init -> void
+Aw.Sindri.Core.Sessions.TerminalFacts.Name.get -> string!
+Aw.Sindri.Core.Sessions.TerminalFacts.Name.init -> void
+Aw.Sindri.Core.Sessions.TerminalFacts.Pid.get -> int
+Aw.Sindri.Core.Sessions.TerminalFacts.Pid.init -> void
+Aw.Sindri.Core.Sessions.TerminalFacts.TerminalFacts(string! Name, int Pid) -> void
+Aw.Sindri.Core.Sessions.TerminalFacts.WarpFocusUrl.get -> string?
+Aw.Sindri.Core.Sessions.TerminalFacts.WarpFocusUrl.init -> void
+Aw.Sindri.Core.Sessions.TerminalFacts.WeztermPane.get -> string?
+Aw.Sindri.Core.Sessions.TerminalFacts.WeztermPane.init -> void
+Aw.Sindri.Core.Sessions.TerminalFacts.XWindow.get -> string?
+Aw.Sindri.Core.Sessions.TerminalFacts.XWindow.init -> void
+Aw.Sindri.Core.Sessions.TerminalName
+Aw.Sindri.Core.Sessions.TerminalName.<Clone>$() -> Aw.Sindri.Core.Sessions.TerminalName!
+Aw.Sindri.Core.Sessions.TerminalName.Deconstruct(out string! Name, out System.Collections.Generic.IReadOnlyList<string!>! ProcessNames) -> void
+Aw.Sindri.Core.Sessions.TerminalName.Equals(Aw.Sindri.Core.Sessions.TerminalName? other) -> bool
+Aw.Sindri.Core.Sessions.TerminalName.Name.get -> string!
+Aw.Sindri.Core.Sessions.TerminalName.Name.init -> void
+Aw.Sindri.Core.Sessions.TerminalName.ProcessNames.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Sessions.TerminalName.ProcessNames.init -> void
+Aw.Sindri.Core.Sessions.TerminalName.TerminalName(string! Name, System.Collections.Generic.IReadOnlyList<string!>! ProcessNames) -> void
+Aw.Sindri.Core.Sessions.TmuxAttachLine
+Aw.Sindri.Core.Sessions.TmuxClient
+Aw.Sindri.Core.Sessions.TmuxClient.<Clone>$() -> Aw.Sindri.Core.Sessions.TmuxClient!
+Aw.Sindri.Core.Sessions.TmuxClient.Deconstruct(out int Pid, out string! Tty, out string! Session) -> void
+Aw.Sindri.Core.Sessions.TmuxClient.Equals(Aw.Sindri.Core.Sessions.TmuxClient? other) -> bool
+Aw.Sindri.Core.Sessions.TmuxClient.Pid.get -> int
+Aw.Sindri.Core.Sessions.TmuxClient.Pid.init -> void
+Aw.Sindri.Core.Sessions.TmuxClient.Session.get -> string!
+Aw.Sindri.Core.Sessions.TmuxClient.Session.init -> void
+Aw.Sindri.Core.Sessions.TmuxClient.TmuxClient(int Pid, string! Tty, string! Session) -> void
+Aw.Sindri.Core.Sessions.TmuxClient.Tty.get -> string!
+Aw.Sindri.Core.Sessions.TmuxClient.Tty.init -> void
+Aw.Sindri.Core.Sessions.TmuxFacts
+Aw.Sindri.Core.Sessions.TmuxFacts.<Clone>$() -> Aw.Sindri.Core.Sessions.TmuxFacts!
+Aw.Sindri.Core.Sessions.TmuxFacts.Deconstruct(out string? Socket, out string! SocketKind, out string? Session, out string? Pane) -> void
+Aw.Sindri.Core.Sessions.TmuxFacts.Equals(Aw.Sindri.Core.Sessions.TmuxFacts? other) -> bool
+Aw.Sindri.Core.Sessions.TmuxFacts.Pane.get -> string?
+Aw.Sindri.Core.Sessions.TmuxFacts.Pane.init -> void
+Aw.Sindri.Core.Sessions.TmuxFacts.Session.get -> string?
+Aw.Sindri.Core.Sessions.TmuxFacts.Session.init -> void
+Aw.Sindri.Core.Sessions.TmuxFacts.Socket.get -> string?
+Aw.Sindri.Core.Sessions.TmuxFacts.Socket.init -> void
+Aw.Sindri.Core.Sessions.TmuxFacts.SocketKind.get -> string!
+Aw.Sindri.Core.Sessions.TmuxFacts.SocketKind.init -> void
+Aw.Sindri.Core.Sessions.TmuxFacts.TmuxFacts(string? Socket, string! SocketKind, string? Session, string? Pane) -> void
+Aw.Sindri.Core.Sessions.TmuxPane
+Aw.Sindri.Core.Sessions.TmuxPane.<Clone>$() -> Aw.Sindri.Core.Sessions.TmuxPane!
+Aw.Sindri.Core.Sessions.TmuxPane.Deconstruct(out int PanePid, out string! Session, out int Window, out int Index, out string! Pane) -> void
+Aw.Sindri.Core.Sessions.TmuxPane.Equals(Aw.Sindri.Core.Sessions.TmuxPane? other) -> bool
+Aw.Sindri.Core.Sessions.TmuxPane.Index.get -> int
+Aw.Sindri.Core.Sessions.TmuxPane.Index.init -> void
+Aw.Sindri.Core.Sessions.TmuxPane.Pane.get -> string!
+Aw.Sindri.Core.Sessions.TmuxPane.Pane.init -> void
+Aw.Sindri.Core.Sessions.TmuxPane.PanePid.get -> int
+Aw.Sindri.Core.Sessions.TmuxPane.PanePid.init -> void
+Aw.Sindri.Core.Sessions.TmuxPane.Session.get -> string!
+Aw.Sindri.Core.Sessions.TmuxPane.Session.init -> void
+Aw.Sindri.Core.Sessions.TmuxPane.TmuxPane(int PanePid, string! Session, int Window, int Index, string! Pane) -> void
+Aw.Sindri.Core.Sessions.TmuxPane.Window.get -> int
+Aw.Sindri.Core.Sessions.TmuxPane.Window.init -> void
+Aw.Sindri.Core.Sessions.TmuxServerView
+Aw.Sindri.Core.Sessions.TmuxServerView.<Clone>$() -> Aw.Sindri.Core.Sessions.TmuxServerView!
+Aw.Sindri.Core.Sessions.TmuxServerView.Clients.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.TmuxClient!>!
+Aw.Sindri.Core.Sessions.TmuxServerView.Clients.init -> void
+Aw.Sindri.Core.Sessions.TmuxServerView.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.TmuxPane!>! Panes, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.TmuxClient!>! Clients) -> void
+Aw.Sindri.Core.Sessions.TmuxServerView.Equals(Aw.Sindri.Core.Sessions.TmuxServerView? other) -> bool
+Aw.Sindri.Core.Sessions.TmuxServerView.Panes.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.TmuxPane!>!
+Aw.Sindri.Core.Sessions.TmuxServerView.Panes.init -> void
+Aw.Sindri.Core.Sessions.TmuxServerView.TmuxServerView(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.TmuxPane!>! Panes, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.TmuxClient!>! Clients) -> void
+const Aw.Sindri.Core.Sessions.HostChain.MaxSteps = 32 -> int
+override Aw.Sindri.Core.Sessions.HostHit.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.HostHit.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.HostHit.ToString() -> string!
+override Aw.Sindri.Core.Sessions.HostQuery.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.HostQuery.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.HostQuery.ToString() -> string!
+override Aw.Sindri.Core.Sessions.TeamNames.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.TeamNames.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.TeamNames.ToString() -> string!
+override Aw.Sindri.Core.Sessions.TerminalFacts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.TerminalFacts.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.TerminalFacts.ToString() -> string!
+override Aw.Sindri.Core.Sessions.TerminalName.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.TerminalName.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.TerminalName.ToString() -> string!
+override Aw.Sindri.Core.Sessions.TmuxClient.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.TmuxClient.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.TmuxClient.ToString() -> string!
+override Aw.Sindri.Core.Sessions.TmuxFacts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.TmuxFacts.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.TmuxFacts.ToString() -> string!
+override Aw.Sindri.Core.Sessions.TmuxPane.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.TmuxPane.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.TmuxPane.ToString() -> string!
+override Aw.Sindri.Core.Sessions.TmuxServerView.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.TmuxServerView.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.TmuxServerView.ToString() -> string!
+static Aw.Sindri.Core.Sessions.HostChain.Ancestors(System.Collections.Generic.IReadOnlyDictionary<int, Aw.Sindri.Core.Sessions.ProcessEntry!>! table, Aw.Sindri.Core.Sessions.ProcessEntry! start) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.ProcessEntry!>!
+static Aw.Sindri.Core.Sessions.HostChain.Classify(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.ProcessEntry!>! chain, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.TerminalName!>! terminals, bool allowTmux) -> Aw.Sindri.Core.Sessions.HostHit?
+static Aw.Sindri.Core.Sessions.HostHit.operator !=(Aw.Sindri.Core.Sessions.HostHit? left, Aw.Sindri.Core.Sessions.HostHit? right) -> bool
+static Aw.Sindri.Core.Sessions.HostHit.operator ==(Aw.Sindri.Core.Sessions.HostHit? left, Aw.Sindri.Core.Sessions.HostHit? right) -> bool
+static Aw.Sindri.Core.Sessions.HostQuery.operator !=(Aw.Sindri.Core.Sessions.HostQuery? left, Aw.Sindri.Core.Sessions.HostQuery? right) -> bool
+static Aw.Sindri.Core.Sessions.HostQuery.operator ==(Aw.Sindri.Core.Sessions.HostQuery? left, Aw.Sindri.Core.Sessions.HostQuery? right) -> bool
+static Aw.Sindri.Core.Sessions.HostRules.Detect(Aw.Sindri.Core.Sessions.HostQuery! query, Aw.Sindri.Core.Sessions.IHostSources! sources) -> Aw.Sindri.Core.Sessions.HostInfo!
+static Aw.Sindri.Core.Sessions.HostRules.SocketKind(string? socket, string? session, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.TeamNames!>! teams) -> string!
+static Aw.Sindri.Core.Sessions.TeamNames.operator !=(Aw.Sindri.Core.Sessions.TeamNames? left, Aw.Sindri.Core.Sessions.TeamNames? right) -> bool
+static Aw.Sindri.Core.Sessions.TeamNames.operator ==(Aw.Sindri.Core.Sessions.TeamNames? left, Aw.Sindri.Core.Sessions.TeamNames? right) -> bool
+static Aw.Sindri.Core.Sessions.TerminalFacts.operator !=(Aw.Sindri.Core.Sessions.TerminalFacts? left, Aw.Sindri.Core.Sessions.TerminalFacts? right) -> bool
+static Aw.Sindri.Core.Sessions.TerminalFacts.operator ==(Aw.Sindri.Core.Sessions.TerminalFacts? left, Aw.Sindri.Core.Sessions.TerminalFacts? right) -> bool
+static Aw.Sindri.Core.Sessions.TerminalName.operator !=(Aw.Sindri.Core.Sessions.TerminalName? left, Aw.Sindri.Core.Sessions.TerminalName? right) -> bool
+static Aw.Sindri.Core.Sessions.TerminalName.operator ==(Aw.Sindri.Core.Sessions.TerminalName? left, Aw.Sindri.Core.Sessions.TerminalName? right) -> bool
+static Aw.Sindri.Core.Sessions.TmuxAttachLine.Argv(string! socket, string! session) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Sessions.TmuxAttachLine.Line(string! socket, string! session) -> string!
+static Aw.Sindri.Core.Sessions.TmuxClient.operator !=(Aw.Sindri.Core.Sessions.TmuxClient? left, Aw.Sindri.Core.Sessions.TmuxClient? right) -> bool
+static Aw.Sindri.Core.Sessions.TmuxClient.operator ==(Aw.Sindri.Core.Sessions.TmuxClient? left, Aw.Sindri.Core.Sessions.TmuxClient? right) -> bool
+static Aw.Sindri.Core.Sessions.TmuxFacts.operator !=(Aw.Sindri.Core.Sessions.TmuxFacts? left, Aw.Sindri.Core.Sessions.TmuxFacts? right) -> bool
+static Aw.Sindri.Core.Sessions.TmuxFacts.operator ==(Aw.Sindri.Core.Sessions.TmuxFacts? left, Aw.Sindri.Core.Sessions.TmuxFacts? right) -> bool
+static Aw.Sindri.Core.Sessions.TmuxPane.operator !=(Aw.Sindri.Core.Sessions.TmuxPane? left, Aw.Sindri.Core.Sessions.TmuxPane? right) -> bool
+static Aw.Sindri.Core.Sessions.TmuxPane.operator ==(Aw.Sindri.Core.Sessions.TmuxPane? left, Aw.Sindri.Core.Sessions.TmuxPane? right) -> bool
+static Aw.Sindri.Core.Sessions.TmuxServerView.operator !=(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
+static Aw.Sindri.Core.Sessions.TmuxServerView.operator ==(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
+Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.JudgeSettings? Judge, out Aw.Sindri.Core.Profile.ForgeSettings? Forge, out Aw.Sindri.Core.Profile.RouteSettings? Route) -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.JudgeSettings? Judge = null, Aw.Sindri.Core.Profile.ForgeSettings? Forge = null, Aw.Sindri.Core.Profile.RouteSettings? Route = null) -> void

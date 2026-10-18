@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text.Json;
-using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Recipes;
 
@@ -40,7 +39,7 @@ internal sealed partial class BlockRules
     }
 
     /// <summary>
-    /// A Judge Step's literal 'providers' narrows the profile's list (DT-J plan Q8): a name outside <see cref="JudgeProviders.Known"/> would silently drop
+    /// A Judge Step's literal 'providers' narrows the profile's list (DT-J plan Q8): a name outside <see cref="JudgeProviderNames.Known"/> would silently drop
     /// every provider, so it is refused at validate time (RCP-BLOCK-003). A fact value is no list of provider names either.
     /// </summary>
     private static IEnumerable<RecipeFinding> ProviderLists(BlockReference reference, BlockDescriptor descriptor, RecipeSource source)
@@ -51,14 +50,14 @@ internal sealed partial class BlockRules
         }
 
         var path = $"{reference.Path}.with.{JudgeProvidersParameter}";
-        var known = string.Join(", ", JudgeProviders.Known);
+        var known = string.Join(", ", JudgeProviderNames.Known);
         if (value.Fact is not null)
         {
             yield return source.Finding("RCP-BLOCK-003", path, $"parameter 'providers' of '{descriptor.Id.Value}' takes a list of provider names, not a fact", $"give it a list of {known}, or {{ profile: workflow.judge.providers }}");
         }
         else if (value.Literal is { ValueKind: JsonValueKind.Array } list)
         {
-            foreach (var name in list.EnumerateArray().Where(static e => e.ValueKind == JsonValueKind.String).Select(static e => e.GetString() ?? string.Empty).Where(static n => !JudgeProviders.Known.Contains(n, StringComparer.Ordinal)))
+            foreach (var name in list.EnumerateArray().Where(static e => e.ValueKind == JsonValueKind.String).Select(static e => e.GetString() ?? string.Empty).Where(static n => !JudgeProviderNames.Known.Contains(n, StringComparer.Ordinal)))
             {
                 yield return source.Finding("RCP-BLOCK-003", path, $"provider '{name}' isn't one of {known}", $"use one of {known}");
             }

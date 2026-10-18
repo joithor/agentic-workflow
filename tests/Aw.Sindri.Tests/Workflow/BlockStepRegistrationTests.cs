@@ -36,7 +36,7 @@ public sealed class BlockStepRegistrationTests
     public void The_contract_bases_enumerate_block_Steps_beside_the_other_runtime_kinds()
     {
         // why: the bases keep their kinds private; a block Step they cannot enumerate would leave a descriptor-only contract green after J3 registers its runtime
-        var kinds = (Type[])typeof(Aw.Sindri.Testing.Workflow.DescriptorContract).GetField("_runtimeKinds", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!.GetValue(null)!;
+        var kinds = (Type[])typeof(Testing.Workflow.DescriptorContract).GetField("_runtimeKinds", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!.GetValue(null)!;
 
         Assert.Contains(typeof(IBlockStep), kinds);
     }

@@ -47,12 +47,18 @@ internal static class ApiGolden
     }
 
     /// <summary>Checks <paramref name="body"/> (JSON as served by the host in <paramref name="home"/>) against its golden file.</summary>
-    public static void Match(string body, string home, string slug, string scenario) =>
+    public static void Match(string body, string home, string slug, string scenario) => Match(body, home, slug, scenario, []);
+
+    /// <summary>
+    /// Checks <paramref name="body"/> as <see cref="Match(string, string, string, string)"/> does, after <paramref name="masks"/>
+    /// masks the values a served answer draws at run time (an instance's id, its timestamps).
+    /// </summary>
+    public static void Match(string body, string home, string slug, string scenario, IReadOnlyList<NormalizationRule> masks) =>
         Golden.Match(
             Reindent(body),
             typeof(ApiGolden).Assembly,
             PathOf(slug, scenario),
-            new Normalization(_traceId, _applyFile, new NormalizationRule("home", System.Text.RegularExpressions.Regex.Escape(home), "<home>")));
+            new Normalization([_traceId, _applyFile, new NormalizationRule("home", System.Text.RegularExpressions.Regex.Escape(home), "<home>"), .. masks]));
 
     /// <summary>The JSON re-indented with two spaces and a final newline; keys, order and values as served.</summary>
     public static string Reindent(string json)

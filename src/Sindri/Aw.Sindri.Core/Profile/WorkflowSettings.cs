@@ -12,6 +12,7 @@ namespace Aw.Sindri.Core.Profile;
 /// <param name="Effects">The effect allowlist (§5.7, RCP-EFFECT-001): the 'effect.*' ids a recipe may dispatch. Absent: RCP-EFFECT-001 is skipped and every recipe effect is refused at dispatch (SND-WF-011). Engine P6 unit (d) checks it.</param>
 /// <param name="DispatchDelay">The undo window before an effect's activity runs (§5.7; default 10s; the dev profile sets 60s). Engine P6 unit (d) checks it.</param>
 /// <param name="Judge">The 'judge:' section (DT-J plan Q8): which providers a Judge Step may ask (<see cref="JudgeProviders"/>).</param>
+/// <param name="Forge">The forge port's settings (PR babysitter spec W27): adapter, hosts and credential source.</param>
 /// <param name="Route">The 'route:' section (engine P7 plan D8): whether the router stub lets routed items start (<see cref="RouteSettings"/>).</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record WorkflowSettings(
@@ -20,4 +21,5 @@ public sealed record WorkflowSettings(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<string>? Effects = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? DispatchDelay = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] JudgeSettings? Judge = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ForgeSettings? Forge = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] RouteSettings? Route = null);
