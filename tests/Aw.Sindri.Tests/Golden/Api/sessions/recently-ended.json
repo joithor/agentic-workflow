@@ -1,0 +1,97 @@
+{
+  "sessions": [
+    {
+      "ref": "codex/bbbbbbbb-0000-4000-8000-000000000002",
+      "provider": "codex",
+      "providerLabel": "Codex",
+      "id": "bbbbbbbb-0000-4000-8000-000000000002",
+      "idKnown": true,
+      "state": "asking",
+      "asking": {
+        "reason": "approval",
+        "tool": "Bash",
+        "since": "2026-10-16T12:01:00.0000000Z"
+      },
+      "stateSource": "record",
+      "estimated": false,
+      "repo": "web",
+      "worktree": null,
+      "host": {
+        "kind": "warp",
+        "label": "Warp",
+        "socketKind": null,
+        "attachedClients": null,
+        "terminal": "warp",
+        "session": null,
+        "pane": null,
+        "socket": null
+      },
+      "lane": null,
+      "launchId": null,
+      "startedAt": null,
+      "since": "2026-10-16T12:01:00.0000000Z",
+      "focus": {
+        "method": "none",
+        "possible": false,
+        "why": "pending:CO-4a"
+      },
+      "title": null,
+      "pid": 222
+    }
+  ],
+  "recentlyEnded": [
+    {
+      "session": {
+        "ref": "claude-code/aaaaaaaa-0000-4000-8000-000000000001",
+        "provider": "claude-code",
+        "providerLabel": "Claude Code",
+        "id": "aaaaaaaa-0000-4000-8000-000000000001",
+        "idKnown": true,
+        "state": "running",
+        "asking": null,
+        "stateSource": "record",
+        "estimated": false,
+        "repo": "api",
+        "worktree": null,
+        "host": {
+          "kind": "tmux",
+          "label": "tmux · Warp",
+          "socketKind": "default",
+          "attachedClients": 1,
+          "terminal": "warp",
+          "session": "main",
+          "pane": "%3",
+          "socket": null
+        },
+        "lane": {
+          "team": "sindri",
+          "lane": "ideas"
+        },
+        "launchId": null,
+        "startedAt": "2026-10-16T11:30:00.0000000Z",
+        "since": "2026-10-16T12:00:00.0000000Z",
+        "focus": {
+          "method": "none",
+          "possible": false,
+          "why": "pending:CO-4a"
+        },
+        "title": "private title",
+        "pid": 111
+      },
+      "endedAt": "2026-10-16T12:04:00.0000000Z",
+      "resume": [
+        "claude",
+        "--resume",
+        "aaaaaaaa-0000-4000-8000-000000000001"
+      ]
+    }
+  ],
+  "problems": [],
+  "counts": {
+    "live": 1,
+    "asking": 1,
+    "outsideWorkflow": 1
+  },
+  "empty": null,
+  "asOf": "2026-10-16T12:05:00.0000000Z"
+}

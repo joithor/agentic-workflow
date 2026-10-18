@@ -145,10 +145,34 @@ socket, the terminals and the Meta teams), which `Features/Sessions/PassHostSour
 CO-2a (discovery): `Aw.Sindri.Core/Sessions/` (the records, the pure rules `SessionLiveness`, `AgentProcessRules`, `SessionStateRules.Merge`,
 `FleetChangeRules.Diff`/`Restore`, `EnvironmentAllowlist`, the ports), `Aw.Sindri.Core/Launch/` and `Infrastructure/Launch/` (the minimal launcher reader and agent
 catalog, CA-0), `Infrastructure/Sessions/` (`ProcProcessTable`, `ClaudeSessionRecords`, `FleetStateFiles`, `TranscriptFiles`, `SessionSnapshotStore`),
-`Features/Sessions/` (the pass, `RecordFleetChanges`, `RestoreFleetHistory`) and `Host/Server/SessionCollectorHost`. Host detection landed in CO-2b (the next section); the routes and the CLI are CO-3. The event is `fleet.changed`; the codes are `SND-SESSION-001`
+`Features/Sessions/` (the pass, `RecordFleetChanges`, `RestoreFleetHistory`) and `Host/Server/SessionCollectorHost`. Host detection landed in CO-2b (the previous section); the routes and the CLI are CO-3 (the section below). The event is `fleet.changed`; the codes are `SND-SESSION-001`
 (a source failed), `-002` (`unsupported-platform`, `proc-unreadable`, `disabled`) and `-003` (a test override) in `docs/csharp/sindri.md`. The snapshot over
 `tests/fixtures/sessions/` is pinned by `tests/Aw.Sindri.Tests/Sessions/Golden/snapshot-discovery.json`. `LaunchId` (the engine's, `Core/Workflow/Engine/LaunchId.cs`, `LCH-` and 32 hex) is the
 typed id of `AW_SINDRI_LAUNCH`; a value of another shape is dropped.
+
+## Routes and CLI (CO-3)
+
+`GET /sindri/sessions?provider=&state=&repo=&inWorkflow=` (`ListSessions`, CA-1) and `GET /sindri/sessions/{provider}/{id}` (`GetSession`, CA-2) read the collector's in-memory
+snapshot; both are queries and have no catalog row. `Core/Sessions/SessionRows` is the one place that turns an `ObservedSession` into a `SessionRow` and decides who sees what.
+
+- **Callers:** a human or service caller sees every session. A `session` caller sees only the sessions whose repo is its `X-Sindri-Repo` (a session with no repo header sees none), and
+  `title`, `pid`, `host.session`, `host.pane`, `recentlyEnded[].resume`, `cwd`, `host.socket` and `stateHistory` are null for it. The 404 of `GetSession` is the same for an unknown ref
+  and one in another repo.
+- **Row:** `ref`, `provider`, `providerLabel`, `id`, `idKnown`, `state`, `asking`, `stateSource` (`none`, `record`, `hook`, `transcript`), `estimated`, `repo`, `worktree` (the directory
+  below the repo's checkout in the approved profile, else null), `host{kind, label, socketKind, attachedClients, terminal}`, `lane{team, lane}`, `launchId`, `startedAt`, `since`,
+  `focus`. `focus` is `{method: none, possible: false, why: pending:CO-4a}` until CO-4a (the `FocusSession` catalog row says `pending:CO-4a` too). `item` and `instance` come with CA-6.
+  `inWorkflow` means "has a Sindri launch" until the launch join exists.
+- **`SessionList`:** `sessions`, `recentlyEnded` (each `{session, endedAt, resume}`), `problems`, `counts{live, asking, outsideWorkflow}` (over what the caller may see, before the
+  filters), `empty` (`No agent sessions are running.` when no row is shown), `asOf` (the last pass). Before the first pass the list is empty. A `SND-SESSION-002` problem in the pass
+  replaces the list (`503`, `detail` the reason); `-001` and `-003` stay problem rows.
+- **`SessionView`:** `{session, cwd, stateHistory, asOf}`. `stateHistory` is the snapshot's `History` (`StateHistoryRules`): per live session, the first state and each change of state or
+  asking reason, at most 20, oldest first, in memory for this Sindri run.
+- **Status:** `GET /status` has `sessions{live, asking, problems}`.
+- **CLI:** `sindri agents [--provider P] [--state S] [--repo R] [--json]` and `sindri agents show <provider>/<id> [--json]` (`Host/Commands/AgentsVerbs`) call the routes and never
+  start the control plane. Exit 0 (an empty list too), 1 when Sindri isn't running (`SND-API-001`) or a problem row is present, 2 on usage or another error. `--json` is the raw body.
+- **Goldens:** `tests/Aw.Sindri.Tests/Golden/Api/sessions/` (`empty`, `fixture-three-providers`, `session-scoped`, `problems-source-failed`, `recently-ended`, `unsupported-platform`,
+  `proc-unreadable`, `disabled`), `sessions-id/` (`claude-tmux`, `codex-hook`, `not-found`, `session-caller-hidden-fields`) and `status/sessions.json`, from
+  `ApiGoldens/SessionScenarios` (the snapshot is published into the host's store). `Aw.Sindri.Ui.Tests` reads every API golden and is in the gate.
 
 ## API rows for review
 

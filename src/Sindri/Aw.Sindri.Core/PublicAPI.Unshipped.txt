@@ -9186,3 +9186,14 @@ static Aw.Sindri.Core.Sessions.SessionRow.operator ==(Aw.Sindri.Core.Sessions.Se
 static Aw.Sindri.Core.Sessions.SessionStateEntry.operator !=(Aw.Sindri.Core.Sessions.SessionStateEntry? left, Aw.Sindri.Core.Sessions.SessionStateEntry? right) -> bool
 static Aw.Sindri.Core.Sessions.SessionStateEntry.operator ==(Aw.Sindri.Core.Sessions.SessionStateEntry? left, Aw.Sindri.Core.Sessions.SessionStateEntry? right) -> bool
 static readonly Aw.Sindri.Core.SindriErrors.SessionNotFound -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Sessions.SessionRows
+Aw.Sindri.Core.Sessions.StateHistoryRules
+const Aw.Sindri.Core.Sessions.StateHistoryRules.Cap = 20 -> int
+static Aw.Sindri.Core.Sessions.SessionRows.Of(Aw.Sindri.Core.Sessions.ObservedSession! session, Aw.Sindri.Core.Launch.AgentEntry? entry, string? repoPath, bool human) -> Aw.Sindri.Core.Sessions.SessionRow!
+static Aw.Sindri.Core.Sessions.SessionRows.Resume(Aw.Sindri.Core.Sessions.ObservedSession! session, Aw.Sindri.Core.Launch.AgentEntry? entry) -> System.Collections.Generic.IReadOnlyList<string!>?
+static Aw.Sindri.Core.Sessions.SessionRows.SeesHumanFields(Aw.Sindri.Core.Commands.CallerContext! caller) -> bool
+static Aw.Sindri.Core.Sessions.SessionRows.Unavailable(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionProblem!>! problems) -> Aw.Kernel.Error?
+static Aw.Sindri.Core.Sessions.SessionRows.Visible(Aw.Sindri.Core.Commands.CallerContext! caller, Aw.Sindri.Core.Sessions.ObservedSession! session) -> bool
+static Aw.Sindri.Core.Sessions.SessionRows.WithSocket(Aw.Sindri.Core.Sessions.SessionRow! row, Aw.Sindri.Core.Sessions.ObservedSession! session) -> Aw.Sindri.Core.Sessions.SessionRow!
+static Aw.Sindri.Core.Sessions.SessionRows.Worktree(string? cwd, string? repoPath) -> string?
+static Aw.Sindri.Core.Sessions.StateHistoryRules.Next(System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Sessions.SessionRef, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionStateEntry!>!>! previous, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.ObservedSession!>! sessions) -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Sessions.SessionRef, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionStateEntry!>!>!

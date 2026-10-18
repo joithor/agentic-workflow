@@ -1,0 +1,42 @@
+{
+  "running": true,
+  "pid": 4242,
+  "epoch": 1,
+  "leaseExpiresAt": "2026-01-01T00:01:00.0000000Z",
+  "profile": {
+    "approved": null,
+    "live": "70e1581b3ecaf617318482f6b0844b67f79a287a7136b4e4b6ff5d26005e4261",
+    "changedSinceApproval": false,
+    "problem": null,
+    "source": "<home>/profile/profile.yaml",
+    "needsApproval": true
+  },
+  "services": [],
+  "apiVersion": 1,
+  "views": {
+    "cursor": 0,
+    "ledgerHead": 1,
+    "projectedAt": null,
+    "rebuilding": false,
+    "stalled": false,
+    "stalledAt": null,
+    "stalledType": null,
+    "text": null
+  },
+  "health": {
+    "word": "degraded",
+    "problems": [
+      {
+        "code": "SND-PROFILE-005",
+        "text": "Not approved: run `sindri profile approve`",
+        "clause": "the profile isn't approved"
+      }
+    ],
+    "sentence": "Sindri is degraded: the profile isn't approved."
+  },
+  "sessions": {
+    "live": 3,
+    "asking": 1,
+    "problems": 1
+  }
+}

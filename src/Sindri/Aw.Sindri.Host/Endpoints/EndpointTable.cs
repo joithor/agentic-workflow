@@ -39,6 +39,8 @@ internal static class EndpointTable
         _ = queries.MapListInstances();
         _ = queries.MapListOutbox();
         _ = queries.MapListServices();
+        _ = queries.MapListSessions();
+        _ = queries.MapGetSession();
         _ = queries.MapListRecipes();
         _ = queries.MapPingProcess();
         _ = queries.MapReadLedger();

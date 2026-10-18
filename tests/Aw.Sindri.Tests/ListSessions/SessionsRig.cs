@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Infrastructure.Launch;
@@ -16,6 +17,12 @@ internal sealed class SessionsRig
     public const string Launch = "LCH-00000000000000000000000000000001";
 
     private static readonly DateTimeOffset _t0 = SessionData.T0;
+
+    public SessionsRig()
+    {
+        var profile = SliceHarness.Profile();
+        _ = Base.Profiles.Save(profile with { Profile = profile.Profile with { Repos = [new RepoEntry("api", "/work/api"), new RepoEntry("web", "/work/web")] } }, Token).AsTask().GetAwaiter().GetResult();
+    }
 
     public SliceHarness Base { get; } = new();
 
