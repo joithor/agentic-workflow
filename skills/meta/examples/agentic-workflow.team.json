@@ -55,7 +55,7 @@
       }
     }
   },
-  "resources": { "diskFloorGb": 30, "memFloorGb": 8, "swapHighPct": 90 },
+  "resources": { "diskFloorGb": 30, "memFloorGb": 8 },
   "context": { "recycleAt": 300000 },
   "builders": { "maxPerLane": 4, "worktreeGb": 4 },
   "heavy": { "cap": 3, "reserve": [ { "minDepth": 3, "slots": 1 }, { "minDepth": 5, "slots": 2 }, { "minDepth": 7, "slots": "all" } ] },

@@ -40,7 +40,7 @@ internal static class HealthCommand
         var host = health.Host;
         return string.Create(
             CultureInfo.InvariantCulture,
-            $"memory: {host.MemAvailableKb / 1024} MB available of {host.MemTotalKb / 1024} MB ({host.AvailablePercent}%){(health.MemoryLow ? " LOW" : string.Empty)}; swap used {host.SwapUsedKb / 1024} MB; disk free {host.DiskFreeBytes / (1024 * 1024 * 1024)} GB");
+            $"memory: {host.MemAvailableKb / 1024} MB available of {host.MemTotalKb / 1024} MB ({host.AvailablePercent}%){(health.MemoryLow ? " LOW" : string.Empty)}; swap used {host.SwapUsedKb / 1024} MB (informational); disk free {host.DiskFreeBytes / (1024 * 1024 * 1024)} GB");
     }
 
     private static IEnumerable<string> Adaptation(HealthResponse health)

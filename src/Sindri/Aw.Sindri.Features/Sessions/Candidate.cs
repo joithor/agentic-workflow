@@ -19,5 +19,7 @@ internal sealed record Candidate(ProcessEntry Process, AgentEntry Agent, Session
 
     internal string? TranscriptHint { get; init; }
 
+    internal HostInfo Host { get; init; } = HostInfo.Unknown;
+
     internal SessionRef Ref => new(Agent.Id, Session);
 }

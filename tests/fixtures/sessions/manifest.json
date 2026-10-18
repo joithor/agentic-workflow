@@ -35,6 +35,14 @@
       "role": "kitty"
     },
     {
+      "pid": 301,
+      "role": "tmux client attached to session api (its terminal: kitty, through shell 305)"
+    },
+    {
+      "pid": 305,
+      "role": "kitty-shell of the tmux client (KITTY_WINDOW_ID=9)"
+    },
+    {
       "pid": 310,
       "role": "kitty-shell"
     },

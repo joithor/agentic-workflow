@@ -238,7 +238,7 @@ public sealed class WatchTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Nearly_full_swap_counts_as_low_memory_even_with_memory_to_spare()
+    public async Task Nearly_full_swap_is_not_low_memory_while_ram_is_above_the_floor()
     {
         await _world.Ready();
         _world.Resources.Resources = new HostResources(64_000_000, 40_000_000, SwapUsedKb: 9_500_000, DiskFreeBytes: 80_000_000_000, SwapTotalKb: 10_000_000);
@@ -246,7 +246,7 @@ public sealed class WatchTests
 
         _ = await Watch(TimeSpan.FromSeconds(240));
 
-        Assert.Equal(["MEMORY LOW"], _lines.Where(l => l.StartsWith("MEMORY", StringComparison.Ordinal)), StringComparer.Ordinal);
+        Assert.DoesNotContain(_lines, l => l.StartsWith("MEMORY", StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]
