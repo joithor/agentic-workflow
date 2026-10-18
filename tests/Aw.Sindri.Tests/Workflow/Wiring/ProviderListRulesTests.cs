@@ -41,7 +41,7 @@ public sealed class ProviderListRulesTests
         Assert.Empty(Check(Judge(new WithValue(Literal: null, Fact: null, "workflow.judge.providers"))));
     }
 
-    private static IReadOnlyList<Aw.Sindri.Core.Workflow.Validation.RecipeFinding> Check(Recipe recipe) =>
+    private static IReadOnlyList<Core.Workflow.Validation.RecipeFinding> Check(Recipe recipe) =>
         CheckBlocks(recipe, new Located("r.yaml", [], Engine.EngineFixture.Catalog));
 
     private static Recipe Judge(WithValue providers) =>
