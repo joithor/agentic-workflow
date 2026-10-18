@@ -183,31 +183,31 @@
       "code": "SND-LAUNCH-018",
       "reason": "no-key",
       "text": "Sindri couldn't get a short-lived GitHub token for this Step: the agent GitHub key is missing. Retry the Step, or do it at your desk.",
-      "attendedText": "Sindri couldn't get a short-lived GitHub token for this Step: the agent GitHub key is missing. Retry the Step, or do it at your desk."
+      "attendedText": "Sindri couldn't get a short-lived GitHub token for this session: the agent GitHub key is missing. Retry the session."
     },
     {
       "code": "SND-LAUNCH-018",
       "reason": "http-<status>",
       "text": "Sindri couldn't get a short-lived GitHub token for this Step: GitHub refused the request (`<status>`). Retry the Step, or do it at your desk.",
-      "attendedText": "Sindri couldn't get a short-lived GitHub token for this Step: GitHub refused the request (`<status>`). Retry the Step, or do it at your desk."
+      "attendedText": "Sindri couldn't get a short-lived GitHub token for this session: GitHub refused the request (`<status>`). Retry the session."
     },
     {
       "code": "SND-LAUNCH-018",
       "reason": "no-network",
       "text": "Sindri couldn't get a short-lived GitHub token for this Step: there is no network to GitHub. Retry the Step, or do it at your desk.",
-      "attendedText": "Sindri couldn't get a short-lived GitHub token for this Step: there is no network to GitHub. Retry the Step, or do it at your desk."
+      "attendedText": "Sindri couldn't get a short-lived GitHub token for this session: there is no network to GitHub. Retry the session."
     },
     {
       "code": "SND-LAUNCH-019",
       "reason": "memory",
       "text": "This Step ran out of memory (`<limit>`) after `<time>`. Its work so far is kept on branch `<name>`. Raise `sandbox.limits.memory` in the profile (now `<limit>`; for example `<1.5 ×>`; a re-approval), then run the Step again; or do it at your desk.",
-      "attendedText": "This Step ran out of memory (`<limit>`) after `<time>`. Its work so far is kept on branch `<name>`. Raise `sandbox.limits.memory` in the profile (now `<limit>`; for example `<1.5 ×>`; a re-approval), then run the Step again; or do it at your desk."
+      "attendedText": "This session ran out of memory (`<limit>`) after `<time>`. Raise `sandbox.limits.memory` in the profile (now `<limit>`; for example `<1.5 ×>`; a re-approval), then open again."
     },
     {
       "code": "SND-LAUNCH-019",
       "reason": "wall",
       "text": "This Step ran out of time after `<time>`. Its work so far is kept on branch `<name>`. Run it again, or do it at your desk.",
-      "attendedText": "This Step ran out of time after `<time>`. Its work so far is kept on branch `<name>`. Run it again, or do it at your desk."
+      "attendedText": "This session ran out of time after `<time>`. Open it again."
     },
     {
       "code": "SND-LAUNCH-020",

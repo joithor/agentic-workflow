@@ -69,11 +69,12 @@ public sealed class SandboxWireTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Sandbox_denied_and_limit_hit_have_their_wire_shapes()
-    {
+    public void Sandbox_denied_has_its_wire_shape() =>
         Match(JsonSerializer.Serialize(new SandboxDenied(A.FirstLaunchId, DenialKind.Network, "github.com", "group:github-off", 10), Json), "sandbox-denied.json");
+
+    [Fact, Trait("Lane", "unit")]
+    public void Sandbox_limit_hit_has_its_wire_shape() =>
         Match(JsonSerializer.Serialize(new SandboxLimitHit(A.FirstLaunchId, LimitHitKind.Pids, 2048), Json), "sandbox-limit-hit.json");
-    }
 
     [Fact, Trait("Lane", "unit")]
     public void Sandbox_events_are_public_and_invalidate_a_view()
