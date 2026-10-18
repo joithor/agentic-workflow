@@ -134,6 +134,7 @@ public sealed class SindriApiClientContextTests
         Assert.All(handler.Requests, r => Assert.Equal(("POST", "/sindri/context/map/review", "human", "ui", null), (r.Method, r.Path, r.Caller, r.Client, r.Terminal)));
         Assert.Equal(2, server.ReviewCalls.Count);
         Assert.Equal([DeskVerb.Undo, DeskVerb.Drop], server.ReviewCalls.Select(c => c.Verb));
+        Assert.Equal(["undo", "drop"], handler.ReviewBodies.Select(b => (string)JsonNode.Parse(b)!["verb"]!), StringComparer.Ordinal);   // the verb as it goes on the wire, not as the app's enum reads it back
         Assert.Equal([written], server.ReviewCalls[0].Overrides!, StringComparer.Ordinal);
         Assert.Equal(written, server.ReviewCalls[1].Override);
     }

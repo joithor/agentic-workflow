@@ -21,6 +21,19 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
     public IReadOnlyList<SeenRequest> Requests => [.. _requests];
 
     private readonly List<SeenRequest> _requests = [];
+    private readonly List<string> _reviewBodies = [];
+
+    /// <summary>The raw bodies the review route received, as the client wrote them (so a test checks the wire, not a round trip).</summary>
+    public IReadOnlyList<string> ReviewBodies
+    {
+        get
+        {
+            lock (_requests)
+            {
+                return [.. _reviewBodies];
+            }
+        }
+    }
 
     /// <summary>When set, the token Sindri holds: a request without it is refused with 403 SND-AUTH-001, as Sindri's caller check does.</summary>
     public string? RequiredToken { get; set; }
@@ -104,6 +117,12 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
         var uri = request.RequestUri!; // why: HttpClient always sets it on a sent request
         if (request.Method == HttpMethod.Post && uri.AbsolutePath.EndsWith("/map/review", StringComparison.Ordinal))
         {
+            var sent = await request.Content!.ReadAsStringAsync(cancellationToken).ConfigureAwait(false); // why: the client always sends a body on this POST
+            lock (_requests)
+            {
+                _reviewBodies.Add(sent);
+            }
+
             _ = await server.ReviewDecision(uri, await Body<ReviewDecisionRequest>(request, cancellationToken), cancellationToken);
             return Answer(server.ReviewDecided);
         }

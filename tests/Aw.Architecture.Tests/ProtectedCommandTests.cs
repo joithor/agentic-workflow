@@ -68,8 +68,9 @@ public sealed class ProtectedCommandTests
 
     /// <summary>
     /// The routes only protected rows serve. One route can carry many verbs, class by verb (a desk accept and a protected merge
-    /// share POST /context/map/review, and a GET reads it), so a shared route is not banned from the app: the type half of the
-    /// rule already bans sending a protected verb, since that needs a ChallengeAnswer.
+    /// share POST /context/map/review, and a GET reads it), so a shared route is not banned from the app: what the app may send on
+    /// it is pinned by Every_verb_the_app_can_send_on_the_shared_review_route_is_a_non_protected_catalog_row (its closed DeskVerb set;
+    /// the type half sees no protected verb here, the app's review body having no ChallengeAnswer).
     /// </summary>
     /// <param name="rows">The catalog's rows.</param>
     /// <returns>The routes no desk or other row serves.</returns>
@@ -88,13 +89,18 @@ public sealed class ProtectedCommandTests
     public void Every_verb_the_app_can_send_on_the_shared_review_route_is_a_non_protected_catalog_row()
     {
         var ui = Production.Assemblies.Single(a => a.GetName().Name == Solution.AssemblyOf("Aw.Sindri.Ui"));
-        var verbs = ui.GetType("Aw.Sindri.Ui.Api.Context.DeskVerb", throwOnError: true)!.GetFields(BindingFlags.Public | BindingFlags.Static)
+        var desk = ui.GetType("Aw.Sindri.Ui.Api.Context.DeskVerb", throwOnError: true)!;
+        var request = ui.GetType("Aw.Sindri.Ui.Api.Context.ReviewDecisionRequest", throwOnError: true)!;
+        var verbs = desk.GetFields(BindingFlags.Public | BindingFlags.Static)
             .Select(f => f.GetCustomAttributes(typeof(System.Text.Json.Serialization.JsonStringEnumMemberNameAttribute), inherit: false).Cast<System.Text.Json.Serialization.JsonStringEnumMemberNameAttribute>().Single().Name)
             .ToList();
         var rows = HostIntrospection.Catalog().Rows.Where(r => string.Equals(r.Route, "/sindri/context/map/review", StringComparison.Ordinal)).ToList();
 
         Assert.NotEmpty(verbs);
-        Assert.All(verbs, verb => Assert.Contains(rows, r => string.Equals(r.Variant, verb, StringComparison.Ordinal) && r.Class != ActionClass.Protected));
+        Assert.All(verbs, verb => Assert.Contains(rows, r => string.Equals(r.Variant, verb, StringComparison.Ordinal) && r.Class == ActionClass.Desk));
+        // The link: the request the app posts carries its verb as DeskVerb, and no string verb beside it.
+        Assert.Equal(desk, request.GetProperty("Verb")!.PropertyType);
+        Assert.DoesNotContain(request.GetProperties(), p => p.PropertyType == typeof(string) && p.Name.Contains("Verb", StringComparison.Ordinal));
         Assert.Contains(rows, r => r.Class == ActionClass.Protected);   // the route really is shared with protected verbs
     }
 
