@@ -31,6 +31,10 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(RequestFiledView))]
 // LANE ANCHOR U3': one [JsonSerializable] per Needs you record. Insert immediately above this marker, never between the markers.
 // LANE ANCHOR U8: one [JsonSerializable] per command send body and reply. Insert immediately below this marker, never between the markers.
+[JsonSerializable(typeof(Workflow.RecipeList))]
+[JsonSerializable(typeof(Workflow.StartInstanceRequest))]
+[JsonSerializable(typeof(Workflow.StartedView))]
+
 // LANE ANCHOR U9: one [JsonSerializable] per context record and request body; U9e adds SubgraphView. Insert immediately below this marker, never between the markers.
 [JsonSerializable(typeof(Context.LensesView))]
 [JsonSerializable(typeof(Context.FileMapView))]

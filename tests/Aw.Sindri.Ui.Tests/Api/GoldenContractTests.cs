@@ -41,6 +41,8 @@ public sealed class GoldenContractTests
         ["workflow-instance-fact"] = As<FactView>,
         ["workflow-status"] = As<StatusFields>,
         ["workflow-recipe"] = As<RecipeView>,
+        ["workflow-recipes"] = As<RecipeList>,
+        ["workflow-instances-start"] = AsStart,   // POST /workflow/instances: the request golden, and the started answer (which also carries the engine's whole view)
         ["needs-you"] = As<NeedsYouList>,
         ["decisions"] = As<DecisionList>,
         ["decisions-id"] = As<CommandAcceptedView>,   // POST /decisions/{id}'s accepted goldens; the refusals are ProblemDetails
@@ -247,6 +249,9 @@ public sealed class GoldenContractTests
     // One slug for GET and POST /requests (U3-API-5): the list-* scenarios are RequestList, the others RequestFiled.
     private static Result<object> AsRequests(byte[] body) =>
         JsonNode.Parse(body) is JsonObject node && node.ContainsKey("requests") ? As<RequestList>(body) : As<RequestFiledView>(body);
+
+    private static Result<object> AsStart(byte[] body) =>
+        JsonNode.Parse(body) is JsonObject node && node.ContainsKey("instance") ? As<StartedView>(body) : As<StartInstanceRequest>(body);
 
     // One slug for GET and POST /context/map/review: the post-* scenarios are the decision's reply, the others the queue.
     private static Result<object> AsReview(byte[] body) =>
