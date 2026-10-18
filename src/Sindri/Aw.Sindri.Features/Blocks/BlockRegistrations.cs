@@ -43,9 +43,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(EvidenceSteps.None)
         .AddBlockDescriptor(EvidenceSteps.Combine)
         .AddBlockDescriptor(EvidenceSteps.Desk)
-        .AddBlockDescriptor(ReviewSteps.Run)
-        .AddBlockDescriptor(ReviewSteps.Fix)
-        .AddBlockDescriptor(ReviewSteps.Recheck)
+        .AddReviewBlocks()
         .AddBlockDescriptor(OwnerSteps.Decide)
         .AddScopingBlocks()
         .AddBlockDescriptor(EvidenceProviders.Check)
@@ -56,6 +54,17 @@ internal static class BlockRegistrations
         .AddEvent(RecipeEvents.ItemRouted)
         .AddEvent(RecipeEvents.ClaimCreated)
         .AddEvent(RecipeEvents.NotifyDelivered);
+
+    /// <summary>Registers the review loop's Steps and the lens frame it shares (line spec DTC4), descriptors only.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddReviewBlocks(this IServiceCollection services) => services
+        .AddBlockDescriptor(ReviewSteps.Round)
+        .AddBlockDescriptor(LensSteps.Run)
+        .AddBlockDescriptor(ReviewSteps.Log)
+        .AddBlockDescriptor(ReviewSteps.Record)
+        .AddBlockDescriptor(ReviewSteps.Fix)
+        .AddBlockDescriptor(ReviewSteps.Recheck);
 
     /// <summary>Registers the scoping station's Steps and the context Step inputs it names (scoping spec §9), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
