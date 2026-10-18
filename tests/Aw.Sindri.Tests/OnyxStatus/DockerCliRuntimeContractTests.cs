@@ -84,13 +84,38 @@ public sealed class DockerCliRuntimeContractTests : ContainerRuntimeContract
             "version" when arguments.Contains("{{.Server.Os}}/{{.Server.Arch}}", StringComparer.Ordinal) => facts.DaemonAnswers ? Exited("linux/aarch64\n") : Exited("", 1),
             "version" => facts.DaemonProblem == DaemonProblem.Starting ? ToolRun.TimedOut : facts.DaemonAnswers ? Exited(facts.ServerVersion + "\n") : Exited("", 1, Stderr(facts.DaemonProblem)),
             "context" => facts.Endpoint is null ? Exited("", 1) : Exited(facts.Endpoint + "\n"),
-            "ps" => facts.DaemonAnswers ? Exited("") : Exited("", 1),
+            "ps" => facts.DaemonAnswers ? Exited(LabelPs(arguments)) : Exited("", 1),
+            "stop" => StopByIds(),
             "stats" => facts.DaemonAnswers ? Exited("abc123def456|1.5GiB / 15.66GiB\n") : Exited("", 1),
             "image" => facts.DaemonAnswers ? Inspect(arguments[^1]) : Exited("", 1),
             _ => facts is { MemoryBytes: null, DataRoot: null, OperatingSystem: null }
                 ? Exited("", 1)
                 : Exited(facts.MemoryBytes?.ToString(CultureInfo.InvariantCulture) + "|" + facts.OperatingSystem + "|" + facts.DataRoot + "\n"),
         };
+
+        // `docker ps` by project label: ids for -q, one `id|state|service|image|ports` row per container for the format the adapter asks; nothing before up.
+        private string LabelPs(IReadOnlyList<string> arguments)
+        {
+            if (!_started)
+            {
+                return "";
+            }
+
+            var live = !_stopped;
+            if (arguments.Contains("-q", StringComparer.Ordinal))
+            {
+                return live ? "a1b2c3d4e5f6\nb2c3d4e5f6a1\n" : "";
+            }
+
+            var state = live ? "running" : "exited";
+            return $"a1b2c3d4e5f6|{state}|nginx|nginx@sha256:aaa|127.0.0.1:3000->80/tcp\nb2c3d4e5f6a1|{state}|api_server|onyxdotapp/onyx-backend@sha256:bbb|\n";
+        }
+
+        private ToolRun StopByIds()
+        {
+            _stopped = _started;
+            return Exited("a1b2c3d4e5f6\nb2c3d4e5f6a1\n");
+        }
 
         private ToolRun Inspect(string image)
             => localImages.TryGetValue(image, out var digests) ? Exited("[" + string.Join(',', digests.Select(static d => "\"" + d + "\"")) + "]\n") : Exited("", 1);

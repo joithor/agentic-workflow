@@ -20,9 +20,9 @@ internal sealed class OnyxStatusService(IOnyxPinsSource pinsSource, OnyxFacts fa
         }
 
         var setUp = IsSetUp(state, compose.Value);
-        var (running, servingPort) = Serving(setUp, state, cancellationToken);
+        var (running, servingPort, listFailed) = Serving(setUp, state, cancellationToken);
         var report = OnyxPreflight.Evaluate(docker, host, pins, running ? servingPort : null, facts.MemoryUsedByOthers(cancellationToken));
-        var onyx = Classify(setUp, running, facts.DockerProblem(cancellationToken) is not null);
+        var onyx = Classify(setUp, running, facts.DockerProblem(cancellationToken) is not null || listFailed);
         var (url, version) = running ? await Running(report.Port, cancellationToken).ConfigureAwait(false) : (null, null);
         return new OnyxStatusResponse(onyx, pins.Version, pins.Commit, report.Checks, report.Port, report.Ok ? 0 : 1, url, version, Detail(onyx));
     }
@@ -46,21 +46,28 @@ internal sealed class OnyxStatusService(IOnyxPinsSource pinsSource, OnyxFacts fa
         OnyxState.NotSetUp => "not set up: run `sindri onyx up`",
         OnyxState.Stopped => "stopped: run `sindri onyx up` to start it",
         OnyxState.Running => "running",
-        OnyxState.Unknown => "unknown: Docker isn't usable here, so whether Onyx runs can't be told",
+        OnyxState.Unknown => "unknown: Docker isn't usable here, or its containers couldn't be listed, so whether Onyx runs can't be told",
         _ => "",
     };
 
     // Whether Onyx is serving and the port it holds: the one nginx publishes (as in up and doctor), and state.json's only when no nginx publishes one; a state another home wrote is ignored.
-    private (bool Running, int? Port) Serving(bool ask, OnyxSetupState? state, CancellationToken cancellationToken)
+    private (bool Running, int? Port, bool ListFailed) Serving(bool ask, OnyxSetupState? state, CancellationToken cancellationToken)
     {
-        var containers = ask ? facts.Containers(cancellationToken) : null;
-        if (containers is not { IsSuccess: true })
+        if (!ask)
         {
-            return (false, null);
+            return (false, null, false);
+        }
+
+        // With a file gone the stack is asked about by its label, as `down` does; a read that fails is "unknown", never "stopped".
+        var picked = facts.ProjectInUse(workspace);
+        var containers = picked.IsError ? picked.Error : facts.Containers(picked.Value.Project, cancellationToken);
+        if (containers.IsError)
+        {
+            return (false, null, true);
         }
 
         var recorded = facts.ForeignProjectWarning(state) is null ? state?.Port : null;
-        return (IsServing(containers.Value), OnyxFacts.OwnPort(containers.Value) ?? recorded);
+        return (IsServing(containers.Value), OnyxFacts.OwnPort(containers.Value) ?? recorded, false);
     }
 
     // nginx and the API server both running is what "Onyx is up" means here; anything else is stopped. "Status" means "Onyx is serving" on purpose: down, doctor and
