@@ -56,5 +56,5 @@ public sealed class EgressPolicyTests
     [InlineData("::1")]
     [InlineData("192.168.1.1")]
     public async Task Address_literals_not_in_a_group_are_denied(string literal) =>
-        Assert.NotEqual(EgressVerdict.Allowed, (await Policy().Decide(literal, 80, TestContext.Current.CancellationToken)).Verdict);
+        Assert.Equal(EgressVerdict.Denied, (await Policy().Decide(literal, 80, TestContext.Current.CancellationToken)).Verdict);
 }

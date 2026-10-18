@@ -11,7 +11,6 @@ namespace Aw.Sindri.Tests.Sandbox.Egress;
 /// <summary>The real listeners on unix sockets in a temp directory, with loopback stubs for Sindri and the allowed host.</summary>
 public sealed class EgressIntegrationTests : IAsyncDisposable
 {
-    private static readonly string[] _socatPaths = ["/usr/bin/socat", "/usr/local/bin/socat", "/opt/homebrew/bin/socat"];
     private readonly string _root = Directory.CreateTempSubdirectory("egress-it").FullName;
     private readonly List<IAsyncDisposable> _cleanup = [];
 
@@ -63,7 +62,7 @@ public sealed class EgressIntegrationTests : IAsyncDisposable
     [Fact, Trait("Lane", "integration")]
     public async Task Socat_forward_chain_carries_a_call_to_sindri()
     {
-        var socat = _socatPaths.FirstOrDefault(File.Exists);
+        var socat = (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries).Select(d => Path.Combine(d, "socat")).FirstOrDefault(File.Exists);
         Assert.SkipWhen(socat is null, "socat is not installed");
         var stub = StubServer.Start("mcp-ok");
         _cleanup.Add(stub);
@@ -108,7 +107,7 @@ public sealed class EgressIntegrationTests : IAsyncDisposable
             File.WriteAllText(fake, "#!/bin/sh\n");
         }
 
-        var service = new EgressService(new FakeEgressResolver([]), dialer, n => n == "AW_SANDBOX_SOCAT" ? fake : null, Path.Combine(_root, "run"));
+        var service = new EgressService(new FakeEgressResolver([]), dialer, n => n == SandboxEnvironment.Socat ? fake : null, Path.Combine(_root, "run"));
         var result = service.Start(new PlanNetwork(NetworkMode.Enforce, groups, sindriPort, 3128, Path.Combine(_root, "n")), EgressCaps.Default);
         Assert.True(result.IsSuccess, result.IsError ? result.Error.Message : string.Empty);
         return result.Value;

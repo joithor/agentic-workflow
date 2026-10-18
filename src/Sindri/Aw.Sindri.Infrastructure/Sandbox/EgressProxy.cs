@@ -33,7 +33,7 @@ internal sealed class EgressProxy(EgressPolicy policy, IEgressDialer dialer, Egr
         try
         {
             using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            limit.CancelAfter(caps.MaxDuration);
+            limit.CancelAfter(caps.ConnectionLifetime);
             await Serve(client, limit.Token).ConfigureAwait(false);
         }
         catch (Exception e) when (e is IOException or OperationCanceledException or ObjectDisposedException or InvalidDataException)

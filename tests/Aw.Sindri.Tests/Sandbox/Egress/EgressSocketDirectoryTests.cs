@@ -21,7 +21,8 @@ public sealed class EgressSocketDirectoryTests
     [Fact, Trait("Lane", "integration")]
     public void Created_directory_is_owner_only()
     {
-        var directory = Path.Combine(Directory.CreateTempSubdirectory("egress-dir").FullName, "sindri", "a1b2c3d4");
+        using var temp = new TempDirectory();
+        var directory = Path.Combine(temp.Path, "sindri", "a1b2c3d4");
 
         Assert.SkipWhen(OperatingSystem.IsWindows(), "unix modes");
         EgressSocketDirectory.Create(directory);
