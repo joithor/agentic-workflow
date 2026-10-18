@@ -7,7 +7,8 @@ profile, the command layer and its API, the scheduler and `doctor`. The workflow
 blocks and workflows come later and plug into it. The Avalonia UI is its own package, `SindriUi` (stage S1b, `docs/csharp/sindri-ui.md`).
 
 Tier 3 in `deps.yaml` (`src/Sindri`, full shape: Core · Features · Infrastructure · Host). Nothing installs it before
-the switch: `setup.sh`, the providers and launchd don't point at it.
+the switch: the providers and launchd don't point at it, and `setup.sh` only through `./setup.sh --with-sindri`, whose Onyx step
+(`scripts/install-onyx.sh`; `--no-onyx` opts out) runs `onyx up` via `scripts/sindri-app.sh`.
 
 ## The binary
 

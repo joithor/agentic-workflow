@@ -13,7 +13,7 @@ source itself.
 Docker (Docker Desktop, or Docker Engine with Compose v2) is the one thing you install yourself. Then, at a terminal:
 
 ```bash
-sindri-app onyx up        # or: $SINDRI onyx up. The first bare `sindri` at a terminal offers the same thing.
+sindri-app onyx up        # or: $SINDRI onyx up (`./setup.sh --with-sindri` runs it for you). The first bare `sindri` at a terminal offers the same thing.
 ```
 
 It runs the pinned Onyx v4.9.0 (`context/onyx.lock`) as the compose project `sindri-onyx-<hash>` under `$AW_SINDRI_HOME/onyx/`: preflight

@@ -5,7 +5,7 @@
 #   ./setup.sh [--providers claude,codex,cursor] [--dry-run]
 #   ./setup.sh --install-agents [--providers ...] [--dry-run]
 #   ./setup.sh [--providers ...] --with-sindri   # also build and install the sindri CLI (opt-in), and stand the pinned Onyx up
-#   ./setup.sh [--providers ...] --with-sindri --no-onyx   # ... without the Onyx step (run `sindri-app onyx up` later)
+#   ./setup.sh [--providers ...] --with-sindri --no-onyx   # ... without the Onyx step (run `scripts/sindri-app.sh onyx up` later)
 #   ./setup.sh [--providers ...] --with-meta     # also install the /meta harness: aw-meta CLI, hooks, launcher (opt-in)
 #   ./setup.sh --profile <web-app|ios|personal> --target <dir> [--dry-run]
 #
@@ -668,8 +668,8 @@ echo "Custom agents:      run ./setup.sh --install-agents to install lean agent 
 # The meta step's failure (if any) comes last, after everything else has been installed.
 if [ "$WITH_META" = "1" ]; then aw_setup_meta_finish "$META_RC" || exit "$?"; fi
 # The Onyx step's failure (if any) comes last too. 3 is a skip with its warning already printed, not a failure.
-if [ "$ONYX_RC" = "1" ]; then
-  echo ""
-  echo "Onyx was not set up (see above). The rest of setup is done; rerun: sindri-app onyx up   (or ./setup.sh --with-sindri)"
-  exit 1
+if [ "$WITH_SINDRI" = "1" ] && [ "$WITH_ONYX" = "1" ]; then
+  # shellcheck source=config/lib/setup-onyx-step.sh
+  source "$SCRIPT_DIR/config/lib/setup-onyx-step.sh"
+  aw_setup_onyx_finish "$ONYX_RC" "$SCRIPT_DIR/scripts/sindri-app.sh onyx up" || exit "$?"
 fi

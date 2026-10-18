@@ -11,14 +11,15 @@
 #   AW_ONYX_FORCE_TERMINAL=1             treat this run as being at a terminal (tests)
 #
 # Exit: 0 Onyx is up (or was); 3 skipped with a warning and the command to run later (no Docker, Docker not answering,
-# no terminal); 1 `onyx up` failed (its message names the fix; rerun this script or `sindri-app onyx up`). An agent
+# no terminal); 1 `onyx up` failed (its message names the fix; rerun this script or `scripts/sindri-app.sh onyx up`). An agent
 # session is refused by `onyx up` itself (SND-AUTH-002); this script never works around that.
 # Bash 3.2 compatible (macOS /bin/bash).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 APP="${AW_ONYX_SINDRI_APP:-$SCRIPT_DIR/scripts/sindri-app.sh}"
-LATER="sindri-app onyx up"
+# the command to run later: the checkout's script, because the `sindri-app` link exists only after that script has run once
+LATER="$APP onyx up"
 
 echo "=== Onyx (Sindri's business-context search) ==="
 
@@ -57,4 +58,4 @@ if [ "$rc" -ne 0 ]; then
   echo "  Onyx setup did not finish (exit $rc); the message above names the fix. Rerun: $LATER"
   exit 1
 fi
-echo "  Onyx: done. 'sindri-app onyx status' shows where it stands; 'sindri-app onyx open' opens it."
+echo "  Onyx: done. '$APP onyx status' shows where it stands; '$APP onyx open' opens it."

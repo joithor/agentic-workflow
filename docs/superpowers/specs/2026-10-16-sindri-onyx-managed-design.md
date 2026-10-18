@@ -278,12 +278,12 @@ lists them instead.
    commands, a README X-row (the next free, X64) recording O1–O5.
 
 5. **P5 — the setup script (owner, 2026-10-18; spec delta):** the owner's goal is "Onyx as a full dependency, stood up with
-   the rest of Sindri by the setup bash script". `./setup.sh --with-sindri` now ends with `scripts/install-onyx.sh`, which
+   the rest of Sindri by the setup bash script". `./setup.sh --with-sindri` now runs `scripts/install-onyx.sh` after the other installs, which
    checks that Docker is installed and answering (a missing or silent Docker prints the fix and the command to run later,
    exit 3, and setup goes on) and then runs `sindri-app onyx up`, the human's verb, at the terminal setup runs in: preflight,
    pinned files, start, your account in the browser, Sindri's key and the profile section with its approval. `--no-onyx` opts
    out; `--dry-run` / `AW_DRY_RUN=1` prints the step and runs nothing; without a terminal the step prints the command
-   (`sindri-app onyx up`) instead of asking; a rerun on a set-up box is `onyx up`'s no-op; a failed `onyx up` is reported at the
+   (`<checkout>/scripts/sindri-app.sh onyx up`: the `sindri-app` link exists only once that script has run) instead of asking; a rerun on a set-up box is `onyx up`'s no-op; a failed `onyx up` is reported at the
    very end of setup (exit 1) after everything else is installed. An agent session running setup is still refused by
    `onyx up` itself (SND-AUTH-002): the script never works around it. This amends the earlier rule that nothing in `setup.sh`
    points at the C# build (AGENTS.md "C# build"): the Onyx step is the one exception, and it uses `sindri-app`, which builds
