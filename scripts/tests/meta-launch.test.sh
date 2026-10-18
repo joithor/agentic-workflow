@@ -494,7 +494,8 @@ sleep 600
 EOF2
 chmod +x "$WORK/codex-whole"
 jq -n --arg c "$WORK/codex-whole" '{schema:1, agents:{codex:{override:true, bin:$c, sessionIdPattern:"[0-9a-f]{8}-[0-9a-f]{4}"}}, meta:{lanesAgent:"codex"}}' > "$WORK/whole-partial.json"
-jq -n --arg c "$WORK/codex-whole" '{schema:1, agents:{codex:{override:true, bin:$c, sessionIdPattern:"[0-9a-f-]{36}"}}, meta:{lanesAgent:"codex"}}' > "$WORK/whole-full.json"
+sed 's/55555555-5555-5555-5555-555555555555/66666666-6666-6666-6666-666666666666/; s/2026\/10\/17/2026\/10\/18/g; s/2026-10-17/2026-10-18/' "$WORK/codex-whole" > "$WORK/codex-whole2"; chmod +x "$WORK/codex-whole2"
+jq -n --arg c "$WORK/codex-whole2" '{schema:1, agents:{codex:{override:true, bin:$c, sessionIdPattern:"[0-9a-f-]{36}"}}, meta:{lanesAgent:"codex"}}' > "$WORK/whole-full.json"
 rm -f "$ids/whole" "$ids/whole.settled" "$ids/whole.ambiguous"
 AW_LAUNCHER_CONFIG="$WORK/whole-partial.json" AW_META_ID_WAIT=2 bash "$DIR/meta-lane.sh" t1 whole > /dev/null 2>&1 &
 rp=$!; sleep 3.5; kill "$rp" 2> /dev/null; killstubs; wait "$rp" 2> /dev/null
@@ -502,7 +503,7 @@ check "a pattern that matches only part of the captured id refuses it" "$(test -
 rm -f "$ids/whole" "$ids/whole.settled" "$ids/whole.ambiguous"
 AW_LAUNCHER_CONFIG="$WORK/whole-full.json" AW_META_ID_WAIT=8 bash "$DIR/meta-lane.sh" t1 whole > /dev/null 2>&1 &
 rp=$!; waitfor '[ -e "$ids/whole.settled" ]'
-check "a pattern that matches the whole captured id records it" "$(tr -d '[:space:]' < "$ids/whole" 2> /dev/null)" "55555555-5555-5555-5555-555555555555"
+check "a pattern that matches the whole captured id records it" "$(tr -d '[:space:]' < "$ids/whole" 2> /dev/null)" "66666666-6666-6666-6666-666666666666"
 kill "$rp" 2> /dev/null; killstubs; wait "$rp" 2> /dev/null
 
 # An agent that never reports: the launcher times out with a message and the next lane still starts.
