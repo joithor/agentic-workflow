@@ -5020,3 +5020,11 @@ Aw.Context.Core.Proposals.ProposeResult.Kept.init -> void
 Aw.Context.Core.Proposals.ProposeResult.WithdrawnRows.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>?
 Aw.Context.Core.Proposals.ProposeResult.WithdrawnRows.init -> void
 static Aw.Context.Core.Proposals.ProposalPlanner.Withdraw(string! run, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, string! who, System.DateTimeOffset at) -> (System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Rows, int Kept)
+Aw.Context.Core.Lenses.LensBasisReader
+Aw.Context.Core.Lenses.LensBasisReader.LensBasisReader(Aw.Context.Core.Extract.IRepoReader! repos, Aw.Context.Core.Linking.IIntentStore! intents, System.TimeProvider! clock) -> void
+Aw.Context.Core.Lenses.LensBasisReader.For(Aw.Context.Core.Map.VisibleMap! map, Aw.Context.Core.Engine.ContextSettings! settings, Aw.Context.Core.Engine.ContextScope! scope, bool draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Context.Core.Lenses.LensBasis!>
+static Aw.Context.Core.Lenses.LensBasisReader.ShortCommit(string? commit) -> string?
+Aw.Context.Core.Map.LensTexts
+static Aw.Context.Core.Map.LensTexts.Clean(Aw.Context.Core.Lenses.LensesView! view, Aw.Context.Core.Map.MapText! text) -> Aw.Context.Core.Lenses.LensesView!
+static Aw.Context.Core.Map.LensTexts.Clean(Aw.Context.Core.Lenses.LensesSetView! view, Aw.Context.Core.Map.MapText! text) -> Aw.Context.Core.Lenses.LensesSetView!
+static Aw.Context.Core.Map.LensTexts.Clean(Aw.Context.Core.Subgraph.SubgraphView! view, Aw.Context.Core.Map.MapText! text) -> Aw.Context.Core.Subgraph.SubgraphView!

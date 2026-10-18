@@ -65,13 +65,14 @@ public sealed class WithdrawTests : IDisposable
     public async Task Withdraw_with_no_draft_opens_none_and_writes_nothing()
     {
         _ = await _world.ImportFixture();
+        var before = await Overrides();
 
         var withdrawn = await Propose(Empty());
 
         Assert.Null(withdrawn.Draft);
         Assert.Equal((0, 0), (withdrawn.Withdrawn, withdrawn.Kept));
         Assert.DoesNotContain((await _world.Store.Versions(MapWorld.None)).Value, v => v.Status == Aw.Context.Core.Map.MapVersionStatus.Draft);
-        Assert.Empty(await Overrides());
+        Assert.Equal(before.Count, (await Overrides()).Count);   // why: the imported fixture carries overrides of its own; the withdraw adds none
     }
 
     [Fact, Trait("Lane", "unit")]

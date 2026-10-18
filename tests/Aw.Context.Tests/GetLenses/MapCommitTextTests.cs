@@ -1,4 +1,4 @@
-using Aw.Context.Features;
+using Aw.Context.Core.Lenses;
 
 namespace Aw.Context.Tests.GetLenses;
 
