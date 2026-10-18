@@ -206,7 +206,7 @@ public sealed class CleanupTests(DevServer server) : IClassFixture<DevServer>, I
         var n = Interlocked.Increment(ref _events);
         var id = Guid.Parse(string.Create(CultureInfo.InvariantCulture, $"00000000-0000-7000-8000-{n:D12}"));
         Guid? causation = null;
-        var envelope = new EventEnvelope<string>(id, "item.routed", 1, sindri.GetRequiredService<TimeProvider>().GetUtcNow(), "router.stub", "local", 0, id, causation, TraceId: null, """{"outcome":"startable"}""");
+        var envelope = new EventEnvelope<string>(id, "item.routed", 1, sindri.GetRequiredService<TimeProvider>().GetUtcNow(), "service:router-stub", "local", 0, id, causation, TraceId: null, """{"outcome":"startable"}""");
         var grant = sindri.GetRequiredService<HeldLease>().Current ?? throw new InvalidOperationException("the test holds no lease");
         var appended = await sindri.GetRequiredService<ILedgerStore>().Append(new LedgerEntry(envelope, "test:" + id.ToString("N"), item), grant, Token);
         Assert.False(appended.IsError, appended.IsError ? appended.Error.Message : null);

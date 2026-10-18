@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using Aw.Kernel.Events;
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Lease;
@@ -54,7 +55,7 @@ public sealed class ItemRoutingTests(DevServer server) : IClassFixture<DevServer
             using var payload = JsonDocument.Parse(row.Envelope.Payload);
             var spec = payload.RootElement.GetProperty("facts").GetProperty("fact:stepSpec");
             var stored = await sindri.GetRequiredService<IFactContents>().Read(new FactValue(spec.GetProperty("ref").GetString()!, spec.GetProperty("sha256").GetString()!, HeadSha: null), Token);
-            Assert.Equal(("router.stub", "T-51", "startable"), (row.Envelope.Actor, row.Item, payload.RootElement.GetProperty("outcome").GetString()));
+            Assert.Equal(("service:router-stub", "T-51", "startable"), (row.Envelope.Actor, row.Item, payload.RootElement.GetProperty("outcome").GetString()));
             Assert.Equal(Spec, System.Text.Encoding.UTF8.GetString(stored.Value.Span));
             Assert.Equal("triaged", (await item.QueryAsync(static wf => wf.GetInstance())).State);
         }, TestContext.Current.CancellationToken);
@@ -155,7 +156,7 @@ public sealed class ItemRoutingTests(DevServer server) : IClassFixture<DevServer
         var n = Interlocked.Increment(ref _events);
         var id = Guid.Parse(string.Create(CultureInfo.InvariantCulture, $"00000000-0000-7000-8000-{n:D12}"));
         Guid? causation = null;
-        var envelope = new EventEnvelope<string>(id, "item.routed", 1, sindri.GetRequiredService<TimeProvider>().GetUtcNow(), "router.stub", "local", 0, id, causation, TraceId: null, payload);
+        var envelope = new EventEnvelope<string>(id, "item.routed", 1, sindri.GetRequiredService<TimeProvider>().GetUtcNow(), "service:router-stub", "local", 0, id, causation, TraceId: null, payload);
         var grant = sindri.GetRequiredService<HeldLease>().Current ?? throw new InvalidOperationException("the test holds no lease");
         var appended = await sindri.GetRequiredService<ILedgerStore>().Append(new LedgerEntry(envelope, "test:" + id.ToString("N"), item), grant, Token);
         Assert.False(appended.IsError, appended.IsError ? appended.Error.Message : null);
@@ -168,12 +169,13 @@ public sealed class ItemRoutingTests(DevServer server) : IClassFixture<DevServer
         await using var scope = sindri.CreateAsyncScope();
         var service = scope.ServiceProvider.GetServices<IScheduledService>().Single(s => s.Identity() == name);
         var grant = sindri.GetRequiredService<HeldLease>().Current ?? throw new InvalidOperationException("the test holds no lease");
+        using var caller = sindri.GetRequiredService<ICallerContextAccessor>().EnterService(name.Value);   // the scheduler's own caller: it names the actor of what the service appends
         var ran = await service.Run(new ScheduledRun(grant, KnownInstants.Epoch), Token);
         Assert.False(ran.IsError, ran.IsError ? ran.Error.Message : null);
     }
 
     private static async Task<IReadOnlyList<LedgerEvent>> Routed(IServiceProvider sindri) =>
-        [.. (await sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 1000, Token)).Value.Where(static e => e.Envelope.Type == "item.routed" && e.Envelope.Actor == "router.stub")];
+        [.. (await sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 1000, Token)).Value.Where(static e => e.Envelope.Type == "item.routed" && e.Envelope.Actor == "service:router-stub")];
 
     private static async Task<IReadOnlyList<string>> Types(IServiceProvider sindri) =>
         [.. (await sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 1000, Token)).Value.Select(static e => e.Envelope.Type)];
