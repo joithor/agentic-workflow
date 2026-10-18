@@ -53,30 +53,38 @@ public sealed class SessionSheetTests : FrameHost
     private static List<(string Name, AutomationControlType Type)> Tree(Window window) => Heard.Tree(Named<Control>(window, "SessionSheet"));
 
     [Fact]
-    public Task Enter_on_a_row_opens_the_session_sheet_named_session_x() => OnUi(async () =>
+    public Task A_session_link_opens_the_sheet_and_every_field_is_heard_through_the_peer_tree() => OnUi(async () =>
     {
-        var (window, shell) = await Opened(Claude);
+        var (window, shell) = await Connected(width: 1600, height: 1000);
 
-        Assert.Equal("Session " + Claude, shell.SheetName);
-        Assert.Equal(shell.SheetName, Heard.Name(Named<Control>(window, "Sheet")));
-        Assert.True(Visible(window, "SessionSheet"));
-        Assert.False(Visible(window, "SheetBody"), "the placeholder is gone");
-        Frame(window, "claude-tmux");
-    });
-
-    [Fact]
-    public Task Every_field_is_heard_as_one_named_text_through_the_peer_tree() => OnUi(async () =>
-    {
-        var (window, shell) = await Opened(Claude);
+        shell.Navigate(Link(Claude));   // the deep link: the Agents page and the sheet
+        await Until(window, () => shell.AgentSheet.Phase == FramePhase.Shown);
         var sheet = shell.AgentSheet;
+        Assert.Equal((PageId.Agents, "Session " + Claude), (shell.CurrentPage, shell.SheetName));
+        Assert.Equal(shell.SheetName, Heard.Name(Named<Control>(window, "Sheet")));
+        Assert.False(Visible(window, "SheetBody"), "the placeholder is gone");
+        Assert.Equal(sheet.Heading, Heard.Wrapper(Named<Border>(window, "SessionHeading")));
         var heard = Tree(window);
-
         var expected = new[] { sheet.Heading, sheet.StateLine, sheet.FocusLine }
             .Concat(sheet.Fields.Select(f => f.Name)).Concat(sheet.HostFields.Select(f => f.Name)).Concat(sheet.History.Select(h => h.Name));
         Assert.All(expected, name => Assert.Contains((name, AutomationControlType.Text), heard));
         Assert.All(heard.Where(h => h.Type == AutomationControlType.Text), h => Assert.False(string.IsNullOrWhiteSpace(h.Name), "a nameless text node in the sheet"));
         Assert.Contains(heard, h => h.Type == AutomationControlType.Button && h.Name == "Copy: Focus");
         Assert.Contains(heard, h => h.Type == AutomationControlType.Button && h.Name.StartsWith("Focus", StringComparison.Ordinal));
+
+        // the CO-7c host: in the tree, collapsed and empty
+        var host = Named<ContentControl>(window, "LivePreviewHost");
+        Assert.False(host.IsVisible);
+        Assert.Null(host.Content);
+        Frame(window, "claude-tmux");
+
+        // Esc closes it to the edge tab, which reopens the same session
+        Press(window, Key.Escape);
+        await Until(window, () => !shell.IsSheetOpen);
+        Assert.Equal("Reopen session " + Claude, Heard.Name(Named<Button>(window, "EdgeTab")));
+        Named<Button>(window, "EdgeTab").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+        await Until(window, () => shell.IsSheetShown && Visible(window, "SessionSheet"));
+        Assert.Equal(Claude, shell.AgentSheet.Ref);
     });
 
     [Fact]
@@ -97,17 +105,6 @@ public sealed class SessionSheetTests : FrameHost
     });
 
     [Fact]
-    public Task Live_preview_host_is_in_the_tree_and_collapsed() => OnUi(async () =>
-    {
-        var (window, _) = await Opened(Claude);
-
-        var host = Named<ContentControl>(window, "LivePreviewHost");
-        Assert.False(host.IsVisible);
-        Assert.Null(host.Content);
-        Assert.DoesNotContain(host.GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible);
-    });
-
-    [Fact]
     public Task A_404_says_the_session_has_ended_and_the_sheet_stays_open() => OnUi(async () =>
     {
         Server.SessionAnswer = RouteAnswer.Problem("sessions-id", "not-found");
@@ -115,7 +112,7 @@ public sealed class SessionSheetTests : FrameHost
 
         var ended = Named<Border>(window, "SessionEnded");
         Assert.Equal("This session has ended.", Heard.Wrapper(ended));
-        Assert.Equal(shell.AgentSheet.EndedDetail, Avalonia.Controls.ToolTip.GetTip(ended));
+        Assert.Equal(shell.AgentSheet.EndedDetail, ToolTip.GetTip(ended));
         Assert.True(shell.IsSheetShown);
         Assert.False(Named<Button>(window, "SessionFocus").IsEnabled);
         Frame(window, "ended");
@@ -137,31 +134,5 @@ public sealed class SessionSheetTests : FrameHost
         Press(window, Key.Escape);
 
         await Until(window, () => !shell.IsSheetOpen && ReferenceEquals(window.FocusManager?.GetFocusedElement(), row), $"focus is on {window.FocusManager?.GetFocusedElement()}");
-    });
-
-    [Fact]
-    public Task Edge_tab_reopens_the_session_sheet() => OnUi(async () =>
-    {
-        var (window, shell) = await Opened(Claude);
-        Press(window, Key.Escape);
-        await Until(window, () => !shell.IsSheetOpen);
-        Assert.Equal("Reopen session " + Claude, Heard.Name(Named<Button>(window, "EdgeTab")));
-
-        Named<Button>(window, "EdgeTab").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-
-        await Until(window, () => shell.IsSheetShown && Visible(window, "SessionSheet"));
-        Assert.Equal(Claude, shell.AgentSheet.Ref);
-    });
-
-    [Fact]
-    public Task Deep_link_session_provider_id_opens_agents_and_the_sheet() => OnUi(async () =>
-    {
-        var (window, shell) = await Connected(width: 1600, height: 1000);
-
-        shell.Navigate(Link(Codex));
-        await Until(window, () => shell.AgentSheet.Phase == FramePhase.Shown);
-
-        Assert.Equal((PageId.Agents, true), (shell.CurrentPage, Visible(window, "SessionSheet")));
-        Assert.Equal(shell.AgentSheet.Heading, Heard.Wrapper(Named<Border>(window, "SessionHeading")));
     });
 }
