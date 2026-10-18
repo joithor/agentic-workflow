@@ -83,7 +83,7 @@ public sealed class ContextSyncGapsServiceTests
         Assert.True((await Run(none)).Value.Idle);
         Assert.True((await Run(synced)).Value.Idle);
         Assert.True((await Run(failedOnce)).Value.Idle);
-        Assert.Empty(_start.Requests);
+        Assert.Empty(_start.Requests);   // a quiet tick only reads views: the service holds no ledger or logger, and starts nothing
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -15,8 +15,7 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// <summary>
 /// The 'context-sync-gaps' background service (scoping spec C5, owner decision 2026-10-18 "allow, show the gap, queue or start the sync"): when a configured intent source has never synced
 /// it starts a sync job as <c>service:context-sync-gaps</c>, through the SyncSources command (gate, audit, authorization and 'command.handled'; never the runner). Reads stay pure: the lenses
-/// and the history only show the gap. A running sync is never doubled (key 'sync': SND-JOB-409 is a quiet run). It looks again on its next tick after that job's 'job.finished' (it reads the
-/// jobs view; it does not wait on the job), backs off after a failed sync and goes quiet once every source has been tried. A failure to start surfaces as a failed service run (needs-you 'failure:service:context-sync-gaps').
+/// and the history only show the gap. A running sync is never doubled (key 'sync': SND-JOB-409 is a quiet run). It re-checks on the scheduler tick by reading the jobs view; the scheduler has no event trigger (sindri-api accepted this), backs off after a failed sync and goes quiet once every source has been tried. A failure to start surfaces as a failed service run (needs-you 'failure:service:context-sync-gaps').
 /// </summary>
 /// <param name="scopes">The profile's scope and the caller.</param>
 /// <param name="engine">The context engine.</param>
@@ -30,28 +29,11 @@ internal sealed class ContextSyncGapsService(ContextScopes scopes, IContextEngin
     /// <summary>Runs without a profile entry, every minute: a tick is two view reads when nothing is missing.</summary>
     internal static BuiltInService BuiltIn { get; } = new(ServiceId, new Cadence(TimeSpan.FromMinutes(1)));
 
-    /// <summary>The wait after the first failed sync; it doubles with each failure in a row, up to <see cref="LongestBackoff"/>.</summary>
-    internal static TimeSpan FirstBackoff { get; } = TimeSpan.FromMinutes(5);
-
-    internal static TimeSpan LongestBackoff { get; } = TimeSpan.FromHours(1);
-
     public ServiceName Identity() => ServiceId;
 
-    /// <summary>
-    /// The trigger seam (sindri-api condition (b) is open on whether a tick is acceptable): today the scheduler's tick calls <see cref="Evaluate"/>; an event trigger on
-    /// 'job.finished' would call the same method and the built-in cadence would go.
-    /// </summary>
-    public ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken)
+    public async ValueTask<Result<ScheduledResult>> Run(ScheduledRun run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(run);
-        return Evaluate(cancellationToken);
-    }
-
-    /// <summary>Looks for a never-synced source and starts one sync when nothing runs and no backoff holds; everything the service decides is here, whatever wakes it.</summary>
-    /// <param name="cancellationToken">Cancels the check.</param>
-    /// <returns>Worked when a sync was started, else quiet; or the start's refusal.</returns>
-    internal async ValueTask<Result<ScheduledResult>> Evaluate(CancellationToken cancellationToken)
-    {
         var scope = await scopes.Current(cancellationToken).ConfigureAwait(false);
         if (scope.IsError || scope.Value.Settings is null)
         {
@@ -59,21 +41,18 @@ internal sealed class ContextSyncGapsService(ContextScopes scopes, IContextEngin
         }
 
         var sources = await engine.Sources(scope.Value, cancellationToken).ConfigureAwait(false);
-        if (sources.IsError || !sources.Value.Sources.Any(Gap))
+        var running = sources.IsError ? null : await jobs.List(JobState.Running, SyncGaps.SyncKind, cancellationToken).ConfigureAwait(false);
+        var recent = running is null ? null : await jobs.List(state: null, SyncGaps.SyncKind, cancellationToken).ConfigureAwait(false);
+        if (sources.IsError || running!.IsError || recent!.IsError)
         {
-            return sources.IsError ? sources.Error : ScheduledResult.Quiet;
+            return sources.IsError ? sources.Error : running!.IsError ? running.Error : recent!.Error;
         }
 
-        var running = await jobs.List(JobState.Running, SyncGaps.SyncKind, cancellationToken).ConfigureAwait(false);
-        if (running.IsError || running.Value.Count > 0)
+        var finished = recent.Value.Where(static j => j.State != JobState.Running && j.EndedAt is not null).Select(static j => new SyncAttempt(j.State == JobState.Failed, j.EndedAt!.Value)).ToList();
+        var action = SyncGapDecision.Decide(sources.Value.Sources.Any(Gap), running.Value.Count > 0, finished, clock.GetUtcNow());
+        if (action != SyncGapAction.Start)
         {
-            return running.IsError ? running.Error : ScheduledResult.Quiet;
-        }
-
-        var recent = await jobs.List(state: null, SyncGaps.SyncKind, cancellationToken).ConfigureAwait(false);
-        if (recent.IsError || BackingOff(recent.Value))
-        {
-            return recent.IsError ? recent.Error : ScheduledResult.Quiet;
+            return ScheduledResult.Quiet;
         }
 
         var started = await start.Handle(new SyncContextSourcesRequest(), cancellationToken).ConfigureAwait(false);
@@ -87,17 +66,4 @@ internal sealed class ContextSyncGapsService(ContextScopes scopes, IContextEngin
 
     /// <summary>A configured intent source that has never been tried: no sync, no failure recorded.</summary>
     private static bool Gap(Aw.Context.Core.Results.SourceStatusRow row) => row.Kind == SourceKind.Intent && row.Sync is { LastSync: null, Code: null };
-
-    // The newest jobs first: count the failures in a row, wait FirstBackoff doubled for each more, from when the newest ended.
-    private bool BackingOff(IReadOnlyList<JobRow> newestFirst)
-    {
-        var failures = newestFirst.TakeWhile(static j => j.State == JobState.Failed).ToList();
-        if (failures.Count == 0 || failures[0].EndedAt is not { } ended)
-        {
-            return false;
-        }
-
-        var wait = TimeSpan.FromTicks(Math.Min(LongestBackoff.Ticks, FirstBackoff.Ticks << Math.Min(failures.Count - 1, 8)));
-        return clock.GetUtcNow() < ended + wait;
-    }
 }
