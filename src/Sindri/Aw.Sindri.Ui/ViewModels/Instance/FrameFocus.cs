@@ -29,4 +29,7 @@ internal enum FrameFocus
 
     /// <summary>The header's Recipe link (Back from the recipe sheet it opened).</summary>
     Recipe,
+
+    /// <summary>The first child's entry in the children panel (the answer is the child's and no child was named).</summary>
+    Children,
 }

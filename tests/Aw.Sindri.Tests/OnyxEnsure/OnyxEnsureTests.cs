@@ -133,6 +133,19 @@ public sealed class OnyxEnsureTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_start_interrupted_by_serve_stopping_leaves_no_failed_note()
+    {
+        var rig = new Rig();
+        using var stopping = new CancellationTokenSource();
+        rig.Up.Runtime.FailNext("Up", SindriErrors.OnyxComposeFailed.With("cancelled"));
+        await stopping.CancelAsync();
+
+        _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await rig.Service().Handle(new OnyxEnsureRequest(), stopping.Token));
+
+        Assert.False(rig.Workspace.Files.ContainsKey(rig.Paths.Ensure));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task An_onyx_that_never_answers_fails_after_five_minutes()
     {
         var rig = new Rig();

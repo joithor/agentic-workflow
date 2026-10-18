@@ -76,6 +76,7 @@ internal sealed class OnyxUpService(IOnyxWorkspace workspace, OnyxFacts facts, I
             return results.Error;
         }
 
+        _ = workspace.WriteIfChanged(facts.Paths.Ensure, "running\n", secret: false);   // a finished `onyx up` answers serve's earlier "failed" note
         return new OnyxUpResponse(port, string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}"), context.Version ?? pins.Version, warnings, results.Value);
     }
 

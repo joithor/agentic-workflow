@@ -20,6 +20,8 @@ public sealed class HttpOnyxProvisioningTests
 
         public Func<Sent, bool> Hang { get; set; } = static _ => false;
 
+        public Func<Sent, bool> Refuse { get; set; } = static _ => false;
+
         public Func<Sent, (HttpStatusCode Status, string Body)> Answer { get; set; } = static _ => (HttpStatusCode.OK, "{}");
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -27,6 +29,11 @@ public sealed class HttpOnyxProvisioningTests
             var body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync(cancellationToken);
             var sent = new Sent(request.Method, request.RequestUri!.PathAndQuery, body, request.Headers.Authorization?.ToString());
             Requests.Add(sent);
+            if (Refuse(sent))
+            {
+                throw new HttpRequestException("connection refused");
+            }
+
             if (Hang(sent))
             {
                 await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
@@ -155,6 +162,54 @@ public sealed class HttpOnyxProvisioningTests
         Assert.False((await adapter.KeyIsAdmin(3000, "human", Token)).Value);
         Assert.False((await adapter.KeyIsAdmin(3000, "stranger", Token)).Value);
         Assert.All(script.Requests, static r => Assert.Equal("/api/me", r.PathAndQuery));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_login_that_may_not_make_keys_is_sindri_onyx_007()
+    {
+        var script = new Script { Answer = static sent => sent.PathAndQuery == "/api/admin/api-key" ? (HttpStatusCode.Forbidden, "{}") : (HttpStatusCode.OK, "{}") };
+        var session = (await Adapter(script).SignIn(3000, "a@b.c", "x", Token)).Value;
+
+        Assert.Equal(SindriErrors.OnyxNotAdmin.Code, (await session.CreateKey("k", 3, Token)).Error.Code);
+    }
+
+    [Theory, Trait("Lane", "integration")]
+    [InlineData(HttpStatusCode.InternalServerError, "{}")]
+    [InlineData(HttpStatusCode.OK, "not json")]
+    [InlineData(HttpStatusCode.OK, "{\"api_key\":\"\"}")]
+    public async Task A_key_Onyx_does_not_make_is_sindri_onyx_008(HttpStatusCode status, string body)
+    {
+        var script = new Script { Answer = sent => sent.PathAndQuery == "/api/admin/api-key" ? (status, body) : (HttpStatusCode.OK, "{}") };
+        var session = (await Adapter(script).SignIn(3000, "a@b.c", "x", Token)).Value;
+
+        var key = await session.CreateKey("k", 3, Token);
+
+        Assert.Equal(SindriErrors.OnyxKeyFailed.Code, key.Error.Code);
+        Assert.Contains("didn't make the key", key.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_request_Onyx_does_not_answer_in_time_names_the_wait()
+    {
+        var script = new Script { Hang = static sent => sent.PathAndQuery == "/api/me" };
+        var adapter = new HttpOnyxProvisioning(() => script, requestTimeout: TimeSpan.FromMilliseconds(100));
+
+        var result = await adapter.KeyIsAdmin(3000, "k", Token);
+
+        Assert.Equal(SindriErrors.OnyxKeyFailed.Code, result.Error.Code);
+        Assert.Contains("didn't answer GET /api/me", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task An_Onyx_that_cannot_be_reached_is_an_error_not_a_false()
+    {
+        var script = new Script { Refuse = static _ => true };
+
+        var admin = await Adapter(script).KeyIsAdmin(3000, "k", Token);
+        var login = await Adapter(script).SignIn(3000, "a@b.c", "x", Token);
+
+        Assert.Contains("couldn't be reached", admin.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("couldn't be reached", login.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]

@@ -21,16 +21,42 @@ internal sealed class OnyxOffer(IServiceProvider services, AgentSession session,
             return;
         }
 
-        var answer = (await prompt("Set up Onyx (Sindri's business-context search) now? [Y/n] ").ConfigureAwait(false))?.Trim();
+        var line = await prompt("Set up Onyx (Sindri's business-context search) now? [Y/n] ").ConfigureAwait(false);
+        if (line is null)
+        {
+            return;   // end of input is no answer: neither a start nor a remembered no
+        }
+
+        var answer = line.Trim();
         if (answer is { Length: > 0 } && !answer.StartsWith('y') && !answer.StartsWith('Y'))
         {
             var workspace = services.GetRequiredService<IOnyxWorkspace>();
-            _ = workspace.WriteIfChanged(services.GetRequiredService<OnyxFacts>().Paths.Declined, string.Empty, secret: false);
+            try
+            {
+                _ = workspace.WriteIfChanged(services.GetRequiredService<OnyxFacts>().Paths.Declined, string.Empty, secret: false);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                // the marker couldn't be written: the offer comes again next time
+            }
+
             await error.WriteLineAsync("Skipped. Set Onyx up any time with `sindri onyx up` (the needs-you list reminds you).").ConfigureAwait(false);
         }
-        else if (await up(ct).ConfigureAwait(false) != 0)
+        else if (!await Up(ct).ConfigureAwait(false))
         {
             await error.WriteLineAsync("Onyx setup didn't finish; starting Sindri anyway. Run `sindri onyx up` to continue.").ConfigureAwait(false);
+        }
+    }
+
+    private async Task<bool> Up(CancellationToken ct)
+    {
+        try
+        {
+            return await up(ct).ConfigureAwait(false) == 0;
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            return false;   // whatever happens, Sindri starts afterwards
         }
     }
 

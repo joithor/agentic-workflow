@@ -133,6 +133,7 @@ internal static class ServeCommand
             // a stop request, a signal or a lost lease
         }
 
+        await OnyxServeHooks.Stop(app, onyx, Console.Error).ConfigureAwait(false);   // a managed Onyx stops before the record and the lease go, bounded
         await runtime.WaitForWorker(CancellationToken.None).ConfigureAwait(false);   // bounded, and a worker fault is the worker's to log
 
         if (app.Services.GetRequiredService<HeldLease>().Current is not null)
@@ -144,7 +145,6 @@ internal static class ServeCommand
         _ = await endpoints.Remove(grant.Holder.Pid, CancellationToken.None).ConfigureAwait(false);
         await DropToken(app).ConfigureAwait(false);
         await app.StopAsync(CancellationToken.None).ConfigureAwait(false);
-        await OnyxServeHooks.Stop(app, onyx, Console.Error).ConfigureAwait(false);   // after the control plane's own shutdown, bounded
         return app.Services.GetRequiredService<IExitCode>().Code;
     }
 
