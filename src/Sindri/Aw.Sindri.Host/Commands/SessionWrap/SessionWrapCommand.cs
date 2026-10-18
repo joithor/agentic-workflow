@@ -16,10 +16,12 @@ namespace Aw.Sindri.Host.Commands.SessionWrap;
 /// <param name="clock">The time the heartbeat and the id wait run on.</param>
 /// <param name="errors">Where wrap writes its own messages (never the agent's output).</param>
 /// <param name="ids">Where the session id is looked for.</param>
-internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher children, Func<string, string?> environment, TimeProvider clock, TextWriter errors, ISessionIdSource ids)
+/// <param name="hangup">Completes when wrap is told to hang up or terminate (its terminal closed); null when nothing can tell it.</param>
+internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher children, Func<string, string?> environment, TimeProvider clock, TextWriter errors, ISessionIdSource ids, Task? hangup = null)
 {
     private static readonly TimeSpan _idWait = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan _idPoll = TimeSpan.FromMilliseconds(500);
+    private static readonly TimeSpan _hangupGrace = TimeSpan.FromSeconds(5);
     private static readonly TimeSpan _exitRetry = TimeSpan.FromSeconds(1);
     private const int ExitAttempts = 3;
     private SessionId? _found;
@@ -47,7 +49,7 @@ internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher childr
             watchers.Add(Beats(launch, secret, stop.Token));
         }
 
-        var code = await child.Exited.ConfigureAwait(false);
+        var code = await ExitCode(child, cancellationToken).ConfigureAwait(false);
         await stop.CancelAsync().ConfigureAwait(false);
         await Task.WhenAll(watchers).ConfigureAwait(false);
         if (proof is { } last)
@@ -56,6 +58,21 @@ internal sealed class SessionWrapCommand(IWrapCalls calls, IChildLauncher childr
         }
 
         return code;
+    }
+
+    /// <summary>Waits for the agent. A hang-up (the terminal closed) is also sent to the agent by the kernel, but an agent that doesn't read its terminal can outlive it; after the grace it is killed, so the session ends and its exit is reported.</summary>
+    private async Task<int> ExitCode(IWrapChild child, CancellationToken cancellationToken)
+    {
+        if (hangup is not null && await Task.WhenAny(child.Exited, hangup).ConfigureAwait(false) == hangup && !child.Exited.IsCompleted)
+        {
+            var grace = Task.Delay(_hangupGrace, clock, cancellationToken);
+            if (await Task.WhenAny(child.Exited, grace).ConfigureAwait(false) == grace)
+            {
+                child.Dispose();   // kills the agent's tree; Exited completes with 137
+            }
+        }
+
+        return await child.Exited.ConfigureAwait(false);
     }
 
     private async Task<(int? Failed, LaunchId? Launch, IWrapChild? Child)> Begin(string[] args)

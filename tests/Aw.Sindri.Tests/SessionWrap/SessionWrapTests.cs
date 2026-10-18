@@ -35,7 +35,7 @@ public sealed class SessionWrapTests : IDisposable
 
     private static string[] Args => ["--launch", A.FirstLaunchId.Value, "--", "/bin/sh", "-c", "agent"];
 
-    private SessionWrapCommand Command() => new(_calls, _children, name => _env.GetValueOrDefault(name), _clock, _errors, _ids);
+    private SessionWrapCommand Command(Task? hangup = null) => new(_calls, _children, name => _env.GetValueOrDefault(name), _clock, _errors, _ids, hangup);
 
     private static async Task Until(Func<bool> condition)
     {
@@ -61,6 +61,38 @@ public sealed class SessionWrapTests : IDisposable
         await Until(() => _children.Child is not null);
         _children.Child!.Exit(code);
         return await run.WaitAsync(_deadline, TimeProvider.System, TestContext.Current.CancellationToken);
+    }
+
+    [Fact]
+    public async Task A_hangup_ends_an_agent_that_ignores_it_after_the_grace_and_the_exit_is_reported()
+    {
+        var hangup = new TaskCompletionSource();
+        var run = Command(hangup.Task).Run(Args, TestContext.Current.CancellationToken);
+        await Until(() => _children.Child is not null);
+
+        hangup.SetResult();
+        await Run(TimeSpan.FromSeconds(6));
+        var code = await run.WaitAsync(_deadline, TimeProvider.System, TestContext.Current.CancellationToken);
+
+        Expect.True(_children.Child!.Killed);
+        Expect.Equal(137, code);
+        _ = Expect.Only(_calls.Exits);
+    }
+
+    [Fact]
+    public async Task A_hangup_leaves_an_agent_that_ends_within_the_grace_alone()
+    {
+        var hangup = new TaskCompletionSource();
+        var run = Command(hangup.Task).Run(Args, TestContext.Current.CancellationToken);
+        await Until(() => _children.Child is not null);
+
+        hangup.SetResult();
+        await Run(TimeSpan.FromSeconds(1));
+        _children.Child!.Exit(0);
+        var code = await run.WaitAsync(_deadline, TimeProvider.System, TestContext.Current.CancellationToken);
+
+        Expect.True(!_children.Child.Killed);
+        Expect.Equal(0, code);
     }
 
     [Fact]
