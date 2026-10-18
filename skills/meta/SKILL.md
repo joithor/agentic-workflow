@@ -198,6 +198,19 @@ process) and sweep again.
 **Announcements.** Any message to a lane that announces main moving must carry the new **short sha** (the text `merge-run`
 prints does: send it verbatim). The Stop hook closes the `announce-main` obligation by matching that sha in what you sent.
 
+## Lane context
+
+Keep each Claude lane's context window small, or the lanes burn usage. `aw-meta lanes-context` lists each lane's size and a verdict
+(`ok`, `recycle` at `context.recycleAt`, default 300k, `unknown`); `health` and `status` print it as `context: api 487k (recycle), ...`,
+and `watch` prints `CONTEXT HIGH <lane> <N>k` once per crossing and `CONTEXT OK <lane>` after a recycle.
+
+On `CONTEXT HIGH` (or a `recycle` verdict), message the lane (SendMessage): at a safe point write a digest to
+`~/.agentic-workflow/digests/<team>-<lane>-<date>.md` and reply `DIGEST READY <path>`. A safe point means no builder subagent, review run or
+background job is running (`/clear` cuts them off) and everything is pushed. When the reply arrives, run
+`aw-meta lane-recycle <lane> --digest <path>` (`--dry-run` shows the steps). It clears the lane, waits for the new session, records it so a
+relaunch resumes it, and has the lane read the digest and continue. Exit 1 means it refused (stale or empty digest) or the new session never
+appeared (nothing more was sent; the error prints the command to send the line by hand). Never recycle the meta lane this way.
+
 ## The running log
 
 Merges, owner decisions, lane maps and kills are logged by the CLI. For anything else worth keeping:
