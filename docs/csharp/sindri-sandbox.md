@@ -33,7 +33,7 @@ mistakes, not a deliberate escape (spec §2).
 | `StepPolicy.LoginSource` | `Launch/` | `ModelLoginSource?`: the stricter login source a Step asks for (`OwnerCopy` < `SeparateLogin`); null means no ask and is left out of the JSON. The launcher's stricter-of merge is SB-1/SB-5a. |
 | `ModelLoginSource` | `Sandbox/` | `owner-copy`, `separate-login`. |
 | `IModelCredentialSource`, `LoginStatus`, `LoginState`, `PreparedLogin`, `LoginMount`, `LoginHandle` | `Sandbox/Credentials/` (its own namespace: it needs `AgentId` from `Launch`, which uses `Sandbox`) | The credential port (SB18). `Prepare` returns plain data the plan builder consumes. The fake, the contract base and the adapters are SB-1 and SB-2. |
-| `SandboxReasons`, `SandboxCodes`, `SandboxRefusal`, `LaunchCodeKind` | `Sandbox/` | The closed reason sets, the kind table, and the factory that puts `reason` (and `source`) on the error as extensions. |
+| `SandboxReasons`, `SandboxCodes`, `SandboxRefusal`, `LaunchCodeKind` | `Sandbox/` | The closed reason sets, the kind table (with the `step.failed` reason of a step-failure code: `limit` for `-019`, `launch` for `-018` and `-021`), and the factory that puts `reason`, `source` and named details (`which`, `tool`, `path`, `cap`, `running`, ...) on the error as extensions. `ReasonOf(error)` and `SourceOf(error)` read them back. |
 | `SandboxDenied`, `SandboxLimitHit` | `Events/` | The `sandbox.denied` and `sandbox.limit-hit` payloads (emitted from SB-4b/SB-5a). |
 | `SandboxSettings` and its records | `Profile/` | The profile's `sandbox:` section. |
 | `SandboxEnvironment` | `Sandbox/` | The three test-redirect variable names. |
@@ -54,7 +54,7 @@ code form, and `Code_kinds_match_the_engine_table` pins them together.
 | `SND-LAUNCH-020` | resource wait | 503 | `sessions` |
 | `SND-LAUNCH-021` | step failure | 503 | `install-failed`, `lockfile-missing`, `timeout` |
 
-`FailedLaunch` carries the error; build it with `SandboxRefusal.For(definition, reason, detail, source)`, which refuses a reason the code does
+`FailedLaunch` carries the error. The reason and source also reach the ledger and the launches view: `launch.failed` gains `reason` and `source` (left out when null, written from the error by the launcher), and `GET /sindri/launches/{id}` serves them, so the engine's NoRuntime park and the app pick the sentence by `(code, reason)` without the in-process error. The named details stay on the in-process error until SB-5a needs them on the card. Build the error with `SandboxRefusal.For(definition, reason, detail, source)`, which refuses a reason the code does
 not define. The sentence the owner sees for each `(code, reason)` is in `Golden/Sandbox/copy.json` (a Step wording and an attended wording;
 the `deskCapable` suffix is added to every `-014` and `-017` sentence). A golden test checks every owner string against the word list: the
 words "scope", "plan", "canary" and "confined" never appear.
@@ -64,11 +64,11 @@ words "scope", "plan", "canary" and "confined" never appear.
 | Event | Fields |
 |---|---|
 | `launch.started` | gains `sandbox` (the `SandboxSummary`) |
-| `session.ended` | `reason: limit` adds `kind`, `limit`, `peak` and `peaks`; a final usage sample precedes it |
-| `sandbox.denied` | `{launch, kind: network\|policy\|path, target, rule, count}`; the 1st, 10th and 100th denial of each (kind, target) per run; a denied command line is never recorded whole |
+| `session.ended` | `reason: limit` adds `kind`, `limit`, `peak` and `peaks`; a final usage sample precedes it. Written by `LaunchSessionEvents.EndByLimit`; the launches view's `ended` carries `kind`, `limit` and `peak` |
+| `sandbox.denied` | `{launch, kind: network\|policy\|path, target, rule, count}`; the 1st, 10th and 100th denial of each (kind, target) per run; at most 200 distinct targets, then one event with `overflow: true`, an empty `target`, rule `overflow` and `count` the denials not counted by target; a denied command line is never recorded whole |
 | `sandbox.limit-hit` | `{launch, kind: pids\|memory\|disk, peak}` |
 
-Wire shapes are goldens under `Golden/Sandbox/events/`.
+Wire shapes are goldens under `Golden/Sandbox/events/`. The spec writes `launchId` in these payloads; on the wire the field is `launch`, as in every other launch event.
 
 ## Profile keys
 
@@ -80,7 +80,7 @@ with no `sandbox:` section is valid and gets `SandboxDefaults`; `sindri doctor` 
 
 `$AW_SINDRI_HOME/launches/<launchId>.sandbox.json` (0600), written by the launcher before the agent starts and read by a resume, which is
 refused with `-015 no-stored-plan` if it is gone. `AW_SANDBOX_PLAN` names a value-free copy that `sindri sandbox explain` reads and nothing
-else. Shape (camelCase, enums by their wire names; SB-1 owns the C# type and a golden of it):
+else. The summary's `inner` is the resolved `on` or `off` (`InnerState`), never the profile's `auto`. Shape (camelCase, enums by their wire names; SB-1 owns the C# type and a golden of it):
 
 ```json
 {
@@ -98,7 +98,7 @@ else. Shape (camelCase, enums by their wire names; SB-1 owns the C# type and a g
   "limits": { "memoryMax": "12GiB", "cpuQuota": "400%", "tasksMax": 2048, "wall": "70m" },
   "credentials": { "github": "none" },
   "login": { "source": "owner-copy" },
-  "inner": "auto",
+  "inner": "on",
   "denials": { "counterFile": "denials.json", "egressLog": "egress.log" }
 }
 ```

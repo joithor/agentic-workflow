@@ -17,7 +17,6 @@ public static class SandboxRefusal
     /// <exception cref="ArgumentOutOfRangeException">The pair isn't a defined (code, reason): a programming error.</exception>
     public static Error For(ErrorDefinition definition, string reason, string? detail = null, ModelLoginSource? source = null, IReadOnlyDictionary<string, string>? details = null)
     {
-        _ = details;   // red stub: the named details become extensions in the next commit
         ArgumentNullException.ThrowIfNull(definition);
         ArgumentNullException.ThrowIfNull(reason);
         if (!SandboxReasons.IsDefined(definition.Code, reason))
@@ -27,18 +26,35 @@ public static class SandboxRefusal
 
         var error = definition.With(detail is null ? $"{definition.Title} ({reason})" : $"{definition.Title} ({reason}): {detail}")
             .WithExtension("reason", Text(reason));
-        return source is { } s ? error.WithExtension("source", Text(SandboxWire.Name(s))) : error;
+        error = source is { } s ? error.WithExtension("source", Text(SandboxWire.Name(s))) : error;
+        return (details ?? new Dictionary<string, string>(StringComparer.Ordinal)).Aggregate(error, (e, d) => e.WithExtension(d.Key, Text(d.Value)));
     }
 
     /// <summary>Reads back the reason a sandbox refusal carries (Extensions aren't serialized with the error).</summary>
     /// <param name="error">Any error.</param>
     /// <returns>The reason, or null when the error isn't a sandbox refusal.</returns>
-    public static string? ReasonOf(Error error) => throw new NotSupportedException();
+    public static string? ReasonOf(Error error) => Extension(error, "reason");
 
     /// <summary>Reads back the credential source a refusal carries (-017).</summary>
     /// <param name="error">Any error.</param>
     /// <returns>The source, or null when the error has none.</returns>
-    public static ModelLoginSource? SourceOf(Error error) => throw new NotSupportedException();
+    public static ModelLoginSource? SourceOf(Error error) => Extension(error, "source") switch
+    {
+        "owner-copy" => ModelLoginSource.OwnerCopy,
+        "separate-login" => ModelLoginSource.SeparateLogin,
+        _ => null,
+    };
+
+    /// <summary>Reads back the credential source a refusal carries, as the text the ledger records ('owner-copy' or 'separate-login').</summary>
+    /// <param name="error">Any error.</param>
+    /// <returns>The source name, or null when the error has none.</returns>
+    public static string? SourceTextOf(Error error) => SourceOf(error) is { } source ? SandboxWire.Name(source) : null;
+
+    private static string? Extension(Error error, string name)
+    {
+        ArgumentNullException.ThrowIfNull(error);
+        return error.Extensions?.Where(e => string.Equals(e.Key, name, StringComparison.Ordinal) && e.Value.ValueKind == JsonValueKind.String).Select(e => e.Value.GetString()).FirstOrDefault();
+    }
 
     private static JsonElement Text(string value)
     {

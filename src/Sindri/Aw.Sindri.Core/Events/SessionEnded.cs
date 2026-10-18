@@ -24,5 +24,9 @@ public sealed record SessionEnded(
     /// <param name="launch">The launch.</param>
     /// <param name="end">Which limit, its value and peak.</param>
     /// <returns>The payload.</returns>
-    public static SessionEnded Limited(LaunchId launch, LimitEnd end) => throw new NotSupportedException();
+    public static SessionEnded Limited(LaunchId launch, LimitEnd end)
+    {
+        ArgumentNullException.ThrowIfNull(end);
+        return new SessionEnded(launch, SessionEndReason.Limit, ExitCode: null, end.Kind, end.Limit, end.Peak, end.Peaks);
+    }
 }

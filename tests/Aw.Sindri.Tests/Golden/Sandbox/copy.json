@@ -155,7 +155,7 @@
       "reason": "no-login",
       "source": "separate-login",
       "text": "Steps have their own Claude Code (or Codex) sign-in, and it's missing or has expired. Run `sindri sandbox login <target>`, then press Check again.",
-      "attendedText": "Steps have their own Claude Code (or Codex) sign-in, and it's missing or has expired. Run `sindri sandbox login <target>`, then press Check again.",
+      "attendedText": "Sessions have their own Claude Code (or Codex) sign-in, and it's missing or has expired. Run `sindri sandbox login <target>`, then press Check again.",
       "command": "sindri sandbox login <target>"
     },
     {
@@ -170,7 +170,7 @@
       "reason": "expired",
       "source": "separate-login",
       "text": "Steps have their own Claude Code (or Codex) sign-in, and it's missing or has expired. Run `sindri sandbox login <target>`, then press Check again.",
-      "attendedText": "Steps have their own Claude Code (or Codex) sign-in, and it's missing or has expired. Run `sindri sandbox login <target>`, then press Check again.",
+      "attendedText": "Sessions have their own Claude Code (or Codex) sign-in, and it's missing or has expired. Run `sindri sandbox login <target>`, then press Check again.",
       "command": "sindri sandbox login <target>"
     },
     {

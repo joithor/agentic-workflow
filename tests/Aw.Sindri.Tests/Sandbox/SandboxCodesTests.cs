@@ -1,7 +1,7 @@
 using Aw.Kernel;
 using Aw.Sindri.Core;
-using Aw.Sindri.Host;
 using Aw.Sindri.Core.Sandbox;
+using Aw.Sindri.Host;
 
 namespace Aw.Sindri.Tests.Sandbox;
 

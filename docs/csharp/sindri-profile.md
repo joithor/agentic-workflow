@@ -103,7 +103,7 @@ A map of agent id to its limits, plus the reserved sibling `softLimit`. An id is
 
 ### `sandbox`
 
-Tightening needs no re-approval in the spec's terms; loosening (a longer limit, a new group or host, learn mode, `agent-app`, a looser login source) does. A key can only tighten a Step. `sindri doctor` prints "using the built-in sandbox defaults" when the section is absent.
+In the spec's terms tightening needs no re-approval and loosening (a longer limit, a new group or host, learn mode, `agent-app`, a looser login source) does. **That split is not built yet:** today every change to the `sandbox:` section changes the profile hash and is a re-approval (`ProfileDiff` records values, not direction). The spec's §12 assigns the tighten/loosen split to no phase; it is an open question for the spec lane (default: the launcher phase that first reads the section, SB-5a). A key can only tighten a Step. `sindri doctor` prints "using the built-in sandbox defaults" when the section is absent.
 
 | Key | Type | Default | Meaning |
 |---|---|---|---|

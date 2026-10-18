@@ -21,7 +21,8 @@ public sealed class CredentialPortTests
 
         Assert.Equal(login.Mounts, read.Mounts);
         Assert.Equal(login.Environment, read.Environment);
-        Assert.Equal((login.Source, login.Handle, login.DeniedReads), (read.Source, read.Handle, read.DeniedReads));
+        Assert.Equal(login.DeniedReads, read.DeniedReads);
+        Assert.Equal((login.Source, login.Handle), (read.Source, read.Handle));
     }
 
     [Fact, Trait("Lane", "unit")]
