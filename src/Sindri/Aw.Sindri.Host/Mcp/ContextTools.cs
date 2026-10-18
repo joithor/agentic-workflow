@@ -25,8 +25,10 @@ internal static class ContextTools
     /// <summary>context_lenses' name.</summary>
     internal const string Lenses = "context_lenses";
 
-    private static readonly string[] _texts = ["q", "node", "item", "symbol", "diff", "mapVersion"];
-    private static readonly string[] _lensesArguments = ["anchor", "anchors", "mapVersion"];
+    private const string HopsText = "The cascade hops, a comma list of state, flow, dependency and component; default state, flow and dependency";
+
+    private static readonly string[] _texts = ["q", "node", "item", "symbol", "diff", "hops", "mapVersion"];
+    private static readonly string[] _lensesArguments = ["anchor", "anchors", "mapVersion", "hops"];
     private static readonly string[] _numbers = ["depth", "budget"];
 
     /// <summary>context_query's definition.</summary>
@@ -43,6 +45,7 @@ internal static class ContextTools
             ["symbol"] = Property("string", "A file path or symbol"),
             ["diff"] = Property("string", "Two commit shas joined by '..' (base..head), not branch names"),
             ["depth"] = Property("integer", "Cascade depth (at most 4)", minimum: 0),
+            ["hops"] = Property("string", HopsText),
             ["budget"] = Property("integer", "Token budget for the answer", minimum: 1),
             ["mapVersion"] = Property("string", "A retained map version to read as of, such as v3; omit for the current map"),
         }),
@@ -75,6 +78,7 @@ internal static class ContextTools
                 ["maxItems"] = 20,
             },
             ["mapVersion"] = Property("string", "A retained map version to read as of, such as v3; omit for the current map"),
+            ["hops"] = Property("string", HopsText),
         }),
         Annotations = new ToolAnnotations { ReadOnlyHint = true, OpenWorldHint = false },
     };
@@ -110,12 +114,13 @@ internal static class ContextTools
         var unknown = args.Keys.FirstOrDefault(k => !_lensesArguments.Contains(k, StringComparer.Ordinal));
         if (unknown is not null)
         {
-            return ContextErrors.McpArgumentsInvalid.With($"context_lenses has no argument '{unknown}' (fix: anchor, anchors, mapVersion; the draft map is never read over MCP)");
+            return ContextErrors.McpArgumentsInvalid.With($"context_lenses has no argument '{unknown}' (fix: anchor, anchors, mapVersion, hops; the draft map is never read over MCP)");
         }
 
         var anchors = new List<string>();
         var mapVersion = (string?)null;
-        var wrong = args.FirstOrDefault(a => a.Value.ValueKind != JsonValueKind.Null && !Take(a.Key, a.Value, anchors, ref mapVersion));
+        var hops = (string?)null;
+        var wrong = args.FirstOrDefault(a => a.Value.ValueKind != JsonValueKind.Null && !Take(a.Key, a.Value, anchors, ref mapVersion, ref hops));
         if (wrong.Key is not null)
         {
             return ContextErrors.McpArgumentsInvalid.With($"'{wrong.Key}' has the wrong type (fix: see the tool's input schema)");
@@ -123,11 +128,11 @@ internal static class ContextTools
 
         return anchors.Count == 0 || anchors.Exists(string.IsNullOrWhiteSpace)
             ? ContextErrors.McpArgumentsInvalid.With("context_lenses needs 'anchor', a node key, name or alias (fix: call it with {\"anchor\": \"feature:tabs\"}, or 'anchors' for several)")
-            : new GetContextLensesAnswerRequest(anchors, Draft: false, Depth: null, mapVersion);
+            : new GetContextLensesAnswerRequest(anchors, Draft: false, Depth: null, mapVersion, hops);
     }
 
     /// <summary>One lenses argument into the anchors (a single 'anchor' first) or the map version; false for a wrong type.</summary>
-    private static bool Take(string name, JsonElement value, List<string> anchors, ref string? mapVersion)
+    private static bool Take(string name, JsonElement value, List<string> anchors, ref string? mapVersion, ref string? hops)
     {
         if (string.Equals(name, "anchors", StringComparison.Ordinal))
         {
@@ -149,6 +154,10 @@ internal static class ContextTools
         if (string.Equals(name, "anchor", StringComparison.Ordinal))
         {
             anchors.Insert(0, value.GetString() ?? string.Empty);
+        }
+        else if (string.Equals(name, "hops", StringComparison.Ordinal))
+        {
+            hops = value.GetString();
         }
         else
         {
@@ -208,7 +217,7 @@ internal static class ContextTools
         }
 
         return new QueryContextRequest(Get(texts, "q"), Get(texts, "node"), Get(texts, "item"), Get(texts, "symbol"),
-            numbers.TryGetValue("depth", out var depth) ? depth.ToString(System.Globalization.CultureInfo.InvariantCulture) : null, numbers.TryGetValue("budget", out var budget) ? budget.ToString(System.Globalization.CultureInfo.InvariantCulture) : null, Diff: Get(texts, "diff"), MapVersion: Get(texts, "mapVersion"));
+            numbers.TryGetValue("depth", out var depth) ? depth.ToString(System.Globalization.CultureInfo.InvariantCulture) : null, numbers.TryGetValue("budget", out var budget) ? budget.ToString(System.Globalization.CultureInfo.InvariantCulture) : null, Diff: Get(texts, "diff"), Hops: Get(texts, "hops"), MapVersion: Get(texts, "mapVersion"));
     }
 
     /// <summary>One argument into its map; false for an unknown name or a wrong type. An optional argument sent as null is absent.</summary>
@@ -241,7 +250,7 @@ internal static class ContextTools
     private static string Invalid(string name, JsonElement value) =>
         _texts.Contains(name, StringComparer.Ordinal) || _numbers.Contains(name, StringComparer.Ordinal)
             ? $"'{name}' must be {(_texts.Contains(name, StringComparer.Ordinal) ? "a string" : "an integer")}, got {value.ValueKind.ToString().ToLowerInvariant()} (fix: see the tool's input schema)"
-            : $"context_query has no argument '{name}' (fix: q, node, item, symbol, diff, mapVersion, depth, budget)";
+            : $"context_query has no argument '{name}' (fix: q, node, item, symbol, diff, depth, hops, mapVersion, budget)";
 
     /// <summary>An object schema with these properties and no others.</summary>
     internal static JsonElement Schema(JsonObject properties, string[]? required = null)

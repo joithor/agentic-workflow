@@ -1,6 +1,7 @@
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Subgraph;
+using Aw.Context.Core.Results;
 
 namespace Aw.Context.Core.LensSupport;
 
@@ -15,6 +16,7 @@ public static class LensTexts
     {
         Anchor = view.Anchor with { Label = text.Label(view.Anchor.Label, view.Anchor.Trust) },
         Bands = Bands(view.Bands, text),
+        SkippedComponents = Units(view.SkippedComponents, text),
     };
 
     /// <summary>Cleans the map text of a lenses set view.</summary>
@@ -26,6 +28,7 @@ public static class LensTexts
         Anchors = [.. view.Anchors.Select(a => a with { Label = text.Label(a.Label, a.Trust) })],
         MissingAnchors = [.. view.MissingAnchors.Select(text.Line)],
         Bands = Bands(view.Bands, text),
+        SkippedComponents = Units(view.SkippedComponents, text),
     };
 
     /// <summary>Cleans the map text of a subgraph view.</summary>
@@ -37,6 +40,7 @@ public static class LensTexts
         Missing = [.. view.Missing.Select(text.Line)],
         Bands = Bands(view.Bands, text),
     };
+    private static IReadOnlyList<SkippedComponent>? Units(IReadOnlyList<SkippedComponent>? units, MapText text) => units is null ? null : [.. units.Select(u => u with { Unit = text.Line(u.Unit) })];
 
     private static LensBands Bands(LensBands bands, MapText text) => new(Intent(bands.Intent, text), Product(bands.Product, text), Code(bands.Code, text));
 

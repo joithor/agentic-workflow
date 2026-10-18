@@ -1,5 +1,6 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Graph;
 
 namespace Aw.Context.Tests.Core;
 
@@ -187,4 +188,42 @@ public sealed class QueryRulesTests
         Assert.Equal(ContextErrors.QueryInvalid.Code, QueryRules.CheckSubgraphGet([.. twenty, "feature:k.20"])!.Code);
         Assert.Equal(ContextErrors.QueryInvalid.Code, QueryRules.CheckSubgraphGet(["feature:" + new string('\u6f22', 900)])!.Code);
     }
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(null, null)]
+    [InlineData("component", CascadeHops.Component)]
+    [InlineData("state,flow,dependency,component", CascadeHops.Default | CascadeHops.Component)]
+    [InlineData(" Flow , state ,flow", CascadeHops.State | CascadeHops.Flow)]
+    public void Hops_from_text_are_absent_or_a_comma_list_in_any_order_case_and_repeat(string? text, CascadeHops? expected) =>
+        Assert.Equal(expected, QueryRules.ParseHops(text).Value);
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("bogus")]
+    [InlineData("state,neighbors")]
+    [InlineData("")]
+    [InlineData("state,,flow")]
+    [InlineData("8")]
+    [InlineData("none")]
+    [InlineData("Default")]
+    public void An_unknown_or_empty_hop_is_140(string text) =>
+        Assert.Equal(ContextErrors.HopsInvalid.Code, QueryRules.ParseHops(text).Error.Code);
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_profile_fan_out_of_10_reaches_the_walk_through_CascadeFor_so_a_unit_of_6_features_is_walked()
+    {
+        var edges = Enumerable.Range(0, 6).Select(i => new GraphEdge(NodeKey.From("code:src/util.ts"), NodeKey.From(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"feature:f{i}")), EdgeType.Implements)).ToList();
+        var graph = new GraphSnapshot([.. edges.SelectMany(e => new[] { e.From, e.To }).DistinctBy(k => k.Value, StringComparer.Ordinal).Select(k => new GraphNode(k, k.Value))], edges, [], []);
+        var hops = QueryRules.ParseHops("component").Value;
+
+        var byDefault = Cascade.Affects(graph, NodeKey.From("feature:f0"), depth: 1, QueryRules.CascadeFor(hops, new ContextSettings()));
+        var raised = Cascade.Affects(graph, NodeKey.From("feature:f0"), depth: 1, QueryRules.CascadeFor(hops, new ContextSettings { CascadeComponentFanOut = 10 }));
+
+        _ = Assert.Single(byDefault.SkippedComponents);
+        Assert.Empty(byDefault.Affected);
+        Assert.Empty(raised.SkippedComponents);
+        Assert.Equal(5, raised.Affected.Count);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_query_with_a_bad_hops_list_is_140_before_any_source_sees_it() =>
+        Assert.Equal(ContextErrors.HopsInvalid.Code, QueryRules.Check(new ContextQuery("x") { Hops = "bogus" }, new()).Error.Code);
 }

@@ -111,6 +111,11 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
 
     public ValueTask<Result<SubgraphView>> Subgraph(SubgraphQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         inner.Subgraph(query, scope, cancellationToken);
+    public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.Lenses(anchor, read, range, scope, cancellationToken);
+
+    public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.LensesOf(anchors, read, range, scope, cancellationToken);
 
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         inner.FileMap(query, scope, cancellationToken);

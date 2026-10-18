@@ -56,6 +56,9 @@ internal static class ContextApiScenarios
         ("context-subgraph", "too-many-006", async (s, ct) => await s.Fetch(Subgraph(string.Join('&', Enumerable.Range(0, 21).Select(i => "nodes=feature%3Anope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture)))), ct)),
         ("context-subgraph", "not-retained-120", async (s, ct) => await s.Fetch(Subgraph(ThreeKeys) + "&mapVersion=v99", ct)),
         ("context-subgraph", "query-refused-origin", async (s, ct) => await s.QueryForeignOrigin("/sindri/context/subgraph", SubgraphBody, ct)),
+        ("context-lenses", "hops-component", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Ashare.sharing&depth=1&hops=state,dependency,flow,component", ct)),
+        ("context-lenses", "hops-component-skipped", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Autil.u0&depth=1&hops=component", ct)),
+        ("context-lenses", "hops-bogus-140", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Ashare.sharing&hops=bogus", ct)),
         ("context-eval", "map-tabs", async (s, ct) => await s.Fetch("/sindri/context/eval/map", ct)),
         ("context-filemap", "root", async (s, ct) => await s.Fetch($"/sindri/context/filemap?repo={Repo}", ct)),
         ("context-filemap", "src", async (s, ct) => await s.Fetch($"/sindri/context/filemap?repo={Repo}&path=src/", ct)),
@@ -66,6 +69,8 @@ internal static class ContextApiScenarios
         ("context-map", "map-tabs-anchor", async (s, ct) => await s.Fetch($"/sindri/context/map?anchor={Anchor}", ct)),
         ("context-query", "diff-spl-103", async (s, ct) => await s.Fetch($"/sindri/context/query?diff={DiffRange(s)}&repo={FixtureMap.Repo}", ct)),
         ("context-query", "diff-unknown-sha-110", async (s, ct) => await s.Fetch($"/sindri/context/query?diff={_unknownBase}..{HeadOf(s)}&repo={FixtureMap.Repo}", ct)),
+        ("context-query", "diff-spl-103-hops-component", async (s, ct) => await s.Fetch($"/sindri/context/query?diff={DiffRange(s)}&repo={FixtureMap.Repo}&hops=component", ct)),
+        ("context-query", "hops-component-node", async (s, ct) => await s.Fetch("/sindri/context/query?node=feature%3Autil.u0&depth=1&hops=component", ct)),
         ("context-node", "tab-manager", async (s, ct) => await s.Fetch($"/sindri/context/node?key={Anchor}", ct)),
         ("context-map-review", "no-draft-044", async (s, ct) => await s.Fetch("/sindri/context/map/review", ct)),
         ("context-map-review", "session-auth-002", async (s, ct) => await s.SessionReview(ct)),
@@ -92,7 +97,7 @@ internal static class ContextApiScenarios
     /// <summary>Starts the host the scenario runs on, with the map imported (the bulk accept: a rebuilt draft over the fixture repo).</summary>
     public static async Task<GoldenHost> Start(string slug, string scenario, CancellationToken ct)
     {
-        if (slug == "context-query")
+        if (slug == "context-query" && scenario != "hops-component-node")
         {
             return await StartDiff(ct);
         }
@@ -159,6 +164,11 @@ internal static class ContextApiScenarios
 
     private static string ImportFile(GoldenHost host, string slug, string scenario)
     {
+        if (scenario.StartsWith("hops-", StringComparison.Ordinal))
+        {
+            return HopsMap(host.Home);
+        }
+
         if ((slug, scenario) is not ("context-lenses", "ambiguous-037"))
         {
             return MapTabsRepo.WriteMap(host.Home);
@@ -167,6 +177,33 @@ internal static class ContextApiScenarios
         var file = Path.Combine(host.Home, "ambiguous-map.yaml");
         File.WriteAllText(file, string.Join('\n', "schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:",
             "  - {key: \"feature:layout.a\", label: \"Layout\"}", "  - {key: \"feature:layout.b\", label: \"Layout\"}") + "\n");
+        return file;
+    }
+
+    /// <summary>Two features sharing one confirmed code unit, and six features sharing a utility over the default fan-out cap of 5.</summary>
+    private static string HopsMap(string home)
+    {
+        var nodes = new List<string>
+        {
+            "  - {key: \"feature:share.sharing\", label: \"Sharing\"}",
+            "  - {key: \"feature:share.export\", label: \"Export\"}",
+            "  - {key: \"code:src/share/Share.ts\", label: \"Share.ts\"}",
+            "  - {key: \"code:src/util/format.ts\", label: \"format.ts\"}",
+        };
+        var edges = new List<string>
+        {
+            "  - {from: \"code:src/share/Share.ts\", to: \"feature:share.sharing\", type: implements}",
+            "  - {from: \"code:src/share/Share.ts\", to: \"feature:share.export\", type: implements}",
+        };
+        for (var i = 0; i < 6; i++)
+        {
+            var key = string.Create(System.Globalization.CultureInfo.InvariantCulture, $"feature:util.u{i}");
+            nodes.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"  - {{key: \"{key}\", label: \"U{i}\"}}"));
+            edges.Add($"  - {{from: \"code:src/util/format.ts\", to: \"{key}\", type: implements}}");
+        }
+
+        var file = Path.Combine(home, "hops-map.yaml");
+        File.WriteAllText(file, string.Join('\n', ["schemaVersion: 1", "kind: authored", "repo: aw-split-panes", "nodes:", .. nodes, "edges:", .. edges]) + "\n");
         return file;
     }
 

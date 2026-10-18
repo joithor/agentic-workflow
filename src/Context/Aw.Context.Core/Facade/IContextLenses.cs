@@ -15,7 +15,7 @@ public interface IContextLenses
     /// <summary>The lenses around one node in the map <paramref name="read"/> names: the current version, the draft or a retained version (scoping spec C10).</summary>
     /// <param name="anchor">A node key, alias or label.</param>
     /// <param name="read">Which map.</param>
-    /// <param name="depth">How far the neighbors reach and the cascade runs (0 to 4), or null for the profile's 'context.cascadeDepth'.</param>
+    /// <param name="depth">How far the neighbors range and the cascade runs (0 to 4), or null for the profile's 'context.cascadeDepth'.</param>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The lenses, or SND-CONTEXT-001/003/004/006/020/030/037/044/120.</returns>
@@ -24,7 +24,7 @@ public interface IContextLenses
     /// <summary>The union of the lenses around several nodes (scoping spec C1, schema 2), read from one map snapshot.</summary>
     /// <param name="anchors">One to 20 node keys, aliases or labels; duplicates count once.</param>
     /// <param name="read">Which map.</param>
-    /// <param name="depth">How far the neighbors reach and the cascade runs (0 to 4), or null for the profile's 'context.cascadeDepth'.</param>
+    /// <param name="depth">How far the neighbors range and the cascade runs (0 to 4), or null for the profile's 'context.cascadeDepth'.</param>
     /// <param name="scope">The profile's context section and repos, and the caller.</param>
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The lenses; an anchor this caller can't read goes to 'missingAnchors', and none resolving is SND-CONTEXT-003. Also SND-CONTEXT-001/004/006/020/030/037/044/120.</returns>
@@ -36,6 +36,23 @@ public interface IContextLenses
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The view; a key this caller can't read goes to 'missing' (all missing is still an answer). SND-CONTEXT-001/004/006/020/030/037/044/120 otherwise.</returns>
     public ValueTask<Result<SubgraphView>> Subgraph(SubgraphQuery query, ContextScope scope, CancellationToken cancellationToken);
+    /// <summary>The lenses around one node with the cascade hops the caller names (the opt-in 'component' hop; C4).</summary>
+    /// <param name="anchor">A node key, alias or label.</param>
+    /// <param name="read">Which map.</param>
+    /// <param name="range">The depth and the cascade hops.</param>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The lenses, or SND-CONTEXT-140 for a bad hops list, else as the overload without hops.</returns>
+    public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken);
+
+    /// <summary>The union of the lenses around several nodes with the cascade hops the caller names.</summary>
+    /// <param name="anchors">One to 20 node keys, aliases or labels; duplicates count once.</param>
+    /// <param name="read">Which map.</param>
+    /// <param name="range">The depth and the cascade hops.</param>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The lenses, or SND-CONTEXT-140 for a bad hops list, else as the overload without hops.</returns>
+    public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>The direct children of a repo path with their status.</summary>
     /// <param name="query">The repo, the path and the filters.</param>

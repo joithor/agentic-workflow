@@ -31,6 +31,10 @@
           "description": "Cascade depth (at most 4)",
           "minimum": 0
         },
+        "hops": {
+          "type": "string",
+          "description": "The cascade hops, a comma list of state, flow, dependency and component; default state, flow and dependency"
+        },
         "budget": {
           "type": "integer",
           "description": "Token budget for the answer",
@@ -86,6 +90,10 @@
         "mapVersion": {
           "type": "string",
           "description": "A retained map version to read as of, such as v3; omit for the current map"
+        },
+        "hops": {
+          "type": "string",
+          "description": "The cascade hops, a comma list of state, flow, dependency and component; default state, flow and dependency"
         }
       }
     },

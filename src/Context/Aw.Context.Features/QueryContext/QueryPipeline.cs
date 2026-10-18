@@ -89,7 +89,7 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
         var (settings, scrubbers) = context;
         var (valid, read) = (checkedQuery.Valid, checkedQuery.Read);
         var query = request.Query;
-        var depth = query.Depth ?? settings.CascadeDepth;
+        var reach = CascadeReach.Of(query, settings);
         var map = await graphs.Read(request.Scope, read, cancellationToken).ConfigureAwait(false);
         if (query.Node is { } node)
         {
@@ -100,12 +100,12 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
             }
 
             var text = new MapText(scrubbers);
-            return (GraphAnswer.Build(map.Value, [anchor.Value], [], depth, text), text.SearchTerms(anchor.Value.Label));
+            return (GraphAnswer.Build(map.Value, [anchor.Value], [], reach, text), text.SearchTerms(anchor.Value.Label));
         }
 
         if (query.Symbol is { } symbol)
         {
-            return Symbolic(map, symbol, depth, new MapText(scrubbers));
+            return Symbolic(map, symbol, reach, new MapText(scrubbers));
         }
 
         if (map.IsError)
@@ -116,7 +116,7 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
 
         var found = AnchorMatch.FromText(map.Value.Graph, query.Text ?? string.Empty);
         var anchors = found.Anchors.Select(map.Value.Graph.Resolve).OfType<GraphNode>().ToList();
-        return (GraphAnswer.Build(map.Value, anchors, found.Suggested, depth, new MapText(scrubbers)), valid.Terms);
+        return (GraphAnswer.Build(map.Value, anchors, found.Suggested, reach, new MapText(scrubbers)), valid.Terms);
     }
 
     private static async ValueTask<Result<(GraphPart Graph, IReadOnlyList<string> Terms, ItemMiss? Miss)>> AnchorFor(QueryContextRequest request, CheckedQuery checkedQuery,
@@ -172,7 +172,7 @@ internal sealed partial class QueryPipeline(IScrubberFactory scrubberFactory, II
         var text = new MapText(context.Scrubbers);
         var touched = ItemAnchors.Touched(found.Map.Graph, found.Record);
         var terms = QueryRules.Terms(found.Record.Key.Name).Concat(QueryRules.Terms(item)).Concat(touched.Skip(1).SelectMany(n => text.SearchTerms(n.Label))).Distinct(StringComparer.Ordinal).Take(QueryRules.MaxTerms).ToList();
-        return (GraphAnswer.Build(found.Map, touched, [], request.Query.Depth ?? context.Settings.CascadeDepth, text), terms, null);
+        return (GraphAnswer.Build(found.Map, touched, [], CascadeReach.Of(request.Query, context.Settings), text), terms, null);
     }
 
     private static Error Unknown(ItemMiss miss, ContextScope scope) => QueryRules.UnknownItem(miss.Item, miss.Suggested, scope.SyncConfigured);

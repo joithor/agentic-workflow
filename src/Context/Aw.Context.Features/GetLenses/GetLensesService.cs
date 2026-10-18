@@ -31,6 +31,12 @@ internal sealed class GetLensesService(MapReader reader, LensBasisReader bases, 
             return badDepth;
         }
 
+        var hops = QueryRules.ParseHops(request.Hops);
+        if (hops.IsError)
+        {
+            return hops.Error;
+        }
+
         var read = await reader.ReadViewAt(request.Scope, request.Read, cancellationToken).ConfigureAwait(false);
         var anchor = read.IsError ? read.Error : AnchorMatch.Resolve(read.Value.Graph, request.Anchor);
         if (read.IsError || anchor.IsError)
@@ -38,7 +44,7 @@ internal sealed class GetLensesService(MapReader reader, LensBasisReader bases, 
             return read.IsError ? read.Error : anchor.Error;
         }
 
-        var basis = await bases.For(read.Value, settings.Value, request.Scope, request.Read.Draft, cancellationToken).ConfigureAwait(false);
+        var basis = (await bases.For(read.Value, settings.Value, request.Scope, request.Read.Draft, cancellationToken).ConfigureAwait(false)) with { Cascade = QueryRules.CascadeFor(hops.Value, settings.Value) };
         var view = LensesBuilder.Build(basis, read.Value.Graph, anchor.Value.Key, depth, read.Value.Conflicts);
         return view.Map(v => LensTexts.Clean(v, new MapText(built.Value, FencePolicies.For(request.Scope.Caller))));
     }
