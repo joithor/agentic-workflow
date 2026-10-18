@@ -19,6 +19,7 @@ public sealed partial class ShippedRecipesTests
                 "dev/desk-round-trip.yaml", "dev/incident-hold.yaml", "dev/triage-three-state.yaml", "dev/workflow.dev-child-outputs.yaml", "dev/workflow.dev-child-summary.yaml",
                 "dev/workflow.dev-evidence-route.yaml",
                 "dev/workflow.dev-notify.yaml", "dev/workflow.dev-timeout.yaml",
+                "sindri/workflow.build.yaml", "sindri/workflow.prove.yaml",
                 "sindri/workflow.evidence-all.yaml", "sindri/workflow.evidence-api.yaml", "sindri/workflow.evidence-db.yaml",
                 "sindri/workflow.evidence-other.yaml", "sindri/workflow.evidence-ui.yaml", "sindri/workflow.evidence.yaml",
                 "sindri/workflow.hand-test.yaml", "sindri/workflow.idea-to-brief.yaml", "sindri/workflow.implement.yaml",
@@ -112,6 +113,7 @@ public sealed partial class ShippedRecipesTests
                 ("workflow.evidence-all", "workflow.evidence-api"), ("workflow.evidence-all", "workflow.evidence-db"), ("workflow.evidence-all", "workflow.evidence-ui"),
                 ("workflow.item", "workflow.step"),
                 ("workflow.line", "workflow.implement"), ("workflow.line", "workflow.scoping"),
+                ("workflow.prove", "workflow.evidence"), ("workflow.prove", "workflow.hand-test"), ("workflow.prove", "workflow.verify"),
                 ("workflow.scoping", "workflow.idea-to-brief"),
             ],
             pairs);

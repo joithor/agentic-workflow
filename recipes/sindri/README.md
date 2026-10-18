@@ -9,6 +9,8 @@ The recipes Sindri ships. Each is a YAML state machine (`docs/csharp/sindri-work
 | `workflow.scoping` | Station 1 of the line: scope a brief, tracker item, idea or change; interview; challenge; park at the owner's stop with a scope packet | scoping spec §6.1 |
 | `workflow.idea-to-brief` | Block recipe, the child of `workflow.scoping`'s `idea` branch: a short interview turns an idea into a cited brief | scoping spec §6.2 |
 | `workflow.line` | A minimal first cut of the line spec's `workflow.line` (the full line, LN-L, grows it later): waits on `workflow.scoping` as a child, then on `workflow.implement` as the build child; ends `done`, `dropped` (scoping unresolved or cancelled) or `stuck` (build unresolved) | line spec §3.5, LN-WF8 |
+| `workflow.build` | Station 4 of the line: one TDD builder per phase in its worktree (red tests, green code, scope gate, owner-granted scope amendments) | line spec §7.2 |
+| `workflow.prove` | Station 5 of the line: prove every acceptance item on the head (hand test, verify and evidence as children, before/after, hidden scenarios), then freeze the proof pack | line spec §7.3 |
 | The block recipes below | The small recipes bugfix and spec-to-PR runs are built from | decision-tree spec (DT-R2) |
 
 ```bash
@@ -73,3 +75,10 @@ DTC2 to DTC9 as the plan reads them. Out of this change: seeds (DT-R3), `workflo
 
 - A check cancelled inside `evidence-all` ends `workflow.evidence` in `all-failed`, not `dropped`. `evidence-all` reports it as its own unresolved `dropped`, because a recipe terminal can't declare `cancelled`.
 - A change that touches two of ui, api and db is not an `all` change (`all` needs all three). The judge routes it to one leaf, or ends uncertain and the desk picks. Running two leaves needs DT-B or DT-E.
+
+## Line stations: build and prove
+
+- Every Step of `workflow.build` and `workflow.prove` is descriptor-only (`BuildSteps.cs`, `ProveSteps.cs`), so each parks with SND-WF-010 at the desk until its runtime ships. Only the owner may report `step.build.scope-desk`.
+- `workflow.build` inputs: `fact:phasePacket`, `fact:workspace` (text), `fact:buildNotes`, `fact:lineContext`. Outputs: `fact:built`, `fact:change`, `fact:redTests`, `fact:activePacket`. Terminals: `built` (resolved), `stopped` (unresolved).
+- `workflow.prove` inputs: `fact:phasePacket`, `fact:built`, `fact:workspace` (text), `fact:redTests`. Outputs: `fact:proofPack`, `fact:findings`. Terminals: `proven` (resolved), `failed` (unresolved, `fact:findings`). It waits on `workflow.hand-test`, `workflow.verify` and `workflow.evidence`.
+- Every wait on the heavy-job slot parks with SND-WF-010 until the engine's heavy allocator is wired (RCP-RES-001).

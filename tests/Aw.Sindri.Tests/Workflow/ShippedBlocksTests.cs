@@ -25,12 +25,14 @@ public sealed class ShippedBlocksTests
         Assert.Equal(
             [
                 "effect.claim.ref", "effect.notify.desk", "evidence.check", "gate.budget.available", "gate.route.startable", "input.context.code",
-                "input.context.history", "input.context.lenses", "step.brief.questions", "step.brief.seed", "step.brief.write", "step.bugfix.judge",
+                "input.context.history", "input.context.lenses", "step.brief.questions", "step.brief.seed", "step.brief.write", "step.build.amend", "step.build.checks", "step.build.green", "step.build.prepare", "step.build.red",
+                "step.build.red-check", "step.build.scope-desk", "step.bugfix.judge",
                 "step.bugfix.recheck", "step.bugfix.record-candidate", "step.bugfix.start-attempt", "step.checks", "step.desk.choose",
                 "step.evidence.api-plan", "step.evidence.api-run", "step.evidence.combine", "step.evidence.db-plan", "step.evidence.db-run",
                 "step.evidence.desk", "step.evidence.none", "step.evidence.ui-plan", "step.evidence.ui-run", "step.handtest.run",
                 "step.intake.ticket", "step.interview.answer", "step.interview.apply", "step.interview.questions", "step.interview.record",
-                "step.judge.choose", "step.owner.decide", "step.produce", "step.report.write", "step.reproduce.test-check", "step.reproduce.ui-check",
+                "step.judge.choose", "step.owner.decide", "step.produce", "step.prove.before-after", "step.prove.evidence", "step.prove.fail-log", "step.prove.holdout",
+                "step.prove.holdout-log", "step.prove.intake", "step.report.write", "step.reproduce.test-check", "step.reproduce.ui-check",
                 "step.review.fix", "step.review.recheck", "step.review.run", "step.rootcause.investigate", "step.scope.anchor",
                 "step.scope.challenge", "step.scope.challenge-log", "step.scope.check", "step.scope.draft", "step.scope.evidence",
                 "step.scope.freeze", "step.scope.gather", "step.scope.intake", "step.scope.propose", "step.scope.read-brief",
