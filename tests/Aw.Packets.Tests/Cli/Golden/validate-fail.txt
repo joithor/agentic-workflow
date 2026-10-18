@@ -12,5 +12,5 @@ pass      PKT-EVID-001 packet: every acceptance example maps to an evidence kind
 pass      PKT-DEC-001 packet: every question is answered or deferred with an owner and a default
 pass      PKT-HOLD-001 packet: every task holds an acceptance example out
 pass      PKT-HOLD-002 packet: no held-out example keeps its text in the packet
-unchecked PKT-SIZE-001 packet: the size-class budgets aren't defined yet, so each task's size and budget are recorded but not compared
+unchecked PKT-SIZE-001 packet: no sizes file was given (validate --sizes <file>), so each task's size and budget are recorded but not compared
 unchecked PKT-FLOW-001 packet: workflow coverage (addendum §17.7) needs the lens catalog and workflow generation, which don't exist yet

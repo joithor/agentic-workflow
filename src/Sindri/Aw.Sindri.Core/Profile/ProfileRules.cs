@@ -39,7 +39,7 @@ public static class ProfileRules
     }
 
     private static Error? Sections(SindriProfile profile) =>
-        Services(profile.Services) ?? Durations(profile.Workflow) ?? Effects(profile.Workflow) ?? Globs(profile) ?? LaunchKeys(profile.Launch) ?? AgentKeys(profile.Agents);
+        Services(profile.Services) ?? Workflow(profile.Workflow) ?? Globs(profile) ?? LaunchKeys(profile.Launch) ?? AgentKeys(profile.Agents);
 
     /// <summary>The 'launch:' keys: the confirm window is a duration, and a repo has a name. Agent ids are checked by pattern when read, never against the catalog.</summary>
     private static Error? LaunchKeys(LaunchSettings? launch)
@@ -224,6 +224,9 @@ public static class ProfileRules
             ? Invalid("workflow.dispatchDelay", $"'{delay}' is not a delay: a whole number and s, m or h (for example 10s), from 5s to 24h")
             : null;
     }
+
+    private static Error? Workflow(WorkflowSettings? workflow) =>
+        Durations(workflow) ?? Effects(workflow) ?? ForgeRules.Check(workflow?.Forge);
 
     private static Error Invalid(string keyPath, string problem) =>
         SindriErrors.ProfileInvalid.With($"{keyPath}: {problem}");

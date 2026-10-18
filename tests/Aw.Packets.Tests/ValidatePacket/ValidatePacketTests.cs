@@ -13,7 +13,7 @@ public sealed class ValidatePacketTests
     {
         var service = new ValidatePacketService(new PacketInspector(
             new InMemoryPacketSource().With("pkt", PacketFiles.Of(packet.Build())),
-            repo ?? new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles)));
+            repo ?? new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles)), new InMemorySizesSource());
         var result = await service.Handle(new ValidatePacketRequest("pkt"), CancellationToken.None);
         Assert.True(result.IsSuccess, result.IsError ? result.Error.Message : null);
         return result.Value;
@@ -152,7 +152,7 @@ public sealed class ValidatePacketTests
     {
         var service = new ValidatePacketService(new PacketInspector(
             new InMemoryPacketSource().With("pkt", PacketFiles.Of(A.Packet().Build())),
-            new InMemoryRepoSnapshot().Unreadable("pkt")));
+            new InMemoryRepoSnapshot().Unreadable("pkt")), new InMemorySizesSource());
 
         var result = await service.Handle(new ValidatePacketRequest("pkt"), CancellationToken.None);
 
@@ -164,7 +164,7 @@ public sealed class ValidatePacketTests
     {
         var repo = new InMemoryRepoSnapshot().With(PacketBuilder.BaseSha, PacketBuilder.BaseFiles).Unreadable("pkt");
         var service = new ValidatePacketService(new PacketInspector(
-            new InMemoryPacketSource().With("pkt", PacketFiles.Of(A.Packet().Build())), repo));
+            new InMemoryPacketSource().With("pkt", PacketFiles.Of(A.Packet().Build())), repo), new InMemorySizesSource());
 
         var defaulted = await service.Handle(new ValidatePacketRequest("pkt"), CancellationToken.None);
         var given = await service.Handle(new ValidatePacketRequest("pkt", "repo"), CancellationToken.None);

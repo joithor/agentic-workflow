@@ -1,4 +1,6 @@
+using Aw.Packets.Core.Ids;
 using Aw.Packets.Core.Model;
+using Aw.Packets.Core.Values;
 
 namespace Aw.Packets.Core;
 
@@ -14,6 +16,14 @@ public static class FreezeLocation
     public static string Of(FreezeRecord record)
     {
         ArgumentNullException.ThrowIfNull(record);
-        return $"{record.Repo.Value}/{record.Packet.Value}/frozen/{record.Hash.Hex}.json";
+        return Of(record.Repo, record.Packet, record.Hash);
     }
+
+    /// <summary>The location of the record for <paramref name="hash"/> of <paramref name="packet"/> in <paramref name="repo"/>.</summary>
+    /// <param name="repo">The repository.</param>
+    /// <param name="packet">The packet id.</param>
+    /// <param name="hash">The canonical hash.</param>
+    /// <returns>The relative path.</returns>
+    public static string Of(RepoSlug repo, PacketId packet, PacketHash hash) =>
+        $"{repo.Value}/{packet.Value}/frozen/{hash.Hex}.json";
 }

@@ -1720,6 +1720,17 @@ Aw.Sindri.Core.Profile.EffectSettings.DispatchDelay.get -> System.TimeSpan
 Aw.Sindri.Core.Profile.EffectSettings.DispatchDelay.init -> void
 Aw.Sindri.Core.Profile.EffectSettings.EffectSettings(System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.BlockId>? Allowlist, System.TimeSpan DispatchDelay) -> void
 Aw.Sindri.Core.Profile.EffectSettings.Equals(Aw.Sindri.Core.Profile.EffectSettings? other) -> bool
+Aw.Sindri.Core.Profile.ForgeSettings
+Aw.Sindri.Core.Profile.ForgeSettings.<Clone>$() -> Aw.Sindri.Core.Profile.ForgeSettings!
+Aw.Sindri.Core.Profile.ForgeSettings.Adapter.get -> string?
+Aw.Sindri.Core.Profile.ForgeSettings.Adapter.init -> void
+Aw.Sindri.Core.Profile.ForgeSettings.Credential.get -> string?
+Aw.Sindri.Core.Profile.ForgeSettings.Credential.init -> void
+Aw.Sindri.Core.Profile.ForgeSettings.Deconstruct(out string? Adapter, out System.Collections.Generic.IReadOnlyList<string!>? Hosts, out string? Credential) -> void
+Aw.Sindri.Core.Profile.ForgeSettings.Equals(Aw.Sindri.Core.Profile.ForgeSettings? other) -> bool
+Aw.Sindri.Core.Profile.ForgeSettings.ForgeSettings(string? Adapter = null, System.Collections.Generic.IReadOnlyList<string!>? Hosts = null, string? Credential = null) -> void
+Aw.Sindri.Core.Profile.ForgeSettings.Hosts.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Profile.ForgeSettings.Hosts.init -> void
 Aw.Sindri.Core.Profile.IApprovals
 Aw.Sindri.Core.Profile.IApprovals.Save(Aw.Sindri.Core.Profile.LoadedProfile! profile, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
 Aw.Sindri.Core.Profile.IApprovedProfile
@@ -1790,7 +1801,7 @@ Aw.Sindri.Core.Profile.SindriProfile.Workflow.get -> Aw.Sindri.Core.Profile.Work
 Aw.Sindri.Core.Profile.SindriProfile.Workflow.init -> void
 Aw.Sindri.Core.Profile.WorkflowSettings
 Aw.Sindri.Core.Profile.WorkflowSettings.<Clone>$() -> Aw.Sindri.Core.Profile.WorkflowSettings!
-Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay) -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.ForgeSettings? Forge) -> void
 Aw.Sindri.Core.Profile.WorkflowSettings.DeskTimeout.get -> string?
 Aw.Sindri.Core.Profile.WorkflowSettings.DeskTimeout.init -> void
 Aw.Sindri.Core.Profile.WorkflowSettings.DispatchDelay.get -> string?
@@ -1800,7 +1811,9 @@ Aw.Sindri.Core.Profile.WorkflowSettings.Effects.init -> void
 Aw.Sindri.Core.Profile.WorkflowSettings.Equals(Aw.Sindri.Core.Profile.WorkflowSettings? other) -> bool
 Aw.Sindri.Core.Profile.WorkflowSettings.EventHold.get -> string?
 Aw.Sindri.Core.Profile.WorkflowSettings.EventHold.init -> void
-Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null) -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Forge.get -> Aw.Sindri.Core.Profile.ForgeSettings?
+Aw.Sindri.Core.Profile.WorkflowSettings.Forge.init -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.ForgeSettings? Forge = null) -> void
 Aw.Sindri.Core.Profile.WorkflowTimes
 Aw.Sindri.Core.Profile.WorkflowTimes.<Clone>$() -> Aw.Sindri.Core.Profile.WorkflowTimes!
 Aw.Sindri.Core.Profile.WorkflowTimes.Deconstruct(out System.TimeSpan DeskTimeout, out System.TimeSpan EventHold) -> void
@@ -2444,6 +2457,17 @@ Aw.Sindri.Core.Workflow.Blocks.StepInputContext.Input.init -> void
 Aw.Sindri.Core.Workflow.Blocks.StepInputContext.Step.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
 Aw.Sindri.Core.Workflow.Blocks.StepInputContext.Step.init -> void
 Aw.Sindri.Core.Workflow.Blocks.StepInputContext.StepInputContext(Aw.Sindri.Core.Workflow.Ids.BlockId Input, Aw.Sindri.Core.Workflow.Ids.BlockId Step, System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Arguments, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! Facts) -> void
+Aw.Sindri.Core.Workflow.Registry.StepInputRefusals
+Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration
+Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration!
+Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Id) -> void
+Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration.Equals(Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration? other) -> bool
+Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration.Id.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
+Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration.Id.init -> void
+Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration.StepInputRegistration(Aw.Sindri.Core.Workflow.Ids.BlockId Id) -> void
+Aw.Sindri.Core.Workflow.Blocks.StepInputRuntimes
+Aw.Sindri.Core.Workflow.Blocks.StepInputRuntimes.Has(Aw.Sindri.Core.Workflow.Ids.BlockId id) -> bool
+Aw.Sindri.Core.Workflow.Blocks.StepInputRuntimes.StepInputRuntimes(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration!>! runtimes) -> void
 Aw.Sindri.Core.Workflow.Blocks.StepReport
 Aw.Sindri.Core.Workflow.Blocks.StepReport.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.StepReport!
 Aw.Sindri.Core.Workflow.Blocks.StepReport.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! Outputs) -> void
@@ -4543,7 +4567,7 @@ Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner.Approve(Aw.Sindri.Core.Wo
 Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner.Approve(Aw.Sindri.Core.Workflow.Registry.RegisteredRecipe! recipe, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.ApprovalPlan!>!>
 Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner.Find(Aw.Sindri.Core.Workflow.Ids.RecipeId id, string! hash, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.RegisteredRecipe!>!>
 Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner.Preview(Aw.Sindri.Core.Workflow.Registry.RegisteredRecipe! recipe, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Registry.ApprovalPreview!>!>
-Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner.RecipeApprovalPlanner(Aw.Sindri.Core.Workflow.Registry.IRecipeStore! store, Aw.Sindri.Core.Workflow.Registry.IRecipeApprovals! approvals, Aw.Sindri.Core.Workflow.Registry.IRecipeWake! wake, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! catalog, System.Text.Json.JsonSerializerOptions! json, Aw.Sindri.Core.Workflow.Validation.IRecipeProfileFacts! profile) -> void
+Aw.Sindri.Core.Workflow.Registry.RecipeApprovalPlanner.RecipeApprovalPlanner(Aw.Sindri.Core.Workflow.Registry.IRecipeStore! store, Aw.Sindri.Core.Workflow.Registry.IRecipeApprovals! approvals, Aw.Sindri.Core.Workflow.Registry.IRecipeWake! wake, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! catalog, System.Text.Json.JsonSerializerOptions! json, Aw.Sindri.Core.Workflow.Validation.IRecipeProfileFacts! profile, Aw.Sindri.Core.Workflow.Blocks.StepInputRuntimes! inputRuntimes) -> void
 Aw.Sindri.Core.Workflow.Registry.RecipeApproved
 Aw.Sindri.Core.Workflow.Registry.RecipeApproved.<Clone>$() -> Aw.Sindri.Core.Workflow.Registry.RecipeApproved!
 Aw.Sindri.Core.Workflow.Registry.RecipeApproved.Base.get -> Aw.Sindri.Core.Workflow.Recipes.RecipeRef?
@@ -6050,6 +6074,9 @@ override Aw.Sindri.Core.Profile.Cadence.ToString() -> string!
 override Aw.Sindri.Core.Profile.EffectSettings.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Profile.EffectSettings.GetHashCode() -> int
 override Aw.Sindri.Core.Profile.EffectSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.ForgeSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.ForgeSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.ForgeSettings.ToString() -> string!
 override Aw.Sindri.Core.Profile.IndexSettings.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Profile.IndexSettings.GetHashCode() -> int
 override Aw.Sindri.Core.Profile.IndexSettings.ToString() -> string!
@@ -6169,6 +6196,9 @@ override Aw.Sindri.Core.Workflow.Blocks.StepContext.ToString() -> string!
 override Aw.Sindri.Core.Workflow.Blocks.StepInputContext.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Blocks.StepInputContext.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Blocks.StepInputContext.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration.ToString() -> string!
 override Aw.Sindri.Core.Workflow.Blocks.StepReport.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Blocks.StepReport.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Blocks.StepReport.ToString() -> string!
@@ -7301,6 +7331,8 @@ static Aw.Sindri.Core.Profile.EffectSettings.IsEffectId(string! entry) -> bool
 static Aw.Sindri.Core.Profile.EffectSettings.Of(Aw.Sindri.Core.Profile.SindriProfile! profile) -> Aw.Sindri.Core.Profile.EffectSettings!
 static Aw.Sindri.Core.Profile.EffectSettings.operator !=(Aw.Sindri.Core.Profile.EffectSettings? left, Aw.Sindri.Core.Profile.EffectSettings? right) -> bool
 static Aw.Sindri.Core.Profile.EffectSettings.operator ==(Aw.Sindri.Core.Profile.EffectSettings? left, Aw.Sindri.Core.Profile.EffectSettings? right) -> bool
+static Aw.Sindri.Core.Profile.ForgeSettings.operator !=(Aw.Sindri.Core.Profile.ForgeSettings? left, Aw.Sindri.Core.Profile.ForgeSettings? right) -> bool
+static Aw.Sindri.Core.Profile.ForgeSettings.operator ==(Aw.Sindri.Core.Profile.ForgeSettings? left, Aw.Sindri.Core.Profile.ForgeSettings? right) -> bool
 static Aw.Sindri.Core.Profile.IndexSettings.operator !=(Aw.Sindri.Core.Profile.IndexSettings? left, Aw.Sindri.Core.Profile.IndexSettings? right) -> bool
 static Aw.Sindri.Core.Profile.IndexSettings.operator ==(Aw.Sindri.Core.Profile.IndexSettings? left, Aw.Sindri.Core.Profile.IndexSettings? right) -> bool
 static Aw.Sindri.Core.Profile.LoadedProfile.operator !=(Aw.Sindri.Core.Profile.LoadedProfile? left, Aw.Sindri.Core.Profile.LoadedProfile? right) -> bool
@@ -7439,6 +7471,9 @@ static Aw.Sindri.Core.Workflow.Blocks.StepContext.operator !=(Aw.Sindri.Core.Wor
 static Aw.Sindri.Core.Workflow.Blocks.StepContext.operator ==(Aw.Sindri.Core.Workflow.Blocks.StepContext? left, Aw.Sindri.Core.Workflow.Blocks.StepContext? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.StepInputContext.operator !=(Aw.Sindri.Core.Workflow.Blocks.StepInputContext? left, Aw.Sindri.Core.Workflow.Blocks.StepInputContext? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.StepInputContext.operator ==(Aw.Sindri.Core.Workflow.Blocks.StepInputContext? left, Aw.Sindri.Core.Workflow.Blocks.StepInputContext? right) -> bool
+static Aw.Sindri.Core.Workflow.Registry.StepInputRefusals.Check(Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Blocks.StepInputRuntimes! runtimes) -> Aw.Kernel.Error?
+static Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration.operator !=(Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration? left, Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration? right) -> bool
+static Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration.operator ==(Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration? left, Aw.Sindri.Core.Workflow.Blocks.StepInputRegistration? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.StepReport.operator !=(Aw.Sindri.Core.Workflow.Blocks.StepReport? left, Aw.Sindri.Core.Workflow.Blocks.StepReport? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.StepReport.operator ==(Aw.Sindri.Core.Workflow.Blocks.StepReport? left, Aw.Sindri.Core.Workflow.Blocks.StepReport? right) -> bool
 static Aw.Sindri.Core.Workflow.Blocks.StepResult.operator !=(Aw.Sindri.Core.Workflow.Blocks.StepResult? left, Aw.Sindri.Core.Workflow.Blocks.StepResult? right) -> bool
@@ -8101,6 +8136,7 @@ static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.RecipeRevoked -> Aw.Kerne
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.RecipeUnreadable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.RecipeVersionTaken -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.StaleRunToken -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.StepInputNoRuntime -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.TriggerNotAllowed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.WorkflowChallengeStale -> Aw.Kernel.ErrorDefinition!
 virtual Aw.Sindri.Core.Workflow.Engine.Decisions.Decision.EqualityContract.get -> System.Type!
