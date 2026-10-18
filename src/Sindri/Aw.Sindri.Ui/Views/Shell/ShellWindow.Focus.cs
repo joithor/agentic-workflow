@@ -200,4 +200,35 @@ internal sealed partial class ShellWindow
 
     private static Control? Usable(Control? control) =>
         control is { IsEffectivelyVisible: true, IsEffectivelyEnabled: true, Focusable: true } ? control : null;
+
+    // Opening the sheet over the page (below 1100 px) moves focus to its heading (§11.2). Beside the page focus stays
+    // where it is, unless what had it hid as the sheet opened (the edge tab at 1100 px and wider; review run 4,
+    // accessibility-tester-0): then the heading gets it too, never a hidden control.
+    private void FocusOpenedSheet()
+    {
+        if (Shell is { IsSheetShown: true } shell && (Covering || !HasRealFocus))
+        {
+            _ = this.Get<Border>("SheetTitle").Focus(Method());
+            if (NoOpener(shell))
+            {
+                EnterOpenedFrame(shell);   // a link with no row behind it goes on to the frame; a row's open stays on the heading (§11.2)
+            }
+        }
+        else if (Shell is { IsSheetShown: true, IsInstanceSheet: true } opened && NoOpener(opened))
+        {
+            EnterOpenedFrame(opened);   // a link with no row behind it (a deep link, a pointer): nothing on the page to stay on
+        }
+    }
+
+    // The page region takes focus (named, so the page is spoken); the Context page then sends it on to its anchor box. One path for a page change and the window opening.
+    private void LandOnPage()
+    {
+        Dispatcher.UIThread.Post(KeepFocusOrReannounce, DispatcherPriority.Loaded);
+        FocusContextAnchor();
+    }
+
+    // Focus on a visible, enabled control. The window itself is no focus: an activated desktop window puts focus on its own scope first.
+    private bool HasRealFocus => HasUsableFocus && FocusManager?.GetFocusedElement() is not ShellWindow;
+
+    private bool HasUsableFocus => FocusManager?.GetFocusedElement() is Control { IsEffectivelyVisible: true, IsEffectivelyEnabled: true };
 }
