@@ -10,6 +10,7 @@ internal sealed class EgressListener : IAsyncDisposable
     private readonly Task _accept;
     private readonly List<Task> _connections = [];
     private readonly Lock _gate = new();
+    private int _disposed;
 
     private EgressListener(Socket socket, Func<Stream, CancellationToken, Task> handler)
     {
@@ -44,9 +45,26 @@ internal sealed class EgressListener : IAsyncDisposable
         return new EgressListener(socket, handler);
     }
 
+    /// <summary>Stops accepting at once, without waiting: for a start that failed before anything was handed out.</summary>
+    public void Abort()
+    {
+        if (Interlocked.Exchange(ref _disposed, 1) == 1)
+        {
+            return;
+        }
+
+        _stop.Cancel();
+        _socket.Dispose();
+    }
+
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) == 1)
+        {
+            return;
+        }
+
         await _stop.CancelAsync().ConfigureAwait(false);
         _socket.Dispose();
         _ = await Task.WhenAny(_accept).ConfigureAwait(false);
@@ -60,9 +78,9 @@ internal sealed class EgressListener : IAsyncDisposable
         {
             await Task.WhenAll(open).WaitAsync(TimeSpan.FromSeconds(5), CancellationToken.None).ConfigureAwait(false);
         }
-        catch (Exception e) when (e is TimeoutException or OperationCanceledException)
+        catch (Exception e) when (e is not OutOfMemoryException)
         {
-            // A connection that won't end is dropped with the process.
+            // A connection that won't end, or that failed, is not the run's fault; it is dropped with the process.
         }
 
         _stop.Dispose();

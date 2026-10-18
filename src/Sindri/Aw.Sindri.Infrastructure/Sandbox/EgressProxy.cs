@@ -43,13 +43,14 @@ internal sealed class EgressProxy(EgressPolicy policy, IEgressDialer dialer, Egr
         finally
         {
             _ = Interlocked.Decrement(ref _active);
-            log.Flush();
         }
     }
 
     private async Task Serve(Stream client, CancellationToken cancellationToken)
     {
-        var (head, tail) = await ReadHead(client, cancellationToken).ConfigureAwait(false);
+        using var headLimit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        headLimit.CancelAfter(caps.HeadTimeout);
+        var (head, tail) = await ReadHead(client, headLimit.Token).ConfigureAwait(false);
         var lines = Encoding.Latin1.GetString(head).Split("\r\n");
         var parts = lines[0].Split(' ');
         if (parts.Length != 3 || !TryTarget(parts, out var host, out var port, out var origin))

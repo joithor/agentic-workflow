@@ -1,3 +1,4 @@
+using System.Net.Sockets;
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Sandbox;
@@ -31,30 +32,47 @@ internal sealed class EgressService(IEgressResolver resolver, IEgressDialer dial
             return SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, SandboxReasons.NetForward, "the socket directory path is too long");
         }
 
-        EgressSocketDirectory.Create(network.NetDir);
-        _ = Directory.CreateDirectory(runDirectory);
-        var log = new EgressLog(Path.Combine(runDirectory, "egress.log"));
-        var proxy = new EgressProxy(new EgressPolicy(network.Groups, resolver), dialer, log, caps);
-        var forward = new EgressForward(network.SindriPort);
-#pragma warning disable CA2000 // ownership passes to RunningEgress, which disposes both
-        var proxyListener = EgressListener.Start(Path.Combine(network.NetDir, EgressSocketDirectory.ProxySocket), proxy.Handle);
+        EgressListener? proxyListener = null;
         try
         {
+            EgressSocketDirectory.Create(network.NetDir);
+            _ = Directory.CreateDirectory(runDirectory);
+            var log = new EgressLog(Path.Combine(runDirectory, "egress.log"));
+            var proxy = new EgressProxy(new EgressPolicy(network.Groups, resolver), dialer, log, caps);
+            var forward = new EgressForward(network.SindriPort);
+#pragma warning disable CA2000 // ownership passes to RunningEgress, which disposes both
+            proxyListener = EgressListener.Start(Path.Combine(network.NetDir, EgressSocketDirectory.ProxySocket), proxy.Handle);
             var sindriListener = EgressListener.Start(Path.Combine(network.NetDir, EgressSocketDirectory.SindriSocket), forward.Handle);
             log.Flush();
             return new RunningEgress(socat, network.NetDir, log, proxyListener, sindriListener);
-        }
-        catch
-        {
-            _ = proxyListener.DisposeAsync().AsTask();
-            throw;
-        }
 #pragma warning restore CA2000
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or SocketException)
+        {
+            proxyListener?.Abort();
+            RemoveDirectory(network.NetDir);
+            return SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, SandboxReasons.NetForward, "the forwarders could not start: " + e.Message);
+        }
+    }
+
+    private static void RemoveDirectory(string directory)
+    {
+        try
+        {
+            if (Directory.Exists(directory))
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+        catch (IOException)
+        {
+            // Nothing more to undo; the launch is refused either way.
+        }
     }
 
     private string? FindSocat()
     {
-        if (environment("AW_SANDBOX_SOCAT") is { Length: > 0 } configured)
+        if (environment(SandboxEnvironment.Socat) is { Length: > 0 } configured)
         {
             return File.Exists(configured) ? configured : null;
         }

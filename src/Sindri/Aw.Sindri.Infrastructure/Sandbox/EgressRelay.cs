@@ -1,3 +1,5 @@
+using System.Net.Sockets;
+
 namespace Aw.Sindri.Infrastructure.Sandbox;
 
 /// <summary>Copies bytes both ways between two streams until either side ends.</summary>
@@ -16,8 +18,17 @@ internal static class EgressRelay
         var backward = Pump(b, a, allow, both.Token);
         try
         {
-            _ = await Task.WhenAny(forward, backward).ConfigureAwait(false);
-            await both.CancelAsync().ConfigureAwait(false);
+            var first = await Task.WhenAny(forward, backward).ConfigureAwait(false);
+            var destination = first == forward ? b : a;
+            if (destination is NetworkStream socket && first.IsCompletedSuccessfully)
+            {
+                // The sender is done (an HTTP/1.0 client half-closes after its request): pass the end on and let the answer finish.
+                socket.Socket.Shutdown(SocketShutdown.Send);
+            }
+            else
+            {
+                await both.CancelAsync().ConfigureAwait(false);
+            }
         }
         finally
         {

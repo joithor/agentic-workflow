@@ -44,6 +44,24 @@ public sealed class EgressIntegrationTests : IAsyncDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task A_client_that_half_closes_after_its_request_still_gets_the_answer()
+    {
+        var stub = StubServer.Start("mcp-ok");
+        _cleanup.Add(stub);
+        var running = Start(stub.Port, [], new RedirectingDialer(0));
+        using var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+        await socket.ConnectAsync(new UnixDomainSocketEndPoint(Path.Combine(running.Directory, "sindri.sock")), TestContext.Current.CancellationToken);
+
+        _ = await socket.SendAsync("GET /sindri/mcp HTTP/1.0\r\n\r\n"u8.ToArray(), TestContext.Current.CancellationToken);
+        socket.Shutdown(SocketShutdown.Send);
+        using var reader = new StreamReader(new NetworkStream(socket, ownsSocket: false), Encoding.ASCII);
+        var answer = await reader.ReadToEndAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        await running.DisposeAsync();
+
+        Assert.EndsWith("mcp-ok", answer, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task Real_proxy_relays_to_an_allowed_host_and_refuses_another()
     {
         var upstream = StubServer.Start("allowed-ok");
