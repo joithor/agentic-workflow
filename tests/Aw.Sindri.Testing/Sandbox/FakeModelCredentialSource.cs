@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Sandbox;
 using Aw.Sindri.Core.Sandbox.Credentials;
@@ -48,7 +49,7 @@ public sealed class FakeModelCredentialSource(ModelLoginSource id) : IModelCrede
         if (!Supports(target) || status.State != LoginState.Ready)
         {
             var reason = !Supports(target) ? SandboxReasons.SourceUnsupported : status.State == LoginState.Expired ? SandboxReasons.Expired : SandboxReasons.NoLogin;
-            return Task.FromResult<Result<PreparedLogin>>(SandboxRefusal.For(Aw.Sindri.Core.SindriErrors.LaunchLoginUnavailable, reason, source: Id));
+            return Task.FromResult<Result<PreparedLogin>>(SandboxRefusal.For(SindriErrors.LaunchLoginUnavailable, reason, source: Id));
         }
 
         var dir = $"/fake/{launch.Value}/{Id.ToString().ToLowerInvariant()}-{_prepared.Count}";
