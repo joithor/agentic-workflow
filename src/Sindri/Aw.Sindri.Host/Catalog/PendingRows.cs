@@ -16,6 +16,7 @@ internal static class PendingRows
         Pending("OpenItem:attach", ActionClass.Desk, "POST /sindri/items/{itemId}/open", "sindri open <itemId> --attach [--agent <agent>]", "P10a") with { ReadsViews = true },
         Pending("OpenItem:resume", ActionClass.Desk, "POST /sindri/items/{itemId}/open", "sindri open <itemId> --resume [--agent <agent>]", "P10a") with { ReadsViews = true },
         Pending("ProbeLaunchTargets", ActionClass.Job, "POST /sindri/launch/targets/probe", "sindri launch probe", "P10a"),
+        Pending("FocusSession", ActionClass.Desk, "POST /sindri/sessions/{provider}/{id}/focus", "sindri agents focus <ref>", "CO-4a"),   // collector spec CA-4, CA-7: CO-4a binds its type
     ];
 
     /// <summary>A pending row: '&lt;Command&gt;[:&lt;variant&gt;]', its class, 'METHOD /route', its CLI form and the phase that ships it.</summary>

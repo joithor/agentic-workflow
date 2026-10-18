@@ -30,6 +30,8 @@ internal static class Usage
         "       sindri jobs [--state <s>] [--kind <k>] [--json] [--no-start]   the jobs, newest first (states: running, succeeded, failed, cancelled); exit 1 while the views rebuild or stall",
         "       sindri jobs show <jobId> [--json] [--no-start]   one job: who started it, its last 200 lines, how it ended and the command that cancels it",
         "       sindri jobs cancel <jobId> [--no-start]   cancel a running job (SND-JOB-409 when it already ended)",
+        "       sindri agents [--provider <agent>] [--state <s>] [--repo <r>] [--json]   every live agent session on the box: state, repo and host, and the recently ended ones; reads the running control plane and never starts it; exit 1 when it isn't running or a source failed",
+        "       sindri agents show <provider>/<id> [--json]   one session in full: host, lane, launch and, at a terminal, directory and state history (SND-SESSION-404 when none)",
         "       sindri doctor [--json]        lease, ledger, views, profile, api, temporal and context checks, and the pinned harness probe; runs without the control plane",
         "       sindri doctor --probe [--harness <name>]  this process's agent variables (names only), ancestry and harness version, as JSON",
         "       sindri onyx status [--json]   where Sindri's Onyx stands (not set up, running with its url and version, or stopped) and whether this box can run the pinned one: docker, compose, memory, disk and port, with the fix for each failure (exit 1: a check needs attention); changes nothing and runs without the control plane",
