@@ -2,7 +2,7 @@ using Aw.Sindri.Ui.Platform;
 
 namespace Aw.Sindri.Ui.Testing;
 
-/// <summary>The in-memory file picker: answers the file a test queued, in order, and records what it was asked.</summary>
+/// <summary>The in-memory file picker: answers the file a test queued, in order, and records what it was asked. Like every picker it leaves a file larger than the limit unread.</summary>
 internal sealed class FakeFilePicker : IFilePicker
 {
     private readonly Queue<PickedFile?> _next = new();
@@ -18,6 +18,7 @@ internal sealed class FakeFilePicker : IFilePicker
     public Task<PickedFile?> Pick(string title, int limit, CancellationToken cancellationToken)
     {
         _asked.Add((title, limit));
-        return Task.FromResult(_next.TryDequeue(out var file) ? file : null);
+        var answer = _next.TryDequeue(out var file) ? file : null;
+        return Task.FromResult(answer is { Size: var size } && size > limit ? answer with { Content = ReadOnlyMemory<byte>.Empty } : answer);
     }
 }

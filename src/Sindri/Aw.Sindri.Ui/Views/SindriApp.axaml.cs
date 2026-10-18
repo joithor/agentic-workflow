@@ -61,7 +61,7 @@ public sealed partial class SindriApp : Application, IDisposable
         var api = new SindriApiClient(Loopback(), platform.Token, clock, platform.Log);
 #pragma warning restore CA2000
         var files = new AvaloniaFilePicker(static () => (Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.MainWindow);
-        return new(new ShellViewModel(platform.Records, api, clock, preferences, clipboard, platform.Motion, launcher) { Files = files }, preferences, platform, clock);
+        return new(new ShellViewModel(platform.Records, api, clock, preferences, clipboard, platform.Motion, new WindowPorts(launcher, files)), preferences, platform, clock);
     }
 
     /// <summary>Stops reading the single instance's messages (the app's exit does; a test that starts the app calls it).</summary>

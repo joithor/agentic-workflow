@@ -1,4 +1,3 @@
-using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Start;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
@@ -6,9 +5,6 @@ namespace Aw.Sindri.Ui.ViewModels.Shell;
 /// <summary>The Start form in the shell (<see cref="ShellViewModel"/>, continued; U5').</summary>
 internal sealed partial class ShellViewModel
 {
-    /// <summary>Where the Start form's file inputs are chosen: the window's picker once the app has one; until then none is ever chosen.</summary>
-    internal IFilePicker Files { get; init; } = new NullFilePicker();
-
     /// <summary>The Start form.</summary>
     public StartFormViewModel Start { get; }
 

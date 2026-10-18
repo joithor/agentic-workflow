@@ -11,13 +11,13 @@ internal sealed class StartFieldViewModel : ObservableObject
     /// <summary>The most bytes a fact may hold (API: 1 MiB).</summary>
     internal const int MaxBytes = 1024 * 1024;
 
-    private readonly Func<IFilePicker> _files;
+    private readonly IFilePicker _files;
     private PickedFile? _file;
 
     /// <summary>The field for one declared input.</summary>
     /// <param name="input">The input as the recipe serves it.</param>
     /// <param name="files">Where a file is chosen (read when a file is asked for).</param>
-    internal StartFieldViewModel(RecipeInputView input, Func<IFilePicker> files)
+    internal StartFieldViewModel(RecipeInputView input, IFilePicker files)
     {
         ArgumentNullException.ThrowIfNull(input);
         ArgumentNullException.ThrowIfNull(files);
@@ -117,7 +117,7 @@ internal sealed class StartFieldViewModel : ObservableObject
     /// <returns>A task that completes when the choice is shown.</returns>
     internal async Task Pick(CancellationToken cancellationToken)
     {
-        var picked = await _files().Pick(Labels.ChooseFileTitle, MaxBytes, cancellationToken).ConfigureAwait(true);
+        var picked = await _files.Pick(Labels.ChooseFileTitle, MaxBytes, cancellationToken).ConfigureAwait(true);
         if (picked is null)
         {
             return;   // none chosen: the file before it, if any, stays

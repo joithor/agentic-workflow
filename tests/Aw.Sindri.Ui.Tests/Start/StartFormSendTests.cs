@@ -304,7 +304,7 @@ public sealed class StartFormSendTests
     [Fact]
     public async Task Before_the_catalog_is_read_start_is_not_ready()
     {
-        var form = new StartFormViewModel(new ViewModels.Controls.CatalogViewModel(new FakeClipboard(), _fixture.Clock), () => StartFormFixture.Api, _fixture.Server, () => _fixture.Files);
+        var form = new StartFormViewModel(new ViewModels.Controls.CatalogViewModel(new FakeClipboard(), _fixture.Clock), () => StartFormFixture.Api, _fixture.Server, _fixture.Files);
 
         await form.Open(itemId: null, Token);
 

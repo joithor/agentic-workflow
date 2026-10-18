@@ -50,8 +50,8 @@ internal sealed partial class ShellViewModel : ObservableObject
     /// <param name="preferences">The app's local preferences, shared with Settings (the shell keeps its window, sheet width and last page there).</param>
     /// <param name="clipboard">Where Copy puts a CLI (the window's clipboard).</param>
     /// <param name="motion">The OS reduce-motion setting; none means motion is allowed.</param>
-    /// <param name="launcher">Opens links and files in the system's apps; none opens nothing.</param>
-    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences, IClipboard clipboard, IMotionPreference? motion = null, ILauncher? launcher = null)
+    /// <param name="window">The window's adapters (opening links and files, choosing a file); none opens and chooses nothing.</param>
+    internal ShellViewModel(IEndpointRecordSource records, ISindriApi api, TimeProvider clock, Preferences preferences, IClipboard clipboard, IMotionPreference? motion = null, WindowPorts? window = null)
     {
         _store = preferences;
         _clock = clock;
@@ -60,7 +60,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         Health.Pill.PropertyChanged += OnPillChanged;
         CommandOutcome = new CommandOutcomeRegion(control => Health.Banner.HasRebuild && ReferenceEquals(Health.Banner.Rebuild, control));
         Create = new CreateItemViewModel(Health.Catalog, () => Health.ApiUrl(), api);
-        Start = new StartFormViewModel(Health.Catalog, () => Health.ApiUrl(), api, () => Files);
+        Start = new StartFormViewModel(Health.Catalog, () => Health.ApiUrl(), api, (window ?? WindowPorts.None).Files);
         Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun, CommandOutcome, () => Create.Open(), OpenStart);
         Shortcuts = new ShortcutsViewModel(Health.Catalog);
         Queue = new QueueViewModel(api, Health.Catalog, clock);
@@ -78,7 +78,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         Workflows = new WorkflowsViewModel(api, clipboard, clock);
         InitWorkflows();
         InitStart();
-        Instance = new InstanceFrameViewModel(api, clipboard, clock, catalog: Health.Catalog, launcher: launcher);
+        Instance = new InstanceFrameViewModel(api, clipboard, clock, catalog: Health.Catalog, launcher: (window ?? WindowPorts.None).Launcher);
         InitInstance();
         Recipe = new RecipeSheetViewModel(api);
         InitRecipe();

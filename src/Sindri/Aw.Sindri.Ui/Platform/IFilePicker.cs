@@ -1,7 +1,7 @@
 namespace Aw.Sindri.Ui.Platform;
 
 /// <summary>Port: lets the human choose a file for a start input (the Start form). The app supplies the Avalonia one; an adapter answers null for no choice and never throws.</summary>
-internal interface IFilePicker
+public interface IFilePicker
 {
     /// <summary>Asks for one file.</summary>
     /// <param name="title">The picker's title.</param>

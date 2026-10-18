@@ -18,7 +18,7 @@ internal sealed partial class StartFormViewModel : ObservableObject
     private readonly CatalogViewModel _catalog;
     private readonly Func<Uri?> _url;
     private readonly ISindriApi _api;
-    private readonly Func<IFilePicker> _files;
+    private readonly IFilePicker _files;
     private int _form;   // which opening of the form this is; an answer is for the one that sent it
     private RecipeChoice? _chosen;   // the recipe whose inputs were asked for
     private string? _itemKey;   // the recipe's own key for its item input, when it declares one
@@ -30,8 +30,8 @@ internal sealed partial class StartFormViewModel : ObservableObject
     /// <param name="catalog">The command catalog: its StartInstance row says whether Start is ready.</param>
     /// <param name="url">The API now, or null when none is running.</param>
     /// <param name="api">The API.</param>
-    /// <param name="files">Where a file input is chosen (read when a file is asked for).</param>
-    internal StartFormViewModel(CatalogViewModel catalog, Func<Uri?> url, ISindriApi api, Func<IFilePicker> files)
+    /// <param name="files">Where a file input is chosen .</param>
+    internal StartFormViewModel(CatalogViewModel catalog, Func<Uri?> url, ISindriApi api, IFilePicker files)
     {
         ArgumentNullException.ThrowIfNull(catalog);
         ArgumentNullException.ThrowIfNull(url);

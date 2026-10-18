@@ -37,7 +37,7 @@ internal sealed class StartFormFixture
     {
         var catalog = new CatalogViewModel(new FakeClipboard(), Clock);
         catalog.Show(Api, Server, (await Server.Commands(Api, Token)).Value);
-        return new StartFormViewModel(catalog, () => Api, Server, () => Files);
+        return new StartFormViewModel(catalog, () => Api, Server, Files);
     }
 
     /// <summary>A form opened on the recipes <see cref="Rows"/> lists, with the first one chosen.</summary>
