@@ -2,6 +2,9 @@ using System.Text.Json;
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
+using Aw.Context.Core.Map;
+using Aw.Context.Core.Proposals;
+using Aw.Context.Core.Subgraph;
 using Aw.Kernel.Testing;
 using Xunit;
 
@@ -75,6 +78,26 @@ public abstract class ContextEngineContract<TEngine>
         };
 
         Check(codes.All(c => c == ContextErrors.NoMap.Code), "a graph read without a map is 030");
+    }
+
+    /// <summary>Without a map, a subgraph read and the scoping run's proposals reads and writes are SND-CONTEXT-030.</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Subgraph_and_scope_proposals_without_a_map_are_030()
+    {
+        var scope = new ContextScope(Settings: null, [new ContextRepo(ContextRepoName.From("split-panes"), "/repos/split-panes")],
+            new ContextCaller(ContextCallerKind.Human, Repo: null, ContextClient.Cli));
+        var engine = CreateDown();
+        var proposal = new ScopeProposal("run-1", ContextRepoName.From("split-panes"), [new ProposedSurface("Split vertical")]);
+
+        var codes = new[]
+        {
+            (await engine.Subgraph(new SubgraphQuery(["feature:a"], Depth: null, MapRead.Current), scope, CancellationToken.None)).Error.Code,
+            (await engine.Proposals("run-1", scope, CancellationToken.None)).Error.Code,
+            (await engine.Propose(proposal, scope, CancellationToken.None)).Error.Code,
+        };
+
+        Check(codes.All(c => c == ContextErrors.NoMap.Code), "a subgraph read, a proposals read and a propose without a map are 030");
     }
 
     /// <summary>An eval with no probe file named and none on disk is SND-CONTEXT-036, whatever the engine.</summary>
