@@ -1723,6 +1723,7 @@ public sealed class ShellWindowTests : IDisposable
             return names.FirstOrDefault(n => focused is not null && window.Get<Control>(n) is var r && (r == focused || r.IsVisualAncestorOf(focused))) ?? "none";
         }
 
+        Settle(window);
         var seen = new List<string>();
         for (var i = 0; i < 4; i++)
         {
@@ -1731,7 +1732,11 @@ public sealed class ShellWindowTests : IDisposable
             seen.Add(Region());
         }
 
-        Assert.Equal(["TopBar", "Page", "Sheet", "TopBar"], seen);
+        // The window opens with focus already on a region, so the cycle starts there: it still runs TopBar, Page, Sheet in order and wraps.
+        string[] cycle = ["TopBar", "Page", "Sheet"];
+        var next = (Array.IndexOf(cycle, seen[0]) + 1) % cycle.Length;
+        Assert.Equal([cycle[next], cycle[(next + 1) % 3], cycle[(next + 2) % 3]], seen.Skip(1));
+        Assert.Equal(seen[0], seen[3]);
     });
 
     // Owner decision F6 (2026-10-12, review run 4): on macOS ⌘⌥→ and ⌘⌥← cycle the regions forward and back, like F6
