@@ -101,6 +101,8 @@ internal sealed partial class HomePage : UserControl
         }
     }
 
+    private void OnStart(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.OpenStart();
+
     private void OnWorkflowsMore(object? sender, RoutedEventArgs e) => (DataContext as ShellViewModel)?.Strip.OpenWorkflows();
 
     // Focus arriving on a strip row selects it, and the other lists' selections give way: one selection on Home.

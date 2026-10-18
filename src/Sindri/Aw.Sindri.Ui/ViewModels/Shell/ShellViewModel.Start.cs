@@ -12,10 +12,20 @@ internal sealed partial class ShellViewModel
     /// <summary>The Start form.</summary>
     public StartFormViewModel Start { get; }
 
-    /// <summary>Opens the Start form: from `N` on Workflows, the Workflows head and Home's buttons, ⌘N and the palette.</summary>
+    /// <summary>
+    /// Opens the Start form: from `N` on Workflows, the Workflows head and Home's buttons, ⌘N and the palette. With an item's sheet open the
+    /// form starts for that item.
+    /// </summary>
     internal void OpenStart()
     {
-        Start.Close();
-        throw new NotSupportedException();
+        var item = IsSheetOpen && IsItemSheet && SheetLink?.Subject is { } subject ? subject : null;
+        _ = Start.Open(item, CancellationToken.None);
+    }
+
+    // Everything the form needs once it exists (ShellViewModel's constructor calls this one line): an accepted start opens the instance's frame.
+    private void InitStart()
+    {
+        Start.Started += (_, e) => OpenInstance(e.Address, e.Id);
+        Workflows.StartRequested += (_, _) => OpenStart();
     }
 }

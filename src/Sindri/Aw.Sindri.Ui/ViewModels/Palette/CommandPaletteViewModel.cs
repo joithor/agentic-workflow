@@ -177,6 +177,10 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
                 CreateItem?.Invoke();   // the form's own control sends it; it opens first, so the window hands the palette's opener on to it
                 Close();
                 break;
+            case { Control.Action: "StartInstance" }:
+                StartWorkflow?.Invoke();   // the form sends it; it opens first, so the window hands the palette's opener on to it
+                Close();
+                break;
             default:
                 // why: an enabled entry without a page has a control
                 await Send(entry, entry.Control!, cancellationToken).ConfigureAwait(true);
@@ -203,7 +207,11 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
     // Create item opens its form (when the shell has one); the item sheet's close actions need the version the sheet shows.
     private bool Runs(ControlViewModel control) =>
         (control.IsSendable && !control.IsDestructive) || (control.IsReady && control.Action == "StopProcess")
-        || (control.IsReady && control.Action == "CreateItem" && CreateItem is not null) || (control.IsCliOnly && control.CanCopy);
+        || OpensForm(control) || (control.IsCliOnly && control.CanCopy);
+
+    // Create item and Start workflow open their forms (when the shell has them).
+    private bool OpensForm(ControlViewModel control) =>
+        control.IsReady && ((control.Action == "CreateItem" && CreateItem is not null) || (control.Action == "StartInstance" && StartWorkflow is not null));
 
     // What a ready row that Enter skips says instead of "ready": where it lives, or that the app has no sender for it.
     private static string NotRun(ControlViewModel control) =>

@@ -77,8 +77,8 @@ internal sealed partial class ShellWindow
             shell.SheetStacked -= OnSheetStacked;
         }
 
-        PropertyChangedEventHandler[] handlers = [OnShellChanged, OnBannerChanged, OnOverlayChanged, OnOverlayChanged, OnOverlayChanged, OnQueueChanged];
-        INotifyPropertyChanged[] sources = [shell, shell.Health.Banner, shell.Palette, shell.Shortcuts, shell.Create, shell.Queue];
+        PropertyChangedEventHandler[] handlers = [OnShellChanged, OnBannerChanged, OnOverlayChanged, OnOverlayChanged, OnOverlayChanged, OnOverlayChanged, OnQueueChanged];
+        INotifyPropertyChanged[] sources = [shell, shell.Health.Banner, shell.Palette, shell.Shortcuts, shell.Create, shell.Start, shell.Queue];
         for (var i = 0; i < sources.Length; i++)
         {
             if (on)

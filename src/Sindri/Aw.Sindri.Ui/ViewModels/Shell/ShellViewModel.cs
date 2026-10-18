@@ -77,6 +77,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         InitStrip();
         Workflows = new WorkflowsViewModel(api, clipboard, clock);
         InitWorkflows();
+        InitStart();
         Instance = new InstanceFrameViewModel(api, clipboard, clock, catalog: Health.Catalog, launcher: launcher);
         InitInstance();
         Recipe = new RecipeSheetViewModel(api);

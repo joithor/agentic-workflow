@@ -141,6 +141,9 @@ internal sealed class ShellText
     /// <summary><see cref="Labels.SearchKeyLetter"/>.</summary>
     public string SearchKeyLetter { get; } = Labels.SearchKeyLetter;
 
+    /// <summary><see cref="Labels.StartWorkflow"/>.</summary>
+    public string StartWorkflow { get; } = Labels.StartWorkflow;
+
     /// <summary><see cref="Labels.Stale"/>.</summary>
     public string Stale { get; } = Labels.Stale;
 

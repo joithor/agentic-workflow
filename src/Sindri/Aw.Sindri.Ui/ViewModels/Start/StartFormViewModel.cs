@@ -20,6 +20,7 @@ internal sealed partial class StartFormViewModel : ObservableObject
     private readonly ISindriApi _api;
     private readonly Func<IFilePicker> _files;
     private int _form;   // which opening of the form this is; an answer is for the one that sent it
+    private RecipeChoice? _chosen;   // the recipe whose inputs were asked for
     private string? _itemKey;   // the recipe's own key for its item input, when it declares one
     private bool _blocked;   // the recipes or the recipe could not be read, or there is none to start
     private bool _sentFirst;
@@ -125,8 +126,12 @@ internal sealed partial class StartFormViewModel : ObservableObject
         {
             Set(ref field, value);
             OnChanged(nameof(CanStart));
+            OnChanged(nameof(ButtonText));
         }
     }
+
+    /// <summary>The Start button's words: the catalog's label, and "Starting…" while it is in flight.</summary>
+    public string ButtonText => IsSending ? Labels.StartSending : Labels.StartWorkflow;
 
     /// <summary>True when a press would send: ready, nothing blocks it, not in flight and not already accepted.</summary>
     public bool CanStart => IsReady && !_blocked && !IsSending && !_sentFirst;

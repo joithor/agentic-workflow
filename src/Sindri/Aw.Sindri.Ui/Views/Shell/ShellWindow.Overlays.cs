@@ -8,6 +8,7 @@ using Aw.Sindri.Ui.ViewModels.Palette;
 using Aw.Sindri.Ui.ViewModels.Shell;
 using Aw.Sindri.Ui.Views.Item;
 using Aw.Sindri.Ui.Views.Palette;
+using Aw.Sindri.Ui.Views.Start;
 
 namespace Aw.Sindri.Ui.Views.Shell;
 
@@ -22,15 +23,13 @@ internal sealed partial class ShellWindow
             return false;
         }
 
-        if (shell.Create.IsOpen)
+        if (FormOpen(shell))
         {
             return SwallowedByForm(e);
         }
 
-        if (e.Key == Key.K && e.KeyModifiers == _command)
+        if (OpenLayerByChord(e, shell))
         {
-            shell.Shortcuts.Close();   // one overlay at a time; focus goes back to the original opener first (OnOverlayChanged)
-            shell.Palette.Open();
             return true;
         }
 
@@ -41,6 +40,30 @@ internal sealed partial class ShellWindow
         }
 
         return OpenSettingsByKey(e, shell);
+    }
+
+    private static bool FormOpen(ShellViewModel shell) => shell.Create.IsOpen || shell.Start.IsOpen;
+
+    // ⌘K opens the palette, ⌘N the Start form: one layer at a time, so the one open goes first (focus goes back to the original opener first, OnOverlayChanged).
+    private static bool OpenLayerByChord(KeyEventArgs e, ShellViewModel shell)
+    {
+        if (e.KeyModifiers != _command || e.Key is not (Key.K or Key.N))
+        {
+            return false;
+        }
+
+        shell.Shortcuts.Close();
+        if (e.Key == Key.N)
+        {
+            shell.Palette.Close();
+            shell.OpenStart();
+        }
+        else
+        {
+            shell.Palette.Open();
+        }
+
+        return true;
     }
 
     // The Create form is modal (L10, §11.2): ⌘K, ⌘, and ? are swallowed. ? is a character in a field, so it types there.
@@ -75,7 +98,7 @@ internal sealed partial class ShellWindow
         return true;
     }
 
-    private bool OverlayOpen => Shell is { } shell && (shell.Palette.IsOpen || shell.Shortcuts.IsOpen || shell.Create.IsOpen);
+    private bool OverlayOpen => Shell is { } shell && (shell.Palette.IsOpen || shell.Shortcuts.IsOpen || shell.Create.IsOpen || shell.Start.IsOpen);
 
     // `?` is Shift+/ on most layouts; the key symbol says so on the rest.
     private static bool IsQuestionMark(KeyEventArgs e) =>
@@ -108,7 +131,7 @@ internal sealed partial class ShellWindow
     }
 
     private static bool IsOpen(object? sender, ShellViewModel shell) =>
-        sender == shell.Palette ? shell.Palette.IsOpen : sender == shell.Create ? shell.Create.IsOpen : shell.Shortcuts.IsOpen;
+        sender == shell.Palette ? shell.Palette.IsOpen : sender == shell.Create ? shell.Create.IsOpen : sender == shell.Start ? shell.Start.IsOpen : shell.Shortcuts.IsOpen;
 
     // Where focus goes when what opened the overlay is gone: the Create form falls back to the Queue page's "Create item"
     // button, the others to the ⌘K field.
@@ -125,6 +148,10 @@ internal sealed partial class ShellWindow
         else if (sender == shell.Create)
         {
             this.Get<CreateItemDialog>("CreateItemDialog").FocusTitle();
+        }
+        else if (sender == shell.Start)
+        {
+            this.Get<StartDialog>("StartDialog").FocusFirst();
         }
         else
         {

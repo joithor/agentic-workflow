@@ -14,7 +14,7 @@ internal sealed partial class StartFormViewModel
     internal async Task Open(string? itemId, CancellationToken cancellationToken)
     {
         var form = ++_form;
-        (Recipe, PickedItem) = (null, null);
+        (Recipe, PickedItem, _chosen) = (null, null, null);
         (Recipes, Fields, Items, _itemKey) = ([], [], [], null);
         (_sentFirst, _sentNext, _blocked) = (false, false, false);
         (ItemId, Note, Outcome, IsSending, OffersNewAttempt) = (itemId ?? string.Empty, string.Empty, string.Empty, false, false);
@@ -63,7 +63,13 @@ internal sealed partial class StartFormViewModel
     internal async Task Choose(RecipeChoice recipe, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(recipe);
+        if (ReferenceEquals(_chosen, recipe))
+        {
+            return;   // the picker and a caller both say so: one read
+        }
+
         var form = _form;
+        _chosen = recipe;
         (Recipe, Fields, _itemKey, Note) = (recipe, [], null, string.Empty);
         ClearError();
         if (_url() is not { } api)
@@ -80,6 +86,7 @@ internal sealed partial class StartFormViewModel
 
         if (read.IsError)
         {
+            _chosen = null;   // the same choice can be made again
             Blocked(read.Error);
             return;
         }

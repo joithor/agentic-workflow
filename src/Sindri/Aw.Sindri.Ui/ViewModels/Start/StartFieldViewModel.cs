@@ -39,6 +39,9 @@ internal sealed class StartFieldViewModel : ObservableObject
         FileLine = Kind == StartFieldKind.File ? Labels.NoFileChosen : string.Empty;
     }
 
+    /// <summary>The file button's words.</summary>
+    public string ChooseFileText { get; } = Labels.ChooseFile;
+
     /// <summary>The input's key ('fact:spec').</summary>
     public string Key { get; }
 
@@ -62,6 +65,9 @@ internal sealed class StartFieldViewModel : ObservableObject
 
     /// <summary>True for a file.</summary>
     public bool IsFile => Kind == StartFieldKind.File;
+
+    /// <summary>True for a one-line box (text or link).</summary>
+    public bool IsLine => Kind is StartFieldKind.Text or StartFieldKind.Link;
 
     /// <summary>True for a field typed into (text, link, JSON), as against a file.</summary>
     public bool IsTyped => Kind != StartFieldKind.File;

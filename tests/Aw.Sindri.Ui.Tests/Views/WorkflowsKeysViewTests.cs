@@ -197,9 +197,6 @@ public sealed class WorkflowsKeysViewTests : FrameHost
         Settle(window);
         Assert.Equal((true, Labels.HandBackArrives), (Visible(window, "WorkflowsKeyNote"), Named<TextBlock>(window, "WorkflowsKeyNote").Text));
 
-        Press(window, Key.N);
-        Settle(window);
-        Assert.Equal(Labels.StartArrives, Named<TextBlock>(window, "WorkflowsKeyNote").Text);
         Assert.Same(RowFrame(window, Plain.Address), Focused(window));
         Frame(window, "u8-keys-phase-note", "");
     });
