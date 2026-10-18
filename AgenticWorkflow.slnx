@@ -79,6 +79,7 @@
     <Project Path="tests/Aw.BugFix.Tests/Aw.BugFix.Tests.csproj" />
     <Project Path="tests/Aw.BugFix.Testing/Aw.BugFix.Testing.csproj" />
     <Project Path="tests/Aw.Sindri.Tests/Aw.Sindri.Tests.csproj" />
+    <Project Path="tests/Aw.Sindri.Engine.Tests/Aw.Sindri.Engine.Tests.csproj" />
     <Project Path="tests/Aw.Sindri.Testing/Aw.Sindri.Testing.csproj" />
     <Project Path="tests/Aw.Sindri.Ui.Tests/Aw.Sindri.Ui.Tests.csproj" />
     <Project Path="tests/Aw.Sindri.Ui.Rendering.Tests/Aw.Sindri.Ui.Rendering.Tests.csproj" />

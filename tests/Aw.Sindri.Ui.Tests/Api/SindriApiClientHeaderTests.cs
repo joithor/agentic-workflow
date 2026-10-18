@@ -2,6 +2,7 @@ using System.Net;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Api.Context;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 
@@ -326,5 +327,25 @@ public sealed class SindriApiClientHeaderTests
             await _release.Task.WaitAsync(cancellationToken);
             return new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(RouteAnswer.SpecShaped("services", "fixture").Body) };
         }
+    }
+
+    // Every context call says human from the UI like the rest: never X-Sindri-Terminal (the protected verbs stay at the CLI), never Origin.
+    [Fact]
+    public async Task Context_calls_send_human_ui_and_never_terminal_or_origin()
+    {
+        var handler = new FakeSindriHandler(new FakeSindriApi());
+        var client = new SindriApiClient(new HttpClient(handler), new InMemoryHumanToken("tok-1"), TimeProvider.System);
+
+        _ = await client.Lenses(_api, new LensesQuery(["feature:x"], Depth: null, Draft: false, MapVersion: null), Token);
+        _ = await client.FileMap(_api, new FileMapQuery("r", Path: null, UnmappedOnly: false, Draft: false), Token);
+        _ = await client.ReviewQueue(_api, limit: null, Token);
+        _ = await client.ReviewDecision(_api, new ReviewDecisionRequest(DeskVerb.Accept, Node: "code:x"), Token);
+        _ = await client.ReviewHistory(_api, limit: null, Token);
+        _ = await client.MapStatus(_api, anchor: null, Token);
+        _ = await client.Node(_api, "feature:x", Token);
+        _ = await client.Sources(_api, Token);
+
+        Assert.Equal(8, handler.Requests.Count);
+        Assert.All(handler.Requests, r => Assert.Equal(("human", "ui", null, null, "tok-1"), (r.Caller, r.Client, r.Terminal, r.Origin, r.Token)));
     }
 }
