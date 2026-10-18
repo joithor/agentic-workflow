@@ -124,12 +124,13 @@ public sealed class ExecTemplateViewerTests : TerminalViewerContract, IDisposabl
         await _f.StartSession();
         var argvFile = Path.Combine(_f.Dir, "argv.txt");
         var envFile = Path.Combine(_f.Dir, "env.txt");
-        var viewer = Viewer(_f.Script("rec.sh", $"for a in \"$@\"; do printf '%s\\n' \"$a\"; done > '{argvFile}'; env > '{envFile}'"));
+        var doneFile = Path.Combine(_f.Dir, "done.txt");   // written last: until it exists the stub is still running, so the window must not end
+        var viewer = Viewer(_f.Script("rec.sh", $"for a in \"$@\"; do printf '%s\\n' \"$a\"; done > '{argvFile}'; env > '{envFile}'; : > '{doneFile}'"));
         var previous = Environment.GetEnvironmentVariable("TMUX");
         Environment.SetEnvironmentVariable("TMUX", "/tmp/not-ours,1,0");
         try
         {
-            _ = await _f.Drive(viewer.Open(_f.Request(), TestContext.Current.CancellationToken));
+            _ = await _f.Drive(viewer.Open(_f.Request(), TestContext.Current.CancellationToken), hold: () => !File.Exists(doneFile));
         }
         finally
         {
@@ -139,7 +140,7 @@ public sealed class ExecTemplateViewerTests : TerminalViewerContract, IDisposabl
         var recorded = await File.ReadAllLinesAsync(argvFile, TestContext.Current.CancellationToken);
         Expect.Sequence(["sindri ITM-1", _f.Dir, .. _f.Host.AttachArgv(_f.Session)], recorded);   // the title, the repo path and the attach command, nothing else
         Expect.True(!(await File.ReadAllTextAsync(envFile, TestContext.Current.CancellationToken)).Contains("TMUX=", StringComparison.Ordinal));
-        Expect.Sequence(["argv.txt", "env.txt", "rec.sh"], Directory.GetFiles(_f.Dir).Select(f => Path.GetFileName(f)).Order(StringComparer.Ordinal));
+        Expect.Sequence(["argv.txt", "done.txt", "env.txt", "rec.sh"], Directory.GetFiles(_f.Dir).Select(f => Path.GetFileName(f)).Order(StringComparer.Ordinal));
     }
 
     [Fact(Timeout = 30_000)]

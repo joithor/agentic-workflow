@@ -1062,7 +1062,6 @@ Engine spec rev 8.1 §3.8, §5.2, §5.5, §5.8, §6.2; UI spec E-6, E-19.
   `workflow.started` row's `causation`, the state's full timeout kept for the handback and takeoverIdle running. The adapter
   (`LaunchRequestsView`) reads the `launches` view: the launch still `requested` and inside its 30 s deadline; a key that is no item id has none.
 
-
 ## Block runtime (DT-J2)
 
 A Step whose descriptor says `runtime: block` and that has a registered `IBlockStep` runs without a desk: the workflow

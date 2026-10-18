@@ -10,7 +10,13 @@ internal sealed class FakeChild : IWrapChild
 
     public void Exit(int code) => _exited.TrySetResult(code);
 
+    public bool Killed { get; private set; }
+
     public void Dispose()
     {
+        if (_exited.TrySetResult(137))
+        {
+            Killed = true;   // like the real child: a dispose that finds it running kills it
+        }
     }
 }

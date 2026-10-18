@@ -41,6 +41,10 @@ internal sealed partial class LaunchFileStore(LauncherOptions options) : ILaunch
     {
         LaunchSecrets.Delete(options.SecretsDirectory, launch);
         DeleteFlat(options, launch);
+        if (Directory.Exists(options.LaunchDirectory))
+        {
+            McpLaunchConfig.Delete(options.LaunchDirectory, launch);
+        }
     }
 
     public IReadOnlyList<LaunchId> Launches()
@@ -66,12 +70,12 @@ internal sealed partial class LaunchFileStore(LauncherOptions options) : ILaunch
     public int SweepStale(DateTimeOffset now, TimeSpan olderThan, Func<LaunchId, bool> live)
     {
         ArgumentNullException.ThrowIfNull(live);
+        var removed = McpLaunchConfig.Sweep(options.LaunchDirectory, now, olderThan, live);
         if (!Directory.Exists(options.LaunchesDirectory))
         {
-            return 0;
+            return removed;
         }
 
-        var removed = 0;
         foreach (var file in Directory.EnumerateFiles(options.LaunchesDirectory))
         {
             var match = PerLaunch.Match(Path.GetFileName(file));
@@ -92,6 +96,17 @@ internal sealed partial class LaunchFileStore(LauncherOptions options) : ILaunch
     {
         _ = TryDelete(Path.Combine(options.LaunchesDirectory, Core.Launch.LaunchFiles.CaptureName(launch)));
         _ = TryDelete(Path.Combine(options.LaunchesDirectory, Core.Launch.LaunchFiles.SessionIdName(launch)));
+    }
+
+    /// <summary>Deletes <paramref name="file"/> when its <paramref name="directory"/> exists; whatever is gone is fine.</summary>
+    /// <param name="directory">The file's directory.</param>
+    /// <param name="file">The file.</param>
+    internal static void DeleteIn(string directory, string file)
+    {
+        if (Directory.Exists(directory))
+        {
+            File.Delete(file);
+        }
     }
 
     private static bool TryDelete(string path)

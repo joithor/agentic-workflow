@@ -185,6 +185,9 @@ public static class SindriErrors
     /// <summary>SND-SESSION-003: a test override (AW_SESSIONS_PROC_ROOT, AW_SESSIONS_CLAUDE_DIR) is set in this run; informational, one problem row beside a normal list.</summary>
     public static readonly ErrorDefinition SessionsTestOverride = new("SND-SESSION-003", ErrorKind.Unavailable, "A test override is set in this run");
 
+    /// <summary>SND-SESSION-404: no live session has that ref, or it is outside a session caller's repo (collector spec CA-5).</summary>
+    public static readonly ErrorDefinition SessionNotFound = new("SND-SESSION-404", ErrorKind.NotFound, "No such live session");
+
     /// <summary>Every Sindri error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
@@ -193,6 +196,6 @@ public static class SindriErrors
         CallerUnknown, OriginRefused, CommandBusy, AuthTokenRequired, AuthRefused, UnknownVerb, StartFailed,
         InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, JobNotFound, JobConflict, JobInterrupted, JobsRateLimited, ServiceNotFound, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
         LaunchNotFound, LaunchViewerFailed, LaunchNoViewer, LaunchAgentMissing, LaunchRepoMissing, LaunchNoSession, LaunchInterrupted, LaunchInProgress, LaunchTimedOut, LaunchBudgetReached,
-        LauncherInvalid, LaunchNotApproved, LaunchFormUnsupported, AuthLaunchSecret, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride,
+        LauncherInvalid, LaunchNotApproved, LaunchFormUnsupported, AuthLaunchSecret, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride, SessionNotFound,
     ];
 }

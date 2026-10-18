@@ -56,6 +56,25 @@ public sealed class LauncherInitTests : IDisposable
     }
 
     [Fact]
+    public async Task Detection_tries_TERMINAL_then_x_terminal_emulator_before_the_first_on_PATH()
+    {
+        var known = await TerminalDetection.Detect(Detection(WithTerminal("/usr/bin/alacritty"), "/usr/bin/alacritty", "xterm"), CancellationToken.None);
+        var unknown = await TerminalDetection.Detect(Detection(WithTerminal("mytty"), "mytty", "kitty"), CancellationToken.None);
+        var missing = await TerminalDetection.Detect(Detection(WithTerminal("gone"), "x-terminal-emulator", "kitty"), CancellationToken.None);
+        var alternatives = await TerminalDetection.Detect(Detection(_gui, "x-terminal-emulator", "kitty"), CancellationToken.None);
+        var termProgram = await TerminalDetection.Detect(Detection(new Dictionary<string, string>(WithTerminal("mytty"), StringComparer.Ordinal) { ["TERM_PROGRAM"] = "kitty" }, "mytty", "kitty"), CancellationToken.None);
+
+        Expect.Equal("alacritty", known.Template?.Id);
+        Expect.Equal(("mytty", "from $TERMINAL"), (unknown.Template?.Bin, unknown.Reason));
+        Expect.Sequence(["mytty", "-T", "{title}", "-e", "{cmd...}"], [.. unknown.Template!.Argv]);
+        Expect.Equal("x-terminal-emulator", missing.Template?.Bin);
+        Expect.Equal("x-terminal-emulator", alternatives.Template?.Bin);
+        Expect.Equal("kitty", termProgram.Template?.Id);
+    }
+
+    private static Dictionary<string, string> WithTerminal(string terminal) => new(_gui, StringComparer.Ordinal) { ["TERMINAL"] = terminal };
+
+    [Fact]
     public async Task Init_writes_a_0600_file_the_next_read_uses()
     {
         var report = (await Setup(Detection(_gui, "xterm")).Init(new LaunchInitRequest(Viewer: null, Force: false, ToStdout: false), CancellationToken.None)).Value;

@@ -22,6 +22,9 @@ internal sealed record LauncherOptions(string Home)
     /// <summary>The flat per-launch files the id hook and 'session wrap' share (<c lang="text">&lt;id&gt;.capture.json</c>, <c lang="text">&lt;id&gt;.session-id</c>; launcher L-9).</summary>
     public string LaunchesDirectory => Path.Combine(Home, Core.Launch.LaunchFiles.Directory);
 
+    /// <summary>The launcher's own directory: the per-launch MCP config files (<c lang="text">mcp-&lt;id&gt;.json</c>, 0600, no token) sit in it beside the secrets and policy folders.</summary>
+    public string LaunchDirectory => Path.Combine(Home, "launch");
+
     /// <summary>The per-launch Step policy files (0600, deleted with the launch).</summary>
     public string PolicyDirectory => Path.Combine(Home, "launch", "policy");
 }

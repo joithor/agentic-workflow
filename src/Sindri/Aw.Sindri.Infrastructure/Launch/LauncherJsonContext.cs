@@ -7,6 +7,6 @@ namespace Aw.Sindri.Infrastructure.Launch;
 [JsonSerializable(typeof(ReportedIdSection))]
 [JsonSerializable(typeof(Core.Launch.CaptureRule))]
 [JsonSerializable(typeof(ClaudeSettingsDocument))]
+[JsonSerializable(typeof(McpConfigDocument))]
 [JsonSerializable(typeof(TerminalTemplatesFile))]
-[JsonSerializable(typeof(TerminalsDocument))]
 internal sealed partial class LauncherJsonContext : JsonSerializerContext;

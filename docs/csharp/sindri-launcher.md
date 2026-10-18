@@ -3,7 +3,7 @@
 The launcher puts a Sindri session in any terminal and any agent CLI. This page is the file contract and its worked
 examples (phase SL-0 of `docs/superpowers/specs/2026-10-15-sindri-session-launcher-design.md`, "the spec" below). The
 bash reader is in `aw-meta-launch` (SL-1, `scripts/launcher-lib.sh`; `docs/csharp/meta.md` "Launcher"); the C# ports
-inside API P10a (SL-2) are still to come.
+live in API P10a (SL-2); see "C# ports" at the end.
 
 ## The file
 
@@ -158,3 +158,23 @@ takeover all work; T3 Code just isn't the window.
 ```json
 { "schema": 1, "viewer": { "kind": "print" } }
 ```
+
+## C# ports
+
+The C# side is `Aw.Sindri.Core/Launch` (the catalog, `BuildArgv`, the ports), `Aw.Sindri.Infrastructure/Launch` (the launcher, the tmux host, the
+viewers, detection, `launch init` and `show`) and `Aw.Sindri.Features/Launching` (the open flow and doctor's rows).
+
+- **Terminal detection** runs in this order: no GUI session means `print`; Warp when present; the terminal `$TERM_PROGRAM` names in `terminals.json`;
+  `$TERMINAL`, then `x-terminal-emulator` (owner, 2026-10-17); the first row of `terminals.json` on the login PATH; else `print`. A `$TERMINAL` or
+  `x-terminal-emulator` that `terminals.json` knows uses that row's argv, otherwise the generic `<bin> -T {title} -e {cmd...}`.
+- **MCP at launch** (the entry's `mcp` form): `claude-config-file` writes `<home>/launch/mcp-<launchId>.json` (0600, no token, deleted with the launch and
+  swept when stale) and adds `--mcp-config <file>`; `codex-overrides` adds typed `-c mcp_servers.sindri.*` overrides; `none` adds nothing. Both name
+  `http://127.0.0.1:<port>/sindri/mcp` and the `X-Sindri-Repo` header only. The Step run header and the `sindri-step` server are a later phase (BA-1 of the
+  blocks-over-MCP spec).
+- **The item's launch block** (`GET /sindri/items/{id}` `launch`, UI spec E-2) is computed at read from projections (`LaunchOptions.For`): modes (open,
+  attach, resume), the default agent and why, the live session, the resumable session id (once the item was handed back), the confirm window and what
+  would block an open now.
+- **Doctor** prints `launcher` (viewer and config problems), `launcher:agents` (each entry's resolved bin, the Steps that would park) and
+  `launcher:adoption` (opens of the last 30 days by viewer and agent).
+- **`profile approve`** previews, for each added or changed `agents.<id>.stepArgvHash`, the entry on this box that has the hash, or "no entry on this box
+  has the hash" (L-16).

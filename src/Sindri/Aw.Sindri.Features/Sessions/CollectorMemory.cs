@@ -26,6 +26,9 @@ internal sealed class CollectorMemory
 
     internal IReadOnlyList<EndedSession> Ended { get; set; } = [];
 
+    /// <summary>Each live session's last state changes in this run (collector spec CA-2).</summary>
+    internal IReadOnlyDictionary<SessionRef, IReadOnlyList<SessionStateEntry>> History { get; set; } = new Dictionary<SessionRef, IReadOnlyList<SessionStateEntry>>();
+
     /// <summary>The sessions that left this good pass join the ended list; the ones that returned leave it; the ones older than ten minutes are dropped.</summary>
     internal IReadOnlyList<EndedSession> Ending(IReadOnlyList<ObservedSession> now, DateTimeOffset at)
     {

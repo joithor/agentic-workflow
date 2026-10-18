@@ -3,7 +3,7 @@ using Aw.Sindri.Core.Sessions;
 
 namespace Aw.Sindri.Infrastructure.Launch;
 
-/// <summary>The terminals' process names from config/launcher/terminals.json, embedded in this assembly (collector spec CO-2b): each row's 'id' and 'processNames' only.</summary>
+/// <summary>The terminals' process names from config/launcher/terminals.json, embedded in this assembly (collector spec CO-2b): each row's 'id' and 'processNames'.</summary>
 internal sealed class TerminalProcessNames : ITerminalNames
 {
     private static readonly System.Text.Json.JsonSerializerOptions _json = AwJson.CreateOptions(LauncherJsonContext.Default);
@@ -31,7 +31,7 @@ internal sealed class TerminalProcessNames : ITerminalNames
     /// <returns>The terminals; none when the text is not the expected shape.</returns>
     internal static TerminalProcessNames Parse(byte[] utf8)
     {
-        var document = AwJson.Deserialize<TerminalsDocument>(utf8, _json);
+        var document = AwJson.Deserialize<TerminalTemplatesFile>(utf8, _json);
         return new TerminalProcessNames(document.IsSuccess
             ? [.. document.Value.Terminals.Select(static t => new TerminalName(t.Id, t.ProcessNames ?? []))]
             : []);
