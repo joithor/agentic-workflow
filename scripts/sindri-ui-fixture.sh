@@ -37,17 +37,23 @@
 #                                  adds it to the live profile's repos and approves that, then imports the tabs map
 #                                  (map-tabs.json) as the owner, typing 'import map <hash6>', and prints the repo name
 #                                  (the app's repo= argument); draft runs 'context map build' as the owner (a draft to
-#                                  review; a missing model is a degraded line, not a failure); down removes the repo, the
-#                                  map copy and the profile entry (and approves again); the second run is a no-op
+#                                  review; a missing graphify is a degraded line, not a failure); down removes the repo, the
+#                                  map copy and the profile entry (and approves again). Idempotent: a repeat up imports the map
+#                                  only when the store has no map or the map file changed (the imported version stays in
+#                                  context.db through down, so the next draft's number depends on earlier runs); up and down
+#                                  approve whenever the profile is not approved
 #
 # FIXTURE_REPO names the items' repo (default: none, so the API's default applies).
 # Environment: AW_SINDRI_HOME (required: sindri-prove.sh's guard, a temp or proof folder), SINDRI (the built C# CLI,
 # as sindri-prove.sh reads it), STALL_TYPE (the stalled row's type; default service.ran, a type the projector reads),
 # SINDRI_UI_FIXTURE_SQL=python (use python3's sqlite3 module even when the sqlite3 CLI is installed; without the CLI it is
 # the fallback anyway). Needs sqlite3 or python3 for stall and unstall, jq for up.
-# Exit: 0 done; 2 the guard, a usage error or a missing tool; otherwise the failing step's exit code.
+# Exit: 0 done; 2 the guard, a usage error, a missing tool or (context up) a refused map import; otherwise the failing step's exit code.
 # Tests: bash scripts/tests/sindri-ui-fixture.test.sh
 set -uo pipefail
+# The fixture's profile is always <guarded home>/profile/profile.yaml: an exported AW_SINDRI_PROFILE (the owner's real
+# profile, .env.example) must not be edited or read by any verb or by the CLI calls through sindri-prove.sh.
+unset AW_SINDRI_PROFILE
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 PROVE="$ROOT/scripts/sindri-prove.sh"
@@ -56,7 +62,7 @@ STALL_ID="7f3c1a52-0b6e-4d1e-9a55-3c2f6d8e1b04"
 STALL_CORRELATION="7f3c1a52-0b6e-4d1e-9a55-3c2f6d8e1b05"
 
 die() { echo "sindri-ui-fixture: $*" >&2; exit 2; }
-usage() { sed -n '5,41p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { awk 'NR >= 5 { if (/^#/) print; else exit }' "$0" | sed 's/^# \{0,1\}//'; }
 
 # sindri-prove.sh's guard alone: it runs before any verb, and SINDRI=true makes the verb a no-op.
 guard() { SINDRI=true "$PROVE" guard >/dev/null || exit 2; }
@@ -89,7 +95,7 @@ for part in sys.argv[2].split(";"):
 ' "$1" "$2"
 }
 
-profile_path() { printf '%s\n' "${AW_SINDRI_PROFILE:-$AW_SINDRI_HOME/profile/profile.yaml}"; }
+profile_path() { printf '%s\n' "$AW_SINDRI_HOME/profile/profile.yaml"; }
 
 up() {
   need jq
@@ -313,7 +319,7 @@ context_repo() {
   printf 'export class Grid {}\n' > "$dir/src/layout/Grid.ts"
   printf '# Tabs\n' > "$dir/README.md"
   printf 'PRIVATE=1\n' > "$dir/.env"
-  local g=(env GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_AUTHOR_NAME="Fixture Author" GIT_AUTHOR_EMAIL=fixture@example.invalid
+  local g=(env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE -u GIT_COMMON_DIR GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_AUTHOR_NAME="Fixture Author" GIT_AUTHOR_EMAIL=fixture@example.invalid
      GIT_COMMITTER_NAME="Fixture Author" GIT_COMMITTER_EMAIL=fixture@example.invalid
      GIT_AUTHOR_DATE=2026-07-01T09:00:00Z GIT_COMMITTER_DATE=2026-07-01T09:00:00Z git -C "$dir")
   "${g[@]}" init -q -b main && "${g[@]}" config core.hooksPath "$dir/.no-hooks" && "${g[@]}" add -A \
@@ -333,28 +339,39 @@ context_profile_add() {
 
 context_up() {
   need jq
-  local profile dir map hash out
+  local profile dir map hash out marker
   profile="$(profile_path)"
   [ -f "$profile" ] || die "no live profile at $profile: run 'up' first"
   dir="$(context_dir)/$CONTEXT_REPO"
   context_repo "$dir" || return
   if ! grep -q "name: $CONTEXT_REPO" "$profile"; then
     context_profile_add "$profile" "$dir" || die "context up: can't add the repo to $profile"
-    approve || return
   fi
+  # Approve whenever the profile isn't approved (not only after this run's edit): a failed approve is retried here.
+  if needs_approval; then approve >&2 || return; fi
   map="$(context_dir)/tabs-map.json"
   cp "$ROOT/tests/Aw.Context.Testing/Fixtures/map-tabs.json" "$map" || die "context up: can't copy the tabs map"
   hash="$(sha256sum "$map" 2>/dev/null | cut -d' ' -f1)"
   [ -n "$hash" ] || hash="$(shasum -a 256 "$map" | cut -d' ' -f1)"
   [ -n "$hash" ] || die "context up: no sha256sum or shasum"
+  # Each import makes a new map version, so a repeat up imports only when the store has no map or the file changed.
+  marker="$AW_SINDRI_HOME/ui-fixture-context-imported"
+  if [ "$(cat "$marker" 2>/dev/null)" = "$hash" ] && "$PROVE" human context map status --json >/dev/null 2>&1; then
+    printf '%s\n' "$CONTEXT_REPO"
+    return 0
+  fi
   # The challenge is 'import map ' and the first six characters of the file's sha-256 (the content hash the CLI shows).
   if ! out="$(printf 'import map %s\n' "${hash:0:6}" | "$PROVE" human context map import "$map" 2>&1)"; then
     die "context up: the map import was refused: $out"
   fi
+  printf '%s\n' "$hash" > "$marker"
   printf '%s\n' "$CONTEXT_REPO"
 }
 
 context_draft() { "$PROVE" human context map build; }
+
+# True when the live profile isn't the approved one (or validate can't say).
+needs_approval() { [ "$("$PROVE" profile validate --json 2>/dev/null | jq -r '.approved // false')" != true ]; }
 
 context_down() {
   local dir profile
@@ -363,7 +380,11 @@ context_down() {
   profile="$(profile_path)"
   if [ -f "$profile" ] && grep -q "name: $CONTEXT_REPO" "$profile"; then
     grep -v "name: $CONTEXT_REPO" "$profile" | awk '{l[NR]=$0} END {for (i=1;i<=NR;i++) if (!(l[i]=="repos:" && (i==NR || l[i+1] !~ /^  /))) print l[i]}' > "$profile.new" \
-      && mv "$profile.new" "$profile" && { (approve) || echo "context down: the profile changed; approve it again (sindri profile approve)" >&2; }
+      && mv "$profile.new" "$profile"
+  fi
+  # Whether or not this run edited the profile: an approve that failed on an earlier down is tried again.
+  if [ -f "$profile" ] && needs_approval; then
+    (approve >&2) || echo "context down: the profile is not approved; run 'context down' again or approve it (sindri profile approve)" >&2
   fi
   return 0
 }
