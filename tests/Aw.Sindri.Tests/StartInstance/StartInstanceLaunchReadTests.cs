@@ -2,6 +2,7 @@ using System.Text;
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -25,7 +26,7 @@ public sealed class StartInstanceLaunchReadTests
     public async Task A_launches_read_that_fails_leaves_no_facts_behind()
     {
         var facts = new InMemoryFactStore();
-        var service = new StartInstanceService(new OneItem(), new OneRecipe(), new NoInstances(), new StartFacts(facts, TimeProvider.System), new NoInstances(), new FailingLaunches(), new ClaimHolders(new InMemoryWorkflowClaims(), new FakeInstanceLiveness()));
+        var service = new StartInstanceService(new OneItem(), new OneRecipe(), new NoInstances(), new StartFacts(facts, TimeProvider.System, new StepInputRuntimes([])), new NoInstances(), new FailingLaunches(), new ClaimHolders(new InMemoryWorkflowClaims(), new FakeInstanceLiveness()));
         var request = new StartInstanceRequest("workflow.step", "T-1", NextAttempt: false,
             new Dictionary<FactKey, StartFact> { [FactKey.From("fact:item")] = new("spec.md", Encoding.UTF8.GetBytes("{\"id\":\"T-1\"}")) });
 

@@ -12,6 +12,26 @@ internal sealed class TaskBuilder(string id)
     private string[] _scope = ["src/**"];
     private string _workstream = PacketBuilder.Workstream;
     private bool _none;
+    private SizeClass _size = SizeClass.Small;
+    private TaskBudget _budget = new() { Tokens = 100_000, Turns = 40, WallMinutes = 60 };
+
+    /// <summary>Sets the size class (small by default).</summary>
+    /// <param name="size">The size.</param>
+    /// <returns>This builder.</returns>
+    public TaskBuilder Sized(SizeClass size)
+    {
+        _size = size;
+        return this;
+    }
+
+    /// <summary>Sets the budget (100k tokens, 40 turns, 60 minutes by default).</summary>
+    /// <param name="budget">The budget.</param>
+    /// <returns>This builder.</returns>
+    public TaskBuilder Budgeted(TaskBudget budget)
+    {
+        _budget = budget;
+        return this;
+    }
 
     /// <summary>Adds dependencies.</summary>
     /// <param name="deps">Task ids it waits for.</param>
@@ -78,7 +98,7 @@ internal sealed class TaskBuilder(string id)
         Workstream = WorkstreamId.From(_workstream),
         Title = $"task {id}",
         Deps = [.. _deps.Select(TaskId.From)],
-        Size = SizeClass.Small,
+        Size = _size,
         WriteScope = _scope,
         ReadSeeds = ["README.md"],
         Acceptance = _none ? [] : _examples.Count > 0
@@ -88,6 +108,6 @@ internal sealed class TaskBuilder(string id)
                 new AcceptanceExample { Id = ExampleId.From($"{id}-e1"), Text = $"{id} works", Evidence = ["test"] },
                 new AcceptanceExample { Id = ExampleId.From($"{id}-h1"), Evidence = ["test"], Holdout = true },
             ],
-        Budget = new TaskBudget { Tokens = 100_000, Turns = 40, WallMinutes = 60 },
+        Budget = _budget,
     };
 }

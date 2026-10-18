@@ -1,6 +1,7 @@
 using System.Text;
 using Aw.Kernel;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -44,7 +45,7 @@ public sealed class StartInstanceGenerateTests
         var clock = new SteppingClock(new DateTimeOffset(2026, 10, 15, 23, 59, 59, TimeSpan.Zero));   // every read is a minute later: a second read crosses midnight
         var facts = new InMemoryFactStore();
         var runtime = new Capturing();
-        var service = new StartInstanceService(new OneItem(), new OneRecipe(), new NoInstances(), new StartFacts(facts, clock), runtime, new NoLaunches(), new ClaimHolders(new InMemoryWorkflowClaims(), new FakeInstanceLiveness()));
+        var service = new StartInstanceService(new OneItem(), new OneRecipe(), new NoInstances(), new StartFacts(facts, clock, new StepInputRuntimes([])), runtime, new NoLaunches(), new ClaimHolders(new InMemoryWorkflowClaims(), new FakeInstanceLiveness()));
 
         _ = await service.Handle(new StartInstanceRequest("workflow.gen", "T-1", NextAttempt: false, Item()), Token);
 
@@ -84,7 +85,7 @@ public sealed class StartInstanceGenerateTests
     {
         var facts = new InMemoryFactStore();
         var runtime = new Capturing();
-        return (new StartInstanceService(new OneItem(), new OneRecipe(), new NoInstances(), new StartFacts(facts, new FixedClock()), runtime, new NoLaunches(), new ClaimHolders(new InMemoryWorkflowClaims(), new FakeInstanceLiveness())), facts, runtime);
+        return (new StartInstanceService(new OneItem(), new OneRecipe(), new NoInstances(), new StartFacts(facts, new FixedClock(), new StepInputRuntimes([])), runtime, new NoLaunches(), new ClaimHolders(new InMemoryWorkflowClaims(), new FakeInstanceLiveness())), facts, runtime);
     }
 
     private sealed class SteppingClock(DateTimeOffset first) : TimeProvider
