@@ -67,9 +67,19 @@ public static class SindriWorkflowsServiceCollectionExtensions
     /// <summary>The Step inputs' run time: the in-memory texts (no text is stored), the one runner, the FillInput activity, and the in-process Step's context (no IStep runtime ships yet).</summary>
     private static IServiceCollection AddStepInputRuntime(this IServiceCollection services) => services
         .AddSingleton<IInjectionTexts, MemoryInjectionTexts>()
+        .AddSingleton<InputDispatch>(static provider => (context, ct) => FillScoped(provider, context, ct))
         .AddSingleton<IStepInputRunner, StepInputRunner>()
         .AddSingleton<StepInputActivities>()
         .AddSingleton<StepContexts>();
+
+    private static async ValueTask<InjectionSections> FillScoped(IServiceProvider provider, StepInputContext context, CancellationToken cancellationToken)
+    {
+        var scope = provider.CreateAsyncScope();
+        await using (scope.ConfigureAwait(false))
+        {
+            return await scope.ServiceProvider.GetRequiredKeyedService<IStepInput>(context.Input.Value).Fill(context, cancellationToken).ConfigureAwait(false);
+        }
+    }
 
     private static async ValueTask<Result<EffectDone>> DispatchScoped(IServiceProvider provider, EffectContext context, CancellationToken cancellationToken)
     {

@@ -8928,7 +8928,7 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionWarning.Replaced.get -> Aw.Sindr
 Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionWarning.Replaced.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionWarning.Section.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionWarning.Section.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.InputParks
+Aw.Sindri.Core.Workflow.Engine.Rules.InputParks
 override Aw.Sindri.Core.Workflow.Engine.Runtime.FilledInput.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Engine.Runtime.FilledInput.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Engine.Runtime.FilledInput.ToString() -> string!
@@ -8969,8 +8969,8 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionResultEntry.operator !=(A
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionResultEntry.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionResultEntry? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionResultEntry? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionWarning.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionWarning? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionWarning? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionWarning.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionWarning? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionWarning? right) -> bool
-static Aw.Sindri.Core.Workflow.Engine.Runtime.InputParks.Park(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Ids.BlockId input, Aw.Sindri.Core.Workflow.Ids.BlockId step, string! actor) -> Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance!
-static Aw.Sindri.Core.Workflow.Engine.Runtime.InputParks.Question(Aw.Sindri.Core.Workflow.Ids.BlockId input, Aw.Sindri.Core.Workflow.Ids.BlockId step) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Rules.InputParks.Park(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Ids.BlockId input, Aw.Sindri.Core.Workflow.Ids.BlockId step, string! actor) -> Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance!
+static Aw.Sindri.Core.Workflow.Engine.Rules.InputParks.Question(Aw.Sindri.Core.Workflow.Ids.BlockId input, Aw.Sindri.Core.Workflow.Ids.BlockId step) -> string!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.InjectionChanged -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.InjectionInvalid -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.InputChanged -> Aw.Kernel.ErrorDefinition!

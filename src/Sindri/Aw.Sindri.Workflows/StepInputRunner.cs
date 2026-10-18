@@ -8,7 +8,6 @@ using Aw.Redaction;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
@@ -17,10 +16,10 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// text scrubbed before it is hashed (so the digest covers exactly what is served), sections and the typed result capped
 /// at 256 KiB each and the plan at 1 MiB. The activity and the pull route's refill share this one path.
 /// </summary>
-/// <param name="scopes">Opens the scope the input runs in.</param>
+/// <param name="dispatch">Runs the input in its own scope (the registration builds it).</param>
 /// <param name="runtimes">The inputs this build runs.</param>
 /// <param name="redactor">Scrubs the text; the default when none is given.</param>
-internal sealed partial class StepInputRunner(IServiceScopeFactory scopes, StepInputRuntimes runtimes, IRedactor? redactor = null) : IStepInputRunner
+internal sealed partial class StepInputRunner(InputDispatch dispatch, StepInputRuntimes runtimes, IRedactor? redactor = null) : IStepInputRunner
 {
     /// <summary>The most bytes one section, or one typed result, may hold.</summary>
     internal const int SectionCap = 256 * 1024;
@@ -37,13 +36,7 @@ internal sealed partial class StepInputRunner(IServiceScopeFactory scopes, StepI
             return WorkflowErrors.StepInputNoRuntime.With($"input {context.Input.Value} has no runtime in this build");
         }
 
-        InjectionSections sections;
-        var scope = scopes.CreateAsyncScope();
-        await using (scope.ConfigureAwait(false))
-        {
-            sections = await scope.ServiceProvider.GetRequiredKeyedService<IStepInput>(context.Input.Value).Fill(context, cancellationToken).ConfigureAwait(false);
-        }
-
+        var sections = await dispatch(context, cancellationToken).ConfigureAwait(false);
         return Shape(context, index, sections);
     }
 

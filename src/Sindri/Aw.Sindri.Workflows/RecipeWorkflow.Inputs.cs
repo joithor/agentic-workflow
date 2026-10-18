@@ -3,6 +3,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Recipes;
