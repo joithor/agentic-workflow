@@ -35,14 +35,18 @@ internal sealed partial class CommandPaletteViewModel : ObservableObject
     /// <param name="remember">Records an entry run (the paletteHistory preference).</param>
     /// <param name="outcomes">The shell's region for a run whose palette closed before its outcome; null hands such a run back to its control.</param>
     /// <param name="createItem">Opens the Create item form (the CreateItem entry runs it); null leaves that entry unrunnable.</param>
-    internal CommandPaletteViewModel(CatalogViewModel catalog, Action<PageId> goTo, Action<string> remember, CommandOutcomeRegion? outcomes = null, Action? createItem = null)
+    /// <param name="startWorkflow">Opens the Start form (the StartInstance entry runs it); null leaves that entry unrunnable.</param>
+    internal CommandPaletteViewModel(CatalogViewModel catalog, Action<PageId> goTo, Action<string> remember, CommandOutcomeRegion? outcomes = null, Action? createItem = null, Action? startWorkflow = null)
     {
-        (_catalog, _goTo, _remember, Outcomes, CreateItem) = (catalog, goTo, remember, outcomes, createItem);
+        (_catalog, _goTo, _remember, Outcomes, CreateItem, StartWorkflow) = (catalog, goTo, remember, outcomes, createItem, startWorkflow);
         _catalog.PropertyChanged += OnCatalogChanged;
     }
 
     /// <summary>Opens the Create item form, or null.</summary>
     internal Action? CreateItem { get; }
+
+    /// <summary>Opens the Start form, or null.</summary>
+    internal Action? StartWorkflow { get; }
 
     /// <summary>The shell's region for a run whose palette closed before its outcome, or null.</summary>
     internal CommandOutcomeRegion? Outcomes { get; }
