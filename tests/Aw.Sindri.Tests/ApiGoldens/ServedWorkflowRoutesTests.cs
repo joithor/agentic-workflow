@@ -29,7 +29,7 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
     public static IReadOnlyList<(string Slug, string Scenario)> Goldens { get; } =
     [
         ("workflow-instance", "not-found"), ("workflow-instance-fact", "not-found"), ("workflow-recipes", "list"),
-        ("workflow-instances", "start-request"), ("workflow-instances", "start-started"), ("workflow-instances", "start-item-not-found"), ("workflow-instances", "start-missing-input"),
+        ("workflow-instances-start", "request"), ("workflow-instances-start", "started"), ("workflow-instances", "start-item-not-found"), ("workflow-instances", "start-missing-input"),
         ("workflow-instances", "start-item-mismatch"), ("workflow-instances", "start-earlier-attempt-live"),
         ("workflow-instances", "start-recipe-legacy"), ("workflow-instances", "start-recipe-revoked"), ("workflow-instances", "start-recipe-drifted"),
     ];
@@ -205,8 +205,8 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
 
         Assert.Equal(HttpStatusCode.OK, started.Status);
         Assert.Contains("\"content\": \"dGhlIHNwZWM=\"", ApiGolden.Reindent(request), StringComparison.Ordinal);   // 'the spec' as base64: StartFact has no converter
-        ApiGolden.Match(request, _harness.Home, "workflow-instances", "start-request");
-        ApiGolden.Match(started.Body, _harness.Home, "workflow-instances", "start-started", _drawn);
+        ApiGolden.Match(request, _harness.Home, "workflow-instances-start", "request");
+        ApiGolden.Match(started.Body, _harness.Home, "workflow-instances-start", "started", _drawn);
     }
 
     [Fact(Timeout = 120_000)]
@@ -222,7 +222,8 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
         _ = await Start(served, StartBody(served, "workflow.step", "T-3", next: false, spec));
         var live = await Start(served, StartBody(served, "workflow.step", "T-3", next: true, spec));
 
-        Assert.Equal(("SND-ITEM-404", HttpStatusCode.NotFound), (unknownItem.Code, unknownItem.Status));
+        // The wired SelfItems stub answers an unknown item as SND-CLI-003, so SND-ITEM-404 is unreachable through this host.
+        Assert.Equal(("SND-CLI-003", HttpStatusCode.BadRequest), (unknownItem.Code, unknownItem.Status));
         Assert.Equal(("SND-CLI-003", HttpStatusCode.BadRequest), (noInput.Code, noInput.Status));
         Assert.Equal(("SND-WF-014", HttpStatusCode.BadRequest), (mismatch.Code, mismatch.Status));
         Assert.Equal(("SND-WF-012", HttpStatusCode.Conflict), (live.Code, live.Status));
