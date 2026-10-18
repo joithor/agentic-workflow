@@ -1,0 +1,15 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ag="using:Aw.Sindri.Ui.ViewModels.Agents"
+             x:Class="Aw.Sindri.Ui.Views.Agents.AgentsPage"
+             x:DataType="ag:AgentsPageViewModel">
+  <!-- The Agents page (collector spec CU-1, screens spec §4.5). T0's skeleton: three named regions the page's builder fills in T2 (this file is theirs):
+       the head with the counts and the filters, the lines and groups, and the footer. -->
+  <StackPanel Spacing="{StaticResource Size.PanelGap}">
+    <StackPanel x:Name="AgentsHeadRegion" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+      <TextBlock Classes="page-title" Text="Agents" AutomationProperties.Name="Agents" />
+    </StackPanel>
+    <StackPanel x:Name="AgentsBodyRegion" Spacing="{StaticResource Size.PanelGap}" />
+    <StackPanel x:Name="AgentsFooterRegion" Spacing="4" />
+  </StackPanel>
+</UserControl>
