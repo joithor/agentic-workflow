@@ -62,13 +62,36 @@ internal sealed partial class RecipeWorkflow
         if (instance.Suspension is { } suspension)
         {
             // why: the parked loop never reads a report, so one accepted here would hang its Update and apply stale after the resume
-            throw Refusal(WorkflowErrors.TriggerNotAllowed.With($"{instance.Address.Value} is parked ({suspension.Reason?.ToString() ?? suspension.Kind.ToString()}); answer --resume first, then complete run {report.Run.Value}"));
+            throw Refusal(WorkflowErrors.TriggerNotAllowed.With(ParkedRefusal(instance, suspension, report.Run)));
         }
 
         if (TransitionDecision.Decide(new DecisionInput(instance, context.Recipe, report, GateAnswers.None, context.Decisions)) is Rejected rejected)
         {
             throw Refusal(rejected.Error);
         }
+    }
+
+    // Precise only where it is certain. A takeover with no unapproved park queued ends with the handback (EndCurrent skips approved
+    // parks): a block run's Step then runs again, and a desk run completes with its unchanged token. Past that point the way out
+    // depends on the park (its answer, and whether the Step runs again), so the text points at 'status', which shows the answer.
+    internal static string ParkedRefusal(WorkflowInstance instance, Suspension suspension, RunToken run)
+    {
+        var address = instance.Address.Value;
+        var parked = $"{address} is parked ({suspension.Reason?.ToString() ?? suspension.Kind.ToString()}); ";
+        if (suspension.Kind != SuspensionKind.Takeover)
+        {
+            return $"{parked}answer it first: sindri workflow status {address} shows the answer it takes";
+        }
+
+        var handback = $"{parked}hand it back first: sindri workflow handback {address}";
+        if (instance.PendingPark is { Approved: false } || instance.LaterParks?.Any(static p => !p.Approved) == true)
+        {
+            return $"{handback}; a park follows, and sindri workflow status {address} shows the answer it takes";
+        }
+
+        return instance.Frame.Run is { Runtime: StepRuntime.Block }
+            ? $"{handback} (the handback runs the Step again)"
+            : $"{handback}, then complete run {run.Value}";
     }
 
     /// <summary>

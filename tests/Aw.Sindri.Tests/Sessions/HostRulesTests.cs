@@ -36,7 +36,7 @@ public sealed class HostRulesTests
         var host = Detect(TmuxSources(), table[2], table);
 
         Assert.Equal(("tmux", "tmux · kitty"), (host.Kind, host.Label));
-        Assert.Equal(new TmuxFacts(Socket, "other", "api", "%0"), host.Tmux);
+        Assert.Equal(new TmuxFacts(Socket, "other", "api", "%0") { AttachedClients = 1 }, host.Tmux);
     }
 
     [Fact, Trait("Lane", "unit")]

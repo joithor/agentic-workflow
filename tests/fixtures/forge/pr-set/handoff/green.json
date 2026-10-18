@@ -1,0 +1,7 @@
+{
+  "_synthetic": true,
+  "gate": "local",
+  "outcome": "passed",
+  "sha": "@PROVEN@",
+  "commands": [{ "cmd": "bash ci/check.sh", "exit": 0 }]
+}

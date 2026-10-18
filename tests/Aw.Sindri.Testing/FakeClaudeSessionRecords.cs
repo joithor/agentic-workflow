@@ -24,5 +24,5 @@ public sealed class FakeClaudeSessionRecords : IClaudeSessionRecords
 
     /// <inheritdoc/>
     public Result<IReadOnlyList<ClaudeRecord>> Read(CancellationToken cancellationToken) =>
-        _failing ? SindriErrors.SessionsUnavailable.With("claude-records-unreadable") : Results.Success<IReadOnlyList<ClaudeRecord>>([.. _records]);
+        _failing ? SindriErrors.SessionSourceFailed.With("claude-records-unreadable") : Results.Success<IReadOnlyList<ClaudeRecord>>([.. _records]);
 }

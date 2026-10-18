@@ -42,6 +42,9 @@ internal sealed class WorkflowsHarness : IDisposable
 
     public string Home => _home.Path;
 
+    /// <summary>Applied to the registry's composition as well, so a recipe is approved against the same catalog the test then runs (a block runtime's fake).</summary>
+    public Action<IServiceCollection> Replacing { get; set; } = static _ => { };
+
     /// <summary>The OS notifications the composed host showed: every composition here replaces the real one, so no test fires a notification.</summary>
     public FakeOsNotifier Notifier { get; } = new();
 
@@ -191,7 +194,11 @@ internal sealed class WorkflowsHarness : IDisposable
     private RegisteredRecipe Registry(string yaml, bool approve, Action<IServiceCollection>? replace = null)
     {
         var ct = TestContext.Current.CancellationToken;
-        using var sindri = replace is null ? Sindri() : Sindri(replace);
+        using var sindri = Sindri(services =>
+        {
+            Replacing(services);
+            replace?.Invoke(services);
+        });
         var json = sindri.GetRequiredService<JsonSerializerOptions>();
         var document = sindri.GetRequiredService<IRecipeReader>().Read(yaml, "recipe.yaml").Document;
         Assert.NotNull(document);
