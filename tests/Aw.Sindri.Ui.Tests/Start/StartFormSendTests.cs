@@ -58,6 +58,18 @@ public sealed class StartFormSendTests
         Assert.Equal((Labels.StartRequired(label), true, true), (form.Fields[0].Error, form.HasError, form.CanStart));
     }
 
+    // Found in the live proof: the form's sentence stayed under a field that had been filled in since.
+    [Fact]
+    public async Task Typing_into_the_field_that_was_refused_clears_the_forms_sentence()
+    {
+        var form = await _fixture.Opened("T-1");
+        await form.Submit(Token);
+
+        form.Fields[0].Value = "the spec";
+
+        Assert.Equal((false, string.Empty, string.Empty), (form.HasError, form.ErrorDetail, form.Fields[0].Error));
+    }
+
     [Fact]
     public async Task A_missing_recipe_or_item_stops_the_send_before_the_field_checks()
     {

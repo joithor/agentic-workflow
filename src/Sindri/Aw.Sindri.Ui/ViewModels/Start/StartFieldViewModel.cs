@@ -39,6 +39,9 @@ internal sealed class StartFieldViewModel : ObservableObject
         FileLine = Kind == StartFieldKind.File ? Labels.NoFileChosen : string.Empty;
     }
 
+    /// <summary>Raised when the human changes the field (typed, or a file chosen), so the form can drop the sentence about it.</summary>
+    internal event EventHandler? Edited;
+
     /// <summary>The file button's words.</summary>
     public string ChooseFileText { get; } = Labels.ChooseFile;
 
@@ -209,5 +212,7 @@ internal sealed class StartFieldViewModel : ObservableObject
         {
             Error = string.Empty;
         }
+
+        Edited?.Invoke(this, EventArgs.Empty);
     }
 }

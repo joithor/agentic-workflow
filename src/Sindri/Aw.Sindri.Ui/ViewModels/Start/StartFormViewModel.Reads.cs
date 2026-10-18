@@ -94,6 +94,11 @@ internal sealed partial class StartFormViewModel
         _blocked = false;
         _itemKey = read.Value.Inputs.FirstOrDefault(i => i.Type == FactType.Item)?.Key;
         Fields = [.. read.Value.Inputs.Where(i => i.Type != FactType.Item).Select(i => new StartFieldViewModel(i, _files))];
+        foreach (var field in Fields)
+        {
+            field.Edited += (_, _) => ClearError();
+        }
+
         OnChanged(nameof(CanStart));
     }
 
