@@ -40,7 +40,7 @@ B="$WORK/aw-meta"
 
 # the version line
 stub "$B" "$C3"
-check "version line: commit, build time, OS and runtime id" "$(meta_version_line "$B")" "aw-meta $C3 (built 2026-10-17T00:00:00Z, macOS osx-arm64)"
+check "version line: commit, build time, OS and runtime id" "$(meta_version_line "$B")" "aw-meta commit $C3, built 2026-10-17T00:00:00Z, macOS osx-arm64"
 stub "$B" none
 check "version line: a binary with no version command says so" "$(meta_version_line "$B" | grep -c 'predates .aw-meta version')" "1"
 

@@ -4,7 +4,7 @@
 #
 #   meta_version_json <bin>             the binary's `version --json` output; empty for a build that has no version command
 #                                       (older than that command) or that can't run
-#   meta_version_line <bin>             one line: "aw-meta <commit> (built <time>, <os> <rid>)", or why there is no version
+#   meta_version_line <bin>             one line: "aw-meta commit <commit>, built <time>, <os> <rid>", or why there is no version
 #   meta_stale_line <bin> <repo-dir>    one warning line when the binary is older than the sources it is run from, else nothing
 #
 # A binary is stale when the last commit that touched the sources it is built from (META_BUILD_PATHS, read from
@@ -28,7 +28,7 @@ meta_version_line() {
     echo "$bin predates 'aw-meta version' (it carries no commit stamp); reinstall with scripts/install-meta.sh"
     return 0
   fi
-  jq -r '"aw-meta \(.commit) (built \(.builtAt), \(.os) \(.rid))"' <<< "$json"
+  jq -r '"aw-meta commit \(.commit), built \(.builtAt), \(.os) \(.rid)"' <<< "$json"
 }
 
 meta_stale_line() {

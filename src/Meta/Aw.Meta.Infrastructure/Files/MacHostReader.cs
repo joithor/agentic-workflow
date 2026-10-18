@@ -58,7 +58,7 @@ internal sealed class MacHostReader(string stateDirectory, ICommandRunner runner
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>lsof's field output, or AW-META-010.</returns>
     internal ValueTask<Result<string>> Lsof(CancellationToken cancellationToken) =>
-        MacTools.Output(runner, [paths.Lsof, "-w", "-n", "-F", "pcnR"], cancellationToken);
+        MacTools.Output(runner, [paths.Lsof, "-w", "-n", "-F", "pcnR"], cancellationToken, exit1WithOutputIsUsable: true);
 
     /// <summary>How long every live process has run, from one ps ("ps -axo pid=,etime=").</summary>
     /// <param name="cancellationToken">Cancels the call.</param>

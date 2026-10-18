@@ -116,7 +116,7 @@ if [ "${1:-}" = version ]; then echo '{"commit":"abc123","builtAt":"2026-10-17T0
 exit 0
 STUB
 OUT="$(CLAUDE_LOCAL_BIN="$WORK/ver-bin" bash "$DIR/install-meta.sh" --provider claude 2>&1)"; RC=$?
-check "the installed version is printed: commit, build time, OS and runtime id" "$RC:$(printf '%s' "$OUT" | grep -c 'aw-meta abc123 (built 2026-10-17T00:00:00Z, macOS osx-arm64)')" "0:1"
+check "the installed version is printed: commit, build time, OS and runtime id" "$RC:$(printf '%s' "$OUT" | grep -c 'aw-meta commit abc123, built 2026-10-17T00:00:00Z, macOS osx-arm64')" "0:1"
 printf '#!/usr/bin/env bash\nexit 2\n' > "$AW_STATE_DIR/bin/aw-meta"
 OUT="$(CLAUDE_LOCAL_BIN="$WORK/ver-bin" bash "$DIR/install-meta.sh" --provider claude 2>&1)"; RC=$?
 check "a binary that has no version command is said to predate it, exit 0" "$RC:$(printf '%s' "$OUT" | grep -c 'predates .aw-meta version')" "0:1"
@@ -157,14 +157,14 @@ ARGS="$(cat "$WORK/publish-args" 2>/dev/null)"
 check "a real install publishes for the host runtime id and installs the binary and e_sqlite3" "$RC:$(test -x "$AW_STATE_DIR/bin/aw-meta" && test -f "$AW_STATE_DIR/bin/libe_sqlite3.dylib" && echo yes):$(printf '%s' "$ARGS" | grep -c -- '-r osx-arm64')" "0:yes:1"
 check "the publish is stamped with this tree's commit" "$(printf '%s' "$ARGS" | grep -c -- "-p:SourceRevisionId=$PHEAD\( \|\$\)")" "1"
 check "the publish is stamped with a UTC build time" "$(printf '%s' "$ARGS" | grep -cE -- '-p:AwBuildTime=[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z')" "1"
-check "the install line shows the installed commit" "$(printf '%s' "$OUT" | grep -c "aw-meta $PHEAD (built")" "1"
+check "the install line shows the installed commit" "$(printf '%s' "$OUT" | grep -c "aw-meta commit $PHEAD, built")" "1"
 # a dirty tree: a changed or new file under a meta build path stamps <HEAD>-dirty; a docs change does not
 echo doc2 >> "$WORK/ptree/docs/a.md"; echo extra > "$WORK/ptree/docs/untracked.md"
 OUT="$(pub)"; ARGS="$(cat "$WORK/publish-args")"
 check "a docs-only change leaves the stamp clean" "$(printf '%s' "$ARGS" | grep -c -- "-p:SourceRevisionId=$PHEAD\( \|\$\)")" "1"
 echo two >> "$WORK/ptree/src/Meta/a.cs"
 OUT="$(pub)"; RC=$?; ARGS="$(cat "$WORK/publish-args")"
-check "an uncommitted change under a meta build path stamps <HEAD>-dirty, and the install line shows it" "$RC:$(printf '%s' "$ARGS" | grep -c -- "-p:SourceRevisionId=$PHEAD-dirty"):$(printf '%s' "$OUT" | grep -c "aw-meta $PHEAD-dirty (built")" "0:1:1"
+check "an uncommitted change under a meta build path stamps <HEAD>-dirty, and the install line shows it" "$RC:$(printf '%s' "$ARGS" | grep -c -- "-p:SourceRevisionId=$PHEAD-dirty"):$(printf '%s' "$OUT" | grep -c "aw-meta commit $PHEAD-dirty, built")" "0:1:1"
 git -C "$WORK/ptree" checkout -q -- src/Meta/a.cs; echo new > "$WORK/ptree/src/Meta/new.cs"
 OUT="$(pub)"; ARGS="$(cat "$WORK/publish-args")"
 check "a new untracked file under a meta build path is dirty too" "$(printf '%s' "$ARGS" | grep -c -- "-p:SourceRevisionId=$PHEAD-dirty")" "1"

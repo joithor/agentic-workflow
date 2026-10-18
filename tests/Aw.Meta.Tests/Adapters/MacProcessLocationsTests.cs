@@ -72,4 +72,31 @@ public sealed class MacProcessLocationsTests
             Assert.Contains("unavailable on macOS", error.Message, StringComparison.Ordinal);
         }
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_lsof_whose_output_reaches_the_cap_is_AW_META_010_not_a_partial_process_list()
+    {
+        var full = Lsof + new string('x', MacTools.OutputCharacterCap);
+        var locations = await Make(new InMemoryCommandRunner().When("lsof", full)).Locations(TestContext.Current.CancellationToken);
+
+        Assert.True(locations.IsError);
+        Assert.Equal(MetaErrors.HostUnreadable.Code, locations.Error.Code);
+        Assert.Contains("unavailable on macOS: lsof output over the cap", locations.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_lsof_that_exits_1_with_output_is_usable_because_it_could_not_read_some_files()
+    {
+        var locations = await Make(new InMemoryCommandRunner().When("lsof", Lsof, exitCode: 1)).Locations(TestContext.Current.CancellationToken);
+
+        Assert.True(locations.IsSuccess);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_lsof_that_exits_2_with_output_is_still_AW_META_010()
+    {
+        var locations = await Make(new InMemoryCommandRunner().When("lsof", Lsof, exitCode: 2)).Locations(TestContext.Current.CancellationToken);
+
+        Assert.True(locations.IsError);
+    }
 }

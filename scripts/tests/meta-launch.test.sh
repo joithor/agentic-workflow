@@ -384,7 +384,7 @@ if command -v script > /dev/null 2>&1; then
   if script --version 2>&1 | grep -q util-linux; then script -qfec "$pty_cmd" /dev/null < /dev/null > /dev/null 2>&1 &   # util-linux
   else script -q /dev/null bash -c "$pty_cmd" < /dev/null > /dev/null 2>&1 & fi   # BSD (macOS)
   sp=$!
-  waitfor '[ "$(pgrep -f "^bash $DIR/meta-lane.sh t1 api$" | wc -l | tr -d ' ')" -ge 2 ] && pgrep -f "^codex 60$" > /dev/null'
+  waitfor '[ "$(pgrep -f "^bash $DIR/meta-lane.sh t1 api$" | wc -l | tr -d " ")" -ge 2 ] && pgrep -f "^codex 60$" > /dev/null'
   lane_pids="$(pgrep -f "^bash $DIR/meta-lane.sh t1 api$")"; agent_pid="$(pgrep -f '^codex 60$' | head -1)"
   check "a lane under a pty runs its script, its agent and an id watcher" "$([ "$(echo "$lane_pids" | wc -l | tr -d ' ')" -ge 2 ] && kill -0 "$agent_pid" 2> /dev/null && echo yes)" "yes"
   kill -KILL "$sp" 2> /dev/null; wait "$sp" 2> /dev/null

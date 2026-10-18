@@ -11,7 +11,7 @@ internal static class MacTools
 {
     /// <summary>
     /// How many characters of a tool's output are kept: 16 MiB, about thirty times what "ps -axww" prints for a busy machine
-    /// (a few thousand processes with long command lines, well under 1 MiB). Past it the start of the output is dropped, never the end.
+    /// (a few thousand processes with long command lines, well under 1 MiB). Output that reaches it is refused, because the runner keeps only the end and the start would be missing.
     /// </summary>
     internal const int OutputCharacterCap = 16 * 1024 * 1024;
 
@@ -20,7 +20,13 @@ internal static class MacTools
 
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(15);
 
-    internal static async ValueTask<Result<string>> Output(ICommandRunner runner, IReadOnlyList<string> argv, CancellationToken cancellationToken)
+    /// <summary>Runs a tool and returns all of its output.</summary>
+    /// <param name="runner">The command runner.</param>
+    /// <param name="argv">The tool and its arguments.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <param name="exit1WithOutputIsUsable">True for a tool (lsof) that exits 1 when it could not read some of what it lists: exit 1 with output is then an answer.</param>
+    /// <returns>The output, or AW-META-010 (also when the output reached the cap: the start would be missing).</returns>
+    internal static async ValueTask<Result<string>> Output(ICommandRunner runner, IReadOnlyList<string> argv, CancellationToken cancellationToken, bool exit1WithOutputIsUsable = false)
     {
         var ran = await runner.Run(new CommandRequest(argv, _timeout) { TailCharacters = OutputCharacterCap }, cancellationToken).ConfigureAwait(false);
         var tool = string.Join(' ', argv);
@@ -29,8 +35,14 @@ internal static class MacTools
             return MetaErrors.HostUnreadable.With($"unavailable on macOS: {tool} could not be run ({ran.Error.Message})");
         }
 
-        return ran.Value.TimedOut || ran.Value.ExitCode != 0
-            ? MetaErrors.HostUnreadable.With($"unavailable on macOS: {tool} {(ran.Value.TimedOut ? "timed out" : string.Create(CultureInfo.InvariantCulture, $"exited {ran.Value.ExitCode}"))}: {Clip(ran.Value.Stderr.Trim())}")
+        var usableExit = ran.Value.ExitCode == 0 || (exit1WithOutputIsUsable && ran.Value.ExitCode == 1 && ran.Value.Stdout.Length > 0);
+        if (ran.Value.TimedOut || !usableExit)
+        {
+            return MetaErrors.HostUnreadable.With($"unavailable on macOS: {tool} {(ran.Value.TimedOut ? "timed out" : string.Create(CultureInfo.InvariantCulture, $"exited {ran.Value.ExitCode}"))}: {Clip(ran.Value.Stderr.Trim())}");
+        }
+
+        return ran.Value.Stdout.Length >= OutputCharacterCap
+            ? MetaErrors.HostUnreadable.With($"unavailable on macOS: {Path.GetFileName(argv[0])} output over the cap")
             : ran.Value.Stdout;
     }
 
