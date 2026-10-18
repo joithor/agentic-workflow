@@ -46,7 +46,7 @@ internal static class ParkScenarios
             case "park-mirrored-child":
                 await Append(host, item, EventTypes.WorkflowStarted, Row(address, "running", "start", new FrameSummary("running", 1, Run: null, Child: null), suspension: null), "started", ct);
                 var childAddress = address + "/step.4";
-                var mirrored = new SuspensionSummary(SuspensionKind.Park, ParkReason.NoProgress, ParkKind.Loop, Escalation: null, Mirrors: WorkflowInstanceId.Of(InstanceAddress.From(childAddress)).Value, MirrorsAddress: childAddress);
+                var mirrored = new SuspensionSummary(SuspensionKind.Park, ParkReason.NeedsAnswer, ParkKind.Step, Escalation: null, Mirrors: WorkflowInstanceId.Of(InstanceAddress.From(childAddress)).Value, MirrorsAddress: childAddress);
                 await Append(host, item, EventTypes.WorkflowTransition, Row(address, "running", "child.parked", frame: null, mirrored), "parked", ct);
                 break;
             default:   // 'idle-takeover'

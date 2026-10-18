@@ -3,25 +3,27 @@
     {
       "id": "park:WFI-4b2ce3bc02838fa3b234ec373586a772",
       "kind": "park",
-      "label": "park · no progress",
+      "label": "park · needs answer",
       "subject": {
         "kind": "instance",
         "id": "WFI-4b2ce3bc02838fa3b234ec373586a772"
       },
       "item": "ITM-0000000000000000000000000000000e",
       "title": "Try the engine",
-      "reason": "the rounds made no progress (ITM-0000000000000000000000000000000e/step/1)",
+      "reason": "it needs an answer (ITM-0000000000000000000000000000000e/step/1)",
       "repo": "demo",
       "urgency": "pulse",
       "since": "2026-01-01T00:00:00.0000000Z",
       "recordedOnly": false,
       "notice": null,
-      "answerKind": "grant",
-      "primaryAction": "ApplyCommand:answer-grant",
+      "answerKind": "text",
+      "primaryAction": "ApplyCommand:answer-text",
       "actions": [
-        "ApplyCommand:answer-grant"
+        "ApplyCommand:answer-text"
       ],
-      "cli": "sindri workflow answer ITM-0000000000000000000000000000000e/step/1 --grant 1"
+      "cli": "sindri workflow answer ITM-0000000000000000000000000000000e/step/1 <the child's answer>",
+      "via": "child",
+      "child": "ITM-0000000000000000000000000000000e/step/1/step.4"
     }
   ],
   "empty": null,
