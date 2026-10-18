@@ -65,8 +65,8 @@ expect "dry run prints the new steps" 0 \
   "would run: uv tool install graphifyy==$PIN --exclude-newer $DATE" \
   "would run: scripts/binaries-lock.sh fetch temporal\$" \
   "would run: scripts/binaries-lock.sh fetch temporal-test-server" \
-  "bwrap: MISSING" "secret-tool: MISSING" \
-  "would run: sudo apt-get install -y bubblewrap libsecret-tools clang zlib1g-dev lsof tmux curl git"
+  "bwrap: MISSING" "socat: MISSING" "secret-tool: MISSING" "systemd-run: MISSING" \
+  "would run: sudo apt-get install -y bubblewrap socat libsecret-tools clang zlib1g-dev lsof tmux curl git"
 [ -z "$(ls -A "$HOME_DIR")" ] && ok "dry run wrote nothing into HOME" || fail "dry run wrote: $(ls -A "$HOME_DIR")"
 
 # 2. uv and graphify at the pin are recognised.
@@ -82,11 +82,18 @@ expect "a graphify off the pin is reinstalled" 0 "would run: uv tool install gra
 
 # 4. Everything present: exit 0, no sudo line.
 fake graphify "echo graphify $PIN"
-for t in bwrap secret-tool clang lsof tmux curl git; do fake "$t"; done
+for t in bwrap socat secret-tool clang lsof tmux curl git systemd-run; do fake "$t"; done
 : >"$TMPROOT/zlib.h"
 run AW_DEPS_OS=Linux AW_DRY_RUN=1
 expect "all system packages present" 0 "bwrap: found" "secret-tool: found"
 printf '%s\n' "$OUT" | has "sudo apt-get" && fail "no sudo line when nothing is missing" || ok "no sudo line when nothing is missing"
+
+# 4a. systemd-run: a working user scope is reported, a failing one is a warning that never fails the run (exit 0).
+run AW_DEPS_OS=Linux AW_DRY_RUN=1 AW_DEPS_SYSTEMD_PROBE=true
+expect "a working systemd user scope is reported" 0 "systemd-run: user scope works"
+run AW_DEPS_OS=Linux AW_DRY_RUN=1 AW_DEPS_SYSTEMD_PROBE=false
+expect "a missing systemd user manager only warns" 0 "systemd-run: found but no user scope \\(WARN"
+printf '%s\n' "$OUT" | has "sudo apt-get" && fail "no sudo line for socat when present" || ok "socat present: no install line"
 
 # 4b. bwrap present but its sandbox fails with the AppArmor restriction on: the profile is written and loaded through
 # sudo, then the sandbox is probed again (the fake probe passes once apparmor_parser ran).

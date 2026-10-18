@@ -9,11 +9,12 @@
 #     temporal, temporal-test-server   scripts/binaries-lock.sh fetch <name> (sha256-verified, idempotent) into
 #                  ${AW_STATE_DIR:-~/.agentic-workflow}/cache/bin/<name>-<pin>/, where sindri serve and the tests look;
 #                  `temporal --version` is run afterwards and a failed fetch or a binary that won't run fails the script
+#   systemd-run --user --scope is checked (a warning only: the Sindri sandbox's limits need a user manager; AW_DEPS_SYSTEMD_PROBE replaces the command, tests).
 #   bwrap is also probed with a no-op sandbox (`bwrap --ro-bind / / true`); when that fails because AppArmor restricts
 #   user namespaces (Ubuntu 24.04), the /etc/apparmor.d/bwrap profile is written and loaded with sudo, then probed again.
 #   system packages, installed when missing through config/lib/sys-pkg.sh (sudo + apt-get/dnf/yum/pacman/zypper on
 #   Linux, Homebrew on macOS, installing Homebrew itself when needed); AW_NO_SYSTEM_INSTALL=1 only prints the command:
-#     Linux: bubblewrap (bwrap: graphify never runs unsandboxed), libsecret-tools (secret-tool: Sindri keychain:
+#     Linux: bubblewrap (bwrap: graphify never runs unsandboxed), socat (the Sindri sandbox's forwarders), libsecret-tools (secret-tool: Sindri keychain:
 #            pointers), clang + zlib1g-dev (NativeAOT), lsof, tmux, curl, git
 #     macOS: tmux
 #
@@ -45,6 +46,7 @@ check_system() {
   MISSING_PKGS=""
   if [ "$OS" = "Linux" ]; then
     need bwrap bubblewrap "network sandbox for graphify; it never runs unsandboxed"
+    need socat socat "Sindri sandbox forwarders; without it a sandboxed launch is SND-LAUNCH-014 no-forwarder"
     need secret-tool secret-tool "Sindri keychain: pointers"
     need clang clang "NativeAOT publish"
     if [ -e "${AW_DEPS_ZLIB_H:-/usr/include/zlib.h}" ]; then echo "  zlib.h: found"; else
@@ -70,6 +72,18 @@ probe_bwrap() {
   fi
 }
 
+# The sandbox's cgroup limits run through `systemd-run --user --scope`. Not a package to install (systemd is the base system),
+# and the sandbox is not wired into a launch yet, so this only warns: a missing user manager is SND-LAUNCH-014 no-user-manager.
+probe_systemd_run() {
+  [ "$OS" = "Linux" ] || return 0
+  if ! command -v systemd-run &>/dev/null; then
+    echo "  systemd-run: MISSING (WARN: the Sindri sandbox's limits need a systemd user manager)"; return 0
+  fi
+  if eval "${AW_DEPS_SYSTEMD_PROBE:-systemd-run --user --scope --quiet true}" >/dev/null 2>&1; then echo "  systemd-run: user scope works"; else
+    echo "  systemd-run: found but no user scope (WARN: the Sindri sandbox's limits need a systemd user manager; loginctl enable-linger \"\$USER\")"
+  fi
+}
+
 check_system
 if [ -n "$MISSING_PKGS" ]; then
   echo ""
@@ -83,6 +97,7 @@ if [ -n "$MISSING_PKGS" ]; then
   fi
 fi
 probe_bwrap
+probe_systemd_run
 
 # --- uv ---
 if command -v uv &>/dev/null; then
