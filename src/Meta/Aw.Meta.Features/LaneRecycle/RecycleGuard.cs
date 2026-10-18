@@ -35,26 +35,21 @@ internal sealed class RecycleGuard(ILaneFiles files, ILaneSessions sessions, IDi
             return MetaErrors.RecycleRefused.With($"lane {name} runs {other.Agent?.Agent}: only Claude Code lanes are recycled");
         }
 
-        if (await Known(team.Team + "-" + name, record.Value, cancellationToken).ConfigureAwait(false) is not { } session)
+        // Only the live id counts: the id lane-sessions holds goes stale at every /clear, and taking it as the old id would let the poll accept the pre-clear session as the new one.
+        var live = await sessions.Current(team.Team + "-" + name, cancellationToken).ConfigureAwait(false);
+        if (live.IsError || live.Value is not { } session)
         {
-            return MetaErrors.LaneNotRecorded.With($"lane {name} has no session: nothing in tmux session {team.Team}-{name} reports one");
+            return MetaErrors.RecycleRefused.With($"lane {name}: no live Claude session found under tmux session {team.Team}-{name} (is the lane up?); nothing was sent");
         }
 
-        var digest = await CheckDigest(request.Digest, cancellationToken).ConfigureAwait(false);
+        var digest = await CheckDigest(Path.GetFullPath(request.Digest), cancellationToken).ConfigureAwait(false);
         if (digest.IsError)
         {
             return digest.Error;
         }
 
         var before = await context.ReadLane(team.Team, name, team.Context.RecycleAt, cancellationToken).ConfigureAwait(false);
-        return new RecyclePlan(team.Team, name, session, before.IsSuccess ? before.Value.Tokens : null, request.Digest);
-    }
-
-    // The session id the lane's Claude reports now, else the one lane-sessions holds.
-    private async ValueTask<Core.Ids.SessionId?> Known(string tmuxSession, Core.Lanes.LaneRecord? record, CancellationToken cancellationToken)
-    {
-        var current = await sessions.Current(tmuxSession, cancellationToken).ConfigureAwait(false);
-        return (current.IsSuccess ? current.Value : null) ?? record?.Session;
+        return new RecyclePlan(team.Team, name, session, before.IsSuccess ? before.Value.Tokens : null, Path.GetFullPath(request.Digest));
     }
 
     private async ValueTask<Result<Unit>> CheckDigest(string path, CancellationToken cancellationToken)

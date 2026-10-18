@@ -17,8 +17,13 @@ internal sealed class PaneLaneSessions(ILanePane pane, IProcessTable processes, 
     public async ValueTask<Result<SessionId?>> Current(string session, CancellationToken cancellationToken)
     {
         var root = await pane.PanePid(session, cancellationToken).ConfigureAwait(false);
-        var table = root.IsSuccess && root.Value is not null ? await processes.Snapshot(cancellationToken).ConfigureAwait(false) : null;
-        if (root.Value is not { } start || table is not { IsSuccess: true })
+        if (root.IsError || root.Value is not { } start)
+        {
+            return Results.Success<SessionId?>(value: null);
+        }
+
+        var table = await processes.Snapshot(cancellationToken).ConfigureAwait(false);
+        if (table.IsError)
         {
             return Results.Success<SessionId?>(value: null);
         }

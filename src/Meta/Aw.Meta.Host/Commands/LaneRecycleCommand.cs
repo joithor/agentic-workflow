@@ -19,7 +19,7 @@ internal static class LaneRecycleCommand
 
     private static async Task<int> Run(CommandContext context)
     {
-        var request = new LaneRecycleRequest(context.Line.Positional(0), context.Line.Value("digest"), context.Line.Has("dry-run"));
+        var request = new LaneRecycleRequest(context.Line.Positional(0), Absolute(context.Line.Value("digest")), context.Line.Has("dry-run"));
         var result = await context.Services.GetRequiredService<IService<LaneRecycleRequest, LaneRecycleResponse>>().Handle(request, context.Cancellation).ConfigureAwait(false);
         if (result.IsError)
         {
@@ -29,6 +29,9 @@ internal static class LaneRecycleCommand
 
         return CommandOutput.Report(context, result, Text);
     }
+
+    // The digest is typed into another session's pane, whose directory is not ours: relative paths are made absolute here.
+    private static string Absolute(string path) => string.IsNullOrWhiteSpace(path) || path.Contains('\0', StringComparison.Ordinal) ? path : Path.GetFullPath(path);
 
     private static string Text(LaneRecycleResponse response) =>
         string.Join(

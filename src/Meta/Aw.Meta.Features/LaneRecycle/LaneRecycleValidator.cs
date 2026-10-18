@@ -14,6 +14,11 @@ internal sealed class LaneRecycleValidator : IValidator<LaneRecycleRequest>
             return MetaErrors.Invalid.With("a lane is required");
         }
 
-        return string.IsNullOrWhiteSpace(value.Digest) ? MetaErrors.Invalid.With("--digest <path> is required") : Unit.Value;
+        if (string.IsNullOrWhiteSpace(value.Digest) || value.Digest.Contains('\0', StringComparison.Ordinal))
+        {
+            return MetaErrors.Invalid.With("--digest <path> is required");
+        }
+
+        return Path.IsPathFullyQualified(value.Digest) ? Unit.Value : MetaErrors.Invalid.With("--digest must be an absolute path");
     }
 }

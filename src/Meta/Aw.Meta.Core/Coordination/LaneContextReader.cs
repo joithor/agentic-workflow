@@ -86,7 +86,7 @@ public sealed class LaneContextReader(ILaneFiles files, ILaneSessions sessions, 
         var tail = await transcripts.Tail(session, TailBytes, cancellationToken).ConfigureAwait(false);
         if (tail.IsError)
         {
-            return tail.Error;
+            return Unknown(lane, session, threshold, "the transcript can't be read: " + tail.Error.Message.ReplaceLineEndings(" "));
         }
 
         if (tail.Value is not { } read)
