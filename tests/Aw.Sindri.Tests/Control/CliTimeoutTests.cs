@@ -96,7 +96,7 @@ public sealed class CliTimeoutTests
     {
         using var client = new ControlPlaneClient(_probe, SliceHarness.Json, timeout: TimeSpan.FromMilliseconds(50), handler: new LateHandler(new FakeTimeProvider(), TimeSpan.FromHours(1)));
 
-        var frames = new List<Aw.Kernel.Result<StreamFrame>>();
+        var frames = new List<Kernel.Result<StreamFrame>>();
         await foreach (var frame in client.Stream("/sindri/events", TestContext.Current.CancellationToken))
         {
             frames.Add(frame);
