@@ -45,12 +45,7 @@ internal sealed class PrivateTmux : IDisposable
 
     private static string? Run(string name, params string[] arguments)
     {
-        var start = new ProcessStartInfo("tmux") { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
-        foreach (var part in (string[])["-L", name, .. arguments])
-        {
-            start.ArgumentList.Add(part);
-        }
-
+        var start = new ProcessStartInfo("tmux", ["-L", name, .. arguments]) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
         _ = start.Environment.Remove("TMUX");
         _ = start.Environment.Remove("TMUX_PANE");
         try
