@@ -137,6 +137,15 @@ public static class SindriErrors
     /// <summary>SND-ONYX-005: Onyx didn't become ready in time, or answered with a version other than the pinned one.</summary>
     public static readonly ErrorDefinition OnyxNotReady = new("SND-ONYX-005", ErrorKind.Unavailable, "Onyx isn't ready or runs another version");
 
+    /// <summary>SND-ONYX-007: the Onyx login given isn't an admin (it can't list groups or make a key).</summary>
+    public static readonly ErrorDefinition OnyxNotAdmin = new("SND-ONYX-007", ErrorKind.Forbidden, "The Onyx login given isn't an admin");
+
+    /// <summary>SND-ONYX-008: logging in, minting Sindri's key or verifying it failed.</summary>
+    public static readonly ErrorDefinition OnyxKeyFailed = new("SND-ONYX-008", ErrorKind.Unavailable, "Minting or verifying Sindri's Onyx key failed");
+
+    /// <summary>SND-ONYX-009: the key couldn't be stored (neither the OS secret store nor the owner-only file).</summary>
+    public static readonly ErrorDefinition OnyxSecretNotStored = new("SND-ONYX-009", ErrorKind.Unavailable, "Writing the Onyx key to a secret store failed");
+
     /// <summary>SND-ONYX-010: Docker points at another machine; Sindri only runs Onyx on this one.</summary>
     public static readonly ErrorDefinition OnyxRemoteDocker = new("SND-ONYX-010", ErrorKind.Unavailable, "Docker points at another machine");
 
@@ -179,7 +188,7 @@ public static class SindriErrors
         LeaseHeld, LeaseLost, LeaseStale, ProfileMissing, ProfileInvalid, ProfileHashMismatch, ProfileNeedsTerminal,
         ProfileNotApproved, ApprovalsUnavailable, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, PortInUse, ApiNoCode, ApiInternal,
         CallerUnknown, OriginRefused, CommandBusy, AuthTokenRequired, AuthRefused, UnknownVerb, StartFailed,
-        InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, JobNotFound, JobConflict, JobInterrupted, JobsRateLimited, ServiceNotFound, OnyxDockerUnavailable, OnyxComposeMissing, OnyxNotEnoughResources, OnyxPinsMalformed, OnyxPortTaken, OnyxNotReady, OnyxRemoteDocker, OnyxComposeFailed, OnyxWorkspaceUnusable, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
+        InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, JobNotFound, JobConflict, JobInterrupted, JobsRateLimited, ServiceNotFound, OnyxDockerUnavailable, OnyxComposeMissing, OnyxNotEnoughResources, OnyxPinsMalformed, OnyxPortTaken, OnyxNotAdmin, OnyxKeyFailed, OnyxSecretNotStored, OnyxNotReady, OnyxRemoteDocker, OnyxComposeFailed, OnyxWorkspaceUnusable, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
         LauncherInvalid, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride,
     ];
 }

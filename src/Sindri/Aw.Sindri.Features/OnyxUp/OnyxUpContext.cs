@@ -12,6 +12,9 @@ internal sealed record OnyxUpContext(OnyxPins Pins, OnyxPaths Paths, int Port, s
     /// <summary>Gets or sets a value indicating whether the config step rewrote a file whose content differed in this run, so a stack that is already up is running with the old one and the start step must run `compose up -d` again (which recreates the services that changed).</summary>
     public bool ConfigRewritten { get; set; }
 
+    /// <summary>Gets or sets the secret pointer the account stage recorded, carried so a rewrite of state.json keeps it.</summary>
+    public string? KeyPointer { get; set; }
+
     /// <summary>Gets or sets the release the running Onyx reported once the start step finished.</summary>
     public string? Version { get; set; }
 

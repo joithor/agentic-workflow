@@ -16,12 +16,16 @@ public sealed partial record OnyxSettings
     private const int MaxShown = 64;
     private static readonly HashSet<string> _schemes = new(StringComparer.Ordinal) { "env", "file", "keychain", "op" };
 
-    private OnyxSettings(Uri url, string token, string version)
+    private OnyxSettings(Uri url, string token, string version, bool managed)
     {
         Url = url;
         Token = token;
         Version = version;
+        Managed = managed;
     }
+
+    /// <summary>Gets a value indicating whether Sindri manages this Onyx ('context.sources.onyx.managed'): it stands the stack up, starts it with 'serve' and stops it with 'stop'. Only a managed one has its url on 127.0.0.1.</summary>
+    public bool Managed { get; }
 
     /// <summary>Onyx's base URL (http or https on a loopback host), ending in '/'.</summary>
     public Uri Url { get; }
@@ -39,13 +43,19 @@ public sealed partial record OnyxSettings
     /// <param name="url">'context.sources.onyx.url'.</param>
     /// <param name="token">'context.sources.onyx.token', a secret pointer.</param>
     /// <param name="version">'context.sources.onyx.version', a release tag.</param>
+    /// <param name="managed">'context.sources.onyx.managed': Sindri runs this Onyx, so its url must be http://127.0.0.1:&lt;port&gt;.</param>
     /// <returns>The settings, SND-CONTEXT-055 for a URL or version that breaks the rules, or SND-CONTEXT-002 for no token or one that isn't a secret pointer (never repeated).</returns>
-    public static Result<OnyxSettings> Create(string? url, string? token, string? version)
+    public static Result<OnyxSettings> Create(string? url, string? token, string? version, bool managed = false)
     {
         var baseUrl = CheckUrl(url);
         if (baseUrl.IsError)
         {
             return baseUrl.Error;
+        }
+
+        if (managed && (baseUrl.Value.Scheme != Uri.UriSchemeHttp || baseUrl.Value.Host != "127.0.0.1"))
+        {
+            return NotLoopback("a managed Onyx (managed: true) is reached at http://127.0.0.1:<port> only");
         }
 
         if (string.IsNullOrWhiteSpace(token))
@@ -62,7 +72,7 @@ public sealed partial record OnyxSettings
         }
 
         var pinned = CheckPinned(version);
-        return pinned.IsError ? pinned.Error : new OnyxSettings(baseUrl.Value, token, pinned.Value);
+        return pinned.IsError ? pinned.Error : new OnyxSettings(baseUrl.Value, token, pinned.Value, managed);
     }
 
     /// <summary>Compares the version a running Onyx reports with the pinned one.</summary>

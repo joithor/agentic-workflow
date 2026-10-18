@@ -42,7 +42,7 @@ internal sealed class ProcessToolRunner : IToolRunner
 
         using (process)
         {
-            return Wait(process, timeout, options?.StandardErrorLine, cancellationToken);
+            return Wait(process, timeout, options, cancellationToken);
         }
     }
 
@@ -66,8 +66,21 @@ internal sealed class ProcessToolRunner : IToolRunner
         }
     }
 
-    private static ToolRun Wait(Process process, TimeSpan timeout, Action<string>? standardErrorLine, CancellationToken cancellationToken)
+    private static ToolRun Wait(Process process, TimeSpan timeout, ToolRunOptions? options, CancellationToken cancellationToken)
     {
+        var standardErrorLine = options?.StandardErrorLine;
+        if (options?.StandardInput is { } input)
+        {
+            try
+            {
+                process.StandardInput.Write(input);
+            }
+            catch (IOException)
+            {
+                // the tool closed its input early; its exit code says what it made of what it read
+            }
+        }
+
         process.StandardInput.Close();   // a tool that prompts reads end of input instead of waiting for a terminal
         var output = process.StandardOutput.ReadToEndAsync(CancellationToken.None);
         var error = DrainLines(process.StandardError, standardErrorLine);
