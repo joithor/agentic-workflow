@@ -42,7 +42,7 @@ internal sealed class ItemLaunchSource(ILaunchViews launches, LaunchTargetsReade
         }
 
         var inRepo = await launches.ForRepo(repo, cancellationToken).ConfigureAwait(false);
-        return inRepo.IsError ? inRepo.Error : Results.Success<AgentId?>(inRepo.Value.FirstOrDefault(static row => row.State == LaunchState.Started)?.Target);
+        return inRepo.IsError ? inRepo.Error : Results.Success(inRepo.Value.FirstOrDefault(static row => row.State == LaunchState.Started)?.Target);
     }
 
     private async ValueTask<Result<ItemLaunch>> Decide(ItemRow item, IReadOnlyList<LaunchRow> own, AgentId? lastUsed, LaunchTargets probe, CancellationToken cancellationToken)
