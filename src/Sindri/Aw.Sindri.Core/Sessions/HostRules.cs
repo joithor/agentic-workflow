@@ -98,7 +98,8 @@ public static partial class HostRules
         var pane = view is null ? null : PaneOf(view, query.Agent, chain);
         var (session, paneId) = pane is not null ? (pane.Session, pane.Pane) : FromRecord(query.RecordTmux);
         var terminal = view is null || session is null ? null : ClientTerminal(query, view, session, sources);
-        var facts = new TmuxFacts(socket, SocketKind(socket, session, sources.Teams), session, paneId);
+        var clients = view is null || session is null ? (int?)null : view.Clients.Count(c => string.Equals(c.Session, session, StringComparison.Ordinal));
+        var facts = new TmuxFacts(socket, SocketKind(socket, session, sources.Teams), session, paneId) { AttachedClients = clients };
         return new HostInfo("tmux", terminal is null ? "tmux" : "tmux · " + Label(terminal)) { Tmux = facts, Terminal = terminal };
     }
 
