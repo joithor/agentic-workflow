@@ -59,6 +59,7 @@ internal static class NeedsYouMapper
             ItemId = row.Item,
             Cli = row.Cli,
             Via = row.Via,
+            Child = InstanceRules.IsChildVia(row.Via) && !string.IsNullOrEmpty(row.Child) ? row.Child : null,
             RecordedOnly = row.RecordedOnly,
             Notice = row.Notice ?? string.Empty,
             Question = PendingDecision(subject?.DecisionId, decisions)?.Question ?? string.Empty,

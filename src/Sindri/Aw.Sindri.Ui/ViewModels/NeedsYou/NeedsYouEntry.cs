@@ -57,6 +57,9 @@ internal sealed record NeedsYouEntry(string Id, NeedsYouUrgency Urgency)
     /// <summary>The served via of a row whose answer a child instance decides ("child"); null for any other row.</summary>
     internal string? Via { get; init; }
 
+    /// <summary>The address of the child instance that decides the answer, served on a via child row; null when none is served.</summary>
+    internal string? Child { get; init; }
+
     /// <summary>What a decision row's decision asks, as the pending list serves it; empty for any other row.</summary>
     internal string Question { get; init; } = "";
 
@@ -72,7 +75,7 @@ internal sealed record NeedsYouEntry(string Id, NeedsYouUrgency Urgency)
     public bool Equals(NeedsYouEntry? other) =>
         other is not null
         && ((Id, Urgency, Kind, Chip, ShownId, Title, Repo, Label, Reason) == (other.Id, other.Urgency, other.Kind, other.Chip, other.ShownId, other.Title, other.Repo, other.Label, other.Reason))
-        && ((Since, PrimaryAction, Subject, ItemId, Cli, Question, RecordedOnly, Notice, Via) == (other.Since, other.PrimaryAction, other.Subject, other.ItemId, other.Cli, other.Question, other.RecordedOnly, other.Notice, other.Via))
+        && ((Since, PrimaryAction, Subject, ItemId, Cli, Question, RecordedOnly, Notice, Via, Child) == (other.Since, other.PrimaryAction, other.Subject, other.ItemId, other.Cli, other.Question, other.RecordedOnly, other.Notice, other.Via, other.Child))
         && Actions.SequenceEqual(other.Actions);
 
     /// <inheritdoc />

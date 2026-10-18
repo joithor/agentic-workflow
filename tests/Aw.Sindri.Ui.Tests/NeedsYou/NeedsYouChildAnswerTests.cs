@@ -49,6 +49,49 @@ public sealed class NeedsYouChildAnswerTests
         Assert.Empty(row.Entry.PrimaryAction);
     }
 
+    private static NeedsYouRowViewModel Mirrored()
+    {
+        var list = Golden<NeedsYouList>("needs-you", "park-mirrored-child");
+        var entry = NeedsYouMapper.Map(list, Golden<CommandList>("commands", "catalog"), decisions: null, new HomeCounts(Running: 0, WithYou: 0, Queued: 0)).Rows[0];
+        return new NeedsYouRowViewModel(entry, seen: false, reducedMotion: false, arrived: false, new FakeTimeProvider(A.Noon));
+    }
+
+    [Fact]
+    public void A_mirrored_child_row_is_named_for_and_opens_the_served_child()
+    {
+        var served = Golden<NeedsYouList>("needs-you", "park-mirrored-child").Rows[0];
+        Assert.Equal("child", served.Via);
+        Assert.NotEmpty(served.Child!);
+
+        var row = Mirrored();
+
+        Assert.Equal($"Answer in the child {served.Child}", row.ChildAnswer!.Name);
+        Assert.True(row.ChildAnswer.OpensChild);
+        Assert.Equal(new Aw.Sindri.Ui.Navigation.DeepLink(Aw.Sindri.Ui.Navigation.DeepLinkKind.Workflow, served.Child!), row.ChildAnswer.Link);
+        Assert.Empty(row.Cli);   // the placeholder is still never copied
+        Assert.Empty(row.Controls);
+    }
+
+    [Fact]
+    public void A_child_row_served_no_child_keeps_the_fallback_name()
+    {
+        var row = Row("child");   // the older park golden serves via and no child
+
+        Assert.False(row.ChildAnswer!.OpensChild);
+        Assert.Equal(Labels.AnswerInChildOpensName(row.ShownId), row.ChildAnswer.Name);
+    }
+
+    [Fact]
+    public void A_row_that_is_not_via_child_ignores_a_served_child()
+    {
+        var list = Golden<NeedsYouList>("needs-you", "park-mirrored-child");
+        var served = list with { Rows = [list.Rows[0] with { Via = null }] };
+
+        var entry = NeedsYouMapper.Map(served, Golden<CommandList>("commands", "catalog"), decisions: null, new HomeCounts(Running: 0, WithYou: 0, Queued: 0)).Rows[0];
+
+        Assert.Null(entry.Child);
+    }
+
     [Fact]
     public void A_row_without_via_is_unchanged()
     {
