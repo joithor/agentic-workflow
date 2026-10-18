@@ -1033,6 +1033,10 @@ Outside S1:
 | SND-WF-013 | conflict | A workflow challenge expired, or its subject changed | Run it again and re-read the preview |
 | SND-WF-014 | invalid | `--item` and `fact:item`'s `id` differ | Use the same id in both |
 | SND-WF-015 | unavailable | An effect couldn't be sent (an undeclared reply outcome, or every retry failed) | Fix the block or its service, then resume the dispatch park |
+| SND-WF-016 | unavailable | A Step input has a descriptor but no runtime in this build: refused at `recipe approve` and `workflow start`; if the runtime is gone after approval, the instance parks (`NoRuntime`) and the question names this code | Install the block pack or rebuild, then restart |
+| SND-WF-017 | conflict | The text a pull (`workflow injection`) refilled differs from what the run recorded; nothing is served | Re-run the Step |
+| SND-WF-018 | conflict | A Step input, re-run on a cache miss, differs from what the run recorded; the Step does not run on different data | Re-run the Step |
+| SND-WF-019 | invalid | A Step input filled an invalid plan: a bad section name, a section or typed result over 256 KiB, or a plan over 1 MiB; the Step fails | Fix the input block |
 
 ## 9. Validator and eval format
 
