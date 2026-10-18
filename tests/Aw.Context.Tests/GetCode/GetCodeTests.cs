@@ -182,7 +182,8 @@ public sealed class GetCodeTests : IDisposable
         Assert.Equal(["map", "code-index", "lexical-tests", "lexical-schema"], view.Searched.Sources.Select(s => s.Id.Value), StringComparer.Ordinal);
         Assert.Equal((SearchedState.Unavailable, "index-not-built"), (Row(view, "code-index").State, Row(view, "code-index").Reason));
         Assert.Equal((SearchedState.Ok, SearchedState.Ok), (Row(view, "lexical-tests").State, Row(view, "lexical-schema").State));
-        Assert.Equal((0, [CodeWorld.Anchor]), (view.Searched.Depth, view.Searched.Anchors.ToArray()));
+        Assert.Equal(0, view.Searched.Depth);
+        Assert.Equal([CodeWorld.Anchor], view.Searched.Anchors, StringComparer.Ordinal);
         Assert.False(view.Searched.Bands.Code.Empty);
     }
 
