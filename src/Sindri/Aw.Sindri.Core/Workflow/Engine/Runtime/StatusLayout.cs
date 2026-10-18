@@ -3,7 +3,7 @@ using System.Text;
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
 /// <summary>
-/// 'workflow status' (engine spec §6.4): the header, then labelled lines in a fixed order — next, child, inputs, drift,
+/// 'workflow status' (engine spec §6.4): the header, then labelled lines in a fixed order — next, run (an agent run, P8), child, inputs, drift,
 /// timeout, paused, budget (beside an open desk task, as §6.4 shows it), answer, commands — leaving out the empty ones. Labels take 12 columns; a long 'next' wraps
 /// at 120 and every continuation line is indented to the value column. Plain ASCII.
 /// </summary>
@@ -22,6 +22,7 @@ public static class StatusLayout
         var text = new StringBuilder().Append(InstanceHeader.Line(view, now)).Append('\n');
         Labelled(text, "name", NameLines(view));
         Labelled(text, "next", Wrap(view.Next));
+        Labelled(text, "run", view.AgentRun is { } run ? [$"agent {run.Launch}"] : []);
         Labelled(text, "child", [.. view.Children.Select(static c => $"{c.Address.Value}  {c.State}")]);
         Labelled(text, "inputs", InputLines(view));
         Labelled(text, "drift", view.Drift is { } drift ? [drift] : []);

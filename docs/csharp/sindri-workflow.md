@@ -1107,3 +1107,30 @@ sends it on to the desk twin. A Step with no registered runtime keeps opening a 
   `decision`, left out when null. Desk reports carry neither.
 - **Profile:** `workflow.judge.providers` (and `repos[].workflow.judge.providers`) narrows which providers a Judge
   Step may ask; see `sindri-profile.md`.
+
+## Agent runtime (P8)
+
+A Step whose descriptor says `runtime: agent` runs on an agent session when the approved profile sets `workflow.agent.target`
+(see `sindri-profile.md`) and a launcher is registered. Otherwise it opens a desk task as before. The workflow launches the
+session once (`LaunchAgentStep`, id `agent-launch:{run}:{n}`; a repeated request for the same launch id reuses the
+session), watches it (`WatchAgentStep`, heartbeating), and on an accepted report closes the run (`CloseAgentStep`: the
+usage, the measured empty diff, and the stop of the session) before it decides.
+
+- **The report is the `complete` Update**, validated like a desk report. The session sends `X-Sindri-Launch-Secret`
+  (`AW_SINDRI_LAUNCH_SECRET` for the CLI); another caller gets `SND-AUTH-002`, a wrong secret `SND-AUTH-003` (it consumes no
+  nonce). While the instance is taken over the secret is refused and only the human completes it, through the desk.
+- **A park or a takeover leaves the session running;** the watch resumes after the handback and attaches to the same
+  launch id. A `cancel` or the end of the run stops the session. A session that ends without a report is
+  `step.failed` (`exit`, or `lost` when it vanished), and the loop rules apply to it as to any failure.
+- **Status:** an open agent run adds `run: { runtime: "agent", launch: "LCH-…" }` to the status fields and a `run` line to
+  the text (`run       agent LCH-…`). A desk run and a block run have neither; the member is left out of the JSON when
+  null, so every other status golden is unchanged. An agent run has no desk task, so `commands` lists `takeover` and
+  `cancel` and not `complete`. Golden: `Golden/Api/workflow-status/agent-run.json`.
+- **Events:** an accepted agent report's transition carries `via: agent` and `tokens: N` (the usage the close step read, 0
+  when it could not be read); `sindri workflow events` prints `via agent · tokens N`. The API's event detail has `via`
+  and `tokens`, left out when null. A desk report carries neither.
+- **Replay:** `Workflow.Patched("p8-agent-runtime")` follows `dt-j-block-runtime` in `Begin`, so a history started before P8
+  replays with no agent Steps and its Step stays a desk task (`A_history_before_P8_replays_on_the_desk`).
+- **The dev recipe:** the interpreter tests (`AgentRuntimeInterpreterTests`) run an inline `workflow.dev-agent`: a `write`
+  state whose Step is `step.report.write` (agent runtime), a state budget of 1000 tokens and a 1 minute timeout, with a fake
+  launcher and fake sessions. It is not a shipped recipe.

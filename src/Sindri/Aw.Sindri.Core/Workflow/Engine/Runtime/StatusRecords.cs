@@ -26,7 +26,10 @@ internal static class StatusRecords
         view is { Task: not null, Budget: { } budget } ? new StatusBudget("state", budget.State, budget.StateCap, new BudgetFigures(budget.Instance, budget.InstanceCap)) : null,
         view.Paused is { } left ? new StatusPaused(Seconds(left)) : null,
         Commands(view),
-        StatusLayout.Render(view, now));
+        StatusLayout.Render(view, now))
+    {
+        Run = view.AgentRun is { } agent ? new StatusRun("agent", agent.Launch) : null,
+    };
 
     private static StatusHeader Header(InstanceView view, DateTimeOffset now) => new(
         view.Address,

@@ -120,6 +120,9 @@ public sealed record WorkflowEventDetail(
             [.. recorded.Effects.Select(e => e.Text)],
             WorkflowEventDelta.Of(recorded.Delta),
             recorded.Trigger.Via,
-            recorded.Trigger.Decision);
+            recorded.Trigger.Decision)
+        {
+            Tokens = recorded.Trigger.Tokens,
+        };
     }
 }
