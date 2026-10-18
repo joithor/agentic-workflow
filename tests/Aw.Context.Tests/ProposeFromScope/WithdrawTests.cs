@@ -62,6 +62,48 @@ public sealed class WithdrawTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Withdraw_keeps_a_proposal_a_person_renamed()
+    {
+        _ = await _world.ImportFixture();
+        _ = await Propose(Run());
+        _world.Clock.Advance(TimeSpan.FromMinutes(1));
+        Assert.True((await _world.Map.ApplyReview(new ReviewDecision(ReviewVerb.Rename, _restore, Label: "Restore tabs"), MapWorld.Human, MapWorld.None)).IsSuccess);
+
+        var withdrawn = await Propose(Empty());
+
+        Assert.Equal((1, 1), (withdrawn.Withdrawn, withdrawn.Kept));   // the zoom proposal is undone; the renamed one is a person's decision and stays
+        var undone = (await Overrides()).Where(o => o.Action == OverrideAction.Undo).Select(o => o.Target.Value);
+        Assert.Equal([_zoom.Value], undone, StringComparer.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Withdraw_keeps_a_proposal_a_person_moved()
+    {
+        _ = await _world.ImportFixture();
+        _ = await Propose(Run());
+        _world.Clock.Advance(TimeSpan.FromMinutes(1));
+        Assert.True((await _world.Map.ApplyReview(new ReviewDecision(ReviewVerb.Move, _restore, Other: NodeKey.From("feature:tabs.tab-manager")), MapWorld.Human, MapWorld.None)).IsSuccess);
+
+        var withdrawn = await Propose(Empty());
+
+        Assert.Equal((1, 1), (withdrawn.Withdrawn, withdrawn.Kept));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_repeated_withdraw_names_the_runs_earlier_undo_rows_so_a_failed_event_can_be_written_by_the_retry()
+    {
+        _ = await _world.ImportFixture();
+        _ = await Propose(Run());
+        var first = await Propose(Empty());
+
+        var again = await Propose(Empty());
+
+        Assert.Equal(0, again.Withdrawn);   // nothing new was taken back
+        Assert.Equal(2, first.WithdrawnRows!.Count);
+        Assert.Equal(first.WithdrawnRows.Select(i => i.Value), again.WithdrawnRows!.Select(i => i.Value), StringComparer.Ordinal);   // but the rows the first call wrote are named again
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Withdraw_with_no_draft_opens_none_and_writes_nothing()
     {
         _ = await _world.ImportFixture();
@@ -88,7 +130,7 @@ public sealed class WithdrawTests : IDisposable
 
         Assert.Equal((0, 0), (again.Withdrawn, again.Kept));
         Assert.Equal(before, (await Overrides()).Count);
-        Assert.Empty(again.WithdrawnRows ?? []);
+        Assert.Equal(2, again.WithdrawnRows!.Count);   // it names the earlier undo rows again (and writes none) so a failed event append can be retried
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -78,7 +78,7 @@ internal sealed class ProposeContextMapService(ContextScopes scopes, IScopePropo
         // The counts of the call that wrote the rows, recomputed from the rows themselves: a retry that finds them already there counts them as existing, not added.
         var rowCount = result.RowsOrEmpty.Count;
         var withdrawn = result.WithdrawnRows ?? [];
-        var payload = new ContextMapProposed(proposal.Run, proposal.Repo.Value, result.Draft?.Number ?? 0, rowCount, result.Existing + result.Added - rowCount, result.Rejected, result.Withdrawn > 0 ? result.Withdrawn : null);
+        var payload = new ContextMapProposed(proposal.Run, proposal.Repo.Value, result.Draft?.Number ?? 0, rowCount, result.Existing + result.Added - rowCount, result.Rejected, withdrawn.Count > 0 ? withdrawn.Count : null);
         // The run and the rows it has for these surfaces (a hash of their ids), not the draft: the same rows are one event however often they are sent and across a promote, and a return to an earlier set of surfaces is that set's event.
         // A withdrawal is keyed by the undo rows it wrote, so a retry of the same withdrawal is the same event.
         var rows = string.Join(',', result.RowsOrEmpty.Select(id => id.Value).Concat(withdrawn.Select(id => "-" + id.Value)));

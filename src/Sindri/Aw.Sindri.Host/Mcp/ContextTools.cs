@@ -132,8 +132,13 @@ internal static class ContextTools
         if (string.Equals(name, "anchors", StringComparison.Ordinal))
         {
             var items = value.ValueKind == JsonValueKind.Array ? value.EnumerateArray().ToList() : [];
+            if (value.ValueKind != JsonValueKind.Array || !items.TrueForAll(e => e.ValueKind == JsonValueKind.String))
+            {
+                return false;   // checked before any GetString: a number or null item is a wrong type, not a throw
+            }
+
             anchors.AddRange(items.Select(e => e.GetString() ?? string.Empty));
-            return value.ValueKind == JsonValueKind.Array && items.TrueForAll(e => e.ValueKind == JsonValueKind.String);
+            return true;
         }
 
         if (value.ValueKind != JsonValueKind.String)

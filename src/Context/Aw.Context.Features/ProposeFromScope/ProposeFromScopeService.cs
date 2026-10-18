@@ -81,7 +81,7 @@ internal sealed class ProposeFromScopeService(IGraphStore store, IProposalRuns r
         {
             Withdrawn = rows.Count,
             Kept = kept,
-            WithdrawnRows = [.. rows.Select(o => o.ToId()).OrderBy(id => id.Value, StringComparer.Ordinal)],
+            WithdrawnRows = [.. rows.Select(o => o.ToId()).Concat(EarlierUndos(proposal.Run, seen.Value.Overrides)).DistinctBy(id => id.Value, StringComparer.Ordinal).OrderBy(id => id.Value, StringComparer.Ordinal)],
         };
         if (rows.Count == 0 && standing.Value is not { Surfaces.Count: > 0 })
         {
@@ -90,6 +90,13 @@ internal sealed class ProposeFromScopeService(IGraphStore store, IProposalRuns r
 
         var written = await runs.Propose(proposal, rows, cancellationToken).ConfigureAwait(false);
         return written.IsError ? written.Error : result;
+    }
+
+    // The undo rows an earlier withdrawal of this run wrote: a retry names them again, so a withdrawal whose event failed to append is recorded by the retry (the event is keyed by these ids).
+    private static IEnumerable<OverrideId> EarlierUndos(string run, IReadOnlyList<MapOverride> overrides)
+    {
+        var proposed = overrides.Where(o => o.Action == OverrideAction.Propose && string.Equals(o.Proposal?.Run, run, StringComparison.Ordinal)).Select(o => o.ToId().Value).ToHashSet(StringComparer.Ordinal);
+        return overrides.Where(o => o.Action == OverrideAction.Undo && o.Undoes is { } undone && proposed.Contains(undone.Value) && string.Equals(o.Who, Who, StringComparison.Ordinal)).Select(o => o.ToId());
     }
 
     // The run's propose rows for this call's surfaces: the ones just planned and the ones the draft already held (a retry names them again).

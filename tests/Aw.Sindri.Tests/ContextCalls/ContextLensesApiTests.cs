@@ -208,6 +208,7 @@ public sealed class ContextLensesApiTests : IDisposable
         var goneSet = await mcp.Call("context_lenses", $$"""{"anchors":["{{Anchor}}","feature:layout.split-pane"],"mapVersion":"v99"}""", ct);
         var none = await mcp.Call("context_lenses", "{}", ct);
         var wrongType = await mcp.Call("context_lenses", """{"anchors":"feature:a"}""", ct);
+        var wrongItem = await mcp.Call("context_lenses", """{"anchors":[1]}""", ct);
 
         Assert.Equal(["anchor", "anchors", "mapVersion"], tool.GetProperty("properties").EnumerateObject().Select(p => p.Name), StringComparer.Ordinal);
         Assert.False(tool.TryGetProperty("required", out _));
@@ -216,7 +217,7 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Equal(["feature:nope.x"], set.StructuredContent!.Value.GetProperty("missingAnchors").EnumerateArray().Select(e => e.GetString()), StringComparer.Ordinal);
         Assert.Equal("v1", held.StructuredContent!.Value.GetProperty("mapVersion").GetString());
         Assert.All([gone, goneSet], r => { Assert.Equal(true, r.IsError); Assert.Contains("SND-CONTEXT-120", r.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal); });
-        Assert.All([none, wrongType], r => { Assert.Equal(true, r.IsError); Assert.Contains("SND-CONTEXT-022", r.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal); });
+        Assert.All([none, wrongType, wrongItem], r => { Assert.Equal(true, r.IsError); Assert.Contains("SND-CONTEXT-022", r.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal); });
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
@@ -402,6 +403,31 @@ public sealed class ContextLensesApiTests : IDisposable
         var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapProposed, TestContext.Current.CancellationToken);
         var payload = Json(recorded.Value!.Envelope.Payload);
         Assert.Equal((1, 0), (payload.GetProperty("added").GetInt32(), payload.GetProperty("existing").GetInt32()));   // the re-emitted event says what the committed call added, not the retry's 0
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task A_retry_after_the_withdraw_event_append_failed_records_the_event_exactly_once()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        var ledger = new FlakyLedger();
+        await using var host = await ContextHosts.Approved(_repo, sessions: true, TestContext.Current.CancellationToken,
+            s => { _ = s.RemoveAll<IClusterSource>(); _ = s.AddSingleton<IClusterSource>(new FakeClusterSource()); ledger.Wrap(s); }, name: FixtureMap.Repo);
+        await ContextMapApiTests.Import(host);
+        var body = $$"""{"run":"scope-5","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"Zoom","kind":"feature"}]}""";
+        var empty = $$"""{"run":"scope-5","repo":"{{FixtureMap.Repo}}","surfaces":[]}""";
+        Assert.Equal(HttpStatusCode.OK, (await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)))).Status);
+
+        ledger.Failing = true;
+        var failed = await host.Http.Ask(Post("/sindri/context/map/proposals", empty, App(host)));
+        ledger.Failing = false;
+        var retry = await host.Http.Ask(Post("/sindri/context/map/proposals", empty, App(host)));
+        var again = await host.Http.Ask(Post("/sindri/context/map/proposals", empty, App(host)));
+
+        Assert.Equal((HttpStatusCode.ServiceUnavailable, "SND-LEDGER-002"), (failed.Status, failed.Code));
+        Assert.Equal(JsonValueKind.Number, Json(retry.Body).GetProperty("sequence").ValueKind);   // the rows committed the first time; the retry writes the event they lack
+        Assert.Equal(JsonValueKind.Null, Json(again.Body).GetProperty("sequence").ValueKind);   // and only once
+        var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapProposed, TestContext.Current.CancellationToken);
+        Assert.Equal(1, Json(recorded.Value!.Envelope.Payload).GetProperty("withdrawn").GetInt32());
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
