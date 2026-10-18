@@ -79,10 +79,48 @@ public abstract partial class SindriApiContract
         var api = Reach(new FakeSindriApi());
         var served = GoldenFiles.Node("context-lenses", "set-missing-anchor");
 
-        var lenses = (await api.Lenses(_api, new LensesQuery([AnchorKeys("set-missing-anchor")[0], "feature:tabs.nope"], Depth: null, Draft: false, MapVersion: null), Token)).Value;
+        var lenses = (await api.Lenses(_api, new LensesQuery([.. AnchorKeys("set-missing-anchor"), .. served["missingAnchors"]!.AsArray().Select(m => (string)m!)], Depth: null, Draft: false, MapVersion: null), Token)).Value;
 
         Expect.Sequence(served["missingAnchors"]!.AsArray().Select(m => (string)m!), lenses.MissingAnchors);
         Expect.Sequence(AnchorKeys("set-missing-anchor"), lenses.Anchors.Select(a => a.Key));
+    }
+
+    // The fake holds one partly-known golden; it never answers it for a different set, so a reply always names what was asked.
+    [Fact]
+    public async Task Lenses_does_not_answer_the_missing_anchor_golden_for_a_different_partly_known_set()
+    {
+        var api = Reach(new FakeSindriApi());
+        var known = AnchorKeys("set-two-anchors");
+
+        var other = await api.Lenses(_api, new LensesQuery([known[1], "feature:tabs.nope"], Depth: null, Draft: false, MapVersion: null), Token);
+        var wider = await api.Lenses(_api, new LensesQuery([.. known, "feature:tabs.nope"], Depth: null, Draft: false, MapVersion: null), Token);
+
+        Expect.Equal("SND-CONTEXT-003", other.Error.Code);
+        Expect.Equal("SND-CONTEXT-003", wider.Error.Code);
+    }
+
+    [Fact]
+    public async Task Lenses_answers_003_for_a_known_anchor_alone_when_no_single_anchor_golden_holds_it()
+    {
+        var api = Reach(new FakeSindriApi());
+
+        var single = await api.Lenses(_api, new LensesQuery([AnchorKeys("set-two-anchors")[1]], Depth: null, Draft: false, MapVersion: null), Token);
+
+        Expect.Equal("SND-CONTEXT-003", single.Error.Code);
+    }
+
+    [Fact]
+    public async Task A_released_gate_lets_the_read_answer_its_golden()
+    {
+        var root = GoldenFiles.Node("context-filemap", "root");
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var server = new FakeSindriApi { FileMapGate = gate };
+        var read = Reach(server).FileMap(_api, new FileMapQuery((string)root["repo"]!, Path: null, UnmappedOnly: false, Draft: false), Token);
+        Expect.True(!read.IsCompleted);
+
+        gate.SetResult();
+
+        Expect.Sequence(Names(root), (await read.WaitAsync(TimeSpan.FromSeconds(10), Token)).Value.Entries.Select(e => e.Name));
     }
 
     [Fact]

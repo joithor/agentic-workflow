@@ -11,6 +11,13 @@ internal static class ContextAnswers
 
     private static string SingleAnchor { get; } = (string)GoldenFiles.Node("context-lenses", Lenses1)["anchor"]!["key"]!;
 
+    // The one partly-known request a golden holds: the resolved anchors, then the ones the server listed as missing.
+    private static string[] MissingSet { get; } =
+    [
+        .. GoldenFiles.Node("context-lenses", "set-missing-anchor")["anchors"]!.AsArray().Select(a => (string)a!["key"]!),
+        .. GoldenFiles.Node("context-lenses", "set-missing-anchor")["missingAnchors"]!.AsArray().Select(m => (string)m!),
+    ];
+
     /// <summary>The anchors the lens goldens hold.</summary>
     internal static IReadOnlySet<string> KnownAnchors { get; } = new HashSet<string>(
         [(string)GoldenFiles.Node("context-lenses", Lenses1)["anchor"]!["key"]!, .. GoldenFiles.Node("context-lenses", LensesSet)["anchors"]!.AsArray().Select(a => (string)a!["key"]!)],
@@ -46,7 +53,9 @@ internal static class ContextAnswers
             1 when query.Depth == 1 => RouteAnswer.Api("context-lenses", "depth-1"),
             1 when string.Equals(query.MapVersion, "v1", StringComparison.Ordinal) => RouteAnswer.Api("context-lenses", "map-version-v1"),
             1 => RouteAnswer.Api("context-lenses", Lenses1),
-            _ when known.Count < anchors.Count => RouteAnswer.Api("context-lenses", "set-missing-anchor"),   // some resolve, some do not: 200 with missingAnchors, as the server answers
+            _ when known.Count < anchors.Count => anchors.SequenceEqual(MissingSet, StringComparer.Ordinal)
+                ? RouteAnswer.Api("context-lenses", "set-missing-anchor")   // some resolve, some do not: 200 with missingAnchors, as the server answers
+                : RouteAnswer.Problem("context-lenses", "unknown-anchor-003"),   // no golden names these missing anchors, and a reply must name what was asked
             _ => RouteAnswer.Api("context-lenses", LensesSet),
         };
     }
