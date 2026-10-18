@@ -23,7 +23,7 @@ public sealed partial class ShippedRecipesTests
                 "sindri/workflow.evidence-other.yaml", "sindri/workflow.evidence-ui.yaml", "sindri/workflow.evidence.yaml",
                 "sindri/workflow.hand-test.yaml", "sindri/workflow.idea-to-brief.yaml", "sindri/workflow.implement.yaml",
                 "sindri/workflow.investigate.yaml", "sindri/workflow.item.yaml", "sindri/workflow.report.yaml",
-                "sindri/workflow.reproduce.yaml", "sindri/workflow.review-loop.yaml", "sindri/workflow.scoping.yaml", "sindri/workflow.step.yaml",
+                "sindri/workflow.reproduce.yaml", "sindri/workflow.review-loop.yaml", "sindri/workflow.scoping.yaml", "sindri/workflow.ship.yaml", "sindri/workflow.step.yaml",
                 "sindri/workflow.verify.yaml",
             ],
             ShippedRecipes.Recipes,
