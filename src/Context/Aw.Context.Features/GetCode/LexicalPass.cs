@@ -61,6 +61,7 @@ internal sealed class LexicalPass(ContextSettings settings, GraphSnapshot graph,
     internal CodeLexicalFindings Findings(DateTimeOffset now) =>
         new(Tests, Schema, Searched, Unlocated, Capped)
         {
+            TestsTruncated = TestsCapped,
             TestsRow = Row(TestsId, _testsFailure, Capped || TestsCapped, now, configured: true),
             SchemaRow = Row(SchemaId, _schemaFailure, SchemaCapped, now, Settings.SchemaGlobs.Count > 0),
         };
