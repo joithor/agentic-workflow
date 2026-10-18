@@ -7,12 +7,12 @@ namespace Aw.Meta.Tests.Ports;
 [Lane(TestLane.Unit)]
 public sealed class InMemoryDigestFilesContractTests : DigestFilesContract
 {
-    protected override (IDigestFiles Files, Func<string, string, string> Put) Create()
+    protected override (IDigestFiles Files, Func<string, string, DateTimeOffset, string> Put) Create()
     {
         var fake = new InMemoryDigestFiles();
-        return (fake, (name, content) =>
+        return (fake, (name, content, modifiedAt) =>
         {
-            fake.Put("/d/" + name, content.Length, A.T0);
+            fake.Put("/d/" + name, content.Length, modifiedAt);
             return "/d/" + name;
         }
         );

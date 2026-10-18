@@ -85,4 +85,29 @@ public sealed class LaneContextReaderTests
         Assert.Equal(ContextVerdict.Recycle, (await Read(100_000))[0].Verdict);
         Assert.Equal(100_000, (await Read(100_000))[0].Threshold);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task One_unreadable_transcript_makes_only_that_lane_unknown()
+    {
+        Claude("api", "s-api");
+        Claude("ui", "s-ui");
+        _world.ClaudeTranscripts.FailFor("s-api");
+        _world.ClaudeTranscripts.PutUsage("s-ui", 50_000, A.At(6));
+
+        var rows = await Read();
+
+        Assert.Equal([ContextVerdict.Unknown, ContextVerdict.Ok], rows.Select(r => r.Verdict));
+        Assert.Contains("can't be read", rows[0].Reason, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Without_a_live_session_the_recorded_lane_sessions_id_is_measured()
+    {
+        Claude("api", "s-recorded");
+        _world.ClaudeTranscripts.PutUsage("s-recorded", 77_000, A.At(5));
+
+        var row = (await Read())[0];
+
+        Assert.Equal(("s-recorded", 77_000L), (row.Session!.Value.Value, row.Tokens));
+    }
 }

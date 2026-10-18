@@ -89,6 +89,7 @@ public sealed class LaneRecycleTests
         Assert.True(result.IsError);
         Assert.Equal(MetaErrors.CommandFailed.Code, result.Error.Code);
         Assert.Empty(_world.Log.Lines);
+        Assert.Equal(2, _world.LaneSessions.Calls);   // the guard looked twice (live id, then the size); no poll: no poll for a new session after the failed /clear
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -99,7 +100,10 @@ public sealed class LaneRecycleTests
         var result = await Run();
 
         Assert.Equal(MetaErrors.RecycleTimedOut.Code, result.Error.Code);
-        Assert.Contains("send-keys", result.Error.Message, StringComparison.Ordinal);
+        Assert.Equal(
+            "lane api did not report a new session id within 60 s of /clear; nothing more was sent. Once it is up, send the line by hand: "
+            + "tmux -L t1 send-keys -t '=t1-api:' -l 'Read and continue from /home/x/digests/t1-api-2026-10-17.md' && tmux -L t1 send-keys -t '=t1-api:' Enter",
+            result.Error.Message);
         Assert.Equal([("t1-api", "/clear")], _world.Panes.Woken);
         Assert.Equal("s-old", (await _world.LaneFiles.Record("api", CancellationToken.None)).Value!.Session!.Value.Value);
         Assert.Empty(_world.Log.Lines);
@@ -145,5 +149,48 @@ public sealed class LaneRecycleTests
         Assert.Empty(_world.Panes.Woken);
         Assert.Empty(_world.Log.Lines);
         Assert.Equal(487_000L, result.Value.OldTokens);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_digest_exactly_two_hours_old_is_accepted_and_one_second_older_is_refused()
+    {
+        await Ready();
+        _world.Digests.Put("/at.md", 10, _world.Clock.GetUtcNow().AddHours(-2));
+        _world.Digests.Put("/past.md", 10, _world.Clock.GetUtcNow().AddHours(-2).AddSeconds(-1));
+
+        var accepted = await Service().Handle(new LaneRecycleRequest("api", "/at.md", DryRun: true), CancellationToken.None);
+        var refused = await Service().Handle(new LaneRecycleRequest("api", "/past.md", DryRun: true), CancellationToken.None);
+
+        Assert.True(accepted.IsSuccess);
+        Assert.Equal(MetaErrors.RecycleRefused.Code, refused.Error.Code);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Without_a_live_session_the_recycle_is_refused_and_the_stale_lane_sessions_id_is_never_the_old_one()
+    {
+        await _world.Ready();
+        _world.LaneFiles.Put(new LaneRecord("api", SessionId.From("s-stale"), Agent: null, A.At(1)));
+        _world.Panes.Put("t1-api", "claude");
+        _world.Digests.Put(Digest, 1200, _world.Clock.GetUtcNow().AddMinutes(-5));
+
+        var result = await Run(NewSessionAppears);
+
+        Assert.Equal(MetaErrors.RecycleRefused.Code, result.Error.Code);
+        Assert.Contains("no live Claude session", result.Error.Message, StringComparison.Ordinal);
+        Assert.Empty(_world.Panes.Woken);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_relative_digest_becomes_absolute_before_it_is_checked_and_typed()
+    {
+        await Ready();
+        var absolute = Path.GetFullPath("digest-rel.md");
+        _world.Digests.Put(absolute, 10, _world.Clock.GetUtcNow());
+
+        var result = await Service(NewSessionAppears).Handle(new LaneRecycleRequest("api", "digest-rel.md", DryRun: false), CancellationToken.None);
+
+        Assert.True(result.IsSuccess, result.IsError ? result.Error.Message : string.Empty);
+        Assert.Equal(absolute, result.Value.Digest);
+        Assert.Equal($"Read and continue from {absolute}", _world.Panes.Woken[^1].Line);
     }
 }

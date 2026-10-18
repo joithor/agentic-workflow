@@ -8,7 +8,12 @@ namespace Aw.Meta.Testing;
 /// <summary>The in-memory IClaudeTranscripts: the one fake, kept honest by ClaudeTranscriptsContract.</summary>
 public sealed class InMemoryClaudeTranscripts : IClaudeTranscripts
 {
+    private readonly HashSet<string> _unreadable = new(StringComparer.Ordinal);
     private readonly Dictionary<string, (string Content, DateTimeOffset At)> _files = new(StringComparer.Ordinal);
+
+    /// <summary>Makes a session's transcript unreadable (AW-META-004).</summary>
+    /// <param name="session">The session id.</param>
+    public void FailFor(string session) => _unreadable.Add(session);
 
     /// <summary>Sets a session's transcript.</summary>
     /// <param name="session">The session id.</param>
@@ -26,6 +31,11 @@ public sealed class InMemoryClaudeTranscripts : IClaudeTranscripts
     /// <inheritdoc />
     public ValueTask<Result<TranscriptTail?>> Tail(SessionId session, int maxBytes, CancellationToken cancellationToken)
     {
+        if (_unreadable.Contains(session.Value))
+        {
+            return Done.Failed<TranscriptTail?>(Core.MetaErrors.TranscriptUnreadable.With("unreadable"));
+        }
+
         if (!_files.TryGetValue(session.Value, out var file))
         {
             return Done.Of<TranscriptTail?>(value: null);

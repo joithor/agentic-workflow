@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Meta.Core;
 using Aw.Meta.Core.Lanes;
 using Aw.Meta.Core.Ports;
 
@@ -20,6 +21,11 @@ public sealed class InMemoryLaneFiles : ILaneFiles
     /// <inheritdoc />
     public ValueTask<Result<Unit>> RecordSession(string lane, Core.Ids.SessionId session, DateTimeOffset at, CancellationToken cancellationToken)
     {
+        if (lane.Length == 0 || lane.All(static c => c == '.') || !lane.All(static c => char.IsAsciiLetterOrDigit(c) || c is '.' or '_' or '-'))
+        {
+            return Done.Failed<Unit>(MetaErrors.UnknownLane.With($"'{lane}' is not a lane name"));
+        }
+
         _records[lane] = (_records.GetValueOrDefault(lane) ?? new LaneRecord(lane, Session: null, Agent: null)) with { Session = session, RecordedAt = at, Ambiguous = false };
         return Done.Unit();
     }

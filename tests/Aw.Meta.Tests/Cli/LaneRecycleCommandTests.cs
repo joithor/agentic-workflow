@@ -25,7 +25,7 @@ public sealed class LaneRecycleCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task A_dry_run_with_a_fresh_digest_lists_the_steps_and_types_nothing()
+    public async Task A_lane_with_no_live_session_is_refused_even_if_lane_sessions_holds_an_id()
     {
         await Ready();
         var digest = _cli.File("digest.md");
@@ -34,9 +34,8 @@ public sealed class LaneRecycleCommandTests : IDisposable
 
         var result = await _cli.Run("lane-recycle", "api", "--digest", digest, "--dry-run");
 
-        Assert.Equal(0, result.Exit);
-        Assert.Contains("dry run: would recycle lane api (session s-old)", result.Out, StringComparison.Ordinal);
-        Assert.Contains("/clear", result.Out, StringComparison.Ordinal);
+        Assert.Equal(1, result.Exit);
+        Assert.Contains("AW-META-021: lane api: no live Claude session", result.Err, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]

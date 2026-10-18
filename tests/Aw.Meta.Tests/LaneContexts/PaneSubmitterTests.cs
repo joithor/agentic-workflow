@@ -30,4 +30,43 @@ public sealed class PaneSubmitterTests
 
         Assert.True(PaneSubmitter.InputHolds(capture, "Read and continue from /home/x/digests/t1-api-2026-10-17.md"));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Submit_types_waits_presses_Enter_waits_and_reads_the_pane_back()
+    {
+        var world = new Testing.MetaWorld();
+        world.Panes.Put("t1-api", "claude");
+
+        var result = await new PaneSubmitter(world.Panes, world.Delay).Submit("t1-api", "/clear", CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal([("t1-api", "/clear")], world.Panes.Woken);
+        Assert.Equal(1, world.Panes.Enters);
+        Assert.Equal([PaneSubmitter.Pause, PaneSubmitter.Pause], world.Delay.Waits);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task An_Enter_that_never_gets_through_is_pressed_four_times_in_all_and_then_fails_with_nothing_submitted()
+    {
+        var world = new Testing.MetaWorld();
+        world.Panes.Put("t1-api", "claude");
+        world.Panes.SwallowEnters = 99;
+
+        var result = await new PaneSubmitter(world.Panes, world.Delay).Submit("t1-api", "Read and continue from /d.md", CancellationToken.None);
+
+        Assert.Equal(Core.MetaErrors.CommandFailed.Code, result.Error.Code);
+        Assert.Equal(PaneSubmitter.Retries + 1, world.Panes.Enters);
+        Assert.Empty(world.Panes.Woken);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_failed_type_presses_no_key()
+    {
+        var world = new Testing.MetaWorld();
+
+        var result = await new PaneSubmitter(world.Panes, world.Delay).Submit("t1-gone", "/clear", CancellationToken.None);
+
+        Assert.True(result.IsError);
+        Assert.Equal(0, world.Panes.Enters);
+    }
 }

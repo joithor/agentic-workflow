@@ -63,6 +63,11 @@ public sealed class InMemoryLanePane : ILanePane
     /// <inheritdoc />
     public ValueTask<Result<Unit>> PressEnter(string session, CancellationToken cancellationToken)
     {
+        if (!_panes.ContainsKey(session))
+        {
+            return Done.Failed<Unit>(MetaErrors.CommandFailed.With($"no such session: {session}"));
+        }
+
         Enters++;
         if (SwallowEnters > 0)
         {
@@ -78,7 +83,7 @@ public sealed class InMemoryLanePane : ILanePane
 
     /// <inheritdoc />
     public ValueTask<Result<string>> Capture(string session, CancellationToken cancellationToken) =>
-        Done.Of("some output\n" + new string('─', 20) + "\n❯ " + _pending.GetValueOrDefault(session, string.Empty) + "\n" + new string('─', 20) + "\n");
+        !_panes.ContainsKey(session) ? Done.Failed<string>(MetaErrors.CommandFailed.With($"no such session: {session}")) : Done.Of("some output\n" + new string('─', 20) + "\n❯ " + _pending.GetValueOrDefault(session, string.Empty) + "\n" + new string('─', 20) + "\n");
 
     /// <inheritdoc />
     public ValueTask<Result<Unit>> Wake(string session, string line, CancellationToken cancellationToken)

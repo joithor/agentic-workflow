@@ -11,11 +11,12 @@ public sealed class FileDigestFilesContractTests : DigestFilesContract, IDisposa
 {
     private readonly TempDirectory _dir = new();
 
-    protected override (IDigestFiles Files, Func<string, string, string> Put) Create() =>
-        (new FileDigestFiles(), (name, content) =>
+    protected override (IDigestFiles Files, Func<string, string, DateTimeOffset, string> Put) Create() =>
+        (new FileDigestFiles(), (name, content, modifiedAt) =>
         {
             var path = Path.Combine(_dir.Path, name);
             File.WriteAllText(path, content);
+            File.SetLastWriteTimeUtc(path, modifiedAt.UtcDateTime);
             return path;
         }
     );
