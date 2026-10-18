@@ -48,6 +48,8 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 | `workflow.review-loop` | change (payload), phasePacket | review | clean / stuck, wrong (failed) |
 | `workflow.docs-sync` | pr, phasePacket (`{}` when started by hand) | docsResult, docsPr | opened / not-done; alreadySatisfied (no docs to change or sync off), abandoned (failed) |
 | `workflow.ship` | phasePacket, proofPack, review, workspace, lineContext | pr, handoff, returnNotes | shipped / returned (GREEN red or head moved) , refused (failed) |
+| `workflow.pr-babysitter` | pr, handoff, phasePacket, lineContext, workspace | mergedSha, reworkNotes | merged / stuck, rework (failed). **Stub**: one human-only Step (`step.babysit.watch`) stands for babysitting, docs sync and the merge until the PR babysitter spec's recipe replaces it |
+| `workflow.phase` | phasePacket, lineContext | pr, handoff, proofPack, mergedSha | merged / dropped. The per-phase child of the line (spec App. C.6): build, prove, review, drift check, ship, babysit; `stage` 3 and `reprove` 3 |
 
 ### Rules every block recipe follows
 
@@ -65,7 +67,7 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 
 ### Approval order
 
-Approve leaf recipes first (`report`, `investigate`, `reproduce`, `implement`, `hand-test`, `verify`, `evidence-ui`, `evidence-api`, `evidence-db`, `evidence-other`, `review-loop`), then `evidence-all`, then `evidence`. A child resolves beside its parent, from the same directory.
+Approve leaf recipes first (`report`, `investigate`, `reproduce`, `implement`, `hand-test`, `verify`, `evidence-ui`, `evidence-api`, `evidence-db`, `evidence-other`, `review-loop`, `build`, `ship`, `pr-babysitter`), then `evidence-all`, then `evidence`, then `prove`, then `phase`. A child resolves beside its parent, from the same directory.
 
 ### Applied from the decision-tree spec
 
@@ -84,3 +86,7 @@ DTC2 to DTC9 as the plan reads them. Out of this change: seeds (DT-R3), `workflo
 - `workflow.build` inputs: `fact:phasePacket`, `fact:workspace` (text), `fact:buildNotes`, `fact:lineContext`. Outputs: `fact:built`, `fact:change`, `fact:redTests`, `fact:activePacket`. Terminals: `built` (resolved), `stopped` (unresolved).
 - `workflow.prove` inputs: `fact:phasePacket`, `fact:built`, `fact:workspace` (text), `fact:redTests`. Outputs: `fact:proofPack`, `fact:findings`. Terminals: `proven` (resolved), `failed` (unresolved, `fact:findings`). It waits on `workflow.hand-test`, `workflow.verify` and `workflow.evidence`.
 - Every wait on the heavy-job slot parks with SND-WF-010 until the engine's heavy allocator is wired (RCP-RES-001).
+
+### The line's phase (workflow.phase)
+
+`workflow.phase` waits on `build`, `prove`, `review-loop`, `ship` and `pr-babysitter`. `pr-babysitter` is a **stub** until the PR babysitter spec's recipe replaces it. Steps with no runtime (`step.phase.seed`, `step.phase.drift`, `step.phase.decide`, `step.babysit.watch`) are descriptors only: `recipe validate` and `recipe eval` pass, and a served instance parks with `SND-WF-010` at the desk. `effect.line.report` is descriptor-only too. The renames in phase's `produces` use the long form (`{ fact, from }`) and hold under `RCP-WIRE-003` because every path to the terminal each is taken on writes the note.

@@ -103,6 +103,10 @@ public sealed class HumanOnlyReportTests
     [InlineData("step.evidence.desk", "recorded", " --output fact:evidenceSummary=<file> --output fact:evidenceReason=<file>")]
     [InlineData("step.owner.decide", "retry", " --output fact:notes=<file>")]
     [InlineData("step.owner.decide", "stop", "")]
+    [InlineData("step.phase.decide", "rebuild", " --output fact:buildNotes=<file>")]
+    [InlineData("step.phase.decide", "stop", "")]
+    [InlineData("step.babysit.watch", "merged", " --output fact:mergedSha=<file>")]
+    [InlineData("step.babysit.watch", "rework", " --output fact:reworkNotes=<file>")]
     public async Task The_refusal_command_lists_the_outputs_required_on_the_reported_outcome(string step, string outcome, string outputs)
     {
         var desk = new OpenTask(step);
