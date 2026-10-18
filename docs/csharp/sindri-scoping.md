@@ -8,8 +8,10 @@ This page is the reference for what phase SC-K1 built in `src/Sindri/Aw.Sindri.F
 A fact directory (a Step directory, W11) holds `<key>.json` for `fact:<key>` (`scopeMap.json`, `acceptance.json`, `coverage.json`,
 `lenses.json`, `brief.json`, `answers.json`, `answerLog.json`, `challenge.json`, `openQuestions.json`, `questions.json`, `decision.json`,
 `anchors.json`, `runs.json`) and `<key>.jsonl` for a list (`rounds.jsonl` is `fact:rounds`). `fact:scopePacket` is `{ "hash": "sha256:..." }`.
-The gold facts are `tests/fixtures/scoping/facts/expiry/`: the line gold scope packet as facts, plus a `noBehaviourChange` marker on each
-surface with no acceptance item and a third workstream for the surfaces the packet left unplaced.
+The gold facts are `tests/fixtures/scoping/facts/expiry/`: the line gold scope packet (`tests/fixtures/line/gold/scope/expiry/`) as facts. The two are one
+document: `ScopingGoldFactsTests` asserts the facts equal the packet with `trust`, `schemaVersion` and the brief's `change` and `baseSha` removed.
+Both carry a `noBehaviourChange` reason of its own on each surface that has no acceptance item (S22 and S23, the new behaviour, are cited by
+AC-1 and AC-2), and every surface sits in exactly one of the two workstreams, so the gold passes SCP-ACC-002 and SCP-MAP-001 as written.
 
 ## Verbs
 

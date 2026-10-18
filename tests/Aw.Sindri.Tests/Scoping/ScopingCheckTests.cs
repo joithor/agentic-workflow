@@ -246,7 +246,7 @@ public sealed class ScopingCheckTests
     [Fact, Trait("Lane", "unit")]
     public async Task A_workstream_gap_or_a_cycle_is_SCP_MAP_001()
     {
-        var gap = ScopingFacts.Expiry().Edit("scopeMap", n => n["workstreams"]!.AsArray().RemoveAt(2));
+        var gap = ScopingFacts.Expiry().Edit("scopeMap", n => n["workstreams"]!.AsArray().RemoveAt(1));
         var twice = ScopingFacts.Expiry().Edit("scopeMap", n => n["workstreams"]![1]!["surfaces"]!.AsArray().Add("S1"));
         var cycle = ScopingFacts.Expiry().Edit("scopeMap", n => n["workstreams"]![0]!["deps"] = new JsonArray("ws-2"));
         var unknown = ScopingFacts.Expiry().Edit("scopeMap", n => n["workstreams"]![1]!["deps"] = new JsonArray("ws-9"));

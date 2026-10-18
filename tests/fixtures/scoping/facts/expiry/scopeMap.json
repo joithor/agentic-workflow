@@ -11,7 +11,7 @@
       "lens": "code",
       "graphStatus": "mapped",
       "id": "S1",
-      "noBehaviourChange": "No behaviour of its own changes: the acceptance items on the surfaces it supports cover it."
+      "noBehaviourChange": "A grouping of the sharing surfaces; it does no work of its own, and AC-1 to AC-5 cover the surfaces under it."
     },
     {
       "key": "surface:route/links-create",
@@ -60,7 +60,7 @@
       "lens": "code",
       "graphStatus": "mapped",
       "id": "S5",
-      "noBehaviourChange": "No behaviour of its own changes: the acceptance items on the surfaces it supports cover it."
+      "noBehaviourChange": "The action behind the create route (S2); AC-1 and AC-4 are tested through that route."
     },
     {
       "key": "action:sharing.resolve-link",
@@ -73,7 +73,7 @@
       "lens": "code",
       "graphStatus": "mapped",
       "id": "S6",
-      "noBehaviourChange": "No behaviour of its own changes: the acceptance items on the surfaces it supports cover it."
+      "noBehaviourChange": "The action behind the open-link route (S3); AC-2, AC-3 and AC-7 are tested through that route."
     },
     {
       "key": "thing:shared-link",
@@ -86,7 +86,7 @@
       "lens": "code",
       "graphStatus": "mapped",
       "id": "S7",
-      "noBehaviourChange": "No behaviour of its own changes: the acceptance items on the surfaces it supports cover it."
+      "noBehaviourChange": "The data a link holds; the new expiry field is stored by AC-1 and read by AC-2, so it has no item of its own."
     },
     {
       "key": "code:src/sharing/links.ts",
@@ -99,7 +99,7 @@
       "lens": "code",
       "graphStatus": "mapped",
       "id": "S8",
-      "noBehaviourChange": "No behaviour of its own changes: the acceptance items on the surfaces it supports cover it."
+      "noBehaviourChange": "Code that implements S5 and S6 (createLink and resolveLink); AC-1 to AC-4 test it through them."
     },
     {
       "key": "code:src/sharing/routes.ts",
@@ -112,7 +112,7 @@
       "lens": "code",
       "graphStatus": "mapped",
       "id": "S9",
-      "noBehaviourChange": "No behaviour of its own changes: the acceptance items on the surfaces it supports cover it."
+      "noBehaviourChange": "Code that implements the create route (S2); AC-1 and AC-4 test it."
     },
     {
       "key": "code:web/screens/ShareDialog.ts",
@@ -125,7 +125,7 @@
       "lens": "code",
       "graphStatus": "mapped",
       "id": "S10",
-      "noBehaviourChange": "No behaviour of its own changes: the acceptance items on the surfaces it supports cover it."
+      "noBehaviourChange": "Code that implements the Share dialog (S4, S22); AC-1 tests it."
     },
     {
       "key": "code:tests/sharing.test.ts",
@@ -138,7 +138,7 @@
       "lens": "code",
       "graphStatus": "mapped",
       "id": "S11",
-      "noBehaviourChange": "No behaviour of its own changes: the acceptance items on the surfaces it supports cover it."
+      "noBehaviourChange": "The existing tests that pin link behaviour; they are updated alongside AC-1 to AC-5 and ship no behaviour."
     },
     {
       "key": "feature:sharing.link-revocation",
@@ -151,7 +151,7 @@
       "lens": "product",
       "graphStatus": "mapped",
       "id": "S12",
-      "noBehaviourChange": "No behaviour of its own changes: the acceptance items on the surfaces it supports cover it."
+      "noBehaviourChange": "Revocation is unchanged; AC-8 pins that it works as it does today."
     },
     {
       "key": "surface:route/links-revoke",
@@ -176,7 +176,7 @@
       "lens": "product",
       "graphStatus": "mapped",
       "id": "S14",
-      "noBehaviourChange": "No behaviour of its own changes: the acceptance items on the surfaces it supports cover it."
+      "noBehaviourChange": "The linkRevocation flag is unchanged; expiry is not behind it (R2), so nothing is built here."
     },
     {
       "key": "action:sharing.revoke-link",
@@ -189,7 +189,7 @@
       "lens": "product",
       "graphStatus": "mapped",
       "id": "S15",
-      "noBehaviourChange": "No behaviour of its own changes: the acceptance items on the surfaces it supports cover it."
+      "noBehaviourChange": "Revocation is unchanged; the action behind the revoke route (S13), which AC-5 and AC-8 cover."
     },
     {
       "key": "feature:digest",
@@ -202,7 +202,7 @@
       "lens": "product",
       "graphStatus": "mapped",
       "id": "S16",
-      "noBehaviourChange": "No behaviour of its own changes: the acceptance items on the surfaces it supports cover it."
+      "noBehaviourChange": "A grouping of the digest surfaces; AC-6 and AC-9 cover the digest route and the job under it."
     },
     {
       "key": "surface:api/weekly-digest-email",
@@ -227,7 +227,7 @@
       "lens": "product",
       "graphStatus": "mapped",
       "id": "S18",
-      "noBehaviourChange": "No behaviour of its own changes: the acceptance items on the surfaces it supports cover it."
+      "noBehaviourChange": "The action behind the weekly digest (S17); AC-6 and AC-9 are tested through it."
     },
     {
       "key": "surface:job/nightly",
@@ -252,7 +252,7 @@
       "lens": "code",
       "graphStatus": "mapped",
       "id": "S20",
-      "noBehaviourChange": "No behaviour of its own changes: the acceptance items on the surfaces it supports cover it."
+      "noBehaviourChange": "Code that builds the digest (S17, S18); AC-6 and AC-9 test it."
     },
     {
       "key": "code:src/jobs/nightly.ts",
@@ -265,7 +265,7 @@
       "lens": "code",
       "graphStatus": "mapped",
       "id": "S21",
-      "noBehaviourChange": "No behaviour of its own changes: the acceptance items on the surfaces it supports cover it."
+      "noBehaviourChange": "Code that schedules the nightly job (S19); AC-6 tests it."
     },
     {
       "key": "surface:dialog/share-expiry",
@@ -277,8 +277,7 @@
       ],
       "lens": "code",
       "graphStatus": "new",
-      "id": "S22",
-      "noBehaviourChange": "No behaviour of its own changes: the acceptance items on the surfaces it supports cover it."
+      "id": "S22"
     },
     {
       "key": "surface:screen/link-expired",
@@ -290,8 +289,7 @@
       ],
       "lens": "code",
       "graphStatus": "new",
-      "id": "S23",
-      "noBehaviourChange": "No behaviour of its own changes: the acceptance items on the surfaces it supports cover it."
+      "id": "S23"
     }
   ],
   "implications": [
@@ -341,26 +339,7 @@
         "S4",
         "S22",
         "S23",
-        "S7"
-      ],
-      "deps": []
-    },
-    {
-      "id": "ws-2",
-      "title": "Digest notice",
-      "surfaces": [
-        "S16",
-        "S17",
-        "S19"
-      ],
-      "deps": [
-        "ws-1"
-      ]
-    },
-    {
-      "id": "ws-3",
-      "title": "Surfaces the change touches without changing their behaviour",
-      "surfaces": [
+        "S7",
         "S5",
         "S6",
         "S8",
@@ -370,7 +349,17 @@
         "S12",
         "S13",
         "S14",
-        "S15",
+        "S15"
+      ],
+      "deps": []
+    },
+    {
+      "id": "ws-2",
+      "title": "Digest notice",
+      "surfaces": [
+        "S16",
+        "S17",
+        "S19",
         "S18",
         "S20",
         "S21"
