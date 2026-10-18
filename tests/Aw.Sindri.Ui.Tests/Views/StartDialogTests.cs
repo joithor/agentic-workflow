@@ -121,6 +121,6 @@ public sealed class StartDialogTests : FrameHost
         Assert.Contains(Labels.StartWorkflow, heard, StringComparer.Ordinal);
     });
 
-    private static string Wire(Aw.Sindri.Ui.Api.Workflow.StartInstanceRequest request) =>
-        System.Text.Encoding.UTF8.GetString(Aw.Kernel.Json.AwJson.Serialize(request, Aw.Sindri.Ui.Api.SindriApiClient.Json));
+    private static string Wire(Ui.Api.Workflow.StartInstanceRequest request) =>
+        System.Text.Encoding.UTF8.GetString(Kernel.Json.AwJson.Serialize(request, Ui.Api.SindriApiClient.Json));
 }
