@@ -83,6 +83,5 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(ScopingSteps.Evidence)
         .AddBlockDescriptor(ScopingSteps.Review)
         .AddBlockDescriptor(ScopingSteps.Freeze)
-        .AddBlockDescriptor(ScopingSteps.Withdraw)
-        .AddBlockDescriptor(PendingInputs.Code);
+        .AddBlockDescriptor(ScopingSteps.Withdraw);
 }

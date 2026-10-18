@@ -206,6 +206,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<ContextInputScopes>()
             .AddStepInput<ContextLensesInput>()
             .AddStepInput<ContextHistoryInput>()
+            .AddStepInput<ContextCodeInput>()
             .AddSingleton<IHeavyJobLock>(static sp => new SindriHeavyJobLock(sp.GetRequiredService<IHeavySlots>(), SindriHeavyJobLock.DefaultWait));
         _ = services.AddScoped<IValidator<PromoteContextMapRequest>, AcceptAllValidator<PromoteContextMapRequest>>().AddCommand<PromoteContextMapRequest, PromoteContextMapResponse, PromoteContextMapService>();
         _ = services.AddScoped<IValidator<ProposeContextMapRequest>, AcceptAllValidator<ProposeContextMapRequest>>().AddCommand<ProposeContextMapRequest, ProposeContextMapResponse, ProposeContextMapService>();
