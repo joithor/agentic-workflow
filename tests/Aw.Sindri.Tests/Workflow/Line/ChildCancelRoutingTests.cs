@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.Workflow.Line;
@@ -36,6 +37,6 @@ public sealed class ChildCancelRoutingTests
         Assert.Contains("sindri/workflow.phase.yaml", withChildren, StringComparer.Ordinal);
     }
 
-    private static bool Names(Aw.Sindri.Core.Workflow.Recipes.WhenClause? when, string outcome) =>
+    private static bool Names(WhenClause? when, string outcome) =>
         when is not null && (when.Outcome?.Value == outcome || (when.All ?? []).Concat(when.Any ?? []).Append(when.Not).Any(c => Names(c, outcome)));
 }

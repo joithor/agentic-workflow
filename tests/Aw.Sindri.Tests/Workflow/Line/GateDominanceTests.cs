@@ -1,3 +1,5 @@
+using Aw.Sindri.Testing.Workflow;
+
 namespace Aw.Sindri.Tests.Workflow.Line;
 
 /// <summary>Line spec App. B.1 'gates': no path through workflow.phase reaches 'merged' without prove, review and ship (DT10).</summary>
@@ -35,5 +37,5 @@ public sealed class GateDominanceTests
         _ = Assert.ThrowsAny<Exception>(() => GateDominance.Skipped(phase, "merged", "nope"));
     }
 
-    private static string ShippedPhase() => Aw.Sindri.Testing.Workflow.ShippedRecipes.Read("sindri/workflow.phase.yaml");
+    private static string ShippedPhase() => ShippedRecipes.Read("sindri/workflow.phase.yaml");
 }
