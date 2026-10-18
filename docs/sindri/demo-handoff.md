@@ -217,6 +217,17 @@ An interactive agent asks to approve the five `mcp__sindri__context_*` tools onc
 | `SND-CLI-001` on `context lenses` | Used `--anchor` | Pass anchors positionally |
 | `sindri doctor` exits 1 on a clean box | Warnings such as `context:map` "no map yet" or a harness-probe version note | Read each row; a warning is not a stop. Fail rows are |
 
+## Plan B, if scoping can't start by 08:00 PT
+
+Decide at 08:00 PT. If `workflow.scoping` still cannot be approved (`SND-WF-016`) or started, do not wait. Work down this list; each item is a smaller demo that still shows real Sindri.
+
+1. **Context from the owner's session over MCP.** This needs no recipe. Do sections 3 to 5, then run the section 7 prompt: the session calls `context_query` and `context_lenses` (and `context_sources`, `context_node`, `context_neighbors`). On main, `scripts/sindri-app.sh mcp register` (it passes its arguments to `sindri`, so this is `sindri mcp register`) serves 12 tools: 5 `context_*` and 7 `sindri_*`. Verified in `McpToolTable.cs` and by a `tools/list` call in the rehearsal.
+2. **Show the scoping gold facts.** **LANDING TONIGHT (#362):** `sindri scoping check (<address> | --facts <dir>) [--draft <dir>] [--stage draft|evidence] [--json]` and `sindri scoping show (<address> | --facts <dir>) [--json]`. They are in the scoping station spec (`docs/superpowers/specs/2026-10-15-sindri-scoping-station-design.md`, section on the verbs) but not in `src/Sindri/Aw.Sindri.Host/Commands/` on main as of writing. Check: `sindri help | grep scoping`. Run them with `--facts` on a gold directory such as `tests/fixtures/line/gold/scope/expiry` (it holds `brief.md`, `scope-map.json`, `acceptance.json` and the other facts) in a plain terminal. From an agent session the output is fenced as untrusted text, so for the stage show it in the owner's terminal.
+3. **A live instance in the app.** Start any recipe that approves on this build, so Workflows shows something running. On main that is `workflow.idea-to-brief`: `sindri item add "<title>" --repo <work-repo>`; `sindri recipe register recipes/sindri/workflow.idea-to-brief.yaml`; owner types `sindri recipe approve <id>@<hash12>` and the typed line; then the owner starts it, `sindri workflow start workflow.idea-to-brief --item <ITM-id> --fact fact:idea=<file.json>`. Then show the instance frame as in section 7. `workflow.step`, `workflow.report` and the other recipes in `recipes/sindri/` are further options if `sindri recipe validate` passes for them.
+4. **The line, without a running line.** Show it by validation and evals: `sindri recipe validate recipes/sindri/workflow.line.yaml` and `sindri recipe eval recipes/sindri/workflow.line.yaml`, then the same for each station recipe. **LANDING TONIGHT:** these files exist only once the line recipes merge. If P7 and the stations do merge, add a desk walk: the owner starts `workflow.line` and completes each Step with `workflow complete` (section 7, steps 5 to 9). If they do not, use the interim path in the line spec (`docs/superpowers/specs/2026-10-15-sindri-spec-to-proven-pr-line-design.md`, section 13.3): hand `tests/fixtures/line/gold/scope/expiry` to `/specToProvenPR` as the scoped input. I could not find the words "interim path" in that section, so read it, or ask the coordinator what the path is, before the demo.
+
+Tell the owner at 08:00 PT which of 1 to 4 you can show, and what each needs from them.
+
 ## 8. Verify before 09:00 PT
 
 Tick each. Report any miss to the owner at once.
