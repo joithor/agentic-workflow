@@ -1,4 +1,5 @@
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Extract;
 using Aw.Context.Infrastructure.Extract;
 using Aw.Context.Infrastructure.Git;
 
@@ -21,7 +22,7 @@ public sealed class GraphifyClusterReasonTests
         return new TempGitRepo(files);
     }
 
-    private static async Task<Aw.Context.Core.Extract.ClusterSet> Cluster(TempGitRepo repo, GraphifyOptions options, GraphifyLimits limits)
+    private static async Task<ClusterSet> Cluster(TempGitRepo repo, GraphifyOptions options, GraphifyLimits limits)
     {
         var set = await new GraphifyClusterSource(new GitCli(), options).Clusters(repo.Repo, repo.Head, limits, Ct);
         Assert.True(set.IsSuccess);
