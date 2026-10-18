@@ -1723,6 +1723,7 @@ public sealed class ShellWindowTests : IDisposable
             return names.FirstOrDefault(n => focused is not null && window.Get<Control>(n) is var r && (r == focused || r.IsVisualAncestorOf(focused))) ?? "none";
         }
 
+        Settle(window);
         var seen = new List<string>();
         for (var i = 0; i < 4; i++)
         {
@@ -1731,7 +1732,8 @@ public sealed class ShellWindowTests : IDisposable
             seen.Add(Region());
         }
 
-        Assert.Equal(["TopBar", "Page", "Sheet", "TopBar"], seen);
+        // The window opens with focus on the page region, so the first F6 goes to the sheet.
+        Assert.Equal(["Sheet", "TopBar", "Page", "Sheet"], seen);
     });
 
     // Owner decision F6 (2026-10-12, review run 4): on macOS ⌘⌥→ and ⌘⌥← cycle the regions forward and back, like F6

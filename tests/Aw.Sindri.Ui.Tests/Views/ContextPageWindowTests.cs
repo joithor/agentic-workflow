@@ -67,6 +67,48 @@ public sealed class ContextPageWindowTests
         }, Token);
     }
 
+    [Fact]
+    public async Task Typing_an_anchor_draws_the_stack_and_every_line_reaches_the_automation_tree()
+    {
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        _ = await HeadlessUnitTestSession.GetOrStartForAssembly(typeof(ContextPageWindowTests).Assembly).Dispatch(async () =>
+        {
+            var records = new InMemoryEndpointRecords();
+            records.Write(A.Record());
+            var shell = new ShellViewModel(records, new FakeSindriApi(), new FakeTimeProvider(A.Noon), new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
+            await shell.Restore(Token);
+            var window = new ShellWindow { DataContext = shell };
+            try
+            {
+                window.Show();
+                _ = shell.Run(stop.Token);
+                for (var i = 0; i < 200 && shell.State != ShellState.Normal; i++)
+                {
+                    await Task.Delay(10, Token);
+                    Dispatcher.UIThread.RunJobs();
+                }
+
+                shell.GoTo(PageId.Context);
+                shell.Context.AnchorText = (string)GoldenFiles.Node("context-lenses", "map-tabs")["anchor"]!["key"]!;
+                await shell.Context.Submit(Token);
+                Dispatcher.UIThread.RunJobs();
+                window.UpdateLayout();
+
+                var heard = Heard.Tree(window).Select(n => n.Name).ToList();
+                var expected = shell.Context.Bands.SelectMany(b => b.Lines.Select(l => l.Text)).Concat(shell.Context.Edges.Select(l => l.Text)).Concat(shell.Context.Coverage.Select(l => l.Text));
+                Assert.All(expected, text => Assert.Contains(heard, h => string.Equals(h, text, StringComparison.Ordinal)));
+            }
+            finally
+            {
+                await stop.CancelAsync();
+                window.Close();
+                Dispatcher.UIThread.RunJobs();
+            }
+
+            return true;
+        }, Token);
+    }
+
     // Each stage's host is its seam view, bound to that stage's view model (a Panel, or a lost binding, fails here).
     private static void AssertSeams(ShellViewModel shell, Control page)
     {

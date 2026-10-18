@@ -1,0 +1,20 @@
+{
+  "comment": "Hook INPUT payloads for the aw:fleet hook (spec 2026-10-16-sindri-session-collector-design.md 5.2), the counterpart of tests/fixtures/fleet/ (the state files the hook writes). Kept in a sibling directory because scripts/check-fleet.mjs treats every .json under fleet/ as a state file.",
+  "captured": "Claude Code 2.1.302, 2026-10-18, by a probe (config/hooks/probe-log.sh on every event through claude --settings, a temp settings file), session ids, paths and prompt text scrubbed to fixed values.",
+  "real": [
+    "session-start",
+    "prompt-submit",
+    "permission-request",
+    "notification-permission",
+    "post-tool-use",
+    "stop",
+    "session-end"
+  ],
+  "derived": {
+    "notification-elicitation": "notification-permission with notification_type elicitation_dialog (not triggered in the probe)",
+    "notification-idle": "notification-permission with notification_type idle_prompt (not triggered in the probe)",
+    "notification-other": "notification-permission with notification_type auth_success (a type that writes nothing)"
+  },
+  "observed": "A permission prompt fires PermissionRequest (with tool_name and tool_input) and, a few seconds later, Notification permission_prompt (message only, no tool; it can arrive after a quick approval). Claude run with -p does not fire PermissionRequest. SessionEnd carries reason.",
+  "denyAndEsc": "2026-10-18, Claude Code 2.1.302, interactive session in tmux (private socket), temp --settings hooking SessionStart, UserPromptSubmit, PreToolUse, PermissionRequest, PermissionDenied, Notification, PostToolUse, PostToolUseFailure, Stop, StopFailure, SessionEnd with an ask rule for mkdir. After choosing No at the dialog, and separately after Esc, NO event fired in the next 10 s: no Stop, PermissionDenied, PostToolUseFailure or Notification (the turn simply ended). So no event can take the file out of asking; the collector's transcript-mtime fallback (spec 5.2) does."
+}

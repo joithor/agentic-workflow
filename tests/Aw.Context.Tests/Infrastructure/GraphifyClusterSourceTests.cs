@@ -1,3 +1,4 @@
+using Aw.Context.Core.Engine;
 using Aw.Context.Infrastructure.Extract;
 using Aw.Context.Infrastructure.Git;
 
@@ -13,7 +14,7 @@ public sealed class GraphifyClusterSourceTests
         using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["src/a.ts"] = "export const a = 1;\n" });
         var source = new GraphifyClusterSource(new GitCli(), GraphifyOptions.Default with { Binary = "/nonexistent/graphify" });
 
-        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+        var set = await source.Clusters(repo.Repo, repo.Head, ClusterLimits.Default, Ct);
 
         Assert.True(set.IsSuccess);
         Assert.False(set.Value.Available);
@@ -27,7 +28,7 @@ public sealed class GraphifyClusterSourceTests
         using var stub = new StubGraphify("0.0.1");
         var source = new GraphifyClusterSource(new GitCli(), stub.Options);
 
-        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+        var set = await source.Clusters(repo.Repo, repo.Head, ClusterLimits.Default, Ct);
 
         Assert.True(set.IsSuccess);
         Assert.False(set.Value.Available);
@@ -41,7 +42,7 @@ public sealed class GraphifyClusterSourceTests
         using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
         var source = new GraphifyClusterSource(new GitCli(), stub.Options);
 
-        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+        var set = await source.Clusters(repo.Repo, repo.Head, ClusterLimits.Default, Ct);
 
         Assert.True(set.IsSuccess);
         Assert.True(set.Value.Available);
@@ -67,7 +68,7 @@ public sealed class GraphifyClusterSourceTests
         await using var heldOpen = new FileStream(stub.Options.Binary, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
         var source = new GraphifyClusterSource(new GitCli(), stub.Options);
 
-        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+        var set = await source.Clusters(repo.Repo, repo.Head, ClusterLimits.Default, Ct);
 
         Assert.True(set.Value.Available, "the stub ran despite an open write descriptor");
     }
@@ -79,7 +80,7 @@ public sealed class GraphifyClusterSourceTests
         using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
         var source = new GraphifyClusterSource(new GitCli(), stub.Options with { Sandbox = (_, command, _) => command.Contains("extract", StringComparer.Ordinal) ? throw new IOException("disk full") : StubGraphify.RunThroughShell(command) });
 
-        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+        var set = await source.Clusters(repo.Repo, repo.Head, ClusterLimits.Default, Ct);
 
         Assert.True(set.IsSuccess);
         Assert.False(set.Value.Available);
@@ -93,7 +94,7 @@ public sealed class GraphifyClusterSourceTests
         using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
         var source = new GraphifyClusterSource(new GitCli(), stub.Options with { Sandbox = (_, command, _) => command.Contains("extract", StringComparer.Ordinal) ? throw new ArgumentNullException(nameof(command)) : StubGraphify.RunThroughShell(command) });
 
-        _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await source.Clusters(repo.Repo, repo.Head, Ct));
+        _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await source.Clusters(repo.Repo, repo.Head, ClusterLimits.Default, Ct));
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -107,7 +108,7 @@ public sealed class GraphifyClusterSourceTests
         var snapshot = Directory.CreateTempSubdirectory("aw-unpack-").FullName;
         try
         {
-            var exported = await new GitCli().Archive(repo.Path, repo.Head, (stream, token) => GraphifyClusterSource.Unpack(stream, snapshot, repo.Repo, token), Ct);
+            var exported = await new GitCli().Archive(repo.Path, repo.Head, (stream, token) => GraphifySnapshot.Unpack(stream, snapshot, repo.Repo, new GraphifySnapshot.Tally(ClusterLimits.Default), token), Ct);
 
             Assert.False(exported.IsError);
             Assert.True(File.Exists(Path.Combine(snapshot, "src", "keys", "bindings.ts")), "a source file is unpacked");
@@ -139,7 +140,7 @@ public sealed class GraphifyClusterSourceTests
             ["config/secrets/keys.ts"] = "export const token = 'not-a-real-secret';\n",
         });
 
-        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+        var set = await source.Clusters(repo.Repo, repo.Head, ClusterLimits.Default, Ct);
 
         Assert.True(set.IsSuccess);
         Assert.True(set.Value.Available, "graphify and the sandbox are usable here, so the set must be available");

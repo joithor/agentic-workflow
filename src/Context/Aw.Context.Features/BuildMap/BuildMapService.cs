@@ -117,7 +117,7 @@ internal sealed class BuildMapService(
 
         var (commit, files) = read.Value;
         var (extracted, timedOut) = MapExtractor.Extract(repo.Name, files, recognizers);
-        var clusters = await Clusters(repo, commit, cancellationToken).ConfigureAwait(false);
+        var clusters = await Clusters(repo, commit, settings.Graphify, cancellationToken).ConfigureAwait(false);
         var labels = await Labels(progress, settings, clusters, cancellationToken).ConfigureAwait(false);
         if (labels.IsError && labels.Error.Code == ContextErrors.LabelingUnavailable.Code)
         {
@@ -130,7 +130,7 @@ internal sealed class BuildMapService(
     }
 
     private static string[] Degraded(ClusterSet clusters, Result<LabelPass> labels, bool timedOut) =>
-        [.. clusters.Available ? [] : new[] { "clusters" }, .. labels.IsError || !labels.Value.Complete ? new[] { "labels" } : [], .. timedOut ? new[] { "recognizers" } : []];
+        [.. clusters is { Available: true, Reason: null } ? [] : new[] { clusters.Reason is { } why ? $"clusters: {why}" : "clusters" }, .. labels.IsError || !labels.Value.Complete ? new[] { "labels" } : [], .. timedOut ? new[] { "recognizers" } : []];
 
     // A denied path is never read, whatever a recognizer wants.
     private static bool Readable(ContextRepo repo, RecognizerSet recognizers, string path) => !repo.Denies(path) && (Recognizers.MayRead(path) || recognizers.Wants(path));
@@ -167,17 +167,18 @@ internal sealed class BuildMapService(
     }
 
     // A cluster source that fails reads like one that is absent; a denied path never reaches the labeler or the graph.
-    private async ValueTask<ClusterSet> Clusters(ContextRepo repo, string commit, CancellationToken cancellationToken)
+    private async ValueTask<ClusterSet> Clusters(ContextRepo repo, string commit, ClusterLimits limits, CancellationToken cancellationToken)
     {
-        var set = await clusterSource.Clusters(repo, commit, cancellationToken).ConfigureAwait(false);
+        var set = await clusterSource.Clusters(repo, commit, limits, cancellationToken).ConfigureAwait(false);
         if (set.IsError || !set.Value.Available)
         {
-            return new ClusterSet([], Available: false);
+            return new ClusterSet([], Available: false, set.IsError ? null : set.Value.Reason);
         }
 
         return new ClusterSet(
             [.. set.Value.Clusters.Select(c => c with { Files = [.. c.Files.Where(f => !repo.Denies(f))] }).Where(c => c.Files.Count > 0)],
-            Available: true);
+            Available: true,
+            set.Value.Reason);
     }
 
     private async ValueTask<Result<LabelPass>> Labels(IProgress<string>? progress, ContextSettings settings, ClusterSet clusters, CancellationToken cancellationToken)

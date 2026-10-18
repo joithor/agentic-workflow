@@ -13,10 +13,10 @@ public static class McpRegistration
     /// <summary>The claude CLI's arguments for <paramref name="repo"/> on <paramref name="port"/>.</summary>
     /// <param name="repo">The repo.</param>
     /// <param name="port">Sindri's API port.</param>
-    /// <returns>The arguments after 'claude'.</returns>
+    /// <returns>The arguments after 'claude'; the header goes last, since claude's '--header &lt;header...&gt;' takes every later argument.</returns>
     public static IReadOnlyList<string> Arguments(RepoName repo, int port) =>
-        ["mcp", "add", "--transport", "http", "--scope", "local", "--header", "X-Sindri-Repo: " + repo.Value, McpScope.ServerName,
-            string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}/sindri/mcp")];
+        ["mcp", "add", "--transport", "http", "--scope", "local", McpScope.ServerName,
+            string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}/sindri/mcp"), "--header", "X-Sindri-Repo: " + repo.Value];
 
     /// <summary>The port to register: the running instance's, else the profile's API port.</summary>
     /// <param name="running">The running instance's URL, or null when none is running.</param>

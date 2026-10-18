@@ -61,7 +61,7 @@ public sealed class McpCliTests
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData(new[] { "register", "--repo", "demo" }, 0, "claude mcp add --transport http --scope local --header 'X-Sindri-Repo: demo' sindri http://127.0.0.1:7444/sindri/mcp", null)]
+    [InlineData(new[] { "register", "--repo", "demo" }, 0, "claude mcp add --transport http --scope local sindri http://127.0.0.1:7444/sindri/mcp --header 'X-Sindri-Repo: demo'", null)]
     [InlineData(new[] { "register", "--json", "--repo", "demo" }, 0, "\"arguments\":[\"mcp\",\"add\"", null)]
     [InlineData(new[] { "register", "--repo", "nope" }, 1, null, "SND-CONTEXT-024 'nope' is not a repo the profile names")]
     [InlineData(new[] { "register", "--repo", "demo", "--apply" }, 2, null, "SND-CONTEXT-025 claude exited 1: already exists")]
