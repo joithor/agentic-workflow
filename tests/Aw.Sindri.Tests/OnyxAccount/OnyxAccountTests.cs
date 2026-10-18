@@ -281,6 +281,7 @@ public sealed class OnyxAccountTests
         Assert.True(response.NeedsHuman);
         Assert.Null(response.KeyPointer);
         Assert.Equal(OnyxStepOutcome.NeedsHuman, response.Steps[1].Outcome);
+        Assert.Equal(2, response.Steps.Count);   // no profile step was reached
     }
 
     [Fact, Trait("Lane", "unit")]
