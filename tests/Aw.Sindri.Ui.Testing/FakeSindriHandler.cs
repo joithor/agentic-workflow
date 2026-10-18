@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using System.Text;
 using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Api.Context;
 using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.Testing;
@@ -20,6 +21,19 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
     public IReadOnlyList<SeenRequest> Requests => [.. _requests];
 
     private readonly List<SeenRequest> _requests = [];
+    private readonly List<string> _reviewBodies = [];
+
+    /// <summary>The raw bodies the review route received, as the client wrote them (so a test checks the wire, not a round trip).</summary>
+    public IReadOnlyList<string> ReviewBodies
+    {
+        get
+        {
+            lock (_requests)
+            {
+                return [.. _reviewBodies];
+            }
+        }
+    }
 
     /// <summary>When set, the token Sindri holds: a request without it is refused with 403 SND-AUTH-001, as Sindri's caller check does.</summary>
     public string? RequiredToken { get; set; }
@@ -90,10 +104,72 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
             "/sindri/requests" when request.Method == HttpMethod.Get => Answer(Counted(await server.Requests(uri, Query(uri, "state"), Query(uri, "item"), after, cancellationToken), server.RequestsAnswer(Query(uri, "item")))),
             // LANE ANCHOR U3': add the Needs you routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately above this marker, never between the markers.
             // LANE ANCHOR U8: add the workflow command routes as arms above the workflow-read arm, each a RouteAnswer from the goldens. Insert immediately below this marker, never between the markers.
+            { } path when path.StartsWith("/sindri/context/", StringComparison.Ordinal) => await ContextRoute(request, cancellationToken),
             { } path when request.Method == HttpMethod.Get && path.StartsWith("/sindri/workflow/", StringComparison.Ordinal) => await Workflow(uri, cancellationToken),
             _ => Text(HttpStatusCode.NotFound, "{}", "application/json"),
         };
     }
+
+    // The context routes (context spec §8): the call goes through the model (its counts, its refusals, the queue it keeps), then the
+    // answer the model holds is served as it is. A key, an anchor or a path is only ever a query value.
+    private async Task<HttpResponseMessage> ContextRoute(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        var uri = request.RequestUri!; // why: HttpClient always sets it on a sent request
+        if (request.Method == HttpMethod.Post && uri.AbsolutePath.EndsWith("/map/review", StringComparison.Ordinal))
+        {
+            var sent = await request.Content!.ReadAsStringAsync(cancellationToken).ConfigureAwait(false); // why: the client always sends a body on this POST
+            lock (_requests)
+            {
+                _reviewBodies.Add(sent);
+            }
+
+            _ = await server.ReviewDecision(uri, await Body<ReviewDecisionRequest>(request, cancellationToken), cancellationToken);
+            return Answer(server.ReviewDecided);
+        }
+
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        var limit = int.TryParse(query["limit"], NumberStyles.None, CultureInfo.InvariantCulture, out var n) ? n : (int?)null;
+        switch (uri.AbsolutePath["/sindri/context/".Length..])
+        {
+            case "lenses":
+                var lenses = Lenses(query);
+                _ = await server.Lenses(uri, lenses, cancellationToken);
+                return Answer(server.LensesAnswer(lenses));
+            case "filemap":
+                var files = new FileMapQuery(query["repo"] ?? string.Empty, Path: query["path"], UnmappedOnly: query["unmapped"] == "true", Draft: query["draft"] == "true");
+                _ = await server.FileMap(uri, files, cancellationToken);
+                return Answer(server.FileMapFor(files));
+            case "map/review":
+                _ = await server.ReviewQueue(uri, limit, cancellationToken);
+                return Answer(server.ReviewQueueBody());
+            case "map/review/history":
+                _ = await server.ReviewHistory(uri, limit, cancellationToken);
+                return Answer(server.ReviewHistoryAnswer);
+            default:
+                return await ContextRecord(uri, query, cancellationToken);
+        }
+    }
+
+    private async Task<HttpResponseMessage> ContextRecord(Uri uri, System.Collections.Specialized.NameValueCollection query, CancellationToken cancellationToken)
+    {
+        switch (uri.AbsolutePath["/sindri/context/".Length..])
+        {
+            case "map":
+                _ = await server.MapStatus(uri, query["anchor"], cancellationToken);
+                return Answer(server.MapStatusAnswer);
+            case "node":
+                _ = await server.Node(uri, query["key"] ?? string.Empty, cancellationToken);
+                return Answer(server.NodeAnswer);
+            case "sources":
+                _ = await server.Sources(uri, cancellationToken);
+                return Answer(server.SourcesAnswer);
+            default:
+                return Text(HttpStatusCode.NotFound, "{}", "application/json");
+        }
+    }
+
+    private static LensesQuery Lenses(System.Collections.Specialized.NameValueCollection query) =>
+        new([.. query.GetValues("anchor") ?? []], Depth: int.TryParse(query["depth"], NumberStyles.None, CultureInfo.InvariantCulture, out var depth) ? depth : null, Draft: query["draft"] == "true", MapVersion: query["mapVersion"]);
 
     // The workflow reads (API §3.8): the call goes through the model (so a down server or a refusal answers as it does there),
     // then the route's golden is served as the model has it. An address is only ever a query value, so every segment is an id, a key or a recipe.
@@ -240,7 +316,7 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
 
     /// <summary>A status body as this handler writes it.</summary>
     internal static string Status(StatusView s) => string.Create(CultureInfo.InvariantCulture,
-        $$"""{"running":{{Bool(s.Running)}},"pid":{{s.Pid}},"epoch":{{s.Epoch}},"leaseExpiresAt":{{Quoted(s.LeaseExpiresAt)}},"profile":{"approved":{{Quoted(s.Profile.Approved)}},"live":{{Quoted(s.Profile.Live)}},"changedSinceApproval":{{Bool(s.Profile.ChangedSinceApproval)}},"problem":{{Quoted(s.Profile.Problem)}},"source":{{Quoted(s.Profile.Source)}},"needsApproval":{{Bool(s.Profile.NeedsApproval)}}},"services":[{{string.Join(',', s.Services.Select(Service))}}]{{ApiVersion(s.ApiVersion)}}{{Views(s.Views)}}{{Health(s.Health)}}}""");
+        $$"""{"running":{{Bool(s.Running)}},"pid":{{s.Pid}},"epoch":{{s.Epoch}},"leaseExpiresAt":{{Quoted(s.LeaseExpiresAt)}},"profile":{"approved":{{Quoted(s.Profile.Approved)}},"live":{{Quoted(s.Profile.Live)}},"changedSinceApproval":{{Bool(s.Profile.ChangedSinceApproval)}},"problem":{{Quoted(s.Profile.Problem)}},"source":{{Quoted(s.Profile.Source)}},"needsApproval":{{Bool(s.Profile.NeedsApproval)}}},"services":[{{string.Join(',', s.Services.Select(Service))}}]{{ApiVersion(s.ApiVersion)}}{{Views(s.Views)}}{{Health(s.Health)}}{{Sessions(s.Sessions)}}}""");
 
     // Absent before API P1 (the field doesn't exist on S1's status), so the app must read a status without it.
     private static string ApiVersion(int? version) => version is { } v ? string.Create(CultureInfo.InvariantCulture, $",\"apiVersion\":{v}") : string.Empty;
@@ -251,6 +327,9 @@ internal sealed class FakeSindriHandler(FakeSindriApi server) : HttpMessageHandl
 
     private static string Health(HealthView? h) => h is null ? ",\"health\":null" :
         $$""","health":{"word":"{{h.Word}}","problems":[{{string.Join(',', h.Problems.Select(p => $$"""{"code":"{{p.Code}}","text":"{{p.Text}}","clause":{{Quoted(p.Clause)}}}"""))}}],"sentence":{{Quoted(h.Sentence)}}}""";
+
+    // Absent before CO-3 (the spec-shaped status goldens carry none), so a null count is left out.
+    private static string Sessions(SessionCountsView? c) => c is null ? string.Empty : string.Create(CultureInfo.InvariantCulture, $",\"sessions\":{{\"live\":{c.Live},\"asking\":{c.Asking},\"problems\":{c.Problems}}}");
 
     private static string Service(ServiceView v) => $$"""{"name":"{{v.Name}}","every":"{{v.Every}}","lastRun":{{Quoted(v.LastRun)}}}""";
 

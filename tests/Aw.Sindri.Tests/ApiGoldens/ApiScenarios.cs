@@ -11,8 +11,8 @@ namespace Aw.Sindri.Tests.ApiGoldens;
 /// </summary>
 internal static class ApiScenarios
 {
-    /// <summary>Every (route slug, scenario) pair, in the order of the plan's golden list.</summary>
-    public static IReadOnlyList<(string Slug, string Scenario)> All { get; } =
+    /// <summary>The rows of the routes with no scenario file of their own: status, ping, commands, events, stop and profile-approve.</summary>
+    public static IReadOnlyList<(string Slug, string Scenario)> Core { get; } =
     [
         ("status", "running-unapproved"), ("status", "running-approved"), ("status", "human-no-token"),
         ("status", "human-stale-token"), ("status", "unknown-caller"), ("status", "prover-refused"),
@@ -22,15 +22,24 @@ internal static class ApiScenarios
         ("profile-approve", "refused-session"), ("profile-approve", "refused-no-terminal"), ("profile-approve", "refused-origin"),
         ("profile-approve", "stale-hash"), ("profile-approve", "bad-body"),
         ("workflow-recipe", "not-found"),
-        .. ContextApiScenarios.Rows,
-        .. ViewScenarios.All,
-        .. ItemScenarios.All,
-        .. ParkScenarios.All,
-        .. RequestScenarios.All,
-        .. StreamScenarios.All,
-        .. JobScenarios.All,
-        .. JobScopeScenarios.All,
     ];
+
+    /// <summary>The rows by route group, each run by its own test class (the per-group ApiGoldenTests classes) so xUnit runs the groups in parallel; every row starts a host of its own, so no group shares state.</summary>
+    public static IReadOnlyDictionary<string, IReadOnlyList<(string Slug, string Scenario)>> Groups { get; } = new Dictionary<string, IReadOnlyList<(string Slug, string Scenario)>>(StringComparer.Ordinal)
+    {
+        ["Core"] = Core,
+        ["Context"] = ContextApiScenarios.Rows,
+        ["Views"] = ViewScenarios.All,
+        ["Sessions"] = SessionScenarios.All,
+        ["Items"] = ItemScenarios.All,
+        ["Parks"] = ParkScenarios.All,
+        ["Requests"] = RequestScenarios.All,
+        ["Streams"] = StreamScenarios.All,
+        ["Jobs"] = [.. JobScenarios.All, .. JobScopeScenarios.All],
+    };
+
+    /// <summary>Every (route slug, scenario) pair, group by group.</summary>
+    public static IReadOnlyList<(string Slug, string Scenario)> All { get; } = [.. Groups.Values.SelectMany(g => g)];
 
     /// <summary>Whether the scenario's host must refuse the prover label (its home isn't temporary).</summary>
     public static bool NeedsNonTemporaryHome(string slug, string scenario) => (slug, scenario) is ("status", "prover-refused");
@@ -44,7 +53,7 @@ internal static class ApiScenarios
             : await GoldenHost.Start(temporary: !NeedsNonTemporaryHome(slug, scenario), ct, ProfileYaml(slug, scenario));
 
     /// <summary>The live profile the scenario's host starts with: the item scenarios need two repos.</summary>
-    public static string ProfileYaml(string slug, string scenario) => ItemScenarios.Handles(slug, scenario) || ParkScenarios.Handles(slug, scenario) || RequestScenarios.Handles(slug, scenario) || StreamScenarios.Handles(slug, scenario) ? ItemScenarios.ProfileYaml : GoldenHost.ProfileYaml;
+    public static string ProfileYaml(string slug, string scenario) => SessionScenarios.Handles(slug, scenario) ? SessionScenarios.ProfileYaml : ItemScenarios.Handles(slug, scenario) || ParkScenarios.Handles(slug, scenario) || RequestScenarios.Handles(slug, scenario) || StreamScenarios.Handles(slug, scenario) ? ItemScenarios.ProfileYaml : GoldenHost.ProfileYaml;
 
     /// <summary>Runs the scenario against <paramref name="host"/> and returns the body to compare.</summary>
     public static async Task<string> Body(GoldenHost host, string slug, string scenario, CancellationToken ct)
@@ -86,6 +95,7 @@ internal static class ApiScenarios
         : ParkScenarios.Handles(slug, scenario) ? () => ParkScenarios.Body(host, slug, scenario, ct)
         : RequestScenarios.Handles(slug, scenario) ? () => RequestScenarios.Body(host, slug, scenario, ct)
         : StreamScenarios.Handles(slug, scenario) ? () => StreamScenarios.Body(host, slug, scenario, ct)
+        : SessionScenarios.Handles(slug, scenario) ? () => SessionScenarios.Body(host, slug, scenario, ct)
         : ViewScenarios.Handles(slug, scenario) ? () => ViewScenarios.Body(host, slug, scenario, ct)
         : JobScenarios.Handles(slug, scenario) ? () => JobScenarios.Body(host, slug, scenario, ct)
         : JobScopeScenarios.Handles(slug, scenario) ? () => JobScopeScenarios.Body(host, slug, scenario, ct)

@@ -14,7 +14,7 @@ internal static class SessionProblems
     internal static SessionProblem Disabled { get; } = Unavailable("collector", UnavailableReason.Disabled);
 
     private static SessionProblem Unavailable(string source, UnavailableReason reason) =>
-        new(source, SindriErrors.SessionsUnavailable.Code, $"Sindri can't see agent sessions on this system: {UnavailableReasons.Text(reason)}");
+        new(source, SindriErrors.SessionsUnavailable.Code, $"Sindri can't see agent sessions on this system: {UnavailableReasons.Text(reason)}") { Reason = reason };
 
     internal static SessionProblem TestOverride { get; } = new("collector", SindriErrors.SessionsTestOverride.Code, "A test override is set in this run: the sessions shown may be fixtures");
 

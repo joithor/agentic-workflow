@@ -119,6 +119,21 @@ public static class SindriErrors
     /// <summary>SND-DEC-001: the choice isn't one of the decision's options, or the note is too long.</summary>
     public static readonly ErrorDefinition DecisionInvalid = new("SND-DEC-001", ErrorKind.Invalid, "The decision's choice isn't valid");
 
+    /// <summary>SND-ONYX-004: the Onyx pins are malformed (a downloaded file or image that fails its pin reuses the code).</summary>
+    public static readonly ErrorDefinition OnyxPinsMalformed = new("SND-ONYX-004", ErrorKind.Invalid, "The Onyx pins are malformed or a download failed its pin");
+
+    /// <summary>SND-ONYX-001: the Docker CLI is missing or its daemon isn't answering; the message says to install or start it.</summary>
+    public static readonly ErrorDefinition OnyxDockerUnavailable = new("SND-ONYX-001", ErrorKind.Unavailable, "Docker is missing or not running");
+
+    /// <summary>SND-ONYX-002: Compose v2 is missing.</summary>
+    public static readonly ErrorDefinition OnyxComposeMissing = new("SND-ONYX-002", ErrorKind.Unavailable, "Docker Compose v2 is missing");
+
+    /// <summary>SND-ONYX-003: not enough free disk or Docker memory; the message says how much is needed and where.</summary>
+    public static readonly ErrorDefinition OnyxNotEnoughResources = new("SND-ONYX-003", ErrorKind.BudgetExceeded, "Not enough disk or Docker memory for Onyx");
+
+    /// <summary>SND-ONYX-006: Onyx's port is taken by something not ours and no fallback port is free.</summary>
+    public static readonly ErrorDefinition OnyxPortTaken = new("SND-ONYX-006", ErrorKind.Conflict, "Onyx's port is taken and no fallback port is free");
+
     /// <summary>SND-JOB-404: no job has that id, or a session caller may not see it (API spec §9).</summary>
     public static readonly ErrorDefinition JobNotFound = new("SND-JOB-404", ErrorKind.NotFound, "No such job");
 
@@ -146,13 +161,19 @@ public static class SindriErrors
     /// <summary>SND-SESSION-003: a test override (AW_SESSIONS_PROC_ROOT, AW_SESSIONS_CLAUDE_DIR) is set in this run; informational, one problem row beside a normal list.</summary>
     public static readonly ErrorDefinition SessionsTestOverride = new("SND-SESSION-003", ErrorKind.Unavailable, "A test override is set in this run");
 
+    /// <summary>SND-SESSION-404: no live session has that ref, or it is outside a session caller's repo (collector spec CA-5).</summary>
+    public static readonly ErrorDefinition SessionNotFound = new("SND-SESSION-404", ErrorKind.NotFound, "No such live session");
+
+    /// <summary>SND-SESSION-409: the session at that ref is a different process than the caller looked at (collector spec CA-4, CA-5, CA-9).</summary>
+    public static readonly ErrorDefinition SessionConflict = new("SND-SESSION-409", ErrorKind.Conflict, "The session at that ref is a different process");
+
     /// <summary>Every Sindri error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
         LeaseHeld, LeaseLost, LeaseStale, ProfileMissing, ProfileInvalid, ProfileHashMismatch, ProfileNeedsTerminal,
         ProfileNotApproved, ApprovalsUnavailable, LedgerSchema, LedgerUnavailable, NotRunning, ApiTimeout, PortInUse, ApiNoCode, ApiInternal,
         CallerUnknown, OriginRefused, CommandBusy, AuthTokenRequired, AuthRefused, UnknownVerb, StartFailed,
-        InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, JobNotFound, JobConflict, JobInterrupted, JobsRateLimited, ServiceNotFound, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
-        LauncherInvalid, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride,
+        InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, JobNotFound, JobConflict, JobInterrupted, JobsRateLimited, ServiceNotFound, OnyxDockerUnavailable, OnyxComposeMissing, OnyxNotEnoughResources, OnyxPinsMalformed, OnyxPortTaken, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
+        LauncherInvalid, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride, SessionNotFound, SessionConflict,
     ];
 }

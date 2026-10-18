@@ -8804,6 +8804,200 @@ const Aw.Sindri.Core.Workflow.Engine.Runtime.EndedInstanceViews.Capacity = 512 -
 Aw.Sindri.Core.Workflow.Engine.Runtime.EndedInstanceViews.Get(Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>!>
 Aw.Sindri.Core.Workflow.Engine.Runtime.EndedInstanceViews.Get(Aw.Sindri.Core.Workflow.Engine.Desk.InstanceRow! row, Aw.Sindri.Core.Workflow.Engine.InstanceAddress address, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!>!>
 Aw.Sindri.Core.Jobs.IJobCancellation.CancelRecorded(Aw.Sindri.Core.Ids.JobId job, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<bool>
+Aw.Sindri.Core.Onyx.IOnyxPinsSource
+Aw.Sindri.Core.Onyx.IOnyxPinsSource.Pins.get -> Aw.Sindri.Core.Onyx.OnyxPins!
+Aw.Sindri.Core.Onyx.OnyxFilePin
+Aw.Sindri.Core.Onyx.OnyxFilePin.<Clone>$() -> Aw.Sindri.Core.Onyx.OnyxFilePin!
+Aw.Sindri.Core.Onyx.OnyxFilePin.Deconstruct(out string! Path, out string! Sha256) -> void
+Aw.Sindri.Core.Onyx.OnyxFilePin.Equals(Aw.Sindri.Core.Onyx.OnyxFilePin? other) -> bool
+Aw.Sindri.Core.Onyx.OnyxFilePin.OnyxFilePin(string! Path, string! Sha256) -> void
+Aw.Sindri.Core.Onyx.OnyxFilePin.Path.get -> string!
+Aw.Sindri.Core.Onyx.OnyxFilePin.Path.init -> void
+Aw.Sindri.Core.Onyx.OnyxFilePin.Sha256.get -> string!
+Aw.Sindri.Core.Onyx.OnyxFilePin.Sha256.init -> void
+Aw.Sindri.Core.Onyx.OnyxImagePin
+Aw.Sindri.Core.Onyx.OnyxImagePin.<Clone>$() -> Aw.Sindri.Core.Onyx.OnyxImagePin!
+Aw.Sindri.Core.Onyx.OnyxImagePin.Deconstruct(out string! Repository, out string! Tag, out string! Platform, out string! Digest) -> void
+Aw.Sindri.Core.Onyx.OnyxImagePin.Digest.get -> string!
+Aw.Sindri.Core.Onyx.OnyxImagePin.Digest.init -> void
+Aw.Sindri.Core.Onyx.OnyxImagePin.Equals(Aw.Sindri.Core.Onyx.OnyxImagePin? other) -> bool
+Aw.Sindri.Core.Onyx.OnyxImagePin.OnyxImagePin(string! Repository, string! Tag, string! Platform, string! Digest) -> void
+Aw.Sindri.Core.Onyx.OnyxImagePin.Tag.get -> string!
+Aw.Sindri.Core.Onyx.OnyxImagePin.Tag.init -> void
+Aw.Sindri.Core.Onyx.OnyxImagePin.Platform.get -> string!
+Aw.Sindri.Core.Onyx.OnyxImagePin.Platform.init -> void
+Aw.Sindri.Core.Onyx.OnyxImagePin.Repository.get -> string!
+Aw.Sindri.Core.Onyx.OnyxImagePin.Repository.init -> void
+Aw.Sindri.Core.Onyx.OnyxPins
+Aw.Sindri.Core.Onyx.OnyxPins.<Clone>$() -> Aw.Sindri.Core.Onyx.OnyxPins!
+Aw.Sindri.Core.Onyx.OnyxPins.Commit.get -> string!
+Aw.Sindri.Core.Onyx.OnyxPins.Commit.init -> void
+Aw.Sindri.Core.Onyx.OnyxPins.Deconstruct(out string! Version, out string! Commit, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxFilePin!>! Files, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxImagePin!>! Images, out long DiskBytes, out long DockerMemoryBytes) -> void
+Aw.Sindri.Core.Onyx.OnyxPins.DiskBytes.get -> long
+Aw.Sindri.Core.Onyx.OnyxPins.DiskBytes.init -> void
+Aw.Sindri.Core.Onyx.OnyxPins.DockerMemoryBytes.get -> long
+Aw.Sindri.Core.Onyx.OnyxPins.DockerMemoryBytes.init -> void
+Aw.Sindri.Core.Onyx.OnyxPins.Equals(Aw.Sindri.Core.Onyx.OnyxPins? other) -> bool
+Aw.Sindri.Core.Onyx.OnyxPins.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxFilePin!>!
+Aw.Sindri.Core.Onyx.OnyxPins.Files.init -> void
+Aw.Sindri.Core.Onyx.OnyxPins.Images.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxImagePin!>!
+Aw.Sindri.Core.Onyx.OnyxPins.Images.init -> void
+Aw.Sindri.Core.Onyx.OnyxPins.OnyxPins(string! Version, string! Commit, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxFilePin!>! Files, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxImagePin!>! Images, long DiskBytes, long DockerMemoryBytes) -> void
+Aw.Sindri.Core.Onyx.OnyxPins.Version.get -> string!
+Aw.Sindri.Core.Onyx.OnyxPins.Version.init -> void
+override Aw.Sindri.Core.Onyx.OnyxFilePin.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.OnyxFilePin.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.OnyxFilePin.ToString() -> string!
+override Aw.Sindri.Core.Onyx.OnyxImagePin.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.OnyxImagePin.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.OnyxImagePin.ToString() -> string!
+override Aw.Sindri.Core.Onyx.OnyxPins.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.OnyxPins.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.OnyxPins.ToString() -> string!
+static Aw.Sindri.Core.Onyx.OnyxFilePin.operator !=(Aw.Sindri.Core.Onyx.OnyxFilePin? left, Aw.Sindri.Core.Onyx.OnyxFilePin? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxFilePin.operator ==(Aw.Sindri.Core.Onyx.OnyxFilePin? left, Aw.Sindri.Core.Onyx.OnyxFilePin? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxImagePin.operator !=(Aw.Sindri.Core.Onyx.OnyxImagePin? left, Aw.Sindri.Core.Onyx.OnyxImagePin? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxImagePin.operator ==(Aw.Sindri.Core.Onyx.OnyxImagePin? left, Aw.Sindri.Core.Onyx.OnyxImagePin? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxPins.Parse(string! text) -> Aw.Kernel.Result<Aw.Sindri.Core.Onyx.OnyxPins!>!
+static Aw.Sindri.Core.Onyx.OnyxPins.operator !=(Aw.Sindri.Core.Onyx.OnyxPins? left, Aw.Sindri.Core.Onyx.OnyxPins? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxPins.operator ==(Aw.Sindri.Core.Onyx.OnyxPins? left, Aw.Sindri.Core.Onyx.OnyxPins? right) -> bool
+static readonly Aw.Sindri.Core.SindriErrors.OnyxPinsMalformed -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Onyx.DaemonProblem
+Aw.Sindri.Core.Onyx.DaemonProblem.ContextMissing = 3 -> Aw.Sindri.Core.Onyx.DaemonProblem
+Aw.Sindri.Core.Onyx.DaemonProblem.None = 0 -> Aw.Sindri.Core.Onyx.DaemonProblem
+Aw.Sindri.Core.Onyx.DaemonProblem.NotRunning = 1 -> Aw.Sindri.Core.Onyx.DaemonProblem
+Aw.Sindri.Core.Onyx.DaemonProblem.PermissionDenied = 2 -> Aw.Sindri.Core.Onyx.DaemonProblem
+Aw.Sindri.Core.Onyx.DaemonProblem.Starting = 4 -> Aw.Sindri.Core.Onyx.DaemonProblem
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.<Clone>$() -> Aw.Sindri.Core.Onyx.ContainerRuntimeFacts!
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.CliFound.get -> bool
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.CliFound.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeV2.get -> bool
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeV2.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeVersion.get -> string?
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeVersion.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ContainerRuntimeFacts(bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes, string? DataRoot, string? OperatingSystem = null, Aw.Sindri.Core.Onyx.DaemonProblem DaemonProblem = Aw.Sindri.Core.Onyx.DaemonProblem.None, int? WaitedSeconds = null) -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DaemonAnswers.get -> bool
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DaemonAnswers.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DaemonProblem.get -> Aw.Sindri.Core.Onyx.DaemonProblem
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DaemonProblem.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DataRoot.get -> string?
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DataRoot.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DataInVm.get -> bool
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Deconstruct(out bool CliFound, out bool DaemonAnswers, out string? ServerVersion, out bool ComposeV2, out string? ComposeVersion, out long? MemoryBytes, out string? DataRoot, out string? OperatingSystem, out Aw.Sindri.Core.Onyx.DaemonProblem DaemonProblem, out int? WaitedSeconds) -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Equals(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? other) -> bool
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.MemoryBytes.get -> long?
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.MemoryBytes.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.OperatingSystem.get -> string?
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.OperatingSystem.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ServerVersion.get -> string?
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ServerVersion.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.WaitedSeconds.get -> int?
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.WaitedSeconds.init -> void
+Aw.Sindri.Core.Onyx.IContainerRuntime
+Aw.Sindri.Core.Onyx.IContainerRuntime.Inspect(System.Threading.CancellationToken cancellationToken) -> Aw.Sindri.Core.Onyx.ContainerRuntimeFacts!
+override Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ToString() -> string!
+static Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.operator !=(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? left, Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? right) -> bool
+static Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.operator ==(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? left, Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? right) -> bool
+Aw.Sindri.Core.Onyx.DiskFacts
+Aw.Sindri.Core.Onyx.DiskFacts.<Clone>$() -> Aw.Sindri.Core.Onyx.DiskFacts!
+Aw.Sindri.Core.Onyx.DiskFacts.Deconstruct(out string! MeasuredPath, out long FreeBytes) -> void
+Aw.Sindri.Core.Onyx.DiskFacts.DiskFacts(string! MeasuredPath, long FreeBytes) -> void
+Aw.Sindri.Core.Onyx.DiskFacts.Equals(Aw.Sindri.Core.Onyx.DiskFacts? other) -> bool
+Aw.Sindri.Core.Onyx.DiskFacts.FreeBytes.get -> long
+Aw.Sindri.Core.Onyx.DiskFacts.FreeBytes.init -> void
+Aw.Sindri.Core.Onyx.DiskFacts.MeasuredPath.get -> string!
+Aw.Sindri.Core.Onyx.DiskFacts.MeasuredPath.init -> void
+Aw.Sindri.Core.Onyx.IHostProbes
+Aw.Sindri.Core.Onyx.IHostProbes.FreeDisk(string! path) -> Aw.Sindri.Core.Onyx.DiskFacts!
+Aw.Sindri.Core.Onyx.IHostProbes.Ports(int preferred, int fallbackFirst, int fallbackLast) -> Aw.Sindri.Core.Onyx.PortFacts!
+Aw.Sindri.Core.Onyx.OnyxPreflight
+Aw.Sindri.Core.Onyx.PortFacts
+Aw.Sindri.Core.Onyx.PortFacts.<Clone>$() -> Aw.Sindri.Core.Onyx.PortFacts!
+Aw.Sindri.Core.Onyx.PortFacts.Deconstruct(out int Preferred, out bool PreferredFree, out int? FirstFreeFallback) -> void
+Aw.Sindri.Core.Onyx.PortFacts.Equals(Aw.Sindri.Core.Onyx.PortFacts? other) -> bool
+Aw.Sindri.Core.Onyx.PortFacts.FirstFreeFallback.get -> int?
+Aw.Sindri.Core.Onyx.PortFacts.FirstFreeFallback.init -> void
+Aw.Sindri.Core.Onyx.PortFacts.PortFacts(int Preferred, bool PreferredFree, int? FirstFreeFallback) -> void
+Aw.Sindri.Core.Onyx.PortFacts.Preferred.get -> int
+Aw.Sindri.Core.Onyx.PortFacts.Preferred.init -> void
+Aw.Sindri.Core.Onyx.PortFacts.PreferredFree.get -> bool
+Aw.Sindri.Core.Onyx.PortFacts.PreferredFree.init -> void
+Aw.Sindri.Core.Onyx.PreflightCheck
+Aw.Sindri.Core.Onyx.PreflightCheck.<Clone>$() -> Aw.Sindri.Core.Onyx.PreflightCheck!
+Aw.Sindri.Core.Onyx.PreflightCheck.Deconstruct(out string! Name, out Aw.Sindri.Core.Doctor.CheckState State, out string! Detail, out Aw.Kernel.Error? Problem) -> void
+Aw.Sindri.Core.Onyx.PreflightCheck.Detail.get -> string!
+Aw.Sindri.Core.Onyx.PreflightCheck.Detail.init -> void
+Aw.Sindri.Core.Onyx.PreflightCheck.Equals(Aw.Sindri.Core.Onyx.PreflightCheck? other) -> bool
+Aw.Sindri.Core.Onyx.PreflightCheck.Name.get -> string!
+Aw.Sindri.Core.Onyx.PreflightCheck.Name.init -> void
+Aw.Sindri.Core.Onyx.PreflightCheck.PreflightCheck(string! Name, Aw.Sindri.Core.Doctor.CheckState State, string! Detail, Aw.Kernel.Error? Problem) -> void
+Aw.Sindri.Core.Onyx.PreflightCheck.Problem.get -> Aw.Kernel.Error?
+Aw.Sindri.Core.Onyx.PreflightCheck.Problem.init -> void
+Aw.Sindri.Core.Onyx.PreflightCheck.State.get -> Aw.Sindri.Core.Doctor.CheckState
+Aw.Sindri.Core.Onyx.PreflightCheck.State.init -> void
+Aw.Sindri.Core.Onyx.PreflightReport
+Aw.Sindri.Core.Onyx.PreflightReport.<Clone>$() -> Aw.Sindri.Core.Onyx.PreflightReport!
+Aw.Sindri.Core.Onyx.PreflightReport.Checks.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>!
+Aw.Sindri.Core.Onyx.PreflightReport.Checks.init -> void
+Aw.Sindri.Core.Onyx.PreflightReport.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>! Checks, out int Port) -> void
+Aw.Sindri.Core.Onyx.PreflightReport.Equals(Aw.Sindri.Core.Onyx.PreflightReport? other) -> bool
+Aw.Sindri.Core.Onyx.PreflightReport.Ok.get -> bool
+Aw.Sindri.Core.Onyx.PreflightReport.Port.get -> int
+Aw.Sindri.Core.Onyx.PreflightReport.Port.init -> void
+Aw.Sindri.Core.Onyx.PreflightReport.PreflightReport(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>! Checks, int Port) -> void
+const Aw.Sindri.Core.Onyx.OnyxPreflight.FallbackFirst = 3001 -> int
+const Aw.Sindri.Core.Onyx.OnyxPreflight.FallbackLast = 3010 -> int
+const Aw.Sindri.Core.Onyx.OnyxPreflight.PreferredPort = 3000 -> int
+override Aw.Sindri.Core.Onyx.DiskFacts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.DiskFacts.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.DiskFacts.ToString() -> string!
+override Aw.Sindri.Core.Onyx.PortFacts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.PortFacts.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.PortFacts.ToString() -> string!
+override Aw.Sindri.Core.Onyx.PreflightCheck.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.PreflightCheck.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.PreflightCheck.ToString() -> string!
+override Aw.Sindri.Core.Onyx.PreflightReport.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.PreflightReport.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.PreflightReport.ToString() -> string!
+static Aw.Sindri.Core.Onyx.DiskFacts.operator !=(Aw.Sindri.Core.Onyx.DiskFacts? left, Aw.Sindri.Core.Onyx.DiskFacts? right) -> bool
+static Aw.Sindri.Core.Onyx.DiskFacts.operator ==(Aw.Sindri.Core.Onyx.DiskFacts? left, Aw.Sindri.Core.Onyx.DiskFacts? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxPreflight.Gib(long bytes) -> string!
+static Aw.Sindri.Core.Onyx.PortFacts.operator !=(Aw.Sindri.Core.Onyx.PortFacts? left, Aw.Sindri.Core.Onyx.PortFacts? right) -> bool
+static Aw.Sindri.Core.Onyx.PortFacts.operator ==(Aw.Sindri.Core.Onyx.PortFacts? left, Aw.Sindri.Core.Onyx.PortFacts? right) -> bool
+static Aw.Sindri.Core.Onyx.PreflightCheck.operator !=(Aw.Sindri.Core.Onyx.PreflightCheck? left, Aw.Sindri.Core.Onyx.PreflightCheck? right) -> bool
+static Aw.Sindri.Core.Onyx.PreflightCheck.operator ==(Aw.Sindri.Core.Onyx.PreflightCheck? left, Aw.Sindri.Core.Onyx.PreflightCheck? right) -> bool
+static Aw.Sindri.Core.Onyx.PreflightReport.operator !=(Aw.Sindri.Core.Onyx.PreflightReport? left, Aw.Sindri.Core.Onyx.PreflightReport? right) -> bool
+static Aw.Sindri.Core.Onyx.PreflightReport.operator ==(Aw.Sindri.Core.Onyx.PreflightReport? left, Aw.Sindri.Core.Onyx.PreflightReport? right) -> bool
+static readonly Aw.Sindri.Core.SindriErrors.OnyxComposeMissing -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.OnyxDockerUnavailable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.OnyxNotEnoughResources -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.OnyxPortTaken -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Control.ISindriHome
+Aw.Sindri.Core.Control.ISindriHome.Path.get -> string!
+Aw.Sindri.Core.Onyx.OnyxState
+Aw.Sindri.Core.Onyx.OnyxState.NotSetUp = 0 -> Aw.Sindri.Core.Onyx.OnyxState
+Aw.Sindri.Core.Onyx.HostFacts
+Aw.Sindri.Core.Onyx.HostFacts.<Clone>$() -> Aw.Sindri.Core.Onyx.HostFacts!
+Aw.Sindri.Core.Onyx.HostFacts.DataRoot.get -> Aw.Sindri.Core.Onyx.DiskFacts?
+Aw.Sindri.Core.Onyx.HostFacts.DataRoot.init -> void
+Aw.Sindri.Core.Onyx.HostFacts.Deconstruct(out Aw.Sindri.Core.Onyx.DiskFacts! Home, out Aw.Sindri.Core.Onyx.DiskFacts? DataRoot, out Aw.Sindri.Core.Onyx.PortFacts! Port) -> void
+Aw.Sindri.Core.Onyx.HostFacts.Equals(Aw.Sindri.Core.Onyx.HostFacts? other) -> bool
+Aw.Sindri.Core.Onyx.HostFacts.Home.get -> Aw.Sindri.Core.Onyx.DiskFacts!
+Aw.Sindri.Core.Onyx.HostFacts.Home.init -> void
+Aw.Sindri.Core.Onyx.HostFacts.HostFacts(Aw.Sindri.Core.Onyx.DiskFacts! Home, Aw.Sindri.Core.Onyx.DiskFacts? DataRoot, Aw.Sindri.Core.Onyx.PortFacts! Port) -> void
+Aw.Sindri.Core.Onyx.HostFacts.Port.get -> Aw.Sindri.Core.Onyx.PortFacts!
+Aw.Sindri.Core.Onyx.HostFacts.Port.init -> void
+Aw.Sindri.Core.Onyx.IHostProbes.FreeDiskIfExists(string! path) -> Aw.Sindri.Core.Onyx.DiskFacts?
+override Aw.Sindri.Core.Onyx.HostFacts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.HostFacts.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.HostFacts.ToString() -> string!
+static Aw.Sindri.Core.Onyx.HostFacts.operator !=(Aw.Sindri.Core.Onyx.HostFacts? left, Aw.Sindri.Core.Onyx.HostFacts? right) -> bool
+static Aw.Sindri.Core.Onyx.HostFacts.operator ==(Aw.Sindri.Core.Onyx.HostFacts? left, Aw.Sindri.Core.Onyx.HostFacts? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxPreflight.Evaluate(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! docker, Aw.Sindri.Core.Onyx.HostFacts! host, Aw.Sindri.Core.Onyx.OnyxPins! pins) -> Aw.Sindri.Core.Onyx.PreflightReport!
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.HumanOnly.get -> bool?
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.HumanOnly.init -> void
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.Runtime.get -> Aw.Sindri.Core.Workflow.Blocks.BlockRuntime?
@@ -9170,3 +9364,202 @@ static Aw.Sindri.Core.Sessions.TmuxPane.operator !=(Aw.Sindri.Core.Sessions.Tmux
 static Aw.Sindri.Core.Sessions.TmuxPane.operator ==(Aw.Sindri.Core.Sessions.TmuxPane? left, Aw.Sindri.Core.Sessions.TmuxPane? right) -> bool
 static Aw.Sindri.Core.Sessions.TmuxServerView.operator !=(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
 static Aw.Sindri.Core.Sessions.TmuxServerView.operator ==(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
+Aw.Sindri.Core.Sessions.SessionAsking
+Aw.Sindri.Core.Sessions.SessionAsking.<Clone>$() -> Aw.Sindri.Core.Sessions.SessionAsking!
+Aw.Sindri.Core.Sessions.SessionAsking.Deconstruct(out Aw.Sindri.Core.Sessions.AskingReason Reason, out string? Tool, out System.DateTimeOffset Since) -> void
+Aw.Sindri.Core.Sessions.SessionAsking.Equals(Aw.Sindri.Core.Sessions.SessionAsking? other) -> bool
+Aw.Sindri.Core.Sessions.SessionAsking.Reason.get -> Aw.Sindri.Core.Sessions.AskingReason
+Aw.Sindri.Core.Sessions.SessionAsking.Reason.init -> void
+Aw.Sindri.Core.Sessions.SessionAsking.SessionAsking(Aw.Sindri.Core.Sessions.AskingReason Reason, string? Tool, System.DateTimeOffset Since) -> void
+Aw.Sindri.Core.Sessions.SessionAsking.Since.get -> System.DateTimeOffset
+Aw.Sindri.Core.Sessions.SessionAsking.Since.init -> void
+Aw.Sindri.Core.Sessions.SessionAsking.Tool.get -> string?
+Aw.Sindri.Core.Sessions.SessionAsking.Tool.init -> void
+Aw.Sindri.Core.Sessions.SessionFocus
+Aw.Sindri.Core.Sessions.SessionFocus.<Clone>$() -> Aw.Sindri.Core.Sessions.SessionFocus!
+Aw.Sindri.Core.Sessions.SessionFocus.Deconstruct(out string! Method, out bool Possible, out string? Why) -> void
+Aw.Sindri.Core.Sessions.SessionFocus.Equals(Aw.Sindri.Core.Sessions.SessionFocus? other) -> bool
+Aw.Sindri.Core.Sessions.SessionFocus.Method.get -> string!
+Aw.Sindri.Core.Sessions.SessionFocus.Method.init -> void
+Aw.Sindri.Core.Sessions.SessionFocus.Possible.get -> bool
+Aw.Sindri.Core.Sessions.SessionFocus.Possible.init -> void
+Aw.Sindri.Core.Sessions.SessionFocus.SessionFocus(string! Method, bool Possible, string? Why) -> void
+Aw.Sindri.Core.Sessions.SessionFocus.Why.get -> string?
+Aw.Sindri.Core.Sessions.SessionFocus.Why.init -> void
+Aw.Sindri.Core.Sessions.SessionHostRow
+Aw.Sindri.Core.Sessions.SessionHostRow.<Clone>$() -> Aw.Sindri.Core.Sessions.SessionHostRow!
+Aw.Sindri.Core.Sessions.SessionHostRow.AttachedClients.get -> int?
+Aw.Sindri.Core.Sessions.SessionHostRow.AttachedClients.init -> void
+Aw.Sindri.Core.Sessions.SessionHostRow.Deconstruct(out string! Kind, out string! Label, out string? SocketKind, out int? AttachedClients, out string? Terminal) -> void
+Aw.Sindri.Core.Sessions.SessionHostRow.Equals(Aw.Sindri.Core.Sessions.SessionHostRow? other) -> bool
+Aw.Sindri.Core.Sessions.SessionHostRow.Kind.get -> string!
+Aw.Sindri.Core.Sessions.SessionHostRow.Kind.init -> void
+Aw.Sindri.Core.Sessions.SessionHostRow.Label.get -> string!
+Aw.Sindri.Core.Sessions.SessionHostRow.Label.init -> void
+Aw.Sindri.Core.Sessions.SessionHostRow.Pane.get -> string?
+Aw.Sindri.Core.Sessions.SessionHostRow.Pane.init -> void
+Aw.Sindri.Core.Sessions.SessionHostRow.Session.get -> string?
+Aw.Sindri.Core.Sessions.SessionHostRow.Session.init -> void
+Aw.Sindri.Core.Sessions.SessionHostRow.SessionHostRow(string! Kind, string! Label, string? SocketKind, int? AttachedClients, string? Terminal) -> void
+Aw.Sindri.Core.Sessions.SessionHostRow.Socket.get -> string?
+Aw.Sindri.Core.Sessions.SessionHostRow.Socket.init -> void
+Aw.Sindri.Core.Sessions.SessionHostRow.SocketKind.get -> string?
+Aw.Sindri.Core.Sessions.SessionHostRow.SocketKind.init -> void
+Aw.Sindri.Core.Sessions.SessionHostRow.Terminal.get -> string?
+Aw.Sindri.Core.Sessions.SessionHostRow.Terminal.init -> void
+Aw.Sindri.Core.Sessions.SessionLane
+Aw.Sindri.Core.Sessions.SessionLane.<Clone>$() -> Aw.Sindri.Core.Sessions.SessionLane!
+Aw.Sindri.Core.Sessions.SessionLane.Deconstruct(out string! Team, out string! Lane) -> void
+Aw.Sindri.Core.Sessions.SessionLane.Equals(Aw.Sindri.Core.Sessions.SessionLane? other) -> bool
+Aw.Sindri.Core.Sessions.SessionLane.Lane.get -> string!
+Aw.Sindri.Core.Sessions.SessionLane.Lane.init -> void
+Aw.Sindri.Core.Sessions.SessionLane.SessionLane(string! Team, string! Lane) -> void
+Aw.Sindri.Core.Sessions.SessionLane.Team.get -> string!
+Aw.Sindri.Core.Sessions.SessionLane.Team.init -> void
+Aw.Sindri.Core.Sessions.SessionRow
+Aw.Sindri.Core.Sessions.SessionRow.<Clone>$() -> Aw.Sindri.Core.Sessions.SessionRow!
+Aw.Sindri.Core.Sessions.SessionRow.Asking.get -> Aw.Sindri.Core.Sessions.SessionAsking?
+Aw.Sindri.Core.Sessions.SessionRow.Asking.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Deconstruct(out string! Ref, out Aw.Sindri.Core.Launch.AgentId Provider, out string! ProviderLabel, out Aw.Sindri.Core.Sessions.SessionId Id, out bool IdKnown, out Aw.Sindri.Core.Sessions.SessionState State, out Aw.Sindri.Core.Sessions.SessionAsking? Asking, out Aw.Sindri.Core.Sessions.StateSource StateSource, out bool Estimated, out Aw.Sindri.Core.Ids.RepoName? Repo, out string? Worktree, out Aw.Sindri.Core.Sessions.SessionHostRow! Host, out Aw.Sindri.Core.Sessions.SessionLane? Lane, out Aw.Sindri.Core.Workflow.Engine.LaunchId? LaunchId, out System.DateTimeOffset? StartedAt, out System.DateTimeOffset Since, out Aw.Sindri.Core.Sessions.SessionFocus! Focus) -> void
+Aw.Sindri.Core.Sessions.SessionRow.Equals(Aw.Sindri.Core.Sessions.SessionRow? other) -> bool
+Aw.Sindri.Core.Sessions.SessionRow.Estimated.get -> bool
+Aw.Sindri.Core.Sessions.SessionRow.Estimated.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Focus.get -> Aw.Sindri.Core.Sessions.SessionFocus!
+Aw.Sindri.Core.Sessions.SessionRow.Focus.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Host.get -> Aw.Sindri.Core.Sessions.SessionHostRow!
+Aw.Sindri.Core.Sessions.SessionRow.Host.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Id.get -> Aw.Sindri.Core.Sessions.SessionId
+Aw.Sindri.Core.Sessions.SessionRow.Id.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.IdKnown.get -> bool
+Aw.Sindri.Core.Sessions.SessionRow.IdKnown.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Lane.get -> Aw.Sindri.Core.Sessions.SessionLane?
+Aw.Sindri.Core.Sessions.SessionRow.Lane.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.LaunchId.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId?
+Aw.Sindri.Core.Sessions.SessionRow.LaunchId.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Pid.get -> int?
+Aw.Sindri.Core.Sessions.SessionRow.Pid.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Provider.get -> Aw.Sindri.Core.Launch.AgentId
+Aw.Sindri.Core.Sessions.SessionRow.Provider.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.ProviderLabel.get -> string!
+Aw.Sindri.Core.Sessions.SessionRow.ProviderLabel.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Ref.get -> string!
+Aw.Sindri.Core.Sessions.SessionRow.Ref.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Core.Sessions.SessionRow.Repo.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.SessionRow(string! Ref, Aw.Sindri.Core.Launch.AgentId Provider, string! ProviderLabel, Aw.Sindri.Core.Sessions.SessionId Id, bool IdKnown, Aw.Sindri.Core.Sessions.SessionState State, Aw.Sindri.Core.Sessions.SessionAsking? Asking, Aw.Sindri.Core.Sessions.StateSource StateSource, bool Estimated, Aw.Sindri.Core.Ids.RepoName? Repo, string? Worktree, Aw.Sindri.Core.Sessions.SessionHostRow! Host, Aw.Sindri.Core.Sessions.SessionLane? Lane, Aw.Sindri.Core.Workflow.Engine.LaunchId? LaunchId, System.DateTimeOffset? StartedAt, System.DateTimeOffset Since, Aw.Sindri.Core.Sessions.SessionFocus! Focus) -> void
+Aw.Sindri.Core.Sessions.SessionRow.Since.get -> System.DateTimeOffset
+Aw.Sindri.Core.Sessions.SessionRow.Since.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.StartedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Core.Sessions.SessionRow.StartedAt.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.State.get -> Aw.Sindri.Core.Sessions.SessionState
+Aw.Sindri.Core.Sessions.SessionRow.State.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.StateSource.get -> Aw.Sindri.Core.Sessions.StateSource
+Aw.Sindri.Core.Sessions.SessionRow.StateSource.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Title.get -> string?
+Aw.Sindri.Core.Sessions.SessionRow.Title.init -> void
+Aw.Sindri.Core.Sessions.SessionRow.Worktree.get -> string?
+Aw.Sindri.Core.Sessions.SessionRow.Worktree.init -> void
+Aw.Sindri.Core.Sessions.SessionSnapshot.History.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Sessions.SessionRef, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionStateEntry!>!>!
+Aw.Sindri.Core.Sessions.SessionSnapshot.History.init -> void
+Aw.Sindri.Core.Sessions.SessionStateEntry
+Aw.Sindri.Core.Sessions.SessionStateEntry.<Clone>$() -> Aw.Sindri.Core.Sessions.SessionStateEntry!
+Aw.Sindri.Core.Sessions.SessionStateEntry.At.get -> System.DateTimeOffset
+Aw.Sindri.Core.Sessions.SessionStateEntry.At.init -> void
+Aw.Sindri.Core.Sessions.SessionStateEntry.Deconstruct(out Aw.Sindri.Core.Sessions.SessionState State, out Aw.Sindri.Core.Sessions.AskingReason? Reason, out System.DateTimeOffset At, out Aw.Sindri.Core.Sessions.StateSource Source) -> void
+Aw.Sindri.Core.Sessions.SessionStateEntry.Equals(Aw.Sindri.Core.Sessions.SessionStateEntry? other) -> bool
+Aw.Sindri.Core.Sessions.SessionStateEntry.Reason.get -> Aw.Sindri.Core.Sessions.AskingReason?
+Aw.Sindri.Core.Sessions.SessionStateEntry.Reason.init -> void
+Aw.Sindri.Core.Sessions.SessionStateEntry.SessionStateEntry(Aw.Sindri.Core.Sessions.SessionState State, Aw.Sindri.Core.Sessions.AskingReason? Reason, System.DateTimeOffset At, Aw.Sindri.Core.Sessions.StateSource Source) -> void
+Aw.Sindri.Core.Sessions.SessionStateEntry.Source.get -> Aw.Sindri.Core.Sessions.StateSource
+Aw.Sindri.Core.Sessions.SessionStateEntry.Source.init -> void
+Aw.Sindri.Core.Sessions.SessionStateEntry.State.get -> Aw.Sindri.Core.Sessions.SessionState
+Aw.Sindri.Core.Sessions.SessionStateEntry.State.init -> void
+Aw.Sindri.Core.Sessions.TmuxFacts.AttachedClients.get -> int?
+Aw.Sindri.Core.Sessions.TmuxFacts.AttachedClients.init -> void
+override Aw.Sindri.Core.Sessions.SessionAsking.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.SessionAsking.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.SessionAsking.ToString() -> string!
+override Aw.Sindri.Core.Sessions.SessionFocus.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.SessionFocus.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.SessionFocus.ToString() -> string!
+override Aw.Sindri.Core.Sessions.SessionHostRow.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.SessionHostRow.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.SessionHostRow.ToString() -> string!
+override Aw.Sindri.Core.Sessions.SessionLane.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.SessionLane.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.SessionLane.ToString() -> string!
+override Aw.Sindri.Core.Sessions.SessionRow.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.SessionRow.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.SessionRow.ToString() -> string!
+override Aw.Sindri.Core.Sessions.SessionStateEntry.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.SessionStateEntry.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.SessionStateEntry.ToString() -> string!
+static Aw.Sindri.Core.Sessions.SessionAsking.operator !=(Aw.Sindri.Core.Sessions.SessionAsking? left, Aw.Sindri.Core.Sessions.SessionAsking? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionAsking.operator ==(Aw.Sindri.Core.Sessions.SessionAsking? left, Aw.Sindri.Core.Sessions.SessionAsking? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionFocus.Pending.get -> Aw.Sindri.Core.Sessions.SessionFocus!
+static Aw.Sindri.Core.Sessions.SessionFocus.operator !=(Aw.Sindri.Core.Sessions.SessionFocus? left, Aw.Sindri.Core.Sessions.SessionFocus? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionFocus.operator ==(Aw.Sindri.Core.Sessions.SessionFocus? left, Aw.Sindri.Core.Sessions.SessionFocus? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionHostRow.operator !=(Aw.Sindri.Core.Sessions.SessionHostRow? left, Aw.Sindri.Core.Sessions.SessionHostRow? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionHostRow.operator ==(Aw.Sindri.Core.Sessions.SessionHostRow? left, Aw.Sindri.Core.Sessions.SessionHostRow? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionLane.operator !=(Aw.Sindri.Core.Sessions.SessionLane? left, Aw.Sindri.Core.Sessions.SessionLane? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionLane.operator ==(Aw.Sindri.Core.Sessions.SessionLane? left, Aw.Sindri.Core.Sessions.SessionLane? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionRow.operator !=(Aw.Sindri.Core.Sessions.SessionRow? left, Aw.Sindri.Core.Sessions.SessionRow? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionRow.operator ==(Aw.Sindri.Core.Sessions.SessionRow? left, Aw.Sindri.Core.Sessions.SessionRow? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionStateEntry.operator !=(Aw.Sindri.Core.Sessions.SessionStateEntry? left, Aw.Sindri.Core.Sessions.SessionStateEntry? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionStateEntry.operator ==(Aw.Sindri.Core.Sessions.SessionStateEntry? left, Aw.Sindri.Core.Sessions.SessionStateEntry? right) -> bool
+static readonly Aw.Sindri.Core.SindriErrors.SessionNotFound -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Sessions.SessionRows
+Aw.Sindri.Core.Sessions.StateHistoryRules
+const Aw.Sindri.Core.Sessions.StateHistoryRules.Cap = 20 -> int
+static Aw.Sindri.Core.Sessions.SessionRows.Of(Aw.Sindri.Core.Sessions.ObservedSession! session, Aw.Sindri.Core.Launch.AgentEntry? entry, string? repoPath, bool human) -> Aw.Sindri.Core.Sessions.SessionRow!
+static Aw.Sindri.Core.Sessions.SessionRows.Resume(Aw.Sindri.Core.Sessions.ObservedSession! session, Aw.Sindri.Core.Launch.AgentEntry? entry) -> System.Collections.Generic.IReadOnlyList<string!>?
+static Aw.Sindri.Core.Sessions.SessionRows.SeesHumanFields(Aw.Sindri.Core.Commands.CallerContext! caller) -> bool
+static Aw.Sindri.Core.Sessions.SessionRows.Unavailable(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionProblem!>! problems) -> Aw.Kernel.Error?
+static Aw.Sindri.Core.Sessions.SessionRows.Visible(Aw.Sindri.Core.Commands.CallerContext! caller, Aw.Sindri.Core.Sessions.ObservedSession! session) -> bool
+static Aw.Sindri.Core.Sessions.SessionRows.WithSocket(Aw.Sindri.Core.Sessions.SessionRow! row, Aw.Sindri.Core.Sessions.ObservedSession! session) -> Aw.Sindri.Core.Sessions.SessionRow!
+static Aw.Sindri.Core.Sessions.SessionRows.Worktree(string? cwd, string? repoPath) -> string?
+static Aw.Sindri.Core.Sessions.StateHistoryRules.Next(System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Sessions.SessionRef, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionStateEntry!>!>! previous, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.ObservedSession!>! sessions) -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Sessions.SessionRef, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionStateEntry!>!>!
+Aw.Sindri.Core.Sessions.SessionProblem.Reason.get -> Aw.Sindri.Core.Sessions.UnavailableReason?
+Aw.Sindri.Core.Sessions.SessionProblem.Reason.init -> void
+static Aw.Sindri.Core.Sessions.SessionRows.Find(Aw.Sindri.Core.Sessions.SessionSnapshot! pass, Aw.Sindri.Core.Sessions.SessionRef reference, Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Sindri.Core.Sessions.ObservedSession?
+static Aw.Sindri.Core.Sessions.SessionRows.RefuseSession(Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Kernel.Error?
+Aw.Sindri.Core.Sessions.IPaneReader
+Aw.Sindri.Core.Sessions.IPaneReader.Read(string! socket, string! pane, System.Threading.CancellationToken cancellationToken) -> Aw.Sindri.Core.Sessions.PaneRead!
+Aw.Sindri.Core.Sessions.PaneRead
+Aw.Sindri.Core.Sessions.PaneRead.Kind.get -> Aw.Sindri.Core.Sessions.PaneReadKind
+Aw.Sindri.Core.Sessions.PaneRead.PanePid.get -> int
+Aw.Sindri.Core.Sessions.PaneReadKind
+Aw.Sindri.Core.Sessions.PaneReadKind.Captured = 0 -> Aw.Sindri.Core.Sessions.PaneReadKind
+Aw.Sindri.Core.Sessions.PaneReadKind.Gone = 1 -> Aw.Sindri.Core.Sessions.PaneReadKind
+Aw.Sindri.Core.Sessions.PaneReadKind.TimedOut = 2 -> Aw.Sindri.Core.Sessions.PaneReadKind
+Aw.Sindri.Core.Sessions.PreviewReason
+Aw.Sindri.Core.Sessions.PreviewRules
+Aw.Sindri.Core.Sessions.PreviewText
+Aw.Sindri.Core.Sessions.PreviewText.<Clone>$() -> Aw.Sindri.Core.Sessions.PreviewText!
+Aw.Sindri.Core.Sessions.PreviewText.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Lines, out bool Truncated) -> void
+Aw.Sindri.Core.Sessions.PreviewText.Equals(Aw.Sindri.Core.Sessions.PreviewText? other) -> bool
+Aw.Sindri.Core.Sessions.PreviewText.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Sessions.PreviewText.Lines.init -> void
+Aw.Sindri.Core.Sessions.PreviewText.PreviewText(System.Collections.Generic.IReadOnlyList<string!>! Lines, bool Truncated) -> void
+Aw.Sindri.Core.Sessions.PreviewText.Truncated.get -> bool
+Aw.Sindri.Core.Sessions.PreviewText.Truncated.init -> void
+const Aw.Sindri.Core.Sessions.PreviewReason.NotInTmux = "not-in-tmux" -> string!
+const Aw.Sindri.Core.Sessions.PreviewReason.NotLive = "not-live" -> string!
+const Aw.Sindri.Core.Sessions.PreviewReason.TimedOut = "timed-out" -> string!
+const Aw.Sindri.Core.Sessions.PreviewRules.MaxBytes = 65536 -> int
+const Aw.Sindri.Core.Sessions.PreviewRules.MaxHops = 64 -> int
+const Aw.Sindri.Core.Sessions.PreviewRules.MaxLineLength = 200 -> int
+const Aw.Sindri.Core.Sessions.PreviewRules.MaxLines = 40 -> int
+override Aw.Sindri.Core.Sessions.PreviewText.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Sessions.PreviewText.GetHashCode() -> int
+override Aw.Sindri.Core.Sessions.PreviewText.ToString() -> string!
+static Aw.Sindri.Core.Sessions.PaneRead.Gone.get -> Aw.Sindri.Core.Sessions.PaneRead!
+static Aw.Sindri.Core.Sessions.PaneRead.TimedOut.get -> Aw.Sindri.Core.Sessions.PaneRead!
+static Aw.Sindri.Core.Sessions.PreviewRules.InPane(int pid, long startTicks, int panePid, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.ProcessEntry!>! table) -> bool
+static Aw.Sindri.Core.Sessions.PreviewRules.Of(System.ReadOnlySpan<byte> capture) -> Aw.Sindri.Core.Sessions.PreviewText!
+static Aw.Sindri.Core.Sessions.PreviewRules.Of(string! text, bool dropped) -> Aw.Sindri.Core.Sessions.PreviewText!
+static Aw.Sindri.Core.Sessions.PreviewText.operator !=(Aw.Sindri.Core.Sessions.PreviewText? left, Aw.Sindri.Core.Sessions.PreviewText? right) -> bool
+static Aw.Sindri.Core.Sessions.PreviewText.operator ==(Aw.Sindri.Core.Sessions.PreviewText? left, Aw.Sindri.Core.Sessions.PreviewText? right) -> bool
+static readonly Aw.Sindri.Core.SindriErrors.SessionConflict -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Sessions.PaneRead.Capture.get -> System.ReadOnlyMemory<byte>
+static Aw.Sindri.Core.Sessions.PaneRead.Captured(int panePid, byte[]! capture) -> Aw.Sindri.Core.Sessions.PaneRead!

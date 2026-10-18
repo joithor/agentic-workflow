@@ -4,6 +4,7 @@ using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Api.Context;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 
@@ -43,19 +44,27 @@ public sealed class GoldenContractTests
         ["decisions"] = As<DecisionList>,
         ["decisions-id"] = As<CommandAcceptedView>,   // POST /decisions/{id}'s accepted goldens; the refusals are ProblemDetails
         ["requests"] = AsRequests,
+        ["context-lenses"] = As<LensesView>,
+        ["context-filemap"] = As<FileMapView>,
+        ["context-map"] = As<MapStatusView>,
+        ["context-map-promote"] = As<PromotePreview>,
+        ["context-map-review"] = AsReview,
+        ["context-map-review-history"] = As<ReviewHistoryView>,
+        ["context-node"] = As<NodeView>,
     };
 
     // Routes the app never calls yet: stop is Health's (U4), profile approve is protected (the app shows the CLI, §6.5), the profile route is a later page's (U2+), and the
-    // context routes are U9's (the context lens), read once U9 lands, until U9 (context records).
+    // context routes U9 does not read (eval, proposals, query).
     private static readonly HashSet<string> _notRead = new(StringComparer.Ordinal)
     {
         "stop", "profile-approve", "profile",
         "needs-you", "decisions", "decisions-id", "requests",   // API P4: the app reads them in U3
-        "context-eval", "context-filemap", "context-lenses", "context-map", "context-map-promote", "context-map-proposals", "context-map-review", "context-map-review-history", "context-node", "context-query",   // until U9 (context records)
+        "context-eval", "context-map-proposals", "context-query",   // not U9's: eval, proposals (U13) and the query routes are read by the phases that call them
         "items",   // GET /items (the list) is never called; POST /items' created* goldens are read (see the loop)
         "ledger",   // API P5: the audit read is the CLI's; the app follows the stream and re-queries
         "services-name-run", "services-name-pause", "services-name-resume", "jobs-id", "jobs-id-cancel", "jobs",   // API P6: the app reads them in U4 (Services and the job panel)
         "workflow-recipes", "workflow-instances-start",   // the Start form's reads (U5'): the recipe list, and POST /workflow/instances' request and started answer (its refusals are ProblemDetails under workflow-instances); workflow-recipes/list pins the shape served before P12 (standing/via/stale/inputs), which differs from the spec's RecipeList (E-25), so U5' must not read inputs from it until that is decided (read GET /workflow/recipes/{id} instead)
+        "sessions", "sessions-id",   // collector CO-3: U11a (the Agents page) reads them
         "events-catalog",   // API P5 (E-15): the app reads each type's invalidates once it switches from re-querying every view on each event (UI lane)
     };
 
@@ -236,6 +245,10 @@ public sealed class GoldenContractTests
     // One slug for GET and POST /requests (U3-API-5): the list-* scenarios are RequestList, the others RequestFiled.
     private static Result<object> AsRequests(byte[] body) =>
         JsonNode.Parse(body) is JsonObject node && node.ContainsKey("requests") ? As<RequestList>(body) : As<RequestFiledView>(body);
+
+    // One slug for GET and POST /context/map/review: the post-* scenarios are the decision's reply, the others the queue.
+    private static Result<object> AsReview(byte[] body) =>
+        JsonNode.Parse(body) is JsonObject node && node.ContainsKey("result") ? As<ReviewDecisionResponse>(body) : As<ReviewQueueView>(body);
 
     private static Result<object> AsEvents(byte[] body)
     {
