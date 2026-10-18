@@ -15,7 +15,7 @@ namespace Aw.Sindri.Infrastructure.Sessions;
 /// <param name="time">The clock for the timeouts, the cache and the skip window.</param>
 /// <param name="executable">The tmux program (a test passes a stand-in).</param>
 /// <param name="callBudget">The longest one tmux call may run.</param>
-internal sealed class TmuxCli(TimeProvider time, string executable, TimeSpan callBudget) : ITmuxServers
+internal sealed class TmuxCli(TimeProvider time, string executable, TimeSpan callBudget) : ITmuxServers, IPaneReader
 {
     internal static readonly TimeSpan Window = TimeSpan.FromSeconds(10);
 
@@ -65,6 +65,8 @@ internal sealed class TmuxCli(TimeProvider time, string executable, TimeSpan cal
         return view;
     }
 
+    public PaneRead Read(string socket, string pane, CancellationToken cancellationToken) => throw new NotSupportedException();
+
     private Result<TmuxServerView> Ask(string socket, CancellationToken cancellationToken)
     {
         var panes = Run(socket, TmuxVerb.ListPanes, ["-a", "-F", PaneFormat], cancellationToken);
@@ -85,11 +87,12 @@ internal sealed class TmuxCli(TimeProvider time, string executable, TimeSpan cal
         TmuxVerb.ListPanes => "list-panes",
         TmuxVerb.ListClients => "list-clients",
         TmuxVerb.DisplayMessage => "display-message",
+        TmuxVerb.CapturePane => "capture-pane",
         _ => throw new ArgumentOutOfRangeException(nameof(verb)),
     };
 
     /// <summary>Runs one verb on <paramref name="socket"/>; null when tmux is missing, the server doesn't answer, or the call ran past its budget (then the socket is skipped for 10 s).</summary>
-    private string? Run(string socket, TmuxVerb verb, string[] arguments, CancellationToken cancellationToken)
+    internal string? Run(string socket, TmuxVerb verb, string[] arguments, CancellationToken cancellationToken)
     {
         var start = new ProcessStartInfo(executable) { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
         foreach (var part in (string[])["-S", socket, Name(verb), .. arguments])
