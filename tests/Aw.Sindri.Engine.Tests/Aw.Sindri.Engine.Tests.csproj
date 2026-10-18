@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Aw.Sindri.Engine.Tests (split out of Aw.Sindri.Tests, LANE-PKG-001, owner 2026-10-18): by feature, one Lane trait per test (spec §4b.5). -->
+  <!-- Aw.Sindri.Engine.Tests (split out of Aw.Sindri.Tests, LANE-PKG-001, owner 2026-10-18): the Temporal-bound suites (Workflows, CompleteStep, ApplyCommand), one Lane trait per test (spec §4b.5). -->
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <OutputType>Exe</OutputType>
@@ -50,10 +50,5 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- Golden files (Aw.Kernel.Testing Golden) live in this project's source tree (the recipe goldens, and the API goldens of API P1 unit E); AW_GOLDEN_UPDATE=1 rewrites them there. -->
-    <AssemblyMetadata Include="AwGoldenSourceRoot" Value="$(MSBuildProjectDirectory)" />
   </ItemGroup>
 </Project>

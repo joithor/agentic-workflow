@@ -20,6 +20,18 @@ public sealed class ApiGoldenTests
         Assert.Equal(expected, files);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void Every_scenario_group_has_its_golden_test_class_and_every_class_its_group()
+    {
+        const string suffix = "ApiGoldenTests";
+        var classes = typeof(ApiGoldenTests).Assembly.GetTypes()
+            .Where(t => t.Namespace == typeof(ApiGoldenTests).Namespace && t.Name.EndsWith(suffix, StringComparison.Ordinal) && t != typeof(ApiGoldenTests))
+            .Select(t => t.Name[..^suffix.Length])
+            .Order(StringComparer.Ordinal);
+
+        Assert.Equal(ApiScenarios.Groups.Keys.Order(StringComparer.Ordinal), classes);
+    }
+
     [Theory, Trait("Lane", "unit")]
     [InlineData("/sindri/status", "status")]
     [InlineData("/sindri/profile/approve", "profile-approve")]
