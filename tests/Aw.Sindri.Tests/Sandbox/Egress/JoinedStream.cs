@@ -1,5 +1,5 @@
-using Aw.Sindri.Infrastructure.Sandbox;
 using System.IO.Pipelines;
+using Aw.Sindri.Infrastructure.Sandbox;
 
 namespace Aw.Sindri.Tests.Sandbox.Egress;
 
