@@ -25,7 +25,7 @@ public static class HistoryLens
             return refused;
         }
 
-        var resolved = LensSets.Resolve(graph, distinct, depth: 0);
+        var resolved = AnchorSet.Resolve(graph, distinct, depth: 0);
         if (resolved.IsError)
         {
             return resolved.Error;

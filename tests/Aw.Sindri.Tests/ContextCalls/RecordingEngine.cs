@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
+using Aw.Context.Core.Code;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Facade;
@@ -111,6 +112,9 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
 
     public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
         inner.LensesOf(anchors, read, depth, scope, cancellationToken);
+
+    public ValueTask<Result<CodeView>> Code(IReadOnlyList<string> anchors, bool draft, string? mapVersion, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.Code(anchors, draft, mapVersion, scope, cancellationToken);
 
     public ValueTask<Result<HistoryView>> History(IReadOnlyList<string> anchors, HistoryWindow window, MapRead read, ContextScope scope, CancellationToken cancellationToken) =>
         inner.History(anchors, window, read, scope, cancellationToken);

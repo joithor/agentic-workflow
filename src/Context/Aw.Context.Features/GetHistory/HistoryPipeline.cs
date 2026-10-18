@@ -5,6 +5,7 @@ using Aw.Context.Core.Graph;
 using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Linking;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
 using Aw.Kernel;
 

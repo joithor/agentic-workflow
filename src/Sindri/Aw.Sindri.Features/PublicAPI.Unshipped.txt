@@ -2634,6 +2634,23 @@ static Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.operator !=(Aw.Sind
 static Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.operator ==(Aw.Sindri.Features.ReadInjection.ReadInjectionRequest? left, Aw.Sindri.Features.ReadInjection.ReadInjectionRequest? right) -> bool
 Aw.Sindri.Features.SindriProveFeaturesServiceCollectionExtensions
 static Aw.Sindri.Features.SindriProveFeaturesServiceCollectionExtensions.AddSindriProveBlocks(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextCodeRequest!
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Anchors.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out bool Draft, out string? MapVersion) -> void
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Draft.get -> bool
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.GetContextCodeRequest(System.Collections.Generic.IReadOnlyList<string!>! Anchors, bool Draft = false, string? MapVersion = null) -> void
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.MapVersion.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.MapVersion.init -> void
+override Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? left, Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? left, Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? right) -> bool
+
 Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out bool Draft, out int? Depth, out string? MapVersion, out string? Hops) -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.GetContextLensesAnswerRequest(System.Collections.Generic.IReadOnlyList<string!>! Anchors, bool Draft = false, int? Depth = null, string? MapVersion = null, string? Hops = null) -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Hops.get -> string?
@@ -2770,6 +2787,26 @@ static Aw.Sindri.Features.ListSessions.SessionCounts.operator !=(Aw.Sindri.Featu
 static Aw.Sindri.Features.ListSessions.SessionCounts.operator ==(Aw.Sindri.Features.ListSessions.SessionCounts? left, Aw.Sindri.Features.ListSessions.SessionCounts? right) -> bool
 static Aw.Sindri.Features.ListSessions.SessionList.operator !=(Aw.Sindri.Features.ListSessions.SessionList? left, Aw.Sindri.Features.ListSessions.SessionList? right) -> bool
 static Aw.Sindri.Features.ListSessions.SessionList.operator ==(Aw.Sindri.Features.ListSessions.SessionList? left, Aw.Sindri.Features.ListSessions.SessionList? right) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest!
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Anchors.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Before.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Before.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out string? Since, out string? Before, out bool Draft, out string? MapVersion) -> void
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Draft.get -> bool
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.GetContextHistoryRequest(System.Collections.Generic.IReadOnlyList<string!>! Anchors, string? Since = null, string? Before = null, bool Draft = false, string? MapVersion = null) -> void
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.MapVersion.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.MapVersion.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Since.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Since.init -> void
+override Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest? left, Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest? left, Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest? right) -> bool
 Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest
 Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.<Clone>$() -> Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest!
 Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.Deconstruct(out Aw.Sindri.Core.Sessions.SessionRef Ref, out System.DateTimeOffset? ExpectStartedAt) -> void

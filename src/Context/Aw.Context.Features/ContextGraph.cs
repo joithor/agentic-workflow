@@ -1,12 +1,12 @@
+using Aw.Context.Core.Code;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Context.Features.FindPath;
-using Aw.Context.Core.History;
 using Aw.Context.Features.GetFileMap;
-using Aw.Context.Features.GetHistory;
 using Aw.Context.Features.GetLenses;
 using Aw.Context.Features.ListNeighbors;
 using Aw.Context.Features.ShowNode;
@@ -23,7 +23,7 @@ internal sealed class ContextGraph(
     IService<GetLensesRequest, LensesView> lenses,
     IService<GetLensesSetRequest, LensesSetView> lensesSet,
     IService<GetFileMapRequest, FileMapView> fileMap,
-    IService<GetHistoryRequest, HistoryView> history) : IContextGraph, IContextLenses, IContextHistory
+    ContextCodeHistory codeHistory) : IContextGraph, IContextLenses, IContextCode, IContextHistory
 {
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) =>
         show.Handle(new ShowNodeRequest(key, scope), cancellationToken);
@@ -52,6 +52,9 @@ internal sealed class ContextGraph(
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         fileMap.Handle(new GetFileMapRequest(query, scope), cancellationToken);
 
+    public ValueTask<Result<CodeView>> Code(IReadOnlyList<string> anchors, bool draft, string? mapVersion, ContextScope scope, CancellationToken cancellationToken) =>
+        codeHistory.Code(anchors, draft, mapVersion, scope, cancellationToken);
+
     public ValueTask<Result<HistoryView>> History(IReadOnlyList<string> anchors, HistoryWindow window, MapRead read, ContextScope scope, CancellationToken cancellationToken) =>
-        history.Handle(new GetHistoryRequest(anchors, window, read, scope), cancellationToken);
+        codeHistory.History(anchors, window, read, scope, cancellationToken);
 }
