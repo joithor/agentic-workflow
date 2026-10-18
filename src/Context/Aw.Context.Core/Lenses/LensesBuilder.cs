@@ -21,7 +21,7 @@ public static class LensesBuilder
         ArgumentNullException.ThrowIfNull(basis);
         ArgumentNullException.ThrowIfNull(graph);
         var clamped = Math.Clamp(depth, 0, GraphWalk.MaxDepth);
-        if (LensScope.Of(graph, anchor, clamped) is not { } scope)
+        if (LensScope.Of(graph, anchor, clamped, basis.Cascade) is not { } scope)
         {
             return ContextErrors.UnknownAnchor.With($"no node '{(anchor.Value.Length <= 80 ? anchor.Value : "(a long key)")}' in this map (fix: sindri context map status)");
         }
@@ -38,6 +38,7 @@ public static class LensesBuilder
             bands, LensEdges.Across(graph, items), LensConflicts.Of(scope, checkedPairs ?? []), coverage, searched, [], new Dictionary<string, Results.Citation>(StringComparer.Ordinal))
         {
             MapCommit = basis.MapCommit,
+            SkippedComponents = scope.Cascade.SkippedComponents.Count > 0 ? scope.Cascade.SkippedComponents : null,
         };
     }
 
