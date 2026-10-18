@@ -1,0 +1,30 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ctx="using:Aw.Sindri.Ui.ViewModels.Context"
+             x:Class="Aw.Sindri.Ui.Views.Context.ContextPage"
+             x:DataType="ctx:ContextPageViewModel">
+  <!-- The Context page (screens spec §4.4): the head with the anchor box, the lens stack and files lens on the left, the review queue,
+       the node card and the sources on the right. U9a0 draws the skeleton; each host below is a seam its stage fills (U9a the stack,
+       U9c the review, U9d the files, U9b the node card and sources). -->
+  <StackPanel Spacing="{StaticResource Size.PanelGap}">
+    <Grid ColumnDefinitions="Auto,*,Auto">
+      <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+        <TextBlock x:Name="ContextTitle" Classes="page-title" Text="{Binding Title}" />
+        <TextBlock x:Name="ContextHead" Classes="caption subtle" Text="{Binding Head}" VerticalAlignment="Center" />
+      </StackPanel>
+      <TextBox x:Name="AnchorBox" Grid.Column="2" MinWidth="280" Text="{Binding AnchorText, Mode=TwoWay}" PlaceholderText="{Binding AnchorHint}"
+               AutomationProperties.Name="{Binding AnchorLabel}" />
+    </Grid>
+    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{StaticResource Size.PanelGap}">
+      <StackPanel Spacing="{StaticResource Size.PanelGap}">
+        <Panel x:Name="LensStackHost" />
+        <Panel x:Name="FileMapHost" DataContext="{Binding FileMap}" />
+      </StackPanel>
+      <StackPanel Grid.Column="1" Spacing="{StaticResource Size.PanelGap}" MinWidth="320">
+        <Panel x:Name="ReviewHost" DataContext="{Binding Review}" />
+        <Panel x:Name="NodeHost" DataContext="{Binding Node}" />
+        <Panel x:Name="SourcesHost" DataContext="{Binding Sources}" />
+      </StackPanel>
+    </Grid>
+  </StackPanel>
+</UserControl>

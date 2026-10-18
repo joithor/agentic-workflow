@@ -22,13 +22,24 @@ public sealed class ContextPageWindowTests
     [Fact]
     public async Task Context_page_replaces_the_placeholder_in_the_window()
     {
-        _ = await HeadlessUnitTestSession.GetOrStartForAssembly(typeof(ContextPageWindowTests).Assembly).Dispatch(() =>
+        using var stop = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        _ = await HeadlessUnitTestSession.GetOrStartForAssembly(typeof(ContextPageWindowTests).Assembly).Dispatch(async () =>
         {
-            var shell = new ShellViewModel(new InMemoryEndpointRecords(), new FakeSindriApi(), new FakeTimeProvider(A.Noon), new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
+            var records = new InMemoryEndpointRecords();
+            records.Write(A.Record());
+            var shell = new ShellViewModel(records, new FakeSindriApi(), new FakeTimeProvider(A.Noon), new Preferences(new InMemoryPreferencesStore()), new FakeClipboard());
+            await shell.Restore(Token);
             var window = new ShellWindow { DataContext = shell };
             try
             {
                 window.Show();
+                _ = shell.Run(stop.Token);
+                for (var i = 0; i < 200 && shell.State != ShellState.Normal; i++)
+                {
+                    await Task.Delay(10, Token);
+                    Dispatcher.UIThread.RunJobs();
+                }
+
                 shell.GoTo(PageId.Context);
                 Dispatcher.UIThread.RunJobs();
                 window.UpdateLayout();
@@ -43,6 +54,7 @@ public sealed class ContextPageWindowTests
             }
             finally
             {
+                await stop.CancelAsync();
                 window.Close();
                 Dispatcher.UIThread.RunJobs();
             }

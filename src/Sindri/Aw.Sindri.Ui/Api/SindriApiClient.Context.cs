@@ -1,35 +1,41 @@
 using Aw.Kernel;
+using Aw.Kernel.Json;
 using Aw.Sindri.Ui.Api.Context;
 
 namespace Aw.Sindri.Ui.Api;
 
-/// <summary>The context routes (<see cref="SindriApiClient"/>, continued): the lenses, the file map, the review queue and its decisions, the map status, the node card and the sources.</summary>
+/// <summary>The context routes (<see cref="SindriApiClient"/>, continued): the lenses, the file map, the review queue and its decisions, the map status, the node card and the sources. Reads of the context database never carry X-Sindri-After.</summary>
 internal sealed partial class SindriApiClient
 {
     /// <inheritdoc />
-    public Task<Result<LensesView>> Lenses(Uri api, LensesQuery query, CancellationToken cancellationToken) => NotYet<LensesView>(ContextRoutes.Lenses(query));
+    public Task<Result<LensesView>> Lenses(Uri api, LensesQuery query, CancellationToken cancellationToken) =>
+        Get<LensesView>(api, ContextRoutes.Lenses(query), cancellationToken);
 
     /// <inheritdoc />
-    public Task<Result<FileMapView>> FileMap(Uri api, FileMapQuery query, CancellationToken cancellationToken) => NotYet<FileMapView>(ContextRoutes.FileMap(query));
+    public Task<Result<FileMapView>> FileMap(Uri api, FileMapQuery query, CancellationToken cancellationToken) =>
+        Get<FileMapView>(api, ContextRoutes.FileMap(query), cancellationToken);
 
     /// <inheritdoc />
-    public Task<Result<ReviewQueueView>> ReviewQueue(Uri api, int? limit, CancellationToken cancellationToken) => NotYet<ReviewQueueView>(ContextRoutes.ReviewQueue(limit));
+    public Task<Result<ReviewQueueView>> ReviewQueue(Uri api, int? limit, CancellationToken cancellationToken) =>
+        Get<ReviewQueueView>(api, ContextRoutes.ReviewQueue(limit), cancellationToken);
 
     /// <inheritdoc />
-    public Task<Result<ReviewDecisionResponse>> ReviewDecision(Uri api, ReviewDecisionRequest request, CancellationToken cancellationToken) => NotYet<ReviewDecisionResponse>(ContextRoutes.Review);
+    public Task<Result<ReviewDecisionResponse>> ReviewDecision(Uri api, ReviewDecisionRequest request, CancellationToken cancellationToken) =>
+        Call<ReviewDecisionResponse>(api, HttpMethod.Post, ContextRoutes.Review, cancellationToken, new CallOptions(Content: AwJson.Serialize(request, Json)));
 
     /// <inheritdoc />
-    public Task<Result<ReviewHistoryView>> ReviewHistory(Uri api, int? limit, CancellationToken cancellationToken) => NotYet<ReviewHistoryView>(ContextRoutes.ReviewHistory(limit));
+    public Task<Result<ReviewHistoryView>> ReviewHistory(Uri api, int? limit, CancellationToken cancellationToken) =>
+        Get<ReviewHistoryView>(api, ContextRoutes.ReviewHistory(limit), cancellationToken);
 
     /// <inheritdoc />
-    public Task<Result<MapStatusView>> MapStatus(Uri api, string? anchor, CancellationToken cancellationToken) => NotYet<MapStatusView>(ContextRoutes.MapStatus(anchor));
+    public Task<Result<MapStatusView>> MapStatus(Uri api, string? anchor, CancellationToken cancellationToken) =>
+        Get<MapStatusView>(api, ContextRoutes.MapStatus(anchor), cancellationToken);
 
     /// <inheritdoc />
-    public Task<Result<NodeView>> Node(Uri api, string key, CancellationToken cancellationToken) => NotYet<NodeView>(ContextRoutes.Node(key));
+    public Task<Result<NodeView>> Node(Uri api, string key, CancellationToken cancellationToken) =>
+        Get<NodeView>(api, ContextRoutes.Node(key), cancellationToken);
 
     /// <inheritdoc />
-    public Task<Result<SourcesView>> Sources(Uri api, CancellationToken cancellationToken) => NotYet<SourcesView>(ContextRoutes.Sources);
-
-    // Red stub (U9a0): the route is named and nothing is sent until the calls are written.
-    private static Task<Result<T>> NotYet<T>(string route) => throw new NotSupportedException(route);
+    public Task<Result<SourcesView>> Sources(Uri api, CancellationToken cancellationToken) =>
+        Get<SourcesView>(api, ContextRoutes.Sources, cancellationToken);
 }
