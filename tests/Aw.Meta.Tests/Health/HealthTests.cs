@@ -144,6 +144,20 @@ public sealed class HealthTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Full_swap_is_reported_as_a_figure_but_is_not_low_memory()
+    {
+        await _world.Ready();
+        AllLanesLive();
+        _world.Resources.Resources = new HostResources(32_000_000, 14_000_000, SwapUsedKb: 8_000_000, DiskFreeBytes: 50_000_000_000, SwapTotalKb: 8_000_000);
+
+        var health = await Check();
+
+        Assert.Equal((8_000_000L, 100), (health.Host.SwapUsedKb, health.Host.SwapUsedPercent));
+        Assert.False(health.MemoryLow);
+        Assert.False(health.Attention);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Low_memory_needs_attention()
     {
         await _world.Ready();
