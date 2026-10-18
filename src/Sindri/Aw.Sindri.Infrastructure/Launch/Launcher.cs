@@ -173,7 +173,7 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
             WriteCaptureRule(request.Launch, entry);
             var secret = LaunchSecrets.Mint();
             LaunchSecrets.Write(parts.Options.SecretsDirectory, request.Launch, secret);
-            return new Prepared(workDir, composed.Value.Argv, Environment(request, secret), composed.Value.Session?.Value);
+            return new Prepared(workDir, composed.Value.Argv, Environment(request), composed.Value.Session?.Value);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -216,14 +216,14 @@ internal sealed class Launcher(LauncherParts parts) : ILauncher
         OwnerOnly.WriteAtomically(Path.Combine(parts.Options.LaunchesDirectory, LaunchFiles.CaptureName(launch)), AwJson.Serialize(rule, _captureJson));
     }
 
-    private Dictionary<string, string> Environment(LaunchRequest request, string secret)
+    private Dictionary<string, string> Environment(LaunchRequest request)
     {
         var env = new Dictionary<string, string>(StepEnvironment.For(request), StringComparer.Ordinal)
         {
             ["AW_SINDRI_CHILD"] = "1",
             ["AW_SINDRI_ITEM"] = request.Item.Value,
             ["AW_SINDRI_LAUNCH"] = request.Launch.Value,
-            ["AW_SINDRI_LAUNCH_SECRET"] = secret,
+            ["AW_SINDRI_LAUNCH_SECRET_FILE"] = LaunchSecrets.SecretPathFor(parts.Options.SecretsDirectory, request.Launch),   // the path only: the secret itself never sits in a tmux command line
         };
         if (parts.Options.SindriHome is { } home)
         {
