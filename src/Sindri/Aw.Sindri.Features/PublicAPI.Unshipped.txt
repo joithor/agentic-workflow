@@ -2681,3 +2681,27 @@ static Aw.Sindri.Features.ListSessions.SessionCounts.operator !=(Aw.Sindri.Featu
 static Aw.Sindri.Features.ListSessions.SessionCounts.operator ==(Aw.Sindri.Features.ListSessions.SessionCounts? left, Aw.Sindri.Features.ListSessions.SessionCounts? right) -> bool
 static Aw.Sindri.Features.ListSessions.SessionList.operator !=(Aw.Sindri.Features.ListSessions.SessionList? left, Aw.Sindri.Features.ListSessions.SessionList? right) -> bool
 static Aw.Sindri.Features.ListSessions.SessionList.operator ==(Aw.Sindri.Features.ListSessions.SessionList? left, Aw.Sindri.Features.ListSessions.SessionList? right) -> bool
+Aw.Sindri.Features.RecordEval.RecordEvalRequest
+Aw.Sindri.Features.RecordEval.RecordEvalRequest.<Clone>$() -> Aw.Sindri.Features.RecordEval.RecordEvalRequest!
+Aw.Sindri.Features.RecordEval.RecordEvalRequest.Address.get -> string!
+Aw.Sindri.Features.RecordEval.RecordEvalRequest.Address.init -> void
+Aw.Sindri.Features.RecordEval.RecordEvalRequest.Deconstruct(out string! Address) -> void
+Aw.Sindri.Features.RecordEval.RecordEvalRequest.Equals(Aw.Sindri.Features.RecordEval.RecordEvalRequest? other) -> bool
+Aw.Sindri.Features.RecordEval.RecordEvalRequest.RecordEvalRequest(string! Address) -> void
+Aw.Sindri.Features.RecordEval.RecordEvalResponse
+Aw.Sindri.Features.RecordEval.RecordEvalResponse.<Clone>$() -> Aw.Sindri.Features.RecordEval.RecordEvalResponse!
+Aw.Sindri.Features.RecordEval.RecordEvalResponse.Deconstruct(out string! Text) -> void
+Aw.Sindri.Features.RecordEval.RecordEvalResponse.Equals(Aw.Sindri.Features.RecordEval.RecordEvalResponse? other) -> bool
+Aw.Sindri.Features.RecordEval.RecordEvalResponse.RecordEvalResponse(string! Text) -> void
+Aw.Sindri.Features.RecordEval.RecordEvalResponse.Text.get -> string!
+Aw.Sindri.Features.RecordEval.RecordEvalResponse.Text.init -> void
+override Aw.Sindri.Features.RecordEval.RecordEvalRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.RecordEval.RecordEvalRequest.GetHashCode() -> int
+override Aw.Sindri.Features.RecordEval.RecordEvalRequest.ToString() -> string!
+override Aw.Sindri.Features.RecordEval.RecordEvalResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.RecordEval.RecordEvalResponse.GetHashCode() -> int
+override Aw.Sindri.Features.RecordEval.RecordEvalResponse.ToString() -> string!
+static Aw.Sindri.Features.RecordEval.RecordEvalRequest.operator !=(Aw.Sindri.Features.RecordEval.RecordEvalRequest? left, Aw.Sindri.Features.RecordEval.RecordEvalRequest? right) -> bool
+static Aw.Sindri.Features.RecordEval.RecordEvalRequest.operator ==(Aw.Sindri.Features.RecordEval.RecordEvalRequest? left, Aw.Sindri.Features.RecordEval.RecordEvalRequest? right) -> bool
+static Aw.Sindri.Features.RecordEval.RecordEvalResponse.operator !=(Aw.Sindri.Features.RecordEval.RecordEvalResponse? left, Aw.Sindri.Features.RecordEval.RecordEvalResponse? right) -> bool
+static Aw.Sindri.Features.RecordEval.RecordEvalResponse.operator ==(Aw.Sindri.Features.RecordEval.RecordEvalResponse? left, Aw.Sindri.Features.RecordEval.RecordEvalResponse? right) -> bool
