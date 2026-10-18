@@ -35,7 +35,7 @@ public sealed class GitCliArchiveTests : IDisposable
         var result = await GraphifyRun.Archive(FakeGit(exit: 0, "quiet"), repo, Drain);
 
         Assert.False(result.IsError);
-        Assert.True(started.Elapsed < TimeSpan.FromSeconds(15), $"the call must stop waiting for stderr after the grace, it took {started.Elapsed.TotalSeconds:0} s");
+        Assert.True(started.Elapsed < TimeSpan.FromSeconds(15), string.Create(System.Globalization.CultureInfo.InvariantCulture, $"the call must stop waiting for stderr after the grace, it took {started.Elapsed.TotalSeconds} s"));
     }
 
     [Fact]
