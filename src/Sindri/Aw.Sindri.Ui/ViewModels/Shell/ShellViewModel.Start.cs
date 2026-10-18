@@ -1,3 +1,5 @@
+using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.ViewModels.Start;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
@@ -19,9 +21,11 @@ internal sealed partial class ShellViewModel
     }
 
     // Everything the form needs once it exists (ShellViewModel's constructor calls this one line): an accepted start opens the instance's frame.
-    private void InitStart()
+    private StartFormViewModel InitStart(ISindriApi api, WindowPorts window)
     {
-        Start.Started += (_, e) => OpenInstance(e.Address, e.Id);
+        var form = new StartFormViewModel(Health.Catalog, () => Health.ApiUrl(), api, window.Files);
+        form.Started += (_, e) => OpenInstance(e.Address, e.Id);
         Workflows.StartRequested += (_, _) => OpenStart();
+        return form;
     }
 }

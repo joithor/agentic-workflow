@@ -60,7 +60,6 @@ internal sealed partial class ShellViewModel : ObservableObject
         Health.Pill.PropertyChanged += OnPillChanged;
         CommandOutcome = new CommandOutcomeRegion(control => Health.Banner.HasRebuild && ReferenceEquals(Health.Banner.Rebuild, control));
         Create = new CreateItemViewModel(Health.Catalog, () => Health.ApiUrl(), api);
-        Start = new StartFormViewModel(Health.Catalog, () => Health.ApiUrl(), api, (window ??= WindowPorts.None).Files);
         Palette = new CommandPaletteViewModel(Health.Catalog, GoTo, RememberRun, CommandOutcome, () => Create.Open(), OpenStart);
         Shortcuts = new ShortcutsViewModel(Health.Catalog);
         Queue = new QueueViewModel(api, Health.Catalog, clock);
@@ -77,7 +76,7 @@ internal sealed partial class ShellViewModel : ObservableObject
         InitStrip();
         Workflows = new WorkflowsViewModel(api, clipboard, clock);
         InitWorkflows();
-        InitStart();
+        Start = InitStart(api, window ??= WindowPorts.None);
         Instance = new InstanceFrameViewModel(api, clipboard, clock, catalog: Health.Catalog, launcher: window.Launcher);
         InitInstance();
         Recipe = new RecipeSheetViewModel(api);
