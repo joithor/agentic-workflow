@@ -21,13 +21,15 @@ internal static class DesignSteps
     // TODO(W9/L-17): read-only capability (no descriptor field yet; the launch enforces it)
     public static BlockDescriptor Draft { get; } = AgentStep("step.design.draft", Capability.Tools)
         .Reads("fact:scope", "fact:packs", "fact:design", "fact:findings", "fact:changedSections").Reports("drafted")
-        .Writes(On("fact:design", "drafted")) with { Parameters = [Bundle()] };
+        .Takes(Bundle())
+        .Writes(On("fact:design", "drafted"));
 
     /// <summary>'step.design.apply': folds the stop-2 revision into the sections it affects; 'applied' with the changed sections.</summary>
     // TODO(W9/L-17): read-only capability (no descriptor field yet; the launch enforces it)
     public static BlockDescriptor Apply { get; } = AgentStep("step.design.apply", Capability.Tools)
         .Reads("fact:scope", "fact:packs", "fact:design", "fact:designRevision", "fact:answers").Reports("applied")
-        .Writes(On("fact:design", "applied"), On("fact:changedSections", "applied")) with { Parameters = [Bundle()] };
+        .Takes(Bundle())
+        .Writes(On("fact:design", "applied"), On("fact:changedSections", "applied"));
 
     /// <summary>'step.design.check': the draft-stage design checks (coverage, signals, decisions, contract edits, style); 'pass' or 'gaps' with findings.</summary>
     public static BlockDescriptor Check { get; } = BlockStep("step.design.check", Capability.Tools)
@@ -37,7 +39,8 @@ internal static class DesignSteps
     // TODO(W9/L-17): read-only capability (no descriptor field yet; the launch enforces it)
     public static BlockDescriptor Revise { get; } = AgentStep("step.design.revise", Capability.Tools)
         .Reads("fact:scope", "fact:packs", "fact:design", "fact:findings", "fact:answers").Reports("revised")
-        .Writes(On("fact:design", "revised"), On("fact:changedSections", "revised")) with { Parameters = [Bundle()] };
+        .Takes(Bundle())
+        .Writes(On("fact:design", "revised"), On("fact:changedSections", "revised"));
 
     /// <summary>'step.design.lens-desk': the lens rounds hit their cap with findings left; human-only: accept them as known risks, revise with notes, or drop.</summary>
     public static BlockDescriptor LensDesk { get; } = HumanDeskStep("step.design.lens-desk", Capability.None)

@@ -30,7 +30,7 @@ public sealed class DesignPlanRecipeTests
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("workflow.design", "designed=resolved;dropped=unresolved")]
-    [InlineData("workflow.plan", "approved=resolved;redesign=unresolved;dropped=failed")]
+    [InlineData("workflow.plan", "planned=resolved;redesign=unresolved;dropped=failed")]
     public void The_terminals_carry_the_outcomes_the_line_reads(string id, string terminals)
     {
         var recipe = Read(id).Recipe;

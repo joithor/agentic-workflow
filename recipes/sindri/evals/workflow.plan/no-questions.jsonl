@@ -7,4 +7,4 @@
 {"trigger":{"kind":"step.completed","outcome":"complete","outputs":{"fact:planPacket":"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"}},"expect":{"state":"questions"}}
 {"trigger":{"kind":"step.completed","outcome":"none"},"expect":{"state":"stop"}}
 {"trigger":{"kind":"step.completed","outcome":"approve"},"expect":{"state":"freeze"}}
-{"trigger":{"kind":"step.completed","outcome":"frozen","outputs":{"fact:planPacket":"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd","fact:phasePackets":[{"phase":"P1","hash":"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"}]}},"expect":{"state":"approved","outcome":"resolved"}}
+{"trigger":{"kind":"step.completed","outcome":"frozen","outputs":{"fact:planPacket":"sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd","fact:phasePackets":[{"phase":"P1","hash":"sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"}]}},"expect":{"state":"planned","outcome":"resolved"}}

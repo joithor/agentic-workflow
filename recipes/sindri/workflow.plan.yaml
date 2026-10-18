@@ -36,7 +36,7 @@ states:
                  next: "Your stop: read {item}'s design and plan graph (`sindri plan show {instance}` or the stop view), then approve, revise the design, revise the plan, or drop." }
   freeze:      { kind: active, step: step.plan.freeze, loop: refreeze, timeout: { after: 1h, then: park },
                  next: "Re-check and freeze {item}'s design, plan and phase packets." }
-  approved:    { kind: terminal, outcome: resolved }
+  planned:     { kind: terminal, outcome: resolved }
   redesign:    { kind: terminal, outcome: unresolved }
   dropped:     { kind: terminal, outcome: failed }
 transitions:
@@ -62,7 +62,7 @@ transitions:
   - { from: stop, to: record,  on: step.completed, when: { outcome: reviseDesign }, produces: [fact:answers] }
   - { from: stop, to: record,  on: step.completed, when: { outcome: revisePlan },   produces: [fact:answers] }
   - { from: stop, to: dropped, on: step.completed, when: { outcome: drop } }
-  - { from: freeze, to: approved, on: step.completed, when: { outcome: frozen },   produces: [fact:planPacket, fact:phasePackets] }
+  - { from: freeze, to: planned, on: step.completed, when: { outcome: frozen },   produces: [fact:planPacket, fact:phasePackets] }
   - { from: freeze, to: evidence, on: step.completed, when: { outcome: mismatch }, produces: [fact:findings] }
 loops: { rounds: { cap: 5 }, refreeze: { cap: 2 }, revisions: { cap: 5 } }
 budget: { tokens: 1000k }
