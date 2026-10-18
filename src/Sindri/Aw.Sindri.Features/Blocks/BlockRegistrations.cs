@@ -48,9 +48,8 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(ReviewSteps.Recheck)
         .AddBlockDescriptor(OwnerSteps.Decide)
         .AddScopingBlocks()
-        .AddLineStationBlocks()
         .AddLineDesignBlocks()
-        .AddLineBlocks()
+        .AddPhaseBlocks()
         .AddBuildProveBlocks()
         .AddShipDocsBlocks()
         .AddBlockDescriptor(EvidenceProviders.Check)
@@ -61,11 +60,6 @@ internal static class BlockRegistrations
         .AddEvent(RecipeEvents.ItemRouted)
         .AddEvent(RecipeEvents.ClaimCreated)
         .AddEvent(RecipeEvents.NotifyDelivered);
-
-    /// <summary>Registers the line's blocks (the build and prove stations' and the per-phase child's).</summary>
-    /// <param name="services">The service collection.</param>
-    /// <returns>The same collection.</returns>
-    private static IServiceCollection AddLineBlocks(this IServiceCollection services) => services.AddBuildProveBlocks().AddLineStationBlocks().AddPhaseBlocks();
 
     /// <summary>Registers the per-phase child's Steps, the babysitter stub's Step and the line report effect (line spec §7, App. C.6), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
