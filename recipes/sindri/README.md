@@ -44,9 +44,11 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 | `workflow.evidence-other` | phasePacket, built | evidenceSummary, evidenceReason | recorded / none-found |
 | `workflow.evidence-all` | phasePacket, built | evidenceSummary | done / failed, dropped |
 | `workflow.evidence` | phasePacket, built | evidenceSummary, decision | done / failed, all-failed, dropped |
-| `workflow.review-loop` | change (payload), phasePacket | review | clean / stuck, wrong (failed) |
+| `workflow.review-loop` (version 2, DTC4) | change (payload), phasePacket | review (packet) | clean / stuck, wrong (failed) |
 | `workflow.docs-sync` | pr, phasePacket (`{}` when started by hand) | docsResult, docsPr | opened / not-done; alreadySatisfied (no docs to change or sync off), abandoned (failed) |
 | `workflow.ship` | phasePacket, proofPack, review, workspace, lineContext | pr, handoff, returnNotes | shipped / returned (GREEN red or head moved) , refused (failed) |
+
+`workflow.review-loop` v2 (DTC4) reviews one lens per run (`round`, `lens`, `lens-log`), a round per iteration (cap 5), keeps the narrow re-check, and ends `clean` only through `step.review.record`, which writes the review packet; `fact:review` is now `type: packet` (it was `payload`). Its hash changed: version 1 and version 2 are different recipes, and no approval of version 1 carries over (no live approvals exist, so there is no migration). The v1 eval names are kept (`happy`, `cap-then-recheck`, `behaviour-wrong`, `recheck-clean`, `recheck-wrong`) and `one-lens-per-run` is new. `step.lens.run`, `step.review.round`, `step.review.log` and `step.review.record` are descriptor-only: an instance parks with SND-WF-010 at the desk when it reaches one.
 
 ### Rules every block recipe follows
 
