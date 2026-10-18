@@ -125,9 +125,13 @@ Aw.Sindri.Features.CloseItem.CloseItemRequest.Variant.get -> string!
 Aw.Sindri.Features.Commands.SindriCommandServiceCollectionExtensions
 Aw.Sindri.Features.CompleteStep.CompleteStepRequest
 Aw.Sindri.Features.CompleteStep.CompleteStepRequest.<Clone>$() -> Aw.Sindri.Features.CompleteStep.CompleteStepRequest!
-Aw.Sindri.Features.CompleteStep.CompleteStepRequest.CompleteStepRequest(string! Instance, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.ReadOnlyMemory<byte>>! Outputs, Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce = null) -> void
-Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Deconstruct(out string! Instance, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.ReadOnlyMemory<byte>>! Outputs, out Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce) -> void
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.CompleteStepRequest(string! Instance, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.ReadOnlyMemory<byte>>! Outputs, Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce = null, Aw.Sindri.Core.Launches.LaunchSecret? LaunchSecret = null) -> void
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Deconstruct(out string! Instance, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.ReadOnlyMemory<byte>>! Outputs, out Aw.Sindri.Core.Workflow.Engine.CommandNonce? Nonce, out Aw.Sindri.Core.Launches.LaunchSecret? LaunchSecret) -> void
 Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Equals(Aw.Sindri.Features.CompleteStep.CompleteStepRequest? other) -> bool
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.CarriesProtectedFields.get -> bool
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.LaunchSecret.get -> Aw.Sindri.Core.Launches.LaunchSecret?
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.LaunchSecret.init -> void
+Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Variant.get -> string?
 Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Instance.get -> string!
 Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Instance.init -> void
 Aw.Sindri.Features.CompleteStep.CompleteStepRequest.Nonce.get -> Aw.Sindri.Core.Workflow.Engine.CommandNonce?

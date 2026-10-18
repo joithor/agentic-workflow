@@ -74,6 +74,7 @@ public static partial class InstanceViews
             Answer = words.Answer(),
             Drift = words.Drift(),
             Budget = Budget(instance, recipe),
+            AgentRun = instance is { Ended: false, Frame.Run: { Runtime: StepRuntime.Agent } agent } ? agent : null,
             RunningSteps = instance is { Ended: false, Frame.Run.Runtime: not StepRuntime.Desk } ? 1 : 0,
             Paused = instance.Suspension is { Kind: SuspensionKind.Takeover, Remaining: { } paused } ? paused.Left : null,
         };

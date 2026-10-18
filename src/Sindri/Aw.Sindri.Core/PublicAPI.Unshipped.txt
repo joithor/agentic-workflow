@@ -179,7 +179,7 @@ Aw.Sindri.Core.Commands.ICallerContextAccessor.Enter(Aw.Sindri.Core.Commands.Cal
 Aw.Sindri.Core.Commands.ICallerContextAccessor.EnterService(string! service) -> System.IDisposable!
 Aw.Sindri.Core.Commands.IClassifiedCommand
 Aw.Sindri.Core.Commands.IClassifiedCommand.CarriesProtectedFields.get -> bool
-Aw.Sindri.Core.Commands.IClassifiedCommand.Variant.get -> string!
+Aw.Sindri.Core.Commands.IClassifiedCommand.Variant.get -> string?
 Aw.Sindri.Core.Commands.ICommand<TResult>
 Aw.Sindri.Core.Commands.ICommandCatalog
 Aw.Sindri.Core.Commands.ICommandCatalog.For(System.Type! commandType) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Commands.CommandRow!>!
@@ -3594,6 +3594,8 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Activity.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Activity.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.AgentRun.get -> Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.AgentRun.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Address.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.AllowedCommands.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand!>!
