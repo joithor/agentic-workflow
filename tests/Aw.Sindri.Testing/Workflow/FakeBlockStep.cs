@@ -9,15 +9,17 @@ namespace Aw.Sindri.Testing.Workflow;
 public sealed class FakeBlockStep(Func<StepContext, CancellationToken, ValueTask<BlockStepResult>> run) : IBlockStep
 {
     private int _runs;
+    private int _cancelled;
+    private StepContext? _last;
 
     /// <summary>How many runs started.</summary>
     public int Runs => Volatile.Read(ref _runs);
 
     /// <summary>The context of the last run.</summary>
-    public StepContext? Last { get; private set; }
+    public StepContext? Last => Volatile.Read(ref _last);
 
     /// <summary>How many runs were cancelled.</summary>
-    public int Cancelled { get; private set; }
+    public int Cancelled => Volatile.Read(ref _cancelled);
 
     /// <summary>A Step that reports <paramref name="outcome"/> with a 'fact:decision'.</summary>
     /// <param name="outcome">The outcome.</param>
@@ -62,14 +64,14 @@ public sealed class FakeBlockStep(Func<StepContext, CancellationToken, ValueTask
     public async ValueTask<BlockStepResult> Run(StepContext context, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _runs);
-        Last = context;
+        Volatile.Write(ref _last, context);
         try
         {
             return await run(context, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException)
         {
-            Cancelled++;
+            _ = Interlocked.Increment(ref _cancelled);
             throw;
         }
     }

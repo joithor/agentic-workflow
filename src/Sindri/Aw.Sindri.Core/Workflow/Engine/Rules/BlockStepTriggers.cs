@@ -17,6 +17,12 @@ public static class BlockStepTriggers
     public static string Actor(BlockId step)
         => "service:block:" + step.Value;
 
+    /// <summary>Whether <paramref name="actor"/> is a block Step's: a failed block run's event says 'via block' like a completed one.</summary>
+    /// <param name="actor">A trigger's actor.</param>
+    /// <returns>True for 'service:block:&lt;step&gt;'.</returns>
+    public static bool IsBlockActor(string actor)
+        => actor is not null && actor.StartsWith("service:block:", StringComparison.Ordinal);
+
     /// <summary>
     /// A completed result as a trigger: a <see cref="StepCompleted"/> when the report validation of WF §5.3 accepts it, else a
     /// <see cref="StepFailed"/> with the reason 'invalid-result: &lt;code&gt;' so the run can't hang on a refusal nobody sees.

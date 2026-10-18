@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json;
 using Aw.Kernel;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -97,7 +98,7 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
     {
         var read = await contents.Read(fact, cancellationToken).ConfigureAwait(false);
         return read.IsError
-            ? new Error("SND-BLOCK-001", ErrorKind.Unavailable, $"the fact {key.Value} can't be read: {read.Error.Message}")
+            ? WorkflowErrors.BlockFactUnreadable.With($"the fact {key.Value} can't be read: {read.Error.Message}")
             : JsonSerializer.SerializeToElement(Encoding.UTF8.GetString(read.Value.Span), _json);
     }
 
@@ -105,10 +106,15 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
     // Nothing approved means the defaults (no jev); an approved profile that can't be read fails the run, and the list is never widened.
     private async Task<Result<JsonElement>> Providers(BlockStepRun run, Dictionary<string, JsonElement> arguments, CancellationToken cancellationToken)
     {
+        if (run.RepoUnreadable)
+        {
+            return WorkflowErrors.BlockRepoUnreadable.With("repo-unreadable");
+        }
+
         var latest = await approved.Latest(cancellationToken).ConfigureAwait(false);
         if (latest.IsError)
         {
-            return new Error("SND-BLOCK-002", ErrorKind.Unavailable, $"profile-unreadable: {latest.Error.Code}");
+            return WorkflowErrors.BlockProfileUnreadable.With($"profile-unreadable: {latest.Error.Code}");
         }
 
         var profile = latest.Value?.Profile ?? new SindriProfile(1, string.Empty);

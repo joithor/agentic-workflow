@@ -14,8 +14,8 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
 /// The block runtime of <see cref="RecipeWorkflow"/> (DT spec §8.2; DT-J2): a Step the build registered with AddBlockStep runs in one
-/// 'RunBlockStep' activity, attempted once, and its result becomes the trigger the engine reports for it, with no desk task. The activity is
-/// bounded by the descriptor's 'maxDuration' (BlockLimits); RCP-TIME-003 keeps the state's timeout longer than that, so the Step's own bound always ends it first and running out is step.failed 'timeout', never a timer park.
+/// 'RunBlockStep' activity, attempted once, and its result becomes the trigger the engine reports for it, with no desk task. The activity (queue time included) is
+/// bounded by the descriptor's 'maxDuration' and by the time left on the state timer (BlockLimits.Bound); RCP-TIME-003 keeps the state's timeout longer than that, so the Step's own bound ends it first and running out is step.failed 'timeout', not a timer park.
 /// </summary>
 internal sealed partial class RecipeWorkflow
 {
@@ -59,14 +59,16 @@ internal sealed partial class RecipeWorkflow
         _runs++;
         var start = _start ?? throw new InvalidOperationException("the workflow has not begun"); // why: the loop runs only after Begin set it
         var recipe = _recipe ?? throw new InvalidOperationException("the workflow has not begun"); // why: as above
-        var run = new BlockStepRun(start.WorkflowId().Value, instance.Frame.State, open.Token.Value, step.Use, step.With, instance.Facts, _repo);
+        var run = new BlockStepRun(start.WorkflowId().Value, instance.Frame.State, open.Token.Value, step.Use, step.With, instance.Facts, _repo, _repoUnreadable);
+        var bound = Limit(recipe, step);
         return Workflow.ExecuteActivityAsync(
             (RunStepActivities a) => a.RunBlockStepAsync(run),
             new ActivityOptions
             {
                 ActivityId = string.Create(CultureInfo.InvariantCulture, $"block:{open.Token.Value}:{_runs}"),
                 TaskQueue = StepTaskQueue.For(state, Workflow.Info.TaskQueue),
-                StartToCloseTimeout = Limit(recipe, state, open, step),
+                StartToCloseTimeout = bound,
+                ScheduleToCloseTimeout = bound,   // queue time counts too, so a busy worker can't let the state timer win
                 HeartbeatTimeout = _blockHeartbeat,   // Temporal throttles a heartbeat to 80% of this (8 s), so a cancel or takeover reaches the Step within about that
                 RetryPolicy = new RetryPolicy { MaximumAttempts = 1 },   // a judge call is never retried: a second ask is a second decision (DT spec §8.2)
                 CancellationToken = token,
@@ -108,11 +110,11 @@ internal sealed partial class RecipeWorkflow
         return (instance, false);
     }
 
-    /// <summary>The activity's bound: the descriptor's 'maxDuration' (two minutes when it sets none), or the state's timeout when that is shorter (a recipe RCP-TIME-003 refuses, kept as a guard for one that predates the rule).</summary>
-    private TimeSpan Limit(InterpretedRecipe recipe, RecipeState state, OpenRun open, StepUse step)
+    /// <summary>The activity's bound (BlockLimits.Bound): the descriptor's 'maxDuration' (two minutes when it sets none), or less than the time left on the state timer, which a handback after a takeover resumes with only what was left.</summary>
+    private TimeSpan Limit(InterpretedRecipe recipe, StepUse step)
     {
         var max = recipe.Catalog.Find(step.Use) is { } descriptor ? BlockLimits.MaxDuration(descriptor) : BlockLimits.Fallback;
-        return StateTimers.Timeout(state, open, _deskTimeout) is { } timeout && timeout < max ? timeout : max;
+        return BlockLimits.Bound(max, _timers.FiresAt() is { } at ? at - Now : null);
     }
 
     /// <summary>The activity's result as the trigger the engine reports: a completed result, or step.failed for a failure, a timeout or an invalid result.</summary>
