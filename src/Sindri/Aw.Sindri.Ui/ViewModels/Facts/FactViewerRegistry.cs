@@ -11,7 +11,7 @@ internal sealed class FactViewerRegistry
 {
     private readonly Dictionary<FactType, Func<FactRow, FactViewerContext, IFactViewer>> _factories = [];
 
-    /// <summary>The registry with the five viewers U8 ships.</summary>
+    /// <summary>The registry with the five viewers U8 ships, and the scope-map viewer.</summary>
     /// <returns>A new registry.</returns>
     internal static FactViewerRegistry CreateDefault()
     {
@@ -21,6 +21,7 @@ internal sealed class FactViewerRegistry
         registry.Register(FactType.Item, (row, context) => new ItemFactViewer(row, context));
         registry.Register(FactType.Link, (row, context) => new LinkFactViewer(row, context.Launcher));
         registry.Register(FactType.Payload, (row, context) => new PayloadFactViewer(row, context));
+        registry.Register(FactType.ScopeMap, (row, context) => new ScopeMapViewer(row, context));
         return registry;
     }
 

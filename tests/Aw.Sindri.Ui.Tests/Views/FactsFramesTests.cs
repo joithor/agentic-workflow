@@ -53,6 +53,30 @@ public sealed class FactsFramesTests : FrameHost
     });
 
     [Fact]
+    public Task u13_frame_facts_scope_map_table() => OnUi(async () =>
+    {
+        var (window, shell) = await Opened("project-build");
+        var scope = shell.Instance.Facts!.Rows.Single(r => r.Key == "fact:scope");
+        Click(ViewButton(window, scope));
+        await Until(window, () => scope.Viewer is ScopeMapViewer { IsLoading: false } && Visible(window, "ScopeCounts"));
+
+        var viewer = (ScopeMapViewer)scope.Viewer!;
+        Assert.Equal(viewer.Counts, Named<TextBlock>(window, "ScopeCounts").Text);
+        var table = Named<StackPanel>(window, "ScopeTable");
+        var heard = Heard.Tree(table).Select(h => h.Name).ToList();
+        Assert.Contains(heard, h => string.Equals(h, viewer.Counts, StringComparison.Ordinal));
+        Assert.All(viewer.Surfaces, s => Assert.Contains(heard, h => string.Equals(h, s.Title, StringComparison.Ordinal)));
+        Assert.All(viewer.Surfaces, s => Assert.Contains(heard, h => string.Equals(h, s.Chip, StringComparison.Ordinal)));
+        Assert.False(Visible(window, "ScopeTree"));
+        Click(Named<Button>(window, "ScopeToggle"));
+        await Until(window, () => Visible(window, "ScopeTree"));
+        Assert.False(Visible(window, "ScopeCounts"));
+        Click(Named<Button>(window, "ScopeToggle"));
+        await Until(window, () => Visible(window, "ScopeCounts"));
+        Frame(window, "facts-scope-map");
+    });
+
+    [Fact]
     public Task Text_copy_feedback_is_a_polite_live_region() => OnUi(async () =>
     {
         var (window, shell) = await Opened("incident-loop");
