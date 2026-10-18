@@ -1,5 +1,5 @@
-using Aw.Kernel;
 using System.Text.Json.Nodes;
+using Aw.Kernel;
 using Aw.Sindri.Ui.Api.Context;
 
 namespace Aw.Sindri.Ui.Testing;
@@ -97,7 +97,7 @@ public abstract partial class SindriApiContract
         var wider = await api.Lenses(_api, new LensesQuery([.. known, "feature:tabs.nope"], Depth: null, Draft: false, MapVersion: null), Token);
 
         // Not 003 (the real server answers 200 with missingAnchors): the fake's "not served" answer, so a test relying on it fails loudly.
-        Expect.Equal((ErrorKind.NotFound, ErrorKind.NotFound), (other.Error.Kind, wider.Error.Kind));
+        Expect.Equal((ErrorKind.Unavailable, ErrorKind.Unavailable), (other.Error.Kind, wider.Error.Kind));   // an unserved route reads as unavailable
         Expect.True(other.Error.Code != "SND-CONTEXT-003" && wider.Error.Code != "SND-CONTEXT-003");
     }
 
