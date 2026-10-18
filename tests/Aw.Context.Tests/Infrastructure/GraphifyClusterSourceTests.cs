@@ -1,3 +1,4 @@
+using Aw.Context.Core.Engine;
 using Aw.Context.Infrastructure.Extract;
 using Aw.Context.Infrastructure.Git;
 
@@ -18,7 +19,7 @@ public sealed class GraphifyClusterSourceTests
         bounded.CancelAfter(limit);
         try
         {
-            return await source.Clusters(repo.Repo, repo.Head, bounded.Token);
+            return await source.Clusters(repo.Repo, repo.Head, ClusterLimits.Default, bounded.Token);
         }
         catch (OperationCanceledException e) when (!Ct.IsCancellationRequested)
         {
@@ -147,7 +148,7 @@ public sealed class GraphifyClusterSourceTests
         var snapshot = Directory.CreateTempSubdirectory("aw-unpack-").FullName;
         try
         {
-            var exported = await new GitCli().Archive(repo.Path, repo.Head, (stream, token) => GraphifyClusterSource.Unpack(stream, snapshot, repo.Repo, token), Ct);
+            var exported = await new GitCli().Archive(repo.Path, repo.Head, (stream, token) => GraphifySnapshot.Unpack(stream, snapshot, repo.Repo, new GraphifySnapshot.Tally(ClusterLimits.Default), token), Ct);
 
             Assert.False(exported.IsError);
             Assert.True(File.Exists(Path.Combine(snapshot, "src", "keys", "bindings.ts")), "a source file is unpacked");

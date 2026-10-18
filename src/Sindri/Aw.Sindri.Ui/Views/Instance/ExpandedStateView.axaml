@@ -50,7 +50,7 @@
               <Panel IsVisible="{Binding Protected, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="0,0,8,0">
                 <comp:ProtectedActionButton DataContext="{Binding Protected}" />
               </Panel>
-              <TextBlock Name="CommandCli" Classes="caption mono" Text="{Binding Cli}" IsVisible="{Binding ShowsCli}" VerticalAlignment="Center" Margin="0,0,8,0"
+              <TextBlock Name="CommandCli" Classes="caption mono" Text="{Binding Cli}" IsVisible="{Binding ShowsCli}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,8,0"
                          AutomationProperties.Name="{Binding Cli}" />
               <Button Name="CommandCopy" Classes="copy" Content="{Binding CliCopy.Label}" IsVisible="{Binding ShowsCli}" Click="OnCopyCommand" Margin="0,0,8,0"
                       AutomationProperties.Name="{Binding CopyName}" />

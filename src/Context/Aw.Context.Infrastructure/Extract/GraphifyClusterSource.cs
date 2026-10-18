@@ -1,6 +1,4 @@
-using System.Diagnostics;
-using System.Formats.Tar;
-using System.Text;
+using System.Globalization;
 using System.Text.RegularExpressions;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Extract;
@@ -12,46 +10,49 @@ namespace Aw.Context.Infrastructure.Extract;
 /// <summary>
 /// Clusters a repo's code with graphify, pinned and sandboxed (network denied, writes confined to a private snapshot of
 /// the commit). Absent, wrong version, no sandbox or a failed run is an unavailable, empty set, never an error: the build
-/// goes on with deterministic anchors and says 'degraded: clusters'. graphify never runs unsandboxed.
+/// goes on with deterministic anchors and says 'degraded: clusters' with the reason (timed out, snapshot truncated, graph too large, graphify not found, no sandbox). graphify never runs unsandboxed.
 /// </summary>
 /// <param name="git">Exports the commit.</param>
-/// <param name="options">The pin and limits.</param>
+/// <param name="options">The pin and binary.</param>
 internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions options) : IClusterSource
 {
     /// <summary>graphify's private temp and cache folder inside the snapshot (the only writable path); a repo's tracked files never land under it.</summary>
     internal const string PrivateFolder = ".sindri-tmp";
 
-    private const long MaxFileBytes = 2L * 1024 * 1024;
-    private const long MaxTotalBytes = 256L * 1024 * 1024;
-    private static readonly ClusterSet _unavailable = new([], Available: false);
+    private static readonly ClusterSet _none = new([], Available: false);
 
-    public async ValueTask<Result<ClusterSet>> Clusters(ContextRepo repo, string commit, CancellationToken cancellationToken)
+    public async ValueTask<Result<ClusterSet>> Clusters(ContextRepo repo, string commit, ClusterLimits limits, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(repo);
+        ArgumentNullException.ThrowIfNull(limits);
         try
         {
-            return await Cluster(repo, commit, cancellationToken).ConfigureAwait(false);
+            return await Cluster(repo, commit, limits, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return _unavailable;   // a temp folder that can't be made, a disk that fills: the build goes on, degraded: clusters
+            return Unavailable("an I/O error while preparing or reading the snapshot");   // a temp folder that can't be made, a disk that fills: the build goes on, degraded: clusters
         }
     }
 
-    private async ValueTask<Result<ClusterSet>> Cluster(ContextRepo repo, string commit, CancellationToken cancellationToken)
+    private static ClusterSet Unavailable(string reason) => _none with { Reason = reason };
+
+    private async ValueTask<Result<ClusterSet>> Cluster(ContextRepo repo, string commit, ClusterLimits limits, CancellationToken cancellationToken)
     {
         var host = SandboxHost.Current();
-        var (binary, reason) = await Check(host, cancellationToken).ConfigureAwait(false);
-        if (binary is null || reason is not null)
+        var (binary, problem) = await Check(host, cancellationToken).ConfigureAwait(false);
+        if (binary is null || problem is not null)
         {
-            return _unavailable;
+            return Unavailable(problem?.Short ?? "graphify not found");
         }
 
         var snapshot = Directory.CreateTempSubdirectory("aw-graphify-").FullName;
         try
         {
-            var exported = await git.Archive(repo.Path, commit, (stream, token) => Unpack(stream, snapshot, repo, token), cancellationToken).ConfigureAwait(false);
-            return exported.IsError ? _unavailable : await Run(host, binary, snapshot, cancellationToken).ConfigureAwait(false);
+            var tally = new GraphifySnapshot.Tally(limits);
+            var exported = await git.Archive(repo.Path, commit, (stream, token) => GraphifySnapshot.Unpack(stream, snapshot, repo, tally, token), cancellationToken).ConfigureAwait(false);
+            var set = exported.IsError ? Unavailable("the commit could not be exported from git") : await Run(host, binary, snapshot, limits, cancellationToken).ConfigureAwait(false);
+            return Truncated(set, tally, limits);
         }
         finally
         {
@@ -59,7 +60,26 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
         }
     }
 
-    private async ValueTask<Result<ClusterSet>> Run(SandboxHost host, string binary, string snapshot, CancellationToken cancellationToken)
+    // What the snapshot caps left out is part of the reason, so a build that clusters a partial repo says so.
+    private static ClusterSet Truncated(ClusterSet set, GraphifySnapshot.Tally tally, ClusterLimits limits)
+    {
+        var notes = new List<string>();
+        if (tally.OverSnapshot > 0)
+        {
+            notes.Add(string.Create(CultureInfo.InvariantCulture, $"snapshot truncated at {limits.MaxSnapshotMB} MB ({Files(tally.OverSnapshot)} skipped)"));
+        }
+
+        if (tally.OverFile > 0)
+        {
+            notes.Add(string.Create(CultureInfo.InvariantCulture, $"{Files(tally.OverFile)} over {limits.MaxFileMB} MB left out"));
+        }
+
+        return notes.Count == 0 ? set : set with { Reason = string.Join("; ", set.Reason is null ? notes : [set.Reason, .. notes]) };
+    }
+
+    private static string Files(int count) => count == 1 ? "1 file" : string.Create(CultureInfo.InvariantCulture, $"{count} files");
+
+    private async ValueTask<ClusterSet> Run(SandboxHost host, string binary, string snapshot, ClusterLimits limits, CancellationToken cancellationToken)
     {
         var real = host.RealPath(snapshot);
         var priv = PrivateDirectory(real);
@@ -67,18 +87,31 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
         var argv = options.Sandbox(host, [binary, "extract", real, "--code-only", "--no-viz"], [real]);
         if (argv is null)
         {
-            return _unavailable;
+            return Unavailable("no sandbox");
         }
 
-        var env = PrivateEnvironment(priv);
-        var ran = await Spawn(argv, env, real, options.Timeout, cancellationToken).ConfigureAwait(false);
-        if (ran is not { Exit: 0 } || ReadGraph(real) is not { } json)
+        var ran = await GraphifyProcess.Spawn(argv, PrivateEnvironment(priv), real, limits.TimeoutMinutes == 0 ? null : limits.TimeoutMinutes * options.MinuteLength, cancellationToken).ConfigureAwait(false);
+        if (ran is not { TimedOut: false, Exit: 0 })
         {
-            return _unavailable;
+            return Unavailable(ran switch
+            {
+                null => "graphify did not start",
+                { TimedOut: true } => string.Create(CultureInfo.InvariantCulture, $"timed out after {limits.TimeoutMinutes} min"),
+                _ => string.Create(CultureInfo.InvariantCulture, $"graphify exited with code {ran.Exit}"),
+            });
         }
 
-        var clusters = GraphifyGraph.Clusters(json, [snapshot, real]);
-        return clusters.IsError ? _unavailable : new ClusterSet(clusters.Value, Available: true);
+        var (graph, why) = OpenGraph(real, limits);
+        if (graph is null)
+        {
+            return Unavailable(why!);   // why: OpenGraph gives a reason whenever it gives no stream
+        }
+
+        await using (graph.ConfigureAwait(false))
+        {
+            var clusters = GraphifyGraph.Clusters(graph, [snapshot, real]);
+            return clusters.IsError ? Unavailable("graph.json could not be read") : new ClusterSet(clusters.Value, Available: true);
+        }
     }
 
     // graphify's private folder, made inside the snapshot (the only path it may write) and readable by this user alone. CreateTempSubdirectory only takes a name prefix and always lands in the system temp folder.
@@ -94,14 +127,14 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
     /// <summary>Null when this machine can run the pinned graphify under the sandbox; else why it can't (no sandbox, no binary, a sandbox that won't start, the wrong version). The same check, sandbox argv, timeout and kill the build uses.</summary>
     /// <param name="cancellationToken">Stops the probe.</param>
     internal async ValueTask<string?> WhyUnavailable(CancellationToken cancellationToken) =>
-        (await Check(SandboxHost.Current(), cancellationToken).ConfigureAwait(false)).Reason;
+        (await Check(SandboxHost.Current(), cancellationToken).ConfigureAwait(false)).Problem?.Why;
 
-    // The binary's path (null when absent) and the reason it can't be used (null when usable): --version run inside the sandbox must print the pin.
-    private async ValueTask<(string? Binary, string? Reason)> Check(SandboxHost host, CancellationToken cancellationToken)
+    // The binary's path (null when absent) and the problem that keeps it from being used (null when usable): --version run inside the sandbox must print the pin.
+    private async ValueTask<(string? Binary, Unusable? Problem)> Check(SandboxHost host, CancellationToken cancellationToken)
     {
         if (Find(options.Binary) is not { } binary)
         {
-            return (null, $"no {options.Binary} binary found");
+            return (null, new Unusable($"no {options.Binary} binary found", "graphify not found"));
         }
 
         var scratch = Directory.CreateTempSubdirectory("aw-graphify-probe-").FullName;
@@ -110,18 +143,18 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
             var argv = options.Sandbox(host, [binary, "--version"], []);
             if (argv is null)
             {
-                return (binary, "no sandbox available on this machine");
+                return (binary, new Unusable("no sandbox available on this machine", "no sandbox"));
             }
 
-            var ran = await Spawn(argv, PrivateEnvironment(scratch), scratch, TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false);
+            var ran = await GraphifyProcess.Spawn(argv, PrivateEnvironment(scratch), scratch, TimeSpan.FromSeconds(30), cancellationToken).ConfigureAwait(false);
             if (ran is not { Exit: 0 })
             {
-                return (binary, "the sandboxed graphify --version did not start, failed or timed out");
+                return (binary, new Unusable("the sandboxed graphify --version did not start, failed or timed out", "graphify did not start under the sandbox"));
             }
 
             return Version.Match(ran.Stdout) is { Success: true } found && string.Equals(found.Value, options.Pin, StringComparison.Ordinal)
                 ? (binary, null)
-                : (binary, $"graphify is not the pin {options.Pin}");
+                : (binary, new Unusable($"graphify is not the pin {options.Pin}", $"graphify is not the pin {options.Pin}"));
         }
         finally
         {
@@ -152,123 +185,25 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
             .Select(dir => Path.Combine(dir, binary)).FirstOrDefault(File.Exists);
     }
 
-    // graph.json is the sandboxed tool's output and is read unsandboxed: never through a link, only a regular file, never over the cap.
-    private string? ReadGraph(string snapshot)
+    // graph.json is the sandboxed tool's output and is read unsandboxed: never through a link, only a regular file, never over the cap. Opened for streaming (no whole-file string), or why not.
+    private static (Stream? Graph, string? Why) OpenGraph(string snapshot, ClusterLimits limits)
     {
         try
         {
             var folder = new DirectoryInfo(Path.Combine(snapshot, "graphify-out"));
             var file = new FileInfo(Path.Combine(folder.FullName, "graph.json"));
-            return folder.Exists && folder.LinkTarget is null && file.Exists && file.LinkTarget is null && file.Length <= options.MaxGraphBytes
-                ? File.ReadAllText(file.FullName, Encoding.UTF8)
-                : null;
+            if (!folder.Exists || folder.LinkTarget is not null || !file.Exists || file.LinkTarget is not null)
+            {
+                return (null, "graphify wrote no graph.json");
+            }
+
+            return limits.MaxGraphBytes is { } cap && file.Length > cap
+                ? (null, string.Create(CultureInfo.InvariantCulture, $"graph.json over {limits.MaxGraphMB} MB"))
+                : (new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read), null);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            return null;
-        }
-    }
-
-    // Writes the tar's regular files under the snapshot: no link, no path that climbs out, nothing in graphify's own folders, no oversized file, and no path the repo denies (secrets never reach graphify).
-    internal static async Task Unpack(Stream tar, string snapshot, ContextRepo repo, CancellationToken cancellationToken)
-    {
-        long total = 0;
-        var reader = new TarReader(tar, leaveOpen: true);
-        await using (reader.ConfigureAwait(false))
-        {
-            while (await reader.GetNextEntryAsync(copyData: false, cancellationToken).ConfigureAwait(false) is { } entry)
-            {
-                if (SafePath(entry) is not { } relative || repo.Denies(relative) || entry.DataStream is null || entry.Length > MaxFileBytes || (total += entry.Length) > MaxTotalBytes)
-                {
-                    continue;
-                }
-
-                var target = Path.Combine(snapshot, relative);
-                _ = Directory.CreateDirectory(Path.GetDirectoryName(target)!);   // why: target is a file path under the snapshot
-                var file = new FileStream(target, FileMode.CreateNew, FileAccess.Write, FileShare.None);
-                await using (file.ConfigureAwait(false))
-                {
-                    await entry.DataStream.CopyToAsync(file, cancellationToken).ConfigureAwait(false);
-                }
-            }
-        }
-    }
-
-    // The entry's path when it is a regular file that stays inside the snapshot and outside graphify's own folders; else null.
-    private static string? SafePath(TarEntry entry)
-    {
-        var segments = entry.Name.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        return entry.EntryType != TarEntryType.RegularFile || segments.Length == 0 || segments.Contains("..") || segments.Contains(".")
-            || segments[0].StartsWith("graphify-out", StringComparison.Ordinal) || segments[0].StartsWith(PrivateFolder, StringComparison.Ordinal)
-            ? null
-            : string.Join('/', segments);
-    }
-
-    // Runs argv with exactly this environment; null when it can't start or doesn't finish in time. Output is drained and capped, never logged.
-    private static async Task<Ran?> Spawn(IReadOnlyList<string> argv, Dictionary<string, string> environment, string directory, TimeSpan limit, CancellationToken cancellationToken)
-    {
-        var start = StartInfo(argv, environment, directory);
-        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        timeout.CancelAfter(limit);
-        Process? process = null;
-        try
-        {
-            process = Process.Start(start) ?? throw new InvalidOperationException("the process didn't start");
-            var stdout = process.StandardOutput.ReadToEndAsync(timeout.Token);
-            var stderr = process.StandardError.ReadToEndAsync(timeout.Token);
-            await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
-            _ = await stderr.ConfigureAwait(false);
-            return new Ran(process.ExitCode, await stdout.ConfigureAwait(false));
-        }
-        catch (OperationCanceledException)
-        {
-            Kill(process);
-            if (cancellationToken.IsCancellationRequested)
-            {
-                throw;
-            }
-
-            return null;
-        }
-        catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception)
-        {
-            return null;
-        }
-        finally
-        {
-            process?.Dispose();
-        }
-    }
-
-    private static ProcessStartInfo StartInfo(IReadOnlyList<string> argv, Dictionary<string, string> environment, string directory)
-    {
-        var start = new ProcessStartInfo(argv[0]) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false, WorkingDirectory = directory };
-        start.Environment.Clear();
-        foreach (var (name, value) in environment)
-        {
-            start.Environment[name] = value;
-        }
-
-        foreach (var arg in argv.Skip(1))
-        {
-            start.ArgumentList.Add(arg);
-        }
-
-        return start;
-    }
-
-    private static void Kill(Process? process)
-    {
-        try
-        {
-            if (process is { HasExited: false })
-            {
-                process.Kill(entireProcessTree: true);
-            }
-        }
-        catch (Exception e) when (e is InvalidOperationException or System.ComponentModel.Win32Exception)
-        {
-            // it exited between the check and the kill
+            return (null, "graph.json could not be read");
         }
     }
 
@@ -287,5 +222,5 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
     [GeneratedRegex("[0-9]+\\.[0-9]+\\.[0-9]+", RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Version { get; }
 
-    private sealed record Ran(int Exit, string Stdout);
+    private sealed record Unusable(string Why, string Short);
 }
