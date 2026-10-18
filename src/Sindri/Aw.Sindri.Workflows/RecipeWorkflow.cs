@@ -47,6 +47,7 @@ internal sealed partial class RecipeWorkflow
     private DateTimeOffset _since;
     private TimeSpan _deskTimeout;
     private string? _repo;
+    private bool _repoUnreadable;   // fact:item was there but couldn't be read: a block Step that needs the repo fails instead of using the box's list
     private SubjectRef? _subject;
     private IReadOnlyDictionary<FactKey, string>? _contents;
     private string? _recorded;
@@ -113,7 +114,7 @@ internal sealed partial class RecipeWorkflow
 
         var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, runtimes, NoChildRecipes.Instance) { DeskTimeout = loaded.DeskTimeout };
         _context = new Interpreting(loaded.Recipe, decisions);
-        _repo = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : null;
+        (_repo, _repoUnreadable) = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : (null, false);
         (_subject, _contents) = await NamedSubject(_recipe, start).ConfigureAwait(true);
         var change = Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions));
         var instance = Enter(change.After, Desk);
