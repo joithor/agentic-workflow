@@ -56,6 +56,7 @@ not in the profile: they live in `launcher.json` (`docs/csharp/sindri-launcher.m
 | `dispatchDelay` | duration (`5s` to `24h`, unit `s`, `m` or `h`) | no | `10s` | The undo window before each effect's activity runs (§5.7); the dev profile sets `60s` |
 | `judge` | object (`providers`) | no | none | Which providers a Judge Step (`step.judge.choose`) may ask (DT-J plan Q8). `judge.providers` is a list of `jev`, `claude-cli`, `codex-cli`, `cursor-cli`, `rules`; absent: `claude-cli`, `codex-cli`, `cursor-cli`, `rules`. `jev` runs only when listed, so it is opt-in. `rules` is always kept, last. A recipe's own `providers` list only narrows this one and never adds `jev`. A name that is not one of the five is refused before approval (`workflow.judge.providers[i]`). A repo may set its own list under `repos[].workflow.judge.providers`; it wins over the box's |
 | `forge` | object | no | none | The forge port's settings: `adapter`, `hosts` and `credential` (see `workflow.forge` below) |
+| `route` | object (`startable`) | no | none | The router stub's setting (engine P7 plan D8; see `workflow.route` below) |
 
 ### `repos[].workflow`
 
@@ -72,6 +73,14 @@ The forge port's settings (PR babysitter spec W27, §10.2; `docs/csharp/forge.md
 | `adapter` | `github` or `file` | no | none | Which forge adapter the services and effects use; `file` is the file-backed forge tests and proofs use |
 | `hosts` | string[] (host names) | no | none | The forge hosts a link or request may name, such as `github.com`; a host outside the list is refused (`AW-FORGE-002`) before anything is sent |
 | `credential` | `env:NAME` or `command:<argv>` | no | `env:AW_FORGE_TOKEN` | A variable that holds a long-lived token, or a program run per call that prints a token (or JSON with `token` and `expiresAt`); cached until five minutes before the expiry, re-run once after a 401 |
+
+### `workflow.route`
+
+What the router stub does with an item it routes (workflow engine spec §12). Real routing replaces it; `gate.route.startable` reads this key.
+
+| Key | Type | Required | Default | Meaning |
+|---|---|---|---|---|
+| `startable` | `all` or `none` | no | `all` | `all` lets every routed item start; `none` stops them at the router (the gate fails and the item parks). Any other value is refused before approval (`workflow.route.startable`) |
 
 ### `index`
 

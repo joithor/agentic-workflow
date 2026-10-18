@@ -22,6 +22,15 @@ public sealed class InMemoryClaimRefs : IClaimRefs
     }
 
     /// <inheritdoc/>
+    public ValueTask<Result<bool>> Unmark(string repository, string reference, CancellationToken cancellationToken)
+    {
+        lock (_gate)
+        {
+            return ValueTask.FromResult<Result<bool>>(_marked.Remove((repository, reference)));
+        }
+    }
+
+    /// <inheritdoc/>
     public ValueTask<Result<bool>> Mark(string repository, string reference, CancellationToken cancellationToken)
     {
         lock (_gate)

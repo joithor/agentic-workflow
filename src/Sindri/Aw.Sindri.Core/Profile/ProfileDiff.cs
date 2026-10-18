@@ -124,8 +124,11 @@ public static class ProfileDiff
             ("workflow.dispatchDelay", workflow?.DispatchDelay),
             ("workflow.judge.providers", workflow?.Judge?.Providers is { } providers ? string.Join(", ", providers) : null),
         ];
-        return keys.Concat(Forge(workflow?.Forge)).Where(static k => k.Value is not null).Select(static k => (k.Key, k.Value!));   // why: the nulls are filtered out just before
+        return keys.Concat(Nested(workflow)).Where(static k => k.Value is not null).Select(static k => (k.Key, k.Value!));   // why: the nulls are filtered out just before
     }
+
+    private static IEnumerable<(string Key, string? Value)> Nested(WorkflowSettings? workflow) =>
+        Forge(workflow?.Forge).Concat([("workflow.route.startable", workflow?.Route?.Startable)]);
 
     private static (string Key, string? Value)[] Forge(ForgeSettings? forge) =>
     [

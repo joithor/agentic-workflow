@@ -72,9 +72,9 @@ Optional, additive, in schema 1 (`schemas/launcher.schema.json`, `$defs.sessions
 The bash reader (`scripts/launcher-lib.sh`) refuses unknown keys, so CO-0 adds `sessions` to `x-aw-keys.root` and the
 reader accepts the key and ignores its content. An `aw-meta-launch` installed before this change refuses a file that
 has the key until `scripts/install-meta.sh` reinstalls it. The environment variables the collector will read
-(`AW_FLEET_DIR`, `AW_FLEET_DISABLE`, `AW_SESSIONS_PROC_ROOT`, `AW_SESSIONS_CLAUDE_DIR`) are not in `.env.example` yet: each
-lands with the phase whose code first reads it (CO-1, CO-2a), because `scripts/check-env-example.sh` fails an entry
-nothing reads.
+(`AW_FLEET_DIR`, `AW_FLEET_DISABLE`, `AW_SESSIONS_PROC_ROOT`, `AW_SESSIONS_CLAUDE_DIR`) are in `.env.example`: each
+landed with the phase whose code first reads it (CO-1 for `AW_FLEET_DISABLE`, CO-2a for the rest), because
+`scripts/check-env-example.sh` fails an entry nothing reads.
 
 ## Terminals' process names
 
@@ -86,7 +86,7 @@ fails a row without them.
 ## Dependency edge
 
 `deps.yaml`: Sindri owns `fleet/` as a state-root path (`files`), and a Hooks to Sindri `file` edge records the hook's
-writes. The edge is `planned` here and CO-1 flips it to `current` when `config/hooks/fleet-state.sh` exists, because
+writes. The edge is `current` since CO-1 added `config/hooks/fleet-state.sh`, because
 `check-deps` fails a current edge the source lacks (DEPS-STALE-001) and a planned one it finds (DEPS-STALE-002).
 `~/.claude/sessions` and the provider folders are outside the state root, so they are not edges.
 
