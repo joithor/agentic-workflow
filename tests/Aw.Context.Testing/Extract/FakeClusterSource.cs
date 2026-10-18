@@ -17,10 +17,10 @@ public sealed class FakeClusterSource : IClusterSource
     public IList<string> Asked { get; } = [];
 
     /// <summary>The limits each call was given, in order.</summary>
-    public IList<GraphifyLimits> AskedLimits { get; } = [];
+    public IList<ClusterLimits> AskedLimits { get; } = [];
 
     /// <inheritdoc/>
-    public ValueTask<Result<ClusterSet>> Clusters(ContextRepo repo, string commit, GraphifyLimits limits, CancellationToken cancellationToken)
+    public ValueTask<Result<ClusterSet>> Clusters(ContextRepo repo, string commit, ClusterLimits limits, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(repo);
         ArgumentNullException.ThrowIfNull(limits);

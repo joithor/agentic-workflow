@@ -12,10 +12,10 @@ internal static class GraphifySnapshot
 {
     /// <summary>What <see cref="Unpack"/> left out because of a cap.</summary>
     /// <param name="limits">The per-file and snapshot caps.</param>
-    internal sealed class Tally(GraphifyLimits limits)
+    internal sealed class Tally(ClusterLimits limits)
     {
         /// <summary>The per-file and snapshot caps.</summary>
-        public GraphifyLimits Limits { get; } = limits;
+        public ClusterLimits Limits { get; } = limits;
 
         /// <summary>Files left out because the snapshot cap was reached.</summary>
         public int OverSnapshot { get; set; }

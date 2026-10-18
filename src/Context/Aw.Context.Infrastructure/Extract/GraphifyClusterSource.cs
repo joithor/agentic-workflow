@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Extract;
@@ -22,7 +21,7 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
 
     private static readonly ClusterSet _none = new([], Available: false);
 
-    public async ValueTask<Result<ClusterSet>> Clusters(ContextRepo repo, string commit, GraphifyLimits limits, CancellationToken cancellationToken)
+    public async ValueTask<Result<ClusterSet>> Clusters(ContextRepo repo, string commit, ClusterLimits limits, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(repo);
         ArgumentNullException.ThrowIfNull(limits);
@@ -38,7 +37,7 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
 
     private static ClusterSet Unavailable(string reason) => _none with { Reason = reason };
 
-    private async ValueTask<Result<ClusterSet>> Cluster(ContextRepo repo, string commit, GraphifyLimits limits, CancellationToken cancellationToken)
+    private async ValueTask<Result<ClusterSet>> Cluster(ContextRepo repo, string commit, ClusterLimits limits, CancellationToken cancellationToken)
     {
         var host = SandboxHost.Current();
         var (binary, problem) = await Check(host, cancellationToken).ConfigureAwait(false);
@@ -62,23 +61,25 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
     }
 
     // What the snapshot caps left out is part of the reason, so a build that clusters a partial repo says so.
-    private static ClusterSet Truncated(ClusterSet set, GraphifySnapshot.Tally tally, GraphifyLimits limits)
+    private static ClusterSet Truncated(ClusterSet set, GraphifySnapshot.Tally tally, ClusterLimits limits)
     {
         var notes = new List<string>();
         if (tally.OverSnapshot > 0)
         {
-            notes.Add(string.Create(CultureInfo.InvariantCulture, $"snapshot truncated at {limits.MaxSnapshotMB} MB ({tally.OverSnapshot} files skipped)"));
+            notes.Add(string.Create(CultureInfo.InvariantCulture, $"snapshot truncated at {limits.MaxSnapshotMB} MB ({Files(tally.OverSnapshot)} skipped)"));
         }
 
         if (tally.OverFile > 0)
         {
-            notes.Add(string.Create(CultureInfo.InvariantCulture, $"{tally.OverFile} files over {limits.MaxFileMB} MB left out"));
+            notes.Add(string.Create(CultureInfo.InvariantCulture, $"{Files(tally.OverFile)} over {limits.MaxFileMB} MB left out"));
         }
 
         return notes.Count == 0 ? set : set with { Reason = string.Join("; ", set.Reason is null ? notes : [set.Reason, .. notes]) };
     }
 
-    private async ValueTask<ClusterSet> Run(SandboxHost host, string binary, string snapshot, GraphifyLimits limits, CancellationToken cancellationToken)
+    private static string Files(int count) => count == 1 ? "1 file" : string.Create(CultureInfo.InvariantCulture, $"{count} files");
+
+    private async ValueTask<ClusterSet> Run(SandboxHost host, string binary, string snapshot, ClusterLimits limits, CancellationToken cancellationToken)
     {
         var real = host.RealPath(snapshot);
         var priv = PrivateDirectory(real);
@@ -89,7 +90,7 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
             return Unavailable("no sandbox");
         }
 
-        var ran = await GraphifyProcess.Spawn(argv, PrivateEnvironment(priv), real, limits.Timeout, cancellationToken).ConfigureAwait(false);
+        var ran = await GraphifyProcess.Spawn(argv, PrivateEnvironment(priv), real, limits.TimeoutMinutes == 0 ? null : limits.TimeoutMinutes * options.MinuteLength, cancellationToken).ConfigureAwait(false);
         if (ran is not { TimedOut: false, Exit: 0 })
         {
             return Unavailable(ran switch
@@ -100,14 +101,17 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
             });
         }
 
-        var (json, why) = ReadGraph(real, limits);
-        if (json is null)
+        var (graph, why) = OpenGraph(real, limits);
+        if (graph is null)
         {
-            return Unavailable(why!);   // why: ReadGraph gives a reason whenever it gives no text
+            return Unavailable(why!);   // why: OpenGraph gives a reason whenever it gives no stream
         }
 
-        var clusters = GraphifyGraph.Clusters(json, [snapshot, real]);
-        return clusters.IsError ? Unavailable("graph.json could not be read") : new ClusterSet(clusters.Value, Available: true);
+        await using (graph.ConfigureAwait(false))
+        {
+            var clusters = GraphifyGraph.Clusters(graph, [snapshot, real]);
+            return clusters.IsError ? Unavailable("graph.json could not be read") : new ClusterSet(clusters.Value, Available: true);
+        }
     }
 
     // graphify's private folder, made inside the snapshot (the only path it may write) and readable by this user alone. CreateTempSubdirectory only takes a name prefix and always lands in the system temp folder.
@@ -181,8 +185,8 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
             .Select(dir => Path.Combine(dir, binary)).FirstOrDefault(File.Exists);
     }
 
-    // graph.json is the sandboxed tool's output and is read unsandboxed: never through a link, only a regular file, never over the cap. The text, or why not.
-    private static (string? Json, string? Why) ReadGraph(string snapshot, GraphifyLimits limits)
+    // graph.json is the sandboxed tool's output and is read unsandboxed: never through a link, only a regular file, never over the cap. Opened for streaming (no whole-file string), or why not.
+    private static (Stream? Graph, string? Why) OpenGraph(string snapshot, ClusterLimits limits)
     {
         try
         {
@@ -195,7 +199,7 @@ internal sealed partial class GraphifyClusterSource(GitCli git, GraphifyOptions 
 
             return limits.MaxGraphBytes is { } cap && file.Length > cap
                 ? (null, string.Create(CultureInfo.InvariantCulture, $"graph.json over {limits.MaxGraphMB} MB"))
-                : (File.ReadAllText(file.FullName, Encoding.UTF8), null);
+                : (new FileStream(file.FullName, FileMode.Open, FileAccess.Read, FileShare.Read), null);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

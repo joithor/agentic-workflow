@@ -548,7 +548,7 @@ repos:
   - { name: work-app, path: /path/to/work-app, index: { denyPaths: ["private/**"] } }   # this repo's own, added to the above
 context:
   labeling: { enabled: false, maxTokens: 400000, maxTokensPerSync: 50000 }  # name clusters with a model; over the cap is SND-CONTEXT-042; maxTokensPerSync caps decision extraction in one sync (the rest stays queued); a record whose extraction prompt alone is over it can never be extracted, so it is skipped: counted in `refused`, no decisions, not queued (raise the cap to extract it; it is retried when its version changes)
-  extract: { graphify: { timeoutMinutes: 60, maxSnapshotMB: 2048, maxFileMB: 16, maxGraphMB: 1024 } }   # the cluster pass's limits (these are the defaults; 0 is no limit); the surface recognizers are context.extract.recognizers
+  extract: { graphify: { timeoutMinutes: 60, maxSnapshotMB: 2048, maxFileMB: 16, maxGraphMB: 256 } }   # the cluster pass's limits (these are the defaults; 0 is no limit); the surface recognizers are context.extract.recognizers
 services:
   context-rebuild: { every: 24h }                  # proposes the map on a cadence; runs only when named here
 ```
@@ -559,13 +559,14 @@ services:
 - Labeling is off by default. When on, it runs through your own agent CLIs (Claude Code, Codex or Cursor, in that order), which send the scrubbed file paths to their provider, as any session does; it never uses Judge's remote API. It asks the CLI to name each cluster from its file paths, scrubbed (with your `context.scrub.extraPatterns` too), in batches of twenty, inside `maxTokens`. If no CLI
   answers, the build goes on with unnamed clusters and reports `degraded: labels`.
 - Clusters need graphify (pinned) under a working sandbox: `bwrap` on Linux, `sandbox-exec` on macOS. Without either,
-  the build still proposes the deterministic anchors and reports `degraded: clusters`; it is not an error. On Linux
+  the build still proposes the deterministic anchors and reports `degraded: clusters: <reason>` (`clusters: no sandbox`, `clusters: graphify not found`, and the other reasons under "Building a draft"); it is not an error. On Linux
   with an AppArmor profile that blocks unprivileged user namespaces, `bwrap` fails and so do clusters until the
   system allows them (`scripts/install-deps.sh` probes it and prints the fix).
 - `context.extract.graphify` bounds the cluster pass; every key is a whole number, and `0` means no limit. `timeoutMinutes` (default 60) kills
   graphify after that long; `maxSnapshotMB` (default 2048) caps the files copied into the private snapshot graphify reads, counting only the
-  bytes actually copied (a file left out takes no room); `maxFileMB` (default 16) leaves out any single larger file; `maxGraphMB` (default 1024)
-  caps the `graph.json` read back. A negative, fractional or absurd value (over 10,000,000) is `SND-CONTEXT-133` at `profile validate`, naming
+  bytes actually copied (a file left out takes no room); `maxFileMB` (default 16) leaves out any single larger file; `maxGraphMB` (default 256)
+  caps the `graph.json` read back (it is parsed from a stream, but the parsed graph is held in memory, so `0` risks running out of memory on a huge
+  graph). A negative or fractional value, a `timeoutMinutes` over 70,000 (about 48 days, what a timer accepts) or a size over 10,000,000 is `SND-CONTEXT-133` at `profile validate`, naming
   the key path (`context.extract.graphify.maxFileMB: is a whole number of megabytes, 0 or more (0 is no limit)`). Raise a limit for a very
   large repo, lower it to bound a slow machine.
 
@@ -596,9 +597,10 @@ When it ends, the CLI prints `draft N for <repo> · M proposed` and one `degrade
 | `clusters: graphify is not the pin <version>` | Another graphify version is installed |
 | `clusters: timed out after N min` | The run passed `timeoutMinutes` and was killed |
 | `clusters: graph.json over N MB` | The graph it wrote passed `maxGraphMB` and was not read |
-| `clusters: snapshot truncated at N MB (K files skipped)` | The snapshot hit `maxSnapshotMB`; graphify clustered what was copied (clusters are still used) |
-| `clusters: K files over N MB left out` | `K` files passed `maxFileMB` and were not copied; the rest clustered |
+| `clusters: snapshot truncated at N MB (K files skipped)` (`1 file` for one) | The snapshot hit `maxSnapshotMB`; graphify clustered what was copied (clusters are still used) |
+| `clusters: K files over N MB left out` (`1 file` for one) | `K` files passed `maxFileMB` and were not copied; the rest clustered |
 | `clusters: graphify exited with code N`, `graphify wrote no graph.json`, `graph.json could not be read` | graphify ran and failed or wrote nothing usable |
+| `clusters: the commit could not be exported from git`, `an I/O error while preparing or reading the snapshot` | The snapshot could not be made |
 
 Reasons that apply together are joined with `; `. `labels` and `recognizers` are the other degraded parts, without a reason.
 
@@ -717,7 +719,7 @@ the store, a usage error · `75` the heavy-job lock stayed busy (`040`).
 | `SND-CONTEXT-056` | That source's sync is already running (for example the `context-sync` service holds it): the source's own row in the job's result carries this code and the other sources go on. It is an in-run row, not a start-time refusal: a second job start answers `SND-JOB-409` | Wait; `context sources status` shows it |
 | `SND-CONTEXT-057` | A model answer the engine refused (quote not verbatim, target outside the record's links, malformed), or a record skipped because its extraction prompt alone is over `maxTokensPerSync` (no decisions, not queued; the same when its conflict checks can't fit even one pair under the cap as the run's first call: the pairs are refused, and not retried on a version change unless the decision's quote changes); counted in `refused`, never fails the sync. A conflict verdict that can't be read keeps the pair pending (the record stays queued) and is asked at most 3 times, then the pair is marked refused | None for answers (persistent counts mean prompt drift); for a skipped record raise `maxTokensPerSync`: a record skipped for its prompt is retried when its version changes, but refused conflict pairs are not (unless the quote changes), so raise the cap before the give-up happens |
 | `SND-CONTEXT-058` | `sources sync <source>` names a source that isn't configured or has nothing to sync (404) | `context sources status` for the names |
-| `SND-CONTEXT-133` | A `context.extract.graphify` limit (`timeoutMinutes`, `maxSnapshotMB`, `maxFileMB`, `maxGraphMB`) is negative, fractional or over 10,000,000 (`profile validate`, exit 2; the message names the key path) | Write a whole number, or `0` for no limit |
+| `SND-CONTEXT-133` | A `context.extract.graphify` limit (`timeoutMinutes`, `maxSnapshotMB`, `maxFileMB`, `maxGraphMB`) is negative, fractional, over 10,000,000 or, for `timeoutMinutes`, over 70,000 (`profile validate`, exit 2; the message names the key path) | Write a whole number, or `0` for no limit |
 | `SND-CONTEXT-059` | A sync stopped at its time cap: partial, it resumes from its cursor (`sources status` shows `059`, the source stays `ok` or `degraded`, exit 0). Every run completes at least one record, so a slow source still finishes across runs. A model or store failure in the same run shows instead of `059` | None; the next run continues. Raise the cadence if persistent |
 
 ## S-5A: the onyx source, secret pointers, doctor `context:onyx`

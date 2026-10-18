@@ -58,5 +58,5 @@ public sealed record ContextSettings
     public IReadOnlyList<ProfileRecognizer> Recognizers { get; init; } = [];
 
     /// <summary>'context.extract.graphify' (S-4): the cluster pass's time, snapshot, file and graph limits; generous defaults, 0 for no limit.</summary>
-    public GraphifyLimits Graphify { get; init; } = GraphifyLimits.Default;
+    public ClusterLimits Graphify { get; init; } = ClusterLimits.Default;
 }

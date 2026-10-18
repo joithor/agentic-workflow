@@ -17,6 +17,16 @@ public static class AsOfMapCache
         return string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{repo.Value}-{commit[..Math.Min(12, commit.Length)]}-x{extractorVersion}-c{(clustered ? 1 : 0)}");
     }
 
+    /// <summary>A clustered key with the cluster pass's limits: other limits can cluster other files, so they never reuse each other's map. The shipped limits add nothing, so older entries still serve.</summary>
+    /// <param name="key">A clustered key.</param>
+    /// <param name="limits">The profile's limits.</param>
+    /// <returns>The key, with '-g&lt;timeout&gt;.&lt;snapshot&gt;.&lt;file&gt;.&lt;graph&gt;' when the limits are not the shipped ones.</returns>
+    public static string WithLimits(string key, Engine.ClusterLimits limits)
+    {
+        ArgumentNullException.ThrowIfNull(limits);
+        return limits == Engine.ClusterLimits.Default ? key : string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{key}-g{limits.TimeoutMinutes}.{limits.MaxSnapshotMB}.{limits.MaxFileMB}.{limits.MaxGraphMB}");
+    }
+
     /// <summary>The key of an extraction that also ran the profile's recognizers: the plain key and, when the set is not empty, its hash, so a changed recognizer set never reuses a cached map.</summary>
     /// <param name="repo">The repo.</param>
     /// <param name="commit">The cut commit (a full sha).</param>

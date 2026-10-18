@@ -13,17 +13,16 @@ public sealed class GraphifySettingsTests
     [Fact, Trait("Lane", "unit")]
     public void Without_the_keys_the_limits_are_generous_defaults()
     {
-        var expected = (60, 2048, 16, 1024);
+        var expected = (60, 2048, 16, 256);
 
         foreach (var limits in new[] { SettingsReader.Read(section: null).Value.Graphify, Read("{}").Value.Graphify })
         {
             Assert.Equal(expected, (limits.TimeoutMinutes, limits.MaxSnapshotMB, limits.MaxFileMB, limits.MaxGraphMB));
         }
 
-        Assert.Equal(TimeSpan.FromMinutes(60), GraphifyLimits.Default.Timeout);
-        Assert.Equal(2048L * 1024 * 1024, GraphifyLimits.Default.MaxSnapshotBytes);
-        Assert.Equal(16L * 1024 * 1024, GraphifyLimits.Default.MaxFileBytes);
-        Assert.Equal(1024L * 1024 * 1024, GraphifyLimits.Default.MaxGraphBytes);
+        Assert.Equal(2048L * 1024 * 1024, ClusterLimits.Default.MaxSnapshotBytes);
+        Assert.Equal(16L * 1024 * 1024, ClusterLimits.Default.MaxFileBytes);
+        Assert.Equal(256L * 1024 * 1024, ClusterLimits.Default.MaxGraphBytes);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -31,8 +30,7 @@ public sealed class GraphifySettingsTests
     {
         var limits = Read("""{"timeoutMinutes":5,"maxFileMB":4}""").Value.Graphify;
 
-        Assert.Equal((5, 2048, 4, 1024), (limits.TimeoutMinutes, limits.MaxSnapshotMB, limits.MaxFileMB, limits.MaxGraphMB));
-        Assert.Equal(TimeSpan.FromMinutes(5), limits.Timeout);
+        Assert.Equal((5, 2048, 4, 256), (limits.TimeoutMinutes, limits.MaxSnapshotMB, limits.MaxFileMB, limits.MaxGraphMB));
         Assert.Equal(4L * 1024 * 1024, limits.MaxFileBytes);
     }
 
@@ -41,7 +39,7 @@ public sealed class GraphifySettingsTests
     {
         var limits = Read("""{"timeoutMinutes":0,"maxSnapshotMB":0,"maxFileMB":0,"maxGraphMB":0}""").Value.Graphify;
 
-        Assert.Null(limits.Timeout);
+        Assert.Equal(0, limits.TimeoutMinutes);
         Assert.Null(limits.MaxSnapshotBytes);
         Assert.Null(limits.MaxFileBytes);
         Assert.Null(limits.MaxGraphBytes);
@@ -60,6 +58,18 @@ public sealed class GraphifySettingsTests
         Assert.True(settings.IsError);
         Assert.Equal(ContextErrors.GraphifyLimitInvalid.Code, settings.Error.Code);
         Assert.StartsWith(prefix, settings.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_longest_timeout_is_70000_minutes_because_a_timer_takes_no_more()
+    {
+        Assert.Equal(70_000, Read("""{"timeoutMinutes":70000}""").Value.Graphify.TimeoutMinutes);
+        Assert.True(TimeSpan.FromMinutes(70_000).TotalMilliseconds < uint.MaxValue - 1);   // CancelAfter's own ceiling
+
+        var over = Read("""{"timeoutMinutes":70001}""");
+
+        Assert.Equal(ContextErrors.GraphifyLimitInvalid.Code, over.Error.Code);
+        Assert.StartsWith("context.extract.graphify.timeoutMinutes: is a whole number of minutes, 0 to 70000", over.Error.Message, StringComparison.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]

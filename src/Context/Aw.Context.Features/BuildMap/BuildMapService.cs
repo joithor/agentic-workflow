@@ -167,7 +167,7 @@ internal sealed class BuildMapService(
     }
 
     // A cluster source that fails reads like one that is absent; a denied path never reaches the labeler or the graph.
-    private async ValueTask<ClusterSet> Clusters(ContextRepo repo, string commit, GraphifyLimits limits, CancellationToken cancellationToken)
+    private async ValueTask<ClusterSet> Clusters(ContextRepo repo, string commit, ClusterLimits limits, CancellationToken cancellationToken)
     {
         var set = await clusterSource.Clusters(repo, commit, limits, cancellationToken).ConfigureAwait(false);
         if (set.IsError || !set.Value.Available)

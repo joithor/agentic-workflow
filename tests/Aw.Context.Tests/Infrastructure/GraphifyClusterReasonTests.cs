@@ -22,7 +22,7 @@ public sealed class GraphifyClusterReasonTests
         return new TempGitRepo(files);
     }
 
-    private static async Task<ClusterSet> Cluster(TempGitRepo repo, GraphifyOptions options, GraphifyLimits limits)
+    private static async Task<ClusterSet> Cluster(TempGitRepo repo, GraphifyOptions options, ClusterLimits limits)
     {
         var set = await new GraphifyClusterSource(new GitCli(), options).Clusters(repo.Repo, repo.Head, limits, Ct);
         Assert.True(set.IsSuccess);
@@ -37,7 +37,7 @@ public sealed class GraphifyClusterReasonTests
     {
         using var repo = Repo();
 
-        var set = await Cluster(repo, GraphifyOptions.Default with { Binary = "/nonexistent/graphify" }, GraphifyLimits.Default);
+        var set = await Cluster(repo, GraphifyOptions.Default with { Binary = "/nonexistent/graphify" }, ClusterLimits.Default);
 
         Assert.Equal((false, "graphify not found"), (set.Available, set.Reason));
     }
@@ -48,7 +48,7 @@ public sealed class GraphifyClusterReasonTests
         using var repo = Repo();
         using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
 
-        var set = await Cluster(repo, stub.Options with { Sandbox = (_, _, _) => null }, GraphifyLimits.Default);
+        var set = await Cluster(repo, stub.Options with { Sandbox = (_, _, _) => null }, ClusterLimits.Default);
 
         Assert.Equal((false, "no sandbox"), (set.Available, set.Reason));
     }
@@ -59,7 +59,7 @@ public sealed class GraphifyClusterReasonTests
         using var repo = Repo();
         using var stub = new StubGraphify("0.0.1");
 
-        var set = await Cluster(repo, stub.Options, GraphifyLimits.Default);
+        var set = await Cluster(repo, stub.Options, ClusterLimits.Default);
 
         Assert.Equal((false, $"graphify is not the pin {GraphifyOptions.Default.Pin}"), (set.Available, set.Reason));
     }
@@ -69,9 +69,9 @@ public sealed class GraphifyClusterReasonTests
     {
         using var repo = Repo();
         using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
-        var limits = new GraphifyLimits { TimeoutMinutes = 1, TimeoutOverride = TimeSpan.FromMilliseconds(400) };
+        var options = Through(stub, "sleep 30") with { MinuteLength = TimeSpan.FromMilliseconds(400) };
 
-        var set = await Cluster(repo, Through(stub, "sleep 30"), limits);
+        var set = await Cluster(repo, options, new ClusterLimits { TimeoutMinutes = 1 });
 
         Assert.Equal((false, "timed out after 1 min"), (set.Available, set.Reason));
     }
@@ -83,8 +83,8 @@ public sealed class GraphifyClusterReasonTests
         using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
         var script = "mkdir -p \"$1/graphify-out\" && head -c 1500000 /dev/zero > \"$1/graphify-out/graph.json\"";
 
-        var set = await Cluster(repo, Through(stub, script), new GraphifyLimits { MaxGraphMB = 1 });
-        var unlimited = await Cluster(repo, Through(stub, script), new GraphifyLimits { MaxGraphMB = 0 });
+        var set = await Cluster(repo, Through(stub, script), new ClusterLimits { MaxGraphMB = 1 });
+        var unlimited = await Cluster(repo, Through(stub, script), new ClusterLimits { MaxGraphMB = 0 });
 
         Assert.Equal((false, "graph.json over 1 MB"), (set.Available, set.Reason));
         Assert.Equal("graph.json could not be read", unlimited.Reason);   // no cap: the file was read, and is not a graph
@@ -96,11 +96,11 @@ public sealed class GraphifyClusterReasonTests
         using var repo = Repo(new Dictionary<string, string>(StringComparer.Ordinal) { ["big/x1.ts"] = new string('a', 700 * 1024), ["big/x2.ts"] = new string('b', 700 * 1024) });
         using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
 
-        var set = await Cluster(repo, stub.Options, new GraphifyLimits { MaxSnapshotMB = 1 });
+        var set = await Cluster(repo, stub.Options, new ClusterLimits { MaxSnapshotMB = 1 });
 
         Assert.True(set.Available);
         Assert.NotEmpty(set.Clusters);
-        Assert.Equal("snapshot truncated at 1 MB (1 files skipped)", set.Reason);
+        Assert.Equal("snapshot truncated at 1 MB (1 file skipped)", set.Reason);
     }
 
     [Fact]
@@ -109,10 +109,10 @@ public sealed class GraphifyClusterReasonTests
         using var repo = Repo(new Dictionary<string, string>(StringComparer.Ordinal) { ["data/big.json"] = new string('a', 1536 * 1024) });
         using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
 
-        var capped = await Cluster(repo, stub.Options, new GraphifyLimits { MaxFileMB = 1 });
-        var unlimited = await Cluster(repo, stub.Options, new GraphifyLimits { MaxFileMB = 0 });
+        var capped = await Cluster(repo, stub.Options, new ClusterLimits { MaxFileMB = 1 });
+        var unlimited = await Cluster(repo, stub.Options, new ClusterLimits { MaxFileMB = 0 });
 
-        Assert.Equal((true, "1 files over 1 MB left out"), (capped.Available, capped.Reason));
+        Assert.Equal((true, "1 file over 1 MB left out"), (capped.Available, capped.Reason));
         Assert.Equal((true, null), (unlimited.Available, unlimited.Reason));
     }
 
@@ -122,7 +122,7 @@ public sealed class GraphifyClusterReasonTests
         using var repo = Repo();
         using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
 
-        var set = await Cluster(repo, stub.Options, GraphifyLimits.Default);
+        var set = await Cluster(repo, stub.Options, ClusterLimits.Default);
 
         Assert.Equal((true, null), (set.Available, set.Reason));
     }

@@ -12,5 +12,5 @@ public interface IClusterSource
     /// <param name="limits">The profile's time, snapshot, file and graph limits ('context.extract.graphify').</param>
     /// <param name="cancellationToken">Cancels the run.</param>
     /// <returns>The clusters.</returns>
-    public ValueTask<Result<ClusterSet>> Clusters(ContextRepo repo, string commit, GraphifyLimits limits, CancellationToken cancellationToken);
+    public ValueTask<Result<ClusterSet>> Clusters(ContextRepo repo, string commit, ClusterLimits limits, CancellationToken cancellationToken);
 }

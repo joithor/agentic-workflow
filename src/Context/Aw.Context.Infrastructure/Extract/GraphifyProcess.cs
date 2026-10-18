@@ -5,6 +5,9 @@ namespace Aw.Context.Infrastructure.Extract;
 /// <summary>Runs one command with exactly the environment given, bounded by a time limit, and kills its tree at the limit.</summary>
 internal static class GraphifyProcess
 {
+    /// <summary>The most output characters kept from each stream.</summary>
+    internal const int MaxKept = 64 * 1024;
+
     /// <summary>How a graphify process ended.</summary>
     /// <param name="Exit">The exit code; -1 when it timed out.</param>
     /// <param name="Stdout">What it printed (empty when it timed out).</param>
@@ -24,8 +27,8 @@ internal static class GraphifyProcess
         try
         {
             process = Process.Start(start) ?? throw new InvalidOperationException("the process didn't start");
-            var stdout = process.StandardOutput.ReadToEndAsync(timeout.Token);
-            var stderr = process.StandardError.ReadToEndAsync(timeout.Token);
+            var stdout = Capture(process.StandardOutput, timeout.Token);
+            var stderr = Capture(process.StandardError, timeout.Token);
             await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
             _ = await stderr.ConfigureAwait(false);
             return new Ran(process.ExitCode, await stdout.ConfigureAwait(false));
@@ -48,6 +51,20 @@ internal static class GraphifyProcess
         {
             process?.Dispose();
         }
+    }
+
+    // Reads the stream to its end, keeping only the first MaxKept characters: a chatty tool can't grow this process.
+    private static async Task<string> Capture(StreamReader reader, CancellationToken cancellationToken)
+    {
+        var kept = new System.Text.StringBuilder();
+        var buffer = new char[4096];
+        int read;
+        while ((read = await reader.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false)) > 0)
+        {
+            _ = kept.Append(buffer, 0, Math.Min(read, MaxKept - kept.Length));
+        }
+
+        return kept.ToString();
     }
 
     private static ProcessStartInfo StartInfo(IReadOnlyList<string> argv, Dictionary<string, string> environment, string directory)

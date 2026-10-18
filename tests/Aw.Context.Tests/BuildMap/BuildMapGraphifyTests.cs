@@ -46,7 +46,7 @@ public sealed class BuildMapGraphifyTests : IDisposable
         _ = await Degraded("""{"repos":["aw-split-panes"],"extract":{"graphify":{"timeoutMinutes":0,"maxSnapshotMB":512,"maxFileMB":8,"maxGraphMB":64}}}""");
 
         var (plain, set) = (_world.Clusters.AskedLimits[0], _world.Clusters.AskedLimits[1]);
-        Assert.Equal(GraphifyLimits.Default, plain);
+        Assert.Equal(ClusterLimits.Default, plain);
         Assert.Equal((0, 512, 8, 64), (set.TimeoutMinutes, set.MaxSnapshotMB, set.MaxFileMB, set.MaxGraphMB));
     }
 }

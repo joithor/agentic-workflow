@@ -33,7 +33,7 @@ public sealed class GraphifySnapshotTests : IDisposable
 
     private static async Task<MemoryStream> Tar(params string[] paths) => await Tar([.. paths.Select(p => (p, 0))]);
 
-    private async Task<GraphifySnapshot.Tally> Unpack(MemoryStream tar, GraphifyLimits limits, ContextRepo? repo = null)
+    private async Task<GraphifySnapshot.Tally> Unpack(MemoryStream tar, ClusterLimits limits, ContextRepo? repo = null)
     {
         var tally = new GraphifySnapshot.Tally(limits);
         await GraphifySnapshot.Unpack(tar, _snapshot, repo ?? _repo, tally, TestContext.Current.CancellationToken);
@@ -49,7 +49,7 @@ public sealed class GraphifySnapshotTests : IDisposable
         var repo = new ContextRepo(ContextRepoName.From("aw-split-panes"), "/work/aw-split-panes") { DenyPaths = [.. PathDenylist.Defaults, "private/**"] };
         await using var tar = await Tar("src/app.ts", ".env", "config/secrets/token.txt", "certs/server.pem", "private/notes.ts", "docs/readme.md");
 
-        _ = await Unpack(tar, GraphifyLimits.Default, repo);
+        _ = await Unpack(tar, ClusterLimits.Default, repo);
 
         Assert.Equal(["docs/readme.md", "src/app.ts"], Present(), StringComparer.Ordinal);
     }
@@ -57,7 +57,7 @@ public sealed class GraphifySnapshotTests : IDisposable
     [Fact]
     public async Task Only_bytes_actually_copied_count_toward_the_snapshot_total()
     {
-        var limits = new GraphifyLimits { MaxSnapshotMB = 1 };
+        var limits = new ClusterLimits { MaxSnapshotMB = 1 };
         await using var tar = await Tar(("a.ts", 700 * Kb), ("b.ts", 700 * Kb), ("c.ts", 100 * Kb), ("d.ts", 100 * Kb));
 
         var tally = await Unpack(tar, limits);
@@ -70,7 +70,7 @@ public sealed class GraphifySnapshotTests : IDisposable
     public async Task A_denied_or_oversized_file_does_not_use_up_the_snapshot_cap()
     {
         var repo = new ContextRepo(ContextRepoName.From("aw-split-panes"), "/work/aw-split-panes") { DenyPaths = [.. PathDenylist.Defaults, "private/**"] };
-        var limits = new GraphifyLimits { MaxSnapshotMB = 1, MaxFileMB = 1 };
+        var limits = new ClusterLimits { MaxSnapshotMB = 1, MaxFileMB = 1 };
         await using var tar = await Tar(("private/big.ts", 900 * Kb), ("huge.bin", 1536 * Kb), ("a.ts", 900 * Kb));
 
         var tally = await Unpack(tar, limits, repo);
@@ -82,7 +82,7 @@ public sealed class GraphifySnapshotTests : IDisposable
     [Fact]
     public async Task Zero_limits_copy_everything()
     {
-        var limits = new GraphifyLimits { MaxSnapshotMB = 0, MaxFileMB = 0 };
+        var limits = new ClusterLimits { MaxSnapshotMB = 0, MaxFileMB = 0 };
         await using var tar = await Tar(("a.ts", 700 * Kb), ("b.ts", 1536 * Kb), ("c.ts", 700 * Kb));
 
         var tally = await Unpack(tar, limits);
