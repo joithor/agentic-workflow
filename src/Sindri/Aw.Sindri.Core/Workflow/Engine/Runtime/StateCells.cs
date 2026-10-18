@@ -60,13 +60,14 @@ public static class StateCells
             return StateGlyph.Active;
         }
 
-        if (at.Instance.Visited is { } visited)
-        {
-            return visited.Contains(place.State, StringComparer.Ordinal) ? StateGlyph.Done : StateGlyph.Pending;   // a branch state or one before a loop's re-entry counts too
-        }
-
-        return !terminal && place.Order is { } order && order < at.ActiveOrder ? StateGlyph.Done : StateGlyph.Pending;   // an instance that recorded no visits: path order
+        return Passed(place, terminal, at) ? StateGlyph.Done : StateGlyph.Pending;
     }
+
+    // A state the instance entered is done (a branch state or one before a loop's re-entry too); an instance that recorded none falls back to path order.
+    private static bool Passed(StatePlace place, bool terminal, Place at) =>
+        at.Instance.Visited is { } visited
+            ? visited.Contains(place.State, StringComparer.Ordinal)
+            : !terminal && place.Order is { } order && order < at.ActiveOrder;
 
     /// <summary>The path position of the active state; a branch state counts as the main-path state it is folded under.</summary>
     private static int ActiveOrder(PathOrder path, string active)
