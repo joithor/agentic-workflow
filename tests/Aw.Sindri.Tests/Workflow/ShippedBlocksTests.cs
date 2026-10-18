@@ -119,6 +119,7 @@ public sealed class ShippedBlocksTests
         Assert.Equal(BlockRuntime.Block, catalog.Find(BlockId.From("step.judge.choose"))!.Runtime);
 
         Assert.Empty(scope.ServiceProvider.GetServices<IStep>());   // no runtime until the block runtime (DT-J)
+        Assert.Empty(scope.ServiceProvider.GetServices<IBlockStep>());   // none is registered in this build: J3 registers the judge and moves its contract to BlockContract
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -721,6 +721,9 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 | `SND-WF-014` | invalid | `--item` and `fact:item`'s `id` differ |
 | `SND-WF-015` | unavailable | An effect couldn't be sent: its block replied an undeclared outcome, or every retry failed; the instance parks (dispatch) |
 | `SND-WF-016` | unavailable | A Step input has a descriptor but no runtime in this build; refused at `recipe approve` and at `workflow start` |
+| `SND-BLOCK-001` | unavailable | A fact a block Step reads can't be read; the run ends as `step.failed` with the message as its reason |
+| `SND-BLOCK-002` | unavailable | The approved profile a block Step's providers come from can't be read; the run ends as `step.failed` `profile-unreadable: <code>` |
+| `SND-BLOCK-003` | unavailable | The item's repo (`fact:item`) couldn't be read, so a block Step's per-repo keys can't be resolved; the run ends as `step.failed` `repo-unreadable`, never with the box's list |
 
 `sindri recipe validate <file> [--json]` and `sindri recipe eval <file>` are local checker verbs (engine spec W27): exit
 0 pass, 1 fail, 2 usage or tool error. The recipe reference, the eval format, the `RCP-*` rule table and how to add
