@@ -34,6 +34,7 @@ public static class EnvironmentAllowlist
         ["npm_config_ignore_scripts"] = "install scripts are off",
         ["NODE_OPTIONS"] = "only when the repo sets it",
         ["DISABLE_TELEMETRY"] = "the inner policy turns telemetry off",
+        ["DISABLE_AUTOUPDATER"] = "no auto-update call to the download host (spike item 11)",
         ["CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC"] = "the inner policy turns update checks off",
         ["GIT_CONFIG_COUNT"] = "the sandbox's git settings at command-line scope",
         ["GIT_CONFIG_GLOBAL"] = "an empty file: the owner's .gitconfig is absent",
@@ -70,6 +71,11 @@ public static class EnvironmentAllowlist
     /// <param name="name">The variable name.</param>
     /// <returns>True when it may.</returns>
     public static bool IsCredentialName(string name) => _credentialNames.Contains(name, StringComparer.Ordinal);
+
+    /// <summary>Whether <paramref name="name"/> is a model API key: its value is supplied by the launcher at start and never stored in the plan or its hash.</summary>
+    /// <param name="name">The variable name.</param>
+    /// <returns>True for ANTHROPIC_API_KEY and OPENAI_API_KEY.</returns>
+    public static bool IsModelKey(string name) => string.Equals(name, "ANTHROPIC_API_KEY", StringComparison.Ordinal) || string.Equals(name, "OPENAI_API_KEY", StringComparison.Ordinal);
 
     /// <summary>Whether a name looks like a secret: *_TOKEN, *_KEY, *_SECRET, *PASSWORD*, AWS_*, GH_*, GITHUB_*, AGENT_APP_*.</summary>
     /// <param name="name">The variable name.</param>

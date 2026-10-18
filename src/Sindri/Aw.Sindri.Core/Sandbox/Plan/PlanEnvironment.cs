@@ -33,6 +33,7 @@ internal static class PlanEnvironment
             Var("npm_config_logs_dir", "/tmp/npm-logs"),
             Var("npm_config_ignore_scripts", "true"),
             Var("DISABLE_TELEMETRY", "1"),
+            Var("DISABLE_AUTOUPDATER", "1"),
             Var("CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", "1"),
             Var("DOTNET_PROCESSOR_COUNT", Cpus(host)),
             Var("MSBUILDDISABLENODEREUSE", "1"),
@@ -41,7 +42,7 @@ internal static class PlanEnvironment
         env.AddRange(GitSettings.ToEnvironment(Git(c), c.RunArea + "/gitconfig.empty"));
         env.AddRange(Proxy(r.Net.ProxyPort));
         env.AddRange(Sindri(c));
-        env.AddRange((r.Login?.Environment ?? new Dictionary<string, string>(StringComparer.Ordinal)).OrderBy(e => e.Key, StringComparer.Ordinal).Select(e => Var(e.Key, e.Value)));
+        env.AddRange((r.Login?.Environment ?? new Dictionary<string, string>(StringComparer.Ordinal)).OrderBy(e => e.Key, StringComparer.Ordinal).Select(e => Var(e.Key, EnvironmentAllowlist.IsModelKey(e.Key) ? null : e.Value)));
         return env;
     }
 

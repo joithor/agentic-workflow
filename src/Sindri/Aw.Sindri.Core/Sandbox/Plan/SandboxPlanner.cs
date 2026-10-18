@@ -12,14 +12,11 @@ public static class SandboxPlanner
     /// <param name="mechanism">The mechanism of the calling adapter.</param>
     /// <param name="request">The launch.</param>
     /// <returns>The plan, or SND-LAUNCH-015 (can't be confined to this policy), -016 (the plan itself is unsafe) or -017 (the login is not from the chosen source).</returns>
-    /// <exception cref="ArgumentException">A Step request carries no StepPolicy: a programming error.</exception>
+    /// <exception cref="ArgumentException">A Step request carries no StepPolicy, or an attended one carries one: a programming error.</exception>
     public static Result<SandboxPlan> Build(SandboxMechanism mechanism, SandboxRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
-        if (!request.Attended && request.Policy is null)
-        {
-            throw new ArgumentException("A Step launch carries its StepPolicy; only an attended session has none.", nameof(request));
-        }
+        RequireConsistentKind(request);
 
         var c = PlanContext.From(request);
         if (PlanChecks.Validate(c) is { } refusal)
@@ -47,6 +44,19 @@ public static class SandboxPlanner
             PlanPolicy.Build(c),
             HookInventory.ForSession());
         return plan with { PlanHash = PlanHasher.Hash(plan, PerLaunchPaths(request)) };
+    }
+
+    private static void RequireConsistentKind(SandboxRequest request)
+    {
+        if (!request.Attended && request.Policy is null)
+        {
+            throw new ArgumentException("A Step launch carries its StepPolicy; only an attended session has none.", nameof(request));
+        }
+
+        if (request.Attended && request.Policy is not null)
+        {
+            throw new ArgumentException("An attended session has no StepPolicy: a Step launched with the attended flag is a mistake.", nameof(request));
+        }
     }
 
     /// <summary>A resume or reopen reuses the stored plan; a missing plan is refused (SB1).</summary>

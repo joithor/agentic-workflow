@@ -177,6 +177,8 @@ environment. `ISandbox` is `Probe`, `Plan`, `SelfCheck` and `Wrap`, all returnin
 | `planHash` | 12 hex digits of SHA-256 over a canonical text of the plan with per-launch paths replaced by placeholders, so one policy hashes the same across launches; it includes the login source |
 | Renderer | `SandboxPlanRenderer.Show` and `Explain` are pure over the plan (goldens in `tests/Aw.Sindri.Tests/Sandbox/Plan/Golden/`) |
 
+**Fix round 2 (#355 run 2).** A narrow `Bash(<cmd>:*)` in a read-only Step stays narrow (only commands inside the read-only set survive); model API key values are never in the plan or the hash (the launcher supplies them at start, like the launch secret); a request that is both attended and carries a `StepPolicy` is an error; the agent-home write set also applies to `homeAllow` and `cachePaths`; Edit, Write and NotebookEdit patterns must be clean and inside a root; the git directory must be inside the repo; the run namespace is exactly three git-safe segments; `DISABLE_AUTOUPDATER=1` is set (spike item 11; the spec text still needs the line, with the next amendment); `TERM`, `LANG`, `USER` and `SHELL` stay out of the hash.
+
 **Fix round 1 (#355 run 1).** The builder refuses, with `-015 worktree-outside-repo` (the closest closed reason; the detail says which), a ReadOnly or Plan Step that names a writable path, and
 any path that is not absolute and normalized (no `..`, no `.`, no `//`, no trailing slash, not empty): the repo, the worktree (strictly inside the repo), the git directory, the run directory and
 run area (inside the Sindri home), the home, the state directory, the Sindri home and the socket directory; the run namespace must be `sindri/<instance>/<run>`. A credential source may set
@@ -184,6 +186,7 @@ only `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and the model key (`-016 env` otherwise),
 in `AgentHomeWriteSet` (Claude: projects, sessions, session-env, shell-snapshots, file-history, todos, history.jsonl, backups, cache, state; Codex: sessions, log, memories, shell_snapshots, cache, tmp).
 The credential masks follow what is bound: the owner's `.credentials.json` and `auth.json` are masked whenever the owner's real home covers them (a `homeAllow` entry included), and not when a
 `separate-login` home from another host path is bound there. `PATH` is the shims, then `$AW_STATE_DIR/bin-r1b` (so the shims find `heavy`), then the host tools outside the state directory.
+The `-015 worktree-outside-repo` reason also covers a bad home, state directory, Sindri home or socket directory (a Sindri fault either way; the detail names the path).
 A repo declaration cannot add `github` or `packages` beyond what the session kind allows. The inner policy carries `DefaultMode` (`dontAsk` for a Step, `default` for an attended session) and
 `DisableBypassPermissions`: **SB-5a's rendered settings must write `permissions.defaultMode` and `disableBypassPermissionsMode: "disable"` explicitly**, because the owner's own settings may say
 `bypassPermissions` (spike items 1 and 6); an attended session gets `Ask` rules for Bash, Edit and Write and no Bash allow. SB-5a test names: `Rendered_settings_set_the_default_mode_explicitly`,

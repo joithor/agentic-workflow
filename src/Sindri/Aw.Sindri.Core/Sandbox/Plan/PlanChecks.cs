@@ -16,7 +16,7 @@ internal static partial class PlanChecks
 
     private static readonly string[] _renameWritten = [".credentials.json", ".claude.json", "auth.json"];
 
-    internal static Error? Validate(PlanContext c) => Mode(c) ?? Paths(c) ?? Namespace(c) ?? Worktree(c) ?? Socket(c) ?? Login(c);
+    internal static Error? Validate(PlanContext c) => Mode(c) ?? Paths(c) ?? Namespace(c) ?? Worktree(c) ?? Socket(c) ?? HomeEntries(c) ?? Login(c);
 
     private static Error? Mode(PlanContext c) =>
         c.Request.Policy is { Mode: not StepPermissionMode.Default, WritablePath: not null }
@@ -38,6 +38,11 @@ internal static partial class PlanChecks
             return Unconfinable($"{bad.What} is not an absolute normalized path");
         }
 
+        if (!Inside(p.GitCommonDir, p.Repo))
+        {
+            return Unconfinable("the git directory is not inside the repo");
+        }
+
         if (p.Worktree is { } worktree && !Inside(worktree, p.Repo))
         {
             return Unconfinable("the worktree is not inside the repo");
@@ -51,7 +56,7 @@ internal static partial class PlanChecks
     private static Error? Namespace(PlanContext c)
     {
         var ns = c.Request.RunNamespace;
-        return !RunNamespace.IsMatch(ns) || ns.Split('/').Any(s => string.Equals(s, ".", StringComparison.Ordinal) || string.Equals(s, "..", StringComparison.Ordinal) || s.EndsWith(".lock", StringComparison.Ordinal))
+        return !RunNamespace.IsMatch(ns) || ns.Contains("..", StringComparison.Ordinal) || ns.Split('/').Any(s => s.EndsWith(".lock", StringComparison.Ordinal))
             ? Unconfinable("the run namespace is not sindri/<instance>/<run>")
             : null;
     }
@@ -68,6 +73,19 @@ internal static partial class PlanChecks
         Encoding.UTF8.GetByteCount(c.Request.Net.NetDir + "/sindri.sock") >= SocketPathLimit
             ? SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, SandboxReasons.NetForward, "the socket directory is too long for a unix socket path")
             : null;
+
+    // The agent-home write set holds for the profile's home entries too: a read-write entry may not open the owner's hooks or settings.
+    private static Error? HomeEntries(PlanContext c)
+    {
+        IEnumerable<string> writable =
+        [
+            .. (c.Request.Settings?.Fs?.HomeAllow ?? []).Concat(c.Repo.HomeAllow ?? []).Where(e => e.Mode == MountMode.ReadWrite && e.Path is not null).Select(e => e.Path!),   // why: the profile rules require a path
+            .. c.Repo.CachePaths ?? [],
+        ];
+        return writable.FirstOrDefault(p => OutsideWriteSet(c.Home, $"{c.Home}/{p}")) is { } path
+            ? Failed(SandboxReasons.Login, $"'{path}' opens the agent home read-write outside its named write set")
+            : null;
+    }
 
     private static Error? Login(PlanContext c)
     {
@@ -142,6 +160,6 @@ internal static partial class PlanChecks
 
     private static Error Failed(string reason, string detail) => SandboxRefusal.For(SindriErrors.LaunchSelfCheckFailed, reason, detail);
 
-    [GeneratedRegex("^sindri(/[A-Za-z0-9._-]+){2,}\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
+    [GeneratedRegex("^sindri(/[A-Za-z0-9_-]([A-Za-z0-9._-]*[A-Za-z0-9_-])?){2}\\z", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 100)]
     private static partial Regex RunNamespace { get; }
 }

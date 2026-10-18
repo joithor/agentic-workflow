@@ -11647,6 +11647,7 @@ static Aw.Sindri.Core.Sandbox.Plan.AgentHomeWriteSet.Allows(string! agentHome, s
 static Aw.Sindri.Core.Sandbox.Plan.DenyRuleExpansion.Expand(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.Plan.InnerRule!>! rules) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sandbox.Plan.InnerRule!>!
 static Aw.Sindri.Core.Sandbox.Plan.EnvironmentAllowlist.IsCredentialName(string! name) -> bool
 static Aw.Sindri.Core.Sandbox.Plan.EnvironmentAllowlist.IsListed(string! name) -> bool
+static Aw.Sindri.Core.Sandbox.Plan.EnvironmentAllowlist.IsModelKey(string! name) -> bool
 static Aw.Sindri.Core.Sandbox.Plan.EnvironmentAllowlist.IsSecretShaped(string! name) -> bool
 static Aw.Sindri.Core.Sandbox.Plan.EnvironmentAllowlist.Names.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
 static Aw.Sindri.Core.Sandbox.Plan.EnvironmentAllowlist.Violations(System.Collections.Generic.IEnumerable<string!>! names) -> System.Collections.Generic.IReadOnlyList<string!>!

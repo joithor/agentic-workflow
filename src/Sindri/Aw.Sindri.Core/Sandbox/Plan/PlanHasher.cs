@@ -11,7 +11,7 @@ public static class PlanHasher
 
     // Variables whose value differs on every launch (or carries a port); the paths in the others are normalized like the mounts.
     private static readonly string[] _perLaunchEnvironment =
-        ["AW_SINDRI_LAUNCH", "AW_SINDRI_ITEM", "AW_SINDRI_INSTANCE", "HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY", "https_proxy", "http_proxy", "all_proxy"];
+        ["AW_SINDRI_LAUNCH", "AW_SINDRI_ITEM", "AW_SINDRI_INSTANCE", "HTTPS_PROXY", "HTTP_PROXY", "ALL_PROXY", "https_proxy", "http_proxy", "all_proxy", "TERM", "LANG", "USER", "SHELL"];
 
     /// <summary>Hashes a plan.</summary>
     /// <param name="plan">The plan (its own PlanHash is ignored).</param>
