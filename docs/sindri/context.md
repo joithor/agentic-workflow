@@ -567,7 +567,7 @@ services:
   bytes actually copied (a file left out takes no room); `maxFileMB` (default 16) leaves out any single larger file; `maxGraphMB` (default 256)
   caps the `graph.json` read back (it is parsed from a stream, but the parsed graph is held in memory, so `0` risks running out of memory on a huge
   graph). A negative or fractional value, a `timeoutMinutes` over 70,000 (about 48 days, what a timer accepts) or a size over 10,000,000 is `SND-CONTEXT-133` at `profile validate`, naming
-  the key path (`context.extract.graphify.maxFileMB: is a whole number of megabytes, 0 or more (0 is no limit)`). Raise a limit for a very
+  the key path (`context.extract.graphify.maxFileMB: is a whole number of megabytes, 0 to 10000000 (0 is no limit)`). Raise a limit for a very
   large repo, lower it to bound a slow machine.
 
 ### Building a draft
