@@ -12,7 +12,7 @@ public sealed class LensRunStepContract : DescriptorContract
 {
     protected override BlockDescriptor Descriptor => LensSteps.Run;
 
-    protected override string ExpectedHash => "sha256:PLACEHOLDER";
+    protected override string ExpectedHash => "sha256:6e230ca3cacbeb875be8c69b76173dd33308c581c2e98d87818a9ae5f3121855";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

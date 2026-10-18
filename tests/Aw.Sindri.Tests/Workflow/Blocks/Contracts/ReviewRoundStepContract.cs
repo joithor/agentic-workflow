@@ -12,7 +12,7 @@ public sealed class ReviewRoundStepContract : DescriptorContract
 {
     protected override BlockDescriptor Descriptor => ReviewSteps.Round;
 
-    protected override string ExpectedHash => "sha256:PLACEHOLDER";
+    protected override string ExpectedHash => "sha256:b233d18f67e4ee4c34bc4785fba73efd5cb5785ad2c8a79d0556cbdb499a550b";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

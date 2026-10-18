@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.Workflow;
@@ -9,7 +10,7 @@ public sealed class ReviewLoopV2Tests
 {
     private const string Path = "sindri/workflow.review-loop.yaml";
 
-    private static Aw.Sindri.Core.Workflow.Recipes.Recipe Load() => RecipeComposition.ReadClean(ShippedRecipes.Read(Path), "workflow.review-loop.yaml").Recipe;
+    private static Recipe Load() => RecipeComposition.ReadClean(ShippedRecipes.Read(Path), "workflow.review-loop.yaml").Recipe;
 
     [Fact, Trait("Lane", "unit")]
     public void The_recipe_is_version_2_and_validates_against_the_shipped_catalog()
@@ -41,7 +42,7 @@ public sealed class ReviewLoopV2Tests
 
         Assert.Equal("round", recipe.Initial);
         Assert.Equal(
-            ["clean", "fix", "lens", "lens-log", "record", "recheck", "round", "stuck", "wrong"],
+            ["clean", "fix", "lens", "lens-log", "recheck", "record", "round", "stuck", "wrong"],
             recipe.States.Keys.Order(StringComparer.Ordinal),
             StringComparer.Ordinal);
         Assert.Equal("step.review.round", recipe.States["round"].Step!.Use.Value);
