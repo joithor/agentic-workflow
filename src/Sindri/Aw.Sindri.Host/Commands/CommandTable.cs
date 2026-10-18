@@ -40,7 +40,8 @@ internal static class CommandTable
             await using (scope.ConfigureAwait(false))
             {
                 var session = AgentSession.Detect(environment, scope.ServiceProvider.GetRequiredService<IProcessAncestry>(), Interactive());
-                return await Dispatch(args, session, scope.ServiceProvider, environment).ConfigureAwait(false);
+                using var interrupt = Interrupt.For(args);   // Ctrl-C ends the streaming verbs and the job-following ones; no other verb listens
+                return await Guarded(interrupt, Console.Error, i => Dispatch(args, session, scope.ServiceProvider, environment, i)).ConfigureAwait(false);
             }
         }
     }
@@ -62,16 +63,34 @@ internal static class CommandTable
             : await output.Error(refused).ConfigureAwait(false);
     }
 
-    private static async Task<int> Dispatch(string[] args, AgentSession session, IServiceProvider services, Func<string, string?> environment)
+    /// <summary>Runs the verb; a Ctrl-C that cancels a call in flight ends it with 'interrupted' and exit 130 instead of a stack trace. Any other cancellation is a bug and propagates.</summary>
+    /// <param name="interrupt">The listener whose token the Ctrl-C cancels.</param>
+    /// <param name="stderr">Where 'interrupted' goes.</param>
+    /// <param name="dispatch">Runs the verb.</param>
+    /// <returns>The verb's exit code, or 130.</returns>
+    internal static async Task<int> Guarded(Interrupt interrupt, TextWriter stderr, Func<Interrupt, Task<int>> dispatch)
+    {
+        try
+        {
+            return await dispatch(interrupt).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (interrupt.Token.IsCancellationRequested)
+        {
+            await stderr.WriteLineAsync("interrupted").ConfigureAwait(false);
+            return 130;
+        }
+    }
+
+    private static async Task<int> Dispatch(string[] args, AgentSession session, IServiceProvider services, Func<string, string?> environment, Interrupt interrupt)
     {
         var options = services.GetRequiredService<JsonSerializerOptions>();
         var probe = services.GetRequiredService<IControlPlaneProbe>();
         var output = new Output(Console.Out, Console.Error, options);
-        using var client = new ControlPlaneClient(probe, options, Headers(session, services));
+        var cap = CliTimeout.Read(environment);   // a malformed value refuses the calls, not the verbs that make none
+        using var client = new ControlPlaneClient(probe, options, Headers(session, services), cap.IsError ? null : cap.Value, refusal: cap.IsError ? cap.Error : null);
         StartCommand Start(bool headless) => NewStart(services, session, (client, probe, output), UiOpener(headless, environment), headless);
         var start = Start(headless: true);   // 'sindri --headless', and the start a human 'profile approve' may need
         var verbs = new Verbs(client, probe, output, services);
-        using var interrupt = Interrupt.For(args);   // Ctrl-C ends 'workflow events --follow' with exit 0; no other verb listens
         var ct = interrupt.Token;
         var harnesses = new ProbeCommands(services.GetRequiredService<IProcessAncestry>(), services.GetRequiredService<IHarnessVersions>(), environment, Interactive());
         return args switch
