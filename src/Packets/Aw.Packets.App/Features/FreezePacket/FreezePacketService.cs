@@ -12,7 +12,7 @@ internal sealed class FreezePacketService(PacketInspector inspector, IFreezeLog 
 {
     public async ValueTask<Result<FreezePacketResponse>> Handle(FreezePacketRequest request, CancellationToken cancellationToken)
     {
-        var inspection = await inspector.Inspect(request.PacketDirectory, request.RepoDirectory ?? request.PacketDirectory, cancellationToken)
+        var inspection = await inspector.Inspect(request.PacketDirectory, request.RepoDirectory ?? request.PacketDirectory, sizes: null, cancellationToken)
             .ConfigureAwait(false);
         if (inspection.IsError)
         {
@@ -24,6 +24,7 @@ internal sealed class FreezePacketService(PacketInspector inspector, IFreezeLog 
         {
             SchemaVersion = 1,
             Packet = checkedPacket.Loaded.Packet.Manifest.Id,
+            By = request.By,
             Frozen = false,
             DigestVersion = PacketDigest.Version,
             AlreadyFrozen = false,
@@ -40,11 +41,36 @@ internal sealed class FreezePacketService(PacketInspector inspector, IFreezeLog 
             return hash.Error;
         }
 
-        var receipt = await log.Record(Record(checkedPacket.Loaded, hash.Value), cancellationToken).ConfigureAwait(false);
-        return receipt.Map(r => notFrozen with { Frozen = true, Hash = hash.Value, Location = r.Location, AlreadyFrozen = r.AlreadyFrozen });
+        return await Complete(request, notFrozen, Record(checkedPacket.Loaded, hash.Value, request.By), hash.Value, cancellationToken).ConfigureAwait(false);
     }
 
-    private FreezeRecord Record(LoadedPacket loaded, PacketHash hash) => new()
+    private async ValueTask<Result<FreezePacketResponse>> Complete(FreezePacketRequest request, FreezePacketResponse notFrozen, FreezeRecord recorded, PacketHash hash, CancellationToken cancellationToken)
+    {
+        var receipt = await log.Record(recorded, cancellationToken).ConfigureAwait(false);
+        if (receipt.IsError)
+        {
+            return receipt.Error;
+        }
+
+        var stored = await log.Stored(recorded, receipt.Value, cancellationToken).ConfigureAwait(false);
+        if (stored.IsError)
+        {
+            return stored.Error;
+        }
+
+        return notFrozen with
+        {
+            Frozen = true,
+            Hash = hash,
+            Location = receipt.Value.Location,
+            AlreadyFrozen = receipt.Value.AlreadyFrozen,
+            By = stored.Value.FrozenBy,
+            FrozenAt = stored.Value.FrozenAt,
+            AlreadyFrozenBy = receipt.Value.AlreadyFrozen && stored.Value.FrozenBy != request.By ? stored.Value.FrozenBy : null,
+        };
+    }
+
+    private FreezeRecord Record(LoadedPacket loaded, PacketHash hash, FreezeBy by) => new()
     {
         SchemaVersion = 1,
         Repo = loaded.Packet.Manifest.Repo,
@@ -52,6 +78,7 @@ internal sealed class FreezePacketService(PacketInspector inspector, IFreezeLog 
         Hash = hash,
         DigestVersion = PacketDigest.Version,
         BaseSha = CommitSha.From(loaded.Packet.Manifest.BaseSha),   // the checks passed, so PKT-BASE-001 accepted it
+        By = by,
         FrozenAt = clock.GetUtcNow(),
         Files = [.. loaded.Files.Keys.Order(StringComparer.Ordinal)],
     };

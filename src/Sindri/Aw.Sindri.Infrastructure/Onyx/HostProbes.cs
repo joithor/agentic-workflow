@@ -70,7 +70,9 @@ internal sealed class HostProbes(bool ipv6Available) : IHostProbes
         try
         {
             using var client = new TcpClient(address.AddressFamily);
+#pragma warning disable RS0030 // a synchronous port probe: IHostProbes is a sync port, the connect is loopback and bounded to 500 ms
             return client.ConnectAsync(address, port).Wait(TimeSpan.FromMilliseconds(500)) && client.Connected;
+#pragma warning restore RS0030
         }
         catch (SocketException exception) when (exception.SocketErrorCode is SocketError.AddressFamilyNotSupported)
         {
@@ -98,7 +100,7 @@ internal sealed class HostProbes(bool ipv6Available) : IHostProbes
         }
         finally
         {
-            listener.Stop();
+            listener.Dispose();
         }
     }
 }

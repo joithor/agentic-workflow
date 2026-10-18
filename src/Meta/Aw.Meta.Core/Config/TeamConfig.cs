@@ -19,6 +19,10 @@ public sealed record TeamConfig
     /// <param name="mergeOrder">Merge-order rules; none when absent.</param>
     /// <param name="knownFlakes">Names of tests known to be flaky; none when absent.</param>
     /// <param name="worktrees">The worktree sweep's settings; the defaults when absent.</param>
+    /// <param name="resources">The memory and disk thresholds; the defaults when absent.</param>
+    /// <param name="builders">How many builders a lane may run; the defaults when absent.</param>
+    /// <param name="heavy">The heavy-slot reservation; the defaults when absent.</param>
+    /// <param name="context">The lane context-window threshold for recycling; the defaults when absent.</param>
     [JsonConstructor]
     public TeamConfig(
         string team,
@@ -30,7 +34,11 @@ public sealed record TeamConfig
         GateConfig? gate = null,
         IReadOnlyList<MergeOrderRule>? mergeOrder = null,
         IReadOnlyList<string>? knownFlakes = null,
-        WorktreeConfig? worktrees = null)
+        WorktreeConfig? worktrees = null,
+        ResourcesConfig? resources = null,
+        BuildersConfig? builders = null,
+        HeavyConfig? heavy = null,
+        ContextConfig? context = null)
     {
         Team = team;
         Repo = repo;
@@ -42,6 +50,10 @@ public sealed record TeamConfig
         MergeOrder = mergeOrder ?? [];
         KnownFlakes = knownFlakes ?? [];
         Worktrees = worktrees ?? new WorktreeConfig();
+        Resources = resources ?? new ResourcesConfig();
+        Builders = builders ?? new BuildersConfig();
+        Heavy = heavy ?? new HeavyConfig();
+        Context = context ?? new ContextConfig();
     }
 
     /// <summary>The team name; session names are "team-lane".</summary>
@@ -73,4 +85,16 @@ public sealed record TeamConfig
 
     /// <summary>The worktree sweep's settings.</summary>
     public WorktreeConfig Worktrees { get; init; }
+
+    /// <summary>The memory and disk thresholds.</summary>
+    public ResourcesConfig Resources { get; init; }
+
+    /// <summary>How many builders a lane may run.</summary>
+    public BuildersConfig Builders { get; init; }
+
+    /// <summary>The heavy-slot reservation.</summary>
+    public HeavyConfig Heavy { get; init; }
+
+    /// <summary>The lane context-window threshold for recycling.</summary>
+    public ContextConfig Context { get; init; }
 }

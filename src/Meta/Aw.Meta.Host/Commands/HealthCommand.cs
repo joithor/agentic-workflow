@@ -29,7 +29,9 @@ internal static class HealthCommand
                     var missing => "lanes with no live session: " + string.Join(", ", missing),
                 },
                 .. (health.Lanes ?? []).Select(static l => $"lane {l.Lane} ({l.Agent}): {l.State}"),
+                .. ContextLine.Of(health.Context),
                 .. HeavyLocks(health),
+                .. Adaptation(health),
                 health.Attention ? "HEALTH ATTENTION" : "HEALTH OK",
             ]);
 
@@ -38,7 +40,20 @@ internal static class HealthCommand
         var host = health.Host;
         return string.Create(
             CultureInfo.InvariantCulture,
-            $"memory: {host.MemAvailableKb / 1024} MB available of {host.MemTotalKb / 1024} MB ({host.AvailablePercent}%){(health.MemoryLow ? " LOW" : string.Empty)}; swap used {host.SwapUsedKb / 1024} MB; disk free {host.DiskFreeBytes / (1024 * 1024 * 1024)} GB");
+            $"memory: {host.MemAvailableKb / 1024} MB available of {host.MemTotalKb / 1024} MB ({host.AvailablePercent}%){(health.MemoryLow ? " LOW" : string.Empty)}; swap used {host.SwapUsedKb / 1024} MB (informational); disk free {host.DiskFreeBytes / (1024 * 1024 * 1024)} GB");
+    }
+
+    private static IEnumerable<string> Adaptation(HealthResponse health)
+    {
+        if (health.Heavy is { } heavy)
+        {
+            yield return heavy.Line();
+        }
+
+        if (health.Builders is { } builders)
+        {
+            yield return builders.Line();
+        }
     }
 
     private static IEnumerable<string> Orphans(HealthResponse health) =>

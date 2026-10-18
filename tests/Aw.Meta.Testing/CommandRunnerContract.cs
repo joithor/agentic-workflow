@@ -1,3 +1,4 @@
+using Aw.Kernel.Testing;
 using Aw.Meta.Core;
 using Aw.Meta.Core.Commands;
 using Aw.Meta.Core.Ports;
@@ -48,6 +49,18 @@ public abstract class CommandRunnerContract
         Expect.That(bad.IsSuccess && bad.Value.ExitCode == 3, "a non-zero exit is a result, not an error");
     }
 
+    /// <summary>Output past TailCharacters keeps exactly the last TailCharacters characters (the macOS tools' cap refusal depends on it).</summary>
+    /// <returns>A task.</returns>
+    [Fact]
+    public async Task Output_past_the_tail_keeps_exactly_the_last_characters()
+    {
+        var text = string.Concat(Enumerable.Range(0, 100).Select(n => (char)('a' + (n % 26))));
+
+        var result = await Create().Run(new CommandRequest(Prints(text), TimeSpan.FromSeconds(20)) { TailCharacters = 10 }, _none);
+
+        Expect.That(result.IsSuccess && result.Value.Stdout == text[^10..], "stdout is the last 10 characters");
+    }
+
     /// <summary>A command past its timeout is killed and flagged.</summary>
     /// <returns>A task.</returns>
     [Fact]
@@ -73,7 +86,7 @@ public abstract class CommandRunnerContract
     [Fact]
     public async Task Output_is_appended_to_the_log_file()
     {
-        var log = Path.Combine(Path.GetTempPath(), "aw-meta-cmd-" + Guid.NewGuid().ToString("N") + ".log");
+        var log = Path.Combine(Path.GetTempPath(), "aw-meta-cmd-" + RealTime.NewGuid().ToString("N") + ".log");
         try
         {
             var result = await Create().Run(Request(Prints("to the log")) with { LogFile = log }, _none);

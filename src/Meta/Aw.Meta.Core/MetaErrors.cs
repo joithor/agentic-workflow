@@ -65,7 +65,13 @@ public static class MetaErrors
     /// <summary>AW-META-020.</summary>
     public static readonly ErrorDefinition TeamMigrationRefused = new("AW-META-020", ErrorKind.Conflict, "The legacy team can't be migrated");
 
+    /// <summary>AW-META-021.</summary>
+    public static readonly ErrorDefinition RecycleRefused = new("AW-META-021", ErrorKind.Conflict, "The lane can't be recycled");
+
+    /// <summary>AW-META-022.</summary>
+    public static readonly ErrorDefinition RecycleTimedOut = new("AW-META-022", ErrorKind.Unavailable, "The recycled lane never reported a new session");
+
     /// <summary>Every Meta error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
-        [Invalid, NoTeamConfig, ConfigInvalid, TranscriptUnreadable, MessageNotFound, QuestionNotFound, GateStepNotFound, LogUnwritable, CommandNotStarted, HostUnreadable, ConfigExists, CommandFailed, LogUnreadable, LaneVariablesUnset, LaneNotRecorded, UnknownLane, ClaudeLane, QueueEntryNotFound, TeamAmbiguous, TeamMigrationRefused];
+        [Invalid, NoTeamConfig, ConfigInvalid, TranscriptUnreadable, MessageNotFound, QuestionNotFound, GateStepNotFound, LogUnwritable, CommandNotStarted, HostUnreadable, ConfigExists, CommandFailed, LogUnreadable, LaneVariablesUnset, LaneNotRecorded, UnknownLane, ClaudeLane, QueueEntryNotFound, TeamAmbiguous, TeamMigrationRefused, RecycleRefused, RecycleTimedOut];
 }

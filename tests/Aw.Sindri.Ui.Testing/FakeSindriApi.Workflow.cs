@@ -10,24 +10,55 @@ internal sealed partial class FakeSindriApi
     public RouteAnswer? WorkflowAnswer { get; set; }
 
     private int _instancesCalls;
+    private readonly List<InstanceQuery> _instanceQueries = [];
+
+    /// <summary>Every instance-list query made, in order: the Workflows page and the strip send the same root, open query, so a query can't tell which reader made a call: count the page's reads on the page (WorkflowsViewModel.Drawn).</summary>
+    public IReadOnlyList<InstanceQuery> InstanceQueries { get { lock (_instanceQueries) { return [.. _instanceQueries]; } } }
 
     /// <summary>How many times the instance list was read.</summary>
     public int InstancesCalls => Volatile.Read(ref _instancesCalls);
 
-    public Task<Result<InstanceList>> Instances(Uri api, InstanceQuery query, CancellationToken cancellationToken)
+    /// <summary>
+    /// Held open until set, per query: the answer is decided when the request is made and arrives when the gate is set, so a test can have
+    /// an older read finish after a newer one (the fake otherwise answers at once, in request order).
+    /// </summary>
+    public Dictionary<InstanceQuery, TaskCompletionSource> InstancesGates { get; } = [];
+
+    public async Task<Result<InstanceList>> Instances(Uri api, InstanceQuery query, CancellationToken cancellationToken)
     {
         _ = Interlocked.Increment(ref _instancesCalls);
-        return Task.FromResult(Answer<InstanceList>(api, WorkflowRoutes.Instances(query), InstancesAnswer(query)));
+        LastInstancesQuery = query;
+        lock (_instanceQueries)
+        {
+            _instanceQueries.Add(query);
+        }
+
+        var answer = Answer<InstanceList>(api, WorkflowRoutes.Instances(query), InstancesAnswer(query));
+        if (InstancesGates.TryGetValue(query, out var gate))
+        {
+            await gate.Task.WaitAsync(cancellationToken).ConfigureAwait(true);
+        }
+
+        return answer;
     }
 
-    public Task<Result<InstanceDetail>> Instance(Uri api, string id, CancellationToken cancellationToken) =>
-        Task.FromResult(Answer<InstanceDetail>(api, WorkflowRoutes.Instance(id), InstanceAnswer(id)));
+    public Task<Result<InstanceDetail>> Instance(Uri api, string id, CancellationToken cancellationToken)
+    {
+        LastInstanceId = id;
+        return Task.FromResult(Answer<InstanceDetail>(api, WorkflowRoutes.Instance(id), InstanceAnswer(id)));
+    }
 
     public Task<Result<FactView>> InstanceFact(Uri api, string id, string key, CancellationToken cancellationToken) =>
         Task.FromResult(Answer<FactView>(api, WorkflowRoutes.Fact(id, key), FactAnswer(id, key)));
 
-    public Task<Result<RecipeView>> Recipe(Uri api, string recipe, string? hash, CancellationToken cancellationToken) =>
-        Task.FromResult(Answer<RecipeView>(api, WorkflowRoutes.Recipe(recipe, hash), RecipeAnswer(recipe, hash)));
+    public Task<Result<RecipeView>> Recipe(Uri api, string recipe, string? hash, CancellationToken cancellationToken)
+    {
+        LastRecipeRead = (recipe, hash);
+        return Task.FromResult(Answer<RecipeView>(api, WorkflowRoutes.Recipe(recipe, hash), RecipeAnswer(recipe, hash)));
+    }
+
+    /// <summary>The recipe and hash of the latest recipe read; null before the first.</summary>
+    public (string Recipe, string? Hash)? LastRecipeRead { get; private set; }
 
     /// <summary>What GET /workflow/instances answers for a query.</summary>
     /// <param name="query">The query.</param>
@@ -53,4 +84,10 @@ internal sealed partial class FakeSindriApi
 
     // LANE ANCHOR U3': U3' keeps its own fake in FakeSindriApi.Routes.cs; it adds nothing here. Insert immediately above this marker, never between the markers.
     // LANE ANCHOR U8: new workflow answers (commands, complete) and their gates, answered from WorkflowAnswers. Insert immediately below this marker, never between the markers.
+
+    /// <summary>The id of the latest instance read; null before the first.</summary>
+    public string? LastInstanceId { get; private set; }
+
+    /// <summary>The query of the latest instance-list read; null before the first.</summary>
+    public InstanceQuery? LastInstancesQuery { get; private set; }
 }

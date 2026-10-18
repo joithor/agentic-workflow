@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+. "$(dirname "${BASH_SOURCE[0]}")/../../../scripts/lib/test-grep.sh"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HOOK="$DIR/../../hooks/scope-gate.sh"
 # The hook logs fail-open events under $AW_STATE_DIR (default ~/.agentic-workflow): this suite gets its own, never an inherited one.
@@ -44,7 +45,7 @@ test_missing_denies_with_field_reason() {
   bin_dir="$(setup_fake_judge missing)"
   out="$(run_hook '{"session_id":"s1","prompt_id":"p1","tool_use_id":"tu2","tool_input":{"subagent_type":"lean-coder","description":"","prompt":""}}' "$bin_dir")"
   echo "$out" | jq -e '.hookSpecificOutput.permissionDecision == "deny"' > /dev/null || { echo "FAIL: expected deny for missing, got $out"; exit 1; }
-  echo "$out" | jq -r '.hookSpecificOutput.permissionDecisionReason' | grep -qi "goal or acceptance" || { echo "FAIL: expected the missing-field reason, got $out"; exit 1; }
+  echo "$out" | jq -r '.hookSpecificOutput.permissionDecisionReason' | has -i "goal or acceptance" || { echo "FAIL: expected the missing-field reason, got $out"; exit 1; }
   echo "PASS: test_missing_denies_with_field_reason"
 }
 
@@ -53,7 +54,7 @@ test_needs_design_denies_with_user_wording() {
   bin_dir="$(setup_fake_judge needs_design)"
   out="$(run_hook '{"session_id":"s1","prompt_id":"p1","tool_use_id":"tu3","tool_input":{"subagent_type":"lean-coder","description":"make it better","prompt":"make it nicer"}}' "$bin_dir")"
   echo "$out" | jq -e '.hookSpecificOutput.permissionDecision == "deny"' > /dev/null || { echo "FAIL: expected deny for needs_design, got $out"; exit 1; }
-  echo "$out" | jq -r '.hookSpecificOutput.permissionDecisionReason' | grep -qi "user" || { echo "FAIL: expected 'send this to the user' wording, got $out"; exit 1; }
+  echo "$out" | jq -r '.hookSpecificOutput.permissionDecisionReason' | has -i "user" || { echo "FAIL: expected 'send this to the user' wording, got $out"; exit 1; }
   echo "PASS: test_needs_design_denies_with_user_wording"
 }
 
@@ -69,6 +70,7 @@ test_judge_failure_fails_open_to_allow() {
   local bin_dir out; bin_dir="$(mktemp -d)"
   cat > "$bin_dir/judge" <<'EOF'
 #!/usr/bin/env bash
+cat >/dev/null  # drain stdin like the real judge, so the logged cause is judge-exit-1, never a SIGPIPE 141
 exit 1
 EOF
   chmod +x "$bin_dir/judge"

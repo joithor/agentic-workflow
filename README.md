@@ -1,6 +1,6 @@
 # Agentic Workflow
 
-A portable, provider-agnostic workflow toolkit for AI coding agents. It works the same way in **Claude Code**, **Codex**, and **Cursor**: 53 native skills plus 3 fetched external design packs (impeccable, emil-design-eng, taste-skill), a repo bootstrapper, safety hooks, a cheap-decision judge, a cost/involvement scorer, and token-efficiency tools (the rtk command rewriter and the headroom context compressor).
+A portable, provider-agnostic workflow toolkit for AI coding agents. It works the same way in **Claude Code**, **Codex**, and **Cursor**: 53 native skills plus 3 fetched external design packs (impeccable, emil-design-eng, taste-skill), a repo bootstrapper, safety hooks, a cheap-decision judge, a cost/involvement scorer, and a token-efficiency tool (the rtk command rewriter).
 
 There is one canonical core: skills, hook logic, MCP servers, judge, and scorer. Each provider gets a thin adapter on top. Skills describe *capabilities* ("ask the user", "spawn a subagent", "call an MCP tool"), and each provider maps those to its own tools. See [Providers](#providers) and [`planning/PROVIDERS.md`](planning/PROVIDERS.md).
 
@@ -98,7 +98,7 @@ The toolkit treats Claude Code, Codex, and Cursor as equal hosts. `setup.sh` ins
 | Skills installed to | `~/.claude/skills/` | `~/.codex/skills/` | `~/.cursor/skills/` |
 | Repo instructions | `CLAUDE.md` (symlink to `AGENTS.md`) + `.claude/rules` (symlink) | `AGENTS.md` (Rules Index) | `AGENTS.md` + `.cursor/rules/*.mdc` (symlinks) |
 | Safety hooks (`config/hooks/`) | Native | Via adapter (`config/hooks/adapters/codex.sh`); trust with `/hooks` | Via adapter (`config/hooks/adapters/cursor.sh`) |
-| MCP servers (serena, headroom, prism-mcp, …) | `claude mcp add --scope user` | `codex mcp add` | merged into `~/.cursor/mcp.json` (may need `cursor-agent mcp enable <name>`) |
+| MCP servers (serena, prism-mcp, …) | `claude mcp add --scope user` | `codex mcp add` | merged into `~/.cursor/mcp.json` (may need `cursor-agent mcp enable <name>`) |
 | Judge model provider | `claude-cli` | `codex-cli` | `cursor-cli` |
 | Scorer transcript source | Yes | Yes | Involvement only (no token/cost data) |
 | Statusline + shell integration | Yes | — | — |
@@ -138,8 +138,6 @@ After setup, a couple of provider-specific steps remain:
 - [GitHub CLI (`gh`)](https://cli.github.com/) installed and authenticated (required by review skills)
 - [`jq`](https://jqlang.github.io/jq/) installed (required by hooks and the statusline; `brew install jq` on macOS)
 - [`rtk`](https://github.com/rtk-ai/rtk): token-compressing CLI proxy (`brew install rtk` on macOS; installed automatically by `setup.sh`)
-- Python 3 + pip, required for headroom
-- [`headroom`](https://github.com/chopratejas/headroom): context optimization layer (`pip install "headroom-ai[all]"`; installed automatically by `setup.sh`)
 
 ## Setup
 
@@ -155,9 +153,9 @@ The setup script:
 - Symlinks native skills, `/bootstrap`, and the external design packs (cloned at pinned commits from `EXTERNAL_PINS.env`) into each selected provider's skills directory
 - Installs the safety hooks (`block-destructive.sh`, `block-push-main.sh`, `detect-secrets.sh`, `rtk-rewrite.sh`) and session-context hooks for each provider. Claude Code uses them natively; Codex and Cursor go through their hook adapters.
 - Builds the Serena Docker images (base TS/Python image; opt-in C# and Swift extensions) and installs the `serena-docker` wrapper to `~/.local/bin/`
-- Registers the MCP servers (`serena`, `headroom`, `prism-mcp`, and `xcodebuildmcp` on macOS) with each selected provider, and removes an old `agentic-bridge` registration and the leftover `mcp-bridge/` build output (the MCP bridge was retired)
+- Registers the MCP servers (`serena`, `prism-mcp`, and `xcodebuildmcp` on macOS) with each selected provider, and removes old `agentic-bridge` and `headroom` registrations and the leftover `mcp-bridge/` build output (the MCP bridge was retired)
 - Configures `prism-mcp` (persistent memory, downloaded on first use) with its Mind Palace dashboard at `http://localhost:7180` (`PRISM_DASHBOARD_PORT`). The `prism-context.sh` session-start hook warns if the dashboard is unreachable; `/prismStatus` runs a full health check
-- Installs rtk and headroom
+- Installs rtk
 - **Claude Code only:** copies `settings.json`, installs the statusline and shell integration, and adds plugin marketplaces and plugins
 
 ## Contents
@@ -174,7 +172,7 @@ The setup script:
 | C# scaffolds | `new-package`, `new-slice` |
 | Review | `review`, `postReview`, `addressReview`, `cso` |
 | Debug & QA | `rootCause`, `bugHunt`, `bugReport`, `bugFixOrchestrator`, `testAudit` |
-| Ship & operate | `shipRelease`, `landAndDeploy`, `canary`, `syncDocs`, `weeklyRetro`, `prismStatus`, `judge`, `meta` (opt-in: `./setup.sh --with-meta`; Linux only for now, aw-meta reads /proc, so setup skips it on macOS) |
+| Ship & operate | `shipRelease`, `landAndDeploy`, `canary`, `syncDocs`, `weeklyRetro`, `prismStatus`, `judge`, `meta` (opt-in: `./setup.sh --with-meta`; Linux and macOS) |
 | Repo setup | `bootstrap` |
 | Self-evolution | `reflect`, `correct` |
 

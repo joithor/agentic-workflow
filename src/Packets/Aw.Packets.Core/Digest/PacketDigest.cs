@@ -4,6 +4,9 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Kernel;
+using Aw.Packets.Core.Kinds;
+using Aw.Packets.Core.Kinds.Line;
+using Aw.Packets.Core.Kinds.Scoping;
 using Aw.Packets.Core.Model;
 using Aw.Packets.Core.Values;
 
@@ -36,10 +39,59 @@ public static class PacketDigest
         ArgumentNullException.ThrowIfNull(loaded);
         var links = loaded.Packet.Manifest.Links;
         var json = new HashSet<string>(StringComparer.Ordinal) { ManifestFile, links.Decisions, links.OutOfScope, links.Tasks };
-        var files = new JsonObject();
-        foreach (var (path, bytes) in loaded.Files.OrderBy(static f => f.Key, StringComparer.Ordinal))
+        return Compute(loaded.Files.Select(f => (f.Key, f.Value, json.Contains(f.Key))), kind: null);
+    }
+
+    /// <summary>
+    /// Computes the hash of a scope packet: the same canonical form, over the scoping kind's twelve files, with
+    /// '"kind":"scoping"' in the hashed document so no build packet can collide with it. A JSON file's entry is the file
+    /// without its '$schema'; a JSON-lines or text file's entry is 'sha256:&lt;hex of its bytes&gt;'.
+    /// </summary>
+    /// <param name="files">The packet directory as read.</param>
+    /// <returns>The hash; AW-PACKETS-003 when a listed file is missing or a JSON file has no canonical form.</returns>
+    public static Result<PacketHash> Compute(ScopingFiles files)
+    {
+        ArgumentNullException.ThrowIfNull(files);
+        var kind = PacketKinds.Scoping;
+        if (kind.Files.FirstOrDefault(f => !files.Present.ContainsKey(f.Name)) is { } missing)
         {
-            var entry = json.Contains(path) ? Parse(path, bytes) : Results.Success<JsonNode?>(Hex(bytes.Span));
+            return PacketsErrors.Malformed.With($"{missing.Name} is missing; a scope packet is hashed with all {kind.Files.Count} files.");
+        }
+
+        return Compute(kind.Files.Select(f => (f.Name, files.Present[f.Name], f.Format == PacketFileFormat.Json)), kind.Name);
+    }
+
+    /// <summary>
+    /// Computes the hash of a line packet (design, plan, phase, proof, review, handoff): the same canonical form over the
+    /// kind's files (packet.json and index.json among them) and the files under its linked directories, with
+    /// '"kind":"&lt;kind&gt;"' in the hashed document so no packet of another kind can collide with it. A JSON file's entry
+    /// is the file without its '$schema' hint (packet.json also without 'status' and 'hash'); any other file's entry is
+    /// 'sha256:&lt;hex of its bytes&gt;'.
+    /// </summary>
+    /// <param name="kind">A line kind.</param>
+    /// <param name="files">The packet directory as read.</param>
+    /// <returns>The hash; AW-PACKETS-003 when a listed file is missing or a JSON file has no canonical form.</returns>
+    public static Result<PacketHash> Compute(PacketKind kind, LinePacketFiles files)
+    {
+        ArgumentNullException.ThrowIfNull(kind);
+        ArgumentNullException.ThrowIfNull(files);
+        if (kind.Files.FirstOrDefault(f => !files.Present.ContainsKey(f.Name)) is { } missing)
+        {
+            return PacketsErrors.Malformed.With($"{missing.Name} is missing; a {kind.Name} packet is hashed with all {kind.Files.Count} files.");
+        }
+
+        var json = kind.Files.Where(static f => f.Format == PacketFileFormat.Json).Select(static f => f.Name).ToHashSet(StringComparer.Ordinal);
+        var listed = kind.Files.Select(static f => f.Name).ToHashSet(StringComparer.Ordinal);
+        var covered = files.Present.Where(f => listed.Contains(f.Key) || kind.Directories.Any(d => f.Key.StartsWith(d.Prefix, StringComparison.Ordinal)));
+        return Compute(covered.Select(f => (f.Key, f.Value, json.Contains(f.Key))), kind.Name);
+    }
+
+    private static Result<PacketHash> Compute(IEnumerable<(string Path, ReadOnlyMemory<byte> Bytes, bool IsJson)> entries, string? kind)
+    {
+        var files = new JsonObject();
+        foreach (var (path, bytes, isJson) in entries.OrderBy(static f => f.Path, StringComparer.Ordinal))
+        {
+            var entry = isJson ? Parse(path, bytes) : Results.Success<JsonNode?>(Hex(bytes.Span));
             if (entry.IsError)
             {
                 return entry.Error;
@@ -49,6 +101,11 @@ public static class PacketDigest
         }
 
         var document = new JsonObject { ["digestVersion"] = Version, ["files"] = files };
+        if (kind is not null)
+        {
+            document["kind"] = kind;
+        }
+
         return PacketHash.From(Hex(Canonical(document)));
     }
 

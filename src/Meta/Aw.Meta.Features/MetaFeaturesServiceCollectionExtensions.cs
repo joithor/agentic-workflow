@@ -11,8 +11,10 @@ using Aw.Meta.Features.Inbox;
 using Aw.Meta.Features.InboxDefer;
 using Aw.Meta.Features.InboxDismiss;
 using Aw.Meta.Features.LaneInbox;
+using Aw.Meta.Features.LaneRecycle;
 using Aw.Meta.Features.LaneReply;
 using Aw.Meta.Features.Lanes;
+using Aw.Meta.Features.LanesContext;
 using Aw.Meta.Features.LaneSend;
 using Aw.Meta.Features.LaneStopCheck;
 using Aw.Meta.Features.LogAppend;
@@ -22,7 +24,9 @@ using Aw.Meta.Features.Owner;
 using Aw.Meta.Features.OwnerAnswer;
 using Aw.Meta.Features.OwnerAsk;
 using Aw.Meta.Features.QueueDrop;
+using Aw.Meta.Features.QueueGate;
 using Aw.Meta.Features.Roles;
+using Aw.Meta.Features.ShowVersion;
 using Aw.Meta.Features.Status;
 using Aw.Meta.Features.StopCheck;
 using Aw.Meta.Features.SyncInbox;
@@ -61,6 +65,8 @@ public static class MetaFeaturesServiceCollectionExtensions
         .Validated<TeamInitService, TeamInitRequest, TeamConfig>()
         .AddScoped<TeamShowService>()
         .Plain<TeamShowService, TeamShowRequest, TeamConfig>()
+        .AddScoped<ShowVersionService>()
+        .Plain<ShowVersionService, ShowVersionRequest, BuildInfo>()
         .AddScoped<TeamListService>()
         .Plain<TeamListService, TeamListRequest, TeamListResponse>()
         .AddScoped<TeamMigrateService>()
@@ -93,6 +99,13 @@ public static class MetaFeaturesServiceCollectionExtensions
         .AddScoped<LaneSendService>()
         .AddScoped<IValidator<LaneSendRequest>, LaneSendValidator>()
         .Validated<LaneSendService, LaneSendRequest, LaneSendResponse>()
+        .AddScoped<LanesContextService>()
+        .Plain<LanesContextService, LanesContextRequest, LanesContextResponse>()
+        .AddScoped<RecycleGuard>()
+        .AddScoped<RecycleRunner>()
+        .AddScoped<LaneRecycleService>()
+        .AddScoped<IValidator<LaneRecycleRequest>, LaneRecycleValidator>()
+        .Validated<LaneRecycleService, LaneRecycleRequest, LaneRecycleResponse>()
         .AddScoped<LaneInboxService>()
         .Plain<LaneInboxService, LaneInboxRequest, LaneInboxResponse>()
         .AddScoped<LaneStopCheckService>()
@@ -123,11 +136,13 @@ public static class MetaFeaturesServiceCollectionExtensions
         .Plain<StatusService, StatusRequest, StatusResponse>();
 
     private static IServiceCollection AddGateSlices(this IServiceCollection services) => services
-        .AddScoped<GateStepRunner>()
         .AddScoped<RerunExecutor>()
         .AddScoped<GateRunService>()
         .AddScoped<IValidator<GateRunRequest>, GateRunValidator>()
         .Validated<GateRunService, GateRunRequest, GateRunResponse>()
+        .AddScoped<QueueGateService>()
+        .AddScoped<IValidator<QueueGateRequest>, QueueGateValidator>()
+        .Validated<QueueGateService, QueueGateRequest, QueueGateResponse>()
         .AddScoped<GateRerunService>()
         .AddScoped<IValidator<GateRerunRequest>, GateRerunValidator>()
         .Validated<GateRerunService, GateRerunRequest, GateRerunResponse>()

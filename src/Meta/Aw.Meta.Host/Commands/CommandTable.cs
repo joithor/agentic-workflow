@@ -18,6 +18,7 @@ internal static class CommandTable
         TeamInitCommand.Entry,
         TeamShowCommand.Entry,
         TeamListCommand.Entry,
+        VersionCommand.Entry,
         TeamMigrateCommand.Entry,
         SyncInboxCommand.Entry,
         StopCheckCommand.Entry,
@@ -34,6 +35,7 @@ internal static class CommandTable
         StatusCommand.Entry,
         QueueDropCommand.Entry,
         GateRunCommand.Entry,
+        QueueGateCommand.Entry,
         GateRerunCommand.Entry,
         MergeCheckCommand.Entry,
         MergeRunCommand.Entry,
@@ -42,13 +44,15 @@ internal static class CommandTable
         WorktreeListCommand.Entry,
         WorktreeSweepCommand.Entry,
         LaneSendCommand.Entry,
+        LanesContextCommand.Entry,
+        LaneRecycleCommand.Entry,
         LaneInboxCommand.Entry,
         LaneStopCheckCommand.Entry,
         LaneReplyCommand.Entry,
     ];
 
     // Commands that work across teams: they never need one selected.
-    private static readonly HashSet<string> _teamFree = new(["team-list", "team-migrate"], StringComparer.Ordinal);
+    private static readonly HashSet<string> _teamFree = new(["team-list", "team-migrate", "version"], StringComparer.Ordinal);
 
     // The hook commands run for every session of the box, so they pass through when the team can't be told.
     private static readonly HashSet<string> _hooks = new(["stop-check", "outbox-record"], StringComparer.Ordinal);
@@ -81,7 +85,7 @@ internal static class CommandTable
         return CommandOutput.Failed;
     }
 
-    internal static async Task<int> Run(string[] args, IServiceProvider provider, JsonSerializerOptions json, ConsoleIo io)
+    internal static async Task<int> Run(string[] args, IServiceProvider provider, JsonSerializerOptions json, ConsoleIo io, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(args);
         if (args.Length == 0)
@@ -107,7 +111,7 @@ internal static class CommandTable
         var scope = provider.CreateAsyncScope();
         await using (scope.ConfigureAwait(false))
         {
-            var context = new CommandContext(line, scope.ServiceProvider, json, io);
+            var context = new CommandContext(line, scope.ServiceProvider, json, io, cancellationToken);
             if (entry.NeedsConfig && (await scope.ServiceProvider.GetRequiredService<IMetaConfig>().Load(CancellationToken.None).ConfigureAwait(false)) is { IsError: true } missing)
             {
                 return CommandOutput.Fail(context, missing.Error);

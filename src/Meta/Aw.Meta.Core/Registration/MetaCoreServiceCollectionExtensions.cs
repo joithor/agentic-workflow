@@ -20,10 +20,17 @@ public static class MetaCoreServiceCollectionExtensions
         .AddScoped<LaneBeats>()
         .AddScoped<LaneStopGuard>()
         .AddScoped<LaneHealthReader>()
+        .AddScoped<LaneContextReader>()
+        .AddScoped<PaneSubmitter>()
         .AddScoped<RepoCommands>()
         .AddScoped<GateTree>()
         .AddScoped<GateWorkspace>()
+        .AddScoped<GateStepRunner>()
+        .AddScoped<TrainSelection>()
         .AddScoped<MergeReadiness>()
+        .AddScoped<MergeQueueReader>()
+        .AddScoped<HeavyReservation>()
+        .AddScoped<ResourceAdvisor>()
         .AddScoped<WorktreeInspector>()
         .AddScoped<WorktreeSweeper>();
 }

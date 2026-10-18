@@ -34,8 +34,18 @@ public abstract class FrameHost : IDisposable
 
     public void Dispose()
     {
-        _stop.Dispose();
+        Dispose(disposing: true);
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>Releases the host's resources.</summary>
+    /// <param name="disposing">True when called from <see cref="Dispose()"/>.</param>
+    protected virtual void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _stop.Dispose();
+        }
     }
 
     private protected async Task OnUi(Func<Task> body) =>
@@ -103,9 +113,9 @@ public abstract class FrameHost : IDisposable
 
     private protected static bool Visible(Visual within, string name) => within.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.Name == name)?.IsEffectivelyVisible == true;
 
-    private protected static void Frame(Window window, string name)
+    private protected static void Frame(Window window, string name, string prefix = "u3-")
     {
         Settle(window);
-        FrameFile.Save(window, "u3-" + name);
+        FrameFile.Save(window, prefix + name);
     }
 }

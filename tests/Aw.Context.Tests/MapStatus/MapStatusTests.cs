@@ -74,7 +74,7 @@ public sealed class MapStatusTests : IDisposable
         var lenses = (await _world.Engine.Lenses("feature:tabs.tab-manager", draft: false, depth: null, MapWorld.Human, MapWorld.None)).Value;
 
         Assert.NotNull(status.Coverage);
-        Assert.Equivalent(lenses.Coverage, status.Coverage);
+        Assert.Equivalent(lenses.Coverage with { Map = null }, status.Coverage);
         Assert.Equal((6, 2, 6, 2), (status.Coverage.Scope, status.Coverage.Intent.Covered, status.Coverage.Product.Confirmed, status.Coverage.Code.Implemented));
     }
 

@@ -41,6 +41,7 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<HeldHumanToken>()
             .AddSingleton<BlockCatalog>()
             .AddScoped<OnyxFacts>()
+            .AddSingleton<StepInputRuntimes>()
             .AddSingleton<ILedgerSignal, LedgerSignal>()
             .AddSingleton<IStreamSlots, StreamSlots>()
             .AddScoped<CallerEventView>()

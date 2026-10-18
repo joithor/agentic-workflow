@@ -204,6 +204,16 @@ public sealed class BacktestTests
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task Backtest_of_the_docs_arm_alone_does_not_report_missing_clusters()
+    {
+        await using var world = await BacktestWorld.Start(BacktestWorld.BeforeAllCuts);   // no clusters, but the docs arm reads no map
+
+        var report = (await world.Run("docs")).Value.Report;
+
+        Assert.DoesNotContain(report.Degraded, d => d.StartsWith("clusters unavailable", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task Backtest_says_so_when_a_teams_issue_listing_hit_the_source_cap()
     {
         await using var world = await BacktestWorld.Start(BacktestWorld.BeforeAllCuts);

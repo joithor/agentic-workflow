@@ -1,7 +1,7 @@
 {
   "pid": 1100,
   "sessionId": "cccccccc-0000-4000-8000-000000001100",
-  "cwd": "/home/dev/recycled",
+  "cwd": "/nonexistent-fixture-root/home/dev/recycled",
   "startedAt": 1760000001100,
   "procStart": "8000",
   "version": "2.1.301",

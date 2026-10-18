@@ -107,7 +107,7 @@ public sealed class GetInstanceServiceTests
         var line = status.Text.Split('\n').Select(static l => l.Trim()).FirstOrDefault(static l => l.StartsWith("commands", StringComparison.Ordinal));
         // The commands line lists the verbs ("answer (forwarded)" marks a forwarded answer); an approve has its own drift line, which carries its command.
         var parsed = line is null ? string.Empty : line["commands".Length..].Replace(" (forwarded)", string.Empty, StringComparison.Ordinal).Trim();
-        Assert.Equal(string.Join(", ", status.Commands.Where(static c => c.Verb != StatusVerb.Approve).Select(static c => StatusVerbNames.Of(c.Verb))), parsed);
+        Assert.Equal(string.Join(", ", status.Commands.Where(static c => c.Verb != StatusVerb.Approve).Select(static c => StatusVerbNames.Of(c.Verb)).Distinct(StringComparer.Ordinal)), parsed);   // one word per verb: an answer with two variants is still "answer"
         Assert.All(status.Commands.Where(static c => c.Verb == StatusVerb.Approve), c => Assert.Contains(Words(c.Cli), Words(status.Text), StringComparison.Ordinal));
     }
 

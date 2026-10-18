@@ -54,6 +54,15 @@ public sealed class MetaWorld
     /// <summary>Transcript files.</summary>
     public InMemoryTranscriptReader Transcripts { get; } = new();
 
+    /// <summary>Claude Code's session transcripts.</summary>
+    public InMemoryClaudeTranscripts ClaudeTranscripts { get; } = new();
+
+    /// <summary>The session each Claude lane runs now (Claude Code's sessions directory).</summary>
+    public InMemoryLaneSessions LaneSessions { get; } = new();
+
+    /// <summary>The digest files lanes wrote.</summary>
+    public InMemoryDigestFiles Digests { get; } = new();
+
     /// <summary>External programs (git, gh and the gate's steps), scripted per test.</summary>
     public InMemoryCommandRunner Runner { get; } = new();
 
@@ -62,6 +71,9 @@ public sealed class MetaWorld
 
     /// <summary>Memory, disk and heavy-job locks.</summary>
     public InMemoryHostResources Resources { get; } = new();
+
+    /// <summary>The team's kept heavy reservation (heavy-reserve).</summary>
+    public InMemoryHeavyReserve Heavy { get; } = new();
 
     /// <summary>Processes.</summary>
     public InMemoryProcessTable Processes { get; } = new();
@@ -113,6 +125,9 @@ public sealed class MetaWorld
         var values = new InMemoryKeyValueStore();
         return new LaneHealthReader(new InMemoryLaneFiles(), new LaneBeats(values), new InMemoryLaneMail(new InMemoryMessageStore()), new LaneStopGuard(values, new InMemoryRunningLog()));
     }
+
+    /// <summary>The lanes' context sizes.</summary>
+    public LaneContextReader Context => new(LaneFiles, LaneSessions, ClaudeTranscripts);
 
     /// <summary>The non-Claude lanes' standing.</summary>
     public LaneHealthReader LaneHealth => new(LaneFiles, Beats, LaneMail, LaneGuard);
@@ -171,6 +186,17 @@ public sealed class MetaWorld
     /// <returns>The JSONL line with its line ending.</returns>
     public static string PeerLine(string id, string name, string body) =>
         $$"""{"type":"user","origin":{"kind":"peer","from":"uds:/run/{{name}}.sock","msg_id":"{{id}}","name":"{{name}}","body":"{{body}}"},"timestamp":"2026-10-15T04:05:00.000Z"}""" + "\n";
+
+    /// <summary>Appends a peer message to the meta transcript and syncs it into the inbox (appended, so the sync offset stays valid across calls).</summary>
+    /// <param name="id">The message id.</param>
+    /// <param name="name">The sender's session name.</param>
+    /// <param name="body">The text.</param>
+    /// <returns>A task.</returns>
+    public async Task Receive(string id, string name, string body)
+    {
+        Transcripts.Append(Transcript, PeerLine(id, name, body));
+        _ = await Sync.Run(Transcript, CancellationToken.None);
+    }
 
     /// <summary>A transcript line holding a peer message that arrived mid-turn: the queued_command attachment shape.</summary>
     /// <param name="id">The message id; empty for none (the delivery id then names it).</param>

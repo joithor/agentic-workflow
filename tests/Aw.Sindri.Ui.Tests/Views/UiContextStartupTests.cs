@@ -1,3 +1,5 @@
+using Avalonia.Headless;
+using Avalonia.Threading;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Testing;
@@ -35,15 +37,34 @@ public sealed class UiContextStartupTests
         return done.Task.GetAwaiter().GetResult();
     }
 
+    // The app's factory runs before Avalonia installs its context, so the bodies below run with none on the session thread. They never
+    // build an Avalonia object on a thread of their own: a thread that reads Dispatcher.UIThread while the headless session has it
+    // unbound (between two tests) takes the dispatcher, and the next test's compositor fails with "a different thread owns it".
+    private static Task<T> OnUiWithoutContext<T>(Func<Task<T>> body) =>
+        HeadlessUnitTestSession.GetOrStartForAssembly(typeof(UiContextStartupTests).Assembly).Dispatch(async () =>
+        {
+            var installed = SynchronizationContext.Current;
+            SynchronizationContext.SetSynchronizationContext(syncContext: null);
+            try
+            {
+                return await body();
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(installed);
+            }
+        }, TestContext.Current.CancellationToken);
+
     [Fact]
-    public void The_app_factory_leaves_the_UI_context_installed_for_the_view_models_it_builds()
+    public async Task The_app_factory_leaves_the_UI_context_installed_for_the_view_models_it_builds()
     {
         var platform = new SindriPlatform(new InMemoryEndpointRecords(), new InMemoryHumanToken(), new InMemoryPreferencesStore(), new FakeMotionPreference(), new FakeSingleInstance(new FakeInstanceChannel()), new FakeTray());
 
-        var after = OnBareThread(() =>
+        var after = await OnUiWithoutContext(() =>
         {
-            _ = SindriApp.Create(platform, new FakeTimeProvider(A.Noon));
-            return SynchronizationContext.Current;
+            Assert.Null(SynchronizationContext.Current);
+            using var app = SindriApp.Create(platform, new FakeTimeProvider(A.Noon));
+            return Task.FromResult(SynchronizationContext.Current);
         });
 
         Assert.NotNull(after);
@@ -54,14 +75,14 @@ public sealed class UiContextStartupTests
     {
         var motion = new FakeMotionPreference();
         var platform = new SindriPlatform(new InMemoryEndpointRecords(), new InMemoryHumanToken(), new InMemoryPreferencesStore(), motion, new FakeSingleInstance(new FakeInstanceChannel()), new FakeTray());
-        var app = OnBareThread(() => SindriApp.Create(platform, new FakeTimeProvider(A.Noon)));
 
-        var thrown = await Record.ExceptionAsync(() => Task.Run(() => motion.Set(reduce: true), TestContext.Current.CancellationToken));
-        var reduced = await Avalonia.Headless.HeadlessUnitTestSession.GetOrStartForAssembly(typeof(UiContextStartupTests).Assembly).Dispatch(() =>
+        var (thrown, reduced) = await OnUiWithoutContext(async () =>
         {
-            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-            return app.Shell!.NeedsYou.Seen.ReducedMotion;
-        }, TestContext.Current.CancellationToken);
+            using var app = SindriApp.Create(platform, new FakeTimeProvider(A.Noon));
+            var failure = await Record.ExceptionAsync(() => Task.Run(() => motion.Set(reduce: true), TestContext.Current.CancellationToken));
+            Dispatcher.UIThread.RunJobs();
+            return (failure, app.Shell!.NeedsYou.Seen.ReducedMotion);
+        });
 
         Assert.Null(thrown);
         Assert.True(reduced);

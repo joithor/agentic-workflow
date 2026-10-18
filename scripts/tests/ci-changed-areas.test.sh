@@ -74,12 +74,20 @@ expect "the fleet fixtures and the sessions tree run the bash tests (check-fleet
   "$(printf 'tests/fixtures/fleet/claude-code/stop.json\ntests/fixtures/sessions/proc/211/stat\nschemas/fleet-state.schema.json\n')" \
   "$(printf 'bash=true\ndotnet=true\npackages=[]')"
 
+expect "the shipped recipes run dotnet (the Sindri tests embed them) and the bash tests (the scoping schema check reads them)" \
+  "$(printf 'recipes/sindri/workflow.scoping.yaml\nrecipes/sindri/evals/workflow.scoping/brief-happy.jsonl\n')" \
+  "$(printf 'bash=true\ndotnet=true\npackages=[]')"
+
 expect "the sessions doc alone runs bash only" \
   "$(printf 'docs/csharp/sindri-sessions.md\n')" \
   "$(printf 'bash=true\ndotnet=false\npackages=[]')"
 
 expect "the scoping fixture runs the bash tests (scoping-fixture.test.sh builds its history)" \
   "$(printf 'tests/fixtures/scoping/gold/expiry.json\ntests/fixtures/scoping/history/build.sh\n')" \
+  "$(printf 'bash=true\ndotnet=true\npackages=[]')"
+
+expect "the line fixture runs the bash tests (line-fixture.test.sh builds its history)" \
+  "$(printf 'tests/fixtures/line/gold/plan/expiry/packet.json\ntests/fixtures/line/history/build.sh\n')" \
   "$(printf 'bash=true\ndotnet=true\npackages=[]')"
 
 expect "SindriProfile.cs runs bash and dotnet" \

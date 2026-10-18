@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jthorare/agentic-workflow/schemas/packets/sizes.schema.json",
+  "title": "Packet sizes file (schemaVersion 1)",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "sizes": {
+      "type": "object",
+      "properties": {
+        "XS": {
+          "type": "object",
+          "properties": {
+            "files": {
+              "type": "integer"
+            },
+            "items": {
+              "type": "integer"
+            },
+            "budget": {
+              "type": "object",
+              "properties": {
+                "tokens": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "turns": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "wallMinutes": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "files",
+            "items",
+            "budget"
+          ],
+          "additionalProperties": false
+        },
+        "S": {
+          "type": "object",
+          "properties": {
+            "files": {
+              "type": "integer"
+            },
+            "items": {
+              "type": "integer"
+            },
+            "budget": {
+              "$ref": "#/properties/sizes/properties/XS/properties/budget"
+            }
+          },
+          "required": [
+            "files",
+            "items",
+            "budget"
+          ],
+          "additionalProperties": false
+        },
+        "M": {
+          "type": "object",
+          "properties": {
+            "files": {
+              "type": "integer"
+            },
+            "items": {
+              "type": "integer"
+            },
+            "budget": {
+              "$ref": "#/properties/sizes/properties/XS/properties/budget"
+            }
+          },
+          "required": [
+            "files",
+            "items",
+            "budget"
+          ],
+          "additionalProperties": false
+        },
+        "L": {
+          "type": "object",
+          "properties": {
+            "files": {
+              "type": "integer"
+            },
+            "items": {
+              "type": "integer"
+            },
+            "budget": {
+              "$ref": "#/properties/sizes/properties/XS/properties/budget"
+            }
+          },
+          "required": [
+            "files",
+            "items",
+            "budget"
+          ],
+          "additionalProperties": false
+        },
+        "XL": {
+          "type": "object",
+          "properties": {
+            "files": {
+              "type": "integer"
+            },
+            "items": {
+              "type": "integer"
+            },
+            "budget": {
+              "$ref": "#/properties/sizes/properties/XS/properties/budget"
+            }
+          },
+          "required": [
+            "files",
+            "items",
+            "budget"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "sizes"
+  ],
+  "additionalProperties": false
+}

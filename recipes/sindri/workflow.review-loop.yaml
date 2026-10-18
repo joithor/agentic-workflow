@@ -1,0 +1,34 @@
+schema: 1
+id: workflow.review-loop
+version: 1
+description: "Block recipe: review to zero blocking and issue findings, at most 5 runs, then one narrow re-check."
+inputs:
+  - { key: fact:change, label: "Change", type: payload, kind: payload }
+  - { key: fact:phasePacket, label: "Phase packet", type: packet, kind: packet }
+outputs:
+  - { key: fact:review, label: "Last review", type: payload, from: review }
+initial: review
+states:
+  review:  { kind: active, step: step.review.run, loop: rounds, timeout: { after: 2h, then: park },
+             next: "Run review {loop.rounds}/{loop.rounds.cap} on {item}'s change." }
+  fix:     { kind: active, step: step.review.fix, timeout: { after: 4h, then: park },
+             next: "Fix the blocking and issue findings of run {loop.rounds}; answer the rest in writing." }
+  recheck: { kind: active, step: step.review.recheck, timeout: { after: 1h, then: park },
+             next: "Run cap reached: have one reviewer re-check only the fixes." }
+  clean:   { kind: terminal, outcome: resolved }
+  stuck:   { kind: terminal, outcome: unresolved }
+  wrong:   { kind: terminal, outcome: failed }
+transitions:
+  - { from: [review, recheck], to: clean, on: step.completed, when: { outcome: clean },           produces: [fact:review] }
+  - { from: review,  to: fix,     on: step.completed, when: { outcome: findings },        produces: [fact:review] }
+  - { from: [review, recheck], to: wrong, on: step.completed, when: { outcome: behaviourWrong }, produces: [fact:review] }
+  - { from: fix,     to: review,  on: step.completed, when: { all: [ { outcome: fixed }, { loop: rounds, below: cap } ] }, produces: [fact:change] }
+  - { from: fix,     to: recheck, on: step.completed, when: { all: [ { outcome: fixed }, { not: { loop: rounds, below: cap } } ] }, produces: [fact:change] }
+  - { from: recheck, to: stuck,   on: step.completed, when: { outcome: findings },        produces: [fact:review] }
+loops: { rounds: { cap: 5 } }
+evals:
+  - evals/workflow.review-loop/happy.jsonl
+  - evals/workflow.review-loop/cap-then-recheck.jsonl
+  - evals/workflow.review-loop/behaviour-wrong.jsonl
+  - evals/workflow.review-loop/recheck-clean.jsonl
+  - evals/workflow.review-loop/recheck-wrong.jsonl

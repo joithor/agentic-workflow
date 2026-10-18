@@ -37,7 +37,7 @@ SND-LEASE-001 held by HOST/PID since TIME (epoch 1)
 exit 1
 ## sindri profile approve (human, terminal)
 hash HASH
-changed since the last approval: api.port, schemaVersion, services.heartbeat.every, tenant, user
+changed since the last approval: api.port, repos.smoke, schemaVersion, services.heartbeat.every, tenant, user
 to approve: sindri profile approve HASH
 exit 1
 ## sindri profile approve HASH
@@ -61,7 +61,12 @@ Approved HASH
 {"running":true,"apiVersion":1}
 ## /sindri/mcp initialize, then tools/list (stateless)
 "sindri"
-["context_query","context_sources","context_lenses","context_node","context_neighbors"]
+["context_query","context_sources","context_lenses","context_node","context_neighbors","sindri_status","sindri_queue","sindri_item","sindri_item_timeline","sindri_pending_decisions","sindri_job","sindri_request"]
+## /sindri/mcp sindri_queue, sindri_request (files as session:mcp), sindri_item (not an id), sindri_decide (no such tool)
+{"isError":null,"groups":["waitingOnYou","withYou","running","queued"]}
+{"isError":null,"request":"REQ-ID"}
+{"isError":true,"code":"SND-CLI-003"}
+{"isError":true,"code":"SND-CONTEXT-023"}
 ## sindri views rebuild (session)
 SND-AUTH-002 RebuildViews is a human decision. Ask the human to run it in a terminal or the Sindri app: sindri views rebuild (this CLI ran as a session: CLAUDECODE is set)
 exit 2
@@ -190,6 +195,10 @@ hash sha256:HASH
 ## sindri recipe validate ROOT/recipes/sindri/workflow.item.yaml
 information: RCP-RES-001: resource 'slot' has no allocator in this build at workflow.item.yaml:10:39 (states.startable.waitFor.resource); it parks with SND-WF-010 until the session-slot stub lands (P7)
 skipped: RCP-EFFECT-001: effect 'effect.claim.ref' wasn't checked against an effect allowlist, since the profile has no workflow.effects at workflow.item.yaml:23:101 (transitions[2].effects[0].use); add workflow.effects to the profile; until then the effect is refused at run time
+hash sha256:HASH
+## sindri recipe validate ROOT/recipes/sindri/workflow.review-loop.yaml
+hash sha256:HASH
+## sindri recipe validate ROOT/recipes/sindri/workflow.evidence.yaml
 hash sha256:HASH
 ## sindri recipe validate ROOT/tests/Aw.Sindri.Testing/Workflow/Recipes/invalid/RCP-REACH-001.yaml
 RCP-REACH-001: state 'orphan' is unreachable from 'produce' at RCP-REACH-001.yaml:14:3 (states.orphan); add a transition into it or remove it

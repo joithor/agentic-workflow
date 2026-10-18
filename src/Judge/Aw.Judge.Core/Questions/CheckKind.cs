@@ -13,4 +13,12 @@ public enum CheckKind
     /// <summary>A regression test.</summary>
     [JsonStringEnumMemberName("test")]
     Test = 2,
+
+    /// <summary>An HTTP or CLI contract check (api-evidence).</summary>
+    [JsonStringEnumMemberName("api-evidence")]
+    ApiEvidence = 3,
+
+    /// <summary>A persisted-state check (db-evidence).</summary>
+    [JsonStringEnumMemberName("db-evidence")]
+    DbEvidence = 4,
 }

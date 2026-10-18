@@ -30,6 +30,7 @@ using Aw.Sindri.Infrastructure.Onyx;
 using Aw.Sindri.Infrastructure.Processes;
 using Aw.Sindri.Infrastructure.Profile;
 using Aw.Sindri.Infrastructure.Secrets;
+using Aw.Sindri.Infrastructure.Sessions;
 using Aw.Sindri.Infrastructure.Text;
 using Aw.Sindri.Infrastructure.Views;
 using Aw.Sindri.Infrastructure.Workflow;
@@ -46,10 +47,15 @@ public static class SindriInfrastructureServiceCollectionExtensions
     /// <param name="environment">Reads an environment variable (Environment.GetEnvironmentVariable in Program.cs, a lambda in tests).</param>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddSindriInfrastructure(this IServiceCollection services, Func<string, string?> environment)
-        => services
-            .AddSettings(environment)
-            .AddSingleton<IIdGenerator, GuidV7Ids>()
-            .AddSingleton<IProcessProbe, PosixProcessProbe>()
+    {
+        var settings = SettingsFromEnvironment.Read(environment);
+        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriAdapters(environment).AddOnyxInfrastructure(environment);
+    }
+
+    private static IServiceCollection AddSindriAdapters(this IServiceCollection services, Func<string, string?> environment)
+    {
+        return services
+            .AddSingleton<IIdGenerator, GuidV7Ids>().AddSingleton<IProcessProbe, PosixProcessProbe>()
             .AddSingleton<LedgerDatabase>()
             .AddSingleton<ILedgerStore, SqliteLedger>()
             .AddSingleton<ILedgerReader, SqliteLedgerReader>()
@@ -83,25 +89,15 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IHarnessVersions, CommandHarnessVersions>()
             .AddSingleton<IOsNotifier, OsascriptNotifier>()          // engine P6 unit (c): the only OS notifier (README X5, X50)
             .AddSingleton<IDeskNotices, FileDeskNotices>()           // engine P6 unit (c): notifications.jsonl
-            .AddMcpAdapters(environment)
-            .AddOnyxInfrastructure(environment)
-            .AddSingleton<ITextScrubber>(new RedactingScrubber(Redactor.Default));
-
-    // The settings and the one place that reads Sindri's home from them.
-    private static IServiceCollection AddSettings(this IServiceCollection services, Func<string, string?> environment)
-        => services
-            .AddSingleton(SettingsFromEnvironment.Read(environment))
-            .AddSingleton<ISindriHome, SettingsSindriHome>();
-
-    // The MCP registration adapters: its settings, the claude CLI and the provider config files.
-    private static IServiceCollection AddMcpAdapters(this IServiceCollection services, Func<string, string?> environment)
-        => services
             .AddSingleton(McpSettings.Read(environment))
             .AddSingleton<IClaudeCli, ProcessClaudeCli>()
-            .AddSingleton<IProviderFiles, ProviderConfigFiles>();
+            .AddSingleton<IProviderFiles, ProviderConfigFiles>()
+            .AddSingleton<ITextScrubber>(new RedactingScrubber(Redactor.Default));
+    }
 
     private static IServiceCollection AddOnyxInfrastructure(this IServiceCollection services, Func<string, string?> environment)
         => services
+            .AddSingleton<ISindriHome, SettingsSindriHome>()
             .AddSingleton<IOnyxPinsSource, EmbeddedOnyxPins>()                                            // context/onyx.lock, embedded
             .AddSingleton<IContainerRuntime>(_ => new DockerCliRuntime(new ProcessToolRunner(), environment))   // docker facts and compose operations
             .AddSingleton<IDeployFiles>(static _ => new HttpDeployFiles(new HttpClient(new SocketsHttpHandler { AllowAutoRedirect = false }), new Uri("https://raw.githubusercontent.com/onyx-dot-app/onyx/")))   // the pinned files, https, no redirect; the handler keeps the environment proxy on purpose (corporate networks need it, and integrity is the pinned sha256, not the path)

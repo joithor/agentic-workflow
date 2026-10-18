@@ -30,8 +30,29 @@ public static class LensesBuilder
         var (product, productKeys) = LensProduct.Build(scope, clamped);
         var (code, codeKeys) = LensCode.Build(scope);
         var items = productKeys.Concat(codeKeys).Concat(scope.IntoScope(EdgeType.Mentions, EdgeType.Decides).Select(e => e.From.Value)).ToHashSet(StringComparer.Ordinal);
+        var bands = new LensBands(intent, product, code);
+        var coverage = LensCoverageBuilder.Of(scope) with { Map = MapCoverageBuilder.Of(graph, scope.Own, basis) };
+        var searched = LensSearchedBuilder.For(basis, [scope.Anchor.Key.Value], clamped, bands);
         var anchorTrust = TrustPolicy.ForNode(scope.Anchor, LensScope.Confirmed(scope.Anchor.Provenance));
         return new LensesView(1, new LensAnchor(scope.Anchor.Key, scope.Anchor.Label, scope.Anchor.Key.Kind, anchorTrust), basis.Map, basis.Draft, clamped, basis.AsOf,
-            new LensBands(intent, product, code), LensEdges.Across(graph, items), LensConflicts.Of(scope, checkedPairs ?? []), LensCoverageBuilder.Of(scope), [], new Dictionary<string, Results.Citation>(StringComparer.Ordinal));
+            bands, LensEdges.Across(graph, items), LensConflicts.Of(scope, checkedPairs ?? []), coverage, searched, [], new Dictionary<string, Results.Citation>(StringComparer.Ordinal))
+        {
+            MapCommit = basis.MapCommit,
+        };
+    }
+
+    /// <summary>Builds the schema 2 view over several anchors (scoping spec C1): the union of their bands.</summary>
+    /// <param name="basis">The map read and when.</param>
+    /// <param name="graph">The graph a caller may see.</param>
+    /// <param name="anchors">The anchors as given (keys, aliases or labels); duplicates count once.</param>
+    /// <param name="depth">How far the neighbors reach and the cascade runs, 0 to 4.</param>
+    /// <param name="checkedPairs">The model-checked decision pairs.</param>
+    /// <returns>The view; SND-CONTEXT-006 for no anchor or more than 20; SND-CONTEXT-037 for an ambiguous name; SND-CONTEXT-003 when none resolves.</returns>
+    public static Result<LensesSetView> BuildSet(LensBasis basis, GraphSnapshot graph, IReadOnlyList<string> anchors, int depth, IReadOnlyList<Linking.DecisionConflict>? checkedPairs = null)
+    {
+        ArgumentNullException.ThrowIfNull(basis);
+        ArgumentNullException.ThrowIfNull(graph);
+        ArgumentNullException.ThrowIfNull(anchors);
+        return LensSets.Build(basis, graph, anchors, Math.Clamp(depth, 0, GraphWalk.MaxDepth), checkedPairs ?? []);
     }
 }

@@ -1,0 +1,42 @@
+using Aw.Context.Core.Engine;
+using Aw.Context.Core.Lenses;
+using Aw.Context.Core.Map;
+using Aw.Context.Core.Trust;
+using Aw.Kernel;
+using Aw.Kernel.Services;
+
+namespace Aw.Context.Features.GetLenses;
+
+/// <summary>
+/// The union of the bands around several nodes (scoping spec C1, schema 2): one snapshot of the map the caller may read serves every anchor. An anchor the version doesn't hold, a session can't
+/// see or a deny glob hides is listed in 'missingAnchors' with one answer for every reason; none resolving is SND-CONTEXT-003 and an ambiguous name SND-CONTEXT-037.
+/// </summary>
+internal sealed class GetLensesSetService(MapReader reader, LensBasisReader bases, IScrubberFactory scrubbers) : IService<GetLensesSetRequest, LensesSetView>
+{
+    public async ValueTask<Result<LensesSetView>> Handle(GetLensesSetRequest request, CancellationToken cancellationToken)
+    {
+        var settings = SettingsReader.Read(request.Scope.Settings);
+        var built = settings.Bind(s => scrubbers.For(s.ExtraPatterns));
+        if (built.IsError)
+        {
+            return built.Error;
+        }
+
+        var depth = request.Depth ?? settings.Value.CascadeDepth;
+        var anchors = request.Anchors.Distinct(StringComparer.Ordinal).ToList();
+        if ((QueryRules.CheckAnchors(anchors) ?? QueryRules.CheckDepth(depth)) is { } refused)
+        {
+            return refused;
+        }
+
+        var read = await reader.ReadViewAt(request.Scope, request.Read, cancellationToken).ConfigureAwait(false);
+        if (read.IsError)
+        {
+            return read.Error;
+        }
+
+        var basis = await bases.For(read.Value, settings.Value, request.Scope, request.Read.Draft, cancellationToken).ConfigureAwait(false);
+        var view = LensesBuilder.BuildSet(basis, read.Value.Graph, anchors, depth, read.Value.Conflicts);
+        return view.Map(v => LensTexts.Clean(v, new MapText(built.Value, FencePolicies.For(request.Scope.Caller))));
+    }
+}

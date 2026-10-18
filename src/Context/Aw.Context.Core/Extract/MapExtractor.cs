@@ -15,11 +15,21 @@ public static class MapExtractor
     /// <param name="repo">The repo (its name joins the evidence keys).</param>
     /// <param name="files">The files at the commit.</param>
     /// <returns>The nodes and edges, ordered, the same for the same files.</returns>
-    public static ExtractedMap Extract(ContextRepoName repo, IReadOnlyList<RepoFile> files)
+    public static ExtractedMap Extract(ContextRepoName repo, IReadOnlyList<RepoFile> files) => Extract(repo, files, RecognizerSet.None).Map;
+
+    /// <summary>Extracts the map with the profile's recognizers added to the built-in table.</summary>
+    /// <param name="repo">The repo (its name joins the evidence keys).</param>
+    /// <param name="files">The files at the commit.</param>
+    /// <param name="recognizers">The profile's recognizers; their matches are suggested at confidence 0.8.</param>
+    /// <returns>The map, and whether a recognizer timed out on some file.</returns>
+    public static MapExtraction Extract(ContextRepoName repo, IReadOnlyList<RepoFile> files, RecognizerSet recognizers)
     {
         ArgumentNullException.ThrowIfNull(files);
+        ArgumentNullException.ThrowIfNull(recognizers);
+        var (profile, timedOut) = recognizers.Find(files);
         var hits = files.Where(Recognizers.Source).OrderBy(f => f.Path, StringComparer.Ordinal)
             .SelectMany(file => Recognizers.All.Where(r => r.Applies(file)).SelectMany(r => r.Find(file)).Select(found => (File: file, Found: found)))
+            .Concat(profile)
             .Where(h => CodeKey(h.File.Path) is not null && Evidence(repo, h.File.Path) is not null)
             .ToList();
         List<GraphNode> nodes = [.. hits.GroupBy(h => h.Found.Key.Value, StringComparer.Ordinal).Select(g => Node(repo, [.. g]))];
@@ -27,7 +37,7 @@ public static class MapExtractor
         var known = nodes.Select(n => n.Key.Value).ToHashSet(StringComparer.Ordinal);
         var implements = hits.Select(h => new GraphEdge(CodeKey(h.File.Path)!.Value, h.Found.Key, EdgeType.Implements, Provenance.Deterministic, 1.0, [Evidence(repo, h.File.Path)!]));   // why: hits keep only files whose keys are valid
         var related = hits.SelectMany(h => h.Found.Edges.Where(e => known.Contains(e.To.Value)).Select(e => e with { Evidence = [Evidence(repo, h.File.Path)!] }));   // why: as above
-        return ExtractedMap.Empty.Plus(new ExtractedMap([.. nodes, .. codeNodes], [.. implements, .. related]));
+        return new MapExtraction(ExtractedMap.Empty.Plus(new ExtractedMap([.. nodes, .. codeNodes], [.. implements, .. related])), timedOut);
     }
 
     private static GraphNode Node(ContextRepoName repo, List<(RepoFile File, Found Found)> hits)

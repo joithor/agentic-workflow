@@ -69,6 +69,7 @@ Aw.Sindri.Ui.Platform.TrayView.TrayView(Aw.Sindri.Ui.Platform.TrayState State, s
 Aw.Sindri.Ui.Views.AppTrayIcons
 Aw.Sindri.Ui.Views.SindriApp
 Aw.Sindri.Ui.Views.SindriApp.SindriApp() -> void
+Aw.Sindri.Ui.Views.SindriApp.Dispose() -> void
 const Aw.Sindri.Ui.Platform.InstanceMessages.Focus = "focus" -> string!
 const Aw.Sindri.Ui.Platform.InstanceMessages.MaxLength = 512 -> int
 const Aw.Sindri.Ui.Views.SindriApp.FailedExitCode = 2 -> int
@@ -137,3 +138,6 @@ Aw.Sindri.Ui.Platform.TrayView.RunningLabel.get -> string!
 Aw.Sindri.Ui.Platform.TrayView.RunningLabel.init -> void
 Aw.Sindri.Ui.Views.MainWindowHandle
 static Aw.Sindri.Ui.Views.MainWindowHandle.Current() -> nint
+Aw.Sindri.Ui.Platform.ILauncher
+Aw.Sindri.Ui.Platform.ILauncher.OpenFile(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
+Aw.Sindri.Ui.Platform.ILauncher.OpenUri(System.Uri! uri, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<bool>!
