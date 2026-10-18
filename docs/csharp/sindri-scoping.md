@@ -1,0 +1,49 @@
+# Sindri scoping station (C#): checks, stop view and desk helper
+
+Spec: `docs/superpowers/specs/2026-10-15-sindri-scoping-station-design.md` (§8.2 the checks, §8.3 the packet, §8.4 the stop view).
+This page is the reference for what phase SC-K1 built in `src/Sindri/Aw.Sindri.Features/Scoping/` and `Host/Commands/Scoping/`.
+
+## Facts as files
+
+A fact directory (a Step directory, W11) holds `<key>.json` for `fact:<key>` (`scopeMap.json`, `acceptance.json`, `coverage.json`,
+`lenses.json`, `brief.json`, `answers.json`, `answerLog.json`, `challenge.json`, `openQuestions.json`, `questions.json`, `decision.json`,
+`anchors.json`, `runs.json`) and `<key>.jsonl` for a list (`rounds.jsonl` is `fact:rounds`). `fact:scopePacket` is `{ "hash": "sha256:..." }`.
+The gold facts are `tests/fixtures/scoping/facts/expiry/`: the line gold scope packet as facts, plus a `noBehaviourChange` marker on each
+surface with no acceptance item and a third workstream for the surfaces the packet left unplaced.
+
+## Verbs
+
+```
+sindri scoping check (<address> | --facts <dir>) [--draft <dir>] [--stage draft|evidence] [--json]
+sindri scoping show  (<address> | --facts <dir>) [--json]
+sindri scoping desk  <block> --facts <dir> --out <dir> [--json]
+```
+
+Exit 0 pass, 1 findings, 2 usage, tool error or serve not running (`SND-API-001`, serve is never started). `--draft` overlays draft files and,
+like `desk --out`, is refused inside a git worktree (`SND-SCOPING-002`); with an address it must sit under `$AW_SINDRI_HOME/workflow/runs/`.
+`check --json` prints `{ stage, outcome, findings, warnings, rules }`; `findings` holds failures only and is the `fact:findings` body.
+
+## Rules
+
+`SCP-CITE-001/002`, `SCP-COV-001..005`, `SCP-LENS-001`, `SCP-ACC-001..005`, `SCP-ANS-001`, `SCP-TRUST-001`, `SCP-CHAL-001/002`, `SCP-MAP-001` as in §8.2,
+plus `SCP-SCHEMA-001` (SC-K's: a model's `scopeMap` and `acceptance` are validated against the schema's `$defs/fact` directly, whatever `schemaVersion` says).
+Choices where the spec is silent: a surface is marked `noBehaviourChange: "<reason>"` (SCP-ACC-002/005); a regression item matches `continue to`;
+SCP-COV-003 counts nodes of a lens that followed at most one edge, or within one edge of an anchor; SCP-COV-004 reads a brief ref with source `change`
+and the `code:` anchors; SCP-ACC-004 checks uniqueness only; the vendor half of SCP-CHAL-002 is not enforced. A rule whose facts are missing is `not-run`
+with the missing keys and never fails; at `evidence` it makes the outcome `incomplete`.
+
+Coverage: a source that is `degraded`, or `unavailable`/`not-configured` without matching a row of the Recorded limits table on (lens, state, reason), fails
+SCP-COV-002 (outcome `regather` when it is the only failing rule). The one fix-line map is `ScopeFixLines`; the view reads `not searched: <limit> — <fix line>`.
+A `not-synced` source reads by its `sync` pair (`null`, queued, running, finished, failed with optional `retryAt` or `failures`).
+
+## Desk helper
+
+`desk` runs `intake`, `check`, `challenge-log`, `record`, `seed` and `evidence` (short or full ids). It writes each output fact to `<out>/<key>.json`,
+`report.json` (`{ block, outcome, outputs: { "fact:<key>": "<file>" }, files, findings, warnings }`, what `workflow complete --outcome … --output fact:<key>=<file>` takes),
+`check` appends `rounds.jsonl`, and `evidence` writes `<out>/scope-packet/` (twelve files, trust stamped by code, `lenses.json` untrusted throughout) and
+adds `fact:scopePacket` from `aw-packets hash --kind scoping` (`AW_PACKETS_BIN`, else `aw-packets` on the PATH).
+Not covered yet: `read-brief`, `gather`, `anchor`, `reanchor`, `propose`.
+
+## Not built yet (SC-K2)
+
+The server's `ScopingView` route (API2), API9's packet-file route, the `scoping.approved` and `scoping.escape` event kinds, and the Ui catalog golden.
