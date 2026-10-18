@@ -44,6 +44,9 @@ public sealed class StatusInjectionTests
 
         var line = Assert.Single(fields.Injection);
         Assert.Equal(("echo", "input.prove.echo", 42, $"sha256:{_sha}"), (line.Section, line.Input, line.Bytes, line.Hash));
+        var replacing = StatusRecords.Of(Planned(new InjectionEntry("notes", BlockId.From("input.b"), 7, _sha, Replaced: BlockId.From("input.a"))), StatusCases.Now);
+        Assert.Equal("input.a", Assert.Single(replacing.Injection).Replaced);
+        Assert.Null(line.Replaced);
         Assert.Empty(StatusRecords.Of(StatusCases.View("desk-task"), StatusCases.Now).Injection);
         Assert.DoesNotContain("injection", StatusLayout.Render(StatusCases.View("desk-task"), StatusCases.Now), StringComparison.Ordinal);
     }

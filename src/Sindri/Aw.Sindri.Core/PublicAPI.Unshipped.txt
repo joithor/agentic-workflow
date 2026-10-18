@@ -9549,7 +9549,6 @@ Aw.Sindri.Core.Workflow.Views.StatusInjection
 Aw.Sindri.Core.Workflow.Views.StatusInjection.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusInjection!
 Aw.Sindri.Core.Workflow.Views.StatusInjection.Bytes.get -> int
 Aw.Sindri.Core.Workflow.Views.StatusInjection.Bytes.init -> void
-Aw.Sindri.Core.Workflow.Views.StatusInjection.Deconstruct(out string! Section, out string! Input, out int Bytes, out string! Hash) -> void
 Aw.Sindri.Core.Workflow.Views.StatusInjection.Equals(Aw.Sindri.Core.Workflow.Views.StatusInjection? other) -> bool
 Aw.Sindri.Core.Workflow.Views.StatusInjection.Hash.get -> string!
 Aw.Sindri.Core.Workflow.Views.StatusInjection.Hash.init -> void
@@ -9557,10 +9556,13 @@ Aw.Sindri.Core.Workflow.Views.StatusInjection.Input.get -> string!
 Aw.Sindri.Core.Workflow.Views.StatusInjection.Input.init -> void
 Aw.Sindri.Core.Workflow.Views.StatusInjection.Section.get -> string!
 Aw.Sindri.Core.Workflow.Views.StatusInjection.Section.init -> void
-Aw.Sindri.Core.Workflow.Views.StatusInjection.StatusInjection(string! Section, string! Input, int Bytes, string! Hash) -> void
 const Aw.Sindri.Core.Events.EventTypes.WorkflowInjection = "workflow.injection" -> string!
 override Aw.Sindri.Core.Workflow.Views.StatusInjection.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Workflow.Views.StatusInjection.GetHashCode() -> int
 override Aw.Sindri.Core.Workflow.Views.StatusInjection.ToString() -> string!
 static Aw.Sindri.Core.Workflow.Views.StatusInjection.operator !=(Aw.Sindri.Core.Workflow.Views.StatusInjection? left, Aw.Sindri.Core.Workflow.Views.StatusInjection? right) -> bool
 static Aw.Sindri.Core.Workflow.Views.StatusInjection.operator ==(Aw.Sindri.Core.Workflow.Views.StatusInjection? left, Aw.Sindri.Core.Workflow.Views.StatusInjection? right) -> bool
+Aw.Sindri.Core.Workflow.Views.StatusInjection.Deconstruct(out string! Section, out string! Input, out int Bytes, out string! Hash, out string? Replaced) -> void
+Aw.Sindri.Core.Workflow.Views.StatusInjection.Replaced.get -> string?
+Aw.Sindri.Core.Workflow.Views.StatusInjection.Replaced.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusInjection.StatusInjection(string! Section, string! Input, int Bytes, string! Hash, string? Replaced = null) -> void
