@@ -31,7 +31,7 @@ public sealed record ContextSettings
     public int CascadeDepth { get; init; } = 2;
 
     /// <summary>The component hop's fan-out cap ('context.cascadeComponentFanOut'): 1 to 50, default 5; a code unit implementing more features is skipped and reported.</summary>
-    public int CascadeComponentFanOut { get; init; } = Graph.CascadeOptions.DefaultFanOut;
+    public int CascadeComponentFanOut { get; init; } = CascadeOptions.DefaultFanOut;
 
     /// <summary>Whether session callers may read context at all, on any transport (spec §3). Off until approved.</summary>
     public bool SessionsEnabled { get; init; }

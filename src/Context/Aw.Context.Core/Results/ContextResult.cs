@@ -39,5 +39,5 @@ public sealed record ContextResult(
 
     /// <summary>The code units the component hop skipped for the fan-out cap; left out when none.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public IReadOnlyList<Graph.SkippedComponent>? SkippedComponents { get; init; }
+    public IReadOnlyList<SkippedComponent>? SkippedComponents { get; init; }
 }

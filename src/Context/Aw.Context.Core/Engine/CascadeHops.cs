@@ -1,4 +1,4 @@
-namespace Aw.Context.Core.Graph;
+namespace Aw.Context.Core.Engine;
 
 /// <summary>The kinds of step the cascade may take (spec §6.1; the component hop is SC App. C, C4). The default is the first three.</summary>
 [Flags]

@@ -1,4 +1,4 @@
-namespace Aw.Context.Core.Graph;
+namespace Aw.Context.Core.Engine;
 
 /// <summary>What a cascade walk may do.</summary>
 /// <param name="Hops">The hop kinds it may take.</param>

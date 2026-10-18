@@ -1,4 +1,4 @@
-namespace Aw.Context.Core.Graph;
+namespace Aw.Context.Core.Results;
 
 /// <summary>A code unit the component hop did not walk because it implements more features than the cap (a shared utility would relate everything).</summary>
 /// <param name="Unit">The code unit's key, scrubbed like every code path.</param>

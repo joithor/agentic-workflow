@@ -37,5 +37,5 @@ public sealed record LensesView(
 
     /// <summary>The code units the component hop skipped for the fan-out cap; left out when none.</summary>
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-    public IReadOnlyList<Graph.SkippedComponent>? SkippedComponents { get; init; }
+    public IReadOnlyList<SkippedComponent>? SkippedComponents { get; init; }
 }

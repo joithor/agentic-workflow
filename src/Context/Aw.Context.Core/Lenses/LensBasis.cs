@@ -1,3 +1,5 @@
+using Aw.Context.Core.Engine;
+
 namespace Aw.Context.Core.Lenses;
 
 /// <summary>What a lenses view was read from.</summary>
@@ -10,7 +12,7 @@ public sealed record LensBasis(string Map, bool Draft, DateTimeOffset AsOf)
     public string? MapCommit { get; init; }
 
     /// <summary>What the cascade may do for this call: the hops asked for and the component fan-out cap.</summary>
-    public Graph.CascadeOptions Cascade { get; init; } = Graph.CascadeOptions.Default;
+    public CascadeOptions Cascade { get; init; } = CascadeOptions.Default;
 
     /// <summary>When the map version was written (the answer's map source and map coverage read it); null when the caller has none, which reads as <see cref="AsOf"/>.</summary>
     public DateTimeOffset? MapCreated { get; init; }
