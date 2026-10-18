@@ -11,8 +11,8 @@ namespace Aw.Sindri.Tests.ApiGoldens;
 /// </summary>
 internal static class ApiScenarios
 {
-    /// <summary>Every (route slug, scenario) pair, in the order of the plan's golden list.</summary>
-    public static IReadOnlyList<(string Slug, string Scenario)> All { get; } =
+    /// <summary>The rows of the routes with no scenario file of their own: status, ping, commands, events, stop and profile-approve.</summary>
+    public static IReadOnlyList<(string Slug, string Scenario)> Core { get; } =
     [
         ("status", "running-unapproved"), ("status", "running-approved"), ("status", "human-no-token"),
         ("status", "human-stale-token"), ("status", "unknown-caller"), ("status", "prover-refused"),
@@ -22,16 +22,24 @@ internal static class ApiScenarios
         ("profile-approve", "refused-session"), ("profile-approve", "refused-no-terminal"), ("profile-approve", "refused-origin"),
         ("profile-approve", "stale-hash"), ("profile-approve", "bad-body"),
         ("workflow-recipe", "not-found"),
-        .. ContextApiScenarios.Rows,
-        .. ViewScenarios.All,
-        .. SessionScenarios.All,
-        .. ItemScenarios.All,
-        .. ParkScenarios.All,
-        .. RequestScenarios.All,
-        .. StreamScenarios.All,
-        .. JobScenarios.All,
-        .. JobScopeScenarios.All,
     ];
+
+    /// <summary>The rows by route group, each run by its own test class (the per-group ApiGoldenTests classes) so xUnit runs the groups in parallel; every row starts a host of its own, so no group shares state.</summary>
+    public static IReadOnlyDictionary<string, IReadOnlyList<(string Slug, string Scenario)>> Groups { get; } = new Dictionary<string, IReadOnlyList<(string Slug, string Scenario)>>(StringComparer.Ordinal)
+    {
+        ["Core"] = Core,
+        ["Context"] = ContextApiScenarios.Rows,
+        ["Views"] = ViewScenarios.All,
+        ["Sessions"] = SessionScenarios.All,
+        ["Items"] = ItemScenarios.All,
+        ["Parks"] = ParkScenarios.All,
+        ["Requests"] = RequestScenarios.All,
+        ["Streams"] = StreamScenarios.All,
+        ["Jobs"] = [.. JobScenarios.All, .. JobScopeScenarios.All],
+    };
+
+    /// <summary>Every (route slug, scenario) pair, group by group.</summary>
+    public static IReadOnlyList<(string Slug, string Scenario)> All { get; } = [.. Groups.Values.SelectMany(g => g)];
 
     /// <summary>Whether the scenario's host must refuse the prover label (its home isn't temporary).</summary>
     public static bool NeedsNonTemporaryHome(string slug, string scenario) => (slug, scenario) is ("status", "prover-refused");

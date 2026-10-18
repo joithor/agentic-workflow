@@ -28,6 +28,7 @@ internal sealed partial class HomePage : UserControl
         AddHandler(StripRow.OpenEvent, OnStripOpen);
         AddHandler(StripRow.SelectEvent, OnStripSelect);
         AddHandler(StripRow.AnswerEvent, OnStripAnswer);
+        AddHandler(ChildAnswerButton.FollowEvent, OnChildAnswer);
     }
 
     /// <inheritdoc />
@@ -118,6 +119,24 @@ internal sealed partial class HomePage : UserControl
         {
             shell.SelectStripRow(row.Address);
             shell.OpenStripRow(row.Address);
+        }
+    }
+
+    // "Answer in the child" on a strip or needs-you row: the row is selected and stays the opener, like its other buttons.
+    private void OnChildAnswer(object? sender, RoutedEventArgs e)
+    {
+        if (e.Source is not ChildAnswerButton { Answer: { } answer } button || DataContext is not ShellViewModel shell)
+        {
+            return;
+        }
+
+        if (button.FindAncestorOfType<StripRow>() is { Address.Length: > 0 } strip)
+        {
+            shell.FollowChildAnswerFromStrip(strip.Address, answer);
+        }
+        else if (button.FindAncestorOfType<NeedsYouRow>() is { RowId.Length: > 0 } needsYou)
+        {
+            shell.FollowChildAnswerFromNeedsYou(needsYou.RowId, answer);
         }
     }
 

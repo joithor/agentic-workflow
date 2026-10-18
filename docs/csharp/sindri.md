@@ -673,6 +673,7 @@ There is no decision, desk, protected, job or step-report tool, and no `sindri_c
 | `SND-SESSION-002` | The session collector can't run here; the `detail` is `unsupported-platform`, `proc-unreadable` or `disabled`, and only these replace the list (collector CO-2a; the routes `GET /sessions` and `GET /sessions/{provider}/{id}` answer it, CO-3) |
 | `SND-SESSION-003` | A test override (`AW_SESSIONS_PROC_ROOT`, `AW_SESSIONS_CLAUDE_DIR`) is set in this run: informational, one problem row beside a normal list; pruning of hook files is off and focus answers `copy` (collector CO-2a) |
 | `SND-SESSION-404` | No live session has that ref, or it is outside a session caller's repo (the same answer for both; collector CA-5, CO-3) |
+| `SND-SESSION-409` | The session at that ref is a different process than the caller looked at (`expectStartedAt` differs; collector CA-5; the preview read, CO-7a, answers it, and `FocusSession` will, CO-4a) |
 | `SND-SECRET-001` | A secret pointer is malformed: no scheme, an unknown scheme, or a bad target. Expected `env:NAME`, `file:/absolute/path`, `keychain:<service>/<account>` or `op:<vault>/<item>/<field>`; the message names only the scheme, never the text after it (it may be a secret pasted by mistake) |
 | `SND-SECRET-002` | A secret pointer doesn't resolve: the variable is unset or empty, the file is missing or empty, the keychain (macOS `security`, Linux `secret-tool`) or 1Password entry is missing, `security`, `secret-tool` or `op` isn't on PATH or ran past its timeout (5 s, 30 s), or `keychain:` is used on any other OS. On Linux `secret-tool` exits 1 both for a missing entry and when no D-Bus session or keyring is reachable, so `sindri serve` must run in the login session. The message names the pointer and the fix, never a value |
 | `SND-SECRET-003` | A `file:` pointer is unsafe: the file has group or other permission bits (it must be 0600 or stricter) or isn't a regular file (a symbolic link, even to a 0600 file, or a directory; only the last path segment is checked) |
@@ -796,6 +797,7 @@ app must provide what that hook reads before it replaces the TS one.
 ```bash
 dotnet test --project tests/Aw.Sindri.Tests --filter-trait "Lane=unit"          # domain, slices, CLI text
 dotnet test --project tests/Aw.Sindri.Tests --filter-trait "Lane=integration"   # SQLite contracts, YAML files, the API on loopback, the scheduler
+dotnet test --project tests/Aw.Sindri.Engine.Tests --filter-trait "Lane=integration"   # the real-Temporal suites (Workflows, CompleteStep, ApplyCommand), split out for LANE-PKG-001
 scripts/binaries-lock.sh fetch temporal && scripts/binaries-lock.sh fetch temporal-test-server   # the Temporal tests and the smoke run these pins
 bash src/Sindri/aot-smoke/run.sh                                                # publish framework-dependent and drive the published apphost (expected.txt)
 ```

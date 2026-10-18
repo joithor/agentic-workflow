@@ -39,4 +39,8 @@ public sealed record LensesSetView(
     /// <summary>The commit the map was built at (first seven characters), or null for an imported map; 'mapVersion' itself stays 'v&lt;N&gt;'.</summary>
     [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public string? MapCommit { get; init; }
+
+    /// <summary>The code units the component hop skipped for the fan-out cap; left out when none.</summary>
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public IReadOnlyList<SkippedComponent>? SkippedComponents { get; init; }
 }
