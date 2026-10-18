@@ -56,7 +56,7 @@ internal static class ScopingFactDirectory
         ScopingErrors.DraftOutsideRunArea.With($"{flag} {path} is inside a git worktree (fix: write it under the instance's run area, $AW_SINDRI_HOME/workflow/runs/<instance>/, or any directory outside a checkout)");
 
     private static Error Missing(string directory) =>
-        Aw.Sindri.Core.SindriErrors.InvalidInput.With($"{directory} is not a directory (fix: pass the directory of fact files, for example --facts \"$AW_SINDRI_RUN_DIR\")");
+        Core.SindriErrors.InvalidInput.With($"{directory} is not a directory (fix: pass the directory of fact files, for example --facts \"$AW_SINDRI_RUN_DIR\")");
 
     /// <summary>Writes text to a file, creating its directory; the content as UTF-8 without a byte order mark.</summary>
     internal static async Task Write(string path, string content, bool append, CancellationToken ct)

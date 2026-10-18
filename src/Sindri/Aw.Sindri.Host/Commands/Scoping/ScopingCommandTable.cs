@@ -161,7 +161,7 @@ internal static class ScopingCommandTable
     /// <summary>An instance's facts through the control plane's facts route (class query); a serve that is down is SND-API-001 and is never started.</summary>
     private static async Task<Result<Dictionary<string, string>>> InstanceFacts(RecipeDesk desk, string address, CancellationToken ct)
     {
-        var listed = await desk.Client.Get<Aw.Sindri.Core.Workflow.Views.InstanceList>($"{InstanceReads.Instances}?address={Uri.EscapeDataString(address)}", ct).ConfigureAwait(false);
+        var listed = await desk.Client.Get<Core.Workflow.Views.InstanceList>($"{InstanceReads.Instances}?address={Uri.EscapeDataString(address)}", ct).ConfigureAwait(false);
         if (listed.IsError)
         {
             return listed.Error;
@@ -169,7 +169,7 @@ internal static class ScopingCommandTable
 
         if (listed.Value.Value.Instances is not [var instance])
         {
-            return Aw.Sindri.Core.Workflow.WorkflowErrors.InstanceNotFound.With($"'{address}' names no one instance (fix: sindri workflow list)");
+            return Core.Workflow.WorkflowErrors.InstanceNotFound.With($"'{address}' names no one instance (fix: sindri workflow list)");
         }
 
         if (!string.Equals(instance.Recipe.Id.Value, "workflow.scoping", StringComparison.Ordinal))
