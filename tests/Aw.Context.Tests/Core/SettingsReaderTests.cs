@@ -38,6 +38,28 @@ public sealed class SettingsReaderTests
         Assert.StartsWith("context.cascadeDepth:", settings.Error.Message, StringComparison.Ordinal);
     }
 
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(null, 5)]
+    [InlineData(1, 1)]
+    [InlineData(50, 50)]
+    public void The_component_fan_out_defaults_to_5_and_takes_1_to_50(int? fanOut, int expected)
+    {
+        var settings = fanOut is null ? SettingsReader.Read(section: null) : Read("{\"cascadeComponentFanOut\":" + fanOut.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}");
+
+        Assert.Equal(expected, settings.Value.CascadeComponentFanOut);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(0)]
+    [InlineData(51)]
+    public void A_component_fan_out_outside_1_to_50_is_SND_CONTEXT_001_at_its_key(int fanOut)
+    {
+        var settings = Read("{\"cascadeComponentFanOut\":" + fanOut.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}");
+
+        Assert.Equal("SND-CONTEXT-001", settings.Error.Code);
+        Assert.StartsWith("context.cascadeComponentFanOut:", settings.Error.Message, StringComparison.Ordinal);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Every_key_is_read()
     {

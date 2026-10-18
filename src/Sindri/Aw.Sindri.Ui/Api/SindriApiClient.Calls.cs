@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net;
 using Aw.Kernel;
 using Aw.Kernel.Json;
+using Aw.Sindri.Ui.Api.Context;
 
 namespace Aw.Sindri.Ui.Api;
 
@@ -168,9 +169,10 @@ internal sealed partial class SindriApiClient
         }
 
         var detail = problem.Value.Detail;
-        return status == HttpStatusCode.Forbidden
+        var error = status == HttpStatusCode.Forbidden
             ? new Error(code, ErrorKind.Forbidden, detail is { Length: > 0 } ? detail : code)
             : code.StartsWith("SND-", StringComparison.Ordinal) && detail is { Length: > 0 } ? new Error(code, KindOf(status), detail) : null;
+        return error is null ? null : ContextRefusal.Extend(error, body);
     }
 
     private static ErrorKind KindOf(HttpStatusCode status) => (int)status switch
