@@ -45,13 +45,13 @@ internal sealed partial class ContextPageViewModel
     public string EdgesHeader => Labels.ContextBandHeader(Labels.ContextEdges, Edges.Count);
 
     /// <summary>The coverage strip's name.</summary>
-    public string CoverageName => Labels.ContextCoverage;
+    public string CoverageName { get; } = Labels.ContextCoverage;
 
     /// <summary>The searched sources' name.</summary>
-    public string SearchedName => Labels.ContextSearched;
+    public string SearchedName { get; } = Labels.ContextSearched;
 
     /// <summary>The choices' name.</summary>
-    public string ChoicesName => Labels.ContextSuggestions;
+    public string ChoicesName { get; } = Labels.ContextSuggestions;
 
     /// <summary>Reads the lenses for the anchors in the box (Enter): one read, the newest answer wins.</summary>
     /// <param name="cancellationToken">Cancels the read.</param>
@@ -66,14 +66,14 @@ internal sealed partial class ContextPageViewModel
 
         if (anchors.Count > MaxAnchors)
         {
-            Show(null, []);
+            Show(view: null, choices: []);
             Problem = Labels.ContextTooMany(MaxAnchors);
             Refresh();
             return;
         }
 
         var generation = ++_generation;
-        var result = await Ports.Api.Lenses(api, new LensesQuery(anchors, null, false, null), cancellationToken).ConfigureAwait(true);
+        var result = await Ports.Api.Lenses(api, new LensesQuery(anchors, Depth: null, Draft: false, MapVersion: null), cancellationToken).ConfigureAwait(true);
         if (generation != _generation)
         {
             return;
@@ -81,11 +81,11 @@ internal sealed partial class ContextPageViewModel
 
         if (result.IsSuccess)
         {
-            Show(result.Value, []);
+            Show(result.Value, choices: []);
         }
         else
         {
-            Show(null, Suggestions(result.Error));
+            Show(view: null, choices: Suggestions(result.Error));
             Problem = result.Error.Message;
         }
 
@@ -113,7 +113,7 @@ internal sealed partial class ContextPageViewModel
         }
 
         return [.. error.Extensions.Where(m => string.Equals(m.Key, name, StringComparison.Ordinal) && m.Value.ValueKind == JsonValueKind.Array)
-            .SelectMany(m => m.Value.EnumerateArray()).Where(v => v.ValueKind == JsonValueKind.String).Select(v => v.GetString()!)];
+            .SelectMany(m => m.Value.EnumerateArray()).Where(v => v.ValueKind == JsonValueKind.String).Select(v => v.GetString() ?? string.Empty)];
     }
 
     private void Show(LensesView? view, List<string> choices)
@@ -222,7 +222,7 @@ internal sealed partial class ContextPageViewModel
             n.Depth is { } depth && depth > 0 ? Inv($"depth {depth}") : null, n.Confirmed ? null : Labels.ContextUnconfirmed, Untrusted(n.Trust)));
         List<ContextLine> lines =
         [
-            .. product.Own.Select(n => Row(n, null)),
+            .. product.Own.Select(n => Row(n, list: null)),
             .. product.Neighbors.Select(n => Row(n, "neighbor")),
             .. product.Affects.Select(n => Row(n, "affects")),
         ];
