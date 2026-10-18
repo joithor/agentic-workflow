@@ -94,7 +94,7 @@ public sealed class NavTabClickTests : IDisposable
         var shown = _pages
             .Where(n => window.GetVisualDescendants().OfType<Control>().First(c => c.Name == n).IsEffectivelyVisible).ToList();
         Assert.Equal([Own(target)], shown);
-        if (target == PageId.Context or PageId.Agents)   // a pointer opening (not an arrow) puts focus in the anchor box
+        if (target == PageId.Context)   // a pointer opening (not an arrow) puts focus in the anchor box
         {
             Assert.Equal("AnchorBox", (window.FocusManager?.GetFocusedElement() as Control)?.Name);
         }

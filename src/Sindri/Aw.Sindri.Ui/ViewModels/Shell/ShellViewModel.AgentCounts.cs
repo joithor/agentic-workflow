@@ -14,6 +14,11 @@ internal sealed partial class ShellViewModel
             var live = Health.Sessions is { } sessions ? sessions.Live.ToString(CultureInfo.InvariantCulture) : "";
             Agents.ShowNavCount(live);
             Navigation.First(n => n.Page == PageId.Agents).Count = live;
+            if (Health.Sessions is { } counts)
+            {
+                Agents.ObserveCounts(counts.Live, counts.Asking);
+            }
+
             Reattend();
         }
     };

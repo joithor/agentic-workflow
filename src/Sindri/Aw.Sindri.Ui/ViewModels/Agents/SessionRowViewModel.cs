@@ -9,7 +9,7 @@ namespace Aw.Sindri.Ui.ViewModels.Agents;
 /// One live session on the Agents page (collector spec CU-1, CU-6). It is kept by its ref across reads and updated in place, so a control with
 /// focus keeps it. It maps served fields to words and decides nothing: Focus is the catalog's pending control, never a button that sends.
 /// </summary>
-internal sealed class SessionRowViewModel : ObservableObject
+internal sealed class SessionRowViewModel : ObservableObject, ISessionRef
 {
     private readonly TimeProvider _clock;
 

@@ -154,4 +154,19 @@ public sealed class AgentsPageTests : FrameHost
         Assert.Contains("arrives in", line.GetValue(Avalonia.Automation.AutomationProperties.NameProperty), StringComparison.Ordinal);
         Assert.NotNull(shell.Agents.SelectedKey);
     });
+
+    [Fact]
+    public Task Minimising_the_window_stops_the_page_polling_and_restoring_resumes_it() => OnUi(async () =>
+    {
+        var (window, shell) = await OnAgents();
+        Assert.True(shell.Agents.IsActive);
+
+        window.WindowState = WindowState.Minimized;
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(shell.Agents.IsActive);
+
+        window.WindowState = WindowState.Normal;
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(shell.Agents.IsActive);
+    });
 }

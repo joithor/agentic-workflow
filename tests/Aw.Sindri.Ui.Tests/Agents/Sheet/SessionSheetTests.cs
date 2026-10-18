@@ -24,12 +24,6 @@ public sealed class SessionSheetTests : FrameHost
     private const string Claude = "claude-code/aaaaaaaa-0000-4000-8000-000000000001";
     private const string Codex = "codex/bbbbbbbb-0000-4000-8000-000000000002";
 
-    // A stand-in for the page's row until the page's own rows exist: a focusable control whose data is a session ref.
-    private sealed class StandInRow(string reference) : ISessionRef
-    {
-        public string Ref { get; } = reference;
-    }
-
     private static void Frame(Window window, string name) => Frame(window, name, "u11a-sheet-");
 
     private static void Press(Window window, Key key)
@@ -123,10 +117,8 @@ public sealed class SessionSheetTests : FrameHost
     {
         var (window, shell) = await Connected(width: 1000, height: 1000);   // narrow: the sheet covers the page and takes focus
         shell.GoTo(PageId.Agents);
-        Settle(window);
-        var row = new Button { Name = "StandInRow", DataContext = new StandInRow(Claude), Content = "row" };
-        Named<Control>(window, "AgentsPage").FindDescendantOfType<Panel>()!.Children.Add(row);
-        Settle(window);
+        await Until(window, () => shell.Agents.Drawn > 0, "the Agents page never read the list");
+        var row = window.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "SessionRowFrame" && b.IsEffectivelyVisible && b.DataContext is SessionRowViewModel { Ref: Claude });
         Assert.True(row.Focus(NavigationMethod.Tab));
 
         shell.Agents.RequestOpen(new SessionOpenRequestedEventArgs(Link(Claude)));
@@ -134,5 +126,16 @@ public sealed class SessionSheetTests : FrameHost
         Press(window, Key.Escape);
 
         await Until(window, () => !shell.IsSheetOpen && ReferenceEquals(window.FocusManager?.GetFocusedElement(), row), $"focus is on {window.FocusManager?.GetFocusedElement()}");
+    });
+
+    [Fact]
+    public Task The_sheet_is_named_session_provider_and_title() => OnUi(async () =>
+    {
+        var (_, shell) = await Opened(Claude);
+
+        Assert.Equal("Session " + shell.AgentSheet.Heading, shell.SheetName);
+        Assert.StartsWith("Session ", shell.SheetName, StringComparison.Ordinal);
+        Assert.DoesNotContain(Claude, shell.SheetName, StringComparison.Ordinal);
+        Assert.Equal("Reopen session " + shell.AgentSheet.Heading, shell.EdgeTabName);
     });
 }

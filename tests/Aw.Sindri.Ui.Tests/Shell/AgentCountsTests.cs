@@ -58,4 +58,34 @@ public sealed class AgentCountsTests
 
         Assert.Equal("", TabCount(shell));
     }, Token);
+
+    [Fact]
+    public Task A_status_that_changes_the_figures_is_said_while_the_page_is_shown_and_not_otherwise() => UiThread.Run(async () =>
+    {
+        _server.Current = A.Status() with { Sessions = new SessionCountsView(Live: 3, Asking: 1, Problems: 0) };
+        var shell = await Running();
+        await ShellWait.Until(shell, () => TabCount(shell) == "3", Token);
+        var url = new Uri("http://127.0.0.1:7410/");
+
+        shell.Health.Show(url, A.Status() with { Sessions = new SessionCountsView(Live: 4, Asking: 1, Problems: 0) });
+        Assert.False(shell.Agents.Voice.IsAnnouncing);   // the page is not shown: the tab count moved, nothing is said
+
+        shell.GoTo(PageId.Agents);
+        shell.Health.Show(url, A.Status() with { Sessions = new SessionCountsView(Live: 4, Asking: 2, Problems: 0) });
+        Assert.Equal(Labels.AgentsCounts(4, 2), shell.Agents.Voice.Announcement);
+    }, Token);
+
+    [Fact]
+    public Task A_status_with_the_same_figures_says_nothing() => UiThread.Run(async () =>
+    {
+        _server.Current = A.Status() with { Sessions = new SessionCountsView(Live: 3, Asking: 1, Problems: 0) };
+        var shell = await Running();
+        await ShellWait.Until(shell, () => TabCount(shell) == "3", Token);
+        shell.GoTo(PageId.Agents);
+        var before = shell.Agents.Voice.Announcement;
+
+        shell.Health.Show(new Uri("http://127.0.0.1:7410/"), A.Status() with { Sessions = new SessionCountsView(Live: 3, Asking: 1, Problems: 0) });
+
+        Assert.Equal(before, shell.Agents.Voice.Announcement);
+    }, Token);
 }

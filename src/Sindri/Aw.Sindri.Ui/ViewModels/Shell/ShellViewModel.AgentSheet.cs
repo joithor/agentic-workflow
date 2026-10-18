@@ -1,4 +1,5 @@
 using Aw.Sindri.Ui.Navigation;
+using Aw.Sindri.Ui.ViewModels.Agents;
 
 namespace Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -8,8 +9,18 @@ internal sealed partial class ShellViewModel
     /// <summary>The session whose Agents row opened the sheet (its ref), where Esc returns focus; null when it was opened some other way.</summary>
     internal string? OpenerSession { get; private set; }
 
+    // A session sheet names its session as the sheet does ("Session <provider> <title or id8>"), not by the ref, once the read has drawn.
+    private string NamedSubject => SheetLink?.Kind == DeepLinkKind.Session && AgentSheet.Heading.Length > 0 ? AgentSheet.Heading : SheetSubject;
+
     partial void InitAgentSheet()
     {
+        AgentSheet.PropertyChanged += (_, e) =>
+        {
+            if (string.Equals(e.PropertyName, nameof(SessionSheetViewModel.Heading), StringComparison.Ordinal))
+            {
+                Changed(nameof(SheetName), nameof(EdgeTabName));
+            }
+        };
         AgentSheet.Wire(Health.Catalog, _clock);
         Health.Follow((url, token) => IsSessionSheet && IsSheetOpen ? AgentSheet.Refresh(url, token) : Task.CompletedTask);
         Agents.OpenRequested += (_, e) =>
