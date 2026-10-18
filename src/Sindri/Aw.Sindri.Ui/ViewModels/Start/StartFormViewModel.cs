@@ -7,10 +7,24 @@ namespace Aw.Sindri.Ui.ViewModels.Start;
 /// <summary>
 /// The Start form (screens spec §4.2, U5'): choose an approved recipe and an item, give the recipe's inputs, and send
 /// StartInstance once. The subject is the item. The recipe list only picks; the inputs come from the recipe's own read.
-/// A refusal is the API's code and detail, shown inline; nothing is retried by the app.
+/// A refusal is the API's code and detail, shown inline; nothing is retried by the app, and a start is marked sent only
+/// when the API accepted it. Readiness is the command catalog's StartInstance row.
 /// </summary>
-internal sealed class StartFormViewModel : ObservableObject
+internal sealed partial class StartFormViewModel : ObservableObject
 {
+    private const string Action = "StartInstance";
+    private const string ItemFactName = "item.json";
+
+    private readonly CatalogViewModel _catalog;
+    private readonly Func<Uri?> _url;
+    private readonly ISindriApi _api;
+    private readonly Func<IFilePicker> _files;
+    private int _form;   // which opening of the form this is; an answer is for the one that sent it
+    private string? _itemKey;   // the recipe's own key for its item input, when it declares one
+    private bool _blocked;   // the recipes or the recipe could not be read, or there is none to start
+    private bool _sentFirst;
+    private bool _sentNext;
+
     /// <summary>The form over its ports.</summary>
     /// <param name="catalog">The command catalog: its StartInstance row says whether Start is ready.</param>
     /// <param name="url">The API now, or null when none is running.</param>
@@ -22,6 +36,7 @@ internal sealed class StartFormViewModel : ObservableObject
         ArgumentNullException.ThrowIfNull(url);
         ArgumentNullException.ThrowIfNull(api);
         ArgumentNullException.ThrowIfNull(files);
+        (_catalog, _url, _api, _files) = (catalog, url, api, files);
     }
 
     /// <summary>Raised for every accepted start, so the shell opens the instance's frame.</summary>
@@ -46,31 +61,75 @@ internal sealed class StartFormViewModel : ObservableObject
     public IReadOnlyList<ItemChoice> Items { get; private set => Set(ref field, value); } = [];
 
     /// <summary>An item picked from <see cref="Items"/>; picking one fills <see cref="ItemId"/>.</summary>
-    public ItemChoice? PickedItem { get; set => Set(ref field, value); }
+    public ItemChoice? PickedItem
+    {
+        get;
+        set
+        {
+            Set(ref field, value);
+            if (value is not null)
+            {
+                ItemId = value.Id;
+            }
+        }
+    }
 
     /// <summary>The item the workflow runs for.</summary>
-    public string ItemId { get; set => Set(ref field, value); } = string.Empty;
+    public string ItemId
+    {
+        get;
+        set
+        {
+            Set(ref field, value);
+            ClearError();
+        }
+    } = string.Empty;
 
     /// <summary>True while the recipes are being read.</summary>
     public bool IsLoading { get; private set => Set(ref field, value); }
 
     /// <summary>The recipes' or the recipe's read failure as served (code and detail), the empty-list sentence, or empty.</summary>
-    public string Note { get; private set => Set(ref field, value); } = string.Empty;
+    public string Note
+    {
+        get;
+        private set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(HasNote));
+        }
+    } = string.Empty;
 
     /// <summary>True while <see cref="Note"/> shows.</summary>
     public bool HasNote => Note.Length > 0;
 
-    /// <summary>True when the command catalog says Start is ready (a pending row is not).</summary>
-    public bool IsReady { get; private set => Set(ref field, value); }
+    /// <summary>True when the command catalog says Start is ready (a pending row, or no row, is not).</summary>
+    public bool IsReady => Row is { Kind: ControlKind.Ready };
 
-    /// <summary>For a pending Start, "arrives in P…"; else empty.</summary>
-    public string Readiness { get; } = string.Empty;
+    /// <summary>For a Start that is not ready, why: "arrives in P…", or that the command list is not read; else empty.</summary>
+    public string Readiness => Row switch
+    {
+        null => Labels.StartNoCatalog,
+        { Kind: ControlKind.Ready } => string.Empty,
+        { Kind: ControlKind.Pending } pending => Labels.Arrives(pending.Stage),
+        _ => Labels.NotInApp,
+    };
+
+    /// <summary>True when <see cref="Readiness"/> shows.</summary>
+    public bool IsNotReady => !IsReady;
 
     /// <summary>True while a start is in flight.</summary>
-    public bool IsSending { get; private set => Set(ref field, value); }
+    public bool IsSending
+    {
+        get;
+        private set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(CanStart));
+        }
+    }
 
-    /// <summary>True when a press would send: ready, not in flight and not already accepted.</summary>
-    public bool CanStart => IsReady && !IsSending;
+    /// <summary>True when a press would send: ready, nothing blocks it, not in flight and not already accepted.</summary>
+    public bool CanStart => IsReady && !_blocked && !IsSending && !_sentFirst;
 
     /// <summary>The inline error: the API's code and detail as served, or the sentence of a field that cannot be sent; empty when none.</summary>
     public string Error { get; private set => Set(ref field, value); } = string.Empty;
@@ -88,56 +147,32 @@ internal sealed class StartFormViewModel : ObservableObject
     public int ErrorFocusRequests { get; private set => Set(ref field, value); }
 
     /// <summary>"already running" or "finished" for an attempt that existed; else empty.</summary>
-    public string Outcome { get; private set => Set(ref field, value); } = string.Empty;
+    public string Outcome
+    {
+        get;
+        private set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(HasOutcome));
+        }
+    } = string.Empty;
 
     /// <summary>True while <see cref="Outcome"/> shows.</summary>
     public bool HasOutcome => Outcome.Length > 0;
 
     /// <summary>True when the existing attempt has finished: a new attempt can be asked for.</summary>
-    public bool OffersNewAttempt { get; private set => Set(ref field, value); }
-
-    /// <summary>Opens the form: reads the recipes and the queue's items.</summary>
-    /// <param name="itemId">The item to start for, or null.</param>
-    /// <param name="cancellationToken">Cancels the reads.</param>
-    /// <returns>A task that completes when both reads are shown.</returns>
-    internal Task Open(string? itemId, CancellationToken cancellationToken)
+    public bool OffersNewAttempt
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        ItemId = itemId ?? string.Empty;
-        throw new NotSupportedException();
+        get;
+        private set
+        {
+            Set(ref field, value);
+            OnChanged(nameof(CanStartNewAttempt));
+        }
     }
 
-    /// <summary>Esc or Cancel: closes the form; nothing is sent.</summary>
-    internal void Close() => IsOpen = false;
+    /// <summary>True when the new-attempt button would send: offered, not in flight and not sent yet.</summary>
+    public bool CanStartNewAttempt => OffersNewAttempt && !IsSending && !_sentNext;
 
-    /// <summary>Chooses a recipe and reads its inputs.</summary>
-    /// <param name="recipe">The recipe.</param>
-    /// <param name="cancellationToken">Cancels the read.</param>
-    /// <returns>A task that completes when the fields are shown.</returns>
-    internal Task Choose(RecipeChoice recipe, CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        Recipe = recipe;
-        throw new NotSupportedException();
-    }
-
-    /// <summary>Sends the form once.</summary>
-    /// <param name="cancellationToken">Cancels the wait for the answer.</param>
-    /// <returns>A task that completes when the answer is shown.</returns>
-    internal Task Submit(CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        Error = string.Empty;
-        throw new NotSupportedException();
-    }
-
-    /// <summary>Sends the form again as the next attempt: a second, explicit press, offered only after a finished attempt was shown.</summary>
-    /// <param name="cancellationToken">Cancels the wait for the answer.</param>
-    /// <returns>A task that completes when the answer is shown.</returns>
-    internal Task StartNewAttempt(CancellationToken cancellationToken)
-    {
-        cancellationToken.ThrowIfCancellationRequested();
-        Started?.Invoke(this, new StartedEventArgs(string.Empty, string.Empty, existing: false, finished: false));
-        throw new NotSupportedException();
-    }
+    private (ControlKind Kind, string Stage)? Row => _catalog.Row(Action) is { } row ? CatalogReadiness.Parse(row.Ui) : null;
 }
