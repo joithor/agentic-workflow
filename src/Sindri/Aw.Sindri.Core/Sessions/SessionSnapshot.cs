@@ -6,4 +6,8 @@ namespace Aw.Sindri.Core.Sessions;
 /// <param name="Problems">One row per source that failed.</param>
 /// <param name="ObservedAt">When the pass ran.</param>
 public sealed record SessionSnapshot(
-    IReadOnlyList<ObservedSession> Sessions, IReadOnlyList<EndedSession> RecentlyEnded, IReadOnlyList<SessionProblem> Problems, DateTimeOffset ObservedAt);
+    IReadOnlyList<ObservedSession> Sessions, IReadOnlyList<EndedSession> RecentlyEnded, IReadOnlyList<SessionProblem> Problems, DateTimeOffset ObservedAt)
+{
+    /// <summary>The last 20 state changes of each live session in this Sindri run, oldest first (collector spec CA-2).</summary>
+    public IReadOnlyDictionary<SessionRef, IReadOnlyList<SessionStateEntry>> History { get; init; } = new Dictionary<SessionRef, IReadOnlyList<SessionStateEntry>>();
+}

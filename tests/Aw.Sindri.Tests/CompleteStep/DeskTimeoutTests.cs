@@ -97,7 +97,7 @@ public sealed class DeskTimeoutTests(TimeSkippingServer server) : IClassFixture<
 
             Assert.Equal("SND-WF-003", (rejected.InnerException as Temporalio.Exceptions.ApplicationFailureException)?.ErrorType);
             Assert.Equal("-> checks", done.Happened);
-            Assert.Contains("answer --resume first", rejected.InnerException?.Message, StringComparison.Ordinal);
+            Assert.Contains("answer it first: sindri workflow status", rejected.InnerException?.Message, StringComparison.Ordinal);
         }
         finally
         {
