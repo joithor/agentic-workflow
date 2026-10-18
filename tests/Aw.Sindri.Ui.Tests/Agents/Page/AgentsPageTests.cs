@@ -9,6 +9,7 @@ using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.Tests.Views;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Agents;
+using Aw.Sindri.Ui.ViewModels.Shell;
 
 namespace Aw.Sindri.Ui.Tests.Agents.Page;
 
@@ -26,7 +27,7 @@ public sealed class AgentsPageTests : FrameHost
     private static List<Border> Rows(Window window) =>
         [.. window.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "SessionRowFrame" && b.IsEffectivelyVisible)];
 
-    private async Task<(Window Window, Aw.Sindri.Ui.ViewModels.Shell.ShellViewModel Shell)> OnAgents(Action? serve = null, double? height = null)
+    private async Task<(Window Window, ShellViewModel Shell)> OnAgents(Action? serve = null, double? height = null)
     {
         serve?.Invoke();
         var (window, shell) = await Connected(width: 1280, height: height);

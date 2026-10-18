@@ -44,6 +44,10 @@ public sealed class SessionSheetTests : FrameHost
         return (window, shell);
     }
 
+    // The Agents rows have their own controls with some of the sheet's names: look inside the sheet only.
+    private static T InSheet<T>(Window window, string name) where T : Control =>
+        Named<Control>(window, "SessionSheet").GetVisualDescendants().OfType<T>().First(c => string.Equals(c.Name, name, StringComparison.Ordinal));
+
     private static List<(string Name, AutomationControlType Type)> Tree(Window window) => Heard.Tree(Named<Control>(window, "SessionSheet"));
 
     [Fact]
@@ -54,7 +58,7 @@ public sealed class SessionSheetTests : FrameHost
         shell.Navigate(Link(Claude));   // the deep link: the Agents page and the sheet
         await Until(window, () => shell.AgentSheet.Phase == FramePhase.Shown);
         var sheet = shell.AgentSheet;
-        Assert.Equal((PageId.Agents, "Session " + Claude), (shell.CurrentPage, shell.SheetName));
+        Assert.Equal((PageId.Agents, "Session " + sheet.Heading), (shell.CurrentPage, shell.SheetName));
         Assert.Equal(shell.SheetName, Heard.Name(Named<Control>(window, "Sheet")));
         Assert.False(Visible(window, "SheetBody"), "the placeholder is gone");
         Assert.Equal(sheet.Heading, Heard.Wrapper(Named<Border>(window, "SessionHeading")));
@@ -86,11 +90,11 @@ public sealed class SessionSheetTests : FrameHost
     {
         var (window, shell) = await Opened(Codex);
 
-        var focus = Named<Button>(window, "SessionFocus");
+        var focus = InSheet<Button>(window, "SessionFocus");
         Assert.False(focus.IsEnabled);
         Assert.Equal("Focus, arrives in CO-4a", Heard.Name(focus));
-        Assert.Equal(shell.AgentSheet.FocusLine, Heard.Wrapper(Named<Border>(window, "SessionFocusLine")));
-        var copy = Named<Button>(window, "SessionFocusCopy");
+        Assert.Equal(shell.AgentSheet.FocusLine, Heard.Wrapper(InSheet<Border>(window, "SessionFocusLine")));
+        var copy = InSheet<Button>(window, "SessionFocusCopy");
         Assert.True(copy.Focusable && copy.IsEffectivelyEnabled);
         copy.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await Until(window, () => shell.AgentSheet.CopyLabel == "Copied");
@@ -104,11 +108,11 @@ public sealed class SessionSheetTests : FrameHost
         Server.SessionAnswer = RouteAnswer.Problem("sessions-id", "not-found");
         var (window, shell) = await Opened(Claude);
 
-        var ended = Named<Border>(window, "SessionEnded");
+        var ended = InSheet<Border>(window, "SessionEnded");
         Assert.Equal("This session has ended.", Heard.Wrapper(ended));
         Assert.Equal(shell.AgentSheet.EndedDetail, ToolTip.GetTip(ended));
         Assert.True(shell.IsSheetShown);
-        Assert.False(Named<Button>(window, "SessionFocus").IsEnabled);
+        Assert.False(InSheet<Button>(window, "SessionFocus").IsEnabled);
         Frame(window, "ended");
     });
 

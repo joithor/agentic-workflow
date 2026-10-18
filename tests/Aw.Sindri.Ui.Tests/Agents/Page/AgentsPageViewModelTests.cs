@@ -3,6 +3,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Agents;
+using Aw.Sindri.Ui.ViewModels.Controls;
 using static Aw.Sindri.Ui.Tests.Agents.Page.AgentsPageFixture;
 
 namespace Aw.Sindri.Ui.Tests.Agents.Page;
@@ -339,7 +340,7 @@ public sealed class AgentsPageViewModelTests
     [Fact]
     public async Task Without_a_catalog_row_focus_still_says_its_cli()
     {
-        var page = new Aw.Sindri.Ui.ViewModels.Agents.AgentsPageViewModel(_f.Server, _f.Clipboard, _f.Clock, new Aw.Sindri.Ui.ViewModels.Controls.CatalogViewModel(_f.Clipboard, _f.Clock));
+        var page = new AgentsPageViewModel(_f.Server, _f.Clipboard, _f.Clock, new CatalogViewModel(_f.Clipboard, _f.Clock));
         page.SetShown(shown: true);
         await page.Refresh(Url, Token);
 
