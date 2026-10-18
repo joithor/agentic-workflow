@@ -115,10 +115,7 @@ internal static class PlanMounts
     {
         var paths = c.Request.Paths;
         m.Add(new PlanMount(paths.RunDirectory, PlanMountKind.ReadWrite, Reason: "the Step's outputs"));
-        if (paths.GitCommonDir.Length > 0)
-        {
-            m.Add(new PlanMount(paths.GitCommonDir, PlanMountKind.ReadOnly, Reason: "the git directory: config, hooks, packed-refs, tags and other runs' refs stay read-only"));
-        }
+        m.Add(new PlanMount(paths.GitCommonDir, PlanMountKind.ReadOnly, Reason: "the git directory: config, hooks, packed-refs, tags and other runs' refs stay read-only"));   // why: PlanChecks proved it is a clean path inside the repo
 
         if (c.WritablePath is not { } worktree)
         {
@@ -126,11 +123,6 @@ internal static class PlanMounts
         }
 
         m.Add(new PlanMount(worktree, PlanMountKind.ReadWrite, Reason: "the run's worktree"));
-        if (paths.GitCommonDir.Length == 0)
-        {
-            return;
-        }
-
         var git = paths.GitCommonDir;
         var ns = c.Request.RunNamespace;
         m.Add(new PlanMount(git + "/objects", PlanMountKind.ReadWrite, Reason: "a commit writes objects"));

@@ -38,9 +38,9 @@ internal static partial class PlanChecks
             return Unconfinable($"{bad.What} is not an absolute normalized path");
         }
 
-        if (!Inside(p.GitCommonDir, p.Repo))
+        if (!IsGitDirectory(p.GitCommonDir, p.Repo))
         {
-            return Unconfinable("the git directory is not inside the repo");
+            return Unconfinable("the git directory is not the repo's .git or inside it");
         }
 
         if (p.Worktree is { } worktree && !Inside(worktree, p.Repo))
@@ -153,6 +153,9 @@ internal static partial class PlanChecks
     private static bool IsClean(string? path) =>
         !string.IsNullOrEmpty(path) && path[0] == '/' && path.Length > 1 && !path.EndsWith('/') && !path.Contains("//", StringComparison.Ordinal)
         && !path.Split('/').Any(s => string.Equals(s, ".", StringComparison.Ordinal) || string.Equals(s, "..", StringComparison.Ordinal));
+
+    // Spec SB5: the common git directory is <repo>/.git, or under it (a submodule's modules/<name>).
+    private static bool IsGitDirectory(string git, string repo) => string.Equals(git, repo + "/.git", StringComparison.Ordinal) || Inside(git, repo + "/.git");
 
     private static bool Inside(string path, string root) => path.StartsWith(root + "/", StringComparison.Ordinal);
 
