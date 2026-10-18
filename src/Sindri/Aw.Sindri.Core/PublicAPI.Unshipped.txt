@@ -8163,17 +8163,14 @@ Aw.Sindri.Core.Events.LaunchFailed
 Aw.Sindri.Core.Events.LaunchFailed.<Clone>$() -> Aw.Sindri.Core.Events.LaunchFailed!
 Aw.Sindri.Core.Events.LaunchFailed.Code.get -> string!
 Aw.Sindri.Core.Events.LaunchFailed.Code.init -> void
-Aw.Sindri.Core.Events.LaunchFailed.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, out Aw.Sindri.Core.Ids.ItemId Item, out string! Code, out string! Message, out Aw.Sindri.Core.Launch.LaunchStage? Stage) -> void
 Aw.Sindri.Core.Events.LaunchFailed.Equals(Aw.Sindri.Core.Events.LaunchFailed? other) -> bool
 Aw.Sindri.Core.Events.LaunchFailed.Item.get -> Aw.Sindri.Core.Ids.ItemId
 Aw.Sindri.Core.Events.LaunchFailed.Item.init -> void
 Aw.Sindri.Core.Events.LaunchFailed.Launch.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId
 Aw.Sindri.Core.Events.LaunchFailed.Launch.init -> void
-Aw.Sindri.Core.Events.LaunchFailed.LaunchFailed(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, Aw.Sindri.Core.Ids.ItemId Item, string! Code, string! Message, Aw.Sindri.Core.Launch.LaunchStage? Stage) -> void
 Aw.Sindri.Core.Events.LaunchFailed.Message.get -> string!
 Aw.Sindri.Core.Events.LaunchFailed.Message.init -> void
 Aw.Sindri.Core.Events.LaunchFailed.Stage.get -> Aw.Sindri.Core.Launch.LaunchStage?
-Aw.Sindri.Core.Events.LaunchFailed.Stage.init -> void
 Aw.Sindri.Core.Events.LaunchSessionReported
 Aw.Sindri.Core.Events.LaunchSessionReported.<Clone>$() -> Aw.Sindri.Core.Events.LaunchSessionReported!
 Aw.Sindri.Core.Events.LaunchSessionReported.Equals(Aw.Sindri.Core.Events.LaunchSessionReported? other) -> bool
@@ -8266,7 +8263,6 @@ Aw.Sindri.Core.Events.SessionEndReason.Exit = 0 -> Aw.Sindri.Core.Events.Session
 Aw.Sindri.Core.Events.SessionEndReason.Lost = 1 -> Aw.Sindri.Core.Events.SessionEndReason
 Aw.Sindri.Core.Events.SessionEnded
 Aw.Sindri.Core.Events.SessionEnded.<Clone>$() -> Aw.Sindri.Core.Events.SessionEnded!
-Aw.Sindri.Core.Events.SessionEnded.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, out Aw.Sindri.Core.Events.SessionEndReason Reason, out int? ExitCode) -> void
 Aw.Sindri.Core.Events.SessionEnded.Equals(Aw.Sindri.Core.Events.SessionEnded? other) -> bool
 Aw.Sindri.Core.Events.SessionEnded.ExitCode.get -> int?
 Aw.Sindri.Core.Events.SessionEnded.ExitCode.init -> void
@@ -8274,10 +8270,8 @@ Aw.Sindri.Core.Events.SessionEnded.Launch.get -> Aw.Sindri.Core.Workflow.Engine.
 Aw.Sindri.Core.Events.SessionEnded.Launch.init -> void
 Aw.Sindri.Core.Events.SessionEnded.Reason.get -> Aw.Sindri.Core.Events.SessionEndReason
 Aw.Sindri.Core.Events.SessionEnded.Reason.init -> void
-Aw.Sindri.Core.Events.SessionEnded.SessionEnded(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, Aw.Sindri.Core.Events.SessionEndReason Reason, int? ExitCode) -> void
 Aw.Sindri.Core.Events.SessionUsage
 Aw.Sindri.Core.Events.SessionUsage.<Clone>$() -> Aw.Sindri.Core.Events.SessionUsage!
-Aw.Sindri.Core.Events.SessionUsage.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, out int Sample, out long InputTokens, out long OutputTokens) -> void
 Aw.Sindri.Core.Events.SessionUsage.Equals(Aw.Sindri.Core.Events.SessionUsage? other) -> bool
 Aw.Sindri.Core.Events.SessionUsage.InputTokens.get -> long
 Aw.Sindri.Core.Events.SessionUsage.InputTokens.init -> void
@@ -8287,7 +8281,6 @@ Aw.Sindri.Core.Events.SessionUsage.OutputTokens.get -> long
 Aw.Sindri.Core.Events.SessionUsage.OutputTokens.init -> void
 Aw.Sindri.Core.Events.SessionUsage.Sample.get -> int
 Aw.Sindri.Core.Events.SessionUsage.Sample.init -> void
-Aw.Sindri.Core.Events.SessionUsage.SessionUsage(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, int Sample, long InputTokens, long OutputTokens) -> void
 Aw.Sindri.Core.Launch.CatalogSource
 Aw.Sindri.Core.Launch.CatalogSource.Added = 2 -> Aw.Sindri.Core.Launch.CatalogSource
 Aw.Sindri.Core.Launch.CatalogSource.Builtin = 0 -> Aw.Sindri.Core.Launch.CatalogSource
@@ -9955,7 +9948,6 @@ Aw.Sindri.Core.Launches.LaunchSessionEvents.Report(Aw.Sindri.Core.Workflow.Engin
 Aw.Sindri.Core.Launches.LaunchSessionEvents.Verify(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, Aw.Sindri.Core.Launches.LaunchSecret secret) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
 Aw.Sindri.Core.Launches.ReportedIdAdmission
 Aw.Sindri.Core.Launches.ReportedIdAdmission.Admit(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, Aw.Sindri.Core.Ids.SessionId? id, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Launches.AdmittedLaunch!>
-Aw.Sindri.Core.Launches.ReportedIdAdmission.ReportedIdAdmission(Aw.Sindri.Core.Launches.ILaunchViews! views, Aw.Sindri.Core.Launch.IAgentCatalog! catalog) -> void
 override Aw.Sindri.Core.Launches.AdmittedLaunch.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Launches.AdmittedLaunch.GetHashCode() -> int
 override Aw.Sindri.Core.Launches.AdmittedLaunch.ToString() -> string!
@@ -9992,7 +9984,6 @@ Aw.Sindri.Core.Launches.ILaunchUsage.OfSession(Aw.Sindri.Core.Launch.AgentId tar
 Aw.Sindri.Core.Launches.ISessionUsageSampler
 Aw.Sindri.Core.Launches.ISessionUsageSampler.Sample(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int>
 Aw.Sindri.Core.Launches.UsageSamples
-Aw.Sindri.Core.Launches.UsageSamples.Changed(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, long input, long output) -> bool
 Aw.Sindri.Core.Launches.UsageSamples.Keep(System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Engine.LaunchId>! live) -> void
 Aw.Sindri.Core.Launches.UsageSamples.UsageSamples() -> void
 Aw.Sindri.Core.Launches.LaunchLiveness.Active() -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.LaunchId>!
@@ -10664,3 +10655,48 @@ Aw.Sindri.Core.Launch.LaunchRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engi
 Aw.Sindri.Core.Launch.LaunchRequest.LaunchRequest(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Launch.AgentId Agent, Aw.Sindri.Core.Launch.LaunchMode Mode, bool Attended, string! RepoPath, Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance, string? Worktree, Aw.Sindri.Core.Launch.StepArgs? Step, Aw.Sindri.Core.Workflow.Engine.RunToken? Run, Aw.Sindri.Core.Ids.SessionId? Resume = null) -> void
 Aw.Sindri.Core.Launch.LaunchRequest.Resume.get -> Aw.Sindri.Core.Ids.SessionId?
 Aw.Sindri.Core.Launch.LaunchRequest.Resume.init -> void
+Aw.Sindri.Core.Events.LaunchFailed.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, out Aw.Sindri.Core.Ids.ItemId Item, out string! Code, out string! Message, out Aw.Sindri.Core.Events.LaunchFailureDetail? Detail) -> void
+Aw.Sindri.Core.Events.LaunchFailed.Detail.get -> Aw.Sindri.Core.Events.LaunchFailureDetail?
+Aw.Sindri.Core.Events.LaunchFailed.Detail.init -> void
+Aw.Sindri.Core.Events.LaunchFailureDetail.Stage.get -> Aw.Sindri.Core.Launch.LaunchStage?
+Aw.Sindri.Core.Events.LaunchFailureDetail.Stage.init -> void
+Aw.Sindri.Core.Events.LaunchFailureDetail.Reason.get -> string?
+Aw.Sindri.Core.Events.LaunchFailureDetail.Current.get -> string?
+Aw.Sindri.Core.Events.LaunchFailureDetail.Approved.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Events.LaunchFailureDetail.Current.init -> void
+Aw.Sindri.Core.Events.LaunchFailureDetail.Approved.init -> void
+Aw.Sindri.Core.Events.LaunchFailureDetail
+Aw.Sindri.Core.Events.LaunchFailureDetail.Reason.init -> void
+override Aw.Sindri.Core.Events.LaunchFailureDetail.ToString() -> string!
+static Aw.Sindri.Core.Events.LaunchFailureDetail.operator !=(Aw.Sindri.Core.Events.LaunchFailureDetail? left, Aw.Sindri.Core.Events.LaunchFailureDetail? right) -> bool
+static Aw.Sindri.Core.Events.LaunchFailureDetail.operator ==(Aw.Sindri.Core.Events.LaunchFailureDetail? left, Aw.Sindri.Core.Events.LaunchFailureDetail? right) -> bool
+override Aw.Sindri.Core.Events.LaunchFailureDetail.GetHashCode() -> int
+override Aw.Sindri.Core.Events.LaunchFailureDetail.Equals(object? obj) -> bool
+Aw.Sindri.Core.Events.LaunchFailureDetail.Equals(Aw.Sindri.Core.Events.LaunchFailureDetail? other) -> bool
+Aw.Sindri.Core.Events.LaunchFailureDetail.<Clone>$() -> Aw.Sindri.Core.Events.LaunchFailureDetail!
+Aw.Sindri.Core.Events.LaunchFailureDetail.Deconstruct(out Aw.Sindri.Core.Launch.LaunchStage? Stage, out string? Reason, out string? Current, out System.Collections.Generic.IReadOnlyList<string!>? Approved) -> void
+Aw.Sindri.Core.Events.SessionEnded.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, out Aw.Sindri.Core.Events.SessionEndReason Reason, out int? ExitCode, out long? InputTokens, out long? OutputTokens) -> void
+Aw.Sindri.Core.Events.SessionEnded.InputTokens.get -> long?
+Aw.Sindri.Core.Events.SessionEnded.OutputTokens.get -> long?
+Aw.Sindri.Core.Events.SessionEnded.InputTokens.init -> void
+Aw.Sindri.Core.Events.SessionEnded.OutputTokens.init -> void
+Aw.Sindri.Core.Events.SessionUsage.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, out int Sample, out long InputTokens, out long OutputTokens, out Aw.Sindri.Core.Launch.AgentId Target, out string? Model) -> void
+Aw.Sindri.Core.Events.SessionUsage.Target.get -> Aw.Sindri.Core.Launch.AgentId
+Aw.Sindri.Core.Events.SessionUsage.Model.get -> string?
+Aw.Sindri.Core.Events.SessionUsage.Target.init -> void
+Aw.Sindri.Core.Events.SessionUsage.Model.init -> void
+Aw.Sindri.Core.Events.SessionUsage.SessionUsage(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, int Sample, long InputTokens, long OutputTokens, Aw.Sindri.Core.Launch.AgentId Target, string? Model = null) -> void
+Aw.Sindri.Core.Events.SessionEnded.SessionEnded(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, Aw.Sindri.Core.Events.SessionEndReason Reason, int? ExitCode, long? InputTokens = null, long? OutputTokens = null) -> void
+Aw.Sindri.Core.Events.LaunchFailureDetail.LaunchFailureDetail(Aw.Sindri.Core.Launch.LaunchStage? Stage, string? Reason = null, string? Current = null, System.Collections.Generic.IReadOnlyList<string!>? Approved = null) -> void
+static Aw.Sindri.Core.Events.LaunchFailureDetail.Of(Aw.Kernel.Error! error, Aw.Sindri.Core.Launch.LaunchStage? stage) -> Aw.Sindri.Core.Events.LaunchFailureDetail?
+Aw.Sindri.Core.Events.LaunchFailed.LaunchFailed(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, Aw.Sindri.Core.Ids.ItemId Item, string! Code, string! Message, Aw.Sindri.Core.Events.LaunchFailureDetail? Detail = null) -> void
+Aw.Sindri.Core.Launches.UsageSamples.IsNew(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, long input, long output) -> bool
+Aw.Sindri.Core.Launches.UsageSamples.Next(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, int floor) -> int
+Aw.Sindri.Core.Launches.UsageSamples.Record(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, long input, long output, int number) -> void
+Aw.Sindri.Core.Launches.ReportedIdAdmission.ReportedIdAdmission(Aw.Sindri.Core.Launches.ILaunchViews! views, Aw.Sindri.Core.Launch.IAgentCatalog! catalog, Aw.Sindri.Core.Launches.ILaunchUsage! usage) -> void
+Aw.Sindri.Core.Launches.ReportedIdAdmission.FinalTokens(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<(long? Input, long? Output)>
+static Aw.Sindri.Core.Launches.ModelTokens.Totals(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.ModelTokens!>! tokens) -> (long Input, long Output)
+static Aw.Sindri.Core.Launches.ModelTokens.Dominant(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.ModelTokens!>! tokens) -> string?
+static Aw.Sindri.Core.Launches.LaunchRules.SweepGap.get -> System.TimeSpan
+Aw.Sindri.Core.Launches.LaunchLiveness.SilentAfterSweep(System.DateTimeOffset now, System.TimeSpan silence, System.TimeSpan maxGap) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.LaunchId>!
+static Aw.Sindri.Core.Launch.Argv.SessionIdRules.Matches(string! pattern, string! text) -> bool
