@@ -3,6 +3,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Features.Launching;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Launch;
@@ -49,7 +50,7 @@ public sealed class LauncherDoctorChecksTests
             new HostFacts(HostKind.Tmux, Present: true, "3.4", Problem: null), [], []);
         _ = await _v.Slice.Store.Append(_v.Slice.Events.Entry(EventTypes.LaunchProbed, probed, "launch.probed:0"), grant, Token);
         await _v.Request(A.FirstLaunchId);   // no outcome, and about to be 31 s old
-        var failed = Aw.Sindri.Core.Workflow.Engine.LaunchId.From("LCH-" + new string('0', 31) + "7");
+        var failed = LaunchId.From("LCH-" + new string('0', 31) + "7");
         await _v.Request(failed);
         await _v.Fail("SND-LAUNCH-009", launch: failed);
         _v.Slice.Clock.Advance(TimeSpan.FromMinutes(3));
