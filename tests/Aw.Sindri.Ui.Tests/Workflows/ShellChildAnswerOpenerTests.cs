@@ -88,7 +88,7 @@ public sealed class ShellChildAnswerOpenerTests
         shell.FollowChildAnswerFromNeedsYou(row.Id, OfNeedsYou(shell));
 
         Assert.NotNull(shell.SheetLink);
-        Assert.NotEqual(DeepLinkKind.Workflow, shell.SheetLink!.Kind);
+        Assert.NotEqual(DeepLinkKind.Workflow, shell.SheetLink.Kind);
     }, Token);
 
     [Fact]
