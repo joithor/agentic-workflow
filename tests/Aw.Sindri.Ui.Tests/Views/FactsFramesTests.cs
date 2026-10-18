@@ -43,9 +43,9 @@ public sealed class FactsFramesTests : FrameHost
         Click(button);
         await Until(window, () => alert.Viewer is PayloadFactViewer { IsLoading: false });
 
-        var viewer = (PayloadFactViewer)alert.Viewer!;
+        Assert.IsType<PayloadFactViewer>(alert.Viewer);
         Assert.Equal(FixtureInstances.Detail("incident-loop").Facts.Count, window.GetVisualDescendants().OfType<TextBlock>().Count(t => t.Name == "FactLabel"));
-        Assert.Equal(viewer.Preview, window.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "PayloadPreviewLine").Select(t => t.Text ?? string.Empty), StringComparer.Ordinal);
+        Assert.False(Visible(window, "PayloadScalar"));   // the body is drawn once, as the tree
         Assert.True(Visible(window, "PayloadTree"));
         Assert.Same(button, window.FocusManager?.GetFocusedElement());
         Assert.Equal(Labels.HideFact, button.Content?.ToString());
