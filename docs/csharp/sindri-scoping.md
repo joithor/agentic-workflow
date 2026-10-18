@@ -50,3 +50,17 @@ Not covered yet: `read-brief`, `gather`, `anchor`, `reanchor`, `propose`.
 ## Not built yet (SC-K2)
 
 The server's `ScopingView` route (API2), API9's packet-file route, the `scoping.approved` and `scoping.escape` event kinds, and the Ui catalog golden.
+
+Deferred from the SC-K1 review (runs 1 and 2) to SC-K2 or later:
+
+- The evidence-stage `SCP-TRUST-001` and the trust part of `SCP-LENS-001` read `pass` without checking anything, because trust is stamped only into the assembled packet: check the packet's trust once one exists (the freeze re-check needs it), or report `not-run` until then.
+- `brief.md` in the packet uses its own backtick fence; API9 wraps a `.md` file in the pack fence (`UntrustedFence`), and the packet moves to it.
+- `--draft` with an address is checked against the runs root, not that instance's run area, and skips the worktree check; resolve the instance first and share one `AW_SINDRI_HOME` resolution.
+- `SCP-ACC-003` reads `openQuestions` and `questions` without `Need`-ing them, so a Step directory without them fails instead of `not-run`.
+- `PacketsCli` does not kill the child process on timeout or Ctrl-C, and reports a tool failure as `InvalidInput`.
+- The `noBehaviourChange` marker needs a spec amendment (§8.2 ACC-002 and ACC-005, A.1 and the SC-E seeds); it also means "covered through another surface" for some surfaces (owner decision, in the PR).
+- `ScopeSchemas` caches parsed `JsonNode` documents in a static field; materialize them under the lock before `serve` shares the view (API2).
+- `workflow.scoping.mapCoverageFloor` is the constant 0.5, to become the profile key.
+- Fencing in `show --json` leaves `ScopingRow.Key` and the Open in Context fields plain; a human who pipes `show` is classed as a session, as in the context verbs.
+- `ScopingGoldFactsTests` compares five of the facts with the line gold and not the stamped trust; compare `ScopePacket.Build` output with the gold files.
+- The `archive` line gold scope packet passes SCP-MAP-001 and SCP-ACC-002 as `expiry` does (`ScopingGoldFactsTests` runs both), but it has no facts set; SC-K2's freeze re-check will run the remaining rules on it.

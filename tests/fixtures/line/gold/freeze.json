@@ -12,7 +12,7 @@
     {
       "packet": "scope/archive",
       "kind": "scoping",
-      "hash": "sha256:f78ae36dfb51456a5da5e5d581a0c910b48da6c1a355aea550c676dd68514174",
+      "hash": "sha256:03f5caf76f7bb319d5400a8c764303f59f76b13f21459641ab675bd70608621b",
       "by": "owner",
       "station": "step.scope.freeze",
       "at": "2026-10-16T09:40:00Z"

@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Testing.Scoping;
 
 namespace Aw.Sindri.Tests.Scoping;
@@ -6,7 +7,8 @@ namespace Aw.Sindri.Tests.Scoping;
 /// <summary>The gold facts and the line gold scope packet (tests/fixtures/line/gold/scope/expiry) are one document: the facts equal the packet with the stamped fields removed, so neither drifts alone.</summary>
 public sealed class ScopingGoldFactsTests
 {
-    private static readonly string _gold = Path.Combine(RepoRoot(), "tests", "fixtures", "line", "gold", "scope", "expiry");
+    private static readonly string _scopes = Path.Combine(RepoRoot(), "tests", "fixtures", "line", "gold", "scope");
+    private static readonly string _gold = Path.Combine(_scopes, "expiry");
 
     private static string RepoRoot()
     {
@@ -34,7 +36,7 @@ public sealed class ScopingGoldFactsTests
 
             if (top)
             {
-                _ = o.Remove("change");   // the packet names its change and base commit; the facts keep them in brief
+                _ = o.Remove("change");   // the packet names its change and base commit; the fact form refuses both
                 _ = o.Remove("baseSha");
             }
 
@@ -70,5 +72,24 @@ public sealed class ScopingGoldFactsTests
         var gold = Strip(JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(_gold, file), TestContext.Current.CancellationToken)), top: true)!;
         var facts = Strip(JsonNode.Parse(ScopingFacts.Expiry()[fact]), top: true)!;
         Assert.Equal(gold.ToJsonString(), facts.ToJsonString());
+    }
+
+    [Theory, Trait("Lane", "integration")]   // reads the line fixture from the source tree
+    [InlineData("expiry")]
+    [InlineData("archive")]
+    public async Task Every_gold_scope_packet_passes_the_strict_map_and_acceptance_rules(string change)
+    {
+        var facts = new ScopingFacts();
+        foreach (var (key, file) in new[] { ("scopeMap", "scope-map.json"), ("acceptance", "acceptance.json") })
+        {
+            var text = await File.ReadAllTextAsync(Path.Combine(_scopes, change, file), TestContext.Current.CancellationToken);
+            facts[key] = Strip(JsonNode.Parse(text), top: true)!.ToJsonString();
+        }
+
+        var response = (await new ScopingCheckService().Handle(new ScopingCheckRequest(facts, ScopeStage.Draft), CancellationToken.None)).Value;
+
+        Assert.Empty(response.Findings);
+        Assert.Equal(ScopeRuleStatus.Pass, response.Rules.Single(r => r.Rule == "SCP-MAP-001").Status);
+        Assert.Equal(ScopeRuleStatus.Pass, response.Rules.Single(r => r.Rule == "SCP-ACC-002").Status);
     }
 }
