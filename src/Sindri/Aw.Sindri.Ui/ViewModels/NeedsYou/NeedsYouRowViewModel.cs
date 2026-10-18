@@ -29,7 +29,7 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     public ChildAnswerViewModel? ChildAnswer { get; private set; }
 
     private static ChildAnswerViewModel? ChildAnswerOf(NeedsYouEntry entry) =>
-        InstanceRules.IsChildVia(entry.Via) ? ChildAnswerViewModel.ForNeedsYouRow(entry.Id, entry.ShownId.Length > 0 ? entry.ShownId : entry.Id) : null;
+        InstanceRules.IsChildVia(entry.Via) ? ChildAnswerViewModel.ForNeedsYouRow(entry.Id, entry.ShownId.Length > 0 ? entry.ShownId : entry.Id, entry.Child) : null;
 
     /// <summary>The row's chip as served, the one chip control draws it; null for none.</summary>
     public StateChip? Chip => Entry.Chip;

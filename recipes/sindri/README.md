@@ -9,6 +9,8 @@ The recipes Sindri ships. Each is a YAML state machine (`docs/csharp/sindri-work
 | `workflow.scoping` | Station 1 of the line: scope a brief, tracker item, idea or change; interview; challenge; park at the owner's stop with a scope packet | scoping spec §6.1 |
 | `workflow.idea-to-brief` | Block recipe, the child of `workflow.scoping`'s `idea` branch: a short interview turns an idea into a cited brief | scoping spec §6.2 |
 | `workflow.line` | The line, with sequential stations (LN-WF8): waits on `workflow.scoping`, `workflow.design` (again after a plan sent back), `workflow.plan`, one `workflow.phase` and `workflow.docs-sync` as children; ends `done`, `dropped` or `stuck`. Parallel phase dispatch comes with LN-WF1; until then it runs the plan's `fact:phasePackets` as the one phase | line spec §3.5, LN-WF8 |
+| `workflow.design` | Station 2 of the line: one spec draft from a frozen scope packet in the style pack, reviewed through the lens pack until no CRITICAL or HIGH finding is left; a candidate design packet | line spec §4, C.1 |
+| `workflow.plan` | Station 3 of the line: the phase graph, executability review and hidden scenarios for a candidate design; the owner's after-design stop; freezes design, plan and phase packets | line spec §6, C.2 |
 | `workflow.build` | Station 4 of the line: one TDD builder per phase in its worktree (red tests, green code, scope gate, owner-granted scope amendments) | line spec §7.2 |
 | `workflow.prove` | Station 5 of the line: prove every acceptance item on the head (hand test, verify and evidence as children, before/after, hidden scenarios), then freeze the proof pack | line spec §7.3 |
 | The block recipes below | The small recipes bugfix and spec-to-PR runs are built from | decision-tree spec (DT-R2) |
@@ -45,11 +47,14 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 | `workflow.evidence-other` | phasePacket, built | evidenceSummary, evidenceReason | recorded / none-found |
 | `workflow.evidence-all` | phasePacket, built | evidenceSummary | done / failed, dropped |
 | `workflow.evidence` | phasePacket, built | evidenceSummary, decision | done / failed, all-failed, dropped |
-| `workflow.review-loop` | change (payload), phasePacket | review | clean / stuck, wrong (failed) |
+| `workflow.review-loop` (version 2, DTC4) | change (payload), phasePacket | review (packet) | clean / stuck, wrong (failed) |
 | `workflow.docs-sync` | pr, phasePacket (`{}` when started by hand) | docsResult, docsPr | opened / not-done; alreadySatisfied (no docs to change or sync off), abandoned (failed) |
 | `workflow.ship` | phasePacket, proofPack, review, workspace, lineContext | pr, handoff, returnNotes | shipped / returned (GREEN red or head moved) , refused (failed) |
 | `workflow.pr-babysitter` | pr, handoff, phasePacket, lineContext, workspace | mergedSha, reworkNotes | merged / stuck, rework (failed). **Stub**: one human-only Step (`step.babysit.watch`) stands for babysitting, docs sync and the merge until the PR babysitter spec's recipe replaces it |
 | `workflow.phase` | phasePacket, lineContext | pr, handoff, proofPack, mergedSha | merged / dropped. The per-phase child of the line (spec App. C.6): build, prove, review, drift check, ship, babysit; `stage` 3 and `reprove` 3 |
+
+
+`workflow.review-loop` v2 (DTC4) reviews one lens per run (`round`, `lens`, `lens-log`), a round per iteration (cap 5), keeps the narrow re-check, and ends `clean` only through `step.review.record`, which writes the review packet; `fact:review` is now `type: packet` (it was `payload`). Its hash changed: version 1 and version 2 are different recipes, and no approval of version 1 carries over (no live approvals exist, so there is no migration). The v1 eval names are kept (`happy`, `cap-then-recheck`, `behaviour-wrong`, `recheck-clean`, `recheck-wrong`) and `one-lens-per-run` is new. `step.lens.run`, `step.review.round`, `step.review.log` and `step.review.record` are descriptor-only: an instance parks with SND-WF-010 at the desk when it reaches one.
 
 ### Rules every block recipe follows
 
@@ -85,7 +90,7 @@ DTC2 to DTC9 as the plan reads them. Out of this change: seeds (DT-R3), `workflo
 - Every Step of `workflow.build` and `workflow.prove` is descriptor-only (`BuildSteps.cs`, `ProveSteps.cs`), so each parks with SND-WF-010 at the desk until its runtime ships. Only the owner may report `step.build.scope-desk`.
 - `workflow.build` inputs: `fact:phasePacket`, `fact:workspace` (text), `fact:buildNotes`, `fact:lineContext`. Outputs: `fact:built`, `fact:change`, `fact:redTests`, `fact:activePacket`. Terminals: `built` (resolved), `stopped` (unresolved).
 - `workflow.prove` inputs: `fact:phasePacket`, `fact:built`, `fact:workspace` (text), `fact:redTests`. Outputs: `fact:proofPack`, `fact:findings`. Terminals: `proven` (resolved), `failed` (unresolved, `fact:findings`). It waits on `workflow.hand-test`, `workflow.verify` and `workflow.evidence`.
-- Every wait on the heavy-job slot parks with SND-WF-010 until the engine's heavy allocator is wired (RCP-RES-001).
+- Neither recipe waits on the heavy-job slot yet, because nothing in a served build grants it. Restore the slot waits (line spec C.3, C.4) when the heavy allocator exists.
 
 ### The line's phase (workflow.phase)
 

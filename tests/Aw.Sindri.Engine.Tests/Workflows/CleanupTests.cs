@@ -191,8 +191,9 @@ public sealed class CleanupTests(DevServer server) : IClassFixture<DevServer>, I
     /// <summary>The marker ref is gone and the claim row is freed.</summary>
     private static async Task Gone(IServiceProvider sindri, TempGitRepo repo, string item)
     {
-        await WaitFor(async () => (await repo.Git("for-each-ref", $"refs/sindri/thor/{item}")).Length == 0);
-        Assert.Null((await sindri.GetRequiredService<IWorkflowClaims>().Find(ItemKey.From(item), Token)).Value);
+        // why: cleanup deletes the ref, then frees the row; wait for both, or a loaded box sees the row between the two steps
+        await WaitFor(async () => (await repo.Git("for-each-ref", $"refs/sindri/thor/{item}")).Length == 0
+            && (await sindri.GetRequiredService<IWorkflowClaims>().Find(ItemKey.From(item), Token)).Value is null);
     }
 
     /// <summary>Appends 'item.routed' as the router would, with a fresh id.</summary>

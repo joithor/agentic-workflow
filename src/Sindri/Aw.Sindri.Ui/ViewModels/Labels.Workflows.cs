@@ -112,9 +112,6 @@ internal static partial class Labels
     /// <summary>B on a row: handing an instance back is sent from the app in U8b.</summary>
     internal static readonly string HandBackArrives = $"Hand back {Arrives("U8b")}. Copy its command from the instance and run it at a terminal.";
 
-    /// <summary>N: starting a workflow from the app arrives with U5'.</summary>
-    internal static readonly string StartArrives = $"Start {Arrives("U5'")}.";
-
     /// <summary>The frame tab strip's heading for screen readers.</summary>
     internal const string TabsHeading = "Instance views";
 

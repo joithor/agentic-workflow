@@ -22,5 +22,5 @@
 {"trigger":{"kind":"step.completed","outcome":"findings","outputs":{"fact:lensRounds":[{"round":1},{"round":2},{"round":3},{"round":4}],"fact:findings":[{"rule":"DSN-LENS-001","item":"S1","message":"CRITICAL: missing expiry","fix":"See the rule.","severity":"fail"}]}},"expect":{"state":"lens-desk"}}
 {"trigger":{"kind":"step.completed","outcome":"revise","outputs":{"fact:answers":[{"question":"Q-revise","other":"Also cover the reminder."}]}},"expect":{"state":"revise"}}
 {"trigger":{"kind":"step.completed","outcome":"revised","outputs":{"fact:design":{"sections":[{"id":"D1","text":"Expiry"}]},"fact:changedSections":["D1"]}},"expect":{"state":"check"}}
-{"trigger":{"kind":"step.completed","outcome":"pass"},"expect":{"state":"parked","park":"lens"}}
+{"trigger":{"kind":"step.completed","outcome":"pass"},"expect":{"state":"parked","park":"rounds"}}
 {"trigger":{"kind":"answer","variant":"grant","amount":1},"expect":{"state":"round"}}

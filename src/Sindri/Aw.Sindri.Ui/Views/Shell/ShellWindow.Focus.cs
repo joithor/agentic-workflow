@@ -66,6 +66,7 @@ internal sealed partial class ShellWindow
         ListenNeedsYou(shell, on);
         ListenStrip(shell, on);
         ListenWorkflows(shell, on);
+        ListenAgents(shell, on);
         if (on)
         {
             shell.Queue.FocusRequested += OnFocusRow;
@@ -77,8 +78,8 @@ internal sealed partial class ShellWindow
             shell.SheetStacked -= OnSheetStacked;
         }
 
-        PropertyChangedEventHandler[] handlers = [OnShellChanged, OnBannerChanged, OnOverlayChanged, OnOverlayChanged, OnOverlayChanged, OnQueueChanged];
-        INotifyPropertyChanged[] sources = [shell, shell.Health.Banner, shell.Palette, shell.Shortcuts, shell.Create, shell.Queue];
+        PropertyChangedEventHandler[] handlers = [OnShellChanged, OnBannerChanged, OnOverlayChanged, OnOverlayChanged, OnOverlayChanged, OnOverlayChanged, OnQueueChanged];
+        INotifyPropertyChanged[] sources = [shell, shell.Health.Banner, shell.Palette, shell.Shortcuts, shell.Create, shell.Start, shell.Queue];
         for (var i = 0; i < sources.Length; i++)
         {
             if (on)
@@ -206,6 +207,11 @@ internal sealed partial class ShellWindow
     // accessibility-tester-0): then the heading gets it too, never a hidden control.
     private void FocusOpenedSheet()
     {
+        if (Shell is { Start.IsOpen: true })
+        {
+            return;   // the Start form is modal: an instance it opened (an existing attempt) stays behind it, and focus stays in the form
+        }
+
         if (Shell is { IsSheetShown: true } shell && (Covering || !HasRealFocus))
         {
             _ = this.Get<Border>("SheetTitle").Focus(Method());

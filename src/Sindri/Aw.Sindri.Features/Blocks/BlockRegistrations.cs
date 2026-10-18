@@ -43,12 +43,10 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(EvidenceSteps.None)
         .AddBlockDescriptor(EvidenceSteps.Combine)
         .AddBlockDescriptor(EvidenceSteps.Desk)
-        .AddBlockDescriptor(ReviewSteps.Run)
-        .AddBlockDescriptor(ReviewSteps.Fix)
-        .AddBlockDescriptor(ReviewSteps.Recheck)
+        .AddReviewBlocks()
         .AddBlockDescriptor(OwnerSteps.Decide)
         .AddScopingBlocks()
-        .AddLineBlocks()
+        .AddLineBlocks().AddLineDesignBlocks()
         .AddBlockDescriptor(EvidenceProviders.Check)
         .AddGate<BudgetAvailableGate>()
         .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
@@ -58,14 +56,10 @@ internal static class BlockRegistrations
         .AddEvent(RecipeEvents.ClaimCreated)
         .AddEvent(RecipeEvents.NotifyDelivered);
 
-    /// <summary>Registers every station of the line: design and plan, the per-phase child, build and prove, ship and docs sync.</summary>
+    /// <summary>Registers the line's blocks (the build and prove stations' and the per-phase child's).</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
-    private static IServiceCollection AddLineBlocks(this IServiceCollection services) => services
-        .AddLineDesignBlocks()
-        .AddPhaseBlocks()
-        .AddBuildProveBlocks()
-        .AddShipDocsBlocks();
+    private static IServiceCollection AddLineBlocks(this IServiceCollection services) => services.AddBuildProveBlocks().AddShipDocsBlocks().AddPhaseBlocks();
 
     /// <summary>Registers the per-phase child's Steps, the babysitter stub's Step and the line report effect (line spec §7, App. C.6), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
@@ -95,6 +89,17 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(ProveSteps.Evidence)
         .AddBlockDescriptor(ProveSteps.FailLog);
 
+    /// <summary>Registers the review loop's Steps and the lens frame it shares (line spec DTC4), descriptors only.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddReviewBlocks(this IServiceCollection services) => services
+        .AddBlockDescriptor(ReviewSteps.Round)
+        .AddBlockDescriptor(LensSteps.Run)
+        .AddBlockDescriptor(ReviewSteps.Log)
+        .AddBlockDescriptor(ReviewSteps.Record)
+        .AddBlockDescriptor(ReviewSteps.Fix)
+        .AddBlockDescriptor(ReviewSteps.Recheck);
+
     /// <summary>Registers the scoping station's Steps and the context Step inputs it names (scoping spec §9), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
@@ -107,7 +112,6 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(DesignSteps.LensDesk)
         .AddBlockDescriptor(DesignSteps.Evidence)
         .AddBlockDescriptor(LensRoundSteps.Round)
-        .AddBlockDescriptor(LensSteps.Run)
         .AddBlockDescriptor(LensRoundSteps.Log)
         .AddBlockDescriptor(PlanSteps.Intake)
         .AddBlockDescriptor(PlanSteps.Graph)
