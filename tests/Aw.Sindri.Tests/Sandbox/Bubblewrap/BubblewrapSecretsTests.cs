@@ -68,6 +68,37 @@ public sealed class BubblewrapSecretsTests
     }
 
     [Fact]
+    public void A_wrap_that_never_ran_leaves_nothing_once_the_launcher_discards_it()
+    {
+        using var area = new TempRunArea("AW_SINDRI_LAUNCH_SECRET", "ANTHROPIC_API_KEY");
+        var sandbox = Sandbox(new FakeProcesses(), Registry(area));
+        var file = sandbox.Wrap(area.Plan, ["claude"]).Value[4];
+        Assert.True(File.Exists(file));
+
+        sandbox.Discard(area.Plan);
+
+        Assert.False(File.Exists(file));
+        Assert.Empty(Directory.Exists(area.Root + "/area/secrets") ? Directory.GetFileSystemEntries(area.Root + "/area/secrets") : []);
+    }
+
+    [Fact]
+    public void A_retried_wrap_and_a_stale_file_leave_exactly_the_new_file()
+    {
+        using var area = new TempRunArea("AW_SINDRI_LAUNCH_SECRET", "ANTHROPIC_API_KEY");
+        var sandbox = Sandbox(new FakeProcesses(), Registry(area));
+        Directory.CreateDirectory(area.Root + "/area/secrets");
+        var stale = area.Root + "/area/secrets/stale-from-a-crash";
+        File.WriteAllText(stale, "--setenv\0AW_SINDRI_LAUNCH_SECRET\0old\0");
+        var first = sandbox.Wrap(area.Plan, ["claude"]).Value[4];
+
+        var second = sandbox.Wrap(area.Plan, ["claude"]).Value[4];
+
+        Assert.False(File.Exists(stale));
+        Assert.False(File.Exists(first));
+        Assert.Equal([second], Directory.GetFiles(area.Root + "/area/secrets"));
+    }
+
+    [Fact]
     public async Task The_canaries_are_wrapped_without_secrets()
     {
         using var area = new TempRunArea("AW_SINDRI_LAUNCH_SECRET", "ANTHROPIC_API_KEY");

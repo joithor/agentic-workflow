@@ -124,6 +124,34 @@ public sealed class SandboxCanariesTests
     }
 
     [Fact]
+    public async Task A_missing_worktree_is_015_through_the_self_check_before_any_canary_runs_and_is_never_created()
+    {
+        using var area = new TempRunArea();
+        var plan = area.Plan with { Worktree = area.Root + "/no-such-worktree" };
+        var processes = new FakeProcesses().When((p, _) => p == "bwrap", FakeProcesses.Ok());
+
+        var result = await Sandbox(processes).SelfCheck(plan, TestContext.Current.CancellationToken);
+
+        Assert.Equal("SND-LAUNCH-015", result.Error.Code);
+        Assert.DoesNotContain(processes.Calls, c => c.Program == "bwrap");
+        Assert.False(Directory.Exists(area.Root + "/no-such-worktree"));
+    }
+
+    [Fact]
+    public async Task A_missing_run_directory_is_016_fs_write_through_the_self_check_not_a_deny_canary()
+    {
+        using var area = new TempRunArea();
+        var plan = area.Plan with { RunDirectory = area.Root + "/no-such-run" };
+        var processes = new FakeProcesses().When((p, _) => p == "bwrap", FakeProcesses.Ok());
+
+        var result = await Sandbox(processes).SelfCheck(plan, TestContext.Current.CancellationToken);
+
+        Assert.Equal("SND-LAUNCH-016", result.Error.Code);
+        Assert.Equal("fs-write", SandboxRefusal.ReasonOf(result.Error));
+        Assert.DoesNotContain(processes.Calls, c => c.Program == "bwrap");
+    }
+
+    [Fact]
     public async Task The_whole_self_check_has_one_deadline_not_one_per_canary()
     {
         using var area = new TempRunArea();

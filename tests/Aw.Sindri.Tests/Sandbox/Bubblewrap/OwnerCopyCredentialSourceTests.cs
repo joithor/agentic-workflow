@@ -98,17 +98,33 @@ public sealed class OwnerCopyCredentialSourceTests
         Assert.Equal((LoginState.Ready, FakeOwnerHome.Now - TimeSpan.FromDays(2) + TimeSpan.FromDays(8)), (status.State, status.ExpiresAt));
     }
 
-    [Fact]
-    public void Codex_prefers_the_access_tokens_own_exp_when_auth_json_has_a_jwt()
+    private static string CodexJwtAuth(DateTimeOffset exp, string lastRefresh)
     {
-        using var home = new FakeOwnerHome(LoginState.Ready, codexRefreshedDaysAgo: 17);
-        var exp = (FakeOwnerHome.Now + TimeSpan.FromHours(2)).ToUnixTimeSeconds();
-        var payload = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{{\"exp\":{exp.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}")).TrimEnd('=').Replace('+', '-').Replace('/', '_');
-        home.CodexAuth($"{{\"tokens\":{{\"access_token\":\"h.{payload}.s\"}},\"last_refresh\":\"2026-10-01T00:00:00Z\"}}");
+        var payload = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{{\"exp\":{exp.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture)}}}")).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+        return $"{{\"tokens\":{{\"access_token\":\"h.{payload}.s\"}},\"last_refresh\":\"{lastRefresh}\"}}";
+    }
+
+    [Fact]
+    public void Codex_login_refreshed_12_days_ago_is_not_ready_even_when_the_token_has_hours_left()
+    {
+        using var home = new FakeOwnerHome(LoginState.Ready, codexRefreshedDaysAgo: 12);
+        home.CodexAuth(CodexJwtAuth(FakeOwnerHome.Now + TimeSpan.FromHours(2), "2026-10-06T12:00:00Z"));
 
         var status = home.Source().Probe(AgentId.From("codex"));
 
-        Assert.Equal((LoginState.Ready, DateTimeOffset.FromUnixTimeSeconds(exp)), (status.State, status.ExpiresAt));
+        Assert.Equal(LoginState.Expired, status.State);
+    }
+
+    [Fact]
+    public void Codex_expiry_is_the_earlier_of_the_tokens_exp_and_last_refresh_plus_the_refresh_age()
+    {
+        using var home = new FakeOwnerHome(LoginState.Ready, codexRefreshedDaysAgo: 1);
+        var exp = FakeOwnerHome.Now + TimeSpan.FromHours(2);
+        home.CodexAuth(CodexJwtAuth(exp, "2026-10-17T12:00:00Z"));
+
+        var status = home.Source().Probe(AgentId.From("codex"));
+
+        Assert.Equal((LoginState.Ready, DateTimeOffset.FromUnixTimeSeconds(exp.ToUnixTimeSeconds())), (status.State, status.ExpiresAt));
     }
 
     [Theory]

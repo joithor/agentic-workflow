@@ -93,6 +93,12 @@ run AW_DEPS_OS=Linux AW_DRY_RUN=1 AW_DEPS_SYSTEMD_PROBE=true
 expect "a working systemd user scope is reported" 0 "systemd-run: user scope works"
 run AW_DEPS_OS=Linux AW_DRY_RUN=1 AW_DEPS_SYSTEMD_PROBE=false
 expect "a missing systemd user manager only warns" 0 "systemd-run: found but no user scope \\(WARN"
+# The default probe command itself: a fake systemd-run that succeeds only for exactly `--user --scope --quiet true`.
+fake systemd-run 'echo "$*" >"'"$TMPROOT"'/sd-args"; [ "$*" = "--user --scope --quiet true" ]'
+run AW_DEPS_OS=Linux AW_DRY_RUN=1
+expect "the default systemd probe is a quiet user scope running true" 0 "systemd-run: user scope works"
+[ "$(cat "$TMPROOT/sd-args")" = "--user --scope --quiet true" ] && ok "the default probe ran systemd-run --user --scope --quiet true" || fail "the default probe ran systemd-run --user --scope --quiet true"
+fake systemd-run
 printf '%s\n' "$OUT" | has "sudo apt-get" && fail "no sudo line for socat when present" || ok "socat present: no install line"
 
 # 4b. bwrap present but its sandbox fails with the AppArmor restriction on: the profile is written and loaded through
