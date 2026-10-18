@@ -42,10 +42,10 @@ public static class SubgraphBuilder
         var reached = Widen(graph, nodes, given, depth);
         var order = reached.OrderBy(r => r.Value.Depth).ThenBy(r => r.Value.Origin).ThenBy(r => r.Key, StringComparer.Ordinal).Select(r => r.Key).ToList();
         var all = reached.Keys.ToHashSet(StringComparer.Ordinal);
-        var bands = new LensBands(Intent(graph, nodes, order, reached, all), Product(graph, nodes, order, reached, given.Count), Code(graph, nodes, order, reached, all));
+        var bands = new LensBands(Intent(graph, nodes, order, reached, all), Product(graph, nodes, order, reached), Code(graph, nodes, order, reached, all));
         var givenProduct = given.Where(k => IsProduct(k.Kind)).ToList();
         var ownSet = givenProduct.Select(k => k.Value).ToHashSet(StringComparer.Ordinal);
-        var coverage = LensCoverageBuilder.Of(graph, nodes, givenProduct) with { Map = MapCoverageBuilder.Of(graph, ownSet, basis) };
+        var coverage = LensCoverageBuilder.Of(graph, nodes, givenProduct) with { Map = MapCoverageBuilder.Of(graph, ownSet, basis, all.Where(k => nodes[k].Key.Kind == NodeKind.Code)) };
         var searched = LensSearchedBuilder.For(basis, [.. given.Select(k => k.Value)], depth, bands) with { Hops = [] };
         return new SubgraphView(1, given, missing, basis.Map, depth, basis.AsOf, bands, LensEdges.Across(graph, all), LensConflicts.Of(graph, all, conflicts), coverage, searched, [],
             new Dictionary<string, Citation>(StringComparer.Ordinal))
@@ -172,12 +172,11 @@ public static class SubgraphBuilder
     private static LensDecision Decision(GraphSnapshot graph, GraphNode n, int depth, HashSet<string> all) =>
         LensIntent.Decision(graph, n, Targets(graph, n.Key, EdgeType.Decides, all)) with { Depth = depth };
 
-    private static ProductBand Product(GraphSnapshot graph, Dictionary<string, GraphNode> nodes, List<string> order, Dictionary<string, Hit> reached, int givenCount)
+    private static ProductBand Product(GraphSnapshot graph, Dictionary<string, GraphNode> nodes, List<string> order, Dictionary<string, Hit> reached)
     {
         var product = order.Where(k => IsProduct(nodes[k].Key.Kind)).ToList();
         var own = product.Where(k => reached[k].Depth == 0).Select(k => LensScope.Item(nodes[k]) with { Depth = 0 }).ToList();
         var neighbors = product.Where(k => reached[k].Depth > 0).Select(k => Reach(nodes[k], reached[k])).ToList();
-        _ = givenCount;
         return LensProduct.Band(own, neighbors, [], LensProduct.Edges(graph, product.ToHashSet(StringComparer.Ordinal)));
     }
 

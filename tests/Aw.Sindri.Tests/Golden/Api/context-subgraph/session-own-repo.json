@@ -144,7 +144,9 @@
       "affects": [],
       "counts": {
         "own": 2,
-        "affects": 0
+        "affects": 0,
+        "neighbors": 1,
+        "edges": 1
       },
       "edges": [
         {

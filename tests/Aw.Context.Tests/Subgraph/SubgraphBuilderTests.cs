@@ -50,6 +50,40 @@ public sealed class SubgraphBuilderTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_set_of_only_code_nodes_still_gets_a_map_coverage_over_their_directories()
+    {
+        var view = Of([FileA]);
+
+        Assert.Equal(["src/"], view.Coverage.Map!.Paths);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void Widened_code_files_add_their_directories_to_the_map_coverage()
+    {
+        var graph = new GraphBuilder().Edge(B, EdgeType.PartOf, A).Edge("code:lib/b.ts", EdgeType.Implements, B).Edge(FileA, EdgeType.Implements, A).Build();
+
+        var view = SubgraphBuilder.Build(_basis, graph, [A], 2, []).Value;
+
+        Assert.Equal(["lib/", "src/"], view.Coverage.Map!.Paths);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_product_counts_carry_the_full_neighbor_and_edge_totals_beyond_the_cap()
+    {
+        var builder = new GraphBuilder();
+        foreach (var i in Enumerable.Range(0, LensesBuilder.BandCap + 5))
+        {
+            _ = builder.Edge(string.Create(CultureInfo.InvariantCulture, $"feature:n{i}"), EdgeType.PartOf, A);
+        }
+
+        var product = SubgraphBuilder.Build(_basis, builder.Build(), [A], 1, []).Value.Bands.Product;
+
+        Assert.Equal(LensesBuilder.BandCap, product.Neighbors.Count);
+        Assert.Equal((LensesBuilder.BandCap + 5, LensesBuilder.BandCap + 5, true), (product.Counts.Neighbors, product.Counts.Edges, product.Truncated));
+        Assert.Equal(LensesBuilder.BandCap, product.Edges.Count);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Edges_are_only_among_returned_nodes()
     {
         var view = Of([A, FileA]);

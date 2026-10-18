@@ -5028,3 +5028,7 @@ Aw.Context.Core.LensSupport.LensTexts
 static Aw.Context.Core.LensSupport.LensTexts.Clean(Aw.Context.Core.Lenses.LensesView! view, Aw.Context.Core.Map.MapText! text) -> Aw.Context.Core.Lenses.LensesView!
 static Aw.Context.Core.LensSupport.LensTexts.Clean(Aw.Context.Core.Lenses.LensesSetView! view, Aw.Context.Core.Map.MapText! text) -> Aw.Context.Core.Lenses.LensesSetView!
 static Aw.Context.Core.LensSupport.LensTexts.Clean(Aw.Context.Core.Subgraph.SubgraphView! view, Aw.Context.Core.Map.MapText! text) -> Aw.Context.Core.Subgraph.SubgraphView!
+Aw.Context.Core.Lenses.ProductCounts.Neighbors.get -> int?
+Aw.Context.Core.Lenses.ProductCounts.Neighbors.init -> void
+Aw.Context.Core.Lenses.ProductCounts.Edges.get -> int?
+Aw.Context.Core.Lenses.ProductCounts.Edges.init -> void
