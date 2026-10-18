@@ -4950,3 +4950,43 @@ Aw.Context.Core.Lenses.LensesView.MapCommit.get -> string?
 Aw.Context.Core.Lenses.LensesView.MapCommit.init -> void
 Aw.Context.Core.Lenses.SearchedState.Degraded = 3 -> Aw.Context.Core.Lenses.SearchedState
 Aw.Context.Core.Map.MapReader.ReadAt(Aw.Context.Core.Engine.ContextScope! scope, Aw.Context.Core.Map.MapRead read, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>
+Aw.Context.Core.Graph.CascadeHops
+Aw.Context.Core.Graph.CascadeHops.Component = 8 -> Aw.Context.Core.Graph.CascadeHops
+Aw.Context.Core.Graph.CascadeHops.Default = Aw.Context.Core.Graph.CascadeHops.State | Aw.Context.Core.Graph.CascadeHops.Flow | Aw.Context.Core.Graph.CascadeHops.Dependency -> Aw.Context.Core.Graph.CascadeHops
+Aw.Context.Core.Graph.CascadeHops.Dependency = 4 -> Aw.Context.Core.Graph.CascadeHops
+Aw.Context.Core.Graph.CascadeHops.Flow = 2 -> Aw.Context.Core.Graph.CascadeHops
+Aw.Context.Core.Graph.CascadeHops.None = 0 -> Aw.Context.Core.Graph.CascadeHops
+Aw.Context.Core.Graph.CascadeHops.State = 1 -> Aw.Context.Core.Graph.CascadeHops
+Aw.Context.Core.Graph.CascadeOptions
+Aw.Context.Core.Graph.CascadeOptions.CascadeOptions(Aw.Context.Core.Graph.CascadeHops Hops = Aw.Context.Core.Graph.CascadeHops.Default, int ComponentFanOut = 5) -> void
+Aw.Context.Core.Graph.CascadeOptions.<Clone>$() -> Aw.Context.Core.Graph.CascadeOptions!
+Aw.Context.Core.Graph.CascadeOptions.ComponentFanOut.get -> int
+Aw.Context.Core.Graph.CascadeOptions.ComponentFanOut.init -> void
+Aw.Context.Core.Graph.CascadeOptions.Deconstruct(out Aw.Context.Core.Graph.CascadeHops Hops, out int ComponentFanOut) -> void
+Aw.Context.Core.Graph.CascadeOptions.Equals(Aw.Context.Core.Graph.CascadeOptions? other) -> bool
+Aw.Context.Core.Graph.CascadeOptions.Hops.get -> Aw.Context.Core.Graph.CascadeHops
+Aw.Context.Core.Graph.CascadeOptions.Hops.init -> void
+Aw.Context.Core.Graph.CascadeResult.SkippedComponents.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.SkippedComponent!>!
+Aw.Context.Core.Graph.CascadeResult.SkippedComponents.init -> void
+Aw.Context.Core.Graph.SkippedComponent
+Aw.Context.Core.Graph.SkippedComponent.<Clone>$() -> Aw.Context.Core.Graph.SkippedComponent!
+Aw.Context.Core.Graph.SkippedComponent.Deconstruct(out string! Unit, out int Features) -> void
+Aw.Context.Core.Graph.SkippedComponent.Equals(Aw.Context.Core.Graph.SkippedComponent? other) -> bool
+Aw.Context.Core.Graph.SkippedComponent.Features.get -> int
+Aw.Context.Core.Graph.SkippedComponent.Features.init -> void
+Aw.Context.Core.Graph.SkippedComponent.SkippedComponent(string! Unit, int Features) -> void
+Aw.Context.Core.Graph.SkippedComponent.Unit.get -> string!
+Aw.Context.Core.Graph.SkippedComponent.Unit.init -> void
+const Aw.Context.Core.Graph.CascadeOptions.DefaultFanOut = 5 -> int
+override Aw.Context.Core.Graph.CascadeOptions.Equals(object? obj) -> bool
+override Aw.Context.Core.Graph.CascadeOptions.GetHashCode() -> int
+override Aw.Context.Core.Graph.CascadeOptions.ToString() -> string!
+override Aw.Context.Core.Graph.SkippedComponent.Equals(object? obj) -> bool
+override Aw.Context.Core.Graph.SkippedComponent.GetHashCode() -> int
+override Aw.Context.Core.Graph.SkippedComponent.ToString() -> string!
+static Aw.Context.Core.Graph.Cascade.Affects(Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Graph.NodeKey anchor, int depth, Aw.Context.Core.Graph.CascadeOptions! options) -> Aw.Context.Core.Graph.CascadeResult!
+static Aw.Context.Core.Graph.CascadeOptions.Default.get -> Aw.Context.Core.Graph.CascadeOptions!
+static Aw.Context.Core.Graph.CascadeOptions.operator !=(Aw.Context.Core.Graph.CascadeOptions? left, Aw.Context.Core.Graph.CascadeOptions? right) -> bool
+static Aw.Context.Core.Graph.CascadeOptions.operator ==(Aw.Context.Core.Graph.CascadeOptions? left, Aw.Context.Core.Graph.CascadeOptions? right) -> bool
+static Aw.Context.Core.Graph.SkippedComponent.operator !=(Aw.Context.Core.Graph.SkippedComponent? left, Aw.Context.Core.Graph.SkippedComponent? right) -> bool
+static Aw.Context.Core.Graph.SkippedComponent.operator ==(Aw.Context.Core.Graph.SkippedComponent? left, Aw.Context.Core.Graph.SkippedComponent? right) -> bool

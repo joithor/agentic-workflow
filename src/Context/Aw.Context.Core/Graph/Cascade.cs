@@ -14,8 +14,17 @@ public static class Cascade
     /// <param name="anchor">A node key in <paramref name="graph"/> (resolve aliases first).</param>
     /// <param name="depth">The depth cap, 0 to 4 (0: own scope only).</param>
     /// <returns>The own scope and the affected nodes.</returns>
-    public static CascadeResult Affects(GraphSnapshot graph, NodeKey anchor, int depth)
+    public static CascadeResult Affects(GraphSnapshot graph, NodeKey anchor, int depth) => Affects(graph, anchor, depth, CascadeOptions.Default);
+
+    /// <summary>The anchor's own scope and the nodes up to <paramref name="depth"/> steps from it, taking only the hops <paramref name="options"/> names.</summary>
+    /// <param name="graph">The graph a caller may see (overrides applied, a session's scope already cut).</param>
+    /// <param name="anchor">A node key in <paramref name="graph"/> (resolve aliases first).</param>
+    /// <param name="depth">The depth cap, 0 to 4 (0: own scope only).</param>
+    /// <param name="options">The hops and the component fan-out cap.</param>
+    /// <returns>The own scope, the affected nodes and the skipped components.</returns>
+    public static CascadeResult Affects(GraphSnapshot graph, NodeKey anchor, int depth, CascadeOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(graph);
         var index = new GraphIndex(graph);
         var own = OwnScope(index, anchor);
