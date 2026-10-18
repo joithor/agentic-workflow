@@ -9861,3 +9861,21 @@ Aw.Sindri.Core.Sessions.SessionProblem.Reason.get -> Aw.Sindri.Core.Sessions.Una
 Aw.Sindri.Core.Sessions.SessionProblem.Reason.init -> void
 static Aw.Sindri.Core.Sessions.SessionRows.Find(Aw.Sindri.Core.Sessions.SessionSnapshot! pass, Aw.Sindri.Core.Sessions.SessionRef reference, Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Sindri.Core.Sessions.ObservedSession?
 static Aw.Sindri.Core.Sessions.SessionRows.RefuseSession(Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Kernel.Error?
+Aw.Sindri.Core.Onyx.OnyxStepOutcome
+Aw.Sindri.Core.Onyx.OnyxStepOutcome.NeedsHuman = 2 -> Aw.Sindri.Core.Onyx.OnyxStepOutcome
+Aw.Sindri.Core.Onyx.OnyxStepOutcome.Ran = 0 -> Aw.Sindri.Core.Onyx.OnyxStepOutcome
+Aw.Sindri.Core.Onyx.OnyxStepOutcome.Skipped = 1 -> Aw.Sindri.Core.Onyx.OnyxStepOutcome
+Aw.Sindri.Core.Onyx.OnyxStepResult
+Aw.Sindri.Core.Onyx.OnyxStepResult.<Clone>$() -> Aw.Sindri.Core.Onyx.OnyxStepResult!
+Aw.Sindri.Core.Onyx.OnyxStepResult.Deconstruct(out string! Step, out Aw.Sindri.Core.Onyx.OnyxStepOutcome Outcome) -> void
+Aw.Sindri.Core.Onyx.OnyxStepResult.Equals(Aw.Sindri.Core.Onyx.OnyxStepResult? other) -> bool
+Aw.Sindri.Core.Onyx.OnyxStepResult.OnyxStepResult(string! Step, Aw.Sindri.Core.Onyx.OnyxStepOutcome Outcome) -> void
+Aw.Sindri.Core.Onyx.OnyxStepResult.Outcome.get -> Aw.Sindri.Core.Onyx.OnyxStepOutcome
+Aw.Sindri.Core.Onyx.OnyxStepResult.Outcome.init -> void
+Aw.Sindri.Core.Onyx.OnyxStepResult.Step.get -> string!
+Aw.Sindri.Core.Onyx.OnyxStepResult.Step.init -> void
+override Aw.Sindri.Core.Onyx.OnyxStepResult.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.OnyxStepResult.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.OnyxStepResult.ToString() -> string!
+static Aw.Sindri.Core.Onyx.OnyxStepResult.operator !=(Aw.Sindri.Core.Onyx.OnyxStepResult? left, Aw.Sindri.Core.Onyx.OnyxStepResult? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxStepResult.operator ==(Aw.Sindri.Core.Onyx.OnyxStepResult? left, Aw.Sindri.Core.Onyx.OnyxStepResult? right) -> bool

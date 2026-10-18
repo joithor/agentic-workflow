@@ -2,8 +2,6 @@ using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Onyx;
-using Aw.Sindri.Core.Profile;
-using Aw.Sindri.Features.OnyxAccount;
 using Aw.Sindri.Features.OnyxDown;
 using Aw.Sindri.Features.OnyxUp;
 
@@ -20,8 +18,6 @@ namespace Aw.Sindri.Host.Commands;
 /// <param name="approve">Runs `profile approve [hash]` the way the CLI does (preview without a hash, the typed challenge with one), for the approval `onyx up` shows inline; null skips the offer.</param>
 internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentSession session, Func<string?, CancellationToken, Task<int>>? approve = null)
 {
-    private const string ConnectorChecklist = "Connect your sources in Onyx (OAuth is yours, and so is the company's sign-off):\n  Linear: the product's teams, with a start date that covers the backtests\n  Slack: the product's channels\nThen `sindri doctor` shows context:onyx and onyx:stack.\n";
-
     internal async Task<int> Up(bool json, CancellationToken ct)
     {
         if (!session.Human)
@@ -45,21 +41,14 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
             return await Fail(output, answer.Error).ConfigureAwait(false);
         }
 
-        var up = answer.Value;
-        var account = await Account(up, ct).ConfigureAwait(false);
-        if (account.IsError)
+        try
         {
-            return account.Error.Code is "interrupted" ? Interrupted("interrupted; run `sindri onyx up` again to resume") : await Fail(output, account.Error).ConfigureAwait(false);
+            return await new OnyxHandOver(services, output, approve).Finish(answer.Value, json, ct).ConfigureAwait(false);
         }
-
-        var tail = account.Value is { } done ? await HandOverText(done, ct).ConfigureAwait(false) : null;
-        var next = up.NeedsHuman is { Count: > 0 } waiting
-            ? $"needs you: {string.Join(", ", waiting)}"
-            : tail?.Text ?? "Onyx is running. Account setup (sign-up and Sindri's key) needs a terminal: run `sindri onyx up` in one.";
-        var code = tail?.ExitCode ?? 0;
-        return json
-            ? await output.Json(new OnyxUpSummary(up, account.Value), code).ConfigureAwait(false)
-            : await output.Text($"{"url",-10}{up.Url}\n{"version",-10}{up.Version}\n{"ran",-10}{Steps(up.Ran)}\n{"skipped",-10}{Steps(up.Skipped)}\n{next}\n", code).ConfigureAwait(false);
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            return Interrupted("interrupted; run `sindri onyx up` again to resume");
+        }
     }
 
     /// <summary>'sindri onyx open': the sign-up page while no account was made through `onyx up`, else the connectors page.</summary>
@@ -80,56 +69,9 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
             return 1;
         }
 
-        var page = new Uri($"http://127.0.0.1:{state.Port}" + (state.Steps.ContainsKey(OnyxSteps.Signup) ? "/admin/add-connector" : "/auth/signup"));
+        var page = new Uri($"http://127.0.0.1:{state.Port.ToString(System.Globalization.CultureInfo.InvariantCulture)}" + (state.Steps.ContainsKey(OnyxSteps.Signup) ? "/admin/add-connector" : "/auth/signup"));
         var opened = services.GetRequiredService<IBrowser>().Open(page);
         return await output.Text(opened ? $"Opening {page}\n" : $"Open {page} in your browser.\n", 0).ConfigureAwait(false);
-    }
-
-    private async Task<Result<OnyxAccountResponse?>> Account(OnyxUpResponse up, CancellationToken ct)
-    {
-        Result<OnyxAccountResponse> account;
-        try
-        {
-            account = await services.GetRequiredService<IService<OnyxAccountRequest, OnyxAccountResponse>>().Handle(new OnyxAccountRequest(up.Port, up.Version), ct).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            return new Error("interrupted", ErrorKind.Timeout, "interrupted");
-        }
-
-        return account.IsError ? account.Error : Results.Success<OnyxAccountResponse?>(account.Value);
-    }
-
-    // After the account stage: the profile approval shown inline, the connectors page opened, the checklist printed.
-    private async Task<(string Text, int ExitCode)> HandOverText(OnyxAccountResponse done, CancellationToken ct)
-    {
-        if (done.NeedsHuman)
-        {
-            return ($"needs you: {string.Join(", ", done.Steps.Where(static s => s.Outcome == OnyxStepOutcome.NeedsHuman).Select(static s => s.Step))} (run `sindri onyx up` at a terminal)", 0);
-        }
-
-        var approved = approve is null || await ApproveInline(ct).ConfigureAwait(false);
-        _ = services.GetRequiredService<IBrowser>().Open(new Uri(done.Url + "/admin/add-connector"));
-        var key = done.KeyPointer is null ? string.Empty : $"{"key",-10}{done.KeyPointer} (a pointer; the key itself is in the store)\n";
-        var profile = approved ? string.Empty : "The profile section is written but not approved yet: run `sindri profile approve`.\n";
-        return ($"{key}{profile}{ConnectorChecklist}".TrimEnd('\n'), approved ? 0 : 1);
-    }
-
-    private async Task<bool> ApproveInline(CancellationToken ct)
-    {
-        var loaded = await services.GetRequiredService<IProfileSource>().Load(ct).ConfigureAwait(false);
-        if (loaded.IsError)
-        {
-            _ = await output.Error(loaded.Error).ConfigureAwait(false);
-            return false;
-        }
-
-        if (await approve!(null, ct).ConfigureAwait(false) == 0)
-        {
-            return true;   // the preview says it is approved already
-        }
-
-        return await approve(loaded.Value.Hash.Value, ct).ConfigureAwait(false) == 0;   // the typed challenge, as `sindri profile approve <hash>` asks it
     }
 
     internal async Task<int> Down(bool json, CancellationToken ct)
@@ -177,7 +119,7 @@ internal sealed class OnyxVerbs(IServiceProvider services, Output output, AgentS
         return error.Code.StartsWith("SND-ONYX-", StringComparison.Ordinal) || error.Code == SindriErrors.CommandBusy.Code ? 1 : 2;
     }
 
-    private static string Steps(IReadOnlyList<string> steps) => steps.Count == 0 ? "none" : string.Join(", ", steps);
+    internal static string Steps(IReadOnlyList<string> steps) => steps.Count == 0 ? "none" : string.Join(", ", steps);
 
     // Through the progress writer, which ends an open row of dots before the line, so the resume line never starts mid-row.
     private int Interrupted(string text)

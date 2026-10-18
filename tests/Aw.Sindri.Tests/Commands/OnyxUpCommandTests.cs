@@ -1,8 +1,9 @@
-using Aw.Sindri.Core.Onyx;
 using System.Text;
 using System.Text.Json;
 using Aw.Kernel.Json;
 using Aw.Kernel.Services;
+using Aw.Sindri.Core.Onyx;
+using Aw.Sindri.Features.OnyxAccount;
 using Aw.Sindri.Features.OnyxDown;
 using Aw.Sindri.Features.OnyxUp;
 using Aw.Sindri.Host;
@@ -17,7 +18,7 @@ namespace Aw.Sindri.Tests.Commands;
 [Collection(ProcessEnvironment.Name)]
 public sealed class OnyxUpCommandTests : IDisposable
 {
-    private const string HandOver = "Onyx is running. Account setup (sign-up and Sindri's key) comes next: `sindri onyx up` will continue it once that stage lands.";
+    private const string HandOver = "needs you: signup (run `sindri onyx up` at a terminal)";   // the account stage without a terminal
 
     private static readonly JsonSerializerOptions _json = AwJson.CreateOptions(SindriJsonContext.Default);
 
@@ -25,15 +26,24 @@ public sealed class OnyxUpCommandTests : IDisposable
     private readonly StringWriter _error = new();
     private readonly OnyxUpRig _rig = new();
     private readonly ServiceProvider _services;
+    private readonly FakeOnyxPrompts _prompts = new() { Interactive = false };
+    private readonly FakeBrowser _browser = new();
+    private readonly FakeOnyxProvisioning _provisioning = new();
+    private readonly FakeSecretWriter _secrets = new();
+    private readonly FakeOnyxProfileWriter _profile = new();
 
     public OnyxUpCommandTests()
     {
         _rig.Progress.Forward = new ConsoleOnyxProgress(_error);
         _services = new ServiceCollection()
             .AddSingleton(_rig.Service())
-            .AddSingleton<Core.Onyx.IOnyxProgress>(_rig.Progress)
+            .AddSingleton<IOnyxProgress>(_rig.Progress)
+            .AddSingleton<IService<OnyxAccountRequest, OnyxAccountResponse>>(_ => new OnyxAccountService(_rig.Workspace, _prompts, _browser, new OnyxKeyMinter(_prompts, _provisioning, _secrets, _secrets), _profile, _rig.Progress))
+            .AddSingleton<IBrowser>(_browser)
+            .AddSingleton<IOnyxWorkspace>(_rig.Workspace)
+            .AddSingleton<Core.Profile.IProfileSource>(new StubProfile())
             .AddSingleton<IService<OnyxDownRequest, OnyxDownResponse>>(
-                new OnyxDownService(_rig.Workspace, new Core.Onyx.OnyxFacts(_rig.Runtime, _rig.Probes, new FakeSindriHome(OnyxUpRig.Home)), _rig.Runtime))
+                new OnyxDownService(_rig.Workspace, new OnyxFacts(_rig.Runtime, _rig.Probes, new FakeSindriHome(OnyxUpRig.Home)), _rig.Runtime))
             .BuildServiceProvider();
     }
 
@@ -68,7 +78,7 @@ public sealed class OnyxUpCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Up_prints_url_version_and_the_P3_hand_over_line_on_stdout_and_progress_on_stderr()
+    public async Task Up_prints_url_version_and_what_the_account_stage_needs_on_stdout_and_progress_on_stderr()
     {
         var code = await Verbs(Human).Up(json: false, TestContext.Current.CancellationToken);
 
@@ -106,9 +116,10 @@ public sealed class OnyxUpCommandTests : IDisposable
     {
         var code = await Verbs(Human).Up(json: true, TestContext.Current.CancellationToken);
 
-        var response = AwJson.Deserialize<OnyxUpResponse>(Encoding.UTF8.GetBytes(_out.ToString()), _json).Value;
+        var summary = AwJson.Deserialize<OnyxUpSummary>(Encoding.UTF8.GetBytes(_out.ToString()), _json).Value;
         Assert.Equal(0, code);
-        Assert.Equal("http://127.0.0.1:3000", response.Url);
+        Assert.Equal("http://127.0.0.1:3000", summary.Up.Url);
+        Assert.True(summary.Account!.NeedsHuman);
         Assert.DoesNotContain("USER_AUTH", _out.ToString(), StringComparison.Ordinal);
     }
 
@@ -118,10 +129,10 @@ public sealed class OnyxUpCommandTests : IDisposable
         _ = await Verbs(Human).Up(json: true, TestContext.Current.CancellationToken);
 
         using var document = JsonDocument.Parse(_out.ToString());
-        var steps = document.RootElement.GetProperty("steps").EnumerateArray().Select(static e => (e.GetProperty("step").GetString(), e.GetProperty("outcome").GetString())).ToArray();
+        var steps = document.RootElement.GetProperty("up").GetProperty("steps").EnumerateArray().Select(static e => (e.GetProperty("step").GetString(), e.GetProperty("outcome").GetString())).ToArray();
         Assert.Equal([("fetch", "ran"), ("config", "ran"), ("pull", "ran"), ("start", "ran")], steps);
-        Assert.False(document.RootElement.TryGetProperty("ran", out _));
-        Assert.False(document.RootElement.TryGetProperty("skipped", out _));
+        Assert.False(document.RootElement.GetProperty("up").TryGetProperty("ran", out _));
+        Assert.False(document.RootElement.GetProperty("up").TryGetProperty("skipped", out _));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -135,6 +146,79 @@ public sealed class OnyxUpCommandTests : IDisposable
         Assert.Equal(0, code);
         Assert.Contains("needs you: account", _out.ToString(), StringComparison.Ordinal);
         Assert.DoesNotContain(HandOver, _out.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task With_a_terminal_up_continues_with_the_account_shows_the_approval_and_prints_the_connector_checklist()
+    {
+        _prompts.Interactive = true;
+        _prompts.Answer("owner@example.com", "owner-login-value-0042");
+        var approvals = new List<string?>();
+        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), Human, (hash, _) =>
+        {
+            approvals.Add(hash);
+            return Task.FromResult(hash is null ? 1 : 0);   // the preview says not approved, then the typed challenge succeeds
+        });
+
+        var code = await verbs.Up(json: false, TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, code);
+        Assert.Contains("key       keychain:onyx/sindri-onyx", _out.ToString(), StringComparison.Ordinal);
+        Assert.Contains("Linear:", _out.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("owner-login-value-0042", _out.ToString() + _error, StringComparison.Ordinal);
+        Assert.Equal(2, approvals.Count);
+        Assert.Null(approvals[0]);
+        Assert.NotNull(approvals[1]);
+        Assert.Contains(_browser.Opened, static u => u.AbsolutePath == "/admin/add-connector");
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_declined_approval_leaves_the_section_written_and_says_how_to_approve_later()
+    {
+        _prompts.Interactive = true;
+        _prompts.Answer("owner@example.com", "owner-login-value-0042");
+        var verbs = new OnyxVerbs(_services, new Output(_out, _error, _json), Human, (_, _) => Task.FromResult(1));
+
+        var code = await verbs.Up(json: false, TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, code);
+        Assert.Contains("written but not approved yet: run `sindri profile approve`", _out.ToString(), StringComparison.Ordinal);
+        Assert.True(_profile.Section is not null);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Open_as_a_session_is_refused_and_opens_nothing()
+    {
+        var code = await Verbs(new AgentSession("CLAUDECODE is set", Terminal: true, Prover: false)).Open(TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, code);
+        Assert.Contains("SND-AUTH-002", _error.ToString(), StringComparison.Ordinal);
+        Assert.Empty(_browser.Opened);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Open_before_setup_says_to_run_up_and_after_the_account_opens_the_connectors_page()
+    {
+        Assert.Equal(1, await Verbs(Human).Open(TestContext.Current.CancellationToken));
+        Assert.Contains("sindri onyx up", _error.ToString(), StringComparison.Ordinal);
+
+        _rig.Workspace.State = new OnyxSetupState(3001, new Dictionary<string, string>(StringComparer.Ordinal));
+        Assert.Equal(0, await Verbs(Human).Open(TestContext.Current.CancellationToken));
+        Assert.Equal("/auth/signup", Assert.Single(_browser.Opened).AbsolutePath);
+
+        _rig.Workspace.State = new OnyxSetupState(3001, new Dictionary<string, string>(StringComparer.Ordinal) { [OnyxSteps.Signup] = "x" });
+        _ = await Verbs(Human).Open(TestContext.Current.CancellationToken);
+        Assert.Equal("/admin/add-connector", _browser.Opened[^1].AbsolutePath);
+        Assert.Equal(3001, _browser.Opened[^1].Port);
+    }
+
+    private sealed class StubProfile : Core.Profile.IProfileSource
+    {
+        public ValueTask<Kernel.Result<Core.Profile.LoadedProfile>> Load(CancellationToken cancellationToken)
+            => ValueTask.FromResult<Kernel.Result<Core.Profile.LoadedProfile>>(new Core.Profile.LoadedProfile(
+                new Core.Profile.SindriProfile(Core.Profile.SindriProfile.CurrentSchemaVersion, "tester"),
+                Core.Ids.ProfileHash.From(new string('c', 64)),
+                "/home/profile.yaml"));
     }
 
     private sealed class StubUp(OnyxUpResponse response) : IService<OnyxUpRequest, OnyxUpResponse>

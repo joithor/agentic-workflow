@@ -142,16 +142,25 @@ internal sealed class YamlOnyxProfileWriter(SindriSettings settings) : IOnyxProf
         }
 
         using var document = JsonDocument.Parse(json);
-        return document.RootElement.TryGetProperty("context", out var context)
-            && context.ValueKind == JsonValueKind.Object
-            && context.TryGetProperty("sources", out var sources)
-            && sources.ValueKind == JsonValueKind.Object
-            && sources.TryGetProperty("onyx", out var onyx)
-            && onyx.ValueKind == JsonValueKind.Object
-            && onyx.TryGetProperty("url", out var u) && u.GetString() == url
-            && onyx.TryGetProperty("token", out var t) && t.GetString() == token
-            && onyx.TryGetProperty("version", out var v) && v.GetString() == version;
+        var onyx = Descend(document.RootElement, "context", "sources", "onyx");
+        return onyx is { } entry && Text(entry, "url") == url && Text(entry, "token") == token && Text(entry, "version") == version;
     }
+
+    private static JsonElement? Descend(JsonElement from, params string[] path)
+    {
+        var at = from;
+        foreach (var key in path)
+        {
+            if (at.ValueKind != JsonValueKind.Object || !at.TryGetProperty(key, out at))
+            {
+                return null;
+            }
+        }
+
+        return at;
+    }
+
+    private static string? Text(JsonElement map, string key) => map.TryGetProperty(key, out var value) ? value.GetString() : null;
 
     private static void Write(string path, string text)
     {

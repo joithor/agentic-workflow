@@ -60,8 +60,8 @@ using Aw.Sindri.Features.ListOutbox;
 using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Features.ListServices;
-using Aw.Sindri.Features.OnyxAccount;
 using Aw.Sindri.Features.ListSessions;
+using Aw.Sindri.Features.OnyxAccount;
 using Aw.Sindri.Features.OnyxDown;
 using Aw.Sindri.Features.OnyxStatus;
 using Aw.Sindri.Features.OnyxUp;
@@ -243,6 +243,7 @@ public static class SindriFeaturesServiceCollectionExtensions
         .AddSingleton<IOnyxUpStep, OnyxPullStep>()
         .AddSingleton<IOnyxUpStep, OnyxStartStep>()
         .AddScoped<IService<OnyxUpRequest, OnyxUpResponse>, OnyxUpService>()
+        .AddScoped<OnyxKeyMinter>()
         .AddScoped<IService<OnyxAccountRequest, OnyxAccountResponse>, OnyxAccountService>()   // Onyx P3: sign-up hand-off, Sindri's key, the profile section
         .AddScoped<IService<OnyxDownRequest, OnyxDownResponse>, OnyxDownService>();
 

@@ -61,8 +61,8 @@ using Aw.Sindri.Features.ListOutbox;
 using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Features.ListServices;
-using Aw.Sindri.Features.OnyxAccount;
 using Aw.Sindri.Features.ListSessions;
+using Aw.Sindri.Features.OnyxAccount;
 using Aw.Sindri.Features.OnyxDown;
 using Aw.Sindri.Features.OnyxStatus;
 using Aw.Sindri.Features.OnyxUp;
@@ -83,6 +83,7 @@ using Aw.Sindri.Host.Commands.Probe;
 using Aw.Sindri.Host.Commands.Recipe;
 using Aw.Sindri.Host.Endpoints;
 using Aw.Sindri.Host.Mcp;
+using Aw.Sindri.Host.Onyx;
 
 namespace Aw.Sindri.Host;
 

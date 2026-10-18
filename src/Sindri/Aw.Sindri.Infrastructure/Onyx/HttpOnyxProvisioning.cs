@@ -52,28 +52,33 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
     internal static bool Allowed(HttpMethod method, string path) => _allowed.Any(a => a.Method == method && string.Equals(a.Path, path, StringComparison.Ordinal));
 
     /// <inheritdoc />
+#pragma warning disable CA2000 // the session owns its client and disposes both when the caller disposes the session
     public async ValueTask<Result<IOnyxSession>> SignIn(int port, string email, string password, CancellationToken cancellationToken)
     {
         var session = new Session(NewClient(), Origin(port));
-        using var body = new FormUrlEncodedContent(new Dictionary<string, string> { ["username"] = email, ["password"] = password });
+        using var body = new FormUrlEncodedContent(new Dictionary<string, string>(StringComparer.Ordinal) { ["username"] = email, ["password"] = password });
         var sent = await session.Send(HttpMethod.Post, "/api/auth/login", body, cancellationToken).ConfigureAwait(false);
         if (sent.IsError || !sent.Value.Success)
         {
             await session.DisposeAsync().ConfigureAwait(false);
             return sent.IsError
                 ? sent.Error
-                : SindriErrors.OnyxKeyFailed.With($"Onyx refused that login (HTTP {(int)sent.Value.Status}); check the email and password of the account you created at the sign-up page, then run `sindri onyx up` again");
+                : SindriErrors.OnyxKeyFailed.With($"Onyx refused that login (HTTP {Code(sent.Value.Status)}); check the email and password of the account you created at the sign-up page, then run `sindri onyx up` again");
         }
 
-        return session;
+        return Results.Success<IOnyxSession>(session);
     }
+
+#pragma warning restore CA2000
 
     /// <inheritdoc />
     public async ValueTask<Result<bool>> KeyIsAdmin(int port, string key, CancellationToken cancellationToken)
     {
         using var client = NewClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", key);
+#pragma warning disable CA2000 // a Session only borrows the client, which the using above disposes
         var session = new Session(client, Origin(port));
+#pragma warning restore CA2000
         var sent = await session.Send(HttpMethod.Get, "/api/me", content: null, cancellationToken).ConfigureAwait(false);
         if (sent.IsError)
         {
@@ -94,6 +99,8 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
     private HttpClient NewClient() => new(_handler(), disposeHandler: true) { Timeout = _timeout + TimeSpan.FromSeconds(5) };
 
     private static Uri Origin(int port) => new(string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}"));
+
+    private static string Code(HttpStatusCode status) => ((int)status).ToString(CultureInfo.InvariantCulture);
 
     private sealed record Answer(HttpStatusCode Status, string Body)
     {
@@ -118,14 +125,15 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
             var groups = sent.Value.Success ? AwJson.Deserialize<OnyxGroupWire[]>(Encoding.UTF8.GetBytes(sent.Value.Body), _json) : null;
             var admin = groups is { IsSuccess: true } read ? read.Value.FirstOrDefault(static g => g.IsDefault && string.Equals(g.Name, "Admin", StringComparison.Ordinal)) : null;
             return admin is null
-                ? SindriErrors.OnyxKeyFailed.With($"Onyx's group list gave no default Admin group (HTTP {(int)sent.Value.Status}); this Onyx release may differ from the pinned one")
+                ? SindriErrors.OnyxKeyFailed.With($"Onyx's group list gave no default Admin group (HTTP {Code(sent.Value.Status)}); this Onyx release may differ from the pinned one")
                 : admin.Id;
         }
 
         public async ValueTask<Result<string>> CreateKey(string name, int groupId, CancellationToken cancellationToken)
         {
             var request = new OnyxKeyRequestWire(name, [groupId]);
-            using var body = new StringContent(JsonSerializer.Serialize(request, _json), Encoding.UTF8, "application/json");
+            using var body = new ByteArrayContent(AwJson.Serialize(request, _json));
+            body.Headers.ContentType = new MediaTypeHeaderValue("application/json");
             var sent = await Send(HttpMethod.Post, "/api/admin/api-key", body, cancellationToken).ConfigureAwait(false);
             if (sent.IsError)
             {
@@ -140,7 +148,7 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
             var key = sent.Value.Success ? AwJson.Deserialize<OnyxKeyWire>(Encoding.UTF8.GetBytes(sent.Value.Body), _json) : null;
             return key is { IsSuccess: true, Value.ApiKey: { Length: > 0 } raw }
                 ? raw
-                : SindriErrors.OnyxKeyFailed.With($"Onyx didn't make the key (HTTP {(int)sent.Value.Status}); run `sindri onyx up` again");
+                : SindriErrors.OnyxKeyFailed.With($"Onyx didn't make the key (HTTP {Code(sent.Value.Status)}); run `sindri onyx up` again");
         }
 
         public async ValueTask DisposeAsync()
@@ -169,7 +177,7 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
-                return SindriErrors.OnyxKeyFailed.With($"Onyx didn't answer {method} {path} within {_timeout.TotalSeconds:0} s; check `sindri onyx status`, then run `sindri onyx up` again");
+                return SindriErrors.OnyxKeyFailed.With($"Onyx didn't answer {method} {path} within {_timeout.TotalSeconds.ToString("0", CultureInfo.InvariantCulture)} s; check `sindri onyx status`, then run `sindri onyx up` again");
             }
             catch (HttpRequestException)
             {

@@ -1,5 +1,5 @@
-using Aw.Sindri.Core.Onyx;
 using Aw.Kernel;
+using Aw.Sindri.Core.Onyx;
 
 namespace Aw.Sindri.Features.OnyxUp;
 

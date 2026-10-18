@@ -47,7 +47,8 @@ internal sealed class KeychainSecretWriter(IToolRunner runner, ISindriHome home,
         {
             KeychainPlatform.MacOS => runner.Run("security", ["-i"], _timeout, new ToolRunOptions(StandardInput: $"add-generic-password -U -s {service} -a {account} -w {secret}\n")),
             KeychainPlatform.Linux => runner.Run("secret-tool", ["store", "--label", $"{service}/{account}", "service", service, "account", account], _timeout, new ToolRunOptions(StandardInput: secret)),
-            _ => ToolRun.Missing,
+            KeychainPlatform.Unsupported => ToolRun.Missing,
+            _ => throw new ArgumentOutOfRangeException(nameof(service), _platform, "unknown platform"),
         };
         return run is { Outcome: ToolOutcome.Exited, ExitCode: 0 };
     }
@@ -60,12 +61,7 @@ internal sealed class KeychainSecretWriter(IToolRunner runner, ISindriHome home,
         {
             OwnerOnly.EnsureDirectory(directory);
             var temporary = path + ".tmp";
-            using (var stream = new FileStream(temporary, new FileStreamOptions
-            {
-                Mode = FileMode.Create,
-                Access = FileAccess.Write,
-                UnixCreateMode = OperatingSystem.IsWindows() ? null : UnixFileMode.UserRead | UnixFileMode.UserWrite,
-            }))
+            using (var stream = OpenOwnerOnly(temporary))
             using (var writer = new StreamWriter(stream))
             {
                 writer.Write(secret);
@@ -82,4 +78,10 @@ internal sealed class KeychainSecretWriter(IToolRunner runner, ISindriHome home,
 
         return SecretPointer.Parse($"file:{path}");
     }
+
+    // Created 0600 from the start, so the secret is never in a file others can read, not even for a moment.
+    private static FileStream OpenOwnerOnly(string path)
+        => OperatingSystem.IsWindows()
+            ? new FileStream(path, FileMode.Create, FileAccess.Write)
+            : new FileStream(path, new FileStreamOptions { Mode = FileMode.Create, Access = FileAccess.Write, UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite });
 }
