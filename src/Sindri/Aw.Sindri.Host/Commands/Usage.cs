@@ -34,6 +34,7 @@ internal static class Usage
         "       sindri agents show <provider>/<id> [--json]   one session in full: host, lane, launch and, at a terminal, directory and state history (SND-SESSION-404 when none)",
         "       sindri doctor [--json]        lease, ledger, views, profile, api, temporal and context checks, and the pinned harness probe; runs without the control plane",
         "       sindri doctor --probe [--harness <name>]  this process's agent variables (names only), ancestry and harness version, as JSON",
+        "       sindri onyx status [--json]   whether this box can run the pinned Onyx: docker, compose, memory, disk and port, with the fix for each failure (exit 1: a check needs attention); changes nothing and runs without the control plane",
         "       sindri mcp register [--repo NAME] [--apply] [--json]   the per-repo Claude Code registration of /sindri/mcp (--apply: a human at a terminal)",
         "       sindri context query <text> [--node K | --item I | --symbol S | --diff BASE..HEAD [--repo R]] [--depth N] [--budget N] [--draft | --map-version V] [--json]   cited context from the running control plane (exit 1: not running, unknown anchor, refused)",
         "       sindri context show <key> [--json]   one map node (a key, alias or name), its aliases and edges (exit 1: unknown or ambiguous, no map)",
