@@ -424,19 +424,19 @@ public sealed class ListInstancesServiceTests
     }
 
     [Fact]
-    public async Task The_counts_ask_only_running_roots_for_their_view_and_count_the_ended_ones_from_the_listing()
+    public async Task The_counts_read_each_root_once_and_count_the_ones_that_resolved_today()
     {
         var running = View("desk-task", "T-1/step/1");
         var ended = new[] { View("done", "T-2/step/1"), View("done", "T-3/step/1"), View("done", "T-4/step/1") };
         InstanceView[] all = [running, .. ended];
         var reader = new FixedReader(all);
         var port = new RecordingInstances([.. all.Select(static v => new InstanceRow(v.Address.Value, v.State, NeedsYou: false))], running: [running.Address.Value]);
-        var service = Service(all, new FixedItemViews(failing: false), new CallerContextBuilder().Human().Build(), port: port, reader: reader);
+        var service = Service(all, new FixedItemViews(failing: false), new CallerContextBuilder().Human().Build(), port: port, reader: reader, clock: new FakeTimeProvider(StatusCases.Now));
 
         var result = await service.Handle(new ListInstancesRequest(Open: "true"), CancellationToken.None);
 
         Assert.Equal((1, 3), (result.Value.Counts.Open, result.Value.Counts.Done));
-        Assert.Equal(["T-1/step/1"], reader.Reads, StringComparer.Ordinal);   // one Query, for the one running root
+        Assert.Equal(["T-1/step/1", "T-2/step/1", "T-3/step/1", "T-4/step/1"], reader.Reads.Order(StringComparer.Ordinal), StringComparer.Ordinal);   // each root read once
     }
 
     [Fact]

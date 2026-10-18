@@ -75,8 +75,9 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
     }
 
     /// <summary>
-    /// The counts of every root instance, ended ones included: the root set listed twice, all and running only. A root that is no longer running
-    /// is finished (its chip is DONE) and is counted from the listing; only the running ones are asked for their view, reusing the views the first call read.
+    /// The counts of every root instance, ended ones included: the root set listed twice, all and running only. The running ones are counted
+    /// from their views; 'done' is the ended roots that resolved (outcome resolved or alreadySatisfied) today, in the clock's local day. A root
+    /// that was cancelled, failed, is unresolved, ended on an earlier day or can no longer be read is not done.
     /// </summary>
     private async ValueTask<Result<ListCounts>> RootCounts(Dictionary<string, InstanceView> known, CancellationToken cancellationToken)
     {
@@ -89,11 +90,19 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
         }
 
         var live = running.Value.Select(static r => r.Address).ToHashSet(StringComparer.Ordinal);
-        var open = visible.Value.Where(r => live.Contains(r.Address)).ToList();
-        var finished = visible.Value.Count(r => !live.Contains(r.Address) && InstanceAddress.TryFrom(r.Address, out _));
-        var views = await Views(open, known, cancellationToken).ConfigureAwait(false);
-        return views.IsError ? views.Error : InstanceCounts.Of(views.Value) with { Done = InstanceCounts.Of(views.Value).Done + finished };
+        var open = await Views([.. visible.Value.Where(r => live.Contains(r.Address))], known, cancellationToken).ConfigureAwait(false);
+        var ended = open.IsError ? open.Error : await Views([.. visible.Value.Where(r => !live.Contains(r.Address))], known, cancellationToken).ConfigureAwait(false);
+        if (ended.IsError)
+        {
+            return ended.Error;
+        }
+
+        var today = clock.GetLocalNow().Date;
+        var done = ended.Value.Count(v => ResolvedStates.Contains(v.Outcome?.Value ?? string.Empty) && v.Since.ToOffset(clock.GetLocalNow().Offset).Date >= today);
+        return InstanceCounts.Of(open.Value) with { Done = done };
     }
+
+    private static readonly HashSet<string> ResolvedStates = new(["resolved", "alreadySatisfied"], StringComparer.Ordinal);
 
     /// <summary>The rows the caller may read: all of them, or for a session its own repo's. No caller means the service is called inside the process, with no scope to apply.</summary>
     private async ValueTask<Result<IReadOnlyList<InstanceRow>>> Scoped(IReadOnlyList<InstanceRow> rows, CancellationToken cancellationToken) =>
