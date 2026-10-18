@@ -10,7 +10,7 @@ internal static class RecipeEvents
 
     /// <summary>'item.routed', from the router stub: whether the item is startable, with its Step spec.</summary>
     public static EventDescriptor ItemRouted { get; } = new(
-        EventKind.From("item.routed"), "router.stub", EventRoute.Item,
+        EventKind.From("item.routed"), "service:router-stub", EventRoute.Item,
         [OutcomeName.From("startable"), OutcomeName.From("notStartable")], [FactKey.From("fact:stepSpec")]);
 
     /// <summary>'claim.created', from the dispatcher, answering the 'effect.claim.ref' command that caused it.</summary>

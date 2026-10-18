@@ -33,6 +33,7 @@
        for routes whose API phase isn't built yet (Golden/SpecShaped). -->
   <ItemGroup>
     <None Include="../Aw.Sindri.Tests/Golden/Api/**/*.json" Link="Golden/Api/%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="../Aw.Sindri.Tests/Layout/Golden/instance-summary-*.json" Link="Golden/Layout/%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Update="Golden/SpecShaped/**/*.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
