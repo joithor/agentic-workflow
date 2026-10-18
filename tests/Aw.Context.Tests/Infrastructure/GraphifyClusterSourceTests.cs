@@ -6,26 +6,10 @@ namespace Aw.Context.Tests.Infrastructure;
 
 public sealed class GraphifyClusterSourceTests
 {
-    /// <summary>The longest one run may take: a run is a few small processes, seconds even on a loaded box; a hang fails here, not at the host's 5 minutes.</summary>
-    private static readonly TimeSpan _deadline = TimeSpan.FromSeconds(30);
-
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    /// <summary>Runs the source under the test's own deadline; a hung child (git archive, the stub) is a TimeoutException naming the call, not a silent wait.</summary>
-    private static async Task<Aw.Kernel.Result<Aw.Context.Core.Extract.ClusterSet>> Clusters(GraphifyClusterSource source, TempGitRepo repo, TimeSpan? deadline = null)
-    {
-        var limit = deadline ?? _deadline;
-        using var bounded = CancellationTokenSource.CreateLinkedTokenSource(Ct);
-        bounded.CancelAfter(limit);
-        try
-        {
-            return await source.Clusters(repo.Repo, repo.Head, ClusterLimits.Default, bounded.Token);
-        }
-        catch (OperationCanceledException e) when (!Ct.IsCancellationRequested)
-        {
-            throw new TimeoutException(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"GraphifyClusterSource.Clusters did not finish in {limit.TotalSeconds} s: a child process (git archive or the graphify stub) is hung, or the box is starved"), e);
-        }
-    }
+    private static Task<Aw.Kernel.Result<Aw.Context.Core.Extract.ClusterSet>> Clusters(GraphifyClusterSource source, TempGitRepo repo, TimeSpan? deadline = null) =>
+        GraphifyRun.Clusters(source, repo, ClusterLimits.Default, deadline);
 
     [Fact, Trait("Lane", "integration")]
     public async Task An_absent_graphify_is_an_empty_unavailable_set_not_an_error()

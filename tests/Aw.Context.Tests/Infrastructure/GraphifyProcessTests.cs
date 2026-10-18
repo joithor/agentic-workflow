@@ -10,7 +10,7 @@ public sealed class GraphifyProcessTests
     [Fact]
     public async Task A_tool_that_prints_megabytes_is_drained_and_only_the_first_64_KB_is_kept()
     {
-        var ran = await GraphifyProcess.Spawn(["/bin/sh", "-c", "head -c 3000000 /dev/zero | tr '\\0' a; head -c 3000000 /dev/zero | tr '\\0' b >&2"], _env, Path.GetTempPath(), TimeSpan.FromSeconds(60), TestContext.Current.CancellationToken);
+        var ran = await GraphifyProcess.Spawn(["/bin/sh", "-c", "head -c 3000000 /dev/zero | tr '\\0' a; head -c 3000000 /dev/zero | tr '\\0' b >&2"], _env, Path.GetTempPath(), TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken);
 
         Assert.NotNull(ran);
         Assert.Equal(0, ran.Exit);
