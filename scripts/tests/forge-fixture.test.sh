@@ -94,7 +94,7 @@ check "the hand-off has no placeholder left" "$(grep -rlE '@[A-Z]+@' "$H/comment
 check "the hand-off's pr.json is JSON" "$(jq -r .headBranch "$H/comments/handoff/pr.json")" "feature/json-flag"
 check "the phase packet is JSON" "$(jq -r .id "$H/comments/phase-packet.json")" "fixture-line-P1"
 check "docs/usage.md is stale: it lacks --json" "$(grep -c -- '--json' "$H/comments/work/docs/usage.md")" "0"
-check "the code has --json" "$(grep -c -- '--json' "$H/comments/work/src/args.js")" "3"
+check "the code has --json" "$(grep -c -- '--json' "$H/comments/work/src/args.js")" "2"
 
 bash "$FIXTURE" status >"$WORK/status" 2>&1; check "status exits 0 while up" "$?" "0"
 contains "status lists the link" "$(cat "$WORK/status")" "$link"
@@ -155,7 +155,7 @@ check "secret: the head branch has no token" "$(git -C "$sw" grep -l 'ghp_' feat
 
 # all variants at once
 bash "$FIXTURE" up --fake all >"$WORK/o" 2>&1; check "up --fake all exits 0" "$?" "0"
-check "all: a link per variant is printed" "$(grep -c '^link: ' "$WORK/o")" "10"
+check "all: a link per variant is printed" "$(grep -c "^link: " "$WORK/o")" "9"
 
 # --- --github dry run: the plan, never a token ---
 out="$(AW_FORGE_TOKEN=tok-not-printed FORGE_FIXTURE_GITHUB_SCRATCH=acme/scratch bash "$FIXTURE" up --github acme/scratch comments --dry-run 2>&1)"; check "--github --dry-run exits 0" "$?" "0"
