@@ -994,3 +994,78 @@ static Aw.Meta.Features.LanesContext.LanesContextRequest.operator !=(Aw.Meta.Fea
 static Aw.Meta.Features.LanesContext.LanesContextRequest.operator ==(Aw.Meta.Features.LanesContext.LanesContextRequest? left, Aw.Meta.Features.LanesContext.LanesContextRequest? right) -> bool
 static Aw.Meta.Features.LanesContext.LanesContextResponse.operator !=(Aw.Meta.Features.LanesContext.LanesContextResponse? left, Aw.Meta.Features.LanesContext.LanesContextResponse? right) -> bool
 static Aw.Meta.Features.LanesContext.LanesContextResponse.operator ==(Aw.Meta.Features.LanesContext.LanesContextResponse? left, Aw.Meta.Features.LanesContext.LanesContextResponse? right) -> bool
+Aw.Meta.Features.Usage.UsageRequest
+Aw.Meta.Features.Usage.UsageRequest.<Clone>$() -> Aw.Meta.Features.Usage.UsageRequest!
+Aw.Meta.Features.Usage.UsageRequest.Equals(Aw.Meta.Features.Usage.UsageRequest? other) -> bool
+Aw.Meta.Features.Usage.UsageRequest.UsageRequest() -> void
+Aw.Meta.Features.Usage.UsageResponse
+Aw.Meta.Features.Usage.UsageResponse.<Clone>$() -> Aw.Meta.Features.Usage.UsageResponse!
+Aw.Meta.Features.Usage.UsageResponse.Attention.get -> bool
+Aw.Meta.Features.Usage.UsageResponse.Attention.init -> void
+Aw.Meta.Features.Usage.UsageResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Features.Usage.UsageRow!>! Subjects, out bool Attention) -> void
+Aw.Meta.Features.Usage.UsageResponse.Equals(Aw.Meta.Features.Usage.UsageResponse? other) -> bool
+Aw.Meta.Features.Usage.UsageResponse.Subjects.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Features.Usage.UsageRow!>!
+Aw.Meta.Features.Usage.UsageResponse.Subjects.init -> void
+Aw.Meta.Features.Usage.UsageResponse.UsageResponse(System.Collections.Generic.IReadOnlyList<Aw.Meta.Features.Usage.UsageRow!>! Subjects, bool Attention) -> void
+Aw.Meta.Features.Usage.UsageRow
+Aw.Meta.Features.Usage.UsageRow.<Clone>$() -> Aw.Meta.Features.Usage.UsageRow!
+Aw.Meta.Features.Usage.UsageRow.Equals(Aw.Meta.Features.Usage.UsageRow? other) -> bool
+Aw.Meta.Features.Usage.UsageRow.Kind.init -> void
+Aw.Meta.Features.Usage.UsageRow.Reason.get -> string?
+Aw.Meta.Features.Usage.UsageRow.Reason.init -> void
+Aw.Meta.Features.Usage.UsageRow.ResetsAt.get -> System.DateTimeOffset?
+Aw.Meta.Features.Usage.UsageRow.ResetsAt.init -> void
+Aw.Meta.Features.Usage.UsageRow.Source.get -> string?
+Aw.Meta.Features.Usage.UsageRow.Source.init -> void
+Aw.Meta.Features.Usage.UsageRow.State.init -> void
+Aw.Meta.Features.Usage.UsageRow.Subject.get -> string!
+Aw.Meta.Features.Usage.UsageRow.Subject.init -> void
+Aw.Meta.Features.Usage.UsageWaitRequest
+Aw.Meta.Features.Usage.UsageWaitRequest.<Clone>$() -> Aw.Meta.Features.Usage.UsageWaitRequest!
+Aw.Meta.Features.Usage.UsageWaitRequest.Deconstruct(out bool UntilOk, out System.TimeSpan Max) -> void
+Aw.Meta.Features.Usage.UsageWaitRequest.Equals(Aw.Meta.Features.Usage.UsageWaitRequest? other) -> bool
+Aw.Meta.Features.Usage.UsageWaitRequest.Max.get -> System.TimeSpan
+Aw.Meta.Features.Usage.UsageWaitRequest.Max.init -> void
+Aw.Meta.Features.Usage.UsageWaitRequest.UntilOk.get -> bool
+Aw.Meta.Features.Usage.UsageWaitRequest.UntilOk.init -> void
+Aw.Meta.Features.Usage.UsageWaitRequest.UsageWaitRequest(bool UntilOk, System.TimeSpan Max) -> void
+Aw.Meta.Features.Usage.UsageWaitResponse
+Aw.Meta.Features.Usage.UsageWaitResponse.<Clone>$() -> Aw.Meta.Features.Usage.UsageWaitResponse!
+Aw.Meta.Features.Usage.UsageWaitResponse.Deconstruct(out bool Ok, out System.Collections.Generic.IReadOnlyList<string!>! Lines, out long WaitedSeconds) -> void
+Aw.Meta.Features.Usage.UsageWaitResponse.Equals(Aw.Meta.Features.Usage.UsageWaitResponse? other) -> bool
+Aw.Meta.Features.Usage.UsageWaitResponse.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Features.Usage.UsageWaitResponse.Lines.init -> void
+Aw.Meta.Features.Usage.UsageWaitResponse.Ok.get -> bool
+Aw.Meta.Features.Usage.UsageWaitResponse.Ok.init -> void
+Aw.Meta.Features.Usage.UsageWaitResponse.UsageWaitResponse(bool Ok, System.Collections.Generic.IReadOnlyList<string!>! Lines, long WaitedSeconds) -> void
+Aw.Meta.Features.Usage.UsageWaitResponse.WaitedSeconds.get -> long
+Aw.Meta.Features.Usage.UsageWaitResponse.WaitedSeconds.init -> void
+override Aw.Meta.Features.Usage.UsageRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.Usage.UsageRequest.GetHashCode() -> int
+override Aw.Meta.Features.Usage.UsageRequest.ToString() -> string!
+override Aw.Meta.Features.Usage.UsageResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.Usage.UsageResponse.GetHashCode() -> int
+override Aw.Meta.Features.Usage.UsageResponse.ToString() -> string!
+override Aw.Meta.Features.Usage.UsageRow.Equals(object? obj) -> bool
+override Aw.Meta.Features.Usage.UsageRow.GetHashCode() -> int
+override Aw.Meta.Features.Usage.UsageRow.ToString() -> string!
+override Aw.Meta.Features.Usage.UsageWaitRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.Usage.UsageWaitRequest.GetHashCode() -> int
+override Aw.Meta.Features.Usage.UsageWaitRequest.ToString() -> string!
+override Aw.Meta.Features.Usage.UsageWaitResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.Usage.UsageWaitResponse.GetHashCode() -> int
+override Aw.Meta.Features.Usage.UsageWaitResponse.ToString() -> string!
+static Aw.Meta.Features.Usage.UsageRequest.operator !=(Aw.Meta.Features.Usage.UsageRequest? left, Aw.Meta.Features.Usage.UsageRequest? right) -> bool
+static Aw.Meta.Features.Usage.UsageRequest.operator ==(Aw.Meta.Features.Usage.UsageRequest? left, Aw.Meta.Features.Usage.UsageRequest? right) -> bool
+static Aw.Meta.Features.Usage.UsageResponse.operator !=(Aw.Meta.Features.Usage.UsageResponse? left, Aw.Meta.Features.Usage.UsageResponse? right) -> bool
+static Aw.Meta.Features.Usage.UsageResponse.operator ==(Aw.Meta.Features.Usage.UsageResponse? left, Aw.Meta.Features.Usage.UsageResponse? right) -> bool
+static Aw.Meta.Features.Usage.UsageRow.operator !=(Aw.Meta.Features.Usage.UsageRow? left, Aw.Meta.Features.Usage.UsageRow? right) -> bool
+static Aw.Meta.Features.Usage.UsageRow.operator ==(Aw.Meta.Features.Usage.UsageRow? left, Aw.Meta.Features.Usage.UsageRow? right) -> bool
+static Aw.Meta.Features.Usage.UsageWaitRequest.operator !=(Aw.Meta.Features.Usage.UsageWaitRequest? left, Aw.Meta.Features.Usage.UsageWaitRequest? right) -> bool
+static Aw.Meta.Features.Usage.UsageWaitRequest.operator ==(Aw.Meta.Features.Usage.UsageWaitRequest? left, Aw.Meta.Features.Usage.UsageWaitRequest? right) -> bool
+static Aw.Meta.Features.Usage.UsageWaitResponse.operator !=(Aw.Meta.Features.Usage.UsageWaitResponse? left, Aw.Meta.Features.Usage.UsageWaitResponse? right) -> bool
+static Aw.Meta.Features.Usage.UsageWaitResponse.operator ==(Aw.Meta.Features.Usage.UsageWaitResponse? left, Aw.Meta.Features.Usage.UsageWaitResponse? right) -> bool
+Aw.Meta.Features.Usage.UsageRow.Deconstruct(out string! Subject, out Aw.Meta.Core.Usage.UsageState State, out Aw.Meta.Core.Usage.UsageKind? Kind, out System.DateTimeOffset? ResetsAt, out string? Source, out string? Reason) -> void
+Aw.Meta.Features.Usage.UsageRow.Kind.get -> Aw.Meta.Core.Usage.UsageKind?
+Aw.Meta.Features.Usage.UsageRow.State.get -> Aw.Meta.Core.Usage.UsageState
+Aw.Meta.Features.Usage.UsageRow.UsageRow(string! Subject, Aw.Meta.Core.Usage.UsageState State, Aw.Meta.Core.Usage.UsageKind? Kind, System.DateTimeOffset? ResetsAt, string? Source = null, string? Reason = null) -> void
