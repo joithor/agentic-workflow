@@ -13,14 +13,28 @@ internal static class SandboxCanaries
     // The recursive, forced delete of the root that the destructive-command hook must refuse (spec §3.1, hook canary part a).
     private const string DestructiveCommand = "rm -r" + "f /";
 
-    private static readonly string _hookScript = Prelude + string.Join(
-        '\n',
+    // The hooks-run canary exercises the hooks the plan keeps (plan.Hooks.Kept), never a dropped one, and never rtk-rewrite: inside a Step
+    // that hook grants nothing (owner, 2026-10-18, strict; SB-5a enforces it), so no canary part may rely on it.
+    private static readonly string[] _preamble =
+    [
         "H=\"$HOME/.claude/hooks\"",
         "S=\"${AW_STATE_DIR:-$HOME/.agentic-workflow}\"",
+    ];
+
+    private static readonly string[] _blockDestructive =
+    [
         "printf '%s' '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"" + DestructiveCommand + "\"}}' | \"$H/block-destructive.sh\" >/dev/null 2>&1; rc=$?",
         "[ \"$rc\" -eq 2 ] || fail \"block-destructive let a recursive delete of the root through (exit $rc)\"",
+    ];
+
+    private static readonly string[] _detectSecrets =
+    [
         "printf '%s' '{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"echo AKIAIOSFODNN7EXAMPLE\"}}' | \"$H/detect-secrets.sh\" >/dev/null 2>&1; rc=$?",
         "[ \"$rc\" -eq 2 ] || fail \"detect-secrets let a planted key through (exit $rc)\"",
+    ];
+
+    private static readonly string[] _judgeAndState =
+    [
         "out=$(judge brief get task:selfcheck 2>&1); rc=$?",
         "{ [ \"$rc\" -eq 1 ] && printf '%s' \"$out\" | grep -q 'no brief'; } || fail \"the judge round trip failed (exit $rc): $out\"",
         "[ -d \"$S/judge\" ] && [ -d \"$S/locks\" ] || fail \"the shared judge or locks directory is not bound in\"",
@@ -29,11 +43,44 @@ internal static class SandboxCanaries
         "aw_failopen sindri-selfcheck canary",
         "grep -q sindri-selfcheck \"$S/logs/failopen.log\" 2>/dev/null || fail \"the fail-open line did not reach the per-launch log\"",
         "rm -f \"$S/logs/failopen.log\"",
+    ];
+
+    private static readonly string[] _metaOutbox =
+    [
         "printf '%s' '{\"tool_name\":\"SendMessage\",\"tool_input\":{\"message\":\"x\"}}' | \"$H/meta-outbox.sh\" >/dev/null 2>&1; rc=$?",
         "[ \"$rc\" -eq 0 ] || fail \"meta-outbox exited $rc\"",
+    ];
+
+    private static readonly string[] _closing =
+    [
         "[ ! -e \"$S/bin/aw-meta\" ] || fail \"aw-meta is visible in the session\"",
         "exit 0",
-        string.Empty);
+    ];
+
+    private static string HookScript(SandboxPlan plan)
+    {
+        var kept = plan.Hooks.Kept;
+        var lines = new List<string>(_preamble);
+        if (kept.Contains("block-destructive", StringComparer.Ordinal))
+        {
+            lines.AddRange(_blockDestructive);
+        }
+
+        if (kept.Contains("detect-secrets", StringComparer.Ordinal))
+        {
+            lines.AddRange(_detectSecrets);
+        }
+
+        lines.AddRange(_judgeAndState);
+        if (kept.Contains("meta-outbox", StringComparer.Ordinal))
+        {
+            lines.AddRange(_metaOutbox);
+        }
+
+        lines.AddRange(_closing);
+        lines.Add(string.Empty);
+        return Prelude + string.Join('\n', lines);
+    }
 
     /// <summary>Builds the canaries a plan can be proven with, in the order they run.</summary>
     /// <param name="plan">The plan.</param>
@@ -41,7 +88,7 @@ internal static class SandboxCanaries
     internal static IReadOnlyList<SandboxCanary> For(SandboxPlan plan)
     {
         ArgumentNullException.ThrowIfNull(plan);
-        List<SandboxCanary> canaries = [FsDeny(plan), FsWrite(plan), Env(), Login(plan), new SandboxCanary(SandboxReasons.HooksRun, _hookScript, Shell: "/bin/bash"), NetDeny()];
+        List<SandboxCanary> canaries = [FsDeny(plan), FsWrite(plan), Env(), Login(plan), new SandboxCanary(SandboxReasons.HooksRun, HookScript(plan), Shell: "/bin/bash"), NetDeny()];
         if (plan.Worktree is { } worktree && plan.Writable.Contains(worktree, StringComparer.Ordinal))
         {
             canaries.Insert(2, GitRef(plan, worktree));

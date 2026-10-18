@@ -59,6 +59,30 @@ public sealed class SandboxCanariesTests
         Assert.Contains("meta-outbox.sh", canary.Script, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("block-destructive", "block-destructive.sh")]
+    [InlineData("detect-secrets", "detect-secrets.sh")]
+    [InlineData("meta-outbox", "meta-outbox.sh")]
+    public void The_hook_canary_runs_a_hook_only_while_the_plan_keeps_it(string hook, string script)
+    {
+        var plan = SandboxPlannerTests.Build(Req.WriteScope);
+        var without = plan with { Hooks = plan.Hooks with { Kept = [.. plan.Hooks.Kept.Where(h => !string.Equals(h, hook, StringComparison.Ordinal))] } };
+
+        Assert.Contains(script, SandboxCanaries.For(plan).Single(c => c.Reason == "hooks-run").Script, StringComparison.Ordinal);
+        Assert.DoesNotContain(script, SandboxCanaries.For(without).Single(c => c.Reason == "hooks-run").Script, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void The_hook_canary_never_exercises_a_dropped_or_rewriting_hook()
+    {
+        var script = SandboxCanaries.For(SandboxPlannerTests.Build(Req.WriteScope)).Single(c => c.Reason == "hooks-run").Script;
+
+        foreach (var hook in new[] { "external-write-guard", "record-teammate-name", "scope-gate", "send-gate", "rtk-rewrite" })
+        {
+            Assert.DoesNotContain(hook, script, StringComparison.Ordinal);
+        }
+    }
+
     [Fact]
     public void The_login_canary_checks_the_copy_the_plan_names_and_the_originals_mask()
     {
