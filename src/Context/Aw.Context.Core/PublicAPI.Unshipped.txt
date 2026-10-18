@@ -5183,12 +5183,10 @@ Aw.Context.Core.Code.CodeView.Callees.init -> void
 Aw.Context.Core.Code.CodeView.Callers.get -> Aw.Context.Core.Code.CodeSymbols!
 Aw.Context.Core.Code.CodeView.Callers.init -> void
 Aw.Context.Core.Code.CodeView.<Clone>$() -> Aw.Context.Core.Code.CodeView!
-Aw.Context.Core.Code.CodeView.CodeView(int SchemaVersion, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensAnchor!>! Anchors, System.Collections.Generic.IReadOnlyList<string!>! MissingAnchors, string! MapVersion, bool Draft, System.DateTimeOffset AsOf, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Code.CodeFile!>! Files, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Code.CodeTest!>! Tests, Aw.Context.Core.Code.CodeData! Data, Aw.Context.Core.Code.CodeSymbols! Callers, Aw.Context.Core.Code.CodeSymbols! Callees, Aw.Context.Core.Code.CodeLensCounts! Counts, Aw.Context.Core.Code.CodeLensTruncated! Truncated, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Code.CodeLexical!>! Lexical, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges) -> void
 Aw.Context.Core.Code.CodeView.Counts.get -> Aw.Context.Core.Code.CodeLensCounts!
 Aw.Context.Core.Code.CodeView.Counts.init -> void
 Aw.Context.Core.Code.CodeView.Data.get -> Aw.Context.Core.Code.CodeData!
 Aw.Context.Core.Code.CodeView.Data.init -> void
-Aw.Context.Core.Code.CodeView.Deconstruct(out int SchemaVersion, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensAnchor!>! Anchors, out System.Collections.Generic.IReadOnlyList<string!>! MissingAnchors, out string! MapVersion, out bool Draft, out System.DateTimeOffset AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Code.CodeFile!>! Files, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Code.CodeTest!>! Tests, out Aw.Context.Core.Code.CodeData! Data, out Aw.Context.Core.Code.CodeSymbols! Callers, out Aw.Context.Core.Code.CodeSymbols! Callees, out Aw.Context.Core.Code.CodeLensCounts! Counts, out Aw.Context.Core.Code.CodeLensTruncated! Truncated, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Code.CodeLexical!>! Lexical, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges) -> void
 Aw.Context.Core.Code.CodeView.Draft.get -> bool
 Aw.Context.Core.Code.CodeView.Draft.init -> void
 Aw.Context.Core.Code.CodeView.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>!
@@ -5341,3 +5339,21 @@ override Aw.Context.Core.Code.CodeSearchQuery.GetHashCode() -> int
 override Aw.Context.Core.Code.CodeSearchQuery.ToString() -> string!
 static Aw.Context.Core.Code.CodeSearchQuery.operator !=(Aw.Context.Core.Code.CodeSearchQuery? left, Aw.Context.Core.Code.CodeSearchQuery? right) -> bool
 static Aw.Context.Core.Code.CodeSearchQuery.operator ==(Aw.Context.Core.Code.CodeSearchQuery? left, Aw.Context.Core.Code.CodeSearchQuery? right) -> bool
+Aw.Context.Core.Code.CodeLexicalFindings.SchemaRow.get -> Aw.Context.Core.Lenses.SearchedSource?
+Aw.Context.Core.Code.CodeLexicalFindings.SchemaRow.init -> void
+Aw.Context.Core.Code.CodeLexicalFindings.TestsRow.get -> Aw.Context.Core.Lenses.SearchedSource?
+Aw.Context.Core.Code.CodeLexicalFindings.TestsRow.init -> void
+Aw.Context.Core.Code.CodeView.Cites.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>!
+Aw.Context.Core.Code.CodeView.Cites.init -> void
+Aw.Context.Core.Code.CodeView.CodeView(int SchemaVersion, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensAnchor!>! Anchors, System.Collections.Generic.IReadOnlyList<string!>! MissingAnchors, string! MapVersion, bool Draft, System.DateTimeOffset AsOf, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Code.CodeFile!>! Files, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Code.CodeTest!>! Tests, Aw.Context.Core.Code.CodeData! Data, Aw.Context.Core.Code.CodeSymbols! Callers, Aw.Context.Core.Code.CodeSymbols! Callees, Aw.Context.Core.Code.CodeLensCounts! Counts, Aw.Context.Core.Code.CodeLensTruncated! Truncated, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Code.CodeLexical!>! Lexical, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, Aw.Context.Core.Lenses.LensCoverage! Coverage, Aw.Context.Core.Lenses.LensSearched! Searched, System.Collections.Generic.IReadOnlyList<string!>! Degraded, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
+Aw.Context.Core.Code.CodeView.Coverage.get -> Aw.Context.Core.Lenses.LensCoverage!
+Aw.Context.Core.Code.CodeView.Coverage.init -> void
+Aw.Context.Core.Code.CodeView.Deconstruct(out int SchemaVersion, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensAnchor!>! Anchors, out System.Collections.Generic.IReadOnlyList<string!>! MissingAnchors, out string! MapVersion, out bool Draft, out System.DateTimeOffset AsOf, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Code.CodeFile!>! Files, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Code.CodeTest!>! Tests, out Aw.Context.Core.Code.CodeData! Data, out Aw.Context.Core.Code.CodeSymbols! Callers, out Aw.Context.Core.Code.CodeSymbols! Callees, out Aw.Context.Core.Code.CodeLensCounts! Counts, out Aw.Context.Core.Code.CodeLensTruncated! Truncated, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Code.CodeLexical!>! Lexical, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, out Aw.Context.Core.Lenses.LensCoverage! Coverage, out Aw.Context.Core.Lenses.LensSearched! Searched, out System.Collections.Generic.IReadOnlyList<string!>! Degraded, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
+Aw.Context.Core.Code.CodeView.Degraded.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Code.CodeView.Degraded.init -> void
+Aw.Context.Core.Code.CodeView.Searched.get -> Aw.Context.Core.Lenses.LensSearched!
+Aw.Context.Core.Code.CodeView.Searched.init -> void
+Aw.Context.Core.Facade.IContextCode
+Aw.Context.Core.Facade.IContextCode.Code(System.Collections.Generic.IReadOnlyList<string!>! anchors, bool draft, string? mapVersion, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Code.CodeView!>!>
+static Aw.Context.Core.Code.CodeLensBuilder.ThingTerms(Aw.Context.Core.Graph.GraphSnapshot! graph, Aw.Context.Core.Graph.NodeKey thing, System.Func<string!, string!>! clean) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Context.Core.Lenses.SearchedSources.Lexical(Aw.Context.Core.Sources.SourceId id, Aw.Context.Core.Lenses.SearchedState state, string? reason, string? code, System.DateTimeOffset? asOf) -> Aw.Context.Core.Lenses.SearchedSource!

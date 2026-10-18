@@ -5,7 +5,7 @@ using Aw.Context.Core.Linking;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Sources;
 
-namespace Aw.Context.Features.GetLenses;
+namespace Aw.Context.Features;
 
 /// <summary>
 /// What a lenses answer rests on besides the graph (scoping spec C6, C13): the version's moment and commit, the repo's tracked files at HEAD (never a denied path) for map

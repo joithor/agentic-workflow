@@ -1,3 +1,5 @@
+using Aw.Context.Core.Lenses;
+
 namespace Aw.Context.Core.Code;
 
 /// <summary>What the lexical search found, for <see cref="CodeLensMerge"/>.</summary>
@@ -11,4 +13,11 @@ public sealed record CodeLexicalFindings(
     IReadOnlyList<LexicalSchemaFile> SchemaFiles,
     IReadOnlyList<CodeLexical> Searched,
     int Unlocated,
-    bool SearchedFilesCapped);
+    bool SearchedFilesCapped)
+{
+    /// <summary>The 'lexical-tests' row of 'searched.sources'; null when the lexical step did not run.</summary>
+    public SearchedSource? TestsRow { get; init; }
+
+    /// <summary>The 'lexical-schema' row of 'searched.sources'; null when the lexical step did not run.</summary>
+    public SearchedSource? SchemaRow { get; init; }
+}

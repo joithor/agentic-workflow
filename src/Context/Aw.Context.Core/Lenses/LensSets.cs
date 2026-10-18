@@ -23,7 +23,7 @@ internal static class LensSets
             return tooMany;
         }
 
-        var resolved = Resolve(graph, distinct, depth);
+        var resolved = AnchorSet.Resolve(graph, distinct, depth);
         if (resolved.IsError)
         {
             return resolved.Error;
@@ -36,44 +36,12 @@ internal static class LensSets
         var items = productKeys.Concat(codeKeys).Concat(scopes.SelectMany(s => s.IntoScope(EdgeType.Mentions, EdgeType.Decides).Select(e => e.From.Value))).ToHashSet(StringComparer.Ordinal);
         var bands = new LensBands(intent, product, code);
         var keys = scopes.Select(s => s.Anchor.Key.Value).ToList();
-        var byAnchor = scopes.ToDictionary(s => s.Anchor.Key.Value, LensCoverageBuilder.Of, StringComparer.Ordinal);
-        var coverage = LensCoverageBuilder.Of(scopes[0].Graph, scopes[0].Nodes, [.. ownUnion.Select(NodeKey.From)]) with { Map = MapCoverageBuilder.Of(graph, ownUnion, basis), ByAnchor = byAnchor };
+        var coverage = AnchorSet.Coverage(basis, graph, scopes, ownUnion);
         return new LensesSetView(2, [.. scopes.Select(Anchor)], missing, basis.Map, basis.Draft, depth, basis.AsOf, bands, LensEdges.Across(graph, items),
             Conflicts(scopes, pairs), coverage, LensSearchedBuilder.For(basis, keys, depth, bands), [], new Dictionary<string, Results.Citation>(StringComparer.Ordinal))
         {
             MapCommit = basis.MapCommit,
         };
-    }
-
-    // The anchors that resolve (de-duplicated by node), the values that don't (as given). An ambiguous name refuses the call; with nothing resolved the first miss is the answer.
-    private static Result<(List<LensScope> Scopes, List<string> Missing)> Resolve(GraphSnapshot graph, List<string> given, int depth)
-    {
-        var scopes = new List<LensScope>();
-        var missing = new List<string>();
-        Error? first = null;
-        foreach (var raw in given)
-        {
-            var node = AnchorMatch.Resolve(graph, raw);
-            if (node.IsSuccess)
-            {
-                if (!scopes.Exists(s => s.Anchor.Key.Value == node.Value.Key.Value) && LensScope.Of(graph, node.Value.Key, depth) is { } scope)
-                {
-                    scopes.Add(scope);
-                }
-
-                continue;
-            }
-
-            if (node.Error.Code == ContextErrors.AmbiguousAnchor.Code)
-            {
-                return node.Error;
-            }
-
-            missing.Add(raw);
-            first ??= node.Error;
-        }
-
-        return scopes.Count == 0 && first is { } none ? none : (scopes, missing);
     }
 
     private static LensAnchor Anchor(LensScope scope) =>

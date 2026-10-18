@@ -1,9 +1,11 @@
+using Aw.Context.Core.Code;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Context.Features.FindPath;
+using Aw.Context.Features.GetCode;
 using Aw.Context.Features.GetFileMap;
 using Aw.Context.Features.GetLenses;
 using Aw.Context.Features.ListNeighbors;
@@ -20,7 +22,8 @@ internal sealed class ContextGraph(
     IService<FindPathRequest, PathView> path,
     IService<GetLensesRequest, LensesView> lenses,
     IService<GetLensesSetRequest, LensesSetView> lensesSet,
-    IService<GetFileMapRequest, FileMapView> fileMap) : IContextGraph, IContextLenses
+    IService<GetFileMapRequest, FileMapView> fileMap,
+    IService<GetCodeRequest, CodeView> code) : IContextGraph, IContextLenses, IContextCode
 {
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) =>
         show.Handle(new ShowNodeRequest(key, scope), cancellationToken);
@@ -42,4 +45,7 @@ internal sealed class ContextGraph(
 
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         fileMap.Handle(new GetFileMapRequest(query, scope), cancellationToken);
+
+    public ValueTask<Result<CodeView>> Code(IReadOnlyList<string> anchors, bool draft, string? mapVersion, ContextScope scope, CancellationToken cancellationToken) =>
+        code.Handle(new GetCodeRequest(anchors, draft, mapVersion, scope), cancellationToken);
 }

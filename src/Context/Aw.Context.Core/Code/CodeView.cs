@@ -1,8 +1,9 @@
 using Aw.Context.Core.Lenses;
+using Aw.Context.Core.Results;
 
 namespace Aw.Context.Core.Code;
 
-/// <summary>The code lens around some anchors (S-CL, scoping station C3): files, tests, data, callers and callees. Coverage and searched join in CL-5.</summary>
+/// <summary>The code lens around some anchors (S-CL, scoping station C3): files, tests, data, callers and callees. </summary>
 /// <param name="SchemaVersion">1.</param>
 /// <param name="Anchors">The anchors that resolved.</param>
 /// <param name="MissingAnchors">The names that did not, as given.</param>
@@ -18,6 +19,10 @@ namespace Aw.Context.Core.Code;
 /// <param name="Truncated">Which lists were cut.</param>
 /// <param name="Lexical">What the lexical search read.</param>
 /// <param name="Edges">The stored implements, tests, writes and reads edges between the found items and the scope.</param>
+/// <param name="Coverage">The lenses' coverage over the union of the own scopes, with 'map' and 'byAnchor'.</param>
+/// <param name="Searched">What was searched: the map, the code index and the two lexical sources.</param>
+/// <param name="Degraded">Lexical sources that couldn't be fully read.</param>
+/// <param name="Cites">The citations by marker (none: the code lens cites no records).</param>
 public sealed record CodeView(
     int SchemaVersion,
     IReadOnlyList<LensAnchor> Anchors,
@@ -33,4 +38,8 @@ public sealed record CodeView(
     CodeLensCounts Counts,
     CodeLensTruncated Truncated,
     IReadOnlyList<CodeLexical> Lexical,
-    IReadOnlyList<LensEdge> Edges);
+    IReadOnlyList<LensEdge> Edges,
+    LensCoverage Coverage,
+    LensSearched Searched,
+    IReadOnlyList<string> Degraded,
+    IReadOnlyDictionary<string, Citation> Cites);

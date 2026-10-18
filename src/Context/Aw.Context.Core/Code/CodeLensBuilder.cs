@@ -1,5 +1,6 @@
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
+using Aw.Context.Core.Results;
 using Aw.Kernel;
 
 namespace Aw.Context.Core.Code;
@@ -17,7 +18,7 @@ public static class CodeLensBuilder
         ArgumentNullException.ThrowIfNull(basis);
         ArgumentNullException.ThrowIfNull(graph);
         ArgumentNullException.ThrowIfNull(anchors);
-        var resolved = Resolve(graph, [.. anchors.Distinct(StringComparer.Ordinal)]);
+        var resolved = AnchorSet.Resolve(graph, [.. anchors.Distinct(StringComparer.Ordinal)], depth: 0);
         if (resolved.IsError)
         {
             return resolved.Error;
@@ -47,16 +48,42 @@ public static class CodeLensBuilder
             new CodeLensCounts(linkedFiles.Count, linkedTests.Count, things.Count, SchemaFiles: 0, linkedFiles.Count(f => f.TestedBy.Count == 0), Unlocated: 0),
             new CodeLensTruncated(linkedFiles.Count > CodeRules.MaxListed, linkedTests.Count > CodeRules.MaxListed, things.Count > CodeRules.MaxListed, SchemaFiles: false, SearchedFiles: false),
             [],
-            CodeEdges.Of(graph, reach.Union, listedFiles, listedTests, listedThings));
+            CodeEdges.Of(graph, reach.Union, listedFiles, listedTests, listedThings),
+            AnchorSet.Coverage(basis, graph, scopes, reach.Union),
+            Searched(basis, scopes, listedFiles.Count > 0 || listedTests.Count > 0 || listedThings.Count > 0),
+            [],
+            new Dictionary<string, Citation>(StringComparer.Ordinal));
+    }
+
+    // The code lens does not cascade: depth 0, no hops. The map and the code index are its graph-half sources; the lexical rows join in CodeLensMerge.
+    private static LensSearched Searched(LensBasis basis, List<LensScope> scopes, bool codeFound)
+    {
+        var intent = scopes.TrueForAll(s => LensIntent.Records(s).Count == 0 && LensIntent.Decisions(s).Count == 0);
+        var product = scopes.TrueForAll(s => LensProduct.Lists(s, 0) is { Own.Count: 0, Neighbors.Count: 0, Affects.Count: 0 });
+        return new LensSearched(
+            [.. scopes.Select(s => s.Anchor.Key.Value)],
+            basis.Map,
+            Depth: 0,
+            [],
+            [SearchedSources.Map(basis.MapCreated ?? basis.AsOf), SearchedSources.CodeIndex],
+            new SearchedBands(new BandSearched(intent), new BandSearched(product), new BandSearched(!codeFound)));
     }
 
     /// <summary>The search terms of a data thing: the forms of its key name, its label and every alias that targets it.</summary>
     /// <param name="graph">The graph.</param>
     /// <param name="thing">The thing's key.</param>
     /// <returns>The forms; empty when the thing is not searchable.</returns>
-    public static IReadOnlyList<string> ThingTerms(GraphSnapshot graph, NodeKey thing)
+    public static IReadOnlyList<string> ThingTerms(GraphSnapshot graph, NodeKey thing) => ThingTerms(graph, thing, static name => name);
+
+    /// <summary>The search terms of a data thing, with each name cleaned first (the search must only carry text the answer could carry).</summary>
+    /// <param name="graph">The graph.</param>
+    /// <param name="thing">The thing's key.</param>
+    /// <param name="clean">Cleans one name; a name it returns empty gives no terms.</param>
+    /// <returns>The forms; empty when the thing is not searchable.</returns>
+    public static IReadOnlyList<string> ThingTerms(GraphSnapshot graph, NodeKey thing, Func<string, string> clean)
     {
         ArgumentNullException.ThrowIfNull(graph);
+        ArgumentNullException.ThrowIfNull(clean);
         var names = new List<string> { CodeTerms.KeyName(thing.Value) };
         if (graph.Nodes.FirstOrDefault(n => n.Key.Value == thing.Value) is { } node)
         {
@@ -64,38 +91,7 @@ public static class CodeLensBuilder
         }
 
         names.AddRange(graph.Aliases.Where(a => a.Target.Value == thing.Value).Select(a => CodeTerms.KeyName(a.Alias.Value)));
-        return CodeTerms.Forms(names);
-    }
-
-    // The anchors that resolve (de-duplicated by node), the values that don't (as given). An ambiguous name refuses the call; with nothing resolved the first miss is the answer.
-    private static Result<(List<LensScope> Scopes, List<string> Missing)> Resolve(GraphSnapshot graph, List<string> given)
-    {
-        var scopes = new List<LensScope>();
-        var missing = new List<string>();
-        Error? first = null;
-        foreach (var raw in given)
-        {
-            var node = AnchorMatch.Resolve(graph, raw);
-            if (node.IsSuccess)
-            {
-                if (!scopes.Exists(s => s.Anchor.Key.Value == node.Value.Key.Value) && LensScope.Of(graph, node.Value.Key, depth: 0) is { } scope)
-                {
-                    scopes.Add(scope);
-                }
-
-                continue;
-            }
-
-            if (node.Error.Code == ContextErrors.AmbiguousAnchor.Code)
-            {
-                return node.Error;
-            }
-
-            missing.Add(raw);
-            first ??= node.Error;
-        }
-
-        return scopes.Count == 0 && first is { } none ? none : (scopes, missing);
+        return CodeTerms.Forms(names.Select(clean));
     }
 
     private static LensAnchor Anchor(LensScope scope) =>

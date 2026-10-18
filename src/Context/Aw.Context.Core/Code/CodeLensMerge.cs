@@ -1,4 +1,5 @@
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.Lenses;
 
 namespace Aw.Context.Core.Code;
 
@@ -27,8 +28,25 @@ public static class CodeLensMerge
             Counts = view.Counts with { Tests = total, SchemaFiles = schemaTotal, FilesWithoutTest = withoutTest, Unlocated = findings.Unlocated },
             Truncated = view.Truncated with { Tests = total > CodeRules.MaxListed, SchemaFiles = schemaCut, SearchedFiles = findings.SearchedFilesCapped },
             Lexical = findings.Searched,
+            Searched = Searched(view, findings, tests.Count > 0, listedSchema.Count > 0),
+            Degraded = [.. view.Degraded.Concat(Degraded(findings))],
         };
     }
+
+    private static LensSearched Searched(CodeView view, CodeLexicalFindings findings, bool tests, bool schema)
+    {
+        SearchedSource?[] rows = [findings.TestsRow, findings.SchemaRow];
+        var codeFound = view.Files.Count > 0 || tests || view.Data.Things.Count > 0 || schema;
+        return view.Searched with
+        {
+            Sources = [.. view.Searched.Sources.Concat(rows.OfType<SearchedSource>())],
+            Bands = view.Searched.Bands with { Code = new BandSearched(!codeFound) },
+        };
+    }
+
+    private static IEnumerable<string> Degraded(CodeLexicalFindings findings) =>
+        new[] { findings.TestsRow, findings.SchemaRow }.OfType<SearchedSource>().Where(r => r.State == SearchedState.Degraded)
+            .Select(r => $"{r.Id.Value}: {r.Code ?? "degraded"}");
 
     // Lexical tests grouped by path (imports outranks sibling, the named files are joined): those the edges already hold, and the new ones.
     private static (Dictionary<string, List<string>> Existing, List<CodeTest> Added) Tie(CodeView view, IReadOnlyList<LexicalTest> lexical)
