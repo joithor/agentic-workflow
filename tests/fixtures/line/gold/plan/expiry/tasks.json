@@ -44,7 +44,7 @@
           "holdout": false
         },
         {
-          "id": "RG-3",
+          "id": "AC-10",
           "text": "If a viewer tries to create a link, the system shall refuse, as it does today.",
           "evidence": [
             "api-transcript"
@@ -128,7 +128,7 @@
           "holdout": false
         },
         {
-          "id": "RG-1",
+          "id": "AC-8",
           "text": "When an editor revokes a link, the system shall stop returning its note, as it does today.",
           "evidence": [
             "api-transcript"
@@ -252,7 +252,7 @@
           "holdout": false
         },
         {
-          "id": "RG-2",
+          "id": "AC-9",
           "text": "When the digest is built for a week with no changed note, the system shall send nothing.",
           "evidence": [
             "api-transcript"
@@ -260,7 +260,7 @@
           "holdout": false
         },
         {
-          "id": "RG-4",
+          "id": "AC-11",
           "text": "When a team's notes are exported, the system shall produce the same output as before this change, whether or not a note has a link with an expiry time.",
           "evidence": [
             "api-transcript"
