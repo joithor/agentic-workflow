@@ -29,7 +29,7 @@ public static class SessionRows
         return pass.Sessions.FirstOrDefault(s => s.Ref.Equals(reference)) is { } found && Visible(caller, found) ? found : null;
     }
 
-    /// <summary>SND-AUTH-002 for a <c>session</c> caller, else null: for a human-only read to call before it looks a ref up, so a session cannot probe which refs exist.</summary>
+    /// <summary>SND-AUTH-002 for a session caller, else null: for a human-only read to call before it looks a ref up, so a session cannot probe which refs exist.</summary>
     /// <param name="caller">The caller.</param>
     /// <returns>The refusal, or null.</returns>
     public static Kernel.Error? RefuseSession(CallerContext caller)

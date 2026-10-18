@@ -33,7 +33,7 @@
       "focus": {
         "method": "none",
         "possible": false,
-        "why": "pending:CO-4a"
+        "why": "not-built"
       },
       "title": null,
       "pid": 222
@@ -52,7 +52,7 @@
         "stateSource": "record",
         "estimated": false,
         "repo": "api",
-        "worktree": null,
+        "worktree": ".claude/worktrees/ideas",
         "host": {
           "kind": "tmux",
           "label": "tmux · Warp",
@@ -73,7 +73,7 @@
         "focus": {
           "method": "none",
           "possible": false,
-          "why": "pending:CO-4a"
+          "why": "not-built"
         },
         "title": "private title",
         "pid": 111

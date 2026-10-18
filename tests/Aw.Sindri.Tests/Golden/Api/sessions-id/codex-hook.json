@@ -32,7 +32,7 @@
     "focus": {
       "method": "none",
       "possible": false,
-      "why": "pending:CO-4a"
+      "why": "not-built"
     },
     "title": null,
     "pid": 222

@@ -9197,3 +9197,7 @@ static Aw.Sindri.Core.Sessions.SessionRows.Visible(Aw.Sindri.Core.Commands.Calle
 static Aw.Sindri.Core.Sessions.SessionRows.WithSocket(Aw.Sindri.Core.Sessions.SessionRow! row, Aw.Sindri.Core.Sessions.ObservedSession! session) -> Aw.Sindri.Core.Sessions.SessionRow!
 static Aw.Sindri.Core.Sessions.SessionRows.Worktree(string? cwd, string? repoPath) -> string?
 static Aw.Sindri.Core.Sessions.StateHistoryRules.Next(System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Sessions.SessionRef, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionStateEntry!>!>! previous, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.ObservedSession!>! sessions) -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Sessions.SessionRef, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionStateEntry!>!>!
+Aw.Sindri.Core.Sessions.SessionProblem.Reason.get -> Aw.Sindri.Core.Sessions.UnavailableReason?
+Aw.Sindri.Core.Sessions.SessionProblem.Reason.init -> void
+static Aw.Sindri.Core.Sessions.SessionRows.Find(Aw.Sindri.Core.Sessions.SessionSnapshot! pass, Aw.Sindri.Core.Sessions.SessionRef reference, Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Sindri.Core.Sessions.ObservedSession?
+static Aw.Sindri.Core.Sessions.SessionRows.RefuseSession(Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Kernel.Error?

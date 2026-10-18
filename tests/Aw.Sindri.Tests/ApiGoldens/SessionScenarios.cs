@@ -25,7 +25,7 @@ internal static class SessionScenarios
     /// <summary>The golden host's profile: the repos the fixture sessions work in, so a session's worktree is served relative to its checkout.</summary>
     public const string ProfileYaml = "schemaVersion: 1\nuser: golden\nrepos:\n  - { name: api, path: /work/api }\n  - { name: web, path: /work/web }\nservices:\n  heartbeat: { every: 5s }\n";
 
-    private static readonly Dictionary<string, UnavailableReason> Reasons = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, UnavailableReason> _reasons = new(StringComparer.Ordinal)
     {
         ["unsupported-platform"] = UnavailableReason.UnsupportedPlatform,
         ["proc-unreadable"] = UnavailableReason.ProcUnreadable,
@@ -74,7 +74,7 @@ internal static class SessionScenarios
         "problems-source-failed" or "sessions" => (SessionsRig.Three, [], [new SessionProblem("claude-records", "SND-SESSION-001", "The claude-records source couldn't be read in the last pass")]),
         "recently-ended" => ([SessionsRig.Codex()], [new EndedSession(SessionsRig.Claude(), SessionData.T0.AddMinutes(4))], []),
         "unsupported-platform" or "proc-unreadable" or "disabled" =>
-            (SessionsRig.Three, [], [new SessionProblem("processes", "SND-SESSION-002", $"Sindri can't see agent sessions on this system: {scenario}") { Reason = Reasons[scenario] }]),
+            (SessionsRig.Three, [], [new SessionProblem("processes", "SND-SESSION-002", $"Sindri can't see agent sessions on this system: {scenario}") { Reason = _reasons[scenario] }]),
         _ => (SessionsRig.Three, [], []),
     };
 }
