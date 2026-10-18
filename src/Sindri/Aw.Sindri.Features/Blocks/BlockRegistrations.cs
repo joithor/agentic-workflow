@@ -49,6 +49,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(OwnerSteps.Decide)
         .AddScopingBlocks()
         .AddShipDocsBlocks()
+        .AddBuildProveBlocks()
         .AddBlockDescriptor(EvidenceProviders.Check)
         .AddGate<BudgetAvailableGate>()
         .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
@@ -57,6 +58,24 @@ internal static class BlockRegistrations
         .AddEvent(RecipeEvents.ItemRouted)
         .AddEvent(RecipeEvents.ClaimCreated)
         .AddEvent(RecipeEvents.NotifyDelivered);
+
+    /// <summary>Registers the line's build and prove stations' Steps (line spec §7.2, §7.3), descriptors only.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    private static IServiceCollection AddBuildProveBlocks(this IServiceCollection services) => services
+        .AddBlockDescriptor(BuildSteps.Prepare)
+        .AddBlockDescriptor(BuildSteps.Red)
+        .AddBlockDescriptor(BuildSteps.RedCheck)
+        .AddBlockDescriptor(BuildSteps.Green)
+        .AddBlockDescriptor(BuildSteps.Checks)
+        .AddBlockDescriptor(BuildSteps.ScopeDesk)
+        .AddBlockDescriptor(BuildSteps.Amend)
+        .AddBlockDescriptor(ProveSteps.Intake)
+        .AddBlockDescriptor(ProveSteps.BeforeAfter)
+        .AddBlockDescriptor(ProveSteps.Holdout)
+        .AddBlockDescriptor(ProveSteps.HoldoutLog)
+        .AddBlockDescriptor(ProveSteps.Evidence)
+        .AddBlockDescriptor(ProveSteps.FailLog);
 
     /// <summary>Registers the scoping station's Steps and the context Step inputs it names (scoping spec §9), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
