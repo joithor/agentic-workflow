@@ -69,6 +69,12 @@ internal sealed partial class InstanceFrameView : UserControl
 
         if (target is not null)
         {
+            if (++_attempts > MaxLooks)
+            {
+                GiveUp(wanted);   // a part that never holds focus (a detached view, a closed window) is not chased forever: the queue must drain
+                return;
+            }
+
             _ = target.Focus(NavigationMethod.Tab);
             Dispatcher.UIThread.Post(Satisfy, DispatcherPriority.Background);
         }
