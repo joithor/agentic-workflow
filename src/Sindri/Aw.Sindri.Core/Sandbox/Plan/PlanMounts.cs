@@ -43,15 +43,15 @@ internal static class PlanMounts
 
     private static void AddHomeAllow(List<PlanMount> m, PlanContext c)
     {
-        m.AddRange(_homeDefaults.Select(d => new PlanMount($"{c.Home}/{d.Path}", d.Kind, Reason: d.Reason)));
+        m.AddRange(_homeDefaults.Select(d => new PlanMount($"{c.Home}/{d.Path}", d.Kind, Reason: d.Reason, Optional: true)));
         if (c.Request.Host.ToolkitDir.Length > 0)
         {
-            m.Add(new PlanMount(c.Request.Host.ToolkitDir, PlanMountKind.ReadOnly, Reason: "the toolkit checkout the judge wrapper runs"));
+            m.Add(new PlanMount(c.Request.Host.ToolkitDir, PlanMountKind.ReadOnly, Reason: "the toolkit checkout the judge wrapper runs", Optional: true));
         }
 
         IEnumerable<HomeAllowEntry> declared = [.. c.Request.Settings?.Fs?.HomeAllow ?? [], .. c.Repo.HomeAllow ?? []];
-        m.AddRange(declared.Select(e => new PlanMount($"{c.Home}/{e.Path}", e.Mode == MountMode.ReadWrite ? PlanMountKind.ReadWrite : PlanMountKind.ReadOnly, Reason: "allowed by the profile")));
-        m.AddRange((c.Repo.CachePaths ?? []).Select(p => new PlanMount($"{c.Home}/{p}", PlanMountKind.ReadWrite, Reason: "a cache path this repo declares")));
+        m.AddRange(declared.Select(e => new PlanMount($"{c.Home}/{e.Path}", e.Mode == MountMode.ReadWrite ? PlanMountKind.ReadWrite : PlanMountKind.ReadOnly, Reason: "allowed by the profile", Optional: true)));
+        m.AddRange((c.Repo.CachePaths ?? []).Select(p => new PlanMount($"{c.Home}/{p}", PlanMountKind.ReadWrite, Reason: "a cache path this repo declares", Optional: true)));
     }
 
     private static void AddLogin(List<PlanMount> m, PlanContext c)
@@ -82,7 +82,7 @@ internal static class PlanMounts
         var key = ProjectKey.For(worktree);
         var real = $"{c.Home}/.claude/projects/{key}";
         m.Add(new PlanMount($"{config}/projects/{key}", PlanMountKind.ReadWrite, real, Reason: "this worktree's transcripts, in the owner's agent home"));
-        m.Add(new PlanMount($"{config}/projects/{key}/memory", PlanMountKind.ReadOnly, real + "/memory", Reason: "the owner's memory for this project stays read-only"));
+        m.Add(new PlanMount($"{config}/projects/{key}/memory", PlanMountKind.ReadOnly, real + "/memory", Reason: "the owner's memory for this project stays read-only", Optional: true));
     }
 
     private static void AddMasks(List<PlanMount> m, PlanContext c)
@@ -120,7 +120,7 @@ internal static class PlanMounts
             return new PlanMount(path, PlanMountKind.PerLaunchDir, spool, Reason: entry.UsedBy);
         }
 
-        return new PlanMount(path, entry.Kind == StatePathKind.ReadOnly ? PlanMountKind.ReadOnly : PlanMountKind.ReadWrite, Reason: entry.UsedBy);
+        return new PlanMount(path, entry.Kind == StatePathKind.ReadOnly ? PlanMountKind.ReadOnly : PlanMountKind.ReadWrite, Reason: entry.UsedBy, Optional: true);
     }
 
     private static void AddLaunchFiles(List<PlanMount> m, PlanContext c)
