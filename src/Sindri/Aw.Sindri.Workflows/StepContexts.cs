@@ -44,10 +44,14 @@ internal sealed class StepContexts(IInjectionTexts texts, IStepInputRunner runne
 
             if (kept.Value.Result is { } result)
             {
-                results[input.Recorded.Input.Value] = result;
+                results[ResultKey(input.Recorded, inputs)] = result;
             }
         }
 
         return seed with { Injection = new InjectionSections(sections), InputResults = results };
     }
+
+    /// <summary>The key of an entry's typed result: the input id, or 'id#n' (n = the entry's place) when the Step lists that input more than once, so the second use never overwrites the first.</summary>
+    private static string ResultKey(FilledInput entry, IReadOnlyList<InjectionInputSource> all) =>
+        all.Count(i => i.Recorded.Input == entry.Input) > 1 ? $"{entry.Input.Value}#{entry.Index.ToString(System.Globalization.CultureInfo.InvariantCulture)}" : entry.Input.Value;
 }

@@ -27,6 +27,7 @@ internal sealed partial class RecipeWorkflow
     private bool _fillsInputs;
     private bool _mirrorsInjection;
     private bool _dropsTexts;
+    private bool _capsPlan;
     private string? _filled;
     private InjectionPlan _injection = InjectionPlan.Empty;
     private List<InjectionFill> _fills = [];
@@ -71,9 +72,13 @@ internal sealed partial class RecipeWorkflow
             catch (ActivityFailureException e) when (e.InnerException is not CanceledFailureException)
             {
                 var code = e.InnerException is ApplicationFailureException { ErrorType: { } t } ? t : "failed";   // never the message: it could carry text
-                var reason = $"input {request.Input.Value} failed: {code}";
-                await DropTexts(instance.Address.Value).ConfigureAwait(true);
-                return new Filling(new StepFailed("engine:inputs", open.Token, reason, Tokens: 0, Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(reason)))), Parked: null);
+                return await InputsFailed(instance, open, $"input {request.Input.Value} failed: {code}").ConfigureAwait(true);
+            }
+
+            if (_capsPlan && InjectionPlans.Bytes([.. fills.Select(static f => f.Recorded)]) > InjectionPlans.PlanCap)
+            {
+                // the plan is one budget for the run: past it the Step fails (SND-WF-019) and the texts held so far go
+                return await InputsFailed(instance, open, $"inputs failed: {WorkflowErrors.InjectionInvalid.Code} the plan is over {InjectionPlans.PlanCap} bytes").ConfigureAwait(true);
             }
         }
 
@@ -81,6 +86,13 @@ internal sealed partial class RecipeWorkflow
         _injection = InjectionPlans.Merge([.. fills.Select(static f => f.Recorded)]);
         await MirrorInjection(instance, open).ConfigureAwait(true);
         return default;
+    }
+
+    /// <summary>The Step failure an input's failure becomes: its texts dropped, the reason never carrying text.</summary>
+    private async Task<Filling> InputsFailed(WorkflowInstance instance, OpenRun open, string reason)
+    {
+        await DropTexts(instance.Address.Value).ConfigureAwait(true);
+        return new Filling(new StepFailed("engine:inputs", open.Token, reason, Tokens: 0, Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(reason)))), Parked: null);
     }
 
     /// <summary>

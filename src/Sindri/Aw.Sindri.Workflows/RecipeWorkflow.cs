@@ -104,6 +104,7 @@ internal sealed partial class RecipeWorkflow
         _fillsInputs = Workflow.Patched("step-inputs-v1");   // read once: an instance that began before the patch never starts filling halfway through
         _mirrorsInjection = Workflow.Patched("step-inputs-injection-row-v1");   // the ledger row adds a local activity: its own marker
         _dropsTexts = Workflow.Patched("step-inputs-drop-v1");   // so does the eviction at the Step's end
+        _capsPlan = Workflow.Patched("step-inputs-plan-cap-v1");   // a plan over the cap fails the Step: a history that filled past it before must replay as it ran
         _since = Now;
         // DT-J2: first, before any await, so the marker is the first command and replays at the same place; a history that began before the block runtime has no marker, so it replays with no block runtimes, on the desk path exactly as recorded (kept until the cutover; DT-J plan Q7)
         var blockRuntime = Workflow.Patched("dt-j-block-runtime");

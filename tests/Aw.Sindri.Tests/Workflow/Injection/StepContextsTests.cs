@@ -59,7 +59,7 @@ public sealed class StepContextsTests
     {
         var texts = new MemoryInjectionTexts();
         var kept = Output("kept text", "{\"count\":2}");
-        texts.Put(new InjectionKey(_run.Address, _run.State, _run.Token, _input), kept.Texts);
+        texts.Put(new InjectionKey(_run.Address, _run.State, _run.Token, 1), kept.Texts);
         var runner = new FakeRunner(() => throw new InvalidOperationException("a hit must not run the input"));
 
         var context = await new StepContexts(texts, runner).For(_run, Seed, [new InjectionInputSource(kept.Metadata, Context)], TestContext.Current.CancellationToken);
@@ -74,7 +74,7 @@ public sealed class StepContextsTests
     {
         var texts = new MemoryInjectionTexts();
         var plain = Output("no result");
-        texts.Put(new InjectionKey(_run.Address, _run.State, _run.Token, _input), plain.Texts);
+        texts.Put(new InjectionKey(_run.Address, _run.State, _run.Token, 1), plain.Texts);
         var contexts = new StepContexts(texts, new FakeRunner(() => plain));
 
         var none = await contexts.For(_run, Seed, [], TestContext.Current.CancellationToken);
@@ -120,7 +120,7 @@ public sealed class StepContextsTests
 
         Assert.Equal("same text", context.Value.Injection.Sections["notes"]);
         Assert.Equal(1, runner.Calls);
-        Assert.NotNull(texts.Get(new InjectionKey(_run.Address, _run.State, _run.Token, _input)));
+        Assert.NotNull(texts.Get(new InjectionKey(_run.Address, _run.State, _run.Token, 1)));
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public sealed class StepContextsTests
 
         Assert.Equal(WorkflowErrors.InputChanged.Code, context.Error.Code);
         Assert.DoesNotContain("other text", context.Error.Message, StringComparison.Ordinal);
-        Assert.Null(texts.Get(new InjectionKey(_run.Address, _run.State, _run.Token, _input)));
+        Assert.Null(texts.Get(new InjectionKey(_run.Address, _run.State, _run.Token, 1)));
     }
 
     [Fact]

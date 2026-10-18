@@ -73,18 +73,19 @@ internal sealed class ReadInjectionService(IInstanceDirectory directory, IInstan
     private async ValueTask<Result<InjectionView>> Sections(string address, InjectionSource source, List<InjectionEntry> wanted, CallerContext caller, CancellationToken cancellationToken)
     {
         var scope = caller.Class == CallerClass.Session ? caller.Repo : null;
-        var filled = new Dictionary<string, FilledTexts>(StringComparer.Ordinal);
+        var filled = new Dictionary<int, FilledTexts>();
         var sections = new List<InjectionSectionView>();
         foreach (var entry in wanted)
         {
-            if (!filled.TryGetValue(entry.Input.Value, out var kept))
+            // the entry of the run that won this section, not the first use of the block: the same block listed twice has two entries
+            var input = source.Inputs.FirstOrDefault(i => i.Recorded.Input == entry.Input && i.Recorded.Sections.Any(s => string.Equals(s.Section, entry.Section, StringComparison.Ordinal) && string.Equals(s.Sha256, entry.Sha256, StringComparison.Ordinal)));
+            if (input is null)
             {
-                var input = source.Inputs.FirstOrDefault(i => i.Recorded.Input == entry.Input);
-                if (input is null)
-                {
-                    return WorkflowErrors.InjectionChanged.With($"the plan names input {entry.Input.Value}, which run {source.Run} did not fill (fix: re-run the Step)");
-                }
+                return WorkflowErrors.InjectionChanged.With($"the plan names input {entry.Input.Value}, which run {source.Run} did not fill (fix: re-run the Step)");
+            }
 
+            if (!filled.TryGetValue(input.Recorded.Index, out var kept))
+            {
                 var loaded = await InputRefills.Texts(texts, runner, new InputRefill(address, source.State, source.Run, input with { Context = input.Context with { Scope = scope } }, WorkflowErrors.InjectionChanged), cancellationToken).ConfigureAwait(false);
                 if (loaded.IsError)
                 {
@@ -92,7 +93,7 @@ internal sealed class ReadInjectionService(IInstanceDirectory directory, IInstan
                 }
 
                 kept = loaded.Value;
-                filled[entry.Input.Value] = kept;
+                filled[input.Recorded.Index] = kept;
             }
 
             if (!kept.Sections.TryGetValue(entry.Section, out var text))
