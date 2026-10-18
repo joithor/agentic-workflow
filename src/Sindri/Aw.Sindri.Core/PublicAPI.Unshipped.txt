@@ -8425,7 +8425,6 @@ Aw.Sindri.Core.Launch.TerminalFacts
 Aw.Sindri.Core.Launch.TerminalFacts.<Clone>$() -> Aw.Sindri.Core.Launch.TerminalFacts!
 Aw.Sindri.Core.Launch.TerminalFacts.ConfigPath.get -> string?
 Aw.Sindri.Core.Launch.TerminalFacts.ConfigPath.init -> void
-Aw.Sindri.Core.Launch.TerminalFacts.Detail.get -> string?
 Aw.Sindri.Core.Launch.TerminalFacts.Detail.init -> void
 Aw.Sindri.Core.Launch.TerminalFacts.Equals(Aw.Sindri.Core.Launch.TerminalFacts? other) -> bool
 Aw.Sindri.Core.Launch.TerminalFacts.Label.get -> string!
@@ -8623,10 +8622,8 @@ Aw.Sindri.Core.Events.LaunchStarted.SessionId.get -> Aw.Sindri.Core.Sessions.Ses
 Aw.Sindri.Core.Events.LaunchStartedPublic.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Launch.LaunchMode Mode, out Aw.Sindri.Core.Launch.AgentId Target, out Aw.Sindri.Core.Sessions.SessionId? SessionId, out string! TabTitle, out Aw.Sindri.Core.Events.LaunchViewerPublic! Viewer, out System.Collections.Generic.IReadOnlyList<string!>! Attach, out Aw.Sindri.Core.Launch.CatalogSource CatalogSource, out string! ArgvHash) -> void
 Aw.Sindri.Core.Events.LaunchStartedPublic.LaunchStartedPublic(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Launch.LaunchMode Mode, Aw.Sindri.Core.Launch.AgentId Target, Aw.Sindri.Core.Sessions.SessionId? SessionId, string! TabTitle, Aw.Sindri.Core.Events.LaunchViewerPublic! Viewer, System.Collections.Generic.IReadOnlyList<string!>! Attach, Aw.Sindri.Core.Launch.CatalogSource CatalogSource, string! ArgvHash) -> void
 Aw.Sindri.Core.Events.LaunchStartedPublic.SessionId.get -> Aw.Sindri.Core.Sessions.SessionId?
-Aw.Sindri.Core.Launch.TerminalFacts.Deconstruct(out string! Kind, out string! Label, out bool Present, out string! Source, out string? ConfigPath, out string? Problem, out string? Detail) -> void
 Aw.Sindri.Core.Launch.TerminalFacts.Kind.get -> string!
 Aw.Sindri.Core.Launch.TerminalFacts.Kind.init -> void
-Aw.Sindri.Core.Launch.TerminalFacts.TerminalFacts(string! Kind, string! Label, bool Present, string! Source, string? ConfigPath, string? Problem, string? Detail) -> void
 Aw.Sindri.Core.Launch.AgentEntry.ArgvHash.get -> string?
 Aw.Sindri.Core.Launch.AgentEntry.ArgvHash.init -> void
 Aw.Sindri.Core.Launch.AgentEntry.ModelForm.get -> Aw.Sindri.Core.Launch.ModelForm
@@ -10648,4 +10645,20 @@ Aw.Sindri.Core.Sessions.SessionProblem.Reason.get -> Aw.Sindri.Core.Sessions.Una
 Aw.Sindri.Core.Sessions.SessionProblem.Reason.init -> void
 static Aw.Sindri.Core.Sessions.SessionRows.Find(Aw.Sindri.Core.Sessions.SessionSnapshot! pass, Aw.Sindri.Core.Sessions.SessionRef reference, Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Sindri.Core.Sessions.ObservedSession?
 static Aw.Sindri.Core.Sessions.SessionRows.RefuseSession(Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Kernel.Error?
-
+Aw.Sindri.Core.Launch.TerminalDetail
+Aw.Sindri.Core.Launch.TerminalDetail.<Clone>$() -> Aw.Sindri.Core.Launch.TerminalDetail!
+Aw.Sindri.Core.Launch.TerminalDetail.Deconstruct(out int? Line, out string! Reason) -> void
+Aw.Sindri.Core.Launch.TerminalDetail.Equals(Aw.Sindri.Core.Launch.TerminalDetail? other) -> bool
+Aw.Sindri.Core.Launch.TerminalDetail.Line.get -> int?
+Aw.Sindri.Core.Launch.TerminalDetail.Line.init -> void
+Aw.Sindri.Core.Launch.TerminalDetail.Reason.get -> string!
+Aw.Sindri.Core.Launch.TerminalDetail.Reason.init -> void
+Aw.Sindri.Core.Launch.TerminalDetail.TerminalDetail(int? Line, string! Reason) -> void
+Aw.Sindri.Core.Launch.TerminalFacts.Deconstruct(out string! Kind, out string! Label, out bool Present, out string! Source, out string? ConfigPath, out string? Problem, out Aw.Sindri.Core.Launch.TerminalDetail? Detail) -> void
+Aw.Sindri.Core.Launch.TerminalFacts.Detail.get -> Aw.Sindri.Core.Launch.TerminalDetail?
+Aw.Sindri.Core.Launch.TerminalFacts.TerminalFacts(string! Kind, string! Label, bool Present, string! Source, string? ConfigPath, string? Problem, Aw.Sindri.Core.Launch.TerminalDetail? Detail) -> void
+override Aw.Sindri.Core.Launch.TerminalDetail.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launch.TerminalDetail.GetHashCode() -> int
+override Aw.Sindri.Core.Launch.TerminalDetail.ToString() -> string!
+static Aw.Sindri.Core.Launch.TerminalDetail.operator !=(Aw.Sindri.Core.Launch.TerminalDetail? left, Aw.Sindri.Core.Launch.TerminalDetail? right) -> bool
+static Aw.Sindri.Core.Launch.TerminalDetail.operator ==(Aw.Sindri.Core.Launch.TerminalDetail? left, Aw.Sindri.Core.Launch.TerminalDetail? right) -> bool
