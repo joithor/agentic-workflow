@@ -58,10 +58,10 @@ internal static class BlockRegistrations
         .AddEvent(RecipeEvents.ClaimCreated)
         .AddEvent(RecipeEvents.NotifyDelivered);
 
-    /// <summary>Registers the line's blocks: the per-phase child's, and the TEMPORARY stand-ins that go when engine's build, prove and ship land.</summary>
+    /// <summary>Registers the line's blocks (the per-phase child's).</summary>
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
-    private static IServiceCollection AddLineBlocks(this IServiceCollection services) => services.AddPhaseBlocks().AddStandInBlocks();
+    private static IServiceCollection AddLineBlocks(this IServiceCollection services) => services.AddPhaseBlocks();
 
     /// <summary>Registers the per-phase child's Steps, the babysitter stub's Step and the line report effect (line spec §7, App. C.6), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
@@ -72,15 +72,6 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PhaseSteps.Decide)
         .AddBlockDescriptor(BabysitSteps.Watch)
         .AddBlockDescriptor(LineEffects.Report);
-
-    /// <summary>TEMPORARY: registers the stand-in Steps of workflow.build, workflow.prove and workflow.ship until engine's recipes land.</summary>
-    /// <param name="services">The service collection.</param>
-    /// <returns>The same collection.</returns>
-    private static IServiceCollection AddStandInBlocks(this IServiceCollection services) => services
-        .AddBlockDescriptor(StandInBuildSteps.Build)
-        .AddBlockDescriptor(StandInProveSteps.Prove)
-        .AddBlockDescriptor(StandInProveSteps.ProveLog)
-        .AddBlockDescriptor(StandInShipSteps.Ship);
 
     /// <summary>Registers the scoping station's Steps and the context Step inputs it names (scoping spec §9), descriptors only.</summary>
     /// <param name="services">The service collection.</param>

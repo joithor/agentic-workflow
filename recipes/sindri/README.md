@@ -43,9 +43,6 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 | `workflow.evidence-all` | phasePacket, built | evidenceSummary | done / failed, dropped |
 | `workflow.evidence` | phasePacket, built | evidenceSummary, decision | done / failed, all-failed, dropped |
 | `workflow.review-loop` | change (payload), phasePacket | review | clean / stuck, wrong (failed) |
-| `workflow.build` | phasePacket, workspace, buildNotes, lineContext | built, change, redTests, activePacket | built / stopped. **Temporary stand-in** (one descriptor-only Step) until sindri-engine's recipe lands |
-| `workflow.prove` | phasePacket, built, workspace, redTests | proofPack, findings | proven / failed. **Temporary stand-in** (the three proof children, then descriptor-only Steps) until sindri-engine's recipe lands |
-| `workflow.ship` | phasePacket, proofPack, review, workspace, lineContext | pr, handoff, returnNotes | shipped / returned, refused (failed). **Temporary stand-in** (one descriptor-only Step) until sindri-engine's recipe lands |
 | `workflow.pr-babysitter` | pr, handoff, phasePacket, lineContext, workspace | mergedSha, reworkNotes | merged / stuck, rework (failed). **Stub**: one human-only Step (`step.babysit.watch`) stands for babysitting, docs sync and the merge until the PR babysitter spec's recipe replaces it |
 | `workflow.phase` | phasePacket, lineContext | pr, handoff, proofPack, mergedSha | merged / dropped. The per-phase child of the line (spec App. C.6): build, prove, review, drift check, ship, babysit; `stage` 3 and `reprove` 3 |
 
@@ -80,4 +77,4 @@ DTC2 to DTC9 as the plan reads them. Out of this change: seeds (DT-R3), `workflo
 
 ### The line's phase (workflow.phase)
 
-`workflow.phase` waits on `build`, `prove`, `review-loop`, `ship` and `pr-babysitter`. Until sindri-engine's `build`, `prove` and `ship` land, `recipes/sindri/` holds temporary stand-ins with the real inputs, outputs and terminals (each its own commit, dropped when the real recipes replace them), and `pr-babysitter` is a stub. Steps with no runtime (`step.phase.seed`, `step.phase.drift`, `step.phase.decide`, `step.babysit.watch`, the stand-ins) are descriptors only: `recipe validate` and `recipe eval` pass, and a served instance parks with `SND-WF-010` at the desk. `effect.line.report` is descriptor-only too. The renames in phase's `produces` use the long form (`{ fact, from }`) and hold under `RCP-WIRE-003` because every path to the terminal each is taken on writes the note.
+`workflow.phase` waits on `build`, `prove`, `review-loop`, `ship` and `pr-babysitter`. `pr-babysitter` is a **stub** until the PR babysitter spec's recipe replaces it. Steps with no runtime (`step.phase.seed`, `step.phase.drift`, `step.phase.decide`, `step.babysit.watch`) are descriptors only: `recipe validate` and `recipe eval` pass, and a served instance parks with `SND-WF-010` at the desk. `effect.line.report` is descriptor-only too. The renames in phase's `produces` use the long form (`{ fact, from }`) and hold under `RCP-WIRE-003` because every path to the terminal each is taken on writes the note.

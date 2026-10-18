@@ -526,7 +526,6 @@ Descriptor-only too (`ScopingSteps`, `PendingInputs` in `Aw.Sindri.Features/Bloc
 | `step.phase.decide` | desk, human-only | `phasePacket` | `rebuild`, `stop` | `buildNotes` on rebuild |
 | `step.babysit.watch` | desk, human-only (stub of `workflow.pr-babysitter`) | `pr`, `handoff`, `phasePacket`, `lineContext`, `workspace` | `merged`, `rework`, `stuck` | `mergedSha` on merged; `reworkNotes` on rework |
 | `effect.line.report` | effect (descriptor only) | - | - | parameters `status`, `line` |
-| `step.standin.build`, `.prove`, `.prove-log`, `.ship` | agent (temporary stand-ins) | those of `workflow.build`, `.prove`, `.ship` | built/stopped; proven/incomplete; logged; shipped/returned/refused | the outputs of those recipes |
 
 `step.interview.answer` and `step.scope.review` carry no form yet: the answer form built from `fact:questions` and the stop's fixed form (approve, revise, drop) await W2, so at the desk they complete with plain outcomes and outputs. The output schemas, their fact-or-packet-file design and field-name choices are in `schemas/scoping/README.md`.
 

@@ -1,5 +1,0 @@
-{"start":{"inputs":{"fact:phasePacket":{"phase":"1"},"fact:built":{"head":"abc123"},"fact:workspace":"/work/phase-1","fact:redTests":{"tests":[]}}}}
-{"trigger":{"kind":"wait.satisfied","outcome":"resolved"},"expect":{"state":"verify"}}
-{"trigger":{"kind":"wait.satisfied","outcome":"resolved"},"expect":{"state":"evidence"}}
-{"trigger":{"kind":"wait.satisfied","outcome":"cancelled"},"expect":{"state":"log"}}
-{"trigger":{"kind":"step.completed","outcome":"logged","outputs":{"fact:findings":[{"message":"the evidence child was cancelled"}]}},"expect":{"state":"failed","outcome":"unresolved"}}
