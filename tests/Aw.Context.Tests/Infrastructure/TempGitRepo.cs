@@ -7,6 +7,8 @@ namespace Aw.Context.Tests.Infrastructure;
 /// <summary>A throwaway git repo with one commit holding the given files; Dispose deletes it.</summary>
 internal sealed class TempGitRepo : IDisposable
 {
+    private static readonly TimeSpan _gitTimeout = TimeSpan.FromSeconds(30);
+
     public TempGitRepo(IReadOnlyDictionary<string, string> files)
     {
         _ = Run("init", "-q", "-b", "main");
@@ -45,10 +47,15 @@ internal sealed class TempGitRepo : IDisposable
         }
 
         using var git = Process.Start(start)!;   // why: git is on the test machine's PATH
-        var stderr = git.StandardError.ReadToEndAsync(CancellationToken.None);
-        var output = git.StandardOutput.ReadToEnd().Trim();
-        git.WaitForExit();
-        return git.ExitCode == 0 ? output : throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"git {string.Join(' ', args)} exited {git.ExitCode}: {stderr.Result}"));
+        var stdout = git.StandardOutput.ReadToEndAsync();
+        var stderr = git.StandardError.ReadToEndAsync();
+        if (!git.WaitForExit(_gitTimeout) || !stdout.Wait(_gitTimeout) || !stderr.Wait(_gitTimeout))
+        {
+            git.Kill(entireProcessTree: true);
+            throw new TimeoutException(string.Create(CultureInfo.InvariantCulture, $"git {string.Join(' ', args)} did not finish in {_gitTimeout.TotalSeconds} s: a stuck git, or a pipe a concurrent fork still holds"));
+        }
+
+        return git.ExitCode == 0 ? stdout.Result.Trim() : throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"git {string.Join(' ', args)} exited {git.ExitCode}: {stderr.Result}"));
     }
 
     public void Dispose() => Directory.Delete(Path, recursive: true);

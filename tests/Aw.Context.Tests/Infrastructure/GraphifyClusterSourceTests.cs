@@ -5,7 +5,26 @@ namespace Aw.Context.Tests.Infrastructure;
 
 public sealed class GraphifyClusterSourceTests
 {
+    /// <summary>The longest one run may take: a run is a few small processes, seconds even on a loaded box; a hang fails here, not at the host's 5 minutes.</summary>
+    private static readonly TimeSpan _deadline = TimeSpan.FromSeconds(30);
+
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    /// <summary>Runs the source under the test's own deadline; a hung child (git archive, the stub) is a TimeoutException naming the call, not a silent wait.</summary>
+    private static async Task<Aw.Kernel.Result<Aw.Context.Core.Extract.ClusterSet>> Clusters(GraphifyClusterSource source, TempGitRepo repo, TimeSpan? deadline = null)
+    {
+        var limit = deadline ?? _deadline;
+        using var bounded = CancellationTokenSource.CreateLinkedTokenSource(Ct);
+        bounded.CancelAfter(limit);
+        try
+        {
+            return await source.Clusters(repo.Repo, repo.Head, bounded.Token);
+        }
+        catch (OperationCanceledException) when (!Ct.IsCancellationRequested)
+        {
+            throw new TimeoutException($"GraphifyClusterSource.Clusters did not finish in {limit.TotalSeconds:0.#} s: a child process (git archive or the graphify stub) is hung, or the box is starved");
+        }
+    }
 
     [Fact, Trait("Lane", "integration")]
     public async Task An_absent_graphify_is_an_empty_unavailable_set_not_an_error()
@@ -13,7 +32,7 @@ public sealed class GraphifyClusterSourceTests
         using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["src/a.ts"] = "export const a = 1;\n" });
         var source = new GraphifyClusterSource(new GitCli(), GraphifyOptions.Default with { Binary = "/nonexistent/graphify" });
 
-        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+        var set = await Clusters(source, repo);
 
         Assert.True(set.IsSuccess);
         Assert.False(set.Value.Available);
@@ -27,7 +46,7 @@ public sealed class GraphifyClusterSourceTests
         using var stub = new StubGraphify("0.0.1");
         var source = new GraphifyClusterSource(new GitCli(), stub.Options);
 
-        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+        var set = await Clusters(source, repo);
 
         Assert.True(set.IsSuccess);
         Assert.False(set.Value.Available);
@@ -41,7 +60,7 @@ public sealed class GraphifyClusterSourceTests
         using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
         var source = new GraphifyClusterSource(new GitCli(), stub.Options);
 
-        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+        var set = await Clusters(source, repo);
 
         Assert.True(set.IsSuccess);
         Assert.True(set.Value.Available);
@@ -67,7 +86,7 @@ public sealed class GraphifyClusterSourceTests
         await using var heldOpen = new FileStream(stub.Options.Binary, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
         var source = new GraphifyClusterSource(new GitCli(), stub.Options);
 
-        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+        var set = await Clusters(source, repo);
 
         Assert.True(set.Value.Available, "the stub ran despite an open write descriptor");
     }
@@ -79,7 +98,7 @@ public sealed class GraphifyClusterSourceTests
         using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
         var source = new GraphifyClusterSource(new GitCli(), stub.Options with { Sandbox = (_, command, _) => command.Contains("extract", StringComparer.Ordinal) ? throw new IOException("disk full") : StubGraphify.RunThroughShell(command) });
 
-        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+        var set = await Clusters(source, repo);
 
         Assert.True(set.IsSuccess);
         Assert.False(set.Value.Available);
@@ -93,7 +112,28 @@ public sealed class GraphifyClusterSourceTests
         using var stub = new StubGraphify(GraphifyOptions.Default.Pin);
         var source = new GraphifyClusterSource(new GitCli(), stub.Options with { Sandbox = (_, command, _) => command.Contains("extract", StringComparer.Ordinal) ? throw new ArgumentNullException(nameof(command)) : StubGraphify.RunThroughShell(command) });
 
-        _ = await Assert.ThrowsAsync<ArgumentNullException>(async () => await source.Clusters(repo.Repo, repo.Head, Ct));
+        var thrown = await Record.ExceptionAsync(async () => await Clusters(source, repo));
+
+        if (thrown is TimeoutException)
+        {
+            Assert.Fail(thrown.Message);   // a hang, not the programming error this test is about
+        }
+
+        _ = Assert.IsType<ArgumentNullException>(thrown);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_graphify_run_that_never_ends_fails_the_test_fast_with_a_message_naming_the_hang()
+    {
+        using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["src/a.ts"] = "export const a = 1;\n" });
+        using var stub = new StubGraphify(GraphifyOptions.Default.Pin, hangs: true);
+        var source = new GraphifyClusterSource(new GitCli(), stub.Options);
+        var started = System.Diagnostics.Stopwatch.StartNew();
+
+        var thrown = await Assert.ThrowsAsync<TimeoutException>(async () => await Clusters(source, repo, TimeSpan.FromSeconds(3)));
+
+        Assert.Contains("did not finish in 3 s", thrown.Message, StringComparison.Ordinal);
+        Assert.True(started.Elapsed < TimeSpan.FromSeconds(20), $"the deadline must cut the hang short, it took {started.Elapsed.TotalSeconds:0} s");
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -139,7 +179,7 @@ public sealed class GraphifyClusterSourceTests
             ["config/secrets/keys.ts"] = "export const token = 'not-a-real-secret';\n",
         });
 
-        var set = await source.Clusters(repo.Repo, repo.Head, Ct);
+        var set = await Clusters(source, repo);
 
         Assert.True(set.IsSuccess);
         Assert.True(set.Value.Available, "graphify and the sandbox are usable here, so the set must be available");
