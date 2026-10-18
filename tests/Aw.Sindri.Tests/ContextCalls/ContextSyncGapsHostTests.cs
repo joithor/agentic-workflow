@@ -1,0 +1,107 @@
+using System.Net;
+using System.Text.Json;
+using Aw.Context.Testing.Fakes;
+using Aw.Context.Testing.Fixtures;
+using Aw.Context.Testing.Map;
+using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Lease;
+using Aw.Sindri.Core.Ledger;
+using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Tests.ApiGoldens;
+using Microsoft.Extensions.DependencyInjection;
+using static Aw.Sindri.Tests.Callers.CallerRequests;
+
+namespace Aw.Sindri.Tests.ContextCalls;
+
+/// <summary>A configured intent source that has never synced: the history route shows the gap, the 'context-sync-gaps' service fills it through the command chain, the next read is clean (owner decision 2026-10-18).</summary>
+public sealed class ContextSyncGapsHostTests : IDisposable
+{
+    private const string KeyVariable = "SINDRI_TEST_ONYX_KEY";
+    private const string History = "/sindri/context/history?anchor=feature%3Alayout.split-pane";
+    private readonly FixtureRepo _repo = FixtureRepo.Build();
+
+    public void Dispose() => _repo.Dispose();
+
+    private static JsonElement Onyx(string body)
+    {
+        using var view = JsonDocument.Parse(body);
+        return view.RootElement.GetProperty("searched").GetProperty("sources").EnumerateArray().Single(s => s.GetProperty("id").GetString() == "onyx").Clone();
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Never_synced_source_reads_not_synced_161_then_the_service_syncs_it_as_itself_and_the_next_read_is_clean()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var onyx = await FakeOnyxServer.Start();
+        await using var host = await Approved(onyx, ct);
+
+        var before = await host.Http.Ask(Get(History, Human(host.Token.Value)));
+        var first = await RunGaps(host, ct);
+        await WaitForSyncToEnd(host, ct);
+        var after = await host.Http.Ask(Get(History, Human(host.Token.Value)));
+        var second = await RunGaps(host, ct);
+        var started = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.JobStarted, ct);
+
+        var gap = Onyx(before.Body);
+        Assert.Equal(("unavailable", "not-synced", "SND-CONTEXT-161"), (gap.GetProperty("state").GetString(), gap.GetProperty("reason").GetString(), gap.GetProperty("code").GetString()));
+        Assert.False(gap.TryGetProperty("sync", out _));
+        Assert.False(first.Value.Idle);
+        var healed = Onyx(after.Body);
+        Assert.True(healed.GetProperty("state").GetString() == "ok", healed.GetRawText());
+        Assert.True(second.Value.Idle);
+        Assert.Equal("service:context-sync-gaps", started.Value!.Envelope.Actor);
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task The_service_is_a_built_in_with_no_profile_entry_and_a_tick_with_no_approved_profile_is_quiet()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var onyx = await FakeOnyxServer.Start();
+        await using var host = await Approved(onyx, ct);
+
+        var builtIns = host.App.Services.GetServices<BuiltInService>();
+
+        Assert.Contains(builtIns, b => b.Name.Value == "context-sync-gaps");
+    }
+
+    private static async Task<Kernel.Result<ScheduledResult>> RunGaps(GoldenHost host, CancellationToken ct)
+    {
+        await using var scope = host.App.Services.CreateAsyncScope();
+        var gaps = scope.ServiceProvider.GetServices<IScheduledService>().Single(s => s.Identity().Value == "context-sync-gaps");
+        var grant = host.App.Services.GetRequiredService<HeldLease>().Current!;   // why: the started host holds the lease
+        using var caller = host.App.Services.GetRequiredService<ICallerContextAccessor>().EnterService("context-sync-gaps");   // as the scheduler enters it
+        return await gaps.Run(new ScheduledRun(grant, DateTimeOffset.UnixEpoch), ct);
+    }
+
+    // The test host does not project views on its own, so wait on the ledger: the sync job is over when 'job.finished' is recorded.
+    private static async Task WaitForSyncToEnd(GoldenHost host, CancellationToken ct)
+    {
+        var ledger = host.App.Services.GetRequiredService<ILedgerStore>();
+        for (var i = 0; i < 160; i++)
+        {
+            if ((await ledger.Latest(EventTypes.JobFinished, ct)).Value is not null)
+            {
+                return;
+            }
+
+            await Task.Delay(250, ct);
+        }
+
+        Assert.Fail("the sync job didn't end");
+    }
+
+    private async Task<GoldenHost> Approved(FakeOnyxServer onyx, CancellationToken ct)
+    {
+        var yaml = $"schemaVersion: 1\nuser: golden\nrepos:\n  - {{ name: {FixtureMap.Repo}, path: \"{_repo.Path}\" }}\n"
+            + "context:\n  docs: { globs: [\"docs/**/*.md\"] }\n  sources:\n"
+            + $"    onyx: {{ url: \"{onyx.Url}\", token: \"env:{KeyVariable}\", version: \"{FakeOnyxServer.PinnedVersion}\" }}\n"
+            + "    linear: { teams: [SPL] }\n";
+        var host = await GoldenHost.Start(temporary: true, ct, yaml, new Dictionary<string, string>(StringComparer.Ordinal) { [KeyVariable] = onyx.Token });
+        var hash = (await host.LiveHash(ct)).Value;
+        var approved = await host.Http.Ask(Post("/sindri/profile/approve", await ApiScenarios.Confirmed(host, hash), Human(host.Token.Value)));
+        Assert.Equal(HttpStatusCode.OK, approved.Status);
+        await ContextMapApiTests.Import(host);
+        return host;
+    }
+}

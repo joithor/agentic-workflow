@@ -2845,3 +2845,23 @@ static Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.operator =
 virtual Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.EqualityContract.get -> System.Type!
 virtual Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.Equals(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse? other) -> bool
 virtual Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.PrintMembers(System.Text.StringBuilder! builder) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest!
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Anchors.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Before.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Before.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out string? Since, out string? Before, out bool Draft, out string? MapVersion) -> void
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Draft.get -> bool
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.GetContextHistoryRequest(System.Collections.Generic.IReadOnlyList<string!>! Anchors, string? Since = null, string? Before = null, bool Draft = false, string? MapVersion = null) -> void
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.MapVersion.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.MapVersion.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Since.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Since.init -> void
+override Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest? left, Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest? left, Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest? right) -> bool

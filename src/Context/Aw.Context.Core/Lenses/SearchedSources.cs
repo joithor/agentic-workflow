@@ -20,7 +20,7 @@ public static class SearchedSources
 
         if (state is null || (state.LastSync is null && state.LastError is null))
         {
-            return new SearchedSource(id, SearchedState.Unavailable, "not-synced", Code: null, AsOf: null);
+            return new SearchedSource(id, SearchedState.Unavailable, NotSynced, ContextErrors.IntentNotSynced.Code, AsOf: null);
         }
 
         // A capped run (059) or held-back extraction (042) is partial, not a failure: the source still answers.
@@ -34,5 +34,23 @@ public static class SearchedSources
     /// <summary>The code index's row: not built until the code stage ships it.</summary>
     internal static SearchedSource CodeIndex { get; } = new(SourceId.From("code-index"), SearchedState.Unavailable, "index-not-built", Code: null, AsOf: null);
 
+    /// <summary>The history lens's reading of a synced intent source that linked no record to any node: unavailable, 'history-unlinked'.</summary>
+    /// <param name="row">The source's row.</param>
+    /// <returns>The row, changed only when it was ok.</returns>
+    public static SearchedSource Unlinked(SearchedSource row) =>
+        row.State == SearchedState.Ok ? row with { State = SearchedState.Unavailable, Reason = "history-unlinked" } : row;
+
+    /// <summary>The git-history row of a history answer.</summary>
+    /// <param name="state">The state.</param>
+    /// <param name="reason">The recorded-limit word, or null.</param>
+    /// <param name="code">The code, or null.</param>
+    /// <param name="asOf">When the log was read.</param>
+    /// <returns>The row.</returns>
+    public static SearchedSource GitHistory(SearchedState state, string? reason, string? code, DateTimeOffset asOf) => new(SourceId.From("git-history"), state, reason, code, asOf);
+
+    /// <summary>The incidents row: no incident source exists yet.</summary>
+    public static SearchedSource Incidents { get; } = new(SourceId.From("incidents"), SearchedState.NotConfigured, NotConfigured, Code: null, AsOf: null);
+
+    private const string NotSynced = "not-synced";
     private const string NotConfigured = "not-configured";
 }

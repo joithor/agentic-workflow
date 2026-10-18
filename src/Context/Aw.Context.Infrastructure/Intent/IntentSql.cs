@@ -1,15 +1,15 @@
 namespace Aw.Context.Infrastructure.Intent;
 
-/// <summary>The intent layer's SQL (context.db, migration 0006_s5b_intent_links). The cursor lives in source_cursor under repo '*'.</summary>
+/// <summary>The intent layer's SQL (context.db, migration 0006_s5b_intent_links, created_at from 0007_s5b_intent_created). The cursor lives in source_cursor under repo '*'.</summary>
 internal static class IntentSql
 {
     internal const string CursorRepo = "*";
 
     /// <summary>A record that is new, or whose version moved, is queued for extraction again; the same version changes nothing (a replay writes no rows).</summary>
     internal const string UpsertRecord =
-        "INSERT INTO intent_record (key, source, version, title, aliases, fetched_at, extracted_version, extraction_state) " +
-        "VALUES (@key, @source, @version, @title, @aliases, @at, NULL, 'queued') " +
-        "ON CONFLICT (key) DO UPDATE SET source = excluded.source, title = excluded.title, aliases = excluded.aliases, fetched_at = excluded.fetched_at, " +
+        "INSERT INTO intent_record (key, source, version, title, aliases, fetched_at, extracted_version, extraction_state, created_at) " +
+        "VALUES (@key, @source, @version, @title, @aliases, @at, NULL, 'queued', @created) " +
+        "ON CONFLICT (key) DO UPDATE SET source = excluded.source, title = excluded.title, aliases = excluded.aliases, fetched_at = excluded.fetched_at, created_at = excluded.created_at, " +
         "extracted_version = NULL, extraction_state = 'queued', version = excluded.version WHERE intent_record.version <> excluded.version";
 
     // A record moving to another map version is queued in the same statement (a done one included; its decisions stay until the extraction replaces them): only a finished extraction marks it done again,
@@ -33,7 +33,7 @@ internal static class IntentSql
         "INSERT INTO source_cursor (source, repo, cursor, last_sync, last_error) VALUES (@source, '*', NULL, NULL, @code) " +
         "ON CONFLICT (source, repo) DO UPDATE SET last_error = excluded.last_error";
 
-    internal const string Records = "SELECT key, source, version, title, aliases FROM intent_record ORDER BY key";
+    internal const string Records = "SELECT key, source, version, title, aliases, created_at, fetched_at FROM intent_record ORDER BY key";
 
     internal const string Links = "SELECT record, target, rule, confidence, span_hash FROM intent_link ORDER BY record, target, rule";
 

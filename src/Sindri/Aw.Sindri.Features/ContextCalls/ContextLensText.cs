@@ -14,7 +14,7 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// </summary>
 internal static class ContextLensText
 {
-    private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
+    internal static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
 
     internal static string Lenses(LensesView view, bool fence)
     {
@@ -67,13 +67,14 @@ internal static class ContextLensText
     }
 
     /// <summary>What was looked at, one word per source state ('onyx degraded (SND-CONTEXT-010)'), never colour.</summary>
-    private static string Searched(LensSearched searched)
+    internal static string Searched(LensSearched searched)
     {
         var text = new StringBuilder(Invariant($"searched: map {searched.MapVersion} · depth {searched.Depth} · hops {string.Join(", ", searched.Hops)}\n"));
         foreach (var source in searched.Sources)
         {
-            var why = source.Code ?? source.Reason;
-            _ = text.AppendLine(Invariant($"  {source.Id.Value} {StateWord(source.State)}{(why is null ? string.Empty : " (" + why + ")")}"));
+            var why = string.Join(", ", new[] { source.Reason, source.Code }.Where(static w => w is not null));
+            var sync = source.Sync is { } s ? Invariant($" · sync {s.State} {s.JobId.Value}") : string.Empty;
+            _ = text.AppendLine(Invariant($"  {source.Id.Value} {StateWord(source.State)}{(why.Length == 0 ? string.Empty : " (" + why + ")")}{sync}"));
         }
 
         foreach (var (name, band) in new[] { ("intent", searched.Bands.Intent), ("product", searched.Bands.Product), ("code", searched.Bands.Code) })
@@ -87,7 +88,7 @@ internal static class ContextLensText
         return text.ToString();
     }
 
-    private static string StateWord(SearchedState state) => state switch
+    internal static string StateWord(SearchedState state) => state switch
     {
         SearchedState.NotConfigured => "not-configured",
         SearchedState.Ok => "ok",
@@ -193,6 +194,6 @@ internal static class ContextLensText
     }
 
     /// <summary>The label as it may reach a model: an untrusted one inside the fence (unless the server fenced it already for a session).</summary>
-    private static string Fenced(string label, Trust trust, bool fence) =>
+    internal static string Fenced(string label, Trust trust, bool fence) =>
         fence && trust == Trust.Untrusted ? UntrustedFence.Wrap("map", author: null, label) : label;
 }

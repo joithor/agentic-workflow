@@ -56,6 +56,7 @@ internal static class EndpointTable
         _ = queries.MapExportContextReview();
         _ = queries.MapFindContextPath();
         _ = queries.MapGetContextFileMap();
+        _ = queries.MapGetContextHistory();
         _ = queries.MapGetContextLenses();
         _ = queries.MapGetContextEvalMap();
         _ = queries.MapGetContextMap();

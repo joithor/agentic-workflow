@@ -260,7 +260,7 @@ internal sealed class SqliteIntentStore(ContextDatabase database) : IIntentStore
         foreach (var record in page.Records)
         {
             yield return new SqlStatement(IntentSql.UpsertRecord, c => c.Bind("@key", record.Key.Value).Bind("@source", record.Source.Value).Bind("@version", record.Version)
-                .Bind("@title", record.Title).Bind("@aliases", IntentMappers.Joined(record.Aliases)).Bind("@at", page.At));
+                .Bind("@title", record.Title).Bind("@aliases", IntentMappers.Joined(record.Aliases)).Bind("@at", page.At).BindCreated(record.CreatedAt));
             yield return new SqlStatement(IntentSql.DeleteLinks, c => c.Bind("@record", record.Key.Value));
             if (page.MapVersion > 0)
             {

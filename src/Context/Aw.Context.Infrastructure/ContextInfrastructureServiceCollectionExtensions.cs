@@ -3,6 +3,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Extract;
+using Aw.Context.Core.History;
 using Aw.Context.Core.Linking;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
@@ -63,6 +64,7 @@ public static class ContextInfrastructureServiceCollectionExtensions
             .AddSingleton<IProbeFileReader, ProbeFileReader>()
             .AddSingleton<IProbeReportStore, FileProbeReportStore>()
             .AddSingleton<IMergeHistory, GitMergeHistory>()
+            .AddSingleton<IFileHistory, GitFileHistory>()
             .AddSingleton<IBriefSource, OnyxBriefSource>()
             .AddSingleton<IAsOfDocs, AsOfDocsFactory>()
             .AddSingleton<IEvalStore, FileEvalStore>()
