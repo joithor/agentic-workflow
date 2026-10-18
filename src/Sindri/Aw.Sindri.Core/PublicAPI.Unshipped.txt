@@ -9210,3 +9210,5 @@ override Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem.ToString() -> string!
 static Aw.Sindri.Core.Workflow.Engine.Rules.MatchedTransition.Of(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger! trigger) -> Aw.Sindri.Core.Workflow.Recipes.RecipeTransition?
 static Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem? left, Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem? left, Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem? right) -> bool
+Aw.Sindri.Core.Workflow.Engine.Rules.ItemBudget
+static Aw.Sindri.Core.Workflow.Engine.Rules.ItemBudget.TokensLeft(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe) -> int?

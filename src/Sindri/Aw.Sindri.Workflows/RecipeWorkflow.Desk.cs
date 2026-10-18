@@ -98,7 +98,7 @@ internal sealed partial class RecipeWorkflow
         var reportId = _reportId;
         _reportId = null;
         var before = instance;
-        var decision = TransitionDecision.Decide(new DecisionInput(instance, context.Recipe, trigger, GateAnswers.None, context.Decisions));   // a desk timer's expiry always parks (W20)
+        var decision = TransitionDecision.Decide(await Deciding(instance, context, trigger).ConfigureAwait(true));   // a desk timer's expiry matches no transition and always parks (W20); a report runs its transition's gates
         if (decision is Rejected rejected)
         {
             Settle(reportId, new Reported(Result: null, rejected.Error));   // the validator saw the same instance, so this is a bug guard

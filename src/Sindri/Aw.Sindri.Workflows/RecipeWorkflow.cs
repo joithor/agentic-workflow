@@ -40,6 +40,7 @@ internal sealed partial class RecipeWorkflow
     private readonly HashSet<long> _eventsTaken = [];
     private readonly Dictionary<string, Reported> _reported = new(StringComparer.Ordinal);
     private readonly TimerScopes _timers = new(Timers);   // engine P5 (§5.5): unit (a) arms the state timers through it, unit (b) pauses and resumes them
+    private bool _children;   // engine P7: the 'p7-children' marker is in this history (gates run, the slot stub grants); false on a replay of an older one
     private InstanceStart? _start;
     private InterpretedRecipe? _recipe;
     private Interpreting? _context;
@@ -95,6 +96,7 @@ internal sealed partial class RecipeWorkflow
         _since = Now;
         // DT-J2: first, before any await, so the marker is the first command and replays at the same place; a history that began before the block runtime has no marker, so it replays with no block runtimes, on the desk path exactly as recorded (kept until the cutover; DT-J plan Q7)
         var blockRuntime = Workflow.Patched("dt-j-block-runtime");
+        _children = Workflow.Patched("p7-children");   // engine P7: gates, the slot stub (and, as the units land, children and cleanup); right after dt-j-block-runtime, before any await; a history without it replays exactly as recorded
         var loaded = await Workflow.ExecuteLocalActivityAsync(
             (RunStepActivities a) => a.LoadRecipeAsync(start.Recipe),
             new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(30) }).ConfigureAwait(true);
@@ -222,6 +224,7 @@ internal sealed partial class RecipeWorkflow
         _instance = kept is not null && instance.Suspension is { Kind: SuspensionKind.Takeover } takeover
             ? instance with { Suspension = takeover with { Remaining = kept } }
             : instance;
+        GrantSlot(before, instance, recipe);
         return _instance;
     }
 

@@ -55,6 +55,8 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<EventBridgeCursor>()                         // engine P4 unit (d): the bridge's cursor file
             .AddScoped<IScheduledService, EventBridge>()               // engine P4 unit (d): the ledger-to-Temporal bridge
             .AddSingleton(EventBridge.BuiltIn)                         // engine P4 unit (d): runs without a profile entry (S1-D8)
+            .AddSingleton<RouterStubCursor>()                          // engine P7: the stub's cursor file
+            .AddScoped<ItemRouter>()
             .AddScoped<IScheduledService, RouterStub>()                // engine P7 unit U3: the router stub (spec §12), 'item.routed' for each workflow.item that starts
             .AddSingleton(RouterStub.BuiltIn);
     }

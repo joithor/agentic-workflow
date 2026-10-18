@@ -102,7 +102,7 @@ internal sealed partial class RecipeWorkflow
     /// </summary>
     private async Task<WorkflowInstance> Apply(WorkflowInstance instance, Submission submission, Interpreting context)
     {
-        var decision = TransitionDecision.Decide(new DecisionInput(instance, context.Recipe, submission.Trigger, GateAnswers.None, context.Decisions));
+        var decision = TransitionDecision.Decide(await Deciding(instance, context, submission.Trigger).ConfigureAwait(true));
         var after = After(instance, decision);
         if (OwnChange(instance, decision) is { } change)
         {

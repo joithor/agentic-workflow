@@ -1,6 +1,5 @@
 using System.Globalization;
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -40,7 +39,7 @@ internal sealed partial class RecipeWorkflow
         instance = awaited;
         var trigger = await Resulting(instance, open, step, running, context).ConfigureAwait(true);
         var decided = instance;
-        var decision = TransitionDecision.Decide(new DecisionInput(instance, context.Recipe, trigger, GateAnswers.None, context.Decisions));
+        var decision = TransitionDecision.Decide(await Deciding(instance, context, trigger).ConfigureAwait(true));
         instance = After(instance, decision);
         if (ReferenceEquals(decided, instance))
         {
