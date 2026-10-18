@@ -10448,3 +10448,25 @@ static Aw.Sindri.Core.Sessions.TmuxPane.operator !=(Aw.Sindri.Core.Sessions.Tmux
 static Aw.Sindri.Core.Sessions.TmuxPane.operator ==(Aw.Sindri.Core.Sessions.TmuxPane? left, Aw.Sindri.Core.Sessions.TmuxPane? right) -> bool
 static Aw.Sindri.Core.Sessions.TmuxServerView.operator !=(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
 static Aw.Sindri.Core.Sessions.TmuxServerView.operator ==(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
+Aw.Sindri.Core.Events.WorkflowEventDetail.Tokens.get -> int?
+Aw.Sindri.Core.Events.WorkflowEventDetail.Tokens.init -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.Tokens.get -> int?
+Aw.Sindri.Core.Events.WorkflowEventPayload.Tokens.init -> void
+Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Tokens.get -> int?
+Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Tokens.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.Run.get -> Aw.Sindri.Core.Workflow.Views.StatusRun?
+Aw.Sindri.Core.Workflow.Views.StatusFields.Run.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusRun
+Aw.Sindri.Core.Workflow.Views.StatusRun.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusRun!
+Aw.Sindri.Core.Workflow.Views.StatusRun.Deconstruct(out string! Runtime, out string? Launch) -> void
+Aw.Sindri.Core.Workflow.Views.StatusRun.Equals(Aw.Sindri.Core.Workflow.Views.StatusRun? other) -> bool
+Aw.Sindri.Core.Workflow.Views.StatusRun.Launch.get -> string?
+Aw.Sindri.Core.Workflow.Views.StatusRun.Launch.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusRun.Runtime.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusRun.Runtime.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusRun.StatusRun(string! Runtime, string? Launch) -> void
+override Aw.Sindri.Core.Workflow.Views.StatusRun.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.StatusRun.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.StatusRun.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Views.StatusRun.operator !=(Aw.Sindri.Core.Workflow.Views.StatusRun? left, Aw.Sindri.Core.Workflow.Views.StatusRun? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusRun.operator ==(Aw.Sindri.Core.Workflow.Views.StatusRun? left, Aw.Sindri.Core.Workflow.Views.StatusRun? right) -> bool

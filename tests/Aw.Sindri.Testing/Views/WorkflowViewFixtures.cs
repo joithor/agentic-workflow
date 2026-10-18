@@ -115,6 +115,10 @@ public static class WorkflowViewFixtures
         new EngineOwnedBadge(EngineOwnedKind.TakenOver, "with you since 12:01"),
         Subject("text", "ITM-01JA1", "ITM-01JA1"), _step.Cells("produce"), "with you", "ApplyCommand:handback", "ApplyCommand:cancel");
 
+    // ITM-01JM3: its produce Step runs on an agent session (P8): not a row of the root list, and no desk task, so no complete command.
+    private static readonly InstanceSummary _agentRun = Row("ITM-01JM3/step/1", _step, "produce", Today(12, 10), null,
+        Subject("text", "ITM-01JM3", "ITM-01JM3"), _step.Cells("produce"), "agent running", "ApplyCommand:takeover", "ApplyCommand:cancel");
+
     // A needs-answer park of its own (PRJ-exports is the taken-over project): a project parked at its design desk. Not a row of the root list.
     private static readonly InstanceSummary _prjReports = Row("ITM-01JKE/project/1", _project, "design", Today(10, 30),
         new EngineOwnedBadge(EngineOwnedKind.Parked, "needs-answer"), Subject("linear-project", "ENG", "ENG · Reports"),
@@ -207,7 +211,10 @@ public static class WorkflowViewFixtures
         // The header's v<n> is the instance's version (its mirrored event count). A fixture has no events, so it shows the recipe's author version as a stand-in: the goldens pin it.
         var header = new StatusHeader(row.Address, recipe.Id, recipe.Hash.Display, recipe.Version, HeaderState(row), detail, row.Since, (long)(Now - row.Since).TotalSeconds);
         var fields = new StatusFields(header, next, lines.Answer, lines.Child, lines.Drift, lines.Inputs, lines.Timeout, lines.Budget, lines.Paused,
-            Commands(row, lines.Answer, open), string.Empty);
+            Commands(row, lines.Answer, open), string.Empty)
+        {
+            Run = lines.Run,
+        };
         var name = FixtureRecipes.All.SingleOrDefault(r => r.Id == recipe.Id.Value)?.Name is null ? null : row.Subject.Label;
         return fields with { Text = StatusText.Render(fields, Now, name) };
     }
@@ -313,6 +320,8 @@ public static class WorkflowViewFixtures
         public StatusBudget? Budget { get; init; }
 
         public StatusPaused? Paused { get; init; }
+
+        public StatusRun? Run { get; init; }
     }
 
     private static readonly StatusInput _alertInput = new("fact:alert", "alert.json", Hash("1c0e5a77"));
@@ -378,6 +387,11 @@ public static class WorkflowViewFixtures
 
     /// <summary>Layout 6: a finished instance, the header only.</summary>
     public static StatusFields StatusDone() => Status(_sentry8809, "resolved", null, new OpenWork());
+
+    /// <summary>P8: an open Step run on an agent session. The status names the runtime and the launch, offers takeover and cancel, and has no desk task.</summary>
+    public static StatusFields StatusAgentRun() => Status(_agentRun, "agent running",
+        "An agent session is working on produce. It reports when it is done; take it over to work on it yourself.", new OpenWork(RunningSteps: 1),
+        new StatusLines { Run = new StatusRun("agent", "LCH-01JM3A4B5C6D7E8F") });
 
     /// <summary>A park with a recorded drift: it takes no answer (API Q-API-4): the recipe re-approval is its own protected command, and the approval resumes the instance.</summary>
     public static StatusFields StatusParkedDrift() => Status(_prjCache, "spec-conflict (drift)",

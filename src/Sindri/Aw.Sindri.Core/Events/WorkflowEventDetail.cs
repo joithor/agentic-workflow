@@ -28,7 +28,7 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Refusal">What followed a refusal.</param>
 /// <param name="Effects">The identities of the effects the decision runs for this instance, as '{instance}:{entry}:{index}'.</param>
 /// <param name="Delta">The post-state delta.</param>
-/// <param name="Via">'block' for a Step the engine ran on the block runtime; null otherwise.</param>
+/// <param name="Via">'block' for a Step the engine ran on the block runtime, 'agent' for one an agent session ran; null otherwise (a desk report writes none).</param>
 /// <param name="Decision">The Judge decision id of a block Step's result; null otherwise.</param>
 public sealed record WorkflowEventDetail(
     TriggerKey TriggerId,
@@ -49,6 +49,10 @@ public sealed record WorkflowEventDetail(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Via = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Decision = null)
 {
+    /// <summary>The tokens an agent run spent; null for any other event. Not written when null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? Tokens { get; init; }
+
     /// <summary>
     /// The detail of a row mirrored without a decision: a desk timeout's park, or a held event's expiry. It names the trigger
     /// (its key and actor, a wait's source sequence) and the instance's suspension after the row, and nothing else.

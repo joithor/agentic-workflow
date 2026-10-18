@@ -26,4 +26,9 @@ public sealed record StatusFields(
     StatusBudget? Budget,
     StatusPaused? Paused,
     IReadOnlyList<StatusCommand> Commands,
-    string Text);
+    string Text)
+{
+    /// <summary>The open agent run (P8); null (not written) for a desk run, a block run or none, so the other statuses read as before.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public StatusRun? Run { get; init; }
+}

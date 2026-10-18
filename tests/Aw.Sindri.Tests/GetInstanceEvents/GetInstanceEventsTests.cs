@@ -175,6 +175,23 @@ public sealed class GetInstanceEventsTests
     }
 
     [Fact]
+    public async Task An_agent_report_reads_back_as_via_agent_and_its_tokens_and_prints_that_exact_line()
+    {
+        var h = await Ledger();
+        var payload = new WorkflowEventPayload(WorkflowInstanceId.Of(_address).Value, "produce", "checks", "step.completed", "done", "3.1") { Via = "agent", Tokens = 1_200 };
+        Assert.False((await h.Store.Append(h.Events.Entry("workflow.transition", payload, "workflow:T-1/step/1:run-a:10", "T-1"), h.Held.Current!, TestContext.Current.CancellationToken)).IsError);
+
+        var read = (await Service(h).Handle(new GetInstanceEventsRequest(_address.Value), TestContext.Current.CancellationToken)).Value;
+
+        var agent = read.Events[^1];
+        Assert.Equal(("agent", 1_200), (agent.Transition.Via, agent.Transition.Tokens));
+        var at = agent.OccurredAt.UtcDateTime.ToString("MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+        Assert.Equal(
+            $"{agent.Sequence.ToString(System.Globalization.CultureInfo.InvariantCulture)}  {at}  workflow.transition  produce -> checks  step.completed done  run 3.1  via agent · tokens 1200  {agent.Actor}\n",
+            EventsCommand.Lines([agent], empty: false));
+    }
+
+    [Fact]
     public async Task The_events_response_with_a_block_and_a_desk_event_matches_its_golden()
     {
         var h = await Ledger();

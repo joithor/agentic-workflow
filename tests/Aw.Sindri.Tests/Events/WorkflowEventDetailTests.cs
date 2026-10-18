@@ -1,10 +1,13 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Events;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
+using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Tests.Workflow.Engine;
 
 namespace Aw.Sindri.Tests.Events;
 
@@ -74,6 +77,38 @@ public sealed class WorkflowEventDetailTests
 
         Assert.Equal(new string('e', 64), detail.Delta.Facts!["fact:output"]);
     }
+
+    [Fact]
+    public void An_agent_report_records_via_agent_and_tokens()
+    {
+        var report = new StepCompleted("session:claude", RunToken.For(3, 1), OutcomeName.From("done"), Output(), Tokens: 1_200, StepRuntime.Agent, new string('a', 64));
+
+        var recorded = Assert.IsType<Applied>(TransitionDecision.Decide(new DecisionInput(FrameFixture.Producing(), FrameFixture.Recipe, report, GateAnswers.None, FrameFixture.Context()))).Changes[0].Event;
+        var detail = WorkflowEventDetail.Of(recorded, report);
+
+        Assert.Equal(("agent", 1_200), (recorded.Trigger.Via, recorded.Trigger.Tokens));
+        Assert.Equal(("agent", 1_200), (detail.Via, detail.Tokens));
+        var json = System.Text.Json.JsonSerializer.Serialize(detail, SliceHarness.Json);
+        Assert.Contains("\"via\":\"agent\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"tokens\":1200", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void A_desk_report_writes_no_via()
+    {
+        var instance = FrameFixture.Instance(new Frame("checks", Entry: 4, new OpenRun(RunToken.For(4, 1), StepRuntime.Desk, Launch: null, Task: "desk-1"), Child: null));
+        var report = new StepCompleted("human:cli", RunToken.For(4, 1), OutcomeName.From("done"), Output(), Tokens: 0, StepRuntime.Desk, new string('b', 64));
+
+        var recorded = Assert.IsType<Applied>(TransitionDecision.Decide(new DecisionInput(instance, FrameFixture.Recipe, report, GateAnswers.None, FrameFixture.Context()))).Changes[0].Event;
+        var detail = WorkflowEventDetail.Of(recorded, report);
+
+        Assert.Equal((null, null), (detail.Via, detail.Tokens));
+        var json = System.Text.Json.JsonSerializer.Serialize(detail, SliceHarness.Json);
+        Assert.DoesNotContain("\"via\":", json, StringComparison.Ordinal);
+        Assert.DoesNotContain("\"tokens\":", json, StringComparison.Ordinal);
+    }
+
+    private static Dictionary<FactKey, FactValue> Output() => new() { [FactKey.From("fact:output")] = EngineFixture.Fact("the output") };
 
     private static StepCompleted Report() =>
         new("human:cli", RunToken.From("1.1"), OutcomeName.From("done"), new Dictionary<FactKey, FactValue>(), Tokens: 0, StepRuntime.Desk, new string('f', 64));
