@@ -1,6 +1,5 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
-using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Infrastructure.Workflows;
 
 namespace Aw.Sindri.Tests.Workflow.Injection;
@@ -9,8 +8,6 @@ namespace Aw.Sindri.Tests.Workflow.Injection;
 [Lane(TestLane.Unit)]
 public sealed class MemoryInjectionTextsTests
 {
-    private static readonly BlockId _input = BlockId.From("input.test.a");
-
     private static InjectionKey Key(string address, string run) => new(address, "checks", run, 1);
 
     private static FilledTexts Text(string text) => new(new Dictionary<string, string>(StringComparer.Ordinal) { ["s"] = text });
