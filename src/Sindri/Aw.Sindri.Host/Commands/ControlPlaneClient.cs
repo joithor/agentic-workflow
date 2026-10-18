@@ -17,16 +17,19 @@ namespace Aw.Sindri.Host.Commands;
 /// <param name="probe">Finds the running control plane.</param>
 /// <param name="options">The package's AwJson options.</param>
 /// <param name="headers">The caller headers; none (read as a session) when null.</param>
-/// <param name="timeout">How long a call may take (10 s by default).</param>
+/// <param name="timeout">A hard cap on one call (AW_SINDRI_CLI_TIMEOUT); none by default, so a slow but healthy answer completes. Connecting is bounded by <see cref="CliTimeout.Connect"/> instead.</param>
 /// <param name="handler">The HTTP handler (tests); a loopback handler without a proxy when null.</param>
 internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerializerOptions options, CallerHeaders? headers = null, TimeSpan? timeout = null,
     HttpMessageHandler? handler = null) : IDisposable
 {
-    private readonly HttpClient _http = new(handler ?? new SocketsHttpHandler { UseProxy = false }) { Timeout = timeout ?? TimeSpan.FromSeconds(10) };
+    private readonly HttpClient _http = new(handler ?? new SocketsHttpHandler { UseProxy = false, ConnectTimeout = CliTimeout.Connect }) { Timeout = timeout ?? Timeout.InfiniteTimeSpan };
     private readonly CallerHeaders _headers = headers ?? CallerHeaders.None;
 
     /// <summary>Why this CLI calls as a session ('CLAUDECODE is set', 'no terminal'), or null when it calls as a human.</summary>
     public string? SessionReason => _headers.SessionReason;
+
+    /// <summary>The cap on one call: <see cref="Timeout.InfiniteTimeSpan"/> when none is set.</summary>
+    internal TimeSpan CallTimeout => _http.Timeout;
 
     public void Dispose() => _http.Dispose();
 
@@ -136,6 +139,10 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
             var value = AwJson.Deserialize<T>(bytes, options);
             return value.IsError ? value.Error : new ApiAnswer<T>(value.Value, bytes);
         }
+        catch (HttpRequestException e) when (e.InnerException is TimeoutException)
+        {
+            return ConnectTimeout(found.Value.Endpoint.Url.Authority);
+        }
         catch (HttpRequestException e)
         {
             return SindriErrors.NotRunning.With($"the control plane went away: {e.Message}");
@@ -143,9 +150,12 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
         catch (TaskCanceledException) when (!ct.IsCancellationRequested)
         {
             return SindriErrors.ApiTimeout.With(string.Create(System.Globalization.CultureInfo.InvariantCulture,
-                $"{found.Value.Endpoint.Url.Authority} didn't answer {route} within {_http.Timeout.TotalSeconds:0} s"));
+                $"{found.Value.Endpoint.Url.Authority} didn't answer {route} within {_http.Timeout.TotalSeconds:0} s ({CliTimeout.Variable})"));
         }
     }
+
+    private static Error ConnectTimeout(string authority) => SindriErrors.ApiTimeout.With(string.Create(System.Globalization.CultureInfo.InvariantCulture,
+        $"couldn't connect to {authority} within {CliTimeout.Connect.TotalSeconds:0} s"));
 
     private async Task<Result<HttpResponseMessage>> Open(string route, CancellationToken ct)
     {
@@ -170,6 +180,10 @@ internal sealed class ControlPlaneClient(IControlPlaneProbe probe, JsonSerialize
             {
                 return Problem(await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false), (int)response.StatusCode);
             }
+        }
+        catch (HttpRequestException e) when (e.InnerException is TimeoutException)
+        {
+            return ConnectTimeout(found.Value.Endpoint.Url.Authority);
         }
         catch (HttpRequestException e)
         {

@@ -40,7 +40,10 @@ internal static class CommandTable
             await using (scope.ConfigureAwait(false))
             {
                 var session = AgentSession.Detect(environment, scope.ServiceProvider.GetRequiredService<IProcessAncestry>(), Interactive());
-                return await Dispatch(args, session, scope.ServiceProvider, environment).ConfigureAwait(false);
+                var cap = CliTimeout.Read(environment);
+                return cap.IsError
+                    ? await new Output(Console.Out, Console.Error, scope.ServiceProvider.GetRequiredService<JsonSerializerOptions>()).Error(cap.Error).ConfigureAwait(false)
+                    : await Dispatch(args, session, scope.ServiceProvider, environment, cap.Value).ConfigureAwait(false);
             }
         }
     }
@@ -62,12 +65,12 @@ internal static class CommandTable
             : await output.Error(refused).ConfigureAwait(false);
     }
 
-    private static async Task<int> Dispatch(string[] args, AgentSession session, IServiceProvider services, Func<string, string?> environment)
+    private static async Task<int> Dispatch(string[] args, AgentSession session, IServiceProvider services, Func<string, string?> environment, TimeSpan? cap)
     {
         var options = services.GetRequiredService<JsonSerializerOptions>();
         var probe = services.GetRequiredService<IControlPlaneProbe>();
         var output = new Output(Console.Out, Console.Error, options);
-        using var client = new ControlPlaneClient(probe, options, Headers(session, services));
+        using var client = new ControlPlaneClient(probe, options, Headers(session, services), cap);
         StartCommand Start(bool headless) => new(probe, services.GetRequiredService<IControlPlaneLauncher>(), client, output,
             services.GetRequiredService<TimeProvider>(), session, UiOpener(headless, environment));
         var start = Start(headless: true);   // 'sindri --headless', and the start a human 'profile approve' may need
