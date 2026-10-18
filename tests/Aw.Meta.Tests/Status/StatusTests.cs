@@ -203,4 +203,16 @@ public sealed class StatusTests
 
         Assert.Equal(MetaErrors.NoTeamConfig.Code, result.Error.Code);
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Status_carries_the_lanes_context_for_its_compact_line()
+    {
+        await _world.Ready();
+        _world.LaneFiles.Put(new Core.Lanes.LaneRecord("api", Core.Ids.SessionId.From("s-api"), Agent: null, A.At(1)));
+        _world.ClaudeTranscripts.PutUsage("s-api", 487_000, A.At(5));
+
+        var status = await Status();
+
+        Assert.Equal(["context: api 487k (recycle)"], Host.Commands.ContextLine.Of(status.Context), StringComparer.Ordinal);
+    }
 }

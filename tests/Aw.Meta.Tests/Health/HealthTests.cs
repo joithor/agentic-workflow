@@ -1,5 +1,7 @@
 using Aw.Meta.Core;
 using Aw.Meta.Core.Health;
+using Aw.Meta.Core.Ids;
+using Aw.Meta.Core.Lanes;
 using Aw.Meta.Features.Health;
 using Aw.Meta.Testing;
 using Aw.Meta.Tests.Reserve;
@@ -14,7 +16,7 @@ public sealed class HealthTests
 
     private HealthService Service() => new(
         new HostProbe(_world.Processes, _world.Resources),
-        new LaneCheck(_world.Config, _world.Sessions, _world.Messages, _world.Lanes, _world.LaneHealth),
+        new LaneCheck(_world.Config, _world.Sessions, _world.Messages, _world.Lanes, _world.LaneHealth, _world.Context),
         new OrphanKiller(_world.Processes, _world.Log, _world.Clock),
         _world.Values,
         _world.Config,
@@ -247,5 +249,47 @@ public sealed class HealthTests
         Assert.Equal(
             "2026-10-15T05:00:00.0000000+00:00 attention: orphans=1 missing-lanes=1 memory-available=50%",
             (await _world.Values.Get(KvKeys.HealthLast, CancellationToken.None)).Value);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Health_carries_each_lanes_context_and_the_compact_line_marks_a_lane_at_the_threshold_without_making_health_attend()
+    {
+        await _world.Ready();
+        AllLanesLive();
+        _world.LaneFiles.Put(new LaneRecord("api", SessionId.From("s-api"), Agent: null, A.At(1)));
+        _world.LaneFiles.Put(new LaneRecord("ui", SessionId.From("s-ui"), Agent: null, A.At(1)));
+        _world.ClaudeTranscripts.PutUsage("s-api", 300_000, A.At(5));
+        _world.ClaudeTranscripts.PutUsage("s-ui", 120_000, A.At(5));
+
+        var health = await Check();
+
+        Assert.Equal(["context: api 300k (recycle), ui 120k"], Host.Commands.ContextLine.Of(health.Context), StringComparer.Ordinal);
+        Assert.False(health.Attention);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Lanes_context_attends_exactly_at_recycleAt_and_not_one_token_below()
+    {
+        await _world.Ready();
+        _world.LaneFiles.Put(new LaneRecord("api", SessionId.From("s-api"), Agent: null, A.At(1)));
+        var service = new Features.LanesContext.LanesContextService(_world.Config, _world.Context);
+        _world.ClaudeTranscripts.PutUsage("s-api", 299_999, A.At(5));
+        var below = await service.Handle(new Features.LanesContext.LanesContextRequest(), CancellationToken.None);
+        _world.ClaudeTranscripts.PutUsage("s-api", 300_000, A.At(6));
+        var at = await service.Handle(new Features.LanesContext.LanesContextRequest(), CancellationToken.None);
+
+        Assert.False(below.Value.Attention);
+        Assert.True(at.Value.Attention);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_context_line_lists_only_lanes_with_a_known_size_and_is_absent_when_none_is()
+    {
+        var known = new LaneContext("engine", SessionId.From("s"), "/t", 235_000, LastActivity: null, 300_000, ContextVerdict.Ok);
+        var unknown = new LaneContext("ideas", Session: null, Transcript: null, Tokens: null, LastActivity: null, 300_000, ContextVerdict.Unknown, "x");
+
+        Assert.Equal(["context: engine 235k"], Host.Commands.ContextLine.Of([known, unknown]), StringComparer.Ordinal);
+        Assert.Empty(Host.Commands.ContextLine.Of([unknown]));
+        Assert.Empty(Host.Commands.ContextLine.Of(lanes: null));
     }
 }
