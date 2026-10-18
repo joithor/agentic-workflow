@@ -3,6 +3,7 @@ using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Context;
 using Aw.Sindri.Ui.ViewModels.Controls;
+using Aw.Sindri.Ui.ViewModels.Shell;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Ui.Tests.Context;
@@ -15,7 +16,7 @@ public sealed class ContextPageViewModelTests
     {
         var clipboard = new FakeClipboard();
         var clock = new FakeTimeProvider(A.Noon);
-        return new ContextPageViewModel(new ContextPorts(api, () => null, clipboard, clock, new CatalogViewModel(clipboard, clock)));
+        return new ContextPageViewModel(new ContextPorts(api, () => null, clipboard, clock, new CatalogViewModel(clipboard, clock), _ => { }));
     }
 
     [Fact]
@@ -38,6 +39,38 @@ public sealed class ContextPageViewModelTests
         _ = Assert.IsType<FileMapViewModel>(page.FileMap);
         _ = Assert.IsType<NodeCardViewModel>(page.Node);
         _ = Assert.IsType<SourcesPanelViewModel>(page.Sources);
+    }
+
+    [Fact]
+    public void Every_stage_shares_the_pages_ports()
+    {
+        var page = Page(new FakeSindriApi());
+
+        Assert.All([page.Review.Ports, page.FileMap.Ports, page.Node.Ports, page.Sources.Ports], p => Assert.Same(page.Ports, p));
+    }
+
+    [Fact]
+    public async Task The_shell_builds_the_ports_from_its_own_clipboard_clock_catalog_and_follow()
+    {
+        var records = new InMemoryEndpointRecords();
+        records.Write(A.Record());
+        var clipboard = new FakeClipboard();
+        var clock = new FakeTimeProvider(A.Noon);
+        var shell = new ShellViewModel(records, new FakeSindriApi(), clock, new Preferences(new InMemoryPreferencesStore()), clipboard);
+        var url = new Uri("http://127.0.0.1:1/");
+        var reads = new List<Uri>();
+
+        shell.Context.Ports.Follow((u, _) =>
+        {
+            reads.Add(u);
+            return Task.CompletedTask;
+        });
+        await shell.Health.RefreshViews(url, TestContext.Current.CancellationToken);
+
+        Assert.Same(clipboard, shell.Context.Ports.Clipboard);
+        Assert.Same(clock, shell.Context.Ports.Clock);
+        Assert.Same(shell.Health.Catalog, shell.Context.Ports.Catalog);
+        Assert.Equal([url], reads);
     }
 
     [Fact]

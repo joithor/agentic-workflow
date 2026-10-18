@@ -8,6 +8,10 @@ using Aw.Sindri.Ui.Navigation;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Shell;
+using Aw.Sindri.Ui.Views.Context.FileMap;
+using Aw.Sindri.Ui.Views.Context.Node;
+using Aw.Sindri.Ui.Views.Context.Review;
+using Aw.Sindri.Ui.Views.Context.Sources;
 using Aw.Sindri.Ui.Views.Shell;
 using Microsoft.Extensions.Time.Testing;
 
@@ -50,7 +54,7 @@ public sealed class ContextPageWindowTests
                 var anchor = page.GetVisualDescendants().OfType<TextBox>().Single(t => t.Name == "AnchorBox");
                 Assert.Equal(Labels.ContextAnchor, AutomationProperties.GetName(anchor));
                 Assert.Same(anchor, window.FocusManager?.GetFocusedElement());
-                AssertHosts(page);
+                AssertHosts(shell, page);
             }
             finally
             {
@@ -63,8 +67,19 @@ public sealed class ContextPageWindowTests
         }, Token);
     }
 
-    private static void AssertHosts(Control page)
+    // Each stage's host is its seam view, bound to that stage's view model (a Panel, or a lost binding, fails here).
+    private static void AssertSeams(ShellViewModel shell, Control page)
     {
+        Control Host(string name) => page.GetVisualDescendants().OfType<Control>().Single(c => c.Name == name);
+        Assert.Same(shell.Context.FileMap, Assert.IsType<FileMapTree>(Host("FileMapHost")).DataContext);
+        Assert.Same(shell.Context.Review, Assert.IsType<MapReviewPanel>(Host("ReviewHost")).DataContext);
+        Assert.Same(shell.Context.Node, Assert.IsType<NodeCard>(Host("NodeHost")).DataContext);
+        Assert.Same(shell.Context.Sources, Assert.IsType<SourcesPanel>(Host("SourcesHost")).DataContext);
+    }
+
+    private static void AssertHosts(ShellViewModel shell, Control page)
+    {
+        AssertSeams(shell, page);
         Assert.False(page.GetVisualDescendants().OfType<TextBlock>().Single(t => t.Name == "ContextHead").IsEffectivelyVisible);
         string[] hosts = ["LensStackHost", "FileMapHost", "ReviewHost", "NodeHost", "SourcesHost"];
         Assert.All(hosts, h => Assert.Contains(page.GetVisualDescendants().OfType<Control>(), c => c.Name == h));
