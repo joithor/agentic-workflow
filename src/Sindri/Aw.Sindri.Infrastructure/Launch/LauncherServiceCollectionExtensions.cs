@@ -26,7 +26,6 @@ internal static class LauncherServiceCollectionExtensions
             .AddSingleton<ILaunchSpend>(static sp => sp.GetRequiredService<UsageSpend>())
             .AddSingleton<ILaunchUsage>(static sp => sp.GetRequiredService<UsageSpend>())
             .AddScoped<ILaunchProbes, LaunchProbeRecorder>()
-            .AddSingleton<ISindriHome>(new SindriHome(settings.Home))
             .AddSingleton(_ => Options(environment, settings))
             .AddSingleton<ILaunchFiles>(static sp => new LaunchFileStore(sp.GetRequiredService<LauncherOptions>()))
             .AddSingleton<ILauncher>(sp => new Launcher(Parts(sp, BuiltinHash)))

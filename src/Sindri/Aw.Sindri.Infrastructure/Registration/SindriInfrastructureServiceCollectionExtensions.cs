@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Locks;
 using Aw.Sindri.Core.Mcp;
+using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Secrets;
@@ -25,6 +26,7 @@ using Aw.Sindri.Infrastructure.Ledger;
 using Aw.Sindri.Infrastructure.Locks;
 using Aw.Sindri.Infrastructure.Mcp;
 using Aw.Sindri.Infrastructure.Notifications;
+using Aw.Sindri.Infrastructure.Onyx;
 using Aw.Sindri.Infrastructure.Profile;
 using Aw.Sindri.Infrastructure.Secrets;
 using Aw.Sindri.Infrastructure.Sessions;
@@ -46,7 +48,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
     public static IServiceCollection AddSindriInfrastructure(this IServiceCollection services, Func<string, string?> environment)
     {
         var settings = SettingsFromEnvironment.Read(environment);
-        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriLauncher(environment, settings).AddSindriAdapters(environment);
+        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriLauncher(environment, settings).AddSindriAdapters(environment).AddOnyxInfrastructure();
     }
 
     private static IServiceCollection AddSindriAdapters(this IServiceCollection services, Func<string, string?> environment)
@@ -91,6 +93,13 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IProviderFiles, ProviderConfigFiles>()
             .AddSingleton<ITextScrubber>(new RedactingScrubber(Redactor.Default));
     }
+
+    private static IServiceCollection AddOnyxInfrastructure(this IServiceCollection services)
+        => services
+            .AddSingleton<ISindriHome, SettingsSindriHome>()
+            .AddSingleton<IOnyxPinsSource, EmbeddedOnyxPins>()                                            // context/onyx.lock, embedded
+            .AddSingleton<IContainerRuntime>(static _ => new DockerCliRuntime(new ProcessToolRunner()))   // Docker facts, read-only
+            .AddSingleton<IHostProbes>(static _ => new HostProbes());                                     // free disk and loopback ports
 
     /// <summary>
     /// Makes the secret-pointer resolver (env:, file:, keychain:, op:) over <paramref name="environment"/>, for Composition to
