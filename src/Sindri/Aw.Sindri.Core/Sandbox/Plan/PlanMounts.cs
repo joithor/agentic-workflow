@@ -16,6 +16,8 @@ internal static class PlanMounts
         (".npm/_cacache", PlanMountKind.ReadWrite, "the npm cache; shared with the owner's builds"),
     ];
 
+    private const long RunTmpfsBytes = 16L * 1024 * 1024;
+
     internal static IReadOnlyList<PlanMount> Build(PlanContext c)
     {
         List<PlanMount> m =
@@ -23,6 +25,7 @@ internal static class PlanMounts
             new("/", PlanMountKind.ReadOnly, Reason: "the system, toolchains and other repos can be read, not written"),
             new("/dev", PlanMountKind.Dev, Reason: "a fresh /dev"),
             new("/proc", PlanMountKind.Proc, Reason: "a fresh /proc"),
+            new("/run", PlanMountKind.Tmpfs, Size: RunTmpfsBytes, Reason: "an empty /run: the user sockets and the Docker socket are gone, and the net directory has a place to bind"),
             new("/tmp", PlanMountKind.ReadWrite, c.RunArea + "/tmp", Reason: "private scratch, removed with the run"),
             new(c.Home, PlanMountKind.Tmpfs, Size: c.Limits.HomeTmpfsBytes, Reason: "an empty home: only the entries below exist"),
         ];

@@ -39,6 +39,11 @@ internal static class PlanEnvironment
             Var("MSBUILDDISABLENODEREUSE", "1"),
             Var("DOTNET_CLI_USE_MSBUILD_SERVER", "0"),
         ];
+        if (!string.Equals(c.StateDir, c.Home + "/.agentic-workflow", StringComparison.Ordinal))
+        {
+            env.Add(Var("AW_STATE_DIR", c.StateDir));   // the hooks default to $HOME/.agentic-workflow; elsewhere they need to be told
+        }
+
         env.AddRange(GitSettings.ToEnvironment(Git(c), c.RunArea + "/gitconfig.empty"));
         env.AddRange(Proxy(r.Net.ProxyPort));
         env.AddRange(Sindri(c));

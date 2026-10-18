@@ -53,6 +53,7 @@ public static class EnvironmentAllowlist
         ["all_proxy"] = "the egress proxy",
         ["NO_PROXY"] = "keeps the Sindri port off the proxy",
         ["no_proxy"] = "keeps the Sindri port off the proxy",
+        ["AW_STATE_DIR"] = "the hooks and heavy find their state here when it is not ~/.agentic-workflow",
         ["AW_SANDBOX"] = "tells the agent it is sandboxed",
         ["AW_SANDBOX_PLAN"] = "the value-free summary file 'sandbox explain' reads",
         ["AW_SANDBOX_SLOT_HELD"] = "the Step already holds a heavy slot: the shims run the real tool",
