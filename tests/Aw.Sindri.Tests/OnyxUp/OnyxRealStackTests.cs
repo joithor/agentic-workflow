@@ -1,5 +1,5 @@
-using Aw.Kernel.Testing;
 using Aw.Kernel.Services;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Features.OnyxDown;
