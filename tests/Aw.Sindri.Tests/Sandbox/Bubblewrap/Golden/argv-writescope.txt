@@ -74,7 +74,7 @@
 /root
 --remount-ro
 /root
---bind-try
+--bind
 /home/owner/.agentic-workflow/judge
 /home/owner/.agentic-workflow/judge
 --ro-bind-try
@@ -92,10 +92,10 @@
 --ro-bind-try
 /home/owner/.agentic-workflow/context-guard
 /home/owner/.agentic-workflow/context-guard
---bind-try
+--bind
 /home/owner/.agentic-workflow/context-guard/state
 /home/owner/.agentic-workflow/context-guard/state
---bind-try
+--bind
 /home/owner/.agentic-workflow/locks
 /home/owner/.agentic-workflow/locks
 --ro-bind-try
@@ -329,9 +329,6 @@ ITM-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 --setenv
 AW_SINDRI_LAUNCH
 LCH-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
---setenv
-AW_SINDRI_LAUNCH_SECRET
-s3cret
 --setenv
 CLAUDE_CONFIG_DIR
 /home/owner/.claude-run

@@ -10,7 +10,7 @@ internal sealed class TempRunArea : IDisposable
 {
     internal TempRunArea(params string[] launcherVariables)
     {
-        Root = Path.Combine(Path.GetTempPath(), "aw-sb2-area-" + RealTime.NewGuid().ToString("N")[..8]);
+        Root = Path.Combine(AppContext.BaseDirectory, "sandbox-fixtures", "area-" + RealTime.NewGuid().ToString("N")[..8]);   // not /tmp: a sandbox replaces it
         Directory.CreateDirectory(Root + "/run");
         Directory.CreateDirectory(Root + "/area");
         var built = SandboxPlannerTests.Build(Req.WriteScope);

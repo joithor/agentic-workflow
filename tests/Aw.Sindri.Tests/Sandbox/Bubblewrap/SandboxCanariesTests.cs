@@ -127,7 +127,7 @@ public sealed class SandboxCanariesTests
 
         var refs = processes.Calls.Where(c => c.Program == "git").Select(c => c.Arguments[^1]).ToList();
         Assert.Equal(["refs/heads/sindri/x/1/selfcheck", "refs/heads/other-selfcheck"], refs);
-        Assert.All(processes.Calls.Where(c => c.Program == "git"), c => Assert.Equal(["-C", area.Root + "/run", "-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=", "update-ref", "-d"], c.Arguments.Take(8)));
+        Assert.All(processes.Calls.Where(c => c.Program == "git"), c => Assert.Equal(["-C", area.Root + "/run", "-c", "core.hooksPath=/dev/null", "-c", "core.fsmonitor=", "update-ref", "-d"], c.Arguments.Take(8), StringComparer.Ordinal));
     }
 
     [Fact]

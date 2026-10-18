@@ -97,7 +97,7 @@ public sealed class BubblewrapSecretsTests
         var argv = sandbox.Wrap(area.Plan, ["/bin/sh", "-c", "printenv AW_SINDRI_LAUNCH_SECRET; ls -l /proc/self/fd 2>&1"]).Value;
         var run = SandboxBox.Run(argv[0], [.. argv.Skip(1)]);
 
-        Assert.Equal(0, run.Exit);
+        Assert.True(run.Exit == 0, run.Output);
         Assert.StartsWith(LaunchValue, run.Output, StringComparison.Ordinal);
         Assert.False(File.Exists(argv[4]));
         Assert.DoesNotContain("secrets", run.Output, StringComparison.Ordinal);   // no descriptor onto the (deleted) file survives into the agent
