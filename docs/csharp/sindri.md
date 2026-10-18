@@ -567,6 +567,7 @@ grant: no command gate, audit row or catalog row, the `CheckProfileService` patt
   `*.key`), `$AW_FLEET_DIR/<provider>/*.json`. The agent catalog is `config/launcher/builtins.json` (embedded) merged with `launcher.json`'s `agents` (`AW_LAUNCHER_CONFIG`,
   default `$AW_STATE_DIR/launcher.json`); `sessions.enabled`, `pollSeconds`, `providers` and `claudeSessionsDir` come from the same file, read once at start.
 - **Test overrides:** `AW_SESSIONS_PROC_ROOT` and `AW_SESSIONS_CLAUDE_DIR`, for tests and the prover only; either shows `SND-SESSION-003`.
+- **Host (CO-2b):** each session also carries its host (`tmux`, `warp`, `terminal`, `ide`, `ssh`, `t3`, `unknown`), found from the parent chain, `/proc/net/unix` and read-only `tmux -S <socket>` calls (`docs/csharp/sindri-sessions.md`, Host detection). The `fleet.changed` payload carries the host kind only.
 - Telemetry: span `sindri.collector.pass`, gauge `sindri.sessions` (by provider and state), counters `sindri.collector.overrun` and `sindri.collector.pruned`.
 
 ## Scheduler
@@ -705,6 +706,7 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 | `SND-WF-013` | conflict | A workflow challenge expired, or its subject changed |
 | `SND-WF-014` | invalid | `--item` and `fact:item`'s `id` differ |
 | `SND-WF-015` | unavailable | An effect couldn't be sent: its block replied an undeclared outcome, or every retry failed; the instance parks (dispatch) |
+| `SND-WF-016` | unavailable | A Step input has a descriptor but no runtime in this build; refused at `recipe approve` and at `workflow start` |
 
 `sindri recipe validate <file> [--json]` and `sindri recipe eval <file>` are local checker verbs (engine spec W27): exit
 0 pass, 1 fail, 2 usage or tool error. The recipe reference, the eval format, the `RCP-*` rule table and how to add

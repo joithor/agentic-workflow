@@ -21,7 +21,7 @@ not in the profile: they live in `launcher.json` (`docs/csharp/sindri-launcher.m
 | `services` | map of service name to `ServiceSettings` | no | none | Background services by name, each with its cadence |
 | `api` | `ApiSettings` | no | `{ port: 7410 }` | The local API's settings |
 | `workflow` | `WorkflowSettings` | no | all defaults | The workflow engine's times (engine spec S1-D11). Left out of the canonical JSON when absent, so a profile without it keeps its approved hash |
-| `context` | object | no | none | The context engine's section (context spec §8.8). Sindri keeps the JSON and the engine checks its keys at validate and approve. `context.labeling.maxTokensPerSync` (int > 0, default 50000) caps the model tokens one intent-source sync may spend extracting decisions; over it, the rest stays queued (context spec §8.8, `docs/sindri/context.md`). `context.eval.adjudicator` (bool, default false) lets `context eval backtest` ask the model to label surfaces no PR touched (two runs in reversed order, agreeing answers only), within 1.5M tokens per run (context spec §9.1, §9.4, `docs/sindri/context.md` S-7A). `context.code.schemaGlobs` (string[], default migration and schema globs; `[]` turns the schema scan off) and `context.code.testGlobs` (string[], default common test globs) steer the code lens's lexical search (`sindri context code`, context spec S-CL). Globs are repo-relative, at most 50, and never override `denyPaths` |
+| `context` | object | no | none | The context engine's section (context spec §8.8). Sindri keeps the JSON and the engine checks its keys at validate and approve. `context.labeling.maxTokensPerSync` (int > 0, default 50000) caps the model tokens one intent-source sync may spend extracting decisions; over it, the rest stays queued (context spec §8.8, `docs/sindri/context.md`). `context.eval.adjudicator` (bool, default false) lets `context eval backtest` ask the model to label surfaces no PR touched (two runs in reversed order, agreeing answers only), within 1.5M tokens per run (context spec §9.1, §9.4, `docs/sindri/context.md` S-7A). `context.extract.recognizers` (array of `{ kind, glob, pattern, keyFrom }`, default none, at most 50, a pattern at most 512 characters) adds surface recognizers to the built-in ones: `kind` is a surface kind, `glob` a repo-relative glob (a denied path is never read), `pattern` a regex whose named group `keyFrom` becomes `surface:<kind>/<name>`; matches are suggested, never confirmed; a bad entry is SND-CONTEXT-130, too many or too long is 131 (scoping station C2, `docs/csharp/sindri-context.md`). `context.code.schemaGlobs` (string[], default migration and schema globs; `[]` turns the schema scan off) and `context.code.testGlobs` (string[], default common test globs) steer the code lens's lexical search (`sindri context code`, context spec S-CL). Globs are repo-relative, at most 50, and never override `denyPaths` |
 | `index` | `IndexSettings` | no | none | Deny paths for every repo's map extraction |
 
 ### `repos[]`
@@ -52,6 +52,17 @@ not in the profile: they live in `launcher.json` (`docs/csharp/sindri-launcher.m
 | `eventHold` | duration | no | `24h` | How long a buffered event signal waits for its wait before it is dropped with `workflow.expired` (§5.4) |
 | `effects` | string[] (`effect.*` block ids) | no | none | The effect allowlist (§5.7, RCP-EFFECT-001): the effects a recipe may dispatch. Absent: RCP-EFFECT-001 is skipped and every recipe effect is refused at dispatch (SND-WF-011). An entry that isn't an `effect.*` id is refused before approval |
 | `dispatchDelay` | duration (`5s` to `24h`, unit `s`, `m` or `h`) | no | `10s` | The undo window before each effect's activity runs (§5.7); the dev profile sets `60s` |
+| `forge` | object | no | none | The forge port's settings: `adapter`, `hosts` and `credential` (see `workflow.forge` below) |
+
+### `workflow.forge`
+
+The forge port's settings (PR babysitter spec W27, §10.2; `docs/csharp/forge.md`). The credential itself is never in the profile.
+
+| Key | Type | Required | Default | Meaning |
+|---|---|---|---|---|
+| `adapter` | `github` or `file` | no | none | Which forge adapter the services and effects use; `file` is the file-backed forge tests and proofs use |
+| `hosts` | string[] (host names) | no | none | The forge hosts a link or request may name, such as `github.com`; a host outside the list is refused (`AW-FORGE-002`) before anything is sent |
+| `credential` | `env:NAME` or `command:<argv>` | no | `env:AW_FORGE_TOKEN` | A variable that holds a long-lived token, or a program run per call that prints a token (or JSON with `token` and `expiresAt`); cached until five minutes before the expiry, re-run once after a 401 |
 
 ### `index`
 

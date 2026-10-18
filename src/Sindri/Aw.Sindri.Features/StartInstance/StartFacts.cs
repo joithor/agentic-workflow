@@ -1,15 +1,23 @@
 using Aw.Kernel;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Core.Workflow.Registry;
 
 namespace Aw.Sindri.Features.StartInstance;
 
 /// <summary>Stores a start's input facts owner-only and renders the generated ones (spec section 3.11) from the start time.</summary>
 /// <param name="facts">Where the input facts are stored.</param>
 /// <param name="clock">The start time that an input's generate template reads.</param>
-internal sealed class StartFacts(IFactStore facts, TimeProvider clock)
+/// <param name="inputRuntimes">The Step inputs this build runs.</param>
+internal sealed class StartFacts(IFactStore facts, TimeProvider clock, StepInputRuntimes inputRuntimes)
 {
+    /// <summary>SND-WF-016 when a Step of <paramref name="recipe"/> names an input this build has no runtime for.</summary>
+    /// <param name="recipe">The approved recipe.</param>
+    /// <returns>The refusal, or null.</returns>
+    public Error? NoRuntime(Recipe recipe) => StepInputRefusals.Check(recipe, inputRuntimes);
+
     /// <summary>Stores the supplied facts and, for each input with a generate template the start gave no value for, the rendered text (spec section 3.11): a supplied value always wins.</summary>
     public async ValueTask<Result<StartedFacts>> Store(StartInstanceRequest request, Recipe recipe, CancellationToken cancellationToken)
     {

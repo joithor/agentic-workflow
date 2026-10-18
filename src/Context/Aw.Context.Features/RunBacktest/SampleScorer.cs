@@ -25,12 +25,13 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
         var scores = running.ToDictionary(a => a, _ => new List<SampleScore>());
         var dropped = new Dictionary<Outcome, int>();
         var spend = new Spend(world.Settings.Adjudicator);
+        var timedOut = new List<string>();
         for (var i = 0; i < loaded.Samples.Count; i++)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var sample = loaded.Samples[i];
             var step = string.Create(CultureInfo.InvariantCulture, $"sample {i + 1}/{loaded.Samples.Count} {sample.IssueKey}");
-            var outcome = await One(request, (world, loaded.Issues[sample.IssueKey], sample), (running, scores, step), spend, cancellationToken).ConfigureAwait(false);
+            var outcome = await One(request, (world, loaded.Issues[sample.IssueKey], sample), (running, scores, step), (spend, timedOut), cancellationToken).ConfigureAwait(false);
             if (outcome.IsError)
             {
                 return outcome.Error;   // a refused store (005) stops the run: every other sample would fail the same way
@@ -51,6 +52,7 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
                 Tokens = spend.ByArm,
                 AdjudicationCapped = spend.Capped,
                 AdjudicationError = spend.Error,
+                RecognizerTimeouts = timedOut.Count,
                 SourceDown = dropped.GetValueOrDefault(Outcome.SourceDown),
                 CappedTeams = loaded.CappedTeams,
                 WithoutClusters = running.Exists(static a => a != Arm.Docs) ? dropped.GetValueOrDefault(Outcome.ScoredWithoutClusters) : 0,   // the docs arm reads no map
@@ -63,8 +65,9 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
             $"no backtest sample could be scored: {dropped.GetValueOrDefault(Outcome.SourceDown)} dropped for an unavailable brief source (SND-CONTEXT-011), {dropped.GetValueOrDefault(Outcome.NoBrief)} with no brief, {dropped.GetValueOrDefault(Outcome.CutUnreadable)} whose cut git can't read (fix: sindri context sources status; check the checkout)"));
 
     private async ValueTask<Result<Outcome>> One(BacktestRequest request, (BriefScope World, BriefIssue Issue, CorpusSample Sample) what,
-        (List<Arm> Running, Dictionary<Arm, List<SampleScore>> Scores, string Step) how, Spend spend, CancellationToken cancellationToken)
+        (List<Arm> Running, Dictionary<Arm, List<SampleScore>> Scores, string Step) how, (Spend Spend, List<string> TimedOut) tally, CancellationToken cancellationToken)
     {
+        var spend = tally.Spend;
         var (world, issue, sample) = what;
         var brief = await briefs.Brief(world, issue, cancellationToken).ConfigureAwait(false);
         if (brief.IsError || brief.Value is null)
@@ -80,8 +83,17 @@ internal sealed class SampleScorer(IBriefSource briefs, AsOfMapBuilder maps, IAs
         }
 
         request.Progress?.Report($"{how.Step}: map {(opened.Value.Graph.Cached ? "cached" : "built")}");
+        NoteTimeout(tally.TimedOut, opened.Value.Graph, sample);
         await Ask(request, (how.Running, sample, how.Scores), (brief.Value, opened.Value, spend), cancellationToken).ConfigureAwait(false);
         return opened.Value.Graph.Clustered ? Outcome.Scored : Outcome.ScoredWithoutClusters;
+    }
+
+    private static void NoteTimeout(List<string> timedOut, AsOfGraph graph, CorpusSample sample)
+    {
+        if (graph.RecognizersTimedOut)
+        {
+            timedOut.Add(sample.IssueKey);
+        }
     }
 
     // Only git failing to read the cut drops a sample; a refused store (005), context.db or the cache failing would fail every other sample the same way, so the real code stops the run.

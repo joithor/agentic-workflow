@@ -43,7 +43,7 @@ public static partial class SettingsReader
 
         if (UnknownKey(element) is { } unknown)
         {
-            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, cascadeDepth, deadline, maxBudget, minHits, labeling, scrub, sessions, sources, eval, code)");
+            return Invalid("context." + unknown, "is not a context setting this build knows (repos, docs, cascadeDepth, deadline, maxBudget, minHits, labeling, scrub, sessions, sources, eval, code, extract)");
         }
 
         if (CodeUnknownKey(element) is { } codeKey)
@@ -66,7 +66,7 @@ public static partial class SettingsReader
         var globs = section.Docs?.Globs ?? ContextSettings.DefaultDocGlobs;
         var deadline = section.Deadline is null ? settings.Deadline : Duration(section.Deadline);
         var sources = SourcesReader.Check(section.Sources);
-        return (Problem(section, globs), deadline, sources) switch
+        return (Refused(section, globs), deadline, sources) switch
         {
             ({ } problem, _, _) => problem,
             (_, null, _) => Invalid("context.deadline", "is a duration from 100ms to 60s, such as 4s or 500ms"),
@@ -86,6 +86,7 @@ public static partial class SettingsReader
                     ExtraPatterns = Patterns(section.Scrub),
                     Labeling = Labeling(section.Labeling),
                     Adjudicator = Adjudicates(section.Eval),
+                    Recognizers = Recognizers(section.Extract),
                 },
                 section.Code),
         };
@@ -153,6 +154,12 @@ public static partial class SettingsReader
         return code.EnumerateObject().Select(p => p.Name).FirstOrDefault(n => !known.Contains(n, StringComparer.Ordinal)) is { } name ? Printable(name) : null;
     }
 
+    /// <summary>The recognizers as written (a null entry was refused by <see cref="RecognizerRules"/>).</summary>
+    private static IReadOnlyList<ProfileRecognizer> Recognizers(ExtractSection? extract) =>
+        [.. (extract?.Recognizers ?? []).OfType<RecognizerEntry>().Select(e => new ProfileRecognizer(e.Kind!, e.Glob!, e.Pattern!, e.KeyFrom!))];   // why: RecognizerRules refused a missing field
+
+    private static Error? Refused(ContextSection section, IReadOnlyList<string> globs) => Problem(section, globs) ?? RecognizerRules.Problem(section.Extract?.Recognizers);
+
     private static bool Adjudicates(EvalSection? section) => section?.Adjudicator ?? false;
 
     private static LabelingSettings Labeling(LabelingSection? section) =>
@@ -213,7 +220,7 @@ public static partial class SettingsReader
 
     private static string? UnknownKey(JsonElement element)
     {
-        string[] known = ["repos", "docs", "cascadeDepth", "deadline", "maxBudget", "minHits", "labeling", "scrub", "sessions", "sources", "eval", "code"];
+        string[] known = ["repos", "docs", "cascadeDepth", "deadline", "maxBudget", "minHits", "labeling", "scrub", "sessions", "sources", "eval", "code", "extract"];
         return element.EnumerateObject().Select(p => p.Name).FirstOrDefault(n => !known.Contains(n, StringComparer.Ordinal)) is { } name ? Printable(name) : null;
     }
 
@@ -229,6 +236,9 @@ public static partial class SettingsReader
         var span = string.Equals(match.Groups["u"].Value, "ms", StringComparison.Ordinal) ? TimeSpan.FromMilliseconds(value) : TimeSpan.FromSeconds(value);
         return span >= TimeSpan.FromMilliseconds(100) && span <= TimeSpan.FromSeconds(60) ? span : null;
     }
+
+    /// <summary>Whether text is a repo-relative glob the profile may name.</summary>
+    internal static bool IsGlob(string text) => GlobShape.IsMatch(text);
 
     /// <summary>A name or value from the profile, for a message: itself when it is plain, else a fixed word.</summary>
     internal static string Printable(string text) => PlainText.IsMatch(text) ? text : "(a value with unusual characters)";

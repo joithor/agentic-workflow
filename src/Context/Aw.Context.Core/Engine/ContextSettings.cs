@@ -64,4 +64,7 @@ public sealed record ContextSettings
 
     /// <summary>'context.code.testGlobs' (S-CL): repo-relative globs that mark a file as a test for the code lens's lexical tests.</summary>
     public IReadOnlyList<string> TestGlobs { get; init; } = DefaultTestGlobs;
+
+    /// <summary>'context.extract.recognizers' (S-SK): the profile's extra surface recognizers, added to the built-in forms. Empty by default.</summary>
+    public IReadOnlyList<ProfileRecognizer> Recognizers { get; init; } = [];
 }
