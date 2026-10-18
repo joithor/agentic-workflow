@@ -96,7 +96,7 @@ public sealed class ContextPageWindowTests
 
                 var heard = Heard.Tree(window).Select(n => n.Name).ToList();
                 var expected = shell.Context.Bands.SelectMany(b => b.Lines.Select(l => l.Text)).Concat(shell.Context.Edges.Select(l => l.Text)).Concat(shell.Context.Coverage.Select(l => l.Text));
-                Assert.All(expected, text => Assert.Contains(text, heard));
+                Assert.All(expected, text => Assert.Contains(heard, h => string.Equals(h, text, StringComparison.Ordinal)));
             }
             finally
             {

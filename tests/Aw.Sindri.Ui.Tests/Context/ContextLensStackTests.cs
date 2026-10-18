@@ -126,7 +126,7 @@ public sealed class ContextLensStackTests
         Assert.Equal(Labels.ContextHead((string)Golden("map-tabs")["mapVersion"]!, 1), page.Head);
 
         var calls = server.ContextCalls;
-        page.AnchorText = string.Join(' ', Enumerable.Range(0, 21).Select(i => System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToLower("a:" + i)));
+        page.AnchorText = string.Join(' ', Enumerable.Range(0, 21).Select(i => string.Create(System.Globalization.CultureInfo.InvariantCulture, $"a:{i}")));
         await page.Submit(Token);
 
         Assert.Equal(calls, server.ContextCalls);
