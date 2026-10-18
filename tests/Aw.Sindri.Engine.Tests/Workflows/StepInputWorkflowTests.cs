@@ -181,6 +181,22 @@ public sealed class StepInputWorkflowTests(SindriTimeSkippingServer server) : IC
     }
 
     [Fact]
+    public async Task Inputs_that_together_pass_the_plan_cap_fail_the_Step_and_drop_their_texts()
+    {
+        var big = new string('x', 200 * 1024);   // 3 sections of 200 KiB: 600 KiB an input, under the 1 MiB cap alone
+        _probe.Behavior = _ => new InjectionSections(new Dictionary<string, string>(StringComparer.Ordinal) { ["a"] = big, ["b"] = big, ["c"] = big });
+        await Run("T-79", [ProbeInput.Id, SecondProbeInput.Id], async run =>
+        {
+            var result = await run.Handle.GetResultAsync();
+            var texts = run.Desk.Sindri.GetRequiredService<IInjectionTexts>();
+
+            Assert.Equal("broken", result.State);   // the two inputs are 1.2 MiB together: one plan over the cap
+            Assert.Equal(2, _probe.Calls.Count);
+            Assert.Null(texts.Get(new InjectionKey(run.Handle.Id, "checks", "1.1", BlockId.From(ProbeInput.Id))));
+        });
+    }
+
+    [Fact]
     public async Task One_injection_row_per_run_holds_the_plan_metadata_and_no_text_anywhere_in_the_ledger()
     {
         await Run("T-79", [ProbeInput.Id, SecondProbeInput.Id], async run =>

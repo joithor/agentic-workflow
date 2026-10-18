@@ -80,6 +80,6 @@ internal sealed class MemoryInjectionTexts : IInjectionTexts
         }
     }
 
-    private static int Size(FilledTexts texts) =>
+    internal static int Size(FilledTexts texts) =>
         texts.Sections.Sum(static s => System.Text.Encoding.UTF8.GetByteCount(s.Value)) + (texts.Result?.GetRawText().Length ?? 0);
 }

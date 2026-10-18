@@ -35,14 +35,22 @@ public sealed class StepContextsTests
             new FilledTexts(new Dictionary<string, string>(StringComparer.Ordinal) { ["notes"] = text }, result is null ? null : Json(result)));
     }
 
-    private sealed class FakeRunner(Func<FilledOutput> fill) : IStepInputRunner
+    private static FilledOutput OutputAt(int index, string text, string result)
+    {
+        var entry = new InjectionEntry("notes", _input, System.Text.Encoding.UTF8.GetByteCount(text), StepInputRunner.Sha(text));
+        return new FilledOutput(
+            new FilledInput(_input, index, [entry], new InjectionResultEntry(result.Length, StepInputRunner.Sha(result))),
+            new FilledTexts(new Dictionary<string, string>(StringComparer.Ordinal) { ["notes"] = text }, Json(result)));
+    }
+
+    private sealed class FakeRunner(Func<FilledOutput> fill, Func<int, FilledOutput>? fillAt = null) : IStepInputRunner
     {
         public int Calls { get; private set; }
 
         public ValueTask<Result<FilledOutput>> Fill(StepInputContext context, int index, CancellationToken cancellationToken)
         {
             Calls++;
-            return ValueTask.FromResult<Result<FilledOutput>>(fill());
+            return ValueTask.FromResult<Result<FilledOutput>>(fillAt is null ? fill() : fillAt(index));
         }
     }
 
@@ -75,6 +83,30 @@ public sealed class StepContextsTests
         Assert.Empty(none.Value.InputResults);
         Assert.Empty(without.Value.InputResults);
         Assert.NotNull(Seed.InputResults);
+    }
+
+    [Fact]
+    public async Task The_same_input_twice_in_one_Step_fills_both_and_each_refills_against_its_own_text()
+    {
+        var texts = new MemoryInjectionTexts();
+        var first = OutputAt(1, "first text", "{\"count\":1}");
+        var second = OutputAt(2, "second text", "{\"count\":2}");
+        var runner = new FakeRunner(() => throw new InvalidOperationException("filled by index below"), static index => index == 1 ? OutputAt(1, "first text", "{\"count\":1}") : OutputAt(2, "second text", "{\"count\":2}"));
+        var sources = new[] { new InjectionInputSource(first.Metadata, Context), new InjectionInputSource(second.Metadata, Context) };
+
+        var cold = await new StepContexts(texts, runner).For(_run, Seed, sources, TestContext.Current.CancellationToken);
+        var warm = await new StepContexts(texts, new FakeRunner(() => throw new InvalidOperationException("a hit must not run the input"))).For(_run, Seed, sources, TestContext.Current.CancellationToken);
+
+        Assert.True(cold.IsSuccess);
+        Assert.Equal(2, runner.Calls);
+        foreach (var context in new[] { cold.Value, warm.Value })
+        {
+            Assert.Equal(2, context.InputResults.Count);   // one result per entry: the second use does not overwrite the first
+            Assert.Equal([1, 2], context.InputResults.OrderBy(static r => r.Key, StringComparer.Ordinal).Select(static r => r.Value.GetProperty("count").GetInt32()));
+        }
+
+        Assert.Equal("first text", Assert.IsType<FilledTexts>(texts.Get(new InjectionKey(_run.Address, _run.State, _run.Token, 1))).Sections["notes"]);
+        Assert.Equal("second text", Assert.IsType<FilledTexts>(texts.Get(new InjectionKey(_run.Address, _run.State, _run.Token, 2))).Sections["notes"]);
     }
 
     [Fact]
