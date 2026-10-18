@@ -96,6 +96,7 @@ public sealed class ExpandedChildAnswerTests
         expanded.ChildRequested += (_, e) => opened.Add(e);
         expanded.ChildrenRequested += (_, _) => panel++;
 
+        Assert.Equal(Labels.AnswerInChildPanelName, expanded.AnswerInChildName);   // a child is served, but not the answer's: the name falls back with the click
         expanded.AnswerInTheChild();
 
         Assert.Empty(opened);
