@@ -1,3 +1,5 @@
+using Aw.Sindri.Core.Workflow.Blocks;
+
 namespace Aw.Sindri.Core.Profile;
 
 /// <summary>
@@ -7,13 +9,13 @@ namespace Aw.Sindri.Core.Profile;
 public static class JudgeProviders
 {
     /// <summary>The deterministic fallback provider, never dropped.</summary>
-    public const string Rules = "rules";
+    public const string Rules = JudgeProviderNames.Rules;
 
     /// <summary>The opt-in provider.</summary>
-    public const string Jev = "jev";
+    public const string Jev = JudgeProviderNames.Jev;
 
     /// <summary>Every provider name a profile may list.</summary>
-    public static IReadOnlyList<string> Known { get; } = [Jev, "claude-cli", "codex-cli", "cursor-cli", Rules];
+    public static IReadOnlyList<string> Known => JudgeProviderNames.Known;
 
     /// <summary>The list when the profile sets none.</summary>
     public static IReadOnlyList<string> Default { get; } = ["claude-cli", "codex-cli", "cursor-cli", Rules];

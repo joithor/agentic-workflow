@@ -9,7 +9,7 @@ public interface IBlockStep
 {
     /// <summary>Runs the Step.</summary>
     /// <param name="context">The Step's arguments, resolved from the recipe, and the facts it names.</param>
-    /// <param name="cancellationToken">Cancelled when the instance is cancelled or the Step's 'maxDuration' runs out.</param>
+    /// <param name="cancellationToken">Cancelled when the run ends before the Step does: the instance is cancelled, taken over or parked, a revoke or drift wakes it, or the Step's 'maxDuration' runs out.</param>
     /// <returns>The outcome and the facts it records, or a failure reason.</returns>
     public ValueTask<BlockStepResult> Run(StepContext context, CancellationToken cancellationToken);
 }

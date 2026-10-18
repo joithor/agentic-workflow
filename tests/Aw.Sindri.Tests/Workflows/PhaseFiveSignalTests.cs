@@ -1,9 +1,13 @@
 using System.Diagnostics;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Infrastructure.Workflows;
 using Microsoft.Extensions.DependencyInjection;
 using Temporalio.Client;
+using Temporalio.Exceptions;
 using Temporalio.Worker;
 
 namespace Aw.Sindri.Tests.Workflows;
@@ -62,6 +66,7 @@ public sealed class PhaseFiveSignalTests(SindriTimeSkippingServer server) : ICla
         await env.DelayAsync(TimeSpan.FromSeconds(60), ct);   // T-2 is 80 s in; T-8's paused timer must not fire
         var parked = await WorkflowsHarness.Until(first, static v => v.State == "parked");
         var stillTakenOver = await WorkflowsHarness.Until(second, static v => v.State == "taken-over");
+        var refusal = await CompleteWhileTakenOver(second, stillTakenOver);
         var handedBack = await second.ExecuteUpdateAsync(wf => wf.HandbackAsync(new HandbackRequested("human:cli", Stamp('2'))), new WorkflowUpdateOptions(new string('2', 32)));
         await env.DelayAsync(TimeSpan.FromSeconds(30), ct);   // 30 of the 40 s left
         var beforeTheRest = await WorkflowsHarness.Until(second, static v => v.Task is not null);
@@ -72,6 +77,7 @@ public sealed class PhaseFiveSignalTests(SindriTimeSkippingServer server) : ICla
 
         Assert.Equal((ParkReason.Timeout, "hold ran past 1m", "1.1"), (parked.Question?.Reason, parked.Question?.Question, parked.Run?.Value));
         Assert.Equal(("taken-over", "taken-over"), (takenOver.Instance.State, stillTakenOver.State));
+        Assert.Equal(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"hand it back first: sindri workflow handback {stillTakenOver.Address.Value}, then complete run {stillTakenOver.Run!.Value}"), refusal);   // a desk run is reported after the handback
         Assert.InRange(takenOver.Instance.Paused ?? TimeSpan.Zero, TimeSpan.FromSeconds(40) - _slack, TimeSpan.FromSeconds(40) + _slack);
         Assert.Equal(("hold", "1.1"), (handedBack.Instance.State, handedBack.Instance.Run?.Value));
         Assert.Equal(("hold", "1.1", null), (beforeTheRest.State, beforeTheRest.Run?.Value, beforeTheRest.Question));
@@ -82,6 +88,16 @@ public sealed class PhaseFiveSignalTests(SindriTimeSkippingServer server) : ICla
         await first.TerminateAsync("test over");
         await second.TerminateAsync("test over");
         return took;
+    }
+
+    /// <summary>A report to the taken-over desk run, which the validator refuses: the fix it words, from after "is parked (Takeover); ".</summary>
+    private static async Task<string> CompleteWhileTakenOver(WorkflowHandle<RecipeWorkflow> handle, InstanceView taken)
+    {
+        var output = new Dictionary<FactKey, FactValue>();
+        var report = new StepCompleted("human:cli", taken.Run!.Value, OutcomeName.From("done"), output, Tokens: 0, StepRuntime.Desk, new string('f', 64));
+        var refused = await Assert.ThrowsAsync<WorkflowUpdateFailedException>(() => handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(report), new WorkflowUpdateOptions(new string('4', 32))));
+        var message = refused.InnerException!.Message;
+        return message[(message.IndexOf("; ", StringComparison.Ordinal) + 2)..];
     }
 
     private static CommandStamp Stamp(char digit) => new(CommandNonce.From(new string(digit, 32)), new string('0', 64));

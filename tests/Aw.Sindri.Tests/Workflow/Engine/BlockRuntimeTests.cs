@@ -1,6 +1,7 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
@@ -93,7 +94,8 @@ public sealed class BlockRuntimeTests
 
         var rejected = Assert.IsType<Rejected>(decision);
         Assert.Equal(WorkflowErrors.TriggerNotAllowed.Code, rejected.Error.Code);
-        Assert.Contains("take it over", rejected.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("wait for its result", rejected.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("takeover", rejected.Error.Message, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -121,6 +123,35 @@ public sealed class BlockRuntimeTests
 
         Assert.Equal("route-evidence-desk", Assert.IsType<Applied>(decision).Changes[0].After.State);
     }
+
+    [Fact]
+    public void A_failed_block_run_s_event_says_via_block_and_a_desk_failure_does_not()
+    {
+        var instance = BlockRun();
+        var run = instance.Frame.Run!.Token;
+
+        var block = Assert.IsType<Applied>(TransitionDecision.Decide(new DecisionInput(instance, _route, BlockStepTriggers.Failed(_judge, run, "timeout"), GateAnswers.None, Context()))).Changes[0].Event;
+        var desk = Assert.IsType<Applied>(TransitionDecision.Decide(new DecisionInput(instance, _route, new StepFailed("human:cli", run, "gave up", Tokens: 0, new string('a', 64)), GateAnswers.None, Context())));
+
+        Assert.Equal(("block", "timeout"), (block.Trigger.Via, block.Trigger.Reason));
+        Assert.Null(desk.Changes[0].Event.Trigger.Via);
+    }
+
+    [Theory]
+    [InlineData(180, 120, 120)]   // a fresh run: the state timer has its full 3 minutes, the Step its maxDuration
+    [InlineData(90, 120, 89)]     // takeover at 1m30, handback: the timer resumed with 90 s, so the Step's own timeout lands first
+    [InlineData(121, 120, 120)]
+    [InlineData(1, 120, 0.5)]
+    public void The_activity_bound_stays_inside_the_time_left_on_the_state_timer(double leftSeconds, double maxSeconds, double boundSeconds)
+    {
+        var bound = BlockLimits.Bound(TimeSpan.FromSeconds(maxSeconds), TimeSpan.FromSeconds(leftSeconds));
+
+        Assert.Equal(TimeSpan.FromSeconds(boundSeconds), bound);
+    }
+
+    [Fact]
+    public void With_no_state_timer_the_bound_is_the_max_duration() =>
+        Assert.Equal(BlockLimits.Fallback, BlockLimits.Bound(BlockLimits.Fallback, timerLeft: null));
 
     private static DecisionContext Context() => EngineFixture.Context() with { Runtimes = new Dictionary<BlockId, StepRuntime> { [_judge] = StepRuntime.Block } };
 
