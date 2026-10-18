@@ -76,13 +76,11 @@ Aw.Meta.Features.Health.HealthResponse.Attention.get -> bool
 Aw.Meta.Features.Health.HealthResponse.Attention.init -> void
 Aw.Meta.Features.Health.HealthResponse.Builders.get -> Aw.Meta.Core.Health.BuilderAdvice?
 Aw.Meta.Features.Health.HealthResponse.Builders.init -> void
-Aw.Meta.Features.Health.HealthResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>! Groups, out int ProcessCount, out Aw.Meta.Core.Health.HostResources! Host, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Orphans, out System.Collections.Generic.IReadOnlyList<int>! Killed, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>! Duplicates, out System.Collections.Generic.IReadOnlyList<string!>? MissingLanes, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>! HeavyLocks, out bool MemoryLow, out bool Attention, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>? Lanes, out Aw.Meta.Core.Health.HeavySlots? Heavy, out Aw.Meta.Core.Health.BuilderAdvice? Builders) -> void
 Aw.Meta.Features.Health.HealthResponse.Duplicates.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>!
 Aw.Meta.Features.Health.HealthResponse.Duplicates.init -> void
 Aw.Meta.Features.Health.HealthResponse.Equals(Aw.Meta.Features.Health.HealthResponse? other) -> bool
 Aw.Meta.Features.Health.HealthResponse.Groups.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>!
 Aw.Meta.Features.Health.HealthResponse.Groups.init -> void
-Aw.Meta.Features.Health.HealthResponse.HealthResponse(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>! Groups, int ProcessCount, Aw.Meta.Core.Health.HostResources! Host, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Orphans, System.Collections.Generic.IReadOnlyList<int>! Killed, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>! Duplicates, System.Collections.Generic.IReadOnlyList<string!>? MissingLanes, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>! HeavyLocks, bool MemoryLow, bool Attention, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>? Lanes = null, Aw.Meta.Core.Health.HeavySlots? Heavy = null, Aw.Meta.Core.Health.BuilderAdvice? Builders = null) -> void
 Aw.Meta.Features.Health.HealthResponse.Heavy.get -> Aw.Meta.Core.Health.HeavySlots?
 Aw.Meta.Features.Health.HealthResponse.Heavy.init -> void
 Aw.Meta.Features.Health.HealthResponse.HeavyLocks.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>!
@@ -916,3 +914,74 @@ Aw.Meta.Features.QueueGate.QueueGateRequest.Deconstruct(out System.Collections.G
 Aw.Meta.Features.QueueGate.QueueGateRequest.Pid.get -> int
 Aw.Meta.Features.QueueGate.QueueGateRequest.Pid.init -> void
 Aw.Meta.Features.QueueGate.QueueGateRequest.QueueGateRequest(System.Collections.Generic.IReadOnlyList<int>! Prs, int? Max, int Pid = 0) -> void
+Aw.Meta.Features.Health.HealthResponse.Context.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneContext!>?
+Aw.Meta.Features.Health.HealthResponse.Context.init -> void
+Aw.Meta.Features.Health.HealthResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>! Groups, out int ProcessCount, out Aw.Meta.Core.Health.HostResources! Host, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Orphans, out System.Collections.Generic.IReadOnlyList<int>! Killed, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>! Duplicates, out System.Collections.Generic.IReadOnlyList<string!>? MissingLanes, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>! HeavyLocks, out bool MemoryLow, out bool Attention, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>? Lanes, out Aw.Meta.Core.Health.HeavySlots? Heavy, out Aw.Meta.Core.Health.BuilderAdvice? Builders, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneContext!>? Context) -> void
+Aw.Meta.Features.Health.HealthResponse.HealthResponse(System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessGroup!>! Groups, int ProcessCount, Aw.Meta.Core.Health.HostResources! Host, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.ProcessInfo!>! Orphans, System.Collections.Generic.IReadOnlyList<int>! Killed, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.DuplicateServer!>! Duplicates, System.Collections.Generic.IReadOnlyList<string!>? MissingLanes, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Health.HeavyLock!>! HeavyLocks, bool MemoryLow, bool Attention, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneHealth!>? Lanes = null, Aw.Meta.Core.Health.HeavySlots? Heavy = null, Aw.Meta.Core.Health.BuilderAdvice? Builders = null, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneContext!>? Context = null) -> void
+Aw.Meta.Features.LaneRecycle.LaneRecycleRequest
+Aw.Meta.Features.LaneRecycle.LaneRecycleRequest.<Clone>$() -> Aw.Meta.Features.LaneRecycle.LaneRecycleRequest!
+Aw.Meta.Features.LaneRecycle.LaneRecycleRequest.Deconstruct(out string! Lane, out string! Digest, out bool DryRun) -> void
+Aw.Meta.Features.LaneRecycle.LaneRecycleRequest.Digest.get -> string!
+Aw.Meta.Features.LaneRecycle.LaneRecycleRequest.Digest.init -> void
+Aw.Meta.Features.LaneRecycle.LaneRecycleRequest.DryRun.get -> bool
+Aw.Meta.Features.LaneRecycle.LaneRecycleRequest.DryRun.init -> void
+Aw.Meta.Features.LaneRecycle.LaneRecycleRequest.Equals(Aw.Meta.Features.LaneRecycle.LaneRecycleRequest? other) -> bool
+Aw.Meta.Features.LaneRecycle.LaneRecycleRequest.Lane.get -> string!
+Aw.Meta.Features.LaneRecycle.LaneRecycleRequest.Lane.init -> void
+Aw.Meta.Features.LaneRecycle.LaneRecycleRequest.LaneRecycleRequest(string! Lane, string! Digest, bool DryRun) -> void
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.<Clone>$() -> Aw.Meta.Features.LaneRecycle.LaneRecycleResponse!
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.Deconstruct(out string! Lane, out bool DryRun, out string! OldSession, out string? NewSession, out long? OldTokens, out string! Digest, out System.Collections.Generic.IReadOnlyList<string!>! Steps) -> void
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.Digest.get -> string!
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.Digest.init -> void
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.DryRun.get -> bool
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.DryRun.init -> void
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.Equals(Aw.Meta.Features.LaneRecycle.LaneRecycleResponse? other) -> bool
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.Lane.get -> string!
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.Lane.init -> void
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.LaneRecycleResponse(string! Lane, bool DryRun, string! OldSession, string? NewSession, long? OldTokens, string! Digest, System.Collections.Generic.IReadOnlyList<string!>! Steps) -> void
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.NewSession.get -> string?
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.NewSession.init -> void
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.OldSession.get -> string!
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.OldSession.init -> void
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.OldTokens.get -> long?
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.OldTokens.init -> void
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.Steps.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.Steps.init -> void
+Aw.Meta.Features.LanesContext.LanesContextRequest
+Aw.Meta.Features.LanesContext.LanesContextRequest.<Clone>$() -> Aw.Meta.Features.LanesContext.LanesContextRequest!
+Aw.Meta.Features.LanesContext.LanesContextRequest.Equals(Aw.Meta.Features.LanesContext.LanesContextRequest? other) -> bool
+Aw.Meta.Features.LanesContext.LanesContextRequest.LanesContextRequest() -> void
+Aw.Meta.Features.LanesContext.LanesContextResponse
+Aw.Meta.Features.LanesContext.LanesContextResponse.<Clone>$() -> Aw.Meta.Features.LanesContext.LanesContextResponse!
+Aw.Meta.Features.LanesContext.LanesContextResponse.Attention.get -> bool
+Aw.Meta.Features.LanesContext.LanesContextResponse.Attention.init -> void
+Aw.Meta.Features.LanesContext.LanesContextResponse.Deconstruct(out int RecycleAt, out System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneContext!>! Lanes, out bool Attention) -> void
+Aw.Meta.Features.LanesContext.LanesContextResponse.Equals(Aw.Meta.Features.LanesContext.LanesContextResponse? other) -> bool
+Aw.Meta.Features.LanesContext.LanesContextResponse.Lanes.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneContext!>!
+Aw.Meta.Features.LanesContext.LanesContextResponse.Lanes.init -> void
+Aw.Meta.Features.LanesContext.LanesContextResponse.LanesContextResponse(int RecycleAt, System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneContext!>! Lanes, bool Attention) -> void
+Aw.Meta.Features.LanesContext.LanesContextResponse.RecycleAt.get -> int
+Aw.Meta.Features.LanesContext.LanesContextResponse.RecycleAt.init -> void
+Aw.Meta.Features.Status.StatusResponse.Context.get -> System.Collections.Generic.IReadOnlyList<Aw.Meta.Core.Lanes.LaneContext!>?
+Aw.Meta.Features.Status.StatusResponse.Context.init -> void
+override Aw.Meta.Features.LaneRecycle.LaneRecycleRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.LaneRecycle.LaneRecycleRequest.GetHashCode() -> int
+override Aw.Meta.Features.LaneRecycle.LaneRecycleRequest.ToString() -> string!
+override Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.GetHashCode() -> int
+override Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.ToString() -> string!
+override Aw.Meta.Features.LanesContext.LanesContextRequest.Equals(object? obj) -> bool
+override Aw.Meta.Features.LanesContext.LanesContextRequest.GetHashCode() -> int
+override Aw.Meta.Features.LanesContext.LanesContextRequest.ToString() -> string!
+override Aw.Meta.Features.LanesContext.LanesContextResponse.Equals(object? obj) -> bool
+override Aw.Meta.Features.LanesContext.LanesContextResponse.GetHashCode() -> int
+override Aw.Meta.Features.LanesContext.LanesContextResponse.ToString() -> string!
+static Aw.Meta.Features.LaneRecycle.LaneRecycleRequest.operator !=(Aw.Meta.Features.LaneRecycle.LaneRecycleRequest? left, Aw.Meta.Features.LaneRecycle.LaneRecycleRequest? right) -> bool
+static Aw.Meta.Features.LaneRecycle.LaneRecycleRequest.operator ==(Aw.Meta.Features.LaneRecycle.LaneRecycleRequest? left, Aw.Meta.Features.LaneRecycle.LaneRecycleRequest? right) -> bool
+static Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.operator !=(Aw.Meta.Features.LaneRecycle.LaneRecycleResponse? left, Aw.Meta.Features.LaneRecycle.LaneRecycleResponse? right) -> bool
+static Aw.Meta.Features.LaneRecycle.LaneRecycleResponse.operator ==(Aw.Meta.Features.LaneRecycle.LaneRecycleResponse? left, Aw.Meta.Features.LaneRecycle.LaneRecycleResponse? right) -> bool
+static Aw.Meta.Features.LanesContext.LanesContextRequest.operator !=(Aw.Meta.Features.LanesContext.LanesContextRequest? left, Aw.Meta.Features.LanesContext.LanesContextRequest? right) -> bool
+static Aw.Meta.Features.LanesContext.LanesContextRequest.operator ==(Aw.Meta.Features.LanesContext.LanesContextRequest? left, Aw.Meta.Features.LanesContext.LanesContextRequest? right) -> bool
+static Aw.Meta.Features.LanesContext.LanesContextResponse.operator !=(Aw.Meta.Features.LanesContext.LanesContextResponse? left, Aw.Meta.Features.LanesContext.LanesContextResponse? right) -> bool
+static Aw.Meta.Features.LanesContext.LanesContextResponse.operator ==(Aw.Meta.Features.LanesContext.LanesContextResponse? left, Aw.Meta.Features.LanesContext.LanesContextResponse? right) -> bool

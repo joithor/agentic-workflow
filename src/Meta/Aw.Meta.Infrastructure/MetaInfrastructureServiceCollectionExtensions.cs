@@ -37,6 +37,9 @@ public static class MetaInfrastructureServiceCollectionExtensions
             .AddScoped<ILaneMail, SqliteLaneMail>()
             .AddScoped<IMetaConfig>(sp => new FileMetaConfig(settings.ConfigPath, new JsonSerializerOptions(sp.GetRequiredService<JsonSerializerOptions>()) { WriteIndented = true }))
             .AddSingleton<ITranscriptReader, FileTranscriptReader>()
+            .AddScoped<ILaneSessions>(sp => new PaneLaneSessions(sp.GetRequiredService<ILanePane>(), sp.GetRequiredService<IProcessTable>(), settings.SessionsDirectory))
+            .AddSingleton<IClaudeTranscripts>(new ClaudeProjectsTranscripts(Path.Combine(settings.Paths.Home, ".claude", "projects")))
+            .AddSingleton<IDigestFiles, FileDigestFiles>()
             .AddSingleton<ILaneFiles>(new DirectoryLaneFiles(settings.LaneSessionsDirectory))
             .AddScoped<ILanePane>(sp => new TmuxLanePane(sp.GetRequiredService<ICommandRunner>(), settings.Tmux, settings.TmuxSocket, sp.GetRequiredService<IMetaConfig>()))
             .AddScoped<ISessionDirectory>(sp => new LaneSessionDirectory(
