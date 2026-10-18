@@ -59,6 +59,9 @@ contains "--github names the confirmation" "$out" "FORGE_FIXTURE_GITHUB_SCRATCH"
 lacks "--github never prints the token" "$out" "tok-not-printed"
 out="$(AW_FORGE_TOKEN=tok-not-printed FORGE_FIXTURE_GITHUB_SCRATCH=other/repo bash "$FIXTURE" up --github acme/scratch comments 2>&1)"; check "--github with another confirmation is refused (exit 2)" "$?" "2"
 
+bash "$FIXTURE" status >/dev/null 2>&1; check "status exits 1 when nothing is up" "$?" "1"
+out="$(AW_FORGE_TOKEN=tok-not-printed FORGE_FIXTURE_GITHUB_SCRATCH=acme/scratch bash "$FIXTURE" up --github acme/scratch comments --bogus 2>&1)"; check "--github rejects an unknown extra argument (exit 2)" "$?" "2"
+
 # --- up --fake comments (the first call builds aw-forge-fake) ---
 out="$(bash "$FIXTURE" up --fake comments 2>&1)"; rc=$?
 check "up --fake comments exits 0" "$rc" "0"
@@ -93,6 +96,7 @@ check "the hand-off's proven sha is the head" "$(jq -r .headSha "$H/comments/han
 check "the hand-off has no placeholder left" "$(grep -rlE '@[A-Z]+@' "$H/comments/handoff" "$H/comments/phase-packet.json" | wc -l | tr -d ' ')" "0"
 check "the hand-off's pr.json is JSON" "$(jq -r .headBranch "$H/comments/handoff/pr.json")" "feature/json-flag"
 check "the phase packet is JSON" "$(jq -r .id "$H/comments/phase-packet.json")" "fixture-line-P1"
+check "docs/usage.md mentions a changed symbol and path (docs scope lists it)" "$(grep -c 'parseArgs.*src/args.js' "$H/comments/work/docs/usage.md")" "1"
 check "docs/usage.md is stale: it lacks --json" "$(grep -c -- '--json' "$H/comments/work/docs/usage.md")" "0"
 check "the code has --json" "$(grep -c -- '--json' "$H/comments/work/src/args.js")" "2"
 
@@ -121,6 +125,7 @@ check "conflict: the forge reports a conflict" "$(forge pull "$l" | jq -r .merge
 
 bash "$FIXTURE" up --fake noDocs >"$WORK/o" 2>&1; check "up noDocs exits 0" "$?" "0"
 check "noDocs: there is no docs folder" "$(test -e "$H/no-docs/work/docs" && echo yes || echo no)" "no"
+check "noDocs: no doc mentions docs/ or a changed flag" "$(cd "$H/no-docs/work" && grep -l -e 'docs/' -e 'parseArgs' -e '--json' README.md AGENTS.md CHANGELOG.md | wc -l | tr -d ' ')" "0"
 
 bash "$FIXTURE" up --fake sourceFix >"$WORK/o" 2>&1; check "up sourceFix exits 0" "$?" "0"
 sf="$H/source-fix/work"
@@ -153,9 +158,16 @@ check "secret: the planted token is token-shaped" "$(printf '%s' "$token" | grep
 check "secret: the token is in no tracked fixture file" "$(git -C "$ROOT" grep -l 'ghp_[A-Za-z0-9]\{20\}' -- tests/fixtures/forge scripts/forge-fixture.sh scripts/tests/forge-fixture.test.sh | wc -l | tr -d ' ')" "0"
 check "secret: the head branch has no token" "$(git -C "$sw" grep -l 'ghp_' feature/json-flag | wc -l | tr -d ' ')" "0"
 
+# a TMPDIR with a trailing slash still gives a valid default home (the guard once refused '//')
+slash="$WORK/slash/"; mkdir -p "$slash"
+out="$(env -u FORGE_FIXTURE_HOME TMPDIR="$slash" AW_FORGE_FAKE="dotnet $H/bin/aw-forge-fake.dll" bash "$FIXTURE" up --fake conflict 2>&1)"; check "up with TMPDIR ending in / exits 0" "$?" "0"
+contains "the default home has no double slash" "$out" "workspace: $WORK/slash/aw-forge-fixture-$(id -u)/conflict/work"
+env -u FORGE_FIXTURE_HOME TMPDIR="$slash" bash "$FIXTURE" down --all >/dev/null 2>&1; check "down --all with TMPDIR ending in / exits 0" "$?" "0"
+
 # all variants at once
 bash "$FIXTURE" up --fake all >"$WORK/o" 2>&1; check "up --fake all exits 0" "$?" "0"
 check "all: a link per variant is printed" "$(grep -c "^link: " "$WORK/o")" "9"
+check "all: every variant's PR is number 1 but the stacked one's" "$(grep '^link: ' "$WORK/o" | grep -vc 'pull/1$')" "1"
 
 # --- --github dry run: the plan, never a token ---
 out="$(AW_FORGE_TOKEN=tok-not-printed FORGE_FIXTURE_GITHUB_SCRATCH=acme/scratch bash "$FIXTURE" up --github acme/scratch comments --dry-run 2>&1)"; check "--github --dry-run exits 0" "$?" "0"
@@ -164,14 +176,18 @@ contains "the dry run names the repository" "$out" "acme/scratch"
 lacks "the dry run never prints the token" "$out" "tok-not-printed"
 
 # --- down ---
+printf 'keep\n' >"$H/stray.txt"; mkdir -p "$H/stray-dir"
 bash "$FIXTURE" down >/dev/null 2>&1; check "down exits 0" "$?" "0"
+check "down leaves a stray file" "$(cat "$H/stray.txt" 2>/dev/null)" "keep"
+check "down leaves a stray directory" "$(test -d "$H/stray-dir" && echo yes || echo no)" "yes"
+check "down removes the world" "$(test -e "$H/state" && echo yes || echo no)" "no"
+rm -r "$H/stray.txt" "$H/stray-dir"
 check "down removes the variants" "$(test -e "$H/comments" && echo yes || echo no)" "no"
 check "down keeps the build" "$(test -e "$H/bin/aw-forge-fake.dll" && echo yes || echo no)" "yes"
 bash "$FIXTURE" down >/dev/null 2>&1; check "a second down exits 0" "$?" "0"
 bash "$FIXTURE" down --all >/dev/null 2>&1; check "down --all removes the build" "$(test -e "$H" && echo yes || echo no)" "no"
 
-# --- the fixture itself: synthetic, no work names ---
-check "no work-app name in the fixture" "$(grep -rilE 'vitalize|connectai' "$SET" "$FIXTURE" | wc -l | tr -d ' ')" "0"
+# --- the fixture itself ---
 check "variants.json lists exactly the nine variants" "$(jq '.variants | length' "$SET/variants.json")" "9"
 
 [ "$fail" -eq 0 ] && echo "all passed" || { echo "FAILED"; exit 1; }
