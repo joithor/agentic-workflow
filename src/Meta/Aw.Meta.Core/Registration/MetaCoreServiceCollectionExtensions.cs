@@ -20,6 +20,8 @@ public static class MetaCoreServiceCollectionExtensions
         .AddScoped<LaneBeats>()
         .AddScoped<LaneStopGuard>()
         .AddScoped<LaneHealthReader>()
+        .AddScoped<LaneContextReader>()
+        .AddScoped<PaneSubmitter>()
         .AddScoped<RepoCommands>()
         .AddScoped<GateTree>()
         .AddScoped<GateWorkspace>()
