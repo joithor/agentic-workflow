@@ -13,11 +13,11 @@ internal sealed class GetContextLensesAnswerService(IService<GetContextLensesReq
         var anchors = request.Anchors.Distinct(StringComparer.Ordinal).ToArray();
         if (anchors.Length > 1)
         {
-            var many = await set.Handle(new GetContextLensesSetRequest(anchors, request.Draft, request.Depth, request.MapVersion), cancellationToken).ConfigureAwait(false);
+            var many = await set.Handle(new GetContextLensesSetRequest(anchors, request.Draft, request.Depth, request.MapVersion, request.Hops), cancellationToken).ConfigureAwait(false);
             return many.IsError ? many.Error : new LensesAnswer(One: null, Many: many.Value);
         }
 
-        var one = await single.Handle(new GetContextLensesRequest(anchors.Length == 0 ? string.Empty : anchors[0], request.Draft, request.Depth, request.MapVersion), cancellationToken).ConfigureAwait(false);
+        var one = await single.Handle(new GetContextLensesRequest(anchors.Length == 0 ? string.Empty : anchors[0], request.Draft, request.Depth, request.MapVersion, request.Hops), cancellationToken).ConfigureAwait(false);
         return one.IsError ? one.Error : new LensesAnswer(One: one.Value, Many: null);
     }
 }

@@ -163,6 +163,9 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-111: the two commits of a diff range share no merge base (unrelated histories).</summary>
     public static readonly ErrorDefinition NoMergeBase = new("SND-CONTEXT-111", ErrorKind.Invalid, "The two commits share no merge base");
 
+    /// <summary>SND-CONTEXT-140: 'hops' names a hop that does not exist. Scoping stage S-CH owns 140–149 (141 is reserved; a profile range error is SettingsInvalid, 001).</summary>
+    public static readonly ErrorDefinition HopsInvalid = new("SND-CONTEXT-140", ErrorKind.Invalid, "hops must be a comma list of state, flow, dependency and component");
+
     /// <summary>SND-CONTEXT-120: the map version asked for ('mapVersion=' / '--map-version') isn't held: never written, purged, a draft, still building, or its commit part differs. Scoping stage S-LB1 owns 120–129.</summary>
     public static readonly ErrorDefinition MapVersionNotRetained = new("SND-CONTEXT-120", ErrorKind.NotFound, "That map version is not retained");
 

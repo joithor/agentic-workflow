@@ -54,7 +54,7 @@ public sealed class ProtectedCommandTests
     {
         var rows = HostIntrospection.Catalog().Rows.Where(r => r.Class == ActionClass.Protected).ToList();
         var types = rows.Select(r => r.CommandType?.FullName).OfType<string>().Append(typeof(ChallengeAnswer).FullName).ToHashSet(StringComparer.Ordinal);
-        var routes = rows.Select(r => r.Route).OfType<string>().SelectMany(r => new[] { r, r.Replace("/sindri", string.Empty, StringComparison.Ordinal) }).ToHashSet(StringComparer.Ordinal);
+        var routes = ProtectedOnlyRoutes(HostIntrospection.Catalog().Rows).SelectMany(r => new[] { r, r.Replace("/sindri", string.Empty, StringComparison.Ordinal) }).ToHashSet(StringComparer.Ordinal);
 
         var found = Production.Architecture.Types
             .Where(t => IsClient(t.Assembly.Name) || InMcp(t.Namespace.FullName))
@@ -64,6 +64,55 @@ public sealed class ProtectedCommandTests
 
         Assert.True(found.Count == 0, string.Join(Environment.NewLine, found)
             + ". Fix: a protected action is typed at a terminal; the app shows the CLI form to copy (engine spec §4.2, UI spec E-9)");
+    }
+
+    /// <summary>
+    /// The routes only protected rows serve. One route can carry many verbs, class by verb (a desk accept and a protected merge
+    /// share POST /context/map/review, and a GET reads it), so a shared route is not banned from the app: what the app may send on
+    /// it is pinned by Every_verb_the_app_can_send_on_the_shared_review_route_is_a_non_protected_catalog_row (its closed DeskVerb set;
+    /// the type half sees no protected verb here, the app's review body having no ChallengeAnswer).
+    /// </summary>
+    /// <param name="rows">The catalog's rows.</param>
+    /// <returns>The routes no desk or other row serves.</returns>
+    internal static IReadOnlyList<string> ProtectedOnlyRoutes(IEnumerable<CommandRow> rows) =>
+        [.. rows
+            .Where(r => r.Route is not null)
+            .GroupBy(r => r.Route!, StringComparer.Ordinal)
+            .Where(g => g.All(r => r.Class == ActionClass.Protected))
+            .Select(g => g.Key)
+            .Order(StringComparer.Ordinal)];
+
+    // One route, class by verb: the review route carries desk verbs and protected ones, so the app may only hold the desk verbs.
+    // Every verb the app can put in a review request (the members of its DeskVerb enum, by wire name) must be a catalog row on
+    // that route whose class is not Protected.
+    [Fact]
+    public void Every_verb_the_app_can_send_on_the_shared_review_route_is_a_non_protected_catalog_row()
+    {
+        var ui = Production.Assemblies.Single(a => a.GetName().Name == Solution.AssemblyOf("Aw.Sindri.Ui"));
+        var desk = ui.GetType("Aw.Sindri.Ui.Api.Context.DeskVerb", throwOnError: true)!;
+        var request = ui.GetType("Aw.Sindri.Ui.Api.Context.ReviewDecisionRequest", throwOnError: true)!;
+        var verbs = desk.GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Select(f => f.GetCustomAttributes(typeof(System.Text.Json.Serialization.JsonStringEnumMemberNameAttribute), inherit: false).Cast<System.Text.Json.Serialization.JsonStringEnumMemberNameAttribute>().Single().Name)
+            .ToList();
+        var rows = HostIntrospection.Catalog().Rows.Where(r => string.Equals(r.Route, "/sindri/context/map/review", StringComparison.Ordinal)).ToList();
+
+        Assert.NotEmpty(verbs);
+        Assert.All(verbs, verb => Assert.Contains(rows, r => string.Equals(r.Variant, verb, StringComparison.Ordinal) && r.Class == ActionClass.Desk));
+        // The link: the request the app posts carries its verb as DeskVerb, and no string verb beside it.
+        Assert.Equal(desk, request.GetProperty("Verb")!.PropertyType);
+        Assert.DoesNotContain(request.GetProperties(), p => p.PropertyType == typeof(string) && p.Name.Contains("Verb", StringComparison.Ordinal));
+        Assert.Contains(rows, r => r.Class == ActionClass.Protected);   // the route really is shared with protected verbs
+    }
+
+    [Fact]
+    public void The_banned_routes_are_the_protected_only_ones_and_the_shared_review_route_is_not_banned()
+    {
+        var all = HostIntrospection.Catalog().Rows.ToList();
+        var banned = ProtectedOnlyRoutes(all);
+
+        Assert.NotEmpty(banned);
+        Assert.DoesNotContain("/sindri/context/map/review", banned, StringComparer.Ordinal);
+        Assert.All(banned, route => Assert.All(all.Where(r => string.Equals(r.Route, route, StringComparison.Ordinal)), r => Assert.Equal(ActionClass.Protected, r.Class)));
     }
 
     /// <summary>The Avalonia app (SindriUi, spec §4a 'UI') and any MCP server: clients that never sit at a terminal.</summary>
