@@ -50,6 +50,52 @@ public sealed class TmuxLanePaneTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task The_pane_pid_is_read_with_the_exact_session_on_the_team_socket()
+    {
+        _ = _runner.When("display-message", "4242\n");
+
+        var pid = await (await TeamPane()).PanePid("t1-api", CancellationToken.None);
+
+        Assert.Equal(4242, pid.Value);
+        Assert.Equal(["tmux -L t1 display-message -p -t =t1-api: #{pane_pid}"], _runner.Lines);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Type_sends_the_text_literally_without_Enter_and_PressEnter_sends_only_Enter()
+    {
+        _ = _runner.When("send-keys");
+        var pane = await TeamPane();
+
+        var typed = await pane.Type("t1-api", "Read and continue from /x -y; $(date)", CancellationToken.None);
+        var entered = await pane.PressEnter("t1-api", CancellationToken.None);
+
+        Assert.True(typed.IsSuccess && entered.IsSuccess);
+        Assert.Equal(["tmux -L t1 send-keys -t =t1-api: -l Read and continue from /x -y; $(date)", "tmux -L t1 send-keys -t =t1-api: Enter"], _runner.Lines);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Capture_reads_the_visible_pane_of_the_exact_session()
+    {
+        _ = _runner.When("capture-pane", "screen\n");
+
+        var shown = await (await TeamPane()).Capture("t1-api", CancellationToken.None);
+
+        Assert.Equal("screen\n", shown.Value);
+        Assert.Equal(["tmux -L t1 capture-pane -p -t =t1-api:"], _runner.Lines);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_failing_type_press_or_capture_is_an_error_naming_the_exit()
+    {
+        _ = _runner.When("send-keys", exitCode: 1).When("capture-pane", exitCode: 1);
+        var pane = await TeamPane();
+
+        Assert.True((await pane.Type("t1-api", "x", CancellationToken.None)).IsError);
+        Assert.True((await pane.PressEnter("t1-api", CancellationToken.None)).IsError);
+        Assert.True((await pane.Capture("t1-api", CancellationToken.None)).IsError);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_failed_send_keys_is_an_error_and_Enter_is_not_sent()
     {
         _ = _runner.When("send-keys", exitCode: 1);

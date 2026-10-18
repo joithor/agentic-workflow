@@ -9,7 +9,7 @@ internal static class Worlds
 {
     internal static MergeQueueReader Queue(MetaWorld world) => new(world.Messages, world.Gates, world.Values);
 
-    internal static StatusReader StatusReader(MetaWorld world) => new(world.Reader, Queue(world), world.Owner, world.Lanes);
+    internal static StatusReader StatusReader(MetaWorld world) => new(world.Reader, Queue(world), world.Owner, world.Lanes, world.Context);
 
     internal static HeavyReservation Reservation(MetaWorld world) => new(world.Heavy, Queue(world), world.Log, world.Config, world.Clock);
 
