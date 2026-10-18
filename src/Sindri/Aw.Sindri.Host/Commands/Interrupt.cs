@@ -54,6 +54,9 @@ internal sealed class Interrupt : IDisposable
     /// <returns>The listener; dispose it to stop listening.</returns>
     public static Interrupt For(string[] args) => new(Streams(args), FollowsJob(args));
 
+    /// <summary>Cancels <see cref="Token"/> as a Ctrl-C does (tests: a signal can't be sent to the test host).</summary>
+    internal void Raise() => _source.Cancel();
+
     public void Dispose()
     {
         if (_listening)
