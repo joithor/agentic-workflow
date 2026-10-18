@@ -93,6 +93,7 @@ public sealed class EgressInitRunTests : IDisposable
     public async Task A_signal_to_the_init_reaches_the_agent_and_the_socats_go_with_it(string signal)
     {
         Assert.SkipWhen(!Directory.Exists("/proc/self/fd"), "needs /proc");
+        Assert.SkipWhen(signal == "INT" && SignalIgnoredHere(2), "the test host started with SIGINT ignored, which a shell cannot trap");
         var socat = FakeSocat($"echo $$ >> '{_temp.Path}/socat-pids'; exec sleep 30\n");
         var agent = Write("agent", $"#!/bin/sh\ntrap 'echo got-term > \"{_temp.Path}/agent-term\"; exit 3' TERM INT HUP\necho $$ > '{_temp.Path}/agent-pid'\nwhile :; do sleep 0.1; done\n");
 
@@ -177,6 +178,12 @@ public sealed class EgressInitRunTests : IDisposable
 
         Assert.Equal(0, init.ExitCode);
         Assert.Equal("hello", await File.ReadAllTextAsync(Path.Combine(_temp.Path, "stdin"), TestContext.Current.CancellationToken));
+    }
+
+    private static bool SignalIgnoredHere(int signal)
+    {
+        var line = File.ReadLines("/proc/self/status").FirstOrDefault(l => l.StartsWith("SigIgn:", StringComparison.Ordinal));
+        return line is not null && ulong.TryParse(line["SigIgn:".Length..].Trim(), NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var mask) && (mask & (1UL << (signal - 1))) != 0;
     }
 
     private static int FreePort()

@@ -173,4 +173,22 @@ public sealed class EgressServiceTests : IDisposable
 
         await running.DisposeAsync();
     }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_flush_that_keeps_failing_warns_once_not_every_tick()
+    {
+        var socat = FakeSocat();
+        var warnings = new List<string>();
+        var run = Path.Combine(_temp.Path, "run");
+        var service = new EgressService(new FakeEgressResolver(new Dictionary<string, System.Net.IPAddress[]>(StringComparer.Ordinal)), new FakeEgressDialer(), n => n == SandboxEnvironment.Socat ? socat : null, run, warnings.Add);
+        await using var running = service.Start(Network(Path.Combine(_temp.Path, "n")), EgressCaps.Default).Value;
+        var blocker = Path.Combine(run, "egress.log.tmp");
+        _ = Directory.CreateDirectory(blocker);
+        running.Log.Record("a.example", 443, EgressVerdict.Denied);
+
+        await Task.Delay(3500, TestContext.Current.CancellationToken);
+
+        _ = Assert.Single(warnings);
+        Directory.Delete(blocker);
+    }
 }

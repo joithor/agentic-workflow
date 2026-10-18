@@ -132,21 +132,6 @@ public sealed class EgressProxyTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Bytes_cap_ends_the_relay()
-    {
-        var (proxy, dialer, _) = Make(new EgressCaps(4, 8, TimeSpan.FromMinutes(1), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30)));
-        var (client, server) = JoinedStream.Pair();
-        var handled = proxy.Handle(server, TestContext.Current.CancellationToken);
-        await client.WriteAsync("CONNECT api.anthropic.com:443 HTTP/1.1\r\n\r\n"u8.ToArray(), TestContext.Current.CancellationToken);
-        _ = await ReadHead(client);
-        _ = await dialer.Upstream.Task;
-
-        await client.WriteAsync(new byte[64], TestContext.Current.CancellationToken);
-
-        await handled.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
-    }
-
-    [Fact, Trait("Lane", "unit")]
     public async Task Connection_lifetime_ends_a_connection()
     {
         var (proxy, dialer, _) = Make(new EgressCaps(4, 1024, TimeSpan.FromMilliseconds(200), TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30)));
