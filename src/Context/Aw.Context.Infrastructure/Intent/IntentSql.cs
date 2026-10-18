@@ -33,7 +33,7 @@ internal static class IntentSql
         "INSERT INTO source_cursor (source, repo, cursor, last_sync, last_error) VALUES (@source, '*', NULL, NULL, @code) " +
         "ON CONFLICT (source, repo) DO UPDATE SET last_error = excluded.last_error";
 
-    internal const string Records = "SELECT key, source, version, title, aliases, created_at FROM intent_record ORDER BY key";
+    internal const string Records = "SELECT key, source, version, title, aliases, created_at, fetched_at FROM intent_record ORDER BY key";
 
     internal const string Links = "SELECT record, target, rule, confidence, span_hash FROM intent_link ORDER BY record, target, rule";
 

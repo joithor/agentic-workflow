@@ -5,6 +5,7 @@ using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Eval.MapQuality;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
@@ -51,6 +52,9 @@ internal sealed class ContextEngine(
     public ValueTask<Result<MapQualityRun>> EvalMap(MapQualityRequest request, CancellationToken cancellationToken) => eval.Map(request, cancellationToken);
 
     public ValueTask<Result<EvalPurgeReport>> EvalPurge(EvalPurgeRequest request, CancellationToken cancellationToken) => eval.Purge(request, cancellationToken);
+
+    public ValueTask<Result<HistoryView>> History(IReadOnlyList<string> anchors, HistoryWindow window, MapRead read, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.History(anchors, window, read, scope, cancellationToken);
 
     public ValueTask<Result<NodeView>> ShowNode(string key, ContextScope scope, CancellationToken cancellationToken) => graph.ShowNode(key, scope, cancellationToken);
 

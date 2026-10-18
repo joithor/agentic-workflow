@@ -78,6 +78,20 @@ public abstract class IntentStoreContract
         Expect.That(layer.Records.Single(r => r.Key.Value == _r104.Value).CreatedAt is null, test, "a record with no creation instant read one back");
     }
 
+    /// <summary>The instant the page was fetched reads back on the record; a replay of the same version keeps the first.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Fetched_at_reads_back_as_the_pages_instant_and_a_replay_keeps_it()
+    {
+        const string test = nameof(Fetched_at_reads_back_as_the_pages_instant_and_a_replay_keeps_it);
+        var store = CreateStore();
+        _ = Expect.Ok(await store.CommitPage(Page("c1", [Record(_r103, "v1", "SPL-103")], []), None), test);
+
+        var layer = Expect.Ok(await store.Layer(None), test);
+
+        Expect.That(layer.Records.Single().FetchedAt == _at, test, "the fetch instant didn't read back");
+    }
+
     /// <summary>Replaying the same version keeps the stored row, creation instant included.</summary>
     /// <returns>The test.</returns>
     [Fact]

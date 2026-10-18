@@ -4,6 +4,7 @@ using Aw.Context.Core.Eval.MapQuality;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Locks;
 using Aw.Context.Core.Map;
@@ -22,6 +23,7 @@ using Aw.Context.Features.ExportMap;
 using Aw.Context.Features.ExportReview;
 using Aw.Context.Features.FindPath;
 using Aw.Context.Features.GetFileMap;
+using Aw.Context.Features.GetHistory;
 using Aw.Context.Features.GetLenses;
 using Aw.Context.Features.GetProposals;
 using Aw.Context.Features.ImportMap;
@@ -97,6 +99,8 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<GetLensesRequest, LensesView>, GetLensesService>()
         .AddScoped<IService<GetLensesSetRequest, LensesSetView>, GetLensesSetService>()
         .AddScoped<LensBasisReader>()
+        .AddScoped<IService<GetHistoryRequest, HistoryView>, GetHistoryService>()
+        .AddScoped<HistoryPipeline>()
         .AddScoped<IService<GetFileMapRequest, FileMapView>, GetFileMapService>()
         .AddScoped<MapReader>()
         .AddScoped<MapAdmin>()
@@ -106,6 +110,7 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<ContextGraph>()
         .AddScoped<IContextGraph>(static sp => sp.GetRequiredService<ContextGraph>())
         .AddScoped<IContextLenses>(static sp => sp.GetRequiredService<ContextGraph>())
+        .AddScoped<IContextHistory>(static sp => sp.GetRequiredService<ContextGraph>())
         .AddScoped<IContextEngine, ContextEngine>();
 
     private static IServiceCollection AddBacktest(this IServiceCollection services) => services

@@ -12,4 +12,7 @@ public sealed record IntentRecord(RecordKey Key, SourceId Source, string Version
 {
     /// <summary>When the source created the record, or null (a row stored before the column existed, or a source that gives none). A 'before' read treats null as leaky.</summary>
     public DateTimeOffset? CreatedAt { get; init; }
+
+    /// <summary>When the sync last wrote the record (its version moved); set by the store when it reads the row back, null on a record that hasn't been stored.</summary>
+    public DateTimeOffset? FetchedAt { get; init; }
 }

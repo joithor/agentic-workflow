@@ -166,6 +166,12 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-120: the map version asked for ('mapVersion=' / '--map-version') isn't held: never written, purged, a draft, still building, or its commit part differs. Scoping stage S-LB1 owns 120–129.</summary>
     public static readonly ErrorDefinition MapVersionNotRetained = new("SND-CONTEXT-120", ErrorKind.NotFound, "That map version is not retained");
 
+    /// <summary>SND-CONTEXT-160: the history lens ran out of 'context.deadline' reading git and returned the changes it had. Never a route failure: it is the code of a 'git-history' row in 'searched' (state degraded). S-H owns 160–169.</summary>
+    public static readonly ErrorDefinition HistoryDeadline = new("SND-CONTEXT-160", ErrorKind.Timeout, "The history read ran out of time");
+
+    /// <summary>SND-CONTEXT-161: a configured intent source has never synced, so no record of it can be listed. The code of an intent source's row in 'searched' (state unavailable, reason 'not-synced'); never a route failure. Sindri's 'context-sync-gaps' service starts the sync.</summary>
+    public static readonly ErrorDefinition IntentNotSynced = new("SND-CONTEXT-161", ErrorKind.Unavailable, "A configured intent source has not synced yet");
+
     /// <summary>SND-CONTEXT-130: a profile recognizer ('context.extract.recognizers[i]') is invalid: an unknown kind, a bad glob, a regex that doesn't compile or a key group it doesn't name. 132 is reserved for a recognizer that timed out on a file (degraded, never a failure).</summary>
     public static readonly ErrorDefinition RecognizerInvalid = new("SND-CONTEXT-130", ErrorKind.Invalid, "A profile recognizer is invalid");
 
@@ -179,7 +185,7 @@ public static class ContextErrors
          NoMap, MapFileInvalid, MapNodeUndefined, ExportOutsideHome, MapFileChanged, ProbeFileInvalid, NoProbeFile, AmbiguousAnchor, ProbesRegressed,
          HeavyLockBusy, LabelingUnavailable, ReviewFileNoMatch, NoDraftMap, RepoOutsideScope, PromoteRefused, ReviewTargetStale, ExtractionUnreadable,
          OnyxKeyRefused, OnyxUnexpectedReply, OnyxDocumentNotFound, OnyxKeyNotServiceAccount, OnyxNotPinnedOrLoopback, SyncRunning, ModelAnswerRefused, SyncSourceUnknown, SyncCapped,
-         NoEligibleSample, NoBriefSource, UnknownArm, AdjudicationCapped, CommitUnknown, NoMergeBase, MapVersionNotRetained, RecognizerInvalid, RecognizerOverCap];
+         NoEligibleSample, NoBriefSource, UnknownArm, AdjudicationCapped, CommitUnknown, NoMergeBase, MapVersionNotRetained, HistoryDeadline, IntentNotSynced, RecognizerInvalid, RecognizerOverCap];
 
     /// <summary>
     /// The codes the CLI answers with exit 1 (attention, spec §8.6): an unknown or ambiguous anchor, a refused input or

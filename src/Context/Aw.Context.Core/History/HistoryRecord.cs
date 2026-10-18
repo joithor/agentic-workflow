@@ -28,4 +28,8 @@ public sealed record HistoryRecord(
     DateTimeOffset? CreatedAt,
     DateTimeOffset? UpdatedAt,
     DateTimeOffset? FetchedAt,
-    bool Leaky);
+    bool Leaky)
+{
+    /// <summary>Its kind (always a record).</summary>
+    public NodeKind Kind => NodeKind.Record;
+}

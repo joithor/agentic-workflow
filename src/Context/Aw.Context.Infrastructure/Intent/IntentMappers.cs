@@ -14,7 +14,7 @@ internal static class IntentMappers
     private static readonly string[] _rules = ["issue-key", "url", "path", "identifier", "quoted-title"];
 
     internal static IRowMapper<IntentRecord> Record { get; } = new Mapper<IntentRecord>(r =>
-        new(RecordKey.From(r.GetString(0)), SourceId.From(r.GetString(1)), r.GetString(2), r.GetString(3), Split(r.GetString(4))) { CreatedAt = r.IsDBNull(5) ? null : SqliteRead.GetTimestamp(r, 5) });
+        new(RecordKey.From(r.GetString(0)), SourceId.From(r.GetString(1)), r.GetString(2), r.GetString(3), Split(r.GetString(4))) { CreatedAt = r.IsDBNull(5) ? null : SqliteRead.GetTimestamp(r, 5), FetchedAt = SqliteRead.GetTimestamp(r, 6) });
 
     internal static IRowMapper<IntentLink> Link { get; } = new Mapper<IntentLink>(r =>
         new(RecordKey.From(r.GetString(0)), NodeKey.From(r.GetString(1)), RuleOf(r.GetString(2)), r.GetDouble(3), r.GetString(4)));
