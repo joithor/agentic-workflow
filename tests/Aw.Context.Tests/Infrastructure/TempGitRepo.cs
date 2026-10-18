@@ -11,6 +11,21 @@ internal sealed class TempGitRepo : IDisposable
 
     public TempGitRepo(IReadOnlyDictionary<string, string> files)
     {
+        try
+        {
+            Init(files);
+            Head = Run("rev-parse", "HEAD");
+            Repo = new ContextRepo(ContextRepoName.From("aw-split-panes"), Path);
+        }
+        catch (Exception)
+        {
+            Directory.Delete(Path, recursive: true);   // a git that timed out must not leave its folder behind
+            throw;
+        }
+    }
+
+    private void Init(IReadOnlyDictionary<string, string> files)
+    {
         _ = Run("init", "-q", "-b", "main");
         foreach (var (path, text) in files)
         {
@@ -21,8 +36,6 @@ internal sealed class TempGitRepo : IDisposable
 
         _ = Run("add", "-A");
         _ = Run("commit", "-q", "-m", "first");
-        Head = Run("rev-parse", "HEAD");
-        Repo = new ContextRepo(ContextRepoName.From("aw-split-panes"), Path);
     }
 
     public string Path { get; } = Directory.CreateTempSubdirectory("aw-ctx-git-").FullName;
@@ -56,7 +69,7 @@ internal sealed class TempGitRepo : IDisposable
         {
             Task.WaitAll([exited, stdout, stderr], limit.Token);
         }
-        catch (Exception e) when (e is OperationCanceledException or AggregateException { InnerException: OperationCanceledException })
+        catch (Exception e) when (!TestContext.Current.CancellationToken.IsCancellationRequested && e is OperationCanceledException or AggregateException { InnerException: OperationCanceledException })
         {
             git.Kill(entireProcessTree: true);
             throw new TimeoutException(string.Create(CultureInfo.InvariantCulture, $"git {string.Join(' ', args)} did not finish in {_gitTimeout.TotalSeconds} s: a stuck git, or a pipe a concurrent fork still holds"), e);

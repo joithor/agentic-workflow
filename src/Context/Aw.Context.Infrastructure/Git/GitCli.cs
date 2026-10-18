@@ -18,7 +18,23 @@ internal sealed partial class GitCli
 {
     private readonly TimeSpan _timeout = TimeSpan.FromSeconds(30);
     private readonly TimeSpan _archiveTimeout = TimeSpan.FromMinutes(5);
-    private readonly TimeSpan _drainGrace = TimeSpan.FromSeconds(2);
+    private readonly IReadOnlyList<string> _command;
+    private readonly TimeSpan _drainGrace;
+
+    /// <summary>The git on PATH, with the shipped two-second grace for stderr after git exits.</summary>
+    public GitCli()
+        : this(["git"], TimeSpan.FromSeconds(2))
+    {
+    }
+
+    /// <summary>A git reached by another command, and another stderr grace: what the tests use to stand in a git that exits while something else still holds its stderr.</summary>
+    /// <param name="command">The command and its leading arguments; the git arguments follow them.</param>
+    /// <param name="drainGrace">How long a finished git's stderr may stay open before the call stops waiting for it.</param>
+    internal GitCli(IReadOnlyList<string> command, TimeSpan drainGrace)
+    {
+        _command = command;
+        _drainGrace = drainGrace;
+    }
 
     /// <summary>The commit HEAD points at.</summary>
     /// <param name="repo">The repo's checkout.</param>
@@ -165,7 +181,7 @@ internal sealed partial class GitCli
 
     private async ValueTask<Result<(int Exit, string Stdout)>> Run(string repo, string[] args, CancellationToken cancellationToken)
     {
-        var start = new ProcessStartInfo("git")
+        var start = new ProcessStartInfo(_command[0])
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -177,7 +193,7 @@ internal sealed partial class GitCli
             _ = start.Environment.Remove(name);
         }
 
-        foreach (var arg in (string[])["-C", repo, "-c", "core.quotepath=off", .. args])
+        foreach (var arg in (string[])[.. _command.Skip(1), "-C", repo, "-c", "core.quotepath=off", .. args])
         {
             start.ArgumentList.Add(arg);
         }
@@ -219,9 +235,9 @@ internal sealed partial class GitCli
         }
     }
 
-    private static ProcessStartInfo CleanGit(string[] args)
+    private ProcessStartInfo CleanGit(string[] args)
     {
-        var start = new ProcessStartInfo("git", args) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
+        var start = new ProcessStartInfo(_command[0], [.. _command.Skip(1), .. args]) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
         foreach (var name in start.Environment.Keys.Where(k => k.StartsWith("GIT_", StringComparison.Ordinal)).ToList())
         {
             _ = start.Environment.Remove(name);

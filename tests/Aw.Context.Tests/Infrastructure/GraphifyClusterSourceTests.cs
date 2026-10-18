@@ -132,7 +132,7 @@ public sealed class GraphifyClusterSourceTests
         var snapshot = Directory.CreateTempSubdirectory("aw-unpack-").FullName;
         try
         {
-            var exported = await new GitCli().Archive(repo.Path, repo.Head, (stream, token) => GraphifySnapshot.Unpack(stream, snapshot, repo.Repo, new GraphifySnapshot.Tally(ClusterLimits.Default), token), Ct);
+            var exported = await GraphifyRun.Archive(new GitCli(), repo, (stream, token) => GraphifySnapshot.Unpack(stream, snapshot, repo.Repo, new GraphifySnapshot.Tally(ClusterLimits.Default), token));
 
             Assert.False(exported.IsError);
             Assert.True(File.Exists(Path.Combine(snapshot, "src", "keys", "bindings.ts")), "a source file is unpacked");
