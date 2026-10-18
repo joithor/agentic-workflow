@@ -24,12 +24,18 @@ public sealed class TmuxLanePaneContractTests : LanePaneContract
             return at < 0 || at + 1 >= request.Argv.Count ? null : request.Argv[at + 1].TrimStart('=').TrimEnd(':');
         }
 
+        static bool Live(CommandRequest request, Dictionary<string, (string Command, int Clients)> all) => Session(request) is { } s && all.ContainsKey(s);
+
         var runner = new InMemoryCommandRunner()
-            .When("display-message", r => Session(r) is { } s && sessions.TryGetValue(s, out var found) ? Ok(found.Command + "\n") : Failed())
+            .When("display-message", r => Session(r) is { } s && sessions.TryGetValue(s, out var found) ? Ok(Shown(r, found.Command)) : Failed())
+            .When("capture-pane", r => Live(r, sessions) ? Ok("output\n") : Failed())
             .When("list-clients", r => Session(r) is { } s && sessions.TryGetValue(s, out var found) ? Ok(string.Concat(Enumerable.Repeat("x\n", found.Clients))) : Failed())
-            .When("send-keys", r => Session(r) is { } s && sessions.ContainsKey(s) ? Ok(string.Empty) : Failed());
+            .When("send-keys", r => Live(r, sessions) ? Ok(string.Empty) : Failed());
         return (new TmuxLanePane(runner, "tmux-never-started", "t1", config), (session, command, clients) => sessions[session] = (command, clients));
     }
+
+    // display-message answers the pane's pid for #{pane_pid} and the command otherwise.
+    private static string Shown(CommandRequest request, string command) => (string.Equals(request.Argv[^1], "#{pane_pid}", StringComparison.Ordinal) ? "4242" : command) + "\n";
 
     private static CommandResult Ok(string stdout) => new(0, stdout, string.Empty, TimedOut: false);
 
