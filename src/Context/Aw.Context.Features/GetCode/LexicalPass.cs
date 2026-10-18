@@ -88,7 +88,7 @@ internal sealed class LexicalPass(ContextSettings settings, GraphSnapshot graph,
 
     private readonly record struct RowFacts((string Code, bool NotHeld)? Failure, bool Capped, bool Started, bool Configured, bool TimedOut);
 
-    private SearchedSource Row(SourceId id, RowFacts facts, DateTimeOffset now) =>
+    private static SearchedSource Row(SourceId id, RowFacts facts, DateTimeOffset now) =>
         (facts.Configured, facts.Failure, facts.TimedOut) switch
         {
             (false, _, _) => SearchedSources.Lexical(id, SearchedState.NotConfigured, "not-configured", code: null, asOf: null),
