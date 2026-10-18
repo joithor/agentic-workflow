@@ -579,11 +579,9 @@ Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsResponse.Events.init -> vo
 Aw.Sindri.Features.GetInstanceEvents.GetInstanceEventsResponse.GetInstanceEventsResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.GetInstanceEvents.InstanceEventView!>! Events, long Cursor) -> void
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.<Clone>$() -> Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields!
-Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Deconstruct(out string? From, out string? To, out string? Trigger, out string? Outcome, out string? Run) -> void
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Equals(Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields? other) -> bool
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.From.get -> string?
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.From.init -> void
-Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.InstanceEventFields(string? From = null, string? To = null, string? Trigger = null, string? Outcome = null, string? Run = null) -> void
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Outcome.get -> string?
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Outcome.init -> void
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Run.get -> string?
@@ -2498,6 +2496,13 @@ override Aw.Sindri.Features.ContextCalls.BacktestArmScore.GetHashCode() -> int
 override Aw.Sindri.Features.ContextCalls.BacktestArmScore.ToString() -> string!
 static Aw.Sindri.Features.ContextCalls.BacktestArmScore.operator !=(Aw.Sindri.Features.ContextCalls.BacktestArmScore? left, Aw.Sindri.Features.ContextCalls.BacktestArmScore? right) -> bool
 static Aw.Sindri.Features.ContextCalls.BacktestArmScore.operator ==(Aw.Sindri.Features.ContextCalls.BacktestArmScore? left, Aw.Sindri.Features.ContextCalls.BacktestArmScore? right) -> bool
+
+Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Deconstruct(out string? From, out string? To, out string? Trigger, out string? Outcome, out string? Run, out string? Via, out string? Decision) -> void
+Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.InstanceEventFields(string? From = null, string? To = null, string? Trigger = null, string? Outcome = null, string? Run = null, string? Via = null, string? Decision = null) -> void
+Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Via.get -> string?
+Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Via.init -> void
+Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Decision.get -> string?
+Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Decision.init -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.MapVersion.get -> string?
 Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.MapVersion.init -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest
@@ -2564,3 +2569,123 @@ Aw.Sindri.Features.ContextCalls.QueryContextRequest.Deconstruct(out string? Q, o
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Hops.get -> string?
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.Hops.init -> void
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.QueryContextRequest(string? Q, string? Node = null, string? Item = null, string? Symbol = null, string? Depth = null, string? Budget = null, bool Draft = false, string? Diff = null, string? Repo = null, string? MapVersion = null, string? Hops = null) -> void
+Aw.Sindri.Features.GetSession.GetSessionRequest
+Aw.Sindri.Features.GetSession.GetSessionRequest.<Clone>$() -> Aw.Sindri.Features.GetSession.GetSessionRequest!
+Aw.Sindri.Features.GetSession.GetSessionRequest.Deconstruct(out Aw.Sindri.Core.Sessions.SessionRef Ref) -> void
+Aw.Sindri.Features.GetSession.GetSessionRequest.Equals(Aw.Sindri.Features.GetSession.GetSessionRequest? other) -> bool
+Aw.Sindri.Features.GetSession.GetSessionRequest.GetSessionRequest(Aw.Sindri.Core.Sessions.SessionRef Ref) -> void
+Aw.Sindri.Features.GetSession.GetSessionRequest.Ref.get -> Aw.Sindri.Core.Sessions.SessionRef
+Aw.Sindri.Features.GetSession.GetSessionRequest.Ref.init -> void
+Aw.Sindri.Features.GetSession.SessionView
+Aw.Sindri.Features.GetSession.SessionView.<Clone>$() -> Aw.Sindri.Features.GetSession.SessionView!
+Aw.Sindri.Features.GetSession.SessionView.AsOf.get -> System.DateTimeOffset
+Aw.Sindri.Features.GetSession.SessionView.AsOf.init -> void
+Aw.Sindri.Features.GetSession.SessionView.Cwd.get -> string?
+Aw.Sindri.Features.GetSession.SessionView.Cwd.init -> void
+Aw.Sindri.Features.GetSession.SessionView.Deconstruct(out Aw.Sindri.Core.Sessions.SessionRow! Session, out string? Cwd, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionStateEntry!>? StateHistory, out System.DateTimeOffset AsOf) -> void
+Aw.Sindri.Features.GetSession.SessionView.Equals(Aw.Sindri.Features.GetSession.SessionView? other) -> bool
+Aw.Sindri.Features.GetSession.SessionView.Session.get -> Aw.Sindri.Core.Sessions.SessionRow!
+Aw.Sindri.Features.GetSession.SessionView.Session.init -> void
+Aw.Sindri.Features.GetSession.SessionView.SessionView(Aw.Sindri.Core.Sessions.SessionRow! Session, string? Cwd, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionStateEntry!>? StateHistory, System.DateTimeOffset AsOf) -> void
+Aw.Sindri.Features.GetSession.SessionView.StateHistory.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionStateEntry!>?
+Aw.Sindri.Features.GetSession.SessionView.StateHistory.init -> void
+Aw.Sindri.Features.GetStatus.GetStatusResponse.Sessions.get -> Aw.Sindri.Features.GetStatus.SessionStatus?
+Aw.Sindri.Features.GetStatus.GetStatusResponse.Sessions.init -> void
+Aw.Sindri.Features.GetStatus.SessionStatus
+Aw.Sindri.Features.GetStatus.SessionStatus.<Clone>$() -> Aw.Sindri.Features.GetStatus.SessionStatus!
+Aw.Sindri.Features.GetStatus.SessionStatus.Asking.get -> int
+Aw.Sindri.Features.GetStatus.SessionStatus.Asking.init -> void
+Aw.Sindri.Features.GetStatus.SessionStatus.Deconstruct(out int Live, out int Asking, out int Problems) -> void
+Aw.Sindri.Features.GetStatus.SessionStatus.Equals(Aw.Sindri.Features.GetStatus.SessionStatus? other) -> bool
+Aw.Sindri.Features.GetStatus.SessionStatus.Live.get -> int
+Aw.Sindri.Features.GetStatus.SessionStatus.Live.init -> void
+Aw.Sindri.Features.GetStatus.SessionStatus.Problems.get -> int
+Aw.Sindri.Features.GetStatus.SessionStatus.Problems.init -> void
+Aw.Sindri.Features.GetStatus.SessionStatus.SessionStatus(int Live, int Asking, int Problems) -> void
+Aw.Sindri.Features.ListSessions.EndedSessionRow
+Aw.Sindri.Features.ListSessions.EndedSessionRow.<Clone>$() -> Aw.Sindri.Features.ListSessions.EndedSessionRow!
+Aw.Sindri.Features.ListSessions.EndedSessionRow.Deconstruct(out Aw.Sindri.Core.Sessions.SessionRow! Session, out System.DateTimeOffset EndedAt, out System.Collections.Generic.IReadOnlyList<string!>? Resume) -> void
+Aw.Sindri.Features.ListSessions.EndedSessionRow.EndedAt.get -> System.DateTimeOffset
+Aw.Sindri.Features.ListSessions.EndedSessionRow.EndedAt.init -> void
+Aw.Sindri.Features.ListSessions.EndedSessionRow.EndedSessionRow(Aw.Sindri.Core.Sessions.SessionRow! Session, System.DateTimeOffset EndedAt, System.Collections.Generic.IReadOnlyList<string!>? Resume) -> void
+Aw.Sindri.Features.ListSessions.EndedSessionRow.Equals(Aw.Sindri.Features.ListSessions.EndedSessionRow? other) -> bool
+Aw.Sindri.Features.ListSessions.EndedSessionRow.Resume.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Features.ListSessions.EndedSessionRow.Resume.init -> void
+Aw.Sindri.Features.ListSessions.EndedSessionRow.Session.get -> Aw.Sindri.Core.Sessions.SessionRow!
+Aw.Sindri.Features.ListSessions.EndedSessionRow.Session.init -> void
+Aw.Sindri.Features.ListSessions.ListSessionsRequest
+Aw.Sindri.Features.ListSessions.ListSessionsRequest.<Clone>$() -> Aw.Sindri.Features.ListSessions.ListSessionsRequest!
+Aw.Sindri.Features.ListSessions.ListSessionsRequest.Deconstruct(out Aw.Sindri.Core.Launch.AgentId? Provider, out Aw.Sindri.Core.Sessions.SessionState? State, out Aw.Sindri.Core.Ids.RepoName? Repo, out bool? InWorkflow) -> void
+Aw.Sindri.Features.ListSessions.ListSessionsRequest.Equals(Aw.Sindri.Features.ListSessions.ListSessionsRequest? other) -> bool
+Aw.Sindri.Features.ListSessions.ListSessionsRequest.InWorkflow.get -> bool?
+Aw.Sindri.Features.ListSessions.ListSessionsRequest.InWorkflow.init -> void
+Aw.Sindri.Features.ListSessions.ListSessionsRequest.ListSessionsRequest(Aw.Sindri.Core.Launch.AgentId? Provider = null, Aw.Sindri.Core.Sessions.SessionState? State = null, Aw.Sindri.Core.Ids.RepoName? Repo = null, bool? InWorkflow = null) -> void
+Aw.Sindri.Features.ListSessions.ListSessionsRequest.Provider.get -> Aw.Sindri.Core.Launch.AgentId?
+Aw.Sindri.Features.ListSessions.ListSessionsRequest.Provider.init -> void
+Aw.Sindri.Features.ListSessions.ListSessionsRequest.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Features.ListSessions.ListSessionsRequest.Repo.init -> void
+Aw.Sindri.Features.ListSessions.ListSessionsRequest.State.get -> Aw.Sindri.Core.Sessions.SessionState?
+Aw.Sindri.Features.ListSessions.ListSessionsRequest.State.init -> void
+Aw.Sindri.Features.ListSessions.SessionCounts
+Aw.Sindri.Features.ListSessions.SessionCounts.<Clone>$() -> Aw.Sindri.Features.ListSessions.SessionCounts!
+Aw.Sindri.Features.ListSessions.SessionCounts.Asking.get -> int
+Aw.Sindri.Features.ListSessions.SessionCounts.Asking.init -> void
+Aw.Sindri.Features.ListSessions.SessionCounts.Deconstruct(out int Live, out int Asking, out int OutsideWorkflow) -> void
+Aw.Sindri.Features.ListSessions.SessionCounts.Equals(Aw.Sindri.Features.ListSessions.SessionCounts? other) -> bool
+Aw.Sindri.Features.ListSessions.SessionCounts.Live.get -> int
+Aw.Sindri.Features.ListSessions.SessionCounts.Live.init -> void
+Aw.Sindri.Features.ListSessions.SessionCounts.OutsideWorkflow.get -> int
+Aw.Sindri.Features.ListSessions.SessionCounts.OutsideWorkflow.init -> void
+Aw.Sindri.Features.ListSessions.SessionCounts.SessionCounts(int Live, int Asking, int OutsideWorkflow) -> void
+Aw.Sindri.Features.ListSessions.SessionList
+Aw.Sindri.Features.ListSessions.SessionList.<Clone>$() -> Aw.Sindri.Features.ListSessions.SessionList!
+Aw.Sindri.Features.ListSessions.SessionList.AsOf.get -> System.DateTimeOffset
+Aw.Sindri.Features.ListSessions.SessionList.AsOf.init -> void
+Aw.Sindri.Features.ListSessions.SessionList.Counts.get -> Aw.Sindri.Features.ListSessions.SessionCounts!
+Aw.Sindri.Features.ListSessions.SessionList.Counts.init -> void
+Aw.Sindri.Features.ListSessions.SessionList.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionRow!>! Sessions, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListSessions.EndedSessionRow!>! RecentlyEnded, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionProblem!>! Problems, out Aw.Sindri.Features.ListSessions.SessionCounts! Counts, out string? Empty, out System.DateTimeOffset AsOf) -> void
+Aw.Sindri.Features.ListSessions.SessionList.Empty.get -> string?
+Aw.Sindri.Features.ListSessions.SessionList.Empty.init -> void
+Aw.Sindri.Features.ListSessions.SessionList.Equals(Aw.Sindri.Features.ListSessions.SessionList? other) -> bool
+Aw.Sindri.Features.ListSessions.SessionList.Problems.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionProblem!>!
+Aw.Sindri.Features.ListSessions.SessionList.Problems.init -> void
+Aw.Sindri.Features.ListSessions.SessionList.RecentlyEnded.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListSessions.EndedSessionRow!>!
+Aw.Sindri.Features.ListSessions.SessionList.RecentlyEnded.init -> void
+Aw.Sindri.Features.ListSessions.SessionList.SessionList(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionRow!>! Sessions, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ListSessions.EndedSessionRow!>! RecentlyEnded, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionProblem!>! Problems, Aw.Sindri.Features.ListSessions.SessionCounts! Counts, string? Empty, System.DateTimeOffset AsOf) -> void
+Aw.Sindri.Features.ListSessions.SessionList.Sessions.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionRow!>!
+Aw.Sindri.Features.ListSessions.SessionList.Sessions.init -> void
+override Aw.Sindri.Features.GetSession.GetSessionRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetSession.GetSessionRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetSession.GetSessionRequest.ToString() -> string!
+override Aw.Sindri.Features.GetSession.SessionView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetSession.SessionView.GetHashCode() -> int
+override Aw.Sindri.Features.GetSession.SessionView.ToString() -> string!
+override Aw.Sindri.Features.GetStatus.SessionStatus.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetStatus.SessionStatus.GetHashCode() -> int
+override Aw.Sindri.Features.GetStatus.SessionStatus.ToString() -> string!
+override Aw.Sindri.Features.ListSessions.EndedSessionRow.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListSessions.EndedSessionRow.GetHashCode() -> int
+override Aw.Sindri.Features.ListSessions.EndedSessionRow.ToString() -> string!
+override Aw.Sindri.Features.ListSessions.ListSessionsRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListSessions.ListSessionsRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ListSessions.ListSessionsRequest.ToString() -> string!
+override Aw.Sindri.Features.ListSessions.SessionCounts.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListSessions.SessionCounts.GetHashCode() -> int
+override Aw.Sindri.Features.ListSessions.SessionCounts.ToString() -> string!
+override Aw.Sindri.Features.ListSessions.SessionList.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ListSessions.SessionList.GetHashCode() -> int
+override Aw.Sindri.Features.ListSessions.SessionList.ToString() -> string!
+static Aw.Sindri.Features.GetSession.GetSessionRequest.operator !=(Aw.Sindri.Features.GetSession.GetSessionRequest? left, Aw.Sindri.Features.GetSession.GetSessionRequest? right) -> bool
+static Aw.Sindri.Features.GetSession.GetSessionRequest.operator ==(Aw.Sindri.Features.GetSession.GetSessionRequest? left, Aw.Sindri.Features.GetSession.GetSessionRequest? right) -> bool
+static Aw.Sindri.Features.GetSession.SessionView.operator !=(Aw.Sindri.Features.GetSession.SessionView? left, Aw.Sindri.Features.GetSession.SessionView? right) -> bool
+static Aw.Sindri.Features.GetSession.SessionView.operator ==(Aw.Sindri.Features.GetSession.SessionView? left, Aw.Sindri.Features.GetSession.SessionView? right) -> bool
+static Aw.Sindri.Features.GetStatus.SessionStatus.operator !=(Aw.Sindri.Features.GetStatus.SessionStatus? left, Aw.Sindri.Features.GetStatus.SessionStatus? right) -> bool
+static Aw.Sindri.Features.GetStatus.SessionStatus.operator ==(Aw.Sindri.Features.GetStatus.SessionStatus? left, Aw.Sindri.Features.GetStatus.SessionStatus? right) -> bool
+static Aw.Sindri.Features.ListSessions.EndedSessionRow.operator !=(Aw.Sindri.Features.ListSessions.EndedSessionRow? left, Aw.Sindri.Features.ListSessions.EndedSessionRow? right) -> bool
+static Aw.Sindri.Features.ListSessions.EndedSessionRow.operator ==(Aw.Sindri.Features.ListSessions.EndedSessionRow? left, Aw.Sindri.Features.ListSessions.EndedSessionRow? right) -> bool
+static Aw.Sindri.Features.ListSessions.ListSessionsRequest.operator !=(Aw.Sindri.Features.ListSessions.ListSessionsRequest? left, Aw.Sindri.Features.ListSessions.ListSessionsRequest? right) -> bool
+static Aw.Sindri.Features.ListSessions.ListSessionsRequest.operator ==(Aw.Sindri.Features.ListSessions.ListSessionsRequest? left, Aw.Sindri.Features.ListSessions.ListSessionsRequest? right) -> bool
+static Aw.Sindri.Features.ListSessions.SessionCounts.operator !=(Aw.Sindri.Features.ListSessions.SessionCounts? left, Aw.Sindri.Features.ListSessions.SessionCounts? right) -> bool
+static Aw.Sindri.Features.ListSessions.SessionCounts.operator ==(Aw.Sindri.Features.ListSessions.SessionCounts? left, Aw.Sindri.Features.ListSessions.SessionCounts? right) -> bool
+static Aw.Sindri.Features.ListSessions.SessionList.operator !=(Aw.Sindri.Features.ListSessions.SessionList? left, Aw.Sindri.Features.ListSessions.SessionList? right) -> bool
+static Aw.Sindri.Features.ListSessions.SessionList.operator ==(Aw.Sindri.Features.ListSessions.SessionList? left, Aw.Sindri.Features.ListSessions.SessionList? right) -> bool

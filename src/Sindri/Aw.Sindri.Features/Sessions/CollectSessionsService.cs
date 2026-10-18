@@ -18,6 +18,7 @@ internal sealed partial class CollectSessionsService(SessionDiscovery discovery,
         var now = clock.GetUtcNow();
         if (!discovery.IsEnabled())
         {
+            memory.History = new Dictionary<SessionRef, IReadOnlyList<SessionStateEntry>>();
             Publish([], [], [SessionProblems.Disabled], now);
             return new CollectSessionsResponse(memory.Pending, Good: false, Sessions: 0, Pruned: 0);
         }
@@ -38,6 +39,7 @@ internal sealed partial class CollectSessionsService(SessionDiscovery discovery,
         LogHostChanges(sessions);
         memory.Previous = sessions.ToDictionary(static s => s.Ref);
         memory.Ended = ended;
+        memory.History = StateHistoryRules.Next(memory.History, sessions);
         Publish(sessions, ended, found.Problems, now);
         return new CollectSessionsResponse(memory.Pending, Good: true, sessions.Count, discovery.Prune([.. sessions.Select(static s => s.Ref)], now));
     }
@@ -124,5 +126,5 @@ internal sealed partial class CollectSessionsService(SessionDiscovery discovery,
     }
 
     private void Publish(IReadOnlyList<ObservedSession> sessions, IReadOnlyList<EndedSession> ended, IReadOnlyList<SessionProblem> problems, DateTimeOffset at) =>
-        snapshot.Publish(new SessionSnapshot(sessions, ended, [.. discovery.StaticProblems(), .. problems], at));
+        snapshot.Publish(new SessionSnapshot(sessions, ended, [.. discovery.StaticProblems(), .. problems], at) { History = memory.History });
 }
