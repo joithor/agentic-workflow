@@ -208,7 +208,7 @@ On `CONTEXT HIGH` (or a `recycle` verdict), message the lane (SendMessage): at a
 `~/.agentic-workflow/digests/<team>-<lane>-<date>.md` and reply `DIGEST READY <path>`. A safe point means no builder subagent, review run or
 background job is running (`/clear` cuts them off) and everything is pushed. When the reply arrives, run
 `aw-meta lane-recycle <lane> --digest <path>` (`--dry-run` shows the steps). It clears the lane, waits for the new session, records it so a
-relaunch resumes it, and has the lane read the digest and continue. Exit 1 means it refused (stale or empty digest) or the new session never
+relaunch resumes it, and has the lane read the digest and continue. Exit 1 means it refused (stale or empty digest, or no live Claude session in the lane's pane) or the new session never
 appeared (nothing more was sent; the error prints the command to send the line by hand). Never recycle the meta lane this way.
 
 ## The running log
