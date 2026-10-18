@@ -67,6 +67,11 @@ bash "$INSTALL" --provider claude >/dev/null 2>&1
 check "install with no settings file: creates it, 7 entries" "$(fleet_entries "$CLAUDE_SETTINGS_FILE")" "7"
 bash "$INSTALL" --uninstall --provider claude >/dev/null 2>&1
 
+# Uninstall with no settings file at all: exit 0, and none is made.
+rm -r "$WORK/claude"
+bash "$INSTALL" --uninstall --provider claude >/dev/null 2>&1
+check "uninstall with no settings file: exit 0, none created" "$?:$([ -e "$CLAUDE_SETTINGS_FILE" ] && echo made || echo none)" "0:none"
+
 # Codex and Cursor are CO-1b: say so, write nothing.
 for p in codex cursor; do
   OUT="$(bash "$INSTALL" --provider "$p" 2>&1)"; RC=$?

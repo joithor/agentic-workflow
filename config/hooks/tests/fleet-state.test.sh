@@ -53,7 +53,9 @@ check "env is {} on Linux" "$(field '.env | length')" "0"
 check "at is a millisecond UTC stamp" "$(field .at | grep -cE '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z$')" "1"
 step prompt-submit running - -
 step permission-request asking approval Bash
-step notification-permission asking approval Bash   # the notification that follows the request keeps the tool
+cp "$FILE" "$WORK/before-notification"
+step notification-permission asking approval Bash   # the notification that follows the request leaves the file as it is
+check "permission_prompt after the request: the file is byte-identical" "$(cmp -s "$FILE" "$WORK/before-notification" && echo same || echo changed)" "same"
 step post-tool-use running - -
 step notification-elicitation asking input -
 step post-tool-use running - -
@@ -65,11 +67,25 @@ step prompt-submit running - -
 step stop idle - -
 step session-end ended - -
 
-# --- a permission notification with no request before it is still asking approval, with no tool ---
+# --- a permission_prompt notification never writes: the request wrote asking, and a late notification must not undo an approval ---
 fresh
 run notification-permission
-check "notification alone: asking approval, no tool" "$(field '[.state, .reason, (.tool // "-")] | join(" ")')" "asking approval -"
-check "notification alone: schema-valid" "$(valid "$FILE")" "valid"
+check "notification alone: nothing written" "$([ -e "$FILE" ] && echo file || echo none):$RC:$OUT" "none:0:"
+for f in permission-request post-tool-use notification-permission; do run "$f"; done
+check "request, approval, then the late notification: ends running" "$(field '[.state, .event, (.reason // "-")] | join(" ")')" "running PostToolUse -"
+run notification-elicitation
+cp "$FILE" "$WORK/before-late"
+run notification-permission
+check "permission_prompt while asking input: unchanged" "$(field '[.state, .reason] | join(" ")'):$(cmp -s "$FILE" "$WORK/before-late" && echo same || echo changed)" "asking input:same"
+fresh; run session-start; run notification-permission
+check "permission_prompt on an idle file: unchanged" "$(field .state)" "idle"
+
+# --- PostToolUse over an empty or unparseable file leaves it alone ---
+fresh; run session-start
+: > "$FILE"; run post-tool-use
+check "PostToolUse on an empty file: exit 0, still empty" "$RC:$OUT:$(wc -c < "$FILE" | tr -d ' ')" "0::0"
+echo 'not json {' > "$FILE"; run post-tool-use
+check "PostToolUse on an unparseable file: exit 0, untouched" "$RC:$(cat "$FILE")" "0:not json {"
 
 # --- no payload text in the file ---
 fresh
