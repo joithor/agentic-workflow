@@ -8,6 +8,8 @@ The recipes Sindri ships. Each is a YAML state machine (`docs/csharp/sindri-work
 | `workflow.step` | Produce, check, verify one Step | engine spec §12 |
 | `workflow.scoping` | Station 1 of the line: scope a brief, tracker item, idea or change; interview; challenge; park at the owner's stop with a scope packet | scoping spec §6.1 |
 | `workflow.idea-to-brief` | Block recipe, the child of `workflow.scoping`'s `idea` branch: a short interview turns an idea into a cited brief | scoping spec §6.2 |
+| `workflow.design` | Station 2 of the line: one spec draft from a frozen scope packet in the style pack, reviewed through the lens pack until no CRITICAL or HIGH finding is left; a candidate design packet | line spec §4, C.1 |
+| `workflow.plan` | Station 3 of the line: the phase graph, executability review and hidden scenarios for a candidate design; the owner's after-design stop; freezes design, plan and phase packets | line spec §6, C.2 |
 | The block recipes below | The small recipes bugfix and spec-to-PR runs are built from | decision-tree spec (DT-R2) |
 
 ```bash

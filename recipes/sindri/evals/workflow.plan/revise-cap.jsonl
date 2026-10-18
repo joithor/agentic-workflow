@@ -23,4 +23,4 @@
 {"trigger":{"kind":"step.completed","outcome":"assumed"},"expect":{"state":"stop"}}
 {"trigger":{"kind":"step.completed","outcome":"reviseDesign","outputs":{"fact:answers":[{"question":"Q-design4","other":"note 4"}]}},"expect":{"state":"record"}}
 {"trigger":{"kind":"step.completed","outcome":"recorded","outputs":{"fact:answerLog":[{"id":"A6"}]}},"expect":{"state":"settle"}}
-{"trigger":{"kind":"step.completed","outcome":"assumed"},"expect":{"state":"parked","park":"revisions"}}
+{"trigger":{"kind":"step.completed","outcome":"assumed"},"expect":{"state":"parked","park":"rounds"}}
