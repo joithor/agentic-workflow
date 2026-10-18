@@ -225,7 +225,7 @@ public static class ProfileRules
             : null;
     }
 
-    private static Error? Workflow(SindriProfile profile) => Durations(profile.Workflow) ?? Effects(profile.Workflow) ?? Judges(profile);
+    private static Error? Workflow(SindriProfile profile) => Durations(profile.Workflow) ?? Effects(profile.Workflow) ?? Judges(profile) ?? ForgeRules.Check(profile.Workflow?.Forge);
 
     /// <summary>The judge provider lists (DT-J plan Q8): the box's and each repo's name only known providers.</summary>
     private static Error? Judges(SindriProfile profile)

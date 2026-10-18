@@ -13,6 +13,7 @@ namespace Aw.Sindri.Core.Profile;
 /// <param name="DispatchDelay">The undo window before an effect's activity runs (§5.7; default 10s; the dev profile sets 60s). Engine P6 unit (d) checks it.</param>
 /// <param name="Agent">The 'agent:' section (engine P8): the agent a Step launches (<see cref="WorkflowAgentSettings"/>).</param>
 /// <param name="Judge">The 'judge:' section (DT-J plan Q8): which providers a Judge Step may ask (<see cref="JudgeProviders"/>).</param>
+/// <param name="Forge">The forge port's settings (PR babysitter spec W27): adapter, hosts and credential source.</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record WorkflowSettings(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? DeskTimeout = null,
@@ -20,4 +21,5 @@ public sealed record WorkflowSettings(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] IReadOnlyList<string>? Effects = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? DispatchDelay = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] JudgeSettings? Judge = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] WorkflowAgentSettings? Agent = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] WorkflowAgentSettings? Agent = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ForgeSettings? Forge = null);

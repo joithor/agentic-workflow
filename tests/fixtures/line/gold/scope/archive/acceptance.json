@@ -5,12 +5,13 @@
     {
       "id": "AC-1",
       "text": "When the nightly job runs, the system shall archive every note not changed for a year.",
-      "form": "event",
+      "form": "ears",
       "surfaces": [
-        "surface:job/nightly"
+        "S15"
       ],
       "citations": [
-        "S15"
+        "L-product-5",
+        "A1"
       ],
       "trust": "untrusted",
       "status": "failing",
@@ -20,14 +21,14 @@
     {
       "id": "AC-2",
       "text": "While a note is archived, the system shall leave it out of the notes list.",
-      "form": "state",
+      "form": "ears",
       "surfaces": [
-        "surface:screen/notes-list",
-        "surface:route/notes-api"
-      ],
-      "citations": [
         "S2",
         "S3"
+      ],
+      "citations": [
+        "L-code-2",
+        "L-code-3"
       ],
       "trust": "untrusted",
       "status": "failing",
@@ -37,14 +38,15 @@
     {
       "id": "AC-3",
       "text": "When an editor restores an archived note, the system shall return it to the notes list.",
-      "form": "event",
+      "form": "ears",
       "surfaces": [
-        "surface:screen/archive",
-        "surface:route/notes-api"
-      ],
-      "citations": [
         "S25",
         "S3"
+      ],
+      "citations": [
+        "L-code-2",
+        "L-code-3",
+        "A1"
       ],
       "trust": "untrusted",
       "status": "failing",
@@ -54,42 +56,42 @@
     {
       "id": "AC-4",
       "text": "While a note is archived, the system shall leave it out of the weekly digest.",
-      "form": "state",
+      "form": "ears",
       "surfaces": [
-        "surface:api/weekly-digest-email"
-      ],
-      "citations": [
         "S24"
       ],
+      "citations": [
+        "L-product-11"
+      ],
       "trust": "untrusted",
       "status": "failing",
       "evidence": [],
       "parent": null
     },
     {
-      "id": "RG-1",
+      "id": "AC-5",
       "text": "When someone opens a live shared link, the system shall return its note, as it does today.",
-      "form": "event",
+      "form": "ears",
       "surfaces": [
-        "surface:route/link-resolve"
-      ],
-      "citations": [
         "S23"
       ],
+      "citations": [
+        "L-product-10"
+      ],
       "trust": "untrusted",
       "status": "failing",
       "evidence": [],
       "parent": null
     },
     {
-      "id": "RG-2",
+      "id": "AC-6",
       "text": "When the nightly job purges the trash, the system shall delete notes trashed more than 30 days, as it does today.",
-      "form": "event",
+      "form": "ears",
       "surfaces": [
-        "surface:job/nightly"
+        "S15"
       ],
       "citations": [
-        "S15"
+        "L-product-5"
       ],
       "trust": "untrusted",
       "status": "failing",

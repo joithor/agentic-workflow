@@ -125,8 +125,15 @@ public static class ProfileDiff
             ("workflow.agent.target", workflow?.Agent?.Target?.Value),
             ("workflow.judge.providers", Joined(workflow?.Judge?.Providers)),
         ];
-        return keys.Where(static k => k.Value is not null).Select(static k => (k.Key, k.Value!));   // why: the nulls are filtered out just before
+        return keys.Concat(Forge(workflow?.Forge)).Where(static k => k.Value is not null).Select(static k => (k.Key, k.Value!));   // why: the nulls are filtered out just before
     }
 
     private static string? Joined(IReadOnlyList<string>? values) => values is null ? null : string.Join(", ", values);
+
+    private static (string Key, string? Value)[] Forge(ForgeSettings? forge) =>
+    [
+        ("workflow.forge.adapter", forge?.Adapter),
+        ("workflow.forge.hosts", forge?.Hosts is { } hosts ? string.Join(", ", hosts) : null),
+        ("workflow.forge.credential", forge?.Credential),
+    ];
 }
