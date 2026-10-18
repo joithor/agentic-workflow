@@ -1,11 +1,11 @@
 using System.Reflection;
 using System.Text.Json;
-using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Kernel;
+using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Commands;
@@ -25,6 +25,7 @@ public sealed class ContextSyncGapsServiceTests
     private readonly InMemoryJobViews _jobs = new();
     private readonly Starter _start;
     private int _next;
+    private Aw.Sindri.Core.Lease.LeaseGrant? _grant;
 
     public ContextSyncGapsServiceTests()
     {
@@ -39,8 +40,8 @@ public sealed class ContextSyncGapsServiceTests
         var loaded = SliceHarness.Profile("5s");
         loaded = loaded with { Profile = loaded.Profile with { Context = context ? JsonDocument.Parse("{}").RootElement.Clone() : null } };
         _ = await _h.Profiles.Save(loaded, Ct);
-        var engine = DispatchProxy.Create<IContextEngine, SourcesProxy>();
-        ((SourcesProxy)(object)engine).View = new SourcesView(rows, SessionsEnabled: false, _now);
+        var engine = DispatchProxy.Create<IContextEngine, EngineSourcesProxy>();
+        ((EngineSourcesProxy)(object)engine).View = new SourcesView(rows, SessionsEnabled: false, _now);
         return new ContextSyncGapsService(new ContextScopes(_h.Profiles, _h.Callers), engine, _jobs, _start, _h.Clock);
     }
 
@@ -56,7 +57,8 @@ public sealed class ContextSyncGapsServiceTests
 
     private async Task<Result<ScheduledResult>> Run(ContextSyncGapsService service)
     {
-        var grant = await _h.HoldLease();
+        _grant ??= await _h.HoldLease();
+        var grant = _grant;
         using var caller = _h.Callers.EnterService("context-sync-gaps");
         return await service.Run(new ScheduledRun(grant, _now), Ct);
     }
@@ -69,21 +71,29 @@ public sealed class ContextSyncGapsServiceTests
         var result = await Run(service);
 
         Assert.False(result.Value.Idle);
-        Assert.Equal(null, Assert.Single(_start.Requests).Source);
+        Assert.Null(Assert.Single(_start.Requests).Source);
         Assert.Equal("service:context-sync-gaps", _start.Actors.Single());
     }
 
     [Fact, Trait("Lane", "unit")]
     public async Task Nothing_to_do_without_a_context_section_a_synced_source_or_a_failed_attempt()
     {
-        var none = await Service(context: false, Onyx());
-        var synced = await Service(context: true, Onyx(lastSync: _now));
-        var failedOnce = await Service(context: true, Onyx(code: "SND-CONTEXT-010"));
-
-        Assert.True((await Run(none)).Value.Idle);
-        Assert.True((await Run(synced)).Value.Idle);
-        Assert.True((await Run(failedOnce)).Value.Idle);
+        Assert.True((await Run(await Service(context: false, Onyx()))).Value.Idle);
+        Assert.True((await Run(await Service(context: true, Onyx(lastSync: _now)))).Value.Idle);
+        Assert.True((await Run(await Service(context: true, Onyx(code: "SND-CONTEXT-010")))).Value.Idle);
         Assert.Empty(_start.Requests);   // a quiet tick only reads views: the service holds no ledger or logger, and starts nothing
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_tick_with_no_approved_profile_is_quiet_not_a_failed_run()
+    {
+        var engine = DispatchProxy.Create<IContextEngine, EngineSourcesProxy>();
+        var service = new ContextSyncGapsService(new ContextScopes(_h.Profiles, _h.Callers), engine, _jobs, _start, _h.Clock);
+
+        var result = await Run(service);
+
+        Assert.True(result.Value.Idle);
+        Assert.Empty(_start.Requests);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -109,7 +119,7 @@ public sealed class ContextSyncGapsServiceTests
 
         Assert.True(waiting.Value.Idle);
         Assert.False(elapsed.Value.Idle);
-        Assert.Single(_start.Requests);
+        _ = Assert.Single(_start.Requests);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -147,7 +157,7 @@ public sealed class ContextSyncGapsServiceTests
         var notSynced = new SearchedSource(SourceId.From("onyx"), SearchedState.Unavailable, "not-synced", "SND-CONTEXT-161", AsOf: null);
         var ok = new SearchedSource(SourceId.From("git-history"), SearchedState.Ok, Reason: null, Code: null, _now);
 
-        var marked = await gaps.Mark(new LensSearched(["a"], "v1", 0, [], [notSynced, ok], new SearchedBands(new BandSearched(true), new BandSearched(true), new BandSearched(true))), Ct);
+        var marked = await gaps.Mark(new LensSearched(["a"], "v1", 0, [], [notSynced, ok], new SearchedBands(new BandSearched(Empty: true), new BandSearched(Empty: true), new BandSearched(Empty: true))), Ct);
 
         Assert.Equal("running", marked.Sources[0].Sync!.State);
         Assert.StartsWith("JOB-", marked.Sources[0].Sync!.JobId.Value, StringComparison.Ordinal);
@@ -160,7 +170,7 @@ public sealed class ContextSyncGapsServiceTests
         Job(JobState.Succeeded, TimeSpan.FromMinutes(1));
         var notSynced = new SearchedSource(SourceId.From("onyx"), SearchedState.Unavailable, "not-synced", "SND-CONTEXT-161", AsOf: null);
 
-        var marked = await new SyncGaps(_jobs).Mark(new LensSearched(["a"], "v1", 0, [], [notSynced], new SearchedBands(new BandSearched(true), new BandSearched(true), new BandSearched(true))), Ct);
+        var marked = await new SyncGaps(_jobs).Mark(new LensSearched(["a"], "v1", 0, [], [notSynced], new SearchedBands(new BandSearched(Empty: true), new BandSearched(Empty: true), new BandSearched(Empty: true))), Ct);
 
         Assert.Null(marked.Sources[0].Sync);
     }
@@ -189,14 +199,5 @@ public sealed class ContextSyncGapsServiceTests
                 ? error
                 : new JobStartedResponse(new CommandAccepted(harness.Ids.New<CommandId>(), 1), JobId.New(harness.Ids), new JobLinks("/j", "/c", "/e")));
         }
-    }
-
-    /// <summary>An engine that answers only 'sources': the one call the service makes.</summary>
-    public class SourcesProxy : DispatchProxy
-    {
-        public SourcesView? View { get; set; }
-
-        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args) =>
-            targetMethod?.Name == nameof(IContextEngine.Sources) ? ValueTask.FromResult<Result<SourcesView>>(View!) : throw new NotSupportedException(targetMethod?.Name);
     }
 }

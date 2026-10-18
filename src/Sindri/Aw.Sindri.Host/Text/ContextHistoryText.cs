@@ -12,9 +12,7 @@ internal static class ContextHistoryText
 {
     internal static string History(HistoryView view, bool fence)
     {
-        var anchors = string.Join(", ", view.Anchors.Select(a => Invariant($"{a.Key.Value} ({Fenced(a.Label, a.Trust, fence)})")));
-        var window = Invariant($"since {view.Window.Since?.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture) ?? "the beginning"} · before {view.Window.Before?.ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture) ?? "now"}");
-        var text = new StringBuilder(Invariant($"history of {view.Anchors.Count} {(view.Anchors.Count == 1 ? "anchor" : "anchors")} ({anchors}) · map {view.MapVersion}{(view.Draft ? " (draft)" : string.Empty)} · {window}\n"));
+        var text = new StringBuilder(Header(view, fence));
         foreach (var missing in view.MissingAnchors)
         {
             _ = text.AppendLine($"missing anchor: {missing}");
@@ -23,6 +21,21 @@ internal static class ContextHistoryText
         Changes(text, view, fence);
         Intent(text, view, fence);
         _ = text.AppendLine(Invariant($"incidents: {StateWord(view.Incidents.State)} ({view.Incidents.Reason})"));
+        Footer(text, view);
+        _ = text.Append(Searched(view.Searched)).Append(Coverage(view.Coverage));
+        return text.ToString();
+    }
+
+    private static string Header(HistoryView view, bool fence)
+    {
+        var anchors = string.Join(", ", view.Anchors.Select(a => Invariant($"{a.Key.Value} ({Fenced(a.Label, a.Trust, fence)})")));
+        var since = Instant(view.Window.Since, "the beginning");
+        var before = Instant(view.Window.Before, "now");
+        return Invariant($"history of {view.Anchors.Count} {(view.Anchors.Count == 1 ? "anchor" : "anchors")} ({anchors}) · map {view.MapVersion}{(view.Draft ? " (draft)" : string.Empty)} · since {since} · before {before}\n");
+    }
+
+    private static void Footer(StringBuilder text, HistoryView view)
+    {
         foreach (var git in view.Git)
         {
             _ = text.AppendLine(Invariant($"git {git.Repo.Value}: head {git.Head}{(git.UpTo is null ? string.Empty : " up to " + git.UpTo)}{(git.Shallow ? " (shallow clone)" : string.Empty)}, {git.Files} files searched, {git.Changes} changes"));
@@ -33,17 +46,16 @@ internal static class ContextHistoryText
         var cut = new[] { ("records", view.Truncated.Records), ("decisions", view.Truncated.Decisions), ("changes", view.Truncated.Changes), ("files", view.Truncated.Files) }.Where(static t => t.Item2).Select(static t => t.Item1).ToList();
         if (cut.Count > 0)
         {
-            _ = text.AppendLine("truncated: " + string.Join(", ", cut));
+            _ = text.AppendLine($"truncated: {string.Join(", ", cut)}");
         }
 
         foreach (var line in view.Degraded)
         {
-            _ = text.AppendLine("degraded: " + line);
+            _ = text.AppendLine($"degraded: {line}");
         }
-
-        _ = text.Append(Searched(view.Searched)).Append(Coverage(view.Coverage));
-        return text.ToString();
     }
+
+    private static string Instant(DateTimeOffset? at, string none) => at is { } value ? value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture) : none;
 
     private static void Changes(StringBuilder text, HistoryView view, bool fence)
     {
@@ -71,14 +83,12 @@ internal static class ContextHistoryText
 
         foreach (var record in view.Records)
         {
-            _ = text.AppendLine(Invariant($"  record  {Fenced(record.Label, record.Trust, fence)}  {record.Source}  {record.Key.Value}  updated {Instant(record.UpdatedAt)}{(record.Leaky ? "  leaky" : string.Empty)}"));
+            _ = text.AppendLine(Invariant($"  record  {Fenced(record.Label, record.Trust, fence)}  {record.Source}  {record.Key.Value}  updated {Instant(record.UpdatedAt, "unknown")}{(record.Leaky ? "  leaky" : string.Empty)}"));
         }
 
         foreach (var d in view.Decisions)
         {
-            _ = text.AppendLine($"  decision  {Fenced(d.Text, d.Trust, fence)}  {d.Provenance.ToString().ToLowerInvariant()} {(d.Confirmed ? "confirmed" : "suggested")}  {d.Node.Value}  at {Instant(d.At)}{(d.Leaky ? "  leaky" : string.Empty)}");
+            _ = text.AppendLine($"  decision  {Fenced(d.Text, d.Trust, fence)}  {d.Provenance.ToString().ToLowerInvariant()} {(d.Confirmed ? "confirmed" : "suggested")}  {d.Node.Value}  at {Instant(d.At, "unknown")}{(d.Leaky ? "  leaky" : string.Empty)}");
         }
     }
-
-    private static string Instant(DateTimeOffset? at) => at is { } value ? value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture) : "unknown";
 }

@@ -23,11 +23,11 @@ public sealed class ContextHistoryTextTests
             ["src/layout/SplitPane.ts"], [split], Trust.Untrusted);
         var gap = new SearchedSource(SourceId.From("onyx"), SearchedState.Unavailable, "not-synced", "SND-CONTEXT-161", AsOf: null) { Sync = new SearchedSync("running", SyncJobId.From("JOB-1")) };
         var searched = new LensSearched(["feature:layout.split-pane"], "v2", 0, [], [gap, new SearchedSource(SourceId.From("git-history"), SearchedState.Ok, "capped", Code: null, _at)],
-            new SearchedBands(new BandSearched(false), new BandSearched(false), new BandSearched(false)));
+            new SearchedBands(new BandSearched(Empty: false), new BandSearched(Empty: false), new BandSearched(Empty: false)));
         return new HistoryView(1, [new LensAnchor(split, "Split pane", NodeKind.Feature, Trust.Trusted)], ["feature:nope"], "v2", Draft: false, _at, new HistoryWindow(Since: null, Before: _at),
             [record], [], [change], HistoryIncidents.NotConfigured, [], new HistoryCounts(1, 0, 1, 1, 0, 2), new HistoryTruncated(Records: false, Decisions: false, Changes: true, Files: false),
             [new HistoryGit(ContextRepoName.From("aw-split-panes"), "a41b07d", UpTo: null, Shallow: true, Files: 1, Changes: 1)],
-            new LensCoverage(1, new CoverageIntent(0, 1), new CoverageProduct(1, 1), new CoverageCode(1, 1, "file", 0), []), searched, ["git-history: stopped"], new Dictionary<string, Citation>());
+            new LensCoverage(1, new CoverageIntent(0, 1), new CoverageProduct(1, 1), new CoverageCode(1, 1, "file", 0), []), searched, ["git-history: stopped"], new Dictionary<string, Citation>(StringComparer.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]

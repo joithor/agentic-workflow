@@ -1,26 +1,5 @@
 namespace Aw.Sindri.Core.Scheduling;
 
-/// <summary>What the 'context-sync-gaps' service does on a tick.</summary>
-public enum SyncGapAction
-{
-    /// <summary>No configured source is waiting for its first sync: a view read and nothing else.</summary>
-    Nothing,
-
-    /// <summary>A sync job is running: never doubled.</summary>
-    JobRunning,
-
-    /// <summary>The last sync(s) failed and the wait is not over.</summary>
-    BackoffNotDue,
-
-    /// <summary>Start one sync of every source.</summary>
-    Start,
-}
-
-/// <summary>A finished sync job, as the decision reads it.</summary>
-/// <param name="Failed">True when the job failed (a succeeded or cancelled one resets the count).</param>
-/// <param name="EndedAt">When it ended.</param>
-public sealed record SyncAttempt(bool Failed, DateTimeOffset EndedAt);
-
 /// <summary>
 /// The pure decision of the 'context-sync-gaps' service (scoping spec C5): a gap, a running job, then the backoff after failures in a row (5, 10, 20, 40, then 60 minutes at most,
 /// counted from the newest failure; any other outcome resets it). The service re-checks on the scheduler tick by reading the jobs view; the scheduler has no event trigger.

@@ -9329,3 +9329,27 @@ Aw.Sindri.Core.Sessions.SessionProblem.Reason.get -> Aw.Sindri.Core.Sessions.Una
 Aw.Sindri.Core.Sessions.SessionProblem.Reason.init -> void
 static Aw.Sindri.Core.Sessions.SessionRows.Find(Aw.Sindri.Core.Sessions.SessionSnapshot! pass, Aw.Sindri.Core.Sessions.SessionRef reference, Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Sindri.Core.Sessions.ObservedSession?
 static Aw.Sindri.Core.Sessions.SessionRows.RefuseSession(Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Kernel.Error?
+Aw.Sindri.Core.Scheduling.SyncAttempt
+Aw.Sindri.Core.Scheduling.SyncAttempt.<Clone>$() -> Aw.Sindri.Core.Scheduling.SyncAttempt!
+Aw.Sindri.Core.Scheduling.SyncAttempt.Deconstruct(out bool Failed, out System.DateTimeOffset EndedAt) -> void
+Aw.Sindri.Core.Scheduling.SyncAttempt.EndedAt.get -> System.DateTimeOffset
+Aw.Sindri.Core.Scheduling.SyncAttempt.EndedAt.init -> void
+Aw.Sindri.Core.Scheduling.SyncAttempt.Equals(Aw.Sindri.Core.Scheduling.SyncAttempt? other) -> bool
+Aw.Sindri.Core.Scheduling.SyncAttempt.Failed.get -> bool
+Aw.Sindri.Core.Scheduling.SyncAttempt.Failed.init -> void
+Aw.Sindri.Core.Scheduling.SyncAttempt.SyncAttempt(bool Failed, System.DateTimeOffset EndedAt) -> void
+Aw.Sindri.Core.Scheduling.SyncGapAction
+Aw.Sindri.Core.Scheduling.SyncGapAction.BackoffNotDue = 2 -> Aw.Sindri.Core.Scheduling.SyncGapAction
+Aw.Sindri.Core.Scheduling.SyncGapAction.JobRunning = 1 -> Aw.Sindri.Core.Scheduling.SyncGapAction
+Aw.Sindri.Core.Scheduling.SyncGapAction.Nothing = 0 -> Aw.Sindri.Core.Scheduling.SyncGapAction
+Aw.Sindri.Core.Scheduling.SyncGapAction.Start = 3 -> Aw.Sindri.Core.Scheduling.SyncGapAction
+Aw.Sindri.Core.Scheduling.SyncGapDecision
+const Aw.Sindri.Core.Events.ApiViews.ContextHistory = "context-history" -> string!
+const Aw.Sindri.Core.Events.ApiViews.ContextLenses = "context-lenses" -> string!
+override Aw.Sindri.Core.Scheduling.SyncAttempt.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scheduling.SyncAttempt.GetHashCode() -> int
+override Aw.Sindri.Core.Scheduling.SyncAttempt.ToString() -> string!
+static Aw.Sindri.Core.Scheduling.SyncAttempt.operator !=(Aw.Sindri.Core.Scheduling.SyncAttempt? left, Aw.Sindri.Core.Scheduling.SyncAttempt? right) -> bool
+static Aw.Sindri.Core.Scheduling.SyncAttempt.operator ==(Aw.Sindri.Core.Scheduling.SyncAttempt? left, Aw.Sindri.Core.Scheduling.SyncAttempt? right) -> bool
+static Aw.Sindri.Core.Scheduling.SyncGapDecision.Decide(bool gap, bool running, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scheduling.SyncAttempt!>! finishedNewestFirst, System.DateTimeOffset now) -> Aw.Sindri.Core.Scheduling.SyncGapAction
+static Aw.Sindri.Core.Scheduling.SyncGapDecision.Wait(int failuresInARow) -> System.TimeSpan
