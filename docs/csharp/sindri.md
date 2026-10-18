@@ -64,6 +64,8 @@ calling process, read-only, because they must work while the control plane is do
 the approval is a ledger event fenced by the lease, so from a human at a terminal it starts it first (`--no-start` opts
 out); no verb starts it from an agent session (Callers and auth below).
 
+**How long a CLI call may take.** Connecting to the recorded port is bounded at 5 s (`couldn't connect to 127.0.0.1:<port> within 5 s`, `SND-API-002`), so a dead or wrong port fails fast. Once connected there is no call timeout by default: a slow but healthy answer (a map review over thousands of items can take 40 s) completes, and Ctrl-C ends the call. `AW_SINDRI_CLI_TIMEOUT` (whole seconds; unset, empty or `0` is no cap) sets a hard cap on one call; past it the CLI exits 2 with `SND-API-002 <host:port> didn't answer <route> within N s (AW_SINDRI_CLI_TIMEOUT)`, and a value that isn't a whole number of seconds is `SND-CLI-003` before any call is made. The cap does not touch the 2 s liveness ping, the 10 s wait for a freshly started `serve`, or the streaming verbs (`status --follow`, `workflow events --follow`, job follows), which have no call timeout once the stream is open.
+
 **External executables.** `deps.yaml` models edges between this repo's packages only, so the programs Sindri runs on the host are listed here instead. Managed Onyx (spec `docs/superpowers/specs/2026-10-16-sindri-onyx-managed-design.md` §9) runs `docker` (`version`, `compose version --short`, `info`; P2 adds the compose operations) and, in later phases, the secret stores and clipboards: `security` (macOS Keychain), `secret-tool` (Linux Secret Service), `pbcopy`, `wl-copy`, `xclip` and `xsel`. `sindri onyx status` runs only `docker`; the pins it reads are `context/onyx.lock`, embedded into the build.
 
 ## Files
@@ -644,7 +646,7 @@ There is no decision, desk, protected, job or step-report tool, and no `sindri_c
 | `SND-LEDGER-001` | The ledger's schema doesn't match this build |
 | `SND-LEDGER-002` | The ledger can't be opened or written, or the human token file can't be written |
 | `SND-API-001` | The control plane isn't running (no endpoint record, or nothing answers at it) |
-| `SND-API-002` | It didn't answer the ping within 2 s, or the call itself within 10 s |
+| `SND-API-002` | It didn't answer the ping within 2 s, the CLI couldn't connect within 5 s, or the call outlasted `AW_SINDRI_CLI_TIMEOUT` (no cap unless set) |
 | `SND-API-003` | `sindri serve` can't listen on the API port: another program has it, it is refused, or the host failed to start listening (the stop is recorded and the lease released) |
 | `SND-API-004` | The API answered an error without a catalogue code (an unknown route, a wrong method or `Content-Type`; the HTTP status is named) |
 | `SND-API-005` | A handler failed with an unexpected exception; the control plane logged it |
