@@ -22,7 +22,7 @@ internal sealed partial class ShellViewModel
     [MemberNotNull(nameof(Agents), nameof(AgentSheet))]
     private void InitAgents(IClipboard clipboard)
     {
-        Agents = new AgentsPageViewModel(_api, clipboard, _clock);
+        Agents = new AgentsPageViewModel(_api, clipboard, _clock, Health.Catalog);
         AgentSheet = new SessionSheetViewModel(_api);
         InitAgentsPage();
         InitAgentSheet();
