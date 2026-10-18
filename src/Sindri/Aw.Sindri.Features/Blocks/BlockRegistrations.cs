@@ -9,7 +9,7 @@ namespace Aw.Sindri.Features.Blocks;
 
 /// <summary>
 /// The blocks and events this build ships (spec §12): pure blocks with AddGate/AddStep/…, the P6 effects with
-/// AddEffect, the desk Steps and the P7 gate as descriptors only (AddBlockDescriptor), and the events with AddEvent.
+/// AddEffect, the desk Steps as descriptors only (AddBlockDescriptor), and the events with AddEvent.
 /// </summary>
 internal static class BlockRegistrations
 {
@@ -50,7 +50,7 @@ internal static class BlockRegistrations
         .AddScopingBlocks()
         .AddBlockDescriptor(EvidenceProviders.Check)
         .AddGate<BudgetAvailableGate>()
-        .AddBlockDescriptor(PendingRuntimes.RouteStartable)
+        .AddGate<RouteStartableGate>()     // engine P7 unit U1: a stub over the profile's workflow.route
         .AddEffect<ClaimRefEffect>()      // engine P6 unit (d)
         .AddEffect<NotifyDeskEffect>()    // engine P6 unit (c)
         .AddEvent(RecipeEvents.ItemRouted)

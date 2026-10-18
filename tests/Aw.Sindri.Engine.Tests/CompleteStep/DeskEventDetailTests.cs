@@ -31,7 +31,7 @@ public sealed class DeskEventDetailTests(TimeSkippingServer server) : IClassFixt
         await WorkflowsHarness.HoldLease(sindri, ct);
         var gated = WorkflowsHarness.Shipped("sindri/workflow.step.yaml")
             .Replace("version: 2", "version: 3", StringComparison.Ordinal)
-            .Replace("on: step.completed, when: { outcome: done }, produces", "on: step.completed, when: { outcome: done }, gates: [gate.route.startable], produces", StringComparison.Ordinal);
+            .Replace("on: step.completed, when: { outcome: done }, produces", "on: step.completed, when: { outcome: done }, gates: [gate.test.check], produces", StringComparison.Ordinal);
         _harness.Recipe("workflow.step", gated);
         await DeskTimeoutTests.RegisterAttributes(env);
         using var worker = new TemporalWorker(env.Client, sindri.GetRequiredService<TemporalWorkerOptions>());
@@ -52,7 +52,7 @@ public sealed class DeskEventDetailTests(TimeSkippingServer server) : IClassFixt
             Assert.Equal("human:cli", detail.GetProperty("triggerActor").GetString());
             Assert.EndsWith(new string('f', 64), detail.GetProperty("triggerId").GetString(), StringComparison.Ordinal);
             Assert.Equal(new string('f', 64), detail.GetProperty("reportSha256").GetString());
-            Assert.Equal("gate.route.startable", Assert.Single(detail.GetProperty("gates").EnumerateArray()).GetProperty("gate").GetString());
+            Assert.Equal("gate.test.check", Assert.Single(detail.GetProperty("gates").EnumerateArray()).GetProperty("gate").GetString());
             Assert.Equal("rerun", detail.GetProperty("refusal").GetProperty("follow").ToString());
             Assert.DoesNotContain(new string('e', 64), row.GetRawText(), StringComparison.Ordinal);   // the output fact's digest is not in a refused row; its content never is
         }

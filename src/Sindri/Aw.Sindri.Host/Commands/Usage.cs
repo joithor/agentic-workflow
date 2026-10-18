@@ -61,7 +61,7 @@ internal static class Usage
         "       sindri recipe validate <file> [--json]   check a recipe in-process: rule lines, then its hash (exit 0 pass, 1 fail, 2 error)",
         "       sindri recipe eval <file> [--json]       run a recipe's eval cases in-process (exit 0 pass, 1 fail, 2 error)",
         "       sindri recipe eval --scaffold <file> [--out <dir>]   print a happy-path eval case for the recipe; a route recipe has a case per path, and --out writes each to <dir>/<case>.jsonl (it refuses to overwrite)",
-        "       sindri recipe eval --record <address> --out <file>   an instance's history as an eval case (needs the server, P4)",
+        "       sindri recipe eval --record <address> --out <file>   an instance's history as an eval case, read from the ledger and the stored facts (no server needed)",
         "       sindri recipe register <file>            register a recipe by hash: 'registered <id>@<hash> (unapproved)'",
         "       sindri recipe show <id|id@hash> [--json]  the recipe's keys, urgency, inputs, outputs, path order and loops (a bare id is the approved version); --json: the served RecipeView",
         "       sindri recipe list [--stale] [--json]    one line per registered recipe; --stale: approved ones that drifted or pin a stale child",
