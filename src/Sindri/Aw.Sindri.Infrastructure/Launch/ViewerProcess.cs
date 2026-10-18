@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
-using System.Text;
 using Aw.Redaction;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Launch;
@@ -9,63 +8,32 @@ using Aw.Sindri.Core.Launch;
 namespace Aw.Sindri.Infrastructure.Launch;
 
 /// <summary>What the viewers share: one spawned process with a bounded stderr, the observation window, GUI and program checks.</summary>
-internal static class ViewerProcess
+internal static partial class ViewerProcess
 {
     internal const int StderrLimit = 2048;
     private static readonly TimeSpan _poll = TimeSpan.FromMilliseconds(250);
     private static readonly TimeSpan _probeBudget = TimeSpan.FromSeconds(5);
 
-    /// <summary>A started child: stdin closed, stdout discarded, the first 2 KB of stderr kept (the rest is drained).</summary>
-    internal sealed class Child(Process process)
+    // A terminal that outlives Sindri must not share its session or its pipes (launcher spec: new session, stdin and stdout /dev/null, stderr in
+    // its own file): sh redirects all three, then starts the program under setsid where the box has it (macOS has none, so there it only detaches the descriptors).
+    private const string DetachScript = "err=$1; shift; exec </dev/null >/dev/null 2>\"$err\"; if command -v setsid >/dev/null 2>&1; then exec setsid \"$@\"; else exec \"$@\"; fi";
+
+    private static ProcessStartInfo Info(IReadOnlyList<string> argv, IReadOnlyDictionary<string, string>? environment, string? errorFile)
     {
-        private readonly StringBuilder _stderr = new();
-
-        public Process Process { get; } = process;
-
-        public Task Exited { get; } = process.WaitForExitAsync(CancellationToken.None);
-
-        public Task Drained { get; private set; } = Task.CompletedTask;
-
-        public void Drain() => Drained = Task.Run(async () =>
-        {
-            var buffer = new char[512];
-            int read;
-            while ((read = await Process.StandardError.ReadAsync(buffer).ConfigureAwait(false)) > 0)
-            {
-                lock (_stderr)
-                {
-                    _ = _stderr.Append(buffer, 0, Math.Min(read, StderrLimit - _stderr.Length));
-                }
-            }
-        });
-
-        public string Stderr()
-        {
-            lock (_stderr)
-            {
-                return _stderr.ToString();
-            }
-        }
-    }
-
-    // A terminal that outlives Sindri must not share its session or its pipes (launcher spec: new session, stdin and stdout /dev/null): sh
-    // closes both, then starts the program under setsid where the box has it (macOS has none, so there it only detaches the descriptors).
-    private const string DetachScript = "exec </dev/null >/dev/null; if command -v setsid >/dev/null 2>&1; then exec setsid \"$@\"; else exec \"$@\"; fi";
-
-    private static ProcessStartInfo Info(IReadOnlyList<string> argv, IReadOnlyDictionary<string, string>? environment, bool detached)
-    {
+        var detached = errorFile is not null;
         var info = new ProcessStartInfo(detached ? "/bin/sh" : argv[0])
         {
             UseShellExecute = false,
             RedirectStandardInput = true,
             RedirectStandardOutput = true,
-            RedirectStandardError = true,
+            RedirectStandardError = !detached,
         };
         if (detached)
         {
             info.ArgumentList.Add("-c");
             info.ArgumentList.Add(DetachScript);
             info.ArgumentList.Add("sh");
+            info.ArgumentList.Add(errorFile ?? string.Empty);   // detached implies a file; the fallback is never used
             info.ArgumentList.Add(argv[0]);
         }
 
@@ -90,24 +58,27 @@ internal static class ViewerProcess
     /// <returns>The child, or the reason it could not start.</returns>
     internal static (Child? Child, string? Problem) Start(IReadOnlyList<string> argv, IReadOnlyDictionary<string, string>? environment, bool detached = false)
     {
-        var info = Info(argv, environment, detached);
+        var errorFile = detached ? Path.GetTempFileName() : null;   // 0600, in the temp directory; deleted when the window's process ends
+        var info = Info(argv, environment, errorFile);
         try
         {
             var process = Process.Start(info);
             if (process is null)
             {
+                DeleteQuietly(errorFile);
                 return (null, $"{argv[0]} did not start");
             }
 
             process.StandardInput.Close();
             process.OutputDataReceived += static (_, _) => { };
             process.BeginOutputReadLine();
-            var child = new Child(process);
+            var child = new Child(process) { ErrorFile = errorFile };
             child.Drain();
             return (child, null);
         }
         catch (Win32Exception e)
         {
+            DeleteQuietly(errorFile);
             return (null, $"{argv[0]} could not be started: {e.Message}");
         }
     }
@@ -143,6 +114,7 @@ internal static class ViewerProcess
         finally
         {
             child.Process.Dispose();
+            DeleteQuietly(child.ErrorFile);
         }
     });
 

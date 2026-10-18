@@ -1,5 +1,6 @@
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Commands;
+using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Features.Launching;
 
@@ -11,12 +12,18 @@ namespace Aw.Sindri.Host.Server;
 /// deadline is failed as SND-LAUNCH-007) nor another request. It runs only with the lease, like the other background services, and a stop waits for the
 /// requests in flight, which see its cancellation. A failed tick is logged once per distinct problem and tried again on the next.
 /// </summary>
-internal sealed partial class LauncherHost(IServiceScopeFactory scopes, HeldLease held, ICallerContextAccessor callers, TimeProvider clock, ILogger<LauncherHost> log)
+internal sealed partial class LauncherHost(IServiceScopeFactory scopes, HeldLease held, ICallerContextAccessor callers, ILaunchStartup startup, TimeProvider clock, ILogger<LauncherHost> log)
     : BackgroundService
 {
     private static readonly TimeSpan _tick = TimeSpan.FromSeconds(1);
     private readonly List<Task> _running = [];
     private string? _problem;
+
+    public override Task StartAsync(CancellationToken cancellationToken)
+    {
+        startup.Sweep();
+        return base.StartAsync(cancellationToken);
+    }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

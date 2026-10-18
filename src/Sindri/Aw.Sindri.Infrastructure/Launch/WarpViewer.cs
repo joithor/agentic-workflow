@@ -100,6 +100,7 @@ internal sealed partial class WarpViewer(WarpViewerOptions options, ISessionHost
             }
             catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
             {
+                ViewerProcess.KillTree(child);   // an opener that overran its budget must not be waited on for ever
                 return ViewerOutcome.Failed(SindriErrors.LaunchTimedOut.Code, string.Create(CultureInfo.InvariantCulture, $"{options.Opener} did not return within {_openerBudget.TotalSeconds:0} s"));
             }
 
