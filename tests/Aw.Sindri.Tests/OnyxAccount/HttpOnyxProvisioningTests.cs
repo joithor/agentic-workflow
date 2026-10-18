@@ -18,6 +18,8 @@ public sealed class HttpOnyxProvisioningTests
     {
         public List<Sent> Requests { get; } = [];
 
+        public Func<Sent, bool> Hang { get; set; } = static _ => false;
+
         public Func<Sent, (HttpStatusCode Status, string Body)> Answer { get; set; } = static _ => (HttpStatusCode.OK, "{}");
 
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -25,6 +27,11 @@ public sealed class HttpOnyxProvisioningTests
             var body = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync(cancellationToken);
             var sent = new Sent(request.Method, request.RequestUri!.PathAndQuery, body, request.Headers.Authorization?.ToString());
             Requests.Add(sent);
+            if (Hang(sent))
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            }
+
             var (status, text) = Answer(sent);
             return new HttpResponseMessage(status) { Content = new StringContent(text, Encoding.UTF8, "application/json") };
         }
@@ -60,6 +67,23 @@ public sealed class HttpOnyxProvisioningTests
         Assert.Equal("/api/auth/login", login.PathAndQuery);
         Assert.Equal("username=owner%40example.com&password=pw+value", login.Body);
         Assert.Equal("/api/auth/logout", script.Requests[^1].PathAndQuery);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_logout_that_hangs_is_given_up_on_without_throwing_and_the_made_key_survives()
+    {
+        var script = new Script
+        {
+            Answer = static sent => sent.PathAndQuery == "/api/admin/api-key" ? (HttpStatusCode.OK, "{\"api_key\":\"on_abc123\"}") : (HttpStatusCode.OK, "{}"),
+            Hang = static sent => sent.PathAndQuery == "/api/auth/logout",
+        };
+        var adapter = new HttpOnyxProvisioning(() => script, TimeSpan.FromMilliseconds(100));
+        var session = (await adapter.SignIn(3000, "a@b.c", "x", Token)).Value;
+        var key = await session.CreateKey("sindri-onyx", 3, Token);
+
+        await session.DisposeAsync();   // must not throw
+
+        Assert.Equal("on_abc123", key.Value);
     }
 
     [Fact, Trait("Lane", "integration")]
