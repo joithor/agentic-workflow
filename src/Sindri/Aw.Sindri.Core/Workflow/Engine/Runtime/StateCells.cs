@@ -52,7 +52,7 @@ public static class StateCells
     {
         if (at.Instance.Ended)
         {
-            return isActive || (!terminal && place.Order is not null) ? StateGlyph.Done : StateGlyph.Pending;
+            return isActive || EndedDone(place, terminal, at.Instance) ? StateGlyph.Done : StateGlyph.Pending;
         }
 
         if (isActive)
@@ -62,6 +62,10 @@ public static class StateCells
 
         return Passed(place, terminal, at) ? StateGlyph.Done : StateGlyph.Pending;
     }
+
+    // An ended instance with visit data shows what it entered (its branch states too); without, every main-path state.
+    private static bool EndedDone(StatePlace place, bool terminal, WorkflowInstance instance) =>
+        instance.Visited is { } visited ? visited.Contains(place.State, StringComparer.Ordinal) : !terminal && place.Order is not null;
 
     // A state the instance entered is done (a branch state or one before a loop's re-entry too); an instance that recorded none falls back to path order.
     private static bool Passed(StatePlace place, bool terminal, Place at) =>
