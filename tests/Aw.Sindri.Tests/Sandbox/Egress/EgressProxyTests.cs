@@ -248,7 +248,7 @@ public sealed class EgressProxyTests
         var upstream = await dialer.Upstream.Task;
 
         await upstream.WriteAsync("bye"u8.ToArray(), TestContext.Current.CancellationToken);
-        ((Aw.Sindri.Infrastructure.Sandbox.IHalfCloseable)upstream).ShutdownSend();
+        ((IHalfCloseable)upstream).ShutdownSend();
 
         var got = new byte[3];
         await client.ReadExactlyAsync(got, TestContext.Current.CancellationToken);
@@ -267,7 +267,7 @@ public sealed class EgressProxyTests
         var upstream = await dialer.Upstream.Task;
 
         await client.WriteAsync("ask"u8.ToArray(), TestContext.Current.CancellationToken);
-        ((Aw.Sindri.Infrastructure.Sandbox.IHalfCloseable)client).ShutdownSend();
+        ((IHalfCloseable)client).ShutdownSend();
         var asked = new byte[3];
         await upstream.ReadExactlyAsync(asked, TestContext.Current.CancellationToken).AsTask().WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
         Assert.Equal(0, await upstream.ReadAsync(new byte[1], TestContext.Current.CancellationToken).AsTask().WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken));

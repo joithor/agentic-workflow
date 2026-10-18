@@ -169,7 +169,7 @@ public sealed class EgressInitRunTests : IDisposable
         var socat = FakeSocat("exec sleep 30\n");
         var agent = Write("agent", $"#!/bin/sh\ncat > '{_temp.Path}/stdin'\n");
 
-        using var init = RunWith(resolved!, Init(socat), agent);
+        using var init = RunWith(resolved, Init(socat), agent);
         await init.StandardInput.WriteAsync("hello".AsMemory(), TestContext.Current.CancellationToken);
         init.StandardInput.Close();
         await init.WaitForExitAsync(TestContext.Current.CancellationToken).WaitAsync(TimeSpan.FromSeconds(20), TestContext.Current.CancellationToken);
