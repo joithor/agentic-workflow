@@ -29,13 +29,19 @@ internal sealed class GetLensesSetService(MapReader reader, LensBasisReader base
             return refused;
         }
 
+        var hops = QueryRules.ParseHops(request.Hops);
+        if (hops.IsError)
+        {
+            return hops.Error;
+        }
+
         var read = await reader.ReadViewAt(request.Scope, request.Read, cancellationToken).ConfigureAwait(false);
         if (read.IsError)
         {
             return read.Error;
         }
 
-        var basis = await bases.For(read.Value, settings.Value, request.Scope, request.Read.Draft, cancellationToken).ConfigureAwait(false);
+        var basis = (await bases.For(read.Value, settings.Value, request.Scope, request.Read.Draft, cancellationToken).ConfigureAwait(false)) with { Cascade = QueryRules.CascadeFor(hops.Value, settings.Value) };
         var view = LensesBuilder.BuildSet(basis, read.Value.Graph, anchors, depth, read.Value.Conflicts);
         return view.Map(v => LensTexts.Clean(v, new MapText(built.Value, FencePolicies.For(request.Scope.Caller))));
     }

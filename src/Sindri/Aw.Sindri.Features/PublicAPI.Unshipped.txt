@@ -2534,27 +2534,21 @@ Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Via.get -> string?
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Via.init -> void
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Decision.get -> string?
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Decision.init -> void
-Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.Deconstruct(out string! Anchor, out bool Draft, out int? Depth, out string? MapVersion) -> void
-Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.GetContextLensesRequest(string! Anchor, bool Draft = false, int? Depth = null, string? MapVersion = null) -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.MapVersion.get -> string?
 Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.MapVersion.init -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest
 Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest!
 Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Anchors.init -> void
-Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out bool Draft, out int? Depth, out string? MapVersion) -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Depth.get -> int?
 Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Depth.init -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Draft.get -> bool
 Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Draft.init -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest? other) -> bool
-Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.GetContextLensesSetRequest(System.Collections.Generic.IReadOnlyList<string!>! Anchors, bool Draft = false, int? Depth = null, string? MapVersion = null) -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.MapVersion.get -> string?
 Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.MapVersion.init -> void
-Aw.Sindri.Features.ContextCalls.QueryContextRequest.Deconstruct(out string? Q, out string? Node, out string? Item, out string? Symbol, out string? Depth, out string? Budget, out bool Draft, out string? Diff, out string? Repo, out string? MapVersion) -> void
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.MapVersion.get -> string?
 Aw.Sindri.Features.ContextCalls.QueryContextRequest.MapVersion.init -> void
-Aw.Sindri.Features.ContextCalls.QueryContextRequest.QueryContextRequest(string? Q, string? Node = null, string? Item = null, string? Symbol = null, string? Depth = null, string? Budget = null, bool Draft = false, string? Diff = null, string? Repo = null, string? MapVersion = null) -> void
 override Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Equals(object? obj) -> bool
 override Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.GetHashCode() -> int
 override Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.ToString() -> string!
@@ -2564,13 +2558,11 @@ Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest
 Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest!
 Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Anchors.init -> void
-Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out bool Draft, out int? Depth, out string? MapVersion) -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Depth.get -> int?
 Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Depth.init -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Draft.get -> bool
 Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Draft.init -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest? other) -> bool
-Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.GetContextLensesAnswerRequest(System.Collections.Generic.IReadOnlyList<string!>! Anchors, bool Draft = false, int? Depth = null, string? MapVersion = null) -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.MapVersion.get -> string?
 Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.MapVersion.init -> void
 Aw.Sindri.Features.ContextCalls.LensesAnswer
@@ -2820,6 +2812,22 @@ static Aw.Sindri.Features.Scoping.ScopingShowRequest.operator !=(Aw.Sindri.Featu
 static Aw.Sindri.Features.Scoping.ScopingShowRequest.operator ==(Aw.Sindri.Features.Scoping.ScopingShowRequest? left, Aw.Sindri.Features.Scoping.ScopingShowRequest? right) -> bool
 static Aw.Sindri.Features.Scoping.ScopingView.operator !=(Aw.Sindri.Features.Scoping.ScopingView? left, Aw.Sindri.Features.Scoping.ScopingView? right) -> bool
 static Aw.Sindri.Features.Scoping.ScopingView.operator ==(Aw.Sindri.Features.Scoping.ScopingView? left, Aw.Sindri.Features.Scoping.ScopingView? right) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out bool Draft, out int? Depth, out string? MapVersion, out string? Hops) -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.GetContextLensesAnswerRequest(System.Collections.Generic.IReadOnlyList<string!>! Anchors, bool Draft = false, int? Depth = null, string? MapVersion = null, string? Hops = null) -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Hops.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Hops.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.Deconstruct(out string! Anchor, out bool Draft, out int? Depth, out string? MapVersion, out string? Hops) -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.GetContextLensesRequest(string! Anchor, bool Draft = false, int? Depth = null, string? MapVersion = null, string? Hops = null) -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.Hops.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextLensesRequest.Hops.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out bool Draft, out int? Depth, out string? MapVersion, out string? Hops) -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.GetContextLensesSetRequest(System.Collections.Generic.IReadOnlyList<string!>! Anchors, bool Draft = false, int? Depth = null, string? MapVersion = null, string? Hops = null) -> void
+Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Hops.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextLensesSetRequest.Hops.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Deconstruct(out string? Q, out string? Node, out string? Item, out string? Symbol, out string? Depth, out string? Budget, out bool Draft, out string? Diff, out string? Repo, out string? MapVersion, out string? Hops) -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Hops.get -> string?
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.Hops.init -> void
+Aw.Sindri.Features.ContextCalls.QueryContextRequest.QueryContextRequest(string? Q, string? Node = null, string? Item = null, string? Symbol = null, string? Depth = null, string? Budget = null, bool Draft = false, string? Diff = null, string? Repo = null, string? MapVersion = null, string? Hops = null) -> void
 Aw.Sindri.Features.GetSession.GetSessionRequest
 Aw.Sindri.Features.GetSession.GetSessionRequest.<Clone>$() -> Aw.Sindri.Features.GetSession.GetSessionRequest!
 Aw.Sindri.Features.GetSession.GetSessionRequest.Deconstruct(out Aw.Sindri.Core.Sessions.SessionRef Ref) -> void
@@ -2940,3 +2948,78 @@ static Aw.Sindri.Features.ListSessions.SessionCounts.operator !=(Aw.Sindri.Featu
 static Aw.Sindri.Features.ListSessions.SessionCounts.operator ==(Aw.Sindri.Features.ListSessions.SessionCounts? left, Aw.Sindri.Features.ListSessions.SessionCounts? right) -> bool
 static Aw.Sindri.Features.ListSessions.SessionList.operator !=(Aw.Sindri.Features.ListSessions.SessionList? left, Aw.Sindri.Features.ListSessions.SessionList? right) -> bool
 static Aw.Sindri.Features.ListSessions.SessionList.operator ==(Aw.Sindri.Features.ListSessions.SessionList? left, Aw.Sindri.Features.ListSessions.SessionList? right) -> bool
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.<Clone>$() -> Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest!
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.Deconstruct(out Aw.Sindri.Core.Sessions.SessionRef Ref, out System.DateTimeOffset? ExpectStartedAt) -> void
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.Equals(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest? other) -> bool
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.ExpectStartedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.ExpectStartedAt.init -> void
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.GetSessionPreviewRequest(Aw.Sindri.Core.Sessions.SessionRef Ref, System.DateTimeOffset? ExpectStartedAt = null) -> void
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.Ref.get -> Aw.Sindri.Core.Sessions.SessionRef
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.Ref.init -> void
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.GetSessionPreviewResponse(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse! original) -> void
+Aw.Sindri.Features.GetSessionPreview.PreviewHost
+Aw.Sindri.Features.GetSessionPreview.PreviewHost.<Clone>$() -> Aw.Sindri.Features.GetSessionPreview.PreviewHost!
+Aw.Sindri.Features.GetSessionPreview.PreviewHost.Deconstruct(out string! Kind, out string! Label) -> void
+Aw.Sindri.Features.GetSessionPreview.PreviewHost.Equals(Aw.Sindri.Features.GetSessionPreview.PreviewHost? other) -> bool
+Aw.Sindri.Features.GetSessionPreview.PreviewHost.Kind.get -> string!
+Aw.Sindri.Features.GetSessionPreview.PreviewHost.Kind.init -> void
+Aw.Sindri.Features.GetSessionPreview.PreviewHost.Label.get -> string!
+Aw.Sindri.Features.GetSessionPreview.PreviewHost.Label.init -> void
+Aw.Sindri.Features.GetSessionPreview.PreviewHost.PreviewHost(string! Kind, string! Label) -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreview
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.CapturedAt.get -> System.DateTimeOffset
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.CapturedAt.init -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Lines, out bool Truncated, out System.DateTimeOffset CapturedAt, out System.DateTimeOffset? StartedAt, out Aw.Sindri.Features.GetSessionPreview.PreviewHost! Host) -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.Equals(Aw.Sindri.Features.GetSessionPreview.SessionPreview? other) -> bool
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.Host.get -> Aw.Sindri.Features.GetSessionPreview.PreviewHost!
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.Host.init -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.Lines.init -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.SessionPreview(System.Collections.Generic.IReadOnlyList<string!>! Lines, bool Truncated, System.DateTimeOffset CapturedAt, System.DateTimeOffset? StartedAt, Aw.Sindri.Features.GetSessionPreview.PreviewHost! Host) -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.StartedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.StartedAt.init -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.Truncated.get -> bool
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.Truncated.init -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable
+Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.CapturedAt.get -> System.DateTimeOffset
+Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.CapturedAt.init -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.Deconstruct(out string! Reason, out System.DateTimeOffset CapturedAt) -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.Equals(Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable? other) -> bool
+Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.Reason.get -> string!
+Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.Reason.init -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.SessionPreviewUnavailable(string! Reason, System.DateTimeOffset CapturedAt) -> void
+abstract Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.<Clone>$() -> Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse!
+override Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.ToString() -> string!
+override Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.GetHashCode() -> int
+override Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.ToString() -> string!
+override Aw.Sindri.Features.GetSessionPreview.PreviewHost.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetSessionPreview.PreviewHost.GetHashCode() -> int
+override Aw.Sindri.Features.GetSessionPreview.PreviewHost.ToString() -> string!
+override Aw.Sindri.Features.GetSessionPreview.SessionPreview.<Clone>$() -> Aw.Sindri.Features.GetSessionPreview.SessionPreview!
+override Aw.Sindri.Features.GetSessionPreview.SessionPreview.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetSessionPreview.SessionPreview.GetHashCode() -> int
+override Aw.Sindri.Features.GetSessionPreview.SessionPreview.ToString() -> string!
+override Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.<Clone>$() -> Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable!
+override Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.GetHashCode() -> int
+override Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.ToString() -> string!
+override sealed Aw.Sindri.Features.GetSessionPreview.SessionPreview.Equals(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse? other) -> bool
+override sealed Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.Equals(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse? other) -> bool
+static Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.operator !=(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest? left, Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest? right) -> bool
+static Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.operator ==(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest? left, Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest? right) -> bool
+static Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.operator !=(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse? left, Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse? right) -> bool
+static Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.operator ==(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse? left, Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse? right) -> bool
+static Aw.Sindri.Features.GetSessionPreview.PreviewHost.operator !=(Aw.Sindri.Features.GetSessionPreview.PreviewHost? left, Aw.Sindri.Features.GetSessionPreview.PreviewHost? right) -> bool
+static Aw.Sindri.Features.GetSessionPreview.PreviewHost.operator ==(Aw.Sindri.Features.GetSessionPreview.PreviewHost? left, Aw.Sindri.Features.GetSessionPreview.PreviewHost? right) -> bool
+static Aw.Sindri.Features.GetSessionPreview.SessionPreview.operator !=(Aw.Sindri.Features.GetSessionPreview.SessionPreview? left, Aw.Sindri.Features.GetSessionPreview.SessionPreview? right) -> bool
+static Aw.Sindri.Features.GetSessionPreview.SessionPreview.operator ==(Aw.Sindri.Features.GetSessionPreview.SessionPreview? left, Aw.Sindri.Features.GetSessionPreview.SessionPreview? right) -> bool
+static Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.operator !=(Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable? left, Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable? right) -> bool
+static Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.operator ==(Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable? left, Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable? right) -> bool
+virtual Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.EqualityContract.get -> System.Type!
+virtual Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.Equals(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse? other) -> bool
+virtual Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.PrintMembers(System.Text.StringBuilder! builder) -> bool
