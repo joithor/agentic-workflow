@@ -28,6 +28,13 @@ public sealed class ScopingShowTests
                 new JsonObject { ["id"] = "git", ["state"] = "ok" });
             history["limits"] = new JsonArray(new JsonObject { ["not"] = "ticket mentions", ["why"] = "history-unlinked" });
             history["found"] = new JsonObject { ["count"] = 0, ["ids"] = new JsonArray() };
+        }).Edit("lenses", n =>
+        {
+            var history = n["history"]!;
+            history["foundCount"] = 0;
+            history["nodes"] = new JsonArray();
+            history["items"] = new JsonArray();
+            history["edges"] = new JsonArray();
         });
 
     private static ScopingSection Section(ScopingView view, string id) => view.Sections.Single(s => s.Name == id);

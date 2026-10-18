@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Profile;
 
 using Aw.Sindri.Host.Commands.Probe;
+using Aw.Sindri.Host.Commands.Scoping;
 
 namespace Aw.Sindri.Host.Commands;
 
@@ -89,6 +90,7 @@ internal static class CommandTable
             ["context", ..] => await Context(args, client, output, services, (ct, interrupt.Again)).ConfigureAwait(false),
             ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
             ["workflow", .. var rest] => await WorkflowCommandTable.Run(rest, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
+            ["scoping", .. var rest] => await ScopingCommandTable.Run(rest, new ScopingCommandTable.Host(services, output, new RecipeDesk(client, Console.In, static _ => Task.FromResult<Kernel.Error?>(null)), environment), ct).ConfigureAwait(false),
             ["outbox", .. var rest] => await OutboxCommandTable.Run(rest, services, output, ct).ConfigureAwait(false),
             ["handback", ..] => await WorkflowCommandTable.RunShort(args, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
             ["help" or "--help" or "-h"] => await output.Text(Usage.Text + "\n", 0).ConfigureAwait(false),
