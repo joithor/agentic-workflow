@@ -5,7 +5,7 @@
       "from": "scoping",
       "station": "design",
       "kind": "acceptance",
-      "id": "RG-4",
+      "id": "AC-11",
       "why": "Export regression, added by the design; export is excluded in the scope map."
     },
     {
@@ -13,7 +13,7 @@
       "station": "design",
       "kind": "surface",
       "id": "surface:route/export-download",
-      "why": "RG-4's surface; the scope map lists it as excluded."
+      "why": "AC-11's surface; the scope map lists it as excluded."
     }
   ]
 }
