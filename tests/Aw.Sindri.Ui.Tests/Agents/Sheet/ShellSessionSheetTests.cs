@@ -95,7 +95,8 @@ public sealed class ShellSessionSheetTests
         var shell = await Shell(connect: true);
         shell.Agents.RequestOpen(new SessionOpenRequestedEventArgs(Link("session/" + Ref)));
         shell.CloseSheet();
-        Assert.Equal("Reopen session " + Ref, shell.EdgeTabName);
+        Assert.Equal("Reopen session " + shell.AgentSheet.Heading, shell.EdgeTabName);
+        Assert.DoesNotContain(Ref, shell.EdgeTabName, StringComparison.Ordinal);
 
         shell.ReopenSheet();
 
