@@ -107,12 +107,24 @@ public sealed class PayloadFactViewerTests
         var context = new FactViewerContext(_server, new FakeClipboard(), _clock, () => null, FixtureInstances.Detail("incident-loop").Id, _ => { });
         var viewer = new PayloadFactViewer(FactFixtures.Row("incident-loop", "fact:alert"), context);
 
+        // what the live region held at the instant the problem became visible: a change observed, not a turn raced
+        var announcingWhenShown = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        viewer.PropertyChanged += (_, e) =>
+        {
+            if (string.Equals(e.PropertyName, nameof(PayloadFactViewer.ProblemText), StringComparison.Ordinal))
+            {
+                announcingWhenShown.TrySetResult(viewer.Voice.IsAnnouncing);
+            }
+        };
+        using var bound = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        bound.CancelAfter(TimeSpan.FromSeconds(30));
+
         var loading = viewer.Load(Token);
 
         // the live region is born with the viewer: its text must change after that to be spoken, so the first Say waits a turn
-        Assert.Equal((false, Labels.PayloadNotRunning), (viewer.Voice.IsAnnouncing, viewer.ProblemText));
-        await loading;
-        Assert.Equal((true, Labels.PayloadNotRunning), (viewer.Voice.IsAnnouncing, viewer.Voice.Announcement));
+        Assert.False(await announcingWhenShown.Task.WaitAsync(bound.Token));
+        await loading.WaitAsync(bound.Token);
+        Assert.Equal((Labels.PayloadNotRunning, true, Labels.PayloadNotRunning), (viewer.ProblemText, viewer.Voice.IsAnnouncing, viewer.Voice.Announcement));
     }
 
     [Fact]
