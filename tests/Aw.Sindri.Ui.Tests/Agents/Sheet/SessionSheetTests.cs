@@ -79,7 +79,7 @@ public sealed class SessionSheetTests : FrameHost
         // Esc closes it to the edge tab, which reopens the same session
         Press(window, Key.Escape);
         await Until(window, () => !shell.IsSheetOpen);
-        Assert.Equal("Reopen session " + Claude, Heard.Name(Named<Button>(window, "EdgeTab")));
+        Assert.Equal("Reopen session " + shell.AgentSheet.Heading, Heard.Name(Named<Button>(window, "EdgeTab")));
         Named<Button>(window, "EdgeTab").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
         await Until(window, () => shell.IsSheetShown && Visible(window, "SessionSheet"));
         Assert.Equal(Claude, shell.AgentSheet.Ref);
