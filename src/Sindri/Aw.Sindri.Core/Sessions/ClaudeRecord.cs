@@ -23,6 +23,9 @@ public sealed record ClaudeRecord(int Pid, string? ProcStart)
     /// <summary>The tmux place, '&lt;session&gt;:@&lt;window&gt;.%&lt;pane&gt;', with no socket.</summary>
     public string? Tmux { get; init; }
 
+    /// <summary>True for a T3 Code session: an sdk-ts record under .t3/worktrees.</summary>
+    public bool IsT3 => string.Equals(Entrypoint, "sdk-ts", StringComparison.Ordinal) && Cwd?.Contains("/.t3/worktrees", StringComparison.Ordinal) == true;
+
     /// <summary>The session's name; it may come from a prompt, so it is scrubbed before anyone sees it.</summary>
     public string? Name { get; init; }
 

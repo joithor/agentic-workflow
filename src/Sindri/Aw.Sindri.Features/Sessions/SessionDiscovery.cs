@@ -9,7 +9,7 @@ namespace Aw.Sindri.Features.Sessions;
 /// One pass over the sources (collector spec §4.1): the process table, Claude's records, the hook's state files. A source that fails is a problem row and leaves the
 /// others intact; when the process table itself fails or overruns the pass is not good and the caller keeps the previous snapshot.
 /// </summary>
-internal sealed class SessionDiscovery(IProcessTable processes, IClaudeSessionRecords records, IFleetStates fleet, IAgentCatalog catalog, SessionSettings settings, TimeProvider time)
+internal sealed class SessionDiscovery(IProcessTable processes, IClaudeSessionRecords records, IFleetStates fleet, IAgentCatalog catalog, SessionSettings settings, SessionHosts hosts, TimeProvider time)
 {
     private static readonly AgentId _claude = AgentId.From("claude-code");
     private static readonly IReadOnlyDictionary<string, string> _emptyEnvironment = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -84,7 +84,8 @@ internal sealed class SessionDiscovery(IProcessTable processes, IClaudeSessionRe
         }
 
         candidates.AddRange(found.Where(f => !live.ContainsKey(f.Process.Pid)).Select(f => FromProcess(f, hooks, pass)));
-        return new Discovered(candidates, problems, Good: true) { Unknown = unknown };
+        var sources = hosts.ForPass(pass);
+        return new Discovered([.. candidates.Select(c => c with { Host = SessionHosts.Detect(sources, byPid, c) })], problems, Good: true) { Unknown = unknown };
     }
 
     /// <summary>A process whose environment can't be read is unknown, never "not a judge child": it is left out of this pass and its previous state is kept.</summary>
