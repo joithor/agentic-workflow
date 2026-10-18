@@ -193,6 +193,48 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Equal(("<untrusted source=\"map\">Drafted B</untrusted>", "untrusted"), (own.GetProperty("label").GetString(), own.GetProperty("trust").GetString()));
     }
 
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Context_lenses_over_mcp_takes_optional_anchors_and_mapVersion_and_a_lone_anchor_stays_schema_1()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        await using var mcp = await McpSession.Open(host, FixtureMap.Repo, ct);
+
+        var tool = (await mcp.Client.ListToolsAsync(cancellationToken: ct)).Single(t => t.Name == "context_lenses").JsonSchema;
+        var lone = await mcp.Call("context_lenses", $$"""{"anchor":"{{Anchor}}"}""", ct);
+        var set = await mcp.Call("context_lenses", $$"""{"anchors":["{{Anchor}}","feature:layout.split-pane","feature:nope.x"]}""", ct);
+        var held = await mcp.Call("context_lenses", $$"""{"anchor":"{{Anchor}}","mapVersion":"v1"}""", ct);
+        var gone = await mcp.Call("context_lenses", $$"""{"anchor":"{{Anchor}}","mapVersion":"v99"}""", ct);
+        var goneSet = await mcp.Call("context_lenses", $$"""{"anchors":["{{Anchor}}","feature:layout.split-pane"],"mapVersion":"v99"}""", ct);
+        var none = await mcp.Call("context_lenses", "{}", ct);
+        var wrongType = await mcp.Call("context_lenses", """{"anchors":"feature:a"}""", ct);
+
+        Assert.Equal(["anchor", "anchors", "mapVersion"], tool.GetProperty("properties").EnumerateObject().Select(p => p.Name), StringComparer.Ordinal);
+        Assert.False(tool.TryGetProperty("required", out _));
+        Assert.Equal((1, Anchor), (lone.StructuredContent!.Value.GetProperty("schemaVersion").GetInt32(), lone.StructuredContent!.Value.GetProperty("anchor").GetProperty("key").GetString()));
+        Assert.Equal((2, 2), (set.StructuredContent!.Value.GetProperty("schemaVersion").GetInt32(), set.StructuredContent!.Value.GetProperty("anchors").GetArrayLength()));
+        Assert.Equal(["feature:nope.x"], set.StructuredContent!.Value.GetProperty("missingAnchors").EnumerateArray().Select(e => e.GetString()), StringComparer.Ordinal);
+        Assert.Equal("v1", held.StructuredContent!.Value.GetProperty("mapVersion").GetString());
+        Assert.All([gone, goneSet], r => { Assert.Equal(true, r.IsError); Assert.Contains("SND-CONTEXT-120", r.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal); });
+        Assert.All([none, wrongType], r => { Assert.Equal(true, r.IsError); Assert.Contains("SND-CONTEXT-022", r.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal); });
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Context_query_over_mcp_takes_an_optional_mapVersion()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        await using var mcp = await McpSession.Open(host, FixtureMap.Repo, ct);
+
+        var schema = (await mcp.Client.ListToolsAsync(cancellationToken: ct)).Single(t => t.Name == "context_query").JsonSchema;
+        var gone = await mcp.Call("context_query", $$"""{"node":"{{Anchor}}","mapVersion":"v99"}""", ct);
+        var malformed = await mcp.Call("context_query", $$"""{"node":"{{Anchor}}","mapVersion":"latest"}""", ct);
+
+        Assert.True(schema.GetProperty("properties").TryGetProperty("mapVersion", out _));
+        Assert.Contains("SND-CONTEXT-120", gone.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal);
+        Assert.Contains("SND-CONTEXT-006", malformed.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal);
+    }
+
     private async Task<GoldenHost> OffHost() => await Host(sessions: false);
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]

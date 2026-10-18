@@ -432,7 +432,7 @@ User-facing behaviour is in `docs/sindri/context.md` (S-4). This is where the co
 - **Sindri Host.** Routes: `GET /sindri/context/map/review`, `/review/history`, `/review/export`, `/map/proposals`, `/lenses`, `/filemap`; `POST /sindri/context/map/review`,
   `/promote`, `/proposals`. CLI: `ContextReviewVerbs` (review, promote, propose, proposals), `ContextLensVerbs` (lenses, filemap), `ReviewArguments` (the pure parse),
   `ReviewSession` (the review loop as a state machine; the TTY shell only reads lines and sends), `ContextExit` (040 is 75), text in `Text/ContextReviewText` and `ContextLensText`.
-  MCP: `context_lenses {anchor}` in `ContextTools`; `context_node {key}` and `context_neighbors {key, depth?}` in `GraphTools` (S-3M; the same services as the HTTP routes, 022 for bad arguments, summaries in `McpSummaries.Node` and `.Neighbors`, tested in `ContextGraphMcpTests`). `Models/JudgeModelPort` adapts Judge's `IProviderCatalog` as `IModelPort` (agent CLIs only, never `jev`), the catalog built in a container of its own (`JudgeCatalog`).
+  MCP: `context_lenses {anchor? | anchors?, mapVersion?}` in `ContextTools` (a lone anchor stays schema 1, several distinct anchors answer schema 2; `context_query` also takes `mapVersion?`; no new tool, the session reads sets through S-LB2); `context_node {key}` and `context_neighbors {key, depth?}` in `GraphTools` (S-3M; the same services as the HTTP routes, 022 for bad arguments, summaries in `McpSummaries.Node` and `.Neighbors`, tested in `ContextGraphMcpTests`). `Models/JudgeModelPort` adapts Judge's `IProviderCatalog` as `IModelPort` (agent CLIs only, never `jev`), the catalog built in a container of its own (`JudgeCatalog`).
 
 ### Classes (README X63)
 
