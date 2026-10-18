@@ -4,7 +4,10 @@ using Aw.Sindri.Testing.Scoping;
 
 namespace Aw.Sindri.Tests.Scoping;
 
-/// <summary>The gold facts and the line gold scope packet (tests/fixtures/line/gold/scope/expiry) are one document: the facts equal the packet with the stamped fields removed, so neither drifts alone.</summary>
+/// <summary>
+/// The gold facts and the line gold scope packet (tests/fixtures/line/gold/scope/expiry) are one document: the facts equal the packet with the
+/// stamped fields removed, so neither drifts alone. Every gold scope packet (expiry and archive, discovered) passes the strict map and acceptance rules.
+/// </summary>
 public sealed class ScopingGoldFactsTests
 {
     private static readonly string _scopes = Path.Combine(RepoRoot(), "tests", "fixtures", "line", "gold", "scope");
@@ -74,9 +77,18 @@ public sealed class ScopingGoldFactsTests
         Assert.Equal(gold.ToJsonString(), facts.ToJsonString());
     }
 
+    /// <summary>Every directory under tests/fixtures/line/gold/scope, so a new gold packet is checked without a test edit.</summary>
+    public static TheoryData<string> Changes() => [.. Directory.EnumerateDirectories(_scopes).Select(static d => Path.GetFileName(d)).Order(StringComparer.Ordinal)];
+
+    [Fact, Trait("Lane", "integration")]
+    public void The_discovery_finds_the_known_gold_packets()
+    {
+        Assert.Contains("expiry", Changes().Select(static d => (string)d[0]!), StringComparer.Ordinal);
+        Assert.Contains("archive", Changes().Select(static d => (string)d[0]!), StringComparer.Ordinal);
+    }
+
     [Theory, Trait("Lane", "integration")]   // reads the line fixture from the source tree
-    [InlineData("expiry")]
-    [InlineData("archive")]
+    [MemberData(nameof(Changes))]
     public async Task Every_gold_scope_packet_passes_the_strict_map_and_acceptance_rules(string change)
     {
         var facts = new ScopingFacts();

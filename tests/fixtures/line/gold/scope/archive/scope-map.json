@@ -180,8 +180,7 @@
       "trust": "untrusted",
       "lens": "product",
       "graphStatus": "mapped",
-      "id": "S13",
-      "noBehaviourChange": "Trash is unchanged; AC-6 pins that the purge works as it does today."
+      "id": "S13"
     },
     {
       "key": "action:trash.purge",
@@ -194,8 +193,7 @@
       "trust": "untrusted",
       "lens": "product",
       "graphStatus": "mapped",
-      "id": "S14",
-      "noBehaviourChange": "Trash purge is unchanged; AC-6 pins it as it works today."
+      "id": "S14"
     },
     {
       "key": "surface:job/nightly",
@@ -235,8 +233,7 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S17",
-      "noBehaviourChange": "The sibling purge pass is unchanged; AC-6 pins that it works as today."
+      "id": "S17"
     },
     {
       "key": "feature:export",
@@ -249,8 +246,7 @@
       "trust": "untrusted",
       "lens": "product",
       "graphStatus": "mapped",
-      "id": "S18",
-      "noBehaviourChange": "Export is not changed by this brief; whether it includes archived notes is the open question Q3, which blocks no item."
+      "id": "S18"
     },
     {
       "key": "action:export.run",
@@ -263,8 +259,7 @@
       "trust": "untrusted",
       "lens": "product",
       "graphStatus": "mapped",
-      "id": "S19",
-      "noBehaviourChange": "The action behind export; its handling of archived notes is the open question Q3, and the brief asks for no change to it."
+      "id": "S19"
     },
     {
       "key": "code:src/export/exporter.ts",
@@ -277,8 +272,7 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S20",
-      "noBehaviourChange": "Code behind export; the open question Q3 decides whether it changes, and the brief asks for no change to it."
+      "id": "S20"
     },
     {
       "key": "feature:sharing",
@@ -407,7 +401,7 @@
     },
     {
       "id": "ws-3",
-      "title": "Digest, export and sharing keep working",
+      "title": "Digest, export and sharing respect the archive",
       "surfaces": [
         "S10",
         "S11",

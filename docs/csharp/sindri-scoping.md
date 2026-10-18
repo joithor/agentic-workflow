@@ -61,6 +61,6 @@ Deferred from the SC-K1 review (runs 1 and 2) to SC-K2 or later:
 - The `noBehaviourChange` marker needs a spec amendment (§8.2 ACC-002 and ACC-005, A.1 and the SC-E seeds); it also means "covered through another surface" for some surfaces (owner decision, in the PR).
 - `ScopeSchemas` caches parsed `JsonNode` documents in a static field; materialize them under the lock before `serve` shares the view (API2).
 - `workflow.scoping.mapCoverageFloor` is the constant 0.5, to become the profile key.
-- Fencing in `show --json` leaves `ScopingRow.Key` and the Open in Context fields plain; a human who pipes `show` is classed as a session, as in the context verbs.
+- Fencing in `show --json` leaves `ScopingRow.Key` and the Open in Context fields plain; a human who pipes `show` is classed as a session, as in the context verbs, and the session test cannot tell the two callers apart under a redirected test host, so the plain-for-a-human path is untested.
 - `ScopingGoldFactsTests` compares five of the facts with the line gold and not the stamped trust; compare `ScopePacket.Build` output with the gold files.
 - The `archive` line gold scope packet passes SCP-MAP-001 and SCP-ACC-002 as `expiry` does (`ScopingGoldFactsTests` runs both), but it has no facts set; SC-K2's freeze re-check will run the remaining rules on it.
