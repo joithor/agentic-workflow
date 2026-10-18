@@ -1,0 +1,81 @@
+{
+  "hosts": [
+    {
+      "ref": "claude-code/aaaaaaaa-0000-4000-8000-000000000211",
+      "kind": "warp",
+      "label": "Warp",
+      "socket": null,
+      "socketKind": null,
+      "session": null,
+      "pane": null,
+      "terminal": "warp",
+      "terminalDetail": "warp://session/0123456789abcdef0123456789abcdef"
+    },
+    {
+      "ref": "claude-code/bbbbbbbb-0000-4000-8000-000000000311",
+      "kind": "terminal",
+      "label": "kitty",
+      "socket": null,
+      "socketKind": null,
+      "session": null,
+      "pane": null,
+      "terminal": "kitty",
+      "terminalDetail": "7"
+    },
+    {
+      "ref": "claude-code/pid-1100-9000",
+      "kind": "unknown",
+      "label": "unknown",
+      "socket": null,
+      "socketKind": null,
+      "session": null,
+      "pane": null,
+      "terminal": null,
+      "terminalDetail": null
+    },
+    {
+      "ref": "claude-code/pid-411-3100",
+      "kind": "tmux",
+      "label": "tmux",
+      "socket": "/tmp/tmux-1000/t1",
+      "socketKind": "team",
+      "session": "api",
+      "pane": "%0",
+      "terminal": null,
+      "terminalDetail": null
+    },
+    {
+      "ref": "claude-code/pid-521-4100",
+      "kind": "ssh",
+      "label": "ssh",
+      "socket": null,
+      "socketKind": null,
+      "session": null,
+      "pane": null,
+      "terminal": "ssh",
+      "terminalDetail": null
+    },
+    {
+      "ref": "codex/0199a1b2-c3d4-7e5f-8a6b-7c8d9e0f1a2b",
+      "kind": "warp",
+      "label": "Warp",
+      "socket": null,
+      "socketKind": null,
+      "session": null,
+      "pane": null,
+      "terminal": "warp",
+      "terminalDetail": "warp://session/0123456789abcdef0123456789abcdef"
+    },
+    {
+      "ref": "cursor/pid-700-6000",
+      "kind": "terminal",
+      "label": "kitty",
+      "socket": null,
+      "socketKind": null,
+      "session": null,
+      "pane": null,
+      "terminal": "kitty",
+      "terminalDetail": "7"
+    }
+  ]
+}
