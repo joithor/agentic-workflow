@@ -15,8 +15,8 @@ internal sealed class CodeLexicalSearch(IRepoReader repos, ICodeSearch search, L
 {
     internal async ValueTask<CodeLexicalFindings> Find(CodeLexicalRequest request, CancellationToken cancellationToken)
     {
-        using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        limit.CancelAfter(request.Settings.Deadline);
+        using var deadline = new CancellationTokenSource(request.Settings.Deadline, clock);   // the TimeProvider's timer, so a test drives it with a fake clock
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, deadline.Token);
         var pass = new LexicalPass(request.Settings, request.Map.Graph, request.View.Data.Things, request.Clean);
         try
         {

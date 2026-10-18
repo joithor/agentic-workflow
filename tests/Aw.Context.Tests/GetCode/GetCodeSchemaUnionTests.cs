@@ -37,7 +37,7 @@ public sealed class GetCodeSchemaUnionTests
     {
         var (nodes, edges) = Gadgets(5);
         var schemaCalls = 0;
-        using var world = new CodeWorld(decorate: inner => new StallingSearch(inner, q => IsSchemaQuery(q) && ++schemaCalls > 1));   // a second schema call would never answer
+        using var world = new CodeWorld(decorateTimed: (inner, expire) => new StallingSearch(inner, q => IsSchemaQuery(q) && ++schemaCalls > 1, expire));   // a second schema call would never answer
         _ = await world.ImportSharing(extraNodes: nodes, extraEdges: edges);
 
         var view = (await world.Code(MapWorld.HumanWith("""{"deadline":"100ms"}"""))).Value;
@@ -49,7 +49,7 @@ public sealed class GetCodeSchemaUnionTests
     [Fact, Trait("Lane", "unit")]
     public async Task When_only_the_schema_step_is_cut_only_the_schema_row_is_degraded()
     {
-        using var world = new CodeWorld(decorate: inner => new StallingSearch(inner, IsSchemaQuery));
+        using var world = new CodeWorld(decorateTimed: (inner, expire) => new StallingSearch(inner, IsSchemaQuery, expire));
         _ = await world.ImportSharing();
 
         var view = (await world.Code(MapWorld.HumanWith("""{"deadline":"100ms"}"""))).Value;

@@ -136,7 +136,7 @@ public sealed class GetCodeTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public async Task The_deadline_returns_what_was_found_with_152_as_a_degraded_row()
     {
-        using var slow = new CodeWorld(decorate: inner => new SlowSearch());
+        using var slow = new CodeWorld(decorateTimed: (inner, expire) => new StallingSearch(inner, _ => true, expire));
         _ = await slow.ImportSharing();
 
         var view = (await slow.Code(MapWorld.HumanWith("""{"deadline":"100ms"}"""))).Value;
@@ -259,16 +259,5 @@ public sealed class GetCodeTests : IDisposable
 
         Assert.Equal(["feature:nope"], one.MissingAnchors, StringComparer.Ordinal);
         Assert.Equal(ContextErrors.UnknownAnchor.Code, none.Error.Code);
-    }
-
-    private sealed class SlowSearch : ICodeSearch
-    {
-        public async ValueTask<Result<CodeSearchHits>> FilesNaming(CodeSearchQuery query, CancellationToken cancellationToken)
-        {
-            await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
-            return new CodeSearchHits([], Truncated: false);
-        }
-
-        public ValueTask<Result<string>> Resolve(ContextRepo repo, string commit, CancellationToken cancellationToken) => ValueTask.FromResult<Result<string>>(commit);
     }
 }
