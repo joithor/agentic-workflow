@@ -16,10 +16,15 @@ public sealed class FakeClusterSource : IClusterSource
     /// <summary>The repos asked about, in order.</summary>
     public IList<string> Asked { get; } = [];
 
+    /// <summary>The limits each call was given, in order.</summary>
+    public IList<ClusterLimits> AskedLimits { get; } = [];
+
     /// <inheritdoc/>
-    public ValueTask<Result<ClusterSet>> Clusters(ContextRepo repo, string commit, CancellationToken cancellationToken)
+    public ValueTask<Result<ClusterSet>> Clusters(ContextRepo repo, string commit, ClusterLimits limits, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(repo);
+        ArgumentNullException.ThrowIfNull(limits);
+        AskedLimits.Add(limits);
         Asked.Add($"{repo.Name.Value}@{commit}");
         return ValueTask.FromResult<Result<ClusterSet>>(Failure is { } failure ? failure : Set);
     }
