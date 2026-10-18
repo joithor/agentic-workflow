@@ -16,6 +16,7 @@ using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Locks;
+using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
@@ -64,6 +65,7 @@ using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.ListSessions;
 using Aw.Sindri.Features.OnyxAccount;
 using Aw.Sindri.Features.OnyxDown;
+using Aw.Sindri.Features.OnyxEnsure;
 using Aw.Sindri.Features.OnyxStatus;
 using Aw.Sindri.Features.OnyxUp;
 using Aw.Sindri.Features.PauseService;
@@ -250,6 +252,9 @@ public static class SindriFeaturesServiceCollectionExtensions
         .AddSingleton<IOnyxUpStep, OnyxPullStep>()
         .AddSingleton<IOnyxUpStep, OnyxStartStep>()
         .AddScoped<IService<OnyxUpRequest, OnyxUpResponse>, OnyxUpService>()
+        .AddScoped<IManagedOnyx, ManagedOnyx>()                                            // Onyx P4: serve starts a managed Onyx and the needs-you list says when it needs you
+        .AddScoped<IOnyxNotices, OnyxNotices>()
+        .AddScoped<IService<OnyxEnsureRequest, OnyxEnsureResponse>, OnyxEnsureService>()
         .AddScoped<OnyxKeyMinter>()
         .AddScoped<IService<OnyxAccountRequest, OnyxAccountResponse>, OnyxAccountService>()   // Onyx P3: sign-up hand-off, Sindri's key, the profile section
         .AddScoped<IService<OnyxDownRequest, OnyxDownResponse>, OnyxDownService>();

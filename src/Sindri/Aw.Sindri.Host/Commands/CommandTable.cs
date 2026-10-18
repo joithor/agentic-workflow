@@ -89,8 +89,7 @@ internal static class CommandTable
         var output = new Output(Console.Out, Console.Error, options);
         var cap = CliTimeout.Read(environment);   // a malformed value refuses the calls, not the verbs that make none
         using var client = new ControlPlaneClient(probe, options, Headers(session, services), cap.IsError ? null : cap.Value, refusal: cap.IsError ? cap.Error : null);
-        StartCommand Start(bool headless) => new(probe, services.GetRequiredService<IControlPlaneLauncher>(), client, output,
-            services.GetRequiredService<TimeProvider>(), session, UiOpener(headless, environment));
+        StartCommand Start(bool headless) => NewStart(services, session, (client, probe, output), UiOpener(headless, environment), headless);
         var start = Start(headless: true);   // 'sindri --headless', and the start a human 'profile approve' may need
         var verbs = new Verbs(client, probe, output, services);
         var ct = interrupt.Token;
@@ -136,6 +135,32 @@ internal static class CommandTable
             _ => await UnknownVerb(args, output).ConfigureAwait(false),
         };
     }
+
+    // Bare 'sindri' (not headless) offers to set Onyx up before it starts the control plane.
+    private static StartCommand NewStart(IServiceProvider services, AgentSession session, (ControlPlaneClient Client, IControlPlaneProbe Probe, Output Output) wire, Func<string>? openUi, bool headless)
+        => new(wire.Probe, services.GetRequiredService<IControlPlaneLauncher>(), wire.Client, wire.Output, services.GetRequiredService<TimeProvider>(), session, openUi)
+        {
+            BeforeStart = headless ? null : OnyxFirstRun(services, session, wire),
+        };
+
+    // The control plane may not be running yet while the offer's inline approval needs it, so this approval may start it.
+    private static Task<int> Approve(IServiceProvider services, AgentSession session, (ControlPlaneClient Client, IControlPlaneProbe Probe, Output Output) wire, string? hash, CancellationToken ct)
+    {
+        var starter = new StartCommand(wire.Probe, services.GetRequiredService<IControlPlaneLauncher>(), wire.Client, wire.Output, services.GetRequiredService<TimeProvider>(), session);
+        return new Verbs(wire.Client, wire.Probe, wire.Output, services, e => starter.EnsureRunning(launch: true, e)).Approve(hash, Interactive(), Console.In, ct);
+    }
+
+    // Bare 'sindri' offers to set Onyx up first (O6); the offer asks on standard error and reads a line from standard input, and only at a terminal.
+    private static Func<CancellationToken, Task> OnyxFirstRun(IServiceProvider services, AgentSession session, (ControlPlaneClient Client, IControlPlaneProbe Probe, Output Output) wire)
+        => ct => !Interactive() ? Task.CompletedTask : new OnyxOffer(
+            services, session,
+            async question =>
+            {
+                await Console.Error.WriteAsync(question).ConfigureAwait(false);
+                return await Console.In.ReadLineAsync(ct).ConfigureAwait(false);
+            },
+            c => Onyx(["up"], new Verbs(wire.Client, wire.Probe, wire.Output, services), new OnyxVerbs(services, wire.Output, session, (hash, to, a) => Approve(services, session, (wire.Client, wire.Probe, to), hash, a)), wire.Output, c),
+            Console.Error).Run(ct);
 
     /// <summary>'sindri onyx status|up|down [--json]'.</summary>
     private static async Task<int> Onyx(string[] rest, Verbs verbs, OnyxVerbs onyx, Output output, CancellationToken ct) =>
