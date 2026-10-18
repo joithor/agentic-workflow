@@ -139,6 +139,7 @@ public sealed class StartupFocusTests : IDisposable
         _ = shell.Run(_stop.Token);
         Settle();
         Assert.True(DeepLink.TryParse("item/ITM-01JC8", out var link));
+        window.Focusable = true;   // headless gives the window no focus of its own; a desktop window has it
         Assert.True(window.Focus(NavigationMethod.Tab));   // an activated desktop window holds its own focus scope
         Assert.Same(window, window.FocusManager?.GetFocusedElement());
         shell.Navigate(link);
