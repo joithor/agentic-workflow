@@ -4,4 +4,9 @@ namespace Aw.Sindri.Core.Sessions;
 /// <param name="Source">The source: 'processes', 'claude-records', 'fleet-states' or 'collector'.</param>
 /// <param name="Code">The stable code, for example 'SND-SESSION-003'.</param>
 /// <param name="Text">The sentence a client shows.</param>
-public sealed record SessionProblem(string Source, string Code, string Text);
+public sealed record SessionProblem(string Source, string Code, string Text)
+{
+    /// <summary>Why the collector can't run, set on the SND-SESSION-002 problem only; not served (the code and text say it to clients).</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public UnavailableReason? Reason { get; init; }
+}

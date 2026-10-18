@@ -5,4 +5,8 @@ namespace Aw.Sindri.Core.Sessions;
 /// <param name="SocketKind">'sindri', 'team', 'default' or 'other'.</param>
 /// <param name="Session">The tmux session name, or null when unknown.</param>
 /// <param name="Pane">The pane id ('%3'), or null when unknown.</param>
-public sealed record TmuxFacts(string? Socket, string SocketKind, string? Session, string? Pane);
+public sealed record TmuxFacts(string? Socket, string SocketKind, string? Session, string? Pane)
+{
+    /// <summary>How many tmux clients are attached to the session, or null when the server couldn't be read.</summary>
+    public int? AttachedClients { get; init; }
+}
