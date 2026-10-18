@@ -321,7 +321,7 @@
       "title": "The archive list and its Restore control",
       "detail": "New: The archive list and its Restore control, on surface:screen/notes-list.",
       "citations": [
-        "S2"
+        "L-code-2"
       ],
       "trust": "untrusted",
       "lens": "code",
@@ -333,6 +333,10 @@
     {
       "id": "R1",
       "text": "An archived note must stay out of the list and the digest but remain openable.",
+      "citations": [
+        "L-code-2",
+        "L-product-11"
+      ],
       "surfaces": [
         "S2",
         "S24"
@@ -341,6 +345,10 @@
     {
       "id": "R2",
       "text": "Archive and trash both retire notes; their order matters.",
+      "citations": [
+        "L-product-3",
+        "L-product-4"
+      ],
       "surfaces": [
         "S15"
       ]
@@ -374,23 +382,23 @@
   "flagged": [],
   "excluded": [
     {
-      "key": "feature:sharing.link-revocation",
+      "item": "feature:sharing.link-revocation",
       "reason": "Revoking a link has nothing to do with a note's age."
     },
     {
-      "key": "surface:route/links-revoke",
+      "item": "surface:route/links-revoke",
       "reason": "Same."
     },
     {
-      "key": "surface:setting/linkRevocation",
+      "item": "surface:setting/linkRevocation",
       "reason": "Same."
     },
     {
-      "key": "feature:audit-report",
+      "item": "feature:audit-report",
       "reason": "Archiving adds no action the report counts."
     },
     {
-      "key": "surface:route/audit-report",
+      "item": "surface:route/audit-report",
       "reason": "Same."
     }
   ],

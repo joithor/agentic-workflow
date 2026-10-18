@@ -12,8 +12,19 @@
           "surface:api/weekly-digest-email"
         ],
         "sources": [
-          "map",
-          "repo"
+          {
+            "id": "map",
+            "state": "ok"
+          },
+          {
+            "id": "repo",
+            "state": "ok"
+          },
+          {
+            "id": "symbols",
+            "state": "unavailable",
+            "reason": "index-not-built"
+          }
         ],
         "mapVersion": "v1",
         "depth": 0,
@@ -60,7 +71,10 @@
           "surface:api/weekly-digest-email"
         ],
         "sources": [
-          "map"
+          {
+            "id": "map",
+            "state": "ok"
+          }
         ],
         "mapVersion": "v1",
         "depth": 0,
@@ -97,8 +111,14 @@
           "surface:api/weekly-digest-email"
         ],
         "sources": [
-          "map",
-          "tracker"
+          {
+            "id": "map",
+            "state": "ok"
+          },
+          {
+            "id": "tracker",
+            "state": "ok"
+          }
         ],
         "mapVersion": "v1",
         "depth": 2,
@@ -137,8 +157,14 @@
           "surface:api/weekly-digest-email"
         ],
         "sources": [
-          "tracker",
-          "git"
+          {
+            "id": "tracker",
+            "state": "ok"
+          },
+          {
+            "id": "git",
+            "state": "ok"
+          }
         ],
         "mapVersion": "v1",
         "depth": 0,
