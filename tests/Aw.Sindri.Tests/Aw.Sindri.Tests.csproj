@@ -66,6 +66,7 @@
     <Compile Include="../Aw.Sindri.Engine.Tests/Workflows/Spike/SpikeView.cs" Link="Shared/Workflows/Spike/SpikeView.cs" />
     <Compile Include="../Aw.Sindri.Engine.Tests/Workflows/Spike/SpikeWorker.cs" Link="Shared/Workflows/Spike/SpikeWorker.cs" />
     <Compile Include="../Aw.Sindri.Engine.Tests/Workflows/Spike/TemporalServerFixture.cs" Link="Shared/Workflows/Spike/TemporalServerFixture.cs" />
+    <Compile Include="../Aw.Sindri.Engine.Tests/Workflows/Spike/TemporalProbes.cs" Link="Shared/Workflows/Spike/TemporalProbes.cs" />
     <Compile Include="../Aw.Sindri.Engine.Tests/Workflows/Spike/TimeSkippingServer.cs" Link="Shared/Workflows/Spike/TimeSkippingServer.cs" />
     <Compile Include="../Aw.Sindri.Engine.Tests/Workflows/Spike/UpdateProbeWorkflow.cs" Link="Shared/Workflows/Spike/UpdateProbeWorkflow.cs" />
     <Compile Include="../Aw.Sindri.Engine.Tests/Workflows/WorkflowsHarness.cs" Link="Shared/Workflows/WorkflowsHarness.cs" />
