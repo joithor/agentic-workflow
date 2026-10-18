@@ -182,7 +182,7 @@ internal sealed partial class RecipeWorkflow
         },
         before.Frame.Run?.Token.Value,
         trigger.Actor,
-        Detail: WorkflowEventDetail.Of(change.Event, trigger),
+        Detail: Located(WorkflowEventDetail.Of(change.Event, trigger), change.After),
         Causation: (trigger as OpenRequested)?.Launch);
 
     internal static string TypeOf(WorkflowEventType type) => type switch

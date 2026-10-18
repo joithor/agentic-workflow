@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Events;
@@ -224,6 +225,12 @@ internal sealed partial class RecipeWorkflow
 
         _ = await Workflow.WaitConditionAsync(() => live.TrueForAll(static r => r.Done), _childrenGrace).ConfigureAwait(true);
     }
+
+    /// <summary>The event's detail with the mirrored child's address in its suspension, so a needs-you row names the child (the id alone doesn't give the address back).</summary>
+    private WorkflowEventDetail Located(WorkflowEventDetail detail, WorkflowInstance after) =>
+        _children && after.Suspension?.Mirrors is { } child && _childRuns.TryGetValue(child, out var run) && detail.Delta.Suspension is { } summary
+            ? detail with { Delta = detail.Delta with { Suspension = summary with { MirrorsAddress = run.Address.Value } } }
+            : detail;
 
     private IReadOnlyList<ChildView>? ChildViews() => _children ? [.. _childRuns.Values.Select(static r => new ChildView(r.Address, r.State))] : null;
 
