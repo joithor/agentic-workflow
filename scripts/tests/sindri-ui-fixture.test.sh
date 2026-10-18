@@ -290,6 +290,7 @@ AW_SINDRI_HOME="$C" bash "$FIXTURE" context >/dev/null 2>&1; check "context need
 AW_SINDRI_HOME="$C" bash "$FIXTURE" context sideways >/dev/null 2>&1; check "context refuses another word (exit 2)" "$?" "2"
 
 : > "$STUB_LOG"
+rm -f "$STUB_LOG.env"   # per case: the assertions below read only this context up
 out="$(AW_SINDRI_HOME="$C" SINDRI="$STUB" bash "$FIXTURE" context up 2>/dev/null)"; check "context up exits 0" "$?" "0"
 check "context up prints the repo name" "$out" "aw-split-panes"
 R="$C/ui-fixture-context/aw-split-panes"
@@ -338,8 +339,10 @@ check "the second context down changes nothing" "$(cat "$C/profile/profile.yaml"
 absent "the second context down approves nothing" "$(cat "$STUB_LOG")" "profile approve"
 # --- review run 1: re-import, approval retry, AW_SINDRI_PROFILE ---
 : > "$STUB_LOG"
+# The marker names this very file, so only the status check can send it back to the import.
+sha256sum "$ROOT/tests/Aw.Context.Testing/Fixtures/map-tabs.json" | cut -d' ' -f1 > "$C/ui-fixture-context-imported"
 STUB_NO_MAP=1 AW_SINDRI_HOME="$C" SINDRI="$STUB" bash "$FIXTURE" context up >/dev/null 2>&1; check "context up imports again when the store has no map" "$?" "0"
-contains "the import ran" "$(cat "$STUB_LOG")" "context map import"
+contains "the import ran although the marker is current" "$(cat "$STUB_LOG")" "context map import"
 rm -f "$C/ui-fixture-context-imported"
 : > "$STUB_LOG"
 AW_SINDRI_HOME="$C" SINDRI="$STUB" bash "$FIXTURE" context up >/dev/null 2>&1
