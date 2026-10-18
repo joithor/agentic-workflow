@@ -5002,3 +5002,6 @@ Aw.Context.Core.Lenses.LensesView.SkippedComponents.get -> System.Collections.Ge
 Aw.Context.Core.Lenses.LensesView.SkippedComponents.init -> void
 Aw.Context.Core.Results.ContextResult.SkippedComponents.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.SkippedComponent!>?
 Aw.Context.Core.Results.ContextResult.SkippedComponents.init -> void
+Aw.Context.Core.Engine.ContextSettings.CascadeComponentFanOut.get -> int
+Aw.Context.Core.Engine.ContextSettings.CascadeComponentFanOut.init -> void
+static Aw.Context.Core.Engine.QueryRules.CascadeFor(Aw.Context.Core.Graph.CascadeHops? hops, Aw.Context.Core.Engine.ContextSettings! settings) -> Aw.Context.Core.Graph.CascadeOptions!

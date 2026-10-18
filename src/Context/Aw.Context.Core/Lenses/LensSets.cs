@@ -23,7 +23,7 @@ internal static class LensSets
             return tooMany;
         }
 
-        var resolved = Resolve(graph, distinct, depth);
+        var resolved = Resolve(graph, distinct, depth, basis.Cascade);
         if (resolved.IsError)
         {
             return resolved.Error;
@@ -42,11 +42,20 @@ internal static class LensSets
             Conflicts(scopes, pairs), coverage, LensSearchedBuilder.For(basis, keys, depth, bands), [], new Dictionary<string, Results.Citation>(StringComparer.Ordinal))
         {
             MapCommit = basis.MapCommit,
+            SkippedComponents = Skipped(scopes),
         };
     }
 
+    // Each skipped unit once, across the anchors, ordinal by unit; null when none.
+    private static List<SkippedComponent>? Skipped(List<LensScope> scopes)
+    {
+        var all = scopes.SelectMany(s => s.Cascade.SkippedComponents).GroupBy(c => c.Unit, StringComparer.Ordinal)
+            .OrderBy(g => g.Key, StringComparer.Ordinal).Select(g => g.OrderByDescending(c => c.Features).First()).ToList();
+        return all.Count > 0 ? all : null;
+    }
+
     // The anchors that resolve (de-duplicated by node), the values that don't (as given). An ambiguous name refuses the call; with nothing resolved the first miss is the answer.
-    private static Result<(List<LensScope> Scopes, List<string> Missing)> Resolve(GraphSnapshot graph, List<string> given, int depth)
+    private static Result<(List<LensScope> Scopes, List<string> Missing)> Resolve(GraphSnapshot graph, List<string> given, int depth, CascadeOptions options)
     {
         var scopes = new List<LensScope>();
         var missing = new List<string>();
@@ -56,7 +65,7 @@ internal static class LensSets
             var node = AnchorMatch.Resolve(graph, raw);
             if (node.IsSuccess)
             {
-                if (!scopes.Exists(s => s.Anchor.Key.Value == node.Value.Key.Value) && LensScope.Of(graph, node.Value.Key, depth) is { } scope)
+                if (!scopes.Exists(s => s.Anchor.Key.Value == node.Value.Key.Value) && LensScope.Of(graph, node.Value.Key, depth, options) is { } scope)
                 {
                     scopes.Add(scope);
                 }
