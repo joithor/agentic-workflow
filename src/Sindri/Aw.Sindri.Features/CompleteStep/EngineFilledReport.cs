@@ -39,7 +39,7 @@ internal sealed class EngineFilledReport(BlockCatalog catalog, JsonSerializerOpt
         }
 
         return SindriErrors.AuthRefused.With(
-            $"CompleteStep on '{task.Step.Value}' (state '{task.State}') is a human-only Step. Ask the human to run it in a terminal or the Sindri app: {CompleteCommand.Line(view.Address.Value, request.Run, request.Outcome, task.Outputs)}");
+            $"CompleteStep on '{task.Step.Value}' (state '{task.State}') is a human-only Step. Ask the human to run it in a terminal or the Sindri app: {CompleteCommand.Line(view.Address.Value, request.Run, [request.Outcome], task.Outputs)}");
     }
 
     /// <summary>Who may report the run (see <see cref="AgentReportAuthority"/>): a non-human caller's report on an agent run is proven by its launch secret.</summary>

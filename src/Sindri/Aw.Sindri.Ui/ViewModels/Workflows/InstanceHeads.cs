@@ -26,10 +26,10 @@ internal static class InstanceHeads
     /// <returns>The text.</returns>
     internal static string Workflows(ListCounts counts) => Labels.WorkflowsHead(Number(counts.Open), Number(counts.NeedsYou), Number(counts.WithYou));
 
-    /// <summary>The collapsed finished line: "4 done today".</summary>
+    /// <summary>The collapsed finished line: "4 finished" (every finished run, cancelled and failed included; owner, q25).</summary>
     /// <param name="done">The finished figure.</param>
     /// <returns>The text.</returns>
-    internal static string DoneLine(int done) => $"{Number(done)} done today";
+    internal static string DoneLine(int done) => $"{Number(done)} finished";
 
     private static string Number(int value) => value.ToString(CultureInfo.InvariantCulture);
 }
