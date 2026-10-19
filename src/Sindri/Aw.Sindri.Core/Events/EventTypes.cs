@@ -56,6 +56,12 @@ public static class EventTypes
     /// <summary>A draft map became current (context spec §3).</summary>
     public const string ContextMapPromoted = "context.map.promoted";
 
+    /// <summary>The owner approved a scope packet (scoping spec §3, SC3); written by the freeze Step.</summary>
+    public const string ScopingApproved = "scoping.approved";
+
+    /// <summary>A later station found a surface or behaviour an approved scope packet missed (scoping spec §3, SC3); written by that station.</summary>
+    public const string ScopingEscape = "scoping.escape";
+
     /// <summary>A scoping run's surfaces were written to the draft map (context spec §3; S-4 adds this sixth event).</summary>
     public const string ContextMapProposed = "context.map.proposed";
 

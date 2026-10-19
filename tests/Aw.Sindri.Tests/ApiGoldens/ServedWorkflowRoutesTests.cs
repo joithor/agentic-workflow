@@ -32,6 +32,7 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
         ("workflow-instances-start", "request"), ("workflow-instances-start", "started"), ("workflow-instances", "start-item-malformed"), ("workflow-instances", "start-missing-input"),
         ("workflow-instances", "start-item-mismatch"), ("workflow-instances", "start-earlier-attempt-live"),
         ("workflow-instances", "start-recipe-legacy"), ("workflow-instances", "start-recipe-revoked"), ("workflow-instances", "start-recipe-drifted"),
+        ("workflow-instance-scoping", "expiry-stop"),   // recorded by ScopingShowTests (API2 serves that view as is)
     ];
 
     /// <summary>What a served start draws at run time: its timestamps and the instance id.</summary>

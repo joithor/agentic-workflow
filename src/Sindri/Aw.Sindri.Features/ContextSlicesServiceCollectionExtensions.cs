@@ -8,6 +8,7 @@ using Aw.Context.Core.Review;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Locks;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Commands;
 using Aw.Sindri.Features.ContextCalls;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,6 +31,11 @@ internal static class ContextSlicesServiceCollectionExtensions
             .AddScoped<IScheduledService, ContextSyncGapsService>()
             .AddSingleton(ContextSyncGapsService.BuiltIn)
             .AddScoped<SyncGaps>()
+            .AddScoped<ContextInputScopes>()
+            .AddScoped<ContextInputFacts>()
+            .AddStepInput<ContextLensesInput>()
+            .AddStepInput<ContextHistoryInput>()
+            .AddStepInput<ContextCodeInput>()
             .AddSingleton<IHeavyJobLock>(static sp => new SindriHeavyJobLock(sp.GetRequiredService<IHeavySlots>(), SindriHeavyJobLock.DefaultWait));
         _ = services.AddScoped<IValidator<PromoteContextMapRequest>, AcceptAllValidator<PromoteContextMapRequest>>().AddCommand<PromoteContextMapRequest, PromoteContextMapResponse, PromoteContextMapService>();
         _ = services.AddScoped<IValidator<ProposeContextMapRequest>, AcceptAllValidator<ProposeContextMapRequest>>().AddCommand<ProposeContextMapRequest, ProposeContextMapResponse, ProposeContextMapService>();

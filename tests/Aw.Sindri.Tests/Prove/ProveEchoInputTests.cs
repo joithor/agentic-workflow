@@ -51,7 +51,7 @@ public sealed class ProveEchoInputTests : IDisposable
 
         var filled = await new ProveEchoInput(echo).Fill(Context(), TestContext.Current.CancellationToken);
 
-        Assert.Equal("PLANT-ECHO the section text", filled.Sections["echo"]);
+        Assert.Equal("PLANT-ECHO the section text", filled.Value.Sections["echo"]);
         var line = Assert.Single(echo.Lines);
         Assert.Matches("^fill input\\.prove\\.echo step\\.produce [0-9a-f]{12}$", line);
         Assert.DoesNotContain("PLANT", line, StringComparison.Ordinal);
