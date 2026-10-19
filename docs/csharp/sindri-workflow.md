@@ -979,7 +979,7 @@ Before a desk Step opens, each input in its `step.inputs` list runs as a `FillIn
 - **A later section of the same name replaces the earlier one** in place (`InjectionPlans.Merge`, pure); the plan keeps a warning for each replacement.
 - **A throwing input fails the Step**: `step.failed` with the reason `input <id> failed: <error code>` (never the message), which the recipe's `on: step.failed` routes. No desk task opens.
 - **An input whose runtime is gone after approval parks the instance** with the existing `ParkReason.NoRuntime` (shown as `SND-WF-010`); the question reads `input <id> of <step> has no runtime in this build (SND-WF-016; fix: install the block pack or rebuild, then restart)`. A restart runs Fill again and parks again the same way while the runtime is missing; nothing fails and nothing loops.
-- **An in-process Step** gets `StepContext.Injection` (the sections) and `StepContext.InputResults` (the typed results by input id; read-only, empty when it has none) from `StepContexts`. On a cache miss the input runs again and its digests must equal the recorded ones; otherwise `SND-WF-018` and the Step does not run on different data.
+- **An in-process Step** gets `StepContext.Injection` (the sections) and `StepContext.InputResults` (the typed results, keyed by the input block id, or `id#n` (n = the entry's place in the Step's input list) once the Step lists that block twice; read-only, empty when it has none) from `StepContexts`. On a cache miss the input runs again and its digests must equal the recorded ones; otherwise `SND-WF-018` and the Step does not run on different data.
 
 ### The context inputs (S-LB2)
 

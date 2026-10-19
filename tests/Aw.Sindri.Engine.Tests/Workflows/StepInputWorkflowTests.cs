@@ -193,6 +193,7 @@ public sealed class StepInputWorkflowTests(SindriTimeSkippingServer server) : IC
             Assert.Equal("broken", result.State);   // the two inputs are 1.2 MiB together: one plan over the cap
             Assert.Equal(2, _probe.Calls.Count);
             Assert.Null(texts.Get(new InjectionKey(run.Handle.Id, "checks", "1.1", 1)));
+            Assert.Null(texts.Get(new InjectionKey(run.Handle.Id, "checks", "1.1", 2)));
         });
     }
 
