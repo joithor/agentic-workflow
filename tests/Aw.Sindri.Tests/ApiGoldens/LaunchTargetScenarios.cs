@@ -67,7 +67,7 @@ internal static class LaunchTargetScenarios
         return (await host.Http.Ask(Get("/sindri/launch/targets", human))).Body;
     }
 
-    private static LaunchProbed Probed(string scenario) => new(Terminal(scenario), new HostFacts(HostKind.Tmux, Present: true, "3.4", Problem: null), Targets(scenario),
+    internal static LaunchProbed Probed(string scenario) => new(Terminal(scenario), new HostFacts(HostKind.Tmux, Present: true, "3.4", Problem: null), Targets(scenario),
         [new RepoFacts(RepoName.From("demo"), Present: true), new RepoFacts(RepoName.From("other"), Present: false)]);
 
     private static TerminalFacts Terminal(string scenario) => scenario switch

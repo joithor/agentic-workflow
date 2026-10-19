@@ -13,6 +13,8 @@ public sealed class LaunchRequestBuilder
     private StepArgs? _step;
     private LaunchMode _mode = LaunchMode.Open;
     private SessionId? _resume;
+    private InstanceAddress? _instance;
+    private RunToken? _run;
 
     /// <summary>Sets the launch id.</summary>
     /// <param name="value">The id.</param>
@@ -42,6 +44,17 @@ public sealed class LaunchRequestBuilder
         return this;
     }
 
+    /// <summary>Says which workflow instance and Step run the launch belongs to.</summary>
+    /// <param name="instance">The instance.</param>
+    /// <param name="run">The Step run's token.</param>
+    /// <returns>This builder.</returns>
+    public LaunchRequestBuilder OnInstance(InstanceAddress instance, RunToken run)
+    {
+        _instance = instance;
+        _run = run;
+        return this;
+    }
+
     /// <summary>Makes it a Resume of this session.</summary>
     /// <param name="value">The session id to resume.</param>
     /// <returns>This builder.</returns>
@@ -55,5 +68,5 @@ public sealed class LaunchRequestBuilder
     /// <summary>Builds the request.</summary>
     /// <returns>The request.</returns>
     public LaunchRequest Build() =>
-        new(_launch, A.FirstItemId, _agent, _mode, _attended, "/work/repo", Instance: null, Worktree: null, _step, Run: null, _resume);
+        new(_launch, A.FirstItemId, _agent, _mode, _attended, "/work/repo", _instance, Worktree: null, _step, _run, _resume);
 }
