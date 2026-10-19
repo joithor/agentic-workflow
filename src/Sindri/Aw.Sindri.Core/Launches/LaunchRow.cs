@@ -30,6 +30,7 @@ namespace Aw.Sindri.Core.Launches;
 /// <param name="CatalogSource">Where the entry came from, once started.</param>
 /// <param name="ArgvHash">The hash of the entry's argv template, once started.</param>
 /// <param name="Ended">How the session ended, or null while it runs.</param>
+/// <param name="Step">Which workflow instance, Step (state id) and attempt the launch belongs to; every member is null for an attended launch and for events recorded before the fields existed.</param>
 /// <param name="Sequence">The ledger sequence that last changed the row.</param>
 public sealed record LaunchRow(
     LaunchId Id,
@@ -53,6 +54,7 @@ public sealed record LaunchRow(
     CatalogSource? CatalogSource,
     string? ArgvHash,
     LaunchEnd? Ended,
+    LaunchStep Step,
     long Sequence)
 {
     /// <summary>The session id a resume uses: the one known at start, else the reported one.</summary>

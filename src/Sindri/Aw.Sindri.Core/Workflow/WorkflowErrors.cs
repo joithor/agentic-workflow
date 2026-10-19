@@ -94,6 +94,9 @@ public static class WorkflowErrors
     /// <summary>SND-BLOCK-003: the item's repo couldn't be read, so a block Step's per-repo keys can't be resolved; the run ends as step.failed 'repo-unreadable'.</summary>
     public static readonly ErrorDefinition BlockRepoUnreadable = new("SND-BLOCK-003", ErrorKind.Unavailable, "The item's repo couldn't be read for a block Step");
 
+    /// <summary>SND-BLOCK-004: a Step's run area file can't be written or read; the Step fails with the message, and a line is never dropped.</summary>
+    public static readonly ErrorDefinition BlockRunAreaUnavailable = new("SND-BLOCK-004", ErrorKind.Unavailable, "A Step's run area file can't be written or read");
+
     /// <summary>Every live workflow error, for ErrorCatalogue.Validate (together with SindriErrors.All).</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
     [
@@ -101,7 +104,7 @@ public static class WorkflowErrors
         RecipeChallengeStale, RecipeUnreadable,
         InstanceNotFound, TriggerNotAllowed, GateRefused, StaleRunToken, AmbiguousAddress, MalformedReport,
         NonceRefused, NoRuntime, EffectNotAllowed, EarlierAttemptLive, WorkflowChallengeStale, ItemMismatch, EffectFailed,
-        StepInputNoRuntime, InjectionChanged, InputChanged, InjectionInvalid, BlockFactUnreadable, BlockProfileUnreadable, BlockRepoUnreadable,
+        StepInputNoRuntime, InjectionChanged, InputChanged, InjectionInvalid, BlockFactUnreadable, BlockProfileUnreadable, BlockRepoUnreadable, BlockRunAreaUnavailable,
     ];
 
     /// <summary>

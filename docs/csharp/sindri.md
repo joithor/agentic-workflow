@@ -471,6 +471,12 @@ CLI form and the UI status: `ready`, `pending:<phase>` or `cli-only:<reason>`.
 | `RunDoctor`, `ValidateProfile` | local | none (CLI only) | `cli-only:local` |
 | P3–P10a actions | per API spec §3.2 | per the table above | `pending:<phase>` |
 
+**Which instance a launch belongs to (API follow-up to P10a).** An engine launch records the instance, Step and attempt it was made for: `launch.started`
+and `launch.failed` carry `instance` (the instance address), `state` (the Step's state id) and `attempt` (the Step run's number, from the run token `{entry}.{n}`),
+all null for an attended launch (an attach row records no step: it is a person's click, so `GET /launches/{attachId}` reads as unattached even when the session it shows belongs to an engine launch) and for events recorded before the fields existed. `GET /sindri/launches/{launchId}` serves them as `step{instance, state, attempt}`
+(a launch already has its own `state`, requested, started or failed, so the three sit in one object, always present, members null when absent), and a session row serves
+the same object as `launch` (null when no launch row is known; see `sindri-sessions.md`).
+
 `GET /sindri/commands` (a query: any caller) answers `{rows: [{action, class, allowedCallers, terminal, method, route,
 cli, ui, destructive, readsViews, shortcut}]}` sorted by action id. `allowedCallers` comes from the authorization table
 (`human+terminal`, `human`, `session`, `service`, `service:<name>`); a terminal-bound row lists only `human+terminal`, and
@@ -752,6 +758,7 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 | `SND-BLOCK-001` | unavailable | A fact a block Step reads can't be read; the run ends as `step.failed` with the message as its reason |
 | `SND-BLOCK-002` | unavailable | The approved profile a block Step's providers come from can't be read; the run ends as `step.failed` `profile-unreadable: <code>` |
 | `SND-BLOCK-003` | unavailable | The item's repo (`fact:item`) couldn't be read, so a block Step's per-repo keys can't be resolved; the run ends as `step.failed` `repo-unreadable`, never with the box's list |
+| `SND-BLOCK-004` | unavailable | A Step's run-area file (`$AW_SINDRI_HOME/workflow/runs/<WFI-id>/`, for example the scoping station's `rounds.jsonl`) can't be written or read; the Step fails with the reason, and the line is never dropped |
 
 `sindri recipe validate <file> [--json]` and `sindri recipe eval <file>` are local checker verbs (engine spec W27): exit
 0 pass, 1 fail, 2 usage or tool error. The recipe reference, the eval format, the `RCP-*` rule table and how to add

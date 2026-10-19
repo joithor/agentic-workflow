@@ -52,7 +52,7 @@ internal sealed partial class AgentsPage : UserControl
     private void OnFocusRequested(object? sender, AgentFocusEventArgs request) =>
         Dispatcher.UIThread.Post(() => Focus(request), DispatcherPriority.Loaded);
 
-    // A key moved the selection onto a row (or O onto its Focus line), or a re-read changed the rows under it: the row's frame takes focus on the
+    // A key moved the selection onto a row (or O, on a row with no Step, onto its Focus line), or a re-read changed the rows under it: the row's frame takes focus on the
     // keyboard's ring and scrolls into view. A re-read only takes it when focus was lost with the old rows, never from a control the human is on.
     private void Focus(AgentFocusEventArgs request)
     {

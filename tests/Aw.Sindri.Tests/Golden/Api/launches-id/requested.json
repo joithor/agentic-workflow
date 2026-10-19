@@ -18,6 +18,11 @@
   "catalogSource": null,
   "argvHash": null,
   "ended": null,
+  "step": {
+    "instance": null,
+    "state": null,
+    "attempt": null
+  },
   "asOf": {
     "cursor": 7,
     "ledgerHead": 7,

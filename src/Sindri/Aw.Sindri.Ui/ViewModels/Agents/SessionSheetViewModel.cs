@@ -278,7 +278,8 @@ internal sealed partial class SessionSheetViewModel(ISindriApi api) : Observable
     private void Clear()
     {
         (Heading, StateLine, EndedText, EndedDetail, ProblemText, Note) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
-        (Fields, HostFields, History, IsEnded) = ([], [], [], false);
+        (Fields, HostFields, History, IsEnded, _step) = ([], [], [], false, null);
+        OnChanged(nameof(HasStep));
     }
 
     private static string Id8(string id) => id.Length > 8 ? id[..8] : id;
