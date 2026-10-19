@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Aw.Kernel;
 using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
@@ -37,6 +38,8 @@ public sealed class AgentRuntimeInterpreterTests(SindriTimeSkippingServer skippi
     private readonly FakeLauncher _launcher = new();
     private readonly FakeAgentSessions _sessions = new();
     private readonly FakeRunDiff _diff = new();
+    private ILauncher? _launcherSeen;   // what the host sees as the launcher when a test wraps the fake
+    private IRunDiff? _diffSeen;
 
     public void Dispose() => _harness.Dispose();
 
@@ -121,6 +124,29 @@ public sealed class AgentRuntimeInterpreterTests(SindriTimeSkippingServer skippi
             _ = Assert.Single(_launcher.Requests);   // the replay launched nothing
             await AgentRig.Replayed(handle);
         }, ct);
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task A_relaunch_of_the_live_session_with_no_chosen_id_keeps_the_recorded_session_and_does_not_park()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var chosen = SessionId.From("sess-i28");
+        _launcher.PreChosenSession = chosen;
+        _launcherSeen = new SkippedOnRelaunch(_launcher);   // #295 I28: a launcher that did not start the session answers it with a Skipped viewer and no chosen id
+        _diffSeen = new FailsOnce(_diff);   // the first launch attempt dies after the outcome is recorded, so the activity retries
+        await using var rig = await Rig(ct);
+        await rig.Run(async handle =>
+        {
+            var view = await WorkflowsHarness.Until(handle, static v => v.Run is not null && v.State == "write");
+            await WaitFor(() => _launcher.Requests.Count == 2, ct);
+            await Launched(ct);
+            var parked = (await handle.QueryAsync(static wf => wf.GetInstance())).Question;
+
+            Assert.Null(parked);
+            Assert.Equal([chosen.Value], await rig.StartedSessions(ct));   // one outcome, and it keeps the id of the first
+            _ = await handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(Report(view.Run!.Value)), new WorkflowUpdateOptions(new string('b', 32)));
+            await WaitFor(() => _launcher.Stops.Count == 1, ct);
+        });
     }
 
     [Fact(Timeout = 120_000)]
@@ -251,6 +277,32 @@ public sealed class AgentRuntimeInterpreterTests(SindriTimeSkippingServer skippi
 
     private Task<AgentRig> Rig(CancellationToken ct, WorkflowEnvironment? environment = null) => AgentRig.Start(this, environment, ct);
 
+    /// <summary>The real launcher's answer to a launch id whose session is already live and was not started by this process: that session, a Skipped viewer, no chosen id (#295 I28).</summary>
+    private sealed class SkippedOnRelaunch(FakeLauncher inner) : ILauncher
+    {
+        public async ValueTask<LaunchResult> Launch(LaunchRequest request, CancellationToken cancellationToken)
+        {
+            var first = inner.Requests.All(r => r.Launch != request.Launch);
+            var result = await inner.Launch(request, cancellationToken);
+            return first || result is not StartedLaunch started ? result : started with { Viewer = ViewerOutcome.Skipped, ChosenSession = null };
+        }
+
+        public ValueTask<Result<Unit>> Stop(LaunchId launch, CancellationToken cancellationToken) => inner.Stop(launch, cancellationToken);
+
+        public ValueTask<LaunchProbed> Probe(CancellationToken cancellationToken) => inner.Probe(cancellationToken);
+    }
+
+    /// <summary>A run diff whose first read of HEAD throws, as a worker that dies mid-activity would: the launch activity fails once and is retried.</summary>
+    private sealed class FailsOnce(FakeRunDiff inner) : IRunDiff
+    {
+        private int _reads;
+
+        public ValueTask<Result<string>> Head(string worktree, CancellationToken cancellationToken) =>
+            Interlocked.Increment(ref _reads) == 1 ? throw new InvalidOperationException("the worker died") : inner.Head(worktree, cancellationToken);
+
+        public ValueTask<Result<bool>> IsEmpty(string worktree, string startHead, CancellationToken cancellationToken) => inner.IsEmpty(worktree, startHead, cancellationToken);
+    }
+
     private sealed record ItemInfo(string Key, string Id, string Repo);
 
     /// <summary>A running dev server (or the time-skipping one), the composed host with the fakes and a worker for the test body.</summary>
@@ -316,6 +368,20 @@ public sealed class AgentRuntimeInterpreterTests(SindriTimeSkippingServer skippi
             Assert.Null(replayed.ReplayFailure);
         }
 
+        /// <summary>The session id of each 'launch.started' row, in order (null when the row has none).</summary>
+        public async Task<List<string?>> StartedSessions(CancellationToken ct)
+        {
+            var rows = (await Sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 200, ct)).Value;
+            var sessions = new List<string?>();
+            foreach (var row in rows.Where(static e => e.Envelope.Type == "launch.started"))
+            {
+                using var payload = JsonDocument.Parse(row.Envelope.Payload);
+                sessions.Add(payload.RootElement.TryGetProperty("sessionId", out var id) ? id.GetString() : null);
+            }
+
+            return sessions;
+        }
+
         /// <summary>The reason of the instance's one 'step.failed' row.</summary>
         public async Task<string?> FailureReason(CancellationToken ct)
         {
@@ -370,9 +436,9 @@ public sealed class AgentRuntimeInterpreterTests(SindriTimeSkippingServer skippi
 
         private static void Register(IServiceCollection services, AgentRuntimeInterpreterTests test)
         {
-            _ = services.Replace(ServiceDescriptor.Singleton<ILauncher>(test._launcher));
+            _ = services.Replace(ServiceDescriptor.Singleton(test._launcherSeen ?? test._launcher));
             _ = services.Replace(ServiceDescriptor.Singleton<IAgentSessions>(test._sessions));
-            _ = services.Replace(ServiceDescriptor.Singleton<IRunDiff>(test._diff));
+            _ = services.Replace(ServiceDescriptor.Singleton(test._diffSeen ?? test._diff));
             _ = services.Replace(ServiceDescriptor.Singleton(new AgentRuntimeOptions(PollInterval: TimeSpan.FromMilliseconds(100))));
         }
     }
