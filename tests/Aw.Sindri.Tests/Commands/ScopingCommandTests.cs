@@ -253,6 +253,32 @@ public sealed class ScopingCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
+    public async Task Desk_read_brief_refuses_a_file_reached_through_a_symlinked_directory_that_leaves_the_root()
+    {
+        var root = await Repo("briefs/expiry.md", "# x\n");
+        var outside = Path.Combine(_home.Path, "elsewhere");
+        _ = Directory.CreateDirectory(outside);
+        await File.WriteAllTextAsync(Path.Combine(outside, "secret.md"), "# outside\n", TestContext.Current.CancellationToken);
+        _ = Directory.CreateSymbolicLink(Path.Combine(root, "docs"), outside);
+        await ReadBriefInput("docs/secret.md");
+
+        Assert.Equal(2, await Run("scoping", "desk", "read-brief", "--facts", Facts, "--out", Out, "--repo-root", root));
+
+        Assert.Contains("SND-SCOPING-004", _error.ToString(), StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(Out, "brief.json")));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Desk_read_brief_reads_through_a_symlinked_directory_that_stays_inside_the_root()
+    {
+        var root = await Repo("briefs/expiry.md", "# Inside\n");
+        _ = Directory.CreateSymbolicLink(Path.Combine(root, "docs"), Path.Combine(root, "briefs"));
+        await ReadBriefInput("docs/expiry.md");
+
+        Assert.Equal(0, await Run("scoping", "desk", "read-brief", "--facts", Facts, "--out", Out, "--repo-root", root));
+    }
+
+    [Fact, Trait("Lane", "integration")]
     public async Task Desk_gather_takes_the_three_views_as_files_and_writes_lenses_and_coverage()
     {
         await Put(new ScopingFacts { ["anchors"] = ScopingFacts.Expiry()["anchors"] });
