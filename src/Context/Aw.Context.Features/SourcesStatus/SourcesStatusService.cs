@@ -14,8 +14,8 @@ namespace Aw.Context.Features.SourcesStatus;
 /// <summary>
 /// The sources' state: one repo-docs row per repo in scope, from its index (never refreshed reads as degraded, a
 /// refresh that failed as unavailable, documents still stored under other scrub rules as degraded until the next
-/// refresh), then every live source's probe. A session's view is gated and scoped like its queries, but says whether
-/// sessions are enabled.
+/// refresh), then every live source's probe. A session's view is gated and its repo rows scoped like its queries, but says whether
+/// sessions are enabled, and it lists the live sources it doesn't search too, each saying so.
 /// </summary>
 internal sealed class SourcesStatusService(IDocIndex index, ISourceCatalog catalog, IScrubberFactory scrubberFactory, IIntentStore intents, TimeProvider clock)
     : IService<SourcesStatusRequest, SourcesView>
@@ -42,8 +42,8 @@ internal sealed class SourcesStatusService(IDocIndex index, ISourceCatalog catal
             rows.Add(Row(repo.Name, status.Value));
         }
 
-        var live = await LiveRows(catalog.For(settings.Value, repos.Value, scrubbers.Value)
-            .Where(s => s.Describe().Freshness == SourceFreshness.Live && ScopeRules.MayRead(request.Scope.Caller, s.Describe())), cancellationToken).ConfigureAwait(false);
+        var live = await LiveRows(catalog.For(settings.Value, repos.Value, scrubbers.Value).Where(static s => s.Describe().Freshness == SourceFreshness.Live), request.Scope.Caller, cancellationToken)
+            .ConfigureAwait(false);
         if (live.IsError)
         {
             return live.Error;
@@ -53,14 +53,16 @@ internal sealed class SourcesStatusService(IDocIndex index, ISourceCatalog catal
         return new SourcesView(rows, settings.Value.SessionsEnabled, clock.GetUtcNow());
     }
 
-    private async ValueTask<Result<IReadOnlyList<SourceStatusRow>>> LiveRows(IEnumerable<IContextSource> sources, CancellationToken cancellationToken)
+    // Every live source is listed, a session's view too: a row is health, not content (doctor shows it to any caller). A source the caller may not search says so.
+    private async ValueTask<Result<IReadOnlyList<SourceStatusRow>>> LiveRows(IEnumerable<IContextSource> sources, ContextCaller caller, CancellationToken cancellationToken)
     {
         var rows = new List<SourceStatusRow>();
         foreach (var source in sources)
         {
             var health = await source.Probe(cancellationToken).ConfigureAwait(false);
             var described = source.Describe();
-            var row = new SourceStatusRow(described.Id, described.Kind, Repo: null, health.State, health.Detail, health.Code, LastSync: null, Records: 0);
+            var detail = ScopeRules.MayRead(caller, described) ? health.Detail : $"{health.Detail}; sessions don't search it until context.repoTeams maps its teams to a repo";
+            var row = new SourceStatusRow(described.Id, described.Kind, Repo: null, health.State, detail, health.Code, LastSync: null, Records: 0);
             if (described.Kind == SourceKind.Intent)
             {
                 var state = await intents.State(described.Id, cancellationToken).ConfigureAwait(false);

@@ -827,7 +827,9 @@ repo gets no source at all, onyx included.
 
 `sindri context sources status` shows an `onyx` row: `ok`, `degraded` (the token is an admin token of a person's account,
 `SND-CONTEXT-053`) or `unavailable` (no answer, `SND-CONTEXT-010`; another version, `055`; key refused, `050`; pointer
-unresolved, `002`), with the version and the key's role and account type in its detail.
+unresolved, `002`), with the version and the key's role and account type in its detail. A session sees the row too (it
+is health, not content, and doctor shows it to any caller); its detail ends `sessions don't search it until
+context.repoTeams maps its teams to a repo`.
 
 ### Doctor `context:onyx`
 
