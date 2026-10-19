@@ -10725,6 +10725,7 @@ Aw.Sindri.Core.Launches.ISessionUsageSampler.Sample(System.Threading.Cancellatio
 Aw.Sindri.Core.Launches.UsageSamples
 Aw.Sindri.Core.Launches.UsageSamples.Keep(System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Engine.LaunchId>! live) -> void
 Aw.Sindri.Core.Launches.UsageSamples.UsageSamples() -> void
+Aw.Sindri.Core.Launches.UsageSamples.Turn(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.IDisposable!>
 Aw.Sindri.Core.Launches.LaunchLiveness.Active() -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.LaunchId>!
 static Aw.Sindri.Core.Launches.LaunchRules.UsageEvery.get -> System.TimeSpan
 Aw.Sindri.Core.Launches.LaunchSessionEvents.Usage(string! item, Aw.Sindri.Core.Events.SessionUsage! usage, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>

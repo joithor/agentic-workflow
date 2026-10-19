@@ -31,7 +31,7 @@ public sealed class AgentClosingTests
     private AgentClosing Closing(Sessions? sessions = null)
     {
         var services = new ServiceCollection()
-            .AddSingleton<ISessionUsageSampler>(_sampler)
+            .AddSingleton<UsageFlush>((launch, ct) => new ValueTask(_sampler.Flush(launch, ct).AsTask()))
             .AddSingleton<IAgentSessions>(sessions ?? new Sessions(_order))
             .AddSingleton<IRunDiff>(new FakeRunDiff())
             .AddSingleton<ILauncher>(new Stops(_order))

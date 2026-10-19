@@ -1,8 +1,6 @@
 using Aw.Sindri.Core.Launch;
-using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
@@ -14,9 +12,9 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="sessions">The session's usage.</param>
 /// <param name="diff">The diff signal.</param>
 /// <param name="launcher">Stops the session.</param>
-/// <param name="scopes">The scope the usage sampler runs in: it is scoped, this class is not.</param>
+/// <param name="flushUsage">Takes the final usage sample (the sampler is scoped, this class is not).</param>
 /// <param name="logger">Where a failed flush or stop is logged.</param>
-internal sealed partial class AgentClosing(IAgentSessions sessions, IRunDiff diff, ILauncher launcher, IServiceScopeFactory scopes, ILogger<AgentClosing> logger)
+internal sealed partial class AgentClosing(IAgentSessions sessions, IRunDiff diff, ILauncher launcher, UsageFlush flushUsage, ILogger<AgentClosing> logger)
 {
     /// <summary>Measures (when asked) and stops.</summary>
     /// <param name="run">The run.</param>
@@ -55,20 +53,16 @@ internal sealed partial class AgentClosing(IAgentSessions sessions, IRunDiff dif
     {
         try
         {
-            var scope = scopes.CreateAsyncScope();
-            await using (scope.ConfigureAwait(false))
-            {
-                _ = await scope.ServiceProvider.GetRequiredService<ISessionUsageSampler>().Flush(launch, cancellationToken).ConfigureAwait(false);
-            }
+            await flushUsage(launch, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e) when (e is not OperationCanceledException)   // boundary: the sample is a refinement of a number the ledger already holds
         {
-            FlushFailed(logger, launch.Value, e.GetType().Name, e.Message);
+            FlushFailed(logger, launch.Value, e.GetType().Name);   // the type only: a message could quote transcript text
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "the final usage sample of launch {Launch} threw {Type}: {Detail}; the last sample stands")]
-    private static partial void FlushFailed(ILogger logger, string launch, string type, string detail);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "the final usage sample of launch {Launch} threw {Type}; the last sample stands")]
+    private static partial void FlushFailed(ILogger logger, string launch, string type);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "stopping launch {Launch} failed ({Code}); the session ends when its agent exits")]
     private static partial void StopFailed(ILogger logger, string launch, string code);

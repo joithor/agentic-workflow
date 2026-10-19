@@ -145,6 +145,67 @@ public sealed class SessionUsageSamplerTests
         Expect.Equal((0, 1, 2), (tick, flush, _s.Views.Slice.Store.Events.Count));
     }
 
+    [Fact]
+    public async Task A_flush_of_a_launch_whose_session_already_ended_still_appends_its_final_totals()
+    {
+        await Running();
+        await _s.Views.End();
+        _used[_agentSession] = [new ModelTokens("m", 10, 0, 0, 7)];
+
+        var appended = await Sampler().Flush(A.FirstLaunchId, Token);
+
+        Expect.Equal((1, 1), (appended, _s.Views.Slice.Store.Events.Count));
+    }
+
+    [Fact]
+    public async Task A_tick_and_a_flush_of_one_launch_leave_the_newer_totals_in_the_ledger()
+    {
+        await Running();
+        var first = new Held();
+        var reads = 0;
+        var usage = new Sequenced(() => Interlocked.Increment(ref reads) == 1 ? first : null, _agentSession) { Newer = [new ModelTokens("m", 20, 0, 0, 9)] };
+        var sampler = new SessionUsageSampler(_s.Liveness, new LaunchViews(_s.Views.Views), usage, _samples, _s.Events(), _s.Views.Slice.Clock);
+        var tick = sampler.Sample(Token).AsTask();   // reads the older totals and waits there
+        await first.Reached.Task;
+        var flush = sampler.Flush(A.FirstLaunchId, Token).AsTask();
+        await Task.Yield();
+        first.Release.SetResult([new ModelTokens("m", 10, 0, 0, 7)]);
+
+        _ = await Task.WhenAll(tick, flush);
+
+        var latest = _s.Views.Slice.Store.Events.Select(e => _s.Views.Slice.Events.Payload<SessionUsage>(e).Value).MaxBy(p => p.Sample)!;
+        Expect.Equal((20L, 9L), (latest.InputTokens, latest.OutputTokens));
+    }
+
+    private sealed class Held
+    {
+        public TaskCompletionSource Reached { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public TaskCompletionSource<IReadOnlyList<ModelTokens>> Release { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    }
+
+    /// <summary>The first read waits for the test and then answers the older totals; every later read answers the newer ones.</summary>
+    private sealed class Sequenced(Func<Held?> first, SessionId session) : ILaunchUsage
+    {
+        public IReadOnlyList<ModelTokens>? Newer { get; set; }
+
+        public async ValueTask<IReadOnlyList<ModelTokens>?> OfSession(AgentId target, SessionId id, CancellationToken cancellationToken)
+        {
+            if (id != session)
+            {
+                return null;
+            }
+
+            if (first() is { } held)
+            {
+                held.Reached.SetResult();
+                return await held.Release.Task.ConfigureAwait(false);
+            }
+
+            return Newer;
+        }
+    }
+
     private sealed class Used(Dictionary<SessionId, IReadOnlyList<ModelTokens>> used) : ILaunchUsage
     {
         public ValueTask<IReadOnlyList<ModelTokens>?> OfSession(AgentId target, SessionId session, CancellationToken cancellationToken) =>

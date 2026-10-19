@@ -1,4 +1,5 @@
 using Aw.Sindri.Core.Events;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Workflow.Engine;
 
@@ -25,24 +26,30 @@ internal sealed class SessionUsageSampler(LaunchLiveness liveness, ILaunchViews 
         var appended = 0;
         foreach (var launch in tracked)
         {
-            appended += await SampleLaunch(launch, now, cancellationToken).ConfigureAwait(false);
+            appended += await SampleLaunch(launch, now, requireLive: true, cancellationToken).ConfigureAwait(false);
         }
 
         return appended;
     }
 
     public async ValueTask<int> Flush(LaunchId launch, CancellationToken cancellationToken) =>
-        await SampleLaunch(launch, clock.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+        await SampleLaunch(launch, clock.GetUtcNow(), requireLive: false, cancellationToken).ConfigureAwait(false);
 
-    /// <summary>The one sample the tick and the flush share: 1 when a 'session.usage' was appended, 0 when there was nothing new to say.</summary>
-    private async ValueTask<int> SampleLaunch(LaunchId launch, DateTimeOffset now, CancellationToken cancellationToken)
+    /// <summary>The one sample the tick and the flush share (a flush needs no live session: the agent that completed and exited still has its final totals): 1 when a 'session.usage' was appended, 0 when there was nothing new to say.</summary>
+    private async ValueTask<int> SampleLaunch(LaunchId launch, DateTimeOffset now, bool requireLive, CancellationToken cancellationToken)
     {
+        using var turn = await samples.Turn(launch, cancellationToken).ConfigureAwait(false);   // one at a time per launch: the check, the number, the append and the record are one step
         var read = await views.Get(launch, cancellationToken).ConfigureAwait(false);
-        if (read.IsError || read.Value is not { Live: true, ResumableId: { } session } row)
+        if (read.IsError || read.Value is not { ResumableId: { } session } row || (requireLive && !row.Live))
         {
             return 0;
         }
 
+        return await Append(launch, row, session, now, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async ValueTask<int> Append(LaunchId launch, LaunchRow row, SessionId session, DateTimeOffset now, CancellationToken cancellationToken)
+    {
         var tokens = await usage.OfSession(row.Target, session, cancellationToken).ConfigureAwait(false);
         if (tokens is null)
         {
