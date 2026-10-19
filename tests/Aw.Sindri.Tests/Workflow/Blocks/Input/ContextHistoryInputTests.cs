@@ -34,7 +34,7 @@ public sealed class ContextHistoryInputTests
     }
 
     internal static ContextHistoryInput Input(StubHistory history, InMemoryJobViews? jobs = null, bool profile = true) =>
-        new(history, new ContextInputScopes(new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null)), new SyncGaps(jobs ?? new InMemoryJobViews()), ShippedComposition.Json);
+        new(EngineProxy.Of(history), new ContextInputScopes(new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null)), new SyncGaps(jobs ?? new InMemoryJobViews()), ShippedComposition.Json);
 
     private static StepInputContext Context(RepoName? repo, JsonElement? window, params string[] anchors)
     {

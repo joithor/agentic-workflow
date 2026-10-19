@@ -13,11 +13,11 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// <see cref="HistoryView"/> as the route answers it, with its not-synced rows marked by the running sync job. A refusal, or an instance with no mapped repo,
 /// is an honest section and no typed result. The window is 'since'/'before' (RFC 3339 or a date) as an object, or a bare string meaning 'since'.
 /// </summary>
-/// <param name="history">The engine's history lens.</param>
+/// <param name="history">The context engine (its facade for this lens).</param>
 /// <param name="scopes">The service scope for the instance's repo.</param>
 /// <param name="gaps">The not-synced marker.</param>
 /// <param name="json">The host's JSON options.</param>
-internal sealed class ContextHistoryInput(IContextHistory history, ContextInputScopes scopes, SyncGaps gaps, JsonSerializerOptions json) : IStepInput, IDescribedBlock
+internal sealed class ContextHistoryInput(IContextEngine history, ContextInputScopes scopes, SyncGaps gaps, JsonSerializerOptions json) : IStepInput, IDescribedBlock
 {
     /// <summary>The block id.</summary>
     public const string Id = "input.context.history";

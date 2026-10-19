@@ -12,10 +12,10 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// answers it. A refusal, or an instance with no mapped repo, is an honest section and no typed result; callers and callees stay 'unavailable' in the view
 /// until the code index exists.
 /// </summary>
-/// <param name="code">The engine's code lens.</param>
+/// <param name="code">The context engine (its facade for this lens).</param>
 /// <param name="scopes">The service scope for the instance's repo.</param>
 /// <param name="json">The host's JSON options.</param>
-internal sealed class ContextCodeInput(IContextCode code, ContextInputScopes scopes, JsonSerializerOptions json) : IStepInput, IDescribedBlock
+internal sealed class ContextCodeInput(IContextEngine code, ContextInputScopes scopes, JsonSerializerOptions json) : IStepInput, IDescribedBlock
 {
     /// <summary>The block id.</summary>
     public const string Id = "input.context.code";

@@ -30,7 +30,7 @@ public sealed class ContextCodeInputTests
     }
 
     internal static ContextCodeInput Input(StubCode code, bool profile = true) =>
-        new(code, new ContextInputScopes(new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null)), ShippedComposition.Json);
+        new(EngineProxy.Of(code), new ContextInputScopes(new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null)), ShippedComposition.Json);
 
     private static StepInputContext Context(RepoName? repo, params string[] anchors) => new(
         BlockId.From(ContextCodeInput.Id), BlockId.From("step.scope.gather"),

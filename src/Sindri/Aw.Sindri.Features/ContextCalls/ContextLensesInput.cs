@@ -13,10 +13,10 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// <see cref="LensesSetView"/> as the route answers it. A call the engine refuses, or an instance with no mapped repo, is an honest section saying
 /// so (and no typed result): the Step still runs and the gather records the gap.
 /// </summary>
-/// <param name="lenses">The engine's lenses.</param>
+/// <param name="lenses">The context engine (its facade for this lens).</param>
 /// <param name="scopes">The service scope for the instance's repo.</param>
 /// <param name="json">The host's JSON options.</param>
-internal sealed class ContextLensesInput(IContextLenses lenses, ContextInputScopes scopes, JsonSerializerOptions json) : IStepInput, IDescribedBlock
+internal sealed class ContextLensesInput(IContextEngine lenses, ContextInputScopes scopes, JsonSerializerOptions json) : IStepInput, IDescribedBlock
 {
     /// <summary>The block id.</summary>
     public const string Id = "input.context.lenses";
