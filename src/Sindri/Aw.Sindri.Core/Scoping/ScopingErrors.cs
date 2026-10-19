@@ -23,8 +23,11 @@ public static class ScopingErrors
     /// <summary>SND-SCOPING-007: a packet file asked for by a hash the packet directory no longer has (a revise rewrote it, or the hash tool failed).</summary>
     public static readonly ErrorDefinition PacketChanged = new("SND-SCOPING-007", ErrorKind.Conflict, "The packet changed since it was hashed");
 
+    /// <summary>SND-SCOPING-008: the hash tool (aw-packets) is missing or failed, so a packet file cannot be checked.</summary>
+    public static readonly ErrorDefinition PacketToolFailed = new("SND-SCOPING-008", ErrorKind.Unavailable, "The packet hash tool is missing or failed");
+
     /// <summary>The catalogue's codes.</summary>
-    public static IReadOnlyList<ErrorDefinition> All { get; } = [NotAScopingInstance, DraftOutsideRunArea, BriefPathRefused, PacketPurged, PacketChanged];
+    public static IReadOnlyList<ErrorDefinition> All { get; } = [NotAScopingInstance, DraftOutsideRunArea, BriefPathRefused, PacketPurged, PacketChanged, PacketToolFailed];
 
     /// <summary>Codes the spec retired (never reused): SND-SCOPING-003.</summary>
     public static IReadOnlyList<string> Retired { get; } = ["SND-SCOPING-003"];

@@ -10106,3 +10106,4 @@ static Aw.Sindri.Core.Events.ScopingEscape.operator !=(Aw.Sindri.Core.Events.Sco
 static Aw.Sindri.Core.Events.ScopingEscape.operator ==(Aw.Sindri.Core.Events.ScopingEscape? left, Aw.Sindri.Core.Events.ScopingEscape? right) -> bool
 const Aw.Sindri.Core.Events.EventTypes.ScopingApproved = "scoping.approved" -> string!
 const Aw.Sindri.Core.Events.EventTypes.ScopingEscape = "scoping.escape" -> string!
+static readonly Aw.Sindri.Core.Scoping.ScopingErrors.PacketToolFailed -> Aw.Kernel.ErrorDefinition!
