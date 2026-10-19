@@ -27,6 +27,8 @@ internal sealed class OverranHost : ISessionHost
         return ValueTask.FromResult<Result<Unit>>(Unit.Value);
     }
 
+    public ValueTask<bool> Exists(HostRef host, CancellationToken cancellationToken) => ValueTask.FromResult(_live.Contains(host.Name));
+
     public ValueTask<int> AttachedClients(HostRef host, CancellationToken cancellationToken) => ValueTask.FromResult(0);
 
     public IReadOnlyList<string> AttachArgv(HostRef host) => ["tmux", "attach"];

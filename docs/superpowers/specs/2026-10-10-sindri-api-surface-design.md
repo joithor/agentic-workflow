@@ -429,7 +429,7 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 | `item.linked` | item, record key, alias | `item.linked:<itemId>:<record>` | yes | context Phase 6 only (`service:context-sync`); a `CreateItem` with `link` stores it on `item.created` and gives no alias, so `GET /items/<tracker key>` resolves only after a later `item.linked` |
 | `item.open-requested` | `launchId`, item, mode, target, chosenBy | `item.open-requested:<launchId>` | yes | P10 |
 | `launch.started`, `launch.failed`, `launch.probed`, `session.ended` | as UI E-1, E-3 and launcher L-1, L-10: every launch payload names the launch `launchId`; `launch.failed` carries `code`, `message` and an optional `detail` (`stage`: `host`/`backstop`; for SND-LAUNCH-012 also `reason`, `current`, `approved`); `session.ended`: `launchId`, reason (`exit`, `lost`), exit code, and the final `inputTokens`/`outputTokens` when the target's reader had a transcript | `launch.outcome:<launchId>` (`launch.started` and `launch.failed` share it), `session.ended:<launchId>` | yes | P10a (written by `service:launcher`; the engine's agent runtime uses the same events) |
-| `session.usage` | `launchId`, `sample`, `target`, `model` (the one with the most tokens; null when the reader named none), `inputTokens`, `outputTokens` (cumulative for the launch) | `session.usage:<launchId>:<n>` | no | P10a (E-28; sampled every 60 s while the session is live by the target's usage reader, and once more at its end) |
+| `session.usage` | `launchId`, `sample`, `target`, `model` (the one with the most tokens; null when the reader named none), `inputTokens`, `outputTokens` (cumulative for the launch) | `session.usage:<launchId>:<n>` | no | P10a (E-28; sampled every 60 s while the session is live by the target's usage reader; the final totals are on `session.ended`) |
 
 **How a request becomes a decision** (one domain event per command):
 1. `FileRequest` appends `request.filed`, with both ids chosen by the handler.
@@ -851,7 +851,7 @@ target (`claude-code`, `codex`, `cursor`); `agents.softLimit` is a fraction in (
 The key is part of the profile, so a change shows in `GET /profile` and needs the `protected` approval like any other
 (the profile schema is S1's; this spec names the keys). `GET /launch/targets` (UI E-3) gains per target
 `budget: {dailyUsd, spentUsd, fraction, state, basis}`, with `state` `none` (no budget set), `ok`, `soft` or `hard`, and
-`basis` `price-table` or `tokens-only` (the scorer's price table lacks the model: tokens are shown and no limit is
+`basis` `price-table` or `tokens-only` (Sindri's price table lacks the model: tokens are shown and no limit is
 applied); the response gains `budgetTotal` with the same fields over all targets. Spend is the day's token usage
 (`session.usage` and `session.ended` events, §3.4) priced by Sindri's own price table (`Budgets`: USD per million tokens, matched by model-id prefix; the scorer reports tokens and keeps no prices), for the local calendar day. The
 Agents page reads this, and the collector's `GET /sessions` (§11) carries each session's tokens.
@@ -1065,12 +1065,11 @@ One MCP endpoint serves every Sindri tool, this spec's and the context engine's:
   and sets `X-Sindri-Client: mcp`; its own refusals are `SND-CONTEXT-021`, `022` (a bad argument) and `023` (an unknown tool).
 
 **Registration is per repo, by the owner, never user-wide.** `sindri mcp register` prints, and with `--apply` runs,
-`claude mcp add --transport http --scope local --header "X-Sindri-Repo: <name>" sindri http://127.0.0.1:<port>/sindri/mcp`
+`claude mcp add --transport http --scope local sindri http://127.0.0.1:<port>/sindri/mcp --header "X-Sindri-Repo: <name>"`
 inside the current repo (the name resolved as §3.1 says). P8 checks whether that local scope reaches sessions in the
 repo's worktrees and records the answer.
 
-**Codex and Cursor are never registered.** Codex keeps MCP servers only in user config, and Cursor's project file sits
-inside the repo, so either would leak work context or get committed. Instead `ILauncher` passes the endpoint at
+**Codex and Cursor** (owner, 2026-10-18: `sindri-app.sh` registers every installed provider; `sindri mcp register --apply --providers claude,codex,cursor|all`). Cursor takes the checkout's `.cursor/mcp.json` and Codex the checkout's `.codex/config.toml` (`http_headers`; Codex loads a project file only for a trusted project, so `--apply` also appends the checkout's trust row to the user's Codex config and never overwrites another level). Per-repo files do not leak work context into other repos; where git tracks one that would change, the tool refuses and says so. Additionally `ILauncher` passes the endpoint at
 launch time, in the command line it builds (Codex: `-c` config overrides for one `mcp_servers.sindri` entry with the
 repo header; Cursor: the launch-time equivalent its CLI offers, recorded in P10). Until P10 proves a target's form,
 that target launches without Sindri MCP. `sindri doctor` warns on any user-wide `sindri` entry in `~/.claude.json`,

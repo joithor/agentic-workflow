@@ -26,4 +26,7 @@ internal enum FrameIntent
 
     /// <summary>Back from the recipe sheet the frame opened: focus returns to the frame's Recipe link.</summary>
     FocusRecipe,
+
+    /// <summary>"Answer in the child" with no child to open: the parent's frame opens with focus in its Children panel, when it has one.</summary>
+    FocusChildren,
 }

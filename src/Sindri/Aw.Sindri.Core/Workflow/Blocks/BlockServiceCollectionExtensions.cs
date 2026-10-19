@@ -10,13 +10,13 @@ namespace Aw.Sindri.Core.Workflow.Blocks;
 /// </summary>
 public static class BlockServiceCollectionExtensions
 {
-    /// <summary>Registers the gate <typeparamref name="T"/>.</summary>
+    /// <summary>Registers the gate <typeparamref name="T"/>, also keyed by its block id (the 'EvaluateGates' activity runs it by id).</summary>
     /// <param name="services">The service collection.</param>
     /// <typeparam name="T">The gate class.</typeparam>
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddGate<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(this IServiceCollection services)
         where T : class, IGate, IDescribedBlock
-        => services.AddSingleton(T.Descriptor).AddScoped<T>().AddScoped<IGate, T>();
+        => services.AddSingleton(T.Descriptor).AddScoped<T>().AddScoped<IGate, T>().AddKeyedScoped<IGate, T>(T.Descriptor.Id.Value);
 
     /// <summary>Registers the Step <typeparamref name="T"/>.</summary>
     /// <param name="services">The service collection.</param>

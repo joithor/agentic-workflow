@@ -20,7 +20,7 @@ public static class LaunchOptions
         var launches = inputs.Launches;
         var inFlight = launches.FirstOrDefault(row => LaunchRules.InFlight(row, inputs.Now));
         var live = launches.FirstOrDefault(static row => row.Live);
-        var lastStarted = launches.FirstOrDefault(static row => row.State == LaunchState.Started);
+        var lastStarted = launches.FirstOrDefault(static row => row.StartedProcess);
         var takenOver = inputs.Item.Engine?.Suspension == SuspensionKind.Takeover;
         var (target, chosenBy) = Choose(inputs);
         var resumable = ResumableFor(inputs, takenOver);
@@ -76,7 +76,7 @@ public static class LaunchOptions
     private static LaunchRow? ResumableFor(LaunchOptionInputs inputs, bool takenOver) =>
         inputs.Item.Engine is null || takenOver
             ? null
-            : inputs.Launches.FirstOrDefault(static row => row.State == LaunchState.Started && !row.Live && row.ResumableId is not null);
+            : LaunchRules.ResumeCandidate(inputs.Launches);
 
     private static (AgentId Target, string ChosenBy) Choose(LaunchOptionInputs inputs)
     {
@@ -115,7 +115,7 @@ public static class LaunchOptions
 
     /// <summary>A started launch, or one that was interrupted or timed out (a session or a window may still have opened).</summary>
     private static bool MayHaveASession(LaunchRow row) =>
-        row.State == LaunchState.Started
+        row.StartedProcess
         || (row.State == LaunchState.Failed
             && (string.Equals(row.Code, SindriErrors.LaunchInterrupted.Code, StringComparison.Ordinal) || string.Equals(row.Code, SindriErrors.LaunchTimedOut.Code, StringComparison.Ordinal)));
 

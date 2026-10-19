@@ -5,10 +5,8 @@
   "message": "aider isn't approved for unattended Steps",
   "detail": {
     "stage": null,
-    "reason": "hash-changed",
+    "reason": "not-approved",
     "current": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-    "approved": [
-      "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
-    ]
+    "approved": []
   }
 }

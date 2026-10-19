@@ -1,5 +1,6 @@
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Navigation;
+using Aw.Sindri.Ui.ViewModels.Workflows;
 
 namespace Aw.Sindri.Ui.ViewModels.NeedsYou;
 
@@ -21,7 +22,14 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
         _clock = clock;
         (_seen, _reduced, _arrived) = (seen, reducedMotion, arrived);
         Controls = BuildControls();
+        ChildAnswer = ChildAnswerOf(entry);
     }
+
+    /// <summary>The "Answer in the child" control of a row whose answer a child decides (the row's served via); null for any other row.</summary>
+    public ChildAnswerViewModel? ChildAnswer { get; private set; }
+
+    private static ChildAnswerViewModel? ChildAnswerOf(NeedsYouEntry entry) =>
+        InstanceRules.IsChildVia(entry.Via) ? ChildAnswerViewModel.ForNeedsYouRow(entry.Id, entry.ShownId.Length > 0 ? entry.ShownId : entry.Id, entry.Child) : null;
 
     /// <summary>The row's chip as served, the one chip control draws it; null for none.</summary>
     public StateChip? Chip => Entry.Chip;
@@ -101,6 +109,7 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
         {
             var before = (Tint, HasOutline, SlidesIn, HasNewWord);
             Entry = entry;
+            ChildAnswer = ChildAnswerOf(entry);
             foreach (var name in _content)
             {
                 OnChanged(name);
@@ -143,7 +152,7 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
     private static readonly string[] _content =
     [
         nameof(Chip), nameof(Details), nameof(ShownId), nameof(Title), nameof(Repo), nameof(Label), nameof(Reason), nameof(HasReasonLine), nameof(Cli), nameof(Age), nameof(AccessibleName),
-        nameof(CanOpenItem), nameof(ItemLink), nameof(Notice), nameof(HasNotice),
+        nameof(CanOpenItem), nameof(ItemLink), nameof(ChildAnswer), nameof(Notice), nameof(HasNotice),
     ];
 
     private bool _rebuilding;

@@ -67,3 +67,6 @@ LAUNCHER_KEEP_EMPTY_SEED # a shell variable meta-lane.sh sets for launcher_expan
 TMUX # set by tmux inside a client; scripts/test-tmux.sh unsets it so tests can never reach the box's own server
 TMUX_TMPDIR # tmux's socket directory; tests point it at a temp dir (scripts/test-tmux.sh)
 NUGET_PACKAGES # NuGet's own variable; scripts/ci/bash-tests.sh keeps the real package cache reachable from a suite's temp HOME
+PPID # the shell sets it (the aw:fleet hook walks up from it)
+EPOCHREALTIME # the shell sets it (bash 5; the aw:fleet hook timestamps with it)
+AW_HOOK_PROVIDER # set by the Codex and Cursor adapters (config/hooks/adapters/common.sh) for the hook they run, never by the user; the aw:fleet hook maps it to the provider directory

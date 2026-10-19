@@ -94,7 +94,7 @@ internal sealed class OpenChecks(IItemResolver items, ILaunchViews launches, Ope
 
         var attach = request.Mode == LaunchMode.Attach;
         var ofTarget = history.Where(row => request.Target is not { } picked || row.Target == picked).ToList();
-        var found = ofTarget.FirstOrDefault(row => attach ? row.Live : row.State == LaunchState.Started && !row.Live && row.ResumableId is not null);
+        var found = attach ? ofTarget.FirstOrDefault(static row => row.Live) : LaunchRules.ResumeCandidate(ofTarget);
         if (found is not null)
         {
             return found;

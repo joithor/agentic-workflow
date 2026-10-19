@@ -132,6 +132,7 @@ public static class ProfileDiff
     [
         ("workflow.agent.target", workflow?.Agent?.Target?.Value),
         ("workflow.judge.providers", Joined(workflow?.Judge?.Providers)),
+        ("workflow.route.startable", workflow?.Route?.Startable),
     ];
 
     private static (string Key, string? Value)[] Forge(ForgeSettings? forge) =>

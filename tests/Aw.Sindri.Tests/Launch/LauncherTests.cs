@@ -112,6 +112,22 @@ public sealed class LauncherTests : IDisposable
     }
 
     [Fact]
+    public async Task A_relaunch_of_a_live_launch_after_a_restart_answers_it_and_leaves_the_session_and_its_hash_alone()
+    {
+        var request = A.LaunchRequest().Build();
+        var first = (StartedLaunch)await Make().Launch(request, CancellationToken.None);
+        var hashFile = LaunchSecrets.PathFor(Options.SecretsDirectory, request.Launch);
+        var hash = await File.ReadAllTextAsync(hashFile, TestContext.Current.CancellationToken);
+
+        var again = await Make().Launch(request, CancellationToken.None);   // a new process: nothing in memory remembers the first
+
+        Expect.True(again is StartedLaunch started && started.Host == first.Host);
+        Expect.Equal(1, _host.LiveCount);   // never stopped
+        Expect.Equal(1, _host.Started.Count);   // never started twice
+        Expect.Equal(hash, await File.ReadAllTextAsync(hashFile, TestContext.Current.CancellationToken));   // the live wrap's secret still proves its heartbeats
+    }
+
+    [Fact]
     public async Task A_resume_runs_the_resume_template_with_the_session_it_was_given()
     {
         var id = Core.Ids.SessionId.From("0b1f6c3e-52d4-4c7a-9a58-3d1e7f9a2b10");

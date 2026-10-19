@@ -19,7 +19,7 @@ namespace Aw.Meta.Core.Coordination;
 public sealed class MergeReadiness(IMetaConfig config, IGateStore gates, RepoCommands repo, ILogFiles logs)
 {
     private const string Fields = "headRefOid,isDraft,title,state";
-    private const int LogCharacters = 4 * 1024 * 1024;
+    private const int LogCharacters = 32 * 1024 * 1024;
 
     /// <summary>Checks a pull request.</summary>
     /// <param name="pr">The pull request number.</param>

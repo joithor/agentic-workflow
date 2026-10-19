@@ -17,6 +17,21 @@ public sealed class UsageTests
     public void Help_lists_every_workflow_verb(string verb) =>
         Assert.Single(Lines(), l => l.StartsWith($"sindri workflow {verb} ", StringComparison.Ordinal));
 
+    [Fact, Trait("Lane", "unit")]
+    public void Help_describes_mcp_register_for_all_three_providers_with_the_providers_flag()
+    {
+        var line = Assert.Single(Lines(), l => l.StartsWith("sindri mcp register ", StringComparison.Ordinal));
+
+        Assert.Contains("--providers claude,codex,cursor|all", line, StringComparison.Ordinal);
+        Assert.Contains("Claude Code, Codex and Cursor", line, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("sindri context query ")]
+    [InlineData("sindri context lenses ")]
+    public void Help_lines_for_the_cascade_reads_name_the_hops_flag(string start) =>
+        Assert.Contains("--hops", Assert.Single(Lines(), l => l.TrimStart().StartsWith(start, StringComparison.Ordinal)), StringComparison.Ordinal);
+
     [Theory, Trait("Lane", "unit")]
     [InlineData("services [")]
     [InlineData("services run ")]
@@ -80,6 +95,13 @@ public sealed class UsageTests
 
         Assert.Contains(flags, part, StringComparison.Ordinal);
     }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("onyx status")]
+    [InlineData("onyx up")]
+    [InlineData("onyx down")]
+    public void Usage_lists_the_onyx_verbs(string verb) =>
+        Assert.Single(Lines(), l => l.StartsWith($"sindri {verb} ", StringComparison.Ordinal) || l.StartsWith($"sindri {verb}\t", StringComparison.Ordinal));
 
     private static IEnumerable<string> Lines() => Usage.Text.Split('\n').Select(static l => l.Trim().Replace("usage: ", string.Empty, StringComparison.Ordinal));
 }

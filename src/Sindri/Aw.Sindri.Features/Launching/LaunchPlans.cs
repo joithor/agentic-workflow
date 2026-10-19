@@ -55,14 +55,30 @@ internal sealed class LaunchPlans(IViewReader reader, IApprovedProfile profile, 
             return SindriErrors.LaunchRepoMissing.With($"{request.Item.Value} has no repo with a path in the approved profile (fix: add the repo to repos and approve)");
         }
 
-        var resume = request.Mode == LaunchMode.Resume ? await ResumableSession(request, cancellationToken).ConfigureAwait(false) : null;
-        return new LaunchRequest(request.Launch, request.Item, request.Target, request.Mode, Attended: true, path, Instance: null, Worktree: null, Step: null, Run: null, resume);
+        var resume = await ResumeFor(request, cancellationToken).ConfigureAwait(false);
+        if (resume.IsError)
+        {
+            return resume.Error;
+        }
+
+        return new LaunchRequest(request.Launch, request.Item, request.Target, request.Mode, Attended: true, path, Instance: null, Worktree: null, Step: null, Run: null, resume.Value);
     }
 
-    /// <summary>The session a resume addresses: the newest started launch of the picked agent that has an id (the same rule the open admitted it by).</summary>
-    private async ValueTask<SessionId?> ResumableSession(Core.Events.ItemOpenRequested request, CancellationToken cancellationToken)
+    /// <summary>The session a resume addresses (null for any other mode): the newest ended session of the picked agent that has an id, while none of that agent's sessions runs (the same rule the open was admitted by).</summary>
+    private async ValueTask<Result<SessionId?>> ResumeFor(Core.Events.ItemOpenRequested request, CancellationToken cancellationToken)
     {
+        if (request.Mode != LaunchMode.Resume)
+        {
+            return (SessionId?)null;
+        }
+
         var history = await launches.ForItem(request.Item, cancellationToken).ConfigureAwait(false);
-        return history.IsError ? null : history.Value.FirstOrDefault(row => row.Target == request.Target && row.State == LaunchState.Started && !row.Live && row.ResumableId is not null)?.ResumableId;
+        var found = history.IsError ? null : LaunchRules.ResumeCandidate(history.Value.Where(row => row.Target == request.Target))?.ResumableId;
+        if (found is null)
+        {
+            return SindriErrors.LaunchNoSession.With("the item has no ended session of this agent to resume, or one still runs (fix: attach to it, or open the item again)");   // the open was admitted on an older view: never start a fresh session in the name of a resume
+        }
+
+        return found;
     }
 }

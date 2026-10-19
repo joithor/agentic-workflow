@@ -40,6 +40,7 @@ internal sealed partial class RecipeWorkflow
     private readonly HashSet<long> _eventsTaken = [];
     private readonly Dictionary<string, Reported> _reported = new(StringComparer.Ordinal);
     private readonly TimerScopes _timers = new(Timers);   // engine P5 (§5.5): unit (a) arms the state timers through it, unit (b) pauses and resumes them
+    private bool _children;   // engine P7: the 'p7-children' marker is in this history (gates run, the slot stub grants); false on a replay of an older one
     private InstanceStart? _start;
     private InterpretedRecipe? _recipe;
     private Interpreting? _context;
@@ -69,20 +70,19 @@ internal sealed partial class RecipeWorkflow
     public async Task<RecipeResult> RunAsync(InstanceStart start)
     {
         var (instance, context) = await Begin(start).ConfigureAwait(true);
-        while (!instance.Ended)
+        try
         {
-            instance = instance switch
-            {
-                { Suspension: null, Frame.Run: { Runtime: StepRuntime.Block } block } => await RunBlockStep(instance, block, context).ConfigureAwait(true),
-                { Suspension: null, Frame.Run: { Runtime: StepRuntime.Agent } agent } => await RunAgentStep(instance, agent, context).ConfigureAwait(true),
-                { Suspension: null, Frame.Run: { } open } => await RunDeskStep(instance, open, context).ConfigureAwait(true),
-                _ => await Wait(instance, context).ConfigureAwait(true),
-            };
+            instance = await Interpret(instance, context).ConfigureAwait(true);
+        }
+        catch (Exception failed) when (TemporalException.IsCanceledException(failed))
+        {
+            await Cleanup().ConfigureAwait(true);   // the workflow itself was cancelled: the claim is still released (detached scope)
+            throw;
         }
 
-        await Settle().ConfigureAwait(true);   // every effect it emitted is dispatched, refused or aborted (§5.7)
-        await SettleLeftovers(instance, context).ConfigureAwait(true);
-        return new RecipeResult(instance.State, instance.Outcome?.Value);
+        await CancelChildren(instance).ConfigureAwait(true);   // engine P7: a child still live when this ends is cancelled, so it frees its own claim
+        await Cleanup().ConfigureAwait(true);   // engine P7: the item's claim goes with the instance, whatever the ending
+        return new RecipeResult(instance.State, instance.Outcome?.Value, OutputsOf(instance));
     }
 
     /// <summary>
@@ -96,11 +96,13 @@ internal sealed partial class RecipeWorkflow
         _since = Now;
         // DT-J2: first, before any await, so the marker is the first command and replays at the same place; a history that began before the block runtime has no marker, so it replays with no block runtimes, on the desk path exactly as recorded (kept until the cutover; DT-J plan Q7)
         var blockRuntime = Workflow.Patched("dt-j-block-runtime");
+        _children = Workflow.Patched("p7-children");   // engine P7: gates, the slot stub (and, as the units land, children and cleanup); right after dt-j-block-runtime, before any await; a history without it replays exactly as recorded
         // P8: right after the DT-J marker, before any other command; a history that began before the agent runtime has no marker, so it replays with no agent map and stays on the desk exactly as recorded (kept until the cutover)
         var agentRuntime = Workflow.Patched("p8-agent-runtime");
         var loaded = await Workflow.ExecuteLocalActivityAsync(
             (RunStepActivities a) => a.LoadRecipeAsync(start.Recipe),
             new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(30) }).ConfigureAwait(true);
+        var pins = await LoadChildPins(loaded).ConfigureAwait(true);   // engine P7: the children the approval pinned
         var catalog = new BlockCatalog(loaded.Blocks, []);
         _recipe = new InterpretedRecipe(loaded.Version, loaded.Recipe, catalog, start.Inputs);
         _deskTimeout = loaded.DeskTimeout;
@@ -112,11 +114,12 @@ internal sealed partial class RecipeWorkflow
             runtimes[agent] = StepRuntime.Agent;
         }
 
-        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, runtimes, NoChildRecipes.Instance) { DeskTimeout = loaded.DeskTimeout };
+        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, runtimes, pins.Resolver()) { DeskTimeout = loaded.DeskTimeout };
         _context = new Interpreting(loaded.Recipe, decisions);
         (_repo, _repoUnreadable) = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : (null, false);
         (_subject, _contents) = await NamedSubject(_recipe, start).ConfigureAwait(true);
-        var change = Started(TransitionDecision.Start(StartOf(start, loaded), loaded.Recipe, decisions));
+        var decided = TransitionDecision.Start(StartOf(start, loaded, pins), loaded.Recipe, decisions);
+        var change = Started(decided);
         var instance = Enter(change.After, Desk);
         foreach (var key in start.Inputs.Where(static i => i.Value.Generated).Select(static i => i.Key))
         {
@@ -125,6 +128,7 @@ internal sealed partial class RecipeWorkflow
 
         await Mirror(new WorkflowEventRecord(start.WorkflowId().Value, EventTypes.WorkflowStarted, start.Item.Value, string.Empty, instance.State, "start", Outcome: null, Run: null, Detail: Named(WorkflowEventDetail.Of(change.Event, trigger: null), start), Causation: start.OpenLaunch), NeedsYou(instance)).ConfigureAwait(true);
         Emit(before: null, instance, []);
+        Spawn(decided);
         return (instance, _context);
     }
 
@@ -135,7 +139,7 @@ internal sealed partial class RecipeWorkflow
     {
         var start = _start ?? throw new InvalidOperationException("the instance has no input yet");
         return (_instance, _recipe) is ({ } instance, { } recipe)
-            ? InstanceViews.Of(instance, recipe, _since, _timers.FiresAt(), new InstanceViewContext(_mirrored, _provenance, Subject: _subject, Contents: _contents)) with { Id = instance.Id }
+            ? InstanceViews.Of(instance, recipe, _since, _timers.FiresAt(), ViewContext()) with { Id = instance.Id }
             : InstanceViews.Starting(start.WorkflowId(), start.Recipe, _since, start.Item, _subject);
     }
 
@@ -230,6 +234,7 @@ internal sealed partial class RecipeWorkflow
         _instance = kept is not null && instance.Suspension is { Kind: SuspensionKind.Takeover } takeover
             ? instance with { Suspension = takeover with { Remaining = kept } }
             : instance;
+        GrantSlot(before, instance, recipe);
         return _instance;
     }
 
@@ -263,7 +268,7 @@ internal sealed partial class RecipeWorkflow
     /// <summary>The workflow's deterministic clock, as an offset in UTC.</summary>
     private static DateTimeOffset Now => new(Workflow.UtcNow, TimeSpan.Zero);
 
-    private static StartRequest StartOf(InstanceStart start, LoadedRecipe loaded)
+    private static StartRequest StartOf(InstanceStart start, LoadedRecipe loaded, ChildPins pins)
     {
         var address = start.WorkflowId();
         var id = WorkflowInstanceId.Of(address);
@@ -271,10 +276,10 @@ internal sealed partial class RecipeWorkflow
             TriggerKey.For(id, "start"),
             id,
             address,
-            new PinnedRecipe(loaded.Version.Id, loaded.Version.Version, loaded.Version.Hash, new Dictionary<RecipeId, RecipeHash>()),
+            new PinnedRecipe(loaded.Version.Id, loaded.Version.Version, loaded.Version.Hash, pins.Of(loaded.Recipe)),
             start.Item,
             start.Attempt,
-            Parent: null,
+            Parent: start.ParentId,
             start.Inputs.ToDictionary(static i => i.Key, static i => i.Value.Value),
             Desk,
             TakenOver: start.OpenLaunch is not null,

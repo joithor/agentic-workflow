@@ -25,7 +25,11 @@ internal sealed class InstanceRowViewModel : ObservableObject
             var current = string.Equals(s.State, row.State, StringComparison.Ordinal);
             return new StageCellViewModel(s, current, blocked && current);
         })];
-        if (InstanceRules.HasProtectedAnswer(row))
+        if (InstanceRules.IsChildPointer(row.Answer))
+        {
+            ChildAnswer = ChildAnswerViewModel.ForInstance(row.Address, row.Answer.Child);
+        }
+        else if (InstanceRules.HasProtectedAnswer(row))
         {
             var answer = row.Answer!; // why: HasProtectedAnswer is true only for a row with an answer
             Protected = new ProtectedActionViewModel(new ProtectedAction(Labels.AnswerVerb(answer.Kind), answer.Cli, row.Address), clipboard, clock);
@@ -95,6 +99,9 @@ internal sealed class InstanceRowViewModel : ObservableObject
     /// <summary>The lock button for a protected answer; null for none.</summary>
     public ProtectedActionViewModel? Protected { get; }
 
+    /// <summary>The "Answer in the child" control of a row whose answer a child decides; null for any other row.</summary>
+    public ChildAnswerViewModel? ChildAnswer { get; }
+
     /// <summary>True when A answers at the desk: the row's current state is a desk state the engine lets the human complete.</summary>
     public bool CanAnswerAtDesk { get; }
 
@@ -108,7 +115,7 @@ internal sealed class InstanceRowViewModel : ObservableObject
     public bool IsStale { get; private set => Set(ref field, value); }
 
     /// <summary>Everything the row draws: two rows with the same signature look the same.</summary>
-    internal string Signature => string.Join('|', Address, Subject, Chip, Now, string.Join(',', Inputs.Select(i => i.Name)), string.Join(',', Stages.Select(s => s.Name)), StateWord, Chip.Word, Protected?.Cli, CanAnswerAtDesk, CanCancel);
+    internal string Signature => string.Join('|', Address, Subject, Chip, Now, string.Join(',', Inputs.Select(i => i.Name)), string.Join(',', Stages.Select(s => s.Name)), StateWord, Chip.Word, Protected?.Cli, ChildAnswer?.Target, ChildAnswer?.Intent, CanAnswerAtDesk, CanCancel);
 
     /// <summary>Sets what the list knows of the row.</summary>
     /// <param name="stale">The views are stalled or rebuilding.</param>

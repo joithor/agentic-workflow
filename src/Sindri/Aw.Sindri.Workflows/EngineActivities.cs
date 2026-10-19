@@ -1,0 +1,7 @@
+namespace Aw.Sindri.Infrastructure.Workflows;
+
+/// <summary>The activities the engine itself runs around an instance (engine P7): the gates before a decision and the claim cleanup after an ending.</summary>
+/// <param name="Gates">EvaluateGates, a local activity before a decision with gates.</param>
+/// <param name="Cleanup">ReleaseClaim, after any ending.</param>
+/// <param name="Children">LoadChildren, a local activity that reads the children the approval pinned.</param>
+internal sealed record EngineActivities(GateActivities Gates, CleanupActivities Cleanup, ChildActivities Children);

@@ -333,6 +333,42 @@ public sealed class OpenItemTests : IDisposable
     }
 
     [Fact]
+    public async Task Resume_after_an_attach_to_the_running_session_is_refused_and_points_at_attach()
+    {
+        await Seed();
+        var running = SessionId.From("sess-live");
+        await _h.Request(_earlier, target: _codex);
+        await _h.Start(_earlier, target: _codex, session: running);
+        var attach = LaunchId.From("LCH-" + new string('0', 31) + "a");
+        await _h.Request(attach, target: _codex, mode: LaunchMode.Attach);
+        await _h.Start(attach, target: _codex, mode: LaunchMode.Attach, session: running);   // the attach row carries the live session's id
+        using var entered = Human();
+
+        var result = await Service().Handle(A.OpenItemRequest().InMode(LaunchMode.Resume).Build(), Token);
+
+        Expect.Equal(SindriErrors.LaunchNoSession.Code, result.Error.Code);
+        Assert.Contains("attach", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Resume_of_an_older_ended_session_is_refused_while_a_newer_one_runs()
+    {
+        await Seed();
+        await _h.Request(_earlier, target: _codex);
+        await _h.Start(_earlier, target: _codex, session: SessionId.From("sess-old"));
+        await _h.End(launch: _earlier);
+        var newer = LaunchId.From("LCH-" + new string('0', 31) + "b");
+        await _h.Request(newer, target: _codex);
+        await _h.Start(newer, target: _codex, session: SessionId.From("sess-new"));   // live
+        using var entered = Human();
+
+        var result = await Service().Handle(A.OpenItemRequest().InMode(LaunchMode.Resume).Build(), Token);
+
+        Expect.Equal(SindriErrors.LaunchNoSession.Code, result.Error.Code);
+        Assert.Contains("attach", result.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task An_attach_launch_is_not_a_live_session_to_attach_to()
     {
         await Seed();

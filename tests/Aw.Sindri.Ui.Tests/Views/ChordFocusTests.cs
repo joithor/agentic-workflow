@@ -177,7 +177,8 @@ public sealed class ChordFocusTests : IDisposable
         Assert.True(items[0].Focus(NavigationMethod.Tab));
         Dispatcher.UIThread.RunJobs();
 
-        for (var step = 1; step <= 2; step++)
+        var context = shell.Navigation.ToList().FindIndex(n => n.Page == PageId.Context);   // arrowing across Context must keep focus on the tab too, not move it into the anchor box
+        for (var step = 1; step <= context; step++)
         {
             Press(window, Key.Right);
             for (var i = 0; i < 5; i++)
@@ -197,8 +198,8 @@ public sealed class ChordFocusTests : IDisposable
             Dispatcher.UIThread.RunJobs();
         }
 
-        Assert.Equal(shell.Navigation[1].Page, shell.CurrentPage);
-        Assert.Same(items[1], window.FocusManager?.GetFocusedElement());
+        Assert.Equal(shell.Navigation[context - 1].Page, shell.CurrentPage);
+        Assert.Same(items[context - 1], window.FocusManager?.GetFocusedElement());
     });
 
     // Review re-check R2: an arrowed tab keeps a visible keyboard focus ring (WCAG 2.4.7), not only the focus.

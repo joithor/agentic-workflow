@@ -24,18 +24,29 @@ public sealed class ShippedBlocksTests
 
         Assert.Equal(
             [
-                "effect.claim.ref", "effect.notify.desk", "evidence.check", "gate.budget.available", "gate.route.startable", "input.context.code",
-                "input.context.history", "input.context.lenses", "step.brief.questions", "step.brief.seed", "step.brief.write", "step.bugfix.judge",
-                "step.bugfix.recheck", "step.bugfix.record-candidate", "step.bugfix.start-attempt", "step.checks", "step.desk.choose",
-                "step.evidence.api-plan", "step.evidence.api-run", "step.evidence.combine", "step.evidence.db-plan", "step.evidence.db-run",
-                "step.evidence.desk", "step.evidence.none", "step.evidence.ui-plan", "step.evidence.ui-run", "step.handtest.run",
-                "step.intake.ticket", "step.interview.answer", "step.interview.apply", "step.interview.questions", "step.interview.record",
-                "step.judge.choose", "step.owner.decide", "step.produce", "step.report.write", "step.reproduce.test-check", "step.reproduce.ui-check",
-                "step.review.fix", "step.review.recheck", "step.review.run", "step.rootcause.investigate", "step.scope.anchor",
-                "step.scope.challenge", "step.scope.challenge-log", "step.scope.check", "step.scope.draft", "step.scope.evidence",
-                "step.scope.freeze", "step.scope.gather", "step.scope.intake", "step.scope.propose", "step.scope.read-brief",
-                "step.scope.read-change", "step.scope.read-tracker", "step.scope.reanchor", "step.scope.review", "step.scope.withdraw", "step.verify",
-                "step.verify.design", "step.verify.journey",
+                "effect.claim.ref", "effect.line.report", "effect.notify.desk", "evidence.check", "gate.budget.available",
+                "gate.route.startable", "input.context.code", "input.context.history", "input.context.lenses", "step.babysit.watch",
+                "step.brief.questions", "step.brief.seed", "step.brief.write", "step.bugfix.judge", "step.bugfix.recheck",
+                "step.bugfix.record-candidate", "step.bugfix.start-attempt", "step.build.amend", "step.build.checks", "step.build.green",
+                "step.build.prepare", "step.build.red", "step.build.red-check", "step.build.scope-desk", "step.checks",
+                "step.design.apply", "step.design.check", "step.design.draft", "step.design.evidence", "step.design.intake",
+                "step.design.lens-desk", "step.design.revise", "step.desk.choose", "step.docs.check", "step.docs.open-pr",
+                "step.docs.scope", "step.docs.update", "step.evidence.api-plan", "step.evidence.api-run", "step.evidence.combine",
+                "step.evidence.db-plan", "step.evidence.db-run", "step.evidence.desk", "step.evidence.none", "step.evidence.ui-plan",
+                "step.evidence.ui-run", "step.handtest.run", "step.intake.ticket", "step.interview.answer", "step.interview.apply",
+                "step.interview.questions", "step.interview.record", "step.judge.choose", "step.lens.log", "step.lens.round",
+                "step.lens.run", "step.owner.decide", "step.phase.decide", "step.phase.drift", "step.phase.seed",
+                "step.plan.check", "step.plan.evidence", "step.plan.exec-review", "step.plan.freeze", "step.plan.graph",
+                "step.plan.holdout", "step.plan.intake", "step.plan.questions", "step.plan.review", "step.plan.settle",
+                "step.produce", "step.prove.before-after", "step.prove.evidence", "step.prove.fail-log", "step.prove.holdout",
+                "step.prove.holdout-log", "step.prove.intake", "step.report.write", "step.reproduce.test-check", "step.reproduce.ui-check",
+                "step.review.fix", "step.review.log", "step.review.recheck", "step.review.record", "step.review.round",
+                "step.rootcause.investigate", "step.scope.anchor", "step.scope.challenge", "step.scope.challenge-log",
+                "step.scope.check", "step.scope.draft", "step.scope.evidence", "step.scope.freeze", "step.scope.gather",
+                "step.scope.intake", "step.scope.propose", "step.scope.read-brief", "step.scope.read-change", "step.scope.read-tracker",
+                "step.scope.reanchor", "step.scope.review", "step.scope.withdraw", "step.ship.freeze", "step.ship.green",
+                "step.ship.open", "step.ship.pack", "step.ship.return", "step.verify", "step.verify.design",
+                "step.verify.journey",
             ],
             catalog.Blocks.Select(b => b.Id.Value).Order(StringComparer.Ordinal),
             StringComparer.Ordinal);
@@ -60,12 +71,12 @@ public sealed class ShippedBlocksTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task The_budget_gate_and_the_two_effects_have_runtimes_and_the_desk_steps_run_on_the_desk()
+    public async Task The_two_gates_and_the_two_effects_have_runtimes_and_the_desk_steps_run_on_the_desk()
     {
         await using var provider = Composed();
         await using var scope = provider.CreateAsyncScope();
 
-        _ = Assert.IsType<BudgetAvailableGate>(Assert.Single(scope.ServiceProvider.GetServices<IGate>()));
+        Assert.Equal([typeof(BudgetAvailableGate), typeof(RouteStartableGate)], scope.ServiceProvider.GetServices<IGate>().Select(static g => g.GetType()));   // engine P7 adds the route stub
         Assert.Empty(scope.ServiceProvider.GetServices<IStep>());
         Assert.Equal([typeof(ClaimRefEffect), typeof(NotifyDeskEffect)], scope.ServiceProvider.GetServices<IEffectKind>().Select(static e => e.GetType()));   // engine P6
     }
@@ -94,7 +105,7 @@ public sealed class ShippedBlocksTests
         Assert.Equal(capabilities, FixtureCatalog.Shipped().Find(BlockId.From(id))!.Capabilities);   // why: the catalog test pins every shipped id
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData("item.routed", "router.stub", EventRoute.Item, new[] { "startable", "notStartable" }, new[] { "fact:stepSpec" })]
+    [InlineData("item.routed", "service:router-stub", EventRoute.Item, new[] { "startable", "notStartable" }, new[] { "fact:stepSpec" })]
     [InlineData("claim.created", "system:dispatcher", EventRoute.Causation, new[] { "created", "claimExists" }, new string[0])]
     [InlineData("notify.delivered", "system:dispatcher", EventRoute.Causation, new[] { "delivered" }, new string[0])]
     public void Each_event_declares_its_producer_route_outcomes_and_facts(string kind, string producer, EventRoute route, string[] outcomes, string[] facts)

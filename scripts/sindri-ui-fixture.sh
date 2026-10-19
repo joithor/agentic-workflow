@@ -43,6 +43,22 @@
 #                                  context.db through down, so the next draft's number depends on earlier runs); up and down
 #                                  approve whenever the profile is not approved
 #
+#   sindri-ui-fixture.sh sessions up|ask <pid>|end <pid>|back <pid>|disable|enable|down
+#                                  the Agents page's data (U11a; run after 'up', and run 'sessions up' right after every 'up': a
+#                                  control plane started without it reads the real box). up copies tests/fixtures/sessions/
+#                                  (the /proc-shaped tree and the Claude records) to <home>/ui-fixture-sessions/ with cp -a,
+#                                  makes its fleet/ (0700, with the .aw-fleet marker), writes a bare launcher.json there and
+#                                  restarts the control plane (stop, then --headless) with AW_SESSIONS_PROC_ROOT,
+#                                  AW_SESSIONS_CLAUDE_DIR, AW_FLEET_DIR and AW_LAUNCHER_CONFIG pointing at the copy, so the
+#                                  collector never reads the real /proc, ~/.claude, fleet or launcher.json; it needs the
+#                                  fixture's ownUid (manifest.json; exit 2 otherwise). ask writes the fleet state file
+#                                  (asking, approval, tool Bash) of the Claude session with that pid, the pid and start ticks
+#                                  from its stat; end moves proc/<pid>/ to <copy>/ended/ and back moves it back (the row
+#                                  leaves to Recently ended after two passes); disable and enable set sessions.enabled in
+#                                  the copy's launcher.json and restart (SND-SESSION-002); down stops the control plane and
+#                                  removes the copy. Every restart re-exports the four variables while the copy exists, and
+#                                  down never restarts. Needs jq.
+#
 # FIXTURE_REPO names the items' repo (default: none, so the API's default applies).
 # Environment: AW_SINDRI_HOME (required: sindri-prove.sh's guard, a temp or proof folder), SINDRI (the built C# CLI,
 # as sindri-prove.sh reads it), STALL_TYPE (the stalled row's type; default service.ran, a type the projector reads),
@@ -393,6 +409,116 @@ context() {
   case "$1" in up) context_up ;; draft) context_draft ;; down) context_down ;; esac
 }
 
+SESSIONS_DIRNAME="ui-fixture-sessions"
+sessions_dir() { printf '%s\n' "$AW_SINDRI_HOME/$SESSIONS_DIRNAME"; }
+
+# The collector's overrides, pointed at the copy. AW_LAUNCHER_CONFIG keeps the owner's launcher.json (under $AW_STATE_DIR) out too.
+sessions_export() {
+  local d
+  d="$(sessions_dir)"
+  export AW_SESSIONS_PROC_ROOT="$d/proc" AW_SESSIONS_CLAUDE_DIR="$d/claude-sessions" AW_FLEET_DIR="$d/fleet" AW_LAUNCHER_CONFIG="$d/launcher.json"
+}
+
+sessions_restart() {
+  sessions_export
+  "$PROVE" human stop >/dev/null 2>&1 || true
+  "$PROVE" human --headless
+}
+
+sessions_need_copy() { [ -d "$(sessions_dir)/proc" ] || die "no fixture sessions at $(sessions_dir): run 'sessions up' first"; }
+
+sessions_pid() { [[ "$1" =~ ^[0-9]+$ ]] || die "sessions: '$1' is not a pid"; }
+
+# Removes the copy; the path must end in the fixture's folder name.
+sessions_remove() {
+  local d="$1"
+  case "$d" in */"$SESSIONS_DIRNAME") [ ! -e "$d" ] || rm -rf -- "$d" ;; *) die "sessions: refusing to delete $d" ;; esac
+}
+
+sessions_up() {
+  need jq
+  local src="$ROOT/tests/fixtures/sessions" d own
+  own="$(jq -r '.ownUid' "$src/manifest.json")"
+  [ "$(id -u)" = "$own" ] || die "sessions up: the fixture's processes belong to uid $own and this is uid $(id -u); the collector would find no session of its own"
+  [ -f "$(profile_path)" ] || die "no live profile at $(profile_path): run 'up' first"
+  d="$(sessions_dir)"
+  sessions_remove "$d" || return
+  mkdir -p "$d" || return
+  cp -a "$src/proc" "$d/proc" && cp -a "$src/claude-sessions" "$d/claude-sessions" || die "sessions up: can't copy the fixture tree"
+  mkdir -p "$d/ended" && mkdir -m 700 "$d/fleet" && : > "$d/fleet/.aw-fleet" || return
+  printf '{"schema":1}\n' > "$d/launcher.json"
+  sessions_restart
+}
+
+# $1 pid: a Claude session of the copy (its record names the session id).
+sessions_ask() {
+  sessions_pid "$1"
+  sessions_need_copy
+  need jq
+  local d rec id cwd ticks dir now tmp
+  d="$(sessions_dir)"
+  rec="$d/claude-sessions/$1.json"
+  [ -f "$rec" ] || die "sessions ask: no Claude record for pid $1 in the fixture"
+  [ -f "$d/proc/$1/stat" ] || die "sessions ask: pid $1 is not in the fixture's process tree (ended?)"
+  id="$(jq -r '.sessionId' "$rec")"; cwd="$(jq -r '.cwd' "$rec")"
+  # stat field 22 (start time): the comm in field 2 may hold spaces, so count from the last ')' (field 3 is the first token after it).
+  ticks="$(awk '{ sub(/^.*\) /, ""); print $20 }' "$d/proc/$1/stat")"
+  [[ "$ticks" =~ ^[0-9]+$ ]] || die "sessions ask: no start time in $d/proc/$1/stat"
+  dir="$d/fleet/claude-code"
+  mkdir -p "$dir" && chmod 700 "$dir" && : > "$dir/.aw-fleet" || return
+  now="$(date -u +%Y-%m-%dT%H:%M:%S.000Z)"
+  tmp="$(mktemp "$dir/.ask.XXXXXX")" || return
+  jq -n --arg id "$id" --arg at "$now" --arg cwd "$cwd" --argjson pid "$1" --argjson ticks "$ticks" \
+    '{schema: 1, provider: "claude-code", sessionId: $id, event: "Notification", state: "asking", reason: "approval", tool: "Bash",
+      at: $at, cwd: $cwd, transcript: null, agentPid: $pid, agentStartTicks: $ticks, env: {}}' > "$tmp" \
+    && chmod 600 "$tmp" && mv -f "$tmp" "$dir/$id.json" || { rm -f -- "$tmp"; return 1; }
+  printf '%s\n' "$dir/$id.json"
+}
+
+sessions_end() {
+  sessions_pid "$1"
+  sessions_need_copy
+  local d
+  d="$(sessions_dir)"
+  [ -d "$d/proc/$1" ] || die "sessions end: pid $1 is not in the fixture's process tree"
+  mv -- "$d/proc/$1" "$d/ended/$1"
+}
+
+sessions_back() {
+  sessions_pid "$1"
+  sessions_need_copy
+  local d
+  d="$(sessions_dir)"
+  [ -d "$d/ended/$1" ] || die "sessions back: pid $1 was not ended by this fixture"
+  mv -- "$d/ended/$1" "$d/proc/$1"
+}
+
+# false writes sessions.enabled=false; true removes the key. launcher.json is read once at start, so both restart.
+sessions_toggle() {
+  need jq
+  sessions_need_copy
+  local f tmp
+  f="$(sessions_dir)/launcher.json"
+  tmp="$f.new"
+  if [ "$1" = false ]; then jq '.sessions.enabled = false' "$f" > "$tmp"
+  else jq 'del(.sessions.enabled) | if .sessions == {} then del(.sessions) else . end' "$f" > "$tmp"; fi \
+    && mv -f "$tmp" "$f" || die "sessions: can't update $f"
+  sessions_restart
+}
+
+# Stops the control plane and removes the copy. It does not restart: a later 'up' without 'sessions up' would read the real box.
+sessions_down() {
+  "$PROVE" human stop >/dev/null 2>&1 || true
+  sessions_remove "$(sessions_dir)"
+}
+
+sessions() {
+  case "$1" in
+    up) sessions_up ;; ask) sessions_ask "$2" ;; end) sessions_end "$2" ;; back) sessions_back "$2" ;;
+    disable) sessions_toggle false ;; enable) sessions_toggle true ;; down) sessions_down ;;
+  esac
+}
+
 verb="${1:-}"
 case "$verb" in
   -h | --help) usage; exit 0 ;;
@@ -405,6 +531,12 @@ case "$verb" in
   incident) { [ "$#" -eq 2 ] && { [ "$2" = start ] || [ "$2" = stop ]; }; } || die "usage: incident start|stop" ;;
   request) [ "$#" -ge 2 ] || die "usage: request [--item ID] [--repo R] <text>" ;;
   context) { [ "$#" -eq 2 ] && { [ "$2" = up ] || [ "$2" = draft ] || [ "$2" = down ]; }; } || die "usage: context up|draft|down" ;;
+  sessions)
+    case "${2:-}" in
+      up | disable | enable | down) [ "$#" -eq 2 ] || die "usage: sessions up|ask <pid>|end <pid>|back <pid>|disable|enable|down" ;;
+      ask | end | back) [ "$#" -eq 3 ] || die "usage: sessions $2 <pid>" ;;
+      *) die "usage: sessions up|ask <pid>|end <pid>|back <pid>|disable|enable|down" ;;
+    esac ;;
   decide) [ "$#" -eq 3 ] || die "usage: decide <DEC-id> <choice>" ;;
   *) usage >&2; die "unknown verb: $verb" ;;
 esac

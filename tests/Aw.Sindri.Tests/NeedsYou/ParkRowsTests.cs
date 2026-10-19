@@ -55,6 +55,25 @@ public sealed class ParkRowsTests
         Assert.Equal((line.ActionId, line.Cli, line.Kind, line.Via), (row.PrimaryAction, row.Cli, row.AnswerKind, row.Via));
     }
 
+    [Fact]
+    public void A_mirrored_park_row_names_the_child_it_points_at()
+    {
+        var child = "ITM-11111111111111111111111111111111/step/1/workflow.step.1";
+        var summary = new SuspensionSummary(SuspensionKind.Park, ParkReason.NeedsAnswer, ParkKind.Step, Escalation: null, Mirrors: "WFI-22222222222222222222222222222222", MirrorsAddress: child);
+
+        var row = NeedsYouRows.ForPark(Item(), _address, summary, _since, _plain);
+
+        Assert.Equal(("child", child), (row.Via, row.Child));
+    }
+
+    [Fact]
+    public void A_park_the_engine_answers_itself_names_no_child()
+    {
+        var row = NeedsYouRows.ForPark(Item(), _address, Park(ParkReason.Rounds, ParkKind.Loop), _since, _plain);
+
+        Assert.Null(row.Child);
+    }
+
     [Theory]
     [InlineData("parked-mirrored-needs-answer")]
     [InlineData("parked-mirrored-needs-answer-wait")]

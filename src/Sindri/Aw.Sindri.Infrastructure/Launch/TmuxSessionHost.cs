@@ -92,6 +92,24 @@ internal sealed partial class TmuxSessionHost(TmuxHostOptions options) : ISessio
     }
 
     /// <inheritdoc/>
+    public async ValueTask<bool> Exists(HostRef host, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(host);
+        try
+        {
+            return (await Run(["has-session", "-t", Target(host)], cancellationToken, _callBudget).ConfigureAwait(false)).ExitCode == 0;
+        }
+        catch (Win32Exception)
+        {
+            return false;
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return false;
+        }
+    }
+
+    /// <inheritdoc/>
     public async ValueTask<int> AttachedClients(HostRef host, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(host);

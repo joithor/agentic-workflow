@@ -18,9 +18,18 @@ internal sealed partial class WorkflowsPage : UserControl
         AddHandler(InstanceRow.OpenEvent, OnOpen);
         AddHandler(InstanceRow.SelectEvent, OnSelect);
         AddHandler(RecipeGroup.ToggleEvent, OnToggle);
+        AddHandler(ChildAnswerButton.FollowEvent, OnChildAnswer);
     }
 
     private bool _focusWasHere;
+
+    private void OnChildAnswer(object? sender, RoutedEventArgs e)
+    {
+        if (e.Source is ChildAnswerButton { Answer: { } answer } button && button.FindAncestorOfType<InstanceRow>() is { Address.Length: > 0 } row)
+        {
+            (DataContext as WorkflowsViewModel)?.FollowChildAnswer(row.Address, answer);
+        }
+    }
 
     /// <inheritdoc />
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -114,6 +123,8 @@ internal sealed partial class WorkflowsPage : UserControl
             e.Handled = true;
         }
     }
+
+    private void OnStart(object? sender, RoutedEventArgs e) => List?.RequestStart();
 
     private void OnDoneToggle(object? sender, RoutedEventArgs e) => _ = List?.ToggleDone(CancellationToken.None);
 }

@@ -45,4 +45,12 @@ public sealed class ContextErrorsTests
         Assert.DoesNotContain(ContextErrors.All, e => string.Equals(e.Code, "SND-CONTEXT-132", StringComparison.Ordinal));
         Assert.All([ContextErrors.RecognizerInvalid, ContextErrors.RecognizerOverCap], e => Assert.Equal(ErrorKind.Invalid, e.Kind));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_graphify_limit_code_is_133_an_invalid_input()
+    {
+        Assert.Equal("SND-CONTEXT-133", ContextErrors.GraphifyLimitInvalid.Code);
+        Assert.Equal(ErrorKind.Invalid, ContextErrors.GraphifyLimitInvalid.Kind);
+        Assert.Contains(ContextErrors.GraphifyLimitInvalid, ContextErrors.All);
+    }
 }

@@ -20,13 +20,13 @@ internal static class LauncherServiceCollectionExtensions
             .AddSingleton(static _ => new TmuxSessionHost(new TmuxHostOptions()))
             .AddSingleton<ISessionHost>(static sp => sp.GetRequiredService<TmuxSessionHost>())   // the launcher service polls it for attached clients (API P10a U9)
             .AddSingleton<NoSessionHost>()
+            .AddSingleton<ILaunchStartup>(sp => new LaunchStartup(() => WarpSweep(sp, environment)))
             .AddSingleton<ITerminalViewer>(sp => Viewer(sp, environment))
             .AddSingleton<IReadOnlyDictionary<string, IUsageReader>>(UsageReaders(environment))
             .AddSingleton(sp => new UsageSpend(sp.GetRequiredService<ReloadingAgentCatalog>(), sp.GetRequiredService<IReadOnlyDictionary<string, IUsageReader>>(), sp.GetRequiredService<TimeProvider>()))
             .AddSingleton<ILaunchSpend>(static sp => sp.GetRequiredService<UsageSpend>())
             .AddSingleton<ILaunchUsage>(static sp => sp.GetRequiredService<UsageSpend>())
             .AddScoped<ILaunchProbes, LaunchProbeRecorder>()
-            .AddSingleton<ISindriHome>(new SindriHome(settings.Home))
             .AddSingleton(_ => Options(environment, settings))
             .AddSingleton<ILaunchFiles>(static sp => new LaunchFileStore(sp.GetRequiredService<LauncherOptions>()))
             .AddSingleton<ILauncher>(sp => new Launcher(Parts(sp, BuiltinHash)))
@@ -90,17 +90,19 @@ internal static class LauncherServiceCollectionExtensions
         var time = sp.GetRequiredService<TimeProvider>();
         return section.Kind switch
         {
-            "warp" when !OperatingSystem.IsWindows() => SweptWarp(new WarpViewer(WarpOptions(environment), host, time, Redactor.Default)),
+            "warp" when !OperatingSystem.IsWindows() => new WarpViewer(WarpOptions(environment), host, time, Redactor.Default),
             "exec-template" => new ExecTemplateViewer(new ExecTemplateOptions(section.Name!, section.Argv!), host, time, Redactor.Default),   // why: a valid section has both
             _ => new PrintViewer(),
         };
     }
 
-    [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
-    private static WarpViewer SweptWarp(WarpViewer viewer)
+    /// <summary>A restart inside the 60 s window must not leave a launch file in Warp's palette (UI spec 6.3): swept once when the launcher service starts, not on each viewer build.</summary>
+    private static void WarpSweep(IServiceProvider sp, Func<string, string?> environment)
     {
-        viewer.Sweep();   // a restart inside the 60 s window must not leave a launch file in Warp's palette (UI spec 6.3)
-        return viewer;
+        if (!OperatingSystem.IsWindows())
+        {
+            new WarpViewer(WarpOptions(environment), sp.GetRequiredService<TmuxSessionHost>(), sp.GetRequiredService<TimeProvider>(), Redactor.Default).Sweep();
+        }
     }
 
     /// <summary>The program that runs <c lang="text">session wrap</c> inside the session: <c lang="text">AW_SINDRI_EXE</c>, else this process, else <c lang="text">sindri</c> on the PATH (under <c lang="text">dotnet run</c> the process is the dotnet host, which can't run the wrap).</summary>

@@ -36,16 +36,16 @@ internal sealed class ContextJobVerbs(ControlPlaneClient client, Output output, 
             return await output.Error(SindriErrors.InvalidInput.With($"'context {string.Join(' ', args)}' isn't this command: {(sync ? SyncUsage : BuildUsage)}")).ConfigureAwait(false);
         }
 
-        // the start itself is never cancelled by Ctrl-C (as 'services run'): the job may exist on the server, and only the follow listens for the interrupt
+        // Ctrl-C ends the start POST (as 'services run'; nothing else bounds a hung start): the job may already exist on the server, which `sindri jobs` shows
         var started = sync
-            ? await client.Post<SyncContextSourcesRequest, JobStartedResponse>("/sindri/context/sources/sync", new SyncContextSourcesRequest(line.Words.Count == 1 ? line.Words[0] : null), CancellationToken.None).ConfigureAwait(false)
-            : await client.Post<BuildContextMapRequest, JobStartedResponse>("/sindri/context/map/build", new BuildContextMapRequest(), CancellationToken.None).ConfigureAwait(false);
+            ? await client.Post<SyncContextSourcesRequest, JobStartedResponse>("/sindri/context/sources/sync", new SyncContextSourcesRequest(line.Words.Count == 1 ? line.Words[0] : null), interrupt).ConfigureAwait(false)
+            : await client.Post<BuildContextMapRequest, JobStartedResponse>("/sindri/context/map/build", new BuildContextMapRequest(), interrupt).ConfigureAwait(false);
         if (started.IsError)
         {
             return await output.Error(started.Error).ConfigureAwait(false);
         }
 
-        return await Followed(started.Value, (line.Detach, line.Json), interrupt, again).ConfigureAwait(false);
+        return await Followed(started.Value, (line.Detach, line.Json), interrupt, again, sync ? null : BuildTable).ConfigureAwait(false);
     }
 
     /// <summary>'context eval backtest [--arms a,b|all] [--since D] [--until D] [--limit N] [--detach] [--json]': the backtest job (context spec §9.1).</summary>
@@ -61,6 +61,18 @@ internal sealed class ContextJobVerbs(ControlPlaneClient client, Output output, 
         return started.IsError
             ? ContextExit.For(started.Error, await output.Error(started.Error).ConfigureAwait(false))   // 082 (an unknown arm) is attention: exit 1, as the context error table says
             : await Followed(started.Value, (line.Detach, line.Json), interrupt, again, Table).ConfigureAwait(false);
+    }
+
+    /// <summary>The build's draft line and its degraded reasons, read from the final job's small result; nothing when the result isn't there or doesn't read.</summary>
+    private string? BuildTable(JobView job)
+    {
+        if (job.Result is not { } result)
+        {
+            return null;
+        }
+
+        var read = output.Read<BuildContextMapResult>(Encoding.UTF8.GetBytes(result.GetRawText()));
+        return read.IsSuccess ? MapBuildJobText.Render(read.Value) : null;
     }
 
     /// <summary>The backtest's rows, read from the final job's small result; nothing when the result isn't there or doesn't read.</summary>

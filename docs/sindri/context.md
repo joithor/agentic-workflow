@@ -141,7 +141,7 @@ Phase 1 tools (both read-only):
 
 | Tool | Arguments | Answer |
 |---|---|---|
-| `context_query` | `q`, or one anchor `node` / `item` / `symbol`; `depth?`, `budget?` | `structuredContent`: the same result JSON as `context query --json`; text: counts, anchors, conflicts, degraded sources and the citation keys, never the records' text a second time |
+| `context_query` | `q`, or one anchor `node` / `item` / `symbol`; `depth?`, `hops?`, `budget?` | `structuredContent`: the same result JSON as `context query --json`; text: counts, anchors, conflicts, degraded sources and the citation keys, never the records' text a second time |
 | `context_sources` | none | `structuredContent`: the sources view plus `instance` (the Sindri build and port that answered); text: the same, then the `context sources status` table |
 
 Claude Code hands the model `structuredContent` rather than the text block when a result has both, so everything a
@@ -168,26 +168,46 @@ Registration is per work repo and never user-wide, so sessions in personal repos
 work context. In the work repo's main checkout:
 
 ```bash
-$SINDRI mcp register            # prints the command (any caller may run this)
-$SINDRI mcp register --apply    # runs it: a human at a terminal only (a session gets SND-AUTH-002)
+$SINDRI mcp register            # prints each provider's change (any caller may run this)
+$SINDRI mcp register --apply    # writes it: a human at a terminal only (a session gets SND-AUTH-002)
+$SINDRI mcp register --apply --providers claude,codex,cursor|all   # more than Claude Code (the default is claude alone)
 ```
+
+`scripts/sindri-app.sh` (a bare run) does the last line itself once the control plane's port is known, so the owner
+needs nothing else: it is idempotent (an entry that is already right is not written) and re-registers when the port moves.
+`AW_SINDRI_MCP_REPO` is passed through as `--repo`. Without it, from a linked worktree the script passes the main
+checkout's folder name as `--repo`, which works when the profile names the repo after its folder; otherwise set
+`AW_SINDRI_MCP_REPO` to the profile's name. Its `mcp` line names the `--repo` it used.
 
 It prints, and with `--apply` runs in the repo's main checkout:
 
 ```bash
-claude mcp add --transport http --scope local --header 'X-Sindri-Repo: <repo>' sindri http://127.0.0.1:<port>/sindri/mcp
+claude mcp add --transport http --scope local sindri http://127.0.0.1:<port>/sindri/mcp --header 'X-Sindri-Repo: <repo>'
 ```
 
+Per provider (each line of the answer is `registered`, `unchanged`, `skipped` (not installed), `registered, needs trust`
+or `failed` with a fix line; one failing never stops the others):
+
+| Provider | Where | Scope |
+|----------|-------|-------|
+| Claude Code | `claude mcp add --scope local` run in the main checkout; a changed port or repo is `claude mcp remove --scope local sindri`, then add | per repo |
+| Cursor | the checkout's `.cursor/mcp.json`: the `sindri` entry (`url`, `headers`) merged, every other entry untouched | per repo |
+| Codex | the checkout's `.codex/config.toml`: a `[mcp_servers.sindri]` table (`url`, `http_headers`); Codex loads it only for a trusted project, so `--apply` also adds `[projects."<checkout>"] trust_level = "trusted"` to the user's Codex config (`$CODEX_HOME/config.toml`, else `~/.codex/config.toml`), a one-row append that changes nothing else. A row with another level is never overwritten: that line is `registered, needs trust` | per repo; the trust row is user-level but names only this checkout |
+
+A project file git tracks that would change is `failed`, not edited (a provisional owner default, stricter than warning
+and writing; the fix line names the file and the exact entry to add by hand; `.cursor/mcp.json` and `.codex/config.toml` are not tracked in
+this repo; where they aren't ignored either, they show as untracked). A file that isn't valid JSON or TOML the tool can edit is `failed`.
+Installed means `claude`, `codex` or `cursor-agent` on PATH (Cursor also by its `~/.cursor` directory).
+
 Exit codes (spec §8.6): `0` printed or registered · `1` attention: not a profile repo (`024`) or `--apply` from a
-session (`SND-AUTH-002`) · `2` a tool error: `claude` couldn't run or failed (`025`), a usage error.
+session (`SND-AUTH-002`) · `2` a tool error: a provider `failed` (`025`; the others were still registered), a usage error.
 
 `<repo>` is the profile repo the working directory belongs to (a linked worktree resolves to its main checkout), or
 `--repo NAME`. `<port>` is the running instance's, else the profile's `api.port` (default 7410). Outside every
 profile repo, or with an unknown `--repo`, it answers `SND-CONTEXT-024`; a `claude` that can't be started or fails
 answers `SND-CONTEXT-025` (run the printed line by hand to see why). `AW_SINDRI_CLAUDE_BIN` names another `claude`
-executable (tests point it at a recording stub). Codex and Cursor are never registered: Codex keeps MCP servers only
-in user config, and Cursor's project file sits inside the repo, so Sindri passes them the endpoint when it launches
-them (API spec §8.1).
+executable (tests point it at a recording stub). Codex and Cursor take project files (above); Sindri also passes them
+the endpoint when it launches them (API spec §8.1).
 
 **Worktrees.** Claude Code keys a local-scope entry by directory. Whether that entry also reaches sessions started in
 the repo's linked worktrees is checked by the owner with the real `claude` (S-1M `owner-check.md`, step 6b); no agent
@@ -407,7 +427,7 @@ path (`005`), session reads off (`020`), no map (`030`), an invalid file (`031`,
 ### Asking about a node
 
 ```bash
-$SINDRI context query --node feature:layout.split-pane.orientation [--depth N] [--json]
+$SINDRI context query --node feature:layout.split-pane.orientation [--depth N] [--hops <list>] [--json]
 # context q_… · anchors: feature:layout.split-pane.orientation · map: v1 · as of …
 #
 # ## graph
@@ -441,7 +461,7 @@ those surfaces' actions (the `graph` section). Each step costs 1:
 
 A reached surface or action is reported as the feature that owns it. Only the reached node steps on, never that
 feature's other surfaces, so a sibling such as "Pane resize" is never pulled in. The depth is `context.cascadeDepth`
-in the profile (0–4, default 2), and `--depth` overrides it. Each affected node shows its shortest path (between equally deep paths, the one with the fewest `owns` steps, then key order), starting at the anchor and naming the real hops: the `owns` steps down through the anchor's own scope to the surface or action that writes or depends, then the state, dependency or flow hops. A bad `--depth` (not a whole number, or outside 0–4) is `SND-CONTEXT-006`.
+in the profile (0–4, default 2), and `--depth` overrides it. Each affected node shows its shortest path (between equally deep paths, the one with the fewest `owns` steps, then key order), starting at the anchor and naming the real hops: the `owns` steps down through the anchor's own scope to the surface or action that writes or depends, then the state, dependency or flow hops. A bad `--depth` (not a whole number, or outside 0–4) is `SND-CONTEXT-006`. `--hops` names the hops to walk and replaces the default three (`--hops component` walks only that hop; `--hops state,flow,dependency,component` adds the opt-in component hop, nodes that share a confirmed code unit, to the default three); a code unit implementing more than `context.cascadeComponentFanOut` features (default 5) is skipped and listed in `skippedComponents`; an unknown hop name is `SND-CONTEXT-140`.
 
 **A session sees only its repo.** A session sees only the nodes its repo implements (`implements` edges with file
 evidence in its `X-Sindri-Repo`), the code files those edges start from, and the edges among them (so `lenses` shows its code band and
@@ -548,6 +568,7 @@ repos:
   - { name: work-app, path: /path/to/work-app, index: { denyPaths: ["private/**"] } }   # this repo's own, added to the above
 context:
   labeling: { enabled: false, maxTokens: 400000, maxTokensPerSync: 50000 }  # name clusters with a model; over the cap is SND-CONTEXT-042; maxTokensPerSync caps decision extraction in one sync (the rest stays queued); a record whose extraction prompt alone is over it can never be extracted, so it is skipped: counted in `refused`, no decisions, not queued (raise the cap to extract it; it is retried when its version changes)
+  extract: { graphify: { timeoutMinutes: 60, maxSnapshotMB: 2048, maxFileMB: 16, maxGraphMB: 256 } }   # the cluster pass's limits (these are the defaults; 0 is no limit); the surface recognizers are context.extract.recognizers
 services:
   context-rebuild: { every: 24h }                  # proposes the map on a cadence; runs only when named here
 ```
@@ -558,9 +579,16 @@ services:
 - Labeling is off by default. When on, it runs through your own agent CLIs (Claude Code, Codex or Cursor, in that order), which send the scrubbed file paths to their provider, as any session does; it never uses Judge's remote API. It asks the CLI to name each cluster from its file paths, scrubbed (with your `context.scrub.extraPatterns` too), in batches of twenty, inside `maxTokens`. If no CLI
   answers, the build goes on with unnamed clusters and reports `degraded: labels`.
 - Clusters need graphify (pinned) under a working sandbox: `bwrap` on Linux, `sandbox-exec` on macOS. Without either,
-  the build still proposes the deterministic anchors and reports `degraded: clusters`; it is not an error. On Linux
+  the build still proposes the deterministic anchors and reports `degraded: clusters: <reason>` (`clusters: no sandbox`, `clusters: graphify not found`, and the other reasons under "Building a draft"); it is not an error. On Linux
   with an AppArmor profile that blocks unprivileged user namespaces, `bwrap` fails and so do clusters until the
   system allows them (`scripts/install-deps.sh` probes it and prints the fix).
+- `context.extract.graphify` bounds the cluster pass; every key is a whole number, and `0` means no limit. `timeoutMinutes` (default 60) kills
+  graphify after that long; `maxSnapshotMB` (default 2048) caps the files copied into the private snapshot graphify reads, counting only the
+  bytes actually copied (a file left out takes no room); `maxFileMB` (default 16) leaves out any single larger file; `maxGraphMB` (default 256)
+  caps the `graph.json` read back (it is parsed from a stream, but the parsed graph is held in memory, so `0` risks running out of memory on a huge
+  graph). A negative or fractional value, a `timeoutMinutes` over 70,000 (about 48 days, what a timer accepts) or a size over 10,000,000 is `SND-CONTEXT-133` at `profile validate`, naming
+  the key path (`context.extract.graphify.maxFileMB: is a whole number of megabytes, 0 to 10000000 (0 is no limit)`). Raise a limit for a very
+  large repo, lower it to bound a slow machine.
 
 ### Building a draft
 
@@ -577,6 +605,24 @@ A build takes a slot of the box-wide heavy-job lock (`$AW_STATE_DIR/locks/heavy-
 `AW_HEAVY_SLOTS`; the same directory the shell tools and `ui-evidence` use). If every slot stays held for 60 seconds
 it answers `SND-CONTEXT-040` (exit 75) naming the holder, and writes nothing. A second build keeps every decision you made
 (rejected nodes are not proposed again, accepted ones stay accepted) and re-applies pending proposals.
+
+When it ends, the CLI prints `draft N for <repo> · M proposed` and one `degraded: <part>` line for each part the build did without; the same lines are the job's
+`degraded` result (`sindri jobs show <id>`) and the `context.map.built` event. A cluster pass that is lost or partial names why:
+
+| Line | Meaning |
+|---|---|
+| `clusters: graphify not found` | No `graphify` on `PATH` |
+| `clusters: no sandbox` | No `bwrap` (Linux) or `sandbox-exec` (macOS) |
+| `clusters: graphify did not start under the sandbox` | The sandboxed `graphify --version` failed or timed out |
+| `clusters: graphify is not the pin <version>` | Another graphify version is installed |
+| `clusters: timed out after N min` | The run passed `timeoutMinutes` and was killed |
+| `clusters: graph.json over N MB` | The graph it wrote passed `maxGraphMB` and was not read |
+| `clusters: snapshot truncated at N MB (K files skipped)` (`1 file` for one) | The snapshot hit `maxSnapshotMB`; graphify clustered what was copied (clusters are still used) |
+| `clusters: K files over N MB left out` (`1 file` for one) | `K` files passed `maxFileMB` and were not copied; the rest clustered |
+| `clusters: graphify exited with code N`, `graphify wrote no graph.json`, `graph.json could not be read` | graphify ran and failed or wrote nothing usable |
+| `clusters: the commit could not be exported from git`, `an I/O error while preparing or reading the snapshot` | The snapshot could not be made |
+
+Reasons that apply together are joined with `; `. `labels` and `recognizers` are the other degraded parts, without a reason.
 
 ### Reviewing
 
@@ -633,7 +679,7 @@ current map has it: after a promote) or `unmapped` (you rejected it). The `POST`
 ### Lenses and the file map
 
 ```
-$ sindri context lenses feature:tabs.tab-manager [<key>...] [--depth <0-4>] [--draft | --map-version <v>] [--json]
+$ sindri context lenses feature:tabs.tab-manager [<key>...] [--depth <0-4>] [--hops <list>] [--draft | --map-version <v>] [--json]
 lenses of feature:tabs.tab-manager · map v13
 intent (2): …
 product (7): …
@@ -664,7 +710,7 @@ $ sindri context filemap accept edge:0123456789abcdef      # or reject: one over
   takes the worst of its children). A repo that is not in the profile, or outside a session's repo, is `SND-CONTEXT-045` with
   the same answer for both, so a scope never reveals what is outside it.
 - `context query --symbol <path>` resolves a file to the features it implements, with an `affects` section; an unknown file is `003`.
-- MCP: `context_lenses {anchor}` returns the lenses as `structuredContent` and a short summary (band sizes, conflicts,
+- MCP: `context_lenses {anchor, hops?}` returns the lenses as `structuredContent` and a short summary (band sizes, conflicts,
   coverage). It never reads the draft. Off while `context.sessions.enabled` is false (`SND-CONTEXT-020`).
 - MCP: `context_node {key}` and `context_neighbors {key, depth?}` (S-3M) call the services behind `GET /sindri/context/node` and
   `/neighbors` under the session caller, so `structuredContent` equals the session's HTTP answer (labels fenced). The text gives
@@ -693,6 +739,7 @@ the store, a usage error · `75` the heavy-job lock stayed busy (`040`).
 | `SND-CONTEXT-056` | That source's sync is already running (for example the `context-sync` service holds it): the source's own row in the job's result carries this code and the other sources go on. It is an in-run row, not a start-time refusal: a second job start answers `SND-JOB-409` | Wait; `context sources status` shows it |
 | `SND-CONTEXT-057` | A model answer the engine refused (quote not verbatim, target outside the record's links, malformed), or a record skipped because its extraction prompt alone is over `maxTokensPerSync` (no decisions, not queued; the same when its conflict checks can't fit even one pair under the cap as the run's first call: the pairs are refused, and not retried on a version change unless the decision's quote changes); counted in `refused`, never fails the sync. A conflict verdict that can't be read keeps the pair pending (the record stays queued) and is asked at most 3 times, then the pair is marked refused | None for answers (persistent counts mean prompt drift); for a skipped record raise `maxTokensPerSync`: a record skipped for its prompt is retried when its version changes, but refused conflict pairs are not (unless the quote changes), so raise the cap before the give-up happens |
 | `SND-CONTEXT-058` | `sources sync <source>` names a source that isn't configured or has nothing to sync (404) | `context sources status` for the names |
+| `SND-CONTEXT-133` | A `context.extract.graphify` limit (`timeoutMinutes`, `maxSnapshotMB`, `maxFileMB`, `maxGraphMB`) is negative, fractional, over 10,000,000 or, for `timeoutMinutes`, over 70,000 (`profile validate`, exit 2; the message names the key path) | Write a whole number, or `0` for no limit |
 | `SND-CONTEXT-059` | A sync stopped at its time cap: partial, it resumes from its cursor (`sources status` shows `059`, the source stays `ok` or `degraded`, exit 0). Every run completes at least one record, so a slow source still finishes across runs. A model or store failure in the same run shows instead of `059` | None; the next run continues. Raise the cadence if persistent |
 
 ## S-5A: the onyx source, secret pointers, doctor `context:onyx`
@@ -706,13 +753,16 @@ embeddings, telemetry off, connectors, the service account and its key) is `docs
 ```yaml
 context:
   sources:
-    onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "v4.9.0" }
+    onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "v4.9.0" }   # add managed: true when `sindri onyx up` runs it
     linear: { teams: [ENG, APP] }      # the Linear team keys an Onyx identifier alias (ENG-482) may name
 ```
 
 - `url`: http or https on a loopback host (`127.0.0.0/8`, `[::1]`, `localhost`), no user, password, query or
   fragment. Anything else is `SND-CONTEXT-055`.
 - `version`: the release tag that runs (`v4.9.0`), never `latest`; missing or `latest` is `SND-CONTEXT-055`.
+- `managed`: optional, default `false`. `sindri onyx up` writes `managed: true` for the Onyx it runs; when true, `url` must be
+  exactly `http://127.0.0.1:<port>` (not `localhost`, `[::1]`, https or another host), else `SND-CONTEXT-055`. Example:
+  `onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "v4.9.0", managed: true }`.
 - `token`: a **secret pointer** to the Onyx admin key of a service account Sindri alone uses, never the key itself.
   Missing, or text that isn't a pointer, is `SND-CONTEXT-002`; the message doesn't repeat the text (rotate a key that
   was written into the profile).
@@ -842,3 +892,25 @@ sindri context query --diff <base>..<head> [--repo <name>] [--json]
 ```
 
 `<base>` and `<head>` are commit shas (7 to 64 hex characters), never branch names. Sindri lists the files changed from the merge base to `<head>`, the product-map nodes they implement, and what those nodes affect. The text output starts with a count line, then `UNMAPPED`: changed files no node claims, a gap to look at. Files only a model suggested are `suggested`, not `unmapped`. Paths under your deny globs are counted (`denied`) and never listed. An empty range answers with no files. `repo` can be left out when one repo is mapped. Exit 1 with `SND-CONTEXT-110` means the clone does not hold a sha: fetch it first; `111` means the commits share no history.
+
+## The code lens (S-CL)
+
+```
+sindri context code <anchor>... [--draft | --map-version <v>] [--json]
+GET /sindri/context/code?anchor=<key>&anchor=<key>[&draft=true | &mapVersion=v2]
+```
+
+For one to 20 anchors it lists the files that implement them, the tests that cover those files, the data things they read or write, and the schema files that name those things. The tests come from `tests` edges of the map and, beyond them, from a lexical search of the repo at the map's commit: a test file whose text names an implementing file's path (`imports`), or whose name matches the file's name (`sibling`). A lexical test is a suggestion; add the `tests` edge to the map to confirm it. Callers and callees say `unavailable (index-not-built)` until the code index ships.
+
+The output ends with what was searched: `map`, `code-index`, `lexical-tests` and `lexical-schema`, each with a state word. A repo clone that lacks the map's commit shows `unavailable (commit-not-held)`; a search that ran out of `context.deadline` shows `degraded (SND-CONTEXT-152)` with whatever it found. Neither stops the answer.
+
+Two profile keys steer the search, both lists of repo-relative globs (at most 50, never overriding `denyPaths`):
+
+```yaml
+context:
+  code:
+    schemaGlobs: ["db/migrations/**", "**/*.sql"]   # [] turns the schema scan off
+    testGlobs: ["**/*.test.*", "**/tests/**"]       # matched case-sensitively
+```
+
+Exit codes: 0 with an answer, 1 for attention (not running, no anchor found, unknown map version), 2 for a tool error.

@@ -30,6 +30,7 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Delta">The post-state delta.</param>
 /// <param name="Via">'block' for a Step the engine ran on the block runtime, 'agent' for one an agent session ran; null otherwise (a desk report writes none).</param>
 /// <param name="Decision">The Judge decision id of a block Step's result; null otherwise.</param>
+/// <param name="OnBehalfOf">The parent instance an answer was forwarded from (engine spec §5.8), on the child's row; null otherwise.</param>
 public sealed record WorkflowEventDetail(
     TriggerKey TriggerId,
     string TriggerActor,
@@ -47,7 +48,8 @@ public sealed record WorkflowEventDetail(
     IReadOnlyList<string> Effects,
     WorkflowEventDelta Delta,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Via = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Decision = null)
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Decision = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? OnBehalfOf = null)
 {
     /// <summary>The tokens an agent run spent; null for any other event. Not written when null.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
@@ -120,7 +122,8 @@ public sealed record WorkflowEventDetail(
             [.. recorded.Effects.Select(e => e.Text)],
             WorkflowEventDelta.Of(recorded.Delta),
             recorded.Trigger.Via,
-            recorded.Trigger.Decision)
+            recorded.Trigger.Decision,
+            answer?.Forwarded?.Parent.Value)
         {
             Tokens = recorded.Trigger.Tokens,
         };
