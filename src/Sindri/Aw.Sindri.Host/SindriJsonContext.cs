@@ -144,7 +144,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(IssueChallengeResponse)), JsonSerializable(typeof(HarnessProbeReport)), JsonSerializable(typeof(ChallengeAnswer)), JsonSerializable(typeof(ContextResult))]
 [JsonSerializable(typeof(NodeView)), JsonSerializable(typeof(NeighborsView)), JsonSerializable(typeof(PathView)), JsonSerializable(typeof(ProbeSet))]
 [JsonSerializable(typeof(ProbeReport)), JsonSerializable(typeof(ProbeRun)), JsonSerializable(typeof(SourcesView)), JsonSerializable(typeof(SourceSyncStatus))]
-[JsonSerializable(typeof(McpToolError)), JsonSerializable(typeof(McpSourcesAnswer)), JsonSerializable(typeof(RegisterMcpResponse)), JsonSerializable(typeof(ContextSourcesSynced))]
+[JsonSerializable(typeof(McpToolError)), JsonSerializable(typeof(McpSourcesAnswer)), JsonSerializable(typeof(RegisterMcpResponse)), JsonSerializable(typeof(Core.Mcp.ProviderResult)), JsonSerializable(typeof(ContextSourcesSynced))]
 [JsonSerializable(typeof(ContextLinksSynced)), JsonSerializable(typeof(ContextMapImported)), JsonSerializable(typeof(MapDocument)), JsonSerializable(typeof(ReviewFile))]
 [JsonSerializable(typeof(MapStatusView)), JsonSerializable(typeof(MapExported)), JsonSerializable(typeof(MapHealth)), JsonSerializable(typeof(PurgeReport))]
 [JsonSerializable(typeof(ImportContextMapRequest)), JsonSerializable(typeof(ImportContextMapResponse))]

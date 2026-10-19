@@ -167,7 +167,7 @@ In `tests/Aw.Sindri.Tests/ContextCalls`:
 |---|---|---|---|
 | `SND-CONTEXT-020` | Forbidden | MCP tool error | Session reads off (S-1A's code, mapped) |
 | `SND-CONTEXT-024` | Invalid | CLI exit 1 | `mcp register`: not a profile repo |
-| `SND-CONTEXT-025` | Unavailable | CLI exit 2 | `mcp register --apply`: claude couldn't run or failed |
+| `SND-CONTEXT-025` | Unavailable | CLI exit 2 | `mcp register --apply`: a provider failed (claude couldn't run or exited non-zero, a project file is tracked or unparseable, a write failed); the others were still registered |
 | `SND-CONTEXT-026` | Conflict | doctor `warn` | A user-wide `sindri` MCP entry in a provider's config |
 
 Every facade error passes through to the MCP tool error unchanged (`isError`, text `<code> <message>`).
