@@ -46,9 +46,6 @@ internal static class ContextInputFixtures
             return new FactValue("fact:sha256:" + sha, sha, HeadSha: null);
         }
 
-        /// <summary>Replaces what is stored under the reference's sha with other content (a tampered file).</summary>
-        internal void Tamper(FactValue fact, string content) => _stored[fact.Sha256] = System.Text.Encoding.UTF8.GetBytes(content);
-
         public ValueTask<Result<ReadOnlyMemory<byte>>> Read(FactValue fact, CancellationToken cancellationToken) =>
             ValueTask.FromResult(_stored.TryGetValue(fact.Sha256, out var bytes)
                 ? (Result<ReadOnlyMemory<byte>>)(ReadOnlyMemory<byte>)bytes

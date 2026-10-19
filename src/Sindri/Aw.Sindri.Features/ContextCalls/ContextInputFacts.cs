@@ -14,7 +14,7 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// Turns a '{ fact: … }' argument into the fact's content. The engine hands a Step input the stored reference ('{ref, sha256, headSha}', the
 /// serialized <see cref="FactValue"/>), never the content; so an input that wants the value (anchors, a window) reads it here through the same
 /// <see cref="IFactContents"/> port the effects use, checks it against the reference's SHA-256, and parses it as JSON (a content that isn't JSON is its text).
-/// A reference that can't be read is an error that names the argument and the fact (an honest unavailable section); content that isn't what its SHA-256 says throws <see cref="StepInputChangedException"/>, which fails the fill with SND-WF-018.
+/// A reference that can't be read is an error that names the argument and the fact (an honest unavailable section); content that isn't what its SHA-256 says is SND-WF-018 (see <see cref="Fails"/>), which fails the fill.
 /// </summary>
 /// <param name="contents">The fact content port.</param>
 internal sealed class ContextInputFacts(IFactContents contents)
@@ -61,13 +61,13 @@ internal sealed class ContextInputFacts(IFactContents contents)
         var read = await contents.Read(fact, cancellationToken).ConfigureAwait(false);
         if (read.IsError)
         {
-            return ContextErrors.QueryInvalid.With($"the {name} argument names {fact.Ref}, which can't be read: {read.Error.Message}");
+            return ContextErrors.QueryInvalid.With($"the {name} argument names {fact.Ref}, which can't be read");
         }
 
         var actual = Convert.ToHexStringLower(SHA256.HashData(read.Value.Span));
         if (!string.Equals(actual, fact.Sha256, StringComparison.OrdinalIgnoreCase))
         {
-            throw new StepInputChangedException($"the {name} argument names {fact.Ref}, whose stored content does not match its sha256");
+            return WorkflowErrors.InputChanged.With($"{fact.Ref} changed: expected sha256 {fact.Sha256[..12]}, read {actual[..12]}");
         }
 
         try

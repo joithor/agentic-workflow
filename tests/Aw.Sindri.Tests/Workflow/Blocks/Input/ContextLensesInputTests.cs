@@ -185,4 +185,22 @@ public sealed class ContextLensesInputTests
         Assert.Contains("note: 1 of 2 anchors are not text", filled.Value.Sections["lenses"], StringComparison.Ordinal);
         Assert.Contains("note: depth is not a whole number", filled.Value.Sections["lenses"], StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task An_untrusted_label_the_engine_already_fenced_is_rendered_once_not_fenced_again()
+    {
+        const string fenced = "<untrusted source=\"map\">Context sources</untrusted>";
+        var lenses = new StubLenses(anchors =>
+        {
+            var view = ContextInputFixtures.SmallSet([.. anchors]);
+            return view with { Anchors = [.. view.Anchors.Select(a => a with { Label = fenced, Trust = Aw.Context.Core.Results.Trust.Untrusted })] };
+        });
+
+        var filled = await Input(lenses).Fill(Context(ContextInputFixtures.Web, "feature:a"), TestContext.Current.CancellationToken);
+
+        var text = filled.Value.Sections["lenses"];
+        Assert.Contains(fenced, text, StringComparison.Ordinal);
+        Assert.DoesNotContain("&lt;untrusted", text, StringComparison.Ordinal);
+        Assert.Equal(1, text.Split("<untrusted").Length - 1);
+    }
 }

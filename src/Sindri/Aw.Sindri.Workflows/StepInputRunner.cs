@@ -36,8 +36,8 @@ internal sealed partial class StepInputRunner(InputDispatch dispatch, StepInputR
             return WorkflowErrors.StepInputNoRuntime.With($"input {context.Input.Value} has no runtime in this build");
         }
 
-        var sections = (await dispatch(context, cancellationToken).ConfigureAwait(false)).Value;
-        return Shape(context, index, sections);
+        var sections = await dispatch(context, cancellationToken).ConfigureAwait(false);
+        return sections.IsError ? sections.Error : Shape(context, index, sections.Value);
     }
 
     private Result<FilledOutput> Shape(StepInputContext context, int index, InjectionSections filled)
