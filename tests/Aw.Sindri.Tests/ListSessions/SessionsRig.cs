@@ -30,7 +30,7 @@ internal sealed class SessionsRig
 
     public SliceHarness Base { get; } = new();
 
-    /// <summary>The 'launches' view the session reads look launches up in; fold a launch into it with <see cref="Aw.Sindri.Tests.Views.LaunchFolds"/>.</summary>
+    /// <summary>The 'launches' view the session reads look launches up in; fold a launch into it with <see cref="LaunchFolds"/>.</summary>
     public ViewsHarness Launches { get; } = new();
 
     /// <summary>The read port over <see cref="Launches"/>.</summary>
@@ -39,15 +39,15 @@ internal sealed class SessionsRig
     /// <summary>A launches view whose every read fails, as a locked or half-rebuilt views.db does.</summary>
     public sealed class UnreadableLaunches : ILaunchViews
     {
-        private static readonly Aw.Kernel.Error _broken = Aw.Kernel.KernelErrors.Unavailable.With("views.db is locked");
+        private static readonly Kernel.Error _broken = Kernel.KernelErrors.Unavailable.With("views.db is locked");
 
-        public ValueTask<Aw.Kernel.Result<LaunchRow?>> Get(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, CancellationToken cancellationToken) => ValueTask.FromResult<Aw.Kernel.Result<LaunchRow?>>(_broken);
+        public ValueTask<Kernel.Result<LaunchRow?>> Get(LaunchId launch, CancellationToken cancellationToken) => ValueTask.FromResult<Kernel.Result<LaunchRow?>>(_broken);
 
-        public ValueTask<Aw.Kernel.Result<IReadOnlyList<LaunchRow>>> ForItem(ItemId item, CancellationToken cancellationToken) => ValueTask.FromResult<Aw.Kernel.Result<IReadOnlyList<LaunchRow>>>(_broken);
+        public ValueTask<Kernel.Result<IReadOnlyList<LaunchRow>>> ForItem(ItemId item, CancellationToken cancellationToken) => ValueTask.FromResult<Kernel.Result<IReadOnlyList<LaunchRow>>>(_broken);
 
-        public ValueTask<Aw.Kernel.Result<IReadOnlyList<LaunchRow>>> ForRepo(RepoName repo, CancellationToken cancellationToken) => ValueTask.FromResult<Aw.Kernel.Result<IReadOnlyList<LaunchRow>>>(_broken);
+        public ValueTask<Kernel.Result<IReadOnlyList<LaunchRow>>> ForRepo(RepoName repo, CancellationToken cancellationToken) => ValueTask.FromResult<Kernel.Result<IReadOnlyList<LaunchRow>>>(_broken);
 
-        public ValueTask<Aw.Kernel.Result<IReadOnlyList<LaunchRow>>> Since(DateTimeOffset since, CancellationToken cancellationToken) => ValueTask.FromResult<Aw.Kernel.Result<IReadOnlyList<LaunchRow>>>(_broken);
+        public ValueTask<Kernel.Result<IReadOnlyList<LaunchRow>>> Since(DateTimeOffset since, CancellationToken cancellationToken) => ValueTask.FromResult<Kernel.Result<IReadOnlyList<LaunchRow>>>(_broken);
     }
 
     public InMemorySessionSnapshot Snapshot { get; } = new();
