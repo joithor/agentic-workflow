@@ -1401,6 +1401,9 @@ Aw.Sindri.Core.Jobs.JobState.Running = 0 -> Aw.Sindri.Core.Jobs.JobState
 Aw.Sindri.Core.Jobs.JobState.Succeeded = 1 -> Aw.Sindri.Core.Jobs.JobState
 Aw.Sindri.Core.Json.StrictEnumConverter<TEnum>
 Aw.Sindri.Core.Json.StrictEnumConverter<TEnum>.StrictEnumConverter() -> void
+Aw.Sindri.Core.Launches.LaunchStopEnd
+Aw.Sindri.Core.Launches.LaunchStopEnd.EndIfLive(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+Aw.Sindri.Core.Launches.LaunchStopEnd.LaunchStopEnd(Aw.Sindri.Core.Launches.LaunchSessionEvents! session, Aw.Sindri.Core.Launches.ILaunchViews! views) -> void
 Aw.Sindri.Core.Lease.HeldLease
 Aw.Sindri.Core.Lease.HeldLease.Clear() -> void
 Aw.Sindri.Core.Lease.HeldLease.Current.get -> Aw.Sindri.Core.Lease.LeaseGrant?
