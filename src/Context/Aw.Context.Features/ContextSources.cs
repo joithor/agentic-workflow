@@ -1,6 +1,7 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
+using Aw.Context.Core.Linking;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Context.Features.RefreshDocs;
@@ -11,12 +12,28 @@ using Aw.Kernel.Services;
 
 namespace Aw.Context.Features;
 
-/// <summary>The source verbs of the facade: status, the docs refresh and the sync (kept apart so the engine stays under the constructor limit).</summary>
+/// <summary>The source verbs of the facade: status, the docs refresh, the sync and the stored-state gap check (kept apart so the engine stays under the constructor limit).</summary>
 internal sealed class ContextSources(
     IService<SourcesStatusRequest, SourcesView> status,
     IService<RefreshDocsRequest, RefreshReport> refresh,
-    IService<SyncSourcesRequest, SyncReport> sync)
+    IService<SyncSourcesRequest, SyncReport> sync,
+    IIntentStore intents)
 {
+    private static readonly SourceId _onyx = SourceId.From("onyx");
+
+    // Only the stored sync state of the configured intent source: a source with no successful sync (never run, or only failed) is a gap.
+    public async ValueTask<Result<bool>> HasSyncGap(ContextScope scope, CancellationToken cancellationToken)
+    {
+        var settings = SettingsReader.Read(scope.Settings);
+        if (settings.IsError || settings.Value.Onyx is null)
+        {
+            return false;
+        }
+
+        var state = await intents.State(_onyx, cancellationToken).ConfigureAwait(false);
+        return state.IsError ? state.Error : state.Value.LastSync is null;
+    }
+
     public ValueTask<Result<SourcesView>> Status(ContextScope scope, CancellationToken cancellationToken) =>
         status.Handle(new SourcesStatusRequest(scope), cancellationToken);
 

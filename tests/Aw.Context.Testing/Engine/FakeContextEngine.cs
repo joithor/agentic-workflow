@@ -55,6 +55,10 @@ public sealed class FakeContextEngine : IContextEngine
         ValueTask.FromResult<Result<SourcesView>>(Down());
 
     /// <inheritdoc />
+    public ValueTask<Result<bool>> HasSyncGap(ContextScope scope, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<bool>>(Down());
+
+    /// <inheritdoc />
     public ValueTask<Result<RefreshReport>> Refresh(ContextScope scope, CancellationToken cancellationToken) =>
         ValueTask.FromResult<Result<RefreshReport>>(Down());
 

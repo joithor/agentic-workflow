@@ -1,6 +1,4 @@
-using Aw.Context.Core.Engine;
-using Aw.Context.Core.Linking;
-using Aw.Context.Core.Sources;
+using Aw.Context.Core.Facade;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
@@ -22,17 +20,15 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// A failure to start surfaces as a failed service run (needs-you 'failure:service:context-sync-gaps').
 /// </summary>
 /// <param name="scopes">The profile's scope and the caller.</param>
-/// <param name="intents">The stored sync state of the intent sources.</param>
+/// <param name="engine">The context engine: its stored-state gap check.</param>
 /// <param name="jobs">The 'jobs' view.</param>
 /// <param name="start">The SyncSources command chain.</param>
 /// <param name="clock">Dates the backoff.</param>
 /// <param name="logger">Logs a 409 that is not "the sync is already running".</param>
-internal sealed partial class ContextSyncGapsService(ContextScopes scopes, IIntentStore intents, IJobViews jobs, IService<SyncContextSourcesRequest, JobStartedResponse> start, TimeProvider clock, ILogger<ContextSyncGapsService> logger) : IScheduledService
+internal sealed partial class ContextSyncGapsService(ContextScopes scopes, IContextEngine engine, IJobViews jobs, IService<SyncContextSourcesRequest, JobStartedResponse> start, TimeProvider clock, ILogger<ContextSyncGapsService> logger) : IScheduledService
 {
     // The wait caps at 60 minutes from the fifth failure in a row (SyncGapDecision.Wait), so the newest few runs decide it.
     private const int RecentRuns = 8;
-
-    private static readonly SourceId _onyx = SourceId.From("onyx");
 
     internal static ServiceName ServiceId { get; } = ServiceName.From("context-sync-gaps");
 
@@ -51,7 +47,7 @@ internal sealed partial class ContextSyncGapsService(ContextScopes scopes, IInte
             return scope.IsError && scope.Error.Code != SindriErrors.ProfileNotApproved.Code ? scope.Error : ScheduledResult.Quiet;
         }
 
-        var gap = await Gap(scope.Value, cancellationToken).ConfigureAwait(false);
+        var gap = await engine.HasSyncGap(scope.Value, cancellationToken).ConfigureAwait(false);
         if (gap.IsError || !gap.Value)
         {
             return gap.IsError ? gap.Error : ScheduledResult.Quiet;
@@ -75,19 +71,6 @@ internal sealed partial class ContextSyncGapsService(ContextScopes scopes, IInte
         return SyncGapDecision.Decide(gap: true, running, finished, clock.GetUtcNow()) == SyncGapAction.Start
             ? await Start(cancellationToken).ConfigureAwait(false)
             : ScheduledResult.Quiet;
-    }
-
-    // A configured intent source that has never synced successfully (never run, or only failed runs): the stored state, no live probe.
-    private async ValueTask<Result<bool>> Gap(ContextScope scope, CancellationToken cancellationToken)
-    {
-        var settings = SettingsReader.Read(scope.Settings);
-        if (settings.IsError || settings.Value.Onyx is null)
-        {
-            return false;
-        }
-
-        var state = await intents.State(_onyx, cancellationToken).ConfigureAwait(false);
-        return state.IsError ? state.Error : state.Value.LastSync is null;
     }
 
     private async ValueTask<Result<ScheduledResult>> Start(CancellationToken cancellationToken)

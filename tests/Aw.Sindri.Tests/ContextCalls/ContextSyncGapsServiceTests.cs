@@ -1,8 +1,6 @@
 using System.Text.Json;
 using Aw.Context.Core.Lenses;
-using Aw.Context.Core.Linking;
 using Aw.Context.Core.Sources;
-using Aw.Context.Testing.Linking;
 using Microsoft.Extensions.Logging;
 using Aw.Kernel;
 using Aw.Kernel.Ids;
@@ -37,23 +35,22 @@ public sealed class ContextSyncGapsServiceTests
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     private const string OnyxSection = """{"sources":{"onyx":{"url":"http://127.0.0.1:3000","token":"on_live-key-0123","version":"v4.9.0"}}}""";
-    private static readonly SourceId _onyx = SourceId.From("onyx");
-    private readonly FakeIntentStore _intents = new();
+    private readonly GapEngineProxy _engine = GapEngineProxy.Create();
     private readonly CountingJobViews _counted;
     private readonly CapturingLogger _log = new();
 
-    private async Task<ContextSyncGapsService> Service(bool context, bool onyx = true)
+    private async Task<ContextSyncGapsService> Service(bool context)
     {
         _h.Clock.SetUtcNow(_now);
         var loaded = SliceHarness.Profile("5s");
-        loaded = loaded with { Profile = loaded.Profile with { Context = context ? JsonDocument.Parse(onyx ? OnyxSection : "{}").RootElement.Clone() : null } };
+        loaded = loaded with { Profile = loaded.Profile with { Context = context ? JsonDocument.Parse(OnyxSection).RootElement.Clone() : null } };
         _ = await _h.Profiles.Save(loaded, Ct);
-        return new ContextSyncGapsService(new ContextScopes(_h.Profiles, _h.Callers), _intents, _counted, _start, _h.Clock, _log);
+        return new ContextSyncGapsService(new ContextScopes(_h.Profiles, _h.Callers), _engine.Proxy, _counted, _start, _h.Clock, _log);
     }
 
-    private async Task Synced() => _ = await _intents.CommitPage(new IntentPage(_onyx, [], [], Cursor: null, _now), Ct);
+    private void Synced() => _engine.Gap = false;
 
-    private async Task FailedFirstSync() => _ = await _intents.RecordFailure(_onyx, "SND-CONTEXT-010", Ct);
+    private void FailedFirstSync() => _engine.Gap = true;   // a failed first sync is still a gap: the engine's stored-state check says so (SyncGapTests)
 
     private void Job(JobState state, TimeSpan endedAgo)
     {
@@ -86,21 +83,21 @@ public sealed class ContextSyncGapsServiceTests
     public async Task Nothing_to_do_without_a_context_section_a_synced_source_or_a_failed_attempt()
     {
         Assert.True((await Run(await Service(context: false))).Value.Idle);
-        Assert.True((await Run(await Service(context: true, onyx: false))).Value.Idle);
-        await Synced();
+        Synced();
         Assert.True((await Run(await Service(context: true))).Value.Idle);
         Assert.Empty(_start.Requests);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_quiet_tick_reads_only_the_stored_sync_state_and_no_job_view()
+    public async Task A_quiet_tick_asks_the_stored_state_check_once_and_reads_no_job_view()
     {
-        await Synced();
+        Synced();
         var service = await Service(context: true);
 
         var result = await Run(service);
 
         Assert.True(result.Value.Idle);
+        Assert.Equal(1, _engine.Calls);   // the proxy refuses every other engine call, so no live probe
         Assert.Equal(0, _counted.Lists);
         Assert.Empty(_log.Lines);
     }
@@ -108,7 +105,7 @@ public sealed class ContextSyncGapsServiceTests
     [Fact, Trait("Lane", "unit")]
     public async Task A_first_sync_that_failed_is_still_a_gap_and_is_retried_on_the_backoff_not_before()
     {
-        await FailedFirstSync();
+        FailedFirstSync();
         Job(JobState.Failed, TimeSpan.FromMinutes(3));   // ended 3 minutes ago: the first wait is 5
         var service = await Service(context: true);
         var waiting = await Run(service);
@@ -123,7 +120,7 @@ public sealed class ContextSyncGapsServiceTests
     [Fact, Trait("Lane", "unit")]
     public async Task A_first_sync_that_failed_with_no_job_on_record_is_started()
     {
-        await FailedFirstSync();
+        FailedFirstSync();
 
         var result = await Run(await Service(context: true));
 
@@ -147,7 +144,7 @@ public sealed class ContextSyncGapsServiceTests
     [Fact, Trait("Lane", "unit")]
     public async Task A_tick_with_no_approved_profile_is_quiet_not_a_failed_run()
     {
-        var service = new ContextSyncGapsService(new ContextScopes(_h.Profiles, _h.Callers), _intents, _counted, _start, _h.Clock, _log);
+        var service = new ContextSyncGapsService(new ContextScopes(_h.Profiles, _h.Callers), _engine.Proxy, _counted, _start, _h.Clock, _log);
 
         var result = await Run(service);
 

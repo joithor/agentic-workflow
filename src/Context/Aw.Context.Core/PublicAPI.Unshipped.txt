@@ -5893,3 +5893,4 @@ Aw.Context.Core.Lenses.LensRange.Depth.get -> int?
 Aw.Context.Core.Lenses.LensRange.Depth.init -> void
 Aw.Context.Core.Lenses.LensRange.Hops.get -> string?
 Aw.Context.Core.Lenses.LensRange.Hops.init -> void
+Aw.Context.Core.Facade.IContextEngine.HasSyncGap(Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
