@@ -100,10 +100,43 @@ internal sealed partial class RecipeWorkflow
     /// </summary>
     private async Task<WorkflowInstance> RunDeskStep(WorkflowInstance instance, OpenRun open, Interpreting context)
     {
-        if (await RunStep(instance, open, context.Recipe.States[instance.Frame.State]).ConfigureAwait(true) is not { } trigger)
+        try
         {
-            return await ApplySubmitted(instance, context).ConfigureAwait(true);
+            return await RunDeskStepOnce(instance, open, context).ConfigureAwait(true);
         }
+        catch (OperationCanceledException) when (_textsKept) // boundary: the workflow was cancelled while a Step with inputs was open; its texts go with it
+        {
+            await DropTexts(instance.Address.Value).ConfigureAwait(true);
+            throw;
+        }
+    }
+
+    // The Step is still open: apply what another Update submitted; a command that moved the instance out of the Step's state ends the Step's texts.
+    private async Task<WorkflowInstance> ApplyWhileOpen(WorkflowInstance instance, Interpreting context)
+    {
+        var applied = await ApplySubmitted(instance, context).ConfigureAwait(true);
+        if (!string.Equals(applied.Frame.State, instance.Frame.State, StringComparison.Ordinal))
+        {
+            await DropTexts(instance.Address.Value).ConfigureAwait(true);
+        }
+
+        return applied;
+    }
+
+    private async Task<WorkflowInstance> RunDeskStepOnce(WorkflowInstance instance, OpenRun open, Interpreting context)
+    {
+        var filling = await FillInputs(instance, open, context.Recipe.States[instance.Frame.State]).ConfigureAwait(true);
+        if (filling.Parked is { } parked)
+        {
+            return parked;
+        }
+
+        if ((filling.Failed ?? await RunStep(instance, open, context.Recipe.States[instance.Frame.State]).ConfigureAwait(true)) is not { } trigger)
+        {
+            return await ApplyWhileOpen(instance, context).ConfigureAwait(true);
+        }
+
+        await DropTexts(instance.Address.Value).ConfigureAwait(true);   // the Step ended: its report, its failure or its deadline
 
         var reportId = _reportId;
         _reportId = null;

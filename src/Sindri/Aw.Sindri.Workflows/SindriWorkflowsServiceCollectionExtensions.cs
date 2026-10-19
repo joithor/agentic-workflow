@@ -51,6 +51,11 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<IInstanceLiveness>(static sp => sp.GetRequiredService<TemporalInstanceDirectory>())    // engine P6 unit (d): a claim holder's liveness
             .AddSingleton<IRecipeWake, TemporalRecipeWake>()          // engine P6 integration: the revoke and drift wakes as the 'wake' signal (replaces P2's no-op)
             .AddSingleton<ProfileWorkflowTimes>()                    // engine P4 unit (e): S1-D11, workflow.deskTimeout and workflow.eventHold, read by LoadRecipe
+            .AddEventBridge();
+    }
+
+    /// <summary>The ledger-to-Temporal event bridge (its held window and cursor file) and the router stub (its cursor file and the 'item.routed' scheduled service), both of which run without a profile entry.</summary>
+    private static IServiceCollection AddEventBridge(this IServiceCollection services) => services
             .AddSingleton<HeldItemEvents>()                            // engine P4: the bridge's held window (visibility lag)
             .AddSingleton<EventBridgeCursor>()                         // engine P4 unit (d): the bridge's cursor file
             .AddScoped<IScheduledService, EventBridge>()               // engine P4 unit (d): the ledger-to-Temporal bridge
@@ -59,7 +64,6 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddScoped<ItemRouter>()
             .AddScoped<IScheduledService, RouterStub>()                // engine P7 unit U3: the router stub (spec §12), 'item.routed' for each workflow.item that starts
             .AddSingleton(RouterStub.BuiltIn);
-    }
 
     /// <summary>The activities the interpreter runs (RunStep, RecordEvent, ReadItemRepo, the effect activities, EvaluateGates) and the Step, effect and gate dispatchers they run blocks through.</summary>
     private static IServiceCollection AddInterpreterActivities(this IServiceCollection services) => services
@@ -75,6 +79,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
         .AddSingleton<ChildActivities>()                           // engine P7: LoadChildren
         .AddSingleton<EngineActivities>()
         .AddSingleton<EffectActivities>()                          // engine P6: RecordEffect, RecheckEffect, RunEffect
+        .AddStepInputRuntime()                                     // the Step inputs: FillInput, the in-memory texts and their runner
         .AddSingleton<WorkerActivities>();
 
     /// <summary>The <see cref="GateDispatch"/> registration: resolves the gate AddGate keyed by its id, in its own scope; null when this build has no runtime for it.</summary>
@@ -95,6 +100,24 @@ public static class SindriWorkflowsServiceCollectionExtensions
         await using (scope.ConfigureAwait(false))
         {
             return await scope.ServiceProvider.GetRequiredKeyedService<IBlockStep>(step.Value).Run(context, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>The Step inputs' run time: the in-memory texts (no text is stored), the one runner, the FillInput activity, and the in-process Step's context (no IStep runtime ships yet).</summary>
+    private static IServiceCollection AddStepInputRuntime(this IServiceCollection services) => services
+        .AddSingleton<IInjectionTexts, MemoryInjectionTexts>()
+        .AddSingleton<InputDispatch>(static provider => (context, ct) => FillScoped(provider, context, ct))
+        .AddSingleton<IStepInputRunner, StepInputRunner>()
+        .AddSingleton<IInjectionSources, TemporalInjectionSources>()
+        .AddSingleton<StepInputActivities>()
+        .AddSingleton<StepContexts>();
+
+    private static async ValueTask<InjectionSections> FillScoped(IServiceProvider provider, StepInputContext context, CancellationToken cancellationToken)
+    {
+        var scope = provider.CreateAsyncScope();
+        await using (scope.ConfigureAwait(false))
+        {
+            return await scope.ServiceProvider.GetRequiredKeyedService<IStepInput>(context.Input.Value).Fill(context, cancellationToken).ConfigureAwait(false);
         }
     }
 

@@ -77,6 +77,14 @@ public static class WorkflowErrors
     /// <summary>SND-WF-016: a Step input has no runtime in this build (missing, or a descriptor only); raised at approve and at start.</summary>
     public static readonly ErrorDefinition StepInputNoRuntime = new("SND-WF-016", ErrorKind.Unavailable, "A Step input has no runtime in this build");
 
+    /// <summary>SND-WF-017: the text a pull refilled differs from what the run recorded; nothing is served.</summary>
+    public static readonly ErrorDefinition InjectionChanged = new("SND-WF-017", ErrorKind.Conflict, "The input's text changed since the run filled it");
+
+    /// <summary>SND-WF-018: a Step input, re-run on a cache miss, filled differently from what the run recorded; the Step does not run on different data.</summary>
+    public static readonly ErrorDefinition InputChanged = new("SND-WF-018", ErrorKind.Conflict, "The input changed since it was recorded");
+
+    /// <summary>SND-WF-019: a filled plan is invalid: a bad section name, a section over 256 KiB, or a plan over 1 MiB.</summary>
+    public static readonly ErrorDefinition InjectionInvalid = new("SND-WF-019", ErrorKind.Invalid, "A Step input filled an invalid plan");
     /// <summary>SND-BLOCK-001: a fact a block Step reads can't be read; the run ends as step.failed with the message as its reason.</summary>
     public static readonly ErrorDefinition BlockFactUnreadable = new("SND-BLOCK-001", ErrorKind.Unavailable, "A fact a block Step reads can't be read");
 
@@ -93,7 +101,7 @@ public static class WorkflowErrors
         RecipeChallengeStale, RecipeUnreadable,
         InstanceNotFound, TriggerNotAllowed, GateRefused, StaleRunToken, AmbiguousAddress, MalformedReport,
         NonceRefused, NoRuntime, EffectNotAllowed, EarlierAttemptLive, WorkflowChallengeStale, ItemMismatch, EffectFailed,
-        StepInputNoRuntime, BlockFactUnreadable, BlockProfileUnreadable, BlockRepoUnreadable,
+        StepInputNoRuntime, InjectionChanged, InputChanged, InjectionInvalid, BlockFactUnreadable, BlockProfileUnreadable, BlockRepoUnreadable,
     ];
 
     /// <summary>
