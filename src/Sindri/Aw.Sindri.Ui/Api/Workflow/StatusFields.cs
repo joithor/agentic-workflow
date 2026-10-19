@@ -13,6 +13,7 @@ namespace Aw.Sindri.Ui.Api.Workflow;
 /// <param name="Injection">The injection sections, as served.</param>
 /// <param name="Commands">Commands, as served.</param>
 /// <param name="Text">Text, as served.</param>
+/// <param name="Run">The agent run the state is on, or null (omitted by a server before engine P8, and when no agent runs the Step).</param>
 internal sealed record StatusFields(
     StatusHeader Header,
     string? Next,
@@ -25,7 +26,8 @@ internal sealed record StatusFields(
     StatusPaused? Paused,
     IReadOnlyList<StatusCommand> Commands,
     string Text,
-    IReadOnlyList<StatusInjection>? Injection = null)
+    IReadOnlyList<StatusInjection>? Injection = null,
+    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] StatusRun? Run = null)
 {
     /// <summary>The injection sections, never null.</summary>
     public IReadOnlyList<StatusInjection> Injection { get; init; } = Injection ?? [];
