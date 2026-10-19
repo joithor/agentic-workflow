@@ -65,6 +65,15 @@ public sealed class RecognizersTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Minimal_api_routes_in_csharp_give_a_route_surface_per_method_and_path()
+    {
+        const string Text = "group.MapGet(\"/items/{itemId}\", h);\napp.MapPost( \"/jobs/{jobId}/cancel\", h);\nroutes.MapDelete(\"/x\", h);\nMapPatch(\"no-slash\", h);";
+
+        Assert.Equal(["surface:route/DELETE:/x", "surface:route/GET:/items/{itemId}", "surface:route/POST:/jobs/{jobId}/cancel"], Keys("src/Pkg/Host/Endpoints/ItemEndpoints.cs", Text));
+        Assert.Empty(Keys("tests/Pkg.Tests/ItemEndpointsTests.cs", Text));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_component_gets_a_pane_dialog_or_screen_surface_by_its_name()
     {
         const string Text = "export function TabStrip() {}\nexport const RestoreDialog = () => null;\nexport default class SettingsScreen {}";
