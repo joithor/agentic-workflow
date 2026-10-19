@@ -376,7 +376,7 @@
         "state": "degraded",
         "reason": null,
         "code": "SND-CONTEXT-152",
-        "asOf": "2026-01-01T00:00:00.0000000Z"
+        "asOf": "2026-01-01T00:00:01.0000000Z"
       },
       {
         "id": "lexical-schema",
