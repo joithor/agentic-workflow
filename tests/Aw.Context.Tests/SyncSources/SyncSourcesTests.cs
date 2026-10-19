@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
@@ -194,6 +195,41 @@ public sealed class SyncSourcesTests
         var layer = (await world.Intents.Layer(Ct)).Value;
         Assert.DoesNotContain(layer.Records, r => r.Key.Value == Spl103);
         Assert.NotEmpty(layer.Records);
+    }
+
+    [Fact]
+    public async Task Sync_stores_the_fetched_records_created_at()
+    {
+        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions
+        {
+            OnyxPlant = static json => Regex.Replace(json, "\"created_at\"\\s*:\\s*\"[^\"]*\"", "\"created_at\":\"2026-07-02T09:00:00.000Z\"", RegexOptions.ExplicitCapture | RegexOptions.CultureInvariant, TimeSpan.FromSeconds(1)),
+        });
+        using var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
+        using var world = new MapWorld(intent: harness.Source);
+        _ = await world.ImportFixture();
+
+        _ = await world.Engine.Sync("onyx", _scope, Ct);
+
+        var record = (await world.Intents.Layer(Ct)).Value.Records.Single(r => r.Key.Value == Spl103);
+        Assert.Equal(new DateTimeOffset(2026, 7, 2, 9, 0, 0, TimeSpan.Zero), record.CreatedAt);
+    }
+
+    [Fact]
+    public async Task Sync_with_no_created_at_stores_null()
+    {
+        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions
+        {
+            OnyxPlant = static json => json.Replace("\"created_at\"", "\"created_elsewhere\"", StringComparison.Ordinal),
+        });
+        using var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
+        using var world = new MapWorld(intent: harness.Source);
+        _ = await world.ImportFixture();
+
+        _ = await world.Engine.Sync("onyx", _scope, Ct);
+
+        var records = (await world.Intents.Layer(Ct)).Value.Records;
+        Assert.NotEmpty(records);
+        Assert.All(records, r => Assert.Null(r.CreatedAt));
     }
 
     [Fact]

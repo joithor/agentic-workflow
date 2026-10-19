@@ -662,6 +662,7 @@ There is no decision, desk, protected, job or step-report tool, and no `sindri_c
 | `SND-API-012` | Every event stream the caller may open is open: 16 in all, 4 held for the human (429); re-query every 5 s instead |
 | `SND-AUTH-001` | A `human` caller without the valid per-start token: missing or stale (403; restart the app or rerun the command), or a `prover` label outside a temp or proof home |
 | `SND-AUTH-002` | The caller may not run the command's action class (403; only the `command.handled` audit row is written) |
+| `SND-AUTH-003` | The launch secret doesn't match an open launch, or its launch already ended (403; API P10a, `session wrap` calls; a takeover check on the secret arrives with `step-report` in a later phase) |
 | `SND-CLI-001` | Unknown command |
 | `SND-CLI-002` | `sindri serve` didn't come up after starting it, or serve couldn't bring up the Temporal dev server (the pinned CLI is missing, it exited, or it didn't answer within 30 s), or `sindri stop` couldn't stop it |
 | `SND-CLI-003` | Bad input: a CLI argument or setting that is malformed (a profile hash that isn't 64 hex digits, an `AW_SINDRI_PORT` that isn't 0..65535), or an API request body or value the control plane refused (a 400) |
@@ -672,7 +673,19 @@ There is no decision, desk, protected, job or step-report tool, and no `sindri_c
 | `SND-REQ-002` | Too many open requests: 20 in the repo or 50 in all, counted for a `session` caller (429; API P4) |
 | `SND-DEC-404` | No decision has that id, or a `session` caller asked for one outside its repo (404; API P4) |
 | `SND-DEC-001` | The choice isn't one of the decision's options, or the note is over 2,000 characters (400; API P4) |
+| `SND-LAUNCH-001` | The terminal viewer didn't open the launch (503). On a tmux host the session keeps running and the code is on `launch.started`'s `viewer`; with no host it is a `launch.failed` (API P10a) |
+| `SND-LAUNCH-002` | No terminal viewer is available here: no Warp, the template's binary isn't on `PATH`, or no GUI session (503; API P10a) |
+| `SND-LAUNCH-003` | The agent CLI isn't on the login `PATH`, or the target isn't in the catalog (`detail: not-in-catalog`) (404; API P10a) |
+| `SND-LAUNCH-004` | The item's repo isn't on disk (404; API P10a) |
+| `SND-LAUNCH-006` | No session to resume or attach to; the mode falls back to Open (404; API P10a). `-005` is unassigned and stays unused |
+| `SND-LAUNCH-007` | The launch was interrupted: Sindri restarted mid-launch, or the request passed its 30 s deadline; never retried on its own (503; API P10a) |
+| `SND-LAUNCH-008` | A launch is already in progress for the item (409; API P10a) |
+| `SND-LAUNCH-009` | The launch timed out: the 4 s host start (`launch.failed`, `detail.stage: host`), the viewer's window (a viewer outcome), or E-1's 10 s backstop (`stage: backstop`) (504; API P10a) |
+| `SND-LAUNCH-010` | The target's spend today reached its `dailyBudget`, or a `dailyBudget` is set on a target with `usage: none` (`detail: no-usage-reader`) (429; API P10a) |
 | `SND-LAUNCH-011` | `launcher.json` (or an agent entry in it) isn't valid: an unknown key in a section, a bad kind, a placeholder outside the closed set, an entry that lacks `label`, `bin`, `open` or `sessionId`, a `sessions.pollSeconds` outside 1 to 30. The collector reads the built-in agents and the default settings instead and shows one problem row (collector CO-2a). Each error names the section and key at fault (`sessions.pollSeconds is 1 to 30`), so a fix is per section even though the fallback is the whole file |
+| `SND-LAUNCH-012` | The agent entry isn't approved for unattended Steps: `detail.reason` is `not-approved` or `hash-changed`, with the `current` and `approved` hashes (403; launcher SL8; API P10a) |
+| `SND-LAUNCH-013` | A Step asked for a model or a policy and the entry's matching form is `none`; nothing launches (400; launcher L-17; API P10a) |
+| `SND-LAUNCH-404` | No launch has that id, or a session caller may not see it: `GET /sindri/launches/{launchId}` (404; API P10a) |
 | `SND-SESSION-001` | One of the session collector's sources failed or a pass overran its 500 ms budget: a problem row beside a normal list, never an exception message (collector CO-2a) |
 | `SND-SESSION-002` | The session collector can't run here; the `detail` is `unsupported-platform`, `proc-unreadable` or `disabled`, and only these replace the list (collector CO-2a; the routes `GET /sessions` and `GET /sessions/{provider}/{id}` answer it, CO-3) |
 | `SND-SESSION-003` | A test override (`AW_SESSIONS_PROC_ROOT`, `AW_SESSIONS_CLAUDE_DIR`) is set in this run: informational, one problem row beside a normal list; pruning of hook files is off and focus answers `copy` (collector CO-2a) |
@@ -732,7 +745,10 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 | `SND-WF-013` | conflict | A workflow challenge expired, or its subject changed |
 | `SND-WF-014` | invalid | `--item` and `fact:item`'s `id` differ |
 | `SND-WF-015` | unavailable | An effect couldn't be sent: its block replied an undeclared outcome, or every retry failed; the instance parks (dispatch) |
-| `SND-WF-016` | unavailable | A Step input has a descriptor but no runtime in this build; refused at `recipe approve` and at `workflow start` |
+| `SND-WF-016` | unavailable | A Step input has a descriptor but no runtime in this build; refused at `recipe approve` and at `workflow start`; if the runtime is gone after approval, the Step's `FillInput` parks the instance (`SND-WF-010`, the question names 016) and a restart tries again |
+| `SND-WF-017` | conflict | The text a pull refilled differs from what the run recorded; nothing is served (re-run the Step) |
+| `SND-WF-018` | conflict | A Step input, re-run on a cache miss, differs from what the run recorded; the Step does not run on different data (re-run the Step) |
+| `SND-WF-019` | invalid | A Step input filled an invalid plan: a bad section name, a section over 256 KiB, a typed result over 256 KiB, or a plan over 1 MiB; the Step fails |
 | `SND-BLOCK-001` | unavailable | A fact a block Step reads can't be read; the run ends as `step.failed` with the message as its reason |
 | `SND-BLOCK-002` | unavailable | The approved profile a block Step's providers come from can't be read; the run ends as `step.failed` `profile-unreadable: <code>` |
 | `SND-BLOCK-003` | unavailable | The item's repo (`fact:item`) couldn't be read, so a block Step's per-repo keys can't be resolved; the run ends as `step.failed` `repo-unreadable`, never with the box's list |
@@ -811,4 +827,4 @@ scripts/binaries-lock.sh fetch temporal && scripts/binaries-lock.sh fetch tempor
 bash src/Sindri/aot-smoke/run.sh                                                # publish framework-dependent and drive the published apphost (expected.txt)
 ```
 
-The session launcher (`launcher.json`, the agent catalog, terminal templates and the T3 Code fallback) is in `docs/csharp/sindri-launcher.md`; the profile reference is in `docs/csharp/sindri-profile.md`.
+The item detail route (`GET /sindri/items/{itemId}`) carries a `launch` block (modes, default agent, attach and resume targets, confirm, blockers; UI spec E-2), and doctor prints `launcher`, `launcher:agents` and `launcher:adoption` rows. The session launcher (`launcher.json`, the agent catalog, terminal templates and the T3 Code fallback) is in `docs/csharp/sindri-launcher.md`; the profile reference is in `docs/csharp/sindri-profile.md`.

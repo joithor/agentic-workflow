@@ -6,4 +6,5 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="Items">ReadItemRepo and ReadSubject (local activities on start).</param>
 /// <param name="Effects">RecordEffect, RecheckEffect and RunEffect (engine P6).</param>
 /// <param name="Engine">EvaluateGates and ReleaseClaim (engine P7).</param>
-internal sealed record WorkerActivities(RunStepActivities Steps, RecordEventActivities Events, FactReadActivities Items, EffectActivities Effects, EngineActivities Engine);
+/// <param name="Inputs">The Step input activity: FillInput, and the local DropInjection.</param>
+internal sealed record WorkerActivities(RunStepActivities Steps, RecordEventActivities Events, FactReadActivities Items, EffectActivities Effects, EngineActivities Engine, StepInputActivities Inputs);

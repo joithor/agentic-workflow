@@ -11,7 +11,7 @@ internal sealed class StubGraphify : IDisposable
 {
     private readonly string _folder = Directory.CreateTempSubdirectory("aw-stub-graphify-").FullName;
 
-    public StubGraphify(string version)
+    public StubGraphify(string version, bool hangs = false)
     {
         RanMarker = Path.Combine(_folder, "ran");
         var script = Path.Combine(_folder, "graphify");
@@ -19,6 +19,7 @@ internal sealed class StubGraphify : IDisposable
         [
             "#!/bin/sh",
             $"if [ \"$1\" = \"--version\" ]; then echo \"graphify {version}\"; exit 0; fi",
+            .. hangs ? (string[])["sleep 300"] : [],   // a run that never ends: the caller's deadline has to cut it
             $"echo \"$HOME|$TMPDIR|$(stat -c %a \"$HOME\" 2>/dev/null || stat -f %Lp \"$HOME\")\" > \"{RanMarker}\"",
             "root=\"$2\"",
             "mkdir -p \"$root/graphify-out\"",
