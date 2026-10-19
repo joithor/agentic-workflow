@@ -42,6 +42,15 @@ public sealed class ShippedBlocksTests
         Assert.Equal(["claim.created", "item.routed", "notify.delivered"], catalog.Events.Select(e => e.Kind.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
+    /// <summary>Engine P8 Q4: the produce Step runs on an agent session when the build has the runtime, and stays deskCapable so a box with no agent target runs it at the desk (D7).</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void The_produce_step_runs_on_an_agent_and_stays_desk_capable()
+    {
+        var produce = FixtureCatalog.Shipped().Find(BlockId.From("step.produce"));
+
+        Assert.Equal((BlockRuntime.Agent, true), (produce?.Runtime, produce?.DeskCapable));
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void No_shipped_descriptor_says_human_only_false()
     {
@@ -143,7 +152,7 @@ public sealed class ShippedBlocksTests
     [Fact, Trait("Lane", "unit")]
     public void A_descriptor_without_the_new_fields_serializes_without_them()
     {
-        var json = System.Text.Encoding.UTF8.GetString(AwJson.Serialize(FixtureCatalog.Shipped().Find(BlockId.From("step.produce")), SliceHarness.Json));
+        var json = System.Text.Encoding.UTF8.GetString(AwJson.Serialize(FixtureCatalog.Shipped().Find(BlockId.From("step.checks")), SliceHarness.Json));
 
         Assert.DoesNotContain("outcomesFrom", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("inputsFrom", json, StringComparison.OrdinalIgnoreCase);
