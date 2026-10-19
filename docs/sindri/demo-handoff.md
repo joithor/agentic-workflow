@@ -53,9 +53,11 @@ context:
   repos: [<work-repo>]
   docs: { globs: ["AGENTS.md", "docs/**/*.md", "planning/**/*.md"] }   # adjust to where the repo's docs live
   sessions: { enabled: true }               # required: off means every context_* call is SND-CONTEXT-020
+workflow:
+  agent: { target: claude-code }            # P8 (#405): agent Steps run in launched sessions. Absent: every Step is completed at the desk
 ```
 
-Optional: `api: { port: <n> }` to pin the port. The full key list is in `docs/csharp/sindri-profile.md`.
+`workflow.agent.target` is any agent id by pattern; `claude-code` is the built-in entry. Its model and policy forms are already set in `config/launcher/builtins.json` (`claude-flag`, `claude-settings-file`), so the demo needs **no `launcher.json` edit**. Only an entry you add yourself must set `model` and `policy`; one without a policy form parks its Steps with `SND-LAUNCH-013` (a Step never launches unrestricted). See `docs/csharp/sindri-launcher.md`. Setting the target alone switches agents on. Optional: `api: { port: <n> }` to pin the port. The full key list is in `docs/csharp/sindri-profile.md`.
 
 1. Agent: `sindri profile validate`. Expect `Profile valid ... hash <64 hex>, not approved`.
 2. Agent: start the control plane: `sindri-app` (opens the app) or `sindri --headless` (no app, about 3 s). Use `--headless` from an agent session. Do not run `serve` from an agent session.
@@ -159,14 +161,35 @@ Onyx is the intent-source engine (trackers, notes). The demo does not need it: r
 
 **Merged (on main bb26d9a):** #367 (register fix), #371 P7 (child workflows start), #356, #364, #354 (the optional `aw:fleet` hook, `scripts/install-fleet.sh --provider claude`), #372, #377, #381, #369 (Agents page), #379 (children view), #351 (Start form), #376 (ship and docs-sync stations), #387, #384, #380, #388, #362 (`sindri scoping check` and `show`), #348, #357, #360, #361 (the Onyx P2 to P5 stack), #295 (the launcher: open and attach), #370 (PR-B), #394 (S-LB2: the shipped `workflow.scoping` approves), #396 (SC-K2: `sindri scoping desk <block>` with read-brief, anchor, gather, reanchor and propose, plus the ScopingView and packet-file routes), #378 (history lens), #365 (code lens), #391 (`workflow.line`), #386 (sindri-app connects MCP for Claude Code, Codex and Cursor, including the Codex trust row), #392 (row titles) and #390.
 
+**Merged since:** #405 (P8: agents run the line's agent Steps) and #403 (the map extractor reads C# API routes). Main was `ea2bc59`.
+
 **Still pending (PENDING):**
-- P8 (agents running Steps) is paused tonight. **Every Step is completed at the desk** with `sindri workflow complete ...`.
-- #397 (the agent-run Step view) is not merged.
+- #397 (the agent-run Step view) was not merged when this was written. Check: `gh pr view 397 --repo jthorare/agentic-workflow --json state`.
+- U9 (the sandbox half of P8) is a follow-on: **agents run unsandboxed until SB-5.**
 - Rough edge: "1 done today" can show with nothing finished (engine counts).
 
 `recipes/sindri/` has `workflow.line` and its stations: `workflow.scoping`, `workflow.design`, `workflow.plan`, `workflow.phase`, `workflow.ship`, `workflow.docs-sync`. The line is `LN-WF8`; its stations run in sequence as child workflows: scoping, design, plan, phase, docs-sync.
 
-**Main path.** Approve `workflow.idea-to-brief` first, then `workflow.scoping` (else `RCP-CHILD-001`). The shipped file approves on this build (no variant needed). Start `workflow.line`, or `workflow.scoping` alone, with a `fact:item` that carries `{id, repo, spec}`. Without a repo the start fails `SND-CONTEXT-045`. Read the exact inputs with `sindri recipe show <id>` (for `workflow.line` they are `fact:scopeInput` and `fact:lineContext`; `SND-CLI-003` names any missing input). Then complete each Step at the desk; the app follows every transition live. Children appear only on instances started after P7. The scoping desk has its own verb: `sindri scoping desk <block id> --facts <dir> --out <dir> [--repo-root <dir> [--notes-dir <dir>]] [--query <file>] [--lenses <file>] [--code <file>] [--history <file>] [--propose <file>] [--json]`. The exact block names in `DeskBlocks.cs` are `intake`, `check`, `challenge-log`, `evidence`, `record` (or `interview.record`), `gather`, `read-brief`, `anchor`, `reanchor`, `propose` and `seed` (or `brief.seed`). Each also works as its full id (`step.scope.<name>`, `step.interview.record`, `step.brief.seed`). The context-reading ones are `read-brief`, `anchor`, `reanchor`, `gather` and `propose`. For the start command, `sindri recipe show <id>` lists the inputs. A scoping start needs `fact:item` with `{id, repo, spec}`; without it the start fails `SND-CONTEXT-045`.
+**Main path: agents run the line (P8, #405).**
+
+1. Profile: `workflow.agent.target: claude-code` (section 3). The owner re-approves the profile (`sindri profile approve`, typed line) after adding it.
+2. Re-approve the recipes `sindri recipe list --stale` lists. Four Step descriptors moved (`step.produce` is now `Runtime: agent`; `step.build.red`, `step.build.green` and `step.prove.holdout` gained `WriteScope`), so expect `workflow.step`, `workflow.build`, `workflow.prove`, `workflow.implement`, plus recipes that use `step.produce`, then their parents (`workflow.phase`, `workflow.line`). Children first. **Owner types** each: `sindri recipe approve <file|id@hash>` and the typed line. Until then, reports on instances of those recipes are refused with `SND-RECIPE-006`. Before that, approve `workflow.idea-to-brief` first, then `workflow.scoping` (else `RCP-CHILD-001`).
+3. Start `workflow.line` (**owner types**) with a `fact:item` that carries `{id, repo, spec}` (without a repo: `SND-CONTEXT-045`). `sindri recipe show workflow.line` lists the inputs (`fact:scopeInput`, `fact:lineContext`); `SND-CLI-003` names any missing one.
+4. Watch the scoping child's agent Steps run: the Workflows instance frame (the states band advances, events read `via agent · tokens N`, `sindri workflow status <address>` shows `run agent LCH-...`) and the Agents page (`G A`), where the launched session appears.
+5. **Desk-only Steps remain.** P8 puts agents on the agent Steps only. Block Steps and human-only Steps still open a desk task, and the owner completes them: `sindri workflow status <address>` prints the command; run `sindri workflow complete <address> --run <token> --outcome <o> [--output fact:<name>=<file>]...`. On scoping that is most of the early and late states (intake, read-brief, anchor, gather, check, reanchor, propose, evidence, freeze, and more). The scoping desk verb is below. If agents are not available, every Step is at the desk: that is Plan B.
+
+The scoping desk has its own verb: `sindri scoping desk <block id> --facts <dir> --out <dir> [--repo-root <dir> [--notes-dir <dir>]] [--query <file>] [--lenses <file>] [--code <file>] [--history <file>] [--propose <file>] [--json]`. The exact block names in `DeskBlocks.cs` are `intake`, `check`, `challenge-log`, `evidence`, `record` (or `interview.record`), `gather`, `read-brief`, `anchor`, `reanchor`, `propose` and `seed` (or `brief.seed`). Each also works as its full id (`step.scope.<name>`, `step.interview.record`, `step.brief.seed`). The context-reading ones are `read-brief`, `anchor`, `reanchor`, `gather` and `propose`.
+
+**Known rough edges of the agent-run line (with workarounds):**
+
+| Rough edge | Workaround |
+|---|---|
+| Steps park on the token budget. A Step's count includes cache reads, which are re-counted every turn, so a small Step can show 150k to 450k tokens against the default 100k budget. | Answer each budget park with `sindri workflow answer <address> --grant-tokens <n>` (at most 100000 per grant). There is no per-Step budget key in the profile; budgets are recipe-level and changing one needs a re-approval, so grant instead |
+| Claude's first-run folder-trust prompt blocks an unattended launch in a new worktree. | Accept it by hand in the launched session once (attach from the Agents page or `sindri open`), or pre-trust the agent worktree folder in Claude before the demo. A product answer is a follow-up in the launcher |
+| Agents run unsandboxed until SB-5. | Say so; run the demo on a repo where that is acceptable |
+| Block Steps and human-only Steps are not run by agents. | The owner completes them at the desk, as above |
+| Usage may be attributed to the wrong launch, and a finished Step's session can linger about 40 s. | Cosmetic; known follow-ups |
+| A human cannot report during a takeover. | Hand back first (`sindri handback <item-or-address>`), then the agent reports |
 
 *Older builds (before #394):* the shipped `workflow.scoping` fails approval with `SND-WF-016`. A workaround was to copy `recipes/sindri/workflow.scoping.yaml`, delete the three `input.context.*` lines from its `gather` state, validate the copy and register that. Do not use it on main.
 
@@ -201,13 +224,13 @@ Do this twice: once now, once the morning of the demo after the 08:00 pull. The 
 | 2 | Agent | `sindri status`; `sindri context sources status`; `sindri context map status` | healthy; `repo-docs ... ok`; `map vN current` | Home (the health strip opens Health) |
 | 3 | Agent, new session in `<path>` | the prompt below | the session calls the Sindri tools in order and returns a cited plan | none (the terminal) |
 | 4 | Agent | `sindri item add "<project title>" --repo <work-repo>` | an `ITM-...` id | Home (Queued) |
-| 5 | Owner | `sindri workflow start workflow.line --item <ITM-id> --fact <inputs>` (exact inputs from `sindri recipe show workflow.line`; `SND-CLI-003` names any missing input) | `ITM-.../line/1  workflow.line@<hash>  v1 ...` | Workflows (`G W`): the instance, its states band |
+| 5 | Owner | (profile has `workflow.agent.target`, stale recipes re-approved) `sindri workflow start workflow.line --item <ITM-id> --fact <inputs>` (exact inputs from `sindri recipe show workflow.line`; `SND-CLI-003` names any missing input) | `ITM-.../line/1  workflow.line@<hash>  v1 ...` | Workflows (`G W`): the instance, its states band |
 | 6 | Owner | Open the instance in the app (Enter on the row) | header, subject, states band with the current state, copyable next command | Workflows: the instance frame; tabs, facts, children |
-| 7 | Agent | `sindri workflow status <address>` | prints the next command | read only |
-| 8 | Owner | run that command, e.g. `sindri workflow complete <address> --run <token> --outcome <o> --output fact:<name>=<file>` | the state advances | Home strip and the instance frame update live |
-| 9 | Owner | repeat 7 and 8 for each Step | each station shows as a child while the parent waits on it | the children panel |
+| 7 | Agent | `sindri workflow status <address>` | an agent Step shows `run agent LCH-...`; a desk Step prints the next command | read only; Agents page `G A` shows the session |
+| 8 | Owner | for a desk Step, run that command, e.g. `sindri workflow complete <address> --run <token> --outcome <o> --output fact:<name>=<file>` | the state advances | Home strip and the instance frame update live |
+| 9 | Owner | repeat 7 and 8; grant tokens or accept the trust prompt when a Step parks | each station shows as a child while the parent waits on it | the children panel |
 
-### Page tour (final, on main bb26d9a)
+### Page tour (final, on main bb26d9a; the Agents page is where P8 sessions show)
 
 Launch with `scripts/sindri-app.sh` (bare `sindri` also opens the app). Start it from a folder that stays put. Click into a text box before you type: keys typed before focus reaches the box go to the window and can create junk queue items.
 
@@ -242,7 +265,7 @@ Every page: `⌘K` or `Ctrl+K` palette, `?` shortcuts sheet, `/` filter, `J`/`K`
 - The Context page does not open a scope yet (R8-14, U9e).
 - The agent-run Step view (#397) is not merged.
 
-Every Step runs at the desk, attended: P8 (agents running Steps) is paused, so the owner completes each Step with `workflow complete`. The app shows each command as copyable CLI text; the Start form (`N`, #351) can start an instance from the app.
+Every Step runs at the desk, attended: Block Steps and human-only Steps are still completed by the owner with `workflow complete`. The app shows each command as copyable CLI text; the Start form (`N`, #351) can start an instance from the app.
 
 The prompt for step 3. It works because it names the order of tools and tells the model to take anchor keys from the query:
 
@@ -272,12 +295,12 @@ An interactive agent asks to approve the five `mcp__sindri__context_*` tools onc
 
 ## Plan B
 
-Written for main `bb26d9a`. Plan B now covers two cases only.
+Written for main `ea2bc59`. Plan B covers two cases.
 
-1. **P8 is not merged, so agents do not run Steps.** Every Step is completed at the desk. The owner (or you, for reads) uses `sindri workflow status <address>` to get the next command, then runs `sindri workflow complete <address> --run <token> --outcome <o> [--output fact:<name>=<file>]...`. The scoping Steps have the desk verb `sindri scoping desk <block> ...`, which runs a block over files you hand it. Say this on stage: the app follows each transition live; no agent is running the Steps tonight.
-2. **The work repo's context map is thin.** Check with `sindri context map status` (nodes and edges) and `sindri context query "<project description>"` (anchors and cited records, not "0 items in 0 sections"). If it is thin or empty, author and import a small map as in section 5b: an authored file outside any worktree, `evidence` on every `implements` and `tests` edge, then the owner types `sindri context map import <file>` and its typed line. Do this before 09:00, not on stage.
+1. **Agents cannot run the Steps** (the launcher fails, the trust prompt or budget parks keep recurring, or `workflow.agent.target` cannot be set): remove the target from the profile (the owner re-approves), and every Step is completed at the desk. Use `sindri workflow status <address>` for the next command, then `sindri workflow complete <address> --run <token> --outcome <o> [--output fact:<name>=<file>]...`; the scoping Steps have `sindri scoping desk <block> ...` (section 6). Say on stage that nothing is running the Steps; the app still follows each transition live.
+2. **The work repo's context map is thin.** Check with `sindri context map status` and `sindri context query "<project description>"` (anchors and cited records, not "0 items in 0 sections"). If thin or empty, author and import a small map as in section 5b before 09:00. Do not do this on stage.
 
-Everything else that was Plan B on earlier drafts (the scoping variant, the line recipes, the gold-facts check) is no longer a fallback: those pieces are on main. The gold facts still make a short demo of their own: `sindri scoping check --facts tests/fixtures/line/gold/scope/expiry` and `sindri scoping show --facts tests/fixtures/line/gold/scope/expiry` (a plain terminal; from an agent session the output is fenced as untrusted text).
+The gold facts make a short demo of their own: `sindri scoping check --facts tests/fixtures/line/gold/scope/expiry` and `sindri scoping show --facts tests/fixtures/line/gold/scope/expiry` (a plain terminal; from an agent session the output is fenced as untrusted text).
 
 ## 8. Verify before 09:00 PT
 
@@ -287,8 +310,11 @@ Tick each. Report any miss to the owner at once.
 - [ ] `sindri-app` is started: `sindri-app status` shows `Running` and `health healthy`.
 - [ ] The three providers are registered (Claude Code, Codex, Cursor). `claude mcp get sindri` shows `Connected`; the Codex and Cursor entries (`.codex/config.toml` with its trust row, `.cursor/mcp.json`) point at the port `sindri status` shows. If the port changed, `sindri mcp register --apply --providers all --repo <work-repo>` (owner types it) and a new agent session.
 - [ ] The profile is approved and unchanged since (`context.sessions.enabled: true`), and `sindri context sources status` shows `repo-docs <work-repo> ok`.
+- [ ] A fresh `sindri context map build` has run on this main (#403 extracts C# API routes; it takes a heavy-job slot, about 3 to 4 minutes on a quiet box, `SND-CONTEXT-040` if the box is busy), then `sindri context map review --accept-deterministic`, then the owner types `sindri context map promote` and its typed line. If the result is thin, author and import one (Plan B).
 - [ ] The map is promoted or imported: `sindri context map status` shows `map vN current`, and at least one anchor resolves: `sindri context query "<project description>"` returns an anchor key and `sindri context lenses <anchor-key> --json` answers it (from a real terminal).
+- [ ] The profile has `workflow.agent.target: claude-code` and is approved. `sindri recipe list --stale` is empty after the owner re-approves, children first (`workflow.step`, `workflow.build`, `workflow.prove`, `workflow.implement`, then `workflow.phase`, `workflow.line`).
 - [ ] Recipes are approved in order: `workflow.idea-to-brief` first, then `workflow.scoping`, then the line recipes (`workflow.design`, `workflow.plan`, `workflow.phase`, `workflow.ship`, `workflow.docs-sync`, then `workflow.line`). `sindri recipe list` shows each approved, and `sindri recipe validate recipes/sindri/workflow.line.yaml` exits 0.
-- [ ] One dry-run line start reaches scoping's gather with real sections: the owner starts `workflow.line` (or `workflow.scoping`) with `fact:item` `{id, repo, spec}`, completes the early Steps at the desk, and the gather state shows the lens, code and history sections with content, not "none". Then the owner cancels it (`sindri workflow cancel <address>`) so Workflows starts clean, or leaves it by choice.
+- [ ] Claude's folder-trust prompt for the agent worktree was accepted by hand once (or the folder is pre-trusted), and a budget park was answered with `--grant-tokens`.
+- [ ] One dry-run line start reaches scoping's gather with real sections, with the agent Steps run by agents (`via agent` in the events): the owner starts `workflow.line` (or `workflow.scoping`) with `fact:item` `{id, repo, spec}`, completes the early Steps at the desk, and the gather state shows the lens, code and history sections with content, not "none". Then the owner cancels it (`sindri workflow cancel <address>`) so Workflows starts clean, or leaves it by choice.
 - [ ] A fresh agent session runs the section 7 prompt and calls `context_sources`, `context_query`, `context_lenses` and `context_node` without `SND-CONTEXT-*` errors.
 - [ ] The app is open on Home and `G W` opens Workflows. `sindri doctor` has no `fail` rows. The box is quiet: no other builds or heavy jobs running.
