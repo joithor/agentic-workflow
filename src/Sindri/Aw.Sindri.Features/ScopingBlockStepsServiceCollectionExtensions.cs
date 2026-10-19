@@ -22,6 +22,7 @@ internal static class ScopingBlockStepsServiceCollectionExtensions
         .AddBlockStep<ScopeGatherStep>()
         .AddBlockStep<ScopeIntakeStep>()
         .AddBlockStep<ScopeProposeStep>()
+        .AddBlockStep<ScopeReadBriefStep>()
         .AddBlockStep<ScopeReanchorStep>()
         .AddBlockStep<ScopeWithdrawStep>();
 

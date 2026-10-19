@@ -59,6 +59,13 @@ internal static partial class DeskBlocks
         return WithWarnings("step.scope.read-brief", "read", Outputs(("brief", brief), ("anchors", ScopeJson.ToArray(anchors.Anchors))), anchors.Warnings);
     }
 
+    /// <summary>The part of a brief file the Step reads: the whole text, or the scope input's numbered section of it (empty when the file has no such heading).</summary>
+    /// <param name="scopeInput">The scope input.</param>
+    /// <param name="text">The file's text.</param>
+    /// <returns>The body.</returns>
+    internal static string BriefBody(JsonNode? scopeInput, string text) =>
+        ScopeJson.Str(scopeInput, "section") is { } section ? Section(text, section) : text;
+
     private static (string Path, string? Section, string Text, string Body) BriefText(ScopeFacts facts)
     {
         var source = facts.Require("briefSource");

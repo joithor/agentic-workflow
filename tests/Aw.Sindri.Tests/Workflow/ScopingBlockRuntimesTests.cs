@@ -24,7 +24,7 @@ public sealed class ScopingBlockRuntimesTests
     private static readonly string[] _registered =
     [
         "step.brief.seed", "step.interview.record", "step.scope.anchor", "step.scope.challenge-log", "step.scope.check", "step.scope.gather", "step.scope.intake",
-        "step.scope.propose", "step.scope.reanchor", "step.scope.withdraw",
+        "step.scope.propose", "step.scope.read-brief", "step.scope.reanchor", "step.scope.withdraw",
     ];
 
     [Fact]

@@ -125,7 +125,6 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PlanSteps.Freeze);
 
     private static IServiceCollection AddScopingBlocks(this IServiceCollection services) => services
-        .AddBlockDescriptor(ScopingSteps.ReadBrief)
         .AddBlockDescriptor(ScopingSteps.ReadTracker)
         .AddBlockDescriptor(ScopingSteps.ReadChange)
         .AddBlockDescriptor(ScopingSteps.BriefQuestions)
