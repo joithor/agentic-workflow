@@ -15,7 +15,7 @@ namespace Aw.Sindri.Features.Scoping;
 /// <param name="checkouts">Where the repo's checkout is.</param>
 /// <param name="shape">The engine's text shape.</param>
 /// <param name="clock">When the file was read.</param>
-internal sealed class ScopeReadBriefStep(IBriefFiles files, IRepoCheckouts checkouts, IScopingTextShape shape, TimeProvider clock) : ScopingCodeStep(Id), IBlockStepId
+internal sealed class ScopeReadBriefStep(IBriefFiles files, IRepoCheckouts checkouts, IScopingTextShape shape, TimeProvider clock) : ScopingCodeStep(Id), IBlockStepId, IRepoStep
 {
     private const string NoAnchors = """{"suggestedAnchors":[]}""";
 

@@ -27,8 +27,13 @@ internal sealed class StepInputActivities(IStepInputRunner runner, IInjectionTex
     internal async Task<FilledInput> Fill(FillInputRequest request, CancellationToken cancel)
     {
         ArgumentNullException.ThrowIfNull(request);
-        ArgumentNullException.ThrowIfNull(contexts);   // red: not yet resolving the repo
-        var context = request.Context();
+        var resolved = await contexts.WithRepo(request.Address, request.Context(), cancel).ConfigureAwait(false);
+        if (resolved.IsError)
+        {
+            throw new ApplicationFailureException(resolved.Error.Message, errorType: resolved.Error.Code, nonRetryable: true);   // the ledger cannot say which repo: the input must not run on another's
+        }
+
+        var context = resolved.Value;
         Result<FilledOutput> filled;
         try
         {

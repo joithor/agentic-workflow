@@ -15,7 +15,7 @@ namespace Aw.Sindri.Features.Scoping;
 /// 'skipped' (statuses 'unknown'), which the stop shows. An item whose repo could not be read never gets here: the runner fails the Step first.
 /// </summary>
 /// <param name="proposals">The run's proposals on the context map.</param>
-internal sealed class ScopeProposeStep(IScopeRunProposals proposals) : ScopingCodeStep(Id), IBlockStepId
+internal sealed class ScopeProposeStep(IScopeRunProposals proposals) : ScopingCodeStep(Id), IBlockStepId, IRepoStep
 {
     /// <inheritdoc/>
     public static BlockId Id { get; } = BlockId.From("step.scope.propose");
