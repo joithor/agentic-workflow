@@ -50,7 +50,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
     public static IServiceCollection AddSindriInfrastructure(this IServiceCollection services, Func<string, string?> environment)
     {
         var settings = SettingsFromEnvironment.Read(environment);
-        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriLauncher(environment, settings).AddSindriAdapters(environment).AddOnyxInfrastructure(environment);
+        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriLauncher(environment, settings).AddSindriAdapters(environment).AddSindriMcp(environment).AddOnyxInfrastructure(environment);
     }
 
     private static IServiceCollection AddSindriAdapters(this IServiceCollection services, Func<string, string?> environment)
@@ -90,11 +90,16 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IHarnessVersions, CommandHarnessVersions>()
             .AddSingleton<IOsNotifier, OsascriptNotifier>()          // engine P6 unit (c): the only OS notifier (README X5, X50)
             .AddSingleton<IDeskNotices, FileDeskNotices>()           // engine P6 unit (c): notifications.jsonl
-            .AddSingleton(McpSettings.Read(environment))
-            .AddSingleton<IClaudeCli, ProcessClaudeCli>()
-            .AddSingleton<IProviderFiles, ProviderConfigFiles>()
             .AddSingleton<ITextScrubber>(new RedactingScrubber(Redactor.Default));
     }
+
+    /// <summary>The claude CLI and the providers' MCP config files, with their settings.</summary>
+    private static IServiceCollection AddSindriMcp(this IServiceCollection services, Func<string, string?> environment)
+        => services
+            .AddSingleton(McpSettings.Read(environment))
+            .AddSingleton<IClaudeCli, ProcessClaudeCli>()
+            .AddSingleton<IProviderHost, ProviderHost>()
+            .AddSingleton<IProviderFiles, ProviderConfigFiles>();
 
     private static IServiceCollection AddOnyxInfrastructure(this IServiceCollection services, Func<string, string?> environment)
         => services

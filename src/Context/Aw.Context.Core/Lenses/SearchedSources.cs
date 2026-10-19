@@ -34,5 +34,15 @@ public static class SearchedSources
     /// <summary>The code index's row: not built until the code stage ships it.</summary>
     internal static SearchedSource CodeIndex { get; } = new(SourceId.From("code-index"), SearchedState.Unavailable, "index-not-built", Code: null, AsOf: null);
 
+    /// <summary>The row of a lexical code source ('lexical-tests', 'lexical-schema'): what the code lens read from a repo's files at a commit (S-CL).</summary>
+    /// <param name="id">'lexical-tests' or 'lexical-schema'.</param>
+    /// <param name="state">The state.</param>
+    /// <param name="reason">A recorded-limit word ('not-configured', 'commit-not-held', 'capped'), or null.</param>
+    /// <param name="code">An SND-CONTEXT-* code, or null.</param>
+    /// <param name="asOf">When it was read, or null.</param>
+    /// <returns>The row.</returns>
+    public static SearchedSource Lexical(SourceId id, SearchedState state, string? reason, string? code, DateTimeOffset? asOf) =>
+        new(id, state, reason, code, asOf);
+
     private const string NotConfigured = "not-configured";
 }

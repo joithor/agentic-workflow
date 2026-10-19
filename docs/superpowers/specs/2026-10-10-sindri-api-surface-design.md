@@ -1069,8 +1069,7 @@ One MCP endpoint serves every Sindri tool, this spec's and the context engine's:
 inside the current repo (the name resolved as §3.1 says). P8 checks whether that local scope reaches sessions in the
 repo's worktrees and records the answer.
 
-**Codex and Cursor are never registered.** Codex keeps MCP servers only in user config, and Cursor's project file sits
-inside the repo, so either would leak work context or get committed. Instead `ILauncher` passes the endpoint at
+**Codex and Cursor** (owner, 2026-10-18: `sindri-app.sh` registers every installed provider; `sindri mcp register --apply --providers claude,codex,cursor|all`). Cursor takes the checkout's `.cursor/mcp.json` and Codex the checkout's `.codex/config.toml` (`http_headers`; Codex loads a project file only for a trusted project, so `--apply` also appends the checkout's trust row to the user's Codex config and never overwrites another level). Per-repo files do not leak work context into other repos; where git tracks one that would change, the tool refuses and says so. Additionally `ILauncher` passes the endpoint at
 launch time, in the command line it builds (Codex: `-c` config overrides for one `mcp_servers.sindri` entry with the
 repo header; Cursor: the launch-time equivalent its CLI offers, recorded in P10). Until P10 proves a target's form,
 that target launches without Sindri MCP. `sindri doctor` warns on any user-wide `sindri` entry in `~/.claude.json`,

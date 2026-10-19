@@ -1130,11 +1130,13 @@ Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Equals(Aw.Sindri.Fe
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.RecordServiceRunResponse(long Sequence) -> void
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Sequence.get -> long
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Sequence.init -> void
-Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Deconstruct(out string! Directory, out string? Repo, out bool Apply) -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Deconstruct(out string! Directory, out string? Repo, out bool Apply, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Mcp.ProviderFile>? Providers) -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Directory.get -> string!
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Directory.init -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Equals(Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest? other) -> bool
-Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.RegisterMcpRequest(string! Directory, string? Repo, bool Apply) -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Providers.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Mcp.ProviderFile>?
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Providers.init -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.RegisterMcpRequest(string! Directory, string? Repo, bool Apply, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Mcp.ProviderFile>? Providers = null) -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Repo.get -> string?
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Repo.init -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse
@@ -1145,9 +1147,11 @@ Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Arguments.get -> System.Colle
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Arguments.init -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Checkout.get -> string!
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Checkout.init -> void
-Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Deconstruct(out Aw.Sindri.Core.Ids.RepoName Repo, out string! Checkout, out System.Collections.Generic.IReadOnlyList<string!>! Arguments, out bool Applied) -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Deconstruct(out Aw.Sindri.Core.Ids.RepoName Repo, out string! Checkout, out System.Collections.Generic.IReadOnlyList<string!>! Arguments, out bool Applied, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Mcp.ProviderResult!>! Providers) -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Equals(Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse? other) -> bool
-Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.RegisterMcpResponse(Aw.Sindri.Core.Ids.RepoName Repo, string! Checkout, System.Collections.Generic.IReadOnlyList<string!>! Arguments, bool Applied) -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Providers.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Mcp.ProviderResult!>!
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Providers.init -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.RegisterMcpResponse(Aw.Sindri.Core.Ids.RepoName Repo, string! Checkout, System.Collections.Generic.IReadOnlyList<string!>! Arguments, bool Applied, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Mcp.ProviderResult!>! Providers) -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Repo.get -> Aw.Sindri.Core.Ids.RepoName
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Repo.init -> void
 Aw.Sindri.Features.RegisterRecipe.RegisterRecipeRequest
@@ -2845,7 +2849,6 @@ Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Deconstruct(out bool WasRunning, ou
 Aw.Sindri.Features.OnyxDown.OnyxDownResponse.OnyxDownResponse(bool WasRunning, System.Collections.Generic.IReadOnlyList<string!>! Stopped, System.Collections.Generic.IReadOnlyList<string!>! Warnings) -> void
 Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Warnings.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Warnings.init -> void
-
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Deconstruct(out string? From, out string? To, out string? Trigger, out string? Outcome, out string? Run, out string? Via, out string? Decision) -> void
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.InstanceEventFields(string? From = null, string? To = null, string? Trigger = null, string? Outcome = null, string? Run = null, string? Via = null, string? Decision = null) -> void
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Via.get -> string?
@@ -2942,6 +2945,22 @@ static Aw.Sindri.Features.ApproveProfile.StepArgvEntry.operator !=(Aw.Sindri.Fea
 static Aw.Sindri.Features.ApproveProfile.StepArgvEntry.operator ==(Aw.Sindri.Features.ApproveProfile.StepArgvEntry? left, Aw.Sindri.Features.ApproveProfile.StepArgvEntry? right) -> bool
 static Aw.Sindri.Features.ApproveProfile.StepArgvLine.operator !=(Aw.Sindri.Features.ApproveProfile.StepArgvLine? left, Aw.Sindri.Features.ApproveProfile.StepArgvLine? right) -> bool
 static Aw.Sindri.Features.ApproveProfile.StepArgvLine.operator ==(Aw.Sindri.Features.ApproveProfile.StepArgvLine? left, Aw.Sindri.Features.ApproveProfile.StepArgvLine? right) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextCodeRequest!
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Anchors.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out bool Draft, out string? MapVersion) -> void
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Draft.get -> bool
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.GetContextCodeRequest(System.Collections.Generic.IReadOnlyList<string!>! Anchors, bool Draft = false, string? MapVersion = null) -> void
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.MapVersion.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.MapVersion.init -> void
+override Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? left, Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? left, Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? right) -> bool
 Aw.Sindri.Features.Scoping.ScopeFinding
 Aw.Sindri.Features.Scoping.ScopeFinding.<Clone>$() -> Aw.Sindri.Features.Scoping.ScopeFinding!
 Aw.Sindri.Features.Scoping.ScopeFinding.Deconstruct(out string! Rule, out string? Item, out string! Message, out string! Fix, out Aw.Sindri.Features.Scoping.ScopeSeverity Severity) -> void
