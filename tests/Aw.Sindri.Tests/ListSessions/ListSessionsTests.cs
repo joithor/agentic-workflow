@@ -54,6 +54,19 @@ public sealed class ListSessionsTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task ListSessions_still_serves_rows_with_launch_null_when_the_launches_view_cannot_be_read()
+    {
+        _r.LaunchViews = new SessionsRig.UnreadableLaunches();
+        _ = _r.Publish(SessionsRig.Three);
+        using var human = _r.Human();
+
+        var list = await List();
+
+        Assert.Equal(3, list.Sessions.Count);
+        Assert.All(list.Sessions, s => Assert.Null(s.Launch));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task ListSessions_scopes_a_session_caller_to_its_repo_and_hides_human_fields()
     {
         _ = _r.Publish(SessionsRig.Three, ended: [new EndedSession(SessionsRig.Claude(), SessionData.T0.AddMinutes(4)), new EndedSession(SessionsRig.Codex(), SessionData.T0.AddMinutes(3))]);

@@ -24,6 +24,7 @@ internal sealed class SessionsRig
     public SessionsRig()
     {
         var profile = SliceHarness.Profile();
+        LaunchViews = new LaunchViews(Launches.Views);
         _ = Base.Profiles.Save(profile with { Profile = profile.Profile with { Repos = [new RepoEntry("api", "/work/api"), new RepoEntry("web", "/work/web")] } }, Token).AsTask().GetAwaiter().GetResult();
     }
 
@@ -33,7 +34,21 @@ internal sealed class SessionsRig
     public ViewsHarness Launches { get; } = new();
 
     /// <summary>The read port over <see cref="Launches"/>.</summary>
-    public ILaunchViews LaunchViews => new LaunchViews(Launches.Views);
+    public ILaunchViews LaunchViews { get; set; } = null!;
+
+    /// <summary>A launches view whose every read fails, as a locked or half-rebuilt views.db does.</summary>
+    public sealed class UnreadableLaunches : ILaunchViews
+    {
+        private static readonly Aw.Kernel.Error _broken = Aw.Kernel.KernelErrors.Unavailable.With("views.db is locked");
+
+        public ValueTask<Aw.Kernel.Result<LaunchRow?>> Get(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, CancellationToken cancellationToken) => ValueTask.FromResult<Aw.Kernel.Result<LaunchRow?>>(_broken);
+
+        public ValueTask<Aw.Kernel.Result<IReadOnlyList<LaunchRow>>> ForItem(ItemId item, CancellationToken cancellationToken) => ValueTask.FromResult<Aw.Kernel.Result<IReadOnlyList<LaunchRow>>>(_broken);
+
+        public ValueTask<Aw.Kernel.Result<IReadOnlyList<LaunchRow>>> ForRepo(RepoName repo, CancellationToken cancellationToken) => ValueTask.FromResult<Aw.Kernel.Result<IReadOnlyList<LaunchRow>>>(_broken);
+
+        public ValueTask<Aw.Kernel.Result<IReadOnlyList<LaunchRow>>> Since(DateTimeOffset since, CancellationToken cancellationToken) => ValueTask.FromResult<Aw.Kernel.Result<IReadOnlyList<LaunchRow>>>(_broken);
+    }
 
     public InMemorySessionSnapshot Snapshot { get; } = new();
 

@@ -53,6 +53,19 @@ public sealed class GetSessionTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task GetSession_still_serves_the_row_with_launch_null_when_the_launches_view_cannot_be_read()
+    {
+        _r.LaunchViews = new SessionsRig.UnreadableLaunches();
+        _ = _r.Publish(SessionsRig.Three);
+        using var human = _r.Human();
+
+        var result = await Service().Handle(new GetSessionRequest(new SessionRef(AgentId.From("cursor"), SessionId.From("pid-333-100"))), SessionsRig.Token);
+
+        Assert.True(result.IsSuccess, result.IsError ? result.Error.ToString() : null);
+        Assert.Null(result.Value.Session.Launch);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task GetSession_hides_cwd_socket_and_history_from_a_session_caller()
     {
         var history = new Dictionary<SessionRef, IReadOnlyList<SessionStateEntry>> { [_claude] = [Entry(SessionState.Running, 1)] };
