@@ -39,37 +39,69 @@ internal sealed class ContextLensesInput(IContextEngine lenses, ContextInputScop
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
-        var anchors = ContextInputArguments.Anchors(context);
+        var notes = new List<string>();
+        var anchors = ContextInputArguments.Anchors(context, notes);
         if (anchors.Count == 0)
         {
-            return Unavailable("this Step named no anchors");
+            return Unavailable("this Step named no anchors", notes);
         }
 
+        var depth = Depth(context, notes);
+        var hops = Hops(context, notes);
         var scope = await scopes.For(context.Repo, cancellationToken).ConfigureAwait(false);
         if (scope.IsError)
         {
-            return Unavailable(scope.Error.Code + ": " + scope.Error.Message);
+            return Unavailable(scope.Error.Code + ": " + scope.Error.Message, notes);
         }
 
-        var range = new LensRange(Depth(context), Hops(context));
-        var view = await lenses.LensesOf(anchors, MapRead.Current, range, scope.Value, cancellationToken).ConfigureAwait(false);
+        var view = await lenses.LensesOf(anchors, MapRead.Current, new LensRange(depth, hops), scope.Value, cancellationToken).ConfigureAwait(false);
         if (view.IsError)
         {
-            return Unavailable(view.Error.Code + ": " + view.Error.Message);
+            return Unavailable(view.Error.Code + ": " + view.Error.Message, notes);
         }
 
-        var text = ContextLensText.LensesSet(view.Value, fence: true);
-        return new InjectionSections(new Dictionary<string, string>(StringComparer.Ordinal) { [Section] = text }, JsonSerializer.SerializeToElement(view.Value, json.GetTypeInfo(typeof(LensesSetView))));
+        var stable = ContextInputSections.Stable(view.Value);
+        return ContextInputSections.Filled(Section, ContextLensText.LensesSet(stable, fence: true), notes, stable, json);
     }
 
-    private static InjectionSections Unavailable(string why) =>
-        new(new Dictionary<string, string>(StringComparer.Ordinal) { [Section] = "The context lenses are unavailable for this Step (" + why + "); it runs without them.\n" });
+    private static InjectionSections Unavailable(string why, List<string> notes) => ContextInputSections.Unavailable(Section, "context lenses", why, notes);
 
-    private static int? Depth(StepInputContext context) =>
-        context.Arguments.TryGetValue("depth", out var depth) && depth.ValueKind == JsonValueKind.Number && depth.TryGetInt32(out var n) ? n : null;
+    private static int? Depth(StepInputContext context, List<string> notes)
+    {
+        if (!context.Arguments.TryGetValue("depth", out var depth))
+        {
+            return null;
+        }
 
-    private static string? Hops(StepInputContext context) =>
-        context.Arguments.TryGetValue("hops", out var hops) && hops.ValueKind == JsonValueKind.Array
-            ? string.Join(',', hops.EnumerateArray().Where(static h => h.ValueKind == JsonValueKind.String).Select(static h => h.GetString()))
-            : null;
+        if (depth.ValueKind == JsonValueKind.Number && depth.TryGetInt32(out var n))
+        {
+            return n;
+        }
+
+        notes.Add("depth is not a whole number, so the profile's cascade depth was used");
+        return null;
+    }
+
+    private static string? Hops(StepInputContext context, List<string> notes)
+    {
+        if (!context.Arguments.TryGetValue("hops", out var hops))
+        {
+            return null;
+        }
+
+        if (hops.ValueKind != JsonValueKind.Array)
+        {
+            notes.Add("hops is not a list, so the default hops were used");
+            return null;
+        }
+
+        var items = hops.EnumerateArray().ToList();
+        var names = items.Where(static h => h.ValueKind == JsonValueKind.String).Select(static h => h.GetString()).ToList();
+        if (names.Count < items.Count)
+        {
+            notes.Add($"{items.Count - names.Count} of {items.Count} hops are not text and were ignored");
+        }
+
+        return names.Count == 0 ? null : string.Join(',', names);
+    }
 }

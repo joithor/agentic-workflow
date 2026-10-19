@@ -3,6 +3,7 @@ using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.History;
+using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
@@ -33,8 +34,8 @@ public sealed class ContextHistoryInputTests
         public ValueTask<Result<HistoryView>> History(IReadOnlyList<string> anchors, HistoryWindow window, MapRead read, ContextScope scope, CancellationToken cancellationToken) => Record(anchors, window, scope);
     }
 
-    internal static ContextHistoryInput Input(StubHistory history, InMemoryJobViews? jobs = null, bool profile = true) =>
-        new(EngineProxy.Of(history), new ContextInputScopes(new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null)), new SyncGaps(jobs ?? new InMemoryJobViews()), ShippedComposition.Json);
+    internal static ContextHistoryInput Input(StubHistory history, bool profile = true) =>
+        new(EngineProxy.Of(history), new ContextInputScopes(new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null)), ShippedComposition.Json);
 
     private static StepInputContext Context(RepoName? repo, JsonElement? window, params string[] anchors)
     {
@@ -65,18 +66,6 @@ public sealed class ContextHistoryInputTests
     }
 
     [Fact]
-    public async Task A_not_synced_row_is_marked_with_the_running_sync_job()
-    {
-        var jobs = new InMemoryJobViews();
-        var id = JobId.From("JOB-0000000000000000000000000000000a");
-        jobs.Put(new JobBuilder().WithId(id).OfKind(SyncGaps.SyncKind, JobKey.From("sync")).Build());
-
-        var filled = await Input(new StubHistory(() => ContextHistoryTextTests.View()), jobs).Fill(Context(ContextInputFixtures.Web, window: null, "feature:layout.split-pane"), TestContext.Current.CancellationToken);
-
-        Assert.Contains(id.Value, filled.Result!.Value.GetRawText(), StringComparison.Ordinal);
-    }
-
-    [Fact]
     public async Task A_bad_window_is_a_section_and_never_reaches_the_engine()
     {
         var history = new StubHistory(() => ContextHistoryTextTests.View());
@@ -87,6 +76,38 @@ public sealed class ContextHistoryInputTests
         Assert.Contains("SND-CONTEXT-006", filled.Sections["history"], StringComparison.Ordinal);
         Assert.Null(filled.Result);
     }
+
+    [Theory]
+    [InlineData("[1]")]
+    [InlineData("7")]
+    [InlineData("true")]
+    public async Task A_window_of_another_shape_is_a_section_naming_the_argument_and_never_reaches_the_engine(string json)
+    {
+        var history = new StubHistory(() => ContextHistoryTextTests.View());
+
+        var filled = await Input(history).Fill(Context(ContextInputFixtures.Web, JsonDocument.Parse(json).RootElement.Clone(), "feature:a"), TestContext.Current.CancellationToken);
+
+        Assert.Empty(history.Calls);
+        Assert.Contains("window argument", filled.Sections["history"], StringComparison.Ordinal);
+        Assert.Null(filled.Result);
+    }
+
+    [Fact]
+    public async Task Two_fills_of_the_same_stored_state_at_different_clocks_give_identical_bytes()
+    {
+        var first = await Input(new StubHistory(() => Later(ContextHistoryTextTests.View(), days: 3))).Fill(Context(ContextInputFixtures.Web, window: null, "feature:layout.split-pane"), TestContext.Current.CancellationToken);
+        var second = await Input(new StubHistory(() => Later(ContextHistoryTextTests.View(), days: 40))).Fill(Context(ContextInputFixtures.Web, window: null, "feature:layout.split-pane"), TestContext.Current.CancellationToken);
+
+        Assert.Equal(first.Sections["history"], second.Sections["history"]);
+        Assert.Equal(first.Result!.Value.GetRawText(), second.Result!.Value.GetRawText());
+    }
+
+    private static HistoryView Later(HistoryView view, int days) => view with
+    {
+        AsOf = view.AsOf.AddDays(days),
+        Coverage = view.Coverage with { Map = new MapCoverage([], Truncated: false, 1, 0, 0, view.AsOf.AddDays(-10), 10 + days) },
+        Searched = view.Searched with { Sources = [.. view.Searched.Sources.Select(s => s with { AsOf = view.AsOf.AddDays(days) })] },
+    };
 
     [Fact]
     public async Task An_engine_refusal_is_an_honest_section_with_no_typed_result()

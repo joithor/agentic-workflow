@@ -27,7 +27,7 @@ internal class EngineProxy : DispatchProxy
     /// <inheritdoc/>
     protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
     {
-        var target = targetMethod!.DeclaringType!.IsInstanceOfType(_stub) ? _stub : (object)FakeContextEngine.Instance;
+        var target = targetMethod!.DeclaringType!.IsInstanceOfType(_stub) ? _stub : FakeContextEngine.Instance;
         try
         {
             return targetMethod.Invoke(target, args);

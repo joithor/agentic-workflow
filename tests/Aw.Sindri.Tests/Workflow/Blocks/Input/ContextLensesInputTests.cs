@@ -127,4 +127,62 @@ public sealed class ContextLensesInputTests
         Assert.Empty(lenses.Calls);
         Assert.Contains("no anchors", filled.Sections["lenses"], StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task Two_fills_of_the_same_stored_state_at_different_clocks_give_identical_bytes()
+    {
+        var created = new DateTimeOffset(2026, 7, 1, 0, 0, 0, TimeSpan.Zero);
+        static LensesSetView At(IReadOnlyList<string> a, DateTimeOffset created, int days)
+        {
+            var view = ContextInputFixtures.SmallSet([.. a]);
+            return view with
+            {
+                AsOf = created.AddDays(days),
+                Coverage = view.Coverage with { Map = new MapCoverage(["src/"], Truncated: false, 3, 1, 0, created, days) },
+                Searched = view.Searched with { Sources = [.. view.Searched.Sources.Select(s => s with { AsOf = created.AddDays(days) })] },
+            };
+        }
+
+        var first = await Input(new StubLenses(a => At(a, created, 3))).Fill(Context(ContextInputFixtures.Web, "feature:a"), TestContext.Current.CancellationToken);
+        var second = await Input(new StubLenses(a => At(a, created, 40))).Fill(Context(ContextInputFixtures.Web, "feature:a"), TestContext.Current.CancellationToken);
+
+        Assert.Equal(first.Sections["lenses"], second.Sections["lenses"]);
+        Assert.Equal(first.Result!.Value.GetRawText(), second.Result!.Value.GetRawText());
+        Assert.DoesNotContain("days old", first.Sections["lenses"], StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_huge_view_is_cut_at_whole_lines_under_the_cap_and_says_how_many_were_left_out()
+    {
+        var lenses = new StubLenses(_ => ContextInputFixtures.SmallSet([.. Enumerable.Range(0, 20000).Select(i => "feature:f" + i.ToString(System.Globalization.CultureInfo.InvariantCulture))]));
+
+        var filled = await Input(lenses).Fill(Context(ContextInputFixtures.Web, "feature:a"), TestContext.Current.CancellationToken);
+
+        var text = filled.Sections["lenses"];
+        Assert.True(System.Text.Encoding.UTF8.GetByteCount(text) < 256 * 1024);
+        Assert.Matches("\\[\\d+ more lines not shown", text);
+        Assert.Null(filled.Result);
+        Assert.Contains("typed result is over", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task An_argument_that_cannot_be_used_is_noted_in_the_section_and_an_empty_hops_list_is_the_default()
+    {
+        var lenses = new StubLenses(a => ContextInputFixtures.SmallSet([.. a]));
+        var with = new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+        {
+            ["anchors"] = JsonSerializer.SerializeToElement(new object[] { "feature:a", 7 }),
+            ["depth"] = JsonSerializer.SerializeToElement("deep"),
+            ["hops"] = JsonSerializer.SerializeToElement(Array.Empty<string>()),
+        };
+
+        var filled = await Input(lenses).Fill(new StepInputContext(BlockId.From(ContextLensesInput.Id), BlockId.From("step.scope.gather"), with, new Dictionary<FactKey, JsonElement>(), ContextInputFixtures.Web), TestContext.Current.CancellationToken);
+
+        var call = Assert.Single(lenses.Calls);
+        Assert.Equal(["feature:a"], call.Anchors);
+        Assert.Null(call.Range.Depth);
+        Assert.Null(call.Range.Hops);
+        Assert.Contains("note: 1 of 2 anchors are not text", filled.Sections["lenses"], StringComparison.Ordinal);
+        Assert.Contains("note: depth is not a whole number", filled.Sections["lenses"], StringComparison.Ordinal);
+    }
 }

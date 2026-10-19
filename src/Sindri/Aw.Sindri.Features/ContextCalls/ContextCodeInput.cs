@@ -34,29 +34,28 @@ internal sealed class ContextCodeInput(IContextEngine code, ContextInputScopes s
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
-        var anchors = ContextInputArguments.Anchors(context);
+        var notes = new List<string>();
+        var anchors = ContextInputArguments.Anchors(context, notes);
         if (anchors.Count == 0)
         {
-            return Unavailable("this Step named no anchors");
+            return Unavailable("this Step named no anchors", notes);
         }
 
         var scope = await scopes.For(context.Repo, cancellationToken).ConfigureAwait(false);
         if (scope.IsError)
         {
-            return Unavailable(scope.Error.Code + ": " + scope.Error.Message);
+            return Unavailable(scope.Error.Code + ": " + scope.Error.Message, notes);
         }
 
         var view = await code.Code(anchors, draft: false, mapVersion: null, scope.Value, cancellationToken).ConfigureAwait(false);
         if (view.IsError)
         {
-            return Unavailable(view.Error.Code + ": " + view.Error.Message);
+            return Unavailable(view.Error.Code + ": " + view.Error.Message, notes);
         }
 
-        return new InjectionSections(
-            new Dictionary<string, string>(StringComparer.Ordinal) { [Section] = ContextCodeText.Code(view.Value, fence: true) },
-            JsonSerializer.SerializeToElement(view.Value, json.GetTypeInfo(typeof(CodeView))));
+        var stable = ContextInputSections.Stable(view.Value);
+        return ContextInputSections.Filled(Section, ContextCodeText.Code(stable, fence: true), notes, stable, json);
     }
 
-    private static InjectionSections Unavailable(string why) =>
-        new(new Dictionary<string, string>(StringComparer.Ordinal) { [Section] = "The context code is unavailable for this Step (" + why + "); it runs without it.\n" });
+    private static InjectionSections Unavailable(string why, List<string> notes) => ContextInputSections.Unavailable(Section, "context code", why, notes);
 }

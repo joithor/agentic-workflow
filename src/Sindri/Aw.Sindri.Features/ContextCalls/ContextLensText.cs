@@ -105,7 +105,7 @@ internal static class ContextLensText
         var text = new StringBuilder(Invariant($"coverage: scope {c.Scope} · intent {c.Intent.Covered} of {c.Intent.Of} · product {c.Product.Confirmed} of {c.Product.Of} confirmed · code {c.Code.Implemented} of {c.Code.Of} implemented ({c.Code.Level} level), {c.Code.Suggested} suggested\n"));
         if (c.Map is { } m)
         {
-            _ = text.AppendLine(Invariant($"map coverage: {m.Paths.Count} paths{(m.Truncated ? " (truncated)" : string.Empty)}, {m.Files} files, {m.Unmapped} unmapped, {m.Suggested} suggested · map created {m.Created:yyyy-MM-ddTHH:mm:ssZ} ({m.AgeDays} days old)"));
+            _ = text.AppendLine(Invariant($"map coverage: {m.Paths.Count} paths{(m.Truncated ? " (truncated)" : string.Empty)}, {m.Files} files, {m.Unmapped} unmapped, {m.Suggested} suggested · map created {m.Created:yyyy-MM-ddTHH:mm:ssZ}{(m.AgeDays < 0 ? string.Empty : $" ({m.AgeDays} days old)")}"));
         }
 
         foreach (var gap in c.Gaps)

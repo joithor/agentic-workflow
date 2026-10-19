@@ -507,7 +507,7 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 
 ### Block catalog (scoping station)
 
-Descriptor-only too (`ScopingSteps`, `PendingInputs` in `Aw.Sindri.Features/Blocks/`); the recipes are `workflow.scoping` and `workflow.idea-to-brief` (scoping spec §6, §9). Every Step is desk-capable. An agent Step reaches only `Tools` (the read-only rule is W9's, enforced at launch).
+Descriptor-only too (`ScopingSteps` in `Aw.Sindri.Features/Blocks/`; the three context inputs are real runtimes, see "The context inputs (S-LB2)"); the recipes are `workflow.scoping` and `workflow.idea-to-brief` (scoping spec §6, §9). Every Step is desk-capable. An agent Step reaches only `Tools` (the read-only rule is W9's, enforced at launch).
 
 | Step | Runtime | Inputs | Outcomes | Outputs |
 |---|---|---|---|---|
@@ -568,7 +568,7 @@ Descriptor-only Steps of `workflow.design` and `workflow.plan` (line spec §4-§
 | `step.plan.review` | desk, human-only | `planPacket`, `design` | `approve`, `reviseDesign`, `revisePlan`, `drop` | `answers` on reviseDesign and revisePlan |
 | `step.plan.freeze` | block | `planPacket`, `design`, `plan`, `holdoutSets` | `frozen`, `mismatch` | `planPacket`, `phasePackets` on frozen; `findings` on mismatch |
 
-The Step inputs `input.context.lenses`, `input.context.code` and `input.context.history` are registered as descriptors (parameters `anchors`, `depth`, `hops`, `window`) so the recipe validates; the context lane replaces them with the blocks (C1, C3, C5, W6). The output schemas are `schemas/scoping/` (`node scripts/check-scoping-schemas.mjs`).
+The Step inputs `input.context.lenses`, `input.context.code` and `input.context.history` are real Step inputs (parameters `anchors`, `depth`, `hops`, `window`; "The context inputs (S-LB2)" below), so the recipe validates and approves. The output schemas are `schemas/scoping/` (`node scripts/check-scoping-schemas.mjs`).
 
 `step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and human-only; their hashes moved once when the two fields
 landed (provisional owner default); every other shipped descriptor hashes as before (`ShippedBlocksTests` pins all of them).
@@ -988,11 +988,14 @@ The scoping recipe's `gather` Step names three real inputs, so `sindri recipe ap
 | Input | Section | Typed result (`StepContext.InputResults`) | Reads |
 |---|---|---|---|
 | `input.context.lenses {anchors, depth?, hops?}` | `lenses` | `LensesSetView` (schema 2) | `IContextLenses.LensesOf` on the current map |
-| `input.context.history {anchors, window?}` | `history` | `HistoryView`, with its not-synced rows marked by the running `SyncSources` job | `IContextHistory.History`; `window` is `{since?, before?}` (RFC 3339 or a date) or a bare string meaning `since` |
+| `input.context.history {anchors, window?}` | `history` | `HistoryView` (no live sync marker: a fill depends on the stored state only) | `IContextHistory.History`; `window` is `{since?, before?}` (RFC 3339 or a date) or a bare string meaning `since` |
 | `input.context.code {anchors}` | `code` | `CodeView` | `IContextCode.Code` on the current map |
 
 - **`service:engine`, the instance's repo.** Each call runs as the engine's service caller with a scope cut to the one repo of the instance's item (`StepInputContext.Repo`, from the ledger), never from a caller (`ContextInputScopes`).
 - **Honest sections.** An empty anchor list, a bad window, an item with no repo, a repo outside the approved profile, no approved profile, and any refusal from the engine (`SND-CONTEXT-*`) become one section ("The context lenses are unavailable for this Step (code: message); it runs without them.") with no typed result. They never throw; a degraded source stays visible in the view's `searched` rows.
+- **A fill is a function of the stored state.** A re-fill after a restart, an eviction or a pull must give the same digest (`SND-WF-018` otherwise). So the views are made stable before they are rendered (`ContextInputSections.Stable`): `asOf` is the map's creation instant, the map's age is unstated (`ageDays` is -1, the text omits it), and the searched sources' instants are left out. A real change of the map between fill and re-fill still gives 018, which is the rule.
+- **Bounded.** Each section and each typed result is at most 120 KiB (three inputs stay under the plan's 1 MiB; the runner's cap is 256 KiB a part). Text is cut at whole lines with "[N more lines not shown: this section is capped at 120 KiB]"; a typed result over the budget is left out and the text says so. A Step never fails (SND-WF-019) because a map is big.
+- **Arguments.** A history `window` of the wrong shape (a list, a number, a boolean) is an unavailable section naming the argument (an absent or null window is the open window); anchors, `depth` or `hops` that cannot be used, and a `hops` list with non-text items, are named in a "note:" line at the head of the section instead of being dropped silently; an empty `hops` list is the default hops.
 - **Text.** The section is the same plain text the `sindri context lenses|history|code` verbs print, with untrusted labels fenced; the typed result is the view in the route's JSON shape. The runner scrubs and caps both (256 KiB per section).
 
 ## Effects as activities (engine P6)

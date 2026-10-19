@@ -35,17 +35,32 @@ public sealed class GatherInputsFillTests : IDisposable
         }
     }
 
+    private Combined _combined = new(a => ContextInputFixtures.SmallSet([.. a]));
+
     private ServiceProvider Compose() => Composition.Compose(new ServiceCollection(), name => name == "AW_STATE_DIR" ? _root : null, new FakeTimeProvider())
-        .AddScoped<IContextEngine>(static _ => EngineProxy.Of(new Combined()))
+        .AddScoped<IContextEngine>(static _ => EngineProxy.Of(_combined))
         .AddSingleton<IApprovedProfile>(new ContextInputFixtures.Profiles(ContextInputFixtures.Profile()))
         .BuildServiceProvider();
 
     /// <summary>One stub answering all three lenses.</summary>
     private sealed class Combined : IContextLenses, IContextHistory, IContextCode
     {
-        private readonly ContextLensesInputTests.StubLenses _lenses = new(a => ContextInputFixtures.SmallSet([.. a]));
-        private readonly ContextHistoryInputTests.StubHistory _history = new(() => ContextHistoryTextTests.View());
-        private readonly ContextCodeInputTests.StubCode _code = new(() => ContextCodeVerbsTests.View());
+        public Combined(Func<IReadOnlyList<string>, Result<LensesSetView>> lenses)
+        {
+            Lenses_ = new(lenses);
+        }
+
+        public ContextLensesInputTests.StubLenses Lenses_ { get; }
+
+        public ContextHistoryInputTests.StubHistory History_ { get; } = new(() => ContextHistoryTextTests.View());
+
+        public ContextCodeInputTests.StubCode Code_ { get; } = new(() => ContextCodeVerbsTests.View());
+
+        private ContextLensesInputTests.StubLenses _lenses => Lenses_;
+
+        private ContextHistoryInputTests.StubHistory _history => History_;
+
+        private ContextCodeInputTests.StubCode _code => Code_;
 
         public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) => _lenses.LensesOf(anchors, read, range, scope, cancellationToken);
 
@@ -66,9 +81,17 @@ public sealed class GatherInputsFillTests : IDisposable
 
     private static readonly string[] _anchors = ["feature:sharing"];
 
+    private static readonly string[] _hops = ["state", "flow", "dependency", "component"];
+
     private static StepInputContext Context(string input) => new(
         BlockId.From(input), BlockId.From("step.scope.gather"),
-        new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["anchors"] = JsonSerializer.SerializeToElement(_anchors) },
+        new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+        {
+            ["anchors"] = JsonSerializer.SerializeToElement(_anchors),
+            ["depth"] = JsonSerializer.SerializeToElement(2),
+            ["hops"] = JsonSerializer.SerializeToElement(_hops),
+            ["window"] = JsonSerializer.SerializeToElement(new { since = "2026-01-01" }),
+        },
         new Dictionary<FactKey, JsonElement>(), ContextInputFixtures.Web);
 
     [Theory]
@@ -86,6 +109,41 @@ public sealed class GatherInputsFillTests : IDisposable
         Assert.False(string.IsNullOrWhiteSpace(filled.Value.Texts.Sections[section]));
         Assert.True(filled.Value.Texts.Result.HasValue);
         Assert.True(filled.Value.Metadata.Result is not null);
+    }
+
+    [Fact]
+    public async Task The_inputs_read_the_instances_repo_and_pass_the_recipes_depth_hops_and_window()
+    {
+        await using var provider = Compose();
+        var runner = provider.GetRequiredService<IStepInputRunner>();
+
+        foreach (var input in new[] { "input.context.lenses", "input.context.history", "input.context.code" })
+        {
+            _ = await runner.Fill(Context(input), 1, TestContext.Current.CancellationToken);
+        }
+
+        var (_, range, lensScope) = Assert.Single(_combined.Lenses_.Calls);
+        Assert.Equal(2, range.Depth);
+        Assert.Equal("state,flow,dependency,component", range.Hops);
+        Assert.Equal("web", Assert.Single(lensScope.Repos).Name.Value);
+        var (_, window, historyScope) = Assert.Single(_combined.History_.Calls);
+        Assert.Equal(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), window.Since);
+        Assert.Equal("web", Assert.Single(historyScope.Repos).Name.Value);
+        var (_, _, _, codeScope) = Assert.Single(_combined.Code_.Calls);
+        Assert.Equal("web", Assert.Single(codeScope.Repos).Name.Value);
+    }
+
+    [Fact]
+    public async Task A_huge_map_fills_under_the_runners_caps_and_the_Step_does_not_fail()
+    {
+        _combined = new Combined(a => ContextInputFixtures.SmallSet([.. Enumerable.Range(0, 20000).Select(i => "feature:f" + i.ToString(System.Globalization.CultureInfo.InvariantCulture))]));
+        await using var provider = Compose();
+        var runner = provider.GetRequiredService<IStepInputRunner>();
+
+        var filled = await runner.Fill(Context("input.context.lenses"), 1, TestContext.Current.CancellationToken);
+
+        Assert.False(filled.IsError, filled.IsError ? filled.Error.Message : string.Empty);
+        Assert.Contains("more lines not shown", filled.Value.Texts.Sections["lenses"], StringComparison.Ordinal);
     }
 
     [Fact]
