@@ -41,22 +41,26 @@ public sealed class AgentLaunchesTests
         Assert.Null(request.Step?.Model);
     }
 
+    private static readonly string[] _report = ["Bash(sindri workflow complete:*)", "Bash(sindri workflow status:*)", "Bash(sindri workflow events:*)"];
+    private static readonly string[] _git = ["Bash(git add:*)", "Bash(git commit:*)", "Bash(git status:*)", "Bash(git diff:*)"];
+
     [Fact]
-    public void A_step_without_write_scope_is_read_only_with_no_writable_path()
+    public void A_step_without_write_scope_is_not_in_plan_mode_so_it_can_report_and_writes_nothing()
     {
         var policy = AgentLaunches.RequestFor(Run(writes: false), _target).Step?.Policy;
 
-        Assert.Equal(StepPermissionMode.ReadOnly, policy?.Mode);
+        Assert.Equal(StepPermissionMode.Default, policy?.Mode);
         Assert.Null(policy?.WritablePath);
-        Assert.Empty(policy!.AllowedTools);   // why: the Assert above fails first when null
+        Assert.Equal(_report, policy!.AllowedTools);   // why: the Assert above fails first when null
     }
 
     [Fact]
-    public void A_write_scope_step_may_write_only_its_worktree()
+    public void A_write_scope_step_may_write_only_its_worktree_and_commit_it()
     {
         var request = AgentLaunches.RequestFor(Run(), _target);
 
         Assert.Equal(StepPermissionMode.Default, request.Step?.Policy?.Mode);
         Assert.Equal(request.Worktree, request.Step?.Policy?.WritablePath);
+        Assert.Equal([.. _report, .. _git], request.Step?.Policy?.AllowedTools);
     }
 }
