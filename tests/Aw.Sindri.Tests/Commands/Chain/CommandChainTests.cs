@@ -158,6 +158,39 @@ public sealed class CommandChainTests : IAsyncDisposable
         Assert.Equal(1, _c.Latch.Started);
     }
 
+    // A stop must get through whatever holds the gate (the owner's stop met SND-API-009 behind a long apply): it skips the gate and cancels the holder.
+    [Fact, Trait("Lane", "unit")]
+    public async Task Stop_gets_past_a_command_holding_the_gate_and_cancels_it()
+    {
+        _ = await _c.H.HoldLease();
+        var held = _c.Start(new FixtureCommand("block"), Human);
+        await _c.Latch.Entered.Task.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken);   // the holder is inside the handler
+
+        var stopped = await _c.Run<StopProcessRequest, StopProcessResponse>(new StopProcessRequest(StopReason.Stop), Human)
+            .WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken);
+        var ended = await Task.WhenAny(held, Task.Delay(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken));
+
+        Assert.True(stopped.IsSuccess);
+        Assert.Same(held, ended);
+        Assert.Equal(SindriErrors.CommandBusy.Code, (await held).Error.Code);   // a refusal, not a handler failure (a 500)
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_refused_stop_cancels_nothing()
+    {
+        _ = await _c.H.HoldLease();
+        var held = _c.Start(new FixtureCommand("block"), Human);
+        await _c.Latch.Entered.Task.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken);
+
+        var refused = await _c.Run<StopProcessRequest, StopProcessResponse>(new StopProcessRequest(StopReason.Stop), Session)
+            .WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken);
+        Assert.False(held.IsCompleted);
+        _c.Latch.Release.SetResult();
+
+        Assert.Equal(SindriErrors.AuthRefused.Code, refused.Error.Code);
+        Assert.True((await held.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken)).IsSuccess);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Commands_run_one_at_a_time()
     {

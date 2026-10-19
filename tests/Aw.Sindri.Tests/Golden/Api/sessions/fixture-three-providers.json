@@ -35,6 +35,7 @@
         "why": "not-built"
       },
       "title": "private title",
+      "launch": null,
       "pid": 111
     },
     {
@@ -73,6 +74,7 @@
         "why": "not-built"
       },
       "title": null,
+      "launch": null,
       "pid": 222
     },
     {
@@ -107,6 +109,11 @@
         "why": "not-built"
       },
       "title": null,
+      "launch": {
+        "instance": "ITM-00000000000000000000000000000001/step/1",
+        "state": "build",
+        "attempt": 2
+      },
       "pid": 333
     }
   ],

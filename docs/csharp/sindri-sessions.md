@@ -162,9 +162,13 @@ snapshot; both are queries and have no catalog row. `Core/Sessions/SessionRows` 
   below the repo's checkout in the approved profile, else null), `host{kind, label, socketKind, attachedClients, terminal}`, `lane{team, lane}`, `launchId`, `startedAt`, `since`,
   `focus`. `focus` is `{method: none, possible: false, why: not-built}` until CO-4a (a stable code; the `FocusSession` catalog row keeps the phase label `pending:CO-4a`). `item` and `instance` come with CA-6.
   `inWorkflow` means "has a Sindri launch" until the launch join exists.
+- **Launch step:** `launch{instance, state, attempt}` says which workflow instance, Step (state id) and attempt the session's Sindri launch belongs to, so a row reads "on `<instance>` · `<state>`"
+  with no second call (`Core/Sessions/SessionLaunchSteps` looks the launch up in the `launches` view). `launch` is null when no launch of Sindri's is known for the session; its members are
+  null for an attended (click) launch. For example, a session with no launch row serves `"launch": null`, while one whose launch was a click serves `"launch": {"instance": null, "state": null, "attempt": null}`. A session's `state` is its own and unrelated to `launch.state`.
 - **`SessionList`:** `sessions`, `recentlyEnded` (each `{session, endedAt, resume}`), `problems`, `counts{live, asking, outsideWorkflow}` (over what the caller may see, before the
   filters), `empty` (`No agent sessions are running.` when no row is shown), `asOf` (the last pass). Before the first pass the list is empty, with `asOf` the time of the request (no pass has run yet; `GetSession` answers 404). A `SND-SESSION-002` problem in the pass
   replaces the list (`503`, `detail` the reason); `-001` and `-003` stay problem rows.
+- **Ended by Stop:** stopping a Sindri launch records `session.ended` with reason `exit` once the host stop succeeded, so its launches row is no longer live and is never marked `lost`; nothing is recorded if the row isn't live (`docs/csharp/sindri-launcher.md`, "Stop ends the session").
 - **`SessionView`:** `{session, cwd, stateHistory, asOf}`. `stateHistory` is the snapshot's `History` (`StateHistoryRules`): per live session, the first state and each change of state or
   asking reason, at most 20, oldest first, in memory for this Sindri run.
 - **Status:** `GET /status` has `sessions{live, asking, problems}`, box-wide for every caller and deliberately public: a `session` caller sees the numbers (also through the MCP `sindri_status` tool), never the rows. `problems` counts every problem row, `SND-SESSION-003` (a test override) included.
