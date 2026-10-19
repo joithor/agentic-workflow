@@ -599,6 +599,19 @@ Descriptor-only (`BuildSteps`, `ProveSteps` in `Aw.Sindri.Features/Blocks/Step/`
 | `step.prove.evidence` | block | `complete`, `incomplete` | `proofPack`; `findings` on incomplete |
 | `step.prove.fail-log` | block | `logged` | `findings` |
 
+#### The prove station's fact shapes (BS-5)
+
+The line spec names the facts but not their fields; these are the shapes the prove Steps on the block runtime read and write (`Aw.Sindri.Features/Prove/`, rules in `Aw.Sindri.Core/Prove/ProofChecks.cs`). They are all JSON, and a fact the instance does not hold is a Step failure or, for an optional one, a rule reported as not run.
+
+- `findings`: a list of `{rule, item, message, fix, severity}` (`severity` is `fail` or `warn`; `item` is an acceptance item id or null), the scoping findings shape as a bare list, as `step.build.prepare` seeds it.
+- `proof`: `{head, items[{id, text, signals[{id, kind, statement, runsAt}], artifacts[{kind, path, sha256, commit, at, passing, signal?, superseded?}]}]}`. `step.prove.intake` seeds it from the phase packet's `acceptance.json` (every item that is not `superseded`) and `signals.json`, with no artifacts.
+- `beforeAfter`: `{commit, results[{item, signal, base, head, baseScript?, headScript?}]}`, `base` and `head` being `fail` or `pass`. `holdoutResult`: `{commit, canary?, results[{scenario, item, verdict, category, observed, spent?}]}`, `verdict` being `pass` or `fail`, `canary` `clean` or `leaked`. Both start as `{commit, results: []}`.
+- `proofPack`: `{hash, dir}`, the machine-frozen proof pack (the same shape as a packet fact).
+- `step.prove.fail-log` keeps the findings the instance holds, adds one `PRV-BA-001` per before/after result that did not fail at the base and pass at the head, and one `PRV-HOLD-001` per hidden scenario that did not pass (by item and the observed line, never the scenario's id or text; spec §9.3), never the same rule and item twice; with nothing recorded it adds `PRV-FAIL-001`.
+- `step.prove.evidence` reads exactly its descriptor's five facts (`phasePacket`, `built`, `redTests`, `beforeAfter`, `holdoutResult`) and, when the instance has it, `proof`. `PRV-ACC-001` and `PRV-SHA-001` need `proof`'s artifacts, `PRV-APP-001` needs the hand test and verify results (`manualTest`, `evidencePack`, which the descriptor does not read), and `PRV-HOLD-003` needs `holdoutResult.canary`: each is reported **not run**, listed in the pack's `proof.json` under `notRun`, and is a warning, not a failure. `PRV-HOLD-002` uses a minimum of 2 until the profile key `workflow.prove.holdoutMin` exists. A phase of kind `docs` or `config` needs no application run and may have no red tests. `PRV-NP-001` is met by construction: `not-proven.md` lists every planned signal no passing head artifact names (by `signal`), or says `nothing skipped`.
+- The pack is written to `proof-pack/` of the instance's run area (`packet.json`, `index.json`, `proof.json`, `red.json`, `before-after.json`, `holdout.json` with ids, verdicts and `spent` only, `not-proven.md`, `acceptance.json`, empty `app-run` and `evidence` lists) and frozen by aw-packets as kind `proof`, with the repo's checkout as `--repo`. The packet id is the phase packet's id and `-proof`; its only parent is the phase packet's hash; its acceptance extends the hash of the phase's `acceptance.json` bytes and flips an item to `passing` only with the evidence of a passing artifact of the head (`PRV-ACC-002`). `IRunArea.PathFor` gives the directory.
+- Left at the desk: `step.prove.before-after` (needs the command port, BS-3d) and `step.prove.holdout-log` (needs the hidden-scenario store, spec §9.1, which has no port yet).
+
 ### Block recipes
 
 The shipped block recipes (`recipes/sindri/`: report, investigate, reproduce, implement, hand-test, verify, the evidence

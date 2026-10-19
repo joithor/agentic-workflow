@@ -147,10 +147,10 @@ public sealed class ProofChecksTests
         var acceptance = ProofPack.Acceptance(Good(static f => f with { Proof = Proof(Artifact("SG-1a", Head), Artifact("SG-2a", "old")) }));
 
         var items = acceptance["items"]!.AsArray();
-        Assert.Equal(["passing", "failing", "superseded"], items.Select(static i => (string?)i!["status"]));
+        Assert.Equal(["passing", "failing", "superseded"], items.Select(static i => (string?)i!["status"]), StringComparer.Ordinal);
         var evidence = Assert.Single(items[0]!["evidence"]!.AsArray())!;
         Assert.Equal(Head, (string?)evidence["commit"]);
-        Assert.Equal(["at", "commit", "kind", "path", "sha256"], evidence.AsObject().Select(static p => p.Key).Order(StringComparer.Ordinal));
+        Assert.Equal(["at", "commit", "kind", "path", "sha256"], evidence.AsObject().Select(static p => p.Key).Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     [Fact]
@@ -162,8 +162,8 @@ public sealed class ProofChecksTests
         var bare = Acceptance();
         bare["items"]![1]!["status"] = "passing";
 
-        Assert.Equal(["PRV-ACC-002@AC-1"], ProofPack.AcceptanceFlips(before, edited).Select(static f => f.Rule + "@" + f.Item));
-        Assert.Equal(["PRV-ACC-002@AC-2"], ProofPack.AcceptanceFlips(before, bare).Select(static f => f.Rule + "@" + f.Item));
+        Assert.Equal(["PRV-ACC-002@AC-1"], ProofPack.AcceptanceFlips(before, edited).Select(static f => f.Rule + "@" + f.Item), StringComparer.Ordinal);
+        Assert.Equal(["PRV-ACC-002@AC-2"], ProofPack.AcceptanceFlips(before, bare).Select(static f => f.Rule + "@" + f.Item), StringComparer.Ordinal);
         Assert.Empty(ProofPack.AcceptanceFlips(before, Acceptance()));
     }
 

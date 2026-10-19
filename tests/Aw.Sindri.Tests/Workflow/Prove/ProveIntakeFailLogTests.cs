@@ -52,8 +52,8 @@ public sealed class ProveIntakeFailLogTests
         var proof = Out(result, "proof");
         Assert.Equal("abc", (string?)proof["head"]);
         var items = proof["items"]!.AsArray();
-        Assert.Equal(["AC-1", "AC-2"], items.Select(static i => (string?)i!["id"]));   // the superseded AC-3 is not proved
-        Assert.Equal(["SG-1a", "SG-1b"], items[0]!["signals"]!.AsArray().Select(static s => (string?)s!["id"]));
+        Assert.Equal(["AC-1", "AC-2"], items.Select(static i => (string?)i!["id"]), StringComparer.Ordinal);   // the superseded AC-3 is not proved
+        Assert.Equal(["SG-1a", "SG-1b"], items[0]!["signals"]!.AsArray().Select(static s => (string?)s!["id"]), StringComparer.Ordinal);
         Assert.Empty(items[1]!["signals"]!.AsArray());
         Assert.All(items, static i => Assert.Empty(i!["artifacts"]!.AsArray()));
     }
@@ -147,7 +147,7 @@ public sealed class ProveIntakeFailLogTests
 
         var findings = Logged(await new ProveFailLogStep().Run(BuildShipContexts.Of("step.prove.fail-log", facts), Token));
 
-        Assert.Equal(["PRV-RED-001", "PRV-BA-001"], findings.Select(static f => (string?)f!["rule"]));
+        Assert.Equal(["PRV-RED-001", "PRV-BA-001"], findings.Select(static f => (string?)f!["rule"]), StringComparer.Ordinal);
         Assert.Equal("already", (string?)findings[1]!["message"]);
     }
 

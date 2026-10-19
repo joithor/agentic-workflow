@@ -7,8 +7,8 @@ namespace Aw.Sindri.Features.Prove;
 
 /// <summary>
 /// 'step.prove.intake' on the block runtime (line spec §7.3): loads the phase's items and their signals from the phase packet (acceptance.json and signals.json) and seeds the
-/// facts the prove station's later states read. 'proof' is <c>{head, items[{id, text, signals[], artifacts[]}]}</c> for every item that is not superseded, 'holdoutResult' and
-/// 'beforeAfter' start as <c>{commit, results[]}</c>, 'findings' as an empty list. A packet whose files cannot be read fails the Step with the reason.
+/// facts the prove station's later states read. 'proof' is <c language="text">{head, items[{id, text, signals[], artifacts[]}]}</c> for every item that is not superseded, 'holdoutResult' and
+/// 'beforeAfter' start as <c language="text">{commit, results[]}</c>, 'findings' as an empty list. A packet whose files cannot be read fails the Step with the reason.
 /// </summary>
 /// <param name="files">Reads the phase packet's files.</param>
 internal sealed class ProveIntakeStep(IBriefFiles files) : IBlockStep, IBlockStepId
@@ -28,14 +28,14 @@ internal sealed class ProveIntakeStep(IBriefFiles files) : IBlockStep, IBlockSte
             return BlockStepResult.Failed("step.prove.intake needs fact:phasePacket (with its dir) and fact:built (with its head)");
         }
 
-        var acceptance = await ReadJson(dir, "acceptance.json", cancellationToken).ConfigureAwait(false);
-        var signals = await ReadJson(dir, "signals.json", cancellationToken).ConfigureAwait(false);
-        if (acceptance.Failure is not null || signals.Failure is not null)
+        var (acceptance, acceptanceFailure) = await ReadJson(dir, "acceptance.json", cancellationToken).ConfigureAwait(false);
+        var (signals, signalsFailure) = await ReadJson(dir, "signals.json", cancellationToken).ConfigureAwait(false);
+        if (acceptanceFailure is not null || signalsFailure is not null)
         {
-            return BlockStepResult.Failed($"step.prove.intake can't load the phase packet {dir}: {acceptance.Failure ?? signals.Failure}");
+            return BlockStepResult.Failed($"step.prove.intake can't load the phase packet {dir}: {acceptanceFailure ?? signalsFailure}");
         }
 
-        var items = Items(acceptance.Node, signals.Node);
+        var items = Items(acceptance, signals);
         return StepFacts.Done(
             "ready",
             ("fact:findings", new JsonArray()),
@@ -58,7 +58,7 @@ internal sealed class ProveIntakeStep(IBriefFiles files) : IBlockStep, IBlockSte
                 own.Add(signal!.DeepClone()); // why: Where drops the nulls
             }
 
-            items.Add(new JsonObject { ["id"] = id, ["text"] = (string?)item["text"] ?? string.Empty, ["signals"] = own, ["artifacts"] = new JsonArray() });
+            items.Add((JsonNode)new JsonObject { ["id"] = id, ["text"] = (string?)item["text"] ?? string.Empty, ["signals"] = own, ["artifacts"] = new JsonArray() });
         }
 
         return items;

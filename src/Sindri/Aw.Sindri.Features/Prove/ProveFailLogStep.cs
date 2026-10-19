@@ -30,13 +30,13 @@ internal sealed class ProveFailLogStep : IBlockStep, IBlockStepId
         {
             if (!findings.Any(f => (string?)f?["rule"] == (string?)found["rule"] && (string?)f?["item"] == (string?)found["item"]))
             {
-                findings.Add(found);
+                findings.Add((JsonNode)found);
             }
         }
 
         if (findings.Count == 0)
         {
-            findings.Add(Finding("PRV-FAIL-001", null, "the proof failed before any check recorded why (a hand test, verify or evidence run did not resolve)", "open the instance's timeline for the child that did not resolve"));
+            findings.Add((JsonNode)Finding("PRV-FAIL-001", item: null, "the proof failed before any check recorded why (a hand test, verify or evidence run did not resolve)", "open the instance's timeline for the child that did not resolve"));
         }
 
         return ValueTask.FromResult(StepFacts.Done("logged", ("fact:findings", findings)));

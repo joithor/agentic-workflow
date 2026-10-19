@@ -80,10 +80,10 @@ public sealed class ProveEvidenceStepTests
             Assert.NotEmpty((await rig.Area.Read(Address, "proof-pack/" + name, Token)).Value);
         }
 
-        var freeze = Assert.Single(rig.Packets.Calls, static c => c.Verb == "freeze");
-        Assert.Equal((PacketKind.Proof, PacketFreezer.Machine, "/checkouts/name"), (freeze.Packet.Kind, freeze.By, freeze.Packet.Repo));
-        Assert.Equal(freeze.Packet.Directory, (string?)pack["dir"]);
-        Assert.Equal(Aw.Sindri.Testing.Packets.InMemoryPackets.HashOf(freeze.Packet), (string?)pack["hash"]);
+        var (_, packet, by) = Assert.Single(rig.Packets.Calls, static c => c.Verb == "freeze");
+        Assert.Equal((PacketKind.Proof, PacketFreezer.Machine, "/checkouts/name"), (packet.Kind, by, packet.Repo));
+        Assert.Equal(packet.Directory, (string?)pack["dir"]);
+        Assert.Equal(InMemoryPackets.HashOf(packet), (string?)pack["hash"]);
     }
 
     [Fact]
@@ -157,7 +157,7 @@ public sealed class ProveEvidenceStepTests
         Assert.Contains("address", (await rig.Step().Run(Context(Facts(Passing), address: false), Token)).Failure, StringComparison.Ordinal);
         Assert.Contains("repo", (await rig.Step().Run(Context(Facts(Passing), repo: false), Token)).Failure, StringComparison.Ordinal);
         var bare = new Rig();
-        bare.Checkouts.With("other", "/x");
+        _ = bare.Checkouts.With("other", "/x");
         var noCheckout = new ProveEvidenceStep(bare.Files, bare.Area, bare.Packets, new InMemoryRepoCheckouts());
         Assert.Contains("checkout", (await noCheckout.Run(Context(Facts(Passing)), Token)).Failure, StringComparison.Ordinal);
     }
