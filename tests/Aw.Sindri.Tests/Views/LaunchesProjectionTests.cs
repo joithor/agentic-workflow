@@ -7,6 +7,7 @@ using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Views;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Testing;
 
 namespace Aw.Sindri.Tests.Views;
@@ -86,6 +87,36 @@ public sealed class LaunchesProjectionTests
 
         Expect.Equal((LaunchState.Failed, "SND-LAUNCH-009", "timed out", LaunchStage.Host), (row.State, row.Code, row.Message, row.Stage));
         Assert.False(row.Live);
+    }
+
+    [Fact]
+    public async Task Launch_row_folds_instance_state_and_attempt()
+    {
+        var instance = InstanceAddress.From("ITM-1/spec/1");
+        var second = LaunchId.From("LCH-" + new string('0', 31) + "2");
+        await _v.Item(_repo);
+        await _v.Request();
+        await _v.Start(instance: instance, state: "build", attempt: 2);
+        await _v.Request(second);
+        await _v.Fail(launch: second, instance: instance, state: "review", attempt: 1);
+
+        var started = (await Row())!;
+        var failed = (await _v.Views.Get<LaunchRow>(ViewNames.Launches, second.Value, Token)).Value!;
+
+        Expect.Equal((instance, "build", 2), (started.Step.Instance!.Value, started.Step.State, started.Step.Attempt));
+        Expect.Equal((instance, "review", 1), (failed.Step.Instance!.Value, failed.Step.State, failed.Step.Attempt));
+    }
+
+    [Fact]
+    public async Task Old_launch_event_folds_to_null_fields()
+    {
+        await _v.Item(_repo);
+        await _v.Request();
+        await _v.Start();   // an event recorded before the fields existed has none of them
+
+        var step = (await Row())!.Step;
+
+        Expect.Equal((null, null, null), (step.Instance?.Value, step.State, step.Attempt));
     }
 
     [Fact]

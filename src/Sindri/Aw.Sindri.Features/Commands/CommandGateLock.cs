@@ -1,9 +1,13 @@
 namespace Aw.Sindri.Features.Commands;
 
-/// <summary>The process-wide command gate (API spec §2.1): one command at a time, waited for at most 5 s.</summary>
+/// <summary>The process-wide command gate (API spec §2.1): one command at a time, waited for at most 5 s. A stop never waits on it and cancels whatever holds it.</summary>
 internal sealed class CommandGateLock : IDisposable
 {
     private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly CancellationTokenSource _stopping = new();
+
+    /// <summary>Cancelled when the process starts to stop: every gated command runs under it, so a long one ends instead of outliving serve.</summary>
+    internal CancellationToken Stopping => _stopping.Token;
 
     /// <summary>How long a command waits for the gate before SND-API-009.</summary>
     internal static TimeSpan Limit { get; } = TimeSpan.FromSeconds(5);
@@ -28,5 +32,12 @@ internal sealed class CommandGateLock : IDisposable
     /// <summary>Leaves the gate.</summary>
     internal void Exit() => _gate.Release();
 
-    public void Dispose() => _gate.Dispose();
+    /// <summary>Cancels the command holding the gate, and any that would wait for it: the process is stopping.</summary>
+    internal void Stop() => _stopping.Cancel();
+
+    public void Dispose()
+    {
+        _gate.Dispose();
+        _stopping.Dispose();
+    }
 }

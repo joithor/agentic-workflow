@@ -70,6 +70,8 @@
         </ItemsControl>
       </StackPanel>
 
+      <Button x:Name="SessionOpenStep" Content="{Binding OpenFrameLabel}" Click="OnOpenFrame" IsVisible="{Binding HasStep}" HorizontalAlignment="Left" AutomationProperties.Name="{Binding OpenFrameName}" />
+
       <!-- Focus is the catalog's pending control (the send is U11a-f): a disabled button, then the phase and the CLI on a line with Copy. -->
       <StackPanel x:Name="SessionFocusRow" Spacing="6" IsVisible="{Binding HasFocusLine}">
         <Button x:Name="SessionFocus" Content="{Binding Focus.Label}" IsEnabled="{Binding IsFocusEnabled}" HorizontalAlignment="Left" AutomationProperties.Name="{Binding FocusName}" />

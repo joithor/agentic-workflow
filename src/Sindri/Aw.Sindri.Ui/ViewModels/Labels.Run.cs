@@ -111,4 +111,12 @@ internal static partial class Labels
         };
         return string.IsNullOrEmpty(to) ? why + "." : $"{why}. The instance moved to {to}.";
     }
+
+    /// <summary>The visible words of the link from an agent Step to its session.</summary>
+    internal const string SessionLink = "Session ▸";
+
+    /// <summary>The session link's accessible name.</summary>
+    /// <param name="sessionRef">The session's ref.</param>
+    /// <returns>The words.</returns>
+    internal static string SessionLinkName(string sessionRef) => $"{SessionLink} {sessionRef}, opens it on the Agents page";
 }
