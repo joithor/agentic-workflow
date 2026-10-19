@@ -57,7 +57,7 @@ internal sealed partial class AgentsPageViewModel
         return true;
     }
 
-    // Enter opens the selected session's sheet; O puts keyboard focus on its Focus line (the send itself arrives in U11a-f).
+    // Enter opens the selected session's sheet; O opens the frame of the Step it works on, else puts keyboard focus on its Focus line (the send itself arrives in U11a-f).
     private bool PressOnLive(string key, SessionRowViewModel? row)
     {
         if (row is null)
@@ -68,6 +68,10 @@ internal sealed partial class AgentsPageViewModel
         if (key == "Enter")
         {
             RequestOpen(new SessionOpenRequestedEventArgs(row.Link));
+        }
+        else if (row.HasStep)
+        {
+            row.OpenFrame();   // O: open with the resolved target, the frame of the Step the session works on
         }
         else
         {
