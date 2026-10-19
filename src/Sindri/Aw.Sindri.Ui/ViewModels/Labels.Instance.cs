@@ -150,7 +150,15 @@ internal static partial class Labels
     /// <param name="child">The served child.</param>
     /// <returns>The words.</returns>
     internal static string ChildLine(StatusChild child) =>
-        $"child {child.Address} · {child.State}{(child.Reason is { Length: > 0 } reason ? ": " + reason : string.Empty)}";
+        $"child {child.Address} · {ChildStateWords(child.State)}{(child.Reason is { Length: > 0 } reason ? ": " + reason : string.Empty)}";
+
+    /// <summary>The one child state the engine fixes: a child nobody answers for.</summary>
+    internal const string ChildUnreachable = "unreachable";
+
+    /// <summary>A child's state as drawn: "unreachable" is its own case (a warning mark and the word), any other served state is plain text.</summary>
+    /// <param name="state">The served state, an open recipe-state string.</param>
+    /// <returns>The words.</returns>
+    internal static string ChildStateWords(string state) => string.Equals(state, ChildUnreachable, StringComparison.Ordinal) ? "\u26a0 " + ChildUnreachable : state;
 
     /// <summary>A length of time as the engine says it: days, hours, minutes, leading zeros left out.</summary>
     /// <param name="seconds">The seconds.</param>

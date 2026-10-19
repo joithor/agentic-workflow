@@ -27,6 +27,26 @@ public sealed class OnyxSettingsTests
         Assert.Equal("v4.9.0", settings.Value.Version);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void A_managed_onyx_is_reached_at_127_0_0_1_over_http_and_unmanaged_is_the_default()
+    {
+        Assert.True(OnyxSettings.Create("http://127.0.0.1:3001", Pointer, "v4.9.0", managed: true).Value.Managed);
+        Assert.False(OnyxSettings.Create("http://127.0.0.1:3001", Pointer, "v4.9.0").Value.Managed);
+        Assert.False(OnyxSettings.Create("http://localhost:3000", Pointer, "v4.9.0").Value.Managed);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("http://localhost:3000")]
+    [InlineData("http://[::1]:3000")]
+    [InlineData("https://127.0.0.1:3000")]
+    public void A_managed_onyx_on_any_other_loopback_form_is_055(string url)
+    {
+        var error = OnyxSettings.Create(url, Pointer, "v4.9.0", managed: true).Error;
+
+        Assert.Equal("SND-CONTEXT-055", error.Code);
+        Assert.Contains("managed", error.Message, StringComparison.Ordinal);
+    }
+
     [Theory, Trait("Lane", "unit")]
     [InlineData("http://10.0.0.5:3000", "10.0.0.5")]
     [InlineData("http://0.0.0.0:3000", "0.0.0.0")]

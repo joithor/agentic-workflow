@@ -57,11 +57,15 @@ internal sealed partial class FakeSindriApi
     public Task<Result<FactView>> InstanceFact(Uri api, string id, string key, CancellationToken cancellationToken) =>
         Task.FromResult(Answer<FactView>(api, WorkflowRoutes.Fact(id, key), FactAnswer(id, key)));
 
-    public Task<Result<RecipeView>> Recipe(Uri api, string recipe, string? hash, CancellationToken cancellationToken)
+    public async Task<Result<RecipeView>> Recipe(Uri api, string recipe, string? hash, CancellationToken cancellationToken)
     {
         LastRecipeRead = (recipe, hash);
-        return Task.FromResult(Answer<RecipeView>(api, WorkflowRoutes.Recipe(recipe, hash), RecipeAnswer(recipe, hash)));
+        await WaitFor(RecipeGate, cancellationToken).ConfigureAwait(false);   // the gate is read when the call starts, so a test can hand each call its own
+        return Answer<RecipeView>(api, WorkflowRoutes.Recipe(recipe, hash), RecipeAnswer(recipe, hash));
     }
+
+    /// <summary>Held open until set: a recipe read that started while it was set waits for it.</summary>
+    public TaskCompletionSource? RecipeGate { get; set; }
 
     /// <summary>The recipe and hash of the latest recipe read; null before the first.</summary>
     public (string Recipe, string? Hash)? LastRecipeRead { get; private set; }

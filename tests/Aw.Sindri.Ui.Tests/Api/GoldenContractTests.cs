@@ -5,6 +5,7 @@ using Aw.Kernel.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Api.Context;
+using Aw.Sindri.Ui.Api.Sessions;
 using Aw.Sindri.Ui.Api.Workflow;
 using Aw.Sindri.Ui.Testing;
 
@@ -40,10 +41,14 @@ public sealed class GoldenContractTests
         ["workflow-instance-fact"] = As<FactView>,
         ["workflow-status"] = As<StatusFields>,
         ["workflow-recipe"] = As<RecipeView>,
+        ["workflow-recipes"] = As<RecipeList>,
+        ["workflow-instances-start"] = AsStart,   // POST /workflow/instances: the request golden, and the started answer (which also carries the engine's whole view)
         ["needs-you"] = As<NeedsYouList>,
         ["decisions"] = As<DecisionList>,
         ["decisions-id"] = As<CommandAcceptedView>,   // POST /decisions/{id}'s accepted goldens; the refusals are ProblemDetails
         ["requests"] = AsRequests,
+        ["sessions"] = As<SessionList>,   // GET /sessions (collector CO-3); the 503 SND-SESSION-002 bodies are ProblemDetails
+        ["sessions-id"] = As<SessionView>,   // GET /sessions/{provider}/{id}; the 404 is ProblemDetails
         ["context-lenses"] = As<LensesView>,
         ["context-filemap"] = As<FileMapView>,
         ["context-map"] = As<MapStatusView>,
@@ -65,7 +70,6 @@ public sealed class GoldenContractTests
         "services-name-run", "services-name-pause", "services-name-resume", "jobs-id", "jobs-id-cancel", "jobs",   // API P6: the app reads them in U4 (Services and the job panel)
         "items-id-open", "launches-id", "sessions-id-heartbeat", "sessions-id-exit", "launch-targets", "launch-targets-probe",   // API P10a (U8): the app reads the open's answer and the launch in U6a (Open in the terminal); U10: the session wrap's own calls, never the app's
         "workflow-recipes", "workflow-instances-start",   // the Start form's reads (U5'): the recipe list, and POST /workflow/instances' request and started answer (its refusals are ProblemDetails under workflow-instances); workflow-recipes/list pins the shape served before P12 (standing/via/stale/inputs), which differs from the spec's RecipeList (E-25), so U5' must not read inputs from it until that is decided (read GET /workflow/recipes/{id} instead)
-        "sessions", "sessions-id",   // collector CO-3: U11a (the Agents page) reads them
         "events-catalog",   // API P5 (E-15): the app reads each type's invalidates once it switches from re-querying every view on each event (UI lane)
     };
 
@@ -246,6 +250,9 @@ public sealed class GoldenContractTests
     // One slug for GET and POST /requests (U3-API-5): the list-* scenarios are RequestList, the others RequestFiled.
     private static Result<object> AsRequests(byte[] body) =>
         JsonNode.Parse(body) is JsonObject node && node.ContainsKey("requests") ? As<RequestList>(body) : As<RequestFiledView>(body);
+
+    private static Result<object> AsStart(byte[] body) =>
+        JsonNode.Parse(body) is JsonObject node && node.ContainsKey("instance") ? As<StartedView>(body) : As<StartInstanceRequest>(body);
 
     // One slug for GET and POST /context/map/review: the post-* scenarios are the decision's reply, the others the queue.
     private static Result<object> AsReview(byte[] body) =>

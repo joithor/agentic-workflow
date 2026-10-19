@@ -8,6 +8,7 @@ using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.NeedsYou;
+using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Blocks;
@@ -40,6 +41,7 @@ public static class SindriCoreServiceCollectionExtensions
             .AddSingleton<TemporalRuntime>()
             .AddSingleton<HeldHumanToken>()
             .AddSingleton<BlockCatalog>()
+            .AddScoped<OnyxFacts>()
             .AddSingleton<BlockStepRuntimes>()
             .AddSingleton<StepInputRuntimes>()
             .AddSingleton<ILedgerSignal, LedgerSignal>()

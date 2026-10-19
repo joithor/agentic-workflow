@@ -35,6 +35,24 @@ public sealed class SourcesSettingsTests
         Assert.Equal(["SPL", "APP"], settings.LinearTeams, StringComparer.Ordinal);
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void A_managed_onyx_entry_as_sindri_onyx_up_writes_it_is_read_with_managed_set()
+    {
+        // The same four keys YamlOnyxProfileWriter writes: url, token, version, managed: true.
+        var settings = Read("""{"sources":{"onyx":{"url":"http://127.0.0.1:3000","token":"keychain:onyx/sindri-onyx","version":"v4.9.0","managed":true}}}""").Value;
+
+        Assert.True(settings.Onyx!.Managed);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_managed_onyx_entry_off_the_loopback_ip_is_055_at_the_reader()
+    {
+        var read = Read("""{"sources":{"onyx":{"url":"http://localhost:3000","token":"env:K","version":"v4.9.0","managed":true}}}""");
+
+        Assert.Equal("SND-CONTEXT-055", read.Error.Code);
+        Assert.StartsWith("context.sources.onyx", read.Error.Message, StringComparison.Ordinal);
+    }
+
     [Theory, Trait("Lane", "unit")]
     [InlineData("""{"sources":{"slack":{}}}""", "SND-CONTEXT-001", "context.sources.slack:")]
     [InlineData("""{"sources":{"onyx":{"url":"http://127.0.0.1:3000","token":"env:K","version":"v4.9.0","apiKey":"x"}}}""", "SND-CONTEXT-001", "context.sources.onyx.apiKey:")]
