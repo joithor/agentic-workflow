@@ -5,7 +5,7 @@ using Aw.Sindri.Features.ContextCalls;
 namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
-/// 'sindri context subgraph &lt;key&gt;... [--keys-from &lt;file|-&gt;] [--map-version V] [--depth 0-4] [--json]' (scoping spec C14): a client of GET /sindri/context/subgraph, or of POST
+/// 'sindri context subgraph &lt;key&gt;... [--keys-from &lt;file|-&gt;] [--map-version V] [--depth 0-4] [--json]' (scoping spec C14): a client of GET /sindri/context/subgraph, or of QUERY
 /// when the keys don't fit a URL. Exit 0 with an answer (keys the map doesn't hold are listed, not an error); 1 for attention; 2 for a tool error.
 /// </summary>
 /// <param name="client">The API client.</param>
@@ -25,7 +25,7 @@ internal sealed class ContextSubgraphVerbs(ControlPlaneClient client, Output out
 
         var o = parsed.Value;
         var answer = o.UseBody
-            ? await client.Post<GetContextSubgraphRequest, SubgraphView>(Route, new GetContextSubgraphRequest(o.Keys, QueryRules.ParseDepth(o.Depth).Value, o.MapVersion), ct).ConfigureAwait(false)
+            ? await client.Query<GetContextSubgraphRequest, SubgraphView>(Route, new GetContextSubgraphRequest(o.Keys, QueryRules.ParseDepth(o.Depth).Value, o.MapVersion), ct).ConfigureAwait(false)
             : await client.Get<SubgraphView>(Route + o.QueryString, ct).ConfigureAwait(false);
         return answer.IsError ? ContextExit.For(answer.Error, await output.Error(answer.Error).ConfigureAwait(false))
             : o.Json ? await output.Raw(answer.Value.Body, 0).ConfigureAwait(false)

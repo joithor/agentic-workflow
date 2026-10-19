@@ -6,7 +6,7 @@ namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// 'context subgraph &lt;key&gt;... [--keys-from &lt;file|-&gt;] [--depth N] [--map-version V] [--json]': the keys (words, plus one per line of the keys file, '#' comments and blank lines skipped)
-/// and the choice of transport: a GET while at most 20 distinct keys fit the URL, a POST with the keys in the body otherwise.
+/// and the choice of transport: a GET while at most 20 distinct keys fit the URL, an HTTP QUERY with the keys in the body otherwise.
 /// </summary>
 /// <param name="Keys">The distinct keys, in the order given.</param>
 /// <param name="Depth">The depth text as typed (checked, 0 to 4), or null.</param>

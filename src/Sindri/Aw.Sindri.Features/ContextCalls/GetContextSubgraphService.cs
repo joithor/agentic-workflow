@@ -7,7 +7,7 @@ using Aw.Kernel.Services;
 
 namespace Aw.Sindri.Features.ContextCalls;
 
-/// <summary>The subgraph of a set of node keys through the engine, for the caller's scope; the one service behind GET and POST.</summary>
+/// <summary>The subgraph of a set of node keys through the engine, for the caller's scope; the one service behind GET and QUERY.</summary>
 internal sealed class GetContextSubgraphService(ContextScopes scopes, IContextEngine engine) : IService<GetContextSubgraphRequest, SubgraphView>
 {
     public async ValueTask<Result<SubgraphView>> Handle(GetContextSubgraphRequest request, CancellationToken cancellationToken)

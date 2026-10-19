@@ -5,7 +5,7 @@ using Aw.Sindri.Core.Commands;
 namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>
-/// The subgraph around node keys (GET /sindri/context/subgraph?nodes=&amp;nodes=, or POST with this record as the JSON body when the keys don't fit a URL; scoping spec C14).
+/// The subgraph around node keys (GET /sindri/context/subgraph?nodes=&amp;nodes=, or QUERY with this record as the JSON body when the keys don't fit a URL; scoping spec C14).
 /// Both transports run the same service, so the same keys answer the same bytes.
 /// </summary>
 /// <param name="Nodes">One to 1000 node keys (20 over GET).</param>

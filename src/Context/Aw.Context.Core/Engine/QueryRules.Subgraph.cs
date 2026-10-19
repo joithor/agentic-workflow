@@ -8,7 +8,7 @@ public static partial class QueryRules
     /// <summary>The most keys a subgraph GET takes (scoping spec C14).</summary>
     public const int MaxSubgraphGet = 20;
 
-    /// <summary>The most keys a subgraph POST takes (scoping spec C14).</summary>
+    /// <summary>The most keys a subgraph QUERY takes (scoping spec C14).</summary>
     public const int MaxSubgraphPost = 1_000;
 
     /// <summary>Whether a subgraph question fits a URL: at most <see cref="MaxSubgraphGet"/> distinct keys, each at most <see cref="MaxEncodedText"/> characters once percent-encoded.</summary>
@@ -19,8 +19,8 @@ public static partial class QueryRules
         ArgumentNullException.ThrowIfNull(keys);
         var distinct = keys.Distinct(StringComparer.Ordinal).ToList();
         return distinct.Count > MaxSubgraphGet
-            ? ContextErrors.QueryInvalid.With(string.Create(CultureInfo.InvariantCulture, $"a subgraph GET takes at most {MaxSubgraphGet} keys, not {distinct.Count} (fix: POST the keys in a body)"))
-            : distinct.Exists(k => !FitsQueryUrl(k)) ? ContextErrors.QueryInvalid.With(string.Create(CultureInfo.InvariantCulture, $"a subgraph key is over {MaxEncodedText} characters once percent-encoded for the query (fix: POST the keys in a body)"))
+            ? ContextErrors.QueryInvalid.With(string.Create(CultureInfo.InvariantCulture, $"a subgraph GET takes at most {MaxSubgraphGet} keys, not {distinct.Count} (fix: send the keys in a QUERY body)"))
+            : distinct.Exists(k => !FitsQueryUrl(k)) ? ContextErrors.QueryInvalid.With(string.Create(CultureInfo.InvariantCulture, $"a subgraph key is over {MaxEncodedText} characters once percent-encoded for the query (fix: send the keys in a QUERY body)"))
             : null;
     }
 }

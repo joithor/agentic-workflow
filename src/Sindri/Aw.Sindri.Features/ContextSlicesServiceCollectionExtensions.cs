@@ -1,5 +1,6 @@
 using Aw.Context.Core.Code;
 using Aw.Context.Core.Eval.MapQuality;
+using Aw.Context.Core.Facade;
 using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Locks;
@@ -24,6 +25,7 @@ internal static class ContextSlicesServiceCollectionExtensions
     {
         _ = services
             .AddScoped<ContextScopes>()
+            .AddScoped<IScopeProposals>(static sp => sp.GetRequiredService<IContextEngine>())
             .AddScoped<ContextChallenges>()
             .AddScoped<IScheduledService, ContextDocsRefreshService>()
             .AddScoped<IScheduledService, ContextPurgeService>()
