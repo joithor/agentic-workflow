@@ -99,7 +99,7 @@ internal sealed class ContextLensesInput(IContextEngine lenses, ContextInputScop
         var names = items.Where(static h => h.ValueKind == JsonValueKind.String).Select(static h => h.GetString()).ToList();
         if (names.Count < items.Count)
         {
-            notes.Add($"{items.Count - names.Count} of {items.Count} hops are not text and were ignored");
+            notes.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{items.Count - names.Count} of {items.Count} hops are not text and were ignored"));
         }
 
         return names.Count == 0 ? null : string.Join(',', names);

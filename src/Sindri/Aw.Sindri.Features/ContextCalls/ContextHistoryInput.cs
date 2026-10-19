@@ -82,6 +82,7 @@ internal sealed class ContextHistoryInput(IContextEngine history, ContextInputSc
             JsonValueKind.String => HistoryWindow.Of(value.GetString(), before: null),
             JsonValueKind.Object => HistoryWindow.Of(Text(value, "since"), Text(value, "before")),
             JsonValueKind.Array or JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False => ContextErrors.QueryInvalid.With("the window argument must be {since?, before?} or a date text, not " + value.ValueKind.ToString().ToLowerInvariant()),
+            JsonValueKind.Null or JsonValueKind.Undefined => HistoryWindow.Open,
             _ => ContextErrors.QueryInvalid.With("the window argument must be {since?, before?} or a date text"),
         };
     }

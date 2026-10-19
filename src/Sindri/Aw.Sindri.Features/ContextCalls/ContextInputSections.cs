@@ -18,8 +18,6 @@ internal static class ContextInputSections
     /// <summary>The most bytes of text, and of typed result, one input hands over; three inputs stay under the plan cap.</summary>
     internal const int Budget = 120 * 1024;
 
-    private const string Footer = "[{0} more lines not shown: this section is capped at 120 KiB]\n";
-
     /// <summary>The honest section for an input that could not read its lens.</summary>
     /// <param name="section">The section name.</param>
     /// <param name="what">What was asked ("context lenses").</param>
@@ -72,7 +70,7 @@ internal static class ContextInputSections
             shown++;
         }
 
-        return kept.Append(string.Format(System.Globalization.CultureInfo.InvariantCulture, Footer, lines.Length - shown)).ToString();
+        return kept.Append(System.Globalization.CultureInfo.InvariantCulture, $"[{lines.Length - shown} more lines not shown: this section is capped at 120 KiB]\n").ToString();
     }
 
     private static string Notes(IReadOnlyList<string> notes) => string.Concat(notes.Select(static n => "note: " + n + "\n"));
