@@ -11,6 +11,10 @@ internal static class LineJson
     internal static string? Str(JsonNode? node, string name) =>
         node is JsonObject obj && obj[name] is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
 
+    /// <summary>An integer field, or null.</summary>
+    internal static int? Int(JsonNode? node, string name) =>
+        node is JsonObject obj && obj[name] is JsonValue value && value.TryGetValue<int>(out var number) ? number : null;
+
     /// <summary>A boolean field, or null.</summary>
     internal static bool? Bool(JsonNode? node, string name) =>
         node is JsonObject obj && obj[name] is JsonValue value && value.TryGetValue<bool>(out var flag) ? flag : null;

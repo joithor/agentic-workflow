@@ -107,7 +107,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(DesignSteps.Intake)
         .AddBlockDescriptor(DesignSteps.Draft)
         .AddBlockDescriptor(DesignSteps.Apply)
-        .AddBlockDescriptor(DesignSteps.Check)
+        .AddBlockStep<DesignCheckStep>()
         .AddBlockDescriptor(DesignSteps.Revise)
         .AddBlockDescriptor(DesignSteps.LensDesk)
         .AddBlockDescriptor(DesignSteps.Evidence)
