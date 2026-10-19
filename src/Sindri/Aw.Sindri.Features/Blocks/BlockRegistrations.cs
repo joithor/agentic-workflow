@@ -66,7 +66,7 @@ internal static class BlockRegistrations
     /// <returns>The same collection.</returns>
     private static IServiceCollection AddPhaseBlocks(this IServiceCollection services) => services
         .AddBlockDescriptor(PhaseSteps.Seed)
-        .AddBlockDescriptor(PhaseSteps.Drift)
+        .AddBlockStep<PhaseDriftStep>()
         .AddBlockDescriptor(PhaseSteps.Decide)
         .AddBlockDescriptor(BabysitSteps.Watch)
         .AddBlockDescriptor(LineEffects.Report);
@@ -75,7 +75,7 @@ internal static class BlockRegistrations
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     private static IServiceCollection AddBuildProveBlocks(this IServiceCollection services) => services
-        .AddBlockDescriptor(BuildSteps.Prepare)
+        .AddBlockStep<BuildPrepareStep>()
         .AddBlockDescriptor(BuildSteps.Red)
         .AddBlockDescriptor(BuildSteps.RedCheck)
         .AddBlockDescriptor(BuildSteps.Green)
@@ -159,7 +159,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(ShipSteps.Pack)
         .AddBlockDescriptor(ShipSteps.Freeze)
         .AddBlockDescriptor(ShipSteps.Open)
-        .AddBlockDescriptor(ShipSteps.Return);
+        .AddBlockStep<ShipReturnStep>();
 
     /// <summary>Registers the docs-sync station's Steps (PB spec §7), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
