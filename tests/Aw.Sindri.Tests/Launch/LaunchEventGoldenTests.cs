@@ -88,6 +88,6 @@ public sealed class LaunchEventGoldenTests
             .ToList();   // a new launch or session event fails here until it has a golden
 
         Assert.NotEmpty(types);
-        Assert.All(types, type => Assert.Contains(Cases, c => c.Data.StartsWith(type, StringComparison.Ordinal)));
+        Assert.All(types, type => Assert.Contains(Cases, c => string.Equals(c.Data, type, StringComparison.Ordinal) || c.Data.StartsWith(type + "-", StringComparison.Ordinal)));   // a golden is named for its whole type, plus a variant after a dash
     }
 }

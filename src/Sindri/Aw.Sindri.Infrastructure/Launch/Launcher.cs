@@ -191,11 +191,12 @@ internal sealed partial class Launcher(LauncherParts parts) : ILauncher
         var started = await host.Start(new HostSession(name, prepared.WorkDir, wrapped, prepared.Env), parts.Options.HostDeadline, cancellationToken).ConfigureAwait(false);
         if (started.IsError)
         {
-            if (started.Error.Kind != ErrorKind.Conflict)
+            if (started.Error.Kind == ErrorKind.Conflict)
             {
-                _ = await host.Stop(new HostRef(host.Kind, name), CancellationToken.None).ConfigureAwait(false);   // a start that completes late must leave no orphan; a clash is someone else's session
+                return Clash(request, entry, host, prepared, started.Error);   // the session is this launch's own, alive: never stopped, its files never deleted
             }
 
+            _ = await host.Stop(new HostRef(host.Kind, name), CancellationToken.None).ConfigureAwait(false);   // a start that completes late must leave no orphan
             Cleanup(request.Launch);
             return Fail(started.Error);
         }

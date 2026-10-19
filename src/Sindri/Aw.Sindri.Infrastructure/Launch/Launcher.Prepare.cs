@@ -28,8 +28,9 @@ internal sealed partial class Launcher
 
             WriteCaptureRule(request.Launch, entry);
             var secret = LaunchSecrets.Mint();
+            var prior = File.Exists(LaunchSecrets.PathFor(parts.Options.SecretsDirectory, request.Launch)) ? File.ReadAllBytes(LaunchSecrets.PathFor(parts.Options.SecretsDirectory, request.Launch)) : null;   // a live session of this launch may own it
             LaunchSecrets.Write(parts.Options.SecretsDirectory, request.Launch, secret);
-            return new Prepared(workDir, composed.Value.Argv, Environment(request), composed.Value.Session?.Value);
+            return new Prepared(workDir, composed.Value.Argv, Environment(request), composed.Value.Session?.Value) { PriorHash = prior };
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
@@ -97,5 +98,23 @@ internal sealed partial class Launcher
         LaunchFileStore.DeleteIn(parts.Options.LaunchDirectory, McpLaunchConfig.PathFor(parts.Options.LaunchDirectory, launch));
     }
 
-    private sealed record Prepared(string WorkDir, IReadOnlyList<string> Argv, Dictionary<string, string> Env, string? Session);
+    private sealed record Prepared(string WorkDir, IReadOnlyList<string> Argv, Dictionary<string, string> Env, string? Session)
+    {
+        /// <summary>The hash file as it was before this start rewrote it, or null when there was none.</summary>
+        public byte[]? PriorHash { get; init; }
+    }
+
+    /// <summary>The start clashed with a session of this launch's name: it is the launch's own and stays untouched. The hash the live wrap checks is put back (and the session answered as started), or, with no hash to put back, the minted pair is removed and the launch fails.</summary>
+    private LaunchResult Clash(LaunchRequest request, AgentEntry entry, ISessionHost host, Prepared prepared, Error clash)
+    {
+        LaunchSecrets.Delete(parts.Options.SecretsDirectory, request.Launch);
+        if (prepared.PriorHash is not { } prior)
+        {
+            return Fail(clash);
+        }
+
+        OwnerOnly.WriteAtomically(LaunchSecrets.PathFor(parts.Options.SecretsDirectory, request.Launch), prior);
+        var session = new HostRef(host.Kind, SessionName(request.Launch));
+        return new StartedLaunch(session, ViewerOutcome.Skipped, host.AttachArgv(session), entry.Source, entry.ArgvHash ?? string.Empty);
+    }
 }

@@ -18,6 +18,14 @@ public sealed class LauncherRestartTests : IDisposable
     private readonly PrivateTmux _tmux = new();
     private readonly string _home = Directory.CreateTempSubdirectory("aw-launcher-restart-").FullName;
     private readonly FakeTimeProvider _clock = new(KnownInstants.Epoch);
+    private readonly string _wrap;
+
+    public LauncherRestartTests()
+    {
+        _wrap = Path.Combine(_tmux.Scratch, "wrap.sh");   // stands in for 'sindri session wrap': it just stays alive; written before any process of this class starts, so no fork of ours holds it open
+        File.WriteAllText(_wrap, "#!/bin/sh\nsleep 60\n");
+        File.SetUnixFileMode(_wrap, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+    }
 
     public void Dispose()
     {
@@ -34,9 +42,7 @@ public sealed class LauncherRestartTests : IDisposable
     [Fact]
     public async Task The_same_launch_id_after_a_restart_answers_the_live_session()
     {
-        var wrap = Path.Combine(_tmux.Scratch, "wrap.sh");   // stands in for 'sindri session wrap': it just stays alive
-        await File.WriteAllTextAsync(wrap, "#!/bin/sh\nsleep 60\n", TestContext.Current.CancellationToken);
-        File.SetUnixFileMode(wrap, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        var wrap = _wrap;
         var request = A.LaunchRequest().Build();
         var first = await Make(wrap).Launch(request, TestContext.Current.CancellationToken);
         Expect.True(first is StartedLaunch);
