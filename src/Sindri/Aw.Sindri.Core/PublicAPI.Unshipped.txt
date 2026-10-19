@@ -9214,12 +9214,12 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionEntry.Sha256.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey
 Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey.Address.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey.Address.init -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey.Deconstruct(out string! Address, out string! State, out string! Run, out Aw.Sindri.Core.Workflow.Ids.BlockId Input) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey.Deconstruct(out string! Address, out string! State, out string! Run, out int Entry) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey other) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey.InjectionKey() -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey.InjectionKey(string! Address, string! State, string! Run, Aw.Sindri.Core.Workflow.Ids.BlockId Input) -> void
-Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey.Input.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
-Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey.Input.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey.InjectionKey(string! Address, string! State, string! Run, int Entry) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey.Entry.get -> int
+Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey.Entry.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey.Run.get -> string!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey.Run.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey.State.get -> string!
@@ -9290,6 +9290,8 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionKey.operator ==(Aw.Sindri
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan.Empty.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan? right) -> bool
+const Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlans.PlanCap = 1048576 -> int
+static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlans.Bytes(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.FilledInput!>! filled) -> int
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlans.Merge(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.FilledInput!>! filled) -> Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionPlan!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionResultEntry.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionResultEntry? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionResultEntry? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionResultEntry.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionResultEntry? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionResultEntry? right) -> bool

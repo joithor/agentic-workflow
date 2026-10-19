@@ -137,7 +137,7 @@ public sealed class BlockStepRunnerTests
         var text = "notes for the Step";
         var typed = JsonSerializer.SerializeToElement(new { count = 2 });
         var recorded = new FilledInput(input, 1, [new InjectionEntry("notes", input, Encoding.UTF8.GetByteCount(text), StepInputRunner.Sha(text))], new InjectionResultEntry(typed.GetRawText().Length, StepInputRunner.Sha(typed.GetRawText())));
-        _texts.Put(new InjectionKey("T-1/workflow.x/1", "route-evidence", "1.1", input), new FilledTexts(new Dictionary<string, string>(StringComparer.Ordinal) { ["notes"] = text }, typed));
+        _texts.Put(new InjectionKey("T-1/workflow.x/1", "route-evidence", "1.1", 1), new FilledTexts(new Dictionary<string, string>(StringComparer.Ordinal) { ["notes"] = text }, typed));
         var request = new FillInputRequest("T-1/workflow.x/1", "route-evidence", "1.1", 1, input, _judge, new Dictionary<string, WithValue>(StringComparer.Ordinal), new Dictionary<FactKey, FactValue>(), Repo: null);
         var run = (await RunOf(repo: null)) with { Fills = [new InjectionFill(recorded, request)] };
 

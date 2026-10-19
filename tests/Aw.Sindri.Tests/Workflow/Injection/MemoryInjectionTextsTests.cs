@@ -1,6 +1,5 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
-using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Infrastructure.Workflows;
 
 namespace Aw.Sindri.Tests.Workflow.Injection;
@@ -9,9 +8,7 @@ namespace Aw.Sindri.Tests.Workflow.Injection;
 [Lane(TestLane.Unit)]
 public sealed class MemoryInjectionTextsTests
 {
-    private static readonly BlockId _input = BlockId.From("input.test.a");
-
-    private static InjectionKey Key(string address, string run) => new(address, "checks", run, _input);
+    private static InjectionKey Key(string address, string run) => new(address, "checks", run, 1);
 
     private static FilledTexts Text(string text) => new(new Dictionary<string, string>(StringComparer.Ordinal) { ["s"] = text });
 
@@ -78,5 +75,14 @@ public sealed class MemoryInjectionTextsTests
 
         Assert.Null(cache.Get(Key("T-1/s/1", "1.1")));
         Assert.NotNull(cache.Get(Key("T-3/s/1", "1.1")));
+    }
+
+    [Fact]
+    public void A_typed_result_is_sized_in_utf8_bytes_like_the_sections()
+    {
+        var result = System.Text.Json.JsonDocument.Parse("{\"note\":\"\u00e9\u00e9\u00e9\u00e9\"}").RootElement.Clone();   // 4 two-byte characters: the raw text has 4 fewer chars than bytes
+        var texts = new FilledTexts(new Dictionary<string, string>(StringComparer.Ordinal), result);
+
+        Assert.Equal(System.Text.Encoding.UTF8.GetByteCount(result.GetRawText()), MemoryInjectionTexts.Size(texts));
     }
 }

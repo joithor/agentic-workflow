@@ -3,6 +3,18 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <summary>The pure merge of the filled inputs into one plan (plan decision 3): no I/O and no clock, so the workflow can run it.</summary>
 public static class InjectionPlans
 {
+    /// <summary>The most bytes one Step's inputs may fill together: the plan is one budget for the run, not one per input.</summary>
+    public const int PlanCap = 1024 * 1024;
+
+    /// <summary>The bytes the inputs filled together: every section and typed result of every input, replaced sections included, because their texts are all held.</summary>
+    /// <param name="filled">What the inputs returned.</param>
+    /// <returns>The total.</returns>
+    public static int Bytes(IReadOnlyList<FilledInput> filled)
+    {
+        ArgumentNullException.ThrowIfNull(filled);
+        return filled.Sum(static f => f.Sections.Sum(static s => s.Bytes) + (f.Result?.Bytes ?? 0));
+    }
+
     /// <summary>Merges the inputs in declaration order and their sections in the order given; a later section of the same name replaces the earlier one in place and warns.</summary>
     /// <param name="filled">What the inputs returned.</param>
     /// <returns>The plan.</returns>

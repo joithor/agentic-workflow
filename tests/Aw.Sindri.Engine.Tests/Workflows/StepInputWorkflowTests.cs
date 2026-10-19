@@ -136,7 +136,7 @@ public sealed class StepInputWorkflowTests(SindriTimeSkippingServer server) : IC
         {
             var task = await run.Desk.Until(static v => v.Task is not null);
             var texts = run.Desk.Sindri.GetRequiredService<IInjectionTexts>();
-            var key = new InjectionKey(run.Handle.Id, "checks", task.Run!.Value.Value, BlockId.From(ProbeInput.Id));
+            var key = new InjectionKey(run.Handle.Id, "checks", task.Run!.Value.Value, 1);
 
             Assert.Equal(InputProbe.Planted, texts.Get(key)!.Sections["notes"]);
             var report = new StepCompleted("human:cli", task.Run!.Value, OutcomeName.From("passed"), new Dictionary<FactKey, FactValue>(), Tokens: 0, StepRuntime.Desk, new string('f', 64));
@@ -154,7 +154,7 @@ public sealed class StepInputWorkflowTests(SindriTimeSkippingServer server) : IC
         {
             var task = await run.Desk.Until(static v => v.Task is not null);
             var texts = run.Desk.Sindri.GetRequiredService<IInjectionTexts>();
-            var key = new InjectionKey(run.Handle.Id, "checks", task.Run!.Value.Value, BlockId.From(ProbeInput.Id));
+            var key = new InjectionKey(run.Handle.Id, "checks", task.Run!.Value.Value, 1);
             Assert.NotNull(texts.Get(key));
 
             await run.Handle.CancelAsync();
@@ -176,7 +176,23 @@ public sealed class StepInputWorkflowTests(SindriTimeSkippingServer server) : IC
             var texts = run.Desk.Sindri.GetRequiredService<IInjectionTexts>();
 
             Assert.Equal("broken", result.State);
-            Assert.Null(texts.Get(new InjectionKey(run.Handle.Id, "checks", "1.1", BlockId.From(ProbeInput.Id))));
+            Assert.Null(texts.Get(new InjectionKey(run.Handle.Id, "checks", "1.1", 1)));
+        });
+    }
+
+    [Fact]
+    public async Task Inputs_that_together_pass_the_plan_cap_fail_the_Step_and_drop_their_texts()
+    {
+        var big = new string('x', 200 * 1024);   // 3 sections of 200 KiB: 600 KiB an input, under the 1 MiB cap alone
+        _probe.Behavior = _ => new InjectionSections(new Dictionary<string, string>(StringComparer.Ordinal) { ["a"] = big, ["b"] = big, ["c"] = big });
+        await Run("T-79", [ProbeInput.Id, SecondProbeInput.Id], async run =>
+        {
+            var result = await run.Handle.GetResultAsync();
+            var texts = run.Desk.Sindri.GetRequiredService<IInjectionTexts>();
+
+            Assert.Equal("broken", result.State);   // the two inputs are 1.2 MiB together: one plan over the cap
+            Assert.Equal(2, _probe.Calls.Count);
+            Assert.Null(texts.Get(new InjectionKey(run.Handle.Id, "checks", "1.1", 1)));
         });
     }
 

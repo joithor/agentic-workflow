@@ -25,7 +25,7 @@ internal sealed partial class StepInputRunner(InputDispatch dispatch, StepInputR
     internal const int SectionCap = 256 * 1024;
 
     /// <summary>The most bytes a plan may hold.</summary>
-    internal const int PlanCap = 1024 * 1024;
+    internal const int PlanCap = InjectionPlans.PlanCap;
 
     /// <inheritdoc/>
     public async ValueTask<Result<FilledOutput>> Fill(StepInputContext context, int index, CancellationToken cancellationToken)

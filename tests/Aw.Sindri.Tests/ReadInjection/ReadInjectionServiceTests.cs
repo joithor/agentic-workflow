@@ -65,7 +65,7 @@ public sealed class ReadInjectionServiceTests
         var source = new InjectionSource("checks", Run, [new InjectionInputSource(Output(recorded).Metadata, Context)]);
         if (cached)
         {
-            texts.Put(new InjectionKey(view.Address.Value, "checks", Run, _input), Output(recorded).Texts);
+            texts.Put(new InjectionKey(view.Address.Value, "checks", Run, 1), Output(recorded).Texts);
         }
 
         var runner = new Runner(refill);
@@ -91,7 +91,7 @@ public sealed class ReadInjectionServiceTests
 
         Assert.Equal("same", Assert.Single(result.Value.Sections).Text);
         Assert.Equal(1, runner.Calls);
-        Assert.NotNull(texts.Get(new InjectionKey(Open("same").Address.Value, "checks", Run, _input)));   // the refill is kept
+        Assert.NotNull(texts.Get(new InjectionKey(Open("same").Address.Value, "checks", Run, 1)));   // the refill is kept
     }
 
     [Fact]
@@ -100,7 +100,7 @@ public sealed class ReadInjectionServiceTests
         var (result, texts, _) = await Read(Open("before"), "before", () => "after");
 
         Assert.Equal(WorkflowErrors.InjectionChanged.Code, result.Error.Code);
-        Assert.Null(texts.Get(new InjectionKey(Open("before").Address.Value, "checks", Run, _input)));
+        Assert.Null(texts.Get(new InjectionKey(Open("before").Address.Value, "checks", Run, 1)));
         Assert.DoesNotContain("after", result.Error.Message, StringComparison.Ordinal);
     }
 

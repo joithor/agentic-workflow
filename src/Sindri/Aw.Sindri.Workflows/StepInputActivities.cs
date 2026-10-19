@@ -38,7 +38,7 @@ internal sealed class StepInputActivities(IStepInputRunner runner, IInjectionTex
             throw new ApplicationFailureException(filled.Error.Message, errorType: filled.Error.Code, nonRetryable: true);
         }
 
-        texts.Put(new InjectionKey(request.Address, request.State, request.Run, request.Input), filled.Value.Texts);
+        texts.Put(new InjectionKey(request.Address, request.State, request.Run, request.Index), filled.Value.Texts);
         return filled.Value.Metadata;
     }
 

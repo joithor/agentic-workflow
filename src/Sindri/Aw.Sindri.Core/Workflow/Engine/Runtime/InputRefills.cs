@@ -20,7 +20,7 @@ public static class InputRefills
         ArgumentNullException.ThrowIfNull(runner);
         ArgumentNullException.ThrowIfNull(refill);
         var input = refill.Input;
-        var key = new InjectionKey(refill.Address, refill.State, refill.Run, input.Recorded.Input);
+        var key = new InjectionKey(refill.Address, refill.State, refill.Run, input.Recorded.Index);
         if (texts.Get(key) is { } kept)
         {
             return kept;
