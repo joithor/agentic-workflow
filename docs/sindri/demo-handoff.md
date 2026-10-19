@@ -175,19 +175,25 @@ Onyx is the intent-source engine (trackers, notes). The demo does not need it: r
 1. Profile: `workflow.agent.target: claude-code` (section 3). The owner re-approves the profile (`sindri profile approve`, typed line) after adding it.
 2. Re-approve the recipes `sindri recipe list --stale` lists. Four Step descriptors moved (`step.produce` is now `Runtime: agent`; `step.build.red`, `step.build.green` and `step.prove.holdout` gained `WriteScope`), so expect `workflow.step`, `workflow.build`, `workflow.prove`, `workflow.implement`, plus recipes that use `step.produce`, then their parents (`workflow.phase`, `workflow.line`). Children first. **Owner types** each: `sindri recipe approve <file|id@hash>` and the typed line. Until then, reports on instances of those recipes are refused with `SND-RECIPE-006`. Before that, approve `workflow.idea-to-brief` first, then `workflow.scoping` (else `RCP-CHILD-001`).
 3. Start `workflow.line` (**owner types**) with a `fact:item` that carries `{id, repo, spec}` (without a repo: `SND-CONTEXT-045`). `sindri recipe show workflow.line` lists the inputs (`fact:scopeInput`, `fact:lineContext`); `SND-CLI-003` names any missing one.
-4. Watch the scoping child's agent Steps run: the Workflows instance frame (the states band advances, events read `via agent · tokens N`, `sindri workflow status <address>` shows `run agent LCH-...`) and the Agents page (`G A`), where the launched session appears.
-5. **Desk-only Steps remain.** P8 puts agents on the agent Steps only. Block Steps and human-only Steps still open a desk task, and the owner completes them: `sindri workflow status <address>` prints the command; run `sindri workflow complete <address> --run <token> --outcome <o> [--output fact:<name>=<file>]...`. On scoping that is most of the early and late states (intake, read-brief, anchor, gather, check, reanchor, propose, evidence, freeze, and more). The scoping desk verb is below. If agents are not available, every Step is at the desk: that is Plan B.
+4. Watch the scoping child's agent Steps (`draft`, then `questions`) run: the Workflows instance frame (the states band advances, events read `via agent · tokens N`, `sindri workflow status <address>` shows `run agent LCH-...`) and the Agents page (`G A`), where the launched session appears.
+5. **Expect the budget park after `questions`** (above). The desk-only Steps before it (intake, read-brief, gather, check) are answered by the owner as they open.
+6. **Desk-only Steps remain.** P8 puts agents on the agent Steps only. Block Steps and human-only Steps still open a desk task, and the owner completes them: `sindri workflow status <address>` prints the command; run `sindri workflow complete <address> --run <token> --outcome <o> [--output fact:<name>=<file>]...`. On scoping that is most of the early and late states (intake, read-brief, anchor, gather, check, reanchor, propose, evidence, freeze, and more). The scoping desk verb is below. If agents are not available, every Step is at the desk: that is Plan B.
 
 The scoping desk has its own verb: `sindri scoping desk <block id> --facts <dir> --out <dir> [--repo-root <dir> [--notes-dir <dir>]] [--query <file>] [--lenses <file>] [--code <file>] [--history <file>] [--propose <file>] [--json]`. The exact block names in `DeskBlocks.cs` are `intake`, `check`, `challenge-log`, `evidence`, `record` (or `interview.record`), `gather`, `read-brief`, `anchor`, `reanchor`, `propose` and `seed` (or `brief.seed`). Each also works as its full id (`step.scope.<name>`, `step.interview.record`, `step.brief.seed`). The context-reading ones are `read-brief`, `anchor`, `reanchor`, `gather` and `propose`.
 
-**Proof so far.** Engine's proof run drove one item through the shipped `workflow.line` with real Claude sessions: scoping `draft` (event 162, via agent, 157216 tokens) and `questions` (event 184, via agent, 445292 tokens) were each done by a session that reported itself. The final evidence is `~/.agentic-workflow/jthorare-agentic-workflow/proof/p8-line-agents/evidence.md` and arrives later, from engine's fourth proof run; read it there, and do not rely on this paragraph for how far the line gets.
+**What the final proof shows (`~/.agentic-workflow/jthorare-agentic-workflow/proof/p8-line-agents/evidence.md`, same code as main `ea2bc59`).** One item went through the shipped `workflow.line` with real Claude sessions:
+- Scoping's `draft` ran in a real agent session and finished `via agent · tokens 157216` (event 162). `questions` did too (event 184, 445292 tokens). Each session ran the Step brief's `sindri workflow complete` command itself.
+- The other scoping states (intake, read-brief, gather, check) were desk blocks, answered at the desk.
+- Then the line **parks on the token budget inside scoping**. Cache reads inflate the count (`questions used 445292 of 100k`). A 100k grant is the most one grant can give, and answering it **reruns** the Step in a new session (`resumed (rerun)`), which costs more again (783456; then `1228748 of 200k`). The line stops there: scoping `parked: budget`, the line `parked: needs your answer`. Design, plan and phase were not reached.
+
+**Present this park as a known gap, not something to fight live.** The budget unit is a follow-up the next PR fixes. On stage: show the agent Steps running and reporting, show the park in the app and in `sindri workflow status <address>`, say plainly that the budget counts cache reads, and stop. Do not grant tokens live: it reruns the Step. No profile key changes it.
 
 **Known rough edges of the agent-run line (with workarounds):**
 
 | Rough edge | Workaround |
 |---|---|
-| Steps park on the token budget. A Step's count includes cache reads, which are re-counted every turn, so one small Step can use about 450k tokens against the default 100k budget. | There is **no profile key** for it. Answer each park with `sindri workflow answer <address> --grant-tokens <n>` (protected, needs the owner's typed confirmation, at most 100000 per grant; more is `SND-WF-003`). **Expect several grants per Step**, about five for a 450k Step. The other way is to raise the budget in the recipe itself and re-approve that recipe |
-| Claude's first-run folder-trust prompt blocks an unattended launch in a new worktree. | Accept it by hand in the launched session once (attach from the Agents page or `sindri open`), or pre-trust the agent worktree folder in Claude before the demo. A product answer is a follow-up in the launcher |
+| The line parks on the token budget in scoping (see above). A Step's count includes cache reads, so one small Step can use 150k to 450k+ tokens against 100k. | **Known gap, fixed by the next PR; do not fight it live.** There is no profile key. `sindri workflow answer <address> --grant-tokens <n>` is protected (typed confirmation, at most 100000 per grant, more is `SND-WF-003`) and a grant reruns the Step, so it cannot catch up. The other way is a higher budget in the recipe plus a re-approval |
+| Claude's folder-trust prompt ("Is this a project you trust?", default "No, exit") waits in an unattended session the first time a repo path is launched. | Accept it by hand once in the launched session (`tmux ... send-keys Down Enter` in the proof, or attach from the Agents page) **before the demo**; later launches in that repo path inherited it. A product answer is a launcher follow-up |
 | Agents run unsandboxed until SB-5. | Say so; run the demo on a repo where that is acceptable |
 | Block Steps and human-only Steps are not run by agents. | The owner completes them at the desk, as above |
 | Usage may be attributed to the wrong launch, and a finished Step's session can linger about 40 s. | Cosmetic; known follow-ups |
@@ -215,6 +221,17 @@ sindri recipe approve <id>@<hash12>                                 # OWNER TYPE
 ```
 
 Order: the station recipes `workflow.line` names, then `workflow.scoping` (and its child `workflow.idea-to-brief`), then `workflow.line`. Read each file's `children` or `starts` entries to get the real order. Without approval, `workflow start` answers `SND-RECIPE-003 ... isn't approved`.
+
+### Demo script (the order the proof ran, mapped to a real box)
+
+1. Build and start: `scripts/sindri-app.sh` (the proof published the host with `heavy`, then ran serve headless). One terminal environment for everything.
+2. Profile with `workflow.agent.target: claude-code` (and your repo, `context.sessions.enabled: true`); `sindri profile validate`; the owner approves it with the typed line.
+3. Approve every recipe, children first (the proof approved all 19; the shipped `workflow.scoping` approves). Owner types each `sindri recipe approve <file|id@hash>`.
+4. `sindri item add "<title>" --repo <work-repo>`.
+5. Owner starts the line: `sindri workflow start workflow.line --item <ITM-id> --fact ...` (inputs from `sindri recipe show workflow.line`; `fact:lineContext` is `{line, phase, attempt, base, runArea}`).
+6. The owner answers each desk task as it opens (`sindri workflow status <address>` prints the command). Never answer an agent Step's run at the desk.
+7. Watch the agent sessions: the Agents page, `sindri workflow events <address>` (the `via agent · tokens N` lines), or the launcher's tmux (`tmux -L sindri-launch ls`; `capture-pane -p -t snd-LCH-...`). Panes show "bypass permissions on".
+8. The park: show it, explain it, stop (`sindri stop` as the owner when done; readers run from the repo directory, and desk completes and stop run as the human, because a session gets `SND-AUTH-002`).
 
 ## 7. Rehearsal script
 
@@ -299,7 +316,7 @@ An interactive agent asks to approve the five `mcp__sindri__context_*` tools onc
 
 Written for main `ea2bc59`. Plan B covers two cases.
 
-1. **Agents cannot run the Steps** (the launcher fails, the trust prompt or budget parks keep recurring, or `workflow.agent.target` cannot be set): remove the target from the profile (the owner re-approves), and every Step is completed at the desk. Use `sindri workflow status <address>` for the next command, then `sindri workflow complete <address> --run <token> --outcome <o> [--output fact:<name>=<file>]...`; the scoping Steps have `sindri scoping desk <block> ...` (section 6). Say on stage that nothing is running the Steps; the app still follows each transition live.
+1. **Agents cannot run the Steps** (or you want a run that does not park on the budget) (the launcher fails, the trust prompt or budget parks keep recurring, or `workflow.agent.target` cannot be set): remove the target from the profile (the owner re-approves), and every Step is completed at the desk. Use `sindri workflow status <address>` for the next command, then `sindri workflow complete <address> --run <token> --outcome <o> [--output fact:<name>=<file>]...`; the scoping Steps have `sindri scoping desk <block> ...` (section 6). Say on stage that nothing is running the Steps; the app still follows each transition live.
 2. **The work repo's context map is thin.** Check with `sindri context map status` and `sindri context query "<project description>"` (anchors and cited records, not "0 items in 0 sections"). If thin or empty, author and import a small map as in section 5b before 09:00. Do not do this on stage.
 
 The gold facts make a short demo of their own: `sindri scoping check --facts tests/fixtures/line/gold/scope/expiry` and `sindri scoping show --facts tests/fixtures/line/gold/scope/expiry` (a plain terminal; from an agent session the output is fenced as untrusted text).
