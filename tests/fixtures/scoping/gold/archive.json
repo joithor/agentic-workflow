@@ -315,6 +315,25 @@
         "surface:job/nightly"
       ],
       "regression": true
+    },
+    {
+      "id": "AC-7",
+      "form": "event",
+      "text": "When an export runs, the system shall leave out archived notes.",
+      "surfaces": [
+        "action:export.run"
+      ],
+      "regression": false
+    },
+    {
+      "id": "AC-8",
+      "form": "event",
+      "text": "When the nightly job runs, the system shall not archive a trashed note and shall not purge an archived note.",
+      "surfaces": [
+        "surface:job/nightly",
+        "action:trash.purge"
+      ],
+      "regression": false
     }
   ],
   "challenger": {

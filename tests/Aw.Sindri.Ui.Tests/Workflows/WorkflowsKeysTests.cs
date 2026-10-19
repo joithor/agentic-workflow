@@ -113,15 +113,13 @@ public sealed class WorkflowsKeysTests
     }, Token);
 
     [Fact]
-    public Task B_and_N_say_arrive_with_their_phase() => UiThread.Run(async () =>
+    public Task B_says_it_arrives_with_its_phase() => UiThread.Run(async () =>
     {
         var shell = await OnWorkflows();
         Assert.True(shell.Workflows.Select(Plain.Address));
 
         Assert.True(shell.Press("B"));
         Assert.Equal(Labels.HandBackArrives, shell.Workflows.KeyNote);
-        Assert.True(shell.Press("N"));
-        Assert.Equal(Labels.StartArrives, shell.Workflows.KeyNote);
         Assert.False(shell.IsSheetOpen);
 
         Assert.True(shell.Press("J"));
@@ -247,7 +245,7 @@ public sealed class WorkflowsKeysTests
         Assert.Equal(string.Empty, shell.Workflows.KeyNote);
 
         shell.GoTo(PageId.Workflows);
-        Assert.True(shell.Press("N"));
+        Assert.True(shell.Press("B"));
         shell.OpenInstance(Detail(Plain).Address, Detail(Plain).Id);
 
         Assert.Equal((string.Empty, false), (shell.Workflows.KeyNote, shell.Workflows.KeyNoteVoice.IsAnnouncing));

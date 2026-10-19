@@ -4,7 +4,7 @@
     {
       "packet": "scope/expiry",
       "kind": "scoping",
-      "hash": "sha256:99689489b23bf26628e02ce106179c4ecf0aade4860e303b2ce7e2bd7e15ab57",
+      "hash": "sha256:48b9dc81f8935c81f465f785a6e7dba0abd9697480786ad7994d1475da00c973",
       "by": "owner",
       "station": "step.scope.freeze",
       "at": "2026-10-16T09:30:00Z"
@@ -12,7 +12,7 @@
     {
       "packet": "scope/archive",
       "kind": "scoping",
-      "hash": "sha256:f78ae36dfb51456a5da5e5d581a0c910b48da6c1a355aea550c676dd68514174",
+      "hash": "sha256:440e7c4c9cfeb23a0fc2d9dac104575cf3610fff8dae1b338d41ae5066148430",
       "by": "owner",
       "station": "step.scope.freeze",
       "at": "2026-10-16T09:40:00Z"
@@ -20,7 +20,7 @@
     {
       "packet": "design/expiry",
       "kind": "design",
-      "hash": "sha256:43b7aeb5311ea8e2d9def822cc2d1c3afbec3237ee1d060f41b62d68c80a72c4",
+      "hash": "sha256:3deb049307bf38e0981ed4ed374f7d84a63f305f0067a247c10f839dfd4f87e4",
       "by": "owner",
       "station": "step.plan.freeze",
       "at": "2026-10-16T11:05:00Z"
@@ -28,7 +28,7 @@
     {
       "packet": "plan/expiry",
       "kind": "plan",
-      "hash": "sha256:37eed967a625067cced0afa7a980fad7a1f764966b7111f4487d3f8cc995cc38",
+      "hash": "sha256:4c86f2ccafce835260ca379dcc10d4012481bec5fb8411436e89eaa395c6bd14",
       "by": "owner",
       "station": "step.plan.freeze",
       "at": "2026-10-16T11:05:00Z"
