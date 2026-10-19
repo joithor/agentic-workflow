@@ -173,6 +173,7 @@ internal sealed partial class RecipeWorkflow
         instance = Enter(instance, trigger.Actor);
         await Mirror(DeskRow(before, instance, trigger, open, decision), NeedsYou(instance)).ConfigureAwait(true);
         Emit(before, instance, EffectsOf(decision));
+        Spawn(decision);   // a report that enters a child wait starts its child, as the desk, block and loop arms do
         Settle(reportId, new Reported(new CommandResult(GetInstance(), Happened(before, instance, decision)), Refusal: null));
         return instance;
     }

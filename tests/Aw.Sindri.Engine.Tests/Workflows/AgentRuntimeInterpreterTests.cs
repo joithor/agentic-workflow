@@ -275,7 +275,7 @@ public sealed class AgentRuntimeInterpreterTests(SindriTimeSkippingServer skippi
 
             var parent = await WorkflowsHarness.Until(handle, static v => v.State == "run" && v.Children.Count == 1);
 
-            Assert.Equal("workflow.t-child", Assert.Single(parent.Children).Address.Value.Split('/')[^1].Split('.')[0]);
+            Assert.Equal("t-child", Assert.Single(parent.Children).Address.Value.Split('/')[^1].Split('.')[0]);
         });
     }
 
