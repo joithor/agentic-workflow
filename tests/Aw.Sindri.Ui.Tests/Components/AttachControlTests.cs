@@ -53,7 +53,7 @@ public sealed class AttachControlTests
         var vm = new AttachControlViewModel(new AttachInput(Project, AttachStepKind.Agent, AttachReady: false, PendingReason: "No live session to attach to"));
 
         Assert.Equal("No live session to attach to", vm.PendingChip);
-        Assert.Equal($"Attach to {Project}: No live session to attach to", vm.PendingChipName);
+        Assert.Equal($"Attach to {Project}: no live session to attach to", vm.PendingChipName);
         vm.Update(new AttachInput(Project, AttachStepKind.Agent, AttachReady: false, PendingReason: "A launch is still starting"));
         Assert.Equal("A launch is still starting", vm.PendingChip);
     }

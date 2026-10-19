@@ -117,7 +117,7 @@ public sealed class AgentRunTests
         expanded.ShowRun(new AgentRunRead(Launch: null, running, [], ItemUnreadable: false));
         Assert.Equal((true, Labels.AttachNoLiveSession), (expanded.Attach!.IsPending, expanded.Attach.PendingChip));
         Assert.DoesNotContain("P10a", expanded.Attach.PendingChipName, StringComparison.Ordinal);
-        Assert.EndsWith(Labels.AttachNoLiveSession, expanded.Attach.PendingChipName, StringComparison.Ordinal);
+        Assert.EndsWith(": no live session to attach to", expanded.Attach.PendingChipName, StringComparison.Ordinal);
     }
 
     [Fact]
