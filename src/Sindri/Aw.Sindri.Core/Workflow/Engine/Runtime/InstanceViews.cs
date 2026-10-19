@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
@@ -211,11 +212,11 @@ public static partial class InstanceViews
     }
 
     /// <summary>
-    /// The complete command with the outcome it reports (the Step's first declared) and an '--output &lt;fact&gt;=&lt;file&gt;' flag for each
+    /// The complete command with the outcome it reports (every one the Step can report when there are several) and an '--output &lt;fact&gt;=&lt;file&gt;' flag for each
     /// output required on that outcome (API spec §3.8 'desk runtime'); '&lt;outcome&gt;' when the Step declares none.
     /// </summary>
     private static string CompleteCli(string address, DeskTask task) =>
-        CompleteCommand.Line(address, task.Run, task.Outcomes.Count > 0 ? task.Outcomes[0] : null, task.Outputs);
+        CompleteCommand.Line(address, task.Run, task.Outcomes, task.Outputs);
 
     /// <summary>The child a suspension mirrors, matched by its instance id (a sibling listed first is not it); none listed means none; with no mirror, the first child.</summary>
     private static ChildView? MirroredChild(WorkflowInstance instance, IReadOnlyList<ChildView> children) =>
@@ -228,11 +229,17 @@ public static partial class InstanceViews
 
     private static DeskTask Task(string state, RunToken run, InterpretedRecipe recipe, DateTimeOffset? timeoutAt, InjectionPlan? injection)
     {
-        var step = recipe.Recipe.States[state].Step?.Use
+        var use = recipe.Recipe.States[state].Step
             ?? throw new InvalidOperationException($"state {state} has an open run but no Step");
+        var step = use.Use;
         var descriptor = recipe.Catalog.Find(step);
-        return new DeskTask(run, state, step, descriptor?.Outcomes ?? [], descriptor?.Outputs ?? [], recipe.Inputs, timeoutAt, injection?.Entries);
+        var outcomes = OutcomesOf(descriptor, use, recipe);
+        return new DeskTask(run, state, step, outcomes, descriptor?.Outputs ?? [], recipe.Inputs, timeoutAt, injection?.Entries);
     }
+
+    /// <summary>The outcomes the Step reports, through the one resolver; the descriptor's own for a recipe the validator refuses.</summary>
+    private static IReadOnlyList<OutcomeName> OutcomesOf(BlockDescriptor? descriptor, StepUse use, InterpretedRecipe recipe) =>
+        descriptor is null ? [] : StepOutcomes.Of(descriptor, use, recipe.Recipe) ?? descriptor.Outcomes;
 
     /// <summary>The budgets of the active state and the instance, when either is declared and the instance hasn't ended.</summary>
     private static BudgetView? Budget(WorkflowInstance instance, InterpretedRecipe recipe)
