@@ -99,9 +99,22 @@ internal static class ContextReviewText
         return text.ToString();
     }
 
+    private static string ProposedHeader(ProposeResult result, string recorded)
+    {
+        if (result.Draft is not { } draft)
+        {
+            return "No draft map: nothing to withdraw\n";
+        }
+
+        var lead = result.Withdrawn > 0 || result.Kept > 0 ? Invariant($"Withdrew {result.Withdrawn} undecided proposals ({result.Kept} a person decided stay) in draft") : "Proposed into draft";
+        return Invariant($"{lead} v{draft.Number}: {result.Added} added, {result.Existing} already mapped, {result.Rejected} rejected earlier{recorded}\n");
+    }
+
     internal static string Proposed(ProposeContextMapResponse response, bool fence)
     {
-        var text = new StringBuilder(Invariant($"Proposed into draft v{response.Result.Draft.Number}: {response.Result.Added} added, {response.Result.Existing} already mapped, {response.Result.Rejected} rejected earlier{(response.Sequence is { } seq ? Invariant($"; recorded as event {seq}") : string.Empty)}\n"));
+        var recorded = response.Sequence is { } seq ? Invariant($"; recorded as event {seq}") : string.Empty;
+        var result = response.Result;
+        var text = new StringBuilder(ProposedHeader(result, recorded));
         foreach (var s in response.Surfaces)
         {
             _ = text.AppendLine($"  {s.Status.ToString().ToLowerInvariant(),-9} {Fenced(s, fence)}{(s.Node is { } node ? " → " + node.Value : string.Empty)}");

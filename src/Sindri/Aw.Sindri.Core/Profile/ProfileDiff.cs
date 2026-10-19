@@ -120,20 +120,25 @@ public static class ProfileDiff
         [
             ("workflow.deskTimeout", workflow?.DeskTimeout),
             ("workflow.eventHold", workflow?.EventHold),
-            ("workflow.effects", workflow?.Effects is { } effects ? string.Join(", ", effects) : null),
+            ("workflow.effects", Joined(workflow?.Effects)),
             ("workflow.dispatchDelay", workflow?.DispatchDelay),
-            ("workflow.judge.providers", workflow?.Judge?.Providers is { } providers ? string.Join(", ", providers) : null),
         ];
-        return keys.Concat(Nested(workflow)).Where(static k => k.Value is not null).Select(static k => (k.Key, k.Value!));   // why: the nulls are filtered out just before
+        return keys.Concat(Runtimes(workflow)).Concat(Forge(workflow?.Forge)).Where(static k => k.Value is not null).Select(static k => (k.Key, k.Value!));   // why: the nulls are filtered out just before
     }
 
-    private static IEnumerable<(string Key, string? Value)> Nested(WorkflowSettings? workflow) =>
-        Forge(workflow?.Forge).Concat([("workflow.route.startable", workflow?.Route?.Startable)]);
+    private static string? Joined(IReadOnlyList<string>? values) => values is null ? null : string.Join(", ", values);
+
+    private static (string Key, string? Value)[] Runtimes(WorkflowSettings? workflow) =>
+    [
+        ("workflow.agent.target", workflow?.Agent?.Target?.Value),
+        ("workflow.judge.providers", Joined(workflow?.Judge?.Providers)),
+        ("workflow.route.startable", workflow?.Route?.Startable),
+    ];
 
     private static (string Key, string? Value)[] Forge(ForgeSettings? forge) =>
     [
         ("workflow.forge.adapter", forge?.Adapter),
-        ("workflow.forge.hosts", forge?.Hosts is { } hosts ? string.Join(", ", hosts) : null),
+        ("workflow.forge.hosts", Joined(forge?.Hosts)),
         ("workflow.forge.credential", forge?.Credential),
     ];
 }

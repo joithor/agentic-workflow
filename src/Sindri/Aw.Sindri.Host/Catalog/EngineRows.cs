@@ -51,6 +51,9 @@ internal static class EngineRows
         Ready("ApplyCommand:command", typeof(ApplyCommandRequest), ActionClass.Desk, Commands, "sindri workflow command <address> <verb>"),
         Ready("CompleteStep", typeof(CompleteStepRequest), ActionClass.Desk, "POST /sindri/workflow/instances/{instanceId}/runs/{run}/complete",
             "sindri workflow complete <address> --run <token> --outcome <outcome>"),
+        // A launched agent session's report (API spec §4.1): the same command with its launch secret, so a session passes the chain; the service checks the secret.
+        Ready("CompleteStep:report", typeof(CompleteStepRequest), ActionClass.StepReport, "POST /sindri/workflow/instances/{instanceId}/runs/{run}/complete",
+            "sindri workflow complete <address> --run <token> --outcome <outcome>"),
     ];
 
     /// <summary>A P4 or P5 row bound to its type and mapped: 'ready' in the app.</summary>

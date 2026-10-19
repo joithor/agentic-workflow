@@ -178,6 +178,16 @@ public sealed class QueryRulesTests
         Assert.False(QueryRules.FitsQueryUrl(new string('a', QueryRules.MaxEncodedText + 1)));
     }
 
+    [Fact, Trait("Lane", "unit")]
+    public void A_subgraph_url_takes_20_distinct_keys_that_each_fit_and_nothing_more()
+    {
+        var twenty = Enumerable.Range(0, 20).Select(i => "feature:k." + i.ToString(System.Globalization.CultureInfo.InvariantCulture)).ToList();
+
+        Assert.Null(QueryRules.CheckSubgraphGet(twenty));
+        Assert.Null(QueryRules.CheckSubgraphGet([.. twenty, .. twenty]));
+        Assert.Equal(ContextErrors.QueryInvalid.Code, QueryRules.CheckSubgraphGet([.. twenty, "feature:k.20"])!.Code);
+        Assert.Equal(ContextErrors.QueryInvalid.Code, QueryRules.CheckSubgraphGet(["feature:" + new string('\u6f22', 900)])!.Code);
+    }
     [Theory, Trait("Lane", "unit")]
     [InlineData(null, null)]
     [InlineData("component", CascadeHops.Component)]

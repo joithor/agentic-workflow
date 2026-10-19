@@ -5,6 +5,7 @@ using Aw.Context.Core.Facade;
 using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Subgraph;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Profile;
@@ -61,6 +62,8 @@ public sealed class GatherInputsFillTests : IDisposable
         public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) => _lenses.LensesOf(anchors, read, range, scope, cancellationToken);
 
         public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) => _lenses.LensesOf(anchors, read, depth, scope, cancellationToken);
+
+        public ValueTask<Result<SubgraphView>> Subgraph(SubgraphQuery query, ContextScope scope, CancellationToken cancellationToken) => _lenses.Subgraph(query, scope, cancellationToken);
 
         public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) => _lenses.Lenses(anchor, draft, depth, scope, cancellationToken);
 

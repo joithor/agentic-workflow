@@ -52,8 +52,12 @@ public static class SindriInfrastructureServiceCollectionExtensions
     public static IServiceCollection AddSindriInfrastructure(this IServiceCollection services, Func<string, string?> environment)
     {
         var settings = SettingsFromEnvironment.Read(environment);
-        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriLauncher(environment, settings).AddSindriAdapters(environment).AddSindriMcp(environment).AddOnyxInfrastructure(environment).AddScopingInfrastructure(environment);
+        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriLauncher(environment, settings).AddSindriAdapters(environment).AddAgentRuntimeAdapters().AddSindriMcp(environment).AddOnyxInfrastructure(environment).AddScopingInfrastructure(environment);
     }
+
+    /// <summary>Engine P8: the diff signal of an agent run (git) and an agent session's end and spend (the ledger).</summary>
+    private static IServiceCollection AddAgentRuntimeAdapters(this IServiceCollection services) =>
+        services.AddSingleton<IRunDiff, GitRunDiff>().AddSingleton<IAgentSessions, LedgerAgentSessions>();
 
     private static IServiceCollection AddScopingInfrastructure(this IServiceCollection services, Func<string, string?> environment) =>
         services.AddSingleton<IScopePacketStore>(sp => new ScopePacketStore(sp.GetRequiredService<SindriSettings>(), new ProcessToolRunner(), environment));

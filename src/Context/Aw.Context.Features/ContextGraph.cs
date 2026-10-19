@@ -5,6 +5,7 @@ using Aw.Context.Core.Graph;
 using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Subgraph;
 using Aw.Context.Features.FindPath;
 using Aw.Context.Features.GetFileMap;
 using Aw.Context.Features.GetLenses;
@@ -46,8 +47,8 @@ internal sealed class ContextGraph(
     public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) =>
         lensesSet.Handle(new GetLensesSetRequest(anchors, read, range.Depth, scope) { Hops = range.Hops }, cancellationToken);
 
-    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
-        Lenses(anchor, draft ? MapRead.NewestDraft : MapRead.Current, depth, scope, cancellationToken);
+    public ValueTask<Result<SubgraphView>> Subgraph(SubgraphQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        codeHistory.Subgraph(query, scope, cancellationToken);
 
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         fileMap.Handle(new GetFileMapRequest(query, scope), cancellationToken);

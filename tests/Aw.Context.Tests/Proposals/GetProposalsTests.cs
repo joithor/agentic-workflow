@@ -52,7 +52,7 @@ public sealed class GetProposalsTests : IDisposable
 
         var surface = Assert.Single(view.Surfaces);
         Assert.Equal(("Restore session", GraphStatusKind.New, _restore.Value), (surface.Surface, surface.Status, surface.Node!.Value.Value));
-        Assert.Equal(("v1", Drafts.Short(proposed.Draft)), (view.Map, view.Draft!.Split('@')[0]));
+        Assert.Equal(("v1", Drafts.Short(proposed.Draft!)), (view.Map, view.Draft!.Split('@')[0]));
     }
 
     [Fact, Trait("Lane", "unit")]

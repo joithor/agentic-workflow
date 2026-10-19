@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Context.Core.Graph;
 using Aw.Sindri.Host;
+using Aw.Sindri.Tests.Callers;
 using Aw.Sindri.Tests.ContextCalls;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
@@ -42,6 +43,20 @@ internal sealed class Scenario(GoldenHost host)
     {
         ct.ThrowIfCancellationRequested();
         return (await host.Http.Ask(Get(route, AppHeaders()))).Body;
+    }
+
+    /// <summary>QUERY (the HTTP method with a body) a body query as the app (the subgraph route): a read, so the answer is the body of a GET for the same keys.</summary>
+    public async Task<string> Query(string route, string json, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        return (await host.Http.Ask(CallerRequests.Query(route, json, AppHeaders()))).Body;
+    }
+
+    /// <summary>QUERY a body query from a browser page (an Origin header): refused as a command is.</summary>
+    public async Task<string> QueryForeignOrigin(string route, string json, CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        return (await host.Http.Ask(CallerRequests.Query(route, json, [.. AppHeaders(), ("Origin", "http://localhost:3000")]))).Body;
     }
 
     /// <summary>GET as an agent session of the fixture repo (X-Sindri-Repo): its scope, not the human's.</summary>

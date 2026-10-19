@@ -12,6 +12,7 @@ using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.Subgraph;
 using Aw.Context.Features.Adjudicate;
 using Aw.Context.Features.ApplyReviewFile;
 using Aw.Context.Features.BuildMap;
@@ -28,6 +29,7 @@ using Aw.Context.Features.GetFileMap;
 using Aw.Context.Features.GetHistory;
 using Aw.Context.Features.GetLenses;
 using Aw.Context.Features.GetProposals;
+using Aw.Context.Features.GetSubgraph;
 using Aw.Context.Features.ImportMap;
 using Aw.Context.Features.ListNeighbors;
 using Aw.Context.Features.PreviewMap;
@@ -115,6 +117,7 @@ public static class ContextFeaturesServiceCollectionExtensions
     private static IServiceCollection AddLensSlices(this IServiceCollection services) => services
         .AddScoped<IService<GetLensesRequest, LensesView>, GetLensesService>()
         .AddScoped<IService<GetLensesSetRequest, LensesSetView>, GetLensesSetService>()
+        .AddScoped<IService<GetSubgraphRequest, SubgraphView>, GetSubgraphService>()
         .AddScoped<LensBasisReader>()
         .AddScoped<ContextCodeHistory>()
         .AddScoped<IService<GetCodeRequest, CodeView>, GetCodeService>()

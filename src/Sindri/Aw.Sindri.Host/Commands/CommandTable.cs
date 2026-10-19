@@ -117,7 +117,7 @@ internal static class CommandTable
             ["onyx", .. var rest] => await Onyx(rest, verbs, new OnyxVerbs(services, output, session, (hash, to, c) => new Verbs(client, probe, to, services, e => start.EnsureRunning(launch: true, e)).Approve(hash, Interactive(), Console.In, c)), output, ct).ConfigureAwait(false),
             ["mcp", .. var rest] => await new McpVerbs(services, output, session).Run(rest, ct).ConfigureAwait(false),
             ["context", ..] => await Context(args, client, output, services, (ct, interrupt.Again)).ConfigureAwait(false),
-            ["recipe" or "workflow" or "scoping" or "outbox" or "handback", ..] => await Workflows(args, new ScopingCommandTable.Host(services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), environment), ct).ConfigureAwait(false),
+            ["recipe" or "workflow" or "scoping" or "outbox" or "handback", ..] => await Workflows(args, new ScopingCommandTable.Host(services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c), environment), environment), ct).ConfigureAwait(false),
             ["help" or "--help" or "-h"] => await output.Text(Usage.Text + "\n", 0).ConfigureAwait(false),
             _ => await UnknownVerb(args, output).ConfigureAwait(false),
         };
@@ -205,6 +205,7 @@ internal static class CommandTable
             ["context", "eval", "backtest", .. var rest] => await new ContextJobVerbs(client, output, new JobFollower(client, output, services.GetRequiredService<TimeProvider>())).Run(["eval", "backtest", .. rest], signals.Interrupt, signals.Again).ConfigureAwait(false),
             ["context", "eval", .. var rest] => await new ContextEvalVerbs(client, output, services.GetRequiredService<IContextEngine>()).Run(rest, signals.Interrupt).ConfigureAwait(false),
             ["context", "filemap", "accept" or "reject", var link] => await new ContextMapVerbs(client, output, Interactive(), Console.In).Run(["review", args[2], link], signals.Interrupt).ConfigureAwait(false),
+            ["context", "subgraph", .. var rest] => await new ContextSubgraphVerbs(client, output, Console.In).Run(rest, signals.Interrupt).ConfigureAwait(false),
             ["context", "code", ..] => await new ContextCodeVerbs(client, output).Run(args[2..], signals.Interrupt).ConfigureAwait(false),
             ["context", "lenses" or "history" or "filemap", ..] => await new ContextLensVerbs(client, output).Run(args[1..], signals.Interrupt).ConfigureAwait(false),
             ["context", "map", .. var rest] => await new ContextMapVerbs(client, output, Interactive(), Console.In).Run(rest, signals.Interrupt).ConfigureAwait(false),

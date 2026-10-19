@@ -122,7 +122,7 @@ internal sealed partial class GitCli
         {
             git = Process.Start(start) ?? throw new InvalidOperationException("git didn't start");
             var stderr = git.StandardError.ReadToEndAsync(timeout.Token);
-            await consume(git.StandardOutput.BaseStream, timeout.Token).ConfigureAwait(false);
+            await ConsumeToEnd(git.StandardOutput.BaseStream, consume, timeout.Token).ConfigureAwait(false);
             await git.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
             // git is gone, so everything it wrote is already in the pipe. Its end of stderr closed with it; a stray fork of a parallel
             // process may still hold another copy, and waiting for that EOF held this call to the whole archive timeout (a gate hung 5 min here).
@@ -148,6 +148,14 @@ internal sealed partial class GitCli
         {
             git?.Dispose();
         }
+    }
+
+    // A TarReader stops at the end-of-archive marker and leaves git's record padding in the pipe. On a loaded box (the user over
+    // pipe-user-pages-soft) a new pipe holds one page, so git blocked writing the rest and never exited (a gate hung here 30 s).
+    private static async Task ConsumeToEnd(Stream tar, Func<Stream, CancellationToken, Task> consume, CancellationToken cancellationToken)
+    {
+        await consume(tar, cancellationToken).ConfigureAwait(false);
+        await tar.CopyToAsync(Stream.Null, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>True for a full or abbreviated lower-case hex sha (never an option, never a ref expression).</summary>

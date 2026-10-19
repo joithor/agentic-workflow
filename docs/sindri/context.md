@@ -556,7 +556,9 @@ session reads off make every probe fail, so they are exit 2 here, not 1.
 
 Sindri reads the repo and proposes the product map: deterministic anchors (command ids, keybindings, settings keys,
 routes, UI names) each tied to the file that defines it, graphify clusters as candidate features, and an optional
-model pass that names the clusters. The result is a **draft** map; you review it, and only `map promote` makes it
+model pass that names the clusters. Routes come from Express calls (`app.get`) and from ASP.NET Core minimal APIs in C#
+files (`MapGet` and the like, the path as written, without a `MapGroup` prefix); C# files are read by that form only.
+The result is a **draft** map; you review it, and only `map promote` makes it
 `current`. Every decision is one `map_override` row, so it survives the next build.
 
 ### Profile
@@ -710,7 +712,7 @@ $ sindri context filemap accept edge:0123456789abcdef      # or reject: one over
   takes the worst of its children). A repo that is not in the profile, or outside a session's repo, is `SND-CONTEXT-045` with
   the same answer for both, so a scope never reveals what is outside it.
 - `context query --symbol <path>` resolves a file to the features it implements, with an `affects` section; an unknown file is `003`.
-- MCP: `context_lenses {anchor, hops?}` returns the lenses as `structuredContent` and a short summary (band sizes, conflicts,
+- MCP: `context_lenses {anchor, hops?}` (or optional `anchors` for a set, schema 2, and optional `mapVersion`; `context_query` takes `mapVersion` too) returns the lenses as `structuredContent` and a short summary (band sizes, conflicts,
   coverage). It never reads the draft. Off while `context.sessions.enabled` is false (`SND-CONTEXT-020`).
 - MCP: `context_node {key}` and `context_neighbors {key, depth?}` (S-3M) call the services behind `GET /sindri/context/node` and
   `/neighbors` under the session caller, so `structuredContent` equals the session's HTTP answer (labels fenced). The text gives

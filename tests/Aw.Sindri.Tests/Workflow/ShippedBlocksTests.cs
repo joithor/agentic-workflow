@@ -1,6 +1,10 @@
 using System.Reflection;
 using Aw.Kernel.Json;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Features.Blocks.Gate;
@@ -51,6 +55,32 @@ public sealed class ShippedBlocksTests
             catalog.Blocks.Select(b => b.Id.Value).Order(StringComparer.Ordinal),
             StringComparer.Ordinal);
         Assert.Equal(["claim.created", "item.routed", "notify.delivered"], catalog.Events.Select(e => e.Kind.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+    }
+
+    /// <summary>Engine P8 Q4: the produce Step runs on an agent session when the build has the runtime, and stays deskCapable so a box with no agent target runs it at the desk (D7).</summary>
+    [Fact, Trait("Lane", "unit")]
+    public void The_produce_step_runs_on_an_agent_and_stays_desk_capable()
+    {
+        var produce = FixtureCatalog.Shipped().Find(BlockId.From("step.produce"));
+
+        Assert.Equal((BlockRuntime.Agent, true), (produce?.Runtime, produce?.DeskCapable));
+    }
+
+    /// <summary>The Steps that commit (tests, code) or build and run the app in the run's worktree need the policy that lets them write it; WriteScope grants that worktree and nothing else.</summary>
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("step.build.red")]
+    [InlineData("step.build.green")]
+    [InlineData("step.prove.holdout")]
+    public void The_agent_steps_that_write_their_worktree_carry_write_scope(string id)
+    {
+        var step = FixtureCatalog.Shipped().Find(BlockId.From(id));
+        var address = InstanceAddress.From("T-1/step/1");
+        var run = new AgentStepRun(WorkflowInstanceId.Of(address), address, RunToken.From("1.1"), new StepRef("s", id), step!.Capabilities.HasFlag(Capability.WriteScope));
+        var target = new AgentStepTarget(ItemId.From("ITM-" + new string('a', 32)), AgentId.From("claude-code"), "/work/app");
+
+        var request = AgentLaunches.RequestFor(run, target);
+
+        Assert.Equal((BlockRuntime.Agent, StepPermissionMode.Default, request.Worktree), (step.Runtime, request.Step?.Policy?.Mode, request.Step?.Policy?.WritablePath));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -154,7 +184,7 @@ public sealed class ShippedBlocksTests
     [Fact, Trait("Lane", "unit")]
     public void A_descriptor_without_the_new_fields_serializes_without_them()
     {
-        var json = System.Text.Encoding.UTF8.GetString(AwJson.Serialize(FixtureCatalog.Shipped().Find(BlockId.From("step.produce")), SliceHarness.Json));
+        var json = System.Text.Encoding.UTF8.GetString(AwJson.Serialize(FixtureCatalog.Shipped().Find(BlockId.From("step.checks")), SliceHarness.Json));
 
         Assert.DoesNotContain("outcomesFrom", json, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("inputsFrom", json, StringComparison.OrdinalIgnoreCase);

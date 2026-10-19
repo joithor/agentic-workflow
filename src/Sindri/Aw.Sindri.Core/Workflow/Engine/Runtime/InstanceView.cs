@@ -60,6 +60,10 @@ public sealed record InstanceView(
     /// <summary>What was left of the state's timeout when a takeover paused it (§6.4 'paused'; engine P5 sets it).</summary>
     public TimeSpan? Paused { get; init; }
 
+    /// <summary>The open run when an agent session runs it (its token and the launch that proves it); null for a desk or block run. What authorizes a session's report (API spec §4.2).</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public Instances.OpenRun? AgentRun { get; init; }
+
     /// <summary>The runs of non-desk steps now executing, which a cancel stops (the cancel confirmation counts them; a desk run is not a running step).</summary>
     public int RunningSteps { get; init; }
 

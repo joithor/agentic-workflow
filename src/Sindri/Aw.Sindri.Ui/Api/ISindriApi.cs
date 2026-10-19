@@ -236,4 +236,28 @@ internal interface ISindriApi
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The session, SND-SESSION-404 when it is unknown or ended, another refusal, or SND-UI-002/003.</returns>
     public Task<Result<SessionView>> Session(Uri api, string provider, string id, CancellationToken cancellationToken);
+
+    // LANE ANCHOR L1: the agent run's reads and the Attach send (the client's are in SindriApiClient.Launch.cs). Insert immediately below this marker, never between the markers.
+
+    /// <summary>GET /sindri/launches/{id} (API P10a): one launch with its state, viewer and attach command.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="launch">The launch id (LCH-…).</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The launch, the API's refusal (SND-LAUNCH-404, SND-CLI-003), or SND-UI-002/003.</returns>
+    public Task<Result<LaunchView>> Launch(Uri api, string launch, CancellationToken cancellationToken);
+
+    /// <summary>POST /sindri/items/{itemId}/open (OpenItem, desk, API P10a): sent once, never retried by the app. The server opens the viewer; the app execs nothing.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="itemId">The item.</param>
+    /// <param name="request">The mode and the version the app read.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The accepted command with its launch, the API's refusal (SND-LAUNCH-001/002/006/008/009, SND-ITEM-409, SND-AUTH-002), or SND-UI-002/003.</returns>
+    public Task<Result<OpenAcceptedView>> OpenItem(Uri api, string itemId, OpenItemRequest request, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/workflow/instances/{id}/events?after=N: the instance's events, oldest first.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="id">The instance id (WFI-…).</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The events, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<InstanceEventsView>> InstanceEvents(Uri api, string id, CancellationToken cancellationToken);
 }

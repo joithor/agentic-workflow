@@ -276,7 +276,7 @@ internal sealed record EvalSimulation(
     private RecipeTransition? Matched(Trigger trigger) => MatchedTransition.Of(Instance, Recipe, trigger);
 
     private static DecisionContext Context(BlockCatalog catalog, IChildRecipeResolver children) =>
-        new(ApprovalCheck.Holds, catalog, catalog.Blocks.Select(static b => b.Id).ToHashSet(), children);
+        new(ApprovalCheck.Holds, catalog, catalog.Blocks.ToDictionary(static b => b.Id, static _ => StepRuntime.Agent), children);
 
     private static Error Missing(string detail) => KernelErrors.Invalid.With(detail);
 
