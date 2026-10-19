@@ -139,8 +139,8 @@ public sealed class BlockStepRunnerTests
         var text = "notes for the Step";
         var typed = JsonSerializer.SerializeToElement(new { count = 2 });
         var recorded = new FilledInput(input, 1, [new InjectionEntry("notes", input, Encoding.UTF8.GetByteCount(text), StepInputRunner.Sha(text))], new InjectionResultEntry(typed.GetRawText().Length, StepInputRunner.Sha(typed.GetRawText())));
-        _texts.Put(new InjectionKey("T-1/workflow.x/1", "route-evidence", "1.1", 1), new FilledTexts(new Dictionary<string, string>(StringComparer.Ordinal) { ["notes"] = text }, typed));
-        var request = new FillInputRequest("T-1/workflow.x/1", "route-evidence", "1.1", 1, input, _judge, new Dictionary<string, WithValue>(StringComparer.Ordinal), new Dictionary<FactKey, FactValue>(), Repo: null);
+        _texts.Put(new InjectionKey("T-1/x/1", "route-evidence", "1.1", 1), new FilledTexts(new Dictionary<string, string>(StringComparer.Ordinal) { ["notes"] = text }, typed));
+        var request = new FillInputRequest("T-1/x/1", "route-evidence", "1.1", 1, input, _judge, new Dictionary<string, WithValue>(StringComparer.Ordinal), new Dictionary<FactKey, FactValue>(), Repo: null);
         var run = (await RunOf(repo: null)) with { Fills = [new InjectionFill(recorded, request)] };
 
         var outcome = await Runner(_profiles).Run(run, TestContext.Current.CancellationToken);
@@ -233,13 +233,13 @@ public sealed class BlockStepRunnerTests
 
         _ = await ReadsRunner().Run(run, TestContext.Current.CancellationToken);
 
-        Assert.Equal(("T-1/workflow.x/1", "web"), (_seen!.Address!.Value.Value, _seen.Repo!.Value.Value));
+        Assert.Equal(("T-1/x/1", "web"), (_seen!.Address!.Value.Value, _seen.Repo!.Value.Value));
     }
 
     [Fact]
     public async Task A_child_instance_with_no_fact_item_gets_the_repo_of_the_item_its_address_starts_with()
     {
-        var run = (await RunOf(repo: null)) with { Step = ReadsStep.Id, Address = "T-5/workflow.scoping/1/workflow.idea-to-brief.3" };
+        var run = (await RunOf(repo: null)) with { Step = ReadsStep.Id, Address = "T-5/scoping/1/idea-to-brief.3" };
 
         var outcome = await ReadsRunner(new ItemReposStub().With("T-5", "web")).Run(run, TestContext.Current.CancellationToken);
 
@@ -250,7 +250,7 @@ public sealed class BlockStepRunnerTests
     [Fact]
     public async Task An_item_the_ledger_knows_no_repo_for_is_no_repo_and_an_unreadable_ledger_fails_the_Step()
     {
-        var run = (await RunOf(repo: null)) with { Step = ReadsStep.Id, Address = "T-5/workflow.scoping/1/workflow.idea-to-brief.3" };
+        var run = (await RunOf(repo: null)) with { Step = ReadsStep.Id, Address = "T-5/scoping/1/idea-to-brief.3" };
 
         var none = await ReadsRunner(new ItemReposStub()).Run(run, TestContext.Current.CancellationToken);
         var seenRepo = _seen!.Repo;
@@ -315,7 +315,7 @@ public sealed class BlockStepRunnerTests
             ["facts"] = new WithValue(JsonSerializer.SerializeToElement(_factNames), Fact: null, Profile: null),
             ["providers"] = new WithValue(Literal: null, Fact: null, Profile: "workflow.judge.providers"),
         };
-        return new BlockStepRun("T-1/workflow.x/1", "route-evidence", "1.1", _judge, with, new Dictionary<FactKey, FactValue> { [_change] = put.Value }, repo);
+        return new BlockStepRun("T-1/x/1", "route-evidence", "1.1", _judge, with, new Dictionary<FactKey, FactValue> { [_change] = put.Value }, repo);
     }
 
     private sealed class UnreadableProfile : IApprovedProfile

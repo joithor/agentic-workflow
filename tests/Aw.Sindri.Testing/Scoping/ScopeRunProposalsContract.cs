@@ -9,7 +9,7 @@ namespace Aw.Sindri.Testing.Scoping;
 public abstract class ScopeRunProposalsContract
 {
     private static readonly RepoName _fallback = RepoName.From("fixture-notes");
-    private static readonly InstanceAddress _run = InstanceAddress.From("T-1/workflow.scoping/1");
+    private static readonly InstanceAddress _run = InstanceAddress.From("T-1/scoping/1");
 
     /// <summary>The repo whose map the run writes to.</summary>
     protected virtual RepoName Repo => _fallback;

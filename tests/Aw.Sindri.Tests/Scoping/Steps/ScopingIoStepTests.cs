@@ -16,7 +16,7 @@ namespace Aw.Sindri.Tests.Scoping.Steps;
 public sealed class ScopingIoStepTests
 {
     private static readonly RepoName _repo = RepoName.From("fixture-notes");
-    private static readonly InstanceAddress _address = InstanceAddress.From("T-1/workflow.scoping/1");
+    private static readonly InstanceAddress _address = InstanceAddress.From("T-1/scoping/1");
 
     private static StepContext Context(string step, ScopingFacts facts, RepoName? repo = null) =>
         ScopingStepContexts.Of(step, facts) with { Repo = repo ?? _repo, Address = _address };

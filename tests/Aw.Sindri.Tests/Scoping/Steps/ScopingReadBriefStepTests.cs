@@ -23,7 +23,7 @@ public sealed class ScopingReadBriefStepTests
         new(files, new InMemoryRepoCheckouts().With("web", "/work/web"), shape, new FakeTimeProvider(new DateTimeOffset(2026, 10, 19, 9, 0, 0, TimeSpan.Zero)));
 
     private static StepContext Context(string scopeInput, RepoName? repo = null) =>
-        ScopingStepContexts.Of("step.scope.read-brief", new ScopingFacts { ["scopeInput"] = scopeInput }) with { Repo = repo ?? _web, Address = InstanceAddress.From("T-1/workflow.scoping/1") };
+        ScopingStepContexts.Of("step.scope.read-brief", new ScopingFacts { ["scopeInput"] = scopeInput }) with { Repo = repo ?? _web, Address = InstanceAddress.From("T-1/scoping/1") };
 
     private static JsonNode Out(BlockStepResult result, string key) => JsonNode.Parse(result.Result!.Outputs[FactKey.From("fact:" + key)].GetRawText())!;
 
