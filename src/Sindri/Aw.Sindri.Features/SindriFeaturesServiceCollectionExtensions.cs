@@ -213,6 +213,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddSingleton(ContextSyncGapsService.BuiltIn)
             .AddScoped<SyncGaps>()
             .AddScoped<ContextInputScopes>()
+            .AddScoped<ContextInputFacts>()
             .AddStepInput<ContextLensesInput>()
             .AddStepInput<ContextHistoryInput>()
             .AddStepInput<ContextCodeInput>()

@@ -6,7 +6,7 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// <summary>Reads the 'with:' arguments the context Step inputs share. What it can't use it says in notes instead of dropping it silently.</summary>
 internal static class ContextInputArguments
 {
-    /// <summary>The anchors: a list of strings, or one string; empty when absent or of another shape.</summary>
+    /// <summary>The anchors: a list of strings, one string, or an object holding either under 'anchors'; empty when absent or of another shape.</summary>
     /// <param name="context">The input's context.</param>
     /// <param name="notes">Receives a note for anything that was ignored.</param>
     /// <returns>The anchors, in order, duplicates kept (the engine counts them once).</returns>
@@ -17,6 +17,11 @@ internal static class ContextInputArguments
         if (!context.Arguments.TryGetValue("anchors", out var value))
         {
             return [];
+        }
+
+        if (value.ValueKind == JsonValueKind.Object && value.TryGetProperty("anchors", out var inner))   // a resolved fact:anchors may be { "anchors": [...] }
+        {
+            value = inner;
         }
 
         if (value.ValueKind == JsonValueKind.String)

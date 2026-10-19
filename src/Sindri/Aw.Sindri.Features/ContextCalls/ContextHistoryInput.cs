@@ -16,8 +16,9 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// </summary>
 /// <param name="history">The context engine (its facade for this lens).</param>
 /// <param name="scopes">The service scope for the instance's repo.</param>
+/// <param name="facts">Reads the content behind a fact-reference argument.</param>
 /// <param name="json">The host's JSON options.</param>
-internal sealed class ContextHistoryInput(IContextEngine history, ContextInputScopes scopes, JsonSerializerOptions json) : IStepInput, IDescribedBlock
+internal sealed class ContextHistoryInput(IContextEngine history, ContextInputScopes scopes, ContextInputFacts facts, JsonSerializerOptions json) : IStepInput, IDescribedBlock
 {
     /// <summary>The block id.</summary>
     public const string Id = "input.context.history";
@@ -40,13 +41,20 @@ internal sealed class ContextHistoryInput(IContextEngine history, ContextInputSc
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
         var notes = new List<string>();
+        var resolved = await facts.Resolve(context, cancellationToken).ConfigureAwait(false);
+        if (resolved.IsError)
+        {
+            return Unavailable(resolved.Error.Code + ": " + resolved.Error.Message, notes);
+        }
+
+        context = resolved.Value;
         var anchors = ContextInputArguments.Anchors(context, notes);
         if (anchors.Count == 0)
         {
             return Unavailable("this Step named no anchors", notes);
         }
 
-        var window = Window(context);
+        var window = Window(context, notes);
         if (window.IsError)
         {
             return Unavailable(window.Error.Code + ": " + window.Error.Message, notes);
@@ -65,28 +73,54 @@ internal sealed class ContextHistoryInput(IContextEngine history, ContextInputSc
         }
 
         var stable = ContextInputSections.Stable(view.Value);
-        return ContextInputSections.Filled(Section, ContextHistoryText.History(stable, fence: true), notes, stable, json);
+        return ContextInputSections.Filled(Section, ContextHistoryText.History(stable, fence: false), notes, stable, json);
     }
 
     private static InjectionSections Unavailable(string why, List<string> notes) => ContextInputSections.Unavailable(Section, "context history", why, notes);
 
-    private static Aw.Kernel.Result<HistoryWindow> Window(StepInputContext context)
+    private static Aw.Kernel.Result<HistoryWindow> Window(StepInputContext context, List<string> notes)
     {
         if (!context.Arguments.TryGetValue("window", out var value) || value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
         {
             return HistoryWindow.Open;
         }
 
-        return value.ValueKind switch
+        if (value.ValueKind == JsonValueKind.String)
         {
-            JsonValueKind.String => HistoryWindow.Of(value.GetString(), before: null),
-            JsonValueKind.Object => HistoryWindow.Of(Text(value, "since"), Text(value, "before")),
-            JsonValueKind.Array or JsonValueKind.Number or JsonValueKind.True or JsonValueKind.False => ContextErrors.QueryInvalid.With("the window argument must be {since?, before?} or a date text, not " + value.ValueKind.ToString().ToLowerInvariant()),
-            JsonValueKind.Null or JsonValueKind.Undefined => HistoryWindow.Open,
-            _ => ContextErrors.QueryInvalid.With("the window argument must be {since?, before?} or a date text"),
-        };
+            return HistoryWindow.Of(value.GetString(), before: null);
+        }
+
+        return value.ValueKind == JsonValueKind.Object
+            ? ObjectWindow(value, notes)
+            : ContextErrors.QueryInvalid.With("the window argument must be {since?, before?} or a date text, not " + value.ValueKind.ToString().ToLowerInvariant());
     }
 
-    private static string? Text(JsonElement window, string name) =>
-        window.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+    private static Aw.Kernel.Result<HistoryWindow> ObjectWindow(JsonElement window, List<string> notes)
+    {
+        string? since = null, before = null;
+        foreach (var property in window.EnumerateObject())
+        {
+            if (property.Name is not ("since" or "before"))
+            {
+                notes.Add($"window key '{property.Name}' is not since or before and was ignored");
+                continue;
+            }
+
+            if (property.Value.ValueKind != JsonValueKind.String)
+            {
+                return ContextErrors.QueryInvalid.With($"the window's {property.Name} must be date text, not " + property.Value.ValueKind.ToString().ToLowerInvariant());
+            }
+
+            if (property.Name == "since")
+            {
+                since = property.Value.GetString();
+            }
+            else
+            {
+                before = property.Value.GetString();
+            }
+        }
+
+        return HistoryWindow.Of(since, before);
+    }
 }

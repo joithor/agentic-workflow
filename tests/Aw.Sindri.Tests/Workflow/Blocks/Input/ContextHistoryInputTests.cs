@@ -34,7 +34,7 @@ public sealed class ContextHistoryInputTests
     }
 
     internal static ContextHistoryInput Input(StubHistory history, bool profile = true) =>
-        new(EngineProxy.Of(history), new ContextInputScopes(new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null)), ShippedComposition.Json);
+        new(EngineProxy.Of(history), new ContextInputScopes(new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null)), ContextInputFixtures.NoFacts(), ShippedComposition.Json);
 
     private static StepInputContext Context(RepoName? repo, JsonElement? window, params string[] anchors)
     {
@@ -89,6 +89,32 @@ public sealed class ContextHistoryInputTests
         Assert.Empty(history.Calls);
         Assert.Contains("window argument", filled.Sections["history"], StringComparison.Ordinal);
         Assert.Null(filled.Result);
+    }
+
+    [Theory]
+    [InlineData("{\"since\":7}")]
+    [InlineData("{\"before\":true}")]
+    [InlineData("{\"since\":[\"2026-01-01\"]}")]
+    public async Task A_window_object_with_a_since_or_before_that_is_not_text_is_a_section_and_never_the_open_window(string json)
+    {
+        var history = new StubHistory(() => ContextHistoryTextTests.View());
+
+        var filled = await Input(history).Fill(Context(ContextInputFixtures.Web, JsonDocument.Parse(json).RootElement.Clone(), "feature:a"), TestContext.Current.CancellationToken);
+
+        Assert.Empty(history.Calls);
+        Assert.Contains("must be date text", filled.Sections["history"], StringComparison.Ordinal);
+        Assert.Null(filled.Result);
+    }
+
+    [Fact]
+    public async Task A_window_key_other_than_since_or_before_is_named_in_a_note()
+    {
+        var history = new StubHistory(() => ContextHistoryTextTests.View());
+
+        var filled = await Input(history).Fill(Context(ContextInputFixtures.Web, JsonDocument.Parse("{\"sinse\":\"2026-01-01\"}").RootElement.Clone(), "feature:a"), TestContext.Current.CancellationToken);
+
+        Assert.Contains("note: window key 'sinse' is not since or before", filled.Sections["history"], StringComparison.Ordinal);
+        _ = Assert.Single(history.Calls);
     }
 
     [Fact]

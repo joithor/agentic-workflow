@@ -14,8 +14,9 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// </summary>
 /// <param name="code">The context engine (its facade for this lens).</param>
 /// <param name="scopes">The service scope for the instance's repo.</param>
+/// <param name="facts">Reads the content behind a fact-reference argument.</param>
 /// <param name="json">The host's JSON options.</param>
-internal sealed class ContextCodeInput(IContextEngine code, ContextInputScopes scopes, JsonSerializerOptions json) : IStepInput, IDescribedBlock
+internal sealed class ContextCodeInput(IContextEngine code, ContextInputScopes scopes, ContextInputFacts facts, JsonSerializerOptions json) : IStepInput, IDescribedBlock
 {
     /// <summary>The block id.</summary>
     public const string Id = "input.context.code";
@@ -35,6 +36,13 @@ internal sealed class ContextCodeInput(IContextEngine code, ContextInputScopes s
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
         var notes = new List<string>();
+        var resolved = await facts.Resolve(context, cancellationToken).ConfigureAwait(false);
+        if (resolved.IsError)
+        {
+            return Unavailable(resolved.Error.Code + ": " + resolved.Error.Message, notes);
+        }
+
+        context = resolved.Value;
         var anchors = ContextInputArguments.Anchors(context, notes);
         if (anchors.Count == 0)
         {
@@ -54,7 +62,7 @@ internal sealed class ContextCodeInput(IContextEngine code, ContextInputScopes s
         }
 
         var stable = ContextInputSections.Stable(view.Value);
-        return ContextInputSections.Filled(Section, ContextCodeText.Code(stable, fence: true), notes, stable, json);
+        return ContextInputSections.Filled(Section, ContextCodeText.Code(stable, fence: false), notes, stable, json);
     }
 
     private static InjectionSections Unavailable(string why, List<string> notes) => ContextInputSections.Unavailable(Section, "context code", why, notes);

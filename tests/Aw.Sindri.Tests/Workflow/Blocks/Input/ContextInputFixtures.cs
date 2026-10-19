@@ -4,6 +4,9 @@ using Aw.Context.Core.Results;
 using Aw.Kernel;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Features.ContextCalls;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Input;
 
@@ -28,6 +31,31 @@ internal static class ContextInputFixtures
             new LensSearched([], "v3", 2, [], [], new SearchedBands(new BandSearched(Empty: true), new BandSearched(Empty: false), new BandSearched(Empty: true))),
             [], new Dictionary<string, Citation>(StringComparer.Ordinal));
     }
+
+    /// <summary>Stored fact contents by sha, for the fact-reference arguments; a sha it doesn't hold can't be read.</summary>
+    internal sealed class MemoryFacts : IFactContents
+    {
+        private readonly Dictionary<string, byte[]> _stored = new(StringComparer.Ordinal);
+
+        /// <summary>Stores <paramref name="content"/> and returns its reference.</summary>
+        internal FactValue Put(string content)
+        {
+            var bytes = System.Text.Encoding.UTF8.GetBytes(content);
+            var sha = Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(bytes));
+            _stored[sha] = bytes;
+            return new FactValue("fact:sha256:" + sha, sha, HeadSha: null);
+        }
+
+        /// <summary>Replaces what is stored under the reference's sha with other content (a tampered file).</summary>
+        internal void Tamper(FactValue fact, string content) => _stored[fact.Sha256] = System.Text.Encoding.UTF8.GetBytes(content);
+
+        public ValueTask<Result<ReadOnlyMemory<byte>>> Read(FactValue fact, CancellationToken cancellationToken) =>
+            ValueTask.FromResult(_stored.TryGetValue(fact.Sha256, out var bytes)
+                ? (Result<ReadOnlyMemory<byte>>)(ReadOnlyMemory<byte>)bytes
+                : Aw.Sindri.Core.SindriErrors.ApiInternal.With("not stored"));
+    }
+
+    internal static ContextInputFacts NoFacts() => new(new MemoryFacts());
 
     internal sealed class Profiles(LoadedProfile? profile) : IApprovedProfile
     {

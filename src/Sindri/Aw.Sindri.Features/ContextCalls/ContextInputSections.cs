@@ -53,7 +53,7 @@ internal static class ContextInputSections
             return text;
         }
 
-        var lines = text.Split('\n');
+        var lines = text.EndsWith('\n') ? text[..^1].Split('\n') : text.Split('\n');
         var kept = new StringBuilder();
         var used = 0;
         var shown = 0;

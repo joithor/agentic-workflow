@@ -10322,3 +10322,7 @@ static Aw.Sindri.Core.Sessions.PaneRead.Captured(int panePid, byte[]! capture) -
 Aw.Sindri.Core.Mcp.ProviderResult.Detail.get -> string!
 Aw.Sindri.Core.Mcp.ProviderResult.Detail.init -> void
 static Aw.Sindri.Core.Mcp.McpRegistration.Url(int port) -> string!
+Aw.Sindri.Core.Workflow.Blocks.StepInputChangedException
+Aw.Sindri.Core.Workflow.Blocks.StepInputChangedException.StepInputChangedException() -> void
+Aw.Sindri.Core.Workflow.Blocks.StepInputChangedException.StepInputChangedException(string! message) -> void
+Aw.Sindri.Core.Workflow.Blocks.StepInputChangedException.StepInputChangedException(string! message, System.Exception! innerException) -> void

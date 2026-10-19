@@ -9,6 +9,7 @@ using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Host;
@@ -151,5 +152,69 @@ public sealed class GatherInputsFillTests : IDisposable
         Assert.True(runtimes.Has(BlockId.From("input.context.lenses")));
         Assert.True(runtimes.Has(BlockId.From("input.context.history")));
         Assert.True(runtimes.Has(BlockId.From("input.context.code")));
+    }
+
+    /// <summary>The argument as the engine hands it over for '{ fact: fact:anchors }': the stored reference, not the content.</summary>
+    private static JsonElement Reference(FactValue fact) => JsonSerializer.SerializeToElement(new { @ref = fact.Ref, sha256 = fact.Sha256, headSha = fact.HeadSha });
+
+    private static StepInputContext FactContext(string input, FactValue anchors) => new(
+        BlockId.From(input), BlockId.From("step.scope.gather"),
+        new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["anchors"] = Reference(anchors) },
+        new Dictionary<FactKey, JsonElement>(), ContextInputFixtures.Web);
+
+    private static async Task<FactValue> Store(ServiceProvider provider, string content) =>
+        (await provider.GetRequiredService<IFactStore>().Put(System.Text.Encoding.UTF8.GetBytes(content), TestContext.Current.CancellationToken)).Value;
+
+    [Theory]
+    [InlineData("input.context.lenses", "lenses", "[\"feature:sharing\"]")]
+    [InlineData("input.context.history", "history", "[\"feature:sharing\"]")]
+    [InlineData("input.context.code", "code", "{\"anchors\":[\"feature:sharing\"]}")]
+    [InlineData("input.context.code", "code", "feature:sharing")]
+    public async Task The_shipped_recipes_fact_anchors_argument_is_read_from_the_stored_fact_and_fills_the_section(string input, string section, string content)
+    {
+        await using var provider = Compose();
+        var fact = await Store(provider, content);
+
+        var filled = await provider.GetRequiredService<IStepInputRunner>().Fill(FactContext(input, fact), 1, TestContext.Current.CancellationToken);
+
+        Assert.False(filled.IsError, filled.IsError ? filled.Error.Message : string.Empty);
+        Assert.DoesNotContain("unavailable", filled.Value.Texts.Sections[section], StringComparison.Ordinal);
+        Assert.True(filled.Value.Texts.Result.HasValue);
+        IReadOnlyList<IReadOnlyList<string>> calls = input switch
+        {
+            "input.context.lenses" => [.. _combined.Lenses_.Calls.Select(c => c.Anchors)],
+            "input.context.history" => [.. _combined.History_.Calls.Select(c => c.Anchors)],
+            _ => [.. _combined.Code_.Calls.Select(c => c.Anchors)],
+        };
+        Assert.Equal(["feature:sharing"], Assert.Single(calls));
+    }
+
+    [Fact]
+    public async Task A_fact_anchors_argument_that_is_not_stored_is_an_unavailable_section_naming_the_fact()
+    {
+        await using var provider = Compose();
+        var missing = new FactValue("fact:sha256:" + new string('a', 64), new string('a', 64), HeadSha: null);
+
+        var filled = await provider.GetRequiredService<IStepInputRunner>().Fill(FactContext("input.context.lenses", missing), 1, TestContext.Current.CancellationToken);
+
+        Assert.False(filled.IsError);
+        Assert.Contains("unavailable", filled.Value.Texts.Sections["lenses"], StringComparison.Ordinal);
+        Assert.Contains(missing.Ref, filled.Value.Texts.Sections["lenses"], StringComparison.Ordinal);
+        Assert.False(filled.Value.Texts.Result.HasValue);
+    }
+
+    [Fact]
+    public async Task A_stored_fact_whose_content_no_longer_matches_its_sha_fails_the_fill_with_the_input_changed_error()
+    {
+        await using var provider = Compose();
+        var fact = await Store(provider, "[\"feature:sharing\"]");
+        var file = Directory.EnumerateFiles(_root, fact.Sha256, SearchOption.AllDirectories).Single();
+        await File.WriteAllTextAsync(file, "[\"feature:other\"]", TestContext.Current.CancellationToken);
+
+        var filled = await provider.GetRequiredService<IStepInputRunner>().Fill(FactContext("input.context.lenses", fact), 1, TestContext.Current.CancellationToken);
+
+        Assert.True(filled.IsError);
+        Assert.Equal("SND-WF-018", filled.Error.Code);
+        Assert.Empty(_combined.Lenses_.Calls);
     }
 }

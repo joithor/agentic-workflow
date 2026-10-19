@@ -42,7 +42,7 @@ public sealed class ContextLensesInputTests
     private static readonly string[] _hops = ["state", "flow"];
 
     internal static ContextLensesInput Input(StubLenses lenses, bool profile = true) =>
-        new(EngineProxy.Of(lenses), new ContextInputScopes(new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null)), ShippedComposition.Json);
+        new(EngineProxy.Of(lenses), new ContextInputScopes(new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null)), ContextInputFixtures.NoFacts(), ShippedComposition.Json);
 
     private static StepInputContext Context(RepoName? repo, params string[] anchors) => new(
         BlockId.From(ContextLensesInput.Id), BlockId.From("step.scope.gather"),
