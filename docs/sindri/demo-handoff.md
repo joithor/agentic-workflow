@@ -67,7 +67,7 @@ Important: the approval holds while the profile file is unchanged. Edit the file
 
 Registration is per work repo, never user-wide. Run it from the checkout `<path>` (a git worktree of it is refused with `SND-CONTEXT-024`; add `--repo <work-repo>` to override). Note the port: `sindri status` shows the one the control plane is on. If the control plane comes back on another port, register again.
 
-**Path A: the argv fix is on main (PR #367, merged; main was `62ad6cd` when this was updated).** If your checkout has it, `sindri mcp register --apply --repo <work-repo>` works on Claude Code 2.1.302 (**owner types it**). Before the fix, the printed line and `--apply` failed with `error: missing required argument 'name'` (`SND-CONTEXT-025`) because the variadic `--header` swallowed the server name. Check that your checkout has the fix. **Still LANDING TONIGHT:** a separate change so `scripts/sindri-app.sh` registers Claude Code, Codex and Cursor itself; the `grep` below tells you whether it is there.
+**Path A: the argv fix is on main (PR #367, merged; main was `62ad6cd` when this was updated).** If your checkout has it, `sindri mcp register --apply --repo <work-repo>` works on Claude Code 2.1.302 (**owner types it**). Before the fix, the printed line and `--apply` failed with `error: missing required argument 'name'` (`SND-CONTEXT-025`) because the variadic `--header` swallowed the server name. Check that your checkout has the fix. **Still LANDING TONIGHT (#386):** a separate change so `scripts/sindri-app.sh` registers Claude Code, Codex and Cursor itself; the `grep` below tells you whether it is there.
 
 ```bash
 sindri help | grep -n "mcp"             # the mcp verbs this build has
@@ -151,11 +151,24 @@ sindri context query "<project description>"          # expect anchors and cited
 sindri context lenses <anchor-key> --json            # the anchor key comes from the query's anchors; it takes positional anchors, not --anchor
 ```
 
+### Optional for the demo: Onyx
+
+Onyx is the intent-source engine (trackers, notes). The demo does not need it: repo docs and the map are enough. `./setup.sh --with-sindri` builds the sindri CLI and, by default, stands the pinned Onyx up. Opt out with `./setup.sh --with-sindri --no-onyx`; start it later with `scripts/sindri-app.sh onyx up`. Do not add it the morning of the demo.
+
 ## 6. Recipes
 
-**Merged:** #367 (register fix), #371 P7 (child workflows start), #356 (app crash fix), #364, #354 (the `aw:fleet` hook: optional, `scripts/install-fleet.sh --provider claude`; then `sindri agents` shows a session as ASKING while a permission prompt is open), #372 (Workflows polish), #377 (Context page, read-only: anchor box and lens stack) and #381 (the styled scope-map table in the facts panel, with a Show raw toggle). **Still LANDING TONIGHT:** the Agents page (#369), the child-workflow view (#379), visited states shown as done (#373), the ship and docs-sync stations (#376), PR-B (#370) plus S-LB2, and the MCP providers PR. In particular `workflow.scoping` registers and validates on main but cannot be approved until context's PR-B (#370) and S-LB2 land (`SND-WF-016: states.gather.step.inputs[0] uses input.context.lenses, which this build has no runtime for`). `workflow.line` and its stations are not on main as of writing.
+**Merged (on main f7ac779):** #367 (register fix), #371 P7 (child workflows start), #356, #364, #354 (the optional `aw:fleet` hook, `scripts/install-fleet.sh --provider claude`), #372, #377, #381, #369 (Agents page), #379 (children view), #351 (Start form), #376 (ship and docs-sync stations), #387, #384, #380, #388, #362 (`sindri scoping check` and `show`) and #348, #357, #360, #361 (the Onyx P2 to P5 stack).
 
-The line is `LN-WF8`. Its stations run in sequence as child workflows: scoping, then design, then plan, then phase, then docs-sync.
+**Still LANDING TONIGHT:**
+- #386: `sindri-app` registers MCP for all providers.
+- #391: `workflow.line`.
+- PR-B (#370) plus S-LB2: `workflow.scoping` approvable. Until then it fails `SND-WF-016: states.gather.step.inputs[0] uses input.context.lenses, which this build has no runtime for`.
+- SC-K2: the scoping desk.
+- The engine list label and counts fix (rows read `fact:scopeInput` as the subject; "1 done today" can show with nothing finished).
+
+On main now, `recipes/sindri/` has `workflow.scoping`, `workflow.design`, `workflow.plan`, `workflow.phase`, `workflow.ship` and `workflow.docs-sync`, but not `workflow.line`. The line is `LN-WF8`; its stations run in sequence as child workflows: scoping, design, plan, phase, docs-sync.
+
+**Plan A until PR-B lands: the scoping variant.** Use a copy of `workflow.scoping` without the three `input.context.*` inputs of its `gather` state (`input.context.lenses`, `input.context.code`, `input.context.history`). Copy `recipes/sindri/workflow.scoping.yaml` to a file outside the repo, delete those three lines from `gather`, run `sindri recipe validate <copy>`, then register and approve it as below. Steps are descriptor-only, so the owner completes each state at the desk (`sindri workflow complete ... --outcome ...`) and the app follows every transition live. Children appear only on instances started after P7 (#371, merged). When PR-B lands, switch to the shipped file.
 
 Verify:
 
@@ -188,25 +201,48 @@ Do this twice: once now, once the morning of the demo after the 08:00 pull. The 
 | 2 | Agent | `sindri status`; `sindri context sources status`; `sindri context map status` | healthy; `repo-docs ... ok`; `map vN current` | Home (the health strip opens Health) |
 | 3 | Agent, new session in `<path>` | the prompt below | the session calls the Sindri tools in order and returns a cited plan | none (the terminal) |
 | 4 | Agent | `sindri item add "<project title>" --repo <work-repo>` | an `ITM-...` id | Home (Queued) |
-| 5 | Owner | `sindri workflow start workflow.line --item <ITM-id> --fact <inputs>` (**LANDING TONIGHT**: exact `--fact` names come from `sindri recipe show workflow.line`; `SND-CLI-003` names any missing input) | `ITM-.../line/1  workflow.line@<hash>  v1 ...` | Workflows (`G W`): the instance, its states band |
+| 5 | Owner | `sindri workflow start workflow.line --item <ITM-id> --fact <inputs>` (**LANDING TONIGHT, #391**: exact `--fact` names come from `sindri recipe show workflow.line`; `SND-CLI-003` names any missing input) | `ITM-.../line/1  workflow.line@<hash>  v1 ...` | Workflows (`G W`): the instance, its states band |
 | 6 | Owner | Open the instance in the app (Enter on the row) | header, subject, states band with the current state, copyable next command | Workflows: the instance frame; tabs, facts, children |
 | 7 | Agent | `sindri workflow status <address>` | prints the next command | read only |
 | 8 | Owner | run that command, e.g. `sindri workflow complete <address> --run <token> --outcome <o> --output fact:<name>=<file>` | the state advances | Home strip and the instance frame update live |
 | 9 | Owner | repeat 7 and 8 for each Step | each station shows as a child while the parent waits on it | the children panel |
 
-### Page tour (what is on main)
+### Page tour (final, on main f7ac779)
 
-Keys: Home `G H`, Workflows `G W`, Context `G C`. Everything here is read-only.
+Launch with `scripts/sindri-app.sh` (bare `sindri` also opens the app). Start it from a folder that stays put. Click into a text box before you type: keys typed before focus reaches the box go to the window and can create junk queue items.
 
-1. **Home.** The health strip, then the queue frames.
-2. **Workflows (`G W`).** The instance list with the states band. Enter on a row opens the **instance frame**: header, subject, states band, the next sentence, copyable CLI.
-3. **The facts panel in the instance frame.** A `scope-map` fact draws as a table (#381): a counts line, a row per surface with its title, id, kind and graph chip, and a files or citations count. **Show raw** swaps it for the payload tree and back.
-4. **Context (`G C`, #377).** Enter one anchor key (take it from `sindri context query`) and the lens stack shows its bands. **Click into the anchor box before you type.** Keys typed before focus reaches the box go to the window as shortcuts and can create junk queue items (for example `N`). If that happens, clean up with `sindri items` and `sindri item close <item> --cancelled`.
-5. **Agents (`G A`).** Optional. With the fleet hook (#354) installed, `scripts/install-fleet.sh --provider claude` (`--uninstall` removes it), `sindri agents` shows a session as ASKING while a permission prompt is open. **The Agents page itself is LANDING TONIGHT (#369).** Check: `sindri agents` runs on main; whether the page has content depends on #369.
+| Page | Keys | What it shows |
+|---|---|---|
+| Home | `G H` (or `G N`); `G D` jumps to its Decisions | Needs-you strip (count, desk and answer rows, the next sentence), open workflows strip, health line |
+| Workflows | `G W` | Instances grouped by recipe; head counts; one cell per state; NOW text. `J`/`K` walk rows, Enter opens the frame |
+| Instance frame | Enter on a row | Header and state, states band in served order (visited states read done), the expanded state (step, next sentence, commands as CLI plus Copy), facts panel, children panel, tab counts; Back or Esc |
+| Facts | View on a fact | Scope map as a styled table (graph chips, counts; Show raw); other facts as one aligned tree |
+| Children | the frame's Children panel | Child rows by workstream with their state; a needs-you child links to its frame; "unreachable" shows as a warning |
+| Recipes, recipe sheet | `G R`; "Recipe ▸" in the frame or a group head | States, inputs and outputs of the pinned version |
+| Start form | `N` on Workflows, `⌘N` or `Ctrl+N` from any page | Start an instance from the app: pick a recipe, fill inputs, send |
+| Agents | `G A` | Live sessions by provider and lane, ASKING rows, filters, session sheet (Enter), ended fold (`E`), copy resume (`Y`), the tab count, the tray line |
+| Context | `G C` | Type an anchor (or two), Enter: head "map vN · K anchors", intent, product and code bands with edges, coverage strip, searched-source chips; "not found" and suggested anchors |
+| Work (queue) | `G Q` | Items with sizes; item sheet; Create (`C`) and Close item |
+| System, Health | `G .` (or `G S`) | Control plane, services, freshness |
 
-Not on main yet (LANDING TONIGHT): the child-workflow view (#379), visited states drawn as done (#373).
+Every page: `⌘K` or `Ctrl+K` palette, `?` shortcuts sheet, `/` filter, `J`/`K` rows, Enter and Esc, `Y` copies the row's CLI, `⌘,` or `Ctrl+,` Settings.
 
-Every Step runs at the desk, attended: this build has no agent launcher, so the owner completes each Step with `workflow complete`. The app is read-only for commands: it shows each command as copyable CLI text, not a button, and **Start (`N`) is not in the app on main** (the app Start form is PR #351, open; check `gh pr view 351 --repo jthorare/agentic-workflow --json state`).
+**Suggested walk:** Workflows, then an instance frame, then its facts panel's scope-map table (Show raw to flip it); then Context with one anchor key (from `sindri context query`); then Agents if the fleet hook is installed (`sindri agents` shows a session as ASKING while a permission prompt is open).
+
+**Demo path (desk-driven):**
+1. Approve `workflow.idea-to-brief` first, then the scoping recipe, or approval fails `RCP-CHILD-001`.
+2. The shipped `workflow.scoping.yaml` cannot be approved until PR-B lands (`SND-WF-016`); use the variant above until then.
+3. Steps are descriptor-only: complete each state at the desk. The app follows every transition live.
+4. Children appear only on instances started after P7 (#371, merged).
+
+**Known rough edges (the app draws what is served; none are UI bugs):**
+- Rows read `fact:scopeInput` as the subject (an engine and API label ask, still landing).
+- "1 done today" can show with nothing finished (engine counts, still landing).
+- Times in the app are local; the CLI prints UTC.
+- Focus send on Agents is pending (CO-4a); the live preview is pending (CO-7b, CO-7c).
+- The Context page does not open a scope yet (R8-14, U9e).
+
+Every Step runs at the desk, attended: this build has no agent launcher, so the owner completes each Step with `workflow complete`. The app shows each command as copyable CLI text; the Start form (`N`, #351) can start an instance from the app.
 
 The prompt for step 3. It works because it names the order of tools and tells the model to take anchor keys from the query:
 
@@ -238,7 +274,7 @@ An interactive agent asks to approve the five `mcp__sindri__context_*` tools onc
 Decide at 08:00 PT. If `workflow.scoping` still cannot be approved (`SND-WF-016`) or started, do not wait. Work down this list; each item is a smaller demo that still shows real Sindri.
 
 1. **Context from the owner's session over MCP.** This needs no recipe. Do sections 3 to 5, then run the section 7 prompt: the session calls `context_query` and `context_lenses` (and `context_sources`, `context_node`, `context_neighbors`). On main, `scripts/sindri-app.sh mcp register` (it passes its arguments to `sindri`, so this is `sindri mcp register`) serves 12 tools: 5 `context_*` and 7 `sindri_*`. Verified in `McpToolTable.cs` and by a `tools/list` call in the rehearsal.
-2. **Show the scoping gold facts.** **LANDING TONIGHT (#362):** `sindri scoping check (<address> | --facts <dir>) [--draft <dir>] [--stage draft|evidence] [--json]` and `sindri scoping show (<address> | --facts <dir>) [--json]`. They are in the scoping station spec (`docs/superpowers/specs/2026-10-15-sindri-scoping-station-design.md`, section on the verbs) but not in `src/Sindri/Aw.Sindri.Host/Commands/` on main as of writing. Check: `sindri help | grep scoping`. Run them with `--facts` on a gold directory such as `tests/fixtures/line/gold/scope/expiry` (it holds `brief.md`, `scope-map.json`, `acceptance.json` and the other facts) in a plain terminal. From an agent session the output is fenced as untrusted text, so for the stage show it in the owner's terminal.
+2. **Show the scoping gold facts.** `sindri scoping check (<address> | --facts <dir>) [--draft <dir>] [--stage draft|evidence] [--json]` and `sindri scoping show (<address> | --facts <dir>) [--json]`. They are in the scoping station spec (`docs/superpowers/specs/2026-10-15-sindri-scoping-station-design.md`, section on the verbs) but not in `src/Sindri/Aw.Sindri.Host/Commands/` on main as of writing. Check: `sindri help | grep scoping`. Run them with `--facts` on a gold directory such as `tests/fixtures/line/gold/scope/expiry` (it holds `brief.md`, `scope-map.json`, `acceptance.json` and the other facts) in a plain terminal. From an agent session the output is fenced as untrusted text, so for the stage show it in the owner's terminal.
 3. **A live instance in the app.** Start any recipe that approves on this build, so Workflows shows something running. On main that is `workflow.idea-to-brief`: `sindri item add "<title>" --repo <work-repo>`; `sindri recipe register recipes/sindri/workflow.idea-to-brief.yaml`; owner types `sindri recipe approve <id>@<hash12>` and the typed line; then the owner starts it, `sindri workflow start workflow.idea-to-brief --item <ITM-id> --fact fact:idea=<file.json>`. Then show the instance frame as in section 7. `workflow.step`, `workflow.report` and the other recipes in `recipes/sindri/` are further options if `sindri recipe validate` passes for them.
 4. **The line, without a running line.** Show it by validation and evals: `sindri recipe validate recipes/sindri/workflow.line.yaml` and `sindri recipe eval recipes/sindri/workflow.line.yaml`, then the same for each station recipe. **LANDING TONIGHT:** these files exist only once the line recipes merge. If P7 and the stations do merge, add a desk walk: the owner starts `workflow.line` and completes each Step with `workflow complete` (section 7, steps 5 to 9). If they do not, use the interim path in the line spec (`docs/superpowers/specs/2026-10-15-sindri-spec-to-proven-pr-line-design.md`, section 13.3): hand `tests/fixtures/line/gold/scope/expiry` to `/specToProvenPR` as the scoped input. I could not find the words "interim path" in that section, so read it, or ask the coordinator what the path is, before the demo.
 
@@ -254,7 +290,7 @@ Tick each. Report any miss to the owner at once.
 - [ ] `sindri context map status` shows `map vN current` with the nodes you expect; `sindri context query "<project description>"` returns anchors and cited records.
 - [ ] `claude mcp get sindri` (or the Codex or Cursor equivalent) shows `Connected`, and the registered port equals the one `sindri status` shows.
 - [ ] A fresh agent session runs the section 7 prompt and calls `context_sources`, `context_query`, `context_lenses` and `context_node` without `SND-CONTEXT-*` errors.
-- [ ] **LANDING TONIGHT:** `sindri recipe validate recipes/sindri/workflow.line.yaml` exits 0, and `workflow.scoping`, `workflow.line` and every station show as approved in `sindri recipe list`.
+- [ ] **LANDING TONIGHT (#391, PR-B):** `sindri recipe validate recipes/sindri/workflow.line.yaml` exits 0, and `workflow.scoping` (or the variant), `workflow.line` and every station show as approved in `sindri recipe list`.
 - [ ] The rehearsal instance was started and cancelled by the owner (`sindri workflow cancel <address>`), so the demo starts from a clean Workflows page; or the owner decided to leave it.
 - [ ] The app is open on Home, theme and window size are as the owner wants, and `G W` opens Workflows.
 - [ ] `sindri doctor` has no `fail` rows.
