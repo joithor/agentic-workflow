@@ -215,6 +215,22 @@ public sealed class ScopingDeskBlocksTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Gather_coverage_with_a_never_synced_source_keeps_its_sync_pair_and_validates_against_the_coverage_schema()
+    {
+        var facts = GatherFacts();
+        var history = JsonNode.Parse(ScopingFacts.View("historyView"))!;
+        history["searched"]!["sources"]!.AsArray().Add(JsonNode.Parse("""{"id":"linear","state":"unavailable","reason":"not-synced","code":null,"sync":{"state":"failed","code":"SND-CONTEXT-101","failures":3}}"""));
+        facts["historyView"] = history.ToJsonString();
+
+        var response = await Run("gather", facts);
+
+        var coverage = Out(response, "coverage");
+        var row = coverage["lenses"]!.AsArray().Single(r => r!["lens"]!.GetValue<string>() == "history")!;
+        Assert.Equal("failed", row["searched"]!["sources"]!.AsArray().Single(s => s!["id"]!.GetValue<string>() == "linear")!["sync"]!["state"]!.GetValue<string>());
+        Assert.Empty(ScopeSchemas.Errors("coverage", coverage));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Gather_with_a_degraded_source_makes_the_check_report_regather()
     {
         var facts = GatherFacts();
