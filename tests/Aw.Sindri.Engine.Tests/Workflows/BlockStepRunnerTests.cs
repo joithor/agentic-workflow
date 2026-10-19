@@ -157,6 +157,30 @@ public sealed class BlockStepRunnerTests
         Assert.Empty(_seen.InputResults);
     }
 
+    [Fact]
+    public async Task A_Step_gets_the_stored_content_of_every_fact_its_descriptor_reads()
+    {
+        var reads = new BlockDescriptor(BlockId.From("step.test.reads"), BlockKind.Step, Version: 1, [_change], [], [OutcomeName.From("done")], Capability.None, [], Rung: null, DeskCapable: false, Runtime: BlockRuntime.Block);
+        var runner = new BlockStepRunner(
+            new BlockStepRuntimes([new BlockStepRegistration(reads.Id)]),
+            new BlockCatalog([reads], []),
+            (_, context, _) =>
+            {
+                _seen = context;
+                return ValueTask.FromResult(BlockStepResult.Completed(OutcomeName.From("done"), new Dictionary<FactKey, JsonElement>()));
+            },
+            _store,
+            _store,
+            _profiles,
+            new StepContexts(_texts, new NoRunner()));
+        var run = (await RunOf(repo: null)) with { Step = reads.Id };
+
+        var outcome = await runner.Run(run, TestContext.Current.CancellationToken);
+
+        Assert.Null(outcome.Failure);
+        Assert.Equal("Add a button", _seen!.Facts[_change].GetString());
+    }
+
     private static SindriProfile Profile(WorkflowSettings? workflow) => new(SindriProfile.CurrentSchemaVersion, "tester", Workflow: workflow);
 
     private static ProfileHash Hash(char c) => ProfileHash.From(new string(c, 64));
