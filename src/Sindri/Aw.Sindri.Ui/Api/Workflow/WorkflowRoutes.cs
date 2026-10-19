@@ -33,6 +33,12 @@ internal static class WorkflowRoutes
 
     internal static string Fact(string id, string key) => $"{Instance(id)}/facts/{Uri.EscapeDataString(key)}";
 
+    /// <summary>GET: the recipe list (every registered recipe).</summary>
+    internal static string Recipes => $"{Root}/recipes";
+
+    /// <summary>POST: start an instance.</summary>
+    internal static string Start => $"{Root}/instances";
+
     internal static string Recipe(string recipe, string? hash)
     {
         var path = new StringBuilder(Root).Append("/recipes/").Append(Uri.EscapeDataString(recipe));

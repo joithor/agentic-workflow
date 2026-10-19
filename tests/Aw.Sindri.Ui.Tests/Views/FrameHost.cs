@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Testing;
 using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.Shell;
@@ -29,6 +30,8 @@ public abstract class FrameHost : IDisposable
     private protected FakeTimeProvider Clock { get; } = new(A.Noon);
 
     private protected FakeMotionPreference Motion { get; } = new();
+
+    private protected FakeFilePicker Files { get; } = new();
 
     private protected static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -69,7 +72,7 @@ public abstract class FrameHost : IDisposable
     private protected async Task<(ShellWindow Window, ShellViewModel Shell)> Connected(Func<ShellViewModel, bool>? ready = null, double? width = null, double? height = null)
     {
         _records.Write(A.Record());
-        var shell = new ShellViewModel(_records, Server, Clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard(), Motion);
+        var shell = new ShellViewModel(_records, Server, Clock, new Preferences(new InMemoryPreferencesStore()), new FakeClipboard(), Motion, new WindowPorts(NullLauncher.Instance, Files));
         await shell.Restore(Token);
         var window = new ShellWindow { DataContext = shell };
         if (width is { } w)

@@ -1,6 +1,8 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Ui.Api;
 using Aw.Sindri.Ui.Platform;
 using Aw.Sindri.Ui.Testing;
+using Aw.Sindri.Ui.ViewModels;
 using Aw.Sindri.Ui.ViewModels.NeedsYou;
 using Aw.Sindri.Ui.ViewModels.Shell;
 
@@ -120,5 +122,43 @@ public sealed class AttentionSummaryTests
         Assert.Equal(2, announcer.Announcements);
         announcer.Observe(2);
         Assert.Equal((3, "2 now need you"), (announcer.Announcements, announcer.Line));
+    }
+
+    [Fact]
+    public void Tooltip_adds_agents_and_asking_when_sessions_are_served()
+    {
+        var tray = AttentionSummary.For(Feed(NeedsYouRows.Park()), ShellState.Normal, A.Noon, new SessionCountsView(Live: 3, Asking: 1, Problems: 0)).Tray;
+
+        Assert.EndsWith(Labels.AgentsCounts(3, 1), tray.Tooltip, StringComparison.Ordinal);
+        Assert.StartsWith(For(Feed(NeedsYouRows.Park())).Tray.Tooltip, tray.Tooltip, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Tooltip_is_unchanged_without_sessions()
+    {
+        var feed = Feed(NeedsYouRows.Park());
+
+        var without = AttentionSummary.For(feed, ShellState.Normal, A.Noon, sessions: null).Tray;
+        var plain = For(feed).Tray;
+
+        Assert.Equal((plain.State, plain.Tooltip), (without.State, without.Tooltip));
+        Assert.DoesNotContain("agent", without.Tooltip, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Tooltip_stays_the_state_word_when_the_tray_is_not_normal()
+    {
+        var tray = AttentionSummary.For(feed: null, ShellState.NotRunning, A.Noon, new SessionCountsView(Live: 3, Asking: 1, Problems: 0)).Tray;
+
+        Assert.Equal(Labels.TrayNotRunning, tray.Tooltip);
+    }
+
+    [Fact]
+    public void Badge_stays_the_needs_you_count()
+    {
+        var summary = AttentionSummary.For(Feed(NeedsYouRows.Park()), ShellState.Normal, A.Noon, new SessionCountsView(Live: 5, Asking: 2, Problems: 0));
+
+        Assert.Equal(1, summary.Badge);
+        Assert.Equal("(1) Needs you · Sindri", summary.Title);
     }
 }

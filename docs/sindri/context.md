@@ -168,9 +168,16 @@ Registration is per work repo and never user-wide, so sessions in personal repos
 work context. In the work repo's main checkout:
 
 ```bash
-$SINDRI mcp register            # prints the command (any caller may run this)
-$SINDRI mcp register --apply    # runs it: a human at a terminal only (a session gets SND-AUTH-002)
+$SINDRI mcp register            # prints each provider's change (any caller may run this)
+$SINDRI mcp register --apply    # writes it: a human at a terminal only (a session gets SND-AUTH-002)
+$SINDRI mcp register --apply --providers claude,codex,cursor|all   # more than Claude Code (the default is claude alone)
 ```
+
+`scripts/sindri-app.sh` (a bare run) does the last line itself once the control plane's port is known, so the owner
+needs nothing else: it is idempotent (an entry that is already right is not written) and re-registers when the port moves.
+`AW_SINDRI_MCP_REPO` is passed through as `--repo`. Without it, from a linked worktree the script passes the main
+checkout's folder name as `--repo`, which works when the profile names the repo after its folder; otherwise set
+`AW_SINDRI_MCP_REPO` to the profile's name. Its `mcp` line names the `--repo` it used.
 
 It prints, and with `--apply` runs in the repo's main checkout:
 
@@ -178,16 +185,29 @@ It prints, and with `--apply` runs in the repo's main checkout:
 claude mcp add --transport http --scope local sindri http://127.0.0.1:<port>/sindri/mcp --header 'X-Sindri-Repo: <repo>'
 ```
 
+Per provider (each line of the answer is `registered`, `unchanged`, `skipped` (not installed), `registered, needs trust`
+or `failed` with a fix line; one failing never stops the others):
+
+| Provider | Where | Scope |
+|----------|-------|-------|
+| Claude Code | `claude mcp add --scope local` run in the main checkout; a changed port or repo is `claude mcp remove --scope local sindri`, then add | per repo |
+| Cursor | the checkout's `.cursor/mcp.json`: the `sindri` entry (`url`, `headers`) merged, every other entry untouched | per repo |
+| Codex | the checkout's `.codex/config.toml`: a `[mcp_servers.sindri]` table (`url`, `http_headers`); Codex loads it only for a trusted project, so `--apply` also adds `[projects."<checkout>"] trust_level = "trusted"` to the user's Codex config (`$CODEX_HOME/config.toml`, else `~/.codex/config.toml`), a one-row append that changes nothing else. A row with another level is never overwritten: that line is `registered, needs trust` | per repo; the trust row is user-level but names only this checkout |
+
+A project file git tracks that would change is `failed`, not edited (a provisional owner default, stricter than warning
+and writing; the fix line names the file and the exact entry to add by hand; `.cursor/mcp.json` and `.codex/config.toml` are not tracked in
+this repo; where they aren't ignored either, they show as untracked). A file that isn't valid JSON or TOML the tool can edit is `failed`.
+Installed means `claude`, `codex` or `cursor-agent` on PATH (Cursor also by its `~/.cursor` directory).
+
 Exit codes (spec §8.6): `0` printed or registered · `1` attention: not a profile repo (`024`) or `--apply` from a
-session (`SND-AUTH-002`) · `2` a tool error: `claude` couldn't run or failed (`025`), a usage error.
+session (`SND-AUTH-002`) · `2` a tool error: a provider `failed` (`025`; the others were still registered), a usage error.
 
 `<repo>` is the profile repo the working directory belongs to (a linked worktree resolves to its main checkout), or
 `--repo NAME`. `<port>` is the running instance's, else the profile's `api.port` (default 7410). Outside every
 profile repo, or with an unknown `--repo`, it answers `SND-CONTEXT-024`; a `claude` that can't be started or fails
 answers `SND-CONTEXT-025` (run the printed line by hand to see why). `AW_SINDRI_CLAUDE_BIN` names another `claude`
-executable (tests point it at a recording stub). Codex and Cursor are never registered: Codex keeps MCP servers only
-in user config, and Cursor's project file sits inside the repo, so Sindri passes them the endpoint when it launches
-them (API spec §8.1).
+executable (tests point it at a recording stub). Codex and Cursor take project files (above); Sindri also passes them
+the endpoint when it launches them (API spec §8.1).
 
 **Worktrees.** Claude Code keys a local-scope entry by directory. Whether that entry also reaches sessions started in
 the repo's linked worktrees is checked by the owner with the real `claude` (S-1M `owner-check.md`, step 6b); no agent
@@ -733,13 +753,16 @@ embeddings, telemetry off, connectors, the service account and its key) is `docs
 ```yaml
 context:
   sources:
-    onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "v4.9.0" }
+    onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "v4.9.0" }   # add managed: true when `sindri onyx up` runs it
     linear: { teams: [ENG, APP] }      # the Linear team keys an Onyx identifier alias (ENG-482) may name
 ```
 
 - `url`: http or https on a loopback host (`127.0.0.0/8`, `[::1]`, `localhost`), no user, password, query or
   fragment. Anything else is `SND-CONTEXT-055`.
 - `version`: the release tag that runs (`v4.9.0`), never `latest`; missing or `latest` is `SND-CONTEXT-055`.
+- `managed`: optional, default `false`. `sindri onyx up` writes `managed: true` for the Onyx it runs; when true, `url` must be
+  exactly `http://127.0.0.1:<port>` (not `localhost`, `[::1]`, https or another host), else `SND-CONTEXT-055`. Example:
+  `onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "v4.9.0", managed: true }`.
 - `token`: a **secret pointer** to the Onyx admin key of a service account Sindri alone uses, never the key itself.
   Missing, or text that isn't a pointer, is `SND-CONTEXT-002`; the message doesn't repeat the text (rotate a key that
   was written into the profile).
@@ -869,3 +892,25 @@ sindri context query --diff <base>..<head> [--repo <name>] [--json]
 ```
 
 `<base>` and `<head>` are commit shas (7 to 64 hex characters), never branch names. Sindri lists the files changed from the merge base to `<head>`, the product-map nodes they implement, and what those nodes affect. The text output starts with a count line, then `UNMAPPED`: changed files no node claims, a gap to look at. Files only a model suggested are `suggested`, not `unmapped`. Paths under your deny globs are counted (`denied`) and never listed. An empty range answers with no files. `repo` can be left out when one repo is mapped. Exit 1 with `SND-CONTEXT-110` means the clone does not hold a sha: fetch it first; `111` means the commits share no history.
+
+## The code lens (S-CL)
+
+```
+sindri context code <anchor>... [--draft | --map-version <v>] [--json]
+GET /sindri/context/code?anchor=<key>&anchor=<key>[&draft=true | &mapVersion=v2]
+```
+
+For one to 20 anchors it lists the files that implement them, the tests that cover those files, the data things they read or write, and the schema files that name those things. The tests come from `tests` edges of the map and, beyond them, from a lexical search of the repo at the map's commit: a test file whose text names an implementing file's path (`imports`), or whose name matches the file's name (`sibling`). A lexical test is a suggestion; add the `tests` edge to the map to confirm it. Callers and callees say `unavailable (index-not-built)` until the code index ships.
+
+The output ends with what was searched: `map`, `code-index`, `lexical-tests` and `lexical-schema`, each with a state word. A repo clone that lacks the map's commit shows `unavailable (commit-not-held)`; a search that ran out of `context.deadline` shows `degraded (SND-CONTEXT-152)` with whatever it found. Neither stops the answer.
+
+Two profile keys steer the search, both lists of repo-relative globs (at most 50, never overriding `denyPaths`):
+
+```yaml
+context:
+  code:
+    schemaGlobs: ["db/migrations/**", "**/*.sql"]   # [] turns the schema scan off
+    testGlobs: ["**/*.test.*", "**/tests/**"]       # matched case-sensitively
+```
+
+Exit codes: 0 with an answer, 1 for attention (not running, no anchor found, unknown map version), 2 for a tool error.

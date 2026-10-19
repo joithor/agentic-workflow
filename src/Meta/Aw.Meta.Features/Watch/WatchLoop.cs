@@ -11,15 +11,15 @@ namespace Aw.Meta.Features.Watch;
 /// <param name="emit">Receives each line.</param>
 /// <param name="reported">The disk and memory states an earlier watch reported (a re-armed watch does not announce them again).</param>
 /// <param name="remember">Keeps the reported states whenever they change.</param>
-/// <param name="contextHigh">The lanes an earlier watch reported CONTEXT HIGH for (a re-armed watch does not announce them again).</param>
-/// <param name="rememberContext">Keeps the lanes reported high whenever they change.</param>
-internal sealed class WatchLoop(TeamConfig team, WatchPoller poller, Func<string, ValueTask> emit, WatchResources reported, Func<WatchResources, ValueTask> remember, IReadOnlySet<string> contextHigh, Func<IReadOnlySet<string>, ValueTask> rememberContext)
+/// <param name="context">The lanes an earlier watch reported CONTEXT HIGH for (a re-armed watch does not announce them again), and how to keep them.</param>
+/// <param name="usage">Looks at the lanes and the meta for usage limits and returns the lines to print (USAGE LIMITED / USAGE OK).</param>
+internal sealed class WatchLoop(TeamConfig team, WatchPoller poller, Func<string, ValueTask> emit, WatchResources reported, Func<WatchResources, ValueTask> remember, ContextReported context, Func<ValueTask<IReadOnlyList<string>>> usage)
 {
     private WatchState _state = WatchState.Continuing(reported);
     private WatchResources _kept = reported;
     private int? _inbox;
     private bool _failing;
-    private IReadOnlySet<string> _high = contextHigh;
+    private IReadOnlySet<string> _high = context.High;
 
     /// <summary>How many lines were emitted.</summary>
     internal int Lines { get; private set; }
@@ -61,11 +61,21 @@ internal sealed class WatchLoop(TeamConfig team, WatchPoller poller, Func<string
             await Say(string.Create(CultureInfo.InvariantCulture, $"INBOX {polled.Value.Inbox - before} new message(s)")).ConfigureAwait(false);
         }
 
-        await ReportContext(polled.Value.Context).ConfigureAwait(false);
+        await ReportLanes(polled.Value.Context).ConfigureAwait(false);
 
         _inbox = polled.Value.Inbox;
         _state = step.State;
         await Remember().ConfigureAwait(false);
+    }
+
+    // The lanes' standing: context sizes, then usage limits. Neither can fail the poll.
+    private async ValueTask ReportLanes(IReadOnlyList<LaneContext>? contexts)
+    {
+        await ReportContext(contexts).ConfigureAwait(false);
+        foreach (var line in await usage().ConfigureAwait(false))
+        {
+            await Say(line).ConfigureAwait(false);
+        }
     }
 
     // CONTEXT HIGH once per crossing, CONTEXT OK after a recycle; the lanes reported high are kept for a re-armed watch.
@@ -85,7 +95,7 @@ internal sealed class WatchLoop(TeamConfig team, WatchPoller poller, Func<string
         if (!high.SetEquals(_high))
         {
             _high = high;
-            await rememberContext(high).ConfigureAwait(false);
+            await context.Keep(high).ConfigureAwait(false);
         }
     }
 

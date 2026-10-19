@@ -72,7 +72,7 @@ internal static class InvalidFixtureCases
             []),
         ["RCP-CHILD-003"] = new(
             FixtureSetup.Shipped,
-            "RCP-CHILD-003: child recipes nest 5 deep (workflow.depth-0 -> workflow.depth-1 -> workflow.depth-2 -> workflow.depth-3 -> workflow.depth-4 -> workflow.depth-5), more than 4 at RCP-CHILD-003.yaml:8:25 (states.running.waitFor.child.recipe); flatten the chain so children nest at most 4 deep",
+            "RCP-CHILD-003: child recipes nest 6 deep (workflow.depth-0 -> workflow.depth-1 -> workflow.depth-2 -> workflow.depth-3 -> workflow.depth-4 -> workflow.depth-5 -> workflow.depth-6), more than 5 at RCP-CHILD-003.yaml:8:25 (states.running.waitFor.child.recipe); flatten the chain so children nest at most 5 deep",
             []),
         ["RCP-DUR-001"] = new(
             FixtureSetup.Shipped,

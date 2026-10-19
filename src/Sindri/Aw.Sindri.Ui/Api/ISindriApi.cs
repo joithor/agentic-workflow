@@ -1,5 +1,6 @@
 using Aw.Kernel;
 using Aw.Sindri.Ui.Api.Context;
+using Aw.Sindri.Ui.Api.Sessions;
 using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.Api;
@@ -148,6 +149,20 @@ internal interface ISindriApi
 
     // LANE ANCHOR U3': the Needs you, decision and request reads and the Decide and FileRequest sends, one method each (the client's are in SindriApiClient.NeedsYou.cs). Insert immediately above this marker, never between the markers.
     // LANE ANCHOR U8: the command sends (nonce, commands, complete), once API P11 serves their shapes (Q-API-7/8); none is declared before. Insert immediately below this marker, never between the markers.
+
+    /// <summary>GET /sindri/workflow/recipes (API §3.8): every registered recipe with its standing. The Start form uses it only to pick one.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The list, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<RecipeList>> Recipes(Uri api, CancellationToken cancellationToken);
+
+    /// <summary>POST /sindri/workflow/instances (StartInstance, desk, engine P6): sent once, never retried by the app, and it takes no nonce.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="request">The recipe, the item and the input facts.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The started (or existing) instance, the API's refusal (SND-WF-012, SND-WF-014, SND-RECIPE-001/005/006, SND-CLI-003) as served, or SND-UI-002/003.</returns>
+    public Task<Result<StartedView>> StartInstance(Uri api, StartInstanceRequest request, CancellationToken cancellationToken);
+
     // LANE ANCHOR U9: the context reads and the review send, one method each (the client's are in SindriApiClient.Context.cs, the routes in ContextRoutes); U9e adds Subgraph. Insert immediately below this marker, never between the markers.
 
     /// <summary>GET /sindri/context/lenses (context spec §8): the three bands around an anchor or a set of them. A read of the context database, so it never waits on the views.</summary>
@@ -204,4 +219,21 @@ internal interface ISindriApi
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The sources, the API's refusal, or SND-UI-002/003.</returns>
     public Task<Result<SourcesView>> Sources(Uri api, CancellationToken cancellationToken);
+
+    // LANE ANCHOR U11a: the Agents page's reads, one method each (the client's are in SindriApiClient.Sessions.cs); the Focus send (U11a-f) is declared once CO-4a serves its goldens. Insert immediately below this marker, never between the markers.
+
+    /// <summary>GET /sindri/sessions (collector spec CA-1): the live agent sessions, the recently ended ones, the collector's problems and the head counts. A session problem (SND-SESSION-002) is a refusal, not a transport failure.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="query">What to ask for; none of it when the page filters in the app.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The list, the API's refusal, or SND-UI-002/003.</returns>
+    public Task<Result<SessionList>> Sessions(Uri api, SessionQuery query, CancellationToken cancellationToken);
+
+    /// <summary>GET /sindri/sessions/{provider}/{id} (collector spec CA-2): one live session with its cwd, socket and state history.</summary>
+    /// <param name="api">The base URL.</param>
+    /// <param name="provider">The provider's id as served ("claude-code").</param>
+    /// <param name="id">The session id as served.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The session, SND-SESSION-404 when it is unknown or ended, another refusal, or SND-UI-002/003.</returns>
+    public Task<Result<SessionView>> Session(Uri api, string provider, string id, CancellationToken cancellationToken);
 }

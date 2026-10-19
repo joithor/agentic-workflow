@@ -363,7 +363,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-CHOICE-006` | A route state's `uncertain` and `step.failed` transitions come after its branch transitions (the app takes the first transition as the main path) | List the branches first |
 | `RCP-CHILD-001` | A child recipe resolves (registered, or next to the recipe) and gets its inputs | Register it, or put `<id>.yaml` beside the recipe; pass the inputs it declares |
 | `RCP-CHILD-002` | Child recipes form no cycle | Remove a child wait |
-| `RCP-CHILD-003` | Children nest at most 4 deep | Flatten the chain |
+| `RCP-CHILD-003` | Children nest at most 5 deep | Flatten the chain |
 | `RCP-CAP-001` | **Generated recipes only** (run against the base; `recipe validate` doesn't): a generated recipe adds no capability use its base doesn't have | Remove it, or generate from a base that has it |
 | `RCP-CAP-002` | **Generated recipes only:** a generated recipe keeps its base's capability parameters | Set them to the base's values |
 | `RCP-CAP-003` | The recipe's hash is approved and its pinned blocks match the build (registry, P2) | Approve it |
@@ -487,10 +487,22 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 | `step.evidence.none` | block | `built` | `done` | `evidenceSummary` on done |
 | `step.evidence.combine` | block | `evidenceUi`, `evidenceApi`, `evidenceDb` | `done` | `evidenceSummary` on done |
 | `step.evidence.desk` | desk, human-only | `built` | `recorded`, `noneFound` | `evidenceSummary` (every outcome); `evidenceReason` (every outcome) |
-| `step.review.run` | agent | `change`, `phasePacket` | `clean`, `findings`, `behaviourWrong` | `review` (every outcome) |
+| `step.review.round` | block | `change`, `phasePacket` | `ready` | `lensQueue`, `lensRounds` on ready |
+| `step.lens.run` | agent; parameters `subject` (required), `bundle` | `lensQueue`, `lensRounds` | `reviewed` | `lensReport` on reviewed |
+| `step.review.log` | block | `lensReport`, `lensRounds` | `next`, `clean`, `findings`, `behaviourWrong` | `lensRounds` (every outcome); `lensQueue` on next; `review` on clean, findings, behaviourWrong |
+| `step.review.record` | block | `change`, `review`, `lensRounds` | `recorded` | `review` on recorded |
 | `step.review.fix` | agent | `change`, `review` | `fixed` | `change` on fixed |
 | `step.review.recheck` | agent | `change`, `review` | `clean`, `findings`, `behaviourWrong` | `review` (every outcome) |
 | `step.owner.decide` | desk, human-only | - | `retry`, `stop` | `notes` on retry |
+| `step.ship.green` | block | `phasePacket`, `workspace` | `green`, `red` | `green` on green; `findings` on red |
+| `step.ship.pack` | block | `phasePacket`, `proofPack`, `review`, `lineContext` | `packed` | `handoffDraft` on packed |
+| `step.ship.freeze` | block | `handoffDraft`, `proofPack`, `review` | `frozen`, `stale` | `handoff` on frozen; `findings` on stale |
+| `step.ship.open` | desk, human-only | `handoff`, `workspace` | `opened`, `updated`, `refused` | `pr` on opened and updated (stands in for `effect.pr.open`; nothing reaches the forge) |
+| `step.ship.return` | block | `findings` | `noted` | `returnNotes` on noted |
+| `step.docs.scope` | block | `pr`, `phasePacket` | `candidates`, `none`, `disabled`, `notOpen` | `docsResult` (every outcome); `docsScope`, `prState`, `findings`, `handoffNote`, `workspace` on candidates |
+| `step.docs.update` | agent | `docsScope`, `prState`, `findings`, `handoffNote`, `phasePacket` | `changed`, `noChange`, `blocked` | `handoffNote` (every outcome) |
+| `step.docs.check` | block | `docsScope`, `workspace` | `pass`, `fail` | `findings` on fail |
+| `step.docs.open-pr` | desk, human-only | `pr`, `workspace` | `opened`, `updated`, `rejected` | `docsPr` on opened and updated (stands in for `effect.pr.create-stacked`; nothing reaches the forge) |
 
 
 ### Block catalog (scoping station)
@@ -521,13 +533,65 @@ Descriptor-only too (`ScopingSteps`, `PendingInputs` in `Aw.Sindri.Features/Bloc
 | `step.scope.review` | desk, human-only | `scopePacket` | `approve`, `revise`, `drop` | `answers` on revise |
 | `step.scope.freeze` | block | `scopePacket`, `answerLog` | `frozen`, `mismatch` | `findings` on mismatch |
 | `step.scope.withdraw` | block | - | `withdrawn` | - |
+| `step.phase.seed` | block | `phasePacket`, `lineContext` | `seeded` | `buildNotes`, `workspace`, `built`, `change`, `redTests` on seeded |
+| `step.phase.drift` | block | `built`, `change`, `workspace` | `same`, `moved` | `built`, `change` on moved |
+| `step.phase.decide` | desk, human-only | `phasePacket` | `rebuild`, `stop` | `buildNotes` on rebuild |
+| `step.babysit.watch` | desk, human-only (stub of `workflow.pr-babysitter`) | `pr`, `handoff`, `phasePacket`, `lineContext`, `workspace` | `merged`, `rework`, `stuck` | `mergedSha` on merged; `reworkNotes` on rework |
+| `effect.line.report` | effect (descriptor only) | - | - | parameters `status`, `line` |
 
 `step.interview.answer` and `step.scope.review` carry no form yet: the answer form built from `fact:questions` and the stop's fixed form (approve, revise, drop) await W2, so at the desk they complete with plain outcomes and outputs. The output schemas, their fact-or-packet-file design and field-name choices are in `schemas/scoping/README.md`.
+
+### Block catalog (line design and plan stations)
+
+Descriptor-only Steps of `workflow.design` and `workflow.plan` (line spec §4-§6, LN-Y1; `Aw.Sindri.Features/Blocks/Step/{DesignSteps,LensRoundSteps,LensSteps,PlanSteps}.cs`). A served instance parks at one with SND-WF-010 until its runtime ships; at the desk each completes with plain outcomes and outputs. `bundle`, `pack` and `subject` are optional text parameters (`subject` required on `step.lens.run`), descriptor-only until LN-PK resolves packs; `workflow.packs.lenses.design` and `workflow.packs.style` are profile key names only. Neither recipe uses an `input.*` Step input.
+
+| Step | Kind | Reads | Outcomes | Writes |
+|---|---|---|---|---|
+| `step.design.intake` | block | `scopePacket`, `designRevision` | `fresh`, `revise` | the eight seeds (`scope`, `packs`, `design`, `findings`, `lensRounds`, `changedSections`, `answers`, `accepted`) on both |
+| `step.design.draft` | agent | `scope`, `packs`, `design`, `findings`, `changedSections` | `drafted` | `design`; optional `bundle` |
+| `step.design.apply` | agent | `scope`, `packs`, `design`, `designRevision`, `answers` | `applied` | `design`, `changedSections`; optional `bundle` |
+| `step.design.check` | block | `scope`, `packs`, `design` | `pass`, `gaps` | `findings` on gaps |
+| `step.design.revise` | agent | `scope`, `packs`, `design`, `findings`, `answers` | `revised` | `design`, `changedSections`; optional `bundle` |
+| `step.design.lens-desk` | desk, human-only | `findings`, `lensRounds` | `accept`, `revise`, `drop` | `accepted` on accept, `answers` on revise |
+| `step.design.evidence` | block | `scope`, `packs`, `design`, `findings`, `lensRounds`, `accepted` | `complete`, `incomplete` | `designPacket`, `design`, `lensRounds` on complete; `findings` on incomplete |
+| `step.lens.round` | block | `packs`, `lensRounds`, `changedSections` | `ready` | `lensQueue`; optional `pack` |
+| `step.lens.run` | agent | `lensQueue`, `lensRounds` | `reviewed` | `lensReport`; `subject` (required), optional `bundle` |
+| `step.lens.log` | block | `lensReport`, `lensRounds`, `lensQueue` | `next`, `clean`, `findings` | `lensRounds` on all; `lensQueue` on next; `findings` on findings |
+| `step.plan.intake` | block | `scopePacket`, `designPacket` | `loaded` | the seven seeds (`design`, `plan`, `findings`, `questions`, `answers`, `answerLog`, `holdoutSets`) |
+| `step.plan.graph` | agent | `scopePacket`, `design`, `plan`, `findings`, `answerLog` | `drafted` | `plan` |
+| `step.plan.check` | block | `scopePacket`, `design`, `plan` | `pass`, `gaps` | `findings` on gaps |
+| `step.plan.exec-review` | agent | `design`, `plan` | `executable`, `objections` | `findings` on objections |
+| `step.plan.holdout` | agent | `design`, `plan` | `written` | `holdoutSets` (ids and hashes, never scenario text) |
+| `step.plan.evidence` | block | `scopePacket`, `design`, `plan`, `holdoutSets`, `findings`, `answerLog` | `complete`, `incomplete` | `planPacket` on complete, `findings` on incomplete |
+| `step.plan.questions` | block | `design`, `answers`, `answerLog` | `asked`, `none` | `questions` on asked |
+| `step.plan.settle` | block | `design`, `answers`, `answerLog` | `assumed`, `changed`, `replan` | `designRevision` on changed |
+| `step.plan.review` | desk, human-only | `planPacket`, `design` | `approve`, `reviseDesign`, `revisePlan`, `drop` | `answers` on reviseDesign and revisePlan |
+| `step.plan.freeze` | block | `planPacket`, `design`, `plan`, `holdoutSets` | `frozen`, `mismatch` | `planPacket`, `phasePackets` on frozen; `findings` on mismatch |
 
 The Step inputs `input.context.lenses`, `input.context.code` and `input.context.history` are registered as descriptors (parameters `anchors`, `depth`, `hops`, `window`) so the recipe validates; the context lane replaces them with the blocks (C1, C3, C5, W6). The output schemas are `schemas/scoping/` (`node scripts/check-scoping-schemas.mjs`).
 
 `step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and human-only; their hashes moved once when the two fields
 landed (provisional owner default); every other shipped descriptor hashes as before (`ShippedBlocksTests` pins all of them).
+
+### Block catalog (line stations: build and prove)
+
+Descriptor-only (`BuildSteps`, `ProveSteps` in `Aw.Sindri.Features/Blocks/Step/`); the recipes are `workflow.build` and `workflow.prove` (line spec §7.2, §7.3, Appendix C.3 and C.4). Every Step is desk-capable.
+
+| Step | Runtime | Outcomes | Outputs |
+|---|---|---|---|
+| `step.build.prepare` | block | `ready` | the seeds `activePacket`, `redTests`, `built`, `change`, `findings`, `answers` |
+| `step.build.red` | agent | `written` | `redTests` |
+| `step.build.red-check` | block | `red`, `vacuous` | `findings` on vacuous |
+| `step.build.green` | agent | `built`, `blocked` | `built`; `findings` on blocked |
+| `step.build.checks` | block | `pass`, `failed`, `outOfScope` | `built`, `change` on pass; `findings` otherwise |
+| `step.build.scope-desk` | desk, human-only | `allow`, `revert`, `stop` | `answers` on allow and revert |
+| `step.build.amend` | block | `amended` | `activePacket` |
+| `step.prove.intake` | block | `ready` | the seeds `findings`, `proof`, `holdoutResult`, `beforeAfter` |
+| `step.prove.before-after` | block | `pass`, `fail` | `beforeAfter` |
+| `step.prove.holdout` | agent | `ran` | `holdoutResult` |
+| `step.prove.holdout-log` | block | `passed`, `failed`, `leaked` | `holdoutResult`; `findings` on failed and leaked |
+| `step.prove.evidence` | block | `complete`, `incomplete` | `proofPack`; `findings` on incomplete |
+| `step.prove.fail-log` | block | `logged` | `findings` |
 
 ### Block recipes
 
@@ -583,7 +647,7 @@ transition decides which to keep (decision-tree spec §8.4, DT-C). The complete 
 
 A `waitFor: { child }` state's entry starts the child as a Temporal child workflow (`ParentClosePolicy.Terminate`) whose
 workflow id is the child's address, `{parent}/{recipe name}.{entry}`; a looped child wait therefore starts a new child on
-each entry, and a child may wait on its own child (RCP-CHILD-003 allows depth 4). The child is created from the hash its
+each entry, and a child may wait on its own child (RCP-CHILD-003 allows depth 5). The child is created from the hash its
 parent's approval pinned: `LoadChildren`, a local activity, reads the pinned children and their pinned children, and an
 unpinned or re-hashed child is refused (`SND-RECIPE-002`).
 

@@ -99,7 +99,7 @@ public sealed class NavTabClickTests : IDisposable
             Assert.Equal("AnchorBox", (window.FocusManager?.GetFocusedElement() as Control)?.Name);
         }
 
-        if (target is not (PageId.Work or PageId.Workflows or PageId.Context) && Labels.ArrivesWith(target) is { } arrives)   // Work is the queue (U2), Workflows the list (U8) and Context the page (U9), not placeholders
+        if (target is not (PageId.Work or PageId.Workflows or PageId.Context or PageId.Agents) && Labels.ArrivesWith(target) is { } arrives)   // Work is the queue (U2), Workflows the list (U8) and Context the page (U9), Agents the sessions (U11a), not placeholders
         {
             var page = window.GetVisualDescendants().OfType<PlaceholderPage>().Single(p => p.Name == Own(target));
             Assert.Equal(arrives, page.Note);
