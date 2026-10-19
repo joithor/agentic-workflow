@@ -72,14 +72,14 @@ internal static class ScopingBriefFile
         }
     }
 
-    /// <summary>The file's full path when it is inside a root, not denied, and not a link out of it; null otherwise.</summary>
+    /// <summary>The file's full path when its real location (every directory and the file itself followed through links) is inside the root's real location and not denied; null otherwise.</summary>
     private static string? Resolve(string path, IReadOnlyList<string> roots)
     {
         foreach (var root in roots.Select(static r => System.IO.Path.GetFullPath(r)))
         {
             var candidate = System.IO.Path.GetFullPath(System.IO.Path.Combine(root, path));
-            var real = new FileInfo(candidate).ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? candidate;
-            if (Inside(root, candidate) && Inside(RealDirectory(root), real) is var inside && (inside || Inside(root, real)) && !Denied(System.IO.Path.GetRelativePath(root, candidate)) && !Denied(System.IO.Path.GetFileName(real)))
+            var real = Real(candidate);
+            if (Inside(root, candidate) && Inside(Real(root), real) && !Denied(System.IO.Path.GetRelativePath(root, candidate)) && !Denied(System.IO.Path.GetRelativePath(Real(root), real)))
             {
                 return candidate;
             }
@@ -88,7 +88,22 @@ internal static class ScopingBriefFile
         return null;
     }
 
-    private static string RealDirectory(string root) => new DirectoryInfo(root).ResolveLinkTarget(returnFinalTarget: true)?.FullName ?? root;
+    /// <summary>The path with every existing component followed through its link, so a symlinked directory counts as where it points.</summary>
+    private static string Real(string path)
+    {
+        var full = System.IO.Path.GetFullPath(path);
+        var current = System.IO.Path.GetPathRoot(full) ?? string.Empty;
+        foreach (var part in full[current.Length..].Split(System.IO.Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
+        {
+            current = System.IO.Path.Combine(current, part);
+            if (new FileInfo(current).ResolveLinkTarget(returnFinalTarget: true) is { } target)
+            {
+                current = Real(target.FullName);
+            }
+        }
+
+        return current;
+    }
 
     private static bool Inside(string root, string path) => path.StartsWith(root.TrimEnd(System.IO.Path.DirectorySeparatorChar) + System.IO.Path.DirectorySeparatorChar, StringComparison.Ordinal);
 
