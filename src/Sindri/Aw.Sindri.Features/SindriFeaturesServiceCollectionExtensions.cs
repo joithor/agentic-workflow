@@ -18,6 +18,7 @@ using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Locks;
+using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
@@ -65,18 +66,24 @@ using Aw.Sindri.Features.ListRecipes;
 using Aw.Sindri.Features.ListRequests;
 using Aw.Sindri.Features.ListServices;
 using Aw.Sindri.Features.ListSessions;
+using Aw.Sindri.Features.OnyxAccount;
+using Aw.Sindri.Features.OnyxDown;
+using Aw.Sindri.Features.OnyxEnsure;
 using Aw.Sindri.Features.OnyxStatus;
+using Aw.Sindri.Features.OnyxUp;
 using Aw.Sindri.Features.PauseService;
 using Aw.Sindri.Features.PingProcess;
 using Aw.Sindri.Features.ReadInjection;
 using Aw.Sindri.Features.ReadLedger;
 using Aw.Sindri.Features.RebuildViews;
+using Aw.Sindri.Features.RecordEval;
 using Aw.Sindri.Features.RecordHeartbeat;
 using Aw.Sindri.Features.RegisterMcp;
 using Aw.Sindri.Features.RegisterRecipe;
 using Aw.Sindri.Features.ResumeService;
 using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Features.RunDoctor;
+using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Features.Sessions;
 using Aw.Sindri.Features.ShowRecipe;
 using Aw.Sindri.Features.StartInstance;
@@ -128,12 +135,14 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddSingleton<IJobRunner>(static sp => sp.GetRequiredService<JobRunner>()).AddSingleton<IJobCancellation>(static sp => sp.GetRequiredService<JobRunner>())
             .AddScoped<IService<ValidateRecipeRequest, ValidateRecipeResponse>, ValidateRecipeService>()
             .AddScoped<IService<EvalRecipeRequest, EvalRecipeResponse>, EvalRecipeService>()
+            .AddScoped<IService<RecordEvalRequest, RecordEvalResponse>, RecordEvalService>()
             .AddRecipeBlocks()
             .AddRegistrySlices()
             .AddContextSlices()
             .AddContextJobs()
             .AddEngineSlices()
-            .AddSessionSlices();
+            .AddSessionSlices()
+            .AddScopingSlices();
         return services;
     }
 
@@ -248,7 +257,20 @@ public static class SindriFeaturesServiceCollectionExtensions
         .AddScoped<RunDoctorService>()
         .AddScoped<IService<RunDoctorRequest, RunDoctorResponse>>(static sp =>
             new WithMoreChecks(sp.GetRequiredService<RunDoctorService>(), sp.GetServices<IDoctorChecks>()))
-        .AddScoped<IDoctorChecks, ContextDoctorChecks>();
+        .AddScoped<IDoctorChecks, ContextDoctorChecks>()
+        .AddScoped<IDoctorChecks, OnyxStackDoctor>()                                       // Onyx P2: `onyx:stack`, after the context rows, only once `onyx up` has run
+        .AddSingleton<OnyxReadiness>()
+        .AddSingleton<IOnyxUpStep, OnyxFetchStep>()                                         // Onyx P2: the steps of `onyx up`, in this order
+        .AddSingleton<IOnyxUpStep, OnyxConfigStep>()
+        .AddSingleton<IOnyxUpStep, OnyxPullStep>()
+        .AddSingleton<IOnyxUpStep, OnyxStartStep>()
+        .AddScoped<IService<OnyxUpRequest, OnyxUpResponse>, OnyxUpService>()
+        .AddScoped<IManagedOnyx, ManagedOnyx>()                                            // Onyx P4: serve starts a managed Onyx and the needs-you list says when it needs you
+        .AddScoped<IOnyxNotices, OnyxNotices>()
+        .AddScoped<IService<OnyxEnsureRequest, OnyxEnsureResponse>, OnyxEnsureService>()
+        .AddScoped<OnyxKeyMinter>()
+        .AddScoped<IService<OnyxAccountRequest, OnyxAccountResponse>, OnyxAccountService>()   // Onyx P3: sign-up hand-off, Sindri's key, the profile section
+        .AddScoped<IService<OnyxDownRequest, OnyxDownResponse>, OnyxDownService>();
 
     /// <summary>Onyx's status (P1): read-only and in process, like the doctor, but its own slice.</summary>
     private static IServiceCollection AddOnyxStatus(this IServiceCollection services) => services

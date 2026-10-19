@@ -47,10 +47,10 @@ public sealed class ContextErrorsTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void The_S_H_history_codes_are_160_and_161_are_searched_row_codes_and_never_attention()
+    public void The_graphify_limit_code_is_133_an_invalid_input()
     {
-        Assert.Equal(["SND-CONTEXT-160", "SND-CONTEXT-161"], new[] { ContextErrors.HistoryDeadline, ContextErrors.IntentNotSynced }.Select(e => e.Code), StringComparer.Ordinal);
-        Assert.Equal((ErrorKind.Timeout, ErrorKind.Unavailable), (ContextErrors.HistoryDeadline.Kind, ContextErrors.IntentNotSynced.Kind));
-        Assert.All([ContextErrors.HistoryDeadline, ContextErrors.IntentNotSynced], e => Assert.DoesNotContain(e.Code, ContextErrors.Attention));
+        Assert.Equal("SND-CONTEXT-133", ContextErrors.GraphifyLimitInvalid.Code);
+        Assert.Equal(ErrorKind.Invalid, ContextErrors.GraphifyLimitInvalid.Kind);
+        Assert.Contains(ContextErrors.GraphifyLimitInvalid, ContextErrors.All);
     }
 }

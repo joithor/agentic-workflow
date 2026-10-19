@@ -111,6 +111,18 @@ internal sealed partial class RecipeWorkflow
         }
     }
 
+    // The Step is still open: apply what another Update submitted; a command that moved the instance out of the Step's state ends the Step's texts.
+    private async Task<WorkflowInstance> ApplyWhileOpen(WorkflowInstance instance, Interpreting context)
+    {
+        var applied = await ApplySubmitted(instance, context).ConfigureAwait(true);
+        if (!string.Equals(applied.Frame.State, instance.Frame.State, StringComparison.Ordinal))
+        {
+            await DropTexts(instance.Address.Value).ConfigureAwait(true);
+        }
+
+        return applied;
+    }
+
     private async Task<WorkflowInstance> RunDeskStepOnce(WorkflowInstance instance, OpenRun open, Interpreting context)
     {
         var filling = await FillInputs(instance, open, context.Recipe.States[instance.Frame.State]).ConfigureAwait(true);
@@ -121,13 +133,7 @@ internal sealed partial class RecipeWorkflow
 
         if ((filling.Failed ?? await RunStep(instance, open, context.Recipe.States[instance.Frame.State]).ConfigureAwait(true)) is not { } trigger)
         {
-            var applied = await ApplySubmitted(instance, context).ConfigureAwait(true);
-            if (!string.Equals(applied.Frame.State, instance.Frame.State, StringComparison.Ordinal))
-            {
-                await DropTexts(instance.Address.Value).ConfigureAwait(true);   // a command moved the instance out of the Step's state
-            }
-
-            return applied;
+            return await ApplyWhileOpen(instance, context).ConfigureAwait(true);
         }
 
         await DropTexts(instance.Address.Value).ConfigureAwait(true);   // the Step ended: its report, its failure or its deadline
@@ -135,7 +141,7 @@ internal sealed partial class RecipeWorkflow
         var reportId = _reportId;
         _reportId = null;
         var before = instance;
-        var decision = TransitionDecision.Decide(new DecisionInput(instance, context.Recipe, trigger, GateAnswers.None, context.Decisions));   // a desk timer's expiry always parks (W20)
+        var decision = TransitionDecision.Decide(await Deciding(instance, context, trigger).ConfigureAwait(true));   // a desk timer's expiry matches no transition and always parks (W20); a report runs its transition's gates
         if (decision is Rejected rejected)
         {
             Settle(reportId, new Reported(Result: null, rejected.Error));   // the validator saw the same instance, so this is a bug guard
@@ -148,6 +154,7 @@ internal sealed partial class RecipeWorkflow
             instance = Enter(instance, decision is null ? Timers : trigger.Actor);
             await Mirror(DeskRow(before, instance, trigger, open, decision), NeedsYou(instance)).ConfigureAwait(true);
             Emit(before, instance, EffectsOf(decision));
+            Spawn(decision);
         }
 
         Settle(reportId, new Reported(new CommandResult(GetInstance(), Happened(before, instance, decision)), Refusal: null));

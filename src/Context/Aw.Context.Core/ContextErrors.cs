@@ -169,26 +169,14 @@ public static class ContextErrors
     /// <summary>SND-CONTEXT-120: the map version asked for ('mapVersion=' / '--map-version') isn't held: never written, purged, a draft, still building, or its commit part differs. Scoping stage S-LB1 owns 120–129.</summary>
     public static readonly ErrorDefinition MapVersionNotRetained = new("SND-CONTEXT-120", ErrorKind.NotFound, "That map version is not retained");
 
-    /// <summary>SND-CONTEXT-160: the history lens ran out of 'context.deadline' reading git and returned the changes it had. Never a route failure: it is the code of a 'git-history' row in 'searched' (state degraded). S-H owns 160–169.</summary>
-    public static readonly ErrorDefinition HistoryDeadline = new("SND-CONTEXT-160", ErrorKind.Timeout, "The history read ran out of time");
-
-    /// <summary>SND-CONTEXT-161: a configured intent source has never synced, so no record of it can be listed. The code of an intent source's row in 'searched' (state unavailable, reason 'not-synced'); never a route failure. Sindri's 'context-sync-gaps' service starts the sync.</summary>
-    public static readonly ErrorDefinition IntentNotSynced = new("SND-CONTEXT-161", ErrorKind.Unavailable, "A configured intent source has not synced yet");
-
     /// <summary>SND-CONTEXT-130: a profile recognizer ('context.extract.recognizers[i]') is invalid: an unknown kind, a bad glob, a regex that doesn't compile or a key group it doesn't name. 132 is reserved for a recognizer that timed out on a file (degraded, never a failure).</summary>
     public static readonly ErrorDefinition RecognizerInvalid = new("SND-CONTEXT-130", ErrorKind.Invalid, "A profile recognizer is invalid");
 
     /// <summary>SND-CONTEXT-131: more than 50 profile recognizers, or a pattern over 512 characters.</summary>
     public static readonly ErrorDefinition RecognizerOverCap = new("SND-CONTEXT-131", ErrorKind.Invalid, "Too many profile recognizers, or a pattern is too long");
 
-    /// <summary>SND-CONTEXT-150: a 'context.code.schemaGlobs' or 'context.code.testGlobs' entry isn't a repo-relative glob. The message starts with the key path.</summary>
-    public static readonly ErrorDefinition CodeGlobInvalid = new("SND-CONTEXT-150", ErrorKind.Invalid, "A code-lens glob is not a repo-relative glob");
-
-    /// <summary>SND-CONTEXT-151: more than 50 entries in 'context.code.schemaGlobs' or 'context.code.testGlobs'.</summary>
-    public static readonly ErrorDefinition CodeGlobsTooMany = new("SND-CONTEXT-151", ErrorKind.Invalid, "Too many code-lens globs");
-
-    /// <summary>SND-CONTEXT-152: the code lens's lexical search ran out of 'context.deadline' and returned what it had (the code of a searched row, never a route failure).</summary>
-    public static readonly ErrorDefinition CodeSearchTimedOut = new("SND-CONTEXT-152", ErrorKind.Timeout, "The lexical code search ran out of time");
+    /// <summary>SND-CONTEXT-133: a 'context.extract.graphify' limit (timeoutMinutes, maxSnapshotMB, maxFileMB, maxGraphMB) isn't a whole number from 0 (no limit) up. The message names the key path.</summary>
+    public static readonly ErrorDefinition GraphifyLimitInvalid = new("SND-CONTEXT-133", ErrorKind.Invalid, "A graphify limit is invalid");
 
     /// <summary>Every Context error, for ErrorCatalogue.Validate.</summary>
     public static IReadOnlyList<ErrorDefinition> All { get; } =
@@ -197,7 +185,7 @@ public static class ContextErrors
          NoMap, MapFileInvalid, MapNodeUndefined, ExportOutsideHome, MapFileChanged, ProbeFileInvalid, NoProbeFile, AmbiguousAnchor, ProbesRegressed,
          HeavyLockBusy, LabelingUnavailable, ReviewFileNoMatch, NoDraftMap, RepoOutsideScope, PromoteRefused, ReviewTargetStale, ExtractionUnreadable,
          OnyxKeyRefused, OnyxUnexpectedReply, OnyxDocumentNotFound, OnyxKeyNotServiceAccount, OnyxNotPinnedOrLoopback, SyncRunning, ModelAnswerRefused, SyncSourceUnknown, SyncCapped,
-         NoEligibleSample, NoBriefSource, UnknownArm, AdjudicationCapped, CommitUnknown, NoMergeBase, MapVersionNotRetained, HistoryDeadline, IntentNotSynced, CodeGlobInvalid, CodeGlobsTooMany, CodeSearchTimedOut, RecognizerInvalid, RecognizerOverCap];
+         NoEligibleSample, NoBriefSource, UnknownArm, AdjudicationCapped, CommitUnknown, NoMergeBase, MapVersionNotRetained, RecognizerInvalid, RecognizerOverCap, GraphifyLimitInvalid];
 
     /// <summary>
     /// The codes the CLI answers with exit 1 (attention, spec §8.6): an unknown or ambiguous anchor, a refused input or
@@ -210,6 +198,6 @@ public static class ContextErrors
         ExportOutsideHome.Code, MapFileChanged.Code, ProbeFileInvalid.Code, NoProbeFile.Code, AmbiguousAnchor.Code, ProbesRegressed.Code,
         LabelingUnavailable.Code, ReviewFileNoMatch.Code, NoDraftMap.Code, RepoOutsideScope.Code, PromoteRefused.Code, ReviewTargetStale.Code, SyncRunning.Code, SyncSourceUnknown.Code,
         NoEligibleSample.Code, NoBriefSource.Code, UnknownArm.Code,
-        CommitUnknown.Code, NoMergeBase.Code, MapVersionNotRetained.Code, CodeGlobInvalid.Code, CodeGlobsTooMany.Code,
+        CommitUnknown.Code, NoMergeBase.Code, MapVersionNotRetained.Code,
     };
 }

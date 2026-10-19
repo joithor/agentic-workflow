@@ -8,19 +8,19 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// </summary>
 internal static class SindriWorker
 {
-    /// <summary>The worker options: <see cref="RecipeWorkflow"/> and the activities.</summary>
+    /// <summary>The worker options: <see cref="RecipeWorkflow"/> and every activity class of <paramref name="activities"/>.</summary>
     /// <param name="settings">The task queue.</param>
-    /// <param name="activities">The activity instances.</param>
+    /// <param name="activities">The activity classes.</param>
     /// <returns>The options, on <see cref="TemporalSettings.TaskQueue"/>.</returns>
-    public static TemporalWorkerOptions Options(TemporalSettings settings, WorkerActivities activities)
-    {
-        ArgumentNullException.ThrowIfNull(activities);
-        return new TemporalWorkerOptions(settings.TaskQueue)
+    public static TemporalWorkerOptions Options(TemporalSettings settings, WorkerActivities activities) =>
+        new TemporalWorkerOptions(settings.TaskQueue)
             .AddWorkflow<RecipeWorkflow>()
             .AddAllActivities(activities.Steps)
             .AddAllActivities(activities.Events)
             .AddAllActivities(activities.Items)
             .AddAllActivities(activities.Effects)
+            .AddAllActivities(activities.Engine.Gates)
+            .AddAllActivities(activities.Engine.Cleanup)
+            .AddAllActivities(activities.Engine.Children)
             .AddAllActivities(activities.Inputs);
-    }
 }
