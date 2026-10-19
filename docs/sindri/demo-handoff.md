@@ -180,11 +180,13 @@ Onyx is the intent-source engine (trackers, notes). The demo does not need it: r
 
 The scoping desk has its own verb: `sindri scoping desk <block id> --facts <dir> --out <dir> [--repo-root <dir> [--notes-dir <dir>]] [--query <file>] [--lenses <file>] [--code <file>] [--history <file>] [--propose <file>] [--json]`. The exact block names in `DeskBlocks.cs` are `intake`, `check`, `challenge-log`, `evidence`, `record` (or `interview.record`), `gather`, `read-brief`, `anchor`, `reanchor`, `propose` and `seed` (or `brief.seed`). Each also works as its full id (`step.scope.<name>`, `step.interview.record`, `step.brief.seed`). The context-reading ones are `read-brief`, `anchor`, `reanchor`, `gather` and `propose`.
 
+**Proof so far.** Engine's proof run drove one item through the shipped `workflow.line` with real Claude sessions: scoping `draft` (event 162, via agent, 157216 tokens) and `questions` (event 184, via agent, 445292 tokens) were each done by a session that reported itself. The final evidence is `~/.agentic-workflow/jthorare-agentic-workflow/proof/p8-line-agents/evidence.md` and arrives later, from engine's fourth proof run; read it there, and do not rely on this paragraph for how far the line gets.
+
 **Known rough edges of the agent-run line (with workarounds):**
 
 | Rough edge | Workaround |
 |---|---|
-| Steps park on the token budget. A Step's count includes cache reads, which are re-counted every turn, so a small Step can show 150k to 450k tokens against the default 100k budget. | Answer each budget park with `sindri workflow answer <address> --grant-tokens <n>` (at most 100000 per grant). There is no per-Step budget key in the profile; budgets are recipe-level and changing one needs a re-approval, so grant instead |
+| Steps park on the token budget. A Step's count includes cache reads, which are re-counted every turn, so one small Step can use about 450k tokens against the default 100k budget. | There is **no profile key** for it. Answer each park with `sindri workflow answer <address> --grant-tokens <n>` (protected, needs the owner's typed confirmation, at most 100000 per grant; more is `SND-WF-003`). **Expect several grants per Step**, about five for a 450k Step. The other way is to raise the budget in the recipe itself and re-approve that recipe |
 | Claude's first-run folder-trust prompt blocks an unattended launch in a new worktree. | Accept it by hand in the launched session once (attach from the Agents page or `sindri open`), or pre-trust the agent worktree folder in Claude before the demo. A product answer is a follow-up in the launcher |
 | Agents run unsandboxed until SB-5. | Say so; run the demo on a repo where that is acceptable |
 | Block Steps and human-only Steps are not run by agents. | The owner completes them at the desk, as above |
