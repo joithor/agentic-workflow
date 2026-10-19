@@ -74,6 +74,22 @@ public sealed class RecognizersTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void A_minimal_api_call_without_a_literal_rooted_path_is_not_a_route()
+    {
+        const string Text = "var api = app.MapGroup(\"/sindri\");\napp.MapMethods(\"/m\", [\"HEAD\"], h);\napp.MapGet(\"relative\", h);\napp.MapGet(path, h);\nmap.Map(\"/x\");\napp.MapPut(\n    \"/put\", h);";
+
+        Assert.Equal(["surface:route/PUT:/put"], Keys("src/Pkg/Host/Endpoints/Routes.cs", Text));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_script_forms_never_read_a_csharp_file()
+    {
+        const string Text = "new Entry(id: \"open-pane\", title: \"Open pane\");\nrouter.get(\"/x\", h);\nvar a = \"data-testid='x'\";\npublic sealed class SettingsScreen {}";
+
+        Assert.Empty(Keys("src/Pkg/Core/Entries.cs", Text));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_component_gets_a_pane_dialog_or_screen_surface_by_its_name()
     {
         const string Text = "export function TabStrip() {}\nexport const RestoreDialog = () => null;\nexport default class SettingsScreen {}";
