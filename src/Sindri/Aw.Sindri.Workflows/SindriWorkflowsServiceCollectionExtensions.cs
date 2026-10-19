@@ -1,7 +1,9 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Desk;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -98,8 +100,18 @@ public static class SindriWorkflowsServiceCollectionExtensions
     // Engine P8 U3: LaunchAgentStep, WatchAgentStep, CloseAgentStep and what they use, and the worker's set of activity classes.
     private static IServiceCollection AddAgentRuntime(this IServiceCollection services) => services
         .AddSingleton<AgentStepActivities>().AddSingleton<AgentLaunching>().AddSingleton<AgentClosing>()
+        .AddSingleton<UsageFlush>(static provider => (launch, ct) => FlushScoped(provider, launch, ct))
         .AddSingleton<AgentTargetResolver>().AddSingleton<AgentLaunchRecorder>().AddSingleton(AgentRuntimeOptions.Default)
         .AddSingleton<WorkerActivities>();
+
+    private static async ValueTask FlushScoped(IServiceProvider provider, LaunchId launch, CancellationToken cancellationToken)
+    {
+        var scope = provider.CreateAsyncScope();
+        await using (scope.ConfigureAwait(false))
+        {
+            _ = await scope.ServiceProvider.GetRequiredService<ISessionUsageSampler>().Flush(launch, cancellationToken).ConfigureAwait(false);
+        }
+    }
 
     private static async ValueTask<BlockStepResult> RunBlockScoped(IServiceProvider provider, BlockId step, StepContext context, CancellationToken cancellationToken)
     {
