@@ -74,4 +74,24 @@ public sealed class SourcesStatusTests
         Assert.Equal((SourceState.Unavailable, "SND-CONTEXT-010"), (view.Value.Sources[^1].State, view.Value.Sources[^1].Code));
         Assert.Equal(ContextErrors.SessionsDisabled.Code, session.Error.Code);
     }
+
+    // Health is not content: doctor already shows a session the onyx row and points it at `sources status` as the fix, so the status lists it too,
+    // and says the session doesn't search it (ScopeRules.MayRead) instead of leaving it out.
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_session_sees_the_onyx_row_with_its_probe_and_a_note_that_sessions_do_not_search_it()
+    {
+        var onyx = new FakeContextSource(new SourceDescriptor(SourceId.From("onyx"), SourceKind.Intent, SourceFreshness.Live, SupportsAsOf: false), [])
+        {
+            Failure = ContextErrors.SourceUnavailable.With("down"),
+        };
+        var engine = Engines.Over(new FixedSourceCatalog(onyx));
+
+        var view = await engine.Sources(Engines.Session("split-panes", """{"sessions":{"enabled":true}}"""), CancellationToken.None);
+        var human = await engine.Sources(Engines.Human("""{"sessions":{"enabled":true}}"""), CancellationToken.None);
+
+        var row = Assert.Single(view.Value.Sources, static r => r.Source.Value == "onyx");
+        Assert.Equal((SourceState.Unavailable, "SND-CONTEXT-010"), (row.State, row.Code));
+        Assert.Contains("sessions don't search it", row.Detail, StringComparison.Ordinal);
+        Assert.DoesNotContain("sessions don't search it", Assert.Single(human.Value.Sources, static r => r.Source.Value == "onyx").Detail, StringComparison.Ordinal);
+    }
 }
