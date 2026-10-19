@@ -971,6 +971,16 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
   `sindri` when unset; README X61). A Step's activity runs on its instance's queue; `StepTaskQueue.For` is the seam a
   later phase uses to route a Step elsewhere.
 
+## Step inputs at run time
+
+Before a desk Step opens, each input in its `step.inputs` list runs as a `FillInput` activity (id `inputs:{token}:{n}`, 60 s, 3 attempts), in declaration order, once per run token. The activity runs the input in its own scope, checks the section names (`^[a-z][a-z0-9._-]{0,63}$`), scrubs each section and the typed result, then hashes the scrubbed text, so the digest covers exactly what a Step sees. A section or a typed result is at most 256 KiB and a plan at most 1 MiB (`SND-WF-019`, which fails the Step without retries).
+
+- **No text is stored.** The activity returns `{section, input, bytes, sha256}` per section and the size and digest of the typed result; that metadata is all Temporal records. The text lives in `MemoryInjectionTexts`, keyed by instance address, state, run token and input, bounded (64 entries, 8 MiB), dropped when a newer run of the instance arrives, and never persisted or logged. A history recorded before the `step-inputs-v1` patch replays without filling.
+- **A later section of the same name replaces the earlier one** in place (`InjectionPlans.Merge`, pure); the plan keeps a warning for each replacement.
+- **A throwing input fails the Step**: `step.failed` with the reason `input <id> failed: <error code>` (never the message), which the recipe's `on: step.failed` routes. No desk task opens.
+- **An input whose runtime is gone after approval parks the instance** with the existing `ParkReason.NoRuntime` (shown as `SND-WF-010`); the question reads `input <id> of <step> has no runtime in this build (SND-WF-016; fix: install the block pack or rebuild, then restart)`. A restart runs Fill again and parks again the same way while the runtime is missing; nothing fails and nothing loops.
+- **An in-process Step** gets `StepContext.Injection` (the sections) and `StepContext.InputResults` (the typed results, keyed by the input block id, or `id#n` (n = the entry's place in the Step's input list) once the Step lists that block twice; read-only, empty when it has none) from `StepContexts`. On a cache miss the input runs again and its digests must equal the recorded ones; otherwise `SND-WF-018` and the Step does not run on different data.
+
 ## Effects as activities (engine P6)
 
 Engine spec rev 8.1 §5.7. A transition's effects run after the transition's ledger event, each on its own path in
@@ -1148,11 +1158,11 @@ Engine spec rev 8.1 §3.8, §5.2, §5.5, §5.8, §6.2; UI spec E-6, E-19.
   and is `SND-WF-003` on an ended instance whose workflow is still open (`SND-WF-001` once it has closed), for any actor other than `service:engine`,
   and for a launch that is not a launch id (`LCH-` and 32 lower-case hex digits). One that arrives while the
   instance is still starting waits for the start, then takes over. Temporal deduplicates the id, so a repeat applies once. The ledger row
-  carries the launch id as `causation`. Its sender is API P10b's launcher.
+  carries the launch id as `causation`. Its sender is the launcher service (API P10a, `Features/Launching/TakeoverWait`), which waits for the result inside the request's 30 s deadline.
 - **Start taken over (E-19).** `StartInstance` reads the item's launches (`ILaunchRequests.Requested` returns a `LaunchId?`: `LCH-` and 32 hex digits); when one is still
   requested the instance starts taken over (`InstanceStart.OpenLaunch`, actor `service:engine`), with the launch as the
-  `workflow.started` row's `causation`, the state's full timeout kept for the handback and takeoverIdle running. Until
-  API P10a's launches projection lands, the adapter (`NoLaunchRequests`) reads none.
+  `workflow.started` row's `causation`, the state's full timeout kept for the handback and takeoverIdle running. The adapter
+  (`LaunchRequestsView`) reads the `launches` view: the launch still `requested` and inside its 30 s deadline; a key that is no item id has none.
 
 ## Block runtime (DT-J2)
 

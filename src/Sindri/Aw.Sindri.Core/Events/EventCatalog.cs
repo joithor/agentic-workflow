@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Workflow.Registry;
 
 namespace Aw.Sindri.Core.Events;
@@ -34,15 +35,24 @@ public static class EventCatalog
         new(EventTypes.WorkflowShifted, Public: true, typeof(WorkflowEventPayload), "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]"),
         new(EventTypes.WorkflowNotified, Public: true, typeof(WorkflowEventPayload), "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]"),
         new(EventTypes.WorkflowExpired, Public: true, typeof(WorkflowEventPayload), "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]"),
+        new(EventTypes.WorkflowInjection, Public: true, typeof(WorkflowEventPayload), "workflow:<workflow id>:<run id>:<activity id>[:<content hash>]"),
         new(EventTypes.ServiceRan, Public: true, typeof(ServiceRan), "service.ran:<name>:<epoch>:<slot> | service.ran:<name>:manual:<jobId>") { Invalidates = [ApiViews.Status, ApiViews.Services, ApiViews.NeedsYou] },
-        new(EventTypes.JobStarted, Public: true, typeof(JobStarted), "job.started:<jobId>") { Invalidates = [ApiViews.Job, ApiViews.Jobs, ApiViews.Services] },
+        new(EventTypes.JobStarted, Public: true, typeof(JobStarted), "job.started:<jobId>") { Invalidates = [ApiViews.Job, ApiViews.Jobs, ApiViews.Services, ApiViews.ContextLenses, ApiViews.ContextHistory] },
         new(EventTypes.JobProgress, Public: true, typeof(JobProgress), "job.progress:<jobId>:<n>") { Invalidates = [ApiViews.Job, ApiViews.Jobs] },
-        new(EventTypes.JobFinished, Public: true, typeof(JobFinishedPublic), "job.finished:<jobId>") { Invalidates = [ApiViews.Job, ApiViews.Jobs, ApiViews.Services] },
-        new(EventTypes.JobCancelled, Public: true, typeof(JobCancelled), "job.cancelled:<jobId>") { Invalidates = [ApiViews.Job, ApiViews.Jobs, ApiViews.Services] },
+        new(EventTypes.JobFinished, Public: true, typeof(JobFinishedPublic), "job.finished:<jobId>") { Invalidates = [ApiViews.Job, ApiViews.Jobs, ApiViews.Services, ApiViews.ContextLenses, ApiViews.ContextHistory] },
+        new(EventTypes.JobCancelled, Public: true, typeof(JobCancelled), "job.cancelled:<jobId>") { Invalidates = [ApiViews.Job, ApiViews.Jobs, ApiViews.Services, ApiViews.ContextLenses, ApiViews.ContextHistory] },
         new(EventTypes.ServicePaused, Public: true, typeof(ServicePaused), "service.paused:<name>:<commandId>") { Invalidates = [ApiViews.Services, ApiViews.Status] },
         new(EventTypes.ServiceResumed, Public: true, typeof(ServiceResumed), "service.resumed:<name>:<commandId>") { Invalidates = [ApiViews.Services, ApiViews.Status] },
         new(EventTypes.ProfileChecked, Public: true, typeof(ProfileChecked), "profile.checked:<previousCheckSequence>") { Invalidates = [ApiViews.Status, ApiViews.Profile, ApiViews.NeedsYou] },
         new(EventTypes.FleetChanged, Public: true, typeof(FleetChanged), "fleet.changed:<provider>:<id>:<change>:<observedAtMs>") { Invalidates = [ApiViews.Status] },
+        new(EventTypes.ItemOpenRequested, Public: true, typeof(ItemOpenRequested), "item.open-requested:<launchId>") { Invalidates = [ApiViews.Launch, ApiViews.Item, ApiViews.Items, ApiViews.Timeline] },
+        new(EventTypes.LaunchStarted, Public: true, typeof(LaunchStartedPublic), "launch.outcome:<launchId>") { Invalidates = [ApiViews.Launch, ApiViews.Item, ApiViews.Items, ApiViews.Timeline, ApiViews.NeedsYou] },
+        new(EventTypes.LaunchFailed, Public: true, typeof(LaunchFailed), "launch.outcome:<launchId>") { Invalidates = [ApiViews.Launch, ApiViews.Item, ApiViews.Items, ApiViews.Timeline, ApiViews.NeedsYou, ApiViews.LaunchTargets] },
+        new(EventTypes.LaunchProbed, Public: true, typeof(LaunchProbed), "launch.probed:<probe>") { Invalidates = [ApiViews.LaunchTargets, ApiViews.Item] },
+        new(EventTypes.SessionEnded, Public: true, typeof(SessionEnded), "session.ended:<launch>") { Invalidates = [ApiViews.Launch, ApiViews.Item, ApiViews.Items, ApiViews.Timeline] },
+        new(EventTypes.SessionUsage, Public: false, PublicPayload: null, "session.usage:<launch>:<n>"),
+        new(EventTypes.LaunchSessionReported, Public: true, typeof(LaunchSessionReported), "launch.session-reported:<launch>") { Invalidates = [ApiViews.Launch, ApiViews.Item] },
+        new(EventTypes.LaunchViewerAttached, Public: true, typeof(LaunchViewerAttached), "launch.viewer-attached:<launch>") { Invalidates = [ApiViews.Launch, ApiViews.Item] },
         new(EventTypes.ViewsRebuilt, Public: false, PublicPayload: null, "views.rebuilt:<commandId>"),
     ];
 }

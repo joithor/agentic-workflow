@@ -14,6 +14,7 @@ using Aw.Context.Features.ExportReview;
 using Aw.Context.Features.FindPath;
 using Aw.Context.Features.GetCode;
 using Aw.Context.Features.GetFileMap;
+using Aw.Context.Features.GetHistory;
 using Aw.Context.Features.GetLenses;
 using Aw.Context.Features.GetProposals;
 using Aw.Context.Features.ImportMap;
@@ -35,6 +36,7 @@ using Aw.Context.Features.SyncSources;
 using Aw.Context.Testing.Code;
 using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Extract;
+using Aw.Context.Testing.History;
 using Aw.Context.Testing.Linking;
 using Aw.Context.Testing.Locks;
 using Aw.Context.Testing.Map;
@@ -50,20 +52,21 @@ internal static class Engines
 {
     internal static readonly ContextRepo[] Repos = [new(ContextRepoName.From("split-panes"), "/repos/split-panes"), new(ContextRepoName.From("other"), "/repos/other")];
 
-    internal static IContextEngine Over(FixedSourceCatalog catalog, FakeDocIndex? index = null, FakeTimeProvider? time = null)
+    internal static IContextEngine Over(FixedSourceCatalog catalog, FakeDocIndex? index = null, FakeTimeProvider? time = null, FakeIntentStore? intentStore = null)
     {
         var clock = time ?? new FakeTimeProvider(new DateTimeOffset(2026, 10, 12, 9, 0, 0, TimeSpan.Zero));
         var scrubbers = new FakeScrubberFactory();
         var docs = index ?? new FakeDocIndex(clock);
         var store = new FakeGraphStore();
-        var intents = new FakeIntentStore();
+        var intents = intentStore ?? new FakeIntentStore();
         var graphs = new MapReader(store, intents);
         var repos = new FakeRepoReader(Repos[0], "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567", new Dictionary<string, string>(StringComparer.Ordinal));
         return new ContextEngine(new QueryContextService(catalog, scrubbers, new SequentialIdGenerator(), clock, graphs, intents, repos),
-            new ContextSources(new SourcesStatusService(docs, catalog, scrubbers, intents, clock), new RefreshDocsService(docs, scrubbers), new SyncSourcesService(catalog, scrubbers, graphs, intents, new FakeModelPort(), new SyncLocks(), clock)), scrubbers, Map(clock, store, scrubbers),
+            new ContextSources(new SourcesStatusService(docs, catalog, scrubbers, intents, clock), new RefreshDocsService(docs, scrubbers), new SyncSourcesService(catalog, scrubbers, graphs, intents, new FakeModelPort(), new SyncLocks(), clock), intents), scrubbers, Map(clock, store, scrubbers),
             new ContextGraph(new ShowNodeService(graphs, scrubbers), new ListNeighborsService(graphs, scrubbers), new FindPathService(graphs, scrubbers),
                 new GetLensesService(graphs, new LensBasisReader(repos, intents, clock), scrubbers), new GetLensesSetService(graphs, new LensBasisReader(repos, intents, clock), scrubbers), new GetFileMapService(graphs, repos),
-                new GetCodeService(graphs, new LensBasisReader(repos, intents, clock), Lexical(repos, clock), scrubbers)),
+                new ContextCodeHistory(new GetCodeService(graphs, new LensBasisReader(repos, intents, clock), Lexical(repos, clock), scrubbers),
+                    new GetHistoryService(graphs, new HistoryPipeline(new LensBasisReader(repos, intents, clock), intents, new FakeFileHistory(Repos[0], new HistoryWorld("0a1b2c3d4e5f60718293a4b5c6d7e8f901234567", [])), clock), scrubbers))),
             new ContextEval(Probes(clock), new NoBacktest(), new NoMapQuality(), new NoPurge()));
     }
 

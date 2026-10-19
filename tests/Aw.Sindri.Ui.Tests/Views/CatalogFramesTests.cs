@@ -150,7 +150,7 @@ public sealed class CatalogFramesTests : IDisposable
         Frame(window, "control-accepted");
     });
 
-    // §7: pending rows are disabled with a focusable "arrives in <phase> · <cli>" line Tab reaches; cli-only rows are copy blocks.
+    // §7: pending rows (FocusSession is the one left, until CO-4a) are disabled with a focusable "arrives in <phase> · <cli>" line Tab reaches; cli-only rows are copy blocks.
     [Fact]
     public Task Health_shows_pending_lines_and_copy_blocks() => OnUi(async () =>
     {
@@ -162,23 +162,21 @@ public sealed class CatalogFramesTests : IDisposable
         var lines = page.GetVisualDescendants().OfType<Border>().Where(b => b.Name == "PendingLine" && b.IsEffectivelyVisible).ToList();
         Assert.Equal(shell.Health.Catalog.Pending.Sum(p => p.Controls.Count), lines.Count);
         Assert.All(lines, l => Assert.True(l.Focusable));
-        Assert.Contains("Check launch targets again, arrives in P10a · sindri launch probe", lines.Select(AutomationProperties.GetName), StringComparer.Ordinal);
+        Assert.Contains("Focus, arrives in CO-4a · sindri agents focus <ref>", lines.Select(AutomationProperties.GetName), StringComparer.Ordinal);
         var copies = page.GetVisualDescendants().OfType<Button>().Where(b => b.Classes.Contains("copy") && b.IsEffectivelyVisible).Select(AutomationProperties.GetName).ToList();
-        Assert.Contains("Copy: Check launch targets again", copies, StringComparer.Ordinal);
+        Assert.Contains("Copy: Focus", copies, StringComparer.Ordinal);
         Assert.Contains("Copy: Run doctor", copies, StringComparer.Ordinal);
         Assert.All(page.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "TerminalGlyph"), g => Assert.Equal(AccessibilityView.Raw, AutomationProperties.GetAccessibilityView(g)));
-        var pendingRun = page.GetVisualDescendants().OfType<Button>().First(b => b.Name == "RunButton" && b.IsEffectivelyVisible);
-        Assert.False(pendingRun.IsEffectivelyEnabled);
 
         var blocks = page.GetVisualDescendants().OfType<TextBlock>().Where(t => t.Name == "CliText" && t.IsEffectivelyVisible).Select(t => t.Text).ToList();
-        Assert.Equal(["sindri workflow answer <address> --accept", "sindri workflow answer <address> --grant <rounds>", "sindri workflow answer <address> --grant-tokens <tokens>", "sindri profile approve [<hash>]", "sindri recipe approve <recipe>", "sindri context map import <file>", "sindri context map promote", "sindri context map review add <node> <name> [--under <node>]", "sindri context map review --apply <file>", "sindri context map review delete <node>", "sindri context map review merge <node> --into <node>", "sindri recipe revoke <recipe>", "sindri doctor", "sindri profile validate"], blocks, StringComparer.Ordinal);
+        Assert.Equal(["sindri workflow answer <address> --accept", "sindri workflow answer <address> --grant <rounds>", "sindri workflow answer <address> --grant-tokens <tokens>", "sindri profile approve [<hash>]", "sindri recipe approve <recipe>", "sindri context map import <file>", "sindri launch init [--viewer <name>] [--force] [--stdout]", "sindri launch show [<id>] [--json]", "sindri context map promote", "sindri context map review add <node> <name> [--under <node>]", "sindri context map review --apply <file>", "sindri context map review delete <node>", "sindri context map review merge <node> --into <node>", "sindri recipe revoke <recipe>", "sindri doctor", "sindri profile validate"], blocks, StringComparer.Ordinal);
         Assert.Contains(page.GetVisualDescendants().OfType<TextBlock>(), t => t.Name == "CopyNoteText" && t.IsEffectivelyVisible && t.Text == Labels.TypedConfirmation);
 
         Assert.True(lines[0].Focus(NavigationMethod.Tab));
         window.KeyPress(Key.Tab, RawInputModifiers.Shift, PhysicalKey.Tab, keySymbol: null);
         window.KeyPress(Key.Tab, RawInputModifiers.None, PhysicalKey.Tab, keySymbol: null);
         Settle(window);
-        Assert.Same(lines[0], window.FocusManager?.GetFocusedElement());
+        Assert.Same(lines[0], window.FocusManager?.GetFocusedElement());   // Tab reaches the pending line and comes back to it
         Frame(window, "health-controls");
     });
 

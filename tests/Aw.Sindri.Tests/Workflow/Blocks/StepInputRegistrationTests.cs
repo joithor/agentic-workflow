@@ -32,6 +32,22 @@ public sealed class StepInputRegistrationTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void StepInputRefusals_names_the_alphabetically_first_state_whatever_order_the_recipe_declares_them()
+    {
+        var one = ARecipe.WithStepInputs(ARecipe.Minimal(RecipeId.From("workflow.inputs")), FakeStepInput.Id);
+        var (name, state) = one.States.First(static s => s.Value.Step is not null);
+        var reversed = one with
+        {
+            States = new Dictionary<string, Core.Workflow.Recipes.RecipeState>(StringComparer.Ordinal) { ["zeta"] = state, ["alpha"] = state, [name] = state },
+        };
+
+        var refused = StepInputRefusals.Check(reversed, new StepInputRuntimes([]));
+
+        Assert.NotNull(refused);
+        Assert.Contains("states.alpha.step.inputs[0]", refused.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void StepInputRefusals_names_the_path_and_id_of_the_first_input_with_no_runtime()
     {
         var recipe = ARecipe.WithStepInputs(ARecipe.Minimal(RecipeId.From("workflow.inputs")), FakeStepInput.Id, "input.test.other");

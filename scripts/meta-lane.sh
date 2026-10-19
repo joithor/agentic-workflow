@@ -81,7 +81,7 @@ fail() {
   if [ "$id_mode" = reported ]; then printf '%s\n' "$2" > "$ids/$lane.failed"; : > "$ids/$lane.settled"; fi
   exit "$1"
 }
-id_ok() { [ -z "$id_pattern" ] || [[ "$1" =~ $id_pattern ]]; }
+id_ok() { [ -z "$id_pattern" ] || [[ "$1" =~ ^($id_pattern)$ ]]; }   # the whole id, as the C# launcher matches it (sindri-launcher.md)
 has_transcript() {
   [ -n "$transcripts" ] || return 1
   local g="${transcripts//\{sessionId\}/$1}"

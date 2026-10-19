@@ -143,7 +143,8 @@
           "confirm": "Cancel ITM-01JL2/dev-triage-three-state/1? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JL2/dev-triage-three-state/1  workflow.dev-triage-three-state@94c0c28e21ca  v2  desk: desk task  since 12:00 (26m)\n  name      Crash on launch - 2026-10-12\n  next      Write the draft for ITM-01JL2, then run:\n            sindri workflow complete ITM-01JL2/dev-triage-three-state/1 --run 1.1 --outcome done --output\n            fact:output=<file>\n  inputs    fact:scope  scope.txt  sha256:2e04...\n            fact:item  item.json  sha256:b6c9...\n  timeout   parks in 1d 23h 34m (desk)\n  commands  complete, takeover, cancel\n"
+      "text": "ITM-01JL2/dev-triage-three-state/1  workflow.dev-triage-three-state@94c0c28e21ca  v2  desk: desk task  since 12:00 (26m)\n  name      Crash on launch - 2026-10-12\n  next      Write the draft for ITM-01JL2, then run:\n            sindri workflow complete ITM-01JL2/dev-triage-three-state/1 --run 1.1 --outcome done --output\n            fact:output=<file>\n  inputs    fact:scope  scope.txt  sha256:2e04...\n            fact:item  item.json  sha256:b6c9...\n  timeout   parks in 1d 23h 34m (desk)\n  commands  complete, takeover, cancel\n",
+      "injection": []
     }
   },
   "facts": [

@@ -5,6 +5,7 @@ using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
@@ -45,6 +46,8 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
     }
 
     public ValueTask<Result<SourcesView>> Sources(ContextScope scope, CancellationToken cancellationToken) => inner.Sources(scope, cancellationToken);
+
+    public ValueTask<Result<bool>> HasSyncGap(ContextScope scope, CancellationToken cancellationToken) => inner.HasSyncGap(scope, cancellationToken);
 
     public ValueTask<Result<RefreshReport>> Refresh(ContextScope scope, CancellationToken cancellationToken) => inner.Refresh(scope, cancellationToken);
 
@@ -114,6 +117,9 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
 
     public ValueTask<Result<CodeView>> Code(IReadOnlyList<string> anchors, bool draft, string? mapVersion, ContextScope scope, CancellationToken cancellationToken) =>
         inner.Code(anchors, draft, mapVersion, scope, cancellationToken);
+
+    public ValueTask<Result<HistoryView>> History(IReadOnlyList<string> anchors, HistoryWindow window, MapRead read, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.History(anchors, window, read, scope, cancellationToken);
 
     public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) =>
         inner.Lenses(anchor, read, range, scope, cancellationToken);

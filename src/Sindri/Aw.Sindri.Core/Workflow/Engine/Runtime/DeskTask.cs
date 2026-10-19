@@ -14,6 +14,7 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <param name="Outputs">The Step's declared outputs, each with the outcomes it is required on.</param>
 /// <param name="Inputs">The instance's input facts.</param>
 /// <param name="TimeoutAt">When the state's timeout fires; null without one.</param>
+/// <param name="Injection">The sections the Step's inputs filled, by metadata only (no text); empty without inputs.</param>
 public sealed record DeskTask(
     RunToken Run,
     string State,
@@ -21,4 +22,9 @@ public sealed record DeskTask(
     IReadOnlyList<OutcomeName> Outcomes,
     IReadOnlyList<OutputSpec> Outputs,
     IReadOnlyDictionary<FactKey, InputFact> Inputs,
-    DateTimeOffset? TimeoutAt);
+    DateTimeOffset? TimeoutAt,
+    IReadOnlyList<InjectionEntry>? Injection = null)
+{
+    /// <summary>The injection plan's sections, never null.</summary>
+    public IReadOnlyList<InjectionEntry> Injection { get; init; } = Injection ?? [];
+}

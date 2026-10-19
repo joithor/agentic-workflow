@@ -199,9 +199,14 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
     private static string ApprovalText(ApproveProfileResponse a, bool preview) => (preview, a.Approved) switch
     {
         (_, true) when preview => $"Approved already: {a.Hash.Value}\n",
-        (true, _) => $"hash {a.Hash.Value}\nchanged since the last approval: {(a.Changes.Count == 0 ? "nothing" : string.Join(", ", a.Changes))}\nto approve: sindri profile approve {a.Hash.Value}\n",
+        (true, _) => $"hash {a.Hash.Value}\nchanged since the last approval: {(a.Changes.Count == 0 ? "nothing" : string.Join(", ", a.Changes))}\n{StepArgvText(a)}to approve: sindri profile approve {a.Hash.Value}\n",
         _ => $"Approved {a.Hash.Value}\n",
     };
+
+    /// <summary>One line per step hash: the entry on this box that has it, or that none does (launcher L-16).</summary>
+    private static string StepArgvText(ApproveProfileResponse a) => string.Concat(a.StepArgv.Select(static line => line.Entry is { } entry
+        ? $"steps on {line.Agent} may run {entry.Bin} {string.Join(' ', entry.Open)}{(entry.Resume is null ? string.Empty : " (resume: " + string.Join(' ', entry.Resume) + ")")} [{line.Hash}, {entry.Source.ToString().ToLowerInvariant()}]\n"
+        : $"steps on {line.Agent}: no entry on this box has the hash {line.Hash}\n"));
 
     private static string Word(CheckState state) => state switch
     {
