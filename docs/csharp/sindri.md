@@ -421,6 +421,8 @@ Every command (`ICommand<T>`) and issue (`IIssue<T>`) is registered through `Add
 
 Queries (`IQuery<T>`, `AddQuery`) get a `sindri.query <name>` span around validation, and nothing else.
 
+- **The stop skips the gate:** `StopProcess` is registered with `AddStopCommand`: the same chain without `CommandGate`, and after validation a `StoppingGate` that cancels the command holding the gate (every gated command runs under the gate's stopping token) and any that would wait for it. So a long command, such as a large review apply, can't keep `sindri stop` behind `SND-API-009`, and a refused caller cancels nothing.
+
 - **Self-audited:** `StopProcess`'s accepted path writes no `command.handled`: it releases the lease, and its
   `process.stopped` is the audit. A refused stop is audited like any other command.
 - **No caller context** (nothing set it) is refused and audited as caller `none`. `ServeCommand` calls `StopProcess` as

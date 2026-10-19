@@ -29,9 +29,9 @@ public sealed class ChainRegistrationTests
         }
     }
 
-    // A stop is audited and authorized like any command but never waits on the gate: a long command holding it can't keep the process from stopping.
+    // A stop is audited and authorized like any command but never waits on the gate: once allowed, it cancels the holder (StoppingGate).
     [Fact, Trait("Lane", "unit")]
-    public void The_stop_is_wrapped_audit_authorize_validate_await_views_without_the_gate()
+    public void The_stop_is_wrapped_audit_authorize_validate_then_cancels_the_gate_holder_without_waiting()
     {
         var (services, scope) = Composed();
         using (scope)
@@ -39,7 +39,7 @@ public sealed class ChainRegistrationTests
             var stop = Assert.Single(Registered(services, typeof(ICommand<>)), IsStop);
 
             Assert.Equal(
-                [typeof(AuditingService<,>), typeof(AuthorizingService<,>), typeof(ValidatingService<,>), typeof(AwaitingViews<,>), null],
+                [typeof(AuditingService<,>), typeof(AuthorizingService<,>), typeof(ValidatingService<,>), typeof(StoppingGate<,>), typeof(AwaitingViews<,>), null],
                 Chain(scope.ServiceProvider.GetRequiredService(stop)));
         }
     }

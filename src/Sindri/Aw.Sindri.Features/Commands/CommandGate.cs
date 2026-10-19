@@ -22,8 +22,9 @@ internal sealed class CommandGate<TRequest, TResponse>(IService<TRequest, TRespo
 
     public override async ValueTask<Result<TResponse>> Handle(TRequest request, CancellationToken cancellationToken)
     {
+        using var running = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, gate.Stopping);   // a stop cancels the holder
         var waiting = clock.GetTimestamp();
-        var entered = await gate.Enter(clock, cancellationToken).ConfigureAwait(false);
+        var entered = await gate.Enter(clock, running.Token).ConfigureAwait(false);
         CommandTelemetry.GateWait.Record(clock.GetElapsedTime(waiting).TotalSeconds);
         if (!entered)
         {
@@ -32,7 +33,7 @@ internal sealed class CommandGate<TRequest, TResponse>(IService<TRequest, TRespo
 
         try
         {
-            return await Inner.Handle(request, cancellationToken).ConfigureAwait(false);
+            return await Inner.Handle(request, running.Token).ConfigureAwait(false);
         }
         finally
         {
