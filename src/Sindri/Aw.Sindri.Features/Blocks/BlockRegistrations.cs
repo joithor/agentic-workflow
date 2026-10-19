@@ -119,8 +119,8 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PlanSteps.ExecReview)
         .AddBlockDescriptor(PlanSteps.Holdout)
         .AddBlockDescriptor(PlanSteps.Evidence)
-        .AddBlockDescriptor(PlanSteps.Questions)
-        .AddBlockDescriptor(PlanSteps.Settle)
+        .AddBlockStep<PlanQuestionsStep>()
+        .AddBlockStep<PlanSettleStep>()
         .AddBlockDescriptor(PlanSteps.Review)
         .AddBlockDescriptor(PlanSteps.Freeze);
 
