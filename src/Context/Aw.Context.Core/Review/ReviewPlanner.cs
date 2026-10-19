@@ -27,19 +27,7 @@ public static class ReviewPlanner
     {
         ArgumentNullException.ThrowIfNull(decision);
         ArgumentNullException.ThrowIfNull(basis);
-        var (draft, overrides, onDraft) = basis;
-        var applied = OverrideApplier.Apply(draft, overrides);
-        var world = new World(who, at, overrides, applied, ReviewBacklog.Build(string.Empty, draft, overrides), draft, onDraft);
-        return decision.Verb switch
-        {
-            ReviewVerb.AcceptDeterministic => world.AcceptDeterministic(),
-            ReviewVerb.Accept or ReviewVerb.Reject => One(decision.Link is { } link ? world.DecideLink(decision, link) : world.DecideNode(decision)),
-            ReviewVerb.Undo => decision.UndoesAll is null ? One(world.Undo(decision)) : world.UndoAll(decision.UndoesAll),
-            ReviewVerb.Drop => One(world.Drop(decision)),
-            ReviewVerb.Repoint => world.Repoint(decision),
-            ReviewVerb.Rename or ReviewVerb.Move or ReviewVerb.Merge or ReviewVerb.Add or ReviewVerb.Delete => One(world.Edit(decision)),
-            _ => One(Stale($"{decision.Verb.ToString().ToLowerInvariant()} is not a review action")),
-        };
+        return World.Of(basis, who, at).Plan(decision);
     }
 
     /// <summary>Plans a whole review file's decisions, each on top of the rows planned before it, against one build of the map.</summary>
@@ -49,15 +37,71 @@ public static class ReviewPlanner
     /// <param name="at">When.</param>
     /// <param name="cancellationToken">Stops the plan between decisions.</param>
     /// <returns>The rows to append and the skipped lines (one per decision that is stale).</returns>
-    public static (IReadOnlyList<MapOverride> Rows, IReadOnlyList<string> Skipped) PlanAll(IReadOnlyList<ReviewDecision> decisions, ReviewBasis basis, string who, DateTimeOffset at, CancellationToken cancellationToken) =>
-        throw new NotSupportedException();
+    /// <remarks>
+    /// The same rows and skipped lines as planning each decision alone on top of the rows before it, without rebuilding the map per
+    /// decision: an accept or a reject only takes entries out of the queue (its own; a node's reject also the links that end at it), so
+    /// those are claimed in the one build. Any other verb plans against a fresh build with every row so far, as a single call would.
+    /// </remarks>
+    public static (IReadOnlyList<MapOverride> Rows, IReadOnlyList<string> Skipped) PlanAll(IReadOnlyList<ReviewDecision> decisions, ReviewBasis basis, string who, DateTimeOffset at, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(decisions);
+        ArgumentNullException.ThrowIfNull(basis);
+        var rows = new List<MapOverride>();
+        var skipped = new List<string>();
+        World? world = null;
+        foreach (var decision in decisions)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var claims = decision.Verb is ReviewVerb.Accept or ReviewVerb.Reject;
+            world = claims ? world ?? World.Of(basis with { Overrides = [.. basis.Overrides, .. rows] }, who, at) : null;
+            var planned = world?.Plan(decision) ?? Plan(decision, basis with { Overrides = [.. basis.Overrides, .. rows] }, who, at);
+            if (planned.IsError)
+            {
+                skipped.Add(planned.Error.Message);
+                continue;
+            }
+
+            rows.AddRange(planned.Value);
+            foreach (var row in planned.Value)
+            {
+                world?.Claim(row);
+            }
+        }
+
+        return (rows, skipped);
+    }
 
     private static Result<IReadOnlyList<MapOverride>> One(Result<MapOverride> row) => row.Map<IReadOnlyList<MapOverride>>(r => [r]);
 
     private static Error Stale(string message) => ContextErrors.ReviewTargetStale.With(message);
 
+    // The map a decision is planned against, with the queue indexed by id so a decision is a lookup, not a scan.
     private sealed record World(string Who, DateTimeOffset At, IReadOnlyList<MapOverride> Overrides, AppliedMap Applied, ReviewQueueView Queue, GraphSnapshot Draft, bool OnDraft)
     {
+        private readonly Dictionary<string, ReviewEntry> _nodes = Index(Queue.Entries.Where(e => e.Link is null && e.Group != ReviewGroup.Orphaned), e => e.Node.Value);
+        private readonly Dictionary<string, List<ReviewEntry>> _links = Group(Queue.Entries, e => e.Link is { } link ? [link.Value] : []);
+        private readonly Dictionary<string, List<ReviewEntry>> _linksAt = Group(Queue.Entries.Where(e => e.Link is not null && e.Group != ReviewGroup.Orphaned), e => [e.Node.Value, .. e.Parent is { } to ? [to.Value] : Array.Empty<string>()]);
+        private readonly HashSet<ReviewEntry> _claimed = new(ReferenceEqualityComparer.Instance);
+        private Dictionary<string, GraphNode>? _graphNodes;
+        private Dictionary<string, NodeKey>? _aliases;
+
+        internal static World Of(ReviewBasis basis, string who, DateTimeOffset at)
+        {
+            var (draft, overrides, onDraft) = basis;
+            return new World(who, at, overrides, OverrideApplier.Apply(draft, overrides), ReviewBacklog.Build(string.Empty, draft, overrides), draft, onDraft);
+        }
+
+        internal Result<IReadOnlyList<MapOverride>> Plan(ReviewDecision decision) => decision.Verb switch
+        {
+            ReviewVerb.AcceptDeterministic => AcceptDeterministic(),
+            ReviewVerb.Accept or ReviewVerb.Reject => One(decision.Link is { } link ? DecideLink(decision, link) : DecideNode(decision)),
+            ReviewVerb.Undo => decision.UndoesAll is null ? One(Undo(decision)) : UndoAll(decision.UndoesAll),
+            ReviewVerb.Drop => One(Drop(decision)),
+            ReviewVerb.Repoint => Repoint(decision),
+            ReviewVerb.Rename or ReviewVerb.Move or ReviewVerb.Merge or ReviewVerb.Add or ReviewVerb.Delete => One(Edit(decision)),
+            _ => One(Stale($"{decision.Verb.ToString().ToLowerInvariant()} is not a review action")),
+        };
+
         private GraphSnapshot Graph => Applied.Graph;
 
         private string Basis => OnDraft ? "the draft" : "the current map";
@@ -72,7 +116,7 @@ public static class ReviewPlanner
 
         internal Result<MapOverride> DecideLink(ReviewDecision d, LinkId link)
         {
-            var entry = Queue.Entries.FirstOrDefault(e => e.Link?.Value == link.Value);
+            var entry = _links.GetValueOrDefault(link.Value)?.FirstOrDefault(e => !_claimed.Contains(e));
             return entry is null
                 ? Stale($"link {link.Value} is not in {(OnDraft ? "the review queue" : "the current map")} (fix: {(OnDraft ? "list it again with 'sindri context map review'" : "find its id with 'sindri context filemap'")})")
                 : Row(Verb(d), entry.Node) with { Link = link };
@@ -80,15 +124,55 @@ public static class ReviewPlanner
 
         internal Result<MapOverride> DecideNode(ReviewDecision d)
         {
-            var entry = d.Node is { } key ? Queue.Entries.FirstOrDefault(e => e.Link is null && e.Group != ReviewGroup.Orphaned && e.Node.Value == key.Value) : null;
+            var entry = d.Node is { } key && _nodes.TryGetValue(key.Value, out var queued) && !_claimed.Contains(queued) ? queued : null;
             if (entry is null)
             {
                 return Stale($"{d.Node?.Value ?? "no node"} is not in the review queue (fix: list it again with 'sindri context map review')");
             }
 
             var row = Row(Verb(d), entry.Node);
-            return d.Verb == ReviewVerb.Reject && Graph.Resolve(entry.Node) is { } node ? row with { Rejection = RejectionIdentity.For(node) } : row;
+            return d.Verb == ReviewVerb.Reject && Resolve(entry.Node) is { } node ? row with { Rejection = RejectionIdentity.For(node) } : row;
         }
+
+        /// <summary>Takes out of the queue what an accept or a reject planned here takes out once it is applied: the decided entry, and for a node's reject the links that end at it (the applier removes the node with its edges).</summary>
+        internal void Claim(MapOverride row)
+        {
+            if (row.Link is { } link)
+            {
+                if (_links.GetValueOrDefault(link.Value)?.FirstOrDefault(e => !_claimed.Contains(e)) is { Group: not ReviewGroup.Orphaned } live)
+                {
+                    _ = _claimed.Add(live);   // an orphaned link entry stays: deciding it again orphans the new row too
+                }
+
+                return;
+            }
+
+            if (_nodes.TryGetValue(row.Target.Value, out var entry))
+            {
+                _ = _claimed.Add(entry);
+            }
+
+            if (row is { Action: OverrideAction.Reject, Rejection: not null })
+            {
+                _claimed.UnionWith(_linksAt.GetValueOrDefault(row.Target.Value) ?? []);
+            }
+        }
+
+        // The graph's own Resolve, by index: an alias names its target, and the first node with a key wins.
+        private GraphNode? Resolve(NodeKey key)
+        {
+            _aliases ??= Graph.Aliases.DistinctBy(a => a.Alias.Value, StringComparer.Ordinal).ToDictionary(a => a.Alias.Value, a => a.Target, StringComparer.Ordinal);
+            _graphNodes ??= Graph.Nodes.DistinctBy(n => n.Key.Value, StringComparer.Ordinal).ToDictionary(n => n.Key.Value, StringComparer.Ordinal);
+            return _graphNodes.GetValueOrDefault(_aliases.TryGetValue(key.Value, out var target) ? target.Value : key.Value);
+        }
+
+        private static Dictionary<string, ReviewEntry> Index(IEnumerable<ReviewEntry> entries, Func<ReviewEntry, string> key) =>
+            entries.DistinctBy(key, StringComparer.Ordinal).ToDictionary(key, StringComparer.Ordinal);
+
+        // Each entry under every key it has, in queue order.
+        private static Dictionary<string, List<ReviewEntry>> Group(IEnumerable<ReviewEntry> entries, Func<ReviewEntry, string[]> keys) =>
+            entries.SelectMany(e => keys(e).Distinct(StringComparer.Ordinal).Select(k => (Key: k, Entry: e)))
+                .GroupBy(p => p.Key, StringComparer.Ordinal).ToDictionary(g => g.Key, g => g.Select(p => p.Entry).ToList(), StringComparer.Ordinal);
 
         internal Result<MapOverride> Undo(ReviewDecision d) =>
             d.Undoes is not { } id

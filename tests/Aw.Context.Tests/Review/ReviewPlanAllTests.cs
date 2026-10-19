@@ -4,7 +4,6 @@ using Aw.Context.Core.Graph;
 using Aw.Context.Core.Overrides;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
-using Aw.Context.Testing.Graph;
 
 namespace Aw.Context.Tests.Review;
 
@@ -91,14 +90,10 @@ public sealed class ReviewPlanAllTests
     public void A_file_of_twenty_thousand_decisions_is_matched_and_planned_in_seconds_not_hours()
     {
         const int count = 20_000;
-        var builder = new GraphBuilder();
-        for (var i = 0; i < count; i++)
-        {
-            _ = builder.Node("feature:" + F(i), F(i), Provenance.Model, 0.5)
-                .Edge("code:src/" + F(i) + ".ts", EdgeType.Implements, "feature:" + F(i), provenance: Provenance.Model, confidence: 0.5);
-        }
-
-        var basis = new ReviewBasis(builder.Build(), []);
+        // Built directly: GraphBuilder looks every edge's ends up in its node list, which is itself quadratic at this size.
+        var features = Enumerable.Range(0, count).Select(i => new GraphNode(SampleDrafts.Key("feature:" + F(i)), F(i), Provenance.Model, 0.5)).ToList();
+        var links = features.Select(n => new GraphEdge(SampleDrafts.Key("code:src/" + n.Label + ".ts"), n.Key, EdgeType.Implements, Provenance.Model, 0.5)).ToList();
+        var basis = new ReviewBasis(new GraphSnapshot(features, links, [], []), []);
         var queue = ReviewBacklog.Build("v2@draft", basis.Graph, basis.Overrides);
         var file = new ReviewFile("v2@draft", [.. Enumerable.Range(0, count).Select(i =>
             new ReviewFileEntry(F(i), ReviewGroup.Model, 0.5, Node: SampleDrafts.Key("feature:" + F(i)), Decision: i % 2 == 0 ? ReviewVerb.Accept : ReviewVerb.Reject))]);
