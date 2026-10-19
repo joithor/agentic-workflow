@@ -1,7 +1,7 @@
 using Aw.Context.Core;
 using Aw.Context.Core.Code;
 using Aw.Sindri.Core;
-using Aw.Sindri.Host.Text;
+using Aw.Sindri.Features.ContextCalls;
 
 namespace Aw.Sindri.Host.Commands;
 

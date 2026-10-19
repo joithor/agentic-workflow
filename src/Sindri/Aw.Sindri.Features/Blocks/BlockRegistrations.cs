@@ -147,10 +147,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(ScopingSteps.Evidence)
         .AddBlockDescriptor(ScopingSteps.Review)
         .AddBlockDescriptor(ScopingSteps.Freeze)
-        .AddBlockDescriptor(ScopingSteps.Withdraw)
-        .AddBlockDescriptor(PendingInputs.Lenses)
-        .AddBlockDescriptor(PendingInputs.Code)
-        .AddBlockDescriptor(PendingInputs.History);
+        .AddBlockDescriptor(ScopingSteps.Withdraw);
 
     /// <summary>Registers the line stations' Steps (ship, docs sync), descriptors only.</summary>
     /// <param name="services">The service collection.</param>

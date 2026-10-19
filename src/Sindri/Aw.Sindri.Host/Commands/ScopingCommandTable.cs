@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
 using Aw.Kernel;
@@ -5,7 +6,6 @@ using Aw.Kernel.Json;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Scoping;
-using Aw.Sindri.Features.GetInstanceFact;
 using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Host.Commands.Scoping;
 
@@ -16,18 +16,11 @@ namespace Aw.Sindri.Host.Commands;
 /// files (class local: no instance, no server); with an address they are clients of the control plane, and a serve that is down is
 /// SND-API-001, never started. Exit 0 pass, 1 findings, 2 usage, a tool error or serve not running.
 /// </summary>
-internal static class ScopingCommandTable
+internal static partial class ScopingCommandTable
 {
     private const string CheckUsage = "usage: sindri scoping check (<address> | --facts <dir>) [--draft <dir>] [--stage draft|evidence] [--json]";
     private const string ShowUsage = "usage: sindri scoping show (<address> | --facts <dir>) [--json]";
-    private const string DeskUsage = "usage: sindri scoping desk <block id> --facts <dir> --out <dir> [--json]";
-
-    /// <summary>The facts a scoping instance holds, by the keys the checks and the view read.</summary>
-    private static readonly string[] _factKeys =
-    [
-        "brief", "lenses", "coverage", "scopeMap", "acceptance", "answers", "answerLog", "challenge", "openQuestions", "questions",
-        "decision", "anchors", "runs", "rounds", "scopePacket",
-    ];
+    private const string DeskUsage = "usage: sindri scoping desk <block id> --facts <dir> --out <dir> [--repo-root <dir> [--notes-dir <dir>]] [--query <file>] [--lenses <file>] [--code <file>] [--history <file>] [--propose <file>] [--json]";
 
     /// <summary>What every scoping verb needs: the container, the output, the API client and the environment.</summary>
     internal sealed record Host(IServiceProvider Services, Output Output, RecipeDesk Desk, Func<string, string?> Environment);
@@ -82,21 +75,28 @@ internal static class ScopingCommandTable
             return await Fail(output, SindriErrors.InvalidInput.With(ShowUsage)).ConfigureAwait(false);
         }
 
+        // an address is a client of API2, whose route fences a session's text itself; --facts runs here and fences for a session
+        var view = parsed.Value("--facts") is not null
+            ? await LocalView(services, desk, parsed, ct).ConfigureAwait(false)
+            : await InstanceView(desk, parsed.Positional[0], ct).ConfigureAwait(false);
+        if (view.IsError)
+        {
+            return await Fail(output, view.Error).ConfigureAwait(false);
+        }
+
+        return parsed.Json ? await output.Json(view.Value, 0).ConfigureAwait(false) : await output.Text(ScopingText.View(view.Value), 0).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<ScopingView>> LocalView(IServiceProvider services, RecipeDesk desk, ScopingArguments parsed, CancellationToken ct)
+    {
         var facts = await Facts(parsed, desk, static _ => null, ct).ConfigureAwait(false);
         if (facts.IsError)
         {
-            return await Fail(output, facts.Error).ConfigureAwait(false);
+            return facts.Error;
         }
 
-        var result = await services.GetRequiredService<IService<ScopingShowRequest, ScopingView>>()
-            .Handle(new ScopingShowRequest(facts.Value), ct).ConfigureAwait(false);
-        if (result.IsError)
-        {
-            return await Fail(output, result.Error).ConfigureAwait(false);
-        }
-
-        var view = desk.Client.SessionReason is null ? result.Value : ScopingFencing.Fence(result.Value);   // a session's text is fenced
-        return parsed.Json ? await output.Json(view, 0).ConfigureAwait(false) : await output.Text(ScopingText.View(view), 0).ConfigureAwait(false);
+        var result = await services.GetRequiredService<IService<ScopingShowRequest, ScopingView>>().Handle(new ScopingShowRequest(facts.Value), ct).ConfigureAwait(false);
+        return result.IsError || desk.Client.SessionReason is null ? result : ScopingFencing.Fence(result.Value);
     }
 
     /// <summary>Exactly one of an address and --facts.</summary>
@@ -160,49 +160,10 @@ internal static class ScopingCommandTable
         return Path.GetFullPath(path).StartsWith(root, StringComparison.Ordinal);
     }
 
-    /// <summary>An instance's facts through the control plane's facts route (class query); a serve that is down is SND-API-001 and is never started.</summary>
-    private static async Task<Result<Dictionary<string, string>>> InstanceFacts(RecipeDesk desk, string address, CancellationToken ct)
-    {
-        var listed = await desk.Client.Get<Core.Workflow.Views.InstanceList>($"{InstanceReads.Instances}?address={Uri.EscapeDataString(address)}", ct).ConfigureAwait(false);
-        if (listed.IsError)
-        {
-            return listed.Error;
-        }
-
-        if (listed.Value.Value.Instances is not [var instance])
-        {
-            return Core.Workflow.WorkflowErrors.InstanceNotFound.With($"'{address}' names no one instance (fix: sindri workflow list)");
-        }
-
-        if (!string.Equals(instance.Recipe.Id.Value, "workflow.scoping", StringComparison.Ordinal))
-        {
-            return ScopingErrors.NotAScopingInstance.With($"{address} runs {instance.Recipe.Id.Value} (fix: pass the address of a workflow.scoping instance)");
-        }
-
-        var facts = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var key in _factKeys)
-        {
-            var read = await desk.Client.Get<FactView>($"{InstanceReads.Instances}/{instance.Id.Value}/facts/{Uri.EscapeDataString("fact:" + key)}", ct).ConfigureAwait(false);
-            if (read.IsError && string.Equals(read.Error.Code, SindriErrors.ItemNotFound.Code, StringComparison.Ordinal))
-            {
-                continue;   // not produced yet
-            }
-
-            if (read.IsError)
-            {
-                return read.Error;
-            }
-
-            facts[key] = read.Value.Value.Body.GetRawText();
-        }
-
-        return facts;
-    }
-
     private static async Task<int> Desk(IReadOnlyList<string> args, Host host, CancellationToken ct)
     {
         var (services, output, _, environment) = host;
-        var parsed = ScopingArguments.Parse(args, "--facts", "--out");
+        var parsed = ScopingArguments.Parse(args, "--facts", "--out", "--repo-root", "--notes-dir", "--query", "--lenses", "--code", "--history", "--propose");
         if (!DeskArguments(parsed, out var block, out var directory, out var outDirectory))
         {
             return await Fail(output, SindriErrors.InvalidInput.With(DeskUsage)).ConfigureAwait(false);
@@ -213,13 +174,12 @@ internal static class ScopingCommandTable
             return await Fail(output, ScopingFactDirectory.WorktreeRefusal("--out", outDirectory)).ConfigureAwait(false);
         }
 
-        var facts = await ScopingFactDirectory.Read(directory, ct).ConfigureAwait(false);
+        var facts = await ScopingDeskInputs.Load(parsed, (block, directory, outDirectory), services.GetRequiredService<TimeProvider>().GetUtcNow(), ct).ConfigureAwait(false);
         if (facts.IsError)
         {
             return await Fail(output, facts.Error).ConfigureAwait(false);
         }
 
-        await ScopingFactDirectory.OverlayRounds(facts.Value, outDirectory, ct).ConfigureAwait(false);
         var result = await services.GetRequiredService<IService<ScopingDeskRequest, ScopingDeskResponse>>()
             .Handle(new ScopingDeskRequest(block, facts.Value), ct).ConfigureAwait(false);
         if (result.IsError)
@@ -234,12 +194,12 @@ internal static class ScopingCommandTable
         }
 
         var code = result.Value.Findings.Count > 0 || string.Equals(result.Value.Outcome, "incomplete", StringComparison.Ordinal) ? 1 : 0;
-        return parsed?.Json == true
+        return parsed.Json
             ? await output.Json(report.Value, code).ConfigureAwait(false)
             : await output.Text(DeskLine(report.Value), code).ConfigureAwait(false);
     }
 
-    private static bool DeskArguments(ScopingArguments? parsed, out string block, out string directory, out string outDirectory)
+    private static bool DeskArguments([NotNullWhen(true)] ScopingArguments? parsed, out string block, out string directory, out string outDirectory)
     {
         block = directory = outDirectory = string.Empty;
         if (parsed is not { Positional: [var only] } || parsed.Value("--facts") is not { } facts || parsed.Value("--out") is not { } output)

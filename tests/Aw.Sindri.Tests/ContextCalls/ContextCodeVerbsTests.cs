@@ -33,7 +33,7 @@ public sealed class ContextCodeVerbsTests : IDisposable
         return await new ContextCodeVerbs(client, new Output(_out, _error, SliceHarness.Json)).Run(args, Token);
     }
 
-    private static CodeView View()
+    internal static CodeView View()
     {
         var key = NodeKey.From("feature:sharing");
         var at = DateTimeOffset.Parse("2026-10-16T18:00:00Z", System.Globalization.CultureInfo.InvariantCulture);

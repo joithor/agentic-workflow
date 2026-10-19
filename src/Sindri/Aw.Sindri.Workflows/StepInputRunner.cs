@@ -37,7 +37,7 @@ internal sealed partial class StepInputRunner(InputDispatch dispatch, StepInputR
         }
 
         var sections = await dispatch(context, cancellationToken).ConfigureAwait(false);
-        return Shape(context, index, sections);
+        return sections.IsError ? sections.Error : Shape(context, index, sections.Value);
     }
 
     private Result<FilledOutput> Shape(StepInputContext context, int index, InjectionSections filled)
