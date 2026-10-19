@@ -22,7 +22,7 @@ internal sealed class AwPacketsTool(IToolRunner runner, Func<string, string?> en
         ValueTask.FromResult(Answer("validate", packet, by: null, cancellationToken).Map(static json => new PacketValidation(Flag(json, "passed"), Failures(json))));
 
     public ValueTask<Result<string>> Hash(PacketRef packet, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(Run("hash", packet, by: null, cancellationToken).Bind(static output => output.Trim() is var hash && hash.StartsWith("sha256:", StringComparison.Ordinal)
+        ValueTask.FromResult(Run("hash", packet, by: null, cancellationToken).Bind(static run => run.Output.Trim() is var hash && hash.StartsWith("sha256:", StringComparison.Ordinal)
             ? Results.Success(hash)
             : ScopingErrors.PacketToolFailed.With("aw-packets hash printed no sha256 hash")));
 
@@ -32,10 +32,20 @@ internal sealed class AwPacketsTool(IToolRunner runner, Func<string, string?> en
 
     // Exit 0 and 1 carry a JSON answer (1 is a failed check).
     private Result<JsonObject> Answer(string verb, PacketRef packet, PacketFreezer? by, CancellationToken cancellationToken) =>
-        Run(verb, packet, by, cancellationToken).Bind(output => Parse(output) is { } json ? Results.Success(json) : Failed(verb, Program(), $"it printed no JSON: {Tail(output)}"));
+        Run(verb, packet, by, cancellationToken).Bind(run => Parse(run.Output) is { } json ? Results.Success(json) : NoAnswer(verb, run));
 
-    // The program's standard output on exit 0, and on exit 1 for a verb whose answer is the check result.
-    private Result<string> Run(string verb, PacketRef packet, PacketFreezer? by, CancellationToken cancellationToken)
+    // No JSON on stdout: exit 1 is the tool's own refusal of a malformed packet (AW-PACKETS-003, -004), reported on stderr; the packet is at fault, not the install.
+    private Error NoAnswer(string verb, ToolRun run) => run.ExitCode == 1
+        ? ScopingErrors.PacketToolFailed.With($"aw-packets {verb} refused the packet: {ToolError(run.Error)}")
+        : Failed(verb, Program(), $"it printed no JSON: {Tail(run.Output)}");
+
+    // The tool's Error record on stderr (--json) as "CODE message", else the raw tail.
+    private static string ToolError(string stderr) => Parse(stderr) is { } json && Text(json, "code") is { } code
+        ? $"{code} {Text(json, "message")}".Trim()
+        : Tail(stderr);
+
+    // The finished run: exit 0, and exit 1 for a verb whose answer is the check result.
+    private Result<ToolRun> Run(string verb, PacketRef packet, PacketFreezer? by, CancellationToken cancellationToken)
     {
         var program = Program();
         var run = runner.Run(program, Arguments(verb, packet, by), _timeout, options: null, cancellationToken);
@@ -45,7 +55,7 @@ internal sealed class AwPacketsTool(IToolRunner runner, Func<string, string?> en
         }
 
         var accepted = run.ExitCode == 0 || (run.ExitCode == 1 && verb != "hash");
-        return accepted ? run.Output : Failed(verb, program, $"exit {run.ExitCode.ToString(CultureInfo.InvariantCulture)}: {Tail(run.Error.Length > 0 ? run.Error : run.Output)}");
+        return accepted ? run : Failed(verb, program, $"exit {run.ExitCode.ToString(CultureInfo.InvariantCulture)}: {Tail(run.Error.Length > 0 ? run.Error : run.Output)}");
     }
 
     private string Program() => environment("AW_PACKETS_BIN") is { Length: > 0 } given ? given : "aw-packets";
@@ -59,7 +69,7 @@ internal sealed class AwPacketsTool(IToolRunner runner, Func<string, string?> en
         }
 
         arguments.Add(packet.Directory);
-        AddOption(arguments, "--repo", verb == "hash" ? null : packet.Repo);
+        AddOption(arguments, "--repo", verb == "hash" || packet.Kind == PacketKind.Scoping ? null : packet.Repo);   // a scoping packet has no repo: aw-packets rejects --repo for it
         AddOption(arguments, "--repo-slug", verb == "freeze" ? packet.RepoSlug : null);
         AddOption(arguments, "--instance", verb == "freeze" ? packet.Instance : null);
         AddOption(arguments, "--by", by is { } who ? who.ToString().ToLowerInvariant() : null);
