@@ -241,14 +241,14 @@ public sealed class ExpandedStateViewModelTests
     }
 
     [Fact]
-    public void An_agent_step_shows_Attach_as_a_chip_pending_P10a()
+    public void An_agent_step_shows_Attach_waiting_on_the_item_not_P10a()
     {
         var agent = Expanded("incident-loop");
         var desk = Expanded("dev-desk-round-trip");
 
-        Assert.Equal((true, Labels.AvailableWithP10a), (agent.HasAttach, agent.AttachChip));
-        Assert.Contains(FixtureInstances.Detail("incident-loop").Address, agent.AttachName, StringComparison.Ordinal);
-        Assert.Equal((false, string.Empty), (desk.HasAttach, desk.AttachChip));
+        Assert.Equal((true, true, Labels.AttachChecking), (agent.HasAttach, agent.Attach!.IsPending, agent.Attach.PendingChip));
+        Assert.Contains(FixtureInstances.Detail("incident-loop").Address, agent.Attach.PendingChipName, StringComparison.Ordinal);
+        Assert.Equal((false, null), (desk.HasAttach, desk.Attach));
     }
 
     [Fact]

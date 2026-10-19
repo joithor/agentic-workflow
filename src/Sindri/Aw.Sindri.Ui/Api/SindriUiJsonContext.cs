@@ -51,4 +51,9 @@ namespace Aw.Sindri.Ui.Api;
 // LANE ANCHOR U11a: one [JsonSerializable] per Agents record. Insert immediately below this marker, never between the markers.
 [JsonSerializable(typeof(Sessions.SessionList))]
 [JsonSerializable(typeof(Sessions.SessionView))]
+// LANE ANCHOR L1: one [JsonSerializable] per agent-run record. Insert immediately below this marker, never between the markers.
+[JsonSerializable(typeof(LaunchView))]
+[JsonSerializable(typeof(OpenItemRequest))]
+[JsonSerializable(typeof(OpenAcceptedView))]
+[JsonSerializable(typeof(Workflow.InstanceEventsView))]
 internal sealed partial class SindriUiJsonContext : JsonSerializerContext;
