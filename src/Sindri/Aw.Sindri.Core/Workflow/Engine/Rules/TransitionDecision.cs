@@ -93,7 +93,7 @@ public static partial class TransitionDecision
         }
 
         var spend = Spend(d, instance);
-        if (spend.Park is { } budget)
+        if (spend.Park is { } budget && !KeepsReport(d))
         {
             return d.Changed(d.Rules.Suspend(instance with { Spent = spend.Spent }, Caused(budget, d.Trigger, match.Transition)));
         }
@@ -101,6 +101,9 @@ public static partial class TransitionDecision
         var spent = instance with { Spent = spend.Spent };
         return match.Transition is { } index ? Transition(d, spent, index) : Unmatched(d, spent);
     }
+
+    /// <summary>An accepted report is kept whatever it cost: its transition applies and the budget is checked where the next Step would start (BudgetRules.StartPark).</summary>
+    private static bool KeepsReport(Deciding d) => d.Trigger is StepCompleted && !d.Context.LegacyBudgetPark;
 
     /// <summary>
     /// A park a rule decided carries no actor and no withheld trigger (LoopRules, BudgetRules); the decision that took the

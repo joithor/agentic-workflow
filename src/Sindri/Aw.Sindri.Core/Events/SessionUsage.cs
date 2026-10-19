@@ -12,4 +12,4 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Target">The agent the launch runs.</param>
 /// <param name="CacheReadTokens">The part of <paramref name="InputTokens"/> served from the cache; a Step's budget leaves it out. Null on a sample from before the split, or when there were none.</param>
 /// <param name="Model">The model the tokens are priced as: the one with the most tokens when a session used several, or null when the reader named none.</param>
-public sealed record SessionUsage([property: JsonPropertyName("launchId")] LaunchId Launch, int Sample, long InputTokens, long OutputTokens, AgentId Target, string? Model = null, long? CacheReadTokens = null);
+public sealed record SessionUsage([property: JsonPropertyName("launchId")] LaunchId Launch, int Sample, long InputTokens, long OutputTokens, AgentId Target, string? Model = null, [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] long? CacheReadTokens = null);

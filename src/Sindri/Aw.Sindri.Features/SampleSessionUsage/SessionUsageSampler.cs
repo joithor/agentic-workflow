@@ -43,7 +43,7 @@ internal sealed class SessionUsageSampler(LaunchLiveness liveness, ILaunchViews 
             }
 
             var number = samples.Next(launch, (int)Math.Floor(Math.Max(0, (now - (row.OutcomeAt ?? row.RequestedAt)) / LaunchRules.UsageEvery)) + 1);
-            var sample = new SessionUsage(launch, number, input, output, row.Target, ModelTokens.Dominant(tokens));
+            var sample = new SessionUsage(launch, number, input, output, row.Target, ModelTokens.Dominant(tokens), ModelTokens.CacheReads(tokens) is > 0 and var cached ? cached : null);
             if ((await events.Usage(row.Item.Value, sample, cancellationToken).ConfigureAwait(false)).IsSuccess)
             {
                 samples.Record(launch, input, output, number);   // only a sample that is in the ledger counts as seen

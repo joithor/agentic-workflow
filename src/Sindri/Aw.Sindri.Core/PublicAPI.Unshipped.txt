@@ -11650,6 +11650,7 @@ Aw.Sindri.Core.Launches.UsageSamples.Next(Aw.Sindri.Core.Workflow.Engine.LaunchI
 Aw.Sindri.Core.Launches.UsageSamples.Record(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, long input, long output, int number) -> void
 Aw.Sindri.Core.Launches.ReportedIdAdmission.ReportedIdAdmission(Aw.Sindri.Core.Launches.ILaunchViews! views, Aw.Sindri.Core.Launch.IAgentCatalog! catalog, Aw.Sindri.Core.Launches.ILaunchUsage! usage) -> void
 Aw.Sindri.Core.Launches.ReportedIdAdmission.FinalTokens(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<(long? Input, long? Output)>
+static Aw.Sindri.Core.Launches.ModelTokens.CacheReads(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.ModelTokens!>! tokens) -> long
 static Aw.Sindri.Core.Launches.ModelTokens.Totals(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.ModelTokens!>! tokens) -> (long Input, long Output)
 static Aw.Sindri.Core.Launches.ModelTokens.Dominant(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.ModelTokens!>! tokens) -> string?
 static Aw.Sindri.Core.Launches.LaunchRules.SweepGap.get -> System.TimeSpan
