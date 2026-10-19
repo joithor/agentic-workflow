@@ -38,6 +38,8 @@ public sealed class AgentRuntimeInterpreterTests : AgentRuntimeTestBase
             var request = Assert.Single(_launcher.Requests);
             Assert.Equal(("done", false, LaunchMode.Open, rig.Worktree), (result.Instance.State, request.Attended, request.Mode, request.Worktree));
             Assert.Equal(rig.Launch, request.Launch);
+            Assert.Equal((StepPermissionMode.Default, null), (request.Step?.Policy?.Mode, request.Step?.Policy?.WritablePath));   // not plan mode: the session must be able to report
+            Assert.Equal(["Bash(sindri workflow complete:*)", "Bash(sindri workflow status:*)", "Bash(sindri workflow events:*)"], request.Step?.Policy?.AllowedTools, StringComparer.Ordinal);
             Assert.Equal(rig.Launch, Assert.Single(_launcher.Stops));   // the session closes with its run
             Assert.Equal(0, _launcher.SessionCount);
         });
@@ -214,6 +216,28 @@ public sealed class AgentRuntimeInterpreterTests : AgentRuntimeTestBase
             Assert.Contains("SND-LAUNCH-004", parked.Question?.Question, StringComparison.Ordinal);
             Assert.Equal(("launch", "agent"), await rig.Failure(ct));
             Assert.Empty(_launcher.Requests);
+        });
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task A_write_scope_step_launches_with_its_worktree_writable_and_the_commit_rules()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _root = "workflow.dev-agent-write";
+        _also = [_writeRecipe];
+        _more = new Dictionary<string, string>(StringComparer.Ordinal) { ["fact:change"] = "the change", ["fact:review"] = "the review" };
+        await using var rig = await Rig(ct);
+        await rig.Run(async handle =>
+        {
+            _ = await WorkflowsHarness.Until(handle, static v => v.Run is not null && v.State == "fix");
+            await Launched(ct);
+
+            var request = Assert.Single(_launcher.Requests);
+
+            Assert.Equal((StepPermissionMode.Default, request.Worktree), (request.Step?.Policy?.Mode, request.Step?.Policy?.WritablePath));
+            var allowed = request.Step?.Policy?.AllowedTools ?? [];
+            Assert.Contains("Bash(git commit:*)", allowed, StringComparer.Ordinal);
+            Assert.Contains("Bash(sindri workflow complete:*)", allowed, StringComparer.Ordinal);
         });
     }
 

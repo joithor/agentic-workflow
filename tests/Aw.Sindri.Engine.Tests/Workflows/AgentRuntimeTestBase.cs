@@ -34,6 +34,7 @@ public abstract class AgentRuntimeTestBase : IDisposable
     internal readonly FakeRunDiff _diff = new();
     internal string _root = RecipeName;   // the recipe a rig starts; a test that wants a parent over a child sets it and _also before Rig
     internal string[] _also = [];
+    internal Dictionary<string, string> _more = new(StringComparer.Ordinal);   // more text inputs a root recipe declares, by key
     internal string? _factRepo;   // the repo key fact:item names, when a test wants one the profile doesn't list
     internal ILauncher? _launcherSeen;   // what the host sees as the launcher when a test wraps the fake
     internal IRunDiff? _diffSeen;
@@ -208,7 +209,14 @@ public abstract class AgentRuntimeTestBase : IDisposable
                 await Replayed(handle);
                 if ((await handle.DescribeAsync()).Status == Temporalio.Api.Enums.V1.WorkflowExecutionStatus.Running)
                 {
-                    await handle.TerminateAsync("test over");
+                    try
+                    {
+                        await handle.TerminateAsync("test over");
+                    }
+                    catch (Temporalio.Exceptions.RpcException)
+                    {
+                        // the instance ended between the describe and the terminate: nothing is left to stop
+                    }
                 }
             }, ct);
         }
@@ -277,6 +285,11 @@ public abstract class AgentRuntimeTestBase : IDisposable
                 [FactKey.From("fact:item")] = new InputFact("item.json", item),
                 [FactKey.From("fact:issue")] = new InputFact("issue.txt", _test._harness.Fact("The button is broken")),
             };
+            foreach (var (key, text) in _test._more)
+            {
+                inputs[FactKey.From(key)] = new InputFact(key[5..] + ".txt", _test._harness.Fact(text));
+            }
+
             return start with { Inputs = inputs };
         }
 
@@ -297,4 +310,24 @@ public abstract class AgentRuntimeTestBase : IDisposable
             _ = services.Replace(ServiceDescriptor.Singleton(new AgentRuntimeOptions(PollInterval: TimeSpan.FromMilliseconds(100))));
         }
     }
+
+    internal static readonly string _writeRecipe = string.Join('\n',
+        "schema: 1",
+        "id: workflow.dev-agent-write",
+        "version: 1",
+        "inputs:",
+        "  - { key: fact:item, label: \"Item\", type: item, kind: item }",
+        "  - { key: fact:change, label: \"Change\", type: text, kind: text }",
+        "  - { key: fact:review, label: \"Review\", type: text, kind: text }",
+        "initial: fix",
+        "states:",
+        "  fix:",
+        "    kind: active",
+        "    step: step.review.fix",
+        "    budget: { tokens: 1000 }",
+        "    timeout: { after: 1m, then: park }",
+        "    next: \"Fix the review findings for {item}.\"",
+        "  done: { kind: terminal, outcome: resolved }",
+        "transitions:",
+        "  - { from: fix, to: done, on: step.completed, when: { outcome: fixed }, produces: [fact:change] }");
 }
