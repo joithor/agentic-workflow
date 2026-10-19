@@ -50,7 +50,7 @@ public static partial class InstanceViews
         ArgumentNullException.ThrowIfNull(context);
         var children = context.Children ?? [];
         var task = instance is { Ended: false, Suspension: null, Frame.Run: { Runtime: StepRuntime.Desk } open }
-            ? Task(instance.Frame.State, open.Token, recipe, timeoutAt)
+            ? Task(instance.Frame.State, open.Token, recipe, timeoutAt, context.Injection)
             : null;
         var words = new InstanceWords(instance, recipe, since, MirroredChild(instance, children));
         var view = new InstanceView(
@@ -219,12 +219,12 @@ public static partial class InstanceViews
     private static bool Answerable(Suspension suspension) =>
         suspension.ParkKind is not (ParkKind.Revoked or ParkKind.ChildRevoked or ParkKind.Drift);
 
-    private static DeskTask Task(string state, RunToken run, InterpretedRecipe recipe, DateTimeOffset? timeoutAt)
+    private static DeskTask Task(string state, RunToken run, InterpretedRecipe recipe, DateTimeOffset? timeoutAt, InjectionPlan? injection)
     {
         var step = recipe.Recipe.States[state].Step?.Use
             ?? throw new InvalidOperationException($"state {state} has an open run but no Step");
         var descriptor = recipe.Catalog.Find(step);
-        return new DeskTask(run, state, step, descriptor?.Outcomes ?? [], descriptor?.Outputs ?? [], recipe.Inputs, timeoutAt);
+        return new DeskTask(run, state, step, descriptor?.Outcomes ?? [], descriptor?.Outputs ?? [], recipe.Inputs, timeoutAt, injection?.Entries);
     }
 
     /// <summary>The budgets of the active state and the instance, when either is declared and the instance hasn't ended.</summary>

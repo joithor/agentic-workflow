@@ -34,10 +34,31 @@
               IsVisible="{Binding Child, Converter={x:Static ObjectConverters.IsNotNull}}" AutomationProperties.Name="{Binding Child.Name}" />
       <Button x:Name="ExpandedAnswerInChild" Content="{Binding AnswerInChildText}" Click="OnAnswerInChild" HorizontalAlignment="Left"
               IsVisible="{Binding AnswersInChild}" AutomationProperties.Name="{Binding AnswerInChildName}" />
-      <Border x:Name="ExpandedAttach" Classes="pending-chip" HorizontalAlignment="Left" IsVisible="{Binding HasAttach}"
-              AutomationProperties.Name="{Binding AttachName}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
-        <TextBlock x:Name="ExpandedAttachChip" Classes="caption subtle" Text="{Binding AttachChip}" AutomationProperties.AccessibilityView="Raw" />
+      <Border x:Name="ExpandedRun" HorizontalAlignment="Left" IsVisible="{Binding HasRun}" AutomationProperties.Name="{Binding RunName}"
+              AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
+        <TextBlock x:Name="ExpandedRunLine" Classes="caption mono" Text="{Binding RunLine}" AutomationProperties.AccessibilityView="Raw" />
       </Border>
+      <TextBlock x:Name="ExpandedLaunch" Classes="caption" Text="{Binding LaunchLine}" IsVisible="{Binding HasLaunchLine}" TextWrapping="Wrap"
+                 AutomationProperties.Name="{Binding LaunchLine}" />
+      <Panel x:Name="ExpandedAttachPanel" HorizontalAlignment="Left" IsVisible="{Binding HasAttach}">
+        <comp:AttachButton x:Name="ExpandedAttach" DataContext="{Binding Attach}" />
+      </Panel>
+      <TextBlock x:Name="ExpandedAttachOutcome" Classes="caption" Text="{Binding AttachOutcomeLine}" TextWrapping="Wrap"
+                 IsVisible="{Binding AttachOutcomeLine, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" AutomationProperties.Name="{Binding AttachOutcomeLine}" />
+      <WrapPanel x:Name="ExpandedAttachCommandRow" Orientation="Horizontal" IsVisible="{Binding HasAttachCommand}">
+        <TextBlock x:Name="ExpandedAttachCommand" Classes="caption mono" Text="{Binding AttachCommand}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,8,0"
+                   AutomationProperties.Name="{Binding AttachCommand}" />
+        <Button x:Name="ExpandedAttachCopy" Classes="copy" Content="{Binding AttachCommandCopy.Label}" Click="OnCopyAttach" AutomationProperties.Name="{Binding CopyAttachName}" />
+        <TextBlock x:Name="ExpandedAttachCopyAnnouncement" Classes="caption live-region" Classes.live="{Binding AttachCommandCopy.IsAnnouncing}" Width="0" Opacity="0"
+                   IsHitTestVisible="False" Text="{Binding AttachCommandCopy.Announcement}" />
+      </WrapPanel>
+      <ItemsControl x:Name="ExpandedRunEvents" ItemsSource="{Binding RunEvents}" IsVisible="{Binding HasRunEvents}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="x:String">
+            <TextBlock Classes="caption" Text="{Binding}" TextWrapping="Wrap" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
       <ItemsControl x:Name="ExpandedCommands" ItemsSource="{Binding Commands}" IsVisible="{Binding HasCommands}">
         <ItemsControl.ItemTemplate>
           <DataTemplate x:DataType="inst:ExpandedCommandViewModel">
@@ -50,7 +71,7 @@
               <Panel IsVisible="{Binding Protected, Converter={x:Static ObjectConverters.IsNotNull}}" Margin="0,0,8,0">
                 <comp:ProtectedActionButton DataContext="{Binding Protected}" />
               </Panel>
-              <TextBlock Name="CommandCli" Classes="caption mono" Text="{Binding Cli}" IsVisible="{Binding ShowsCli}" VerticalAlignment="Center" Margin="0,0,8,0"
+              <TextBlock Name="CommandCli" Classes="caption mono" Text="{Binding Cli}" IsVisible="{Binding ShowsCli}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,8,0"
                          AutomationProperties.Name="{Binding Cli}" />
               <Button Name="CommandCopy" Classes="copy" Content="{Binding CliCopy.Label}" IsVisible="{Binding ShowsCli}" Click="OnCopyCommand" Margin="0,0,8,0"
                       AutomationProperties.Name="{Binding CopyName}" />

@@ -35,7 +35,70 @@ public static class ProfileDiff
             values[key] = value;
         }
 
+        foreach (var (key, value) in LaunchAndAgents(p))
+        {
+            values[key] = value;
+        }
+
         return values;
+    }
+
+    /// <summary>The 'launch:' and 'agents:' keys the profile sets; an absent key has no path, so adding one shows as a change.</summary>
+    private static IEnumerable<(string Key, string Value)> LaunchAndAgents(SindriProfile p)
+    {
+        foreach (var entry in LaunchKeys(p.Launch))
+        {
+            yield return entry;
+        }
+
+        foreach (var entry in AgentKeys(p.Agents))
+        {
+            yield return entry;
+        }
+    }
+
+    private static IEnumerable<(string Key, string Value)> LaunchKeys(LaunchSettings? launch)
+    {
+        if (launch?.Default is { } target)
+        {
+            yield return ("launch.default", target.Value);
+        }
+
+        if (launch?.ConfirmWindow is { } window)
+        {
+            yield return ("launch.confirmWindow", window);
+        }
+
+        foreach (var (repo, settings) in launch?.Repos ?? new Dictionary<string, LaunchRepoSettings>(StringComparer.Ordinal))
+        {
+            if (settings.Default is { } repoTarget)
+            {
+                yield return ($"launch.repos.{repo}.default", repoTarget.Value);
+            }
+        }
+
+    }
+
+    private static IEnumerable<(string Key, string Value)> AgentKeys(AgentSettings? agents)
+    {
+        var culture = System.Globalization.CultureInfo.InvariantCulture;
+        if (agents?.SoftLimit is { } soft)
+        {
+            yield return ("agents.softLimit", soft.ToString(culture));
+        }
+
+        foreach (var (id, limits) in agents?.Targets ?? new Dictionary<string, AgentLimits>(StringComparer.Ordinal))
+        {
+            if (limits.DailyBudget is { } budget)
+            {
+                yield return ($"agents.{id}.dailyBudget", budget.ToString(culture));
+            }
+
+            if (limits.StepArgvHash is { } hashes)
+            {
+                yield return ($"agents.{id}.stepArgvHash", string.Join(", ", hashes));
+            }
+        }
     }
 
     private static IEnumerable<(string Key, string Value)> Repos(IReadOnlyList<RepoEntry>? repos)
@@ -61,8 +124,11 @@ public static class ProfileDiff
             ("workflow.dispatchDelay", workflow?.DispatchDelay),
             ("workflow.judge.providers", workflow?.Judge?.Providers is { } providers ? string.Join(", ", providers) : null),
         ];
-        return keys.Concat(Forge(workflow?.Forge)).Where(static k => k.Value is not null).Select(static k => (k.Key, k.Value!));   // why: the nulls are filtered out just before
+        return keys.Concat(Nested(workflow)).Where(static k => k.Value is not null).Select(static k => (k.Key, k.Value!));   // why: the nulls are filtered out just before
     }
+
+    private static IEnumerable<(string Key, string? Value)> Nested(WorkflowSettings? workflow) =>
+        Forge(workflow?.Forge).Concat([("workflow.route.startable", workflow?.Route?.Startable)]);
 
     private static (string Key, string? Value)[] Forge(ForgeSettings? forge) =>
     [

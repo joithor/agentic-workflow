@@ -1,8 +1,10 @@
+using Aw.Context.Core.Code;
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Eval.Backtest;
 using Aw.Context.Core.Extract;
+using Aw.Context.Core.History;
 using Aw.Context.Core.Linking;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
@@ -58,11 +60,13 @@ public static class ContextInfrastructureServiceCollectionExtensions
             .AddSingleton<IReviewFileStore, FileReviewFileStore>()
             .AddSingleton<ICurrentUser, OsCurrentUser>()
             .AddSingleton<IRepoReader, GitRepoReader>()
+            .AddSingleton<ICodeSearch, GitCodeSearch>()
             .AddSingleton(GraphifyOptions.Default)
             .AddSingleton<IClusterSource, GraphifyClusterSource>()
             .AddSingleton<IProbeFileReader, ProbeFileReader>()
             .AddSingleton<IProbeReportStore, FileProbeReportStore>()
             .AddSingleton<IMergeHistory, GitMergeHistory>()
+            .AddSingleton<IFileHistory, GitFileHistory>()
             .AddSingleton<IBriefSource, OnyxBriefSource>()
             .AddSingleton<IAsOfDocs, AsOfDocsFactory>()
             .AddSingleton<IEvalStore, FileEvalStore>()

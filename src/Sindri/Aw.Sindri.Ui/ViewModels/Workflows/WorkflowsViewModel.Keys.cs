@@ -61,12 +61,21 @@ internal sealed partial class WorkflowsViewModel
         Mark();
     }
 
+    /// <summary>The Start button's words (the catalog's label for StartInstance).</summary>
+    public string StartLabel { get; } = Labels.StartWorkflow;
+
+    /// <summary>Raised when the human asks to start a workflow (N, the head's Start button): the shell opens the Start form.</summary>
+    internal event EventHandler? StartRequested;
+
+    /// <summary>Asks for the Start form.</summary>
+    internal void RequestStart() => StartRequested?.Invoke(this, EventArgs.Empty);
+
     /// <summary>One single key on the page.</summary>
     /// <param name="key">J, K, Enter, A, X, B or N.</param>
     /// <returns>True when the key was used.</returns>
     internal bool Press(string key)
     {
-        if (key is not ("B" or "N"))
+        if (key is not "B")
         {
             ClearNote();
         }
@@ -76,7 +85,7 @@ internal sealed partial class WorkflowsViewModel
             case "J" or "K":
                 return Move(key == "J" ? 1 : -1);
             case "N":
-                Say(Labels.StartArrives);
+                RequestStart();
                 return true;
             case "B":
                 Say(Labels.HandBackArrives);   // never a dead key: the note says where hand-back is

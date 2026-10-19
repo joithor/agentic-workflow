@@ -4,6 +4,7 @@ using Aw.Kernel.Telemetry;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Profile;
 
 using Aw.Sindri.Host.Commands.Probe;
@@ -40,7 +41,8 @@ internal static class CommandTable
             await using (scope.ConfigureAwait(false))
             {
                 var session = AgentSession.Detect(environment, scope.ServiceProvider.GetRequiredService<IProcessAncestry>(), Interactive());
-                return await Dispatch(args, session, scope.ServiceProvider, environment).ConfigureAwait(false);
+                using var interrupt = Interrupt.For(args);   // Ctrl-C ends the streaming verbs and the job-following ones; no other verb listens
+                return await Guarded(interrupt, Console.Error, i => Dispatch(args, session, scope.ServiceProvider, environment, i)).ConfigureAwait(false);
             }
         }
     }
@@ -62,17 +64,34 @@ internal static class CommandTable
             : await output.Error(refused).ConfigureAwait(false);
     }
 
-    private static async Task<int> Dispatch(string[] args, AgentSession session, IServiceProvider services, Func<string, string?> environment)
+    /// <summary>Runs the verb; a Ctrl-C that cancels a call in flight ends it with 'interrupted' and exit 130 instead of a stack trace. Any other cancellation is a bug and propagates.</summary>
+    /// <param name="interrupt">The listener whose token the Ctrl-C cancels.</param>
+    /// <param name="stderr">Where 'interrupted' goes.</param>
+    /// <param name="dispatch">Runs the verb.</param>
+    /// <returns>The verb's exit code, or 130.</returns>
+    internal static async Task<int> Guarded(Interrupt interrupt, TextWriter stderr, Func<Interrupt, Task<int>> dispatch)
+    {
+        try
+        {
+            return await dispatch(interrupt).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (interrupt.Token.IsCancellationRequested)
+        {
+            await stderr.WriteLineAsync("interrupted").ConfigureAwait(false);
+            return 130;
+        }
+    }
+
+    private static async Task<int> Dispatch(string[] args, AgentSession session, IServiceProvider services, Func<string, string?> environment, Interrupt interrupt)
     {
         var options = services.GetRequiredService<JsonSerializerOptions>();
         var probe = services.GetRequiredService<IControlPlaneProbe>();
         var output = new Output(Console.Out, Console.Error, options);
-        using var client = new ControlPlaneClient(probe, options, Headers(session, services));
-        StartCommand Start(bool headless) => new(probe, services.GetRequiredService<IControlPlaneLauncher>(), client, output,
-            services.GetRequiredService<TimeProvider>(), session, UiOpener(headless, environment));
+        var cap = CliTimeout.Read(environment);   // a malformed value refuses the calls, not the verbs that make none
+        using var client = new ControlPlaneClient(probe, options, Headers(session, services), cap.IsError ? null : cap.Value, refusal: cap.IsError ? cap.Error : null);
+        StartCommand Start(bool headless) => NewStart(services, session, (client, probe, output), UiOpener(headless, environment), headless);
         var start = Start(headless: true);   // 'sindri --headless', and the start a human 'profile approve' may need
         var verbs = new Verbs(client, probe, output, services);
-        using var interrupt = Interrupt.For(args);   // Ctrl-C ends 'workflow events --follow' with exit 0; no other verb listens
         var ct = interrupt.Token;
         var harnesses = new ProbeCommands(services.GetRequiredService<IProcessAncestry>(), services.GetRequiredService<IHarnessVersions>(), environment, Interactive());
         return args switch
@@ -87,23 +106,84 @@ internal static class CommandTable
                 .Approve(a.Hash, Interactive(), Console.In, ct).ConfigureAwait(false),
             ["views", "rebuild", .. var rest] when NoStart(rest) is { } noStart => await new Verbs(client, probe, output, services, c => start.EnsureRunning(!noStart, c))
                 .RebuildViews(ct).ConfigureAwait(false),
+            ["open", .. var rest] => await new OpenCommand(client, output, start.EnsureRunning, services.GetRequiredService<TimeProvider>()).Run(rest, ct).ConfigureAwait(false),
             ["queue" or "items" or "item", ..] => await new ItemVerbs(client, output, (launch, c) => start.EnsureRunning(launch, c)).Run(args, ct).ConfigureAwait(false),
             ["request" or "requests" or "decisions" or "decide" or "needs-you", ..] => await new RequestVerbs(client, output, (launch, c) => start.EnsureRunning(launch, c)).Run(args, ct).ConfigureAwait(false),
             ["agents", .. var rest] => await new AgentsVerbs(client, output).Run(rest, ct).ConfigureAwait(false),
             ["ledger", .. var rest] => await new LedgerVerbs(client, output, (launch, c) => start.EnsureRunning(launch, c)).Run(rest, ct).ConfigureAwait(false),
             ["services" or "jobs", ..] => await JobCommands.Run(args, (client, output), start.EnsureRunning, services.GetRequiredService<TimeProvider>(), (ct, interrupt.Again)).ConfigureAwait(false),
+            ["launch" or "session", ..] => await LaunchOrSession(args, client, (output, environment), services, (ct, interrupt.Again)).ConfigureAwait(false),
             ["doctor", ..] => await Doctor(args, verbs, harnesses, output, ct).ConfigureAwait(false),
-            ["onyx", "status", .. var rest] when Json(rest) is { } json => await verbs.OnyxStatus(json, ct).ConfigureAwait(false),
+            ["onyx", .. var rest] => await Onyx(rest, verbs, new OnyxVerbs(services, output, session, (hash, to, c) => new Verbs(client, probe, to, services, e => start.EnsureRunning(launch: true, e)).Approve(hash, Interactive(), Console.In, c)), output, ct).ConfigureAwait(false),
             ["mcp", .. var rest] => await new McpVerbs(services, output, session).Run(rest, ct).ConfigureAwait(false),
             ["context", ..] => await Context(args, client, output, services, (ct, interrupt.Again)).ConfigureAwait(false),
-            ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
-            ["workflow", .. var rest] => await WorkflowCommandTable.Run(rest, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
-            ["outbox", .. var rest] => await OutboxCommandTable.Run(rest, services, output, ct).ConfigureAwait(false),
-            ["handback", ..] => await WorkflowCommandTable.RunShort(args, services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), ct).ConfigureAwait(false),
+            ["recipe" or "workflow" or "scoping" or "outbox" or "handback", ..] => await Workflows(args, new ScopingCommandTable.Host(services, output, new RecipeDesk(client, Console.In, c => start.EnsureRunning(launch: true, c)), environment), ct).ConfigureAwait(false),
             ["help" or "--help" or "-h"] => await output.Text(Usage.Text + "\n", 0).ConfigureAwait(false),
             _ => await UnknownVerb(args, output).ConfigureAwait(false),
         };
     }
+
+    /// <summary>'sindri recipe|workflow|scoping|outbox|handback …': the recipe family, one arm per verb.</summary>
+    private static async Task<int> Workflows(string[] args, ScopingCommandTable.Host host, CancellationToken ct)
+    {
+        var (services, output, desk, _) = host;
+        return args switch
+        {
+            ["recipe", .. var rest] => await RecipeCommandTable.Run(rest, services, output, desk, ct).ConfigureAwait(false),
+            ["workflow", .. var rest] => await WorkflowCommandTable.Run(rest, services, output, desk, ct).ConfigureAwait(false),
+            ["scoping", .. var rest] => await ScopingCommandTable.Run(rest, host with { Desk = desk with { EnsureRunning = static _ => Task.FromResult<Kernel.Error?>(null) } }, ct).ConfigureAwait(false),
+            ["outbox", .. var rest] => await OutboxCommandTable.Run(rest, services, output, ct).ConfigureAwait(false),
+            ["handback", ..] => await WorkflowCommandTable.RunShort(args, services, output, desk, ct).ConfigureAwait(false),
+            _ => await UnknownVerb(args, output).ConfigureAwait(false),
+        };
+    }
+
+    // Bare 'sindri' (not headless) offers to set Onyx up before it starts the control plane.
+    private static StartCommand NewStart(IServiceProvider services, AgentSession session, (ControlPlaneClient Client, IControlPlaneProbe Probe, Output Output) wire, Func<string>? openUi, bool headless)
+        => new(wire.Probe, services.GetRequiredService<IControlPlaneLauncher>(), wire.Client, wire.Output, services.GetRequiredService<TimeProvider>(), session, openUi)
+        {
+            BeforeStart = headless ? null : OnyxFirstRun(services, session, wire),
+        };
+
+    // The control plane may not be running yet while the offer's inline approval needs it, so this approval may start it.
+    private static Task<int> Approve(IServiceProvider services, AgentSession session, (ControlPlaneClient Client, IControlPlaneProbe Probe, Output Output) wire, string? hash, CancellationToken ct)
+    {
+        var starter = new StartCommand(wire.Probe, services.GetRequiredService<IControlPlaneLauncher>(), wire.Client, wire.Output, services.GetRequiredService<TimeProvider>(), session);
+        return new Verbs(wire.Client, wire.Probe, wire.Output, services, e => starter.EnsureRunning(launch: true, e)).Approve(hash, Interactive(), Console.In, ct);
+    }
+
+    // Bare 'sindri' offers to set Onyx up first (O6); the offer asks on standard error and reads a line from standard input, and only at a terminal.
+    private static Func<CancellationToken, Task> OnyxFirstRun(IServiceProvider services, AgentSession session, (ControlPlaneClient Client, IControlPlaneProbe Probe, Output Output) wire)
+        => ct => !Interactive() ? Task.CompletedTask : new OnyxOffer(
+            services, session,
+            async question =>
+            {
+                await Console.Error.WriteAsync(question).ConfigureAwait(false);
+                return await Console.In.ReadLineAsync(ct).ConfigureAwait(false);
+            },
+            c => Onyx(["up"], new Verbs(wire.Client, wire.Probe, wire.Output, services), new OnyxVerbs(services, wire.Output, session, (hash, to, a) => Approve(services, session, (wire.Client, wire.Probe, to), hash, a)), wire.Output, c),
+            Console.Error).Run(ct);
+
+    /// <summary>'sindri onyx status|up|down [--json]'.</summary>
+    private static async Task<int> Onyx(string[] rest, Verbs verbs, OnyxVerbs onyx, Output output, CancellationToken ct) =>
+        rest switch
+        {
+            ["status", .. var flags] when Json(flags) is { } json => await verbs.OnyxStatus(json, ct).ConfigureAwait(false),
+            ["up", .. var flags] when Json(flags) is { } json => await onyx.Up(json, ct).ConfigureAwait(false),
+            ["down", .. var flags] when Json(flags) is { } json => await onyx.Down(json, ct).ConfigureAwait(false),
+            ["open"] => await onyx.Open(ct).ConfigureAwait(false),
+            _ => await UnknownVerb(["onyx", .. rest], output).ConfigureAwait(false),
+        };
+
+    /// <summary>'launch init|show' (box-local) and 'session wrap' (runs the agent under a launch).</summary>
+    private static async Task<int> LaunchOrSession(string[] args, ControlPlaneClient client, (Output Output, Func<string, string?> Environment) io, IServiceProvider services, (CancellationToken Interrupt, CancellationToken Again) signals) =>
+        args switch
+        {
+            ["session", "wrap", .. var rest] => await SessionWrapVerb.Run(rest, client, services.GetRequiredService<ISindriHome>(), io.Environment, signals.Interrupt).ConfigureAwait(false),
+            ["launch", "probe", .. var probe] => await new LaunchProbeVerb(client, io.Output, new JobFollower(client, io.Output, services.GetRequiredService<TimeProvider>())).Run(probe, signals.Interrupt, signals.Again).ConfigureAwait(false),
+            ["launch", .. var rest] => await new LaunchVerbs(services.GetRequiredService<ILaunchSetup>(), io.Output).Run(rest, signals.Interrupt).ConfigureAwait(false),
+            _ => await UnknownVerb(args, io.Output).ConfigureAwait(false),
+        };
 
     /// <summary>'sindri doctor [--json]' and 'sindri doctor --probe [--harness NAME] [--json]'.</summary>
     private static async Task<int> Doctor(string[] args, Verbs verbs, ProbeCommands harnesses, Output output, CancellationToken ct) =>
@@ -126,7 +206,8 @@ internal static class CommandTable
             ["context", "eval", .. var rest] => await new ContextEvalVerbs(client, output, services.GetRequiredService<IContextEngine>()).Run(rest, signals.Interrupt).ConfigureAwait(false),
             ["context", "filemap", "accept" or "reject", var link] => await new ContextMapVerbs(client, output, Interactive(), Console.In).Run(["review", args[2], link], signals.Interrupt).ConfigureAwait(false),
             ["context", "subgraph", .. var rest] => await new ContextSubgraphVerbs(client, output, Console.In).Run(rest, signals.Interrupt).ConfigureAwait(false),
-            ["context", "lenses" or "filemap", ..] => await new ContextLensVerbs(client, output).Run(args[1..], signals.Interrupt).ConfigureAwait(false),
+            ["context", "code", ..] => await new ContextCodeVerbs(client, output).Run(args[2..], signals.Interrupt).ConfigureAwait(false),
+            ["context", "lenses" or "history" or "filemap", ..] => await new ContextLensVerbs(client, output).Run(args[1..], signals.Interrupt).ConfigureAwait(false),
             ["context", "map", .. var rest] => await new ContextMapVerbs(client, output, Interactive(), Console.In).Run(rest, signals.Interrupt).ConfigureAwait(false),
             ["context", .. var rest] => await new ContextVerbs(client, output).Run(rest, signals.Interrupt).ConfigureAwait(false),
             _ => await UnknownVerb(args, output).ConfigureAwait(false),

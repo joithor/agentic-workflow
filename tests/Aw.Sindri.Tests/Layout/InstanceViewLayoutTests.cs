@@ -98,7 +98,7 @@ public sealed class InstanceViewLayoutTests
 
     private static void AssertStatus(JsonElement status)
     {
-        HasExactly(status, "header", "next", "answer", "child", "drift", "inputs", "timeout", "budget", "paused", "commands", "text");
+        HasExactly(status, "header", "next", "answer", "child", "drift", "inputs", "timeout", "budget", "paused", "commands", "text", "injection");
         HasExactly(Prop(status, "header"), "address", "recipe", "hash12", "version", "state", "detail", "since", "ageSeconds");
         HasExactly(Prop(status, "answer"), "kind", "actionId", "class", "cli", "atTerminal");
         Assert.Equal("grantTokens", Prop(Prop(status, "answer"), "kind").GetString());

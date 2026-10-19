@@ -39,6 +39,22 @@ public sealed class StartCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task A_malformed_AW_SINDRI_CLI_TIMEOUT_is_refused_before_anything_is_launched()
+    {
+        var launcher = new FakeControlPlaneLauncher();
+        _probe.Answers.Enqueue(SindriErrors.NotRunning.With("no control plane is recorded"));
+        using var refusing = new ControlPlaneClient(_probe, SliceHarness.Json, refusal: CliTimeout.Read(_ => "abc").Error);
+        var command = new StartCommand(_probe, launcher, refusing, new Output(TextWriter.Null, TextWriter.Null, SliceHarness.Json), _clock);
+
+        var found = await command.FindOrLaunch(Token);
+        var ensured = await command.EnsureRunning(launch: true, Token);
+
+        Assert.Equal(SindriErrors.InvalidInput.Code, found.Error.Code);
+        Assert.Equal(SindriErrors.InvalidInput.Code, ensured!.Code);
+        Assert.Equal(0, launcher.Launches);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task A_concurrent_start_that_won_the_lease_is_found_by_polling_on()
     {
         var launcher = FakeControlPlaneLauncher.ExitingWith("SND-LEASE-001 held by host/77 since then (epoch 3)");

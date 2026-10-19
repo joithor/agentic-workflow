@@ -107,21 +107,38 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
 
     internal async Task<int> OnyxStatus(bool json, CancellationToken ct)
     {
-        var status = (await scope.GetRequiredService<IService<OnyxStatusRequest, OnyxStatusResponse>>().Handle(new OnyxStatusRequest(), ct).ConfigureAwait(false)).Value;
+        var answer = await scope.GetRequiredService<IService<OnyxStatusRequest, OnyxStatusResponse>>().Handle(new OnyxStatusRequest(), ct).ConfigureAwait(false);
+        if (answer.IsError)
+        {
+            return await OnyxVerbs.Fail(output, answer.Error).ConfigureAwait(false);
+        }
+
+        var status = answer.Value;
         if (json)
         {
             return await output.Json(status, status.ExitCode).ConfigureAwait(false);
         }
 
-        var state = status.State == OnyxState.NotSetUp ? "not set up" : status.State.ToString();   // no command named yet: `onyx up` arrives with P2, which adds the hint
-        var rows = new List<string>
+        var rows = new List<string> { $"{"onyx",-10}{OnyxStateText(status)}" };
+        if (status.Url is not null)
         {
-            $"{"onyx",-10}{state}",
-            $"{"pinned",-10}{status.PinnedVersion} ({status.PinnedCommit[..7]})",
-        };
+            rows.Add($"{"url",-10}{status.Url}");
+            rows.Add($"{"running",-10}{status.RunningVersion}");
+        }
+
+        rows.Add($"{"pinned",-10}{status.PinnedVersion} ({status.PinnedCommit[..7]})");
         rows.AddRange(status.Checks.Select(c => $"{c.Name,-10}{Word(c.State)} {c.Detail}{(c.Problem is null ? string.Empty : $" ({c.Problem.Code}: {c.Problem.Message})")}"));
         return await output.Text(string.Join('\n', rows) + "\n", status.ExitCode).ConfigureAwait(false);
     }
+
+    private static string OnyxStateText(OnyxStatusResponse status) => status.State switch
+    {
+        OnyxState.NotSetUp => "not set up (run `sindri onyx up`)",
+        OnyxState.Stopped => "stopped (run `sindri onyx up` to start it)",
+        OnyxState.Running => "running",
+        OnyxState.Unknown => $"unknown (Docker isn't usable here: {status.Checks.FirstOrDefault(static c => c.Name == "docker")?.Detail})",
+        _ => status.State.ToString(),
+    };
 
     internal async Task<int> Approve(string? hashText, bool interactive, TextReader input, CancellationToken ct)
     {
@@ -182,9 +199,14 @@ internal sealed class Verbs(ControlPlaneClient client, Core.Control.IControlPlan
     private static string ApprovalText(ApproveProfileResponse a, bool preview) => (preview, a.Approved) switch
     {
         (_, true) when preview => $"Approved already: {a.Hash.Value}\n",
-        (true, _) => $"hash {a.Hash.Value}\nchanged since the last approval: {(a.Changes.Count == 0 ? "nothing" : string.Join(", ", a.Changes))}\nto approve: sindri profile approve {a.Hash.Value}\n",
+        (true, _) => $"hash {a.Hash.Value}\nchanged since the last approval: {(a.Changes.Count == 0 ? "nothing" : string.Join(", ", a.Changes))}\n{StepArgvText(a)}to approve: sindri profile approve {a.Hash.Value}\n",
         _ => $"Approved {a.Hash.Value}\n",
     };
+
+    /// <summary>One line per step hash: the entry on this box that has it, or that none does (launcher L-16).</summary>
+    private static string StepArgvText(ApproveProfileResponse a) => string.Concat(a.StepArgv.Select(static line => line.Entry is { } entry
+        ? $"steps on {line.Agent} may run {entry.Bin} {string.Join(' ', entry.Open)}{(entry.Resume is null ? string.Empty : " (resume: " + string.Join(' ', entry.Resume) + ")")} [{line.Hash}, {entry.Source.ToString().ToLowerInvariant()}]\n"
+        : $"steps on {line.Agent}: no entry on this box has the hash {line.Hash}\n"));
 
     private static string Word(CheckState state) => state switch
     {

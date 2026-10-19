@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Aw.Kernel.Testing;
@@ -106,8 +107,13 @@ public sealed class InstanceFramesTests : FrameHost
         await FocusedOn(window, "ExpandedCopyStatus");
 
         Assert.Contains(Texts(window, "StateNodeLink"), t => t.Text == Labels.LoopMark);
-        Assert.Equal(Labels.AvailableWithP10a, Named<TextBlock>(window, "ExpandedAttachChip").Text);
+        Assert.True(Visible(window, "ExpandedAttachPanel"));
+        Assert.DoesNotContain("P10a", Named<Panel>(window, "PendingChip").GetVisualDescendants().OfType<TextBlock>().Single().Text, StringComparison.Ordinal);
         Assert.Empty(Buttons(window, "LockButton"));
+        Assert.All(Texts(window, "CommandCli"), t => Assert.Equal(TextWrapping.Wrap, t.TextWrapping));   // a long CLI wraps inside the frame, never clipped at the right
+        var scrolls = Named<Border>(window, "ExpandedState").GetVisualAncestors().OfType<ScrollViewer>().ToList();
+        Assert.Equal("InstanceSheetScroll", Assert.Single(scrolls, sv => sv.Name?.EndsWith("SheetScroll", StringComparison.Ordinal) == true).Name);   // the frame scrolls once
+        Assert.Empty(Named<Border>(window, "ExpandedState").GetVisualDescendants().OfType<ScrollViewer>());   // and the expanded state has no scroll region of its own
         Frame(window, "incident-loop");
 
         // Esc during the cancel confirm answers Keep and returns focus to the ask, with the sheet still open (V5)
@@ -215,7 +221,7 @@ public sealed class InstanceFramesTests : FrameHost
         Assert.Contains(Labels.Duration(FixtureInstances.Status("taken-over").Paused!.TimeoutLeftSeconds), Named<TextBlock>(window, "ExpandedPaused").Text, StringComparison.Ordinal);
         Expect.Sequence(FixtureInstances.Status("taken-over").Commands.Select(c => c.Cli), Texts(window, "CommandCli").Select(t => t.Text));
         Assert.Equal("taken-over", shell.Instance.StateText);
-        Assert.False(Visible(window, "ExpandedAttachChip"));
+        Assert.False(Visible(window, "ExpandedAttachPanel"));
         Frame(window, "taken-over");
     });
 

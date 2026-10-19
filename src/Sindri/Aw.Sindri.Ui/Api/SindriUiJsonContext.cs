@@ -14,6 +14,7 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(ProblemView))]
 [JsonSerializable(typeof(QueueView))]
 [JsonSerializable(typeof(ItemView))]
+[JsonSerializable(typeof(ItemLaunchView))]
 [JsonSerializable(typeof(TimelineView))]
 [JsonSerializable(typeof(CreateItemRequest))]
 [JsonSerializable(typeof(ItemCreatedView))]
@@ -23,6 +24,7 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(Workflow.FactView))]
 [JsonSerializable(typeof(Workflow.RecipeView))]
 [JsonSerializable(typeof(Workflow.StatusFields))]
+[JsonSerializable(typeof(Workflow.StatusInjection))]
 [JsonSerializable(typeof(NeedsYouList))]
 [JsonSerializable(typeof(DecisionList))]
 [JsonSerializable(typeof(RequestList))]
@@ -31,6 +33,10 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(RequestFiledView))]
 // LANE ANCHOR U3': one [JsonSerializable] per Needs you record. Insert immediately above this marker, never between the markers.
 // LANE ANCHOR U8: one [JsonSerializable] per command send body and reply. Insert immediately below this marker, never between the markers.
+[JsonSerializable(typeof(Workflow.RecipeList))]
+[JsonSerializable(typeof(Workflow.StartInstanceRequest))]
+[JsonSerializable(typeof(Workflow.StartedView))]
+
 // LANE ANCHOR U9: one [JsonSerializable] per context record and request body; U9e adds SubgraphView. Insert immediately below this marker, never between the markers.
 [JsonSerializable(typeof(Context.LensesView))]
 [JsonSerializable(typeof(Context.FileMapView))]
@@ -42,4 +48,12 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(Context.MapStatusView))]
 [JsonSerializable(typeof(Context.NodeView))]
 [JsonSerializable(typeof(Context.SourcesView))]
+// LANE ANCHOR U11a: one [JsonSerializable] per Agents record. Insert immediately below this marker, never between the markers.
+[JsonSerializable(typeof(Sessions.SessionList))]
+[JsonSerializable(typeof(Sessions.SessionView))]
+// LANE ANCHOR L1: one [JsonSerializable] per agent-run record. Insert immediately below this marker, never between the markers.
+[JsonSerializable(typeof(LaunchView))]
+[JsonSerializable(typeof(OpenItemRequest))]
+[JsonSerializable(typeof(OpenAcceptedView))]
+[JsonSerializable(typeof(Workflow.InstanceEventsView))]
 internal sealed partial class SindriUiJsonContext : JsonSerializerContext;

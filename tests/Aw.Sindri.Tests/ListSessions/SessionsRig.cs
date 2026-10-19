@@ -6,6 +6,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Infrastructure.Launch;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Sessions;
+using TerminalFacts = Aw.Sindri.Core.Sessions.TerminalFacts;
 
 namespace Aw.Sindri.Tests.ListSessions;
 

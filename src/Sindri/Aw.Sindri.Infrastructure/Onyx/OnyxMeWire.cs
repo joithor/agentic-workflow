@@ -1,0 +1,10 @@
+using System.Text.Json.Serialization;
+
+namespace Aw.Sindri.Infrastructure.Onyx;
+
+/// <summary>`GET /api/me` answer, the two fields Sindri reads.</summary>
+/// <param name="AccountType">STANDARD or SERVICE_ACCOUNT.</param>
+/// <param name="EffectivePermissions">The permission tokens ("admin" is the full admin panel).</param>
+internal sealed record OnyxMeWire(
+    [property: JsonPropertyName("account_type")] string? AccountType,
+    [property: JsonPropertyName("effective_permissions")] string[]? EffectivePermissions);

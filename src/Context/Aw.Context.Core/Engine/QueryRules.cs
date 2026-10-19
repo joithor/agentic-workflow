@@ -5,7 +5,7 @@ using Aw.Kernel;
 namespace Aw.Context.Core.Engine;
 
 /// <summary>Checks a question before any source sees it (spec §8.1, §8.3 caps): the text and node shapes; item and symbol anchors arrive in later phases.</summary>
-public static class QueryRules
+public static partial class QueryRules
 {
     /// <summary>The budget a request gets when it names none.</summary>
     public const int DefaultBudget = 8_000;
@@ -24,12 +24,6 @@ public static class QueryRules
 
     /// <summary>The most anchors one lenses call takes (scoping spec C1).</summary>
     public const int MaxAnchors = 20;
-
-    /// <summary>The most keys a subgraph GET takes (scoping spec C14).</summary>
-    public const int MaxSubgraphGet = 20;
-
-    /// <summary>The most keys a subgraph POST takes (scoping spec C14).</summary>
-    public const int MaxSubgraphPost = 1_000;
 
     /// <summary>What a bad depth's 006 starts with (a transport adds its own hint after it).</summary>
     public const string DepthMessage = "depth must be a whole number from 0 to 4";
@@ -157,19 +151,6 @@ public static class QueryRules
         return anchors.Count is >= 1 and <= MaxAnchors
             ? null
             : ContextErrors.QueryInvalid.With(string.Create(CultureInfo.InvariantCulture, $"a lenses call takes 1 to {MaxAnchors} anchors, not {anchors.Count}"));
-    }
-
-    /// <summary>Whether a subgraph question fits a URL: at most <see cref="MaxSubgraphGet"/> distinct keys, each at most <see cref="MaxEncodedText"/> characters once percent-encoded.</summary>
-    /// <param name="keys">The node keys as given.</param>
-    /// <returns>Null when it fits, else the 006.</returns>
-    public static Error? CheckSubgraphGet(IReadOnlyList<string> keys)
-    {
-        ArgumentNullException.ThrowIfNull(keys);
-        var distinct = keys.Distinct(StringComparer.Ordinal).ToList();
-        return distinct.Count > MaxSubgraphGet
-            ? ContextErrors.QueryInvalid.With(string.Create(CultureInfo.InvariantCulture, $"a subgraph GET takes at most {MaxSubgraphGet} keys, not {distinct.Count} (fix: POST the keys in a body)"))
-            : distinct.Exists(k => !FitsQueryUrl(k)) ? ContextErrors.QueryInvalid.With(string.Create(CultureInfo.InvariantCulture, $"a subgraph key is over {MaxEncodedText} characters once percent-encoded for the query (fix: POST the keys in a body)"))
-            : null;
     }
 
     private static Result<int?> ParseWhole(string? text, string rule, int min, int max)

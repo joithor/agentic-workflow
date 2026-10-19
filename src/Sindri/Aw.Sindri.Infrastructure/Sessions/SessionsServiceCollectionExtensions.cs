@@ -22,12 +22,15 @@ internal static class SessionsServiceCollectionExtensions
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         return services
             .AddSingleton<IAgentCatalog>(load.Catalog)
+            .AddSingleton(LauncherStartup.Catalog(environment, settings))
             .AddSingleton(load.Sessions)
             .AddSingleton<IProcessTable>(new ProcProcessTable(procRoot, OwnUid.Read()))
             .AddSingleton<IClaudeSessionRecords>(new ClaudeSessionRecords(load.ClaudeSessionsDirectory))
             .AddSingleton<IFleetStates>(new FleetStateFiles(fleet, providers, pruning: !load.Sessions.TestOverride))
             .AddSingleton<IUnixSockets>(new UnixSockets(procRoot))
-            .AddSingleton<ITmuxServers>(provider => new TmuxCli(provider.GetRequiredService<TimeProvider>(), "tmux", TmuxCli.CallBudget))
+            .AddSingleton(provider => new TmuxCli(provider.GetRequiredService<TimeProvider>(), "tmux", TmuxCli.CallBudget))   // one instance: the pass and the preview share its caches and marks
+            .AddSingleton<ITmuxServers>(static provider => provider.GetRequiredService<TmuxCli>())
+            .AddSingleton<IPaneReader>(static provider => provider.GetRequiredService<TmuxCli>())
             .AddSingleton<ITeamNames>(new TeamNameFiles(settings.StateDirectory))
             .AddSingleton<ITerminalNames>(TerminalProcessNames.Embedded())
             .AddSingleton<ITranscripts>(new TranscriptFiles(home))

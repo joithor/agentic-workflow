@@ -45,4 +45,20 @@ public sealed class ContextErrorsTests
         Assert.DoesNotContain(ContextErrors.All, e => string.Equals(e.Code, "SND-CONTEXT-132", StringComparison.Ordinal));
         Assert.All([ContextErrors.RecognizerInvalid, ContextErrors.RecognizerOverCap], e => Assert.Equal(ErrorKind.Invalid, e.Kind));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_S_H_history_codes_are_160_and_161_are_searched_row_codes_and_never_attention()
+    {
+        Assert.Equal(["SND-CONTEXT-160", "SND-CONTEXT-161"], new[] { ContextErrors.HistoryDeadline, ContextErrors.IntentNotSynced }.Select(e => e.Code), StringComparer.Ordinal);
+        Assert.Equal((ErrorKind.Timeout, ErrorKind.Unavailable), (ContextErrors.HistoryDeadline.Kind, ContextErrors.IntentNotSynced.Kind));
+        Assert.All([ContextErrors.HistoryDeadline, ContextErrors.IntentNotSynced], e => Assert.DoesNotContain(e.Code, ContextErrors.Attention));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_graphify_limit_code_is_133_an_invalid_input()
+    {
+        Assert.Equal("SND-CONTEXT-133", ContextErrors.GraphifyLimitInvalid.Code);
+        Assert.Equal(ErrorKind.Invalid, ContextErrors.GraphifyLimitInvalid.Kind);
+        Assert.Contains(ContextErrors.GraphifyLimitInvalid, ContextErrors.All);
+    }
 }

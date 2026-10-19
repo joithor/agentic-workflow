@@ -23,6 +23,8 @@ internal static class EndpointTable
         _ = queries.MapGetEventCatalog();
         _ = queries.MapGetItem();
         _ = queries.MapGetJob();
+        _ = queries.MapGetLaunch();
+        _ = queries.MapGetLaunchTargets();
         _ = queries.MapListJobs();
         _ = queries.MapGetItemTimeline();
         _ = queries.MapGetQueue();
@@ -33,6 +35,9 @@ internal static class EndpointTable
         _ = queries.MapGetInstance();
         _ = queries.MapGetInstanceEvents();
         _ = queries.MapGetInstanceFact();
+        _ = queries.MapGetInstanceScoping();
+        _ = queries.MapGetPacketFile();
+        _ = queries.MapReadInjection();
         _ = queries.MapGetProfile();
         _ = queries.MapGetStatus();
         _ = queries.MapListCommands();
@@ -55,8 +60,10 @@ internal static class EndpointTable
         _ = queries.MapExportContextReview();
         _ = queries.MapFindContextPath();
         _ = queries.MapGetContextFileMap();
+        _ = queries.MapGetContextHistory();
         _ = queries.MapGetContextLenses();
         _ = queries.MapGetContextSubgraph();
+        _ = queries.MapGetContextCode();
         _ = queries.MapGetContextEvalMap();
         _ = queries.MapGetContextMap();
         _ = queries.MapGetContextProposals();
@@ -75,10 +82,12 @@ internal static class EndpointTable
         _ = commands.MapApproveProfile();
         _ = commands.MapCancelJob();
         _ = commands.MapCloseItem();
+        _ = commands.MapOpenItem();
         _ = commands.MapPauseService();
         _ = commands.MapResumeService();
         _ = commands.MapRunService();
         _ = commands.MapContextJobs();
+        _ = commands.MapLaunchTargetJob();
         _ = commands.MapCreateItem();
         _ = commands.MapDecide();
         _ = commands.MapFileRequest();
@@ -96,6 +105,8 @@ internal static class EndpointTable
         _ = commands.MapIssueNonce();
         _ = commands.MapApplyCommand();
         _ = commands.MapCompleteStep();
+        _ = commands.MapSessionHeartbeat();
+        _ = commands.MapSessionExit();
         return commands;
     }
 }

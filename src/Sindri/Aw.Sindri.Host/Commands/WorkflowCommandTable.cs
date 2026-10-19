@@ -14,7 +14,7 @@ internal static class WorkflowCommandTable
 {
     internal const string UsageText =
         "usage: sindri workflow start <recipe> --item <id> [--attempt next] [--fact <key>=<file>]... [--json] | status <address> [--json] | "
-        + "list [--needs-me | --item <id> | --state <s>] [--query <q>] [--json] | events <address> [--follow] [--json] | "
+        + "list [--needs-me | --item <id> | --state <s>] [--query <q>] [--json] | events <address> [--follow] [--json] | injection <address> [--section <name>] [--json] | "
         + "answer <address> [--text …|--file …] [--grant n | --grant-tokens n | --accept | --reject | --resume] [--nonce <n>] [--json] | "
         + "command <address> <verb> [--nonce <n>] [--json] | cancel <address> [--nonce <n>] [--json] | takeover <address> [--nonce <n>] [--json] | handback <address> [--nonce <n>] [--json] | complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--nonce <n>] [--json]";
 
@@ -35,6 +35,7 @@ internal static class WorkflowCommandTable
         ["status", .. var rest] => StatusCommand.Run(rest, desk, output, ct),
         ["list", .. var rest] => ListCommand.Run(rest, desk, services, output, ct),
         ["events", .. var rest] => EventsCommand.Run(rest, desk, services, output, ct),
+        ["injection", .. var rest] => InjectionCommand.Run(rest, desk, output, ct),
         ["answer", .. var rest] => new ApplyCommandVerbs(desk, services, output).Answer(rest, ct),
         ["command", .. var rest] => new ApplyCommandVerbs(desk, services, output).Command(rest, ct),
         ["cancel", .. var rest] => new ApplyCommandVerbs(desk, services, output).Cancel(rest, ct),

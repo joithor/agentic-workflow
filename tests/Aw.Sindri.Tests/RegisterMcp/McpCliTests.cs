@@ -24,9 +24,9 @@ public sealed class McpCliTests
     public void The_json_answer_is_in_the_host_context()
     {
         var json = System.Text.Encoding.UTF8.GetString(AwJson.Serialize(
-            new RegisterMcpResponse(Core.Ids.RepoName.From("demo"), "/work/demo", ["mcp", "add"], Applied: false), AwJson.CreateOptions(SindriJsonContext.Default)));
+            new RegisterMcpResponse(Core.Ids.RepoName.From("demo"), "/work/demo", ["mcp", "add"], Applied: false, [new ProviderResult(ProviderFile.Codex, ProviderOutcome.NeedsTrust, "x", Fix: null)]), AwJson.CreateOptions(SindriJsonContext.Default)));
 
-        Assert.Equal("""{"repo":"demo","checkout":"/work/demo","arguments":["mcp","add"],"applied":false}""", json);
+        Assert.Equal("""{"repo":"demo","checkout":"/work/demo","arguments":["mcp","add"],"applied":false,"providers":[{"provider":"codex","outcome":"needsTrust","detail":"x","fix":null}]}""", json);
     }
 
     [Theory, Trait("Lane", "unit")]
@@ -45,8 +45,30 @@ public sealed class McpCliTests
     }
 
     [Theory, Trait("Lane", "unit")]
+    [InlineData(new[] { "register", "--repo", "demo", "--providers", "all" }, "claude: would register", "codex: would register")]
+    [InlineData(new[] { "register", "--repo", "demo", "--providers", "codex,cursor" }, "cursor: would register", "codex: would register")]
+    public async Task Providers_selects_which_lines_are_printed(string[] args, string first, string second)
+    {
+        var profiles = new InMemoryProfiles();
+        var live = SliceHarness.Profile();
+        _ = await profiles.Save(live with { Profile = live.Profile with { Repos = [new RepoEntry("demo", "/work/demo")] } }, TestContext.Current.CancellationToken);
+        var service = new RegisterMcpService(profiles, new FakeRepoLocator(), new InMemoryEndpointFile(), new FakeClaudeCli(), new FakeProviderHost());
+        await using var services = new ServiceCollection().AddSingleton<IService<RegisterMcpRequest, RegisterMcpResponse>>(service).BuildServiceProvider();
+        using var output = new StringWriter();
+
+        var code = await new McpVerbs(services, new Output(output, TextWriter.Null, AwJson.CreateOptions(SindriJsonContext.Default)), new AgentSession(Signal: null, Terminal: true, Prover: false))
+            .Run(args, TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, code);
+        Assert.Contains(first, output.ToString(), StringComparison.Ordinal);
+        Assert.Contains(second, output.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(args[^1] == "all" ? "never" : "claude:", output.ToString(), StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "unit")]
     [InlineData("register", "--bogus")]
     [InlineData("register", "--repo")]
+    [InlineData("register", "--providers", "vim")]
     [InlineData("list")]
     public async Task Unknown_forms_are_usage_errors(params string[] args)
     {
@@ -57,20 +79,20 @@ public sealed class McpCliTests
         var exit = await new McpVerbs(services, output, new AgentSession(Signal: null, Terminal: true, Prover: false)).Run(args, TestContext.Current.CancellationToken);
 
         Assert.Equal(2, exit);
-        Assert.Contains("mcp register [--repo NAME] [--apply] [--json]", error.ToString(), StringComparison.Ordinal);
+        Assert.Contains("mcp register [--repo NAME] [--providers claude,codex,cursor|all] [--apply] [--json]", error.ToString(), StringComparison.Ordinal);
     }
 
     [Theory, Trait("Lane", "unit")]
-    [InlineData(new[] { "register", "--repo", "demo" }, 0, "claude mcp add --transport http --scope local --header 'X-Sindri-Repo: demo' sindri http://127.0.0.1:7444/sindri/mcp", null)]
+    [InlineData(new[] { "register", "--repo", "demo" }, 0, "claude mcp add --transport http --scope local sindri http://127.0.0.1:7444/sindri/mcp --header 'X-Sindri-Repo: demo'", null)]
     [InlineData(new[] { "register", "--json", "--repo", "demo" }, 0, "\"arguments\":[\"mcp\",\"add\"", null)]
     [InlineData(new[] { "register", "--repo", "nope" }, 1, null, "SND-CONTEXT-024 'nope' is not a repo the profile names")]
-    [InlineData(new[] { "register", "--repo", "demo", "--apply" }, 2, null, "SND-CONTEXT-025 claude exited 1: already exists")]
+    [InlineData(new[] { "register", "--repo", "demo", "--apply" }, 2, null, "SND-CONTEXT-025 claude: claude exited 1: already exists")]
     public async Task The_verb_wires_the_service_its_output_and_its_exit_codes(string[] args, int exit, string? stdout, string? stderr)
     {
         var profiles = new InMemoryProfiles();
         var live = SliceHarness.Profile();
         _ = await profiles.Save(live with { Profile = live.Profile with { Repos = [new RepoEntry("demo", "/work/demo")], Api = new ApiSettings(7444) } }, TestContext.Current.CancellationToken);
-        var service = new RegisterMcpService(profiles, new FakeRepoLocator(), new InMemoryEndpointFile(), new FakeClaudeCli { Answer = new ClaudeRun(1, "already exists") });
+        var service = new RegisterMcpService(profiles, new FakeRepoLocator(), new InMemoryEndpointFile(), new FakeClaudeCli { Answer = new ClaudeRun(1, "already exists") }, new FakeProviderHost());
         await using var services = new ServiceCollection().AddSingleton<IService<RegisterMcpRequest, RegisterMcpResponse>>(service).BuildServiceProvider();
         using var output = new StringWriter();
         using var error = new StringWriter();

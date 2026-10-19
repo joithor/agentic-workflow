@@ -1,7 +1,6 @@
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Subgraph;
 using Aw.Sindri.Features.ContextCalls;
-using Aw.Sindri.Host.Text;
 
 namespace Aw.Sindri.Host.Commands;
 

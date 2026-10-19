@@ -12,6 +12,14 @@ public sealed record ContextSettings
     /// <summary>The default doc globs.</summary>
     public static IReadOnlyList<string> DefaultDocGlobs { get; } = ["docs/**/*.md", "**/PRD*.md", "**/TDD*.md"];
 
+    /// <summary>The default 'context.code.schemaGlobs': the migration and schema files the code lens's data files may name.</summary>
+    public static IReadOnlyList<string> DefaultSchemaGlobs { get; } =
+        ["**/migrations/**", "**/migrate/**", "**/schema/**", "**/schemas/**", "**/*.sql", "**/*.prisma", "**/*.graphql", "**/*.gql", "**/*.proto", "**/*.avsc", "**/*.xsd", "**/*.schema.json"];
+
+    /// <summary>The default 'context.code.testGlobs': the paths that mark a file as a test.</summary>
+    public static IReadOnlyList<string> DefaultTestGlobs { get; } =
+        ["**/test/**", "**/tests/**", "**/Test/**", "**/Tests/**", "**/__tests__/**", "**/spec/**", "**/specs/**", "**/*.test.*", "**/*.spec.*", "**/*_test.*", "**/*Test.*", "**/*Tests.*", "**/test_*.*"];
+
     /// <summary>The profile repos the engine maps, or null for all of them.</summary>
     public IReadOnlyList<ContextRepoName>? Repos { get; init; }
 
@@ -54,6 +62,15 @@ public sealed record ContextSettings
     /// <summary>'context.eval.adjudicator' (S-7A): whether a backtest asks the model to label surfaces no PR touched, within 1.5M tokens per run. Off by default.</summary>
     public bool Adjudicator { get; init; }
 
+    /// <summary>'context.code.schemaGlobs' (S-CL): repo-relative globs of the migration and schema files the code lens's data files may name; empty turns the schema scan off.</summary>
+    public IReadOnlyList<string> SchemaGlobs { get; init; } = DefaultSchemaGlobs;
+
+    /// <summary>'context.code.testGlobs' (S-CL): repo-relative globs that mark a file as a test for the code lens's lexical tests.</summary>
+    public IReadOnlyList<string> TestGlobs { get; init; } = DefaultTestGlobs;
+
     /// <summary>'context.extract.recognizers' (S-SK): the profile's extra surface recognizers, added to the built-in forms. Empty by default.</summary>
     public IReadOnlyList<ProfileRecognizer> Recognizers { get; init; } = [];
+
+    /// <summary>'context.extract.graphify' (S-4): the cluster pass's time, snapshot, file and graph limits; generous defaults, 0 for no limit.</summary>
+    public ClusterLimits Graphify { get; init; } = ClusterLimits.Default;
 }

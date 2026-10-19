@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
-using Aw.Context.Core.LensSupport;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Sources;
 using Aw.Context.Features;
@@ -13,7 +12,9 @@ using Aw.Context.Features.EvalProbes;
 using Aw.Context.Features.ExportMap;
 using Aw.Context.Features.ExportReview;
 using Aw.Context.Features.FindPath;
+using Aw.Context.Features.GetCode;
 using Aw.Context.Features.GetFileMap;
+using Aw.Context.Features.GetHistory;
 using Aw.Context.Features.GetLenses;
 using Aw.Context.Features.GetProposals;
 using Aw.Context.Features.GetSubgraph;
@@ -33,8 +34,10 @@ using Aw.Context.Features.ShowMapStatus;
 using Aw.Context.Features.ShowNode;
 using Aw.Context.Features.SourcesStatus;
 using Aw.Context.Features.SyncSources;
+using Aw.Context.Testing.Code;
 using Aw.Context.Testing.Engine;
 using Aw.Context.Testing.Extract;
+using Aw.Context.Testing.History;
 using Aw.Context.Testing.Linking;
 using Aw.Context.Testing.Locks;
 using Aw.Context.Testing.Map;
@@ -50,23 +53,34 @@ internal static class Engines
 {
     internal static readonly ContextRepo[] Repos = [new(ContextRepoName.From("split-panes"), "/repos/split-panes"), new(ContextRepoName.From("other"), "/repos/other")];
 
-    internal static IContextEngine Over(FixedSourceCatalog catalog, FakeDocIndex? index = null, FakeTimeProvider? time = null)
+    internal static IContextEngine Over(FixedSourceCatalog catalog, FakeDocIndex? index = null, FakeTimeProvider? time = null, FakeIntentStore? intentStore = null)
     {
         var clock = time ?? new FakeTimeProvider(new DateTimeOffset(2026, 10, 12, 9, 0, 0, TimeSpan.Zero));
         var scrubbers = new FakeScrubberFactory();
         var docs = index ?? new FakeDocIndex(clock);
         var store = new FakeGraphStore();
-        var intents = new FakeIntentStore();
+        var intents = intentStore ?? new FakeIntentStore();
         var graphs = new MapReader(store, intents);
         var repos = new FakeRepoReader(Repos[0], "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567", new Dictionary<string, string>(StringComparer.Ordinal));
         return new ContextEngine(new QueryContextService(catalog, scrubbers, new SequentialIdGenerator(), clock, graphs, intents, repos),
-            new ContextSources(new SourcesStatusService(docs, catalog, scrubbers, intents, clock), new RefreshDocsService(docs, scrubbers), new SyncSourcesService(catalog, scrubbers, graphs, intents, new FakeModelPort(), new SyncLocks(), clock)), scrubbers, Map(clock, store, scrubbers),
+            new ContextSources(new SourcesStatusService(docs, catalog, scrubbers, intents, clock), new RefreshDocsService(docs, scrubbers), new SyncSourcesService(catalog, scrubbers, graphs, intents, new FakeModelPort(), new SyncLocks(), clock), intents), scrubbers, Map(clock, store, scrubbers),
             new ContextGraph(new ShowNodeService(graphs, scrubbers), new ListNeighborsService(graphs, scrubbers), new FindPathService(graphs, scrubbers),
-                new GetLensesService(graphs, new LensBasisReader(repos, intents, clock), scrubbers), new GetLensesSetService(graphs, new LensBasisReader(repos, intents, clock), scrubbers), new GetFileMapService(graphs, repos), new GetSubgraphService(graphs, new LensBasisReader(repos, intents, clock), scrubbers)),
+                new GetLensesService(graphs, new LensBasisReader(repos, intents, clock), scrubbers), new GetLensesSetService(graphs, new LensBasisReader(repos, intents, clock), scrubbers), new GetFileMapService(graphs, repos),
+                new ContextCodeHistory(new GetCodeService(graphs, new LensBasisReader(repos, intents, clock), Lexical(repos, clock), scrubbers),
+                    new GetHistoryService(graphs, new HistoryPipeline(new LensBasisReader(repos, intents, clock), intents, new FakeFileHistory(Repos[0], new HistoryWorld("0a1b2c3d4e5f60718293a4b5c6d7e8f901234567", [])), clock), scrubbers),
+                    new GetSubgraphService(graphs, new LensBasisReader(repos, intents, clock), scrubbers))),
             new ContextEval(Probes(clock), new NoBacktest(), new NoMapQuality(), new NoPurge()));
     }
 
     /// <summary>The probe runner over no probe file (the query tests never run probes).</summary>
+    // The code lens over an empty repo: nothing to find, but the engine facade is whole.
+    private static CodeLexicalSearch Lexical(FakeRepoReader repos, TimeProvider clock)
+    {
+        var search = new FakeCodeSearch(Repos[0], "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567", new Dictionary<string, string>(StringComparer.Ordinal));
+        var candidates = new LexicalCandidates(search, repos);
+        return new CodeLexicalSearch(repos, search, new LexicalTestsRule(candidates), new LexicalSchemaRule(candidates), clock);
+    }
+
     private static EvalProbesService Probes(TimeProvider clock) => new(new NoProbes(), new NoProbes(), clock);
 
     /// <summary>The map part over its fakes (S-3a); the query tests never touch it.</summary>

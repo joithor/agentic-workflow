@@ -24,7 +24,7 @@ internal static class LensSets
             return tooMany;
         }
 
-        var resolved = Resolve(graph, distinct, depth, basis.Cascade);
+        var resolved = AnchorSet.Resolve(graph, distinct, depth, basis.Cascade);
         if (resolved.IsError)
         {
             return resolved.Error;
@@ -37,8 +37,7 @@ internal static class LensSets
         var items = productKeys.Concat(codeKeys).Concat(scopes.SelectMany(s => s.IntoScope(EdgeType.Mentions, EdgeType.Decides).Select(e => e.From.Value))).ToHashSet(StringComparer.Ordinal);
         var bands = new LensBands(intent, product, code);
         var keys = scopes.Select(s => s.Anchor.Key.Value).ToList();
-        var byAnchor = scopes.ToDictionary(s => s.Anchor.Key.Value, LensCoverageBuilder.Of, StringComparer.Ordinal);
-        var coverage = LensCoverageBuilder.Of(scopes[0].Graph, scopes[0].Nodes, [.. ownUnion.Select(NodeKey.From)]) with { Map = MapCoverageBuilder.Of(graph, ownUnion, basis), ByAnchor = byAnchor };
+        var coverage = AnchorSet.Coverage(basis, graph, scopes, ownUnion);
         return new LensesSetView(2, [.. scopes.Select(Anchor)], missing, basis.Map, basis.Draft, depth, basis.AsOf, bands, LensEdges.Across(graph, items),
             Conflicts(scopes, pairs), coverage, LensSearchedBuilder.For(basis, keys, depth, bands), [], new Dictionary<string, Citation>(StringComparer.Ordinal))
         {
@@ -55,37 +54,6 @@ internal static class LensSets
         return all.Count > 0 ? all : null;
     }
 
-    // The anchors that resolve (de-duplicated by node), the values that don't (as given). An ambiguous name refuses the call; with nothing resolved the first miss is the answer.
-    private static Result<(List<LensScope> Scopes, List<string> Missing)> Resolve(GraphSnapshot graph, List<string> given, int depth, CascadeOptions options)
-    {
-        var scopes = new List<LensScope>();
-        var missing = new List<string>();
-        Error? first = null;
-        foreach (var raw in given)
-        {
-            var node = AnchorMatch.Resolve(graph, raw);
-            if (node.IsSuccess)
-            {
-                if (!scopes.Exists(s => s.Anchor.Key.Value == node.Value.Key.Value) && LensScope.Of(graph, node.Value.Key, depth, options) is { } scope)
-                {
-                    scopes.Add(scope);
-                }
-
-                continue;
-            }
-
-            if (node.Error.Code == ContextErrors.AmbiguousAnchor.Code)
-            {
-                return node.Error;
-            }
-
-            missing.Add(raw);
-            first ??= node.Error;
-        }
-
-        return scopes.Count == 0 && first is { } none ? none : (scopes, missing);
-    }
-
     private static LensAnchor Anchor(LensScope scope) =>
         new(scope.Anchor.Key, scope.Anchor.Label, scope.Anchor.Key.Kind, TrustPolicy.ForNode(scope.Anchor, LensScope.Confirmed(scope.Anchor.Provenance)));
 
@@ -93,6 +61,14 @@ internal static class LensSets
         [.. scopes.SelectMany(s => LensConflicts.Of(s, pairs)).DistinctBy(c => (c.Kind, c.Node.Value, c.Decision.Value, c.Other))];
 
     private static IntentBand Intent(List<LensScope> scopes)
+    {
+        var (recordList, decisionList) = IntentUnion(scopes);
+        var cut = recordList.Count > LensesBuilder.BandCap || decisionList.Count > LensesBuilder.BandCap;
+        return new IntentBand([.. recordList.Take(LensesBuilder.BandCap)], [.. decisionList.Take(LensesBuilder.BandCap)], new IntentCounts(recordList.Count, decisionList.Count, Orphaned: null), cut);
+    }
+
+    /// <summary>The records and decisions of every scope, each once with the anchors that reached it, in key order and uncapped (the lenses cap them; the history lens cuts them by time first).</summary>
+    internal static (List<LensRecord> Records, List<LensDecision> Decisions) IntentUnion(List<LensScope> scopes)
     {
         var records = new Dictionary<string, (LensRecord Record, List<NodeKey> Mentions, SortedSet<int> By)>(StringComparer.Ordinal);
         var decisions = new Dictionary<string, (LensDecision Decision, List<NodeKey> Decides, List<NodeKey> Supersedes, SortedSet<int> By)>(StringComparer.Ordinal);
@@ -129,8 +105,7 @@ internal static class LensSets
             Anchors = Names(scopes, e.By),
             Depth = 0,
         }).ToList();
-        var cut = recordList.Count > LensesBuilder.BandCap || decisionList.Count > LensesBuilder.BandCap;
-        return new IntentBand([.. recordList.Take(LensesBuilder.BandCap)], [.. decisionList.Take(LensesBuilder.BandCap)], new IntentCounts(recordList.Count, decisionList.Count, Orphaned: null), cut);
+        return (recordList, decisionList);
     }
 
     private static List<NodeKey> Sorted(IEnumerable<NodeKey> keys) =>

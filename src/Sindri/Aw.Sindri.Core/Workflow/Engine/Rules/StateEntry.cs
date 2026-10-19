@@ -32,6 +32,7 @@ internal static class StateEntry
         {
             Frame = new Frame(state, entry, OpenRun(target, entry, context), Child: null),
             Outcome = target.Kind == StateKind.Terminal ? target.Outcome : instance.Outcome,
+            Visited = instance.Visited?.Contains(state, StringComparer.Ordinal) == true ? instance.Visited : [.. instance.Visited ?? [], state],
         };
     }
 

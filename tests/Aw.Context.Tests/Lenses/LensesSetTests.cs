@@ -254,8 +254,8 @@ public sealed class LensesSetTests
         var synced = new IntentSourceState("c", _created, LastError: null, 3, 1, 0, 0);
 
         Assert.Equal((SearchedState.NotConfigured, "not-configured", null), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: false, state: null)));
-        Assert.Equal((SearchedState.Unavailable, "not-synced", null), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: true, state: null)));
-        Assert.Equal((SearchedState.Unavailable, "not-synced", null), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: true, new IntentSourceState(Cursor: null, LastSync: null, LastError: null, Records: 0, Links: 0, Decisions: 0, Queued: 0))));
+        Assert.Equal((SearchedState.Unavailable, "not-synced", "SND-CONTEXT-161"), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: true, state: null)));
+        Assert.Equal((SearchedState.Unavailable, "not-synced", "SND-CONTEXT-161"), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: true, new IntentSourceState(Cursor: null, LastSync: null, LastError: null, Records: 0, Links: 0, Decisions: 0, Queued: 0))));
         Assert.Equal((SearchedState.Degraded, null, "SND-CONTEXT-010"), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: true, synced with { LastError = "SND-CONTEXT-010" })));
         Assert.Equal((SearchedState.Ok, null, "SND-CONTEXT-059"), Parts(SearchedSources.Intent(SourceId.From("onyx"), configured: true, synced with { LastError = "SND-CONTEXT-059" })));
         var ok = SearchedSources.Intent(SourceId.From("onyx"), configured: true, synced);

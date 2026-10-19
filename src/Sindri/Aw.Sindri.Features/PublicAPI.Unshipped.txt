@@ -646,13 +646,11 @@ Aw.Sindri.Features.GetItem.ItemView.CreatedAt.get -> System.DateTimeOffset
 Aw.Sindri.Features.GetItem.ItemView.CreatedAt.init -> void
 Aw.Sindri.Features.GetItem.ItemView.CreatedBy.get -> string!
 Aw.Sindri.Features.GetItem.ItemView.CreatedBy.init -> void
-Aw.Sindri.Features.GetItem.ItemView.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Id, out string! Title, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Items.Vocabulary.ItemState State, out string? Step, out System.DateTimeOffset Since, out Aw.Sindri.Core.Ids.ActionId? PrimaryAction, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out string? Owner, out long Version, out string! CreatedBy, out string? WaitingOn, out string? Instance, out System.DateTimeOffset CreatedAt, out System.DateTimeOffset UpdatedAt, out string? Body, out Aw.Sindri.Core.Ids.RecordKey? Link, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
 Aw.Sindri.Features.GetItem.ItemView.Equals(Aw.Sindri.Features.GetItem.ItemView? other) -> bool
 Aw.Sindri.Features.GetItem.ItemView.Id.get -> Aw.Sindri.Core.Ids.ItemId
 Aw.Sindri.Features.GetItem.ItemView.Id.init -> void
 Aw.Sindri.Features.GetItem.ItemView.Instance.get -> string?
 Aw.Sindri.Features.GetItem.ItemView.Instance.init -> void
-Aw.Sindri.Features.GetItem.ItemView.ItemView(Aw.Sindri.Core.Ids.ItemId Id, string! Title, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.Items.Vocabulary.ItemState State, string? Step, System.DateTimeOffset Since, Aw.Sindri.Core.Ids.ActionId? PrimaryAction, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, string? Owner, long Version, string! CreatedBy, string? WaitingOn, string? Instance, System.DateTimeOffset CreatedAt, System.DateTimeOffset UpdatedAt, string? Body, Aw.Sindri.Core.Ids.RecordKey? Link, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
 Aw.Sindri.Features.GetItem.ItemView.Link.get -> Aw.Sindri.Core.Ids.RecordKey?
 Aw.Sindri.Features.GetItem.ItemView.Link.init -> void
 Aw.Sindri.Features.GetItem.ItemView.Owner.get -> string?
@@ -1132,11 +1130,13 @@ Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Equals(Aw.Sindri.Fe
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.RecordServiceRunResponse(long Sequence) -> void
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Sequence.get -> long
 Aw.Sindri.Features.RecordServiceRun.RecordServiceRunResponse.Sequence.init -> void
-Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Deconstruct(out string! Directory, out string? Repo, out bool Apply) -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Deconstruct(out string! Directory, out string? Repo, out bool Apply, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Mcp.ProviderFile>? Providers) -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Directory.get -> string!
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Directory.init -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Equals(Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest? other) -> bool
-Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.RegisterMcpRequest(string! Directory, string? Repo, bool Apply) -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Providers.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Mcp.ProviderFile>?
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Providers.init -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.RegisterMcpRequest(string! Directory, string? Repo, bool Apply, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Mcp.ProviderFile>? Providers = null) -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Repo.get -> string?
 Aw.Sindri.Features.RegisterMcp.RegisterMcpRequest.Repo.init -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse
@@ -1147,9 +1147,11 @@ Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Arguments.get -> System.Colle
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Arguments.init -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Checkout.get -> string!
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Checkout.init -> void
-Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Deconstruct(out Aw.Sindri.Core.Ids.RepoName Repo, out string! Checkout, out System.Collections.Generic.IReadOnlyList<string!>! Arguments, out bool Applied) -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Deconstruct(out Aw.Sindri.Core.Ids.RepoName Repo, out string! Checkout, out System.Collections.Generic.IReadOnlyList<string!>! Arguments, out bool Applied, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Mcp.ProviderResult!>! Providers) -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Equals(Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse? other) -> bool
-Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.RegisterMcpResponse(Aw.Sindri.Core.Ids.RepoName Repo, string! Checkout, System.Collections.Generic.IReadOnlyList<string!>! Arguments, bool Applied) -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Providers.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Mcp.ProviderResult!>!
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Providers.init -> void
+Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.RegisterMcpResponse(Aw.Sindri.Core.Ids.RepoName Repo, string! Checkout, System.Collections.Generic.IReadOnlyList<string!>! Arguments, bool Applied, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Mcp.ProviderResult!>! Providers) -> void
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Repo.get -> Aw.Sindri.Core.Ids.RepoName
 Aw.Sindri.Features.RegisterMcp.RegisterMcpResponse.Repo.init -> void
 Aw.Sindri.Features.RegisterRecipe.RegisterRecipeRequest
@@ -2412,6 +2414,80 @@ static Aw.Sindri.Features.Sessions.RestoreFleetHistoryRequest.operator ==(Aw.Sin
 static Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse.operator !=(Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse? left, Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse? right) -> bool
 static Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse.operator ==(Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse? left, Aw.Sindri.Features.Sessions.RestoreFleetHistoryResponse? right) -> bool
 static Aw.Sindri.Features.SindriJobServiceCollectionExtensions.AddJob<TRequest, TResult, TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<TRequest!, Aw.Sindri.Core.Ids.JobKey>! key, System.Func<TResult, string!>! summary, System.Func<TRequest!, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>>? precheck = null, System.Func<TRequest!, Aw.Sindri.Core.Ids.RepoName?>? repo = null) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Aw.Sindri.Features.GetLaunch.GetLaunchRequest
+Aw.Sindri.Features.GetLaunch.GetLaunchRequest.<Clone>$() -> Aw.Sindri.Features.GetLaunch.GetLaunchRequest!
+Aw.Sindri.Features.GetLaunch.GetLaunchRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId LaunchId) -> void
+Aw.Sindri.Features.GetLaunch.GetLaunchRequest.Equals(Aw.Sindri.Features.GetLaunch.GetLaunchRequest? other) -> bool
+Aw.Sindri.Features.GetLaunch.GetLaunchRequest.GetLaunchRequest(Aw.Sindri.Core.Workflow.Engine.LaunchId LaunchId) -> void
+Aw.Sindri.Features.GetLaunch.GetLaunchRequest.LaunchId.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId
+Aw.Sindri.Features.GetLaunch.GetLaunchRequest.LaunchId.init -> void
+Aw.Sindri.Features.GetLaunchTargets.GetLaunchTargetsRequest
+Aw.Sindri.Features.GetLaunchTargets.GetLaunchTargetsRequest.<Clone>$() -> Aw.Sindri.Features.GetLaunchTargets.GetLaunchTargetsRequest!
+Aw.Sindri.Features.GetLaunchTargets.GetLaunchTargetsRequest.Equals(Aw.Sindri.Features.GetLaunchTargets.GetLaunchTargetsRequest? other) -> bool
+Aw.Sindri.Features.GetLaunchTargets.GetLaunchTargetsRequest.GetLaunchTargetsRequest() -> void
+Aw.Sindri.Features.OpenItem.OpenItemRequest
+Aw.Sindri.Features.OpenItem.OpenItemRequest.<Clone>$() -> Aw.Sindri.Features.OpenItem.OpenItemRequest!
+Aw.Sindri.Features.OpenItem.OpenItemRequest.Equals(Aw.Sindri.Features.OpenItem.OpenItemRequest? other) -> bool
+Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest
+Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest.<Clone>$() -> Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest!
+Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest.Equals(Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest? other) -> bool
+Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest.ProbeLaunchTargetsRequest() -> void
+Aw.Sindri.Features.SessionExit.SessionExitRequest
+Aw.Sindri.Features.SessionExit.SessionExitRequest.<Clone>$() -> Aw.Sindri.Features.SessionExit.SessionExitRequest!
+Aw.Sindri.Features.SessionExit.SessionExitRequest.Equals(Aw.Sindri.Features.SessionExit.SessionExitRequest? other) -> bool
+Aw.Sindri.Features.SessionExit.SessionExitRequest.LaunchId.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId
+Aw.Sindri.Features.SessionExit.SessionExitRequest.LaunchId.init -> void
+Aw.Sindri.Features.SessionExit.SessionExitResponse
+Aw.Sindri.Features.SessionExit.SessionExitResponse.<Clone>$() -> Aw.Sindri.Features.SessionExit.SessionExitResponse!
+Aw.Sindri.Features.SessionExit.SessionExitResponse.Equals(Aw.Sindri.Features.SessionExit.SessionExitResponse? other) -> bool
+Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest
+Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest.<Clone>$() -> Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest!
+Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest.Equals(Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest? other) -> bool
+Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest.LaunchId.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId
+Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest.LaunchId.init -> void
+Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse
+Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse.<Clone>$() -> Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse!
+Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse.Equals(Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse? other) -> bool
+override Aw.Sindri.Features.GetLaunch.GetLaunchRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetLaunch.GetLaunchRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetLaunch.GetLaunchRequest.ToString() -> string!
+override Aw.Sindri.Features.GetLaunchTargets.GetLaunchTargetsRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetLaunchTargets.GetLaunchTargetsRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetLaunchTargets.GetLaunchTargetsRequest.ToString() -> string!
+override Aw.Sindri.Features.OpenItem.OpenItemRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.OpenItem.OpenItemRequest.GetHashCode() -> int
+override Aw.Sindri.Features.OpenItem.OpenItemRequest.ToString() -> string!
+override Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest.ToString() -> string!
+override Aw.Sindri.Features.SessionExit.SessionExitRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.SessionExit.SessionExitRequest.GetHashCode() -> int
+override Aw.Sindri.Features.SessionExit.SessionExitRequest.ToString() -> string!
+override Aw.Sindri.Features.SessionExit.SessionExitResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.SessionExit.SessionExitResponse.GetHashCode() -> int
+override Aw.Sindri.Features.SessionExit.SessionExitResponse.ToString() -> string!
+override Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest.GetHashCode() -> int
+override Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest.ToString() -> string!
+override Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse.GetHashCode() -> int
+override Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse.ToString() -> string!
+static Aw.Sindri.Features.GetLaunch.GetLaunchRequest.operator !=(Aw.Sindri.Features.GetLaunch.GetLaunchRequest? left, Aw.Sindri.Features.GetLaunch.GetLaunchRequest? right) -> bool
+static Aw.Sindri.Features.GetLaunch.GetLaunchRequest.operator ==(Aw.Sindri.Features.GetLaunch.GetLaunchRequest? left, Aw.Sindri.Features.GetLaunch.GetLaunchRequest? right) -> bool
+static Aw.Sindri.Features.GetLaunchTargets.GetLaunchTargetsRequest.operator !=(Aw.Sindri.Features.GetLaunchTargets.GetLaunchTargetsRequest? left, Aw.Sindri.Features.GetLaunchTargets.GetLaunchTargetsRequest? right) -> bool
+static Aw.Sindri.Features.GetLaunchTargets.GetLaunchTargetsRequest.operator ==(Aw.Sindri.Features.GetLaunchTargets.GetLaunchTargetsRequest? left, Aw.Sindri.Features.GetLaunchTargets.GetLaunchTargetsRequest? right) -> bool
+static Aw.Sindri.Features.OpenItem.OpenItemRequest.operator !=(Aw.Sindri.Features.OpenItem.OpenItemRequest? left, Aw.Sindri.Features.OpenItem.OpenItemRequest? right) -> bool
+static Aw.Sindri.Features.OpenItem.OpenItemRequest.operator ==(Aw.Sindri.Features.OpenItem.OpenItemRequest? left, Aw.Sindri.Features.OpenItem.OpenItemRequest? right) -> bool
+static Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest.operator !=(Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest? left, Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest? right) -> bool
+static Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest.operator ==(Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest? left, Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsRequest? right) -> bool
+static Aw.Sindri.Features.SessionExit.SessionExitRequest.operator !=(Aw.Sindri.Features.SessionExit.SessionExitRequest? left, Aw.Sindri.Features.SessionExit.SessionExitRequest? right) -> bool
+static Aw.Sindri.Features.SessionExit.SessionExitRequest.operator ==(Aw.Sindri.Features.SessionExit.SessionExitRequest? left, Aw.Sindri.Features.SessionExit.SessionExitRequest? right) -> bool
+static Aw.Sindri.Features.SessionExit.SessionExitResponse.operator !=(Aw.Sindri.Features.SessionExit.SessionExitResponse? left, Aw.Sindri.Features.SessionExit.SessionExitResponse? right) -> bool
+static Aw.Sindri.Features.SessionExit.SessionExitResponse.operator ==(Aw.Sindri.Features.SessionExit.SessionExitResponse? left, Aw.Sindri.Features.SessionExit.SessionExitResponse? right) -> bool
+static Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest.operator !=(Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest? left, Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest? right) -> bool
+static Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest.operator ==(Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest? left, Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest? right) -> bool
+static Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse.operator !=(Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse? left, Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse? right) -> bool
+static Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse.operator ==(Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse? left, Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse? right) -> bool
 Aw.Sindri.Features.ContextCalls.BacktestArmLine
 Aw.Sindri.Features.ContextCalls.BacktestArmLine.<Clone>$() -> Aw.Sindri.Features.ContextCalls.BacktestArmLine!
 Aw.Sindri.Features.ContextCalls.BacktestArmLine.Arm.get -> string!
@@ -2496,6 +2572,192 @@ override Aw.Sindri.Features.ContextCalls.BacktestArmScore.GetHashCode() -> int
 override Aw.Sindri.Features.ContextCalls.BacktestArmScore.ToString() -> string!
 static Aw.Sindri.Features.ContextCalls.BacktestArmScore.operator !=(Aw.Sindri.Features.ContextCalls.BacktestArmScore? left, Aw.Sindri.Features.ContextCalls.BacktestArmScore? right) -> bool
 static Aw.Sindri.Features.ContextCalls.BacktestArmScore.operator ==(Aw.Sindri.Features.ContextCalls.BacktestArmScore? left, Aw.Sindri.Features.ContextCalls.BacktestArmScore? right) -> bool
+Aw.Sindri.Features.GetLaunch.LaunchView.SessionId.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.Viewer.init -> void
+Aw.Sindri.Features.OpenItem.OpenItemRequest.Mode.get -> Aw.Sindri.Core.Launch.LaunchMode
+Aw.Sindri.Features.GetLaunch.LaunchView.TabTitle.get -> string?
+Aw.Sindri.Features.OpenItem.LaunchRequested.Warnings.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.Detail.get -> string?
+Aw.Sindri.Features.GetLaunch.LaunchView.RequestedAt.get -> System.DateTimeOffset
+override Aw.Sindri.Features.GetLaunch.LaunchView.ToString() -> string!
+static Aw.Sindri.Features.OpenItem.LaunchRequested.operator ==(Aw.Sindri.Features.OpenItem.LaunchRequested? left, Aw.Sindri.Features.OpenItem.LaunchRequested? right) -> bool
+Aw.Sindri.Features.OpenItem.LaunchRequested.Launch.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId
+Aw.Sindri.Features.GetLaunch.LaunchView.Id.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId
+override Aw.Sindri.Features.OpenItem.LaunchRequested.ToString() -> string!
+Aw.Sindri.Features.OpenItem.OpenItemRequest.CarriesProtectedFields.get -> bool
+Aw.Sindri.Features.OpenItem.LaunchRequested.Warnings.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Features.OpenItem.LaunchRequested.operator !=(Aw.Sindri.Features.OpenItem.LaunchRequested? left, Aw.Sindri.Features.OpenItem.LaunchRequested? right) -> bool
+override Aw.Sindri.Features.GetLaunch.LaunchView.GetHashCode() -> int
+Aw.Sindri.Features.GetLaunch.LaunchView.State.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.Detail.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.CatalogSource.get -> Aw.Sindri.Core.Launch.CatalogSource?
+Aw.Sindri.Features.OpenItem.OpenItemRequest.ItemVersion.get -> long
+Aw.Sindri.Features.GetLaunch.LaunchView.Equals(Aw.Sindri.Features.GetLaunch.LaunchView? other) -> bool
+Aw.Sindri.Features.OpenItem.LaunchRequested.ChosenBy.get -> string!
+Aw.Sindri.Features.GetLaunch.LaunchView.AsOf.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.TabTitle.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.Mode.init -> void
+Aw.Sindri.Features.OpenItem.OpenItemRequest.Deconstruct(out Aw.Sindri.Core.Ids.ItemRef Item, out Aw.Sindri.Core.Launch.LaunchMode Mode, out Aw.Sindri.Core.Launch.AgentId? Target, out long ItemVersion) -> void
+Aw.Sindri.Features.OpenItem.OpenItemRequest.Item.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.Target.get -> Aw.Sindri.Core.Launch.AgentId
+Aw.Sindri.Features.OpenItem.LaunchRequested
+Aw.Sindri.Features.OpenItem.OpenItemRequest.Variant.get -> string!
+Aw.Sindri.Features.GetLaunch.LaunchView.ChosenBy.init -> void
+Aw.Sindri.Features.OpenItem.LaunchRequested.Accepted.get -> Aw.Sindri.Core.Commands.CommandAccepted!
+override Aw.Sindri.Features.OpenItem.LaunchRequested.GetHashCode() -> int
+Aw.Sindri.Features.GetLaunch.LaunchView.Stage.init -> void
+Aw.Sindri.Features.OpenItem.OpenItemRequest.Item.get -> Aw.Sindri.Core.Ids.ItemRef
+Aw.Sindri.Features.OpenItem.OpenItemRequest.ItemVersion.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.Mode.get -> Aw.Sindri.Core.Launch.LaunchMode
+Aw.Sindri.Features.GetLaunch.LaunchView.Item.init -> void
+Aw.Sindri.Features.OpenItem.OpenItemRequest.OpenItemRequest(Aw.Sindri.Core.Ids.ItemRef Item, Aw.Sindri.Core.Launch.LaunchMode Mode, Aw.Sindri.Core.Launch.AgentId? Target, long ItemVersion) -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.Attach.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Features.GetLaunch.LaunchView.Late.get -> bool
+Aw.Sindri.Features.GetLaunch.LaunchView.CatalogSource.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.Ended.init -> void
+override Aw.Sindri.Features.OpenItem.LaunchRequested.Equals(object? obj) -> bool
+Aw.Sindri.Features.OpenItem.OpenItemRequest.Target.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.Stage.get -> Aw.Sindri.Core.Launch.LaunchStage?
+Aw.Sindri.Features.GetLaunch.LaunchView.OutcomeAt.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.OutcomeAt.get -> System.DateTimeOffset?
+Aw.Sindri.Features.GetLaunch.LaunchView.<Clone>$() -> Aw.Sindri.Features.GetLaunch.LaunchView!
+Aw.Sindri.Features.GetLaunch.LaunchView.AsOf.get -> Aw.Sindri.Core.Views.AsOf!
+Aw.Sindri.Features.OpenItem.LaunchRequested.<Clone>$() -> Aw.Sindri.Features.OpenItem.LaunchRequested!
+override Aw.Sindri.Features.GetLaunch.LaunchView.Equals(object? obj) -> bool
+Aw.Sindri.Features.GetLaunch.LaunchView.Target.init -> void
+Aw.Sindri.Features.OpenItem.OpenItemRequest.Target.get -> Aw.Sindri.Core.Launch.AgentId?
+Aw.Sindri.Features.OpenItem.LaunchRequested.Launch.init -> void
+Aw.Sindri.Features.OpenItem.LaunchRequested.Target.get -> Aw.Sindri.Core.Launch.AgentId
+Aw.Sindri.Features.GetLaunch.LaunchView.SessionId.get -> Aw.Sindri.Core.Ids.SessionId?
+Aw.Sindri.Features.GetLaunch.LaunchView.Code.init -> void
+Aw.Sindri.Features.OpenItem.OpenItemRequest.Mode.init -> void
+Aw.Sindri.Features.OpenItem.LaunchRequested.Equals(Aw.Sindri.Features.OpenItem.LaunchRequested? other) -> bool
+static Aw.Sindri.Features.GetLaunch.LaunchView.operator !=(Aw.Sindri.Features.GetLaunch.LaunchView? left, Aw.Sindri.Features.GetLaunch.LaunchView? right) -> bool
+Aw.Sindri.Features.GetLaunch.LaunchView
+Aw.Sindri.Features.GetLaunch.LaunchView.Id.init -> void
+Aw.Sindri.Features.OpenItem.LaunchRequested.ChosenBy.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.ArgvHash.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.ArgvHash.get -> string?
+Aw.Sindri.Features.OpenItem.LaunchRequested.Target.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.Code.get -> string?
+Aw.Sindri.Features.GetLaunch.LaunchView.Item.get -> Aw.Sindri.Core.Ids.ItemId
+Aw.Sindri.Features.GetLaunch.LaunchView.ChosenBy.get -> string!
+Aw.Sindri.Features.GetLaunch.LaunchView.RequestedAt.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.Viewer.get -> Aw.Sindri.Core.Events.LaunchViewer?
+Aw.Sindri.Features.GetLaunch.LaunchView.Attach.init -> void
+Aw.Sindri.Features.OpenItem.LaunchRequested.LaunchRequested(Aw.Sindri.Core.Commands.CommandAccepted! Accepted, Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, Aw.Sindri.Core.Launch.AgentId Target, string! ChosenBy, System.Collections.Generic.IReadOnlyList<string!>! Warnings) -> void
+Aw.Sindri.Features.OpenItem.LaunchRequested.Deconstruct(out Aw.Sindri.Core.Commands.CommandAccepted! Accepted, out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, out Aw.Sindri.Core.Launch.AgentId Target, out string! ChosenBy, out System.Collections.Generic.IReadOnlyList<string!>! Warnings) -> void
+static Aw.Sindri.Features.GetLaunch.LaunchView.operator ==(Aw.Sindri.Features.GetLaunch.LaunchView? left, Aw.Sindri.Features.GetLaunch.LaunchView? right) -> bool
+Aw.Sindri.Features.OpenItem.LaunchRequested.Accepted.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.Late.init -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.State.get -> Aw.Sindri.Core.Launches.LaunchState
+Aw.Sindri.Features.GetLaunch.LaunchView.Ended.get -> Aw.Sindri.Core.Launches.LaunchEnd?
+Aw.Sindri.Features.GetLaunch.LaunchView.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Id, out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Launch.LaunchMode Mode, out Aw.Sindri.Core.Launches.LaunchState State, out Aw.Sindri.Core.Launch.AgentId Target, out string! ChosenBy, out System.DateTimeOffset RequestedAt, out System.DateTimeOffset? OutcomeAt, out string? Code, out string? Detail, out Aw.Sindri.Core.Launch.LaunchStage? Stage, out Aw.Sindri.Core.Ids.SessionId? SessionId, out string? TabTitle, out Aw.Sindri.Core.Events.LaunchViewer? Viewer, out bool Late, out System.Collections.Generic.IReadOnlyList<string!>? Attach, out Aw.Sindri.Core.Launch.CatalogSource? CatalogSource, out string? ArgvHash, out Aw.Sindri.Core.Launches.LaunchEnd? Ended, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.GetLaunch.LaunchView.LaunchView(Aw.Sindri.Core.Workflow.Engine.LaunchId Id, Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Launch.LaunchMode Mode, Aw.Sindri.Core.Launches.LaunchState State, Aw.Sindri.Core.Launch.AgentId Target, string! ChosenBy, System.DateTimeOffset RequestedAt, System.DateTimeOffset? OutcomeAt, string? Code, string? Detail, Aw.Sindri.Core.Launch.LaunchStage? Stage, Aw.Sindri.Core.Ids.SessionId? SessionId, string? TabTitle, Aw.Sindri.Core.Events.LaunchViewer? Viewer, bool Late, System.Collections.Generic.IReadOnlyList<string!>? Attach, Aw.Sindri.Core.Launch.CatalogSource? CatalogSource, string? ArgvHash, Aw.Sindri.Core.Launches.LaunchEnd? Ended, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.Launching.PendingLaunch
+Aw.Sindri.Features.Launching.PendingLaunch.<Clone>$() -> Aw.Sindri.Features.Launching.PendingLaunch!
+Aw.Sindri.Features.Launching.PendingLaunch.At.get -> System.DateTimeOffset
+Aw.Sindri.Features.Launching.PendingLaunch.At.init -> void
+Aw.Sindri.Features.Launching.PendingLaunch.Deconstruct(out Aw.Sindri.Core.Events.ItemOpenRequested! Request, out long Sequence, out System.DateTimeOffset At) -> void
+Aw.Sindri.Features.Launching.PendingLaunch.Equals(Aw.Sindri.Features.Launching.PendingLaunch? other) -> bool
+Aw.Sindri.Features.Launching.PendingLaunch.PendingLaunch(Aw.Sindri.Core.Events.ItemOpenRequested! Request, long Sequence, System.DateTimeOffset At) -> void
+Aw.Sindri.Features.Launching.PendingLaunch.Request.get -> Aw.Sindri.Core.Events.ItemOpenRequested!
+Aw.Sindri.Features.Launching.PendingLaunch.Request.init -> void
+Aw.Sindri.Features.Launching.PendingLaunch.Sequence.get -> long
+Aw.Sindri.Features.Launching.PendingLaunch.Sequence.init -> void
+Aw.Sindri.Features.Launching.ProcessLaunchRequest
+Aw.Sindri.Features.Launching.ProcessLaunchRequest.<Clone>$() -> Aw.Sindri.Features.Launching.ProcessLaunchRequest!
+Aw.Sindri.Features.Launching.ProcessLaunchRequest.Deconstruct(out Aw.Sindri.Core.Lease.LeaseGrant! Grant, out Aw.Sindri.Features.Launching.PendingLaunch! Pending) -> void
+Aw.Sindri.Features.Launching.ProcessLaunchRequest.Equals(Aw.Sindri.Features.Launching.ProcessLaunchRequest? other) -> bool
+Aw.Sindri.Features.Launching.ProcessLaunchRequest.Grant.get -> Aw.Sindri.Core.Lease.LeaseGrant!
+Aw.Sindri.Features.Launching.ProcessLaunchRequest.Grant.init -> void
+Aw.Sindri.Features.Launching.ProcessLaunchRequest.Pending.get -> Aw.Sindri.Features.Launching.PendingLaunch!
+Aw.Sindri.Features.Launching.ProcessLaunchRequest.Pending.init -> void
+Aw.Sindri.Features.Launching.ProcessLaunchRequest.ProcessLaunchRequest(Aw.Sindri.Core.Lease.LeaseGrant! Grant, Aw.Sindri.Features.Launching.PendingLaunch! Pending) -> void
+Aw.Sindri.Features.Launching.ProcessLaunchResponse
+Aw.Sindri.Features.Launching.ProcessLaunchResponse.<Clone>$() -> Aw.Sindri.Features.Launching.ProcessLaunchResponse!
+Aw.Sindri.Features.Launching.ProcessLaunchResponse.Deconstruct(out bool Launched) -> void
+Aw.Sindri.Features.Launching.ProcessLaunchResponse.Equals(Aw.Sindri.Features.Launching.ProcessLaunchResponse? other) -> bool
+Aw.Sindri.Features.Launching.ProcessLaunchResponse.Launched.get -> bool
+Aw.Sindri.Features.Launching.ProcessLaunchResponse.Launched.init -> void
+Aw.Sindri.Features.Launching.ProcessLaunchResponse.ProcessLaunchResponse(bool Launched) -> void
+Aw.Sindri.Features.Launching.RunLaunchRequest
+Aw.Sindri.Features.Launching.RunLaunchRequest.<Clone>$() -> Aw.Sindri.Features.Launching.RunLaunchRequest!
+Aw.Sindri.Features.Launching.RunLaunchRequest.Deconstruct(out Aw.Sindri.Core.Lease.LeaseGrant! Grant) -> void
+Aw.Sindri.Features.Launching.RunLaunchRequest.Equals(Aw.Sindri.Features.Launching.RunLaunchRequest? other) -> bool
+Aw.Sindri.Features.Launching.RunLaunchRequest.Grant.get -> Aw.Sindri.Core.Lease.LeaseGrant!
+Aw.Sindri.Features.Launching.RunLaunchRequest.Grant.init -> void
+Aw.Sindri.Features.Launching.RunLaunchRequest.RunLaunchRequest(Aw.Sindri.Core.Lease.LeaseGrant! Grant) -> void
+Aw.Sindri.Features.Launching.RunLaunchResponse
+Aw.Sindri.Features.Launching.RunLaunchResponse.<Clone>$() -> Aw.Sindri.Features.Launching.RunLaunchResponse!
+Aw.Sindri.Features.Launching.RunLaunchResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Launching.PendingLaunch!>! Due) -> void
+Aw.Sindri.Features.Launching.RunLaunchResponse.Due.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Launching.PendingLaunch!>!
+Aw.Sindri.Features.Launching.RunLaunchResponse.Due.init -> void
+Aw.Sindri.Features.Launching.RunLaunchResponse.Equals(Aw.Sindri.Features.Launching.RunLaunchResponse? other) -> bool
+Aw.Sindri.Features.Launching.RunLaunchResponse.RunLaunchResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Launching.PendingLaunch!>! Due) -> void
+override Aw.Sindri.Features.Launching.PendingLaunch.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Launching.PendingLaunch.GetHashCode() -> int
+override Aw.Sindri.Features.Launching.PendingLaunch.ToString() -> string!
+override Aw.Sindri.Features.Launching.ProcessLaunchRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Launching.ProcessLaunchRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Launching.ProcessLaunchRequest.ToString() -> string!
+override Aw.Sindri.Features.Launching.ProcessLaunchResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Launching.ProcessLaunchResponse.GetHashCode() -> int
+override Aw.Sindri.Features.Launching.ProcessLaunchResponse.ToString() -> string!
+override Aw.Sindri.Features.Launching.RunLaunchRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Launching.RunLaunchRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Launching.RunLaunchRequest.ToString() -> string!
+override Aw.Sindri.Features.Launching.RunLaunchResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Launching.RunLaunchResponse.GetHashCode() -> int
+override Aw.Sindri.Features.Launching.RunLaunchResponse.ToString() -> string!
+static Aw.Sindri.Features.Launching.PendingLaunch.operator !=(Aw.Sindri.Features.Launching.PendingLaunch? left, Aw.Sindri.Features.Launching.PendingLaunch? right) -> bool
+static Aw.Sindri.Features.Launching.PendingLaunch.operator ==(Aw.Sindri.Features.Launching.PendingLaunch? left, Aw.Sindri.Features.Launching.PendingLaunch? right) -> bool
+static Aw.Sindri.Features.Launching.ProcessLaunchRequest.operator !=(Aw.Sindri.Features.Launching.ProcessLaunchRequest? left, Aw.Sindri.Features.Launching.ProcessLaunchRequest? right) -> bool
+static Aw.Sindri.Features.Launching.ProcessLaunchRequest.operator ==(Aw.Sindri.Features.Launching.ProcessLaunchRequest? left, Aw.Sindri.Features.Launching.ProcessLaunchRequest? right) -> bool
+static Aw.Sindri.Features.Launching.ProcessLaunchResponse.operator !=(Aw.Sindri.Features.Launching.ProcessLaunchResponse? left, Aw.Sindri.Features.Launching.ProcessLaunchResponse? right) -> bool
+static Aw.Sindri.Features.Launching.ProcessLaunchResponse.operator ==(Aw.Sindri.Features.Launching.ProcessLaunchResponse? left, Aw.Sindri.Features.Launching.ProcessLaunchResponse? right) -> bool
+static Aw.Sindri.Features.Launching.RunLaunchRequest.operator !=(Aw.Sindri.Features.Launching.RunLaunchRequest? left, Aw.Sindri.Features.Launching.RunLaunchRequest? right) -> bool
+static Aw.Sindri.Features.Launching.RunLaunchRequest.operator ==(Aw.Sindri.Features.Launching.RunLaunchRequest? left, Aw.Sindri.Features.Launching.RunLaunchRequest? right) -> bool
+static Aw.Sindri.Features.Launching.RunLaunchResponse.operator !=(Aw.Sindri.Features.Launching.RunLaunchResponse? left, Aw.Sindri.Features.Launching.RunLaunchResponse? right) -> bool
+static Aw.Sindri.Features.Launching.RunLaunchResponse.operator ==(Aw.Sindri.Features.Launching.RunLaunchResponse? left, Aw.Sindri.Features.Launching.RunLaunchResponse? right) -> bool
+Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult
+Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.<Clone>$() -> Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult!
+Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.Changed.get -> bool
+Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.Changed.init -> void
+Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.Deconstruct(out bool Changed, out int Targets, out int Present) -> void
+Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.Equals(Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult? other) -> bool
+Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.Present.get -> int
+Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.Present.init -> void
+Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.ProbeLaunchTargetsResult(bool Changed, int Targets, int Present) -> void
+Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.Targets.get -> int
+Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.Targets.init -> void
+override Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.GetHashCode() -> int
+override Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.ToString() -> string!
+static Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.operator !=(Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult? left, Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult? right) -> bool
+static Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult.operator ==(Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult? left, Aw.Sindri.Features.ProbeLaunchTargets.ProbeLaunchTargetsResult? right) -> bool
+Aw.Sindri.Features.SessionExit.SessionExitRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId LaunchId, out Aw.Sindri.Core.Launches.LaunchSecret Secret, out int ExitCode, out Aw.Sindri.Core.Ids.SessionId? SessionId) -> void
+Aw.Sindri.Features.SessionExit.SessionExitRequest.ExitCode.get -> int
+Aw.Sindri.Features.SessionExit.SessionExitRequest.ExitCode.init -> void
+Aw.Sindri.Features.SessionExit.SessionExitRequest.Secret.get -> Aw.Sindri.Core.Launches.LaunchSecret
+Aw.Sindri.Features.SessionExit.SessionExitRequest.Secret.init -> void
+Aw.Sindri.Features.SessionExit.SessionExitRequest.SessionExitRequest(Aw.Sindri.Core.Workflow.Engine.LaunchId LaunchId, Aw.Sindri.Core.Launches.LaunchSecret Secret, int ExitCode, Aw.Sindri.Core.Ids.SessionId? SessionId = null) -> void
+Aw.Sindri.Features.SessionExit.SessionExitRequest.SessionId.get -> Aw.Sindri.Core.Ids.SessionId?
+Aw.Sindri.Features.SessionExit.SessionExitRequest.SessionId.init -> void
+Aw.Sindri.Features.SessionExit.SessionExitResponse.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch) -> void
+Aw.Sindri.Features.SessionExit.SessionExitResponse.Launch.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId
+Aw.Sindri.Features.SessionExit.SessionExitResponse.Launch.init -> void
+Aw.Sindri.Features.SessionExit.SessionExitResponse.SessionExitResponse(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch) -> void
+Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId LaunchId, out Aw.Sindri.Core.Launches.LaunchSecret Secret, out Aw.Sindri.Core.Ids.SessionId? SessionId) -> void
+Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest.Secret.get -> Aw.Sindri.Core.Launches.LaunchSecret
+Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest.Secret.init -> void
+Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest.SessionHeartbeatRequest(Aw.Sindri.Core.Workflow.Engine.LaunchId LaunchId, Aw.Sindri.Core.Launches.LaunchSecret Secret, Aw.Sindri.Core.Ids.SessionId? SessionId = null) -> void
+Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest.SessionId.get -> Aw.Sindri.Core.Ids.SessionId?
+Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatRequest.SessionId.init -> void
+Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch) -> void
+Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse.Launch.get -> Aw.Sindri.Core.Workflow.Engine.LaunchId
+Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse.Launch.init -> void
+Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse.SessionHeartbeatResponse(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch) -> void
 Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest
 Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest.<Clone>$() -> Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest!
 Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest.Equals(Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest? other) -> bool
@@ -2504,11 +2766,9 @@ Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.<Clone>$() -> Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse!
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.Checks.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>!
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.Checks.init -> void
-Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.Deconstruct(out Aw.Sindri.Core.Onyx.OnyxState State, out string! PinnedVersion, out string! PinnedCommit, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>! Checks, out int Port, out int ExitCode) -> void
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.Equals(Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse? other) -> bool
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.ExitCode.get -> int
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.ExitCode.init -> void
-Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.OnyxStatusResponse(Aw.Sindri.Core.Onyx.OnyxState State, string! PinnedVersion, string! PinnedCommit, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>! Checks, int Port, int ExitCode) -> void
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.PinnedCommit.get -> string!
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.PinnedCommit.init -> void
 Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.PinnedVersion.get -> string!
@@ -2527,7 +2787,68 @@ static Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest.operator !=(Aw.Sindri.Fea
 static Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest.operator ==(Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest? left, Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest? right) -> bool
 static Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.operator !=(Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse? left, Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse? right) -> bool
 static Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.operator ==(Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse? left, Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse? right) -> bool
-
+Aw.Sindri.Features.OnyxUp.OnyxUpRequest
+Aw.Sindri.Features.OnyxUp.OnyxUpRequest.<Clone>$() -> Aw.Sindri.Features.OnyxUp.OnyxUpRequest!
+Aw.Sindri.Features.OnyxUp.OnyxUpRequest.Equals(Aw.Sindri.Features.OnyxUp.OnyxUpRequest? other) -> bool
+Aw.Sindri.Features.OnyxUp.OnyxUpRequest.OnyxUpRequest() -> void
+Aw.Sindri.Features.OnyxUp.OnyxUpResponse
+Aw.Sindri.Features.OnyxUp.OnyxUpResponse.<Clone>$() -> Aw.Sindri.Features.OnyxUp.OnyxUpResponse!
+Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Equals(Aw.Sindri.Features.OnyxUp.OnyxUpResponse? other) -> bool
+Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Port.get -> int
+Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Port.init -> void
+Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Ran.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Skipped.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Steps.init -> void
+Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Url.get -> string!
+Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Url.init -> void
+Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Version.get -> string!
+Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Version.init -> void
+Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Warnings.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Warnings.init -> void
+Aw.Sindri.Features.OnyxUp.OnyxUpResponse.NeedsHuman.get -> System.Collections.Generic.IReadOnlyList<string!>!
+override Aw.Sindri.Features.OnyxUp.OnyxUpRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.OnyxUp.OnyxUpRequest.GetHashCode() -> int
+override Aw.Sindri.Features.OnyxUp.OnyxUpRequest.ToString() -> string!
+override Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.OnyxUp.OnyxUpResponse.GetHashCode() -> int
+override Aw.Sindri.Features.OnyxUp.OnyxUpResponse.ToString() -> string!
+static Aw.Sindri.Features.OnyxUp.OnyxUpRequest.operator !=(Aw.Sindri.Features.OnyxUp.OnyxUpRequest? left, Aw.Sindri.Features.OnyxUp.OnyxUpRequest? right) -> bool
+static Aw.Sindri.Features.OnyxUp.OnyxUpRequest.operator ==(Aw.Sindri.Features.OnyxUp.OnyxUpRequest? left, Aw.Sindri.Features.OnyxUp.OnyxUpRequest? right) -> bool
+static Aw.Sindri.Features.OnyxUp.OnyxUpResponse.operator !=(Aw.Sindri.Features.OnyxUp.OnyxUpResponse? left, Aw.Sindri.Features.OnyxUp.OnyxUpResponse? right) -> bool
+static Aw.Sindri.Features.OnyxUp.OnyxUpResponse.operator ==(Aw.Sindri.Features.OnyxUp.OnyxUpResponse? left, Aw.Sindri.Features.OnyxUp.OnyxUpResponse? right) -> bool
+Aw.Sindri.Features.OnyxDown.OnyxDownRequest
+Aw.Sindri.Features.OnyxDown.OnyxDownRequest.<Clone>$() -> Aw.Sindri.Features.OnyxDown.OnyxDownRequest!
+Aw.Sindri.Features.OnyxDown.OnyxDownRequest.Equals(Aw.Sindri.Features.OnyxDown.OnyxDownRequest? other) -> bool
+Aw.Sindri.Features.OnyxDown.OnyxDownRequest.OnyxDownRequest() -> void
+Aw.Sindri.Features.OnyxDown.OnyxDownResponse
+Aw.Sindri.Features.OnyxDown.OnyxDownResponse.<Clone>$() -> Aw.Sindri.Features.OnyxDown.OnyxDownResponse!
+Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Equals(Aw.Sindri.Features.OnyxDown.OnyxDownResponse? other) -> bool
+Aw.Sindri.Features.OnyxDown.OnyxDownResponse.WasRunning.get -> bool
+Aw.Sindri.Features.OnyxDown.OnyxDownResponse.WasRunning.init -> void
+Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Stopped.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Stopped.init -> void
+Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.Deconstruct(out Aw.Sindri.Core.Onyx.OnyxState State, out string! PinnedVersion, out string! PinnedCommit, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>! Checks, out int Port, out int ExitCode, out string? Url, out string? RunningVersion, out string? Detail) -> void
+Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.Detail.get -> string?
+Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.Detail.init -> void
+Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.OnyxStatusResponse(Aw.Sindri.Core.Onyx.OnyxState State, string! PinnedVersion, string! PinnedCommit, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.PreflightCheck!>! Checks, int Port, int ExitCode, string? Url, string? RunningVersion, string? Detail) -> void
+Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.RunningVersion.get -> string?
+Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.RunningVersion.init -> void
+Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.Url.get -> string?
+Aw.Sindri.Features.OnyxStatus.OnyxStatusResponse.Url.init -> void
+override Aw.Sindri.Features.OnyxDown.OnyxDownRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.OnyxDown.OnyxDownRequest.GetHashCode() -> int
+override Aw.Sindri.Features.OnyxDown.OnyxDownRequest.ToString() -> string!
+override Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.OnyxDown.OnyxDownResponse.GetHashCode() -> int
+override Aw.Sindri.Features.OnyxDown.OnyxDownResponse.ToString() -> string!
+static Aw.Sindri.Features.OnyxDown.OnyxDownRequest.operator !=(Aw.Sindri.Features.OnyxDown.OnyxDownRequest? left, Aw.Sindri.Features.OnyxDown.OnyxDownRequest? right) -> bool
+static Aw.Sindri.Features.OnyxDown.OnyxDownRequest.operator ==(Aw.Sindri.Features.OnyxDown.OnyxDownRequest? left, Aw.Sindri.Features.OnyxDown.OnyxDownRequest? right) -> bool
+static Aw.Sindri.Features.OnyxDown.OnyxDownResponse.operator !=(Aw.Sindri.Features.OnyxDown.OnyxDownResponse? left, Aw.Sindri.Features.OnyxDown.OnyxDownResponse? right) -> bool
+static Aw.Sindri.Features.OnyxDown.OnyxDownResponse.operator ==(Aw.Sindri.Features.OnyxDown.OnyxDownResponse? left, Aw.Sindri.Features.OnyxDown.OnyxDownResponse? right) -> bool
+Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Deconstruct(out bool WasRunning, out System.Collections.Generic.IReadOnlyList<string!>! Stopped, out System.Collections.Generic.IReadOnlyList<string!>! Warnings) -> void
+Aw.Sindri.Features.OnyxDown.OnyxDownResponse.OnyxDownResponse(bool WasRunning, System.Collections.Generic.IReadOnlyList<string!>! Stopped, System.Collections.Generic.IReadOnlyList<string!>! Warnings) -> void
+Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Warnings.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Warnings.init -> void
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Deconstruct(out string? From, out string? To, out string? Trigger, out string? Outcome, out string? Run, out string? Via, out string? Decision) -> void
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.InstanceEventFields(string? From = null, string? To = null, string? Trigger = null, string? Outcome = null, string? Run = null, string? Via = null, string? Decision = null) -> void
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Via.get -> string?
@@ -2602,6 +2923,371 @@ override Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.GetHashCode()
 override Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.ToString() -> string!
 static Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest? left, Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest? right) -> bool
 static Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest? left, Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest? right) -> bool
+Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.StepArgv.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ApproveProfile.StepArgvLine!>!
+Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.StepArgv.init -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.<Clone>$() -> Aw.Sindri.Features.ApproveProfile.StepArgvEntry!
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Bin.get -> string!
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Bin.init -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Deconstruct(out string! Bin, out System.Collections.Generic.IReadOnlyList<string!>! Open, out System.Collections.Generic.IReadOnlyList<string!>? Resume, out Aw.Sindri.Core.Launch.CatalogSource Source) -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Equals(Aw.Sindri.Features.ApproveProfile.StepArgvEntry? other) -> bool
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Open.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Open.init -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Resume.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Resume.init -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Source.get -> Aw.Sindri.Core.Launch.CatalogSource
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Source.init -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvEntry.StepArgvEntry(string! Bin, System.Collections.Generic.IReadOnlyList<string!>! Open, System.Collections.Generic.IReadOnlyList<string!>? Resume, Aw.Sindri.Core.Launch.CatalogSource Source) -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvLine
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.<Clone>$() -> Aw.Sindri.Features.ApproveProfile.StepArgvLine!
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.Agent.get -> string!
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.Agent.init -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.Deconstruct(out string! Agent, out string! Hash, out Aw.Sindri.Features.ApproveProfile.StepArgvEntry? Entry) -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.Entry.get -> Aw.Sindri.Features.ApproveProfile.StepArgvEntry?
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.Entry.init -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.Equals(Aw.Sindri.Features.ApproveProfile.StepArgvLine? other) -> bool
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.Hash.get -> string!
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.Hash.init -> void
+Aw.Sindri.Features.ApproveProfile.StepArgvLine.StepArgvLine(string! Agent, string! Hash, Aw.Sindri.Features.ApproveProfile.StepArgvEntry? Entry) -> void
+Aw.Sindri.Features.GetItem.ItemView.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Id, out string! Title, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Items.Vocabulary.ItemState State, out string? Step, out System.DateTimeOffset Since, out Aw.Sindri.Core.Ids.ActionId? PrimaryAction, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, out string? Owner, out long Version, out string! CreatedBy, out string? WaitingOn, out string? Instance, out System.DateTimeOffset CreatedAt, out System.DateTimeOffset UpdatedAt, out string? Body, out Aw.Sindri.Core.Ids.RecordKey? Link, out Aw.Sindri.Core.Launches.ItemLaunch! Launch, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.GetItem.ItemView.ItemView(Aw.Sindri.Core.Ids.ItemId Id, string! Title, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.Items.Vocabulary.ItemState State, string? Step, System.DateTimeOffset Since, Aw.Sindri.Core.Ids.ActionId? PrimaryAction, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Ids.ActionId>! Actions, string? Owner, long Version, string! CreatedBy, string? WaitingOn, string? Instance, System.DateTimeOffset CreatedAt, System.DateTimeOffset UpdatedAt, string? Body, Aw.Sindri.Core.Ids.RecordKey? Link, Aw.Sindri.Core.Launches.ItemLaunch! Launch, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
+Aw.Sindri.Features.GetItem.ItemView.Launch.get -> Aw.Sindri.Core.Launches.ItemLaunch!
+Aw.Sindri.Features.GetItem.ItemView.Launch.init -> void
+override Aw.Sindri.Features.ApproveProfile.StepArgvEntry.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ApproveProfile.StepArgvEntry.GetHashCode() -> int
+override Aw.Sindri.Features.ApproveProfile.StepArgvEntry.ToString() -> string!
+override Aw.Sindri.Features.ApproveProfile.StepArgvLine.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ApproveProfile.StepArgvLine.GetHashCode() -> int
+override Aw.Sindri.Features.ApproveProfile.StepArgvLine.ToString() -> string!
+static Aw.Sindri.Features.ApproveProfile.StepArgvEntry.operator !=(Aw.Sindri.Features.ApproveProfile.StepArgvEntry? left, Aw.Sindri.Features.ApproveProfile.StepArgvEntry? right) -> bool
+static Aw.Sindri.Features.ApproveProfile.StepArgvEntry.operator ==(Aw.Sindri.Features.ApproveProfile.StepArgvEntry? left, Aw.Sindri.Features.ApproveProfile.StepArgvEntry? right) -> bool
+static Aw.Sindri.Features.ApproveProfile.StepArgvLine.operator !=(Aw.Sindri.Features.ApproveProfile.StepArgvLine? left, Aw.Sindri.Features.ApproveProfile.StepArgvLine? right) -> bool
+static Aw.Sindri.Features.ApproveProfile.StepArgvLine.operator ==(Aw.Sindri.Features.ApproveProfile.StepArgvLine? left, Aw.Sindri.Features.ApproveProfile.StepArgvLine? right) -> bool
+Aw.Sindri.Features.ReadInjection.InjectionSectionView
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.<Clone>$() -> Aw.Sindri.Features.ReadInjection.InjectionSectionView!
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Bytes.get -> int
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Bytes.init -> void
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Deconstruct(out string! Section, out string! Input, out int Bytes, out string! Sha256, out string! Text) -> void
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Equals(Aw.Sindri.Features.ReadInjection.InjectionSectionView? other) -> bool
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.InjectionSectionView(string! Section, string! Input, int Bytes, string! Sha256, string! Text) -> void
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Input.get -> string!
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Input.init -> void
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Section.get -> string!
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Section.init -> void
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Sha256.get -> string!
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Sha256.init -> void
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Text.get -> string!
+Aw.Sindri.Features.ReadInjection.InjectionSectionView.Text.init -> void
+Aw.Sindri.Features.ReadInjection.InjectionView
+Aw.Sindri.Features.ReadInjection.InjectionView.<Clone>$() -> Aw.Sindri.Features.ReadInjection.InjectionView!
+Aw.Sindri.Features.ReadInjection.InjectionView.Deconstruct(out string! Run, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ReadInjection.InjectionSectionView!>! Sections) -> void
+Aw.Sindri.Features.ReadInjection.InjectionView.Equals(Aw.Sindri.Features.ReadInjection.InjectionView? other) -> bool
+Aw.Sindri.Features.ReadInjection.InjectionView.InjectionView(string! Run, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ReadInjection.InjectionSectionView!>! Sections) -> void
+Aw.Sindri.Features.ReadInjection.InjectionView.Run.get -> string!
+Aw.Sindri.Features.ReadInjection.InjectionView.Run.init -> void
+Aw.Sindri.Features.ReadInjection.InjectionView.Sections.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ReadInjection.InjectionSectionView!>!
+Aw.Sindri.Features.ReadInjection.InjectionView.Sections.init -> void
+Aw.Sindri.Features.ReadInjection.ReadInjectionRequest
+Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.<Clone>$() -> Aw.Sindri.Features.ReadInjection.ReadInjectionRequest!
+Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, out string? Section) -> void
+Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.Equals(Aw.Sindri.Features.ReadInjection.ReadInjectionRequest? other) -> bool
+Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.Instance.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
+Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.Instance.init -> void
+Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.ReadInjectionRequest(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, string? Section = null) -> void
+Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.Section.get -> string?
+Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.Section.init -> void
+override Aw.Sindri.Features.ReadInjection.InjectionSectionView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ReadInjection.InjectionSectionView.GetHashCode() -> int
+override Aw.Sindri.Features.ReadInjection.InjectionSectionView.ToString() -> string!
+override Aw.Sindri.Features.ReadInjection.InjectionView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ReadInjection.InjectionView.GetHashCode() -> int
+override Aw.Sindri.Features.ReadInjection.InjectionView.ToString() -> string!
+override Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.ToString() -> string!
+static Aw.Sindri.Features.ReadInjection.InjectionSectionView.operator !=(Aw.Sindri.Features.ReadInjection.InjectionSectionView? left, Aw.Sindri.Features.ReadInjection.InjectionSectionView? right) -> bool
+static Aw.Sindri.Features.ReadInjection.InjectionSectionView.operator ==(Aw.Sindri.Features.ReadInjection.InjectionSectionView? left, Aw.Sindri.Features.ReadInjection.InjectionSectionView? right) -> bool
+static Aw.Sindri.Features.ReadInjection.InjectionView.operator !=(Aw.Sindri.Features.ReadInjection.InjectionView? left, Aw.Sindri.Features.ReadInjection.InjectionView? right) -> bool
+static Aw.Sindri.Features.ReadInjection.InjectionView.operator ==(Aw.Sindri.Features.ReadInjection.InjectionView? left, Aw.Sindri.Features.ReadInjection.InjectionView? right) -> bool
+static Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.operator !=(Aw.Sindri.Features.ReadInjection.ReadInjectionRequest? left, Aw.Sindri.Features.ReadInjection.ReadInjectionRequest? right) -> bool
+static Aw.Sindri.Features.ReadInjection.ReadInjectionRequest.operator ==(Aw.Sindri.Features.ReadInjection.ReadInjectionRequest? left, Aw.Sindri.Features.ReadInjection.ReadInjectionRequest? right) -> bool
+Aw.Sindri.Features.SindriProveFeaturesServiceCollectionExtensions
+static Aw.Sindri.Features.SindriProveFeaturesServiceCollectionExtensions.AddSindriProveBlocks(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextCodeRequest!
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Anchors.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out bool Draft, out string? MapVersion) -> void
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Draft.get -> bool
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.GetContextCodeRequest(System.Collections.Generic.IReadOnlyList<string!>! Anchors, bool Draft = false, string? MapVersion = null) -> void
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.MapVersion.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.MapVersion.init -> void
+override Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? left, Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? left, Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? right) -> bool
+
+Aw.Sindri.Features.Scoping.ScopeFinding
+Aw.Sindri.Features.Scoping.ScopeFinding.<Clone>$() -> Aw.Sindri.Features.Scoping.ScopeFinding!
+Aw.Sindri.Features.Scoping.ScopeFinding.Deconstruct(out string! Rule, out string? Item, out string! Message, out string! Fix, out Aw.Sindri.Features.Scoping.ScopeSeverity Severity) -> void
+Aw.Sindri.Features.Scoping.ScopeFinding.Equals(Aw.Sindri.Features.Scoping.ScopeFinding? other) -> bool
+Aw.Sindri.Features.Scoping.ScopeFinding.Fix.get -> string!
+Aw.Sindri.Features.Scoping.ScopeFinding.Fix.init -> void
+Aw.Sindri.Features.Scoping.ScopeFinding.Item.get -> string?
+Aw.Sindri.Features.Scoping.ScopeFinding.Item.init -> void
+Aw.Sindri.Features.Scoping.ScopeFinding.Message.get -> string!
+Aw.Sindri.Features.Scoping.ScopeFinding.Message.init -> void
+Aw.Sindri.Features.Scoping.ScopeFinding.Rule.get -> string!
+Aw.Sindri.Features.Scoping.ScopeFinding.Rule.init -> void
+Aw.Sindri.Features.Scoping.ScopeFinding.ScopeFinding(string! Rule, string? Item, string! Message, string! Fix, Aw.Sindri.Features.Scoping.ScopeSeverity Severity) -> void
+Aw.Sindri.Features.Scoping.ScopeFinding.Severity.get -> Aw.Sindri.Features.Scoping.ScopeSeverity
+Aw.Sindri.Features.Scoping.ScopeFinding.Severity.init -> void
+Aw.Sindri.Features.Scoping.ScopeOutcome
+Aw.Sindri.Features.Scoping.ScopeOutcome.Complete = 3 -> Aw.Sindri.Features.Scoping.ScopeOutcome
+Aw.Sindri.Features.Scoping.ScopeOutcome.Gaps = 2 -> Aw.Sindri.Features.Scoping.ScopeOutcome
+Aw.Sindri.Features.Scoping.ScopeOutcome.Incomplete = 4 -> Aw.Sindri.Features.Scoping.ScopeOutcome
+Aw.Sindri.Features.Scoping.ScopeOutcome.Pass = 1 -> Aw.Sindri.Features.Scoping.ScopeOutcome
+Aw.Sindri.Features.Scoping.ScopeOutcome.Regather = 5 -> Aw.Sindri.Features.Scoping.ScopeOutcome
+Aw.Sindri.Features.Scoping.ScopeRuleResult
+Aw.Sindri.Features.Scoping.ScopeRuleResult.<Clone>$() -> Aw.Sindri.Features.Scoping.ScopeRuleResult!
+Aw.Sindri.Features.Scoping.ScopeRuleResult.Deconstruct(out string! Rule, out Aw.Sindri.Features.Scoping.ScopeRuleStatus Status, out System.Collections.Generic.IReadOnlyList<string!>! Missing) -> void
+Aw.Sindri.Features.Scoping.ScopeRuleResult.Equals(Aw.Sindri.Features.Scoping.ScopeRuleResult? other) -> bool
+Aw.Sindri.Features.Scoping.ScopeRuleResult.Missing.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.Scoping.ScopeRuleResult.Missing.init -> void
+Aw.Sindri.Features.Scoping.ScopeRuleResult.Rule.get -> string!
+Aw.Sindri.Features.Scoping.ScopeRuleResult.Rule.init -> void
+Aw.Sindri.Features.Scoping.ScopeRuleResult.ScopeRuleResult(string! Rule, Aw.Sindri.Features.Scoping.ScopeRuleStatus Status, System.Collections.Generic.IReadOnlyList<string!>! Missing) -> void
+Aw.Sindri.Features.Scoping.ScopeRuleResult.Status.get -> Aw.Sindri.Features.Scoping.ScopeRuleStatus
+Aw.Sindri.Features.Scoping.ScopeRuleResult.Status.init -> void
+Aw.Sindri.Features.Scoping.ScopeRuleStatus
+Aw.Sindri.Features.Scoping.ScopeRuleStatus.Fail = 2 -> Aw.Sindri.Features.Scoping.ScopeRuleStatus
+Aw.Sindri.Features.Scoping.ScopeRuleStatus.NotRun = 4 -> Aw.Sindri.Features.Scoping.ScopeRuleStatus
+Aw.Sindri.Features.Scoping.ScopeRuleStatus.Pass = 1 -> Aw.Sindri.Features.Scoping.ScopeRuleStatus
+Aw.Sindri.Features.Scoping.ScopeRuleStatus.Warn = 3 -> Aw.Sindri.Features.Scoping.ScopeRuleStatus
+Aw.Sindri.Features.Scoping.ScopeSeverity
+Aw.Sindri.Features.Scoping.ScopeSeverity.Fail = 1 -> Aw.Sindri.Features.Scoping.ScopeSeverity
+Aw.Sindri.Features.Scoping.ScopeSeverity.Warn = 2 -> Aw.Sindri.Features.Scoping.ScopeSeverity
+Aw.Sindri.Features.Scoping.ScopeStage
+Aw.Sindri.Features.Scoping.ScopeStage.Draft = 1 -> Aw.Sindri.Features.Scoping.ScopeStage
+Aw.Sindri.Features.Scoping.ScopeStage.Evidence = 2 -> Aw.Sindri.Features.Scoping.ScopeStage
+Aw.Sindri.Features.Scoping.ScopingCheckRequest
+Aw.Sindri.Features.Scoping.ScopingCheckRequest.<Clone>$() -> Aw.Sindri.Features.Scoping.ScopingCheckRequest!
+Aw.Sindri.Features.Scoping.ScopingCheckRequest.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Facts, out Aw.Sindri.Features.Scoping.ScopeStage Stage) -> void
+Aw.Sindri.Features.Scoping.ScopingCheckRequest.Equals(Aw.Sindri.Features.Scoping.ScopingCheckRequest? other) -> bool
+Aw.Sindri.Features.Scoping.ScopingCheckRequest.Facts.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Features.Scoping.ScopingCheckRequest.Facts.init -> void
+Aw.Sindri.Features.Scoping.ScopingCheckRequest.ScopingCheckRequest(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Facts, Aw.Sindri.Features.Scoping.ScopeStage Stage) -> void
+Aw.Sindri.Features.Scoping.ScopingCheckRequest.Stage.get -> Aw.Sindri.Features.Scoping.ScopeStage
+Aw.Sindri.Features.Scoping.ScopingCheckRequest.Stage.init -> void
+Aw.Sindri.Features.Scoping.ScopingCheckResponse
+Aw.Sindri.Features.Scoping.ScopingCheckResponse.<Clone>$() -> Aw.Sindri.Features.Scoping.ScopingCheckResponse!
+Aw.Sindri.Features.Scoping.ScopingCheckResponse.Deconstruct(out Aw.Sindri.Features.Scoping.ScopeStage Stage, out Aw.Sindri.Features.Scoping.ScopeOutcome Outcome, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopeFinding!>! Findings, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopeFinding!>! Warnings, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopeRuleResult!>! Rules) -> void
+Aw.Sindri.Features.Scoping.ScopingCheckResponse.Equals(Aw.Sindri.Features.Scoping.ScopingCheckResponse? other) -> bool
+Aw.Sindri.Features.Scoping.ScopingCheckResponse.Findings.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopeFinding!>!
+Aw.Sindri.Features.Scoping.ScopingCheckResponse.Findings.init -> void
+Aw.Sindri.Features.Scoping.ScopingCheckResponse.Outcome.get -> Aw.Sindri.Features.Scoping.ScopeOutcome
+Aw.Sindri.Features.Scoping.ScopingCheckResponse.Outcome.init -> void
+Aw.Sindri.Features.Scoping.ScopingCheckResponse.Passed.get -> bool
+Aw.Sindri.Features.Scoping.ScopingCheckResponse.Rules.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopeRuleResult!>!
+Aw.Sindri.Features.Scoping.ScopingCheckResponse.Rules.init -> void
+Aw.Sindri.Features.Scoping.ScopingCheckResponse.ScopingCheckResponse(Aw.Sindri.Features.Scoping.ScopeStage Stage, Aw.Sindri.Features.Scoping.ScopeOutcome Outcome, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopeFinding!>! Findings, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopeFinding!>! Warnings, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopeRuleResult!>! Rules) -> void
+Aw.Sindri.Features.Scoping.ScopingCheckResponse.Stage.get -> Aw.Sindri.Features.Scoping.ScopeStage
+Aw.Sindri.Features.Scoping.ScopingCheckResponse.Stage.init -> void
+Aw.Sindri.Features.Scoping.ScopingCheckResponse.Warnings.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopeFinding!>!
+Aw.Sindri.Features.Scoping.ScopingCheckResponse.Warnings.init -> void
+Aw.Sindri.Features.Scoping.ScopingDeskFile
+Aw.Sindri.Features.Scoping.ScopingDeskFile.<Clone>$() -> Aw.Sindri.Features.Scoping.ScopingDeskFile!
+Aw.Sindri.Features.Scoping.ScopingDeskFile.Append.get -> bool
+Aw.Sindri.Features.Scoping.ScopingDeskFile.Append.init -> void
+Aw.Sindri.Features.Scoping.ScopingDeskFile.Content.get -> string!
+Aw.Sindri.Features.Scoping.ScopingDeskFile.Content.init -> void
+Aw.Sindri.Features.Scoping.ScopingDeskFile.Deconstruct(out string! Path, out string! Content, out bool Append) -> void
+Aw.Sindri.Features.Scoping.ScopingDeskFile.Equals(Aw.Sindri.Features.Scoping.ScopingDeskFile? other) -> bool
+Aw.Sindri.Features.Scoping.ScopingDeskFile.Path.get -> string!
+Aw.Sindri.Features.Scoping.ScopingDeskFile.Path.init -> void
+Aw.Sindri.Features.Scoping.ScopingDeskFile.ScopingDeskFile(string! Path, string! Content, bool Append) -> void
+Aw.Sindri.Features.Scoping.ScopingDeskRequest
+Aw.Sindri.Features.Scoping.ScopingDeskRequest.<Clone>$() -> Aw.Sindri.Features.Scoping.ScopingDeskRequest!
+Aw.Sindri.Features.Scoping.ScopingDeskRequest.Block.get -> string!
+Aw.Sindri.Features.Scoping.ScopingDeskRequest.Block.init -> void
+Aw.Sindri.Features.Scoping.ScopingDeskRequest.Deconstruct(out string! Block, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Facts) -> void
+Aw.Sindri.Features.Scoping.ScopingDeskRequest.Equals(Aw.Sindri.Features.Scoping.ScopingDeskRequest? other) -> bool
+Aw.Sindri.Features.Scoping.ScopingDeskRequest.Facts.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Features.Scoping.ScopingDeskRequest.Facts.init -> void
+Aw.Sindri.Features.Scoping.ScopingDeskRequest.ScopingDeskRequest(string! Block, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Facts) -> void
+Aw.Sindri.Features.Scoping.ScopingDeskResponse
+Aw.Sindri.Features.Scoping.ScopingDeskResponse.<Clone>$() -> Aw.Sindri.Features.Scoping.ScopingDeskResponse!
+Aw.Sindri.Features.Scoping.ScopingDeskResponse.Block.get -> string!
+Aw.Sindri.Features.Scoping.ScopingDeskResponse.Block.init -> void
+Aw.Sindri.Features.Scoping.ScopingDeskResponse.Deconstruct(out string! Block, out string! Outcome, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Outputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopingDeskFile!>! Files, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopeFinding!>! Findings, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopeFinding!>! Warnings) -> void
+Aw.Sindri.Features.Scoping.ScopingDeskResponse.Equals(Aw.Sindri.Features.Scoping.ScopingDeskResponse? other) -> bool
+Aw.Sindri.Features.Scoping.ScopingDeskResponse.Files.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopingDeskFile!>!
+Aw.Sindri.Features.Scoping.ScopingDeskResponse.Files.init -> void
+Aw.Sindri.Features.Scoping.ScopingDeskResponse.Findings.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopeFinding!>!
+Aw.Sindri.Features.Scoping.ScopingDeskResponse.Findings.init -> void
+Aw.Sindri.Features.Scoping.ScopingDeskResponse.Outcome.get -> string!
+Aw.Sindri.Features.Scoping.ScopingDeskResponse.Outcome.init -> void
+Aw.Sindri.Features.Scoping.ScopingDeskResponse.Outputs.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Features.Scoping.ScopingDeskResponse.Outputs.init -> void
+Aw.Sindri.Features.Scoping.ScopingDeskResponse.ScopingDeskResponse(string! Block, string! Outcome, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Outputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopingDeskFile!>! Files, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopeFinding!>! Findings, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopeFinding!>! Warnings) -> void
+Aw.Sindri.Features.Scoping.ScopingDeskResponse.Warnings.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopeFinding!>!
+Aw.Sindri.Features.Scoping.ScopingDeskResponse.Warnings.init -> void
+Aw.Sindri.Features.Scoping.ScopingOpenInContext
+Aw.Sindri.Features.Scoping.ScopingOpenInContext.<Clone>$() -> Aw.Sindri.Features.Scoping.ScopingOpenInContext!
+Aw.Sindri.Features.Scoping.ScopingOpenInContext.Deconstruct(out bool Enabled, out string? Reason) -> void
+Aw.Sindri.Features.Scoping.ScopingOpenInContext.Enabled.get -> bool
+Aw.Sindri.Features.Scoping.ScopingOpenInContext.Enabled.init -> void
+Aw.Sindri.Features.Scoping.ScopingOpenInContext.Equals(Aw.Sindri.Features.Scoping.ScopingOpenInContext? other) -> bool
+Aw.Sindri.Features.Scoping.ScopingOpenInContext.Reason.get -> string?
+Aw.Sindri.Features.Scoping.ScopingOpenInContext.Reason.init -> void
+Aw.Sindri.Features.Scoping.ScopingOpenInContext.ScopingOpenInContext(bool Enabled, string? Reason) -> void
+Aw.Sindri.Features.Scoping.ScopingRow
+Aw.Sindri.Features.Scoping.ScopingRow.<Clone>$() -> Aw.Sindri.Features.Scoping.ScopingRow!
+Aw.Sindri.Features.Scoping.ScopingRow.Deconstruct(out string! Key, out string! Text, out string? Status, out System.Collections.Generic.IReadOnlyList<string!>! Lines) -> void
+Aw.Sindri.Features.Scoping.ScopingRow.Equals(Aw.Sindri.Features.Scoping.ScopingRow? other) -> bool
+Aw.Sindri.Features.Scoping.ScopingRow.Key.get -> string!
+Aw.Sindri.Features.Scoping.ScopingRow.Key.init -> void
+Aw.Sindri.Features.Scoping.ScopingRow.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.Scoping.ScopingRow.Lines.init -> void
+Aw.Sindri.Features.Scoping.ScopingRow.ScopingRow(string! Key, string! Text, string? Status, System.Collections.Generic.IReadOnlyList<string!>! Lines) -> void
+Aw.Sindri.Features.Scoping.ScopingRow.Status.get -> string?
+Aw.Sindri.Features.Scoping.ScopingRow.Status.init -> void
+Aw.Sindri.Features.Scoping.ScopingRow.Text.get -> string!
+Aw.Sindri.Features.Scoping.ScopingRow.Text.init -> void
+Aw.Sindri.Features.Scoping.ScopingSection
+Aw.Sindri.Features.Scoping.ScopingSection.<Clone>$() -> Aw.Sindri.Features.Scoping.ScopingSection!
+Aw.Sindri.Features.Scoping.ScopingSection.Deconstruct(out int Order, out string! Name, out string! Title, out Aw.Sindri.Features.Scoping.ScopingSectionState State, out string? Note, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopingRow!>! Rows) -> void
+Aw.Sindri.Features.Scoping.ScopingSection.Equals(Aw.Sindri.Features.Scoping.ScopingSection? other) -> bool
+Aw.Sindri.Features.Scoping.ScopingSection.Name.get -> string!
+Aw.Sindri.Features.Scoping.ScopingSection.Name.init -> void
+Aw.Sindri.Features.Scoping.ScopingSection.Note.get -> string?
+Aw.Sindri.Features.Scoping.ScopingSection.Note.init -> void
+Aw.Sindri.Features.Scoping.ScopingSection.Order.get -> int
+Aw.Sindri.Features.Scoping.ScopingSection.Order.init -> void
+Aw.Sindri.Features.Scoping.ScopingSection.Rows.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopingRow!>!
+Aw.Sindri.Features.Scoping.ScopingSection.Rows.init -> void
+Aw.Sindri.Features.Scoping.ScopingSection.ScopingSection(int Order, string! Name, string! Title, Aw.Sindri.Features.Scoping.ScopingSectionState State, string? Note, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopingRow!>! Rows) -> void
+Aw.Sindri.Features.Scoping.ScopingSection.State.get -> Aw.Sindri.Features.Scoping.ScopingSectionState
+Aw.Sindri.Features.Scoping.ScopingSection.State.init -> void
+Aw.Sindri.Features.Scoping.ScopingSection.Title.get -> string!
+Aw.Sindri.Features.Scoping.ScopingSection.Title.init -> void
+Aw.Sindri.Features.Scoping.ScopingSectionState
+Aw.Sindri.Features.Scoping.ScopingSectionState.Empty = 2 -> Aw.Sindri.Features.Scoping.ScopingSectionState
+Aw.Sindri.Features.Scoping.ScopingSectionState.NotYet = 3 -> Aw.Sindri.Features.Scoping.ScopingSectionState
+Aw.Sindri.Features.Scoping.ScopingSectionState.Ready = 1 -> Aw.Sindri.Features.Scoping.ScopingSectionState
+Aw.Sindri.Features.Scoping.ScopingShowRequest
+Aw.Sindri.Features.Scoping.ScopingShowRequest.<Clone>$() -> Aw.Sindri.Features.Scoping.ScopingShowRequest!
+Aw.Sindri.Features.Scoping.ScopingShowRequest.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Facts) -> void
+Aw.Sindri.Features.Scoping.ScopingShowRequest.Equals(Aw.Sindri.Features.Scoping.ScopingShowRequest? other) -> bool
+Aw.Sindri.Features.Scoping.ScopingShowRequest.Facts.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Features.Scoping.ScopingShowRequest.Facts.init -> void
+Aw.Sindri.Features.Scoping.ScopingShowRequest.ScopingShowRequest(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Facts) -> void
+Aw.Sindri.Features.Scoping.ScopingView
+Aw.Sindri.Features.Scoping.ScopingView.<Clone>$() -> Aw.Sindri.Features.Scoping.ScopingView!
+Aw.Sindri.Features.Scoping.ScopingView.CoverageHeader.get -> string!
+Aw.Sindri.Features.Scoping.ScopingView.CoverageHeader.init -> void
+Aw.Sindri.Features.Scoping.ScopingView.Deconstruct(out Aw.Sindri.Features.Scoping.ScopeStage Stage, out string! CoverageHeader, out Aw.Sindri.Features.Scoping.ScopingOpenInContext! OpenInContext, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopingSection!>! Sections) -> void
+Aw.Sindri.Features.Scoping.ScopingView.Equals(Aw.Sindri.Features.Scoping.ScopingView? other) -> bool
+Aw.Sindri.Features.Scoping.ScopingView.OpenInContext.get -> Aw.Sindri.Features.Scoping.ScopingOpenInContext!
+Aw.Sindri.Features.Scoping.ScopingView.OpenInContext.init -> void
+Aw.Sindri.Features.Scoping.ScopingView.ScopingView(Aw.Sindri.Features.Scoping.ScopeStage Stage, string! CoverageHeader, Aw.Sindri.Features.Scoping.ScopingOpenInContext! OpenInContext, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopingSection!>! Sections) -> void
+Aw.Sindri.Features.Scoping.ScopingView.Sections.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.Scoping.ScopingSection!>!
+Aw.Sindri.Features.Scoping.ScopingView.Sections.init -> void
+Aw.Sindri.Features.Scoping.ScopingView.Stage.get -> Aw.Sindri.Features.Scoping.ScopeStage
+Aw.Sindri.Features.Scoping.ScopingView.Stage.init -> void
+override Aw.Sindri.Features.Scoping.ScopeFinding.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Scoping.ScopeFinding.GetHashCode() -> int
+override Aw.Sindri.Features.Scoping.ScopeFinding.ToString() -> string!
+override Aw.Sindri.Features.Scoping.ScopeRuleResult.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Scoping.ScopeRuleResult.GetHashCode() -> int
+override Aw.Sindri.Features.Scoping.ScopeRuleResult.ToString() -> string!
+override Aw.Sindri.Features.Scoping.ScopingCheckRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Scoping.ScopingCheckRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Scoping.ScopingCheckRequest.ToString() -> string!
+override Aw.Sindri.Features.Scoping.ScopingCheckResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Scoping.ScopingCheckResponse.GetHashCode() -> int
+override Aw.Sindri.Features.Scoping.ScopingCheckResponse.ToString() -> string!
+override Aw.Sindri.Features.Scoping.ScopingDeskFile.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Scoping.ScopingDeskFile.GetHashCode() -> int
+override Aw.Sindri.Features.Scoping.ScopingDeskFile.ToString() -> string!
+override Aw.Sindri.Features.Scoping.ScopingDeskRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Scoping.ScopingDeskRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Scoping.ScopingDeskRequest.ToString() -> string!
+override Aw.Sindri.Features.Scoping.ScopingDeskResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Scoping.ScopingDeskResponse.GetHashCode() -> int
+override Aw.Sindri.Features.Scoping.ScopingDeskResponse.ToString() -> string!
+override Aw.Sindri.Features.Scoping.ScopingOpenInContext.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Scoping.ScopingOpenInContext.GetHashCode() -> int
+override Aw.Sindri.Features.Scoping.ScopingOpenInContext.ToString() -> string!
+override Aw.Sindri.Features.Scoping.ScopingRow.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Scoping.ScopingRow.GetHashCode() -> int
+override Aw.Sindri.Features.Scoping.ScopingRow.ToString() -> string!
+override Aw.Sindri.Features.Scoping.ScopingSection.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Scoping.ScopingSection.GetHashCode() -> int
+override Aw.Sindri.Features.Scoping.ScopingSection.ToString() -> string!
+override Aw.Sindri.Features.Scoping.ScopingShowRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Scoping.ScopingShowRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Scoping.ScopingShowRequest.ToString() -> string!
+override Aw.Sindri.Features.Scoping.ScopingView.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Scoping.ScopingView.GetHashCode() -> int
+override Aw.Sindri.Features.Scoping.ScopingView.ToString() -> string!
+static Aw.Sindri.Features.Scoping.ScopeFinding.operator !=(Aw.Sindri.Features.Scoping.ScopeFinding? left, Aw.Sindri.Features.Scoping.ScopeFinding? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopeFinding.operator ==(Aw.Sindri.Features.Scoping.ScopeFinding? left, Aw.Sindri.Features.Scoping.ScopeFinding? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopeRuleResult.operator !=(Aw.Sindri.Features.Scoping.ScopeRuleResult? left, Aw.Sindri.Features.Scoping.ScopeRuleResult? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopeRuleResult.operator ==(Aw.Sindri.Features.Scoping.ScopeRuleResult? left, Aw.Sindri.Features.Scoping.ScopeRuleResult? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingCheckRequest.operator !=(Aw.Sindri.Features.Scoping.ScopingCheckRequest? left, Aw.Sindri.Features.Scoping.ScopingCheckRequest? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingCheckRequest.operator ==(Aw.Sindri.Features.Scoping.ScopingCheckRequest? left, Aw.Sindri.Features.Scoping.ScopingCheckRequest? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingCheckResponse.operator !=(Aw.Sindri.Features.Scoping.ScopingCheckResponse? left, Aw.Sindri.Features.Scoping.ScopingCheckResponse? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingCheckResponse.operator ==(Aw.Sindri.Features.Scoping.ScopingCheckResponse? left, Aw.Sindri.Features.Scoping.ScopingCheckResponse? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingDeskFile.operator !=(Aw.Sindri.Features.Scoping.ScopingDeskFile? left, Aw.Sindri.Features.Scoping.ScopingDeskFile? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingDeskFile.operator ==(Aw.Sindri.Features.Scoping.ScopingDeskFile? left, Aw.Sindri.Features.Scoping.ScopingDeskFile? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingDeskRequest.operator !=(Aw.Sindri.Features.Scoping.ScopingDeskRequest? left, Aw.Sindri.Features.Scoping.ScopingDeskRequest? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingDeskRequest.operator ==(Aw.Sindri.Features.Scoping.ScopingDeskRequest? left, Aw.Sindri.Features.Scoping.ScopingDeskRequest? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingDeskResponse.operator !=(Aw.Sindri.Features.Scoping.ScopingDeskResponse? left, Aw.Sindri.Features.Scoping.ScopingDeskResponse? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingDeskResponse.operator ==(Aw.Sindri.Features.Scoping.ScopingDeskResponse? left, Aw.Sindri.Features.Scoping.ScopingDeskResponse? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingOpenInContext.operator !=(Aw.Sindri.Features.Scoping.ScopingOpenInContext? left, Aw.Sindri.Features.Scoping.ScopingOpenInContext? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingOpenInContext.operator ==(Aw.Sindri.Features.Scoping.ScopingOpenInContext? left, Aw.Sindri.Features.Scoping.ScopingOpenInContext? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingRow.operator !=(Aw.Sindri.Features.Scoping.ScopingRow? left, Aw.Sindri.Features.Scoping.ScopingRow? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingRow.operator ==(Aw.Sindri.Features.Scoping.ScopingRow? left, Aw.Sindri.Features.Scoping.ScopingRow? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingSection.operator !=(Aw.Sindri.Features.Scoping.ScopingSection? left, Aw.Sindri.Features.Scoping.ScopingSection? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingSection.operator ==(Aw.Sindri.Features.Scoping.ScopingSection? left, Aw.Sindri.Features.Scoping.ScopingSection? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingShowRequest.operator !=(Aw.Sindri.Features.Scoping.ScopingShowRequest? left, Aw.Sindri.Features.Scoping.ScopingShowRequest? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingShowRequest.operator ==(Aw.Sindri.Features.Scoping.ScopingShowRequest? left, Aw.Sindri.Features.Scoping.ScopingShowRequest? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingView.operator !=(Aw.Sindri.Features.Scoping.ScopingView? left, Aw.Sindri.Features.Scoping.ScopingView? right) -> bool
+static Aw.Sindri.Features.Scoping.ScopingView.operator ==(Aw.Sindri.Features.Scoping.ScopingView? left, Aw.Sindri.Features.Scoping.ScopingView? right) -> bool
+Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest
+Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest.<Clone>$() -> Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest!
+Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest.Deconstruct(out int Port, out string! Version) -> void
+Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest.Equals(Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest? other) -> bool
+Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest.OnyxAccountRequest(int Port, string! Version) -> void
+Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest.Port.get -> int
+Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest.Port.init -> void
+Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest.Version.get -> string!
+Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest.Version.init -> void
+Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse
+Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.<Clone>$() -> Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse!
+Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.Equals(Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse? other) -> bool
+Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.KeyPointer.get -> string?
+Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.KeyPointer.init -> void
+Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.NeedsHuman.get -> bool
+Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.ProfileChanged.get -> bool
+Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.ProfileChanged.init -> void
+Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.Steps.init -> void
+Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.Url.get -> string!
+Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.Url.init -> void
+override Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest.GetHashCode() -> int
+override Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest.ToString() -> string!
+override Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.GetHashCode() -> int
+override Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.ToString() -> string!
+static Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest.operator !=(Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest? left, Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest? right) -> bool
+static Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest.operator ==(Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest? left, Aw.Sindri.Features.OnyxAccount.OnyxAccountRequest? right) -> bool
+static Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.operator !=(Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse? left, Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse? right) -> bool
+static Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.operator ==(Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse? left, Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse? right) -> bool
 Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out bool Draft, out int? Depth, out string? MapVersion, out string? Hops) -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.GetContextLensesAnswerRequest(System.Collections.Generic.IReadOnlyList<string!>! Anchors, bool Draft = false, int? Depth = null, string? MapVersion = null, string? Hops = null) -> void
 Aw.Sindri.Features.ContextCalls.GetContextLensesAnswerRequest.Hops.get -> string?
@@ -2738,3 +3424,197 @@ static Aw.Sindri.Features.ListSessions.SessionCounts.operator !=(Aw.Sindri.Featu
 static Aw.Sindri.Features.ListSessions.SessionCounts.operator ==(Aw.Sindri.Features.ListSessions.SessionCounts? left, Aw.Sindri.Features.ListSessions.SessionCounts? right) -> bool
 static Aw.Sindri.Features.ListSessions.SessionList.operator !=(Aw.Sindri.Features.ListSessions.SessionList? left, Aw.Sindri.Features.ListSessions.SessionList? right) -> bool
 static Aw.Sindri.Features.ListSessions.SessionList.operator ==(Aw.Sindri.Features.ListSessions.SessionList? left, Aw.Sindri.Features.ListSessions.SessionList? right) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest!
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Anchors.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Before.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Before.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out string? Since, out string? Before, out bool Draft, out string? MapVersion) -> void
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Draft.get -> bool
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.GetContextHistoryRequest(System.Collections.Generic.IReadOnlyList<string!>! Anchors, string? Since = null, string? Before = null, bool Draft = false, string? MapVersion = null) -> void
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.MapVersion.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.MapVersion.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Since.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Since.init -> void
+override Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest? left, Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest? left, Aw.Sindri.Features.ContextCalls.GetContextHistoryRequest? right) -> bool
+Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.Deconstruct(out string! Url, out string? KeyPointer, out bool ProfileChanged, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxStepResult!>! Steps) -> void
+Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.OnyxAccountResponse(string! Url, string? KeyPointer, bool ProfileChanged, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxStepResult!>! Steps) -> void
+Aw.Sindri.Features.OnyxAccount.OnyxAccountResponse.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxStepResult!>!
+Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Deconstruct(out int Port, out string! Url, out string! Version, out System.Collections.Generic.IReadOnlyList<string!>! Warnings, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxStepResult!>! Steps) -> void
+Aw.Sindri.Features.OnyxUp.OnyxUpResponse.OnyxUpResponse(int Port, string! Url, string! Version, System.Collections.Generic.IReadOnlyList<string!>! Warnings, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxStepResult!>! Steps) -> void
+Aw.Sindri.Features.OnyxUp.OnyxUpResponse.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.OnyxStepResult!>!
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest.<Clone>$() -> Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest!
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest.Equals(Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest? other) -> bool
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest.OnyxEnsureRequest() -> void
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.<Clone>$() -> Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse!
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.Deconstruct(out Aw.Sindri.Core.Control.OnyxEndpoint? Endpoint, out string? Detail) -> void
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.Detail.get -> string?
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.Detail.init -> void
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.Endpoint.get -> Aw.Sindri.Core.Control.OnyxEndpoint?
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.Endpoint.init -> void
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.Equals(Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse? other) -> bool
+Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.OnyxEnsureResponse(Aw.Sindri.Core.Control.OnyxEndpoint? Endpoint, string? Detail) -> void
+override Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest.GetHashCode() -> int
+override Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest.ToString() -> string!
+override Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.GetHashCode() -> int
+override Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.ToString() -> string!
+static Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest.operator !=(Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest? left, Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest? right) -> bool
+static Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest.operator ==(Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest? left, Aw.Sindri.Features.OnyxEnsure.OnyxEnsureRequest? right) -> bool
+static Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.operator !=(Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse? left, Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse? right) -> bool
+static Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse.operator ==(Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse? left, Aw.Sindri.Features.OnyxEnsure.OnyxEnsureResponse? right) -> bool
+Aw.Sindri.Features.RecordEval.RecordEvalRequest
+Aw.Sindri.Features.RecordEval.RecordEvalRequest.<Clone>$() -> Aw.Sindri.Features.RecordEval.RecordEvalRequest!
+Aw.Sindri.Features.RecordEval.RecordEvalRequest.Address.get -> string!
+Aw.Sindri.Features.RecordEval.RecordEvalRequest.Address.init -> void
+Aw.Sindri.Features.RecordEval.RecordEvalRequest.Deconstruct(out string! Address) -> void
+Aw.Sindri.Features.RecordEval.RecordEvalRequest.Equals(Aw.Sindri.Features.RecordEval.RecordEvalRequest? other) -> bool
+Aw.Sindri.Features.RecordEval.RecordEvalRequest.RecordEvalRequest(string! Address) -> void
+Aw.Sindri.Features.RecordEval.RecordEvalResponse
+Aw.Sindri.Features.RecordEval.RecordEvalResponse.<Clone>$() -> Aw.Sindri.Features.RecordEval.RecordEvalResponse!
+Aw.Sindri.Features.RecordEval.RecordEvalResponse.Deconstruct(out string! Text) -> void
+Aw.Sindri.Features.RecordEval.RecordEvalResponse.Equals(Aw.Sindri.Features.RecordEval.RecordEvalResponse? other) -> bool
+Aw.Sindri.Features.RecordEval.RecordEvalResponse.RecordEvalResponse(string! Text) -> void
+Aw.Sindri.Features.RecordEval.RecordEvalResponse.Text.get -> string!
+Aw.Sindri.Features.RecordEval.RecordEvalResponse.Text.init -> void
+override Aw.Sindri.Features.RecordEval.RecordEvalRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.RecordEval.RecordEvalRequest.GetHashCode() -> int
+override Aw.Sindri.Features.RecordEval.RecordEvalRequest.ToString() -> string!
+override Aw.Sindri.Features.RecordEval.RecordEvalResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.RecordEval.RecordEvalResponse.GetHashCode() -> int
+override Aw.Sindri.Features.RecordEval.RecordEvalResponse.ToString() -> string!
+static Aw.Sindri.Features.RecordEval.RecordEvalRequest.operator !=(Aw.Sindri.Features.RecordEval.RecordEvalRequest? left, Aw.Sindri.Features.RecordEval.RecordEvalRequest? right) -> bool
+static Aw.Sindri.Features.RecordEval.RecordEvalRequest.operator ==(Aw.Sindri.Features.RecordEval.RecordEvalRequest? left, Aw.Sindri.Features.RecordEval.RecordEvalRequest? right) -> bool
+static Aw.Sindri.Features.RecordEval.RecordEvalResponse.operator !=(Aw.Sindri.Features.RecordEval.RecordEvalResponse? left, Aw.Sindri.Features.RecordEval.RecordEvalResponse? right) -> bool
+static Aw.Sindri.Features.RecordEval.RecordEvalResponse.operator ==(Aw.Sindri.Features.RecordEval.RecordEvalResponse? left, Aw.Sindri.Features.RecordEval.RecordEvalResponse? right) -> bool
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.<Clone>$() -> Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest!
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.Deconstruct(out Aw.Sindri.Core.Sessions.SessionRef Ref, out System.DateTimeOffset? ExpectStartedAt) -> void
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.Equals(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest? other) -> bool
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.ExpectStartedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.ExpectStartedAt.init -> void
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.GetSessionPreviewRequest(Aw.Sindri.Core.Sessions.SessionRef Ref, System.DateTimeOffset? ExpectStartedAt = null) -> void
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.Ref.get -> Aw.Sindri.Core.Sessions.SessionRef
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.Ref.init -> void
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse
+Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.GetSessionPreviewResponse(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse! original) -> void
+Aw.Sindri.Features.GetSessionPreview.PreviewHost
+Aw.Sindri.Features.GetSessionPreview.PreviewHost.<Clone>$() -> Aw.Sindri.Features.GetSessionPreview.PreviewHost!
+Aw.Sindri.Features.GetSessionPreview.PreviewHost.Deconstruct(out string! Kind, out string! Label) -> void
+Aw.Sindri.Features.GetSessionPreview.PreviewHost.Equals(Aw.Sindri.Features.GetSessionPreview.PreviewHost? other) -> bool
+Aw.Sindri.Features.GetSessionPreview.PreviewHost.Kind.get -> string!
+Aw.Sindri.Features.GetSessionPreview.PreviewHost.Kind.init -> void
+Aw.Sindri.Features.GetSessionPreview.PreviewHost.Label.get -> string!
+Aw.Sindri.Features.GetSessionPreview.PreviewHost.Label.init -> void
+Aw.Sindri.Features.GetSessionPreview.PreviewHost.PreviewHost(string! Kind, string! Label) -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreview
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.CapturedAt.get -> System.DateTimeOffset
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.CapturedAt.init -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Lines, out bool Truncated, out System.DateTimeOffset CapturedAt, out System.DateTimeOffset? StartedAt, out Aw.Sindri.Features.GetSessionPreview.PreviewHost! Host) -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.Equals(Aw.Sindri.Features.GetSessionPreview.SessionPreview? other) -> bool
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.Host.get -> Aw.Sindri.Features.GetSessionPreview.PreviewHost!
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.Host.init -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.Lines.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.Lines.init -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.SessionPreview(System.Collections.Generic.IReadOnlyList<string!>! Lines, bool Truncated, System.DateTimeOffset CapturedAt, System.DateTimeOffset? StartedAt, Aw.Sindri.Features.GetSessionPreview.PreviewHost! Host) -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.StartedAt.get -> System.DateTimeOffset?
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.StartedAt.init -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.Truncated.get -> bool
+Aw.Sindri.Features.GetSessionPreview.SessionPreview.Truncated.init -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable
+Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.CapturedAt.get -> System.DateTimeOffset
+Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.CapturedAt.init -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.Deconstruct(out string! Reason, out System.DateTimeOffset CapturedAt) -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.Equals(Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable? other) -> bool
+Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.Reason.get -> string!
+Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.Reason.init -> void
+Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.SessionPreviewUnavailable(string! Reason, System.DateTimeOffset CapturedAt) -> void
+abstract Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.<Clone>$() -> Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse!
+override Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.GetHashCode() -> int
+override Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.ToString() -> string!
+override Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.GetHashCode() -> int
+override Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.ToString() -> string!
+override Aw.Sindri.Features.GetSessionPreview.PreviewHost.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetSessionPreview.PreviewHost.GetHashCode() -> int
+override Aw.Sindri.Features.GetSessionPreview.PreviewHost.ToString() -> string!
+override Aw.Sindri.Features.GetSessionPreview.SessionPreview.<Clone>$() -> Aw.Sindri.Features.GetSessionPreview.SessionPreview!
+override Aw.Sindri.Features.GetSessionPreview.SessionPreview.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetSessionPreview.SessionPreview.GetHashCode() -> int
+override Aw.Sindri.Features.GetSessionPreview.SessionPreview.ToString() -> string!
+override Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.<Clone>$() -> Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable!
+override Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.Equals(object? obj) -> bool
+override Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.GetHashCode() -> int
+override Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.ToString() -> string!
+override sealed Aw.Sindri.Features.GetSessionPreview.SessionPreview.Equals(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse? other) -> bool
+override sealed Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.Equals(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse? other) -> bool
+static Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.operator !=(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest? left, Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest? right) -> bool
+static Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest.operator ==(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest? left, Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewRequest? right) -> bool
+static Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.operator !=(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse? left, Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse? right) -> bool
+static Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.operator ==(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse? left, Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse? right) -> bool
+static Aw.Sindri.Features.GetSessionPreview.PreviewHost.operator !=(Aw.Sindri.Features.GetSessionPreview.PreviewHost? left, Aw.Sindri.Features.GetSessionPreview.PreviewHost? right) -> bool
+static Aw.Sindri.Features.GetSessionPreview.PreviewHost.operator ==(Aw.Sindri.Features.GetSessionPreview.PreviewHost? left, Aw.Sindri.Features.GetSessionPreview.PreviewHost? right) -> bool
+static Aw.Sindri.Features.GetSessionPreview.SessionPreview.operator !=(Aw.Sindri.Features.GetSessionPreview.SessionPreview? left, Aw.Sindri.Features.GetSessionPreview.SessionPreview? right) -> bool
+static Aw.Sindri.Features.GetSessionPreview.SessionPreview.operator ==(Aw.Sindri.Features.GetSessionPreview.SessionPreview? left, Aw.Sindri.Features.GetSessionPreview.SessionPreview? right) -> bool
+static Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.operator !=(Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable? left, Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable? right) -> bool
+static Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.operator ==(Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable? left, Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable? right) -> bool
+virtual Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.EqualityContract.get -> System.Type!
+virtual Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.Equals(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse? other) -> bool
+virtual Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.PrintMembers(System.Text.StringBuilder! builder) -> bool
+Aw.Sindri.Features.Scoping.GetInstanceScopingRequest
+Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.<Clone>$() -> Aw.Sindri.Features.Scoping.GetInstanceScopingRequest!
+Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance) -> void
+Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.Equals(Aw.Sindri.Features.Scoping.GetInstanceScopingRequest? other) -> bool
+Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.GetInstanceScopingRequest(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance) -> void
+Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.Instance.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
+Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.Instance.init -> void
+override Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.ToString() -> string!
+static Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.operator !=(Aw.Sindri.Features.Scoping.GetInstanceScopingRequest? left, Aw.Sindri.Features.Scoping.GetInstanceScopingRequest? right) -> bool
+static Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.operator ==(Aw.Sindri.Features.Scoping.GetInstanceScopingRequest? left, Aw.Sindri.Features.Scoping.GetInstanceScopingRequest? right) -> bool
+Aw.Sindri.Features.Scoping.ScopingFactKeys
+static Aw.Sindri.Features.Scoping.ScopingFactKeys.All.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.Scoping.GetPacketFileRequest
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.<Clone>$() -> Aw.Sindri.Features.Scoping.GetPacketFileRequest!
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, out string! Hash, out string! Name) -> void
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.Equals(Aw.Sindri.Features.Scoping.GetPacketFileRequest? other) -> bool
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.GetPacketFileRequest(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, string! Hash, string! Name) -> void
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.Instance.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.Instance.init -> void
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.Hash.get -> string!
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.Hash.init -> void
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.Name.get -> string!
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.Name.init -> void
+override Aw.Sindri.Features.Scoping.GetPacketFileRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Scoping.GetPacketFileRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Scoping.GetPacketFileRequest.ToString() -> string!
+static Aw.Sindri.Features.Scoping.GetPacketFileRequest.operator !=(Aw.Sindri.Features.Scoping.GetPacketFileRequest? left, Aw.Sindri.Features.Scoping.GetPacketFileRequest? right) -> bool
+static Aw.Sindri.Features.Scoping.GetPacketFileRequest.operator ==(Aw.Sindri.Features.Scoping.GetPacketFileRequest? left, Aw.Sindri.Features.Scoping.GetPacketFileRequest? right) -> bool
+Aw.Sindri.Features.Scoping.PacketFile
+Aw.Sindri.Features.Scoping.PacketFile.<Clone>$() -> Aw.Sindri.Features.Scoping.PacketFile!
+Aw.Sindri.Features.Scoping.PacketFile.Deconstruct(out string! Name, out string! Text, out string! Format) -> void
+Aw.Sindri.Features.Scoping.PacketFile.Equals(Aw.Sindri.Features.Scoping.PacketFile? other) -> bool
+Aw.Sindri.Features.Scoping.PacketFile.PacketFile(string! Name, string! Text, string! Format) -> void
+Aw.Sindri.Features.Scoping.PacketFile.Name.get -> string!
+Aw.Sindri.Features.Scoping.PacketFile.Name.init -> void
+Aw.Sindri.Features.Scoping.PacketFile.Text.get -> string!
+Aw.Sindri.Features.Scoping.PacketFile.Text.init -> void
+Aw.Sindri.Features.Scoping.PacketFile.Format.get -> string!
+Aw.Sindri.Features.Scoping.PacketFile.Format.init -> void
+override Aw.Sindri.Features.Scoping.PacketFile.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Scoping.PacketFile.GetHashCode() -> int
+override Aw.Sindri.Features.Scoping.PacketFile.ToString() -> string!
+static Aw.Sindri.Features.Scoping.PacketFile.operator !=(Aw.Sindri.Features.Scoping.PacketFile? left, Aw.Sindri.Features.Scoping.PacketFile? right) -> bool
+static Aw.Sindri.Features.Scoping.PacketFile.operator ==(Aw.Sindri.Features.Scoping.PacketFile? left, Aw.Sindri.Features.Scoping.PacketFile? right) -> bool
