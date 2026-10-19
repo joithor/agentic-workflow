@@ -117,7 +117,7 @@ public sealed class ReadInjectionServiceTests
         var instances = new SomeInstances(view);
         var service = new ReadInjectionService(instances, instances, new Sources(source), texts, runner, new FixedRepos((Item, "alpha")), new ListInstances.FixedCaller(new CallerContextBuilder().Human().Build()));
 
-        var result = await service.Handle(new ReadInjectionRequest(view.Id, null), TestContext.Current.CancellationToken);
+        var result = await service.Handle(new ReadInjectionRequest(view.Id), TestContext.Current.CancellationToken);
 
         Assert.Equal([("notes", "first"), ("extra", "second")], result.Value.Sections.Select(static s => (s.Section, s.Text)));
         Assert.Equal(2, runner.Calls);
