@@ -20,9 +20,9 @@ public sealed record StepContext(
     /// <summary>The typed results of the Step's inputs, never null.</summary>
     public IReadOnlyDictionary<string, JsonElement> InputResults { get; init; } = InputResults ?? new Dictionary<string, JsonElement>(StringComparer.Ordinal);
 
-    /// <summary>The repo the instance's item belongs to (from the ledger, never from a caller), for a Step that reads or writes through the repo's map; null when the item has none.</summary>
+    /// <summary>The repo the instance's item belongs to (a top-level instance's fact:item, or for a child the ledger's repo of the item its address starts with; never from a caller), for a Step that reads or writes through the repo's map; null when the ledger knows none. An item whose repo cannot be read never reaches a Step: the runner fails it first.</summary>
     public RepoName? Repo { get; init; }
 
-    /// <summary>The instance's address ('T-1/workflow.scoping/1'), the identity a Step's external writes carry so a retry replaces them; null where the engine has not set it.</summary>
+    /// <summary>The instance's address ('T-1/scoping/1'), the identity a Step's external writes carry so a retry replaces them; the block runner always sets it. Text, not an InstanceAddress: that type's namespace depends on this one, and a Step that needs the typed id parses it (InstanceAddress.TryFrom).</summary>
     public string? Address { get; init; }
 }

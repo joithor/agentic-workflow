@@ -1,8 +1,9 @@
 using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Features;
 using Aw.Sindri.Features.Blocks.Step;
+using Aw.Sindri.Features.Scoping;
+using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Scoping.Steps;
 
@@ -23,5 +24,5 @@ public sealed class ScopeProposeStepContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new ScopeProposeStep(new FakeRunProposals()).Run(ScopingStepContexts.Of("step.scope.propose", []), cancellationToken);
+        _ = await new ScopeProposeStep(new InMemoryScopeRunProposals()).Run(ScopingStepContexts.Of("step.scope.propose", []), cancellationToken);
 }

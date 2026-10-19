@@ -7,8 +7,8 @@ using Aw.Sindri.Core.Onyx;
 namespace Aw.Sindri.Features.OnyxAccount;
 
 /// <summary>
-/// Spec §4.1 steps 6-9. (6) The owner makes their own account in Onyx's sign-up page (Onyx makes the first user the admin; Sindri registers nobody). (7, 8) With that login, asked for once at the terminal and forgotten, Sindri makes its
-/// admin key and stores it (<see cref="OnyxKeyMinter"/>). (9) The profile section is written. Each step is recorded in state.json once done, so a rerun skips it. Without a terminal nothing is asked: the stage ends "needs you".
+/// Spec §4.1 steps 6-9. (6) The owner makes their own account in Onyx's sign-up page (Onyx makes the first user the admin; Sindri doesn't register that account). (7, 8) With that login, asked for once at the terminal and forgotten, Sindri makes its
+/// dedicated admin user and its token and stores the token (<see cref="OnyxKeyMinter"/>). (9) The profile section is written. Each step is recorded in state.json once done, so a rerun skips it. Without a terminal nothing is asked: the stage ends "needs you".
 /// </summary>
 internal sealed class OnyxAccountService(IOnyxWorkspace workspace, IOnyxPrompts prompts, IBrowser browser, OnyxKeyMinter minter, IOnyxProfileWriter profile, IOnyxProgress progress)
     : IService<OnyxAccountRequest, OnyxAccountResponse>

@@ -4,9 +4,8 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Features;
+using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Testing.Scoping;
-using Aw.Sindri.Tests.Workflow.Blocks.Input;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.Scoping.Steps;
@@ -17,13 +16,13 @@ public sealed class ScopingReadBriefStepTests
 {
     private const string BriefText = "# Shared links expire after a chosen time\n\n## 1. Problem\n\nA shared link stays open for ever.\n\n## 2. What we want\n\n- Pick a time after which the link stops working.\n";
 
-    private static readonly RepoName _web = ContextInputFixtures.Web;
+    private static readonly RepoName _web = RepoName.From("web");
 
-    private static ScopeReadBriefStep Step(InMemoryBriefFiles files, FakeTextShape shape, bool profile = true) =>
-        new(files, new ContextInputFixtures.Profiles(profile ? ContextInputFixtures.Profile() : null), shape, new FakeTimeProvider(new DateTimeOffset(2026, 10, 19, 9, 0, 0, TimeSpan.Zero)));
+    private static ScopeReadBriefStep Step(InMemoryBriefFiles files, InMemoryScopingTextShape shape) =>
+        new(files, new InMemoryRepoCheckouts().With("web", "/work/web"), shape, new FakeTimeProvider(new DateTimeOffset(2026, 10, 19, 9, 0, 0, TimeSpan.Zero)));
 
     private static StepContext Context(string scopeInput, RepoName? repo = null) =>
-        ScopingStepContexts.Of("step.scope.read-brief", new ScopingFacts { ["scopeInput"] = scopeInput }) with { Repo = repo ?? _web, Address = "T-1/workflow.scoping/1" };
+        ScopingStepContexts.Of("step.scope.read-brief", new ScopingFacts { ["scopeInput"] = scopeInput }) with { Repo = repo ?? _web, Address = "T-1/scoping/1" };
 
     private static JsonNode Out(BlockStepResult result, string key) => JsonNode.Parse(result.Result!.Outputs[FactKey.From("fact:" + key)].GetRawText())!;
 
@@ -33,7 +32,7 @@ public sealed class ScopingReadBriefStepTests
     public async Task It_reads_the_brief_from_the_repos_checkout_and_records_it_with_the_text_shapes_anchors()
     {
         var files = new InMemoryBriefFiles().With("docs/expiry.md", BriefText);
-        var shape = new FakeTextShape("""{"suggestedAnchors":["feature:links"]}""");
+        var shape = new InMemoryScopingTextShape(["feature:links"]);
 
         var result = await Step(files, shape).Run(Context(Input), TestContext.Current.CancellationToken);
 
@@ -51,7 +50,7 @@ public sealed class ScopingReadBriefStepTests
     public async Task A_named_section_is_the_brief_and_the_question_the_text_shape_is_asked()
     {
         var files = new InMemoryBriefFiles().With("docs/expiry.md", BriefText);
-        var shape = new FakeTextShape("""{"suggestedAnchors":[]}""");
+        var shape = new InMemoryScopingTextShape([]);
 
         var result = await Step(files, shape).Run(Context("""{"kind":"brief","repo":"web","path":"docs/expiry.md","section":"2"}"""), TestContext.Current.CancellationToken);
 
@@ -63,7 +62,7 @@ public sealed class ScopingReadBriefStepTests
     public async Task A_brief_with_nothing_in_the_named_section_is_empty_and_never_asks_the_engine()
     {
         var files = new InMemoryBriefFiles().With("docs/expiry.md", BriefText);
-        var shape = new FakeTextShape("""{"suggestedAnchors":["feature:x"]}""");
+        var shape = new InMemoryScopingTextShape(["feature:x"]);
 
         var result = await Step(files, shape).Run(Context("""{"kind":"brief","repo":"web","path":"docs/expiry.md","section":"9"}"""), TestContext.Current.CancellationToken);
 
@@ -76,7 +75,7 @@ public sealed class ScopingReadBriefStepTests
     [InlineData("""{"kind":"tracker","repo":"web","key":"NTS-1"}""", "brief")]
     public async Task A_scope_input_that_is_not_a_brief_with_a_path_fails_the_Step(string input, string mentions)
     {
-        var result = await Step(new InMemoryBriefFiles(), new FakeTextShape("{}")).Run(Context(input), TestContext.Current.CancellationToken);
+        var result = await Step(new InMemoryBriefFiles(), new InMemoryScopingTextShape([])).Run(Context(input), TestContext.Current.CancellationToken);
 
         Assert.Null(result.Result);
         Assert.Contains(mentions, result.Failure, StringComparison.Ordinal);
@@ -87,7 +86,7 @@ public sealed class ScopingReadBriefStepTests
     {
         var files = new InMemoryBriefFiles().With(".env", "SECRET=1");
 
-        var result = await Step(files, new FakeTextShape("{}")).Run(Context("""{"kind":"brief","repo":"web","path":".env"}"""), TestContext.Current.CancellationToken);
+        var result = await Step(files, new InMemoryScopingTextShape([])).Run(Context("""{"kind":"brief","repo":"web","path":".env"}"""), TestContext.Current.CancellationToken);
 
         Assert.Null(result.Result);
         Assert.Contains("refused", result.Failure, StringComparison.Ordinal);
@@ -98,10 +97,10 @@ public sealed class ScopingReadBriefStepTests
     {
         var files = new InMemoryBriefFiles().With("docs/expiry.md", BriefText);
 
-        var result = await Step(files, new FakeTextShape("{}")).Run(Context(Input, RepoName.From("other")), TestContext.Current.CancellationToken);
+        var result = await Step(files, new InMemoryScopingTextShape([])).Run(Context(Input, RepoName.From("other")), TestContext.Current.CancellationToken);
 
         Assert.Null(result.Result);
-        Assert.Contains("no repo in the approved profile", result.Failure, StringComparison.Ordinal);
+        Assert.Contains("no checkout", result.Failure, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -109,7 +108,7 @@ public sealed class ScopingReadBriefStepTests
     {
         var files = new InMemoryBriefFiles().With("docs/expiry.md", BriefText);
 
-        var result = await Step(files, new FakeTextShape(SindriErrors.InvalidInput.With("no map"))).Run(Context(Input), TestContext.Current.CancellationToken);
+        var result = await Step(files, new InMemoryScopingTextShape(SindriErrors.InvalidInput.With("no map"))).Run(Context(Input), TestContext.Current.CancellationToken);
 
         Assert.Null(result.Result);
         Assert.Contains("no map", result.Failure, StringComparison.Ordinal);

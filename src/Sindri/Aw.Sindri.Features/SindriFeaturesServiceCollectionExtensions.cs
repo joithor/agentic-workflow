@@ -13,6 +13,7 @@ using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Views;
@@ -51,6 +52,7 @@ using Aw.Sindri.Features.Items;
 using Aw.Sindri.Features.JobProbe;
 using Aw.Sindri.Features.Jobs;
 using Aw.Sindri.Features.Launching;
+using Aw.Sindri.Features.Line;
 using Aw.Sindri.Features.ListCommands;
 using Aw.Sindri.Features.ListDecisions;
 using Aw.Sindri.Features.ListInstances;
@@ -76,6 +78,7 @@ using Aw.Sindri.Features.RecordEval;
 using Aw.Sindri.Features.RecordHeartbeat;
 using Aw.Sindri.Features.RegisterMcp;
 using Aw.Sindri.Features.RegisterRecipe;
+using Aw.Sindri.Features.Repos;
 using Aw.Sindri.Features.ResumeService;
 using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Features.RunDoctor;
@@ -137,9 +140,6 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<EvalRecipeRequest, EvalRecipeResponse>, EvalRecipeService>()
             .AddScoped<IService<RecordEvalRequest, RecordEvalResponse>, RecordEvalService>()
             .AddRecipeBlocks()
-            .AddScopingBlockSteps()
-            .AddLineBlockSteps()
-            .AddScopingBlockPorts()
             .AddRegistrySlices()
             .AddContextSlices()
             .AddContextJobs()
@@ -147,7 +147,9 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddSessionSlices()
             .AddLaunchSlices()
             .AddLaunchTargetJob()
-            .AddScopingSlices();
+            .AddScoped<IRepoCheckouts, ProfileRepoCheckouts>()
+            .AddScopingSlices()
+            .AddLineSlices();
         return services;
     }
 
@@ -247,7 +249,6 @@ public static class SindriFeaturesServiceCollectionExtensions
         .AddScoped<IOnyxNotices, OnyxNotices>()
         .AddScoped<IService<OnyxEnsureRequest, OnyxEnsureResponse>, OnyxEnsureService>()
         .AddScoped<OnyxKeyMinter>()
-        .AddScoped<OnyxAdminGroup>()
         .AddScoped<IService<OnyxAccountRequest, OnyxAccountResponse>, OnyxAccountService>()   // Onyx P3: sign-up hand-off, Sindri's key, the profile section
         .AddScoped<IService<OnyxDownRequest, OnyxDownResponse>, OnyxDownService>();
 

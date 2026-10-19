@@ -1,5 +1,4 @@
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Features;
 using Aw.Sindri.Features.Blocks;
 using Aw.Sindri.Features.ContextCalls;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +16,7 @@ public static class FixtureCatalog
     private static ServiceCollection ShippedServices()
     {
         var services = new ServiceCollection();
-        _ = services.AddRecipeBlocks().AddScopingBlockSteps()
+        _ = services.AddRecipeBlocks()
             .AddBlockDescriptor(ContextLensesInput.Descriptor)
             .AddBlockDescriptor(ContextHistoryInput.Descriptor)
             .AddBlockDescriptor(ContextCodeInput.Descriptor);

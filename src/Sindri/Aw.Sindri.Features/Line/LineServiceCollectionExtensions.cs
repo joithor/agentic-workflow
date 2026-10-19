@@ -1,0 +1,17 @@
+using Aw.Sindri.Core.Workflow.Blocks;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Aw.Sindri.Features.Line;
+
+/// <summary>Registers the block runtimes of the design and plan stations' Steps (line spec §4.1, §6.1); their descriptors stay in the block catalog.</summary>
+internal static class LineServiceCollectionExtensions
+{
+    /// <summary>Adds each Step's runtime by its id (AddBlockRuntime), in Step id order.</summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same collection.</returns>
+    internal static IServiceCollection AddLineSlices(this IServiceCollection services) => services
+        .AddBlockRuntime<DesignCheckStep>()
+        .AddBlockRuntime<PlanCheckStep>()
+        .AddBlockRuntime<PlanQuestionsStep>()
+        .AddBlockRuntime<PlanSettleStep>();
+}
