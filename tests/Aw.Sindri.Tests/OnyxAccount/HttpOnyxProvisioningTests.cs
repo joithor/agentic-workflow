@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
+using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Infrastructure.Onyx;
 
 namespace Aw.Sindri.Tests.OnyxAccount;
@@ -53,7 +54,7 @@ public sealed class HttpOnyxProvisioningTests
     private static Script Answering(string path, HttpStatusCode status, string body)
         => new() { Answer = sent => sent.PathAndQuery == path ? (status, body) : (HttpStatusCode.OK, "{}") };
 
-    private static async Task<Aw.Sindri.Core.Onyx.IOnyxSession> Session(Script script)
+    private static async Task<IOnyxSession> Session(Script script)
         => (await Adapter(script).SignIn(3000, "a@b.c", "x", Token)).Value;
 
     [Theory, Trait("Lane", "integration")]
