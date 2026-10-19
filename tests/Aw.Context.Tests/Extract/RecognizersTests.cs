@@ -65,6 +65,31 @@ public sealed class RecognizersTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Minimal_api_routes_in_csharp_give_a_route_surface_per_method_and_path()
+    {
+        const string Text = "group.MapGet(\"/items/{itemId}\", h);\napp.MapPost( \"/jobs/{jobId}/cancel\", h);\nroutes.MapDelete(\"/x\", h);\nMapPatch(\"no-slash\", h);";
+
+        Assert.Equal(["surface:route/DELETE:/x", "surface:route/GET:/items/{itemId}", "surface:route/POST:/jobs/{jobId}/cancel"], Keys("src/Pkg/Host/Endpoints/ItemEndpoints.cs", Text));
+        Assert.Empty(Keys("tests/Pkg.Tests/ItemEndpointsTests.cs", Text));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_minimal_api_call_without_a_literal_rooted_path_is_not_a_route()
+    {
+        const string Text = "var api = app.MapGroup(\"/sindri\");\napp.MapMethods(\"/m\", [\"HEAD\"], h);\napp.MapGet(\"relative\", h);\napp.MapGet(path, h);\nmap.Map(\"/x\");\napp.MapPut(\n    \"/put\", h);";
+
+        Assert.Equal(["surface:route/PUT:/put"], Keys("src/Pkg/Host/Endpoints/Routes.cs", Text));
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_script_forms_never_read_a_csharp_file()
+    {
+        const string Text = "new Entry(id: \"open-pane\", title: \"Open pane\");\nrouter.get(\"/x\", h);\nvar a = \"data-testid='x'\";\npublic sealed class SettingsScreen {}";
+
+        Assert.Empty(Keys("src/Pkg/Core/Entries.cs", Text));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void A_component_gets_a_pane_dialog_or_screen_surface_by_its_name()
     {
         const string Text = "export function TabStrip() {}\nexport const RestoreDialog = () => null;\nexport default class SettingsScreen {}";
@@ -133,7 +158,8 @@ public sealed class RecognizersTests
     [InlineData("node_modules/x/a.ts", false)]
     [InlineData("dist/a.js", false)]
     [InlineData("README.md", false)]
-    [InlineData("src/a.cs", false)]
+    [InlineData("src/a.cs", true)]
+    [InlineData("src/a.csproj", false)]
     public void Only_source_files_outside_tests_and_build_output_are_read(string path, bool expected) =>
         Assert.Equal(expected, Recognizers.Source(new RepoFile(path, "x")));
 

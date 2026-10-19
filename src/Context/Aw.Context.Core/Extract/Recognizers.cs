@@ -10,7 +10,7 @@ namespace Aw.Context.Core.Extract;
 public static partial class Recognizers
 {
     internal const int MaxFileLength = 512_000;
-    private static readonly string[] _extensions = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".json"];
+    private static readonly string[] _extensions = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".json", ".cs"];
     private static readonly HashSet<string> _localeFolders = new(["i18n", "l10n", "locale", "locales", "lang", "translations"], StringComparer.OrdinalIgnoreCase);
     private static readonly string[] _notComponents = ["Context", "Schema", "Props"];
     private static readonly string[] _skipped = ["node_modules/", "dist/", "build/", "coverage/", ".git/", "tests/", "__tests__/"];
@@ -18,13 +18,14 @@ public static partial class Recognizers
     /// <summary>Every recognizer, in the order their findings are reported.</summary>
     public static IReadOnlyList<Recognizer> All { get; } =
     [
-        new("command-ids", Source, CommandIds),
-        new("command-registry", Source, Registry),
-        new("keybindings", Source, Keybindings),
+        new("command-ids", Script, CommandIds),
+        new("command-registry", Script, Registry),
+        new("keybindings", Script, Keybindings),
         new("settings", f => Source(f) && SettingsFile.IsMatch(f.Path) && !InToolFolder(f.Path) && !NotTheAppsSettings(f.Path), SettingKeys),
-        new("routes", Source, Routes),
+        new("routes", Script, Routes),
+        new("minimal-api-routes", f => Source(f) && IsCSharp(f.Path), MinimalApiRoutes),
         new("components", f => Source(f) && IsComponentFile(f.Path), Components),
-        new("test-ids", Source, TestIds),
+        new("test-ids", Script, TestIds),
     ];
 
     /// <summary>Whether the extractor reads a file at all.</summary>
@@ -48,6 +49,11 @@ public static partial class Recognizers
             && !path.Contains(".test.", StringComparison.Ordinal)
             && !path.Contains(".spec.", StringComparison.Ordinal);
     }
+
+    // The TypeScript and JavaScript forms: C# named arguments (id: "a", title: "b") would read as a command registry entry.
+    private static bool Script(RepoFile file) => Source(file) && !IsCSharp(file.Path);
+
+    private static bool IsCSharp(string path) => path.EndsWith(".cs", StringComparison.Ordinal);
 
     // The app's own settings registry is a tracked file of its source; a dot-folder (.vscode, .devcontainer, .idea) holds a tool's settings, not the product's.
     private static bool InToolFolder(string path) => path.Split('/').SkipLast(1).Any(segment => segment.StartsWith('.'));
@@ -99,6 +105,10 @@ public static partial class Recognizers
         Route.Matches(file.Text).Select(m => (Method: m.Groups["m"].Value.ToUpperInvariant(), Path: m.Groups["p"].Value))
             .Select(r => Named($"surface:route/{r.Method}:{r.Path}", $"{r.Method} {r.Path}", 1.0)).OfType<Found>();
 
+    private static IEnumerable<Found> MinimalApiRoutes(RepoFile file) =>
+        MinimalApiRoute.Matches(file.Text).Select(m => (Method: m.Groups["m"].Value.ToUpperInvariant(), Path: m.Groups["p"].Value))
+            .Select(r => Named($"surface:route/{r.Method}:{r.Path}", $"{r.Method} {r.Path}", 1.0)).OfType<Found>();
+
     private static IEnumerable<Found> Components(RepoFile file) =>
         Component.Matches(file.Text).Select(m => m.Groups["n"].Value).Where(n => !_notComponents.Any(suffix => n.EndsWith(suffix, StringComparison.Ordinal))).Select(n => Named($"surface:{ComponentKind(n)}/{n}", n, 0.9)).OfType<Found>();
 
@@ -142,6 +152,10 @@ public static partial class Recognizers
 
     [GeneratedRegex("\\b(?:app|router)\\.(?<m>get|post|put|patch|delete)\\(\\s*[\"'`](?<p>/[^\"'`\\s]*)[\"'`]", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Route { get; }
+
+    // ASP.NET Core minimal APIs: a Map{Get,Post,Put,Patch,Delete} call on an app or a group whose first argument is a literal path from '/'. The path is the one written there, without any MapGroup prefix (that is often set in another file).
+    [GeneratedRegex("\\.Map(?<m>Get|Post|Put|Patch|Delete)\\(\\s*\"(?<p>/[^\"\\s]*)\"", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex MinimalApiRoute { get; }
 
     [GeneratedRegex("\\bexport\\s+(?:default\\s+)?(?:async\\s+)?(?:function|const|class)\\s+(?<n>[A-Z][A-Za-z0-9]*[a-z][A-Za-z0-9]*)(?![A-Za-z0-9_])", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Component { get; }
