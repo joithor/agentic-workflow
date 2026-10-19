@@ -1599,7 +1599,9 @@ Aw.Context.Core.Map.MapPromoted.Retained.init -> void
 Aw.Context.Core.Map.MapPromoted.Version.get -> Aw.Context.Core.Map.MapVersion!
 Aw.Context.Core.Map.MapPromoted.Version.init -> void
 Aw.Context.Core.Map.MapReader
-Aw.Context.Core.Map.MapReader.MapReader(Aw.Context.Core.Map.IGraphStore! store, Aw.Context.Core.Linking.IIntentStore! intents) -> void
+Aw.Context.Core.Map.MapReader.MapReader(Aw.Context.Core.Map.IGraphStore! store, Aw.Context.Core.Linking.IIntentStore! intents, Aw.Context.Core.Map.MapViewCache? views = null) -> void
+Aw.Context.Core.Map.MapViewCache
+Aw.Context.Core.Map.MapViewCache.MapViewCache() -> void
 Aw.Context.Core.Map.MapReader.Open(Aw.Context.Core.Engine.ContextScope! scope, Aw.Context.Core.Trust.IScrubberFactory! scrubbers, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<(Aw.Context.Core.Map.VisibleMap! Map, Aw.Context.Core.Map.MapText! Text)>!>
 Aw.Context.Core.Map.MapReader.Read(Aw.Context.Core.Engine.ContextScope! scope, bool draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>
 Aw.Context.Core.Map.MapReader.ReadView(Aw.Context.Core.Engine.ContextScope! scope, bool draft, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>
