@@ -90,7 +90,7 @@ Within steps 1–3 the specs' phases land in this order. It is the only cross-sp
 | 4 | API P4 (decisions, needs-you), P6 (jobs); engine P4; context S-3M; UI U2 (queue, item detail) | API P3; API P2 + P5; engine P4a + P2 + P3 + API P3; S-1M + S-3; U1 + API P3 |
 | 5 | API P8 (`sindri_*` tools), P11 (engine item states); engine P5, P6; context S-4, S-5B, S-10; UI U3 (needs you, home), U4 (services, health) | API P4 + P6; API P4 + engine P4; engine P4; S-3 (+ S-5A) + API P6; engine P4; U2 + API P4; U1 + API P6 |
 | 6 | API P10a (`OpenItem`, the launcher, Warp); engine P7; context S-6, S-7A, S-CF; UI U5 (engine surfaces), U7 (context tab) | API P3 + P8; engine P5 + P6; S-5B; S-3 + S-4; S-4 + S-5B; U3 + engine P4, P5 + API P11; U2 + S-4 |
-| 7 | API P10b (opening is a takeover); engine P8 (agent runtime); context S-7B; UI U6a (open in Warp) | API P10a + engine P5; engine P7 + API P10a + Judge (#156); S-4 + S-6 + S-7A; U3 + API P10a |
+| 7 | API P10b (opening is a takeover); engine P8 (agent runtime); context S-7B; UI U6a (open in Warp) | API P10a + engine P5; API P10a (provisional owner default Q10: engine P7 and Judge #156 are not needed); S-4 + S-6 + S-7A; U3 + API P10a |
 | 8 | UI U6b (attach, resume, takeover on open); context S-8 | U5 + U6a + API P10b; S-7B |
 
 The scoping recipe's spec comes after these. Context S-9 waits for the code index block. "Execution plan" below turns
@@ -111,7 +111,7 @@ parallel across lanes. The lane leads talk only through merged code and these do
 |---|---|---|---|
 | **Gate: land S1** | #163 merged (needs a CI run or the owner's local merge-gate run), #156 Judge merged | — | — |
 | **API** | P0 → P1 → P2 → P3 → P5 → P4 → P6 → P8 → P11 → P10a → P10b | P0 | S1 (P1); engine P4 (P11); engine P5 (P10b) |
-| **Engine** | P1, P3 done → P4a → P2 → P4 → P5 → P6 → P7 → P8 | P4a (needs nothing else) | API P1 (P2); API P3 (P4); API P10a and Judge (P8) |
+| **Engine** | P1, P3 done → P4a → P2 → P4 → P5 → P6 → P7 → P8 | P4a (needs nothing else) | API P1 (P2); API P3 (P4); API P10a (P8) |
 | **Context** | S-1C, S-2R, S-FX → S-1A → S-1M, S-2W, S-3, S-5A → S-3M → S-4, S-5B, S-10 → S-6, S-7A, S-CF → S-7B → S-8 | S-1C, S-2R, S-FX | API P1 (S-1A); API P6 (S-4, S-5B); engine P4 (S-10) |
 | **UI** | U0 → U1 → U2 → U3, U4 → U5, U7 → U6a → U6b | U0 (S1b rebased, stacked on S1) | API P1 + P2 (U1); P3 (U2); P4, P6 (U3, U4); engine P4, P5 + API P11 (U5); context S-4 (U7); API P10a (U6a); API P10b (U6b) |
 
@@ -171,7 +171,7 @@ Where the API (API), workflow engine (WF) and context retrieval (CTX) specs disa
 | X39 | Several build orders (P2-5) | The derived wave table above; each spec's graph gained its cross-spec edges and points here | README; all three |
 | X40 | The `human` token had no phase, code or header; the prover couldn't act as human (P2-6) | API P1 builds it (`X-Sindri-Token`, `SND-AUTH-001`); `sindri-prove.sh human` reads it from the guarded home and sets a marker the server honours only for a temp home | API §1 D4, §6 |
 | X41 | `OpenItem` broke the chain's rules; attach meant three things; unattended runs needed Warp (P2-7, P2-16) | `OpenItem` appends one event; `service:launcher` takes over and launches after commit; attach only focuses; two target kinds (`interactive` Warp, `process` for the agent runtime and `--headless`; **superseded by X55**: one tmux-owned kind); ids only at launch, context pulled through MCP; usage read, never self-reported | API §8.1; WF §6.5 |
-| X42 | Leftovers (P2-9 to P2-15) | CTX §3 follows X22 and S-1M owns the three-provider doctor check and the worktree probe; only `protected` promote makes a map current; `issue` kind in API §4; `item.linked` and `CreateItem` `link?`; `EventFactory` owned by API P1; engine P8 owns the Sindri → Judge edge (it needs no fan-out exception since X60); `context.repoTeams` in the profile example | CTX §3, §8.7, §8.8; API §3, §4; WF P8 |
+| X42 | Leftovers (P2-9 to P2-15) | CTX §3 follows X22 and S-1M owns the three-provider doctor check and the worktree probe; only `protected` promote makes a map current; `issue` kind in API §4; `item.linked` and `CreateItem` `link?`; `EventFactory` owned by API P1; the Sindri → Judge edge is not P8's: the agent runtime calls no Judge provider and P8 adds no `deps.yaml` edge (DT-J3 adds the cli edge); `context.repoTeams` in the profile example | CTX §3, §8.7, §8.8; API §3, §4; WF P8 |
 | X43 | (UI X18) Opening is a takeover with no mechanism | A WF trigger kind `open-request` applied in `Commit` (`service:engine`); the launcher opens Warp only after it lands (UI E-6). This replaces API §8.1's `service:launcher` `pause` | WF §5.4, §5.7; API P10b |
 | X44 | (UI X19) Launching was I/O inside a command | `OpenItem` records the request (`LaunchRequested`); the launcher service performs it once within 30 s and records `launch.started` or `launch.failed` (UI E-1); an instance started while a launch is pending starts taken over (E-19) | API P10a |
 | X45 | (UI X20) Taking over a running Step | Take over only pauses; engine P8 (the agent runtime) owns stopping a worker (`run.stopped`), and only then is resume offered | WF P8 |
