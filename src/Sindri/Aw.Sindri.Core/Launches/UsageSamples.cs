@@ -9,6 +9,9 @@ namespace Aw.Sindri.Core.Launches;
 /// </summary>
 public sealed class UsageSamples
 {
+    /// <summary>How many launches' totals are kept before the ended ones are forgotten.</summary>
+    public const int Retained = 256;
+
     private readonly Lock _gate = new();
     private readonly Dictionary<LaunchId, (long Input, long Output, int Number)> _last = [];
     private readonly ConcurrentDictionary<LaunchId, SemaphoreSlim> _turns = new();
@@ -67,12 +70,20 @@ public sealed class UsageSamples
         }
     }
 
-    /// <summary>Forgets every launch not in <paramref name="live"/>.</summary>
+    /// <summary>
+    /// Forgets the launches not in <paramref name="live"/> once more than <see cref="Retained"/> are held. An ended launch's totals and number stay until then: the close
+    /// of its Step still takes a final sample, and a number the tick already used must not be used again or the ledger drops the sample as a duplicate.
+    /// </summary>
     /// <param name="live">The launches that still run.</param>
     public void Keep(IReadOnlySet<LaunchId> live)
     {
         lock (_gate)
         {
+            if (_last.Count <= Retained)
+            {
+                return;
+            }
+
             foreach (var gone in _last.Keys.Where(k => !live.Contains(k)).ToList())
             {
                 _ = _last.Remove(gone);
