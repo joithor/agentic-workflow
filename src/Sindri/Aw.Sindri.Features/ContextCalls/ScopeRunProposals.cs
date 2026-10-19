@@ -17,6 +17,7 @@ internal sealed class ScopeRunProposals(ProposeContextMapService service) : ISco
     private static readonly HashSet<string> _kinds = new(["feature", "surface", "action", "thing", "flow"], StringComparer.Ordinal);
 
     /// <inheritdoc/>
+    // The engine answers in submission order and fences a surface name it echoes back for a service caller, so each status is named by the title that was submitted.
     public async ValueTask<Result<IReadOnlyList<ScopeSurfaceStatus>>> Replace(InstanceAddress run, RepoName repo, IReadOnlyList<ProposedScopeSurface> surfaces, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(surfaces);
@@ -24,7 +25,7 @@ internal sealed class ScopeRunProposals(ProposeContextMapService service) : ISco
         var written = await service.Handle(new ProposeContextMapRequest(run.Value, repo.Value, proposed), cancellationToken).ConfigureAwait(false);
         return written.IsError
             ? written.Error
-            : Results.Success<IReadOnlyList<ScopeSurfaceStatus>>([.. written.Value.Surfaces.Select(static s => new ScopeSurfaceStatus(s.Surface, s.Node?.Value, Status(s.Status)))]);
+            : Results.Success<IReadOnlyList<ScopeSurfaceStatus>>([.. written.Value.Surfaces.Select((s, i) => new ScopeSurfaceStatus(i < surfaces.Count ? surfaces[i].Title : s.Surface, s.Node?.Value, Status(s.Status)))]);
     }
 
     private static string Status(GraphStatusKind kind) => kind switch

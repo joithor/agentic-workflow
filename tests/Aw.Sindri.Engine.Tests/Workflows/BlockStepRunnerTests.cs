@@ -10,7 +10,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
-using Aw.Sindri.Features.Scoping.Steps;
+using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Scoping;
@@ -233,15 +233,15 @@ public sealed class BlockStepRunnerTests
 
         _ = await ReadsRunner().Run(run, TestContext.Current.CancellationToken);
 
-        Assert.Equal(("T-1/x/1", "web"), (_seen!.Address!.Value.Value, _seen.Repo!.Value.Value));
+        Assert.Equal(("T-1/x/1", "web"), (_seen!.Address, _seen.Repo!.Value.Value));
     }
 
     [Fact]
     public async Task A_child_instance_with_no_fact_item_gets_the_repo_of_the_item_its_address_starts_with()
     {
-        var run = (await RunOf(repo: null)) with { Step = ReadsStep.Id, Address = "T-5/scoping/1/idea-to-brief.3" };
+        var run = (await RunOf(repo: null)) with { Step = ReadsStep.Id, Address = "ITM-0123456789abcdef0123456789abcdef/scoping/1/idea-to-brief.3" };
 
-        var outcome = await ReadsRunner(new ItemReposStub().With("T-5", "web")).Run(run, TestContext.Current.CancellationToken);
+        var outcome = await ReadsRunner(new ItemReposStub().With("ITM-0123456789abcdef0123456789abcdef", "web")).Run(run, TestContext.Current.CancellationToken);
 
         Assert.Null(outcome.Failure);
         Assert.Equal("web", _seen!.Repo!.Value.Value);
@@ -250,7 +250,7 @@ public sealed class BlockStepRunnerTests
     [Fact]
     public async Task An_item_the_ledger_knows_no_repo_for_is_no_repo_and_an_unreadable_ledger_fails_the_Step()
     {
-        var run = (await RunOf(repo: null)) with { Step = ReadsStep.Id, Address = "T-5/scoping/1/idea-to-brief.3" };
+        var run = (await RunOf(repo: null)) with { Step = ReadsStep.Id, Address = "ITM-0123456789abcdef0123456789abcdef/scoping/1/idea-to-brief.3" };
 
         var none = await ReadsRunner(new ItemReposStub()).Run(run, TestContext.Current.CancellationToken);
         var seenRepo = _seen!.Repo;

@@ -3,9 +3,8 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Features.Scoping.Steps;
+using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Testing.Scoping;
 using Microsoft.Extensions.Time.Testing;
 
@@ -23,7 +22,7 @@ public sealed class ScopingReadBriefStepTests
         new(files, new InMemoryRepoCheckouts().With("web", "/work/web"), shape, new FakeTimeProvider(new DateTimeOffset(2026, 10, 19, 9, 0, 0, TimeSpan.Zero)));
 
     private static StepContext Context(string scopeInput, RepoName? repo = null) =>
-        ScopingStepContexts.Of("step.scope.read-brief", new ScopingFacts { ["scopeInput"] = scopeInput }) with { Repo = repo ?? _web, Address = InstanceAddress.From("T-1/scoping/1") };
+        ScopingStepContexts.Of("step.scope.read-brief", new ScopingFacts { ["scopeInput"] = scopeInput }) with { Repo = repo ?? _web, Address = "T-1/scoping/1" };
 
     private static JsonNode Out(BlockStepResult result, string key) => JsonNode.Parse(result.Result!.Outputs[FactKey.From("fact:" + key)].GetRawText())!;
 

@@ -1,8 +1,9 @@
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 
-namespace Aw.Sindri.Features.Scoping.Steps;
+namespace Aw.Sindri.Features.Scoping;
 
 /// <summary>
 /// 'step.scope.withdraw', on the block runtime (scoping spec §6.1, C9, Q14): resubmits the run with no surfaces, which withdraws its undecided map
@@ -23,8 +24,13 @@ internal sealed class ScopeWithdrawStep(IScopeRunProposals proposals) : IBlockSt
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
-        if (context.Repo is { } repo && context.Address is { } address)
+        if (context.Repo is { } repo)
         {
+            if (!InstanceAddress.TryFrom(context.Address ?? string.Empty, out var address))
+            {
+                return BlockStepResult.Failed("the run's proposals were not withdrawn: the instance has no address");
+            }
+
             var withdrawn = await proposals.Replace(address, repo, [], cancellationToken).ConfigureAwait(false);
             if (withdrawn.IsError)
             {

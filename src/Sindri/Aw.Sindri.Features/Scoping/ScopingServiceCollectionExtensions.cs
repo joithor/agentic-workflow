@@ -1,6 +1,5 @@
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Features.Scoping.Steps;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Aw.Sindri.Features.Scoping;

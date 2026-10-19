@@ -2,7 +2,7 @@ using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 
-namespace Aw.Sindri.Features.Scoping.Steps;
+namespace Aw.Sindri.Features.Scoping;
 
 /// <summary>
 /// 'step.scope.gather', on the block runtime: <c language="text">ScopingSteps.Gather</c>'s code behind <see cref="IBlockStep"/>. The context engine's views

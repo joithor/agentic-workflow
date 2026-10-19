@@ -3,7 +3,7 @@ using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 
-namespace Aw.Sindri.Features.Scoping.Steps;
+namespace Aw.Sindri.Features.Scoping;
 
 /// <summary>
 /// 'step.scope.anchor', on the block runtime: the brief's anchors from the context engine's text shape (<see cref="IScopingTextShape"/>) over the brief's text,

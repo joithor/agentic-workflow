@@ -1,10 +1,12 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 
-namespace Aw.Sindri.Features.Scoping.Steps;
+namespace Aw.Sindri.Features.Scoping;
 
 /// <summary>
 /// 'step.scope.propose', on the block runtime (scoping spec §6.1, C9): submits the map's surfaces that have no node key as draft proposals, the run being the
@@ -23,9 +25,14 @@ internal sealed class ScopeProposeStep(IScopeRunProposals proposals) : ScopingCo
     {
         ArgumentNullException.ThrowIfNull(context);
         var facts = new Dictionary<string, string>(StringComparer.Ordinal);
-        if (context.Repo is not { } repo || context.Address is not { } address)
+        if (context.Repo is not { } repo)
         {
             return Facts(facts);
+        }
+
+        if (!InstanceAddress.TryFrom(context.Address ?? string.Empty, out var address))
+        {
+            return SindriErrors.InvalidInput.With("the instance has no address to name the run's proposals by");
         }
 
         // The surfaces this run proposes: those with no node yet, and those a first pass proposed (status 'new', their node key already written), so a revise

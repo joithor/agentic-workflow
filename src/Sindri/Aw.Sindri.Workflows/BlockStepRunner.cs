@@ -87,7 +87,7 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
             : new StepContext(run.Step, resolved.Value, named.Value, InjectionSections.Empty)
             {
                 Repo = repo.Value,
-                Address = InstanceAddress.TryFrom(run.Address, out var address) ? address : null,
+                Address = run.Address,
             };
     }
 

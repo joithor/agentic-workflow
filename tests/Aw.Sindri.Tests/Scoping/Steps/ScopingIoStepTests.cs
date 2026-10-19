@@ -6,7 +6,7 @@ using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.ContextCalls;
-using Aw.Sindri.Features.Scoping.Steps;
+using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Testing.Scoping;
 
 namespace Aw.Sindri.Tests.Scoping.Steps;
@@ -19,7 +19,7 @@ public sealed class ScopingIoStepTests
     private static readonly InstanceAddress _address = InstanceAddress.From("T-1/scoping/1");
 
     private static StepContext Context(string step, ScopingFacts facts, RepoName? repo = null) =>
-        ScopingStepContexts.Of(step, facts) with { Repo = repo ?? _repo, Address = _address };
+        ScopingStepContexts.Of(step, facts) with { Repo = repo ?? _repo, Address = _address.Value };
 
     private static JsonNode Out(BlockStepResult result, string key) => JsonNode.Parse(result.Result!.Outputs[FactKey.From("fact:" + key)].GetRawText())!;
 
@@ -111,7 +111,7 @@ public sealed class ScopingIoStepTests
     {
         var proposals = new InMemoryScopeRunProposals();
 
-        var result = await new ScopeProposeStep(proposals).Run(Context("step.scope.propose", new ScopingFacts { ["scopeMap"] = ScopingFacts.Expiry()["scopeMap"] }), TestContext.Current.CancellationToken);
+        var result = await new ScopeProposeStep(proposals).Run(Context("step.scope.propose", new ScopingFacts { ["scopeMap"] = AllMapped() }), TestContext.Current.CancellationToken);
 
         Assert.Empty(proposals.Calls);
         Assert.Equal("skipped", result.Result!.Outcome.Value);
@@ -198,6 +198,15 @@ public sealed class ScopingIoStepTests
         ["anchors"] = ScopingFacts.Expiry()["anchors"],
         ["lenses"] = ScopingFacts.Expiry()["lenses"],
     };
+
+    /// <summary>The gold map with every surface already on the map: nothing is left to propose.</summary>
+    private static string AllMapped() => ScopingFacts.Expiry().Edit("scopeMap", map =>
+    {
+        foreach (var surface in map["surfaces"]!.AsArray().OfType<JsonObject>())
+        {
+            surface["graphStatus"] = "mapped";
+        }
+    })["scopeMap"];
 
     /// <summary>The gold map as it stood before propose: S22 and S23 have no node key yet.</summary>
     private static string Unproposed() => ScopingFacts.Expiry().Edit("scopeMap", map =>

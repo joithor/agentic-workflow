@@ -11946,7 +11946,7 @@ Aw.Sindri.Core.Scoping.ScopeSurfaceStatus.Surface.get -> string!
 Aw.Sindri.Core.Scoping.ScopeSurfaceStatus.Surface.init -> void
 Aw.Sindri.Core.Workflow.Blocks.IBlockStepId
 Aw.Sindri.Core.Workflow.Blocks.IBlockStepId.Id.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
-Aw.Sindri.Core.Workflow.Blocks.StepContext.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress?
+Aw.Sindri.Core.Workflow.Blocks.StepContext.Address.get -> string?
 override Aw.Sindri.Core.Scoping.ProposedScopeSurface.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Scoping.ProposedScopeSurface.GetHashCode() -> int
 override Aw.Sindri.Core.Scoping.ProposedScopeSurface.ToString() -> string!

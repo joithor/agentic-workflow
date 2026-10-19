@@ -4,7 +4,7 @@ using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 
-namespace Aw.Sindri.Features.Scoping.Steps;
+namespace Aw.Sindri.Features.Scoping;
 
 /// <summary>
 /// 'step.scope.read-brief', on the block runtime (scoping spec §7, §8.2): reads the brief file the scope input names from the item's repo checkout

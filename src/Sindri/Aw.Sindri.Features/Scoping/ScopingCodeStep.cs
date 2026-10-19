@@ -4,7 +4,7 @@ using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 
-namespace Aw.Sindri.Features.Scoping.Steps;
+namespace Aw.Sindri.Features.Scoping;
 
 /// <summary>
 /// A scoping Step the block runtime runs (scoping spec §8.2, §9): the same code the desk helper runs (<see cref="DeskBlocks"/>), moved behind
