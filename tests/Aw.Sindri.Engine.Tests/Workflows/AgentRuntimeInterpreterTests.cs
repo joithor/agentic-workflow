@@ -1,4 +1,5 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
@@ -182,6 +183,37 @@ public sealed class AgentRuntimeInterpreterTests : AgentRuntimeTestBase
 
             await WaitFor(() => _launcher.Stops.Contains(rig.Launch), ct);
             Assert.Equal(0, _launcher.SessionCount);
+        });
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task A_failed_launch_is_step_failed_launch_and_the_launchers_words_reach_the_question()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _launcher.FailNextWith(SindriErrors.LaunchAgentMissing.With("the agent is gone"));
+        await using var rig = await Rig(ct);
+        await rig.Run(async handle =>
+        {
+            var parked = await WorkflowsHarness.Until(handle, static v => v.Question is not null);
+
+            Assert.Contains("the agent is gone", parked.Question?.Question, StringComparison.Ordinal);
+            Assert.Equal(("launch", "agent"), await rig.Failure(ct));
+        });
+    }
+
+    [Fact(Timeout = 120_000)]
+    public async Task A_target_the_profile_cannot_resolve_is_step_failed_launch()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _factRepo = "elsewhere";   // fact:item names a repo the approved profile doesn't list
+        await using var rig = await Rig(ct);
+        await rig.Run(async handle =>
+        {
+            var parked = await WorkflowsHarness.Until(handle, static v => v.Question is not null);
+
+            Assert.Contains("SND-LAUNCH-004", parked.Question?.Question, StringComparison.Ordinal);
+            Assert.Equal(("launch", "agent"), await rig.Failure(ct));
+            Assert.Empty(_launcher.Requests);
         });
     }
 

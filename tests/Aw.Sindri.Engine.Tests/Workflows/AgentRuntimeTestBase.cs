@@ -34,6 +34,7 @@ public abstract class AgentRuntimeTestBase : IDisposable
     internal readonly FakeRunDiff _diff = new();
     internal string _root = RecipeName;   // the recipe a rig starts; a test that wants a parent over a child sets it and _also before Rig
     internal string[] _also = [];
+    internal string? _factRepo;   // the repo key fact:item names, when a test wants one the profile doesn't list
     internal ILauncher? _launcherSeen;   // what the host sees as the launcher when a test wraps the fake
     internal IRunDiff? _diffSeen;
 
@@ -233,7 +234,10 @@ public abstract class AgentRuntimeTestBase : IDisposable
         }
 
         /// <summary>The reason of the instance's one 'step.failed' row.</summary>
-        public async Task<string?> FailureReason(CancellationToken ct)
+        public async Task<string?> FailureReason(CancellationToken ct) => (await Failure(ct)).Reason;
+
+        /// <summary>The reason and the runtime ('via') of the instance's one 'step.failed' row; nulls when there is none.</summary>
+        public async Task<(string? Reason, string? Via)> Failure(CancellationToken ct)
         {
             var rows = (await Sindri.GetRequiredService<ILedgerStore>().ReadAfter(0, 200, ct)).Value;
             foreach (var row in rows.Where(static e => e.Envelope.Type == "workflow.transition"))
@@ -241,11 +245,12 @@ public abstract class AgentRuntimeTestBase : IDisposable
                 using var payload = JsonDocument.Parse(row.Envelope.Payload);
                 if (payload.RootElement.TryGetProperty("trigger", out var trigger) && trigger.GetString() == "step.failed")
                 {
-                    return payload.RootElement.GetProperty("detail").GetProperty("reason").GetString();
+                    var detail = payload.RootElement.GetProperty("detail");
+                    return (detail.GetProperty("reason").GetString(), detail.TryGetProperty("via", out var via) ? via.GetString() : null);
                 }
             }
 
-            return null;
+            return (null, null);
         }
 
         public async ValueTask DisposeAsync()
@@ -266,7 +271,7 @@ public abstract class AgentRuntimeTestBase : IDisposable
         private async Task<InstanceStart> Prepare(CancellationToken ct)
         {
             var start = await WorkflowsHarness.RecipeStart(Sindri, _test._root, _item.Key, ct);
-            var item = _test._harness.Fact(JsonSerializer.Serialize(new { id = _item.Id, repo = _item.Repo, spec = (string?)null }));
+            var item = _test._harness.Fact(JsonSerializer.Serialize(new { id = _item.Id, repo = _test._factRepo ?? _item.Repo, spec = (string?)null }));
             var inputs = new Dictionary<FactKey, InputFact>
             {
                 [FactKey.From("fact:item")] = new InputFact("item.json", item),
