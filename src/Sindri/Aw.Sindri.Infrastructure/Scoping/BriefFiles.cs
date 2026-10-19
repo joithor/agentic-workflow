@@ -65,7 +65,7 @@ internal sealed class BriefFiles : IBriefFiles
         foreach (var part in full[current.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
         {
             current = Path.Combine(current, part);
-            if (new FileInfo(current).ResolveLinkTarget(returnFinalTarget: true) is { } target)
+            if ((File.Exists(current) || Directory.Exists(current)) && new FileInfo(current).ResolveLinkTarget(returnFinalTarget: true) is { } target)
             {
                 current = Real(target.FullName);
             }
