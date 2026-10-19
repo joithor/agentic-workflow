@@ -38,19 +38,14 @@ public sealed class GatherInputsFillTests : IDisposable
     private Combined _combined = new(a => ContextInputFixtures.SmallSet([.. a]));
 
     private ServiceProvider Compose() => Composition.Compose(new ServiceCollection(), name => name == "AW_STATE_DIR" ? _root : null, new FakeTimeProvider())
-        .AddScoped<IContextEngine>(static _ => EngineProxy.Of(_combined))
+        .AddScoped<IContextEngine>(_ => EngineProxy.Of(_combined))
         .AddSingleton<IApprovedProfile>(new ContextInputFixtures.Profiles(ContextInputFixtures.Profile()))
         .BuildServiceProvider();
 
     /// <summary>One stub answering all three lenses.</summary>
-    private sealed class Combined : IContextLenses, IContextHistory, IContextCode
+    private sealed class Combined(Func<IReadOnlyList<string>, Result<LensesSetView>> lenses) : IContextLenses, IContextHistory, IContextCode
     {
-        public Combined(Func<IReadOnlyList<string>, Result<LensesSetView>> lenses)
-        {
-            Lenses_ = new(lenses);
-        }
-
-        public ContextLensesInputTests.StubLenses Lenses_ { get; }
+        public ContextLensesInputTests.StubLenses Lenses_ { get; } = new(lenses);
 
         public ContextHistoryInputTests.StubHistory History_ { get; } = new(() => ContextHistoryTextTests.View());
 

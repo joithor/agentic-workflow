@@ -11,7 +11,6 @@ using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.ContextCalls;
-using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.ContextCalls;
 using Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 
