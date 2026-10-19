@@ -1,3 +1,4 @@
+using Aw.Context.Core.Code;
 using Aw.Context.Core.Docs;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Eval;
@@ -58,6 +59,7 @@ public static class ContextInfrastructureServiceCollectionExtensions
             .AddSingleton<IReviewFileStore, FileReviewFileStore>()
             .AddSingleton<ICurrentUser, OsCurrentUser>()
             .AddSingleton<IRepoReader, GitRepoReader>()
+            .AddSingleton<ICodeSearch, GitCodeSearch>()
             .AddSingleton(GraphifyOptions.Default)
             .AddSingleton<IClusterSource, GraphifyClusterSource>()
             .AddSingleton<IProbeFileReader, ProbeFileReader>()

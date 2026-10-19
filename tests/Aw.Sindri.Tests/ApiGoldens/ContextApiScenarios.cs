@@ -28,6 +28,10 @@ internal static class ContextApiScenarios
     private delegate Task<string> Run(Scenario scenario, CancellationToken ct);
 
 
+    private const string CodeAnchor = "feature%3Asharing";
+
+    private static string CodeRoute(string? second = null) => $"/sindri/context/code?anchor={CodeAnchor}" + (second is null ? string.Empty : $"&anchor={second}");
+
     private static readonly (string Slug, string Scenario, Run Body)[] _table =
     [
         ("context-lenses", "map-tabs", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}", ct)),
@@ -41,6 +45,17 @@ internal static class ContextApiScenarios
         ("context-lenses", "map-version-v1", async (s, ct) => await s.FetchAfterSecondMap($"/sindri/context/lenses?anchor={Anchor}&mapVersion=v1", ct)),
         ("context-lenses", "map-version-not-retained-120", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&mapVersion=v99", ct)),
         ("context-lenses", "session-set-other-repo", async (s, ct) => await s.FetchAsSession($"/sindri/context/lenses?anchor={Anchor}&anchor=feature%3Aother.thing", ct)),
+        ("context-code", "edges-and-lexical", async (s, ct) => await s.Fetch(CodeRoute(), ct)),
+        ("context-code", "two-anchors", async (s, ct) => await s.Fetch(CodeRoute("feature%3Aaudit"), ct)),
+        ("context-code", "schema-off", async (s, ct) => await s.Fetch(CodeRoute(), ct)),
+        ("context-code", "commit-not-held", async (s, ct) => await s.Fetch(CodeRoute(), ct)),
+        ("context-code", "map-version-v1", async (s, ct) => await s.FetchAfterSecondMap(CodeRoute() + "&mapVersion=v1", ct)),
+        ("context-code", "capped", async (s, ct) => await s.Fetch(CodeRoute(), ct)),
+        ("context-code", "deadline-152", async (s, ct) => await s.Fetch(CodeRoute(), ct)),
+        ("context-code", "unknown-anchor-003", async (s, ct) => await s.Fetch("/sindri/context/code?anchor=feature%3Anope", ct)),
+        ("context-code", "too-many-anchors-006", async (s, ct) => await s.Fetch("/sindri/context/code?" + string.Join('&', Enumerable.Range(0, 21).Select(i => "anchor=feature%3Anope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture))), ct)),
+        ("context-code", "not-retained-120", async (s, ct) => await s.Fetch(CodeRoute() + "&mapVersion=v99", ct)),
+        ("context-code", "session-other-repo", async (s, ct) => await s.FetchAsSession(CodeRoute("feature%3Aother.thing"), ct)),
         ("context-lenses", "hops-component", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Ashare.sharing&depth=1&hops=state,dependency,flow,component", ct)),
         ("context-lenses", "hops-component-skipped", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Autil.u0&depth=1&hops=component", ct)),
         ("context-lenses", "hops-bogus-140", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Ashare.sharing&hops=bogus", ct)),
@@ -87,6 +102,11 @@ internal static class ContextApiScenarios
             return await StartDiff(ct);
         }
 
+        if (slug == "context-code")
+        {
+            return await StartCode(scenario, ct);
+        }
+
         var bulk = (slug, scenario) is ("context-map-review", "post-accept-deterministic");
         var locks = Directory.CreateTempSubdirectory("aw-golden-locks-");
         IDisposable repo = bulk ? FixtureRepo.Build() : MapTabsRepo.Build();
@@ -103,6 +123,24 @@ internal static class ContextApiScenarios
             await ContextMapApiTests.Import(host, ImportFile(host, slug, scenario));
         }
 
+        return host;
+    }
+
+    // The code goldens read the CodeLensRepo (a fixed sha); the map names no commit, so the lexical search reads HEAD, except where a scenario says otherwise.
+    private static async Task<GoldenHost> StartCode(string scenario, CancellationToken ct)
+    {
+        var repo = CodeLensRepo.Build(extraTests: scenario == "capped" ? 105 : 0);
+        var extra = scenario switch
+        {
+            "schema-off" => "  code: { schemaGlobs: [] }\n",
+            "deadline-152" => "  deadline: 100ms\n",
+            _ => null,
+        };
+        Action<IServiceCollection>? wire = scenario == "deadline-152" ? HangingCodeSearch.Install : null;   // a search that never answers: the 100ms deadline decides
+        var host = await ContextHosts.Approved(repo.Path, sessions: true, ct, wire, CodeLensRepo.Repo, contextExtra: extra);
+        host.Own(repo);
+        var commit = scenario == "commit-not-held" ? new string('f', 40) : null;
+        await ContextMapApiTests.Import(host, CodeLensRepo.WriteMap(host.Home, CodeLensRepo.MapYaml(commit)));
         return host;
     }
 
