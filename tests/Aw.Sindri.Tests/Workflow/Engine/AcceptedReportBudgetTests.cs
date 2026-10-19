@@ -1,8 +1,11 @@
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
+using Aw.Sindri.Core.Workflow.Ids;
+using Aw.Sindri.Core.Workflow.Recipes;
 using static Aw.Sindri.Tests.Workflow.Engine.LoopFixture;
 
 namespace Aw.Sindri.Tests.Workflow.Engine;
@@ -50,6 +53,33 @@ public sealed class AcceptedReportBudgetTests
         var after = granted.Changes[0].After;
         Assert.Equal(("checks", null, 1), (after.Frame.State, after.Park, after.Loops[Revisions].Round));
         Assert.Equal(FollowUpKind.StartRun, Assert.Single(granted.FollowUps).Kind);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_report_a_gate_refuses_over_budget_parks_on_the_budget_and_starts_no_run()
+    {
+        var instance = In("produce", new LoopState(1, 3, Last: null), Spent(150_000, 150_000));
+        var gated = new GateUse(BlockId.From("gate.test.check"), Threshold: null, new Dictionary<string, WithValue>(StringComparer.Ordinal));
+        var recipe = StepRecipe with { Transitions = [StepRecipe.Transitions[0] with { Gates = [gated] }, .. StepRecipe.Transitions.Skip(1)] };
+        var failing = EngineFixture.Gates(("gate.test.check", GateVerdict.Fail, null));
+
+        var refused = Assert.IsType<Refused>(TransitionDecision.Decide(new DecisionInput(instance, recipe, Report(tokens: 60_000), failing, EngineFixture.Context())));
+
+        var after = refused.Changes[0].After;
+        Assert.Equal((ParkReason.Budget, "produce"), (after.Park, after.Frame.State));
+        Assert.Empty(refused.FollowUps);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_needs_answer_park_answered_over_budget_parks_on_the_budget_and_starts_no_run()
+    {
+        var parked = Parked(In("produce", new LoopState(1, 3, Last: null), Spent(210_000, 210_000)), ParkReason.NeedsAnswer, ParkKind.Step, ResumeKind.Rerun);
+        var text = new AnswerGiven("human:cli", new CommandStamp(CommandNonce.From(new string('c', 32)), new string('d', 64)), AnswerVariant.Text, "Try again.", Amount: null, Forwarded: null);
+
+        var applied = Assert.IsType<Applied>(Decide(parked, text));
+
+        Assert.Equal(ParkReason.Budget, applied.Changes[0].After.Park);
+        Assert.Empty(applied.FollowUps);
     }
 
     [Fact, Trait("Lane", "unit")]
