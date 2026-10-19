@@ -5,9 +5,9 @@ using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Sources;
 using Aw.Kernel.Json;
+using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Host;
 using Aw.Sindri.Host.Commands;
-using Aw.Sindri.Features.ContextCalls;
 
 namespace Aw.Sindri.Tests.ContextCalls;
 

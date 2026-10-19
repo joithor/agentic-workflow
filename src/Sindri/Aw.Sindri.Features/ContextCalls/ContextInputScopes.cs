@@ -9,7 +9,7 @@ namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>
 /// The scope a context Step input reads under (scoping spec C1, C3, C5): the engine as a service, never as the caller, cut to the one repo the
-/// instance's item belongs to. The repo comes from <see cref="Aw.Sindri.Core.Workflow.Blocks.StepInputContext.Repo"/> (the ledger), never from a caller.
+/// instance's item belongs to. The repo comes from <see cref="Core.Workflow.Blocks.StepInputContext.Repo"/> (the ledger), never from a caller.
 /// </summary>
 /// <param name="approvals">The approved profiles.</param>
 internal sealed class ContextInputScopes(IApprovedProfile approvals)

@@ -49,7 +49,7 @@ internal static class ContextInputFixtures
         public ValueTask<Result<ReadOnlyMemory<byte>>> Read(FactValue fact, CancellationToken cancellationToken) =>
             ValueTask.FromResult(_stored.TryGetValue(fact.Sha256, out var bytes)
                 ? (Result<ReadOnlyMemory<byte>>)(ReadOnlyMemory<byte>)bytes
-                : Aw.Sindri.Core.SindriErrors.ApiInternal.With("not stored"));
+                : Core.SindriErrors.ApiInternal.With("not stored"));
     }
 
     internal static ContextInputFacts NoFacts() => new(new MemoryFacts());

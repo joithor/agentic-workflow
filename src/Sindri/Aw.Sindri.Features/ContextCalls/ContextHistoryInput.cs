@@ -89,7 +89,7 @@ internal sealed class ContextHistoryInput(IContextEngine history, ContextInputSc
 
     private static InjectionSections Unavailable(string why, List<string> notes) => ContextInputSections.Unavailable(Section, "context history", why, notes);
 
-    private static Aw.Kernel.Result<HistoryWindow> Window(StepInputContext context, List<string> notes)
+    private static Result<HistoryWindow> Window(StepInputContext context, List<string> notes)
     {
         if (!context.Arguments.TryGetValue("window", out var value) || value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
         {
@@ -108,7 +108,7 @@ internal sealed class ContextHistoryInput(IContextEngine history, ContextInputSc
             : ContextErrors.QueryInvalid.With("the window argument must be {since?, before?} or a date text, not " + value.ValueKind.ToString().ToLowerInvariant());
     }
 
-    private static Aw.Kernel.Result<HistoryWindow> ObjectWindow(JsonElement window, List<string> notes)
+    private static Result<HistoryWindow> ObjectWindow(JsonElement window, List<string> notes)
     {
         string? since = null, before = null;
         foreach (var property in window.EnumerateObject())

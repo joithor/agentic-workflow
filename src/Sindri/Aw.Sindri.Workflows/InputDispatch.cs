@@ -6,4 +6,4 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="context">What the input fills from.</param>
 /// <param name="cancellationToken">Cancels the fill.</param>
 /// <returns>The sections it filled, or the error that fails the fill.</returns>
-internal delegate ValueTask<Aw.Kernel.Result<InjectionSections>> InputDispatch(StepInputContext context, CancellationToken cancellationToken);
+internal delegate ValueTask<Kernel.Result<InjectionSections>> InputDispatch(StepInputContext context, CancellationToken cancellationToken);

@@ -39,7 +39,7 @@ public sealed class GatherInputsFillTests : IDisposable
     private Combined _combined = new(a => ContextInputFixtures.SmallSet([.. a]));
 
     private ServiceProvider Compose() => Composition.Compose(new ServiceCollection(), name => name == "AW_STATE_DIR" ? _root : null, new FakeTimeProvider())
-        .AddScoped<IContextEngine>(_ => EngineProxy.Of(_combined))
+        .AddScoped(_ => EngineProxy.Of(_combined))
         .AddSingleton<IApprovedProfile>(new ContextInputFixtures.Profiles(ContextInputFixtures.Profile()))
         .BuildServiceProvider();
 

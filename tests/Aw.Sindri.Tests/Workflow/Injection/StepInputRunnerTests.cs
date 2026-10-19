@@ -31,7 +31,7 @@ public sealed class StepInputRunnerTests
         {
             seen?.Invoke(ct);
             ct.ThrowIfCancellationRequested();
-            return ValueTask.FromResult<Aw.Kernel.Result<InjectionSections>>(fill());
+            return ValueTask.FromResult<Kernel.Result<InjectionSections>>(fill());
         },
         new StepInputRuntimes([new StepInputRegistration(_input)]),
         new SwapRedactor());
@@ -126,7 +126,7 @@ public sealed class StepInputRunnerTests
     public async Task An_inputs_failure_fails_the_fill_with_the_inputs_code_as_a_refill_mismatch_does()
     {
         var runner = new StepInputRunner(
-            (_, _) => ValueTask.FromResult<Aw.Kernel.Result<InjectionSections>>(WorkflowErrors.InputChanged.With("fact:anchors changed: expected aaa, read bbb")),
+            (_, _) => ValueTask.FromResult<Kernel.Result<InjectionSections>>(WorkflowErrors.InputChanged.With("fact:anchors changed: expected aaa, read bbb")),
             new StepInputRuntimes([new StepInputRegistration(_input)]),
             new SwapRedactor());
 

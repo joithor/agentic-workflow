@@ -56,7 +56,7 @@ internal static class ContextHistoryText
         }
     }
 
-    private static string Instant(DateTimeOffset? at, string none) => at is { } value ? value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", System.Globalization.CultureInfo.InvariantCulture) : none;
+    private static string Instant(DateTimeOffset? at, string none) => at is { } value ? value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture) : none;
 
     private static void Changes(StringBuilder text, HistoryView view, bool fence)
     {
