@@ -123,7 +123,7 @@ public static partial class TransitionDecision
 
     /// <summary>A Step runs when this build has its runtime, or on the desk runtime when its descriptor says deskCapable (W5, W20).</summary>
     private static bool Runnable(DecisionContext context, BlockId step) =>
-        context.Runtimes.Contains(step) || context.RunsAsBlock(step) || context.Catalog.Find(step) is { DeskCapable: true };
+        context.RuntimeOf(step) is not null || context.Catalog.Find(step) is { DeskCapable: true };
 
     private static Suspension NoRuntime(BlockId step, string actor) => new(
         SuspensionKind.Park, ParkReason.NoRuntime, ParkKind: null, Escalation: null,
@@ -153,6 +153,7 @@ public static partial class TransitionDecision
     private static ProgressMark Progress(Trigger trigger) => trigger switch
     {
         StepFailed failed => new ProgressMark(Findings: null, RefusalRules.Digest(failed.Reason), EmptyDiff: false),
+        StepCompleted done => new ProgressMark(Outputs(trigger).GetValueOrDefault(_findings)?.Sha256, Failure: null, done.EmptyDiff, done.FindingKeys),
         _ => new ProgressMark(Outputs(trigger).GetValueOrDefault(_findings)?.Sha256, Failure: null, EmptyDiff: false),
     };
 

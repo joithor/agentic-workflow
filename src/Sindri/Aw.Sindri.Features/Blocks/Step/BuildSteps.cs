@@ -16,7 +16,7 @@ internal static class BuildSteps
         .Writes(On("fact:activePacket", "ready"), On("fact:redTests", "ready"), On("fact:built", "ready"), On("fact:change", "ready"), On("fact:findings", "ready"), On("fact:answers", "ready"));
 
     /// <summary>'step.build.red': one failing test per visible acceptance item, committed as 'test: …'; 'written' with the red tests.</summary>
-    public static BlockDescriptor Red { get; } = AgentStep("step.build.red", Capability.Tools)
+    public static BlockDescriptor Red { get; } = AgentStep("step.build.red", Capability.Tools | Capability.WriteScope)
         .Reads("fact:activePacket", "fact:buildNotes", "fact:redTests", "fact:findings").Reports("written").Writes(On("fact:redTests", "written"));
 
     /// <summary>'step.build.red-check': runs the red tests on the red commit; 'red' when every one fails, 'vacuous' (with findings) when one passes.</summary>
@@ -24,7 +24,7 @@ internal static class BuildSteps
         .Reads("fact:redTests", "fact:activePacket").Reports("red", "vacuous").Writes(On("fact:findings", "vacuous"));
 
     /// <summary>'step.build.green': implements in atomic commits inside the allowed files; 'built', or 'blocked' with a request.</summary>
-    public static BlockDescriptor Green { get; } = AgentStep("step.build.green", Capability.Tools)
+    public static BlockDescriptor Green { get; } = AgentStep("step.build.green", Capability.Tools | Capability.WriteScope)
         .Reads("fact:activePacket", "fact:redTests", "fact:buildNotes", "fact:findings", "fact:answers").Reports("built", "blocked")
         .Writes(On("fact:built", "built"), On("fact:findings", "blocked"));
 

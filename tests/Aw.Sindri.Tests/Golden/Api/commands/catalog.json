@@ -272,6 +272,21 @@
       "shortcut": null
     },
     {
+      "action": "CompleteStep:report",
+      "class": "step-report",
+      "allowedCallers": [
+        "session"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/workflow/instances/{instanceId}/runs/{run}/complete",
+      "cli": "sindri workflow complete <address> --run <token> --outcome <outcome>",
+      "ui": "ready",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
       "action": "CreateItem",
       "class": "desk",
       "allowedCallers": [

@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.CompleteStep;
 using Aw.Sindri.Infrastructure.Workflows;
+using Aw.Sindri.Testing.Launch;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.ApplyCommand;
 using Aw.Sindri.Tests.Ledger;
@@ -33,7 +34,7 @@ public sealed class DeadTemporalReadsTests
         var directory = new TemporalInstanceDirectory(frontend, known);
         var like = new TemporalLikeRuntime();   // why: the approval check and the caller, which are not Temporal's
         var nonces = new InMemoryCommandNonces(new FakeTimeProvider());
-        var service = new CompleteStepService(directory, runtime, like, new InMemoryFactStore(), nonces, like, new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options));
+        var service = new CompleteStepService(directory, runtime, like, new InMemoryFactStore(), nonces, like, new EngineFilledReport(EvalComposition.Catalog, EvalComposition.Options, new FakeLaunchFiles()));
         Assert.Equal("SND-WF-001", (await runtime.Get(_address, ct)).Error.Code);
         await environment.ShutdownAsync();
 

@@ -132,7 +132,7 @@ public static partial class TransitionDecision
 
         var step = d.Recipe.States[instance.State].Step?.Use.Value ?? instance.State;
         var park = new Suspension(
-            SuspensionKind.Park, ParkReason.NeedsAnswer, ParkKind.Step, Escalation: null, $"{step} failed: {failed.Reason}", failed.Actor, Mirrors: null,
+            SuspensionKind.Park, ParkReason.NeedsAnswer, ParkKind.Step, Escalation: null, failed.Detail is { } detail ? $"{step} failed: {failed.Reason}: {detail}" : $"{step} failed: {failed.Reason}", failed.Actor, Mirrors: null,
             new ResumeAction(ResumeKind.Rerun, Withheld: null, Gate: null, Effects: []));
         return d.Changed(d.Rules.Suspend(instance, park));
     }

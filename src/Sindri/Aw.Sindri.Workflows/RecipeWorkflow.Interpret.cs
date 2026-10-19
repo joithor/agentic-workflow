@@ -13,10 +13,12 @@ internal sealed partial class RecipeWorkflow
             instance = instance switch
             {
                 { Suspension: null, Frame.Run: { Runtime: StepRuntime.Block } block } => await RunBlockStep(instance, block, context).ConfigureAwait(true),
+                { Suspension: null, Frame.Run: { Runtime: StepRuntime.Agent } agent } => await RunAgentStep(instance, agent, context).ConfigureAwait(true),
                 { Suspension: null, Frame.Run: { } open } => await RunDeskStep(instance, open, context).ConfigureAwait(true),
                 _ => await Wait(instance, context).ConfigureAwait(true),
             };
             await DropEndedRun(instance).ConfigureAwait(true);
+            await DropEndedAgent(instance).ConfigureAwait(true);
         }
 
         await Settle().ConfigureAwait(true);   // every effect it emitted is dispatched, refused or aborted (§5.7)

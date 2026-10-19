@@ -12,12 +12,12 @@ namespace Aw.Sindri.Core.Workflow.Engine.Decisions;
 /// </summary>
 /// <param name="Approval">The approval check's answer for the instance's recipe.</param>
 /// <param name="Catalog">The build's block and event descriptors (rungs, outcomes, outputs, deskCapable).</param>
-/// <param name="Runtimes">The blocks and resources this build has a runtime for; a Step without one parks with SND-WF-010 unless it is deskCapable (W5).</param>
+/// <param name="Runtimes">The Steps this build runs off the desk, each with its runtime (block or agent; one map); a Step without one parks with SND-WF-010 unless it is deskCapable (W5).</param>
 /// <param name="Children">The pinned child recipes, for a child wait's creation.</param>
 public sealed record DecisionContext(
     ApprovalCheck Approval,
     BlockCatalog Catalog,
-    IReadOnlySet<BlockId> Runtimes,
+    IReadOnlyDictionary<BlockId, StepRuntime> Runtimes,
     IChildRecipeResolver Children)
 {
     /// <summary>
@@ -28,13 +28,12 @@ public sealed record DecisionContext(
     public TimeSpan DeskTimeout { get; init; } = TimeSpan.FromDays(2);
 
     /// <summary>
-    /// The Steps this build runs on the block runtime (DT spec §8.2): a Step in it whose descriptor says <see cref="BlockRuntime.Block"/>
-    /// opens its run on <see cref="StepRuntime.Block"/>. Empty by default, which is the desk path every history before the block runtime took.
+    /// Where this build runs a Step that is not at the desk (P8 D5, one map): <see cref="StepRuntime.Block"/> for a registered block runtime whose descriptor says
+    /// <see cref="BlockRuntime.Block"/>, <see cref="StepRuntime.Agent"/> for a Step an agent session runs. A Step in neither is at the desk when it is deskCapable.
     /// </summary>
-    public IReadOnlySet<BlockId> BlockRuntimes { get; init; } = new HashSet<BlockId>();
-
-    /// <summary>Whether <paramref name="step"/> opens a block run: this build registered its runtime and its descriptor says <see cref="BlockRuntime.Block"/>. The one rule entry and Runnable both ask.</summary>
     /// <param name="step">The Step.</param>
-    /// <returns>True when its run is the engine's.</returns>
-    internal bool RunsAsBlock(BlockId step) => BlockRuntimes.Contains(step) && Catalog.Find(step) is { Runtime: BlockRuntime.Block };
+    /// <returns>The runtime, or null when the build has none for it.</returns>
+    internal StepRuntime? RuntimeOf(BlockId step) => Runtimes.TryGetValue(step, out var runtime) && (runtime == StepRuntime.Agent || (runtime == StepRuntime.Block && Catalog.Find(step) is { Runtime: BlockRuntime.Block }))
+        ? runtime
+        : null;
 }

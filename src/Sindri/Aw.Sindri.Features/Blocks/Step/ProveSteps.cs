@@ -20,7 +20,7 @@ internal static class ProveSteps
         .Reads("fact:phasePacket", "fact:built", "fact:workspace").Reports("pass", "fail").Writes(Every("fact:beforeAfter"));
 
     /// <summary>'step.prove.holdout': runs the hidden scenarios against the head in the running app; 'ran' with the verdicts.</summary>
-    public static BlockDescriptor Holdout { get; } = AgentStep("step.prove.holdout", Capability.Tools)
+    public static BlockDescriptor Holdout { get; } = AgentStep("step.prove.holdout", Capability.Tools | Capability.WriteScope)
         .Reads("fact:built", "fact:workspace").Reports("ran").Writes(On("fact:holdoutResult", "ran"));
 
     /// <summary>'step.prove.holdout-log': records the verdicts, marks failures spent and checks the canary; 'passed', 'failed' or 'leaked'.</summary>
