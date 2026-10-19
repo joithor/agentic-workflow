@@ -46,4 +46,13 @@ public sealed class PlanCheckStepTests
         Assert.Null(result.Result);
         Assert.Contains("fact:plan", result.Failure, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task A_plan_fact_that_is_not_JSON_fails_the_Step_rather_than_reading_as_empty()
+    {
+        var result = await Run(new ScopingFacts { ["scopePacket"] = "sha256:aa", ["design"] = Design, ["plan"] = "the plan is ready" });
+
+        Assert.Null(result.Result);
+        Assert.Contains("fact:plan", result.Failure, StringComparison.Ordinal);
+    }
 }

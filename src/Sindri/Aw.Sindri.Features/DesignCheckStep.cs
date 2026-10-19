@@ -12,6 +12,9 @@ internal sealed class DesignCheckStep() : LineStep(Descriptor), IDescribedBlock
     public static BlockDescriptor Descriptor => DesignSteps.Check;
 
     /// <inheritdoc/>
+    protected override IReadOnlyList<string> Structured => ["scope", "design"];
+
+    /// <inheritdoc/>
     protected override Result<LineVerdict> Decide(LineFacts facts)
     {
         ArgumentNullException.ThrowIfNull(facts);

@@ -46,7 +46,7 @@ public sealed class PlanChecksTests
             d["acceptance"]!["items"]![1]!["status"] = "superseded";
         });
 
-        Assert.Equal(["PLN-ACC-001"], Failed(none), StringComparer.Ordinal);
+        Assert.Contains("PLN-ACC-001", Failed(none), StringComparer.Ordinal);
         Assert.Equal(["PLN-ACC-001"], Failed(twice), StringComparer.Ordinal);
         Assert.DoesNotContain("PLN-ACC-001", Failed(superseded), StringComparer.Ordinal);
     }

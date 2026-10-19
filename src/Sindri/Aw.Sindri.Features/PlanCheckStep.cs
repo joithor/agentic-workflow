@@ -12,6 +12,9 @@ internal sealed class PlanCheckStep() : LineStep(Descriptor), IDescribedBlock
     public static BlockDescriptor Descriptor => PlanSteps.Check;
 
     /// <inheritdoc/>
+    protected override IReadOnlyList<string> Structured => ["design", "plan"];
+
+    /// <inheritdoc/>
     protected override Result<LineVerdict> Decide(LineFacts facts)
     {
         ArgumentNullException.ThrowIfNull(facts);

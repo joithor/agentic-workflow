@@ -1,7 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Kernel;
-using Aw.Sindri.Core;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Line;
@@ -26,6 +25,9 @@ internal abstract class LineStep(BlockDescriptor step) : IBlockStep
         return ValueTask.FromResult(RunSync(context));
     }
 
+    /// <summary>The facts (without the 'fact:' prefix) the Step reads as a JSON object or array; text that is not JSON there fails the Step instead of reading as empty. None by default.</summary>
+    protected virtual IReadOnlyList<string> Structured => [];
+
     /// <summary>The Step's decision over its facts.</summary>
     /// <param name="facts">The facts.</param>
     /// <returns>The verdict, or why the Step fails.</returns>
@@ -37,16 +39,17 @@ internal abstract class LineStep(BlockDescriptor step) : IBlockStep
         return parsed.RootElement.Clone();
     }
 
-    private static Result<JsonNode?> Parse(string key, JsonElement value)
+    // A fact is JSON text; a scalar that is not JSON (a packet hash such as sha256:ab12) stays the string it is. A fact a Step reads as a structure is checked in RunSync.
+    private static JsonNode? Parse(JsonElement value)
     {
         var text = value.ValueKind == JsonValueKind.String ? value.GetString() ?? string.Empty : value.GetRawText();
         try
         {
-            return Results.Success(JsonNode.Parse(text));
+            return JsonNode.Parse(text);
         }
-        catch (JsonException e)
+        catch (JsonException)
         {
-            return SindriErrors.InvalidInput.With($"{key} is not JSON ({e.Message})");   // boundary: a fact is text a model or a person wrote
+            return JsonValue.Create(text);   // boundary: a fact is text a model or a person wrote
         }
     }
 
@@ -60,13 +63,12 @@ internal abstract class LineStep(BlockDescriptor step) : IBlockStep
         var nodes = new Dictionary<string, JsonNode?>(StringComparer.Ordinal);
         foreach (var (key, value) in context.Facts.Where(static f => f.Key.Value.StartsWith(FactPrefix, StringComparison.Ordinal)))
         {
-            var parsed = Parse(key.Value, value);
-            if (parsed.IsError)
-            {
-                return BlockStepResult.Failed(parsed.Error.Message);
-            }
+            nodes[key.Value[FactPrefix.Length..]] = Parse(value);
+        }
 
-            nodes[key.Value[FactPrefix.Length..]] = parsed.Value;
+        if (Structured.Where(k => nodes.GetValueOrDefault(k) is not (JsonObject or JsonArray)).ToList() is { Count: > 0 } broken)
+        {
+            return BlockStepResult.Failed($"{step.Id.Value} reads {string.Join(", ", broken.Select(static k => FactPrefix + k))} as JSON, and the instance holds text that is not (fix: the Step that wrote it must write a JSON object or array)");
         }
 
         var verdict = Decide(new LineFacts(nodes));
