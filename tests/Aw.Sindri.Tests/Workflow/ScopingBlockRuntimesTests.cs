@@ -43,7 +43,7 @@ public sealed class ScopingBlockRuntimesTests
         using var provider = ShippedComposition.Compose();
         var (recipe, context) = Scoping(provider);
 
-        Assert.Equal(_pure, context.Runtimes.Keys.Select(static k => k.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Subset(context.Runtimes.Keys.Select(static k => k.Value).ToHashSet(StringComparer.Ordinal), _pure.ToHashSet(StringComparer.Ordinal));   // other stations add their own Steps
         var used = recipe.States.Values.Select(static s => s.Step?.Use.Value).OfType<string>().ToHashSet(StringComparer.Ordinal);
         Assert.Subset(used.Concat(["step.brief.seed"]).ToHashSet(StringComparer.Ordinal), _pure.ToHashSet(StringComparer.Ordinal));   // brief.seed is the idea child's, not this recipe's
     }

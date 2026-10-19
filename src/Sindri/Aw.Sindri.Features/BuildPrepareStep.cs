@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Features.Blocks.Step;
@@ -16,5 +17,30 @@ internal sealed class BuildPrepareStep(IRunDiff diff) : IBlockStep, IDescribedBl
     public static BlockDescriptor Descriptor => BuildSteps.Prepare;
 
     /// <inheritdoc/>
-    public ValueTask<BlockStepResult> Run(StepContext context, CancellationToken cancellationToken) { _ = diff; throw new NotSupportedException(); }
+    public async ValueTask<BlockStepResult> Run(StepContext context, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        cancellationToken.ThrowIfCancellationRequested();
+        var worktree = StepFacts.Text(context, "fact:workspace");
+        if (worktree is null || StepFacts.Read(context, "fact:phasePacket") is not { } packet)
+        {
+            return BlockStepResult.Failed("step.build.prepare needs fact:workspace (a path) and fact:phasePacket");
+        }
+
+        var head = await diff.Head(worktree, cancellationToken).ConfigureAwait(false);
+        if (head.IsError)
+        {
+            return BlockStepResult.Failed($"step.build.prepare can't read {worktree}: {head.Error.Message}");
+        }
+
+        var clean = await diff.IsEmpty(worktree, head.Value, cancellationToken).ConfigureAwait(false);
+        if (clean.IsError)
+        {
+            return BlockStepResult.Failed($"step.build.prepare can't read {worktree}: {clean.Error.Message}");
+        }
+
+        return clean.Value
+            ? StepFacts.Done("ready", ("fact:activePacket", packet.DeepClone()), ("fact:redTests", new JsonObject()), ("fact:built", new JsonObject()), ("fact:change", new JsonObject()), ("fact:findings", new JsonArray()), ("fact:answers", new JsonArray()))
+            : BlockStepResult.Failed($"step.build.prepare: the worktree {worktree} has uncommitted changes (fix: commit or discard them, then resume)");
+    }
 }

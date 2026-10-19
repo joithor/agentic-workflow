@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Features.Blocks.Step;
@@ -12,5 +13,35 @@ internal sealed class PhaseDriftStep(IRunDiff diff) : IBlockStep, IDescribedBloc
     public static BlockDescriptor Descriptor => PhaseSteps.Drift;
 
     /// <inheritdoc/>
-    public ValueTask<BlockStepResult> Run(StepContext context, CancellationToken cancellationToken) { _ = diff; throw new NotSupportedException(); }
+    public async ValueTask<BlockStepResult> Run(StepContext context, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        cancellationToken.ThrowIfCancellationRequested();
+        var worktree = StepFacts.Text(context, "fact:workspace");
+        var proven = StepFacts.Head(StepFacts.Read(context, "fact:built"));
+        if (worktree is null || proven is null)
+        {
+            return BlockStepResult.Failed("step.phase.drift needs fact:workspace (a path) and fact:built (with its head)");
+        }
+
+        var head = await diff.Head(worktree, cancellationToken).ConfigureAwait(false);
+        if (head.IsError)
+        {
+            return BlockStepResult.Failed($"step.phase.drift can't read the head of {worktree}: {head.Error.Message}");
+        }
+
+        if (string.Equals(head.Value, proven, StringComparison.Ordinal))
+        {
+            return StepFacts.Done("same");
+        }
+
+        return StepFacts.Done("moved", ("fact:built", WithHead(StepFacts.Read(context, "fact:built"), head.Value)), ("fact:change", WithHead(StepFacts.Read(context, "fact:change"), head.Value)));
+    }
+
+    private static JsonObject WithHead(JsonNode? fact, string head)
+    {
+        var copy = fact is JsonObject obj ? (JsonObject)obj.DeepClone() : [];
+        copy["head"] = head;
+        return copy;
+    }
 }
