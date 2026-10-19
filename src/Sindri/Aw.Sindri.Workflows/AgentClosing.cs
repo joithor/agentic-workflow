@@ -1,19 +1,22 @@
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
 /// <summary>
-/// What 'CloseAgentStep' does when a run closes (engine P8 D9, D10, D11): reads the session's usage and the engine-measured diff signal, then stops the session.
+/// What 'CloseAgentStep' does when a run closes (engine P8 D9, D10, D11): takes a final usage sample, reads the session's usage and the engine-measured diff signal, then stops the session.
 /// A stop that fails is logged and does not fail the close: the session ends by itself when its agent exits, and the run's result must not wait on the host.
 /// </summary>
 /// <param name="sessions">The session's usage.</param>
 /// <param name="diff">The diff signal.</param>
 /// <param name="launcher">Stops the session.</param>
-/// <param name="logger">Where a failed stop is logged.</param>
-internal sealed partial class AgentClosing(IAgentSessions sessions, IRunDiff diff, ILauncher launcher, ILogger<AgentClosing> logger)
+/// <param name="scopes">The scope the usage sampler runs in: it is scoped, this class is not.</param>
+/// <param name="logger">Where a failed flush or stop is logged.</param>
+internal sealed partial class AgentClosing(IAgentSessions sessions, IRunDiff diff, ILauncher launcher, IServiceScopeFactory scopes, ILogger<AgentClosing> logger)
 {
     /// <summary>Measures (when asked) and stops.</summary>
     /// <param name="run">The run.</param>
@@ -35,6 +38,7 @@ internal sealed partial class AgentClosing(IAgentSessions sessions, IRunDiff dif
 
     private async Task<AgentClosed> Measure(AgentCloseRun run, LaunchId launch, CancellationToken cancellationToken)
     {
+        await Flush(launch, cancellationToken).ConfigureAwait(false);   // the ledger's latest sample is up to a minute old, or missing for a short Step
         var usage = await sessions.Usage(launch, cancellationToken).ConfigureAwait(false);
         if (usage.IsError)
         {
@@ -45,6 +49,26 @@ internal sealed partial class AgentClosing(IAgentSessions sessions, IRunDiff dif
             && await diff.IsEmpty(worktree, head, cancellationToken).ConfigureAwait(false) is { IsError: false, Value: true };   // not measured is not empty
         return new AgentClosed((int)Math.Min(usage.Value, int.MaxValue), empty);
     }
+
+    /// <summary>A final usage sample for the launch. One that fails is logged and leaves the last sample: a close must not fail on a sample.</summary>
+    private async Task Flush(LaunchId launch, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var scope = scopes.CreateAsyncScope();
+            await using (scope.ConfigureAwait(false))
+            {
+                _ = await scope.ServiceProvider.GetRequiredService<ISessionUsageSampler>().Flush(launch, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch (Exception e) when (e is not OperationCanceledException)   // boundary: the sample is a refinement of a number the ledger already holds
+        {
+            FlushFailed(logger, launch.Value, e.GetType().Name, e.Message);
+        }
+    }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "the final usage sample of launch {Launch} threw {Type}: {Detail}; the last sample stands")]
+    private static partial void FlushFailed(ILogger logger, string launch, string type, string detail);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "stopping launch {Launch} failed ({Code}); the session ends when its agent exits")]
     private static partial void StopFailed(ILogger logger, string launch, string code);
