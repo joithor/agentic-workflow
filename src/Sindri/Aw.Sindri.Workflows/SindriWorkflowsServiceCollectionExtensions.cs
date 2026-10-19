@@ -63,7 +63,6 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddScoped<ItemRouter>()
             .AddScoped<IScheduledService, RouterStub>()                // engine P7 unit U3: the router stub (spec §12), 'item.routed' for each workflow.item that starts
             .AddSingleton(RouterStub.BuiltIn);
-    }
 
     /// <summary>The activities the interpreter runs (RunStep, RecordEvent, ReadItemRepo, the effect activities, EvaluateGates) and the Step, effect and gate dispatchers they run blocks through.</summary>
     private static IServiceCollection AddInterpreterActivities(this IServiceCollection services) => services
