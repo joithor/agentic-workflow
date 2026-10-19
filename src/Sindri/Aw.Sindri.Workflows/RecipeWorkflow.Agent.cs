@@ -28,6 +28,7 @@ internal sealed partial class RecipeWorkflow
     private static readonly AgentCall _launchCall = new("agent-launch", TimeSpan.FromMinutes(2), Heartbeat: null, new RetryPolicy { InitialInterval = TimeSpan.FromSeconds(1), MaximumAttempts = 3 });
     private static readonly AgentCall _watchCall = new("agent-watch", TimeSpan.FromDays(7), TimeSpan.FromSeconds(10), new RetryPolicy { InitialInterval = TimeSpan.FromSeconds(1), MaximumInterval = TimeSpan.FromSeconds(10) });   // a heartbeat timeout or a restarted worker retries the watch, which attaches to the same session
     private static readonly AgentCall _closeCall = new("agent-close", TimeSpan.FromMinutes(2), Heartbeat: null, new RetryPolicy { InitialInterval = TimeSpan.FromSeconds(1), MaximumAttempts = 3 });
+    private AgentRunning? _held;   // the launched run whose session is still live, so the interpreter loop can stop it when the instance ends or the run is replaced while it is parked or taken over (D11)
     private (string Token, AgentLaunched Launched)? _agent;   // the open run's launch, kept across a park or a takeover so the watch resumes without a second launch
 
     private enum AgentEnd
@@ -97,6 +98,7 @@ internal sealed partial class RecipeWorkflow
         }
 
         _agent = (open.Token.Value, launched);
+        _held = new AgentRunning(open, state, run, launched);
         var filled = applied with { Frame = applied.Frame with { Run = open with { Launch = AgentLaunches.LaunchIdFor(run).Value } } };
         _instance = filled;   // why: the run's launch is part of the instance the Query and the validator read; no timer or state changed
         return (filled, false);
@@ -176,30 +178,6 @@ internal sealed partial class RecipeWorkflow
         Spawn(decision);   // a report that enters a child wait starts its child, as the desk, block and loop arms do
         Settle(reportId, new Reported(new CommandResult(GetInstance(), Happened(before, instance, decision)), Refusal: null));
         return instance;
-    }
-
-    // A run that was cancelled or replaced closes: its session is stopped. A park or a takeover keeps the session (D11).
-    private async Task<WorkflowInstance> StopIfClosed(WorkflowInstance instance, AgentRunning running)
-    {
-        if (instance.Ended || (instance.Suspension is null && instance.Frame.Run?.Token != running.Open.Token))
-        {
-            _ = await Close(running, measure: false).ConfigureAwait(true);
-        }
-
-        return instance;
-    }
-
-    private async Task<AgentClosed> Close(AgentRunning running, bool measure)
-    {
-        var close = new AgentCloseRun(AgentLaunches.LaunchIdFor(running.Run).Value, running.Launched?.Worktree, running.Launched?.StartHead, measure);
-        try
-        {
-            return await Workflow.ExecuteActivityAsync((AgentStepActivities a) => a.CloseAsync(close), AgentOptions(_closeCall, running.Open, running.State, CancellationToken.None)).ConfigureAwait(true);
-        }
-        catch (ActivityFailureException)
-        {
-            return new AgentClosed(Tokens: 0, EmptyDiff: false);   // boundary: a close that can't read the usage must not wedge the instance; the run is decided with 0 tokens
-        }
     }
 
     private ActivityOptions AgentOptions(AgentCall call, OpenRun open, RecipeState state, CancellationToken token)
@@ -291,6 +269,4 @@ internal sealed partial class RecipeWorkflow
     private sealed record AgentCall(string Kind, TimeSpan Limit, TimeSpan? Heartbeat, RetryPolicy Retry);
 
     private sealed record Awaited(Task Running, CancellationTokenSource Cancel, bool Reports);
-
-    private sealed record AgentRunning(OpenRun Open, RecipeState State, AgentStepRun Run, AgentLaunched? Launched);
 }

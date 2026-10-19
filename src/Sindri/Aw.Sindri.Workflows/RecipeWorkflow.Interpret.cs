@@ -18,6 +18,7 @@ internal sealed partial class RecipeWorkflow
                 _ => await Wait(instance, context).ConfigureAwait(true),
             };
             await DropEndedRun(instance).ConfigureAwait(true);
+            await DropEndedAgent(instance).ConfigureAwait(true);
         }
 
         await Settle().ConfigureAwait(true);   // every effect it emitted is dispatched, refused or aborted (§5.7)
