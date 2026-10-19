@@ -55,4 +55,24 @@ public sealed class PacketFileFencingTests
 
         Assert.StartsWith(Open, file.Text, StringComparison.Ordinal);
     }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("""{"items":[{"id":"AC-1","text":"x","trust":7}]}""")]
+    [InlineData("""{"items":[{"id":"AC-1","text":"x","trust":{"owner":true}}]}""")]
+    [InlineData("""{"items":[{"id":"AC-1","text":"x","trust":null}]}""")]
+    [InlineData("""{"items":[{"id":"AC-1","text":"x","trust":["owner"]}]}""")]
+    public void A_trust_that_is_not_the_word_owner_fences_its_object_and_never_throws(string json)
+    {
+        var file = PacketFileFencing.Fence(new PacketFile("acceptance.json", json, "json"));
+
+        Assert.StartsWith(Open, JsonNode.Parse(file.Text)!["items"]![0]!["text"]!.GetValue<string>(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_json_file_that_is_not_json_is_served_as_text_so_its_content_type_is_not_json()
+    {
+        var file = PacketFileFencing.Fence(new PacketFile("size.json", "not { json", "json"));
+
+        Assert.Equal("text", file.Format);
+    }
 }
