@@ -13,7 +13,7 @@ namespace Aw.Sindri.Ui.Testing;
 internal static class FixtureInstances
 {
     /// <summary>
-    /// The finished line's figure ("4 done today"). The API serves a root-wide counts.done and no per-day figure
+    /// The finished line's figure ("4 finished"). The API serves a root-wide counts.done and no per-day figure
     /// (Q-API-3, P11's list contract), so this is a UI extra kept equal to the golden's until P11.
     /// </summary>
     internal const int DoneToday = 4;
