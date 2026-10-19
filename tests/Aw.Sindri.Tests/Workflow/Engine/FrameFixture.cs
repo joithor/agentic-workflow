@@ -39,7 +39,7 @@ internal static class FrameFixture
     public static DecisionContext Context() => new(
         ApprovalCheck.Holds,
         new BlockCatalog([TestBlocks.Step("step.produce"), TestBlocks.Step("step.check"), TestBlocks.Gate("gate.verify.judge")], []),
-        new HashSet<BlockId> { Produce }, InMemoryChildRecipes.None);
+        new Dictionary<BlockId, StepRuntime> { [Produce] = StepRuntime.Agent }, InMemoryChildRecipes.None);
 
     /// <summary>An instance at entry 3 in 'produce', run '3.1' on the agent.</summary>
     public static WorkflowInstance Producing() => Instance(new Frame(

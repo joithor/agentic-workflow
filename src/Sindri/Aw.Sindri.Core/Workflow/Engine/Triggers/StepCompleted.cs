@@ -13,6 +13,8 @@ namespace Aw.Sindri.Core.Workflow.Engine.Triggers;
 /// <param name="Tokens">The tokens the run spent (0 for a desk report).</param>
 /// <param name="Via">The runtime that ran it.</param>
 /// <param name="ReportSha256">The SHA-256 of the canonical report, so two different reports never share a key.</param>
+/// <param name="FindingKeys">The sorted keys of the findings the report carries (<see cref="Rules.FindingKeys"/>), or null when it has none in the keyed shape (the digest rule applies).</param>
+/// <param name="EmptyDiff">Whether the engine measured an empty diff for an agent run (never self-reported).</param>
 /// <param name="Decision">The Judge decision id a block Step reports ('JD-…'), for the event's 'decision'; null for any other.</param>
 public sealed record StepCompleted(
     string Actor,
@@ -22,7 +24,9 @@ public sealed record StepCompleted(
     int Tokens,
     StepRuntime Via,
     string ReportSha256,
-    string? Decision = null) : Trigger(Actor)
+    string? Decision = null,
+    IReadOnlyList<string>? FindingKeys = null,
+    bool EmptyDiff = false) : Trigger(Actor)
 {
     /// <inheritdoc/>
     public override string Name => TriggerNames.StepCompleted;

@@ -64,7 +64,7 @@ public sealed class CqrsRuleTests
         Assert.Equal(
             ["ARCH-CQRS-003: FixtureApply has no command catalog row; add one in Host/Catalog", "ARCH-CQRS-003: UnlistedCommand has no command catalog row; add one in Host/Catalog"],
             CatalogCoverageRules.Check([typeof(FixtureApply), typeof(UnlistedCommand)], new InMemoryCommandCatalog()));
-        Assert.Contains("every row needs a variant", Assert.Single(CatalogCoverageRules.Check([typeof(FixtureApply)], plainOnly)), StringComparison.Ordinal);
+        Assert.Contains("needs variant rows", Assert.Single(CatalogCoverageRules.Check([typeof(FixtureApply)], plainOnly)), StringComparison.Ordinal);
         Assert.Empty(CatalogCoverageRules.Check([typeof(FixtureApply)], variants));
     }
 

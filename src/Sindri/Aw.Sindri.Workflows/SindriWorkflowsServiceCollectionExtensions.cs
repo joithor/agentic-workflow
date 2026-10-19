@@ -31,6 +31,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<TemporalDevServer>()
             .AddSingleton<ITemporalServer, DevServerTemporal>()
             .AddInterpreterActivities()
+            .AddAgentRuntime()
             .AddSingleton(provider => SindriWorker.Options(settings, provider.GetRequiredService<WorkerActivities>()))
             .AddSingleton<TemporalFrontend>()
             .AddSingleton<KnownInstances>()                            // engine P4: the opaque ids this process has seen (spec §6.3)
@@ -72,7 +73,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
         .AddSingleton<FactReadActivities>()
         .AddSingleton<EffectDispatch>(static provider => (context, ct) => DispatchScoped(provider, context, ct))   // engine P6 unit (a): RunEffect runs a scoped block by id
         .AddSingleton<BlockStepDispatch>(static provider => (step, context, ct) => RunBlockScoped(provider, step, context, ct))   // DT-J2: RunBlockStep runs a scoped block Step by id
-        .AddSingleton<BlockStepRunner>()
+        .AddSingleton<BlockStepRunner>().AddSingleton<AgentStepSelection>()
         .AddSingleton<GateDispatch>(static provider => (gate, context, ct) => RunGateScoped(provider, gate, context, ct))   // engine P7: EvaluateGates runs a scoped gate by id
         .AddSingleton<GateActivities>()                            // engine P7: EvaluateGates
         .AddSingleton<CleanupActivities>()                         // engine P7: ReleaseClaim
@@ -93,6 +94,12 @@ public static class SindriWorkflowsServiceCollectionExtensions
                 : null;
         }
     }
+
+    // Engine P8 U3: LaunchAgentStep, WatchAgentStep, CloseAgentStep and what they use, and the worker's set of activity classes.
+    private static IServiceCollection AddAgentRuntime(this IServiceCollection services) => services
+        .AddSingleton<AgentStepActivities>().AddSingleton<AgentLaunching>().AddSingleton<AgentClosing>()
+        .AddSingleton<AgentTargetResolver>().AddSingleton<AgentLaunchRecorder>().AddSingleton(AgentRuntimeOptions.Default)
+        .AddSingleton<WorkerActivities>();
 
     private static async ValueTask<BlockStepResult> RunBlockScoped(IServiceProvider provider, BlockId step, StepContext context, CancellationToken cancellationToken)
     {
