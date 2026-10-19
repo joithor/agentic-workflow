@@ -12077,3 +12077,5 @@ Aw.Sindri.Core.Workflow.Blocks.IRepoStep
 Aw.Sindri.Core.Packets.IPacketFiles
 Aw.Sindri.Core.Packets.IPacketFiles.Create(string! address, string! name, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! files, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Sindri.Core.Packets.IPacketFiles.Read(string! directory, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, string!>!>!>
+static Aw.Sindri.Core.Workflow.Blocks.StepFacts.Field(System.Text.Json.Nodes.JsonNode? fact, string! name) -> string?
+static Aw.Sindri.Core.Packets.PacketFailure.Describe(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Packets.PacketFailure!>! failures) -> string!

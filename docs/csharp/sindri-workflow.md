@@ -599,6 +599,23 @@ Descriptor-only (`BuildSteps`, `ProveSteps` in `Aw.Sindri.Features/Blocks/Step/`
 | `step.prove.evidence` | block | `complete`, `incomplete` | `proofPack`; `findings` on incomplete |
 | `step.prove.fail-log` | block | `logged` | `findings` |
 
+### Build and ship Steps on the block runtime: fact shapes
+
+`step.build.prepare`, `step.phase.drift`, `step.ship.return`, `step.build.amend` and `step.ship.freeze` have block runtimes (`Aw.Sindri.Features/Build`, `Ship`); the descriptors above are unchanged. They read these shapes (the line spec does not define them, so these are the contract the desk and the other Steps write to):
+
+| Fact | Shape | Written by |
+|---|---|---|
+| `fact:phasePacket`, `fact:activePacket` | `{ hash, dir, repo? }`: the packet's frozen hash and directory; `repo` is a checkout of the repository it builds on (PKT-BASE-001 needs the base commit), which `step.build.prepare` sets to `fact:workspace` | the phase's seed (`hash`, `dir`), prepare (`repo`), amend (the child's) |
+| `fact:answers` | array; each scope-desk answer is `{ station: "scope-desk", outcome: "allow"\|"revert", paths?: string[], reason?: string }`. `allow` has non-empty `paths` (repo-relative globs or `new: <path>`) and a non-blank `reason`; amend uses the **last** `allow` | prepare seeds `[]`; the scope desk appends |
+| `fact:handoffDraft` | `{ dir, head, workspace }`: the hand-off packet directory (`pr.json`, `body.md`, `green.json`, `packet.json`, `index.json`), the head it was packed on, and the phase worktree | `step.ship.pack` (at the desk until its fact shapes are settled) |
+| `fact:proofPack`, `fact:review` | each holds `head`, the commit its run covered | `step.prove.evidence`, `step.review.record` |
+| `fact:handoff` | `{ hash, dir }`: the frozen hand-off | freeze |
+| `fact:findings` | array of `{ rule, message }` | `SHIP-SHA-001` on stale |
+
+**`step.build.amend`** reads `fact:activePacket` and `fact:answers` only (the descriptor's reads), so the child packet goes in **this instance's** run area, `workflow/runs/<WFI-id>/packets/<parent id>-a<n>/`, not the line's (`fact:lineContext.runArea` is not among its reads). It copies the parent's files, sets `packet.json` to the next id (`-a1`, then `-a2`...), `draft` and a null hash, adds the granted paths to `phase.json`'s `allowedFiles`, writes `amends: { parent, paths, reason, at }` (the parent's hash, this grant's paths only) and sets `index.json`'s parents to the parent's hash. It owner-freezes the child through `aw-packets freeze --kind phase --by owner` and reports `{ hash, dir, repo }` as the packet in force. A grant with no usable `allow`, a missing `repo`, an unreadable parent or a child that fails its checks fails the Step (the rule ids are in the message). The LC-7 escape is a line `{ from: "build", station: "amend", kind: "scopeGrant", id, parent }` appended to the run area's `escapes.jsonl`; the Step reads no ledger, so the `line.escape` row is written from that file.
+
+**`step.ship.freeze`** passes `SHIP-SHA-001` when the draft's, proof's and review's heads and the worktree's HEAD (`IRunDiff.Head(workspace)`) are one sha; it then machine-freezes the hand-off (`aw-packets freeze --kind handoff --by machine`) and reports `frozen`. Any other combination reports `stale` with one `SHIP-SHA-001` finding naming all four shas and freezes nothing. A hand-off that fails its checks, or a missing fact, fails the Step.
+
 ### Block recipes
 
 The shipped block recipes (`recipes/sindri/`: report, investigate, reproduce, implement, hand-test, verify, the evidence
