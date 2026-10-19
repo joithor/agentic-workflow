@@ -73,16 +73,8 @@ internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProce
         return WrapWith(plan, argv, secrets.For(plan.Launch), prepare: true);
     }
 
-    /// <summary>Removes what <see cref="Wrap"/> left for a launch whose wrapper never ran (the launcher's failure path).</summary>
-    /// <param name="plan">The plan that was wrapped.</param>
-    internal static void Discard(SandboxPlan plan)
-    {
-        ArgumentNullException.ThrowIfNull(plan);
-        if (RunAreaPreparer.RunAreaOf(plan) is { } area && Directory.Exists(area + "/secrets"))
-        {
-            Directory.Delete(area + "/secrets", recursive: true);
-        }
-    }
+    /// <inheritdoc />
+    public void Discard(SandboxPlan plan) => throw new NotSupportedException();
 
     /// <inheritdoc />
     public async Task<Result<Unit>> SelfCheck(SandboxPlan plan, CancellationToken ct)

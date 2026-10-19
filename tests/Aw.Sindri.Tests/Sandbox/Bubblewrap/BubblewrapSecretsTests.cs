@@ -1,4 +1,5 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Infrastructure.Sandbox;
 using Aw.Sindri.Testing.Sandbox;
 using Microsoft.Extensions.Time.Testing;
@@ -75,10 +76,10 @@ public sealed class BubblewrapSecretsTests
         var file = sandbox.Wrap(area.Plan, ["claude"]).Value[4];
         Assert.True(File.Exists(file));
 
-        BubblewrapSandbox.Discard(area.Plan);
+        sandbox.Discard(area.Plan);
 
         Assert.False(File.Exists(file));
-        Assert.Empty(Directory.Exists(area.Root + "/area/secrets") ? Directory.GetFileSystemEntries(area.Root + "/area/secrets") : []);
+        Assert.False(Directory.Exists(Path.GetDirectoryName(file)));
     }
 
     [Fact]
@@ -86,8 +87,9 @@ public sealed class BubblewrapSecretsTests
     {
         using var area = new TempRunArea("AW_SINDRI_LAUNCH_SECRET", "ANTHROPIC_API_KEY");
         var sandbox = Sandbox(new FakeProcesses(), Registry(area));
-        Directory.CreateDirectory(area.Root + "/area/secrets");
-        var stale = area.Root + "/area/secrets/stale-from-a-crash";
+        var launchDirectory = area.Root + "/area/secrets/" + area.Plan.Launch.Value;
+        Directory.CreateDirectory(launchDirectory);
+        var stale = launchDirectory + "/stale-from-a-crash";
         File.WriteAllText(stale, "--setenv\0AW_SINDRI_LAUNCH_SECRET\0old\0");
         var first = sandbox.Wrap(area.Plan, ["claude"]).Value[4];
 
@@ -95,7 +97,31 @@ public sealed class BubblewrapSecretsTests
 
         Assert.False(File.Exists(stale));
         Assert.False(File.Exists(first));
-        Assert.Equal([second], Directory.GetFiles(area.Root + "/area/secrets"));
+        Assert.Equal([second], Directory.GetFiles(launchDirectory), StringComparer.Ordinal);
+    }
+
+    [Fact]
+    public void Two_launches_in_one_run_area_never_touch_each_others_secrets()
+    {
+        using var area = new TempRunArea("AW_SINDRI_LAUNCH_SECRET", "ANTHROPIC_API_KEY");
+        var registry = Registry(area);
+        var other = area.Plan with { Launch = LaunchId.From("LCH-" + new string('e', 32)) };
+        registry.Put(other.Launch, new Dictionary<string, string>(StringComparer.Ordinal) { ["AW_SINDRI_LAUNCH_SECRET"] = "other-launch-value" });
+        var sandbox = Sandbox(new FakeProcesses(), registry);
+        var first = sandbox.Wrap(area.Plan, ["claude"]).Value[4];
+
+        var second = sandbox.Wrap(other, ["claude"]).Value[4];   // another launch's Wrap does not sweep the first's file
+        Assert.True(File.Exists(first));
+        sandbox.Discard(other);   // nor does its Discard
+        Assert.True(File.Exists(first));
+        Assert.False(File.Exists(second));
+        var otherAgain = sandbox.Wrap(other, ["claude"]).Value[4];
+        var firstAgain = sandbox.Wrap(area.Plan, ["claude"]).Value[4];   // re-wrapping the first replaces only the first's file
+
+        Assert.False(string.Equals(first, firstAgain, StringComparison.Ordinal));
+        Assert.False(File.Exists(first));
+        Assert.True(File.Exists(firstAgain));
+        Assert.True(File.Exists(otherAgain));
     }
 
     [Fact]

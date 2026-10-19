@@ -11267,6 +11267,7 @@ Aw.Sindri.Core.Sandbox.Plan.HookScript.Name.get -> string!
 Aw.Sindri.Core.Sandbox.Plan.HookScript.Name.init -> void
 Aw.Sindri.Core.Sandbox.Plan.HostGroups
 Aw.Sindri.Core.Sandbox.Plan.ISandbox
+Aw.Sindri.Core.Sandbox.Plan.ISandbox.Discard(Aw.Sindri.Core.Sandbox.Plan.SandboxPlan! plan) -> void
 Aw.Sindri.Core.Sandbox.Plan.ISandbox.Plan(Aw.Sindri.Core.Sandbox.Plan.SandboxRequest! request) -> Aw.Kernel.Result<Aw.Sindri.Core.Sandbox.Plan.SandboxPlan!>!
 Aw.Sindri.Core.Sandbox.Plan.ISandbox.Probe() -> Aw.Kernel.Result<Aw.Sindri.Core.Sandbox.Plan.SandboxCapabilities!>!
 Aw.Sindri.Core.Sandbox.Plan.ISandbox.SelfCheck(Aw.Sindri.Core.Sandbox.Plan.SandboxPlan! plan, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Aw.Kernel.Result<Aw.Kernel.Unit>!>!
@@ -11577,6 +11578,7 @@ Aw.Sindri.Core.Sandbox.Plan.StatePathKind.PerLaunchDir = 2 -> Aw.Sindri.Core.San
 Aw.Sindri.Core.Sandbox.Plan.StatePathKind.ReadOnly = 0 -> Aw.Sindri.Core.Sandbox.Plan.StatePathKind
 Aw.Sindri.Core.Sandbox.Plan.StatePathKind.ReadWrite = 1 -> Aw.Sindri.Core.Sandbox.Plan.StatePathKind
 Aw.Sindri.Core.Sandbox.Plan.UnavailableSandbox
+Aw.Sindri.Core.Sandbox.Plan.UnavailableSandbox.Discard(Aw.Sindri.Core.Sandbox.Plan.SandboxPlan! plan) -> void
 Aw.Sindri.Core.Sandbox.Plan.UnavailableSandbox.Plan(Aw.Sindri.Core.Sandbox.Plan.SandboxRequest! request) -> Aw.Kernel.Result<Aw.Sindri.Core.Sandbox.Plan.SandboxPlan!>!
 Aw.Sindri.Core.Sandbox.Plan.UnavailableSandbox.Probe() -> Aw.Kernel.Result<Aw.Sindri.Core.Sandbox.Plan.SandboxCapabilities!>!
 Aw.Sindri.Core.Sandbox.Plan.UnavailableSandbox.SelfCheck(Aw.Sindri.Core.Sandbox.Plan.SandboxPlan! plan, System.Threading.CancellationToken ct) -> System.Threading.Tasks.Task<Aw.Kernel.Result<Aw.Kernel.Unit>!>!

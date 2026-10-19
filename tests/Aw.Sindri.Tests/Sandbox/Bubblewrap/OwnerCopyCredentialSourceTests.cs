@@ -204,6 +204,18 @@ public sealed class OwnerCopyCredentialSourceTests
     }
 
     [Fact]
+    public async Task The_copy_is_stamped_before_the_first_file_is_copied_so_a_sweep_never_sees_it_unstamped()
+    {
+        using var home = new FakeOwnerHome(LoginState.Ready);
+
+        var prepared = (await home.Source().Prepare(_claude, _launch, TestContext.Current.CancellationToken)).Value;
+
+        var stamp = prepared.Handle.Value + "/.prepared";
+        var credentials = prepared.Handle.Value + "/.credentials.json";
+        Assert.True(File.GetCreationTimeUtc(stamp) <= File.GetCreationTimeUtc(credentials), "the stamp is made before the first copied file");
+    }
+
+    [Fact]
     public async Task The_crash_sweep_removes_the_copies_of_launches_with_no_live_scope_once_they_are_past_the_grace_period()
     {
         using var home = new FakeOwnerHome(LoginState.Ready);

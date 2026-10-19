@@ -152,6 +152,22 @@ public sealed class SandboxCanariesTests
     }
 
     [Fact]
+    public async Task A_run_area_that_cannot_be_made_is_016_fs_write_before_any_canary_runs()
+    {
+        using var area = new TempRunArea();
+        await File.WriteAllTextAsync(area.Root + "/a-file", "x", TestContext.Current.CancellationToken);
+        var plan = area.Plan with { Mounts = [.. area.Plan.Mounts, new PlanMount(area.Root + "/a-file/below", PlanMountKind.ReadWrite, Reason: "test")] };   // a directory below a file cannot be made
+        var processes = new FakeProcesses().When((p, _) => p == "bwrap", FakeProcesses.Ok());
+
+        var result = await Sandbox(processes).SelfCheck(plan, TestContext.Current.CancellationToken);
+
+        Assert.Equal("SND-LAUNCH-016", result.Error.Code);
+        Assert.Equal("fs-write", SandboxRefusal.ReasonOf(result.Error));
+        Assert.Contains("could not be prepared", result.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(processes.Calls, c => c.Program == "bwrap");
+    }
+
+    [Fact]
     public async Task The_whole_self_check_has_one_deadline_not_one_per_canary()
     {
         using var area = new TempRunArea();
