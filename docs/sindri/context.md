@@ -555,8 +555,10 @@ session reads off make every probe fail, so they are exit 2 here, not 1.
 ## S-4: proposing the map, reviewing it, lenses, the file map
 
 Sindri reads the repo and proposes the product map: deterministic anchors (command ids, keybindings, settings keys,
-routes (Express `app.get(...)` and ASP.NET Core minimal APIs `MapGet(...)`), UI names) each tied to the file that defines it, graphify clusters as candidate features, and an optional
-model pass that names the clusters. The result is a **draft** map; you review it, and only `map promote` makes it
+routes, UI names) each tied to the file that defines it, graphify clusters as candidate features, and an optional
+model pass that names the clusters. Routes come from Express calls (`app.get`) and from ASP.NET Core minimal APIs in C#
+files (`MapGet` and the like, the path as written, without a `MapGroup` prefix); C# files are read by that form only.
+The result is a **draft** map; you review it, and only `map promote` makes it
 `current`. Every decision is one `map_override` row, so it survives the next build.
 
 ### Profile

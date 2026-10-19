@@ -18,14 +18,14 @@ public static partial class Recognizers
     /// <summary>Every recognizer, in the order their findings are reported.</summary>
     public static IReadOnlyList<Recognizer> All { get; } =
     [
-        new("command-ids", Source, CommandIds),
-        new("command-registry", Source, Registry),
-        new("keybindings", Source, Keybindings),
+        new("command-ids", Script, CommandIds),
+        new("command-registry", Script, Registry),
+        new("keybindings", Script, Keybindings),
         new("settings", f => Source(f) && SettingsFile.IsMatch(f.Path) && !InToolFolder(f.Path) && !NotTheAppsSettings(f.Path), SettingKeys),
-        new("routes", Source, Routes),
-        new("minimal-api-routes", f => Source(f) && f.Path.EndsWith(".cs", StringComparison.Ordinal), MinimalApiRoutes),
+        new("routes", Script, Routes),
+        new("minimal-api-routes", f => Source(f) && IsCSharp(f.Path), MinimalApiRoutes),
         new("components", f => Source(f) && IsComponentFile(f.Path), Components),
-        new("test-ids", Source, TestIds),
+        new("test-ids", Script, TestIds),
     ];
 
     /// <summary>Whether the extractor reads a file at all.</summary>
@@ -49,6 +49,11 @@ public static partial class Recognizers
             && !path.Contains(".test.", StringComparison.Ordinal)
             && !path.Contains(".spec.", StringComparison.Ordinal);
     }
+
+    // The TypeScript and JavaScript forms: C# named arguments (id: "a", title: "b") would read as a command registry entry.
+    private static bool Script(RepoFile file) => Source(file) && !IsCSharp(file.Path);
+
+    private static bool IsCSharp(string path) => path.EndsWith(".cs", StringComparison.Ordinal);
 
     // The app's own settings registry is a tracked file of its source; a dot-folder (.vscode, .devcontainer, .idea) holds a tool's settings, not the product's.
     private static bool InToolFolder(string path) => path.Split('/').SkipLast(1).Any(segment => segment.StartsWith('.'));
@@ -148,7 +153,7 @@ public static partial class Recognizers
     [GeneratedRegex("\\b(?:app|router)\\.(?<m>get|post|put|patch|delete)\\(\\s*[\"'`](?<p>/[^\"'`\\s]*)[\"'`]", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Route { get; }
 
-    // ASP.NET Core minimal APIs: app.MapGet("/path", ...) or group.MapPost("/path", ...). The path is the one written there, relative to any MapGroup prefix.
+    // ASP.NET Core minimal APIs: a Map{Get,Post,Put,Patch,Delete} call on an app or a group whose first argument is a literal path from '/'. The path is the one written there, without any MapGroup prefix (that is often set in another file).
     [GeneratedRegex("\\.Map(?<m>Get|Post|Put|Patch|Delete)\\(\\s*\"(?<p>/[^\"\\s]*)\"", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex MinimalApiRoute { get; }
 
