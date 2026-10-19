@@ -12,15 +12,16 @@ public sealed class ScopingErrorsTests
         Assert.True(ErrorCatalogue.Validate([.. SindriErrors.All, .. WorkflowErrors.All, .. ScopingErrors.All]).IsSuccess);
 
     [Fact, Trait("Lane", "unit")]
-    public void The_live_codes_are_001_002_and_006_and_003_is_retired_and_never_live()
+    public void The_live_codes_are_001_002_004_and_006_and_003_is_retired_and_never_live()
     {
-        Assert.Equal(["SND-SCOPING-001", "SND-SCOPING-002", "SND-SCOPING-006"], ScopingErrors.All.Select(e => e.Code), StringComparer.Ordinal);
+        Assert.Equal(["SND-SCOPING-001", "SND-SCOPING-002", "SND-SCOPING-004", "SND-SCOPING-006"], ScopingErrors.All.Select(e => e.Code), StringComparer.Ordinal);
         Assert.Equal(["SND-SCOPING-003"], ScopingErrors.Retired);
     }
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("SND-SCOPING-001", ErrorKind.Invalid)]
     [InlineData("SND-SCOPING-002", ErrorKind.Invalid)]
+    [InlineData("SND-SCOPING-004", ErrorKind.Invalid)]
     [InlineData("SND-SCOPING-006", ErrorKind.NotFound)]
     public void Each_code_has_its_kind(string code, ErrorKind kind) =>
         Assert.Equal(kind, Assert.Single(ScopingErrors.All, e => e.Code == code).Kind);

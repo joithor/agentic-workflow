@@ -22,6 +22,7 @@ internal static class DeskBlocks
         ["evidence"] = "step.scope.evidence",
         ["record"] = "step.interview.record",
         ["interview.record"] = "step.interview.record",
+        ["gather"] = "step.scope.gather",
         ["seed"] = "step.brief.seed",
         ["brief.seed"] = "step.brief.seed",
     };
@@ -41,6 +42,7 @@ internal static class DeskBlocks
         "step.scope.evidence" => Evidence(facts),
         "step.interview.record" => Record(facts),
         "step.brief.seed" => Seed(),
+        "step.scope.gather" => Gather(facts),
         _ => SindriErrors.InvalidInput.With($"no desk helper for {block}"),
     };
 
@@ -71,6 +73,12 @@ internal static class DeskBlocks
 
         var outputs = ScopeSchemas.Seeds().ToDictionary(static s => s.Key, static s => ScopeJson.Write(s.Value), StringComparer.Ordinal);
         return Reply("step.scope.intake", kind, outputs, []);
+    }
+
+    private static Result<ScopingDeskResponse> Gather(ScopeFacts facts)
+    {
+        var assembled = LensGather.Assemble(facts["lensesView"], facts["codeView"], facts["historyView"], [.. ScopeJson.Strings(facts["anchors"])]);
+        return Reply("step.scope.gather", "gathered", Outputs(("lenses", assembled.Lenses), ("coverage", assembled.Coverage)), []);
     }
 
     private static Result<ScopingDeskResponse> Seed() =>

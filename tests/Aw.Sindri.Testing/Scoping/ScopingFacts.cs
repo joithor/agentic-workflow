@@ -31,6 +31,11 @@ public sealed class ScopingFacts : Dictionary<string, string>
         return facts;
     }
 
+    /// <summary>A context view fixture's JSON text ('lensesView', 'codeView', 'historyView', 'contextQuery' or 'proposeResult').</summary>
+    /// <param name="name">The fixture's file name without its extension.</param>
+    /// <returns>The JSON text.</returns>
+    public static string View(string name) => Read("scoping-views/" + name + ".json");
+
     /// <summary>Edits one fact's JSON in place.</summary>
     /// <param name="key">The fact.</param>
     /// <param name="edit">Receives the fact's parsed JSON; change it in place.</param>
