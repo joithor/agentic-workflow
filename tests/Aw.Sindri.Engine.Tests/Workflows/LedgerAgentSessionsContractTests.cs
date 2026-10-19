@@ -33,6 +33,30 @@ public sealed class LedgerAgentSessionsContractTests : AgentSessionsContract
     protected override async ValueTask Spend(IAgentSessions sessions, LaunchId launch, int sample, long tokens) =>
         await Append(EventTypes.SessionUsage, new SessionUsage(launch, sample, tokens / 2, tokens - (tokens / 2), AgentId.From("claude-code")), string.Create(CultureInfo.InvariantCulture, $"{EventTypes.SessionUsage}:{launch.Value}:{sample}"));
 
+    /// <summary>A Step's budget counts fresh input, cache writes and output, not the cache reads a session re-counts every turn.</summary>
+    [Fact]
+    public async Task Usage_leaves_the_cache_reads_out_of_the_budgeted_tokens()
+    {
+        var sessions = await Create();
+        await Append(EventTypes.SessionUsage, new SessionUsage(A.FirstLaunchId, 1, InputTokens: 1_000, OutputTokens: 100, AgentId.From("claude-code"), Model: null, CacheReadTokens: 800), $"{EventTypes.SessionUsage}:{A.FirstLaunchId.Value}:1");
+
+        var spent = await sessions.Usage(A.FirstLaunchId, TestContext.Current.CancellationToken);
+
+        Assert.Equal(300L, spent.Value);
+    }
+
+    /// <summary>A sample from before the split has no cache field: its input stands as it was.</summary>
+    [Fact]
+    public async Task Usage_of_a_sample_without_the_split_counts_all_its_input()
+    {
+        var sessions = await Create();
+        await Append(EventTypes.SessionUsage, new SessionUsage(A.FirstLaunchId, 1, 1_000, 100, AgentId.From("claude-code")), $"{EventTypes.SessionUsage}:{A.FirstLaunchId.Value}:1");
+
+        var spent = await sessions.Usage(A.FirstLaunchId, TestContext.Current.CancellationToken);
+
+        Assert.Equal(1_100L, spent.Value);
+    }
+
     private async ValueTask Append<T>(string type, T payload, string key)
     {
         var appended = await _slice.Store.Append(_slice.Events.Entry(type, payload, key, A.FirstItemId.Value), _grant!, TestContext.Current.CancellationToken);   // why: Create ran first
