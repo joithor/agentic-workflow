@@ -28,6 +28,8 @@ public sealed class OnyxAccountTests
 
         public FakeOnyxProvisioning Provisioning { get; } = new();
 
+        public FakeOnyxDatabase Database { get; } = new();
+
         public FakeSecretWriter Secrets { get; } = new();
 
         public FakeOnyxProfileWriter Profile { get; } = new();
@@ -35,7 +37,7 @@ public sealed class OnyxAccountTests
         public CapturingOnyxProgress Progress { get; } = new();
 
         public OnyxAccountService Service(FakeOnyxPrompts? prompts = null)
-            => new(Workspace, prompts ?? Prompts, Browser, new OnyxKeyMinter(prompts ?? Prompts, Provisioning, Secrets, Secrets), Profile, Progress);
+            => new(Workspace, prompts ?? Prompts, Browser, new OnyxKeyMinter(prompts ?? Prompts, Provisioning, Secrets, Secrets, new OnyxAdminGroup(Database, new OnyxFacts(new FakeContainerRuntime(FakeContainerRuntime.Healthy), new FakeHostProbes(), new FakeSindriHome(OnyxUpRig.Home)))), Profile, Progress);
 
         public async Task<Kernel.Result<OnyxAccountResponse>> Run() => await Service().Handle(new OnyxAccountRequest(3000, "v4.9.0"), Token);
     }

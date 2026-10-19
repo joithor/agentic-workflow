@@ -32,7 +32,7 @@ public sealed class HttpOnyxProvisioningContractTests : OnyxProvisioningContract
             var (status, body) = path switch
             {
                 "/api/manage/admin/user-group" => (HttpStatusCode.OK, "[{\"id\":3,\"name\":\"Admin\",\"is_default\":true}]"),
-                "/api/admin/api-key" => (HttpStatusCode.OK, "{\"api_key\":\"on_made-0123\"}"),
+                "/api/admin/api-key" => (HttpStatusCode.OK, "{\"api_key\":\"on_made-0123\",\"groups\":[{\"id\":3,\"name\":\"Admin\"}]}"),
                 "/api/me" when request.Headers.Authorization?.Parameter == "on_made-0123" => (HttpStatusCode.OK, "{\"account_type\":\"SERVICE_ACCOUNT\",\"effective_permissions\":[\"basic\",\"admin\"]}"),
                 "/api/me" => (HttpStatusCode.Unauthorized, "{}"),
                 _ => (HttpStatusCode.OK, "{}"),

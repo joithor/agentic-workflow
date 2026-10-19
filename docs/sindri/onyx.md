@@ -28,6 +28,13 @@ one-user sizing), the pull and the start. Then it needs you twice:
    an owner-only file under `$AW_SINDRI_HOME/secrets/` when there is none), writes `context.sources.onyx` into your profile
    (`managed: true`) and shows the profile approval to confirm.
 
+   *Community Edition note.* Onyx's user-group list is an Enterprise-only route, so the CE we run answers it `402 Payment
+   Required`. Sindri takes the default Admin group's id from the stack's own database instead (a read-only
+   `select` through `docker exec` on the `relational_db` container of its own compose project; no extra HTTP request),
+   makes the key in that group, and keeps it only when Onyx's answer lists the Admin group; otherwise it tells you which
+   key to delete in Admin → API Keys. With no stack of Sindri's on the box (an Onyx you run yourself) it reads nothing
+   and points you at section 5 below. A rerun after any failure resumes at this step.
+
 Last it opens Onyx's connectors page and prints the checklist: connect Linear (the product's teams, with a start date that
 covers the backtests) and Slack (the product's channels) with the company's OAuth, in Onyx's UI. `$SINDRI doctor` then
 shows `context:onyx` and `onyx:stack`.
@@ -151,6 +158,8 @@ answers and what the key is, not how far indexing has got.
 ## 5. The key
 
 Create a **dedicated service account** in Admin → API Keys named `sindri-onyx` and copy its key (`on_…`).
+(This is also the path `sindri onyx up` sends you to on the Community Edition when no stack of Sindri's runs on the
+box, since it can't read the Admin group without one.)
 The search route Sindri uses (`POST /api/admin/search`, the only v4.9.0 CE route that returns document ids without
 an LLM) needs an **admin** key, so this key could change Onyx settings (owner decision 2026-10-12, context spec §8.8).
 Sindri only ever sends the five requests in §7; its Onyx adapter refuses any other request before sending it, and a

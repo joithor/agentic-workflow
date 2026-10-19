@@ -122,6 +122,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IOnyxHealth>(static _ => new HttpOnyxHealth(HttpOnyxHealth.CreateClient()))                 // readiness, http://127.0.0.1 only
             .AddSingleton<IHostProbes>(static _ => new HostProbes())                                       // free disk and loopback ports
             .AddSingleton<IOnyxProvisioning, HttpOnyxProvisioning>()                                        // the setup-only requests, loopback, five on the list (spec §5.2)
+            .AddSingleton<IOnyxDatabase>(static _ => new DockerExecOnyxDatabase(new ProcessToolRunner()))   // the default Admin group's id, read from Sindri's own stack when Onyx CE's group list answers 402
             .AddSingleton<ISecretWriter>(static sp => new KeychainSecretWriter(new ProcessToolRunner(), sp.GetRequiredService<ISindriHome>()))   // the key into the OS store, else an owner-only file
             .AddSingleton<IOnyxProfileWriter, YamlOnyxProfileWriter>()                                     // context.sources.onyx in the live profile
             .AddSingleton<IOnyxPrompts, TerminalPrompts>()                                                  // the owner at the terminal, no echo for the password
