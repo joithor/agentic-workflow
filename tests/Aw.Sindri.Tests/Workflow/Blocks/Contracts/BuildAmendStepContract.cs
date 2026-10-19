@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.Extensions.Time.Testing;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Step;
@@ -7,6 +6,7 @@ using Aw.Sindri.Features.Build;
 using Aw.Sindri.Testing.Packets;
 using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 

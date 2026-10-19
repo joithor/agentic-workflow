@@ -28,7 +28,7 @@ public sealed class InMemoryPacketFiles : IPacketFiles
 
     /// <inheritdoc/>
     public ValueTask<Result<IReadOnlyDictionary<string, string>>> Read(string directory, CancellationToken cancellationToken) =>
-        ValueTask.FromResult<Result<IReadOnlyDictionary<string, string>>>(_directories.TryGetValue(directory, out var files) ? Results.Success(files) : SindriErrors.InvalidInput.With($"the packet directory {directory} does not exist"));
+        ValueTask.FromResult(_directories.TryGetValue(directory, out var files) ? Results.Success(files) : SindriErrors.InvalidInput.With($"the packet directory {directory} does not exist"));
 
     /// <inheritdoc/>
     public ValueTask<Result<string>> Create(string address, string name, IReadOnlyDictionary<string, string> files, CancellationToken cancellationToken)
