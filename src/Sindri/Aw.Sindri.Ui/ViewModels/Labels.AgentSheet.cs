@@ -92,7 +92,7 @@ internal static partial class Labels
 
     /// <summary>The accessible name of the action that opens the Step's frame.</summary>
     /// <param name="instance">The instance address.</param>
-    /// <param name="state">The Step's state.</param>
+    /// <param name="state">The Step's state, or null.</param>
     /// <returns>The words.</returns>
-    internal static string OpenStepFrameName(string instance, string state) => $"{OpenStepFrame}: {instance} at {state}";
+    internal static string OpenStepFrameName(string instance, string? state) => state is { Length: > 0 } ? $"{OpenStepFrame}: {instance} at {state}" : $"{OpenStepFrame}: {instance}";
 }

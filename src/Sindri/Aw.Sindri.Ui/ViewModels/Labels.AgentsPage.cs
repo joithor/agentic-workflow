@@ -82,4 +82,12 @@ internal static partial class Labels
     /// <returns>The words.</returns>
     internal static string SessionStep(string instance, string? state, int? attempt) =>
         string.Join(" · ", new[] { "on " + instance, state ?? string.Empty, attempt is > 1 ? "attempt " + attempt.Value.ToString(CultureInfo.InvariantCulture) : string.Empty }.Where(p => p.Length > 0));
+
+    /// <summary>The step button's accessible name: its visible words, then what it opens ("on ITM-…/step/1 · build: open ITM-…/step/1 at build").</summary>
+    /// <param name="visible">The button's visible words.</param>
+    /// <param name="instance">The instance address.</param>
+    /// <param name="state">The Step's state, or null.</param>
+    /// <returns>The words.</returns>
+    internal static string SessionStepName(string visible, string instance, string? state) =>
+        state is { Length: > 0 } ? $"{visible}: open {instance} at {state}" : $"{visible}: open {instance}";
 }

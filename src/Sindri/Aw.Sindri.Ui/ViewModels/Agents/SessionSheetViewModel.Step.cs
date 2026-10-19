@@ -11,7 +11,7 @@ internal sealed partial class SessionSheetViewModel
     internal event EventHandler<SessionFrameRequestedEventArgs>? FrameRequested;
 
     /// <summary>True when an engine launch started the session (the open action shows).</summary>
-    public bool HasStep => _step is { Instance.Length: > 0, State: not null };
+    public bool HasStep => _step is { Instance.Length: > 0 };
 
     /// <summary>The open action's visible words.</summary>
 #pragma warning disable CA1822, MA0041 // a fixed word is a property because the view binds it
@@ -19,14 +19,14 @@ internal sealed partial class SessionSheetViewModel
 #pragma warning restore CA1822, MA0041
 
     /// <summary>The open action's accessible name: "Open ITM-…/step/1 at build".</summary>
-    public string OpenFrameName => _step is { Instance: { } instance, State: { } state } ? Labels.OpenStepFrameName(instance, state) : Labels.OpenStepFrame;
+    public string OpenFrameName => _step is { Instance: { Length: > 0 } instance } step ? Labels.OpenStepFrameName(instance, step.State) : Labels.OpenStepFrame;
 
     /// <summary>Opens the frame of the Step the session works on; nothing without one.</summary>
     internal void OpenFrame()
     {
-        if (_step is { Instance: { Length: > 0 } instance, State: { } state })
+        if (_step is { Instance: { Length: > 0 } instance } step)
         {
-            FrameRequested?.Invoke(this, new SessionFrameRequestedEventArgs(instance, state));
+            FrameRequested?.Invoke(this, new SessionFrameRequestedEventArgs(instance, step.State));
         }
     }
 

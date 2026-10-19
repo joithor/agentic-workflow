@@ -53,4 +53,20 @@ public sealed class SessionSheetStepTests
     }
 
     private static string Field(SessionSheetViewModel sheet, string label) => sheet.Fields.Single(f => f.Label == label).Value;
+
+    [Fact]
+    public async Task A_Step_with_no_state_still_shows_and_runs_the_open_action()
+    {
+        var body = System.Text.Json.Nodes.JsonNode.Parse(GoldenFiles.Api("sessions-id", "cursor-engine-launch"))!;
+        body["session"]!["launch"]!["state"] = null;
+        _server.SessionAnswer = new RouteAnswer(System.Net.HttpStatusCode.OK, body.ToJsonString());
+        var sheet = await Opened("cursor/pid-333-100");
+        SessionFrameRequestedEventArgs? asked = null;
+        sheet.FrameRequested += (_, e) => asked = e;
+
+        sheet.OpenFrame();
+
+        Assert.Equal((true, Instance, null), (sheet.HasStep, asked!.Address, asked.State));
+        Assert.EndsWith(Instance, sheet.OpenFrameName, StringComparison.Ordinal);
+    }
 }

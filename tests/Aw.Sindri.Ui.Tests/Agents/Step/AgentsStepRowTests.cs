@@ -104,6 +104,32 @@ public sealed class AgentsStepRowTests
         Assert.Equal((Instance, "build"), (asked!.Address, asked.State));
     }
 
+    [Fact]
+    public async Task A_Step_with_no_state_still_opens_its_frame_from_the_chip_and_from_O()
+    {
+        _f.Serve(Served(r => r["launch"] = Launch(Instance, state: null, attempt: null)));
+        var page = await _f.Shown(Token);
+        var asked = new List<SessionFrameRequestedEventArgs>();
+        page.FrameRequested += (_, e) => asked.Add(e);
+        _ = page.Press("K");
+        var row = page.Groups.SelectMany(g => g.Rows).Single(r => r.Ref.StartsWith("cursor/", StringComparison.Ordinal));
+
+        row.OpenFrame();
+        Assert.True(page.Press("O"));
+
+        Assert.Equal((true, 2, $"on {Instance}"), (row.HasStep, asked.Count, row.StepText));
+        Assert.All(asked, e => Assert.Equal((Instance, null), (e.Address, e.State)));
+        Assert.Equal($"on {Instance}: open {Instance}", row.StepName);
+    }
+
+    [Fact]
+    public async Task The_chips_name_starts_with_its_visible_words_and_says_what_it_opens()
+    {
+        var row = await CursorRow(r => r["launch"] = Launch(Instance, "build", 2));
+
+        Assert.Equal($"on {Instance} · build · attempt 2: open {Instance} at build", row.StepName);
+    }
+
     private static void FocusAsked(AgentsPageViewModel page, out Func<AgentFocusEventArgs?> read)
     {
         AgentFocusEventArgs? last = null;

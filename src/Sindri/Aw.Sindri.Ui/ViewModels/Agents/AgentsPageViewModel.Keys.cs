@@ -2,7 +2,7 @@ namespace Aw.Sindri.Ui.ViewModels.Agents;
 
 /// <summary>
 /// The Agents page's keys (<see cref="AgentsPageViewModel"/>, continued; collector spec CU-1, Q6): J / K walk the drawn rows, Enter opens the
-/// selected session's sheet, O moves focus to its Focus line, Y copies the selected ended row's resume command (or the Focus line's CLI) and
+/// selected session's sheet, O opens the frame of the Step it works on (else moves focus to its Focus line), Y copies the selected ended row's resume command (or the Focus line's CLI) and
 /// E folds the recently ended. The selection is a key: a re-read keeps it on the same row and moves it to the neighbour when its row is gone.
 /// </summary>
 internal sealed partial class AgentsPageViewModel

@@ -97,15 +97,18 @@ internal sealed class SessionRowViewModel : ObservableObject, ISessionRef
     /// <summary>"on ITM-…/step/1 · build · attempt 2" for a session an engine launch started; empty otherwise.</summary>
     public string StepText { get; private set => Set(ref field, value); } = string.Empty;
 
+    /// <summary>The step button's accessible name: its visible words first, then what it opens.</summary>
+    public string StepName { get; private set => Set(ref field, value); } = string.Empty;
+
     /// <summary>True when the row names the Step it works on.</summary>
     public bool HasStep => StepText.Length > 0;
 
     /// <summary>Opens the frame of the Step the session works on; nothing without one.</summary>
     internal void OpenFrame()
     {
-        if (Row.Launch is { Instance: { Length: > 0 } instance, State: { } state })
+        if (Row.Launch is { Instance: { Length: > 0 } instance } launch)
         {
-            FrameRequested?.Invoke(this, new SessionFrameRequestedEventArgs(instance, state));
+            FrameRequested?.Invoke(this, new SessionFrameRequestedEventArgs(instance, launch.State));
         }
     }
 
@@ -133,6 +136,7 @@ internal sealed class SessionRowViewModel : ObservableObject, ISessionRef
         (WorktreeText, SinceText) = (Row.Worktree ?? string.Empty, Labels.Age(_clock.GetUtcNow() - Row.Since));
         (HostText, LaneText) = (HostOf(Row), LaneOf(Row));
         StepText = Row.Launch is { Instance: { Length: > 0 } instance } launch ? Labels.SessionStep(instance, launch.State, launch.Attempt) : string.Empty;
+        StepName = Row.Launch is { Instance: { Length: > 0 } opens } named ? Labels.SessionStepName(StepText, opens, named.State) : string.Empty;
         WhereText = string.Join(" · ", new[] { WorktreeText, HostText, LaneText }.Where(p => p.Length > 0));
         Name = Labels.SessionName(Row.ProviderLabel, title, chip.Word.ToLowerInvariant() + (EstimatedText.Length > 0 ? " (" + EstimatedText + ")" : string.Empty), string.Join(", ", new[] { AskingText, StepText }.Where(p => p.Length > 0)), HostText);
         Signature = string.Join('|', Row.State, AskingText, EstimatedText, title, WorktreeText, HostText, LaneText, StepText, Row.Focus.Method);
