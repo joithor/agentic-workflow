@@ -36,7 +36,7 @@ public static class InstanceSummaries
 
     /// <summary>
     /// The subject the list row and the detail show: the view's, with an item's title in place of its id when the subject is the
-    /// item, the recipe declares no name and the caller knows the title; an empty rendered name shows the instance address. A view
+    /// item, the recipe declares no name and the caller knows the title; a subject labelled by nothing but its fact key ('fact:scopeInput') shows the item's title when there is one; an empty rendered name shows the instance address. A view
     /// with no subject yet (a starting instance) is about the item itself: kind 'item', the item's id as the key, its title (else the address) as the label.
     /// </summary>
     /// <param name="view">The instance view.</param>
@@ -49,6 +49,7 @@ public static class InstanceSummaries
         {
             null => new("item", view.ItemId?.Value ?? string.Empty, itemTitle is { Length: > 0 } ? itemTitle : view.Address.Value, Href: null),
             { Kind: "item" } item when view.Name is null && itemTitle is { Length: > 0 } && item.Key == view.ItemId?.Value => item with { Label = itemTitle },
+            { } keyed when itemTitle is { Length: > 0 } && keyed.Label == keyed.Key && keyed.Key.StartsWith("fact:", StringComparison.Ordinal) => keyed with { Label = itemTitle },
             { Label.Length: 0 } unnamed => unnamed with { Label = view.Address.Value },
             { } subject => subject,
         };
