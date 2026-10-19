@@ -1,11 +1,39 @@
 # Sindri
 
-Sindri is a local, always-on harness that picks up work, sizes it, starts agent sessions with cited context, keeps them on track and ships them. It asks the human only when it has to. Two things carry the name today:
+Sindri is a local, always-on harness that picks up work, sizes it, starts agent sessions with cited context, keeps them on track and ships them. It asks the human only when it has to.
 
-- **The Sindri application**, designed below and built new in C# (not ported from TypeScript). Its first stage, the app shell (`src/Sindri`: the `sindri` CLI and control plane, host lease, ledger, YAML profile, API, scheduler, doctor), is built and documented in `docs/csharp/sindri.md`, with its own `SND-*` catalogue; nothing of it is installed yet. `errors.md` is the TypeScript sindri's catalogue.
+It runs on your machine as one process, the **control plane**, with three engines inside it:
+
+- **Control plane**: the ledger (every event, append-only), the API on `127.0.0.1`, the scheduler and the host lease (one Sindri per box).
+- **Workflow engine**: runs each piece of work as a recipe on a local Temporal server, from scoping to a proven pull request (`workflow.line`).
+- **Context engine**: the product map of your repo, its docs, and your Linear and Slack (through a local Onyx), answered with citations to you and to agent sessions over MCP.
+
+The **Sindri app** (`sindri-ui`) is a desktop window onto the control plane. Your agent work still happens in Claude Code, Codex or Cursor in your terminal; Sindri starts those sessions, feeds them context and tracks them.
+
+## Install and start
+
+```bash
+cd ~/code/agentic-workflow
+scripts/sindri-app.sh status            # publishes the C# Sindri for this platform and links ~/.local/bin/sindri-app
+$EDITOR ~/.agentic-workflow/sindri-app/profile/profile.yaml   # your repos and the context section
+sindri-app profile validate
+sindri-app profile approve <hash>       # in your own terminal: type the challenge it shows
+sindri-app                              # start the control plane and open the app (--headless: no app)
+sindri-app doctor                       # one line per check: ok / warn / fail with a fix
+```
+
+Use `sindri-app`, not `sindri`: until the C# build replaces it, `sindri` on your PATH is the TypeScript Sindri, with its own profile. Sindri's own hints say `sindri …`; read them as `sindri-app …`. Some commands (approvals, starting and answering workflows, map builds, `onyx up`) only run from a person's terminal and refuse agent sessions with `SND-AUTH-002`.
+
+The full setup, from prerequisites through Onyx, agent runtime and MCP to the app, is in **[SETUP.md](SETUP.md)**, and as a guided page with a picture per step: **[`docs/sindri-setup.html`](../sindri-setup.html)** (open it from disk). Operating it from the CLI (the product map, recipes, running the line) is in [OPERATIONS.md](OPERATIONS.md) until those move into the app.
+
+## Two builds
+
+Two things carry the name today:
+
+- **The Sindri application**, designed below and built new in C# (not ported from TypeScript): `src/Sindri`, the `sindri` CLI and control plane (run as `sindri-app` before the switch), documented in `docs/csharp/sindri.md` with its own `SND-*` catalogue. `errors.md` is the TypeScript sindri's catalogue.
 - **The TypeScript `sindri/` package** ([below](#today-the-typescript-reference-sindri)). It runs at the desk now and is the reference for what each part does. It keeps running until the switch (readiness spec §4a step 3).
 
-Visual guides: `docs/sindri-architecture.html` (the map and step-by-step flows of using and building Sindri), `docs/sindri.html` (every feature, with status) and `docs/sindri-course/` (the concepts).
+Visual guides: `docs/sindri-setup.html` (setting it up, step by step), `docs/sindri-architecture.html` (the map and step-by-step flows of using and building Sindri), `docs/sindri.html` (every feature, with status) and `docs/sindri-course/` (the concepts).
 
 Specs: the core design `docs/superpowers/specs/2026-10-07-sindri-design.md`, and the factory addendum `docs/superpowers/specs/2026-10-09-sindri-factory-addendum.md` (A below), whose §17.28 (the workflow engine) and §17.29 (Sindri as an application) define the app. Decisions Q6 and Q7 are in A §17.17.
 

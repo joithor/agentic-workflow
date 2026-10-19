@@ -11,7 +11,7 @@ namespace Aw.Sindri.Features.Scoping;
 /// answer for (no repo, no profile, an engine error) is left out, as the desk leaves out a missing 'contextQuery'.
 /// </summary>
 /// <param name="shape">The engine's text shape.</param>
-internal sealed class ScopeReanchorStep(IScopingTextShape shape) : ScopingCodeStep(Id), IBlockStepId
+internal sealed class ScopeReanchorStep(IScopingTextShape shape) : ScopingCodeStep(Id), IBlockStepId, IRepoStep
 {
     /// <inheritdoc/>
     public static BlockId Id { get; } = BlockId.From("step.scope.reanchor");

@@ -3,6 +3,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Step;
 using Aw.Sindri.Features.Scoping;
+using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Scoping.Steps;
 
@@ -23,5 +24,5 @@ public sealed class ScopeCheckStepContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new ScopeCheckStep().Run(ScopingStepContexts.Of("step.scope.check", []), cancellationToken);
+        _ = await new ScopeCheckStep(new InMemoryRunArea()).Run(ScopingStepContexts.Of("step.scope.check", []), cancellationToken);
 }

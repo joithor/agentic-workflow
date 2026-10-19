@@ -271,7 +271,7 @@ public sealed class BlockStepRunnerTests
     }
 
     private BlockStepRunner ReadsRunner(ItemReposStub? repos = null) => new(
-        new BlockStepRuntimes([new BlockStepRegistration(ReadsStep.Id)]),
+        new BlockStepRuntimes([new BlockStepRegistration(ReadsStep.Id, NeedsRepo: true)]),
         new BlockCatalog([ReadsStep.Descriptor], []),
         (_, context, _) =>
         {

@@ -8,7 +8,7 @@ namespace Aw.Sindri.Features.Scoping;
 /// 'step.scope.gather', on the block runtime: <c language="text">ScopingSteps.Gather</c>'s code behind <see cref="IBlockStep"/>. The context engine's views
 /// are not facts but its Step inputs' typed results ('input.context.lenses', '.code' and '.history'), which the code reads as lensesView, codeView and historyView.
 /// </summary>
-internal sealed class ScopeGatherStep() : ScopingCodeStep(Id), IBlockStepId
+internal sealed class ScopeGatherStep() : ScopingCodeStep(Id), IBlockStepId, IRepoStep
 {
     private static readonly (string Input, string View)[] _views =
     [

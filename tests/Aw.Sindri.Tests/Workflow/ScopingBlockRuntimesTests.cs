@@ -24,8 +24,8 @@ public sealed class ScopingBlockRuntimesTests
 {
     private static readonly string[] _registered =
     [
-        "step.brief.seed", "step.interview.record", "step.scope.anchor", "step.scope.challenge-log", "step.scope.check", "step.scope.gather", "step.scope.intake",
-        "step.scope.propose", "step.scope.read-brief", "step.scope.reanchor", "step.scope.withdraw",
+        "step.brief.seed", "step.build.prepare", "step.interview.record", "step.phase.drift", "step.scope.anchor", "step.scope.challenge-log", "step.scope.check", "step.scope.gather",
+        "step.scope.intake", "step.scope.propose", "step.scope.read-brief", "step.scope.reanchor", "step.scope.withdraw", "step.ship.return",
     ];
 
     [Fact]
@@ -50,7 +50,7 @@ public sealed class ScopingBlockRuntimesTests
 
         Assert.Equal(_registered, context.Runtimes.Keys.Select(static k => k.Value).Where(static k => !k.StartsWith("step.design.", StringComparison.Ordinal) && !k.StartsWith("step.plan.", StringComparison.Ordinal)).Order(StringComparer.Ordinal), StringComparer.Ordinal);   // the design and plan stations' runtimes are BS2's
         var used = recipe.States.Values.Select(static s => s.Step?.Use.Value).OfType<string>().ToHashSet(StringComparer.Ordinal);
-        Assert.Empty(_registered.Except(used.Concat(["step.brief.seed", "step.scope.anchor"]), StringComparer.Ordinal));   // brief.seed and anchor are the idea child's (workflow.idea-to-brief), not this recipe's
+        Assert.Empty(_registered.Where(static id => id.StartsWith("step.scope.", StringComparison.Ordinal) || string.Equals(id, "step.brief.seed", StringComparison.Ordinal) || string.Equals(id, "step.interview.record", StringComparison.Ordinal)).Except(used.Concat(["step.brief.seed", "step.scope.anchor"]), StringComparer.Ordinal));   // brief.seed and anchor are the idea child's (workflow.idea-to-brief), not this recipe's
     }
 
     [Fact]

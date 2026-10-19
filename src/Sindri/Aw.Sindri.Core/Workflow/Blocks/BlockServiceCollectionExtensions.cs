@@ -46,7 +46,7 @@ public static class BlockServiceCollectionExtensions
     /// <returns>The same collection.</returns>
     public static IServiceCollection AddBlockRuntime<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] T>(this IServiceCollection services)
         where T : class, IBlockStep, IBlockStepId
-        => services.AddSingleton(new BlockStepRegistration(T.Id)).AddScoped<T>().AddScoped<IBlockStep, T>().AddKeyedScoped<IBlockStep, T>(T.Id.Value);
+        => services.AddSingleton(new BlockStepRegistration(T.Id, typeof(IRepoStep).IsAssignableFrom(typeof(T)))).AddScoped<T>().AddScoped<IBlockStep, T>().AddKeyedScoped<IBlockStep, T>(T.Id.Value);
 
     /// <summary>Registers the effect <typeparamref name="T"/>, also keyed by its block id (the 'RunEffect' activity runs it by id).</summary>
     /// <param name="services">The service collection.</param>

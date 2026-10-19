@@ -12,7 +12,7 @@ namespace Aw.Sindri.Features.Scoping;
 /// since 'withdrawn' would say a drop left nothing behind when it left the proposals standing.
 /// </summary>
 /// <param name="proposals">The run's proposals on the context map.</param>
-internal sealed class ScopeWithdrawStep(IScopeRunProposals proposals) : IBlockStep, IBlockStepId
+internal sealed class ScopeWithdrawStep(IScopeRunProposals proposals) : IBlockStep, IBlockStepId, IRepoStep
 {
     private static readonly OutcomeName _withdrawn = OutcomeName.From("withdrawn");
 

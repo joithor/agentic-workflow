@@ -10,7 +10,7 @@ namespace Aw.Sindri.Features.Scoping;
 /// then <c language="text">ScopingSteps.Anchor</c>'s code. The engine failing to answer fails the Step, which parks for a person (the anchors gather searches from).
 /// </summary>
 /// <param name="shape">The engine's text shape.</param>
-internal sealed class ScopeAnchorStep(IScopingTextShape shape) : ScopingCodeStep(Id), IBlockStepId
+internal sealed class ScopeAnchorStep(IScopingTextShape shape) : ScopingCodeStep(Id), IBlockStepId, IRepoStep
 {
     /// <inheritdoc/>
     public static BlockId Id { get; } = BlockId.From("step.scope.anchor");

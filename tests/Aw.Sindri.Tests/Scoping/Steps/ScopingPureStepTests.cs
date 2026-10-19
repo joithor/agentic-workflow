@@ -49,7 +49,7 @@ public sealed class ScopingPureStepTests
     [Fact]
     public async Task Check_on_the_gold_facts_passes_and_writes_no_findings()
     {
-        var result = await Run(new ScopeCheckStep(), "step.scope.check", ScopingFacts.Expiry());
+        var result = await Run(new ScopeCheckStep(new InMemoryRunArea()), "step.scope.check", ScopingFacts.Expiry());
 
         Assert.Equal("pass", result.Result!.Outcome.Value);
         Assert.Empty(ScopingStepContexts.Keys(result));
@@ -58,7 +58,7 @@ public sealed class ScopingPureStepTests
     [Fact]
     public async Task Check_on_a_gap_reports_gaps_with_the_findings()
     {
-        var result = await Run(new ScopeCheckStep(), "step.scope.check", ScopingFacts.Expiry().Edit("acceptance", n => n["items"] = new JsonArray()));
+        var result = await Run(new ScopeCheckStep(new InMemoryRunArea()), "step.scope.check", ScopingFacts.Expiry().Edit("acceptance", n => n["items"] = new JsonArray()));
 
         Assert.Equal("gaps", result.Result!.Outcome.Value);
         Assert.Contains(Out(result, "findings").AsArray(), f => f!["rule"]!.GetValue<string>() == "SCP-ACC-001");
@@ -67,7 +67,7 @@ public sealed class ScopingPureStepTests
     [Fact]
     public async Task Check_on_a_degraded_source_reports_regather()
     {
-        var result = await Run(new ScopeCheckStep(), "step.scope.check", ScopingCheckTests.Limited("history", "degraded", "timeout", code: null, "not-searched", 0));
+        var result = await Run(new ScopeCheckStep(new InMemoryRunArea()), "step.scope.check", ScopingCheckTests.Limited("history", "degraded", "timeout", code: null, "not-searched", 0));
 
         Assert.Equal("regather", result.Result!.Outcome.Value);
         Assert.Equal(["findings"], ScopingStepContexts.Keys(result), StringComparer.Ordinal);
