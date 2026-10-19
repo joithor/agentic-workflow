@@ -65,7 +65,13 @@ public sealed class AwPacketsToolTests
         var result = await tool.Freeze(new PacketRef(PacketKind.Scoping, "/run/scope", RepoSlug: "o/n", Instance: "T-1"), PacketFreezer.Owner, Token);
 
         Assert.Equal(["freeze", "--kind", "scoping", "/run/scope", "--repo-slug", "o/n", "--instance", "T-1", "--by", "owner", "--json"], runner.Calls[0].Arguments);
-        Assert.Equal(new PacketFreeze(true, hash, PacketFreezer.Machine, true, PacketFreezer.Machine, []), result.Value);
+        var freeze = result.Value;
+        Assert.True(freeze.Frozen);
+        Assert.Equal(hash, freeze.Hash);
+        Assert.Equal(PacketFreezer.Machine, freeze.By);
+        Assert.True(freeze.AlreadyFrozen);
+        Assert.Equal(PacketFreezer.Machine, freeze.AlreadyFrozenBy);
+        Assert.Empty(freeze.Failures);
     }
 
     [Fact]
@@ -105,11 +111,11 @@ public sealed class AwPacketsToolTests
     }
 
     [Theory]
-    [InlineData(ToolOutcome.Missing)]
-    [InlineData(ToolOutcome.TimedOut)]
-    public async Task A_missing_or_slow_tool_is_a_tool_error(ToolOutcome outcome)
+    [InlineData(2)]   // ToolOutcome.Missing
+    [InlineData(3)]   // ToolOutcome.TimedOut
+    public async Task A_missing_or_slow_tool_is_a_tool_error(int outcome)
     {
-        var (tool, _) = Tool(new ToolRun(outcome, -1, string.Empty));
+        var (tool, _) = Tool(new ToolRun((ToolOutcome)outcome, -1, string.Empty));
 
         var result = await tool.Freeze(new PacketRef(PacketKind.Build, "/p"), PacketFreezer.Machine, Token);
 

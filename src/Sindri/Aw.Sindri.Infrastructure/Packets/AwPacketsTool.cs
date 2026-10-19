@@ -19,10 +19,10 @@ internal sealed class AwPacketsTool(IToolRunner runner, Func<string, string?> en
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(60);
 
     public ValueTask<Result<PacketValidation>> Validate(PacketRef packet, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(Answer("validate", packet, null, cancellationToken).Map(static json => new PacketValidation(Flag(json, "passed"), Failures(json))));
+        ValueTask.FromResult(Answer("validate", packet, by: null, cancellationToken).Map(static json => new PacketValidation(Flag(json, "passed"), Failures(json))));
 
     public ValueTask<Result<string>> Hash(PacketRef packet, CancellationToken cancellationToken) =>
-        ValueTask.FromResult(Run("hash", packet, null, cancellationToken).Bind(static output => output.Trim() is var hash && hash.StartsWith("sha256:", StringComparison.Ordinal)
+        ValueTask.FromResult(Run("hash", packet, by: null, cancellationToken).Bind(static output => output.Trim() is var hash && hash.StartsWith("sha256:", StringComparison.Ordinal)
             ? Results.Success(hash)
             : ScopingErrors.PacketToolFailed.With("aw-packets hash printed no sha256 hash")));
 
@@ -103,10 +103,10 @@ internal sealed class AwPacketsTool(IToolRunner runner, Func<string, string?> en
     };
 
     private static List<PacketFailure> Failures(JsonObject json) => json["checks"] is JsonArray checks
-        ? [.. checks.OfType<JsonObject>().Where(static c => Text(c, "state") is "fail" or "omitted").Select(static c => new PacketFailure(Text(c, "rule") ?? "?", Text(c, "subject") ?? "packet", Text(c, "message") ?? string.Empty, Text(c, "fix")))]
+        ? [.. checks.OfType<JsonObject>().Where(static c => Text(c, "state") is { } state && (string.Equals(state, "fail", StringComparison.Ordinal) || string.Equals(state, "omitted", StringComparison.Ordinal))).Select(static c => new PacketFailure(Text(c, "rule") ?? "?", Text(c, "subject") ?? "packet", Text(c, "message") ?? string.Empty, Text(c, "fix")))]
         : [];
 
-    private static string Tail(string text) => text.Trim() is { Length: > 300 } long ? long[^300..] : text.Trim();
+    private static string Tail(string text) => text.Trim() is { Length: > 300 } trimmed ? trimmed[^300..] : text.Trim();
 
     private static Error Failed(string verb, string program, string why) =>
         ScopingErrors.PacketToolFailed.With($"aw-packets {verb} failed ({program}: {why}) (fix: build aw-packets and put it on the PATH, or set AW_PACKETS_BIN)");

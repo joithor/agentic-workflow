@@ -5,3 +5,5 @@ static Aw.Sindri.Infrastructure.Registration.SindriInfrastructureServiceCollecti
 Aw.Sindri.Infrastructure.Registration.SindriProveInfrastructureServiceCollectionExtensions
 static Aw.Sindri.Infrastructure.Registration.SindriProveInfrastructureServiceCollectionExtensions.AddSindriProveInfrastructure(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Func<string!, string?>! environment) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Aw.Sindri.Infrastructure.Registration.SindriProveInfrastructureServiceCollectionExtensions.ProveBlocksAllowed(System.Func<string!, string?>! environment) -> bool
+Aw.Sindri.Infrastructure.Packets.PacketsTools
+static Aw.Sindri.Infrastructure.Packets.PacketsTools.Create(System.Func<string!, string?>! environment) -> Aw.Sindri.Core.Packets.IPackets!

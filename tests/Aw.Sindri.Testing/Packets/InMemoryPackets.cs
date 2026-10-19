@@ -73,17 +73,17 @@ public sealed class InMemoryPackets : IPackets
         {
             if (failures.Count > 0)
             {
-                return new PacketFreeze(false, null, by, false, null, failures);
+                return new PacketFreeze(Frozen: false, Hash: null, By: by, AlreadyFrozen: false, AlreadyFrozenBy: null, Failures: failures);
             }
 
             var hash = HashOf(packet);
             if (_frozen.TryGetValue(hash, out var first))
             {
-                return new PacketFreeze(true, hash, first, true, first == by ? null : first, []);
+                return new PacketFreeze(Frozen: true, Hash: hash, By: first, AlreadyFrozen: true, AlreadyFrozenBy: first == by ? null : first, Failures: []);
             }
 
             _frozen[hash] = by;
-            return new PacketFreeze(true, hash, by, false, null, []);
+            return new PacketFreeze(Frozen: true, Hash: hash, By: by, AlreadyFrozen: false, AlreadyFrozenBy: null, Failures: []);
         }));
     }
 
