@@ -14,7 +14,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S1"
+      "id": "S1",
+      "noBehaviourChange": "A grouping of the notes surfaces; it does no work of its own, and AC-2 and AC-3 cover the surfaces under it."
     },
     {
       "key": "surface:screen/notes-list",
@@ -53,7 +54,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S4"
+      "id": "S4",
+      "noBehaviourChange": "The action behind a restore, reached through the notes route (S3); AC-3 is tested through that route."
     },
     {
       "key": "thing:note",
@@ -66,7 +68,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S5"
+      "id": "S5",
+      "noBehaviourChange": "The note's archived state is set by AC-1 and read by AC-2 and AC-4; it has no item of its own."
     },
     {
       "key": "code:src/notes/service.ts",
@@ -79,7 +82,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S6"
+      "id": "S6",
+      "noBehaviourChange": "Code behind the notes route and the save action (listNotes, saveNote); AC-2 and AC-3 test it through them."
     },
     {
       "key": "code:src/notes/routes.ts",
@@ -92,7 +96,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S7"
+      "id": "S7",
+      "noBehaviourChange": "Code for the restore route (S3); AC-3 tests it through the route."
     },
     {
       "key": "code:web/screens/NotesList.ts",
@@ -105,7 +110,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S8"
+      "id": "S8",
+      "noBehaviourChange": "Code for the notes list (S2); AC-2 tests it."
     },
     {
       "key": "code:tests/notes.test.ts",
@@ -118,7 +124,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S9"
+      "id": "S9",
+      "noBehaviourChange": "The existing tests that pin notes; they are updated alongside AC-2 and AC-3 and ship no behaviour."
     },
     {
       "key": "feature:digest",
@@ -131,7 +138,8 @@
       "trust": "untrusted",
       "lens": "product",
       "graphStatus": "mapped",
-      "id": "S10"
+      "id": "S10",
+      "noBehaviourChange": "A grouping of the digest surfaces; AC-4 covers the weekly digest mail (S24)."
     },
     {
       "key": "action:digest.send",
@@ -144,7 +152,8 @@
       "trust": "untrusted",
       "lens": "product",
       "graphStatus": "mapped",
-      "id": "S11"
+      "id": "S11",
+      "noBehaviourChange": "The action behind the weekly digest mail (S24); AC-4 is tested through it."
     },
     {
       "key": "code:src/digest/digest.ts",
@@ -157,7 +166,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S12"
+      "id": "S12",
+      "noBehaviourChange": "Code that filters the digest (S24); AC-4 tests it."
     },
     {
       "key": "feature:trash",
@@ -170,7 +180,8 @@
       "trust": "untrusted",
       "lens": "product",
       "graphStatus": "mapped",
-      "id": "S13"
+      "id": "S13",
+      "noBehaviourChange": "A grouping of the trash surfaces; AC-8 covers the purge action (S14)."
     },
     {
       "key": "action:trash.purge",
@@ -209,7 +220,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S16"
+      "id": "S16",
+      "noBehaviourChange": "Code that schedules the archive pass (S15); AC-1 tests it."
     },
     {
       "key": "code:src/jobs/purge-trash.ts",
@@ -222,7 +234,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S17"
+      "id": "S17",
+      "noBehaviourChange": "Code for the purge pass on the nightly job (S15); AC-8 tests it."
     },
     {
       "key": "feature:export",
@@ -235,7 +248,8 @@
       "trust": "untrusted",
       "lens": "product",
       "graphStatus": "mapped",
-      "id": "S18"
+      "id": "S18",
+      "noBehaviourChange": "A grouping of the export surfaces; AC-7 covers the export action (S19)."
     },
     {
       "key": "action:export.run",
@@ -261,7 +275,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S20"
+      "id": "S20",
+      "noBehaviourChange": "Code behind export (S19); AC-7 tests it through the action."
     },
     {
       "key": "feature:sharing",
@@ -274,7 +289,8 @@
       "trust": "untrusted",
       "lens": "product",
       "graphStatus": "mapped",
-      "id": "S21"
+      "id": "S21",
+      "noBehaviourChange": "Sharing is unchanged; AC-5 pins that a live shared link returns its note as today."
     },
     {
       "key": "action:sharing.resolve-link",
@@ -287,7 +303,8 @@
       "trust": "untrusted",
       "lens": "product",
       "graphStatus": "mapped",
-      "id": "S22"
+      "id": "S22",
+      "noBehaviourChange": "The action behind the shared-link route (S23); AC-5 is tested through that route."
     },
     {
       "key": "surface:route/link-resolve",
@@ -363,7 +380,12 @@
         "S2",
         "S3",
         "S25",
-        "S5"
+        "S5",
+        "S4",
+        "S6",
+        "S7",
+        "S8",
+        "S9"
       ],
       "deps": []
     },
@@ -372,7 +394,29 @@
       "title": "Nightly pass",
       "surfaces": [
         "S15",
-        "S13"
+        "S13",
+        "S14",
+        "S16",
+        "S17"
+      ],
+      "deps": [
+        "ws-1"
+      ]
+    },
+    {
+      "id": "ws-3",
+      "title": "Digest, export and sharing respect the archive",
+      "surfaces": [
+        "S10",
+        "S11",
+        "S12",
+        "S24",
+        "S18",
+        "S19",
+        "S20",
+        "S21",
+        "S22",
+        "S23"
       ],
       "deps": [
         "ws-1"

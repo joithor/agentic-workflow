@@ -57,6 +57,11 @@
                   "unmapped",
                   "unknown"
                 ]
+              },
+              "noBehaviourChange": {
+                "type": "string",
+                "minLength": 1,
+                "description": "SCP-ACC-002: the reason this in-scope surface needs no acceptance item of its own (\"marked no-behaviour-change with a reason\"). SC-K chose this field name; the spec names the marker but no field."
               }
             },
             "required": [
@@ -309,6 +314,11 @@
                   "owner"
                 ],
                 "description": "Stamped by code (SCP-TRUST-001). The spec 7.3 example carries it on a question; a draft-stage model-written value is a finding, so it is optional here."
+              },
+              "noBehaviourChange": {
+                "type": "string",
+                "minLength": 1,
+                "description": "SCP-ACC-002: the reason this in-scope surface needs no acceptance item of its own (\"marked no-behaviour-change with a reason\"). SC-K chose this field name; the spec names the marker but no field."
               }
             },
             "required": [
