@@ -1,6 +1,6 @@
 using Aw.Sindri.Core.Workflow.Engine;
 
-namespace Aw.Sindri.Core.Launches;
+namespace Aw.Sindri.Core.Launch;
 
 /// <summary>
 /// Which workflow instance, Step and attempt a launch belongs to, so a client can show "on &lt;instance&gt; · &lt;state&gt;" with no extra call. Served as 'step' on a launch

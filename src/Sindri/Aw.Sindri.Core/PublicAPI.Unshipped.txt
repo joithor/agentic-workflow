@@ -1425,21 +1425,22 @@ Aw.Sindri.Core.Jobs.JobState.Running = 0 -> Aw.Sindri.Core.Jobs.JobState
 Aw.Sindri.Core.Jobs.JobState.Succeeded = 1 -> Aw.Sindri.Core.Jobs.JobState
 Aw.Sindri.Core.Json.StrictEnumConverter<TEnum>
 Aw.Sindri.Core.Json.StrictEnumConverter<TEnum>.StrictEnumConverter() -> void
-Aw.Sindri.Core.Launches.LaunchRow.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Id, out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Launch.LaunchMode Mode, out Aw.Sindri.Core.Launch.AgentId Target, out string! ChosenBy, out Aw.Sindri.Core.Launches.LaunchState State, out System.DateTimeOffset RequestedAt, out System.DateTimeOffset? OutcomeAt, out string? Code, out string? Message, out Aw.Sindri.Core.Launch.LaunchStage? Stage, out Aw.Sindri.Core.Ids.SessionId? SessionId, out Aw.Sindri.Core.Ids.SessionId? ReportedSessionId, out string? TabTitle, out Aw.Sindri.Core.Events.LaunchViewer? Viewer, out bool Late, out System.Collections.Generic.IReadOnlyList<string!>? Attach, out Aw.Sindri.Core.Launch.CatalogSource? CatalogSource, out string? ArgvHash, out Aw.Sindri.Core.Launches.LaunchEnd? Ended, out Aw.Sindri.Core.Launches.LaunchStep! Step, out long Sequence) -> void
-Aw.Sindri.Core.Launches.LaunchRow.LaunchRow(Aw.Sindri.Core.Workflow.Engine.LaunchId Id, Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.Launch.LaunchMode Mode, Aw.Sindri.Core.Launch.AgentId Target, string! ChosenBy, Aw.Sindri.Core.Launches.LaunchState State, System.DateTimeOffset RequestedAt, System.DateTimeOffset? OutcomeAt, string? Code, string? Message, Aw.Sindri.Core.Launch.LaunchStage? Stage, Aw.Sindri.Core.Ids.SessionId? SessionId, Aw.Sindri.Core.Ids.SessionId? ReportedSessionId, string? TabTitle, Aw.Sindri.Core.Events.LaunchViewer? Viewer, bool Late, System.Collections.Generic.IReadOnlyList<string!>? Attach, Aw.Sindri.Core.Launch.CatalogSource? CatalogSource, string? ArgvHash, Aw.Sindri.Core.Launches.LaunchEnd? Ended, Aw.Sindri.Core.Launches.LaunchStep! Step, long Sequence) -> void
-Aw.Sindri.Core.Launches.LaunchRow.Step.get -> Aw.Sindri.Core.Launches.LaunchStep!
+Aw.Sindri.Core.Launch.LaunchStep
+Aw.Sindri.Core.Launch.LaunchStep.<Clone>$() -> Aw.Sindri.Core.Launch.LaunchStep!
+Aw.Sindri.Core.Launch.LaunchStep.Attempt.get -> int?
+Aw.Sindri.Core.Launch.LaunchStep.Attempt.init -> void
+Aw.Sindri.Core.Launch.LaunchStep.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance, out string? State, out int? Attempt) -> void
+Aw.Sindri.Core.Launch.LaunchStep.Equals(Aw.Sindri.Core.Launch.LaunchStep? other) -> bool
+Aw.Sindri.Core.Launch.LaunchStep.Instance.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress?
+Aw.Sindri.Core.Launch.LaunchStep.Instance.init -> void
+Aw.Sindri.Core.Launch.LaunchStep.LaunchStep(Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance = null, string? State = null, int? Attempt = null) -> void
+Aw.Sindri.Core.Launch.LaunchStep.State.get -> string?
+Aw.Sindri.Core.Launch.LaunchStep.State.init -> void
+Aw.Sindri.Core.Launches.LaunchRow.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Id, out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Launch.LaunchMode Mode, out Aw.Sindri.Core.Launch.AgentId Target, out string! ChosenBy, out Aw.Sindri.Core.Launches.LaunchState State, out System.DateTimeOffset RequestedAt, out System.DateTimeOffset? OutcomeAt, out string? Code, out string? Message, out Aw.Sindri.Core.Launch.LaunchStage? Stage, out Aw.Sindri.Core.Ids.SessionId? SessionId, out Aw.Sindri.Core.Ids.SessionId? ReportedSessionId, out string? TabTitle, out Aw.Sindri.Core.Events.LaunchViewer? Viewer, out bool Late, out System.Collections.Generic.IReadOnlyList<string!>? Attach, out Aw.Sindri.Core.Launch.CatalogSource? CatalogSource, out string? ArgvHash, out Aw.Sindri.Core.Launches.LaunchEnd? Ended, out Aw.Sindri.Core.Launch.LaunchStep! Step, out long Sequence) -> void
+Aw.Sindri.Core.Launches.LaunchRow.LaunchRow(Aw.Sindri.Core.Workflow.Engine.LaunchId Id, Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Ids.RepoName? Repo, Aw.Sindri.Core.Launch.LaunchMode Mode, Aw.Sindri.Core.Launch.AgentId Target, string! ChosenBy, Aw.Sindri.Core.Launches.LaunchState State, System.DateTimeOffset RequestedAt, System.DateTimeOffset? OutcomeAt, string? Code, string? Message, Aw.Sindri.Core.Launch.LaunchStage? Stage, Aw.Sindri.Core.Ids.SessionId? SessionId, Aw.Sindri.Core.Ids.SessionId? ReportedSessionId, string? TabTitle, Aw.Sindri.Core.Events.LaunchViewer? Viewer, bool Late, System.Collections.Generic.IReadOnlyList<string!>? Attach, Aw.Sindri.Core.Launch.CatalogSource? CatalogSource, string? ArgvHash, Aw.Sindri.Core.Launches.LaunchEnd? Ended, Aw.Sindri.Core.Launch.LaunchStep! Step, long Sequence) -> void
+Aw.Sindri.Core.Launches.LaunchRow.Step.get -> Aw.Sindri.Core.Launch.LaunchStep!
 Aw.Sindri.Core.Launches.LaunchRow.Step.init -> void
-Aw.Sindri.Core.Launches.LaunchStep
-Aw.Sindri.Core.Launches.LaunchStep.<Clone>$() -> Aw.Sindri.Core.Launches.LaunchStep!
-Aw.Sindri.Core.Launches.LaunchStep.Attempt.get -> int?
-Aw.Sindri.Core.Launches.LaunchStep.Attempt.init -> void
-Aw.Sindri.Core.Launches.LaunchStep.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance, out string? State, out int? Attempt) -> void
-Aw.Sindri.Core.Launches.LaunchStep.Equals(Aw.Sindri.Core.Launches.LaunchStep? other) -> bool
-Aw.Sindri.Core.Launches.LaunchStep.Instance.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress?
-Aw.Sindri.Core.Launches.LaunchStep.Instance.init -> void
-Aw.Sindri.Core.Launches.LaunchStep.LaunchStep(Aw.Sindri.Core.Workflow.Engine.InstanceAddress? Instance = null, string? State = null, int? Attempt = null) -> void
-Aw.Sindri.Core.Launches.LaunchStep.State.get -> string?
-Aw.Sindri.Core.Launches.LaunchStep.State.init -> void
+Aw.Sindri.Core.Launches.LaunchSteps
 Aw.Sindri.Core.Lease.HeldLease
 Aw.Sindri.Core.Lease.HeldLease.Clear() -> void
 Aw.Sindri.Core.Lease.HeldLease.Current.get -> Aw.Sindri.Core.Lease.LeaseGrant?
@@ -1935,8 +1936,7 @@ Aw.Sindri.Core.Secrets.SecretScheme.Env = 1 -> Aw.Sindri.Core.Secrets.SecretSche
 Aw.Sindri.Core.Secrets.SecretScheme.File = 2 -> Aw.Sindri.Core.Secrets.SecretScheme
 Aw.Sindri.Core.Secrets.SecretScheme.Keychain = 3 -> Aw.Sindri.Core.Secrets.SecretScheme
 Aw.Sindri.Core.Secrets.SecretScheme.OnePassword = 4 -> Aw.Sindri.Core.Secrets.SecretScheme
-Aw.Sindri.Core.Sessions.SessionLaunchSteps
-Aw.Sindri.Core.Sessions.SessionRow.Launch.get -> Aw.Sindri.Core.Launches.LaunchStep?
+Aw.Sindri.Core.Sessions.SessionRow.Launch.get -> Aw.Sindri.Core.Launch.LaunchStep?
 Aw.Sindri.Core.Sessions.SessionRow.Launch.init -> void
 Aw.Sindri.Core.SindriErrors
 Aw.Sindri.Core.Text.ITextScrubber
@@ -6032,9 +6032,9 @@ override Aw.Sindri.Core.Jobs.JobRow.ToString() -> string!
 override Aw.Sindri.Core.Jobs.JobStartedResponse.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Jobs.JobStartedResponse.GetHashCode() -> int
 override Aw.Sindri.Core.Jobs.JobStartedResponse.ToString() -> string!
-override Aw.Sindri.Core.Launches.LaunchStep.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Launches.LaunchStep.GetHashCode() -> int
-override Aw.Sindri.Core.Launches.LaunchStep.ToString() -> string!
+override Aw.Sindri.Core.Launch.LaunchStep.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Launch.LaunchStep.GetHashCode() -> int
+override Aw.Sindri.Core.Launch.LaunchStep.ToString() -> string!
 override Aw.Sindri.Core.Lease.LeaseGrant.Equals(object? obj) -> bool
 override Aw.Sindri.Core.Lease.LeaseGrant.GetHashCode() -> int
 override Aw.Sindri.Core.Lease.LeaseGrant.ToString() -> string!
@@ -7291,9 +7291,10 @@ static Aw.Sindri.Core.Jobs.JobRow.operator ==(Aw.Sindri.Core.Jobs.JobRow? left, 
 static Aw.Sindri.Core.Jobs.JobRules.CanCancel(Aw.Sindri.Core.Jobs.JobRow? row) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
 static Aw.Sindri.Core.Jobs.JobStartedResponse.operator !=(Aw.Sindri.Core.Jobs.JobStartedResponse? left, Aw.Sindri.Core.Jobs.JobStartedResponse? right) -> bool
 static Aw.Sindri.Core.Jobs.JobStartedResponse.operator ==(Aw.Sindri.Core.Jobs.JobStartedResponse? left, Aw.Sindri.Core.Jobs.JobStartedResponse? right) -> bool
-static Aw.Sindri.Core.Launches.LaunchStep.None.get -> Aw.Sindri.Core.Launches.LaunchStep!
-static Aw.Sindri.Core.Launches.LaunchStep.operator !=(Aw.Sindri.Core.Launches.LaunchStep? left, Aw.Sindri.Core.Launches.LaunchStep? right) -> bool
-static Aw.Sindri.Core.Launches.LaunchStep.operator ==(Aw.Sindri.Core.Launches.LaunchStep? left, Aw.Sindri.Core.Launches.LaunchStep? right) -> bool
+static Aw.Sindri.Core.Launch.LaunchStep.None.get -> Aw.Sindri.Core.Launch.LaunchStep!
+static Aw.Sindri.Core.Launch.LaunchStep.operator !=(Aw.Sindri.Core.Launch.LaunchStep? left, Aw.Sindri.Core.Launch.LaunchStep? right) -> bool
+static Aw.Sindri.Core.Launch.LaunchStep.operator ==(Aw.Sindri.Core.Launch.LaunchStep? left, Aw.Sindri.Core.Launch.LaunchStep? right) -> bool
+static Aw.Sindri.Core.Launches.LaunchSteps.Of(Aw.Sindri.Core.Launches.ILaunchViews! launches, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Engine.LaunchId>! ids, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Engine.LaunchId, Aw.Sindri.Core.Launch.LaunchStep!>!>
 static Aw.Sindri.Core.Lease.LeaseDecision.Acquire(Aw.Sindri.Core.Lease.LeaseRow? row, Aw.Sindri.Core.Lease.LeaseHolder! candidate, System.DateTimeOffset now, Aw.Sindri.Core.Lease.HolderLiveness liveness) -> Aw.Kernel.Result<Aw.Sindri.Core.Lease.LeaseGrant!>!
 static Aw.Sindri.Core.Lease.LeaseDecision.Holds(Aw.Sindri.Core.Lease.LeaseRow? row, Aw.Sindri.Core.Lease.LeaseGrant! grant) -> bool
 static Aw.Sindri.Core.Lease.LeaseDecision.Liveness(Aw.Sindri.Core.Lease.LeaseHolder! holder, Aw.Sindri.Core.Lease.LeaseHolder! self, Aw.Sindri.Core.Lease.ProcessFacts! facts) -> Aw.Sindri.Core.Lease.HolderLiveness
@@ -7406,8 +7407,7 @@ static Aw.Sindri.Core.Secrets.SecretPointer.IsPointer(string! name) -> bool
 static Aw.Sindri.Core.Secrets.SecretPointer.Parse(string! text) -> Aw.Kernel.Result<Aw.Sindri.Core.Secrets.SecretPointer!>!
 static Aw.Sindri.Core.Secrets.SecretPointer.operator !=(Aw.Sindri.Core.Secrets.SecretPointer? left, Aw.Sindri.Core.Secrets.SecretPointer? right) -> bool
 static Aw.Sindri.Core.Secrets.SecretPointer.operator ==(Aw.Sindri.Core.Secrets.SecretPointer? left, Aw.Sindri.Core.Secrets.SecretPointer? right) -> bool
-static Aw.Sindri.Core.Sessions.SessionLaunchSteps.Of(Aw.Sindri.Core.Launches.ILaunchViews! launches, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Sessions.ObservedSession!>! sessions, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Engine.LaunchId, Aw.Sindri.Core.Launches.LaunchStep!>!>
-static Aw.Sindri.Core.Sessions.SessionRows.Of(Aw.Sindri.Core.Sessions.ObservedSession! session, Aw.Sindri.Core.Launch.AgentEntry? entry, string? repoPath, bool human, Aw.Sindri.Core.Launches.LaunchStep? launch = null) -> Aw.Sindri.Core.Sessions.SessionRow!
+static Aw.Sindri.Core.Sessions.SessionRows.Of(Aw.Sindri.Core.Sessions.ObservedSession! session, Aw.Sindri.Core.Launch.AgentEntry? entry, string? repoPath, bool human, Aw.Sindri.Core.Launch.LaunchStep? launch = null) -> Aw.Sindri.Core.Sessions.SessionRow!
 static Aw.Sindri.Core.SindriErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 static Aw.Sindri.Core.Text.SafeText.Clean(Aw.Sindri.Core.Text.ITextScrubber! scrubber, string! text, int max) -> string!
 static Aw.Sindri.Core.Text.SafeText.CleanBlock(Aw.Sindri.Core.Text.ITextScrubber! scrubber, string! text, int max) -> string!
