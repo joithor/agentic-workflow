@@ -1,0 +1,2 @@
+{"start":{"inputs":{"fact:pr":"https://example.test/pr/1","fact:handoff":{"head":"abc123"},"fact:phasePacket":{"phase":"1"},"fact:lineContext":{"base":"origin/main"},"fact:workspace":"/work/phase-1"}}}
+{"trigger":{"kind":"step.completed","outcome":"merged","outputs":{"fact:mergedSha":"9f2c1ab"}},"expect":{"state":"merged","outcome":"resolved"}}

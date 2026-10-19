@@ -13,9 +13,15 @@
 #            index (`scripts/onyx-lock.sh verify` repeats this per row, from the recorded tag). Tags: onyx-* at v4.9.0, postgres 15.2-alpine, opensearch 3.6.0, nginx 1.25.5-alpine, redis 7.4-alpine,
 #            minio RELEASE.2025-07-23T15-54-02Z-cpuv1 (the s3-filestore profile), code-interpreter 0.4.8
 #   need disk-bytes
-#            2712988889 (config + layers sizes, compressed, of the nine linux/arm64 manifests) x 2.5 for uncompressed
-#            layers and volumes = 6782472222, + 10 GiB (10737418240) for models and data = 17519890462. A first estimate:
-#            P2 re-measures on a real pull and adjusts.
+#            11258659258, measured 2026-10-17 on a running v4.9.0 stack (linux/arm64, Docker Desktop) plus headroom:
+#            images   2530446819 = the sum of `docker image inspect --format '{{.Size}}' <repo>@<digest>` for the lock's
+#                     linux/arm64 digests of the eight images the stack runs (code-interpreter is not pulled without its profile)
+#            volumes  615256500 = the eight volumes of one sindri-onyx-<hash> project in `docker system df -v` (548 MB is
+#                     the Hugging Face model cache, 65.7 MB Postgres)
+#            layers   213800000 = the nine containers' writable layers in the same listing
+#            measured 3359503319 (3.1 GiB), a fresh one-user stack with no documents indexed
+#            headroom 7899155939 = one more set of images (2530446819: an upgrade holds the old and the new set until the
+#                     old one is pruned) + 5 GiB (5368709120) for documents and their index
 #   need docker-memory-bytes
 #            5905580032 = 5.5 GiB: the floor for `docker info` MemTotal. The one-user sizing of docs/sindri/onyx.md is a
 #            6 GiB Docker VM, and Docker Desktop reports MemTotal a few percent under the limit the user sets, so a 6 GiB
@@ -52,5 +58,5 @@ image docker.io/onyxdotapp/minio RELEASE.2025-07-23T15-54-02Z-cpuv1 linux/amd64 
 image docker.io/onyxdotapp/code-interpreter 0.4.8 linux/arm64 sha256:4fd52d3b18012fbfa83d4b7504877e99f2be78a55093b22dd96f7b7cad297a1c
 image docker.io/onyxdotapp/code-interpreter 0.4.8 linux/amd64 sha256:30b96dce1c5f60dfe138c19afb8737a5ec995803b7e26ca9c2907a2a59f0d6d2
 
-need disk-bytes 17519890462
+need disk-bytes 11258659258
 need docker-memory-bytes 5905580032

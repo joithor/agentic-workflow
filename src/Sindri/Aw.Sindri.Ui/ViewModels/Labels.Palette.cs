@@ -55,6 +55,7 @@ internal static partial class Labels
         ("T / B", "Take over / hand back"),
         ("Y", "Copy the selected row's CLI"),
         ("C / R", "Create item / file a request"),
+        ("N / ⌘N / Ctrl+N", "Start workflow (N on Workflows, the chord from any page)"),
         ("/", "Filter the current list"),
         ("?", "Shortcuts sheet"),
         ("⌘, / Ctrl+,", Settings),

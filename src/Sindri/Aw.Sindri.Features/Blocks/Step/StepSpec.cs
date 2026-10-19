@@ -15,6 +15,7 @@ internal sealed class StepSpec
     private readonly Capability _capabilities;
     private FactKey[] _inputs = [];
     private OutcomeName[] _outcomes = [];
+    private ParameterSpec[] _parameters = [];
 
     private StepSpec(string id, BlockRuntime runtime, bool humanOnly, Capability capabilities)
     {
@@ -68,6 +69,15 @@ internal sealed class StepSpec
         return this;
     }
 
+    /// <summary>The 'with:' parameters the Step takes.</summary>
+    /// <param name="parameters">The parameters.</param>
+    /// <returns>The builder.</returns>
+    public StepSpec Takes(params ParameterSpec[] parameters)
+    {
+        _parameters = parameters;
+        return this;
+    }
+
     /// <summary>The outcomes the Step reports.</summary>
     /// <param name="outcomes">The outcome names.</param>
     /// <returns>The builder.</returns>
@@ -81,6 +91,6 @@ internal sealed class StepSpec
     /// <param name="outputs">The outputs.</param>
     /// <returns>The descriptor.</returns>
     public BlockDescriptor Writes(params OutputSpec[] outputs) => new(
-        _id, BlockKind.Step, Version: 1, _inputs, outputs, _outcomes, _capabilities, Parameters: [], Rung: null, DeskCapable: true,
+        _id, BlockKind.Step, Version: 1, _inputs, outputs, _outcomes, _capabilities, Parameters: _parameters, Rung: null, DeskCapable: true,
         HumanOnly: _humanOnly ? true : null, Runtime: _runtime);
 }

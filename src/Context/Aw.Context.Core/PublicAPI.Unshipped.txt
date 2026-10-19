@@ -3596,7 +3596,6 @@ static Aw.Context.Core.Onyx.OnyxRecordIdentity.operator !=(Aw.Context.Core.Onyx.
 static Aw.Context.Core.Onyx.OnyxRecordIdentity.operator ==(Aw.Context.Core.Onyx.OnyxRecordIdentity? left, Aw.Context.Core.Onyx.OnyxRecordIdentity? right) -> bool
 static Aw.Context.Core.Onyx.OnyxRecordKeys.Identify(Aw.Context.Core.Sources.ExternalId document, string! sourceType, string! semanticIdentifier, string? link, System.Collections.Generic.IReadOnlySet<string!>! teams) -> Aw.Context.Core.Onyx.OnyxRecordIdentity?
 static Aw.Context.Core.Onyx.OnyxRecordKeys.KindOf(Aw.Context.Core.Sources.RecordKey canonical) -> Aw.Context.Core.Sources.RecordKind
-static Aw.Context.Core.Onyx.OnyxSettings.Create(string? url, string? token, string? version) -> Aw.Kernel.Result<Aw.Context.Core.Onyx.OnyxSettings!>!
 static Aw.Context.Core.Onyx.OnyxSettings.operator !=(Aw.Context.Core.Onyx.OnyxSettings? left, Aw.Context.Core.Onyx.OnyxSettings? right) -> bool
 static Aw.Context.Core.Onyx.OnyxSettings.operator ==(Aw.Context.Core.Onyx.OnyxSettings? left, Aw.Context.Core.Onyx.OnyxSettings? right) -> bool
 static Aw.Context.Core.Overrides.AppliedMap.operator !=(Aw.Context.Core.Overrides.AppliedMap? left, Aw.Context.Core.Overrides.AppliedMap? right) -> bool
@@ -5365,7 +5364,8 @@ Aw.Context.Core.Code.CodeLexicalFindings.SchemaTruncated.init -> void
 Aw.Context.Core.Code.CodeSearchQuery.Resolved.get -> bool
 Aw.Context.Core.Code.CodeSearchQuery.Resolved.init -> void
 Aw.Context.Core.Code.ICodeSearch.Resolve(Aw.Context.Core.Engine.ContextRepo! repo, string! commit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
-
+Aw.Context.Core.Onyx.OnyxSettings.Managed.get -> bool
+static Aw.Context.Core.Onyx.OnyxSettings.Create(string? url, string? token, string? version, bool managed = false) -> Aw.Kernel.Result<Aw.Context.Core.Onyx.OnyxSettings!>!
 Aw.Context.Core.Engine.CascadeHops
 Aw.Context.Core.Engine.CascadeHops.Component = 8 -> Aw.Context.Core.Engine.CascadeHops
 Aw.Context.Core.Engine.CascadeHops.Default = Aw.Context.Core.Engine.CascadeHops.State | Aw.Context.Core.Engine.CascadeHops.Flow | Aw.Context.Core.Engine.CascadeHops.Dependency -> Aw.Context.Core.Engine.CascadeHops

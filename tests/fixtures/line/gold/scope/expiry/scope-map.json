@@ -14,7 +14,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S1"
+      "id": "S1",
+      "noBehaviourChange": "A grouping of the sharing surfaces; it does no work of its own, and AC-1 to AC-5 cover the surfaces under it."
     },
     {
       "key": "surface:route/links-create",
@@ -66,7 +67,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S5"
+      "id": "S5",
+      "noBehaviourChange": "The action behind the create route (S2); AC-1 and AC-4 are tested through that route."
     },
     {
       "key": "action:sharing.resolve-link",
@@ -79,7 +81,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S6"
+      "id": "S6",
+      "noBehaviourChange": "The action behind the open-link route (S3); AC-2, AC-3 and AC-7 are tested through that route."
     },
     {
       "key": "thing:shared-link",
@@ -92,7 +95,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S7"
+      "id": "S7",
+      "noBehaviourChange": "The data a link holds; the new expiry field is stored by AC-1 and read by AC-2, so it has no item of its own."
     },
     {
       "key": "code:src/sharing/links.ts",
@@ -105,7 +109,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S8"
+      "id": "S8",
+      "noBehaviourChange": "Code that implements S5 and S6 (createLink and resolveLink); AC-1 to AC-4 test it through them."
     },
     {
       "key": "code:src/sharing/routes.ts",
@@ -118,7 +123,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S9"
+      "id": "S9",
+      "noBehaviourChange": "Code that implements the create route (S2); AC-1 and AC-4 test it."
     },
     {
       "key": "code:web/screens/ShareDialog.ts",
@@ -131,7 +137,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S10"
+      "id": "S10",
+      "noBehaviourChange": "Code that implements the Share dialog (S4, S22); AC-1 tests it."
     },
     {
       "key": "code:tests/sharing.test.ts",
@@ -144,7 +151,8 @@
       "trust": "untrusted",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S11"
+      "id": "S11",
+      "noBehaviourChange": "The existing tests that pin link behaviour; they are updated alongside AC-1 to AC-5 and ship no behaviour."
     },
     {
       "key": "feature:sharing.link-revocation",
@@ -157,7 +165,8 @@
       "trust": "untrusted",
       "lens": "product",
       "graphStatus": "mapped",
-      "id": "S12"
+      "id": "S12",
+      "noBehaviourChange": "Revocation is unchanged; AC-8 pins that it works as it does today."
     },
     {
       "key": "surface:route/links-revoke",
@@ -183,7 +192,8 @@
       "trust": "untrusted",
       "lens": "product",
       "graphStatus": "mapped",
-      "id": "S14"
+      "id": "S14",
+      "noBehaviourChange": "The linkRevocation flag is unchanged; expiry is not behind it (R2), so nothing is built here."
     },
     {
       "key": "action:sharing.revoke-link",
@@ -196,7 +206,8 @@
       "trust": "untrusted",
       "lens": "product",
       "graphStatus": "mapped",
-      "id": "S15"
+      "id": "S15",
+      "noBehaviourChange": "Revocation is unchanged; the action behind the revoke route (S13), which AC-5 and AC-8 cover."
     },
     {
       "key": "feature:digest",
@@ -209,7 +220,8 @@
       "trust": "owner",
       "lens": "product",
       "graphStatus": "mapped",
-      "id": "S16"
+      "id": "S16",
+      "noBehaviourChange": "A grouping of the digest surfaces; AC-6 and AC-9 cover the digest route and the job under it."
     },
     {
       "key": "surface:api/weekly-digest-email",
@@ -235,7 +247,8 @@
       "trust": "owner",
       "lens": "product",
       "graphStatus": "mapped",
-      "id": "S18"
+      "id": "S18",
+      "noBehaviourChange": "The action behind the weekly digest (S17); AC-6 and AC-9 are tested through it."
     },
     {
       "key": "surface:job/nightly",
@@ -261,7 +274,8 @@
       "trust": "owner",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S20"
+      "id": "S20",
+      "noBehaviourChange": "Code that builds the digest (S17, S18); AC-6 and AC-9 test it."
     },
     {
       "key": "code:src/jobs/nightly.ts",
@@ -274,7 +288,8 @@
       "trust": "owner",
       "lens": "code",
       "graphStatus": "mapped",
-      "id": "S21"
+      "id": "S21",
+      "noBehaviourChange": "Code that schedules the nightly job (S19); AC-6 tests it."
     },
     {
       "key": "surface:dialog/share-expiry",
@@ -350,7 +365,17 @@
         "S4",
         "S22",
         "S23",
-        "S7"
+        "S7",
+        "S5",
+        "S6",
+        "S8",
+        "S9",
+        "S10",
+        "S11",
+        "S12",
+        "S13",
+        "S14",
+        "S15"
       ],
       "deps": []
     },
@@ -360,7 +385,10 @@
       "surfaces": [
         "S16",
         "S17",
-        "S19"
+        "S19",
+        "S18",
+        "S20",
+        "S21"
       ],
       "deps": [
         "ws-1"

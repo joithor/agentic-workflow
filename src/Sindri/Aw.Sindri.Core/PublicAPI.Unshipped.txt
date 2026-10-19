@@ -8876,7 +8876,7 @@ Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeV2.get -> bool
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeV2.init -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeVersion.get -> string?
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ComposeVersion.init -> void
-Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ContainerRuntimeFacts(bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes, string? DataRoot, string? OperatingSystem = null, Aw.Sindri.Core.Onyx.DaemonProblem DaemonProblem = Aw.Sindri.Core.Onyx.DaemonProblem.None, int? WaitedSeconds = null) -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.ContainerRuntimeFacts(bool CliFound, bool DaemonAnswers, string? ServerVersion, bool ComposeV2, string? ComposeVersion, long? MemoryBytes, string? DataRoot, string? Endpoint, string? OperatingSystem = null, Aw.Sindri.Core.Onyx.DaemonProblem DaemonProblem = Aw.Sindri.Core.Onyx.DaemonProblem.None, int? WaitedSeconds = null) -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DaemonAnswers.get -> bool
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DaemonAnswers.init -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DaemonProblem.get -> Aw.Sindri.Core.Onyx.DaemonProblem
@@ -8884,7 +8884,7 @@ Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DaemonProblem.init -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DataRoot.get -> string?
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DataRoot.init -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.DataInVm.get -> bool
-Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Deconstruct(out bool CliFound, out bool DaemonAnswers, out string? ServerVersion, out bool ComposeV2, out string? ComposeVersion, out long? MemoryBytes, out string? DataRoot, out string? OperatingSystem, out Aw.Sindri.Core.Onyx.DaemonProblem DaemonProblem, out int? WaitedSeconds) -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Deconstruct(out bool CliFound, out bool DaemonAnswers, out string? ServerVersion, out bool ComposeV2, out string? ComposeVersion, out long? MemoryBytes, out string? DataRoot, out string? Endpoint, out string? OperatingSystem, out Aw.Sindri.Core.Onyx.DaemonProblem DaemonProblem, out int? WaitedSeconds) -> void
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Equals(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts? other) -> bool
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.MemoryBytes.get -> long?
 Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.MemoryBytes.init -> void
@@ -8997,7 +8997,318 @@ override Aw.Sindri.Core.Onyx.HostFacts.GetHashCode() -> int
 override Aw.Sindri.Core.Onyx.HostFacts.ToString() -> string!
 static Aw.Sindri.Core.Onyx.HostFacts.operator !=(Aw.Sindri.Core.Onyx.HostFacts? left, Aw.Sindri.Core.Onyx.HostFacts? right) -> bool
 static Aw.Sindri.Core.Onyx.HostFacts.operator ==(Aw.Sindri.Core.Onyx.HostFacts? left, Aw.Sindri.Core.Onyx.HostFacts? right) -> bool
-static Aw.Sindri.Core.Onyx.OnyxPreflight.Evaluate(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! docker, Aw.Sindri.Core.Onyx.HostFacts! host, Aw.Sindri.Core.Onyx.OnyxPins! pins) -> Aw.Sindri.Core.Onyx.PreflightReport!
+Aw.Sindri.Core.Onyx.ComposeImageRef
+Aw.Sindri.Core.Onyx.ComposeService
+Aw.Sindri.Core.Onyx.ComposeService.<Clone>$() -> Aw.Sindri.Core.Onyx.ComposeService!
+Aw.Sindri.Core.Onyx.ComposeService.Equals(Aw.Sindri.Core.Onyx.ComposeService? other) -> bool
+Aw.Sindri.Core.Onyx.ComposeService.Image.get -> string?
+Aw.Sindri.Core.Onyx.ComposeService.Image.init -> void
+Aw.Sindri.Core.Onyx.ComposeService.Name.get -> string!
+Aw.Sindri.Core.Onyx.ComposeService.Name.init -> void
+Aw.Sindri.Core.Onyx.ComposeService.ComposeService(string! Name, string? Image, System.Collections.Generic.IReadOnlyList<string!>! Profiles) -> void
+Aw.Sindri.Core.Onyx.ComposeService.Deconstruct(out string! Name, out string? Image, out System.Collections.Generic.IReadOnlyList<string!>! Profiles) -> void
+Aw.Sindri.Core.Onyx.ComposeService.Profiles.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Onyx.ComposeService.Profiles.init -> void
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Endpoint.get -> string?
+Aw.Sindri.Core.Onyx.ContainerRuntimeFacts.Endpoint.init -> void
+Aw.Sindri.Core.Onyx.EnvSettings
+Aw.Sindri.Core.Onyx.EnvSettings.<Clone>$() -> Aw.Sindri.Core.Onyx.EnvSettings!
+Aw.Sindri.Core.Onyx.EnvSettings.AuthSecret.get -> string!
+Aw.Sindri.Core.Onyx.EnvSettings.AuthSecret.init -> void
+Aw.Sindri.Core.Onyx.EnvSettings.Deconstruct(out string! ImageTag, out int Port, out string! AuthSecret) -> void
+Aw.Sindri.Core.Onyx.EnvSettings.EnvSettings(string! ImageTag, int Port, string! AuthSecret) -> void
+Aw.Sindri.Core.Onyx.EnvSettings.Equals(Aw.Sindri.Core.Onyx.EnvSettings? other) -> bool
+Aw.Sindri.Core.Onyx.EnvSettings.ImageTag.get -> string!
+Aw.Sindri.Core.Onyx.EnvSettings.ImageTag.init -> void
+Aw.Sindri.Core.Onyx.EnvSettings.Port.get -> int
+Aw.Sindri.Core.Onyx.EnvSettings.Port.init -> void
+Aw.Sindri.Core.Onyx.ImageRef
+Aw.Sindri.Core.Onyx.ImageRef.<Clone>$() -> Aw.Sindri.Core.Onyx.ImageRef!
+Aw.Sindri.Core.Onyx.ImageRef.Deconstruct(out string! Repository, out string! Tag) -> void
+Aw.Sindri.Core.Onyx.ImageRef.Equals(Aw.Sindri.Core.Onyx.ImageRef? other) -> bool
+Aw.Sindri.Core.Onyx.ImageRef.ImageRef(string! Repository, string! Tag) -> void
+Aw.Sindri.Core.Onyx.ImageRef.Repository.get -> string!
+Aw.Sindri.Core.Onyx.ImageRef.Repository.init -> void
+Aw.Sindri.Core.Onyx.ImageRef.Tag.get -> string!
+Aw.Sindri.Core.Onyx.ImageRef.Tag.init -> void
+Aw.Sindri.Core.Onyx.OnyxConfig
+Aw.Sindri.Core.Onyx.OnyxPaths
+Aw.Sindri.Core.Onyx.OnyxPaths.<Clone>$() -> Aw.Sindri.Core.Onyx.OnyxPaths!
+Aw.Sindri.Core.Onyx.OnyxPaths.Compose.get -> string!
+Aw.Sindri.Core.Onyx.OnyxPaths.Compose.init -> void
+Aw.Sindri.Core.Onyx.OnyxPaths.DeployDir.get -> string!
+Aw.Sindri.Core.Onyx.OnyxPaths.DeployDir.init -> void
+Aw.Sindri.Core.Onyx.OnyxPaths.Deconstruct(out string! Root, out string! State, out string! DeployDir, out string! Compose, out string! Env, out string! Override, out string! ProjectName) -> void
+Aw.Sindri.Core.Onyx.OnyxPaths.Env.get -> string!
+Aw.Sindri.Core.Onyx.OnyxPaths.Env.init -> void
+Aw.Sindri.Core.Onyx.OnyxPaths.Equals(Aw.Sindri.Core.Onyx.OnyxPaths? other) -> bool
+Aw.Sindri.Core.Onyx.OnyxPaths.Override.get -> string!
+Aw.Sindri.Core.Onyx.OnyxPaths.Override.init -> void
+Aw.Sindri.Core.Onyx.OnyxPaths.OnyxPaths(string! Root, string! State, string! DeployDir, string! Compose, string! Env, string! Override, string! ProjectName) -> void
+Aw.Sindri.Core.Onyx.OnyxPaths.Root.get -> string!
+Aw.Sindri.Core.Onyx.OnyxPaths.Root.init -> void
+Aw.Sindri.Core.Onyx.OnyxPaths.State.get -> string!
+Aw.Sindri.Core.Onyx.OnyxPaths.State.init -> void
+Aw.Sindri.Core.Onyx.OnyxSetupState
+Aw.Sindri.Core.Onyx.OnyxSetupState.<Clone>$() -> Aw.Sindri.Core.Onyx.OnyxSetupState!
+Aw.Sindri.Core.Onyx.OnyxSetupState.Equals(Aw.Sindri.Core.Onyx.OnyxSetupState? other) -> bool
+Aw.Sindri.Core.Onyx.OnyxSetupState.Port.get -> int
+Aw.Sindri.Core.Onyx.OnyxSetupState.Port.init -> void
+Aw.Sindri.Core.Onyx.OnyxSetupState.Project.get -> string?
+Aw.Sindri.Core.Onyx.OnyxSetupState.Project.init -> void
+Aw.Sindri.Core.Onyx.OnyxSetupState.Steps.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Core.Onyx.OnyxSetupState.Steps.init -> void
+Aw.Sindri.Core.Onyx.OnyxSetupState.SchemaVersion.get -> int
+Aw.Sindri.Core.Onyx.OnyxSetupState.SchemaVersion.init -> void
+Aw.Sindri.Core.Onyx.OnyxState.Running = 1 -> Aw.Sindri.Core.Onyx.OnyxState
+Aw.Sindri.Core.Onyx.OnyxState.Stopped = 2 -> Aw.Sindri.Core.Onyx.OnyxState
+Aw.Sindri.Core.Onyx.OnyxSteps
+Aw.Sindri.Core.Onyx.PreflightReport.Blocks.get -> bool
+const Aw.Sindri.Core.Onyx.OnyxSteps.Config = "config" -> string!
+const Aw.Sindri.Core.Onyx.OnyxSteps.Fetch = "fetch" -> string!
+const Aw.Sindri.Core.Onyx.OnyxSteps.Pull = "pull" -> string!
+const Aw.Sindri.Core.Onyx.OnyxSteps.Start = "start" -> string!
+const Aw.Sindri.Core.Onyx.OnyxSetupState.CurrentSchema = 1 -> int
+override Aw.Sindri.Core.Onyx.ComposeService.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.ComposeService.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.ComposeService.ToString() -> string!
+override Aw.Sindri.Core.Onyx.EnvSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.EnvSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.EnvSettings.ToString() -> string!
+override Aw.Sindri.Core.Onyx.ImageRef.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.ImageRef.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.ImageRef.ToString() -> string!
+override Aw.Sindri.Core.Onyx.OnyxPaths.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.OnyxPaths.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.OnyxPaths.ToString() -> string!
+override Aw.Sindri.Core.Onyx.OnyxSetupState.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.OnyxSetupState.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.OnyxSetupState.ToString() -> string!
+static Aw.Sindri.Core.Onyx.ComposeImageRef.Resolve(string! raw, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! env) -> Aw.Kernel.Result<Aw.Sindri.Core.Onyx.ImageRef!>!
+static Aw.Sindri.Core.Onyx.ComposeService.operator !=(Aw.Sindri.Core.Onyx.ComposeService? left, Aw.Sindri.Core.Onyx.ComposeService? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposeService.operator ==(Aw.Sindri.Core.Onyx.ComposeService? left, Aw.Sindri.Core.Onyx.ComposeService? right) -> bool
+static Aw.Sindri.Core.Onyx.EnvSettings.operator !=(Aw.Sindri.Core.Onyx.EnvSettings? left, Aw.Sindri.Core.Onyx.EnvSettings? right) -> bool
+static Aw.Sindri.Core.Onyx.EnvSettings.operator ==(Aw.Sindri.Core.Onyx.EnvSettings? left, Aw.Sindri.Core.Onyx.EnvSettings? right) -> bool
+static Aw.Sindri.Core.Onyx.ImageRef.operator !=(Aw.Sindri.Core.Onyx.ImageRef? left, Aw.Sindri.Core.Onyx.ImageRef? right) -> bool
+static Aw.Sindri.Core.Onyx.ImageRef.operator ==(Aw.Sindri.Core.Onyx.ImageRef? left, Aw.Sindri.Core.Onyx.ImageRef? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxConfig.ReadSecret(string? envText) -> string?
+static Aw.Sindri.Core.Onyx.OnyxConfig.RenderEnv(string! template, Aw.Sindri.Core.Onyx.EnvSettings! settings) -> string!
+static Aw.Sindri.Core.Onyx.OnyxConfig.RenderOverride(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeService!>! services, Aw.Sindri.Core.Onyx.EnvSettings! settings, Aw.Sindri.Core.Onyx.OnyxPins! pins, string! platform) -> Aw.Kernel.Result<string!>!
+static Aw.Sindri.Core.Onyx.OnyxConfig.ActiveImages(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeService!>! services, Aw.Sindri.Core.Onyx.EnvSettings! settings, Aw.Sindri.Core.Onyx.OnyxPins! pins, string! platform, System.Collections.Generic.IReadOnlyList<string!>! enabledProfiles) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!
+static Aw.Sindri.Core.Onyx.OnyxConfig.EnabledProfiles(string? envText) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Onyx.OnyxConfig.EnvKeys.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Onyx.OnyxPaths.For(string! sindriHome) -> Aw.Sindri.Core.Onyx.OnyxPaths!
+static Aw.Sindri.Core.Onyx.OnyxPaths.operator !=(Aw.Sindri.Core.Onyx.OnyxPaths? left, Aw.Sindri.Core.Onyx.OnyxPaths? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxPaths.operator ==(Aw.Sindri.Core.Onyx.OnyxPaths? left, Aw.Sindri.Core.Onyx.OnyxPaths? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxSetupState.operator !=(Aw.Sindri.Core.Onyx.OnyxSetupState? left, Aw.Sindri.Core.Onyx.OnyxSetupState? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxSetupState.operator ==(Aw.Sindri.Core.Onyx.OnyxSetupState? left, Aw.Sindri.Core.Onyx.OnyxSetupState? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxSteps.Stamp(params string![]! parts) -> string!
+static Aw.Sindri.Core.Onyx.OnyxSteps.Order.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static readonly Aw.Sindri.Core.SindriErrors.OnyxComposeFailed -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.OnyxNotReady -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.OnyxRemoteDocker -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.OnyxWorkspaceUnusable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.Onyx.OnyxPreflight.ComposeFloor -> System.Version!
+Aw.Sindri.Core.Onyx.ComposeContainer
+Aw.Sindri.Core.Onyx.ComposeContainer.<Clone>$() -> Aw.Sindri.Core.Onyx.ComposeContainer!
+Aw.Sindri.Core.Onyx.ComposeContainer.ComposeContainer(string! Service, string! State, string? Health, string! Image, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposePublisher!>! Publishers) -> void
+Aw.Sindri.Core.Onyx.ComposeContainer.Deconstruct(out string! Service, out string! State, out string? Health, out string! Image, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposePublisher!>! Publishers) -> void
+Aw.Sindri.Core.Onyx.ComposeContainer.Equals(Aw.Sindri.Core.Onyx.ComposeContainer? other) -> bool
+Aw.Sindri.Core.Onyx.ComposeContainer.Health.get -> string?
+Aw.Sindri.Core.Onyx.ComposeContainer.Health.init -> void
+Aw.Sindri.Core.Onyx.ComposeContainer.Image.get -> string!
+Aw.Sindri.Core.Onyx.ComposeContainer.Image.init -> void
+static Aw.Sindri.Core.Onyx.ComposeContainer.IsLive(string! state) -> bool
+Aw.Sindri.Core.Onyx.ComposeContainer.Publishers.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposePublisher!>!
+Aw.Sindri.Core.Onyx.ComposeContainer.Publishers.init -> void
+Aw.Sindri.Core.Onyx.ComposeContainer.Service.get -> string!
+Aw.Sindri.Core.Onyx.ComposeContainer.Service.init -> void
+Aw.Sindri.Core.Onyx.ComposeContainer.State.get -> string!
+Aw.Sindri.Core.Onyx.ComposeContainer.State.init -> void
+Aw.Sindri.Core.Onyx.ComposeProject
+Aw.Sindri.Core.Onyx.ComposeProject.<Clone>$() -> Aw.Sindri.Core.Onyx.ComposeProject!
+Aw.Sindri.Core.Onyx.ComposeProject.ComposeFile.get -> string!
+Aw.Sindri.Core.Onyx.ComposeProject.ComposeFile.init -> void
+Aw.Sindri.Core.Onyx.ComposeProject.ComposeProject(string! Name, string! ComposeFile, string! OverrideFile, string! EnvFile) -> void
+Aw.Sindri.Core.Onyx.ComposeProject.EnvFile.get -> string!
+Aw.Sindri.Core.Onyx.ComposeProject.EnvFile.init -> void
+Aw.Sindri.Core.Onyx.ComposeProject.Equals(Aw.Sindri.Core.Onyx.ComposeProject? other) -> bool
+Aw.Sindri.Core.Onyx.ComposeProject.OverrideFile.get -> string!
+Aw.Sindri.Core.Onyx.ComposeProject.OverrideFile.init -> void
+Aw.Sindri.Core.Onyx.ComposeProject.Deconstruct(out string! Name, out string! ComposeFile, out string! OverrideFile, out string! EnvFile) -> void
+Aw.Sindri.Core.Onyx.ComposeProject.Name.get -> string!
+Aw.Sindri.Core.Onyx.ComposeProject.Name.init -> void
+Aw.Sindri.Core.Onyx.ComposePublisher
+Aw.Sindri.Core.Onyx.ComposePublisher.<Clone>$() -> Aw.Sindri.Core.Onyx.ComposePublisher!
+Aw.Sindri.Core.Onyx.ComposePublisher.Address.get -> string!
+Aw.Sindri.Core.Onyx.ComposePublisher.Address.init -> void
+Aw.Sindri.Core.Onyx.ComposePublisher.ComposePublisher(string! Address, int PublishedPort, int TargetPort) -> void
+Aw.Sindri.Core.Onyx.ComposePublisher.Deconstruct(out string! Address, out int PublishedPort, out int TargetPort) -> void
+Aw.Sindri.Core.Onyx.ComposePublisher.Equals(Aw.Sindri.Core.Onyx.ComposePublisher? other) -> bool
+Aw.Sindri.Core.Onyx.ComposePublisher.PublishedPort.get -> int
+Aw.Sindri.Core.Onyx.ComposePublisher.PublishedPort.init -> void
+Aw.Sindri.Core.Onyx.ComposePublisher.TargetPort.get -> int
+Aw.Sindri.Core.Onyx.ComposePublisher.TargetPort.init -> void
+Aw.Sindri.Core.Onyx.ComposePublishedPort
+Aw.Sindri.Core.Onyx.ComposePublishedPort.<Clone>$() -> Aw.Sindri.Core.Onyx.ComposePublishedPort!
+Aw.Sindri.Core.Onyx.ComposePublishedPort.ComposePublishedPort(string! Service, string! HostIp, int Published, int Target) -> void
+Aw.Sindri.Core.Onyx.ComposePublishedPort.Deconstruct(out string! Service, out string! HostIp, out int Published, out int Target) -> void
+Aw.Sindri.Core.Onyx.ComposePublishedPort.Equals(Aw.Sindri.Core.Onyx.ComposePublishedPort? other) -> bool
+Aw.Sindri.Core.Onyx.ComposePublishedPort.HostIp.get -> string!
+Aw.Sindri.Core.Onyx.ComposePublishedPort.HostIp.init -> void
+Aw.Sindri.Core.Onyx.ComposePublishedPort.Published.get -> int
+Aw.Sindri.Core.Onyx.ComposePublishedPort.Published.init -> void
+Aw.Sindri.Core.Onyx.ComposePublishedPort.Service.get -> string!
+Aw.Sindri.Core.Onyx.ComposePublishedPort.Service.init -> void
+Aw.Sindri.Core.Onyx.ComposePublishedPort.Target.get -> int
+Aw.Sindri.Core.Onyx.ComposePublishedPort.Target.init -> void
+Aw.Sindri.Core.Onyx.ComposeFailures
+Aw.Sindri.Core.Onyx.IContainerRuntime.Ps(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeContainer!>!>!
+Aw.Sindri.Core.Onyx.IContainerRuntime.Pull(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Action<string!>! progress, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+Aw.Sindri.Core.Onyx.IContainerRuntime.RepoDigests(System.Collections.Generic.IReadOnlyList<string!>! images, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<string!, System.Collections.Generic.IReadOnlyList<string!>!>!>!
+Aw.Sindri.Core.Onyx.IContainerRuntime.ServerPlatform(System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<string!>!
+Aw.Sindri.Core.Onyx.IContainerRuntime.Stop(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+Aw.Sindri.Core.Onyx.IContainerRuntime.Up(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Action<string!>! progress, System.TimeSpan? limit, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<Aw.Kernel.Unit>!
+Aw.Sindri.Core.Onyx.ImageNames
+override Aw.Sindri.Core.Onyx.ComposeContainer.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.ComposeContainer.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.ComposeContainer.ToString() -> string!
+override Aw.Sindri.Core.Onyx.ComposeProject.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.ComposeProject.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.ComposeProject.ToString() -> string!
+override Aw.Sindri.Core.Onyx.ComposePublisher.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.ComposePublisher.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.ComposePublisher.ToString() -> string!
+override Aw.Sindri.Core.Onyx.ComposePublishedPort.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.ComposePublishedPort.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.ComposePublishedPort.ToString() -> string!
+static Aw.Sindri.Core.Onyx.ComposeContainer.operator !=(Aw.Sindri.Core.Onyx.ComposeContainer? left, Aw.Sindri.Core.Onyx.ComposeContainer? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposeContainer.operator ==(Aw.Sindri.Core.Onyx.ComposeContainer? left, Aw.Sindri.Core.Onyx.ComposeContainer? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposeProject.operator !=(Aw.Sindri.Core.Onyx.ComposeProject? left, Aw.Sindri.Core.Onyx.ComposeProject? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposeProject.operator ==(Aw.Sindri.Core.Onyx.ComposeProject? left, Aw.Sindri.Core.Onyx.ComposeProject? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposeProject.StrippedVariables.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Onyx.ComposeProject.IsOurs(string? name) -> bool
+static Aw.Sindri.Core.Onyx.ComposeProject.NameFor(string! sindriHome) -> string!
+static Aw.Sindri.Core.Onyx.ComposePublisher.operator !=(Aw.Sindri.Core.Onyx.ComposePublisher? left, Aw.Sindri.Core.Onyx.ComposePublisher? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposePublisher.operator ==(Aw.Sindri.Core.Onyx.ComposePublisher? left, Aw.Sindri.Core.Onyx.ComposePublisher? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposePublishedPort.operator !=(Aw.Sindri.Core.Onyx.ComposePublishedPort? left, Aw.Sindri.Core.Onyx.ComposePublishedPort? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposePublishedPort.operator ==(Aw.Sindri.Core.Onyx.ComposePublishedPort? left, Aw.Sindri.Core.Onyx.ComposePublishedPort? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposeFailures.IsTimeout(Aw.Kernel.Error! error) -> bool
+static Aw.Sindri.Core.Onyx.ComposeFailures.TimedOut(string! what, System.TimeSpan timeout) -> Aw.Kernel.Error!
+static Aw.Sindri.Core.Onyx.ComposeFailures.StopCutShort(System.TimeSpan timeout) -> Aw.Kernel.Error!
+static Aw.Sindri.Core.Onyx.ImageNames.WithoutDefaults(string! reference) -> string!
+Aw.Sindri.Core.Onyx.DeployFetch
+Aw.Sindri.Core.Onyx.DeployFetch.<Clone>$() -> Aw.Sindri.Core.Onyx.DeployFetch!
+Aw.Sindri.Core.Onyx.DeployFetch.Deconstruct(out int Downloaded, out int Present) -> void
+Aw.Sindri.Core.Onyx.DeployFetch.DeployFetch(int Downloaded, int Present) -> void
+Aw.Sindri.Core.Onyx.DeployFetch.Downloaded.get -> int
+Aw.Sindri.Core.Onyx.DeployFetch.Downloaded.init -> void
+Aw.Sindri.Core.Onyx.DeployFetch.Equals(Aw.Sindri.Core.Onyx.DeployFetch? other) -> bool
+Aw.Sindri.Core.Onyx.DeployFetch.Present.get -> int
+Aw.Sindri.Core.Onyx.DeployFetch.Present.init -> void
+Aw.Sindri.Core.Onyx.IDeployFiles
+Aw.Sindri.Core.Onyx.IDeployFiles.Fetch(Aw.Sindri.Core.Onyx.OnyxPins! pins, string! deployDir, System.Action<string!>! progress, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Onyx.DeployFetch!>!>
+Aw.Sindri.Core.Onyx.OnyxFilePin.Matches(System.ReadOnlySpan<byte> content) -> bool
+Aw.Sindri.Core.Onyx.OnyxFilePin.Mismatch(System.ReadOnlySpan<byte> content) -> Aw.Kernel.Error!
+Aw.Sindri.Core.Onyx.OnyxFilePin.Unavailable(string! why) -> Aw.Kernel.Error!
+override Aw.Sindri.Core.Onyx.DeployFetch.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.DeployFetch.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.DeployFetch.ToString() -> string!
+static Aw.Sindri.Core.Onyx.DeployFetch.operator !=(Aw.Sindri.Core.Onyx.DeployFetch? left, Aw.Sindri.Core.Onyx.DeployFetch? right) -> bool
+static Aw.Sindri.Core.Onyx.DeployFetch.operator ==(Aw.Sindri.Core.Onyx.DeployFetch? left, Aw.Sindri.Core.Onyx.DeployFetch? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxFilePin.Sha256Of(System.ReadOnlySpan<byte> content) -> string!
+Aw.Sindri.Core.Onyx.IComposeServices
+Aw.Sindri.Core.Onyx.IComposeServices.Read(string! composeText) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeService!>!>!
+Aw.Sindri.Core.Onyx.IOnyxWorkspace
+Aw.Sindri.Core.Onyx.IOnyxWorkspace.Read(string! path) -> Aw.Kernel.Result<string?>!
+Aw.Sindri.Core.Onyx.IOnyxWorkspace.ReadState() -> Aw.Sindri.Core.Onyx.OnyxSetupState?
+Aw.Sindri.Core.Onyx.IOnyxWorkspace.WriteIfChanged(string! path, string! content, bool secret) -> bool
+Aw.Sindri.Core.Onyx.IOnyxWorkspace.WriteState(Aw.Sindri.Core.Onyx.OnyxSetupState! state) -> void
+Aw.Sindri.Core.Onyx.IOnyxHealth
+Aw.Sindri.Core.Onyx.IOnyxHealth.Probe(int port, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Onyx.OnyxProbe!>
+Aw.Sindri.Core.Onyx.OnyxProbe
+Aw.Sindri.Core.Onyx.OnyxProbe.<Clone>$() -> Aw.Sindri.Core.Onyx.OnyxProbe!
+Aw.Sindri.Core.Onyx.OnyxProbe.BackendVersion.get -> string?
+Aw.Sindri.Core.Onyx.OnyxProbe.BackendVersion.init -> void
+Aw.Sindri.Core.Onyx.OnyxProbe.Deconstruct(out bool Healthy, out string? BackendVersion) -> void
+Aw.Sindri.Core.Onyx.OnyxProbe.Equals(Aw.Sindri.Core.Onyx.OnyxProbe? other) -> bool
+Aw.Sindri.Core.Onyx.OnyxProbe.Healthy.get -> bool
+Aw.Sindri.Core.Onyx.OnyxProbe.Healthy.init -> void
+Aw.Sindri.Core.Onyx.OnyxProbe.OnyxProbe(bool Healthy, string? BackendVersion) -> void
+Aw.Sindri.Core.Onyx.OnyxRoutes
+const Aw.Sindri.Core.Onyx.OnyxRoutes.Health = "/api/health" -> string!
+const Aw.Sindri.Core.Onyx.OnyxRoutes.Version = "/api/version" -> string!
+override Aw.Sindri.Core.Onyx.OnyxProbe.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.OnyxProbe.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.OnyxProbe.ToString() -> string!
+static Aw.Sindri.Core.Onyx.OnyxProbe.operator !=(Aw.Sindri.Core.Onyx.OnyxProbe? left, Aw.Sindri.Core.Onyx.OnyxProbe? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxProbe.operator ==(Aw.Sindri.Core.Onyx.OnyxProbe? left, Aw.Sindri.Core.Onyx.OnyxProbe? right) -> bool
+Aw.Sindri.Core.Onyx.IOnyxProgress
+Aw.Sindri.Core.Onyx.IOnyxProgress.Line(string! text) -> void
+Aw.Sindri.Core.Onyx.IOnyxProgress.Tick() -> void
+Aw.Sindri.Core.Onyx.IOnyxWorkspace.StateIsUnreadable() -> bool
+Aw.Sindri.Core.Onyx.IOnyxWorkspace.TryLock() -> Aw.Kernel.Result<System.IDisposable?>!
+Aw.Sindri.Core.Onyx.IRandomHex
+Aw.Sindri.Core.Onyx.IRandomHex.Hex(int bytes) -> string!
+Aw.Sindri.Core.Onyx.OnyxFacts
+Aw.Sindri.Core.Onyx.OnyxFacts.OnyxFacts(Aw.Sindri.Core.Onyx.IContainerRuntime! runtime, Aw.Sindri.Core.Onyx.IHostProbes! probes, Aw.Sindri.Core.Control.ISindriHome! home) -> void
+Aw.Sindri.Core.Onyx.OnyxFacts.Paths.get -> Aw.Sindri.Core.Onyx.OnyxPaths!
+Aw.Sindri.Core.Onyx.OnyxFacts.Platform(System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<string!>!
+Aw.Sindri.Core.Onyx.OnyxFacts.Read(System.Threading.CancellationToken cancellationToken) -> (Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! Docker, Aw.Sindri.Core.Onyx.HostFacts! Host)
+Aw.Sindri.Core.Onyx.OnyxFacts.Read(int? stickyPort, System.Threading.CancellationToken cancellationToken) -> (Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! Docker, Aw.Sindri.Core.Onyx.HostFacts! Host)
+Aw.Sindri.Core.Onyx.OnyxPaths.EnvTemplate.get -> string!
+Aw.Sindri.Core.Onyx.OnyxPaths.Project.get -> Aw.Sindri.Core.Onyx.ComposeProject!
+Aw.Sindri.Core.Onyx.OnyxPaths.ProjectName.get -> string!
+Aw.Sindri.Core.Onyx.OnyxPaths.ProjectName.init -> void
+Aw.Sindri.Core.Onyx.OnyxBindings
+static Aw.Sindri.Core.Onyx.OnyxPreflight.DockerProblem(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! docker) -> Aw.Kernel.Error?
+static Aw.Sindri.Core.Onyx.OnyxFacts.OwnPort(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Onyx.ComposeContainer!>! containers) -> int?
+static Aw.Sindri.Core.Onyx.OnyxPreflight.IsLocalEndpoint(string? endpoint) -> bool
+static Aw.Sindri.Core.Onyx.OnyxPreflight.RemoteDocker(string? endpoint) -> Aw.Kernel.Error!
+static Aw.Sindri.Core.Onyx.OnyxPreflight.TryParseComposeVersion(string? text, out System.Version! version) -> bool
+Aw.Sindri.Core.Onyx.ComposeConfigFacts
+Aw.Sindri.Core.Onyx.ComposeConfigFacts.<Clone>$() -> Aw.Sindri.Core.Onyx.ComposeConfigFacts!
+Aw.Sindri.Core.Onyx.ComposeConfigFacts.ComposeConfigFacts(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposePublishedPort!>! Ports, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeHostAccess!>! HostAccess) -> void
+Aw.Sindri.Core.Onyx.ComposeConfigFacts.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposePublishedPort!>! Ports, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeHostAccess!>! HostAccess) -> void
+Aw.Sindri.Core.Onyx.ComposeConfigFacts.Equals(Aw.Sindri.Core.Onyx.ComposeConfigFacts? other) -> bool
+Aw.Sindri.Core.Onyx.ComposeConfigFacts.HostAccess.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeHostAccess!>!
+Aw.Sindri.Core.Onyx.ComposeConfigFacts.HostAccess.init -> void
+Aw.Sindri.Core.Onyx.ComposeConfigFacts.Ports.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposePublishedPort!>!
+Aw.Sindri.Core.Onyx.ComposeConfigFacts.Ports.init -> void
+Aw.Sindri.Core.Onyx.ComposeHostAccess
+Aw.Sindri.Core.Onyx.ComposeHostAccess.<Clone>$() -> Aw.Sindri.Core.Onyx.ComposeHostAccess!
+Aw.Sindri.Core.Onyx.ComposeHostAccess.ComposeHostAccess(string! Service, string! Setting) -> void
+Aw.Sindri.Core.Onyx.ComposeHostAccess.Deconstruct(out string! Service, out string! Setting) -> void
+Aw.Sindri.Core.Onyx.ComposeHostAccess.Equals(Aw.Sindri.Core.Onyx.ComposeHostAccess? other) -> bool
+Aw.Sindri.Core.Onyx.ComposeHostAccess.Service.get -> string!
+Aw.Sindri.Core.Onyx.ComposeHostAccess.Service.init -> void
+Aw.Sindri.Core.Onyx.ComposeHostAccess.Setting.get -> string!
+Aw.Sindri.Core.Onyx.ComposeHostAccess.Setting.init -> void
+Aw.Sindri.Core.Onyx.IContainerRuntime.RenderedConfig(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<Aw.Sindri.Core.Onyx.ComposeConfigFacts!>!
+override Aw.Sindri.Core.Onyx.ComposeConfigFacts.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.ComposeConfigFacts.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.ComposeConfigFacts.ToString() -> string!
+override Aw.Sindri.Core.Onyx.ComposeHostAccess.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.ComposeHostAccess.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.ComposeHostAccess.ToString() -> string!
+static Aw.Sindri.Core.Onyx.ComposeConfigFacts.operator !=(Aw.Sindri.Core.Onyx.ComposeConfigFacts? left, Aw.Sindri.Core.Onyx.ComposeConfigFacts? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposeConfigFacts.operator ==(Aw.Sindri.Core.Onyx.ComposeConfigFacts? left, Aw.Sindri.Core.Onyx.ComposeConfigFacts? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposeHostAccess.operator !=(Aw.Sindri.Core.Onyx.ComposeHostAccess? left, Aw.Sindri.Core.Onyx.ComposeHostAccess? right) -> bool
+static Aw.Sindri.Core.Onyx.ComposeHostAccess.operator ==(Aw.Sindri.Core.Onyx.ComposeHostAccess? left, Aw.Sindri.Core.Onyx.ComposeHostAccess? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxBindings.Verify(Aw.Sindri.Core.Onyx.ComposeConfigFacts! config, int port) -> Aw.Kernel.Error?
+Aw.Sindri.Core.Onyx.OnyxFacts.Containers(System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeContainer!>!>!
+Aw.Sindri.Core.Onyx.OnyxFacts.ForeignProjectWarning(Aw.Sindri.Core.Onyx.OnyxSetupState? state) -> string?
+Aw.Sindri.Core.Onyx.OnyxFacts.Project.get -> Aw.Sindri.Core.Onyx.ComposeProject!
+Aw.Sindri.Core.Onyx.OnyxFacts.DockerProblem(System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Error?
+Aw.Sindri.Core.Onyx.ComposeProject.HasFiles.get -> bool
+static Aw.Sindri.Core.Onyx.ComposeProject.ByLabel(string! name) -> Aw.Sindri.Core.Onyx.ComposeProject!
+Aw.Sindri.Core.Onyx.OnyxFacts.Containers(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Onyx.ComposeContainer!>!>!
+static Aw.Sindri.Core.Onyx.ComposeFailures.WithHint(Aw.Kernel.Error! error, string! hint) -> Aw.Kernel.Error!
+Aw.Sindri.Core.Onyx.OnyxState.Unknown = 3 -> Aw.Sindri.Core.Onyx.OnyxState
+Aw.Sindri.Core.Onyx.OnyxFacts.ProjectInUse(Aw.Sindri.Core.Onyx.IOnyxWorkspace! workspace) -> Aw.Kernel.Result<(Aw.Sindri.Core.Onyx.ComposeProject! Project, System.Collections.Generic.IReadOnlyList<string!>! Missing)>!
+Aw.Sindri.Core.Onyx.IContainerRuntime.MemoryUsedOutside(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<long>!
+Aw.Sindri.Core.Onyx.OnyxFacts.MemoryUsedByOthers(System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<long>!
+static Aw.Sindri.Core.Onyx.OnyxPreflight.Evaluate(Aw.Sindri.Core.Onyx.ContainerRuntimeFacts! docker, Aw.Sindri.Core.Onyx.HostFacts! host, Aw.Sindri.Core.Onyx.OnyxPins! pins, int? ownPort = null, Aw.Kernel.Result<long>? usedByOthers = null) -> Aw.Sindri.Core.Onyx.PreflightReport!
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.HumanOnly.get -> bool?
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.HumanOnly.init -> void
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.Runtime.get -> Aw.Sindri.Core.Workflow.Blocks.BlockRuntime?
@@ -9382,6 +9693,39 @@ static Aw.Sindri.Core.Sessions.TmuxPane.operator !=(Aw.Sindri.Core.Sessions.Tmux
 static Aw.Sindri.Core.Sessions.TmuxPane.operator ==(Aw.Sindri.Core.Sessions.TmuxPane? left, Aw.Sindri.Core.Sessions.TmuxPane? right) -> bool
 static Aw.Sindri.Core.Sessions.TmuxServerView.operator !=(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
 static Aw.Sindri.Core.Sessions.TmuxServerView.operator ==(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
+Aw.Sindri.Core.Scoping.ScopingErrors
+static Aw.Sindri.Core.Scoping.ScopingErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
+static Aw.Sindri.Core.Scoping.ScopingErrors.Retired.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static readonly Aw.Sindri.Core.Scoping.ScopingErrors.DraftOutsideRunArea -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.Scoping.ScopingErrors.NotAScopingInstance -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.Scoping.ScopingErrors.PacketPurged -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Onyx.IBrowser
+Aw.Sindri.Core.Onyx.IBrowser.Open(System.Uri! url) -> bool
+Aw.Sindri.Core.Onyx.IOnyxProfileWriter
+Aw.Sindri.Core.Onyx.IOnyxProfileWriter.SetOnyx(string! url, string! token, string! version) -> Aw.Kernel.Result<bool>!
+Aw.Sindri.Core.Onyx.IOnyxPrompts
+Aw.Sindri.Core.Onyx.IOnyxPrompts.Ask(string! question, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<string?>
+Aw.Sindri.Core.Onyx.IOnyxPrompts.AskSecret(string! question, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<string?>
+Aw.Sindri.Core.Onyx.IOnyxPrompts.Interactive.get -> bool
+Aw.Sindri.Core.Onyx.IOnyxPrompts.Pause(string! message, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+Aw.Sindri.Core.Onyx.IOnyxProvisioning
+Aw.Sindri.Core.Onyx.IOnyxProvisioning.KeyIsAdmin(int port, string! key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+Aw.Sindri.Core.Onyx.IOnyxProvisioning.SignIn(int port, string! email, string! password, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Onyx.IOnyxSession!>!>
+Aw.Sindri.Core.Onyx.IOnyxSession
+Aw.Sindri.Core.Onyx.IOnyxSession.AdminGroup(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
+Aw.Sindri.Core.Onyx.IOnyxSession.CreateKey(string! name, int groupId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Sindri.Core.Onyx.ISecretWriter
+Aw.Sindri.Core.Onyx.ISecretWriter.Store(string! service, string! account, string! secret) -> Aw.Kernel.Result<Aw.Sindri.Core.Secrets.SecretPointer!>!
+Aw.Sindri.Core.Onyx.OnyxSetupState.Deconstruct(out int Port, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Steps, out string? Project, out int SchemaVersion, out string? KeyPointer) -> void
+Aw.Sindri.Core.Onyx.OnyxSetupState.KeyPointer.get -> string?
+Aw.Sindri.Core.Onyx.OnyxSetupState.KeyPointer.init -> void
+Aw.Sindri.Core.Onyx.OnyxSetupState.OnyxSetupState(int Port, System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Steps, string? Project = null, int SchemaVersion = 1, string? KeyPointer = null) -> void
+const Aw.Sindri.Core.Onyx.OnyxSteps.Key = "key" -> string!
+const Aw.Sindri.Core.Onyx.OnyxSteps.Profile = "profile" -> string!
+const Aw.Sindri.Core.Onyx.OnyxSteps.Signup = "signup" -> string!
+static readonly Aw.Sindri.Core.SindriErrors.OnyxKeyFailed -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.OnyxNotAdmin -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.OnyxSecretNotStored -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.JudgeSettings? Judge, out Aw.Sindri.Core.Profile.ForgeSettings? Forge, out Aw.Sindri.Core.Profile.RouteSettings? Route) -> void
 Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.JudgeSettings? Judge = null, Aw.Sindri.Core.Profile.ForgeSettings? Forge = null, Aw.Sindri.Core.Profile.RouteSettings? Route = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Rules.MatchedTransition
@@ -9561,6 +9905,69 @@ Aw.Sindri.Core.Sessions.SessionProblem.Reason.get -> Aw.Sindri.Core.Sessions.Una
 Aw.Sindri.Core.Sessions.SessionProblem.Reason.init -> void
 static Aw.Sindri.Core.Sessions.SessionRows.Find(Aw.Sindri.Core.Sessions.SessionSnapshot! pass, Aw.Sindri.Core.Sessions.SessionRef reference, Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Sindri.Core.Sessions.ObservedSession?
 static Aw.Sindri.Core.Sessions.SessionRows.RefuseSession(Aw.Sindri.Core.Commands.CallerContext! caller) -> Aw.Kernel.Error?
+Aw.Sindri.Core.Onyx.OnyxStepOutcome
+Aw.Sindri.Core.Onyx.OnyxStepOutcome.NeedsHuman = 2 -> Aw.Sindri.Core.Onyx.OnyxStepOutcome
+Aw.Sindri.Core.Onyx.OnyxStepOutcome.Ran = 0 -> Aw.Sindri.Core.Onyx.OnyxStepOutcome
+Aw.Sindri.Core.Onyx.OnyxStepOutcome.Skipped = 1 -> Aw.Sindri.Core.Onyx.OnyxStepOutcome
+Aw.Sindri.Core.Onyx.OnyxStepResult
+Aw.Sindri.Core.Onyx.OnyxStepResult.<Clone>$() -> Aw.Sindri.Core.Onyx.OnyxStepResult!
+Aw.Sindri.Core.Onyx.OnyxStepResult.Deconstruct(out string! Step, out Aw.Sindri.Core.Onyx.OnyxStepOutcome Outcome) -> void
+Aw.Sindri.Core.Onyx.OnyxStepResult.Equals(Aw.Sindri.Core.Onyx.OnyxStepResult? other) -> bool
+Aw.Sindri.Core.Onyx.OnyxStepResult.OnyxStepResult(string! Step, Aw.Sindri.Core.Onyx.OnyxStepOutcome Outcome) -> void
+Aw.Sindri.Core.Onyx.OnyxStepResult.Outcome.get -> Aw.Sindri.Core.Onyx.OnyxStepOutcome
+Aw.Sindri.Core.Onyx.OnyxStepResult.Outcome.init -> void
+Aw.Sindri.Core.Onyx.OnyxStepResult.Step.get -> string!
+Aw.Sindri.Core.Onyx.OnyxStepResult.Step.init -> void
+override Aw.Sindri.Core.Onyx.OnyxStepResult.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.OnyxStepResult.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.OnyxStepResult.ToString() -> string!
+static Aw.Sindri.Core.Onyx.OnyxStepResult.operator !=(Aw.Sindri.Core.Onyx.OnyxStepResult? left, Aw.Sindri.Core.Onyx.OnyxStepResult? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxStepResult.operator ==(Aw.Sindri.Core.Onyx.OnyxStepResult? left, Aw.Sindri.Core.Onyx.OnyxStepResult? right) -> bool
+Aw.Sindri.Core.Control.ControlEndpoint.Onyx.get -> Aw.Sindri.Core.Control.OnyxEndpoint?
+Aw.Sindri.Core.Control.ControlEndpoint.Onyx.init -> void
+Aw.Sindri.Core.Control.OnyxEndpoint
+Aw.Sindri.Core.Control.OnyxEndpoint.<Clone>$() -> Aw.Sindri.Core.Control.OnyxEndpoint!
+Aw.Sindri.Core.Control.OnyxEndpoint.Deconstruct(out string! Project, out string! Url, out string! State) -> void
+Aw.Sindri.Core.Control.OnyxEndpoint.Equals(Aw.Sindri.Core.Control.OnyxEndpoint? other) -> bool
+Aw.Sindri.Core.Control.OnyxEndpoint.OnyxEndpoint(string! Project, string! Url, string! State) -> void
+Aw.Sindri.Core.Control.OnyxEndpoint.Project.get -> string!
+Aw.Sindri.Core.Control.OnyxEndpoint.Project.init -> void
+Aw.Sindri.Core.Control.OnyxEndpoint.State.get -> string!
+Aw.Sindri.Core.Control.OnyxEndpoint.State.init -> void
+Aw.Sindri.Core.Control.OnyxEndpoint.Url.get -> string!
+Aw.Sindri.Core.Control.OnyxEndpoint.Url.init -> void
+Aw.Sindri.Core.Onyx.IManagedOnyx
+Aw.Sindri.Core.Onyx.IManagedOnyx.Is(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+Aw.Sindri.Core.Onyx.IManagedOnyx.IsConfigured(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+Aw.Sindri.Core.Onyx.IOnyxNotices
+Aw.Sindri.Core.Onyx.IOnyxNotices.Current(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Onyx.OnyxNotice?>!>
+Aw.Sindri.Core.Onyx.OnyxNotice
+Aw.Sindri.Core.Onyx.OnyxNotice.<Clone>$() -> Aw.Sindri.Core.Onyx.OnyxNotice!
+Aw.Sindri.Core.Onyx.OnyxNotice.Command.get -> string!
+Aw.Sindri.Core.Onyx.OnyxNotice.Command.init -> void
+Aw.Sindri.Core.Onyx.OnyxNotice.Deconstruct(out string! Title, out string! Reason, out string! Command) -> void
+Aw.Sindri.Core.Onyx.OnyxNotice.Equals(Aw.Sindri.Core.Onyx.OnyxNotice? other) -> bool
+Aw.Sindri.Core.Onyx.OnyxNotice.OnyxNotice(string! Title, string! Reason, string! Command) -> void
+Aw.Sindri.Core.Onyx.OnyxNotice.Reason.get -> string!
+Aw.Sindri.Core.Onyx.OnyxNotice.Reason.init -> void
+Aw.Sindri.Core.Onyx.OnyxNotice.Title.get -> string!
+Aw.Sindri.Core.Onyx.OnyxNotice.Title.init -> void
+Aw.Sindri.Core.Onyx.OnyxNoticeRules
+Aw.Sindri.Core.Onyx.OnyxPaths.Declined.get -> string!
+Aw.Sindri.Core.Onyx.OnyxPaths.Ensure.get -> string!
+const Aw.Sindri.Core.Onyx.OnyxNoticeRules.Command = "sindri onyx up" -> string!
+override Aw.Sindri.Core.Control.OnyxEndpoint.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Control.OnyxEndpoint.GetHashCode() -> int
+override Aw.Sindri.Core.Control.OnyxEndpoint.ToString() -> string!
+override Aw.Sindri.Core.Onyx.OnyxNotice.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Onyx.OnyxNotice.GetHashCode() -> int
+override Aw.Sindri.Core.Onyx.OnyxNotice.ToString() -> string!
+static Aw.Sindri.Core.Control.OnyxEndpoint.operator !=(Aw.Sindri.Core.Control.OnyxEndpoint? left, Aw.Sindri.Core.Control.OnyxEndpoint? right) -> bool
+static Aw.Sindri.Core.Control.OnyxEndpoint.operator ==(Aw.Sindri.Core.Control.OnyxEndpoint? left, Aw.Sindri.Core.Control.OnyxEndpoint? right) -> bool
+static Aw.Sindri.Core.NeedsYou.NeedsYouRows.ForOnyx(Aw.Sindri.Core.Onyx.OnyxNotice! notice, System.DateTimeOffset since, Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Kernel.Result<Aw.Sindri.Core.NeedsYou.NeedsYouRow!>!
+static Aw.Sindri.Core.Onyx.OnyxNotice.operator !=(Aw.Sindri.Core.Onyx.OnyxNotice? left, Aw.Sindri.Core.Onyx.OnyxNotice? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxNotice.operator ==(Aw.Sindri.Core.Onyx.OnyxNotice? left, Aw.Sindri.Core.Onyx.OnyxNotice? right) -> bool
+static Aw.Sindri.Core.Onyx.OnyxNoticeRules.Decide(bool managed, bool setUp, bool declined, string? ensure, bool configured = false) -> Aw.Sindri.Core.Onyx.OnyxNotice?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.ChildAddress.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.ChildAddress.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceStart.ParentId.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId?

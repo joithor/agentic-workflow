@@ -8,7 +8,8 @@
 #   --rebuild  publish again although the build matches the source
 #
 # A side name: the TypeScript `sindri` (~/.local/bin/sindri, its launchd jobs and the nudge hook) stays as it is until the
-# switch (AGENTS.md "C# build"), and nothing in setup.sh, the providers or launchd runs this.
+# switch (AGENTS.md "C# build"), and nothing in the providers or launchd runs this. The one caller in setup.sh is the Onyx step
+# (`./setup.sh --with-sindri`, scripts/install-onyx.sh), which runs `sindri-app onyx up`.
 #
 # The build is one directory, $AW_STATE_DIR/bin/sindri-app/<stamp>/: `sindri` framework-dependent (the Temporal .NET SDK
 # can't be trimmed; .agents/rules/csharp.md "AOT scope") and `sindri-ui` NativeAOT for this RID with its native
