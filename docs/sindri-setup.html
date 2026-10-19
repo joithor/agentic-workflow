@@ -192,7 +192,9 @@ details.more .body li { margin: 4px 0; }
 }
 @media (prefers-reduced-motion: reduce) { html.js .step.on { animation: none; } .rail .meter i, details.more summary::before { transition: none; } }
 @media print {
-  :root, :root[data-theme] { --bg: #fff; --panel: #fff; --panel-2: #fff; --ink: #000; --ink-2: #222; --ink-3: #444; --line: #bbb; color-scheme: light; }
+  :root, :root[data-theme] { --bg: #fff; --panel: #fff; --panel-2: #fff; --ink: #000; --ink-2: #222; --ink-3: #444; --line: #bbb;
+    --accent: #a8401b; --accent-soft: #f5e1d6; --human: #a8401b; --human-soft: #f5e1d6; --agent: #2d6a38; --agent-soft: #dfeedc;
+    --info: #1d5d8a; --info-soft: #dce8f3; --on-accent: #fff; color-scheme: light; }
   .rail, .pager, .top, .skip, .cmd .copy { display: none; }
   html.js .step { display: block !important; break-after: page; }
   .shell { display: block; }
@@ -454,7 +456,7 @@ sindri-app mcp register --apply --providers all</code></pre><p class="note">Your
 
     <div class="pager">
       <button class="btn" id="prevBtn" type="button">← Back</button>
-      <span class="pos" id="pos" aria-live="polite"></span>
+      <span class="pos" id="pos"></span>
       <button class="btn primary" id="nextBtn" type="button">Next →</button>
     </div>
   </main>
@@ -613,8 +615,9 @@ sindri-app mcp register --apply --providers all</code></pre><p class="note">Your
     rail.scrollLeft = items[i].offsetLeft - rail.clientWidth / 2 + items[i].offsetWidth / 2;
     document.title = "Sindri Setup · " + steps[i].dataset.title;
   }
+  // A hash that names no step (the skip link's #main, a typo) keeps the current step.
   function fromHash() {
-    var id = location.hash.slice(1), k = 0;
+    var id = location.hash.slice(1), k = cur;
     steps.forEach(function (s, j) { if (s.dataset.slug === id) k = j; });
     return k;
   }
@@ -628,13 +631,21 @@ sindri-app mcp register --apply --providers all</code></pre><p class="note">Your
     var id = a.getAttribute("href").slice(1);
     steps.forEach(function (s, j) { if (s.dataset.slug === id) go(j); });
   });
+  // The skip link only moves focus; as a hash it would add a history entry that names no step.
+  document.querySelector(".skip").addEventListener("click", function (e) {
+    e.preventDefault(); focusStep();
+  });
   document.querySelector(".brand").addEventListener("click", function (e) {
     if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault(); go(0);
   });
   document.getElementById("prevBtn").addEventListener("click", function () { go(cur - 1); });
   document.getElementById("nextBtn").addEventListener("click", function () { go(cur + 1); });
-  window.addEventListener("popstate", function () { show(fromHash(), false); window.scrollTo(0, 0); focusStep(); });
+  window.addEventListener("popstate", function () {
+    var k = fromHash();
+    if (k === cur && location.hash !== "#" + steps[cur].dataset.slug) return;
+    show(k, false); window.scrollTo(0, 0); focusStep();
+  });
   document.addEventListener("keydown", function (e) {
     if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey || e.defaultPrevented) return;
     var t = e.target.tagName;
