@@ -10,7 +10,7 @@ namespace Aw.Context.Core.Extract;
 public static partial class Recognizers
 {
     internal const int MaxFileLength = 512_000;
-    private static readonly string[] _extensions = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".json"];
+    private static readonly string[] _extensions = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".json", ".cs"];
     private static readonly HashSet<string> _localeFolders = new(["i18n", "l10n", "locale", "locales", "lang", "translations"], StringComparer.OrdinalIgnoreCase);
     private static readonly string[] _notComponents = ["Context", "Schema", "Props"];
     private static readonly string[] _skipped = ["node_modules/", "dist/", "build/", "coverage/", ".git/", "tests/", "__tests__/"];
@@ -23,6 +23,7 @@ public static partial class Recognizers
         new("keybindings", Source, Keybindings),
         new("settings", f => Source(f) && SettingsFile.IsMatch(f.Path) && !InToolFolder(f.Path) && !NotTheAppsSettings(f.Path), SettingKeys),
         new("routes", Source, Routes),
+        new("minimal-api-routes", f => Source(f) && f.Path.EndsWith(".cs", StringComparison.Ordinal), MinimalApiRoutes),
         new("components", f => Source(f) && IsComponentFile(f.Path), Components),
         new("test-ids", Source, TestIds),
     ];
@@ -99,6 +100,10 @@ public static partial class Recognizers
         Route.Matches(file.Text).Select(m => (Method: m.Groups["m"].Value.ToUpperInvariant(), Path: m.Groups["p"].Value))
             .Select(r => Named($"surface:route/{r.Method}:{r.Path}", $"{r.Method} {r.Path}", 1.0)).OfType<Found>();
 
+    private static IEnumerable<Found> MinimalApiRoutes(RepoFile file) =>
+        MinimalApiRoute.Matches(file.Text).Select(m => (Method: m.Groups["m"].Value.ToUpperInvariant(), Path: m.Groups["p"].Value))
+            .Select(r => Named($"surface:route/{r.Method}:{r.Path}", $"{r.Method} {r.Path}", 1.0)).OfType<Found>();
+
     private static IEnumerable<Found> Components(RepoFile file) =>
         Component.Matches(file.Text).Select(m => m.Groups["n"].Value).Where(n => !_notComponents.Any(suffix => n.EndsWith(suffix, StringComparison.Ordinal))).Select(n => Named($"surface:{ComponentKind(n)}/{n}", n, 0.9)).OfType<Found>();
 
@@ -142,6 +147,10 @@ public static partial class Recognizers
 
     [GeneratedRegex("\\b(?:app|router)\\.(?<m>get|post|put|patch|delete)\\(\\s*[\"'`](?<p>/[^\"'`\\s]*)[\"'`]", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Route { get; }
+
+    // ASP.NET Core minimal APIs: app.MapGet("/path", ...) or group.MapPost("/path", ...). The path is the one written there, relative to any MapGroup prefix.
+    [GeneratedRegex("\\.Map(?<m>Get|Post|Put|Patch|Delete)\\(\\s*\"(?<p>/[^\"\\s]*)\"", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex MinimalApiRoute { get; }
 
     [GeneratedRegex("\\bexport\\s+(?:default\\s+)?(?:async\\s+)?(?:function|const|class)\\s+(?<n>[A-Z][A-Za-z0-9]*[a-z][A-Za-z0-9]*)(?![A-Za-z0-9_])", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 1000)]
     private static partial Regex Component { get; }

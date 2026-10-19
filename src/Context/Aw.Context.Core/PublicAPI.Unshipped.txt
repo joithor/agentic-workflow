@@ -4254,7 +4254,7 @@ const Aw.Context.Core.Eval.Backtest.Verdicts.NotMet = "not met" -> string!
 const Aw.Context.Core.Eval.Backtest.Verdicts.NotPassed = "NOT PASSED" -> string!
 const Aw.Context.Core.Eval.Backtest.Verdicts.OwnerDecision = "owner decision needed (small sample)" -> string!
 const Aw.Context.Core.Eval.Backtest.Verdicts.Pass = "PASS" -> string!
-const Aw.Context.Core.Extract.MapExtractor.Version = 1 -> int
+const Aw.Context.Core.Extract.MapExtractor.Version = 2 -> int
 override Aw.Context.Core.Eval.Backtest.ArmPassLine.Equals(object? obj) -> bool
 override Aw.Context.Core.Eval.Backtest.ArmPassLine.GetHashCode() -> int
 override Aw.Context.Core.Eval.Backtest.ArmPassLine.ToString() -> string!

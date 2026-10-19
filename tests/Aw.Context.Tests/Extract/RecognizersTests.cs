@@ -142,7 +142,8 @@ public sealed class RecognizersTests
     [InlineData("node_modules/x/a.ts", false)]
     [InlineData("dist/a.js", false)]
     [InlineData("README.md", false)]
-    [InlineData("src/a.cs", false)]
+    [InlineData("src/a.cs", true)]
+    [InlineData("src/a.csproj", false)]
     public void Only_source_files_outside_tests_and_build_output_are_read(string path, bool expected) =>
         Assert.Equal(expected, Recognizers.Source(new RepoFile(path, "x")));
 
