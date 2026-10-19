@@ -193,7 +193,7 @@ internal static class CommandTable
             ["context", "eval", .. var rest] => await new ContextEvalVerbs(client, output, services.GetRequiredService<IContextEngine>()).Run(rest, signals.Interrupt).ConfigureAwait(false),
             ["context", "filemap", "accept" or "reject", var link] => await new ContextMapVerbs(client, output, Interactive(), Console.In).Run(["review", args[2], link], signals.Interrupt).ConfigureAwait(false),
             ["context", "code", ..] => await new ContextCodeVerbs(client, output).Run(args[2..], signals.Interrupt).ConfigureAwait(false),
-            ["context", "lenses" or "filemap", ..] => await new ContextLensVerbs(client, output).Run(args[1..], signals.Interrupt).ConfigureAwait(false),
+            ["context", "lenses" or "history" or "filemap", ..] => await new ContextLensVerbs(client, output).Run(args[1..], signals.Interrupt).ConfigureAwait(false),
             ["context", "map", .. var rest] => await new ContextMapVerbs(client, output, Interactive(), Console.In).Run(rest, signals.Interrupt).ConfigureAwait(false),
             ["context", .. var rest] => await new ContextVerbs(client, output).Run(rest, signals.Interrupt).ConfigureAwait(false),
             _ => await UnknownVerb(args, output).ConfigureAwait(false),

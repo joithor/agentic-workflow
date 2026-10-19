@@ -5,6 +5,7 @@ using Aw.Context.Core.Eval.MapQuality;
 using Aw.Context.Core.Extract;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Locks;
 using Aw.Context.Core.Map;
@@ -24,6 +25,7 @@ using Aw.Context.Features.ExportReview;
 using Aw.Context.Features.FindPath;
 using Aw.Context.Features.GetCode;
 using Aw.Context.Features.GetFileMap;
+using Aw.Context.Features.GetHistory;
 using Aw.Context.Features.GetLenses;
 using Aw.Context.Features.GetProposals;
 using Aw.Context.Features.ImportMap;
@@ -70,6 +72,7 @@ public static class ContextFeaturesServiceCollectionExtensions
 
     private static IServiceCollection AddContextSlices(this IServiceCollection services) => services
         .AddBacktest()
+        .AddHistory()
         .AddScoped<IService<QueryContextRequest, ContextResult>, QueryContextService>()
         .AddScoped<IService<SourcesStatusRequest, SourcesView>, SourcesStatusService>()
         .AddScoped<IService<RefreshDocsRequest, RefreshReport>, RefreshDocsService>()
@@ -113,12 +116,18 @@ public static class ContextFeaturesServiceCollectionExtensions
         .AddScoped<IService<GetLensesRequest, LensesView>, GetLensesService>()
         .AddScoped<IService<GetLensesSetRequest, LensesSetView>, GetLensesSetService>()
         .AddScoped<LensBasisReader>()
+        .AddScoped<ContextCodeHistory>()
         .AddScoped<IService<GetCodeRequest, CodeView>, GetCodeService>()
         .AddScoped<CodeLexicalSearch>()
         .AddScoped<LexicalCandidates>()
         .AddScoped<LexicalTestsRule>()
         .AddScoped<LexicalSchemaRule>()
         .AddScoped<IContextCode>(static sp => sp.GetRequiredService<ContextGraph>());
+
+    private static IServiceCollection AddHistory(this IServiceCollection services) => services
+        .AddScoped<IService<GetHistoryRequest, HistoryView>, GetHistoryService>()
+        .AddScoped<HistoryPipeline>()
+        .AddScoped<IContextHistory>(static sp => sp.GetRequiredService<ContextGraph>());
 
     private static IServiceCollection AddBacktest(this IServiceCollection services) => services
         .AddScoped<IService<EvalProbesRequest, ProbeRun>, EvalProbesService>()

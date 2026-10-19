@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using Aw.Context.Core.Code;
 using Aw.Context.Core.Eval;
 using Aw.Context.Core.Graph;
+using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
@@ -163,7 +164,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(ContextChallenge)), JsonSerializable(typeof(ReviewContextMapRequest)), JsonSerializable(typeof(ReviewContextMapResponse)), JsonSerializable(typeof(PromoteContextMapRequest))]
 [JsonSerializable(typeof(PromoteContextMapResponse)), JsonSerializable(typeof(ProposeContextMapRequest)), JsonSerializable(typeof(ProposeContextMapResponse)), JsonSerializable(typeof(ReviewQueueView))]
 [JsonSerializable(typeof(ReviewHistoryView)), JsonSerializable(typeof(ReviewExported)), JsonSerializable(typeof(ReviewResult)), JsonSerializable(typeof(ProposalsView))]
-[JsonSerializable(typeof(LensesView)), JsonSerializable(typeof(LensesSetView)), JsonSerializable(typeof(CodeView)), JsonSerializable(typeof(FileMapView)), JsonSerializable(typeof(ContextMapReviewed)), JsonSerializable(typeof(ContextMapPromoted))]
+[JsonSerializable(typeof(LensesView)), JsonSerializable(typeof(LensesSetView)), JsonSerializable(typeof(HistoryView)), JsonSerializable(typeof(CodeView)), JsonSerializable(typeof(FileMapView)), JsonSerializable(typeof(ContextMapReviewed)), JsonSerializable(typeof(ContextMapPromoted))]
 [JsonSerializable(typeof(ContextMapProposed)), JsonSerializable(typeof(ContextMapBuilt))]
 [JsonSerializable(typeof(SyncContextSourcesRequest)), JsonSerializable(typeof(SyncContextSourcesResult))]
 [JsonSerializable(typeof(BuildContextMapRequest)), JsonSerializable(typeof(BuildContextMapResult))]

@@ -1,0 +1,7 @@
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "SND-CONTEXT-006",
+  "status": 400,
+  "detail": "since isn't an RFC 3339 instant ('2025-09-01T00:00:00Z') or a date ('2025-09-01'); relative times such as '90d' aren't accepted (fix: pass an absolute time)",
+  "traceId": "<trace>"
+}

@@ -510,7 +510,7 @@ error (the profile is invalid, the store can't open, every source is down); **75
 | `SND-CONTEXT-049` | Reserved for findings in the S-4 review loop | — |
 | `SND-CONTEXT-050` | A source's token lacks a needed read scope | Recreate the key read-only with the listed scope |
 | `SND-CONTEXT-055` | Onyx not on a loopback address, or its pinned version differs | §8.8 |
-| `SND-CONTEXT-110` | A sha of a `diff` range is not a commit in the repo's clone, is an ambiguous abbreviation, or is spelled like a ref name (exit 1; HTTP 404) | Fetch that commit into the profile repo's checkout, or pass the full sha |
+| `SND-CONTEXT-110` | A sha of a `diff` range is not a commit in the repo's clone, is an ambiguous abbreviation, or is spelled like a ref name; or the commit a `mapVersion=` read's as-of map names is not in the clone (the `git-history` row of a history answer, reason `commit-not-held`) (exit 1; HTTP 404) | Fetch that commit into the profile repo's checkout, or pass the full sha |
 | `SND-CONTEXT-111` | The two commits of a `diff` range share no merge base (exit 1; HTTP 400) | Pass a base on the head's history |
 
 `lenses` and `filemap` reuse `SND-CONTEXT-003` for an anchor, node or path that is not in the map (UI E-26's "anchor not found"; a second code for the same condition would duplicate it), with `suggestedAnchors` in the problem details.
