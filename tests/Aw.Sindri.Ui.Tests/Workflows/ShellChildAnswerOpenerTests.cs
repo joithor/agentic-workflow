@@ -23,9 +23,9 @@ public sealed class ShellChildAnswerOpenerTests
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private async Task<ShellViewModel> Connected(string? subject)
+    private async Task<ShellViewModel> Connected(string? subject, string scenario = "park")
     {
-        var park = JsonNode.Parse(GoldenFiles.Api("needs-you", "park"))!;
+        var park = JsonNode.Parse(GoldenFiles.Api("needs-you", scenario))!;
         var row = park["rows"]![0]!;
         row["via"] = "child";
         if (subject is not null)
@@ -89,6 +89,18 @@ public sealed class ShellChildAnswerOpenerTests
 
         Assert.NotNull(shell.SheetLink);
         Assert.NotEqual(DeepLinkKind.Workflow, shell.SheetLink.Kind);
+    }, Token);
+
+    [Fact]
+    public Task A_needs_you_row_served_a_child_opens_that_childs_frame_not_the_parent() => UiThread.Run(async () =>
+    {
+        var (address, _) = Served();
+        var shell = await Connected(address, "park-mirrored-child");
+        var child = (string)GoldenFiles.Node("needs-you", "park-mirrored-child")["rows"]![0]!["child"]!;
+
+        shell.FollowChildAnswerFromNeedsYou(shell.NeedsYou.Seen.Rows[0].Id, OfNeedsYou(shell));
+
+        Assert.Equal(new DeepLink(DeepLinkKind.Workflow, child), shell.SheetLink);
     }, Token);
 
     [Fact]

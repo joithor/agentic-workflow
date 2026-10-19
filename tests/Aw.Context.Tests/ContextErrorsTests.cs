@@ -53,4 +53,12 @@ public sealed class ContextErrorsTests
         Assert.Equal((ErrorKind.Timeout, ErrorKind.Unavailable), (ContextErrors.HistoryDeadline.Kind, ContextErrors.IntentNotSynced.Kind));
         Assert.All([ContextErrors.HistoryDeadline, ContextErrors.IntentNotSynced], e => Assert.DoesNotContain(e.Code, ContextErrors.Attention));
     }
+
+    [Fact, Trait("Lane", "unit")]
+    public void The_graphify_limit_code_is_133_an_invalid_input()
+    {
+        Assert.Equal("SND-CONTEXT-133", ContextErrors.GraphifyLimitInvalid.Code);
+        Assert.Equal(ErrorKind.Invalid, ContextErrors.GraphifyLimitInvalid.Kind);
+        Assert.Contains(ContextErrors.GraphifyLimitInvalid, ContextErrors.All);
+    }
 }

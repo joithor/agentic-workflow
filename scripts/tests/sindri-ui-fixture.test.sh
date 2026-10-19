@@ -114,6 +114,7 @@ case "$*" in
     echo "approve-env prover=${AW_SINDRI_PROVER:-} tty=$([ -t 0 ] && echo 1 || echo 0)" >> "$STUB_LOG.env"
     [ -n "${STUB_FAIL_APPROVE:-}" ] && { echo "approve refused" >&2; exit 1; }
     cksum < "$AW_SINDRI_HOME/profile/profile.yaml" > "$STUB_LOG.approved" ;;
+  "--headless") echo "headless proc=${AW_SESSIONS_PROC_ROOT:-} claude=${AW_SESSIONS_CLAUDE_DIR:-} fleet=${AW_FLEET_DIR:-} launcher=${AW_LAUNCHER_CONFIG:-}" >> "$STUB_LOG.env" ;;
   "context map status --json") [ -z "${STUB_NO_MAP:-}" ] || exit 1; echo '{"version":{"number":1}}' ;;
   "context map build") echo "build-env prover=${AW_SINDRI_PROVER:-} tty=$([ -t 0 ] && echo 1 || echo 0)" >> "$STUB_LOG.env" ;;
   "context map import "*) IFS= read -r line; echo "typed=$line" >> "$STUB_LOG"; echo "import-env prover=${AW_SINDRI_PROVER:-} tty=$([ -t 0 ] && echo 1 || echo 0)" >> "$STUB_LOG.env"; [ -z "${STUB_FAIL_IMPORT:-}" ] || { echo "SND-AUTH-002 refused" >&2; exit 1; } ;;
@@ -381,5 +382,79 @@ contains "--help shows FIXTURE_REPO" "$(bash "$FIXTURE" --help)" "FIXTURE_REPO n
 contains "--help shows the environment" "$(bash "$FIXTURE" --help)" "Environment: AW_SINDRI_HOME"
 
 AW_SINDRI_HOME="$C" SINDRI="$STUB" bash "$FIXTURE" context up >/dev/null 2>&1; check "context up works again after down" "$?" "0"
+
+# --- sessions up | ask | end | back | disable | enable | down (the Agents page's data, U11a) ---
+S="$TMPDIR/sess"
+mkdir -p "$S"
+AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" up >/dev/null 2>&1
+for v in "up" "ask 211" "end 211" "back 211" "disable" "enable" "down"; do
+  # shellcheck disable=SC2086
+  AW_SINDRI_HOME="$WORK/elsewhere" bash "$FIXTURE" sessions $v >/dev/null 2>&1; check "sessions $v refuses an unguarded home" "$?" "2"
+done
+check "the refused sessions verbs wrote nothing" "$(ls -A "$WORK/elsewhere")" ""
+AW_SINDRI_HOME="$S" bash "$FIXTURE" sessions >/dev/null 2>&1; check "sessions needs a subverb (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$S" bash "$FIXTURE" sessions sideways >/dev/null 2>&1; check "sessions refuses another word (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$S" bash "$FIXTURE" sessions ask >/dev/null 2>&1; check "sessions ask needs a pid (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$S" bash "$FIXTURE" sessions up 1 >/dev/null 2>&1; check "sessions up takes no argument (exit 2)" "$?" "2"
+AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions end 211 >/dev/null 2>&1; check "sessions end before up exits 2" "$?" "2"
+AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions ask x >/dev/null 2>&1; check "sessions ask refuses a non-pid (exit 2)" "$?" "2"
+
+own="$(jq -r '.ownUid' "$ROOT/tests/fixtures/sessions/manifest.json")"
+if [ "$(id -u)" != "$own" ]; then
+  out="$(AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions up 2>&1)"; check "sessions up refuses another uid" "$?" "2"
+  contains "the refusal names the fixture's uid" "$out" "belong to uid $own"
+  check "the refused sessions up copied nothing" "$([ -e "$S/ui-fixture-sessions" ] && echo yes || echo no)" "no"
+  echo "ok - skipped: the other sessions cases need uid $own (this is $(id -u))"
+else
+  # shellcheck source=scripts/lib/ensure-scripts-deps.sh
+  . "$ROOT/scripts/lib/ensure-scripts-deps.sh"
+  ensure_scripts_deps "$ROOT/scripts" || { echo "not ok - Ajv is needed"; fail=1; }
+  : > "$STUB_LOG"; : > "$STUB_LOG.env"
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions up >/dev/null 2>&1; check "sessions up exits 0" "$?" "0"
+  D="$S/ui-fixture-sessions"
+  check "the copy is the fixture's tree" "$(diff -r --no-dereference "$ROOT/tests/fixtures/sessions/proc" "$D/proc" && diff -r "$ROOT/tests/fixtures/sessions/claude-sessions" "$D/claude-sessions" && echo same)" "same"
+  check "the copy's proc keeps a symlink" "$([ -L "$D/proc/211/exe" ] && echo link)" "link"
+  check "the fleet dir is 0700 with the marker" "$(stat -c %a "$D/fleet" 2>/dev/null || stat -f %Lp "$D/fleet"):$([ -f "$D/fleet/.aw-fleet" ] && echo marker)" "700:marker"
+  check "the copy's launcher.json is bare" "$(jq -c . "$D/launcher.json")" '{"schema":1}'
+  check "sessions up stops, then starts headless" "$(tr '\n' ';' < "$STUB_LOG")" "stop;--headless;"
+  check "the control plane starts with the four overrides on the copy" "$(tail -1 "$STUB_LOG.env")" "headless proc=$D/proc claude=$D/claude-sessions fleet=$D/fleet launcher=$D/launcher.json"
+  before="$(cat "$STUB_LOG")"
+  # ask: a schema-valid asking file for pid 211's session, ticks from its stat
+  f="$(AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions ask 211 2>&1)"; check "sessions ask exits 0" "$?" "0"
+  check "ask prints the file under fleet/claude-code/<session id>.json" "$f" "$D/fleet/claude-code/aaaaaaaa-0000-4000-8000-000000000211.json"
+  check "ask: state, reason, tool, pid, ticks, provider" "$(jq -r '[.state, .reason, .tool, .agentPid, .agentStartTicks, .provider] | join(",")' "$f")" "asking,approval,Bash,211,1100,claude-code"
+  check "ask: mode 0600, dir 0700, marker" "$(stat -c %a "$f" 2>/dev/null || stat -f %Lp "$f"):$(stat -c %a "$D/fleet/claude-code" 2>/dev/null || stat -f %Lp "$D/fleet/claude-code"):$([ -f "$D/fleet/claude-code/.aw-fleet" ] && echo marker)" "600:700:marker"
+  check "ask leaves no temp file" "$(ls -A "$D/fleet/claude-code" | grep -c '^\.ask\.')" "0"
+  check "ask does not restart the control plane" "$(cat "$STUB_LOG")" "$before"
+  node -e '
+const fs = require("fs"), { createRequire } = require("module");
+const Ajv = createRequire(process.argv[1] + "/package.json")("ajv/dist/2020").default;
+const v = new Ajv({ strict: false }).compile(JSON.parse(fs.readFileSync(process.argv[2], "utf8")));
+process.exit(v(JSON.parse(fs.readFileSync(process.argv[3], "utf8"))) ? 0 : 1);' "$ROOT/scripts" "$ROOT/schemas/fleet-state.schema.json" "$f" 2>/dev/null
+  check "the fleet file validates against fleet-state.schema.json" "$?" "0"
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions ask 212 >/dev/null 2>&1; check "ask refuses a pid with no Claude record (exit 2)" "$?" "2"
+  # end / back
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions end 311 >/dev/null 2>&1; check "sessions end exits 0" "$?" "0"
+  check "end moves proc/311 out of the tree" "$([ -e "$D/proc/311" ] && echo in || echo out):$([ -d "$D/ended/311" ] && echo kept)" "out:kept"
+  check "end leaves the source fixture alone" "$([ -d "$ROOT/tests/fixtures/sessions/proc/311" ] && echo present)" "present"
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions end 311 >/dev/null 2>&1; check "ending an ended pid exits 2" "$?" "2"
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions back 311 >/dev/null 2>&1; check "sessions back exits 0" "$?" "0"
+  check "back restores proc/311" "$(diff -r --no-dereference "$ROOT/tests/fixtures/sessions/proc/311" "$D/proc/311" && echo same)" "same"
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions back 311 >/dev/null 2>&1; check "back of a pid not ended exits 2" "$?" "2"
+  # disable / enable
+  : > "$STUB_LOG.env"
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions disable >/dev/null 2>&1; check "sessions disable exits 0" "$?" "0"
+  check "disable writes sessions.enabled=false into the copy's launcher.json" "$(jq -c . "$D/launcher.json")" '{"schema":1,"sessions":{"enabled":false}}'
+  check "disable restarts with the overrides" "$(cat "$STUB_LOG.env")" "headless proc=$D/proc claude=$D/claude-sessions fleet=$D/fleet launcher=$D/launcher.json"
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions enable >/dev/null 2>&1; check "sessions enable exits 0" "$?" "0"
+  check "enable removes the key again" "$(jq -c . "$D/launcher.json")" '{"schema":1}'
+  # down
+  : > "$STUB_LOG"
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions down >/dev/null 2>&1; check "sessions down exits 0" "$?" "0"
+  check "down removes the copy" "$([ -e "$D" ] && echo present || echo gone)" "gone"
+  check "down stops the control plane and never restarts it" "$(cat "$STUB_LOG")" "stop"
+  AW_SINDRI_HOME="$S" SINDRI="$STUB" bash "$FIXTURE" sessions down >/dev/null 2>&1; check "sessions down twice exits 0" "$?" "0"
+  check "the fixture tree in the repo is untouched" "$(git -C "$ROOT" status --porcelain -- tests/fixtures/sessions)" ""
+fi
 
 exit "$fail"

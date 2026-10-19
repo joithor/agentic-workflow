@@ -49,6 +49,8 @@ internal static class CommandTable
         LaneInboxCommand.Entry,
         LaneStopCheckCommand.Entry,
         LaneReplyCommand.Entry,
+        UsageCommand.Entry,
+        UsageWaitCommand.Entry,
     ];
 
     // Commands that work across teams: they never need one selected.

@@ -74,9 +74,6 @@ internal static partial class Labels
     /// <summary>Context's placeholder.</summary>
     internal const string ArrivesContext = "arrives with U9 and the context lens routes (CTX phase 4)";
 
-    /// <summary>Agents' placeholder.</summary>
-    internal const string ArrivesAgents = "arrives with U11 and the launch targets (API P10a)";
-
     /// <summary>What an unbuilt page says it waits for ("arrives with U8 and the workflow routes (API P11)"), or null for a built page.</summary>
     /// <param name="page">The page.</param>
     /// <returns>The words, or null.</returns>
@@ -85,8 +82,7 @@ internal static partial class Labels
         PageId.Work => ArrivesWork,
         PageId.Recipes => ArrivesRecipes,
         PageId.Context => ArrivesContext,
-        PageId.Agents => ArrivesAgents,
-        PageId.Home or PageId.Workflows or PageId.System or PageId.Settings => null,
+        PageId.Home or PageId.Workflows or PageId.Agents or PageId.System or PageId.Settings => null,
         _ => throw new ArgumentOutOfRangeException(nameof(page), page, message: null),
     };
 

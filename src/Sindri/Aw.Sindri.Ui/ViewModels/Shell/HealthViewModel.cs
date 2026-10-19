@@ -141,6 +141,7 @@ internal sealed partial class HealthViewModel(IEndpointRecordSource records, ISi
 
         _url = url;
         (_health, _projectedAt) = (status.Health, status.Views?.ProjectedAt);
+        Sessions = status.Sessions;
         Detail.Show(url, status);
         Api = url.Authority;
         Lease = StatusText.Lease(status);

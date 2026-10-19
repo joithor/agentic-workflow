@@ -70,4 +70,7 @@ public sealed record ContextSettings
 
     /// <summary>'context.extract.recognizers' (S-SK): the profile's extra surface recognizers, added to the built-in forms. Empty by default.</summary>
     public IReadOnlyList<ProfileRecognizer> Recognizers { get; init; } = [];
+
+    /// <summary>'context.extract.graphify' (S-4): the cluster pass's time, snapshot, file and graph limits; generous defaults, 0 for no limit.</summary>
+    public ClusterLimits Graphify { get; init; } = ClusterLimits.Default;
 }

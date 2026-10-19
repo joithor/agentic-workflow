@@ -320,10 +320,8 @@ Aw.Context.Core.Extract.ClusterSet
 Aw.Context.Core.Extract.ClusterSet.<Clone>$() -> Aw.Context.Core.Extract.ClusterSet!
 Aw.Context.Core.Extract.ClusterSet.Available.get -> bool
 Aw.Context.Core.Extract.ClusterSet.Available.init -> void
-Aw.Context.Core.Extract.ClusterSet.ClusterSet(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.FileCluster!>! Clusters, bool Available) -> void
 Aw.Context.Core.Extract.ClusterSet.Clusters.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.FileCluster!>!
 Aw.Context.Core.Extract.ClusterSet.Clusters.init -> void
-Aw.Context.Core.Extract.ClusterSet.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.FileCluster!>! Clusters, out bool Available) -> void
 Aw.Context.Core.Extract.ClusterSet.Equals(Aw.Context.Core.Extract.ClusterSet? other) -> bool
 Aw.Context.Core.Extract.ExtractedMap
 Aw.Context.Core.Extract.ExtractedMap.<Clone>$() -> Aw.Context.Core.Extract.ExtractedMap!
@@ -362,7 +360,6 @@ Aw.Context.Core.Extract.Found.Label.init -> void
 Aw.Context.Core.Extract.Found.Named.get -> bool
 Aw.Context.Core.Extract.Found.Named.init -> void
 Aw.Context.Core.Extract.IClusterSource
-Aw.Context.Core.Extract.IClusterSource.Clusters(Aw.Context.Core.Engine.ContextRepo! repo, string! commit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Extract.ClusterSet!>!>
 Aw.Context.Core.Extract.ILabeler
 Aw.Context.Core.Extract.ILabeler.Label(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.FileCluster!>! clusters, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Trust.ScrubPattern!>! extraPatterns, int maxTokens, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Extract.LabelPass!>!>
 Aw.Context.Core.Extract.IRepoReader
@@ -3599,7 +3596,6 @@ static Aw.Context.Core.Onyx.OnyxRecordIdentity.operator !=(Aw.Context.Core.Onyx.
 static Aw.Context.Core.Onyx.OnyxRecordIdentity.operator ==(Aw.Context.Core.Onyx.OnyxRecordIdentity? left, Aw.Context.Core.Onyx.OnyxRecordIdentity? right) -> bool
 static Aw.Context.Core.Onyx.OnyxRecordKeys.Identify(Aw.Context.Core.Sources.ExternalId document, string! sourceType, string! semanticIdentifier, string? link, System.Collections.Generic.IReadOnlySet<string!>! teams) -> Aw.Context.Core.Onyx.OnyxRecordIdentity?
 static Aw.Context.Core.Onyx.OnyxRecordKeys.KindOf(Aw.Context.Core.Sources.RecordKey canonical) -> Aw.Context.Core.Sources.RecordKind
-static Aw.Context.Core.Onyx.OnyxSettings.Create(string? url, string? token, string? version) -> Aw.Kernel.Result<Aw.Context.Core.Onyx.OnyxSettings!>!
 static Aw.Context.Core.Onyx.OnyxSettings.operator !=(Aw.Context.Core.Onyx.OnyxSettings? left, Aw.Context.Core.Onyx.OnyxSettings? right) -> bool
 static Aw.Context.Core.Onyx.OnyxSettings.operator ==(Aw.Context.Core.Onyx.OnyxSettings? left, Aw.Context.Core.Onyx.OnyxSettings? right) -> bool
 static Aw.Context.Core.Overrides.AppliedMap.operator !=(Aw.Context.Core.Overrides.AppliedMap? left, Aw.Context.Core.Overrides.AppliedMap? right) -> bool
@@ -5822,6 +5818,8 @@ Aw.Context.Core.Code.CodeSearchQuery.Resolved.get -> bool
 Aw.Context.Core.Code.CodeSearchQuery.Resolved.init -> void
 Aw.Context.Core.Code.ICodeSearch.Resolve(Aw.Context.Core.Engine.ContextRepo! repo, string! commit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 
+Aw.Context.Core.Onyx.OnyxSettings.Managed.get -> bool
+static Aw.Context.Core.Onyx.OnyxSettings.Create(string? url, string? token, string? version, bool managed = false) -> Aw.Kernel.Result<Aw.Context.Core.Onyx.OnyxSettings!>!
 Aw.Context.Core.Engine.CascadeHops
 Aw.Context.Core.Engine.CascadeHops.Component = 8 -> Aw.Context.Core.Engine.CascadeHops
 Aw.Context.Core.Engine.CascadeHops.Default = Aw.Context.Core.Engine.CascadeHops.State | Aw.Context.Core.Engine.CascadeHops.Flow | Aw.Context.Core.Engine.CascadeHops.Dependency -> Aw.Context.Core.Engine.CascadeHops
@@ -5894,3 +5892,33 @@ Aw.Context.Core.Lenses.LensRange.Depth.init -> void
 Aw.Context.Core.Lenses.LensRange.Hops.get -> string?
 Aw.Context.Core.Lenses.LensRange.Hops.init -> void
 Aw.Context.Core.Facade.IContextEngine.HasSyncGap(Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+Aw.Context.Core.Engine.ContextSettings.Graphify.get -> Aw.Context.Core.Engine.ClusterLimits!
+Aw.Context.Core.Engine.ContextSettings.Graphify.init -> void
+Aw.Context.Core.Engine.ClusterLimits
+Aw.Context.Core.Engine.ClusterLimits.<Clone>$() -> Aw.Context.Core.Engine.ClusterLimits!
+Aw.Context.Core.Engine.ClusterLimits.Equals(Aw.Context.Core.Engine.ClusterLimits? other) -> bool
+Aw.Context.Core.Engine.ClusterLimits.ClusterLimits() -> void
+Aw.Context.Core.Engine.ClusterLimits.MaxFileBytes.get -> long?
+Aw.Context.Core.Engine.ClusterLimits.MaxFileMB.get -> int
+Aw.Context.Core.Engine.ClusterLimits.MaxFileMB.init -> void
+Aw.Context.Core.Engine.ClusterLimits.MaxGraphBytes.get -> long?
+Aw.Context.Core.Engine.ClusterLimits.MaxGraphMB.get -> int
+Aw.Context.Core.Engine.ClusterLimits.MaxGraphMB.init -> void
+Aw.Context.Core.Engine.ClusterLimits.MaxSnapshotBytes.get -> long?
+Aw.Context.Core.Engine.ClusterLimits.MaxSnapshotMB.get -> int
+Aw.Context.Core.Engine.ClusterLimits.MaxSnapshotMB.init -> void
+Aw.Context.Core.Engine.ClusterLimits.TimeoutMinutes.get -> int
+Aw.Context.Core.Engine.ClusterLimits.TimeoutMinutes.init -> void
+Aw.Context.Core.Extract.ClusterSet.ClusterSet(System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.FileCluster!>! Clusters, bool Available, string? Reason = null) -> void
+Aw.Context.Core.Extract.ClusterSet.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Extract.FileCluster!>! Clusters, out bool Available, out string? Reason) -> void
+Aw.Context.Core.Extract.ClusterSet.Reason.get -> string?
+Aw.Context.Core.Extract.ClusterSet.Reason.init -> void
+Aw.Context.Core.Extract.IClusterSource.Clusters(Aw.Context.Core.Engine.ContextRepo! repo, string! commit, Aw.Context.Core.Engine.ClusterLimits! limits, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Extract.ClusterSet!>!>
+override Aw.Context.Core.Engine.ClusterLimits.Equals(object? obj) -> bool
+override Aw.Context.Core.Engine.ClusterLimits.GetHashCode() -> int
+override Aw.Context.Core.Engine.ClusterLimits.ToString() -> string!
+static Aw.Context.Core.Engine.ClusterLimits.Default.get -> Aw.Context.Core.Engine.ClusterLimits!
+static Aw.Context.Core.Engine.ClusterLimits.operator !=(Aw.Context.Core.Engine.ClusterLimits? left, Aw.Context.Core.Engine.ClusterLimits? right) -> bool
+static Aw.Context.Core.Engine.ClusterLimits.operator ==(Aw.Context.Core.Engine.ClusterLimits? left, Aw.Context.Core.Engine.ClusterLimits? right) -> bool
+static readonly Aw.Context.Core.ContextErrors.GraphifyLimitInvalid -> Aw.Kernel.ErrorDefinition!
+static Aw.Context.Core.Eval.Backtest.AsOfMapCache.WithLimits(string! key, Aw.Context.Core.Engine.ClusterLimits! limits) -> string!

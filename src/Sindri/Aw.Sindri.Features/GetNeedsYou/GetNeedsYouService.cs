@@ -5,6 +5,8 @@ using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Items.Vocabulary;
 using Aw.Sindri.Core.NeedsYou;
+using Aw.Sindri.Core.Onyx;
+using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
 
 namespace Aw.Sindri.Features.GetNeedsYou;
@@ -16,7 +18,10 @@ namespace Aw.Sindri.Features.GetNeedsYou;
 /// <param name="views">The 'needs_you' and 'items' views.</param>
 /// <param name="status">How fresh the views are.</param>
 /// <param name="callers">The caller, whose repo scope applies.</param>
-internal sealed class GetNeedsYouService(IViewReader views, IProjectorStatus status, ICallerContextAccessor callers) : IService<GetNeedsYouRequest, GetNeedsYouResponse>
+/// <param name="onyx">The managed Onyx's notice (not set up, or serve could not start it); it is a repo-less row, shown to a human caller only.</param>
+/// <param name="scrubber">Scrubs the notice's text.</param>
+/// <param name="clock">Stamps the notice's row.</param>
+internal sealed class GetNeedsYouService(IViewReader views, IProjectorStatus status, ICallerContextAccessor callers, IOnyxNotices onyx, ITextScrubber scrubber, TimeProvider clock) : IService<GetNeedsYouRequest, GetNeedsYouResponse>
 {
     public async ValueTask<Result<GetNeedsYouResponse>> Handle(GetNeedsYouRequest request, CancellationToken cancellationToken)
     {
@@ -33,7 +38,7 @@ internal sealed class GetNeedsYouService(IViewReader views, IProjectorStatus sta
             return records.Error;
         }
 
-        var rows = NeedsYouOrder.Sort(records.Value.Select(static r => r.Row).Where(r => ItemScope.VisibleOrRepoless(caller, r.Repo)));
+        var rows = NeedsYouOrder.Sort([.. records.Value.Select(static r => r.Row).Where(r => ItemScope.VisibleOrRepoless(caller, r.Repo)), .. await OnyxRows(caller, cancellationToken).ConfigureAwait(false)]);
         var empty = current.Text;
         if (empty is null && rows.Count == 0)
         {
@@ -47,6 +52,24 @@ internal sealed class GetNeedsYouService(IViewReader views, IProjectorStatus sta
         }
 
         return new GetNeedsYouResponse(rows, empty, current.AsOf);
+    }
+
+    // The managed Onyx's row: it is the human's to act on, so a session doesn't see it.
+    private async ValueTask<IReadOnlyList<NeedsYouRow>> OnyxRows(CallerContext caller, CancellationToken cancellationToken)
+    {
+        if (caller.Class != CallerClass.Human)
+        {
+            return [];
+        }
+
+        var notice = await onyx.Current(cancellationToken).ConfigureAwait(false);
+        if (notice is not { IsSuccess: true, Value: { } found })
+        {
+            return [];
+        }
+
+        var row = NeedsYouRows.ForOnyx(found, clock.GetUtcNow(), scrubber);
+        return row.IsSuccess ? [row.Value] : [];
     }
 
     private async ValueTask<Result<(int Running, int Queued)>> Counts(CallerContext caller, CancellationToken cancellationToken)
