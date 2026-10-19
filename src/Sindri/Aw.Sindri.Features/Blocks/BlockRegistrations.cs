@@ -115,7 +115,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(LensRoundSteps.Log)
         .AddBlockDescriptor(PlanSteps.Intake)
         .AddBlockDescriptor(PlanSteps.Graph)
-        .AddBlockDescriptor(PlanSteps.Check)
+        .AddBlockStep<PlanCheckStep>()
         .AddBlockDescriptor(PlanSteps.ExecReview)
         .AddBlockDescriptor(PlanSteps.Holdout)
         .AddBlockDescriptor(PlanSteps.Evidence)
