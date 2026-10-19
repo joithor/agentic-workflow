@@ -12,5 +12,5 @@ internal sealed class PlanQuestionsStep() : LineStep(Descriptor), IDescribedBloc
     public static BlockDescriptor Descriptor => PlanSteps.Questions;
 
     /// <inheritdoc/>
-    protected override Result<LineVerdict> Decide(LineFacts facts) => throw new NotSupportedException();
+    protected override Result<LineVerdict> Decide(LineFacts facts) => PlanQuestions.Build(facts["design"], facts["answerLog"]);
 }

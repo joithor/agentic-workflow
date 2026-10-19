@@ -34,6 +34,9 @@ internal static class LineJson
     /// <summary>The string elements of an array field.</summary>
     internal static IEnumerable<string> Strings(JsonNode? node, string name) => Strings(Arr(node, name));
 
+    /// <summary>Adds a node to an array (the non-generic overload: the generic one is reflection-based and not trimmable).</summary>
+    internal static void Append(JsonArray array, JsonNode node) => array.Add(node);
+
     /// <summary>A string array as a JSON array.</summary>
     internal static JsonArray ToArray(IEnumerable<string> values) => new([.. values.Select(static v => (JsonNode?)JsonValue.Create(v))]);
 

@@ -12,5 +12,5 @@ internal sealed class PlanSettleStep() : LineStep(Descriptor), IDescribedBlock
     public static BlockDescriptor Descriptor => PlanSteps.Settle;
 
     /// <inheritdoc/>
-    protected override Result<LineVerdict> Decide(LineFacts facts) => throw new NotSupportedException();
+    protected override Result<LineVerdict> Decide(LineFacts facts) => PlanSettle.Run(facts["design"], facts["answers"]);
 }
