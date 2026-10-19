@@ -1,0 +1,4 @@
+{"start":{"inputs":{"fact:pr":"https://example.test/pr/1","fact:phasePacket":{}}}}
+{"trigger":{"kind":"step.completed","outcome":"candidates","outputs":{"fact:docsResult":{"result":"candidates","headSha":"abc123"},"fact:docsScope":{"docs":["docs/a.md"]},"fact:prState":{"head":"abc123"},"fact:findings":{},"fact:handoffNote":"n","fact:workspace":"/tmp/docs-wt"}},"expect":{"state":"route"}}
+{"trigger":{"kind":"step.failed","reason":"the judge timed out"},"expect":{"state":"route-desk"}}
+{"trigger":{"kind":"step.completed","outcome":"update"},"expect":{"state":"update"}}
