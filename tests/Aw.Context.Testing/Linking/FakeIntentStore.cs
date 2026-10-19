@@ -26,6 +26,9 @@ public sealed class FakeIntentStore : IIntentStore
     /// <summary>When set, <see cref="Requeue"/> alone fails with it.</summary>
     public Error? RequeueFailure { get; set; }
 
+    /// <summary>When set, <see cref="State"/> alone fails with it.</summary>
+    public Error? StateFailure { get; set; }
+
     /// <summary>When set, <see cref="LinkedUnder"/> alone fails with it.</summary>
     public Error? LinkedUnderFailure { get; set; }
 
@@ -65,7 +68,9 @@ public sealed class FakeIntentStore : IIntentStore
     }
 
     /// <inheritdoc/>
-    public ValueTask<Result<IntentSourceState>> State(SourceId source, CancellationToken cancellationToken) => Done(() =>
+    public ValueTask<Result<IntentSourceState>> State(SourceId source, CancellationToken cancellationToken) => StateFailure is { } stateFailure
+        ? ValueTask.FromResult<Result<IntentSourceState>>(stateFailure)
+        : Done(() =>
     {
         _ = _cursors.TryGetValue(source.Value, out var cursor);
         var mine = _records.Values.Where(r => r.Source.Value == source.Value).Select(r => r.Key.Value).ToHashSet(StringComparer.Ordinal);

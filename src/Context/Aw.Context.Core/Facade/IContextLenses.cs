@@ -1,6 +1,7 @@
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
+using Aw.Context.Core.Subgraph;
 using Aw.Kernel;
 
 namespace Aw.Context.Core.Facade;
@@ -11,15 +12,6 @@ namespace Aw.Context.Core.Facade;
 /// </summary>
 public interface IContextLenses
 {
-    /// <summary>The intent, product and code bands around one node.</summary>
-    /// <param name="anchor">A node key, alias or label.</param>
-    /// <param name="draft">True to read the latest draft instead of the current map.</param>
-    /// <param name="depth">How far the neighbors range and the cascade runs (0 to 4), or null for the profile's 'context.cascadeDepth'.</param>
-    /// <param name="scope">The profile's context section and repos, and the caller.</param>
-    /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The lenses, or SND-CONTEXT-001/003/004/006/020/030/037/044.</returns>
-    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken);
-
     /// <summary>The lenses around one node in the map <paramref name="read"/> names: the current version, the draft or a retained version (scoping spec C10).</summary>
     /// <param name="anchor">A node key, alias or label.</param>
     /// <param name="read">Which map.</param>
@@ -38,6 +30,12 @@ public interface IContextLenses
     /// <returns>The lenses; an anchor this caller can't read goes to 'missingAnchors', and none resolving is SND-CONTEXT-003. Also SND-CONTEXT-001/004/006/020/030/037/044/120.</returns>
     public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken);
 
+    /// <summary>The subgraph around a set of node keys: the bands, edges, conflicts and coverage of those nodes and what they reach within a depth (scoping spec C14).</summary>
+    /// <param name="query">The keys, the depth and which map.</param>
+    /// <param name="scope">The profile's context section and repos, and the caller.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>The view; a key this caller can't read goes to 'missing' (all missing is still an answer). SND-CONTEXT-001/004/006/020/030/037/044/120 otherwise.</returns>
+    public ValueTask<Result<SubgraphView>> Subgraph(SubgraphQuery query, ContextScope scope, CancellationToken cancellationToken);
     /// <summary>The lenses around one node with the cascade hops the caller names (the opt-in 'component' hop; C4).</summary>
     /// <param name="anchor">A node key, alias or label.</param>
     /// <param name="read">Which map.</param>

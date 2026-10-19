@@ -5,7 +5,7 @@ using Aw.Kernel;
 namespace Aw.Context.Core.Engine;
 
 /// <summary>Checks a question before any source sees it (spec §8.1, §8.3 caps): the text and node shapes; item and symbol anchors arrive in later phases.</summary>
-public static class QueryRules
+public static partial class QueryRules
 {
     /// <summary>The budget a request gets when it names none.</summary>
     public const int DefaultBudget = 8_000;
