@@ -21,7 +21,7 @@ public static class OnyxSteps
     /// <summary>Spec §4.1 step 6: the human creates their own Onyx account in the browser.</summary>
     public const string Signup = "signup";
 
-    /// <summary>Steps 7 and 8: Sindri's admin key is minted with the owner's login and stored.</summary>
+    /// <summary>Steps 7 and 8: Sindri's dedicated Onyx user and its token are made with the owner's login, and the token is stored.</summary>
     public const string Key = "key";
 
     /// <summary>Step 9: the profile's `context.sources.onyx` section is written.</summary>
