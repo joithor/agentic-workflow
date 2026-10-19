@@ -48,8 +48,8 @@ public sealed partial class CommandPaletteViewModelTests
         Assert.Equal(["Actions", "Go to", "Sindri"], _palette.Sections.Select(s => s.Heading), StringComparer.Ordinal);
         var actions = _palette.Entries.Where(e => e.IsAction).Select(e => e.Id).ToList();
         Assert.Equal(_catalog.Rows.Select(r => r.Action).Order(StringComparer.Ordinal), actions.Order(StringComparer.Ordinal), StringComparer.Ordinal);
-        Assert.Equal(("ready", "arrives in P10a", "Copy: sindri doctor"), (Entry("RebuildViews").Status, Entry("ProbeLaunchTargets").Status, Entry("RunDoctor").Status));
-        Assert.Equal("Check launch targets again, arrives in P10a", Entry("ProbeLaunchTargets").Name);
+        Assert.Equal(("ready", "not in the app yet", "Copy: sindri doctor"), (Entry("RebuildViews").Status, Entry("ProbeLaunchTargets").Status, Entry("RunDoctor").Status));
+        Assert.Equal("Check launch targets again, not in the app yet", Entry("ProbeLaunchTargets").Name);
     }
 
     // Q3: with no selected row, Actions lists the catalog grouped by status: ready, then pending, then cli-only.

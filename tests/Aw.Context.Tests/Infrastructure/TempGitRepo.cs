@@ -7,7 +7,32 @@ namespace Aw.Context.Tests.Infrastructure;
 /// <summary>A throwaway git repo with one commit holding the given files; Dispose deletes it.</summary>
 internal sealed class TempGitRepo : IDisposable
 {
+    private static readonly TimeSpan _gitTimeout = TimeSpan.FromSeconds(30);
+
     public TempGitRepo(IReadOnlyDictionary<string, string> files)
+    {
+        try
+        {
+            Init(files);
+            Head = Run("rev-parse", "HEAD");
+            Repo = new ContextRepo(ContextRepoName.From("aw-split-panes"), Path);
+        }
+        catch (Exception)
+        {
+            try
+            {
+                Directory.Delete(Path, recursive: true);   // a git that timed out must not leave its folder behind
+            }
+            catch (IOException)
+            {
+                // the cleanup failing must not replace the failure that got us here
+            }
+
+            throw;
+        }
+    }
+
+    private void Init(IReadOnlyDictionary<string, string> files)
     {
         _ = Run("init", "-q", "-b", "main");
         foreach (var (path, text) in files)
@@ -19,8 +44,6 @@ internal sealed class TempGitRepo : IDisposable
 
         _ = Run("add", "-A");
         _ = Run("commit", "-q", "-m", "first");
-        Head = Run("rev-parse", "HEAD");
-        Repo = new ContextRepo(ContextRepoName.From("aw-split-panes"), Path);
     }
 
     public string Path { get; } = Directory.CreateTempSubdirectory("aw-ctx-git-").FullName;
@@ -57,10 +80,22 @@ internal sealed class TempGitRepo : IDisposable
         }
 
         using var git = Process.Start(start)!;   // why: git is on the test machine's PATH
-        var stderr = git.StandardError.ReadToEndAsync(CancellationToken.None);
-        var output = git.StandardOutput.ReadToEnd().Trim();
-        git.WaitForExit();
-        return git.ExitCode == 0 ? output : throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"git {string.Join(' ', args)} exited {git.ExitCode}: {stderr.Result}"));
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(TestContext.Current.CancellationToken);
+        limit.CancelAfter(_gitTimeout);
+        var stdout = git.StandardOutput.ReadToEndAsync(limit.Token);
+        var stderr = git.StandardError.ReadToEndAsync(limit.Token);
+        var exited = git.WaitForExitAsync(limit.Token);
+        try
+        {
+            Task.WaitAll([exited, stdout, stderr], limit.Token);
+        }
+        catch (Exception e) when (!TestContext.Current.CancellationToken.IsCancellationRequested && e is OperationCanceledException or AggregateException { InnerException: OperationCanceledException })
+        {
+            git.Kill(entireProcessTree: true);
+            throw new TimeoutException(string.Create(CultureInfo.InvariantCulture, $"git {string.Join(' ', args)} did not finish in {_gitTimeout.TotalSeconds} s: a stuck git, or a pipe a concurrent fork still holds"), e);
+        }
+
+        return git.ExitCode == 0 ? stdout.Result.Trim() : throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"git {string.Join(' ', args)} exited {git.ExitCode}: {stderr.Result}"));
     }
 
     public void Dispose() => Directory.Delete(Path, recursive: true);

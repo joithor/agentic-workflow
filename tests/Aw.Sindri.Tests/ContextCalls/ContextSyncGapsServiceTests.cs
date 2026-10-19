@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Sources;
-using Microsoft.Extensions.Logging;
 using Aw.Kernel;
 using Aw.Kernel.Ids;
 using Aw.Kernel.Services;
@@ -13,6 +12,7 @@ using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.ContextCalls;
 using Aw.Sindri.Testing;
+using Microsoft.Extensions.Logging;
 
 namespace Aw.Sindri.Tests.ContextCalls;
 
@@ -24,7 +24,7 @@ public sealed class ContextSyncGapsServiceTests
     private readonly InMemoryJobViews _jobs = new();
     private readonly Starter _start;
     private int _next;
-    private Aw.Sindri.Core.Lease.LeaseGrant? _grant;
+    private Core.Lease.LeaseGrant? _grant;
 
     public ContextSyncGapsServiceTests()
     {
@@ -260,7 +260,7 @@ public sealed class ContextSyncGapsServiceTests
     public void The_service_is_a_built_in_that_may_start_a_job()
     {
         Assert.Equal("context-sync-gaps", ContextSyncGapsService.BuiltIn.Name.Value);
-        var row = Aw.Sindri.Tests.Commands.Authorization.Rows.Of(ActionClass.Job, "SyncSources");
+        var row = Commands.Authorization.Rows.Of(ActionClass.Job, "SyncSources");
         Assert.Null(Authorization.Decide(ActionClass.Job, CallerContext.Service("context-sync-gaps", _h.Ids), row).Refusal);
     }
 

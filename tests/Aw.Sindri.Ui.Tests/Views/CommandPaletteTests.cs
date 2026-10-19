@@ -118,7 +118,7 @@ public sealed class CommandPaletteTests : IDisposable
         var names = EntryNames(window);
         Assert.All(shell.Health.Catalog.Controls, c => Assert.Single(names, n => n.StartsWith(c.Label + ", ", StringComparison.Ordinal)));
         Assert.Contains("Run doctor, Copy: sindri doctor", names, StringComparer.Ordinal);
-        Assert.Contains("Check launch targets again, arrives in P10a", names, StringComparer.Ordinal);
+        Assert.Contains("Check launch targets again, not in the app yet", names, StringComparer.Ordinal);
         Assert.Equal(["Actions", "Go to", "Sindri"], Named<ItemsControl>(window, "PaletteSections").GetVisualDescendants().OfType<TextBlock>()
             .Where(t => t.Classes.Contains("palette-heading")).Select(t => t.Text ?? string.Empty), StringComparer.Ordinal);
         Frame(window, "palette");

@@ -21,6 +21,20 @@
     "updatedAt": "2026-01-01T00:00:00.0000000Z",
     "body": "<untrusted source=\"sindri:item\" author=\"human:cli\">Users land on /home &lt;b&gt;after&lt;/b&gt; a deep link.</untrusted>",
     "link": null,
+    "launch": {
+      "modes": [
+        "open"
+      ],
+      "defaultTarget": "claude-code",
+      "chosenBy": "builtIn",
+      "attach": null,
+      "resumable": null,
+      "inFlight": null,
+      "lastStarted": null,
+      "confirm": null,
+      "repoPath": "/work/alpha",
+      "blockers": []
+    },
     "asOf": {
       "cursor": 119,
       "ledgerHead": 119,

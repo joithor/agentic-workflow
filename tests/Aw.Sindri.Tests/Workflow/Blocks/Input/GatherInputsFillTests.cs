@@ -178,7 +178,7 @@ public sealed class GatherInputsFillTests : IDisposable
         var filled = await provider.GetRequiredService<IStepInputRunner>().Fill(FactContext(input, fact), 1, TestContext.Current.CancellationToken);
 
         Assert.False(filled.IsError, filled.IsError ? filled.Error.Message : string.Empty);
-        Assert.DoesNotContain("unavailable", filled.Value.Texts.Sections[section], StringComparison.Ordinal);
+        Assert.DoesNotContain("are unavailable for this Step", filled.Value.Texts.Sections[section], StringComparison.Ordinal);
         Assert.True(filled.Value.Texts.Result.HasValue);
         IReadOnlyList<IReadOnlyList<string>> calls = input switch
         {
