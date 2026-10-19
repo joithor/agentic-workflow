@@ -164,7 +164,7 @@ snapshot; both are queries and have no catalog row. `Core/Sessions/SessionRows` 
   `inWorkflow` means "has a Sindri launch" until the launch join exists.
 - **Launch step:** `launch{instance, state, attempt}` says which workflow instance, Step (state id) and attempt the session's Sindri launch belongs to, so a row reads "on `<instance>` · `<state>`"
   with no second call (`Core/Sessions/SessionLaunchSteps` looks the launch up in the `launches` view). `launch` is null when no launch of Sindri's is known for the session; its members are
-  null for an attended (click) launch. A session's `state` is its own and unrelated to `launch.state`.
+  null for an attended (click) launch. For example, a session with no launch row serves `"launch": null`, while one whose launch was a click serves `"launch": {"instance": null, "state": null, "attempt": null}`. A session's `state` is its own and unrelated to `launch.state`.
 - **`SessionList`:** `sessions`, `recentlyEnded` (each `{session, endedAt, resume}`), `problems`, `counts{live, asking, outsideWorkflow}` (over what the caller may see, before the
   filters), `empty` (`No agent sessions are running.` when no row is shown), `asOf` (the last pass). Before the first pass the list is empty, with `asOf` the time of the request (no pass has run yet; `GetSession` answers 404). A `SND-SESSION-002` problem in the pass
   replaces the list (`503`, `detail` the reason); `-001` and `-003` stay problem rows.

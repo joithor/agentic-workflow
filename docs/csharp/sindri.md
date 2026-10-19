@@ -473,7 +473,7 @@ CLI form and the UI status: `ready`, `pending:<phase>` or `cli-only:<reason>`.
 
 **Which instance a launch belongs to (API follow-up to P10a).** An engine launch records the instance, Step and attempt it was made for: `launch.started`
 and `launch.failed` carry `instance` (the instance address), `state` (the Step's state id) and `attempt` (the Step run's number, from the run token `{entry}.{n}`),
-all null for an attended launch and for events recorded before the fields existed. `GET /sindri/launches/{launchId}` serves them as `step{instance, state, attempt}`
+all null for an attended launch (an attach row records no step: it is a person's click, so `GET /launches/{attachId}` reads as unattached even when the session it shows belongs to an engine launch) and for events recorded before the fields existed. `GET /sindri/launches/{launchId}` serves them as `step{instance, state, attempt}`
 (a launch already has its own `state`, requested, started or failed, so the three sit in one object, always present, members null when absent), and a session row serves
 the same object as `launch` (null when no launch row is known; see `sindri-sessions.md`).
 

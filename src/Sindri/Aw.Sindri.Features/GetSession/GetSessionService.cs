@@ -38,24 +38,16 @@ internal sealed class GetSessionService(ISessionSnapshot snapshot, IAgentCatalog
 
         var human = SessionRows.SeesHumanFields(caller);
         var path = await RepoPath(found, cancellationToken).ConfigureAwait(false);
-        var built = await Row(found, path, human, cancellationToken).ConfigureAwait(false);
-        if (built.IsError)
-        {
-            return built.Error;
-        }
-
-        var row = built.Value;
+        var row = await Row(found, path, human, cancellationToken).ConfigureAwait(false);
         return human
             ? new SessionView(SessionRows.WithSocket(row, found), found.Cwd, now.History.GetValueOrDefault(found.Ref) ?? [], now.ObservedAt)
             : new SessionView(row, Cwd: null, StateHistory: null, now.ObservedAt);
     }
 
-    private async ValueTask<Result<SessionRow>> Row(ObservedSession session, string? path, bool human, CancellationToken cancellationToken)
+    private async ValueTask<SessionRow> Row(ObservedSession session, string? path, bool human, CancellationToken cancellationToken)
     {
         var steps = await SessionLaunchSteps.Of(launches, [session], cancellationToken).ConfigureAwait(false);
-        return steps.IsError
-            ? steps.Error
-            : SessionRows.Of(session, catalog.Resolve(session.Ref.Provider), path, human, session.LaunchId is { } launch ? steps.Value.GetValueOrDefault(launch) : null);
+        return SessionRows.Of(session, catalog.Resolve(session.Ref.Provider), path, human, session.LaunchId is { } launch ? steps.GetValueOrDefault(launch) : null);
     }
 
     private async ValueTask<string?> RepoPath(ObservedSession session, CancellationToken cancellationToken)

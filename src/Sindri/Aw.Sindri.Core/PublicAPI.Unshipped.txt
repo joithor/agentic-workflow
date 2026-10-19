@@ -5699,6 +5699,7 @@ const Aw.Sindri.Core.Views.ViewNames.NeedsYou = "needs_you" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Profile = "profile" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Requests = "requests" -> string!
 const Aw.Sindri.Core.Views.ViewNames.Services = "services" -> string!
+const Aw.Sindri.Core.Views.ViewSchema.Version = 7 -> int
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Cancelled = "outbox.cancelled" -> string!
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Dispatched = "outbox.dispatched" -> string!
 const Aw.Sindri.Core.Workflow.Engine.Effects.OutboxEvents.Pending = "outbox.pending" -> string!
@@ -7403,7 +7404,7 @@ static Aw.Sindri.Core.Secrets.SecretPointer.IsPointer(string! name) -> bool
 static Aw.Sindri.Core.Secrets.SecretPointer.Parse(string! text) -> Aw.Kernel.Result<Aw.Sindri.Core.Secrets.SecretPointer!>!
 static Aw.Sindri.Core.Secrets.SecretPointer.operator !=(Aw.Sindri.Core.Secrets.SecretPointer? left, Aw.Sindri.Core.Secrets.SecretPointer? right) -> bool
 static Aw.Sindri.Core.Secrets.SecretPointer.operator ==(Aw.Sindri.Core.Secrets.SecretPointer? left, Aw.Sindri.Core.Secrets.SecretPointer? right) -> bool
-static Aw.Sindri.Core.Sessions.SessionLaunchSteps.Of(Aw.Sindri.Core.Launches.ILaunchViews! launches, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Sessions.ObservedSession!>! sessions, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Engine.LaunchId, Aw.Sindri.Core.Launches.LaunchStep!>!>!>
+static Aw.Sindri.Core.Sessions.SessionLaunchSteps.Of(Aw.Sindri.Core.Launches.ILaunchViews! launches, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Sessions.ObservedSession!>! sessions, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Engine.LaunchId, Aw.Sindri.Core.Launches.LaunchStep!>!>
 static Aw.Sindri.Core.Sessions.SessionRows.Of(Aw.Sindri.Core.Sessions.ObservedSession! session, Aw.Sindri.Core.Launch.AgentEntry? entry, string? repoPath, bool human, Aw.Sindri.Core.Launches.LaunchStep? launch = null) -> Aw.Sindri.Core.Sessions.SessionRow!
 static Aw.Sindri.Core.SindriErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 static Aw.Sindri.Core.Text.SafeText.Clean(Aw.Sindri.Core.Text.ITextScrubber! scrubber, string! text, int max) -> string!
@@ -10171,7 +10172,6 @@ static Aw.Sindri.Core.Launch.LaunchShowEntry.operator ==(Aw.Sindri.Core.Launch.L
 static Aw.Sindri.Core.Launch.LaunchShowReport.operator !=(Aw.Sindri.Core.Launch.LaunchShowReport? left, Aw.Sindri.Core.Launch.LaunchShowReport? right) -> bool
 static Aw.Sindri.Core.Launch.LaunchShowReport.operator ==(Aw.Sindri.Core.Launch.LaunchShowReport? left, Aw.Sindri.Core.Launch.LaunchShowReport? right) -> bool
 static readonly Aw.Sindri.Core.SindriErrors.LaunchNotFound -> Aw.Kernel.ErrorDefinition!
-const Aw.Sindri.Core.Views.ViewSchema.Version = 6 -> int
 const Aw.Sindri.Core.Views.ViewNames.Launches = "launches" -> string!
 override Aw.Sindri.Core.Launches.LaunchEnd.ToString() -> string!
 Aw.Sindri.Core.Launches.LaunchRow.State.get -> Aw.Sindri.Core.Launches.LaunchState

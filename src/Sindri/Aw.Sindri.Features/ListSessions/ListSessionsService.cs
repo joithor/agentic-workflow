@@ -43,13 +43,8 @@ internal sealed class ListSessionsService(ISessionSnapshot snapshot, IAgentCatal
         var matching = visible.Where(s => Matches(request, s)).ToList();
         var endedVisible = current.RecentlyEnded.Where(e => SessionRows.Visible(caller, e.Session)).ToList();
         var steps = await SessionLaunchSteps.Of(launches, [.. matching, .. endedVisible.Select(static e => e.Session)], cancellationToken).ConfigureAwait(false);
-        if (steps.IsError)
-        {
-            return steps.Error;
-        }
-
-        var shown = matching.Select(s => Row(s, paths, human, steps.Value)).ToList();
-        var ended = endedVisible.Select(e => Ended(e, paths, human, steps.Value)).ToList();
+        var shown = matching.Select(s => Row(s, paths, human, steps)).ToList();
+        var ended = endedVisible.Select(e => Ended(e, paths, human, steps)).ToList();
         var counts = new SessionCounts(visible.Count, visible.Count(static s => s.State == SessionState.Asking), visible.Count(static s => s.LaunchId is null));
         return new SessionList(shown, ended, current.Problems, counts, shown.Count == 0 ? EmptyText : null, current.ObservedAt);
     }
