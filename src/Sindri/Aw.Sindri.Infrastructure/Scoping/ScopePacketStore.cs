@@ -3,6 +3,7 @@ using Aw.Sindri.Core;
 using Aw.Sindri.Core.Packets;
 using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Infrastructure.Workflow;
 
 namespace Aw.Sindri.Infrastructure.Scoping;
 
@@ -35,7 +36,7 @@ internal sealed class ScopePacketStore(SindriSettings settings, IPackets packets
         return await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false);
     }
 
-    private string PacketDirectory(WorkflowInstanceId instance) => Path.Combine(settings.Home, "workflow", "runs", instance.Value, "scope-packet");
+    private string PacketDirectory(WorkflowInstanceId instance) => Path.Combine(RunAreaDirectory.Of(settings.Home, instance), "scope-packet");
 
     private static Error NotThere(WorkflowInstanceId instance) => SindriErrors.ItemNotFound.With($"No scope packet in the run area of workflow instance {instance.Value}.");
 }

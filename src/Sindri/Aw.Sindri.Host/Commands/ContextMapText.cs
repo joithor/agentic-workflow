@@ -1,4 +1,5 @@
 using System.Globalization;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
 using Aw.Sindri.Features.ContextCalls;
 
@@ -19,11 +20,16 @@ internal static class ContextMapText
 
     internal static string Status(MapStatusView s) => string.Create(CultureInfo.InvariantCulture,
         $"map v{s.Version.Number} {Word(s.Version.Status)} · {s.Version.Repo.Value} · created {s.Version.Created:O}{(s.ScopedTo is { } repo ? $" · scoped to {repo.Value}" : string.Empty)}\n"
-        + $"{Counts(s.Counts)}; {s.Orphaned} orphaned overrides; {s.Retained} retained versions\n")
+        + $"{Counts(s.Counts)}{Scope(s.ScopedTo)}; {s.Orphaned} orphaned overrides; {s.Retained} retained versions\n")
         + (s.Coverage is { } coverage ? ContextLensText.Coverage(coverage) : string.Empty);
 
     internal static string Exported(MapExported e) => string.Create(CultureInfo.InvariantCulture,
         $"Exported map v{e.Version} to {e.Path}: {Counts(e.Counts)}\n");
+
+    // A session's counts are its repo's slice (spec §3), so they say so: doctor's are the whole map's, and the two lines are read side by side.
+    private static string Scope(ContextRepoName? repo) => repo is { } r
+        ? $" in {r.Value}'s scope (its code, what it implements and the linked intent; not the whole map)"
+        : string.Empty;
 
     private static string Kind(MapDocumentKind kind) => kind == MapDocumentKind.Export ? "export" : "authored";
 
