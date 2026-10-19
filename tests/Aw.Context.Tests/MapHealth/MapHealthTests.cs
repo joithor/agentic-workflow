@@ -30,7 +30,7 @@ public sealed class MapHealthTests : IDisposable
         var check = (await _world.Map.CheckMap(scope: null, MapWorld.None)).Value;
 
         Assert.Equal(MapHealthState.Ok, check.State);
-        Assert.Equal("map v1 current (aw-split-panes, 20 nodes, 21 edges); commits behind HEAD: unknown until a build records its commit", check.Detail);
+        Assert.Equal("map v1 current (aw-split-panes, whole map: 20 nodes, 21 edges); commits behind HEAD: unknown until a build records its commit", check.Detail);
         Assert.Null(check.Fix);
     }
 

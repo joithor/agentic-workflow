@@ -406,7 +406,10 @@ $SINDRI context map export [<name-or-path>] [--json]
   narrows the map to: a record key (`record:repo:<name>/…`) and an evidence ref name their repo and are judged by the
   globs of every profile repo, but a `code:` key names no repo, so only the globs of the repos the map is built from
   (`context.repos`, else all) judge it; another repo's glob never hides this repo's file. A session can't export the
-  map (`SND-CONTEXT-020`): the file is not scrubbed and now holds the linked work text.
+  map (`SND-CONTEXT-020`): the file is not scrubbed and now holds the linked work text. A session's `map status`
+  counts that scope and says so (`13 nodes, 8 edges, … in <repo>'s scope (its code, what it implements and the linked
+  intent; not the whole map)`), so its numbers are smaller than doctor's `context:map`, which counts the whole map with
+  the deny globs applied (`whole map: 25 nodes, 26 edges`), as a human's `map status` does.
 - No map yet: `SND-CONTEXT-030` (fix: `sindri context map import <file>`).
 
 ### Doctor and the purge
