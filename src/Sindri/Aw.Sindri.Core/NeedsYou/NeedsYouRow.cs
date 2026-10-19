@@ -25,6 +25,7 @@ namespace Aw.Sindri.Core.NeedsYou;
 /// <param name="Actions">The action ids that apply; ready, pending or cli-only is the catalog's say.</param>
 /// <param name="Cli">The command line that does it, built through CliForm.Fill with typed ids.</param>
 /// <param name="Via">"child" when the cli is a pointer to a child that decides the answer, not an answer form; null (omitted) otherwise.</param>
+/// <param name="Child">The address of the child a pointer row ("child" in <paramref name="Via"/>) points at; null (omitted) otherwise.</param>
 public sealed record NeedsYouRow(
     NeedsYouRowId Id,
     NeedsYouKind Kind,
@@ -42,4 +43,5 @@ public sealed record NeedsYouRow(
     ActionId? PrimaryAction,
     IReadOnlyList<ActionId> Actions,
     string Cli,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Via = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Via = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Child = null);

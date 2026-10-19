@@ -21,6 +21,9 @@ namespace Aw.Sindri.Core.Launches;
 public sealed class LaunchSessionEvents(ILaunchFiles files, LaunchLiveness liveness, ReportedIdAdmission admission, HeldLease held,
     ILedgerStore ledger, EventFactory events, TimeProvider clock)
 {
+    /// <summary>How long the end of a session waits for the token totals before it ends without them.</summary>
+    public static TimeSpan FinalTokensBudget { get; } = TimeSpan.FromSeconds(5);
+
     /// <summary>Checks a call's secret against the launch's stored hash.</summary>
     /// <param name="launch">The launch.</param>
     /// <param name="secret">The secret the call carried.</param>
@@ -91,7 +94,7 @@ public sealed class LaunchSessionEvents(ILaunchFiles files, LaunchLiveness liven
         }
 
         var admitted = await admission.Admit(launch, id: null, cancellationToken).ConfigureAwait(false);
-        var (input, output) = await admission.FinalTokens(launch, cancellationToken).ConfigureAwait(false);
+        var (input, output) = await TokensWithin(launch, cancellationToken).ConfigureAwait(false);
         var entry = events.Entry(EventTypes.SessionEnded, new SessionEnded(launch, reason, exitCode, input, output), $"{EventTypes.SessionEnded}:{launch.Value}", admitted.Item);
         var appended = await ledger.Append(entry, grant, cancellationToken).ConfigureAwait(false);
         if (appended.IsError)
@@ -102,6 +105,21 @@ public sealed class LaunchSessionEvents(ILaunchFiles files, LaunchLiveness liven
         files.Forget(launch);
         liveness.End(launch);
         return Unit.Value;
+    }
+
+    /// <summary>The final token totals, best effort: a read that takes longer than <see cref="FinalTokensBudget"/> gives none, so the end of the session never waits on a transcript.</summary>
+    private async ValueTask<(long? Input, long? Output)> TokensWithin(LaunchId launch, CancellationToken cancellationToken)
+    {
+        using var bound = new CancellationTokenSource(FinalTokensBudget, clock);
+        using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, bound.Token);
+        try
+        {
+            return await admission.FinalTokens(launch, linked.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            return (null, null);
+        }
     }
 
     /// <summary>Appends one private 'session.usage' sample.</summary>

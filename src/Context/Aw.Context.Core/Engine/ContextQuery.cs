@@ -29,4 +29,8 @@ public sealed record ContextQuery(
     /// <summary>Read the graph as of a retained map version ('v3', '3' or 'v3@a41b07d'); null for the current one. Left out of JSON when null; not valid with Draft.</summary>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? MapVersion { get; init; }
+
+    /// <summary>The cascade hops as a comma list ('state,flow,dependency,component'); null for the default three. Left out of JSON when null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Hops { get; init; }
 }

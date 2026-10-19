@@ -1,0 +1,59 @@
+schema: 1
+id: workflow.line
+version: 1
+description: "Spec-to-proven-PR, end to end. Sequential stations (LN-WF8): scoping, design, plan and one workflow.phase child; parallel phase dispatch comes with LN-WF1."
+urgency: work
+inputs:
+  - { key: fact:scopeInput,  label: "What to build",  type: payload, kind: payload }
+  - { key: fact:lineContext, label: "Line context (base, stack parent, run area)", type: payload, kind: payload }
+outputs:
+  - { key: fact:scopePacket,  label: "Scope packet",  type: packet, from: scoping }
+  - { key: fact:designPacket, label: "Design packet", type: packet, from: design }
+  - { key: fact:planPacket,   label: "Plan graph",    type: packet, from: plan }
+  - { key: fact:pr,           label: "Pull request",  type: link,   from: phase }
+initial: scoping
+states:
+  scoping: { kind: wait, timeout: { after: 30d, then: park },
+             waitFor: { child: { recipe: workflow.scoping, onParked: propagate, inputs: { "fact:scopeInput": { fact: fact:scopeInput } } } },
+             next: "Waiting for {child}: scoping {item}, ending at your after-scoping stop." }
+  design: { kind: wait, timeout: { after: 7d, then: park },
+             waitFor: { child: { recipe: workflow.design, onParked: propagate, inputs: { "fact:scopePacket": { fact: fact:scopePacket }, "fact:designRevision": { literal: "First pass: no revision yet." } } } },
+             next: "Waiting for {child}: {item}'s spec draft and its lens rounds." }
+  redesign: { kind: wait, loop: redesign, timeout: { after: 7d, then: park },
+             waitFor: { child: { recipe: workflow.design, onParked: propagate, inputs: { "fact:scopePacket": { fact: fact:scopePacket }, "fact:designRevision": { fact: fact:designRevision } } } },
+             next: "Waiting for {child}: {item}'s redesign after the plan sent it back (pass {loop.redesign}/{loop.redesign.cap})." }
+  plan: { kind: wait, timeout: { after: 30d, then: park },
+             waitFor: { child: { recipe: workflow.plan, onParked: propagate, inputs: { "fact:scopePacket": { fact: fact:scopePacket }, "fact:designPacket": { fact: fact:designPacket } } } },
+             next: "Waiting for {child}: {item}'s plan graph, ending at your after-design stop." }
+  phase: { kind: wait, timeout: { after: 14d, then: park },
+             waitFor: { child: { recipe: workflow.phase, onParked: propagate, inputs: { "fact:phasePacket": { fact: fact:phasePackets }, "fact:lineContext": { fact: fact:lineContext } } } },
+             next: "Waiting for {child}: building, proving and shipping {item}'s phase, ending at your merge stop." }
+  done:    { kind: terminal, outcome: resolved }
+  dropped: { kind: terminal, outcome: unresolved }
+  stuck:   { kind: terminal, outcome: unresolved }
+transitions:
+  - { from: scoping, to: design, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:scopePacket] }
+  - { from: scoping, to: dropped, on: wait.satisfied, when: { outcome: unresolved } }
+  - { from: scoping, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
+  - { from: design, to: plan, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:designPacket] }
+  - { from: design, to: dropped, on: wait.satisfied, when: { outcome: unresolved } }
+  - { from: design, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
+  - { from: redesign, to: plan, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:designPacket] }
+  - { from: redesign, to: dropped, on: wait.satisfied, when: { outcome: unresolved } }
+  - { from: redesign, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
+  - { from: plan, to: phase, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:planPacket, fact:phasePackets] }
+  - { from: plan, to: redesign, on: wait.satisfied, when: { outcome: unresolved }, produces: [fact:designRevision] }
+  - { from: plan, to: dropped, on: wait.satisfied, when: { outcome: failed } }
+  - { from: plan, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
+  - { from: phase, to: done, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:pr, fact:handoff, fact:proofPack, fact:mergedSha] }
+  - { from: phase, to: stuck, on: wait.satisfied, when: { outcome: unresolved } }
+  - { from: phase, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
+loops: { redesign: { cap: 2 } }
+evals:
+  - evals/workflow.line/happy.jsonl
+  - evals/workflow.line/design-unresolved.jsonl
+  - evals/workflow.line/phase-unresolved.jsonl
+  - evals/workflow.line/plan-failed.jsonl
+  - evals/workflow.line/plan-redesign.jsonl
+  - evals/workflow.line/scoping-unresolved.jsonl
+

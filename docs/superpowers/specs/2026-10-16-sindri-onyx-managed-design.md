@@ -72,7 +72,8 @@ Slack (OAuth, in Onyx's UI). From then on every `sindri-app` (through `serve`) k
 ## 3. Terms
 
 - **Managed Onyx:** the profile says `context.sources.onyx.managed: true`. Sindri owns its files under
-  `$AW_SINDRI_HOME/onyx/` and its compose project `sindri-onyx`. Without `managed` (or `false`), Onyx is the owner's,
+  `$AW_SINDRI_HOME/onyx/` and its compose project `sindri-onyx-<8 hex>` (per Sindri home: the first 8 hex digits of the
+  sha256 of the full `AW_SINDRI_HOME` path, recorded in `state.json`). Without `managed` (or `false`), Onyx is the owner's,
   as today, and none of §4 runs.
 - **The pins:** `context/onyx.lock` in this repo (§6), read by the build, never fetched.
 - **Provisioning:** the setup-only requests of §5.2.
@@ -98,7 +99,9 @@ Each step is idempotent and checks before it acts; the run records each complete
 
 1. **Preflight.** Docker CLI present and the daemon answering (`docker version`), Compose v2 (`docker compose
    version`); Docker's memory limit ≥ the one-user sizing needs (builder measures; the manual page says ~6 GB with the VM
-   capped at 6 GB); free disk on Docker's data root and `$AW_SINDRI_HOME` ≥ the pinned total image size plus headroom
+   capped at 6 GB); free disk at `$AW_SINDRI_HOME` and, where Docker's data root is a directory on this host (a Linux engine), at the data root
+   (`docker info` DockerRootDir), the smaller of the two ≥ the pinned total image size plus headroom; on Docker Desktop the
+   data root lives in its VM, so the host measurement stands and the row notes that Docker Desktop caps its disk image too
    (the builder measures the real pull and model download on v4.9.0 and records the number in the pins). The chosen
    port (default 3000, §7) free or already ours.
 2. **Fetch the deployment files** listed in the pins (the compose file, `env.template`, the nginx config files the
@@ -112,7 +115,7 @@ Each step is idempotent and checks before it acts; the run records each complete
    `docs/sindri/onyx.md` (OpenSearch heap 1 GB and `mem_limit: 2g`; `indexing_model_server` and `code-interpreter`
    behind profiles; worker concurrency 1; the Slack and Discord bots off). Rewritten only when its content would change.
 4. **Pull** the pinned images (`docker compose pull`), with progress.
-5. **Start** (`docker compose -p sindri-onyx up -d`) and **wait** for readiness: `GET /api/health` answers, then
+5. **Start** (`docker compose -p sindri-onyx-<8 hex> up -d`) and **wait** for readiness: `GET /api/health` answers, then
    `GET /api/version` reports `v4.9.0` (else `SND-ONYX-005`), under a deadline the builder sets from measurement
    (first start downloads models).
 6. **The owner's initial setup** (first run only): open Onyx's sign-up page in the browser and wait at the terminal
@@ -142,7 +145,7 @@ Each step is idempotent and checks before it acts; the run records each complete
   never a failed serve; queries degrade as they do today when Onyx doesn't answer (`SND-CONTEXT-010`).
 - `serve` never fetches, pulls or bootstraps: a box where `onyx up` never completed gets a needs-you row "Run `sindri
   onyx up`".
-- `stop` runs `docker compose -p sindri-onyx stop` after the control plane's own shutdown, bounded; a timeout is
+- `stop` runs `docker compose -p sindri-onyx-<8 hex> stop` after the control plane's own shutdown, bounded; a timeout is
   reported, not fatal.
 - An unmanaged Onyx: nothing here runs.
 
@@ -222,23 +225,27 @@ A new code range `SND-ONYX-0xx` in `SindriErrors`, each with a one-line fix:
 | `SND-ONYX-007` | The Onyx login given isn't an admin (fix: make that account an admin in Onyx's users page, or log in as the first user) |
 | `SND-ONYX-008` | Minting or verifying the key failed |
 | `SND-ONYX-009` | Writing a secret failed (and the `file:` fallback did too) |
+| `SND-ONYX-010` | Docker points at another machine; Sindri only runs Onyx on this one (fix: switch to the local context, unset `DOCKER_HOST`) |
+| `SND-ONYX-011` | A `docker compose` command (`pull`, `up`, `stop`, `ps`) failed; the message ends with the last lines it printed |
+| `SND-ONYX-012` | Sindri can't read or write its Onyx directory under the Sindri home (fix: make it writable by you) |
 
-Doctor gains `onyx:stack` (managed only): the compose project's containers and their health, the bound address (fails
+Doctor gains `onyx:stack` (when Sindri's Onyx state exists): the compose project's containers and their health, the bound address (fails
 on anything but loopback), the image digests running vs the pins. The existing `context:onyx` row is unchanged. The
 UI's Health page shows both rows as it shows every doctor row; nothing UI-specific is required.
 
 ## 9. Architecture (where the code goes)
 
 Inside the Sindri package, by the C# rules (`.agents/rules/csharp.md`): slices `OnyxUp`, `OnyxStatus`, `OnyxDown`,
-`OnyxLogin` in `Aw.Sindri.Features`; ports `IContainerRuntime` (compose project up, stop, pull, ps, version),
+`OnyxLogin` in `Aw.Sindri.Features`; ports `IContainerRuntime` (P1 has `Inspect`, the read-only facts; P2 adds the compose operations pull, up, stop and ps),
 `IOnyxProvisioning` (§5.2), `ISecretWriter` (§5.3), `IDeployFiles` (fetch and verify against the pins) in Core, with
 fakes and contract tests in `Aw.Sindri.Testing`; the Docker CLI, HTTP and keychain adapters in Infrastructure; CLI
 commands in Host. The first-run offer (O6) lives in the C# bare start (`StartCommand`, before it launches `serve`),
 not in `scripts/sindri-app.sh`: the launcher stays a thin build-and-exec wrapper, and a published `sindri` started any
 other way behaves the same. The launcher's only change is its header and `docs/csharp/sindri-ui.md`'s paragraph
 naming Onyx among what bare `sindri-app` brings up. The serve and stop hooks sit beside the Temporal ones (`TemporalDevServer` is the model for detach,
-readiness, bounded stop). `deps.yaml` declares the new `cli` edges (`docker`, `security`, `secret-tool`, `pbcopy` and
-the Linux clipboards) and the `file` edge to `context/onyx.lock`.
+readiness, bounded stop). `deps.yaml` models edges between this repo's packages only, so the external executables
+(`docker`, `security`, `secret-tool`, `pbcopy` and the Linux clipboards) are not declared there: `docs/csharp/sindri.md`
+lists them instead.
 
 ## 10. Proof
 
@@ -259,9 +266,10 @@ the Linux clipboards) and the `file` edge to `context/onyx.lock`.
 ## 11. Phases (for /specToProvenPR)
 
 1. **P1 — pins and preflight:** `context/onyx.lock` with the measured numbers, its check and test; `IContainerRuntime`
-   and the preflight; `sindri onyx status`; `SND-ONYX-001..003, 006`.
+   and the preflight (its memory check is the `MemTotal` floor only); `sindri onyx status`; `SND-ONYX-001..003, 006`.
 2. **P2 — files, config, start:** fetch and verify, `.env` and the override, pull, start, readiness, `sindri onyx down`,
-   doctor `onyx:stack`; `SND-ONYX-004, 005`.
+   doctor `onyx:stack`; `SND-ONYX-004, 005, 010, 011, 012`. The memory check that counts what other containers already use (Docker's
+   `MemTotal` minus their use must cover the need) moved from P1 into P2 by owner decision, 2026-10-17.
 3. **P3 — owner setup, key, secret, profile:** the sign-up hand-off, the provisioning client and its allowlist, the
    secret writer, the profile write and inline approval, `sindri onyx open`; `SND-ONYX-007..009`.
 4. **P4 — the entry path, serve and stop:** the first-run offer in bare `sindri-app` (O6), the lifecycle hooks,
@@ -269,13 +277,25 @@ the Linux clipboards) and the `file` edge to `context/onyx.lock`.
    around bare `sindri-app` and `sindri-app onyx up` (the manual steps kept as an appendix for an unmanaged Onyx), `docs/csharp/sindri.md`
    commands, a README X-row (the next free, X64) recording O1–O5.
 
+5. **P5 — the setup script (owner, 2026-10-18; spec delta):** the owner's goal is "Onyx as a full dependency, stood up with
+   the rest of Sindri by the setup bash script". `./setup.sh --with-sindri` now runs `scripts/install-onyx.sh` after the other installs, which
+   checks that Docker is installed and answering (a missing or silent Docker prints the fix and the command to run later,
+   exit 3, and setup goes on) and then runs `sindri-app onyx up`, the human's verb, at the terminal setup runs in: preflight,
+   pinned files, start, your account in the browser, Sindri's key and the profile section with its approval. `--no-onyx` opts
+   out; `--dry-run` / `AW_DRY_RUN=1` prints the step and runs nothing; without a terminal the step prints the command
+   (`<checkout>/scripts/sindri-app.sh onyx up`: the `sindri-app` link exists only once that script has run) instead of asking; a rerun on a set-up box is `onyx up`'s no-op; a failed `onyx up` is reported at the
+   very end of setup (exit 1) after everything else is installed. An agent session running setup is still refused by
+   `onyx up` itself (SND-AUTH-002): the script never works around it. This amends the earlier rule that nothing in `setup.sh`
+   points at the C# build (AGENTS.md "C# build"): the Onyx step is the one exception, and it uses `sindri-app`, which builds
+   the C# `sindri` on demand, so setup now needs the .NET toolchain `sindri-app` installs on first run.
+
 ## 12. Settled in review, and left to the builder
 
 Settled after the builder check (2026-10-16, the writer's calls):
 - **Another Onyx already on the box** (an unmanaged stack, or anything else on port 3000): never adopted, migrated or
   stopped. Step 1 picks the next free loopback port for the managed one and preflight's memory check counts what Docker
-  already uses, refusing with `SND-ONYX-003` when two stacks won't fit. A compose project named `sindri-onyx` is Sindri's
-  own and is reused.
+  already uses, refusing with `SND-ONYX-003` when two stacks won't fit. The compose project of this Sindri home (`sindri-onyx-<8 hex>`) is Sindri's
+  own and is reused; another home's project is never touched.
 - **Disk:** preflight refuses with the measured need, where it's needed (Docker's data root, `$AW_SINDRI_HOME`) and how
   much is free; there is no reduced-model fallback. The owner's box (11 GiB free on 2026-10-16) needs space freed before
   the heavy proof.

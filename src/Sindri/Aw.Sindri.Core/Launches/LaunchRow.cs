@@ -58,6 +58,12 @@ public sealed record LaunchRow(
     /// <summary>The session id a resume uses: the one known at start, else the reported one.</summary>
     public SessionId? ResumableId => SessionId ?? ReportedSessionId;
 
+    /// <summary>True when this row started an agent process: an attach row records the live session's id but starts nothing.</summary>
+    public bool StartedProcess => State == LaunchState.Started && Mode != LaunchMode.Attach;
+
+    /// <summary>True when a resume may address this row: it started a process, has ended, and has an id.</summary>
+    public bool Resumable => StartedProcess && !Live && ResumableId is not null;
+
     /// <summary>True while the session exists: started and not ended.</summary>
     public bool Live => State == LaunchState.Started && Ended is null && Mode != LaunchMode.Attach;
 }

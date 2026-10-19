@@ -24,11 +24,14 @@ internal sealed class SessionHarness
     /// <summary>What the target's usage reader would say about each agent session, by session id; a session not here has no transcript.</summary>
     public Dictionary<SessionId, IReadOnlyList<ModelTokens>> Tokens { get; } = [];
 
+    /// <summary>A usage reader that replaces <see cref="Tokens"/> (one that throws or never answers), or null.</summary>
+    public ILaunchUsage? Usage { get; set; }
+
     public LaunchSessionEvents Events(params AgentEntry[] catalog) => Events(Views.Slice.Held, catalog);
 
     /// <summary>The session events over a lease holder of the caller's choosing (an empty <see cref="HeldLease"/> is a control plane that doesn't hold the lease).</summary>
     public LaunchSessionEvents Events(HeldLease held, params AgentEntry[] catalog) =>
-        new(Files, Liveness, new ReportedIdAdmission(new LaunchViews(Views.Views), new AgentCatalog(catalog.Length == 0 ? [AgentEntries.ClaudeCode, AgentEntries.Codex] : catalog), new TokensOf(Tokens)), held, Views.Slice.Store, Views.Slice.Events, Views.Slice.Clock);
+        new(Files, Liveness, new ReportedIdAdmission(new LaunchViews(Views.Views), new AgentCatalog(catalog.Length == 0 ? [AgentEntries.ClaudeCode, AgentEntries.Codex] : catalog), Usage ?? new TokensOf(Tokens)), held, Views.Slice.Store, Views.Slice.Events, Views.Slice.Clock);
 
     private sealed class TokensOf(Dictionary<SessionId, IReadOnlyList<ModelTokens>> used) : ILaunchUsage
     {

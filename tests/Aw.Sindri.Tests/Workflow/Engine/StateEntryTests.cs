@@ -54,4 +54,16 @@ public sealed class StateEntryTests
 
         Assert.Equal(StepRuntime.Block, entered.Frame.Run?.Runtime);
     }
+
+    [Fact]
+    public void Entering_a_state_records_it_once_in_first_entry_order()
+    {
+        var recipe = EvalComposition.Recipe(RouteRecipes.Dev);
+        var context = EngineFixture.Context() with { Runtimes = new Dictionary<BlockId, StepRuntime> { [_judge] = StepRuntime.Block } };
+        var first = StateEntry.Enter(EngineFixture.At(recipe, "evidence-ui"), recipe, "route-evidence", context);
+
+        var again = StateEntry.Enter(StateEntry.Enter(first, recipe, "evidence-ui", context), recipe, "route-evidence", context);
+
+        Assert.Equal(["route-evidence", "evidence-ui"], again.Visited);
+    }
 }

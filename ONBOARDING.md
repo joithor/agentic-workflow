@@ -273,6 +273,7 @@ A profile turns off skills that don't apply to a repo (for example, the iOS desi
 
 ```bash
 ./setup.sh --with-sindri          # build and install the sindri CLI, plus its SessionStart nudge
+./setup.sh --with-sindri --no-onyx # ... without standing the pinned Onyx up (--with-sindri otherwise runs `onyx up` through `scripts/sindri-app.sh` after the other installs; it needs Docker and you at a terminal)
 sindri profile init               # scaffold your profile (shadow mode: records only, starts nothing)
 sindri repo onboard .             # add this repo, approve the profile at a terminal, install the hook, build the index
 sindri doctor                     # expect every line ok

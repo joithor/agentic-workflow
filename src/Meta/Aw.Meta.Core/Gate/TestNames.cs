@@ -23,16 +23,22 @@ public static partial class TestNames
         return names;
     }
 
-    /// <summary>How many tests the log's summaries say failed: the "failed: N" lines added up (one summary per test project).</summary>
+    /// <summary>How many tests the log's summaries say failed: the "failed: N" lines added up (one summary per test project), or the
+    /// per-assembly "&lt;dll&gt; (tfm|arch) failed with N error(s)" lines added up (each assembly once: MTP prints it when the assembly
+    /// finishes and again in the run summary), whichever is larger.</summary>
     /// <param name="log">The step log's text.</param>
-    /// <returns>The sum, or null when the log has no failed count.</returns>
+    /// <returns>The count, or null when the log has no failed count.</returns>
     public static int? SummarizedFailures(string log)
     {
         ArgumentNullException.ThrowIfNull(log);
         try
         {
             var counts = FailedCountLine.Matches(log).Select(m => int.Parse(m.Groups["n"].Value, System.Globalization.CultureInfo.InvariantCulture)).ToList();
-            return counts.Count == 0 ? null : counts.Sum();
+            var assemblies = AssemblyFailureLine.Matches(log)
+                .GroupBy(m => m.Groups["dll"].Value, StringComparer.Ordinal)
+                .Select(g => g.Max(m => int.Parse(m.Groups["n"].Value, System.Globalization.CultureInfo.InvariantCulture)))
+                .ToList();
+            return counts.Count == 0 && assemblies.Count == 0 ? null : Math.Max(counts.Sum(), assemblies.Sum());
         }
         catch (RegexMatchTimeoutException)
         {
@@ -125,6 +131,9 @@ public static partial class TestNames
 
     [GeneratedRegex(@"^\s*failed: (?<n>\d{1,9})\s*$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture | RegexOptions.Multiline, matchTimeoutMilliseconds: 100)]
     private static partial Regex FailedCountLine { get; }
+
+    [GeneratedRegex(@"^\s*(?<dll>\S.*?\.dll) \([^)\r\n]*\) failed with (?<n>\d{1,9}) error\(s\)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture | RegexOptions.Multiline, matchTimeoutMilliseconds: 100)]
+    private static partial Regex AssemblyFailureLine { get; }
 
     [GeneratedRegex(@"^\s*total: (?<n>\d{1,12})\s*$", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture | RegexOptions.Multiline, matchTimeoutMilliseconds: 100)]
     private static partial Regex TotalLine { get; }

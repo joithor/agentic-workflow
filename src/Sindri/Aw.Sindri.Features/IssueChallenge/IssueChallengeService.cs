@@ -5,6 +5,7 @@ using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Profile;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -97,8 +98,30 @@ internal sealed partial class IssueChallengeService(RecipeApprovalPlanner approv
         }
 
         var variant = verb switch { "grant" => AnswerVariant.Grant, "grant-tokens" => AnswerVariant.GrantTokens, _ => AnswerVariant.Accept };
-        var issued = challenges.Issue(InstanceChallenge.Action(address.Value, variant, amount), InstanceChallenge.Subject(view.Value));
+        var bound = await BoundTo(address.Value, view.Value, cancellationToken).ConfigureAwait(false);
+        if (bound.IsError)
+        {
+            return bound.Error;
+        }
+
+        var issued = challenges.Issue(InstanceChallenge.Action(bound.Value.Address, variant, amount), InstanceChallenge.Subject(bound.Value.View));
         return Issued(issued, approve: null, revoke: null) with { Instance = view.Value };
+    }
+
+    /// <summary>
+    /// The instance a protected answer's challenge is bound to: the one the answer is delivered to. An answer to a parent whose open park mirrors
+    /// a child is forwarded to the child (engine spec §5.8), and ApplyCommand redeems against the child's address and version, so the challenge
+    /// is issued for the child (the text the human types names it).
+    /// </summary>
+    private async ValueTask<Result<(InstanceAddress Address, InstanceView View)>> BoundTo(InstanceAddress address, InstanceView view, CancellationToken cancellationToken)
+    {
+        if (view.ChildPark is not { } child)
+        {
+            return (address, view);
+        }
+
+        var childView = await runtime.Get(child.Address, cancellationToken).ConfigureAwait(false);
+        return childView.IsError ? childView.Error : (child.Address, childView.Value);
     }
 
     private static Error Unknown(string text) => SindriErrors.InvalidInput.With($"'{text}' isn't an action a challenge is issued for; use {Forms}");

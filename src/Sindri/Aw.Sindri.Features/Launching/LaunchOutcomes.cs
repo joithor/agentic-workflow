@@ -42,7 +42,12 @@ internal sealed class LaunchOutcomes(ILedgerStore ledger, EventFactory events, I
             return ViewerFrom(new TerminalFacts("none", "none", Present: false, "none", ConfigPath: null, Problem: null, Detail: null), outcome, attended);   // an unattended launch skips the viewer (launcher L-1)
         }
 
-        var facts = await viewer.Probe(cancellationToken).ConfigureAwait(false);   // the viewer that opened the window names itself: 'configured' is a wrapper, not a kind
+        if (outcome.ViewerKind is { } kind)
+        {
+            return ViewerFrom(new TerminalFacts(kind, outcome.ViewerLabel ?? kind, Present: true, "file", ConfigPath: null, Problem: null, Detail: null), outcome, attended);   // the viewer that opened the window said what it is
+        }
+
+        var facts = await viewer.Probe(cancellationToken).ConfigureAwait(false);   // a viewer that did not say asks its probe; 'configured' is a wrapper, not a kind
         return ViewerFrom(facts, outcome, attended);
     }
 

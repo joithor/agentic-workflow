@@ -3,6 +3,7 @@
              xmlns:wf="using:Aw.Sindri.Ui.ViewModels.Workflows"
              xmlns:wfv="using:Aw.Sindri.Ui.Views.Workflows"
              xmlns:icons="using:Aw.Sindri.Ui.Views.Icons"
+             xmlns:vm="using:Aw.Sindri.Ui.ViewModels"
              x:Class="Aw.Sindri.Ui.Views.Workflows.WorkflowsPage"
              x:DataType="wf:WorkflowsViewModel">
   <!-- The Workflows page (screens spec §4.2): the head with the root-wide counts and the filters, then the open root instances grouped by
@@ -14,6 +15,12 @@
         <TextBlock x:Name="WorkflowsHead" Classes="caption subtle" Text="{Binding Head}" VerticalAlignment="Center" AutomationProperties.Name="{Binding Head}" />
       </StackPanel>
       <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+        <Button x:Name="WorkflowsStart" Classes="command-control" Click="OnStart" AutomationProperties.Name="{Binding StartLabel}">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Classes="button" Text="{Binding StartLabel}" VerticalAlignment="Center" />
+            <Border Classes="kbd" VerticalAlignment="Center"><TextBlock Classes="kbd" Text="N" /></Border>
+          </StackPanel>
+        </Button>
         <ComboBox x:Name="RecipeFilter" ItemsSource="{Binding RecipeChoices}" SelectionChanged="OnRecipeChosen" PlaceholderText="Recipe" MinWidth="180"
                   AutomationProperties.Name="Recipe filter" />
         <TextBox x:Name="SubjectFilter" PlaceholderText="Subject" KeyDown="OnSubjectKey" MinWidth="160" AutomationProperties.Name="Subject filter" />

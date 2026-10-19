@@ -4,7 +4,7 @@ namespace Aw.Sindri.Core.Launches;
 
 /// <summary>
 /// The last totals sampled per launch and the last sample number used, in memory. A restart samples once more, which is harmless:
-/// the number is never lower than the clock's and never repeats within a run, so no sample is dropped as a duplicate key.
+/// the number is never lower than the clock's and never repeats within a run, so no sample is dropped as a duplicate key. Only "within a run" holds: after a restart the floor starts again from the clock and can equal an earlier bumped number, which drops one sample as already recorded.
 /// </summary>
 public sealed class UsageSamples
 {

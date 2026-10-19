@@ -12,7 +12,7 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// logged and serve runs on without a worker (P4 makes it a health failure).
 /// </summary>
 /// <param name="settings">The namespace and the task queue.</param>
-/// <param name="activities">Every activity class the worker registers.</param>
+/// <param name="activities">The activity classes the worker serves.</param>
 /// <param name="logger">The log.</param>
 internal sealed partial class SindriWorkerHost(
     TemporalSettings settings, WorkerActivities activities, ILogger<SindriWorkerHost> logger) : ITemporalWorker

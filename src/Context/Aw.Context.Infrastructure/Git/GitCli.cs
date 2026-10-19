@@ -160,7 +160,7 @@ internal sealed partial class GitCli
         return run.IsError ? run.Error : run.Value.Exit == 0 ? run.Value.Stdout : Failed(args[0], run.Value.Exit);
     }
 
-    private async ValueTask<Result<(int Exit, string Stdout)>> Run(string repo, string[] args, CancellationToken cancellationToken)
+    private async ValueTask<Result<(int Exit, string Stdout)>> Run(string repo, string[] args, CancellationToken cancellationToken, string? locale = null)
     {
         var start = new ProcessStartInfo("git")
         {
@@ -172,6 +172,11 @@ internal sealed partial class GitCli
         foreach (var name in start.Environment.Keys.Where(k => k.StartsWith("GIT_", StringComparison.Ordinal)).ToList())
         {
             _ = start.Environment.Remove(name);
+        }
+
+        if (locale is not null)
+        {
+            start.Environment["LC_ALL"] = locale;   // case folding of 'grep -i' follows the locale
         }
 
         foreach (var arg in (string[])["-C", repo, "-c", "core.quotepath=off", .. args])

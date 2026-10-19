@@ -24,6 +24,7 @@ public sealed class LaunchEventGoldenTests
         "launch.started-opened",
         "launch.started-viewer-failed",
         "launch.failed-host-stage",
+        "launch.failed-hash-changed",
         "launch.failed-not-approved",
         "launch.failed-plain",
         "launch.viewer-attached",
@@ -32,9 +33,18 @@ public sealed class LaunchEventGoldenTests
         "session.ended-lost",
         "session.usage",
         "launch.probed",
+        "launch.started-public",
     ];
 
     private static string Of<T>(SliceHarness h, string type, T payload) => ApiGolden.Reindent(h.Events.Entry(type, payload, "key", A.FirstItemId.Value).Envelope.Payload);
+
+    /// <summary>The public form the event stream serves (LaunchStartedPublic: no viewer detail).</summary>
+    private static string Public(SliceHarness h, LaunchStarted started)
+    {
+        var entry = h.Events.Entry(EventTypes.LaunchStarted, started, "key", A.FirstItemId.Value);
+        var row = new Core.Ledger.LedgerEvent(Sequence: 1, Epoch: 1, entry.Envelope, entry.IdempotencyKey, entry.Item);
+        return ApiGolden.Reindent(PublicEvents.For(row, SliceHarness.Json, new PassThroughScrubber(), includeNonPublic: false).Value!.Payload.GetRawText());
+    }
 
     private static string Json(SliceHarness h, string name) => name switch
     {
@@ -46,6 +56,8 @@ public sealed class LaunchEventGoldenTests
         "launch.failed-host-stage" => Of(h, EventTypes.LaunchFailed,
             new LaunchFailed(A.FirstLaunchId, A.FirstItemId, "SND-LAUNCH-009", "tmux did not start the session within 4 s", new LaunchFailureDetail(LaunchStage.Host))),
         "launch.failed-not-approved" => Of(h, EventTypes.LaunchFailed, new LaunchFailed(A.FirstLaunchId, A.FirstItemId, "SND-LAUNCH-012", "aider isn't approved for unattended Steps",
+            new LaunchFailureDetail(Stage: null, Reason: "not-approved", Current: "sha256:" + new string('c', 64), Approved: []))),
+        "launch.failed-hash-changed" => Of(h, EventTypes.LaunchFailed, new LaunchFailed(A.FirstLaunchId, A.FirstItemId, "SND-LAUNCH-012", "aider isn't approved for unattended Steps",
             new LaunchFailureDetail(Stage: null, Reason: "hash-changed", Current: "sha256:" + new string('c', 64), Approved: ["sha256:" + new string('d', 64)]))),
         "launch.failed-plain" => Of(h, EventTypes.LaunchFailed, new LaunchFailed(A.FirstLaunchId, A.FirstItemId, "SND-LAUNCH-007", "Sindri restarted before the launch started (fix: open the item again)")),
         "launch.viewer-attached" => Of(h, EventTypes.LaunchViewerAttached, new LaunchViewerAttached(A.FirstLaunchId, _at)),
@@ -58,6 +70,8 @@ public sealed class LaunchEventGoldenTests
             new HostFacts(HostKind.Tmux, Present: true, "3.4", Problem: null),
             [new TargetFacts(_codex, Present: true, "0.40.0", Limited: "usage-unverified", Problem: null, CatalogSource.Builtin, Overridden: false)],
             [new RepoFacts(RepoName.From("demo"), Present: true)])),
+        "launch.started-public" => Public(h, new LaunchStarted(A.FirstLaunchId, A.FirstItemId, LaunchMode.Open, _codex, _session, "sindri " + A.FirstItemId.Value,
+            new LaunchViewer("exec-template", "kitty", ViewerOutcomeKind.Failed, "SND-LAUNCH-001", "kitty: no display"), _attach, CatalogSource.Builtin, "sha256:" + new string('a', 64))),
         _ => throw new ArgumentOutOfRangeException(nameof(name)),
     };
 
@@ -69,8 +83,11 @@ public sealed class LaunchEventGoldenTests
     [Fact, Trait("Lane", "unit")]
     public void Every_launch_event_has_a_golden()
     {
-        string[] types = [EventTypes.LaunchProbed, EventTypes.ItemOpenRequested, EventTypes.LaunchStarted, EventTypes.LaunchFailed, EventTypes.SessionEnded, EventTypes.SessionUsage, EventTypes.LaunchViewerAttached, EventTypes.LaunchSessionReported];
+        var types = EventCatalog.All.Select(static e => e.Type)
+            .Where(static t => t.StartsWith("launch.", StringComparison.Ordinal) || t.StartsWith("session.", StringComparison.Ordinal) || string.Equals(t, EventTypes.ItemOpenRequested, StringComparison.Ordinal))
+            .ToList();   // a new launch or session event fails here until it has a golden
 
-        Assert.All(types, type => Assert.Contains(Cases, c => c.Data.StartsWith(type, StringComparison.Ordinal)));
+        Assert.NotEmpty(types);
+        Assert.All(types, type => Assert.Contains(Cases, c => string.Equals(c.Data, type, StringComparison.Ordinal) || c.Data.StartsWith(type + "-", StringComparison.Ordinal)));   // a golden is named for its whole type, plus a variant after a dash
     }
 }

@@ -15,9 +15,29 @@ public sealed class GetNeedsYouTests
 {
     private readonly RequestQueryHarness _q = new();
 
-    private GetNeedsYouService Service() => new(_q.Views.Views, _q.Views.Progress, _q.Views.Slice.Callers);
+    private readonly FakeOnyxNotices _onyx = new();
+
+    private GetNeedsYouService Service() => new(_q.Views.Views, _q.Views.Progress, _q.Views.Slice.Callers, _onyx, new PassThroughScrubber(), TimeProvider.System);
 
     private async Task<GetNeedsYouResponse> Get() => (await Service().Handle(A.GetNeedsYouRequest().Build(), RequestQueryHarness.Token)).Value;
+
+    [Fact]
+    public async Task GetNeedsYou_shows_the_managed_onyx_row_to_a_human_and_not_to_a_session()
+    {
+        _onyx.Notice = new Core.Onyx.OnyxNotice("Set up Onyx", "Onyx isn't set up on this box", "sindri onyx up");
+
+        using (_q.Human())
+        {
+            var row = Assert.Single((await Get()).Rows);
+            Expect.Equal("failure:service:onyx", row.Id.Value);
+            Expect.Equal("sindri onyx up", row.Cli);
+        }
+
+        using (_q.Session(repo: null))
+        {
+            Assert.Empty((await Get()).Rows);
+        }
+    }
 
     [Fact]
     public async Task GetNeedsYou_lists_rows_by_urgency_then_since_then_id()

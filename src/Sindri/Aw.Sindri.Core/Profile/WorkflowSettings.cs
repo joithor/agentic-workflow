@@ -14,6 +14,7 @@ namespace Aw.Sindri.Core.Profile;
 /// <param name="Agent">The 'agent:' section (engine P8): the agent a Step launches (<see cref="WorkflowAgentSettings"/>).</param>
 /// <param name="Judge">The 'judge:' section (DT-J plan Q8): which providers a Judge Step may ask (<see cref="JudgeProviders"/>).</param>
 /// <param name="Forge">The forge port's settings (PR babysitter spec W27): adapter, hosts and credential source.</param>
+/// <param name="Route">The 'route:' section (engine P7 plan D8): whether the router stub lets routed items start (<see cref="RouteSettings"/>).</param>
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record WorkflowSettings(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? DeskTimeout = null,
@@ -22,4 +23,5 @@ public sealed record WorkflowSettings(
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? DispatchDelay = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] JudgeSettings? Judge = null,
     [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] WorkflowAgentSettings? Agent = null,
-    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ForgeSettings? Forge = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] ForgeSettings? Forge = null,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] RouteSettings? Route = null);
