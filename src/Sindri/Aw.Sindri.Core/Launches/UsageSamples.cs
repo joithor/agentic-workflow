@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using Aw.Sindri.Core.Workflow.Engine;
 
 namespace Aw.Sindri.Core.Launches;
@@ -8,8 +9,28 @@ namespace Aw.Sindri.Core.Launches;
 /// </summary>
 public sealed class UsageSamples
 {
+    /// <summary>How many launches' totals are kept before the ended ones are forgotten.</summary>
+    public const int Retained = 256;
+
     private readonly Lock _gate = new();
     private readonly Dictionary<LaunchId, (long Input, long Output, int Number)> _last = [];
+    private readonly ConcurrentDictionary<LaunchId, SemaphoreSlim> _turns = new();
+
+    /// <summary>Takes the launch's turn: a tick and a flush of one launch run their whole read, number, append and record one after the other, so the newer totals are the ones the ledger keeps.</summary>
+    /// <param name="launch">The launch.</param>
+    /// <param name="cancellationToken">Cancels the wait.</param>
+    /// <returns>The turn; disposing it hands the launch to the next caller.</returns>
+    public async ValueTask<IDisposable> Turn(LaunchId launch, CancellationToken cancellationToken)
+    {
+        var turn = _turns.GetOrAdd(launch, static _ => new SemaphoreSlim(1, 1));
+        await turn.WaitAsync(cancellationToken).ConfigureAwait(false);
+        return new Release(turn);
+    }
+
+    private sealed class Release(SemaphoreSlim turn) : IDisposable
+    {
+        public void Dispose() => _ = turn.Release();
+    }
 
     /// <summary>Whether <paramref name="input"/> and <paramref name="output"/> differ from the totals last recorded for the launch.</summary>
     /// <param name="launch">The launch.</param>
@@ -49,15 +70,28 @@ public sealed class UsageSamples
         }
     }
 
-    /// <summary>Forgets every launch not in <paramref name="live"/>.</summary>
+    /// <summary>
+    /// Forgets the launches not in <paramref name="live"/> once more than <see cref="Retained"/> are held. An ended launch's totals and number stay until then: the close
+    /// of its Step still takes a final sample, and a number the tick already used must not be used again or the ledger drops the sample as a duplicate.
+    /// </summary>
     /// <param name="live">The launches that still run.</param>
     public void Keep(IReadOnlySet<LaunchId> live)
     {
         lock (_gate)
         {
+            if (_last.Count <= Retained)
+            {
+                return;
+            }
+
             foreach (var gone in _last.Keys.Where(k => !live.Contains(k)).ToList())
             {
                 _ = _last.Remove(gone);
+            }
+
+            foreach (var idle in _turns.Where(t => !live.Contains(t.Key) && t.Value.CurrentCount == 1).Select(static t => t.Key).ToList())
+            {
+                _ = _turns.TryRemove(idle, out _);
             }
         }
     }
