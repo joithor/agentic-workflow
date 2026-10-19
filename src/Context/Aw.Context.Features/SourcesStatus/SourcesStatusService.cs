@@ -65,7 +65,8 @@ internal sealed class SourcesStatusService(IDocIndex index, ISourceCatalog catal
             var searched = ScopeRules.MayRead(caller, described);
             var detail = searched ? health.Detail : $"{health.Detail}; sessions don't search it until context.repoTeams maps its teams to a repo";
             var row = new SourceStatusRow(described.Id, described.Kind, Repo: null, health.State, detail, health.Code, LastSync: null, Records: 0);
-            if (described.Kind == SourceKind.Intent && searched)   // the sync's counts are about the store's content, so a caller that doesn't search it gets health only
+            // The sync's counts are about the store's content, so a caller that doesn't search it gets health only.
+            if (described.Kind == SourceKind.Intent && searched)
             {
                 var state = await intents.State(described.Id, cancellationToken).ConfigureAwait(false);
                 if (state.IsError)
