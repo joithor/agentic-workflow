@@ -74,12 +74,18 @@ public static partial class InstanceViews
             Answer = words.Answer(),
             Drift = words.Drift(),
             Budget = Budget(instance, recipe),
-            AgentRun = instance is { Ended: false, Frame.Run: { Runtime: StepRuntime.Agent } agent } ? agent : null,
+            AgentRun = AgentRunOf(instance),
             RunningSteps = instance is { Ended: false, Frame.Run.Runtime: not StepRuntime.Desk } ? 1 : 0,
             Paused = instance.Suspension is { Kind: SuspensionKind.Takeover, Remaining: { } paused } ? paused.Left : null,
         };
         return WithLayout(view, new Layout(instance, recipe, task, words), context);
     }
+
+    /// <summary>The open agent run; one still launching names the launch id it will have (the id is pure), so status never shows a run without one.</summary>
+    private static OpenRun? AgentRunOf(WorkflowInstance instance) =>
+        instance is { Ended: false, Frame.Run: { Runtime: StepRuntime.Agent } agent }
+            ? agent with { Launch = agent.Launch ?? AgentLaunches.LaunchIdFor(WorkflowInstanceId.Of(instance.Address), agent.Token).Value }
+            : null;
 
     /// <summary>The stored digest of each fact by key; null when the instance holds none.</summary>
     private static Dictionary<string, string>? ShasOf(WorkflowInstance instance) =>
