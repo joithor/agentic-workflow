@@ -57,7 +57,7 @@ public sealed class GatherInputsFillTests : IDisposable
         Assert.False(filled.IsError, filled.IsError ? filled.Error.Message : string.Empty);
         Assert.False(string.IsNullOrWhiteSpace(filled.Value.Texts.Sections[section]));
         Assert.True(filled.Value.Texts.Result.HasValue);
-        _ = Assert.NotNull(filled.Value.Metadata.Result);
+        Assert.True(filled.Value.Metadata.Result is not null);
     }
 
     [Fact]
