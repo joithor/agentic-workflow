@@ -1,5 +1,4 @@
 using Aw.Context.Core.Graph;
-using Aw.Context.Core.Results;
 
 namespace Aw.Context.Core.Overrides;
 
@@ -47,29 +46,6 @@ public static partial class OverrideApplier
         }
 
         return o.Action == OverrideAction.Move ? Move(graph, target.Key, other.Key) : Merge(graph, target.Key, other.Key);
-    }
-
-    private static GraphSnapshot? Add(GraphSnapshot graph, MapOverride o)
-    {
-        if (graph.Resolve(o.Target) is not null)
-        {
-            return graph;
-        }
-
-        if (!Addable(o.Target))
-        {
-            return null;
-        }
-
-        var parent = o.Other is { } key ? graph.Resolve(key)?.Key : null;
-        if (o.Other is not null && (parent is not { } p0 || !EdgeRules.Allows(EdgeType.PartOf, o.Target.Kind, p0.Kind)))
-        {
-            return null;
-        }
-
-        var node = new GraphNode(o.Target, o.Label ?? o.Target.Name, Provenance.Human, At: o.At);
-        GraphEdge[] edges = parent is { } p ? [new GraphEdge(o.Target, p, EdgeType.PartOf, At: o.At)] : [];
-        return graph with { Nodes = [.. graph.Nodes, node], Edges = [.. graph.Edges, .. edges] };
     }
 
     /// <summary>A node an add may create: the file validator's surface-kind rule; decisions come only from 'decisions:'.</summary>

@@ -36,6 +36,7 @@ public sealed class InPlaceApplyTests
         var target = SampleDrafts.Key(_nodes[random.Next(_nodes.Length)]);
         var other = SampleDrafts.Key(_nodes[random.Next(_nodes.Length)]);
         LinkId[] links = [SampleDrafts.Link("code:src/tabs/Groups.ts", EdgeType.Implements, "feature:tabs.groups"), SampleDrafts.Link("code:src/layout/Panes.ts", EdgeType.Implements, "feature:layout"), SampleDrafts.Link("code:src/nowhere.ts", EdgeType.Implements, "feature:tabs")];
+        var link = links[random.Next(links.Length)];   // two edges that exist and one that doesn't
         return random.Next(12) switch
         {
             0 => new MapOverride(OverrideAction.Accept, target, "avery", at),
@@ -48,8 +49,8 @@ public sealed class InPlaceApplyTests
             7 => new MapOverride(OverrideAction.Add, target, "avery", at, "Added", random.Next(2) == 0 ? other : null),
             8 => new MapOverride(OverrideAction.Propose, target, "service:engine", at, "Proposed",
                 Proposal: new ProposalPayload("run-1", ContextRepoName.From("aw-split-panes"), target.Kind, random.Next(2) == 0 ? other : null, _evidence, "why")),
-            9 => new MapOverride(OverrideAction.Accept, links[random.Next(links.Length)] is var l ? SampleDrafts.Key("code:src/tabs/Groups.ts") : target, "avery", at, Link: l),
-            10 => new MapOverride(OverrideAction.Reject, SampleDrafts.Key("code:src/layout/Panes.ts"), "avery", at, Link: links[random.Next(links.Length)]),
+            9 => new MapOverride(OverrideAction.Accept, SampleDrafts.Key("code:src/tabs/Groups.ts"), "avery", at, Link: link),
+            10 => new MapOverride(random.Next(3) == 0 ? OverrideAction.Rename : OverrideAction.Reject, SampleDrafts.Key("code:src/layout/Panes.ts"), "avery", at, "x", Link: link),
             _ => new MapOverride(OverrideAction.Accept, SampleDrafts.Key("feature:old-tabs"), "avery", at),
         };
     }
@@ -97,6 +98,22 @@ public sealed class InPlaceApplyTests
 
         Assert.Equal(10_000, applied.Graph.Nodes.Count);
         Assert.Equal(1, copies);
+    }
+
+    // Adds of nodes that exist and moves or merges that can't apply copy nothing either: only a change the in-place fold can't make does.
+    [Fact, Trait("Lane", "unit")]
+    public void Adds_that_change_nothing_and_moves_that_cannot_apply_make_no_extra_copy()
+    {
+        var draft = SampleDrafts.Draft();
+        var rows = Enumerable.Range(0, 1_000).Select(i => new MapOverride(OverrideAction.Add, SampleDrafts.Key("feature:tabs"), "avery", SampleDrafts.At.AddSeconds(i), "Tabs"))
+            .Append(new MapOverride(OverrideAction.Move, SampleDrafts.Key("feature:layout"), "avery", SampleDrafts.At.AddHours(1), Other: SampleDrafts.Key("feature:nowhere")))
+            .Append(new MapOverride(OverrideAction.Merge, SampleDrafts.Key("feature:layout"), "avery", SampleDrafts.At.AddHours(2), Other: SampleDrafts.Key("surface:command/close-tab"))).ToList();
+        var copies = 0;
+
+        var applied = OverrideApplier.Apply(draft, rows, () => copies++);
+
+        Assert.Equal(1, copies);
+        SameAs(ReferenceOverrideApplier.Apply(draft, rows), applied, "adds and refused edits");
     }
 
     // The owner's draft: ~24k nodes, ~34k edges, 7.8k overrides decided and 12k more in one file. Heavy lane, generous guard.

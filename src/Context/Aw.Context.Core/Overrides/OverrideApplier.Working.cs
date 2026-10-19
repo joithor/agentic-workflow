@@ -42,7 +42,7 @@ public static partial class OverrideApplier
         {
             if (o.Action is OverrideAction.Add)
             {
-                return Copying(Add(Snapshot(), o));
+                return Add(o);
             }
 
             if (o.Action is OverrideAction.Propose)
@@ -66,7 +66,7 @@ public static partial class OverrideApplier
                 OverrideAction.Rename when !string.IsNullOrWhiteSpace(o.Label) => Replace(target, target with { Label = o.Label }),
                 OverrideAction.Reject => !o.Rejects(RejectionIdentity.For(target)) || Remove(target.Key.Value),
                 OverrideAction.Delete => Remove(target.Key.Value),
-                OverrideAction.Move or OverrideAction.Merge => Copying(WithOther(Snapshot(), target, o)),
+                OverrideAction.Move or OverrideAction.Merge => Fits(target, o) && Copying(WithOther(Snapshot(), target, o)),
                 OverrideAction.Rename or OverrideAction.Add or OverrideAction.Propose or OverrideAction.Undo => false,
                 _ => false,
             };
@@ -112,6 +112,40 @@ public static partial class OverrideApplier
             }
 
             return true;
+        }
+
+        // A person's added node: nothing to do when its key resolves already; refused when its kind can't be added or its named parent is
+        // missing or doesn't fit; else the node, and its part-of edge when it names a parent.
+        private bool Add(MapOverride o)
+        {
+            if (Resolve(o.Target) is not null)
+            {
+                return true;
+            }
+
+            var parent = o.Other is { } key ? Resolve(key)?.Key : null;
+            if (!Addable(o.Target) || (o.Other is not null && (parent is not { } p || !EdgeRules.Allows(EdgeType.PartOf, o.Target.Kind, p.Kind))))
+            {
+                return false;
+            }
+
+            AddNode(new GraphNode(o.Target, o.Label ?? o.Target.Name, Provenance.Human, At: o.At));
+            if (parent is { } under)
+            {
+                AddEdge(new GraphEdge(o.Target, under, EdgeType.PartOf, At: o.At));
+            }
+
+            return true;
+        }
+
+        // Whether a move or a merge will change the graph (WithOther's checks), so one that won't is refused without a copy.
+        private bool Fits(GraphNode target, MapOverride o)
+        {
+            var other = o.Other is { } key ? Resolve(key) : null;
+            var allowed = o.Action == OverrideAction.Move
+                ? EdgeRules.Allows(EdgeType.PartOf, target.Key.Kind, other?.Key.Kind ?? NodeKind.Feature)
+                : other?.Key.Kind == target.Key.Kind;
+            return other is not null && other.Key.Value != target.Key.Value && allowed;
         }
 
         // A proposal's own parent edge is confirmed with it.
