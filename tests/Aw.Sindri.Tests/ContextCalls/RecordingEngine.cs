@@ -11,6 +11,7 @@ using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.Subgraph;
 using Aw.Kernel;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -106,14 +107,14 @@ internal sealed class RecordingEngine(IContextEngine inner, List<(ContextCaller 
 
     public ValueTask<Result<ProposalsView>> Proposals(string run, ContextScope scope, CancellationToken cancellationToken) => inner.Proposals(run, scope, cancellationToken);
 
-    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
-        inner.Lenses(anchor, draft, depth, scope, cancellationToken);
-
     public ValueTask<Result<LensesView>> Lenses(string anchor, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
         inner.Lenses(anchor, read, depth, scope, cancellationToken);
 
     public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
         inner.LensesOf(anchors, read, depth, scope, cancellationToken);
+
+    public ValueTask<Result<SubgraphView>> Subgraph(SubgraphQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        inner.Subgraph(query, scope, cancellationToken);
 
     public ValueTask<Result<CodeView>> Code(IReadOnlyList<string> anchors, bool draft, string? mapVersion, ContextScope scope, CancellationToken cancellationToken) =>
         inner.Code(anchors, draft, mapVersion, scope, cancellationToken);

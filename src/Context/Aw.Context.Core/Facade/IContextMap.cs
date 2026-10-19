@@ -1,6 +1,5 @@
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Map;
-using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
 using Aw.Kernel;
 
@@ -8,9 +7,9 @@ namespace Aw.Context.Core.Facade;
 
 /// <summary>
 /// The map part of the facade (spec Phase 3, stage S-3a): import, export, status, the doctor checks and the purge; stage S-4 adds the build, the review, the promote and the scoping proposals.
-/// IContextEngine extends it; Sindri calls these through IContextEngine only. Reads take the same ContextScope as the rest of the engine.
+/// IContextEngine extends it, and so does IScopeProposals (the scoping run's proposals and their withdrawal); Sindri calls these through IContextEngine only. Reads take the same ContextScope as the rest of the engine.
 /// </summary>
-public interface IContextMap
+public interface IContextMap : IScopeProposals
 {
     /// <summary>Reads and checks a map file without writing anything: what 'context map import' shows before asking for the hash.</summary>
     /// <param name="path">The file.</param>
@@ -114,18 +113,4 @@ public interface IContextMap
     /// <param name="cancellationToken">Cancels the call.</param>
     /// <returns>The new current version, or SND-CONTEXT-001/004/046 (no draft, or undecided items).</returns>
     public ValueTask<Result<MapPromoted>> Promote(ContextScope scope, CancellationToken cancellationToken);
-
-    /// <summary>Writes a scoping run's surfaces as 'propose' rows in the latest draft (opening one as a copy of current when there is none); never changes current.</summary>
-    /// <param name="proposal">The run's surfaces.</param>
-    /// <param name="scope">The profile's context section and repos, and the caller.</param>
-    /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>What was written, or SND-CONTEXT-001/004/030/045.</returns>
-    public ValueTask<Result<ProposeResult>> Propose(ScopeProposal proposal, ContextScope scope, CancellationToken cancellationToken);
-
-    /// <summary>Where each surface a scoping run proposed stands: mapped, new or unmapped.</summary>
-    /// <param name="run">The run's id.</param>
-    /// <param name="scope">The profile's context section and repos, and the caller.</param>
-    /// <param name="cancellationToken">Cancels the call.</param>
-    /// <returns>The view, or SND-CONTEXT-001/004/030.</returns>
-    public ValueTask<Result<ProposalsView>> Proposals(string run, ContextScope scope, CancellationToken cancellationToken);
 }

@@ -9,7 +9,7 @@ namespace Aw.Sindri.Tests.Cqrs;
 
 /// <summary>
 /// ARCH-CQRS-001 (API spec §2.5) over the endpoint data source, since minimal-API lambdas are invisible to ArchUnitNET:
-/// every GET resolves an IService whose request is an IQuery; every POST one whose request is an ICommand, or an IIssue
+/// every GET and every QUERY (the HTTP method for a read with a body) resolves an IService whose request is an IQuery; every POST one whose request is an ICommand, or an IIssue
 /// on one of the four carve-out routes with catalog rows of class 'issue'. Pure: each violation is one line.
 /// The MCP endpoint (/sindri/mcp, API spec §8) is a transport, not a route: the SDK maps it, and each of its tools calls
 /// one query service (Host/Mcp/McpToolTable), so it's skipped here.
@@ -74,7 +74,8 @@ internal static partial class EndpointCqrsRules
             var problem = request is null ? "resolves no IService<TRequest, _>; bind one service and call it"
                 : route.StartsWith("GET ", StringComparison.Ordinal) ? (Is(request, typeof(IQuery<>)) ? null : $"serves {request.Name}, which isn't an IQuery<>; a GET is a query")
                 : route.StartsWith("POST ", StringComparison.Ordinal) ? Post(route, request, catalog)
-                : "is neither a GET (query) nor a POST (command)";
+                : route.StartsWith("QUERY ", StringComparison.Ordinal) ? (Is(request, typeof(IQuery<>)) ? null : $"serves {request.Name}, which isn't an IQuery<>; a QUERY is a query")
+                : "is neither a GET or QUERY (query) nor a POST (command)";
             if (problem is not null)
             {
                 yield return $"{Rule}: {route} {problem}";

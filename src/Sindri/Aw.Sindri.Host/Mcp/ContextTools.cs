@@ -1,7 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Context.Core;
-using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
 using Aw.Kernel;
 using Aw.Kernel.Services;
@@ -28,7 +27,8 @@ internal static class ContextTools
 
     private const string HopsText = "The cascade hops, a comma list of state, flow, dependency and component; default state, flow and dependency";
 
-    private static readonly string[] _texts = ["q", "node", "item", "symbol", "diff", "hops"];
+    private static readonly string[] _texts = ["q", "node", "item", "symbol", "diff", "hops", "mapVersion"];
+    private static readonly string[] _lensesArguments = ["anchor", "anchors", "mapVersion", "hops"];
     private static readonly string[] _numbers = ["depth", "budget"];
 
     /// <summary>context_query's definition.</summary>
@@ -47,6 +47,7 @@ internal static class ContextTools
             ["depth"] = Property("integer", "Cascade depth (at most 4)", minimum: 0),
             ["hops"] = Property("string", HopsText),
             ["budget"] = Property("integer", "Token budget for the answer", minimum: 1),
+            ["mapVersion"] = Property("string", "A retained map version to read as of, such as v3; omit for the current map"),
         }),
         Annotations = new ToolAnnotations { ReadOnlyHint = true, OpenWorldHint = false },
     };
@@ -69,8 +70,16 @@ internal static class ContextTools
         InputSchema = Schema(new JsonObject
         {
             ["anchor"] = Property("string", "A product-graph node key, name or alias"),
+            ["anchors"] = new JsonObject
+            {
+                ["type"] = "array",
+                ["description"] = "Up to 20 node keys, names or aliases: the union of their lenses (schema 2) when several are distinct; give anchor or anchors",
+                ["items"] = new JsonObject { ["type"] = "string" },
+                ["maxItems"] = 20,
+            },
+            ["mapVersion"] = Property("string", "A retained map version to read as of, such as v3; omit for the current map"),
             ["hops"] = Property("string", HopsText),
-        }, required: ["anchor"]),
+        }),
         Annotations = new ToolAnnotations { ReadOnlyHint = true, OpenWorldHint = false },
     };
 
@@ -81,38 +90,82 @@ internal static class ContextTools
     /// <returns>The tool result.</returns>
     internal static async ValueTask<CallToolResult> CallLenses(IServiceProvider services, IDictionary<string, JsonElement>? arguments, CancellationToken ct)
     {
-        var request = BindLenses(arguments);
-        if (request.IsError)
+        var bound = BindLenses(arguments);
+        if (bound.IsError)
         {
-            return McpResults.Failure(services, request.Error);
+            return McpResults.Failure(services, bound.Error);
         }
 
-        var answer = await services.GetRequiredService<IService<GetContextLensesRequest, LensesView>>().Handle(request.Value, ct).ConfigureAwait(false);
-        return McpResults.From(services, answer, McpSummaries.Lenses);
+        var answer = await services.GetRequiredService<IService<GetContextLensesAnswerRequest, LensesAnswer>>().Handle(bound.Value, ct).ConfigureAwait(false);
+        if (answer.IsError)
+        {
+            return McpResults.Failure(services, answer.Error);
+        }
+
+        return answer.Value.Many is { } many
+            ? McpResults.Success(services, many, McpSummaries.LensesSet(many))
+            : McpResults.Success(services, answer.Value.One!, McpSummaries.Lenses(answer.Value.One!));   // why: exactly one of One and Many is set
     }
 
-    /// <summary>The context_lenses arguments as a request; SND-CONTEXT-022 for a missing anchor, an unknown name or a wrong type.</summary>
-    private static Result<GetContextLensesRequest> BindLenses(IDictionary<string, JsonElement>? arguments)
+    /// <summary>The lenses arguments as a request: 'anchor' then 'anchors' (in order), an optional 'mapVersion'; SND-CONTEXT-022 for anything else. The draft map is never read over MCP.</summary>
+    private static Result<GetContextLensesAnswerRequest> BindLenses(IDictionary<string, JsonElement>? arguments)
     {
-        var unknown = (arguments?.Keys ?? []).FirstOrDefault(k => !string.Equals(k, "anchor", StringComparison.Ordinal) && !string.Equals(k, "hops", StringComparison.Ordinal));
+        var args = arguments ?? new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+        var unknown = args.Keys.FirstOrDefault(k => !_lensesArguments.Contains(k, StringComparer.Ordinal));
         if (unknown is not null)
         {
-            return ContextErrors.McpArgumentsInvalid.With($"context_lenses has no argument '{unknown}' (fix: anchor and hops only; the draft map is never read over MCP)");
+            return ContextErrors.McpArgumentsInvalid.With($"context_lenses has no argument '{unknown}' (fix: anchor, anchors, mapVersion, hops; the draft map is never read over MCP)");
         }
 
-        if (arguments is null || !arguments.TryGetValue("anchor", out var anchor) || anchor.ValueKind != JsonValueKind.String || string.IsNullOrWhiteSpace(anchor.GetString()))
+        var anchors = new List<string>();
+        var mapVersion = (string?)null;
+        var hops = (string?)null;
+        var wrong = args.FirstOrDefault(a => a.Value.ValueKind != JsonValueKind.Null && !Take(a.Key, a.Value, anchors, ref mapVersion, ref hops));
+        if (wrong.Key is not null)
         {
-            return ContextErrors.McpArgumentsInvalid.With("context_lenses needs 'anchor', a node key, name or alias (fix: call it with {\"anchor\": \"feature:tabs\"})");
+            return ContextErrors.McpArgumentsInvalid.With($"'{wrong.Key}' has the wrong type (fix: see the tool's input schema)");
         }
 
-        var hops = LensHops(arguments);
-        return hops.IsError ? hops.Error : new GetContextLensesRequest(anchor.GetString()!, Hops: hops.Value);   // why: the anchor check found a non-blank string
+        return anchors.Count == 0 || anchors.Exists(string.IsNullOrWhiteSpace)
+            ? ContextErrors.McpArgumentsInvalid.With("context_lenses needs 'anchor', a node key, name or alias (fix: call it with {\"anchor\": \"feature:tabs\"}, or 'anchors' for several)")
+            : new GetContextLensesAnswerRequest(anchors, Draft: false, Depth: null, mapVersion, hops);
     }
 
-    private static Result<string?> LensHops(IDictionary<string, JsonElement> arguments) =>
-        !arguments.TryGetValue("hops", out var value) || value.ValueKind == JsonValueKind.Null ? (string?)null
-        : value.ValueKind == JsonValueKind.String ? value.GetString()
-        : ContextErrors.McpArgumentsInvalid.With("'hops' must be a string, a comma list of state, flow, dependency and component (fix: see the tool's input schema)");
+    /// <summary>One lenses argument into the anchors (a single 'anchor' first) or the map version; false for a wrong type.</summary>
+    private static bool Take(string name, JsonElement value, List<string> anchors, ref string? mapVersion, ref string? hops)
+    {
+        if (string.Equals(name, "anchors", StringComparison.Ordinal))
+        {
+            var items = value.ValueKind == JsonValueKind.Array ? value.EnumerateArray().ToList() : [];
+            if (value.ValueKind != JsonValueKind.Array || !items.TrueForAll(e => e.ValueKind == JsonValueKind.String))
+            {
+                return false;   // checked before any GetString: a number or null item is a wrong type, not a throw
+            }
+
+            anchors.AddRange(items.Select(e => e.GetString() ?? string.Empty));
+            return true;
+        }
+
+        if (value.ValueKind != JsonValueKind.String)
+        {
+            return false;
+        }
+
+        if (string.Equals(name, "anchor", StringComparison.Ordinal))
+        {
+            anchors.Insert(0, value.GetString() ?? string.Empty);
+        }
+        else if (string.Equals(name, "hops", StringComparison.Ordinal))
+        {
+            hops = value.GetString();
+        }
+        else
+        {
+            mapVersion = value.GetString();
+        }
+
+        return true;
+    }
 
     /// <summary>Runs context_query.</summary>
     /// <param name="services">The request's services.</param>
@@ -164,7 +217,7 @@ internal static class ContextTools
         }
 
         return new QueryContextRequest(Get(texts, "q"), Get(texts, "node"), Get(texts, "item"), Get(texts, "symbol"),
-            numbers.TryGetValue("depth", out var depth) ? depth.ToString(System.Globalization.CultureInfo.InvariantCulture) : null, numbers.TryGetValue("budget", out var budget) ? budget.ToString(System.Globalization.CultureInfo.InvariantCulture) : null, Diff: Get(texts, "diff"), Hops: Get(texts, "hops"));
+            numbers.TryGetValue("depth", out var depth) ? depth.ToString(System.Globalization.CultureInfo.InvariantCulture) : null, numbers.TryGetValue("budget", out var budget) ? budget.ToString(System.Globalization.CultureInfo.InvariantCulture) : null, Diff: Get(texts, "diff"), Hops: Get(texts, "hops"), MapVersion: Get(texts, "mapVersion"));
     }
 
     /// <summary>One argument into its map; false for an unknown name or a wrong type. An optional argument sent as null is absent.</summary>
@@ -197,7 +250,7 @@ internal static class ContextTools
     private static string Invalid(string name, JsonElement value) =>
         _texts.Contains(name, StringComparer.Ordinal) || _numbers.Contains(name, StringComparer.Ordinal)
             ? $"'{name}' must be {(_texts.Contains(name, StringComparer.Ordinal) ? "a string" : "an integer")}, got {value.ValueKind.ToString().ToLowerInvariant()} (fix: see the tool's input schema)"
-            : $"context_query has no argument '{name}' (fix: q, node, item, symbol, diff, depth, hops, budget)";
+            : $"context_query has no argument '{name}' (fix: q, node, item, symbol, diff, depth, hops, mapVersion, budget)";
 
     /// <summary>An object schema with these properties and no others.</summary>
     internal static JsonElement Schema(JsonObject properties, string[]? required = null)

@@ -1,10 +1,12 @@
 using Aw.Context.Core.Code;
 using Aw.Context.Core.Eval.MapQuality;
+using Aw.Context.Core.Facade;
 using Aw.Context.Core.History;
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Locks;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.Subgraph;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Locks;
 using Aw.Sindri.Core.Scheduling;
@@ -18,11 +20,12 @@ namespace Aw.Sindri.Features;
 /// <summary>Registers the context engine's slices, split from <see cref="SindriFeaturesServiceCollectionExtensions"/> to keep each file under the line cap.</summary>
 internal static class ContextSlicesServiceCollectionExtensions
 {
-    /// <summary>The context engine's slices (stages S-3 and S-4): the review, promote and proposals commands and the reads of the map, lenses and filemap.</summary>
+    /// <summary>The context engine's slices (stages S-3 and S-4): the review, promote and proposals commands and the reads of the map, lenses, subgraph and filemap.</summary>
     internal static IServiceCollection AddContextSlices(this IServiceCollection services)
     {
         _ = services
             .AddScoped<ContextScopes>()
+            .AddScoped<IScopeProposals>(static sp => sp.GetRequiredService<IContextEngine>())
             .AddScoped<ContextChallenges>()
             .AddScoped<IScheduledService, ContextDocsRefreshService>()
             .AddScoped<IScheduledService, ContextPurgeService>()
@@ -44,6 +47,7 @@ internal static class ContextSlicesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<GetContextFileMapRequest>, AcceptAllValidator<GetContextFileMapRequest>>().AddQuery<GetContextFileMapRequest, FileMapView, GetContextFileMapService>();
         _ = services.AddScoped<IValidator<GetContextLensesRequest>, AcceptAllValidator<GetContextLensesRequest>>().AddQuery<GetContextLensesRequest, LensesView, GetContextLensesService>();
         _ = services.AddScoped<IValidator<GetContextLensesSetRequest>, AcceptAllValidator<GetContextLensesSetRequest>>().AddQuery<GetContextLensesSetRequest, LensesSetView, GetContextLensesSetService>();
+        _ = services.AddScoped<IValidator<GetContextSubgraphRequest>, AcceptAllValidator<GetContextSubgraphRequest>>().AddQuery<GetContextSubgraphRequest, SubgraphView, GetContextSubgraphService>();
         _ = services.AddScoped<IValidator<GetContextCodeRequest>, AcceptAllValidator<GetContextCodeRequest>>().AddQuery<GetContextCodeRequest, CodeView, GetContextCodeService>();
         _ = services.AddScoped<IValidator<GetContextLensesAnswerRequest>, AcceptAllValidator<GetContextLensesAnswerRequest>>().AddQuery<GetContextLensesAnswerRequest, LensesAnswer, GetContextLensesAnswerService>();
         _ = services.AddScoped<IValidator<GetContextHistoryRequest>, AcceptAllValidator<GetContextHistoryRequest>>().AddQuery<GetContextHistoryRequest, HistoryView, GetContextHistoryService>();
