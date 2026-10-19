@@ -8,6 +8,7 @@ The recipes Sindri ships. Each is a YAML state machine (`docs/csharp/sindri-work
 | `workflow.step` | Produce, check, verify one Step | engine spec §12 |
 | `workflow.scoping` | Station 1 of the line: scope a brief, tracker item, idea or change; interview; challenge; park at the owner's stop with a scope packet | scoping spec §6.1 |
 | `workflow.idea-to-brief` | Block recipe, the child of `workflow.scoping`'s `idea` branch: a short interview turns an idea into a cited brief | scoping spec §6.2 |
+| `workflow.line` | The line, with sequential stations (LN-WF8): waits on `workflow.scoping`, `workflow.design` (again after a plan sent back), `workflow.plan`, and one `workflow.phase` as children; ends `done`, `dropped` or `stuck`. Parallel phase dispatch comes with LN-WF1; until then it runs the plan's `fact:phasePackets` as the one phase | line spec §3.5, LN-WF8 |
 | `workflow.design` | Station 2 of the line: one spec draft from a frozen scope packet in the style pack, reviewed through the lens pack until no CRITICAL or HIGH finding is left; a candidate design packet | line spec §4, C.1 |
 | `workflow.plan` | Station 3 of the line: the phase graph, executability review and hidden scenarios for a candidate design; the owner's after-design stop; freezes design, plan and phase packets | line spec §6, C.2 |
 | `workflow.build` | Station 4 of the line: one TDD builder per phase in its worktree (red tests, green code, scope gate, owner-granted scope amendments) | line spec §7.2 |
@@ -59,7 +60,7 @@ The small recipes that bugfix and spec-to-PR runs are built from. Each is a chil
 
 - A route (`step.judge.choose`) has its desk twin (`step.desk.choose`), and a failed route Step goes to the desk.
 - A child wait routes `cancelled` on its own transition, which records nothing.
-- `workflow.evidence` nests two deep (evidence, evidence-all, evidence-ui), inside the limit of 4 (`RCP-CHILD-003`).
+- `workflow.evidence` nests two deep (evidence, evidence-all, evidence-ui), inside the limit of 5 (`RCP-CHILD-003`); the line's chain line → phase → prove → evidence → evidence-all → evidence-ui sits at the limit.
 - A parent keeps only the summaries its children's every path proves, so a parent waiting on `workflow.evidence` receives `evidenceSummary` on `resolved` only (`RCP-WIRE-003`). The instance's own facts carry it as well when a leaf child fails.
 - `workflow.evidence`'s unresolved terminals (owner, 2026-10-17):
   - `failed`: a single leaf ran and did not hold. For `other`, that means no evidence was found.
