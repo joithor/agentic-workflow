@@ -85,6 +85,7 @@ public sealed class ScopingShowTests
 
         Assert.True(view.OpenInContext.Enabled);
         Golden.Match(JsonSerializer.Serialize(view, _indented) + "\n", typeof(ScopingShowTests).Assembly, "Golden/Scoping/expiry-stop.view.json", Normalization.None);
+        Golden.Match(JsonSerializer.Serialize(view, _indented) + "\n", typeof(ScopingShowTests).Assembly, "Golden/Api/workflow-instance-scoping/expiry-stop.json", Normalization.None);   // API2 serves this view as is
     }
 
     [Theory, Trait("Lane", "unit")]

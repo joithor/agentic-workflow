@@ -186,6 +186,119 @@ public sealed class ScopingCommandTests : IDisposable
         Assert.False(Directory.Exists(Path.Combine(worktree, "out")));
     }
 
+    private string Out => Path.Combine(_home.Path, "run");
+
+    private async Task<string> Repo(string path, string content)
+    {
+        var root = Path.Combine(_home.Path, "repo");
+        var file = Path.Combine(root, path);
+        _ = Directory.CreateDirectory(Path.GetDirectoryName(file)!);
+        await File.WriteAllTextAsync(file, content, TestContext.Current.CancellationToken);
+        return root;
+    }
+
+    private Task ReadBriefInput(string path) => Put(new ScopingFacts
+    {
+        ["scopeInput"] = $$"""{"kind":"brief","repo":"fixture-notes","path":"{{path}}"}""",
+        ["contextQuery"] = ScopingFacts.View("contextQuery"),
+    });
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Desk_read_brief_reads_the_file_under_the_repo_root_and_writes_the_brief_and_anchors()
+    {
+        var root = await Repo("briefs/expiry.md", "# Shared links expire\n\nA shared link stays open for ever.\n");
+        await ReadBriefInput("briefs/expiry.md");
+
+        Assert.Equal(0, await Run("scoping", "desk", "read-brief", "--facts", Facts, "--out", Out, "--repo-root", root, "--json"));
+
+        var brief = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(Out, "brief.json"), TestContext.Current.CancellationToken))!;
+        Assert.Equal("Shared links expire", brief["subject"]!.GetValue<string>());
+        Assert.Equal("briefs/expiry.md", brief["refs"]![0]!["key"]!.GetValue<string>());
+        Assert.Matches("^sha256:[0-9a-f]{12}$", brief["refs"]![0]!["version"]!.GetValue<string>());
+        Assert.True(File.Exists(Path.Combine(Out, "anchors.json")));
+        using var report = JsonDocument.Parse(_out.ToString());
+        Assert.Equal("read", report.RootElement.GetProperty("outcome").GetString());
+    }
+
+    [Theory, Trait("Lane", "integration")]
+    [InlineData("../outside.md")]
+    [InlineData(".env")]
+    [InlineData("secrets/key.pem")]
+    [InlineData(".git/config")]
+    public async Task Desk_read_brief_refuses_a_path_outside_the_roots_or_under_a_denied_glob_with_SND_SCOPING_004(string path)
+    {
+        var root = await Repo("briefs/expiry.md", "# x\n");
+        _ = await Repo(path.Replace("../", string.Empty, StringComparison.Ordinal), "TOKEN=1\n");
+        await File.WriteAllTextAsync(Path.Combine(_home.Path, "outside.md"), "# outside\n", TestContext.Current.CancellationToken);
+        await ReadBriefInput(path);
+
+        Assert.Equal(2, await Run("scoping", "desk", "read-brief", "--facts", Facts, "--out", Out, "--repo-root", root));
+
+        Assert.Contains("SND-SCOPING-004", _error.ToString(), StringComparison.Ordinal);
+        Assert.Contains("(fix: ", _error.ToString(), StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(Out, "brief.json")));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Desk_read_brief_follows_no_symlink_out_of_the_root()
+    {
+        var root = await Repo("briefs/expiry.md", "# x\n");
+        await File.WriteAllTextAsync(Path.Combine(_home.Path, "outside.md"), "# outside\n", TestContext.Current.CancellationToken);
+        _ = File.CreateSymbolicLink(Path.Combine(root, "briefs", "link.md"), Path.Combine(_home.Path, "outside.md"));
+        await ReadBriefInput("briefs/link.md");
+
+        Assert.Equal(2, await Run("scoping", "desk", "read-brief", "--facts", Facts, "--out", Out, "--repo-root", root));
+
+        Assert.Contains("SND-SCOPING-004", _error.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Desk_read_brief_refuses_a_file_reached_through_a_symlinked_directory_that_leaves_the_root()
+    {
+        var root = await Repo("briefs/expiry.md", "# x\n");
+        var outside = Path.Combine(_home.Path, "elsewhere");
+        _ = Directory.CreateDirectory(outside);
+        await File.WriteAllTextAsync(Path.Combine(outside, "secret.md"), "# outside\n", TestContext.Current.CancellationToken);
+        _ = Directory.CreateSymbolicLink(Path.Combine(root, "docs"), outside);
+        await ReadBriefInput("docs/secret.md");
+
+        Assert.Equal(2, await Run("scoping", "desk", "read-brief", "--facts", Facts, "--out", Out, "--repo-root", root));
+
+        Assert.Contains("SND-SCOPING-004", _error.ToString(), StringComparison.Ordinal);
+        Assert.False(File.Exists(Path.Combine(Out, "brief.json")));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Desk_read_brief_reads_through_a_symlinked_directory_that_stays_inside_the_root()
+    {
+        var root = await Repo("briefs/expiry.md", "# Inside\n");
+        _ = Directory.CreateSymbolicLink(Path.Combine(root, "docs"), Path.Combine(root, "briefs"));
+        await ReadBriefInput("docs/expiry.md");
+
+        Assert.Equal(0, await Run("scoping", "desk", "read-brief", "--facts", Facts, "--out", Out, "--repo-root", root));
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Desk_gather_takes_the_three_views_as_files_and_writes_lenses_and_coverage()
+    {
+        await Put(new ScopingFacts { ["anchors"] = ScopingFacts.Expiry()["anchors"] });
+        var views = Path.Combine(_home.Path, "views");
+        _ = Directory.CreateDirectory(views);
+        foreach (var name in new[] { "lensesView", "codeView", "historyView" })
+        {
+            await File.WriteAllTextAsync(Path.Combine(views, name + ".json"), ScopingFacts.View(name), TestContext.Current.CancellationToken);
+        }
+
+        Assert.Equal(0, await Run("scoping", "desk", "gather", "--facts", Facts, "--out", Out,
+            "--lenses", Path.Combine(views, "lensesView.json"), "--code", Path.Combine(views, "codeView.json"), "--history", Path.Combine(views, "historyView.json")));
+
+        Assert.True(File.Exists(Path.Combine(Out, "lenses.json")));
+        Assert.True(File.Exists(Path.Combine(Out, "coverage.json")));
+        var report = JsonNode.Parse(await File.ReadAllTextAsync(Path.Combine(Out, "report.json"), TestContext.Current.CancellationToken))!;
+        Assert.Equal("gathered", report["outcome"]!.GetValue<string>());
+        Assert.Equal("coverage.json", report["outputs"]!["fact:coverage"]!.GetValue<string>());
+    }
+
     [Theory, Trait("Lane", "integration")]
     [InlineData("check")]
     [InlineData("show")]
