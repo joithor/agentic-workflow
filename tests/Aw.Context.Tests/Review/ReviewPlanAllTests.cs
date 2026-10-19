@@ -66,17 +66,59 @@ public sealed class ReviewPlanAllTests
             OnLink(ReviewVerb.Accept, "code:src/tabs/GroupList.ts", "feature:tabs.groups"),
             On(ReviewVerb.Accept, "surface:command/close-tab"),
         ],
+        _ => OddSequence(name),
+    };
+
+    // The sequences that run on an odd draft (DraftFor) or decide one target again across a node's reject.
+    private static IReadOnlyList<ReviewDecision> OddSequence(string name) => name switch
+    {
+        "an alias that shadows a queued node" =>
+        [
+            On(ReviewVerb.Accept, "feature:layout"),
+            On(ReviewVerb.Accept, "feature:layout"),
+            On(ReviewVerb.Reject, "feature:layout"),
+        ],
+        "a node key held twice" =>
+        [
+            On(ReviewVerb.Accept, "feature:layout"),
+            On(ReviewVerb.Accept, "feature:layout"),
+            On(ReviewVerb.Accept, "feature:layout"),
+        ],
+        "a link decided again after its node is rejected" =>
+        [
+            OnLink(ReviewVerb.Accept, "code:src/layout/Panes.ts", "feature:layout"),
+            On(ReviewVerb.Reject, "feature:layout"),
+            OnLink(ReviewVerb.Accept, "code:src/layout/Panes.ts", "feature:layout"),
+            OnLink(ReviewVerb.Reject, "code:src/tabs/Groups.ts", "feature:tabs.groups"),
+            On(ReviewVerb.Reject, "feature:tabs.groups"),
+            OnLink(ReviewVerb.Accept, "code:src/tabs/Groups.ts", "feature:tabs.groups"),
+        ],
         _ => throw new ArgumentOutOfRangeException(nameof(name), name, "no such sequence"),
     };
+
+    // The draft each sequence runs on: the shared sample, or one with an odd shape the applier treats its own way.
+    private static GraphSnapshot DraftFor(string name)
+    {
+        var draft = SampleDrafts.Draft();
+        return name switch
+        {
+            "an alias that shadows a queued node" => draft with { Aliases = [new NodeAlias(SampleDrafts.Key("feature:layout"), SampleDrafts.Key("feature:tabs.groups"))] },
+            "a node key held twice" => draft with { Nodes = [.. draft.Nodes, draft.Resolve(SampleDrafts.Key("feature:layout"))! with { Label = "Layout again" }] },   // why: the sample holds it
+            _ => draft,
+        };
+    }
 
     // Planning a whole file at once must decide exactly what planning it entry by entry decides: the same rows, the same skipped lines.
     [Theory, Trait("Lane", "unit")]
     [InlineData("nodes, edits and a stale link")]
     [InlineData("links first, then their nodes")]
+    [InlineData("an alias that shadows a queued node")]
+    [InlineData("a node key held twice")]
+    [InlineData("a link decided again after its node is rejected")]
     public void Planning_a_file_at_once_writes_and_skips_what_planning_each_entry_alone_does(string name)
     {
         var decisions = Sequence(name);
-        var basis = new ReviewBasis(SampleDrafts.Draft(), [SampleDrafts.Row(OverrideAction.Accept, "surface:command/switch-tab", at: SampleDrafts.At.AddDays(-1))]);
+        var basis = new ReviewBasis(DraftFor(name), [SampleDrafts.Row(OverrideAction.Accept, "surface:command/switch-tab", at: SampleDrafts.At.AddDays(-1))]);
 
         var (rows, skipped) = OneByOne(decisions, basis);
         var (plannedRows, plannedSkipped) = ReviewPlanner.PlanAll(decisions, basis, Who, SampleDrafts.At, TestContext.Current.CancellationToken);
