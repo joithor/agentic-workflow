@@ -92,6 +92,11 @@ public static partial class TransitionDecision
             return new Entered(scope.Rules.Suspend(entered, NoRuntime(step.Use, scope.Actor)), entry, [], [], []);
         }
 
+        if (!scope.Context.LegacyBudgetPark && BudgetRules.Exhausted(entered, scope.Recipe) is { } question)
+        {
+            return new Entered(scope.Rules.Suspend(entered, BudgetRules.StartPark(question, scope.Actor)), entry, [], [], []);   // a kept report spent the budget: this Step does not start
+        }
+
         FollowUp[] start = entered.Frame.Run is { } run ? [new(FollowUpKind.StartRun, entered.Id, run.Token, step.Use, Answer: null)] : [];
         return new Entered(entered, entry, [], [], start);
     }

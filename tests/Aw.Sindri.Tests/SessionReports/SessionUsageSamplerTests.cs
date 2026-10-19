@@ -45,6 +45,30 @@ public sealed class SessionUsageSamplerTests
     }
 
     [Fact]
+    public async Task A_sample_names_its_cache_reads_beside_the_input_total()
+    {
+        await Running();
+        _used[_agentSession] = [new ModelTokens("m", Input: 10, CacheRead: 5, CacheWrite: 1, Output: 7), new ModelTokens("n", Input: 1, CacheRead: 20, CacheWrite: 0, Output: 1)];
+
+        _ = await Sampler().Sample(Token);
+
+        var payload = _s.Views.Slice.Events.Payload<SessionUsage>(Assert.Single(_s.Views.Slice.Store.Events)).Value;
+        Expect.Equal((37L, 25L), (payload.InputTokens, payload.CacheReadTokens));
+    }
+
+    [Fact]
+    public async Task A_sample_with_no_cache_reads_leaves_the_field_out()
+    {
+        await Running();
+        _used[_agentSession] = [new ModelTokens("m", 10, 0, 0, 7)];
+
+        _ = await Sampler().Sample(Token);
+
+        var payload = _s.Views.Slice.Events.Payload<SessionUsage>(Assert.Single(_s.Views.Slice.Store.Events)).Value;
+        Assert.Null(payload.CacheReadTokens);
+    }
+
+    [Fact]
     public async Task Unchanged_totals_write_nothing_and_changed_ones_write_the_next_sample()
     {
         await Running();

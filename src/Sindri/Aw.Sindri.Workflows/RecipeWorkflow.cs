@@ -104,6 +104,7 @@ internal sealed partial class RecipeWorkflow
         _children = Workflow.Patched("p7-children");   // engine P7: gates, the slot stub (and, as the units land, children and cleanup); right after dt-j-block-runtime, before any await; a history without it replays exactly as recorded
         // P8: right after the DT-J marker, before any other command; a history that began before the agent runtime has no marker, so it replays with no agent map and stays on the desk exactly as recorded (kept until the cutover)
         var agentRuntime = Workflow.Patched("p8-agent-runtime");
+        var keepsReport = Workflow.Patched("token-budget-keeps-report-v1");   // an accepted report over budget keeps its transition (the next Step start parks); a history without the marker parks on the report as it did
         var loaded = await Workflow.ExecuteLocalActivityAsync(
             (RunStepActivities a) => a.LoadRecipeAsync(start.Recipe),
             new LocalActivityOptions { StartToCloseTimeout = TimeSpan.FromSeconds(30) }).ConfigureAwait(true);
@@ -114,7 +115,7 @@ internal sealed partial class RecipeWorkflow
         _eventHold = loaded.EventHold;
         _dispatchDelay = loaded.DispatchDelay;
         var runtimes = Runtimes(loaded, blockRuntime, agentRuntime);
-        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, runtimes, pins.Resolver()) { DeskTimeout = loaded.DeskTimeout };
+        var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, runtimes, pins.Resolver()) { DeskTimeout = loaded.DeskTimeout, LegacyBudgetPark = !keepsReport };
         _context = new Interpreting(loaded.Recipe, decisions);
         (_repo, _repoUnreadable) = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : (null, false);
         (_subject, _contents) = await NamedSubject(_recipe, start).ConfigureAwait(true);
