@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Workflow.Engine;
 namespace Aw.Sindri.Core.Launches;
 
 /// <summary>Ends a live launch's session as an exit when the launcher stops it, so the launch stops being live at once and the silence sweep never marks it lost.</summary>
+/// <remarks>It reads the projected view, so a launch stopped right after its start was appended (projector behind) is left to the silence sweep. The end reads the final tokens for up to <see cref="LaunchSessionEvents.FinalTokensBudget"/> while the launcher holds the launch's gate.</remarks>
 /// <param name="session">The session events: the one 'session.ended' path (its key makes a second end record nothing).</param>
 /// <param name="views">The 'launches' view: only a live launch is ended, so a launch that never started or already ended gets no event.</param>
 public sealed class LaunchStopEnd(LaunchSessionEvents session, ILaunchViews views)
