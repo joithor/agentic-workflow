@@ -1,7 +1,7 @@
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Step;
 
-namespace Aw.Sindri.Features.Scoping.Steps;
+namespace Aw.Sindri.Features;
 
 /// <summary>'step.scope.challenge-log', on the block runtime: <see cref="ScopingSteps.ChallengeLog"/>'s code behind <see cref="IBlockStep"/>.</summary>
 internal sealed class ChallengeLogStep() : ScopingCodeStep(Descriptor), IDescribedBlock

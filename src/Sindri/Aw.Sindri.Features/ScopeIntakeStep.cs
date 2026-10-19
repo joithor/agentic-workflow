@@ -1,7 +1,7 @@
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Step;
 
-namespace Aw.Sindri.Features.Scoping.Steps;
+namespace Aw.Sindri.Features;
 
 /// <summary>'step.scope.intake', on the block runtime: <see cref="ScopingSteps.Intake"/>'s code behind <see cref="IBlockStep"/>.</summary>
 internal sealed class ScopeIntakeStep() : ScopingCodeStep(Descriptor), IDescribedBlock

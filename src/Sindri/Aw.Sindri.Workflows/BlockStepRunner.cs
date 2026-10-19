@@ -138,7 +138,7 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
         BlockDescriptor? descriptor, Dictionary<string, JsonElement> arguments, BlockStepRun run, CancellationToken cancellationToken)
     {
         var named = new Dictionary<FactKey, JsonElement>();
-        foreach (var key in FactsNamed(descriptor, arguments))
+        foreach (var key in (descriptor?.Inputs ?? []).Concat(FactsNamed(descriptor, arguments)).Distinct())
         {
             if (!run.Facts.TryGetValue(key, out var fact))
             {
@@ -177,7 +177,7 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
 
     private static BlockStepOutcome Failed(string reason) => new(Outcome: null, Outputs: null, Decision: null, reason);
 
-    // The fact keys the Step's list parameter (InputsFrom, 'facts') names.
+    // The fact keys the Step's list parameter (InputsFrom, 'facts') names; the facts its descriptor reads (Inputs) come with them.
     private static IEnumerable<FactKey> FactsNamed(BlockDescriptor? descriptor, Dictionary<string, JsonElement> arguments) =>
         descriptor?.InputsFrom is { } list && arguments.TryGetValue(list, out var names) && names.ValueKind == JsonValueKind.Array
             ? names.EnumerateArray().Where(static n => n.ValueKind == JsonValueKind.String).Select(static n => FactKey.From(n.GetString() ?? string.Empty))
