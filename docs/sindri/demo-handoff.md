@@ -382,7 +382,9 @@ To finish, in order: bring #352 up to main and restack #355, #363, #366 (merge 3
 
 ### 9c. Setup and the context map: less human-driven
 
-Three setup steps **stay human by design** (`protected` class: a typed confirmation at a terminal, refused to sessions and to the app with `SND-AUTH-002`): profile approval (API surface spec §4.1–4.2), map import and promote (API §3.7; context spec §3 "decisions stay human"), and recipe approve/revoke and token grants (engine spec W9). Onyx `up`/`down` and connecting its sources are the owner's by the Onyx spec (O3). Automation can prepare and order these, never perform them.
+Today three setup steps are `protected` (a typed confirmation at a terminal, refused to sessions and to the app with `SND-AUTH-002`): profile approval (API surface spec §4.1–4.2), map import and promote (API §3.7; context spec §3 "decisions stay human"), and recipe approve/revoke and token grants (engine spec W9). Onyx `up`/`down` and connecting its sources are the owner's by the Onyx spec (O3).
+
+**Owner decision, 2026-10-19: map import and promote, and recipe approval, must run from CI/CD with no manual step.** This changes the specs above for those verbs and needs a spec amendment (API surface §3.7 and §4, engine W9, context §3) before any code. The amendment has to say what stands in for the typed confirmation, for example: the map or recipe change is reviewed and merged as a PR in the repo, and a CI job holding a scoped Sindri credential applies exactly what was merged (content hash bound to the merge commit), recorded in the ledger as approved by that CI identity, with revoke kept available to the owner. Profile approval and token grants stay human unless the owner says otherwise.
 
 Everything else below is manual only because the automation is not built:
 
