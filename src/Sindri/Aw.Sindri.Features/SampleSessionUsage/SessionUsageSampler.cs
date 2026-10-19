@@ -1,3 +1,4 @@
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Launches;
 
@@ -53,4 +54,6 @@ internal sealed class SessionUsageSampler(LaunchLiveness liveness, ILaunchViews 
 
         return appended;
     }
+
+    public ValueTask<int> Flush(LaunchId launch, CancellationToken cancellationToken) => throw new NotSupportedException();
 }

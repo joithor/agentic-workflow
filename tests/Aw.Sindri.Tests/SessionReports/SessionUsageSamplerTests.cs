@@ -108,6 +108,43 @@ public sealed class SessionUsageSamplerTests
         Expect.Equal(0, await Sampler().Sample(Token));
     }
 
+    [Fact]
+    public async Task A_flush_samples_the_launch_before_any_tick()
+    {
+        await Running();
+        _used[_agentSession] = [new ModelTokens("m", Input: 10, CacheRead: 5, CacheWrite: 1, Output: 7)];
+
+        var appended = await Sampler().Flush(A.FirstLaunchId, Token);
+
+        var payload = _s.Views.Slice.Events.Payload<SessionUsage>(Assert.Single(_s.Views.Slice.Store.Events)).Value;
+        Expect.Equal((1, 1, 16L, 7L), (appended, payload.Sample, payload.InputTokens, payload.OutputTokens));
+    }
+
+    [Fact]
+    public async Task A_flush_of_a_launch_with_no_transcript_yet_writes_nothing()
+    {
+        await Running();
+
+        var appended = await Sampler().Flush(A.FirstLaunchId, Token);
+
+        Expect.Equal((0, 0), (appended, _s.Views.Slice.Store.Events.Count));
+    }
+
+    [Fact]
+    public async Task A_flush_and_the_tick_share_what_they_have_seen()
+    {
+        await Running();
+        _used[_agentSession] = [new ModelTokens("m", 10, 0, 0, 7)];
+        _ = await Sampler().Flush(A.FirstLaunchId, Token);
+        _s.Views.Slice.Clock.Advance(TimeSpan.FromSeconds(60));
+
+        var tick = await Sampler().Sample(Token);
+        _used[_agentSession] = [new ModelTokens("m", 20, 0, 0, 9)];
+        var flush = await Sampler().Flush(A.FirstLaunchId, Token);
+
+        Expect.Equal((0, 1, 2), (tick, flush, _s.Views.Slice.Store.Events.Count));
+    }
+
     private sealed class Used(Dictionary<SessionId, IReadOnlyList<ModelTokens>> used) : ILaunchUsage
     {
         public ValueTask<IReadOnlyList<ModelTokens>?> OfSession(AgentId target, SessionId session, CancellationToken cancellationToken) =>
