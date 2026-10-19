@@ -31,6 +31,8 @@ internal static class WorkflowRoutes
 
     internal static string Instance(string id) => $"{Root}/instances/{Uri.EscapeDataString(id)}";
 
+    internal static string Events(string id) => $"{Instance(id)}/events";
+
     internal static string Fact(string id, string key) => $"{Instance(id)}/facts/{Uri.EscapeDataString(key)}";
 
     /// <summary>GET: the recipe list (every registered recipe).</summary>

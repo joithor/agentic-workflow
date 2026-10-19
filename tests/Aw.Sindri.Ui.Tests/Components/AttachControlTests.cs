@@ -48,6 +48,17 @@ public sealed class AttachControlTests
     }
 
     [Fact]
+    public void A_served_reason_replaces_the_P10a_words_in_the_chip_and_its_name()
+    {
+        var vm = new AttachControlViewModel(new AttachInput(Project, AttachStepKind.Agent, AttachReady: false, PendingReason: "No live session to attach to"));
+
+        Assert.Equal("No live session to attach to", vm.PendingChip);
+        Assert.Equal($"Attach to {Project}: no live session to attach to", vm.PendingChipName);
+        vm.Update(new AttachInput(Project, AttachStepKind.Agent, AttachReady: false, PendingReason: "A launch is still starting"));
+        Assert.Equal("A launch is still starting", vm.PendingChip);
+    }
+
+    [Fact]
     public void Attach_is_pending_P10a_until_the_catalog_says_ready()
     {
         var vm = Agent(ready: false);
