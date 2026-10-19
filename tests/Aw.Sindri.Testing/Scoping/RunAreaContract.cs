@@ -73,6 +73,25 @@ public abstract class RunAreaContract
         Expect.True((await area.Read(Address, name, Token)).IsError);
     }
 
+    /// <summary>A name's location is absolute, ends with the name, differs by instance, and writes nothing.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_location_is_absolute_and_per_instance()
+    {
+        var area = Create();
+
+        var one = area.Location(Address, "design-packet");
+        var two = area.Location("T-2/scoping/1", "design-packet");
+
+        Expect.True(one.IsSuccess);
+        Expect.True(Path.IsPathRooted(one.Value));
+        Expect.True(one.Value.EndsWith("design-packet", StringComparison.Ordinal));
+        Expect.True(one.Value != two.Value);
+        Expect.True(area.Location(Address, "../x").IsError);
+        Expect.True(area.Location("../../etc", "design-packet").IsError);
+        Expect.Equal(string.Empty, (await area.Read(Address, "design-packet/spec.md", Token)).Value);
+    }
+
     /// <summary>A text that is no instance address is refused.</summary>
     /// <returns>The test.</returns>
     [Fact]
