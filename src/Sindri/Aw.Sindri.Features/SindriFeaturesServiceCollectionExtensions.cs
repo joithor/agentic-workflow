@@ -71,6 +71,7 @@ using Aw.Sindri.Features.OnyxUp;
 using Aw.Sindri.Features.OpenItem;
 using Aw.Sindri.Features.PauseService;
 using Aw.Sindri.Features.PingProcess;
+using Aw.Sindri.Features.Prove;
 using Aw.Sindri.Features.ReadInjection;
 using Aw.Sindri.Features.ReadLedger;
 using Aw.Sindri.Features.RebuildViews;
@@ -151,7 +152,8 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IRepoCheckouts, ProfileRepoCheckouts>()
             .AddScopingSlices()
             .AddBuildSlices()
-            .AddShipSlices();
+            .AddShipSlices()
+            .AddProveSlices();
         return services;
     }
 
