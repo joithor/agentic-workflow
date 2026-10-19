@@ -753,6 +753,8 @@ an address is the typed `InstanceAddress`), plus
 | `GET /workflow/instances?root=&open=&recipe=&subject=&state=&needsMe=` (also `item`, `urgency`, `query`, and `address=` for the one-row list that resolves an address to its id) | `ListInstances` (engine) | `InstanceList` |
 | `GET /workflow/instances/{id}` | `GetInstance` (engine) | `InstanceDetail` |
 | `GET /workflow/instances/{id}/facts/{key}` | `GetInstanceFact` | `FactView` |
+| `GET /workflow/instances/{id}/scoping` | `GetInstanceScoping` (scoping, API2) | `ScopingView` (docs/csharp/sindri-scoping.md) |
+| `GET /workflow/instances/{id}/packets/{hash}/files/{name}` | `GetPacketFile` (scoping, API9) | the file as JSON or text (docs/csharp/sindri-scoping.md) |
 | `GET /workflow/recipes/{id}` and `{id}@{hash}` | `ShowRecipe` (engine) | `RecipeView` |
 
 **What the routes serve (API P11).**
