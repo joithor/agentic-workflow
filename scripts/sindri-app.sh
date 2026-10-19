@@ -215,7 +215,8 @@ if [ -z "$mcp_repo" ]; then
   if [ -n "$gitdir" ] && [ -n "$common" ] && [ "$gitdir" != "$common" ]; then mcp_repo="$(basename "$(dirname "$common")")"; fi
 fi
 register_hint() { # waits up to 2 minutes for a live control plane, then prints the registration command (it can't run it: no terminal)
-  local i pid url cmd="sindri-app mcp register --apply --providers all${mcp_repo:+ --repo $mcp_repo}"
+  local i pid url cmd="sindri-app mcp register --apply --providers all"
+  if [ -n "$mcp_repo" ]; then cmd="$cmd --repo $(printf '%q' "$mcp_repo")"; fi   # pasteable even when the folder name has a space
   for i in $(seq 1 240); do
     pid="$(jq -r '.pid // empty' "$control" 2>/dev/null || true)"
     url="$(jq -r '.url // empty' "$control" 2>/dev/null || true)"
