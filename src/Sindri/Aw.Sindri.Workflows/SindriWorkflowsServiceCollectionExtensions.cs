@@ -51,6 +51,10 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddSingleton<IInstanceLiveness>(static sp => sp.GetRequiredService<TemporalInstanceDirectory>())    // engine P6 unit (d): a claim holder's liveness
             .AddSingleton<IRecipeWake, TemporalRecipeWake>()          // engine P6 integration: the revoke and drift wakes as the 'wake' signal (replaces P2's no-op)
             .AddSingleton<ProfileWorkflowTimes>()                    // engine P4 unit (e): S1-D11, workflow.deskTimeout and workflow.eventHold, read by LoadRecipe
+            .AddEventBridge();
+    }
+
+    private static IServiceCollection AddEventBridge(this IServiceCollection services) => services
             .AddSingleton<HeldItemEvents>()                            // engine P4: the bridge's held window (visibility lag)
             .AddSingleton<EventBridgeCursor>()                         // engine P4 unit (d): the bridge's cursor file
             .AddScoped<IScheduledService, EventBridge>()               // engine P4 unit (d): the ledger-to-Temporal bridge
@@ -100,6 +104,24 @@ public static class SindriWorkflowsServiceCollectionExtensions
     }
 
     /// <summary>The <see cref="EffectDispatch"/> registration: resolves the block AddEffect keyed by the effect's id, in its own scope.</summary>
+    /// <summary>The Step inputs' run time: the in-memory texts (no text is stored), the one runner, the FillInput activity, and the in-process Step's context (no IStep runtime ships yet).</summary>
+    private static IServiceCollection AddStepInputRuntime(this IServiceCollection services) => services
+        .AddSingleton<IInjectionTexts, MemoryInjectionTexts>()
+        .AddSingleton<InputDispatch>(static provider => (context, ct) => FillScoped(provider, context, ct))
+        .AddSingleton<IStepInputRunner, StepInputRunner>()
+        .AddSingleton<IInjectionSources, TemporalInjectionSources>()
+        .AddSingleton<StepInputActivities>()
+        .AddSingleton<StepContexts>();
+
+    private static async ValueTask<InjectionSections> FillScoped(IServiceProvider provider, StepInputContext context, CancellationToken cancellationToken)
+    {
+        var scope = provider.CreateAsyncScope();
+        await using (scope.ConfigureAwait(false))
+        {
+            return await scope.ServiceProvider.GetRequiredKeyedService<IStepInput>(context.Input.Value).Fill(context, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
     private static async ValueTask<Result<EffectDone>> DispatchScoped(IServiceProvider provider, EffectContext context, CancellationToken cancellationToken)
     {
         var scope = provider.CreateAsyncScope();
