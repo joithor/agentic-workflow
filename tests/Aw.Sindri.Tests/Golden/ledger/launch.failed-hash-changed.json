@@ -10,5 +10,8 @@
     "approved": [
       "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
     ]
-  }
+  },
+  "instance": null,
+  "state": null,
+  "attempt": null
 }

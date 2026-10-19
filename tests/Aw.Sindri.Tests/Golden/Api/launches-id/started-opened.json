@@ -31,6 +31,11 @@
   "catalogSource": "builtin",
   "argvHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "ended": null,
+  "step": {
+    "instance": null,
+    "state": null,
+    "attempt": null
+  },
   "asOf": {
     "cursor": 8,
     "ledgerHead": 8,

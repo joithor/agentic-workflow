@@ -8,5 +8,8 @@
     "reason": null,
     "current": null,
     "approved": null
-  }
+  },
+  "instance": null,
+  "state": null,
+  "attempt": null
 }

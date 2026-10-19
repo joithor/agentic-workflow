@@ -1,5 +1,6 @@
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Launches;
 
 namespace Aw.Sindri.Core.Sessions;
 
@@ -52,8 +53,9 @@ public static class SessionRows
     /// <param name="entry">Its agent's catalog entry, or null when the catalog no longer has it.</param>
     /// <param name="repoPath">The checkout path of its repo in the approved profile, or null.</param>
     /// <param name="human">True to add the human-only fields.</param>
+    /// <param name="launch">The instance, Step and attempt of the session's Sindri launch, or null when none is known.</param>
     /// <returns>The row.</returns>
-    public static SessionRow Of(ObservedSession session, AgentEntry? entry, string? repoPath, bool human)
+    public static SessionRow Of(ObservedSession session, AgentEntry? entry, string? repoPath, bool human, LaunchStep? launch = null)
     {
         ArgumentNullException.ThrowIfNull(session);
         return new SessionRow(
@@ -62,6 +64,7 @@ public static class SessionRows
         {
             Title = human ? session.Title : null,
             Pid = human ? session.Pid : null,
+            Launch = launch,
         };
     }
 
