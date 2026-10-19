@@ -652,6 +652,9 @@ Accept all 31 deterministic proposals at once? [y]es / [n]o, go through them one
 | `review merge <node> --into <node>`, `add <node> <name> [--under <node>]`, `delete <node>` | Edit nodes outside the queue | protected |
 | `context map promote` | Make the draft the current map | protected |
 
+- **Query** rows here are reads with no challenge, and still a person's: the queue, `--history` and `--export` show the
+  draft and its decisions, which a session never reads, so a session (an agent) gets `SND-CONTEXT-020` (`… is a human
+  decision: a session can't`) whether or not `context.sessions.enabled` is on.
 - **Desk** actions run from a terminal or the app: one `map_override` row each, Undo is the recovery, and a session
   (an agent) is refused with `SND-AUTH-002`. **Protected** ones need you at a terminal: the command shows what it will do and a
   challenge (`review apply-file 3f0c9a`, `promote map v14`), and you type it back. The app never runs them.
