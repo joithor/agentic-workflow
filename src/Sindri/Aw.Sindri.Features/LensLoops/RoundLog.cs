@@ -79,7 +79,7 @@ internal sealed class RoundLog
         }
 
         _ = queue.Remove(queued);
-        var round = RoundOf(rounds);
+        var round = RoundOf(rounds, lens);
         rounds.Add((JsonNode?)Entry(report, round, closes: queue.Count == 0));
         return new RoundLog(scale, rounds, queue, round, FindingsOf(rounds, round));
     }
@@ -87,6 +87,7 @@ internal sealed class RoundLog
     private static JsonObject Entry(JsonObject report, int round, bool closes)
     {
         var entry = (JsonObject)report.DeepClone();
+        _ = entry.Remove("closes");   // the log's own marker: one the agent copied from an earlier entry must not move the boundary
         entry["round"] = round;
         if (closes)
         {
@@ -112,17 +113,22 @@ internal sealed class RoundLog
     private static bool Names(JsonNode? queued, string lens) =>
         queued is JsonValue value ? value.TryGetValue<string>(out var id) && string.Equals(id, lens, StringComparison.Ordinal) : string.Equals(LoopJson.Str(queued, "id"), lens, StringComparison.Ordinal);
 
-    // A round continues while its last entry is open; a closed round (or no log) makes the next entry the first of a new one.
-    private static int RoundOf(JsonArray rounds)
+    // A round continues while its last entry is open; a closed round (or no log) makes the next entry the first of a new one, and so does a lens the open round already logged
+    // (a log whose intake kept an earlier round's entries without their 'closes').
+    private static int RoundOf(JsonArray rounds, string lens)
     {
         if (rounds.LastOrDefault() is not JsonObject last)
         {
             return 1;
         }
 
-        var round = last["round"] is JsonValue value && value.TryGetValue<int>(out var n) ? n : 1;
-        return last["closes"] is JsonValue closes && closes.TryGetValue<bool>(out var closed) && closed ? round + 1 : round;
+        var round = IntOf(last, "round") ?? 1;
+        var closed = last["closes"] is JsonValue closes && closes.TryGetValue<bool>(out var flag) && flag;
+        var repeated = rounds.OfType<JsonObject>().Any(e => IntOf(e, "round") == round && string.Equals(LoopJson.Str(e, "lens"), lens, StringComparison.Ordinal));
+        return closed || repeated ? round + 1 : round;
     }
+
+    private static int? IntOf(JsonObject entry, string name) => entry[name] is JsonValue value && value.TryGetValue<int>(out var n) ? n : null;
 
     private static List<JsonObject> FindingsOf(JsonArray rounds, int round) => [.. rounds.OfType<JsonObject>()
         .Where(e => e["round"] is JsonValue value && value.TryGetValue<int>(out var n) && n == round)

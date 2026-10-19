@@ -169,7 +169,7 @@ public sealed class LensLogStepTests
     [Fact]
     public async Task The_gold_lens_rounds_replay_as_two_rounds_of_five_lenses()
     {
-        var gold = File.ReadAllLines(Path.Combine(RepoRoot(), "tests", "fixtures", "line", "gold", "design", "expiry", "lens-rounds.jsonl")).Select(static l => JsonNode.Parse(l)!.AsObject()).ToList();
+        var gold = (await File.ReadAllLinesAsync(Path.Combine(RepoRoot(), "tests", "fixtures", "line", "gold", "design", "expiry", "lens-rounds.jsonl"), TestContext.Current.CancellationToken)).Select(static l => JsonNode.Parse(l)!.AsObject()).ToList();
         var lenses = gold.Take(5).Select(static e => e["lens"]!.GetValue<string>()).ToList();
         var rounds = "[]";
         var outcomes = new List<(int Round, string Outcome)>();
