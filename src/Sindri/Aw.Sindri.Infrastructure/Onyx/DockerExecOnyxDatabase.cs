@@ -8,12 +8,17 @@ namespace Aw.Sindri.Infrastructure.Onyx;
 
 /// <summary>
 /// IOnyxDatabase over the docker CLI: `docker ps` finds the running `relational_db` container of Sindri's compose project by its labels, then `docker exec … psql` runs one fixed, read-only query in it
-/// (the session is read-only through PGOPTIONS, and no value from outside reaches the command: the project name is checked as one Sindri made, the container id as hex). Arguments are a list, never a shell string.
+/// (no value from outside reaches the command: the project name is checked as one Sindri made, the container id as hex). Arguments are a list, never a shell string.
+/// The protection is that the query is one constant string; PGOPTIONS makes the session read-only by default as belt and braces only, since the postgres superuser could reset it.
+/// Trust boundary: a container counts only when it carries this home's compose project label, the `relational_db` service label and, when the project has files, a `project.working_dir` label equal to the directory of
+/// Sindri's compose file under `$AW_SINDRI_HOME/onyx/`. Labels are not authenticated, so someone who can start containers on this Docker daemon (root-equivalent on the box) could still forge all three; the id read is
+/// only a request, and the caller keeps the key only when Onyx's own answer lists that group as Admin. The caller runs the local-daemon guard (`OnyxFacts.DockerProblem`) first.
 /// </summary>
 /// <param name="runner">Runs the docker CLI.</param>
 internal sealed class DockerExecOnyxDatabase(IToolRunner runner) : IOnyxDatabase
 {
     private const string ProjectLabel = "com.docker.compose.project";
+    private const string WorkingDirLabel = "com.docker.compose.project.working_dir";
     private const string ServiceLabel = "com.docker.compose.service";
     private const string Service = "relational_db";
     private const string Query = "select id from user_group where is_default and name = 'Admin'";
@@ -27,7 +32,13 @@ internal sealed class DockerExecOnyxDatabase(IToolRunner runner) : IOnyxDatabase
             return SindriErrors.OnyxComposeFailed.With($"refusing to act on \"{project.Name}\": it isn't a compose project Sindri names");
         }
 
-        var found = Run(["ps", "-q", "--filter", $"label={ProjectLabel}={project.Name}", "--filter", $"label={ServiceLabel}={Service}"], "ps", cancellationToken);
+        List<string> listing = ["ps", "-q", "--filter", $"label={ProjectLabel}={project.Name}", "--filter", $"label={ServiceLabel}={Service}"];
+        if (project.HasFiles && Path.GetDirectoryName(project.ComposeFile) is { Length: > 0 } workingDir)
+        {
+            listing.AddRange(["--filter", $"label={WorkingDirLabel}={workingDir}"]);
+        }
+
+        var found = Run([.. listing], "ps", cancellationToken);
         if (found.IsError)
         {
             return found.Error;

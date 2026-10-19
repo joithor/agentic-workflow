@@ -173,7 +173,8 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
         private static bool InAdminGroup(OnyxKeyWire key, int groupId)
             => key.Groups?.Any(g => g.Id == groupId && string.Equals(g.Name, "Admin", StringComparison.Ordinal)) == true;
 
-        // The raw key never reaches the message; Onyx's masked display of it does, so the owner can find the key in Onyx's admin page and delete it.
+        // The raw key never reaches the message, but Onyx's masked display of it does (its first and last 4 characters, `build_displayable_api_key`): it is the string Onyx's own admin page shows, so the owner can find
+        // the key there and delete it. Worth the 8 characters: they leave the other ~30 of the key unknown.
         private static Error NotInAdminGroup(OnyxKeyWire key, string name)
         {
             var display = new string([.. (key.ApiKeyDisplay ?? string.Empty).Where(static c => !char.IsControl(c)).Take(48)]);

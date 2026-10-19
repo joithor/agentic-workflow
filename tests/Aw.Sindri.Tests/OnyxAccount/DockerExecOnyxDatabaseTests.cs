@@ -72,13 +72,59 @@ public sealed class DockerExecOnyxDatabaseTests
     [Theory, Trait("Lane", "unit")]
     [InlineData("ps")]
     [InlineData("exec")]
-    public void A_docker_command_that_fails_is_sindri_onyx_011_with_what_it_printed(string failing)
+    public void A_docker_command_that_fails_is_sindri_onyx_011_with_the_command_and_its_exit_code(string failing)
     {
         var (database, _) = Over(failing == "ps" ? Failed("ps broke") : Out("0123456789ab\n"), Failed("exec broke"));
 
         var group = database.DefaultAdminGroup(_project, Token);
 
         Assert.Equal(SindriErrors.OnyxComposeFailed.Code, group.Error.Code);
+        Assert.Contains($"`docker {failing}` failed (exit 1)", group.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_failing_command_shows_the_lines_it_printed_without_control_characters()
+    {
+        var runner = new FakeToolRunner(Failed(), ["psql: error: role \"x\" does not exist\u001b[0m"]);
+
+        var group = new DockerExecOnyxDatabase(runner).DefaultAdminGroup(_project, Token);
+
+        Assert.Contains("psql: error: role \"x\" does not exist[0m", group.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain('\u001b', group.Error.Message);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("ps")]
+    [InlineData("exec")]
+    public void A_docker_command_that_hangs_is_sindri_onyx_001(string hanging)
+    {
+        var (database, _) = Over(hanging == "ps" ? ToolRun.TimedOut : Out("0123456789ab\n"), ToolRun.TimedOut);
+
+        var group = database.DefaultAdminGroup(_project, Token);
+
+        Assert.Equal(SindriErrors.OnyxDockerUnavailable.Code, group.Error.Code);
+        Assert.Contains("isn't answering", group.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_cancelled_command_throws_and_nothing_runs_after_it()
+    {
+        var (database, runner) = Over(ToolRun.Cancelled, Out("2\n"));
+
+        _ = Assert.Throws<OperationCanceledException>(() => database.DefaultAdminGroup(_project, Token));
+        _ = Assert.Single(runner.Calls);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_project_with_files_only_matches_a_container_started_from_this_homes_compose_directory()
+    {
+        var project = new ComposeProject(_project.Name, "/sindri-home/onyx/deploy/deployment/docker_compose/docker-compose.yml", "/o.yml", "/e");
+        var (database, runner) = Over(Out(string.Empty), Out("2\n"));
+
+        var group = database.DefaultAdminGroup(project, Token);
+
+        Assert.Null(group.Value);
+        Assert.Contains("label=com.docker.compose.project.working_dir=/sindri-home/onyx/deploy/deployment/docker_compose", runner.Calls[0].Arguments, StringComparer.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -22,6 +22,11 @@ internal sealed class OnyxAdminGroup(IOnyxDatabase database, OnyxFacts facts)
             return listed;
         }
 
+        if (facts.DockerProblem(cancellationToken) is { } problem)
+        {
+            return problem;   // the local-daemon guard every docker command goes through: nothing is sent to a missing, stopped or remote Docker
+        }
+
         var group = database.DefaultAdminGroup(facts.Project, cancellationToken);
         if (group.IsError)
         {

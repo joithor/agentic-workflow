@@ -36,9 +36,11 @@ public sealed class OnyxAdminGroupTests
 
         public CapturingOnyxProgress Progress { get; } = new();
 
+        public ContainerRuntimeFacts Docker { get; init; } = FakeContainerRuntime.Healthy;
+
         public async Task<Kernel.Result<OnyxAccountResponse>> Run()
         {
-            var facts = new OnyxFacts(new FakeContainerRuntime(FakeContainerRuntime.Healthy), new FakeHostProbes(), new FakeSindriHome(OnyxUpRig.Home));
+            var facts = new OnyxFacts(new FakeContainerRuntime(Docker), new FakeHostProbes(), new FakeSindriHome(OnyxUpRig.Home));
             var minter = new OnyxKeyMinter(Prompts, Provisioning, Secrets, Secrets, new OnyxAdminGroup(Database, facts));
             var service = new OnyxAccountService(Workspace, Prompts, new FakeBrowser(), minter, Profile, Progress);
             return await service.Handle(new OnyxAccountRequest(3000, "v4.9.0"), Token);
@@ -100,6 +102,20 @@ public sealed class OnyxAdminGroupTests
         Assert.Contains("docs/sindri/onyx.md", result.Error.Message, StringComparison.Ordinal);
         Assert.Empty(rig.Provisioning.KeyGroups);
         Assert.Empty(rig.Secrets.Stored);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("daemon-down")]
+    [InlineData("remote")]
+    public async Task The_database_is_not_read_through_a_docker_that_is_down_or_points_at_another_machine(string problem)
+    {
+        var rig = new Rig { Docker = problem == "remote" ? FakeContainerRuntime.Healthy with { Endpoint = "tcp://build-box:2375" } : FakeContainerRuntime.DaemonDown };
+
+        var result = await rig.Run();
+
+        Assert.True(result.IsError);
+        Assert.Empty(rig.Database.Asked);
+        Assert.Empty(rig.Provisioning.KeyGroups);
     }
 
     [Fact, Trait("Lane", "unit")]
