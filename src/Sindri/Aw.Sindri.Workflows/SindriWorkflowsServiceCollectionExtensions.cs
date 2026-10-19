@@ -112,7 +112,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
         .AddSingleton<StepInputActivities>()
         .AddSingleton<StepContexts>();
 
-    private static async ValueTask<InjectionSections> FillScoped(IServiceProvider provider, StepInputContext context, CancellationToken cancellationToken)
+    private static async ValueTask<Result<InjectionSections>> FillScoped(IServiceProvider provider, StepInputContext context, CancellationToken cancellationToken)
     {
         var scope = provider.CreateAsyncScope();
         await using (scope.ConfigureAwait(false))
