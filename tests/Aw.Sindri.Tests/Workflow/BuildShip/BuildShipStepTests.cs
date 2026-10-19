@@ -34,7 +34,7 @@ public sealed class BuildShipStepTests
 
         Assert.Equal("ready", result.Result!.Outcome.Value);
         Assert.Equal("sha256:aa", (string?)Out(result, "activePacket")["hash"]);
-        Assert.Equal(["activePacket", "answers", "built", "change", "findings", "redTests"], result.Result.Outputs.Keys.Select(static k => k.Value[5..]).Order(StringComparer.Ordinal));
+        Assert.Equal(["activePacket", "answers", "built", "change", "findings", "redTests"], result.Result.Outputs.Keys.Select(static k => k.Value[5..]).Order(StringComparer.Ordinal), StringComparer.Ordinal);
     }
 
     [Fact]
