@@ -234,21 +234,36 @@ internal sealed class SqliteDatabaseReader : IDatabaseReader
     }
 
     // The path with every symbolic link in it resolved (a missing part stays as written), so two spellings of one place compare equal.
+    // A link's target goes back on the stack segment by segment, so a link inside the target (macOS's /var → /private/var) is followed too.
     private static string RealPath(string path)
     {
         var resolved = Path.GetPathRoot(path) ?? string.Empty;
+        var pending = new Stack<string>(Segments(path, resolved.Length));
         var links = 0;
-        foreach (var part in path[resolved.Length..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
+        while (pending.TryPop(out var part))
         {
-            resolved = Path.Combine(resolved, part);
-            while (links++ < MaxLinks && new FileInfo(resolved).LinkTarget is { } target)
+            var next = Path.Combine(resolved, part);
+            if (links >= MaxLinks || new FileInfo(next).LinkTarget is not { } target)
             {
-                resolved = Path.GetFullPath(target, Path.GetDirectoryName(resolved) ?? resolved);
+                resolved = next;
+                continue;
+            }
+
+            links++;
+            var full = Path.GetFullPath(target, resolved);
+            resolved = Path.GetPathRoot(full) ?? string.Empty;
+            foreach (var segment in Segments(full, resolved.Length))
+            {
+                pending.Push(segment);
             }
         }
 
         return resolved;
     }
+
+    // The parts of a path after its root, last first, ready to push.
+    private static IEnumerable<string> Segments(string path, int rootLength) =>
+        path[rootLength..].Split(Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries).Reverse();
 
     private static bool IsInside(string directory, string path) =>
         path.StartsWith(directory.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, StringComparison.Ordinal);
