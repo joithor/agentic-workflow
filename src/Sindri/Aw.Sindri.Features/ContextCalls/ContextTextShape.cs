@@ -27,7 +27,7 @@ internal sealed class ContextTextShape(IContextEngine engine, ContextInputScopes
         }
 
         var asked = await engine.Query(new ContextQuery(Cut(text)), scope.Value, cancellationToken).ConfigureAwait(false);
-        return asked.IsError ? asked.Error : Results.Success<IReadOnlyList<string>>(asked.Value.SuggestedAnchors);
+        return asked.IsError ? asked.Error : Results.Success(asked.Value.SuggestedAnchors);
     }
 
     /// <summary>The first <see cref="MaxText"/> characters, never ending inside a surrogate pair.</summary>
