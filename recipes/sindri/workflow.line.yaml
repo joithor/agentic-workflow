@@ -1,7 +1,7 @@
 schema: 1
 id: workflow.line
 version: 1
-description: "Spec-to-proven-PR, end to end: scoping, design and plan as children, then one linked workflow.phase per plan node, started one at a time up to the parallel cap, until every phase is merged. Sequential stations (LN-WF8); parallel phase dispatch comes with LN-WF1."
+description: "Spec-to-proven-PR, end to end. Sequential stations (LN-WF8): scoping, design, plan and one workflow.phase child; parallel phase dispatch comes with LN-WF1."
 urgency: work
 inputs:
   - { key: fact:scopeInput,  label: "What to build",  type: payload, kind: payload }
