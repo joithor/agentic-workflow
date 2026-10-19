@@ -32,7 +32,7 @@ internal sealed class ScopePacketStore(SindriSettings settings, IToolRunner runn
         var hash = run.Output.Trim();
         Result<string> result = run.Outcome == ToolOutcome.Exited && run.ExitCode == 0 && hash.StartsWith("sha256:", StringComparison.Ordinal)
             ? hash
-            : ScopingErrors.PacketChanged.With($"aw-packets hash failed ({program}: {run.Outcome}, exit {run.ExitCode.ToString(CultureInfo.InvariantCulture)}) (fix: build aw-packets and put it on the PATH, or set AW_PACKETS_BIN)");
+            : ScopingErrors.PacketToolFailed.With($"aw-packets hash failed ({program}: {run.Outcome}, exit {run.ExitCode.ToString(CultureInfo.InvariantCulture)}) (fix: build aw-packets and put it on the PATH, or set AW_PACKETS_BIN)");
         return ValueTask.FromResult(result);
     }
 
