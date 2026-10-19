@@ -17,6 +17,7 @@ internal sealed partial class RecipeWorkflow
                 { Suspension: null, Frame.Run: { } open } => await RunDeskStep(instance, open, context).ConfigureAwait(true),
                 _ => await Wait(instance, context).ConfigureAwait(true),
             };
+            await DropEndedRun(instance).ConfigureAwait(true);
         }
 
         await Settle().ConfigureAwait(true);   // every effect it emitted is dispatched, refused or aborted (§5.7)

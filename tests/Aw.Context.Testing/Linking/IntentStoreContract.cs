@@ -62,6 +62,69 @@ public abstract class IntentStoreContract
         Expect.That(state.Cursor == "{\"nodeOffset\":4}" && state.LastSync == _at && state.LastError is null && state is { Records: 1, Links: 1, Queued: 1 }, test, $"state {state}");
     }
 
+    /// <summary>The creation instant a source gave reads back; a record without one reads back null.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Created_at_round_trips()
+    {
+        const string test = nameof(Created_at_round_trips);
+        var store = CreateStore();
+        var created = new DateTimeOffset(2026, 7, 2, 9, 0, 0, TimeSpan.Zero);
+
+        _ = Expect.Ok(await store.CommitPage(Page("c1", [Record(_r103, "v1", "SPL-103") with { CreatedAt = created }, Record(_r104, "v1", "SPL-104")], []), None), test);
+        var layer = Expect.Ok(await store.Layer(None), test);
+
+        Expect.That(layer.Records.Single(r => r.Key.Value == _r103.Value).CreatedAt == created, test, "the creation instant didn't read back");
+        Expect.That(layer.Records.Single(r => r.Key.Value == _r104.Value).CreatedAt is null, test, "a record with no creation instant read one back");
+    }
+
+    /// <summary>The instant the page was fetched reads back on the record; a replay of the same version keeps the first.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Fetched_at_reads_back_as_the_pages_instant_and_a_replay_keeps_it()
+    {
+        const string test = nameof(Fetched_at_reads_back_as_the_pages_instant_and_a_replay_keeps_it);
+        var store = CreateStore();
+        _ = Expect.Ok(await store.CommitPage(Page("c1", [Record(_r103, "v1", "SPL-103")], []), None), test);
+
+        var layer = Expect.Ok(await store.Layer(None), test);
+
+        Expect.That(layer.Records.Single().FetchedAt == _at, test, "the fetch instant didn't read back");
+    }
+
+    /// <summary>Replaying the same version keeps the stored row, creation instant included.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task Replay_of_the_same_version_writes_nothing()
+    {
+        const string test = nameof(Replay_of_the_same_version_writes_nothing);
+        var store = CreateStore();
+        var first = new DateTimeOffset(2026, 7, 2, 9, 0, 0, TimeSpan.Zero);
+        _ = Expect.Ok(await store.CommitPage(Page("c1", [Record(_r103, "v1", "SPL-103") with { CreatedAt = first }], []), None), test);
+
+        var replay = Expect.Ok(await store.CommitPage(Page("c2", [Record(_r103, "v1", "SPL-103") with { CreatedAt = first.AddDays(1) }], []), None), test);
+        var layer = Expect.Ok(await store.Layer(None), test);
+
+        Expect.That(replay.Changed == 0, test, "changed " + replay.Changed.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Expect.That(layer.Records.Single().CreatedAt == first, test, "the replay rewrote the creation instant");
+    }
+
+    /// <summary>A version that moves rewrites the creation instant with the new fetch.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_version_move_rewrites_created_at()
+    {
+        const string test = nameof(A_version_move_rewrites_created_at);
+        var store = CreateStore();
+        var created = new DateTimeOffset(2026, 7, 2, 9, 0, 0, TimeSpan.Zero);
+        _ = Expect.Ok(await store.CommitPage(Page("c1", [Record(_r103, "v1", "SPL-103")], []), None), test);
+
+        _ = Expect.Ok(await store.CommitPage(Page("c2", [Record(_r103, "v2", "SPL-103") with { CreatedAt = created }], []), None), test);
+        var layer = Expect.Ok(await store.Layer(None), test);
+
+        Expect.That(layer.Records.Single().CreatedAt == created, test, "the version move didn't store the creation instant");
+    }
+
     /// <summary>Replaying a page writes no new rows and reports nothing changed.</summary>
     /// <returns>The test.</returns>
     [Fact]

@@ -24,6 +24,7 @@ internal static class ContextApiScenarios
 {
     private const string Repo = MapTabsRepo.Repo;
     private const string Anchor = "feature%3Atabs.tab-manager";
+    private const string SplitPane = "feature%3Alayout.split-pane";
 
     private delegate Task<string> Run(Scenario scenario, CancellationToken ct);
 
@@ -56,6 +57,18 @@ internal static class ContextApiScenarios
         ("context-code", "too-many-anchors-006", async (s, ct) => await s.Fetch("/sindri/context/code?" + string.Join('&', Enumerable.Range(0, 21).Select(i => "anchor=feature%3Anope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture))), ct)),
         ("context-code", "not-retained-120", async (s, ct) => await s.Fetch(CodeRoute() + "&mapVersion=v99", ct)),
         ("context-code", "session-other-repo", async (s, ct) => await s.FetchAsSession(CodeRoute("feature%3Aother.thing"), ct)),
+        ("context-history", "split-pane", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}", ct)),
+        ("context-history", "before-cut", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}&before=2026-07-12T00:00:00Z", ct)),
+        ("context-history", "since-window", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}&since=2026-07-20T00:00:00Z", ct)),
+        ("context-history", "two-anchors", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}&anchor=feature%3Atabs.tab-manager", ct)),
+        ("context-history", "missing-anchor", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}&anchor=feature%3Anope.x", ct)),
+        ("context-history", "no-files-thing", async (s, ct) => await s.Fetch("/sindri/context/history?anchor=thing%3Apane-layout", ct)),
+        ("context-history", "unknown-anchor-003", async (s, ct) => await s.Fetch("/sindri/context/history?anchor=feature%3Atabs.nope", ct)),
+        ("context-history", "bad-window-006", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}&since=90d", ct)),
+        ("context-history", "too-many-anchors-006", async (s, ct) => await s.Fetch("/sindri/context/history?" + string.Join('&', Enumerable.Range(0, 21).Select(i => "anchor=feature%3Anope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture))), ct)),
+        ("context-history", "map-version-v1", async (s, ct) => await s.FetchAfterSecondMap($"/sindri/context/history?anchor={SplitPane}&mapVersion=v1", ct)),
+        ("context-history", "not-retained-120", async (s, ct) => await s.Fetch($"/sindri/context/history?anchor={SplitPane}&mapVersion=v99", ct)),
+        ("context-history", "session-other-repo", async (s, ct) => await s.FetchAsSession($"/sindri/context/history?anchor={SplitPane}&anchor=feature%3Aother.thing", ct)),
         ("context-lenses", "hops-component", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Ashare.sharing&depth=1&hops=state,dependency,flow,component", ct)),
         ("context-lenses", "hops-component-skipped", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Autil.u0&depth=1&hops=component", ct)),
         ("context-lenses", "hops-bogus-140", async (s, ct) => await s.Fetch("/sindri/context/lenses?anchor=feature%3Ashare.sharing&hops=bogus", ct)),
@@ -105,6 +118,11 @@ internal static class ContextApiScenarios
         if (slug == "context-code")
         {
             return await StartCode(scenario, ct);
+        }
+
+        if (slug == "context-history")
+        {
+            return await StartHistory(ct);
         }
 
         var bulk = (slug, scenario) is ("context-map-review", "post-accept-deterministic");
@@ -161,6 +179,16 @@ internal static class ContextApiScenarios
         await ContextMapApiTests.Import(host);
         var merge = repo.PullRequests.Single(p => p.Number == 3).MergeCommit;
         _diffRanges.Add(host, $"{Rev(repo, merge + "^1")}..{Rev(repo, merge + "^2")}");
+        return host;
+    }
+
+    // The history goldens read the five merged pull requests of the same fixture repo: committer dates and shas are fixed.
+    private static async Task<GoldenHost> StartHistory(CancellationToken ct)
+    {
+        var repo = FixtureRepo.Build();
+        var host = await ContextHosts.Approved(repo, sessions: true, ct, name: FixtureMap.Repo);
+        host.Own(repo);
+        await ContextMapApiTests.Import(host);
         return host;
     }
 

@@ -19,8 +19,9 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="dispatch">Runs a Step by id.</param>
 /// <param name="contents">Reads a stored fact.</param>
 /// <param name="facts">Stores an output.</param>
+/// <param name="contexts">Gives a Step the sections and typed results of its inputs (kept in memory, or run again and checked against the recorded digests).</param>
 /// <param name="approved">The APPROVED profile (never the live file): 'providers' resolves from its 'workflow.judge.providers'.</param>
-internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog catalog, BlockStepDispatch dispatch, IFactContents contents, IFactStore facts, IApprovedProfile approved)
+internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog catalog, BlockStepDispatch dispatch, IFactContents contents, IFactStore facts, IApprovedProfile approved, StepContexts contexts)
 {
     private const string ProvidersArgument = "providers";
 
@@ -53,7 +54,16 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
             return Failed(named.Error.Message);
         }
 
-        var result = await dispatch(run.Step, new StepContext(run.Step, arguments, named.Value, InjectionSections.Empty), cancellationToken).ConfigureAwait(false);
+        var seed = new StepContext(run.Step, arguments, named.Value, InjectionSections.Empty);
+        var context = run.Fills is { Count: > 0 } fills
+            ? await contexts.For(new StepRun(fills[0].Request.Address, run.State, run.Token), seed, [.. fills.Select(static f => new InjectionInputSource(f.Recorded, f.Request.Context()))], cancellationToken).ConfigureAwait(false)
+            : Results.Success(seed);
+        if (context.IsError)
+        {
+            return Failed(context.Error.Message);
+        }
+
+        var result = await dispatch(run.Step, context.Value, cancellationToken).ConfigureAwait(false);
         return result.Result is not { } done
             ? Failed(result.Failure ?? "the Step failed")
             : await StoreOutputs(done, cancellationToken).ConfigureAwait(false);

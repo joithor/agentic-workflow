@@ -439,6 +439,29 @@ public sealed class ListInstancesServiceTests
     }
 
     [Fact]
+    public async Task A_payload_subject_with_no_title_of_its_own_is_labelled_by_the_item_title_not_the_fact_key()
+    {
+        var view = OnItem(ItemA, $"{ItemA}/scoping/1") with { Subject = new SubjectRef("payload", "fact:scopeInput", "fact:scopeInput", Href: null) };
+        var service = Service([view], new FixedItemViews(failing: false, Titled(ItemA, "Toy scoping check")), new CallerContextBuilder().Human().Build());
+
+        var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
+
+        Assert.Equal(new SubjectRef("payload", "fact:scopeInput", "Toy scoping check", Href: null), Assert.Single(result.Value.Instances).Subject);
+    }
+
+    [Fact]
+    public async Task A_payload_subject_keeps_its_own_title_and_falls_back_to_the_key_only_when_there_is_no_title_at_all()
+    {
+        var titled = OnItem(ItemA, $"{ItemA}/scoping/1") with { Subject = new SubjectRef("payload", "fact:scopeInput", "Offline sync brief", Href: null) };
+        var bare = OnItem(ItemB, $"{ItemB}/scoping/1") with { Subject = new SubjectRef("payload", "fact:scopeInput", "fact:scopeInput", Href: null) };
+        var service = Service([titled, bare], new FixedItemViews(failing: false, Titled(ItemA, "Item title")), new CallerContextBuilder().Human().Build());
+
+        var result = await service.Handle(new ListInstancesRequest(), CancellationToken.None);
+
+        Assert.Equal(["Offline sync brief", "fact:scopeInput"], result.Value.Instances.OrderBy(static r => r.Address.Value, StringComparer.Ordinal).Select(static r => r.Subject.Label), StringComparer.Ordinal);
+    }
+
+    [Fact]
     public async Task The_single_address_path_shows_the_title_too()
     {
         var views = new[] { OnItem(ItemA, $"{ItemA}/step/1") };

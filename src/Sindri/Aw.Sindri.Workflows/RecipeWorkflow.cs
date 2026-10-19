@@ -76,6 +76,7 @@ internal sealed partial class RecipeWorkflow
         }
         catch (Exception failed) when (TemporalException.IsCanceledException(failed))
         {
+            await DropTexts(instance.Address.Value).ConfigureAwait(true);   // a Step's texts still in memory go too (any runtime)
             await Cleanup().ConfigureAwait(true);   // the workflow itself was cancelled: the claim is still released (detached scope)
             throw;
         }
@@ -93,6 +94,10 @@ internal sealed partial class RecipeWorkflow
     {
         ArgumentNullException.ThrowIfNull(start);
         _start = start;
+        _fillsInputs = Workflow.Patched("step-inputs-v1");   // read once: an instance that began before the patch never starts filling halfway through
+        _mirrorsInjection = Workflow.Patched("step-inputs-injection-row-v1");   // the ledger row adds a local activity: its own marker
+        _dropsTexts = Workflow.Patched("step-inputs-drop-v1");   // so does the eviction at the Step's end
+        _capsPlan = Workflow.Patched("step-inputs-plan-cap-v1");   // a plan over the cap fails the Step: a history that filled past it before must replay as it ran
         _since = Now;
         // DT-J2: first, before any await, so the marker is the first command and replays at the same place; a history that began before the block runtime has no marker, so it replays with no block runtimes, on the desk path exactly as recorded (kept until the cutover; DT-J plan Q7)
         var blockRuntime = Workflow.Patched("dt-j-block-runtime");
@@ -108,12 +113,7 @@ internal sealed partial class RecipeWorkflow
         _deskTimeout = loaded.DeskTimeout;
         _eventHold = loaded.EventHold;
         _dispatchDelay = loaded.DispatchDelay;
-        var runtimes = (blockRuntime ? loaded.BlockRuntimes ?? [] : []).ToDictionary(static b => b, static _ => StepRuntime.Block);
-        foreach (var agent in agentRuntime ? loaded.AgentRuntimes ?? [] : [])
-        {
-            runtimes[agent] = StepRuntime.Agent;
-        }
-
+        var runtimes = Runtimes(loaded, blockRuntime, agentRuntime);
         var decisions = new DecisionContext(ApprovalCheck.Holds, catalog, runtimes, pins.Resolver()) { DeskTimeout = loaded.DeskTimeout };
         _context = new Interpreting(loaded.Recipe, decisions);
         (_repo, _repoUnreadable) = start.Inputs.TryGetValue(_itemFact, out var item) ? await RepoOf(item.Value).ConfigureAwait(true) : (null, false);
