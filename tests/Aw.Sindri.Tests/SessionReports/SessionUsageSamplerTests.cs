@@ -177,6 +177,23 @@ public sealed class SessionUsageSamplerTests
         Expect.Equal((20L, 9L), (latest.InputTokens, latest.OutputTokens));
     }
 
+    [Fact]
+    public async Task A_flush_after_the_session_ended_and_a_tick_pruned_it_still_lands_in_the_same_minute()
+    {
+        await Running();
+        _used[_agentSession] = [new ModelTokens("m", 10, 0, 0, 7)];
+        _ = await Sampler().Sample(Token);
+        _used[_agentSession] = [new ModelTokens("m", 20, 0, 0, 9)];
+        await _s.Views.End();
+        _s.Liveness.End(A.FirstLaunchId);
+        _ = await Sampler().Sample(Token);   // the launch is no longer tracked: the tick forgets its totals
+
+        var appended = await Sampler().Flush(A.FirstLaunchId, Token);
+
+        var latest = _s.Views.Slice.Store.Events.Select(e => _s.Views.Slice.Events.Payload<SessionUsage>(e).Value).MaxBy(p => p.Sample)!;
+        Expect.Equal((1, 20L, 9L), (appended, latest.InputTokens, latest.OutputTokens));
+    }
+
     private sealed class Held
     {
         public TaskCompletionSource Reached { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
