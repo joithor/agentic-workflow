@@ -54,6 +54,69 @@ public sealed class LauncherTests : IDisposable
     }
 
     [Fact]
+    public async Task Stop_ends_the_session_through_the_end_seam_after_the_host_stopped_it()
+    {
+        var ended = new List<Core.Workflow.Engine.LaunchId>();
+        var launcher = new Launcher(new LauncherParts(new AgentCatalog([AgentEntries.ClaudeCode]), _ => _host, _viewer, Options, _clock)
+        {
+            ResolveBin = static (_, _) => ValueTask.FromResult<string?>(null),
+            EndLive = (launch, _) =>
+            {
+                Expect.Equal(0, _host.LiveCount);   // the host stopped it first
+                ended.Add(launch);
+                return ValueTask.CompletedTask;
+            },
+        });
+        var request = A.LaunchRequest().Build();
+        _ = await Drive(launcher.Launch(request, CancellationToken.None));
+
+        _ = await launcher.Stop(request.Launch, CancellationToken.None);
+
+        Expect.Equal(request.Launch, Assert.Single(ended));
+    }
+
+    [Fact]
+    public async Task A_failed_host_stop_records_no_end_and_leaves_the_session_to_its_heartbeat()
+    {
+        var ended = 0;
+        var host = new StopFailsHost(_host);
+        var launcher = new Launcher(new LauncherParts(new AgentCatalog([AgentEntries.ClaudeCode]), _ => host, _viewer, Options, _clock)
+        {
+            ResolveBin = static (_, _) => ValueTask.FromResult<string?>(null),
+            EndLive = (_, _) =>
+            {
+                ended++;
+                return ValueTask.CompletedTask;
+            },
+        });
+        var request = A.LaunchRequest().Build();
+        _ = await Drive(launcher.Launch(request, CancellationToken.None));
+
+        var stopped = await launcher.Stop(request.Launch, CancellationToken.None);
+
+        Assert.True(stopped.IsError);   // tmux could not end it: the agent is still running
+        Expect.Equal(0, ended);   // so the row stays live and the files stay
+    }
+
+    private sealed class StopFailsHost(FakeSessionHost inner) : ISessionHost
+    {
+        public HostKind Kind => inner.Kind;
+
+        public ValueTask<Kernel.Result<HostRef>> Start(HostSession session, TimeSpan timeout, CancellationToken cancellationToken) => inner.Start(session, timeout, cancellationToken);
+
+        public ValueTask<Kernel.Result<Kernel.Unit>> Stop(HostRef host, CancellationToken cancellationToken) =>
+            ValueTask.FromResult<Kernel.Result<Kernel.Unit>>(Kernel.KernelErrors.Unavailable.With("tmux did not answer"));
+
+        public ValueTask<bool> Exists(HostRef host, CancellationToken cancellationToken) => inner.Exists(host, cancellationToken);
+
+        public ValueTask<int> AttachedClients(HostRef host, CancellationToken cancellationToken) => inner.AttachedClients(host, cancellationToken);
+
+        public IReadOnlyList<string> AttachArgv(HostRef host) => inner.AttachArgv(host);
+
+        public ValueTask<HostFacts> Probe(CancellationToken cancellationToken) => inner.Probe(cancellationToken);
+    }
+
+    [Fact]
     public async Task Host_past_4s_is_Failed_009_stage_host_and_kills_the_session()
     {
         var overran = new OverranHost();

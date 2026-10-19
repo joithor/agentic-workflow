@@ -66,11 +66,11 @@ internal sealed class ProcessLaunch(LaunchOutcomes outcomes, TakeoverWait takeov
         }
 
         return work.TryClaim(pending, timings)
-            ? await Launch(grant, pending, plan.Value, cancellationToken).ConfigureAwait(false)
+            ? await Launch(grant, plan.Value, cancellationToken).ConfigureAwait(false)
             : false;   // too little of the deadline is left, or the sweep already failed it
     }
 
-    private async ValueTask<Result<bool>> Launch(LeaseGrant grant, PendingLaunch pending, LaunchRequest plan, CancellationToken cancellationToken)
+    private async ValueTask<Result<bool>> Launch(LeaseGrant grant, LaunchRequest plan, CancellationToken cancellationToken)
     {
         using var bound = new CancellationTokenSource(timings.LaunchLimit, timings.Clock);
         using var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, bound.Token);
@@ -87,12 +87,20 @@ internal sealed class ProcessLaunch(LaunchOutcomes outcomes, TakeoverWait takeov
                 throw;   // shutting down: the next start's sweep gives the request its outcome
             }
 
-            return await Fail(grant, pending, SindriErrors.LaunchTimedOut.With("the launcher did not answer within its limit (a tab may have opened: run `tmux -L sindri-launch ls`)"), LaunchStage.Backstop, CancellationToken.None).ConfigureAwait(false);
+            return await Fail(grant, plan, new FailedLaunch(SindriErrors.LaunchTimedOut.With("the launcher did not answer within its limit (a tab may have opened: run `tmux -L sindri-launch ls`)"), LaunchStage.Backstop), CancellationToken.None).ConfigureAwait(false);
         }
 
         return result is StartedLaunch started
             ? await Record(grant, plan, started, cancellationToken).ConfigureAwait(false)
-            : await Fail(grant, pending, ((FailedLaunch)result).Error, ((FailedLaunch)result).Stage, cancellationToken).ConfigureAwait(false);
+            : await Fail(grant, plan, (FailedLaunch)result, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>The launcher refused or lost the start: the failure says which instance, Step and attempt the plan was for.</summary>
+    private async ValueTask<Result<bool>> Fail(LeaseGrant grant, LaunchRequest plan, FailedLaunch failed, CancellationToken cancellationToken)
+    {
+        work.ProbeSoon();
+        var appended = await outcomes.Failed(grant, plan, failed.Error, failed.Stage, cancellationToken).ConfigureAwait(false);
+        return appended.IsError ? appended.Error : false;
     }
 
     private async ValueTask<Result<bool>> Record(LeaseGrant grant, LaunchRequest plan, StartedLaunch started, CancellationToken cancellationToken)

@@ -62,6 +62,13 @@ internal static class ParkScenarios
         return (await host.Http.Ask(Get(route, ItemScenarios.Human(host)))).Body;
     }
 
+    /// <summary>Starts the item's instance in 'triaged', as the 'running' scenario does.</summary>
+    internal static async Task StartRunning(GoldenHost host, string item, CancellationToken ct)
+    {
+        await Append(host, item, EventTypes.WorkflowStarted, Row(item + "/step/1", "triaged", "start", new FrameSummary("triaged", 1, Run: null, Child: null), suspension: null), "started", ct);
+        await ViewScenarios.CatchUp(host, ct);
+    }
+
     private static FrameSummary Desk() => new("produce", 1, "1.1", Child: null, StepRuntime.Desk);
 
     private static Task Append(GoldenHost host, string item, string type, WorkflowEventPayload payload, string key, CancellationToken ct) =>

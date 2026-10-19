@@ -18,6 +18,18 @@ internal static partial class Labels
     /// <summary>The label of the launch that started the session.</summary>
     internal const string SheetLaunch = "Launch";
 
+    /// <summary>The label of the workflow instance an engine launch started the session for.</summary>
+    internal const string SheetInstance = "Instance";
+
+    /// <summary>The label of that instance's Step state.</summary>
+    internal const string SheetStep = "Step";
+
+    /// <summary>The label of the attempt of that Step.</summary>
+    internal const string SheetAttempt = "Attempt";
+
+    /// <summary>The visible words of the action that opens the Step's frame.</summary>
+    internal const string OpenStepFrame = "Open the Step";
+
     /// <summary>The label of the time the process started.</summary>
     internal const string SheetStarted = "Started";
 
@@ -77,4 +89,10 @@ internal static partial class Labels
     /// <param name="phase">The phase that ships it.</param>
     /// <returns>The name.</returns>
     internal static string SheetFocusName(string phase) => Action("FocusSession") + ", " + Arrives(phase);
+
+    /// <summary>The accessible name of the action that opens the Step's frame.</summary>
+    /// <param name="instance">The instance address.</param>
+    /// <param name="state">The Step's state, or null.</param>
+    /// <returns>The words.</returns>
+    internal static string OpenStepFrameName(string instance, string? state) => state is { Length: > 0 } ? $"{OpenStepFrame}: {instance} at {state}" : $"{OpenStepFrame}: {instance}";
 }

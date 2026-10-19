@@ -27,7 +27,8 @@ namespace Aw.Sindri.Features.GetLaunch;
 /// <param name="CatalogSource">Where the launched entry came from, once started.</param>
 /// <param name="ArgvHash">The hash of the entry's argv template, once started.</param>
 /// <param name="Ended">How the session ended, or null while it runs.</param>
+/// <param name="Step">The workflow instance, Step (state id) and attempt the launch belongs to; its members are null for an attended launch.</param>
 /// <param name="AsOf">How fresh the answer is.</param>
 public sealed record LaunchView(LaunchId Id, ItemId Item, LaunchMode Mode, LaunchState State, AgentId Target, string ChosenBy, DateTimeOffset RequestedAt,
     DateTimeOffset? OutcomeAt, string? Code, string? Detail, LaunchStage? Stage, SessionId? SessionId, string? TabTitle, LaunchViewer? Viewer, bool Late,
-    IReadOnlyList<string>? Attach, CatalogSource? CatalogSource, string? ArgvHash, LaunchEnd? Ended, AsOf AsOf);
+    IReadOnlyList<string>? Attach, CatalogSource? CatalogSource, string? ArgvHash, LaunchEnd? Ended, LaunchStep Step, AsOf AsOf);

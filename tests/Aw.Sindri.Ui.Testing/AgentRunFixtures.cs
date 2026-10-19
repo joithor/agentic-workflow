@@ -7,9 +7,8 @@ namespace Aw.Sindri.Ui.Testing;
 
 /// <summary>
 /// The agent run the app draws, for the unit lane. The status is a copy of engine P8's golden, tests/Aw.Sindri.Tests/Golden/Api/workflow-status/agent-run.json
-/// on branch feat/sindri-wf-p8-agent-runtime (not on main yet, so it is not in the api golden set); the live-session item
-/// is the shape of the api lane's follow-up Golden/Api/items-id/live-session.json (launch.attach populated) built on the
-/// served items-id/running golden. Replace both with the goldens once they are on main.
+/// on branch feat/sindri-wf-p8-agent-runtime (not on main yet, so it is not in the api golden set); the live-session item is the API's Golden/Api/items-id/live-session.json.
+/// Replace the status with the golden once P8 is on main.
 /// </summary>
 internal static class AgentRunFixtures
 {
@@ -55,25 +54,13 @@ internal static class AgentRunFixtures
     /// <returns>The item.</returns>
     internal static ItemView Item(Action<JsonObject> launch) => Read<ItemView>(ItemBody(launch));
 
-    /// <summary>The running item's body with a live session to attach to.</summary>
+    /// <summary>The item with a live session to attach to: the API's items-id/live-session golden.</summary>
     /// <returns>The body as served.</returns>
-    internal static string LiveSessionBody() => ItemBody(WithSession);
+    internal static string LiveSessionBody() => GoldenFiles.Api("items-id", "live-session");
 
-    /// <summary>The running item with a live session to attach to.</summary>
+    /// <summary>The item with a live session to attach to.</summary>
     /// <returns>The item.</returns>
-    internal static ItemView LiveSession() => Item(WithSession);
-
-    private static void WithSession(JsonObject l)
-    {
-        l["modes"] = new JsonArray("open", "attach");
-        l["attach"] = new JsonObject
-        {
-            ["target"] = "claude-code",
-            ["tabTitle"] = null,
-            ["since"] = "2026-01-01T00:00:00.0000000Z",
-            ["argv"] = new JsonArray("tmux", "-L", "sindri-launch", "attach", "-t", "=snd-LCH-00000000000000000000000000000001"),
-        };
-    }
+    internal static ItemView LiveSession() => Golden<ItemView>("items-id", "live-session");
 
     /// <summary>Events as the instance events route serves them.</summary>
     /// <param name="rows">The events, as JSON objects of a transition.</param>

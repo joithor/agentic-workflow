@@ -23,6 +23,7 @@ internal sealed partial class ShellViewModel
         };
         AgentSheet.Wire(Health.Catalog, _clock);
         Health.Follow((url, token) => IsSessionSheet && IsSheetOpen ? AgentSheet.Refresh(url, token) : Task.CompletedTask);
+        InitAgentStep();
         Agents.OpenRequested += (_, e) =>
         {
             OpenSheet(e.Link);
