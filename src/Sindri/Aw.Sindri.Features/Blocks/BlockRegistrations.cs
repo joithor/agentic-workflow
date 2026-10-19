@@ -95,7 +95,7 @@ internal static class BlockRegistrations
     private static IServiceCollection AddReviewBlocks(this IServiceCollection services) => services
         .AddBlockDescriptor(ReviewSteps.Round)
         .AddBlockDescriptor(LensSteps.Run)
-        .AddBlockDescriptor(ReviewSteps.Log)
+        .AddBlockStep<ReviewLogStep>()
         .AddBlockDescriptor(ReviewSteps.Record)
         .AddBlockDescriptor(ReviewSteps.Fix)
         .AddBlockDescriptor(ReviewSteps.Recheck);
@@ -112,7 +112,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(DesignSteps.LensDesk)
         .AddBlockDescriptor(DesignSteps.Evidence)
         .AddBlockDescriptor(LensRoundSteps.Round)
-        .AddBlockDescriptor(LensRoundSteps.Log)
+        .AddBlockStep<LensLogStep>()
         .AddBlockDescriptor(PlanSteps.Intake)
         .AddBlockDescriptor(PlanSteps.Graph)
         .AddBlockDescriptor(PlanSteps.Check)
