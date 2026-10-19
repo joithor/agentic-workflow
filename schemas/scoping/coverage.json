@@ -68,6 +68,34 @@
                         },
                         "code": {
                           "type": "string"
+                        },
+                        "sync": {
+                          "type": "object",
+                          "description": "A never-synced source's sync pair (scoping spec 8.2, Recorded limits): ScopeFixLines words the stop row by it.",
+                          "properties": {
+                            "state": {
+                              "enum": [
+                                "queued",
+                                "running",
+                                "finished",
+                                "failed"
+                              ]
+                            },
+                            "code": {
+                              "type": "string"
+                            },
+                            "failures": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "retryAt": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "state"
+                          ],
+                          "additionalProperties": false
                         }
                       },
                       "required": [

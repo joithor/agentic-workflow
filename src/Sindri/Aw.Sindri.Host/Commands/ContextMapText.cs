@@ -20,7 +20,7 @@ internal static class ContextMapText
     internal static string Status(MapStatusView s) => string.Create(CultureInfo.InvariantCulture,
         $"map v{s.Version.Number} {Word(s.Version.Status)} · {s.Version.Repo.Value} · created {s.Version.Created:O}{(s.ScopedTo is { } repo ? $" · scoped to {repo.Value}" : string.Empty)}\n"
         + $"{Counts(s.Counts)}; {s.Orphaned} orphaned overrides; {s.Retained} retained versions\n")
-        + (s.Coverage is { } coverage ? Text.ContextLensText.Coverage(coverage) : string.Empty);
+        + (s.Coverage is { } coverage ? ContextLensText.Coverage(coverage) : string.Empty);
 
     internal static string Exported(MapExported e) => string.Create(CultureInfo.InvariantCulture,
         $"Exported map v{e.Version} to {e.Path}: {Counts(e.Counts)}\n");

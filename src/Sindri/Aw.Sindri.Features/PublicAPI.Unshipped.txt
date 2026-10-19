@@ -3561,3 +3561,49 @@ static Aw.Sindri.Features.GetSessionPreview.SessionPreviewUnavailable.operator =
 virtual Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.EqualityContract.get -> System.Type!
 virtual Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.Equals(Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse? other) -> bool
 virtual Aw.Sindri.Features.GetSessionPreview.GetSessionPreviewResponse.PrintMembers(System.Text.StringBuilder! builder) -> bool
+Aw.Sindri.Features.Scoping.GetInstanceScopingRequest
+Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.<Clone>$() -> Aw.Sindri.Features.Scoping.GetInstanceScopingRequest!
+Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance) -> void
+Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.Equals(Aw.Sindri.Features.Scoping.GetInstanceScopingRequest? other) -> bool
+Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.GetInstanceScopingRequest(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance) -> void
+Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.Instance.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
+Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.Instance.init -> void
+override Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.ToString() -> string!
+static Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.operator !=(Aw.Sindri.Features.Scoping.GetInstanceScopingRequest? left, Aw.Sindri.Features.Scoping.GetInstanceScopingRequest? right) -> bool
+static Aw.Sindri.Features.Scoping.GetInstanceScopingRequest.operator ==(Aw.Sindri.Features.Scoping.GetInstanceScopingRequest? left, Aw.Sindri.Features.Scoping.GetInstanceScopingRequest? right) -> bool
+Aw.Sindri.Features.Scoping.ScopingFactKeys
+static Aw.Sindri.Features.Scoping.ScopingFactKeys.All.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.Scoping.GetPacketFileRequest
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.<Clone>$() -> Aw.Sindri.Features.Scoping.GetPacketFileRequest!
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, out string! Hash, out string! Name) -> void
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.Equals(Aw.Sindri.Features.Scoping.GetPacketFileRequest? other) -> bool
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.GetPacketFileRequest(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Instance, string! Hash, string! Name) -> void
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.Instance.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.Instance.init -> void
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.Hash.get -> string!
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.Hash.init -> void
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.Name.get -> string!
+Aw.Sindri.Features.Scoping.GetPacketFileRequest.Name.init -> void
+override Aw.Sindri.Features.Scoping.GetPacketFileRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Scoping.GetPacketFileRequest.GetHashCode() -> int
+override Aw.Sindri.Features.Scoping.GetPacketFileRequest.ToString() -> string!
+static Aw.Sindri.Features.Scoping.GetPacketFileRequest.operator !=(Aw.Sindri.Features.Scoping.GetPacketFileRequest? left, Aw.Sindri.Features.Scoping.GetPacketFileRequest? right) -> bool
+static Aw.Sindri.Features.Scoping.GetPacketFileRequest.operator ==(Aw.Sindri.Features.Scoping.GetPacketFileRequest? left, Aw.Sindri.Features.Scoping.GetPacketFileRequest? right) -> bool
+Aw.Sindri.Features.Scoping.PacketFile
+Aw.Sindri.Features.Scoping.PacketFile.<Clone>$() -> Aw.Sindri.Features.Scoping.PacketFile!
+Aw.Sindri.Features.Scoping.PacketFile.Deconstruct(out string! Name, out string! Text, out string! Format) -> void
+Aw.Sindri.Features.Scoping.PacketFile.Equals(Aw.Sindri.Features.Scoping.PacketFile? other) -> bool
+Aw.Sindri.Features.Scoping.PacketFile.PacketFile(string! Name, string! Text, string! Format) -> void
+Aw.Sindri.Features.Scoping.PacketFile.Name.get -> string!
+Aw.Sindri.Features.Scoping.PacketFile.Name.init -> void
+Aw.Sindri.Features.Scoping.PacketFile.Text.get -> string!
+Aw.Sindri.Features.Scoping.PacketFile.Text.init -> void
+Aw.Sindri.Features.Scoping.PacketFile.Format.get -> string!
+Aw.Sindri.Features.Scoping.PacketFile.Format.init -> void
+override Aw.Sindri.Features.Scoping.PacketFile.Equals(object? obj) -> bool
+override Aw.Sindri.Features.Scoping.PacketFile.GetHashCode() -> int
+override Aw.Sindri.Features.Scoping.PacketFile.ToString() -> string!
+static Aw.Sindri.Features.Scoping.PacketFile.operator !=(Aw.Sindri.Features.Scoping.PacketFile? left, Aw.Sindri.Features.Scoping.PacketFile? right) -> bool
+static Aw.Sindri.Features.Scoping.PacketFile.operator ==(Aw.Sindri.Features.Scoping.PacketFile? left, Aw.Sindri.Features.Scoping.PacketFile? right) -> bool

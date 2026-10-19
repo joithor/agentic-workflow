@@ -12,5 +12,6 @@ internal static class ScopingServiceCollectionExtensions
     internal static IServiceCollection AddScopingSlices(this IServiceCollection services) => services
         .AddScoped<IService<ScopingCheckRequest, ScopingCheckResponse>, ScopingCheckService>()
         .AddScoped<IService<ScopingShowRequest, ScopingView>, ScopingShowService>()
-        .AddScoped<IService<ScopingDeskRequest, ScopingDeskResponse>, ScopingDeskService>();
+        .AddScoped<IService<ScopingDeskRequest, ScopingDeskResponse>, ScopingDeskService>()
+        .AddScoped<ScopingInstances>();
 }
