@@ -228,7 +228,7 @@ public sealed class ScopingCommandTests : IDisposable
     public async Task Desk_read_brief_refuses_a_path_outside_the_roots_or_under_a_denied_glob_with_SND_SCOPING_004(string path)
     {
         var root = await Repo("briefs/expiry.md", "# x\n");
-        _ = await Repo(path.TrimStart('.', '/'), "TOKEN=1\n");
+        _ = await Repo(path.Replace("../", string.Empty, StringComparison.Ordinal), "TOKEN=1\n");
         await File.WriteAllTextAsync(Path.Combine(_home.Path, "outside.md"), "# outside\n", TestContext.Current.CancellationToken);
         await ReadBriefInput(path);
 

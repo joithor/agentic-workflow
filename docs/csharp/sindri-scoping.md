@@ -18,7 +18,7 @@ AC-1 and AC-2), and every surface sits in exactly one of the two workstreams, so
 ```
 sindri scoping check (<address> | --facts <dir>) [--draft <dir>] [--stage draft|evidence] [--json]
 sindri scoping show  (<address> | --facts <dir>) [--json]
-sindri scoping desk  <block> --facts <dir> --out <dir> [--json]
+sindri scoping desk  <block> --facts <dir> --out <dir> [--repo-root <dir> [--notes-dir <dir>]] [--query <file>] [--lenses <file>] [--code <file>] [--history <file>] [--propose <file>] [--json]
 ```
 
 Exit 0 pass, 1 findings, 2 usage, tool error or serve not running (`SND-API-001`, serve is never started). `--draft` overlays draft files and,
@@ -41,11 +41,23 @@ A `not-synced` source reads by its `sync` pair (`null`, queued, running, finishe
 
 ## Desk helper
 
-`desk` runs `intake`, `check`, `challenge-log`, `record`, `seed` and `evidence` (short or full ids). It writes each output fact to `<out>/<key>.json`,
+`desk` runs `intake`, `read-brief`, `anchor`, `gather`, `reanchor`, `propose`, `check`, `challenge-log`, `record`, `seed` and `evidence` (short or full ids). It writes each output fact to `<out>/<key>.json`,
 `report.json` (`{ block, outcome, outputs: { "fact:<key>": "<file>" }, files, findings, warnings }`, what `workflow complete --outcome … --output fact:<key>=<file>` takes),
 `check` appends `rounds.jsonl` to `<out>`, and every block reads the past rounds from `<out>/rounds.jsonl` when it exists (else from `--facts`), so the round number, trigger and diff are right when the two directories differ; and `evidence` writes `<out>/scope-packet/` (twelve files, trust stamped by code, `lenses.json` untrusted throughout) and
 adds `fact:scopePacket` from `aw-packets hash --kind scoping` (`AW_PACKETS_BIN`, else `aw-packets` on the PATH). `ScopingDeskPacketsTests` runs this through the CLI against a stub that records its arguments (integration lane) and, in the heavy lane, against the built aw-packets: its hash, validate and freeze (under a temp `AW_STATE_DIR`) accept the packet the gold facts build.
-Not covered yet: `read-brief`, `gather`, `anchor`, `reanchor`, `propose`.
+
+The five that read the context engine or the brief file take what the person hands the desk, as files (a flag, or a `<fact>.json` in `--facts`):
+
+| Block | Reads | Writes (`outcome`) |
+|---|---|---|
+| `read-brief` | `scopeInput.json` (`kind: brief`, `path`, optional `section` for one `## N.` heading), the file at `path` under `--repo-root` (or `--notes-dir`), and `--query` (`contextQuery`: the answer of `sindri context query --json` over the brief's text, whose `suggestedAnchors` become the anchors) | `brief` (one ref `R1`, `trust: untrusted`, the file's `sha256` prefix as version) and `anchors` (`read`), or nothing (`empty`: a blank file, or a section the file lacks) |
+| `anchor` | `brief.json`, `--query` | `anchors` (`anchored`) |
+| `reanchor` | `scopeMap.json`, `anchors.json`, optionally `--query` | `anchors` (`anchored`): the `code:` anchors already held, then the map's node keys, then the suggestions |
+| `gather` | `anchors.json`, `--lenses` (`lensesView`: `sindri context lenses <anchor>... --json`, schema 1 or 2), optionally `--code` (`codeView`) and `--history` (`historyView`) | `lenses` and `coverage` (`gathered`) |
+| `propose` | `scopeMap.json`, optionally `--propose` (`proposeResult`: `sindri context map propose --json`) | `scopeMap` with each surface's `graphStatus`, and the proposed node as `key` for a surface that had none (`proposed`), or every keyless surface `unknown` (`skipped`) |
+
+`read-brief` refuses a path outside the roots or under a denied glob (an environment file, a key or certificate, a credentials file, `.git`, `.ssh`), and a link out of the root, with `SND-SCOPING-004`. Anchors are capped at 20 (the context engine's limit, `SND-CONTEXT-006`) with a warning.
+`gather` is `LensGather.Assemble` (Features/Scoping): the views in, `fact:lenses` and `fact:coverage` out. The block runtime calls the same function over its Step inputs' results, so the two paths give the same facts. The mapping: `product` is the product band's own nodes; `related` the cascade's neighbors and affects, plus the intent band's records and decisions as items; `code` the code files of the lenses view and the code view, its tests, schema files and data things, callers and callees; `history` the history view's records, decisions, changes and incidents. Items are numbered `L-<lens>-<n>`, nodes first. A source's `reason` is written with hyphens (`index not built` reads `index-not-built`); the Recorded limits table turns a source into a `limits[]` entry; a `degraded` list becomes degraded sources (a regather). A view not handed over is a `not-configured` source for the lens it feeds (the lenses view is required). `mapCoverage` counts every found node as mapped.
 
 ## Not built yet (SC-K2)
 

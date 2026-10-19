@@ -9,10 +9,10 @@ namespace Aw.Sindri.Features.Scoping;
 
 /// <summary>
 /// The block Steps the desk helper covers (scoping spec §8.2, 'Desk helper'): each runs the Step's code over the facts the Step reads and
-/// returns what its desk 'complete' takes. The Steps that read the context engine's JSON (gather, anchor, reanchor, propose) and the
-/// readers are not covered yet.
+/// returns what its desk 'complete' takes. The Steps that read the context engine's JSON (gather, anchor, reanchor, propose) take its views as facts
+/// (lensesView, codeView, historyView, contextQuery, proposeResult), and read-brief takes the file's text as briefSource.
 /// </summary>
-internal static class DeskBlocks
+internal static partial class DeskBlocks
 {
     private static readonly Dictionary<string, string> _ids = new(StringComparer.Ordinal)
     {
@@ -23,6 +23,10 @@ internal static class DeskBlocks
         ["record"] = "step.interview.record",
         ["interview.record"] = "step.interview.record",
         ["gather"] = "step.scope.gather",
+        ["read-brief"] = "step.scope.read-brief",
+        ["anchor"] = "step.scope.anchor",
+        ["reanchor"] = "step.scope.reanchor",
+        ["propose"] = "step.scope.propose",
         ["seed"] = "step.brief.seed",
         ["brief.seed"] = "step.brief.seed",
     };
@@ -43,6 +47,10 @@ internal static class DeskBlocks
         "step.interview.record" => Record(facts),
         "step.brief.seed" => Seed(),
         "step.scope.gather" => Gather(facts),
+        "step.scope.read-brief" => ReadBrief(facts),
+        "step.scope.anchor" => Anchor(facts),
+        "step.scope.reanchor" => Reanchor(facts),
+        "step.scope.propose" => Propose(facts),
         _ => SindriErrors.InvalidInput.With($"no desk helper for {block}"),
     };
 
@@ -73,12 +81,6 @@ internal static class DeskBlocks
 
         var outputs = ScopeSchemas.Seeds().ToDictionary(static s => s.Key, static s => ScopeJson.Write(s.Value), StringComparer.Ordinal);
         return Reply("step.scope.intake", kind, outputs, []);
-    }
-
-    private static Result<ScopingDeskResponse> Gather(ScopeFacts facts)
-    {
-        var assembled = LensGather.Assemble(facts["lensesView"], facts["codeView"], facts["historyView"], [.. ScopeJson.Strings(facts["anchors"])]);
-        return Reply("step.scope.gather", "gathered", Outputs(("lenses", assembled.Lenses), ("coverage", assembled.Coverage)), []);
     }
 
     private static Result<ScopingDeskResponse> Seed() =>

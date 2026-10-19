@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.Json;
 using Aw.Kernel;
@@ -20,7 +21,7 @@ internal static class ScopingCommandTable
 {
     private const string CheckUsage = "usage: sindri scoping check (<address> | --facts <dir>) [--draft <dir>] [--stage draft|evidence] [--json]";
     private const string ShowUsage = "usage: sindri scoping show (<address> | --facts <dir>) [--json]";
-    private const string DeskUsage = "usage: sindri scoping desk <block id> --facts <dir> --out <dir> [--json]";
+    private const string DeskUsage = "usage: sindri scoping desk <block id> --facts <dir> --out <dir> [--repo-root <dir> [--notes-dir <dir>]] [--query <file>] [--lenses <file>] [--code <file>] [--history <file>] [--propose <file>] [--json]";
 
     /// <summary>The facts a scoping instance holds, by the keys the checks and the view read.</summary>
     private static readonly string[] _factKeys =
@@ -202,7 +203,7 @@ internal static class ScopingCommandTable
     private static async Task<int> Desk(IReadOnlyList<string> args, Host host, CancellationToken ct)
     {
         var (services, output, _, environment) = host;
-        var parsed = ScopingArguments.Parse(args, "--facts", "--out");
+        var parsed = ScopingArguments.Parse(args, "--facts", "--out", "--repo-root", "--notes-dir", "--query", "--lenses", "--code", "--history", "--propose");
         if (!DeskArguments(parsed, out var block, out var directory, out var outDirectory))
         {
             return await Fail(output, SindriErrors.InvalidInput.With(DeskUsage)).ConfigureAwait(false);
@@ -213,13 +214,12 @@ internal static class ScopingCommandTable
             return await Fail(output, ScopingFactDirectory.WorktreeRefusal("--out", outDirectory)).ConfigureAwait(false);
         }
 
-        var facts = await ScopingFactDirectory.Read(directory, ct).ConfigureAwait(false);
+        var facts = await ScopingDeskInputs.Load(parsed, (block, directory, outDirectory), services.GetRequiredService<TimeProvider>().GetUtcNow(), ct).ConfigureAwait(false);
         if (facts.IsError)
         {
             return await Fail(output, facts.Error).ConfigureAwait(false);
         }
 
-        await ScopingFactDirectory.OverlayRounds(facts.Value, outDirectory, ct).ConfigureAwait(false);
         var result = await services.GetRequiredService<IService<ScopingDeskRequest, ScopingDeskResponse>>()
             .Handle(new ScopingDeskRequest(block, facts.Value), ct).ConfigureAwait(false);
         if (result.IsError)
@@ -234,12 +234,12 @@ internal static class ScopingCommandTable
         }
 
         var code = result.Value.Findings.Count > 0 || string.Equals(result.Value.Outcome, "incomplete", StringComparison.Ordinal) ? 1 : 0;
-        return parsed?.Json == true
+        return parsed.Json
             ? await output.Json(report.Value, code).ConfigureAwait(false)
             : await output.Text(DeskLine(report.Value), code).ConfigureAwait(false);
     }
 
-    private static bool DeskArguments(ScopingArguments? parsed, out string block, out string directory, out string outDirectory)
+    private static bool DeskArguments([NotNullWhen(true)] ScopingArguments? parsed, out string block, out string directory, out string outDirectory)
     {
         block = directory = outDirectory = string.Empty;
         if (parsed is not { Positional: [var only] } || parsed.Value("--facts") is not { } facts || parsed.Value("--out") is not { } output)

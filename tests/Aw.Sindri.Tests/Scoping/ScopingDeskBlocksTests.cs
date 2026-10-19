@@ -245,7 +245,7 @@ public sealed class ScopingDeskBlocksTests
     [Fact, Trait("Lane", "unit")]
     public async Task Propose_writes_each_surfaces_graph_status_from_the_context_engines_answer()
     {
-        var facts = new ScopingFacts { ["scopeMap"] = ScopingFacts.Expiry().Edit("scopeMap", n => SetStatus(n, "unknown"))["scopeMap"], ["proposeResult"] = ScopingFacts.View("proposeResult") };
+        var facts = new ScopingFacts { ["scopeMap"] = Unproposed(), ["proposeResult"] = ScopingFacts.View("proposeResult") };
 
         var response = await Run("propose", facts);
 
@@ -254,13 +254,14 @@ public sealed class ScopingDeskBlocksTests
         var surfaces = Out(response, "scopeMap")["surfaces"]!.AsArray();
         Assert.Equal("new", surfaces.Single(s => s!["id"]!.GetValue<string>() == "S22")!["graphStatus"]!.GetValue<string>());
         Assert.Equal("new", surfaces.Single(s => s!["id"]!.GetValue<string>() == "S23")!["graphStatus"]!.GetValue<string>());
+        Assert.Equal("surface:dialog/share-expiry", surfaces.Single(s => s!["id"]!.GetValue<string>() == "S22")!["key"]!.GetValue<string>());   // the node the engine proposed
         Assert.Equal("mapped", surfaces.Single(s => s!["id"]!.GetValue<string>() == "S2")!["graphStatus"]!.GetValue<string>());
     }
 
     [Fact, Trait("Lane", "unit")]
     public async Task Propose_with_no_answer_reports_skipped_and_marks_the_surfaces_with_no_node_unknown()
     {
-        var response = await Run("propose", new ScopingFacts { ["scopeMap"] = ScopingFacts.Expiry()["scopeMap"] });
+        var response = await Run("propose", new ScopingFacts { ["scopeMap"] = Unproposed() });
 
         Assert.Equal("skipped", response.Outcome);
         var surfaces = Out(response, "scopeMap")["surfaces"]!.AsArray();
@@ -271,7 +272,7 @@ public sealed class ScopingDeskBlocksTests
     [Fact, Trait("Lane", "unit")]
     public async Task Propose_leaves_every_other_field_of_the_map_as_it_was()
     {
-        var map = ScopingFacts.Expiry()["scopeMap"];
+        var map = Unproposed();
         var response = await Run("propose", new ScopingFacts { ["scopeMap"] = map, ["proposeResult"] = ScopingFacts.View("proposeResult") });
 
         var before = JsonNode.Parse(map)!.AsObject();
@@ -301,16 +302,15 @@ public sealed class ScopingDeskBlocksTests
         ["historyView"] = ScopingFacts.View("historyView"),
     };
 
-    private static void SetStatus(JsonNode map, string status)
+    /// <summary>The gold map as it stood before propose: S22 and S23 have no node key yet.</summary>
+    private static string Unproposed() => ScopingFacts.Expiry().Edit("scopeMap", map =>
     {
-        foreach (var surface in map["surfaces"]!.AsArray())
+        foreach (var surface in map["surfaces"]!.AsArray().OfType<JsonObject>().Where(static s => string.Equals(s["id"]!.GetValue<string>(), "S22", StringComparison.Ordinal) || string.Equals(s["id"]!.GetValue<string>(), "S23", StringComparison.Ordinal)))
         {
-            if (surface!["key"] is null || string.Equals(surface["id"]!.GetValue<string>(), "S22", StringComparison.Ordinal) || string.Equals(surface["id"]!.GetValue<string>(), "S23", StringComparison.Ordinal))
-            {
-                surface["graphStatus"] = status;
-            }
+            _ = surface.Remove("key");
+            surface["graphStatus"] = "unknown";
         }
-    }
+    })["scopeMap"];
 
     private static string WithDegraded(string view)
     {
