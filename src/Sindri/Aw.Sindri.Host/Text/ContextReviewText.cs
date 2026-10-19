@@ -11,6 +11,9 @@ namespace Aw.Sindri.Host.Text;
 /// <summary>Plain text for the review verbs: words, never colour, so NO_COLOR and pipes read the same.</summary>
 internal static class ContextReviewText
 {
+    // How many written override ids a result spells out (an apply-file or a multi-undo stays readable); a bulk accept past it gets a pointer instead.
+    private const int ListedIds = 50;
+
     private static string Invariant(FormattableString text) => text.ToString(CultureInfo.InvariantCulture);
 
     internal static string Queue(ReviewQueueView queue)
@@ -61,9 +64,6 @@ internal static class ContextReviewText
         return (history.Truncated ? text.AppendLine("older decisions were cut (fix: raise --limit)") : text).ToString();
     }
 
-    // How many written override ids a result spells out before it points at --history instead.
-    private const int ListedIds = 10;
-
     internal static string Result(string verb, ReviewResult result)
     {
         var text = new StringBuilder(Invariant($"{verb}: {result.Written.Count} {(result.Written.Count == 1 ? "row" : "rows")} written, {result.Undecided} undecided\n"));
@@ -74,7 +74,7 @@ internal static class ContextReviewText
         else if (result.Written.Count > ListedIds)
         {
             // a bulk accept writes thousands: the count and the verb that lists them, not a line of ids
-            _ = text.AppendLine("  list them: sindri context map review --history (newest first; --limit up to 1000)");
+            _ = text.AppendLine(Invariant($"  the newest {ReviewLimits.Max}: sindri context map review --history --limit {ReviewLimits.Max}; every id: add --json to this command"));
         }
 
         foreach (var skipped in result.Skipped)
