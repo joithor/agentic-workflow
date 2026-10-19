@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace Aw.Sindri.Ui.Api.Workflow;
 
 /// <summary>The fields of 'workflow status' (also current.status of an instance).</summary>
@@ -31,10 +29,6 @@ internal sealed record StatusFields(
     IReadOnlyList<StatusInjection>? Injection = null,
     [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] StatusRun? Run = null)
 {
-    /// <summary>The open agent run, as served; absent for a desk or block run, and not written back when null.</summary>
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public StatusRun? Run { get; init; }
-
     /// <summary>The injection sections, never null.</summary>
     public IReadOnlyList<StatusInjection> Injection { get; init; } = Injection ?? [];
 }
