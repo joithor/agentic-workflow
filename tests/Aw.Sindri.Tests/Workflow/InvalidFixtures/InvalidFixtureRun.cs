@@ -99,7 +99,7 @@ internal static class InvalidFixtureRun
 
     /// <summary>
     /// The fixture, a 'workflow.step' child that needs no inputs (RCP-TIME-002's and the capability fixtures'), and the
-    /// chain workflow.depth-1 -> ... -> workflow.depth-5 that RCP-CHILD-003's workflow.depth-0 starts.
+    /// chain workflow.depth-1 -> ... -> workflow.depth-6 that RCP-CHILD-003's workflow.depth-0 starts.
     /// </summary>
     private static InMemoryRecipeFiles Files(string file, string text)
     {
@@ -107,12 +107,12 @@ internal static class InvalidFixtureRun
             .With(Path.Combine(Directory, file), text)
             .With(Path.Combine(Directory, "workflow.step.yaml"), Leaf("workflow.step"))
             .With(Path.Combine(Directory, "workflow.dev-child-summary.yaml"), ShippedRecipes.Read("dev/workflow.dev-child-summary.yaml"));
-        for (var level = 1; level < 5; level++)
+        for (var level = 1; level < 6; level++)
         {
             _ = files.With(Path.Combine(Directory, Depth(level) + ".yaml"), Parent(Depth(level), Depth(level + 1)));
         }
 
-        return files.With(Path.Combine(Directory, Depth(5) + ".yaml"), Leaf(Depth(5)));
+        return files.With(Path.Combine(Directory, Depth(6) + ".yaml"), Leaf(Depth(6)));
     }
 
     private static string Depth(int level) => "workflow.depth-" + level.ToString(CultureInfo.InvariantCulture);
