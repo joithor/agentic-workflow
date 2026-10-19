@@ -10,7 +10,7 @@ namespace Aw.Sindri.Ui.ViewModels.Instance;
 /// served field mapped to words, and the next sentence is shown whole. Nothing is sent from here yet (U8b): each command
 /// shows its CLI with a Copy, a protected one is the lock button, and Cancel asks first with Keep focused.
 /// </summary>
-internal sealed class ExpandedStateViewModel : ObservableObject
+internal sealed partial class ExpandedStateViewModel : ObservableObject
 {
     private CurrentState _current;
     private readonly string _address;
@@ -37,7 +37,9 @@ internal sealed class ExpandedStateViewModel : ObservableObject
             AnswerInChildName = ServedChild(status) is { } childAddress ? Labels.AnswerInChildName(childAddress) : Labels.AnswerInChildPanelName;
         }
 
-        HasAttach = current.Step is { } step && string.Equals(step.Ref, "step.agent", StringComparison.Ordinal) && status.Paused is null;
+        AttachCommandCopy = new CopyAction(clipboard, clock, Labels.CopyAttachName(address));
+        CopyAttachName = Labels.CopyAttachName(address);
+        InitRun(current, address);
         Name = Labels.ExpandedName(current.State, address);
         CopyStatusName = Labels.CopyStatusName(address);
         StatusCopy = new CopyAction(clipboard, clock, Labels.CopyStatus, Labels.CopyStatus);
@@ -151,15 +153,6 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     /// <summary>True when one of the commands is an answer.</summary>
     public bool HasAnswer => Commands.Any(c => c.Verb == StatusVerb.Answer);
 
-    /// <summary>True on a live agent step, which Attach joins once API P10a serves it.</summary>
-    public bool HasAttach { get; }
-
-    /// <summary>The chip that stands for Attach; empty without one.</summary>
-    public string AttachChip => HasAttach ? Labels.AvailableWithP10a : string.Empty;
-
-    /// <summary>The Attach chip's accessible name.</summary>
-    public string AttachName => HasAttach ? Labels.AttachPendingName(_address) : string.Empty;
-
     /// <summary>True while the Cancel confirm shows.</summary>
     public bool IsConfirmingCancel { get; private set => Set(ref field, value); }
 
@@ -202,7 +195,7 @@ internal sealed class ExpandedStateViewModel : ObservableObject
     /// What the state draws as controls and structure, so a re-read of the same keeps them (and the focus, the open confirm and a Copied label).
     /// The words that move with time (the status text, the timeout, the budget, the next sentence, the child pointer's state) are not: <see cref="Update"/> changes them in place.
     /// </summary>
-    internal string Signature => string.Join('|', _current.State, StepLine, string.Join(',', Gates), string.Join(',', Commands.Select(c => c.Signature)), _current.Status.Child?.Id, AnswerChild?.Child, AnswersInChild, HasNext, HasBudget, HasTimeout, IsPaused, HasDrift);
+    internal string Signature => string.Join('|', _current.State, StepLine, string.Join(',', Gates), string.Join(',', Commands.Select(c => c.Signature)), _current.Status.Child?.Id, AnswerChild?.Child, AnswersInChild, HasNext, HasBudget, HasTimeout, IsPaused, HasDrift, HasAttach, _current.Status.Run?.Launch);
 
     /// <summary>Takes a re-read of the same state: the moving words change, the controls stay.</summary>
     /// <param name="current">The state as served now; its <see cref="Signature"/> equals this one's.</param>

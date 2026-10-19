@@ -179,6 +179,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         if (answer.IsSuccess)
         {
             Show(answer.Value);
+            await ReadRun(answer.Value, generation, cancellationToken).ConfigureAwait(true);
         }
         else
         {
