@@ -3,7 +3,7 @@ using Aw.Sindri.Core.Secrets;
 
 namespace Aw.Sindri.Core.Onyx;
 
-/// <summary>Stores the one secret Sindri writes (Onyx's API key) where `SecretPointer` can read it back. The secret never appears in an argument list, a log or an error.</summary>
+/// <summary>Stores the one secret Sindri writes (Onyx's personal access token) where `SecretPointer` can read it back. The secret never appears in an argument list, a log or an error.</summary>
 public interface ISecretWriter
 {
     /// <summary>Stores a secret.</summary>

@@ -765,7 +765,7 @@ context:
 - `managed`: optional, default `false`. `sindri onyx up` writes `managed: true` for the Onyx it runs; when true, `url` must be
   exactly `http://127.0.0.1:<port>` (not `localhost`, `[::1]`, https or another host), else `SND-CONTEXT-055`. Example:
   `onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "v4.9.0", managed: true }`.
-- `token`: a **secret pointer** to the Onyx admin key of a service account Sindri alone uses, never the key itself.
+- `token`: a **secret pointer** to the Onyx admin token Sindri alone uses (a personal access token of the dedicated user `sindri@sindri.app`, or a service-account key), never the token itself.
   Missing, or text that isn't a pointer, is `SND-CONTEXT-002`; the message doesn't repeat the text (rotate a key that
   was written into the profile).
 - `linear.teams`: team keys (a capital letter, then one or more capitals or digits, e.g. `ENG`). Linear's own `token` and `url` arrive
@@ -822,7 +822,7 @@ later stage), a session searches repo-docs sources only, so onyx answers humans 
 the map's records and decisions linked to its repo's nodes (owner decision 2026-10-15: B). A caller whose scope maps no
 repo gets no source at all, onyx included.
 
-`sindri context sources status` shows an `onyx` row: `ok`, `degraded` (the key is an admin key of a person's account,
+`sindri context sources status` shows an `onyx` row: `ok`, `degraded` (the token is an admin token of a person's account,
 `SND-CONTEXT-053`) or `unavailable` (no answer, `SND-CONTEXT-010`; another version, `055`; key refused, `050`; pointer
 unresolved, `002`), with the version and the key's role and account type in its detail.
 
@@ -833,8 +833,8 @@ version, then `GET /api/me` with the key for its role and account type.
 
 | Result | When | Fix |
 |---|---|---|
-| `ok` | Onyx answers the pinned version and the key is an admin key of a service account; or the profile names no onyx (`not configured`) | — |
-| `warn` | the key is an admin key of a person's account (`053`); or onyx is named but no repo is mapped, so no source runs | create a service-account key; map a repo |
+| `ok` | Onyx answers the pinned version and the token is an admin token of Sindri's dedicated user (`sindri@sindri.app`) or a service account; or the profile names no onyx (`not configured`) | — |
+| `warn` | the token is an admin token of a person's account (`053`); or onyx is named but no repo is mapped, so no source runs | use the dedicated user's token (`sindri onyx up`); map a repo |
 | `fail` | the key's pointer doesn't resolve (`SND-SECRET-001`..`003`, checked before Onyx is called), Onyx is down (`010`), another version (`055`, naming both), the key lacks admin (`050`), the section is invalid | per the line; see `docs/sindri/onyx.md` |
 
 The adapter never reads Onyx's provider and telemetry settings (no settings route is on its allowlist); `docs/sindri/onyx.md` lists them as a manual check
@@ -845,7 +845,7 @@ on each Onyx version change.
 ```bash
 $SINDRI stop                                    # first, with the old home: a running control plane keeps its port
 export AW_SINDRI_HOME="$(mktemp -d)"            # throwaway state
-read -rs SINDRI_ONYX_KEY && export SINDRI_ONYX_KEY   # paste the service account's admin key (not echoed, not in history); or keychain:onyx/sindri-onyx
+read -rs SINDRI_ONYX_KEY && export SINDRI_ONYX_KEY   # paste the dedicated user's admin token (not echoed, not in history); or keychain:onyx/sindri-onyx
 mkdir -p "$AW_SINDRI_HOME/profile"
 cat >"$AW_SINDRI_HOME/profile/profile.yaml" <<'YAML'
 schemaVersion: 1

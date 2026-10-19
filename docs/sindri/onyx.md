@@ -22,18 +22,23 @@ sha256, `.env` and a compose override (nginx on `127.0.0.1` only, every image by
 one-user sizing), the pull and the start. Then it needs you twice:
 
 1. **Your account.** It opens Onyx's sign-up page; create your own account (the first account is Onyx's admin) and press
-   Enter. Sindri registers nobody and never sees the account's password except at step 2.
-2. **Sindri's key.** It asks once for that account's email and password (not shown, not stored), makes the
-   `sindri-onyx` key on its own admin service account, stores it in the OS secret store (`keychain:onyx/sindri-onyx`;
-   an owner-only file under `$AW_SINDRI_HOME/secrets/` when there is none), writes `context.sources.onyx` into your profile
-   (`managed: true`) and shows the profile approval to confirm.
+   Enter. Sindri never sees that account's password except at step 2.
+2. **Sindri's own user.** It asks once for that account's email and password (not shown, not stored) and, with it, sets up
+   one dedicated Onyx user, `sindri@sindri.app`, for Sindri alone: it registers it with a random password (or, when it
+   already exists, has Onyx reset the password to a new random one), makes it an admin, logs in as it and makes it a
+   personal access token named `sindri-onyx` (no expiry, no scopes). The user's password lives in memory for that one
+   call; it is never stored, printed or logged. The token goes in the OS secret store (`keychain:onyx/sindri-onyx`; an
+   owner-only file under `$AW_SINDRI_HOME/secrets/` when there is none), and `context.sources.onyx` is written into your
+   profile (`managed: true`) and shown for approval. Sindri registers exactly this one user and nobody else.
 
-   *Community Edition note.* Onyx's user-group list is an Enterprise-only route, so the CE we run answers it `402 Payment
-   Required`. Sindri takes the default Admin group's id from the stack's own database instead (a read-only
-   `select` through `docker exec` on the `relational_db` container of its own compose project; no extra HTTP request),
-   makes the key in that group, and keeps it only when Onyx's answer lists the Admin group; otherwise it tells you which
-   key to delete in Admin → API Keys. With no stack of Sindri's on the box (an Onyx you run yourself) it reads nothing
-   and points you at section 5 below. A rerun after any failure resumes at this step.
+   *Why a user and a token, not an API key.* Onyx's Community Edition gates the API-key route (`/admin/api-key`) and the
+   user-group list at the Business tier, so a service-account key can't be made (it answers `402`, the log says
+   `tier_gate ... required=business`). A personal access token is Community Edition, and Sindri's search route
+   (`POST /api/admin/search`) only needs the admin permission. The user is admin because that route needs it (context
+   spec §8.8), so Sindri has the same reach as an admin: keep the account for Sindri alone. It is a `STANDARD` account, and
+   doctor tells it from a person's by its email (§5). If Onyx is invite-only the registration is refused (`SND-ONYX-008`):
+   invite `sindri@sindri.app` in Admin → Users, or turn invite-only off, and rerun. A rerun after any failure resumes at this
+   step (the user is reused, never doubled); a token that nobody holds any more is left in Onyx, harmless, and a new one is made.
 
 Last it opens Onyx's connectors page and prints the checklist: connect Linear (the product's teams, with a start date that
 covers the backtests) and Slack (the product's channels) with the company's OAuth, in Onyx's UI. `$SINDRI doctor` then
@@ -157,14 +162,17 @@ answers and what the key is, not how far indexing has got.
 
 ## 5. The key
 
-Create a **dedicated service account** in Admin → API Keys named `sindri-onyx` and copy its key (`on_…`).
-(This is also the path `sindri onyx up` sends you to on the Community Edition when no stack of Sindri's runs on the
-box, since it can't read the Admin group without one.)
+Make a **dedicated admin user** for Sindri, with the email `sindri@sindri.app` (doctor tells it from a person's account by
+that email), and make it a personal access token while logged in as it: in Onyx's personal access token settings, a name such as
+`sindri-onyx`, no expiry, **no scopes** (a scoped token can't reach admin search), and copy the token (`onyx_pat_…`).
+Onyx's Community Edition has no service-account keys (Business tier), so this is the manual twin of what `sindri onyx up`
+does. The same path is the fallback when `onyx up` can't do it (an invite-only Onyx you can't open).
 The search route Sindri uses (`POST /api/admin/search`, the only v4.9.0 CE route that returns document ids without
-an LLM) needs an **admin** key, so this key could change Onyx settings (owner decision 2026-10-12, context spec §8.8).
-Sindri only ever sends the five requests in §7; its Onyx adapter refuses any other request before sending it, and a
-test proves it. Keep the key for Sindri alone, on its own service account: doctor reads the key's account through
-`GET /api/me` and warns (`SND-CONTEXT-053`) when the admin key belongs to a person's account.
+an LLM) needs an **admin** account, so this token could change Onyx settings (owner decision 2026-10-12, context spec §8.8).
+Sindri's query adapter only ever sends the five requests in §7; its Onyx adapter refuses any other request before sending it, and a
+test proves it. Keep the user for Sindri alone: doctor reads the token's account through `GET /api/me` and warns
+(`SND-CONTEXT-053`) when the admin token belongs to a person's account (any `STANDARD` account whose email isn't
+`sindri@sindri.app`; an old service-account key, `SERVICE_ACCOUNT`, passes too).
 
 Store it by pointer, never in the profile. Add the `context:` section below to your profile
 (`$AW_SINDRI_HOME/profile/profile.yaml`, which already starts with `schemaVersion: 1` and `user:`; a new profile needs
@@ -216,7 +224,7 @@ $SINDRI context sources status
 | `SND-SECRET-001`..`003` | The key's pointer is malformed (`001`), doesn't resolve (`002`, naming the variable, file or entry), or is an unsafe `file:` (`003`) | Fix the pointer or the secret as the line says (§5) |
 | `SND-CONTEXT-002` | The key's pointer doesn't resolve to a usable key (queries degrade with it as the cause) | `$SINDRI doctor` names the `SND-SECRET` reason |
 | `SND-CONTEXT-050` | Onyx refused the key (403: missing, wrong, or not admin) | Recreate the key as in §5 and update the pointer |
-| `SND-CONTEXT-053` | The admin key isn't a service account's | Create a service account for Sindri (§5) |
+| `SND-CONTEXT-053` | The admin token isn't Sindri's dedicated user's (`sindri@sindri.app`) or a service account's | Use a token of the dedicated user (§5) |
 | `SND-CONTEXT-055` | `onyx.url` isn't loopback, or `managed: true` is set with a url that isn't `http://127.0.0.1:<port>`, or Onyx reports a version other than the pinned one | §1, §2 |
 | `SND-CONTEXT-051` | Onyx answered with a shape the pinned v4.9.0 doesn't have | Check `version` against what Onyx runs (§1) |
 | `SND-CONTEXT-010` | Onyx didn't answer; queries continue without it (`degraded`) | `docker compose ps`, `sources status` |
@@ -236,6 +244,27 @@ loopback only.
 | `GET /api/document/document-size-info?document_id=` and `GET /api/document/chunk-info?document_id=&chunk_id=` | A cited record's text |
 | `GET /api/version` | Doctor's version check (no key sent) |
 | `GET /api/me` | Doctor shows the key's role and account type |
+
+### Setup-only requests (`sindri onyx up`)
+
+`sindri onyx up` (the human's verb, at a terminal) has its own, separate allowlist of **seven** requests in
+`HttpOnyxProvisioning`, refused before sending when off the list; the query adapter above still sends exactly its five. All go
+to `127.0.0.1` only, none carries a password or token into a message or a log, and each is a route the Community Edition's
+license tiers leave open (`PATH_PREFIX_MIN_TIER` in `backend/ee/onyx/configs/license_enforcement_config.py` gates
+`/admin/api-key` and `/manage/admin/user-group` at Business; it matches by path prefix, and none of the routes below falls under
+one). Sources are at the pinned commit f1738ed.
+
+| Request | Why |
+|---|---|
+| `POST /api/auth/login` (form: `username`, `password`) and `POST /api/auth/logout` (`main.py:652`) | The session cookie, held in memory only: first the owner's, then the dedicated user's. Every session logs out when it ends |
+| `POST /api/auth/register` `{email, password}` (`main.py:660`; the invite check is `UserManager.create`, `auth/users.py:696`) | Makes the dedicated user. Open unless the owner made the workspace invite-only; "already exists" is read as "reuse it" |
+| `POST /api/password/reset_password` `{user_email}` (`server/features/password/api.py:42`, needs `FULL_ADMIN_PANEL_ACCESS`) | When the dedicated user already exists: Onyx makes a new random password and returns it, so Sindri never has to guess or keep the old one |
+| `PATCH /api/manage/admin/users/admin-access` `{user_email, is_admin: true}` (`server/manage/users.py:162`, needs `FULL_ADMIN_PANEL_ACCESS`) | Gives the dedicated user the admin permission (already admin is a success) |
+| `POST /api/user/pats` `{name, expiration_days: null, scopes: null}` (`server/pat/api.py`, router prefix `/user/pats`, needs `CREATE_USER_API_KEYS`, which admins hold) | Makes the unscoped, non-expiring token as the dedicated user, which Sindri's query adapter then sends as `Authorization: Bearer onyx_pat_…` (unscoped is the only kind that reaches admin search) |
+| `GET /api/me` (`server/manage/users.py:1081`) | Checks the made token is the dedicated user's, with the admin permission, before it is stored |
+
+Not used, on purpose: `POST /api/admin/api-key` and `GET /api/manage/admin/user-group` (Business tier, answer 402), and the PAT list and
+revoke routes (a token nobody holds any more is harmless and is left; adding revoke would add a path-parameter route to the list).
 
 Nothing else: the adapter refuses any other request before sending it. Linear issues key on Linear's issue UUID
 (Onyx's document id). The `ENG-482`-style identifier is stored as an alias,
