@@ -12058,3 +12058,9 @@ static Aw.Sindri.Core.Packets.PacketRef.operator !=(Aw.Sindri.Core.Packets.Packe
 static Aw.Sindri.Core.Packets.PacketRef.operator ==(Aw.Sindri.Core.Packets.PacketRef? left, Aw.Sindri.Core.Packets.PacketRef? right) -> bool
 static Aw.Sindri.Core.Packets.PacketValidation.operator !=(Aw.Sindri.Core.Packets.PacketValidation? left, Aw.Sindri.Core.Packets.PacketValidation? right) -> bool
 static Aw.Sindri.Core.Packets.PacketValidation.operator ==(Aw.Sindri.Core.Packets.PacketValidation? left, Aw.Sindri.Core.Packets.PacketValidation? right) -> bool
+Aw.Sindri.Core.Workflow.Blocks.StepFacts
+static Aw.Sindri.Core.Workflow.Blocks.StepFacts.Done(string! outcome, params (string! Key, System.Text.Json.Nodes.JsonNode! Value)[]! outputs) -> Aw.Sindri.Core.Workflow.Blocks.BlockStepResult!
+static Aw.Sindri.Core.Workflow.Blocks.StepFacts.Head(System.Text.Json.Nodes.JsonNode? fact) -> string?
+static Aw.Sindri.Core.Workflow.Blocks.StepFacts.Missing(Aw.Sindri.Core.Workflow.Blocks.StepContext! context, params string![]! keys) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Workflow.Blocks.StepFacts.Read(Aw.Sindri.Core.Workflow.Blocks.StepContext! context, string! key) -> System.Text.Json.Nodes.JsonNode?
+static Aw.Sindri.Core.Workflow.Blocks.StepFacts.Text(Aw.Sindri.Core.Workflow.Blocks.StepContext! context, string! key) -> string?

@@ -1,7 +1,6 @@
 using Aw.Kernel;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Packets;
-using Aw.Sindri.Infrastructure.Packets;
 
 namespace Aw.Sindri.Host.Commands.Scoping;
 
@@ -9,9 +8,9 @@ namespace Aw.Sindri.Host.Commands.Scoping;
 internal static class PacketsCli
 {
     /// <summary>The packet directory's canonical hash ('sha256:…') from 'aw-packets hash --kind scoping &lt;dir&gt;'. The program is AW_PACKETS_BIN, else 'aw-packets' on the PATH.</summary>
-    internal static async Task<Result<string>> Hash(string packetDirectory, Func<string, string?> environment, CancellationToken ct)
+    internal static async Task<Result<string>> Hash(IPackets packets, string packetDirectory, CancellationToken ct)
     {
-        var hash = await PacketsTools.Create(environment).Hash(new PacketRef(PacketKind.Scoping, packetDirectory), ct).ConfigureAwait(false);
+        var hash = await packets.Hash(new PacketRef(PacketKind.Scoping, packetDirectory), ct).ConfigureAwait(false);
         return hash.IsError ? SindriErrors.InvalidInput.With(hash.Error.Message) : hash;
     }
 }

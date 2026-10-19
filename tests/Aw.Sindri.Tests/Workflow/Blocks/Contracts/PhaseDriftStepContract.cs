@@ -1,8 +1,8 @@
 using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Features.Build;
 using Aw.Sindri.Features.Blocks.Step;
+using Aw.Sindri.Features.Build;
 using Aw.Sindri.Testing.Workflow;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Contracts;

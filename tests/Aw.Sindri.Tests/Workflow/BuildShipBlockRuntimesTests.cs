@@ -5,9 +5,9 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Recipes;
-using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Features.Build;
 using Aw.Sindri.Features.Ship;
+using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 using Aw.Sindri.Tests.Workflow.Engine;
 using Microsoft.Extensions.DependencyInjection;
@@ -77,7 +77,7 @@ public sealed class BuildShipBlockRuntimesTests
     }
 
     // The state the engine moves to on the Step's result, after the same report validation a desk report gets.
-    private static string Next(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance entered, Recipe recipe, DecisionContext context, BlockStepResult run)
+    private static string Next(Core.Workflow.Engine.Instances.WorkflowInstance entered, Recipe recipe, DecisionContext context, BlockStepResult run)
     {
         var done = run.Result ?? throw new InvalidOperationException(run.Failure);
         var outputs = done.Outputs.ToDictionary(static o => o.Key, static o => EngineFixture.Fact(o.Value.ValueKind == JsonValueKind.String ? o.Value.GetString()! : o.Value.GetRawText()));   // why: a string element always holds its text
