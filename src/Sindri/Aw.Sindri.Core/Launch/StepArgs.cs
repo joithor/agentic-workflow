@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Aw.Sindri.Core.Launch;
 
 /// <summary>
@@ -7,4 +9,5 @@ namespace Aw.Sindri.Core.Launch;
 /// <param name="Model">The model id, or null for the CLI's default.</param>
 /// <param name="Policy">The Step's policy, or null for none.</param>
 /// <param name="Ref">The Step whose seed prompt the session gets.</param>
-public sealed record StepArgs(string? Model, StepPolicy? Policy, StepRef Ref);
+/// <param name="Brief">Null, or the text appended to the seed that says how to finish the Step (engine P8 F13). Written only when set.</param>
+public sealed record StepArgs(string? Model, StepPolicy? Policy, StepRef Ref, [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? Brief = null);

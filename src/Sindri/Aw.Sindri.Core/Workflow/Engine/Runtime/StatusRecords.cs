@@ -27,7 +27,10 @@ internal static class StatusRecords
         view.Paused is { } left ? new StatusPaused(Seconds(left)) : null,
         Commands(view),
         StatusLayout.Render(view, now),
-        Injection(view));
+        Injection(view))
+    {
+        Run = view.AgentRun is { } agent ? new StatusRun("agent", agent.Launch) : null,
+    };
 
     private static List<StatusInjection> Injection(InstanceView view) =>
         [.. view.Task?.Injection.Select(static i => new StatusInjection(i.Section, i.Input.Value, i.Bytes, StatusText.Prefixed(i.Sha256), i.Replaced?.Value)) ?? []];

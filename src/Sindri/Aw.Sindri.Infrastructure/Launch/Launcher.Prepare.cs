@@ -46,7 +46,7 @@ internal sealed partial class Launcher
             ? StepPolicyFile.Write(parts.Options.PolicyDirectory, request.Launch, policy)
             : null;
         var session = request.Mode == LaunchMode.Resume && request.Resume is { } resumed ? resumed : PreChosen(entry);
-        var seed = ArgvBuilder.Seed(request.Item) + (step is null ? string.Empty : $" This is the {step.Ref.State} step, block {step.Ref.Block}.");
+        var seed = ArgvBuilder.Seed(request.Item) + StepSeed(step);
         var (mcpPath, mcpArguments) = McpLaunchConfig.Prepare(entry.McpForm, entry.McpForm == McpForm.None ? null : await parts.McpFor(request.RepoPath, cancellationToken).ConfigureAwait(false), parts.Options.LaunchDirectory, request.Launch);
         var built = ArgvBuilder.Build(entry, request.Mode, new ArgvInputs(request.Item, workDir, SessionName(request.Launch), seed, session, mcpPath, step, policyPath));
         if (built.IsError)
@@ -57,6 +57,10 @@ internal sealed partial class Launcher
         IReadOnlyList<string> argv = [.. built.Value, .. mcpArguments];
         return (argv, session);
     }
+
+    /// <summary>What an unattended launch adds to the seed: which Step it is, then the Step's brief when it has one (engine P8 F13).</summary>
+    private static string StepSeed(StepArgs? step) =>
+        step is null ? string.Empty : $" This is the {step.Ref.State} step, block {step.Ref.Block}." + (step.Brief is { Length: > 0 } brief ? " " + brief : string.Empty);
 
     /// <summary>The session id an entry in 'pre-chosen-uuid' mode is told to use, else none (an id reported later is recorded then, launcher L-9).</summary>
     private static SessionId? PreChosen(AgentEntry entry) => entry.SessionIdMode == SessionIdMode.PreChosenUuid ? SessionId.From(Guid.NewGuid().ToString("D")) : null;

@@ -10,7 +10,7 @@ internal static class SindriWorker
 {
     /// <summary>The worker options: <see cref="RecipeWorkflow"/> and every activity class of <paramref name="activities"/>.</summary>
     /// <param name="settings">The task queue.</param>
-    /// <param name="activities">The activity classes.</param>
+    /// <param name="activities">The activity classes, the agent runtime's (engine P8) among them.</param>
     /// <returns>The options, on <see cref="TemporalSettings.TaskQueue"/>.</returns>
     public static TemporalWorkerOptions Options(TemporalSettings settings, WorkerActivities activities) =>
         new TemporalWorkerOptions(settings.TaskQueue)
@@ -22,5 +22,6 @@ internal static class SindriWorker
             .AddAllActivities(activities.Engine.Gates)
             .AddAllActivities(activities.Engine.Cleanup)
             .AddAllActivities(activities.Engine.Children)
-            .AddAllActivities(activities.Inputs);
+            .AddAllActivities(activities.Inputs)
+            .AddAllActivities(activities.Agents);
 }

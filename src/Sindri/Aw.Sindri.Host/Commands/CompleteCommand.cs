@@ -18,6 +18,8 @@ namespace Aw.Sindri.Host.Commands;
 /// </summary>
 internal static class CompleteCommand
 {
+    private const string SecretVariable = "AW_SINDRI_LAUNCH_SECRET";
+
     private const string Usage =
         "usage: sindri workflow complete <address> --run <token> --outcome <o> [--output <fact>=<file>]... [--nonce <n>] [--json]";
 
@@ -30,10 +32,7 @@ internal static class CompleteCommand
         }
 
         var target = await InstanceTarget.Resolve(desk, request.Instance, request.Nonce, ct).ConfigureAwait(false);
-        var done = target.IsError ? target.Error
-            : await desk.Client.Post<CompleteStepRequest, CompleteStepResponse>(
-                $"/sindri/workflow/instances/{target.Value.Id.Value}/runs/{InstanceRoute.Segment(request.Run.Value)}/complete",
-                request with { Nonce = target.Value.Nonce }, ct).ConfigureAwait(false);
+        var done = target.IsError ? target.Error : await Send(desk, target.Value, request, ct).ConfigureAwait(false);
         if (done.IsError)
         {
             return await output.Error(done.Error).ConfigureAwait(false);
@@ -48,6 +47,16 @@ internal static class CompleteCommand
         var happened = answer.AlreadyApplied ? $"already applied ({answer.Result.Happened})" : answer.Result.Happened;
         var header = InstanceHeader.Line(answer.Result.Instance, services.GetRequiredService<TimeProvider>().GetUtcNow());
         return await output.Text($"{header}\n  {happened}\n", 0).ConfigureAwait(false);
+    }
+
+    /// <summary>Posts the report; a launched session's carries AW_SINDRI_LAUNCH_SECRET as the X-Sindri-Launch-Secret header (never in the body).</summary>
+    private static Task<Result<ApiAnswer<CompleteStepResponse>>> Send(RecipeDesk desk, (WorkflowInstanceId Id, CommandNonce Nonce) target, CompleteStepRequest request, CancellationToken ct)
+    {
+        var route = $"/sindri/workflow/instances/{target.Id.Value}/runs/{InstanceRoute.Segment(request.Run.Value)}/complete";
+        var report = request with { Nonce = target.Nonce };
+        return desk.Environment?.Invoke(SecretVariable) is { Length: > 0 } secret
+            ? desk.Client.PostProven<CompleteStepRequest, CompleteStepResponse>(route, report, secret, ct)
+            : desk.Client.Post<CompleteStepRequest, CompleteStepResponse>(route, report, ct);
     }
 
     private static async Task<(CompleteStepRequest? Request, bool Json, Error? Problem)> Parse(string[] args, CancellationToken ct)

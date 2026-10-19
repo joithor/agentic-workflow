@@ -27,6 +27,7 @@ internal static partial class Labels
         ["CloseItem:cancelled"] = "Close as cancelled",
         ["CloseItem:done"] = "Close item",
         ["CompleteStep"] = "Complete",
+        ["CompleteStep:report"] = "Report agent run",
         ["CreateItem"] = "Create item",
         ["Decide"] = "Decide",
         ["FileRequest"] = "File a request",

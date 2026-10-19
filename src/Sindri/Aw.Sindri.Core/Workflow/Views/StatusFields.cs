@@ -30,6 +30,10 @@ public sealed record StatusFields(
     string Text,
     IReadOnlyList<StatusInjection>? Injection = null)
 {
+    /// <summary>The open agent run (P8); null (not written) for a desk run, a block run or none, so the other statuses read as before.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public StatusRun? Run { get; init; }
+
     /// <summary>The open run's injection sections (metadata only), never null; empty without inputs.</summary>
     public IReadOnlyList<StatusInjection> Injection { get; init; } = Injection ?? [];
 }
