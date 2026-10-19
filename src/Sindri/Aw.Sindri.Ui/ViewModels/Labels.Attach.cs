@@ -37,8 +37,9 @@ internal static partial class Labels
 
     /// <summary>Accessible name of the pending chip that stands for Attach.</summary>
     /// <param name="address">The instance address (opaque).</param>
+    /// <param name="reason">Why it waits, as drawn in the chip.</param>
     /// <returns>The name.</returns>
-    internal static string AttachPendingName(string address) => $"Attach to {address}: available with API P10a";
+    internal static string AttachPendingName(string address, string reason) => $"Attach to {address}: {reason}";
 
     /// <summary>Accessible name of the main button of a tool or model Step.</summary>
     /// <param name="address">The instance address (opaque).</param>

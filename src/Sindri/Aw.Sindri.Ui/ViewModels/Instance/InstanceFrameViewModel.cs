@@ -179,6 +179,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         if (answer.IsSuccess)
         {
             Show(answer.Value);
+            await ReadRun(answer.Value, generation, cancellationToken).ConfigureAwait(true);
         }
         else
         {
@@ -266,6 +267,7 @@ internal sealed partial class InstanceFrameViewModel(ISindriApi api, IClipboard 
         (Title, Recipe, Hash12, Version, StateText, Detail, SinceText, Identity, ProblemText, Note) = (string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty);
         (Subject, Band, Expanded) = (null, null, null);
         ClearPanels();
+        (_eventsFor, _eventRows) = (null, []);
         WantedFocus = null;
         Phase = FramePhase.Empty;
     }
