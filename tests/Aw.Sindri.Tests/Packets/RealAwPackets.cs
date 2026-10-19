@@ -13,6 +13,7 @@ namespace Aw.Sindri.Tests.Packets;
 internal sealed class RealAwPackets : IDisposable
 {
     private readonly TempHome _home = new();
+    private string? _history;
 
     public string HomePath => _home.Path;
 
@@ -34,7 +35,7 @@ internal sealed class RealAwPackets : IDisposable
     {
         var target = Path.Combine(_home.Path, name);
         CopyDirectory(Path.Combine(RepoRoot(), "tests", "fixtures", "line", "gold", "design", "expiry"), target);
-        return new PacketRef(PacketKind.Design, target, Repo: FixtureRepo());
+        return new PacketRef(PacketKind.Design, target, Repo: _history ??= FixtureRepo());
     }
 
     // The packet's baseSha is a commit of the scoping fixture's history; the script builds it deterministically.
