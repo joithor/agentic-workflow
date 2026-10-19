@@ -108,9 +108,9 @@ internal static partial class ProviderPlans
         return text + separator + $"[projects.{Quoted(checkout)}]\ntrust_level = \"trusted\"\n";
     }
 
-    /// <summary>The sindri entry as Codex's project file and Cursor's mcp.json spell it, for a human adding it by hand.</summary>
+    /// <summary>The sindri entry as Codex's project file (valid TOML lines) and Cursor's mcp.json spell it, for a human adding it by hand.</summary>
     internal static string HandEntry(bool codex, string url, string repo) => codex
-        ? $"[{CodexTable}] url = {Quoted(url)}, http_headers = {{ {Quoted(RepoHeader)} = {Quoted(repo)} }}"
+        ? $"[{CodexTable}]\nurl = {Quoted(url)}\nhttp_headers = {{ {Quoted(RepoHeader)} = {Quoted(repo)} }}"
         : $"\"mcpServers\": {{ \"{Server}\": {{ \"url\": \"{url}\", \"headers\": {{ \"{RepoHeader}\": \"{repo}\" }} }} }}";
 
     private static FilePlan CursorPlan(string? existing, string url, string repo)

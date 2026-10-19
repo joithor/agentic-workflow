@@ -128,7 +128,11 @@ internal sealed class RegisterMcpService(IApprovedProfile approvals, IRepoLocato
         var path = Path.Combine(target.Checkout, relative);
         if (plan.Problem is { } problem)
         {
-            return new ProviderResult(provider, ProviderOutcome.Failed, $"{path} {problem}", "add the sindri server to it by hand (sindri mcp register prints the entry), or fix the file and run it again");
+            return new ProviderResult(
+                provider,
+                ProviderOutcome.Failed,
+                $"{path} {problem}",
+                $"add the sindri entry to {relative} by hand ({HandEntry(provider == ProviderFile.Codex, target.Url, target.Repo)}), or fix the file and run it again");
         }
 
         var outcome = ProviderOutcome.Unchanged;
@@ -139,7 +143,7 @@ internal sealed class RegisterMcpService(IApprovedProfile approvals, IRepoLocato
                 return new ProviderResult(
                     provider,
                     ProviderOutcome.Failed,
-                    $"{path} is tracked by git, so it isn't changed silently",
+                    $"{path} is tracked by git, so it is refused and left unchanged",
                     $"add the sindri entry to {relative} by hand ({HandEntry(provider == ProviderFile.Codex, target.Url, target.Repo)}) and commit it, or untrack {relative}; then run it again");
             }
 

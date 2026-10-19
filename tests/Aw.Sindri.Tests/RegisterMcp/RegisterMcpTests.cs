@@ -197,7 +197,7 @@ public sealed class RegisterMcpTests
         var result = (await Service().Handle(new RegisterMcpRequest("/work/demo", "demo", Apply: true, [provider]), Token)).Value.Providers.Single();
 
         Assert.Equal(ProviderOutcome.Failed, result.Outcome);
-        Assert.Contains("tracked by git", result.Detail, StringComparison.Ordinal);
+        Assert.Contains("is tracked by git, so it is refused and left unchanged", result.Detail, StringComparison.Ordinal);
         Assert.DoesNotContain("sindri", _host.Files[path], StringComparison.Ordinal);
     }
 
@@ -211,6 +211,7 @@ public sealed class RegisterMcpTests
         var all = (await Service().Handle(new RegisterMcpRequest("/work/demo", "demo", Apply: true, _allProviders), Token)).Value;
 
         Assert.Equal([ProviderOutcome.Registered, ProviderOutcome.Failed, ProviderOutcome.Failed], all.Providers.Select(p => p.Outcome));
+        Assert.Contains("add the sindri entry to .cursor/mcp.json by hand (\"mcpServers\"", all.Providers[1].Fix, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -286,6 +287,10 @@ public sealed class RegisterMcpTests
         Assert.Contains("http://127.0.0.1:7444/sindri/mcp", fix, StringComparison.Ordinal);
         Assert.Contains("X-Sindri-Repo", fix, StringComparison.Ordinal);
         Assert.Contains("untrack", fix, StringComparison.Ordinal);
+        if (provider == ProviderFile.Codex)
+        {
+            Assert.Contains("[mcp_servers.sindri]\nurl = \"http://127.0.0.1:7444/sindri/mcp\"\nhttp_headers = ", fix, StringComparison.Ordinal);
+        }
     }
 
     private static readonly ProviderFile[] _allProviders = [ProviderFile.Claude, ProviderFile.Cursor, ProviderFile.Codex];

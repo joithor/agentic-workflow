@@ -4,7 +4,7 @@ using Aw.Sindri.Core.Mcp;
 
 namespace Aw.Sindri.Infrastructure.Mcp;
 
-/// <summary>The real machine: PATH lookups, the providers' config files under the settings' home, and git for the tracked check.</summary>
+/// <summary>The real machine (a write creates its temporary file with the target's mode, else 0600, before any text goes in): PATH lookups, the providers' config files under the settings' home, and git for the tracked check.</summary>
 /// <param name="settings">Where to look.</param>
 internal sealed class ProviderHost(McpSettings settings) : IProviderHost
 {
@@ -35,10 +35,26 @@ internal sealed class ProviderHost(McpSettings settings) : IProviderHost
         var temporary = Path.Combine(directory, "." + Path.GetFileName(target) + "." + Environment.ProcessId.ToString(CultureInfo.InvariantCulture) + ".tmp");
         try
         {
-            await File.WriteAllTextAsync(temporary, text, cancellationToken).ConfigureAwait(false);
+            File.Delete(temporary);
+            var options = new FileStreamOptions { Mode = FileMode.CreateNew, Access = FileAccess.Write };
+            if (!OperatingSystem.IsWindows())
+            {
+                options.UnixCreateMode = File.Exists(target) ? File.GetUnixFileMode(target) : UnixFileMode.UserRead | UnixFileMode.UserWrite;
+            }
+
+            var stream = new FileStream(temporary, options);
+            await using (stream.ConfigureAwait(false))
+            {
+                var writer = new StreamWriter(stream);
+                await using (writer.ConfigureAwait(false))
+                {
+                    await writer.WriteAsync(text.AsMemory(), cancellationToken).ConfigureAwait(false);
+                }
+            }
+
             if (!OperatingSystem.IsWindows() && File.Exists(target))
             {
-                File.SetUnixFileMode(temporary, File.GetUnixFileMode(target));
+                File.SetUnixFileMode(temporary, File.GetUnixFileMode(target));   // the umask may have narrowed the create mode
             }
 
             File.Move(temporary, target, overwrite: true);
