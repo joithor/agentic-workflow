@@ -18,6 +18,23 @@ internal sealed partial class GitCli
 {
     private readonly TimeSpan _timeout = TimeSpan.FromSeconds(30);
     private readonly TimeSpan _archiveTimeout = TimeSpan.FromMinutes(5);
+    private readonly IReadOnlyList<string> _command;
+    private readonly TimeSpan _drainGrace;
+
+    /// <summary>The git on PATH, with the shipped two-second grace for stderr after git exits.</summary>
+    public GitCli()
+        : this(["git"], TimeSpan.FromSeconds(2))
+    {
+    }
+
+    /// <summary>A git reached by another command, and another stderr grace: what the tests use to stand in a git that exits while something else still holds its stderr.</summary>
+    /// <param name="command">The command and its leading arguments; the git arguments follow them.</param>
+    /// <param name="drainGrace">How long a finished git's stderr may stay open before the call stops waiting for it.</param>
+    internal GitCli(IReadOnlyList<string> command, TimeSpan drainGrace)
+    {
+        _command = command;
+        _drainGrace = drainGrace;
+    }
 
     /// <summary>The commit HEAD points at.</summary>
     /// <param name="repo">The repo's checkout.</param>
@@ -107,7 +124,9 @@ internal sealed partial class GitCli
             var stderr = git.StandardError.ReadToEndAsync(timeout.Token);
             await consume(git.StandardOutput.BaseStream, timeout.Token).ConfigureAwait(false);
             await git.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
-            _ = await stderr.ConfigureAwait(false);
+            // git is gone, so everything it wrote is already in the pipe. Its end of stderr closed with it; a stray fork of a parallel
+            // process may still hold another copy, and waiting for that EOF held this call to the whole archive timeout (a gate hung 5 min here).
+            _ = await Task.WhenAny(stderr, Task.Delay(_drainGrace, timeout.Token)).ConfigureAwait(false);
             return git.ExitCode == 0 ? Unit.Value : Failed("archive", git.ExitCode);
         }
         catch (OperationCanceledException)
@@ -162,7 +181,7 @@ internal sealed partial class GitCli
 
     private async ValueTask<Result<(int Exit, string Stdout)>> Run(string repo, string[] args, CancellationToken cancellationToken, string? locale = null)
     {
-        var start = new ProcessStartInfo("git")
+        var start = new ProcessStartInfo(_command[0])
         {
             RedirectStandardOutput = true,
             RedirectStandardError = true,
@@ -179,7 +198,7 @@ internal sealed partial class GitCli
             start.Environment["LC_ALL"] = locale;   // case folding of 'grep -i' follows the locale
         }
 
-        foreach (var arg in (string[])["-C", repo, "-c", "core.quotepath=off", .. args])
+        foreach (var arg in (string[])[.. _command.Skip(1), "-C", repo, "-c", "core.quotepath=off", .. args])
         {
             start.ArgumentList.Add(arg);
         }
@@ -221,9 +240,9 @@ internal sealed partial class GitCli
         }
     }
 
-    private static ProcessStartInfo CleanGit(string[] args)
+    private ProcessStartInfo CleanGit(string[] args)
     {
-        var start = new ProcessStartInfo("git", args) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
+        var start = new ProcessStartInfo(_command[0], [.. _command.Skip(1), .. args]) { RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
         foreach (var name in start.Environment.Keys.Where(k => k.StartsWith("GIT_", StringComparison.Ordinal)).ToList())
         {
             _ = start.Environment.Remove(name);
