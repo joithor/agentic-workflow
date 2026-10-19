@@ -60,9 +60,9 @@ public sealed class LauncherDoctorChecksTests
 
         public ValueTask<Result<LaunchRow?>> Get(LaunchId launch, CancellationToken cancellationToken) => ValueTask.FromResult<Result<LaunchRow?>>(_broken);
 
-        public ValueTask<Result<IReadOnlyList<LaunchRow>>> ForItem(Aw.Sindri.Core.Ids.ItemId item, CancellationToken cancellationToken) => ValueTask.FromResult<Result<IReadOnlyList<LaunchRow>>>(_broken);
+        public ValueTask<Result<IReadOnlyList<LaunchRow>>> ForItem(Core.Ids.ItemId item, CancellationToken cancellationToken) => ValueTask.FromResult<Result<IReadOnlyList<LaunchRow>>>(_broken);
 
-        public ValueTask<Result<IReadOnlyList<LaunchRow>>> ForRepo(Aw.Sindri.Core.Ids.RepoName repo, CancellationToken cancellationToken) => ValueTask.FromResult<Result<IReadOnlyList<LaunchRow>>>(_broken);
+        public ValueTask<Result<IReadOnlyList<LaunchRow>>> ForRepo(Core.Ids.RepoName repo, CancellationToken cancellationToken) => ValueTask.FromResult<Result<IReadOnlyList<LaunchRow>>>(_broken);
 
         public ValueTask<Result<IReadOnlyList<LaunchRow>>> Since(DateTimeOffset since, CancellationToken cancellationToken) => ValueTask.FromResult<Result<IReadOnlyList<LaunchRow>>>(_broken);
     }

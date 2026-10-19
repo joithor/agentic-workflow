@@ -193,7 +193,7 @@ public sealed class LauncherReviewFixTests : IDisposable
 
         public HostKind Kind => inner.Kind;
 
-        public async ValueTask<Aw.Kernel.Result<HostRef>> Start(HostSession session, TimeSpan timeout, CancellationToken cancellationToken)
+        public async ValueTask<Kernel.Result<HostRef>> Start(HostSession session, TimeSpan timeout, CancellationToken cancellationToken)
         {
             if (Interlocked.Increment(ref _starts) == 1)
             {
@@ -204,7 +204,7 @@ public sealed class LauncherReviewFixTests : IDisposable
             return await inner.Start(session, timeout, CancellationToken.None).ConfigureAwait(false);
         }
 
-        public ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>> Stop(HostRef host, CancellationToken cancellationToken) => inner.Stop(host, cancellationToken);
+        public ValueTask<Kernel.Result<Kernel.Unit>> Stop(HostRef host, CancellationToken cancellationToken) => inner.Stop(host, cancellationToken);
 
         public ValueTask<bool> Exists(HostRef host, CancellationToken cancellationToken) => inner.Exists(host, cancellationToken);
 
