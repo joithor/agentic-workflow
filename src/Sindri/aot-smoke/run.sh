@@ -212,7 +212,7 @@ session_tty() { # an agent session at a terminal (the CLI's own terminal check p
   echo "## QUERY /sindri/context/subgraph with a JSON body on the published host (the HTTP QUERY method; POST is not a route)"
   base="$(jq -r '.url' "$AW_SINDRI_HOME/control.json" | sed 's|/$||')"
   curl -s -m 30 -X QUERY "$base/sindri/context/subgraph" -H 'X-Sindri-Repo: smoke' -H 'Content-Type: application/json' -d '{"nodes":["feature:smoke.none"]}' \
-    -w '\nhttp=%{http_code}\n' | jq -R -c 'if startswith("http=") then . else (try fromjson | {title, status} catch .) end'
+    -w '\nhttp=%{http_code}\n' | jq -R -c 'if startswith("http=") then . else (try (fromjson | {title, status}) catch .) end'
   curl -s -m 30 -o /dev/null -w 'post http=%{http_code}\n' -X POST "$base/sindri/context/subgraph" -H 'X-Sindri-Repo: smoke' -H 'Content-Type: application/json' -d '{"nodes":["feature:smoke.none"]}'
   echo "## sindri services --json | jq (name, every, paused, job)"
   bounded "$bin" services --json </dev/null | jq -c '[.services[] | {name, every, paused, job}]'
