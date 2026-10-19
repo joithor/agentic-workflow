@@ -40,6 +40,9 @@ public static class OverrideApplier
         return new AppliedMap(graph, orphaned, inapplicable);
     }
 
+    /// <summary>Applies <paramref name="overrides"/>, calling <paramref name="copied"/> once per copy of the graph made (the size test counts them).</summary>
+    internal static AppliedMap Apply(GraphSnapshot graph, IReadOnlyList<MapOverride> overrides, Action? copied) => throw new NotSupportedException();
+
     // A link decision is orphaned when its edge is gone; a node decision when its target no longer resolves. A reject or delete of something gone is satisfied, not orphaned.
     private static bool IsOrphan(GraphSnapshot graph, MapOverride o) => o.Action switch
     {
