@@ -745,7 +745,10 @@ together with `SindriErrors`. Retired codes stay reserved in `WorkflowErrors.Ret
 | `SND-WF-013` | conflict | A workflow challenge expired, or its subject changed |
 | `SND-WF-014` | invalid | `--item` and `fact:item`'s `id` differ |
 | `SND-WF-015` | unavailable | An effect couldn't be sent: its block replied an undeclared outcome, or every retry failed; the instance parks (dispatch) |
-| `SND-WF-016` | unavailable | A Step input has a descriptor but no runtime in this build; refused at `recipe approve` and at `workflow start` |
+| `SND-WF-016` | unavailable | A Step input has a descriptor but no runtime in this build; refused at `recipe approve` and at `workflow start`; if the runtime is gone after approval, the Step's `FillInput` parks the instance (`SND-WF-010`, the question names 016) and a restart tries again |
+| `SND-WF-017` | conflict | The text a pull refilled differs from what the run recorded; nothing is served (re-run the Step) |
+| `SND-WF-018` | conflict | A Step input, re-run on a cache miss, differs from what the run recorded; the Step does not run on different data (re-run the Step) |
+| `SND-WF-019` | invalid | A Step input filled an invalid plan: a bad section name, a section over 256 KiB, a typed result over 256 KiB, or a plan over 1 MiB; the Step fails |
 | `SND-BLOCK-001` | unavailable | A fact a block Step reads can't be read; the run ends as `step.failed` with the message as its reason |
 | `SND-BLOCK-002` | unavailable | The approved profile a block Step's providers come from can't be read; the run ends as `step.failed` `profile-unreadable: <code>` |
 | `SND-BLOCK-003` | unavailable | The item's repo (`fact:item`) couldn't be read, so a block Step's per-repo keys can't be resolved; the run ends as `step.failed` `repo-unreadable`, never with the box's list |

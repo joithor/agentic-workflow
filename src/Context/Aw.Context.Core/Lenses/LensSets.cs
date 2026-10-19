@@ -62,6 +62,14 @@ internal static class LensSets
 
     private static IntentBand Intent(List<LensScope> scopes)
     {
+        var (recordList, decisionList) = IntentUnion(scopes);
+        var cut = recordList.Count > LensesBuilder.BandCap || decisionList.Count > LensesBuilder.BandCap;
+        return new IntentBand([.. recordList.Take(LensesBuilder.BandCap)], [.. decisionList.Take(LensesBuilder.BandCap)], new IntentCounts(recordList.Count, decisionList.Count, Orphaned: null), cut);
+    }
+
+    /// <summary>The records and decisions of every scope, each once with the anchors that reached it, in key order and uncapped (the lenses cap them; the history lens cuts them by time first).</summary>
+    internal static (List<LensRecord> Records, List<LensDecision> Decisions) IntentUnion(List<LensScope> scopes)
+    {
         var records = new Dictionary<string, (LensRecord Record, List<NodeKey> Mentions, SortedSet<int> By)>(StringComparer.Ordinal);
         var decisions = new Dictionary<string, (LensDecision Decision, List<NodeKey> Decides, List<NodeKey> Supersedes, SortedSet<int> By)>(StringComparer.Ordinal);
         for (var i = 0; i < scopes.Count; i++)
@@ -97,8 +105,7 @@ internal static class LensSets
             Anchors = Names(scopes, e.By),
             Depth = 0,
         }).ToList();
-        var cut = recordList.Count > LensesBuilder.BandCap || decisionList.Count > LensesBuilder.BandCap;
-        return new IntentBand([.. recordList.Take(LensesBuilder.BandCap)], [.. decisionList.Take(LensesBuilder.BandCap)], new IntentCounts(recordList.Count, decisionList.Count, Orphaned: null), cut);
+        return (recordList, decisionList);
     }
 
     private static List<NodeKey> Sorted(IEnumerable<NodeKey> keys) =>

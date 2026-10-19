@@ -22,5 +22,6 @@ internal static class SindriWorker
             .AddAllActivities(activities.Engine.Gates)
             .AddAllActivities(activities.Engine.Cleanup)
             .AddAllActivities(activities.Engine.Children)
+            .AddAllActivities(activities.Inputs)
             .AddAllActivities(activities.Agents);
 }

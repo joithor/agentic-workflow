@@ -90,7 +90,7 @@ public sealed class FakeIntentStore : IIntentStore
             {
                 var isNew = !_records.TryGetValue(record.Key.Value, out var stored) || stored.Version != record.Version;
                 changed += isNew ? 1 : 0;
-                _records[record.Key.Value] = isNew ? record : stored!;
+                _records[record.Key.Value] = isNew ? record with { FetchedAt = page.At } : stored!;
                 if (page.MapVersion > 0)
                 {
                     if (_linkedMap.GetValueOrDefault(record.Key.Value) != page.MapVersion)

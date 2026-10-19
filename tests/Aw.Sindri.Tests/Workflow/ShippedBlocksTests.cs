@@ -226,6 +226,7 @@ public sealed class ShippedBlocksTests
             .Select(t => ((BlockDescriptor)typeof(DescriptorContract)
                 .GetProperty("Descriptor", BindingFlags.Instance | BindingFlags.NonPublic)!
                 .GetValue(Activator.CreateInstance(t, nonPublic: true))!).Id.Value)
+            .Where(static id => !string.Equals(id, "input.prove.echo", StringComparison.Ordinal) && !string.Equals(id, "step.prove.echo", StringComparison.Ordinal))   // test-only: composed (and catalogued) only under the prove gate
             .ToList();
 
         var withoutContract = catalogIds.Except(contractIds, StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();

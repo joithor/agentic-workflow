@@ -13,4 +13,5 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="Facts">The instance's facts as stored references; the activity reads the content the Step names, so no fact content enters the workflow's history.</param>
 /// <param name="Repo">The item's repo name, for the per-repo profile keys, or null.</param>
 /// <param name="RepoUnreadable">'fact:item' could not be read, so the repo is unknown (not absent): a Step that resolves per-repo keys fails instead of using the box's.</param>
-internal sealed record BlockStepRun(string Address, string State, string Token, BlockId Step, IReadOnlyDictionary<string, WithValue> Arguments, IReadOnlyDictionary<FactKey, FactValue> Facts, string? Repo = null, bool RepoUnreadable = false);
+/// <param name="Fills">The inputs the run filled (metadata and the requests, never text): the activity gets their sections and typed results for the Step from memory, or by running them again and checking the recorded digests; null without inputs.</param>
+internal sealed record BlockStepRun(string Address, string State, string Token, BlockId Step, IReadOnlyDictionary<string, WithValue> Arguments, IReadOnlyDictionary<FactKey, FactValue> Facts, string? Repo = null, bool RepoUnreadable = false, IReadOnlyList<InjectionFill>? Fills = null);

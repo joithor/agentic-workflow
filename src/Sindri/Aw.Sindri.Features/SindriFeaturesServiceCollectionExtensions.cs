@@ -1,12 +1,6 @@
-using Aw.Context.Core.Code;
-using Aw.Context.Core.Eval.MapQuality;
 using Aw.Context.Core.Graph;
-using Aw.Context.Core.Lenses;
-using Aw.Context.Core.Locks;
 using Aw.Context.Core.Map;
-using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
-using Aw.Context.Core.Review;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Control;
@@ -17,7 +11,6 @@ using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
-using Aw.Sindri.Core.Locks;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Text;
@@ -76,6 +69,7 @@ using Aw.Sindri.Features.OnyxUp;
 using Aw.Sindri.Features.OpenItem;
 using Aw.Sindri.Features.PauseService;
 using Aw.Sindri.Features.PingProcess;
+using Aw.Sindri.Features.ReadInjection;
 using Aw.Sindri.Features.ReadLedger;
 using Aw.Sindri.Features.RebuildViews;
 using Aw.Sindri.Features.RecordEval;
@@ -214,33 +208,6 @@ public static class SindriFeaturesServiceCollectionExtensions
         return services;
     }
 
-    /// <summary>The context engine's slices (stages S-3 and S-4): the review, promote and proposals commands and the reads of the map, lenses and filemap.</summary>
-    private static IServiceCollection AddContextSlices(this IServiceCollection services)
-    {
-        _ = services
-            .AddScoped<ContextScopes>()
-            .AddScoped<ContextChallenges>()
-            .AddScoped<IScheduledService, ContextDocsRefreshService>()
-            .AddScoped<IScheduledService, ContextPurgeService>()
-            .AddScoped<IScheduledService, ContextRebuildService>()
-            .AddScoped<IScheduledService, ContextSyncService>()
-            .AddSingleton<IHeavyJobLock>(static sp => new SindriHeavyJobLock(sp.GetRequiredService<IHeavySlots>(), SindriHeavyJobLock.DefaultWait));
-        _ = services.AddScoped<IValidator<PromoteContextMapRequest>, AcceptAllValidator<PromoteContextMapRequest>>().AddCommand<PromoteContextMapRequest, PromoteContextMapResponse, PromoteContextMapService>();
-        _ = services.AddScoped<IValidator<ProposeContextMapRequest>, AcceptAllValidator<ProposeContextMapRequest>>().AddCommand<ProposeContextMapRequest, ProposeContextMapResponse, ProposeContextMapService>();
-        _ = services.AddScoped<IValidator<ReviewContextMapRequest>, AcceptAllValidator<ReviewContextMapRequest>>().AddCommand<ReviewContextMapRequest, ReviewContextMapResponse, ReviewContextMapService>();
-        _ = services.AddScoped<IValidator<ExportContextReviewRequest>, AcceptAllValidator<ExportContextReviewRequest>>().AddQuery<ExportContextReviewRequest, ReviewExported, ExportContextReviewService>();
-        _ = services.AddScoped<IValidator<GetContextFileMapRequest>, AcceptAllValidator<GetContextFileMapRequest>>().AddQuery<GetContextFileMapRequest, FileMapView, GetContextFileMapService>();
-        _ = services.AddScoped<IValidator<GetContextLensesRequest>, AcceptAllValidator<GetContextLensesRequest>>().AddQuery<GetContextLensesRequest, LensesView, GetContextLensesService>();
-        _ = services.AddScoped<IValidator<GetContextLensesSetRequest>, AcceptAllValidator<GetContextLensesSetRequest>>().AddQuery<GetContextLensesSetRequest, LensesSetView, GetContextLensesSetService>();
-        _ = services.AddScoped<IValidator<GetContextCodeRequest>, AcceptAllValidator<GetContextCodeRequest>>().AddQuery<GetContextCodeRequest, CodeView, GetContextCodeService>();
-        _ = services.AddScoped<IValidator<GetContextLensesAnswerRequest>, AcceptAllValidator<GetContextLensesAnswerRequest>>().AddQuery<GetContextLensesAnswerRequest, LensesAnswer, GetContextLensesAnswerService>();
-        _ = services.AddScoped<IValidator<GetContextEvalMapRequest>, AcceptAllValidator<GetContextEvalMapRequest>>().AddQuery<GetContextEvalMapRequest, MapQualityRun, GetContextEvalMapService>();
-        _ = services.AddScoped<IValidator<GetContextProposalsRequest>, AcceptAllValidator<GetContextProposalsRequest>>().AddQuery<GetContextProposalsRequest, ProposalsView, GetContextProposalsService>();
-        _ = services.AddScoped<IValidator<GetContextReviewRequest>, AcceptAllValidator<GetContextReviewRequest>>().AddQuery<GetContextReviewRequest, ReviewQueueView, GetContextReviewService>();
-        _ = services.AddScoped<IValidator<GetContextReviewHistoryRequest>, AcceptAllValidator<GetContextReviewHistoryRequest>>().AddQuery<GetContextReviewHistoryRequest, ReviewHistoryView, GetContextReviewHistoryService>();
-        return services;
-    }
-
     /// <summary>The engine's instance slices (engine P4): start, command and complete (commands), the nonce (an issue), get, list and events (queries).</summary>
     private static IServiceCollection AddEngineSlices(this IServiceCollection services)
     {
@@ -293,6 +260,7 @@ public static class SindriFeaturesServiceCollectionExtensions
         _ = services.AddScoped<IValidator<IssueChallengeRequest>, AcceptAllValidator<IssueChallengeRequest>>().AddIssue<IssueChallengeRequest, IssueChallengeResponse, IssueChallengeService>();
         _ = services.AddScoped<IValidator<ListRecipesRequest>, AcceptAllValidator<ListRecipesRequest>>().AddQuery<ListRecipesRequest, ListRecipesResponse, ListRecipesService>();
         _ = services.AddScoped<IValidator<ShowRecipeRequest>, AcceptAllValidator<ShowRecipeRequest>>().AddQuery<ShowRecipeRequest, RecipeView, ShowRecipeService>();
+        _ = services.AddScoped<IValidator<ReadInjectionRequest>, AcceptAllValidator<ReadInjectionRequest>>().AddQuery<ReadInjectionRequest, InjectionView, ReadInjectionService>();
         _ = services.AddScoped<IValidator<GetInstanceFactRequest>, AcceptAllValidator<GetInstanceFactRequest>>().AddQuery<GetInstanceFactRequest, FactView, GetInstanceFactService>();
         _ = services.AddScoped<IValidator<ListOutboxRequest>, AcceptAllValidator<ListOutboxRequest>>().AddQuery<ListOutboxRequest, ListOutboxResponse, ListOutboxService>();   // engine P6 unit (c)
         return services;

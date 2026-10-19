@@ -37,10 +37,33 @@ internal sealed partial class RecipeWorkflow
         Over,
     }
 
+    /// <summary>The Steps this build runs off the desk, each with its runtime: the block map when its marker is set, then the agent map when its marker is set (one map, P8 D5).</summary>
+    private static Dictionary<BlockId, StepRuntime> Runtimes(LoadedRecipe loaded, bool block, bool agent)
+    {
+        var runtimes = (block ? loaded.BlockRuntimes ?? [] : []).ToDictionary(static b => b, static _ => StepRuntime.Block);
+        foreach (var step in agent ? loaded.AgentRuntimes ?? [] : [])
+        {
+            runtimes[step] = StepRuntime.Agent;
+        }
+
+        return runtimes;
+    }
+
     private async Task<WorkflowInstance> RunAgentStep(WorkflowInstance instance, OpenRun open, Interpreting context)
     {
         if (_agent is not { } held || !string.Equals(held.Token, open.Token.Value, StringComparison.Ordinal))
         {
+            var filling = await FillInputs(instance, open, context.Recipe.States[instance.Frame.State]).ConfigureAwait(true);   // #370: the Step's inputs, as the desk and block arms fill them, before the session starts
+            if (filling.Parked is { } parked)
+            {
+                return parked;
+            }
+
+            if (filling.Failed is { } failed)
+            {
+                return await Decided(instance, open, failed, reportId: null, context).ConfigureAwait(true);
+            }
+
             var (launched, done) = await LaunchPhase(instance, open, context).ConfigureAwait(true);
             if (done)
             {
