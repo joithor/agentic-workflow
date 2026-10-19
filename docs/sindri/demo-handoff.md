@@ -337,3 +337,91 @@ Tick each. Report any miss to the owner at once.
 - [ ] One dry-run line start reaches scoping's gather with real sections, with the agent Steps run by agents (`via agent` in the events): the owner starts `workflow.line` (or `workflow.scoping`) with `fact:item` `{id, repo, spec}`, completes the early Steps at the desk, and the gather state shows the lens, code and history sections with content, not "none". Then the owner cancels it (`sindri workflow cancel <address>`) so Workflows starts clean, or leaves it by choice.
 - [ ] A fresh agent session runs the section 7 prompt and calls `context_sources`, `context_query`, `context_lenses` and `context_node` without `SND-CONTEXT-*` errors.
 - [ ] The app is open on Home and `G W` opens Workflows. `sindri doctor` has no `fail` rows. The box is quiet: no other builds or heavy jobs running.
+
+## 9. Not built yet against the Sindri spec
+
+Written 2026-10-19 after the demo, against main `84c8fa9`. This is the remaining work. Everything listed is designed in a spec but not built (or only stubbed) on main. "In flight" means a branch or PR exists but is not merged. The lane in brackets is the team lane that would own it. Specs are under `docs/superpowers/specs/`.
+
+### 9a. The line workflow (the rest of spec-to-proven-PR)
+
+On main the whole line recipe tree validates and evals, and agent Steps run (P8, #405). **No block Step has a runtime yet**: every one is registered as a descriptor only (`src/Sindri/Aw.Sindri.Features/Blocks/BlockRegistrations.cs`), so each parks at the desk (`SND-WF-010`). That is the ~40 desk answers in the end-to-end proof. The block-runtime work (BS-*) is in flight and lands station by station.
+
+| Station or piece | Spec | State on main | Still missing | Lane |
+|---|---|---|---|---|
+| Scoping | scoping station §9 (SC-T, SC-R) | all block Steps at the desk | **In flight, #419 (BS-1):** intake, read-brief, anchor, gather, check, reanchor, challenge-log, propose, withdraw, brief.seed, interview.record. After it: `read-tracker`, `read-change`, `scope.evidence`, `scope.freeze` | engine, context |
+| Design and plan | line §4–§6, LN-PK | at the desk | **In flight (BS-2):** `design.check`, `plan.check`, `plan.questions`, `plan.settle`. After it: `design.intake`, `design.evidence`, `plan.intake`, `plan.evidence`, `plan.freeze`, `lens.round`; packs (style and lens resolution, `bundle`, LN-WF5); the design-stop view (LN-API2); the context hand-off (LN-CTX1) | engine, api, context |
+| Phase | line §7.1, LN-WF2/3 | `step.phase.seed`, `step.phase.decide` at the desk | per-phase worktree (`phase.seed` needs api's launcher to create worktrees); a real heavy-slot wait (recipe heavy waits are information-only, RCP-RES-001). **In flight (BS-3):** `phase.drift` | engine, api |
+| Build | line §7.2, LN-B2, LN-H | `build.red-check`, `build.checks`, `build.amend` at the desk | **In flight (BS-3/3b):** `build.prepare`, a command-runner port for checks with a heavy slot, the packets port. After it: the `build` capability, long block Steps (LN-WF7), hidden-scenario capabilities (LN-WF4, LN-LCH2), the secret scan BLD-SECRET-001 | engine, api |
+| Prove | line §7.3, LN-PV | every prove block Step at the desk | all of it | engine |
+| Review loop and lens | DTC4, line §7.4 | `review.round`, `review.record` at the desk | **In flight, #424:** `lens.log`. **Stays at the desk by owner decision (2026-10-19):** `review.log` (next lens or clean) | engine |
+| Ship | line §7.5, LN-SH | `ship.green`, `ship.freeze` at the desk; `step.ship.open` is a desk stand-in for `effect.pr.open` | **In flight (BS-3):** `ship.return`. After it: `ship.green`, `ship.freeze`, SHIP-SECRET-001, `effect.pr.open` (needs 9a's forge row). `ship.pack` stays at the desk until the prove and review shapes exist | engine |
+| Line meta recipe | line §3.5, §8, App. C.7, LN-WF1 | `workflow.line.yaml` runs one phase at a time (the LN-WF8 fallback) | parallel phases: the `seed` state, `step.line.dispatch` and `step.line.decide`, `effect.line.start-phase`, the `line.phaseChanged` event, `effect.line.report` (descriptor only, commented out in `workflow.phase.yaml`), the line board view (LN-API1), `sindri line show` and `line doctor`, the line profile keys (LN-WF9) | engine, api, ui |
+| **PR babysitter** | PR babysitter spec §4, §6.2, §10.1, App. C.1 | **a stub**: `recipes/sindri/workflow.pr-babysitter.yaml` has one human Step, `step.babysit.watch` (outcomes merged, rework, stuck) | the real recipe: the `step.pr.*` Steps (intake, snapshot, ready-check, comment queues, ci-fix, fix-comment, reply-draft, owner forms), the `gate.pr.*` and `gate.revision-bound` gates, `effect.pr.push`, `effect.pr.reply`, `effect.pr.merge`, the `pr.*` events (W25), the `pr_comment_marks` table (W26), human-trigger effects (W23), the hand-off note input (W24), and the PR-state poller `service:pr-watch` (API15). The fixture PR set for proving it exists (`scripts/forge-fixture.sh`) | engine, api |
+| Docs sync | PR babysitter spec §7, App. C.2 | recipe and Steps exist; `docs.scope`, `docs.check` descriptor only; `docs.open-pr` is a desk stand-in | nothing starts it (the stub babysitter never waits on it); its own worktree (W28); `sindri docs check` (API17) and `sindri docs sync` (API16) | engine, api |
+| Prove recheck | PR babysitter spec §8, App. C.3 | absent | `workflow.prove-recheck` | engine |
+| **Real GitHub forge** | PR babysitter spec §10.2 (PB-O, PB-E) | `src/Forge` has `IForge`, `GitHubForge`, `FileForge`, `GitPusher`, but **Sindri does not reference it** (`docs/csharp/forge.md`); GitHub's write side has never run against a real repo. The proof used the file-backed fake forge | wire the forge into Sindri (profile keys, PB-O, PB-E), `effect.pr.open`/`merge`, the merge buttons (LN-API7), the ready-to-merge view (LN-API3, LN-UI3), an owner run of the GitHub write contract on a scratch repo | api, engine, ui |
+| Decision-tree recipes | decision-tree spec §4, §6.1, §10 | `workflow.bugfix` exists only as a test fixture; `step.judge.choose` stays at the desk | the judge runtime (DT-J), the evidence Steps and bugfix Steps (DT-B), `workflow.bugfix` as a shipped recipe. `workflow.implement-split` is deferred by the spec | engine |
+| Blocks over MCP | blocks-over-MCP spec (BM-0, BM-1, BA-1, BA-2, BU-1) | absent | `sindri_list_tools`, `sindri_execute_tool_call` and the rest of the spec | engine, api, ui |
+
+Order that removes the most desk answers first: land BS-1 (#419), then BS-3, then BS-2 and #424 (they stack in that order), then prove and the rest of ship, then the forge wiring, then the babysitter.
+
+### 9b. Sandboxing
+
+Spec: `2026-10-18-sindri-sandbox-design.md` (phases §12, spike results §15). **Nothing from it is on main.** Today a launched agent Step runs only inside the agent CLI's own policy: Claude Code gets `--settings <0600 file>` with a `permissions` block, Codex gets `-c sandbox_mode=read-only|workspace-write` (`Core/Launch/Argv/StepForms.cs`, `docs/csharp/sindri-launcher.md` "Model and policy forms"), and an entry with no policy form is refused with `SND-LAUNCH-013`. Nothing wraps the process tree, controls the network, trims the environment or limits resources, which is what the spec's SB1 forbids. The spec's interim refusal (`UnavailableSandbox`, `SND-LAUNCH-014`) is not on main either.
+
+| Phase | State |
+|---|---|
+| SB-S1 spike | done (§15). Items 2 and 12 (does a token refresh rotate the login) wait on a live owner check |
+| SB-0 contracts | draft #352, paused by the owner; conflicts with main (far behind) |
+| SB-1 pure core (plan builder, credential port) | draft #355 on #352, paused |
+| SB-4a static egress | draft #363 on #355, paused |
+| SB-2 bubblewrap sandbox, owner-copy login | draft #366 on #355, paused |
+| SB-3a, SB-3b, SB-4b, SB-5a, SB-5b, SB-6 (UI), SB-7, SB-8, SB-9 (macOS), SB-10, SB-11 | not started |
+
+To finish, in order: bring #352 up to main and restack #355, #363, #366 (merge 352, 355, then 363 and 366); SB-3a (needs P10a's `session wrap` and the P8 U9 suspension endpoint); **SB-5a, ReadOnly Steps in the sandbox, the gate that lets a real Step run sandboxed** (needs SB-2, SB-3a, SB-4a); SB-3b and SB-4b beside it, then SB-5b (WriteScope Steps, also sandboxes `sindri open`); then SB-11, SB-7, SB-10, the owner's first unattended run. SB-6 (UI) can start on SB-0's goldens once #352 lands. Platform: Linux uses bubblewrap plus `systemd-run --user --scope` for limits (no user systemd manager means `-014`). macOS uses Seatbelt in SB-9 (no network namespace, so egress only to the local proxy and Sindri ports; a memory watchdog instead of a cgroup; keychain hidden); until SB-9, a Step on macOS goes to the desk with `-014 unsupported-platform`.
+
+### 9c. Setup and the context map: less human-driven
+
+Three setup steps **stay human by design** (`protected` class: a typed confirmation at a terminal, refused to sessions and to the app with `SND-AUTH-002`): profile approval (API surface spec §4.1–4.2), map import and promote (API §3.7; context spec §3 "decisions stay human"), and recipe approve/revoke and token grants (engine spec W9). Onyx `up`/`down` and connecting its sources are the owner's by the Onyx spec (O3). Automation can prepare and order these, never perform them.
+
+Everything else below is manual only because the automation is not built:
+
+| Gap | Spec | Exists | Missing |
+|---|---|---|---|
+| Map rebuild on change, and drift | context spec §8.7, §8.8 | `ContextRebuildService` (`context-rebuild: {every: 24h}`) builds drafts; `sindri context map build` | the build doesn't record its commit, so doctor can't say how far `current` is behind HEAD (`CheckMapService.cs`: "unknown until a build records its commit (S-4)"); no trigger on repo change (the scheduler has no event trigger); nothing tells the owner a draft is waiting for review and promote |
+| Map quality on a real repo | context spec | the extractor (C# routes since #403) | the handoff had to fall back to an authored map because the extractor came out nearly empty on a real repo. A better first build and `review --accept-deterministic` defaults would make promote a single owner decision |
+| Sources sync on a schedule | context spec §8.8 | `ContextSyncService` (`context-sync: {every: 15m}`), `ContextSyncGapsService` (syncs a never-synced source by itself) | neither is in the default or handoff profile, so the owner syncs by hand (OPERATIONS.md §1). `context-rebuild` and `context-purge` are also not in the profile |
+| Profile authoring | — (no C# spec found) | the profile is hand-written (SETUP.md §3); only the TypeScript `sindri` has `profile init` | a C# `sindri profile init` that writes a working profile (repo, `context-docs-refresh`, `context-sync`, `context-rebuild`, `sessions.enabled: true`, `workflow.agent.target`); without those keys context reads fail with `SND-CONTEXT-020` or "never refreshed". `docs/sindri-setup.html` is a static page, not a guided flow |
+| Recipe approval, children first | — | OPERATIONS.md §2 lists 19 recipes in order and suggests a shell loop | a command that prints the tree in approval order and walks the owner through each typed challenge (the challenge stays per recipe); `--stale` re-approvals after block changes are manual; drift detection at startup is not wired (`docs/csharp/sindri-workflow.md`: "nothing sends `RecipeWakeKind.Drifted` yet") |
+| MCP registration | context spec §3 | a bare `sindri-app` or `serve` registers every provider once the port is known | a worktree guesses the repo name from the folder (`AW_SINDRI_MCP_REPO` overrides); tracked `.cursor/mcp.json` / `.codex/config.toml` are reported `failed`, not edited; a port change needs a new agent session |
+| Install | — | `scripts/install-deps.sh`, `scripts/sindri-app.sh` (SDK, temporal, publish, link) | the name clash with the TypeScript `sindri`; Claude's folder-trust prompt in launched sessions (accepted by hand; launcher follow-up); the opt-in session hook (`./setup.sh --with-fleet`) |
+| Launcher setup | — | `sindri-app launch init`, `workflow.agent.target` | part of profile init above |
+| Onyx | Onyx spec O1/O6, P5 | `sindri onyx up/status/open/down`, the first-run offer, the "Set up Onyx" row, `install-onyx.sh` | built. Docker install and the owner's steps remain by design |
+
+### 9d. The app: CLI-only functionality
+
+The app is a client of Sindri's HTTP API with no logic of its own. Today it reads almost everything but sends only eight things (rebuild views, item create/close/open, decide, start workflow, file a request, a map-review decision), and two of those have no screen: no screen files a request, and the map-review panel is a placeholder. The command catalog grid (`tests/Aw.Sindri.Tests/Golden/Api/commands/catalog.json`) can run only `RebuildViews`; every other row shows its CLI line to copy.
+
+**By design these stay copy-only in the app** (typed confirmation at a terminal, UI spec §7): profile approve, recipe approve/revoke, the grant and accept answers, map promote/import/merge/add/delete/apply. Everything else in the table is meant to be a button.
+
+| Capability | Today in the app | Spec | HTTP endpoint |
+|---|---|---|---|
+| Answer a BlockStep at the desk (`workflow complete`) | none; `Api/Workflow/DeskForm.cs` exists, nothing draws it | Complete form with file picks (UI §4.4, §7; screens §5.3, R8-10) | `/runs/{run}/complete` exists |
+| `workflow answer` (text, resume, reject), `command`, `cancel`, `takeover`, `handback` | copy only ("Available with U8b"); `X` opens a confirm that can't send | buttons (UI §7; screens §4.2) | `/workflow/instances/{id}/nonce`, `/commands` exist; the client reserves them for U8 |
+| `services run`/`pause`/`resume` | copy | buttons (UI §4.8, §7) | exist |
+| `jobs`, `jobs show`, `jobs cancel` | none | a job panel with Cancel (UI §4.8) | exist |
+| `context sources sync` / status | placeholder panel | "Sync all" (screens §4.4) | exists |
+| `context map build` | none | "Build draft" (screens §4.4) | exists |
+| `context map review` | placeholder panel | accept, reject, rename, move, undo, drop, repoint as buttons (screens §4.4) | exists |
+| `context query` / `neighbors` / `path` | none | from the node card (screens §4.4) | exist |
+| `recipe register` / `list` / `show` | Recipes page is a placeholder; the recipe sheet reads | Import, list with stats (screens §4.3, U10b) | exists |
+| `recipe validate` / `eval` | none | Validate file…, Run evals (screens §4.3) | **no endpoint** |
+| `request` (file a request) | client method, no screen | a form (UI §4.7) | exists |
+| `agents focus`, Attach, Take over, Budgets | disabled ("arrives in CO-4a") / missing | screens §4.5, U11 | — |
+| `doctor` | copy | System's dependency graph (screens §4.6) | **no endpoint** |
+| `stop` | palette confirm only | confirmed button on Health (UI §4.8) | exists |
+| `mcp register`, `onyx` verbs, `profile validate`, `launch init` | none | not in the UI spec (Onyx only as a health node) | **no endpoint** (`cli-only:local`) |
+
+Spec'd screens or parts not built: the Recipes page (U10b); System beyond Health (dependency graph, impact panel, engine execution, services/jobs panel; U12); Context beyond the lens stack (node card, sources, map review, file map, U9b–d; "pinned to a scope" mode, U9e); the instance frame's Timeline, Decisions and Requests tabs (U8b); item-sheet re-base and the scope-map and packet viewers (U13); Agents recipe groups, Attach, Take over, Budgets (U11) and live preview (CO-7c).
+
+The highest-value app work is the desk Complete form and the answer/command buttons: with block Steps still at the desk (9a), the owner currently answers every one of them from a terminal.
