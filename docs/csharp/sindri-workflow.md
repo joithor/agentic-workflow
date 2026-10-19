@@ -515,6 +515,8 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 
 Descriptor-only too (`ScopingSteps` in `Aw.Sindri.Features/Blocks/`; the three context inputs are real runtimes, see "The context inputs (S-LB2)"); the recipes are `workflow.scoping` and `workflow.idea-to-brief` (scoping spec §6, §9). Every Step is desk-capable. An agent Step reaches only `Tools` (the read-only rule is W9's, enforced at launch).
 
+The table also lists the ship and phase Steps. Three of them have block runtimes (BS-3): `step.ship.return` (`ShipReturnStep`) and `step.phase.drift` (`PhaseDriftStep`, which compares HEAD with `built.head`), and `step.build.prepare` of the build station (`BuildPrepareStep`, which checks the workspace is clean). The other rows are descriptor-only.
+
 | Step | Runtime | Inputs | Outcomes | Outputs |
 |---|---|---|---|---|
 | `step.scope.intake` | block | `scopeInput` | `brief`, `tracker`, `idea`, `change` | the eight seeds (`scopeMap`, `acceptance`, `findings`, `answers`, `answerLog`, `challenge`, `questions`, `openQuestions`) on all four |
@@ -581,7 +583,7 @@ landed (provisional owner default). The agent runtime (engine P8) moved `step.pr
 
 ### Block catalog (line stations: build and prove)
 
-Descriptor-only (`BuildSteps`, `ProveSteps` in `Aw.Sindri.Features/Blocks/Step/`); the recipes are `workflow.build` and `workflow.prove` (line spec §7.2, §7.3, Appendix C.3 and C.4). Every Step is desk-capable.
+`step.build.prepare` has a block runtime (BS-3); the rest is descriptor-only (`BuildSteps`, `ProveSteps` in `Aw.Sindri.Features/Blocks/Step/`); the recipes are `workflow.build` and `workflow.prove` (line spec §7.2, §7.3, Appendix C.3 and C.4). Every Step is desk-capable.
 
 | Step | Runtime | Outcomes | Outputs |
 |---|---|---|---|
