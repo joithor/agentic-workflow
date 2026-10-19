@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Globalization;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Overrides;
@@ -127,9 +126,10 @@ public sealed class ReviewPlanAllTests
         Assert.Equal(skipped, plannedSkipped, StringComparer.Ordinal);
     }
 
-    // The owner's file had ~19k decided entries; planning it rebuilt the whole map once per entry and ran for hours. Linear, this is well under a second.
+    // The owner's file had ~19k decided entries; planning it rebuilt the whole map once per entry and ran for hours. Counted, not timed:
+    // accepts and rejects on a plain map are planned against one build, however many there are.
     [Fact, Trait("Lane", "unit")]
-    public void A_file_of_twenty_thousand_decisions_is_matched_and_planned_in_seconds_not_hours()
+    public void Twenty_thousand_accepts_and_rejects_are_planned_against_one_build_of_the_map()
     {
         const int count = 20_000;
         // Built directly: GraphBuilder looks every edge's ends up in its node list, which is itself quadratic at this size.
@@ -139,15 +139,14 @@ public sealed class ReviewPlanAllTests
         var queue = ReviewBacklog.Build("v2@draft", basis.Graph, basis.Overrides);
         var file = new ReviewFile("v2@draft", [.. Enumerable.Range(0, count).Select(i =>
             new ReviewFileEntry(F(i), ReviewGroup.Model, 0.5, Node: SampleDrafts.Key("feature:" + F(i)), Decision: i % 2 == 0 ? ReviewVerb.Accept : ReviewVerb.Reject))]);
-        var clock = Stopwatch.StartNew();
+        var builds = 0;
 
         var matched = ReviewFileMatcher.Match(file, queue).Value;
-        var (rows, skipped) = ReviewPlanner.PlanAll(matched.Decisions, basis, Who, SampleDrafts.At, TestContext.Current.CancellationToken);
+        var (rows, skipped) = ReviewPlanner.PlanAll(matched.Decisions, basis, (Who, SampleDrafts.At), () => builds++, TestContext.Current.CancellationToken);
 
-        clock.Stop();
         Assert.Equal(count, rows.Count);
         Assert.Empty(skipped);
-        Assert.True(clock.Elapsed < TimeSpan.FromSeconds(5), string.Create(CultureInfo.InvariantCulture, $"matching and planning {count} decisions took {clock.Elapsed}"));
+        Assert.Equal(1, builds);
     }
 
     [Fact, Trait("Lane", "unit")]

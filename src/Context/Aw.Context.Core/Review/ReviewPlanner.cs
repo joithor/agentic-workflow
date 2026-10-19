@@ -42,31 +42,33 @@ public static partial class ReviewPlanner
     /// decision: an accept or a reject only takes entries out of the queue (its own; a node's reject also the links that end at it), so
     /// those are claimed in the one build. Any other verb plans against a fresh build with every row so far, as a single call would.
     /// </remarks>
-    public static (IReadOnlyList<MapOverride> Rows, IReadOnlyList<string> Skipped) PlanAll(IReadOnlyList<ReviewDecision> decisions, ReviewBasis basis, string who, DateTimeOffset at, CancellationToken cancellationToken)
+    public static (IReadOnlyList<MapOverride> Rows, IReadOnlyList<string> Skipped) PlanAll(IReadOnlyList<ReviewDecision> decisions, ReviewBasis basis, string who, DateTimeOffset at, CancellationToken cancellationToken) =>
+        PlanAll(decisions, basis, (who, at), built: null, cancellationToken);
+
+    /// <summary><see cref="PlanAll(IReadOnlyList{ReviewDecision}, ReviewBasis, string, DateTimeOffset, CancellationToken)"/>, calling <paramref name="built"/> once per build of the map (the size test counts them).</summary>
+    internal static (IReadOnlyList<MapOverride> Rows, IReadOnlyList<string> Skipped) PlanAll(IReadOnlyList<ReviewDecision> decisions, ReviewBasis basis, (string Who, DateTimeOffset At) by, Action? built, CancellationToken cancellationToken)
     {
+        var (who, at) = by;
         ArgumentNullException.ThrowIfNull(decisions);
         ArgumentNullException.ThrowIfNull(basis);
         var rows = new List<MapOverride>();
         var skipped = new List<string>();
         World? world = null;
         ReviewBasis Current() => basis with { Overrides = [.. basis.Overrides, .. rows] };
+
         foreach (var decision in decisions)
         {
             cancellationToken.ThrowIfCancellationRequested();
             Result<IReadOnlyList<MapOverride>> planned;
             if (decision.Verb is ReviewVerb.Accept or ReviewVerb.Reject)
             {
-                world = world is { CanClaim: true } ? world : World.Of(Current(), who, at);
-                planned = world.Plan(decision);
-                foreach (var row in planned.IsSuccess ? planned.Value : [])
-                {
-                    world.Claim(row);
-                }
+                world = world is { CanClaim: true } ? world : World.Of(Counted(built, Current()), who, at);
+                planned = PlanAndClaim(world, decision);
             }
             else
             {
                 world = null;   // an edit can change any entry: the next decision plans against a fresh build
-                planned = Plan(decision, Current(), who, at);
+                planned = Plan(decision, Counted(built, Current()), who, at);
             }
 
             if (planned.IsError)
@@ -80,6 +82,25 @@ public static partial class ReviewPlanner
         }
 
         return (rows, skipped);
+    }
+
+    // A basis about to be built into a map, counted.
+    private static ReviewBasis Counted(Action? built, ReviewBasis basis)
+    {
+        built?.Invoke();
+        return basis;
+    }
+
+    // Plans an accept or a reject on the world and takes what its rows decide out of that world's queue.
+    private static Result<IReadOnlyList<MapOverride>> PlanAndClaim(World world, ReviewDecision decision)
+    {
+        var planned = world.Plan(decision);
+        foreach (var row in planned.IsSuccess ? planned.Value : [])
+        {
+            world.Claim(row);
+        }
+
+        return planned;
     }
 
     private static Result<IReadOnlyList<MapOverride>> One(Result<MapOverride> row) => row.Map<IReadOnlyList<MapOverride>>(r => [r]);
