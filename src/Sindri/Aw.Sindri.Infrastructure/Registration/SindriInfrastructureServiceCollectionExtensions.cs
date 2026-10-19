@@ -11,6 +11,7 @@ using Aw.Sindri.Core.Mcp;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Secrets;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
@@ -29,6 +30,7 @@ using Aw.Sindri.Infrastructure.Notifications;
 using Aw.Sindri.Infrastructure.Onyx;
 using Aw.Sindri.Infrastructure.Processes;
 using Aw.Sindri.Infrastructure.Profile;
+using Aw.Sindri.Infrastructure.Scoping;
 using Aw.Sindri.Infrastructure.Secrets;
 using Aw.Sindri.Infrastructure.Sessions;
 using Aw.Sindri.Infrastructure.Text;
@@ -49,8 +51,11 @@ public static class SindriInfrastructureServiceCollectionExtensions
     public static IServiceCollection AddSindriInfrastructure(this IServiceCollection services, Func<string, string?> environment)
     {
         var settings = SettingsFromEnvironment.Read(environment);
-        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriAdapters(environment).AddOnyxInfrastructure(environment);
+        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriAdapters(environment).AddOnyxInfrastructure(environment).AddScopingInfrastructure(environment);
     }
+
+    private static IServiceCollection AddScopingInfrastructure(this IServiceCollection services, Func<string, string?> environment) =>
+        services.AddSingleton<IScopePacketStore>(sp => new ScopePacketStore(sp.GetRequiredService<SindriSettings>(), new ProcessToolRunner(), environment));
 
     private static IServiceCollection AddSindriAdapters(this IServiceCollection services, Func<string, string?> environment)
     {

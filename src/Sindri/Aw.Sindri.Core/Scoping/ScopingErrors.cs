@@ -20,8 +20,11 @@ public static class ScopingErrors
     /// <summary>SND-SCOPING-006: 'scoping show' on an instance whose run area was purged and whose packet was never frozen.</summary>
     public static readonly ErrorDefinition PacketPurged = new("SND-SCOPING-006", ErrorKind.NotFound, "The scope packet is gone and was never frozen");
 
+    /// <summary>SND-SCOPING-007: a packet file asked for by a hash the packet directory no longer has (a revise rewrote it, or the hash tool failed).</summary>
+    public static readonly ErrorDefinition PacketChanged = new("SND-SCOPING-007", ErrorKind.Conflict, "The packet changed since it was hashed");
+
     /// <summary>The catalogue's codes.</summary>
-    public static IReadOnlyList<ErrorDefinition> All { get; } = [NotAScopingInstance, DraftOutsideRunArea, BriefPathRefused, PacketPurged];
+    public static IReadOnlyList<ErrorDefinition> All { get; } = [NotAScopingInstance, DraftOutsideRunArea, BriefPathRefused, PacketPurged, PacketChanged];
 
     /// <summary>Codes the spec retired (never reused): SND-SCOPING-003.</summary>
     public static IReadOnlyList<string> Retired { get; } = ["SND-SCOPING-003"];

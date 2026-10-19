@@ -69,6 +69,7 @@ public sealed class GoldenContractTests
         "ledger",   // API P5: the audit read is the CLI's; the app follows the stream and re-queries
         "services-name-run", "services-name-pause", "services-name-resume", "jobs-id", "jobs-id-cancel", "jobs",   // API P6: the app reads them in U4 (Services and the job panel)
         "workflow-recipes", "workflow-instances-start",   // the Start form's reads (U5'): the recipe list, and POST /workflow/instances' request and started answer (its refusals are ProblemDetails under workflow-instances); workflow-recipes/list pins the shape served before P12 (standing/via/stale/inputs), which differs from the spec's RecipeList (E-25), so U5' must not read inputs from it until that is decided (read GET /workflow/recipes/{id} instead)
+        "workflow-instance-scoping",   // API2 (SC-K2): the scoping stop view; the app reads it in SC-U (U2)
         "events-catalog",   // API P5 (E-15): the app reads each type's invalidates once it switches from re-querying every view on each event (UI lane)
     };
 
