@@ -5,7 +5,7 @@ using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Trust;
 
-namespace Aw.Sindri.Host.Text;
+namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>Plain text for 'context code': every status is a word ('suggested', 'unavailable', 'capped'), never colour. A human's answer carries clean labels beside their trust, so the text fences the untrusted ones itself.</summary>
 internal static class ContextCodeText
@@ -18,7 +18,7 @@ internal static class ContextCodeText
         var text = new StringBuilder(Invariant($"code of {view.Anchors.Count} {(view.Anchors.Count == 1 ? "anchor" : "anchors")} ({anchors}) · map {view.MapVersion}{(view.Draft ? " (draft)" : string.Empty)}\n"));
         foreach (var missing in view.MissingAnchors)
         {
-            _ = text.AppendLine($"missing anchor: {missing}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"missing anchor: {missing}");
         }
 
         Files(text, view);
@@ -40,7 +40,7 @@ internal static class ContextCodeText
         foreach (var file in view.Files)
         {
             var accept = file.LinkId is { } id ? $"  accept: sindri context filemap accept {id.Value}" : string.Empty;
-            _ = text.AppendLine($"  {file.Path}  implements {string.Join(", ", file.Implements.Select(k => k.Value))}  {(file.Suggested ? "suggested" : "confirmed")}  tested by {(file.TestedBy.Count == 0 ? "none" : string.Join(", ", file.TestedBy))}{accept}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"  {file.Path}  implements {string.Join(", ", file.Implements.Select(k => k.Value))}  {(file.Suggested ? "suggested" : "confirmed")}  tested by {(file.TestedBy.Count == 0 ? "none" : string.Join(", ", file.TestedBy))}{accept}");
         }
     }
 
@@ -51,7 +51,7 @@ internal static class ContextCodeText
         foreach (var test in view.Tests)
         {
             var accept = test.LinkId is { } id ? $"  accept: sindri context filemap accept {id.Value}" : string.Empty;
-            _ = text.AppendLine($"  {test.Path}  {BasisWord(test.Basis)}  {(test.Suggested ? "suggested" : "confirmed")}  names {string.Join(", ", test.Named)}{accept}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"  {test.Path}  {BasisWord(test.Basis)}  {(test.Suggested ? "suggested" : "confirmed")}  names {string.Join(", ", test.Named)}{accept}");
         }
     }
 
@@ -61,14 +61,14 @@ internal static class ContextCodeText
         None(text, view.Data.Things.Count);
         foreach (var thing in view.Data.Things)
         {
-            _ = text.AppendLine($"  {Fenced(thing.Label, thing.Trust, fence)}  {thing.Key.Value}  {thing.Access.ToString().ToLowerInvariant()} via {string.Join(", ", thing.Via.Select(k => k.Value))}{(thing.Searchable ? string.Empty : "  not searchable")}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"  {Fenced(thing.Label, thing.Trust, fence)}  {thing.Key.Value}  {thing.Access.ToString().ToLowerInvariant()} via {string.Join(", ", thing.Via.Select(k => k.Value))}{(thing.Searchable ? string.Empty : "  not searchable")}");
         }
 
         _ = text.AppendLine(Invariant($"schema files ({view.Counts.SchemaFiles}{(view.Truncated.SchemaFiles ? ", truncated" : string.Empty)}):"));
         None(text, view.Data.Files.Count);
         foreach (var file in view.Data.Files)
         {
-            _ = text.AppendLine($"  {file.Path}  names {file.Thing.Value} as '{file.Matched}'");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"  {file.Path}  names {file.Thing.Value} as '{file.Matched}'");
         }
     }
 
@@ -84,7 +84,7 @@ internal static class ContextCodeText
 
         foreach (var line in view.Degraded)
         {
-            _ = text.AppendLine($"degraded: {line}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"degraded: {line}");
         }
 
         return text.ToString();

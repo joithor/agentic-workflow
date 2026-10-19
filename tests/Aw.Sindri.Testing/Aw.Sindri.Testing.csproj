@@ -31,5 +31,7 @@
     <EmbeddedResource Include="../../recipes/**/*.yaml;../../recipes/**/*.jsonl" LogicalName="shipped/%(RecursiveDir)%(Filename)%(Extension)" />
     <!-- The scoping station's gold facts (SC-K), read by ScopingFacts without file I/O. -->
     <EmbeddedResource Include="../fixtures/scoping/facts/**/*.json" LogicalName="scoping-facts/%(RecursiveDir)%(Filename)%(Extension)" />
+    <!-- The context engine's view JSON the gather, anchor and propose desk blocks read (SC-K2). -->
+    <EmbeddedResource Include="../fixtures/scoping/views/*.json" LogicalName="scoping-views/%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

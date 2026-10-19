@@ -18,6 +18,8 @@ public static class EventCatalog
         new(EventTypes.ContextMapImported, Public: true, typeof(ContextMapImported), "context.map.imported:<hash>:v<version>"),
         new(EventTypes.ContextMapReviewed, Public: true, typeof(ContextMapReviewed), "context.map.reviewed:<overrideId>"),
         new(EventTypes.ContextMapPromoted, Public: true, typeof(ContextMapPromoted), "context.map.promoted:<repo>:v<version>"),
+        new(EventTypes.ScopingApproved, Public: true, typeof(ScopingApproved), "scoping.approved:<packetHash>"),
+        new(EventTypes.ScopingEscape, Public: true, typeof(ScopingEscape), "scoping.escape:<packetHash>:<station>:<reference>"),
         new(EventTypes.ContextMapProposed, Public: true, typeof(ContextMapProposed), "context.map.proposed:<run>:<rows hash16>"),
         new(EventTypes.ContextMapBuilt, Public: true, typeof(ContextMapBuilt), "context.map.built:<epoch>:<slot>"),
         new(EventTypes.CommandHandled, Public: false, PublicPayload: null, "command.handled:<commandId>"),
