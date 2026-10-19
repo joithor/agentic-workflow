@@ -35,7 +35,10 @@ sindri-app context map build         # Human-only, heavy: a job that proposes a 
   suite or a publish.
 - Expect about 15 minutes on a large repo (a 20k-file TypeScript monorepo). `--detach` prints the job id and returns;
   `sindri-app jobs show <JOB>` follows up.
-- It ends with `draft N for my-app · M proposed`, then one `degraded:` line for each part it did without.
+- It ends with `draft N for my-app · M proposed`, then one `degraded:` line for each part it did without. A typical one
+  on a large repo is `degraded: clusters: 1 file over 16 MB left out`: normal, and no limit needs changing.
+- An agent session can't read the review queue (`SND-CONTEXT-020`); it reads the draft with `context query --draft` and
+  `context lenses --draft` instead.
 
 The cluster pass runs graphify in a sandbox. Its limits are in the profile:
 
@@ -61,8 +64,9 @@ build keeps every decision you already made.
 ### Review and promote
 
 ```bash
-sindri-app context map review --list --limit 200            # Agent OK: the draft's queue, read-only
+sindri-app context map review --list --limit 200            # Human-only: the draft's queue, read-only (a session gets SND-CONTEXT-020)
 sindri-app context query --draft "how a user exports a report"   # Agent OK: check the draft finds the right features
+sindri-app context lenses --draft feature:reports.export   # Agent OK: one node of the draft and what it reaches
 sindri-app context map review                               # Human-only: the loop (bulk-accept deterministic, then a/r/n/m/s)
 sindri-app context map promote                              # Human-only: type 'promote map vN'
 ```
