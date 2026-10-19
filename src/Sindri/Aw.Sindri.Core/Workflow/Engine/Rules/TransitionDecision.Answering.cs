@@ -145,6 +145,11 @@ public static partial class TransitionDecision
             return d.Changed(instance);
         }
 
+        if (StartBlocked(d, instance) is { } blocked)
+        {
+            return d.Changed(d.Rules.Suspend(instance, blocked));
+        }
+
         var countsRound = resume.Kind == ResumeKind.Rerun;
         if (countsRound && state.Loop is { } capped && d.Rules.AtCap(instance, d.Recipe, instance.State))
         {

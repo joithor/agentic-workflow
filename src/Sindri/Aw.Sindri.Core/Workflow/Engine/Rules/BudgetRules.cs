@@ -92,6 +92,28 @@ internal static class BudgetRules
         return instance with { Spent = instance.Spent with { Granted = instance.Spent.Granted + tokens } };
     }
 
+    /// <summary>What has run out for the Step about to start: the park's question, or null while both budgets hold.</summary>
+    /// <param name="instance">The instance, in the state it has just entered.</param>
+    /// <param name="recipe">Its recipe.</param>
+    /// <returns>The question, or null.</returns>
+    public static string? Exhausted(WorkflowInstance instance, Recipe recipe)
+    {
+        ArgumentNullException.ThrowIfNull(instance);
+        ArgumentNullException.ThrowIfNull(recipe);
+        return Exhausted(instance.Spent, recipe, Parks.RecipeState(instance));
+    }
+
+    /// <summary>
+    /// The park at a Step's start whose budget a kept report spent (kind step): its answer starts that Step under the raised allowance, and a start
+    /// is not a round of the state's loop, so it resumes with a restart, not a rerun.
+    /// </summary>
+    /// <param name="question">What ran out.</param>
+    /// <param name="actor">Who caused the park.</param>
+    /// <returns>The park.</returns>
+    public static Suspension StartPark(string question, string actor) => new(
+        SuspensionKind.Park, ParkReason.Budget, ParkKind.Step, Escalation: null, question, actor, Mirrors: null,
+        new ResumeAction(ResumeKind.Restart, Withheld: null, Gate: null, Effects: []));
+
     /// <summary>What ran out after a spend, as the park's question; null while both budgets hold.</summary>
     private static string? Exhausted(TokenSpend spent, Recipe recipe, string? state)
     {

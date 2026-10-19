@@ -57,7 +57,7 @@ internal sealed class LedgerAgentSessions(ILaunchViews views, ILedgerReader ledg
 
             if (payload.Value.Sample > sample)
             {
-                (sample, latest) = (payload.Value.Sample, payload.Value.InputTokens + payload.Value.OutputTokens);
+                (sample, latest) = (payload.Value.Sample, payload.Value.InputTokens + payload.Value.OutputTokens - (payload.Value.CacheReadTokens ?? 0));
             }
         }
 

@@ -319,6 +319,10 @@ terminal outcomes plus `cancelled` (`RCP-WHEN-001`, whose message ends with `(ou
   empty); sessions never report it, and desk and block reports leave it false. `sameFailure`: a `step.failed`, or a gate
   refusal, repeats its reason. The first round has nothing to compare with.
 - **Budgets:** `budget: { tokens }` on an active state and on the recipe. Exhausting one parks the instance with `budget`.
+  An agent Step is charged its fresh input, cache writes and output; **cache reads are not counted** (a session re-counts them every turn),
+  though `session.usage` still carries them as `cacheReadTokens` (absent when none). A report the engine accepted is **never discarded for its cost**:
+  its transition applies and the spend is recorded, and the park falls where the next Step would start (`budget`, answered with `--grant-tokens`,
+  which starts that Step without counting a round). A run that fails over budget still parks on it.
 - **`next`** tells whoever reads the status what happens or what to do. Its variables are `{item}`, `{instance}`,
   `{state}`, `{user}`, `{child}`, `{loop.<name>}`, `{loop.<name>.cap}` and `{budget.tokens.left}` (`RCP-NEXT-001`).
   It never tells the reader to run an approval-tier command such as `--grant` (`RCP-NEXT-002`). Waits are descriptions

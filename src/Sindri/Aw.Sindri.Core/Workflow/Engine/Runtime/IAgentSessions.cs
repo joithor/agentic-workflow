@@ -11,7 +11,7 @@ public interface IAgentSessions
     /// <returns>The state; an error when the facts can't be read.</returns>
     public ValueTask<Result<AgentSessionState>> Watch(LaunchId launch, CancellationToken cancellationToken);
 
-    /// <summary>The tokens the session has spent so far: input and output of its latest usage sample (samples are cumulative). Zero when there is none.</summary>
+    /// <summary>The tokens the session has spent so far, as a Step's budget counts them: fresh input, cache writes and output of its latest usage sample (samples are cumulative), without the cache reads a session re-counts every turn. Zero when there is none.</summary>
     /// <param name="launch">The launch.</param>
     /// <param name="cancellationToken">Cancels the read.</param>
     /// <returns>The tokens; an error when the facts can't be read.</returns>

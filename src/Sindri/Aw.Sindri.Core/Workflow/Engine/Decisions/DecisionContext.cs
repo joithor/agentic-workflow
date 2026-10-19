@@ -28,6 +28,12 @@ public sealed record DecisionContext(
     public TimeSpan DeskTimeout { get; init; } = TimeSpan.FromDays(2);
 
     /// <summary>
+    /// Whether a Step's accepted report that runs a budget out still parks the instance on the report (the behavior before the 'token-budget-keeps-report-v1'
+    /// patch, which a history recorded without the marker replays). Off: the report's transition applies, the spend is recorded, and the next Step start parks on the budget.
+    /// </summary>
+    public bool LegacyBudgetPark { get; init; }
+
+    /// <summary>
     /// Where this build runs a Step that is not at the desk (P8 D5, one map): <see cref="StepRuntime.Block"/> for a registered block runtime whose descriptor says
     /// <see cref="BlockRuntime.Block"/>, <see cref="StepRuntime.Agent"/> for a Step an agent session runs. A Step in neither is at the desk when it is deskCapable.
     /// </summary>

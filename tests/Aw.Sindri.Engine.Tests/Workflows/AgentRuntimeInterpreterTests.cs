@@ -261,7 +261,7 @@ public sealed class AgentRuntimeInterpreterTests : AgentRuntimeTestBase
     }
 
     [Fact(Timeout = 120_000)]
-    public async Task Usage_over_budget_parks_with_budget()
+    public async Task An_accepted_report_over_budget_keeps_its_transition_and_is_not_rerun()
     {
         var ct = TestContext.Current.CancellationToken;
         await using var rig = await Rig(ct);
@@ -273,7 +273,8 @@ public sealed class AgentRuntimeInterpreterTests : AgentRuntimeTestBase
 
             var result = await handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(Report(view.Run!.Value)), new WorkflowUpdateOptions(new string('b', 32)));
 
-            Assert.Equal(("parked", ParkReason.Budget), (result.Instance.State, result.Instance.Question?.Reason));
+            Assert.Equal(("done", null), (result.Instance.State, result.Instance.Question?.Reason));   // the report wins; the overage is recorded
+            _ = Assert.Single(_launcher.Requests);   // and no second session ran
         });
     }
 
