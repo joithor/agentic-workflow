@@ -14,7 +14,7 @@ public sealed class HostSourceFilesTests : IDisposable
     [Fact, Trait("Lane", "unit")]
     public void TerminalProcessNames_reads_every_row_of_terminals_json()
     {
-        var names = TerminalProcessNames.Parse(Encoding.UTF8.GetBytes("""{ "terminals": [ { "id": "kitty", "processNames": ["kitty"], "other": 1 }, { "id": "plain" } ] }""")).All;
+        var names = TerminalProcessNames.Parse(Encoding.UTF8.GetBytes("""{ "schema": 1, "terminals": [ { "id": "kitty", "name": "kitty", "bin": "kitty", "termProgram": [], "argv": ["kitty"], "processNames": ["kitty"], "other": 1 }, { "id": "plain", "name": "plain", "bin": "plain", "termProgram": [], "argv": ["plain"] } ] }""")).All;
 
         Assert.Equal("kitty,plain", string.Join(',', names.Select(static n => n.Name)));
         Assert.Equal("kitty", string.Join(',', names[0].ProcessNames));

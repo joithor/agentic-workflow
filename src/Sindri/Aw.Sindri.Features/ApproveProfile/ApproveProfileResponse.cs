@@ -7,4 +7,8 @@ namespace Aw.Sindri.Features.ApproveProfile;
 /// <param name="Changes">Key paths changed since the latest approval (every path when there was none).</param>
 /// <param name="Approved">True when this hash is now (or already was) the approval.</param>
 /// <param name="Sequence">The 'profile.approved' event's ledger sequence when this call approved it; null for a preview or an approval that already held.</param>
-public sealed record ApproveProfileResponse(ProfileHash Hash, IReadOnlyList<string> Changes, bool Approved, long? Sequence);
+public sealed record ApproveProfileResponse(ProfileHash Hash, IReadOnlyList<string> Changes, bool Approved, long? Sequence)
+{
+    /// <summary>For each <c lang="text">agents.&lt;id&gt;.stepArgvHash</c> the approval adds or changes, the entry on this box that has the hash (launcher L-16); empty when none changed.</summary>
+    public IReadOnlyList<StepArgvLine> StepArgv { get; init; } = [];
+}

@@ -23,6 +23,8 @@ internal static class EndpointTable
         _ = queries.MapGetEventCatalog();
         _ = queries.MapGetItem();
         _ = queries.MapGetJob();
+        _ = queries.MapGetLaunch();
+        _ = queries.MapGetLaunchTargets();
         _ = queries.MapListJobs();
         _ = queries.MapGetItemTimeline();
         _ = queries.MapGetQueue();
@@ -76,10 +78,12 @@ internal static class EndpointTable
         _ = commands.MapApproveProfile();
         _ = commands.MapCancelJob();
         _ = commands.MapCloseItem();
+        _ = commands.MapOpenItem();
         _ = commands.MapPauseService();
         _ = commands.MapResumeService();
         _ = commands.MapRunService();
         _ = commands.MapContextJobs();
+        _ = commands.MapLaunchTargetJob();
         _ = commands.MapCreateItem();
         _ = commands.MapDecide();
         _ = commands.MapFileRequest();
@@ -97,6 +101,8 @@ internal static class EndpointTable
         _ = commands.MapIssueNonce();
         _ = commands.MapApplyCommand();
         _ = commands.MapCompleteStep();
+        _ = commands.MapSessionHeartbeat();
+        _ = commands.MapSessionExit();
         return commands;
     }
 }
