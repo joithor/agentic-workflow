@@ -8,7 +8,9 @@ namespace Aw.Sindri.Tests.Workflow.Blocks.Input;
 /// An <see cref="IContextEngine"/> for the context input tests: the calls of the facade a stub implements (IContextLenses, IContextHistory or IContextCode) go
 /// to the stub, every other call to <see cref="FakeContextEngine"/>. Sindri takes the whole engine, so a test needs one without writing forty members.
 /// </summary>
+#pragma warning disable CA1852 // DispatchProxy generates a subclass at run time, so the type cannot be sealed
 internal class EngineProxy : DispatchProxy
+#pragma warning restore CA1852
 {
     private object _stub = new();
 
@@ -25,8 +27,7 @@ internal class EngineProxy : DispatchProxy
     /// <inheritdoc/>
     protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
     {
-        ArgumentNullException.ThrowIfNull(targetMethod);
-        object target = targetMethod.DeclaringType!.IsInstanceOfType(_stub) ? _stub : FakeContextEngine.Instance;
+        var target = targetMethod!.DeclaringType!.IsInstanceOfType(_stub) ? _stub : (object)FakeContextEngine.Instance;
         try
         {
             return targetMethod.Invoke(target, args);
