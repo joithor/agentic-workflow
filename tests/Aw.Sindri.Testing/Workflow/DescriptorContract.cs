@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text.Json;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Registry;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -75,5 +76,6 @@ public abstract class DescriptorContract
     }
 
     private static bool IsDescribedAs(Type type, BlockDescriptor descriptor) =>
-        type.GetProperty(nameof(IDescribedBlock.Descriptor), BindingFlags.Public | BindingFlags.Static)?.GetValue(null) is BlockDescriptor d && d.Id == descriptor.Id;
+        (type.GetProperty(nameof(IDescribedBlock.Descriptor), BindingFlags.Public | BindingFlags.Static)?.GetValue(null) is BlockDescriptor d && d.Id == descriptor.Id)
+        || (type.GetProperty(nameof(IBlockStepId.Id), BindingFlags.Public | BindingFlags.Static)?.GetValue(null) is BlockId id && id == descriptor.Id);   // a runtime registered by id (AddBlockRuntime) carries no descriptor
 }

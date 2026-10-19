@@ -174,7 +174,7 @@ internal static partial class ScopingCommandTable
             return await Fail(output, ScopingFactDirectory.WorktreeRefusal("--out", outDirectory)).ConfigureAwait(false);
         }
 
-        var facts = await ScopingDeskInputs.Load(parsed, (block, directory, outDirectory), services.GetRequiredService<TimeProvider>().GetUtcNow(), ct).ConfigureAwait(false);
+        var facts = await ScopingDeskInputs.Load(parsed, (block, directory, outDirectory), (services.GetRequiredService<IBriefFiles>(), services.GetRequiredService<TimeProvider>().GetUtcNow()), ct).ConfigureAwait(false);
         if (facts.IsError)
         {
             return await Fail(output, facts.Error).ConfigureAwait(false);

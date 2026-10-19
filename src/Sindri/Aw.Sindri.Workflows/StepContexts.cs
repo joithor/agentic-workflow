@@ -1,5 +1,7 @@
 using System.Text.Json;
 using Aw.Kernel;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Items;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -14,8 +16,41 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// </summary>
 /// <param name="texts">The in-memory texts.</param>
 /// <param name="runner">Runs an input again.</param>
-internal sealed class StepContexts(IInjectionTexts texts, IStepInputRunner runner)
+/// <param name="repos">The ledger's repo of an item, for an instance with no fact:item of its own (a child).</param>
+internal sealed class StepContexts(IInjectionTexts texts, IStepInputRunner runner, IItemRepos? repos = null)
 {
+    /// <summary>
+    /// The instance's repo, three ways: a repo, none (the ledger knows none), or one that cannot be read, which fails the Step. A top-level instance's comes from its fact:item;
+    /// a child has no fact:item, so its address's item is looked up in the ledger, as the agent runtime does (AgentTargetResolver).
+    /// </summary>
+    /// <param name="address">The instance's address.</param>
+    /// <param name="named">The repo its fact:item names, or null.</param>
+    /// <param name="unreadable">Whether its fact:item could not be read.</param>
+    /// <param name="cancellationToken">Cancels the lookup.</param>
+    /// <returns>The repo or none; SND-BLOCK-003 when it cannot be read or is no repo name.</returns>
+    public async ValueTask<Result<RepoName?>> RepoOf(string address, string? named, bool unreadable, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(address);
+        var refused = WorkflowErrors.BlockRepoUnreadable.With("repo-unreadable");
+        if (unreadable)
+        {
+            return refused;
+        }
+
+        if (named is not null)
+        {
+            return RepoName.TryFrom(named, out var name) ? (RepoName?)name : refused;
+        }
+
+        if (repos is null || !ItemId.TryFrom(address.Split('/')[0], out var item))
+        {
+            return (RepoName?)null;
+        }
+
+        var found = await repos.RepoOf(item, cancellationToken).ConfigureAwait(false);
+        return found.IsError ? refused : found.Value;
+    }
+
     /// <summary>The context <paramref name="run"/> starts with.</summary>
     /// <param name="run">The run.</param>
     /// <param name="seed">The context without the inputs' contribution.</param>

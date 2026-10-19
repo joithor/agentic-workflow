@@ -66,7 +66,7 @@ internal static class BlockRegistrations
     /// <returns>The same collection.</returns>
     private static IServiceCollection AddPhaseBlocks(this IServiceCollection services) => services
         .AddBlockDescriptor(PhaseSteps.Seed)
-        .AddBlockStep<PhaseDriftStep>()
+        .AddBlockDescriptor(PhaseSteps.Drift)
         .AddBlockDescriptor(PhaseSteps.Decide)
         .AddBlockDescriptor(BabysitSteps.Watch)
         .AddBlockDescriptor(LineEffects.Report);
@@ -75,7 +75,7 @@ internal static class BlockRegistrations
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     private static IServiceCollection AddBuildProveBlocks(this IServiceCollection services) => services
-        .AddBlockStep<BuildPrepareStep>()
+        .AddBlockDescriptor(BuildSteps.Prepare)
         .AddBlockDescriptor(BuildSteps.Red)
         .AddBlockDescriptor(BuildSteps.RedCheck)
         .AddBlockDescriptor(BuildSteps.Green)
@@ -125,24 +125,24 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PlanSteps.Freeze);
 
     private static IServiceCollection AddScopingBlocks(this IServiceCollection services) => services
-        .AddBlockStep<ScopeIntakeStep>()
+        .AddBlockDescriptor(ScopingSteps.Intake)
         .AddBlockDescriptor(ScopingSteps.ReadBrief)
         .AddBlockDescriptor(ScopingSteps.ReadTracker)
         .AddBlockDescriptor(ScopingSteps.ReadChange)
-        .AddBlockStep<BriefSeedStep>()
+        .AddBlockDescriptor(ScopingSteps.BriefSeed)
         .AddBlockDescriptor(ScopingSteps.BriefQuestions)
         .AddBlockDescriptor(ScopingSteps.BriefWrite)
         .AddBlockDescriptor(ScopingSteps.Anchor)
-        .AddBlockStep<ScopeGatherStep>()
+        .AddBlockDescriptor(ScopingSteps.Gather)
         .AddBlockDescriptor(ScopingSteps.Draft)
-        .AddBlockStep<ScopeCheckStep>()
+        .AddBlockDescriptor(ScopingSteps.Check)
         .AddBlockDescriptor(ScopingSteps.InterviewQuestions)
         .AddBlockDescriptor(ScopingSteps.InterviewAnswer)
-        .AddBlockStep<InterviewRecordStep>()
+        .AddBlockDescriptor(ScopingSteps.InterviewRecord)
         .AddBlockDescriptor(ScopingSteps.InterviewApply)
         .AddBlockDescriptor(ScopingSteps.Reanchor)
         .AddBlockDescriptor(ScopingSteps.Challenge)
-        .AddBlockStep<ChallengeLogStep>()
+        .AddBlockDescriptor(ScopingSteps.ChallengeLog)
         .AddBlockDescriptor(ScopingSteps.Propose)
         .AddBlockDescriptor(ScopingSteps.Evidence)
         .AddBlockDescriptor(ScopingSteps.Review)
@@ -159,7 +159,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(ShipSteps.Pack)
         .AddBlockDescriptor(ShipSteps.Freeze)
         .AddBlockDescriptor(ShipSteps.Open)
-        .AddBlockStep<ShipReturnStep>();
+        .AddBlockDescriptor(ShipSteps.Return);
 
     /// <summary>Registers the docs-sync station's Steps (PB spec §7), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
