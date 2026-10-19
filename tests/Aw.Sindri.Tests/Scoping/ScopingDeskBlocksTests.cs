@@ -198,6 +198,22 @@ public sealed class ScopingDeskBlocksTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Gather_over_the_code_lens_golden_whose_commit_is_not_held_records_both_limits_and_passes_the_coverage_rules()
+    {
+        var facts = GatherFacts();
+        facts["codeView"] = ScopingFacts.View("codeView.commit-not-held");   // context's own golden: context-code/commit-not-held.json
+        var response = await Run("gather", facts);
+        var check = ScopingFacts.Expiry();
+        check["lenses"] = response.Outputs["lenses"];
+        check["coverage"] = response.Outputs["coverage"];
+
+        var code = Out(response, "coverage")["lenses"]!.AsArray().Single(r => r!["lens"]!.GetValue<string>() == "code")!;
+        Assert.Equal(["commit-not-held", "index-not-built"], code["limits"]!.AsArray().Select(static l => l!["why"]!.GetValue<string>()).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        var report = ScopePacketChecks.Run(new ScopeFacts(check), ScopeStage.Draft);
+        Assert.DoesNotContain(report.Findings, f => string.Equals(f.Rule, "SCP-COV-002", StringComparison.Ordinal) || string.Equals(f.Rule, "SCP-LENS-001", StringComparison.Ordinal));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Gather_with_a_degraded_source_makes_the_check_report_regather()
     {
         var facts = GatherFacts();

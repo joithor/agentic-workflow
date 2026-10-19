@@ -1,4 +1,3 @@
-using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Workflow.Engine;
@@ -16,7 +15,7 @@ internal static class GetPacketFileEndpoint
 {
     internal static RouteGroupBuilder MapGetPacketFile(this RouteGroupBuilder group)
     {
-        _ = group.MapGet("/workflow/instances/{instanceId}/packets/{hash}/files/{name}", static async (string instanceId, string hash, string name, IService<GetPacketFileRequest, PacketFile> service, ICallerContextAccessor callers, CancellationToken ct) =>
+        _ = group.MapGet("/workflow/instances/{instanceId}/packets/{hash}/files/{name}", static async Task<IResult> (string instanceId, string hash, string name, IService<GetPacketFileRequest, PacketFile> service, ICallerContextAccessor callers, CancellationToken ct) =>
         {
             var read = await service.Handle(new GetPacketFileRequest(WorkflowInstanceId.From(InstanceRoute.Id(instanceId)), hash, name), ct).ConfigureAwait(false);
             if (read.IsError)
@@ -25,7 +24,7 @@ internal static class GetPacketFileEndpoint
             }
 
             var file = callers.Current?.Class == CallerClass.Session ? PacketFileFencing.Fence(read.Value) : read.Value;
-            return Results.Text(file.Text, string.Equals(file.Format, "json", StringComparison.Ordinal) ? "application/json" : "text/plain", System.Text.Encoding.UTF8);
+            return TypedResults.Text(file.Text, string.Equals(file.Format, "json", StringComparison.Ordinal) ? "application/json" : "text/plain", System.Text.Encoding.UTF8);
         });
         return group;
     }

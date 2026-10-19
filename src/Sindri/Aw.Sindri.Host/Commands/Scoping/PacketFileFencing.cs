@@ -28,7 +28,8 @@ internal static class PacketFileFencing
     {
         try
         {
-            return JsonNode.Parse(text) is { } node ? Write(Fence(node, owner: false)) : Whole(text);
+            var written = Write(Fence(JsonNode.Parse(text), owner: false));
+            return written.Length == 0 ? Whole(text) : written;
         }
         catch (JsonException)
         {
@@ -44,18 +45,16 @@ internal static class PacketFileFencing
 
     private static JsonNode? Fence(JsonNode? node, bool owner)
     {
-        switch (node)
+        return node switch
         {
-            case JsonObject obj:
-                return FenceObject(obj, owner);
-            case JsonArray array:
-                return new JsonArray([.. array.Select(item => Fence(item, owner))]);
-            case JsonValue value when !owner && value.TryGetValue<string>(out var text):
-                return JsonValue.Create(Whole(text));
-            default:
-                return node?.DeepClone();
-        }
+            JsonObject obj => FenceObject(obj, owner),
+            JsonArray array => new JsonArray([.. array.Select(item => Fence(item, owner))]),
+            JsonValue value when !owner && value.TryGetValue<string>(out var text) => JsonValue.Create(Whole(text)),
+            _ => Copy(node),
+        };
     }
+
+    private static JsonNode? Copy(JsonNode? node) => node?.DeepClone();
 
     private static JsonObject FenceObject(JsonObject obj, bool owner)
     {
@@ -63,7 +62,7 @@ internal static class PacketFileFencing
         var copy = new JsonObject();
         foreach (var (name, value) in obj)
         {
-            copy[name] = string.Equals(name, "trust", StringComparison.Ordinal) ? value?.DeepClone() : Fence(value, mine);
+            copy[name] = string.Equals(name, "trust", StringComparison.Ordinal) ? Copy(value) : Fence(value, mine);
         }
 
         return copy;

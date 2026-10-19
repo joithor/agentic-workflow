@@ -52,7 +52,7 @@ public sealed class GetInstanceScopingServiceTests
     {
         var (view, contents) = Instance(recipe, facts);
         var instances = new SomeInstances(view);
-        var service = new GetInstanceScopingService(instances, instances, contents, new Redacting(), repos ?? new FixedRepos(), new ListInstances.FixedCaller(caller ?? new CallerContextBuilder().Human().Build()));
+        var service = new GetInstanceScopingService(new ScopingInstances(instances, instances, repos ?? new FixedRepos(), new ListInstances.FixedCaller(caller ?? new CallerContextBuilder().Human().Build())), contents, new Redacting());
         return await service.Handle(new GetInstanceScopingRequest(view.Id), CancellationToken.None);
     }
 
