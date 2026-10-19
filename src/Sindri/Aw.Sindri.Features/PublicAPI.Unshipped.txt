@@ -3629,3 +3629,4 @@ override Aw.Sindri.Features.Scoping.PacketFile.GetHashCode() -> int
 override Aw.Sindri.Features.Scoping.PacketFile.ToString() -> string!
 static Aw.Sindri.Features.Scoping.PacketFile.operator !=(Aw.Sindri.Features.Scoping.PacketFile? left, Aw.Sindri.Features.Scoping.PacketFile? right) -> bool
 static Aw.Sindri.Features.Scoping.PacketFile.operator ==(Aw.Sindri.Features.Scoping.PacketFile? left, Aw.Sindri.Features.Scoping.PacketFile? right) -> bool
+static Aw.Sindri.Features.Commands.SindriCommandServiceCollectionExtensions.AddStopCommand<TCommand, TResult, TService>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
