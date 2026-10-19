@@ -45,4 +45,19 @@ public sealed class GitCliArchiveTests : IDisposable
         Assert.True(result.IsError);
         Assert.Contains("exit 3", result.Error.Message, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task Archive_finishes_when_the_consumer_stops_reading_before_the_end_of_the_tar()
+    {
+        // A TarReader stops at the end-of-archive marker and leaves git's record padding unread. Once the user is over
+        // pipe-user-pages-soft (a loaded gate), each new pipe holds one page, git blocks writing that padding and never
+        // exits. A file bigger than any pipe makes the same stop-early consumer hang on every box.
+        using var repo = new TempGitRepo(new Dictionary<string, string>(StringComparer.Ordinal) { ["big.txt"] = new string('x', 1024 * 1024) });
+
+        var result = await GraphifyRun.Archive(new GitCli(), repo, ReadFirstBlock, deadline: TimeSpan.FromSeconds(10));
+
+        Assert.False(result.IsError);
+    }
+
+    private static async Task ReadFirstBlock(Stream tar, CancellationToken token) => _ = await tar.ReadAsync(new byte[512], token);
 }
