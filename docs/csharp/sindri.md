@@ -471,6 +471,12 @@ CLI form and the UI status: `ready`, `pending:<phase>` or `cli-only:<reason>`.
 | `RunDoctor`, `ValidateProfile` | local | none (CLI only) | `cli-only:local` |
 | P3–P10a actions | per API spec §3.2 | per the table above | `pending:<phase>` |
 
+**Which instance a launch belongs to (API follow-up to P10a).** An engine launch records the instance, Step and attempt it was made for: `launch.started`
+and `launch.failed` carry `instance` (the instance address), `state` (the Step's state id) and `attempt` (the Step run's number, from the run token `{entry}.{n}`),
+all null for an attended launch and for events recorded before the fields existed. `GET /sindri/launches/{launchId}` serves them as `step{instance, state, attempt}`
+(a launch already has its own `state`, requested, started or failed, so the three sit in one object, always present, members null when absent), and a session row serves
+the same object as `launch` (null when no launch row is known; see `sindri-sessions.md`).
+
 `GET /sindri/commands` (a query: any caller) answers `{rows: [{action, class, allowedCallers, terminal, method, route,
 cli, ui, destructive, readsViews, shortcut}]}` sorted by action id. `allowedCallers` comes from the authorization table
 (`human+terminal`, `human`, `session`, `service`, `service:<name>`); a terminal-bound row lists only `human+terminal`, and
