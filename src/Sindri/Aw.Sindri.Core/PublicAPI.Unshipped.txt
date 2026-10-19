@@ -1441,6 +1441,9 @@ Aw.Sindri.Core.Launches.LaunchRow.LaunchRow(Aw.Sindri.Core.Workflow.Engine.Launc
 Aw.Sindri.Core.Launches.LaunchRow.Step.get -> Aw.Sindri.Core.Launch.LaunchStep!
 Aw.Sindri.Core.Launches.LaunchRow.Step.init -> void
 Aw.Sindri.Core.Launches.LaunchSteps
+Aw.Sindri.Core.Launches.LaunchStopEnd
+Aw.Sindri.Core.Launches.LaunchStopEnd.EndIfLive(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+Aw.Sindri.Core.Launches.LaunchStopEnd.LaunchStopEnd(Aw.Sindri.Core.Launches.LaunchSessionEvents! session, Aw.Sindri.Core.Launches.ILaunchViews! views) -> void
 Aw.Sindri.Core.Lease.HeldLease
 Aw.Sindri.Core.Lease.HeldLease.Clear() -> void
 Aw.Sindri.Core.Lease.HeldLease.Current.get -> Aw.Sindri.Core.Lease.LeaseGrant?

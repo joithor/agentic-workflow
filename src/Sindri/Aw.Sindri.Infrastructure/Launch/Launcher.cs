@@ -45,6 +45,11 @@ internal sealed partial class Launcher(LauncherParts parts) : ILauncher
         using var turn = await _gates.Turn(launch, cancellationToken).ConfigureAwait(false);   // a Launch the caller cancelled finishes unwinding first, so it can't re-create the memory this removes
         _ = _started.TryRemove(launch, out _);
         var stopped = await parts.HostFor(false).Stop(new HostRef(HostKind.Tmux, SessionName(launch)), cancellationToken).ConfigureAwait(false);
+        if (stopped.IsSuccess)
+        {
+            await parts.EndLive(launch, cancellationToken).ConfigureAwait(false);   // the session is over (a session tmux no longer has counts as stopped): the row stops being live now, and the lost sweep never marks it
+        }
+
         Cleanup(launch);
         return stopped;
     }
