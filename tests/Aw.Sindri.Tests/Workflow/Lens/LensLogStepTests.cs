@@ -99,7 +99,7 @@ public sealed class LensLogStepTests
         var result = await Run("""{"lens":"product","findings":[{"severity":"blocking","text":"x"}]}""", "[]", """["product"]""");
 
         Assert.Null(result.Result);
-        Assert.Contains("blocking", result.Failure, StringComparison.Ordinal);
+        Assert.Contains("scale", result.Failure, StringComparison.Ordinal);
     }
 
     [Fact]

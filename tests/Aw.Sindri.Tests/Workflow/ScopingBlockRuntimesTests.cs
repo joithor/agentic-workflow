@@ -43,7 +43,8 @@ public sealed class ScopingBlockRuntimesTests
         using var provider = ShippedComposition.Compose();
         var (recipe, context) = Scoping(provider);
 
-        Assert.Equal(_pure, context.Runtimes.Keys.Select(static k => k.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        var scoping = context.Runtimes.Keys.Select(static k => k.Value).Where(static k => !k.StartsWith("step.lens.", StringComparison.Ordinal) && !k.StartsWith("step.review.", StringComparison.Ordinal));   // the lens loops' block Steps are the design and review recipes'
+        Assert.Equal(_pure, scoping.Order(StringComparer.Ordinal), StringComparer.Ordinal);
         var used = recipe.States.Values.Select(static s => s.Step?.Use.Value).OfType<string>().ToHashSet(StringComparer.Ordinal);
         Assert.Subset(used.Concat(["step.brief.seed"]).ToHashSet(StringComparer.Ordinal), _pure.ToHashSet(StringComparer.Ordinal));   // brief.seed is the idea child's, not this recipe's
     }
