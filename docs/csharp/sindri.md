@@ -421,6 +421,8 @@ Every command (`ICommand<T>`) and issue (`IIssue<T>`) is registered through `Add
 
 Queries (`IQuery<T>`, `AddQuery`) get a `sindri.query <name>` span around validation, and nothing else.
 
+- **The stop skips the gate:** `StopProcess` is registered with `AddStopCommand`: the same chain without `CommandGate`, and after validation a `StoppingGate` that cancels the command holding the gate (every gated command runs under the gate's stopping token) and any that would wait for it. So a long command, such as a large review apply, can't keep `sindri stop` behind `SND-API-009`, and a refused caller cancels nothing.
+
 - **Self-audited:** `StopProcess`'s accepted path writes no `command.handled`: it releases the lease, and its
   `process.stopped` is the audit. A refused stop is audited like any other command.
 - **No caller context** (nothing set it) is refused and audited as caller `none`. `ServeCommand` calls `StopProcess` as
@@ -470,6 +472,12 @@ CLI form and the UI status: `ready`, `pending:<phase>` or `cli-only:<reason>`.
 | `ApproveProfile` | protected (terminal) | human+terminal | `cli-only:typed-confirmation` |
 | `RunDoctor`, `ValidateProfile` | local | none (CLI only) | `cli-only:local` |
 | P3–P10a actions | per API spec §3.2 | per the table above | `pending:<phase>` |
+
+**Which instance a launch belongs to (API follow-up to P10a).** An engine launch records the instance, Step and attempt it was made for: `launch.started`
+and `launch.failed` carry `instance` (the instance address), `state` (the Step's state id) and `attempt` (the Step run's number, from the run token `{entry}.{n}`),
+all null for an attended launch (an attach row records no step: it is a person's click, so `GET /launches/{attachId}` reads as unattached even when the session it shows belongs to an engine launch) and for events recorded before the fields existed. `GET /sindri/launches/{launchId}` serves them as `step{instance, state, attempt}`
+(a launch already has its own `state`, requested, started or failed, so the three sit in one object, always present, members null when absent), and a session row serves
+the same object as `launch` (null when no launch row is known; see `sindri-sessions.md`).
 
 `GET /sindri/commands` (a query: any caller) answers `{rows: [{action, class, allowedCallers, terminal, method, route,
 cli, ui, destructive, readsViews, shortcut}]}` sorted by action id. `allowedCallers` comes from the authorization table

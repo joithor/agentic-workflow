@@ -131,4 +131,46 @@ public sealed class AwPacketsToolTests
 
         Assert.Equal(ScopingErrors.PacketToolFailed.Code, result.Error.Code);
     }
+
+    private const string Malformed = """{"code":"AW-PACKETS-003","message":"packet.json repeats the key \"files\""}""";
+
+    [Fact]
+    public async Task AMalformed_packet_exit_1_with_no_json_names_the_tools_error_on_validate()
+    {
+        var (tool, _) = Tool(new ToolRun(ToolOutcome.Exited, 1, string.Empty, Malformed));
+
+        var result = await tool.Validate(new PacketRef(PacketKind.Phase, "/p"), Token);
+
+        AssertNamesTheToolsError(result.Error.Message);
+    }
+
+    [Fact]
+    public async Task AMalformed_packet_exit_1_with_no_json_names_the_tools_error_on_freeze()
+    {
+        var (tool, _) = Tool(new ToolRun(ToolOutcome.Exited, 1, string.Empty, Malformed));
+
+        var result = await tool.Freeze(new PacketRef(PacketKind.Phase, "/p"), PacketFreezer.Machine, Token);
+
+        AssertNamesTheToolsError(result.Error.Message);
+    }
+
+    private static void AssertNamesTheToolsError(string message)
+    {
+        Assert.Contains("AW-PACKETS-003", message, StringComparison.Ordinal);
+        Assert.DoesNotContain("build aw-packets", message, StringComparison.Ordinal);
+        Assert.DoesNotContain("it printed no JSON", message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_scoping_packet_passes_no_repo_to_validate_or_freeze()
+    {
+        var (tool, runner) = Tool(new ToolRun(ToolOutcome.Exited, 0, """{"passed":true,"frozen":true,"checks":[]}"""));
+        var packet = new PacketRef(PacketKind.Scoping, "/run/scope", Repo: "/work/web", RepoSlug: "o/n", Instance: "T-1");
+
+        _ = await tool.Validate(packet, Token);
+        _ = await tool.Freeze(packet, PacketFreezer.Machine, Token);
+
+        Assert.Equal(2, runner.Calls.Count);
+        Assert.All(runner.Calls, call => Assert.DoesNotContain(call.Arguments, static argument => string.Equals(argument, "--repo", StringComparison.Ordinal)));
+    }
 }

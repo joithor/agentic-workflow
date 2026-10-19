@@ -40,7 +40,7 @@ internal sealed class BuildPrepareStep(IRunDiff diff) : IBlockStep, IBlockStepId
         }
 
         return clean.Value
-            ? StepFacts.Done("ready", ("fact:activePacket", InForce(packet, worktree)), ("fact:redTests", new JsonObject()), ("fact:built", new JsonObject()), ("fact:change", new JsonObject()), ("fact:findings", new JsonArray()), ("fact:answers", new JsonArray()))
+            ? StepFacts.Done("ready", ("fact:activePacket", InForce(packet, worktree)), ("fact:redTests", new JsonObject()), ("fact:built", new JsonObject()), ("fact:change", new JsonObject()), ("fact:findings", new JsonArray()), ("fact:answers", new JsonObject()))
             : BlockStepResult.Failed($"step.build.prepare: the worktree {worktree} has uncommitted changes (fix: commit or discard them, then resume)");
     }
 

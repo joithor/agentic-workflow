@@ -26,6 +26,7 @@ internal sealed partial class AgentsPageViewModel
         }
 
         var row = new SessionRowViewModel(served, catalog.Row("FocusSession"), Clipboard, _clock);
+        row.FrameRequested += (_, e) => FrameRequested?.Invoke(this, e);
         _rows[served.Ref] = row;
         return row;
     }

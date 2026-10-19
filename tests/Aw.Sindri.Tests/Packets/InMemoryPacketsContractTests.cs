@@ -8,5 +8,11 @@ namespace Aw.Sindri.Tests.Packets;
 [Lane(TestLane.Unit)]
 public sealed class InMemoryPacketsContractTests : PacketsContract
 {
-    protected override IPackets Create() => new InMemoryPackets().Fails(Bad).Unreadable(Missing);
+    protected override PacketRef Good { get; } = new(PacketKind.Phase, "/packets/good");
+
+    protected override PacketRef Bad { get; } = new(PacketKind.Phase, "/packets/bad");
+
+    protected override PacketRef Missing { get; } = new(PacketKind.Phase, "/packets/missing");
+
+    protected override IPackets Create() => new InMemoryPackets().Fails(Bad.Directory).Unreadable(Missing.Directory);
 }

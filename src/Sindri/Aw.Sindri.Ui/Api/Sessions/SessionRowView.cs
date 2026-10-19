@@ -20,6 +20,7 @@ namespace Aw.Sindri.Ui.Api.Sessions;
 /// <param name="Focus">Focus, as served.</param>
 /// <param name="Title">Title, as served; null for a session caller.</param>
 /// <param name="Pid">Pid, as served; null for a session caller.</param>
+/// <param name="Launch">Launch: the Step an engine launch started it for; null when no launch row is known, all-null members for an attended launch.</param>
 internal sealed record SessionRowView(
     string Ref,
     string Provider,
@@ -39,4 +40,5 @@ internal sealed record SessionRowView(
     DateTimeOffset Since,
     SessionFocusView Focus,
     string? Title,
-    int? Pid);
+    int? Pid,
+    SessionLaunchView? Launch = null);

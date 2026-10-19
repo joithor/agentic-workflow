@@ -1,4 +1,5 @@
 using Aw.Sindri.Ui.Api;
+using Aw.Sindri.Ui.Api.Sessions;
 using Aw.Sindri.Ui.Api.Workflow;
 
 namespace Aw.Sindri.Ui.ViewModels.Instance;
@@ -10,6 +11,9 @@ internal sealed partial class InstanceFrameViewModel
     // session.ended) moves its version, state or run, so the events are read once when the frame opens and again only when one moved.
     private (string Address, long Version, string State, string? Launch)? _eventsFor;
     private IReadOnlyList<InstanceEventRow> _eventRows = [];
+
+    /// <summary>Raised when the agent Step's session link is followed; the shell opens the Agents page's session sheet.</summary>
+    internal event EventHandler<FrameSessionEventArgs>? SessionRequested;
 
     // An agent Step shows a run line, its launch's state and Attach (ready from the item). What the agent's Steps came to is read for
     // every instance, so a frame opened on one that already failed or completed still shows it; it is nothing for an instance that never ran one.
@@ -28,6 +32,7 @@ internal sealed partial class InstanceFrameViewModel
 
         var (item, unreadable) = expanded.HasAttach ? await ReadItem(url, detail.ItemId, cancellationToken).ConfigureAwait(true) : (null, false);
         var launch = await ReadLaunch(url, run, cancellationToken).ConfigureAwait(true);
+        var sessionRef = await ReadSessionRef(url, run, cancellationToken).ConfigureAwait(true);
         var header = detail.Current.Status.Header;
         var stamp = (detail.Address, header.Version, header.State, run?.Launch);
         if (_eventsFor != stamp)
@@ -41,7 +46,7 @@ internal sealed partial class InstanceFrameViewModel
 
         if (generation == _generation)
         {
-            expanded.ShowRun(new AgentRunRead(launch, item, _eventRows, unreadable));
+            expanded.ShowRun(new AgentRunRead(launch, item, _eventRows, unreadable, sessionRef));
         }
     }
 
@@ -65,5 +70,17 @@ internal sealed partial class InstanceFrameViewModel
 
         var read = await api.Launch(url, run.Launch, cancellationToken).ConfigureAwait(true);
         return read.IsSuccess ? read.Value : null;
+    }
+
+    // The session behind the run is known when the collector lists a row whose launch id is the run's; a list that can't be read is no link.
+    private async Task<string?> ReadSessionRef(Uri url, StatusRun? run, CancellationToken cancellationToken)
+    {
+        if (run is null || !string.Equals(run.Runtime, "agent", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var read = await api.Sessions(url, new SessionQuery(InWorkflow: true), cancellationToken).ConfigureAwait(true);
+        return read.IsSuccess ? read.Value.Sessions.FirstOrDefault(s => string.Equals(s.LaunchId, run.Launch, StringComparison.Ordinal))?.Ref : null;
     }
 }

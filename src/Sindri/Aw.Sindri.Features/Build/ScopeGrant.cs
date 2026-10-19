@@ -4,22 +4,20 @@ using Aw.Sindri.Core.Workflow.Blocks;
 namespace Aw.Sindri.Features.Build;
 
 /// <summary>
-/// What the owner allowed at the scope desk (line spec §7.2): the last <c language="text">{ outcome: "allow", paths, reason }</c> entry of 'fact:answers', the array 'step.build.prepare' seeds
-/// and the desk's 'allow' and 'revert' answers append to. A grant with no path or no reason is no grant.
+/// What the owner allowed at the scope desk (line spec §7.2): 'fact:answers' is an object, <c language="text">{ allow?: string[], reason?: string, revert?: string[] }</c>, the shape the shipped
+/// workflow.build evals use. 'allow' names the granted paths (repo-relative globs or 'new: &lt;path&gt;'); a grant with no path is no grant. The reason is the owner's, or a stock line when the desk gave none.
 /// </summary>
-/// <param name="Paths">The granted paths: repo-relative globs, or 'new: &lt;path&gt;'.</param>
+/// <param name="Paths">The granted paths.</param>
 /// <param name="Reason">Why the owner allowed them.</param>
 internal sealed record ScopeGrant(IReadOnlyList<string> Paths, string Reason)
 {
-    internal static ScopeGrant? Last(JsonNode? answers)
-    {
-        if (answers is not JsonArray entries)
-        {
-            return null;
-        }
+    internal const string DefaultReason = "allowed at the scope desk";
 
-        var allow = entries.OfType<JsonObject>().LastOrDefault(static e => string.Equals(StepFacts.Field(e, "outcome"), "allow", StringComparison.Ordinal));
-        var paths = allow?["paths"] is JsonArray listed ? listed.Select(static p => p is JsonValue v && v.TryGetValue<string>(out var text) ? text : null).OfType<string>().Where(static p => !string.IsNullOrWhiteSpace(p)).ToList() : [];
-        return paths.Count > 0 && StepFacts.Field(allow, "reason") is { } reason ? new ScopeGrant(paths, reason) : null;
+    internal static ScopeGrant? From(JsonNode? answers)
+    {
+        var paths = answers is JsonObject obj && obj["allow"] is JsonArray listed
+            ? listed.Select(static p => p is JsonValue v && v.TryGetValue<string>(out var text) ? text : null).OfType<string>().Where(static p => !string.IsNullOrWhiteSpace(p)).ToList()
+            : [];
+        return paths.Count > 0 ? new ScopeGrant(paths, StepFacts.Field(answers, "reason") ?? DefaultReason) : null;
     }
 }

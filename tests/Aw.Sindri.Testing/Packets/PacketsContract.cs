@@ -6,20 +6,18 @@ namespace Aw.Sindri.Testing.Packets;
 /// <summary>The contract every <see cref="IPackets"/> honours: a failed check is an answer, a freeze is write-once, the hash is stable.</summary>
 public abstract class PacketsContract
 {
-    /// <summary>The directory <see cref="Create"/> holds a good packet in.</summary>
-    protected const string Good = "/packets/good";
-
-    /// <summary>The directory <see cref="Create"/> holds a packet that fails its checks in.</summary>
-    protected const string Bad = "/packets/bad";
-
-    /// <summary>The directory <see cref="Create"/> cannot read a packet in.</summary>
-    protected const string Missing = "/packets/missing";
-
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static PacketRef Of(string directory, PacketKind kind = PacketKind.Phase) => new(kind, directory);
+    /// <summary>The packet <see cref="Create"/> holds as good.</summary>
+    protected abstract PacketRef Good { get; }
 
-    /// <summary>Packets that hold a good packet at <see cref="Good"/>, one that fails its checks at <see cref="Bad"/> and none readable at <see cref="Missing"/>.</summary>
+    /// <summary>The packet <see cref="Create"/> holds as failing its checks.</summary>
+    protected abstract PacketRef Bad { get; }
+
+    /// <summary>The packet <see cref="Create"/> cannot read.</summary>
+    protected abstract PacketRef Missing { get; }
+
+    /// <summary>Packets that hold <see cref="Good"/> good, <see cref="Bad"/> failing its checks and <see cref="Missing"/> unreadable.</summary>
     /// <returns>The port.</returns>
     protected abstract IPackets Create();
 
@@ -28,7 +26,7 @@ public abstract class PacketsContract
     [Fact]
     public async Task A_good_packet_validates()
     {
-        var result = await Create().Validate(Of(Good), Token);
+        var result = await Create().Validate(Good, Token);
 
         Expect.True(result.IsSuccess);
         Expect.True(result.Value.Passed);
@@ -40,7 +38,7 @@ public abstract class PacketsContract
     [Fact]
     public async Task A_failing_packet_validates_to_its_failures()
     {
-        var result = await Create().Validate(Of(Bad), Token);
+        var result = await Create().Validate(Bad, Token);
 
         Expect.True(result.IsSuccess);
         Expect.True(!result.Value.Passed);
@@ -52,7 +50,7 @@ public abstract class PacketsContract
     [Fact]
     public async Task An_unreadable_packet_is_an_error()
     {
-        var result = await Create().Validate(Of(Missing), Token);
+        var result = await Create().Validate(Missing, Token);
 
         Expect.True(result.IsError);
     }
@@ -64,8 +62,8 @@ public abstract class PacketsContract
     {
         var packets = Create();
 
-        var first = await packets.Hash(Of(Good), Token);
-        var second = await packets.Hash(Of(Good), Token);
+        var first = await packets.Hash(Good, Token);
+        var second = await packets.Hash(Good, Token);
 
         Expect.True(first.IsSuccess);
         Expect.True(first.Value.StartsWith("sha256:", StringComparison.Ordinal));
@@ -79,8 +77,8 @@ public abstract class PacketsContract
     {
         var packets = Create();
 
-        var frozen = await packets.Freeze(Of(Good), PacketFreezer.Machine, Token);
-        var hash = await packets.Hash(Of(Good), Token);
+        var frozen = await packets.Freeze(Good, PacketFreezer.Machine, Token);
+        var hash = await packets.Hash(Good, Token);
 
         Expect.True(frozen.IsSuccess);
         Expect.True(frozen.Value.Frozen);
@@ -94,7 +92,7 @@ public abstract class PacketsContract
     [Fact]
     public async Task A_failing_packet_does_not_freeze()
     {
-        var frozen = await Create().Freeze(Of(Bad), PacketFreezer.Owner, Token);
+        var frozen = await Create().Freeze(Bad, PacketFreezer.Owner, Token);
 
         Expect.True(frozen.IsSuccess);
         Expect.True(!frozen.Value.Frozen);
@@ -108,9 +106,9 @@ public abstract class PacketsContract
     public async Task A_second_freeze_keeps_the_first_freezer()
     {
         var packets = Create();
-        _ = await packets.Freeze(Of(Good), PacketFreezer.Machine, Token);
+        _ = await packets.Freeze(Good, PacketFreezer.Machine, Token);
 
-        var again = await packets.Freeze(Of(Good), PacketFreezer.Owner, Token);
+        var again = await packets.Freeze(Good, PacketFreezer.Owner, Token);
 
         Expect.True(again.Value.Frozen);
         Expect.True(again.Value.AlreadyFrozen);

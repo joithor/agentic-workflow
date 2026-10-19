@@ -36,7 +36,7 @@ public sealed class BuildAmendStepTests
 
     private BuildAmendStep Step() => new(_packets, _files, _area, _clock);
 
-    private StepContext Context(string answers = """[{"station":"scope-desk","outcome":"allow","paths":["docs/**","new: src/x.cs"],"reason":"needs docs"}]""", string id = "fixture-p1")
+    private StepContext Context(string answers = """{"allow":["docs/**","new: src/x.cs"],"reason":"needs docs"}""", string id = "fixture-p1")
     {
         _ = _files.Put(ParentDir, ParentFiles(id));
         return BuildShipContexts.Of("step.build.amend", new Dictionary<string, string>(StringComparer.Ordinal)
@@ -92,14 +92,13 @@ public sealed class BuildAmendStepTests
     }
 
     [Fact]
-    public async Task The_last_allow_is_the_grant_and_a_stamp_records_when()
+    public async Task A_grant_with_no_reason_takes_the_stock_one_and_a_stamp_records_when()
     {
-        var answers = """[{"outcome":"allow","paths":["a/**"],"reason":"first"},{"outcome":"revert","reason":"no"},{"outcome":"allow","paths":["b/**"],"reason":"second"}]""";
-
-        _ = await Step().Run(Context(answers), Token);
+        _ = await Step().Run(Context("""{"allow":["b/**"],"revert":["c.cs"]}"""), Token);
 
         var child = await Child("fixture-p1-a1");
         Assert.Equal(["src/**", "b/**"], child["allowedFiles"]!.AsArray().Select(static n => (string?)n), StringComparer.Ordinal);
+        Assert.Equal(ScopeGrant.DefaultReason, (string?)child["amends"]!["reason"], StringComparer.Ordinal);
         Assert.StartsWith("2026-10-19T09:00:00", (string?)child["amends"]!["at"], StringComparison.Ordinal);
     }
 
@@ -125,9 +124,10 @@ public sealed class BuildAmendStepTests
     }
 
     [Theory]
-    [InlineData("""[{"outcome":"revert","reason":"no"}]""")]
-    [InlineData("""[{"outcome":"allow","paths":[],"reason":"x"}]""")]
-    [InlineData("""[{"outcome":"allow","paths":["a"],"reason":" "}]""")]
+    [InlineData("""{"revert":["a"]}""")]
+    [InlineData("""{"allow":[],"reason":"x"}""")]
+    [InlineData("""{"allow":[" "]}""")]
+    [InlineData("[]")]
     [InlineData("{}")]
     public async Task Answers_with_no_usable_grant_fail_the_Step(string answers)
     {
@@ -143,7 +143,7 @@ public sealed class BuildAmendStepTests
         var context = BuildShipContexts.Of("step.build.amend", new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["activePacket"] = """{"hash":"sha256:aa","dir":"/nowhere","repo":"/work/p1"}""",
-            ["answers"] = """[{"outcome":"allow","paths":["a"],"reason":"r"}]""",
+            ["answers"] = """{"allow":["a"],"reason":"r"}""",
         }, Address);
 
         var result = await Step().Run(context, Token);
@@ -158,7 +158,7 @@ public sealed class BuildAmendStepTests
         var noRepo = BuildShipContexts.Of("step.build.amend", new Dictionary<string, string>(StringComparer.Ordinal)
         {
             ["activePacket"] = $$"""{"hash":"{{ParentHash}}","dir":"{{ParentDir}}"}""",
-            ["answers"] = """[{"outcome":"allow","paths":["a"],"reason":"r"}]""",
+            ["answers"] = """{"allow":["a"],"reason":"r"}""",
         }, Address);
         _ = context;
 

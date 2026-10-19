@@ -6,7 +6,7 @@ using Aw.Sindri.Core.Workflow.Ids;
 namespace Aw.Sindri.Features.Build;
 
 /// <summary>
-/// 'step.build.amend' on the block runtime (line spec §7.2, LN-PKT1, LN-PKT5): the owner's grant (the last 'allow' in 'fact:answers') becomes a new child phase packet
+/// 'step.build.amend' on the block runtime (line spec §7.2, LN-PKT1, LN-PKT5): the owner's grant (the 'allow' paths of the object 'fact:answers') becomes a new child phase packet
 /// (<see cref="AmendedPhasePacket"/>) in this instance's run area under packets/&lt;id&gt;, owner-frozen through aw-packets, and the packet in force. The scope grant never edits the
 /// frozen packet. The LC-7 escape is a line of the run area's escapes.jsonl: the Step reads no ledger, so the 'line.escape' row is the engine's to write from it. The Step reads
 /// 'fact:activePacket' and 'fact:answers' only, so the child goes to the instance's own run area, not the line's.
@@ -35,9 +35,9 @@ internal sealed class BuildAmendStep(IPackets packets, IPacketFiles files, IRunA
             return BlockStepResult.Failed("step.build.amend needs the repo of fact:activePacket: a checkout aw-packets can check the packet's base commit in (fix: step.build.prepare sets it from fact:workspace)");
         }
 
-        if (ScopeGrant.Last(StepFacts.Read(context, "fact:answers")) is not { } grant)
+        if (ScopeGrant.From(StepFacts.Read(context, "fact:answers")) is not { } grant)
         {
-            return BlockStepResult.Failed("step.build.amend found no 'allow' with paths and a reason in fact:answers");
+            return BlockStepResult.Failed("step.build.amend found no 'allow' paths in fact:answers ({ allow: [paths], reason })");
         }
 
         return await Amend(address, active, grant, cancellationToken).ConfigureAwait(false);
