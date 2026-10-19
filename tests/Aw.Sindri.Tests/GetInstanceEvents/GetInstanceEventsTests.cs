@@ -3,6 +3,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Aw.Sindri.Features.GetInstanceEvents;
 using Aw.Sindri.Features.StreamEvents;
 using Aw.Sindri.Host.Commands;
@@ -195,7 +196,7 @@ public sealed class GetInstanceEventsTests
     public async Task A_failed_step_serves_its_reason_and_no_other_event_does()
     {
         var h = await Ledger();
-        var failed = new Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed("agent:session", RunToken.From("4.1"), "lost", Tokens: 0, new string('a', 64));
+        var failed = new StepFailed("agent:session", RunToken.From("4.1"), "lost", Tokens: 0, new string('a', 64));
         var detail = WorkflowEventDetail.Of(failed, WorkflowInstanceId.Of(_address), suspension: null) with { Reason = "lost" };
         var payload = new WorkflowEventPayload(WorkflowInstanceId.Of(_address).Value, "write", "parked", "step.failed", Outcome: null, "4.1", detail);
         Assert.False((await h.Store.Append(h.Events.Entry("workflow.transition", payload, "workflow:T-1/step/1:run-a:11", "T-1"), h.Held.Current!, TestContext.Current.CancellationToken)).IsError);
