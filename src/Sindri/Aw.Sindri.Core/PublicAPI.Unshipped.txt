@@ -8391,7 +8391,6 @@ Aw.Sindri.Core.Launch.LaunchStage.Backstop = 1 -> Aw.Sindri.Core.Launch.LaunchSt
 Aw.Sindri.Core.Launch.LaunchStage.Host = 0 -> Aw.Sindri.Core.Launch.LaunchStage
 Aw.Sindri.Core.Launch.StepArgs
 Aw.Sindri.Core.Launch.StepArgs.<Clone>$() -> Aw.Sindri.Core.Launch.StepArgs!
-Aw.Sindri.Core.Launch.StepArgs.Deconstruct(out string? Model, out Aw.Sindri.Core.Launch.StepPolicy? Policy, out Aw.Sindri.Core.Launch.StepRef! Ref) -> void
 Aw.Sindri.Core.Launch.StepArgs.Equals(Aw.Sindri.Core.Launch.StepArgs? other) -> bool
 Aw.Sindri.Core.Launch.StepArgs.Model.get -> string?
 Aw.Sindri.Core.Launch.StepArgs.Model.init -> void
@@ -8399,7 +8398,6 @@ Aw.Sindri.Core.Launch.StepArgs.Policy.get -> Aw.Sindri.Core.Launch.StepPolicy?
 Aw.Sindri.Core.Launch.StepArgs.Policy.init -> void
 Aw.Sindri.Core.Launch.StepArgs.Ref.get -> Aw.Sindri.Core.Launch.StepRef!
 Aw.Sindri.Core.Launch.StepArgs.Ref.init -> void
-Aw.Sindri.Core.Launch.StepArgs.StepArgs(string? Model, Aw.Sindri.Core.Launch.StepPolicy? Policy, Aw.Sindri.Core.Launch.StepRef! Ref) -> void
 Aw.Sindri.Core.Launch.StepPolicy
 Aw.Sindri.Core.Launch.StepPolicy.<Clone>$() -> Aw.Sindri.Core.Launch.StepPolicy!
 Aw.Sindri.Core.Launch.StepPolicy.Equals(Aw.Sindri.Core.Launch.StepPolicy? other) -> bool
@@ -10651,7 +10649,6 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailures.Of(Aw.Sindri.C
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.LaunchIdFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run) -> Aw.Sindri.Core.Workflow.Engine.LaunchId
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.LaunchIdFor(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId workflow, Aw.Sindri.Core.Workflow.Engine.RunToken run) -> Aw.Sindri.Core.Workflow.Engine.LaunchId
-static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.RequestFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target) -> Aw.Sindri.Core.Launch.LaunchRequest!
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.WorktreeFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target) -> string!
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun!
@@ -11886,3 +11883,10 @@ const Aw.Sindri.Core.Events.EventTypes.ScopingEscape = "scoping.escape" -> strin
 static readonly Aw.Sindri.Core.Scoping.ScopingErrors.PacketToolFailed -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Detail.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Detail.init -> void
+Aw.Sindri.Core.Launch.StepArgs.Brief.get -> string?
+Aw.Sindri.Core.Launch.StepArgs.Brief.init -> void
+Aw.Sindri.Core.Launch.StepArgs.Deconstruct(out string? Model, out Aw.Sindri.Core.Launch.StepPolicy? Policy, out Aw.Sindri.Core.Launch.StepRef! Ref, out string? Brief) -> void
+Aw.Sindri.Core.Launch.StepArgs.StepArgs(string? Model, Aw.Sindri.Core.Launch.StepPolicy? Policy, Aw.Sindri.Core.Launch.StepRef! Ref, string? Brief = null) -> void
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.RequestFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor = null) -> Aw.Sindri.Core.Launch.LaunchRequest!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief.Render(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor) -> string!

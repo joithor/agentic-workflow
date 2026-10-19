@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Workflow.Blocks;
 
 namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 
@@ -43,8 +44,9 @@ public static class AgentLaunches
     /// <summary>The launcher's request: unattended, Open, the worktree, the Step's reference and the policy its capability gives.</summary>
     /// <param name="run">The run.</param>
     /// <param name="target">Where it runs.</param>
+    /// <param name="descriptor">The Step's descriptor, for the brief; null when the catalog doesn't know it.</param>
     /// <returns>The request.</returns>
-    public static LaunchRequest RequestFor(AgentStepRun run, AgentStepTarget target)
+    public static LaunchRequest RequestFor(AgentStepRun run, AgentStepTarget target, BlockDescriptor? descriptor = null)
     {
         var worktree = WorktreeFor(run, target);
         // Never plan mode: plan mode runs read-only tools only, so the session couldn't run 'sindri workflow complete'. A Step only tightens the
@@ -52,6 +54,6 @@ public static class AgentLaunches
         var policy = new StepPolicy(run.WriteScope ? [.. _report, .. _commit] : _report, StepPermissionMode.Default, run.WriteScope ? worktree : null);
         return new LaunchRequest(
             LaunchIdFor(run), target.Item, target.Agent, LaunchMode.Open, Attended: false, target.RepoPath, run.Address, worktree,
-            new StepArgs(Model: null, policy, run.Step), run.Run);   // Model null: per-Step models are SC-R
+            new StepArgs(Model: null, policy, run.Step, descriptor is null ? null : AgentStepBrief.Render(run, descriptor)), run.Run);   // Model null: per-Step models are SC-R
     }
 }
