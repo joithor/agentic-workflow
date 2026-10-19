@@ -16,7 +16,7 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// successfully it starts a sync job as 'service:context-sync-gaps', through the SyncSources command (gate, audit, authorization and 'command.handled'; never the runner). Reads stay pure: the lenses
 /// and the history only show the gap. A running sync is never doubled (key 'sync': SND-JOB-409 with 'runningJob' is a quiet run; any other 409 is logged and not retried). It re-checks on the scheduler tick;
 /// the scheduler has no event trigger (sindri-api accepted this). A tick reads the sources' stored sync state and nothing else (no live probe, no job read, no command, nothing logged above debug)
-/// until a source is a gap; then it reads the sync jobs once, backs off after failed syncs (a source whose first sync failed is still a gap) and starts one when due.
+/// until a source is a gap; then it reads the sync jobs once, backs off after every ended sync while the gap remains (a source whose sync failed, or that is down and left the job Succeeded with a coded row, is still a gap) and starts one when due.
 /// A failure to start surfaces as a failed service run (needs-you 'failure:service:context-sync-gaps').
 /// </summary>
 /// <param name="scopes">The profile's scope and the caller.</param>
@@ -66,8 +66,9 @@ internal sealed partial class ContextSyncGapsService(ContextScopes scopes, ICont
         }
 
         var running = recent.Value.Any(static j => j.State == JobState.Running);
+        // Only called while a source has no successful sync, so every ended run counts as a failed attempt for it; the job's own state is left as it is (other readers use it).
         IReadOnlyList<SyncAttempt> finished = [.. recent.Value.Where(static j => j.State != JobState.Running && j.EndedAt is not null).Take(RecentRuns)
-            .Select(static j => new SyncAttempt(j.State == JobState.Failed, j.EndedAt ?? default))];
+            .Select(static j => new SyncAttempt(Failed: true, j.EndedAt ?? default))];   // the gap is still there, so no run left the source synced, whatever state the job ended in (a down source ends the job Succeeded with a coded row)
         return SyncGapDecision.Decide(gap: true, running, finished, clock.GetUtcNow()) == SyncGapAction.Start
             ? await Start(cancellationToken).ConfigureAwait(false)
             : ScheduledResult.Quiet;

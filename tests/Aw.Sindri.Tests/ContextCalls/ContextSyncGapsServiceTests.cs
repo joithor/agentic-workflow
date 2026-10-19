@@ -179,17 +179,31 @@ public sealed class ContextSyncGapsServiceTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task Two_failures_in_a_row_wait_ten_minutes_and_a_success_resets_the_count()
+    public async Task A_sync_that_ended_Succeeded_but_left_the_source_unsynced_counts_as_a_failed_attempt_and_the_wait_doubles()
     {
-        Job(JobState.Failed, TimeSpan.FromMinutes(20));
-        Job(JobState.Failed, TimeSpan.FromMinutes(7));   // newest: wait 10 from 7 minutes ago
+        // the source is down: the job ends Succeeded with a coded row, and the gap is still there, so each run counts
+        Job(JobState.Succeeded, TimeSpan.FromMinutes(20));
+        Job(JobState.Succeeded, TimeSpan.FromMinutes(7));   // newest: the second wait is 10 minutes from 7 minutes ago
         var service = await Service(context: true);
         var waiting = await Run(service);
-        Job(JobState.Succeeded, TimeSpan.FromMinutes(1));   // newest of all
-        var reset = await Run(service);
+        _h.Clock.Advance(TimeSpan.FromMinutes(4));   // 11 minutes after it ended
+        var elapsed = await Run(service);
 
         Assert.True(waiting.Value.Idle);
-        Assert.False(reset.Value.Idle);
+        Assert.False(elapsed.Value.Idle);
+        _ = Assert.Single(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task A_down_source_does_not_start_a_sync_every_minute()
+    {
+        Job(JobState.Succeeded, TimeSpan.FromMinutes(1));
+        var service = await Service(context: true);
+
+        var result = await Run(service);
+
+        Assert.True(result.Value.Idle);
+        Assert.Empty(_start.Requests);
     }
 
     [Fact, Trait("Lane", "unit")]
