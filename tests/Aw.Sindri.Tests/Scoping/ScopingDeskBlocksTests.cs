@@ -179,11 +179,11 @@ public sealed class ScopingDeskBlocksTests
         facts["lenses"] = response.Outputs["lenses"];
         facts["coverage"] = response.Outputs["coverage"];
 
-        var report = ScopePacketChecks.Run(new ScopeFacts(facts), ScopeStage.Draft);
+        var report = ScopePacketChecks.Run(new ScopeFacts(facts), ScopeStage.Evidence);   // SCP-LENS-001 is an evidence-stage rule
 
         foreach (var rule in new[] { "SCP-COV-001", "SCP-COV-002", "SCP-LENS-001", "SCP-SCHEMA-001" })
         {
-            Assert.DoesNotContain(report.Findings, f => f.Rule == rule);
+            Assert.Equal(ScopeRuleStatus.Pass, report.Rules.Single(r => string.Equals(r.Rule, rule, StringComparison.Ordinal)).Status);
         }
     }
 
@@ -209,8 +209,9 @@ public sealed class ScopingDeskBlocksTests
 
         var code = Out(response, "coverage")["lenses"]!.AsArray().Single(r => r!["lens"]!.GetValue<string>() == "code")!;
         Assert.Equal(["commit-not-held", "index-not-built"], code["limits"]!.AsArray().Select(static l => l!["why"]!.GetValue<string>()).Order(StringComparer.Ordinal), StringComparer.Ordinal);
-        var report = ScopePacketChecks.Run(new ScopeFacts(check), ScopeStage.Draft);
-        Assert.DoesNotContain(report.Findings, f => string.Equals(f.Rule, "SCP-COV-002", StringComparison.Ordinal) || string.Equals(f.Rule, "SCP-LENS-001", StringComparison.Ordinal));
+        var report = ScopePacketChecks.Run(new ScopeFacts(check), ScopeStage.Evidence);
+        Assert.Equal(ScopeRuleStatus.Pass, report.Rules.Single(static r => string.Equals(r.Rule, "SCP-COV-002", StringComparison.Ordinal)).Status);
+        Assert.Equal(ScopeRuleStatus.Pass, report.Rules.Single(static r => string.Equals(r.Rule, "SCP-LENS-001", StringComparison.Ordinal)).Status);
     }
 
     [Fact, Trait("Lane", "unit")]
