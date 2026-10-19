@@ -38,6 +38,8 @@ public sealed class AgentRuntimeInterpreterTests(SindriTimeSkippingServer skippi
     private readonly FakeLauncher _launcher = new();
     private readonly FakeAgentSessions _sessions = new();
     private readonly FakeRunDiff _diff = new();
+    private string _root = RecipeName;   // the recipe a rig starts; a test that wants a parent over a child sets it and _also before Rig
+    private string[] _also = [];
     private ILauncher? _launcherSeen;   // what the host sees as the launcher when a test wraps the fake
     private IRunDiff? _diffSeen;
 
@@ -258,6 +260,25 @@ public sealed class AgentRuntimeInterpreterTests(SindriTimeSkippingServer skippi
     }
 
     // The launcher has been asked and the launch activity has had time to finish; a command that lands before it does is applied in the launch phase, which the tests that need the watch avoid.
+    [Fact(Timeout = 120_000)]
+    public async Task An_agent_report_that_enters_a_child_wait_starts_the_child()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _root = "workflow.dev-agent-parent";
+        _also = [ChildRecipes.Child(), _parentRecipe];
+        await using var rig = await Rig(ct);
+        await rig.Run(async handle =>
+        {
+            var view = await WorkflowsHarness.Until(handle, static v => v.Run is not null && v.State == "write");
+            await Launched(ct);
+            _ = await handle.ExecuteUpdateAsync(wf => wf.CompleteAsync(Report(view.Run!.Value)), new WorkflowUpdateOptions(new string('a', 32)));
+
+            var parent = await WorkflowsHarness.Until(handle, static v => v.State == "run" && v.Children.Count == 1);
+
+            Assert.Equal("workflow.t-child", Assert.Single(parent.Children).Address.Value.Split('/')[^1].Split('.')[0]);
+        });
+    }
+
     private async Task Launched(CancellationToken ct)
     {
         await WaitFor(() => _launcher.Requests.Count > 0, ct);
@@ -332,6 +353,11 @@ public sealed class AgentRuntimeInterpreterTests(SindriTimeSkippingServer skippi
         {
             test._harness.Replacing = services => Register(services, test);
             test._harness.Recipe(RecipeName, _recipe);
+            foreach (var yaml in test._also)
+            {
+                _ = test._harness.Approve(yaml);
+            }
+
             var environment = given ?? await WorkflowsHarness.StartDevServer(ct: ct);
             var sindri = test._harness.Sindri(test._harness.Replacing);
             await WorkflowsHarness.HoldLease(sindri, ct);
@@ -415,7 +441,7 @@ public sealed class AgentRuntimeInterpreterTests(SindriTimeSkippingServer skippi
 
         private async Task<InstanceStart> Prepare(CancellationToken ct)
         {
-            var start = await WorkflowsHarness.RecipeStart(Sindri, RecipeName, _item.Key, ct);
+            var start = await WorkflowsHarness.RecipeStart(Sindri, _test._root, _item.Key, ct);
             var item = _test._harness.Fact(JsonSerializer.Serialize(new { id = _item.Id, repo = _item.Repo, spec = (string?)null }));
             var inputs = new Dictionary<FactKey, InputFact>
             {
@@ -462,4 +488,27 @@ public sealed class AgentRuntimeInterpreterTests(SindriTimeSkippingServer skippi
         "  done: { kind: terminal, outcome: resolved }",
         "transitions:",
         "  - { from: write, to: done, on: step.completed, when: { outcome: done }, produces: [fact:resolution] }");
+
+    private static readonly string _parentRecipe = string.Join('\n',
+        "schema: 1",
+        "id: workflow.dev-agent-parent",
+        "version: 1",
+        "inputs:",
+        "  - { key: fact:item, label: \"Item\", type: item, kind: item }",
+        "  - { key: fact:issue, label: \"Issue\", type: text, kind: text }",
+        "initial: write",
+        "states:",
+        "  write:",
+        "    kind: active",
+        "    step: step.report.write",
+        "    budget: { tokens: 1000 }",
+        "    timeout: { after: 1m, then: park }",
+        "    next: \"Write up the resolution for {item}.\"",
+        "  run: { kind: wait, timeout: { after: 2d, then: park },",
+        "         waitFor: { child: { recipe: workflow.t-child, inputs: { \"fact:request\": { fact: fact:issue } }, onParked: propagate } },",
+        "         next: \"Waiting for {child}.\" }",
+        "  done: { kind: terminal, outcome: resolved }",
+        "transitions:",
+        "  - { from: write, to: run, on: step.completed, when: { outcome: done }, produces: [fact:resolution] }",
+        "  - { from: run, to: done, on: wait.satisfied, when: { outcome: resolved } }");
 }
