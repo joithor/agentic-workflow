@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
@@ -123,5 +124,80 @@ public sealed class LensLogStepTests
         var result = await new LensLogStep().Run(new StepContext(BlockId.From(Step), new Dictionary<string, JsonElement>(StringComparer.Ordinal), facts, InjectionSections.Empty), TestContext.Current.CancellationToken);
 
         Assert.Equal("clean", result.Result!.Outcome.Value);
+    }
+
+    [Fact]
+    public async Task A_mid_round_report_that_carries_closes_still_gives_next_in_the_same_round()
+    {
+        var result = await Run("""{"lens":"product","closes":true,"round":9,"findings":[]}""", "[]", """["product","arch"]""");
+
+        Assert.Equal("next", result.Result!.Outcome.Value);
+        var entry = Assert.Single(LensStepContexts.Out(result, "lensRounds").AsArray())!;
+        Assert.Equal(1, entry["round"]!.GetValue<int>());
+        Assert.Null(entry["closes"]);
+    }
+
+    [Fact]
+    public async Task A_copied_closes_does_not_hide_a_high_finding_in_a_clean_round()
+    {
+        const string earlier = """[{"round":1,"lens":"product","findings":[{"severity":"HIGH","text":"h"}]}]""";
+
+        var result = await Run("""{"lens":"arch","closes":true,"findings":[]}""", earlier, """["arch"]""");
+
+        Assert.Equal("findings", result.Result!.Outcome.Value);
+    }
+
+    [Fact]
+    public async Task A_mixed_case_severity_counts_on_the_scale()
+    {
+        var result = await Run("""{"lens":"arch","findings":[{"severity":"High","text":"h"}]}""", "[]", """["arch"]""");
+
+        Assert.Equal("findings", result.Result!.Outcome.Value);
+    }
+
+    [Fact]
+    public async Task A_lens_already_logged_in_the_open_round_starts_a_new_round()
+    {
+        const string open = """[{"round":1,"lens":"product","findings":[{"severity":"HIGH","text":"old"}]}]""";
+
+        var result = await Run("""{"lens":"product","findings":[]}""", open, """["product"]""");
+
+        Assert.Equal("clean", result.Result!.Outcome.Value);
+        Assert.Equal(2, LensStepContexts.Out(result, "lensRounds").AsArray()[1]!["round"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public async Task The_gold_lens_rounds_replay_as_two_rounds_of_five_lenses()
+    {
+        var gold = File.ReadAllLines(Path.Combine(RepoRoot(), "tests", "fixtures", "line", "gold", "design", "expiry", "lens-rounds.jsonl")).Select(static l => JsonNode.Parse(l)!.AsObject()).ToList();
+        var lenses = gold.Take(5).Select(static e => e["lens"]!.GetValue<string>()).ToList();
+        var rounds = "[]";
+        var outcomes = new List<(int Round, string Outcome)>();
+        foreach (var report in gold)
+        {
+            var round = report["round"]!.GetValue<int>();
+            var left = lenses.SkipWhile(l => l != report["lens"]!.GetValue<string>()).ToList();
+            var asReport = (JsonObject)report.DeepClone();
+            _ = asReport.Remove("round");
+            var result = await Run(asReport.ToJsonString(), rounds, JsonSerializer.Serialize(left));
+            outcomes.Add((round, result.Result!.Outcome.Value));
+            rounds = LensStepContexts.Out(result, "lensRounds").ToJsonString();
+        }
+
+        Assert.Equal(
+            [(1, "next"), (1, "next"), (1, "next"), (1, "next"), (1, "findings"), (2, "next"), (2, "next"), (2, "next"), (2, "next"), (2, "clean")],
+            outcomes);
+        Assert.Equal(gold.Select(static e => e["round"]!.GetValue<int>()), JsonNode.Parse(rounds)!.AsArray().Select(static e => e!["round"]!.GetValue<int>()));
+    }
+
+    private static string RepoRoot()
+    {
+        var dir = new DirectoryInfo(AppContext.BaseDirectory);
+        while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "AgenticWorkflow.slnx")))
+        {
+            dir = dir.Parent;
+        }
+
+        return dir?.FullName ?? throw new InvalidOperationException("the repo root was not found");
     }
 }
