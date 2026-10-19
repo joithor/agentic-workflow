@@ -11,7 +11,6 @@ outputs:
   - { key: fact:designPacket, label: "Design packet", type: packet, from: design }
   - { key: fact:planPacket,   label: "Plan graph",    type: packet, from: plan }
   - { key: fact:pr,           label: "Pull request",  type: link,   from: phase }
-  - { key: fact:docsPr,       label: "Docs PR",       type: link,   from: docs }
 initial: scoping
 states:
   scoping: { kind: wait, timeout: { after: 30d, then: park },
@@ -29,9 +28,6 @@ states:
   phase: { kind: wait, timeout: { after: 14d, then: park },
              waitFor: { child: { recipe: workflow.phase, onParked: propagate, inputs: { "fact:phasePacket": { fact: fact:phasePackets }, "fact:lineContext": { fact: fact:lineContext } } } },
              next: "Waiting for {child}: building, proving and shipping {item}'s phase, ending at your merge stop." }
-  docs: { kind: wait, timeout: { after: 7d, then: park },
-             waitFor: { child: { recipe: workflow.docs-sync, onParked: propagate, inputs: { "fact:pr": { fact: fact:pr }, "fact:phasePacket": { fact: fact:phasePackets } } } },
-             next: "Waiting for {child}: syncing the docs for {item}'s merged PR." }
   done:    { kind: terminal, outcome: resolved }
   dropped: { kind: terminal, outcome: unresolved }
   stuck:   { kind: terminal, outcome: unresolved }
@@ -49,20 +45,13 @@ transitions:
   - { from: plan, to: redesign, on: wait.satisfied, when: { outcome: unresolved }, produces: [fact:designRevision] }
   - { from: plan, to: dropped, on: wait.satisfied, when: { outcome: failed } }
   - { from: plan, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
-  - { from: phase, to: docs, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:pr, fact:handoff, fact:proofPack, fact:mergedSha] }
+  - { from: phase, to: done, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:pr, fact:handoff, fact:proofPack, fact:mergedSha] }
   - { from: phase, to: stuck, on: wait.satisfied, when: { outcome: unresolved } }
   - { from: phase, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
-  - { from: docs, to: done, on: wait.satisfied, when: { outcome: resolved }, produces: [fact:docsPr] }
-  - { from: docs, to: done, on: wait.satisfied, when: { outcome: alreadySatisfied } }
-  - { from: docs, to: stuck, on: wait.satisfied, when: { outcome: unresolved } }
-  - { from: docs, to: stuck, on: wait.satisfied, when: { outcome: failed } }
-  - { from: docs, to: dropped, on: wait.satisfied, when: { outcome: cancelled } }
 loops: { redesign: { cap: 2 } }
 evals:
   - evals/workflow.line/happy.jsonl
   - evals/workflow.line/design-unresolved.jsonl
-  - evals/workflow.line/docs-already-satisfied.jsonl
-  - evals/workflow.line/docs-unresolved.jsonl
   - evals/workflow.line/phase-unresolved.jsonl
   - evals/workflow.line/plan-failed.jsonl
   - evals/workflow.line/plan-redesign.jsonl
