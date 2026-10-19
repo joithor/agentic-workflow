@@ -231,6 +231,25 @@ public sealed class ScopingDeskBlocksTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Gather_over_the_history_lens_golden_finds_its_changes_and_records_the_unconfigured_sources_as_a_limit()
+    {
+        var facts = GatherFacts();
+        facts["historyView"] = ScopingFacts.View("historyView.golden");   // context's own golden: context-history/two-anchors.json
+        var response = await Run("gather", facts);
+        var check = ScopingFacts.Expiry();
+        check["lenses"] = response.Outputs["lenses"];
+        check["coverage"] = response.Outputs["coverage"];
+
+        var history = Out(response, "coverage")["lenses"]!.AsArray().Single(r => r!["lens"]!.GetValue<string>() == "history")!;
+        Assert.Equal(("found", 4), (history["state"]!.GetValue<string>(), history["found"]!["count"]!.GetValue<int>()));
+        Assert.Equal("not-configured", Assert.Single(history["limits"]!.AsArray())!["why"]!.GetValue<string>());
+        Assert.All(Out(response, "lenses")["history"]!["items"]!.AsArray(), static i => Assert.StartsWith("commit:", i!["citations"]![0]!.GetValue<string>(), StringComparison.Ordinal));
+        var report = ScopePacketChecks.Run(new ScopeFacts(check), ScopeStage.Evidence);
+        Assert.Equal(ScopeRuleStatus.Pass, report.Rules.Single(static r => string.Equals(r.Rule, "SCP-COV-002", StringComparison.Ordinal)).Status);
+        Assert.Equal(ScopeRuleStatus.Pass, report.Rules.Single(static r => string.Equals(r.Rule, "SCP-LENS-001", StringComparison.Ordinal)).Status);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Gather_with_a_degraded_source_makes_the_check_report_regather()
     {
         var facts = GatherFacts();
