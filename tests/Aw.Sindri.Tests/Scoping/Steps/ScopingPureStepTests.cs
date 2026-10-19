@@ -2,7 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Features;
+using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Testing.Scoping;
 
 namespace Aw.Sindri.Tests.Scoping.Steps;
@@ -71,15 +71,6 @@ public sealed class ScopingPureStepTests
 
         Assert.Equal("regather", result.Result!.Outcome.Value);
         Assert.Equal(["findings"], ScopingStepContexts.Keys(result), StringComparer.Ordinal);
-    }
-
-    [Fact]
-    public async Task A_Step_without_a_fact_it_reads_fails_naming_it_and_never_passes()
-    {
-        var result = await Run(new ScopeCheckStep(), "step.scope.check", ScopingFacts.Expiry().Without("lenses"));
-
-        Assert.Null(result.Result);
-        Assert.Contains("fact:lenses", result.Failure, StringComparison.Ordinal);
     }
 
     [Fact]

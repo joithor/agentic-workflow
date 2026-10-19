@@ -3,6 +3,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
+using Aw.Sindri.Core.Workflow.Engine.Instances;
 using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Testing.Scoping;
@@ -21,7 +22,11 @@ namespace Aw.Sindri.Tests.Workflow;
 [Lane(TestLane.Unit)]
 public sealed class ScopingBlockRuntimesTests
 {
-    private static readonly string[] _pure = ["step.brief.seed", "step.interview.record", "step.scope.challenge-log", "step.scope.check", "step.scope.gather", "step.scope.intake"];
+    private static readonly string[] _registered =
+    [
+        "step.brief.seed", "step.interview.record", "step.scope.anchor", "step.scope.challenge-log", "step.scope.check", "step.scope.gather", "step.scope.intake",
+        "step.scope.propose", "step.scope.read-brief", "step.scope.reanchor", "step.scope.withdraw",
+    ];
 
     [Fact]
     public void Every_registered_scoping_Step_opens_a_block_run_and_the_rest_stay_off_it()
@@ -38,15 +43,15 @@ public sealed class ScopingBlockRuntimesTests
     }
 
     [Fact]
-    public void The_pure_Steps_are_the_ones_this_build_runs_and_the_recipe_uses_each()
+    public void The_registered_Steps_are_the_ones_this_build_runs_and_the_recipe_uses_each()
     {
         using var provider = ShippedComposition.Compose();
         var (recipe, context) = Scoping(provider);
 
-        var scoping = context.Runtimes.Keys.Select(static k => k.Value).Where(static k => !k.StartsWith("step.lens.", StringComparison.Ordinal) && !k.StartsWith("step.review.", StringComparison.Ordinal));   // the lens loops' block Steps are the design and review recipes'
-        Assert.Equal(_pure, scoping.Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        var scoping = context.Runtimes.Keys.Select(static k => k.Value).Where(static k => !k.StartsWith("step.lens.", StringComparison.Ordinal));   // the lens loop's block Step is the design recipe's
+        Assert.Equal(_registered, scoping.Order(StringComparer.Ordinal), StringComparer.Ordinal);
         var used = recipe.States.Values.Select(static s => s.Step?.Use.Value).OfType<string>().ToHashSet(StringComparer.Ordinal);
-        Assert.Subset(used.Concat(["step.brief.seed"]).ToHashSet(StringComparer.Ordinal), _pure.ToHashSet(StringComparer.Ordinal));   // brief.seed is the idea child's, not this recipe's
+        Assert.Empty(_registered.Except(used.Concat(["step.brief.seed", "step.scope.anchor"]), StringComparer.Ordinal));   // brief.seed and anchor are the idea child's (workflow.idea-to-brief), not this recipe's
     }
 
     [Fact]
@@ -88,7 +93,7 @@ public sealed class ScopingBlockRuntimesTests
     }
 
     // The state the engine moves to on the Step's result, after the same report validation a desk report gets.
-    private static string Next(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance entered, Recipe recipe, DecisionContext context, BlockStepResult run)
+    private static string Next(WorkflowInstance entered, Recipe recipe, DecisionContext context, BlockStepResult run)
     {
         var done = run.Result ?? throw new InvalidOperationException(run.Failure);
         var outputs = done.Outputs.ToDictionary(static o => o.Key, static o => EngineFixture.Fact(o.Value.ValueKind == JsonValueKind.String ? o.Value.GetString()! : o.Value.GetRawText()));   // why: a string element always holds its text

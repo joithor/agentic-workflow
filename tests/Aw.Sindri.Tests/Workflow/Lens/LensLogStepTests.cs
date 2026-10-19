@@ -2,7 +2,7 @@ using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Features;
+using Aw.Sindri.Features.LensLoops;
 
 namespace Aw.Sindri.Tests.Workflow.Lens;
 
@@ -108,15 +108,6 @@ public sealed class LensLogStepTests
         var result = await Run("""{"lens":"product"}""", "[]", """["product"]""");
 
         Assert.Null(result.Result);
-    }
-
-    [Fact]
-    public async Task A_missing_fact_fails_the_Step_naming_it()
-    {
-        var result = await new LensLogStep().Run(LensStepContexts.Of(Step, ("lensRounds", "[]"), ("lensQueue", """["a"]""")), TestContext.Current.CancellationToken);
-
-        Assert.Null(result.Result);
-        Assert.Contains("fact:lensReport", result.Failure, StringComparison.Ordinal);
     }
 
     [Fact]

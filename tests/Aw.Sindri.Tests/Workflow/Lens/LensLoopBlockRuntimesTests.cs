@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Decisions;
 using Aw.Sindri.Core.Workflow.Engine.Instances;
@@ -14,38 +15,22 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Aw.Sindri.Tests.Workflow.Lens;
 
 /// <summary>
-/// The lens loops on the block runtime (BS-4): in the shipped build, 'lens-log' of the design and review recipes opens a block run, not a desk task, and the real
+/// The lens loops on the block runtime (BS-4): in the shipped build, 'lens-log' of the design recipe opens a block run, not a desk task, and the real
 /// Step's result carries the instance on, with the recipe's own loop cap deciding between revise and the lens desk.
 /// </summary>
 [Lane(TestLane.Unit)]
 public sealed class LensLoopBlockRuntimesTests
 {
     [Fact]
-    public async Task Review_lens_log_runs_as_a_block_and_a_clean_round_goes_on_to_record()
+    public async Task Review_lens_log_stays_at_the_desk_because_its_descriptor_does_not_read_the_queue()
     {
         await using var provider = ShippedComposition.Compose();
         var (recipe, context) = Recipe(provider, "sindri/workflow.review-loop.yaml");
+
         var entered = StateEntry.Enter(EngineFixture.At(recipe, "lens-log"), recipe, "lens-log", context);
 
-        var run = await Run(provider, "step.review.log", """{"lens":"correctness","findings":[{"severity":"nit","text":"n"}]}""", """["correctness"]""");
-
-        Assert.Equal(StepRuntime.Block, entered.Frame.Run?.Runtime);
-        Assert.Equal("clean", run.Result?.Outcome.Value);
-        Assert.Equal("record", Next(entered, recipe, context, run));
-    }
-
-    [Fact]
-    public async Task Review_lens_log_with_a_queued_lens_goes_back_to_the_lens_and_findings_go_to_fix()
-    {
-        await using var provider = ShippedComposition.Compose();
-        var (recipe, context) = Recipe(provider, "sindri/workflow.review-loop.yaml");
-        var entered = StateEntry.Enter(EngineFixture.At(recipe, "lens-log"), recipe, "lens-log", context);
-
-        var next = await Run(provider, "step.review.log", """{"lens":"correctness","findings":[]}""", """["correctness","security"]""");
-        var findings = await Run(provider, "step.review.log", """{"lens":"security","findings":[{"severity":"issue","text":"i"}]}""", """["security"]""");
-
-        Assert.Equal("lens", Next(entered, recipe, context, next));
-        Assert.Equal("fix", Next(entered, recipe, context, findings));
+        Assert.Equal(StepRuntime.Desk, entered.Frame.Run?.Runtime);   // 'step.review.log' reads lensReport and lensRounds only: it cannot know whether a lens is still queued (docs/csharp/sindri-workflow.md)
+        Assert.DoesNotContain(BlockId.From("step.review.log"), context.Runtimes.Keys);
     }
 
     [Fact]

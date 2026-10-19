@@ -100,19 +100,26 @@ internal sealed class OnyxSource(OnyxClient client, IReadOnlySet<string> teams, 
             : Role(version.Detail, me.Value);
     }
 
+    // The token's role. Onyx CE has no service-account keys (the route is Business tier), so Sindri's own token is a personal access token of one dedicated admin user, recognised by its email
+    // (OnyxSettings.DedicatedAccountEmail, the user `sindri onyx up` makes). A service-account key (Business tier, or a manual setup) is just as dedicated. Any other account, a person's, is a warning,
+    // and its address is not echoed.
     private static SourceHealth Role(string versionDetail, OnyxMeReply me)
     {
         var admin = me.EffectivePermissions.Contains("admin", StringComparer.Ordinal);
         var serviceAccount = string.Equals(me.AccountType, "SERVICE_ACCOUNT", StringComparison.Ordinal);
+        var dedicatedUser = string.Equals(me.AccountType, "STANDARD", StringComparison.Ordinal)
+            && string.Equals(me.Email, OnyxSettings.DedicatedAccountEmail, StringComparison.OrdinalIgnoreCase);
         var account = Shown(me.AccountType);
-        return (admin, serviceAccount) switch
+        return (admin, serviceAccount, dedicatedUser) switch
         {
-            (false, _) => new SourceHealth(SourceState.Unavailable,
+            (false, _, _) => new SourceHealth(SourceState.Unavailable,
                 $"{versionDetail}; key: {account} account without 'admin', which POST /api/admin/search needs (spec §8.8)", ContextErrors.OnyxKeyRefused.Code),
-            (true, false) => new SourceHealth(SourceState.Degraded,
-                $"{versionDetail}; key: admin, {account} account, not a dedicated service account: create a service account for Sindri alone and use its key (spec §8.8)",
+            (true, false, false) => new SourceHealth(SourceState.Degraded,
+                $"{versionDetail}; key: admin, {account} account, not Sindri's dedicated user ({OnyxSettings.DedicatedAccountEmail}) or a service account: use a token of a dedicated admin user for Sindri alone "
+                + "(`sindri onyx up` makes one; spec §8.8)",
                 ContextErrors.OnyxKeyNotServiceAccount.Code),
-            _ => new SourceHealth(SourceState.Ok, $"{versionDetail}; key: admin, service account", Code: null),
+            (true, true, _) => new SourceHealth(SourceState.Ok, $"{versionDetail}; key: admin, service account", Code: null),
+            _ => new SourceHealth(SourceState.Ok, $"{versionDetail}; key: admin, Sindri's dedicated user", Code: null),
         };
     }
 

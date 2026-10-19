@@ -10610,7 +10610,6 @@ static Aw.Sindri.Core.Sessions.SessionIdScan.operator !=(Aw.Sindri.Core.Sessions
 static Aw.Sindri.Core.Sessions.SessionIdScan.operator ==(Aw.Sindri.Core.Sessions.SessionIdScan? left, Aw.Sindri.Core.Sessions.SessionIdScan? right) -> bool
 Aw.Sindri.Core.Launches.ILaunchFiles.Launches() -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.LaunchId>!
 Aw.Sindri.Core.Launches.ILostSessions.SweepFiles(System.TimeSpan olderThan, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int?>
-
 Aw.Sindri.Core.Profile.WorkflowAgentSettings
 Aw.Sindri.Core.Profile.WorkflowAgentSettings.<Clone>$() -> Aw.Sindri.Core.Profile.WorkflowAgentSettings!
 Aw.Sindri.Core.Profile.WorkflowAgentSettings.Deconstruct(out Aw.Sindri.Core.Launch.AgentId? Target) -> void
@@ -10896,9 +10895,12 @@ Aw.Sindri.Core.Workflow.Blocks.InjectionSections.Deconstruct(out System.Collecti
 Aw.Sindri.Core.Workflow.Blocks.InjectionSections.InjectionSections(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Sections, System.Text.Json.JsonElement? Result = null) -> void
 Aw.Sindri.Core.Workflow.Blocks.InjectionSections.Result.get -> System.Text.Json.JsonElement?
 Aw.Sindri.Core.Workflow.Blocks.InjectionSections.Result.init -> void
+Aw.Sindri.Core.Workflow.Blocks.StepContext.Address.init -> void
 Aw.Sindri.Core.Workflow.Blocks.StepContext.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Step, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Arguments, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! Facts, out Aw.Sindri.Core.Workflow.Blocks.InjectionSections! Injection, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>? InputResults) -> void
 Aw.Sindri.Core.Workflow.Blocks.StepContext.InputResults.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>!
 Aw.Sindri.Core.Workflow.Blocks.StepContext.InputResults.init -> void
+Aw.Sindri.Core.Workflow.Blocks.StepContext.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Core.Workflow.Blocks.StepContext.Repo.init -> void
 Aw.Sindri.Core.Workflow.Blocks.StepContext.StepContext(Aw.Sindri.Core.Workflow.Ids.BlockId Step, System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Arguments, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! Facts, Aw.Sindri.Core.Workflow.Blocks.InjectionSections! Injection, System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>? InputResults = null) -> void
 Aw.Sindri.Core.Workflow.Blocks.StepInputContext.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Input, out Aw.Sindri.Core.Workflow.Ids.BlockId Step, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Arguments, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! Facts, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Ids.RepoName? Scope) -> void
 Aw.Sindri.Core.Workflow.Blocks.StepInputContext.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
@@ -11374,11 +11376,8 @@ Aw.Sindri.Core.Onyx.IOnyxPrompts.AskSecret(string! question, System.Threading.Ca
 Aw.Sindri.Core.Onyx.IOnyxPrompts.Interactive.get -> bool
 Aw.Sindri.Core.Onyx.IOnyxPrompts.Pause(string! message, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 Aw.Sindri.Core.Onyx.IOnyxProvisioning
-Aw.Sindri.Core.Onyx.IOnyxProvisioning.KeyIsAdmin(int port, string! key, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
 Aw.Sindri.Core.Onyx.IOnyxProvisioning.SignIn(int port, string! email, string! password, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Onyx.IOnyxSession!>!>
 Aw.Sindri.Core.Onyx.IOnyxSession
-Aw.Sindri.Core.Onyx.IOnyxSession.AdminGroup(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
-Aw.Sindri.Core.Onyx.IOnyxSession.CreateKey(string! name, int groupId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Sindri.Core.Onyx.ISecretWriter
 Aw.Sindri.Core.Onyx.ISecretWriter.Store(string! service, string! account, string! secret) -> Aw.Kernel.Result<Aw.Sindri.Core.Secrets.SecretPointer!>!
 Aw.Sindri.Core.Onyx.OnyxSetupState.Deconstruct(out int Port, out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Steps, out string? Project, out int SchemaVersion, out string? KeyPointer) -> void
@@ -11388,7 +11387,6 @@ Aw.Sindri.Core.Onyx.OnyxSetupState.OnyxSetupState(int Port, System.Collections.G
 const Aw.Sindri.Core.Onyx.OnyxSteps.Key = "key" -> string!
 const Aw.Sindri.Core.Onyx.OnyxSteps.Profile = "profile" -> string!
 const Aw.Sindri.Core.Onyx.OnyxSteps.Signup = "signup" -> string!
-static readonly Aw.Sindri.Core.SindriErrors.OnyxGroupListUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.OnyxKeyFailed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.OnyxNotAdmin -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.OnyxSecretNotStored -> Aw.Kernel.ErrorDefinition!
@@ -11899,5 +11897,74 @@ Aw.Sindri.Core.Launch.StepArgs.StepArgs(string? Model, Aw.Sindri.Core.Launch.Ste
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.RequestFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor = null) -> Aw.Sindri.Core.Launch.LaunchRequest!
 Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief.Render(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor) -> string!
-Aw.Sindri.Core.Onyx.IOnyxDatabase
-Aw.Sindri.Core.Onyx.IOnyxDatabase.DefaultAdminGroup(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<int?>!
+Aw.Sindri.Core.Scoping.BriefFile
+Aw.Sindri.Core.Scoping.BriefFile.<Clone>$() -> Aw.Sindri.Core.Scoping.BriefFile!
+Aw.Sindri.Core.Scoping.BriefFile.BriefFile(string! Path, string! Text, string! Version) -> void
+Aw.Sindri.Core.Scoping.BriefFile.Deconstruct(out string! Path, out string! Text, out string! Version) -> void
+Aw.Sindri.Core.Scoping.BriefFile.Equals(Aw.Sindri.Core.Scoping.BriefFile? other) -> bool
+Aw.Sindri.Core.Scoping.BriefFile.Path.get -> string!
+Aw.Sindri.Core.Scoping.BriefFile.Path.init -> void
+Aw.Sindri.Core.Scoping.BriefFile.Text.get -> string!
+Aw.Sindri.Core.Scoping.BriefFile.Text.init -> void
+Aw.Sindri.Core.Scoping.BriefFile.Version.get -> string!
+Aw.Sindri.Core.Scoping.BriefFile.Version.init -> void
+Aw.Sindri.Core.Scoping.BriefPaths
+Aw.Sindri.Core.Scoping.IBriefFiles
+Aw.Sindri.Core.Scoping.IBriefFiles.Read(string! path, System.Collections.Generic.IReadOnlyList<string!>! roots, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Scoping.BriefFile!>!>
+const Aw.Sindri.Core.Scoping.BriefPaths.MaxBytes = 1048576 -> long
+override Aw.Sindri.Core.Scoping.BriefFile.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scoping.BriefFile.GetHashCode() -> int
+override Aw.Sindri.Core.Scoping.BriefFile.ToString() -> string!
+static Aw.Sindri.Core.Scoping.BriefFile.operator !=(Aw.Sindri.Core.Scoping.BriefFile? left, Aw.Sindri.Core.Scoping.BriefFile? right) -> bool
+static Aw.Sindri.Core.Scoping.BriefFile.operator ==(Aw.Sindri.Core.Scoping.BriefFile? left, Aw.Sindri.Core.Scoping.BriefFile? right) -> bool
+static Aw.Sindri.Core.Scoping.BriefPaths.Denied(string! relative) -> bool
+Aw.Sindri.Core.Scoping.IRepoCheckouts
+Aw.Sindri.Core.Scoping.IRepoCheckouts.Of(Aw.Sindri.Core.Ids.RepoName repo, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Sindri.Core.Scoping.IScopeRunProposals
+Aw.Sindri.Core.Scoping.IScopeRunProposals.Replace(Aw.Sindri.Core.Workflow.Engine.InstanceAddress run, Aw.Sindri.Core.Ids.RepoName repo, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scoping.ProposedScopeSurface!>! surfaces, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scoping.ScopeSurfaceStatus!>!>!>
+Aw.Sindri.Core.Scoping.IScopingTextShape
+Aw.Sindri.Core.Scoping.IScopingTextShape.Anchors(Aw.Sindri.Core.Ids.RepoName? repo, string! text, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<string!>!>!>
+Aw.Sindri.Core.Scoping.ProposedScopeSurface
+Aw.Sindri.Core.Scoping.ProposedScopeSurface.<Clone>$() -> Aw.Sindri.Core.Scoping.ProposedScopeSurface!
+Aw.Sindri.Core.Scoping.ProposedScopeSurface.Deconstruct(out string! Title, out string? Kind) -> void
+Aw.Sindri.Core.Scoping.ProposedScopeSurface.Equals(Aw.Sindri.Core.Scoping.ProposedScopeSurface? other) -> bool
+Aw.Sindri.Core.Scoping.ProposedScopeSurface.Kind.get -> string?
+Aw.Sindri.Core.Scoping.ProposedScopeSurface.Kind.init -> void
+Aw.Sindri.Core.Scoping.ProposedScopeSurface.ProposedScopeSurface(string! Title, string? Kind) -> void
+Aw.Sindri.Core.Scoping.ProposedScopeSurface.Title.get -> string!
+Aw.Sindri.Core.Scoping.ProposedScopeSurface.Title.init -> void
+Aw.Sindri.Core.Scoping.ScopeSurfaceStatus
+Aw.Sindri.Core.Scoping.ScopeSurfaceStatus.<Clone>$() -> Aw.Sindri.Core.Scoping.ScopeSurfaceStatus!
+Aw.Sindri.Core.Scoping.ScopeSurfaceStatus.Deconstruct(out string! Surface, out string? Node, out string! Status) -> void
+Aw.Sindri.Core.Scoping.ScopeSurfaceStatus.Equals(Aw.Sindri.Core.Scoping.ScopeSurfaceStatus? other) -> bool
+Aw.Sindri.Core.Scoping.ScopeSurfaceStatus.Node.get -> string?
+Aw.Sindri.Core.Scoping.ScopeSurfaceStatus.Node.init -> void
+Aw.Sindri.Core.Scoping.ScopeSurfaceStatus.ScopeSurfaceStatus(string! Surface, string? Node, string! Status) -> void
+Aw.Sindri.Core.Scoping.ScopeSurfaceStatus.Status.get -> string!
+Aw.Sindri.Core.Scoping.ScopeSurfaceStatus.Status.init -> void
+Aw.Sindri.Core.Scoping.ScopeSurfaceStatus.Surface.get -> string!
+Aw.Sindri.Core.Scoping.ScopeSurfaceStatus.Surface.init -> void
+Aw.Sindri.Core.Workflow.Blocks.IBlockStepId
+Aw.Sindri.Core.Workflow.Blocks.IBlockStepId.Id.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
+Aw.Sindri.Core.Workflow.Blocks.StepContext.Address.get -> string?
+override Aw.Sindri.Core.Scoping.ProposedScopeSurface.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scoping.ProposedScopeSurface.GetHashCode() -> int
+override Aw.Sindri.Core.Scoping.ProposedScopeSurface.ToString() -> string!
+override Aw.Sindri.Core.Scoping.ScopeSurfaceStatus.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scoping.ScopeSurfaceStatus.GetHashCode() -> int
+override Aw.Sindri.Core.Scoping.ScopeSurfaceStatus.ToString() -> string!
+static Aw.Sindri.Core.Scoping.ProposedScopeSurface.operator !=(Aw.Sindri.Core.Scoping.ProposedScopeSurface? left, Aw.Sindri.Core.Scoping.ProposedScopeSurface? right) -> bool
+static Aw.Sindri.Core.Scoping.ProposedScopeSurface.operator ==(Aw.Sindri.Core.Scoping.ProposedScopeSurface? left, Aw.Sindri.Core.Scoping.ProposedScopeSurface? right) -> bool
+static Aw.Sindri.Core.Scoping.ScopeSurfaceStatus.operator !=(Aw.Sindri.Core.Scoping.ScopeSurfaceStatus? left, Aw.Sindri.Core.Scoping.ScopeSurfaceStatus? right) -> bool
+static Aw.Sindri.Core.Scoping.ScopeSurfaceStatus.operator ==(Aw.Sindri.Core.Scoping.ScopeSurfaceStatus? left, Aw.Sindri.Core.Scoping.ScopeSurfaceStatus? right) -> bool
+static Aw.Sindri.Core.Workflow.Blocks.BlockServiceCollectionExtensions.AddBlockRuntime<T>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+Aw.Sindri.Core.Onyx.IOnyxSession.CreateToken(string! name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Sindri.Core.Onyx.IOnyxProvisioning.TokenIsAdmin(int port, string! token, string! email, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+Aw.Sindri.Core.Onyx.IOnyxSession.RetireLegacyUser(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+Aw.Sindri.Core.Onyx.IOnyxSession.ResetDedicatedPassword(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string?>!>
+Aw.Sindri.Core.Onyx.IOnyxSession.RegisterDedicatedUser(string! password, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Onyx.IOnyxSession.MakeDedicatedAdmin(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Onyx.IOnyxSession.RevokeTokens(string! name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<int>!>
+Aw.Sindri.Core.Onyx.OnyxAccounts
+const Aw.Sindri.Core.Onyx.OnyxAccounts.DedicatedEmail = "sindri@example.com" -> string!
+const Aw.Sindri.Core.Onyx.OnyxAccounts.LegacyEmail = "sindri@sindri.app" -> string!

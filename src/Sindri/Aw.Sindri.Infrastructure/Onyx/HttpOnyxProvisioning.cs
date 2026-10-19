@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -11,25 +10,27 @@ using Aw.Sindri.Core.Onyx;
 namespace Aw.Sindri.Infrastructure.Onyx;
 
 /// <summary>
-/// IOnyxProvisioning over HTTP to http://127.0.0.1:&lt;port&gt; only (spec §5.2). Five requests are allowed and nothing else; one that isn't on the list is refused before anything is sent (<see cref="Allowed"/>).
-/// The login cookie lives in the session's own container and goes with the session; the password and the key are never put in an error message or a log. Not used by the query adapter, and it does not use it.
-/// The role step (spec §5.2, "the builder finds"): v4.9.0's `APIKeyArgs` is `{name, group_ids}`; a key's service account gets the admin role by joining the default "Admin" group
-/// (`backend/onyx/db/api_key.py` `insert_api_key` → `set_user_groups__no_commit`; `backend/onyx/server/api_key/api.py:52` allows the group list to be uncapped), so the group id comes from the user-group list.
-/// That list (`backend/ee/onyx/server/user_group/api.py`) is Enterprise-only: the Community Edition answers 402, which is SND-ONYX-013 here and which the caller answers by reading the id from Sindri's own stack's database
-/// (<see cref="IOnyxDatabase"/>). The key's answer is checked either way: its `groups` must hold the Admin group the key was asked to join, or the key is not returned.
+/// IOnyxProvisioning over HTTP to http://127.0.0.1:&lt;port&gt; only (spec §5.2). Ten requests are allowed (nine exact routes and one delete pattern) and nothing else; one that isn't on the list is refused before anything is sent (<see cref="Allowed"/>).
+/// The login cookie lives in the session's own container and goes with the session; no password and no token is put in an error message or a log. Not used by the query adapter, and it does not use it.
+/// Why these ten (docs/sindri/onyx.md section 7): Onyx's Community Edition gates `/admin/api-key` and `/manage/admin/user-group` at the Business tier (`backend/ee/onyx/configs/license_enforcement_config.py`,
+/// `PATH_PREFIX_MIN_TIER`), so Sindri can't have a service-account key. It gets a dedicated admin user and a personal access token of that user instead, through routes the tiers leave open.
 /// </summary>
 internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
 {
-    private static readonly JsonSerializerOptions _json = AwJson.CreateOptions(OnyxHealthJsonContext.Default);
     private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(15);
 
+    // Each route with its source at the pinned commit f1738ed (the paths the app serves under /api).
     private static readonly (HttpMethod Method, string Path)[] _allowed =
     [
-        (HttpMethod.Post, "/api/auth/login"),
-        (HttpMethod.Post, "/api/auth/logout"),
-        (HttpMethod.Get, "/api/manage/admin/user-group"),
-        (HttpMethod.Post, "/api/admin/api-key"),
-        (HttpMethod.Get, "/api/me"),
+        (HttpMethod.Post, "/api/auth/login"),                          // main.py:652, fastapi-users auth router: the cookie of the owner, then of the dedicated user
+        (HttpMethod.Post, "/api/auth/logout"),                         // main.py:652
+        (HttpMethod.Post, "/api/auth/register"),                       // main.py:660, fastapi-users register router; UserManager.create (auth/users.py:696) enforces invite-only
+        (HttpMethod.Post, "/api/password/reset_password"),             // server/features/password/api.py:42: FULL_ADMIN_PANEL_ACCESS; the server makes the new password
+        (HttpMethod.Patch, "/api/manage/admin/users/admin-access"),    // server/manage/users.py:162: FULL_ADMIN_PANEL_ACCESS; the CE route that sets the admin permission
+        (HttpMethod.Patch, "/api/manage/admin/deactivate-user"),       // server/manage/users.py:800: FULL_ADMIN_PANEL_ACCESS; retires the dedicated user of an earlier build (its tokens stop working)
+        (HttpMethod.Get, "/api/user/pats"),                            // server/pat/api.py (GET ""): BASIC_ACCESS; the dedicated user's own tokens, so old sindri-onyx ones can be revoked
+        (HttpMethod.Post, "/api/user/pats"),                           // server/pat/api.py (POST ""): CREATE_USER_API_KEYS, which admins hold
+        (HttpMethod.Get, "/api/me"),                                   // server/manage/users.py:1081: whose token this is
     ];
 
     private static readonly TimeSpan _logoutTimeout = TimeSpan.FromSeconds(5);
@@ -55,17 +56,28 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
         _request = requestTimeout ?? _timeout;
     }
 
+    /// <summary>Gets the JSON options every provisioning request and reply goes through.</summary>
+    internal static JsonSerializerOptions Json { get; } = AwJson.CreateOptions(OnyxHealthJsonContext.Default);
+
     /// <summary>Whether a request is on the provisioning allowlist: the method and the path (no query), exactly.</summary>
     /// <param name="method">The method.</param>
     /// <param name="path">The absolute path.</param>
     /// <returns>True when it may be sent.</returns>
-    internal static bool Allowed(HttpMethod method, string path) => _allowed.Any(a => a.Method == method && string.Equals(a.Path, path, StringComparison.Ordinal));
+    internal static bool Allowed(HttpMethod method, string path)
+        => _allowed.Any(a => a.Method == method && string.Equals(a.Path, path, StringComparison.Ordinal)) || (method == HttpMethod.Delete && IsTokenPath(path));
+
+    // The one route with a parameter: `DELETE /api/user/pats/{id}` (server/pat/api.py; a user can revoke only their own tokens), the id one to nine ASCII numerals and nothing after it.
+    private static bool IsTokenPath(string path)
+    {
+        const string prefix = "/api/user/pats/";
+        return path.StartsWith(prefix, StringComparison.Ordinal) && path.Length - prefix.Length is >= 1 and <= 9 && path.AsSpan(prefix.Length).IndexOfAnyExceptInRange('0', '9') < 0;
+    }
 
     /// <inheritdoc />
 #pragma warning disable CA2000 // the session owns its client and disposes both when the caller disposes the session
     public async ValueTask<Result<IOnyxSession>> SignIn(int port, string email, string password, CancellationToken cancellationToken)
     {
-        var session = new Session(NewClient(), Origin(port), _logout, _request);
+        var session = new OnyxSession(NewClient(), Origin(port), _logout, _request);
         using var body = new FormUrlEncodedContent(new Dictionary<string, string>(StringComparer.Ordinal) { ["username"] = email, ["password"] = password });
         var sent = await session.Send(HttpMethod.Post, "/api/auth/login", body, cancellationToken).ConfigureAwait(false);
         if (sent.IsError || !sent.Value.Success)
@@ -73,7 +85,7 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
             await session.DisposeAsync().ConfigureAwait(false);
             return sent.IsError
                 ? sent.Error
-                : SindriErrors.OnyxKeyFailed.With($"Onyx refused that login (HTTP {Code(sent.Value.Status)}); check the email and password of the account you created at the sign-up page, then run `sindri onyx up` again");
+                : SindriErrors.OnyxKeyFailed.With($"Onyx refused that login (HTTP {OnyxSession.Code(sent.Value.Status)}); check the email and password, then run `sindri onyx up` again");
         }
 
         return Results.Success<IOnyxSession>(session);
@@ -82,12 +94,12 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
 #pragma warning restore CA2000
 
     /// <inheritdoc />
-    public async ValueTask<Result<bool>> KeyIsAdmin(int port, string key, CancellationToken cancellationToken)
+    public async ValueTask<Result<bool>> TokenIsAdmin(int port, string token, string email, CancellationToken cancellationToken)
     {
         using var client = NewClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", key);
-#pragma warning disable CA2000 // a Session only borrows the client, which the using above disposes
-        var session = new Session(client, Origin(port), _logout, _request);
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+#pragma warning disable CA2000 // a session only borrows the client, which the using above disposes
+        var session = new OnyxSession(client, Origin(port), _logout, _request);
 #pragma warning restore CA2000
         var sent = await session.Send(HttpMethod.Get, "/api/me", content: null, cancellationToken).ConfigureAwait(false);
         if (sent.IsError)
@@ -97,135 +109,16 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
 
         if (!sent.Value.Success)
         {
-            return false;   // refused: not a key Onyx knows
+            return false;   // refused: not a token Onyx knows
         }
 
-        var me = AwJson.Deserialize<OnyxMeWire>(Encoding.UTF8.GetBytes(sent.Value.Body), _json);
+        var me = AwJson.Deserialize<OnyxMeWire>(Encoding.UTF8.GetBytes(sent.Value.Body), Json);
         return me is { IsSuccess: true, Value: { } wire }
-            && string.Equals(wire.AccountType, "SERVICE_ACCOUNT", StringComparison.Ordinal)
+            && string.Equals(wire.Email, email, StringComparison.OrdinalIgnoreCase)
             && wire.EffectivePermissions?.Contains("admin", StringComparer.Ordinal) == true;
     }
 
     private HttpClient NewClient() => new(_handler(), disposeHandler: true) { Timeout = _request + TimeSpan.FromSeconds(5) };
 
     private static Uri Origin(int port) => new(string.Create(CultureInfo.InvariantCulture, $"http://127.0.0.1:{port}"));
-
-    private static string Code(HttpStatusCode status) => ((int)status).ToString(CultureInfo.InvariantCulture);
-
-    private sealed record Answer(HttpStatusCode Status, string Body)
-    {
-        public bool Success => (int)Status is >= 200 and < 300;
-    }
-
-    private sealed class Session(HttpClient client, Uri origin, TimeSpan logoutTimeout, TimeSpan timeout) : IOnyxSession
-    {
-        public async ValueTask<Result<int>> AdminGroup(CancellationToken cancellationToken)
-        {
-            var sent = await Send(HttpMethod.Get, "/api/manage/admin/user-group", content: null, cancellationToken, query: "?include_default=true").ConfigureAwait(false);
-            if (sent.IsError)
-            {
-                return sent.Error;
-            }
-
-            if (sent.Value.Status is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized)
-            {
-                return NotAdmin();
-            }
-
-            if (sent.Value.Status == HttpStatusCode.PaymentRequired)
-            {
-                return SindriErrors.OnyxGroupListUnavailable.With("Onyx answered the group list with HTTP 402: that route is Enterprise-only and this Onyx is the Community Edition");
-            }
-
-            var groups = sent.Value.Success ? AwJson.Deserialize<OnyxGroupWire[]>(Encoding.UTF8.GetBytes(sent.Value.Body), _json) : null;
-            var admin = groups is { IsSuccess: true } read ? read.Value.FirstOrDefault(static g => g.IsDefault && string.Equals(g.Name, "Admin", StringComparison.Ordinal)) : null;
-            return admin is null
-                ? SindriErrors.OnyxKeyFailed.With($"Onyx's group list gave no default Admin group (HTTP {Code(sent.Value.Status)}); this Onyx release may differ from the pinned one")
-                : admin.Id;
-        }
-
-        public async ValueTask<Result<string>> CreateKey(string name, int groupId, CancellationToken cancellationToken)
-        {
-            var request = new OnyxKeyRequestWire(name, [groupId]);
-            using var body = new ByteArrayContent(AwJson.Serialize(request, _json));
-            body.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-            var sent = await Send(HttpMethod.Post, "/api/admin/api-key", body, cancellationToken).ConfigureAwait(false);
-            if (sent.IsError)
-            {
-                return sent.Error;
-            }
-
-            if (sent.Value.Status is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized)
-            {
-                return NotAdmin();
-            }
-
-            var key = sent.Value.Success ? AwJson.Deserialize<OnyxKeyWire>(Encoding.UTF8.GetBytes(sent.Value.Body), _json) : null;
-            if (key is not { IsSuccess: true, Value.ApiKey: { Length: > 0 } raw })
-            {
-                return SindriErrors.OnyxKeyFailed.With($"Onyx didn't make the key (HTTP {Code(sent.Value.Status)}); run `sindri onyx up` again");
-            }
-
-            return InAdminGroup(key.Value, groupId) ? raw : NotInAdminGroup(key.Value, name);
-        }
-
-        // Onyx's own account of the groups the key's service account is in, not the request's: the id asked for must be there and still be named Admin.
-        private static bool InAdminGroup(OnyxKeyWire key, int groupId)
-            => key.Groups?.Any(g => g.Id == groupId && string.Equals(g.Name, "Admin", StringComparison.Ordinal)) == true;
-
-        // The raw key never reaches the message; Onyx's masked display of it does, so the owner can find the key in Onyx's admin page and delete it.
-        private static Error NotInAdminGroup(OnyxKeyWire key, string name)
-        {
-            var display = new string([.. (key.ApiKeyDisplay ?? string.Empty).Where(static c => !char.IsControl(c)).Take(48)]);
-            var shown = display.Length > 0 ? $"{display} ({name})" : name;
-            return SindriErrors.OnyxKeyFailed.With($"Onyx made the API key {shown} but its service account is not in the Admin group, so Sindri did not keep the key; delete it on Onyx's admin API keys page, then run `sindri onyx up` again");
-        }
-
-        public async ValueTask DisposeAsync()
-        {
-            try
-            {
-                using var deadline = new CancellationTokenSource(logoutTimeout);
-                _ = await Send(HttpMethod.Post, "/api/auth/logout", content: null, deadline.Token).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException)
-            {
-                // best effort: a slow logout must not decide the outcome (the key is already made); the cookie is dropped with the client either way
-            }
-            finally
-            {
-                client.Dispose();
-            }
-        }
-
-        // The one place a request leaves: the allowlist first, then the send. Neither the password nor the key reaches an error.
-        internal async ValueTask<Result<Answer>> Send(HttpMethod method, string path, HttpContent? content, CancellationToken cancellationToken, string query = "")
-        {
-            if (!Allowed(method, path))
-            {
-                return SindriErrors.OnyxKeyFailed.With($"{method} {path} is not a request `sindri onyx up` may send to Onyx");
-            }
-
-            using var message = new HttpRequestMessage(method, new Uri(origin, path + query)) { Content = content };
-            using var deadline = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            deadline.CancelAfter(timeout);
-            try
-            {
-                using var response = await client.SendAsync(message, deadline.Token).ConfigureAwait(false);
-                var text = await response.Content.ReadAsStringAsync(deadline.Token).ConfigureAwait(false);
-                return new Answer(response.StatusCode, text);
-            }
-            catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-            {
-                return SindriErrors.OnyxKeyFailed.With($"Onyx didn't answer {method} {path} within {timeout.TotalSeconds.ToString("0.##", CultureInfo.InvariantCulture)} s; check `sindri onyx status`, then run `sindri onyx up` again");
-            }
-            catch (HttpRequestException)
-            {
-                return SindriErrors.OnyxKeyFailed.With($"Onyx couldn't be reached for {method} {path}; check `sindri onyx status`, then run `sindri onyx up` again");
-            }
-        }
-
-        private static Error NotAdmin() => SindriErrors.OnyxNotAdmin.With(
-            "that Onyx login isn't an admin; the first account created at the sign-up page is the admin, so log in as it, or make this account an admin in Onyx's admin users page, then run `sindri onyx up` again");
-    }
 }
