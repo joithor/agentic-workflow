@@ -28,7 +28,8 @@ internal sealed partial class Launcher
 
             WriteCaptureRule(request.Launch, entry);
             var secret = LaunchSecrets.Mint();
-            var prior = File.Exists(LaunchSecrets.PathFor(parts.Options.SecretsDirectory, request.Launch)) ? File.ReadAllBytes(LaunchSecrets.PathFor(parts.Options.SecretsDirectory, request.Launch)) : null;   // a live session of this launch may own it
+            var hashFile = LaunchSecrets.PathFor(parts.Options.SecretsDirectory, request.Launch);
+            var prior = File.Exists(hashFile) ? await File.ReadAllBytesAsync(hashFile, cancellationToken).ConfigureAwait(false) : null;   // a live session of this launch may own it
             LaunchSecrets.Write(parts.Options.SecretsDirectory, request.Launch, secret);
             return new Prepared(workDir, composed.Value.Argv, Environment(request), composed.Value.Session?.Value) { PriorHash = prior };
         }
