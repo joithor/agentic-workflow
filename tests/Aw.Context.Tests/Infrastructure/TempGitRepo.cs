@@ -19,7 +19,15 @@ internal sealed class TempGitRepo : IDisposable
         }
         catch (Exception)
         {
-            Directory.Delete(Path, recursive: true);   // a git that timed out must not leave its folder behind
+            try
+            {
+                Directory.Delete(Path, recursive: true);   // a git that timed out must not leave its folder behind
+            }
+            catch (IOException)
+            {
+                // the cleanup failing must not replace the failure that got us here
+            }
+
             throw;
         }
     }
