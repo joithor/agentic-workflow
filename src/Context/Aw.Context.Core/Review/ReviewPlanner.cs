@@ -42,6 +42,16 @@ public static class ReviewPlanner
         };
     }
 
+    /// <summary>Plans a whole review file's decisions, each on top of the rows planned before it, against one build of the map.</summary>
+    /// <param name="decisions">The decisions, in file order.</param>
+    /// <param name="basis">The map as the caller may see it, before overrides.</param>
+    /// <param name="who">The OS user who decided.</param>
+    /// <param name="at">When.</param>
+    /// <param name="cancellationToken">Stops the plan between decisions.</param>
+    /// <returns>The rows to append and the skipped lines (one per decision that is stale).</returns>
+    public static (IReadOnlyList<MapOverride> Rows, IReadOnlyList<string> Skipped) PlanAll(IReadOnlyList<ReviewDecision> decisions, ReviewBasis basis, string who, DateTimeOffset at, CancellationToken cancellationToken) =>
+        throw new NotSupportedException();
+
     private static Result<IReadOnlyList<MapOverride>> One(Result<MapOverride> row) => row.Map<IReadOnlyList<MapOverride>>(r => [r]);
 
     private static Error Stale(string message) => ContextErrors.ReviewTargetStale.With(message);
