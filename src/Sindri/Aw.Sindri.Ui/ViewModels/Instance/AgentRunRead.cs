@@ -8,4 +8,5 @@ namespace Aw.Sindri.Ui.ViewModels.Instance;
 /// <param name="Item">The item, or null.</param>
 /// <param name="Events">The instance's events (empty when not read).</param>
 /// <param name="ItemUnreadable">True when the item was asked for and could not be read.</param>
-internal sealed record AgentRunRead(LaunchView? Launch, ItemView? Item, IReadOnlyList<InstanceEventRow> Events, bool ItemUnreadable);
+/// <param name="SessionRef">The ref (provider/id) of the session row whose launch id is this run's launch, or null when none is known.</param>
+internal sealed record AgentRunRead(LaunchView? Launch, ItemView? Item, IReadOnlyList<InstanceEventRow> Events, bool ItemUnreadable, string? SessionRef = null);
