@@ -26,6 +26,13 @@ internal static class ContextApiScenarios
     private const string Anchor = "feature%3Atabs.tab-manager";
     private const string SplitPane = "feature%3Alayout.split-pane";
 
+    private const string ThreeKeys = "nodes=feature%3Atabs.tab-manager&nodes=feature%3Atabs.tab-groups&nodes=feature%3Anope.x";
+
+    /// <summary>The QUERY body: a mixed set of four keys (a surface, a code file, a decision, one absent), not the GET's three feature keys.</summary>
+    internal const string SubgraphBody = """{"nodes":["surface:command/switch-tab","code:src/tabs/TabManager.ts","decision:d036352234b17baf9a7b2e7cffef599bdc9c8209e92c389d2bcbb919c74c162b","feature:nope.x"]}""";   // a real mixed set: a surface, a code file, a decision, one absent key
+
+    private static string Subgraph(string query) => "/sindri/context/subgraph?" + query;
+
     private delegate Task<string> Run(Scenario scenario, CancellationToken ct);
 
 
@@ -46,6 +53,14 @@ internal static class ContextApiScenarios
         ("context-lenses", "map-version-v1", async (s, ct) => await s.FetchAfterSecondMap($"/sindri/context/lenses?anchor={Anchor}&mapVersion=v1", ct)),
         ("context-lenses", "map-version-not-retained-120", async (s, ct) => await s.Fetch($"/sindri/context/lenses?anchor={Anchor}&mapVersion=v99", ct)),
         ("context-lenses", "session-set-other-repo", async (s, ct) => await s.FetchAsSession($"/sindri/context/lenses?anchor={Anchor}&anchor=feature%3Aother.thing", ct)),
+        ("context-subgraph", "get-three-keys", async (s, ct) => await s.Fetch(Subgraph(ThreeKeys), ct)),
+        ("context-subgraph", "query-packet-set", async (s, ct) => await s.Query("/sindri/context/subgraph", SubgraphBody, ct)),
+        ("context-subgraph", "depth-2", async (s, ct) => await s.Fetch(Subgraph(ThreeKeys) + "&depth=2", ct)),
+        ("context-subgraph", "missing-after-v2", async (s, ct) => await s.FetchAfterSecondMap(Subgraph(ThreeKeys), ct)),
+        ("context-subgraph", "session-own-repo", async (s, ct) => await s.FetchAsSession(Subgraph(ThreeKeys) + "&depth=2", ct)),
+        ("context-subgraph", "too-many-006", async (s, ct) => await s.Fetch(Subgraph(string.Join('&', Enumerable.Range(0, 21).Select(i => "nodes=feature%3Anope." + i.ToString(System.Globalization.CultureInfo.InvariantCulture)))), ct)),
+        ("context-subgraph", "not-retained-120", async (s, ct) => await s.Fetch(Subgraph(ThreeKeys) + "&mapVersion=v99", ct)),
+        ("context-subgraph", "query-refused-origin", async (s, ct) => await s.QueryForeignOrigin("/sindri/context/subgraph", SubgraphBody, ct)),
         ("context-code", "edges-and-lexical", async (s, ct) => await s.Fetch(CodeRoute(), ct)),
         ("context-code", "two-anchors", async (s, ct) => await s.Fetch(CodeRoute("feature%3Aaudit"), ct)),
         ("context-code", "schema-off", async (s, ct) => await s.Fetch(CodeRoute(), ct)),
