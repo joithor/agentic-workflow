@@ -159,7 +159,41 @@ public sealed class AgentAttachTests
     }
 
     [Fact]
-    public async Task A_frame_without_a_run_or_an_agent_step_reads_nothing_more()
+    public async Task A_frame_opened_on_an_already_failed_instance_still_reads_the_agent_failure()
+    {
+        var detail = FixtureInstances.Detail("dev-desk-round-trip");   // a desk step now: the run is gone
+        _server.InstanceEventAnswers[detail.Id] = new RouteAnswer(HttpStatusCode.OK, AgentRunFixtures.Events(
+            AgentRunFixtures.Event(5, """{"from":"produce","to":"review","trigger":"step.completed","via":"agent","tokens":900}"""),
+            AgentRunFixtures.Event(6, """{"from":"review","to":"review-desk","trigger":"step.failed","reason":"exit"}""")));
+        var frame = new InstanceFrameViewModel(_server, _clipboard, _clock);
+
+        await frame.Open(_api, detail.Address, detail.Id, Token);
+
+        Assert.Equal((false, false), (frame.Expanded!.HasRun, frame.Expanded.HasAttach));
+        Assert.Equal(["via agent · 900 tokens", "The agent exited. The instance moved to review-desk."], frame.Expanded.RunEvents);
+    }
+
+    [Fact]
+    public async Task Events_are_read_once_and_again_only_when_the_instance_moved()
+    {
+        var detail = FixtureInstances.Detail("dev-desk-round-trip");
+        var frame = new InstanceFrameViewModel(_server, _clipboard, _clock);
+
+        await frame.Open(_api, detail.Address, detail.Id, Token);
+        await frame.Refresh(_api, Token);
+        await frame.Refresh(_api, Token);
+        Assert.Equal(1, _server.InstanceEventCalls);
+
+        var body = GoldenFiles.Node("workflow-instance", "dev-desk-round-trip");
+        body["current"]!["status"]!["header"]!["version"] = (int)body["current"]!["status"]!["header"]!["version"]! + 1;
+        _server.WorkflowAnswer = new RouteAnswer(HttpStatusCode.OK, body.ToJsonString());
+        await frame.Refresh(_api, Token);
+
+        Assert.Equal(2, _server.InstanceEventCalls);
+    }
+
+    [Fact]
+    public async Task A_frame_without_a_run_or_an_agent_step_reads_no_launch_and_no_item()
     {
         var detail = FixtureInstances.Detail("dev-desk-round-trip");
         var frame = new InstanceFrameViewModel(_server, _clipboard, _clock);

@@ -9,6 +9,7 @@ internal sealed partial class FakeSindriApi
 {
     private readonly List<(string Item, OpenItemRequest Request)> _opened = [];
     private int _launchCalls;
+    private int _eventCalls;
 
     /// <summary>GET /sindri/launches/{id}'s answer per launch id; an id not here answers the SND-LAUNCH-404 golden.</summary>
     public Dictionary<string, RouteAnswer> Launches { get; } = new(StringComparer.Ordinal);
@@ -53,7 +54,13 @@ internal sealed partial class FakeSindriApi
         return answer;
     }
 
-    public Task<Result<InstanceEventsView>> InstanceEvents(Uri api, string id, CancellationToken cancellationToken) =>
-        Task.FromResult(Answer<InstanceEventsView>(api, WorkflowRoutes.Events(id),
+    /// <summary>How many instance-event reads were made.</summary>
+    public int InstanceEventCalls => Volatile.Read(ref _eventCalls);
+
+    public Task<Result<InstanceEventsView>> InstanceEvents(Uri api, string id, CancellationToken cancellationToken)
+    {
+        _ = Interlocked.Increment(ref _eventCalls);
+        return Task.FromResult(Answer<InstanceEventsView>(api, WorkflowRoutes.Events(id),
             InstanceEventAnswers.TryGetValue(id, out var own) ? own : new RouteAnswer(System.Net.HttpStatusCode.OK, """{"events":[],"cursor":0}""")));
+    }
 }

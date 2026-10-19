@@ -6,11 +6,13 @@ namespace Aw.Sindri.Ui.ViewModels.Instance;
 /// <summary>The instance frame's agent run (<see cref="InstanceFrameViewModel"/>, continued): reads the launch, the item and the events behind an agent Step.</summary>
 internal sealed partial class InstanceFrameViewModel
 {
-    private string? _agentAddress;
+    // What the events were last read for: the instance and what it served then. A stream event for the instance (step.*, launch.*,
+    // session.ended) moves its version, state or run, so the events are read once when the frame opens and again only when one moved.
+    private (string Address, long Version, string State, string? Launch)? _eventsFor;
+    private IReadOnlyList<InstanceEventRow> _eventRows = [];
 
-    // An agent Step shows a run line, its launch's state and Attach (ready from the item), and what the agent's Steps came to.
-    // The events are read while this instance has had an agent Step in this frame, so a failure that moves it to a desk twin or a
-    // park still reads after the run is gone. Nothing is read, and nothing is drawn, for any other instance.
+    // An agent Step shows a run line, its launch's state and Attach (ready from the item). What the agent's Steps came to is read for
+    // every instance, so a frame opened on one that already failed or completed still shows it; it is nothing for an instance that never ran one.
     private async Task ReadRun(InstanceDetail detail, int generation, CancellationToken cancellationToken)
     {
         if (Expanded is not { } expanded || _url is not { } url)
@@ -19,16 +21,6 @@ internal sealed partial class InstanceFrameViewModel
         }
 
         var run = detail.Current.Status.Run;
-        if (expanded.HasAttach || run is not null)
-        {
-            _agentAddress = detail.Address;
-        }
-
-        if (!string.Equals(_agentAddress, detail.Address, StringComparison.Ordinal))
-        {
-            return;
-        }
-
         if (detail.ItemId is { } itemId)
         {
             expanded.Attacher ??= new AgentAttacher(api, () => _url, itemId);
@@ -36,10 +28,20 @@ internal sealed partial class InstanceFrameViewModel
 
         var (item, unreadable) = expanded.HasAttach ? await ReadItem(url, detail.ItemId, cancellationToken).ConfigureAwait(true) : (null, false);
         var launch = await ReadLaunch(url, run, cancellationToken).ConfigureAwait(true);
-        var events = await api.InstanceEvents(url, detail.Id, cancellationToken).ConfigureAwait(true);
+        var header = detail.Current.Status.Header;
+        var stamp = (detail.Address, header.Version, header.State, run?.Launch);
+        if (_eventsFor != stamp)
+        {
+            var events = await api.InstanceEvents(url, detail.Id, cancellationToken).ConfigureAwait(true);
+            if (generation == _generation && events.IsSuccess)
+            {
+                (_eventsFor, _eventRows) = (stamp, events.Value.Events);
+            }
+        }
+
         if (generation == _generation)
         {
-            expanded.ShowRun(new AgentRunRead(launch, item, events.IsSuccess ? events.Value.Events : [], unreadable));
+            expanded.ShowRun(new AgentRunRead(launch, item, _eventRows, unreadable));
         }
     }
 
