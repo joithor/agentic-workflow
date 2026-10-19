@@ -54,6 +54,6 @@ public static class AgentLaunches
         var policy = new StepPolicy(run.WriteScope ? [.. _report, .. _commit] : _report, StepPermissionMode.Default, run.WriteScope ? worktree : null);
         return new LaunchRequest(
             LaunchIdFor(run), target.Item, target.Agent, LaunchMode.Open, Attended: false, target.RepoPath, run.Address, worktree,
-            new StepArgs(Model: null, policy, run.Step, descriptor is null ? null : AgentStepBrief.Render(run, descriptor)), run.Run);   // Model null: per-Step models are SC-R
+            new StepArgs(Model: null, policy, run.Step, AgentStepBrief.Render(run, descriptor)), run.Run);   // Model null: per-Step models are SC-R
     }
 }

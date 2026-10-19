@@ -167,17 +167,23 @@ public sealed class LauncherTests : IDisposable
     }
 
     [Fact]
-    public async Task A_Step_brief_is_appended_to_the_seed_and_a_Step_without_one_keeps_the_seed()
+    public async Task A_Step_brief_is_appended_to_the_seed()
     {
-        var plain = A.LaunchRequest().Unattended(Step()).Build();
-        var briefed = A.LaunchRequest().Unattended(Step() with { Brief = "Report with: sindri workflow complete X." }).Build();
+        var request = A.LaunchRequest().Unattended(Step() with { Brief = "Report with: sindri workflow complete X." }).Build();
 
-        _ = await Make().Launch(plain, CancellationToken.None);
-        _ = await Make().Launch(briefed, CancellationToken.None);
+        _ = await Make().Launch(request, CancellationToken.None);
 
-        var seeds = _host.Started.Select(static s => s.Argv[^1]).ToList();
-        Expect.True(seeds[0].EndsWith("This is the build step, block agent.", StringComparison.Ordinal));
-        Expect.True(seeds[1].EndsWith("This is the build step, block agent. Report with: sindri workflow complete X.", StringComparison.Ordinal));
+        Expect.True(_host.Started.Single().Argv.Any(static a => a.EndsWith("This is the build step, block agent. Report with: sindri workflow complete X.", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public async Task A_Step_without_a_brief_keeps_the_plain_seed()
+    {
+        var request = A.LaunchRequest().Unattended(Step()).Build();
+
+        _ = await Make().Launch(request, CancellationToken.None);
+
+        Expect.True(_host.Started.Single().Argv.Any(static a => a.EndsWith("This is the build step, block agent.", StringComparison.Ordinal)));
     }
 
     [Fact]

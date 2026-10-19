@@ -1,5 +1,7 @@
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
@@ -11,7 +13,8 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// <param name="targets">Where the Step runs.</param>
 /// <param name="recorder">Records 'launch.started' and 'launch.failed'.</param>
 /// <param name="diff">Reads the start commit.</param>
-internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver targets, AgentLaunchRecorder recorder, IRunDiff diff)
+/// <param name="catalog">The blocks' descriptors, for the Step's brief.</param>
+internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver targets, AgentLaunchRecorder recorder, IRunDiff diff, BlockCatalog catalog)
 {
     /// <summary>Launches the run's session.</summary>
     /// <param name="run">The run.</param>
@@ -26,7 +29,7 @@ internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver tar
             return new AgentLaunched(Worktree: null, StartHead: null, new AgentLaunchFailure(AgentLaunchFailureKind.StepFailed, target.Error.Code, target.Error.Message));   // nothing was asked of the launcher, so there is no outcome to record
         }
 
-        var request = AgentLaunches.RequestFor(run.Run, target.Value);
+        var request = AgentLaunches.RequestFor(run.Run, target.Value, catalog.Find(BlockId.From(run.Run.Step.Block)));
         var result = await launcher.Launch(request, cancellationToken).ConfigureAwait(false);
         switch (result)
         {
