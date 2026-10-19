@@ -54,7 +54,7 @@ internal sealed partial class WorkflowsViewModel(ISindriApi api, IClipboard clip
     /// <summary>True when finished instances exist.</summary>
     public bool HasDone { get; private set => Set(ref field, value); }
 
-    /// <summary>"4 done today", from the served finished count (provisional until the API serves a per-day figure, Q-API-3).</summary>
+    /// <summary>"4 finished", from the served finished count (counts.done: every finished run, cancelled and failed included).</summary>
     public string DoneText { get; private set { Set(ref field, value); OnChanged(nameof(DoneToggleName)); } } = string.Empty;
 
     /// <summary>The finished line's name for screen readers: the figure and whether the rows show.</summary>
