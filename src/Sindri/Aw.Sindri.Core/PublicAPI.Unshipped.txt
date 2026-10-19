@@ -10896,9 +10896,13 @@ Aw.Sindri.Core.Workflow.Blocks.InjectionSections.Deconstruct(out System.Collecti
 Aw.Sindri.Core.Workflow.Blocks.InjectionSections.InjectionSections(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Sections, System.Text.Json.JsonElement? Result = null) -> void
 Aw.Sindri.Core.Workflow.Blocks.InjectionSections.Result.get -> System.Text.Json.JsonElement?
 Aw.Sindri.Core.Workflow.Blocks.InjectionSections.Result.init -> void
+Aw.Sindri.Core.Workflow.Blocks.StepContext.Address.get -> string?
+Aw.Sindri.Core.Workflow.Blocks.StepContext.Address.init -> void
 Aw.Sindri.Core.Workflow.Blocks.StepContext.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Step, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Arguments, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! Facts, out Aw.Sindri.Core.Workflow.Blocks.InjectionSections! Injection, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>? InputResults) -> void
 Aw.Sindri.Core.Workflow.Blocks.StepContext.InputResults.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>!
 Aw.Sindri.Core.Workflow.Blocks.StepContext.InputResults.init -> void
+Aw.Sindri.Core.Workflow.Blocks.StepContext.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Core.Workflow.Blocks.StepContext.Repo.init -> void
 Aw.Sindri.Core.Workflow.Blocks.StepContext.StepContext(Aw.Sindri.Core.Workflow.Ids.BlockId Step, System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Arguments, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! Facts, Aw.Sindri.Core.Workflow.Blocks.InjectionSections! Injection, System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>? InputResults = null) -> void
 Aw.Sindri.Core.Workflow.Blocks.StepInputContext.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Input, out Aw.Sindri.Core.Workflow.Ids.BlockId Step, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Arguments, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! Facts, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Ids.RepoName? Scope) -> void
 Aw.Sindri.Core.Workflow.Blocks.StepInputContext.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
@@ -11901,3 +11905,24 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief
 static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief.Render(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor) -> string!
 Aw.Sindri.Core.Onyx.IOnyxDatabase
 Aw.Sindri.Core.Onyx.IOnyxDatabase.DefaultAdminGroup(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<int?>!
+Aw.Sindri.Core.Scoping.BriefFile
+Aw.Sindri.Core.Scoping.BriefFile.<Clone>$() -> Aw.Sindri.Core.Scoping.BriefFile!
+Aw.Sindri.Core.Scoping.BriefFile.BriefFile(string! Path, string! Text, string! Version) -> void
+Aw.Sindri.Core.Scoping.BriefFile.Deconstruct(out string! Path, out string! Text, out string! Version) -> void
+Aw.Sindri.Core.Scoping.BriefFile.Equals(Aw.Sindri.Core.Scoping.BriefFile? other) -> bool
+Aw.Sindri.Core.Scoping.BriefFile.Path.get -> string!
+Aw.Sindri.Core.Scoping.BriefFile.Path.init -> void
+Aw.Sindri.Core.Scoping.BriefFile.Text.get -> string!
+Aw.Sindri.Core.Scoping.BriefFile.Text.init -> void
+Aw.Sindri.Core.Scoping.BriefFile.Version.get -> string!
+Aw.Sindri.Core.Scoping.BriefFile.Version.init -> void
+Aw.Sindri.Core.Scoping.BriefPaths
+Aw.Sindri.Core.Scoping.IBriefFiles
+Aw.Sindri.Core.Scoping.IBriefFiles.Read(string! path, System.Collections.Generic.IReadOnlyList<string!>! roots, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Scoping.BriefFile!>!>
+const Aw.Sindri.Core.Scoping.BriefPaths.MaxBytes = 1048576 -> long
+override Aw.Sindri.Core.Scoping.BriefFile.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Scoping.BriefFile.GetHashCode() -> int
+override Aw.Sindri.Core.Scoping.BriefFile.ToString() -> string!
+static Aw.Sindri.Core.Scoping.BriefFile.operator !=(Aw.Sindri.Core.Scoping.BriefFile? left, Aw.Sindri.Core.Scoping.BriefFile? right) -> bool
+static Aw.Sindri.Core.Scoping.BriefFile.operator ==(Aw.Sindri.Core.Scoping.BriefFile? left, Aw.Sindri.Core.Scoping.BriefFile? right) -> bool
+static Aw.Sindri.Core.Scoping.BriefPaths.Denied(string! relative) -> bool

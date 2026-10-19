@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Scoping;
@@ -19,23 +20,53 @@ internal abstract class ScopingCodeStep(BlockDescriptor step) : IBlockStep
     private const string FactPrefix = "fact:";
 
     /// <inheritdoc/>
-    public ValueTask<BlockStepResult> Run(StepContext context, CancellationToken cancellationToken)
+    public async ValueTask<BlockStepResult> Run(StepContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
         if (step.Inputs.Where(k => !context.Facts.ContainsKey(k)).Select(static k => k.Value).ToList() is { Count: > 0 } missing)
         {
-            return ValueTask.FromResult(BlockStepResult.Failed($"{step.Id.Value} needs {string.Join(", ", missing)}, which the instance does not hold"));   // the checks read a missing fact as a rule that did not run, which must never pass a Step
+            return BlockStepResult.Failed($"{step.Id.Value} needs {string.Join(", ", missing)}, which the instance does not hold");   // the checks read a missing fact as a rule that did not run, which must never pass a Step
         }
 
-        var ran = DeskBlocks.Run(step.Id.Value, new ScopeFacts(Texts(context)));
-        return ValueTask.FromResult(ran.IsError ? BlockStepResult.Failed(ran.Error.Message) : Completed(ran.Value));
+        var extra = await Extra(context, cancellationToken).ConfigureAwait(false);
+        if (extra.IsError)
+        {
+            return BlockStepResult.Failed(extra.Error.Message);
+        }
+
+        var ran = DeskBlocks.Run(step.Id.Value, new ScopeFacts(Texts(context, extra.Value)));
+        return ran.IsError ? BlockStepResult.Failed(ran.Error.Message) : Completed(ran.Value);
     }
 
     /// <summary>The code's facts beyond the context's own: what the Step's inputs gave it. None by default.</summary>
     /// <param name="context">The Step's context.</param>
-    /// <returns>JSON text by code fact key.</returns>
-    protected virtual IReadOnlyDictionary<string, string> Extra(StepContext context) => new Dictionary<string, string>(StringComparer.Ordinal);
+    /// <param name="cancellationToken">Cancelled when the run ends before the Step does.</param>
+    /// <returns>JSON text by code fact key, or the error that fails the Step.</returns>
+    protected virtual ValueTask<Result<IReadOnlyDictionary<string, string>>> Extra(StepContext context, CancellationToken cancellationToken) =>
+        ValueTask.FromResult(Facts([]));
+
+    /// <summary>The JSON tree of one of the Step's facts.</summary>
+    /// <param name="context">The Step's context.</param>
+    /// <param name="name">The fact's name without the 'fact:' prefix.</param>
+    /// <returns>The tree, or null when the fact is absent or not JSON.</returns>
+    protected static JsonNode? Fact(StepContext context, string name)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        try
+        {
+            return context.Facts.TryGetValue(FactKey.From(FactPrefix + name), out var value) ? JsonNode.Parse(Text(value)) : null;
+        }
+        catch (JsonException)
+        {
+            return null;   // boundary: a fact is text a model or a person wrote
+        }
+    }
+
+    /// <summary>The code's extra facts as a result.</summary>
+    /// <param name="texts">JSON text by code fact key.</param>
+    /// <returns>The result.</returns>
+    protected static Result<IReadOnlyDictionary<string, string>> Facts(Dictionary<string, string> texts) => texts;
 
     /// <summary>The JSON text a fact or an input's typed result holds: the string the runner stored, or the element's own text.</summary>
     /// <param name="value">The element.</param>
@@ -61,7 +92,7 @@ internal abstract class ScopingCodeStep(BlockDescriptor step) : IBlockStep
         return quoted.RootElement.Clone();
     }
 
-    private Dictionary<string, string> Texts(StepContext context)
+    private static Dictionary<string, string> Texts(StepContext context, IReadOnlyDictionary<string, string> extra)
     {
         var texts = new Dictionary<string, string>(StringComparer.Ordinal);
         foreach (var (key, value) in context.Facts.Where(static f => f.Key.Value.StartsWith(FactPrefix, StringComparison.Ordinal)))
@@ -69,7 +100,7 @@ internal abstract class ScopingCodeStep(BlockDescriptor step) : IBlockStep
             texts[key.Value[FactPrefix.Length..]] = Text(value);
         }
 
-        foreach (var (key, text) in Extra(context))
+        foreach (var (key, text) in extra)
         {
             texts[key] = text;
         }

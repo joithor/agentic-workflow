@@ -107,7 +107,7 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(DesignSteps.Intake)
         .AddBlockDescriptor(DesignSteps.Draft)
         .AddBlockDescriptor(DesignSteps.Apply)
-        .AddBlockStep<DesignCheckStep>()
+        .AddBlockDescriptor(DesignSteps.Check)
         .AddBlockDescriptor(DesignSteps.Revise)
         .AddBlockDescriptor(DesignSteps.LensDesk)
         .AddBlockDescriptor(DesignSteps.Evidence)
@@ -115,39 +115,28 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(LensRoundSteps.Log)
         .AddBlockDescriptor(PlanSteps.Intake)
         .AddBlockDescriptor(PlanSteps.Graph)
-        .AddBlockStep<PlanCheckStep>()
+        .AddBlockDescriptor(PlanSteps.Check)
         .AddBlockDescriptor(PlanSteps.ExecReview)
         .AddBlockDescriptor(PlanSteps.Holdout)
         .AddBlockDescriptor(PlanSteps.Evidence)
-        .AddBlockStep<PlanQuestionsStep>()
-        .AddBlockStep<PlanSettleStep>()
+        .AddBlockDescriptor(PlanSteps.Questions)
+        .AddBlockDescriptor(PlanSteps.Settle)
         .AddBlockDescriptor(PlanSteps.Review)
         .AddBlockDescriptor(PlanSteps.Freeze);
 
     private static IServiceCollection AddScopingBlocks(this IServiceCollection services) => services
-        .AddBlockStep<ScopeIntakeStep>()
-        .AddBlockDescriptor(ScopingSteps.ReadBrief)
         .AddBlockDescriptor(ScopingSteps.ReadTracker)
         .AddBlockDescriptor(ScopingSteps.ReadChange)
-        .AddBlockStep<BriefSeedStep>()
         .AddBlockDescriptor(ScopingSteps.BriefQuestions)
         .AddBlockDescriptor(ScopingSteps.BriefWrite)
-        .AddBlockDescriptor(ScopingSteps.Anchor)
-        .AddBlockStep<ScopeGatherStep>()
         .AddBlockDescriptor(ScopingSteps.Draft)
-        .AddBlockStep<ScopeCheckStep>()
         .AddBlockDescriptor(ScopingSteps.InterviewQuestions)
         .AddBlockDescriptor(ScopingSteps.InterviewAnswer)
-        .AddBlockStep<InterviewRecordStep>()
         .AddBlockDescriptor(ScopingSteps.InterviewApply)
-        .AddBlockDescriptor(ScopingSteps.Reanchor)
         .AddBlockDescriptor(ScopingSteps.Challenge)
-        .AddBlockStep<ChallengeLogStep>()
-        .AddBlockDescriptor(ScopingSteps.Propose)
         .AddBlockDescriptor(ScopingSteps.Evidence)
         .AddBlockDescriptor(ScopingSteps.Review)
-        .AddBlockDescriptor(ScopingSteps.Freeze)
-        .AddBlockDescriptor(ScopingSteps.Withdraw);
+        .AddBlockDescriptor(ScopingSteps.Freeze);
 
     /// <summary>Registers the line stations' Steps (ship, docs sync), descriptors only.</summary>
     /// <param name="services">The service collection.</param>
