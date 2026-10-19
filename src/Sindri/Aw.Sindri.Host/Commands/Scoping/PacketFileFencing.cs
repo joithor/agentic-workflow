@@ -15,31 +15,42 @@ internal static class PacketFileFencing
 {
     private const string Source = "scoping";
 
-    /// <summary>The file with its text fenced.</summary>
+    /// <summary>The file with its text fenced. A JSON file that is not JSON comes back as text (format 'text'), wrapped whole.</summary>
     internal static PacketFile Fence(PacketFile file)
     {
         ArgumentNullException.ThrowIfNull(file);
-        return file with { Text = file.Format switch { "json" => Json(file.Text), "jsonl" => Lines(file.Text), _ => Whole(file.Text) } };
+        return file.Format switch
+        {
+            "json" => Json(file),
+            "jsonl" => file with { Text = Lines(file.Text) },
+            _ => file with { Text = Whole(file.Text) },
+        };
     }
 
     private static string Whole(string text) => UntrustedFence.Wrap(Source, author: null, text);
 
-    private static string Json(string text)
+    private static PacketFile Json(PacketFile file)
+    {
+        var text = Json(file.Text);
+        return text is null ? file with { Text = Whole(file.Text), Format = "text" } : file with { Text = text };
+    }
+
+    private static string? Json(string text)
     {
         try
         {
             var written = Write(Fence(JsonNode.Parse(text), owner: false));
-            return written.Length == 0 ? Whole(text) : written;
+            return written.Length == 0 ? null : written;
         }
         catch (JsonException)
         {
-            return Whole(text);   // boundary: the file is text a model's output went into
+            return null;   // boundary: the file is text a model's output went into
         }
     }
 
     private static string Lines(string text)
     {
-        var lines = text.Split('\n').Where(static l => l.Length > 0).Select(Json);
+        var lines = text.Split('\n').Where(static l => l.Length > 0).Select(l => Json(l) ?? Whole(l));
         return string.Join('\n', lines) + "\n";
     }
 
@@ -58,7 +69,7 @@ internal static class PacketFileFencing
 
     private static JsonObject FenceObject(JsonObject obj, bool owner)
     {
-        var mine = owner || string.Equals(obj["trust"]?.GetValue<string>(), "owner", StringComparison.Ordinal);
+        var mine = owner || (obj["trust"] is JsonValue trust && trust.TryGetValue<string>(out var label) && string.Equals(label, "owner", StringComparison.Ordinal));
         var copy = new JsonObject();
         foreach (var (name, value) in obj)
         {
