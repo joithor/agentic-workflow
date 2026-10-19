@@ -54,6 +54,28 @@ public sealed class LauncherTests : IDisposable
     }
 
     [Fact]
+    public async Task Stop_ends_the_session_through_the_end_seam_after_the_host_stopped_it()
+    {
+        var ended = new List<Aw.Sindri.Core.Workflow.Engine.LaunchId>();
+        var launcher = new Launcher(new LauncherParts(new AgentCatalog([AgentEntries.ClaudeCode]), _ => _host, _viewer, Options, _clock)
+        {
+            ResolveBin = static (_, _) => ValueTask.FromResult<string?>(null),
+            EndLive = (launch, _) =>
+            {
+                Expect.Equal(0, _host.LiveCount);   // the host stopped it first
+                ended.Add(launch);
+                return ValueTask.CompletedTask;
+            },
+        });
+        var request = A.LaunchRequest().Build();
+        _ = await Drive(launcher.Launch(request, CancellationToken.None));
+
+        _ = await launcher.Stop(request.Launch, CancellationToken.None);
+
+        Expect.Equal(request.Launch, Assert.Single(ended));
+    }
+
+    [Fact]
     public async Task Host_past_4s_is_Failed_009_stage_host_and_kills_the_session()
     {
         var overran = new OverranHost();
