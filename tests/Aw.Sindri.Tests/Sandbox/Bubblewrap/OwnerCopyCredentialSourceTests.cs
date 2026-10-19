@@ -207,12 +207,30 @@ public sealed class OwnerCopyCredentialSourceTests
     public async Task The_copy_is_stamped_before_the_first_file_is_copied_so_a_sweep_never_sees_it_unstamped()
     {
         using var home = new FakeOwnerHome(LoginState.Ready);
+        var seen = new List<bool>();
+        var clock = new ObservingClock(home.Clock, () =>
+        {
+            // Stamp writes the mark and then reads the clock: at that moment no login file may be in the copy directory yet.
+            foreach (var mark in Directory.Exists(home.SindriHome + "/launches") ? Directory.GetFiles(home.SindriHome + "/launches", ".prepared", SearchOption.AllDirectories) : [])
+            {
+                seen.Add(File.Exists(Path.GetDirectoryName(mark) + "/.credentials.json"));
+            }
+        });
+        var source = new OwnerCopyCredentialSource(new OwnerCopyOptions(home.Root, home.SindriHome), clock);
 
-        var prepared = (await home.Source().Prepare(_claude, _launch, TestContext.Current.CancellationToken)).Value;
+        _ = await source.Prepare(_claude, _launch, TestContext.Current.CancellationToken);
 
-        var stamp = prepared.Handle.Value + "/.prepared";
-        var credentials = prepared.Handle.Value + "/.credentials.json";
-        Assert.True(File.GetCreationTimeUtc(stamp) <= File.GetCreationTimeUtc(credentials), "the stamp is made before the first copied file");
+        Assert.NotEmpty(seen);
+        Assert.All(seen, copied => Assert.False(copied, "a login file was already copied when the stamp was made"));
+    }
+
+    private sealed class ObservingClock(TimeProvider inner, Action onRead) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow()
+        {
+            onRead();
+            return inner.GetUtcNow();
+        }
     }
 
     [Fact]

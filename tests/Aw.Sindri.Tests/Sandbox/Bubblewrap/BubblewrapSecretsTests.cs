@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Infrastructure.Sandbox;
@@ -122,6 +123,38 @@ public sealed class BubblewrapSecretsTests
         Assert.False(File.Exists(first));
         Assert.True(File.Exists(firstAgain));
         Assert.True(File.Exists(otherAgain));
+    }
+
+    [Fact]
+    [UnsupportedOSPlatform("windows")]
+    public void A_discard_that_cannot_delete_warns_and_does_not_throw()
+    {
+        using var area = new TempRunArea("AW_SINDRI_LAUNCH_SECRET", "ANTHROPIC_API_KEY");
+        List<string> warnings = [];
+        var sandbox = new BubblewrapSandbox(_options, new FakeProcesses(), new HostPaths(), Registry(area), new FakeTimeProvider(), warnings.Add);
+        var directory = Path.GetDirectoryName(sandbox.Wrap(area.Plan, ["claude"]).Value[4])!;
+        File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserExecute);   // a file cannot be removed from a read-only directory
+        try
+        {
+            var thrown = Record.Exception(() => sandbox.Discard(area.Plan));
+
+            Assert.Null(thrown);
+            Assert.Contains(directory, Assert.Single(warnings), StringComparison.Ordinal);
+        }
+        finally
+        {
+            File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+    }
+
+    [Fact]
+    public void A_discard_of_a_plan_that_was_never_wrapped_does_nothing()
+    {
+        using var area = new TempRunArea("AW_SINDRI_LAUNCH_SECRET");
+
+        var thrown = Record.Exception(() => Sandbox(new FakeProcesses(), Registry(area)).Discard(area.Plan));
+
+        Assert.Null(thrown);
     }
 
     [Fact]

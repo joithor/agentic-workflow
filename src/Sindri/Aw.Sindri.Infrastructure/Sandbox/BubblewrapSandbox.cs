@@ -16,7 +16,8 @@ namespace Aw.Sindri.Infrastructure.Sandbox;
 /// <param name="host">What the host's paths are.</param>
 /// <param name="secrets">The per-launch values of the variables the plan leaves to the launcher.</param>
 /// <param name="clock">The clock the self-check deadline is read against.</param>
-internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProcesses processes, IHostPaths host, ILaunchSecrets secrets, TimeProvider clock) : ISandbox
+/// <param name="warn">Where a failure that must not stop the launcher (Discard) is reported; null drops it.</param>
+internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProcesses processes, IHostPaths host, ILaunchSecrets secrets, TimeProvider clock, Action<string>? warn = null) : ISandbox
 {
     // The wrapper reads the launcher-supplied --setenv pairs from a file it deletes at once, so no secret is ever an argument: $1 is the file, $2 bubblewrap, the rest its arguments.
     private const string SecretsWrapper = "f=$1; b=$2; shift 2; exec 3<\"$f\" && rm -f \"$f\" && exec \"$b\" \"$@\"";
@@ -79,7 +80,15 @@ internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProce
         ArgumentNullException.ThrowIfNull(plan);
         if (SecretsDirectory(plan) is { } directory && Directory.Exists(directory))
         {
-            Directory.Delete(directory, recursive: true);   // this launch's directory only: another launch of the run area keeps its file
+            try
+            {
+                Directory.Delete(directory, recursive: true);   // this launch's directory only: another launch of the run area keeps its file
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                // Discard runs on the launcher's failure path: it must not replace the launch's own error. The 0600 file stays for the run area's cleanup.
+                warn?.Invoke($"could not remove the launch's secrets directory {directory}: {e.Message}");
+            }
         }
     }
 
