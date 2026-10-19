@@ -14,8 +14,8 @@ namespace Aw.Context.Features.SourcesStatus;
 /// <summary>
 /// The sources' state: one repo-docs row per repo in scope, from its index (never refreshed reads as degraded, a
 /// refresh that failed as unavailable, documents still stored under other scrub rules as degraded until the next
-/// refresh), then every live source's probe. A session's view is gated and its repo rows scoped like its queries, but says whether
-/// sessions are enabled, and it lists the live sources it doesn't search too, each saying so.
+/// refresh), then every live source's probe. A session's view is gated and its repo rows scoped like its queries, but
+/// says whether sessions are enabled; it lists the live sources it doesn't search too, health only, each saying so.
 /// </summary>
 internal sealed class SourcesStatusService(IDocIndex index, ISourceCatalog catalog, IScrubberFactory scrubberFactory, IIntentStore intents, TimeProvider clock)
     : IService<SourcesStatusRequest, SourcesView>
@@ -53,7 +53,8 @@ internal sealed class SourcesStatusService(IDocIndex index, ISourceCatalog catal
         return new SourcesView(rows, settings.Value.SessionsEnabled, clock.GetUtcNow());
     }
 
-    // Every live source is listed, a session's view too: a row is health, not content (doctor shows it to any caller). A source the caller may not search says so.
+    // Every live source is listed, a session's view too: its state and probe are health, not content (doctor shows them to
+    // any caller). A source the caller may not search says so and leaves out its sync counts.
     private async ValueTask<Result<IReadOnlyList<SourceStatusRow>>> LiveRows(IEnumerable<IContextSource> sources, ContextCaller caller, CancellationToken cancellationToken)
     {
         var rows = new List<SourceStatusRow>();
@@ -61,9 +62,10 @@ internal sealed class SourcesStatusService(IDocIndex index, ISourceCatalog catal
         {
             var health = await source.Probe(cancellationToken).ConfigureAwait(false);
             var described = source.Describe();
-            var detail = ScopeRules.MayRead(caller, described) ? health.Detail : $"{health.Detail}; sessions don't search it until context.repoTeams maps its teams to a repo";
+            var searched = ScopeRules.MayRead(caller, described);
+            var detail = searched ? health.Detail : $"{health.Detail}; sessions don't search it until context.repoTeams maps its teams to a repo";
             var row = new SourceStatusRow(described.Id, described.Kind, Repo: null, health.State, detail, health.Code, LastSync: null, Records: 0);
-            if (described.Kind == SourceKind.Intent)
+            if (described.Kind == SourceKind.Intent && searched)   // the sync's counts are about the store's content, so a caller that doesn't search it gets health only
             {
                 var state = await intents.State(described.Id, cancellationToken).ConfigureAwait(false);
                 if (state.IsError)
