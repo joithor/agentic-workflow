@@ -89,7 +89,7 @@ public sealed class WorkflowsViewModelTests
         var list = await Shown();
 
         var done = GoldenFiles.Node("workflow-instances", "root")["counts"]!["done"];
-        Assert.Equal((true, $"{done} done today", false, 0), (list.HasDone, list.DoneText, list.IsDoneExpanded, list.DoneRows.Count));
+        Assert.Equal((true, $"{done} finished", false, 0), (list.HasDone, list.DoneText, list.IsDoneExpanded, list.DoneRows.Count));
 
         await list.ToggleDone(Token);
 
