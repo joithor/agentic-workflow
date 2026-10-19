@@ -4,9 +4,9 @@ using Aw.Kernel.Services;
 namespace Aw.Sindri.Features.Commands;
 
 /// <summary>
-/// The stop's own decorator, in place of the gate (API spec §2.1): once the caller is authorized and the request valid, it cancels the
-/// command holding the gate, and any that would wait for it, then runs the stop. A long command (a 19k-entry review apply) can't keep the
-/// process from stopping, and a refused caller cancels nothing.
+/// The stop's own decorator, in place of the gate (API spec §2.1): the stop runs without waiting for the gate, and once it has stopped
+/// the process it cancels the command holding the gate and any that would wait for it. A long command (a 19k-entry review apply) can't
+/// keep the process from stopping; a refused caller or a stop that failed cancels nothing, so a process that keeps serving keeps its gate.
 /// </summary>
 /// <param name="inner">The rest of the chain.</param>
 /// <param name="gate">The process-wide gate.</param>
@@ -16,9 +16,14 @@ internal sealed class StoppingGate<TRequest, TResponse>(IService<TRequest, TResp
     : Decorated<TRequest, TResponse>(inner)
     where TRequest : notnull
 {
-    public override ValueTask<Result<TResponse>> Handle(TRequest request, CancellationToken cancellationToken)
+    public override async ValueTask<Result<TResponse>> Handle(TRequest request, CancellationToken cancellationToken)
     {
-        gate.Stop();
-        return Inner.Handle(request, cancellationToken);
+        var stopped = await Inner.Handle(request, cancellationToken).ConfigureAwait(false);
+        if (stopped.IsSuccess)
+        {
+            gate.Stop();
+        }
+
+        return stopped;
     }
 }
