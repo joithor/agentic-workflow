@@ -16,7 +16,7 @@ public class GapEngineProxy : DispatchProxy
     /// <summary>The engine view of this proxy.</summary>
     internal IContextEngine Proxy => (IContextEngine)(object)this;
 
-    internal static GapEngineProxy Create() => (GapEngineProxy)(object)DispatchProxy.Create<IContextEngine, GapEngineProxy>();
+    internal static GapEngineProxy Create() => (GapEngineProxy)(object)Create<IContextEngine, GapEngineProxy>();
 
     protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
     {
