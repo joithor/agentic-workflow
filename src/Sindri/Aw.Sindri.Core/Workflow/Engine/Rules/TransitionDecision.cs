@@ -102,6 +102,13 @@ public static partial class TransitionDecision
         return match.Transition is { } index ? Transition(d, spent, index) : Unmatched(d, spent);
     }
 
+    /// <summary>
+    /// The park that stands in for any new run of the Step when its budget is already spent (a kept report spent it): null while the Step may start, or in a history from
+    /// before the fix. Its answer starts the Step without counting a round.
+    /// </summary>
+    private static Suspension? StartBlocked(Deciding d, WorkflowInstance instance) =>
+        !d.Context.LegacyBudgetPark && BudgetRules.Exhausted(instance, d.Recipe) is { } question ? BudgetRules.StartPark(question, d.Trigger.Actor) : null;
+
     /// <summary>An accepted report is kept whatever it cost: its transition applies and the budget is checked where the next Step would start (BudgetRules.StartPark).</summary>
     private static bool KeepsReport(Deciding d) => d.Trigger is StepCompleted && !d.Context.LegacyBudgetPark;
 
