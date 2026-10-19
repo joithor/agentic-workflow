@@ -8,7 +8,7 @@ public sealed class GraphifyClusterSourceTests
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private static Task<Aw.Kernel.Result<Aw.Context.Core.Extract.ClusterSet>> Clusters(GraphifyClusterSource source, TempGitRepo repo, TimeSpan? deadline = null) =>
+    private static Task<Kernel.Result<Context.Core.Extract.ClusterSet>> Clusters(GraphifyClusterSource source, TempGitRepo repo, TimeSpan? deadline = null) =>
         GraphifyRun.Clusters(source, repo, ClusterLimits.Default, deadline);
 
     [Fact, Trait("Lane", "integration")]
