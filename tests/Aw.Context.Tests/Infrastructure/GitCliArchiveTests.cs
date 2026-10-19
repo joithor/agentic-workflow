@@ -20,7 +20,7 @@ public sealed class GitCliArchiveTests : IDisposable
     private GitCli FakeGit(int exit, string stderrText)
     {
         var script = Path.Combine(_folder, "git");
-        File.WriteAllLines(script, ["sleep 20 > /dev/null &", $"echo {stderrText} >&2", $"exit {exit}"]);
+        File.WriteAllLines(script, ["sleep 20 > /dev/null &", $"echo {stderrText} >&2", string.Create(System.Globalization.CultureInfo.InvariantCulture, $"exit {exit}")]);
         return new GitCli(["/bin/sh", script], _grace);
     }
 
