@@ -28,7 +28,7 @@ internal static class ContextMapText
 
     // A session's counts are its repo's slice (spec §3), so they say so: doctor's are the whole map's, and the two lines are read side by side.
     private static string Scope(ContextRepoName? repo) => repo is { } r
-        ? $" in {r.Value}'s scope (the nodes {r.Value} implements and the intent linked to them; doctor counts the whole map)"
+        ? $" in {r.Value}'s scope (its code, what it implements and the linked intent; not the whole map)"
         : string.Empty;
 
     private static string Kind(MapDocumentKind kind) => kind == MapDocumentKind.Export ? "export" : "authored";

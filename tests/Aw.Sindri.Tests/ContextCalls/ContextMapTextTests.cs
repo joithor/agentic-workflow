@@ -17,7 +17,9 @@ public sealed class ContextMapTextTests
     {
         var text = ContextMapText.Status(View(_repo));
 
-        Assert.Contains("13 nodes, 8 edges, 0 aliases, 0 decisions, 0 overrides in aw-split-panes's scope (the nodes aw-split-panes implements and the intent linked to them; doctor counts the whole map)", text, StringComparison.Ordinal);
+        var counts = text.Split('\n')[1];
+        Assert.StartsWith("13 nodes, 8 edges, 0 aliases, 0 decisions, 0 overrides in aw-split-panes's scope", counts, StringComparison.Ordinal);
+        Assert.Contains("not the whole map", counts, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -26,6 +28,7 @@ public sealed class ContextMapTextTests
         var text = ContextMapText.Status(View(scopedTo: null));
 
         Assert.Contains("13 nodes, 8 edges, 0 aliases, 0 decisions, 0 overrides; 0 orphaned overrides", text, StringComparison.Ordinal);
-        Assert.DoesNotContain("scope", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("'s scope", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("scoped to", text, StringComparison.Ordinal);
     }
 }
