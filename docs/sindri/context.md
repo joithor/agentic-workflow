@@ -652,6 +652,9 @@ Accept all 31 deterministic proposals at once? [y]es / [n]o, go through them one
 | `review merge <node> --into <node>`, `add <node> <name> [--under <node>]`, `delete <node>` | Edit nodes outside the queue | protected |
 | `context map promote` | Make the draft the current map | protected |
 
+- **Query** rows here are reads with no challenge, and still a person's: the queue, `--history` and `--export` show the
+  draft and its decisions, which a session never reads, so a session (an agent) gets `SND-CONTEXT-020` (`… is a human
+  decision: a session can't`) whether or not `context.sessions.enabled` is on.
 - **Desk** actions run from a terminal or the app: one `map_override` row each, Undo is the recovery, and a session
   (an agent) is refused with `SND-AUTH-002`. **Protected** ones need you at a terminal: the command shows what it will do and a
   challenge (`review apply-file 3f0c9a`, `promote map v14`), and you type it back. The app never runs them.
@@ -827,7 +830,10 @@ repo gets no source at all, onyx included.
 
 `sindri context sources status` shows an `onyx` row: `ok`, `degraded` (the token is an admin token of a person's account,
 `SND-CONTEXT-053`) or `unavailable` (no answer, `SND-CONTEXT-010`; another version, `055`; key refused, `050`; pointer
-unresolved, `002`), with the version and the key's role and account type in its detail.
+unresolved, `002`), with the version and the key's role and account type in its detail. A session sees the row too, health
+only (its state and probe, which doctor shows to any caller; no sync counts): its detail ends `; sessions don't search
+it until context.repoTeams maps its teams to a repo`. The records and decisions linked to the session's repo nodes
+still reach it through the map, as above.
 
 ### Doctor `context:onyx`
 
