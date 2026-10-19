@@ -1,4 +1,5 @@
 using Aw.Kernel.Testing;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Tests.Workflow.Choice;
@@ -44,5 +45,14 @@ public sealed class ChoiceStepViewsTests
         var complete = view.AllowedCommands.Single(c => c.Action == "CompleteStep");
 
         Assert.Contains("--outcome <ui|api|db|all|none|other>", complete.Cli, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void One_outcome_stays_filled_in_and_none_stays_a_placeholder()
+    {
+        var run = RunToken.From("1.1");
+
+        Assert.Equal("sindri workflow complete T-3/r/1 --run 1.1 --outcome done", CompleteCommand.Line("T-3/r/1", run, [OutcomeName.From("done")], []));
+        Assert.Equal("sindri workflow complete T-3/r/1 --run 1.1 --outcome <outcome>", CompleteCommand.Line("T-3/r/1", run, [], []));
     }
 }
