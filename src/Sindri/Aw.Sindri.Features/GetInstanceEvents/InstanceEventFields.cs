@@ -19,6 +19,10 @@ public sealed record InstanceEventFields(string? From = null, string? To = null,
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? Tokens { get; init; }
 
+    /// <summary>Why a Step failed ('launch', 'lost', 'exit' or 'limit', or a free text); read from the detail of a 'step.failed' row only. Not written when null.</summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? Reason { get; init; }
+
     /// <summary>No fields: a payload that doesn't read as a workflow transition.</summary>
     public static InstanceEventFields None { get; } = new();
 }

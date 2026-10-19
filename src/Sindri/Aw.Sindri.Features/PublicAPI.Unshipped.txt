@@ -2821,6 +2821,8 @@ Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse.Launch.init -> void
 Aw.Sindri.Features.SessionHeartbeat.SessionHeartbeatResponse.SessionHeartbeatResponse(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch) -> void
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Tokens.get -> int?
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Tokens.init -> void
+Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Reason.get -> string?
+Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Reason.init -> void
 Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest
 Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest.<Clone>$() -> Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest!
 Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest.Equals(Aw.Sindri.Features.OnyxStatus.OnyxStatusRequest? other) -> bool
