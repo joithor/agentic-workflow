@@ -81,7 +81,7 @@ public sealed class HttpOnyxProvisioningTests
     {
         var script = new Script
         {
-            Answer = static sent => sent.PathAndQuery == "/api/admin/api-key" ? (HttpStatusCode.OK, "{\"api_key\":\"on_abc123\"}") : (HttpStatusCode.OK, "{}"),
+            Answer = static sent => sent.PathAndQuery == "/api/admin/api-key" ? (HttpStatusCode.OK, "{\"api_key\":\"on_abc123\",\"groups\":[{\"id\":3,\"name\":\"Admin\"}]}") : (HttpStatusCode.OK, "{}"),
             Hang = static sent => sent.PathAndQuery == "/api/auth/logout",
         };
         var adapter = new HttpOnyxProvisioning(() => script, TimeSpan.FromMilliseconds(100));
@@ -135,7 +135,7 @@ public sealed class HttpOnyxProvisioningTests
     [Fact, Trait("Lane", "integration")]
     public async Task The_key_is_made_with_a_name_and_the_admin_group_and_comes_back_once()
     {
-        var script = new Script { Answer = static sent => sent.PathAndQuery == "/api/admin/api-key" ? (HttpStatusCode.OK, "{\"api_key\":\"on_abc123\"}") : (HttpStatusCode.OK, "{}") };
+        var script = new Script { Answer = static sent => sent.PathAndQuery == "/api/admin/api-key" ? (HttpStatusCode.OK, "{\"api_key\":\"on_abc123\",\"groups\":[{\"id\":3,\"name\":\"Admin\"}]}") : (HttpStatusCode.OK, "{}") };
         var session = (await Adapter(script).SignIn(3000, "a@b.c", "x", Token)).Value;
 
         var key = await session.CreateKey("sindri-onyx", 3, Token);
@@ -143,6 +143,53 @@ public sealed class HttpOnyxProvisioningTests
         Assert.Equal("on_abc123", key.Value);
         var request = script.Requests.Single(static r => r.PathAndQuery == "/api/admin/api-key");
         Assert.Equal("{\"name\":\"sindri-onyx\",\"group_ids\":[3]}", request.Body);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_402_group_list_is_sindri_onyx_013_the_community_edition_has_no_such_route()
+    {
+        var script = new Script { Answer = sent => sent.PathAndQuery.Contains("user-group", StringComparison.Ordinal) ? (HttpStatusCode.PaymentRequired, "{\"detail\":\"Enterprise\"}") : (HttpStatusCode.OK, "{}") };
+        var session = (await Adapter(script).SignIn(3000, "a@b.c", "x", Token)).Value;
+
+        var group = await session.AdminGroup(Token);
+
+        Assert.Equal(SindriErrors.OnyxGroupListUnavailable.Code, group.Error.Code);
+        Assert.Contains("402", group.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "integration")]
+    [InlineData(HttpStatusCode.InternalServerError, "{}")]
+    [InlineData(HttpStatusCode.OK, "[{\"id\":7,\"name\":\"Basic\",\"is_default\":true}]")]
+    [InlineData(HttpStatusCode.OK, "not json")]
+    public async Task Any_other_group_list_without_an_admin_group_is_still_sindri_onyx_008(HttpStatusCode status, string body)
+    {
+        var script = new Script { Answer = sent => sent.PathAndQuery.Contains("user-group", StringComparison.Ordinal) ? (status, body) : (HttpStatusCode.OK, "{}") };
+        var session = (await Adapter(script).SignIn(3000, "a@b.c", "x", Token)).Value;
+
+        var group = await session.AdminGroup(Token);
+
+        Assert.Equal(SindriErrors.OnyxKeyFailed.Code, group.Error.Code);
+        Assert.Contains("no default Admin group", group.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Theory, Trait("Lane", "integration")]
+    [InlineData("\"groups\":[{\"id\":2,\"name\":\"Basic\"}]")]
+    [InlineData("\"groups\":[{\"id\":9,\"name\":\"Admin\"}]")]
+    [InlineData("\"groups\":[]")]
+    [InlineData("\"api_key_name\":\"sindri-onyx\"")]
+    public async Task A_key_whose_service_account_is_not_in_the_admin_group_is_an_error_that_names_it_and_never_returns_the_key(string groups)
+    {
+        var body = "{\"api_key\":\"on_secret-value-9\",\"api_key_display\":\"on_secr...e-9\"," + groups + "}";
+        var script = new Script { Answer = sent => sent.PathAndQuery == "/api/admin/api-key" ? (HttpStatusCode.OK, body) : (HttpStatusCode.OK, "{}") };
+        var session = (await Adapter(script).SignIn(3000, "a@b.c", "x", Token)).Value;
+
+        var key = await session.CreateKey("sindri-onyx", 3, Token);
+
+        Assert.Equal(SindriErrors.OnyxKeyFailed.Code, key.Error.Code);
+        Assert.Contains("not in the Admin group", key.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("on_secr...e-9", key.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("delete it", key.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("on_secret-value-9", key.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]

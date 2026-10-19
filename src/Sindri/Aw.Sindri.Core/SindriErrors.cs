@@ -143,6 +143,9 @@ public static class SindriErrors
     /// <summary>SND-ONYX-008: logging in, minting Sindri's key or verifying it failed.</summary>
     public static readonly ErrorDefinition OnyxKeyFailed = new("SND-ONYX-008", ErrorKind.Unavailable, "Minting or verifying Sindri's Onyx key failed");
 
+    /// <summary>SND-ONYX-013: Onyx answered the user-group list with 402 Payment Required: the Community Edition has no such route (it is Enterprise-only). `onyx up` reads the default Admin group's id from the managed stack's own database instead; the error reaches the owner only when that can't be done.</summary>
+    public static readonly ErrorDefinition OnyxGroupListUnavailable = new("SND-ONYX-013", ErrorKind.Unavailable, "Onyx's user-group list is an Enterprise feature");
+
     /// <summary>SND-ONYX-009: the key couldn't be stored (neither the OS secret store nor the owner-only file).</summary>
     public static readonly ErrorDefinition OnyxSecretNotStored = new("SND-ONYX-009", ErrorKind.Unavailable, "Writing the Onyx key to a secret store failed");
 
