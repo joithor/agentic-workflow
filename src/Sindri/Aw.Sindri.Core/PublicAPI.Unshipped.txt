@@ -2378,7 +2378,7 @@ Aw.Sindri.Core.Workflow.Blocks.IStep
 Aw.Sindri.Core.Workflow.Blocks.IStep.Complete(Aw.Sindri.Core.Workflow.Blocks.StepRun! run, Aw.Sindri.Core.Workflow.Blocks.StepReport! report, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Workflow.Blocks.StepResult!>
 Aw.Sindri.Core.Workflow.Blocks.IStep.Start(Aw.Sindri.Core.Workflow.Blocks.StepContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 Aw.Sindri.Core.Workflow.Blocks.IStepInput
-Aw.Sindri.Core.Workflow.Blocks.IStepInput.Fill(Aw.Sindri.Core.Workflow.Blocks.StepInputContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Workflow.Blocks.InjectionSections!>
+Aw.Sindri.Core.Workflow.Blocks.IStepInput.Fill(Aw.Sindri.Core.Workflow.Blocks.StepInputContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Blocks.InjectionSections!>!>
 Aw.Sindri.Core.Workflow.Blocks.InjectionSections
 Aw.Sindri.Core.Workflow.Blocks.InjectionSections.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.InjectionSections!
 Aw.Sindri.Core.Workflow.Blocks.InjectionSections.Equals(Aw.Sindri.Core.Workflow.Blocks.InjectionSections? other) -> bool
@@ -11353,6 +11353,7 @@ Aw.Sindri.Core.Workflow.Blocks.IProveEcho.ReadText(System.Threading.Cancellation
 Aw.Sindri.Core.Scoping.ScopingErrors
 static Aw.Sindri.Core.Scoping.ScopingErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 static Aw.Sindri.Core.Scoping.ScopingErrors.Retired.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static readonly Aw.Sindri.Core.Scoping.ScopingErrors.BriefPathRefused -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Scoping.ScopingErrors.DraftOutsideRunArea -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Scoping.ScopingErrors.NotAScopingInstance -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.Scoping.ScopingErrors.PacketPurged -> Aw.Kernel.ErrorDefinition!
@@ -11833,3 +11834,50 @@ Aw.Sindri.Core.Mcp.ProviderResult.Detail.init -> void
 static Aw.Sindri.Core.Mcp.McpRegistration.Url(int port) -> string!
 Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.JudgeSettings? Judge, out Aw.Sindri.Core.Profile.WorkflowAgentSettings? Agent, out Aw.Sindri.Core.Profile.ForgeSettings? Forge, out Aw.Sindri.Core.Profile.RouteSettings? Route) -> void
 Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.JudgeSettings? Judge = null, Aw.Sindri.Core.Profile.WorkflowAgentSettings? Agent = null, Aw.Sindri.Core.Profile.ForgeSettings? Forge = null, Aw.Sindri.Core.Profile.RouteSettings? Route = null) -> void
+Aw.Sindri.Core.Scoping.IScopePacketStore
+Aw.Sindri.Core.Scoping.IScopePacketStore.Hash(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId instance, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Sindri.Core.Scoping.IScopePacketStore.ReadFile(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId instance, string! name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+static readonly Aw.Sindri.Core.Scoping.ScopingErrors.PacketChanged -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Events.ScopingApproved
+Aw.Sindri.Core.Events.ScopingApproved.<Clone>$() -> Aw.Sindri.Core.Events.ScopingApproved!
+Aw.Sindri.Core.Events.ScopingApproved.Deconstruct(out string! PacketHash, out string! Instance, out System.Collections.Generic.IReadOnlyList<string!>! Surfaces, out System.Collections.Generic.IReadOnlyList<string!>! AcceptanceItems, out int Rounds, out int Rescopes) -> void
+Aw.Sindri.Core.Events.ScopingApproved.Equals(Aw.Sindri.Core.Events.ScopingApproved? other) -> bool
+Aw.Sindri.Core.Events.ScopingApproved.ScopingApproved(string! PacketHash, string! Instance, System.Collections.Generic.IReadOnlyList<string!>! Surfaces, System.Collections.Generic.IReadOnlyList<string!>! AcceptanceItems, int Rounds, int Rescopes) -> void
+Aw.Sindri.Core.Events.ScopingApproved.PacketHash.get -> string!
+Aw.Sindri.Core.Events.ScopingApproved.PacketHash.init -> void
+Aw.Sindri.Core.Events.ScopingApproved.Instance.get -> string!
+Aw.Sindri.Core.Events.ScopingApproved.Instance.init -> void
+Aw.Sindri.Core.Events.ScopingApproved.Surfaces.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Events.ScopingApproved.Surfaces.init -> void
+Aw.Sindri.Core.Events.ScopingApproved.AcceptanceItems.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Events.ScopingApproved.AcceptanceItems.init -> void
+Aw.Sindri.Core.Events.ScopingApproved.Rounds.get -> int
+Aw.Sindri.Core.Events.ScopingApproved.Rounds.init -> void
+Aw.Sindri.Core.Events.ScopingApproved.Rescopes.get -> int
+Aw.Sindri.Core.Events.ScopingApproved.Rescopes.init -> void
+override Aw.Sindri.Core.Events.ScopingApproved.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ScopingApproved.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ScopingApproved.ToString() -> string!
+static Aw.Sindri.Core.Events.ScopingApproved.operator !=(Aw.Sindri.Core.Events.ScopingApproved? left, Aw.Sindri.Core.Events.ScopingApproved? right) -> bool
+static Aw.Sindri.Core.Events.ScopingApproved.operator ==(Aw.Sindri.Core.Events.ScopingApproved? left, Aw.Sindri.Core.Events.ScopingApproved? right) -> bool
+Aw.Sindri.Core.Events.ScopingEscape
+Aw.Sindri.Core.Events.ScopingEscape.<Clone>$() -> Aw.Sindri.Core.Events.ScopingEscape!
+Aw.Sindri.Core.Events.ScopingEscape.Deconstruct(out string! PacketHash, out string! Station, out string! Kind, out string! Reference) -> void
+Aw.Sindri.Core.Events.ScopingEscape.Equals(Aw.Sindri.Core.Events.ScopingEscape? other) -> bool
+Aw.Sindri.Core.Events.ScopingEscape.ScopingEscape(string! PacketHash, string! Station, string! Kind, string! Reference) -> void
+Aw.Sindri.Core.Events.ScopingEscape.PacketHash.get -> string!
+Aw.Sindri.Core.Events.ScopingEscape.PacketHash.init -> void
+Aw.Sindri.Core.Events.ScopingEscape.Station.get -> string!
+Aw.Sindri.Core.Events.ScopingEscape.Station.init -> void
+Aw.Sindri.Core.Events.ScopingEscape.Kind.get -> string!
+Aw.Sindri.Core.Events.ScopingEscape.Kind.init -> void
+Aw.Sindri.Core.Events.ScopingEscape.Reference.get -> string!
+Aw.Sindri.Core.Events.ScopingEscape.Reference.init -> void
+override Aw.Sindri.Core.Events.ScopingEscape.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Events.ScopingEscape.GetHashCode() -> int
+override Aw.Sindri.Core.Events.ScopingEscape.ToString() -> string!
+static Aw.Sindri.Core.Events.ScopingEscape.operator !=(Aw.Sindri.Core.Events.ScopingEscape? left, Aw.Sindri.Core.Events.ScopingEscape? right) -> bool
+static Aw.Sindri.Core.Events.ScopingEscape.operator ==(Aw.Sindri.Core.Events.ScopingEscape? left, Aw.Sindri.Core.Events.ScopingEscape? right) -> bool
+const Aw.Sindri.Core.Events.EventTypes.ScopingApproved = "scoping.approved" -> string!
+const Aw.Sindri.Core.Events.EventTypes.ScopingEscape = "scoping.escape" -> string!
+static readonly Aw.Sindri.Core.Scoping.ScopingErrors.PacketToolFailed -> Aw.Kernel.ErrorDefinition!

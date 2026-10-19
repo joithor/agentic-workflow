@@ -5,7 +5,7 @@ using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Trust;
 
-namespace Aw.Sindri.Host.Text;
+namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>
 /// Plain text for 'context lenses' and 'context filemap': every status is a word ('suggested', 'unmapped', 'conflict'), never colour.
@@ -28,7 +28,7 @@ internal static class ContextLensText
         var text = new StringBuilder(Invariant($"lenses of {view.Anchors.Count} anchors ({anchors}) · map {MapName(view.MapVersion, view.MapCommit)}{(view.Draft ? " (draft)" : string.Empty)} · depth {view.Depth}\n"));
         foreach (var missing in view.MissingAnchors)
         {
-            _ = text.AppendLine($"missing anchor: {missing}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"missing anchor: {missing}");
         }
 
         return Body(text, new LensParts(view.Bands, view.Edges, view.Conflicts, view.Coverage, view.Searched), fence);
@@ -51,7 +51,7 @@ internal static class ContextLensText
 
         foreach (var conflict in conflicts)
         {
-            _ = text.AppendLine($"conflict {conflict.Kind.ToString().ToLowerInvariant()}: {conflict.Decision.Value} over {conflict.Other} on {conflict.Node.Value}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"conflict {conflict.Kind.ToString().ToLowerInvariant()}: {conflict.Decision.Value} over {conflict.Other} on {conflict.Node.Value}");
         }
 
         _ = text.Append(Searched(searched)).Append(Coverage(coverage));
@@ -81,7 +81,7 @@ internal static class ContextLensText
         {
             if (band.Empty)
             {
-                _ = text.AppendLine($"  {name} band: empty");
+                _ = text.AppendLine(CultureInfo.InvariantCulture, $"  {name} band: empty");
             }
         }
 
@@ -105,12 +105,12 @@ internal static class ContextLensText
         var text = new StringBuilder(Invariant($"coverage: scope {c.Scope} · intent {c.Intent.Covered} of {c.Intent.Of} · product {c.Product.Confirmed} of {c.Product.Of} confirmed · code {c.Code.Implemented} of {c.Code.Of} implemented ({c.Code.Level} level), {c.Code.Suggested} suggested\n"));
         if (c.Map is { } m)
         {
-            _ = text.AppendLine(Invariant($"map coverage: {m.Paths.Count} paths{(m.Truncated ? " (truncated)" : string.Empty)}, {m.Files} files, {m.Unmapped} unmapped, {m.Suggested} suggested · map created {m.Created:yyyy-MM-ddTHH:mm:ssZ} ({m.AgeDays} days old)"));
+            _ = text.AppendLine(Invariant($"map coverage: {m.Paths.Count} paths{(m.Truncated ? " (truncated)" : string.Empty)}, {m.Files} files, {m.Unmapped} unmapped, {m.Suggested} suggested · map created {m.Created:yyyy-MM-ddTHH:mm:ssZ}{(m.AgeDays < 0 ? string.Empty : Invariant($" ({m.AgeDays} days old)"))}"));
         }
 
         foreach (var gap in c.Gaps)
         {
-            _ = text.AppendLine($"gap: {gap.Node.Value} missing {string.Join(", ", gap.Missing.Select(m => m.ToString().ToLowerInvariant()))}{(gap.Note is { } note ? " (" + note + ")" : string.Empty)}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"gap: {gap.Node.Value} missing {string.Join(", ", gap.Missing.Select(m => m.ToString().ToLowerInvariant()))}{(gap.Note is { } note ? " (" + note + ")" : string.Empty)}");
         }
 
         return text.ToString();
@@ -151,12 +151,12 @@ internal static class ContextLensText
 
         foreach (var record in band.Records)
         {
-            _ = text.AppendLine($"  record  {Fenced(record.Label, record.Trust, fence)}  {record.Source}  {record.Key.Value}  mentions {string.Join(", ", record.Mentions.Select(m => m.Value))}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"  record  {Fenced(record.Label, record.Trust, fence)}  {record.Source}  {record.Key.Value}  mentions {string.Join(", ", record.Mentions.Select(m => m.Value))}");
         }
 
         foreach (var d in band.Decisions)
         {
-            _ = text.AppendLine($"  decision  {Fenced(d.Text, d.Trust, fence)}  {d.Provenance.ToString().ToLowerInvariant()} {(d.Confirmed ? "confirmed" : "suggested")}  {d.Node.Value}  decides {string.Join(", ", d.Decides.Select(k => k.Value))}{(d.Supersedes.Count == 0 ? string.Empty : "  supersedes " + string.Join(", ", d.Supersedes.Select(k => k.Value)))}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"  decision  {Fenced(d.Text, d.Trust, fence)}  {d.Provenance.ToString().ToLowerInvariant()} {(d.Confirmed ? "confirmed" : "suggested")}  {d.Node.Value}  decides {string.Join(", ", d.Decides.Select(k => k.Value))}{(d.Supersedes.Count == 0 ? string.Empty : "  supersedes " + string.Join(", ", d.Supersedes.Select(k => k.Value)))}");
         }
     }
 
