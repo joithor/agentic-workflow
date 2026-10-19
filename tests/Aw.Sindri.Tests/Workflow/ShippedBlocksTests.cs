@@ -1,6 +1,10 @@
 using System.Reflection;
 using Aw.Kernel.Json;
+using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Launch;
 using Aw.Sindri.Core.Workflow.Blocks;
+using Aw.Sindri.Core.Workflow.Engine;
+using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Blocks.Effect;
 using Aw.Sindri.Features.Blocks.Gate;
@@ -60,6 +64,23 @@ public sealed class ShippedBlocksTests
         var produce = FixtureCatalog.Shipped().Find(BlockId.From("step.produce"));
 
         Assert.Equal((BlockRuntime.Agent, true), (produce?.Runtime, produce?.DeskCapable));
+    }
+
+    /// <summary>The Steps that commit (tests, code) or build and run the app in the run's worktree need the policy that lets them write it; WriteScope grants that worktree and nothing else.</summary>
+    [Theory, Trait("Lane", "unit")]
+    [InlineData("step.build.red")]
+    [InlineData("step.build.green")]
+    [InlineData("step.prove.holdout")]
+    public void The_agent_steps_that_write_their_worktree_carry_write_scope(string id)
+    {
+        var step = FixtureCatalog.Shipped().Find(BlockId.From(id));
+        var address = InstanceAddress.From("T-1/step/1");
+        var run = new AgentStepRun(WorkflowInstanceId.Of(address), address, RunToken.From("1.1"), new StepRef("s", id), step!.Capabilities.HasFlag(Capability.WriteScope));
+        var target = new AgentStepTarget(ItemId.From("ITM-" + new string('a', 32)), AgentId.From("claude-code"), "/work/app");
+
+        var request = AgentLaunches.RequestFor(run, target);
+
+        Assert.Equal((BlockRuntime.Agent, StepPermissionMode.Default, request.Worktree), (step.Runtime, request.Step?.Policy?.Mode, request.Step?.Policy?.WritablePath));
     }
 
     [Fact, Trait("Lane", "unit")]
