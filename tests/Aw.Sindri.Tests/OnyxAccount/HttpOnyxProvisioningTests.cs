@@ -1,15 +1,18 @@
 using System.Net;
 using System.Text;
+using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core;
 using Aw.Sindri.Infrastructure.Onyx;
 
 namespace Aw.Sindri.Tests.OnyxAccount;
 
-// The five setup-only requests of spec §5.2, against a scripted Onyx: their shapes, the refusal of everything else, and what never leaves.
+// The seven setup-only requests (docs/sindri/onyx.md section 7), against a scripted Onyx: their shapes, the refusal of everything else, and what never leaves.
 [Lane(TestLane.Integration)]
 public sealed class HttpOnyxProvisioningTests
 {
+    private const string DedicatedEmail = "sindri@sindri.app";
+
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     private sealed record Sent(HttpMethod Method, string PathAndQuery, string Body, string? Authorization);
@@ -46,19 +49,32 @@ public sealed class HttpOnyxProvisioningTests
 
     private static HttpOnyxProvisioning Adapter(Script script) => new(() => script);
 
+    // A script that answers one path with (status, body) and every other with 200 {}.
+    private static Script Answering(string path, HttpStatusCode status, string body)
+        => new() { Answer = sent => sent.PathAndQuery == path ? (status, body) : (HttpStatusCode.OK, "{}") };
+
+    private static async Task<Aw.Sindri.Core.Onyx.IOnyxSession> Session(Script script)
+        => (await Adapter(script).SignIn(3000, "a@b.c", "x", Token)).Value;
+
     [Theory, Trait("Lane", "integration")]
     [InlineData("POST", "/api/auth/login", true)]
     [InlineData("POST", "/api/auth/logout", true)]
-    [InlineData("GET", "/api/manage/admin/user-group", true)]
-    [InlineData("POST", "/api/admin/api-key", true)]
+    [InlineData("POST", "/api/auth/register", true)]
+    [InlineData("POST", "/api/password/reset_password", true)]
+    [InlineData("PATCH", "/api/manage/admin/users/admin-access", true)]
+    [InlineData("POST", "/api/user/pats", true)]
     [InlineData("GET", "/api/me", true)]
-    [InlineData("POST", "/api/auth/register", false)]
-    [InlineData("GET", "/api/admin/api-key", false)]
-    [InlineData("DELETE", "/api/admin/api-key", false)]
-    [InlineData("GET", "/api/manage/users", false)]
+    [InlineData("POST", "/api/admin/api-key", false)]
+    [InlineData("GET", "/api/manage/admin/user-group", false)]
+    [InlineData("GET", "/api/user/pats", false)]
+    [InlineData("DELETE", "/api/user/pats/1", false)]
+    [InlineData("PATCH", "/api/manage/admin/users/craft-enabled", false)]
+    [InlineData("DELETE", "/api/manage/admin/delete-user", false)]
+    [InlineData("PUT", "/api/manage/admin/users", false)]
     [InlineData("POST", "/api/me", false)]
     [InlineData("GET", "/api/auth/login", false)]
-    public void Only_the_five_allowlisted_requests_may_be_sent(string method, string path, bool allowed)
+    [InlineData("POST", "/api/password/change-password", false)]
+    public void Only_the_seven_allowlisted_requests_may_be_sent(string method, string path, bool allowed)
         => Assert.Equal(allowed, HttpOnyxProvisioning.Allowed(new HttpMethod(method), path));
 
     [Fact, Trait("Lane", "integration")]
@@ -77,20 +93,20 @@ public sealed class HttpOnyxProvisioningTests
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task A_logout_that_hangs_is_given_up_on_without_throwing_and_the_made_key_survives()
+    public async Task A_logout_that_hangs_is_given_up_on_without_throwing_and_the_made_token_survives()
     {
         var script = new Script
         {
-            Answer = static sent => sent.PathAndQuery == "/api/admin/api-key" ? (HttpStatusCode.OK, "{\"api_key\":\"on_abc123\",\"groups\":[{\"id\":3,\"name\":\"Admin\"}]}") : (HttpStatusCode.OK, "{}"),
+            Answer = static sent => sent.PathAndQuery == "/api/user/pats" ? (HttpStatusCode.OK, "{\"token\":\"onyx_pat_abc123\"}") : (HttpStatusCode.OK, "{}"),
             Hang = static sent => sent.PathAndQuery == "/api/auth/logout",
         };
         var adapter = new HttpOnyxProvisioning(() => script, TimeSpan.FromMilliseconds(100));
         var session = (await adapter.SignIn(3000, "a@b.c", "x", Token)).Value;
-        var key = await session.CreateKey("sindri-onyx", 3, Token);
+        var token = await session.CreateToken("sindri-onyx", Token);
 
         await session.DisposeAsync();   // must not throw
 
-        Assert.Equal("on_abc123", key.Value);
+        Assert.Equal("onyx_pat_abc123", token.Value);
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -105,134 +121,169 @@ public sealed class HttpOnyxProvisioningTests
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task The_admin_group_is_the_default_group_named_Admin()
+    public async Task A_new_user_is_registered_with_a_json_body_and_reported_as_made()
     {
-        var script = new Script
-        {
-            Answer = static sent => sent.PathAndQuery.StartsWith("/api/manage/admin/user-group", StringComparison.Ordinal)
-                ? (HttpStatusCode.OK, "[{\"id\":7,\"name\":\"Basic\",\"is_default\":true},{\"id\":3,\"name\":\"Admin\",\"is_default\":true},{\"id\":9,\"name\":\"Admin\",\"is_default\":false}]")
-                : (HttpStatusCode.OK, "{}"),
-        };
-        var session = (await Adapter(script).SignIn(3000, "a@b.c", "x", Token)).Value;
+        var script = Answering("/api/auth/register", HttpStatusCode.Created, "{\"id\":\"u1\",\"email\":\"sindri@sindri.app\"}");
+        var session = await Session(script);
 
-        var group = await session.AdminGroup(Token);
+        var made = await session.RegisterUser(DedicatedEmail, "pw-0123456789", Token);
 
-        Assert.Equal(3, group.Value);
-        Assert.Equal("/api/manage/admin/user-group?include_default=true", script.Requests[1].PathAndQuery);
-    }
-
-    [Theory, Trait("Lane", "integration")]
-    [InlineData(HttpStatusCode.Forbidden)]
-    [InlineData(HttpStatusCode.Unauthorized)]
-    public async Task A_login_that_may_not_list_groups_is_sindri_onyx_007(HttpStatusCode status)
-    {
-        var script = new Script { Answer = sent => sent.PathAndQuery.Contains("user-group", StringComparison.Ordinal) ? (status, "{}") : (HttpStatusCode.OK, "{}") };
-        var session = (await Adapter(script).SignIn(3000, "a@b.c", "x", Token)).Value;
-
-        Assert.Equal(SindriErrors.OnyxNotAdmin.Code, (await session.AdminGroup(Token)).Error.Code);
+        Assert.True(made.Value);
+        var request = script.Requests.Single(static r => r.PathAndQuery == "/api/auth/register");
+        Assert.Equal(HttpMethod.Post, request.Method);
+        using var body = JsonDocument.Parse(request.Body);
+        Assert.Equal(DedicatedEmail, body.RootElement.GetProperty("email").GetString());
+        Assert.Equal("pw-0123456789", body.RootElement.GetProperty("password").GetString());
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task The_key_is_made_with_a_name_and_the_admin_group_and_comes_back_once()
+    public async Task An_email_that_is_already_registered_is_reported_as_not_made_and_not_as_an_error()
     {
-        var script = new Script { Answer = static sent => sent.PathAndQuery == "/api/admin/api-key" ? (HttpStatusCode.OK, "{\"api_key\":\"on_abc123\",\"groups\":[{\"id\":3,\"name\":\"Admin\"}]}") : (HttpStatusCode.OK, "{}") };
-        var session = (await Adapter(script).SignIn(3000, "a@b.c", "x", Token)).Value;
+        var session = await Session(Answering("/api/auth/register", HttpStatusCode.BadRequest, "{\"detail\":\"REGISTER_USER_ALREADY_EXISTS\"}"));
 
-        var key = await session.CreateKey("sindri-onyx", 3, Token);
+        var made = await session.RegisterUser(DedicatedEmail, "pw", Token);
 
-        Assert.Equal("on_abc123", key.Value);
-        var request = script.Requests.Single(static r => r.PathAndQuery == "/api/admin/api-key");
-        Assert.Equal("{\"name\":\"sindri-onyx\",\"group_ids\":[3]}", request.Body);
-    }
-
-    [Fact, Trait("Lane", "integration")]
-    public async Task A_402_group_list_is_sindri_onyx_013_the_community_edition_has_no_such_route()
-    {
-        var script = new Script { Answer = sent => sent.PathAndQuery.Contains("user-group", StringComparison.Ordinal) ? (HttpStatusCode.PaymentRequired, "{\"detail\":\"Enterprise\"}") : (HttpStatusCode.OK, "{}") };
-        var session = (await Adapter(script).SignIn(3000, "a@b.c", "x", Token)).Value;
-
-        var group = await session.AdminGroup(Token);
-
-        Assert.Equal(SindriErrors.OnyxGroupListUnavailable.Code, group.Error.Code);
-        Assert.Contains("402", group.Error.Message, StringComparison.Ordinal);
+        Assert.True(made.IsSuccess);
+        Assert.False(made.Value);
     }
 
     [Theory, Trait("Lane", "integration")]
-    [InlineData(HttpStatusCode.InternalServerError, "{}")]
-    [InlineData(HttpStatusCode.OK, "[{\"id\":7,\"name\":\"Basic\",\"is_default\":true}]")]
-    [InlineData(HttpStatusCode.OK, "not json")]
-    public async Task Any_other_group_list_without_an_admin_group_is_still_sindri_onyx_008(HttpStatusCode status, string body)
+    [InlineData(HttpStatusCode.Unauthorized, "{\"detail\":\"This workspace is invite-only.\"}", "invite-only")]
+    [InlineData(HttpStatusCode.Forbidden, "{}", "invite-only")]
+    [InlineData(HttpStatusCode.BadRequest, "{\"detail\":{\"code\":\"REGISTER_INVALID_PASSWORD\",\"reason\":\"Password must be 12 characters\"}}", "HTTP 400")]
+    [InlineData(HttpStatusCode.InternalServerError, "{}", "HTTP 500")]
+    public async Task A_registration_Onyx_refuses_is_sindri_onyx_008_that_says_why_and_never_repeats_the_password(HttpStatusCode status, string body, string says)
     {
-        var script = new Script { Answer = sent => sent.PathAndQuery.Contains("user-group", StringComparison.Ordinal) ? (status, body) : (HttpStatusCode.OK, "{}") };
-        var session = (await Adapter(script).SignIn(3000, "a@b.c", "x", Token)).Value;
+        var session = await Session(Answering("/api/auth/register", status, body));
 
-        var group = await session.AdminGroup(Token);
+        var made = await session.RegisterUser(DedicatedEmail, "the-password-text", Token);
 
-        Assert.Equal(SindriErrors.OnyxKeyFailed.Code, group.Error.Code);
-        Assert.Contains("no default Admin group", group.Error.Message, StringComparison.Ordinal);
-    }
-
-    [Theory, Trait("Lane", "integration")]
-    [InlineData("\"groups\":[{\"id\":2,\"name\":\"Basic\"}]")]
-    [InlineData("\"groups\":[{\"id\":9,\"name\":\"Admin\"}]")]
-    [InlineData("\"groups\":[]")]
-    [InlineData("\"api_key_name\":\"sindri-onyx\"")]
-    public async Task A_key_whose_service_account_is_not_in_the_admin_group_is_an_error_that_names_it_and_never_returns_the_key(string groups)
-    {
-        var body = "{\"api_key\":\"on_secret-value-9\",\"api_key_display\":\"on_secr...e-9\"," + groups + "}";
-        var script = new Script { Answer = sent => sent.PathAndQuery == "/api/admin/api-key" ? (HttpStatusCode.OK, body) : (HttpStatusCode.OK, "{}") };
-        var session = (await Adapter(script).SignIn(3000, "a@b.c", "x", Token)).Value;
-
-        var key = await session.CreateKey("sindri-onyx", 3, Token);
-
-        Assert.Equal(SindriErrors.OnyxKeyFailed.Code, key.Error.Code);
-        Assert.Contains("not in the Admin group", key.Error.Message, StringComparison.Ordinal);
-        Assert.Contains("on_secr...e-9", key.Error.Message, StringComparison.Ordinal);
-        Assert.Contains("delete it", key.Error.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain("on_secret-value-9", key.Error.Message, StringComparison.Ordinal);
+        Assert.Equal(SindriErrors.OnyxKeyFailed.Code, made.Error.Code);
+        Assert.Contains(says, made.Error.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("the-password-text", made.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task A_key_is_an_admin_only_as_a_service_account_with_the_admin_permission()
+    public async Task A_reset_asks_for_the_user_by_email_and_returns_the_new_password_only_to_the_caller()
+    {
+        var script = Answering("/api/password/reset_password", HttpStatusCode.OK, "{\"user_id\":\"u1\",\"new_password\":\"fresh-pass-77\"}");
+        var session = await Session(script);
+
+        var reset = await session.ResetPassword(DedicatedEmail, Token);
+
+        Assert.Equal("fresh-pass-77", reset.Value);
+        Assert.Equal("{\"user_email\":\"sindri@sindri.app\"}", script.Requests.Single(static r => r.PathAndQuery == "/api/password/reset_password").Body);
+    }
+
+    [Theory, Trait("Lane", "integration")]
+    [InlineData(HttpStatusCode.Forbidden, "SND-ONYX-007")]
+    [InlineData(HttpStatusCode.Unauthorized, "SND-ONYX-007")]
+    [InlineData(HttpStatusCode.NotFound, "SND-ONYX-008")]
+    [InlineData(HttpStatusCode.InternalServerError, "SND-ONYX-008")]
+    public async Task A_reset_Onyx_does_not_do_is_007_for_a_non_admin_and_008_otherwise(HttpStatusCode status, string code)
+    {
+        var session = await Session(Answering("/api/password/reset_password", status, "{\"detail\":\"x\"}"));
+
+        Assert.Equal(code, (await session.ResetPassword(DedicatedEmail, Token)).Error.Code);
+    }
+
+    [Theory, Trait("Lane", "integration")]
+    [InlineData("not json")]
+    [InlineData("{\"user_id\":\"u1\",\"new_password\":\"\"}")]
+    public async Task A_reset_answer_without_a_password_is_sindri_onyx_008(string body)
+    {
+        var session = await Session(Answering("/api/password/reset_password", HttpStatusCode.OK, body));
+
+        Assert.Equal(SindriErrors.OnyxKeyFailed.Code, (await session.ResetPassword(DedicatedEmail, Token)).Error.Code);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task Making_a_user_an_admin_patches_the_admin_access_route()
+    {
+        var script = Answering("/api/manage/admin/users/admin-access", HttpStatusCode.OK, "null");
+        var session = await Session(script);
+
+        var made = await session.MakeAdmin(DedicatedEmail, Token);
+
+        Assert.True(made.IsSuccess);
+        var request = script.Requests.Single(static r => r.PathAndQuery == "/api/manage/admin/users/admin-access");
+        Assert.Equal(HttpMethod.Patch, request.Method);
+        Assert.Equal("{\"user_email\":\"sindri@sindri.app\",\"is_admin\":true}", request.Body);
+    }
+
+    [Theory, Trait("Lane", "integration")]
+    [InlineData(HttpStatusCode.Forbidden, "SND-ONYX-007")]
+    [InlineData(HttpStatusCode.Unauthorized, "SND-ONYX-007")]
+    [InlineData(HttpStatusCode.NotFound, "SND-ONYX-008")]
+    [InlineData(HttpStatusCode.PaymentRequired, "SND-ONYX-008")]
+    public async Task A_login_that_may_not_make_admins_is_007_and_any_other_refusal_is_008(HttpStatusCode status, string code)
+    {
+        var session = await Session(Answering("/api/manage/admin/users/admin-access", status, "{}"));
+
+        Assert.Equal(code, (await session.MakeAdmin(DedicatedEmail, Token)).Error.Code);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_token_is_made_unscoped_and_without_expiry_and_comes_back_once()
+    {
+        var script = Answering("/api/user/pats", HttpStatusCode.OK, "{\"id\":4,\"name\":\"sindri-onyx\",\"token\":\"onyx_pat_abc123\",\"token_display\":\"onyx_pat_abc1****x9\",\"scopes\":null}");
+        var session = await Session(script);
+
+        var token = await session.CreateToken("sindri-onyx", Token);
+
+        Assert.Equal("onyx_pat_abc123", token.Value);
+        var request = script.Requests.Single(static r => r.PathAndQuery == "/api/user/pats");
+        Assert.Equal(HttpMethod.Post, request.Method);
+        using var body = JsonDocument.Parse(request.Body);
+        Assert.Equal("sindri-onyx", body.RootElement.GetProperty("name").GetString());
+        Assert.False(body.RootElement.TryGetProperty("scopes", out var scopes) && scopes.ValueKind != JsonValueKind.Null);
+        Assert.False(body.RootElement.TryGetProperty("expiration_days", out var days) && days.ValueKind != JsonValueKind.Null);
+    }
+
+    [Theory, Trait("Lane", "integration")]
+    [InlineData(HttpStatusCode.Forbidden, "SND-ONYX-007")]
+    [InlineData(HttpStatusCode.Unauthorized, "SND-ONYX-007")]
+    [InlineData(HttpStatusCode.InternalServerError, "SND-ONYX-008")]
+    public async Task A_token_Onyx_refuses_is_007_for_a_login_without_the_permission_and_008_otherwise(HttpStatusCode status, string code)
+    {
+        var session = await Session(Answering("/api/user/pats", status, "{}"));
+
+        Assert.Equal(code, (await session.CreateToken("k", Token)).Error.Code);
+    }
+
+    [Theory, Trait("Lane", "integration")]
+    [InlineData("not json")]
+    [InlineData("{\"token\":\"\"}")]
+    [InlineData("{}")]
+    public async Task A_token_answer_without_a_token_is_sindri_onyx_008(string body)
+    {
+        var session = await Session(Answering("/api/user/pats", HttpStatusCode.OK, body));
+
+        var token = await session.CreateToken("k", Token);
+
+        Assert.Equal(SindriErrors.OnyxKeyFailed.Code, token.Error.Code);
+        Assert.Contains("didn't make the token", token.Error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_token_is_the_dedicated_admin_only_for_that_users_email_with_the_admin_permission()
     {
         var accounts = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["Bearer good"] = "{\"account_type\":\"SERVICE_ACCOUNT\",\"effective_permissions\":[\"basic\",\"admin\"]}",
-            ["Bearer basic"] = "{\"account_type\":\"SERVICE_ACCOUNT\",\"effective_permissions\":[\"basic\"]}",
-            ["Bearer human"] = "{\"account_type\":\"STANDARD\",\"effective_permissions\":[\"admin\"]}",
+            ["Bearer good"] = "{\"account_type\":\"STANDARD\",\"email\":\"sindri@sindri.app\",\"effective_permissions\":[\"basic\",\"admin\"]}",
+            ["Bearer basic"] = "{\"account_type\":\"STANDARD\",\"email\":\"sindri@sindri.app\",\"effective_permissions\":[\"basic\"]}",
+            ["Bearer human"] = "{\"account_type\":\"STANDARD\",\"email\":\"someone@example.com\",\"effective_permissions\":[\"admin\"]}",
+            ["Bearer noemail"] = "{\"account_type\":\"STANDARD\",\"effective_permissions\":[\"admin\"]}",
         };
         var script = new Script { Answer = sent => accounts.TryGetValue(sent.Authorization ?? string.Empty, out var body) ? (HttpStatusCode.OK, body) : (HttpStatusCode.Unauthorized, "{}") };
         var adapter = Adapter(script);
 
-        Assert.True((await adapter.KeyIsAdmin(3000, "good", Token)).Value);
-        Assert.False((await adapter.KeyIsAdmin(3000, "basic", Token)).Value);
-        Assert.False((await adapter.KeyIsAdmin(3000, "human", Token)).Value);
-        Assert.False((await adapter.KeyIsAdmin(3000, "stranger", Token)).Value);
+        Assert.True((await adapter.TokenIsAdmin(3000, "good", DedicatedEmail, Token)).Value);
+        Assert.False((await adapter.TokenIsAdmin(3000, "basic", DedicatedEmail, Token)).Value);
+        Assert.False((await adapter.TokenIsAdmin(3000, "human", DedicatedEmail, Token)).Value);
+        Assert.False((await adapter.TokenIsAdmin(3000, "noemail", DedicatedEmail, Token)).Value);
+        Assert.False((await adapter.TokenIsAdmin(3000, "stranger", DedicatedEmail, Token)).Value);
         Assert.All(script.Requests, static r => Assert.Equal("/api/me", r.PathAndQuery));
-    }
-
-    [Fact, Trait("Lane", "integration")]
-    public async Task A_login_that_may_not_make_keys_is_sindri_onyx_007()
-    {
-        var script = new Script { Answer = static sent => sent.PathAndQuery == "/api/admin/api-key" ? (HttpStatusCode.Forbidden, "{}") : (HttpStatusCode.OK, "{}") };
-        var session = (await Adapter(script).SignIn(3000, "a@b.c", "x", Token)).Value;
-
-        Assert.Equal(SindriErrors.OnyxNotAdmin.Code, (await session.CreateKey("k", 3, Token)).Error.Code);
-    }
-
-    [Theory, Trait("Lane", "integration")]
-    [InlineData(HttpStatusCode.InternalServerError, "{}")]
-    [InlineData(HttpStatusCode.OK, "not json")]
-    [InlineData(HttpStatusCode.OK, "{\"api_key\":\"\"}")]
-    public async Task A_key_Onyx_does_not_make_is_sindri_onyx_008(HttpStatusCode status, string body)
-    {
-        var script = new Script { Answer = sent => sent.PathAndQuery == "/api/admin/api-key" ? (status, body) : (HttpStatusCode.OK, "{}") };
-        var session = (await Adapter(script).SignIn(3000, "a@b.c", "x", Token)).Value;
-
-        var key = await session.CreateKey("k", 3, Token);
-
-        Assert.Equal(SindriErrors.OnyxKeyFailed.Code, key.Error.Code);
-        Assert.Contains("didn't make the key", key.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "integration")]
@@ -241,7 +292,7 @@ public sealed class HttpOnyxProvisioningTests
         var script = new Script { Hang = static sent => sent.PathAndQuery == "/api/me" };
         var adapter = new HttpOnyxProvisioning(() => script, requestTimeout: TimeSpan.FromMilliseconds(100));
 
-        var result = await adapter.KeyIsAdmin(3000, "k", Token);
+        var result = await adapter.TokenIsAdmin(3000, "k", DedicatedEmail, Token);
 
         Assert.Equal(SindriErrors.OnyxKeyFailed.Code, result.Error.Code);
         Assert.Contains("didn't answer GET /api/me", result.Error.Message, StringComparison.Ordinal);
@@ -252,7 +303,7 @@ public sealed class HttpOnyxProvisioningTests
     {
         var script = new Script { Refuse = static _ => true };
 
-        var admin = await Adapter(script).KeyIsAdmin(3000, "k", Token);
+        var admin = await Adapter(script).TokenIsAdmin(3000, "k", DedicatedEmail, Token);
         var login = await Adapter(script).SignIn(3000, "a@b.c", "x", Token);
 
         Assert.Contains("couldn't be reached", admin.Error.Message, StringComparison.Ordinal);
@@ -266,7 +317,7 @@ public sealed class HttpOnyxProvisioningTests
         var uris = new List<Uri>();
         var recording = new HttpOnyxProvisioning(() => new Capture(uris, script));
 
-        _ = await recording.KeyIsAdmin(3456, "k", Token);
+        _ = await recording.TokenIsAdmin(3456, "k", DedicatedEmail, Token);
 
         Assert.Equal(new Uri("http://127.0.0.1:3456/api/me"), Assert.Single(uris));
     }

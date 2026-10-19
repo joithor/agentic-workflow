@@ -3,7 +3,7 @@ using Aw.Kernel;
 namespace Aw.Sindri.Core.Onyx;
 
 /// <summary>
-/// The setup-only requests of spec §5.2, used by `sindri onyx up` in the human's process and by nothing else. Its allowlist is separate from the query adapter's (which stays at five requests);
+/// The setup-only requests of spec §5.2 (the dedicated user and its token, docs/sindri/onyx.md section 7), used by `sindri onyx up` in the human's process and by nothing else. Its allowlist is separate from the query adapter's (which stays at five requests) and lists seven;
 /// neither type uses the other. A request off the list is refused before it is sent. The login cookie lives in the session object only.
 /// </summary>
 public interface IOnyxProvisioning
@@ -16,10 +16,11 @@ public interface IOnyxProvisioning
     /// <returns>The session, or SND-ONYX-008 when the login is refused.</returns>
     public ValueTask<Result<IOnyxSession>> SignIn(int port, string email, string password, CancellationToken cancellationToken);
 
-    /// <summary>Asks whether a key is an admin service account (`GET /api/me` with the key).</summary>
+    /// <summary>Asks whether a token is the dedicated user's admin token (`GET /api/me` with the token as a Bearer).</summary>
     /// <param name="port">The loopback port.</param>
-    /// <param name="key">The API key.</param>
+    /// <param name="token">The personal access token.</param>
+    /// <param name="email">The email of the user the token must belong to.</param>
     /// <param name="cancellationToken">Cancels the request.</param>
-    /// <returns>True for an admin service account, false when the key is refused or isn't an admin; an error when Onyx can't be reached.</returns>
-    public ValueTask<Result<bool>> KeyIsAdmin(int port, string key, CancellationToken cancellationToken);
+    /// <returns>True when Onyx knows the token as that user with the admin permission, false when it refuses the token or the account is another or not an admin; an error when Onyx can't be reached.</returns>
+    public ValueTask<Result<bool>> TokenIsAdmin(int port, string token, string email, CancellationToken cancellationToken);
 }

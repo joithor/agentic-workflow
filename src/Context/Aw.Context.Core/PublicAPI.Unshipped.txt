@@ -5999,3 +5999,4 @@ static Aw.Context.Core.Engine.ClusterLimits.operator !=(Aw.Context.Core.Engine.C
 static Aw.Context.Core.Engine.ClusterLimits.operator ==(Aw.Context.Core.Engine.ClusterLimits? left, Aw.Context.Core.Engine.ClusterLimits? right) -> bool
 static readonly Aw.Context.Core.ContextErrors.GraphifyLimitInvalid -> Aw.Kernel.ErrorDefinition!
 static Aw.Context.Core.Eval.Backtest.AsOfMapCache.WithLimits(string! key, Aw.Context.Core.Engine.ClusterLimits! limits) -> string!
+const Aw.Context.Core.Onyx.OnyxSettings.DedicatedAccountEmail = "sindri@sindri.app" -> string!

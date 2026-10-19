@@ -244,7 +244,6 @@ public static class SindriFeaturesServiceCollectionExtensions
         .AddScoped<IOnyxNotices, OnyxNotices>()
         .AddScoped<IService<OnyxEnsureRequest, OnyxEnsureResponse>, OnyxEnsureService>()
         .AddScoped<OnyxKeyMinter>()
-        .AddScoped<OnyxAdminGroup>()
         .AddScoped<IService<OnyxAccountRequest, OnyxAccountResponse>, OnyxAccountService>()   // Onyx P3: sign-up hand-off, Sindri's key, the profile section
         .AddScoped<IService<OnyxDownRequest, OnyxDownResponse>, OnyxDownService>();
 

@@ -10,6 +10,12 @@ namespace Aw.Context.Core.Onyx;
 /// </summary>
 public sealed partial record OnyxSettings
 {
+    /// <summary>
+    /// The email of the dedicated Onyx user that `sindri onyx up` makes for Sindri (an admin, so the search route works, on its own account rather than a person's). Onyx Community Edition has no service-account keys
+    /// (their route is Business tier), so Sindri's token is a personal access token of this user, and doctor tells it from a person's account by this email. A manual setup names its dedicated user the same.
+    /// </summary>
+    public const string DedicatedAccountEmail = "sindri@sindri.app";
+
     private const string UrlKey = "context.sources.onyx.url";
     private const string TokenKey = "context.sources.onyx.token";
     private const string VersionKey = "context.sources.onyx.version";

@@ -2,11 +2,13 @@ using System.Text.Json.Serialization;
 
 namespace Aw.Sindri.Infrastructure.Onyx;
 
-/// <summary>This adapter's own JSON context for Onyx's reply, whose record is internal (used only through AwJson.CreateOptions).</summary>
+/// <summary>This adapter's own JSON context for Onyx's requests and replies, whose records are internal (used only through AwJson.CreateOptions).</summary>
 [JsonSerializable(typeof(OnyxVersionWire))]
-[JsonSerializable(typeof(OnyxGroupWire[]))]
-[JsonSerializable(typeof(OnyxKeyWire))]
-[JsonSerializable(typeof(OnyxGroupRefWire))]
+[JsonSerializable(typeof(OnyxPatWire))]
 [JsonSerializable(typeof(OnyxMeWire))]
-[JsonSerializable(typeof(OnyxKeyRequestWire))]
+[JsonSerializable(typeof(OnyxRegisterRequestWire))]
+[JsonSerializable(typeof(OnyxUserEmailWire))]
+[JsonSerializable(typeof(OnyxResetWire))]
+[JsonSerializable(typeof(OnyxAdminAccessWire))]
+[JsonSerializable(typeof(OnyxPatRequestWire))]
 internal sealed partial class OnyxHealthJsonContext : JsonSerializerContext;

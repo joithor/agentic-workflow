@@ -1,3 +1,4 @@
+using Aw.Context.Core.Onyx;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Features.OnyxAccount;
@@ -9,7 +10,7 @@ namespace Aw.Sindri.Tests.OnyxAccount;
 public sealed class OnyxAccountTests
 {
     private const string LoginSecret = "owner-login-value-0042";
-    private const string MadeKey = "sindri-key-0123456789";
+    private const string MadeKey = "onyx_pat_sindri-0123456789";
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
@@ -28,8 +29,6 @@ public sealed class OnyxAccountTests
 
         public FakeOnyxProvisioning Provisioning { get; } = new();
 
-        public FakeOnyxDatabase Database { get; } = new();
-
         public FakeSecretWriter Secrets { get; } = new();
 
         public FakeOnyxProfileWriter Profile { get; } = new();
@@ -37,13 +36,13 @@ public sealed class OnyxAccountTests
         public CapturingOnyxProgress Progress { get; } = new();
 
         public OnyxAccountService Service(FakeOnyxPrompts? prompts = null)
-            => new(Workspace, prompts ?? Prompts, Browser, new OnyxKeyMinter(prompts ?? Prompts, Provisioning, Secrets, Secrets, new OnyxAdminGroup(Database, new OnyxFacts(new FakeContainerRuntime(FakeContainerRuntime.Healthy), new FakeHostProbes(), new FakeSindriHome(OnyxUpRig.Home)))), Profile, Progress);
+            => new(Workspace, prompts ?? Prompts, Browser, new OnyxKeyMinter(prompts ?? Prompts, Provisioning, Secrets, Secrets, new FakeRandomHex()), Profile, Progress);
 
         public async Task<Kernel.Result<OnyxAccountResponse>> Run() => await Service().Handle(new OnyxAccountRequest(3000, "v4.9.0"), Token);
     }
 
     [Fact, Trait("Lane", "unit")]
-    public async Task A_first_run_opens_sign_up_mints_and_stores_the_key_and_writes_the_profile()
+    public async Task A_first_run_opens_sign_up_makes_the_dedicated_admin_user_and_stores_its_token_and_writes_the_profile()
     {
         var rig = new Rig();
 
@@ -56,8 +55,12 @@ public sealed class OnyxAccountTests
         Assert.Equal(new Uri("http://127.0.0.1:3000/auth/signup"), Assert.Single(rig.Browser.Opened));
         Assert.Equal(("http://127.0.0.1:3000", "keychain:onyx/sindri-onyx", "v4.9.0"), rig.Profile.Section);
         Assert.Equal(MadeKey, rig.Secrets.Stored["keychain:onyx/sindri-onyx"]);
-        Assert.Equal(1, rig.Provisioning.LoggedOut);
+        Assert.Equal(2, rig.Provisioning.LoggedOut);   // the owner's session and the dedicated user's
         Assert.Equal("keychain:onyx/sindri-onyx", rig.Workspace.State!.KeyPointer);
+        Assert.Contains(OnyxSettings.DedicatedAccountEmail, rig.Provisioning.Registered.Keys, StringComparer.Ordinal);
+        Assert.Contains(OnyxSettings.DedicatedAccountEmail, rig.Provisioning.Admins, StringComparer.Ordinal);
+        Assert.Equal(OnyxSettings.DedicatedAccountEmail, rig.Provisioning.Made[MadeKey]);
+        Assert.Equal(0, rig.Provisioning.Resets);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -70,6 +73,7 @@ public sealed class OnyxAccountTests
         var shown = string.Join('\n', rig.Progress.Lines) + string.Join(',', rig.Workspace.State!.Steps.Values) + rig.Workspace.State.KeyPointer + response.Url + response.KeyPointer + string.Join(',', response.Steps.Select(static s => s.Step + s.Outcome));
         Assert.DoesNotContain(LoginSecret, shown, StringComparison.Ordinal);
         Assert.DoesNotContain(MadeKey, shown, StringComparison.Ordinal);
+        Assert.DoesNotContain(rig.Provisioning.Registered[OnyxSettings.DedicatedAccountEmail], shown, StringComparison.Ordinal);   // the dedicated user's password is made, used and dropped
         Assert.Equal(1, rig.Prompts.SecretsAsked);
     }
 
@@ -85,7 +89,7 @@ public sealed class OnyxAccountTests
         Assert.Equal([OnyxStepOutcome.Skipped, OnyxStepOutcome.Skipped, OnyxStepOutcome.Skipped], again.Steps.Select(static s => s.Outcome));
         Assert.False(again.ProfileChanged);
         Assert.Equal(asked, rig.Prompts.Asked.Count);
-        Assert.Equal(1, rig.Provisioning.SignIns);
+        Assert.Equal(2, rig.Provisioning.SignIns);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -101,7 +105,9 @@ public sealed class OnyxAccountTests
 
         Assert.Equal(OnyxStepOutcome.Skipped, again.Steps[0].Outcome);
         Assert.Equal(OnyxStepOutcome.Ran, again.Steps[1].Outcome);
-        Assert.Equal(2, rig.Provisioning.SignIns);
+        Assert.Equal(4, rig.Provisioning.SignIns);
+        Assert.Equal(1, rig.Provisioning.Resets);   // the dedicated user already existed: its password was reset, not a second user made
+        _ = Assert.Single(rig.Provisioning.Registered);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -123,28 +129,29 @@ public sealed class OnyxAccountTests
     public async Task A_login_that_is_not_an_admin_is_sindri_onyx_007_and_stores_nothing()
     {
         var rig = new Rig();
-        rig.Provisioning.GroupError = SindriErrors.OnyxNotAdmin.With("not an admin");
+        rig.Provisioning.AdminError = SindriErrors.OnyxNotAdmin.With("not an admin");
 
         var result = await rig.Run();
 
         Assert.Equal(SindriErrors.OnyxNotAdmin.Code, result.Error.Code);
         Assert.Empty(rig.Secrets.Stored);
         Assert.Null(rig.Profile.Section);
-        Assert.Equal(1, rig.Provisioning.LoggedOut);   // the session still logged out
+        Assert.Equal(1, rig.Provisioning.LoggedOut);   // the owner's session still logged out; no dedicated login was made
+        Assert.Empty(rig.Provisioning.Made);
     }
 
     [Fact, Trait("Lane", "unit")]
     public async Task A_key_onyx_does_not_treat_as_an_admin_is_sindri_onyx_008()
     {
         var rig = new Rig();
-        rig.Provisioning.KeyIsAdminAnswer = false;
+        rig.Provisioning.TokenIsAdminAnswer = false;
 
         var result = await rig.Run();
 
         Assert.Equal(SindriErrors.OnyxKeyFailed.Code, result.Error.Code);
         Assert.Empty(rig.Secrets.Stored);
-        Assert.Contains("sindri-onyx", result.Error.Message, StringComparison.Ordinal);   // the key made in Onyx is left there: the owner is told
-        Assert.Contains("delete it", result.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("sindri-onyx", result.Error.Message, StringComparison.Ordinal);   // the token made in Onyx is left there: the owner is told
+        Assert.Contains("nobody holding it", result.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -179,7 +186,7 @@ public sealed class OnyxAccountTests
 
         Assert.Equal(SindriErrors.OnyxSecretNotStored.Code, result.Error.Code);
         Assert.Null(rig.Profile.Section);
-        Assert.Contains("delete it", result.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("nobody holding it", result.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -192,7 +199,7 @@ public sealed class OnyxAccountTests
 
         _ = await rig.Run();
 
-        Assert.Contains(rig.Progress.Lines, static l => l.StartsWith("key: the recorded key no longer works", StringComparison.Ordinal) && l.Contains("delete it", StringComparison.Ordinal));
+        Assert.Contains(rig.Progress.Lines, static l => l.StartsWith("key: the recorded key no longer works", StringComparison.Ordinal) && l.Contains("nobody holding it", StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -250,7 +257,7 @@ public sealed class OnyxAccountTests
         Assert.Equal(OnyxStepOutcome.Skipped, again.Steps[0].Outcome);
         Assert.Equal(OnyxStepOutcome.Skipped, again.Steps[1].Outcome);
         Assert.Equal(OnyxStepOutcome.Ran, again.Steps[2].Outcome);
-        Assert.Equal(1, rig.Provisioning.SignIns);
+        Assert.Equal(2, rig.Provisioning.SignIns);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -291,12 +298,12 @@ public sealed class OnyxAccountTests
     {
         var rig = new Rig();
         _ = await rig.Run();
-        rig.Provisioning.KeyIsAdminAnswer = false;
+        rig.Provisioning.TokenIsAdminAnswer = false;
         rig.Prompts.Answer("owner@example.com", LoginSecret);
 
         var result = await rig.Run();
 
-        Assert.Equal(2, rig.Provisioning.SignIns);   // the stored key was checked, found wanting, and a new one asked for
+        Assert.Equal(4, rig.Provisioning.SignIns);   // the stored key was checked, found wanting, and a new one made
         Assert.Equal(SindriErrors.OnyxKeyFailed.Code, result.Error.Code);   // the fake still rejects the new one
     }
 }
