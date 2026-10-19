@@ -10,6 +10,7 @@ internal static class BuildServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <returns>The same collection.</returns>
     internal static IServiceCollection AddBuildSlices(this IServiceCollection services) => services
+        .AddBlockRuntime<BuildAmendStep>()
         .AddBlockRuntime<BuildPrepareStep>()
         .AddBlockRuntime<PhaseDriftStep>();
 }

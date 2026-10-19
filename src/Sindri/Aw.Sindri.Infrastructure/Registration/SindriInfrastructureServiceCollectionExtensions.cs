@@ -63,7 +63,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
         services.AddSingleton<IRunDiff, GitRunDiff>().AddSingleton<IAgentSessions, LedgerAgentSessions>();
 
     private static IServiceCollection AddScopingInfrastructure(this IServiceCollection services, Func<string, string?> environment) =>
-        services.AddSingleton<IPackets>(_ => new AwPacketsTool(new ProcessToolRunner(), environment))
+        services.AddSingleton<IPackets>(_ => new AwPacketsTool(new ProcessToolRunner(), environment)).AddSingleton<IPacketFiles, DiskPacketFiles>()
             .AddSingleton<IScopePacketStore>(sp => new ScopePacketStore(sp.GetRequiredService<SindriSettings>(), sp.GetRequiredService<IPackets>())).AddSingleton<IBriefFiles, BriefFiles>().AddSingleton<IRunArea, DiskRunArea>();
 
     private static IServiceCollection AddSindriAdapters(this IServiceCollection services, Func<string, string?> environment)

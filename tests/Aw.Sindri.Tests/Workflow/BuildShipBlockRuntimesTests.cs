@@ -23,6 +23,8 @@ public sealed class BuildShipBlockRuntimesTests
 {
     [Theory]
     [InlineData("workflow.build.yaml", "prepare", "step.build.prepare")]
+    [InlineData("workflow.build.yaml", "amend", "step.build.amend")]
+    [InlineData("workflow.ship.yaml", "freeze", "step.ship.freeze")]
     [InlineData("workflow.ship.yaml", "return", "step.ship.return")]
     [InlineData("workflow.phase.yaml", "drift", "step.phase.drift")]
     public void The_Step_opens_a_block_run_not_a_desk_task(string file, string state, string step)
