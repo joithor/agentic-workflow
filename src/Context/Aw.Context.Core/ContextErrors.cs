@@ -108,8 +108,8 @@ public static class ContextErrors
 
     /// <summary>
     /// SND-CONTEXT-050: Onyx refused the key (HTTP 403): it is missing, wrong, or lacks the admin role that
-    /// 'POST /api/admin/search' needs (spec §8.8). Fix: create an admin key for a dedicated service account, store it
-    /// behind 'context.sources.onyx.token', and approve the profile again.
+    /// 'POST /api/admin/search' needs (spec §8.8). Fix: use a personal access token of a dedicated admin user (or a service-account key),
+    /// store it behind 'context.sources.onyx.token', and approve the profile again.
     /// </summary>
     public static readonly ErrorDefinition OnyxKeyRefused = new("SND-CONTEXT-050", ErrorKind.Forbidden, "Onyx refused the key: it is missing, wrong, or lacks the admin role the search route needs");
 
@@ -123,10 +123,11 @@ public static class ContextErrors
     public static readonly ErrorDefinition OnyxDocumentNotFound = new("SND-CONTEXT-052", ErrorKind.NotFound, "Onyx has no such document");
 
     /// <summary>
-    /// SND-CONTEXT-053: the Onyx key is an admin key of a person's account, not of a dedicated service account (spec
-    /// §8.8). Doctor shows it as degraded. Fix: create a service account for Sindri alone and use its key.
+    /// SND-CONTEXT-053: the Onyx token is an admin token of a person's account, not of Sindri's dedicated user
+    /// (OnyxSettings.DedicatedAccountEmail, the user `sindri onyx up` makes, a STANDARD account) or a service account (spec
+    /// §8.8). Doctor shows it as degraded. Fix: use a token of a dedicated admin user for Sindri alone.
     /// </summary>
-    public static readonly ErrorDefinition OnyxKeyNotServiceAccount = new("SND-CONTEXT-053", ErrorKind.Forbidden, "The Onyx key doesn't belong to a dedicated service account");
+    public static readonly ErrorDefinition OnyxKeyNotServiceAccount = new("SND-CONTEXT-053", ErrorKind.Forbidden, "The Onyx key doesn't belong to Sindri's dedicated account");
 
     /// <summary>
     /// SND-CONTEXT-055: Onyx isn't on a loopback address, or its version differs from the pinned one (spec §8.8). The
