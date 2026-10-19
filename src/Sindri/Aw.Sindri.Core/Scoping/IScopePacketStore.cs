@@ -9,7 +9,7 @@ public interface IScopePacketStore
     /// <summary>The canonical hash ('sha256:…') of the instance's candidate packet directory, computed now.</summary>
     /// <param name="instance">The instance.</param>
     /// <param name="cancellationToken">Cancels the hash.</param>
-    /// <returns>The hash; SND-ITEM-404 when the run area holds no packet; SND-SCOPING-007 when the hash tool failed.</returns>
+    /// <returns>The hash; SND-ITEM-404 when the run area holds no packet; SND-SCOPING-008 when the hash tool is missing, failed or timed out.</returns>
     public ValueTask<Result<string>> Hash(WorkflowInstanceId instance, CancellationToken cancellationToken);
 
     /// <summary>The text of one file of the candidate packet; the name is one of the packet's files, never a path.</summary>

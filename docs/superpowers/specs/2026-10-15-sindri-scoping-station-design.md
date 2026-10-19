@@ -689,6 +689,8 @@ disabled (still focusable) and reads "Available once the evidence step assembles
 | `SND-SCOPING-004` | `read-brief` path outside the repo root and notes dir, or under a denied glob | Name a file the brief may come from |
 | `SND-SCOPING-005` | `read-tracker` with no tracker source configured | Configure `context.sources.<name>` or start from a brief |
 | `SND-SCOPING-006` | `scoping show` on an instance whose run area was purged and whose packet was never frozen | Start a new scoping |
+| `SND-SCOPING-007` | API9: the packet directory no longer hashes to the `{hash}` asked for (a revise rewrote it) | Read the instance's current `fact:scopePacket` |
+| `SND-SCOPING-008` | API9: `aw-packets hash` is missing, failed or timed out (unavailable, 503) | Install `aw-packets` or set `AW_PACKETS_BIN` |
 
 Reader failures that aren't `empty` (a source down, a merge base not found on a shallow clone) are `step.failed`, and
 the instance parks with the code and reason.

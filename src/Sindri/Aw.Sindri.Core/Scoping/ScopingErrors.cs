@@ -20,7 +20,7 @@ public static class ScopingErrors
     /// <summary>SND-SCOPING-006: 'scoping show' on an instance whose run area was purged and whose packet was never frozen.</summary>
     public static readonly ErrorDefinition PacketPurged = new("SND-SCOPING-006", ErrorKind.NotFound, "The scope packet is gone and was never frozen");
 
-    /// <summary>SND-SCOPING-007: a packet file asked for by a hash the packet directory no longer has (a revise rewrote it, or the hash tool failed).</summary>
+    /// <summary>SND-SCOPING-007: a packet file asked for by a hash the packet directory no longer has (a revise rewrote it); a hash tool failure is SND-SCOPING-008.</summary>
     public static readonly ErrorDefinition PacketChanged = new("SND-SCOPING-007", ErrorKind.Conflict, "The packet changed since it was hashed");
 
     /// <summary>SND-SCOPING-008: the hash tool (aw-packets) is missing or failed, so a packet file cannot be checked.</summary>
