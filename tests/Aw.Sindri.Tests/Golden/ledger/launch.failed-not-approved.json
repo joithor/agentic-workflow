@@ -8,5 +8,8 @@
     "reason": "not-approved",
     "current": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
     "approved": []
-  }
+  },
+  "instance": null,
+  "state": null,
+  "attempt": null
 }

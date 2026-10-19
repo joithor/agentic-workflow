@@ -2,6 +2,7 @@ using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.ApiGoldens;
 
@@ -14,6 +15,7 @@ namespace Aw.Sindri.Tests.Launch;
 public sealed class LaunchEventGoldenTests
 {
     private static readonly DateTimeOffset _at = new(2026, 10, 18, 9, 30, 0, TimeSpan.Zero);
+    private static readonly InstanceAddress _instance = InstanceAddress.From("ITM-00000000000000000000000000000001/spec/1");
     private static readonly AgentId _codex = AgentId.From("codex");
     private static readonly SessionId _session = SessionId.From("0a1b2c3d-0000-4000-8000-000000000001");
     private static readonly string[] _attach = ["tmux", "-L", "sindri-launch", "attach", "-t", "=snd-1"];
@@ -23,10 +25,12 @@ public sealed class LaunchEventGoldenTests
         "item.open-requested",
         "launch.started-opened",
         "launch.started-viewer-failed",
+        "launch.started-engine",
         "launch.failed-host-stage",
         "launch.failed-hash-changed",
         "launch.failed-not-approved",
         "launch.failed-plain",
+        "launch.failed-engine",
         "launch.viewer-attached",
         "launch.session-reported",
         "session.ended-exit-with-tokens",
@@ -34,6 +38,7 @@ public sealed class LaunchEventGoldenTests
         "session.usage",
         "launch.probed",
         "launch.started-public",
+        "launch.started-public-engine",
     ];
 
     private static string Of<T>(SliceHarness h, string type, T payload) => ApiGolden.Reindent(h.Events.Entry(type, payload, "key", A.FirstItemId.Value).Envelope.Payload);
@@ -55,6 +60,10 @@ public sealed class LaunchEventGoldenTests
             new LaunchViewer("exec-template", "kitty", ViewerOutcomeKind.Failed, "SND-LAUNCH-001", "kitty: no display"), _attach, CatalogSource.Override, "sha256:" + new string('b', 64))),
         "launch.failed-host-stage" => Of(h, EventTypes.LaunchFailed,
             new LaunchFailed(A.FirstLaunchId, A.FirstItemId, "SND-LAUNCH-009", "tmux did not start the session within 4 s", new LaunchFailureDetail(LaunchStage.Host))),
+        "launch.started-engine" => Of(h, EventTypes.LaunchStarted, new LaunchStarted(A.FirstLaunchId, A.FirstItemId, LaunchMode.Open, _codex, _session, "sindri " + A.FirstItemId.Value,
+            new LaunchViewer("none", Label: null, ViewerOutcomeKind.Skipped, Code: null, Detail: null), _attach, CatalogSource.Builtin, "sha256:" + new string('a', 64), _instance, "build", 2)),
+        "launch.failed-engine" => Of(h, EventTypes.LaunchFailed,
+            new LaunchFailed(A.FirstLaunchId, A.FirstItemId, "SND-LAUNCH-009", "tmux did not start the session within 4 s", new LaunchFailureDetail(LaunchStage.Host), _instance, "build", 2)),
         "launch.failed-not-approved" => Of(h, EventTypes.LaunchFailed, new LaunchFailed(A.FirstLaunchId, A.FirstItemId, "SND-LAUNCH-012", "aider isn't approved for unattended Steps",
             new LaunchFailureDetail(Stage: null, Reason: "not-approved", Current: "sha256:" + new string('c', 64), Approved: []))),
         "launch.failed-hash-changed" => Of(h, EventTypes.LaunchFailed, new LaunchFailed(A.FirstLaunchId, A.FirstItemId, "SND-LAUNCH-012", "aider isn't approved for unattended Steps",
@@ -72,6 +81,8 @@ public sealed class LaunchEventGoldenTests
             [new RepoFacts(RepoName.From("demo"), Present: true)])),
         "launch.started-public" => Public(h, new LaunchStarted(A.FirstLaunchId, A.FirstItemId, LaunchMode.Open, _codex, _session, "sindri " + A.FirstItemId.Value,
             new LaunchViewer("exec-template", "kitty", ViewerOutcomeKind.Failed, "SND-LAUNCH-001", "kitty: no display"), _attach, CatalogSource.Builtin, "sha256:" + new string('a', 64))),
+        "launch.started-public-engine" => Public(h, new LaunchStarted(A.FirstLaunchId, A.FirstItemId, LaunchMode.Open, _codex, _session, "sindri " + A.FirstItemId.Value,
+            new LaunchViewer("none", Label: null, ViewerOutcomeKind.Skipped, Code: null, Detail: null), _attach, CatalogSource.Builtin, "sha256:" + new string('a', 64), _instance, "build", 2)),
         _ => throw new ArgumentOutOfRangeException(nameof(name)),
     };
 

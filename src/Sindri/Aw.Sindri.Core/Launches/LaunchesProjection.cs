@@ -163,6 +163,7 @@ internal sealed class LaunchesProjection(EventFactory events) : IProjection
                 Attach = started.Attach,
                 CatalogSource = started.CatalogSource,
                 ArgvHash = started.ArgvHash,
+                Step = new LaunchStep(started.Instance, started.State, started.Attempt),
                 Sequence = recorded.Sequence,
             };
     }
@@ -186,6 +187,7 @@ internal sealed class LaunchesProjection(EventFactory events) : IProjection
                 Code = failed.Code,
                 Message = SafeText.Escape(failed.Message),
                 Stage = failed.Stage,
+                Step = new LaunchStep(failed.Instance, failed.State, failed.Attempt),
                 Sequence = recorded.Sequence,
             };
     }

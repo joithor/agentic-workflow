@@ -1933,6 +1933,7 @@ Aw.Sindri.Core.Secrets.SecretScheme.Env = 1 -> Aw.Sindri.Core.Secrets.SecretSche
 Aw.Sindri.Core.Secrets.SecretScheme.File = 2 -> Aw.Sindri.Core.Secrets.SecretScheme
 Aw.Sindri.Core.Secrets.SecretScheme.Keychain = 3 -> Aw.Sindri.Core.Secrets.SecretScheme
 Aw.Sindri.Core.Secrets.SecretScheme.OnePassword = 4 -> Aw.Sindri.Core.Secrets.SecretScheme
+Aw.Sindri.Core.Sessions.SessionLaunchSteps
 Aw.Sindri.Core.Sessions.SessionRow.Launch.get -> Aw.Sindri.Core.Launches.LaunchStep?
 Aw.Sindri.Core.Sessions.SessionRow.Launch.init -> void
 Aw.Sindri.Core.SindriErrors
@@ -7402,6 +7403,8 @@ static Aw.Sindri.Core.Secrets.SecretPointer.IsPointer(string! name) -> bool
 static Aw.Sindri.Core.Secrets.SecretPointer.Parse(string! text) -> Aw.Kernel.Result<Aw.Sindri.Core.Secrets.SecretPointer!>!
 static Aw.Sindri.Core.Secrets.SecretPointer.operator !=(Aw.Sindri.Core.Secrets.SecretPointer? left, Aw.Sindri.Core.Secrets.SecretPointer? right) -> bool
 static Aw.Sindri.Core.Secrets.SecretPointer.operator ==(Aw.Sindri.Core.Secrets.SecretPointer? left, Aw.Sindri.Core.Secrets.SecretPointer? right) -> bool
+static Aw.Sindri.Core.Sessions.SessionLaunchSteps.Of(Aw.Sindri.Core.Launches.ILaunchViews! launches, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Sessions.ObservedSession!>! sessions, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Engine.LaunchId, Aw.Sindri.Core.Launches.LaunchStep!>!>!>
+static Aw.Sindri.Core.Sessions.SessionRows.Of(Aw.Sindri.Core.Sessions.ObservedSession! session, Aw.Sindri.Core.Launch.AgentEntry? entry, string? repoPath, bool human, Aw.Sindri.Core.Launches.LaunchStep? launch = null) -> Aw.Sindri.Core.Sessions.SessionRow!
 static Aw.Sindri.Core.SindriErrors.All.get -> System.Collections.Generic.IReadOnlyList<Aw.Kernel.ErrorDefinition!>!
 static Aw.Sindri.Core.Text.SafeText.Clean(Aw.Sindri.Core.Text.ITextScrubber! scrubber, string! text, int max) -> string!
 static Aw.Sindri.Core.Text.SafeText.CleanBlock(Aw.Sindri.Core.Text.ITextScrubber! scrubber, string! text, int max) -> string!
@@ -11459,7 +11462,6 @@ static readonly Aw.Sindri.Core.SindriErrors.SessionNotFound -> Aw.Kernel.ErrorDe
 Aw.Sindri.Core.Sessions.SessionRows
 Aw.Sindri.Core.Sessions.StateHistoryRules
 const Aw.Sindri.Core.Sessions.StateHistoryRules.Cap = 20 -> int
-static Aw.Sindri.Core.Sessions.SessionRows.Of(Aw.Sindri.Core.Sessions.ObservedSession! session, Aw.Sindri.Core.Launch.AgentEntry? entry, string? repoPath, bool human) -> Aw.Sindri.Core.Sessions.SessionRow!
 static Aw.Sindri.Core.Sessions.SessionRows.Resume(Aw.Sindri.Core.Sessions.ObservedSession! session, Aw.Sindri.Core.Launch.AgentEntry? entry) -> System.Collections.Generic.IReadOnlyList<string!>?
 static Aw.Sindri.Core.Sessions.SessionRows.SeesHumanFields(Aw.Sindri.Core.Commands.CallerContext! caller) -> bool
 static Aw.Sindri.Core.Sessions.SessionRows.Unavailable(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Sessions.SessionProblem!>! problems) -> Aw.Kernel.Error?

@@ -92,7 +92,15 @@ internal sealed class ProcessLaunch(LaunchOutcomes outcomes, TakeoverWait takeov
 
         return result is StartedLaunch started
             ? await Record(grant, plan, started, cancellationToken).ConfigureAwait(false)
-            : await Fail(grant, pending, ((FailedLaunch)result).Error, ((FailedLaunch)result).Stage, cancellationToken).ConfigureAwait(false);
+            : await Fail(grant, plan, (FailedLaunch)result, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>The launcher refused or lost the start: the failure says which instance, Step and attempt the plan was for.</summary>
+    private async ValueTask<Result<bool>> Fail(LeaseGrant grant, LaunchRequest plan, FailedLaunch failed, CancellationToken cancellationToken)
+    {
+        work.ProbeSoon();
+        var appended = await outcomes.Failed(grant, plan, failed.Error, failed.Stage, cancellationToken).ConfigureAwait(false);
+        return appended.IsError ? appended.Error : false;
     }
 
     private async ValueTask<Result<bool>> Record(LeaseGrant grant, LaunchRequest plan, StartedLaunch started, CancellationToken cancellationToken)

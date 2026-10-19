@@ -77,7 +77,8 @@ internal sealed class LaunchOutcomes(ILedgerStore ledger, EventFactory events, I
         ArgumentNullException.ThrowIfNull(started);
         var shown = await ViewerOf(started.Viewer, request.Attended, cancellationToken).ConfigureAwait(false);
         return await Recorded(request.Launch, AppendStarted(grant,
-            new LaunchStarted(request.Launch, request.Item, request.Mode, request.Agent, SessionIdOf(started), TabTitle(request.Item), shown, started.Attach, started.CatalogSource, started.ArgvHash),
+            new LaunchStarted(request.Launch, request.Item, request.Mode, request.Agent, SessionIdOf(started), TabTitle(request.Item), shown, started.Attach, started.CatalogSource, started.ArgvHash,
+                request.Instance, request.Step?.Ref.State, request.Run?.Number),
             cancellationToken)).ConfigureAwait(false);
     }
 
@@ -125,7 +126,8 @@ internal sealed class LaunchOutcomes(ILedgerStore ledger, EventFactory events, I
     {
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(error);
-        return Failed(grant, new LaunchFailed(request.Launch, request.Item, error.Code, error.Message, LaunchFailureDetail.Of(error, stage)), cancellationToken);
+        return Failed(grant, new LaunchFailed(request.Launch, request.Item, error.Code, error.Message, LaunchFailureDetail.Of(error, stage),
+            request.Instance, request.Step?.Ref.State, request.Run?.Number), cancellationToken);
     }
 
     /// <summary>Records that a client attached to an 'unconfirmed' launch's session.</summary>
