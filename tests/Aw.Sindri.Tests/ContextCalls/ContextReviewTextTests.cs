@@ -74,6 +74,35 @@ public sealed class ContextReviewTextTests
         Assert.Contains("skipped: one skipped: no match", text, StringComparison.Ordinal);
     }
 
+    // The owner's apply skipped 5.7k links whose feature the same file rejected: one line each buried the answer. Past a handful the
+    // skipped lines are counted per reason, with a few of their ids, and --json carries every one.
+    [Fact, Trait("Lane", "unit")]
+    public void Many_skipped_entries_are_counted_per_reason_with_a_few_examples()
+    {
+        var skipped = Enumerable.Range(0, 5_737).Select(static i => $"link edge:{i:x16} is not in the review queue (fix: list it again with 'sindri context map review')")
+            .Concat(["feature:gone is not in the review queue (fix: list it again with 'sindri context map review')", "feature:lost: not in the latest draft's queue"]).ToList();
+
+        var text = ContextReviewText.Result("review", new ReviewResult([OverrideId.From("ovr_0123456789abcdef")], skipped, Undecided: 0));
+        var lines = text.TrimEnd('\n').Split('\n');
+
+        Assert.Contains("  skipped 5737: link … is not in the review queue (fix: list it again with 'sindri context map review'); e.g. edge:0000000000000000, edge:0000000000000001, edge:0000000000000002, edge:0000000000000003, edge:0000000000000004", lines, StringComparer.Ordinal);
+        Assert.Contains("  skipped 1: feature:gone is not in the review queue (fix: list it again with 'sindri context map review')", lines, StringComparer.Ordinal);
+        Assert.Contains("  skipped 1: feature:lost: not in the latest draft's queue", lines, StringComparer.Ordinal);
+        Assert.Contains("  every skipped entry: add --json to this command", lines, StringComparer.Ordinal);
+        Assert.DoesNotContain("edge:0000000000000005", text, StringComparison.Ordinal);
+        Assert.True(lines.Length <= 7, text);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public void A_few_skipped_entries_are_each_listed()
+    {
+        var skipped = Enumerable.Range(0, 10).Select(static i => $"link edge:{i:x16} is not in the review queue").ToList();
+
+        var text = ContextReviewText.Result("review", new ReviewResult([], skipped, Undecided: 0));
+
+        Assert.Equal(10, text.Split('\n').Count(static l => l.StartsWith("  skipped: link edge:", StringComparison.Ordinal)));
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void The_queue_header_counts_the_groups_and_says_which_were_cut()
     {
