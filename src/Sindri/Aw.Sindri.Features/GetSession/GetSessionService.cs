@@ -46,7 +46,7 @@ internal sealed class GetSessionService(ISessionSnapshot snapshot, IAgentCatalog
 
     private async ValueTask<SessionRow> Row(ObservedSession session, string? path, bool human, CancellationToken cancellationToken)
     {
-        var steps = await SessionLaunchSteps.Of(launches, [session], cancellationToken).ConfigureAwait(false);
+        var steps = await LaunchSteps.Of(launches, session.LaunchId is { } id ? [id] : [], cancellationToken).ConfigureAwait(false);
         return SessionRows.Of(session, catalog.Resolve(session.Ref.Provider), path, human, session.LaunchId is { } launch ? steps.GetValueOrDefault(launch) : null);
     }
 
