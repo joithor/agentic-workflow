@@ -11,6 +11,10 @@ internal static class CallerRequests
     public static HttpRequestMessage Post(string path, string? json, params (string Name, string Value)[] headers) =>
         With(new HttpRequestMessage(HttpMethod.Post, path) { Content = json is null ? null : new StringContent(json, System.Text.Encoding.UTF8, "application/json") }, headers);
 
+    /// <summary>An HTTP QUERY (the IETF safe method with a body, draft): what the subgraph route takes when its keys don't fit a URL.</summary>
+    public static HttpRequestMessage Query(string path, string? json, params (string Name, string Value)[] headers) =>
+        With(new HttpRequestMessage(new HttpMethod("QUERY"), path) { Content = json is null ? null : new StringContent(json, System.Text.Encoding.UTF8, "application/json") }, headers);
+
     public static (string Name, string Value)[] Human(string? token, string client = "cli") =>
         token is null
             ? [(SindriHeaders.Caller, "human"), (SindriHeaders.Terminal, "1"), (SindriHeaders.Client, client)]

@@ -8,11 +8,12 @@ internal static class MapCoverageBuilder
     private const int MaxPaths = 50;
     private const string CodePrefix = "code:";
 
-    /// <summary>The coverage of the files that implement <paramref name="own"/> nodes: their directories (50 at most), and the repo's files under them counted by status.</summary>
-    internal static MapCoverage Of(GraphSnapshot graph, IReadOnlySet<string> own, LensBasis basis)
+    /// <summary>The coverage of the files that implement <paramref name="own"/> nodes and of any <paramref name="codeKeys"/> given or reached: their directories (50 at most), and the repo's files under them counted by status.</summary>
+    internal static MapCoverage Of(GraphSnapshot graph, IReadOnlySet<string> own, LensBasis basis, IEnumerable<string>? codeKeys = null)
     {
-        var directories = graph.Edges.Where(e => e.Type == EdgeType.Implements && own.Contains(e.To.Value) && IsFile(e.From.Value))
-            .Select(e => Directory(e.From.Value[CodePrefix.Length..])).Where(d => d.Length > 0).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
+        var directories = graph.Edges.Where(e => e.Type == EdgeType.Implements && own.Contains(e.To.Value) && IsFile(e.From.Value)).Select(e => e.From.Value)
+            .Concat((codeKeys ?? []).Where(IsFile))
+            .Select(k => Directory(k[CodePrefix.Length..])).Where(d => d.Length > 0).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
         var paths = directories.Take(MaxPaths).ToList();
         var under = basis.Files.Where(f => paths.Exists(p => f.StartsWith(p, StringComparison.Ordinal))).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal).ToList();
         var totals = FileMapBuilder.Totals(under, new FileLinks(graph));

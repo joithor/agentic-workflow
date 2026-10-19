@@ -136,6 +136,10 @@ false
 ["item.created","item.state-changed"]
 ## GET /sindri/events/catalog | jq (public types, their invalidates)
 {"commandHandled":false,"itemCreated":["queue","items","item","timeline"]}
+## QUERY /sindri/context/subgraph with a JSON body on the published host (the HTTP QUERY method; POST is not a route)
+{"title":"SND-CONTEXT-020","status":403}
+"http=403"
+post http=405
 ## sindri services --json | jq (name, every, paused, job)
 [{"name":"heartbeat","every":"5s","paused":false,"job":null}]
 ## sindri services run heartbeat (human, terminal)

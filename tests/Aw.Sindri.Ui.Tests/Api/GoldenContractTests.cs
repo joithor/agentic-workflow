@@ -64,7 +64,7 @@ public sealed class GoldenContractTests
     {
         "stop", "profile-approve", "profile",
         "needs-you", "decisions", "decisions-id", "requests",   // API P4: the app reads them in U3
-        "context-code", "context-history", "context-eval", "context-map-proposals", "context-query",   // not U9's: eval, proposals (U13) and the query routes are read by the phases that call them
+        "context-eval", "context-map-proposals", "context-query", "context-code", "context-history", "context-subgraph",   // not U9's: eval, proposals (U13) and the query routes are read by the phases that call them
         "items",   // GET /items (the list) is never called; POST /items' created* goldens are read (see the loop)
         "ledger",   // API P5: the audit read is the CLI's; the app follows the stream and re-queries
         "services-name-run", "services-name-pause", "services-name-resume", "jobs-id", "jobs-id-cancel", "jobs",   // API P6: the app reads them in U4 (Services and the job panel)

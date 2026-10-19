@@ -39,6 +39,10 @@
           "type": "integer",
           "description": "Token budget for the answer",
           "minimum": 1
+        },
+        "mapVersion": {
+          "type": "string",
+          "description": "A retained map version to read as of, such as v3; omit for the current map"
         }
       }
     },
@@ -75,14 +79,23 @@
           "type": "string",
           "description": "A product-graph node key, name or alias"
         },
+        "anchors": {
+          "type": "array",
+          "description": "Up to 20 node keys, names or aliases: the union of their lenses (schema 2) when several are distinct; give anchor or anchors",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 20
+        },
+        "mapVersion": {
+          "type": "string",
+          "description": "A retained map version to read as of, such as v3; omit for the current map"
+        },
         "hops": {
           "type": "string",
           "description": "The cascade hops, a comma list of state, flow, dependency and component; default state, flow and dependency"
         }
-      },
-      "required": [
-        "anchor"
-      ]
+      }
     },
     "annotations": {
       "readOnlyHint": true,

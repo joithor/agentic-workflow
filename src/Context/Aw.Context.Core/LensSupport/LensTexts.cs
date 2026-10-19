@@ -1,20 +1,29 @@
 using Aw.Context.Core.Lenses;
 using Aw.Context.Core.Map;
 using Aw.Context.Core.Results;
+using Aw.Context.Core.Subgraph;
 
-namespace Aw.Context.Features.GetLenses;
+namespace Aw.Context.Core.LensSupport;
 
 /// <summary>Cleans every piece of map text in a lenses view the way every answer's is cleaned (spec §7): scrubbed, one line for a label, fenced when the caller's policy fences untrusted text.</summary>
-internal static class LensTexts
+public static class LensTexts
 {
-    internal static LensesView Clean(LensesView view, MapText text) => view with
+    /// <summary>Cleans the map text of a lenses view.</summary>
+    /// <param name="view">The view.</param>
+    /// <param name="text">The caller's text policy.</param>
+    /// <returns>The cleaned view.</returns>
+    public static LensesView Clean(LensesView view, MapText text) => view with
     {
         Anchor = view.Anchor with { Label = text.Label(view.Anchor.Label, view.Anchor.Trust) },
         Bands = Bands(view.Bands, text),
         SkippedComponents = Units(view.SkippedComponents, text),
     };
 
-    internal static LensesSetView Clean(LensesSetView view, MapText text) => view with
+    /// <summary>Cleans the map text of a lenses set view.</summary>
+    /// <param name="view">The view.</param>
+    /// <param name="text">The caller's text policy.</param>
+    /// <returns>The cleaned view.</returns>
+    public static LensesSetView Clean(LensesSetView view, MapText text) => view with
     {
         Anchors = [.. view.Anchors.Select(a => a with { Label = text.Label(a.Label, a.Trust) })],
         MissingAnchors = [.. view.MissingAnchors.Select(text.Line)],
@@ -22,6 +31,15 @@ internal static class LensTexts
         SkippedComponents = Units(view.SkippedComponents, text),
     };
 
+    /// <summary>Cleans the map text of a subgraph view.</summary>
+    /// <param name="view">The view.</param>
+    /// <param name="text">The caller's text policy.</param>
+    /// <returns>The cleaned view.</returns>
+    public static SubgraphView Clean(SubgraphView view, MapText text) => view with
+    {
+        Missing = [.. view.Missing.Select(text.Line)],
+        Bands = Bands(view.Bands, text),
+    };
     private static IReadOnlyList<SkippedComponent>? Units(IReadOnlyList<SkippedComponent>? units, MapText text) => units is null ? null : [.. units.Select(u => u with { Unit = text.Line(u.Unit) })];
 
     private static LensBands Bands(LensBands bands, MapText text) => new(Intent(bands.Intent, text), Product(bands.Product, text), Code(bands.Code, text));

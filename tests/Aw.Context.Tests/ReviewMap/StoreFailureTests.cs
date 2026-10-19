@@ -2,6 +2,7 @@ using Aw.Context.Core;
 using Aw.Context.Core.Engine;
 using Aw.Context.Core.Graph;
 using Aw.Context.Core.Lenses;
+using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Review;
 using Aw.Context.Testing.Map;
@@ -46,7 +47,7 @@ public sealed class StoreFailureTests : IDisposable
             "promote" => Code(await _world.Map.Promote(scope, MapWorld.None)),
             "propose" => Code(await _world.Map.Propose(proposal, scope, MapWorld.None)),
             "proposals" => Code(await _world.Map.Proposals("run-1", scope, MapWorld.None)),
-            "lenses" => Code(await _world.Engine.Lenses("feature:a", draft: false, depth: null, scope, MapWorld.None)),
+            "lenses" => Code(await _world.Engine.Lenses("feature:a", read: MapRead.Current, depth: null, scope, MapWorld.None)),
             "filemap" => Code(await _world.Engine.FileMap(new FileMapQuery(ContextRepoName.From(FixtureMap.Repo), "src/", UnmappedOnly: false, Draft: false), scope, MapWorld.None)),
             _ => Code(await _world.Engine.Query(new ContextQuery(Text: null, Symbol: "src/a.ts"), scope, MapWorld.None)),
         };

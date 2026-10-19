@@ -401,7 +401,6 @@ Aw.Context.Core.Facade.IContextGraph.Path(string! from, string! to, Aw.Context.C
 Aw.Context.Core.Facade.IContextGraph.ShowNode(string! key, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Graph.NodeView!>!>
 Aw.Context.Core.Facade.IContextLenses
 Aw.Context.Core.Facade.IContextLenses.FileMap(Aw.Context.Core.Lenses.FileMapQuery! query, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Lenses.FileMapView!>!>
-Aw.Context.Core.Facade.IContextLenses.Lenses(string! anchor, bool draft, int? depth, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Lenses.LensesView!>!>
 Aw.Context.Core.Facade.IContextMap
 Aw.Context.Core.Facade.IContextMap.ApplyReview(Aw.Context.Core.Review.ReviewDecision! decision, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Review.ReviewResult!>!>
 Aw.Context.Core.Facade.IContextMap.ApplyReviewFile(string! path, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Review.ReviewResult!>!>
@@ -415,8 +414,8 @@ Aw.Context.Core.Facade.IContextMap.MapStatus(string? anchor, Aw.Context.Core.Eng
 Aw.Context.Core.Facade.IContextMap.PreviewMap(string! path, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapFilePreview!>!>
 Aw.Context.Core.Facade.IContextMap.PreviewReviewFile(string! path, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Review.ReviewFilePreview!>!>
 Aw.Context.Core.Facade.IContextMap.Promote(Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.MapPromoted!>!>
-Aw.Context.Core.Facade.IContextMap.Proposals(string! run, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Proposals.ProposalsView!>!>
-Aw.Context.Core.Facade.IContextMap.Propose(Aw.Context.Core.Proposals.ScopeProposal! proposal, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Proposals.ProposeResult!>!>
+Aw.Context.Core.Facade.IScopeProposals.Proposals(string! run, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Proposals.ProposalsView!>!>
+Aw.Context.Core.Facade.IScopeProposals.Propose(Aw.Context.Core.Proposals.ScopeProposal! proposal, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Proposals.ProposeResult!>!>
 Aw.Context.Core.Facade.IContextMap.PurgeExpired(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.PurgeReport!>!>
 Aw.Context.Core.Facade.IContextMap.ReviewHistory(int? limit, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Review.ReviewHistoryView!>!>
 Aw.Context.Core.Facade.IContextMap.ReviewQueue(int? limit, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Review.ReviewQueueView!>!>
@@ -1908,13 +1907,13 @@ Aw.Context.Core.Proposals.ProposeResult
 Aw.Context.Core.Proposals.ProposeResult.<Clone>$() -> Aw.Context.Core.Proposals.ProposeResult!
 Aw.Context.Core.Proposals.ProposeResult.Added.get -> int
 Aw.Context.Core.Proposals.ProposeResult.Added.init -> void
-Aw.Context.Core.Proposals.ProposeResult.Deconstruct(out Aw.Context.Core.Map.MapVersion! Draft, out int Added, out int Existing, out int Rejected, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>? Rows) -> void
-Aw.Context.Core.Proposals.ProposeResult.Draft.get -> Aw.Context.Core.Map.MapVersion!
+Aw.Context.Core.Proposals.ProposeResult.Deconstruct(out Aw.Context.Core.Map.MapVersion? Draft, out int Added, out int Existing, out int Rejected, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>? Rows) -> void
+Aw.Context.Core.Proposals.ProposeResult.Draft.get -> Aw.Context.Core.Map.MapVersion?
 Aw.Context.Core.Proposals.ProposeResult.Draft.init -> void
 Aw.Context.Core.Proposals.ProposeResult.Equals(Aw.Context.Core.Proposals.ProposeResult? other) -> bool
 Aw.Context.Core.Proposals.ProposeResult.Existing.get -> int
 Aw.Context.Core.Proposals.ProposeResult.Existing.init -> void
-Aw.Context.Core.Proposals.ProposeResult.ProposeResult(Aw.Context.Core.Map.MapVersion! Draft, int Added, int Existing, int Rejected, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>? Rows = null) -> void
+Aw.Context.Core.Proposals.ProposeResult.ProposeResult(Aw.Context.Core.Map.MapVersion? Draft, int Added, int Existing, int Rejected, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>? Rows = null) -> void
 Aw.Context.Core.Proposals.ProposeResult.Rejected.get -> int
 Aw.Context.Core.Proposals.ProposeResult.Rejected.init -> void
 Aw.Context.Core.Proposals.ProposeResult.Rows.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>?
@@ -4947,6 +4946,85 @@ Aw.Context.Core.Lenses.LensesView.MapCommit.get -> string?
 Aw.Context.Core.Lenses.LensesView.MapCommit.init -> void
 Aw.Context.Core.Lenses.SearchedState.Degraded = 3 -> Aw.Context.Core.Lenses.SearchedState
 Aw.Context.Core.Map.MapReader.ReadAt(Aw.Context.Core.Engine.ContextScope! scope, Aw.Context.Core.Map.MapRead read, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>
+Aw.Context.Core.Subgraph.SubgraphBuilder
+Aw.Context.Core.Subgraph.SubgraphQuery
+Aw.Context.Core.Subgraph.SubgraphQuery.<Clone>$() -> Aw.Context.Core.Subgraph.SubgraphQuery!
+Aw.Context.Core.Subgraph.SubgraphQuery.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Keys, out int? Depth, out Aw.Context.Core.Map.MapRead Read) -> void
+Aw.Context.Core.Subgraph.SubgraphQuery.Depth.get -> int?
+Aw.Context.Core.Subgraph.SubgraphQuery.Depth.init -> void
+Aw.Context.Core.Subgraph.SubgraphQuery.Equals(Aw.Context.Core.Subgraph.SubgraphQuery? other) -> bool
+Aw.Context.Core.Subgraph.SubgraphQuery.Keys.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Subgraph.SubgraphQuery.Keys.init -> void
+Aw.Context.Core.Subgraph.SubgraphQuery.Read.get -> Aw.Context.Core.Map.MapRead
+Aw.Context.Core.Subgraph.SubgraphQuery.Read.init -> void
+Aw.Context.Core.Subgraph.SubgraphQuery.SubgraphQuery(System.Collections.Generic.IReadOnlyList<string!>! Keys, int? Depth, Aw.Context.Core.Map.MapRead Read) -> void
+Aw.Context.Core.Subgraph.SubgraphView
+Aw.Context.Core.Subgraph.SubgraphView.AsOf.get -> System.DateTimeOffset
+Aw.Context.Core.Subgraph.SubgraphView.AsOf.init -> void
+Aw.Context.Core.Subgraph.SubgraphView.Bands.get -> Aw.Context.Core.Lenses.LensBands!
+Aw.Context.Core.Subgraph.SubgraphView.Bands.init -> void
+Aw.Context.Core.Subgraph.SubgraphView.Cites.get -> System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>!
+Aw.Context.Core.Subgraph.SubgraphView.Cites.init -> void
+Aw.Context.Core.Subgraph.SubgraphView.<Clone>$() -> Aw.Context.Core.Subgraph.SubgraphView!
+Aw.Context.Core.Subgraph.SubgraphView.Conflicts.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>!
+Aw.Context.Core.Subgraph.SubgraphView.Conflicts.init -> void
+Aw.Context.Core.Subgraph.SubgraphView.Coverage.get -> Aw.Context.Core.Lenses.LensCoverage!
+Aw.Context.Core.Subgraph.SubgraphView.Coverage.init -> void
+Aw.Context.Core.Subgraph.SubgraphView.Deconstruct(out int SchemaVersion, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Nodes, out System.Collections.Generic.IReadOnlyList<string!>! Missing, out string! MapVersion, out int Depth, out System.DateTimeOffset AsOf, out Aw.Context.Core.Lenses.LensBands! Bands, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, out System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>! Conflicts, out Aw.Context.Core.Lenses.LensCoverage! Coverage, out Aw.Context.Core.Lenses.LensSearched! Searched, out System.Collections.Generic.IReadOnlyList<string!>! Degraded, out System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
+Aw.Context.Core.Subgraph.SubgraphView.Degraded.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Subgraph.SubgraphView.Degraded.init -> void
+Aw.Context.Core.Subgraph.SubgraphView.Depth.get -> int
+Aw.Context.Core.Subgraph.SubgraphView.Depth.init -> void
+Aw.Context.Core.Subgraph.SubgraphView.Edges.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>!
+Aw.Context.Core.Subgraph.SubgraphView.Edges.init -> void
+Aw.Context.Core.Subgraph.SubgraphView.Equals(Aw.Context.Core.Subgraph.SubgraphView? other) -> bool
+Aw.Context.Core.Subgraph.SubgraphView.MapCommit.get -> string?
+Aw.Context.Core.Subgraph.SubgraphView.MapCommit.init -> void
+Aw.Context.Core.Subgraph.SubgraphView.MapVersion.get -> string!
+Aw.Context.Core.Subgraph.SubgraphView.MapVersion.init -> void
+Aw.Context.Core.Subgraph.SubgraphView.Missing.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Context.Core.Subgraph.SubgraphView.Missing.init -> void
+Aw.Context.Core.Subgraph.SubgraphView.Nodes.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
+Aw.Context.Core.Subgraph.SubgraphView.Nodes.init -> void
+Aw.Context.Core.Subgraph.SubgraphView.SchemaVersion.get -> int
+Aw.Context.Core.Subgraph.SubgraphView.SchemaVersion.init -> void
+Aw.Context.Core.Subgraph.SubgraphView.Searched.get -> Aw.Context.Core.Lenses.LensSearched!
+Aw.Context.Core.Subgraph.SubgraphView.Searched.init -> void
+Aw.Context.Core.Subgraph.SubgraphView.SubgraphView(int SchemaVersion, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>! Nodes, System.Collections.Generic.IReadOnlyList<string!>! Missing, string! MapVersion, int Depth, System.DateTimeOffset AsOf, Aw.Context.Core.Lenses.LensBands! Bands, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensEdge!>! Edges, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Lenses.LensConflict!>! Conflicts, Aw.Context.Core.Lenses.LensCoverage! Coverage, Aw.Context.Core.Lenses.LensSearched! Searched, System.Collections.Generic.IReadOnlyList<string!>! Degraded, System.Collections.Generic.IReadOnlyDictionary<string!, Aw.Context.Core.Results.Citation!>! Cites) -> void
+const Aw.Context.Core.Engine.QueryRules.MaxSubgraphGet = 20 -> int
+const Aw.Context.Core.Engine.QueryRules.MaxSubgraphPost = 1000 -> int
+override Aw.Context.Core.Subgraph.SubgraphQuery.Equals(object? obj) -> bool
+override Aw.Context.Core.Subgraph.SubgraphQuery.GetHashCode() -> int
+override Aw.Context.Core.Subgraph.SubgraphQuery.ToString() -> string!
+override Aw.Context.Core.Subgraph.SubgraphView.Equals(object? obj) -> bool
+override Aw.Context.Core.Subgraph.SubgraphView.GetHashCode() -> int
+override Aw.Context.Core.Subgraph.SubgraphView.ToString() -> string!
+static Aw.Context.Core.Subgraph.SubgraphBuilder.Build(Aw.Context.Core.Lenses.LensBasis! basis, Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<string!>! keys, int depth, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Linking.DecisionConflict!>! conflicts) -> Aw.Kernel.Result<Aw.Context.Core.Subgraph.SubgraphView!>!
+static Aw.Context.Core.Subgraph.SubgraphQuery.operator !=(Aw.Context.Core.Subgraph.SubgraphQuery? left, Aw.Context.Core.Subgraph.SubgraphQuery? right) -> bool
+static Aw.Context.Core.Subgraph.SubgraphQuery.operator ==(Aw.Context.Core.Subgraph.SubgraphQuery? left, Aw.Context.Core.Subgraph.SubgraphQuery? right) -> bool
+static Aw.Context.Core.Subgraph.SubgraphView.operator !=(Aw.Context.Core.Subgraph.SubgraphView? left, Aw.Context.Core.Subgraph.SubgraphView? right) -> bool
+static Aw.Context.Core.Subgraph.SubgraphView.operator ==(Aw.Context.Core.Subgraph.SubgraphView? left, Aw.Context.Core.Subgraph.SubgraphView? right) -> bool
+Aw.Context.Core.Facade.IContextLenses.Subgraph(Aw.Context.Core.Subgraph.SubgraphQuery! query, Aw.Context.Core.Engine.ContextScope! scope, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Subgraph.SubgraphView!>!>
+static Aw.Context.Core.Engine.QueryRules.CheckSubgraphGet(System.Collections.Generic.IReadOnlyList<string!>! keys) -> Aw.Kernel.Error?
+static Aw.Context.Core.Map.MapAccess.ViewWithIntentOrEmpty(Aw.Context.Core.Linking.IntentLayer! intent, Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, Aw.Context.Core.Engine.ContextScope! scope, bool pending) -> Aw.Kernel.Result<Aw.Context.Core.Map.MapView!>!
+Aw.Context.Core.Map.MapReader.ReadViewAtOrEmpty(Aw.Context.Core.Engine.ContextScope! scope, Aw.Context.Core.Map.MapRead read, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Context.Core.Map.VisibleMap!>!>
+
+Aw.Context.Core.Facade.IScopeProposals
+Aw.Context.Core.Proposals.ProposeResult.Withdrawn.get -> int
+Aw.Context.Core.Proposals.ProposeResult.Withdrawn.init -> void
+Aw.Context.Core.Proposals.ProposeResult.Kept.get -> int
+Aw.Context.Core.Proposals.ProposeResult.Kept.init -> void
+Aw.Context.Core.Proposals.ProposeResult.WithdrawnRows.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.OverrideId>?
+Aw.Context.Core.Proposals.ProposeResult.WithdrawnRows.init -> void
+static Aw.Context.Core.Proposals.ProposalPlanner.Withdraw(string! run, Aw.Context.Core.Engine.ContextRepoName repo, System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! overrides, string! who, System.DateTimeOffset at) -> (System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Overrides.MapOverride!>! Rows, int Kept)
+Aw.Context.Core.LensSupport.LensTexts
+static Aw.Context.Core.LensSupport.LensTexts.Clean(Aw.Context.Core.Lenses.LensesView! view, Aw.Context.Core.Map.MapText! text) -> Aw.Context.Core.Lenses.LensesView!
+static Aw.Context.Core.LensSupport.LensTexts.Clean(Aw.Context.Core.Lenses.LensesSetView! view, Aw.Context.Core.Map.MapText! text) -> Aw.Context.Core.Lenses.LensesSetView!
+static Aw.Context.Core.LensSupport.LensTexts.Clean(Aw.Context.Core.Subgraph.SubgraphView! view, Aw.Context.Core.Map.MapText! text) -> Aw.Context.Core.Subgraph.SubgraphView!
+Aw.Context.Core.Lenses.ProductCounts.Neighbors.get -> int?
+Aw.Context.Core.Lenses.ProductCounts.Neighbors.init -> void
+Aw.Context.Core.Lenses.ProductCounts.Edges.get -> int?
+Aw.Context.Core.Lenses.ProductCounts.Edges.init -> void
 Aw.Context.Core.History.HistoryChange
 Aw.Context.Core.History.HistoryChange.Anchors.get -> System.Collections.Generic.IReadOnlyList<Aw.Context.Core.Graph.NodeKey>!
 Aw.Context.Core.History.HistoryChange.Anchors.init -> void
@@ -5817,7 +5895,6 @@ Aw.Context.Core.Code.CodeLexicalFindings.SchemaTruncated.init -> void
 Aw.Context.Core.Code.CodeSearchQuery.Resolved.get -> bool
 Aw.Context.Core.Code.CodeSearchQuery.Resolved.init -> void
 Aw.Context.Core.Code.ICodeSearch.Resolve(Aw.Context.Core.Engine.ContextRepo! repo, string! commit, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
-
 Aw.Context.Core.Onyx.OnyxSettings.Managed.get -> bool
 static Aw.Context.Core.Onyx.OnyxSettings.Create(string? url, string? token, string? version, bool managed = false) -> Aw.Kernel.Result<Aw.Context.Core.Onyx.OnyxSettings!>!
 Aw.Context.Core.Engine.CascadeHops
