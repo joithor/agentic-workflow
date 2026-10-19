@@ -10893,9 +10893,13 @@ Aw.Sindri.Core.Workflow.Blocks.InjectionSections.Deconstruct(out System.Collecti
 Aw.Sindri.Core.Workflow.Blocks.InjectionSections.InjectionSections(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Sections, System.Text.Json.JsonElement? Result = null) -> void
 Aw.Sindri.Core.Workflow.Blocks.InjectionSections.Result.get -> System.Text.Json.JsonElement?
 Aw.Sindri.Core.Workflow.Blocks.InjectionSections.Result.init -> void
+Aw.Sindri.Core.Workflow.Blocks.StepContext.Address.get -> string?
+Aw.Sindri.Core.Workflow.Blocks.StepContext.Address.init -> void
 Aw.Sindri.Core.Workflow.Blocks.StepContext.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Step, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Arguments, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! Facts, out Aw.Sindri.Core.Workflow.Blocks.InjectionSections! Injection, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>? InputResults) -> void
 Aw.Sindri.Core.Workflow.Blocks.StepContext.InputResults.get -> System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>!
 Aw.Sindri.Core.Workflow.Blocks.StepContext.InputResults.init -> void
+Aw.Sindri.Core.Workflow.Blocks.StepContext.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Core.Workflow.Blocks.StepContext.Repo.init -> void
 Aw.Sindri.Core.Workflow.Blocks.StepContext.StepContext(Aw.Sindri.Core.Workflow.Ids.BlockId Step, System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Arguments, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! Facts, Aw.Sindri.Core.Workflow.Blocks.InjectionSections! Injection, System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>? InputResults = null) -> void
 Aw.Sindri.Core.Workflow.Blocks.StepInputContext.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Input, out Aw.Sindri.Core.Workflow.Ids.BlockId Step, out System.Collections.Generic.IReadOnlyDictionary<string!, System.Text.Json.JsonElement>! Arguments, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! Facts, out Aw.Sindri.Core.Ids.RepoName? Repo, out Aw.Sindri.Core.Ids.RepoName? Scope) -> void
 Aw.Sindri.Core.Workflow.Blocks.StepInputContext.Repo.get -> Aw.Sindri.Core.Ids.RepoName?

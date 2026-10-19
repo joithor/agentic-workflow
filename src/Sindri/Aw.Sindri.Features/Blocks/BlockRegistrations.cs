@@ -125,29 +125,19 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PlanSteps.Freeze);
 
     private static IServiceCollection AddScopingBlocks(this IServiceCollection services) => services
-        .AddBlockStep<ScopeIntakeStep>()
         .AddBlockDescriptor(ScopingSteps.ReadBrief)
         .AddBlockDescriptor(ScopingSteps.ReadTracker)
         .AddBlockDescriptor(ScopingSteps.ReadChange)
-        .AddBlockStep<BriefSeedStep>()
         .AddBlockDescriptor(ScopingSteps.BriefQuestions)
         .AddBlockDescriptor(ScopingSteps.BriefWrite)
-        .AddBlockDescriptor(ScopingSteps.Anchor)
-        .AddBlockStep<ScopeGatherStep>()
         .AddBlockDescriptor(ScopingSteps.Draft)
-        .AddBlockStep<ScopeCheckStep>()
         .AddBlockDescriptor(ScopingSteps.InterviewQuestions)
         .AddBlockDescriptor(ScopingSteps.InterviewAnswer)
-        .AddBlockStep<InterviewRecordStep>()
         .AddBlockDescriptor(ScopingSteps.InterviewApply)
-        .AddBlockDescriptor(ScopingSteps.Reanchor)
         .AddBlockDescriptor(ScopingSteps.Challenge)
-        .AddBlockStep<ChallengeLogStep>()
-        .AddBlockDescriptor(ScopingSteps.Propose)
         .AddBlockDescriptor(ScopingSteps.Evidence)
         .AddBlockDescriptor(ScopingSteps.Review)
-        .AddBlockDescriptor(ScopingSteps.Freeze)
-        .AddBlockDescriptor(ScopingSteps.Withdraw);
+        .AddBlockDescriptor(ScopingSteps.Freeze);
 
     /// <summary>Registers the line stations' Steps (ship, docs sync), descriptors only.</summary>
     /// <param name="services">The service collection.</param>

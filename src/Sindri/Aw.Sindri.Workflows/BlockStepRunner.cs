@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Aw.Kernel;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
@@ -54,7 +55,11 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
             return Failed(named.Error.Message);
         }
 
-        var seed = new StepContext(run.Step, arguments, named.Value, InjectionSections.Empty);
+        var seed = new StepContext(run.Step, arguments, named.Value, InjectionSections.Empty)
+        {
+            Repo = run.Repo is { } repo && RepoName.TryFrom(repo, out var name) ? name : null,
+            Address = run.Address,
+        };
         var context = run.Fills is { Count: > 0 } fills
             ? await contexts.For(new StepRun(fills[0].Request.Address, run.State, run.Token), seed, [.. fills.Select(static f => new InjectionInputSource(f.Recorded, f.Request.Context()))], cancellationToken).ConfigureAwait(false)
             : Results.Success(seed);

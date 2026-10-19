@@ -137,6 +137,8 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddScoped<IService<EvalRecipeRequest, EvalRecipeResponse>, EvalRecipeService>()
             .AddScoped<IService<RecordEvalRequest, RecordEvalResponse>, RecordEvalService>()
             .AddRecipeBlocks()
+            .AddScopingBlockSteps()
+            .AddScopingBlockPorts()
             .AddRegistrySlices()
             .AddContextSlices()
             .AddContextJobs()

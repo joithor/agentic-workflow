@@ -21,7 +21,11 @@ namespace Aw.Sindri.Tests.Workflow;
 [Lane(TestLane.Unit)]
 public sealed class ScopingBlockRuntimesTests
 {
-    private static readonly string[] _pure = ["step.brief.seed", "step.interview.record", "step.scope.challenge-log", "step.scope.check", "step.scope.gather", "step.scope.intake"];
+    private static readonly string[] _registered =
+    [
+        "step.brief.seed", "step.interview.record", "step.scope.anchor", "step.scope.challenge-log", "step.scope.check", "step.scope.gather", "step.scope.intake",
+        "step.scope.propose", "step.scope.reanchor", "step.scope.withdraw",
+    ];
 
     [Fact]
     public void Every_registered_scoping_Step_opens_a_block_run_and_the_rest_stay_off_it()
@@ -38,14 +42,14 @@ public sealed class ScopingBlockRuntimesTests
     }
 
     [Fact]
-    public void The_pure_Steps_are_the_ones_this_build_runs_and_the_recipe_uses_each()
+    public void The_registered_Steps_are_the_ones_this_build_runs_and_the_recipe_uses_each()
     {
         using var provider = ShippedComposition.Compose();
         var (recipe, context) = Scoping(provider);
 
-        Assert.Equal(_pure, context.Runtimes.Keys.Select(static k => k.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
+        Assert.Equal(_registered, context.Runtimes.Keys.Select(static k => k.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
         var used = recipe.States.Values.Select(static s => s.Step?.Use.Value).OfType<string>().ToHashSet(StringComparer.Ordinal);
-        Assert.Subset(used.Concat(["step.brief.seed"]).ToHashSet(StringComparer.Ordinal), _pure.ToHashSet(StringComparer.Ordinal));   // brief.seed is the idea child's, not this recipe's
+        Assert.Empty(_registered.Except(used.Concat(["step.brief.seed", "step.scope.anchor"]), StringComparer.Ordinal));   // brief.seed and anchor are the idea child's (workflow.idea-to-brief), not this recipe's
     }
 
     [Fact]

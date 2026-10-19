@@ -16,6 +16,7 @@ using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Core.Workflow.Validation;
 using Aw.Sindri.Core.Workflow.Views;
+using Aw.Sindri.Features;
 using Aw.Sindri.Features.ApproveRecipe;
 using Aw.Sindri.Features.Blocks;
 using Aw.Sindri.Features.Commands;
@@ -29,6 +30,7 @@ using Aw.Sindri.Testing;
 using Aw.Sindri.Testing.Challenges;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Testing.Workflow.Registry;
+using Aw.Sindri.Tests.Scoping.Steps;
 using Aw.Sindri.Tests.Server;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -70,7 +72,7 @@ internal sealed class RegistryHarness : IAsyncDisposable
             .AddSingleton(SliceHarness.Json)
             .AddSingleton<IProfileSource>(H.Profiles)
             .AddEffectPorts(H)
-            .AddRecipeBlocks()
+            .AddRecipeBlocks().AddScopingBlockSteps().AddSingleton<IScopingTextShape>(new FakeTextShape("{}")).AddSingleton<IScopeRunProposals>(new FakeRunProposals())
             .AddSingleton<BlockCatalog>().AddSingleton<StepInputRuntimes>()
             .AddScoped<RecipeApprovalPlanner>().AddScoped<RecipeRevokePlanner>()
             .AddScoped<IRecipeProfileFacts, ApprovedRecipeProfileFacts>()

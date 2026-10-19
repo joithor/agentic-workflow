@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Step;
 
@@ -18,9 +19,9 @@ internal sealed class ScopeGatherStep() : ScopingCodeStep(Descriptor), IDescribe
     public static BlockDescriptor Descriptor => ScopingSteps.Gather;
 
     /// <inheritdoc/>
-    protected override IReadOnlyDictionary<string, string> Extra(StepContext context)
+    protected override ValueTask<Result<IReadOnlyDictionary<string, string>>> Extra(StepContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
-        return _views.Where(v => context.InputResults.ContainsKey(v.Input)).ToDictionary(static v => v.View, v => Text(context.InputResults[v.Input]), StringComparer.Ordinal);
+        return ValueTask.FromResult(Facts(_views.Where(v => context.InputResults.ContainsKey(v.Input)).ToDictionary(static v => v.View, v => Text(context.InputResults[v.Input]), StringComparer.Ordinal)));
     }
 }
