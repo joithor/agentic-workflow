@@ -4,6 +4,7 @@ using Aw.Sindri.Core.Events;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
+using Aw.Sindri.Core.Workflow.Engine.Triggers;
 
 namespace Aw.Sindri.Features.GetInstanceEvents;
 
@@ -96,7 +97,25 @@ internal sealed class GetInstanceEventsService(ILedgerReader ledger, EventFactor
     private InstanceEventView View(LedgerEvent recorded)
     {
         var fields = events.Payload<InstanceEventFields>(recorded);
+        var read = fields.IsError ? InstanceEventFields.None : fields.Value;
         return new InstanceEventView(recorded.Sequence, recorded.Envelope.Type, recorded.Envelope.OccurredAt, recorded.Envelope.Actor,
-            fields.IsError ? InstanceEventFields.None : fields.Value);
+            string.Equals(read.Trigger, TriggerNames.StepFailed, StringComparison.Ordinal) ? read with { Reason = FailureReason(recorded.Envelope.Payload) } : read);
+    }
+
+    /// <summary>The 'reason' in a step.failed payload's detail; null when the payload has none.</summary>
+    private static string? FailureReason(string payload)
+    {
+        try
+        {
+            using var document = System.Text.Json.JsonDocument.Parse(payload);
+            return document.RootElement.TryGetProperty("detail", out var detail) && detail.ValueKind == System.Text.Json.JsonValueKind.Object
+                && detail.TryGetProperty("reason", out var reason) && reason.ValueKind == System.Text.Json.JsonValueKind.String
+                ? reason.GetString()
+                : null;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return null;
+        }
     }
 }
