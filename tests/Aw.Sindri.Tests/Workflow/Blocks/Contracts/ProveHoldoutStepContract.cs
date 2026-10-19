@@ -12,7 +12,7 @@ public sealed class ProveHoldoutStepContract : DescriptorContract
 {
     protected override BlockDescriptor Descriptor => ProveSteps.Holdout;
 
-    protected override string ExpectedHash => "sha256:43fc79fc61dc312cc8f64b491fa041cc557b55c8da348c6e77ea915933224837";
+    protected override string ExpectedHash => "sha256:03afc64c804a3f055d9933c0edd4168b2ae6e224494ce23bda4b5b35422c2493";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 
