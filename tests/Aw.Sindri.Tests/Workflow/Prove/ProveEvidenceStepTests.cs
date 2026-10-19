@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Packets;
+using Aw.Sindri.Core.Prove;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Features.Prove;
@@ -75,7 +76,7 @@ public sealed class ProveEvidenceStepTests
         var pack = Out(result, "proofPack");
         var written = await rig.Area.Read(Address, "proof-pack/proof.json", Token);
         Assert.Contains(Head, written.Value, StringComparison.Ordinal);
-        foreach (var name in Aw.Sindri.Core.Prove.ProofPack.FileNames)
+        foreach (var name in ProofPack.FileNames)
         {
             Assert.NotEmpty((await rig.Area.Read(Address, "proof-pack/" + name, Token)).Value);
         }

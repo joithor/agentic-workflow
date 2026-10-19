@@ -105,12 +105,12 @@ public sealed class ProofChecksTests
     {
         var fewer = ProofChecks.Run(Good(static f => f with { HoldoutCount = 4 }));
         var elsewhere = ProofChecks.Run(Good(static f => f with { Holdout = JsonNode.Parse("""{"commit":"old","canary":"clean","results":[{"item":"AC-1","verdict":"pass"},{"item":"AC-2","verdict":"pass"},{"item":"AC-1","verdict":"pass"}]}""") }));
-        var failed = ProofChecks.Run(Good(static f => f with { Holdout = JsonNode.Parse($$"""{"commit":"{{Head}}","canary":"clean","results":[{"item":"AC-1","verdict":"fail"},{"item":"AC-2","verdict":"pass"},{"item":"AC-1","verdict":"pass"}]}""") }));
+        var failed = ProofChecks.Run(Good(static f => f with { Holdout = JsonNode.Parse($$"""{"commit":"{{Head}}","canary":"clean","results":[{"scenario":"H9","item":"AC-1","verdict":"fail"},{"item":"AC-2","verdict":"pass"},{"item":"AC-1","verdict":"pass"}]}""") }));
 
         Assert.Equal(["PRV-HOLD-001"], Rules(fewer));
         Assert.Equal(["PRV-HOLD-001"], Rules(elsewhere));
         Assert.Equal(["PRV-HOLD-001@AC-1"], Rules(failed));
-        Assert.DoesNotContain("scenario", failed.Failures[0].Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("H9", failed.Failures[0].Message, StringComparison.Ordinal);
     }
 
     [Fact]
