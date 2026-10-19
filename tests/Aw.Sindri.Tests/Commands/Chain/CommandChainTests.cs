@@ -158,6 +158,24 @@ public sealed class CommandChainTests : IAsyncDisposable
         Assert.Equal(1, _c.Latch.Started);
     }
 
+    // A stop must get through whatever holds the gate (the owner's stop met SND-API-009 behind a long apply): it skips the gate and cancels the holder.
+    [Fact, Trait("Lane", "unit")]
+    public async Task Stop_gets_past_a_command_holding_the_gate_and_cancels_it()
+    {
+        _ = await _c.H.HoldLease();
+        var held = _c.Start(new FixtureCommand("block"), Human);
+        await _c.Latch.Entered.Task.WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken);   // the holder is inside the handler
+
+        var stopped = await _c.Run<StopProcessRequest, StopProcessResponse>(new StopProcessRequest(StopReason.Stop), Human)
+            .WaitAsync(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken);
+        var ended = await Task.WhenAny(held, Task.Delay(TimeSpan.FromSeconds(10), TimeProvider.System, TestContext.Current.CancellationToken));
+
+        Assert.True(stopped.IsSuccess);
+        Assert.Same(held, ended);
+        var thrown = await Record.ExceptionAsync(async () => Assert.False((await held).IsSuccess));   // cancelled: thrown, or a failed result
+        Assert.True(thrown is null or OperationCanceledException, thrown?.ToString());
+    }
+
     [Fact, Trait("Lane", "unit")]
     public async Task Commands_run_one_at_a_time()
     {

@@ -23,11 +23,28 @@ public sealed class ChainRegistrationTests
             var commands = Registered(services, typeof(ICommand<>));
 
             Assert.NotEmpty(commands);
-            Assert.All(commands, type => Assert.Equal(
+            Assert.All(commands.Where(type => !IsStop(type)), type => Assert.Equal(
                 [typeof(CommandGate<,>), typeof(AuditingService<,>), typeof(AuthorizingService<,>), typeof(ValidatingService<,>), typeof(AwaitingViews<,>), null],
                 Chain(scope.ServiceProvider.GetRequiredService(type))));
         }
     }
+
+    // A stop is audited and authorized like any command but never waits on the gate: a long command holding it can't keep the process from stopping.
+    [Fact, Trait("Lane", "unit")]
+    public void The_stop_is_wrapped_audit_authorize_validate_await_views_without_the_gate()
+    {
+        var (services, scope) = Composed();
+        using (scope)
+        {
+            var stop = Assert.Single(Registered(services, typeof(ICommand<>)), IsStop);
+
+            Assert.Equal(
+                [typeof(AuditingService<,>), typeof(AuthorizingService<,>), typeof(ValidatingService<,>), typeof(AwaitingViews<,>), null],
+                Chain(scope.ServiceProvider.GetRequiredService(stop)));
+        }
+    }
+
+    private static bool IsStop(Type service) => service.GenericTypeArguments[0] == typeof(Features.StopProcess.StopProcessRequest);
 
     [Fact, Trait("Lane", "unit")]
     public void Every_registered_command_has_a_validator()
