@@ -105,6 +105,42 @@ public sealed class ReadInjectionServiceTests
     }
 
     [Fact]
+    public async Task ReadInjection_serves_both_entries_of_the_same_input_listed_twice_each_with_its_own_text()
+    {
+        var first = new FilledInput(_input, 1, [new InjectionEntry("notes", _input, 5, StepInputRunner.Sha("first"))]);
+        var second = new FilledInput(_input, 2, [new InjectionEntry("extra", _input, 6, StepInputRunner.Sha("second"))]);
+        var view = StatusCases.View("desk-task") with { ItemId = ItemKey.From(Item) };
+        view = view with { Task = view.Task! with { Injection = [.. first.Sections, .. second.Sections] } };
+        var source = new InjectionSource("checks", Run, [new InjectionInputSource(first, Context), new InjectionInputSource(second, Context)]);
+        var runner = new ByIndexRunner(new Dictionary<int, (string Section, string Text)> { [1] = ("notes", "first"), [2] = ("extra", "second") });
+        var texts = new MemoryInjectionTexts();
+        var instances = new SomeInstances(view);
+        var service = new ReadInjectionService(instances, instances, new Sources(source), texts, runner, new FixedRepos((Item, "alpha")), new ListInstances.FixedCaller(new CallerContextBuilder().Human().Build()));
+
+        var result = await service.Handle(new ReadInjectionRequest(view.Id, null), TestContext.Current.CancellationToken);
+
+        Assert.Equal([("notes", "first"), ("extra", "second")], result.Value.Sections.Select(static s => (s.Section, s.Text)));
+        Assert.Equal(2, runner.Calls);
+        Assert.Equal("first", texts.Get(new InjectionKey(view.Address.Value, "checks", Run, 1))!.Sections["notes"]);
+        Assert.Equal("second", texts.Get(new InjectionKey(view.Address.Value, "checks", Run, 2))!.Sections["extra"]);
+    }
+
+    private sealed class ByIndexRunner(Dictionary<int, (string Section, string Text)> fills) : IStepInputRunner
+    {
+        public int Calls { get; private set; }
+
+        public ValueTask<Result<FilledOutput>> Fill(StepInputContext context, int index, CancellationToken cancellationToken)
+        {
+            Calls++;
+            var (section, text) = fills[index];
+            var entry = new InjectionEntry(section, _input, Encoding.UTF8.GetByteCount(text), StepInputRunner.Sha(text));
+            return ValueTask.FromResult(Results.Success(new FilledOutput(
+                new FilledInput(_input, index, [entry]),
+                new FilledTexts(new Dictionary<string, string>(StringComparer.Ordinal) { [section] = text }))));
+        }
+    }
+
+    [Fact]
     public async Task ReadInjection_without_open_run_is_SND_WF_005()
     {
         var (result, _, _) = await Read(Open("x", openRun: false), "x", () => "x");

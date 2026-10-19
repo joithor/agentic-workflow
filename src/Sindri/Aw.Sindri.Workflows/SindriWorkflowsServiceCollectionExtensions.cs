@@ -54,6 +54,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
             .AddEventBridge();
     }
 
+    /// <summary>The ledger-to-Temporal event bridge (its held window and cursor file) and the router stub (its cursor file and the 'item.routed' scheduled service), both of which run without a profile entry.</summary>
     private static IServiceCollection AddEventBridge(this IServiceCollection services) => services
             .AddSingleton<HeldItemEvents>()                            // engine P4: the bridge's held window (visibility lag)
             .AddSingleton<EventBridgeCursor>()                         // engine P4 unit (d): the bridge's cursor file
@@ -102,7 +103,6 @@ public static class SindriWorkflowsServiceCollectionExtensions
         }
     }
 
-    /// <summary>The <see cref="EffectDispatch"/> registration: resolves the block AddEffect keyed by the effect's id, in its own scope.</summary>
     /// <summary>The Step inputs' run time: the in-memory texts (no text is stored), the one runner, the FillInput activity, and the in-process Step's context (no IStep runtime ships yet).</summary>
     private static IServiceCollection AddStepInputRuntime(this IServiceCollection services) => services
         .AddSingleton<IInjectionTexts, MemoryInjectionTexts>()
@@ -121,6 +121,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
         }
     }
 
+    /// <summary>The <see cref="EffectDispatch"/> registration: resolves the block AddEffect keyed by the effect's id, in its own scope.</summary>
     private static async ValueTask<Result<EffectDone>> DispatchScoped(IServiceProvider provider, EffectContext context, CancellationToken cancellationToken)
     {
         var scope = provider.CreateAsyncScope();
