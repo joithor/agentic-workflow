@@ -64,6 +64,20 @@ public sealed class LaunchStopEndTests
     }
 
     [Fact]
+    public async Task Stop_after_the_sweep_ended_it_records_nothing_more()
+    {
+        await _h.Started();
+        await Sync();
+        _ = await _h.Events().End(A.FirstLaunchId, SessionEndReason.Lost, exitCode: null, Token);
+        await Sync();
+
+        await Ender().EndIfLive(A.FirstLaunchId, Token);
+        await Sync();
+
+        Expect.Equal(SessionEndReason.Lost, Assert.Single(Ended()).Reason);
+    }
+
+    [Fact]
     public async Task Stop_of_a_launch_with_no_live_row_records_nothing()
     {
         await _h.Started();
