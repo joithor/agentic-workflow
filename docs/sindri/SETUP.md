@@ -64,15 +64,19 @@ Type `sindri-app`, never `sindri`, until the switch (step 2 says why). Sindri's 
 | graphify and a sandbox | graphify at Sindri's pin; `sandbox-exec` (macOS, built in) or `bwrap` (Linux) | `scripts/install-deps.sh` (`AW_DRY_RUN=1` prints only) |
 | `jq`, `git` | any recent | your package manager |
 
-Check what this box can run before you start (**Agent OK**; it works before anything is installed):
+`scripts/install-deps.sh` installs host packages (Homebrew, or `sudo` with your Linux package manager), so run it
+yourself (**Human-only**); `AW_DRY_RUN=1 scripts/install-deps.sh` only prints what it would do (**Agent OK**).
+
+Check what this box can run for Onyx (**Agent OK**; it needs no control plane). `sindri-app` exists after step 2, so
+before that run it through the script from the checkout:
 
 ```bash
-sindri-app onyx status        # docker, compose, memory, disk and port, each ok / warn / fail with the fix
+scripts/sindri-app.sh onyx status   # docker, compose, memory, disk and port, each ok / warn / fail with the fix
 ```
 
 ## 2. Install and publish
 
-From the agentic-workflow checkout (**Human-only** the first time, because a bare run starts the control plane):
+From the agentic-workflow checkout (**Human-only**: the first run publishes the build, links `~/.local/bin/sindri-app` and may install the .NET SDK and Temporal):
 
 ```bash
 cd ~/code/agentic-workflow
@@ -188,7 +192,7 @@ A repo's name must be letters, digits, `.`, `_` or `-`.
 | `sindri-app --headless` | Human-only | The same without the app: for a box you reach over SSH or one that stays on |
 | `sindri-app status` | Agent OK | The running control plane's summary; never starts it |
 | `sindri-app doctor` | Agent OK | One line per check, each `ok`, `warn` or `fail` with a fix; works while the control plane is down |
-| `sindri-app stop` | Human-only | Stops it: Temporal, the managed Onyx containers, then the lease |
+| `sindri-app stop` | Human-only | Stops it: a managed Onyx's containers and Temporal, then releases the lease |
 
 A first start on a box without Onyx asks "Set up Onyx (Sindri's business-context search) now? [Y/n]". Answer `n` if
 you want to finish this step first; the needs-you list keeps a "Set up Onyx" row until you run step 5.
@@ -306,7 +310,7 @@ A Step whose runtime is `agent` launches an agent session (Claude Code, Codex or
 Sindri needs two things for that: a launcher file that says how this box opens a terminal, and the agent the profile
 names. Without both, agent Steps fall to your desk too.
 
-1. Write the launcher file (**Human-only**):
+1. Write the launcher file (**Human-only** by convention: it writes a file in your home; Sindri doesn't refuse an agent here):
 
    ```bash
    sindri-app launch init              # detects the terminal (Warp, or another template) and writes ~/.agentic-workflow/launcher.json (0600)
@@ -379,7 +383,8 @@ Sindri splits its commands into classes. Approving config and recipes, starting,
 syncing sources, registering MCP, managing Onyx, deciding, and starting or stopping the control plane are a person's
 decisions. An agent that could run them could approve its own recipes, widen its own config, sign off its own desk
 tasks and merge its own work. That is also why desk tasks are human-only by design: an agent may prepare a desk task's
-output files, but only you submit them with `workflow complete`.
+output files, but only you submit them with `workflow complete`. (An agent Step's own launched session reports its
+run with its launch secret; that is a different path, class `step-report`.)
 So the CLI checks two things before it calls as `human`: stdin and stdout are a terminal, and there is no agent signal
 (an agent variable such as `CLAUDECODE` or `CODEX_SANDBOX`, or an agent harness among its parent processes). Anything
 else calls as `session`, and the API refuses those classes with `SND-AUTH-002`, naming what it saw.
@@ -399,6 +404,7 @@ help (the parent-process check still sees the agent), and the check is there on 
 | `SND-PROFILE-003` | The hash you approved isn't the live profile's | Run `profile approve` without a hash and copy the new one |
 | `SND-PROFILE-004` | Approving needs a terminal and the typed confirmation | Run it in your own terminal and type the challenge exactly |
 | `SND-PROFILE-006` "does not match the current profile" | You ran the TypeScript `sindri` (copied from a hint), which checks its own profile | Before the switch, read every `sindri` in a hint as `sindri-app`: rerun as `sindri-app profile approve <hash>` |
+| `SND-PROFILE-006` from `sindri-app` | The approved snapshots can't be read or written | Check the permissions and free disk under `~/.agentic-workflow/sindri-app/approved/` |
 | `SND-VIEW-001` | The views stalled | `sindri-app views rebuild` |
 | `SND-ONYX-001` | Docker isn't usable (not installed, not running, still starting) | Start Docker, then rerun |
 | `SND-ONYX-003` | Not enough disk or Docker memory for Onyx | The message says how much; raise Docker's memory in its settings |

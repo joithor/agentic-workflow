@@ -104,7 +104,7 @@ line
 For each `workflow.<name>.yaml` in that order (**Human-only**):
 
 ```bash
-sindri-app recipe register workflow.prove.yaml   # 'registered workflow.prove@<hash12> (unapproved)'
+sindri-app recipe register workflow.prove.yaml   # optional ('approve' registers an unknown file itself): 'registered workflow.prove@<hash12> (unapproved)'
 sindri-app recipe approve workflow.prove.yaml    # preview, then type 'approve workflow.prove 1'
 ```
 
@@ -133,7 +133,8 @@ ship, then the PR babysitter). It stops for you after scoping, after design and 
 > fact:<key>=<file>` (**Human-only**). Scoping has a desk helper that runs a block's code and writes the report for
 > you (`sindri-app scoping desk <block> --facts <dir> --out <dir>`, **Agent OK**; it refuses to write inside a git
 > worktree); the other stations don't have one yet. Expect to drive the line from your desk, not to watch it run
-> hands-off. An agent may prepare a desk task's output files, but only you can submit them.
+> hands-off. An agent may prepare a desk task's output files, but only you can submit them (an agent Step's own
+> launched session reports its run with its launch secret, class `step-report`).
 
 1. Make an item for the work (**Human-only**):
 

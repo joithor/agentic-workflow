@@ -6,6 +6,10 @@
 <meta name="color-scheme" content="light dark">
 <title>Sindri Setup</title>
 <meta name="description" content="Set up the C# Sindri app one step at a time, with a picture of what each step adds: prerequisites, install, profile, first start, Onyx, agent runtime, MCP and the app.">
+<script>
+document.documentElement.classList.add("js");
+try { var t0 = localStorage.getItem("sindri-setup-theme"); if (t0 === "light" || t0 === "dark") document.documentElement.setAttribute("data-theme", t0); } catch (e) {}
+</script>
 <style>
 :root {
   --bg: #f4f0e8; --panel: #fffdf8; --panel-2: #f9f5ee; --ink: #1d1a16; --ink-2: #4c463d; --ink-3: #6f675b; --line: #e0d8ca;
@@ -28,7 +32,9 @@
     --term-bg: #0d0c0a; --on-accent: #1a0f08;
   }
 }
+:root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --bg: #14120f; --panel: #1c1915; --panel-2: #211e19; --ink: #efe8dc; --ink-2: #c3b9a9; --ink-3: #9d9385; --line: #342e27;
   --accent: #ee8d5d; --accent-soft: #3b2417; --focus: #8cc4ee;
   --human: #ee8d5d; --human-soft: #3b2417; --agent: #93d095; --agent-soft: #1c2d1d;
@@ -58,7 +64,7 @@ button { font: inherit; color: inherit; }
 .shell { max-width: 1180px; margin: 0 auto; padding: 22px 20px 40px; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 28px; align-items: start; }
 
 /* the rail */
-.rail { position: sticky; top: 72px; }
+.rail { position: sticky; top: 72px; max-height: calc(100vh - 88px); overflow: auto; }
 .rail .meter { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; margin: 0 0 12px; }
 .rail .meter i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s; }
 .rail ol { list-style: none; margin: 0; padding: 0; position: relative; }
@@ -72,8 +78,13 @@ button { font: inherit; color: inherit; }
 .rail .keys { margin: 14px 0 0; font-size: 12.5px; color: var(--ink-3); }
 
 /* a step */
-.step { display: none; }
-.step.on { display: block; animation: rise .22s ease-out; }
+html.js .step { display: none; }
+html.js .step.on { display: block; animation: rise .22s ease-out; }
+.step h1:focus { outline: none; }
+.skip { position: absolute; left: -9999px; top: 8px; z-index: 50; background: var(--panel); border: 1px solid var(--line); padding: 8px 12px; border-radius: 8px; }
+.skip:focus { left: 12px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+noscript p { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; }
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .kicker { font: 600 12px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--accent); margin: 0 0 6px; }
 h1 { font: 700 clamp(26px, 4.2vw, 38px)/1.12 var(--serif); letter-spacing: -.02em; margin: 0 0 8px; }
@@ -105,16 +116,16 @@ svg .pt.box rect.b { fill: var(--panel-2); stroke: var(--line); stroke-width: 1.
 svg .pt.done rect.b { stroke: var(--agent); }
 svg .pt.now rect.b { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2.6; }
 svg .pt.box.now rect.b { fill: color-mix(in srgb, var(--accent-soft) 55%, var(--panel-2)); }
-svg .pt.later { opacity: .3; }
-svg .pt.later rect.b { stroke-dasharray: 5 4; }
+svg .pt.later rect.b { stroke-dasharray: 5 4; stroke-opacity: .55; fill-opacity: .4; }
+svg .pt.later text { fill: var(--ink-3); }
 svg .tick circle { fill: var(--agent); }
 svg .tick path { stroke: var(--panel); stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 svg .ed path { fill: none; stroke: var(--ink-3); stroke-width: 1.6; }
 svg .ed.now path { stroke: var(--accent); stroke-width: 2.4; }
 svg .ed.done path { stroke: var(--agent); }
 svg .elbl.ed-now { fill: var(--accent); font-weight: 650; }
-svg .elbl.ed-later { opacity: .3; }
-svg .ed.later { opacity: .25; }
+svg .elbl.ed-later { fill: var(--ink-3); }
+svg .ed.later { opacity: .4; }
 svg .ed.later path { stroke-dasharray: 4 4; }
 svg .ah { fill: var(--ink-3); } svg .ah-now { fill: var(--accent); } svg .ah-done { fill: var(--agent); }
 
@@ -162,8 +173,8 @@ details.more .body li { margin: 4px 0; }
 .pager #nextBtn { margin-left: auto; }
 
 @media (max-width: 860px) {
-  .shell { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 0 16px 32px; }
-  .rail { position: sticky; top: 49px; z-index: 20; background: var(--bg); margin: 0 -16px; padding: 8px 16px 6px; border-bottom: 1px solid var(--line); }
+  .shell { display: block; padding: 0 16px 32px; }
+  .rail { position: sticky; top: 49px; z-index: 20; max-height: none; overflow: visible; background: var(--bg); margin: 0 -16px 12px; padding: 8px 16px 6px; border-bottom: 1px solid var(--line); }
   .rail .meter { margin: 0 0 8px; }
   .rail ol { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
   .rail ol::-webkit-scrollbar { display: none; }
@@ -177,19 +188,27 @@ details.more .body li { margin: 4px 0; }
   .top .links { display: none; }
   .brand span { display: none; }
   .lede { font-size: 16px; }
-  .pager .pos { display: none; }
+  .pager .pos { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
-@media (prefers-reduced-motion: reduce) { .step.on { animation: none; } .rail .meter i { transition: none; } }
-@media print { .rail, .pager, .top { display: none; } .step { display: block !important; break-after: page; } .shell { display: block; } }
+@media (prefers-reduced-motion: reduce) { html.js .step.on { animation: none; } .rail .meter i, details.more summary::before { transition: none; } }
+@media print {
+  :root, :root[data-theme] { --bg: #fff; --panel: #fff; --panel-2: #fff; --ink: #000; --ink-2: #222; --ink-3: #444; --line: #bbb; color-scheme: light; }
+  .rail, .pager, .top, .skip, .cmd .copy { display: none; }
+  html.js .step { display: block !important; break-after: page; }
+  .shell { display: block; }
+  .cmd pre, .term { color: #000; background: none; border: 1px solid #999; white-space: pre-wrap; }
+  .term .ok, .term .dim { color: #000; }
+}
 </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to the step</a>
 
 <header class="top">
   <a class="brand" href="#start">Sindri <span>setup</span></a>
   <span class="sp"></span>
-  <span class="links"><a href="sindri/SETUP.md">SETUP.md</a><a href="sindri/OPERATIONS.md">Operating it</a><a href="sindri-architecture.html">Architecture</a></span>
-  <button id="themeBtn" class="btn" type="button" aria-label="Switch colour theme">Theme: auto</button>
+  <nav class="links" aria-label="Related guides"><a href="sindri/SETUP.md">SETUP.md</a><a href="sindri/OPERATIONS.md">Operating it</a><a href="sindri-architecture.html">Architecture</a></nav>
+  <button id="themeBtn" class="btn" type="button">Theme: auto</button>
 </header>
 
 <div class="shell">
@@ -199,11 +218,13 @@ details.more .body li { margin: 4px 0; }
     <p class="keys">← → to move between steps</p>
   </nav>
 
-  <main>
+  <main id="main" tabindex="-1">
+<noscript><p>This guide needs JavaScript to show one step at a time. The same steps are in <a href="sindri/SETUP.md">docs/sindri/SETUP.md</a>.</p></noscript>
+<div id="copyStatus" class="sr-only" role="status" aria-live="polite"></div>
 
 <section class="step" data-slug="start" data-n="★" data-title="What you'll have" data-k="99">
   <p class="kicker">Sindri · C# build</p>
-  <h1>Set up Sindri</h1>
+  <h1 tabindex="-1">Set up Sindri</h1>
   <p class="lede">Eight steps take a new Mac to this picture: Sindri running, Onyx connected, agents able to reach it, and the app open.</p>
   <figure class="sys"></figure>
   <p><span class="chip human">HUMAN-ONLY</span> type it in your own terminal, not in an agent session. <span class="chip agent">AGENT OK</span> an agent may run it for you.</p>
@@ -218,11 +239,11 @@ details.more .body li { margin: 4px 0; }
 
 <section class="step" data-slug="prereqs" data-n="1" data-title="Prerequisites" data-k="1">
   <p class="kicker">Step 1</p>
-  <h1>Prepare the Mac</h1>
+  <h1 tabindex="-1">Prepare the Mac</h1>
   <p class="lede">Install Docker yourself (Onyx needs about 5.5 GiB of Docker memory and 10.5 GiB of disk). The script fetches the rest.</p>
   <figure class="sys"></figure>
-  <div class="cmd"><div class="head"><span class="chip agent">AGENT OK</span><span class="what">uv, graphify and the pinned Temporal binaries (<code>AW_DRY_RUN=1</code> prints only)</span></div>
-  <pre><code>scripts/install-deps.sh</code></pre></div>
+  <div class="cmd human"><div class="head"><span class="chip human">HUMAN-ONLY</span><span class="what">uv, graphify, the pinned Temporal binaries and any missing system packages (<code>AW_DRY_RUN=1</code> prints only, agent OK)</span></div>
+  <pre><code>scripts/install-deps.sh</code></pre><p class="note">Your own terminal, not an agent session.</p></div>
   <div class="see"><p class="lbl">You should see</p>
 <pre class="term">=== External tools (uv, graphify, Temporal, system packages) ===
   uv: already installed (uv 0.12.24 …)
@@ -241,7 +262,7 @@ details.more .body li { margin: 4px 0; }
 
 <section class="step" data-slug="install" data-n="2" data-title="Install" data-k="2">
   <p class="kicker">Step 2</p>
-  <h1>Build and link <code>sindri-app</code></h1>
+  <h1 tabindex="-1">Build and link <code>sindri-app</code></h1>
   <p class="lede">One script builds the C# Sindri for this Mac and puts <code>sindri-app</code> on your PATH.</p>
   <figure class="sys"></figure>
   <div class="cmd human"><div class="head"><span class="chip human">HUMAN-ONLY</span><span class="what">From the agentic-workflow checkout (a heavy build)</span></div>
@@ -265,7 +286,7 @@ SND-API-001 not running: … <span class="dim">(expected: step 4 starts it)</spa
 
 <section class="step" data-slug="profile" data-n="3" data-title="Profile" data-k="3">
   <p class="kicker">Step 3</p>
-  <h1>Write and approve the profile</h1>
+  <h1 tabindex="-1">Write and approve the profile</h1>
   <p class="lede">The profile names your repos and what Sindri may read. Sindri runs only the version you approved.</p>
   <figure class="sys"></figure>
   <div class="cmd file"><div class="head"><span class="chip file">FILE</span><span class="what"><code>~/.agentic-workflow/sindri-app/profile/profile.yaml</code></span></div>
@@ -295,13 +316,13 @@ hash 73ce9910…470b, <span class="ok">approved</span></pre></div>
   <details class="more"><summary>If it didn't work</summary><div class="body"><ul>
     <li><code>SND-PROFILE-002</code>: a typo or unknown key; the message names the key path.</li>
     <li><code>SND-PROFILE-003</code>: the file changed since you copied the hash; run the preview again.</li>
-    <li><code>SND-PROFILE-006 … does not match the current profile</code>: you typed <code>sindri</code>, the TypeScript CLI. Use <code>sindri-app</code>.</li>
+    <li><code>SND-PROFILE-006 … does not match the current profile</code>: you typed <code>sindri</code>, the TypeScript CLI. Use <code>sindri-app</code>. (From <code>sindri-app</code>, 006 means the approved snapshots can't be read or written: check permissions and disk.)</li>
   </ul></div></details>
 </section>
 
 <section class="step" data-slug="first-start" data-n="4" data-title="First start" data-k="4">
   <p class="kicker">Step 4</p>
-  <h1>Start Sindri</h1>
+  <h1 tabindex="-1">Start Sindri</h1>
   <p class="lede">Start it once; it keeps running when you close the terminal. <code>doctor</code> checks every part.</p>
   <figure class="sys"></figure>
   <div class="cmd human"><div class="head"><span class="chip human">HUMAN-ONLY</span><span class="what">Starts it in the background (plain <code>sindri-app</code> also opens the app)</span></div>
@@ -328,11 +349,11 @@ hash 73ce9910…470b, <span class="ok">approved</span></pre></div>
 
 <section class="step" data-slug="onyx" data-n="5" data-title="Onyx" data-k="5">
   <p class="kicker">Step 5</p>
-  <h1>Add Onyx, then connect Linear and Slack</h1>
+  <h1 tabindex="-1">Add Onyx, then connect Linear and Slack</h1>
   <p class="lede">One command runs a pinned Onyx in Docker on <code>127.0.0.1</code> and gives Sindri its own Onyx user. Then connect your sources in Onyx's web page.</p>
   <figure class="sys"></figure>
-  <div class="strip" aria-label="What onyx up does, in order">
-    <span>check the Mac</span><b>→</b><span>pinned files</span><b>→</b><span>pull images</span><b>→</b><span>start</span><b>→</b><span class="you">you: sign up</span><b>→</b><span class="you">you: your admin login</span><b>→</b><span>Sindri's user + key</span><b>→</b><span class="you">you: approve profile</span>
+  <div class="strip" role="group" aria-label="What onyx up does, in order">
+    <span>check the Mac</span><b aria-hidden="true">→</b><span>pinned files</span><b aria-hidden="true">→</b><span>pull images</span><b aria-hidden="true">→</b><span>start</span><b aria-hidden="true">→</b><span class="you">you: sign up</span><b aria-hidden="true">→</b><span class="you">you: your admin login</span><b aria-hidden="true">→</b><span>Sindri's user + key</span><b aria-hidden="true">→</b><span class="you">you: approve profile</span>
   </div>
   <div class="cmd human"><div class="head"><span class="chip human">HUMAN-ONLY</span><span class="what">Safe to rerun: it resumes where it stopped</span></div>
   <pre><code>sindri-app onyx up</code></pre><p class="note">Your own terminal, not an agent session.</p></div>
@@ -360,10 +381,10 @@ hash 73ce9910…470b, <span class="ok">approved</span></pre></div>
 
 <section class="step" data-slug="agents" data-n="6" data-title="Agent runtime" data-k="6">
   <p class="kicker">Step 6</p>
-  <h1>Let Sindri launch agents</h1>
+  <h1 tabindex="-1">Let Sindri launch agents</h1>
   <p class="lede">A launcher file tells Sindri how this Mac opens a terminal; the profile names the agent it starts there.</p>
   <figure class="sys"></figure>
-  <div class="cmd human"><div class="head"><span class="chip human">HUMAN-ONLY</span><span class="what">Finds your terminal and writes <code>~/.agentic-workflow/launcher.json</code></span></div>
+  <div class="cmd human"><div class="head"><span class="chip human">HUMAN-ONLY</span><span class="what">Finds your terminal and writes <code>~/.agentic-workflow/launcher.json</code> (your call: Sindri doesn't refuse an agent here)</span></div>
   <pre><code>sindri-app launch init</code></pre><p class="note">Your own terminal, not an agent session.</p></div>
   <div class="cmd file"><div class="head"><span class="chip file">PROFILE</span><span class="what">Add to the profile, then approve it again (step 3)</span></div>
   <pre><code>workflow:
@@ -387,7 +408,7 @@ cursor       builtin  ~/.local/bin/agent        sha256:1e0a…9495  Steps: <span
 
 <section class="step" data-slug="mcp" data-n="7" data-title="MCP" data-k="7">
   <p class="kicker">Step 7</p>
-  <h1>Connect agent sessions over MCP</h1>
+  <h1 tabindex="-1">Connect agent sessions over MCP</h1>
   <p class="lede">Register Sindri in your work repo, so agent sessions there can ask it for context.</p>
   <figure class="sys"></figure>
   <div class="cmd human"><div class="head"><span class="chip human">HUMAN-ONLY</span><span class="what">In the work repo: Claude Code, Cursor and Codex, for this repo only</span></div>
@@ -410,7 +431,7 @@ sindri-app mcp register --apply --providers all</code></pre><p class="note">Your
 
 <section class="step" data-slug="app" data-n="8" data-title="Open the app" data-k="8">
   <p class="kicker">Step 8</p>
-  <h1>Open the app</h1>
+  <h1 tabindex="-1">Open the app</h1>
   <p class="lede">The app is a window onto Sindri: what needs you, its health, and your workflows.</p>
   <figure class="sys"></figure>
   <div class="cmd human"><div class="head"><span class="chip human">HUMAN-ONLY</span><span class="what">Finds the running Sindri and opens the app</span></div>
@@ -481,11 +502,11 @@ sindri-app mcp register --apply --providers all</code></pre><p class="note">Your
     { at: 3, w: "M180 153 H200", n: "M296 58 V128", l: "", wl: [0, 0], nl: [0, 0] },
     { at: 5, w: "M540 246 H600", n: "M300 290 V310", l: "search", wl: [550, 240], nl: [306, 304] },
     { at: 6, w: "M526 140 H600", n: "M99 252 V330", l: "launch", wl: [548, 134], nl: [105, 312] },
-    { at: 7, w: "M670 166 V208 H526", n: "M261 252 V266 H150 V330", l: "MCP", wl: [548, 202], nl: [156, 312] }
+    { at: 7, w: "M670 166 V208 H526", n: "M150 330 V266 H261 V252", l: "MCP", wl: [548, 202], nl: [156, 312] }
   ];
   function state(at, k) { return at === 0 || at < k ? "done" : at === k ? "now" : "later"; }
   function draw(fig, k) {
-    var narrow = window.matchMedia("(max-width: 600px)").matches, L = narrow ? "n" : "w";
+    var narrow = isNarrow(), L = narrow ? "n" : "w";
     var svg = el("svg", { viewBox: narrow ? "0 0 360 590" : "0 0 760 384", role: "img" });
     var defs = el("defs", {});
     ["ah", "ah-now", "ah-done"].forEach(function (c) {
@@ -501,7 +522,7 @@ sindri-app mcp register --apply --providers all</code></pre><p class="note">Your
       g.appendChild(el("path", { d: e[L], "marker-end": "url(#" + fig.dataset.uid + mk + ")" }));
       svg.appendChild(g);
     });
-    var added = [];
+    var added = [], later = [];
     PARTS.forEach(function (p) {
       var r = p[L], s = state(p.at, k), g = el("g", { "class": "pt " + s + (p.box ? " box" : "") });
       g.appendChild(el("rect", { "class": "b", x: r[0], y: r[1], width: r[2], height: r[3], rx: p.box ? 12 : 9 }));
@@ -518,7 +539,8 @@ sindri-app mcp register --apply --providers all</code></pre><p class="note">Your
         t.appendChild(el("path", { d: "M" + (tx - 3.6) + " " + ty + " l2.6 2.6 l4.6 -5" }));
         g.appendChild(t);
       }
-      if (s === "now") added.push(p.box ? p.title.split(" ·")[0] : p.label);
+      var name = p.box ? p.title.split(" ·")[0] : p.label;
+      if (s === "now") added.push(name); else if (s === "later") later.push(name);
       svg.appendChild(g);
     });
     // Edge labels last, so no part covers them.
@@ -529,12 +551,12 @@ sindri-app mcp register --apply --providers all</code></pre><p class="note">Your
     });
     svg.setAttribute("aria-label", k === 99
       ? "The finished setup: your terminal and the Sindri app talk to Sindri on 127.0.0.1:7410, which holds the ledger, Temporal, the context engine, the launcher and MCP; agent sessions connect over MCP; Onyx in Docker brings Linear and Slack; all on this Mac."
-      : "What this step adds: " + added.join(", ") + ". Parts with a check mark are done; dimmed parts come in later steps.");
+      : "What this step adds: " + added.join(", ") + ". Parts with a check mark are done." + (later.length ? " Later steps add: " + later.join(", ") + "." : ""));
     fig.innerHTML = "";
     fig.appendChild(svg);
     var cap = document.createElement("figcaption");
-    cap.innerHTML = k === 99 ? '<span class="k-done"><i></i>what you\'ll have after the eight steps</span>'
-      : '<span class="k-now"><i></i>this step adds: ' + added.join(", ") + '</span><span class="k-done"><i></i>done</span><span class="k-later"><i></i>later</span>';
+    cap.innerHTML = k === 99 ? '<span class="k-done"><i aria-hidden="true"></i>what you\'ll have after the eight steps</span>'
+      : '<span class="k-now"><i aria-hidden="true"></i>this step adds: ' + added.join(", ") + '</span><span class="k-done"><i aria-hidden="true"></i>done</span><span class="k-later"><i aria-hidden="true"></i>later</span>';
     fig.appendChild(cap);
   }
 
@@ -544,10 +566,17 @@ sindri-app mcp register --apply --providers all</code></pre><p class="note">Your
     var f = s.querySelector("figure.sys");
     if (f) { f.dataset.uid = "m" + i; figs.push([f, +s.dataset.k]); }
   });
-  function drawAll() { figs.forEach(function (x) { draw(x[0], x[1]); }); }
+  // The wide picture needs about 640px to stay readable, so the column's width picks the layout.
+  function isNarrow() { return document.getElementById("main").clientWidth < 640; }
+  var drawnNarrow = null;
+  function drawAll() {
+    var n = isNarrow();
+    if (n === drawnNarrow) return;
+    drawnNarrow = n;
+    figs.forEach(function (x) { draw(x[0], x[1]); });
+  }
   drawAll();
-  var mq = window.matchMedia("(max-width: 600px)");
-  if (mq.addEventListener) mq.addEventListener("change", drawAll); else mq.addListener(drawAll);
+  window.addEventListener("resize", drawAll);
 
   /* ---------- the rail and paging ---------- */
   var rail = document.getElementById("railList"), cur = 0;
@@ -567,6 +596,8 @@ sindri-app mcp register --apply --providers all</code></pre><p class="note">Your
     Array.prototype.forEach.call(items, function (li, j) {
       li.classList.toggle("cur", j === i);
       li.classList.toggle("done", j > 0 && j < i);
+      var s = steps[j];
+      li.firstChild.setAttribute("aria-label", (s.dataset.n === "★" ? "" : "Step " + s.dataset.n + ": ") + s.dataset.title + (j > 0 && j < i ? ", done" : ""));
       if (j === i) li.firstChild.setAttribute("aria-current", "step"); else li.firstChild.removeAttribute("aria-current");
     });
     document.getElementById("meter").style.width = (i / (steps.length - 1) * 100) + "%";
@@ -575,7 +606,9 @@ sindri-app mcp register --apply --providers all</code></pre><p class="note">Your
     var nb = document.getElementById("nextBtn");
     nb.disabled = i === steps.length - 1;
     nb.textContent = i === steps.length - 1 ? "Done ✓" : (i === 0 ? "Start: " : "Next: ") + steps[i + 1].dataset.title + " →";
-    if (push && location.hash !== "#" + steps[i].dataset.slug) history.pushState(null, "", "#" + steps[i].dataset.slug);
+    if (push && location.hash !== "#" + steps[i].dataset.slug) {
+      try { history.pushState(null, "", "#" + steps[i].dataset.slug); } catch (e) { location.hash = steps[i].dataset.slug; }
+    }
     // Centre the current step in the phone strip; scrollIntoView would scroll the page too.
     rail.scrollLeft = items[i].offsetLeft - rail.clientWidth / 2 + items[i].offsetWidth / 2;
     document.title = "Sindri Setup · " + steps[i].dataset.title;
@@ -585,44 +618,65 @@ sindri-app mcp register --apply --providers all</code></pre><p class="note">Your
     steps.forEach(function (s, j) { if (s.dataset.slug === id) k = j; });
     return k;
   }
-  function go(i) { show(i, true); window.scrollTo(0, 0); }
+  // A step change the user made moves focus to the new heading, so it is read out and Tab continues from there.
+  function focusStep() { steps[cur].querySelector("h1").focus({ preventScroll: true }); }
+  function go(i) { show(i, true); window.scrollTo(0, 0); focusStep(); }
   rail.addEventListener("click", function (e) {
     var a = e.target.closest("a"); if (!a) return;
+    if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
     var id = a.getAttribute("href").slice(1);
     steps.forEach(function (s, j) { if (s.dataset.slug === id) go(j); });
   });
+  document.querySelector(".brand").addEventListener("click", function (e) {
+    if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault(); go(0);
+  });
   document.getElementById("prevBtn").addEventListener("click", function () { go(cur - 1); });
   document.getElementById("nextBtn").addEventListener("click", function () { go(cur + 1); });
-  window.addEventListener("popstate", function () { show(fromHash(), false); window.scrollTo(0, 0); });
+  window.addEventListener("popstate", function () { show(fromHash(), false); window.scrollTo(0, 0); focusStep(); });
   document.addEventListener("keydown", function (e) {
-    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey || e.defaultPrevented) return;
     var t = e.target.tagName;
-    if (t === "INPUT" || t === "TEXTAREA" || t === "SUMMARY" || t === "BUTTON") return;
+    if (t === "INPUT" || t === "TEXTAREA" || t === "SELECT" || e.target.isContentEditable) return;
+    // A focused code block scrolls with the arrow keys instead.
+    if (e.target.closest && e.target.closest("pre, [contenteditable]")) return;
     if (e.key === "ArrowRight") go(cur + 1); else if (e.key === "ArrowLeft") go(cur - 1);
+  });
+
+  /* ---------- code blocks: focusable, so a keyboard can scroll a long line ---------- */
+  Array.prototype.forEach.call(document.querySelectorAll(".cmd pre, pre.term"), function (pre) {
+    pre.tabIndex = 0;
+    pre.setAttribute("role", "region");
+    pre.setAttribute("aria-label", pre.classList.contains("term") ? "Example output" : "Command");
   });
 
   /* ---------- copy buttons ---------- */
   function copyText(text, btn) {
+    clearTimeout(btn.resetTimer);
     function done(ok) {
       btn.textContent = ok ? "Copied" : "Select and copy";
+      document.getElementById("copyStatus").textContent = ok ? "Copied" : "Copy failed: select the text and copy it";
       btn.classList.toggle("ok", ok);
-      setTimeout(function () { btn.textContent = "Copy"; btn.classList.remove("ok"); }, 1600);
+      btn.resetTimer = setTimeout(function () { btn.textContent = "Copy"; btn.classList.remove("ok"); }, 1600);
     }
     function fallback() {
       var ta = document.createElement("textarea");
       ta.value = text; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
-      document.body.appendChild(ta); ta.select();
+      document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, text.length);
       var ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
-      document.body.removeChild(ta); done(ok);
+      document.body.removeChild(ta); btn.focus(); done(ok);
     }
     if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(function () { done(true); }, fallback);
     else fallback();
   }
+  var copyIds = 0;
   Array.prototype.forEach.call(document.querySelectorAll(".cmd"), function (card) {
     var code = card.querySelector("pre code"), b = document.createElement("button");
     b.type = "button"; b.className = "copy"; b.textContent = "Copy";
-    b.setAttribute("aria-label", "Copy: " + code.textContent.split("\n")[0]);
+    var what = card.querySelector(".what");
+    what.id = "what" + (++copyIds);
+    b.setAttribute("aria-describedby", what.id);
     b.addEventListener("click", function () { copyText(code.textContent, b); });
     card.querySelector(".head").appendChild(b);
   });
