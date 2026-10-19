@@ -1,7 +1,6 @@
 using System.Text;
 using System.Text.Json;
 using Aw.Kernel;
-using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
@@ -41,25 +40,13 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
     public async Task<BlockStepOutcome> Run(BlockStepRun run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(run);
-        var descriptor = catalog.Find(run.Step);
-        var resolved = await ResolveArguments(descriptor, run, cancellationToken).ConfigureAwait(false);
-        if (resolved.IsError)
+        var seeded = await Seed(run, catalog.Find(run.Step), cancellationToken).ConfigureAwait(false);
+        if (seeded.IsError)
         {
-            return Failed(resolved.Error.Message);
+            return Failed(seeded.Error.Message);
         }
 
-        var arguments = resolved.Value;
-        var named = await ReadFacts(descriptor, arguments, run, cancellationToken).ConfigureAwait(false);
-        if (named.IsError)
-        {
-            return Failed(named.Error.Message);
-        }
-
-        var seed = new StepContext(run.Step, arguments, named.Value, InjectionSections.Empty)
-        {
-            Repo = run.Repo is { } repo && RepoName.TryFrom(repo, out var name) ? name : null,
-            Address = run.Address,
-        };
+        var seed = seeded.Value;
         var context = run.Fills is { Count: > 0 } fills
             ? await contexts.For(new StepRun(fills[0].Request.Address, run.State, run.Token), seed, [.. fills.Select(static f => new InjectionInputSource(f.Recorded, f.Request.Context()))], cancellationToken).ConfigureAwait(false)
             : Results.Success(seed);
@@ -73,6 +60,42 @@ internal sealed class BlockStepRunner(BlockStepRuntimes runtimes, BlockCatalog c
             ? Failed(result.Failure ?? "the Step failed")
             : await StoreOutputs(done, cancellationToken).ConfigureAwait(false);
     }
+
+    // What the Step starts with, before its inputs: its arguments, the facts it reads and the repo. The repo is resolved first: a Step never learns "no repo" from a repo it could not read.
+    private async Task<Result<StepContext>> Seed(BlockStepRun run, BlockDescriptor? descriptor, CancellationToken cancellationToken)
+    {
+        var repo = await contexts.RepoOf(run.Address, run.Repo, run.RepoUnreadable, cancellationToken).ConfigureAwait(false);
+        if (repo.IsError)
+        {
+            return repo.Error;
+        }
+
+        var resolved = await ResolveArguments(descriptor, run, cancellationToken).ConfigureAwait(false);
+        if (resolved.IsError)
+        {
+            return resolved.Error;
+        }
+
+        var named = await ReadFacts(descriptor, resolved.Value, run, cancellationToken).ConfigureAwait(false);
+        if (named.IsError)
+        {
+            return named.Error;
+        }
+
+        return MissingFact(descriptor, named.Value, run.Step) is { } absent
+            ? WorkflowErrors.BlockFactUnreadable.With(absent)
+            : new StepContext(run.Step, resolved.Value, named.Value, InjectionSections.Empty)
+            {
+                Repo = repo.Value,
+                Address = InstanceAddress.TryFrom(run.Address, out var address) ? address : null,
+            };
+    }
+
+    // A Step that reads a fact the instance does not hold would take it for a rule that did not run.
+    private static string? MissingFact(BlockDescriptor? descriptor, Dictionary<FactKey, JsonElement> named, BlockId step) =>
+        descriptor?.Inputs.Where(k => !named.ContainsKey(k)).Select(static k => k.Value).ToList() is { Count: > 0 } missing
+            ? $"{step.Value} needs {string.Join(", ", missing)}, which the instance does not hold"
+            : null;
 
     private async Task<Result<Dictionary<string, JsonElement>>> ResolveArguments(BlockDescriptor? descriptor, BlockStepRun run, CancellationToken cancellationToken)
     {

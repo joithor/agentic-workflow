@@ -169,6 +169,18 @@ public sealed class ShippedBlocksTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public void Every_block_runtime_registration_names_a_Step_whose_descriptor_says_block()
+    {
+        using var provider = Composed();
+        var catalog = provider.GetRequiredService<BlockCatalog>();
+
+        var registered = provider.GetServices<BlockStepRegistration>().Select(static r => r.Step).ToList();
+
+        Assert.NotEmpty(registered);
+        Assert.All(registered, id => Assert.Equal(BlockRuntime.Block, catalog.Find(id)?.Runtime));   // a Step registered by id (AddBlockRuntime) has its descriptor elsewhere, so this is where a mismatch shows
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void Every_outcomes_from_and_inputs_from_names_a_list_parameter()
     {
         var from = FixtureCatalog.WithFixtures().Blocks.Where(b => b.OutcomesFrom is not null || b.InputsFrom is not null).ToList();

@@ -125,18 +125,29 @@ internal static class BlockRegistrations
         .AddBlockDescriptor(PlanSteps.Freeze);
 
     private static IServiceCollection AddScopingBlocks(this IServiceCollection services) => services
+        .AddBlockDescriptor(ScopingSteps.Intake)
+        .AddBlockDescriptor(ScopingSteps.ReadBrief)
         .AddBlockDescriptor(ScopingSteps.ReadTracker)
         .AddBlockDescriptor(ScopingSteps.ReadChange)
+        .AddBlockDescriptor(ScopingSteps.BriefSeed)
         .AddBlockDescriptor(ScopingSteps.BriefQuestions)
         .AddBlockDescriptor(ScopingSteps.BriefWrite)
+        .AddBlockDescriptor(ScopingSteps.Anchor)
+        .AddBlockDescriptor(ScopingSteps.Gather)
         .AddBlockDescriptor(ScopingSteps.Draft)
+        .AddBlockDescriptor(ScopingSteps.Check)
         .AddBlockDescriptor(ScopingSteps.InterviewQuestions)
         .AddBlockDescriptor(ScopingSteps.InterviewAnswer)
+        .AddBlockDescriptor(ScopingSteps.InterviewRecord)
         .AddBlockDescriptor(ScopingSteps.InterviewApply)
+        .AddBlockDescriptor(ScopingSteps.Reanchor)
         .AddBlockDescriptor(ScopingSteps.Challenge)
+        .AddBlockDescriptor(ScopingSteps.ChallengeLog)
+        .AddBlockDescriptor(ScopingSteps.Propose)
         .AddBlockDescriptor(ScopingSteps.Evidence)
         .AddBlockDescriptor(ScopingSteps.Review)
-        .AddBlockDescriptor(ScopingSteps.Freeze);
+        .AddBlockDescriptor(ScopingSteps.Freeze)
+        .AddBlockDescriptor(ScopingSteps.Withdraw);
 
     /// <summary>Registers the line stations' Steps (ship, docs sync), descriptors only.</summary>
     /// <param name="services">The service collection.</param>

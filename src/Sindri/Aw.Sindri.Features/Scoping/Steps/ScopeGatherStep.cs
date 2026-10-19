@@ -1,14 +1,14 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Features.Blocks.Step;
+using Aw.Sindri.Core.Workflow.Ids;
 
-namespace Aw.Sindri.Features;
+namespace Aw.Sindri.Features.Scoping.Steps;
 
 /// <summary>
-/// 'step.scope.gather', on the block runtime: <see cref="ScopingSteps.Gather"/>'s code behind <see cref="IBlockStep"/>. The context engine's views
+/// 'step.scope.gather', on the block runtime: <c language="text">ScopingSteps.Gather</c>'s code behind <see cref="IBlockStep"/>. The context engine's views
 /// are not facts but its Step inputs' typed results ('input.context.lenses', '.code' and '.history'), which the code reads as lensesView, codeView and historyView.
 /// </summary>
-internal sealed class ScopeGatherStep() : ScopingCodeStep(Descriptor), IDescribedBlock
+internal sealed class ScopeGatherStep() : ScopingCodeStep(Id), IBlockStepId
 {
     private static readonly (string Input, string View)[] _views =
     [
@@ -16,7 +16,7 @@ internal sealed class ScopeGatherStep() : ScopingCodeStep(Descriptor), IDescribe
     ];
 
     /// <inheritdoc/>
-    public static BlockDescriptor Descriptor => ScopingSteps.Gather;
+    public static BlockId Id { get; } = BlockId.From("step.scope.gather");
 
     /// <inheritdoc/>
     protected override ValueTask<Result<IReadOnlyDictionary<string, string>>> Extra(StepContext context, CancellationToken cancellationToken)

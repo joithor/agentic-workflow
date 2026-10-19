@@ -1,12 +1,11 @@
 using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Features;
+using Aw.Sindri.Features.Scoping.Steps;
 using Aw.Sindri.Features.Blocks.Step;
 using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Scoping.Steps;
-using Aw.Sindri.Tests.Workflow.Blocks.Input;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 
@@ -25,5 +24,5 @@ public sealed class ScopeReadBriefStepContract : BlockContract
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
 
     protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
-        _ = await new ScopeReadBriefStep(new InMemoryBriefFiles(), new ContextInputFixtures.Profiles(profile: null), new FakeTextShape("{}"), TimeProvider.System).Run(ScopingStepContexts.Of("step.scope.read-brief", []), cancellationToken);
+        _ = await new ScopeReadBriefStep(new InMemoryBriefFiles(), new InMemoryRepoCheckouts(), new InMemoryScopingTextShape([]), TimeProvider.System).Run(ScopingStepContexts.Of("step.scope.read-brief", []), cancellationToken);
 }

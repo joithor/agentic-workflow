@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Aw.Sindri.Core.Ids;
+using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 
 namespace Aw.Sindri.Core.Workflow.Blocks;
@@ -20,9 +21,9 @@ public sealed record StepContext(
     /// <summary>The typed results of the Step's inputs, never null.</summary>
     public IReadOnlyDictionary<string, JsonElement> InputResults { get; init; } = InputResults ?? new Dictionary<string, JsonElement>(StringComparer.Ordinal);
 
-    /// <summary>The repo the instance's item belongs to (from the ledger, never from a caller), for a Step that reads or writes through the repo's map; null when the item has none.</summary>
+    /// <summary>The repo the instance's item belongs to (a top-level instance's fact:item, or for a child the ledger's repo of the item its address starts with; never from a caller), for a Step that reads or writes through the repo's map; null when the ledger knows none. An item whose repo cannot be read never reaches a Step: the runner fails it first.</summary>
     public RepoName? Repo { get; init; }
 
-    /// <summary>The instance's address ('T-1/workflow.scoping/1'), the identity a Step's external writes carry so a retry replaces them; null where the engine has not set it.</summary>
-    public string? Address { get; init; }
+    /// <summary>The instance's address, the identity a Step's external writes carry so a retry replaces them; the block runner always sets it.</summary>
+    public InstanceAddress? Address { get; init; }
 }

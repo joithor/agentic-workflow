@@ -9,6 +9,7 @@ using Aw.Context.Core.Review;
 using Aw.Context.Core.Subgraph;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Locks;
+using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Commands;
@@ -36,6 +37,8 @@ internal static class ContextSlicesServiceCollectionExtensions
             .AddScoped<SyncGaps>()
             .AddScoped<ContextInputScopes>()
             .AddScoped<ContextInputFacts>()
+            .AddScoped<IScopingTextShape, ContextTextShape>()
+            .AddScoped<IScopeRunProposals, ScopeRunProposals>()
             .AddStepInput<ContextLensesInput>()
             .AddStepInput<ContextHistoryInput>()
             .AddStepInput<ContextCodeInput>()

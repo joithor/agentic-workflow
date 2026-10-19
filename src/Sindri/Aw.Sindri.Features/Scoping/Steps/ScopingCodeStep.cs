@@ -3,9 +3,8 @@ using System.Text.Json.Nodes;
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
-using Aw.Sindri.Features.Scoping;
 
-namespace Aw.Sindri.Features;
+namespace Aw.Sindri.Features.Scoping.Steps;
 
 /// <summary>
 /// A scoping Step the block runtime runs (scoping spec §8.2, §9): the same code the desk helper runs (<see cref="DeskBlocks"/>), moved behind
@@ -14,8 +13,8 @@ namespace Aw.Sindri.Features;
 /// more than the facts (gather's Step inputs) overrides <see cref="Extra"/>. The desk's run-area files (rounds.jsonl, the packet) have no place
 /// on the block runtime and are not written here.
 /// </summary>
-/// <param name="step">The Step's descriptor (its id picks the code).</param>
-internal abstract class ScopingCodeStep(BlockDescriptor step) : IBlockStep
+/// <param name="step">The Step's id, which picks the code.</param>
+internal abstract class ScopingCodeStep(BlockId step) : IBlockStep
 {
     private const string FactPrefix = "fact:";
 
@@ -24,18 +23,13 @@ internal abstract class ScopingCodeStep(BlockDescriptor step) : IBlockStep
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
-        if (step.Inputs.Where(k => !context.Facts.ContainsKey(k)).Select(static k => k.Value).ToList() is { Count: > 0 } missing)
-        {
-            return BlockStepResult.Failed($"{step.Id.Value} needs {string.Join(", ", missing)}, which the instance does not hold");   // the checks read a missing fact as a rule that did not run, which must never pass a Step
-        }
-
         var extra = await Extra(context, cancellationToken).ConfigureAwait(false);
         if (extra.IsError)
         {
             return BlockStepResult.Failed(extra.Error.Message);
         }
 
-        var ran = DeskBlocks.Run(step.Id.Value, new ScopeFacts(Texts(context, extra.Value)));
+        var ran = DeskBlocks.Run(step.Value, new ScopeFacts(Texts(context, extra.Value)));
         return ran.IsError ? BlockStepResult.Failed(ran.Error.Message) : Completed(ran.Value);
     }
 
@@ -62,6 +56,11 @@ internal abstract class ScopingCodeStep(BlockDescriptor step) : IBlockStep
             return null;   // boundary: a fact is text a model or a person wrote
         }
     }
+
+    /// <summary>The 'contextQuery' fact the desk code takes: the text shape's suggested anchors.</summary>
+    /// <param name="anchors">The anchors.</param>
+    /// <returns>The fact's JSON text.</returns>
+    protected static string ContextQuery(IEnumerable<string> anchors) => new JsonObject { ["suggestedAnchors"] = ScopeJson.ToArray(anchors) }.ToJsonString();
 
     /// <summary>The code's extra facts as a result.</summary>
     /// <param name="texts">JSON text by code fact key.</param>

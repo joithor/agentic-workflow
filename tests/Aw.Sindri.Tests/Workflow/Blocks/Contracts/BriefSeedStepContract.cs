@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Features;
+using Aw.Sindri.Features.Scoping.Steps;
 using Aw.Sindri.Features.Blocks.Step;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Scoping.Steps;
