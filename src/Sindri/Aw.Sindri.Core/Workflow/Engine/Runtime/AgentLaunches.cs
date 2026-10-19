@@ -16,7 +16,16 @@ public static class AgentLaunches
     public static LaunchId LaunchIdFor(AgentStepRun run)
     {
         ArgumentNullException.ThrowIfNull(run);
-        var digest = SHA256.HashData(Encoding.UTF8.GetBytes(run.Workflow.Value + ":" + run.Run.Value));
+        return LaunchIdFor(run.Workflow, run.Run);
+    }
+
+    /// <summary>The launch id of a run, from the instance and the run token alone: what a status read names before the launch activity has run.</summary>
+    /// <param name="workflow">The instance.</param>
+    /// <param name="run">The run token.</param>
+    /// <returns>The id.</returns>
+    public static LaunchId LaunchIdFor(WorkflowInstanceId workflow, RunToken run)
+    {
+        var digest = SHA256.HashData(Encoding.UTF8.GetBytes(workflow.Value + ":" + run.Value));
         return LaunchId.From("LCH-" + Convert.ToHexStringLower(digest)[..32]);
     }
 

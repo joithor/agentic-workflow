@@ -21,6 +21,18 @@ public sealed class AgentRunStatusTests
     }
 
     [Fact]
+    public void An_agent_run_still_launching_already_names_the_launch_it_will_have()
+    {
+        var instance = Agent(launch: null);
+        var expected = AgentLaunches.LaunchIdFor(WorkflowInstanceId.Of(instance.Address), instance.Frame.Run!.Token).Value;   // why: Agent() gives the run
+
+        var status = StatusOf(instance);
+
+        Assert.Equal(new StatusRun("agent", expected), status.Run);
+        Assert.Contains($"\n  run       agent {expected}\n", status.Text, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void A_desk_run_has_no_run_line()
     {
         var status = StatusOf(StatusCases.Instance("desk-task"));
@@ -29,7 +41,7 @@ public sealed class AgentRunStatusTests
         Assert.DoesNotContain("  run  ", status.Text, StringComparison.Ordinal);
     }
 
-    private static WorkflowInstance Agent(string launch)
+    private static WorkflowInstance Agent(string? launch)
     {
         var desk = StatusCases.Instance("desk-task");
         return desk with { Frame = desk.Frame with { Run = desk.Frame.Run! with { Runtime = StepRuntime.Agent, Launch = launch, Task = null } } };   // why: the desk case has a run
