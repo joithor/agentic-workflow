@@ -20,7 +20,7 @@ internal sealed class AgentLaunching(ILauncher launcher, AgentTargetResolver tar
     public async Task<AgentLaunched> Launch(AgentLaunchRun run, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(run);
-        var target = await targets.Resolve(run.Item, cancellationToken).ConfigureAwait(false);
+        var target = await targets.Resolve(run.Item, run.Run.Address, cancellationToken).ConfigureAwait(false);
         if (target.IsError)
         {
             return new AgentLaunched(Worktree: null, StartHead: null, new AgentLaunchFailure(AgentLaunchFailureKind.StepFailed, target.Error.Code, target.Error.Message));   // nothing was asked of the launcher, so there is no outcome to record
