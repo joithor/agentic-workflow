@@ -37,5 +37,6 @@
   "run": {
     "runtime": "agent",
     "launch": "LCH-01JM3A4B5C6D7E8F"
-  }
+  },
+  "injection": []
 }
