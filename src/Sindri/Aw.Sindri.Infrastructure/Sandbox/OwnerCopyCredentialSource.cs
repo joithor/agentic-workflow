@@ -248,7 +248,6 @@ internal sealed class OwnerCopyCredentialSource : IModelCredentialSource
             OwnerOnly.WriteAtomically(directory + "/.claude.json", settings);   // the owner's MCP servers keep their names, not the tokens they were given
         }
 
-
         var config = _options.Home + "/.claude-run";
         List<LoginMount> mounts = [new(_claudeHome, _claudeHome, MountMode.ReadOnly), new(directory, config, MountMode.ReadWrite)];
         mounts.AddRange(ReadOnlyEntries(_claudeHome, config, _claudeScratch));

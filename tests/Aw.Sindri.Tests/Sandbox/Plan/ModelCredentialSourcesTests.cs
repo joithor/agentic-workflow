@@ -32,8 +32,8 @@ public sealed class ModelCredentialSourcesTests
     {
         var registry = Registry(new FakeModelCredentialSource(ModelLoginSource.OwnerCopy).With(_claude, LoginState.Ready));
 
-        var prepared = await registry.Prepare(ModelLoginSource.SeparateLogin, _claude, _launch, ModelCredentialSources.DefaultNeeded, TestContext.Current.CancellationToken);
-        var checkedStatus = registry.Check(ModelLoginSource.SeparateLogin, _claude);
+        var prepared = await registry.Prepare(ModelLoginSource.SeparateLogin, _claude, _launch, TimeSpan.FromHours(1), TestContext.Current.CancellationToken);
+        var checkedStatus = registry.Check(ModelLoginSource.SeparateLogin, _claude, TimeSpan.FromHours(1));
 
         foreach (var error in new[] { prepared.Error, checkedStatus.Error })
         {
@@ -50,7 +50,7 @@ public sealed class ModelCredentialSourcesTests
         var separate = new FakeModelCredentialSource(ModelLoginSource.SeparateLogin).With(_claude, LoginState.Expired);
         var registry = Registry(owner, separate);
 
-        var result = await registry.Prepare(ModelLoginSource.SeparateLogin, _claude, _launch, ModelCredentialSources.DefaultNeeded, TestContext.Current.CancellationToken);
+        var result = await registry.Prepare(ModelLoginSource.SeparateLogin, _claude, _launch, TimeSpan.FromHours(1), TestContext.Current.CancellationToken);
 
         Assert.Equal(SindriErrors.LaunchLoginUnavailable.Code, result.Error.Code);
         Assert.Equal("expired", SandboxRefusal.ReasonOf(result.Error));
@@ -63,8 +63,8 @@ public sealed class ModelCredentialSourcesTests
     {
         var registry = Registry(new FakeModelCredentialSource(ModelLoginSource.OwnerCopy).With(_claude, LoginState.Ready).With(AgentId.From("codex"), LoginState.Missing));
 
-        Assert.True(registry.Check(ModelLoginSource.OwnerCopy, _claude).IsSuccess);
-        Assert.Equal("no-login", SandboxRefusal.ReasonOf(registry.Check(ModelLoginSource.OwnerCopy, AgentId.From("codex")).Error));
+        Assert.True(registry.Check(ModelLoginSource.OwnerCopy, _claude, TimeSpan.FromHours(1)).IsSuccess);
+        Assert.Equal("no-login", SandboxRefusal.ReasonOf(registry.Check(ModelLoginSource.OwnerCopy, AgentId.From("codex"), TimeSpan.FromHours(1)).Error));
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -72,7 +72,7 @@ public sealed class ModelCredentialSourcesTests
     {
         var owner = new FakeModelCredentialSource(ModelLoginSource.OwnerCopy).With(_claude, LoginState.Ready);
         var registry = Registry(owner);
-        var prepared = (await registry.Prepare(ModelLoginSource.OwnerCopy, _claude, _launch, ModelCredentialSources.DefaultNeeded, TestContext.Current.CancellationToken)).Value;
+        var prepared = (await registry.Prepare(ModelLoginSource.OwnerCopy, _claude, _launch, TimeSpan.FromHours(1), TestContext.Current.CancellationToken)).Value;
 
         registry.Release(prepared);
         registry.Release(prepared with { Source = ModelLoginSource.SeparateLogin });   // no adapter: nothing to do, no throw
@@ -104,14 +104,10 @@ public sealed class ModelCredentialSourcesTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void A_caller_that_knows_no_wall_time_gets_the_named_default_and_a_login_without_an_expiry_always_passes()
+    public void A_login_without_an_expiry_always_passes_and_the_caller_must_say_how_long_it_needs()
     {
-        var short5h = Registry(new FakeModelCredentialSource(ModelLoginSource.OwnerCopy).With(_claude, LoginState.Ready, _now + TimeSpan.FromHours(4)));
         var unknown = Registry(new FakeModelCredentialSource(ModelLoginSource.OwnerCopy).With(_claude, LoginState.Ready));
 
-        Assert.Equal(TimeSpan.FromMinutes(265), ModelCredentialSources.DefaultNeeded);
-        Assert.True(short5h.Check(ModelLoginSource.OwnerCopy, _claude).IsError);
-        Assert.True(short5h.Check(ModelLoginSource.OwnerCopy, _claude, TimeSpan.FromHours(1)).IsSuccess);
         Assert.True(unknown.Check(ModelLoginSource.OwnerCopy, _claude, TimeSpan.FromDays(30)).IsSuccess);
     }
 }

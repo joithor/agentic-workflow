@@ -74,7 +74,14 @@ internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProce
     }
 
     /// <inheritdoc />
-    public void Discard(SandboxPlan plan) => throw new NotSupportedException();
+    public void Discard(SandboxPlan plan)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        if (SecretsDirectory(plan) is { } directory && Directory.Exists(directory))
+        {
+            Directory.Delete(directory, recursive: true);   // this launch's directory only: another launch of the run area keeps its file
+        }
+    }
 
     /// <inheritdoc />
     public async Task<Result<Unit>> SelfCheck(SandboxPlan plan, CancellationToken ct)
@@ -180,9 +187,13 @@ internal sealed class BubblewrapSandbox(BubblewrapOptions options, ISandboxProce
         }
     }
 
+    // <run area>/secrets/<launch id>/: a run area may serve several launches, and a sweep or a discard must reach only its own.
+    private static string? SecretsDirectory(SandboxPlan plan) =>
+        RunAreaPreparer.RunAreaOf(plan) is { } area ? $"{area}/secrets/{plan.Launch.Value}" : null;
+
     private static string WriteSecrets(SandboxPlan plan, IEnumerable<(string Name, string Value)> pairs)
     {
-        var directory = (RunAreaPreparer.RunAreaOf(plan) ?? throw new IOException("the plan names no run area")) + "/secrets";
+        var directory = SecretsDirectory(plan) ?? throw new IOException("the plan names no run area");
         OwnerOnly.EnsureDirectory(directory);
         foreach (var old in Directory.GetFiles(directory))
         {

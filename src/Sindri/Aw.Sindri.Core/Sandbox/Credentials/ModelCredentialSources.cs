@@ -7,12 +7,6 @@ namespace Aw.Sindri.Core.Sandbox.Credentials;
 /// <summary>The registry of credential sources, keyed by id (sandbox spec SB18). Adapters are registered explicitly in the DI registration.</summary>
 public sealed class ModelCredentialSources
 {
-    /// <summary>
-    /// What a login must still be good for when the caller knows no wall time: the 4 h default wall limit, the 10 minutes of wall grace and 15 minutes of margin.
-    /// A launcher that knows the Step passes its own (timeout plus grace plus margin).
-    /// </summary>
-    public static readonly TimeSpan DefaultNeeded = TimeSpan.FromHours(4) + TimeSpan.FromMinutes(25);
-
     private readonly Dictionary<ModelLoginSource, IModelCredentialSource> _byId = [];
     private readonly TimeProvider _clock;
 
@@ -37,12 +31,6 @@ public sealed class ModelCredentialSources
     /// <param name="id">The source id.</param>
     /// <returns>True when it is.</returns>
     public bool Has(ModelLoginSource id) => _byId.ContainsKey(id);
-
-    /// <summary>Checks the login cheaply for a caller that knows no wall time (<see cref="DefaultNeeded"/>).</summary>
-    /// <param name="id">The source.</param>
-    /// <param name="target">The agent.</param>
-    /// <returns>The status, or the -017 error.</returns>
-    public Result<LoginStatus> Check(ModelLoginSource id, AgentId target) => Check(id, target, DefaultNeeded);
 
     /// <summary>Checks the login cheaply: ready for at least <paramref name="needed"/>, or SND-LAUNCH-017 with the source id. Never tries another source.</summary>
     /// <param name="id">The source.</param>
