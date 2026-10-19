@@ -95,7 +95,7 @@ internal sealed class LaunchesProjection(EventFactory events) : IProjection
 
             current = new LaunchRow(started.Value.Launch, started.Value.Item, repo.Value, started.Value.Mode, started.Value.Target, EngineChoice, LaunchState.Requested,
                 recorded.Envelope.OccurredAt, OutcomeAt: null, Code: null, Message: null, Stage: null, SessionId: null, ReportedSessionId: null, TabTitle: null,
-                Viewer: null, Late: false, Attach: null, CatalogSource: null, ArgvHash: null, Ended: null, recorded.Sequence);
+                Viewer: null, Late: false, Attach: null, CatalogSource: null, ArgvHash: null, Ended: null, LaunchStep.None, recorded.Sequence);
         }
 
         return await rows.Put(ViewNames.Launches, key, Fold(current, started.Value, recorded), cancellationToken).ConfigureAwait(false);
@@ -138,7 +138,7 @@ internal sealed class LaunchesProjection(EventFactory events) : IProjection
         ArgumentNullException.ThrowIfNull(recorded);
         return new LaunchRow(request.Launch, request.Item, repo, request.Mode, request.Target, request.ChosenBy, LaunchState.Requested, recorded.Envelope.OccurredAt,
             OutcomeAt: null, Code: null, Message: null, Stage: null, SessionId: null, ReportedSessionId: null, TabTitle: null, Viewer: null, Late: false, Attach: null,
-            CatalogSource: null, ArgvHash: null, Ended: null, recorded.Sequence);
+            CatalogSource: null, ArgvHash: null, Ended: null, LaunchStep.None, recorded.Sequence);
     }
 
     /// <summary>The row after a 'launch.started'. The first outcome wins (they share one key): a launch that already has one ignores it.</summary>

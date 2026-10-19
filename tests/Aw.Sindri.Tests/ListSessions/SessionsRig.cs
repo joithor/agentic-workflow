@@ -1,11 +1,13 @@
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Launch;
+using Aw.Sindri.Core.Launches;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Sessions;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Infrastructure.Launch;
 using Aw.Sindri.Testing;
 using Aw.Sindri.Tests.Sessions;
+using Aw.Sindri.Tests.Views;
 using TerminalFacts = Aw.Sindri.Core.Sessions.TerminalFacts;
 
 namespace Aw.Sindri.Tests.ListSessions;
@@ -26,6 +28,12 @@ internal sealed class SessionsRig
     }
 
     public SliceHarness Base { get; } = new();
+
+    /// <summary>The 'launches' view the session reads look launches up in; fold a launch into it with <see cref="Aw.Sindri.Tests.Views.LaunchFolds"/>.</summary>
+    public ViewsHarness Launches { get; } = new();
+
+    /// <summary>The read port over <see cref="Launches"/>.</summary>
+    public ILaunchViews LaunchViews => new LaunchViews(Launches.Views);
 
     public InMemorySessionSnapshot Snapshot { get; } = new();
 

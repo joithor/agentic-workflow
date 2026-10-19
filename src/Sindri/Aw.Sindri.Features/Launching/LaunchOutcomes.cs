@@ -114,6 +114,20 @@ internal sealed class LaunchOutcomes(ILedgerStore ledger, EventFactory events, I
         return ledger.Append(events.Entry(EventTypes.LaunchFailed, failed, OutcomeKey(failed.Launch), failed.Item.Value), grant, cancellationToken);
     }
 
+    /// <summary>Records <paramref name="request"/> as failed with <paramref name="error"/>.</summary>
+    /// <param name="grant">The lease.</param>
+    /// <param name="request">The launch that failed.</param>
+    /// <param name="error">Why.</param>
+    /// <param name="stage">Where it stopped, or null.</param>
+    /// <param name="cancellationToken">Cancels the append.</param>
+    /// <returns>The append; 'AlreadyRecorded' when another outcome got there first.</returns>
+    public ValueTask<Result<LedgerAppend>> Failed(LeaseGrant grant, LaunchRequest request, Error error, LaunchStage? stage, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(error);
+        return Failed(grant, new LaunchFailed(request.Launch, request.Item, error.Code, error.Message, LaunchFailureDetail.Of(error, stage)), cancellationToken);
+    }
+
     /// <summary>Records that a client attached to an 'unconfirmed' launch's session.</summary>
     /// <param name="grant">The lease.</param>
     /// <param name="watched">The launch.</param>

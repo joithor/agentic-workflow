@@ -27,7 +27,7 @@ public sealed class LaunchOptionsTests
     private static LaunchRow Row(int n, LaunchState state, bool live = false, SessionId? reported = null, string? code = null, TimeSpan? age = null) =>
         new(LaunchId.From("LCH-" + n.ToString("x32", System.Globalization.CultureInfo.InvariantCulture)), _item, RepoName.From("web"), LaunchMode.Open, AgentId.From("claude-code"), "click", state,
             _now - (age ?? TimeSpan.FromMinutes(5)), OutcomeAt: null, code, Message: null, Stage: null, SessionId: null, reported, TabTitle: "sindri " + _item.Value, Viewer: null, Late: false,
-            Attach: state == LaunchState.Started ? ["tmux", "attach"] : null, CatalogSource: null, ArgvHash: null, live || state != LaunchState.Started ? null : new LaunchEnd(SessionEndReason.Exit, 0, _now), Sequence: n);
+            Attach: state == LaunchState.Started ? ["tmux", "attach"] : null, CatalogSource: null, ArgvHash: null, live || state != LaunchState.Started ? null : new LaunchEnd(SessionEndReason.Exit, 0, _now), LaunchStep.None, Sequence: n);
 
     private static ItemLaunch For(ItemRow item, params LaunchRow[] launches) => LaunchOptions.For(new LaunchOptionInputs
     {
