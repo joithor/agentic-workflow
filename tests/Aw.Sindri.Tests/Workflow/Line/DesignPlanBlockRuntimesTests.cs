@@ -8,6 +8,7 @@ using Aw.Sindri.Core.Workflow.Engine.Rules;
 using Aw.Sindri.Core.Workflow.Recipes;
 using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
+using Aw.Sindri.Tests.Line;
 using Aw.Sindri.Tests.Scoping.Steps;
 using Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 using Aw.Sindri.Tests.Workflow.Engine;
@@ -31,6 +32,11 @@ public sealed class DesignPlanBlockRuntimesTests
     [InlineData("workflow.plan", "questions")]
     [InlineData("workflow.plan", "settle")]
     [InlineData("workflow.design", "check")]
+    [InlineData("workflow.design", "intake")]
+    [InlineData("workflow.design", "evidence")]
+    [InlineData("workflow.plan", "intake")]
+    [InlineData("workflow.plan", "evidence")]
+    [InlineData("workflow.plan", "freeze")]
     public void The_Step_opens_a_block_run_not_a_desk_task(string recipeName, string state)
     {
         using var provider = ShippedComposition.Compose();
@@ -91,6 +97,35 @@ public sealed class DesignPlanBlockRuntimesTests
         Assert.Equal("round", Next(entered, recipe, context, pass), StringComparer.Ordinal);
         Assert.Equal("draft", Next(entered, recipe, context, gaps), StringComparer.Ordinal);
     }
+
+    [Fact]
+    public async Task The_design_and_plan_stations_run_intake_evidence_and_freeze_without_a_desk_task()
+    {
+        await using var provider = ShippedComposition.Compose();
+        var line = new LineStation();
+        var ct = TestContext.Current.CancellationToken;
+        var (design, designContext) = Station(provider, "workflow.design");
+        var (plan, planContext) = Station(provider, "workflow.plan");
+
+        var designIntake = await line.DesignIntake().Run(LineStation.Context("step.design.intake", LineStation.DesignAddress, new ScopingFacts { ["scopePacket"] = LineStation.ScopePacket, ["designRevision"] = "First pass: no revision yet." }), ct);
+        var designEvidence = await line.DesignEvidence().Run(LineStation.Context("step.design.evidence", LineStation.DesignAddress, await line.DesignFacts()), ct);
+        var planIntake = await line.PlanIntake().Run(LineStation.Context("step.plan.intake", LineStation.PlanAddress, new ScopingFacts { ["scopePacket"] = LineStation.ScopePacket, ["designPacket"] = LineStation.Fact(designEvidence, "designPacket") }), ct);
+        var planFacts = await line.PlanFacts();
+        var planEvidence = await line.PlanEvidence().Run(LineStation.Context("step.plan.evidence", LineStation.PlanAddress, planFacts), ct);
+        planFacts["planPacket"] = LineStation.Fact(planEvidence, "planPacket");
+        var freeze = await line.PlanFreeze().Run(LineStation.Context("step.plan.freeze", LineStation.PlanAddress, planFacts), ct);
+        planFacts["holdoutSets"] = "[]";
+        var refused = await line.PlanFreeze().Run(LineStation.Context("step.plan.freeze", LineStation.PlanAddress, planFacts), ct);
+
+        Assert.Equal("draft", Next(Enter(design, designContext, "intake"), design, designContext, designIntake), StringComparer.Ordinal);
+        Assert.Equal("designed", Next(Enter(design, designContext, "evidence"), design, designContext, designEvidence), StringComparer.Ordinal);
+        Assert.Equal("graph", Next(Enter(plan, planContext, "intake"), plan, planContext, planIntake), StringComparer.Ordinal);
+        Assert.Equal("questions", Next(Enter(plan, planContext, "evidence"), plan, planContext, planEvidence), StringComparer.Ordinal);
+        Assert.Equal("planned", Next(Enter(plan, planContext, "freeze"), plan, planContext, freeze), StringComparer.Ordinal);
+        Assert.Equal("evidence", Next(Enter(plan, planContext, "freeze"), plan, planContext, refused), StringComparer.Ordinal);
+    }
+
+    private static WorkflowInstance Enter(Recipe recipe, DecisionContext context, string state) => StateEntry.Enter(EngineFixture.At(recipe, state), recipe, state, context);
 
     private static (Recipe Recipe, DecisionContext Context) Station(ServiceProvider provider, string name)
     {

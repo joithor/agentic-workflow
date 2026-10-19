@@ -11,7 +11,12 @@ internal static class LineServiceCollectionExtensions
     /// <returns>The same collection.</returns>
     internal static IServiceCollection AddLineSlices(this IServiceCollection services) => services
         .AddBlockRuntime<DesignCheckStep>()
+        .AddBlockRuntime<DesignEvidenceStep>()
+        .AddBlockRuntime<DesignIntakeStep>()
         .AddBlockRuntime<PlanCheckStep>()
+        .AddBlockRuntime<PlanEvidenceStep>()
+        .AddBlockRuntime<PlanFreezeStep>()
+        .AddBlockRuntime<PlanIntakeStep>()
         .AddBlockRuntime<PlanQuestionsStep>()
         .AddBlockRuntime<PlanSettleStep>();
 }
