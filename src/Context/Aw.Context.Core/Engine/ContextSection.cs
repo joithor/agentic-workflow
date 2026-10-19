@@ -17,4 +17,5 @@ internal sealed record ContextSection(
     int? CascadeComponentFanOut = null,
     LabelingSection? Labeling = null,
     EvalSection? Eval = null,
+    CodeSection? Code = null,
     ExtractSection? Extract = null);

@@ -2587,7 +2587,6 @@ Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Deconstruct(out bool WasRunning, ou
 Aw.Sindri.Features.OnyxDown.OnyxDownResponse.OnyxDownResponse(bool WasRunning, System.Collections.Generic.IReadOnlyList<string!>! Stopped, System.Collections.Generic.IReadOnlyList<string!>! Warnings) -> void
 Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Warnings.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Features.OnyxDown.OnyxDownResponse.Warnings.init -> void
-
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Deconstruct(out string? From, out string? To, out string? Trigger, out string? Outcome, out string? Run, out string? Via, out string? Decision) -> void
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.InstanceEventFields(string? From = null, string? To = null, string? Trigger = null, string? Outcome = null, string? Run = null, string? Via = null, string? Decision = null) -> void
 Aw.Sindri.Features.GetInstanceEvents.InstanceEventFields.Via.get -> string?
@@ -2644,6 +2643,22 @@ Aw.Sindri.Features.ContextCalls.LensesAnswer.Many.get -> Aw.Context.Core.Lenses.
 Aw.Sindri.Features.ContextCalls.LensesAnswer.Many.init -> void
 Aw.Sindri.Features.ContextCalls.LensesAnswer.One.get -> Aw.Context.Core.Lenses.LensesView?
 Aw.Sindri.Features.ContextCalls.LensesAnswer.One.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextCodeRequest!
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Anchors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Anchors.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>! Anchors, out bool Draft, out string? MapVersion) -> void
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Draft.get -> bool
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Draft.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.GetContextCodeRequest(System.Collections.Generic.IReadOnlyList<string!>! Anchors, bool Draft = false, string? MapVersion = null) -> void
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.MapVersion.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.MapVersion.init -> void
+override Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? left, Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextCodeRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? left, Aw.Sindri.Features.ContextCalls.GetContextCodeRequest? right) -> bool
 Aw.Sindri.Features.Scoping.ScopeFinding
 Aw.Sindri.Features.Scoping.ScopeFinding.<Clone>$() -> Aw.Sindri.Features.Scoping.ScopeFinding!
 Aw.Sindri.Features.Scoping.ScopeFinding.Deconstruct(out string! Rule, out string? Item, out string! Message, out string! Fix, out Aw.Sindri.Features.Scoping.ScopeSeverity Severity) -> void

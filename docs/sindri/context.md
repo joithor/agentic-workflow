@@ -872,3 +872,25 @@ sindri context query --diff <base>..<head> [--repo <name>] [--json]
 ```
 
 `<base>` and `<head>` are commit shas (7 to 64 hex characters), never branch names. Sindri lists the files changed from the merge base to `<head>`, the product-map nodes they implement, and what those nodes affect. The text output starts with a count line, then `UNMAPPED`: changed files no node claims, a gap to look at. Files only a model suggested are `suggested`, not `unmapped`. Paths under your deny globs are counted (`denied`) and never listed. An empty range answers with no files. `repo` can be left out when one repo is mapped. Exit 1 with `SND-CONTEXT-110` means the clone does not hold a sha: fetch it first; `111` means the commits share no history.
+
+## The code lens (S-CL)
+
+```
+sindri context code <anchor>... [--draft | --map-version <v>] [--json]
+GET /sindri/context/code?anchor=<key>&anchor=<key>[&draft=true | &mapVersion=v2]
+```
+
+For one to 20 anchors it lists the files that implement them, the tests that cover those files, the data things they read or write, and the schema files that name those things. The tests come from `tests` edges of the map and, beyond them, from a lexical search of the repo at the map's commit: a test file whose text names an implementing file's path (`imports`), or whose name matches the file's name (`sibling`). A lexical test is a suggestion; add the `tests` edge to the map to confirm it. Callers and callees say `unavailable (index-not-built)` until the code index ships.
+
+The output ends with what was searched: `map`, `code-index`, `lexical-tests` and `lexical-schema`, each with a state word. A repo clone that lacks the map's commit shows `unavailable (commit-not-held)`; a search that ran out of `context.deadline` shows `degraded (SND-CONTEXT-152)` with whatever it found. Neither stops the answer.
+
+Two profile keys steer the search, both lists of repo-relative globs (at most 50, never overriding `denyPaths`):
+
+```yaml
+context:
+  code:
+    schemaGlobs: ["db/migrations/**", "**/*.sql"]   # [] turns the schema scan off
+    testGlobs: ["**/*.test.*", "**/tests/**"]       # matched case-sensitively
+```
+
+Exit codes: 0 with an answer, 1 for attention (not running, no anchor found, unknown map version), 2 for a tool error.
