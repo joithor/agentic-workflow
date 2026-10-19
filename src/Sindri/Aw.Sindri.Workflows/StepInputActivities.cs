@@ -11,17 +11,29 @@ namespace Aw.Sindri.Infrastructure.Workflows;
 /// </summary>
 /// <param name="runner">Runs the input and shapes what it returned.</param>
 /// <param name="texts">Where the text is kept.</param>
-internal sealed class StepInputActivities(IStepInputRunner runner, IInjectionTexts texts)
+/// <param name="contexts">Resolves the repo of an instance whose workflow holds none (a child).</param>
+internal sealed class StepInputActivities(IStepInputRunner runner, IInjectionTexts texts, StepContexts contexts)
 {
     /// <summary>Runs the input and keeps its text.</summary>
     /// <param name="request">Which input, for which run.</param>
     /// <returns>The metadata of what it filled.</returns>
     [Activity("FillInput")]
-    public async Task<FilledInput> FillInputAsync(FillInputRequest request)
+    public Task<FilledInput> FillInputAsync(FillInputRequest request) => Fill(request, ActivityExecutionContext.Current.CancellationToken);
+
+    /// <summary>Runs the input and keeps its text.</summary>
+    /// <param name="request">Which input, for which run.</param>
+    /// <param name="cancel">The activity's cancellation.</param>
+    /// <returns>The metadata of what it filled.</returns>
+    internal async Task<FilledInput> Fill(FillInputRequest request, CancellationToken cancel)
     {
         ArgumentNullException.ThrowIfNull(request);
-        var cancel = ActivityExecutionContext.Current.CancellationToken;
-        var context = request.Context();
+        var resolved = await contexts.WithRepo(request.Address, request.Context(), cancel).ConfigureAwait(false);
+        if (resolved.IsError)
+        {
+            throw new ApplicationFailureException(resolved.Error.Message, errorType: resolved.Error.Code, nonRetryable: true);   // the ledger cannot say which repo: the input must not run on another's
+        }
+
+        var context = resolved.Value;
         Result<FilledOutput> filled;
         try
         {

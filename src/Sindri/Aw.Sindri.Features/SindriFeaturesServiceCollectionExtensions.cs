@@ -13,6 +13,7 @@ using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
 using Aw.Sindri.Core.Workflow.Views;
@@ -76,6 +77,7 @@ using Aw.Sindri.Features.RecordEval;
 using Aw.Sindri.Features.RecordHeartbeat;
 using Aw.Sindri.Features.RegisterMcp;
 using Aw.Sindri.Features.RegisterRecipe;
+using Aw.Sindri.Features.Repos;
 using Aw.Sindri.Features.ResumeService;
 using Aw.Sindri.Features.RevokeRecipe;
 using Aw.Sindri.Features.RunDoctor;
@@ -144,6 +146,7 @@ public static class SindriFeaturesServiceCollectionExtensions
             .AddSessionSlices()
             .AddLaunchSlices()
             .AddLaunchTargetJob()
+            .AddScoped<IRepoCheckouts, ProfileRepoCheckouts>()
             .AddScopingSlices();
         return services;
     }

@@ -10,8 +10,10 @@ using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Core.Workflow.Recipes;
+using Aw.Sindri.Features.Scoping;
 using Aw.Sindri.Infrastructure.Workflows;
 using Aw.Sindri.Testing;
+using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Workflow.Engine;
 using Aw.Sindri.Tests.Workflows.Inputs;
@@ -137,8 +139,8 @@ public sealed class BlockStepRunnerTests
         var text = "notes for the Step";
         var typed = JsonSerializer.SerializeToElement(new { count = 2 });
         var recorded = new FilledInput(input, 1, [new InjectionEntry("notes", input, Encoding.UTF8.GetByteCount(text), StepInputRunner.Sha(text))], new InjectionResultEntry(typed.GetRawText().Length, StepInputRunner.Sha(typed.GetRawText())));
-        _texts.Put(new InjectionKey("T-1/workflow.x/1", "route-evidence", "1.1", 1), new FilledTexts(new Dictionary<string, string>(StringComparer.Ordinal) { ["notes"] = text }, typed));
-        var request = new FillInputRequest("T-1/workflow.x/1", "route-evidence", "1.1", 1, input, _judge, new Dictionary<string, WithValue>(StringComparer.Ordinal), new Dictionary<FactKey, FactValue>(), Repo: null);
+        _texts.Put(new InjectionKey("T-1/x/1", "route-evidence", "1.1", 1), new FilledTexts(new Dictionary<string, string>(StringComparer.Ordinal) { ["notes"] = text }, typed));
+        var request = new FillInputRequest("T-1/x/1", "route-evidence", "1.1", 1, input, _judge, new Dictionary<string, WithValue>(StringComparer.Ordinal), new Dictionary<FactKey, FactValue>(), Repo: null);
         var run = (await RunOf(repo: null)) with { Fills = [new InjectionFill(recorded, request)] };
 
         var outcome = await Runner(_profiles).Run(run, TestContext.Current.CancellationToken);
@@ -156,6 +158,130 @@ public sealed class BlockStepRunnerTests
         Assert.Empty(_seen!.Injection.Sections);
         Assert.Empty(_seen.InputResults);
     }
+
+    [Fact]
+    public async Task A_Step_gets_the_stored_content_of_every_fact_its_descriptor_reads()
+    {
+        var reads = new BlockDescriptor(BlockId.From("step.test.reads"), BlockKind.Step, Version: 1, [_change], [], [OutcomeName.From("done")], Capability.None, [], Rung: null, DeskCapable: false, Runtime: BlockRuntime.Block);
+        var runner = new BlockStepRunner(
+            new BlockStepRuntimes([new BlockStepRegistration(reads.Id)]),
+            new BlockCatalog([reads], []),
+            (_, context, _) =>
+            {
+                _seen = context;
+                return ValueTask.FromResult(BlockStepResult.Completed(OutcomeName.From("done"), new Dictionary<FactKey, JsonElement>()));
+            },
+            _store,
+            _store,
+            _profiles,
+            new StepContexts(_texts, new NoRunner(), new ItemReposStub()));
+        var run = (await RunOf(repo: null)) with { Step = reads.Id };
+
+        var outcome = await runner.Run(run, TestContext.Current.CancellationToken);
+
+        Assert.Null(outcome.Failure);
+        Assert.Equal("Add a button", _seen!.Facts[_change].GetString());
+    }
+
+    [Fact]
+    public async Task A_Step_that_reads_a_fact_the_instance_does_not_hold_fails_before_it_runs()
+    {
+        var run = (await RunOf(repo: null)) with { Step = ReadsStep.Id, Facts = new Dictionary<FactKey, FactValue>() };
+
+        var outcome = await ReadsRunner().Run(run, TestContext.Current.CancellationToken);
+
+        Assert.Contains("fact:change", outcome.Failure, StringComparison.Ordinal);
+        Assert.Null(_seen);
+    }
+
+    [Theory]
+    [InlineData(true, "web")]
+    [InlineData(false, "Not A Repo")]
+    public async Task A_repo_that_could_not_be_read_or_is_no_repo_name_fails_the_Step_before_it_runs(bool unreadable, string repo)
+    {
+        var run = (await RunOf(repo)) with { Step = ReadsStep.Id, RepoUnreadable = unreadable };
+
+        var outcome = await ReadsRunner().Run(run, TestContext.Current.CancellationToken);
+
+        Assert.Equal("repo-unreadable", outcome.Failure);
+        Assert.Null(_seen);
+    }
+
+    [Fact]
+    public async Task Withdraw_and_propose_fail_on_an_unreadable_repo_and_never_touch_the_proposals()
+    {
+        var proposals = new InMemoryScopeRunProposals();
+        foreach (var step in new IBlockStep[] { new ScopeWithdrawStep(proposals), new ScopeProposeStep(proposals) })
+        {
+            var id = step is ScopeWithdrawStep ? ScopeWithdrawStep.Id : ScopeProposeStep.Id;
+            var descriptor = ReadsStep.Descriptor with { Id = id, Inputs = [] };
+            var runner = new BlockStepRunner(new BlockStepRuntimes([new BlockStepRegistration(id)]), new BlockCatalog([descriptor], []), (_, context, ct) => step.Run(context, ct), _store, _store, _profiles, new StepContexts(_texts, new NoRunner(), new ItemReposStub()));
+            var run = (await RunOf("web")) with { Step = id, RepoUnreadable = true };
+
+            var outcome = await runner.Run(run, TestContext.Current.CancellationToken);
+
+            Assert.Equal("repo-unreadable", outcome.Failure);
+        }
+
+        Assert.Empty(proposals.Calls);
+    }
+
+    [Fact]
+    public async Task The_Step_gets_the_instance_address_and_the_items_repo()
+    {
+        var run = (await RunOf("web")) with { Step = ReadsStep.Id };
+
+        _ = await ReadsRunner().Run(run, TestContext.Current.CancellationToken);
+
+        Assert.Equal(("T-1/x/1", "web"), (_seen!.Address, _seen.Repo!.Value.Value));
+    }
+
+    [Fact]
+    public async Task A_child_instance_with_no_fact_item_gets_the_repo_of_the_item_its_address_starts_with()
+    {
+        var run = (await RunOf(repo: null)) with { Step = ReadsStep.Id, Address = "ITM-0123456789abcdef0123456789abcdef/scoping/1/idea-to-brief.3" };
+
+        var outcome = await ReadsRunner(new ItemReposStub().With("ITM-0123456789abcdef0123456789abcdef", "web")).Run(run, TestContext.Current.CancellationToken);
+
+        Assert.Null(outcome.Failure);
+        Assert.Equal("web", _seen!.Repo!.Value.Value);
+    }
+
+    [Fact]
+    public async Task An_item_the_ledger_knows_no_repo_for_is_no_repo_and_an_unreadable_ledger_fails_the_Step()
+    {
+        var run = (await RunOf(repo: null)) with { Step = ReadsStep.Id, Address = "ITM-0123456789abcdef0123456789abcdef/scoping/1/idea-to-brief.3" };
+
+        var none = await ReadsRunner(new ItemReposStub()).Run(run, TestContext.Current.CancellationToken);
+        var seenRepo = _seen!.Repo;
+        _seen = null;
+        var failed = await ReadsRunner(new ItemReposStub(fails: true)).Run(run, TestContext.Current.CancellationToken);
+
+        Assert.Null(none.Failure);
+        Assert.Null(seenRepo);
+        Assert.Equal("repo-unreadable", failed.Failure);
+        Assert.Null(_seen);
+    }
+
+    private static class ReadsStep
+    {
+        internal static readonly BlockId Id = BlockId.From("step.test.reads");
+
+        internal static BlockDescriptor Descriptor { get; } = new(Id, BlockKind.Step, Version: 1, [_change], [], [OutcomeName.From("done")], Capability.None, [], Rung: null, DeskCapable: false, Runtime: BlockRuntime.Block);
+    }
+
+    private BlockStepRunner ReadsRunner(ItemReposStub? repos = null) => new(
+        new BlockStepRuntimes([new BlockStepRegistration(ReadsStep.Id, NeedsRepo: true)]),
+        new BlockCatalog([ReadsStep.Descriptor], []),
+        (_, context, _) =>
+        {
+            _seen = context;
+            return ValueTask.FromResult(BlockStepResult.Completed(OutcomeName.From("done"), new Dictionary<FactKey, JsonElement>()));
+        },
+        _store,
+        _store,
+        _profiles,
+        new StepContexts(_texts, new NoRunner(), repos ?? new ItemReposStub()));
 
     private static SindriProfile Profile(WorkflowSettings? workflow) => new(SindriProfile.CurrentSchemaVersion, "tester", Workflow: workflow);
 
@@ -177,7 +303,7 @@ public sealed class BlockStepRunnerTests
         _store,
         store ?? _store,
         approved,
-        new StepContexts(_texts, new NoRunner()));
+        new StepContexts(_texts, new NoRunner(), new ItemReposStub()));
 
     private async Task<BlockStepRun> RunOf(string? repo, WithValue? prompt = null)
     {
@@ -189,7 +315,7 @@ public sealed class BlockStepRunnerTests
             ["facts"] = new WithValue(JsonSerializer.SerializeToElement(_factNames), Fact: null, Profile: null),
             ["providers"] = new WithValue(Literal: null, Fact: null, Profile: "workflow.judge.providers"),
         };
-        return new BlockStepRun("T-1/workflow.x/1", "route-evidence", "1.1", _judge, with, new Dictionary<FactKey, FactValue> { [_change] = put.Value }, repo);
+        return new BlockStepRun("T-1/x/1", "route-evidence", "1.1", _judge, with, new Dictionary<FactKey, FactValue> { [_change] = put.Value }, repo);
     }
 
     private sealed class UnreadableProfile : IApprovedProfile
