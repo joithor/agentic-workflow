@@ -168,9 +168,16 @@ Registration is per work repo and never user-wide, so sessions in personal repos
 work context. In the work repo's main checkout:
 
 ```bash
-$SINDRI mcp register            # prints the command (any caller may run this)
-$SINDRI mcp register --apply    # runs it: a human at a terminal only (a session gets SND-AUTH-002)
+$SINDRI mcp register            # prints each provider's change (any caller may run this)
+$SINDRI mcp register --apply    # writes it: a human at a terminal only (a session gets SND-AUTH-002)
+$SINDRI mcp register --apply --providers claude,codex,cursor|all   # more than Claude Code (the default is claude alone)
 ```
+
+`scripts/sindri-app.sh` (a bare run) does the last line itself once the control plane's port is known, so the owner
+needs nothing else: it is idempotent (an entry that is already right is not written) and re-registers when the port moves.
+`AW_SINDRI_MCP_REPO` is passed through as `--repo`. Without it, from a linked worktree the script passes the main
+checkout's folder name as `--repo`, which works when the profile names the repo after its folder; otherwise set
+`AW_SINDRI_MCP_REPO` to the profile's name. Its `mcp` line names the `--repo` it used.
 
 It prints, and with `--apply` runs in the repo's main checkout:
 
@@ -178,16 +185,29 @@ It prints, and with `--apply` runs in the repo's main checkout:
 claude mcp add --transport http --scope local sindri http://127.0.0.1:<port>/sindri/mcp --header 'X-Sindri-Repo: <repo>'
 ```
 
+Per provider (each line of the answer is `registered`, `unchanged`, `skipped` (not installed), `registered, needs trust`
+or `failed` with a fix line; one failing never stops the others):
+
+| Provider | Where | Scope |
+|----------|-------|-------|
+| Claude Code | `claude mcp add --scope local` run in the main checkout; a changed port or repo is `claude mcp remove --scope local sindri`, then add | per repo |
+| Cursor | the checkout's `.cursor/mcp.json`: the `sindri` entry (`url`, `headers`) merged, every other entry untouched | per repo |
+| Codex | the checkout's `.codex/config.toml`: a `[mcp_servers.sindri]` table (`url`, `http_headers`); Codex loads it only for a trusted project, so `--apply` also adds `[projects."<checkout>"] trust_level = "trusted"` to the user's Codex config (`$CODEX_HOME/config.toml`, else `~/.codex/config.toml`), a one-row append that changes nothing else. A row with another level is never overwritten: that line is `registered, needs trust` | per repo; the trust row is user-level but names only this checkout |
+
+A project file git tracks that would change is `failed`, not edited (a provisional owner default, stricter than warning
+and writing; the fix line names the file and the exact entry to add by hand; `.cursor/mcp.json` and `.codex/config.toml` are not tracked in
+this repo; where they aren't ignored either, they show as untracked). A file that isn't valid JSON or TOML the tool can edit is `failed`.
+Installed means `claude`, `codex` or `cursor-agent` on PATH (Cursor also by its `~/.cursor` directory).
+
 Exit codes (spec §8.6): `0` printed or registered · `1` attention: not a profile repo (`024`) or `--apply` from a
-session (`SND-AUTH-002`) · `2` a tool error: `claude` couldn't run or failed (`025`), a usage error.
+session (`SND-AUTH-002`) · `2` a tool error: a provider `failed` (`025`; the others were still registered), a usage error.
 
 `<repo>` is the profile repo the working directory belongs to (a linked worktree resolves to its main checkout), or
 `--repo NAME`. `<port>` is the running instance's, else the profile's `api.port` (default 7410). Outside every
 profile repo, or with an unknown `--repo`, it answers `SND-CONTEXT-024`; a `claude` that can't be started or fails
 answers `SND-CONTEXT-025` (run the printed line by hand to see why). `AW_SINDRI_CLAUDE_BIN` names another `claude`
-executable (tests point it at a recording stub). Codex and Cursor are never registered: Codex keeps MCP servers only
-in user config, and Cursor's project file sits inside the repo, so Sindri passes them the endpoint when it launches
-them (API spec §8.1).
+executable (tests point it at a recording stub). Codex and Cursor take project files (above); Sindri also passes them
+the endpoint when it launches them (API spec §8.1).
 
 **Worktrees.** Claude Code keys a local-scope entry by directory. Whether that entry also reaches sessions started in
 the repo's linked worktrees is checked by the owner with the real `claude` (S-1M `owner-check.md`, step 6b); no agent
@@ -872,3 +892,41 @@ sindri context query --diff <base>..<head> [--repo <name>] [--json]
 ```
 
 `<base>` and `<head>` are commit shas (7 to 64 hex characters), never branch names. Sindri lists the files changed from the merge base to `<head>`, the product-map nodes they implement, and what those nodes affect. The text output starts with a count line, then `UNMAPPED`: changed files no node claims, a gap to look at. Files only a model suggested are `suggested`, not `unmapped`. Paths under your deny globs are counted (`denied`) and never listed. An empty range answers with no files. `repo` can be left out when one repo is mapped. Exit 1 with `SND-CONTEXT-110` means the clone does not hold a sha: fetch it first; `111` means the commits share no history.
+
+## The code lens (S-CL)
+
+```
+sindri context code <anchor>... [--draft | --map-version <v>] [--json]
+GET /sindri/context/code?anchor=<key>&anchor=<key>[&draft=true | &mapVersion=v2]
+```
+
+For one to 20 anchors it lists the files that implement them, the tests that cover those files, the data things they read or write, and the schema files that name those things. The tests come from `tests` edges of the map and, beyond them, from a lexical search of the repo at the map's commit: a test file whose text names an implementing file's path (`imports`), or whose name matches the file's name (`sibling`). A lexical test is a suggestion; add the `tests` edge to the map to confirm it. Callers and callees say `unavailable (index-not-built)` until the code index ships.
+
+The output ends with what was searched: `map`, `code-index`, `lexical-tests` and `lexical-schema`, each with a state word. A repo clone that lacks the map's commit shows `unavailable (commit-not-held)`; a search that ran out of `context.deadline` shows `degraded (SND-CONTEXT-152)` with whatever it found. Neither stops the answer.
+
+Two profile keys steer the search, both lists of repo-relative globs (at most 50, never overriding `denyPaths`):
+
+```yaml
+context:
+  code:
+    schemaGlobs: ["db/migrations/**", "**/*.sql"]   # [] turns the schema scan off
+    testGlobs: ["**/*.test.*", "**/tests/**"]       # matched case-sensitively
+```
+
+Exit codes: 0 with an answer, 1 for attention (not running, no anchor found, unknown map version), 2 for a tool error.
+
+## History: `context history` (S-H)
+
+```
+sindri context history <anchor>... [--since <t>] [--before <t>] [--draft | --map-version <v>] [--json]
+GET /sindri/context/history?anchor=K&anchor=K2[&since=][&before=][&draft=true | &mapVersion=]
+```
+
+What lies behind a node, in time: the stored records and decisions that reach it, and the changes that landed in the files that implement it. One to twenty anchors; each anchor's **own scope** is read (no cascade; `context lenses` is the cascade). An anchor you cannot read is listed in `missingAnchors` (one answer for every reason); none resolving is `SND-CONTEXT-003`.
+
+- **Changes.** `git log --first-parent` over the implementing files (at most 50, confirmed links first, never a path the repo's deny globs hide): one entry per merge commit, squash commit or direct commit on the checked-out branch. The number and branch come from the subject only (GitHub `Merge pull request #N from owner/branch`, a squash's `(#N)`, Bitbucket `(pull request #N)`, `Merge branch 'x'`); nothing calls a forge, and a commit body is never read. A subject is scrubbed, one line, at most 200 characters and fenced for a session (`trust: untrusted`). `files` are the searched files the commit touched. Newest first, at most 100. Needs git 2.31 or newer. With a `mapVersion` that names a commit, no change newer than that commit is listed.
+- **Window.** `since` and `before` are an RFC 3339 instant (`2026-07-01T00:00:00Z`) or a date (`2026-07-01`, UTC midnight). A relative time (`90d`), an unparseable one, `since` after `before`, or `--draft` with `--map-version` is `SND-CONTEXT-006`. `since` cuts changes and records by their last update; it never drops a decision (a decision does not age out).
+- **`before`: the world as of an instant** (inclusive). A change committed later is gone. A record created later is dropped (`counts.afterCut`); one edited later, or whose times are unknown, is kept with `leaky: true`, meaning it may show edits made after the cut. A decision a person made is cut by its own time; one extracted from a record follows that record. Records synced before this release have no creation time until their version changes, so they read `leaky` under a `before`. A `before` older than the map version adds a line to `degraded`: the map is today's, not the map as it was.
+- **`searched`.** The rows are `map`, each intent source, `git-history` and `incidents` (no `code-index`). `incidents` is `not-configured` (no incident source exists). `git-history`: `ok` (reason `capped`, `shallow-clone` or `no-files` when worth saying), `degraded` with `SND-CONTEXT-160` (out of `context.deadline`; the changes found so far are listed) or `SND-CONTEXT-048` (a checkout git cannot read), or `unavailable` with `commit-not-held` and `SND-CONTEXT-110` (the map version's commit is not in the clone: fetch it into the repo's checkout). An intent source reads `not-configured`, `unavailable` with `history-unlinked` (records synced, none linked to a node), or `unavailable` with `not-synced` and `SND-CONTEXT-161` (the source never synced). Codes 160 and 161 are row codes, never a failed call.
+- **A gap fills itself.** When a configured intent source has never synced, the `not-synced` row carries `sync: {state, jobId}` while a sync job runs (the id `GET /sindri/jobs/{id}` serves; also on `context lenses`). The built-in `context-sync-gaps` service (listed by `sindri services`) starts that sync as `service:context-sync-gaps` through the `SyncSources` command; a sync that is already running is never doubled, and after a failed sync it waits 5, 10, 20, 40, then 60 minutes at most, counted from the newest failure in a row (a success resets it). It re-checks on the scheduler tick by reading the jobs view; the scheduler has no event trigger. A failure to start shows in needs-you as `failure:service:context-sync-gaps`. The app re-reads the lenses and history when a `job.*` event arrives.
+- **Exit codes.** 0 with an answer; 1 for attention (not running, an unknown anchor, a bad window, a version not held); 2 for a tool error.

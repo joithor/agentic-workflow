@@ -1,6 +1,4 @@
 using System.Globalization;
-using Aw.Context.Core.Engine;
-using Aw.Context.Core.Facade;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
@@ -20,7 +18,7 @@ namespace Aw.Sindri.Features.ApproveProfile;
 /// A, B records every step and a retry computes the same key. Approving redeems the 'approve profile &lt;hash6&gt;'
 /// challenge (S1-D5) bound to the live hash; a missing, mistyped, expired or stale one is SND-PROFILE-004 and records nothing.
 /// </summary>
-internal sealed class ApproveProfileService(IProfileSource live, IApprovals approvals, HeldLease held, ILedgerStore ledger, EventFactory events, IChallenges challenges, IContextEngine context)
+internal sealed class ApproveProfileService(IProfileSource live, IApprovals approvals, HeldLease held, ILedgerStore ledger, EventFactory events, IChallenges challenges, ProfileChecks checks)
     : IService<ApproveProfileRequest, ApproveProfileResponse>
 {
     public async ValueTask<Result<ApproveProfileResponse>> Handle(ApproveProfileRequest request, CancellationToken cancellationToken)
@@ -93,7 +91,8 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
 
         var previous = latest.IsSuccess ? latest.Value : null;
         var approved = ProfileRules.IsApproved(previous?.Hash, recorded?.Hash, loaded.Hash);
-        return new ApproveProfileResponse(loaded.Hash, ProfileDiff.Between(previous?.Profile, loaded.Profile), approved, Sequence: null);
+        var changes = ProfileDiff.Between(previous?.Profile, loaded.Profile);
+        return new ApproveProfileResponse(loaded.Hash, changes, approved, Sequence: null) { StepArgv = checks.StepArgv(loaded.Profile, changes) };
     }
 
     private Error? Refusal(ProfileHash asked, LoadedProfile live, ChallengeAnswer? answer) => true switch
@@ -116,8 +115,6 @@ internal sealed class ApproveProfileService(IProfileSource live, IApprovals appr
             return loaded;
         }
 
-        var profile = loaded.Value.Profile;
-        var checkedContext = context.CheckSettings(profile.Context, [.. (profile.Repos ?? []).Select(r => new ProfileRepoEntry(r.Name, r.Path))]);
-        return checkedContext.IsError ? checkedContext.Error : loaded;
+        return checks.Context(loaded.Value.Profile) is { } invalid ? invalid : loaded;
     }
 }

@@ -363,7 +363,7 @@ and a test that pins its exact line (the P2 rows have none yet). All are errors 
 | `RCP-CHOICE-006` | A route state's `uncertain` and `step.failed` transitions come after its branch transitions (the app takes the first transition as the main path) | List the branches first |
 | `RCP-CHILD-001` | A child recipe resolves (registered, or next to the recipe) and gets its inputs | Register it, or put `<id>.yaml` beside the recipe; pass the inputs it declares |
 | `RCP-CHILD-002` | Child recipes form no cycle | Remove a child wait |
-| `RCP-CHILD-003` | Children nest at most 4 deep | Flatten the chain |
+| `RCP-CHILD-003` | Children nest at most 5 deep | Flatten the chain |
 | `RCP-CAP-001` | **Generated recipes only** (run against the base; `recipe validate` doesn't): a generated recipe adds no capability use its base doesn't have | Remove it, or generate from a base that has it |
 | `RCP-CAP-002` | **Generated recipes only:** a generated recipe keeps its base's capability parameters | Set them to the base's values |
 | `RCP-CAP-003` | The recipe's hash is approved and its pinned blocks match the build (registry, P2) | Approve it |
@@ -507,7 +507,7 @@ what a report must carry, on which outcomes; "every outcome" outputs are on all 
 
 ### Block catalog (scoping station)
 
-Descriptor-only too (`ScopingSteps`, `PendingInputs` in `Aw.Sindri.Features/Blocks/`); the recipes are `workflow.scoping` and `workflow.idea-to-brief` (scoping spec §6, §9). Every Step is desk-capable. An agent Step reaches only `Tools` (the read-only rule is W9's, enforced at launch).
+Descriptor-only too (`ScopingSteps` in `Aw.Sindri.Features/Blocks/`; the three context inputs are real runtimes, see "The context inputs (S-LB2)"); the recipes are `workflow.scoping` and `workflow.idea-to-brief` (scoping spec §6, §9). Every Step is desk-capable. An agent Step reaches only `Tools` (the read-only rule is W9's, enforced at launch).
 
 | Step | Runtime | Inputs | Outcomes | Outputs |
 |---|---|---|---|---|
@@ -568,7 +568,7 @@ Descriptor-only Steps of `workflow.design` and `workflow.plan` (line spec §4-§
 | `step.plan.review` | desk, human-only | `planPacket`, `design` | `approve`, `reviseDesign`, `revisePlan`, `drop` | `answers` on reviseDesign and revisePlan |
 | `step.plan.freeze` | block | `planPacket`, `design`, `plan`, `holdoutSets` | `frozen`, `mismatch` | `planPacket`, `phasePackets` on frozen; `findings` on mismatch |
 
-The Step inputs `input.context.lenses`, `input.context.code` and `input.context.history` are registered as descriptors (parameters `anchors`, `depth`, `hops`, `window`) so the recipe validates; the context lane replaces them with the blocks (C1, C3, C5, W6). The output schemas are `schemas/scoping/` (`node scripts/check-scoping-schemas.mjs`).
+The Step inputs `input.context.lenses`, `input.context.code` and `input.context.history` are real Step inputs (parameters `anchors`, `depth`, `hops`, `window`; "The context inputs (S-LB2)" below), so the recipe validates and approves. The output schemas are `schemas/scoping/` (`node scripts/check-scoping-schemas.mjs`).
 
 `step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and human-only; their hashes moved once when the two fields
 landed (provisional owner default); every other shipped descriptor hashes as before (`ShippedBlocksTests` pins all of them).
@@ -647,7 +647,7 @@ transition decides which to keep (decision-tree spec §8.4, DT-C). The complete 
 
 A `waitFor: { child }` state's entry starts the child as a Temporal child workflow (`ParentClosePolicy.Terminate`) whose
 workflow id is the child's address, `{parent}/{recipe name}.{entry}`; a looped child wait therefore starts a new child on
-each entry, and a child may wait on its own child (RCP-CHILD-003 allows depth 4). The child is created from the hash its
+each entry, and a child may wait on its own child (RCP-CHILD-003 allows depth 5). The child is created from the hash its
 parent's approval pinned: `LoadChildren`, a local activity, reads the pinned children and their pinned children, and an
 unpinned or re-hashed child is refused (`SND-RECIPE-002`).
 
@@ -971,6 +971,33 @@ Engine spec rev 8.1 §5.1, §5.2, §5.8, §6.1–§6.3.
   `sindri` when unset; README X61). A Step's activity runs on its instance's queue; `StepTaskQueue.For` is the seam a
   later phase uses to route a Step elsewhere.
 
+## Step inputs at run time
+
+Before a desk Step opens, each input in its `step.inputs` list runs as a `FillInput` activity (id `inputs:{token}:{n}`, 60 s, 3 attempts), in declaration order, once per run token. The activity runs the input in its own scope, checks the section names (`^[a-z][a-z0-9._-]{0,63}$`), scrubs each section and the typed result, then hashes the scrubbed text, so the digest covers exactly what a Step sees. A section or a typed result is at most 256 KiB and a plan at most 1 MiB (`SND-WF-019`, which fails the Step without retries).
+
+- **No text is stored.** The activity returns `{section, input, bytes, sha256}` per section and the size and digest of the typed result; that metadata is all Temporal records. The text lives in `MemoryInjectionTexts`, keyed by instance address, state, run token and input, bounded (64 entries, 8 MiB), dropped when a newer run of the instance arrives, and never persisted or logged. A history recorded before the `step-inputs-v1` patch replays without filling.
+- **A later section of the same name replaces the earlier one** in place (`InjectionPlans.Merge`, pure); the plan keeps a warning for each replacement.
+- **A throwing input fails the Step**: `step.failed` with the reason `input <id> failed: <error code>` (never the message), which the recipe's `on: step.failed` routes. No desk task opens.
+- **An input whose runtime is gone after approval parks the instance** with the existing `ParkReason.NoRuntime` (shown as `SND-WF-010`); the question reads `input <id> of <step> has no runtime in this build (SND-WF-016; fix: install the block pack or rebuild, then restart)`. A restart runs Fill again and parks again the same way while the runtime is missing; nothing fails and nothing loops.
+- **An in-process Step** gets `StepContext.Injection` (the sections) and `StepContext.InputResults` (the typed results, keyed by the input block id, or `id#n` (n = the entry's place in the Step's input list) once the Step lists that block twice; read-only, empty when it has none) from `StepContexts`. On a cache miss the input runs again and its digests must equal the recorded ones; otherwise `SND-WF-018` and the Step does not run on different data.
+
+### The context inputs (S-LB2)
+
+The scoping recipe's `gather` Step names three real inputs, so `sindri recipe approve` of `workflow.scoping` passes the `SND-WF-016` check only when this build has a runtime for each. All of them live in `Features/ContextCalls` (they share `ContextInputScopes` and `ContextInputFacts`) and are registered by `AddSindriFeatures`.
+
+| Input | Section | Typed result (`StepContext.InputResults`) | Reads |
+|---|---|---|---|
+| `input.context.lenses {anchors, depth?, hops?}` | `lenses` | `LensesSetView` (schema 2) | `IContextEngine` lenses on the current map |
+| `input.context.history {anchors, window?}` | `history` | `HistoryView` (no live sync marker: a fill depends on the stored state only) | `IContextEngine` history; `window` is `{since?, before?}` (RFC 3339 or a date) or a bare string meaning `since` |
+| `input.context.code {anchors}` | `code` | `CodeView` | `IContextEngine` code on the current map |
+
+- **`service:engine`, the instance's repo.** Each call runs as the engine's service caller with a scope cut to the one repo of the instance's item (`StepInputContext.Repo`, from the ledger), never from a caller (`ContextInputScopes`).
+- **Honest sections.** An empty anchor list, a bad window, an item with no repo, a repo outside the approved profile, no approved profile, and any refusal from the engine (`SND-CONTEXT-*`) become one section ("The context lenses are unavailable for this Step (code: message); it runs without them.") with no typed result. They never throw; a degraded source stays visible in the view's `searched` rows.
+- **A fill is a function of the stored state.** A re-fill after a restart or an eviction must give the same digest (`SND-WF-018` otherwise). So the views are made stable before they are rendered (`ContextInputSections.Stable`): `asOf` is the map's creation instant, the map's age is unstated (`ageDays` is -1, the text omits it), and the searched sources' instants are left out. A real change between fill and re-fill still gives 018, which is the rule: a new map version, and also a change of the repo's HEAD (the coverage and an open history window read live HEAD), counts as a change.
+- **Bounded.** Each section and each typed result is at most 120 KiB (three inputs stay under the plan's 1 MiB; the runner's cap is 256 KiB a part). Text is cut at whole lines with "[N more lines not shown: this section is capped at 120 KiB]"; a typed result over the budget is left out and the text says so. A Step never fails (SND-WF-019) because a map is big.
+- **Arguments.** A fact-valued argument (`anchors: { fact: fact:anchors }`) is read through the fact-content port (`ContextInputFacts`, one helper for the three inputs) and checked against its SHA-256: the content is a JSON list of anchor keys (or `{"anchors": [...]}`), or a single key as text; a fact that is absent or can't be read is an unavailable section naming it, and content that no longer matches its SHA-256 fails the fill with `SND-WF-018` (the Step does not run on other data). `IStepInput.Fill` returns `Result<InjectionSections>`: an expected failure that must fail the fill (changed data, `SND-WF-018`) is a coded `Error`, which the runner returns on the path of its own refill-digest mismatch; everything else is a section. A history `window` of the wrong shape (a list, a number, a boolean, or a `since`/`before` that is not text) is an unavailable section naming the argument (an absent or null window is the open window, with a note; the engine does not pass a `{ profile: … }` window to inputs, so the recipe's `workflow.scoping.historyWindow` is named in a note and the window stays open), and a window key other than `since`/`before` is named in a note; anchors, `depth` or `hops` that cannot be used, and a `hops` list with non-text items, are named in a "note:" line at the head of the section instead of being dropped silently; an empty `hops` list is the default hops.
+- **Text.** The section is the same plain text the `sindri context lenses|history|code` verbs print, with the untrusted labels fenced once (the engine fences them for its in-process caller; the input does not fence again); the typed result is the view in the route's JSON shape. The runner scrubs and caps both (256 KiB per section).
+
 ## Effects as activities (engine P6)
 
 Engine spec rev 8.1 §5.7. A transition's effects run after the transition's ledger event, each on its own path in
@@ -1148,11 +1175,11 @@ Engine spec rev 8.1 §3.8, §5.2, §5.5, §5.8, §6.2; UI spec E-6, E-19.
   and is `SND-WF-003` on an ended instance whose workflow is still open (`SND-WF-001` once it has closed), for any actor other than `service:engine`,
   and for a launch that is not a launch id (`LCH-` and 32 lower-case hex digits). One that arrives while the
   instance is still starting waits for the start, then takes over. Temporal deduplicates the id, so a repeat applies once. The ledger row
-  carries the launch id as `causation`. Its sender is API P10b's launcher.
+  carries the launch id as `causation`. Its sender is the launcher service (API P10a, `Features/Launching/TakeoverWait`), which waits for the result inside the request's 30 s deadline.
 - **Start taken over (E-19).** `StartInstance` reads the item's launches (`ILaunchRequests.Requested` returns a `LaunchId?`: `LCH-` and 32 hex digits); when one is still
   requested the instance starts taken over (`InstanceStart.OpenLaunch`, actor `service:engine`), with the launch as the
-  `workflow.started` row's `causation`, the state's full timeout kept for the handback and takeoverIdle running. Until
-  API P10a's launches projection lands, the adapter (`NoLaunchRequests`) reads none.
+  `workflow.started` row's `causation`, the state's full timeout kept for the handback and takeoverIdle running. The adapter
+  (`LaunchRequestsView`) reads the `launches` view: the launch still `requested` and inside its 30 s deadline; a key that is no item id has none.
 
 ## Block runtime (DT-J2)
 

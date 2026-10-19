@@ -192,7 +192,8 @@
           "confirm": "Cancel ITM-01JE7/item/1/step.4? 0 running steps stop; 0 children are cancelled."
         }
       ],
-      "text": "ITM-01JE7/item/1/step.4  workflow.step@1c1173a162a7  v2  produce: desk task  since 12:20 (6m)\n  next      Produce the Step output for ITM-01JE7 (round 2/3), then run: sindri workflow complete\n            ITM-01JE7/item/1/step.4 --run 3.1 --outcome done --output fact:output=<file>\n  inputs    fact:spec  spec.md  sha256:1c0e...\n  timeout   parks in 1d 23h 54m (desk)\n  budget    tokens 0 / 200k (state), 0 / 400k (instance)\n  commands  complete, takeover, cancel\n"
+      "text": "ITM-01JE7/item/1/step.4  workflow.step@1c1173a162a7  v2  produce: desk task  since 12:20 (6m)\n  next      Produce the Step output for ITM-01JE7 (round 2/3), then run: sindri workflow complete\n            ITM-01JE7/item/1/step.4 --run 3.1 --outcome done --output fact:output=<file>\n  inputs    fact:spec  spec.md  sha256:1c0e...\n  timeout   parks in 1d 23h 54m (desk)\n  budget    tokens 0 / 200k (state), 0 / 400k (instance)\n  commands  complete, takeover, cancel\n",
+      "injection": []
     }
   },
   "facts": [

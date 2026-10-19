@@ -14,8 +14,11 @@ internal static class ShippedComposition
 
     public static JsonSerializerOptions Json => SliceHarness.Json;
 
-    public static ServiceProvider Compose() =>
-        Composition.Compose(new ServiceCollection(), name => name == "AW_STATE_DIR" ? _stateRoot : null, new FakeTimeProvider())
+    public static ServiceProvider Compose() => Compose(_stateRoot, proveBlocks: null);
+
+    /// <summary>The composition over <paramref name="stateRoot"/>, with AW_SINDRI_PROVE_BLOCKS set to <paramref name="proveBlocks"/>.</summary>
+    public static ServiceProvider Compose(string stateRoot, string? proveBlocks) =>
+        Composition.Compose(new ServiceCollection(), name => name switch { "AW_STATE_DIR" => stateRoot, "AW_SINDRI_PROVE_BLOCKS" => proveBlocks, _ => null }, new FakeTimeProvider())
             .BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
 
     public static EffectContext Effect(string id) => new(

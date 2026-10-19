@@ -209,7 +209,7 @@ All are schema 1, and none needs fan-out.
 | Diverge for one step, reconverge | Each branch is one state, and their exits share a target: `{ from: [evidence-ui, evidence-api, evidence-db], to: review, on: wait.satisfied, when: { outcome: resolved } }` |
 | Diverge into separate paths | A branch leads to its own states and its own terminal |
 | A combined branch | One branch is a child that runs several blocks in sequence (`evidence-all`, §5.3) |
-| Nested decisions | A branch's child recipe has its own route state. Children nest at most 4 deep (`RCP-CHILD-003`); §6's deepest chain is 3 below the root (meta → evidence → evidence-all → evidence-ui) |
+| Nested decisions | A branch's child recipe has its own route state. Children nest at most 5 deep (`RCP-CHILD-003`); §6's deepest chain is 3 below the root (meta → evidence → evidence-all → evidence-ui) |
 | Loop back with what was learned | A branch's exit goes back under a declared loop: `{ from: evidence, to: implement, on: wait.satisfied, when: { all: [ { outcome: unresolved }, { loop: stage, below: cap } ] } }` |
 
 Every child wait also reports `cancelled` (REF, `RCP-OUTCOME-001`). Each child state in §4 and §6 routes it with a

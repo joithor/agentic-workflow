@@ -13,7 +13,7 @@ public sealed class WorkflowErrorsTests
 
     [Theory, Trait("Lane", "unit")]
     [InlineData("SND-RECIPE", 10)]
-    [InlineData("SND-WF", 16)]
+    [InlineData("SND-WF", 19)]
     [InlineData("SND-BLOCK", 3)]
     public void Every_code_of_an_area_is_live_or_retired_and_none_is_both(string area, int last)
     {

@@ -9,8 +9,6 @@ namespace Aw.Context.Tests.Infrastructure;
 [Trait("Lane", "integration")]
 public sealed class GraphifyClusterReasonTests
 {
-    private static CancellationToken Ct => TestContext.Current.CancellationToken;
-
     private static TempGitRepo Repo(Dictionary<string, string>? extra = null)
     {
         var files = new Dictionary<string, string>(StringComparer.Ordinal) { ["src/a.ts"] = "export const a = 1;\n", ["src/b.ts"] = "export const b = 2;\n" };
@@ -24,7 +22,7 @@ public sealed class GraphifyClusterReasonTests
 
     private static async Task<ClusterSet> Cluster(TempGitRepo repo, GraphifyOptions options, ClusterLimits limits)
     {
-        var set = await new GraphifyClusterSource(new GitCli(), options).Clusters(repo.Repo, repo.Head, limits, Ct);
+        var set = await GraphifyRun.Clusters(new GraphifyClusterSource(new GitCli(), options), repo, limits);
         Assert.True(set.IsSuccess);
         return set.Value;
     }

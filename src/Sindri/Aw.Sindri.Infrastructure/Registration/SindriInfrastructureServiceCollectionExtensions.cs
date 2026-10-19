@@ -11,6 +11,7 @@ using Aw.Sindri.Core.Mcp;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
+using Aw.Sindri.Core.Scoping;
 using Aw.Sindri.Core.Secrets;
 using Aw.Sindri.Core.Text;
 using Aw.Sindri.Core.Views;
@@ -21,6 +22,7 @@ using Aw.Sindri.Core.Workflow.Registry;
 using Aw.Sindri.Infrastructure.Auth;
 using Aw.Sindri.Infrastructure.Challenges;
 using Aw.Sindri.Infrastructure.Control;
+using Aw.Sindri.Infrastructure.Launch;
 using Aw.Sindri.Infrastructure.Lease;
 using Aw.Sindri.Infrastructure.Ledger;
 using Aw.Sindri.Infrastructure.Locks;
@@ -29,6 +31,7 @@ using Aw.Sindri.Infrastructure.Notifications;
 using Aw.Sindri.Infrastructure.Onyx;
 using Aw.Sindri.Infrastructure.Processes;
 using Aw.Sindri.Infrastructure.Profile;
+using Aw.Sindri.Infrastructure.Scoping;
 using Aw.Sindri.Infrastructure.Secrets;
 using Aw.Sindri.Infrastructure.Sessions;
 using Aw.Sindri.Infrastructure.Text;
@@ -49,8 +52,11 @@ public static class SindriInfrastructureServiceCollectionExtensions
     public static IServiceCollection AddSindriInfrastructure(this IServiceCollection services, Func<string, string?> environment)
     {
         var settings = SettingsFromEnvironment.Read(environment);
-        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriAdapters(environment).AddOnyxInfrastructure(environment);
+        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriLauncher(environment, settings).AddSindriAdapters(environment).AddSindriMcp(environment).AddOnyxInfrastructure(environment).AddScopingInfrastructure(environment);
     }
+
+    private static IServiceCollection AddScopingInfrastructure(this IServiceCollection services, Func<string, string?> environment) =>
+        services.AddSingleton<IScopePacketStore>(sp => new ScopePacketStore(sp.GetRequiredService<SindriSettings>(), new ProcessToolRunner(), environment));
 
     private static IServiceCollection AddSindriAdapters(this IServiceCollection services, Func<string, string?> environment)
     {
@@ -89,11 +95,16 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IHarnessVersions, CommandHarnessVersions>()
             .AddSingleton<IOsNotifier, OsascriptNotifier>()          // engine P6 unit (c): the only OS notifier (README X5, X50)
             .AddSingleton<IDeskNotices, FileDeskNotices>()           // engine P6 unit (c): notifications.jsonl
-            .AddSingleton(McpSettings.Read(environment))
-            .AddSingleton<IClaudeCli, ProcessClaudeCli>()
-            .AddSingleton<IProviderFiles, ProviderConfigFiles>()
             .AddSingleton<ITextScrubber>(new RedactingScrubber(Redactor.Default));
     }
+
+    /// <summary>The claude CLI and the providers' MCP config files, with their settings.</summary>
+    private static IServiceCollection AddSindriMcp(this IServiceCollection services, Func<string, string?> environment)
+        => services
+            .AddSingleton(McpSettings.Read(environment))
+            .AddSingleton<IClaudeCli, ProcessClaudeCli>()
+            .AddSingleton<IProviderHost, ProviderHost>()
+            .AddSingleton<IProviderFiles, ProviderConfigFiles>();
 
     private static IServiceCollection AddOnyxInfrastructure(this IServiceCollection services, Func<string, string?> environment)
         => services

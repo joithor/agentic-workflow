@@ -103,8 +103,9 @@ that graph plus rank fusion across adapters.
 - **MCP registration is per work repo, never user-wide:** one Sindri MCP endpoint serves these tools and the API
   spec's `sindri_*` tools (API §8). `sindri mcp register` prints, or with `--apply` runs, `claude mcp add --transport
   http --scope local sindri http://127.0.0.1:<port>/sindri/mcp --header "X-Sindri-Repo: <name>"` inside the work repo
-  so personal-repo sessions (where Prism is registered) never see work context. Codex and Cursor are never
-  registered: `ILauncher` passes the endpoint at launch time (API §8, §8.1). Doctor check `context:mcp-scope` warns on
+  so personal-repo sessions (where Prism is registered) never see work context. With `--providers claude,codex,cursor|all` it
+  also writes the checkout's `.cursor/mcp.json` and `.codex/config.toml` (and Codex's project trust row in its user config), and
+  `scripts/sindri-app.sh` runs that once the control plane's port is known; `ILauncher` still passes the endpoint at launch time (API §8, §8.1). Doctor check `context:mcp-scope` warns on
   any user-wide `sindri` entry in `~/.claude.json`, `~/.codex/config.toml` or `~/.cursor/mcp.json`. S-1M, which
   creates `/sindri/mcp`, ships this check, `sindri mcp register`, and the probe of whether Claude Code's local scope
   reaches the repo's worktree sessions.
@@ -509,7 +510,7 @@ error (the profile is invalid, the store can't open, every source is down); **75
 | `SND-CONTEXT-049` | Reserved for findings in the S-4 review loop | — |
 | `SND-CONTEXT-050` | A source's token lacks a needed read scope | Recreate the key read-only with the listed scope |
 | `SND-CONTEXT-055` | Onyx not on a loopback address, or its pinned version differs | §8.8 |
-| `SND-CONTEXT-110` | A sha of a `diff` range is not a commit in the repo's clone, is an ambiguous abbreviation, or is spelled like a ref name (exit 1; HTTP 404) | Fetch that commit into the profile repo's checkout, or pass the full sha |
+| `SND-CONTEXT-110` | A sha of a `diff` range is not a commit in the repo's clone, is an ambiguous abbreviation, or is spelled like a ref name; or the commit a `mapVersion=` read's as-of map names is not in the clone (the `git-history` row of a history answer, reason `commit-not-held`) (exit 1; HTTP 404) | Fetch that commit into the profile repo's checkout, or pass the full sha |
 | `SND-CONTEXT-111` | The two commits of a `diff` range share no merge base (exit 1; HTTP 400) | Pass a base on the head's history |
 
 `lenses` and `filemap` reuse `SND-CONTEXT-003` for an anchor, node or path that is not in the map (UI E-26's "anchor not found"; a second code for the same condition would duplicate it), with `suggestedAnchors` in the problem details.
