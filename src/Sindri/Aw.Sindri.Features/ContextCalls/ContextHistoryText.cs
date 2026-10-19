@@ -1,8 +1,9 @@
+using System.Globalization;
 using System.Text;
 using Aw.Context.Core.History;
-using static Aw.Sindri.Host.Text.ContextLensText;
+using static Aw.Sindri.Features.ContextCalls.ContextLensText;
 
-namespace Aw.Sindri.Host.Text;
+namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>
 /// Plain text for 'context history': every state is a word ('ok', 'not-configured', 'leaky'), never colour. A human's answer carries clean labels beside their trust, so the text
@@ -15,7 +16,7 @@ internal static class ContextHistoryText
         var text = new StringBuilder(Header(view, fence));
         foreach (var missing in view.MissingAnchors)
         {
-            _ = text.AppendLine($"missing anchor: {missing}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"missing anchor: {missing}");
         }
 
         Changes(text, view, fence);
@@ -46,12 +47,12 @@ internal static class ContextHistoryText
         var cut = new[] { ("records", view.Truncated.Records), ("decisions", view.Truncated.Decisions), ("changes", view.Truncated.Changes), ("files", view.Truncated.Files) }.Where(static t => t.Item2).Select(static t => t.Item1).ToList();
         if (cut.Count > 0)
         {
-            _ = text.AppendLine($"truncated: {string.Join(", ", cut)}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"truncated: {string.Join(", ", cut)}");
         }
 
         foreach (var line in view.Degraded)
         {
-            _ = text.AppendLine($"degraded: {line}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"degraded: {line}");
         }
     }
 
@@ -88,7 +89,7 @@ internal static class ContextHistoryText
 
         foreach (var d in view.Decisions)
         {
-            _ = text.AppendLine($"  decision  {Fenced(d.Text, d.Trust, fence)}  {d.Provenance.ToString().ToLowerInvariant()} {(d.Confirmed ? "confirmed" : "suggested")}  {d.Node.Value}  at {Instant(d.At, "unknown")}{(d.Leaky ? "  leaky" : string.Empty)}");
+            _ = text.AppendLine(CultureInfo.InvariantCulture, $"  decision  {Fenced(d.Text, d.Trust, fence)}  {d.Provenance.ToString().ToLowerInvariant()} {(d.Confirmed ? "confirmed" : "suggested")}  {d.Node.Value}  at {Instant(d.At, "unknown")}{(d.Leaky ? "  leaky" : string.Empty)}");
         }
     }
 }
