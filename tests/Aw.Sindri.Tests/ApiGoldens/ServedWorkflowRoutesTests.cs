@@ -69,7 +69,7 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
 
         var list = await ListUntil(served, "/sindri/workflow/instances", static l => l.Instances.Count == 2);
 
-        Assert.Equal(new ListCounts(Open: 1, NeedsYou: 1, WithYou: 0, Running: 0, Done: 0), list.Counts);
+        Assert.Equal(new ListCounts(Open: 1, NeedsYou: 1, WithYou: 0, Running: 0, Done: 1), list.Counts);
         Assert.Null(list.Empty);
     }
 
@@ -86,7 +86,7 @@ public sealed class ServedWorkflowRoutesTests : IDisposable
         var list = await ListUntil(served, "/sindri/workflow/instances?open=true", static l => l.Instances.Count == 1);
 
         Assert.Equal(["T-1/step/1"], list.Instances.Select(i => i.Address.Value), StringComparer.Ordinal);
-        Assert.Equal(0, list.Counts.Done);   // a cancelled root is not done; the counts cover the root set before the open filter
+        Assert.Equal(1, list.Counts.Done);   // the counts cover the root set before the open filter
     }
 
     [Fact(Timeout = 120_000)]

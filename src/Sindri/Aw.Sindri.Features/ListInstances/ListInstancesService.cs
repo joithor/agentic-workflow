@@ -31,8 +31,6 @@ namespace Aw.Sindri.Features.ListInstances;
 /// <param name="clock">The time the rows are read at: their ages and timeouts are worked out from it, not from when the workflow last ran.</param>
 internal sealed partial class ListInstancesService(IInstanceDirectory directory, IWorkflowInstances instances, EndedInstanceViews runtime, IViewReader itemViews, IItemRepos repos, ICallerContextAccessor callers, TimeProvider clock) : IService<ListInstancesRequest, InstanceList>
 {
-    private static readonly HashSet<string> _resolvedOutcomes = new(["resolved", "alreadySatisfied"], StringComparer.Ordinal);
-
     public async ValueTask<Result<InstanceList>> Handle(ListInstancesRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -77,9 +75,8 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
     }
 
     /// <summary>
-    /// The counts of every root instance, ended ones included: the root set listed twice, all and running only. The running ones are counted
-    /// from their views; 'done' is the ended roots that resolved (outcome resolved or alreadySatisfied) today, in the clock's local day. A root
-    /// that was cancelled, failed, is unresolved, ended on an earlier day or can no longer be read is not done.
+    /// The counts of every root instance, ended ones included: the root set listed twice, all and running only. A root that is no longer running
+    /// is finished (its chip is DONE) and is counted from the listing; only the running ones are asked for their view, reusing the views the first call read.
     /// </summary>
     private async ValueTask<Result<ListCounts>> RootCounts(Dictionary<string, InstanceView> known, CancellationToken cancellationToken)
     {
@@ -92,17 +89,10 @@ internal sealed partial class ListInstancesService(IInstanceDirectory directory,
         }
 
         var live = running.Value.Select(static r => r.Address).ToHashSet(StringComparer.Ordinal);
-        var open = await Views([.. visible.Value.Where(r => live.Contains(r.Address))], known, cancellationToken).ConfigureAwait(false);
-        var ended = open.IsError ? open.Error : await Views([.. visible.Value.Where(r => !live.Contains(r.Address))], known, cancellationToken).ConfigureAwait(false);
-        if (ended.IsError)
-        {
-            return ended.Error;
-        }
-
-        var today = clock.GetLocalNow().Date;
-        var finished = ended.Value.Concat(open.Value.Where(static v => v.Outcome is not null));   // a root listed as running whose view already has its outcome ended in between
-        var done = finished.Count(v => _resolvedOutcomes.Contains(v.Outcome?.Value ?? string.Empty) && v.Since.ToOffset(clock.GetLocalNow().Offset).Date >= today);
-        return InstanceCounts.Of(open.Value.Where(static v => v.Outcome is null)) with { Done = done };
+        var open = visible.Value.Where(r => live.Contains(r.Address)).ToList();
+        var finished = visible.Value.Count(r => !live.Contains(r.Address) && InstanceAddress.TryFrom(r.Address, out _));
+        var views = await Views(open, known, cancellationToken).ConfigureAwait(false);
+        return views.IsError ? views.Error : InstanceCounts.Of(views.Value) with { Done = InstanceCounts.Of(views.Value).Done + finished };
     }
 
     /// <summary>The rows the caller may read: all of them, or for a session its own repo's. No caller means the service is called inside the process, with no scope to apply.</summary>
