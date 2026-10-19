@@ -36,16 +36,7 @@ internal sealed partial class StepInputRunner(InputDispatch dispatch, StepInputR
             return WorkflowErrors.StepInputNoRuntime.With($"input {context.Input.Value} has no runtime in this build");
         }
 
-        InjectionSections sections;
-        try
-        {
-            sections = await dispatch(context, cancellationToken).ConfigureAwait(false);
-        }
-        catch (StepInputChangedException changed)   // boundary: an input found its argument's data differs from its reference; the fill fails as a refill mismatch does
-        {
-            return WorkflowErrors.InputChanged.With($"input {context.Input.Value}: {changed.Message}");
-        }
-
+        var sections = (await dispatch(context, cancellationToken).ConfigureAwait(false)).Value;
         return Shape(context, index, sections);
     }
 

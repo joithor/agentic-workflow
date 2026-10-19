@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Context.Core.Code;
 using Aw.Context.Core.Facade;
+using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 
@@ -31,7 +32,7 @@ internal sealed class ContextCodeInput(IContextEngine code, ContextInputScopes s
         Rung: null, DeskCapable: false);
 
     /// <inheritdoc/>
-    public async ValueTask<InjectionSections> Fill(StepInputContext context, CancellationToken cancellationToken)
+    public async ValueTask<Result<InjectionSections>> Fill(StepInputContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
@@ -39,6 +40,11 @@ internal sealed class ContextCodeInput(IContextEngine code, ContextInputScopes s
         var resolved = await facts.Resolve(context, cancellationToken).ConfigureAwait(false);
         if (resolved.IsError)
         {
+            if (ContextInputFacts.Fails(resolved.Error))
+            {
+                return resolved.Error;
+            }
+
             return Unavailable(resolved.Error.Code + ": " + resolved.Error.Message, notes);
         }
 

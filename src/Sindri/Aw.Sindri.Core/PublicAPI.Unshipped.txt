@@ -2378,7 +2378,7 @@ Aw.Sindri.Core.Workflow.Blocks.IStep
 Aw.Sindri.Core.Workflow.Blocks.IStep.Complete(Aw.Sindri.Core.Workflow.Blocks.StepRun! run, Aw.Sindri.Core.Workflow.Blocks.StepReport! report, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Workflow.Blocks.StepResult!>
 Aw.Sindri.Core.Workflow.Blocks.IStep.Start(Aw.Sindri.Core.Workflow.Blocks.StepContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 Aw.Sindri.Core.Workflow.Blocks.IStepInput
-Aw.Sindri.Core.Workflow.Blocks.IStepInput.Fill(Aw.Sindri.Core.Workflow.Blocks.StepInputContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Workflow.Blocks.InjectionSections!>
+Aw.Sindri.Core.Workflow.Blocks.IStepInput.Fill(Aw.Sindri.Core.Workflow.Blocks.StepInputContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Blocks.InjectionSections!>!>
 Aw.Sindri.Core.Workflow.Blocks.InjectionSections
 Aw.Sindri.Core.Workflow.Blocks.InjectionSections.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.InjectionSections!
 Aw.Sindri.Core.Workflow.Blocks.InjectionSections.Equals(Aw.Sindri.Core.Workflow.Blocks.InjectionSections? other) -> bool

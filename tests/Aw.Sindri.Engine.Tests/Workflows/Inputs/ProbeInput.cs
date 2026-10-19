@@ -11,5 +11,5 @@ internal sealed class ProbeInput(InputProbe probe) : IStepInput, IDescribedBlock
 
     public static BlockDescriptor Descriptor { get; } = TestBlocks.StepInput(Id);
 
-    public ValueTask<InjectionSections> Fill(StepInputContext context, CancellationToken cancellationToken) => ValueTask.FromResult(probe.Fill(context));
+    public ValueTask<Aw.Kernel.Result<InjectionSections>> Fill(StepInputContext context, CancellationToken cancellationToken) => ValueTask.FromResult<Aw.Kernel.Result<InjectionSections>>(probe.Fill(context));
 }

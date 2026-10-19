@@ -50,8 +50,8 @@ public sealed class ContextCodeInputTests
         Assert.Null(mapVersion);
         Assert.Equal(ContextCallerKind.Service, scope.Caller.Kind);
         Assert.Equal("web", Assert.Single(scope.Repos).Name.Value);
-        Assert.Contains("src/sharing/links.ts", filled.Sections["code"], StringComparison.Ordinal);
-        Assert.Equal(1, filled.Result!.Value.GetProperty("files").GetArrayLength());
+        Assert.Contains("src/sharing/links.ts", filled.Value.Sections["code"], StringComparison.Ordinal);
+        Assert.Equal(1, filled.Value.Result!.Value.GetProperty("files").GetArrayLength());
     }
 
     [Fact]
@@ -59,8 +59,8 @@ public sealed class ContextCodeInputTests
     {
         var filled = await Input(new StubCode(() => ContextErrors.UnknownAnchor.With("no anchor resolved"))).Fill(Context(ContextInputFixtures.Web, "feature:zzz"), TestContext.Current.CancellationToken);
 
-        Assert.Contains("SND-CONTEXT-003", filled.Sections["code"], StringComparison.Ordinal);
-        Assert.Null(filled.Result);
+        Assert.Contains("SND-CONTEXT-003", filled.Value.Sections["code"], StringComparison.Ordinal);
+        Assert.Null(filled.Value.Result);
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public sealed class ContextCodeInputTests
         var filled = await Input(code).Fill(Context(repo: null, "feature:a"), TestContext.Current.CancellationToken);
 
         Assert.Empty(code.Calls);
-        Assert.Contains("no repo", filled.Sections["code"], StringComparison.Ordinal);
+        Assert.Contains("no repo", filled.Value.Sections["code"], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -82,6 +82,6 @@ public sealed class ContextCodeInputTests
         var filled = await Input(code).Fill(Context(ContextInputFixtures.Web), TestContext.Current.CancellationToken);
 
         Assert.Empty(code.Calls);
-        Assert.Contains("no anchors", filled.Sections["code"], StringComparison.Ordinal);
+        Assert.Contains("no anchors", filled.Value.Sections["code"], StringComparison.Ordinal);
     }
 }

@@ -60,8 +60,8 @@ public sealed class ContextHistoryInputTests
         Assert.Equal(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), window.Since);
         Assert.Equal(ContextCallerKind.Service, scope.Caller.Kind);
         Assert.Equal("web", Assert.Single(scope.Repos).Name.Value);
-        Assert.False(string.IsNullOrWhiteSpace(filled.Sections["history"]));
-        Assert.Equal(JsonValueKind.Array, filled.Result!.Value.GetProperty("records").ValueKind);
+        Assert.False(string.IsNullOrWhiteSpace(filled.Value.Sections["history"]));
+        Assert.Equal(JsonValueKind.Array, filled.Value.Result!.Value.GetProperty("records").ValueKind);
     }
 
     [Fact]
@@ -72,8 +72,8 @@ public sealed class ContextHistoryInputTests
         var filled = await Input(history).Fill(Context(ContextInputFixtures.Web, JsonSerializer.SerializeToElement("90d"), "feature:a"), TestContext.Current.CancellationToken);
 
         Assert.Empty(history.Calls);
-        Assert.Contains("SND-CONTEXT-006", filled.Sections["history"], StringComparison.Ordinal);
-        Assert.Null(filled.Result);
+        Assert.Contains("SND-CONTEXT-006", filled.Value.Sections["history"], StringComparison.Ordinal);
+        Assert.Null(filled.Value.Result);
     }
 
     [Theory]
@@ -87,8 +87,8 @@ public sealed class ContextHistoryInputTests
         var filled = await Input(history).Fill(Context(ContextInputFixtures.Web, JsonDocument.Parse(json).RootElement.Clone(), "feature:a"), TestContext.Current.CancellationToken);
 
         Assert.Empty(history.Calls);
-        Assert.Contains("window argument", filled.Sections["history"], StringComparison.Ordinal);
-        Assert.Null(filled.Result);
+        Assert.Contains("window argument", filled.Value.Sections["history"], StringComparison.Ordinal);
+        Assert.Null(filled.Value.Result);
     }
 
     [Theory]
@@ -102,8 +102,8 @@ public sealed class ContextHistoryInputTests
         var filled = await Input(history).Fill(Context(ContextInputFixtures.Web, JsonDocument.Parse(json).RootElement.Clone(), "feature:a"), TestContext.Current.CancellationToken);
 
         Assert.Empty(history.Calls);
-        Assert.Contains("must be date text", filled.Sections["history"], StringComparison.Ordinal);
-        Assert.Null(filled.Result);
+        Assert.Contains("must be date text", filled.Value.Sections["history"], StringComparison.Ordinal);
+        Assert.Null(filled.Value.Result);
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public sealed class ContextHistoryInputTests
 
         var filled = await Input(history).Fill(Context(ContextInputFixtures.Web, JsonDocument.Parse("{\"sinse\":\"2026-01-01\"}").RootElement.Clone(), "feature:a"), TestContext.Current.CancellationToken);
 
-        Assert.Contains("note: window key 'sinse' is not since or before", filled.Sections["history"], StringComparison.Ordinal);
+        Assert.Contains("note: window key 'sinse' is not since or before", filled.Value.Sections["history"], StringComparison.Ordinal);
         _ = Assert.Single(history.Calls);
     }
 
@@ -123,8 +123,8 @@ public sealed class ContextHistoryInputTests
         var first = await Input(new StubHistory(() => Later(ContextHistoryTextTests.View(), days: 3))).Fill(Context(ContextInputFixtures.Web, window: null, "feature:layout.split-pane"), TestContext.Current.CancellationToken);
         var second = await Input(new StubHistory(() => Later(ContextHistoryTextTests.View(), days: 40))).Fill(Context(ContextInputFixtures.Web, window: null, "feature:layout.split-pane"), TestContext.Current.CancellationToken);
 
-        Assert.Equal(first.Sections["history"], second.Sections["history"]);
-        Assert.Equal(first.Result!.Value.GetRawText(), second.Result!.Value.GetRawText());
+        Assert.Equal(first.Value.Sections["history"], second.Value.Sections["history"]);
+        Assert.Equal(first.Value.Result!.Value.GetRawText(), second.Value.Result!.Value.GetRawText());
     }
 
     private static HistoryView Later(HistoryView view, int days) => view with
@@ -139,8 +139,8 @@ public sealed class ContextHistoryInputTests
     {
         var filled = await Input(new StubHistory(() => ContextErrors.UnknownAnchor.With("no anchor resolved"))).Fill(Context(ContextInputFixtures.Web, window: null, "feature:zzz"), TestContext.Current.CancellationToken);
 
-        Assert.Contains("SND-CONTEXT-003", filled.Sections["history"], StringComparison.Ordinal);
-        Assert.Null(filled.Result);
+        Assert.Contains("SND-CONTEXT-003", filled.Value.Sections["history"], StringComparison.Ordinal);
+        Assert.Null(filled.Value.Result);
     }
 
     [Fact]
@@ -151,6 +151,6 @@ public sealed class ContextHistoryInputTests
         var filled = await Input(history).Fill(Context(repo: null, window: null, "feature:a"), TestContext.Current.CancellationToken);
 
         Assert.Empty(history.Calls);
-        Assert.Contains("no repo", filled.Sections["history"], StringComparison.Ordinal);
+        Assert.Contains("no repo", filled.Value.Sections["history"], StringComparison.Ordinal);
     }
 }

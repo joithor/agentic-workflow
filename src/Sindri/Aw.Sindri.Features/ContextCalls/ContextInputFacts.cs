@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Aw.Context.Core;
 using Aw.Kernel;
+using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
@@ -44,6 +45,15 @@ internal sealed class ContextInputFacts(IFactContents contents)
         }
 
         return resolved is null ? context : context with { Arguments = resolved };
+    }
+
+    /// <summary>Whether <paramref name="error"/> must fail the fill (the data changed) rather than become an unavailable section.</summary>
+    /// <param name="error">An error from <see cref="Resolve"/>.</param>
+    /// <returns>True for SND-WF-018.</returns>
+    internal static bool Fails(Error error)
+    {
+        ArgumentNullException.ThrowIfNull(error);
+        return string.Equals(error.Code, WorkflowErrors.InputChanged.Code, StringComparison.Ordinal);
     }
 
     private async ValueTask<Result<JsonElement>> Content(string name, FactValue fact, CancellationToken cancellationToken)

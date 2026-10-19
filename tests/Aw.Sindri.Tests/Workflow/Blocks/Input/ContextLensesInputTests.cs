@@ -67,9 +67,9 @@ public sealed class ContextLensesInputTests
         Assert.Equal("state,flow", call.Range.Hops);
         Assert.Equal(ContextCallerKind.Service, call.Scope.Caller.Kind);
         Assert.Equal("web", Assert.Single(call.Scope.Repos).Name.Value);
-        Assert.Contains("lenses of 2 anchors", filled.Sections["lenses"], StringComparison.Ordinal);
-        Assert.Equal(2, filled.Result!.Value.GetProperty("schemaVersion").GetInt32());
-        Assert.Equal(2, filled.Result.Value.GetProperty("anchors").GetArrayLength());
+        Assert.Contains("lenses of 2 anchors", filled.Value.Sections["lenses"], StringComparison.Ordinal);
+        Assert.Equal(2, filled.Value.Result!.Value.GetProperty("schemaVersion").GetInt32());
+        Assert.Equal(2, filled.Value.Result.Value.GetProperty("anchors").GetArrayLength());
     }
 
     [Fact]
@@ -79,9 +79,9 @@ public sealed class ContextLensesInputTests
 
         var filled = await Input(lenses).Fill(Context(ContextInputFixtures.Web, "feature:zzz"), TestContext.Current.CancellationToken);
 
-        Assert.Contains("unavailable", filled.Sections["lenses"], StringComparison.Ordinal);
-        Assert.Contains("SND-CONTEXT-003", filled.Sections["lenses"], StringComparison.Ordinal);
-        Assert.Null(filled.Result);
+        Assert.Contains("unavailable", filled.Value.Sections["lenses"], StringComparison.Ordinal);
+        Assert.Contains("SND-CONTEXT-003", filled.Value.Sections["lenses"], StringComparison.Ordinal);
+        Assert.Null(filled.Value.Result);
     }
 
     [Fact]
@@ -92,7 +92,7 @@ public sealed class ContextLensesInputTests
         var filled = await Input(lenses).Fill(Context(repo: null, "feature:a"), TestContext.Current.CancellationToken);
 
         Assert.Empty(lenses.Calls);
-        Assert.Contains("no repo", filled.Sections["lenses"], StringComparison.Ordinal);
+        Assert.Contains("no repo", filled.Value.Sections["lenses"], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public sealed class ContextLensesInputTests
         var filled = await Input(lenses).Fill(Context(RepoName.From("other"), "feature:a"), TestContext.Current.CancellationToken);
 
         Assert.Empty(lenses.Calls);
-        Assert.Contains("SND-CONTEXT-045", filled.Sections["lenses"], StringComparison.Ordinal);
+        Assert.Contains("SND-CONTEXT-045", filled.Value.Sections["lenses"], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -114,7 +114,7 @@ public sealed class ContextLensesInputTests
         var filled = await Input(lenses, profile: false).Fill(Context(ContextInputFixtures.Web, "feature:a"), TestContext.Current.CancellationToken);
 
         Assert.Empty(lenses.Calls);
-        Assert.Contains("SND-PROFILE-005", filled.Sections["lenses"], StringComparison.Ordinal);
+        Assert.Contains("SND-PROFILE-005", filled.Value.Sections["lenses"], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public sealed class ContextLensesInputTests
         var filled = await Input(lenses).Fill(Context(ContextInputFixtures.Web), TestContext.Current.CancellationToken);
 
         Assert.Empty(lenses.Calls);
-        Assert.Contains("no anchors", filled.Sections["lenses"], StringComparison.Ordinal);
+        Assert.Contains("no anchors", filled.Value.Sections["lenses"], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -146,9 +146,9 @@ public sealed class ContextLensesInputTests
         var first = await Input(new StubLenses(a => At(a, created, 3))).Fill(Context(ContextInputFixtures.Web, "feature:a"), TestContext.Current.CancellationToken);
         var second = await Input(new StubLenses(a => At(a, created, 40))).Fill(Context(ContextInputFixtures.Web, "feature:a"), TestContext.Current.CancellationToken);
 
-        Assert.Equal(first.Sections["lenses"], second.Sections["lenses"]);
-        Assert.Equal(first.Result!.Value.GetRawText(), second.Result!.Value.GetRawText());
-        Assert.DoesNotContain("days old", first.Sections["lenses"], StringComparison.Ordinal);
+        Assert.Equal(first.Value.Sections["lenses"], second.Value.Sections["lenses"]);
+        Assert.Equal(first.Value.Result!.Value.GetRawText(), second.Value.Result!.Value.GetRawText());
+        Assert.DoesNotContain("days old", first.Value.Sections["lenses"], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -158,10 +158,10 @@ public sealed class ContextLensesInputTests
 
         var filled = await Input(lenses).Fill(Context(ContextInputFixtures.Web, "feature:a"), TestContext.Current.CancellationToken);
 
-        var text = filled.Sections["lenses"];
+        var text = filled.Value.Sections["lenses"];
         Assert.True(System.Text.Encoding.UTF8.GetByteCount(text) < 256 * 1024);
         Assert.Matches("\\[\\d+ more lines not shown", text);
-        Assert.Null(filled.Result);
+        Assert.Null(filled.Value.Result);
         Assert.Contains("typed result is over", text, StringComparison.Ordinal);
     }
 
@@ -182,7 +182,7 @@ public sealed class ContextLensesInputTests
         Assert.Equal(["feature:a"], call.Anchors);
         Assert.Null(call.Range.Depth);
         Assert.Null(call.Range.Hops);
-        Assert.Contains("note: 1 of 2 anchors are not text", filled.Sections["lenses"], StringComparison.Ordinal);
-        Assert.Contains("note: depth is not a whole number", filled.Sections["lenses"], StringComparison.Ordinal);
+        Assert.Contains("note: 1 of 2 anchors are not text", filled.Value.Sections["lenses"], StringComparison.Ordinal);
+        Assert.Contains("note: depth is not a whole number", filled.Value.Sections["lenses"], StringComparison.Ordinal);
     }
 }

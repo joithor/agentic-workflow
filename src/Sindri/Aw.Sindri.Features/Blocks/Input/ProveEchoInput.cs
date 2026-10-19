@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using System.Security.Cryptography;
 using System.Text;
 using Aw.Sindri.Core.Workflow.Blocks;
@@ -24,7 +25,7 @@ internal sealed class ProveEchoInput(IProveEcho echo) : IStepInput, IDescribedBl
         Rung: null, DeskCapable: false);
 
     /// <inheritdoc/>
-    public async ValueTask<InjectionSections> Fill(StepInputContext context, CancellationToken cancellationToken)
+    public async ValueTask<Result<InjectionSections>> Fill(StepInputContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();

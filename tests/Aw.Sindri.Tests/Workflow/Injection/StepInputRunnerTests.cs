@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Redaction;
+using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 using Aw.Sindri.Infrastructure.Workflows;
@@ -30,7 +31,7 @@ public sealed class StepInputRunnerTests
         {
             seen?.Invoke(ct);
             ct.ThrowIfCancellationRequested();
-            return ValueTask.FromResult(fill());
+            return ValueTask.FromResult<Aw.Kernel.Result<InjectionSections>>(fill());
         },
         new StepInputRuntimes([new StepInputRegistration(_input)]),
         new SwapRedactor());
@@ -119,5 +120,20 @@ public sealed class StepInputRunnerTests
         _ = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await runner.Fill(_context, 1, source.Token));
 
         Assert.Equal(source.Token, given);
+    }
+
+    [Fact]
+    public async Task An_inputs_failure_fails_the_fill_with_the_inputs_code_as_a_refill_mismatch_does()
+    {
+        var runner = new StepInputRunner(
+            (_, _) => ValueTask.FromResult<Aw.Kernel.Result<InjectionSections>>(WorkflowErrors.InputChanged.With("fact:anchors changed: expected aaa, read bbb")),
+            new StepInputRuntimes([new StepInputRegistration(_input)]),
+            new SwapRedactor());
+
+        var filled = await runner.Fill(_context, 1, TestContext.Current.CancellationToken);
+
+        Assert.True(filled.IsError);
+        Assert.Equal("SND-WF-018", filled.Error.Code);
+        Assert.Contains("fact:anchors changed", filled.Error.Message, StringComparison.Ordinal);
     }
 }

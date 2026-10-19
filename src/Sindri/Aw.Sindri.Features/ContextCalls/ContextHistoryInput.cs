@@ -3,6 +3,7 @@ using Aw.Context.Core;
 using Aw.Context.Core.Facade;
 using Aw.Context.Core.History;
 using Aw.Context.Core.Map;
+using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 
@@ -36,7 +37,7 @@ internal sealed class ContextHistoryInput(IContextEngine history, ContextInputSc
         Rung: null, DeskCapable: false);
 
     /// <inheritdoc/>
-    public async ValueTask<InjectionSections> Fill(StepInputContext context, CancellationToken cancellationToken)
+    public async ValueTask<Result<InjectionSections>> Fill(StepInputContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
         cancellationToken.ThrowIfCancellationRequested();
@@ -44,6 +45,11 @@ internal sealed class ContextHistoryInput(IContextEngine history, ContextInputSc
         var resolved = await facts.Resolve(context, cancellationToken).ConfigureAwait(false);
         if (resolved.IsError)
         {
+            if (ContextInputFacts.Fails(resolved.Error))
+            {
+                return resolved.Error;
+            }
+
             return Unavailable(resolved.Error.Code + ": " + resolved.Error.Message, notes);
         }
 
@@ -54,6 +60,11 @@ internal sealed class ContextHistoryInput(IContextEngine history, ContextInputSc
             return Unavailable("this Step named no anchors", notes);
         }
 
+        return await Query(context, anchors, notes, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async ValueTask<Result<InjectionSections>> Query(StepInputContext context, IReadOnlyList<string> anchors, List<string> notes, CancellationToken cancellationToken)
+    {
         var window = Window(context, notes);
         if (window.IsError)
         {
@@ -82,6 +93,8 @@ internal sealed class ContextHistoryInput(IContextEngine history, ContextInputSc
     {
         if (!context.Arguments.TryGetValue("window", out var value) || value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
         {
+            // why: the engine leaves a '{ profile: … }' argument out, so an absent window may be a profile window that never arrived; say so
+            notes.Add("no history window reached this input (a window from the profile is not passed to inputs); reading all history");
             return HistoryWindow.Open;
         }
 
@@ -100,6 +113,12 @@ internal sealed class ContextHistoryInput(IContextEngine history, ContextInputSc
         string? since = null, before = null;
         foreach (var property in window.EnumerateObject())
         {
+            if (property.Name == "profile" && property.Value.ValueKind == JsonValueKind.String)
+            {
+                notes.Add($"window from profile {property.Value.GetString()} is not available to this input; reading all history");
+                continue;
+            }
+
             if (property.Name is not ("since" or "before"))
             {
                 notes.Add($"window key '{property.Name}' is not since or before and was ignored");
