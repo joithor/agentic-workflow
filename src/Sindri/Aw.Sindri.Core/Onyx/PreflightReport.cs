@@ -9,4 +9,7 @@ public sealed record PreflightReport(IReadOnlyList<PreflightCheck> Checks, int P
 {
     /// <summary>Gets a value indicating whether every check is ok.</summary>
     public bool Ok => Checks.All(static c => c.State == CheckState.Ok);
+
+    /// <summary>Gets a value indicating whether setup must stop: true when any check is a fail. A warning never blocks (an unknown Docker memory is printed by `up` and setup goes on).</summary>
+    public bool Blocks => Checks.Any(static c => c.State == CheckState.Fail);
 }

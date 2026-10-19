@@ -10,8 +10,8 @@ namespace Aw.Sindri.Host.Commands;
 
 /// <summary>
 /// The 'recipe' verb group's table (spec §6.3; its text is Recipe/RecipeText). 'validate' and 'eval' are local: they
-/// run in this process against the build's catalog and never start or contact serve; 'eval --record' is a query
-/// against serve and refuses until P4. Checker exit codes (W27): 0 pass, 1 fail, 2 usage or tool error.
+/// run in this process against the build's catalog and never start or contact serve; 'eval --record' reads an instance's events from the ledger
+/// and the stored facts, so it needs no serve either. Checker exit codes (W27): 0 pass, 1 fail, 2 usage or tool error.
 /// </summary>
 internal static partial class RecipeCommandTable
 {
@@ -52,8 +52,7 @@ internal static partial class RecipeCommandTable
 
     private static Task<int> RunEval(string[] args, IServiceProvider services, Output output, CancellationToken ct) => args switch
     {
-        ["--record", _, "--out", _] => output.Error(SindriErrors.UnknownVerb.With(
-            "recipe eval --record needs the server (P4): it reads a live instance's history from serve, which arrives with P4 (fix: write the case by hand, or start from sindri recipe eval --scaffold <file>)")),
+        ["--record", var address, "--out", var file] when !IsFlag(address) && !IsFlag(file) => RecordOut(address, file, services, output, ct),
         ["--record", ..] => output.Error(SindriErrors.InvalidInput.With($"recipe eval --record needs an address and --out <file> ({EvalUsage})")),
         [] or ["--json"] or ["--scaffold"] => output.Error(SindriErrors.InvalidInput.With($"recipe eval needs a recipe file ({EvalUsage})")),
         ["--scaffold", var file, "--out", var directory] when !IsFlag(file) && !IsFlag(directory) => ScaffoldOut(file, directory, services, output, ct),

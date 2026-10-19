@@ -45,6 +45,25 @@ public sealed class HostProbesTests
         }
     }
 
+    [Fact, Trait("Lane", "integration")]
+    public async Task A_port_in_time_wait_reads_free()
+    {
+        Assert.SkipWhen(OperatingSystem.IsWindows(), "TIME_WAIT binds differ on Windows, where the probe keeps exclusive use");
+        var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        using (var client = new TcpClient())
+        {
+            await client.ConnectAsync(IPAddress.Loopback, port, TestContext.Current.CancellationToken);
+            using var accepted = await listener.AcceptTcpClientAsync(TestContext.Current.CancellationToken);
+            accepted.Close();   // the server's end closes first: it is the side left in TIME_WAIT
+        }
+
+        listener.Stop();
+
+        Assert.True(new HostProbes().Ports(port, port, port).PreferredFree);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void Ports_probes_no_fallback_when_the_preferred_port_is_free()
     {

@@ -1,11 +1,9 @@
 using System.Linq.Expressions;
 using Aw.Kernel;
-using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Engine.Runtime;
 using Aw.Sindri.Core.Workflow.Engine.Triggers;
 using Temporalio.Client;
-using Temporalio.Exceptions;
 
 namespace Aw.Sindri.Infrastructure.Workflows;
 
@@ -59,32 +57,12 @@ internal sealed class TemporalCommands(TemporalFrontend frontend)
             return client.Error;
         }
 
-        using var patience = TemporalUpdates.Wait(cancellationToken);
-        try
-        {
-            return await client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value).ExecuteUpdateAsync(
-                update,
-                new WorkflowUpdateOptions(updateId) { Rpc = patience.Options }).ConfigureAwait(false);
-        }
-        catch (WorkflowUpdateFailedException e) when (e.InnerException is ApplicationFailureException { ErrorType: { } code } refusal) // boundary: the validator's refusal is the caller's answer
-        {
-            return (WorkflowErrors.All.FirstOrDefault(d => d.Code == code) ?? WorkflowErrors.TriggerNotAllowed).With(refusal.Message);
-        }
-        catch (RpcException e) when (TemporalUpdates.NoNamespace(e)) // boundary: not serve's Temporal; says nothing about the instance
-        {
-            return TemporalUpdates.NotServes(client.Value, e);
-        }
-        catch (Exception e) when (!cancellationToken.IsCancellationRequested && e is WorkflowUpdateRpcTimeoutOrCanceledException or RpcException { Code: RpcException.StatusCode.DeadlineExceeded }) // boundary: no worker took it
-        {
-            return await TemporalUpdates.NoAnswer(client.Value, address, updateId, cancellationToken).ConfigureAwait(false);
-        }
-        catch (RpcException e) when (e.Code == RpcException.StatusCode.NotFound) // boundary: no running execution with that id
-        {
-            return WorkflowErrors.InstanceNotFound.With($"no running instance {address.Value} (fix: sindri workflow list)");
-        }
-        catch (RpcException e) when (e.Code == RpcException.StatusCode.Unavailable) // boundary: the dev server died under a live serve
-        {
-            return TemporalUpdates.Down(client.Value, e, CommandNonce.TryFrom(updateId, out var nonce) ? nonce : null);
-        }
+        var handle = client.Value.GetWorkflowHandle<RecipeWorkflow>(address.Value);
+        return await TemporalUpdates.Execute(
+            TemporalUpdates.UpdateFrontend.Of(client.Value),
+            address,
+            updateId,
+            rpc => handle.ExecuteUpdateAsync(update, new WorkflowUpdateOptions(updateId) { Rpc = rpc }),
+            cancellationToken).ConfigureAwait(false);
     }
 }

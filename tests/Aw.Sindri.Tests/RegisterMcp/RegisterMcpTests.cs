@@ -1,5 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Mcp;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Features.RegisterMcp;
@@ -27,10 +28,20 @@ public sealed class RegisterMcpTests
 
         Assert.Equal("demo", registration.Repo.Value);
         Assert.Equal("/work/demo", registration.Checkout);
-        Assert.Equal(["mcp", "add", "--transport", "http", "--scope", "local", "--header", "X-Sindri-Repo: demo", "sindri", "http://127.0.0.1:7495/sindri/mcp"],
+        Assert.Equal(["mcp", "add", "--transport", "http", "--scope", "local", "sindri", "http://127.0.0.1:7495/sindri/mcp", "--header", "X-Sindri-Repo: demo"],
             registration.Arguments);
         Assert.False(registration.Applied);
         Assert.Empty(_claude.Runs);
+    }
+
+    [Fact]
+    public void The_server_name_and_url_come_before_the_header_because_claude_reads_every_later_argument_as_a_header()
+    {
+        var arguments = McpRegistration.Arguments(RepoName.From("demo"), 7495);
+
+        var header = arguments.ToList().IndexOf("--header");
+        Assert.True(header > arguments.ToList().IndexOf(McpScope.ServerName), "the name must precede the variadic --header");
+        Assert.Equal(arguments.Count - 2, header);   // why: claude mcp add's -H <header...> swallows every argument after it
     }
 
     [Fact]
@@ -41,9 +52,11 @@ public sealed class RegisterMcpTests
         await Approve(apiPort: null);
         var defaultPort = (await Service().Handle(new RegisterMcpRequest("/elsewhere", "demo", Apply: false), Token)).Value;
 
-        Assert.EndsWith("127.0.0.1:7444/sindri/mcp", profilePort.Arguments[^1], StringComparison.Ordinal);
-        Assert.EndsWith($"127.0.0.1:{ApiSettings.DefaultPort}/sindri/mcp", defaultPort.Arguments[^1], StringComparison.Ordinal);
+        Assert.EndsWith("127.0.0.1:7444/sindri/mcp", Url(profilePort.Arguments), StringComparison.Ordinal);
+        Assert.EndsWith($"127.0.0.1:{ApiSettings.DefaultPort}/sindri/mcp", Url(defaultPort.Arguments), StringComparison.Ordinal);
     }
+
+    private static string Url(IReadOnlyList<string> arguments) => arguments.Single(a => a.StartsWith("http://", StringComparison.Ordinal));
 
     [Fact]
     public async Task Outside_every_profile_repo_or_with_an_unknown_repo_it_is_024()

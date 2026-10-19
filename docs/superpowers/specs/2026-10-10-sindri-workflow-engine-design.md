@@ -690,6 +690,7 @@ Registered events (`EventDescriptor`, §2) reach instances as Temporal **Signals
 - **Origin decides the exemption, not the kind:** the engine's own `notify.desk` (parks, escalations, desk tasks,
   `takeoverIdle`) is `origin: engine`, exempt from the approval check and the allowlist, and signals nothing. A
   recipe's `effect.notify.desk` is `origin: recipe` and checked like any effect.
+- *P7, 2026-10-18 (IDEA-033):* after any ending, `cancelled` included, the engine frees the item's claim in a detached scope: it deletes `refs/sindri/<user>/<item>` and the `workflow_claims` row if this instance still owns the claim (a claim another instance took over is left alone). There is no recipe field. The same seam is where per-run worktree removal joins.
 - Kernel's outbox (`outbox_commands`, `IOutbox.MarkRefused`) is no longer used by the engine. The API spec keeps it for
   its own commands if it needs one; S1-D3 and K-D1 drop from this spec's S1 changes (§7.2).
 
@@ -701,6 +702,7 @@ Registered events (`EventDescriptor`, §2) reach instances as Temporal **Signals
   `childNext`). Any later signal or result from the child pops that mirror first, so a child cancelled at its own
   address, or accepted straight to `done`, still releases its parent.
 - *DT-C, 2026-10-16:* the child's result carries its declared `outputs` present at its end, under its own keys; `cancelled` carries none. The validator (`RCP-WIRE-002`, `-003`), `recipe eval` and the pure engine's `produces` (which applies a rename) are DT-C; the interpreter filling the result's outputs from the child's facts is P7.
+- *P7, 2026-10-18:* the child's workflow id is its address, `{parent}/{recipe}.{entry}`, started from the hash the parent's approval pinned. Workflow code can't send an Update, so a parent's ending (a cancel or any other ending) signals each live child (`parentCancel`, origin `parent`); the child records its own `cancelled` and frees its claim, and the parent waits up to 30 s before the parent-close terminate backstops. The parent's view lists its live children and status reads each child's state live (`unreachable` when none answers); the child's end carries its declared outputs on every outcome but `cancelled`.
 - **Forwarded answers.** An `answer` to a parent whose suspension mirrors a child is an Update on the **child**: the
   nonce endpoint resolves the forwarding and mints the nonce for the child; the challenge for a `protected` answer is
   bound to the child's address. The CLI prints the child's result and the parent follows through the child's signal.
@@ -1211,14 +1213,15 @@ These feed A §17.2, and all of it is scrubbed.
 
 | Event | Producer | Outcomes | Facts |
 |---|---|---|---|
-| `item.routed` | `router.stub` | `startable`, `notStartable` | `fact:stepSpec` |
+| `item.routed` | `service:router-stub` | `startable`, `notStartable` | `fact:stepSpec` |
 | `claim.created` | `system:dispatcher` (route: causation) | `created`, `claimExists` | — |
 | `notify.delivered` | `system:dispatcher` (route: causation) | `delivered` | — |
 
 - **`fact:item`** is `{ id, repo, spec }`, where `id` is the `ItemId` (API §3), `repo` is a key of the profile's `repos`
   and `spec` is the Step spec text. `effect.claim.ref` creates
   `sindri/{user}/{item}` in that repo, pointing at its default branch's head, so the repo needs one commit.
-- **`workflow.route`** (P7) is `{ startable: all | none }`. The `router.stub` service fires on each
+- *P7, 2026-10-18:* the `slot` stub is the interpreter itself: it grants a slot the moment an instance waits for one, as the resource allocator's `wait.satisfied` with no outcome; only the router holds an item back. The router stub (producer `service:router-stub`, the actor the scheduler records) is a hosted service over the ledger.
+- **`workflow.route`** (P7) is `{ startable: all | none }`. The `service:router-stub` service fires on each
   `workflow.started` of `workflow.item` and emits `item.routed` with `outcome` taken from that key, and with
   `fact:stepSpec` copied from `fact:item`'s spec.
 

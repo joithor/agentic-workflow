@@ -7,8 +7,8 @@ namespace Aw.Sindri.Core.Workflow.Engine.Runtime;
 /// <summary>
 /// The state band of an instance (UI screens E-20, API spec §3.8): one cell per state of the recipe in path order, built
 /// from <see cref="StatePathOrder"/> so the order, the branches and the loop edges are the ones the recipe shows. Exactly
-/// one cell is active (the state the instance is in, with the engine's badge when it interrupted it); main-path states
-/// before it are done and the others pending; once the instance ended, its terminal state and every main-path state are done.
+/// one cell is active (the state the instance is in, with the engine's badge when it interrupted it); states the instance entered (else, for an instance that recorded none, main-path states
+/// before it) are done and the others pending; once the instance ended, its terminal state and every main-path state are done.
 /// </summary>
 public static class StateCells
 {
@@ -52,7 +52,7 @@ public static class StateCells
     {
         if (at.Instance.Ended)
         {
-            return isActive || (!terminal && place.Order is not null) ? StateGlyph.Done : StateGlyph.Pending;
+            return isActive || EndedDone(place, terminal, at.Instance) ? StateGlyph.Done : StateGlyph.Pending;
         }
 
         if (isActive)
@@ -60,8 +60,18 @@ public static class StateCells
             return StateGlyph.Active;
         }
 
-        return !terminal && place.Order is { } order && order < at.ActiveOrder ? StateGlyph.Done : StateGlyph.Pending;
+        return Passed(place, terminal, at) ? StateGlyph.Done : StateGlyph.Pending;
     }
+
+    // An ended instance with visit data shows what it entered (its branch states too); without, every main-path state.
+    private static bool EndedDone(StatePlace place, bool terminal, WorkflowInstance instance) =>
+        instance.Visited is { } visited ? visited.Contains(place.State, StringComparer.Ordinal) : !terminal && place.Order is not null;
+
+    // A state the instance entered is done (a branch state or one before a loop's re-entry too); an instance that recorded none falls back to path order.
+    private static bool Passed(StatePlace place, bool terminal, Place at) =>
+        at.Instance.Visited is { } visited
+            ? visited.Contains(place.State, StringComparer.Ordinal)
+            : !terminal && place.Order is { } order && order < at.ActiveOrder;
 
     /// <summary>The path position of the active state; a branch state counts as the main-path state it is folded under.</summary>
     private static int ActiveOrder(PathOrder path, string active)

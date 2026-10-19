@@ -7,7 +7,7 @@ namespace Aw.Sindri.Tests.Commands;
 
 /// <summary>
 /// 'sindri recipe eval' as Program runs it, over real files (spec §6.3, W27): case lines and exit 0 or 1, the
-/// scaffold, and '--record' refusing with exit 2 until the server has instances (P4). It swaps the process's console.
+/// scaffold, and '--record' reading an instance's events from the ledger (engine P7). It swaps the process's console.
 /// </summary>
 [Collection(ProcessEnvironment.Name)]
 public sealed class RecipeEvalCommandTests : IDisposable
@@ -164,10 +164,12 @@ public sealed class RecipeEvalCommandTests : IDisposable
     }
 
     [Fact, Trait("Lane", "integration")]
-    public async Task Record_exits_2_until_the_server_has_instances()
+    public async Task Record_of_an_instance_the_ledger_never_saw_exits_2_naming_it_and_writes_nothing()
     {
         Assert.Equal(2, await Run("recipe", "eval", "--record", "T-3/step/1", "--out", Happy));
-        Assert.Contains("needs the server (P4)", _error.ToString(), StringComparison.Ordinal);
+        Assert.Contains("T-3/step/1", _error.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain("needs the server", _error.ToString(), StringComparison.Ordinal);
+        Assert.False(File.Exists(Happy));
     }
 
     private async Task Put(string happy)

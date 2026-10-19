@@ -150,6 +150,7 @@ Degraded: code index ✕ (nightly 03:00, SND-INDEX-012), Onyx ◐ 2h behind, cur
 
 - Work state: `●` done or live · `◐` in progress · `○` not started or queued · `◎` with you · `▌` parked ·
   `▲` escalated · `◌` model call, no session · `⇄` loop.
+- Sessions (Agents): `●` RUNNING · `◐` ASKING · `○` IDLE · `○` UNKNOWN. The word is always there; the glyph is never the only signal.
 - Health: `✓` ok · `◐` degraded · `✕` failed · `○` absent.
 - Colour follows the glyph identically everywhere: `▌` and `▲` and the needs-you chip in `--attn`; `✕` in
   `--error`; live `●` and `✓` in `--success`; every other glyph in ink shades. Always with a word.
@@ -193,6 +194,9 @@ page's chip when it appears behind a sheet (the stage goes in the tag, never in 
 | `DEGRADED` | `chip attn` | `--attn` | a source or service runs behind | Context sources, System |
 | `FAILED` | `chip fail` | `--error` | a service, job or check failed | needs-you row, System, sources |
 | `RUNNING` | `chip ok` | `--success` | an agent or tool is working now (whether or not a terminal exists; Attach shows that) | Home, Work, Workflows, Agents, children, inspector, engine table |
+| `ASKING` | `chip` | ink (not `--attn`, until owner Q3) | a live session is waiting on the human; glyph `◐`; the word reads `ASKING · approval · Bash` when the kind is served (Agents sessions only) | Agents, session sheet |
+| `IDLE` | `chip` | neutral | a live session that is not working and not asking; glyph `○` (Agents sessions only) | Agents, session sheet |
+| `UNKNOWN` | `chip` | `--ink-subtle` | a live session whose state can't be read; glyph `○`; `estimated` follows the chip when the state is a guess (Agents sessions only) | Agents, session sheet |
 | `OK` | `chip ok` | `--success` | healthy | System services, sources |
 | `WITH YOU` | `chip` | `--ink-muted` on `--s2` | a person holds the instance (taken over) | Home, Work, Workflows, Agents |
 | `QUEUED` | `chip` | neutral | waiting for a run slot | Home, Work, children |

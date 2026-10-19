@@ -1066,7 +1066,7 @@ One MCP endpoint serves every Sindri tool, this spec's and the context engine's:
   and sets `X-Sindri-Client: mcp`; its own refusals are `SND-CONTEXT-021`, `022` (a bad argument) and `023` (an unknown tool).
 
 **Registration is per repo, by the owner, never user-wide.** `sindri mcp register` prints, and with `--apply` runs,
-`claude mcp add --transport http --scope local --header "X-Sindri-Repo: <name>" sindri http://127.0.0.1:<port>/sindri/mcp`
+`claude mcp add --transport http --scope local sindri http://127.0.0.1:<port>/sindri/mcp --header "X-Sindri-Repo: <name>"`
 inside the current repo (the name resolved as §3.1 says). P8 checks whether that local scope reaches sessions in the
 repo's worktrees and records the answer.
 
