@@ -6,6 +6,7 @@ namespace Aw.Sindri.Infrastructure.Onyx;
 [JsonSerializable(typeof(OnyxVersionWire))]
 [JsonSerializable(typeof(OnyxGroupWire[]))]
 [JsonSerializable(typeof(OnyxKeyWire))]
+[JsonSerializable(typeof(OnyxGroupRefWire))]
 [JsonSerializable(typeof(OnyxMeWire))]
 [JsonSerializable(typeof(OnyxKeyRequestWire))]
 internal sealed partial class OnyxHealthJsonContext : JsonSerializerContext;

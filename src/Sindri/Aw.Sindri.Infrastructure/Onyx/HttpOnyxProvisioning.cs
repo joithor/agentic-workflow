@@ -15,6 +15,8 @@ namespace Aw.Sindri.Infrastructure.Onyx;
 /// The login cookie lives in the session's own container and goes with the session; the password and the key are never put in an error message or a log. Not used by the query adapter, and it does not use it.
 /// The role step (spec §5.2, "the builder finds"): v4.9.0's `APIKeyArgs` is `{name, group_ids}`; a key's service account gets the admin role by joining the default "Admin" group
 /// (`backend/onyx/db/api_key.py` `insert_api_key` → `set_user_groups__no_commit`; `backend/onyx/server/api_key/api.py:52` allows the group list to be uncapped), so the group id comes from the user-group list.
+/// That list (`backend/ee/onyx/server/user_group/api.py`) is Enterprise-only: the Community Edition answers 402, which is SND-ONYX-013 here and which the caller answers by reading the id from Sindri's own stack's database
+/// (<see cref="IOnyxDatabase"/>). The key's answer is checked either way: its `groups` must hold the Admin group the key was asked to join, or the key is not returned.
 /// </summary>
 internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
 {
@@ -130,6 +132,11 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
                 return NotAdmin();
             }
 
+            if (sent.Value.Status == HttpStatusCode.PaymentRequired)
+            {
+                return SindriErrors.OnyxGroupListUnavailable.With("Onyx answered the group list with HTTP 402: that route is Enterprise-only and this Onyx is the Community Edition");
+            }
+
             var groups = sent.Value.Success ? AwJson.Deserialize<OnyxGroupWire[]>(Encoding.UTF8.GetBytes(sent.Value.Body), _json) : null;
             var admin = groups is { IsSuccess: true } read ? read.Value.FirstOrDefault(static g => g.IsDefault && string.Equals(g.Name, "Admin", StringComparison.Ordinal)) : null;
             return admin is null
@@ -154,9 +161,24 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
             }
 
             var key = sent.Value.Success ? AwJson.Deserialize<OnyxKeyWire>(Encoding.UTF8.GetBytes(sent.Value.Body), _json) : null;
-            return key is { IsSuccess: true, Value.ApiKey: { Length: > 0 } raw }
-                ? raw
-                : SindriErrors.OnyxKeyFailed.With($"Onyx didn't make the key (HTTP {Code(sent.Value.Status)}); run `sindri onyx up` again");
+            if (key is not { IsSuccess: true, Value.ApiKey: { Length: > 0 } raw })
+            {
+                return SindriErrors.OnyxKeyFailed.With($"Onyx didn't make the key (HTTP {Code(sent.Value.Status)}); run `sindri onyx up` again");
+            }
+
+            return InAdminGroup(key.Value, groupId) ? raw : NotInAdminGroup(key.Value, name);
+        }
+
+        // Onyx's own account of the groups the key's service account is in, not the request's: the id asked for must be there and still be named Admin.
+        private static bool InAdminGroup(OnyxKeyWire key, int groupId)
+            => key.Groups?.Any(g => g.Id == groupId && string.Equals(g.Name, "Admin", StringComparison.Ordinal)) == true;
+
+        // The raw key never reaches the message; Onyx's masked display of it does, so the owner can find the key in Onyx's admin page and delete it.
+        private static Error NotInAdminGroup(OnyxKeyWire key, string name)
+        {
+            var display = new string([.. (key.ApiKeyDisplay ?? string.Empty).Where(static c => !char.IsControl(c)).Take(48)]);
+            var shown = display.Length > 0 ? $"{display} ({name})" : name;
+            return SindriErrors.OnyxKeyFailed.With($"Onyx made the API key {shown} but its service account is not in the Admin group, so Sindri did not keep the key; delete it on Onyx's admin API keys page, then run `sindri onyx up` again");
         }
 
         public async ValueTask DisposeAsync()

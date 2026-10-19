@@ -9,7 +9,7 @@ namespace Aw.Sindri.Features.OnyxAccount;
 /// Spec §4.1 steps 7 and 8: Sindri's admin key. The owner's Onyx login is asked for once at the terminal, held in memory for the calls below and dropped; the key is made, checked and stored, and only a pointer to it is returned.
 /// A recorded key is trusted again only when it still resolves from where it was stored and Onyx still takes it as an admin service account.
 /// </summary>
-internal sealed class OnyxKeyMinter(IOnyxPrompts prompts, IOnyxProvisioning provisioning, ISecretWriter secrets, ISecretPointers pointers)
+internal sealed class OnyxKeyMinter(IOnyxPrompts prompts, IOnyxProvisioning provisioning, ISecretWriter secrets, ISecretPointers pointers, OnyxAdminGroup adminGroup)
 {
     private const string KeyName = "sindri-onyx";
     private const string KeyService = "onyx";
@@ -68,7 +68,7 @@ internal sealed class OnyxKeyMinter(IOnyxPrompts prompts, IOnyxProvisioning prov
         var session = signedIn.Value;
         await using (session.ConfigureAwait(false))   // logs out and drops the cookie
         {
-            var group = await session.AdminGroup(cancellationToken).ConfigureAwait(false);
+            var group = await adminGroup.Find(session, cancellationToken).ConfigureAwait(false);
             var made = group.IsError ? group.Error : await session.CreateKey(KeyName, group.Value, cancellationToken).ConfigureAwait(false);
             if (made.IsError)
             {

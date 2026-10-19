@@ -167,7 +167,7 @@ registration request is on it (O3):
 | `GET /api/health`, `GET /api/version` | readiness, the pin check |
 | `POST /api/auth/login` (form: `username`, `password`), `POST /api/auth/logout` | the owner's session cookie (`fastapiusersauth`), held in memory only, for minting the key |
 | `POST /api/admin/api-key` | the `sindri-onyx` key; the raw key is returned once (Onyx stores it hashed) |
-| the role step the builder finds in v4.9.0 | Onyx's `APIKeyArgs` is `{name, group_ids}` with no role field: the builder finds, in the v4.9.0 source, how a key's service account becomes an admin (the Admin group's id, or a set-role route) and adds exactly that request here, with its source line cited in the code comment |
+| the role step the builder finds in v4.9.0 | Onyx's `APIKeyArgs` is `{name, group_ids}` with no role field: the builder finds, in the v4.9.0 source, how a key's service account becomes an admin (the Admin group's id, or a set-role route) and adds exactly that request here, with its source line cited in the code comment. **Found (2026-10-19):** the Admin group's id; the group list that gives it (`GET /api/manage/admin/user-group`) is Enterprise-only (`backend/ee/onyx/server/user_group/api.py`) and answers 402 on the Community Edition, so it is not a CE-safe source (the first build assumed it was). Key creation is CE and returns the account's `groups` in its descriptor. On a 402 the id is read from the managed stack's own Postgres (`docker exec … psql`, read-only, not an HTTP request, so the allowlist stays five), and the key is kept only when the descriptor's `groups` hold that Admin group |
 | `GET /api/me` | the key's account is an admin service account |
 
 Same refusal-before-send shape and test as the query adapter. The research note for the builder: register, login and
@@ -223,7 +223,8 @@ A new code range `SND-ONYX-0xx` in `SindriErrors`, each with a one-line fix:
 | `SND-ONYX-005` | Onyx didn't become ready in time, or reports another version |
 | `SND-ONYX-006` | Port taken by something not ours and no free fallback |
 | `SND-ONYX-007` | The Onyx login given isn't an admin (fix: make that account an admin in Onyx's users page, or log in as the first user) |
-| `SND-ONYX-008` | Minting or verifying the key failed |
+| `SND-ONYX-008` | Minting or verifying the key failed (also: no Admin group to put it in, or Onyx's answer doesn't list it) |
+| `SND-ONYX-013` | The group list answered 402 (Community Edition); the key step reads the Admin group from the stack's database instead |
 | `SND-ONYX-009` | Writing a secret failed (and the `file:` fallback did too) |
 | `SND-ONYX-010` | Docker points at another machine; Sindri only runs Onyx on this one (fix: switch to the local context, unset `DOCKER_HOST`) |
 | `SND-ONYX-011` | A `docker compose` command (`pull`, `up`, `stop`, `ps`) failed; the message ends with the last lines it printed |
