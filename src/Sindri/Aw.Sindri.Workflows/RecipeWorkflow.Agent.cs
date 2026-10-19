@@ -94,7 +94,7 @@ internal sealed partial class RecipeWorkflow
         var launched = await Launching(launching).ConfigureAwait(true);
         if (launched.Failure is { } failure)
         {
-            return (await Decided(applied, open, AgentFailed(open, step, failure.Text, tokens: 0), reportId: null, context).ConfigureAwait(true), true);
+            return (await Decided(applied, open, AgentFailed(open, step, "launch", tokens: 0, $"{failure.Code}: {failure.Message}"), reportId: null, context).ConfigureAwait(true), true);
         }
 
         _agent = (open.Token.Value, launched);
@@ -207,10 +207,10 @@ internal sealed partial class RecipeWorkflow
         return new AgentStepRun(WorkflowInstanceId.Of(address), address, open.Token, new StepRef(instance.Frame.State, step.Use.Value), writes);
     }
 
-    private StepFailed AgentFailed(OpenRun open, StepUse step, string reason, int tokens)
+    private StepFailed AgentFailed(OpenRun open, StepUse step, string reason, int tokens, string? detail = null)
     {
         var digest = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(string.Create(CultureInfo.InvariantCulture, $"failed\n{reason}\n{_runs}"))));
-        return new StepFailed("service:agent:" + step.Use.Value, open.Token, reason, tokens, digest);
+        return new StepFailed("service:agent:" + step.Use.Value, open.Token, reason, tokens, digest) { Detail = detail };
     }
 
     // Waits for the activity, an accepted report (when the wait takes reports), or what ends the run, applying the commands and timers an Update delivers meanwhile.

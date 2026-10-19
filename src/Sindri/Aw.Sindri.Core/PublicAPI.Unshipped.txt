@@ -11882,3 +11882,5 @@ static Aw.Sindri.Core.Events.ScopingEscape.operator ==(Aw.Sindri.Core.Events.Sco
 const Aw.Sindri.Core.Events.EventTypes.ScopingApproved = "scoping.approved" -> string!
 const Aw.Sindri.Core.Events.EventTypes.ScopingEscape = "scoping.escape" -> string!
 static readonly Aw.Sindri.Core.Scoping.ScopingErrors.PacketToolFailed -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Detail.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Detail.init -> void

@@ -50,6 +50,7 @@ public static partial class TransitionDecision
             StepCompleted { Via: StepRuntime.Block } => "block",
             StepCompleted { Via: StepRuntime.Agent } => "agent",
             StepFailed when BlockStepTriggers.IsBlockActor(trigger.Actor) => "block",
+            StepFailed when trigger.Actor.StartsWith("service:agent:", StringComparison.Ordinal) => "agent",   // an agent run that failed to launch, was lost or exited
             _ => null,
         };
     }
