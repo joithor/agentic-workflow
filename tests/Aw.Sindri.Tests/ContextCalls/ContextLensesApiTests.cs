@@ -239,6 +239,49 @@ public sealed class ContextLensesApiTests : IDisposable
         Assert.Equal(("<untrusted source=\"map\">Drafted B</untrusted>", "untrusted"), (own.GetProperty("label").GetString(), own.GetProperty("trust").GetString()));
     }
 
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Context_lenses_over_mcp_takes_optional_anchors_and_mapVersion_and_a_lone_anchor_stays_schema_1()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        await using var mcp = await McpSession.Open(host, FixtureMap.Repo, ct);
+
+        var tool = (await mcp.Client.ListToolsAsync(cancellationToken: ct)).Single(t => t.Name == "context_lenses").JsonSchema;
+        var lone = await mcp.Call("context_lenses", $$"""{"anchor":"{{Anchor}}"}""", ct);
+        var set = await mcp.Call("context_lenses", $$"""{"anchors":["{{Anchor}}","feature:layout.split-pane","feature:nope.x"]}""", ct);
+        var held = await mcp.Call("context_lenses", $$"""{"anchor":"{{Anchor}}","mapVersion":"v1"}""", ct);
+        var gone = await mcp.Call("context_lenses", $$"""{"anchor":"{{Anchor}}","mapVersion":"v99"}""", ct);
+        var goneSet = await mcp.Call("context_lenses", $$"""{"anchors":["{{Anchor}}","feature:layout.split-pane"],"mapVersion":"v99"}""", ct);
+        var none = await mcp.Call("context_lenses", "{}", ct);
+        var wrongType = await mcp.Call("context_lenses", """{"anchors":"feature:a"}""", ct);
+        var wrongItem = await mcp.Call("context_lenses", """{"anchors":[1]}""", ct);
+
+        Assert.Equal(["anchor", "anchors", "mapVersion", "hops"], tool.GetProperty("properties").EnumerateObject().Select(p => p.Name), StringComparer.Ordinal);
+        Assert.False(tool.TryGetProperty("required", out _));
+        Assert.Equal((1, Anchor), (lone.StructuredContent!.Value.GetProperty("schemaVersion").GetInt32(), lone.StructuredContent!.Value.GetProperty("anchor").GetProperty("key").GetString()));
+        Assert.Equal((2, 2), (set.StructuredContent!.Value.GetProperty("schemaVersion").GetInt32(), set.StructuredContent!.Value.GetProperty("anchors").GetArrayLength()));
+        Assert.Equal(["feature:nope.x"], set.StructuredContent!.Value.GetProperty("missingAnchors").EnumerateArray().Select(e => e.GetString()), StringComparer.Ordinal);
+        Assert.Equal("v1", held.StructuredContent!.Value.GetProperty("mapVersion").GetString());
+        Assert.All([gone, goneSet], r => { Assert.Equal(true, r.IsError); Assert.Contains("SND-CONTEXT-120", r.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal); });
+        Assert.All([none, wrongType, wrongItem], r => { Assert.Equal(true, r.IsError); Assert.Contains("SND-CONTEXT-022", r.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal); });
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Context_query_over_mcp_takes_an_optional_mapVersion()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await Host();
+        await using var mcp = await McpSession.Open(host, FixtureMap.Repo, ct);
+
+        var schema = (await mcp.Client.ListToolsAsync(cancellationToken: ct)).Single(t => t.Name == "context_query").JsonSchema;
+        var gone = await mcp.Call("context_query", $$"""{"node":"{{Anchor}}","mapVersion":"v99"}""", ct);
+        var malformed = await mcp.Call("context_query", $$"""{"node":"{{Anchor}}","mapVersion":"latest"}""", ct);
+
+        Assert.True(schema.GetProperty("properties").TryGetProperty("mapVersion", out _));
+        Assert.Contains("SND-CONTEXT-120", gone.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal);
+        Assert.Contains("SND-CONTEXT-006", malformed.StructuredContent!.Value.GetRawText(), StringComparison.Ordinal);
+    }
+
     private async Task<GoldenHost> OffHost() => await Host(sessions: false);
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]
@@ -406,6 +449,52 @@ public sealed class ContextLensesApiTests : IDisposable
         var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapProposed, TestContext.Current.CancellationToken);
         var payload = Json(recorded.Value!.Envelope.Payload);
         Assert.Equal((1, 0), (payload.GetProperty("added").GetInt32(), payload.GetProperty("existing").GetInt32()));   // the re-emitted event says what the committed call added, not the retry's 0
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task A_retry_after_the_withdraw_event_append_failed_records_the_event_exactly_once()
+    {
+        TestContext.Current.CancellationToken.ThrowIfCancellationRequested();
+        var ledger = new FlakyLedger();
+        await using var host = await ContextHosts.Approved(_repo, sessions: true, TestContext.Current.CancellationToken,
+            s => { _ = s.RemoveAll<IClusterSource>(); _ = s.AddSingleton<IClusterSource>(new FakeClusterSource()); ledger.Wrap(s); }, name: FixtureMap.Repo);
+        await ContextMapApiTests.Import(host);
+        var body = $$"""{"run":"scope-5","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"Zoom","kind":"feature"}]}""";
+        var empty = $$"""{"run":"scope-5","repo":"{{FixtureMap.Repo}}","surfaces":[]}""";
+        Assert.Equal(HttpStatusCode.OK, (await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)))).Status);
+
+        ledger.Failing = true;
+        var failed = await host.Http.Ask(Post("/sindri/context/map/proposals", empty, App(host)));
+        ledger.Failing = false;
+        var retry = await host.Http.Ask(Post("/sindri/context/map/proposals", empty, App(host)));
+        var again = await host.Http.Ask(Post("/sindri/context/map/proposals", empty, App(host)));
+
+        Assert.Equal((HttpStatusCode.ServiceUnavailable, "SND-LEDGER-002"), (failed.Status, failed.Code));
+        Assert.Equal(JsonValueKind.Number, Json(retry.Body).GetProperty("sequence").ValueKind);   // the rows committed the first time; the retry writes the event they lack
+        Assert.Equal(JsonValueKind.Null, Json(again.Body).GetProperty("sequence").ValueKind);   // and only once
+        var recorded = await host.App.Services.GetRequiredService<ILedgerStore>().Latest(EventTypes.ContextMapProposed, TestContext.Current.CancellationToken);
+        Assert.Equal(1, Json(recorded.Value!.Envelope.Payload).GetProperty("withdrawn").GetInt32());
+    }
+
+    [Fact(Timeout = 120_000), Trait("Lane", "integration")]
+    public async Task Each_withdraw_event_counts_its_own_withdrawal_across_withdraw_repropose_withdraw()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var host = await ContextHosts.Approved(_repo, sessions: true, ct,
+            s => { _ = s.RemoveAll<IClusterSource>(); _ = s.AddSingleton<IClusterSource>(new FakeClusterSource()); }, name: FixtureMap.Repo);
+        await ContextMapApiTests.Import(host);
+        var body = $$"""{"run":"scope-6","repo":"{{FixtureMap.Repo}}","surfaces":[{"name":"Zoom","kind":"feature"},{"name":"Swap","kind":"feature"}]}""";
+        var empty = $$"""{"run":"scope-6","repo":"{{FixtureMap.Repo}}","surfaces":[]}""";
+
+        _ = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+        var first = await host.Http.Ask(Post("/sindri/context/map/proposals", empty, App(host)));
+        _ = await host.Http.Ask(Post("/sindri/context/map/proposals", body, App(host)));
+        var second = await host.Http.Ask(Post("/sindri/context/map/proposals", empty, App(host)));
+
+        var events = (await host.App.Services.GetRequiredService<ILedgerStore>().ReadAfter(0, 500, ct)).Value.Where(e => e.Envelope.Type == EventTypes.ContextMapProposed)
+            .Select(e => Json(e.Envelope.Payload)).Where(p => p.TryGetProperty("withdrawn", out _)).Select(p => p.GetProperty("withdrawn").GetInt32()).ToList();
+        Assert.Equal((2, 2), (Json(first.Body).GetProperty("result").GetProperty("withdrawn").GetInt32(), Json(second.Body).GetProperty("result").GetProperty("withdrawn").GetInt32()));
+        Assert.Equal([2, 2], events);   // each event says what its own call withdrew, not the run's running total
     }
 
     [Fact(Timeout = 120_000), Trait("Lane", "integration")]

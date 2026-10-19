@@ -73,8 +73,8 @@ public sealed class SessionIntentScopeTests : IDisposable
     {
         await ImportMap();
 
-        var session = (await _world.Engine.Lenses(InKey, draft: false, depth: null, MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value.Bands.Intent;
-        var human = (await _world.Engine.Lenses(InKey, draft: false, depth: null, MapWorld.Human, MapWorld.None)).Value.Bands.Intent;
+        var session = (await _world.Engine.Lenses(InKey, read: MapRead.Current, depth: null, MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value.Bands.Intent;
+        var human = (await _world.Engine.Lenses(InKey, read: MapRead.Current, depth: null, MapWorld.Human, MapWorld.None)).Value.Bands.Intent;
 
         Assert.Equal((human.Counts.Records, human.Counts.Decisions), (session.Counts.Records, session.Counts.Decisions));
         Assert.Equal((2, 2), (session.Counts.Records, session.Counts.Decisions));
@@ -89,7 +89,7 @@ public sealed class SessionIntentScopeTests : IDisposable
 
         var session = (await _world.Engine.ShowNode(both, MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value;
         var human = (await _world.Engine.ShowNode(both, MapWorld.Human, MapWorld.None)).Value;
-        var band = (await _world.Engine.Lenses(InKey, draft: false, depth: null, MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value.Bands.Intent;
+        var band = (await _world.Engine.Lenses(InKey, read: MapRead.Current, depth: null, MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value.Bands.Intent;
 
         Assert.Equal([InKey], session.Out.Select(e => e.To.Value), StringComparer.Ordinal);   // why: the out-of-scope end of the link is not the session's to see
         Assert.Equal([InKey, OutKey], human.Out.Select(e => e.To.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
@@ -122,8 +122,8 @@ public sealed class SessionIntentScopeTests : IDisposable
         const string mentions = "record:linear:issue/0e5a1b00-0000-4000-8000-000000000a02";
         const string fenced = "<untrusted source=\"map\">Mentions in</untrusted>";
 
-        var session = (await _world.Engine.Lenses(mentions, draft: false, depth: null, MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value;
-        var human = (await _world.Engine.Lenses(mentions, draft: false, depth: null, MapWorld.Human, MapWorld.None)).Value;
+        var session = (await _world.Engine.Lenses(mentions, read: MapRead.Current, depth: null, MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value;
+        var human = (await _world.Engine.Lenses(mentions, read: MapRead.Current, depth: null, MapWorld.Human, MapWorld.None)).Value;
 
         Assert.Equal((fenced, Trust.Untrusted), (session.Anchor.Label, session.Anchor.Trust));
         var own = Assert.Single(session.Bands.Product.Own, i => i.Node.Value == mentions);
@@ -188,13 +188,13 @@ public sealed class SessionIntentScopeTests : IDisposable
         foreach (var key in keys)
         {
             var shown = await _world.Engine.ShowNode(key, session, MapWorld.None);
-            var lens = await _world.Engine.Lenses(key, draft: false, depth: null, session, MapWorld.None);
+            var lens = await _world.Engine.Lenses(key, read: MapRead.Current, depth: null, session, MapWorld.None);
 
             Assert.Equal((ContextErrors.UnknownAnchor.Code, ContextErrors.UnknownAnchor.Code), (shown.Error.Code, lens.Error.Code));
             Assert.DoesNotContain("ZEBRA", shown.Error.Message + lens.Error.Message, StringComparison.Ordinal);
         }
 
-        var band = (await _world.Engine.Lenses(InKey, draft: false, depth: null, session, MapWorld.None)).Value.Bands.Intent;
+        var band = (await _world.Engine.Lenses(InKey, read: MapRead.Current, depth: null, session, MapWorld.None)).Value.Bands.Intent;
         Assert.DoesNotContain(band.Records, r => r.Label.Contains("ZEBRA", StringComparison.Ordinal));
         Assert.DoesNotContain(band.Decisions, d => d.Node.Value == DecisionKey(RecordOutDecision, QuoteOut));
     }
@@ -218,8 +218,8 @@ public sealed class SessionIntentScopeTests : IDisposable
     {
         await ImportMap();
         var privateDecision = DecisionKey(PrivateDoc, "private quote");
-        var open = (await _world.Engine.Lenses(InKey, draft: false, depth: null, MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value.Bands.Intent;
-        var denied = (await _world.Engine.Lenses(InKey, draft: false, depth: null, SessionDenying("docs/private/**"), MapWorld.None)).Value.Bands.Intent;
+        var open = (await _world.Engine.Lenses(InKey, read: MapRead.Current, depth: null, MapWorld.Session(FixtureMap.Repo), MapWorld.None)).Value.Bands.Intent;
+        var denied = (await _world.Engine.Lenses(InKey, read: MapRead.Current, depth: null, SessionDenying("docs/private/**"), MapWorld.None)).Value.Bands.Intent;
 
         Assert.Contains(open.Decisions, d => d.Node.Value == privateDecision);
         Assert.DoesNotContain(denied.Decisions, d => d.Node.Value == privateDecision);

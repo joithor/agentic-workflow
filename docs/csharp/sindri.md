@@ -273,7 +273,7 @@ composed by the host from the class and the client label, never taken from a hea
   as the owner's real home, it is 403 `SND-AUTH-001`. The label is the only way the server sees the prover marker.
 - **`Origin` on a command.** Every command route (the `commands` route group, later the issue routes) refuses any
   `Origin` header with 403 `SND-API-008` (logged), before the body is bound, so a malformed body still gets the 403.
-  Queries keep S1's loopback guard: a loopback `Origin` is answered, any other is the guard's bare 403.
+  Queries keep S1's loopback guard: a loopback `Origin` is answered, any other is the guard's bare 403. The one body query, `QUERY /sindri/context/subgraph`, also refuses a request with an `Origin` header through the same refusal (`SND-API-008`, "a body query from a foreign Origin is refused"; in process only: a cross-site browser request meets the guard's empty 403 first). QUERY is the IETF safe method with a body (draft); clients use `new HttpMethod("QUERY")` or `curl -X QUERY`.
 - **Not audited.** `SND-API-007`, `SND-AUTH-001` and `SND-API-008` are refused before the command chain, so they are
   logged, never written as `command.handled`.
 - **`Sindri-Api-Version: 1`** is on every answer past the loopback guard, problems included, and `GET /sindri/status`
@@ -492,7 +492,7 @@ letters, digits, `.`, `_`, `:` and `-`, starting with a letter or digit.
 phase (`CatalogRules.ShippedPhases`, which each phase extends); every non-pending row's route is mapped; every event type
 is in `EventCatalog`, and `command.handled` is flagged non-public there (the stream filters on it from P5). The architecture rules (API spec §2.5) run in `Aw.Sindri.Tests`
 because they need Host internals: `ARCH-CQRS-001` (every GET serves an `IQuery`, every POST an `ICommand`, or an `IIssue`
-on the four carve-out routes with `issue` rows; over the endpoint data source), `ARCH-CQRS-002` (no query handler takes
+on the four carve-out routes with `issue` rows; queries are GET or QUERY, a command is never a GET or a QUERY and no POST serves a query, with no carve-out list; over the endpoint data source), `ARCH-CQRS-002` (no query handler takes
 `ILedgerStore`, `ILease` or `IApprovals`, also through a handler's own Features helpers, followed one level; `GetStatusService` and `StreamEventsService` are allowlisted until P2's
 `ILedgerReader`; the read-only approvals port is `IApprovedProfile`, which the context query handlers already take) and `ARCH-CQRS-003` (every command and issue has its row; a classified command has variant rows).
 

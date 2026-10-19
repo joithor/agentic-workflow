@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Aw.Sindri.Core.Events;
 
 /// <summary>A scoping run's surfaces were written to the latest draft (context spec §3 'context.map.proposed'; added by S-4).</summary>
@@ -7,4 +9,6 @@ namespace Aw.Sindri.Core.Events;
 /// <param name="Added">New proposals written.</param>
 /// <param name="Existing">Surfaces the map has already.</param>
 /// <param name="Rejected">Surfaces a person rejected earlier, so not proposed again.</param>
-public sealed record ContextMapProposed(string Run, string Repo, int Draft, int Added, int Existing, int Rejected);
+/// <param name="Withdrawn">Undecided proposals of the run that an empty surface list took back (scoping spec C9); omitted when none.</param>
+public sealed record ContextMapProposed(string Run, string Repo, int Draft, int Added, int Existing, int Rejected,
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] int? Withdrawn = null);

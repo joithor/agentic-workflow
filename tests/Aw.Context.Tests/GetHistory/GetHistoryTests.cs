@@ -93,7 +93,7 @@ public sealed class GetHistoryTests : IDisposable
         await Seed(world, ("0001", "2026-06-01T00:00:00Z", "2026-06-05T00:00:00Z"));
 
         var view = (await Ask(world)).Value;
-        var lenses = (await world.Engine.Lenses(Anchor, draft: false, depth: 0, MapWorld.Human, MapWorld.None)).Value;
+        var lenses = (await world.Engine.Lenses(Anchor, MapRead.Current, depth: 0, MapWorld.Human, MapWorld.None)).Value;
 
         Assert.Equal([.. lenses.Bands.Intent.Records.Select(r => r.Key.Value).Order(StringComparer.Ordinal)], [.. view.Records.Select(r => r.Key.Value).Order(StringComparer.Ordinal)], StringComparer.Ordinal);
         Assert.Equal([.. lenses.Bands.Intent.Decisions.Select(d => d.Node.Value).Order(StringComparer.Ordinal)], [.. view.Decisions.Select(d => d.Node.Value).Order(StringComparer.Ordinal)], StringComparer.Ordinal);
@@ -359,7 +359,7 @@ public sealed class GetHistoryTests : IDisposable
         var draft = (await ReviewMap.Drafts.Build(world)).Draft;
         _ = draft;
 
-        var lens = (await world.Engine.Lenses("surface:command/split-vertical", draft: true, depth: 0, ReviewMap.Drafts.Scope, MapWorld.None)).Value;
+        var lens = (await world.Engine.Lenses("surface:command/split-vertical", MapRead.NewestDraft, depth: 0, ReviewMap.Drafts.Scope, MapWorld.None)).Value;
         var target = lens.Bands.Code.Files.First(f => string.Equals(f.Path, "src/commands/ids.ts", StringComparison.Ordinal)).Implements[0].Value;
 
         var view = (await Ask(world, [target], ReviewMap.Drafts.Scope, read: MapRead.NewestDraft)).Value;

@@ -2907,6 +2907,24 @@ Aw.Sindri.Features.ContextCalls.LensesAnswer.Many.get -> Aw.Context.Core.Lenses.
 Aw.Sindri.Features.ContextCalls.LensesAnswer.Many.init -> void
 Aw.Sindri.Features.ContextCalls.LensesAnswer.One.get -> Aw.Context.Core.Lenses.LensesView?
 Aw.Sindri.Features.ContextCalls.LensesAnswer.One.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest
+Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.<Clone>$() -> Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest!
+Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? Nodes, out int? Depth, out string? MapVersion, out bool FromUrl) -> void
+Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.Depth.get -> int?
+Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.Depth.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.Equals(Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest? other) -> bool
+Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.FromUrl.get -> bool
+Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.FromUrl.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.GetContextSubgraphRequest(System.Collections.Generic.IReadOnlyList<string!>? Nodes, int? Depth = null, string? MapVersion = null, bool FromUrl = false) -> void
+Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.MapVersion.get -> string?
+Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.MapVersion.init -> void
+Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.Nodes.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.Nodes.init -> void
+override Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.GetHashCode() -> int
+override Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.ToString() -> string!
+static Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.operator !=(Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest? left, Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest? right) -> bool
+static Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest.operator ==(Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest? left, Aw.Sindri.Features.ContextCalls.GetContextSubgraphRequest? right) -> bool
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.StepArgv.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Features.ApproveProfile.StepArgvLine!>!
 Aw.Sindri.Features.ApproveProfile.ApproveProfileResponse.StepArgv.init -> void
 Aw.Sindri.Features.ApproveProfile.StepArgvEntry

@@ -12,6 +12,7 @@ using Aw.Context.Core.Map;
 using Aw.Context.Core.Proposals;
 using Aw.Context.Core.Results;
 using Aw.Context.Core.Review;
+using Aw.Context.Core.Subgraph;
 using Aw.Context.Core.Trust;
 using Aw.Context.Features.QueryContext;
 using Aw.Kernel;
@@ -116,6 +117,9 @@ internal sealed class ContextEngine(
     public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
         graph.LensesOf(anchors, read, depth, scope, cancellationToken);
 
+    public ValueTask<Result<SubgraphView>> Subgraph(SubgraphQuery query, ContextScope scope, CancellationToken cancellationToken) =>
+        graph.Subgraph(query, scope, cancellationToken);
+
     public ValueTask<Result<CodeView>> Code(IReadOnlyList<string> anchors, bool draft, string? mapVersion, ContextScope scope, CancellationToken cancellationToken) =>
         graph.Code(anchors, draft, mapVersion, scope, cancellationToken);
 
@@ -124,9 +128,6 @@ internal sealed class ContextEngine(
 
     public ValueTask<Result<LensesSetView>> LensesOf(IReadOnlyList<string> anchors, MapRead read, LensRange range, ContextScope scope, CancellationToken cancellationToken) =>
         graph.LensesOf(anchors, read, range, scope, cancellationToken);
-
-    public ValueTask<Result<LensesView>> Lenses(string anchor, bool draft, int? depth, ContextScope scope, CancellationToken cancellationToken) =>
-        graph.Lenses(anchor, draft, depth, scope, cancellationToken);
 
     public ValueTask<Result<FileMapView>> FileMap(FileMapQuery query, ContextScope scope, CancellationToken cancellationToken) =>
         graph.FileMap(query, scope, cancellationToken);

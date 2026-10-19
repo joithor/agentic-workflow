@@ -25,7 +25,7 @@ internal static class LensProduct
     {
         var cut = own.Count > LensesBuilder.BandCap || neighbors.Count > LensesBuilder.BandCap || affects.Count > LensesBuilder.BandCap || edges.Count > LensesBuilder.BandCap;
         return new ProductBand([.. own.Take(LensesBuilder.BandCap)], [.. neighbors.Take(LensesBuilder.BandCap)], [.. affects.Take(LensesBuilder.BandCap)],
-            new ProductCounts(own.Count, affects.Count), [.. edges.Take(LensesBuilder.BandCap)], cut);
+            new ProductCounts(own.Count, affects.Count) { Neighbors = neighbors.Count, Edges = edges.Count }, [.. edges.Take(LensesBuilder.BandCap)], cut);
     }
 
     /// <summary>The whole lists of one anchor's scope (nothing cut) and the keys of every item.</summary>

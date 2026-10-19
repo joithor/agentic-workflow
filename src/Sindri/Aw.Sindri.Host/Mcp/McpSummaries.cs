@@ -69,6 +69,23 @@ internal static class McpSummaries
         return text.Append("The bands, their text fenced as untrusted, are in structuredContent.").ToString();
     }
 
+    /// <summary>context_lenses' summary for several anchors: the keys, the band sizes, the conflicts and the coverage line; never record text.</summary>
+    /// <param name="view">The lenses of the set.</param>
+    /// <returns>The text.</returns>
+    internal static string LensesSet(LensesSetView view)
+    {
+        var bands = view.Bands;
+        var c = view.Coverage;
+        var text = new StringBuilder(string.Create(CultureInfo.InvariantCulture,
+            $"lenses of {string.Join(", ", view.Anchors.Select(a => a.Key.Value))} · map {view.MapVersion}: intent {bands.Intent.Counts.Records} records and {bands.Intent.Counts.Decisions} decisions, product {bands.Product.Counts.Own} own and {bands.Product.Counts.Affects} affected, code {bands.Code.Counts.Files} files\n"));
+        _ = text.AppendLine(view.MissingAnchors.Count == 0 ? "missing anchors: none" : "missing anchors: " + string.Join(", ", view.MissingAnchors));
+        _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture, $"{view.Conflicts.Count} conflicts"));
+        _ = text.AppendLine(string.Create(CultureInfo.InvariantCulture,
+            $"coverage: {c.Intent.Covered} of {c.Scope} in scope have a record or decision, {c.Product.Confirmed} confirmed, {c.Code.Implemented} implemented in code ({c.Code.Suggested} suggested), {c.Gaps.Count} gaps"));
+        _ = text.AppendLine(view.Degraded.Count == 0 ? "degraded: none" : "degraded: " + string.Join(", ", view.Degraded));
+        return text.Append("The bands, their text fenced as untrusted, are in structuredContent.").ToString();
+    }
+
     /// <summary>context_node's summary: the key, the map version and the edge counts; never a label.</summary>
     /// <param name="view">The node.</param>
     /// <returns>The text.</returns>
