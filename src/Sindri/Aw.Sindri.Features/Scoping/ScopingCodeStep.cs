@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Aw.Kernel;
+using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Core.Workflow.Ids;
 
@@ -10,8 +11,7 @@ namespace Aw.Sindri.Features.Scoping;
 /// A scoping Step the block runtime runs (scoping spec §8.2, §9): the same code the desk helper runs (<see cref="DeskBlocks"/>), moved behind
 /// <see cref="IBlockStep"/>, so a scoping instance passes the deterministic Steps without a desk task. The context's facts become the code's
 /// facts (JSON text by key, without the 'fact:' prefix); the code's outputs become typed facts again. A subclass names its Step; one that needs
-/// more than the facts (gather's Step inputs) overrides <see cref="Extra"/>. The desk's run-area files (rounds.jsonl, the packet) have no place
-/// on the block runtime and are not written here.
+/// more than the facts (gather's Step inputs) overrides <see cref="Extra"/>. A Step that keeps files in the run area (check's rounds.jsonl) does so through <see cref="IRunArea"/>.
 /// </summary>
 /// <param name="step">The Step's id, which picks the code.</param>
 internal abstract class ScopingCodeStep(BlockId step) : IBlockStep
@@ -30,8 +30,77 @@ internal abstract class ScopingCodeStep(BlockId step) : IBlockStep
         }
 
         var ran = DeskBlocks.Run(step.Value, new ScopeFacts(Texts(context, extra.Value)));
-        return ran.IsError ? BlockStepResult.Failed(ran.Error.Message) : Completed(ran.Value);
+        if (ran.IsError)
+        {
+            return BlockStepResult.Failed(ran.Error.Message);
+        }
+
+        var kept = await Keep(context, ran.Value, cancellationToken).ConfigureAwait(false);
+        return kept.IsError ? BlockStepResult.Failed(kept.Error.Message) : Completed(ran.Value);
     }
+
+    /// <summary>Keeps what the code produced beyond the facts, such as the round line: nothing by default.</summary>
+    /// <param name="context">The Step's context.</param>
+    /// <param name="response">The code's response.</param>
+    /// <param name="cancellationToken">Cancelled when the run ends before the Step does.</param>
+    /// <returns>True when kept; the error that fails the Step (a line is never dropped).</returns>
+    protected virtual ValueTask<Result<bool>> Keep(StepContext context, ScopingDeskResponse response, CancellationToken cancellationToken) =>
+        ValueTask.FromResult<Result<bool>>(true);
+
+    /// <summary>Writes the response's files into the instance's run area, in order.</summary>
+    /// <param name="area">The run area.</param>
+    /// <param name="context">The Step's context, which names the instance.</param>
+    /// <param name="response">The code's response.</param>
+    /// <param name="cancellationToken">Cancelled when the run ends before the Step does.</param>
+    /// <returns>True when all were written; the first error otherwise.</returns>
+    protected static async ValueTask<Result<bool>> WriteFiles(IRunArea area, StepContext context, ScopingDeskResponse response, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(area);
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(response);
+        if (context.Address is not { } address)
+        {
+            return WorkflowErrors.BlockRunAreaUnavailable.With("the Step has no instance address, so there is no run area to write to");
+        }
+
+        foreach (var file in response.Files)
+        {
+            var written = await area.Write(address, file.Path, file.Content, file.Append, cancellationToken).ConfigureAwait(false);
+            if (written.IsError)
+            {
+                return written.Error;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>The rounds the instance's run area holds, as the 'rounds' fact the code takes (a JSON array, one entry per line), none when no round was kept yet.</summary>
+    /// <param name="area">The run area.</param>
+    /// <param name="context">The Step's context, which names the instance.</param>
+    /// <param name="cancellationToken">Cancelled when the run ends before the Step does.</param>
+    /// <returns>The code's extra facts, or the error that fails the Step.</returns>
+    protected static async ValueTask<Result<IReadOnlyDictionary<string, string>>> Rounds(IRunArea area, StepContext context, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(area);
+        ArgumentNullException.ThrowIfNull(context);
+        if (context.Address is not { } address)
+        {
+            return WorkflowErrors.BlockRunAreaUnavailable.With("the Step has no instance address, so there is no run area to read the rounds from");
+        }
+
+        var read = await area.Read(address, RoundsFile, cancellationToken).ConfigureAwait(false);
+        if (read.IsError)
+        {
+            return read.Error;
+        }
+
+        var lines = read.Value.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        return Facts(lines.Length == 0 ? [] : new Dictionary<string, string>(StringComparer.Ordinal) { ["rounds"] = "[" + string.Join(',', lines) + "]" });
+    }
+
+    /// <summary>The run-area file the rounds are kept in.</summary>
+    protected const string RoundsFile = "rounds.jsonl";
 
     /// <summary>The code's facts beyond the context's own: what the Step's inputs gave it. None by default.</summary>
     /// <param name="context">The Step's context.</param>

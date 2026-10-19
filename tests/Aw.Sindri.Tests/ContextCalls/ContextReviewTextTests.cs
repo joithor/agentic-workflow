@@ -45,6 +45,35 @@ public sealed class ContextReviewTextTests
         Assert.Contains("ovr_0123456789abcdef", text, StringComparison.Ordinal);
     }
 
+    // A bulk accept writes thousands of rows: listing every id buries the answer, so past a handful it gives the count and the verb that lists them.
+    [Fact, Trait("Lane", "unit")]
+    public void A_bulk_result_counts_its_rows_and_points_at_the_history_instead_of_listing_every_id()
+    {
+        var written = Enumerable.Range(0, 7795).Select(static i => OverrideId.From($"ovr_{i:x16}")).ToList();
+
+        var text = ContextReviewText.Result("review", new ReviewResult(written, [], Undecided: 18_900));
+
+        Assert.Contains("review: 7795 rows written, 18900 undecided", text, StringComparison.Ordinal);
+        Assert.Contains("sindri context map review --history --limit 1000", text, StringComparison.Ordinal);
+        Assert.Contains("every id: add --json", text, StringComparison.Ordinal);
+        Assert.DoesNotContain(written[0].Value, text, StringComparison.Ordinal);
+        Assert.Equal(2, text.TrimEnd('\n').Split('\n').Length);
+    }
+
+    [Theory, Trait("Lane", "unit")]
+    [InlineData(50, true)]
+    [InlineData(51, false)]
+    public void A_result_spells_out_up_to_fifty_ids_and_points_at_the_history_past_that(int rows, bool listed)
+    {
+        var written = Enumerable.Range(0, rows).Select(static i => OverrideId.From($"ovr_{i:x16}")).ToList();
+
+        var text = ContextReviewText.Result("review", new ReviewResult(written, ["one skipped: no match"], Undecided: 0));
+
+        Assert.Equal(listed, text.Contains(written[^1].Value, StringComparison.Ordinal));
+        Assert.Equal(!listed, text.Contains("--history --limit", StringComparison.Ordinal));
+        Assert.Contains("skipped: one skipped: no match", text, StringComparison.Ordinal);
+    }
+
     [Fact, Trait("Lane", "unit")]
     public void The_queue_header_counts_the_groups_and_says_which_were_cut()
     {

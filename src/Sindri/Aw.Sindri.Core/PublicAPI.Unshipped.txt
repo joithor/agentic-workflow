@@ -9975,8 +9975,6 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.CompleteCommand.Line(string! addre
 Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.MaxDuration.init -> void
 Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration
 Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration!
-Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.BlockStepRegistration(Aw.Sindri.Core.Workflow.Ids.BlockId Step) -> void
-Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Step) -> void
 Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.Equals(Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration? other) -> bool
 Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.Step.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
 Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.Step.init -> void
@@ -11968,3 +11966,15 @@ Aw.Sindri.Core.Onyx.IOnyxSession.RevokeTokens(string! name, System.Threading.Can
 Aw.Sindri.Core.Onyx.OnyxAccounts
 const Aw.Sindri.Core.Onyx.OnyxAccounts.DedicatedEmail = "sindri@example.com" -> string!
 const Aw.Sindri.Core.Onyx.OnyxAccounts.LegacyEmail = "sindri@sindri.app" -> string!
+Aw.Sindri.Core.Workflow.Blocks.IRunArea
+Aw.Sindri.Core.Workflow.Blocks.IRunArea.Read(string! address, string! name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Sindri.Core.Workflow.Blocks.IRunArea.Write(string! address, string! name, string! content, bool append, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
+Aw.Sindri.Core.Workflow.Blocks.RunAreaNames
+static Aw.Sindri.Core.Workflow.Blocks.RunAreaNames.IsValid(string? name) -> bool
+static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.BlockRunAreaUnavailable -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.BlockStepRegistration(Aw.Sindri.Core.Workflow.Ids.BlockId Step, bool NeedsRepo = false) -> void
+Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Step, out bool NeedsRepo) -> void
+Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.NeedsRepo.get -> bool
+Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.NeedsRepo.init -> void
+Aw.Sindri.Core.Workflow.Blocks.BlockStepRuntimes.NeedsRepo(Aw.Sindri.Core.Workflow.Ids.BlockId step) -> bool
+Aw.Sindri.Core.Workflow.Blocks.IRepoStep
