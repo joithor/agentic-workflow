@@ -84,7 +84,7 @@ public static class HistoryCut
     // 'since' cuts what ages: a record by its update (its creation when the update is unknown); an unknown time is kept.
     private static bool Aged(HistoryRecord record, HistoryWindow window) => window.Since is { } since && (record.UpdatedAt ?? record.CreatedAt) < since;
 
-    // A decision made by a person is cut by its own instant. One a model or the extractor made follows the record it quotes, because its own instant is the extraction run, not the decision.
+    // A decision made by a person is cut by its own instant (no instant: kept, leaky). One a model or the extractor made follows the record it quotes, because its own instant is the extraction run, not the decision.
     private static HistoryDecision? Decide(HistoryDecision decision, HistoryWindow window, Dictionary<string, bool?> outcomes)
     {
         if (window.Before is not { } before)
@@ -94,7 +94,7 @@ public static class HistoryCut
 
         if (decision.Provenance == Provenance.Human)
         {
-            return decision.At > before ? null : decision with { Leaky = false };
+            return decision.At > before ? null : decision with { Leaky = decision.At is null };   // an unknown time can't vouch for the cut, as with a record
         }
 
         return decision.Quote is { } quote && outcomes.TryGetValue("record:" + quote.Record.Value, out var leaky)

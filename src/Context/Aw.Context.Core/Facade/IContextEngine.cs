@@ -35,6 +35,14 @@ public interface IContextEngine : IContextMap, IContextGraph, IContextLenses, IC
     public ValueTask<Result<SourcesView>> Sources(ContextScope scope, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Whether a configured intent source has never synced successfully (never run, or only failed runs), read from the stored sync state: no live source is probed, so a scheduler may ask every minute.
+    /// </summary>
+    /// <param name="scope">The profile's settings and repos, and the caller.</param>
+    /// <param name="cancellationToken">Cancels the call.</param>
+    /// <returns>True when a configured intent source has no successful sync; false when none is configured or all have synced.</returns>
+    public ValueTask<Result<bool>> HasSyncGap(ContextScope scope, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Runs a probe file (spec §9.2 item 3): reads and checks it, asks each question through <paramref name="ask"/> (Sindri's
     /// CLI passes its GET /sindri/context/query, so probes see what callers see), scores the answers, compares them with the
     /// baseline of the same file (its newest complete run that did not regress) and writes the report under $AW_SINDRI_HOME/context/eval/probes/.

@@ -98,12 +98,12 @@ public sealed class HistoryCutTests
     }
 
     [Fact, Trait("Lane", "unit")]
-    public void Human_decision_is_cut_by_at_and_null_at_is_kept()
+    public void Human_decision_is_cut_by_at_and_null_at_is_kept_as_leaky()
     {
         var result = HistoryCut.Apply([], [Decision("early", Provenance.Human, Day(3, 18)), Decision("late", Provenance.Human, Day(8, 1)), Decision("undated", Provenance.Human, None)], Before());
 
         Assert.Equal(["decision:early", "decision:undated"], result.Decisions.Select(d => d.Node.Value).Order(StringComparer.Ordinal), StringComparer.Ordinal);
-        Assert.DoesNotContain(result.Decisions, d => d.Leaky);
+        Assert.Equal(["decision:undated"], result.Decisions.Where(d => d.Leaky).Select(d => d.Node.Value), StringComparer.Ordinal);   // an unknown time can't vouch for the cut, as with a record
         Assert.Equal(1, result.AfterCut);
     }
 

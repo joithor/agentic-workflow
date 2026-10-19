@@ -15,8 +15,8 @@ internal sealed class CodeLexicalSearch(IRepoReader repos, ICodeSearch search, L
 {
     internal async ValueTask<CodeLexicalFindings> Find(CodeLexicalRequest request, CancellationToken cancellationToken)
     {
-        using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        limit.CancelAfter(request.Settings.Deadline);
+        using var deadline = new CancellationTokenSource(request.Settings.Deadline, clock);   // the TimeProvider's timer, so a test drives it with a fake clock
+        using var limit = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, deadline.Token);
         var pass = new LexicalPass(request.Settings, request.Map.Graph, request.View.Data.Things, request.Clean);
         try
         {
@@ -24,7 +24,7 @@ internal sealed class CodeLexicalSearch(IRepoReader repos, ICodeSearch search, L
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
-            pass.TimedOut = true;
+            pass.Expire();
         }
 
         return pass.Findings(clock.GetUtcNow());
@@ -44,8 +44,9 @@ internal sealed class CodeLexicalSearch(IRepoReader repos, ICodeSearch search, L
             targets.Add(mapRepo);
         }
 
-        foreach (var repo in targets)
+        foreach (var (repo, index) in targets.Select((r, i) => (r, i)))
         {
+            pass.MoreRepos = index < targets.Count - 1;
             var mapCommit = repo.Name == version.Repo && IsSha(version.Commit) ? version.Commit : null;
             await Repo(pass, repo, mapCommit, byRepo.GetValueOrDefault(repo.Name.Value) ?? [], cancellationToken).ConfigureAwait(false);
         }
@@ -121,11 +122,14 @@ internal sealed class CodeLexicalSearch(IRepoReader repos, ICodeSearch search, L
         if (files.Count > 0)
         {
             pass.TestsStarted = true;
+            pass.Running = LexicalPass.TestsId;
             await tests.Find(run, files, cancellationToken).ConfigureAwait(false);
         }
 
         pass.SchemaStarted = true;
+        pass.Running = LexicalPass.SchemaId;
         await schema.Find(run, cancellationToken).ConfigureAwait(false);
+        pass.Running = null;
     }
 
     private static bool IsSha(string? commit) => commit is { Length: >= 7 and <= 64 } && commit.All(char.IsAsciiHexDigitLower);

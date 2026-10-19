@@ -1,6 +1,4 @@
-using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
-using Aw.Context.Core.Sources;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
@@ -9,24 +7,32 @@ using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
+using Microsoft.Extensions.Logging;
 
 namespace Aw.Sindri.Features.ContextCalls;
 
 /// <summary>
 /// The 'context-sync-gaps' background service (scoping spec C5, owner decision 2026-10-18 "allow, show the gap, queue or start the sync"): when a configured intent source has never synced
-/// it starts a sync job as 'service:context-sync-gaps', through the SyncSources command (gate, audit, authorization and 'command.handled'; never the runner). Reads stay pure: the lenses
-/// and the history only show the gap. A running sync is never doubled (key 'sync': SND-JOB-409 is a quiet run). It re-checks on the scheduler tick by reading the jobs view; the scheduler has no event trigger (sindri-api accepted this), backs off after a failed sync and goes quiet once every source has been tried. A failure to start surfaces as a failed service run (needs-you 'failure:service:context-sync-gaps').
+/// successfully it starts a sync job as 'service:context-sync-gaps', through the SyncSources command (gate, audit, authorization and 'command.handled'; never the runner). Reads stay pure: the lenses
+/// and the history only show the gap. A running sync is never doubled (key 'sync': SND-JOB-409 with 'runningJob' is a quiet run; any other 409 is logged and not retried). It re-checks on the scheduler tick;
+/// the scheduler has no event trigger (sindri-api accepted this). A tick reads the sources' stored sync state and nothing else (no live probe, no job read, no command, nothing logged above debug)
+/// until a source is a gap; then it reads the sync jobs once, backs off after every ended sync while the gap remains (a source whose sync failed, or that is down and left the job Succeeded with a coded row, is still a gap) and starts one when due.
+/// A failure to start surfaces as a failed service run (needs-you 'failure:service:context-sync-gaps').
 /// </summary>
 /// <param name="scopes">The profile's scope and the caller.</param>
-/// <param name="engine">The context engine.</param>
+/// <param name="engine">The context engine: its stored-state gap check.</param>
 /// <param name="jobs">The 'jobs' view.</param>
 /// <param name="start">The SyncSources command chain.</param>
 /// <param name="clock">Dates the backoff.</param>
-internal sealed class ContextSyncGapsService(ContextScopes scopes, IContextEngine engine, IJobViews jobs, IService<SyncContextSourcesRequest, JobStartedResponse> start, TimeProvider clock) : IScheduledService
+/// <param name="logger">Logs a 409 that is not "the sync is already running".</param>
+internal sealed partial class ContextSyncGapsService(ContextScopes scopes, IContextEngine engine, IJobViews jobs, IService<SyncContextSourcesRequest, JobStartedResponse> start, TimeProvider clock, ILogger<ContextSyncGapsService> logger) : IScheduledService
 {
+    // The wait caps at 60 minutes from the fifth failure in a row (SyncGapDecision.Wait), so the newest few runs decide it.
+    private const int RecentRuns = 8;
+
     internal static ServiceName ServiceId { get; } = ServiceName.From("context-sync-gaps");
 
-    /// <summary>Runs without a profile entry, every minute: a tick is two view reads when nothing is missing.</summary>
+    /// <summary>Runs without a profile entry, every minute: a tick is one stored-state read when nothing is missing.</summary>
     internal static BuiltInService BuiltIn { get; } = new(ServiceId, new Cadence(TimeSpan.FromMinutes(1)));
 
     public ServiceName Identity() => ServiceId;
@@ -41,37 +47,31 @@ internal sealed class ContextSyncGapsService(ContextScopes scopes, IContextEngin
             return scope.IsError && scope.Error.Code != SindriErrors.ProfileNotApproved.Code ? scope.Error : ScheduledResult.Quiet;
         }
 
-        var facts = await Facts(scope.Value, cancellationToken).ConfigureAwait(false);
-        if (facts.IsError)
+        var gap = await engine.HasSyncGap(scope.Value, cancellationToken).ConfigureAwait(false);
+        if (gap.IsError || !gap.Value)
         {
-            return facts.Error;
+            return gap.IsError ? gap.Error : ScheduledResult.Quiet;
         }
 
-        var (gap, running, finished) = facts.Value;
-        return SyncGapDecision.Decide(gap, running, finished, clock.GetUtcNow()) == SyncGapAction.Start
-            ? await Start(cancellationToken).ConfigureAwait(false)
-            : ScheduledResult.Quiet;
+        return await StartWhenDue(cancellationToken).ConfigureAwait(false);
     }
 
-    // Only view reads: the sources' sync state and the sync jobs.
-    private async ValueTask<Result<(bool Gap, bool Running, IReadOnlyList<SyncAttempt> Finished)>> Facts(ContextScope scope, CancellationToken cancellationToken)
+    // A gap tick: one read of the sync jobs, newest first, then the pure decision.
+    private async ValueTask<Result<ScheduledResult>> StartWhenDue(CancellationToken cancellationToken)
     {
-        var sources = await engine.Sources(scope, cancellationToken).ConfigureAwait(false);
-        if (sources.IsError)
-        {
-            return sources.Error;
-        }
-
-        var gap = sources.Value.Sources.Any(Gap);
-        var running = await jobs.List(JobState.Running, SyncGaps.SyncKind, cancellationToken).ConfigureAwait(false);
         var recent = await jobs.List(state: null, SyncGaps.SyncKind, cancellationToken).ConfigureAwait(false);
-        if (running.IsError || recent.IsError)
+        if (recent.IsError)
         {
-            return running.IsError ? running.Error : recent.Error;
+            return recent.Error;
         }
 
-        IReadOnlyList<SyncAttempt> finished = [.. recent.Value.Where(static j => j.State != JobState.Running && j.EndedAt is not null).Select(static j => new SyncAttempt(j.State == JobState.Failed, j.EndedAt ?? default))];
-        return (gap, running.Value.Count > 0, finished);
+        var running = recent.Value.Any(static j => j.State == JobState.Running);
+        // Only called while a source has no successful sync, so every ended run counts as a failed attempt for it; the job's own state is left as it is (other readers use it).
+        IReadOnlyList<SyncAttempt> finished = [.. recent.Value.Where(static j => j.State != JobState.Running && j.EndedAt is not null).Take(RecentRuns)
+            .Select(static j => new SyncAttempt(Failed: true, j.EndedAt ?? default))];   // the gap is still there, so no run left the source synced, whatever state the job ended in (a down source ends the job Succeeded with a coded row)
+        return SyncGapDecision.Decide(gap: true, running, finished, clock.GetUtcNow()) == SyncGapAction.Start
+            ? await Start(cancellationToken).ConfigureAwait(false)
+            : ScheduledResult.Quiet;
     }
 
     private async ValueTask<Result<ScheduledResult>> Start(CancellationToken cancellationToken)
@@ -79,12 +79,23 @@ internal sealed class ContextSyncGapsService(ContextScopes scopes, IContextEngin
         var started = await start.Handle(new SyncContextSourcesRequest(), cancellationToken).ConfigureAwait(false);
         if (started.IsError)
         {
-            return started.Error.Code == SindriErrors.JobConflict.Code ? ScheduledResult.Quiet : started.Error;
+            return started.Error.Code != SindriErrors.JobConflict.Code ? started.Error : Conflict(started.Error);
         }
 
         return new ScheduledResult(Idle: false, $"ok: sync {started.Value.JobId.Value} started");
     }
 
-    /// <summary>A configured intent source that has never been tried: no sync, no failure recorded.</summary>
-    private static bool Gap(Aw.Context.Core.Results.SourceStatusRow row) => row.Kind == SourceKind.Intent && row.Sync is { LastSync: null, Code: null };
+    // 409 with 'runningJob' is the same sync running: nothing to say. Any other 409 is logged, and not retried this tick.
+    private ScheduledResult Conflict(Error error)
+    {
+        if (error.Extensions is null || !error.Extensions.Any(static e => e.Key == "runningJob"))
+        {
+            LogConflict(logger, error.Code, error.Message);
+        }
+
+        return ScheduledResult.Quiet;
+    }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "context-sync-gaps: the sync was refused with {Code} and is not retried this tick: {Detail}")]
+    private static partial void LogConflict(ILogger logger, string code, string? detail);
 }

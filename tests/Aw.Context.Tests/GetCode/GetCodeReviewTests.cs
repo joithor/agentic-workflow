@@ -68,7 +68,7 @@ public sealed class GetCodeReviewTests
     [Fact, Trait("Lane", "unit")]
     public async Task When_the_tests_step_uses_the_deadline_the_schema_row_claims_no_read()
     {
-        using var slow = new CodeWorld(decorate: _ => new HangingSearch());
+        using var slow = new CodeWorld(decorateTimed: (inner, expire) => new StallingSearch(inner, _ => true, expire));
         _ = await slow.ImportSharing();
 
         var view = (await slow.Code(MapWorld.HumanWith("""{"deadline":"100ms"}"""))).Value;

@@ -17,32 +17,46 @@ internal sealed class LexicalSchemaRule(LexicalCandidates candidates)
         var schemaPaths = run.Tracked.Where(p => PathDenylist.Matches(p, pass.Settings.SchemaGlobs)).ToList();
         var searchable = pass.Things.Where(t => t.Searchable).ToList();
         pass.SchemaCapped |= searchable.Count > CodeRules.MaxThings;   // the rest are reported, not dropped silently
-        foreach (var thing in searchable.Take(CodeRules.MaxThings))
+        var forms = searchable.Take(CodeRules.MaxThings).Select(t => (Thing: t, Terms: CodeLensBuilder.ThingTerms(pass.Graph, t.Key, pass.Clean))).Where(f => f.Terms.Count > 0).ToList();
+        if (forms.Count == 0 || schemaPaths.Count == 0)
         {
-            var terms = CodeLensBuilder.ThingTerms(pass.Graph, thing.Key, pass.Clean);
-            if (terms.Count == 0 || schemaPaths.Count == 0)
+            return;
+        }
+
+        // One search for every thing's terms together (one git call per chunk of paths); the files are then tied to their things in process.
+        var union = forms.SelectMany(f => f.Terms).Distinct(StringComparer.Ordinal).ToList();
+        var query = new CandidateQuery(union, schemaPaths, CodeRules.MaxCandidates, LexicalPass.SchemaId);
+        if (await candidates.Find(run, query, cancellationToken).ConfigureAwait(false) is not { } found)
+        {
+            return;
+        }
+
+        pass.SchemaCapped |= found.Cut;
+        await Name(run, forms, found.Paths, cancellationToken).ConfigureAwait(false);
+    }
+
+    // Ties each candidate file to the things whose terms its text names, at most one more than the listed files per thing (so the merge sees the cut).
+    private async ValueTask Name(LexicalRun run, List<(CodeThing Thing, IReadOnlyList<string> Terms)> forms, List<string> paths, CancellationToken cancellationToken)
+    {
+        var tied = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var path in paths)
+        {
+            var text = await candidates.Text(run, path, cancellationToken).ConfigureAwait(false);
+            if (text is null)
             {
                 continue;
             }
 
-            var query = new CandidateQuery(terms, schemaPaths, CodeRules.MaxFilesPerThing + 1, LexicalPass.SchemaId);
-            if (await candidates.Find(run, query, cancellationToken).ConfigureAwait(false) is not { } found)
+            foreach (var (thing, terms) in forms)
             {
-                return;
-            }
+                var count = tied.GetValueOrDefault(thing.Key.Value);
+                if (count > CodeRules.MaxFilesPerThing || NameMatcher.FindTerm(text, terms) is not { } matched)
+                {
+                    continue;
+                }
 
-            pass.SchemaCapped |= found.Cut;
-            await Name(run, thing, found.Paths, terms, cancellationToken).ConfigureAwait(false);
-        }
-    }
-
-    private async ValueTask Name(LexicalRun run, CodeThing thing, List<string> paths, IReadOnlyList<string> terms, CancellationToken cancellationToken)
-    {
-        foreach (var path in paths)
-        {
-            var text = await candidates.Text(run, path, cancellationToken).ConfigureAwait(false);
-            if (text is not null && NameMatcher.FindTerm(text, terms) is { } matched)
-            {
+                tied[thing.Key.Value] = count + 1;
+                run.Pass.SchemaCapped |= count == CodeRules.MaxFilesPerThing;
                 run.Pass.Schema.Add(new LexicalSchemaFile(thing.Key, path, matched));
             }
         }

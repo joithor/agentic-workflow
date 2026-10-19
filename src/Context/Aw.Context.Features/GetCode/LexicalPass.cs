@@ -42,7 +42,15 @@ internal sealed class LexicalPass(ContextSettings settings, GraphSnapshot graph,
 
     internal bool SchemaCapped { get; set; }
 
-    internal bool TimedOut { get; set; }
+    /// <summary>The source whose step is running now, or null between steps.</summary>
+    internal SourceId? Running { get; set; }
+
+    /// <summary>True while another repo is still to be searched after the current one.</summary>
+    internal bool MoreRepos { get; set; }
+
+    private bool TestsTimedOut { get; set; }
+
+    private bool SchemaTimedOut { get; set; }
 
     internal bool TestsStarted { get; set; }
 
@@ -62,19 +70,26 @@ internal sealed class LexicalPass(ContextSettings settings, GraphSnapshot graph,
         }
     }
 
+    /// <summary>Notes that the deadline passed: the step running is cut, and so is any step still to run; a step that finished stays as it was.</summary>
+    internal void Expire()
+    {
+        TestsTimedOut = Running != SchemaId || MoreRepos;
+        SchemaTimedOut = true;
+    }
+
     internal CodeLexicalFindings Findings(DateTimeOffset now) =>
         new(Tests, Schema, Searched, Unlocated, Capped)
         {
             TestsTruncated = TestsCapped,
             SchemaTruncated = SchemaCapped,
-            TestsRow = Row(TestsId, new RowFacts(_testsFailure, Capped || TestsCapped, TestsStarted, Configured: true), now),
-            SchemaRow = Row(SchemaId, new RowFacts(_schemaFailure, SchemaCapped, SchemaStarted, Settings.SchemaGlobs.Count > 0), now),
+            TestsRow = Row(TestsId, new RowFacts(_testsFailure, Capped || TestsCapped, TestsStarted, Configured: true, TestsTimedOut), now),
+            SchemaRow = Row(SchemaId, new RowFacts(_schemaFailure, SchemaCapped, SchemaStarted, Settings.SchemaGlobs.Count > 0, SchemaTimedOut), now),
         };
 
-    private readonly record struct RowFacts((string Code, bool NotHeld)? Failure, bool Capped, bool Started, bool Configured);
+    private readonly record struct RowFacts((string Code, bool NotHeld)? Failure, bool Capped, bool Started, bool Configured, bool TimedOut);
 
-    private SearchedSource Row(SourceId id, RowFacts facts, DateTimeOffset now) =>
-        (facts.Configured, facts.Failure, TimedOut) switch
+    private static SearchedSource Row(SourceId id, RowFacts facts, DateTimeOffset now) =>
+        (facts.Configured, facts.Failure, facts.TimedOut) switch
         {
             (false, _, _) => SearchedSources.Lexical(id, SearchedState.NotConfigured, "not-configured", code: null, asOf: null),
             (_, { NotHeld: true } f, _) => SearchedSources.Lexical(id, SearchedState.Unavailable, "commit-not-held", f.Code, asOf: null),

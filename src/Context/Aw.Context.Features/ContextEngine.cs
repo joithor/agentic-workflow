@@ -40,6 +40,9 @@ internal sealed class ContextEngine(
     public ValueTask<Result<SourcesView>> Sources(ContextScope scope, CancellationToken cancellationToken) =>
         sources.Status(scope, cancellationToken);
 
+    public ValueTask<Result<bool>> HasSyncGap(ContextScope scope, CancellationToken cancellationToken) =>
+        sources.HasSyncGap(scope, cancellationToken);
+
     public ValueTask<Result<RefreshReport>> Refresh(ContextScope scope, CancellationToken cancellationToken) =>
         sources.Refresh(scope, cancellationToken);
 
