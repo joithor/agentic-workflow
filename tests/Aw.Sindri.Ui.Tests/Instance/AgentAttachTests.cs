@@ -60,6 +60,57 @@ public sealed class AgentAttachTests
     }
 
     [Fact]
+    public async Task A_second_Attach_while_the_first_is_sending_posts_nothing()
+    {
+        _server.Launches[AgentRunFixtures.Requested] = RouteAnswer.Api("launches-id", "started-opened");
+        _server.CommandGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var expanded = Ready();
+
+        expanded.Attach!.Choose(AttachAction.Attach);
+        expanded.Attach.Choose(AttachAction.Attach);
+        await Until(() => _server.Opened.Count > 0);
+
+        Assert.Equal((true, Labels.AttachSending), (expanded.Attach.IsPending, expanded.Attach.PendingChip));
+        _server.CommandGate.SetResult();
+        await Until(() => expanded.AttachOutcomeLine.Length > 0);
+        _ = Assert.Single(_server.Opened);
+    }
+
+    [Fact]
+    public async Task After_a_send_Attach_stays_not_ready_until_the_item_is_read_again()
+    {
+        _server.Launches[AgentRunFixtures.Requested] = RouteAnswer.Api("launches-id", "started-opened");
+        var expanded = Ready();
+
+        expanded.Attach!.Choose(AttachAction.Attach);
+        await Until(() => expanded.AttachOutcomeLine.Length > 0);
+        Assert.Equal((true, Labels.AttachSent), (expanded.Attach.IsPending, expanded.Attach.PendingChip));
+        expanded.Attach.Choose(AttachAction.Attach);
+        _ = Assert.Single(_server.Opened);
+
+        expanded.ShowRun(new AgentRunRead(Launch: null, AgentRunFixtures.LiveSession(), [], ItemUnreadable: false));
+
+        Assert.False(expanded.Attach.IsPending);
+    }
+
+    [Fact]
+    public async Task A_new_send_clears_the_last_outcome_line()
+    {
+        _server.Launches[AgentRunFixtures.Requested] = RouteAnswer.Api("launches-id", "started-opened");
+        var expanded = Ready();
+        expanded.Attach!.Choose(AttachAction.Attach);
+        await Until(() => expanded.AttachOutcomeLine.Length > 0);
+        expanded.ShowRun(new AgentRunRead(Launch: null, AgentRunFixtures.LiveSession(), [], ItemUnreadable: false));
+        _server.CommandGate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        expanded.Attach.Choose(AttachAction.Attach);
+
+        Assert.Equal(string.Empty, expanded.AttachOutcomeLine);
+        _server.CommandGate.SetResult();
+        await Until(() => _server.Opened.Count == 2 && expanded.AttachOutcomeLine.Length > 0);
+    }
+
+    [Fact]
     public async Task The_print_viewer_shows_the_attach_command_to_copy()
     {
         _server.Launches[AgentRunFixtures.Requested] = RouteAnswer.Api("launches-id", "started-print");

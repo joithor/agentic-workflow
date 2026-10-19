@@ -9,6 +9,8 @@ internal sealed partial class ExpandedStateViewModel
 {
     private ItemView? _item;
     private bool _itemUnreadable;
+    private bool _sending;
+    private bool _sent;
 
     /// <summary>Sends Attach; set by the frame, null when nothing can be sent.</summary>
     internal AgentAttacher? Attacher { get; set; }
@@ -72,7 +74,8 @@ internal sealed partial class ExpandedStateViewModel
 
     private AttachInput AttachFor(string address)
     {
-        var reason = RunWords.PendingReason(_item, _itemUnreadable);
+        // A send in flight, or one answered whose item is not read again yet, is never ready: the version it carried is spent.
+        var reason = _sending ? Labels.AttachSending : _sent ? Labels.AttachSent : RunWords.PendingReason(_item, _itemUnreadable);
         return new AttachInput(address, AttachStepKind.Agent, reason is null, _cancel?.Confirm, reason);
     }
 
@@ -81,7 +84,7 @@ internal sealed partial class ExpandedStateViewModel
     internal void ShowRun(AgentRunRead read)
     {
         ArgumentNullException.ThrowIfNull(read);
-        (_item, _itemUnreadable) = (read.Item, read.ItemUnreadable);
+        (_item, _itemUnreadable, _sent) = (read.Item, read.ItemUnreadable, false);   // the item is read again: its version is the new one
         LaunchLine = HasRun ? (read.Launch is { } launch ? RunWords.LaunchLine(launch) : Labels.LaunchUnreadable) : string.Empty;
         OnChanged(nameof(HasLaunchLine));
         RunEvents = RunWords.EventLines(read.Events);
@@ -115,16 +118,27 @@ internal sealed partial class ExpandedStateViewModel
 
     private async Task SendAttach()
     {
-        if (Attacher is not { } attacher || _item is not { } item)
+        if (_sending || Attacher is not { } attacher || _item is not { } item)
         {
             return;
         }
 
-        using var source = new CancellationTokenSource();
-        var outcome = await attacher.Attach(item.Version, source.Token).ConfigureAwait(true);
-        (AttachOutcomeLine, AttachCommand) = (outcome.Line, outcome.Command);
+        (_sending, AttachOutcomeLine, AttachCommand) = (true, string.Empty, string.Empty);
         OnChanged(nameof(HasAttachCommand));
-        PendingVoice.Say(outcome.Line);
+        Attach?.Update(AttachFor(_address));
+        try
+        {
+            using var source = new CancellationTokenSource();
+            var outcome = await attacher.Attach(item.Version, source.Token).ConfigureAwait(true);
+            (AttachOutcomeLine, AttachCommand, _sent) = (outcome.Line, outcome.Command, !outcome.Refused);
+            OnChanged(nameof(HasAttachCommand));
+            PendingVoice.Say(outcome.Line);
+        }
+        finally
+        {
+            _sending = false;
+            Attach?.Update(AttachFor(_address));
+        }
     }
 
     /// <summary>Copies the attach command, whole.</summary>

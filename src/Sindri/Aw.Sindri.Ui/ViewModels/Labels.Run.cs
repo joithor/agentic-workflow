@@ -17,6 +17,12 @@ internal static partial class Labels
     /// <summary>Why Attach is not ready when the item could not be read.</summary>
     internal const string AttachItemUnreadable = "Can't check for a live session now";
 
+    /// <summary>Why Attach is not ready while its send is in flight.</summary>
+    internal const string AttachSending = "Sending…";
+
+    /// <summary>Why Attach is not ready after a send, until the item is read again.</summary>
+    internal const string AttachSent = "Attach sent; checking the session";
+
     /// <summary>The launch could not be read.</summary>
     internal const string LaunchUnreadable = "The launch can't be read now.";
 
