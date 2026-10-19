@@ -37,6 +37,7 @@ public static partial class TransitionDecision
         // answer's suspension with its SND-WF-004 refusal, so the escalation never stays a dead end (§5.8, W14).
         (WorkflowInstance After, IReadOnlyList<FollowUp> FollowUps) follows = outcome.Follow switch
         {
+            RefusalFollow.Rerun when StartBlocked(d, instance) is { } blocked => (d.Rules.Suspend(instance, blocked), []),
             RefusalFollow.Rerun => Rerun(d, instance, outcome.Round ?? 1, RefusalRules.Mark(input)),
             RefusalFollow.CommandRefused => (instance, []),
             RefusalFollow.Park or RefusalFollow.Escalate or _ => (d.Rules.Suspend(instance, outcome.Suspend!), []), // why: RefusalRules sets Suspend on every park and escalation

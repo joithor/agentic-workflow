@@ -167,6 +167,26 @@ public sealed class LauncherTests : IDisposable
     }
 
     [Fact]
+    public async Task A_Step_brief_is_appended_to_the_seed()
+    {
+        var request = A.LaunchRequest().Unattended(Step() with { Brief = "Report with: sindri workflow complete X." }).Build();
+
+        _ = await Make().Launch(request, CancellationToken.None);
+
+        Expect.True(_host.Started.Single().Argv.Any(static a => a.EndsWith("This is the build step, block agent. Report with: sindri workflow complete X.", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public async Task A_Step_without_a_brief_keeps_the_plain_seed()
+    {
+        var request = A.LaunchRequest().Unattended(Step()).Build();
+
+        _ = await Make().Launch(request, CancellationToken.None);
+
+        Expect.True(_host.Started.Single().Argv.Any(static a => a.EndsWith("This is the build step, block agent.", StringComparison.Ordinal)));
+    }
+
+    [Fact]
     public async Task A_Step_policy_an_entry_cannot_express_is_Failed_013_and_starts_nothing()
     {
         var request = A.LaunchRequest().WithAgent(AgentId.From("cursor")).Unattended(Step(new StepPolicy(["Read"], StepPermissionMode.Plan, WritablePath: null))).Build();

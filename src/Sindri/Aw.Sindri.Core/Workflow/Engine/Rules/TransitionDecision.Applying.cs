@@ -92,6 +92,11 @@ public static partial class TransitionDecision
             return new Entered(scope.Rules.Suspend(entered, NoRuntime(step.Use, scope.Actor)), entry, [], [], []);
         }
 
+        if (!scope.Context.LegacyBudgetPark && BudgetRules.Exhausted(entered, scope.Recipe) is { } question)
+        {
+            return new Entered(scope.Rules.Suspend(entered, BudgetRules.StartPark(question, scope.Actor)), entry, [], [], []);   // a kept report spent the budget: this Step does not start
+        }
+
         FollowUp[] start = entered.Frame.Run is { } run ? [new(FollowUpKind.StartRun, entered.Id, run.Token, step.Use, Answer: null)] : [];
         return new Entered(entered, entry, [], [], start);
     }
@@ -123,7 +128,7 @@ public static partial class TransitionDecision
 
     /// <summary>A Step runs when this build has its runtime, or on the desk runtime when its descriptor says deskCapable (W5, W20).</summary>
     private static bool Runnable(DecisionContext context, BlockId step) =>
-        context.Runtimes.Contains(step) || context.RunsAsBlock(step) || context.Catalog.Find(step) is { DeskCapable: true };
+        context.RuntimeOf(step) is not null || context.Catalog.Find(step) is { DeskCapable: true };
 
     private static Suspension NoRuntime(BlockId step, string actor) => new(
         SuspensionKind.Park, ParkReason.NoRuntime, ParkKind: null, Escalation: null,
@@ -153,6 +158,7 @@ public static partial class TransitionDecision
     private static ProgressMark Progress(Trigger trigger) => trigger switch
     {
         StepFailed failed => new ProgressMark(Findings: null, RefusalRules.Digest(failed.Reason), EmptyDiff: false),
+        StepCompleted done => new ProgressMark(Outputs(trigger).GetValueOrDefault(_findings)?.Sha256, Failure: null, done.EmptyDiff, done.FindingKeys),
         _ => new ProgressMark(Outputs(trigger).GetValueOrDefault(_findings)?.Sha256, Failure: null, EmptyDiff: false),
     };
 

@@ -52,8 +52,12 @@ public static class SindriInfrastructureServiceCollectionExtensions
     public static IServiceCollection AddSindriInfrastructure(this IServiceCollection services, Func<string, string?> environment)
     {
         var settings = SettingsFromEnvironment.Read(environment);
-        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriLauncher(environment, settings).AddSindriAdapters(environment).AddSindriMcp(environment).AddOnyxInfrastructure(environment).AddScopingInfrastructure(environment);
+        return services.AddSingleton(settings).AddSindriSessions(environment, settings).AddSindriLauncher(environment, settings).AddSindriAdapters(environment).AddAgentRuntimeAdapters().AddSindriMcp(environment).AddOnyxInfrastructure(environment).AddScopingInfrastructure(environment);
     }
+
+    /// <summary>Engine P8: the diff signal of an agent run (git) and an agent session's end and spend (the ledger).</summary>
+    private static IServiceCollection AddAgentRuntimeAdapters(this IServiceCollection services) =>
+        services.AddSingleton<IRunDiff, GitRunDiff>().AddSingleton<IAgentSessions, LedgerAgentSessions>();
 
     private static IServiceCollection AddScopingInfrastructure(this IServiceCollection services, Func<string, string?> environment) =>
         services.AddSingleton<IScopePacketStore>(sp => new ScopePacketStore(sp.GetRequiredService<SindriSettings>(), new ProcessToolRunner(), environment));
@@ -118,6 +122,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IOnyxHealth>(static _ => new HttpOnyxHealth(HttpOnyxHealth.CreateClient()))                 // readiness, http://127.0.0.1 only
             .AddSingleton<IHostProbes>(static _ => new HostProbes())                                       // free disk and loopback ports
             .AddSingleton<IOnyxProvisioning, HttpOnyxProvisioning>()                                        // the setup-only requests, loopback, five on the list (spec §5.2)
+            .AddSingleton<IOnyxDatabase>(static _ => new DockerExecOnyxDatabase(new ProcessToolRunner()))   // the default Admin group's id, read from Sindri's own stack when Onyx CE's group list answers 402
             .AddSingleton<ISecretWriter>(static sp => new KeychainSecretWriter(new ProcessToolRunner(), sp.GetRequiredService<ISindriHome>()))   // the key into the OS store, else an owner-only file
             .AddSingleton<IOnyxProfileWriter, YamlOnyxProfileWriter>()                                     // context.sources.onyx in the live profile
             .AddSingleton<IOnyxPrompts, TerminalPrompts>()                                                  // the owner at the terminal, no echo for the password

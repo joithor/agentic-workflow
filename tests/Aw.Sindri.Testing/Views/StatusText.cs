@@ -48,6 +48,11 @@ public static class StatusText
             yield return ("next", next);
         }
 
+        if (status.Run is { } run)
+        {
+            yield return ("run", $"{run.Runtime} {run.Launch}");
+        }
+
         if (status.Child is { } child)
         {
             yield return ("child", $"{child.Address.Value}  {child.State}{(child.Reason is null ? string.Empty : $": {child.Reason}")}");

@@ -310,13 +310,19 @@ terminal outcomes plus `cancelled` (`RCP-WHEN-001`, whose message ends with `(ou
 
 - **Loops:** `loops: { <name>: { cap ≥ 1, noProgress } }`. `noProgress` defaults to `[findings, emptyDiff, sameFailure]`
   and can't be empty (`RCP-LOOP-003`). A looped state needs a transition back into it (`RCP-LOOP-002`).
-  **Until P8 (spec §3.7, owner decision 2026-10-11):** the engine sees a round's `fact:findings` only as a reference
-  and its SHA-256, and a Step report carries no diff, so P3–P7 detect no progress only from identical findings (the
-  digest of the whole findings value; a superset, keyed by file, check and normalized message, isn't detected) and a
-  repeated failure reason (`sameFailure`: a `step.failed`, or a gate refusal, repeats its reason). `emptyDiff` never
-  fires, so a loop that names only `emptyDiff` never parks early, and the validator doesn't say so. The agent runtime
-  (P8) adds finding keys and a diff signal to Step reports, and the full A §17.23.13 rule lands there.
+  **No-progress (spec §3.7, A §17.23.13, P8):** a round made no progress over the last when a signal the loop names fires.
+  `findings`: a report's `fact:findings` that is a JSON list of `{file, check, message}` gets one key per finding (the
+  SHA-256 of `file|check|message`, the file with `/` separators, the message with whitespace collapsed and case dropped),
+  and the signal fires when the round still has every key of the last round (a superset, or the same set). Findings in any
+  other shape have no keys and keep the whole-value digest rule (fires only when identical). `emptyDiff`: fires when the
+  engine measured an empty diff on an agent run (the worktree's HEAD is the start HEAD and `git status --porcelain` is
+  empty); sessions never report it, and desk and block reports leave it false. `sameFailure`: a `step.failed`, or a gate
+  refusal, repeats its reason. The first round has nothing to compare with.
 - **Budgets:** `budget: { tokens }` on an active state and on the recipe. Exhausting one parks the instance with `budget`.
+  An agent Step is charged its fresh input, cache writes and output; **cache reads are not counted** (a session re-counts them every turn),
+  though `session.usage` still carries them as `cacheReadTokens` (absent when none). A report the engine accepted is **never discarded for its cost**:
+  its transition applies and the spend is recorded, and the park falls where the next Step would start (`budget`, answered with `--grant-tokens`,
+  which starts that Step without counting a round). A run that fails over budget still parks on it.
 - **`next`** tells whoever reads the status what happens or what to do. Its variables are `{item}`, `{instance}`,
   `{state}`, `{user}`, `{child}`, `{loop.<name>}`, `{loop.<name>.cap}` and `{budget.tokens.left}` (`RCP-NEXT-001`).
   It never tells the reader to run an approval-tier command such as `--grant` (`RCP-NEXT-002`). Waits are descriptions
@@ -571,7 +577,7 @@ Descriptor-only Steps of `workflow.design` and `workflow.plan` (line spec §4-§
 The Step inputs `input.context.lenses`, `input.context.code` and `input.context.history` are real Step inputs (parameters `anchors`, `depth`, `hops`, `window`; "The context inputs (S-LB2)" below), so the recipe validates and approves. The output schemas are `schemas/scoping/` (`node scripts/check-scoping-schemas.mjs`).
 
 `step.judge.choose` is `block` runtime and `step.desk.choose` is `desk` and human-only; their hashes moved once when the two fields
-landed (provisional owner default); every other shipped descriptor hashes as before (`ShippedBlocksTests` pins all of them).
+landed (provisional owner default). The agent runtime (engine P8) moved `step.produce`, `step.build.red`, `step.build.green` and `step.prove.holdout`; every other shipped descriptor hashes as before (`ShippedBlocksTests` pins all of them). `sindri recipe list --stale` shows which approved recipes use a moved descriptor and need re-approval.
 
 ### Block catalog (line stations: build and prove)
 
@@ -1225,3 +1231,30 @@ sends it on to the desk twin. A Step with no registered runtime keeps opening a 
   `decision`, left out when null. Desk reports carry neither.
 - **Profile:** `workflow.judge.providers` (and `repos[].workflow.judge.providers`) narrows which providers a Judge
   Step may ask; see `sindri-profile.md`.
+
+## Agent runtime (P8)
+
+A Step whose descriptor says `runtime: agent` runs on an agent session when the approved profile sets `workflow.agent.target`
+(see `sindri-profile.md`) and a launcher is registered. Otherwise it opens a desk task as before. The workflow launches the
+session once (`LaunchAgentStep`, id `agent-launch:{run}:{n}`; a repeated request for the same launch id reuses the
+session), watches it (`WatchAgentStep`, heartbeating), and on an accepted report closes the run (`CloseAgentStep`: the
+usage, the measured empty diff, and the stop of the session) before it decides.
+
+- **The report is the `complete` Update**, validated like a desk report. The session sends `X-Sindri-Launch-Secret`
+  (`AW_SINDRI_LAUNCH_SECRET` for the CLI); another caller gets `SND-AUTH-002`, a wrong secret `SND-AUTH-003` (it consumes no
+  nonce). While the instance is taken over the secret is refused and only the human completes it, through the desk.
+- **A park or a takeover leaves the session running;** the watch resumes after the handback and attaches to the same
+  launch id. A `cancel` or the end of the run stops the session. A session that ends without a report is
+  `step.failed` (`exit`, or `lost` when it vanished), and the loop rules apply to it as to any failure.
+- **Status:** an open agent run adds `run: { runtime: "agent", launch: "LCH-…" }` to the status fields and a `run` line to
+  the text (`run       agent LCH-…`). A desk run and a block run have neither; the member is left out of the JSON when
+  null, so every other status golden is unchanged. An agent run has no desk task, so `commands` lists `takeover` and
+  `cancel` and not `complete`. Golden: `Golden/Api/workflow-status/agent-run.json`.
+- **Events:** an accepted agent report's transition carries `via: agent` and `tokens: N` (the usage the close step read, 0
+  when it could not be read); `sindri workflow events` prints `via agent · tokens N`. The API's event detail has `via`
+  and `tokens`, left out when null. A desk report carries neither.
+- **Replay:** `Workflow.Patched("p8-agent-runtime")` follows `dt-j-block-runtime` in `Begin`, so a history started before P8
+  replays with no agent Steps and its Step stays a desk task (`A_history_before_P8_replays_on_the_desk`).
+- **The dev recipe:** the interpreter tests (`AgentRuntimeInterpreterTests`) run an inline `workflow.dev-agent`: a `write`
+  state whose Step is `step.report.write` (agent runtime), a state budget of 1000 tokens and a 1 minute timeout, with a fake
+  launcher and fake sessions. It is not a shipped recipe.

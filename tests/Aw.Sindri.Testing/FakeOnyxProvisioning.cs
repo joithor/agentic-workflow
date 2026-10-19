@@ -15,6 +15,12 @@ public sealed class FakeOnyxProvisioning : IOnyxProvisioning
     /// <summary>Gets or sets an error AdminGroup returns (SND-ONYX-007 for a non-admin login).</summary>
     public Error? GroupError { get; set; }
 
+    /// <summary>Gets or sets an error CreateKey returns instead of a key (a key whose service account isn't in the Admin group, say).</summary>
+    public Error? CreateKeyError { get; set; }
+
+    /// <summary>Gets the group ids each CreateKey was asked to put the key's service account in.</summary>
+    public IList<int> KeyGroups { get; } = [];
+
     /// <summary>Gets or sets a value indicating whether Onyx treats the made key as an admin service account.</summary>
     public bool KeyIsAdminAnswer { get; set; } = true;
 
@@ -45,6 +51,12 @@ public sealed class FakeOnyxProvisioning : IOnyxProvisioning
 
         public ValueTask<Result<string>> CreateKey(string name, int groupId, CancellationToken cancellationToken)
         {
+            owner.KeyGroups.Add(groupId);
+            if (owner.CreateKeyError is { } error)
+            {
+                return ValueTask.FromResult<Result<string>>(error);
+            }
+
             _ = owner.Made.Add(owner.Key);
             return ValueTask.FromResult<Result<string>>(owner.Key);
         }

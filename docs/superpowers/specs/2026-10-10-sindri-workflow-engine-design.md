@@ -77,7 +77,7 @@ deterministic-code rule for workflow code.
 | Deadlines, `retry`, `takeoverIdle`, sleep shift | `Workflow.DelayAsync` in cancellation scopes | The park and escalate rules the timers trigger (§3.8) |
 | Inbox, router, cursor, held and expired rows | **Signals**, buffered until the workflow consumes them | The ledger-to-Temporal bridge service that turns registered ledger events into signals (§5.4) |
 | Children, propagation, forwarded answers | **Child workflows** with a parent-close policy; signals up; an Update on the child | The address grammar and `onBehalfOf` |
-| Run token, desk and agent reports | An **activity with async completion**: the task token is completed by `sindri workflow complete` *(rev 8.1: an agent Step only; a desk Step is a short activity and the report is the `complete` Update, §5.3)* | The launch secret, the report validation (§5.5), the outcomes and outputs contract |
+| Run token, desk and agent reports | An **activity with async completion**: the task token is completed by `sindri workflow complete` *(rev 8.1: a desk Step is a short activity and the report is the `complete` Update, §5.3; rev 8.2, provisional owner default Q1: an agent Step's report is the same `complete` Update, checked at once, and a long heartbeating activity only watches the session)* | The launch secret, the report validation (§5.5), the outcomes and outputs contract |
 | Outbox commands, dispatch delay, recheck | **Activities** with retry policies, after `DelayAsync(dispatchDelay)` and a revoke recheck | Effect identity, the effect allowlist, the ledger row every effect writes |
 | Fencing, lease epoch, `VersionConflict`, `SND-WF-002` | Task-queue ownership; Updates serialize per workflow | Nothing. `SND-WF-002` is retired |
 | `workflow list`, `--needs-me` | Visibility **search attributes** (`Item`, `Recipe`, `State`, `NeedsYou`, `Repo`) | `GET /needs-you` stays the one list, folded from the ledger (API §3.6) |
@@ -601,7 +601,7 @@ stays a public counter in `status` and in the CLI.
   time. Rev 8 stored the task token on `step.started` and completed the activity through it; that is gone. The shipped
   code (P4a) still has rev 8's async-completion desk activity; it is P4's starting point, and **P4 moves it to the
   Update model** (unit (c)).
-- **Agent runtime (§6.5).** `RunStep` asks `ILauncher` for the launch and returns pending. `session wrap`'s heartbeat
+- **Agent runtime (§6.5).** *Rev 8.2 amendment (provisional owner defaults Q1, Q2): the report is the `complete` Update, validated synchronously like a desk report (a wrong report is refused and the run goes on), and the launcher service's liveness (120 s of silence, `session.ended(lost)`) is what ends a dead session, so the engine watches it by polling instead of routing wrap's beat into Temporal; the worst case is about 125 s, inside 150 s. The text below is rev 8's.* `RunStep` asks `ILauncher` for the launch and returns pending. `session wrap`'s heartbeat
   becomes an **activity heartbeat**; a missed heartbeat timeout (120 s) fails the activity with `lost`, and a wrapped
   exit without a report fails it with `exit`, so a closed tab or a crash ends the run as `step.failed` within 150 s,
   as rev 7 required. The launched session, and only it, completes the activity through `complete --run`, proven by
@@ -938,7 +938,7 @@ It uses API §8.1's launch contract; nothing here launches anything itself.
 - **Launch.** For a Step whose descriptor names an agent runtime, the post-commit loop asks `ILauncher` for a
   launch (rev 8: a tmux session, with no Warp tab on the always-on `--headless` box; see "tmux owns the session" below), with only ids: the instance, the run token, the repo,
   and a fresh per-run worktree (`<repo>/.claude/worktrees/sindri-<instance>-<run>`). The target and its permission
-  mode come from the profile (`workflow.agent.target`: Claude Code, Codex or Cursor; `workflow.agent.permissionMode`).
+  mode come from the profile (`workflow.agent.target`: an agent id; *rev 8.2, provisional owner default Q8: the `workflow.agent.permissionMode` key is dropped, because each Step's policy sets the mode*).
   The session pulls its injection plan, context and packet through the MCP endpoint. `run.runtime` is `agent` and
   `run.launch` names the launch.
 - **Report.** The launched session, and only it, reports with `sindri workflow complete --run <token>`. The CLI reads
@@ -1567,7 +1567,7 @@ P1 model + validator (merged) ──┬──► P2 registry + approval (S1, API
 | 2 | P4 | P4a, P2 and P3 merged, API P3 merged |
 | 3 | P5 ∥ P6 | P4 merged |
 | 4 | P7 | P5 and P6 merged |
-| 5 | P8 | P7, API P10a and Judge (#156) merged |
+| 5 | P8 | API P10a merged (rev 8.2, provisional owner default Q10: P7 and Judge #156 are not needed; the agent runtime calls no Judge provider) |
 
 These engine-local waves sit inside the cross-spec order in `docs/sindri/README.md`, which decides what starts when.
 

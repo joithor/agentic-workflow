@@ -12,7 +12,7 @@ public sealed class BuildGreenStepContract : DescriptorContract
 {
     protected override BlockDescriptor Descriptor => BuildSteps.Green;
 
-    protected override string ExpectedHash => "sha256:c2960a6d337fb70bdc75485818e9f0b3192fb2f2f6d316f8785283c6c0411000";
+    protected override string ExpectedHash => "sha256:1183b36de5cd699259b80ff223a89f5ee7634dfd1acc5c9063a1a083d23d164f";
 
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 

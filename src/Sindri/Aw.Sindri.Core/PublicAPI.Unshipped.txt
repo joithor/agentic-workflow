@@ -179,7 +179,7 @@ Aw.Sindri.Core.Commands.ICallerContextAccessor.Enter(Aw.Sindri.Core.Commands.Cal
 Aw.Sindri.Core.Commands.ICallerContextAccessor.EnterService(string! service) -> System.IDisposable!
 Aw.Sindri.Core.Commands.IClassifiedCommand
 Aw.Sindri.Core.Commands.IClassifiedCommand.CarriesProtectedFields.get -> bool
-Aw.Sindri.Core.Commands.IClassifiedCommand.Variant.get -> string!
+Aw.Sindri.Core.Commands.IClassifiedCommand.Variant.get -> string?
 Aw.Sindri.Core.Commands.ICommand<TResult>
 Aw.Sindri.Core.Commands.ICommandCatalog
 Aw.Sindri.Core.Commands.ICommandCatalog.For(System.Type! commandType) -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Commands.CommandRow!>!
@@ -2591,12 +2591,14 @@ Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Catalog.get -> Aw.Sindr
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Catalog.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Children.get -> Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver!
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Children.init -> void
-Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DecisionContext(Aw.Sindri.Core.Workflow.Engine.Decisions.ApprovalCheck Approval, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! Catalog, System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.BlockId>! Runtimes, Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver! Children) -> void
-Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Decisions.ApprovalCheck Approval, out Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! Catalog, out System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.BlockId>! Runtimes, out Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver! Children) -> void
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DecisionContext(Aw.Sindri.Core.Workflow.Engine.Decisions.ApprovalCheck Approval, Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! Catalog, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.BlockId, Aw.Sindri.Core.Workflow.Engine.StepRuntime>! Runtimes, Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver! Children) -> void
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Decisions.ApprovalCheck Approval, out Aw.Sindri.Core.Workflow.Blocks.BlockCatalog! Catalog, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.BlockId, Aw.Sindri.Core.Workflow.Engine.StepRuntime>! Runtimes, out Aw.Sindri.Core.Workflow.Validation.IChildRecipeResolver! Children) -> void
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyBudgetPark.get -> bool
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.LegacyBudgetPark.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DeskTimeout.get -> System.TimeSpan
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.DeskTimeout.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Equals(Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Runtimes.get -> System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.BlockId>!
+Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Runtimes.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.BlockId, Aw.Sindri.Core.Workflow.Engine.StepRuntime>!
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.Runtimes.init -> void
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionInput
 Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionInput.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionInput!
@@ -3246,7 +3248,7 @@ Aw.Sindri.Core.Workflow.Engine.Instances.PinnedRecipe.Version.get -> int
 Aw.Sindri.Core.Workflow.Engine.Instances.PinnedRecipe.Version.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark
 Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark!
-Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.Deconstruct(out string? Findings, out string? Failure, out bool EmptyDiff) -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.Deconstruct(out string? Findings, out string? Failure, out bool EmptyDiff, out System.Collections.Generic.IReadOnlyList<string!>? FindingKeys) -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.EmptyDiff.get -> bool
 Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.EmptyDiff.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.Equals(Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark? other) -> bool
@@ -3254,7 +3256,7 @@ Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.Failure.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.Failure.init -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.Findings.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.Findings.init -> void
-Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.ProgressMark(string? Findings, string? Failure, bool EmptyDiff) -> void
+Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.ProgressMark(string? Findings, string? Failure, bool EmptyDiff, System.Collections.Generic.IReadOnlyList<string!>? FindingKeys = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Instances.RemainingTimer
 Aw.Sindri.Core.Workflow.Engine.Instances.RemainingTimer.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Instances.RemainingTimer!
 Aw.Sindri.Core.Workflow.Engine.Instances.RemainingTimer.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.DeadlineKind Kind, out System.TimeSpan Left) -> void
@@ -3630,6 +3632,8 @@ Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Activity.get -> string?
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Activity.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.AgentRun.get -> Aw.Sindri.Core.Workflow.Engine.Instances.OpenRun?
+Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.AgentRun.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.Address.init -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceView.AllowedCommands.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.Runtime.AllowedCommand!>!
@@ -8311,6 +8315,8 @@ Aw.Sindri.Core.Events.SessionEnded.Reason.get -> Aw.Sindri.Core.Events.SessionEn
 Aw.Sindri.Core.Events.SessionEnded.Reason.init -> void
 Aw.Sindri.Core.Events.SessionUsage
 Aw.Sindri.Core.Events.SessionUsage.<Clone>$() -> Aw.Sindri.Core.Events.SessionUsage!
+Aw.Sindri.Core.Events.SessionUsage.CacheReadTokens.get -> long?
+Aw.Sindri.Core.Events.SessionUsage.CacheReadTokens.init -> void
 Aw.Sindri.Core.Events.SessionUsage.Equals(Aw.Sindri.Core.Events.SessionUsage? other) -> bool
 Aw.Sindri.Core.Events.SessionUsage.InputTokens.get -> long
 Aw.Sindri.Core.Events.SessionUsage.InputTokens.init -> void
@@ -8440,7 +8446,6 @@ Aw.Sindri.Core.Launch.LaunchStage.Backstop = 1 -> Aw.Sindri.Core.Launch.LaunchSt
 Aw.Sindri.Core.Launch.LaunchStage.Host = 0 -> Aw.Sindri.Core.Launch.LaunchStage
 Aw.Sindri.Core.Launch.StepArgs
 Aw.Sindri.Core.Launch.StepArgs.<Clone>$() -> Aw.Sindri.Core.Launch.StepArgs!
-Aw.Sindri.Core.Launch.StepArgs.Deconstruct(out string? Model, out Aw.Sindri.Core.Launch.StepPolicy? Policy, out Aw.Sindri.Core.Launch.StepRef! Ref) -> void
 Aw.Sindri.Core.Launch.StepArgs.Equals(Aw.Sindri.Core.Launch.StepArgs? other) -> bool
 Aw.Sindri.Core.Launch.StepArgs.Model.get -> string?
 Aw.Sindri.Core.Launch.StepArgs.Model.init -> void
@@ -8448,7 +8453,6 @@ Aw.Sindri.Core.Launch.StepArgs.Policy.get -> Aw.Sindri.Core.Launch.StepPolicy?
 Aw.Sindri.Core.Launch.StepArgs.Policy.init -> void
 Aw.Sindri.Core.Launch.StepArgs.Ref.get -> Aw.Sindri.Core.Launch.StepRef!
 Aw.Sindri.Core.Launch.StepArgs.Ref.init -> void
-Aw.Sindri.Core.Launch.StepArgs.StepArgs(string? Model, Aw.Sindri.Core.Launch.StepPolicy? Policy, Aw.Sindri.Core.Launch.StepRef! Ref) -> void
 Aw.Sindri.Core.Launch.StepPolicy
 Aw.Sindri.Core.Launch.StepPolicy.<Clone>$() -> Aw.Sindri.Core.Launch.StepPolicy!
 Aw.Sindri.Core.Launch.StepPolicy.Equals(Aw.Sindri.Core.Launch.StepPolicy? other) -> bool
@@ -10015,6 +10019,137 @@ Aw.Sindri.Core.Workflow.Engine.HumanOnlySteps
 static Aw.Sindri.Core.Workflow.Engine.HumanOnlySteps.Applies(Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor! step, Aw.Sindri.Core.Workflow.Engine.StepRuntime runOn) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.CompleteCommand
 static Aw.Sindri.Core.Workflow.Engine.Runtime.CompleteCommand.Line(string! address, Aw.Sindri.Core.Workflow.Engine.RunToken run, Aw.Sindri.Core.Workflow.Ids.OutcomeName? outcome, System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! outputs) -> string!
+Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.MaxDuration.init -> void
+Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration
+Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration!
+Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.BlockStepRegistration(Aw.Sindri.Core.Workflow.Ids.BlockId Step) -> void
+Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Step) -> void
+Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.Equals(Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration? other) -> bool
+Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.Step.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
+Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.Step.init -> void
+Aw.Sindri.Core.Workflow.Blocks.BlockStepResult
+Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.BlockStepResult!
+Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.BlockStepResult(Aw.Sindri.Core.Workflow.Blocks.StepResult? Result, string? Failure) -> void
+Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Deconstruct(out Aw.Sindri.Core.Workflow.Blocks.StepResult? Result, out string? Failure) -> void
+Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Equals(Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? other) -> bool
+Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Failure.get -> string?
+Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Failure.init -> void
+Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Result.get -> Aw.Sindri.Core.Workflow.Blocks.StepResult?
+Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Result.init -> void
+Aw.Sindri.Core.Workflow.Blocks.BlockStepRuntimes
+Aw.Sindri.Core.Workflow.Blocks.BlockStepRuntimes.BlockStepRuntimes(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration!>! registrations) -> void
+Aw.Sindri.Core.Workflow.Blocks.BlockStepRuntimes.Ids.get -> System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.BlockId>!
+Aw.Sindri.Core.Workflow.Blocks.IBlockStep
+Aw.Sindri.Core.Workflow.Blocks.IBlockStep.Run(Aw.Sindri.Core.Workflow.Blocks.StepContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Workflow.Blocks.BlockStepResult!>
+Aw.Sindri.Core.Workflow.Engine.StepRuntime.Block = 3 -> Aw.Sindri.Core.Workflow.Engine.StepRuntime
+override Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Blocks.BlockServiceCollectionExtensions.AddBlockStep<T>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.operator !=(Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration? left, Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration? right) -> bool
+static Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.operator ==(Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration? left, Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration? right) -> bool
+static Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Completed(Aw.Sindri.Core.Workflow.Ids.OutcomeName outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! outputs) -> Aw.Sindri.Core.Workflow.Blocks.BlockStepResult!
+static Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Failed(string! reason) -> Aw.Sindri.Core.Workflow.Blocks.BlockStepResult!
+static Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.operator !=(Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? left, Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? right) -> bool
+static Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.operator ==(Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? left, Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? right) -> bool
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers
+static Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers.Actor(Aw.Sindri.Core.Workflow.Ids.BlockId step) -> string!
+static Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers.Failed(Aw.Sindri.Core.Workflow.Ids.BlockId step, Aw.Sindri.Core.Workflow.Engine.RunToken run, string! reason) -> Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed!
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion!
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Equals(Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Outcome.get -> Aw.Sindri.Core.Workflow.Ids.OutcomeName
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Outcome.init -> void
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Outputs.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>!
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Outputs.init -> void
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Run.get -> Aw.Sindri.Core.Workflow.Engine.RunToken
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Run.init -> void
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Step.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Step.init -> void
+override Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.operator !=(Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion? left, Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.operator ==(Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion? left, Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers.Completed(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext! context, Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion! result) -> Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger!
+Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.BlockDescriptor(Aw.Sindri.Core.Workflow.Ids.BlockId Id, Aw.Sindri.Core.Workflow.Blocks.BlockKind Kind, int Version, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! Outputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! Outcomes, Aw.Sindri.Core.Workflow.Blocks.Capability Capabilities, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.ParameterSpec!>! Parameters, Aw.Sindri.Core.Workflow.Blocks.Rung? Rung, bool DeskCapable, string? OutcomesFrom = null, string? InputsFrom = null, bool? HumanOnly = null, Aw.Sindri.Core.Workflow.Blocks.BlockRuntime? Runtime = null, System.TimeSpan? MaxDuration = null) -> void
+Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Id, out Aw.Sindri.Core.Workflow.Blocks.BlockKind Kind, out int Version, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! Outputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! Outcomes, out Aw.Sindri.Core.Workflow.Blocks.Capability Capabilities, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.ParameterSpec!>! Parameters, out Aw.Sindri.Core.Workflow.Blocks.Rung? Rung, out bool DeskCapable, out string? OutcomesFrom, out string? InputsFrom, out bool? HumanOnly, out Aw.Sindri.Core.Workflow.Blocks.BlockRuntime? Runtime, out System.TimeSpan? MaxDuration) -> void
+Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.MaxDuration.get -> System.TimeSpan?
+Aw.Sindri.Core.Workflow.Blocks.BlockDurationJsonConverter
+Aw.Sindri.Core.Workflow.Blocks.BlockDurationJsonConverter.BlockDurationJsonConverter() -> void
+override Aw.Sindri.Core.Workflow.Blocks.BlockDurationJsonConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> System.TimeSpan
+override Aw.Sindri.Core.Workflow.Blocks.BlockDurationJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, System.TimeSpan value, System.Text.Json.JsonSerializerOptions! options) -> void
+Aw.Sindri.Core.Profile.JudgeProviders
+Aw.Sindri.Core.Profile.JudgeSettings
+Aw.Sindri.Core.Profile.JudgeSettings.<Clone>$() -> Aw.Sindri.Core.Profile.JudgeSettings!
+Aw.Sindri.Core.Profile.JudgeSettings.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? Providers) -> void
+Aw.Sindri.Core.Profile.JudgeSettings.Equals(Aw.Sindri.Core.Profile.JudgeSettings? other) -> bool
+Aw.Sindri.Core.Profile.JudgeSettings.JudgeSettings(System.Collections.Generic.IReadOnlyList<string!>? Providers = null) -> void
+Aw.Sindri.Core.Profile.JudgeSettings.Providers.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Profile.JudgeSettings.Providers.init -> void
+Aw.Sindri.Core.Profile.RepoEntry.Deconstruct(out string! Name, out string! Path, out Aw.Sindri.Core.Profile.IndexSettings? Index, out Aw.Sindri.Core.Profile.RepoWorkflowSettings? Workflow) -> void
+Aw.Sindri.Core.Profile.RepoEntry.RepoEntry(string! Name, string! Path, Aw.Sindri.Core.Profile.IndexSettings? Index = null, Aw.Sindri.Core.Profile.RepoWorkflowSettings? Workflow = null) -> void
+Aw.Sindri.Core.Profile.RepoEntry.Workflow.get -> Aw.Sindri.Core.Profile.RepoWorkflowSettings?
+Aw.Sindri.Core.Profile.RepoEntry.Workflow.init -> void
+Aw.Sindri.Core.Profile.RepoWorkflowSettings
+Aw.Sindri.Core.Profile.RepoWorkflowSettings.<Clone>$() -> Aw.Sindri.Core.Profile.RepoWorkflowSettings!
+Aw.Sindri.Core.Profile.RepoWorkflowSettings.Deconstruct(out Aw.Sindri.Core.Profile.JudgeSettings? Judge) -> void
+Aw.Sindri.Core.Profile.RepoWorkflowSettings.Equals(Aw.Sindri.Core.Profile.RepoWorkflowSettings? other) -> bool
+Aw.Sindri.Core.Profile.RepoWorkflowSettings.Judge.get -> Aw.Sindri.Core.Profile.JudgeSettings?
+Aw.Sindri.Core.Profile.RepoWorkflowSettings.Judge.init -> void
+Aw.Sindri.Core.Profile.RepoWorkflowSettings.RepoWorkflowSettings(Aw.Sindri.Core.Profile.JudgeSettings? Judge = null) -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Judge.get -> Aw.Sindri.Core.Profile.JudgeSettings?
+Aw.Sindri.Core.Profile.WorkflowSettings.Judge.init -> void
+const Aw.Sindri.Core.Profile.JudgeProviders.Jev = "jev" -> string!
+const Aw.Sindri.Core.Profile.JudgeProviders.Rules = "rules" -> string!
+override Aw.Sindri.Core.Profile.JudgeSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.JudgeSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.JudgeSettings.ToString() -> string!
+override Aw.Sindri.Core.Profile.RepoWorkflowSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.RepoWorkflowSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.RepoWorkflowSettings.ToString() -> string!
+static Aw.Sindri.Core.Profile.JudgeProviders.Default.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Profile.JudgeProviders.Effective(Aw.Sindri.Core.Profile.SindriProfile! profile, string? repo, System.Collections.Generic.IReadOnlyList<string!>? recipeLiteral) -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Profile.JudgeProviders.Known.get -> System.Collections.Generic.IReadOnlyList<string!>!
+static Aw.Sindri.Core.Profile.JudgeSettings.operator !=(Aw.Sindri.Core.Profile.JudgeSettings? left, Aw.Sindri.Core.Profile.JudgeSettings? right) -> bool
+static Aw.Sindri.Core.Profile.JudgeSettings.operator ==(Aw.Sindri.Core.Profile.JudgeSettings? left, Aw.Sindri.Core.Profile.JudgeSettings? right) -> bool
+static Aw.Sindri.Core.Profile.RepoWorkflowSettings.operator !=(Aw.Sindri.Core.Profile.RepoWorkflowSettings? left, Aw.Sindri.Core.Profile.RepoWorkflowSettings? right) -> bool
+static Aw.Sindri.Core.Profile.RepoWorkflowSettings.operator ==(Aw.Sindri.Core.Profile.RepoWorkflowSettings? left, Aw.Sindri.Core.Profile.RepoWorkflowSettings? right) -> bool
+Aw.Sindri.Core.Events.WorkflowEventDetail.Decision.get -> string?
+Aw.Sindri.Core.Events.WorkflowEventDetail.Decision.init -> void
+Aw.Sindri.Core.Events.WorkflowEventDetail.Via.get -> string?
+Aw.Sindri.Core.Events.WorkflowEventDetail.Via.init -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.Decision.get -> string?
+Aw.Sindri.Core.Events.WorkflowEventPayload.Decision.init -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.Via.get -> string?
+Aw.Sindri.Core.Events.WorkflowEventPayload.Via.init -> void
+Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Decision.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Decision.init -> void
+Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Deconstruct(out string! Kind, out Aw.Sindri.Core.Workflow.Engine.TriggerKey Key, out string! Actor, out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, out string? Reason, out string? Via, out string? Decision) -> void
+Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.TriggerRecord(string! Kind, Aw.Sindri.Core.Workflow.Engine.TriggerKey Key, string! Actor, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, string? Reason = null, string? Via = null, string? Decision = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Via.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Via.init -> void
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.BlockCompletion(Aw.Sindri.Core.Workflow.Ids.BlockId Step, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Outputs, string? Decision = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Decision.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Decision.init -> void
+Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Step, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Outputs, out string? Decision) -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.Decision.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.Decision.init -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.Deconstruct(out string! Actor, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Outputs, out int Tokens, out Aw.Sindri.Core.Workflow.Engine.StepRuntime Via, out string! ReportSha256, out string? Decision, out System.Collections.Generic.IReadOnlyList<string!>? FindingKeys, out bool EmptyDiff) -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.StepCompleted(string! Actor, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Outputs, int Tokens, Aw.Sindri.Core.Workflow.Engine.StepRuntime Via, string! ReportSha256, string? Decision = null, System.Collections.Generic.IReadOnlyList<string!>? FindingKeys = null, bool EmptyDiff = false) -> void
+Aw.Sindri.Core.Workflow.Engine.Decisions.MatchMiss.EngineOwnedRun = 5 -> Aw.Sindri.Core.Workflow.Engine.Decisions.MatchMiss
+Aw.Sindri.Core.Workflow.Blocks.BlockLimits
+static Aw.Sindri.Core.Workflow.Blocks.BlockLimits.MaxDuration(Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor! descriptor) -> System.TimeSpan
+static readonly Aw.Sindri.Core.Workflow.Blocks.BlockLimits.Fallback -> System.TimeSpan
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Via.get -> string?
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Via.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Child.get -> string?
+Aw.Sindri.Core.Workflow.Views.StatusAnswer.Child.init -> void
+Aw.Sindri.Core.NeedsYou.NeedsYouRow.Via.get -> string?
+Aw.Sindri.Core.NeedsYou.NeedsYouRow.Via.init -> void
 Aw.Sindri.Core.Launch.StepApproval
 Aw.Sindri.Core.Profile.AgentLimits
 Aw.Sindri.Core.Profile.AgentLimits.AgentLimits(decimal? DailyBudget = null, System.Collections.Generic.IReadOnlyList<string!>? StepArgvHash = null) -> void
@@ -10519,139 +10654,113 @@ static Aw.Sindri.Core.Sessions.SessionIdScan.operator !=(Aw.Sindri.Core.Sessions
 static Aw.Sindri.Core.Sessions.SessionIdScan.operator ==(Aw.Sindri.Core.Sessions.SessionIdScan? left, Aw.Sindri.Core.Sessions.SessionIdScan? right) -> bool
 Aw.Sindri.Core.Launches.ILaunchFiles.Launches() -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.LaunchId>!
 Aw.Sindri.Core.Launches.ILostSessions.SweepFiles(System.TimeSpan olderThan, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<int?>
-Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.MaxDuration.init -> void
-Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration
-Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration!
-Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.BlockStepRegistration(Aw.Sindri.Core.Workflow.Ids.BlockId Step) -> void
-Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Step) -> void
-Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.Equals(Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration? other) -> bool
-Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.Step.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
-Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.Step.init -> void
-Aw.Sindri.Core.Workflow.Blocks.BlockStepResult
-Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.<Clone>$() -> Aw.Sindri.Core.Workflow.Blocks.BlockStepResult!
-Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.BlockStepResult(Aw.Sindri.Core.Workflow.Blocks.StepResult? Result, string? Failure) -> void
-Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Deconstruct(out Aw.Sindri.Core.Workflow.Blocks.StepResult? Result, out string? Failure) -> void
-Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Equals(Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? other) -> bool
-Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Failure.get -> string?
-Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Failure.init -> void
-Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Result.get -> Aw.Sindri.Core.Workflow.Blocks.StepResult?
-Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Result.init -> void
-Aw.Sindri.Core.Workflow.Blocks.BlockStepRuntimes
-Aw.Sindri.Core.Workflow.Blocks.BlockStepRuntimes.BlockStepRuntimes(System.Collections.Generic.IEnumerable<Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration!>! registrations) -> void
-Aw.Sindri.Core.Workflow.Blocks.BlockStepRuntimes.Ids.get -> System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.BlockId>!
-Aw.Sindri.Core.Workflow.Blocks.IBlockStep
-Aw.Sindri.Core.Workflow.Blocks.IBlockStep.Run(Aw.Sindri.Core.Workflow.Blocks.StepContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Workflow.Blocks.BlockStepResult!>
-Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.BlockRuntimes.get -> System.Collections.Generic.IReadOnlySet<Aw.Sindri.Core.Workflow.Ids.BlockId>!
-Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext.BlockRuntimes.init -> void
-Aw.Sindri.Core.Workflow.Engine.StepRuntime.Block = 3 -> Aw.Sindri.Core.Workflow.Engine.StepRuntime
-override Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.GetHashCode() -> int
-override Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.ToString() -> string!
-override Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.GetHashCode() -> int
-override Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.ToString() -> string!
-static Aw.Sindri.Core.Workflow.Blocks.BlockServiceCollectionExtensions.AddBlockStep<T>(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
-static Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.operator !=(Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration? left, Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration? right) -> bool
-static Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.operator ==(Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration? left, Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration? right) -> bool
-static Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Completed(Aw.Sindri.Core.Workflow.Ids.OutcomeName outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, System.Text.Json.JsonElement>! outputs) -> Aw.Sindri.Core.Workflow.Blocks.BlockStepResult!
-static Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.Failed(string! reason) -> Aw.Sindri.Core.Workflow.Blocks.BlockStepResult!
-static Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.operator !=(Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? left, Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? right) -> bool
-static Aw.Sindri.Core.Workflow.Blocks.BlockStepResult.operator ==(Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? left, Aw.Sindri.Core.Workflow.Blocks.BlockStepResult? right) -> bool
-Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers
-static Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers.Actor(Aw.Sindri.Core.Workflow.Ids.BlockId step) -> string!
-static Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers.Failed(Aw.Sindri.Core.Workflow.Ids.BlockId step, Aw.Sindri.Core.Workflow.Engine.RunToken run, string! reason) -> Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed!
-Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion
-Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion!
-Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Equals(Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion? other) -> bool
-Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Outcome.get -> Aw.Sindri.Core.Workflow.Ids.OutcomeName
-Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Outcome.init -> void
-Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Outputs.get -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>!
-Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Outputs.init -> void
-Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Run.get -> Aw.Sindri.Core.Workflow.Engine.RunToken
-Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Run.init -> void
-Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Step.get -> Aw.Sindri.Core.Workflow.Ids.BlockId
-Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Step.init -> void
-override Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.GetHashCode() -> int
-override Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.ToString() -> string!
-static Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.operator !=(Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion? left, Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion? right) -> bool
-static Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.operator ==(Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion? left, Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion? right) -> bool
-static Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers.Completed(Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! instance, Aw.Sindri.Core.Workflow.Recipes.Recipe! recipe, Aw.Sindri.Core.Workflow.Engine.Decisions.DecisionContext! context, Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion! result) -> Aw.Sindri.Core.Workflow.Engine.Triggers.Trigger!
-Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.BlockDescriptor(Aw.Sindri.Core.Workflow.Ids.BlockId Id, Aw.Sindri.Core.Workflow.Blocks.BlockKind Kind, int Version, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>! Inputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! Outputs, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! Outcomes, Aw.Sindri.Core.Workflow.Blocks.Capability Capabilities, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.ParameterSpec!>! Parameters, Aw.Sindri.Core.Workflow.Blocks.Rung? Rung, bool DeskCapable, string? OutcomesFrom = null, string? InputsFrom = null, bool? HumanOnly = null, Aw.Sindri.Core.Workflow.Blocks.BlockRuntime? Runtime = null, System.TimeSpan? MaxDuration = null) -> void
-Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Id, out Aw.Sindri.Core.Workflow.Blocks.BlockKind Kind, out int Version, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.FactKey>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.OutputSpec!>! Outputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Ids.OutcomeName>! Outcomes, out Aw.Sindri.Core.Workflow.Blocks.Capability Capabilities, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Blocks.ParameterSpec!>! Parameters, out Aw.Sindri.Core.Workflow.Blocks.Rung? Rung, out bool DeskCapable, out string? OutcomesFrom, out string? InputsFrom, out bool? HumanOnly, out Aw.Sindri.Core.Workflow.Blocks.BlockRuntime? Runtime, out System.TimeSpan? MaxDuration) -> void
-Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor.MaxDuration.get -> System.TimeSpan?
-Aw.Sindri.Core.Workflow.Blocks.BlockDurationJsonConverter
-Aw.Sindri.Core.Workflow.Blocks.BlockDurationJsonConverter.BlockDurationJsonConverter() -> void
-override Aw.Sindri.Core.Workflow.Blocks.BlockDurationJsonConverter.Read(ref System.Text.Json.Utf8JsonReader reader, System.Type! typeToConvert, System.Text.Json.JsonSerializerOptions! options) -> System.TimeSpan
-override Aw.Sindri.Core.Workflow.Blocks.BlockDurationJsonConverter.Write(System.Text.Json.Utf8JsonWriter! writer, System.TimeSpan value, System.Text.Json.JsonSerializerOptions! options) -> void
-Aw.Sindri.Core.Profile.JudgeProviders
-Aw.Sindri.Core.Profile.JudgeSettings
-Aw.Sindri.Core.Profile.JudgeSettings.<Clone>$() -> Aw.Sindri.Core.Profile.JudgeSettings!
-Aw.Sindri.Core.Profile.JudgeSettings.Deconstruct(out System.Collections.Generic.IReadOnlyList<string!>? Providers) -> void
-Aw.Sindri.Core.Profile.JudgeSettings.Equals(Aw.Sindri.Core.Profile.JudgeSettings? other) -> bool
-Aw.Sindri.Core.Profile.JudgeSettings.JudgeSettings(System.Collections.Generic.IReadOnlyList<string!>? Providers = null) -> void
-Aw.Sindri.Core.Profile.JudgeSettings.Providers.get -> System.Collections.Generic.IReadOnlyList<string!>?
-Aw.Sindri.Core.Profile.JudgeSettings.Providers.init -> void
-Aw.Sindri.Core.Profile.RepoEntry.Deconstruct(out string! Name, out string! Path, out Aw.Sindri.Core.Profile.IndexSettings? Index, out Aw.Sindri.Core.Profile.RepoWorkflowSettings? Workflow) -> void
-Aw.Sindri.Core.Profile.RepoEntry.RepoEntry(string! Name, string! Path, Aw.Sindri.Core.Profile.IndexSettings? Index = null, Aw.Sindri.Core.Profile.RepoWorkflowSettings? Workflow = null) -> void
-Aw.Sindri.Core.Profile.RepoEntry.Workflow.get -> Aw.Sindri.Core.Profile.RepoWorkflowSettings?
-Aw.Sindri.Core.Profile.RepoEntry.Workflow.init -> void
-Aw.Sindri.Core.Profile.RepoWorkflowSettings
-Aw.Sindri.Core.Profile.RepoWorkflowSettings.<Clone>$() -> Aw.Sindri.Core.Profile.RepoWorkflowSettings!
-Aw.Sindri.Core.Profile.RepoWorkflowSettings.Deconstruct(out Aw.Sindri.Core.Profile.JudgeSettings? Judge) -> void
-Aw.Sindri.Core.Profile.RepoWorkflowSettings.Equals(Aw.Sindri.Core.Profile.RepoWorkflowSettings? other) -> bool
-Aw.Sindri.Core.Profile.RepoWorkflowSettings.Judge.get -> Aw.Sindri.Core.Profile.JudgeSettings?
-Aw.Sindri.Core.Profile.RepoWorkflowSettings.Judge.init -> void
-Aw.Sindri.Core.Profile.RepoWorkflowSettings.RepoWorkflowSettings(Aw.Sindri.Core.Profile.JudgeSettings? Judge = null) -> void
-Aw.Sindri.Core.Profile.WorkflowSettings.Judge.get -> Aw.Sindri.Core.Profile.JudgeSettings?
-Aw.Sindri.Core.Profile.WorkflowSettings.Judge.init -> void
-const Aw.Sindri.Core.Profile.JudgeProviders.Jev = "jev" -> string!
-const Aw.Sindri.Core.Profile.JudgeProviders.Rules = "rules" -> string!
-override Aw.Sindri.Core.Profile.JudgeSettings.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Profile.JudgeSettings.GetHashCode() -> int
-override Aw.Sindri.Core.Profile.JudgeSettings.ToString() -> string!
-override Aw.Sindri.Core.Profile.RepoWorkflowSettings.Equals(object? obj) -> bool
-override Aw.Sindri.Core.Profile.RepoWorkflowSettings.GetHashCode() -> int
-override Aw.Sindri.Core.Profile.RepoWorkflowSettings.ToString() -> string!
-static Aw.Sindri.Core.Profile.JudgeProviders.Default.get -> System.Collections.Generic.IReadOnlyList<string!>!
-static Aw.Sindri.Core.Profile.JudgeProviders.Effective(Aw.Sindri.Core.Profile.SindriProfile! profile, string? repo, System.Collections.Generic.IReadOnlyList<string!>? recipeLiteral) -> System.Collections.Generic.IReadOnlyList<string!>!
-static Aw.Sindri.Core.Profile.JudgeProviders.Known.get -> System.Collections.Generic.IReadOnlyList<string!>!
-static Aw.Sindri.Core.Profile.JudgeSettings.operator !=(Aw.Sindri.Core.Profile.JudgeSettings? left, Aw.Sindri.Core.Profile.JudgeSettings? right) -> bool
-static Aw.Sindri.Core.Profile.JudgeSettings.operator ==(Aw.Sindri.Core.Profile.JudgeSettings? left, Aw.Sindri.Core.Profile.JudgeSettings? right) -> bool
-static Aw.Sindri.Core.Profile.RepoWorkflowSettings.operator !=(Aw.Sindri.Core.Profile.RepoWorkflowSettings? left, Aw.Sindri.Core.Profile.RepoWorkflowSettings? right) -> bool
-static Aw.Sindri.Core.Profile.RepoWorkflowSettings.operator ==(Aw.Sindri.Core.Profile.RepoWorkflowSettings? left, Aw.Sindri.Core.Profile.RepoWorkflowSettings? right) -> bool
-Aw.Sindri.Core.Events.WorkflowEventDetail.Decision.get -> string?
-Aw.Sindri.Core.Events.WorkflowEventDetail.Decision.init -> void
-Aw.Sindri.Core.Events.WorkflowEventDetail.Via.get -> string?
-Aw.Sindri.Core.Events.WorkflowEventDetail.Via.init -> void
-Aw.Sindri.Core.Events.WorkflowEventPayload.Decision.get -> string?
-Aw.Sindri.Core.Events.WorkflowEventPayload.Decision.init -> void
-Aw.Sindri.Core.Events.WorkflowEventPayload.Via.get -> string?
-Aw.Sindri.Core.Events.WorkflowEventPayload.Via.init -> void
-Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Decision.get -> string?
-Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Decision.init -> void
-Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Deconstruct(out string! Kind, out Aw.Sindri.Core.Workflow.Engine.TriggerKey Key, out string! Actor, out Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, out string? Reason, out string? Via, out string? Decision) -> void
-Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.TriggerRecord(string! Kind, Aw.Sindri.Core.Workflow.Engine.TriggerKey Key, string! Actor, Aw.Sindri.Core.Workflow.Ids.OutcomeName? Outcome, string? Reason = null, string? Via = null, string? Decision = null) -> void
-Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Via.get -> string?
-Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Via.init -> void
-Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.BlockCompletion(Aw.Sindri.Core.Workflow.Ids.BlockId Step, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Outputs, string? Decision = null) -> void
-Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Decision.get -> string?
-Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Decision.init -> void
-Aw.Sindri.Core.Workflow.Engine.Rules.BlockCompletion.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.BlockId Step, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Outputs, out string? Decision) -> void
-Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.Decision.get -> string?
-Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.Decision.init -> void
-Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.Deconstruct(out string! Actor, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, out System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Outputs, out int Tokens, out Aw.Sindri.Core.Workflow.Engine.StepRuntime Via, out string! ReportSha256, out string? Decision) -> void
-Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.StepCompleted(string! Actor, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Workflow.Ids.OutcomeName Outcome, System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>! Outputs, int Tokens, Aw.Sindri.Core.Workflow.Engine.StepRuntime Via, string! ReportSha256, string? Decision = null) -> void
-Aw.Sindri.Core.Workflow.Engine.Decisions.MatchMiss.EngineOwnedRun = 5 -> Aw.Sindri.Core.Workflow.Engine.Decisions.MatchMiss
-Aw.Sindri.Core.Workflow.Blocks.BlockLimits
-static Aw.Sindri.Core.Workflow.Blocks.BlockLimits.MaxDuration(Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor! descriptor) -> System.TimeSpan
-static readonly Aw.Sindri.Core.Workflow.Blocks.BlockLimits.Fallback -> System.TimeSpan
-Aw.Sindri.Core.Workflow.Views.StatusAnswer.Via.get -> string?
-Aw.Sindri.Core.Workflow.Views.StatusAnswer.Via.init -> void
-Aw.Sindri.Core.Workflow.Views.StatusAnswer.Child.get -> string?
-Aw.Sindri.Core.Workflow.Views.StatusAnswer.Child.init -> void
-Aw.Sindri.Core.NeedsYou.NeedsYouRow.Via.get -> string?
-Aw.Sindri.Core.NeedsYou.NeedsYouRow.Via.init -> void
+
+Aw.Sindri.Core.Profile.WorkflowAgentSettings
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.<Clone>$() -> Aw.Sindri.Core.Profile.WorkflowAgentSettings!
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.Deconstruct(out Aw.Sindri.Core.Launch.AgentId? Target) -> void
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.Equals(Aw.Sindri.Core.Profile.WorkflowAgentSettings? other) -> bool
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.Target.get -> Aw.Sindri.Core.Launch.AgentId?
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.Target.init -> void
+Aw.Sindri.Core.Profile.WorkflowAgentSettings.WorkflowAgentSettings(Aw.Sindri.Core.Launch.AgentId? Target = null) -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.Agent.get -> Aw.Sindri.Core.Profile.WorkflowAgentSettings?
+Aw.Sindri.Core.Profile.WorkflowSettings.Agent.init -> void
+override Aw.Sindri.Core.Profile.WorkflowAgentSettings.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.WorkflowAgentSettings.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.WorkflowAgentSettings.ToString() -> string!
+static Aw.Sindri.Core.Profile.WorkflowAgentSettings.operator !=(Aw.Sindri.Core.Profile.WorkflowAgentSettings? left, Aw.Sindri.Core.Profile.WorkflowAgentSettings? right) -> bool
+static Aw.Sindri.Core.Profile.WorkflowAgentSettings.operator ==(Aw.Sindri.Core.Profile.WorkflowAgentSettings? left, Aw.Sindri.Core.Profile.WorkflowAgentSettings? right) -> bool
+Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.FindingKeys.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Workflow.Engine.Instances.ProgressMark.FindingKeys.init -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.FindingKeys.get -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.FindingKeys.init -> void
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.EmptyDiff.get -> bool
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepCompleted.EmptyDiff.init -> void
+Aw.Sindri.Core.Workflow.Engine.Rules.FindingKeys
+static Aw.Sindri.Core.Workflow.Engine.Rules.FindingKeys.Of(System.ReadOnlySpan<byte> findings) -> System.Collections.Generic.IReadOnlyList<string!>?
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.AgentLaunchFailure(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailureKind Kind, string! Code, string! Message) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Code.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Code.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailureKind Kind, out string! Code, out string! Message) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Kind.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailureKind
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Kind.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Message.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Message.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Text.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailureKind
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailureKind.Park = 1 -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailureKind
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailureKind.StepFailed = 2 -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailureKind
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailures
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailures.Of(Aw.Sindri.Core.Launch.FailedLaunch! failed) -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.LaunchIdFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run) -> Aw.Sindri.Core.Workflow.Engine.LaunchId
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.LaunchIdFor(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId workflow, Aw.Sindri.Core.Workflow.Engine.RunToken run) -> Aw.Sindri.Core.Workflow.Engine.LaunchId
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.WorktreeFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target) -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Address.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Address.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.AgentStepRun(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Workflow, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, Aw.Sindri.Core.Workflow.Engine.RunToken Run, Aw.Sindri.Core.Launch.StepRef! Step, bool WriteScope) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId Workflow, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Address, out Aw.Sindri.Core.Workflow.Engine.RunToken Run, out Aw.Sindri.Core.Launch.StepRef! Step, out bool WriteScope) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Run.get -> Aw.Sindri.Core.Workflow.Engine.RunToken
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Run.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Step.get -> Aw.Sindri.Core.Launch.StepRef!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Step.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Workflow.get -> Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Workflow.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.WriteScope.get -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.WriteScope.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Agent.get -> Aw.Sindri.Core.Launch.AgentId
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Agent.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.AgentStepTarget(Aw.Sindri.Core.Ids.ItemId Item, Aw.Sindri.Core.Launch.AgentId Agent, string! RepoPath) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Deconstruct(out Aw.Sindri.Core.Ids.ItemId Item, out Aw.Sindri.Core.Launch.AgentId Agent, out string! RepoPath) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Item.get -> Aw.Sindri.Core.Ids.ItemId
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Item.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.RepoPath.get -> string!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.RepoPath.init -> void
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.ToString() -> string!
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunchFailure? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget? right) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.AgentSessionState(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd? EndedAs = null, int? ExitCode = null) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd? EndedAs, out int? ExitCode) -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.EndedAs.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd?
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.EndedAs.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.Equals(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState? other) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.ExitCode.get -> int?
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.ExitCode.init -> void
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.IsLive.get -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.Live.get -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState!
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState? right) -> bool
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState? left, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState? right) -> bool
+Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentSessions
+Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentSessions.Usage(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<long>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.IAgentSessions.Watch(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionState!>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.IRunDiff
+Aw.Sindri.Core.Workflow.Engine.Runtime.IRunDiff.Head(string! worktree, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.IRunDiff.IsEmpty(string! worktree, string! startHead, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<bool>!>
 Aw.Sindri.Core.Launches.ILaunchUsage
 Aw.Sindri.Core.Launches.ILaunchUsage.OfSession(Aw.Sindri.Core.Launch.AgentId target, Aw.Sindri.Core.Ids.SessionId session, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.ModelTokens!>?>
 Aw.Sindri.Core.Launches.ISessionUsageSampler
@@ -10662,6 +10771,18 @@ Aw.Sindri.Core.Launches.UsageSamples.UsageSamples() -> void
 Aw.Sindri.Core.Launches.LaunchLiveness.Active() -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Engine.LaunchId>!
 static Aw.Sindri.Core.Launches.LaunchRules.UsageEvery.get -> System.TimeSpan
 Aw.Sindri.Core.Launches.LaunchSessionEvents.Usage(string! item, Aw.Sindri.Core.Events.SessionUsage! usage, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd.Exit = 1 -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd.Lost = 2 -> Aw.Sindri.Core.Workflow.Engine.Runtime.AgentSessionEnd
+static Aw.Sindri.Core.Workflow.Blocks.BlockLimits.Bound(System.TimeSpan max, System.TimeSpan? timerLeft) -> System.TimeSpan
+static Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers.IsBlockActor(string! actor) -> bool
+static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.BlockFactUnreadable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.BlockProfileUnreadable -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.BlockRepoUnreadable -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Workflow.Blocks.JudgeProviderNames
+const Aw.Sindri.Core.Workflow.Blocks.JudgeProviderNames.Jev = "jev" -> string!
+const Aw.Sindri.Core.Workflow.Blocks.JudgeProviderNames.Rules = "rules" -> string!
+static Aw.Sindri.Core.Workflow.Blocks.JudgeProviderNames.Known.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Launch.AgentEntry.McpForm.get -> Aw.Sindri.Core.Launch.McpForm
 Aw.Sindri.Core.Launch.AgentEntry.McpForm.init -> void
 Aw.Sindri.Core.Launch.McpForm
@@ -11012,11 +11133,6 @@ static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource.operator !=(A
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionInputSource? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.operator !=(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource.operator ==(Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource? left, Aw.Sindri.Core.Workflow.Engine.Runtime.InjectionSource? right) -> bool
-static Aw.Sindri.Core.Workflow.Blocks.BlockLimits.Bound(System.TimeSpan max, System.TimeSpan? timerLeft) -> System.TimeSpan
-static Aw.Sindri.Core.Workflow.Engine.Rules.BlockStepTriggers.IsBlockActor(string! actor) -> bool
-static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.BlockFactUnreadable -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.BlockProfileUnreadable -> Aw.Kernel.ErrorDefinition!
-static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.BlockRepoUnreadable -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Profile.RouteSettings
 Aw.Sindri.Core.Profile.RouteSettings.<Clone>$() -> Aw.Sindri.Core.Profile.RouteSettings!
 Aw.Sindri.Core.Profile.RouteSettings.Deconstruct(out string? Startable) -> void
@@ -11041,10 +11157,6 @@ static Aw.Sindri.Core.Profile.RouteSettings.StartableOf(Aw.Sindri.Core.Profile.S
 static Aw.Sindri.Core.Profile.RouteSettings.operator !=(Aw.Sindri.Core.Profile.RouteSettings? left, Aw.Sindri.Core.Profile.RouteSettings? right) -> bool
 static Aw.Sindri.Core.Profile.RouteSettings.operator ==(Aw.Sindri.Core.Profile.RouteSettings? left, Aw.Sindri.Core.Profile.RouteSettings? right) -> bool
 static Aw.Sindri.Core.Workflow.Engine.Rules.ChildResults.Outputs(Aw.Sindri.Core.Workflow.Recipes.Recipe! child, Aw.Sindri.Core.Workflow.Engine.Instances.WorkflowInstance! ended) -> System.Collections.Generic.IReadOnlyDictionary<Aw.Sindri.Core.Workflow.Ids.FactKey, Aw.Sindri.Core.Workflow.Engine.FactValue!>!
-Aw.Sindri.Core.Workflow.Blocks.JudgeProviderNames
-const Aw.Sindri.Core.Workflow.Blocks.JudgeProviderNames.Jev = "jev" -> string!
-const Aw.Sindri.Core.Workflow.Blocks.JudgeProviderNames.Rules = "rules" -> string!
-static Aw.Sindri.Core.Workflow.Blocks.JudgeProviderNames.Known.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Sessions.ClaudeRecord.IsT3.get -> bool
 Aw.Sindri.Core.Sessions.HostChain
 Aw.Sindri.Core.Sessions.HostHit
@@ -11240,6 +11352,28 @@ static Aw.Sindri.Core.Sessions.TmuxPane.operator !=(Aw.Sindri.Core.Sessions.Tmux
 static Aw.Sindri.Core.Sessions.TmuxPane.operator ==(Aw.Sindri.Core.Sessions.TmuxPane? left, Aw.Sindri.Core.Sessions.TmuxPane? right) -> bool
 static Aw.Sindri.Core.Sessions.TmuxServerView.operator !=(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
 static Aw.Sindri.Core.Sessions.TmuxServerView.operator ==(Aw.Sindri.Core.Sessions.TmuxServerView? left, Aw.Sindri.Core.Sessions.TmuxServerView? right) -> bool
+Aw.Sindri.Core.Events.WorkflowEventDetail.Tokens.get -> int?
+Aw.Sindri.Core.Events.WorkflowEventDetail.Tokens.init -> void
+Aw.Sindri.Core.Events.WorkflowEventPayload.Tokens.get -> int?
+Aw.Sindri.Core.Events.WorkflowEventPayload.Tokens.init -> void
+Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Tokens.get -> int?
+Aw.Sindri.Core.Workflow.Engine.Events.TriggerRecord.Tokens.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusFields.Run.get -> Aw.Sindri.Core.Workflow.Views.StatusRun?
+Aw.Sindri.Core.Workflow.Views.StatusFields.Run.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusRun
+Aw.Sindri.Core.Workflow.Views.StatusRun.<Clone>$() -> Aw.Sindri.Core.Workflow.Views.StatusRun!
+Aw.Sindri.Core.Workflow.Views.StatusRun.Deconstruct(out string! Runtime, out string? Launch) -> void
+Aw.Sindri.Core.Workflow.Views.StatusRun.Equals(Aw.Sindri.Core.Workflow.Views.StatusRun? other) -> bool
+Aw.Sindri.Core.Workflow.Views.StatusRun.Launch.get -> string?
+Aw.Sindri.Core.Workflow.Views.StatusRun.Launch.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusRun.Runtime.get -> string!
+Aw.Sindri.Core.Workflow.Views.StatusRun.Runtime.init -> void
+Aw.Sindri.Core.Workflow.Views.StatusRun.StatusRun(string! Runtime, string? Launch) -> void
+override Aw.Sindri.Core.Workflow.Views.StatusRun.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Workflow.Views.StatusRun.GetHashCode() -> int
+override Aw.Sindri.Core.Workflow.Views.StatusRun.ToString() -> string!
+static Aw.Sindri.Core.Workflow.Views.StatusRun.operator !=(Aw.Sindri.Core.Workflow.Views.StatusRun? left, Aw.Sindri.Core.Workflow.Views.StatusRun? right) -> bool
+static Aw.Sindri.Core.Workflow.Views.StatusRun.operator ==(Aw.Sindri.Core.Workflow.Views.StatusRun? left, Aw.Sindri.Core.Workflow.Views.StatusRun? right) -> bool
 Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill
 Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InputRefill.Address.get -> string!
@@ -11295,11 +11429,10 @@ Aw.Sindri.Core.Onyx.OnyxSetupState.OnyxSetupState(int Port, System.Collections.G
 const Aw.Sindri.Core.Onyx.OnyxSteps.Key = "key" -> string!
 const Aw.Sindri.Core.Onyx.OnyxSteps.Profile = "profile" -> string!
 const Aw.Sindri.Core.Onyx.OnyxSteps.Signup = "signup" -> string!
+static readonly Aw.Sindri.Core.SindriErrors.OnyxGroupListUnavailable -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.OnyxKeyFailed -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.OnyxNotAdmin -> Aw.Kernel.ErrorDefinition!
 static readonly Aw.Sindri.Core.SindriErrors.OnyxSecretNotStored -> Aw.Kernel.ErrorDefinition!
-Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.JudgeSettings? Judge, out Aw.Sindri.Core.Profile.ForgeSettings? Forge, out Aw.Sindri.Core.Profile.RouteSettings? Route) -> void
-Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.JudgeSettings? Judge = null, Aw.Sindri.Core.Profile.ForgeSettings? Forge = null, Aw.Sindri.Core.Profile.RouteSettings? Route = null) -> void
 Aw.Sindri.Core.Workflow.Engine.Rules.MatchedTransition
 Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem
 Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem.<Clone>$() -> Aw.Sindri.Core.Workflow.Engine.Runtime.RoutedItem!
@@ -11545,12 +11678,12 @@ Aw.Sindri.Core.Events.SessionEnded.InputTokens.get -> long?
 Aw.Sindri.Core.Events.SessionEnded.OutputTokens.get -> long?
 Aw.Sindri.Core.Events.SessionEnded.InputTokens.init -> void
 Aw.Sindri.Core.Events.SessionEnded.OutputTokens.init -> void
-Aw.Sindri.Core.Events.SessionUsage.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, out int Sample, out long InputTokens, out long OutputTokens, out Aw.Sindri.Core.Launch.AgentId Target, out string? Model) -> void
+Aw.Sindri.Core.Events.SessionUsage.Deconstruct(out Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, out int Sample, out long InputTokens, out long OutputTokens, out Aw.Sindri.Core.Launch.AgentId Target, out string? Model, out long? CacheReadTokens) -> void
 Aw.Sindri.Core.Events.SessionUsage.Target.get -> Aw.Sindri.Core.Launch.AgentId
 Aw.Sindri.Core.Events.SessionUsage.Model.get -> string?
 Aw.Sindri.Core.Events.SessionUsage.Target.init -> void
 Aw.Sindri.Core.Events.SessionUsage.Model.init -> void
-Aw.Sindri.Core.Events.SessionUsage.SessionUsage(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, int Sample, long InputTokens, long OutputTokens, Aw.Sindri.Core.Launch.AgentId Target, string? Model = null) -> void
+Aw.Sindri.Core.Events.SessionUsage.SessionUsage(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, int Sample, long InputTokens, long OutputTokens, Aw.Sindri.Core.Launch.AgentId Target, string? Model = null, long? CacheReadTokens = null) -> void
 Aw.Sindri.Core.Events.SessionEnded.SessionEnded(Aw.Sindri.Core.Workflow.Engine.LaunchId Launch, Aw.Sindri.Core.Events.SessionEndReason Reason, int? ExitCode, long? InputTokens = null, long? OutputTokens = null) -> void
 Aw.Sindri.Core.Events.LaunchFailureDetail.LaunchFailureDetail(Aw.Sindri.Core.Launch.LaunchStage? Stage, string? Reason = null, string? Current = null, System.Collections.Generic.IReadOnlyList<string!>? Approved = null) -> void
 static Aw.Sindri.Core.Events.LaunchFailureDetail.Of(Aw.Kernel.Error! error, Aw.Sindri.Core.Launch.LaunchStage? stage) -> Aw.Sindri.Core.Events.LaunchFailureDetail?
@@ -11559,6 +11692,7 @@ Aw.Sindri.Core.Launches.UsageSamples.Next(Aw.Sindri.Core.Workflow.Engine.LaunchI
 Aw.Sindri.Core.Launches.UsageSamples.Record(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, long input, long output, int number) -> void
 Aw.Sindri.Core.Launches.ReportedIdAdmission.ReportedIdAdmission(Aw.Sindri.Core.Launches.ILaunchViews! views, Aw.Sindri.Core.Launch.IAgentCatalog! catalog, Aw.Sindri.Core.Launches.ILaunchUsage! usage) -> void
 Aw.Sindri.Core.Launches.ReportedIdAdmission.FinalTokens(Aw.Sindri.Core.Workflow.Engine.LaunchId launch, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<(long? Input, long? Output)>
+static Aw.Sindri.Core.Launches.ModelTokens.CacheReads(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.ModelTokens!>! tokens) -> long
 static Aw.Sindri.Core.Launches.ModelTokens.Totals(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.ModelTokens!>! tokens) -> (long Input, long Output)
 static Aw.Sindri.Core.Launches.ModelTokens.Dominant(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Launches.ModelTokens!>! tokens) -> string?
 static Aw.Sindri.Core.Launches.LaunchRules.SweepGap.get -> System.TimeSpan
@@ -11745,6 +11879,8 @@ static Aw.Sindri.Core.Sessions.PaneRead.Captured(int panePid, byte[]! capture) -
 Aw.Sindri.Core.Mcp.ProviderResult.Detail.get -> string!
 Aw.Sindri.Core.Mcp.ProviderResult.Detail.init -> void
 static Aw.Sindri.Core.Mcp.McpRegistration.Url(int port) -> string!
+Aw.Sindri.Core.Profile.WorkflowSettings.Deconstruct(out string? DeskTimeout, out string? EventHold, out System.Collections.Generic.IReadOnlyList<string!>? Effects, out string? DispatchDelay, out Aw.Sindri.Core.Profile.JudgeSettings? Judge, out Aw.Sindri.Core.Profile.WorkflowAgentSettings? Agent, out Aw.Sindri.Core.Profile.ForgeSettings? Forge, out Aw.Sindri.Core.Profile.RouteSettings? Route) -> void
+Aw.Sindri.Core.Profile.WorkflowSettings.WorkflowSettings(string? DeskTimeout = null, string? EventHold = null, System.Collections.Generic.IReadOnlyList<string!>? Effects = null, string? DispatchDelay = null, Aw.Sindri.Core.Profile.JudgeSettings? Judge = null, Aw.Sindri.Core.Profile.WorkflowAgentSettings? Agent = null, Aw.Sindri.Core.Profile.ForgeSettings? Forge = null, Aw.Sindri.Core.Profile.RouteSettings? Route = null) -> void
 Aw.Sindri.Core.Scoping.IScopePacketStore
 Aw.Sindri.Core.Scoping.IScopePacketStore.Hash(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId instance, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
 Aw.Sindri.Core.Scoping.IScopePacketStore.ReadFile(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId instance, string! name, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<string!>!>
@@ -11792,3 +11928,14 @@ static Aw.Sindri.Core.Events.ScopingEscape.operator ==(Aw.Sindri.Core.Events.Sco
 const Aw.Sindri.Core.Events.EventTypes.ScopingApproved = "scoping.approved" -> string!
 const Aw.Sindri.Core.Events.EventTypes.ScopingEscape = "scoping.escape" -> string!
 static readonly Aw.Sindri.Core.Scoping.ScopingErrors.PacketToolFailed -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Detail.get -> string?
+Aw.Sindri.Core.Workflow.Engine.Triggers.StepFailed.Detail.init -> void
+Aw.Sindri.Core.Launch.StepArgs.Brief.get -> string?
+Aw.Sindri.Core.Launch.StepArgs.Brief.init -> void
+Aw.Sindri.Core.Launch.StepArgs.Deconstruct(out string? Model, out Aw.Sindri.Core.Launch.StepPolicy? Policy, out Aw.Sindri.Core.Launch.StepRef! Ref, out string? Brief) -> void
+Aw.Sindri.Core.Launch.StepArgs.StepArgs(string? Model, Aw.Sindri.Core.Launch.StepPolicy? Policy, Aw.Sindri.Core.Launch.StepRef! Ref, string? Brief = null) -> void
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentLaunches.RequestFor(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepTarget! target, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor = null) -> Aw.Sindri.Core.Launch.LaunchRequest!
+Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief
+static Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepBrief.Render(Aw.Sindri.Core.Workflow.Engine.Runtime.AgentStepRun! run, Aw.Sindri.Core.Workflow.Blocks.BlockDescriptor? descriptor) -> string!
+Aw.Sindri.Core.Onyx.IOnyxDatabase
+Aw.Sindri.Core.Onyx.IOnyxDatabase.DefaultAdminGroup(Aw.Sindri.Core.Onyx.ComposeProject! project, System.Threading.CancellationToken cancellationToken) -> Aw.Kernel.Result<int?>!
