@@ -58,6 +58,7 @@ not in the profile: they live in `launcher.json` (`docs/csharp/sindri-launcher.m
 | `judge` | object (`providers`) | no | none | Which providers a Judge Step (`step.judge.choose`) may ask (DT-J plan Q8). `judge.providers` is a list of `jev`, `claude-cli`, `codex-cli`, `cursor-cli`, `rules`; absent: `claude-cli`, `codex-cli`, `cursor-cli`, `rules`. `jev` runs only when listed, so it is opt-in. `rules` is always kept, last. A recipe's own `providers` list only narrows this one and never adds `jev`. A name that is not one of the five is refused before approval (`workflow.judge.providers[i]`). A repo may set its own list under `repos[].workflow.judge.providers`; it wins over the box's |
 | `forge` | object | no | none | The forge port's settings: `adapter`, `hosts` and `credential` (see `workflow.forge` below) |
 | `route` | object (`startable`) | no | none | The router stub's setting (engine P7 plan D8; see `workflow.route` below) |
+| `build` | object (`commands`) | no | none | The repo's commands the build and ship stations run in the phase worktree (line spec LN-WF9; see `workflow.build` below) |
 
 ### `repos[].workflow`
 
@@ -82,6 +83,18 @@ What the router stub does with an item it routes (workflow engine spec §12). Re
 | Key | Type | Required | Default | Meaning |
 |---|---|---|---|---|
 | `startable` | `all` or `none` | no | `all` | `all` lets every routed item start; `none` stops them at the router (the gate fails and the item parks). Any other value is refused before approval (`workflow.route.startable`) |
+
+### `workflow.build`
+
+What the line's build and ship stations run in the phase worktree (line spec §7.2, §7.5, LN-WF9). With no `commands`, a station runs none and its findings say so (`line doctor` asks for them).
+
+| Key | Type | Required | Default | Meaning |
+|---|---|---|---|---|
+| `commands` | list of command objects | no | none | The repo's typecheck, test lanes and lint. Each entry is `name`, `run`, `timeout` and `on`. A change to any entry is a re-approval, and the diff names it as `workflow.build.commands.<name>` |
+| `name` | kebab-case, 1 to 32 characters | yes |  | The command's name (for example `typecheck`); unique among the commands; findings name it. Anything else is refused (`workflow.build.commands[i].name`) |
+| `run` | string[] | yes |  | The program and its arguments, never a shell string; none blank (`workflow.build.commands[i].run`). It runs with the phase worktree as its working directory. On `red` the item's test ids are appended |
+| `timeout` | duration (`30m`, `2h`) | no | the Step's own bound | The longest the command may run (`workflow.build.commands[i].timeout`) |
+| `on` | `red`, `checks` or `green` | no | `checks` | Where it runs: `red` is `step.build.red-check` (the red tests, which must fail), `checks` is `step.build.checks`, `green` is `step.ship.green` (`workflow.build.commands[i].on`) |
 
 ### `index`
 

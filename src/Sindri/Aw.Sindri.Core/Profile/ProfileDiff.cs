@@ -123,7 +123,7 @@ public static class ProfileDiff
             ("workflow.effects", Joined(workflow?.Effects)),
             ("workflow.dispatchDelay", workflow?.DispatchDelay),
         ];
-        return keys.Concat(Runtimes(workflow)).Concat(Forge(workflow?.Forge)).Where(static k => k.Value is not null).Select(static k => (k.Key, k.Value!));   // why: the nulls are filtered out just before
+        return keys.Concat(Runtimes(workflow)).Concat(Forge(workflow?.Forge)).Concat(Commands(workflow?.Build)).Where(static k => k.Value is not null).Select(static k => (k.Key, k.Value!));   // why: the nulls are filtered out just before
     }
 
     private static string? Joined(IReadOnlyList<string>? values) => values is null ? null : string.Join(", ", values);
@@ -134,6 +134,10 @@ public static class ProfileDiff
         ("workflow.judge.providers", Joined(workflow?.Judge?.Providers)),
         ("workflow.route.startable", workflow?.Route?.Startable),
     ];
+
+    // One key per command, valued with everything that decides what runs: the stage, the argv and the timeout.
+    private static (string Key, string? Value)[] Commands(BuildSettings? build) =>
+        [.. (build?.Commands ?? []).Select(static c => ($"workflow.build.commands.{c.Name}", (string?)$"{c.Where}: {string.Join(' ', c.Run)} (timeout {c.Timeout ?? "default"})"))];
 
     private static (string Key, string? Value)[] Forge(ForgeSettings? forge) =>
     [
