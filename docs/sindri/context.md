@@ -765,7 +765,7 @@ context:
 - `managed`: optional, default `false`. `sindri onyx up` writes `managed: true` for the Onyx it runs; when true, `url` must be
   exactly `http://127.0.0.1:<port>` (not `localhost`, `[::1]`, https or another host), else `SND-CONTEXT-055`. Example:
   `onyx: { url: "http://127.0.0.1:3000", token: "keychain:onyx/sindri-onyx", version: "v4.9.0", managed: true }`.
-- `token`: a **secret pointer** to the Onyx admin token Sindri alone uses (a personal access token of the dedicated user `sindri@sindri.app`, or a service-account key), never the token itself.
+- `token`: a **secret pointer** to the Onyx admin token Sindri alone uses (a personal access token of the dedicated user `sindri@example.com`, or a service-account key), never the token itself.
   Missing, or text that isn't a pointer, is `SND-CONTEXT-002`; the message doesn't repeat the text (rotate a key that
   was written into the profile).
 - `linear.teams`: team keys (a capital letter, then one or more capitals or digits, e.g. `ENG`). Linear's own `token` and `url` arrive
@@ -833,7 +833,7 @@ version, then `GET /api/me` with the key for its role and account type.
 
 | Result | When | Fix |
 |---|---|---|
-| `ok` | Onyx answers the pinned version and the token is an admin token of Sindri's dedicated user (`sindri@sindri.app`) or a service account; or the profile names no onyx (`not configured`) | — |
+| `ok` | Onyx answers the pinned version and the token is an admin token of Sindri's dedicated user (`sindri@example.com`) or a service account; or the profile names no onyx (`not configured`) | — |
 | `warn` | the token is an admin token of a person's account (`053`); or onyx is named but no repo is mapped, so no source runs | use the dedicated user's token (`sindri onyx up`); map a repo |
 | `fail` | the key's pointer doesn't resolve (`SND-SECRET-001`..`003`, checked before Onyx is called), Onyx is down (`010`), another version (`055`, naming both), the key lacks admin (`050`), the section is invalid | per the line; see `docs/sindri/onyx.md` |
 

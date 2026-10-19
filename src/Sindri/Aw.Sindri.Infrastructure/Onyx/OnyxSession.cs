@@ -9,82 +9,76 @@ using Aw.Sindri.Core.Onyx;
 
 namespace Aw.Sindri.Infrastructure.Onyx;
 
-/// <summary>A logged-in Onyx session over HTTP (see <see cref="HttpOnyxProvisioning"/>): each request goes through <see cref="Send"/>, which refuses anything off the allowlist before it is sent.</summary>
+/// <summary>
+/// A logged-in Onyx session over HTTP (see <see cref="HttpOnyxProvisioning"/>): each request goes through <see cref="Send"/>, which refuses anything off the allowlist before it is sent.
+/// The calls that change a user name no email of their own: they use <see cref="OnyxAccounts.DedicatedEmail"/> (or the retired <see cref="OnyxAccounts.LegacyEmail"/>) inside this type.
+/// </summary>
 /// <param name="client">The session's client, with its cookie.</param>
 /// <param name="origin">http://127.0.0.1:&lt;port&gt;.</param>
 /// <param name="logoutTimeout">How long disposing waits for the logout.</param>
 /// <param name="timeout">How long one request waits for Onyx.</param>
-internal sealed class OnyxSession(HttpClient client, Uri origin, TimeSpan logoutTimeout, TimeSpan timeout) : IOnyxSession
+internal sealed partial class OnyxSession(HttpClient client, Uri origin, TimeSpan logoutTimeout, TimeSpan timeout) : IOnyxSession
 {
-    public async ValueTask<Result<bool>> RegisterUser(string email, string password, CancellationToken cancellationToken)
+    public async ValueTask<Result<bool>> RetireLegacyUser(CancellationToken cancellationToken)
     {
-        using var body = JsonBody(new OnyxRegisterRequestWire(email, password));
-        var sent = await Send(HttpMethod.Post, "/api/auth/register", body, cancellationToken).ConfigureAwait(false);
+        using var body = JsonBody(new OnyxUserEmailWire(OnyxAccounts.LegacyEmail));
+        var sent = await Send(HttpMethod.Patch, "/api/manage/admin/deactivate-user", body, cancellationToken).ConfigureAwait(false);
         if (sent.IsError)
         {
             return sent.Error;
         }
 
-        var answer = sent.Value;
-        if (answer.Success)
-        {
-            return true;
-        }
-
-        // fastapi-users answers 400 REGISTER_USER_ALREADY_EXISTS for a taken email: that is not a failure, the user is there.
-        return answer.Body.Contains("ALREADY_EXISTS", StringComparison.OrdinalIgnoreCase) ? false : RegisterRefused(answer, email, password);
+        // 404 "User not found" is the usual answer: an earlier build's user was never made on this Onyx.
+        return sent.Value.Status == HttpStatusCode.NotFound ? false : Refusal(sent.Value, "retire the earlier Sindri user") is { } refused ? refused : true;
     }
 
-    public async ValueTask<Result<string>> ResetPassword(string email, CancellationToken cancellationToken)
+    public async ValueTask<Result<string?>> ResetDedicatedPassword(CancellationToken cancellationToken)
     {
-        using var body = JsonBody(new OnyxUserEmailWire(email));
+        using var body = JsonBody(new OnyxUserEmailWire(OnyxAccounts.DedicatedEmail));
         var sent = await Send(HttpMethod.Post, "/api/password/reset_password", body, cancellationToken).ConfigureAwait(false);
         if (sent.IsError)
         {
             return sent.Error;
         }
 
-        if (Refusal(sent.Value, $"reset the password of {email}") is { } refused)
+        if (sent.Value.Status == HttpStatusCode.NotFound)
+        {
+            return Results.Success<string?>(value: null);   // no such user yet: the caller registers it
+        }
+
+        if (Refusal(sent.Value, "reset the password of Sindri's user") is { } refused)
         {
             return refused;
         }
 
         var reset = AwJson.Deserialize<OnyxResetWire>(Encoding.UTF8.GetBytes(sent.Value.Body), HttpOnyxProvisioning.Json);
         return reset is { IsSuccess: true, Value.NewPassword: { Length: > 0 } fresh }
-            ? fresh
+            ? Results.Success<string?>(fresh)
             : SindriErrors.OnyxKeyFailed.With("Onyx didn't give a new password for Sindri's user; run `sindri onyx up` again");
     }
 
-    public async ValueTask<Result<Unit>> MakeAdmin(string email, CancellationToken cancellationToken)
+    public async ValueTask<Result<Unit>> RegisterDedicatedUser(string password, CancellationToken cancellationToken)
     {
-        using var body = JsonBody(new OnyxAdminAccessWire(email, IsAdmin: true));
+        using var body = JsonBody(new OnyxRegisterRequestWire(OnyxAccounts.DedicatedEmail, password));
+        var sent = await Send(HttpMethod.Post, "/api/auth/register", body, cancellationToken).ConfigureAwait(false);
+        if (sent.IsError)
+        {
+            return sent.Error;
+        }
+
+        return sent.Value.Success ? Unit.Value : RegisterRefused(sent.Value, password);
+    }
+
+    public async ValueTask<Result<Unit>> MakeDedicatedAdmin(CancellationToken cancellationToken)
+    {
+        using var body = JsonBody(new OnyxAdminAccessWire(OnyxAccounts.DedicatedEmail, IsAdmin: true));
         var sent = await Send(HttpMethod.Patch, "/api/manage/admin/users/admin-access", body, cancellationToken).ConfigureAwait(false);
         if (sent.IsError)
         {
             return sent.Error;
         }
 
-        return Refusal(sent.Value, $"make {email} an admin") is { } refused ? refused : Unit.Value;
-    }
-
-    public async ValueTask<Result<string>> CreateToken(string name, CancellationToken cancellationToken)
-    {
-        using var body = JsonBody(new OnyxPatRequestWire(name, ExpirationDays: null, Scopes: null));
-        var sent = await Send(HttpMethod.Post, "/api/user/pats", body, cancellationToken).ConfigureAwait(false);
-        if (sent.IsError)
-        {
-            return sent.Error;
-        }
-
-        if (sent.Value.Status is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized)
-        {
-            return NotAdmin(sent.Value.Status);
-        }
-
-        var made = sent.Value.Success ? AwJson.Deserialize<OnyxPatWire>(Encoding.UTF8.GetBytes(sent.Value.Body), HttpOnyxProvisioning.Json) : null;
-        return made is { IsSuccess: true, Value.Token: { Length: > 0 } raw }
-            ? raw
-            : SindriErrors.OnyxKeyFailed.With($"Onyx didn't make the token (HTTP {Code(sent.Value.Status)}); run `sindri onyx up` again");
+        return Refusal(sent.Value, "make Sindri's user an admin") is { } refused ? refused : Unit.Value;
     }
 
     public async ValueTask DisposeAsync()
@@ -133,16 +127,17 @@ internal sealed class OnyxSession(HttpClient client, Uri origin, TimeSpan logout
     private static Error NotAdmin(HttpStatusCode status) => SindriErrors.OnyxNotAdmin.With(
         $"Onyx refused (HTTP {Code(status)}): that login isn't an admin; the first account created at the sign-up page is the admin, so log in as it, or make this account an admin in Onyx's admin users page, then run `sindri onyx up` again");
 
-    // A refused registration, said in words: invite-only is the usual cause; otherwise Onyx's own reason (a password it won't take), with the password itself never shown.
-    private static Error RegisterRefused(OnyxAnswer answer, string email, string password)
+    // A refused registration, said in words. Invite-only and a domain list are the usual causes, and both need the owner once; a password Onyx won't take shows Onyx's own reason, never the password.
+    private static Error RegisterRefused(OnyxAnswer answer, string password)
     {
+        var email = OnyxAccounts.DedicatedEmail;
         if (answer.Status is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized)
         {
-            return SindriErrors.OnyxKeyFailed.With($"Onyx refused to register Sindri's user (HTTP {Code(answer.Status)}): this Onyx is invite-only; invite {email} in Admin → Users (or turn invite-only off), then run `sindri onyx up` again");
+            return SindriErrors.OnyxKeyFailed.With($"Onyx refused to register Sindri's user (HTTP {Code(answer.Status)}): this Onyx is invite-only; invite {email} once in Admin → Users (or turn invite-only off), then run `sindri onyx up` again. After that a rerun doesn't need the invite");
         }
 
         var reason = new string([.. answer.Body.Replace(password, "…", StringComparison.Ordinal).Where(static c => !char.IsControl(c)).Take(200)]);
-        return SindriErrors.OnyxKeyFailed.With($"Onyx refused to register Sindri's user {email} (HTTP {Code(answer.Status)}): {reason}; fix what it says, then run `sindri onyx up` again");
+        return SindriErrors.OnyxKeyFailed.With($"Onyx refused to register Sindri's user {email} (HTTP {Code(answer.Status)}): {reason}; if Onyx limits email domains (VALID_EMAIL_DOMAINS), allow example.com or make the user by hand (docs/sindri/onyx.md section 5), then run `sindri onyx up` again");
     }
 
     // The one place a request leaves: the allowlist first, then the send. No password or token reaches an error.

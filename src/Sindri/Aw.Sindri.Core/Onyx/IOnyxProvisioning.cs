@@ -3,7 +3,7 @@ using Aw.Kernel;
 namespace Aw.Sindri.Core.Onyx;
 
 /// <summary>
-/// The setup-only requests of spec §5.2 (the dedicated user and its token, docs/sindri/onyx.md section 7), used by `sindri onyx up` in the human's process and by nothing else. Its allowlist is separate from the query adapter's (which stays at five requests) and lists seven;
+/// The setup-only requests of spec §5.2 (the dedicated user and its token, docs/sindri/onyx.md section 7), used by `sindri onyx up` in the human's process and by nothing else. Its allowlist is separate from the query adapter's (which stays at five requests) and lists ten;
 /// neither type uses the other. A request off the list is refused before it is sent. The login cookie lives in the session object only.
 /// </summary>
 public interface IOnyxProvisioning

@@ -1,4 +1,3 @@
-using Aw.Context.Core.Onyx;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Features.OnyxAccount;
@@ -36,7 +35,7 @@ public sealed class OnyxAccountTests
         public CapturingOnyxProgress Progress { get; } = new();
 
         public OnyxAccountService Service(FakeOnyxPrompts? prompts = null)
-            => new(Workspace, prompts ?? Prompts, Browser, new OnyxKeyMinter(prompts ?? Prompts, Provisioning, Secrets, Secrets, new FakeRandomHex()), Profile, Progress);
+            => new(Workspace, prompts ?? Prompts, Browser, new OnyxKeyMinter(prompts ?? Prompts, Provisioning, Secrets, Secrets, new FakeRandomHex(), Progress), Profile, Progress);
 
         public async Task<Kernel.Result<OnyxAccountResponse>> Run() => await Service().Handle(new OnyxAccountRequest(3000, "v4.9.0"), Token);
     }
@@ -57,9 +56,9 @@ public sealed class OnyxAccountTests
         Assert.Equal(MadeKey, rig.Secrets.Stored["keychain:onyx/sindri-onyx"]);
         Assert.Equal(2, rig.Provisioning.LoggedOut);   // the owner's session and the dedicated user's
         Assert.Equal("keychain:onyx/sindri-onyx", rig.Workspace.State!.KeyPointer);
-        Assert.Contains(OnyxSettings.DedicatedAccountEmail, rig.Provisioning.Registered.Keys, StringComparer.Ordinal);
-        Assert.Contains(OnyxSettings.DedicatedAccountEmail, rig.Provisioning.Admins, StringComparer.Ordinal);
-        Assert.Equal(OnyxSettings.DedicatedAccountEmail, rig.Provisioning.Made[MadeKey]);
+        Assert.Contains(OnyxAccounts.DedicatedEmail, rig.Provisioning.Registered.Keys, StringComparer.Ordinal);
+        Assert.Contains(OnyxAccounts.DedicatedEmail, rig.Provisioning.Admins, StringComparer.Ordinal);
+        Assert.Equal(OnyxAccounts.DedicatedEmail, rig.Provisioning.Made[MadeKey]);
         Assert.Equal(0, rig.Provisioning.Resets);
     }
 
@@ -73,7 +72,7 @@ public sealed class OnyxAccountTests
         var shown = string.Join('\n', rig.Progress.Lines) + string.Join(',', rig.Workspace.State!.Steps.Values) + rig.Workspace.State.KeyPointer + response.Url + response.KeyPointer + string.Join(',', response.Steps.Select(static s => s.Step + s.Outcome));
         Assert.DoesNotContain(LoginSecret, shown, StringComparison.Ordinal);
         Assert.DoesNotContain(MadeKey, shown, StringComparison.Ordinal);
-        Assert.DoesNotContain(rig.Provisioning.Registered[OnyxSettings.DedicatedAccountEmail], shown, StringComparison.Ordinal);   // the dedicated user's password is made, used and dropped
+        Assert.DoesNotContain(rig.Provisioning.Registered[OnyxAccounts.DedicatedEmail], shown, StringComparison.Ordinal);   // the dedicated user's password is made, used and dropped
         Assert.Equal(1, rig.Prompts.SecretsAsked);
     }
 
@@ -98,7 +97,7 @@ public sealed class OnyxAccountTests
         var rig = new Rig();
         _ = await rig.Run();
         rig.Secrets.Stored.Clear();
-        rig.Provisioning.Made.Clear();
+        rig.Provisioning.RevokeAll();
         rig.Prompts.Answer("owner@example.com", LoginSecret);
 
         var again = (await rig.Run()).Value;
@@ -151,7 +150,7 @@ public sealed class OnyxAccountTests
         Assert.Equal(SindriErrors.OnyxKeyFailed.Code, result.Error.Code);
         Assert.Empty(rig.Secrets.Stored);
         Assert.Contains("sindri-onyx", result.Error.Message, StringComparison.Ordinal);   // the token made in Onyx is left there: the owner is told
-        Assert.Contains("nobody holding it", result.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("nobody can read back", result.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -186,7 +185,7 @@ public sealed class OnyxAccountTests
 
         Assert.Equal(SindriErrors.OnyxSecretNotStored.Code, result.Error.Code);
         Assert.Null(rig.Profile.Section);
-        Assert.Contains("nobody holding it", result.Error.Message, StringComparison.Ordinal);
+        Assert.Contains("nobody can read back", result.Error.Message, StringComparison.Ordinal);
     }
 
     [Fact, Trait("Lane", "unit")]
@@ -199,7 +198,7 @@ public sealed class OnyxAccountTests
 
         _ = await rig.Run();
 
-        Assert.Contains(rig.Progress.Lines, static l => l.StartsWith("key: the recorded key no longer works", StringComparison.Ordinal) && l.Contains("nobody holding it", StringComparison.Ordinal));
+        Assert.Contains(rig.Progress.Lines, static l => l.StartsWith("key: the recorded key no longer works", StringComparison.Ordinal) && l.Contains("nobody can read back", StringComparison.Ordinal));
     }
 
     [Fact, Trait("Lane", "unit")]

@@ -556,7 +556,7 @@ the same issue from Onyx and the native Linear adapter (S-6) is one item.
 | `SND-CONTEXT-050` | Forbidden | — | Onyx refused the key (403), or the key lacks the admin role `POST /api/admin/search` needs: a row, doctor or `degraded` code |
 | `SND-CONTEXT-051` | Unavailable | — | Onyx answered with an unexpected status or shape (not the pinned version's): a `degraded` code |
 | `SND-CONTEXT-052` | NotFound | — | Onyx has no such document: the item is dropped, not degraded |
-| `SND-CONTEXT-053` | Forbidden | — | The admin token belongs to a person's account, not Sindri's dedicated user (`STANDARD`, email `OnyxSettings.DedicatedAccountEmail`, `sindri@sindri.app`, compared case-insensitively) or a service account: a `degraded` row and a doctor `warn`; the address of another account is never echoed |
+| `SND-CONTEXT-053` | Forbidden | — | The admin token belongs to a person's account, not Sindri's dedicated user (`STANDARD`, email `OnyxSettings.DedicatedAccountEmail`, `sindri@example.com`, compared case-insensitively) or a service account: a `degraded` row and a doctor `warn`; the address of another account is never echoed |
 | `SND-CONTEXT-055` | Invalid (400) | 2 | The url isn't loopback or the version isn't a pinned release tag (`profile validate`); at run time, Onyx reports another version (a row and doctor `fail`) |
 
 An onyx failure during a query is always the `degraded` entry `SND-CONTEXT-010` with the cause in its message; the

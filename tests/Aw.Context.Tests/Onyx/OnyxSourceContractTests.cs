@@ -210,7 +210,7 @@ public sealed class OnyxSourceContractTests : ContextSourceContract<IContextSour
     [Fact]
     public async Task Probe_matches_the_dedicated_email_without_regard_to_case()
     {
-        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { OnyxAccountType = "STANDARD", OnyxAccountEmail = "Sindri@Sindri.App" });
+        await using var onyx = await FakeOnyxServer.Start(new FakeServerOptions { OnyxAccountType = "STANDARD", OnyxAccountEmail = "Sindri@Example.COM" });
         using var harness = new OnyxSourceHarness(onyx.Url, onyx.Token);
 
         var health = await harness.Source.Probe(TestContext.Current.CancellationToken);

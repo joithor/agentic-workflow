@@ -10,9 +10,9 @@ using Aw.Sindri.Core.Onyx;
 namespace Aw.Sindri.Infrastructure.Onyx;
 
 /// <summary>
-/// IOnyxProvisioning over HTTP to http://127.0.0.1:&lt;port&gt; only (spec §5.2). Seven requests are allowed and nothing else; one that isn't on the list is refused before anything is sent (<see cref="Allowed"/>).
+/// IOnyxProvisioning over HTTP to http://127.0.0.1:&lt;port&gt; only (spec §5.2). Ten requests are allowed (nine exact routes and one delete pattern) and nothing else; one that isn't on the list is refused before anything is sent (<see cref="Allowed"/>).
 /// The login cookie lives in the session's own container and goes with the session; no password and no token is put in an error message or a log. Not used by the query adapter, and it does not use it.
-/// Why these seven (docs/sindri/onyx.md section 7): Onyx's Community Edition gates `/admin/api-key` and `/manage/admin/user-group` at the Business tier (`backend/ee/onyx/configs/license_enforcement_config.py`,
+/// Why these ten (docs/sindri/onyx.md section 7): Onyx's Community Edition gates `/admin/api-key` and `/manage/admin/user-group` at the Business tier (`backend/ee/onyx/configs/license_enforcement_config.py`,
 /// `PATH_PREFIX_MIN_TIER`), so Sindri can't have a service-account key. It gets a dedicated admin user and a personal access token of that user instead, through routes the tiers leave open.
 /// </summary>
 internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
@@ -27,6 +27,8 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
         (HttpMethod.Post, "/api/auth/register"),                       // main.py:660, fastapi-users register router; UserManager.create (auth/users.py:696) enforces invite-only
         (HttpMethod.Post, "/api/password/reset_password"),             // server/features/password/api.py:42: FULL_ADMIN_PANEL_ACCESS; the server makes the new password
         (HttpMethod.Patch, "/api/manage/admin/users/admin-access"),    // server/manage/users.py:162: FULL_ADMIN_PANEL_ACCESS; the CE route that sets the admin permission
+        (HttpMethod.Patch, "/api/manage/admin/deactivate-user"),       // server/manage/users.py:800: FULL_ADMIN_PANEL_ACCESS; retires the dedicated user of an earlier build (its tokens stop working)
+        (HttpMethod.Get, "/api/user/pats"),                            // server/pat/api.py (GET ""): BASIC_ACCESS; the dedicated user's own tokens, so old sindri-onyx ones can be revoked
         (HttpMethod.Post, "/api/user/pats"),                           // server/pat/api.py (POST ""): CREATE_USER_API_KEYS, which admins hold
         (HttpMethod.Get, "/api/me"),                                   // server/manage/users.py:1081: whose token this is
     ];
@@ -61,7 +63,15 @@ internal sealed class HttpOnyxProvisioning : IOnyxProvisioning
     /// <param name="method">The method.</param>
     /// <param name="path">The absolute path.</param>
     /// <returns>True when it may be sent.</returns>
-    internal static bool Allowed(HttpMethod method, string path) => _allowed.Any(a => a.Method == method && string.Equals(a.Path, path, StringComparison.Ordinal));
+    internal static bool Allowed(HttpMethod method, string path)
+        => _allowed.Any(a => a.Method == method && string.Equals(a.Path, path, StringComparison.Ordinal)) || (method == HttpMethod.Delete && IsTokenPath(path));
+
+    // The one route with a parameter: `DELETE /api/user/pats/{id}` (server/pat/api.py; a user can revoke only their own tokens), the id one to nine ASCII numerals and nothing after it.
+    private static bool IsTokenPath(string path)
+    {
+        const string prefix = "/api/user/pats/";
+        return path.StartsWith(prefix, StringComparison.Ordinal) && path.Length - prefix.Length is >= 1 and <= 9 && path.AsSpan(prefix.Length).IndexOfAnyExceptInRange('0', '9') < 0;
+    }
 
     /// <inheritdoc />
 #pragma warning disable CA2000 // the session owns its client and disposes both when the caller disposes the session

@@ -13,8 +13,10 @@ public sealed partial record OnyxSettings
     /// <summary>
     /// The email of the dedicated Onyx user that `sindri onyx up` makes for Sindri (an admin, so the search route works, on its own account rather than a person's). Onyx Community Edition has no service-account keys
     /// (their route is Business tier), so Sindri's token is a personal access token of this user, and doctor tells it from a person's account by this email. A manual setup names its dedicated user the same.
+    /// It is an example.com address on purpose: RFC 2606 reserves the name, its null MX (RFC 7505) means no mail to it is ever delivered, and nobody can own the mailbox (so Onyx's forgot-password or invite mail can't reach anyone).
+    /// Onyx accepts it: its pinned email-validator 2.2.0 leaves example.com out of its special-use list (`email_validator/__init__.py:66`), whereas `.invalid`, `.test`, `.local` and `.localhost` are rejected.
     /// </summary>
-    public const string DedicatedAccountEmail = "sindri@sindri.app";
+    public const string DedicatedAccountEmail = "sindri@example.com";
 
     private const string UrlKey = "context.sources.onyx.url";
     private const string TokenKey = "context.sources.onyx.token";

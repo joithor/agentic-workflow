@@ -85,7 +85,7 @@ internal sealed class OnyxDoctor(IContextEngine engine, ISecretPointers secrets)
     {
         _ when code == ContextErrors.OnyxNotPinnedOrLoopback.Code => $"run the pinned Onyx release on 127.0.0.1, or pin the running one and approve the profile ({Setup})",
         _ when code == ContextErrors.OnyxKeyRefused.Code || code == ContextErrors.OnyxKeyNotServiceAccount.Code
-            => $"use a personal access token of a dedicated admin user (`sindri onyx up` makes sindri@sindri.app) or a service-account key for Sindri alone, and store it where context.sources.onyx.token points ({Setup})",
+            => $"use a personal access token of a dedicated admin user (`sindri onyx up` makes sindri@example.com) or a service-account key for Sindri alone, and store it where context.sources.onyx.token points ({Setup})",
         _ when code == ContextErrors.SourceNotConfigured.Code => $"store the Onyx key where context.sources.onyx.token points ({Setup})",
         _ => $"start Onyx and check context.sources.onyx.url ({Setup})",
     };
