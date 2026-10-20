@@ -615,14 +615,14 @@ public sealed partial class CommandPaletteViewModelTests
     public async Task A_cli_only_entry_copies_its_cli()
     {
         _palette.Open();
-        _palette.Query = "approveprofile";
+        _palette.Query = "revokerecipe";
 
         await _palette.Run(_palette.Selected, Token);
 
-        Assert.Equal("sindri profile approve [<hash>]", _clipboard.Text);
-        Assert.Equal(("Copied", true), (Entry("ApproveProfile").Status, _palette.IsOpen));
+        Assert.Equal("sindri recipe revoke <recipe>", _clipboard.Text);
+        Assert.Equal(("Copied", true), (Entry("RevokeRecipe").Status, _palette.IsOpen));
         _clock.Advance(ControlViewModel.CopiedFor);
-        Assert.Equal("Copy: sindri profile approve [<hash>]", Entry("ApproveProfile").Status);
+        Assert.Equal("Copy: sindri recipe revoke <recipe>", Entry("RevokeRecipe").Status);
     }
 
     [Fact]
@@ -695,7 +695,7 @@ public sealed partial class CommandPaletteViewModelTests
     public async Task A_copy_changes_the_announcement()
     {
         _palette.Open();
-        _palette.Query = "approve profile";
+        _palette.Query = "revoke recipe";
 
         await _palette.Run(_palette.Selected, Token);
 
