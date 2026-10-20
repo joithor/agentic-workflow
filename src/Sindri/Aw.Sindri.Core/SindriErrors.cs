@@ -242,6 +242,24 @@ public static class SindriErrors
     /// <summary>SND-WT-004: the worktree has uncommitted or untracked files; it is left as it is, never discarded.</summary>
     public static readonly ErrorDefinition WorktreeDirty = new("SND-WT-004", ErrorKind.Conflict, "The worktree has uncommitted changes");
 
+    /// <summary>SND-SETUP-001: the folder to add is missing, is not a git checkout, is unreadable, is inside the Sindri home, is '/', is the home folder, or contains the Sindri home (setup-once spec §7.6).</summary>
+    public static readonly ErrorDefinition SetupFolderInvalid = new("SND-SETUP-001", ErrorKind.Invalid, "That folder can't be added as a repo (fix: pick the repo's top folder)");
+
+    /// <summary>SND-SETUP-002: the repo is already in the profile, or its name collides with another repo's.</summary>
+    public static readonly ErrorDefinition SetupRepoExists = new("SND-SETUP-002", ErrorKind.Conflict, "That repo is already in the profile, or its name is taken (fix: pick another folder, or give a different name)");
+
+    /// <summary>SND-SETUP-003: the app's confirmation was not given: a hold that was too short, an answer less than 2 seconds after the challenge, or the wrong kind of answer.</summary>
+    public static readonly ErrorDefinition SetupConfirmationRefused = new("SND-SETUP-003", ErrorKind.Forbidden, "The confirmation was not given (fix: for a held one, hold the button for the full time or type the text; for a typed one, type the text exactly)");
+
+    /// <summary>SND-SETUP-004: RegisterMcp for a repo the approved profile does not name.</summary>
+    public static readonly ErrorDefinition SetupRepoNotInProfile = new("SND-SETUP-004", ErrorKind.Conflict, "The approved profile does not name that repo (fix: add the repo, approve the profile, then try again)");
+
+    /// <summary>SND-SETUP-005: ConnectOnyx without the Onyx admin email and password.</summary>
+    public static readonly ErrorDefinition SetupOnyxCredentialsMissing = new("SND-SETUP-005", ErrorKind.Invalid, "The Onyx admin email and password are both needed (fix: enter both; sign up in Onyx first if you have no account)");
+
+    /// <summary>SND-SETUP-006: ConnectOnyx while no Onyx setup is waiting for the login, or the 30-minute wait ran out.</summary>
+    public static readonly ErrorDefinition SetupOnyxNotWaiting = new("SND-SETUP-006", ErrorKind.Conflict, "No Onyx setup is waiting for the login (fix: press Set up Onyx first)");
+
     /// <summary>SND-SETUP-007: the approve-all plan, or its challenge, was asked for before a profile is approved (setup-once spec §7.6).</summary>
     public static readonly ErrorDefinition SetupProfileNotApproved = new("SND-SETUP-007", ErrorKind.Conflict, "No profile is approved yet (fix: approve the profile first)");
 
@@ -254,6 +272,6 @@ public static class SindriErrors
         InvalidInput, ServiceFailed, ViewsRebuilding, ViewsBehind, StreamsFull, ViewsStalled, ItemNotFound, ItemConflict, RequestInvalid, RequestsRateLimited, DecisionNotFound, DecisionInvalid, JobNotFound, JobConflict, JobInterrupted, JobsRateLimited, ServiceNotFound, OnyxDockerUnavailable, OnyxComposeMissing, OnyxNotEnoughResources, OnyxPinsMalformed, OnyxPortTaken, OnyxNotAdmin, OnyxKeyFailed, OnyxSecretNotStored, OnyxNotReady, OnyxRemoteDocker, OnyxComposeFailed, OnyxWorkspaceUnusable, SecretPointerInvalid, SecretUnresolved, SecretFileUnsafe,
         LaunchNotFound, LaunchViewerFailed, LaunchNoViewer, LaunchAgentMissing, LaunchRepoMissing, LaunchNoSession, LaunchInterrupted, LaunchInProgress, LaunchTimedOut, LaunchBudgetReached,
         LauncherInvalid, LaunchNotApproved, LaunchFormUnsupported, LaunchSessionIdTimedOut, AuthLaunchSecret, SessionSourceFailed, SessionsUnavailable, SessionsTestOverride, SessionNotFound, SessionConflict,
-        WorktreeInvalid, WorktreeConflict, WorktreeGitFailed, WorktreeDirty, SetupProfileNotApproved,
+        WorktreeInvalid, WorktreeConflict, WorktreeGitFailed, WorktreeDirty, SetupFolderInvalid, SetupRepoExists, SetupConfirmationRefused, SetupRepoNotInProfile, SetupOnyxCredentialsMissing, SetupOnyxNotWaiting, SetupProfileNotApproved,
     ];
 }
