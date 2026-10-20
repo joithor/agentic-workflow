@@ -10,6 +10,14 @@ Tier 3 in `deps.yaml` (`src/Sindri`, full shape: Core · Features · Infrastruct
 the switch: the providers and launchd don't point at it, and `setup.sh` only through `./setup.sh --with-sindri`, whose Onyx step
 (`scripts/install-onyx.sh`; `--no-onyx` opts out) runs `onyx up` via `scripts/sindri-app.sh`.
 
+`scripts/sindri-app.sh` publishes the host and the UI, and with a leading `--publish-only` (optionally followed by `--rebuild`)
+it stops after the publish: no exec, no MCP register hint; exit 0 published or current, 1 a failed publish, 2 any other
+argument. The shipped recipes are `HEAD`'s: the publish runs `git archive HEAD recipes/sindri` into its build copy (replacing
+the copy's directory) and passes that directory as `AwRecipesDir`, which `Aw.Sindri.Host` embeds as `aw-recipes/sindri/<path
+relative to recipes/sindri>` (`/` separated, `README.md` left out, nothing embedded when it is unset). An edited or untracked
+working-tree recipe is never embedded; a dirty tree publishes and says so. The build stamp includes the commit and the git
+tree hash of `recipes/sindri`, and the build dir holds both in `build-info`. A tree that is not a git checkout is refused.
+
 ## The binary
 
 One binary, `sindri`, is both the control plane and its CLI. It publishes framework-dependent, not NativeAOT: the Temporal .NET SDK its worker runs has no trimming support (temporalio/sdk-dotnet#286; `.agents/rules/csharp.md` "AOT scope").
