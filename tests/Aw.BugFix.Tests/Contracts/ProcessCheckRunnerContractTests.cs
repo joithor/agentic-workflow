@@ -88,8 +88,7 @@ public sealed class ProcessCheckRunnerContractTests : CheckRunnerContract, IDisp
         }
 
         var script = Path.Combine(_temp.Path, "check.sh");
-        File.WriteAllText(script, "#!/bin/sh\nexit 4\n");
-        File.SetUnixFileMode(script, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        _ = ExecutableScript.Write(script, "exit 4\n");
 
         var exit = Runner.Run(["./check.sh"], Directory, Path.Combine(_temp.Path, "rel.log"), Key);
 
@@ -106,8 +105,7 @@ public sealed class ProcessCheckRunnerContractTests : CheckRunnerContract, IDisp
         }
 
         var target = Path.Combine(_temp.Path, "dispatch.sh");
-        File.WriteAllText(target, "#!/bin/sh\n[ \"$(basename \"$0\")\" = alias ] && exit 0 || exit 5\n");
-        File.SetUnixFileMode(target, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        _ = ExecutableScript.Write(target, "[ \"$(basename \"$0\")\" = alias ] && exit 0 || exit 5\n");
         _ = File.CreateSymbolicLink(Path.Combine(_temp.Path, "alias"), target);
 
         var exit = Runner.Run(["./alias"], Directory, Path.Combine(_temp.Path, "alias.log"), Key);
