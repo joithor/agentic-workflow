@@ -162,7 +162,7 @@ namespace Aw.Sindri.Host;
 [JsonSerializable(typeof(AddRepoRequest)), JsonSerializable(typeof(AddedRepo))]   // setup-once §5.1: add a repo from the app
 [JsonSerializable(typeof(ApproveAllRecipesRequest)), JsonSerializable(typeof(ApproveAllPlan)), JsonSerializable(typeof(ApproveAllResult)), JsonSerializable(typeof(ShippedRecipePlan))]   // setup-once §7.2: the plan, the hold's job and its result
 [JsonSerializable(typeof(ApproveRecipeResponse)), JsonSerializable(typeof(RevokeRecipeRequest)), JsonSerializable(typeof(RevokeRecipeResponse)), JsonSerializable(typeof(IssueChallengeRequest))]
-[JsonSerializable(typeof(IssueChallengeResponse)), JsonSerializable(typeof(HarnessProbeReport)), JsonSerializable(typeof(ChallengeAnswer)), JsonSerializable(typeof(ContextResult))]
+[JsonSerializable(typeof(IssueChallengeResponse)), JsonSerializable(typeof(IssueAppChallengeRequest)), JsonSerializable(typeof(HarnessProbeReport)), JsonSerializable(typeof(ChallengeAnswer)), JsonSerializable(typeof(ContextResult))]
 [JsonSerializable(typeof(NodeView)), JsonSerializable(typeof(NeighborsView)), JsonSerializable(typeof(PathView)), JsonSerializable(typeof(ProbeSet))]
 [JsonSerializable(typeof(ProbeReport)), JsonSerializable(typeof(ProbeRun)), JsonSerializable(typeof(SourcesView)), JsonSerializable(typeof(SourceSyncStatus))]
 [JsonSerializable(typeof(McpToolError)), JsonSerializable(typeof(McpSourcesAnswer)), JsonSerializable(typeof(RegisterMcpResponse)), JsonSerializable(typeof(Core.Mcp.ProviderResult)), JsonSerializable(typeof(ContextSourcesSynced))]

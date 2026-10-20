@@ -4,6 +4,7 @@ using Aw.Redaction;
 using Aw.Sindri.Core.Auth;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Control;
+using Aw.Sindri.Core.Doctor;
 using Aw.Sindri.Core.Lease;
 using Aw.Sindri.Core.Ledger;
 using Aw.Sindri.Core.Locks;
@@ -89,7 +90,8 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton<IControlPlaneProbe, HttpControlPlaneProbe>()
             .AddSingleton<IControlPlaneLauncher, ServeLauncher>()
             .AddSingleton<IHumanTokenStore, FileHumanToken>()
-            .AddSingleton(static sp => new ProverLabel(sp.GetRequiredService<SindriSettings>().ProverLabelAllowed))
+            .AddSingleton(static sp => new ProverLabel(sp.GetRequiredService<SindriSettings>().ProverLabelAllowed, sp.GetRequiredService<SindriSettings>().ProverMayConfirm))
+            .AddScoped<IDoctorChecks, TokenFileDoctorChecks>()
             .AddSingleton<IProcessAncestry, PosixProcessAncestry>()
             .AddSingleton<IRepoLocator, GitRepoLocator>()
             .AddSingleton<IRepoInspector, GitRepoInspector>().AddSingleton<IProfileRepoWriter, YamlProfileRepoWriter>()   // setup-once §5.1: AddRepo's folder checks and the profile's repos[] appender
