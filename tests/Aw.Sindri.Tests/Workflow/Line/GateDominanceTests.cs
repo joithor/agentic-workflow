@@ -10,6 +10,13 @@ public sealed class GateDominanceTests
         Assert.Empty(GateDominance.Skipped(LineTree.Recipe("workflow.phase"), "merged", "prove", "review", "ship"));
 
     [Fact, Trait("Lane", "unit")]
+    public void Ship_dominates_babysit_and_babysit_dominates_merged()
+    {
+        Assert.Empty(GateDominance.Skipped(LineTree.Recipe("workflow.phase"), "babysit", "ship"));
+        Assert.Empty(GateDominance.Skipped(LineTree.Recipe("workflow.phase"), "merged", "babysit"));
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public void The_walker_answers_per_state()
     {
         Assert.Empty(GateDominance.Skipped(LineTree.Recipe("workflow.phase"), "merged", "seed", "build"));
