@@ -12234,3 +12234,10 @@ override Aw.Sindri.Core.Onyx.OnyxStatusReport.GetHashCode() -> int
 override Aw.Sindri.Core.Onyx.OnyxStatusReport.ToString() -> string!
 static Aw.Sindri.Core.Onyx.OnyxStatusReport.operator !=(Aw.Sindri.Core.Onyx.OnyxStatusReport? left, Aw.Sindri.Core.Onyx.OnyxStatusReport? right) -> bool
 static Aw.Sindri.Core.Onyx.OnyxStatusReport.operator ==(Aw.Sindri.Core.Onyx.OnyxStatusReport? left, Aw.Sindri.Core.Onyx.OnyxStatusReport? right) -> bool
+Aw.Sindri.Core.Setup.MapBuildProgress
+Aw.Sindri.Core.Setup.McpLocalRegistration
+Aw.Sindri.Core.Setup.SetupRecipes
+static Aw.Sindri.Core.Setup.MapBuildProgress.Parse(string! line) -> Aw.Sindri.Core.Setup.SetupProgress?
+static Aw.Sindri.Core.Setup.McpLocalRegistration.IsRegistered(string? claudeJson, string! checkout, string! repo) -> bool
+static Aw.Sindri.Core.Setup.OnyxFact.From(Aw.Sindri.Core.Onyx.OnyxStatusReport! report) -> Aw.Sindri.Core.Setup.OnyxFact!
+static Aw.Sindri.Core.Setup.SetupRecipes.Count(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeSummary!>! lines) -> Aw.Sindri.Core.Setup.RecipesFact!
