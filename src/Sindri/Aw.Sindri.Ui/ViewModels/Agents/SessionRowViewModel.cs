@@ -135,8 +135,8 @@ internal sealed class SessionRowViewModel : ObservableObject, ISessionRef
         (AskingText, EstimatedText) = (AskingOf(Row), EstimatedOf(Row));
         (WorktreeText, SinceText) = (Row.Worktree ?? string.Empty, Labels.Age(_clock.GetUtcNow() - Row.Since));
         (HostText, LaneText) = (HostOf(Row), LaneOf(Row));
-        StepText = Row.Launch is { Instance.Length: > 0 } launch ? Labels.SessionStep(launch.State, launch.Attempt) : string.Empty;
-        StepName = Row.Launch is { Instance.Length: > 0 } named ? Labels.SessionStepName(StepText, named.State) : string.Empty;
+        StepText = Row.Launch is { } launch && launch.Instance is { Length: > 0 } ? Labels.SessionStep(launch.State, launch.Attempt) : string.Empty;
+        StepName = Row.Launch is { } named && named.Instance is { Length: > 0 } ? Labels.SessionStepName(StepText, named.State) : string.Empty;
         WhereText = string.Join(" · ", new[] { WorktreeText, HostText, LaneText }.Where(p => p.Length > 0));
         Name = Labels.SessionName(Row.ProviderLabel, title, chip.Word.ToLowerInvariant() + (EstimatedText.Length > 0 ? " (" + EstimatedText + ")" : string.Empty), string.Join(", ", new[] { AskingText, StepText }.Where(p => p.Length > 0)), HostText);
         Signature = string.Join('|', Row.State, AskingText, EstimatedText, title, WorktreeText, HostText, LaneText, StepText, Row.Focus.Method);

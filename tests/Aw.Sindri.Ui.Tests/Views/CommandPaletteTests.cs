@@ -158,7 +158,7 @@ public sealed class CommandPaletteTests : IDisposable
         Settle(window);
         Assert.True(shell.Palette.IsOpen);
 
-        window.KeyTextInput("workflows");   // the Workflows page entry (a bare "go" now also matches workflow copy blocks)
+        window.KeyTextInput("go:workflows");   // the Workflows page entry by id (the label "Workflow types" also matches a bare "workflows")
         Settle(window);
         Press(window, Key.Down, PhysicalKey.ArrowDown);
         Assert.Equal("go:Workflows", shell.Palette.Selected?.Id);

@@ -126,7 +126,7 @@ public sealed class SessionSheetTests : FrameHost
         Assert.Equal("Details", details.Header);
         Assert.True(InSheet<Border>(window, "SessionHeading").IsEffectivelyVisible);
         Assert.Equal(shell.AgentSheet.StateLine, Heard.Wrapper(InSheet<Border>(window, "SessionState")));
-        Assert.DoesNotContain(InSheet<ItemsControl>(window, "SessionFields").GetVisualDescendants().OfType<Border>(), b => b.IsEffectivelyVisible);
+        Assert.DoesNotContain(Named<Control>(window, "SessionSheet").GetVisualDescendants().OfType<ItemsControl>(), c => string.Equals(c.Name, "SessionFields", StringComparison.Ordinal) && c.IsEffectivelyVisible);   // a closed Expander builds no content
         OpenDetails(window);
         Assert.True(details.IsExpanded);
         Assert.Contains(InSheet<ItemsControl>(window, "SessionFields").GetVisualDescendants().OfType<Border>(), b => b.IsEffectivelyVisible);
@@ -142,7 +142,8 @@ public sealed class SessionSheetTests : FrameHost
         Assert.Equal("This session has ended.", Heard.Wrapper(ended));
         Assert.Equal(shell.AgentSheet.EndedDetail, ToolTip.GetTip(ended));
         Assert.True(shell.IsSheetShown);
-        Assert.False(InSheet<Button>(window, "SessionFocus").IsEnabled);
+        Assert.False(InSheet<StackPanel>(window, "SessionBody").IsVisible);   // an ended session has no Details to open
+        Assert.False(shell.AgentSheet.IsFocusEnabled);
         Frame(window, "ended");
     });
 

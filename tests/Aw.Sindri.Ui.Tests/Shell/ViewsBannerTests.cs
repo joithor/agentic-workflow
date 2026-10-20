@@ -55,7 +55,7 @@ public sealed class ViewsBannerTests
 
         banner.Show(view: null, rebuild: null);
 
-        Assert.Equal(("Sindri", true, "Views are up to date"), (banner.Announcement, banner.IsRecovered, banner.RecoveredAnnouncement));
+        Assert.Equal(("Sindri", true, "Lists are up to date"), (banner.Announcement, banner.IsRecovered, banner.RecoveredAnnouncement));
 
         banner.Show(View("stalled"), rebuild: null);
         Assert.False(banner.IsRecovered);
