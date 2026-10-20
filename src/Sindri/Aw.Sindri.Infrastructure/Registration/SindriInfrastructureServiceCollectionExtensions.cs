@@ -10,6 +10,7 @@ using Aw.Sindri.Core.Locks;
 using Aw.Sindri.Core.Mcp;
 using Aw.Sindri.Core.Onyx;
 using Aw.Sindri.Core.Packets;
+using Aw.Sindri.Core.Setup;
 using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Scoping;
@@ -38,6 +39,7 @@ using Aw.Sindri.Infrastructure.Profile;
 using Aw.Sindri.Infrastructure.Scoping;
 using Aw.Sindri.Infrastructure.Secrets;
 using Aw.Sindri.Infrastructure.Sessions;
+using Aw.Sindri.Infrastructure.Setup;
 using Aw.Sindri.Infrastructure.Text;
 using Aw.Sindri.Infrastructure.Views;
 using Aw.Sindri.Infrastructure.Workflow;
@@ -90,6 +92,7 @@ public static class SindriInfrastructureServiceCollectionExtensions
             .AddSingleton(static sp => new ProverLabel(sp.GetRequiredService<SindriSettings>().ProverLabelAllowed))
             .AddSingleton<IProcessAncestry, PosixProcessAncestry>()
             .AddSingleton<IRepoLocator, GitRepoLocator>()
+            .AddSingleton<IRepoInspector, GitRepoInspector>().AddSingleton<IProfileRepoWriter, YamlProfileRepoWriter>()   // setup-once §5.1: AddRepo's folder checks and the profile's repos[] appender
             .AddSingleton<ICommandOrigins, LedgerCommandOrigins>()   // engine P4 unit (d): the bridge's causation route
             .AddSingleton<IRecipeReader, YamlRecipeReader>()
             .AddSingleton<IRecipeFiles, FileRecipeFiles>()
