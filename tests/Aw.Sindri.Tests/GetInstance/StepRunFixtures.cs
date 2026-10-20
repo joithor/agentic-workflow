@@ -41,7 +41,7 @@ internal static class StepRunFixtures
         new(step, int.Parse(token[..token.IndexOf('.', StringComparison.Ordinal)], System.Globalization.CultureInfo.InvariantCulture), token, Child: null, runtime);
 
     private static WorkflowEventDetail Detail(string actor, FrameSummary? frame, int? tokens = null) =>
-        new(Aw.Sindri.Core.Workflow.Engine.TriggerKey.For(Aw.Sindri.Core.Workflow.Engine.WorkflowInstanceId.From(Id), "t"), actor, SourceSequence: null, ArgumentsSha256: null, ReportSha256: null, Answer: null, Amount: null, Reason: null,
+        new(TriggerKey.For(WorkflowInstanceId.From(Id), "t"), actor, SourceSequence: null, ArgumentsSha256: null, ReportSha256: null, Answer: null, Amount: null, Reason: null,
             Gates: [], Evidence: [], Grant: null, Override: null, Refusal: null, Effects: [],
             new WorkflowEventDelta(frame, Suspension: null, PendingPark: null, Loops: null, TokensSpent: null, TokensGranted: null, Facts: null, Outcome: null))
         {
