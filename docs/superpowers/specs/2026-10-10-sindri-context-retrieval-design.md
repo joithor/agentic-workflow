@@ -584,10 +584,11 @@ record and gets this section's F1P text when it is built; it has no F1 section t
 - **A held version is a `draft`.** `MapVersionStatus` does not change (`building`, `draft`, `current`, `retained`). The F1 refresh (the
   service-run `RefreshContextMap` job: build, cleanup agent, promote) now promotes only when `MapPublishDecision` says `Publish`; when it says
   `Wait` the draft stays the latest draft, ready to promote, and the previous version stays `current`, answering every read.
-- **The hold is stored with the draft** in `context.db`, table `map_hold` (one row per repo's map: `version` referencing `map_version`, `since`, and one row
-  of `heads` per mapped repo with its head and `on_default`), written by `IContextMap.Hold`, read by `IContextMap.Held`, removed by `Release`
-  and by the promote of that version in the same transaction (so a promote by anyone leaves no hold behind). It is replaced, not accumulated: the next hold
-  of a chain takes the earlier one's `since`. A named migration creates it, with a test that an old `context.db` opens and gets it. Nothing about a hold lives in memory;
+- **The hold is stored with the draft** in `context.db`, table `map_hold` (one row, because `context.db` holds one map: `version` referencing `map_version`, `since`, and one row
+  of `heads` per mapped repo with its commit as the build read it and `on_default`). The calls go through `IContextEngine` (which inherits `IContextMap`; Sindri holds no context port) in the
+  existing style: `ValueTask<Result<MapHold?>> Held(ContextScope, ct)`, `ValueTask<Result<MapHold>> Hold(MapHold, ContextScope, ct)`, `ValueTask<Result<Unit>> Release(int version, ContextScope, ct)`.
+  `Release` is `DELETE … WHERE version = ?` (a newer hold is never deleted by a stale caller), and `Hold` replaces the row and reads the earlier `since` in one transaction (`MapHold.NextSince`); the promote of a version removes its hold in the same transaction (so a promote by anyone leaves no hold behind).
+  `Promote` and `CleanDraft` gain an `expectedVersion` (refused with 046 when the latest draft is another number). `MapBuildReport` gains the per-repo commits the build read, and the version records them in `map_version_head(version, repo, commit)` (the same migration), so code reads take `asOf` per repo. The three calls are service-only. A named migration creates it, with a test that an old `context.db` opens and gets it. Nothing about a hold lives in memory;
   a restart changes nothing.
 - **Only the automatic path waits.** `map promote` (protected, typed challenge) promotes the latest draft whether or not it is held, and `map review` and
   `map build` work on a held draft as on any (a build replaces it and the next tick drops the stale hold). A scoping proposal joins a held draft like any draft

@@ -391,19 +391,23 @@ structure, clones and deps layers (CI7: a build with no usable structure fails a
 layer is already decided, `ok` or `unavailable` or `disabled`, because the pointer switches after the graph step (§5.7
 step 4 then 5). So **a graph layer that is unavailable, or embeddings that are `pending`, never hold the map**; only a
 missing, damaged or other-commit index does. The index keeps one commit per repo (§4.3), so "built for C" is true only
-while C is the newest; a map for an older commit is never waited on once the index moved past it (below).
+while C is the newest. Once the index has moved past a held map's commit that map can never be `Built`; it is not waited on for itself, it waits only for the newer map that replaces it (a refresh is started by the next tick), and the bound still ends it (below, Supersede).
 
 **The gate (the map side holds a draft, not a version).** The refresh job (F1) still builds the draft and lets the cleanup
 agent settle it, but it no longer promotes unconditionally: it asks `MapPublishDecision` (below). On `Publish` it
 promotes as today. On `Wait` it ends `Succeeded` with `held: true` and stores a **hold** next to the draft in `context.db`
-(retrieval spec §8.7a): the draft's version, each mapped repo's head the build read with whether it was on the default
+(retrieval spec §8.7a): the draft's version, each mapped repo's commit **as the build read it** (the build's own report, `MapBuildReport.Heads`, a new
+field: the pre-build `MapHeads` read can differ when trunk moves in between) with whether it was on the default
 branch, and `since` (when the hold began, kept across supersedes, below). The held version is an ordinary `draft`: no
 new status, no change to `MapVersionStatus`, and the previous version stays `current` and keeps answering. The
 `context-map-refresh` service's tick (every minute, already there) re-asks the decision while a hold exists; the answer
 `Publish` or `Drop` starts a small job `PublishContextMap` (key `map-publish:<repo>`, started as
 `service:context-map-refresh` through the command chain, like the refresh), which asks again under its own grant, runs
 the cleanup pass once more (a scoping proposal may have joined the draft while it waited; with nothing weak it spends no
-model call) and promotes through the engine. Nothing here is a timer in memory: the hold row, the clock and the stored
+model call; the cleanup rules and who decides are F1's, so a proposal joining a held draft gets no more authority than it has when the refresh re-applies it today) and promotes through the engine. **`Promote` and `CleanDraft` take an `expectedVersion`** (F1P changes
+`IContextMap`): the engine refuses with 046 (reworded for a hold) when the latest draft is not that number, so a refresh or a human
+`map build` that replaced the draft between the check and the promote can never publish a draft the gate did not see. A `RefreshContextMap`
+and a `PublishContextMap` also never run together: the tick starts neither while the other is running (a start refused by the runner's 409 is quiet). Nothing here is a timer in memory: the hold row, the clock and the stored
 index heads are all the decision needs.
 
 **Who decides: one pure function in `Aw.Sindri.Core/Scheduling/`, beside `MainMoveDecision`.**
@@ -419,7 +423,16 @@ public static MapPublishAction Decide(
     DateTimeOffset now);             // -> Wait(until, waitingOn) | Publish(reason, staleRepos) | Drop(reason)
 
 public enum IndexOutlook { Built, Coming, Backoff, Broken, Absent }
+
+// IndexOutlookRules.cs (pure): the classifier's one input record, per repo; deferred and failed come from the BuildCodeIndex job's result
+public static IndexOutlook Classify(IndexOutlookInput input, DateTimeOffset now);
+public sealed record IndexOutlookInput(string? IndexCommit, string HoldHead, string? LiveHead, bool InScope, bool ServiceActive,
+    bool BuildRunning, IReadOnlyList<IndexAttempt> FinishedNewestFirst);   // IndexAttempt(bool Failed, bool Deferred, DateTimeOffset EndedAt): its own record, SyncAttempt (shared with SyncGapDecision) is untouched
+
+// Sindri Core port, implemented in Host by CI-9 (F1P-b registers NoIndexOutlooks: every repo Absent)
+ValueTask<Result<IReadOnlyDictionary<string, IndexOutlook>>> Read(MapHoldState hold, CancellationToken ct);
 ```
+F1P-b owns `IndexOutlook`, `IndexOutlookInput`, `IndexOutlookRules` and `IIndexOutlooks` with their table of cases; CI-9 owns the Host adapter that fills the input.
 
 `IndexOutlook` per repo is classified by `IndexOutlookRules.Classify` (also pure, `Aw.Sindri.Core/Scheduling/`), from what
 the index service already stores: the index's commit from `ICodeIndex.Heads`, the hold's head, the repo's live head, whether the
@@ -432,15 +445,15 @@ the `deferred` flag) with the clock:
 | `Built` | the index commit equals the hold's head | ready |
 | `Coming` | not built, and a build is running, or one is due (the head moved, no backoff) | wait |
 | `Backoff` | not built, the newest job failed (1 or 2 in a row) or ended `deferred: heavy-busy`, a retry is due later | wait, bounded like `Coming` |
-| `Broken` | not built, 3 failed jobs in a row (the service's needs-you row is up), or the index file is damaged and was not rebuilt by the next tick | do not wait |
-| `Absent` | no index will be built for this repo: `ICodeIndex` is not composed (before CI-9), the service is paused, the repo is not in its scope, or the repo's head was not on the default branch when the map read it (the index never builds from a feature branch, §6.1) | not part of the gate |
+| `Broken` | not built, 3 failed jobs in a row (the service's needs-you row is up). A damaged file reads as "no index" from `Heads` and so as `Coming`: the next tick rebuilds it, and the bound applies | do not wait |
+| `Absent` | no index will be built for this repo: `ICodeIndex` is not composed (before CI-9), the service is paused by the owner (a deliberate stop is not waited on), the repo is not in its scope, or the repo's head was not on the default branch when the map read it (the index never builds from a feature branch, §6.1) | not part of the gate |
 
 `Decide`, in this order (the first line that applies):
 
 1. `Drop(Gone)` when `draftVersion` is not the hold's version (a rebuild replaced the draft, or a human cleared it);
    `Drop(AlreadyCurrent)` when `currentVersion` is the hold's version (a person promoted it by hand).
 2. Take out the `Absent` repos. **`Publish(IndexReady)`** when every remaining repo is `Built`; **`Publish(NoIndex)`**
-   when none remain (the old behavior, byte for byte, until CI-9 composes the index).
+   when none remain (the old behavior until CI-9 composes the index; only the new events and fields differ).
 3. **`Publish(IndexBroken, staleRepos)`** when any remaining repo is `Broken`: waiting on an index that has given up
    buys nothing, and the code index already told the owner (the needs-you row).
 4. **`Publish(FirstMap)`** when `currentVersion` is null: the first map of a repo is worth more than a matching one, and its code rows are
@@ -460,19 +473,26 @@ build with graph (under 2 minutes plus the tick), a deferred retry (10-minute su
 small repo; a large repo's first build (10 minutes structure target plus up to 10 for a slot) times out on purpose, and
 the owner reads that as stale rows for a while, not as a stuck map. The key lives in the context section of the profile
 (retrieval spec §8.8), not in `index:`, because it is the map's rule; `docs/csharp/sindri-profile.md` and
-`scripts/check-profile-doc.mjs` list it in F1P (§14), and a value outside 0 to 240 is `SND-CONTEXT-001` with the key path.
+`scripts/check-profile-doc.mjs` list it in F1P-b (§14), and a value outside 0 to 240 is `SND-CONTEXT-001` with the key path.
+
+**The tick, in order** (`ContextMapRefreshService`, one service, two job kinds): (1) scope, as today; (2) read the hold; if there is one,
+read the outlooks and ask `MapPublishDecision`; `Publish` or `Drop` starts `PublishContextMap` and ends the tick; (3) the move check as today, but over the
+`MappedHeads` above; (4) the alarm: the newest 8 ended jobs of **both kinds** merged by end time give the failure count (`MainMoveDecision.FailedInARow`) and the code shown is
+the newest failure's; three in a row raise the one row `failure:service:context-map-refresh` ("the last 3 map refreshes or publishes failed (code)"). `RefreshContextMapResult` gains `Held` (bool) and `Version`; a
+`PublishContextMap` result carries `Version`, `Reason` and the heads, so `HeadsOf` reads either.
 
 **Supersede, both sides.**
 - *A newer trunk move while a map is held.* The service's move check (F1's `MainMoveDecision`) compares the live heads
   with **the heads of the newest map that is current or held** (`MappedHeads`, a small pure function of the last
   succeeded refresh's result, whether it was held, the hold and the current version; a held result whose version is neither
   held nor current counts as no heads, so a dropped hold makes the next tick rebuild instead of leaving the map behind
-  forever). The moved head starts a new refresh; its build replaces the draft, and when it is ready it stores the new hold with
+  forever; except when a **later draft exists** (a person built or edited one), whose heads are kept so the service does not overwrite
+  a person's draft until trunk moves again). The moved head starts a new refresh; its build replaces the draft, and when it is ready it stores the new hold with
   **`since` inherited from the hold it replaced** (`MapHold.NextSince(previous, now)` = `previous?.Since ?? now`). So a trunk that
   moves every ten minutes cannot keep a map from ever promoting: the newest ready draft is published at most `wait` after the
   first hold of the chain, ready or not. Between the new build starting and its hold being written the old hold points at a
-  draft that is gone; the tick does not evaluate a hold while a `RefreshContextMap` job runs, so `Drop(Gone)` never races the
-  replacement. If that refresh fails, the old hold is dropped on the next tick (its `since` is lost: a failing refresh has its own
+  draft that is gone; while a `RefreshContextMap` job runs the tick ignores a `Drop(Gone)` (the replacement is coming and the old hold's `since` must survive
+  to it), but still acts on `Publish`, which is safe because it carries `expectedVersion`, so a stuck refresh cannot hold a due map back. If that refresh fails, the old hold is dropped on the next tick (its `since` is lost: a failing refresh has its own
   alarm).
 - *The index side.* Nothing changes in §6 or §5.7. An index build in flight for the older commit finishes and publishes it (still on
   trunk), and the next tick builds the newer one; the held map for the older commit now sees an index at neither its head nor
@@ -490,9 +510,9 @@ correct rule: **the gate runs once per map version, at promotion; staleness is a
 returned carries `commit` (the index's), `builtAt`, `state` (`stale` when they differ, §7.3) and `asOfCommit` (the commit asked
 for); the code lens' `searched.sources[code-index]` is `{state: degraded, reason: stale, code: null, asOf: <index commit, 7 hex>}`,
 each `callers` and `callees` row is marked `asOfMismatch: true`, and the text reads "from abcdef0, not 1234567" (the index's
-commit, then the map's). A repo the version records no commit for (the version names only the first mapped repo's commit, as
-today; `MapVersion.Commit`) keeps today's rule, the repo's head, and the ledger event below names every repo's head, so the limit is
-visible (Q14).
+commit, then the map's). **Every mapped repo's commit is recorded with the version** (F1P-a: a `map_version_head(version, repo, commit)` table written by the build, beside
+`MapVersion.Commit`, which stays the first repo's), so `asOf` is per repo and a second repo's stale rows are as exact as the first's. A version
+imported or built before this change has no heads and keeps today's rule for its repos, the repo's head (Q14).
 
 **Never block forever.** Every route out of `Wait` ends at line 2, 3, 6 or 1 of `Decide`, and line 6 needs only the clock and a
 stored `since`:
@@ -509,31 +529,36 @@ stored `since`:
 | `PublishContextMap` fails (store error) | retried on the same backoff as a failed refresh (5, 10, 20, 40, 60 minutes); three in a row raise the existing `failure:service:context-map-refresh` row ("the last 3 map publishes failed (code)") |
 | a draft that cannot become ready (undecided items the cleanup cannot settle) | not a gate case: the refresh job fails as today and holds nothing |
 
-**What the owner sees.** Words are fixed, short, and a state is never colour alone:
+**What the owner sees.** One small vocabulary on every surface (Health, `context map status` and its `--json` `state`, doctor, jobs), words and an icon-free text label, never colour alone:
+`waiting`, `published`, `published without waiting`, `published stale`. One sentence for the stale fact everywhere, in this order (the index's commit, then the map's): "Code answers are from
+abcdef0 (built 12 min ago); map v14 is for 1234567." The lens rows keep their own short form "from abcdef0, not 1234567" (§7.3); it is the same fact. With several repos each line names its repo (a session sees only its own repos' lines and "N other repos").
 
-| Where | While waiting | After a timeout publish |
-|---|---|---|
-| Health, Context map card | "Map v14 is ready and waiting for the code index (6 of 15 min). v13 is still current." | "Map v14 is current. Code answers read stale: index abcdef0, map 1234567." (until the index catches up or the next map; read live, so it clears itself) |
-| `sindri context map status` | a line `held: v14 for <repos>, waiting for the code index, until 14:32` | `published: v14, timed out waiting for the code index (2 repos stale)` for the last publish |
-| `sindri jobs` | `RefreshContextMap` ends `succeeded`, summary `map v14 held for the code index` | `PublishContextMap · <repo>`, summary `map v14 promoted · timed out waiting for the code index` |
-| needs-you | **no row**: waiting is normal | **no row**: a timeout is a warning on Health. A broken or failing index already raises `failure:service:code-index-main-move`, and a failing publish raises the map service's row |
-| doctor | `context:publish` `ok`, "v14 held, 6 of 15 min" | `warn` for 24 hours or until the next clean publish: "last map published stale (index abcdef0, map 1234567)" |
+| State | Health, Context map card | `sindri context map status` | `sindri jobs` | needs-you | doctor `context:publish` |
+|---|---|---|---|---|---|
+| `waiting` | "Map v14 is ready. Waiting for the code index of web (building), api (retrying in 12 min). It goes ahead at 14:32 either way; v13 is current until then." (a chained wait adds "a newer commit arrived; the wait did not restart") | `waiting: v14, until 14:32, on web (building)` | `RefreshContextMap` ends `succeeded`, summary `held: map v14 waits for the code index` | none: waiting is normal | `ok`, "v14 waiting until 14:32" |
+| `published` (`IndexReady`) | "Map v14 is current; the code index matches (abcdef0)." | `published: v14, code index matches` | `map v14 promoted` | none | `ok` |
+| `published without waiting` (`FirstMap`, `NoIndex`, `WaitOff`) | "Map v14 is current. The code index is not part of it (first map, or no index here)." | `published: v14 without waiting (first map)` | `map v14 promoted` | none | `ok` |
+| `published stale` (`TimedOut`, `IndexBroken`) | the stale sentence, plus "the code index did not finish in time" or "the code index is broken, see Code index"; read live, it clears itself when the index for the map's commit lands | `published stale: v14 (timed out | index broken), web stale` | `PublishContextMap · <repo>`, summary `map v14 promoted · timed out waiting for the code index` | none: a broken or failing index already raises `failure:service:code-index-main-move`; a failing publish raises the map service's row | `warn` only while the rows are actually stale (the same live comparison as Health); the last publish's reason is an info line read from the latest `context.map.published` event |
 
-**Ledger events** (typed payload records, `SindriJsonContext` entries, catalog rows and `ApiViews` names, all in F1P; payloads hold
+`sindri context map status` also prints how the last 10 publishes ended by reason (for example "7 IndexReady, 2 TimedOut, 1 WaitOff"), so the owner can tune the wait or switch it off with numbers. `jobs show` on a held refresh names the publish job that finished it.
+
+**Ledger events** (typed payload records, `SindriJsonContext` entries, catalog rows and `ApiViews` names, all in F1P-b; payloads hold
 repo names, version numbers, reason words and counts, never a path or text):
 - `context.map.held`: `repo`, `version`, `repos` (count), `waitingOn` (count), `waitMinutes`, `chained` (true when `since` was inherited).
 - `context.map.published` (public): `repo`, `version`, `reason` (`IndexReady`, `NoIndex`, `IndexBroken`, `FirstMap`, `WaitOff`, `TimedOut`), `via` (`refresh` or `check`),
   `repos`, `staleRepos`, `waitedSeconds`, and `heads` (each mapped repo's head, as `context.map.refreshed` has them). It follows `context.map.promoted`, which every committed promote still appends.
 - `context.map.hold.dropped`: `version`, `reason` (`Gone`, `AlreadyCurrent`).
 - `context.map.refreshed` gains `held` (bool; false when the refresh promoted itself).
-Idempotency keys `context.map.held:<repo>:<version>`, `context.map.published:<repo>:<version>`, `context.map.hold.dropped:<repo>:<version>:<ulid>`.
+The `heads` field is in the stored payload only; the public form of `context.map.published` leaves it and the repo names out, as `repo.added` leaves its path out, and a session's `map status` and lens text are cut to its own repos. Idempotency keys `context.map.held:<repo>:<version>`, `context.map.published:<repo>:<version>`, `context.map.hold.dropped:<repo>:<version>:<ulid>`.
 
 **Errors.** The code index range is untouched: `SND-CODEIDX-014..029` stay reserved and this section adds no code (the
 index is read through `Heads`, whose failure is "no index", which is `Absent` or `Coming`, never an error to the map). The map
-side reserves **`SND-CONTEXT-190..194`** (explain owns 180..189) and uses **190** (Conflict): the held version is gone or
+side reserves **`SND-CONTEXT-190..194`** (explain owns 180..189) and uses **190** (Conflict, a result-code string on the job, never raised as an `Error`): the held version is gone or
 changed under a publish (a rebuild replaced the draft, or it was promoted); the job ends `Succeeded` with that code in its
 result, the hold is dropped, and nothing is raised. Underneath it, the store's `SND-CONTEXT-046` is reworded to name a hold. A
-bad profile value is 001. `191..194` are reserved. The range row in the retrieval spec (§14 phases note) is updated in F1P.
+bad profile value is 001. `191..194` are reserved. The range row in the retrieval spec (§14 phases note) is updated in F1P-b.
+
+**Who may do what.** `Hold`, `Release`, `Held` and the `PublishContextMap` job are service-only (`service:context-map-refresh`): no HTTP route, MCP tool or CLI verb starts them, a session starting the job is refused (`SND-AUTH-002`), and `sindri jobs cancel` follows the existing job rules. A human keeps `map promote`, ungated.
 
 **How the neighbours behave.**
 - *The cleanup agent* (owner F1) runs before the hold, once per draft, in parallel with the index build (that is the point of
@@ -578,7 +603,7 @@ caller") and the CLI prints them as plain text for humans. Limits are fixed in `
 records and a fake; Sindri's Host adapts `ICodeIndex` to it in a `CodeIndexSymbolSource` (the `JudgeCatalog` pattern: the
 index's container stays its own). Context never sees SQLite or a path of the index. The code lens fills `callers` and
 `callees` from it, and the `code-index` row of `searched.sources` goes from `unavailable / index-not-built` to
-`ok`, `degraded` (reason `stale`, `checkout-not-on-main`, or a layer `unavailable`) or `unavailable` with the real reason. Every call takes `asOf` (the map version's recorded commit for that repo, or null for the head; §6.4 "After the timeout") and each returned row carries the index's `commit`, `builtAt`, `state` and `asOfCommit`, so the lens can say both commits. The lens' source state vocabulary is the existing one (`ok`, `not-configured`, `unavailable`, `degraded`; `SearchedState`); this block's `state` words (§7.3) map onto it in the adapter, and `stale` is never a state of the lens.
+`ok`, `degraded` (reason `stale`, `checkout-not-on-main`, or a layer `unavailable`) or `unavailable` with the real reason. `ICodeIndex` itself is unchanged by revision 4: its answers already carry `commit`, `builtAt` and `state`. The new part is Context's port: each `ICodeSymbolSource` call takes `asOf` (the map version's recorded commit for that repo, or null), and the adapter in Sindri's Host sets `asOfCommit` and `state: stale` on the rows when it differs from the index's `commit` (§6.4 "After the timeout"). S-9a owns those record changes; no CI-1 edit is needed. The lens' source state vocabulary is the existing one (`ok`, `not-configured`, `unavailable`, `degraded`; `SearchedState`); this block's `state` words (§7.3) map onto it in the adapter, and `stale` is never a state of the lens.
 
 ### 7.3 Stale, missing, as-of
 
@@ -686,8 +711,8 @@ Per `.agents/rules/csharp-testing.md`: red first, fakes with contract tests, bui
     The service tick: starts a publish on `Publish` or `Drop`, is quiet on `Wait` (summary "map v14 waiting for the code index"), skips the hold check while a refresh runs, and backs the publish off after failures.
   - *Context (store contract, fake and SQLite):* the hold row is written, read and replaced, cleared by the promote of its version in the same transaction, untouched by a rebuild that it survives until replaced, and an old `context.db` opens and gets the table (a named migration).
   - *Integration:* a held version promotes when the index lands (a fake index store whose `Heads` changes between two ticks); a held version times out and promotes with `staleRepos` and the lens rows then `stale` with both commits named, and become fresh when the index for the map's commit lands later with no republish; a restart mid-wait (the host rebuilt over the same files and a later clock) resumes with the stored `since`;
-    a chain of two moves publishes at most `wait` after the first hold; a human promote and a human build over a held draft.
-  - *Hand test (running app, scratch home, after CI-9):* commit to a registered repo's trunk with the index service paused; `sindri context map status` shows the map v+1 held and v current; resume the service; the index builds, within one tick the map publishes, `sindri context lenses --json` shows `searched.sources` `code-index: ok` and `sindri code-index status` the same commit. Then set `context.publish.waitForIndexMinutes: 1`, pause the index service again and commit: after a minute the map publishes, the Health card reads the stale words with both commits, `sindri code-index callers <ref>` and the code lens say "from abcdef0, not 1234567"; resume the service and the words clear without a refresh. The same steps are CI-11's owner-check addition.
+    a chain of two moves publishes at most `wait` after the first hold; a human promote and a human build over a held draft (the service does not rebuild over it); a refresh replacing the draft between the publish check and the promote (046, not a promote of the new draft); a two-repo map where one repo is stale; the event payloads hold only enum reasons, counts, version numbers and profile repo names.
+  - *Hand test (running app, scratch home, after CI-9):* hold every heavy-job slot (the way the review API tests do with a bash helper) so the index build cannot start, and commit to a registered repo's trunk; `sindri context map status` shows the map v+1 held and v current; release the slots; the index builds, within one tick the map publishes, `sindri context lenses --json` shows `searched.sources` `code-index: ok` and `sindri code-index status` the same commit. Then set `context.publish.waitForIndexMinutes: 1`, hold the slots again and commit: after a minute the map publishes, the Health card reads the stale words with both commits, `sindri code-index callers <ref>` and the code lens say "from abcdef0, not 1234567"; release the slots and the words clear without a refresh. The same steps are CI-11's owner-check addition.
 - **Parser safety (integration):** a 100,000-term `a+b+...`, deeply nested parentheses and generics: the file ends `parsed = 0`, `too-deep`, the process lives (CI12).
 - **Incremental correctness (unit and integration):** change a callee's file only; the unchanged callers' edges are re-resolved (`certain`, not null).
 - **Heavy lane (nightly, and once by hand in each adapter PR):** real graphify at the pin inside the real sandbox on a
@@ -778,12 +803,14 @@ unit that needs them; every earlier unit is independent of it. CI-9 may start on
 | **CI-6** | `BuildCodeIndex` slice (structure; clones and deps register into it when CI-5 merges, which does not hold CI-6 back) over the fakes and real store: heavy slot, incremental plan, progress lines, cancel, report; the facade `Build` and the reads that need only these layers (`Status`, `FindSymbols`, `FileSymbols`, `Callers`, `Callees`; `Similar` after CI-5) | CI-2, CI-3, CI-4 merged (its Core and Features parts start on CI-1's fakes before they do) | a heavy-lane test that builds this repo and prints the report (files, symbols, edges, shares, ms) and asserts `Callers` on a known method; no separate host; first thing a person can run, still not in the app |
 | **CI-7** | `GraphRunner` (graphify, sandboxed, pin check, snapshot, strict `graph.json` parse, merge into `edges`); `FakeGraphRunner`, contract; (pins from CI-0a, DTO from the CI-0d spike) | CI-0a, CI-0d, CI-1 (contract); CI-6 to merge | heavy lane: graphify at the pin on a fixture repo yields call edges, a request from inside the sandbox is denied; the heavy-run output is pasted in the PR |
 | **CI-8** | `OllamaEmbedder` (loopback, redirect refusal, digest check, batches, resume), the embeddings layer and `Neighbors`; fake and contract | CI-1 (contract); CI-6 to merge | heavy lane: real Ollama at the pinned model; `Neighbors` ranks a known near-duplicate first; the heavy-run output is pasted in the PR |
-| **CI-9** | (revision 4: also `IndexOutlookRules` (pure, Core) and its table of cases, and the Host adapter `CodeIndexOutlooks` that reads `ICodeIndex.Heads`, the `index:<repo>` jobs and the service state; it replaces F1P's `NoIndexOutlooks` registration, which is what turns the gate on; no new event of its own) Sindri job and service: `BuildCodeIndex` registered as a job (`index:<repo>`), `code-index-main-move` (built-in, 1 min), `codeindex.built` event, catalog rows, the `view_code_index` projector; `SindriFeatures` and Host registration (compose edge flips to `current`; `Aw.Sindri.Features` reaches the project fan-out limit of 4 with this edge), the `BuildCodeIndexRequest`/`Result` records and `BuildCodeIndexService` wrapper, the `IHeavyJobLock` adapter, the event's payload record, key and `ApiViews` name | CI-6; the context lane's `MainMoveDecision` and `IRepoHeads` (merged) | **In the running app:** commit to a registered repo's main; within two minutes a `BuildCodeIndex` job is in `sindri jobs` , runs, and ends `succeeded` with the repo and commit; a second commit builds incrementally; a checkout on a feature branch starts nothing; **and, with F1P merged,** the map that refresh started is held until the job ends and publishes within a tick after it (§11 hand test, first half) |
+| **CI-9** | (revision 4: also the Host adapter `CodeIndexOutlooks`, which fills F1P-b's `IndexOutlookInput` from `ICodeIndex.Heads`, the `index:<repo>` jobs (`deferred` and `failed` from each job's result) and the service state; it replaces F1P-b's `NoIndexOutlooks` registration, which is what turns the gate on; no new event of its own) Sindri job and service: `BuildCodeIndex` registered as a job (`index:<repo>`), `code-index-main-move` (built-in, 1 min), `codeindex.built` event, catalog rows, the `view_code_index` projector; `SindriFeatures` and Host registration (compose edge flips to `current`; `Aw.Sindri.Features` reaches the project fan-out limit of 4 with this edge), the `BuildCodeIndexRequest`/`Result` records and `BuildCodeIndexService` wrapper, the `IHeavyJobLock` adapter, the event's payload record, key and `ApiViews` name | CI-6; the context lane's `MainMoveDecision` and `IRepoHeads` (merged); **F1P-b merged** (it owns `IIndexOutlooks`; if CI-9 is ready first it waits, or starts on F1P-b's open PR) | **In the running app:** commit to a registered repo's main; within two minutes a `BuildCodeIndex` job is in `sindri jobs` , runs, and ends `succeeded` with the repo and commit; a second commit builds incrementally; a checkout on a feature branch starts nothing; **and, with F1P-b merged,** the map that refresh started is held until the job ends and publishes within a tick after it (§11 hand test, first half) |
 | **CI-10a** | Reads: HTTP routes and goldens, `sindri code-index status|symbols|callers|callees`, scope checks | CI-9 | **In the running app:** `sindri code-index callers <ref>` answers over a built index; a session gets the uniform not-found for another repo |
 | **CI-10b** | Health and recovery: the Health card (its UI slice, `ISindriApi` method, words keyed by the §7.3 state, text-fit canary and accessible names), doctor rows, `IndexContinuationDecision` wiring and layer recovery (§6.3), the failed-job backoff and the needs-you row proven end to end | CI-10a, CI-7, CI-8 (so its signal shows real graph and embeddings states) | **In the running app:** Health shows "Code index: repo @ abcdef0, 3 min old, structure ok · graph ok · embeddings pending 31%"; `sindri code-index callers <ref>` answers; breaking graphify on purpose (wrong pin) shows `graph unavailable` and the job still succeeds; three failed jobs in a row raise `failure:service:code-index-main-move` |
 | **CI-11** | (revision 4: the owner-check also runs the publish-together hand test of §11, both halves, with `waitForIndexMinutes: 1` for the timeout half) Proof: `scripts/owner-check.sh code-index`, the heavy-lane suite wired to the nightly, `docs/csharp/code-index.md`, `docs/sindri/index.md` (the C# note), the error table in `docs/csharp/sindri.md`, the README X-row; the `code-index` stage added to `scripts/owner-check.sh` and its test | CI-7, CI-8, CI-10a (its docs and owner-check parts open on main; the Health parts rebase on CI-10b) | **In the running app:** `scripts/owner-check.sh code-index up` runs the §11 end-to-end on a scratch home; `sindri doctor` is all ok on the owner's box |
 | **S-9a** | (revision 4: `ICodeSymbolSource` calls take `asOf` and rows carry `commit`, `asOfCommit` and `state`, §7.2 and §6.4; the fake and its contract include a stale and an index-ahead case; the empty-state design adds "from abcdef0, not 1234567" for a map published ahead of its index) The Context side on a fake: `ICodeSymbolSource` in Context's Core with its fake and contract, the lens and file-map changes and their goldens, the `Degraded` comment, and the file-map `symbols` column designed in `mockups/context-filemap.html` with its empty states (not built, building, stale, as-of mismatch) | CI-1 (the interface only) | goldens in the Context tests with the fake; none in the app |
-| **F1P** | **The map's half of §6.4, the context lane (revision 4).** Context: the `map_hold` table (named migration), `IContextMap.Hold/Held/Release`, the promote clearing the hold, retrieval spec §8.7a and `docs/csharp/sindri-context.md`'s F1 section. Sindri: `MapPublishDecision`, `MapHold.NextSince`, `MappedHeads` (Core, pure), the port `IIndexOutlooks` with a `NoIndexOutlooks` registration (every repo `Absent`), the refresh job's hold, the `PublishContextMap` job (catalog row, key, summary text), the service tick, the events (`context.map.held`, `published`, `hold.dropped`, `refreshed.held`) with catalog goldens, `SND-CONTEXT-190`, the profile key and `docs/csharp/sindri-profile.md`, the Health and `context map status` words, the doctor row | F1 (#494) merged; none of CodeIndex: it starts now. The gate is off until CI-9 registers the real outlooks | **In the running app** (before CI-9, with a host-test outlooks seam that is not reachable from a profile or environment): `sindri context map status` shows a held draft and its words and the hand test's timeout half; after CI-9 the full hand test |
+| **F1P-a** | **The map's store half of §6.4, the context lane (revision 4).** `Aw.Context`: the `map_hold` and `map_version_head` tables (one named migration, with a test that an old `context.db` opens), `IContextMap.Hold/Held/Release` and the `expectedVersion` on `Promote` and `CleanDraft`, `MapBuildReport.Heads`, the promote clearing the hold, `FakeContextMap` and the store contract, `PublicAPI.Unshipped.txt` for `Aw.Context.Core`, retrieval spec §8.7a made as-built in `docs/csharp/sindri-context.md` | F1 (#494) merged; none of CodeIndex | Context goldens and the store contract on a real temp file; none in the app |
+| **F1P-b** | **The map's Sindri half.** `Aw.Sindri.Core`: `MapPublishDecision`, `MapHold.NextSince`, `MappedHeads`, `IndexOutlook`, `IndexOutlookInput`, `IndexOutlookRules` (all with tables of cases), the port `IIndexOutlooks` and its `NoIndexOutlooks` registration; `Aw.Sindri.Features`: the refresh job's hold, the `PublishContextMap` job (catalog row, key, summary text), the service tick and the merged alarm; the events (`context.map.held`, `published`, `hold.dropped`, `refreshed.held`) with their payload records, `SindriJsonContext` entries, catalog and golden changes (the existing `context.map.refreshed` goldens change), `PublicAPI.Unshipped.txt` for `Aw.Sindri.Core` and `Features`, the `SND-CONTEXT-190` result code, the profile key and `docs/csharp/sindri-profile.md` and its check; the retrieval spec's code range row | F1P-a (starts on its red contracts) | Host tests with fake outlooks and a fake clock (the integration cases of §11); **the in-app proof is CI-9's**, because until CI-9 the gate is off by design (every repo `Absent`), so the running app publishes at once as today |
+| **F1P-c** | **The words.** The Health Context map card, `sindri context map status` and its `--json` `state`, the doctor row `context:publish`, the `jobs show` link (UI slice: `ISindriApi` method, labels, text-fit canary and accessible names); its gate runs `Aw.Sindri.Ui.Tests` | F1P-b | **In the running app** (a scratch home with the prove fixture's held draft): the four states render with the §6.4 words |
 | **S-9** | **Final phase, the context lane (merges after CI-11):** `CodeIndexSymbolSource` in Sindri's Host over the real facade (S-9a's port); the code lens fills `callers` and `callees`; the `code-index` source row goes live; file map `symbols` column and `coverage.code.level` from `file` to `symbol`; symbol-level `implements`; `context query --symbol path:name`; **built to §6.4 (revision 4):** the adapter passes the map version's commit as `asOf`, every row says `asOfMismatch` and both commits when they differ, the `code-index` row is `degraded / stale` then, and a test shows the rows turn fresh when the index lands at the map's commit with nothing republished | CI-10a (S-9 stacks on it; S-9a is its half) | **In the running app:** `sindri context lenses <anchor> --json` and `GET /sindri/context/code` show real `callers` and `callees` with `basis` and `confidence` and `searched.code-index: ok`; the file map shows symbols; `context query --symbol` on a C# symbol returns the features it implements (the TypeScript example of CTX Phase 9, `src/layout/SplitPane.ts:setOrientation`, is the signal: graphify gave TypeScript call edges in the CI-0d spike); a scoping run no longer records `index-not-built` |
 
 ### 14.1 The lane plan
@@ -795,11 +822,11 @@ each unit.
 |---|---|---|---|---|
 | 0 | **CI-1** scaffold and contracts | **CI-0a** pins and install | **CI-0b** profile keys, then **CI-0d** the graphify spike | **CI-0c** test assets |
 | 1 | **CI-2** snapshot | **CI-3** store and planner | **CI-4** Roslyn parser and resolver | **CI-5** clones and deps |
-| 2 | **CI-6** build slice (starts on CI-1's fakes; real adapters join as CI-2 to CI-4 merge; CI-5's layers plug in later) | **CI-7** graph layer (on the CI-0a pins) | **CI-8** embeddings layer | D starts **S-9a** (the row above; it needs only CI-1, not the context lane's trigger), then **F1P** (it needs neither CodeIndex nor CI-9, so it can also start in wave 0 on the context lane if that lane is free) |
+| 2 | **CI-6** build slice (starts on CI-1's fakes; real adapters join as CI-2 to CI-4 merge; CI-5's layers plug in later) | **CI-7** graph layer (on the CI-0a pins) | **CI-8** embeddings layer | D starts **S-9a** (the row above; it needs only CI-1, not the context lane's trigger), then **F1P-a, F1P-b** and **F1P-c** (they need neither CodeIndex nor CI-9; F1P-a can also start in wave 0 on the context lane if that lane is free, and F1P-b stacks on it; CI-9 needs F1P-b merged) |
 | 3 | **CI-9** job and service (with the outlooks adapter), then **CI-11** install and proof | **CI-10a** reads (stacks on CI-9) | **CI-10b** Health and recovery (stacks on CI-10a) | D finishes **S-9** (adapter in Host over the real facade, the signals above; stacks on CI-10a) |
 
 Wave 0 keeps all four lanes busy while the scaffold lands: CI-0a, CI-0b and CI-0c touch no CodeIndex code, so they run beside CI-1 and merge in any order; CI-2 to CI-5 open as soon as CI-1 opens (they stack on it). Dependencies that decide the order: CI-6 needs CI-2, CI-3 and CI-4 (CI-5 plugs in later); CI-7 and CI-8 need only the CI-1 contract to be
-built and the CI-6 slice to merge; CI-9 needs CI-6 and the shared trigger (merged); no stack is deeper than three open PRs: CI-10 stacks on CI-9, CI-11's owner-check and doc parts open on main and rebase once CI-10b merges; CI-10a needs CI-9, CI-10b needs CI-10a, CI-7 and CI-8; CI-11 needs the adapters and
+built and the CI-6 slice to merge; CI-9 needs CI-6 and the shared trigger (merged); F1P-a, F1P-b and F1P-c are a stack of three (F1P-c is the UI slice and is in no other stack); no stack is deeper than three open PRs: CI-10 stacks on CI-9, CI-11's owner-check and doc parts open on main and rebase once CI-10b merges; CI-10a needs CI-9, CI-10b needs CI-10a, CI-7 and CI-8; CI-11 needs the adapters and
 CI-10a; S-9's adapter needs CI-10a. S-9 stays the final phase because its observable result needs the real data; its
 Context-side half (S-9a) depends only on the CI-1 interface and runs in parallel with wave 2. If the context lane's shared
 trigger is late, CI-9 starts on a local stub of `MainMoveDecision` behind the same signature and swaps it in when it merges.
@@ -812,12 +839,11 @@ catalog rows or action ids also run `Aw.Sindri.Ui.Tests` in their own gate (CI-9
 
 Defaults are what the builders do if you say nothing.
 
-- **Q11. How long should a new map wait for the code index?** (Revision 4, from your 2026-10-20 decision.) When trunk moves, the map and the index both rebuild. The new map is kept back until the index for the same commit is ready, so what you read comes from one commit. *Default:* wait up to 15 minutes, counted from the moment the map itself is finished; after that the map goes ahead and its code answers say "from abcdef0, not 1234567". Set `context.publish.waitForIndexMinutes` from 0 (never wait) to 240. A big first index can take longer than 15 minutes; then you will see the stale words for a while, by design.
-- **Q12. Can you still publish a waiting map by hand?** *Default:* yes: `sindri context map promote` ignores the wait, as you asked for it yourself. The automatic path is the only one that waits.
-- **Q13. Should a timeout put something in your needs-you list?** *Default:* no. A timeout shows as a warning on Health and in `sindri context map status`; a broken or failing index already puts its own row there, and a failing publish does too. The alternative is a row on every timeout, which on a busy box is noise.
-- **Q14. Should every mapped repo's commit be written on the map version?** Today a version records one commit (the first mapped repo's). The wait covers every mapped repo's index, but for the others the "both commits named" words use the repo's current head, not the one the map read. *Default:* leave the version as it is and put every repo's head in the ledger event. Recording them all on the version is a schema change in the map store; say so if your profile maps several repos and you want the exact words for each.
-- **Q15. Does the very first map wait?** *Default:* no. A repo with no map yet gets its first map as soon as it is ready; its code answers say the index is not built or is stale. Waiting would leave the screens empty for up to 15 minutes on a new repo.
-
+- **Q11. How long should a new map wait for the code index?** (Revision 4, from your 2026-10-20 decision.) When trunk moves, the new map and the code index are both rebuilt. The new map is kept back until the index for the same commit is ready, so what you read comes from one commit. *Default:* wait up to 15 minutes after the map itself is finished, then go ahead anyway; code answers then say "from abcdef0; the map is for 1234567" until the index catches up. Is 15 minutes right? (The setting is `context.publish.waitForIndexMinutes`, 0 to 240; 0 means never wait.) A big first index can take longer than 15 minutes; you will see the stale words for a while, by design.
+- **Q12. Can you still publish a waiting map by hand?** *Default:* yes: `sindri context map promote` does not wait, because you asked for it yourself; the code rows then read stale until the index catches up. Only the automatic path waits.
+- **Q13. Should a stale publish ever put something in your needs-you list?** *Default:* no. It shows on Health and in `sindri context map status`, with a count of how the last 10 publishes ended; a broken or failing index already puts its own row there, and a failing publish does too. The alternative is a row whenever the map goes ahead stale (say, three times in a row), which on a busy box can be noise.
+- **Q14. With several repos in the map, should each one's exact commit be remembered with the map version?** Today a version remembers one commit. *Default:* yes, all of them, so the "from abcdef0; the map is for 1234567" words are exact for every repo, not only the first. This is a small addition to the map's store (F1P-a). Saying no keeps one commit and the other repos compare against their current head.
+- **Q15. Does the very first map of a repo wait?** *Default:* no. A repo with no map yet gets its first map as soon as it is ready; its code answers say the index is not built or is stale. Waiting would leave the screens empty for up to 15 minutes on a new repo.
 - **Q1. Which languages need callers and callees in version 1?** The index reads C# itself, with the same parser the .NET
   tools use (accurate for names, not for which overload a call hits). For TypeScript, Python, Go and the rest it can only
   use what graphify finds, which is coarser. *Default:* C# first-class, everything else through graphify and marked
