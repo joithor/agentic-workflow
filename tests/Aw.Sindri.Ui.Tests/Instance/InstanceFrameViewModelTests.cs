@@ -117,7 +117,8 @@ public sealed class InstanceFrameViewModelTests
 
         Assert.Equal(($"{id}@{hash12}", true, "Workflow type ▸"), (frame.RecipeSubject, frame.HasRecipeLink, frame.RecipeLinkText));
         Assert.StartsWith("Workflow type", frame.RecipeLinkName, StringComparison.Ordinal);   // the visible word leads the name
-        Assert.Contains($"{id}@{hash12}", frame.RecipeLinkName, StringComparison.Ordinal);
+        Assert.Contains(frame.WorkflowName, frame.RecipeLinkName, StringComparison.Ordinal);   // the name a person knows, not id@hash
+        Assert.DoesNotContain($"{id}@{hash12}", frame.RecipeLinkName, StringComparison.Ordinal);
         Expect.Sequence([$"{id}@{hash12}"], asked);
         Assert.StartsWith(hash12, Text(golden["recipe"]!["hash"])["sha256:".Length..], StringComparison.Ordinal);   // the pinned version is the one the recipe golden serves
     }
