@@ -6003,3 +6003,4 @@ static Aw.Context.Core.Engine.ClusterLimits.operator ==(Aw.Context.Core.Engine.C
 static readonly Aw.Context.Core.ContextErrors.GraphifyLimitInvalid -> Aw.Kernel.ErrorDefinition!
 static Aw.Context.Core.Eval.Backtest.AsOfMapCache.WithLimits(string! key, Aw.Context.Core.Engine.ClusterLimits! limits) -> string!
 const Aw.Context.Core.Onyx.OnyxSettings.DedicatedAccountEmail = "sindri@example.com" -> string!
+static Aw.Context.Core.Graph.RepoScope.WithHierarchy(Aw.Context.Core.Graph.GraphSnapshot! graph, System.Collections.Generic.IReadOnlySet<string!>! implemented) -> System.Collections.Generic.IReadOnlySet<string!>!

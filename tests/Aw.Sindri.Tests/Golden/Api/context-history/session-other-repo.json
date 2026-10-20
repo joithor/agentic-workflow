@@ -104,18 +104,18 @@
     }
   ],
   "coverage": {
-    "scope": 3,
+    "scope": 7,
     "intent": {
       "covered": 0,
-      "of": 3
+      "of": 7
     },
     "product": {
-      "confirmed": 3,
-      "of": 3
+      "confirmed": 7,
+      "of": 7
     },
     "code": {
       "implemented": 3,
-      "of": 3,
+      "of": 7,
       "level": "file",
       "suggested": 0
     },
@@ -140,6 +140,38 @@
           "intent"
         ],
         "note": "implemented, no record or decision"
+      },
+      {
+        "node": "surface:command/split-vertical",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      },
+      {
+        "node": "surface:command/toggle-orientation",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      },
+      {
+        "node": "surface:keybinding/ctrl+shift+d",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
+      },
+      {
+        "node": "surface:setting/paneResizeStep",
+        "missing": [
+          "intent",
+          "code"
+        ],
+        "note": null
       }
     ],
     "map": {
@@ -155,18 +187,18 @@
     },
     "byAnchor": {
       "feature:layout.split-pane": {
-        "scope": 3,
+        "scope": 7,
         "intent": {
           "covered": 0,
-          "of": 3
+          "of": 7
         },
         "product": {
-          "confirmed": 3,
-          "of": 3
+          "confirmed": 7,
+          "of": 7
         },
         "code": {
           "implemented": 3,
-          "of": 3,
+          "of": 7,
           "level": "file",
           "suggested": 0
         },
@@ -191,6 +223,38 @@
               "intent"
             ],
             "note": "implemented, no record or decision"
+          },
+          {
+            "node": "surface:command/split-vertical",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
+          },
+          {
+            "node": "surface:command/toggle-orientation",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
+          },
+          {
+            "node": "surface:keybinding/ctrl+shift+d",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
+          },
+          {
+            "node": "surface:setting/paneResizeStep",
+            "missing": [
+              "intent",
+              "code"
+            ],
+            "note": null
           }
         ]
       }
