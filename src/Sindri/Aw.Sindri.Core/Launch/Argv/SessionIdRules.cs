@@ -6,7 +6,8 @@ namespace Aw.Sindri.Core.Launch.Argv;
 /// <summary>Which session ids are usable (launcher L-9): the generic bound (<see cref="SessionId"/> itself), then the entry's own pattern.</summary>
 public static class SessionIdRules
 {
-    private static readonly TimeSpan _timeout = TimeSpan.FromMilliseconds(100);
+    // Non-backtracking matching is linear, so this only backstops a pathological pattern; a tight wall-clock bound made a valid id fail on a loaded box (the first match builds the automaton).
+    private static readonly TimeSpan _timeout = TimeSpan.FromSeconds(2);
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, Regex?> _compiled = new(StringComparer.Ordinal);
 
     /// <summary>The id when <paramref name="text"/> passes the generic bound (1 to 128 of [A-Za-z0-9._:-], no leading dot, no '..'), else null.</summary>
@@ -14,7 +15,7 @@ public static class SessionIdRules
     /// <returns>The typed id, or null.</returns>
     public static SessionId? Parse(string? text) => text is not null && SessionId.TryFrom(text, out var id) ? id : null;
 
-    /// <summary>Whether <paramref name="id"/> is present and matches the entry's pattern (run NonBacktracking with a 100 ms timeout).</summary>
+    /// <summary>Whether <paramref name="id"/> is present and matches the entry's pattern (run NonBacktracking with a 2 s timeout).</summary>
     /// <param name="entry">The entry whose 'sessionIdPattern' applies; a null pattern accepts any bounded id.</param>
     /// <param name="id">The session id.</param>
     /// <returns>True when the id may be written, expanded into a template or resumed. A pattern that is invalid, unsupported by the non-backtracking engine or too slow matches nothing.</returns>
@@ -29,7 +30,7 @@ public static class SessionIdRules
         return entry.SessionIdPattern is not { } pattern || Matches(pattern, value.Value);
     }
 
-    /// <summary>Whether <paramref name="text"/> is wholly matched by an entry's session id pattern (anchored at both ends; a pattern that doesn't compile, or runs over 100 ms, matches nothing).</summary>
+    /// <summary>Whether <paramref name="text"/> is wholly matched by an entry's session id pattern (anchored at both ends; a pattern that doesn't compile, or runs over 2 s, matches nothing).</summary>
     /// <param name="pattern">The entry's pattern.</param>
     /// <param name="text">The id.</param>
     /// <returns>True when the whole text matches.</returns>
