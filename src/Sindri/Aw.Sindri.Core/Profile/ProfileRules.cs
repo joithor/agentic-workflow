@@ -39,7 +39,7 @@ public static class ProfileRules
     }
 
     private static Error? Sections(SindriProfile profile) =>
-        Services(profile.Services) ?? Workflow(profile) ?? Globs(profile) ?? LaunchKeys(profile.Launch) ?? AgentKeys(profile.Agents);
+        Services(profile.Services) ?? Workflow(profile) ?? Globs(profile) ?? IndexRules.Check(profile) ?? LaunchKeys(profile.Launch) ?? AgentKeys(profile.Agents);
 
     /// <summary>The 'launch:' keys: the confirm window is a duration, and a repo has a name. Agent ids are checked by pattern when read, never against the catalog.</summary>
     private static Error? LaunchKeys(LaunchSettings? launch)
@@ -126,7 +126,7 @@ public static class ProfileRules
         return null;
     }
 
-    private static string? GlobProblem(string glob) => true switch
+    internal static string? GlobProblem(string glob) => true switch
     {
         _ when string.IsNullOrWhiteSpace(glob) => "must be a non-empty glob",
         _ when glob.Length > MaxGlob => string.Create(CultureInfo.InvariantCulture, $"is over {MaxGlob} characters"),
