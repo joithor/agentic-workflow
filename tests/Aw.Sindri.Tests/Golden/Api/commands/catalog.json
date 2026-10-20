@@ -1,6 +1,22 @@
 {
   "rows": [
     {
+      "action": "AddRepo",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/setup/repos",
+      "cli": "sindri repo add <path>",
+      "ui": "pending:SO-A3",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
       "action": "ApplyCommand:answer-accept",
       "class": "protected",
       "allowedCallers": [
@@ -302,6 +318,22 @@
       "shortcut": null
     },
     {
+      "action": "ConnectOnyx",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/onyx/account",
+      "cli": "sindri onyx connect",
+      "ui": "pending:SO-A5",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
       "action": "CreateItem",
       "class": "desk",
       "allowedCallers": [
@@ -331,6 +363,22 @@
       "ui": "ready",
       "destructive": false,
       "readsViews": true,
+      "shortcut": null
+    },
+    {
+      "action": "DeferOnyx",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/onyx/defer",
+      "cli": "sindri onyx defer",
+      "ui": "pending:SO-A5",
+      "destructive": false,
+      "readsViews": false,
       "shortcut": null
     },
     {
@@ -565,6 +613,40 @@
       "route": "/sindri/views/rebuild",
       "cli": "sindri views rebuild",
       "ui": "ready",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
+      "action": "RefreshContextMap",
+      "class": "job",
+      "allowedCallers": [
+        "human+terminal",
+        "human",
+        "service"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/context/map/refresh",
+      "cli": "sindri context map refresh",
+      "ui": "ready",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
+      "action": "RegisterMcp",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human",
+        "service:setup"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/setup/mcp",
+      "cli": "sindri mcp register --apply",
+      "ui": "pending:SO-A4",
       "destructive": false,
       "readsViews": false,
       "shortcut": null
@@ -881,6 +963,22 @@
       "route": "/sindri/sessions/{launchId}/heartbeat",
       "cli": "sindri session wrap --launch <launchId>",
       "ui": "ready",
+      "destructive": false,
+      "readsViews": false,
+      "shortcut": null
+    },
+    {
+      "action": "SetupOnyx",
+      "class": "desk",
+      "allowedCallers": [
+        "human+terminal",
+        "human"
+      ],
+      "terminal": false,
+      "method": "POST",
+      "route": "/sindri/onyx/setup",
+      "cli": "sindri onyx up",
+      "ui": "pending:SO-A5",
       "destructive": false,
       "readsViews": false,
       "shortcut": null

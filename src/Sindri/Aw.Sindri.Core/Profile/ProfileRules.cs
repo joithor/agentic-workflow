@@ -46,7 +46,13 @@ public static class ProfileRules
     }
 
     private static Error? Sections(SindriProfile profile) =>
-        Services(profile.Services) ?? Workflow(profile) ?? Globs(profile) ?? LaunchKeys(profile.Launch) ?? AgentKeys(profile.Agents);
+        Services(profile.Services) ?? Workflow(profile) ?? Globs(profile) ?? LaunchKeys(profile.Launch) ?? AgentKeys(profile.Agents) ?? SetupKeys(profile.Setup);
+
+    /// <summary>The 'setup:' block (setup-once spec §7.1): 'setup.mcp' is auto or off.</summary>
+    private static Error? SetupKeys(SetupSettings? setup) =>
+        setup?.Mcp is { } mcp && mcp is not (SetupSettings.Auto or SetupSettings.Off)
+            ? Invalid("setup.mcp", $"'{mcp}' is not auto or off")
+            : null;
 
     /// <summary>The 'launch:' keys: the confirm window is a duration, and a repo has a name. Agent ids are checked by pattern when read, never against the catalog.</summary>
     private static Error? LaunchKeys(LaunchSettings? launch)
