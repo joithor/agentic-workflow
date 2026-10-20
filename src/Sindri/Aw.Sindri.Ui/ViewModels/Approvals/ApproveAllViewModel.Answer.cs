@@ -118,7 +118,7 @@ internal sealed partial class ApproveAllViewModel
     }
 
     /// <summary>True when no challenge could be had and a new one can be asked for (the Try again button shows).</summary>
-    public bool CanRetry => false;
+    public bool CanRetry => _session < 0;
 
     /// <summary>Asks for the challenge again after it could not be had.</summary>
     /// <returns>A task that completes when the challenge answered.</returns>
