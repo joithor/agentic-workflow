@@ -96,8 +96,8 @@ public sealed class ChildrenPanelViewModelTests
             n["round"] = new JsonObject { ["n"] = 1, ["max"] = 3 };
             n["agent"] = "an agent";
         });
-        Assert.Equal(("r1/3", "an agent"), (running.RoundText, running.Agent));
-        Assert.Contains("r1/3", running.Meta, StringComparison.Ordinal);
+        Assert.Equal(("round 1 of 3", "an agent"), (running.RoundText, running.Agent));
+        Assert.Contains("round 1 of 3", running.Meta, StringComparison.Ordinal);
         Assert.Contains("an agent", running.Meta, StringComparison.Ordinal);
 
         var bare = Edited("project-build", "step.5", n => n["actions"] = new JsonArray());
@@ -249,7 +249,7 @@ public sealed class ChildrenPanelViewModelTests
         Assert.NotNull(before.Actions.Single(a => a.Label == grant).Protected);
         Assert.Null(before.Actions.Single(a => a.Label == takeover).Protected);
         Assert.Null(after.Actions.Single(a => a.Label == grant).Protected);
-        Assert.Equal(Labels.Arrives("U8b"), before.Actions.Single(a => a.Label == takeover).PendingChip);
+        Assert.Equal(Labels.AvailableWithU8b, before.Actions.Single(a => a.Label == takeover).PendingChip);
         Assert.Equal(Labels.Arrives("U9"), after.Actions.Single(a => a.Label == takeover).PendingChip);
     }
 }

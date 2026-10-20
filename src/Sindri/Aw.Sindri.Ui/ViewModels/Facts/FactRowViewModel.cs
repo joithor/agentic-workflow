@@ -117,7 +117,7 @@ internal sealed class FactRowViewModel : ObservableObject
     public string ViewName => Labels.ViewFactName(IsViewing, Label, Address);
 
     /// <summary>The row's accessible name: label, key, status in words and summary.</summary>
-    public string Name => $"{Label} ({Key}), {StatusWords}, {Summary}";
+    public string Name => $"{Label}, {StatusWords}, {Summary}";
 
     /// <summary>What the row draws, so a re-read of the same keeps it.</summary>
     internal string Signature => string.Join('|', Key, Label, Glyph, Summary, Meta, ProgressText, PendingCli);

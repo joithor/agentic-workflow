@@ -92,6 +92,20 @@ public abstract class FrameHost : IDisposable
         return (window, shell);
     }
 
+    // The frame's disclosures are closed until asked for; a test that reads what is inside opens them first.
+    private protected static void OpenDisclosures(Window window)
+    {
+        for (var pass = 0; pass < 3; pass++)   // an opened disclosure may hold another
+        {
+            foreach (var expander in window.GetVisualDescendants().OfType<Expander>().ToList())
+            {
+                expander.IsExpanded = true;
+            }
+
+            Settle(window);
+        }
+    }
+
     private protected static void Settle(Window window)
     {
         Dispatcher.UIThread.RunJobs();

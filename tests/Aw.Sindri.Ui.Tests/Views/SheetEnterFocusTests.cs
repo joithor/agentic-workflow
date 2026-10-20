@@ -213,7 +213,7 @@ public sealed class SheetEnterFocusTests : IDisposable
         var row = OpenRow(window, shell);
 
         var title = row.GetVisualDescendants().OfType<Button>().First(b => b.Name == "TitleButton");
-        var column = row.GetVisualDescendants().OfType<Grid>().First(g => g.Name == "TableRow").ColumnDefinitions[1].ActualWidth;
+        var column = row.GetVisualDescendants().OfType<Grid>().First(g => g.Name == "TableRow").ColumnDefinitions[0].ActualWidth;
 
         Assert.True(title.Bounds.Width > 0 && column >= 160, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"the title is {title.Bounds.Width} wide in a {column} column"));
     });
