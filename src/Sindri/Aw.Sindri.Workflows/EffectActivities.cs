@@ -164,7 +164,7 @@ internal sealed class EffectActivities(
     /// The reply event a block's <paramref name="outcome"/> names (spec §2, §12): the one causation-routed event that
     /// declares it, from that event's producer, caused by the dispatched row so the bridge routes it to this instance only.
     /// </summary>
-    private LedgerEntry Reply(EffectRun run, OutcomeName outcome, Guid causation, IReadOnlyDictionary<FactKey, FactValue>? facts)
+    private LedgerEntry Reply(EffectRun run, OutcomeName outcome, Guid causation, IReadOnlyDictionary<FactKey, ReplyFact>? facts)
     {
         var replies = RepliesTo(outcome);
         if (replies is not [{ } reply])
@@ -181,8 +181,8 @@ internal sealed class EffectActivities(
     private List<EventDescriptor> RepliesTo(OutcomeName outcome) =>
         [.. catalog.Events.Where(e => e.Route == EventRoute.Causation && e.Outcomes.Contains(outcome))];
 
-    private static Dictionary<string, FactValue>? ReplyFactsOf(IReadOnlyDictionary<FactKey, FactValue>? facts) =>
-        facts is { Count: > 0 } ? facts.ToDictionary(static f => f.Key.Value, static f => f.Value, StringComparer.Ordinal) : null;
+    private static Dictionary<string, FactValue>? ReplyFactsOf(IReadOnlyDictionary<FactKey, ReplyFact>? facts) =>
+        facts is { Count: > 0 } ? facts.ToDictionary(static f => f.Key.Value, static f => new FactValue(f.Value.Ref, f.Value.Sha256, f.Value.HeadSha), StringComparer.Ordinal) : null;
 
     /// <summary>
     /// A reply's facts are recorded only through the transition's 'produces' (forge wiring brief item 3), and only the ones the effect's

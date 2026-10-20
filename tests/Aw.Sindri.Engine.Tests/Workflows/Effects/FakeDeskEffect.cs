@@ -1,6 +1,5 @@
 using Aw.Kernel;
 using Aw.Sindri.Core.Workflow.Blocks;
-using Aw.Sindri.Core.Workflow.Engine;
 using Aw.Sindri.Core.Workflow.Ids;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -26,7 +25,7 @@ internal sealed class FakeDeskEffect : IEffectKind
     public string ReplyOutcome { get; set; } = "delivered";
 
     /// <summary>The facts a recipe effect's reply carries (engine reply facts); none by default.</summary>
-    public IReadOnlyDictionary<FactKey, FactValue>? ReplyFacts { get; set; }
+    public IReadOnlyDictionary<FactKey, ReplyFact>? ReplyFacts { get; set; }
 
     /// <summary>Every dispatch, in order.</summary>
     public IReadOnlyList<EffectContext> Calls

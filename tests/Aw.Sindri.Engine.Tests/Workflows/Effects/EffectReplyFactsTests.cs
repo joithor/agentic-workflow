@@ -27,7 +27,7 @@ public sealed class EffectReplyFactsTests : IDisposable
     private static readonly BlockId _notify = BlockId.From("effect.notify.desk");
     private static readonly FactKey _pr = FactKey.From("fact:pr");
     private static readonly FactKey _other = FactKey.From("fact:other");
-    private static readonly FactValue _value = new("fact-ref-1", new string('a', 64), HeadSha: null);
+    private static readonly ReplyFact _value = new("fact-ref-1", new string('a', 64), HeadSha: null);
     private readonly WorkflowsHarness _harness = new();
     private readonly FakeDeskEffect _desk = new();
 
@@ -36,7 +36,7 @@ public sealed class EffectReplyFactsTests : IDisposable
     [Fact]
     public async Task A_declared_fact_rides_the_reply_and_reaches_the_waiting_frame_as_an_output()
     {
-        _desk.ReplyFacts = new Dictionary<FactKey, FactValue> { [_pr] = _value };
+        _desk.ReplyFacts = new Dictionary<FactKey, ReplyFact> { [_pr] = _value };
         await using var sindri = await Compose(effectWrites: [_pr], eventFacts: [_pr]);
 
         _ = await Run(sindri, replyFacts: true);
@@ -47,7 +47,7 @@ public sealed class EffectReplyFactsTests : IDisposable
         var descriptor = sindri.GetRequiredService<BlockCatalog>().FindEvent(EventKind.From("notify.delivered"))!;
         var (trigger, problem) = DeliveredEvents.Trigger(descriptor, reply, "system:dispatcher");
         Assert.Null(problem);
-        Assert.Equal(_value, trigger!.Outputs[_pr]);
+        Assert.Equal(new FactValue(_value.Ref, _value.Sha256, _value.HeadSha), trigger!.Outputs[_pr]);
     }
 
     [Fact]
@@ -64,7 +64,7 @@ public sealed class EffectReplyFactsTests : IDisposable
     [Fact]
     public async Task A_fact_the_effect_does_not_declare_is_refused_naming_it_and_writes_nothing()
     {
-        _desk.ReplyFacts = new Dictionary<FactKey, FactValue> { [_pr] = _value, [_other] = _value };
+        _desk.ReplyFacts = new Dictionary<FactKey, ReplyFact> { [_pr] = _value, [_other] = _value };
         await using var sindri = await Compose(effectWrites: [_pr], eventFacts: [_pr, _other]);
 
         var refused = await Assert.ThrowsAsync<ApplicationFailureException>(() => Run(sindri, replyFacts: true));
@@ -75,7 +75,7 @@ public sealed class EffectReplyFactsTests : IDisposable
     [Fact]
     public async Task A_fact_the_reply_event_does_not_declare_is_refused_naming_it_and_writes_nothing()
     {
-        _desk.ReplyFacts = new Dictionary<FactKey, FactValue> { [_pr] = _value };
+        _desk.ReplyFacts = new Dictionary<FactKey, ReplyFact> { [_pr] = _value };
         await using var sindri = await Compose(effectWrites: [_pr], eventFacts: []);
 
         var refused = await Assert.ThrowsAsync<ApplicationFailureException>(() => Run(sindri, replyFacts: true));
@@ -86,7 +86,7 @@ public sealed class EffectReplyFactsTests : IDisposable
     [Fact]
     public async Task An_instance_that_began_before_the_marker_refuses_a_reply_with_facts()
     {
-        _desk.ReplyFacts = new Dictionary<FactKey, FactValue> { [_pr] = _value };
+        _desk.ReplyFacts = new Dictionary<FactKey, ReplyFact> { [_pr] = _value };
         await using var sindri = await Compose(effectWrites: [_pr], eventFacts: [_pr]);
 
         var refused = await Assert.ThrowsAsync<ApplicationFailureException>(() => Run(sindri, replyFacts: false));
