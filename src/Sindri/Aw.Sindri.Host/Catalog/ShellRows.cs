@@ -16,7 +16,7 @@ internal static class ShellRows
             "POST", "/sindri/stop", Form("sindri stop"), "ready"),
         new(ActionId.From("ApproveProfile"), typeof(ApproveProfileRequest), Variant: null, ActionClass.Protected, ServiceGrants: [],
             NeedsTerminal: true, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
-            "POST", "/sindri/profile/approve", Form("sindri profile approve [<hash>]"), "cli-only:typed-confirmation"),
+            "POST", "/sindri/profile/approve", Form("sindri profile approve [<hash>]"), "ready", AppConfirm: true, Confirm: "typed"),
         new(ActionId.From("RebuildViews"), typeof(RebuildViewsRequest), Variant: null, ActionClass.Desk, ServiceGrants: [],
             NeedsTerminal: false, SelfAudited: false, Destructive: false, ReadsViews: false, Shortcut: null,
             "POST", "/sindri/views/rebuild", Form("sindri views rebuild"), "ready"),
