@@ -46,7 +46,7 @@ class H(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200); self.end_headers(); self.wfile.write(b"{}")
     def log_message(self, *a): pass
-http.server.HTTPServer(("127.0.0.1", int(sys.argv[1])), H).serve_forever()' "$port"
+http.server.HTTPServer(("127.0.0.1", int(sys.argv[1])), H).serve_forever()' "$port" headroom proxy --port "$port"
 SH
 # Fake claude / codex: log argv, the base URL env, and any mcp call; never print the environment.
 for t in claude codex; do
@@ -138,6 +138,80 @@ check "keep: one proxy start for two runs (the second reuses it)" "$(grep -c '^h
 contains "keep: status shows it running" "$(bash "$WRAP" status)" "claude: running"
 bash "$WRAP" stop
 check "stop: stops it" "$(bash "$WRAP" status | head -1)" "claude: not running"
+
+# --- codex run forms: custom provider with a base_url (above), none set, explicit openai, a provider block without a base_url ---
+mkdir -p "$WORK/ch-none-run" "$WORK/ch-openai" "$WORK/ch-nobase"
+printf 'model = "m"\n' > "$WORK/ch-none-run/config.toml"
+printf 'model_provider = "openai"\nopenai_base_url = "http://top.example/v1"\n' > "$WORK/ch-openai/config.toml"
+printf 'model_provider = "custom"\n[model_providers.custom]\nname = "NoBase"\n' > "$WORK/ch-nobase/config.toml"
+for c in none-run openai nobase; do
+  : > "$CALLS"
+  CODEX_HOME="$WORK/ch-$c" bash "$WRAP" codex exec hi >/dev/null 2>&1
+  LOG="$(cat "$CALLS")"
+  contains "codex run ($c): uses the top-level openai_base_url key" "$LOG" "codex -c openai_base_url=\"http://127.0.0.1:$PX/v1\" exec hi"
+  lacks "codex run ($c): no model_providers override" "$LOG" "model_providers."
+done
+check "codex upstream (explicit openai): the top-level openai_base_url" "$(CODEX_HOME="$WORK/ch-openai" bash "$WRAP" upstream codex)" "http://top.example/v1"
+check "codex upstream (provider without base_url): the default" "$(CODEX_HOME="$WORK/ch-nobase" bash "$WRAP" upstream codex)" "https://api.openai.com/v1"
+
+# --- concurrent starts: two wrappers at once share one proxy, both registered, and the last one out stops it ---
+sed -i 's|^exit 0$|[ -n "${FAKE_SLEEP:-}" ] \&\& sleep "$FAKE_SLEEP"\nexit 0|' "$WORK/bin/claude"
+: > "$CALLS"
+FAKE_SLEEP=3 bash "$WRAP" claude a >/dev/null 2>&1 &
+W1=$!
+FAKE_SLEEP=3 bash "$WRAP" claude b >/dev/null 2>&1 &
+W2=$!
+for _ in $(seq 1 100); do
+  [ "$(ls "$AW_STATE_DIR/headroom/claude/users" 2>/dev/null | wc -l | tr -d ' ')" = "2" ] && break
+  sleep 0.1
+done
+check "concurrent: both sessions are registered" "$(ls "$AW_STATE_DIR/headroom/claude/users" 2>/dev/null | wc -l | tr -d ' ')" "2"
+check "concurrent: exactly one proxy was started" "$(grep -c '^headroom proxy' "$CALLS")" "1"
+PIDF="$(cat "$AW_STATE_DIR/headroom/claude/proxy.pid" 2>/dev/null)"
+check "concurrent: proxy.pid is the live proxy" "$(kill -0 "$PIDF" 2>/dev/null && echo live || echo dead)" "live"
+check "concurrent: and it is the only one listening" "$(ps -eo args= | grep -c -- "[h]eadroom proxy --port $PC")" "1"
+wait "$W1" "$W2"
+check "concurrent: the last session out stopped the proxy" "$(kill -0 "$PIDF" 2>/dev/null && echo live || echo dead)" "dead"
+check "concurrent: no lock is left behind" "$([ -e "$AW_STATE_DIR/headroom/claude/lock.d" ] && echo left || echo none)" "none"
+
+# --- a session joining while another ends never loses its proxy: B registers before A's cleanup counts ---
+: > "$CALLS"
+FAKE_SLEEP=2 bash "$WRAP" claude a >/dev/null 2>&1 &
+W1=$!
+sleep 1
+FAKE_SLEEP=0 bash "$WRAP" claude b >/dev/null 2>&1
+check "join: the first session's proxy survives the second session's exit" "$(kill -0 "$(cat "$AW_STATE_DIR/headroom/claude/proxy.pid" 2>/dev/null)" 2>/dev/null && echo live || echo dead)" "live"
+wait "$W1"
+check "join: and is stopped once the first ends" "$(bash "$WRAP" status | head -1)" "claude: not running"
+
+# --- a different upstream while another session uses the proxy: the newcomer runs unwrapped, the proxy is not touched ---
+: > "$CALLS"
+FAKE_SLEEP=3 bash "$WRAP" claude a >/dev/null 2>&1 &
+W1=$!
+sleep 1
+OUT="$(ANTHROPIC_BASE_URL=http://other.example bash "$WRAP" claude b 2>&1)"
+contains "other upstream: warns and runs unwrapped" "$OUT" "different upstream"
+contains "other upstream: the tool still ran" "$(cat "$CALLS")" "claude b"
+check "other upstream: the first session's registration is intact" "$(ls "$AW_STATE_DIR/headroom/claude/users" | wc -l | tr -d ' ')" "1"
+wait "$W1"
+
+# --- a stale proxy.pid whose pid was recycled: never killed, the proxy starts fresh ---
+sleep 60 &
+BYS=$!
+mkdir -p "$AW_STATE_DIR/headroom/claude"
+echo "$BYS" > "$AW_STATE_DIR/headroom/claude/proxy.pid"
+: > "$CALLS"
+bash "$WRAP" claude hi >/dev/null 2>&1
+check "stale pid: the unrelated process is still alive after a run" "$(kill -0 "$BYS" 2>/dev/null && echo live || echo dead)" "live"
+contains "stale pid: a fresh proxy was started" "$(cat "$CALLS")" "headroom proxy"
+echo "$BYS" > "$AW_STATE_DIR/headroom/claude/proxy.pid"
+bash "$WRAP" stop
+check "stale pid: aw-headroom stop does not kill it either" "$(kill -0 "$BYS" 2>/dev/null && echo live || echo dead)" "live"
+echo "$BYS" > "$AW_STATE_DIR/headroom/claude/users/$BYS" 2>/dev/null || { mkdir -p "$AW_STATE_DIR/headroom/claude/users"; : > "$AW_STATE_DIR/headroom/claude/users/$BYS"; }
+AW_HEADROOM_KEEP=1 bash "$WRAP" claude one >/dev/null 2>&1
+bash "$WRAP" claude two >/dev/null 2>&1
+check "stale user file (recycled pid, not a wrapper): does not keep the proxy alive" "$(bash "$WRAP" status | head -1)" "claude: not running"
+kill "$BYS" 2>/dev/null; wait "$BYS" 2>/dev/null
 
 # --- fail-open ---
 : > "$CALLS"

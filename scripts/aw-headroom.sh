@@ -21,6 +21,8 @@
 #   codex:  $OPENAI_BASE_URL, the active model provider's base_url in config.toml (or top-level
 #           openai_base_url when no provider is set), https://api.openai.com/v1
 #
+# Project-level .claude/settings.json and settings.local.json are not consulted for the upstream; only the user settings file is.
+#
 # Environment (all optional):
 #   AW_HEADROOM_PORT_CLAUDE / AW_HEADROOM_PORT_CODEX  loopback ports (defaults 8791 / 8792)
 #   AW_HEADROOM_BIN        headroom executable (default: headroom on PATH, then ~/.local/bin/headroom)
@@ -86,7 +88,7 @@ codex_config_url() {
     top && /^[ \t]*openai_base_url[ \t]*=/ { top_url = val($0) }
     !top && /^[ \t]*base_url[ \t]*=/ { urls[sec] = val($0) }
     END {
-      if (prov != "") print prov "\t" urls["model_providers." prov]
+      if (prov != "" && prov != "openai" && urls["model_providers." prov] != "") print prov "\t" urls["model_providers." prov]
       else print "\t" top_url
     }' "$cfg"
 }
@@ -110,41 +112,87 @@ proxy_target() { local u; u="$(norm_url "$1")"; printf '%s\n' "${u%/v1}"; }
 alive() { [ -n "${1:-}" ] && kill -0 "$1" 2>/dev/null; }
 healthy() { curl -fsS -m 2 "http://127.0.0.1:$1/health" >/dev/null 2>&1; }
 port_busy() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; }
+cmdline_of() { ps -p "$1" -o args= 2>/dev/null || true; }
+
+# Is pid $1 a headroom proxy on port $2 (and not a recycled pid)?
+is_proxy_pid() {
+  local c
+  alive "$1" || return 1
+  c="$(cmdline_of "$1")"
+  case "$c" in *headroom*proxy*"--port $2"*|*headroom*proxy*"--port=$2"*) return 0 ;; esac
+  return 1
+}
 
 pdir() { printf '%s/%s\n' "$STATE_ROOT" "$1"; }
 
-stop_proxy() {
+# One lock per provider (an atomic mkdir, so it works on macOS, which has no flock). It serializes starting or joining the
+# proxy, registering a session, and the last session's check-and-stop. A holder that died leaves a stale lock; it is broken.
+LOCK_DIR=""
+lock_acquire() {
+  local d="$1" i holder max
+  max=$(( (${AW_HEADROOM_START_WAIT:-120} + 30) * 10 ))
+  mkdir -p "$d" || return 1
+  for ((i = 0; i < max; i++)); do
+    if mkdir "$d/lock.d" 2>/dev/null; then
+      echo "$$" >"$d/lock.d/pid"; LOCK_DIR="$d/lock.d"; return 0
+    fi
+    holder="$(cat "$d/lock.d/pid" 2>/dev/null || true)"
+    if [ -n "$holder" ] && ! alive "$holder"; then rm -r "$d/lock.d" 2>/dev/null; continue; fi
+    sleep 0.1
+  done
+  return 1
+}
+lock_release() { if [ -n "$LOCK_DIR" ]; then rm -r "$LOCK_DIR" 2>/dev/null; fi; LOCK_DIR=""; return 0; }
+
+# Kill the recorded proxy when its pid really is a headroom proxy on this provider's port. Caller holds the lock.
+kill_proxy() {
   local d pid; d="$(pdir "$1")"
   pid="$(cat "$d/proxy.pid" 2>/dev/null || true)"
-  if alive "$pid"; then kill "$pid" 2>/dev/null || true; fi
+  if is_proxy_pid "$pid" "$(port_of "$1")"; then kill "$pid" 2>/dev/null || true; fi
   rm -f "$d/proxy.pid" "$d/upstream"
-  rm -rf "$d/users"
 }
 
+# Sessions registered in users/ whose wrapper is still running (a recycled pid must still look like aw-headroom),
+# not counting pid $2.
 live_users() {
-  local d="$1/users" f n=0
+  local d="$1/users" f n=0 b
   [ -d "$d" ] || { echo 0; return; }
   for f in "$d"/*; do
     [ -e "$f" ] || continue
-    if alive "$(basename "$f")"; then n=$((n + 1)); else rm -f "$f"; fi
+    b="$(basename "$f")"
+    if alive "$b" && case "$(cmdline_of "$b")" in *aw-headroom*) true ;; *) false ;; esac; then
+      [ "$b" = "${2:-}" ] || n=$((n + 1))
+    else
+      rm -f "$f"
+    fi
   done
   echo "$n"
 }
 
-# Start or reuse the proxy for $1 with upstream $2. Returns 0 when it is healthy on its port.
+stop_proxy() {
+  local d; d="$(pdir "$1")"
+  lock_acquire "$d" || { warn "could not take the $1 lock to stop the proxy"; return 1; }
+  kill_proxy "$1"; rm -f "$d"/users/* 2>/dev/null
+  lock_release
+}
+
+# Start or join the proxy for $1 with upstream $2. The caller holds the lock and has registered its session in users/.
+# Returns 0 when the proxy is healthy on its port.
 ensure_proxy() {
   local provider="$1" upstream="$2" port bin d pid target wait i
   port="$(port_of "$provider")"; d="$(pdir "$provider")"
   target="$(proxy_target "$upstream")"
-  mkdir -p "$d/users" || return 1
   pid="$(cat "$d/proxy.pid" 2>/dev/null || true)"
-  if alive "$pid" && healthy "$port"; then
+  if is_proxy_pid "$pid" "$port" && healthy "$port"; then
     if [ "$(cat "$d/upstream" 2>/dev/null)" = "$target" ]; then return 0; fi
-    if [ "$(live_users "$d")" -gt 0 ]; then
+    if [ "$(live_users "$d" "$$")" -gt 0 ]; then
       warn "the proxy on :$port chains to a different upstream and another session uses it; running unwrapped"
       return 1
     fi
-    stop_proxy "$provider"; mkdir -p "$d/users"
+    kill_proxy "$provider"
+    for ((i = 0; i < 40; i++)); do port_busy "$port" || break; sleep 0.25; done
+  elif [ -n "$pid" ]; then
+    kill_proxy "$provider"   # a stale pid file; kills only if the pid still is this proxy
   fi
   if port_busy "$port"; then warn "port $port is taken by something that is not this wrapper's proxy; running unwrapped"; return 1; fi
   bin="$(headroom_bin)"
@@ -156,7 +204,12 @@ ensure_proxy() {
   esac
   # shellcheck disable=SC2206
   [ -n "${AW_HEADROOM_ARGS:-}" ] && args+=(${AW_HEADROOM_ARGS})
-  ( umask 077; setsid nohup "$bin" "${args[@]}" >"$d/proxy.log" 2>&1 < /dev/null & echo $! >"$d/proxy.pid" )
+  # setsid (util-linux) detaches the proxy from this terminal's signals; macOS has none, so nohup alone there.
+  if command -v setsid >/dev/null 2>&1; then
+    ( umask 077; setsid nohup "$bin" "${args[@]}" >"$d/proxy.log" 2>&1 < /dev/null & echo $! >"$d/proxy.pid" )
+  else
+    ( umask 077; nohup "$bin" "${args[@]}" >"$d/proxy.log" 2>&1 < /dev/null & echo $! >"$d/proxy.pid" )
+  fi
   printf '%s\n' "$target" >"$d/upstream"
   pid="$(cat "$d/proxy.pid")"
   wait="${AW_HEADROOM_START_WAIT:-120}"
@@ -166,29 +219,43 @@ ensure_proxy() {
     sleep 0.5
   done
   warn "the proxy did not come up (see $d/proxy.log); running unwrapped"
-  stop_proxy "$provider"
+  kill_proxy "$provider"
   return 1
 }
 
-# EXIT trap of a wrapped run: leave the session list and stop the proxy when it was the last one.
+# EXIT trap of a wrapped run: leave the session list and stop the proxy when no other session is left. The check and the
+# kill happen under the lock a joining session registers under, so a new session is never left on a proxy that is killed.
 cleanup() {
-  rm -f "$RUN_DIR/users/$$"
-  if [ "${AW_HEADROOM_KEEP:-0}" != "1" ] && [ "$(live_users "$RUN_DIR")" -eq 0 ]; then stop_proxy "$RUN_PROVIDER"; fi
+  [ -n "${RUN_DIR:-}" ] || return 0
+  if lock_acquire "$RUN_DIR"; then
+    rm -f "$RUN_DIR/users/$$"
+    if [ "${AW_HEADROOM_KEEP:-0}" != "1" ] && [ "$(live_users "$RUN_DIR")" -eq 0 ]; then kill_proxy "$RUN_PROVIDER"; fi
+    lock_release
+  else
+    rm -f "$RUN_DIR/users/$$"
+  fi
 }
 
 run_wrapped() {
   local provider="$1"; shift
-  local tool="$provider" upstream port url rc d
+  local tool="$provider" upstream port url rc d ok=1
   if ! command -v "$tool" >/dev/null 2>&1; then warn "$tool is not on PATH"; return 127; fi
   upstream="$(upstream_of "$provider")"
   port="$(port_of "$provider")"; d="$(pdir "$provider")"
-  if ! ensure_proxy "$provider" "$upstream"; then exec "$tool" "$@"; fi
-  url="http://127.0.0.1:$port"
-  : >"$d/users/$$"
   RUN_PROVIDER="$provider"; RUN_DIR="$d"
+  mkdir -p "$d/users" || ok=0
+  if [ "$ok" = 1 ] && lock_acquire "$d"; then
+    : >"$d/users/$$"             # registered before the health decision, under the lock a stopping session takes
+    ensure_proxy "$provider" "$upstream" || ok=0
+    lock_release
+  else
+    ok=0
+  fi
+  if [ "$ok" != 1 ]; then cleanup; exec "$tool" "$@"; fi
   trap cleanup EXIT
   trap 'exit 130' INT
   trap 'exit 143' TERM
+  url="http://127.0.0.1:$port"
   warn "$provider -> headroom :$port -> $upstream"
   case "$provider" in
     claude)
@@ -200,8 +267,10 @@ run_wrapped() {
       local line name
       line="$(codex_config_url)"; name="${line%%$'\t'*}"
       if [ -n "$name" ]; then
+        # a custom provider that has its own base_url
         OPENAI_BASE_URL="$url/v1" "$tool" -c "model_providers.$name.base_url=\"$url/v1\"" "$@"
       else
+        # the built-in openai provider (none set, `openai`, or a provider block without a base_url): its key is top-level
         OPENAI_BASE_URL="$url/v1" "$tool" -c "openai_base_url=\"$url/v1\"" "$@"
       fi
       rc=$? ;;
