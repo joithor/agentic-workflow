@@ -16,6 +16,8 @@ internal static class GitProcess
             RedirectStandardOutput = true,
             RedirectStandardError = true,
         };
+        start.Environment["LC_ALL"] = "C";   // git's messages are matched in English
+        start.Environment["GIT_TERMINAL_PROMPT"] = "0";   // never wait for a credential
         Process? git;
         try
         {
