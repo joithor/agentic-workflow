@@ -29,6 +29,11 @@ Status:
   so a live session counts against a budget; the Agents view's "fed later" line now excepts the budget panel. E-21,
   E-26, E-27 and E-31 are the workflow and context specs' edits, and the ledger column for E-30 and the doctor's
   `consumers` declaration for E-29 are cross-referenced, not written here.
+- **Revision note (2026-10-19, setup once, SO-1…SO-9):** `2026-10-19-sindri-setup-once-design.md` adds `GET /setup` and the
+  `AddRepo`, `RegisterMcp` and `SetupOnyx` commands (§3.1, §3.2), the `confirm` column (§3.3), the setup events (§3.4),
+  the needs-you kind `setup` with ids `setup:<step>` (§3.6), the app as a confirmation channel for `ApproveProfile`,
+  `ApproveRecipe` and `ApproveAllRecipes` (§4.1, §4.2, §6), `SND-SETUP-001…005` (§9) and `displayName` on the recipe views
+  (§3.8). Where this text and that spec differ for those items, that spec wins.
 - This document is the written spec for review.
 
 The spec designs the surface every Sindri client uses: the `sindri` CLI, the Avalonia app (`SindriUi`), the Sindri MCP
@@ -297,6 +302,7 @@ Every list view also returns `empty`, the `EmptyText` sentence (§3.6) for its c
 | Route | Slice | Request | Response | Phase |
 |---|---|---|---|---|
 | `GET /status` | `GetStatus` (S1) | — | S1's response, plus `apiVersion`, `health` (§2.3) and `views` (§2.3: the `asOf`-shaped `projectedAt`, `cursor`, `ledgerHead`, `rebuilding`, `stalled`, `stalledAt`, `stalledType`, and `text`, the rebuilding or stalled sentence, `null` when fresh) (`dependencies`, the dependency graph with health and the impact closure of what is failing, E-29, §3.8, is not in P2: it lands with E-29, the rev-8 API follow-up after #190) | S1; extended in P1 and P2 |
+| `GET /setup` **(SO-1)** | `GetSetup` | — | `SetupView(steps, asOf)`: six steps in the order `repo`, `profile`, `recipes`, `mcp`, `map`, `onyx`, each `{id, title, state (todo\|running\|done\|failed\|needs-you), why, detail, error {code, sentence}\|null, action, progress {done, total}\|null}` (setup-once spec §7.2) | setup-once SO-A1 |
 | `GET /ping` | `PingProcess` (S1) | — | S1's `{pid, epoch}` | S1 |
 | `GET /commands` | `ListCommands` | — | `CommandList(rows)`. Each row: <ul><li>action id (`<Command>` or `<Command>:<variant>`);</li><li>class;</li><li>allowed callers;</li><li>whether it needs a terminal;</li><li>method and route;</li><li>CLI form;</li><li>UI status: `ready`, `pending:<phase>` or `cli-only:<reason>`.</li></ul> | P1 |
 | `GET /services` | `ListServices` | — | `ServiceList(services, empty, asOf)`. Each service: <ul><li>name;</li><li>cadence;</li><li>paused;</li><li>last run (slot, outcome, code);</li><li>next slot;</li><li>`job`: the running job of the service (a manual run), or null **(provisional owner default, 2026-10-15)**.</li></ul> | P2, P6 |
@@ -350,6 +356,9 @@ They're in the catalog with class `local` and are never routes. `doctor` gains a
 | `POST /services/{name}/pause` | `PauseService` | — | `CommandAccepted` | desk | `sindri services pause <name>` | P6 |
 | `POST /services/{name}/resume` | `ResumeService` | — | `CommandAccepted` | desk | `sindri services resume <name>` | P6 |
 | `POST /jobs/{jobId}/cancel` | `CancelJob` | — | `CommandAccepted` | job | Ctrl-C while following; `sindri jobs cancel <id>` | P6 |
+| `POST /setup/repos` **(SO-2)** | `AddRepo` | `path`, `name?` | `JobStarted(accepted, JobId, links)` (202) | desk | `sindri repo add <path>` | setup-once SO-A3 |
+| `POST /setup/mcp` **(SO-2)** | `RegisterMcp` | `repo?` | `JobStarted` (202) | desk (`ServiceGrants: [setup]`) | `sindri mcp register --apply` | setup-once SO-A4 |
+| `POST /setup/onyx` **(SO-2)** | `SetupOnyx` | `adminEmail`, `adminPassword` (never logged or recorded) | `JobStarted` (202) | desk | `sindri-app onyx up` | setup-once SO-A5 |
 | `POST /items/{itemId}/open` | `OpenItem` | `mode` (`open`, `attach` or `resume`), `target?` (`claude-code`, `codex` or `cursor`), `itemVersion` (UI E-1) | `LaunchRequested(accepted, LaunchId)` | desk | `sindri open <item> [--agent claude-code\|codex\|cursor] [--attach \| --resume]` | P10a |
 
 Notes:
@@ -390,7 +399,9 @@ facts.
 - the method and route;
 - the CLI form;
 - the UI status: `ready`, `pending:<phase>`, or `cli-only:<reason>`. `cli-only` is accepted only for
-  terminal-bound rows, for example `cli-only:typed-confirmation`.
+  terminal-bound rows, for example `cli-only:typed-confirmation`;
+- **(SO-3)** `confirm`: `typed`, `held` or `null`. A `protected` row with a `confirm` value is also confirmable in the app
+  (`ready`); only `ApproveProfile`, `ApproveRecipe` (typed) and `ApproveAllRecipes` (held) have one.
 
 **Who uses it.**
 - `ListCommands` serves it.
@@ -429,6 +440,10 @@ catalog itself lands in P1. Every domain payload carries `commandId` (or the `se
 | `item.linked` | item, record key, alias | `item.linked:<itemId>:<record>` | yes | context Phase 6 only (`service:context-sync`); a `CreateItem` with `link` stores it on `item.created` and gives no alias, so `GET /items/<tracker key>` resolves only after a later `item.linked` |
 | `item.open-requested` | `launchId`, item, mode, target, chosenBy | `item.open-requested:<launchId>` | yes | P10 |
 | `launch.started`, `launch.failed`, `launch.probed`, `session.ended` | as UI E-1, E-3 and launcher L-1, L-10: every launch payload names the launch `launchId`; `launch.failed` carries `code`, `message` and an optional `detail` (`stage`: `host`/`backstop`; for SND-LAUNCH-012 also `reason`, `current`, `approved`); `session.ended`: `launchId`, reason (`exit`, `lost`), exit code, and the final `inputTokens`/`outputTokens` when the target's reader had a transcript | `launch.outcome:<launchId>` (`launch.started` and `launch.failed` share it), `session.ended:<launchId>` | yes | P10a (written by `service:launcher`; the engine's agent runtime uses the same events) |
+| `setup.step.changed` **(SO-4)** | `id`, `state`, `code?` | `setup.step.changed:<id>:<state>:<ledger head>` | yes | setup-once SO-A6 (`service:setup`) |
+| `repo.added` **(SO-4)** | `repo` (path non-public) | `repo.added:<commandId>` | yes | setup-once SO-A3 |
+| `recipe.registration.completed` **(SO-4)** | `registered`, `unchanged` | `recipe.registration.completed:<epoch>` | yes | setup-once SO-E2 |
+| `mcp.registered` **(SO-4)** | `repo`, `providers[{provider, outcome}]` | `mcp.registered:<commandId>` | yes | setup-once SO-A4 |
 | `session.usage` | `launchId`, `sample`, `target`, `model` (the one with the most tokens; null when the reader named none), `inputTokens`, `outputTokens` (cumulative for the launch) | `session.usage:<launchId>:<n>` | no | P10a (E-28; sampled every 60 s while the session is live by the target's usage reader; the final totals are on `session.ended`) |
 
 **How a request becomes a decision** (one domain event per command):
@@ -526,7 +541,7 @@ How items move through the states:
 | Field | What it holds |
 |---|---|
 | `id` | A stable id, such as `decision:DEC-…` or `failure:service:heartbeat`. The UI keys focus and the "seen" pulse on it |
-| `kind` | `decision`, `park`, `failure` or `profile` |
+| `kind` | `decision`, `park`, `failure`, `profile` or `setup` **(SO-5)**. A `setup` row's id is `setup:<step>` (`repo`, `profile`, `recipes`, `mcp`, `map`, `onyx`; the projection emits `repo`, `recipes`, `mcp` and `onyx`), subject `{setup, <step>}`, `primaryAction` the step's action; cleared when the step is `done` or `running` |
 | `subject` | `{kind, id}`: a reference to an item, decision, instance, job, service or profile. A `profile` row's subject is `{profile, <live hash>}` (owner decision, 2026-10-14) |
 | `title`, `reason` | Scrubbed text |
 | `repo?` | The repo the row belongs to |
@@ -536,7 +551,7 @@ How items move through the states:
 | `notice` | The sentence that says so, served by the API (`recorded; acted on once the workflow engine runs`) so no client keeps its own copy; `null` when `recordedOnly` is false. A `DecisionView` voided by closing its item carries the voided sentence (`voided: the item was closed`) in `notice` and `cleared` |
 | `answerKind` | For `park` rows: `text`, `resume`, `grant`, `grantTokens`, `accept` (with reject), or `cancel-only`, taken from the engine's resume action (engine §5.8), so the app shows the right control |
 | `via?` | `"child"` when `cli` points at a child that decides the answer; omitted otherwise |
-| `primaryAction` | A catalog action id (no P4 row is `cli-only`, so none serves `copy:<cli>`). Per kind: <ul><li>`decision` → `Decide`;</li><li>`park` → the engine's action id;</li><li>`failure` → `RunService` (served since P6, with `cli` `sindri services run <name>`), or **null** for a failure of a service this build doesn't have (`SND-SVC-404`: `actions` is `[PauseService]` and `cli` is `sindri profile validate`; golden `needs-you/unknown-service`);</li><li>`profile` → `ApproveProfile` (protected: terminal-only, so the app copies the row's `cli`, `sindri profile approve <hash>`, instead of calling it).</li></ul> |
+| `primaryAction` | A catalog action id (no P4 row is `cli-only`, so none serves `copy:<cli>`). Per kind: <ul><li>`decision` → `Decide`;</li><li>`park` → the engine's action id;</li><li>`failure` → `RunService` (served since P6, with `cli` `sindri services run <name>`), or **null** for a failure of a service this build doesn't have (`SND-SVC-404`: `actions` is `[PauseService]` and `cli` is `sindri profile validate`; golden `needs-you/unknown-service`);</li><li>`profile` → `ApproveProfile` (protected; **(SO-5)** confirmable in the app by typing, so the app calls it; the `cli` stays as the terminal fallback);<br>`setup` → the step's action (`AddRepo`, `ApproveAllRecipes`, `RegisterMcp`, `SetupOnyx`).</li></ul> |
 | `cli` | The CLI form |
 
 **Rows by kind.** A filed request appears **once**, as its `decision` row; there is no separate request row.
@@ -729,6 +744,8 @@ every §6.4 layout both ways. Lines the layout leaves out are `null` or `[]`.
 - **Desk runtime until P8.** Until the agent runtime lands (WF §12), the deskCapable Steps of the recipes shipped under `recipes/` (`workflow.step` produce, checks and verify; the dev recipes' import) run as **desk tasks**: `current.desk` is set (`run` is `<entry of the state>.<n>`, `3.1`), the status detail is `desk task`, `complete` is the first command, the chip is `DECISION`, and a child row of such a state shows no agent. For a state whose block is in the shipped catalog, `current.desk.outputs` and the `--output <fact>=<file>` flags of the `complete` command are exactly that block's outputs required on the outcome the command reports (`step.produce`: `fact:output`, a file), and `current.desk.checks` are the checks the engine runs on a desk report before it accepts it: one per required output on that outcome, with id `<output name without "fact:">.<type>` (`fact:output` of type `file` is `output.file`, `fact:findings` of type `text` is `findings.text`), or `<name>.present` when the recipe declares no type; `facts[].pending.checks` is the one check of that fact, and the state's token budget is served as 0 used, since no agent runs. Fixture-only recipes (`incident-response`, `triage-alert`, `project`, `intake-linear`, `fork-demo`) stand for the P8-era product the screens fixture shows: their agent states name an agent-runtime block and are `RUNNING` with an agent, and their desk states stay desk tasks. P8 re-records the desk-runtime states.
 - **Timeouts and budgets.** Every active or wait state serves the recipe's timeout (desk at least `DeskTimeouts.DefaultFloor`) and its budget where the recipe declares one.
 
+**`displayName` (SO-9).** `RecipeView`, each `RecipeSummary` and every instance or item view that names a recipe carry the recipe's `displayName` beside its id (setup-once spec §7.7).
+
 **`RecipeView` (E-22).** `GET /workflow/recipes/{id}` and `sindri recipe show` return the same body: the engine spec's
 definition (states, transitions, evals, pins, open instances placed per state, the registry's approved hashes) plus:
 
@@ -875,7 +892,7 @@ Agents page reads this, and the collector's `GET /sessions` (§11) carries each 
 | `job` | Read-only work, possibly long-running; writes only its own job events and, for `RunService`, the run's `service.ran` | `RunService`, `CancelJob` |
 | `decision` | A non-protected human decision (the §17.12 list) | `Decide` |
 | `desk` | A human action that changes item or process state (§17.27.2) | `StopProcess`, `RebuildViews`, `CreateItem`, `CloseItem`, `PauseService`, `ResumeService`, `OpenItem`; the engine's start, answer, handback, cancel and complete |
-| `protected` | The approval tier: a typed confirmation, bound to the content, at a terminal | `ApproveProfile`, and the engine's `ApplyCommand:answer-grant`, `answer-accept` and `recipe approve`. Later: evolve adopt, channel promote and tier raises |
+| `protected` | The approval tier: a typed confirmation, bound to the content, at a terminal. **(SO-6)** Three actions (`ApproveProfile`, `ApproveRecipe`, `ApproveAllRecipes`) can also be confirmed in the app, typed or held (setup-once spec §4) | `ApproveProfile`, and the engine's `ApplyCommand:answer-grant`, `answer-accept` and `recipe approve`. Later: evolve adopt, channel promote and tier raises |
 | `local` | Runs in the CLI, never through the API | `doctor`, `profile validate` |
 | `issue` | Issues a one-time value and appends no domain event (audited by `command.handled`). The only `POST`s that aren't commands (§2.5) | `IssueNonce` (any caller whose class may run a command on that instance, repo-scoped for sessions), `IssueChallenge` (`human` + terminal), and `session wrap`'s heartbeat and exit (the launch secret, §8.1) |
 
@@ -890,7 +907,7 @@ Agents page reads this, and the collector's `GET /sessions` (§11) carries each 
 | `job` | yes | yes | no: file a `request` | yes |
 | `decision` | yes | yes | **no** | no: it may only *raise* a decision |
 | `desk` | yes | yes | **no** | only the engine commands its recipe step owns (the engine spec lists them), and `service:host` → `StopProcess` (§2.1) |
-| `protected` | yes | **no**: shown as `cli-only` | **no** | no |
+| `protected` | yes | **no**: shown as `cli-only`; **(SO-6)** except `ApproveProfile`, `ApproveRecipe` and `ApproveAllRecipes`, which the app confirms by typing or holding against a server challenge | **no** | no |
 | `issue` | per row in §4.1 | per row | per row | no |
 
 **The app is a full desk client.** It starts workflows (scoping included), answers parks, takes over and hands back,
@@ -1013,8 +1030,9 @@ mistakes. That's the repo's threat model: gates guard against honest mistakes, n
 - Queries keep S1's guard (conflict C3).
 - Refusals with `SND-API-007` and `SND-API-008` are logged.
 
-**Protected actions in the UI** show the CLI command to copy (`cli-only:typed-confirmation`), because the app has no
-terminal until passkeys exist.
+**Protected actions in the UI (SO-7)** show the CLI command to copy (`cli-only:typed-confirmation`), because the app has no
+terminal until passkeys exist, **except three**: `ApproveProfile` and `ApproveRecipe` are typed in the app and
+`ApproveAllRecipes` is held, each against the same server challenge as the terminal's (setup-once spec §4).
 
 **The `human` token (P1).** The app is a full desk client, so the header alone is too thin. On each start `serve`
 mints `auth/human.token` (0600) under `$AW_SINDRI_HOME`; the CLI and the app read it and send it as `X-Sindri-Token`.
@@ -1192,6 +1210,7 @@ of **`docs/csharp/sindri.md`**. Not `docs/sindri/errors.md`, which is generated 
 | `SND-ENGINE-001` | Unavailable (503) | The Temporal server, or the SDK call to it, didn't answer (fix: `sindri doctor`; `sindri serve` starts the dev server) (E-30) | P13 |
 | `SND-ENGINE-404` | NotFound (404) | No execution in Temporal for that address (E-30) | P13 |
 | `SND-AUTH-001` | Forbidden (403) | `human` without a valid per-start token | P1 |
+| `SND-SETUP-001`…`005` **(SO-8)** | Invalid / Conflict / Forbidden | A folder that is not a usable git checkout (001); a repo already named or a name collision (002); an app confirmation not given (003); `RegisterMcp` for a repo the approved profile does not name (004); `SetupOnyx` without the Onyx login (005). Texts in setup-once spec §7.6 | setup-once |
 | `SND-AUTH-003` | Forbidden (403) | The launch secret doesn't match an open launch, or the run is taken over | P10 |
 
 - `SND-API-006` is reserved for the idempotency key (§11).

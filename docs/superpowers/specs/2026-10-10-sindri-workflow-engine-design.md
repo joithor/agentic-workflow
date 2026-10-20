@@ -40,6 +40,11 @@ hand-built durable-execution mechanics of §5 with Temporal, relaxes NativeAOT f
 agent session under tmux so the human can join it live (X55); §0 states the decision and the mapping, and every other
 amendment is marked *rev 8* inline.
 
+**Revision note (2026-10-19, setup once, SO-10…SO-13):** `2026-10-19-sindri-setup-once-design.md` adds the required recipe field
+`displayName` (§3.2; re-hashes every recipe once), registration of every shipped recipe at serve start (§4.1), the
+`approve-all` plan and protected POST with an app confirmation channel (§4.1, §4.2, §6.2) and `SND-RECIPE-011` (§8). Where
+this text differs for those items, that spec wins.
+
 References:
 - the factory addendum `2026-10-09-sindri-factory-addendum.md` (A) and the core design `2026-10-07-sindri-design.md` (D);
 - `docs/csharp/bugfix.md`, the reference for gates and state;
@@ -238,6 +243,7 @@ public interface IDescribedBlock { public static abstract BlockDescriptor Descri
 | `id` | yes | `workflow.<name>` |
 | `version` | yes | `RCP-VERSION-001` (same id and version, different hash); `-002` (not above the highest registered) |
 | `description` | no | |
+| `displayName` **(SO-10)** | yes | The name the app shows for the recipe (at most 60 characters, plain text, no control characters). `RCP-DISPLAY-001`. Part of the hashed file, so adding it re-hashes every recipe: each shipped recipe is re-approved once, which approve-all makes one hold |
 | `base` | generated only | Written by Sindri's generator. A hand-written recipe with `base` is `RCP-CAP-004` |
 | `urgency` | no | `incident \| triage \| work`, default `work` (UI E-21). The app orders Home's Workflows strip and the Workflows list's groups by it, `incident` first. It changes no engine behaviour: no timer, escalation or notification reads it. `RCP-URG-001` (any other value). The normalized document writes the default, so an absent `urgency` and `urgency: work` hash the same |
 | `inputs` | **yes** | At least one (`RCP-INPUT-002`). The long form is `{ key, label?, type?, kind, generate? }`. `kind` is one of the subject kinds in §3.3 and is required (`RCP-INPUT-001`). `type` is one of the fact types in §3.3 and defaults to the type `kind` pairs with. `generate` is a template (§3.11) that supplies the value when the start doesn't. The bare-string short form (`[fact:item]`) normalizes to `{ key }` with no `kind`, so it fails `RCP-INPUT-001`. The **first** declared input is the instance's subject (UI §5.4). `recipe show` and `GET /workflow/recipes` return the inputs so the app can render a start form and a subject line |
@@ -479,6 +485,8 @@ pins the latest approved child. Creating a child whose pinned hash is revoked is
 `spec-conflict` (child revoked), which re-approving the parent resumes. The revoke wake reaches those parents too.
 A changed child is never drift: it only marks the parent `child-stale`.
 
+**Registration at start and approve-all (SO-11).** `serve` registers every recipe the installed build ships, children first, idempotently by hash (`recipe.registration.completed {registered, unchanged}`), and never approves. `GET /workflow/recipes/approve-all` returns the plan (shipped, registered, not approved at the current hash or stale; children first; capability summary and eval result; a `digest`). `POST /workflow/recipes/approve-all` (`protected`, challenge `approve-all <digest6>`) applies one `ApproveRecipe` per recipe in plan order, one `recipe.approved` each (with `batch`), stops at the first refusal and answers `{approved, refused}`; a plan that changed since the preview is `SND-RECIPE-009`. A recipe the build does not ship is never in the plan (`SND-RECIPE-011`).
+
 ### 4.2 The challenge (shared by every `protected` command)
 
 1. The CLI asks the server for a challenge for one action, such as `approve workflow.step 1`,
@@ -509,7 +517,7 @@ A changed child is never drift: it only marks the parent `child-stale`.
   cascade revokes.
 - **`grant`** and **`accept`** show the park or escalation, and what will run next.
 
-An architecture test checks that the Avalonia client and the MCP server reference none of these routes.
+An architecture test checks that the Avalonia client and the MCP server reference none of these routes. **(SO-12)** The app half now reads: the Avalonia client references only the challenges of `approve profile`, `approve <recipe>` and `approve-all`, which a `human` app caller may be issued with `confirm: typed|held` (API §4.1, setup-once §4); the MCP server references none.
 
 ### 4.3 Rules
 
@@ -792,7 +800,7 @@ Action classes of the engine's commands (API §4.1), with the fail-closed `IClas
 | query | `recipe show`, `recipe list`, `workflow status`, `workflow list`, `workflow events`, `outbox list` |
 | `pause` | `ApplyCommand:takeover`. A session may take over (the attach hook runs inside the session); handing back is `desk` |
 | `desk` | `recipe register`, `StartInstance` (start, including scoping and any other workflow), `ApplyCommand:answer` (text, resume, reject), `ApplyCommand:handback`, `ApplyCommand:cancel`, `ApplyCommand:command-<verb>`, `CompleteStep` |
-| `protected` | `recipe approve`, `recipe revoke`, `ApplyCommand:answer-grant`, `ApplyCommand:answer-grant-tokens`, `ApplyCommand:answer-accept`. Each also needs the §4.2 challenge |
+| `protected` | (SO-12: `recipe approve` and `approve-all` are also confirmable in the app, typed and held) `recipe approve`, `recipe revoke`, `ApplyCommand:answer-grant`, `ApplyCommand:answer-grant-tokens`, `ApplyCommand:answer-accept`. Each also needs the §4.2 challenge |
 
 So the app is a full desk client: it starts workflows (scoping included), answers parks, takes over, hands back,
 cancels, completes desk tasks and hands work off to a session (API P10, `OpenItem`). `protected` actions show the
@@ -1020,6 +1028,7 @@ Outside S1:
 | SND-RECIPE-008 | conflict | Evals missing or failing | `sindri recipe eval <file>` |
 | SND-RECIPE-009 | conflict | A recipe challenge expired, or its subject changed since the preview | Run it again and re-read the preview |
 | SND-RECIPE-010 | notFound | The recipe file can't be read | Check the path |
+| SND-RECIPE-011 **(SO-13)** | conflict | Approve-all names a recipe this build doesn't ship | Approve it on its own, after reading its preview |
 | SND-WF-001 | notFound | No such instance | `sindri workflow list` |
 | SND-WF-002 | — | Retired (rev 8): Updates serialize per workflow, so there is no version conflict | — |
 | SND-WF-003 | conflict | The trigger isn't allowed here | `allowedCommands` in `status` |
