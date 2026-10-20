@@ -184,4 +184,18 @@ public sealed class AgentsPageTests : FrameHost
         Assert.Equal(Labels.AllRepos, Named<ComboBox>(window, "RepoFilter").SelectedItem);
         Assert.Null(shell.Agents.ProviderFilter);
     });
+
+    // WCAG 2.5.3: a combo shows its choice, so its name starts with it.
+    [Fact]
+    public Task The_filter_names_start_with_the_choice_they_show() => OnUi(async () =>
+    {
+        var (window, shell) = await OnAgents();
+
+        Assert.StartsWith(Labels.AllProviders, Heard.Name(Named<ComboBox>(window, "ProviderFilter")), StringComparison.Ordinal);
+        Assert.StartsWith(Labels.AllStates, Heard.Name(Named<ComboBox>(window, "StateFilter")), StringComparison.Ordinal);
+        Assert.StartsWith(Labels.AllRepos, Heard.Name(Named<ComboBox>(window, "RepoFilter")), StringComparison.Ordinal);
+        shell.Agents.FilterState("running");
+        Dispatcher.UIThread.RunJobs();
+        Assert.StartsWith("running", Heard.Name(Named<ComboBox>(window, "StateFilter")), StringComparison.Ordinal);
+    });
 }
