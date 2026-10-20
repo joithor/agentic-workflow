@@ -94,6 +94,18 @@ public sealed class RowSentencesTests
         Assert.Equal("cancelled", Row(StatusCases.View("cancelled")).Now);
     }
 
+    [Theory]
+    [InlineData("failed", "FAILED", ChipTone.Fail)]
+    [InlineData("unresolved", "DIDN'T WORK OUT", ChipTone.Attn)]
+    [InlineData("cancelled", "CANCELLED", ChipTone.Neutral)]
+    [InlineData("done", "DONE", ChipTone.Neutral)]
+    public void A_finished_row_wears_the_chip_of_its_outcome_and_still_says_the_outcome(string name, string word, ChipTone tone)
+    {
+        var row = Row(StatusCases.View(name));
+
+        Assert.Equal((new StateChip(word, tone), name == "done" ? "resolved" : name), (row.Chip, row.Now));
+    }
+
     [Fact]
     public void A_park_or_escalation_with_no_answer_line_and_no_detail_is_the_bare_word()
     {

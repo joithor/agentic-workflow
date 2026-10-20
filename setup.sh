@@ -575,7 +575,7 @@ AW_MCP_SERVERS="$(jq -nc \
 export AW_MCP_SERVERS
 # Servers the toolkit no longer ships: each provider removes them from an existing install (agentic-bridge, the MCP
 # bridge, retired 2026-10-10: never used; the ledger and judge's outbox carry agent handoffs; headroom, the content
-# compression server, retired 2026-10-18: about 4.2 GB of RAM per Claude session).
+# compression MCP server, retired 2026-10-18: about 4.2 GB of RAM per Claude session; it returns only as the proxy wrapper below).
 AW_MCP_RETIRED="agentic-bridge headroom"
 export AW_MCP_RETIRED
 # The bridge package itself: after the pull only its ignored output (dist, node_modules, bridge.db) is left.
@@ -642,6 +642,20 @@ if [ "$WITH_FLEET" = "1" ]; then
     fi
   done
 fi
+
+# --- headroom, as a proxy wrapper only (no MCP server; it stays in AW_MCP_RETIRED above): installs the CLI when missing and the
+# `aw-headroom claude|codex` launcher, which chains a loopback headroom proxy in front of the upstream the tool already uses
+# (e.g. EasyCLIProxyAPI). Per provider, after the provider installs; Cursor gets a skip line. Fail-open: a failure warns and
+# setup goes on. ---
+echo ""
+echo "=== headroom proxy wrapper ==="
+for _p in $PROVIDERS; do
+  if aw_dry; then
+    bash "$SCRIPT_DIR/scripts/install-headroom.sh" --provider "$_p" --dry-run || echo "  WARN: headroom: install-headroom.sh --provider $_p failed (non-fatal)"
+  else
+    bash "$SCRIPT_DIR/scripts/install-headroom.sh" --provider "$_p" || echo "  WARN: headroom: install-headroom.sh --provider $_p failed (non-fatal)"
+  fi
+done
 
 # --- Provider registry (read by the skill preamble) ---
 echo ""
