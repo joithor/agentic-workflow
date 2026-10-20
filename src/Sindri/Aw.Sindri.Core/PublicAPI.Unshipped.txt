@@ -13359,3 +13359,35 @@ static Aw.Sindri.Core.Line.StopTestChange.operator !=(Aw.Sindri.Core.Line.StopTe
 static Aw.Sindri.Core.Line.StopTestChange.operator ==(Aw.Sindri.Core.Line.StopTestChange? left, Aw.Sindri.Core.Line.StopTestChange? right) -> bool
 static Aw.Sindri.Core.Line.StopTraceRow.operator !=(Aw.Sindri.Core.Line.StopTraceRow? left, Aw.Sindri.Core.Line.StopTraceRow? right) -> bool
 static Aw.Sindri.Core.Line.StopTraceRow.operator ==(Aw.Sindri.Core.Line.StopTraceRow? left, Aw.Sindri.Core.Line.StopTraceRow? right) -> bool
+Aw.Sindri.Core.Line.IOwnerDecisions
+Aw.Sindri.Core.Line.IOwnerDecisions.Ingest(Aw.Sindri.Core.Workflow.Engine.InstanceAddress run, string! packet, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Line.OwnerDecision!>! decisions, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Line.OwnerDecisionsIngested!>!>
+Aw.Sindri.Core.Line.OwnerDecision
+Aw.Sindri.Core.Line.OwnerDecision.<Clone>$() -> Aw.Sindri.Core.Line.OwnerDecision!
+Aw.Sindri.Core.Line.OwnerDecision.Answer.get -> string!
+Aw.Sindri.Core.Line.OwnerDecision.Answer.init -> void
+Aw.Sindri.Core.Line.OwnerDecision.Deconstruct(out string! Text, out System.Collections.Generic.IReadOnlyList<string!>! Nodes, out string! Answer) -> void
+Aw.Sindri.Core.Line.OwnerDecision.Equals(Aw.Sindri.Core.Line.OwnerDecision? other) -> bool
+Aw.Sindri.Core.Line.OwnerDecision.Nodes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Aw.Sindri.Core.Line.OwnerDecision.Nodes.init -> void
+Aw.Sindri.Core.Line.OwnerDecision.OwnerDecision(string! Text, System.Collections.Generic.IReadOnlyList<string!>! Nodes, string! Answer) -> void
+Aw.Sindri.Core.Line.OwnerDecision.Text.get -> string!
+Aw.Sindri.Core.Line.OwnerDecision.Text.init -> void
+Aw.Sindri.Core.Line.OwnerDecisionsIngested
+Aw.Sindri.Core.Line.OwnerDecisionsIngested.<Clone>$() -> Aw.Sindri.Core.Line.OwnerDecisionsIngested!
+Aw.Sindri.Core.Line.OwnerDecisionsIngested.Deconstruct(out int Stored, out string? Skipped) -> void
+Aw.Sindri.Core.Line.OwnerDecisionsIngested.Equals(Aw.Sindri.Core.Line.OwnerDecisionsIngested? other) -> bool
+Aw.Sindri.Core.Line.OwnerDecisionsIngested.OwnerDecisionsIngested(int Stored, string? Skipped) -> void
+Aw.Sindri.Core.Line.OwnerDecisionsIngested.Skipped.get -> string?
+Aw.Sindri.Core.Line.OwnerDecisionsIngested.Skipped.init -> void
+Aw.Sindri.Core.Line.OwnerDecisionsIngested.Stored.get -> int
+Aw.Sindri.Core.Line.OwnerDecisionsIngested.Stored.init -> void
+override Aw.Sindri.Core.Line.OwnerDecision.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Line.OwnerDecision.GetHashCode() -> int
+override Aw.Sindri.Core.Line.OwnerDecision.ToString() -> string!
+override Aw.Sindri.Core.Line.OwnerDecisionsIngested.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Line.OwnerDecisionsIngested.GetHashCode() -> int
+override Aw.Sindri.Core.Line.OwnerDecisionsIngested.ToString() -> string!
+static Aw.Sindri.Core.Line.OwnerDecision.operator !=(Aw.Sindri.Core.Line.OwnerDecision? left, Aw.Sindri.Core.Line.OwnerDecision? right) -> bool
+static Aw.Sindri.Core.Line.OwnerDecision.operator ==(Aw.Sindri.Core.Line.OwnerDecision? left, Aw.Sindri.Core.Line.OwnerDecision? right) -> bool
+static Aw.Sindri.Core.Line.OwnerDecisionsIngested.operator !=(Aw.Sindri.Core.Line.OwnerDecisionsIngested? left, Aw.Sindri.Core.Line.OwnerDecisionsIngested? right) -> bool
+static Aw.Sindri.Core.Line.OwnerDecisionsIngested.operator ==(Aw.Sindri.Core.Line.OwnerDecisionsIngested? left, Aw.Sindri.Core.Line.OwnerDecisionsIngested? right) -> bool

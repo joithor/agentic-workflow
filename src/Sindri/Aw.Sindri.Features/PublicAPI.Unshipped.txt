@@ -3778,3 +3778,41 @@ static Aw.Sindri.Features.Design.DesignShowRequest.operator !=(Aw.Sindri.Feature
 static Aw.Sindri.Features.Design.DesignShowRequest.operator ==(Aw.Sindri.Features.Design.DesignShowRequest? left, Aw.Sindri.Features.Design.DesignShowRequest? right) -> bool
 static Aw.Sindri.Features.Design.GetInstanceDesignStopRequest.operator !=(Aw.Sindri.Features.Design.GetInstanceDesignStopRequest? left, Aw.Sindri.Features.Design.GetInstanceDesignStopRequest? right) -> bool
 static Aw.Sindri.Features.Design.GetInstanceDesignStopRequest.operator ==(Aw.Sindri.Features.Design.GetInstanceDesignStopRequest? left, Aw.Sindri.Features.Design.GetInstanceDesignStopRequest? right) -> bool
+Aw.Sindri.Features.PlanContext.ProposePlanContextRequest
+Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.<Clone>$() -> Aw.Sindri.Features.PlanContext.ProposePlanContextRequest!
+Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.Approved.get -> bool
+Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.Approved.init -> void
+Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.Deconstruct(out System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Facts, out Aw.Sindri.Core.Workflow.Engine.InstanceAddress Run, out Aw.Sindri.Core.Ids.RepoName Repo, out string! Packet, out bool Approved) -> void
+Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.Equals(Aw.Sindri.Features.PlanContext.ProposePlanContextRequest? other) -> bool
+Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.Facts.get -> System.Collections.Generic.IReadOnlyDictionary<string!, string!>!
+Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.Facts.init -> void
+Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.Packet.get -> string!
+Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.Packet.init -> void
+Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.ProposePlanContextRequest(System.Collections.Generic.IReadOnlyDictionary<string!, string!>! Facts, Aw.Sindri.Core.Workflow.Engine.InstanceAddress Run, Aw.Sindri.Core.Ids.RepoName Repo, string! Packet, bool Approved) -> void
+Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.Repo.get -> Aw.Sindri.Core.Ids.RepoName
+Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.Repo.init -> void
+Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.Run.get -> Aw.Sindri.Core.Workflow.Engine.InstanceAddress
+Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.Run.init -> void
+Aw.Sindri.Features.PlanContext.ProposePlanContextResponse
+Aw.Sindri.Features.PlanContext.ProposePlanContextResponse.<Clone>$() -> Aw.Sindri.Features.PlanContext.ProposePlanContextResponse!
+Aw.Sindri.Features.PlanContext.ProposePlanContextResponse.Decisions.get -> int
+Aw.Sindri.Features.PlanContext.ProposePlanContextResponse.Decisions.init -> void
+Aw.Sindri.Features.PlanContext.ProposePlanContextResponse.Deconstruct(out string! Outcome, out string? Reason, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scoping.ScopeSurfaceStatus!>! Surfaces, out int Decisions) -> void
+Aw.Sindri.Features.PlanContext.ProposePlanContextResponse.Equals(Aw.Sindri.Features.PlanContext.ProposePlanContextResponse? other) -> bool
+Aw.Sindri.Features.PlanContext.ProposePlanContextResponse.Outcome.get -> string!
+Aw.Sindri.Features.PlanContext.ProposePlanContextResponse.Outcome.init -> void
+Aw.Sindri.Features.PlanContext.ProposePlanContextResponse.ProposePlanContextResponse(string! Outcome, string? Reason, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scoping.ScopeSurfaceStatus!>! Surfaces, int Decisions) -> void
+Aw.Sindri.Features.PlanContext.ProposePlanContextResponse.Reason.get -> string?
+Aw.Sindri.Features.PlanContext.ProposePlanContextResponse.Reason.init -> void
+Aw.Sindri.Features.PlanContext.ProposePlanContextResponse.Surfaces.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Scoping.ScopeSurfaceStatus!>!
+Aw.Sindri.Features.PlanContext.ProposePlanContextResponse.Surfaces.init -> void
+override Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.GetHashCode() -> int
+override Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.ToString() -> string!
+override Aw.Sindri.Features.PlanContext.ProposePlanContextResponse.Equals(object? obj) -> bool
+override Aw.Sindri.Features.PlanContext.ProposePlanContextResponse.GetHashCode() -> int
+override Aw.Sindri.Features.PlanContext.ProposePlanContextResponse.ToString() -> string!
+static Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.operator !=(Aw.Sindri.Features.PlanContext.ProposePlanContextRequest? left, Aw.Sindri.Features.PlanContext.ProposePlanContextRequest? right) -> bool
+static Aw.Sindri.Features.PlanContext.ProposePlanContextRequest.operator ==(Aw.Sindri.Features.PlanContext.ProposePlanContextRequest? left, Aw.Sindri.Features.PlanContext.ProposePlanContextRequest? right) -> bool
+static Aw.Sindri.Features.PlanContext.ProposePlanContextResponse.operator !=(Aw.Sindri.Features.PlanContext.ProposePlanContextResponse? left, Aw.Sindri.Features.PlanContext.ProposePlanContextResponse? right) -> bool
+static Aw.Sindri.Features.PlanContext.ProposePlanContextResponse.operator ==(Aw.Sindri.Features.PlanContext.ProposePlanContextResponse? left, Aw.Sindri.Features.PlanContext.ProposePlanContextResponse? right) -> bool
