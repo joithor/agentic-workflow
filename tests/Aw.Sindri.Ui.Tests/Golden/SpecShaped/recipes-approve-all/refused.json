@@ -1,0 +1,3 @@
+{"approved":[{"id":"workflow.step","displayName":"One step","hash":"1a2b3c4d5e6f"},{"id":"workflow.note","displayName":"Note","hash":"2c3d4e5f6a7b"}],
+ "refused":[{"id":"workflow.item","hash":"9f8e7d6c5b4a","code":"SND-RECIPE-009","sentence":"Work item changed while Sindri was approving. Read the new plan.","cli":"sindri-app recipe approve <id>"}],
+ "skipped":[{"id":"workflow.review","displayName":"Review loop","because":"workflow.item"}]}

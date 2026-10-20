@@ -56,4 +56,10 @@ namespace Aw.Sindri.Ui.Api;
 [JsonSerializable(typeof(OpenItemRequest))]
 [JsonSerializable(typeof(OpenAcceptedView))]
 [JsonSerializable(typeof(Workflow.InstanceEventsView))]
+[JsonSerializable(typeof(Workflow.ApproveAllPlan))]
+[JsonSerializable(typeof(Workflow.AppChallengeRequest))]
+[JsonSerializable(typeof(Workflow.AppChallengeView))]
+[JsonSerializable(typeof(Workflow.ApproveAllRequest))]
+[JsonSerializable(typeof(Workflow.ApproveAllStarted))]
+[JsonSerializable(typeof(Workflow.ApproveAllJob))]
 internal sealed partial class SindriUiJsonContext : JsonSerializerContext;
