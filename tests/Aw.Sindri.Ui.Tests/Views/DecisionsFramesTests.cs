@@ -133,7 +133,7 @@ public sealed class DecisionsFramesTests : FrameHost
     });
 
     [Fact]
-    public Task The_profile_sheet_shows_the_served_cli() => OnUi(async () =>
+    public Task The_profile_sheet_keeps_the_hash_and_the_served_cli_behind_closed_Details() => OnUi(async () =>
     {
         var (window, shell) = await Connected(width: 1400);
         shell.ShowNeedsYou(new NeedsYouFeed([NeedsYouRows.Profile()], ""));
@@ -141,7 +141,14 @@ public sealed class DecisionsFramesTests : FrameHost
         shell.Navigate(new DeepLink(DeepLinkKind.NeedsYou, "profile:drift"));
         Settle(window);
 
-        Assert.True(Visible(window, "SheetRowCli"));
+        Assert.False(Visible(window, "SheetRowCli"));
+        Assert.False(Visible(window, "SheetRowMoreDetails"));
         Frame(window, "profile-sheet");
+
+        shell.NeedsYou.Rows.Single().DetailsOpen = true;
+        Settle(window);
+
+        Assert.True(Visible(window, "SheetRowMoreDetails"));
+        Assert.Contains(window.GetVisualDescendants().OfType<TextBlock>(), t => t.IsEffectivelyVisible && t.Text == shell.NeedsYou.Rows.Single().Cli);
     });
 }

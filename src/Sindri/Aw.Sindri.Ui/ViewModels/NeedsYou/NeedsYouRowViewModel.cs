@@ -151,7 +151,7 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
 
     private static readonly string[] _content =
     [
-        nameof(Chip), nameof(Details), nameof(ShownId), nameof(Title), nameof(Repo), nameof(Label), nameof(Reason), nameof(HasReasonLine), nameof(Cli), nameof(Age), nameof(AccessibleName),
+        nameof(Chip), nameof(Details), nameof(PrimaryDetails), nameof(MoreDetails), nameof(HasMoreDetails), nameof(ShowsCliUpFront), nameof(ShownId), nameof(Title), nameof(Repo), nameof(Label), nameof(Reason), nameof(HasReasonLine), nameof(Cli), nameof(Age), nameof(AccessibleName),
         nameof(CanOpenItem), nameof(ItemLink), nameof(ChildAnswer), nameof(Notice), nameof(HasNotice),
     ];
 
@@ -209,6 +209,24 @@ internal sealed class NeedsYouRowViewModel : ObservableObject
             return field;
         }
     } = [];
+
+    /// <summary>The lines the sheet shows up front: the plain description and anything the person acts on.</summary>
+    public IReadOnlyList<SheetDetail> PrimaryDetails => [.. Details.Where(d => !d.Secondary)];
+
+    /// <summary>The bookkeeping lines (a hash, the approve command) the sheet keeps behind a closed Details.</summary>
+    public IReadOnlyList<SheetDetail> MoreDetails => [.. Details.Where(d => d.Secondary)];
+
+    /// <summary>True when the row has bookkeeping lines.</summary>
+    public bool HasMoreDetails => Details.Any(d => d.Secondary);
+
+    /// <summary>The disclosure's heading.</summary>
+    public string MoreHeading { get; } = Labels.SheetDetails;
+
+    /// <summary>True while the sheet's Details is open; closed until asked for.</summary>
+    public bool DetailsOpen { get; set => Set(ref field, value); }
+
+    /// <summary>True when the served command shows under the lines: not when Details already holds it.</summary>
+    public bool ShowsCliUpFront => Cli.Length > 0 && !HasMoreDetails;
 
     // Built when the row or its age changes, not on every read.
     private (NeedsYouEntry? Entry, string Age) _detailsFor;
