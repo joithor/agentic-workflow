@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Aw.Sindri.Core.Events;
 
 /// <summary>
@@ -16,5 +18,24 @@ public sealed record InstanceChanged(string Instance, string State, long Cursor)
     /// <summary>The change a mirrored row records, or none when the row isn't a change of an instance's view.</summary>
     /// <param name="row">A public event as the stream reads it.</param>
     /// <returns>The change, or none for another type, an injection row (it changes nothing a client reads) or a payload that can't be read.</returns>
-    public static InstanceChanged? From(PublicEvent row) => throw new NotSupportedException();
+    public static InstanceChanged? From(PublicEvent row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        return Changing.Contains(row.Type, StringComparer.Ordinal)
+            && row.Payload.ValueKind == JsonValueKind.Object
+            && Text(row.Payload, "instance") is { Length: > 0 } instance
+            && Text(row.Payload, "to") is { } state
+                ? new InstanceChanged(instance, state, row.Sequence)
+                : null;
+    }
+
+    /// <summary>The mirrored types that change what an instance's view serves (an injection row records a plan, not a change).</summary>
+    public static IReadOnlyList<string> Changing { get; } =
+    [
+        EventTypes.WorkflowStarted, EventTypes.WorkflowTransition, EventTypes.WorkflowRefused,
+        EventTypes.WorkflowShifted, EventTypes.WorkflowNotified, EventTypes.WorkflowExpired,
+    ];
+
+    private static string? Text(JsonElement payload, string name) =>
+        payload.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
 }
