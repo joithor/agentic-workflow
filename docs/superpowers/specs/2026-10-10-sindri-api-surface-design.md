@@ -680,18 +680,18 @@ The view's top level adds `orderedBy`: `"path"`, or `"transition-list"` when the
 }
 ```
 
-**`StepRun` (`stepRuns[]`).** The engine keeps no per-run record: the read folds the instance's own ledger rows (the same rows `GET /workflow/instances/{id}/events` serves) with `StepRuns.Fold`, a pure function of those rows, so it gives the same runs however often or whenever it is read. A frame that opens a run token starts a run; a `step.completed` or `step.failed` row carrying the token ends it; a frame that moves on without a report ends it `abandoned` (`cancelled` for a cancel). A read whose ledger can't be read fails like the counts do.
+**`StepRun` (`stepRuns[]`).** The engine keeps no per-run record: the read folds the instance's own ledger rows (the same rows `GET /workflow/instances/{id}/events` serves) with `StepRuns.Fold`, a pure function of those rows, so it gives the same runs however often or whenever it is read. A frame that opens a run token starts a run; a `step.completed` or `step.failed` row carrying the token ends it; a frame that moves on without a report ends it `abandoned` (`cancelled` for a cancel). A park, a takeover or an escalation leaves the frame as it was, so the run stays `running` while the instance is suspended. A read whose ledger can't be read fails like the counts do.
 
 | Field | What it holds |
 |---|---|
 | `token` | The run token, `{entry}.{n}` |
 | `step` | The Step's state id. The view carries no display name for a Step, so none is served |
-| `attempt`, `maxAttempts?` | `attempt` is the nth run of the same Step in this instance, from 1. `maxAttempts` is the round cap the instance view's `states[].round.max` shows for that state now (so it moves with a round grant), `null` when the state is in no loop |
-| `state` | `running`, `passed`, `failed`, `refused` (its report was refused by a gate or evidence check), `cancelled` or `abandoned` |
+| `attempt`, `maxAttempts?` | `attempt` is the nth run of the same Step in this instance, from 1. `maxAttempts` is the loop cap of that Step's state: the round allowance `states[].round.max` shows while the state is the active one (so it moves with a round grant), else the recipe's cap from `states[].loops[].max`, which every looped state carries; `null` when the state is in no loop |
+| `state` | `running` (no closing row yet, also while the instance is parked, taken over or escalated), `passed`, `failed`, `refused` (its report was refused by a gate or evidence check; a later override keeps it `refused`), `cancelled` or `abandoned` (the instance moved to another frame with no report on the run) |
 | `runtime?` | `desk` or `agent`, from the frame that opened the run |
 | `startedAt`, `endedAt?`, `durationMs?` | The ledger times of the opening and closing rows; the last two are `null` while `running` |
-| `outcome?` | The reported outcome name; `null` while running, on a failure, a cancel or an abandon |
-| `tokens?` | The tokens the closing report recorded (an agent run); `null` when none |
+| `outcome?` | The reported outcome name; `null` while running, on a failure, a cancel or an abandon; a refused report keeps the outcome it reported |
+| `tokens?` | The tokens the closing report recorded (an agent run); `null` when none (a failed run's tokens are not recorded yet) |
 | `actor?` | Who fired the closing trigger (`agent:session`, `human:…`); `null` while running: no row names who opened the run |
 
 **`StatusFields` (E-23).** The WF §6.4 layout as fields. The CLI prints its text form from the **same renderer**, and

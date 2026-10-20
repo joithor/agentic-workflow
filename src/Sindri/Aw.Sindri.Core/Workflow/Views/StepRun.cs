@@ -11,7 +11,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// <param name="Token">The run token ('{entry}.{n}').</param>
 /// <param name="Step">The Step's state id.</param>
 /// <param name="Attempt">Which try of this Step it is, from 1: the nth run of the same Step in the instance.</param>
-/// <param name="MaxAttempts">The loop cap of the Step's state (the rounds allowed now); null when the state is in no loop.</param>
+/// <param name="MaxAttempts">The loop cap of the Step's state: the active state's rounds allowed now, else the recipe's cap; null when the state is in no loop.</param>
 /// <param name="State">Running, passed, failed, refused, cancelled or abandoned.</param>
 /// <param name="Runtime">Who ran it, desk or agent; null when the opening event did not say.</param>
 /// <param name="StartedAt">The time of the event that opened the run.</param>

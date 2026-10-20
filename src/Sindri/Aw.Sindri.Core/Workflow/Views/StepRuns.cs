@@ -7,7 +7,8 @@ namespace Aw.Sindri.Core.Workflow.Views;
 /// Folds an instance's ledger events into its Step runs (the instance detail's 'stepRuns'). The engine keeps no per-run
 /// record, so a run is derived: a frame that opens a run token starts it; a 'step.completed' or 'step.failed' trigger
 /// carrying that token ends it (a refused report ends it refused); a frame that moves on without a report ends it
-/// abandoned, or cancelled when the trigger was a cancel. A pure function of the events, so a rebuild of any view over the
+/// abandoned, or cancelled when the trigger was a cancel. A takeover, an escalation or a park leaves the frame as it
+/// was, so the run stays running while the instance is suspended. A pure function of the events, so a rebuild of any view over the
 /// same ledger gives the same runs.
 /// </summary>
 public static class StepRuns
@@ -40,8 +41,15 @@ public static class StepRuns
     }
 
     private static StepRun Opened(FrameSummary frame, string token, DateTimeOffset at, List<StepRun> runs, IReadOnlyList<StateCell> states) =>
-        new(token, frame.State, runs.Count(r => string.Equals(r.Step, frame.State, StringComparison.Ordinal)) + 1, states.FirstOrDefault(s => string.Equals(s.State, frame.State, StringComparison.Ordinal))?.Round?.Max,
+        new(token, frame.State, runs.Count(r => string.Equals(r.Step, frame.State, StringComparison.Ordinal)) + 1, MaxAttemptsOf(frame.State, states),
             StepRunState.Running, frame.Runtime, at, EndedAt: null, DurationMs: null, Outcome: null, Tokens: null, Actor: null);
+
+    // The cap of the loop the Step's state is in: the active state's round allowance (it may carry a grant), else the recipe's cap that every looped state's cell shows.
+    private static int? MaxAttemptsOf(string state, IReadOnlyList<StateCell> states)
+    {
+        var cell = states.FirstOrDefault(s => string.Equals(s.State, state, StringComparison.Ordinal));
+        return cell?.Round?.Max ?? cell?.Loops.Select(static l => (int?)l.Max).FirstOrDefault();
+    }
 
     /// <summary>The run after <paramref name="recorded"/>: ended by its report, ended by the frame moving on, or as it was.</summary>
     private static StepRun Closed(StepRun run, RecordedWorkflowEvent recorded)

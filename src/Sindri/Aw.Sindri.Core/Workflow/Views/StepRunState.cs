@@ -6,7 +6,7 @@ namespace Aw.Sindri.Core.Workflow.Views;
 [JsonConverter(typeof(JsonStringEnumConverter<StepRunState>))]
 public enum StepRunState
 {
-    /// <summary>Open: no report yet.</summary>
+    /// <summary>Open: no closing row yet. It stays so while the instance is parked, taken over or escalated, since those leave the frame as it was.</summary>
     [JsonStringEnumMemberName("running")]
     Running = 1,
 
@@ -26,7 +26,7 @@ public enum StepRunState
     [JsonStringEnumMemberName("cancelled")]
     Cancelled = 5,
 
-    /// <summary>The instance left the run's entry with no report (a takeover, an escalation or a recipe move).</summary>
+    /// <summary>The instance moved to another frame with no report on the run (an answer, a command or a recipe move); a cancel is <see cref="Cancelled"/>.</summary>
     [JsonStringEnumMemberName("abandoned")]
     Abandoned = 6,
 }
