@@ -11,13 +11,13 @@ public static class SetupSteps
 {
     private const string RepoTitle = "Add your repo";
     private const string RepoWhy = "Sindri works on the code you point it at, so it needs at least one repository.";
-    private const string ProfileTitle = "Approve your profile";
+    private const string ProfileTitle = "Approve the profile";
     private const string ProfileWhy = "Your profile says what Sindri may do on this machine, and nothing runs until you approve it.";
-    private const string RecipesTitle = "Approve the workflows";
+    private const string RecipesTitle = "Approve the recipes";
     private const string RecipesWhy = "Workflows are the step-by-step recipes Sindri follows, and each one needs your approval before it can run.";
-    private const string McpTitle = "Connect your coding agent";
+    private const string McpTitle = "Connect your agents";
     private const string McpWhy = "Registering Sindri with your agent, for each repo only, lets the agent ask Sindri for context and report back.";
-    private const string MapTitle = "Map your code";
+    private const string MapTitle = "Build the map";
     private const string MapWhy = "The map is how Sindri knows how your code, tickets and decisions connect, so what it tells an agent is relevant.";
     private const string OnyxTitle = "Set up Onyx";
     private const string OnyxWhy = "Onyx is the search Sindri uses to find your business context, such as decisions and tickets.";

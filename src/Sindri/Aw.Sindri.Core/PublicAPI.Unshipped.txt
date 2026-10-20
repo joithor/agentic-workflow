@@ -12241,3 +12241,21 @@ static Aw.Sindri.Core.Setup.MapBuildProgress.Parse(string! line) -> Aw.Sindri.Co
 static Aw.Sindri.Core.Setup.McpLocalRegistration.IsRegistered(string? claudeJson, string! checkout, string! repo) -> bool
 static Aw.Sindri.Core.Setup.OnyxFact.From(Aw.Sindri.Core.Onyx.OnyxStatusReport! report) -> Aw.Sindri.Core.Setup.OnyxFact!
 static Aw.Sindri.Core.Setup.SetupRecipes.Count(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.RecipeSummary!>! lines) -> Aw.Sindri.Core.Setup.RecipesFact!
+Aw.Sindri.Core.Setup.SetupItem.<Clone>$() -> Aw.Sindri.Core.Setup.SetupItem!
+Aw.Sindri.Core.Setup.SetupItem.Deconstruct(out string! Repo, out Aw.Sindri.Core.Setup.SetupState State, out string? Detail) -> void
+Aw.Sindri.Core.Setup.SetupItem.Equals(Aw.Sindri.Core.Setup.SetupItem? other) -> bool
+Aw.Sindri.Core.Setup.SetupItem
+Aw.Sindri.Core.Setup.SetupItem.SetupItem(string! Repo, Aw.Sindri.Core.Setup.SetupState State, string? Detail) -> void
+override Aw.Sindri.Core.Setup.SetupItem.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Setup.SetupItem.GetHashCode() -> int
+override Aw.Sindri.Core.Setup.SetupItem.ToString() -> string!
+static Aw.Sindri.Core.Setup.SetupItem.operator !=(Aw.Sindri.Core.Setup.SetupItem? left, Aw.Sindri.Core.Setup.SetupItem? right) -> bool
+static Aw.Sindri.Core.Setup.SetupItem.operator ==(Aw.Sindri.Core.Setup.SetupItem? left, Aw.Sindri.Core.Setup.SetupItem? right) -> bool
+Aw.Sindri.Core.Setup.SetupItem.Repo.get -> string!
+Aw.Sindri.Core.Setup.SetupItem.Repo.init -> void
+Aw.Sindri.Core.Setup.SetupItem.State.get -> Aw.Sindri.Core.Setup.SetupState
+Aw.Sindri.Core.Setup.SetupItem.State.init -> void
+Aw.Sindri.Core.Setup.SetupItem.Detail.get -> string?
+Aw.Sindri.Core.Setup.SetupItem.Detail.init -> void
+Aw.Sindri.Core.Setup.SetupStep.Items.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupItem!>!
+Aw.Sindri.Core.Setup.SetupStep.Items.init -> void

@@ -3636,11 +3636,11 @@ Aw.Sindri.Features.GetSetup.GetSetupRequest.Equals(Aw.Sindri.Features.GetSetup.G
 Aw.Sindri.Features.GetSetup.GetSetupRequest.GetSetupRequest() -> void
 Aw.Sindri.Features.GetSetup.GetSetupResponse
 Aw.Sindri.Features.GetSetup.GetSetupResponse.<Clone>$() -> Aw.Sindri.Features.GetSetup.GetSetupResponse!
-Aw.Sindri.Features.GetSetup.GetSetupResponse.AsOf.get -> System.DateTimeOffset
+Aw.Sindri.Features.GetSetup.GetSetupResponse.AsOf.get -> Aw.Sindri.Core.Views.AsOf!
 Aw.Sindri.Features.GetSetup.GetSetupResponse.AsOf.init -> void
-Aw.Sindri.Features.GetSetup.GetSetupResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupStep!>! Steps, out System.DateTimeOffset AsOf) -> void
+Aw.Sindri.Features.GetSetup.GetSetupResponse.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupStep!>! Steps, out Aw.Sindri.Core.Views.AsOf! AsOf) -> void
 Aw.Sindri.Features.GetSetup.GetSetupResponse.Equals(Aw.Sindri.Features.GetSetup.GetSetupResponse? other) -> bool
-Aw.Sindri.Features.GetSetup.GetSetupResponse.GetSetupResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupStep!>! Steps, System.DateTimeOffset AsOf) -> void
+Aw.Sindri.Features.GetSetup.GetSetupResponse.GetSetupResponse(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupStep!>! Steps, Aw.Sindri.Core.Views.AsOf! AsOf) -> void
 Aw.Sindri.Features.GetSetup.GetSetupResponse.Steps.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Setup.SetupStep!>!
 Aw.Sindri.Features.GetSetup.GetSetupResponse.Steps.init -> void
 override Aw.Sindri.Features.GetSetup.GetSetupRequest.Equals(object? obj) -> bool

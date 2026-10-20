@@ -8,21 +8,23 @@
       "detail": "1 repository added.",
       "error": null,
       "action": null,
-      "progress": null
+      "progress": null,
+      "items": []
     },
     {
       "id": "profile",
-      "title": "Approve your profile",
+      "title": "Approve the profile",
       "state": "done",
       "why": "Your profile says what Sindri may do on this machine, and nothing runs until you approve it.",
       "detail": "Your profile is approved.",
       "error": null,
       "action": null,
-      "progress": null
+      "progress": null,
+      "items": []
     },
     {
       "id": "recipes",
-      "title": "Approve the workflows",
+      "title": "Approve the recipes",
       "state": "done",
       "why": "Workflows are the step-by-step recipes Sindri follows, and each one needs your approval before it can run.",
       "detail": "All 26 workflows approved.",
@@ -31,27 +33,30 @@
       "progress": {
         "done": 26,
         "total": 26
-      }
+      },
+      "items": []
     },
     {
       "id": "mcp",
-      "title": "Connect your coding agent",
+      "title": "Connect your agents",
       "state": "done",
       "why": "Registering Sindri with your agent, for each repo only, lets the agent ask Sindri for context and report back.",
       "detail": "Your agent knows where Sindri is in 1 repository.",
       "error": null,
       "action": null,
-      "progress": null
+      "progress": null,
+      "items": []
     },
     {
       "id": "map",
-      "title": "Map your code",
+      "title": "Build the map",
       "state": "done",
       "why": "The map is how Sindri knows how your code, tickets and decisions connect, so what it tells an agent is relevant.",
       "detail": "The map is built.",
       "error": null,
       "action": null,
-      "progress": null
+      "progress": null,
+      "items": []
     },
     {
       "id": "onyx",
@@ -61,8 +66,15 @@
       "detail": "Onyx is up and answering.",
       "error": null,
       "action": null,
-      "progress": null
+      "progress": null,
+      "items": []
     }
   ],
-  "asOf": "2026-01-01T00:00:00.0000000Z"
+  "asOf": {
+    "cursor": 0,
+    "ledgerHead": 0,
+    "projectedAt": null,
+    "rebuilding": false,
+    "stalled": false
+  }
 }

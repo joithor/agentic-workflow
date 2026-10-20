@@ -1,5 +1,6 @@
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Setup;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.GetSetup;
 using Aw.Sindri.Testing;
 using Microsoft.Extensions.Time.Testing;
@@ -11,25 +12,36 @@ public sealed class GetSetupTests
 {
     private readonly FakeTimeProvider _clock = new(new DateTimeOffset(2026, 10, 19, 9, 30, 0, TimeSpan.Zero));
 
+    private GetSetupService Service(InMemorySetupFacts facts) => new(facts, new ProjectorProgress(_clock));
+
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact, Trait("Lane", "unit")]
     public async Task GetSetup_reports_every_step_in_order()
     {
-        var service = new GetSetupService(InMemorySetupFacts.AllDone(), _clock);
+        var service = Service(InMemorySetupFacts.AllDone());
 
         var result = await service.Handle(A.GetSetupRequest().Build(), Token);
 
         Assert.True(result.IsSuccess);
         Assert.Equal([SetupStepId.Repo, SetupStepId.Profile, SetupStepId.Recipes, SetupStepId.Mcp, SetupStepId.Map, SetupStepId.Onyx], result.Value.Steps.Select(static s => s.Id));
         Assert.All(result.Value.Steps, static s => Assert.Equal(SetupState.Done, s.State));
-        Assert.Equal(_clock.GetUtcNow(), result.Value.AsOf);
+        Assert.Equal(new ProjectorProgress(_clock).Current.AsOf, result.Value.AsOf);
+    }
+
+    [Fact, Trait("Lane", "unit")]
+    public async Task Titles_are_the_fixed_words_and_items_are_listed_empty_until_a_step_counts_repos()
+    {
+        var steps = (await Service(InMemorySetupFacts.AllDone()).Handle(A.GetSetupRequest().Build(), Token)).Value.Steps;
+
+        Assert.Equal(["Add your repo", "Approve the profile", "Approve the recipes", "Connect your agents", "Build the map", "Set up Onyx"], steps.Select(static s => s.Title), StringComparer.Ordinal);
+        Assert.All(steps, static s => Assert.Empty(s.Items));
     }
 
     [Fact, Trait("Lane", "unit")]
     public async Task A_fresh_box_has_every_step_still_to_do_and_the_answer_is_never_an_error()
     {
-        var result = await new GetSetupService(new InMemorySetupFacts(), _clock).Handle(A.GetSetupRequest().Build(), Token);
+        var result = await Service(new InMemorySetupFacts()).Handle(A.GetSetupRequest().Build(), Token);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(6, result.Value.Steps.Count);
@@ -42,7 +54,7 @@ public sealed class GetSetupTests
         var facts = InMemorySetupFacts.AllDone();
         facts.RecipesAnswer = SindriErrors.LedgerUnavailable.With("the ledger is locked");
 
-        var steps = (await new GetSetupService(facts, _clock).Handle(A.GetSetupRequest().Build(), Token)).Value.Steps;
+        var steps = (await Service(facts).Handle(A.GetSetupRequest().Build(), Token)).Value.Steps;
 
         var failed = Assert.Single(steps, static s => s.State == SetupState.Failed);
         Assert.Equal(SetupStepId.Recipes, failed.Id);

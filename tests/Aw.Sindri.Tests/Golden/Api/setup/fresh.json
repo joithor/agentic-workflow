@@ -8,47 +8,52 @@
       "detail": "No repository is added yet.",
       "error": null,
       "action": "AddRepo",
-      "progress": null
+      "progress": null,
+      "items": []
     },
     {
       "id": "profile",
-      "title": "Approve your profile",
+      "title": "Approve the profile",
       "state": "todo",
       "why": "Your profile says what Sindri may do on this machine, and nothing runs until you approve it.",
       "detail": "There is no profile yet.",
       "error": null,
       "action": null,
-      "progress": null
+      "progress": null,
+      "items": []
     },
     {
       "id": "recipes",
-      "title": "Approve the workflows",
+      "title": "Approve the recipes",
       "state": "todo",
       "why": "Workflows are the step-by-step recipes Sindri follows, and each one needs your approval before it can run.",
       "detail": "No workflows are registered yet. Sindri registers them when it starts.",
       "error": null,
       "action": null,
-      "progress": null
+      "progress": null,
+      "items": []
     },
     {
       "id": "mcp",
-      "title": "Connect your coding agent",
+      "title": "Connect your agents",
       "state": "todo",
       "why": "Registering Sindri with your agent, for each repo only, lets the agent ask Sindri for context and report back.",
       "detail": "Add your repo and approve your profile first.",
       "error": null,
       "action": null,
-      "progress": null
+      "progress": null,
+      "items": []
     },
     {
       "id": "map",
-      "title": "Map your code",
+      "title": "Build the map",
       "state": "todo",
       "why": "The map is how Sindri knows how your code, tickets and decisions connect, so what it tells an agent is relevant.",
       "detail": "Sindri builds the map once your repo is added and your profile is approved.",
       "error": null,
       "action": null,
-      "progress": null
+      "progress": null,
+      "items": []
     },
     {
       "id": "onyx",
@@ -58,8 +63,15 @@
       "detail": "Onyx isn't set up yet.",
       "error": null,
       "action": "SetupOnyx",
-      "progress": null
+      "progress": null,
+      "items": []
     }
   ],
-  "asOf": "2026-01-01T00:00:00.0000000Z"
+  "asOf": {
+    "cursor": 0,
+    "ledgerHead": 0,
+    "projectedAt": null,
+    "rebuilding": false,
+    "stalled": false
+  }
 }

@@ -3,6 +3,7 @@ using System.Text;
 using Aw.Kernel.Json;
 using Aw.Sindri.Core.Control;
 using Aw.Sindri.Core.Setup;
+using Aw.Sindri.Core.Views;
 using Aw.Sindri.Features.GetSetup;
 using Aw.Sindri.Host.Commands;
 using Aw.Sindri.Testing;
@@ -13,7 +14,7 @@ namespace Aw.Sindri.Tests.Commands;
 public sealed class CliSetupTests : IDisposable
 {
     private static readonly FakeControlPlaneProbe _up = FakeControlPlaneProbe.For(new ControlEndpoint(new Uri("http://127.0.0.1:7410"), 42, 3), new Ping(42, 3));
-    private static readonly DateTimeOffset _at = new(2026, 10, 19, 9, 30, 0, TimeSpan.Zero);
+    private static readonly AsOf _asOf = new(Cursor: 5, LedgerHead: 5, ProjectedAt: new DateTimeOffset(2026, 10, 19, 9, 30, 0, TimeSpan.Zero), Rebuilding: false, Stalled: false);
     private readonly StringWriter _out = new();
     private readonly StringWriter _error = new();
 
@@ -25,7 +26,7 @@ public sealed class CliSetupTests : IDisposable
 
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static string Body(params SetupStep[] steps) => Encoding.UTF8.GetString(AwJson.Serialize(new GetSetupResponse(steps, _at), SliceHarness.Json));
+    private static string Body(params SetupStep[] steps) => Encoding.UTF8.GetString(AwJson.Serialize(new GetSetupResponse(steps, _asOf), SliceHarness.Json));
 
     private SetupVerbs Verbs(FakeControlPlaneProbe probe, Api api) =>
         new(new ControlPlaneClient(probe, SliceHarness.Json,
@@ -57,9 +58,9 @@ public sealed class CliSetupTests : IDisposable
         Assert.Equal((1, "/sindri/setup"), (code, api.Path));
         Assert.Equal(
             "done      Add your repo: 1 repository added.\n"
-            + "needs-you Approve your profile: Your profile is ready for you to read and approve.\n"
-            + "needs-you Approve the workflows: 6 workflows waiting for approval. (20 of 26)\n"
-            + "failed    Map your code: The last try at building the map didn't finish.\n"
+            + "needs-you Approve the profile: Your profile is ready for you to read and approve.\n"
+            + "needs-you Approve the recipes: 6 workflows waiting for approval. (20 of 26)\n"
+            + "failed    Build the map: The last try at building the map didn't finish.\n"
             + "1 of 4 steps done.\n",
             _out.ToString().ReplaceLineEndings("\n"));
     }

@@ -2,6 +2,7 @@ using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core.Ports;
 using Aw.Sindri.Core.Setup;
+using Aw.Sindri.Core.Views;
 
 namespace Aw.Sindri.Features.GetSetup;
 
@@ -10,8 +11,8 @@ namespace Aw.Sindri.Features.GetSetup;
 /// source gave. A pure read that starts nothing. A source that can't be read makes only its own step "failed" with a plain sentence, so the answer is never an error.
 /// </summary>
 /// <param name="facts">The sources.</param>
-/// <param name="clock">Dates the answer.</param>
-internal sealed class GetSetupService(ISetupFacts facts, TimeProvider clock) : IService<GetSetupRequest, GetSetupResponse>
+/// <param name="status">How fresh the views are.</param>
+internal sealed class GetSetupService(ISetupFacts facts, IProjectorStatus status) : IService<GetSetupRequest, GetSetupResponse>
 {
     public async ValueTask<Result<GetSetupResponse>> Handle(GetSetupRequest request, CancellationToken cancellationToken)
     {
@@ -31,7 +32,7 @@ internal sealed class GetSetupService(ISetupFacts facts, TimeProvider clock) : I
             Step(SetupStepId.Map, map, SetupSteps.Map),
             Step(SetupStepId.Onyx, onyx, SetupSteps.Onyx),
         ];
-        return new GetSetupResponse(steps, clock.GetUtcNow());
+        return new GetSetupResponse(steps, status.Current.AsOf);
     }
 
     private static SetupStep Step<T>(SetupStepId id, Result<T> read, Func<T, SetupStep> decide) =>
