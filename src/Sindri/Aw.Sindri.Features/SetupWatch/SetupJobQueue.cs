@@ -54,7 +54,20 @@ internal sealed class SetupJobQueue(Func<int> running) : IDisposable
             _waiting.Add(entry);
         }
 
-        await Drain(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await Drain(cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException)
+        {
+            lock (_state)
+            {
+                _ = _waiting.Remove(entry);   // the submitter is gone: a job nobody asked for must not start later
+            }
+
+            throw;
+        }
+
         return entry.Refusal is { } refusal ? refusal : entry.Started ? SetupJobOutcome.Started : SetupJobOutcome.Queued;
     }
 
