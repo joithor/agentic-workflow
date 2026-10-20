@@ -8,7 +8,8 @@
     "id": "workflow.project",
     "hash": "sha256:a8c21e7f00000000000000000000000000000000000000000000000000000000",
     "version": 12,
-    "urgency": "work"
+    "urgency": "work",
+    "displayName": "Project"
   },
   "state": "build",
   "since": "2026-10-12T08:40:00.0000000Z",
@@ -711,7 +712,8 @@
           ]
         }
       ],
-      "more": 4
+      "more": 4,
+      "displayName": "Step"
     }
   ],
   "counts": {
