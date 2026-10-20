@@ -10,7 +10,7 @@ public sealed class NoShippedRecipes : IShippedRecipes
 {
     /// <inheritdoc/>
     public ValueTask<Result<ShippedRecipePlan>> Plan(CancellationToken cancellationToken) =>
-        ValueTask.FromResult<Result<ShippedRecipePlan>>(new ShippedRecipePlan([], [], ApproveAllDigest.Empty));
+        ValueTask.FromResult<Result<ShippedRecipePlan>>(new ShippedRecipePlan([], []));
 
     /// <inheritdoc/>
     public ValueTask<Result<ApproveAllResult>> Approve(RedeemedPlan plan, IProgress<string> progress, CancellationToken cancellationToken) =>

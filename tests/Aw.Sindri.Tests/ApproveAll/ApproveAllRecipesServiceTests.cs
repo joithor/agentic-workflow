@@ -24,7 +24,7 @@ public sealed class ApproveAllRecipesServiceTests
         var plan = (await shipped.Plan(Token)).Value;
         var issued = _slice.Challenges.Issue(ChallengeAction.ApproveAll(plan.Digest), ChallengeSubject.ForApproveAll(plan.Digest));
         var answer = new ChallengeAnswer(issued.Id, issued.Action.Text);
-        return (new ApproveAllRecipesRequest(answer), RedeemedPlan.Redeem(_slice.Challenges, answer, plan).Value);
+        return (new ApproveAllRecipesRequest(answer), RedeemedPlan.Redeem(_slice.Challenges, answer, plan, CommandId.From(new Guid(192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))).Value);
     }
 
     [Fact]

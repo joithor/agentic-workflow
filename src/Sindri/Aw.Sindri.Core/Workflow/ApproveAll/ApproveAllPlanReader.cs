@@ -1,9 +1,7 @@
 using Aw.Kernel;
-using Aw.Sindri.Core;
 using Aw.Sindri.Core.Profile;
-using Aw.Sindri.Core.Workflow.ApproveAll;
 
-namespace Aw.Sindri.Features;
+namespace Aw.Sindri.Core.Workflow.ApproveAll;
 
 /// <summary>
 /// The shipped recipes' plan, once a profile is approved (setup-once spec §5.3, §7.6): every approval check uses the approved profile's allowlist, so before one
@@ -11,8 +9,11 @@ namespace Aw.Sindri.Features;
 /// </summary>
 /// <param name="profile">The approved profile.</param>
 /// <param name="shipped">The recipes this build ships.</param>
-internal sealed class ApproveAllPlanReader(IApprovedProfile profile, IShippedRecipes shipped)
+public sealed class ApproveAllPlanReader(IApprovedProfile profile, IShippedRecipes shipped)
 {
+    /// <summary>The plan now.</summary>
+    /// <param name="cancellationToken">Cancels the read.</param>
+    /// <returns>The plan; SND-SETUP-007 before a profile is approved.</returns>
     public async ValueTask<Result<ShippedRecipePlan>> Read(CancellationToken cancellationToken)
     {
         var approved = await profile.Latest(cancellationToken).ConfigureAwait(false);

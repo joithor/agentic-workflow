@@ -144,7 +144,7 @@ internal sealed partial class IssueChallengeService(RecipeApprovalPlanner approv
             return plan.Error;
         }
 
-        return plan.Value.IsEmpty ? SindriErrors.InvalidInput.With(ApproveAllPlan.EmptySentence + " There is nothing to approve.")
+        return plan.Value.NothingToHold ? SindriErrors.InvalidInput.With("There is nothing for one hold to approve (a recipe that needs its own approval is approved one at a time).")
             : !string.Equals(plan.Value.Digest, digest, StringComparison.Ordinal) ? WorkflowErrors.RecipeChallengeStale.With($"{digest} isn't the plan's digest ({plan.Value.Digest}); read the plan again")
             : Issued(challenges.Issue(ChallengeAction.ApproveAll(digest), ChallengeSubject.ForApproveAll(digest)), approve: null, revoke: null) with { ApproveAll = plan.Value };
     }

@@ -1,6 +1,6 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Challenges;
-using Aw.Sindri.Features;
+using Aw.Sindri.Core.Workflow.ApproveAll;
 using Aw.Sindri.Features.IssueChallenge;
 using Aw.Sindri.Testing.Workflow.ApproveAll;
 using static Aw.Sindri.Tests.ApproveAll.ApproveAllFixtures;
@@ -54,6 +54,19 @@ public sealed class IssueApproveAllChallengeTests
         var issued = await Service().Handle(new IssueChallengeRequest("approve-all 000000"), Token);
 
         Assert.Equal("SND-RECIPE-009", issued.Error.Code);
+    }
+
+    [Fact]
+    public async Task A_plan_with_only_a_recipe_needing_its_own_approval_has_no_challenge()
+    {
+        await Approved();
+        var shipped = new FakeShippedRecipes([]);
+        shipped.OwnApproval.Add(ShipNeedsItsOwn());
+        var service = new IssueChallengeService(null!, null!, _slice.Challenges, null!, null!, null!, new ApproveAllPlanReader(_slice.Profiles, shipped));
+
+        var issued = await service.Handle(new IssueChallengeRequest("approve-all 000000"), Token);
+
+        Assert.Equal("SND-CLI-003", issued.Error.Code);
     }
 
     [Fact]

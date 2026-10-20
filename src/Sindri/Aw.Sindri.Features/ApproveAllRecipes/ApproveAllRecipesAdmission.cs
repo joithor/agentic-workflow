@@ -1,5 +1,7 @@
 using Aw.Kernel;
+using Aw.Sindri.Core;
 using Aw.Sindri.Core.Challenges;
+using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Workflow.ApproveAll;
@@ -15,7 +17,8 @@ namespace Aw.Sindri.Features.ApproveAllRecipes;
 /// <param name="challenges">The server's challenges.</param>
 /// <param name="registry">The running jobs.</param>
 /// <param name="redeemed">Keeps the redeemed plan for the job.</param>
-internal sealed class ApproveAllRecipesAdmission(ApproveAllPlanReader plans, IChallenges challenges, IRunningJobs registry, RedeemedPlans redeemed) : IJobAdmission<ApproveAllRecipesRequest>
+/// <param name="callers">The caller, whose command id is the batch of the approvals.</param>
+internal sealed class ApproveAllRecipesAdmission(ApproveAllPlanReader plans, IChallenges challenges, IRunningJobs registry, RedeemedPlans redeemed, ICallerContextAccessor callers) : IJobAdmission<ApproveAllRecipesRequest>
 {
     /// <summary>The job's kind: the action id.</summary>
     internal static readonly JobKind Kind = JobKind.From("ApproveAllRecipes");
@@ -37,7 +40,12 @@ internal sealed class ApproveAllRecipesAdmission(ApproveAllPlanReader plans, ICh
             return JobConflicts.Running(Kind, Key, running);
         }
 
-        var taken = RedeemedPlan.Redeem(challenges, request.Answer, plan.Value);
+        if (callers.Current is not { } caller)
+        {
+            return SindriErrors.AuthRefused.With("approve-all needs a caller");
+        }
+
+        var taken = RedeemedPlan.Redeem(challenges, request.Answer, plan.Value, caller.CommandId);
         if (taken.IsError)
         {
             return taken.Error;

@@ -1,4 +1,5 @@
 using Aw.Kernel;
+using Aw.Sindri.Core.Workflow;
 using Aw.Sindri.Core.Workflow.ApproveAll;
 using Aw.Sindri.Core.Workflow.Ids;
 
@@ -42,7 +43,7 @@ public sealed class FakeShippedRecipes : IShippedRecipes
     public ValueTask<Result<ShippedRecipePlan>> Plan(CancellationToken cancellationToken)
     {
         var rows = Ordered().Where(s => !_approved.Exists(a => a.Id == s.Id && a.Hash == s.Hash)).Select(Row).ToList();
-        return ValueTask.FromResult<Result<ShippedRecipePlan>>(new ShippedRecipePlan(rows, [.. OwnApproval], ApproveAllDigest.Of(rows)));
+        return ValueTask.FromResult<Result<ShippedRecipePlan>>(new ShippedRecipePlan(rows, [.. OwnApproval]));
     }
 
     /// <inheritdoc/>
@@ -68,13 +69,9 @@ public sealed class FakeShippedRecipes : IShippedRecipes
             {
                 skipped.Add(new ApproveAllSkipped(row.Id, row.DisplayName, because));
             }
-            else if (seed is null || seed.Hash != row.Hash)
+            else if (Refusal(row, seed) is { } refusal)
             {
-                refused.Add(new ApproveAllRefused(row.Id, row.Hash, "SND-RECIPE-009", $"{row.DisplayName} changed while Sindri was approving. Read the new plan.", $"sindri recipe approve {row.Id.Value}"));
-            }
-            else if (seed.Refusal is { } refusal)
-            {
-                refused.Add(new ApproveAllRefused(row.Id, row.Hash, refusal.Code, refusal.Sentence, refusal.Cli));
+                refused.Add(refusal);
             }
             else
             {
@@ -85,6 +82,15 @@ public sealed class FakeShippedRecipes : IShippedRecipes
         }
 
         return new ApproveAllResult(approved, refused, skipped);
+    }
+
+    private static ApproveAllRefused? Refusal(ApproveAllRow row, ShippedSeed? seed)
+    {
+        var cli = $"sindri-app recipe approve {row.Id.Value}";
+        return seed is null ? new ApproveAllRefused(row.Id, row.Hash, WorkflowErrors.RecipeNotShipped.Code, $"{row.DisplayName} is not one this build ships.", cli)
+            : seed.Hash != row.Hash ? new ApproveAllRefused(row.Id, row.Hash, WorkflowErrors.RecipeChallengeStale.Code, $"{row.DisplayName} changed while Sindri was approving. Read the new plan.", cli)
+            : seed.Refusal is { } r ? new ApproveAllRefused(row.Id, row.Hash, r.Code, r.Sentence, r.Cli)
+            : null;
     }
 
     private ApproveAllRow Row(ShippedSeed seed)

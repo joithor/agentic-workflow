@@ -21,4 +21,4 @@ public sealed record ChildGroup(
     IReadOnlyList<Workstream> Workstreams,
     IReadOnlyList<ChildRow> Rows,
     int More,
-    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null);

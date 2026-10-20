@@ -127,6 +127,21 @@ public sealed class ApproveAllRoutesTests
     }
 
     [Fact(Timeout = 30_000), Trait("Lane", "integration")]
+    public async Task A_plan_with_only_a_recipe_needing_its_own_approval_answers_200_empty_and_starts_no_job()
+    {
+        var shipped = new FakeShippedRecipes([]);
+        shipped.OwnApproval.Add(ApproveAllFixtures.ShipNeedsItsOwn());
+        await using var host = await Started(shipped, TestContext.Current.CancellationToken);
+
+        var posted = await host.Http.Ask(Post(PlanRoute, json: null, Human(Terminal(host))));
+        var jobs = await JobHost.Read(host, "/sindri/jobs");
+
+        Assert.Equal((HttpStatusCode.OK, """{"approved":[],"refused":[],"skipped":[]}"""), (posted.Status, posted.Body));
+        Assert.Empty(JsonDocument.Parse(jobs.Body).RootElement.GetProperty("jobs").EnumerateArray());
+        Assert.Equal(0, shipped.Applied);
+    }
+
+    [Fact(Timeout = 30_000), Trait("Lane", "integration")]
     public async Task The_route_is_not_read_as_a_recipe_id_and_hash()
     {
         await using var host = await Started(new FakeShippedRecipes(ApproveAllFixtures.StepAndItem()), TestContext.Current.CancellationToken);

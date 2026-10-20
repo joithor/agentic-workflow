@@ -169,7 +169,7 @@
       "method": "POST",
       "route": "/sindri/workflow/recipes/approve-all",
       "cli": "sindri recipe approve-all",
-      "ui": "cli-only:typed-confirmation",
+      "ui": "pending:SO-E3",
       "destructive": false,
       "readsViews": false,
       "shortcut": null

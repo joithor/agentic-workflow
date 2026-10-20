@@ -12178,7 +12178,6 @@ Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllResult.<Clone>$() -> Aw.Sindri.Core
 static readonly Aw.Sindri.Core.Workflow.WorkflowErrors.RecipeNotShipped -> Aw.Kernel.ErrorDefinition!
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan
 static Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllResult.operator ==(Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllResult? left, Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllResult? right) -> bool
-static Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan.Redeem(Aw.Sindri.Core.Challenges.IChallenges! challenges, Aw.Sindri.Core.Challenges.ChallengeAnswer! answer, Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan! plan) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan!>!
 override Aw.Sindri.Core.Workflow.ApproveAll.CapabilityId.ToString() -> string!
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow.Equals(Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow? other) -> bool
 override Aw.Sindri.Core.Workflow.ApproveAll.CapabilityLine.Equals(object? obj) -> bool
@@ -12198,7 +12197,6 @@ Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow.Version.init -> void
 override Aw.Sindri.Core.Workflow.ApproveAll.CapabilityId.GetHashCode() -> int
 static Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow.operator ==(Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow? left, Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow? right) -> bool
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllPlan.OwnApproval.init -> void
-Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan.ShippedRecipePlan(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow!>! Recipes, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow!>! OwnApproval, string! Digest) -> void
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceDetailContext.RecipeDisplayName.get -> string?
 Aw.Sindri.Core.Workflow.ApproveAll.NoShippedRecipes.Approve(Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan! plan, System.IProgress<string!>! progress, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllResult!>!>
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllPlan.Empty.init -> void
@@ -12287,7 +12285,6 @@ Aw.Sindri.Core.Workflow.Views.ChildGroup.DisplayName.init -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllPlan.Digest.init -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllSkipped.Id.get -> Aw.Sindri.Core.Workflow.Ids.RecipeId
 Aw.Sindri.Core.Workflow.ApproveAll.CapabilityDelta.Added.init -> void
-Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan.Digest.init -> void
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllResult.Refused.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRefused!>!
 Aw.Sindri.Core.Workflow.Engine.Runtime.InstanceSummaryContext.RecipeDisplayName.init -> void
 Aw.Sindri.Core.Workflow.ApproveAll.CapabilityId.Value.get -> string!
@@ -12387,7 +12384,6 @@ override Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan.ToString() -> stri
 Aw.Sindri.Core.Workflow.Registry.RecipeApproved.PlanDigest.get -> string?
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow.Capabilities.get -> System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.CapabilityLine!>!
 Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan.OwnApproval.init -> void
-Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow!>! Recipes, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow!>! OwnApproval, out string! Digest) -> void
 Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllPlan.<Clone>$() -> Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllPlan!
 Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllPlan.Empty.get -> string?
@@ -12443,4 +12439,14 @@ Aw.Sindri.Core.Workflow.Views.ChildGroup.Deconstruct(out string! State, out Aw.S
 Aw.Sindri.Core.Workflow.Views.RecipeView.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out int Version, out string? Name, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeInputView!>! Inputs, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeOutputView!>! Outputs, out Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency, out Aw.Sindri.Core.Workflow.Views.PathOrdering OrderedBy, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeStateView!>! States, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Views.RecipeLoopView!>! Loops, out string? DisplayName) -> void
 Aw.Sindri.Core.Workflow.Registry.RecipeSummary.Deconstruct(out Aw.Sindri.Core.Workflow.Ids.RecipeId Id, out int Version, out Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, out Aw.Sindri.Core.Workflow.Registry.RecipeStanding Standing, out Aw.Sindri.Core.Workflow.Registry.ApprovalVia? Via, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Registry.StaleReason>! Stale, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeInput!>! Inputs, out string! Urgency, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.RecipeOutput!>! Outputs, out string! OrderedBy, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.StatePlace!>! States, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.Recipes.PathLoop!>! Loops, out string? Name, out string? DisplayName) -> void
 Aw.Sindri.Core.Workflow.Views.InstanceRecipe.InstanceRecipe(Aw.Sindri.Core.Workflow.Ids.RecipeId Id, Aw.Sindri.Core.Workflow.Ids.RecipeHash Hash, int Version, Aw.Sindri.Core.Workflow.Recipes.RecipeUrgency Urgency, string? DisplayName = null) -> void
+Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan.Deconstruct(out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow!>! Recipes, out System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow!>! OwnApproval) -> void
+Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan.Batch.get -> Aw.Sindri.Core.Ids.CommandId
+static Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan.Redeem(Aw.Sindri.Core.Challenges.IChallenges! challenges, Aw.Sindri.Core.Challenges.ChallengeAnswer! answer, Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan! plan, Aw.Sindri.Core.Ids.CommandId batch, long? heldMs = null) -> Aw.Kernel.Result<Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan!>!
+Aw.Sindri.Core.Workflow.ApproveAll.RedeemedPlan.HeldMs.get -> long?
+Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan.NothingToHold.get -> bool
+Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan.ShippedRecipePlan(System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllRow!>! Recipes, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Workflow.ApproveAll.OwnApprovalRow!>! OwnApproval) -> void
+Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllPlan.NothingToHold.get -> bool
+Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllPlanReader.ApproveAllPlanReader(Aw.Sindri.Core.Profile.IApprovedProfile! profile, Aw.Sindri.Core.Workflow.ApproveAll.IShippedRecipes! shipped) -> void
+Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllPlanReader
+Aw.Sindri.Core.Workflow.ApproveAll.ApproveAllPlanReader.Read(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Workflow.ApproveAll.ShippedRecipePlan!>!>
 

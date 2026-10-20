@@ -10,8 +10,7 @@ using Aw.Sindri.Features.GetApproveAllPlan;
 namespace Aw.Sindri.Host.Endpoints;
 
 /// <summary>
-/// POST /sindri/workflow/recipes/approve-all (setup-once spec §5.3, §7.2; protected): the body is the challenge and its typed text, as ApproveRecipe's. It answers 202
-/// JobStarted for the job that approves the plan. When nothing waits it answers 200 with an empty result and starts no job (a re-run changes nothing); that answer is
+/// POST /sindri/workflow/recipes/approve-all (setup-once spec §5.3, §7.2; protected): the body is the challenge and its typed text, as ApproveRecipe's. It answers JobStarted (200, like every job route) for the job that approves the plan. When nothing waits it answers 200 with an empty result and starts no job (a re-run changes nothing); that answer is
 /// still the protected action's, so a caller the authorization table refuses is refused here too.
 /// </summary>
 internal static class ApproveAllRecipesEndpoint
@@ -27,7 +26,7 @@ internal static class ApproveAllRecipesEndpoint
         var services = http.RequestServices;
         var ct = http.RequestAborted;
         var plan = await services.GetRequiredService<IService<GetApproveAllPlanRequest, ApproveAllPlan>>().Handle(new GetApproveAllPlanRequest(), ct).ConfigureAwait(false);
-        if (plan is { IsSuccess: true, Value: { Recipes.Count: 0, OwnApproval.Count: 0 } })
+        if (plan is { IsSuccess: true, Value.NothingToHold: true })
         {
             var row = services.GetRequiredService<ICommandCatalog>().For(typeof(ApproveAllRecipesRequest))[0];
             return Authorization.Decide(row.Class, services.GetRequiredService<ICallerContextAccessor>().Current, row).Refusal is { } refused

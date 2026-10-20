@@ -16,4 +16,4 @@ public sealed record InstanceRecipe(
     RecipeHash Hash,
     int Version,
     RecipeUrgency Urgency,
-    [property: System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null);
+    [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] string? DisplayName = null);

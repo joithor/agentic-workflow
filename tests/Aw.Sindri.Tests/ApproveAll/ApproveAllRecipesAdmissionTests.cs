@@ -1,7 +1,7 @@
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Challenges;
 using Aw.Sindri.Core.Ids;
-using Aw.Sindri.Features;
+using Aw.Sindri.Core.Workflow.ApproveAll;
 using Aw.Sindri.Features.ApproveAllRecipes;
 using Aw.Sindri.Features.Jobs;
 using Aw.Sindri.Testing.Workflow.ApproveAll;
@@ -14,16 +14,24 @@ namespace Aw.Sindri.Tests.ApproveAll;
 /// that is not the owner's must leave the hold unburned; nothing is written by the checks.
 /// </summary>
 [Lane(TestLane.Unit)]
-public sealed class ApproveAllRecipesAdmissionTests
+public sealed class ApproveAllRecipesAdmissionTests : IDisposable
 {
     private readonly SliceHarness _slice = new();
     private readonly FakeShippedRecipes _shipped = new(StepAndItem());
     private readonly JobRegistry _jobs = new();
     private readonly RedeemedPlans _kept = new();
 
+    private IDisposable? _caller;
+
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private ApproveAllRecipesAdmission Admission() => new(new ApproveAllPlanReader(_slice.Profiles, _shipped), _slice.Challenges, _jobs, _kept);
+    public void Dispose() => _caller?.Dispose();
+
+    private ApproveAllRecipesAdmission Admission()
+    {
+        _caller ??= _slice.Callers.EnterService("test");
+        return new(new ApproveAllPlanReader(_slice.Profiles, _shipped), _slice.Challenges, _jobs, _kept, _slice.Callers);
+    }
 
     private async Task Approved() => _ = await _slice.Profiles.Save(SliceHarness.Profile(), Token);
 
@@ -100,6 +108,7 @@ public sealed class ApproveAllRecipesAdmissionTests
         Assert.True(admitted.IsSuccess);
         Assert.True(_kept.Take(request, out var plan));
         Assert.Equal([Step, Item], plan!.Plan.Recipes.Select(static r => r.Id));
+        Assert.Equal(_slice.Callers.Current!.CommandId, plan.Batch);   // why: the admission ran under the caller entered above
         Assert.Equal(ledgerBefore, _slice.Store.Events.Count);
         Assert.Equal(0, _shipped.Applied);
     }

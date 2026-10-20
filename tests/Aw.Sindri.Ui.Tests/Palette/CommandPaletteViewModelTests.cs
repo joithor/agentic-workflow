@@ -641,7 +641,7 @@ public sealed partial class CommandPaletteViewModelTests
         _palette.Open();
         _palette.Query = "recipes";
 
-        await _palette.Run(Entry("go:Recipes"), Token);   // "Approve all recipes" (an action) also matches the query and comes first
+        await _palette.Run(_palette.Selected, Token);
 
         Assert.Equal([PageId.Recipes], _pages);
         Assert.Equal(["go:Recipes"], _history, StringComparer.Ordinal);

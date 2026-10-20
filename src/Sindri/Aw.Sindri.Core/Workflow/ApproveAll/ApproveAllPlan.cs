@@ -13,6 +13,10 @@ namespace Aw.Sindri.Core.Workflow.ApproveAll;
 /// <param name="AsOf">How fresh the answer is.</param>
 public sealed record ApproveAllPlan(IReadOnlyList<ApproveAllRow> Recipes, IReadOnlyList<OwnApprovalRow> OwnApproval, string Digest, string? Empty, AsOf AsOf)
 {
+    /// <summary>True when there is no recipe a hold would approve (a recipe needing its own approval is approved one at a time): a start answers the empty result.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool NothingToHold => Recipes.Count == 0;
+
     /// <summary>The sentence an empty plan carries.</summary>
     public const string EmptySentence = "Every recipe is approved.";
 

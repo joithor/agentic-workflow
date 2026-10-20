@@ -104,12 +104,35 @@ public abstract class ShippedRecipesContract
         Expect.Sequence([(_review, _item)], result.Skipped.Select(static s => (s.Id, s.Because)));
     }
 
-    private static async Task<RedeemedPlan> Redeemed(IShippedRecipes port)
+    /// <summary>A row the plan names but the set does not ship is refused SND-RECIPE-011, and one whose hash is not the shipped one SND-RECIPE-009; both carry the one-recipe approval to run instead, and the rest still go.</summary>
+    /// <returns>The test.</returns>
+    [Fact]
+    public async Task A_row_that_is_not_shipped_or_moved_is_refused_by_its_own_code_and_the_rest_go()
     {
+        var port = Create([Seed(_step, "One step", 'a'), Seed(_note, "Note", 'c')]);
         var plan = (await port.Plan(TestContext.Current.CancellationToken)).Value;
+        var stray = plan.Recipes[0] with { Id = _review, DisplayName = "Review loop", Children = [] };
+        var moved = plan.Recipes[1] with { Hash = RecipeHash.From("sha256:" + new string('f', 64)) };
+        var edited = new ShippedRecipePlan([stray, moved, plan.Recipes[0]], []);
+
+        var result = (await port.Approve(await Redeemed(port, edited), new RecordedProgress(), TestContext.Current.CancellationToken)).Value;
+
+        Expect.Sequence([(_review, "SND-RECIPE-011"), (_note, "SND-RECIPE-009")], result.Refused.Select(static r => (r.Id, r.Code)));
+        Expect.Sequence([_step], result.Approved.Select(static a => a.Id));
+        Expect.True(result.Refused.All(static r => r.Cli is { } cli && cli.Contains("recipe approve", StringComparison.Ordinal)));
+    }
+
+    private static readonly Core.Ids.CommandId _batch = Core.Ids.CommandId.From(new Guid(192, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+
+    private static async Task<RedeemedPlan> Redeemed(IShippedRecipes port) =>
+        await Redeemed(port, (await port.Plan(TestContext.Current.CancellationToken)).Value);
+
+    private static Task<RedeemedPlan> Redeemed(IShippedRecipes port, ShippedRecipePlan plan)
+    {
+        ArgumentNullException.ThrowIfNull(port);
         var challenges = new InMemoryChallenges(new FakeTimeProvider(KnownInstants.Epoch));
         var issued = challenges.Issue(ChallengeAction.ApproveAll(plan.Digest), ChallengeSubject.ForApproveAll(plan.Digest));
-        return RedeemedPlan.Redeem(challenges, new ChallengeAnswer(issued.Id, "approve-all " + plan.Digest), plan).Value;
+        return Task.FromResult(RedeemedPlan.Redeem(challenges, new ChallengeAnswer(issued.Id, "approve-all " + plan.Digest), plan, _batch).Value);
     }
 
     private sealed class RecordedProgress : IProgress<string>
