@@ -3,7 +3,7 @@
 # (spec docs/superpowers/specs/2026-10-19-sindri-code-index-design.md §9), and its parity with sindri/package.json.
 #
 # Usage: scripts/code-index-lock.sh check [--file F] [--requirements F] [--package F]
-#        scripts/code-index-lock.sh get <graphify-version|graphify-date|model|model-digest|disk-bytes> [--file F]
+#        scripts/code-index-lock.sh get <graphify-version|graphify-date|requirements-sha256|model|model-digest|disk-bytes> [--file F]
 #   check  every row is well formed, there is exactly one graphify, one ollama-model and one need disk-bytes row, the sha256 of the
 #          requirements file (default: code-index-requirements.txt next to the lock) is the graphify row's, and the graphify version
 #          and date equal sindri/package.json's sindri.graphifyPin and sindri.graphifyPinDate. Prints one line per problem:
