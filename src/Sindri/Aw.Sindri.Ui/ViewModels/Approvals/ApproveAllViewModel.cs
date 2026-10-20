@@ -178,6 +178,7 @@ internal sealed partial class ApproveAllViewModel : ObservableObject
 
         _session++;
         _challenge = null;
+        ResetAnswerState();   // a hold in progress lets go: the view's timer stops on its next step
         IsOpen = false;
         Phase = ApproveAllPhase.Closed;
         Live.Quiet();
