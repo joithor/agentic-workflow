@@ -23,9 +23,9 @@ public sealed record IndexSettings(
     EmbeddingSettings? Embeddings = null,
     GraphSettings? Graph = null)
 {
-    /// <summary>The default for <c>maxFileKB</c>.</summary>
+    /// <summary>The default for 'maxFileKB'.</summary>
     public const int DefaultMaxFileKB = 512;
 
-    /// <summary>The default for <c>maxTotalMB</c>.</summary>
+    /// <summary>The default for 'maxTotalMB'.</summary>
     public const int DefaultMaxTotalMB = 200;
 }

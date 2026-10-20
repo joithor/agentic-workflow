@@ -9,9 +9,9 @@ namespace Aw.Sindri.Core.Profile;
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record GraphSettings(bool? Enabled = null, int? MaxMB = null, int? MaxNodes = null)
 {
-    /// <summary>The default for <c>maxMB</c>.</summary>
+    /// <summary>The default for 'maxMB'.</summary>
     public const int DefaultMaxMB = 256;
 
-    /// <summary>The default for <c>maxNodes</c>.</summary>
+    /// <summary>The default for 'maxNodes'.</summary>
     public const int DefaultMaxNodes = 500_000;
 }

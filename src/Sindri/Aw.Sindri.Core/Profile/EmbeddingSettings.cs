@@ -9,6 +9,6 @@ namespace Aw.Sindri.Core.Profile;
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record EmbeddingSettings(bool? Enabled = null, string? Url = null, string? Model = null)
 {
-    /// <summary>The default for <c>url</c>.</summary>
+    /// <summary>The default for 'url'.</summary>
     public const string DefaultUrl = "http://127.0.0.1:11434";
 }

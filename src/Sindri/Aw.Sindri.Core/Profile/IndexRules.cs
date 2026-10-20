@@ -38,6 +38,7 @@ internal static class IndexRules
     {
         for (var i = 0; i < (globs?.Count ?? 0); i++)
         {
+            // why: the loop bound is zero when globs is null
             if (ProfileRules.GlobProblem(globs![i]) is { } problem)
             {
                 return Invalid(string.Create(CultureInfo.InvariantCulture, $"{path}[{i}]"), problem);
@@ -64,8 +65,7 @@ internal static class IndexRules
         Uri.TryCreate(url, UriKind.Absolute, out var uri)
         && uri.Scheme == Uri.UriSchemeHttp
         && uri.UserInfo.Length == 0
-        && uri.HostNameType is UriHostNameType.IPv4 or UriHostNameType.IPv6
-        && System.Net.IPAddress.IsLoopback(System.Net.IPAddress.Parse(uri.IdnHost.Trim('[', ']')))
+        && (string.Equals(uri.Host, "127.0.0.1", StringComparison.Ordinal) || string.Equals(uri.Host, "[::1]", StringComparison.Ordinal))
         && uri.AbsolutePath == "/" && uri.Query.Length == 0 && uri.Fragment.Length == 0;
 
     /// <summary>The URL without credentials, so a bad one is never echoed with its password.</summary>

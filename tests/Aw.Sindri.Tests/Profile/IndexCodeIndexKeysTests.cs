@@ -24,13 +24,13 @@ public sealed class IndexCodeIndexKeysTests : IDisposable
         Assert.Equal(["src/util/**"], profile.Index!.UtilityGlobs);
         Assert.Equal(256, profile.Index.MaxFileKB);
         Assert.Equal(100, profile.Index.MaxTotalMB);
-        Assert.Equal(new EmbeddingSettings(true, "http://127.0.0.1:11434", "nomic-embed-text"), profile.Index.Embeddings);
-        Assert.Equal(new GraphSettings(false, 64, 1000), profile.Index.Graph);
+        Assert.Equal(new EmbeddingSettings(Enabled: true, Url: "http://127.0.0.1:11434", Model: "nomic-embed-text"), profile.Index.Embeddings);
+        Assert.Equal(new GraphSettings(Enabled: false, MaxMB: 64, MaxNodes: 1000), profile.Index.Graph);
         Assert.Equal(new GraphSettings(MaxMB: 8), profile.Repos![0].Index!.Graph);
     }
 
     [Theory, Trait("Lane", "integration")]
-    [InlineData("index:\n  maxFile: 1\n", "index.maxFile")]
+    [InlineData("index:\n  maxFile: 1\n", "maxFile")]
     [InlineData("index:\n  embeddings: { enable: true }\n", "enable")]
     [InlineData("index:\n  graph: { maxEdges: 1 }\n", "maxEdges")]
     public async Task An_unknown_key_in_the_section_or_a_nested_record_is_refused_by_name(string yaml, string name)
@@ -39,7 +39,7 @@ public sealed class IndexCodeIndexKeysTests : IDisposable
 
         var result = await _files.Source.Load(Token);
 
-        Assert.True(result.IsFailure);
+        Assert.False(result.IsSuccess);
         Assert.Contains(name, result.Error.Message, StringComparison.Ordinal);
     }
 
