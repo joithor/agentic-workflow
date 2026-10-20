@@ -12022,3 +12022,45 @@ Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.NeedsRepo.get -> bool
 Aw.Sindri.Core.Workflow.Blocks.BlockStepRegistration.NeedsRepo.init -> void
 Aw.Sindri.Core.Workflow.Blocks.BlockStepRuntimes.NeedsRepo(Aw.Sindri.Core.Workflow.Ids.BlockId step) -> bool
 Aw.Sindri.Core.Workflow.Blocks.IRepoStep
+static readonly Aw.Sindri.Core.SindriErrors.WorktreeInvalid -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.WorktreeConflict -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.WorktreeGitFailed -> Aw.Kernel.ErrorDefinition!
+static readonly Aw.Sindri.Core.SindriErrors.WorktreeDirty -> Aw.Kernel.ErrorDefinition!
+Aw.Sindri.Core.Worktrees.IWorktrees
+Aw.Sindri.Core.Worktrees.IWorktrees.Create(Aw.Sindri.Core.Worktrees.WorktreeRequest! request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Sindri.Core.Worktrees.WorktreeCheckout!>!>
+Aw.Sindri.Core.Worktrees.IWorktrees.Remove(string! path, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<Aw.Kernel.Unit>!>
+Aw.Sindri.Core.Worktrees.WorktreeCheckout.<Clone>$() -> Aw.Sindri.Core.Worktrees.WorktreeCheckout!
+Aw.Sindri.Core.Worktrees.WorktreeCheckout.Deconstruct(out string! Path, out string! Head, out string! Branch) -> void
+Aw.Sindri.Core.Worktrees.WorktreeCheckout.Equals(Aw.Sindri.Core.Worktrees.WorktreeCheckout? other) -> bool
+Aw.Sindri.Core.Worktrees.WorktreeCheckout
+Aw.Sindri.Core.Worktrees.WorktreeCheckout.WorktreeCheckout(string! Path, string! Head, string! Branch) -> void
+override Aw.Sindri.Core.Worktrees.WorktreeCheckout.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Worktrees.WorktreeCheckout.GetHashCode() -> int
+override Aw.Sindri.Core.Worktrees.WorktreeCheckout.ToString() -> string!
+static Aw.Sindri.Core.Worktrees.WorktreeCheckout.operator !=(Aw.Sindri.Core.Worktrees.WorktreeCheckout? left, Aw.Sindri.Core.Worktrees.WorktreeCheckout? right) -> bool
+static Aw.Sindri.Core.Worktrees.WorktreeCheckout.operator ==(Aw.Sindri.Core.Worktrees.WorktreeCheckout? left, Aw.Sindri.Core.Worktrees.WorktreeCheckout? right) -> bool
+Aw.Sindri.Core.Worktrees.WorktreeCheckout.Path.get -> string!
+Aw.Sindri.Core.Worktrees.WorktreeCheckout.Path.init -> void
+Aw.Sindri.Core.Worktrees.WorktreeCheckout.Head.get -> string!
+Aw.Sindri.Core.Worktrees.WorktreeCheckout.Head.init -> void
+Aw.Sindri.Core.Worktrees.WorktreeCheckout.Branch.get -> string!
+Aw.Sindri.Core.Worktrees.WorktreeCheckout.Branch.init -> void
+Aw.Sindri.Core.Worktrees.WorktreeRequest.<Clone>$() -> Aw.Sindri.Core.Worktrees.WorktreeRequest!
+Aw.Sindri.Core.Worktrees.WorktreeRequest.Deconstruct(out string! RepoRoot, out string! BaseCommit, out string! Branch, out string! Path) -> void
+Aw.Sindri.Core.Worktrees.WorktreeRequest.Equals(Aw.Sindri.Core.Worktrees.WorktreeRequest? other) -> bool
+Aw.Sindri.Core.Worktrees.WorktreeRequest
+Aw.Sindri.Core.Worktrees.WorktreeRequest.WorktreeRequest(string! RepoRoot, string! BaseCommit, string! Branch, string! Path) -> void
+override Aw.Sindri.Core.Worktrees.WorktreeRequest.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Worktrees.WorktreeRequest.GetHashCode() -> int
+override Aw.Sindri.Core.Worktrees.WorktreeRequest.ToString() -> string!
+static Aw.Sindri.Core.Worktrees.WorktreeRequest.operator !=(Aw.Sindri.Core.Worktrees.WorktreeRequest? left, Aw.Sindri.Core.Worktrees.WorktreeRequest? right) -> bool
+static Aw.Sindri.Core.Worktrees.WorktreeRequest.operator ==(Aw.Sindri.Core.Worktrees.WorktreeRequest? left, Aw.Sindri.Core.Worktrees.WorktreeRequest? right) -> bool
+Aw.Sindri.Core.Worktrees.WorktreeRequest.RepoRoot.get -> string!
+Aw.Sindri.Core.Worktrees.WorktreeRequest.RepoRoot.init -> void
+Aw.Sindri.Core.Worktrees.WorktreeRequest.BaseCommit.get -> string!
+Aw.Sindri.Core.Worktrees.WorktreeRequest.BaseCommit.init -> void
+Aw.Sindri.Core.Worktrees.WorktreeRequest.Branch.get -> string!
+Aw.Sindri.Core.Worktrees.WorktreeRequest.Branch.init -> void
+Aw.Sindri.Core.Worktrees.WorktreeRequest.Path.get -> string!
+Aw.Sindri.Core.Worktrees.WorktreeRequest.Path.init -> void
+Aw.Sindri.Core.Worktrees.WorktreeRequest.Validate() -> Aw.Kernel.Error?
