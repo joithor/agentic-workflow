@@ -20,7 +20,6 @@ public static class ProfileRules
     public static Result<SindriProfile> Check(SindriProfile profile, BoxLimits? box)
     {
         ArgumentNullException.ThrowIfNull(profile);
-        _ = box;   // red: the line rules come with the green commit
         if (profile.SchemaVersion != SindriProfile.CurrentSchemaVersion)
         {
             return Invalid("schemaVersion", string.Create(CultureInfo.InvariantCulture,
@@ -37,7 +36,7 @@ public static class ProfileRules
             return Invalid("api.port", "must be 0 (a free port) or 1024 to 65535");
         }
 
-        var invalid = Sections(profile);
+        var invalid = Sections(profile) ?? LineProfileRules.Check(profile.Workflow, box);
         if (invalid is not null)
         {
             return invalid;
@@ -134,7 +133,7 @@ public static class ProfileRules
         return null;
     }
 
-    private static string? GlobProblem(string glob) => true switch
+    internal static string? GlobProblem(string glob) => true switch
     {
         _ when string.IsNullOrWhiteSpace(glob) => "must be a non-empty glob",
         _ when glob.Length > MaxGlob => string.Create(CultureInfo.InvariantCulture, $"is over {MaxGlob} characters"),
