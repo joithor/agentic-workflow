@@ -217,6 +217,7 @@ bash config/hooks/tests/judge-health.test.sh
 bash config/hooks/tests/sindri-nudge.test.sh
 bash config/hooks/tests/fleet-state.test.sh   # the aw:fleet hook: every Claude event's state file against the schema, PostToolUse before jq, refusals, modes, under 100 ms (real payloads in tests/fixtures/fleet-input/)
 bash scripts/tests/install-fleet.test.sh      # install-fleet.sh install and --uninstall (only # aw:fleet entries), setup.sh --with-fleet --dry-run
+bash scripts/tests/install-headroom.test.sh   # aw-headroom.sh and install-headroom.sh: upstream detection order, no loop, fake headroom/claude/codex, dry run writes nothing, no MCP, token never printed
 bash config/hooks/tests/failopen.test.sh
 bash config/hooks/tests/meta-hooks.test.sh
 for t in config/lib/tests/*.test.sh; do bash "$t" || echo "FAILED: $t"; done  # merge-hook, levers, installers, and judge-cs-hook-surface (the hook contract: real hooks vs the C# judge, and the TS judge when judge/dist is built; needs dotnet)
@@ -225,6 +226,8 @@ for t in config/lib/tests/*.test.sh; do bash "$t" || echo "FAILED: $t"; done  # 
 scripts/install-<lever>.sh --provider claude|codex|cursor
 scripts/probe.sh [--provider claude|codex|cursor] on|off|status
 scripts/install-scorer.sh               # Build scorer, install CLI + launchd job
+scripts/install-headroom.sh --provider claude|codex   # headroom as a proxy wrapper only (no MCP server): installs the CLI when missing and the `aw-headroom` launcher; setup.sh runs it per provider (Cursor: skipped), fail-open
+aw-headroom claude|codex [args]         # Run the tool through a loopback headroom proxy chained in front of its current upstream (e.g. EasyCLIProxyAPI); nothing on disk is edited; `aw-headroom upstream|status|stop`
 sindri doctor                           # Sindri health checks (ok / warn / fail + fix)
 sindri index setup && sindri index build    # code index (Ollama + graphify, offline)
 sindri evolve init && sindri evolve check --changed   # registry + module eval suites (heavy: takes a heavy-job slot)
