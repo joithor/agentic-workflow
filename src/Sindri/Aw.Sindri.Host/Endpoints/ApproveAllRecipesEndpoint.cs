@@ -1,3 +1,4 @@
+using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Challenges;
@@ -5,7 +6,6 @@ using Aw.Sindri.Core.Commands;
 using Aw.Sindri.Core.Jobs;
 using Aw.Sindri.Core.Workflow.ApproveAll;
 using Aw.Sindri.Features.ApproveAllRecipes;
-using Aw.Sindri.Features.GetApproveAllPlan;
 
 namespace Aw.Sindri.Host.Endpoints;
 
@@ -17,25 +17,25 @@ internal static class ApproveAllRecipesEndpoint
 {
     internal static RouteGroupBuilder MapApproveAllRecipes(this RouteGroupBuilder group)
     {
-        _ = group.MapPost("/workflow/recipes/approve-all", Handle).WithMetadata(new JobRouteMetadata(typeof(ApproveAllRecipesRequest)));
+        _ = group.MapPost("/workflow/recipes/approve-all", static async Task<IResult> (ChallengeAnswer? answer, HttpContext http) =>
+            {
+                var services = http.RequestServices;
+                var ct = http.RequestAborted;
+                var plan = await services.GetRequiredService<ApproveAllPlanReader>().Read(ct).ConfigureAwait(false);
+                if (plan is { IsSuccess: true, Value.NothingToHold: true })
+                {
+                    var row = services.GetRequiredService<ICommandCatalog>().For(typeof(ApproveAllRecipesRequest))[0];
+                    Result<ApproveAllResult> empty = Authorization.Decide(row.Class, services.GetRequiredService<ICallerContextAccessor>().Current, row).Refusal is { } refused
+                        ? refused
+                        : ApproveAllResult.Nothing;
+                    return empty.ToHttpResult();
+                }
+
+                Result<JobStartedResponse> blank = SindriErrors.InvalidInput.With("the request body is empty (send the challenge and its typed text)");
+                return answer is null
+                    ? blank.ToHttpResult()
+                    : (await services.GetRequiredService<IService<ApproveAllRecipesRequest, JobStartedResponse>>().Handle(new ApproveAllRecipesRequest(answer), ct).ConfigureAwait(false)).ToHttpResult();
+            }).WithMetadata(new JobRouteMetadata(typeof(ApproveAllRecipesRequest)));   // why: a lambda like every endpoint: a method here would add an Endpoints-to-Host edge that closes a namespace cycle with Mcp (ARCH-CYCLE-001)
         return group;
-    }
-
-    private static async Task<IResult> Handle(ChallengeAnswer? answer, HttpContext http)
-    {
-        var services = http.RequestServices;
-        var ct = http.RequestAborted;
-        var plan = await services.GetRequiredService<IService<GetApproveAllPlanRequest, ApproveAllPlan>>().Handle(new GetApproveAllPlanRequest(), ct).ConfigureAwait(false);
-        if (plan is { IsSuccess: true, Value.NothingToHold: true })
-        {
-            var row = services.GetRequiredService<ICommandCatalog>().For(typeof(ApproveAllRecipesRequest))[0];
-            return Authorization.Decide(row.Class, services.GetRequiredService<ICallerContextAccessor>().Current, row).Refusal is { } refused
-                ? HttpResults.Problem(refused)
-                : Results.Ok(ApproveAllResult.Nothing);
-        }
-
-        return answer is null
-            ? HttpResults.Problem(SindriErrors.InvalidInput.With("the request body is empty (send the challenge and its typed text)"))
-            : (await services.GetRequiredService<IService<ApproveAllRecipesRequest, JobStartedResponse>>().Handle(new ApproveAllRecipesRequest(answer), ct).ConfigureAwait(false)).ToHttpResult();
     }
 }
