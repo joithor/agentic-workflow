@@ -2,6 +2,7 @@ using System.Globalization;
 using Avalonia;
 using Avalonia.Automation;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Headless;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -121,12 +122,17 @@ public sealed class ShellWindowTests : IDisposable
                 && (c is Button or ListBoxItem or TextBlock { Text.Length: > 1 })
                 && string.IsNullOrEmpty(AutomationProperties.GetName(c))
                 && !c.Classes.Contains("live-region")
+                && !IsNamedDisclosureToggle(c)
                 && AutomationProperties.GetAccessibilityView(c) != AccessibilityView.Raw   // hidden from the tree on purpose; its parent carries the name
                 && (c is not TextBlock || (c.FindAncestorOfType<Button>() is null && c.FindAncestorOfType<ListBoxItem>() is null)))
             .Select(c => c.GetType().Name + ":" + (c as TextBlock)?.Text)
             .ToList();
         Assert.True(unnamed.Count == 0, "unnamed: " + string.Join(", ", unnamed));
     }
+
+    // An Expander's header toggle: the named Expander carries the name.
+    private static bool IsNamedDisclosureToggle(Control c) =>
+        c is ToggleButton && c.FindAncestorOfType<Expander>() is { } disclosure && !string.IsNullOrEmpty(AutomationProperties.GetName(disclosure));
 
     // §14.2: every text is a step of the type ramp, so the Text size preference reaches all of it. At scale 1.3 each
     // visible TextBlock's size is a ramp size × 1.3 (a literal size, or one Fluent's own default sets, stays put). The
@@ -340,6 +346,7 @@ public sealed class ShellWindowTests : IDisposable
         var profile = Named<ItemsControl>(window, "HealthCells").GetVisualDescendants().OfType<StateIcon>().Single(i => i.IsEffectivelyVisible);
         Assert.Equal(Brush("Success"), profile.Foreground);
         shell.GoTo(PageId.System);
+        shell.Health.DetailsOpen = true;   // the per-service detail waits behind a closed Details
         Settle(window);
         Assert.Equal(Brush("Success"), Named<StateIcon>(window, "ProfileHeadGlyph").Foreground);
 
@@ -383,6 +390,7 @@ public sealed class ShellWindowTests : IDisposable
         _server.Push(A.Event(3));
         var (window, shell) = await Show(s => s.State == ShellState.Normal && s.Health.LastEvent.EndsWith("#3", StringComparison.Ordinal));
         shell.GoTo(PageId.System);
+        shell.Health.DetailsOpen = true;   // the label/value rows wait behind a closed Details
         Settle(window);
 
         static double Baseline(TextBlock t, Window w) => t.TranslatePoint(default, w)!.Value.Y + t.TextLayout.Baseline; // why: in the window
@@ -1255,6 +1263,7 @@ public sealed class ShellWindowTests : IDisposable
         _records.Write(A.Record());
         var (window, shell) = await Show(s => s.State == ShellState.Normal);
         shell.GoTo(PageId.System);
+        shell.Health.DetailsOpen = true;   // the control plane's glyph and word wait behind a closed Details
         _server.FailPing = true;
         _clock.Advance(ShellViewModel.StaleAfter);
         await Until(() => shell.State == ShellState.Stale);
@@ -1277,6 +1286,9 @@ public sealed class ShellWindowTests : IDisposable
 
         Assert.Equal(PageId.System, shell.CurrentPage);
         Assert.True(Visible(window, "HealthPage"));
+        Assert.False(shell.Health.DetailsOpen);
+        shell.Health.DetailsOpen = true;   // the card's rows wait behind a closed Details
+        Settle(window);
 
         // I5 (services-health.html HEALTH): label/value rows at Body size under section heads that carry the state's
         // glyph and word; no display-size values and no badge repeating the pill.
