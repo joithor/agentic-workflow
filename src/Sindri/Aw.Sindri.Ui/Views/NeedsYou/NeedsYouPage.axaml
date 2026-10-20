@@ -40,7 +40,7 @@
                 <Border Classes="group-header" AutomationProperties.Name="{Binding Name}" AutomationProperties.AccessibilityView="Control" AutomationProperties.ControlTypeOverride="Text">
                   <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" VerticalAlignment="Center">
                     <icons:StateIcon Glyph="Profile" VerticalAlignment="Center" Foreground="{DynamicResource Brush.Attention}" />
-                    <TextBlock x:Name="NeedsYouGroupHeading" Grid.Column="1" Classes="body-strong" Text="{Binding Heading}" TextTrimming="CharacterEllipsis" AutomationProperties.AccessibilityView="Raw" />
+                    <TextBlock Grid.Column="1" Classes="body-strong" Text="{Binding Heading}" TextTrimming="CharacterEllipsis" AutomationProperties.AccessibilityView="Raw" />
                     <TextBlock Grid.Column="2" Classes="caption muted" Text="{Binding CountText}" AutomationProperties.AccessibilityView="Raw" />
                   </Grid>
                 </Border>
