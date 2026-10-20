@@ -145,14 +145,14 @@ public sealed class ShellInboxTests
     {
         var shell = await Shell(NeedsYouRows.Decision(), NeedsYouRows.Park("desk:WFI-1"), NeedsYouRows.Failure());
         shell.GoTo(PageId.Home, HomeFilter.Decisions);
-        Assert.Single(shell.NeedsYou.Seen.Rows);
+        _ = Assert.Single(shell.NeedsYou.Seen.Rows);
 
         shell.OpenNeedsYouInbox();
-        Assert.Equal(["Your approvals", "Agent decisions", "Something failed"], shell.Inbox.Groups.Select(g => g.Heading));
+        Assert.Equal(["Your approvals", "Agent decisions", "Something failed"], shell.Inbox.Groups.Select(g => g.Heading), StringComparer.Ordinal);
         Assert.Equal("3 waiting, 0 runs", shell.Inbox.CountText);
 
         _ = shell.LeaveNeedsYouInbox();
-        Assert.Single(shell.NeedsYou.Seen.Rows);
+        _ = Assert.Single(shell.NeedsYou.Seen.Rows);
     }, Token);
 
     [Fact]

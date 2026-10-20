@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Globalization;
 using System.Collections.ObjectModel;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
 using Avalonia.Headless;
@@ -187,7 +188,7 @@ public sealed class StickyGroupListTests
                 StickyGroupList.EnsureVisible(above);
                 Settle(window);
 
-                return above.TranslatePoint(new Avalonia.Point(0, 0), scroll)?.Y ?? -1;
+                return above.TranslatePoint(new Point(0, 0), scroll)?.Y ?? -1;
             }
             finally
             {
@@ -210,7 +211,7 @@ public sealed class StickyGroupListTests
                 Settle(window);
                 var stuck = list.GetVisualDescendants().OfType<ContentControl>().First(c => c.Classes.Contains("sticky-header"));
 
-                var visual = list.GetVisualAt(new Avalonia.Point(20, 10));
+                var visual = list.GetVisualAt(new Point(20, 10));
                 return visual is not null && (ReferenceEquals(visual, stuck) || visual.GetVisualAncestors().Contains(stuck));
             }
             finally
