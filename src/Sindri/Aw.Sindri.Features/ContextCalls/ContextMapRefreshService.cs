@@ -19,7 +19,7 @@ namespace Aw.Sindri.Features.ContextCalls;
 /// 'service:context-map-refresh' (the command chain: gate, audit and authorization; never the runner), so the map keeps itself current. A tick reads the mapped repos' heads from the engine
 /// and the refresh jobs from the 'jobs' view, then decides in <see cref="MainMoveDecision"/>: a running refresh is never doubled, the heads are compared with the ones the last successful refresh
 /// mapped, and failures back off 5, 10, 20, 40, then 60 minutes. A repo on a feature branch is left out and named in the quiet run's summary. Three failed refreshes in a row fail the run
-/// (needs-you 'failure:service:context-map-refresh'), even while the backoff holds the next start; a success resets it.
+/// (needs-you 'failure:service:context-map-refresh'), while the backoff holds the next start and while its retry runs; a success resets it.
 /// </summary>
 /// <param name="scopes">The profile's scope and the caller.</param>
 /// <param name="engine">The context engine: the mapped repos' heads.</param>
@@ -68,17 +68,30 @@ internal sealed partial class ContextMapRefreshService(ContextScopes scopes, ICo
         var onDefault = heads.Where(static h => h.OnDefault).ToDictionary(static h => h.Repo.Value, static h => h.Head, StringComparer.Ordinal);
         var finishedJobs = recent.Where(static j => j.State != JobState.Running && j.EndedAt is not null).OrderByDescending(static j => j.EndedAt).Take(RecentRuns).ToArray();
         IReadOnlyList<SyncAttempt> finished = [.. finishedJobs.Select(static j => new SyncAttempt(j.State == JobState.Failed, j.EndedAt ?? default))];
-        var failures = MainMoveDecision.FailedInARow(finished);
-        if (failures >= FailuresToAlarm)
-        {
-            return SindriErrors.ServiceFailed.With(string.Create(CultureInfo.InvariantCulture, $"{ServiceId.Value}: the last {failures} map refreshes failed ({finishedJobs[0].Code ?? "no code"}); the next try backs off"));
-        }
-
         var last = finishedJobs.FirstOrDefault(static j => j.State == JobState.Succeeded);
         var action = MainMoveDecision.Decide(onDefault, last is null ? null : HeadsOf(last), recent.Any(static j => j.State == JobState.Running), finished, clock.GetUtcNow());
-        return action == MainMoveAction.Start
-            ? await Start(elsewhere, cancellationToken).ConfigureAwait(false)
-            : new ScheduledResult(Idle: true, Left(elsewhere));
+        var failures = MainMoveDecision.FailedInARow(finished);
+        if (failures < FailuresToAlarm || action == MainMoveAction.Nothing)
+        {
+            return action == MainMoveAction.Start
+                ? await Start(elsewhere, cancellationToken).ConfigureAwait(false)
+                : new ScheduledResult(Idle: true, Left(elsewhere));
+        }
+
+        return await Alarm(action, failures, finishedJobs[0].Code, elsewhere, cancellationToken).ConfigureAwait(false);
+    }
+
+    // The alarm stays up until a refresh succeeds or the heads are back at the last mapped ones, and the backoff still retries under it.
+    private async ValueTask<Result<ScheduledResult>> Alarm(MainMoveAction action, int failures, string? code, string[] elsewhere, CancellationToken cancellationToken)
+    {
+        var alarm = string.Create(CultureInfo.InvariantCulture, $"{ServiceId.Value}: the last {failures} map refreshes failed ({code ?? "no code"})");
+        if (action != MainMoveAction.Start)
+        {
+            return SindriErrors.ServiceFailed.With(alarm + "; the next try backs off");
+        }
+
+        var retried = await Start(elsewhere, cancellationToken).ConfigureAwait(false);
+        return retried.IsError ? retried.Error : SindriErrors.ServiceFailed.With(alarm + "; " + (retried.Value.Summary ?? "the next try backs off"));
     }
 
     // The heads the last successful refresh mapped; a result that kept none (or an unreadable one) counts as no heads, so the next tick starts one.

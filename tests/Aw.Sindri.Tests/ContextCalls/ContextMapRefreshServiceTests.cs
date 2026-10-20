@@ -185,6 +185,21 @@ public sealed class ContextMapRefreshServiceTests
     }
 
     [Fact, Trait("Lane", "unit")]
+    public async Task Three_failures_are_quiet_once_the_heads_are_back_at_the_last_mapped_ones()
+    {
+        Job(JobState.Succeeded, TimeSpan.FromMinutes(60), ("a", "1"));
+        Job(JobState.Failed, TimeSpan.FromMinutes(30));
+        Job(JobState.Failed, TimeSpan.FromMinutes(20));
+        Job(JobState.Failed, TimeSpan.FromMinutes(1));
+        _engine.Heads = [Head("a", "1")];
+
+        var result = await Run(await Service());
+
+        Assert.True(result.Value.Idle);
+        Assert.Empty(_start.Requests);
+    }
+
+    [Fact, Trait("Lane", "unit")]
     public async Task Two_failures_are_not_yet_a_failed_run_and_a_success_after_failures_is_a_clean_run()
     {
         Job(JobState.Failed, TimeSpan.FromMinutes(30));
