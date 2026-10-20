@@ -2,6 +2,7 @@ using System.Text.Json.Nodes;
 using Aw.Kernel;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Packets;
+using Aw.Sindri.Features.Line;
 using Aw.Sindri.Testing.Packets;
 using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Tests.Scoping.Steps;

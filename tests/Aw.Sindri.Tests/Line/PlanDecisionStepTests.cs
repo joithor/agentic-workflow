@@ -149,7 +149,7 @@ public sealed class PlanDecisionStepTests
         var result = await Settle(Design(Decision(1)), """[{"question":"Q-revise-design"}]""");
 
         Assert.Equal("changed", result.Result!.Outcome.Value);
-        Assert.Equal(["owner asked for a revision, no text"], Out(result, "designRevision")["notes"]!.AsArray().Select(static n => (string)n!));
+        Assert.Equal(["owner asked for a revision, no text"], Out(result, "designRevision")["notes"]!.AsArray().Select(static n => (string)n!), StringComparer.Ordinal);
     }
 
     [Theory]
