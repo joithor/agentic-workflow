@@ -18,7 +18,7 @@ internal static class StepRunFixtures
         new(type, At(minutes), "service:workflow", new WorkflowEventPayload(Id, from, step, "start", Outcome: null, Run: null, Detail("service:workflow", Frame(step, token, runtime))));
 
     /// <summary>A report on <paramref name="token"/>; it leaves <paramref name="step"/> for <paramref name="to"/>, opening <paramref name="next"/> there when given.</summary>
-    public static RecordedWorkflowEvent Completed(string step, string to, string token, string outcome, int minutes = 5, int? tokens = null, string actor = "agent:session", string? next = null, string kind = "step.completed", string type = "workflow.transition")
+    public static RecordedWorkflowEvent Completed(string step, string to, string token, string? outcome, int minutes = 5, int? tokens = null, string actor = "agent:session", string? next = null, string kind = "step.completed", string type = "workflow.transition")
     {
         var entry = int.Parse(token[..token.IndexOf('.', StringComparison.Ordinal)], System.Globalization.CultureInfo.InvariantCulture);
         var frame = next is null ? new FrameSummary(to, Entry: entry + 1, Run: null, Child: null) : Frame(to, next, StepRuntime.Agent);

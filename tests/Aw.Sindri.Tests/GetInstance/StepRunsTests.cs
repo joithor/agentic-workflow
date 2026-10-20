@@ -32,7 +32,7 @@ public sealed class StepRunsTests
     [Fact]
     public void A_failed_run_is_failed_with_no_outcome()
     {
-        var run = Assert.Single(Fold(Started("write", "1.1"), Completed("write", "parked", "1.1", outcome: null!, kind: "step.failed", tokens: 0)));
+        var run = Assert.Single(Fold(Started("write", "1.1"), Completed("write", "parked", "1.1", outcome: null, kind: "step.failed", tokens: 0)));
 
         Assert.Equal((StepRunState.Failed, null), (run.State, run.Outcome));
     }
