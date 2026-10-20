@@ -14141,3 +14141,43 @@ Aw.Sindri.Core.Events.SetupStepChanged.Deconstruct(out Aw.Sindri.Core.Ids.Comman
 Aw.Sindri.Core.Events.SetupStepChanged.SetupStepChanged(Aw.Sindri.Core.Ids.CommandId CommandId, string! Step, string! State, string? Code = null) -> void
 Aw.Sindri.Core.Events.SetupStepChanged.Step.get -> string!
 Aw.Sindri.Core.Events.SetupStepChanged.Step.init -> void
+Aw.Sindri.Core.Control.IRepoLocator.Place(string! directory, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.RepoEntry!>! repos, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Sindri.Core.Control.RepoPlacement?>
+Aw.Sindri.Core.Control.RepoPlacement
+Aw.Sindri.Core.Control.RepoPlacement.<Clone>$() -> Aw.Sindri.Core.Control.RepoPlacement!
+Aw.Sindri.Core.Control.RepoPlacement.Deconstruct(out string! Path, out Aw.Sindri.Core.Ids.RepoName? Repo) -> void
+Aw.Sindri.Core.Control.RepoPlacement.Equals(Aw.Sindri.Core.Control.RepoPlacement? other) -> bool
+Aw.Sindri.Core.Control.RepoPlacement.Path.get -> string!
+Aw.Sindri.Core.Control.RepoPlacement.Path.init -> void
+Aw.Sindri.Core.Control.RepoPlacement.Repo.get -> Aw.Sindri.Core.Ids.RepoName?
+Aw.Sindri.Core.Control.RepoPlacement.Repo.init -> void
+Aw.Sindri.Core.Control.RepoPlacement.RepoPlacement(string! Path, Aw.Sindri.Core.Ids.RepoName? Repo) -> void
+Aw.Sindri.Core.Profile.RepoState
+Aw.Sindri.Core.Profile.RepoState.NoApprovedProfile = 1 -> Aw.Sindri.Core.Profile.RepoState
+Aw.Sindri.Core.Profile.RepoState.NotOnboarded = 2 -> Aw.Sindri.Core.Profile.RepoState
+Aw.Sindri.Core.Profile.RepoState.Onboarded = 3 -> Aw.Sindri.Core.Profile.RepoState
+Aw.Sindri.Core.Profile.RepoState.OutsideGit = 0 -> Aw.Sindri.Core.Profile.RepoState
+Aw.Sindri.Core.Profile.RepoStatus
+Aw.Sindri.Core.Profile.RepoStatus.<Clone>$() -> Aw.Sindri.Core.Profile.RepoStatus!
+Aw.Sindri.Core.Profile.RepoStatus.Deconstruct(out Aw.Sindri.Core.Profile.RepoState State, out string? Path, out string? Name) -> void
+Aw.Sindri.Core.Profile.RepoStatus.Equals(Aw.Sindri.Core.Profile.RepoStatus? other) -> bool
+Aw.Sindri.Core.Profile.RepoStatus.Name.get -> string?
+Aw.Sindri.Core.Profile.RepoStatus.Name.init -> void
+Aw.Sindri.Core.Profile.RepoStatus.Path.get -> string?
+Aw.Sindri.Core.Profile.RepoStatus.Path.init -> void
+Aw.Sindri.Core.Profile.RepoStatus.RepoStatus(Aw.Sindri.Core.Profile.RepoState State, string? Path, string? Name) -> void
+Aw.Sindri.Core.Profile.RepoStatus.State.get -> Aw.Sindri.Core.Profile.RepoState
+Aw.Sindri.Core.Profile.RepoStatus.State.init -> void
+Aw.Sindri.Core.Profile.RepoStatusRules
+override Aw.Sindri.Core.Control.RepoPlacement.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Control.RepoPlacement.GetHashCode() -> int
+override Aw.Sindri.Core.Control.RepoPlacement.ToString() -> string!
+override Aw.Sindri.Core.Profile.RepoStatus.Equals(object? obj) -> bool
+override Aw.Sindri.Core.Profile.RepoStatus.GetHashCode() -> int
+override Aw.Sindri.Core.Profile.RepoStatus.ToString() -> string!
+static Aw.Sindri.Core.Control.RepoPlacement.operator !=(Aw.Sindri.Core.Control.RepoPlacement? left, Aw.Sindri.Core.Control.RepoPlacement? right) -> bool
+static Aw.Sindri.Core.Control.RepoPlacement.operator ==(Aw.Sindri.Core.Control.RepoPlacement? left, Aw.Sindri.Core.Control.RepoPlacement? right) -> bool
+static Aw.Sindri.Core.Profile.RepoStatus.operator !=(Aw.Sindri.Core.Profile.RepoStatus? left, Aw.Sindri.Core.Profile.RepoStatus? right) -> bool
+static Aw.Sindri.Core.Profile.RepoStatus.operator ==(Aw.Sindri.Core.Profile.RepoStatus? left, Aw.Sindri.Core.Profile.RepoStatus? right) -> bool
+static Aw.Sindri.Core.Profile.RepoStatusRules.ExitCode(Aw.Sindri.Core.Profile.RepoStatus! status) -> int
+static Aw.Sindri.Core.Profile.RepoStatusRules.NudgeLine(Aw.Sindri.Core.Profile.RepoStatus! status) -> string!
+static Aw.Sindri.Core.Profile.RepoStatusRules.Text(Aw.Sindri.Core.Profile.RepoStatus! status) -> string!
