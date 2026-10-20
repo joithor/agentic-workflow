@@ -207,8 +207,8 @@ public sealed class StatePathOrderTests
     /// <summary>Every shipped recipe's hash, pinned before DT-C changed how a produces entry is read (a bare key must keep writing as a string).</summary>
     public static IReadOnlyDictionary<string, string> PinnedHashes { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
     {
-        ["sindri/workflow.phase.yaml"] = "sha256:f3f223a4e693e3382f74b055ec4e3777b3f500e596d2d17251af26c197299013",
-        ["sindri/workflow.pr-babysitter.yaml"] = "sha256:158df4fda5bbdc38bc5cf1424cc058f961b49d7a0320da46e00fed00b8a58641",
+        ["sindri/workflow.phase.yaml"] = "sha256:253ce29641ef0023f8d298a7b9ed3bbedb18be0b90f83ce5da4342b5298625f4",
+        ["sindri/workflow.pr-babysitter.yaml"] = "sha256:03bcd8c465f70a112f3f565933918a585f6384caa92b5788639bde835f574211",
         ["sindri/workflow.build.yaml"] = "sha256:575430facdb0cb6187380210f609390c457b24119f0eb7173a16404dc832a284",
         ["sindri/workflow.prove.yaml"] = "sha256:d0421eb0db5c89641e4dce65ba96bfc3943391692e9083c603026d8bdd2d50e0",
         ["sindri/workflow.item.yaml"] = "sha256:85ecaff4781ee6cfd458a983861cf04a66228fde579c95722b03b353a3532d45",
@@ -229,7 +229,7 @@ public sealed class StatePathOrderTests
         ["sindri/workflow.line.yaml"] = "sha256:251e34be8370d52c8b70e57ff5f52bbac5a64123ca04c9eccebe8d7a597eeea2",
         ["sindri/workflow.report.yaml"] = "sha256:864f58986b4308e16c42ba7d36f751949401a496cb9f12d93d8568a1dac4c093",
         ["sindri/workflow.reproduce.yaml"] = "sha256:690055ffdec765ac25dd7d32af75fb5036480e36e9cb2cc3397b375828a25518",
-        ["sindri/workflow.review-loop.yaml"] = "sha256:169cd2bf9d80e92fe72e977be25892fc4f7c829b1e5025f4a546f182981ca3f1",
+        ["sindri/workflow.review-loop.yaml"] = "sha256:0ebe6a73b6c9539ab23d93e762e3549a859db92cb3568faa16cca43de369f3d5",
         ["sindri/workflow.scoping.yaml"] = "sha256:456d3d6d276602fa326b63389ed604217b2111f8870edf52852da034a7fd1787",
         ["sindri/workflow.ship.yaml"] = "sha256:98d3d07fd83d23bd5a05fcdb1887aeb67d9de826451af8a8098b4098d4abd8c4",
         ["sindri/workflow.verify.yaml"] = "sha256:3f1aeae387cf74c50a02eb397f88791abb93d9bd43bc92accf7025b70e82f696",
