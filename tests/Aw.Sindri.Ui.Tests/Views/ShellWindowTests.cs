@@ -1295,6 +1295,23 @@ public sealed class ShellWindowTests : IDisposable
         Frame(window, "health");
     });
 
+    // F3 review (456-1): what the person must act on stays up front; only the per-service detail waits behind Details.
+    [Fact]
+    public Task The_profile_fix_and_the_actions_are_reachable_while_Details_is_closed() => OnUi(async () =>
+    {
+        _records.Write(A.Record());
+        _server.Current = A.Status(profile: A.ChangedProfile());
+        var (window, shell) = await Show(s => s.State == ShellState.Normal && s.Health.HasProfileFix);
+        shell.GoTo(PageId.System);
+        Settle(window);
+
+        Assert.False(shell.Health.DetailsOpen);
+        Assert.False(Named<Expander>(window, "HealthDetails").IsExpanded);
+        Assert.True(Visible(window, "ProfileFixText"));
+        Assert.True(Visible(window, "ActionsSection"));
+        Assert.False(Visible(window, "ProcessRows"));
+    });
+
     [Fact]
     public Task Homes_health_strip_shows_the_health_line_and_opens_Health() => OnUi(async () =>
     {

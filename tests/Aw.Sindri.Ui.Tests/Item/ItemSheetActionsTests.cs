@@ -124,7 +124,7 @@ public sealed class ItemSheetActionsTests
         await close.Press(Token);
 
         Assert.Equal((false, "SND-ITEM-409", A.Detail("items-id-close", "stale-version")), (sheet.HasProblem, close.ErrorCode, close.ErrorDetail));
-        Assert.Equal("version 2", sheet.VersionText);
+        Assert.Equal("2", sheet.VersionText);
         Assert.Contains(close, sheet.Actions);
 
         _server.Close = RouteAnswer.SpecShaped("items-id-close", "accepted");
