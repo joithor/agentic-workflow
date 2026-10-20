@@ -46,6 +46,14 @@
       "job": null
     },
     {
+      "name": "setup",
+      "every": "1m",
+      "paused": false,
+      "lastRun": null,
+      "nextSlot": null,
+      "job": null
+    },
+    {
       "name": "stuck",
       "every": "5s",
       "paused": false,
