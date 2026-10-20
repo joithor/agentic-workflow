@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using Aw.Sindri.Core.Text;
 
 namespace Aw.Sindri.Core.Checks;
 
@@ -17,6 +18,15 @@ public sealed record RuleFinding(string Rule, string Message, string? Path = nul
     {
         ArgumentNullException.ThrowIfNull(findings);
         return new JsonArray([.. findings.Select(static f => (JsonNode?)f.ToJson())]);
+    }
+
+    /// <summary>This finding with its message, path and detail passed through <paramref name="scrubber"/>: a commit subject or a file name can carry a secret too.</summary>
+    /// <param name="scrubber">Takes secrets out of text.</param>
+    /// <returns>The scrubbed finding.</returns>
+    public RuleFinding Scrubbed(ITextScrubber scrubber)
+    {
+        ArgumentNullException.ThrowIfNull(scrubber);
+        return this with { Message = scrubber.Scrub(Message), Path = Path is null ? null : scrubber.Scrub(Path), Detail = Detail is null ? null : scrubber.Scrub(Detail) };
     }
 
     private JsonObject ToJson()

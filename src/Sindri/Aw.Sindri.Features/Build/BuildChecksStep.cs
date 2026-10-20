@@ -26,6 +26,9 @@ internal sealed class BuildChecksStep(IRunDiff diff, IBranchChanges changes, IPa
     /// <summary>The rule id of a repo command that failed.</summary>
     internal const string CommandRule = "BLD-COMMAND-001";
 
+    /// <summary>The rule id of a worktree with uncommitted or untracked files.</summary>
+    internal const string TreeRule = "BLD-TREE-001";
+
     /// <summary>The rule id of the red tests failing on the head.</summary>
     internal const string RedAgainRule = "BLD-RED-002";
 
@@ -49,6 +52,14 @@ internal sealed class BuildChecksStep(IRunDiff diff, IBranchChanges changes, IPa
             return BlockStepResult.Failed($"step.build.checks: {(head.IsError ? head.Error : scope.Error).Message}");
         }
 
+        var clean = await diff.IsEmpty(worktree, head.Value, cancellationToken).ConfigureAwait(false);
+        if (clean.IsError || !clean.Value)
+        {
+            return clean.IsError
+                ? BlockStepResult.Failed($"step.build.checks can't read {worktree}: {clean.Error.Message}")
+                : StepFacts.Done("failed", ("fact:findings", RuleFinding.ToFact([new RuleFinding(TreeRule, $"the worktree {worktree} has uncommitted or untracked files; the checks must run on the measured head (fix: commit or discard them)")])));
+        }
+
         var seen = await changes.Between(worktree, scope.Value.BaseSha, head.Value, cancellationToken).ConfigureAwait(false);
         return seen.IsError
             ? BlockStepResult.Failed($"step.build.checks can't read the changes of {worktree}: {seen.Error.Message}")
@@ -70,18 +81,18 @@ internal sealed class BuildChecksStep(IRunDiff diff, IBranchChanges changes, IPa
         failures.AddRange(BranchRules.Commits(branch.Changes));
         if (failures.Count > 0)
         {
-            return StepFacts.Done("failed", ("fact:findings", RuleFinding.ToFact([.. scoped, .. failures])));
+            return StepFacts.Done("failed", ("fact:findings", RuleFinding.ToFact(scoped.Concat(failures).Select(f => f.Scrubbed(scrubber)))));
         }
 
         if (scoped.Count > 0)
         {
-            return StepFacts.Done("outOfScope", ("fact:findings", RuleFinding.ToFact(scoped)));
+            return StepFacts.Done("outOfScope", ("fact:findings", RuleFinding.ToFact(scoped.Select(f => f.Scrubbed(scrubber)))));
         }
 
         var ran = await RunCommands(red, branch.Worktree, cancellationToken).ConfigureAwait(false);
         return ran.IsError
             ? BlockStepResult.Failed($"step.build.checks: {ran.Error.Message}")
-            : ran.Value.Count > 0 ? StepFacts.Done("failed", ("fact:findings", RuleFinding.ToFact(ran.Value))) : Pass(branch);
+            : ran.Value.Count > 0 ? StepFacts.Done("failed", ("fact:findings", RuleFinding.ToFact(ran.Value))) : Pass(branch, scrubber);
     }
 
     // The profile's checks commands, then the red tests on the head; the findings are the ones that did not pass.
@@ -97,7 +108,7 @@ internal sealed class BuildChecksStep(IRunDiff diff, IBranchChanges changes, IPa
         var tests = red.AllTests;
         var plan = new List<PlannedCommand>(checks.Value.Select(static c => new PlannedCommand(c, [])));
         plan.AddRange(tests.Count == 0 ? [] : reds.Value.Select(c => new PlannedCommand(c, tests)));
-        var ran = await commands.Run("sindri step.build.checks", plan, worktree, BuildRedCheckStep.CommandTimeout, cancellationToken).ConfigureAwait(false);
+        var ran = await commands.Run("sindri step.build.checks", plan, worktree, CommandStepLimits.BuildBudget, cancellationToken).ConfigureAwait(false);
         return ran.IsError
             ? ran.Error
             : Results.Success<IReadOnlyList<RuleFinding>>([.. ran.Value.Where(static r => !r.Run.Passed).Select(Finding)]);
@@ -108,9 +119,9 @@ internal sealed class BuildChecksStep(IRunDiff diff, IBranchChanges changes, IPa
         result.Planned.ExtraArguments.Count > 0 ? $"{result.Summary}: the red tests must pass on the head" : $"{result.Summary}",
         Detail: result.Run.Tail);
 
-    private static BlockStepResult Pass(Branch branch)
+    private static BlockStepResult Pass(Branch branch, ITextScrubber scrubber)
     {
-        var commits = new JsonArray([.. branch.Changes.Commits.Select(static c => (JsonNode?)new JsonObject { ["sha"] = c.Sha, ["type"] = BranchRules.CommitType(c.Subject), ["subject"] = c.Subject })]);
+        var commits = new JsonArray([.. branch.Changes.Commits.Select(c => (JsonNode?)new JsonObject { ["sha"] = c.Sha, ["type"] = BranchRules.CommitType(c.Subject), ["subject"] = scrubber.Scrub(c.Subject) })]);
         return StepFacts.Done(
             "pass",
             ("fact:built", new JsonObject { ["head"] = branch.Head, ["base"] = branch.Scope.BaseSha, ["commits"] = commits }),

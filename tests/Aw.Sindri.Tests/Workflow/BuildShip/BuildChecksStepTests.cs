@@ -144,6 +144,56 @@ public sealed class BuildChecksStepTests
         Assert.Contains("fact:workspace", result.Failure, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task A_dirty_tree_fails_with_a_BLD_TREE_001_finding_and_runs_nothing()
+    {
+        var rig = Rig().Branch([Added("src/a.cs")]);
+        rig.Diff.Touch(StepRig.Tree);
+
+        var result = await Step(rig).Run(Context(), Token);
+
+        Assert.Equal("failed", result.Result!.Outcome.Value);
+        Assert.Equal("BLD-TREE-001", (string?)StepRig.Out(result, "findings").AsArray().Single()!["rule"]);
+        Assert.Empty(rig.Commands.Calls);
+        Assert.Equal(0, rig.Slots.Taken);
+    }
+
+    [Fact]
+    public async Task A_batch_longer_than_the_Steps_budget_fails_the_Step_inside_it_with_the_budget_named()
+    {
+        var rig = new StepRig(StepRig.Cmd("a", BuildCommand.Checks), StepRig.Cmd("b", BuildCommand.Checks), StepRig.Cmd("c", BuildCommand.Checks), StepRig.Cmd("d", BuildCommand.Checks)).Branch([Added("src/a.cs")]);
+        foreach (var name in new[] { "a", "b", "c", "d" })
+        {
+            _ = rig.Commands.Answer(name, _ =>
+            {
+                rig.Clock.Advance(TimeSpan.FromMinutes(15));
+                return StepRig.Pass();
+            });
+        }
+
+        var result = await Step(rig).Run(Context(), Token);
+
+        Assert.Contains("budget", result.Failure, StringComparison.Ordinal);
+        Assert.Equal(3, rig.Commands.Calls.Count);
+        Assert.True(rig.Clock.GetUtcNow() - KnownInstants.Epoch <= TimeSpan.FromMinutes(50));   // the Step's MaxDuration
+    }
+
+    [Fact]
+    public async Task A_secret_in_a_commit_subject_or_a_path_never_reaches_the_findings_or_the_built_commits()
+    {
+        var bad = Rig().Branch([Added($"etc/{Secret}.yml")], commits: [new ChangedCommit("h1aaaaaaaa", $"oops {Secret}", IsMerge: false)]);
+        var good = Rig().Branch([Added("src/a.cs")], commits: [new ChangedCommit("h1aaaaaaaa", $"feat: add {Secret}", IsMerge: false)]);
+        _ = good.Commands.Answer("typecheck", StepRig.Pass()).Answer("unit", StepRig.Pass()).Answer("red-tests", StepRig.Pass());
+
+        var failed = await Step(bad).Run(Context(), Token);
+        var passed = await Step(good).Run(Context(), Token);
+
+        Assert.Equal("failed", failed.Result!.Outcome.Value);
+        Assert.DoesNotContain(Secret, StepRig.Out(failed, "findings").ToJsonString(), StringComparison.Ordinal);
+        Assert.Equal("pass", passed.Result!.Outcome.Value);
+        Assert.DoesNotContain(Secret, StepRig.Out(passed, "built").ToJsonString(), StringComparison.Ordinal);
+    }
+
     private sealed class Mask : ITextScrubber
     {
         public string Scrub(string text) => text.Replace(Secret, "[secret]", StringComparison.Ordinal);

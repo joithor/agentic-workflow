@@ -90,6 +90,40 @@ public sealed class ShipGreenStepTests
         Assert.Contains("fact:phasePacket", result.Failure, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task A_dirty_tree_is_red_with_a_SHIP_TREE_001_finding_and_runs_nothing()
+    {
+        var rig = new StepRig(StepRig.Cmd("full", BuildCommand.Green)).Branch([]);
+        rig.Diff.Touch(StepRig.Tree);
+
+        var result = await Step(rig).Run(Context(), Token);
+
+        Assert.Equal("red", result.Result!.Outcome.Value);
+        Assert.Equal("SHIP-TREE-001", (string?)StepRig.Out(result, "findings").AsArray().Single()!["rule"]);
+        Assert.Empty(rig.Commands.Calls);
+        Assert.Equal(0, rig.Slots.Taken);
+    }
+
+    [Fact]
+    public async Task A_batch_longer_than_the_Steps_budget_fails_the_Step_inside_it_with_the_budget_named()
+    {
+        var rig = new StepRig(StepRig.Cmd("a", BuildCommand.Green), StepRig.Cmd("b", BuildCommand.Green), StepRig.Cmd("c", BuildCommand.Green), StepRig.Cmd("d", BuildCommand.Green), StepRig.Cmd("e", BuildCommand.Green), StepRig.Cmd("f", BuildCommand.Green)).Branch([]);
+        foreach (var name in new[] { "a", "b", "c", "d", "e", "f" })
+        {
+            _ = rig.Commands.Answer(name, _ =>
+            {
+                rig.Clock.Advance(TimeSpan.FromMinutes(20));
+                return StepRig.Pass();
+            });
+        }
+
+        var result = await Step(rig).Run(Context(), Token);
+
+        Assert.Contains("budget", result.Failure, StringComparison.Ordinal);
+        Assert.Equal(5, rig.Commands.Calls.Count);   // 95 min of 100: the sixth never starts
+        Assert.True(rig.Clock.GetUtcNow() - KnownInstants.Epoch <= TimeSpan.FromMinutes(100));
+    }
+
     private sealed class Mask : ITextScrubber
     {
         public string Scrub(string text) => text.Replace(Secret, "[secret]", StringComparison.Ordinal);

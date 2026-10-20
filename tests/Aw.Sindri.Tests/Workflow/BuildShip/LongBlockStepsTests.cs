@@ -47,4 +47,14 @@ public sealed class LongBlockStepsTests
         Assert.Equal(step, recipe.States[state].Step!.Use.Value);
         Assert.True(recipe.States[state].Timeout!.After.Span > BlockLimits.MaxDuration(descriptor));
     }
+
+    [Theory]
+    [MemberData(nameof(Ids))]
+    public void The_commands_budget_is_inside_the_Steps_MaxDuration_with_room_to_write_the_report(string step)
+    {
+        using var provider = ShippedComposition.Compose();
+        var max = BlockLimits.MaxDuration(provider.GetRequiredService<BlockCatalog>().Find(BlockId.From(step))!);
+
+        Assert.True(Aw.Sindri.Core.Checks.RepoCommandRunner.BudgetFor(max) <= max - TimeSpan.FromMinutes(1));
+    }
 }

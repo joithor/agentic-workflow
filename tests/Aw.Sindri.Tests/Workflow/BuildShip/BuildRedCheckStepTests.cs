@@ -106,4 +106,28 @@ public sealed class BuildRedCheckStepTests
 
         Assert.Contains("fact:activePacket", result.Failure, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public async Task A_dirty_worktree_fails_the_Step_and_runs_nothing()
+    {
+        var rig = new StepRig(StepRig.Cmd("red-tests", BuildCommand.Red));
+        rig.Diff.Touch(StepRig.Tree);
+
+        var result = await Step(rig).Run(Context(), Token);
+
+        Assert.Contains("uncommitted", result.Failure, StringComparison.Ordinal);
+        Assert.Empty(rig.Commands.Calls);
+        Assert.Equal(0, rig.Slots.Taken);
+    }
+
+    [Fact]
+    public async Task Red_tests_without_the_red_commit_fail_the_Step_and_run_nothing()
+    {
+        var rig = new StepRig(StepRig.Cmd("red-tests", BuildCommand.Red));
+
+        var result = await Step(rig).Run(Context("""{"items":{"A1":{"tests":["T1"]}}}"""), Token);
+
+        Assert.Contains("fact:redTests.commit", result.Failure, StringComparison.Ordinal);
+        Assert.Empty(rig.Commands.Calls);
+    }
 }

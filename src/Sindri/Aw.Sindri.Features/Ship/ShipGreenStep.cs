@@ -25,10 +25,11 @@ internal sealed class ShipGreenStep(IRunDiff diff, IBranchChanges changes, IPack
     /// <summary>The rule id of the secret scan before a push.</summary>
     internal const string SecretRule = "SHIP-SECRET-001";
 
+    /// <summary>The rule id of a worktree with uncommitted or untracked files.</summary>
+    internal const string TreeRule = "SHIP-TREE-001";
+
     /// <summary>The rule id of a GREEN command that failed.</summary>
     internal const string CommandRule = "SHIP-GREEN-001";
-
-    private static readonly TimeSpan _commandTimeout = TimeSpan.FromMinutes(90);
 
     /// <inheritdoc/>
     public static BlockId Id { get; } = BlockId.From("step.ship.green");
@@ -51,6 +52,11 @@ internal sealed class ShipGreenStep(IRunDiff diff, IBranchChanges changes, IPack
             return BlockStepResult.Failed($"step.ship.green: {(head.IsError ? head.Error : scope.Error).Message}");
         }
 
+        if (await Dirty(worktree, head.Value, cancellationToken).ConfigureAwait(false) is { } dirty)
+        {
+            return dirty;
+        }
+
         var seen = await changes.Between(worktree, scope.Value.BaseSha, head.Value, cancellationToken).ConfigureAwait(false);
         if (seen.IsError)
         {
@@ -61,6 +67,15 @@ internal sealed class ShipGreenStep(IRunDiff diff, IBranchChanges changes, IPack
         return secrets.Count > 0
             ? Red(secrets)
             : await Gate(worktree, scope.Value.BaseSha, head.Value, cancellationToken).ConfigureAwait(false);
+    }
+
+    // GREEN is the gate on the pushed head: uncommitted or untracked files would make it a gate on something else.
+    private async ValueTask<BlockStepResult?> Dirty(string worktree, string head, CancellationToken cancellationToken)
+    {
+        var clean = await diff.IsEmpty(worktree, head, cancellationToken).ConfigureAwait(false);
+        return clean.IsError
+            ? BlockStepResult.Failed($"step.ship.green can't read {worktree}: {clean.Error.Message}")
+            : clean.Value ? null : Red([new RuleFinding(TreeRule, $"the worktree {worktree} has uncommitted or untracked files; GREEN must run on the pushed head (fix: commit or discard them)")]);
     }
 
     private static string? ActivePacketOf(StepContext context) => StepFacts.Field(StepFacts.Read(context, "fact:phasePacket"), "dir");
@@ -75,7 +90,7 @@ internal sealed class ShipGreenStep(IRunDiff diff, IBranchChanges changes, IPack
             return BlockStepResult.Failed($"step.ship.green: {listed.Error.Message}");
         }
 
-        var ran = await commands.Run("sindri step.ship.green", [.. listed.Value.Select(static c => new PlannedCommand(c, []))], worktree, _commandTimeout, cancellationToken).ConfigureAwait(false);
+        var ran = await commands.Run("sindri step.ship.green", [.. listed.Value.Select(static c => new PlannedCommand(c, []))], worktree, CommandStepLimits.GreenBudget, cancellationToken).ConfigureAwait(false);
         if (ran.IsError)
         {
             return BlockStepResult.Failed($"step.ship.green: {ran.Error.Message}");

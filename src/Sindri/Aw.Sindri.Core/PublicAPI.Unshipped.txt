@@ -12301,10 +12301,16 @@ Aw.Sindri.Core.Checks.PlannedCommand.Equals(Aw.Sindri.Core.Checks.PlannedCommand
 Aw.Sindri.Core.Checks.PlannedCommand.ExtraArguments.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Aw.Sindri.Core.Checks.PlannedCommand.ExtraArguments.init -> void
 Aw.Sindri.Core.Checks.PlannedCommand.PlannedCommand(Aw.Sindri.Core.Profile.BuildCommand! Command, System.Collections.Generic.IReadOnlyList<string!>! ExtraArguments) -> void
+Aw.Sindri.Core.Checks.CommandStepLimits
+static Aw.Sindri.Core.Checks.CommandStepLimits.BuildBudget.get -> System.TimeSpan
+static Aw.Sindri.Core.Checks.CommandStepLimits.BuildMaxDuration.get -> System.TimeSpan
+static Aw.Sindri.Core.Checks.CommandStepLimits.GreenBudget.get -> System.TimeSpan
+static Aw.Sindri.Core.Checks.CommandStepLimits.GreenMaxDuration.get -> System.TimeSpan
 Aw.Sindri.Core.Checks.RepoCommandRunner
 Aw.Sindri.Core.Checks.RepoCommandRunner.For(string! stage, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Profile.BuildCommand!>!>!>
-Aw.Sindri.Core.Checks.RepoCommandRunner.RepoCommandRunner(Aw.Sindri.Core.Profile.IApprovedProfile! profile, Aw.Sindri.Core.Checks.ICheckCommands! commands, Aw.Sindri.Core.Locks.IHeavySlots! slots) -> void
-Aw.Sindri.Core.Checks.RepoCommandRunner.Run(string! holder, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.PlannedCommand!>! plan, string! workingDirectory, System.TimeSpan fallbackTimeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.CheckResult!>!>!>
+Aw.Sindri.Core.Checks.RepoCommandRunner.RepoCommandRunner(Aw.Sindri.Core.Profile.IApprovedProfile! profile, Aw.Sindri.Core.Checks.ICheckCommands! commands, Aw.Sindri.Core.Locks.IHeavySlots! slots, System.TimeProvider! clock) -> void
+Aw.Sindri.Core.Checks.RepoCommandRunner.Run(string! holder, System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.PlannedCommand!>! plan, string! workingDirectory, System.TimeSpan budget, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Aw.Kernel.Result<System.Collections.Generic.IReadOnlyList<Aw.Sindri.Core.Checks.CheckResult!>!>!>
+static Aw.Sindri.Core.Checks.RepoCommandRunner.BudgetFor(System.TimeSpan maxDuration) -> System.TimeSpan
 Aw.Sindri.Core.Checks.RuleFinding
 Aw.Sindri.Core.Checks.RuleFinding.<Clone>$() -> Aw.Sindri.Core.Checks.RuleFinding!
 Aw.Sindri.Core.Checks.RuleFinding.Deconstruct(out string! Rule, out string! Message, out string? Path, out int? Line, out string? Detail) -> void
@@ -12319,6 +12325,7 @@ Aw.Sindri.Core.Checks.RuleFinding.Path.get -> string?
 Aw.Sindri.Core.Checks.RuleFinding.Path.init -> void
 Aw.Sindri.Core.Checks.RuleFinding.Rule.get -> string!
 Aw.Sindri.Core.Checks.RuleFinding.Rule.init -> void
+Aw.Sindri.Core.Checks.RuleFinding.Scrubbed(Aw.Sindri.Core.Text.ITextScrubber! scrubber) -> Aw.Sindri.Core.Checks.RuleFinding!
 Aw.Sindri.Core.Checks.RuleFinding.RuleFinding(string! Rule, string! Message, string? Path = null, int? Line = null, string? Detail = null) -> void
 Aw.Sindri.Core.Checks.ScopeGlobs
 Aw.Sindri.Core.Checks.SecretScan

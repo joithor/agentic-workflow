@@ -81,6 +81,28 @@ public sealed class ToolCheckCommandsTests
         Assert.Empty(runner.Calls);
     }
 
+    [Fact]
+    public async Task A_child_command_is_told_the_caller_holds_a_heavy_slot()
+    {
+        var tools = new FakeToolRunner(new ToolRun(ToolOutcome.Exited, 0, "ok"));
+
+        _ = await new ToolCheckCommands(tools, new Aw.Sindri.Testing.Checks.IdentityScrubber(), new FakeTimeProvider()).Run(new CheckInvocation("c", ["c"], TimeSpan.FromSeconds(1)), "/work", Token);
+
+        Assert.Equal("1", tools.Calls.Single().Environment!["AW_HEAVY_LOCK_HELD"]);
+    }
+
+    [Fact]
+    public async Task A_timed_out_run_keeps_the_tail_of_what_it_printed_scrubbed()
+    {
+        var tools = new FakeToolRunner(new ToolRun(ToolOutcome.TimedOut, -1, "building...\nhunter2 still running", "warn"));
+
+        var run = await new ToolCheckCommands(tools, new Mask("hunter2"), new FakeTimeProvider()).Run(new CheckInvocation("c", ["c"], TimeSpan.FromSeconds(1)), "/work", Token);
+
+        Assert.True(run.Value.TimedOut);
+        Assert.Contains("still running", run.Value.Tail, StringComparison.Ordinal);
+        Assert.DoesNotContain("hunter2", run.Value.Tail, StringComparison.Ordinal);
+    }
+
     private sealed class Mask(string secret) : ITextScrubber
     {
         public string Scrub(string text) => text.Replace(secret, "[secret]", StringComparison.Ordinal);

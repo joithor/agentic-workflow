@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using Aw.Kernel;
+using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Checks;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Locks;
@@ -11,6 +12,7 @@ using Aw.Sindri.Testing.Checks;
 using Aw.Sindri.Testing.Packets;
 using Aw.Sindri.Testing.Workflow;
 using Aw.Sindri.Tests.Workflow.Blocks.Contracts;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Aw.Sindri.Tests.Workflow.BuildShip;
 
@@ -29,6 +31,7 @@ internal sealed class StepRig
         _ = profiles.Save(
             new LoadedProfile(new SindriProfile(1, "thor") with { Workflow = new(Build: new BuildSettings(profileCommands)) }, ProfileHash.From(new string('a', 64)), "/home/profile.yaml"),
             CancellationToken.None).AsTask().GetAwaiter().GetResult();   // why: the in-memory save completes synchronously
+        Clock = new FakeTimeProvider(KnownInstants.Epoch);
         Slots = new CountingSlots();
         Commands = new InMemoryCheckCommands();
         Changes = new InMemoryBranchChanges();
@@ -39,8 +42,10 @@ internal sealed class StepRig
             ["packet.json"] = """{"id":"p1","baseSha":"b0"}""",
             ["phase.json"] = """{"allowedFiles":["src/**","new: docs/x.md"],"testChange":[{"path":"tests/old.test.ts","reason":"renamed"}]}""",
         });
-        Runner = new RepoCommandRunner(profiles, Commands, Slots);
+        Runner = new RepoCommandRunner(profiles, Commands, Slots, Clock);
     }
+
+    internal FakeTimeProvider Clock { get; }
 
     internal CountingSlots Slots { get; }
 
@@ -80,8 +85,16 @@ internal sealed class StepRig
 
         internal bool Busy { get; set; }
 
+        /// <summary>Gets the wait each take was given.</summary>
+        internal List<TimeSpan> Waits { get; } = [];
+
+        /// <summary>Gets or sets what happens while a take waits (a test moves its clock here).</summary>
+        internal Action? OnTake { get; set; }
+
         public ValueTask<Result<HeavySlotTaken>> Take(string holder, TimeSpan timeout, IProgress<string>? waiting, CancellationToken cancellationToken)
         {
+            Waits.Add(timeout);
+            OnTake?.Invoke();
             if (Busy)
             {
                 return ValueTask.FromResult<Result<HeavySlotTaken>>(new HeavySlotTaken(Lease: null, Busy: "slot 1/1 held by someone"));

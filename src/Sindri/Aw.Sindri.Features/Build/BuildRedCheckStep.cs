@@ -9,16 +9,13 @@ namespace Aw.Sindri.Features.Build;
 /// <summary>
 /// 'step.build.red-check' on the block runtime (line spec §7.2, BLD-RED-001): every red test of every item must FAIL on the red commit, before any code. For each item the profile's
 /// <c language="text">on: red</c> commands run in the phase worktree with the item's test ids appended; an item whose command exits 0 is 'vacuous' (a finding names it) and the build goes back to 'red'.
-/// A command that runs out of time, a worktree off the red commit, no red command in the profile or no test to run fails the Step instead, so the instance parks. The commands run under one
+/// A command that runs out of time, a worktree off the red commit or with uncommitted files, no red commit in the facts, no red command in the profile or no test to run fails the Step instead, so the instance parks. The commands run under one
 /// heavy slot. An item with only an 'appOnly' signal has no test and is not run.
 /// </summary>
 /// <param name="diff">Reads the worktree's head.</param>
 /// <param name="commands">Reads the profile's red commands and runs them under a heavy slot.</param>
 internal sealed class BuildRedCheckStep(IRunDiff diff, RepoCommandRunner commands) : IBlockStep, IBlockStepId
 {
-    /// <summary>The longest one command may run when the profile sets no timeout for it.</summary>
-    internal static readonly TimeSpan CommandTimeout = TimeSpan.FromMinutes(40);
-
     /// <inheritdoc/>
     public static BlockId Id { get; } = BlockId.From("step.build.red-check");
 
@@ -49,26 +46,35 @@ internal sealed class BuildRedCheckStep(IRunDiff diff, RepoCommandRunner command
             : await Check(red, listed.Value, worktree, cancellationToken).ConfigureAwait(false);
     }
 
-    // The tests must run on the red commit: a worktree that already moved on proves nothing.
+    // The tests must run on the red commit, in a clean tree: a worktree that already moved on, or carries uncommitted files, proves nothing.
     private async ValueTask<BlockStepResult?> CheckHead(RedTests red, string worktree, CancellationToken cancellationToken)
     {
         if (red.Commit is null)
         {
-            return null;
+            return BlockStepResult.Failed("step.build.red-check needs fact:redTests.commit, the red commit the tests are run on (step.build.red sets it)");
         }
 
         var head = await diff.Head(worktree, cancellationToken).ConfigureAwait(false);
-        return head.IsError
-            ? BlockStepResult.Failed($"step.build.red-check can't read {worktree}: {head.Error.Message}")
-            : string.Equals(head.Value, red.Commit, StringComparison.Ordinal)
-                ? null
-                : BlockStepResult.Failed($"step.build.red-check: {worktree} is at {head.Value}, not the red commit {red.Commit} (BLD-RED-001 needs the tests run before any code)");
+        if (head.IsError)
+        {
+            return BlockStepResult.Failed($"step.build.red-check can't read {worktree}: {head.Error.Message}");
+        }
+
+        if (!string.Equals(head.Value, red.Commit, StringComparison.Ordinal))
+        {
+            return BlockStepResult.Failed($"step.build.red-check: {worktree} is at {head.Value}, not the red commit {red.Commit} (BLD-RED-001 needs the tests run before any code)");
+        }
+
+        var clean = await diff.IsEmpty(worktree, head.Value, cancellationToken).ConfigureAwait(false);
+        return clean.IsError
+            ? BlockStepResult.Failed($"step.build.red-check can't read {worktree}: {clean.Error.Message}")
+            : clean.Value ? null : BlockStepResult.Failed($"step.build.red-check: the worktree {worktree} has uncommitted or untracked files (fix: commit or discard them, then resume)");
     }
 
     private async ValueTask<BlockStepResult> Check(RedTests red, IReadOnlyList<BuildCommand> redCommands, string worktree, CancellationToken cancellationToken)
     {
         var plan = red.Items.SelectMany(item => redCommands.Select(command => new PlannedCommand(command, item.Tests))).ToList();
-        var ran = await commands.Run("sindri step.build.red-check", plan, worktree, CommandTimeout, cancellationToken).ConfigureAwait(false);
+        var ran = await commands.Run("sindri step.build.red-check", plan, worktree, CommandStepLimits.BuildBudget, cancellationToken).ConfigureAwait(false);
         if (ran.IsError)
         {
             return BlockStepResult.Failed($"step.build.red-check: {ran.Error.Message}");

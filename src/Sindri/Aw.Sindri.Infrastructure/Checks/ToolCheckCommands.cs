@@ -21,7 +21,8 @@ internal sealed class ToolCheckCommands(IToolRunner runner, ITextScrubber scrubb
             return SindriErrors.InvalidInput.With($"the command '{command.Name}' names no program to run");
         }
 
-        var options = new ToolRunOptions(WorkingDirectory: workingDirectory);
+        // why: the Step holds the box's heavy slot for the whole batch; a command that runs the repo's own heavy wrapper must not queue behind the slot its caller holds
+        var options = new ToolRunOptions(Environment: new Dictionary<string, string?>(StringComparer.Ordinal) { ["AW_HEAVY_LOCK_HELD"] = "1" }, WorkingDirectory: workingDirectory);
         var started = clock.GetTimestamp();
         var run = await Task.Run(() => runner.Run(command.Argv[0], [.. command.Argv.Skip(1)], command.Timeout, options, cancellationToken), CancellationToken.None).ConfigureAwait(false);   // the runner blocks until the tool ends; it kills the tool on cancel
         var took = clock.GetElapsedTime(started);
@@ -29,7 +30,7 @@ internal sealed class ToolCheckCommands(IToolRunner runner, ITextScrubber scrubb
         {
             ToolOutcome.Cancelled => throw new OperationCanceledException(cancellationToken),
             ToolOutcome.Missing => SindriErrors.InvalidInput.With($"'{command.Argv[0]}' (the command '{command.Name}') can't be started: no such program, or no such directory {workingDirectory}"),
-            ToolOutcome.TimedOut => CheckRun.Of(-1, timedOut: true, took, string.Empty),
+            ToolOutcome.TimedOut => CheckRun.Of(-1, timedOut: true, took, scrubber.Scrub(run.Output + run.Error)),
             ToolOutcome.Exited => CheckRun.Of(run.ExitCode, timedOut: false, took, scrubber.Scrub(run.Output + run.Error)),
             _ => throw new InvalidOperationException("unknown tool outcome"),
         };
