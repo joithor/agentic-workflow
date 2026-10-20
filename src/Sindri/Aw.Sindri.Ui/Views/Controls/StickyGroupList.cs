@@ -73,6 +73,10 @@ internal sealed class StickyGroupList : UserControl
     /// <summary>How far the sticky header is pushed up by the next group's header: 0 until the next header reaches it, then negative.</summary>
     internal double StickyPush => _push.Y;
 
+    /// <summary>Scrolls a row fully into view below the sticky header (never under it).</summary>
+    /// <param name="row">A row of the list.</param>
+    internal static void EnsureVisible(Control row) => _ = row;
+
     /// <summary>Scrolls the list; the sticky header follows.</summary>
     /// <param name="offset">The vertical offset.</param>
     internal void ScrollTo(double offset) => _scroll.Offset = new Vector(0, offset);

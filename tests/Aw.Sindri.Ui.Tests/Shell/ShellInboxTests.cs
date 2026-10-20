@@ -141,6 +141,21 @@ public sealed class ShellInboxTests
     }, Token);
 
     [Fact]
+    public Task The_inbox_lists_every_row_after_Homes_decisions_filter_and_Home_gets_its_filter_back() => UiThread.Run(async () =>
+    {
+        var shell = await Shell(NeedsYouRows.Decision(), NeedsYouRows.Park("desk:WFI-1"), NeedsYouRows.Failure());
+        shell.GoTo(PageId.Home, HomeFilter.Decisions);
+        Assert.Single(shell.NeedsYou.Seen.Rows);
+
+        shell.OpenNeedsYouInbox();
+        Assert.Equal(["Your approvals", "Agent decisions", "Something failed"], shell.Inbox.Groups.Select(g => g.Heading));
+        Assert.Equal("3 waiting, 0 runs", shell.Inbox.CountText);
+
+        _ = shell.LeaveNeedsYouInbox();
+        Assert.Single(shell.NeedsYou.Seen.Rows);
+    }, Token);
+
+    [Fact]
     public Task Home_keeps_its_capped_panel_while_the_inbox_lists_every_row() => UiThread.Run(async () =>
     {
         var rows = Enumerable.Range(0, 8).Select(NeedsYouRows.Many).ToArray();

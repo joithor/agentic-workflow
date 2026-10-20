@@ -172,6 +172,57 @@ public sealed class StickyGroupListTests
     }
 
     [Fact]
+    public async Task A_row_brought_into_view_lands_below_the_sticky_header_not_under_it()
+    {
+        var gap = await OnUi(() =>
+        {
+            var (window, list, _) = Show(new Group("A", 6), new Group("B", 6));
+            try
+            {
+                list.ScrollTo(HeaderHeight + (6 * RowHeight) + 60);   // in B, past two of its rows
+                Settle(window);
+                var scroll = list.GetVisualDescendants().OfType<ScrollViewer>().First();
+                var above = list.GetVisualDescendants().OfType<TextBlock>().First(t => t.Text == "B 0");
+
+                StickyGroupList.EnsureVisible(above);
+                Settle(window);
+
+                return above.TranslatePoint(new Avalonia.Point(0, 0), scroll)?.Y ?? -1;
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+
+        Assert.True(gap >= HeaderHeight - 0.5, "the row's top is under the sticky header");
+    }
+
+    [Fact]
+    public async Task The_sticky_header_takes_the_clicks_over_it_not_the_row_beneath()
+    {
+        var hit = await OnUi(() =>
+        {
+            var (window, list, _) = Show(new Group("A", 6), new Group("B", 6));
+            try
+            {
+                list.ScrollTo(HeaderHeight + (6 * RowHeight) + 60);
+                Settle(window);
+                var stuck = list.GetVisualDescendants().OfType<ContentControl>().First(c => c.Classes.Contains("sticky-header"));
+
+                var visual = list.GetVisualAt(new Avalonia.Point(20, 10));
+                return visual is not null && (ReferenceEquals(visual, stuck) || visual.GetVisualAncestors().Contains(stuck));
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+
+        Assert.True(hit);
+    }
+
+    [Fact]
     public async Task Settled_layout_stays_settled()
     {
         var offsets = await OnUi(() =>

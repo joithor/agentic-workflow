@@ -113,7 +113,7 @@ public sealed class NeedsYouPageViewModelTests
     }
 
     [Fact]
-    public async Task A_row_that_clears_moves_the_selection_to_the_next_row()
+    public async Task A_row_that_clears_keeps_its_card_cleared_while_the_selection_moves_on()
     {
         var (list, page) = await Page(NeedsYouRows.Decision(), NeedsYouRows.Failure());
         list.Select("decision:DEC-1");
@@ -121,6 +121,69 @@ public sealed class NeedsYouPageViewModelTests
         list.Update(new NeedsYouFeed([NeedsYouRows.Failure()], ""));
 
         Assert.Equal("failure:service:index", page.Selected?.Id);
+        Assert.Equal(("decision:DEC-1", true, "REQ-01JD4 cleared"), (page.Card?.Id, page.IsCleared, page.ClearedText));
+    }
+
+    [Fact]
+    public async Task Moving_or_clicking_leaves_the_cleared_card()
+    {
+        var (list, page) = await Page(NeedsYouRows.Decision(), NeedsYouRows.Failure(), NeedsYouRows.Park("desk:WFI-2"));
+        list.Select("decision:DEC-1");
+        list.Update(new NeedsYouFeed([NeedsYouRows.Failure(), NeedsYouRows.Park("desk:WFI-2")], ""));
+        Assert.True(page.IsCleared);
+
+        _ = page.Move(1);
+        Assert.Equal((false, page.Selected?.Id), (page.IsCleared, page.Card?.Id));
+
+        list.Select("failure:service:index");
+        list.Update(new NeedsYouFeed([NeedsYouRows.Park("desk:WFI-2")], ""));
+        Assert.True(page.IsCleared);
+        page.Select("desk:WFI-2");
+        Assert.False(page.IsCleared);
+    }
+
+    [Fact]
+    public async Task An_inbox_opened_empty_selects_the_first_row_when_rows_arrive()
+    {
+        var (list, page) = await Page();
+        page.Active = true;
+
+        list.Update(new NeedsYouFeed([NeedsYouRows.Failure(), NeedsYouRows.Decision()], ""));
+
+        Assert.Equal("decision:DEC-1", page.Selected?.Id);
+    }
+
+    [Fact]
+    public async Task The_footer_wait_follows_the_clock_on_the_next_read_and_is_named_whole()
+    {
+        var (list, page) = await Page(NeedsYouRows.Decision());
+        list.Select("decision:DEC-1");
+        Assert.Equal(("waiting 26m", "Waiting for you, waiting 26m"), (page.FooterRight, page.FooterName));
+
+        _clock.Advance(TimeSpan.FromMinutes(4));
+        list.Update(new NeedsYouFeed([NeedsYouRows.Decision()], ""));
+
+        Assert.Equal("waiting 30m", page.FooterRight);
+    }
+
+    [Fact]
+    public async Task One_run_reads_as_one_run()
+    {
+        var (_, page) = await Page(NeedsYouRows.Park("park:WFI-1"));
+
+        Assert.Equal("1 waiting, 1 run", page.CountText);
+    }
+
+    [Fact]
+    public async Task The_selected_row_says_so_in_its_name()
+    {
+        var (list, _) = await Page(NeedsYouRows.Decision(), NeedsYouRows.Failure());
+
+        list.Select("failure:service:index");
+
+        var names = list.Seen.Rows.ToDictionary(r => r.Id, r => r.InboxName, StringComparer.Ordinal);
+        Assert.EndsWith(", selected", names["failure:service:index"], StringComparison.Ordinal);
+        Assert.DoesNotContain("selected", names["decision:DEC-1"], StringComparison.Ordinal);
     }
 
     [Fact]

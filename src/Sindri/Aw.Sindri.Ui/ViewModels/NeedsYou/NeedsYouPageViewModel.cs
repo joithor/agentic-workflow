@@ -97,6 +97,21 @@ internal sealed class NeedsYouPageViewModel : ObservableObject
     /// <summary>The selected row; null for none.</summary>
     public NeedsYouRowViewModel? Selected => _list.SelectedId is { } id ? _list.Seen.Rows.FirstOrDefault(r => string.Equals(r.Id, id, StringComparison.Ordinal)) : null;
 
+    /// <summary>The row the card shows: the selected one, or the one that cleared until the user moves on.</summary>
+    public NeedsYouRowViewModel? Card => Selected;
+
+    /// <summary>True while the card shows a row that has cleared.</summary>
+    public bool IsCleared => false;
+
+    /// <summary>The cleared card's line.</summary>
+    public string ClearedText => "";
+
+    /// <summary>The footer's accessible name: both its words.</summary>
+    public string FooterName => "";
+
+    /// <summary>True while the inbox shows: rows that arrive later get a selection.</summary>
+    internal bool Active { get; set; }
+
     /// <summary>True when a row is selected: the card shows.</summary>
     public bool HasSelected => Selected is not null;
 

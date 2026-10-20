@@ -16,7 +16,7 @@ public sealed class NeedsYouInboxLabelsTests
     [Fact]
     public void The_page_and_card_words_are_plain() =>
         Assert.Equal(
-            ["Needs you", "3 waiting, 1 runs", "1 new request, held while you read", "2 new requests, held while you read", "Why this needs you", "Waiting for you", "waiting 5h 51m", "Open the item", "Nothing needs you"],
+            ["Needs you", "3 waiting, 1 run", "1 new request, held while you read", "2 new requests, held while you read", "Why this needs you", "Waiting for you", "waiting 5h 51m", "Open the item", "Nothing needs you"],
             [Labels.NeedsYouInboxTitle, Labels.NeedsYouWaiting(3, 1), Labels.NeedsYouNewPill(1), Labels.NeedsYouNewPill(2), Labels.NeedsYouWhyCaption, Labels.NeedsYouFootWaiting, Labels.NeedsYouFootRight("5h 51m"), Labels.NeedsYouOpenItem, Labels.NeedsYouEmptyFallback]);
 
     [Theory]
@@ -27,6 +27,10 @@ public sealed class NeedsYouInboxLabelsTests
     [InlineData(9720, "6d 18h")]
     public void How_long_a_row_has_waited_reads_to_the_minute(int minutes, string words) =>
         Assert.Equal(words, Labels.NeedsYouWaited(TimeSpan.FromMinutes(minutes)));
+
+    [Fact]
+    public void The_count_and_the_breadcrumb_read_right() =>
+        Assert.Equal(["0 waiting, 0 runs", "2 waiting, 2 runs", "Home, back to Home"], [Labels.NeedsYouWaiting(0, 0), Labels.NeedsYouWaiting(2, 2), Labels.NeedsYouCrumbHomeName]);
 
     [Fact]
     public void No_inbox_word_has_an_em_dash()
