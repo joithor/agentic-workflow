@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -15,6 +16,8 @@ internal sealed partial class ApproveAllDialog : UserControl
     private static readonly TimeSpan _tickEvery = TimeSpan.FromMilliseconds(50);
 
     private readonly DispatcherTimer _fill;
+    private IPointer? _pointer;   // the pointer holding the button, captured so a release anywhere reaches it
+    private INotifyPropertyChanged? _watched;
 
     public ApproveAllDialog()
     {
@@ -36,12 +39,63 @@ internal sealed partial class ApproveAllDialog : UserControl
         _ = target.Focus(NavigationMethod.Tab);
     }
 
+    /// <inheritdoc />
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        if (_watched is not null)
+        {
+            _watched.PropertyChanged -= OnModelChanged;
+        }
+
+        _watched = DataContext as INotifyPropertyChanged;
+        if (_watched is not null)
+        {
+            _watched.PropertyChanged += OnModelChanged;
+        }
+    }
+
+    // Focus follows what the dialog is waiting for: the hold button when the challenge arrives, Close (or Done) when the approval runs or ends.
+    // It moves only from nowhere, from Close, or from a control that just left the screen, never away from where the person is typing or reading.
+    private void OnModelChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (sender is not ApproveAllViewModel dialog)
+        {
+            return;
+        }
+
+        if (e.PropertyName is nameof(ApproveAllViewModel.CanApprove) or nameof(ApproveAllViewModel.OffersHold) && dialog is { CanApprove: true, OffersHold: true })
+        {
+            Dispatcher.UIThread.Post(() => MoveFocusTo("ApproveHold"), DispatcherPriority.Loaded);
+        }
+        else if (e.PropertyName == nameof(ApproveAllViewModel.Phase) && dialog.Phase is ApproveAllPhase.Applying or ApproveAllPhase.Done or ApproveAllPhase.Failed)
+        {
+            Dispatcher.UIThread.Post(() => MoveFocusTo("ApproveClose"), DispatcherPriority.Loaded);
+        }
+    }
+
+    private void MoveFocusTo(string name)
+    {
+        var target = this.Get<Button>(name);
+        var focused = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() as Control;
+        if (target.IsEffectivelyVisible && (focused is null || !focused.IsEffectivelyVisible || ReferenceEquals(focused, this.Get<Button>("ApproveClose"))))
+        {
+            _ = target.Focus(NavigationMethod.Tab);
+        }
+    }
+
     private void OnPressed(object? sender, PointerPressedEventArgs e)
     {
         if (DataContext is ApproveAllViewModel dialog && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
             dialog.BeginHold();
             _fill.IsEnabled = dialog.IsHolding;
+            if (dialog.IsHolding && sender is IInputElement hold)
+            {
+                e.Pointer.Capture(hold);   // a release anywhere, or a lost capture, reaches the button and ends the hold
+                _pointer = e.Pointer;
+            }
+
             e.Handled = true;
         }
     }
@@ -81,7 +135,15 @@ internal sealed partial class ApproveAllDialog : UserControl
     private void Release()
     {
         _fill.IsEnabled = false;
+        ReleaseCapture();
         (DataContext as ApproveAllViewModel)?.CancelHold();
+    }
+
+    private void ReleaseCapture()
+    {
+        var pointer = _pointer;
+        _pointer = null;
+        pointer?.Capture(null);
     }
 
     private void OnFill(object? sender, EventArgs e)
@@ -97,6 +159,10 @@ internal sealed partial class ApproveAllDialog : UserControl
     {
         await dialog.Tick().ConfigureAwait(true);
         _fill.IsEnabled = dialog.IsHolding;
+        if (!dialog.IsHolding)
+        {
+            ReleaseCapture();
+        }
     }
 
     private void OnTyped(object? sender, RoutedEventArgs e) => _ = (DataContext as ApproveAllViewModel)?.SubmitTyped();
