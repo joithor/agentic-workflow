@@ -30,7 +30,7 @@ public class HeadsEngineProxy : DispatchProxy
         }
 
         Calls++;
-        Result<IReadOnlyList<RepoHead>> answer = Heads;
+        var answer = Results.Success(Heads);
         if (Failure is { } error)
         {
             answer = error;

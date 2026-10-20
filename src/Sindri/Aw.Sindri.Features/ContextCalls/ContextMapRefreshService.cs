@@ -1,11 +1,13 @@
 using System.Globalization;
 using System.Text.Json;
+using Aw.Context.Core.Engine;
 using Aw.Context.Core.Facade;
 using Aw.Kernel;
 using Aw.Kernel.Services;
 using Aw.Sindri.Core;
 using Aw.Sindri.Core.Ids;
 using Aw.Sindri.Core.Jobs;
+using Aw.Sindri.Core.Profile;
 using Aw.Sindri.Core.Scheduling;
 using Aw.Sindri.Core.Views;
 using Microsoft.Extensions.Logging;
@@ -56,23 +58,24 @@ internal sealed partial class ContextMapRefreshService(ContextScopes scopes, ICo
             return heads.Error;
         }
 
-        var onDefault = heads.Value.Where(static h => h.OnDefault).ToDictionary(static h => h.Repo.Value, static h => h.Head, StringComparer.Ordinal);
         var elsewhere = heads.Value.Where(static h => !h.OnDefault).Select(static h => h.Repo.Value).Order(StringComparer.Ordinal).ToArray();
         var recent = await jobs.List(state: null, RefreshKind, cancellationToken).ConfigureAwait(false);
-        if (recent.IsError)
-        {
-            return recent.Error;
-        }
+        return recent.IsError ? recent.Error : await Decide(heads.Value, recent.Value, elsewhere, cancellationToken).ConfigureAwait(false);
+    }
 
-        var finishedJobs = recent.Value.Where(static j => j.State != JobState.Running && j.EndedAt is not null).OrderByDescending(static j => j.EndedAt).Take(RecentRuns).ToArray();
+    private async ValueTask<Result<ScheduledResult>> Decide(IReadOnlyList<RepoHead> heads, IReadOnlyList<JobRow> recent, string[] elsewhere, CancellationToken cancellationToken)
+    {
+        var onDefault = heads.Where(static h => h.OnDefault).ToDictionary(static h => h.Repo.Value, static h => h.Head, StringComparer.Ordinal);
+        var finishedJobs = recent.Where(static j => j.State != JobState.Running && j.EndedAt is not null).OrderByDescending(static j => j.EndedAt).Take(RecentRuns).ToArray();
         IReadOnlyList<SyncAttempt> finished = [.. finishedJobs.Select(static j => new SyncAttempt(j.State == JobState.Failed, j.EndedAt ?? default))];
-        if (MainMoveDecision.FailedInARow(finished) >= FailuresToAlarm)
+        var failures = MainMoveDecision.FailedInARow(finished);
+        if (failures >= FailuresToAlarm)
         {
-            return SindriErrors.ServiceFailed.With($"{ServiceId.Value}: the last {MainMoveDecision.FailedInARow(finished)} map refreshes failed ({finishedJobs[0].Code ?? "no code"}); the next try backs off");
+            return SindriErrors.ServiceFailed.With(string.Create(CultureInfo.InvariantCulture, $"{ServiceId.Value}: the last {failures} map refreshes failed ({finishedJobs[0].Code ?? "no code"}); the next try backs off"));
         }
 
         var last = finishedJobs.FirstOrDefault(static j => j.State == JobState.Succeeded);
-        var action = MainMoveDecision.Decide(onDefault, last is null ? null : HeadsOf(last), recent.Value.Any(static j => j.State == JobState.Running), finished, clock.GetUtcNow());
+        var action = MainMoveDecision.Decide(onDefault, last is null ? null : HeadsOf(last), recent.Any(static j => j.State == JobState.Running), finished, clock.GetUtcNow());
         return action == MainMoveAction.Start
             ? await Start(elsewhere, cancellationToken).ConfigureAwait(false)
             : new ScheduledResult(Idle: true, Left(elsewhere));
@@ -90,7 +93,7 @@ internal sealed partial class ContextMapRefreshService(ContextScopes scopes, ICo
     }
 
     private static string? Left(string[] elsewhere) =>
-        elsewhere.Length == 0 ? null : string.Create(CultureInfo.InvariantCulture, $"not on trunk, left out: {string.Join(", ", elsewhere)}");
+        elsewhere.Length == 0 ? null : "not on trunk, left out: " + string.Join(", ", elsewhere);
 
     private async ValueTask<Result<ScheduledResult>> Start(string[] elsewhere, CancellationToken cancellationToken)
     {

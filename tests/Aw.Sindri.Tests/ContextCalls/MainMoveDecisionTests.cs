@@ -26,7 +26,7 @@ public sealed class MainMoveDecisionTests
 
     [Fact, Trait("Lane", "unit")]
     public void Nothing_to_do_while_a_job_runs_and_no_repo_is_on_trunk_is_the_running_job_first() =>
-        Assert.Equal(MainMoveAction.JobRunning, Decide(Heads(), null, running: true));
+        Assert.Equal(MainMoveAction.JobRunning, Decide(Heads(), last: null, running: true));
 
     [Fact, Trait("Lane", "unit")]
     public void The_first_ever_run_starts() =>
@@ -34,7 +34,7 @@ public sealed class MainMoveDecisionTests
 
     [Fact, Trait("Lane", "unit")]
     public void The_same_heads_as_the_last_success_are_nothing() =>
-        Assert.Equal(MainMoveAction.Nothing, Decide(Heads(("a", "1"), ("b", "2")), Heads(("b", "2"), ("a", "1")), false, Ok(10)));
+        Assert.Equal(MainMoveAction.Nothing, Decide(Heads(("a", "1"), ("b", "2")), Heads(("b", "2"), ("a", "1")), running: false, Ok(10)));
 
     [Fact, Trait("Lane", "unit")]
     public void A_moved_head_starts() =>
@@ -64,21 +64,21 @@ public sealed class MainMoveDecisionTests
         var history = Enumerable.Range(0, failures).Select(i => Failed(minutes - 1 + i)).ToArray();
         var due = Enumerable.Range(0, failures).Select(i => Failed(minutes + i)).ToArray();
 
-        Assert.Equal(MainMoveAction.BackoffNotDue, Decide(Heads(("a", "2")), Heads(("a", "1")), false, history));
-        Assert.Equal(MainMoveAction.Start, Decide(Heads(("a", "2")), Heads(("a", "1")), false, due));
+        Assert.Equal(MainMoveAction.BackoffNotDue, Decide(Heads(("a", "2")), Heads(("a", "1")), running: false, history));
+        Assert.Equal(MainMoveAction.Start, Decide(Heads(("a", "2")), Heads(("a", "1")), running: false, due));
     }
 
     [Fact, Trait("Lane", "unit")]
     public void A_failure_before_a_newer_success_does_not_back_off() =>
-        Assert.Equal(MainMoveAction.Start, Decide(Heads(("a", "2")), Heads(("a", "1")), false, Ok(1), Failed(2), Failed(3)));
+        Assert.Equal(MainMoveAction.Start, Decide(Heads(("a", "2")), Heads(("a", "1")), running: false, Ok(1), Failed(2), Failed(3)));
 
     [Fact, Trait("Lane", "unit")]
     public void The_first_run_failing_backs_off_too() =>
-        Assert.Equal(MainMoveAction.BackoffNotDue, Decide(Heads(("a", "1")), last: null, false, Failed(1)));
+        Assert.Equal(MainMoveAction.BackoffNotDue, Decide(Heads(("a", "1")), last: null, running: false, Failed(1)));
 
     [Fact, Trait("Lane", "unit")]
     public void Unmoved_heads_stay_nothing_whatever_the_failures() =>
-        Assert.Equal(MainMoveAction.Nothing, Decide(Heads(("a", "1")), Heads(("a", "1")), false, Failed(1)));
+        Assert.Equal(MainMoveAction.Nothing, Decide(Heads(("a", "1")), Heads(("a", "1")), running: false, Failed(1)));
 
     [Fact, Trait("Lane", "unit")]
     public void Failures_in_a_row_count_from_the_newest_until_a_non_failure()

@@ -19,6 +19,7 @@ public sealed class ContextMapRefreshServiceTests
 {
     private static readonly DateTimeOffset _now = new(2026, 10, 19, 12, 0, 0, TimeSpan.Zero);
     private static readonly JobKind _kind = JobKind.From("RefreshContextMap");
+    private static readonly JsonSerializerOptions _web = new(JsonSerializerDefaults.Web);
     private readonly SliceHarness _h = new();
     private readonly InMemoryJobViews _jobs = new();
     private readonly Starter _start;
@@ -26,7 +27,10 @@ public sealed class ContextMapRefreshServiceTests
     private Core.Lease.LeaseGrant? _grant;
     private int _next;
 
-    public ContextMapRefreshServiceTests() => _start = new Starter(_h);
+    public ContextMapRefreshServiceTests()
+    {
+        _start = new Starter(_h);
+    }
 
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -45,7 +49,7 @@ public sealed class ContextMapRefreshServiceTests
     {
         _next++;
         var result = state == JobState.Succeeded
-            ? JsonSerializer.SerializeToElement(new RefreshContextMapResult("r", 1, heads.ToDictionary(static h => h.Repo, static h => h.Sha, StringComparer.Ordinal), 0, 0, 0, "none"), new JsonSerializerOptions(JsonSerializerDefaults.Web))
+            ? JsonSerializer.SerializeToElement(new RefreshContextMapResult("r", 1, heads.ToDictionary(static h => h.Repo, static h => h.Sha, StringComparer.Ordinal), 0, 0, 0, "none"), _web)
             : (JsonElement?)null;
         _jobs.Put(new JobRow(JobId.New(_h.Ids), _kind, JobKey.From("refresh"), Item: null, Repo: null, Service: null, state,
             "service:context-map-refresh", _now - endedAgo - TimeSpan.FromSeconds(5), state == JobState.Running ? null : _now - endedAgo, [], Rounds: 0, Summary: null,
