@@ -72,6 +72,7 @@ public static class SindriWorkflowsServiceCollectionExtensions
     private static IServiceCollection AddInterpreterActivities(this IServiceCollection services) => services
         .AddSingleton<RunStepActivities>()
         .AddSingleton<RecordEventActivities>()
+        .AddScoped<ScopingApprovals>()                             // BS-1b: the scoping.approved row after step.scope.freeze reports frozen
         .AddSingleton<FactReadActivities>()
         .AddSingleton<EffectDispatch>(static provider => (context, ct) => DispatchScoped(provider, context, ct))   // engine P6 unit (a): RunEffect runs a scoped block by id
         .AddSingleton<BlockStepDispatch>(static provider => (step, context, ct) => RunBlockScoped(provider, step, context, ct))   // DT-J2: RunBlockStep runs a scoped block Step by id

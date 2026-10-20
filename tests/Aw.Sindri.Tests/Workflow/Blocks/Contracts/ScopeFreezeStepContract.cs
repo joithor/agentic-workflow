@@ -2,14 +2,20 @@ using System.Text.Json;
 using Aw.Kernel.Testing;
 using Aw.Sindri.Core.Workflow.Blocks;
 using Aw.Sindri.Features.Blocks.Step;
+using Aw.Sindri.Features.Scoping;
+using Aw.Sindri.Testing.Packets;
+using Aw.Sindri.Testing.Scoping;
 using Aw.Sindri.Testing.Workflow;
+using Aw.Sindri.Tests.Scoping.Steps;
 
 namespace Aw.Sindri.Tests.Workflow.Blocks.Contracts;
 
-/// <summary>A descriptor-only block (no runtime until its phase): it hashes, kinds, registers once and resolves nothing.</summary>
+/// <summary>A block-runtime Step (scoping station, BS-1b): it hashes, kinds, registers once, resolves under IBlockStep and honours a cancelled token.</summary>
 [Lane(TestLane.Unit)]
-public sealed class ScopeFreezeStepContract : DescriptorContract
+public sealed class ScopeFreezeStepContract : BlockContract
 {
+    protected override Type Block => typeof(ScopeFreezeStep);
+
     protected override BlockDescriptor Descriptor => ScopingSteps.Freeze;
 
     protected override string ExpectedHash => "sha256:b5bb435675715d8516db3442fc66f8946d6a918064c48fd49aad6d015f45ee65";
@@ -17,4 +23,7 @@ public sealed class ScopeFreezeStepContract : DescriptorContract
     protected override JsonSerializerOptions Json => ShippedComposition.Json;
 
     protected override IServiceProvider Compose() => ShippedComposition.Compose();
+
+    protected override async Task InvokeAsync(CancellationToken cancellationToken) =>
+        _ = await new ScopeFreezeStep(new InMemoryRunArea(), new InMemoryPackets()).Run(ScopingStepContexts.Of("step.scope.freeze", []), cancellationToken);
 }
